@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -21,6 +22,7 @@ type XMPPClient struct {
 	// Connection Status channel:
 	Status chan xmpp.Status
 
+	// Map of JID to Conversation layer
 	conversations map[xmpp.JID]*otr.Conversation
 }
 
@@ -28,6 +30,7 @@ func NewXMPPClient(jid xmpp.JID, pw string) (*XMPPClient, error) {
 	client := &XMPPClient{}
 	client.conversations = make(map[xmpp.JID]*otr.Conversation)
 
+	// TODO: This tls config is probably a bad idea.
 	tlsConf := tls.Config{InsecureSkipVerify: true}
 	innerClient, err := xmpp.NewClient(&jid, pw,
 		tlsConf, nil, xmpp.Presence{}, client.Status)
@@ -52,26 +55,26 @@ func NewXMPPClient(jid xmpp.JID, pw string) (*XMPPClient, error) {
 // TODO: This is only a dummy.
 func loadPrivateKey() *otr.PrivateKey {
 	key := &otr.PrivateKey{}
-	key.Generate(rand.Reader)
 
-	// if file, err := os.Open("/tmp/keyfile"); err != nil {
-	// 	// Generate fresh one:
-	// 	key.Generate(rand.Reader)
-	// 	fmt.Println("Key Generated", key.Serialize(nil))
+	if file, err := os.Open("/tmp/keyfile"); err != nil {
+		// Generate fresh one:
+		key.Generate(rand.Reader)
+		fmt.Printf("Key Generated: %x\n", key.Serialize(nil))
 
-	// 	// Save for next time:
-	// 	ioutil.WriteFile("/tmp/keyfile", key.Serialize(nil), 0775)
-	// } else {
-	// 	buffer := make([]byte, 4096)
-	// 	n, _ := file.Read(buffer)
-	// 	_, ok := key.Parse(buffer[:n])
-	// 	fmt.Print("Key was cached: ")
-	// 	if ok {
-	// 		fmt.Println("Success!")
-	// 	} else {
-	// 		fmt.Println("Nope.")
-	// 	}
-	// }
+		// Save for next time:
+		ioutil.WriteFile("/tmp/keyfile", key.Serialize(nil), 0775)
+	} else {
+		// TODO: This *seems* to work, assert it does.
+		buffer := make([]byte, 4096)
+		n, _ := file.Read(buffer)
+		_, ok := key.Parse(buffer[:n])
+		fmt.Print("Key was cached: ")
+		if ok {
+			fmt.Println("Success!")
+		} else {
+			fmt.Println("Nope.")
+		}
+	}
 
 	return key
 }
@@ -79,6 +82,7 @@ func loadPrivateKey() *otr.PrivateKey {
 func (client *XMPPClient) getConversation(jid xmpp.JID) *otr.Conversation {
 	con, ok := client.conversations[jid]
 	if !ok {
+		fmt.Printf("NEW CONVERSATION: `%v`\n", string(jid))
 		con = &otr.Conversation{}
 		con.PrivateKey = loadPrivateKey()
 		client.conversations[jid] = con
@@ -95,8 +99,22 @@ func truncate(a string, l int) string {
 	return a
 }
 
+func createMessage(from, to string, text []byte) *xmpp.Message {
+	xmsg := &xmpp.Message{}
+	xmsg.From = xmpp.JID(from)
+	xmsg.To = xmpp.JID(to)
+	xmsg.Id = xmpp.NextId()
+
+	xmsg.Type = "chat"
+	xmsg.Lang = "en"
+	xmsg.Body = []xmpp.Text{{XMLName: xml.Name{Local: "body"}, Chardata: string(text)}}
+
+	return xmsg
+}
+
 func (client *XMPPClient) Recv(msg *xmpp.Message) {
 	con := client.getConversation(msg.From)
+	sendBack := make([][]byte, 0)
 
 	for _, data := range msg.Body {
 		data, encrypted, state, toSend, err := con.Receive([]byte(data.Chardata))
@@ -104,10 +122,13 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 			fmt.Println("\n\n!!!!! ", err)
 		}
 
+		sendBack = append(sendBack, toSend...)
+
 		fmt.Printf("RECV: `%v` (encr: %v %v) (state-change: %v)\n",
 			truncate(string(data), 20), encrypted, con.IsEncrypted(), state)
 
-		if state == otr.NewKeys {
+		switch state {
+		case otr.NewKeys:
 			authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
 			fmt.Println("==> AUTH REQUEST")
 			if authErr != nil {
@@ -115,56 +136,35 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 				fmt.Println(authErr)
 				fmt.Println("============ AUTH ==========")
 			}
-			toSend = append(toSend, authToSend...)
+			sendBack = append(sendBack, authToSend...)
 		}
 
-		for _, s := range toSend {
-			fmt.Printf("   SEND BACK: `%v`\n", truncate(string(s), 20))
-			// client.Send(msg.From, string(s))
-			xmsg := xmpp.Message{}
-			xmsg.From = client.C.Jid
-			xmsg.To = msg.From
-			xmsg.Id = xmpp.NextId()
-
-			xmsg.Type = "chat"
-			xmsg.Lang = "en"
-			xmsg.Body = []xmpp.Text{{XMLName: xml.Name{Local: "body"}, Chardata: string(s)}}
-
-			client.C.Send <- &xmsg
+		for _, s := range sendBack {
+			fmt.Printf("   SEND(%v) BACK: `%v`\n", con.IsEncrypted(), truncate(string(s), 20))
+			client.C.Send <- createMessage(string(client.C.Jid), string(msg.From), s)
 		}
 	}
 }
 
 func (client *XMPPClient) Send(to xmpp.JID, text string) {
-	// Encrypt the message via OTR
-	// (TODO: Abort if not encrypted: con.IsEncrypted)
 	con := client.getConversation(to)
+
 	base64Texts, err := con.Send([]byte(text))
+	fmt.Printf("SEND(%v): %v %v\n", con.IsEncrypted(), text, truncate(string(base64Texts[0]), 20))
 
 	if err != nil {
 		fmt.Println("!! ", err)
 		return
 	}
 
-	fmt.Printf("SEND(%v): %v %v\n", con.IsEncrypted(), text, truncate(string(base64Texts[0]), 20))
-
 	for _, base64Text := range base64Texts {
-		xmsg := xmpp.Message{}
-		xmsg.From = client.C.Jid
-		xmsg.To = to
-		xmsg.Id = xmpp.NextId()
-
-		xmsg.Type = "chat"
-		xmsg.Lang = "en"
-		xmsg.Body = []xmpp.Text{{XMLName: xml.Name{Local: "body"}, Chardata: string(base64Text)}}
-
-		client.C.Send <- &xmsg
+		client.C.Send <- createMessage(string(client.C.Jid), string(to), base64Text)
 	}
 }
 
 func (client *XMPPClient) Close() {
-	// TODO: Iterate over all conversations and close them
-	for _, conversation := range client.conversations {
+	for jid, conversation := range client.conversations {
+		fmt.Println("Closing OTR conversation to", jid)
 		conversation.End()
 	}
 	client.C.Close()
@@ -200,8 +200,6 @@ func main() {
 			if msg, ok := stanza.(*xmpp.Message); ok {
 				// fmt.Printf("--->\n%s: %s\n<---\n", msg.From, msg.Body[0].Chardata)
 				client.Recv(msg)
-				// client.Send(msg.From, "pong!")
-				// client.Send(msg.From, otr.QueryMessage)
 			}
 		}
 	}(client.C.Recv)
@@ -218,75 +216,4 @@ func main() {
 		}
 		time.Sleep(5 * time.Second)
 	}
-
-	// stat := make(chan xmpp.Status)
-	// go func() {
-	// 	for s := range stat {
-	// 		log.Printf("connection status %d", s)
-	// 	}
-	// }()
-
-	// tlsConf := tls.Config{InsecureSkipVerify: true}
-	// c, err := xmpp.NewClient(&jid, *pw, tlsConf, nil, xmpp.Presence{}, stat)
-	// if err != nil {
-	// 	log.Fatalf("NewClient(%v): %v", jid, err)
-	// }
-	// defer c.Close()
-
-	// go func(ch <-chan xmpp.Stanza) {
-	// 	for obj := range ch {
-	// 		fmt.Printf("s: %v\n", obj)
-	// 	}
-	// 	fmt.Println("done reading")
-	// }(c.Recv)
-
-	//msg := createMessage("sahib@jabber.nullcat.de/xxx", "christoph@jabber.nullcat.de/xxx", "Hello Kitteh")
-	//c.Send <- msg
-
-	// roster := c.Roster.Get()
-	// fmt.Printf("%d roster entries:\n", len(roster))
-	// for i, entry := range roster {
-	// 	fmt.Printf("%d: %v %v %v\n", i, entry.Jid, entry.Name, entry.Subscription)
-	// }
-
-	// p := make([]byte, 1024)
-	// for {
-	// 	nr, _ := os.Stdin.Read(p)
-	// 	if nr == 0 {
-	// 		break
-	// 	}
-	// 	s := string(p)
-	// 	dec := xml.NewDecoder(strings.NewReader(s))
-	// 	t, err := dec.Token()
-	// 	if err != nil {
-	// 		fmt.Printf("token: %s\n", err)
-	// 		break
-	// 	}
-	// 	var se *xml.StartElement
-	// 	var ok bool
-	// 	if se, ok = t.(*xml.StartElement); !ok {
-	// 		fmt.Println("Couldn't find start element")
-	// 		break
-	// 	}
-	// 	var stan xmpp.Stanza
-	// 	switch se.Name.Local {
-	// 	case "iq":
-	// 		stan = &xmpp.Iq{}
-	// 	case "message":
-	// 		stan = &xmpp.Message{}
-	// 	case "presence":
-	// 		stan = &xmpp.Presence{}
-	// 	default:
-	// 		fmt.Println("Can't parse non-stanza.")
-	// 		continue
-	// 	}
-	// 	err = dec.Decode(stan)
-	// 	if err == nil {
-	// 		c.Send <- stan
-	// 	} else {
-	// 		fmt.Printf("Parse error: %v\n", err)
-	// 		break
-	// 	}
-	// }
-	// fmt.Println("done sending")
 }
