@@ -93,7 +93,7 @@ func (client *XMPPClient) getConversation(jid xmpp.JID) *otr.Conversation {
 
 func truncate(a string, l int) string {
 	if len(a) > l {
-		return a[:l]
+		return a[:l] + "..." + a[len(a)-l:]
 	}
 
 	return a
@@ -112,31 +112,46 @@ func createMessage(from, to string, text []byte) *xmpp.Message {
 	return xmsg
 }
 
+var is_server = false
+
 func (client *XMPPClient) Recv(msg *xmpp.Message) {
 	con := client.getConversation(msg.From)
 	sendBack := make([][]byte, 0)
 
-	for _, data := range msg.Body {
-		data, encrypted, state, toSend, err := con.Receive([]byte(data.Chardata))
+	for _, field := range msg.Body {
+		data, encrypted, state, toSend, err := con.Receive([]byte(field.Chardata))
 		if err != nil {
 			fmt.Println("\n\n!!!!! ", err)
 		}
 
 		sendBack = append(sendBack, toSend...)
 
-		fmt.Printf("RECV: `%v` (encr: %v %v) (state-change: %v)\n",
-			truncate(string(data), 20), encrypted, con.IsEncrypted(), state)
+		fmt.Printf("RECV: `%v` `%v` (encr: %v %v) (state-change: %v)\n",
+			truncate(string(data), 20),
+			truncate(string(field.Chardata), 20),
+			encrypted, con.IsEncrypted(), state)
 
 		switch state {
 		case otr.NewKeys:
-			authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
-			fmt.Println("==> AUTH REQUEST")
-			if authErr != nil {
-				fmt.Println("============ AUTH ==========")
-				fmt.Println(authErr)
-				fmt.Println("============ AUTH ==========")
+			if is_server {
+				authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
+				fmt.Println("==> AUTH REQUEST")
+				if authErr != nil {
+					fmt.Println("============ AUTH ==========")
+					fmt.Println(authErr)
+					fmt.Println("============ AUTH ==========")
+				}
+				sendBack = append(sendBack, authToSend...)
 			}
-			sendBack = append(sendBack, authToSend...)
+		case otr.SMPSecretNeeded:
+			question := con.SMPQuestion()
+			fmt.Printf("[!] Answer a question '%s'\n", question)
+			msgs, _ := con.Authenticate(question, []byte("eule"))
+			sendBack = append(sendBack, msgs...)
+		case otr.SMPComplete:
+			fmt.Println("[!] Answer is correct")
+		case otr.SMPFailed:
+			fmt.Println("[!] Answer is wrong")
 		}
 
 		for _, s := range sendBack {
@@ -150,7 +165,7 @@ func (client *XMPPClient) Send(to xmpp.JID, text string) {
 	con := client.getConversation(to)
 
 	base64Texts, err := con.Send([]byte(text))
-	fmt.Printf("SEND(%v): %v %v\n", con.IsEncrypted(), text, truncate(string(base64Texts[0]), 20))
+	fmt.Printf("SEND(%v): %v => %v\n", con.IsEncrypted(), text, truncate(string(base64Texts[0]), 20))
 
 	if err != nil {
 		fmt.Println("!! ", err)
@@ -207,11 +222,12 @@ func main() {
 	sendOtr := true
 	for {
 		if *send {
+			is_server = true
 			if sendOtr {
 				client.Send(xmpp.JID(*to), "Hello me. "+otr.QueryMessage)
 				sendOtr = false
 			} else {
-				client.Send(xmpp.JID(*to), "Hello me. ")
+				client.Send(xmpp.JID(*to), "Hello me.")
 			}
 		}
 		time.Sleep(5 * time.Second)
