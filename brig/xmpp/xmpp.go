@@ -24,11 +24,15 @@ type XMPPClient struct {
 
 	// Map of JID to Conversation layer
 	conversations map[xmpp.JID]*otr.Conversation
+
+	// Map of JID to authorisation state
+	authorised map[xmpp.JID]bool
 }
 
 func NewXMPPClient(jid xmpp.JID, pw string) (*XMPPClient, error) {
 	client := &XMPPClient{}
 	client.conversations = make(map[xmpp.JID]*otr.Conversation)
+	client.authorised = make(map[xmpp.JID]bool)
 
 	// TODO: This tls config is probably a bad idea.
 	tlsConf := tls.Config{InsecureSkipVerify: true}
@@ -79,16 +83,21 @@ func loadPrivateKey() *otr.PrivateKey {
 	return key
 }
 
-func (client *XMPPClient) getConversation(jid xmpp.JID) *otr.Conversation {
+func (client *XMPPClient) initOtr(jid xmpp.JID) {
+	client.Send(jid, otr.QueryMessage)
+}
+
+func (client *XMPPClient) getConversation(jid xmpp.JID) (*otr.Conversation, bool) {
 	con, ok := client.conversations[jid]
 	if !ok {
 		fmt.Printf("NEW CONVERSATION: `%v`\n", string(jid))
 		con = &otr.Conversation{}
 		con.PrivateKey = loadPrivateKey()
 		client.conversations[jid] = con
+		client.authorised[jid] = false
 	}
 
-	return con
+	return con, !ok
 }
 
 func truncate(a string, l int) string {
@@ -115,7 +124,7 @@ func createMessage(from, to string, text []byte) *xmpp.Message {
 var is_server = false
 
 func (client *XMPPClient) Recv(msg *xmpp.Message) {
-	con := client.getConversation(msg.From)
+	con, _ := client.getConversation(msg.From)
 	sendBack := make([][]byte, 0)
 
 	for _, field := range msg.Body {
@@ -126,10 +135,10 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 
 		sendBack = append(sendBack, toSend...)
 
-		fmt.Printf("RECV: `%v` `%v` (encr: %v %v) (state-change: %v)\n",
+		fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
 			truncate(string(data), 20),
 			truncate(string(field.Chardata), 20),
-			encrypted, con.IsEncrypted(), state)
+			encrypted, con.IsEncrypted(), client.authorised[msg.From], state)
 
 		switch state {
 		case otr.NewKeys:
@@ -150,8 +159,20 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 			sendBack = append(sendBack, msgs...)
 		case otr.SMPComplete:
 			fmt.Println("[!] Answer is correct")
+			if is_server == false && client.authorised[msg.From] == false {
+				authToSend, authErr := con.Authenticate("wer weis nich?", []byte("eule"))
+				fmt.Println("==> AUTH REQUEST")
+				if authErr != nil {
+					fmt.Println("============ AUTH ==========")
+					fmt.Println(authErr)
+					fmt.Println("============ AUTH ==========")
+				}
+				sendBack = append(sendBack, authToSend...)
+			}
+			client.authorised[msg.From] = true
 		case otr.SMPFailed:
 			fmt.Println("[!] Answer is wrong")
+			client.authorised[msg.From] = false
 		}
 
 		for _, s := range sendBack {
@@ -162,10 +183,16 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 }
 
 func (client *XMPPClient) Send(to xmpp.JID, text string) {
-	con := client.getConversation(to)
+	con, wasNew := client.getConversation(to)
+
+	if wasNew {
+		client.initOtr(to)
+	}
 
 	base64Texts, err := con.Send([]byte(text))
-	fmt.Printf("SEND(%v): %v => %v\n", con.IsEncrypted(), text, truncate(string(base64Texts[0]), 20))
+	fmt.Printf("SEND(%v|%v): %v => %v\n",
+		con.IsEncrypted(), client.authorised[to],
+		text, truncate(string(base64Texts[0]), 20))
 
 	if err != nil {
 		fmt.Println("!! ", err)
@@ -188,6 +215,12 @@ func (client *XMPPClient) Close() {
 func init() {
 	// xmpp.Debug = true
 }
+
+// Verbindungsaufbau:
+//   - Sender und Empfänger
+//     wer weiß, wer wer ist?
+//   - "Echte Nachrichten" zurück halten bis OTR auth fertig ist?
+//   - Was passiert bei einem disconnect?
 
 func main() {
 	jid := flag.String("jid", "", "JID to log in as")

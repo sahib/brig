@@ -14,7 +14,7 @@ Every file repository (called a "port") is assigned to a JabberID like this:
 
 REPOSITORIY COMMANDS:
 
-    brig init  <PATH> [<JID>]      Initialize an empty port with no files at <PATH>
+    brig init  [<JID> [<PATH>]     Initialize an empty port with no files at <PATH>
     brig clone <JID>               Clone an existing port fully or shallow to <PATH>
     brig open  <PATH>              Open an encrypted port. Asks for passphrase.
     brig close <PATH>              Closes an encrypted port.
@@ -90,3 +90,73 @@ repositories on the device is stored.
     - Maybe introduce a merge bin with files that need manual review?
 
 - ...
+
+Repositoy Layout
+================
+
+.. code-block:: bash
+
+    repo/
+    ├── .brig
+    │   ├── branches
+    │       └── HEAD
+    │   ├── config
+    │   ├── index
+    │   ├── otr.key
+    │   └── keys.db
+    └── .ipfs
+        ├── blocks
+        ├── config
+        ├── datastore
+        ├── logs
+        └── version
+
+Example session
+===============
+
+Init
+----
+
+.. code-block:: bash
+
+    # Will take "photos" as repo name:
+    # Creates above directory structure (unlocked).
+    $ brig init alice@jabber.nullcat.de/photos
+    # Encrypt the repo metadata (ipfs data is encrypted anyways)
+    # This should make the xmpp client go offline.
+    $ brig close photos/
+    # Open it again, start an xmpp client/make it online:
+    $ brig open photos/
+    PGP Passphrase: clitteh
+
+
+Clone
+-----
+
+.. code-block:: bash
+
+    $ brig discover
+    alice@jabber.nullcat.de/photos
+    alice@jabber.nullcat.de/music
+    alice@jabber.nullcat.de/porns   # Do not over-use resource names ;-)
+
+    # TODO: Problem: When is bob authorised to clone alice' repo?
+    $ brig auth alice@jabber.nullcat.de/photos
+
+    # If succesful:
+    $ brig friends
+    alice@jabber.nullcat.de/photos
+    $ brig clone alice@jabber.nullcat.de/photos bob@jabber.nullcat.de/alice-photos
+
+
+(Manual) sync
+-------------
+
+At Bob's:
+
+.. code-block:: bash
+
+   # Sync with all friendly peers:
+   $ brig sync
+   + file.png
+   - other.jpg 
