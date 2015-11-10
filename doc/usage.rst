@@ -11,10 +11,9 @@ Every file repository (called a "port") is assigned to a JabberID like this:
 
     sahib@jabber.nullcat.de/laptop
 
-
 REPOSITORIY COMMANDS:
 
-    brig init  [<JID> [<PATH>]     Initialize an empty port with no files at <PATH>
+    brig init  <JID> [<PATH>]      Initialize an empty port with no files at <PATH>
     brig clone <JID>               Clone an existing port fully or shallow to <PATH>
     brig open  <PATH>              Open an encrypted port. Asks for passphrase.
     brig close <PATH>              Closes an encrypted port.
