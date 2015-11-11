@@ -1,8 +1,34 @@
-package main
+package cmdline
 
-import "github.com/sahib/climax"
+import (
+	"fmt"
+	"github.com/disorganizer/brig"
+	"github.com/tucnak/climax"
+	"strings"
+)
 
-func main() {
+///////////////////////
+// Utility functions //
+///////////////////////
+
+func upperCategory(category string) string {
+	return strings.ToUpper(category) + " COMMANDS"
+}
+
+///////////////////////
+// Handler functions //
+///////////////////////
+
+func handleVersion(ctx climax.Context) int {
+	fmt.Println(brig.VersingString())
+	return 1
+}
+
+////////////////////////////
+// Commandline definition //
+////////////////////////////
+
+func RunCmdline() {
 	demo := climax.New("brig")
 	demo.Brief = "brig is a decentralized file syncer based on IPFS and XMPP."
 	demo.Version = "unstable"
@@ -11,7 +37,7 @@ func main() {
 		climax.Command{
 			Name:     "init",
 			Brief:    "Initialize an empty repository and open it",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Usage:    `<JID> [<PATH>]`,
 			Help:     `Create an empty repository, open it and associate it with the JID`,
 			Examples: []climax.Example{
@@ -27,7 +53,7 @@ func main() {
 		climax.Command{
 			Name:     "clone",
 			Brief:    "Clone an repository from somebody else",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Usage:    `<OTHER_JID> <YOUR_JID> [<PATH>]`,
 			Help:     `...`,
 			Flags: []climax.Flag{
@@ -46,140 +72,149 @@ func main() {
 				},
 			},
 			Handle: func(ctx climax.Context) int {
+				// TODO: Utils to convert string to int.
+				// TODO: Utils to get default value.
+				depth, ok := ctx.Get("--depth")
+				if !ok {
+					depth = "-1"
+				}
+
+				fmt.Println(depth)
 				return 0
 			},
 		},
 		climax.Command{
 			Name:     "open",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Open an encrypted port. Asks for passphrase.",
 		},
 		climax.Command{
 			Name:     "close",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Encrypt all metadata in the port and go offline.",
 		},
 		climax.Command{
 			Name:     "sync",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Sync with all or selected trusted peers.",
 		},
 		climax.Command{
 			Name:     "push",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Push your content to all or selected trusted peers.",
 		},
 		climax.Command{
 			Name:     "pull",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Pull content from all or selected trusted peers.",
 		},
 		climax.Command{
 			Name:     "watch",
-			Category: "repository",
+			Category: upperCategory("repository"),
 			Brief:    "Enable or disable watch mode.",
 		},
 		climax.Command{
 			Name:     "discover",
-			Category: "xmpp helper",
+			Category: upperCategory("xmpp helper"),
 			Brief:    "Try to find other brig users near you.",
 		},
 		climax.Command{
 			Name:     "friends",
-			Category: "xmpp helper",
+			Category: upperCategory("xmpp helper"),
 			Brief:    "List your trusted peers.",
 		},
 		climax.Command{
 			Name:     "beg",
-			Category: "xmpp helper",
+			Category: upperCategory("xmpp helper"),
 			Brief:    "Request authorisation from a buddy.",
 		},
 		climax.Command{
 			Name:     "ban",
-			Category: "xmpp helper",
+			Category: upperCategory("xmpp helper"),
 			Brief:    "Discontinue friendship with a peer.",
 		},
 		climax.Command{
 			Name:     "prio",
-			Category: "xmpp helper",
+			Category: upperCategory("xmpp helper"),
 			Brief:    "Change priority of a peer.",
 		},
 		climax.Command{
 			Name:     "status",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Give an overview of brig's current state.",
 		},
 		climax.Command{
 			Name:     "add",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Make file to be managed by brig.",
 		},
 		climax.Command{
 			Name:     "find",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Find filenames in the fleet.",
 		},
 		climax.Command{
 			Name:     "rm",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Remove file from brig's control.",
 		},
 		climax.Command{
 			Name:     "log",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Visualize changelog tree.",
 		},
 		climax.Command{
 			Name:     "checkout",
-			Category: "working dir",
+			Category: upperCategory("working dir"),
 			Brief:    "Attempt to checkout previous version of a file.",
 		},
 		climax.Command{
 			Name:     "lock",
-			Category: "advanced",
+			Category: upperCategory("advanced"),
 			Brief:    "Disallow any modification of the repository.",
 		},
 		climax.Command{
 			Name:     "unlock",
-			Category: "advanced",
+			Category: upperCategory("advanced"),
 			Brief:    "Remove a previous write lock.",
 		},
 		climax.Command{
 			Name:     "fsck",
-			Category: "advanced",
+			Category: upperCategory("advanced"),
 			Brief:    "Verify, and possibly fix, broken files.",
 		},
 		climax.Command{
 			Name:     "passwd",
-			Category: "advanced",
+			Category: upperCategory("advanced"),
 			Brief:    "Set your XMPP and access password.",
 		},
 		climax.Command{
 			Name:     "yubi",
-			Category: "advanced",
+			Category: upperCategory("advanced"),
 			Brief:    "Manage YubiKeys.",
 		},
 		climax.Command{
 			Name:     "config",
-			Category: "misc",
+			Category: upperCategory("misc"),
 			Brief:    "Access, list and modify configuration values.",
 		},
 		climax.Command{
 			Name:     "update",
-			Category: "misc",
+			Category: upperCategory("misc"),
 			Brief:    "Try to securely update brig.",
 		},
 		climax.Command{
 			Name:     "help",
-			Category: "misc",
+			Category: upperCategory("misc"),
 			Brief:    "Print some help",
 			Usage:    "Did you really need help on help?",
 		},
 		climax.Command{
 			Name:     "version",
-			Category: "misc",
+			Category: upperCategory("misc"),
 			Brief:    "Print current version.",
 			Usage:    "Print current version.",
+			Handle:   handleVersion,
 		},
 	}
 
@@ -187,6 +222,7 @@ func main() {
 		demo.AddCommand(command)
 	}
 
+	// Help topics:
 	demo.AddTopic(climax.Topic{
 		Name:  "quick-start",
 		Brief: "A very short introduction to brig",
