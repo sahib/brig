@@ -11,8 +11,8 @@ import (
 // Utility functions //
 ///////////////////////
 
-func upperCategory(category string) string {
-	return strings.ToUpper(category) + " COMMANDS"
+func formatGroup(category string) string {
+	return strings.ToUpper(category) + " COMMANDS:"
 }
 
 ///////////////////////
@@ -33,13 +33,19 @@ func RunCmdline() {
 	demo.Brief = "brig is a decentralized file syncer based on IPFS and XMPP."
 	demo.Version = "unstable"
 
+	repoGroup := demo.AddGroup(formatGroup("repository"))
+	xmppGroup := demo.AddGroup(formatGroup("xmpp helper"))
+	wdirGroup := demo.AddGroup(formatGroup("working"))
+	advnGroup := demo.AddGroup(formatGroup("advanced"))
+	miscGroup := demo.AddGroup(formatGroup("misc"))
+
 	commands := []climax.Command{
 		climax.Command{
-			Name:     "init",
-			Brief:    "Initialize an empty repository and open it",
-			Category: upperCategory("repository"),
-			Usage:    `<JID> [<PATH>]`,
-			Help:     `Create an empty repository, open it and associate it with the JID`,
+			Name:  "init",
+			Brief: "Initialize an empty repository and open it",
+			Group: repoGroup,
+			Usage: `<JID> [<PATH>]`,
+			Help:  `Create an empty repository, open it and associate it with the JID`,
 			Examples: []climax.Example{
 				{
 					Usecase:     `alice@jabber.de/laptop`,
@@ -51,11 +57,11 @@ func RunCmdline() {
 			},
 		},
 		climax.Command{
-			Name:     "clone",
-			Brief:    "Clone an repository from somebody else",
-			Category: upperCategory("repository"),
-			Usage:    `<OTHER_JID> <YOUR_JID> [<PATH>]`,
-			Help:     `...`,
+			Name:  "clone",
+			Brief: "Clone an repository from somebody else",
+			Group: repoGroup,
+			Usage: `<OTHER_JID> <YOUR_JID> [<PATH>]`,
+			Help:  `...`,
 			Flags: []climax.Flag{
 				{
 					Name:     "--depth",
@@ -84,137 +90,137 @@ func RunCmdline() {
 			},
 		},
 		climax.Command{
-			Name:     "open",
-			Category: upperCategory("repository"),
-			Brief:    "Open an encrypted port. Asks for passphrase.",
+			Name:  "open",
+			Group: repoGroup,
+			Brief: "Open an encrypted port. Asks for passphrase.",
 		},
 		climax.Command{
-			Name:     "close",
-			Category: upperCategory("repository"),
-			Brief:    "Encrypt all metadata in the port and go offline.",
+			Name:  "close",
+			Group: repoGroup,
+			Brief: "Encrypt all metadata in the port and go offline.",
 		},
 		climax.Command{
-			Name:     "sync",
-			Category: upperCategory("repository"),
-			Brief:    "Sync with all or selected trusted peers.",
+			Name:  "sync",
+			Group: repoGroup,
+			Brief: "Sync with all or selected trusted peers.",
 		},
 		climax.Command{
-			Name:     "push",
-			Category: upperCategory("repository"),
-			Brief:    "Push your content to all or selected trusted peers.",
+			Name:  "push",
+			Group: repoGroup,
+			Brief: "Push your content to all or selected trusted peers.",
 		},
 		climax.Command{
-			Name:     "pull",
-			Category: upperCategory("repository"),
-			Brief:    "Pull content from all or selected trusted peers.",
+			Name:  "pull",
+			Group: repoGroup,
+			Brief: "Pull content from all or selected trusted peers.",
 		},
 		climax.Command{
-			Name:     "watch",
-			Category: upperCategory("repository"),
-			Brief:    "Enable or disable watch mode.",
+			Name:  "watch",
+			Group: repoGroup,
+			Brief: "Enable or disable watch mode.",
 		},
 		climax.Command{
-			Name:     "discover",
-			Category: upperCategory("xmpp helper"),
-			Brief:    "Try to find other brig users near you.",
+			Name:  "discover",
+			Group: xmppGroup,
+			Brief: "Try to find other brig users near you.",
 		},
 		climax.Command{
-			Name:     "friends",
-			Category: upperCategory("xmpp helper"),
-			Brief:    "List your trusted peers.",
+			Name:  "friends",
+			Group: xmppGroup,
+			Brief: "List your trusted peers.",
 		},
 		climax.Command{
-			Name:     "beg",
-			Category: upperCategory("xmpp helper"),
-			Brief:    "Request authorisation from a buddy.",
+			Name:  "beg",
+			Group: xmppGroup,
+			Brief: "Request authorisation from a buddy.",
 		},
 		climax.Command{
-			Name:     "ban",
-			Category: upperCategory("xmpp helper"),
-			Brief:    "Discontinue friendship with a peer.",
+			Name:  "ban",
+			Group: xmppGroup,
+			Brief: "Discontinue friendship with a peer.",
 		},
 		climax.Command{
-			Name:     "prio",
-			Category: upperCategory("xmpp helper"),
-			Brief:    "Change priority of a peer.",
+			Name:  "prio",
+			Group: xmppGroup,
+			Brief: "Change priority of a peer.",
 		},
 		climax.Command{
-			Name:     "status",
-			Category: upperCategory("working dir"),
-			Brief:    "Give an overview of brig's current state.",
+			Name:  "status",
+			Group: wdirGroup,
+			Brief: "Give an overview of brig's current state.",
 		},
 		climax.Command{
-			Name:     "add",
-			Category: upperCategory("working dir"),
-			Brief:    "Make file to be managed by brig.",
+			Name:  "add",
+			Group: wdirGroup,
+			Brief: "Make file to be managed by brig.",
 		},
 		climax.Command{
-			Name:     "find",
-			Category: upperCategory("working dir"),
-			Brief:    "Find filenames in the fleet.",
+			Name:  "find",
+			Group: wdirGroup,
+			Brief: "Find filenames in the fleet.",
 		},
 		climax.Command{
-			Name:     "rm",
-			Category: upperCategory("working dir"),
-			Brief:    "Remove file from brig's control.",
+			Name:  "rm",
+			Group: wdirGroup,
+			Brief: "Remove file from brig's control.",
 		},
 		climax.Command{
-			Name:     "log",
-			Category: upperCategory("working dir"),
-			Brief:    "Visualize changelog tree.",
+			Name:  "log",
+			Group: wdirGroup,
+			Brief: "Visualize changelog tree.",
 		},
 		climax.Command{
-			Name:     "checkout",
-			Category: upperCategory("working dir"),
-			Brief:    "Attempt to checkout previous version of a file.",
+			Name:  "checkout",
+			Group: wdirGroup,
+			Brief: "Attempt to checkout previous version of a file.",
 		},
 		climax.Command{
-			Name:     "lock",
-			Category: upperCategory("advanced"),
-			Brief:    "Disallow any modification of the repository.",
+			Name:  "lock",
+			Group: advnGroup,
+			Brief: "Disallow any modification of the repository.",
 		},
 		climax.Command{
-			Name:     "unlock",
-			Category: upperCategory("advanced"),
-			Brief:    "Remove a previous write lock.",
+			Name:  "unlock",
+			Group: advnGroup,
+			Brief: "Remove a previous write lock.",
 		},
 		climax.Command{
-			Name:     "fsck",
-			Category: upperCategory("advanced"),
-			Brief:    "Verify, and possibly fix, broken files.",
+			Name:  "fsck",
+			Group: advnGroup,
+			Brief: "Verify, and possibly fix, broken files.",
 		},
 		climax.Command{
-			Name:     "passwd",
-			Category: upperCategory("advanced"),
-			Brief:    "Set your XMPP and access password.",
+			Name:  "passwd",
+			Group: advnGroup,
+			Brief: "Set your XMPP and access password.",
 		},
 		climax.Command{
-			Name:     "yubi",
-			Category: upperCategory("advanced"),
-			Brief:    "Manage YubiKeys.",
+			Name:  "yubi",
+			Group: advnGroup,
+			Brief: "Manage YubiKeys.",
 		},
 		climax.Command{
-			Name:     "config",
-			Category: upperCategory("misc"),
-			Brief:    "Access, list and modify configuration values.",
+			Name:  "config",
+			Group: miscGroup,
+			Brief: "Access, list and modify configuration values.",
 		},
 		climax.Command{
-			Name:     "update",
-			Category: upperCategory("misc"),
-			Brief:    "Try to securely update brig.",
+			Name:  "update",
+			Group: miscGroup,
+			Brief: "Try to securely update brig.",
 		},
 		climax.Command{
-			Name:     "help",
-			Category: upperCategory("misc"),
-			Brief:    "Print some help",
-			Usage:    "Did you really need help on help?",
+			Name:  "help",
+			Group: miscGroup,
+			Brief: "Print some help",
+			Usage: "Did you really need help on help?",
 		},
 		climax.Command{
-			Name:     "version",
-			Category: upperCategory("misc"),
-			Brief:    "Print current version.",
-			Usage:    "Print current version.",
-			Handle:   handleVersion,
+			Name:   "version",
+			Group:  miscGroup,
+			Brief:  "Print current version.",
+			Usage:  "Print current version.",
+			Handle: handleVersion,
 		},
 	}
 
