@@ -3,8 +3,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha512"
+	"crypto/sha1"
 	"encoding/binary"
 	"flag"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime/pprof"
 	"time"
 
 	chacha "github.com/codahale/chacha20poly1305"
@@ -41,12 +44,34 @@ func NewFile(path string) (*File, error) {
 }
 
 const (
-	maxPackSize = 16 * 1024 * 1024
-	padPackSize = 4
+	aeadCipherChaCha = iota
+	aeadCipherAES
 )
 
+const (
+	maxPackSize       = 4 * 1024 * 1024
+	goodBufSize       = maxPackSize + 32
+	padPackSize       = 4
+	defaultCipherType = aeadCipherChaCha
+)
+
+func createAEADWorker(cipherType int, key []byte) (cipher.AEAD, error) {
+	switch cipherType {
+	case aeadCipherAES:
+		block, err := aes.NewCipher(key)
+		if err != nil {
+			return nil, err
+		}
+		return cipher.NewGCM(block)
+	case aeadCipherChaCha:
+		return chacha.New(key)
+	}
+
+	return nil, fmt.Errorf("No such cipher type.")
+}
+
 type AEADReader struct {
-	Reader io.Reader
+	Reader io.ReadSeeker
 
 	Hasher hash.Hash
 	aead   cipher.AEAD
@@ -54,33 +79,31 @@ type AEADReader struct {
 	nonce   []byte
 	sizeBuf []byte
 	packBuf []byte
+	backlog *bytes.Buffer
 }
 
-func (r *AEADReader) Read(p []byte) (int, error) {
+func (r *AEADReader) Read(dest []byte) (int, error) {
+	if r.backlog.Len() > 0 {
+		n, _ := r.backlog.Read(dest)
+		return n, nil
+	}
+
 	n, err := r.Reader.Read(r.sizeBuf)
 	if err != nil {
 		return 0, err
 	}
 
 	packSize := binary.BigEndian.Uint32(r.sizeBuf)
-	if packSize > maxPackSize {
-		return 0, fmt.Errorf("Pack size exceeded expectations, ignore pack.")
+	if packSize > maxPackSize+uint32(r.aead.Overhead()) {
+		return 0, fmt.Errorf("Pack size exceeded expectations: %d > %d",
+			packSize, maxPackSize)
 	}
 
-	n, err = r.Reader.Read(r.nonce)
-	if err != nil {
+	if n, err = r.Reader.Read(r.nonce); err != nil {
 		return 0, err
-	}
-
-	if n != r.aead.NonceSize() {
+	} else if n != r.aead.NonceSize() {
 		return 0, fmt.Errorf("Nonce size mismatch. Should: %d. Have: %d",
 			r.aead.NonceSize(), n)
-	}
-
-	// Read encrypted text, but not more than the packet indicated:
-	// Since the packSize might be larger than cap(p) we use another buffer.
-	if r.packBuf == nil || packSize > uint32(cap(r.packBuf)) {
-		r.packBuf = make([]byte, packSize)
 	}
 
 	n, err = r.Reader.Read(r.packBuf[:packSize])
@@ -88,34 +111,64 @@ func (r *AEADReader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
-	// Decrypt text (store it in decrypted)
-	// TODO: This might be slow since it involves two buffers?
-	decrypted, err := r.aead.Open(p, r.nonce, r.packBuf[:packSize], nil)
+	decrypted, err := r.aead.Open(nil, r.nonce, r.packBuf[:n], nil)
 	if err != nil {
 		return 0, err
 	}
 
-	_, err = r.Hasher.Write(decrypted)
-	if err != nil {
+	if _, err = r.Hasher.Write(decrypted); err != nil {
 		return 0, err
 	}
 
-	return copy(p, decrypted), nil
+	// This is the counterpart to above:
+	// Log back any parts that do not fit into `dest`.
+	copySize := len(dest)
+	if len(dest) > len(decrypted) {
+		copySize = len(decrypted)
+	} else if len(dest) < len(decrypted) {
+		r.backlog.Write(decrypted[copySize:])
+		log.Println("CACHE")
+	}
+
+	// return copy(dest, decrypted[:copySize]), nil
+	return copy(dest, decrypted), nil
 }
 
-func NewAEADReader(r io.Reader, key []byte) (io.Reader, error) {
-	aead, err := chacha.New(key)
+func (r *AEADReader) Seek(offset int64, whence int) (int64, error) {
+	// TODO: clear backlog?
+	r.backlog.Reset()
+
+	currPos, _ := r.Reader.Seek(0, os.SEEK_CUR)
+
+	// find previous block
+	blockSize := maxPackSize + padPackSize + r.aead.Overhead() + r.aead.NonceSize()
+	blockPos := currPos / int64(blockSize)
+
+	r.Reader.Seek(blockPos, os.SEEK_SET)
+
+	// TODO: read currPos - blockPos
+	return blockPos, nil
+}
+
+func (r *AEADReader) Close() error {
+	return nil
+}
+
+func NewAEADReader(r io.ReadSeeker, key []byte) (io.ReadCloser, error) {
+	aead, err := createAEADWorker(defaultCipherType, key)
 	if err != nil {
 		return nil, err
 	}
 
 	nonce := make([]byte, aead.NonceSize())
 	return &AEADReader{
-		Hasher:  sha512.New(),
+		Hasher:  sha1.New(),
 		Reader:  r,
 		nonce:   nonce,
 		aead:    aead,
+		backlog: new(bytes.Buffer),
 		sizeBuf: make([]byte, padPackSize),
+		packBuf: make([]byte, 0, maxPackSize+aead.Overhead()),
 	}, nil
 }
 
@@ -135,20 +188,38 @@ type AEADWriter struct {
 	// Short temporary buffer for encoding the packSize
 	sizeBuf []byte
 
+	// A buffer that is maxPackSize big.
+	// Used for caching blocks
+	packBuf *bytes.Buffer
+
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
 }
 
 func (w *AEADWriter) Write(p []byte) (int, error) {
-	if maxPackSize <= padPackSize+w.aead.NonceSize()+len(p)+w.aead.Overhead() {
-		log.Println("too large")
-		return 0, fmt.Errorf("Maximum chunk size is 16MB")
+	w.packBuf.Write(p)
+	if w.packBuf.Len() < maxPackSize {
+		return 0, nil
 	}
 
+	return w.flushPack(maxPackSize)
+}
+
+func (w *AEADWriter) Close() error {
+	_, err := w.flushPack(w.packBuf.Len())
+	return err
+}
+
+func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	// Try to update the checksum as we run:
-	_, err := w.Hasher.Write(p)
-	if err != nil {
+	src := w.packBuf.Bytes()[:chunkSize]
+
+	// Make sure to advance this many bytes
+	// in case any leftovers are in the buffer.
+	defer w.packBuf.Read(src[:chunkSize])
+
+	if _, err := w.Hasher.Write(src); err != nil {
 		return 0, err
 	}
 
@@ -159,49 +230,64 @@ func (w *AEADWriter) Write(p []byte) (int, error) {
 	copy(w.nonce, hash[w.aead.NonceSize():])
 
 	// Encrypt the text:
-	encrypted := w.aead.Seal(nil, w.nonce, p, nil)
+	encrypted := w.aead.Seal(nil, w.nonce, src, nil)
 
 	// Pass it to the underlying writer:
 	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(encrypted)))
+
 	w.Writer.Write(w.sizeBuf)
 	w.Writer.Write(w.nonce)
 	w.Writer.Write(encrypted)
 
-	// len(encrypted) might be more than len(p)
+	// log.Println("WROTE", len(encrypted), len(src))
+
+	// len(encrypted) might be more than len(w.packBuf)
 	return len(encrypted) + len(w.nonce) + len(w.sizeBuf), nil
 }
 
-func NewAEADWriter(w io.Writer, key []byte) (io.Writer, error) {
-	aead, err := chacha.New(key)
+func NewAEADWriter(w io.Writer, key []byte) (io.WriteCloser, error) {
+	aead, err := createAEADWorker(defaultCipherType, key)
 	if err != nil {
 		return nil, err
 	}
 
 	return &AEADWriter{
-		Hasher:  sha512.New(),
+		Hasher:  sha1.New(),
 		Writer:  w,
 		aead:    aead,
 		nonce:   make([]byte, aead.NonceSize()),
 		sizeBuf: make([]byte, padPackSize),
+		packBuf: bytes.NewBuffer(make([]byte, 0, maxPackSize)),
 	}, nil
 }
 
 func main() {
-	var reader io.Reader
-	var writer io.Writer
+	var reader io.ReadCloser
+	var writer io.WriteCloser
 	var err error
-
+	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 	decryptMode := flag.Bool("d", false, "Decrypt.")
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	key := []byte("01234567890ABCDE01234567890ABCDE")
 
 	if *decryptMode == false {
 		writer, err = NewAEADWriter(os.Stdout, key)
 		reader = os.Stdin
+		defer writer.Close()
 	} else {
 		writer = os.Stdout
 		reader, err = NewAEADReader(os.Stdin, key)
+		defer reader.Close()
 	}
 
 	if err != nil {
@@ -210,7 +296,7 @@ func main() {
 	}
 
 	r := bufio.NewReader(reader)
-	buf := make([]byte, 0, 4*1024*1024)
+	buf := make([]byte, 0, goodBufSize)
 
 	for {
 		n, err := r.Read(buf[:cap(buf)])
@@ -224,6 +310,8 @@ func main() {
 			}
 			log.Fatal(err)
 		}
+
+		// log.Println("READ ", n)
 
 		if err != nil && err != io.EOF {
 			log.Fatal(err)
