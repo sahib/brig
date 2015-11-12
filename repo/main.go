@@ -5,10 +5,52 @@ import (
 	"fmt"
 	"github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/packet"
 	"os"
 	"path"
 	"path/filepath"
 )
+
+func generateKeypair(name, comment, email string, cfg *packet.Config) (*openpgp.Entity, error) {
+	fmt.Println("Generating keypair...")
+	keypair, err := openpgp.NewEntity(name, comment, email, cfg)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("...done.")
+	return keypair, nil
+}
+
+func saveKeypair(path string, keypair *openpgp.Entity) error {
+	// TODO: Save key armored with a passphrase - currently not supported by
+	// golang openpgp library
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	keypair.SerializePrivate(f, nil) // TODO: packet.Config instead of nil?
+	return nil
+}
+
+func loadKeypair(path string) (*openpgp.Entity, error) {
+	// TODO: Save key armored keypair
+	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	enityList, err := openpgp.ReadKeyRing(f)
+	if err != nil {
+		return nil, err
+	}
+	if len(enityList) > 0 {
+		return enityList[0], nil
+	}
+	// should acually never be reached
+	return nil, err
+}
 
 // Repository interface for brig repository types
 type Repository interface {
@@ -28,8 +70,7 @@ type FsRepository struct {
 	ConfigPath string
 
 	// Crypto
-	PublicKey  string
-	PrivateKey string
+	GPGKeypair *openpgp.Entity
 	AesKey     string
 	OtrKey     string
 }
@@ -119,9 +160,21 @@ func createIPFS(ipfsRootPath string) error {
 }
 
 func main() {
-	_, err := NewFsRepository(os.Args[1], os.Args[2], os.Args[3])
+	//_, err := NewFsRepository(os.Args[1], os.Args[2], os.Args[3])
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(3)
+	//}
+	e, err := loadKeypair("catz")
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(3)
+	}
+	for _, subkey := range e.Subkeys {
+		if subkey.PrivateKey != nil {
+			fmt.Printf("Privater Schluessel % x\n", subkey.PrivateKey.Fingerprint)
+		}
+		if subkey.PublicKey != nil {
+			fmt.Printf("Public Schluessel % x\n", subkey.PublicKey.Fingerprint)
+		}
 	}
 }
