@@ -14,11 +14,10 @@ import (
 	"io"
 	"log"
 	"os"
-	"runtime/pprof"
 	"time"
 
 	chacha "github.com/codahale/chacha20poly1305"
-	"github.com/jbenet/go-multihash"
+	multihash "github.com/jbenet/go-multihash"
 )
 
 type File interface {
@@ -43,11 +42,13 @@ func NewFile(path string) (*File, error) {
 	return nil, nil
 }
 
+// Possible ciphers in Counter mode:
 const (
 	aeadCipherChaCha = iota
 	aeadCipherAES
 )
 
+//
 const (
 	maxPackSize       = 4 * 1024 * 1024
 	goodBufSize       = maxPackSize + 32
@@ -70,18 +71,50 @@ func createAEADWorker(cipherType int, key []byte) (cipher.AEAD, error) {
 	return nil, fmt.Errorf("No such cipher type.")
 }
 
+type aeadCommon struct {
+	// Hashing io.Writer for in-band hashing.
+	Hasher hash.Hash
+
+	// Nonce that form the first aead.NonceSize() bytes
+	// of the output
+	nonce []byte
+
+	// Short temporary buffer for encoding the packSize
+	sizeBuf []byte
+
+	// For more information, see:
+	// https://en.wikipedia.org/wiki/Authenticated_encryption
+	aead cipher.AEAD
+}
+
+func (c *aeadCommon) initAeadCommon(key []byte) error {
+	c.Hasher = sha1.New()
+
+	aead, err := createAEADWorker(defaultCipherType, key)
+	if err != nil {
+		return err
+	}
+
+	c.nonce = make([]byte, aead.NonceSize())
+	c.sizeBuf = make([]byte, padPackSize)
+	c.aead = aead
+	return nil
+}
+
 type AEADReader struct {
+	aeadCommon
+
 	Reader io.ReadSeeker
 
-	Hasher hash.Hash
-	aead   cipher.AEAD
-
-	nonce   []byte
-	sizeBuf []byte
 	packBuf []byte
 	backlog *bytes.Buffer
 }
 
+// Read from source and decrypt + hash it.
+//
+// This method always decrypts one block to optimize for continous reads. If
+// dest is too small to hold the block, the decrypted text is cached for the
+// next read.
 func (r *AEADReader) Read(dest []byte) (int, error) {
 	if r.backlog.Len() > 0 {
 		n, _ := r.backlog.Read(dest)
@@ -130,24 +163,61 @@ func (r *AEADReader) Read(dest []byte) (int, error) {
 		log.Println("CACHE")
 	}
 
-	// return copy(dest, decrypted[:copySize]), nil
-	return copy(dest, decrypted), nil
+	return copy(dest, decrypted[:copySize]), nil
 }
 
+func (r *AEADReader) seekPosCoord(offset int64) (int64, int64, int64) {
+	blockSize := int64(padPackSize + r.aead.Overhead() + r.aead.NonceSize())
+	blockSize += maxPackSize
+
+	return offset / blockSize, offset % blockSize, blockSize
+}
+
+// Seek into the encrypted stream.
+//
+// Note that the seek offset is relative to the decrypted data,
+// not to the underlying, encrypted stream.
 func (r *AEADReader) Seek(offset int64, whence int) (int64, error) {
-	// TODO: clear backlog?
+	// Clear backlog, reading will cause it to be re-read
 	r.backlog.Reset()
 
-	currPos, _ := r.Reader.Seek(0, os.SEEK_CUR)
+	// Find out our current pos in the encrypted stream:
+	currPos, err := r.Reader.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return 0, err
+	}
 
-	// find previous block
-	blockSize := maxPackSize + padPackSize + r.aead.Overhead() + r.aead.NonceSize()
-	blockPos := currPos / int64(blockSize)
+	// Convert offset to relative to blockNum offset
+	switch whence {
+	case os.SEEK_SET:
+		offset -= currPos
+	case os.SEEK_CUR:
+		offset = offset
+	case os.SEEK_END:
+		return 0, fmt.Errorf("There is no definite end, can't use SEEK_END")
+	}
 
-	r.Reader.Seek(blockPos, os.SEEK_SET)
+	// User wants to know where we are in the decrypted stream:
+	blockNum, blockOff, blockSize := r.seekPosCoord(currPos + offset)
+	if offset == 0 {
+		return blockNum*maxPackSize + blockOff, nil
+	}
 
-	// TODO: read currPos - blockPos
-	return blockPos, nil
+	// Seek relative to the encrypted stream:
+	newEncPos, err := r.Reader.Seek(blockNum*blockSize, os.SEEK_SET)
+	if err != nil {
+		return 0, err
+	}
+
+	// Seek to the right position:
+	dummy := make([]byte, 0, blockOff)
+	if _, err = r.Read(dummy); err != nil {
+		return 0, err
+	}
+
+	// Return new position relative to the decrypted stream:
+	newBlockNum, newBlockOff, _ := r.seekPosCoord(newEncPos)
+	return newBlockNum*maxPackSize + newBlockOff, nil
 }
 
 func (r *AEADReader) Close() error {
@@ -155,46 +225,31 @@ func (r *AEADReader) Close() error {
 }
 
 func NewAEADReader(r io.ReadSeeker, key []byte) (io.ReadCloser, error) {
-	aead, err := createAEADWorker(defaultCipherType, key)
-	if err != nil {
+	reader := &AEADReader{
+		Reader:  r,
+		backlog: new(bytes.Buffer),
+	}
+
+	if err := reader.initAeadCommon(key); err != nil {
 		return nil, err
 	}
 
-	nonce := make([]byte, aead.NonceSize())
-	return &AEADReader{
-		Hasher:  sha1.New(),
-		Reader:  r,
-		nonce:   nonce,
-		aead:    aead,
-		backlog: new(bytes.Buffer),
-		sizeBuf: make([]byte, padPackSize),
-		packBuf: make([]byte, 0, maxPackSize+aead.Overhead()),
-	}, nil
+	reader.packBuf = make([]byte, 0, maxPackSize+reader.aead.Overhead())
+	return reader, nil
 }
 
 ////////////
 
 type AEADWriter struct {
+	// Common fields with AEADReader
+	aeadCommon
+
 	// Internal Writer we would write to.
 	Writer io.Writer
-
-	// Hashing io.Writer for in-band hashing.
-	Hasher hash.Hash
-
-	// Nonce that form the first aead.NonceSize() bytes
-	// of the output
-	nonce []byte
-
-	// Short temporary buffer for encoding the packSize
-	sizeBuf []byte
 
 	// A buffer that is maxPackSize big.
 	// Used for caching blocks
 	packBuf *bytes.Buffer
-
-	// For more information, see:
-	// https://en.wikipedia.org/wiki/Authenticated_encryption
-	aead cipher.AEAD
 }
 
 func (w *AEADWriter) Write(p []byte) (int, error) {
@@ -239,62 +294,24 @@ func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	w.Writer.Write(w.nonce)
 	w.Writer.Write(encrypted)
 
-	// log.Println("WROTE", len(encrypted), len(src))
-
 	// len(encrypted) might be more than len(w.packBuf)
 	return len(encrypted) + len(w.nonce) + len(w.sizeBuf), nil
 }
 
 func NewAEADWriter(w io.Writer, key []byte) (io.WriteCloser, error) {
-	aead, err := createAEADWorker(defaultCipherType, key)
-	if err != nil {
+	writer := &AEADWriter{
+		Writer:  w,
+		packBuf: bytes.NewBuffer(make([]byte, 0, maxPackSize)),
+	}
+
+	if err := writer.initAeadCommon(key); err != nil {
 		return nil, err
 	}
 
-	return &AEADWriter{
-		Hasher:  sha1.New(),
-		Writer:  w,
-		aead:    aead,
-		nonce:   make([]byte, aead.NonceSize()),
-		sizeBuf: make([]byte, padPackSize),
-		packBuf: bytes.NewBuffer(make([]byte, 0, maxPackSize)),
-	}, nil
+	return writer, nil
 }
 
-func main() {
-	var reader io.ReadCloser
-	var writer io.WriteCloser
-	var err error
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	decryptMode := flag.Bool("d", false, "Decrypt.")
-	flag.Parse()
-
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-
-	key := []byte("01234567890ABCDE01234567890ABCDE")
-
-	if *decryptMode == false {
-		writer, err = NewAEADWriter(os.Stdout, key)
-		reader = os.Stdin
-		defer writer.Close()
-	} else {
-		writer = os.Stdout
-		reader, err = NewAEADReader(os.Stdin, key)
-		defer reader.Close()
-	}
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
+func securedTransfer(reader io.Reader, writer io.Writer, encrypt bool) error {
 	r := bufio.NewReader(reader)
 	buf := make([]byte, 0, goodBufSize)
 
@@ -308,18 +325,58 @@ func main() {
 			if err == io.EOF {
 				break
 			}
-			log.Fatal(err)
+
+			return err
 		}
 
-		// log.Println("READ ", n)
-
 		if err != nil && err != io.EOF {
-			log.Fatal(err)
+			return err
 		}
 
 		_, err = writer.Write(buf)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+	}
+
+	return nil
+}
+
+func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) error {
+	layer, err := NewAEADWriter(dest, key)
+	if err != nil {
+		return err
+	}
+
+	defer layer.Close()
+	return securedTransfer(source, layer, true)
+}
+
+func Decrypt(key []byte, source io.ReadSeeker, dest io.Writer) error {
+	layer, err := NewAEADReader(source, key)
+	if err != nil {
+		return err
+	}
+
+	defer layer.Close()
+	return securedTransfer(layer, dest, true)
+}
+
+func main() {
+	decryptMode := flag.Bool("d", false, "Decrypt.")
+	flag.Parse()
+
+	key := []byte("01234567890ABCDE01234567890ABCDE")
+
+	var err error
+	if *decryptMode == false {
+		err = Encrypt(key, os.Stdin, os.Stdout)
+	} else {
+		err = Decrypt(key, os.Stdin, os.Stdout)
+	}
+
+	if err != nil {
+		log.Fatal(err)
+		return
 	}
 }
