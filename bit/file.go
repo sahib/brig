@@ -50,7 +50,7 @@ const (
 
 //
 const (
-	maxPackSize       = 4 * 1024 * 1024
+	maxPackSize       = 1 * 1024 //* 1024
 	goodBufSize       = maxPackSize + 32
 	padPackSize       = 4
 	defaultCipherType = aeadCipherChaCha
@@ -116,11 +116,18 @@ type AEADReader struct {
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *AEADReader) Read(dest []byte) (int, error) {
-	if r.backlog.Len() > 0 {
-		n, _ := r.backlog.Read(dest)
-		return n, nil
+	if r.backlog.Len() == 0 {
+		_, err := r.readBlock()
+		if err != nil {
+			return 0, err
+		}
 	}
 
+	return r.backlog.Read(dest)
+}
+
+// Fill internal buffer with current block
+func (r *AEADReader) readBlock() (int, error) {
 	n, err := r.Reader.Read(r.sizeBuf)
 	if err != nil {
 		return 0, err
@@ -153,78 +160,83 @@ func (r *AEADReader) Read(dest []byte) (int, error) {
 		return 0, err
 	}
 
-	// This is the counterpart to above:
-	// Log back any parts that do not fit into `dest`.
-	copySize := len(dest)
-	if len(dest) > len(decrypted) {
-		copySize = len(decrypted)
-	} else if len(dest) < len(decrypted) {
-		r.backlog.Write(decrypted[copySize:])
-		log.Println("CACHE")
-	}
-
-	return copy(dest, decrypted[:copySize]), nil
+	return r.backlog.Write(decrypted)
 }
 
-func (r *AEADReader) seekPosCoord(offset int64) (int64, int64, int64) {
-	blockSize := int64(padPackSize + r.aead.Overhead() + r.aead.NonceSize())
-	blockSize += maxPackSize
-
-	return offset / blockSize, offset % blockSize, blockSize
+func convertEncToDec(n, blockSize, totalBlockSize, headerSize int64) int64 {
+	encBlocks := n / totalBlockSize
+	encOffset := n % totalBlockSize
+	return (encBlocks * blockSize) + encOffset - headerSize
 }
 
 // Seek into the encrypted stream.
 //
 // Note that the seek offset is relative to the decrypted data,
 // not to the underlying, encrypted stream.
+//
+// Mixing SEEK_CUR and SEEK_SET might not a good idea,
+// since a seek might involve reading a whole encrypted block.
+// Therefore relative seek offset
 func (r *AEADReader) Seek(offset int64, whence int) (int64, error) {
-	// Clear backlog, reading will cause it to be re-read
-	r.backlog.Reset()
+	// Constants and assumption on the stream below:
+	blockSize := int64(maxPackSize)
+	headerSize := int64(padPackSize + r.aead.NonceSize())
+	totalBlockSize := headerSize + blockSize + int64(r.aead.Overhead())
 
-	// Find out our current pos in the encrypted stream:
-	currPos, err := r.Reader.Seek(0, os.SEEK_CUR)
+	// absolute Offset in the decrypted stream
+	absOffsetDec := int64(0)
+
+	// Find out where we are currently:
+	absSeekOffsetEnc, err := r.Reader.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
 	}
 
-	// Convert offset to relative to blockNum offset
+	// Convert the encrypted offset to the decrypted offset:
+	absSeekOffsetDec := convertEncToDec(absSeekOffsetEnc,
+		blockSize, totalBlockSize, headerSize)
+
+	// Convert possibly relative offset to absolute offset:
 	switch whence {
-	case os.SEEK_SET:
-		offset -= currPos
 	case os.SEEK_CUR:
-		offset = offset
+		absOffsetDec = absSeekOffsetDec + offset
+	case os.SEEK_SET:
+		absOffsetDec = offset
 	case os.SEEK_END:
 		return 0, fmt.Errorf("There is no definite end, can't use SEEK_END")
 	}
 
-	// User wants to know where we are in the decrypted stream:
-	blockNum, blockOff, blockSize := r.seekPosCoord(currPos + offset)
-	if offset == 0 {
-		return blockNum*maxPackSize + blockOff, nil
+	// Caller wanted to know only the current stream pos:
+	if absOffsetDec == absSeekOffsetDec {
+		return absOffsetDec, nil
 	}
 
-	// Seek relative to the encrypted stream:
-	newEncPos, err := r.Reader.Seek(blockNum*blockSize, os.SEEK_SET)
+	// Convert decrypted offset to encrypted offset
+	absOffsetEnc := (absOffsetDec / blockSize) * totalBlockSize
+
+	// Clear backlog, reading will cause it to be re-read
+	r.backlog.Reset()
+
+	// Seek to the beginning of the encrypted block:
+	_, err = r.Reader.Seek(absOffsetEnc, os.SEEK_SET)
 	if err != nil {
 		return 0, err
 	}
 
-	// Seek to the right position:
-	dummy := make([]byte, 0, blockOff)
+	// TODO: make this dummy buf persist during seeks
+	dummy := make([]byte, absOffsetDec%blockSize)
 	if _, err = r.Read(dummy); err != nil {
 		return 0, err
 	}
 
-	// Return new position relative to the decrypted stream:
-	newBlockNum, newBlockOff, _ := r.seekPosCoord(newEncPos)
-	return newBlockNum*maxPackSize + newBlockOff, nil
+	return absOffsetDec, nil
 }
 
 func (r *AEADReader) Close() error {
 	return nil
 }
 
-func NewAEADReader(r io.ReadSeeker, key []byte) (io.ReadCloser, error) {
+func NewAEADReader(r io.ReadSeeker, key []byte) (*AEADReader, error) {
 	reader := &AEADReader{
 		Reader:  r,
 		backlog: new(bytes.Buffer),
@@ -279,8 +291,6 @@ func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	}
 
 	// Create a new Nonce for this block:
-	// We do not want to make the nonce be random
-	// so we don't skip deduplication of the encrypted data.
 	hash := w.Hasher.Sum(nil)
 	copy(w.nonce, hash[w.aead.NonceSize():])
 
@@ -298,7 +308,7 @@ func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	return len(encrypted) + len(w.nonce) + len(w.sizeBuf), nil
 }
 
-func NewAEADWriter(w io.Writer, key []byte) (io.WriteCloser, error) {
+func NewAEADWriter(w io.Writer, key []byte) (*AEADWriter, error) {
 	writer := &AEADWriter{
 		Writer:  w,
 		packBuf: bytes.NewBuffer(make([]byte, 0, maxPackSize)),
@@ -358,6 +368,21 @@ func Decrypt(key []byte, source io.ReadSeeker, dest io.Writer) error {
 		return err
 	}
 
+	a, b := layer.Seek(1029, os.SEEK_SET)
+	log.Println("=== ", a, b)
+
+	a, b = layer.Seek(1029, os.SEEK_SET)
+	log.Println("=== ", a, b)
+
+	a, b = layer.Seek(0, os.SEEK_CUR)
+	log.Println("=== ", a, b)
+
+	a, b = layer.Seek(1, os.SEEK_CUR)
+	log.Println("=== ", a, b)
+
+	a, b = layer.Seek(10, os.SEEK_CUR)
+	log.Println("=== ", a, b)
+
 	defer layer.Close()
 	return securedTransfer(layer, dest, true)
 }
@@ -372,7 +397,9 @@ func main() {
 	if *decryptMode == false {
 		err = Encrypt(key, os.Stdin, os.Stdout)
 	} else {
-		err = Decrypt(key, os.Stdin, os.Stdout)
+		source, _ := os.Open("/tmp/dump")
+
+		err = Decrypt(key, source, os.Stdout)
 	}
 
 	if err != nil {
