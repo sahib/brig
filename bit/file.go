@@ -50,7 +50,7 @@ const (
 
 //
 const (
-	maxPackSize       = 1 * 1024 //* 1024
+	maxPackSize       = 1 * 1024 * 1024
 	goodBufSize       = maxPackSize + 32
 	padPackSize       = 4
 	defaultCipherType = aeadCipherChaCha
@@ -273,11 +273,6 @@ func (w *AEADWriter) Write(p []byte) (int, error) {
 	return w.flushPack(maxPackSize)
 }
 
-func (w *AEADWriter) Close() error {
-	_, err := w.flushPack(w.packBuf.Len())
-	return err
-}
-
 func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	// Try to update the checksum as we run:
 	src := w.packBuf.Bytes()[:chunkSize]
@@ -306,6 +301,11 @@ func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 
 	// len(encrypted) might be more than len(w.packBuf)
 	return len(encrypted) + len(w.nonce) + len(w.sizeBuf), nil
+}
+
+func (w *AEADWriter) Close() error {
+	_, err := w.flushPack(w.packBuf.Len())
+	return err
 }
 
 func NewAEADWriter(w io.Writer, key []byte) (*AEADWriter, error) {
@@ -367,21 +367,6 @@ func Decrypt(key []byte, source io.ReadSeeker, dest io.Writer) error {
 	if err != nil {
 		return err
 	}
-
-	a, b := layer.Seek(1029, os.SEEK_SET)
-	log.Println("=== ", a, b)
-
-	a, b = layer.Seek(1029, os.SEEK_SET)
-	log.Println("=== ", a, b)
-
-	a, b = layer.Seek(0, os.SEEK_CUR)
-	log.Println("=== ", a, b)
-
-	a, b = layer.Seek(1, os.SEEK_CUR)
-	log.Println("=== ", a, b)
-
-	a, b = layer.Seek(10, os.SEEK_CUR)
-	log.Println("=== ", a, b)
 
 	defer layer.Close()
 	return securedTransfer(layer, dest, true)
