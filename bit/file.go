@@ -264,6 +264,21 @@ type AEADWriter struct {
 	packBuf *bytes.Buffer
 }
 
+func inc(arr []byte) {
+	i := uint64(0)
+	for idx, val := range arr {
+		i += uint64(val) << (8 * uint64(idx))
+	}
+	i++
+	for idx, _ := range arr {
+		arr[idx] = byte(i % 256)
+		i = i >> 8
+		if i == 0 {
+			break
+		}
+	}
+}
+
 func (w *AEADWriter) Write(p []byte) (int, error) {
 	w.packBuf.Write(p)
 	if w.packBuf.Len() < maxPackSize {
@@ -286,8 +301,7 @@ func (w *AEADWriter) flushPack(chunkSize int) (int, error) {
 	}
 
 	// Create a new Nonce for this block:
-	hash := w.Hasher.Sum(nil)
-	copy(w.nonce, hash[w.aead.NonceSize():])
+	inc(w.nonce)
 
 	// Encrypt the text:
 	encrypted := w.aead.Seal(nil, w.nonce, src, nil)
