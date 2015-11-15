@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 )
@@ -39,7 +40,7 @@ func createFile(size int64) string {
 	return fd.Name()
 }
 
-func encryptFile(key []byte, from, to string) error {
+func encryptFile(key []byte, from, to string) (int64, error) {
 	fdFrom, _ := os.Open(from)
 	defer fdFrom.Close()
 
@@ -49,7 +50,7 @@ func encryptFile(key []byte, from, to string) error {
 	return Encrypt(key, fdFrom, fdTo)
 }
 
-func decryptFile(key []byte, from, to string) error {
+func decryptFile(key []byte, from, to string) (int64, error) {
 	fdFrom, _ := os.Open(from)
 	defer fdFrom.Close()
 
@@ -59,7 +60,7 @@ func decryptFile(key []byte, from, to string) error {
 	return Decrypt(key, fdFrom, fdTo)
 }
 
-func testRead(t *testing.T, size int) {
+func testSimpleEncDec(t *testing.T, size int) {
 	path := createFile(int64(size))
 	defer os.Remove(path)
 
@@ -69,14 +70,15 @@ func testRead(t *testing.T, size int) {
 	decPath := path + "_dec"
 
 	var err error
-	err = encryptFile(key, path, encPath)
+	_, err = encryptFile(key, path, encPath)
 	defer os.Remove(encPath)
 
 	if err != nil {
+		log.Println(err)
 		t.Errorf("Encrypt failed: %v", err)
 	}
 
-	err = decryptFile(key, encPath, decPath)
+	_, err = decryptFile(key, encPath, decPath)
 	defer os.Remove(decPath)
 
 	if err != nil {
@@ -91,17 +93,22 @@ func testRead(t *testing.T, size int) {
 	}
 }
 
-func TestRead(t *testing.T) {
+func TestSimpleEncDec(t *testing.T) {
 	t.Parallel()
 
-	sizes := []int{maxPackSize - 1, maxPackSize, maxPackSize + 1}
+	sizes := []int{MaxBlockSize - 1, MaxBlockSize, MaxBlockSize + 1}
 	for size := range sizes {
-		testRead(t, size)
+		testSimpleEncDec(t, size)
 	}
+}
+
+func TestSeek(t *testing.T) {
+	// rEnc, wEnc := io.Pipe()
+	// enc := NewEncryptedWriter()
 }
 
 func BenchmarkEncDec(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		testRead(nil, maxPackSize*100)
+		testSimpleEncDec(nil, MaxBlockSize*100)
 	}
 }
