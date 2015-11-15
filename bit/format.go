@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log"
 	"os"
 
 	chacha "github.com/codahale/chacha20poly1305"
@@ -367,7 +368,18 @@ func (w *EncryptedWriter) Write(p []byte) (int, error) {
 		return n, nil
 	}
 
-	return w.flushPack(MaxBlockSize)
+	written, err := w.flushPack(MaxBlockSize)
+	if err != nil {
+		return 0, err
+	}
+
+	// flushPack will write more than what fits
+	// into p most of the time, fake numbers therefore.
+	if written > len(p) {
+		written = len(p)
+	}
+
+	return written, nil
 }
 
 func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
@@ -446,7 +458,7 @@ func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
 	}
 
 	defer layer.Close()
-	return io.CopyBuffer(layer, source, make([]byte, GoodBufferSize))
+	return copyBuffer(layer, source, make([]byte, GoodBufferSize))
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
