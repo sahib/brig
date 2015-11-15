@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// LoadConfig loads a yaml configuration file.
 func LoadConfig(path string) (*config.Config, error) {
 	cfg, err := config.ParseYamlFile(path)
 	if err != nil {
@@ -14,6 +15,7 @@ func LoadConfig(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
+// SaveConfig saves a given config as yaml encoded configuration file.
 func SaveConfig(path string, cfg *config.Config) (int, error) {
 	yamlString, err := config.RenderYaml(cfg.Root)
 	if err != nil {
@@ -32,6 +34,7 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 	return written, nil
 }
 
+// CreateDefaultConfig creates a configfile with default values.
 func CreateDefaultConfig(path string) (int, error) {
 	cfg := map[string]interface{}{
 		"development": map[string]interface{}{
