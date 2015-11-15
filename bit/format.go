@@ -26,13 +26,13 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha1"
 	"encoding/binary"
 	"fmt"
 	"hash"
 	"io"
 	"os"
 
+	blake2 "github.com/codahale/blake2"
 	chacha "github.com/codahale/chacha20poly1305"
 )
 
@@ -44,12 +44,17 @@ const (
 
 // Other constants:
 const (
-	padPackSize       = 4
-	headerSize        = 16
+	// TODO: size still needed?
+	padPackSize = 4
+
+	// Size of the initial header:
+	headerSize = 16
+
+	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
 
 	// Maximum number of bytes a single payload may have
-	MaxBlockSize = 256 * 1024
+	MaxBlockSize = 1 * 1024
 
 	// The recommended size of a buffer for efficienct reading
 	GoodBufferSize = MaxBlockSize + 32
@@ -141,7 +146,7 @@ type aeadCommon struct {
 }
 
 func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
-	c.hasher = sha1.New()
+	c.hasher = blake2.NewBlake2B()
 
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
@@ -166,11 +171,12 @@ type EncryptedReader struct {
 
 	encBuf  []byte
 	decBuf  []byte
-	backlog *bytes.Buffer
+	backlog *bytes.Reader
 
-	// Last index of the block we visited:
+	// Last index of the byte the user visited.
 	// (Used to avoid re-reads in Seek())
-	lastBlockNum int64
+	// This does *not* equal the seek offset of the underlying stream.
+	lastSeekPos int64
 }
 
 // Read from source and decrypt + hash it.
@@ -185,8 +191,9 @@ func (r *EncryptedReader) Read(dest []byte) (int, error) {
 			return 0, err
 		}
 	}
-
-	return r.backlog.Read(dest)
+	n, _ := r.backlog.Read(dest)
+	r.lastSeekPos += int64(n)
+	return n, nil
 }
 
 // Fill internal buffer with current block
@@ -224,15 +231,8 @@ func (r *EncryptedReader) readBlock() (int, error) {
 		return 0, err
 	}
 
-	r.backlog = bytes.NewBuffer(r.decBuf)
+	r.backlog = bytes.NewReader(r.decBuf)
 	return len(r.decBuf), nil
-}
-
-func convertEncToDec(n, blockSize, totalBlockSize, blockHeaderSize int64) int64 {
-	n -= headerSize
-	encBlocks := n / totalBlockSize
-	encOffset := n % totalBlockSize
-	return (encBlocks * blockSize) + encOffset - blockHeaderSize
 }
 
 // Seek into the encrypted stream.
@@ -258,72 +258,71 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
 
-	// Find out where we are currently:
-	absSeekOffsetEnc, err := seeker.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return 0, err
-	}
-
-	// Convert the encrypted offset to the decrypted offset:
-	absSeekOffsetDec := convertEncToDec(absSeekOffsetEnc,
-		blockSize, totalBlockSize, blockHeaderSize)
-
 	// Convert possibly relative offset to absolute offset:
 	switch whence {
 	case os.SEEK_CUR:
-		absOffsetDec = absSeekOffsetDec + offset
+		absOffsetDec = r.lastSeekPos + offset
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
-		return 0, fmt.Errorf("There is no definite end, can't use SEEK_END")
+		// We have no idea when the stream ends.
+		return 0, fmt.Errorf("SEEK_END is not supported for encrypted data")
+	}
+
+	if absOffsetDec < 0 {
+		return 0, fmt.Errorf("Negative seek index")
 	}
 
 	// Caller wanted to know only the current stream pos:
-	if absOffsetDec == absSeekOffsetDec {
+	if absOffsetDec == r.lastSeekPos {
 		return absOffsetDec, nil
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := ((absOffsetDec + headerSize) / blockSize) * totalBlockSize
+	absOffsetEnc := (absOffsetDec / blockSize) * totalBlockSize
+	absOffsetEnc += headerSize
 
 	// Clear backlog, reading will cause it to be re-read
-	r.backlog.Reset()
-
-	// Seek to the beginning of the encrypted block:
-	_, err = seeker.Seek(absOffsetEnc, os.SEEK_SET)
-	if err != nil {
-		return 0, err
-	}
-
 	blockNum := absOffsetEnc / totalBlockSize
-	if r.lastBlockNum != blockNum {
+	lastBlockNum := r.lastSeekPos / blockSize
+	r.lastSeekPos = absOffsetDec
+
+	if lastBlockNum != blockNum {
+		// Seek to the beginning of the encrypted block:
+		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
+			return 0, err
+		}
+
 		// Make read consume the current block:
-		if _, err = r.Read(make([]byte, 1)); err != nil {
+		if _, err := r.readBlock(); err != nil {
 			return 0, err
 		}
 	}
 
-	r.lastBlockNum = blockNum
-
 	// Reslice the backlog, so Read() does not return skipped data.
-	// (The whole block is still there in decBuf)
-	r.backlog = bytes.NewBuffer(r.decBuf[absOffsetDec%blockSize:])
-
+	r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET)
 	return absOffsetDec, nil
 }
 
-// Close does finishing work. This is currently a No-Op,
-// and does not close the underlying data stream.
+// Return the internal hasher
+func (r *EncryptedReader) Hash() hash.Hash {
+	return r.hasher
+}
+
+// Close does finishing work.
+// It does not close the underlying data stream.
+//
+// This is currently a No-Op, but you should not rely on that.
 func (r *EncryptedReader) Close() error {
 	return nil
 }
 
 // NewEncryptedReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
-func NewEncryptedReader(r io.ReadSeeker, key []byte) (*EncryptedReader, error) {
+func NewEncryptedReader(r io.Reader, key []byte) (*EncryptedReader, error) {
 	reader := &EncryptedReader{
 		Reader:  r,
-		backlog: new(bytes.Buffer),
+		backlog: bytes.NewReader([]byte{}),
 	}
 
 	header := make([]byte, headerSize)
@@ -459,6 +458,11 @@ func (w *EncryptedWriter) Close() error {
 	return nil
 }
 
+// Return the internal hasher
+func (w *EncryptedWriter) Hash() hash.Hash {
+	return w.hasher
+}
+
 // NewEncryptedWriter returns a new EncryptedWriter which encrypts data with a
 // certain key.
 func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
@@ -482,7 +486,7 @@ func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
+func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewEncryptedWriter(dest, key)
 	if err != nil {
 		return 0, err
@@ -494,7 +498,7 @@ func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
 
 // Decrypt is a utility function which decrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Decrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
+func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewEncryptedReader(source, key)
 	if err != nil {
 		return 0, err
