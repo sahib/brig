@@ -82,6 +82,7 @@ func testSimpleEncDec(t *testing.T, size int) {
 	defer os.Remove(decPath)
 
 	if err != nil {
+		log.Println(err)
 		t.Errorf("Decrypt failed: %v", err)
 	}
 

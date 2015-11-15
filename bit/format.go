@@ -31,7 +31,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"log"
 	"os"
 
 	chacha "github.com/codahale/chacha20poly1305"
@@ -50,7 +49,7 @@ const (
 	defaultCipherType = aeadCipherChaCha
 
 	// Maximum number of bytes a single payload may have
-	MaxBlockSize = 1 * 1024 * 1024
+	MaxBlockSize = 1 * 1024 //* 1024
 
 	// The recommended size of a buffer for efficienct reading
 	GoodBufferSize = MaxBlockSize + 32
@@ -368,18 +367,12 @@ func (w *EncryptedWriter) Write(p []byte) (int, error) {
 		return n, nil
 	}
 
-	written, err := w.flushPack(MaxBlockSize)
+	_, err := w.flushPack(MaxBlockSize)
 	if err != nil {
 		return 0, err
 	}
 
-	// flushPack will write more than what fits
-	// into p most of the time, fake numbers therefore.
-	if written > len(p) {
-		written = len(p)
-	}
-
-	return written, nil
+	return n, nil
 }
 
 func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
@@ -406,12 +399,21 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	// storeVarint(w.sizeBuf, uint64(len(encrypted)))
 	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(encrypted)))
 
-	w.Writer.Write(w.sizeBuf)
-	w.Writer.Write(w.nonce)
-	w.Writer.Write(encrypted)
+	written := 0
+	if n, err := w.Writer.Write(w.sizeBuf); err == nil {
+		written += n
+	}
+
+	if n, err := w.Writer.Write(w.nonce); err == nil {
+		written += n
+	}
+
+	if n, err := w.Writer.Write(encrypted); err == nil {
+		written += n
+	}
 
 	// len(encrypted) might be more than len(w.packBuf)
-	return len(encrypted) + len(w.nonce) + len(w.sizeBuf), nil
+	return written, nil
 }
 
 // Seek the write stream. This maps to a seek in the underlying datastream.
@@ -426,8 +428,18 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 // Close the EncryptedWriter and write any left-over blocks
 // This does not close the underlying data stream.
 func (w *EncryptedWriter) Close() error {
-	_, err := w.flushPack(w.packBuf.Len())
-	return err
+	for w.packBuf.Len() > 0 {
+		size := w.packBuf.Len()
+		if size > MaxBlockSize {
+			size = MaxBlockSize
+		}
+
+		_, err := w.flushPack(size)
+		if err != nil {
+			return nil
+		}
+	}
+	return nil
 }
 
 // NewEncryptedWriter returns a new EncryptedWriter which encrypts data with a
@@ -458,7 +470,7 @@ func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
 	}
 
 	defer layer.Close()
-	return copyBuffer(layer, source, make([]byte, GoodBufferSize))
+	return io.CopyBuffer(layer, source, make([]byte, GoodBufferSize))
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
