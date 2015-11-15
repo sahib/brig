@@ -49,7 +49,7 @@ const (
 	defaultCipherType = aeadCipherChaCha
 
 	// Maximum number of bytes a single payload may have
-	MaxBlockSize = 1 * 1024 //* 1024
+	MaxBlockSize = 256 * 1024
 
 	// The recommended size of a buffer for efficienct reading
 	GoodBufferSize = MaxBlockSize + 32
@@ -164,8 +164,13 @@ type EncryptedReader struct {
 
 	Reader io.Reader
 
-	packBuf []byte
+	encBuf  []byte
+	decBuf  []byte
 	backlog *bytes.Buffer
+
+	// Last index of the block we visited:
+	// (Used to avoid re-reads in Seek())
+	lastBlockNum int64
 }
 
 // Read from source and decrypt + hash it.
@@ -205,21 +210,22 @@ func (r *EncryptedReader) readBlock() (int, error) {
 			r.aead.NonceSize(), n)
 	}
 
-	n, err = r.Reader.Read(r.packBuf[:packSize])
+	n, err = r.Reader.Read(r.encBuf[:packSize])
 	if err != nil {
 		return 0, err
 	}
 
-	decrypted, err := r.aead.Open(nil, r.nonce, r.packBuf[:n], nil)
+	r.decBuf, err = r.aead.Open(r.decBuf[:0], r.nonce, r.encBuf[:n], nil)
 	if err != nil {
 		return 0, err
 	}
 
-	if _, err = r.hasher.Write(decrypted); err != nil {
+	if _, err = r.hasher.Write(r.decBuf); err != nil {
 		return 0, err
 	}
 
-	return r.backlog.Write(decrypted)
+	r.backlog = bytes.NewBuffer(r.decBuf)
+	return len(r.decBuf), nil
 }
 
 func convertEncToDec(n, blockSize, totalBlockSize, blockHeaderSize int64) int64 {
@@ -289,11 +295,19 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 		return 0, err
 	}
 
-	// TODO: make this dummy buf persist during seeks
-	dummy := make([]byte, absOffsetDec%blockSize)
-	if _, err = r.Read(dummy); err != nil {
-		return 0, err
+	blockNum := absOffsetEnc / totalBlockSize
+	if r.lastBlockNum != blockNum {
+		// Make read consume the current block:
+		if _, err = r.Read(make([]byte, 1)); err != nil {
+			return 0, err
+		}
 	}
+
+	r.lastBlockNum = blockNum
+
+	// Reslice the backlog, so Read() does not return skipped data.
+	// (The whole block is still there in decBuf)
+	r.backlog = bytes.NewBuffer(r.decBuf[absOffsetDec%blockSize:])
 
 	return absOffsetDec, nil
 }
@@ -339,7 +353,8 @@ func NewEncryptedReader(r io.ReadSeeker, key []byte) (*EncryptedReader, error) {
 		return nil, err
 	}
 
-	reader.packBuf = make([]byte, 0, MaxBlockSize+reader.aead.Overhead())
+	reader.encBuf = make([]byte, 0, MaxBlockSize+reader.aead.Overhead())
+	reader.decBuf = make([]byte, 0, MaxBlockSize)
 	return reader, nil
 }
 
@@ -358,6 +373,8 @@ type EncryptedWriter struct {
 	// A buffer that is MaxBlockSize big.
 	// Used for caching blocks
 	packBuf *bytes.Buffer
+
+	encBuf []byte
 }
 
 func (w *EncryptedWriter) Write(p []byte) (int, error) {
@@ -393,11 +410,11 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	binary.BigEndian.PutUint64(w.nonce, blockNum+1)
 
 	// Encrypt the text:
-	encrypted := w.aead.Seal(nil, w.nonce, src, nil)
+	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, src, nil)
 
 	// Pass it to the underlying writer:
 	// storeVarint(w.sizeBuf, uint64(len(encrypted)))
-	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(encrypted)))
+	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(w.encBuf)))
 
 	written := 0
 	if n, err := w.Writer.Write(w.sizeBuf); err == nil {
@@ -408,7 +425,7 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 		written += n
 	}
 
-	if n, err := w.Writer.Write(encrypted); err == nil {
+	if n, err := w.Writer.Write(w.encBuf); err == nil {
 		written += n
 	}
 
@@ -453,6 +470,8 @@ func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
 		return nil, err
 	}
+
+	writer.encBuf = make([]byte, 0, MaxBlockSize+writer.aead.Overhead())
 
 	_, err := w.Write(GenerateHeader())
 	if err != nil {
