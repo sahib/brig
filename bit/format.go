@@ -3,14 +3,14 @@
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
-// HEADER is 16 bytes big and contains the following fields:
+// HEADER is 20 bytes big and contains the following fields:
 //    - 8 Byte: Magic number (to identify non-brig files quickly)
 //    - 2 Byte: Format version
 //    - 2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    - 4 Byte: Key length in bytes.
+//	  - 4 Byte: Maximum size of each block (last may be less)
 //
 // BLOCKHEADER contains the following fields:
-//    - 4 Byte: Size of the Payload (1 MB or less)
 //    - 8 Byte: Nonce/Block number
 //
 // PAYLOAD contains the actual encrypted data, possibly with padding.
@@ -44,17 +44,14 @@ const (
 
 // Other constants:
 const (
-	// TODO: size still needed?
-	padPackSize = 4
-
 	// Size of the initial header:
-	headerSize = 16
+	headerSize = 20
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
 
 	// Maximum number of bytes a single payload may have
-	MaxBlockSize = 1 * 1024
+	MaxBlockSize = 1 * 1024 * 1024
 
 	// The recommended size of a buffer for efficienct reading
 	GoodBufferSize = MaxBlockSize + 32
@@ -70,7 +67,7 @@ var KeySize int = chacha.KeySize
 // Generate a valid header for the format file:
 func GenerateHeader() []byte {
 	// This is in big endian:
-	return []byte{
+	header := []byte{
 		// Brigs magic number (8 Byte):
 		0x6d, 0x6f, 0x6f, 0x73,
 		0x65, 0x63, 0x61, 0x74,
@@ -80,34 +77,44 @@ func GenerateHeader() []byte {
 		defaultCipherType >> 8,
 		defaultCipherType & 0xff,
 		// Key length (4 Byte):
-		byte(uint32(chacha.KeySize) >> 24),
-		byte(uint32(chacha.KeySize) >> 16),
-		byte(uint32(chacha.KeySize) >> 8),
-		byte(uint32(chacha.KeySize) & 0xff),
+		0, 0, 0, 0,
+		// Block length (4 Byte):
+		0, 0, 0, 0,
 	}
+
+	binary.BigEndian.PutUint32(header[12:16], uint32(chacha.KeySize))
+	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
+	return header
 }
 
 // Parse the header of the format file:
-// Returns the format version, cipher type, keylength.
+// Returns the format version, cipher type, keylength and block length.
 // If parsing fails, an error is returned.
-func ParseHeader(header []byte) (uint16, uint16, uint32, error) {
+func ParseHeader(header []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
 	expected := GenerateHeader()
 	if bytes.Compare(header[:8], expected[:8]) != 0 {
-		return 0, 0, 0, fmt.Errorf("Magic number differs")
+		err = fmt.Errorf("Magic number in header differs")
+		return
 	}
 
-	format := binary.BigEndian.Uint16(header[8:10])
-	cipher := binary.BigEndian.Uint16(header[10:12])
+	format = binary.BigEndian.Uint16(header[8:10])
+	cipher = binary.BigEndian.Uint16(header[10:12])
 	switch cipher {
 	case aeadCipherAES:
 	case aeadCipherChaCha:
 		// we support this!
 	default:
-		return 0, 0, 0, fmt.Errorf("Unknown cipher type: %d", cipher)
+		err = fmt.Errorf("Unknown cipher type: %d", cipher)
+		return
 	}
 
-	keylen := binary.BigEndian.Uint32(header[12:16])
-	return format, cipher, keylen, nil
+	keylen = binary.BigEndian.Uint32(header[12:16])
+	blocklen = binary.BigEndian.Uint32(header[16:20])
+	if blocklen != MaxBlockSize {
+		err = fmt.Errorf("Unsupported block length in header: %d", blocklen)
+	}
+
+	return
 }
 
 //////////////////////
@@ -137,9 +144,6 @@ type aeadCommon struct {
 	// of the output
 	nonce []byte
 
-	// Short temporary buffer for encoding the packSize
-	sizeBuf []byte
-
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
@@ -154,7 +158,6 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	}
 
 	c.nonce = make([]byte, aead.NonceSize())
-	c.sizeBuf = make([]byte, padPackSize)
 	c.aead = aead
 	return nil
 }
@@ -198,26 +201,14 @@ func (r *EncryptedReader) Read(dest []byte) (int, error) {
 
 // Fill internal buffer with current block
 func (r *EncryptedReader) readBlock() (int, error) {
-	n, err := r.Reader.Read(r.sizeBuf)
-	if err != nil {
-		return 0, err
-	}
-
-	packSize := binary.BigEndian.Uint32(r.sizeBuf)
-
-	if packSize > MaxBlockSize+uint32(r.aead.Overhead()) {
-		return 0, fmt.Errorf("Pack size exceeded expectations: %d > %d",
-			packSize, MaxBlockSize)
-	}
-
-	if n, err = r.Reader.Read(r.nonce); err != nil {
+	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
 		return 0, fmt.Errorf("Nonce size mismatch. Should: %d. Have: %d",
 			r.aead.NonceSize(), n)
 	}
 
-	n, err = r.Reader.Read(r.encBuf[:packSize])
+	n, err := r.Reader.Read(r.encBuf[:MaxBlockSize+r.aead.Overhead()])
 	if err != nil {
 		return 0, err
 	}
@@ -252,7 +243,7 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 
 	// Constants and assumption on the stream below:
 	blockSize := int64(MaxBlockSize)
-	blockHeaderSize := int64(padPackSize + r.aead.NonceSize())
+	blockHeaderSize := int64(r.aead.NonceSize())
 	totalBlockSize := blockHeaderSize + blockSize + int64(r.aead.Overhead())
 
 	// absolute Offset in the decrypted stream
@@ -279,10 +270,9 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := (absOffsetDec / blockSize) * totalBlockSize
-	absOffsetEnc += headerSize
+	absOffsetEnc := headerSize + ((absOffsetDec / blockSize) * totalBlockSize)
 
-	// Clear backlog, reading will cause it to be re-read
+	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
 	lastBlockNum := r.lastSeekPos / blockSize
 	r.lastSeekPos = absOffsetDec
@@ -335,7 +325,7 @@ func NewEncryptedReader(r io.Reader, key []byte) (*EncryptedReader, error) {
 		return nil, fmt.Errorf("No valid header found, damaged file?")
 	}
 
-	version, ciperType, keylen, err := ParseHeader(header)
+	version, ciperType, keylen, _, err := ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
@@ -373,6 +363,7 @@ type EncryptedWriter struct {
 	// Used for caching blocks
 	packBuf *bytes.Buffer
 
+	// Buffer for encrpyted data
 	encBuf []byte
 }
 
@@ -412,14 +403,7 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, src, nil)
 
 	// Pass it to the underlying writer:
-	// storeVarint(w.sizeBuf, uint64(len(encrypted)))
-	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(w.encBuf)))
-
 	written := 0
-	if n, err := w.Writer.Write(w.sizeBuf); err == nil {
-		written += n
-	}
-
 	if n, err := w.Writer.Write(w.nonce); err == nil {
 		written += n
 	}
