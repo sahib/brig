@@ -25,35 +25,39 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer file.Close()
+
 	written, err := file.WriteString(yamlString)
 	if err != nil {
 		return 0, err
 	}
 
-	defer file.Close()
 	return written, nil
 }
 
+// Make default config template a bit prettier:
+type section map[string]interface{}
+
 // CreateDefaultConfig creates a configfile with default values.
 func CreateDefaultConfig(path string) (int, error) {
-	cfg := map[string]interface{}{
-		"development": map[string]interface{}{
-			"database": map[string]interface{}{
+	cfg := section{
+		"development": section{
+			"database": section{
 				"host": "localhost",
 			},
 			"users": []interface{}{
-				map[string]interface{}{
+				section{
 					"name":     "calvin",
 					"password": "yukon",
 				},
-				map[string]interface{}{
+				section{
 					"name":     "hobbes",
 					"password": "tuna",
 				},
 			},
 		},
-		"production": map[string]interface{}{
-			"database": map[string]interface{}{
+		"production": section{
+			"database": section{
 				"host": "192.168.1.1",
 			},
 		},
@@ -64,12 +68,12 @@ func CreateDefaultConfig(path string) (int, error) {
 }
 
 func main() {
-
 	CreateDefaultConfig("nein")
 	c, err := LoadConfig("config.yaml")
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	fmt.Println(c.String("animalzoo.overlord.name"))
 	fmt.Println(c.Root)
 	c.Set("animalzoo.overlord.name", "Gabriele")

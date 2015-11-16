@@ -45,5 +45,5 @@ func UMax(a, b uint) uint {
 
 // Like Clamp() but for uint
 func UClamp(x, lo, hi uint) uint {
-	return Max(lo, Min(x, hi))
+	return UMax(lo, UMin(x, hi))
 }
