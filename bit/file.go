@@ -41,9 +41,7 @@ func main() {
 	if *decryptMode == false {
 		_, err = Encrypt(key, os.Stdin, os.Stdout)
 	} else {
-		source, _ := os.Open("/tmp/dump")
-
-		_, err = Decrypt(key, source, os.Stdout)
+		_, err = Decrypt(key, os.Stdin, os.Stdout)
 	}
 
 	if err != nil {

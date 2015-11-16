@@ -34,6 +34,7 @@ import (
 
 	blake2 "github.com/codahale/blake2"
 	chacha "github.com/codahale/chacha20poly1305"
+	rbuf "github.com/glycerine/rbuf"
 )
 
 // Possible ciphers in Counter mode:
@@ -53,8 +54,9 @@ const (
 	// Maximum number of bytes a single payload may have
 	MaxBlockSize = 1 * 1024 * 1024
 
-	// The recommended size of a buffer for efficienct reading
-	GoodBufferSize = MaxBlockSize + 32
+	// The recommended size of buffers for efficienct reading
+	GoodEncBufferSize = MaxBlockSize + 32
+	GoodDecBufferSize = MaxBlockSize
 )
 
 // Size of the used cipher's key in bytes
@@ -147,6 +149,12 @@ type aeadCommon struct {
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
+
+	// Buffer for encrypted data (MaxBlockSize + overhead)
+	encBuf []byte
+
+	// Buffer for decrypted data (MaxBlockSize)
+	decBuf []byte
 }
 
 func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
@@ -159,6 +167,10 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 
 	c.nonce = make([]byte, aead.NonceSize())
 	c.aead = aead
+
+	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
+	c.decBuf = make([]byte, 0, MaxBlockSize)
+
 	return nil
 }
 
@@ -170,10 +182,10 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 type EncryptedReader struct {
 	aeadCommon
 
+	// Underlying io.Reader
 	Reader io.Reader
 
-	encBuf  []byte
-	decBuf  []byte
+	// Caches leftovers from unread blocks
 	backlog *bytes.Reader
 
 	// Last index of the byte the user visited.
@@ -188,15 +200,23 @@ type EncryptedReader struct {
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *EncryptedReader) Read(dest []byte) (int, error) {
-	if r.backlog.Len() == 0 {
-		_, err := r.readBlock()
-		if err != nil {
-			return 0, err
+	readBytes := 0
+
+	// Try our best ot fill len(dest)
+	for readBytes < len(dest) {
+		if r.backlog.Len() == 0 {
+			_, err := r.readBlock()
+			if err != nil {
+				return readBytes, err
+			}
 		}
+
+		n, _ := r.backlog.Read(dest[readBytes:])
+		readBytes += n
+		r.lastSeekPos += int64(n)
 	}
-	n, _ := r.backlog.Read(dest)
-	r.lastSeekPos += int64(n)
-	return n, nil
+
+	return readBytes, nil
 }
 
 // Fill internal buffer with current block
@@ -208,8 +228,10 @@ func (r *EncryptedReader) readBlock() (int, error) {
 			r.aead.NonceSize(), n)
 	}
 
-	n, err := r.Reader.Read(r.encBuf[:MaxBlockSize+r.aead.Overhead()])
-	if err != nil {
+	// Read the *whole* block from the fs
+	N := MaxBlockSize + r.aead.Overhead()
+	n, err := io.ReadAtLeast(r.Reader, r.encBuf[:N], N)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return 0, err
 	}
 
@@ -342,8 +364,6 @@ func NewEncryptedReader(r io.Reader, key []byte) (*EncryptedReader, error) {
 		return nil, err
 	}
 
-	reader.encBuf = make([]byte, 0, MaxBlockSize+reader.aead.Overhead())
-	reader.decBuf = make([]byte, 0, MaxBlockSize)
 	return reader, nil
 }
 
@@ -361,46 +381,44 @@ type EncryptedWriter struct {
 
 	// A buffer that is MaxBlockSize big.
 	// Used for caching blocks
-	packBuf *bytes.Buffer
-
-	// Buffer for encrpyted data
-	encBuf []byte
+	rbuf *rbuf.FixedSizeRingBuf
 }
 
 func (w *EncryptedWriter) Write(p []byte) (int, error) {
-	n, _ := w.packBuf.Write(p)
-	if w.packBuf.Len() < MaxBlockSize {
-		// Fake the amount of data we've written:
-		return n, nil
+	for w.rbuf.Readable >= MaxBlockSize {
+		_, err := w.flushPack(MaxBlockSize)
+		if err != nil {
+			return 0, err
+		}
 	}
 
-	_, err := w.flushPack(MaxBlockSize)
+	// Remember left-overs for next write:
+	_, err := w.rbuf.Write(p)
+	if err != nil {
+		return 0, nil
+	}
+
+	// Fake the amount of data we've written:
+	return len(p), nil
+}
+
+func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
+	n, err := w.rbuf.Read(w.decBuf[:chunkSize])
 	if err != nil {
 		return 0, err
 	}
 
-	return n, nil
-}
-
-func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	// Try to update the checksum as we run:
-	src := w.packBuf.Bytes()[:chunkSize]
-
-	// Make sure to advance this many bytes
-	// in case any leftovers are in the buffer.
-	defer w.packBuf.Read(src[:chunkSize])
-
-	if _, err := w.hasher.Write(src); err != nil {
+	if _, err := w.hasher.Write(w.decBuf[:n]); err != nil {
 		return 0, err
 	}
 
 	// Create a new Nonce for this block:
-	//storeVarint(w.nonce, loadVarint(w.nonce)+1)
 	blockNum := binary.BigEndian.Uint64(w.nonce)
 	binary.BigEndian.PutUint64(w.nonce, blockNum+1)
 
 	// Encrypt the text:
-	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, src, nil)
+	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.decBuf[:n], nil)
 
 	// Pass it to the underlying writer:
 	written := 0
@@ -412,7 +430,6 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 		written += n
 	}
 
-	// len(encrypted) might be more than len(w.packBuf)
 	return written, nil
 }
 
@@ -428,15 +445,14 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 // Close the EncryptedWriter and write any left-over blocks
 // This does not close the underlying data stream.
 func (w *EncryptedWriter) Close() error {
-	for w.packBuf.Len() > 0 {
-		size := w.packBuf.Len()
-		if size > MaxBlockSize {
-			size = MaxBlockSize
+	for w.rbuf.Readable > 0 {
+		n := MaxBlockSize
+		if n > w.rbuf.Readable {
+			n = w.rbuf.Readable
 		}
-
-		_, err := w.flushPack(size)
+		_, err := w.flushPack(n)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	return nil
@@ -451,15 +467,13 @@ func (w *EncryptedWriter) Hash() hash.Hash {
 // certain key.
 func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 	writer := &EncryptedWriter{
-		Writer:  w,
-		packBuf: bytes.NewBuffer(make([]byte, 0, MaxBlockSize)),
+		Writer: w,
+		rbuf:   rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
 	}
 
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
 		return nil, err
 	}
-
-	writer.encBuf = make([]byte, 0, MaxBlockSize+writer.aead.Overhead())
 
 	_, err := w.Write(GenerateHeader())
 	if err != nil {
@@ -477,7 +491,7 @@ func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	}
 
 	defer layer.Close()
-	return io.CopyBuffer(layer, source, make([]byte, GoodBufferSize))
+	return io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
@@ -489,5 +503,5 @@ func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	}
 
 	defer layer.Close()
-	return io.CopyBuffer(dest, layer, make([]byte, GoodBufferSize))
+	return io.CopyBuffer(dest, layer, make([]byte, GoodDecBufferSize))
 }
