@@ -1,4 +1,4 @@
-// This package implements the encryption and file format layer of brig.
+// Package bit implements the encryption and file format layer of brig.
 // The file format used looks something like this:
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
@@ -51,22 +51,24 @@ const (
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
 
-	// Maximum number of bytes a single payload may have
+	// MaxBlockSize is the maximum number of bytes a single payload may have
 	MaxBlockSize = 1 * 1024 * 1024
 
-	// The recommended size of buffers for efficienct reading
+	// GoodEncBufferSize is the recommended size of buffers
 	GoodEncBufferSize = MaxBlockSize + 32
+
+	// GoodDecBufferSize is the recommended size of buffers
 	GoodDecBufferSize = MaxBlockSize
 )
 
 // Size of the used cipher's key in bytes
-var KeySize int = chacha.KeySize
+var KeySize = chacha.KeySize
 
 ////////////////////
 // Header Parsing //
 ////////////////////
 
-// Generate a valid header for the format file:
+// GenerateHeader creates a valid header for the format file
 func GenerateHeader() []byte {
 	// This is in big endian:
 	header := []byte{
@@ -89,9 +91,9 @@ func GenerateHeader() []byte {
 	return header
 }
 
-// Parse the header of the format file:
-// Returns the format version, cipher type, keylength and block length.
-// If parsing fails, an error is returned.
+// ParseHeader parses the header of the format file.
+// Returns the format version, cipher type, keylength and block length. If
+// parsing fails, an error is returned.
 func ParseHeader(header []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
 	expected := GenerateHeader()
 	if bytes.Compare(header[:8], expected[:8]) != 0 {
@@ -316,7 +318,7 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 	return absOffsetDec, nil
 }
 
-// Return the internal hasher
+// Hash returns the internal hasher
 func (r *EncryptedReader) Hash() hash.Hash {
 	return r.hasher
 }
@@ -458,7 +460,7 @@ func (w *EncryptedWriter) Close() error {
 	return nil
 }
 
-// Return the internal hasher
+// Hash returns the internal hasher
 func (w *EncryptedWriter) Hash() hash.Hash {
 	return w.hasher
 }
