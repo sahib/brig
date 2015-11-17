@@ -1,9 +1,6 @@
-package main
+package bit
 
 import (
-	"flag"
-	"log"
-	"os"
 	"time"
 
 	multihash "github.com/jbenet/go-multihash"
@@ -29,23 +26,4 @@ type File interface {
 func NewFile(path string) (*File, error) {
 	// TODO:
 	return nil, nil
-}
-
-func main() {
-	decryptMode := flag.Bool("d", false, "Decrypt.")
-	flag.Parse()
-
-	key := []byte("01234567890ABCDE01234567890ABCDE")
-
-	var err error
-	if *decryptMode == false {
-		_, err = Encrypt(key, os.Stdin, os.Stdout)
-	} else {
-		_, err = Decrypt(key, os.Stdin, os.Stdout)
-	}
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
 }

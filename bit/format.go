@@ -20,7 +20,7 @@
 // EncryptedReader/EncryptedWriter are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
-package main
+package bit
 
 import (
 	"bytes"
