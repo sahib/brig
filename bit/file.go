@@ -1,53 +1,106 @@
-package main
+package bit
 
 import (
-	"flag"
-	"log"
+	"io"
 	"os"
 	"time"
 
 	multihash "github.com/jbenet/go-multihash"
 )
 
+// Size of the file as large enough integer.
+// Use this type to ensure you don't make mistakes on 32bit.
+type FileSize int64
+
+// Returns the size of the file when it's encrypted
+// Encrpyted file are slightly larger than the source files.
+func (s FileSize) EncrpytedSize() int64 {
+	// TODO
+	return int64(s)
+}
+
+// File represents a File that is managed by brig.
 type File interface {
 	// Path relative to the repo root
 	Path() string
 
 	// File size of the file in bytes
-	Size() int
+	Size() FileSize
+
+	// Does this file represent a directory?
+	IsDir() bool
 
 	// Modification timestamp (with timezone)
-	Mtime() time.Time
+	ModTime() time.Time
 
 	// Hash of the unencrypted file
 	Hash() multihash.Multihash
 
 	// Hash of the encrypted file from IPFS
 	IpfsHash() multihash.Multihash
+
+	// Reader returns a valid EncryptedReader or an error.
+	Reader(from io.Reader) (*EncryptedReader, error)
+
+	// Writer returns a valid EncryptedReader or an error.
+	Writer(to io.Writer) (*EncryptedWriter, error)
 }
 
-func NewFile(path string) (*File, error) {
-	// TODO:
-	return nil, nil
+type fileBuf struct {
+	key      []byte // TODO: pass to NewSourceFile?
+	path     string
+	size     FileSize
+	modTime  time.Time
+	isDir    bool
+	hash     multihash.Multihash
+	ipfsHash multihash.Multihash
 }
 
-func main() {
-	decryptMode := flag.Bool("d", false, "Decrypt.")
-	flag.Parse()
-
-	key := []byte("01234567890ABCDE01234567890ABCDE")
-
-	var err error
-	if *decryptMode == false {
-		_, err = Encrypt(key, os.Stdin, os.Stdout)
-	} else {
-		source, _ := os.Open("/tmp/dump")
-
-		_, err = Decrypt(key, source, os.Stdout)
-	}
-
+func NewSourceFile(path string, key []byte) (File, error) {
+	info, err := os.Stat(path)
 	if err != nil {
-		log.Fatal(err)
-		return
+		return nil, err
 	}
+
+	return &fileBuf{
+		path:    path,
+		key:     key,
+		modTime: info.ModTime(),
+		size:    FileSize(info.Size()),
+		isDir:   info.IsDir(),
+	}, nil
+}
+
+func (f *fileBuf) Path() string {
+	// TODO: Possible memory optimisation:
+	//       Store paths in pathtricia trie.
+	return f.path
+}
+
+func (f *fileBuf) Size() FileSize {
+	return f.size
+}
+
+func (f *fileBuf) IsDir() bool {
+	return f.isDir
+}
+
+func (f *fileBuf) ModTime() time.Time {
+	return f.modTime
+}
+
+func (f *fileBuf) Hash() multihash.Multihash {
+	return f.hash
+}
+
+func (f *fileBuf) IpfsHash() multihash.Multihash {
+	return f.ipfsHash
+}
+
+func (f *fileBuf) Writer(to io.Writer) (*EncryptedWriter, error) {
+	return NewEncryptedWriter(to, f.key)
+}
+
+func (f *fileBuf) Reader(from io.Reader) (*EncryptedReader, error) {
+	return NewEncryptedReader(from, f.key)
 }

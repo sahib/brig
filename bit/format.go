@@ -3,14 +3,14 @@
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
-// HEADER is 16 bytes big and contains the following fields:
+// HEADER is 20 bytes big and contains the following fields:
 //    - 8 Byte: Magic number (to identify non-brig files quickly)
 //    - 2 Byte: Format version
 //    - 2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    - 4 Byte: Key length in bytes.
+//	  - 4 Byte: Maximum size of each block (last may be less)
 //
 // BLOCKHEADER contains the following fields:
-//    - 4 Byte: Size of the Payload (1 MB or less)
 //    - 8 Byte: Nonce/Block number
 //
 // PAYLOAD contains the actual encrypted data, possibly with padding.
@@ -20,20 +20,21 @@
 // EncryptedReader/EncryptedWriter are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
-package main
+package bit
 
 import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha1"
 	"encoding/binary"
 	"fmt"
 	"hash"
 	"io"
 	"os"
 
+	blake2 "github.com/codahale/blake2"
 	chacha "github.com/codahale/chacha20poly1305"
+	rbuf "github.com/glycerine/rbuf"
 )
 
 // Possible ciphers in Counter mode:
@@ -44,15 +45,18 @@ const (
 
 // Other constants:
 const (
-	padPackSize       = 4
-	headerSize        = 16
+	// Size of the initial header:
+	headerSize = 20
+
+	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
 
 	// Maximum number of bytes a single payload may have
-	MaxBlockSize = 256 * 1024
+	MaxBlockSize = 1 * 1024 * 1024
 
-	// The recommended size of a buffer for efficienct reading
-	GoodBufferSize = MaxBlockSize + 32
+	// The recommended size of buffers for efficienct reading
+	GoodEncBufferSize = MaxBlockSize + 32
+	GoodDecBufferSize = MaxBlockSize
 )
 
 // Size of the used cipher's key in bytes
@@ -65,7 +69,7 @@ var KeySize int = chacha.KeySize
 // Generate a valid header for the format file:
 func GenerateHeader() []byte {
 	// This is in big endian:
-	return []byte{
+	header := []byte{
 		// Brigs magic number (8 Byte):
 		0x6d, 0x6f, 0x6f, 0x73,
 		0x65, 0x63, 0x61, 0x74,
@@ -75,34 +79,44 @@ func GenerateHeader() []byte {
 		defaultCipherType >> 8,
 		defaultCipherType & 0xff,
 		// Key length (4 Byte):
-		byte(uint32(chacha.KeySize) >> 24),
-		byte(uint32(chacha.KeySize) >> 16),
-		byte(uint32(chacha.KeySize) >> 8),
-		byte(uint32(chacha.KeySize) & 0xff),
+		0, 0, 0, 0,
+		// Block length (4 Byte):
+		0, 0, 0, 0,
 	}
+
+	binary.BigEndian.PutUint32(header[12:16], uint32(chacha.KeySize))
+	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
+	return header
 }
 
 // Parse the header of the format file:
-// Returns the format version, cipher type, keylength.
+// Returns the format version, cipher type, keylength and block length.
 // If parsing fails, an error is returned.
-func ParseHeader(header []byte) (uint16, uint16, uint32, error) {
+func ParseHeader(header []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
 	expected := GenerateHeader()
 	if bytes.Compare(header[:8], expected[:8]) != 0 {
-		return 0, 0, 0, fmt.Errorf("Magic number differs")
+		err = fmt.Errorf("Magic number in header differs")
+		return
 	}
 
-	format := binary.BigEndian.Uint16(header[8:10])
-	cipher := binary.BigEndian.Uint16(header[10:12])
+	format = binary.BigEndian.Uint16(header[8:10])
+	cipher = binary.BigEndian.Uint16(header[10:12])
 	switch cipher {
 	case aeadCipherAES:
 	case aeadCipherChaCha:
 		// we support this!
 	default:
-		return 0, 0, 0, fmt.Errorf("Unknown cipher type: %d", cipher)
+		err = fmt.Errorf("Unknown cipher type: %d", cipher)
+		return
 	}
 
-	keylen := binary.BigEndian.Uint32(header[12:16])
-	return format, cipher, keylen, nil
+	keylen = binary.BigEndian.Uint32(header[12:16])
+	blocklen = binary.BigEndian.Uint32(header[16:20])
+	if blocklen != MaxBlockSize {
+		err = fmt.Errorf("Unsupported block length in header: %d", blocklen)
+	}
+
+	return
 }
 
 //////////////////////
@@ -132,16 +146,19 @@ type aeadCommon struct {
 	// of the output
 	nonce []byte
 
-	// Short temporary buffer for encoding the packSize
-	sizeBuf []byte
-
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
+
+	// Buffer for encrypted data (MaxBlockSize + overhead)
+	encBuf []byte
+
+	// Buffer for decrypted data (MaxBlockSize)
+	decBuf []byte
 }
 
 func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
-	c.hasher = sha1.New()
+	c.hasher = blake2.NewBlake2B()
 
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
@@ -149,8 +166,11 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	}
 
 	c.nonce = make([]byte, aead.NonceSize())
-	c.sizeBuf = make([]byte, padPackSize)
 	c.aead = aead
+
+	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
+	c.decBuf = make([]byte, 0, MaxBlockSize)
+
 	return nil
 }
 
@@ -162,15 +182,16 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 type EncryptedReader struct {
 	aeadCommon
 
+	// Underlying io.Reader
 	Reader io.Reader
 
-	encBuf  []byte
-	decBuf  []byte
-	backlog *bytes.Buffer
+	// Caches leftovers from unread blocks
+	backlog *bytes.Reader
 
-	// Last index of the block we visited:
+	// Last index of the byte the user visited.
 	// (Used to avoid re-reads in Seek())
-	lastBlockNum int64
+	// This does *not* equal the seek offset of the underlying stream.
+	lastSeekPos int64
 }
 
 // Read from source and decrypt + hash it.
@@ -179,39 +200,38 @@ type EncryptedReader struct {
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *EncryptedReader) Read(dest []byte) (int, error) {
-	if r.backlog.Len() == 0 {
-		_, err := r.readBlock()
-		if err != nil {
-			return 0, err
+	readBytes := 0
+
+	// Try our best ot fill len(dest)
+	for readBytes < len(dest) {
+		if r.backlog.Len() == 0 {
+			_, err := r.readBlock()
+			if err != nil {
+				return readBytes, err
+			}
 		}
+
+		n, _ := r.backlog.Read(dest[readBytes:])
+		readBytes += n
+		r.lastSeekPos += int64(n)
 	}
 
-	return r.backlog.Read(dest)
+	return readBytes, nil
 }
 
 // Fill internal buffer with current block
 func (r *EncryptedReader) readBlock() (int, error) {
-	n, err := r.Reader.Read(r.sizeBuf)
-	if err != nil {
-		return 0, err
-	}
-
-	packSize := binary.BigEndian.Uint32(r.sizeBuf)
-
-	if packSize > MaxBlockSize+uint32(r.aead.Overhead()) {
-		return 0, fmt.Errorf("Pack size exceeded expectations: %d > %d",
-			packSize, MaxBlockSize)
-	}
-
-	if n, err = r.Reader.Read(r.nonce); err != nil {
+	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
 		return 0, fmt.Errorf("Nonce size mismatch. Should: %d. Have: %d",
 			r.aead.NonceSize(), n)
 	}
 
-	n, err = r.Reader.Read(r.encBuf[:packSize])
-	if err != nil {
+	// Read the *whole* block from the fs
+	N := MaxBlockSize + r.aead.Overhead()
+	n, err := io.ReadAtLeast(r.Reader, r.encBuf[:N], N)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return 0, err
 	}
 
@@ -224,15 +244,8 @@ func (r *EncryptedReader) readBlock() (int, error) {
 		return 0, err
 	}
 
-	r.backlog = bytes.NewBuffer(r.decBuf)
+	r.backlog = bytes.NewReader(r.decBuf)
 	return len(r.decBuf), nil
-}
-
-func convertEncToDec(n, blockSize, totalBlockSize, blockHeaderSize int64) int64 {
-	n -= headerSize
-	encBlocks := n / totalBlockSize
-	encOffset := n % totalBlockSize
-	return (encBlocks * blockSize) + encOffset - blockHeaderSize
 }
 
 // Seek into the encrypted stream.
@@ -252,78 +265,76 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 
 	// Constants and assumption on the stream below:
 	blockSize := int64(MaxBlockSize)
-	blockHeaderSize := int64(padPackSize + r.aead.NonceSize())
+	blockHeaderSize := int64(r.aead.NonceSize())
 	totalBlockSize := blockHeaderSize + blockSize + int64(r.aead.Overhead())
 
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
 
-	// Find out where we are currently:
-	absSeekOffsetEnc, err := seeker.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return 0, err
-	}
-
-	// Convert the encrypted offset to the decrypted offset:
-	absSeekOffsetDec := convertEncToDec(absSeekOffsetEnc,
-		blockSize, totalBlockSize, blockHeaderSize)
-
 	// Convert possibly relative offset to absolute offset:
 	switch whence {
 	case os.SEEK_CUR:
-		absOffsetDec = absSeekOffsetDec + offset
+		absOffsetDec = r.lastSeekPos + offset
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
-		return 0, fmt.Errorf("There is no definite end, can't use SEEK_END")
+		// We have no idea when the stream ends.
+		return 0, fmt.Errorf("SEEK_END is not supported for encrypted data")
+	}
+
+	if absOffsetDec < 0 {
+		return 0, fmt.Errorf("Negative seek index")
 	}
 
 	// Caller wanted to know only the current stream pos:
-	if absOffsetDec == absSeekOffsetDec {
+	if absOffsetDec == r.lastSeekPos {
 		return absOffsetDec, nil
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := ((absOffsetDec + headerSize) / blockSize) * totalBlockSize
+	absOffsetEnc := headerSize + ((absOffsetDec / blockSize) * totalBlockSize)
 
-	// Clear backlog, reading will cause it to be re-read
-	r.backlog.Reset()
-
-	// Seek to the beginning of the encrypted block:
-	_, err = seeker.Seek(absOffsetEnc, os.SEEK_SET)
-	if err != nil {
-		return 0, err
-	}
-
+	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
-	if r.lastBlockNum != blockNum {
+	lastBlockNum := r.lastSeekPos / blockSize
+	r.lastSeekPos = absOffsetDec
+
+	if lastBlockNum != blockNum {
+		// Seek to the beginning of the encrypted block:
+		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
+			return 0, err
+		}
+
 		// Make read consume the current block:
-		if _, err = r.Read(make([]byte, 1)); err != nil {
+		if _, err := r.readBlock(); err != nil {
 			return 0, err
 		}
 	}
 
-	r.lastBlockNum = blockNum
-
 	// Reslice the backlog, so Read() does not return skipped data.
-	// (The whole block is still there in decBuf)
-	r.backlog = bytes.NewBuffer(r.decBuf[absOffsetDec%blockSize:])
-
+	r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET)
 	return absOffsetDec, nil
 }
 
-// Close does finishing work. This is currently a No-Op,
-// and does not close the underlying data stream.
+// Return the internal hasher
+func (r *EncryptedReader) Hash() hash.Hash {
+	return r.hasher
+}
+
+// Close does finishing work.
+// It does not close the underlying data stream.
+//
+// This is currently a No-Op, but you should not rely on that.
 func (r *EncryptedReader) Close() error {
 	return nil
 }
 
 // NewEncryptedReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
-func NewEncryptedReader(r io.ReadSeeker, key []byte) (*EncryptedReader, error) {
+func NewEncryptedReader(r io.Reader, key []byte) (*EncryptedReader, error) {
 	reader := &EncryptedReader{
 		Reader:  r,
-		backlog: new(bytes.Buffer),
+		backlog: bytes.NewReader([]byte{}),
 	}
 
 	header := make([]byte, headerSize)
@@ -336,7 +347,7 @@ func NewEncryptedReader(r io.ReadSeeker, key []byte) (*EncryptedReader, error) {
 		return nil, fmt.Errorf("No valid header found, damaged file?")
 	}
 
-	version, ciperType, keylen, err := ParseHeader(header)
+	version, ciperType, keylen, _, err := ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
@@ -353,8 +364,6 @@ func NewEncryptedReader(r io.ReadSeeker, key []byte) (*EncryptedReader, error) {
 		return nil, err
 	}
 
-	reader.encBuf = make([]byte, 0, MaxBlockSize+reader.aead.Overhead())
-	reader.decBuf = make([]byte, 0, MaxBlockSize)
 	return reader, nil
 }
 
@@ -372,55 +381,47 @@ type EncryptedWriter struct {
 
 	// A buffer that is MaxBlockSize big.
 	// Used for caching blocks
-	packBuf *bytes.Buffer
-
-	encBuf []byte
+	rbuf *rbuf.FixedSizeRingBuf
 }
 
 func (w *EncryptedWriter) Write(p []byte) (int, error) {
-	n, _ := w.packBuf.Write(p)
-	if w.packBuf.Len() < MaxBlockSize {
-		// Fake the amount of data we've written:
-		return n, nil
+	for w.rbuf.Readable >= MaxBlockSize {
+		_, err := w.flushPack(MaxBlockSize)
+		if err != nil {
+			return 0, err
+		}
 	}
 
-	_, err := w.flushPack(MaxBlockSize)
+	// Remember left-overs for next write:
+	_, err := w.rbuf.Write(p)
+	if err != nil {
+		return 0, nil
+	}
+
+	// Fake the amount of data we've written:
+	return len(p), nil
+}
+
+func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
+	n, err := w.rbuf.Read(w.decBuf[:chunkSize])
 	if err != nil {
 		return 0, err
 	}
 
-	return n, nil
-}
-
-func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	// Try to update the checksum as we run:
-	src := w.packBuf.Bytes()[:chunkSize]
-
-	// Make sure to advance this many bytes
-	// in case any leftovers are in the buffer.
-	defer w.packBuf.Read(src[:chunkSize])
-
-	if _, err := w.hasher.Write(src); err != nil {
+	if _, err := w.hasher.Write(w.decBuf[:n]); err != nil {
 		return 0, err
 	}
 
 	// Create a new Nonce for this block:
-	//storeVarint(w.nonce, loadVarint(w.nonce)+1)
 	blockNum := binary.BigEndian.Uint64(w.nonce)
 	binary.BigEndian.PutUint64(w.nonce, blockNum+1)
 
 	// Encrypt the text:
-	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, src, nil)
+	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.decBuf[:n], nil)
 
 	// Pass it to the underlying writer:
-	// storeVarint(w.sizeBuf, uint64(len(encrypted)))
-	binary.BigEndian.PutUint32(w.sizeBuf, uint32(len(w.encBuf)))
-
 	written := 0
-	if n, err := w.Writer.Write(w.sizeBuf); err == nil {
-		written += n
-	}
-
 	if n, err := w.Writer.Write(w.nonce); err == nil {
 		written += n
 	}
@@ -429,7 +430,6 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 		written += n
 	}
 
-	// len(encrypted) might be more than len(w.packBuf)
 	return written, nil
 }
 
@@ -445,33 +445,35 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 // Close the EncryptedWriter and write any left-over blocks
 // This does not close the underlying data stream.
 func (w *EncryptedWriter) Close() error {
-	for w.packBuf.Len() > 0 {
-		size := w.packBuf.Len()
-		if size > MaxBlockSize {
-			size = MaxBlockSize
+	for w.rbuf.Readable > 0 {
+		n := MaxBlockSize
+		if n > w.rbuf.Readable {
+			n = w.rbuf.Readable
 		}
-
-		_, err := w.flushPack(size)
+		_, err := w.flushPack(n)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	return nil
+}
+
+// Return the internal hasher
+func (w *EncryptedWriter) Hash() hash.Hash {
+	return w.hasher
 }
 
 // NewEncryptedWriter returns a new EncryptedWriter which encrypts data with a
 // certain key.
 func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 	writer := &EncryptedWriter{
-		Writer:  w,
-		packBuf: bytes.NewBuffer(make([]byte, 0, MaxBlockSize)),
+		Writer: w,
+		rbuf:   rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
 	}
 
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
 		return nil, err
 	}
-
-	writer.encBuf = make([]byte, 0, MaxBlockSize+writer.aead.Overhead())
 
 	_, err := w.Write(GenerateHeader())
 	if err != nil {
@@ -482,24 +484,24 @@ func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
+func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewEncryptedWriter(dest, key)
 	if err != nil {
 		return 0, err
 	}
 
 	defer layer.Close()
-	return io.CopyBuffer(layer, source, make([]byte, GoodBufferSize))
+	return io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Decrypt(key []byte, source io.ReadSeeker, dest io.Writer) (int64, error) {
+func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewEncryptedReader(source, key)
 	if err != nil {
 		return 0, err
 	}
 
 	defer layer.Close()
-	return io.CopyBuffer(dest, layer, make([]byte, GoodBufferSize))
+	return io.CopyBuffer(dest, layer, make([]byte, GoodDecBufferSize))
 }
