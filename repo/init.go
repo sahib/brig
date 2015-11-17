@@ -159,22 +159,22 @@ func createIPFS(ipfsRootPath string) error {
 	return nil
 }
 
-func main() {
-	//_, err := NewFsRepository(os.Args[1], os.Args[2], os.Args[3])
-	//if err != nil {
-	//	fmt.Println(err)
-	//	os.Exit(3)
-	//}
-	e, err := loadKeypair("catz")
-	if err != nil {
-		fmt.Println(err)
-	}
-	for _, subkey := range e.Subkeys {
-		if subkey.PrivateKey != nil {
-			fmt.Printf("Privater Schluessel % x\n", subkey.PrivateKey.Fingerprint)
-		}
-		if subkey.PublicKey != nil {
-			fmt.Printf("Public Schluessel % x\n", subkey.PublicKey.Fingerprint)
-		}
-	}
-}
+//func main() {
+//	//_, err := NewFsRepository(os.Args[1], os.Args[2], os.Args[3])
+//	//if err != nil {
+//	//	fmt.Println(err)
+//	//	os.Exit(3)
+//	//}
+//	e, err := loadKeypair("catz")
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	for _, subkey := range e.Subkeys {
+//		if subkey.PrivateKey != nil {
+//			fmt.Printf("Privater Schluessel % x\n", subkey.PrivateKey.Fingerprint)
+//		}
+//		if subkey.PublicKey != nil {
+//			fmt.Printf("Public Schluessel % x\n", subkey.PublicKey.Fingerprint)
+//		}
+//	}
+//}
