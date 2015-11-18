@@ -1,14 +1,15 @@
-package main
+package repo
 
 import (
-	"fmt"
-	"github.com/olebedev/config"
 	"os"
+
+	"github.com/olebedev/config"
 )
 
 // LoadConfig loads a yaml configuration file.
 func LoadConfig(path string) (*config.Config, error) {
 	cfg, err := config.ParseYamlFile(path)
+
 	if err != nil {
 		return nil, err
 	}
@@ -65,20 +66,4 @@ func CreateDefaultConfig(path string) (int, error) {
 
 	defaultCfg := config.Config{Root: cfg}
 	return SaveConfig(path, &defaultCfg)
-}
-
-func main() {
-	CreateDefaultConfig("nein")
-	c, err := LoadConfig("config.yaml")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(c.String("animalzoo.overlord.name"))
-	fmt.Println(c.Root)
-	c.Set("animalzoo.overlord.name", "Gabriele")
-	fmt.Println(c.Root)
-	v, _ := c.Int("hs-augsburg.mensa.offen")
-	fmt.Printf("%d\n", v)
-	_, _ = SaveConfig("config.yaml", c)
 }

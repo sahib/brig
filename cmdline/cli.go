@@ -2,10 +2,26 @@ package cmdline
 
 import (
 	"fmt"
-	"github.com/disorganizer/brig"
-	"github.com/tucnak/climax"
+	"os"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig"
+	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util"
+	"github.com/tsuibin/goxmpp2/xmpp"
+	"github.com/tucnak/climax"
 )
+
+func init() {
+	log.SetOutput(os.Stderr)
+
+	// Only log the warning severity or above.
+	log.SetLevel(log.DebugLevel)
+
+	// Log pretty text
+	log.SetFormatter(&util.BrigLogFormatter{})
+}
 
 ///////////////////////
 // Utility functions //
@@ -21,7 +37,36 @@ func formatGroup(category string) string {
 
 func handleVersion(ctx climax.Context) int {
 	fmt.Println(brig.VersingString())
-	return 1
+	return 0
+}
+
+func handleInit(ctx climax.Context) int {
+	if len(ctx.Args) < 2 {
+		log.Error("Need your Jabber ID and a password")
+		return 1
+	}
+
+	jid, pwd := xmpp.JID(ctx.Args[0]), ctx.Args[1]
+
+	// Extract the folder from the resource name by default:
+	folder := jid.Resource()
+	if folder == "" {
+		log.Error("Need a resource in your JID.")
+		return 2
+	}
+
+	if ctx.Is("folder") {
+		folder, _ = ctx.Get("folder")
+	}
+
+	repo, err := repo.NewFsRepository(string(jid), pwd, folder)
+	if err != nil {
+		log.Error(err)
+		return 3
+	}
+
+	log.Error(repo)
+	return 0
 }
 
 ////////////////////////////
@@ -46,6 +91,15 @@ func RunCmdline() {
 			Group: repoGroup,
 			Usage: `<JID> [<PATH>]`,
 			Help:  `Create an empty repository, open it and associate it with the JID`,
+			Flags: []climax.Flag{
+				{
+					Name:     "--folder",
+					Short:    "o",
+					Usage:    `--depth="N"`,
+					Help:     `Only clone up to this depth of pinned files`,
+					Variable: true,
+				},
+			},
 			Examples: []climax.Example{
 				{
 					Usecase:     `alice@jabber.de/laptop`,
@@ -53,7 +107,7 @@ func RunCmdline() {
 				},
 			},
 			Handle: func(ctx climax.Context) int {
-				return 0
+				return handleInit(ctx)
 			},
 		},
 		climax.Command{
