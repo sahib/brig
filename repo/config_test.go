@@ -7,7 +7,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	CreateDefaultConfig("/tmp/nein")
-	c, err := LoadConfig("config.yaml")
+	c, err := LoadConfig("/tmp/nein")
 
 	if err != nil {
 		t.Errorf("Unable to create config: %v", err)
