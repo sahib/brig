@@ -41,12 +41,12 @@ func handleVersion(ctx climax.Context) int {
 }
 
 func handleInit(ctx climax.Context) int {
-	if len(ctx.Args) < 2 {
+	if len(ctx.Args) < 1 {
 		log.Error("Need your Jabber ID and a password")
 		return 1
 	}
 
-	jid, pwd := xmpp.JID(ctx.Args[0]), ctx.Args[1]
+	jid := xmpp.JID(ctx.Args[0])
 
 	// Extract the folder from the resource name by default:
 	folder := jid.Resource()
@@ -59,10 +59,16 @@ func handleInit(ctx climax.Context) int {
 		folder, _ = ctx.Get("folder")
 	}
 
-	repo, err := repo.NewFsRepository(string(jid), pwd, folder)
+	pwd, err := repo.PromptNewPassword(40.0)
 	if err != nil {
 		log.Error(err)
 		return 3
+	}
+
+	repo, err := repo.NewFsRepository(string(jid), pwd, folder)
+	if err != nil {
+		log.Error(err)
+		return 4
 	}
 
 	log.Error(repo)
@@ -147,6 +153,12 @@ func RunCmdline() {
 			Name:  "open",
 			Group: repoGroup,
 			Brief: "Open an encrypted port. Asks for passphrase.",
+			Handle: func(ctx climax.Context) int {
+				repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+					return pwd == "bob"
+				})
+				return 0
+			},
 		},
 		climax.Command{
 			Name:  "close",
