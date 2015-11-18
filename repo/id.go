@@ -7,8 +7,8 @@ import (
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 )
 
-func EncryptMSG(jid, pass, mid, plaintext, filename string) (string, error) {
-	ciphertext, err := minilock.EncryptFileContentsWithStrings(filename, []byte(plaintext), jid, pass, true, mid)
+func EncryptMSG(jid, pass, plaintext, filename string, selfenc bool, mid ...string) (string, error) {
+	ciphertext, err := minilock.EncryptFileContentsWithStrings(filename, []byte(plaintext), jid, pass, selfenc, mid...)
 	if err != nil {
 		return "", nil
 	}
