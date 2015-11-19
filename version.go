@@ -12,6 +12,6 @@ func Version() (int, int, int) {
 	return MajorVersion, MinorVersion, PatchVersion
 }
 
-func VersingString() string {
+func VersionString() string {
 	return fmt.Sprintf("%d.%d.%d", MajorVersion, MinorVersion, PatchVersion)
 }
