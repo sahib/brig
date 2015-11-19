@@ -20,24 +20,22 @@ var symbolTable = map[logrus.Level]string{
 }
 
 var colorTable = map[logrus.Level]int{
-	logrus.DebugLevel: 36, // Cyan
-	logrus.InfoLevel:  32, // Green
-	logrus.WarnLevel:  33, // Yellow
-	logrus.ErrorLevel: 31, // Red
-	logrus.FatalLevel: 35, // magenta
-	logrus.PanicLevel: 41, // BG Red
+	logrus.DebugLevel: Cyan,
+	logrus.InfoLevel:  Green,
+	logrus.WarnLevel:  Yellow,
+	logrus.ErrorLevel: Red,
+	logrus.FatalLevel: Magenta,
+	logrus.PanicLevel: BackgroundRed,
 }
 
-func colorEscape(level logrus.Level) []byte {
-	return []byte(fmt.Sprintf("\033[0;%dm", colorTable[level]))
+func colorEscape(level logrus.Level) string {
+	return ColorEscape(colorTable[level])
 }
-
-var resetEscape = []byte("\033[0m")
 
 func formatColored(buffer *bytes.Buffer, msg string, level logrus.Level) {
-	buffer.Write(colorEscape(level))
+	buffer.WriteString(colorEscape(level))
 	buffer.WriteString(msg)
-	buffer.Write(resetEscape)
+	buffer.WriteString(ColorResetEscape)
 }
 
 func formatTimestamp(buffer *bytes.Buffer, t time.Time) {
@@ -78,13 +76,13 @@ func (*BrigLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	buffer := bytes.Buffer{}
 
 	// Add the timestamp:
-	buffer.Write(colorEscape(entry.Level))
+	buffer.WriteString(colorEscape(entry.Level))
 	formatTimestamp(&buffer, entry.Time)
 	buffer.WriteByte(' ')
 
 	// Add the symbol:
 	buffer.WriteString(symbolTable[entry.Level])
-	buffer.Write(resetEscape)
+	buffer.WriteString(ColorResetEscape)
 
 	// Add the actual message:
 	buffer.WriteByte(' ')
