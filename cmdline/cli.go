@@ -31,12 +31,29 @@ func formatGroup(category string) string {
 	return strings.ToUpper(category) + " COMMANDS:"
 }
 
+func guessRepoFolder() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Error(err)
+	}
+	return wd
+}
+
 ///////////////////////
 // Handler functions //
 ///////////////////////
 
 func handleVersion(ctx climax.Context) int {
-	fmt.Println(brig.VersingString())
+	fmt.Println(brig.VersionString())
+	return 0
+}
+
+func handleOpen(ctx climax.Context) int {
+	repository, err := repo.LoadFsRepository(guessRepoFolder())
+	if err != nil {
+		log.Error("Could not create repository", err)
+	}
+	fmt.Println(repository)
 	return 0
 }
 
@@ -65,13 +82,11 @@ func handleInit(ctx climax.Context) int {
 		return 3
 	}
 
-	repo, err := repo.NewFsRepository(string(jid), pwd, folder)
-	if err != nil {
+	if _, err := repo.NewFsRepository(string(jid), pwd, folder); err != nil {
 		log.Error(err)
 		return 4
 	}
 
-	log.Error(repo)
 	return 0
 }
 
@@ -79,6 +94,7 @@ func handleInit(ctx climax.Context) int {
 // Commandline definition //
 ////////////////////////////
 
+// RunCmdline starts a brig commandline tool.
 func RunCmdline() {
 	demo := climax.New("brig")
 	demo.Brief = "brig is a decentralized file syncer based on IPFS and XMPP."
@@ -154,10 +170,10 @@ func RunCmdline() {
 			Group: repoGroup,
 			Brief: "Open an encrypted port. Asks for passphrase.",
 			Handle: func(ctx climax.Context) int {
-				repo.PromptPasswordMaxTries(4, func(pwd string) bool {
-					return pwd == "bob"
-				})
-				return 0
+				return handleOpen(ctx)
+				//repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+				//	return pwd == "bob"
+				//})
 			},
 		},
 		climax.Command{
