@@ -36,34 +36,20 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 	return written, nil
 }
 
-// Make default config template a bit prettier:
-type section map[string]interface{}
-
 // CreateDefaultConfig creates a configfile with default values.
-func CreateDefaultConfig(path string) (int, error) {
-	cfg := section{
-		"development": section{
-			"database": section{
-				"host": "localhost",
-			},
-			"users": []interface{}{
-				section{
-					"name":     "calvin",
-					"password": "yukon",
-				},
-				section{
-					"name":     "hobbes",
-					"password": "tuna",
-				},
-			},
+func CreateDefaultConfig() *config.Config {
+	cfg := map[string]interface{}{
+		"repository": map[string]interface{}{
+			"jid":  "",
+			"mid":  "",
+			"uuid": "",
 		},
-		"production": section{
-			"database": section{
-				"host": "192.168.1.1",
-			},
+		"ipfs": map[string]interface{}{
+			"port":     5001,
+			"hostname": "localhost",
+			"path":     "",
 		},
 	}
 
-	defaultCfg := config.Config{Root: cfg}
-	return SaveConfig(path, &defaultCfg)
+	return &config.Config{Root: cfg}
 }
