@@ -31,7 +31,14 @@ func formatGroup(category string) string {
 	return strings.ToUpper(category) + " COMMANDS:"
 }
 
+// guessRepoFolder tries to find the repository path
+// by using a number of sources.
 func guessRepoFolder() string {
+	wd := os.Getenv("BRIG_PATH")
+	if wd != "" {
+		return wd
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Error(err)
@@ -49,6 +56,10 @@ func handleVersion(ctx climax.Context) int {
 }
 
 func handleOpen(ctx climax.Context) int {
+	repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+		return pwd == "bob"
+	})
+
 	repository, err := repo.LoadFsRepository(guessRepoFolder())
 	if err != nil {
 		log.Error("Could not create repository", err)
@@ -64,12 +75,20 @@ func handleInit(ctx climax.Context) int {
 	}
 
 	jid := xmpp.JID(ctx.Args[0])
+	if jid.Domain() == "" {
+		log.Error("Your JabberID needs a domain.")
+		return 2
+	}
 
 	// Extract the folder from the resource name by default:
 	folder := jid.Resource()
 	if folder == "" {
 		log.Error("Need a resource in your JID.")
-		return 2
+		return 3
+	}
+
+	if envFolder := os.Getenv("BRIG_PATH"); envFolder != "" {
+		folder = envFolder
 	}
 
 	if ctx.Is("folder") {
@@ -79,12 +98,12 @@ func handleInit(ctx climax.Context) int {
 	pwd, err := repo.PromptNewPassword(40.0)
 	if err != nil {
 		log.Error(err)
-		return 3
+		return 4
 	}
 
 	if _, err := repo.NewFsRepository(string(jid), pwd, folder); err != nil {
 		log.Error(err)
-		return 4
+		return 5
 	}
 
 	return 0
@@ -95,7 +114,7 @@ func handleInit(ctx climax.Context) int {
 ////////////////////////////
 
 // RunCmdline starts a brig commandline tool.
-func RunCmdline() {
+func RunCmdline() int {
 	demo := climax.New("brig")
 	demo.Brief = "brig is a decentralized file syncer based on IPFS and XMPP."
 	demo.Version = "unstable"
@@ -171,9 +190,6 @@ func RunCmdline() {
 			Brief: "Open an encrypted port. Asks for passphrase.",
 			Handle: func(ctx climax.Context) int {
 				return handleOpen(ctx)
-				//repo.PromptPasswordMaxTries(4, func(pwd string) bool {
-				//	return pwd == "bob"
-				//})
 			},
 		},
 		climax.Command{
@@ -312,7 +328,7 @@ func RunCmdline() {
 
 	// Help topics:
 	demo.AddTopic(climax.Topic{
-		Name:  "quick-start",
+		Name:  "quickstart",
 		Brief: "A very short introduction to brig",
 		Text:  "TODO: write.",
 	})
@@ -322,9 +338,10 @@ func RunCmdline() {
 		Text:  "TODO: write.",
 	})
 	demo.AddTopic(climax.Topic{
-		Name:  "terminology",
+		Name:  "terms",
 		Brief: "Cheat sheet for often used terms.",
 		Text:  "TODO: write.",
 	})
-	demo.Run()
+
+	return demo.Run()
 }
