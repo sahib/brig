@@ -58,6 +58,6 @@ func TestConfig(t *testing.T) {
 	configValue, _ := c.Int("ipfs.port")
 	fmt.Printf("Reading %s from config: %d\n", "ipfs.port", configValue)
 	if configValue != 5001 {
-		t.Logf("%s read, but %s was expected.\n", configValue, 5001)
+		t.Logf("%d read, but %d was expected.\n", configValue, 5001)
 	}
 }
