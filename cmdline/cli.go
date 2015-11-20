@@ -101,7 +101,7 @@ func handleInit(ctx climax.Context) int {
 		return 4
 	}
 
-	if _, err := repo.NewFsRepository(string(jid), pwd, folder); err != nil {
+	if _, err := repo.NewFsRepository(string(jid), string(pwd), folder); err != nil {
 		log.Error(err)
 		return 5
 	}

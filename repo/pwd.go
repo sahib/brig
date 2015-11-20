@@ -1,13 +1,12 @@
 package repo
 
 import (
+	"bytes"
 	"fmt"
-	"time"
+
+	"github.com/chzyer/readline"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/chzyer/readline"
-	"github.com/chzyer/readline/runes"
-
 	"github.com/disorganizer/brig/util"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 )
@@ -31,49 +30,35 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 	return line, nil
 }
 
-func checkPasswordInBackground(rl *readline.Instance, ticker *time.Ticker) {
-	lastPassword := []rune(nil)
-	for _ = range ticker.C {
-		symbol, color := "", util.Red
-		password := rl.Operation.Buf.Runes()
+func createStrengthPrompt(password []rune, prefix string) string {
+	symbol, color := "", util.Red
+	strength := zxcvbn.PasswordStrength(string(password), nil)
 
-		// Can skip check, input did not change.
-		// (save some cpu time...)
-		if lastPassword != nil && runes.Equal(password, lastPassword) {
-			continue
-		}
-
-		strength := zxcvbn.PasswordStrength(string(password), nil)
-
-		switch {
-		case strength.Score <= 1:
-			symbol = "✗"
-			color = util.Red
-		case strength.Score <= 2:
-			symbol = "⚡"
-			color = util.Magenta
-		case strength.Score <= 3:
-			symbol = "⚠"
-			color = util.Yellow
-		case strength.Score <= 4:
-			symbol = "🗸"
-			color = util.Green
-		}
-
-		prompt := util.Colorize(symbol, color)
-		if strength.Entropy > 0 {
-			entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
-			prompt += util.Colorize(entropy, util.Cyan)
-		} else {
-			prompt += util.Colorize(" ENT", util.Cyan)
-		}
-
-		prompt += util.Colorize(" New Password: ", color)
-
-		rl.SetPrompt(prompt)
-		rl.Operation.Buf.Refresh(nil)
-		lastPassword = password
+	switch {
+	case strength.Score <= 1:
+		symbol = "✗"
+		color = util.Red
+	case strength.Score <= 2:
+		symbol = "⚡"
+		color = util.Magenta
+	case strength.Score <= 3:
+		symbol = "⚠"
+		color = util.Yellow
+	case strength.Score <= 4:
+		symbol = "✔"
+		color = util.Green
 	}
+
+	prompt := util.Colorize(symbol, color)
+	if strength.Entropy > 0 {
+		entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
+		prompt += util.Colorize(entropy, util.Cyan)
+	} else {
+		prompt += util.Colorize(" ENT", util.Cyan)
+	}
+
+	prompt += util.Colorize(" "+prefix+"Password: ", color)
+	return prompt
 }
 
 // PromptNewPassword asks the user to input a password.
@@ -83,34 +68,57 @@ func checkPasswordInBackground(rl *readline.Instance, ticker *time.Ticker) {
 // Additionally the entrtopy of the password is shown.
 // If minEntropy was not reached after hitting enter,
 // this function will log a message and ask the user again.
-func PromptNewPassword(minEntropy float64) (string, error) {
+func PromptNewPassword(minEntropy float64) ([]byte, error) {
 	rl, err := readline.New("")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer rl.Close()
 
-	// Launch security check in backgroumd
-	ticker := time.NewTicker(50 * time.Millisecond)
-	go checkPasswordInBackground(rl, ticker)
-	defer ticker.Stop()
+	passwordCfg := rl.GenPasswordConfig()
+	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
+		rl.SetPrompt(createStrengthPrompt(line, "New"))
+		rl.Refresh()
+		return nil, 0, false
+	})
+
+	pwd := []byte{}
 
 	for {
-		password, err := doPromptLine(rl, "", false)
+		pwd, err = rl.ReadPasswordWithConfig(passwordCfg)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		strength := zxcvbn.PasswordStrength(string(password), nil)
+		strength := zxcvbn.PasswordStrength(string(pwd), nil)
 		if strength.Entropy >= minEntropy {
-			fmt.Println("\r")
-			return password, nil
+			break
 		}
 
-		log.Println("Password is too weak.")
-		log.Printf("Entropy count should reach at least `%3.0f`.\n", minEntropy)
-		log.Println("Please try again.")
+		log.Warningf("Please enter a password with at least %g bits entropy.", minEntropy)
 	}
+
+	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
+		rl.SetPrompt(createStrengthPrompt(line, "Retype"))
+		rl.Refresh()
+		return nil, 0, false
+	})
+
+	log.Infof("Well done! Please re-type your password now:")
+	for {
+		newPwd, err := rl.ReadPasswordWithConfig(passwordCfg)
+		if err != nil {
+			return nil, err
+		}
+
+		if bytes.Equal(pwd, newPwd) {
+			break
+		}
+
+		log.Warningf("This did not seem to match. Please try again.")
+	}
+
+	return pwd, nil
 }
 
 func promptPasswordColored(color int) (string, error) {
