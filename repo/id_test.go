@@ -12,8 +12,8 @@ type User struct {
 	Mid      string
 }
 
-func encrypt(jid, password, secretMsg, filename string, selfenc bool, mid ...string) (string, error) {
-	ciphertext, err := EncryptMSG(jid, password, secretMsg, filename, selfenc, mid...)
+func encrypt(jid, password, secretMsg string, mid ...string) (string, error) {
+	ciphertext, err := EncryptMinilockMsg(jid, password, secretMsg, mid...)
 	return ciphertext, err
 }
 
@@ -70,12 +70,12 @@ func TestID(t *testing.T) {
 		receiverMids = append(receiverMids, receiver.Mid)
 	}
 	fmt.Printf("%s encrypts for %s\n", alice, receivers)
-	ciphertext, err := encrypt(alice.Jid, alice.Password, originalText, "0xDEADBEEF", false, receiverMids...)
+	ciphertext, err := encrypt(alice.Jid, alice.Password, originalText, receiverMids...)
 	if err != nil {
 		t.Log("Error enctypting plaintext.", err)
 	}
 	for _, user := range []*User{alice, bob, bruce, micrathene} {
-		decryptedtext, _ := DecryptMSG(user.Jid, user.Password, ciphertext)
+		decryptedtext, _ := DecryptMinilockMsg(user.Jid, user.Password, ciphertext)
 		if maliciousUserHasDecrypted(decryptedtext, originalText, user, micrathene, alice /* malicious users*/) {
 			t.Errorf("%s souldn't be able to decrypt the ciphertext.\n", user.Jid)
 		}
