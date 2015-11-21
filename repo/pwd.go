@@ -77,7 +77,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
-		rl.SetPrompt(createStrengthPrompt(line, "New"))
+		rl.SetPrompt(createStrengthPrompt(line, "New "))
 		rl.Refresh()
 		return nil, 0, false
 	})
@@ -99,7 +99,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 	}
 
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
-		rl.SetPrompt(createStrengthPrompt(line, "Retype"))
+		rl.SetPrompt(createStrengthPrompt(line, "Retype "))
 		rl.Refresh()
 		return nil, 0, false
 	})

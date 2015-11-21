@@ -1,0 +1,27 @@
+message Command {
+    required int32 command_type = 1;
+
+    message InitCmd {
+        required string jid = 1;
+        required string repo_path = 1;
+        required string password = 1;
+    }
+
+    message AddCmd {
+        required string file_path = 1;
+    }
+
+    message CatCmd {
+        required string file_path = 1;
+        required bytes data = 2;
+    }
+
+    optional InitCmd init_command = 2;
+    optional AddCmd add_command = 3;
+    optional CatCmd cat_command = 4;
+}
+
+message Response {
+    required int32 reponse_type = 1;
+    optional int32 command_type = 2;
+}
