@@ -8,7 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/util"
+	colorlog "github.com/disorganizer/brig/util/log"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
 )
@@ -20,7 +20,7 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 
 	// Log pretty text
-	log.SetFormatter(&util.BrigLogFormatter{})
+	log.SetFormatter(&colorlog.ColorfulLogFormatter{})
 }
 
 ///////////////////////

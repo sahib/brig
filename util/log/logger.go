@@ -1,4 +1,5 @@
-package util
+// Package log implements utility methods for logging in a colorful manner.
+package log
 
 import (
 	"bytes"
@@ -6,9 +7,10 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/util/colors"
 )
 
-type BrigLogFormatter struct{}
+type ColorfulLogFormatter struct{}
 
 var symbolTable = map[logrus.Level]string{
 	logrus.DebugLevel: "⚙",
@@ -20,22 +22,22 @@ var symbolTable = map[logrus.Level]string{
 }
 
 var colorTable = map[logrus.Level]int{
-	logrus.DebugLevel: Cyan,
-	logrus.InfoLevel:  Green,
-	logrus.WarnLevel:  Yellow,
-	logrus.ErrorLevel: Red,
-	logrus.FatalLevel: Magenta,
-	logrus.PanicLevel: BackgroundRed,
+	logrus.DebugLevel: colors.Cyan,
+	logrus.InfoLevel:  colors.Green,
+	logrus.WarnLevel:  colors.Yellow,
+	logrus.ErrorLevel: colors.Red,
+	logrus.FatalLevel: colors.Magenta,
+	logrus.PanicLevel: colors.BackgroundRed,
 }
 
 func colorEscape(level logrus.Level) string {
-	return ColorEscape(colorTable[level])
+	return colors.ColorEscape(colorTable[level])
 }
 
 func formatColored(buffer *bytes.Buffer, msg string, level logrus.Level) {
 	buffer.WriteString(colorEscape(level))
 	buffer.WriteString(msg)
-	buffer.WriteString(ColorResetEscape)
+	buffer.WriteString(colors.ColorResetEscape)
 }
 
 func formatTimestamp(buffer *bytes.Buffer, t time.Time) {
@@ -72,7 +74,7 @@ func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
 	buffer.WriteByte(']')
 }
 
-func (*BrigLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	buffer := bytes.Buffer{}
 
 	// Add the timestamp:
@@ -82,7 +84,7 @@ func (*BrigLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	// Add the symbol:
 	buffer.WriteString(symbolTable[entry.Level])
-	buffer.WriteString(ColorResetEscape)
+	buffer.WriteString(colors.ColorResetEscape)
 
 	// Add the actual message:
 	buffer.WriteByte(' ')

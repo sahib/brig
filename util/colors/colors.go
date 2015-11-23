@@ -1,4 +1,5 @@
-package util
+// Package colors implement easy printing of terminal colors.
+package colors
 
 import "fmt"
 

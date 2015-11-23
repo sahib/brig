@@ -1,5 +1,5 @@
-// Utility functions that would not hurt the simplicity of Go
-// if they would be in the builtins/stdlib.
+// Package std implements small helper function that
+// should be included in the stdlib in our opinion.
 package util
 
 // Returns the minimum of a and b.

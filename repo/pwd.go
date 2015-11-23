@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/util/colors"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 )
 
@@ -31,33 +32,33 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 }
 
 func createStrengthPrompt(password []rune, prefix string) string {
-	symbol, color := "", util.Red
+	symbol, color := "", colors.Red
 	strength := zxcvbn.PasswordStrength(string(password), nil)
 
 	switch {
 	case strength.Score <= 1:
 		symbol = "✗"
-		color = util.Red
+		color = colors.Red
 	case strength.Score <= 2:
 		symbol = "⚡"
-		color = util.Magenta
+		color = colors.Magenta
 	case strength.Score <= 3:
 		symbol = "⚠"
-		color = util.Yellow
+		color = colors.Yellow
 	case strength.Score <= 4:
 		symbol = "✔"
-		color = util.Green
+		color = colors.Green
 	}
 
-	prompt := util.Colorize(symbol, color)
+	prompt := colors.Colorize(symbol, color)
 	if strength.Entropy > 0 {
 		entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
-		prompt += util.Colorize(entropy, util.Cyan)
+		prompt += colors.Colorize(entropy, colors.Cyan)
 	} else {
-		prompt += util.Colorize(" ENT", util.Cyan)
+		prompt += colors.Colorize(" ENT", colors.Cyan)
 	}
 
-	prompt += util.Colorize(" "+prefix+"Password: ", color)
+	prompt += colors.Colorize(" "+prefix+"Password: ", color)
 	return prompt
 }
 
@@ -124,7 +125,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 func promptPasswordColored(color int) (string, error) {
 	prompt := "Password: "
 	if color > 0 {
-		prompt = util.Colorize(prompt, color)
+		prompt = colors.Colorize(prompt, color)
 	}
 
 	rl, err := readline.New(prompt)
@@ -153,10 +154,10 @@ func (e ErrTooManyTries) Error() string {
 }
 
 var triesToColor = map[int]int{
-	0: util.Green,
-	1: util.Yellow,
-	2: util.Magenta,
-	3: util.Red,
+	0: colors.Green,
+	1: colors.Yellow,
+	2: colors.Magenta,
+	3: colors.Red,
 }
 
 // PromptPasswordMaxTries tries to read a password maxTries times.

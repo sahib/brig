@@ -1,4 +1,8 @@
-package util
+// Package security implements utility function for often used
+// security operations. At this very moment this includes:
+//
+// - Key derivation function using scrypt (DeriveAESKey)
+package security
 
 import (
 	"crypto/rand"
