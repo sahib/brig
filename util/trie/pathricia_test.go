@@ -1,4 +1,4 @@
-package util
+package trie
 
 import (
 	"fmt"

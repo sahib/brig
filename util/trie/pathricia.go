@@ -1,5 +1,5 @@
 // This package implements a general purpose Path-Trie.
-package util
+package trie
 
 import (
 	"os"
@@ -63,7 +63,7 @@ func SplitPath(path string) []string {
 // NewTrie returns a trie with the root element pre-inserted.
 // Note that `nil` is a perfectly valid, but empty trie.
 func NewTrie() *Node {
-	return &Node{}
+	return &Node{Name: ""}
 }
 
 // Root returns the root node of the trie.
@@ -199,7 +199,7 @@ func (n *Node) Path() string {
 		return ""
 	}
 
-	s := make([]string, n.Depth+1)
+	s := make([]string, n.Depth+2)
 	i := len(s) - 1
 
 	n.Up(func(parent *Node) {
@@ -209,7 +209,7 @@ func (n *Node) Path() string {
 
 	// TODO: Return "/" if it's the root node only.
 	//       But don't do that on windows?
-	return strings.Join(s, string(os.PathSeparator))
+	return buildPath(s)
 }
 
 // String returns the absolute path of the node.
