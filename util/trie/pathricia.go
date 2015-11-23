@@ -4,6 +4,7 @@ package trie
 import (
 	"os"
 	"strings"
+	"sync"
 )
 
 // Node represents a single node in a Trie, but it can be used as a whole
@@ -12,6 +13,9 @@ import (
 type Node struct {
 	// Pointer to parent node or nil
 	Parent *Node
+
+	// Make Lock() and Unlock() possible
+	RWLock *sync.RWMutex
 
 	// Basename to child-nodes
 	Children map[string]*Node
@@ -63,7 +67,7 @@ func SplitPath(path string) []string {
 // NewTrie returns a trie with the root element pre-inserted.
 // Note that `nil` is a perfectly valid, but empty trie.
 func NewTrie() *Node {
-	return &Node{Name: ""}
+	return &Node{RWLock: &sync.RWMutex{}}
 }
 
 // Root returns the root node of the trie.
@@ -78,7 +82,7 @@ func (n *Node) Root() *Node {
 func (n *Node) Insert(path string) *Node {
 	curr := n
 	if curr == nil {
-		curr = &Node{}
+		curr = NewTrie()
 	}
 
 	wasAdded := false
@@ -93,6 +97,7 @@ func (n *Node) Insert(path string) *Node {
 				Parent: curr,
 				Name:   name,
 				Depth:  uint16(depth + 1),
+				RWLock: curr.RWLock,
 			}
 			curr.Children[name] = child
 			wasAdded = true
@@ -207,8 +212,6 @@ func (n *Node) Path() string {
 		i--
 	})
 
-	// TODO: Return "/" if it's the root node only.
-	//       But don't do that on windows?
 	return buildPath(s)
 }
 
@@ -218,4 +221,32 @@ func (n *Node) String() string {
 		return "<nil>"
 	}
 	return n.Path()
+}
+
+// Lock locks the writer lock
+func (n *Node) Lock() {
+	if n != nil {
+		n.RWLock.Lock()
+	}
+}
+
+// Unlock unlocks the writer lock
+func (n *Node) Unlock() {
+	if n != nil {
+		n.RWLock.Unlock()
+	}
+}
+
+// RLock locks the reader lock
+func (n *Node) RLock() {
+	if n != nil {
+		n.RWLock.RLock()
+	}
+}
+
+// RUnlock unlocks the reader lock
+func (n *Node) RUnlock() {
+	if n != nil {
+		n.RWLock.RUnlock()
+	}
 }
