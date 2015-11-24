@@ -1,10 +1,19 @@
-message Command {
-    required int32 command_type = 1;
+package daemon.protocol;
+option go_package = "proto";
 
+enum MessageType {
+    INIT = 0;
+    ADD = 1;
+    CAT = 2;
+    PING = 3;
+    QUIT = 4;
+}
+
+message Command {
     message InitCmd {
         required string jid = 1;
-        required string repo_path = 1;
-        required string password = 1;
+        required string repo_path = 2;
+        required string password = 3;
     }
 
     message AddCmd {
@@ -16,12 +25,22 @@ message Command {
         required bytes data = 2;
     }
 
+    message PingCmd {
+        optional bytes payload = 1;
+    }
+
+    message QuitCmd {
+    }
+
+    required MessageType command_type = 1;
     optional InitCmd init_command = 2;
     optional AddCmd add_command = 3;
     optional CatCmd cat_command = 4;
+    optional PingCmd ping_command = 5;
+    optional QuitCmd quit_command = 6;
 }
 
 message Response {
-    required int32 reponse_type = 1;
-    optional int32 command_type = 2;
+    required MessageType response_type = 1;
+    required string response = 2;
 }

@@ -7,6 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
+	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
 	colorlog "github.com/disorganizer/brig/util/log"
 	"github.com/tsuibin/goxmpp2/xmpp"
@@ -286,6 +287,49 @@ func RunCmdline() int {
 			Name:  "fsck",
 			Group: advnGroup,
 			Brief: "Verify, and possibly fix, broken files.",
+		},
+		climax.Command{
+			Name:  "daemon",
+			Group: advnGroup,
+			Brief: "Manually run the daemon process.",
+			Flags: []climax.Flag{
+				{
+					Name:  "ping",
+					Short: "p",
+					Usage: `--ping`,
+					Help:  `Ping the dameon to check if it's running.`,
+				},
+				{
+					Name:  "quit",
+					Short: "q",
+					Usage: `--quit`,
+					Help:  `Kill a running daemon.`,
+				},
+			},
+			Handle: func(ctx climax.Context) int {
+				client, err := daemon.Dial(6666)
+				if ctx.Is("ping") {
+					fmt.Println("PING")
+					if err != nil {
+						fmt.Println(err)
+						return 1
+					}
+
+					client.Ping()
+				} else if ctx.Is("quit") {
+					fmt.Println("QUIT")
+					client.Exorcise()
+				} else {
+					// Baal is a daemon.
+					baal, err := daemon.Summon()
+					if err != nil {
+						fmt.Println("Unable to start daemon: ", err)
+					}
+
+					baal.Serve()
+				}
+				return 0
+			},
 		},
 		climax.Command{
 			Name:  "passwd",
