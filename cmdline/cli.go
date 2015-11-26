@@ -300,6 +300,12 @@ func RunCmdline() int {
 					Help:  `Ping the dameon to check if it's running.`,
 				},
 				{
+					Name:  "reach",
+					Short: "r",
+					Usage: `--reach`,
+					Help:  `Dial to a daemon, if unsucessful, start it.`,
+				},
+				{
 					Name:  "quit",
 					Short: "q",
 					Usage: `--quit`,
@@ -318,6 +324,8 @@ func RunCmdline() int {
 					}
 
 					client.Ping()
+				} else if ctx.Is("reach") {
+					fmt.Println(daemon.Reach("", 6666))
 				} else if ctx.Is("quit") {
 					fmt.Println("QUIT")
 					client.Exorcise()

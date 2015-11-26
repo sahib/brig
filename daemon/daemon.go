@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/repo"
 	protobuf "github.com/gogo/protobuf/proto"
@@ -134,9 +136,50 @@ func (c *DaemonClient) handleMessages() {
 }
 
 // Reach tries to Dial() the daemon, if not there it Launch()'es one.
-func Reach(repoPath string, host string, port int) (*DaemonClient, error) {
-	// TODO: fork magic.
-	return Dial(port)
+func Reach(repoPath string, port int) (*DaemonClient, error) {
+
+	if daemon, err := Dial(port); err != nil {
+		exePath, err := godaemon.GetExecutablePath()
+		if err != nil {
+			return nil, err
+		}
+
+		log.Info("Starting daemon: ", exePath)
+		proc, err := os.StartProcess(
+			exePath, []string{"brig", "daemon"}, &os.ProcAttr{},
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		go func() {
+			log.Info("Daemon has PID: ", proc.Pid)
+			if _, err := proc.Wait(); err != nil {
+				log.Warning("Bad exit state: ", err)
+			}
+		}()
+
+		// Wait at max 5 seconds for the daemon to start up:
+		// (this means, wait till it's network interface is started)
+		for i := 0; i < 5; i++ {
+			time.Sleep(1 * time.Second)
+			client, err := Dial(port)
+			if err != nil {
+				return nil, err
+			}
+
+			if client != nil {
+				return client, nil
+			}
+		}
+
+		return nil, fmt.Errorf("Daemon could not be started or took to long.")
+	} else {
+		return daemon, nil
+	}
+
+	return nil, nil
 }
 
 func (c *DaemonClient) Ping() bool {
