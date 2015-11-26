@@ -308,6 +308,8 @@ func RunCmdline() int {
 			},
 			Handle: func(ctx climax.Context) int {
 				client, err := daemon.Dial(6666)
+				defer client.Close()
+
 				if ctx.Is("ping") {
 					fmt.Println("PING")
 					if err != nil {
@@ -321,7 +323,7 @@ func RunCmdline() int {
 					client.Exorcise()
 				} else {
 					// Baal is a daemon.
-					baal, err := daemon.Summon()
+					baal, err := daemon.Summon(6666)
 					if err != nil {
 						fmt.Println("Unable to start daemon: ", err)
 					}

@@ -3,52 +3,24 @@ package daemon
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"net"
+	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/repo"
 	protobuf "github.com/gogo/protobuf/proto"
 )
 
-//////////////////////////
-// FRONTEND DAEMON PART //
-//////////////////////////
+///////////////////////
+// UTILITY FUNCTIONS //
+///////////////////////
 
-// https://github.com/docker/libchan
-
-// Daemon is the top-level struct of the brig daemon.
-type DaemonClient struct {
-	// Use this channel to send commands to the daemon
-	// Send chan<- proto.Command
-
-	// Responses and errors are sent to this channel
-	// Recv <-chan proto.Response
-
-	conn net.Conn
-}
-
-func Dial(port int) (*DaemonClient, error) {
-	client := &DaemonClient{}
-
-	conn, err := net.Dial("tcp", "127.0.0.1:6666")
-	if err != nil {
-		return nil, err
-	}
-
-	client.conn = conn
-	return client, nil
-}
-
-// Reach tries to Dial() the daemon, if not there it Launch()'es one.
-func Reach(repoPath string, host string, port int) (*DaemonClient, error) {
-	return nil, nil
-}
-
-// TODO:
-func send(conn net.Conn, msg protobuf.Message) (int, error) {
+func send(conn net.Conn, msg protobuf.Message) error {
 	data, err := protobuf.Marshal(msg)
 	if err != nil {
-		return 0, nil
+		return nil
 	}
 
 	sizeBuf := make([]byte, binary.MaxVarintLen64)
@@ -56,16 +28,23 @@ func send(conn net.Conn, msg protobuf.Message) (int, error) {
 
 	n, err := conn.Write(sizeBuf)
 	if err != nil {
-		return n, err
+		return err
 	}
 
-	wn, err := conn.Write(data)
+	if n < len(sizeBuf) {
+		return io.ErrShortWrite
+	}
+
+	n, err = conn.Write(data)
 	if err != nil {
-		return n + wn, err
+		return err
 	}
 
-	return n + wn, nil
+	if n < len(data) {
+		return io.ErrShortWrite
+	}
 
+	return nil
 }
 
 func recv(conn net.Conn, msg protobuf.Message) error {
@@ -79,8 +58,6 @@ func recv(conn net.Conn, msg protobuf.Message) error {
 	if size > 1*1024*1024 {
 		return fmt.Errorf("Message too large: %d", size)
 	}
-
-	fmt.Println(size)
 
 	buf := make([]byte, size)
 	n, err = conn.Read(buf)
@@ -96,43 +73,95 @@ func recv(conn net.Conn, msg protobuf.Message) error {
 	return nil
 }
 
-func (c *DaemonClient) Send(cmd *proto.Command) (int, error) {
-	return send(c.conn, cmd)
+//////////////////////////
+// FRONTEND DAEMON PART //
+//////////////////////////
+
+// https://github.com/docker/libchan
+
+// Daemon is the top-level struct of the brig daemon.
+type DaemonClient struct {
+	// Use this channel to send commands to the daemon
+	Send chan *proto.Command
+
+	// Responses are sent to this channel
+	Recv chan *proto.Response
+
+	// Underlying tcp connection:
+	conn net.Conn
+
+	quit chan bool
 }
 
-func (c *DaemonClient) Recv() (*proto.Response, error) {
-	resp := &proto.Response{}
-	if err := recv(c.conn, resp); err != nil {
+func Dial(port int) (*DaemonClient, error) {
+	client := &DaemonClient{
+		Send: make(chan *proto.Command),
+		Recv: make(chan *proto.Response),
+		quit: make(chan bool, 1),
+	}
+
+	conn, err := net.Dial("tcp", "127.0.0.1:6666")
+	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	client.conn = conn
+
+	go client.handleMessages()
+	return client, nil
+}
+
+func (c *DaemonClient) handleMessages() {
+	for {
+		select {
+		case <-c.quit:
+			return
+		case msg := <-c.Send:
+			if err := send(c.conn, msg); err != nil {
+				log.Warning("CLIENT SEND ", err)
+				continue
+			}
+
+			resp := &proto.Response{}
+			if err := recv(c.conn, resp); err != nil {
+				log.Warning("CLIENT RECV ", err)
+				continue
+			}
+
+			c.Recv <- resp
+		}
+	}
+}
+
+// Reach tries to Dial() the daemon, if not there it Launch()'es one.
+func Reach(repoPath string, host string, port int) (*DaemonClient, error) {
+	// TODO: fork magic.
+	return Dial(port)
 }
 
 func (c *DaemonClient) Ping() bool {
 	cmd := &proto.Command{}
 	cmd.CommandType = proto.MessageType_PING.Enum()
-	if _, err := c.Send(cmd); err != nil {
-		return false
+
+	c.Send <- cmd
+	resp := <-c.Recv
+	if resp != nil {
+		return "PONG" == resp.GetResponse()
 	}
 
-	resp := &proto.Response{}
-	if err := recv(c.conn, resp); err != nil {
-		return false
-	}
-
-	fmt.Println("PONG", resp)
-
-	return true
+	return false
 }
 
 func (c *DaemonClient) Exorcise() {
 	cmd := &proto.Command{}
 	cmd.CommandType = proto.MessageType_QUIT.Enum()
-	c.Send(cmd)
+	c.Send <- cmd
 }
 
 func (c *DaemonClient) Close() {
+	if c != nil {
+		c.quit <- true
+	}
 }
 
 /////////////////////////
@@ -150,24 +179,20 @@ type DaemonServer struct {
 	listener net.Listener
 }
 
-func (s *DaemonServer) daemonMain(repoPath string) {
-	// Actual daemon init here.
-}
-
-func Summon() (*DaemonServer, error) {
+func Summon(port int) (*DaemonServer, error) {
 	// Listen for incoming connections.
-	addr := "localhost" + ":" + "6666"
+	addr := fmt.Sprintf("localhost:%d", port)
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
+		log.Error("Error listening:", err.Error())
 		return nil, err
 	}
 
 	// Close the listener when the application closes.
-	fmt.Println("Listening on ", addr)
+	log.Info("Listening on", addr)
 
 	daemon := &DaemonServer{
-		done:     make(chan bool),
+		done:     make(chan bool, 1),
 		quit:     make(chan bool),
 		listener: l,
 	}
@@ -177,10 +202,22 @@ func Summon() (*DaemonServer, error) {
 		for {
 			select {
 			case <-daemon.quit:
-				break
+				// Break the Serve() loop
+				daemon.done <- true
+				return
 			default:
 				// Listen for an incoming connection.
+				deadline := time.Now().Add(500 * time.Millisecond)
+				err := l.(*net.TCPListener).SetDeadline(deadline)
+				if err != nil {
+					break
+				}
+
 				conn, err := l.Accept()
+				if err != nil && err.(*net.OpError).Timeout() {
+					continue
+				}
+
 				if err != nil {
 					fmt.Println("Error accepting: ", err.Error())
 					break
@@ -190,8 +227,6 @@ func Summon() (*DaemonServer, error) {
 				go daemon.handleRequest(conn)
 			}
 		}
-
-		daemon.done <- true
 	}()
 
 	return daemon, nil
@@ -217,6 +252,7 @@ func (d *DaemonServer) handleRequest(conn net.Conn) {
 
 func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
 	fmt.Println("MESSAGE RECEIVED:", cmd)
+	resp := &proto.Response{}
 
 	switch *(cmd.CommandType) {
 	case proto.MessageType_INIT:
@@ -227,12 +263,10 @@ func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
 		fmt.Println("PRE QUIT")
 		d.quit <- true
 		fmt.Println("POST QUIT")
-		resp := &proto.Response{}
 		resp.ResponseType = cmd.CommandType
 		resp.Response = protobuf.String("BYE")
 		send(conn, resp)
 	case proto.MessageType_PING:
-		resp := &proto.Response{}
 		resp.ResponseType = cmd.CommandType
 		resp.Response = protobuf.String("PONG")
 		send(conn, resp)
