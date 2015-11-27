@@ -69,6 +69,54 @@ func handleOpen(ctx climax.Context) int {
 	return 0
 }
 
+func handleDaemonPing() int {
+	repoPath := guessRepoFolder()
+	client, err := daemon.Reach(repoPath, 6666)
+	if err != nil {
+		log.Warning("Unable to dial to daemon: ", err)
+		return 1
+	}
+	defer client.Close()
+
+	for i := 0; ; i++ {
+		fmt.Printf("#%02d %v\n", i, client.Ping())
+	}
+
+	return 0
+}
+
+func handleDaemonQuit() int {
+	repoPath := guessRepoFolder()
+	client, err := daemon.Reach(repoPath, 6666)
+	if err != nil {
+		log.Warning("Unable to dial to daemon: ", err)
+		return 1
+	}
+	defer client.Close()
+
+	client.Exorcise()
+	return 0
+}
+
+func handleDaemon(ctx climax.Context) int {
+	if ctx.Is("ping") {
+		return handleDaemonPing()
+	} else if ctx.Is("quit") {
+		return handleDaemonQuit()
+	} else {
+		// Baal is a daemon.
+		baal, err := daemon.Summon(6666)
+		if err != nil {
+			log.Warning("Unable to start daemon: ", err)
+			return 1
+		}
+
+		baal.Serve()
+	}
+
+	return 0
+}
+
 func handleInit(ctx climax.Context) int {
 	if len(ctx.Args) < 1 {
 		log.Error("Need your Jabber ID and a password")
@@ -300,46 +348,13 @@ func RunCmdline() int {
 					Help:  `Ping the dameon to check if it's running.`,
 				},
 				{
-					Name:  "reach",
-					Short: "r",
-					Usage: `--reach`,
-					Help:  `Dial to a daemon, if unsucessful, start it.`,
-				},
-				{
 					Name:  "quit",
 					Short: "q",
 					Usage: `--quit`,
 					Help:  `Kill a running daemon.`,
 				},
 			},
-			Handle: func(ctx climax.Context) int {
-				client, err := daemon.Dial(6666)
-				defer client.Close()
-
-				if ctx.Is("ping") {
-					fmt.Println("PING")
-					if err != nil {
-						fmt.Println(err)
-						return 1
-					}
-
-					client.Ping()
-				} else if ctx.Is("reach") {
-					fmt.Println(daemon.Reach("", 6666))
-				} else if ctx.Is("quit") {
-					fmt.Println("QUIT")
-					client.Exorcise()
-				} else {
-					// Baal is a daemon.
-					baal, err := daemon.Summon(6666)
-					if err != nil {
-						fmt.Println("Unable to start daemon: ", err)
-					}
-
-					baal.Serve()
-				}
-				return 0
-			},
+			Handle: handleDaemon,
 		},
 		climax.Command{
 			Name:  "passwd",

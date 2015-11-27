@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -121,12 +122,14 @@ func (c *DaemonClient) handleMessages() {
 		case msg := <-c.Send:
 			if err := send(c.conn, msg); err != nil {
 				log.Warning("CLIENT SEND ", err)
+				c.Recv <- nil
 				continue
 			}
 
 			resp := &proto.Response{}
 			if err := recv(c.conn, resp); err != nil {
 				log.Warning("CLIENT RECV ", err)
+				c.Recv <- nil
 				continue
 			}
 
@@ -215,10 +218,10 @@ type DaemonServer struct {
 	// The repo we're working on
 	Repo *repo.FsRepository
 
-	// socket....
 	done chan bool
-	quit chan bool
+	quit chan os.Signal
 
+	// TCP Listener for incoming connections:
 	listener net.Listener
 }
 
@@ -236,12 +239,15 @@ func Summon(port int) (*DaemonServer, error) {
 
 	daemon := &DaemonServer{
 		done:     make(chan bool, 1),
-		quit:     make(chan bool),
+		quit:     make(chan os.Signal, 1),
 		listener: l,
 	}
 
 	// Daemon mainloop:
 	go func() {
+		// Forward signals to the quit channel:
+		signal.Notify(daemon.quit)
+
 		for {
 			select {
 			case <-daemon.quit:
@@ -275,27 +281,32 @@ func Summon(port int) (*DaemonServer, error) {
 	return daemon, nil
 }
 
+// Serve waits until the DaemonServer received a quit event.
 func (d *DaemonServer) Serve() {
 	<-d.done
 	d.listener.Close()
 }
 
-// Handles incoming requests.
+// Handles incoming requests:
 func (d *DaemonServer) handleRequest(conn net.Conn) {
 	defer conn.Close()
 
 	msg := &proto.Command{}
 	if err := recv(conn, msg); err != nil {
-		fmt.Println("daemon: ", err)
+		log.Warning("daemon recv: ", err)
 		return
 	}
 
 	d.handleCommand(msg, conn)
 }
 
+// Handles the actual incoming commands:
 func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
-	fmt.Println("MESSAGE RECEIVED:", cmd)
+	log.Info("Processing message: ", cmd)
+
+	// Prepare a response template
 	resp := &proto.Response{}
+	resp.ResponseType = cmd.CommandType
 
 	switch *(cmd.CommandType) {
 	case proto.MessageType_INIT:
@@ -303,17 +314,16 @@ func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
 	case proto.MessageType_ADD:
 	case proto.MessageType_CAT:
 	case proto.MessageType_QUIT:
-		fmt.Println("PRE QUIT")
-		d.quit <- true
-		fmt.Println("POST QUIT")
-		resp.ResponseType = cmd.CommandType
+		d.quit <- os.Interrupt
 		resp.Response = protobuf.String("BYE")
-		send(conn, resp)
 	case proto.MessageType_PING:
-		resp.ResponseType = cmd.CommandType
 		resp.Response = protobuf.String("PONG")
-		send(conn, resp)
 	default:
 		fmt.Println("Unknown message type.")
+		return
+	}
+
+	if err := send(conn, resp); err != nil {
+		log.Warning("Unable to send message back to client: ", err)
 	}
 }

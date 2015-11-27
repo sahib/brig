@@ -3,9 +3,11 @@ package repo
 import (
 	"code.google.com/p/go-uuid/uuid"
 	"fmt"
+	"github.com/disorganizer/brig/repo/config"
+	"github.com/disorganizer/brig/repo/global"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
-	"github.com/olebedev/config"
+	yamlConfig "github.com/olebedev/config"
 	"os"
 	"path"
 	"path/filepath"
@@ -37,7 +39,9 @@ type FsRepository struct {
 	// TODO: Just for prototype testing, should be deleted in final version
 	Password string
 
-	Config *config.Config
+	Config *yamlConfig.Config
+
+	globalRepo *global.GlobalRepository
 }
 
 // Interface methods
@@ -65,7 +69,6 @@ func (r *FsRepository) Unlock() {
 // NewFsRepository creates a new repository at filesystem level
 // and returns a Repository interface
 func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
-
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -79,12 +82,12 @@ func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
 		return nil, err
 	}
 
-	cfg := CreateDefaultConfig()
-
+	cfg := config.CreateDefaultConfig()
 	minilockID, err := GenerateMinilockID(jid, pass)
 	if err != nil {
 		return nil, err
 	}
+
 	configDefaults := map[string]interface{}{
 		"repository.jid":      jid,
 		"repository.password": pass,
@@ -99,7 +102,8 @@ func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
 		}
 	}
 
-	if _, err := SaveConfig(path.Join(absFolderPath, ".brig", "config"), cfg); err != nil {
+	configPath := path.Join(absFolderPath, ".brig", "config")
+	if _, err := config.SaveConfig(configPath, cfg); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +122,7 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		return nil, err
 	}
 
-	cfg, err := LoadConfig(path.Join(absFolderPath, ".brig", "config"))
+	cfg, err := config.LoadConfig(path.Join(absFolderPath, ".brig", "config"))
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +141,19 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		}
 	}
 
+	globalRepo, err := global.New()
+	if err != nil {
+		return nil, err
+	}
+
 	repo := FsRepository{
-		Jid:      configValues["repository.jid"],
-		Mid:      configValues["repository.mid"],
-		Password: configValues["repository.password"],
-		Folder:   absFolderPath,
-		UniqueID: configValues["repository.uuid"],
-		Config:   cfg,
+		Jid:        configValues["repository.jid"],
+		Mid:        configValues["repository.mid"],
+		Password:   configValues["repository.password"],
+		Folder:     absFolderPath,
+		UniqueID:   configValues["repository.uuid"],
+		Config:     cfg,
+		globalRepo: globalRepo,
 	}
 
 	return &repo, nil
@@ -154,15 +164,17 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	if err := os.Mkdir(path.Join(absFolderPath, ".brig"), 0755); err != nil {
+	brigPath := path.Join(absFolderPath, ".brig")
+	if err := os.Mkdir(brigPath, 0755); err != nil {
 		return err
 	}
 
-	if err := os.Mkdir(path.Join(absFolderPath, ".ipfs"), 0755); err != nil {
+	ipfsPath := path.Join(absFolderPath, "ipfs")
+	if err := os.Mkdir(ipfsPath, 0755); err != nil {
 		return err
 	}
 
-	return createIPFS(path.Join(absFolderPath, ".ipfs"))
+	return createIPFS(ipfsPath)
 }
 
 func createIPFS(ipfsRootPath string) error {

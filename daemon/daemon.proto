@@ -33,11 +33,11 @@ message Command {
     }
 
     required MessageType command_type = 1;
-    optional InitCmd init_command = 2;
-    optional AddCmd add_command = 3;
-    optional CatCmd cat_command = 4;
-    optional PingCmd ping_command = 5;
-    optional QuitCmd quit_command = 6;
+    optional InitCmd init_command = 3;
+    optional AddCmd add_command = 4;
+    optional CatCmd cat_command = 5;
+    optional PingCmd ping_command = 6;
+    optional QuitCmd quit_command = 7;
 }
 
 message Response {
