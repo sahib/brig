@@ -117,7 +117,6 @@ func handleDaemon(ctx climax.Context) int {
 	} else if ctx.Is("quit") {
 		return handleDaemonQuit()
 	} else {
-		// Baal is a daemon.
 		baal, err := daemon.Summon(6666)
 		if err != nil {
 			log.Warning("Unable to start daemon: ", err)
