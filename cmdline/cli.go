@@ -117,7 +117,7 @@ func handleDaemon(ctx climax.Context) int {
 	} else if ctx.Is("quit") {
 		return handleDaemonQuit()
 	} else {
-		baal, err := daemon.Summon(6666)
+		baal, err := daemon.Summon(guessRepoFolder(), 6666)
 		if err != nil {
 			log.Warning("Unable to start daemon: ", err)
 			return 1

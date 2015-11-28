@@ -248,7 +248,21 @@ type DaemonServer struct {
 }
 
 // Summon creates a new up and running DaemonServer instance
-func Summon(port int) (*DaemonServer, error) {
+func Summon(repoFolder string, port int) (*DaemonServer, error) {
+	// Load the on-disk repository:
+	repository, err := repo.LoadFsRepository(repoFolder)
+	log.Infof("Loading repo: %s", repoFolder)
+	if err != nil {
+		log.Error("Could not load repository: ", err)
+		return nil, err
+	}
+
+	log.Info("Starting IPFS node.")
+	if err := startIpfsDaemon(); err != nil {
+		log.Error("Could not start ipfs: ", err)
+		return nil, err
+	}
+
 	// Listen for incoming connections.
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
@@ -264,6 +278,7 @@ func Summon(port int) (*DaemonServer, error) {
 		done:     make(chan bool, 1),
 		signals:  make(chan os.Signal, 1),
 		listener: listener,
+		Repo:     repository,
 	}
 
 	// Daemon mainloop:
@@ -333,8 +348,6 @@ func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
 	resp.ResponseType = cmd.CommandType
 
 	switch *(cmd.CommandType) {
-	case proto.MessageType_INIT:
-		fmt.Println("Init")
 	case proto.MessageType_ADD:
 	case proto.MessageType_CAT:
 	case proto.MessageType_QUIT:

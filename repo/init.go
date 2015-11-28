@@ -141,19 +141,20 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		}
 	}
 
-	globalRepo, err := global.New()
-	if err != nil {
-		return nil, err
-	}
+	// TODO: Use global repo
+	// globalRepo, err := global.New()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	repo := FsRepository{
-		Jid:        configValues["repository.jid"],
-		Mid:        configValues["repository.mid"],
-		Password:   configValues["repository.password"],
-		Folder:     absFolderPath,
-		UniqueID:   configValues["repository.uuid"],
-		Config:     cfg,
-		globalRepo: globalRepo,
+		Jid:      configValues["repository.jid"],
+		Mid:      configValues["repository.mid"],
+		Password: configValues["repository.password"],
+		Folder:   absFolderPath,
+		UniqueID: configValues["repository.uuid"],
+		Config:   cfg,
+		//globalRepo: globalRepo,
 	}
 
 	return &repo, nil
@@ -169,7 +170,8 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	ipfsPath := path.Join(absFolderPath, "ipfs")
+	ipfsPath := path.Join(brigPath, "ipfs")
+	fmt.Println("IPFS PATH", ipfsPath, brigPath)
 	if err := os.Mkdir(ipfsPath, 0755); err != nil {
 		return err
 	}
