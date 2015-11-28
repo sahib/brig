@@ -50,7 +50,7 @@ func Init() (*GlobalRepository, error) {
 		Folder: folder,
 	}
 
-	if err := os.Mkdir(folder, 0755); err != nil {
+	if err := os.Mkdir(folder, 0755); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 

@@ -147,6 +147,13 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		return nil, err
 	}
 
+	globalRepo.AddRepo(global.RepoListEntry{
+		UniqueID:   configValues["repository.uuid"],
+		RepoPath:   folder,
+		DaemonPort: 6666,
+		IpfsPort:   4001,
+	})
+
 	repo := FsRepository{
 		Jid:        configValues["repository.jid"],
 		Mid:        configValues["repository.mid"],
