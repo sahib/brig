@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/colors"
 	colorlog "github.com/disorganizer/brig/util/log"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
@@ -70,8 +72,7 @@ func handleOpen(ctx climax.Context) int {
 }
 
 func handleDaemonPing() int {
-	repoPath := guessRepoFolder()
-	client, err := daemon.Reach(repoPath, 6666)
+	client, err := daemon.Dial(6666)
 	if err != nil {
 		log.Warning("Unable to dial to daemon: ", err)
 		return 1
@@ -79,15 +80,27 @@ func handleDaemonPing() int {
 	defer client.Close()
 
 	for i := 0; ; i++ {
-		fmt.Printf("#%02d %v\n", i, client.Ping())
+		before := time.Now()
+		symbol := colors.Colorize("✔", colors.Green)
+		if !client.Ping() {
+			symbol = colors.Colorize("✘", colors.Red)
+		}
+
+		delay := time.Since(before)
+
+		fmt.Printf("#%02d %s ➔ %s: %s (%v)\n",
+			i+1,
+			client.LocalAddr().String(),
+			client.RemoteAddr().String(),
+			symbol, delay)
+		time.Sleep(1 * time.Second)
 	}
 
 	return 0
 }
 
 func handleDaemonQuit() int {
-	repoPath := guessRepoFolder()
-	client, err := daemon.Reach(repoPath, 6666)
+	client, err := daemon.Dial(6666)
 	if err != nil {
 		log.Warning("Unable to dial to daemon: ", err)
 		return 1
@@ -119,7 +132,7 @@ func handleDaemon(ctx climax.Context) int {
 
 func handleInit(ctx climax.Context) int {
 	if len(ctx.Args) < 1 {
-		log.Error("Need your Jabber ID and a password")
+		log.Error("Need your Jabber ID.")
 		return 1
 	}
 

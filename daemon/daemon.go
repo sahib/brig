@@ -140,7 +140,6 @@ func (c *DaemonClient) handleMessages() {
 
 // Reach tries to Dial() the daemon, if not there it Launch()'es one.
 func Reach(repoPath string, port int) (*DaemonClient, error) {
-
 	if daemon, err := Dial(port); err != nil {
 		exePath, err := godaemon.GetExecutablePath()
 		if err != nil {
@@ -210,6 +209,14 @@ func (c *DaemonClient) Close() {
 	}
 }
 
+func (c *DaemonClient) LocalAddr() net.Addr {
+	return c.conn.LocalAddr()
+}
+
+func (c *DaemonClient) RemoteAddr() net.Addr {
+	return c.conn.RemoteAddr()
+}
+
 /////////////////////////
 // BACKEND DAEMON PART //
 /////////////////////////
@@ -235,7 +242,7 @@ func Summon(port int) (*DaemonServer, error) {
 	}
 
 	// Close the listener when the application closes.
-	log.Info("Listening on", addr)
+	log.Info("Listening on ", addr)
 
 	daemon := &DaemonServer{
 		done:     make(chan bool, 1),
@@ -246,7 +253,7 @@ func Summon(port int) (*DaemonServer, error) {
 	// Daemon mainloop:
 	go func() {
 		// Forward signals to the quit channel:
-		signal.Notify(daemon.quit)
+		signal.Notify(daemon.quit, os.Interrupt, os.Kill)
 
 		for {
 			select {
@@ -268,7 +275,7 @@ func Summon(port int) (*DaemonServer, error) {
 				}
 
 				if err != nil {
-					fmt.Println("Error accepting: ", err.Error())
+					log.Errorf("Error accepting: %v", err.Error())
 					break
 				}
 
@@ -290,14 +297,15 @@ func (d *DaemonServer) Serve() {
 // Handles incoming requests:
 func (d *DaemonServer) handleRequest(conn net.Conn) {
 	defer conn.Close()
+	for {
+		msg := &proto.Command{}
+		if err := recv(conn, msg); err != nil {
+			log.Warning("daemon recv: ", err)
+			return
+		}
 
-	msg := &proto.Command{}
-	if err := recv(conn, msg); err != nil {
-		log.Warning("daemon recv: ", err)
-		return
+		d.handleCommand(msg, conn)
 	}
-
-	d.handleCommand(msg, conn)
 }
 
 // Handles the actual incoming commands:
