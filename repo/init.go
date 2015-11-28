@@ -141,20 +141,20 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		}
 	}
 
-	// TODO: Use global repo
-	// globalRepo, err := global.New()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	// Init the global repo (similar to .gitconfig)
+	globalRepo, err := global.New()
+	if err != nil {
+		return nil, err
+	}
 
 	repo := FsRepository{
-		Jid:      configValues["repository.jid"],
-		Mid:      configValues["repository.mid"],
-		Password: configValues["repository.password"],
-		Folder:   absFolderPath,
-		UniqueID: configValues["repository.uuid"],
-		Config:   cfg,
-		//globalRepo: globalRepo,
+		Jid:        configValues["repository.jid"],
+		Mid:        configValues["repository.mid"],
+		Password:   configValues["repository.password"],
+		Folder:     absFolderPath,
+		UniqueID:   configValues["repository.uuid"],
+		Config:     cfg,
+		globalRepo: globalRepo,
 	}
 
 	return &repo, nil
@@ -171,7 +171,6 @@ func createRepositoryTree(absFolderPath string) error {
 	}
 
 	ipfsPath := path.Join(brigPath, "ipfs")
-	fmt.Println("IPFS PATH", ipfsPath, brigPath)
 	if err := os.Mkdir(ipfsPath, 0755); err != nil {
 		return err
 	}
@@ -180,6 +179,7 @@ func createRepositoryTree(absFolderPath string) error {
 }
 
 func createIPFS(ipfsRootPath string) error {
+	// TODO: write to log, not stdout
 	cfg, err := ipfsconfig.Init(os.Stdout, 2048)
 	if err != nil {
 		return err

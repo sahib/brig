@@ -50,14 +50,14 @@ func Init() (*GlobalRepository, error) {
 		Folder: folder,
 	}
 
+	if err := os.Mkdir(folder, 0755); err != nil {
+		return nil, err
+	}
+
 	if err := repo.acquireLock(); err != nil {
 		return nil, err
 	}
 	defer repo.releaseLock()
-
-	if err := os.Mkdir(folder, 0755); err != nil {
-		return nil, err
-	}
 
 	cfg := &yamlConfig.Config{
 		Root: map[string]interface{}{

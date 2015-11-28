@@ -156,11 +156,12 @@ func handleInit(ctx climax.Context) int {
 		folder, _ = ctx.Get("folder")
 	}
 
-	pwd, err := repo.PromptNewPassword(40.0)
-	if err != nil {
-		log.Error(err)
-		return 4
-	}
+	pwd := ""
+	// pwd, err := repo.PromptNewPassword(40.0)
+	// if err != nil {
+	// 	log.Error(err)
+	// 	return 4
+	// }
 
 	if _, err := repo.NewFsRepository(string(jid), string(pwd), folder); err != nil {
 		log.Error(err)
