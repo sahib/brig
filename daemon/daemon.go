@@ -14,6 +14,7 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/repo"
 	protobuf "github.com/gogo/protobuf/proto"
+	"golang.org/x/net/context"
 )
 
 ///////////////////////
@@ -240,11 +241,12 @@ type DaemonServer struct {
 	// The repo we're working on
 	Repo *repo.FsRepository
 
-	done    chan bool
 	signals chan os.Signal
 
 	// TCP Listener for incoming connections:
 	listener net.Listener
+
+	ctx context.Context
 }
 
 // Summon creates a new up and running DaemonServer instance
@@ -257,11 +259,11 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 		return nil, err
 	}
 
-	log.Info("Starting IPFS node.")
-	if err := startIpfsDaemon(); err != nil {
-		log.Error("Could not start ipfs: ", err)
-		return nil, err
-	}
+	// log.Info("Starting IPFS node.")
+	// if err := startIpfsDaemon(); err != nil {
+	// 	log.Error("Could not start ipfs: ", err)
+	// 	return nil, err
+	// }
 
 	// Listen for incoming connections.
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -275,14 +277,18 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 	log.Info("Listening on ", addr)
 
 	daemon := &DaemonServer{
-		done:     make(chan bool, 1),
 		signals:  make(chan os.Signal, 1),
 		listener: listener,
 		Repo:     repository,
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	daemon.ctx = ctx
+
 	// Daemon mainloop:
 	go func() {
+		defer cancel()
+
 		// Forward signals to the quit channel:
 		signal.Notify(daemon.signals, os.Interrupt, os.Kill)
 
@@ -290,7 +296,7 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 			select {
 			case <-daemon.signals:
 				// Break the Serve() loop
-				daemon.done <- true
+				cancel()
 				return
 			default:
 				// Listen for an incoming connection.
@@ -311,7 +317,7 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 				}
 
 				// Handle connections in a new goroutine.
-				go daemon.handleRequest(conn)
+				go daemon.handleRequest(ctx, conn)
 			}
 		}
 	}()
@@ -321,12 +327,12 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 
 // Serve waits until the DaemonServer received a quit event.
 func (d *DaemonServer) Serve() {
-	<-d.done
+	<-d.ctx.Done()
 	d.listener.Close()
 }
 
 // Handles incoming requests:
-func (d *DaemonServer) handleRequest(conn net.Conn) {
+func (d *DaemonServer) handleRequest(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	for {
 		msg := &proto.Command{}
@@ -335,12 +341,16 @@ func (d *DaemonServer) handleRequest(conn net.Conn) {
 			return
 		}
 
-		d.handleCommand(msg, conn)
+		d.handleCommand(ctx, msg, conn)
 	}
 }
 
 // Handles the actual incoming commands:
-func (d *DaemonServer) handleCommand(cmd *proto.Command, conn net.Conn) {
+func (d *DaemonServer) handleCommand(ctx context.Context, cmd *proto.Command, conn net.Conn) {
+	// This might be used to enforce timeouts for operations:
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	log.Info("Processing message: ", cmd)
 
 	// Prepare a response template
