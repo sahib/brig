@@ -1,4 +1,4 @@
-package bit
+package format
 
 import (
 	"bytes"

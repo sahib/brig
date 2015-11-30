@@ -1,10 +1,8 @@
 package bit
 
 import (
-	"time"
-
-	mapset "github.com/deckarep/golang-set"
 	multihash "github.com/jbenet/go-multihash"
+	"time"
 )
 
 const (
@@ -22,12 +20,6 @@ const (
 
 type ChangeType byte
 
-// Change describes the details of modification of a File.
-type Change struct {
-	Subject File
-	Type    ChangeType
-}
-
 // Commit groups a changese
 type Commit struct {
 	// Optional commit message
@@ -37,7 +29,7 @@ type Commit struct {
 	ModTime time.Time
 
 	// Set of files that were changed.
-	Changes mapset.Set
+	Changes map[File]ChangeType
 
 	// Parent commit (only nil for initial commit)
 	Parent *Commit
@@ -46,4 +38,25 @@ type Commit struct {
 func (c *Commit) Hash() multihash.Multihash {
 	// TODO
 	return nil
+}
+
+func (c *Commit) Contains(file File) ChangeType {
+	if c == nil {
+		return ChangeInvalid
+	}
+
+	if changeType, ok := c.Changes[file]; ok {
+		return changeType
+	}
+
+	return c.Parent.Contains(file)
+}
+
+func NewCommit(parent *Commit, msg string, diffMap map[File]ChangeType) *Commit {
+	return &Commit{
+		Message: msg,
+		ModTime: time.Now(),
+		Parent:  parent,
+		Changes: diffMap,
+	}
 }

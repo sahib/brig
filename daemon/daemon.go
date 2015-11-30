@@ -13,6 +13,7 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
@@ -22,7 +23,7 @@ import (
 ///////////////////////
 
 // send transports a msg over conn with a size header.
-func send(conn net.Conn, msg protobuf.Message) error {
+func send(conn io.Writer, msg protobuf.Message) error {
 	data, err := protobuf.Marshal(msg)
 	if err != nil {
 		return nil
@@ -53,7 +54,7 @@ func send(conn net.Conn, msg protobuf.Message) error {
 }
 
 // recv reads a size-prefixed protobuf buffer
-func recv(conn net.Conn, msg protobuf.Message) error {
+func recv(conn io.Reader, msg protobuf.Message) error {
 	sizeBuf := make([]byte, binary.MaxVarintLen64)
 	n, err := conn.Read(sizeBuf)
 	if err != nil {
@@ -113,28 +114,35 @@ func Dial(port int) (*DaemonClient, error) {
 	}
 
 	client.conn = conn
+	tnl, err := tunnel.NewEllipticTunnel(conn)
+	if err != nil {
+		log.Error("Tunneling failed: ", err)
+		return nil, err
+	}
 
-	go client.handleMessages()
+	go client.handleMessages(tnl)
+
+	client.Ping()
 	return client, nil
 }
 
 // handleMessages takes all messages from the Send channel
 // and actually sends them over the network. It then waits
 // for the response and puts it in the Recv channel.
-func (c *DaemonClient) handleMessages() {
+func (c *DaemonClient) handleMessages(tnl io.ReadWriter) {
 	for {
 		select {
 		case <-c.quit:
 			return
 		case msg := <-c.Send:
-			if err := send(c.conn, msg); err != nil {
+			if err := send(tnl, msg); err != nil {
 				log.Warning("client-send: ", err)
 				c.Recv <- nil
 				continue
 			}
 
 			resp := &proto.Response{}
-			if err := recv(c.conn, resp); err != nil {
+			if err := recv(tnl, resp); err != nil {
 				log.Warning("client-recv: ", err)
 				c.Recv <- nil
 				continue
@@ -212,12 +220,14 @@ func (c *DaemonClient) Exorcise() {
 	cmd := &proto.Command{}
 	cmd.CommandType = proto.MessageType_QUIT.Enum()
 	c.Send <- cmd
+	<-c.Recv
 }
 
 // Close shuts down the daemon client
 func (c *DaemonClient) Close() {
 	if c != nil {
 		c.quit <- true
+		c.conn.Close()
 	}
 }
 
@@ -334,19 +344,25 @@ func (d *DaemonServer) Serve() {
 // Handles incoming requests:
 func (d *DaemonServer) handleRequest(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
+	tnl, err := tunnel.NewEllipticTunnel(conn)
+	if err != nil {
+		log.Error("Tunnel failed", err)
+		return
+	}
+
 	for {
 		msg := &proto.Command{}
-		if err := recv(conn, msg); err != nil {
-			log.Warning("daemon recv: ", err)
+		if err := recv(tnl, msg); err != nil {
+			log.Warning("daemon-recv: ", err)
 			return
 		}
 
-		d.handleCommand(ctx, msg, conn)
+		d.handleCommand(ctx, msg, tnl)
 	}
 }
 
 // Handles the actual incoming commands:
-func (d *DaemonServer) handleCommand(ctx context.Context, cmd *proto.Command, conn net.Conn) {
+func (d *DaemonServer) handleCommand(ctx context.Context, cmd *proto.Command, conn io.ReadWriter) {
 	// This might be used to enforce timeouts for operations:
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

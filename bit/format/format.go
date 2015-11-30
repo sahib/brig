@@ -1,4 +1,4 @@
-// Package bit implements the encryption and file format layer of brig.
+// Package format implements the encryption and file format layer of brig.
 // The file format used looks something like this:
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
@@ -20,7 +20,7 @@
 // EncryptedReader/EncryptedWriter are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
-package bit
+package format
 
 import (
 	"bytes"
