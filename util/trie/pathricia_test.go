@@ -1,7 +1,9 @@
 package trie
 
 import (
+	"encoding/gob"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -40,4 +42,17 @@ func TestPathriciaWindows(t *testing.T) {
 	trie.Walk(false, func(child *Node) {
 		fmt.Println("  :", child)
 	})
+}
+
+func TestJson(t *testing.T) {
+	trie := NewTrie()
+	trie.Insert("/home/qitta")
+	trie.Insert("/home/sahib")
+
+	enc := gob.NewEncoder(os.Stdout)
+
+	err := enc.Encode(trie)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
 }

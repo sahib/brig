@@ -12,10 +12,10 @@ import (
 // valid trie. Node is suitable for embedding it into other structs.
 type Node struct {
 	// Pointer to parent node or nil
-	Parent *Node
+	Parent *Node `json:"parent,omitempty"`
 
 	// Make Lock() and Unlock() possible
-	RWLock *sync.RWMutex
+	RWLock *sync.RWMutex `json:"transient"`
 
 	// Basename to child-nodes
 	Children map[string]*Node

@@ -77,6 +77,7 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return err
 	}
 
+	// Aim for AES 256
 	if len(secret) < 32 {
 		return fmt.Errorf("Secret too short")
 	}
