@@ -31,16 +31,10 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 	return line, nil
 }
 
-var Q *EffectQueue
-
 func createStrengthPrompt(password []rune, prefix string) string {
 	symbol, color := "", colors.Red
 	strength := zxcvbn.PasswordStrength(string(password), nil)
 
-	if Q == nil {
-		q, _ := CreateEffectQueue()
-		Q = q
-	}
 	switch {
 	case strength.Score <= 1:
 		symbol = "✗"
@@ -55,17 +49,6 @@ func createStrengthPrompt(password []rune, prefix string) string {
 		symbol = "✔"
 		color = colors.Green
 	}
-
-	m := map[int]*SimpleColor{
-		colors.Cyan:          &SimpleColor{0, 255, 255},
-		colors.Green:         &SimpleColor{0, 255, 0},
-		colors.Magenta:       &SimpleColor{255, 0, 255},
-		colors.Red:           &SimpleColor{255, 0, 0},
-		colors.Yellow:        &SimpleColor{255, 255, 0},
-		colors.BackgroundRed: &SimpleColor{255, 0, 0},
-	}
-
-	Q.Push(m[color])
 
 	prompt := colors.Colorize(symbol, color)
 	if strength.Entropy > 0 {

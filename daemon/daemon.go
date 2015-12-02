@@ -6,13 +6,16 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
@@ -251,6 +254,8 @@ type DaemonServer struct {
 	// The repo we're working on
 	Repo *repo.FsRepository
 
+	ipfsDaemon *exec.Cmd
+
 	signals chan os.Signal
 
 	// TCP Listener for incoming connections:
@@ -269,11 +274,21 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 		return nil, err
 	}
 
+	// TODO
 	// log.Info("Starting IPFS node.")
 	// if err := startIpfsDaemon(); err != nil {
 	// 	log.Error("Could not start ipfs: ", err)
 	// 	return nil, err
 	// }
+
+	proc, err := ipfsutil.StartDaemon(&ipfsutil.Context{
+		Path: filepath.Join(repoFolder, ".brig", "ipfs"),
+	})
+
+	if err != nil {
+		log.Error("Unable to start ipfs daemon: ", err)
+		return nil, err
+	}
 
 	// Listen for incoming connections.
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -287,9 +302,10 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 	log.Info("Listening on ", addr)
 
 	daemon := &DaemonServer{
-		signals:  make(chan os.Signal, 1),
-		listener: listener,
-		Repo:     repository,
+		signals:    make(chan os.Signal, 1),
+		listener:   listener,
+		Repo:       repository,
+		ipfsDaemon: proc,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -339,6 +355,9 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 func (d *DaemonServer) Serve() {
 	<-d.ctx.Done()
 	d.listener.Close()
+	if err := d.ipfsDaemon.Process.Kill(); err != nil {
+		log.Errorf("Unable to kill off ipfs daemon: %v", err)
+	}
 }
 
 // Handles incoming requests:

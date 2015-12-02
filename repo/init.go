@@ -1,25 +1,20 @@
 package repo
 
 import (
-	"code.google.com/p/go-uuid/uuid"
+	"crypto/rand"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/repo/global"
+	"github.com/disorganizer/brig/store"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	yamlConfig "github.com/olebedev/config"
-	"os"
-	"path"
-	"path/filepath"
 )
-
-// Repository interface for brig repository types
-type Repository interface {
-	Open()
-	Close()
-	Lock()
-	Unlock()
-}
 
 // FsRepository represents data a brig repository consists of
 type FsRepository struct {
@@ -31,7 +26,8 @@ type FsRepository struct {
 	Mid string
 
 	// Folder of repository
-	Folder string
+	Folder         string
+	InternalFolder string
 
 	// UUID which represents a unique repository
 	UniqueID string
@@ -42,28 +38,22 @@ type FsRepository struct {
 	Config *yamlConfig.Config
 
 	globalRepo *global.GlobalRepository
+
+	Store *store.Store
 }
 
 // Interface methods
 
 // Open a encrypted repository
-func (r *FsRepository) Open() {
+func (r *FsRepository) Lock() error {
 	fmt.Println("Opening repository.")
+	return nil
 }
 
 // Close a open repository
-func (r *FsRepository) Close() {
+func (r *FsRepository) Unlock() error {
 	fmt.Println("Closing repository.")
-}
-
-// Lock a repository to be read only
-func (r *FsRepository) Lock() {
-	fmt.Println("Locking repository.")
-}
-
-// Unlock a repository to be writeable
-func (r *FsRepository) Unlock() {
-	fmt.Println("Unlocking repository.")
+	return nil
 }
 
 // NewFsRepository creates a new repository at filesystem level
@@ -93,7 +83,7 @@ func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
 		"repository.password": pass,
 		"repository.uuid":     uuid.NewRandom().String(),
 		"repository.mid":      minilockID,
-		"ipfs.path":           path.Join(absFolderPath, ".brig", "ipfs"),
+		"ipfs.path":           filepath.Join(absFolderPath, ".brig", "ipfs"),
 	}
 
 	for key, value := range configDefaults {
@@ -102,7 +92,7 @@ func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
 		}
 	}
 
-	configPath := path.Join(absFolderPath, ".brig", "config")
+	configPath := filepath.Join(absFolderPath, ".brig", "config")
 	if _, err := config.SaveConfig(configPath, cfg); err != nil {
 		return nil, err
 	}
@@ -122,7 +112,8 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		return nil, err
 	}
 
-	cfg, err := config.LoadConfig(path.Join(absFolderPath, ".brig", "config"))
+	brigPath := filepath.Join(absFolderPath, ".brig")
+	cfg, err := config.LoadConfig(filepath.Join(brigPath, "config"))
 	if err != nil {
 		return nil, err
 	}
@@ -154,14 +145,21 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		IpfsPort:   4001,
 	})
 
+	store, err := store.Open(brigPath)
+	if err != nil {
+		return nil, err
+	}
+
 	repo := FsRepository{
-		Jid:        configValues["repository.jid"],
-		Mid:        configValues["repository.mid"],
-		Password:   configValues["repository.password"],
-		Folder:     absFolderPath,
-		UniqueID:   configValues["repository.uuid"],
-		Config:     cfg,
-		globalRepo: globalRepo,
+		Jid:            configValues["repository.jid"],
+		Mid:            configValues["repository.mid"],
+		Password:       configValues["repository.password"],
+		Folder:         absFolderPath,
+		InternalFolder: brigPath,
+		UniqueID:       configValues["repository.uuid"],
+		Config:         cfg,
+		globalRepo:     globalRepo,
+		Store:          store,
 	}
 
 	return &repo, nil
@@ -172,17 +170,47 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	brigPath := path.Join(absFolderPath, ".brig")
+	brigPath := filepath.Join(absFolderPath, ".brig")
 	if err := os.Mkdir(brigPath, 0755); err != nil {
 		return err
 	}
 
-	ipfsPath := path.Join(brigPath, "ipfs")
+	ipfsPath := filepath.Join(brigPath, "ipfs")
 	if err := os.Mkdir(ipfsPath, 0755); err != nil {
 		return err
 	}
 
+	// TODO: touch() util
+	boltDbPath := filepath.Join(brigPath, "index.bolt")
+	if fd, err := os.Create(boltDbPath); err != nil {
+		return err
+	} else {
+		fd.Write([]byte(""))
+		fd.Close()
+	}
+
+	// Make the key larger than needed:
+	if err := createMasterKey(brigPath, 1024); err != nil {
+		return err
+	}
+
 	return createIPFS(ipfsPath)
+}
+
+func createMasterKey(brigPath string, keySize int) error {
+	keyPath := filepath.Join(brigPath, "master.key")
+	fd, err := os.OpenFile(keyPath, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+
+	if _, err := io.CopyN(fd, rand.Reader, int64(keySize/8)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createIPFS(ipfsRootPath string) error {

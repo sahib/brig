@@ -59,15 +59,36 @@ func handleVersion(ctx climax.Context) int {
 }
 
 func handleOpen(ctx climax.Context) int {
-	repo.PromptPasswordMaxTries(4, func(pwd string) bool {
-		return pwd == "bob"
+	pwd, err := repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+		return pwd == ""
 	})
 
-	repository, err := repo.LoadFsRepository(guessRepoFolder())
 	if err != nil {
-		log.Error("Could not create repository", err)
+		log.Errorf("Open failed: %v", err)
+		return 1
+	}
+
+	repository, err := repo.Open(guessRepoFolder(), pwd)
+	if err != nil {
+		log.Error("Could not open repository: ", err)
+		return 2
 	}
 	fmt.Println(repository)
+	return 0
+}
+
+func handleClose(ctx climax.Context) int {
+	repository, err := repo.LoadFsRepository(guessRepoFolder())
+	if err != nil {
+		log.Errorf("Could not open repo for closing: %v", err)
+		return 1
+	}
+
+	if err := repository.Close(); err != nil {
+		log.Errorf("Could not close repo: %v", err)
+		return 2
+	}
+
 	return 0
 }
 
@@ -156,12 +177,11 @@ func handleInit(ctx climax.Context) int {
 		folder, _ = ctx.Get("folder")
 	}
 
-	pwd := ""
-	// pwd, err := repo.PromptNewPassword(40.0)
-	// if err != nil {
-	// 	log.Error(err)
-	// 	return 4
-	// }
+	pwd, err := repo.PromptNewPassword(40.0)
+	if err != nil {
+		log.Error(err)
+		return 4
+	}
 
 	if _, err := repo.NewFsRepository(string(jid), string(pwd), folder); err != nil {
 		log.Error(err)
@@ -247,17 +267,16 @@ func RunCmdline() int {
 			},
 		},
 		climax.Command{
-			Name:  "open",
-			Group: repoGroup,
-			Brief: "Open an encrypted port. Asks for passphrase.",
-			Handle: func(ctx climax.Context) int {
-				return handleOpen(ctx)
-			},
+			Name:   "open",
+			Group:  repoGroup,
+			Brief:  "Open an encrypted port. Asks for passphrase.",
+			Handle: handleOpen,
 		},
 		climax.Command{
-			Name:  "close",
-			Group: repoGroup,
-			Brief: "Encrypt all metadata in the port and go offline.",
+			Name:   "close",
+			Group:  repoGroup,
+			Brief:  "Encrypt all metadata in the port and go offline.",
+			Handle: handleClose,
 		},
 		climax.Command{
 			Name:  "sync",

@@ -1,12 +1,83 @@
 package repo
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/cathalgarvey/go-minilock"
 )
 
+const (
+	EncFileSuffix = ".minilock"
+)
+
+func LockFile(jid, pass, path string) error {
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	dir, base := filepath.Split(path)
+	encData, err := minilock.EncryptFileContents(base, data, keys, keys)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filepath.Join(dir, base+EncFileSuffix), encData, 0666)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UnlockFile(jid, pass, path string) error {
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	encPath := path + EncFileSuffix
+	data, err := ioutil.ReadFile(encPath)
+	if err != nil {
+		return err
+	}
+
+	_, decName, decData, err := minilock.DecryptFileContents(data, keys)
+	if err != nil {
+		return err
+	}
+
+	decPath := filepath.Join(filepath.Dir(encPath), decName)
+	err = ioutil.WriteFile(decPath, decData, 0666)
+	if err != nil {
+		return err
+	}
+
+	if err := os.Remove(encPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // EncryptMinilockMsg encrypts a given plaintext for multiple receivers.
 func EncryptMinilockMsg(jid, pass, plaintext string, mid ...string) (string, error) {
-	ciphertext, err := minilock.EncryptFileContentsWithStrings("Minilock Filename.", []byte(plaintext), jid, pass, false, mid...)
+	ciphertext, err := minilock.EncryptFileContentsWithStrings(
+		"Minilock Filename.",
+		[]byte(plaintext),
+		jid, pass, false, mid...,
+	)
 	if err != nil {
 		return "", nil
 	}

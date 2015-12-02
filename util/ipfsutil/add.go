@@ -1,4 +1,4 @@
-package ipfs
+package ipfsutil
 
 import (
 	"bytes"
@@ -14,13 +14,13 @@ type Context struct {
 	Path string
 }
 
-func ipfsCommand(ctx Context, args ...string) *exec.Cmd {
+func ipfsCommand(ctx *Context, args ...string) *exec.Cmd {
 	cmd := exec.Command("ipfs", args...)
 	cmd.Env = []string{"IPFS_PATH=" + ctx.Path}
 	return cmd
 }
 
-func Add(ctx Context, r io.Reader) ([]byte, error) {
+func Add(ctx *Context, r io.Reader) ([]byte, error) {
 	adder := ipfsCommand(ctx, "add", "-q")
 	stdin, err := adder.StdinPipe()
 	if err != nil {
@@ -52,7 +52,7 @@ func Add(ctx Context, r io.Reader) ([]byte, error) {
 	}
 }
 
-func Cat(ctx Context, hash []byte) (io.Reader, error) {
+func Cat(ctx *Context, hash []byte) (io.Reader, error) {
 	catter := ipfsCommand(ctx, "cat", string(hash))
 	stdout, err := catter.StdoutPipe()
 	if err != nil {
