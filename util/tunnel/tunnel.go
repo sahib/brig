@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/disorganizer/brig/util/security"
 	"github.com/tang0th/go-ecdh"
 )
 
@@ -77,24 +78,21 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return err
 	}
 
-	// Aim for AES 256
-	if len(secret) < 32 {
-		return fmt.Errorf("Secret too short")
-	}
+	// Transform the secret to a usable 32 byte key:
+	key := security.Scrypt(secret, secret[:16], 32)
+	inv := security.Scrypt(secret, secret[16:], aes.BlockSize)
 
-	blockCipher, err := aes.NewCipher(secret[:32])
+	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Is it okay to use the secret as IV?
-	iv := secret[:aes.BlockSize]
 	tnl.streamW = &cipher.StreamWriter{
-		S: cipher.NewCFBEncrypter(blockCipher, iv),
+		S: cipher.NewCFBEncrypter(blockCipher, inv),
 		W: tnl.ReadWriter,
 	}
 	tnl.streamR = &cipher.StreamReader{
-		S: cipher.NewCFBDecrypter(blockCipher, iv),
+		S: cipher.NewCFBDecrypter(blockCipher, inv),
 		R: tnl.ReadWriter,
 	}
 	return nil

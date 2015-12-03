@@ -13,7 +13,7 @@ var filenames = []string{
 	"master.key",
 }
 
-func Open(folder, pwd string) (*FsRepository, error) {
+func Open(folder, pwd string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
@@ -35,7 +35,7 @@ func Open(folder, pwd string) (*FsRepository, error) {
 	return LoadFsRepository(absFolderPath)
 }
 
-func (r *FsRepository) Close() error {
+func (r *Repository) Close() error {
 	for _, name := range filenames {
 		absName := filepath.Join(r.InternalFolder, name)
 

@@ -4,6 +4,7 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -97,4 +98,28 @@ func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	buffer.WriteByte('\n')
 	return buffer.Bytes(), nil
+}
+
+var LogLevelToFunc = map[logrus.Level]func(args ...interface{}){
+	logrus.DebugLevel: logrus.Debug,
+	logrus.InfoLevel:  logrus.Info,
+	logrus.WarnLevel:  logrus.Warn,
+	logrus.ErrorLevel: logrus.Error,
+	logrus.FatalLevel: logrus.Fatal,
+}
+
+type LogWriter struct {
+	Level logrus.Level
+}
+
+func (l *LogWriter) Write(buf []byte) (int, error) {
+	fn, ok := LogLevelToFunc[l.Level]
+	if !ok {
+		logrus.Fatal("LogWriter: Bad loglevel passed.")
+	} else {
+		msg := string(buf)
+		fn(strings.Trim(msg, "\n\r "))
+	}
+
+	return len(buf), nil
 }

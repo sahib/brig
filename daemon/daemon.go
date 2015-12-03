@@ -252,7 +252,7 @@ func (c *DaemonClient) RemoteAddr() net.Addr {
 // on a single repository.
 type DaemonServer struct {
 	// The repo we're working on
-	Repo *repo.FsRepository
+	Repo *repo.Repository
 
 	ipfsDaemon *exec.Cmd
 
@@ -273,13 +273,6 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 		log.Error("Could not load repository: ", err)
 		return nil, err
 	}
-
-	// TODO
-	// log.Info("Starting IPFS node.")
-	// if err := startIpfsDaemon(); err != nil {
-	// 	log.Error("Could not start ipfs: ", err)
-	// 	return nil, err
-	// }
 
 	proc, err := ipfsutil.StartDaemon(&ipfsutil.Context{
 		Path: filepath.Join(repoFolder, ".brig", "ipfs"),

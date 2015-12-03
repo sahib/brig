@@ -8,58 +8,30 @@ import (
 	"path/filepath"
 
 	"code.google.com/p/go-uuid/uuid"
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
+	logutil "github.com/disorganizer/brig/util/log"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
-	yamlConfig "github.com/olebedev/config"
 )
 
-// TODO: Rename -> Repository, move to repo.go
-// FsRepository represents data a brig repository consists of
-type FsRepository struct {
-
-	// Repository is identified by a XMPP Account: name@domain.tld/ressource
-	Jid string
-
-	// Minilock ID
-	Mid string
-
-	// Folder of repository
-	Folder         string
-	InternalFolder string
-
-	// UUID which represents a unique repository
-	UniqueID string
-
-	// TODO: Just for prototype testing, should be deleted in final version
-	Password string
-
-	Config *yamlConfig.Config
-
-	globalRepo *global.GlobalRepository
-
-	Store *store.Store
-}
-
-// Interface methods
-
 // Open a encrypted repository
-func (r *FsRepository) Lock() error {
+func (r *Repository) Lock() error {
 	fmt.Println("Opening repository.")
 	return nil
 }
 
 // Close a open repository
-func (r *FsRepository) Unlock() error {
+func (r *Repository) Unlock() error {
 	fmt.Println("Closing repository.")
 	return nil
 }
 
 // NewFsRepository creates a new repository at filesystem level
 // and returns a Repository interface
-func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
+func NewFsRepository(jid, pass, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -102,12 +74,12 @@ func NewFsRepository(jid, pass, folder string) (*FsRepository, error) {
 }
 
 // CloneFsRepository clones a brig repository in a git like way
-func CloneFsRepository() *FsRepository {
+func CloneFsRepository() *Repository {
 	return nil
 }
 
 // LoadFsRepository load a brig repository from a given folder.
-func LoadFsRepository(folder string) (*FsRepository, error) {
+func LoadFsRepository(folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -120,10 +92,9 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 	}
 
 	configValues := map[string]string{
-		"repository.jid":      "",
-		"repository.mid":      "",
-		"repository.uuid":     "",
-		"repository.password": "",
+		"repository.jid":  "",
+		"repository.mid":  "",
+		"repository.uuid": "",
 	}
 
 	for key := range configValues {
@@ -151,10 +122,9 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 		return nil, err
 	}
 
-	repo := FsRepository{
+	repo := Repository{
 		Jid:            configValues["repository.jid"],
 		Mid:            configValues["repository.mid"],
-		Password:       configValues["repository.password"],
 		Folder:         absFolderPath,
 		InternalFolder: brigPath,
 		UniqueID:       configValues["repository.uuid"],
@@ -164,6 +134,15 @@ func LoadFsRepository(folder string) (*FsRepository, error) {
 	}
 
 	return &repo, nil
+}
+
+func touch(path string) error {
+	fd, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	return fd.Close()
 }
 
 func createRepositoryTree(absFolderPath string) error {
@@ -181,13 +160,9 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	// TODO: touch() util
 	boltDbPath := filepath.Join(brigPath, "index.bolt")
-	if fd, err := os.Create(boltDbPath); err != nil {
+	if err := touch(boltDbPath); err != nil {
 		return err
-	} else {
-		fd.Write([]byte(""))
-		fd.Close()
 	}
 
 	// Make the key larger than needed:
@@ -215,8 +190,8 @@ func createMasterKey(brigPath string, keySize int) error {
 }
 
 func createIPFS(ipfsRootPath string) error {
-	// TODO: write to log, not stdout
-	cfg, err := ipfsconfig.Init(os.Stdout, 2048)
+	logger := &logutil.LogWriter{Level: log.InfoLevel}
+	cfg, err := ipfsconfig.Init(logger, 2048)
 	if err != nil {
 		return err
 	}
