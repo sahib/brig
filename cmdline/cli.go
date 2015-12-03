@@ -3,6 +3,7 @@ package cmdline
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -10,8 +11,10 @@ import (
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util/colors"
 	colorlog "github.com/disorganizer/brig/util/log"
+	yamlConfig "github.com/olebedev/config"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
 )
@@ -145,6 +148,49 @@ func handleDaemon(ctx climax.Context) int {
 		}
 
 		baal.Serve()
+	}
+
+	return 0
+}
+
+func handleConfig(ctx climax.Context) int {
+	folder := guessRepoFolder()
+	cfgPath := filepath.Join(folder, ".brig", "config")
+
+	cfg, err := config.LoadConfig(cfgPath)
+	if err != nil {
+		log.Errorf("Could not load config: %v", err)
+		return 2
+	}
+
+	switch len(ctx.Args) {
+	case 0:
+		yaml, err := yamlConfig.RenderYaml(cfg)
+		if err != nil {
+			fmt.Errorf("Unable to render config: %v", err)
+			return 3
+		}
+		fmt.Println(yaml)
+	case 1:
+		key := ctx.Args[0]
+		value, err := cfg.String(key)
+		if err != nil {
+			log.Errorf("Could not retrieve %s: %v", key, err)
+			return 4
+		}
+		fmt.Println(value)
+	case 2:
+		key := ctx.Args[0]
+		value := ctx.Args[1]
+		if err := cfg.Set(key, value); err != nil {
+			fmt.Errorf("Could not set %s: %v", err)
+			return 5
+		}
+
+		if _, err := config.SaveConfig(cfgPath, cfg); err != nil {
+			fmt.Errorf("Could not save config: %v", err)
+			return 6
+		}
 	}
 
 	return 0
@@ -399,9 +445,10 @@ func RunCmdline() int {
 			Brief: "Manage YubiKeys.",
 		},
 		climax.Command{
-			Name:  "config",
-			Group: miscGroup,
-			Brief: "Access, list and modify configuration values.",
+			Name:   "config",
+			Group:  miscGroup,
+			Brief:  "Access, list and modify configuration values.",
+			Handle: handleConfig,
 		},
 		climax.Command{
 			Name:  "update",

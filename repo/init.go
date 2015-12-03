@@ -16,6 +16,7 @@ import (
 	yamlConfig "github.com/olebedev/config"
 )
 
+// TODO: Rename -> Repository, move to repo.go
 // FsRepository represents data a brig repository consists of
 type FsRepository struct {
 
