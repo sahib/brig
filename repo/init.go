@@ -31,7 +31,7 @@ func (r *Repository) Unlock() error {
 
 // NewFsRepository creates a new repository at filesystem level
 // and returns a Repository interface
-func NewFsRepository(jid, pass, folder string) (*Repository, error) {
+func NewFsRepository(jid, pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -46,17 +46,16 @@ func NewFsRepository(jid, pass, folder string) (*Repository, error) {
 	}
 
 	cfg := config.CreateDefaultConfig()
-	minilockID, err := GenerateMinilockID(jid, pass)
+	minilockID, err := GenerateMinilockID(jid, pwd)
 	if err != nil {
 		return nil, err
 	}
 
 	configDefaults := map[string]interface{}{
-		"repository.jid":      jid,
-		"repository.password": pass,
-		"repository.uuid":     uuid.NewRandom().String(),
-		"repository.mid":      minilockID,
-		"ipfs.path":           filepath.Join(absFolderPath, ".brig", "ipfs"),
+		"repository.jid":  jid,
+		"repository.uuid": uuid.NewRandom().String(),
+		"repository.mid":  minilockID,
+		"ipfs.path":       filepath.Join(absFolderPath, ".brig", "ipfs"),
 	}
 
 	for key, value := range configDefaults {
@@ -70,7 +69,7 @@ func NewFsRepository(jid, pass, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	return LoadFsRepository(absFolderPath)
+	return LoadFsRepository(pwd, absFolderPath)
 }
 
 // CloneFsRepository clones a brig repository in a git like way
@@ -79,7 +78,7 @@ func CloneFsRepository() *Repository {
 }
 
 // LoadFsRepository load a brig repository from a given folder.
-func LoadFsRepository(folder string) (*Repository, error) {
+func LoadFsRepository(pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -131,6 +130,7 @@ func LoadFsRepository(folder string) (*Repository, error) {
 		Config:         cfg,
 		globalRepo:     globalRepo,
 		Store:          store,
+		Password:       pwd,
 	}
 
 	return &repo, nil

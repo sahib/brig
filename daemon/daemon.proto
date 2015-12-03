@@ -3,19 +3,14 @@ option go_package = "proto";
 
 enum MessageType {
     ADD = 0;
-    PWD = 1;
-    CAT = 2;
-    PING = 3;
-    QUIT = 4;
+    CAT = 1;
+    PING = 2;
+    QUIT = 3;
 }
 
 message Command {
     message AddCmd {
         required string file_path = 1;
-    }
-
-    message PwdCmd {
-        required string password = 1;
     }
 
     message CatCmd {
@@ -32,10 +27,9 @@ message Command {
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
-    optional PwdCmd pwd_command = 3;
-    optional CatCmd cat_command = 4;
-    optional PingCmd ping_command = 5;
-    optional QuitCmd quit_command = 6;
+    optional CatCmd cat_command = 3;
+    optional PingCmd ping_command = 4;
+    optional QuitCmd quit_command = 5;
 }
 
 message Response {

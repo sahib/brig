@@ -52,6 +52,16 @@ func guessRepoFolder() string {
 	return wd
 }
 
+func readPassword() (string, error) {
+	repoFolder := guessRepoFolder()
+	pwd, err := repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+		err := repo.CheckPassword(repoFolder, pwd)
+		return err == nil
+	})
+
+	return pwd, err
+}
+
 ///////////////////////
 // Handler functions //
 ///////////////////////
@@ -62,24 +72,15 @@ func handleVersion(ctx climax.Context) int {
 }
 
 func handleOpen(ctx climax.Context) int {
-	pwd, err := repo.PromptPasswordMaxTries(4, func(pwd string) bool {
-		return pwd == ""
-	})
+	repoFolder := guessRepoFolder()
+	pwd, err := readPassword()
 
 	if err != nil {
 		log.Errorf("Open failed: %v", err)
 		return 1
 	}
 
-	repoFolder := guessRepoFolder()
-	repository, err := repo.Open(repoFolder, pwd)
-	if err != nil {
-		log.Error("Could not open repository: ", err)
-		return 2
-	}
-	fmt.Println(repository)
-
-	if _, err := daemon.Reach(repoFolder, 6666); err != nil {
+	if _, err := daemon.Reach(pwd, repoFolder, 6666); err != nil {
 		log.Errorf("Unable to start daemon: %v", err)
 		return 3
 	}
@@ -90,22 +91,12 @@ func handleClose(ctx climax.Context) int {
 	// Shoot the daemon:
 	client, err := daemon.Dial(6666)
 	if err != nil {
-		log.Printf("Note: no daemon running: %v", err)
-	} else {
-		defer client.Close()
-		client.Exorcise()
-	}
-
-	repository, err := repo.LoadFsRepository(guessRepoFolder())
-	if err != nil {
-		log.Errorf("Could not open repo for closing: %v", err)
+		log.Warningf("Note: no daemon running: %v", err)
 		return 1
 	}
 
-	if err := repository.Close(); err != nil {
-		log.Errorf("Could not close repo: %v", err)
-		return 2
-	}
+	defer client.Close()
+	client.Exorcise()
 
 	return 0
 }
@@ -155,16 +146,32 @@ func handleDaemon(ctx climax.Context) int {
 		return handleDaemonPing()
 	} else if ctx.Is("quit") {
 		return handleDaemonQuit()
-	} else {
-		baal, err := daemon.Summon(guessRepoFolder(), 6666)
-		if err != nil {
-			log.Warning("Unable to start daemon: ", err)
-			return 1
-		}
-
-		baal.Serve()
 	}
 
+	pwd, ok := ctx.Get("password")
+	if !ok {
+		var err error
+		pwd, err = readPassword()
+		if err != nil {
+			log.Errorf("Could not read password: %v", pwd)
+			return 1
+		}
+	}
+
+	repoFolder := guessRepoFolder()
+	err := repo.CheckPassword(repoFolder, pwd)
+	if err != nil {
+		log.Error("Wrong password.")
+		return 2
+	}
+
+	baal, err := daemon.Summon(pwd, repoFolder, 6666)
+	if err != nil {
+		log.Warning("Unable to start daemon: ", err)
+		return 3
+	}
+
+	baal.Serve()
 	return 0
 }
 
@@ -244,9 +251,20 @@ func handleInit(ctx climax.Context) int {
 		return 4
 	}
 
-	if _, err := repo.NewFsRepository(string(jid), string(pwd), folder); err != nil {
+	repo, err := repo.NewFsRepository(string(jid), string(pwd), folder)
+	if err != nil {
 		log.Error(err)
 		return 5
+	}
+
+	if err := repo.Close(); err != nil {
+		log.Errorf("close: %v", err)
+		return 6
+	}
+
+	if _, err := daemon.Reach(string(pwd), folder, 6666); err != nil {
+		log.Errorf("Unable to start daemon: %v", err)
+		return 7
 	}
 
 	return 0
@@ -445,6 +463,13 @@ func RunCmdline() int {
 					Short: "q",
 					Usage: `--quit`,
 					Help:  `Kill a running daemon.`,
+				},
+				{
+					Name:     "password",
+					Short:    "x",
+					Usage:    `--password PWD`,
+					Variable: true,
+					Help:     `Supply password.`,
 				},
 			},
 			Handle: handleDaemon,

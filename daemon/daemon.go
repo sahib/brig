@@ -157,7 +157,7 @@ func (c *DaemonClient) handleMessages(tnl io.ReadWriter) {
 }
 
 // Reach tries to Dial() the daemon, if not there it Launch()'es one.
-func Reach(repoPath string, port int) (*DaemonClient, error) {
+func Reach(pwd, repoPath string, port int) (*DaemonClient, error) {
 	// Try to Dial directly first:
 	if daemon, err := Dial(port); err == nil {
 		return daemon, nil
@@ -172,7 +172,9 @@ func Reach(repoPath string, port int) (*DaemonClient, error) {
 	// Start a new daemon process:
 	log.Info("Starting daemon: ", exePath)
 	proc, err := os.StartProcess(
-		exePath, []string{"brig", "daemon"}, &os.ProcAttr{},
+		exePath,
+		[]string{"brig", "daemon", "-x", pwd},
+		&os.ProcAttr{},
 	)
 
 	if err != nil {
@@ -193,7 +195,7 @@ func Reach(repoPath string, port int) (*DaemonClient, error) {
 		time.Sleep(1 * time.Second)
 		client, err := Dial(port)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		if client != nil {
@@ -252,7 +254,8 @@ func (c *DaemonClient) RemoteAddr() net.Addr {
 // on a single repository.
 type DaemonServer struct {
 	// The repo we're working on
-	Repo *repo.Repository
+	Repo   *repo.Repository
+	Folder string
 
 	ipfsDaemon *exec.Cmd
 
@@ -265,10 +268,10 @@ type DaemonServer struct {
 }
 
 // Summon creates a new up and running DaemonServer instance
-func Summon(repoFolder string, port int) (*DaemonServer, error) {
+func Summon(pwd, repoFolder string, port int) (*DaemonServer, error) {
 	// Load the on-disk repository:
-	repository, err := repo.LoadFsRepository(repoFolder)
-	log.Infof("Loading repo: %s", repoFolder)
+	log.Infof("Opening repo: %s", repoFolder)
+	repository, err := repo.Open(pwd, repoFolder)
 	if err != nil {
 		log.Error("Could not load repository: ", err)
 		return nil, err
@@ -298,6 +301,7 @@ func Summon(repoFolder string, port int) (*DaemonServer, error) {
 		signals:    make(chan os.Signal, 1),
 		listener:   listener,
 		Repo:       repository,
+		Folder:     repoFolder,
 		ipfsDaemon: proc,
 	}
 
@@ -351,6 +355,10 @@ func (d *DaemonServer) Serve() {
 	if err := d.ipfsDaemon.Process.Kill(); err != nil {
 		log.Errorf("Unable to kill off ipfs daemon: %v", err)
 	}
+
+	if err := d.Repo.Close(); err != nil {
+		log.Errorf("Unable to close repository: %v", err)
+	}
 }
 
 // Handles incoming requests:
@@ -389,8 +397,8 @@ func (d *DaemonServer) handleCommand(ctx context.Context, cmd *proto.Command, co
 	case proto.MessageType_ADD:
 	case proto.MessageType_CAT:
 	case proto.MessageType_QUIT:
-		d.signals <- os.Interrupt
 		resp.Response = protobuf.String("BYE")
+		d.signals <- os.Interrupt
 	case proto.MessageType_PING:
 		resp.Response = protobuf.String("PONG")
 	default:

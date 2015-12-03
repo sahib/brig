@@ -105,8 +105,6 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 		return nil, 0, false
 	})
 
-	return pwd, nil
-
 	log.Infof("Well done! Please re-type your password now:")
 	for {
 		newPwd, err := rl.ReadPasswordWithConfig(passwordCfg)

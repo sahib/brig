@@ -41,7 +41,7 @@ func LockFile(jid, pass, path string) error {
 	return nil
 }
 
-func UnlockFile(jid, pass, path string) error {
+func unlockFileReal(jid, pass, path string, write bool) error {
 	keys, err := minilock.GenerateKey(jid, pass)
 	if err != nil {
 		return err
@@ -58,6 +58,10 @@ func UnlockFile(jid, pass, path string) error {
 		return err
 	}
 
+	if !write {
+		return nil
+	}
+
 	decPath := filepath.Join(filepath.Dir(encPath), decName)
 	err = ioutil.WriteFile(decPath, decData, 0666)
 	if err != nil {
@@ -69,6 +73,14 @@ func UnlockFile(jid, pass, path string) error {
 	}
 
 	return nil
+}
+
+func UnlockFile(jid, pass, path string) error {
+	return unlockFileReal(jid, pass, path, true)
+}
+
+func TryUnlock(jid, pass, path string) error {
+	return unlockFileReal(jid, pass, path, false)
 }
 
 // EncryptMinilockMsg encrypts a given plaintext for multiple receivers.
