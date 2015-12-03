@@ -71,16 +71,31 @@ func handleOpen(ctx climax.Context) int {
 		return 1
 	}
 
-	repository, err := repo.Open(guessRepoFolder(), pwd)
+	repoFolder := guessRepoFolder()
+	repository, err := repo.Open(repoFolder, pwd)
 	if err != nil {
 		log.Error("Could not open repository: ", err)
 		return 2
 	}
 	fmt.Println(repository)
+
+	if _, err := daemon.Reach(repoFolder, 6666); err != nil {
+		log.Errorf("Unable to start daemon: %v", err)
+		return 3
+	}
 	return 0
 }
 
 func handleClose(ctx climax.Context) int {
+	// Shoot the daemon:
+	client, err := daemon.Dial(6666)
+	if err != nil {
+		log.Printf("Note: no daemon running: %v", err)
+	} else {
+		defer client.Close()
+		client.Exorcise()
+	}
+
 	repository, err := repo.LoadFsRepository(guessRepoFolder())
 	if err != nil {
 		log.Errorf("Could not open repo for closing: %v", err)
