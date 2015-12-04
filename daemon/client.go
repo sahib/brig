@@ -85,8 +85,8 @@ func (c *Client) handleMessages(tnl io.ReadWriter) {
 // Reach tries to Dial() the daemon, if not there it Launch()'es one.
 func Reach(pwd, repoPath string, port int) (*Client, error) {
 	// Try to Dial directly first:
-	if daemon, err := Dial(port); err == nil {
-		return daemon, nil
+	if client, err := Dial(port); err == nil {
+		return client, nil
 	}
 
 	// Probably not running, find out our own binary:
