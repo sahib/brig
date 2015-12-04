@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/util/colors"
 )
 
+// ColorfulLogFormatter is the default logger for brig.
 type ColorfulLogFormatter struct{}
 
 var symbolTable = map[logrus.Level]string{
@@ -75,6 +76,7 @@ func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
 	buffer.WriteByte(']')
 }
 
+// Format logs a single entry according to our formatting ideas.
 func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	buffer := bytes.Buffer{}
 
@@ -100,7 +102,7 @@ func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-var LogLevelToFunc = map[logrus.Level]func(args ...interface{}){
+var logLevelToFunc = map[logrus.Level]func(args ...interface{}){
 	logrus.DebugLevel: logrus.Debug,
 	logrus.InfoLevel:  logrus.Info,
 	logrus.WarnLevel:  logrus.Warn,
@@ -108,12 +110,14 @@ var LogLevelToFunc = map[logrus.Level]func(args ...interface{}){
 	logrus.FatalLevel: logrus.Fatal,
 }
 
-type LogWriter struct {
+// Writer is an io.Writer that writes everything to logrus.
+type Writer struct {
+	// Level determines the severity for all messages.
 	Level logrus.Level
 }
 
-func (l *LogWriter) Write(buf []byte) (int, error) {
-	fn, ok := LogLevelToFunc[l.Level]
+func (l *Writer) Write(buf []byte) (int, error) {
+	fn, ok := logLevelToFunc[l.Level]
 	if !ok {
 		logrus.Fatal("LogWriter: Bad loglevel passed.")
 	} else {

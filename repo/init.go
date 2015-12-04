@@ -2,7 +2,6 @@ package repo
 
 import (
 	"crypto/rand"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,21 +16,9 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
-// Open a encrypted repository
-func (r *Repository) Lock() error {
-	fmt.Println("Opening repository.")
-	return nil
-}
-
-// Close a open repository
-func (r *Repository) Unlock() error {
-	fmt.Println("Closing repository.")
-	return nil
-}
-
-// NewFsRepository creates a new repository at filesystem level
+// NewRepository creates a new repository at filesystem level
 // and returns a Repository interface
-func NewFsRepository(jid, pwd, folder string) (*Repository, error) {
+func NewRepository(jid, pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -69,16 +56,16 @@ func NewFsRepository(jid, pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	return LoadFsRepository(pwd, absFolderPath)
+	return LoadRepository(pwd, absFolderPath)
 }
 
-// CloneFsRepository clones a brig repository in a git like way
-func CloneFsRepository() *Repository {
+// CloneRepository clones a brig repository in a git like way
+func CloneRepository() *Repository {
 	return nil
 }
 
-// LoadFsRepository load a brig repository from a given folder.
-func LoadFsRepository(pwd, folder string) (*Repository, error) {
+// LoadRepository load a brig repository from a given folder.
+func LoadRepository(pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -136,6 +123,7 @@ func LoadFsRepository(pwd, folder string) (*Repository, error) {
 	return &repo, nil
 }
 
+// touch works like the unix touch(1)
 func touch(path string) error {
 	fd, err := os.Create(path)
 	if err != nil {
@@ -190,7 +178,7 @@ func createMasterKey(brigPath string, keySize int) error {
 }
 
 func createIPFS(ipfsRootPath string) error {
-	logger := &logutil.LogWriter{Level: log.InfoLevel}
+	logger := &logutil.Writer{Level: log.InfoLevel}
 	cfg, err := ipfsconfig.Init(logger, 2048)
 	if err != nil {
 		return err

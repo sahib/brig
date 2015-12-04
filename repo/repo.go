@@ -6,6 +6,8 @@ import (
 	yamlConfig "github.com/olebedev/config"
 )
 
+// Repository represents a handle to one physical brig repository.
+// It groups the APIs to all useful files in it.
 type Repository struct {
 	// Repository is identified by a XMPP Account: name@domain.tld/ressource
 	Jid string
@@ -25,5 +27,5 @@ type Repository struct {
 
 	Config     *yamlConfig.Config
 	Store      *store.Store
-	globalRepo *global.GlobalRepository
+	globalRepo *global.Repository
 }

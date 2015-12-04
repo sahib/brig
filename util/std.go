@@ -1,49 +1,45 @@
-// Package std implements small helper function that
+// Package util implements small helper function that
 // should be included in the stdlib in our opinion.
 package util
 
-// Returns the minimum of a and b.
+// Min returns the minimum of a and b.
 func Min(a, b int) int {
 	if a < b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
-// Returns the maximum of a and b.
+// Max returns the maximum of a and b.
 func Max(a, b int) int {
 	if a < b {
 		return b
-	} else {
-		return a
 	}
+	return a
 }
 
-// Clamps x into [lo, hi]
+// Clamp limits x to the range [lo, hi]
 func Clamp(x, lo, hi int) int {
 	return Max(lo, Min(x, hi))
 }
 
-// Like Min() but for uint
+// UMin returns the unsigned minimum of a and b
 func UMin(a, b uint) uint {
 	if a < b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
-// Like Max() but for uint
+// UMax returns the unsigned minimum of a and b
 func UMax(a, b uint) uint {
 	if a < b {
 		return b
-	} else {
-		return a
 	}
+	return a
 }
 
-// Like Clamp() but for uint
+// UClamp limits x to the range [lo, hi]
 func UClamp(x, lo, hi uint) uint {
 	return UMax(lo, UMin(x, hi))
 }

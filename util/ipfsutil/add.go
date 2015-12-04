@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// Context remembers the settings needed for accessing the ipfs daemon.
 type Context struct {
 	// TODO!
 	Path string
@@ -20,6 +21,8 @@ func ipfsCommand(ctx *Context, args ...string) *exec.Cmd {
 	return cmd
 }
 
+// Add reads `r` and adds it to ipfs.
+// The resulting content hash is returned.
 func Add(ctx *Context, r io.Reader) ([]byte, error) {
 	adder := ipfsCommand(ctx, "add", "-q")
 	stdin, err := adder.StdinPipe()
@@ -45,13 +48,15 @@ func Add(ctx *Context, r io.Reader) ([]byte, error) {
 	stdin.Close()
 	adder.Wait()
 
-	if hash, err := ioutil.ReadAll(stdout); err != nil {
+	hash, err := ioutil.ReadAll(stdout)
+	if err != nil {
 		return nil, err
-	} else {
-		return bytes.TrimSpace(hash), nil
 	}
+
+	return bytes.TrimSpace(hash), nil
 }
 
+// Cat returns an io.Reader that reads from ipfs.
 func Cat(ctx *Context, hash []byte) (io.Reader, error) {
 	catter := ipfsCommand(ctx, "cat", string(hash))
 	stdout, err := catter.StdoutPipe()
@@ -60,7 +65,7 @@ func Cat(ctx *Context, hash []byte) (io.Reader, error) {
 	}
 
 	if err := catter.Start(); err != nil {
-		log.Warning("ipfs add failed: ", err)
+		log.Warning("ipfs cat failed: ", err)
 		return nil, err
 	}
 

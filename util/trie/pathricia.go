@@ -1,4 +1,4 @@
-// This package implements a general purpose Path-Trie.
+// Package trie implements a general purpose Path-Trie.
 package trie
 
 import (

@@ -1,5 +1,5 @@
-// filelock implements helper function for using a `lock` file
-// for synchronising file system resources.
+// Package filelock implements helper function for using a `lock` file for
+// synchronising file system resources.
 package filelock
 
 import (

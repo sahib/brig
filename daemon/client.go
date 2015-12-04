@@ -13,8 +13,8 @@ import (
 	"github.com/disorganizer/brig/util/tunnel"
 )
 
-// Daemon is the top-level struct of the brig daemon.
-type DaemonClient struct {
+// Client is the client API to brigd.
+type Client struct {
 	// Use this channel to send commands to the daemon
 	Send chan *proto.Command
 
@@ -29,8 +29,8 @@ type DaemonClient struct {
 }
 
 // Dial connects to a running daemon instance.
-func Dial(port int) (*DaemonClient, error) {
-	client := &DaemonClient{
+func Dial(port int) (*Client, error) {
+	client := &Client{
 		Send: make(chan *proto.Command),
 		Recv: make(chan *proto.Response),
 		quit: make(chan bool, 1),
@@ -58,7 +58,7 @@ func Dial(port int) (*DaemonClient, error) {
 // handleMessages takes all messages from the Send channel
 // and actually sends them over the network. It then waits
 // for the response and puts it in the Recv channel.
-func (c *DaemonClient) handleMessages(tnl io.ReadWriter) {
+func (c *Client) handleMessages(tnl io.ReadWriter) {
 	for {
 		select {
 		case <-c.quit:
@@ -83,7 +83,7 @@ func (c *DaemonClient) handleMessages(tnl io.ReadWriter) {
 }
 
 // Reach tries to Dial() the daemon, if not there it Launch()'es one.
-func Reach(pwd, repoPath string, port int) (*DaemonClient, error) {
+func Reach(pwd, repoPath string, port int) (*Client, error) {
 	// Try to Dial directly first:
 	if daemon, err := Dial(port); err == nil {
 		return daemon, nil
@@ -133,7 +133,7 @@ func Reach(pwd, repoPath string, port int) (*DaemonClient, error) {
 }
 
 // Ping returns true if the daemon is running and responds correctly.
-func (c *DaemonClient) Ping() bool {
+func (c *Client) Ping() bool {
 	cmd := &proto.Command{}
 	cmd.CommandType = proto.MessageType_PING.Enum()
 
@@ -147,7 +147,7 @@ func (c *DaemonClient) Ping() bool {
 }
 
 // Exorcise sends a QUIT message to the daemon.
-func (c *DaemonClient) Exorcise() {
+func (c *Client) Exorcise() {
 	cmd := &proto.Command{}
 	cmd.CommandType = proto.MessageType_QUIT.Enum()
 	c.Send <- cmd
@@ -155,19 +155,19 @@ func (c *DaemonClient) Exorcise() {
 }
 
 // Close shuts down the daemon client
-func (c *DaemonClient) Close() {
+func (c *Client) Close() {
 	if c != nil {
 		c.quit <- true
 		c.conn.Close()
 	}
 }
 
-// LocalAddr() returns a net.Addr with the client end of the Connection
-func (c *DaemonClient) LocalAddr() net.Addr {
+// LocalAddr returns a net.Addr with the client end of the Connection
+func (c *Client) LocalAddr() net.Addr {
 	return c.conn.LocalAddr()
 }
 
-// RemoteAddr() returns a net.Addr with the server end of the Connection
-func (c *DaemonClient) RemoteAddr() net.Addr {
+// RemoteAddr returns a net.Addr with the server end of the Connection
+func (c *Client) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }

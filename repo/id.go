@@ -9,9 +9,13 @@ import (
 )
 
 const (
+	// EncFileSuffix is appended to all encrypted in-repo file paths
 	EncFileSuffix = ".minilock"
 )
 
+// LockFile encrypts `path` with minilock, using pass and jid as email.
+// The resulting file is written to `path` + EncFileSuffix,
+// the source file is removed.
 func LockFile(jid, pass, path string) error {
 	keys, err := minilock.GenerateKey(jid, pass)
 	if err != nil {
@@ -41,6 +45,7 @@ func LockFile(jid, pass, path string) error {
 	return nil
 }
 
+// unlockFileReal is the actual implementation of TryUnlock/UnlockFile
 func unlockFileReal(jid, pass, path string, write bool) error {
 	keys, err := minilock.GenerateKey(jid, pass)
 	if err != nil {
@@ -75,10 +80,18 @@ func unlockFileReal(jid, pass, path string, write bool) error {
 	return nil
 }
 
+// UnlockFile reverses the effect of LockFile.
+//
+// NOTE: `path` is the path without EncFileSuffix,
+//        i.e. the same path as given to LockFile!
+//
+// If the operation was successful,
 func UnlockFile(jid, pass, path string) error {
 	return unlockFileReal(jid, pass, path, true)
 }
 
+// TryUnlock tries to unlock a file, if successful,
+// `path` will not be removed and no encrypted output is written.
 func TryUnlock(jid, pass, path string) error {
 	return unlockFileReal(jid, pass, path, false)
 }

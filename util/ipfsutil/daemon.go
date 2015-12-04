@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// StartDaemon executes and watches `ipfs daemon`.
 func StartDaemon(ctx *Context) (*exec.Cmd, error) {
 	port := 4001 // TODO: read from ctx.Path.config
 

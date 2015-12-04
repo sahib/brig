@@ -4,18 +4,24 @@ package colors
 import "fmt"
 
 const (
-	Cyan          = 36
-	Green         = 32
-	Magenta       = 35
-	Red           = 31
-	Yellow        = 33
+	// Cyan should be used for debug messages.
+	Cyan = 36
+	// Green should be used for informational/success messages.
+	Green = 32
+	// Magenta should be used for critical errors.
+	Magenta = 35
+	// Red should be used for normal errors.
+	Red = 31
+	// Yellow should be used for warnings.
+	Yellow = 33
+	// BackgroundRed should be used for panic.
 	BackgroundRed = 41
 )
 
-// Reset sequence
+// ColorResetEscape terminates all previous colors.
 var ColorResetEscape = "\033[0m"
 
-// ColorResetEscape translates a ANSI color number to a color escape.
+// ColorEscape translates a ANSI color number to a color escape.
 func ColorEscape(color int) string {
 	return fmt.Sprintf("\033[0;%dm", color)
 }

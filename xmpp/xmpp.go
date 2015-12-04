@@ -15,7 +15,11 @@ import (
 	"golang.org/x/crypto/otr"
 )
 
-type XMPPClient struct {
+// Client is an xmpp client with OTR support.
+// Before establishing a connection, OTR will be triggered
+// and the Socialist Millionaire Protocol is played through,
+// using the minilock IDs of the participants.
+type Client struct {
 	// Embedded client
 	C *xmpp.Client
 
@@ -29,8 +33,9 @@ type XMPPClient struct {
 	authorised map[xmpp.JID]bool
 }
 
-func NewXMPPClient(jid xmpp.JID, pw string) (*XMPPClient, error) {
-	client := &XMPPClient{}
+// NewClient returns a ready client or nil on error.
+func NewClient(jid xmpp.JID, pw string) (*Client, error) {
+	client := &Client{}
 	client.conversations = make(map[xmpp.JID]*otr.Conversation)
 	client.authorised = make(map[xmpp.JID]bool)
 
@@ -49,7 +54,7 @@ func NewXMPPClient(jid xmpp.JID, pw string) (*XMPPClient, error) {
 	// Remember to update the status:
 	go func() {
 		for status := range client.Status {
-			fmt.Println("connection status %d", status)
+			fmt.Printf("connection status %d\n", status)
 		}
 	}()
 
@@ -83,11 +88,11 @@ func loadPrivateKey() *otr.PrivateKey {
 	return key
 }
 
-func (client *XMPPClient) initOtr(jid xmpp.JID) {
+func (client *Client) initOtr(jid xmpp.JID) {
 	client.Send(jid, otr.QueryMessage)
 }
 
-func (client *XMPPClient) getConversation(jid xmpp.JID) (*otr.Conversation, bool) {
+func (client *Client) getConversation(jid xmpp.JID) (*otr.Conversation, bool) {
 	con, ok := client.conversations[jid]
 	if !ok {
 		fmt.Printf("NEW CONVERSATION: `%v`\n", string(jid))
@@ -121,11 +126,12 @@ func createMessage(from, to string, text []byte) *xmpp.Message {
 	return xmsg
 }
 
-var is_server = false
+var isServer = false
 
-func (client *XMPPClient) Recv(msg *xmpp.Message) {
+// Recv receives a single xmpp.Message which is written to *msg.
+func (client *Client) Recv(msg *xmpp.Message) {
 	con, _ := client.getConversation(msg.From)
-	sendBack := make([][]byte, 0)
+	sendBack := [][]byte{}
 
 	for _, field := range msg.Body {
 		data, encrypted, state, toSend, err := con.Receive([]byte(field.Chardata))
@@ -142,7 +148,7 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 
 		switch state {
 		case otr.NewKeys:
-			if is_server {
+			if isServer {
 				authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
 				fmt.Println("==> AUTH REQUEST")
 				if authErr != nil {
@@ -159,7 +165,7 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 			sendBack = append(sendBack, msgs...)
 		case otr.SMPComplete:
 			fmt.Println("[!] Answer is correct")
-			if is_server == false && client.authorised[msg.From] == false {
+			if isServer == false && client.authorised[msg.From] == false {
 				authToSend, authErr := con.Authenticate("wer weis nich?", []byte("eule"))
 				fmt.Println("==> AUTH REQUEST")
 				if authErr != nil {
@@ -182,7 +188,9 @@ func (client *XMPPClient) Recv(msg *xmpp.Message) {
 	}
 }
 
-func (client *XMPPClient) Send(to xmpp.JID, text string) {
+// Send sends `text` to participant `to`.
+// A new otr session will be established if required.
+func (client *Client) Send(to xmpp.JID, text string) {
 	con, wasNew := client.getConversation(to)
 
 	if wasNew {
@@ -204,7 +212,8 @@ func (client *XMPPClient) Send(to xmpp.JID, text string) {
 	}
 }
 
-func (client *XMPPClient) Close() {
+// Close terminates all open connections.
+func (client *Client) Close() {
 	for jid, conversation := range client.conversations {
 		fmt.Println("Closing OTR conversation to", jid)
 		conversation.End()
@@ -235,7 +244,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	client, err := NewXMPPClient(xmpp.JID(*jid), *pwd)
+	client, err := NewClient(xmpp.JID(*jid), *pwd)
 	if err != nil {
 		log.Fatalf("Could not create client: %v", err)
 		return
@@ -255,7 +264,7 @@ func main() {
 	sendOtr := true
 	for {
 		if *send {
-			is_server = true
+			isServer = true
 			if sendOtr {
 				client.Send(xmpp.JID(*to), "Hello me. "+otr.QueryMessage)
 				sendOtr = false

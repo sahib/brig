@@ -1,3 +1,4 @@
+// Package global implements the logic behind the global config files in ~/.brig
 package global
 
 import (
@@ -10,11 +11,13 @@ import (
 	yamlConfig "github.com/olebedev/config"
 )
 
-type GlobalRepository struct {
+// Repository is the handle for the global repository.
+type Repository struct {
 	Folder string
 	Config *yamlConfig.Config
 }
 
+// RepoListEntry is a single entry in ~/.brig/repos
 type RepoListEntry struct {
 	UniqueID   string
 	RepoPath   string
@@ -22,7 +25,7 @@ type RepoListEntry struct {
 	IpfsPort   int
 }
 
-func (g *GlobalRepository) acquireLock() error {
+func (g *Repository) acquireLock() error {
 	lockPath := path.Join(g.Folder, "lock")
 	if err := filelock.Acquire(lockPath); err != nil {
 		return err
@@ -31,7 +34,7 @@ func (g *GlobalRepository) acquireLock() error {
 	return nil
 }
 
-func (g *GlobalRepository) releaseLock() error {
+func (g *Repository) releaseLock() error {
 	return filelock.Release(path.Join(g.Folder, "lock"))
 }
 
@@ -44,9 +47,10 @@ func guessGlobalFolder() string {
 	return path.Join(curr.HomeDir, ".brig")
 }
 
-func Init() (*GlobalRepository, error) {
+// Init creates a new global Repository and returns it.
+func Init() (*Repository, error) {
 	folder := guessGlobalFolder()
-	repo := &GlobalRepository{
+	repo := &Repository{
 		Folder: folder,
 	}
 
@@ -73,9 +77,10 @@ func Init() (*GlobalRepository, error) {
 	return repo, nil
 }
 
-func Load() (*GlobalRepository, error) {
+// Load loads an existing global repository.
+func Load() (*Repository, error) {
 	folder := guessGlobalFolder()
-	repo := &GlobalRepository{
+	repo := &Repository{
 		Folder: folder,
 	}
 
@@ -93,7 +98,8 @@ func Load() (*GlobalRepository, error) {
 	return repo, nil
 }
 
-func New() (*GlobalRepository, error) {
+// New loads a global repository, if it's not there, it's created.
+func New() (*Repository, error) {
 	folder := guessGlobalFolder()
 	if _, err := os.Stat(folder); os.IsExist(err) {
 		return Load()
@@ -102,7 +108,7 @@ func New() (*GlobalRepository, error) {
 	return Init()
 }
 
-func (g *GlobalRepository) modifyConfig(worker func(cfg *yamlConfig.Config) error) error {
+func (g *Repository) modifyConfig(worker func(cfg *yamlConfig.Config) error) error {
 	if err := g.acquireLock(); err != nil {
 		return err
 	}
@@ -124,7 +130,8 @@ func (g *GlobalRepository) modifyConfig(worker func(cfg *yamlConfig.Config) erro
 	return nil
 }
 
-func (g *GlobalRepository) AddRepo(entry RepoListEntry) error {
+// AddRepo adds a new repo to ~/.brig/repos
+func (g *Repository) AddRepo(entry RepoListEntry) error {
 	return g.modifyConfig(func(cfg *yamlConfig.Config) error {
 		repos, err := cfg.Map("repositories")
 		if err != nil {
@@ -136,7 +143,8 @@ func (g *GlobalRepository) AddRepo(entry RepoListEntry) error {
 	})
 }
 
-func (g *GlobalRepository) RemoveRepo(entry RepoListEntry) error {
+// RemoveRepo deletes an existing repo to ~/.brig/repos
+func (g *Repository) RemoveRepo(entry RepoListEntry) error {
 	return g.modifyConfig(func(cfg *yamlConfig.Config) error {
 		repos, err := cfg.Map("repositories")
 		if err != nil {

@@ -6,10 +6,16 @@ import (
 
 	"github.com/chzyer/readline"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
+)
+
+const (
+	msgLowEntropy  = "⚠ Please enter a password with at least %g bits entropy."
+	msgReEnter     = "✔ Well done! Please re-type your password now:"
+	msgBadPassword = "⚠ This did not seem to match. Please try again."
+	msgMaxTriesHit = "⚡ Maximum number of password tries exceeded: %d"
 )
 
 func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, error) {
@@ -58,7 +64,7 @@ func createStrengthPrompt(password []rune, prefix string) string {
 		prompt += colors.Colorize(" ENT", colors.Cyan)
 	}
 
-	prompt += colors.Colorize(" "+prefix+"Password: ", color)
+	prompt += colors.Colorize(" "+prefix+"passphrase: ", color)
 	return prompt
 }
 
@@ -78,7 +84,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
-		rl.SetPrompt(createStrengthPrompt(line, "New "))
+		rl.SetPrompt(createStrengthPrompt(line, "   New "))
 		rl.Refresh()
 		return nil, 0, false
 	})
@@ -96,7 +102,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 			break
 		}
 
-		log.Warningf("Please enter a password with at least %g bits entropy.", minEntropy)
+		fmt.Printf(colors.Colorize(msgLowEntropy, colors.Yellow)+"\n", minEntropy)
 	}
 
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
@@ -105,7 +111,8 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 		return nil, 0, false
 	})
 
-	log.Infof("Well done! Please re-type your password now:")
+	fmt.Println(colors.Colorize(msgReEnter, colors.Green))
+
 	for {
 		newPwd, err := rl.ReadPasswordWithConfig(passwordCfg)
 		if err != nil {
@@ -116,7 +123,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 			break
 		}
 
-		log.Warningf("This did not seem to match. Please try again.")
+		fmt.Println(colors.Colorize(msgBadPassword, colors.Yellow))
 	}
 
 	return pwd, nil
@@ -150,7 +157,7 @@ type ErrTooManyTries struct {
 }
 
 func (e ErrTooManyTries) Error() string {
-	return fmt.Sprintf("Maximum number of password tries exceeded: %d", e.Tries)
+	return fmt.Sprintf(msgMaxTriesHit, e.Tries)
 }
 
 var triesToColor = map[int]int{

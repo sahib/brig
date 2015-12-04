@@ -61,7 +61,7 @@ const (
 	GoodDecBufferSize = MaxBlockSize
 )
 
-// Size of the used cipher's key in bytes
+// KeySize of the used cipher's key in bytes.
 var KeySize = chacha.KeySize
 
 ////////////////////

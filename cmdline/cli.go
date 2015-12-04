@@ -109,7 +109,7 @@ func handleDaemonPing() int {
 	}
 	defer client.Close()
 
-	for i := 0; ; i++ {
+	for i := 0; i < 100; i++ {
 		before := time.Now()
 		symbol := colors.Colorize("✔", colors.Green)
 		if !client.Ping() {
@@ -189,7 +189,7 @@ func handleConfig(ctx climax.Context) int {
 	case 0:
 		yaml, err := yamlConfig.RenderYaml(cfg)
 		if err != nil {
-			fmt.Errorf("Unable to render config: %v", err)
+			log.Errorf("Unable to render config: %v", err)
 			return 3
 		}
 		fmt.Println(yaml)
@@ -205,12 +205,12 @@ func handleConfig(ctx climax.Context) int {
 		key := ctx.Args[0]
 		value := ctx.Args[1]
 		if err := cfg.Set(key, value); err != nil {
-			fmt.Errorf("Could not set %s: %v", err)
+			log.Errorf("Could not set %s: %v", key, err)
 			return 5
 		}
 
 		if _, err := config.SaveConfig(cfgPath, cfg); err != nil {
-			fmt.Errorf("Could not save config: %v", err)
+			log.Errorf("Could not save config: %v", err)
 			return 6
 		}
 	}
@@ -251,7 +251,7 @@ func handleInit(ctx climax.Context) int {
 		return 4
 	}
 
-	repo, err := repo.NewFsRepository(string(jid), string(pwd), folder)
+	repo, err := repo.NewRepository(string(jid), string(pwd), folder)
 	if err != nil {
 		log.Error(err)
 		return 5
@@ -431,16 +431,6 @@ func RunCmdline() int {
 			Name:  "checkout",
 			Group: wdirGroup,
 			Brief: "Attempt to checkout previous version of a file.",
-		},
-		climax.Command{
-			Name:  "lock",
-			Group: advnGroup,
-			Brief: "Disallow any modification of the repository.",
-		},
-		climax.Command{
-			Name:  "unlock",
-			Group: advnGroup,
-			Brief: "Remove a previous write lock.",
 		},
 		climax.Command{
 			Name:  "fsck",

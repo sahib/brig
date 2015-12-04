@@ -32,11 +32,12 @@ type ecdhTunnel struct {
 	streamR *cipher.StreamReader
 }
 
+// NewEllipticTunnel creates an io.ReadWriter that transparently encrypts all data.
 func NewEllipticTunnel(rw io.ReadWriter) (io.ReadWriter, error) {
-	return NewEllipticTunnelWithCurve(rw, elliptic.P256())
+	return newEllipticTunnelWithCurve(rw, elliptic.P256())
 }
 
-func NewEllipticTunnelWithCurve(rw io.ReadWriter, curve elliptic.Curve) (io.ReadWriter, error) {
+func newEllipticTunnelWithCurve(rw io.ReadWriter, curve elliptic.Curve) (io.ReadWriter, error) {
 	tnl := &ecdhTunnel{
 		ReadWriter: rw,
 		ecdh:       ecdh.NewEllipticECDH(curve),

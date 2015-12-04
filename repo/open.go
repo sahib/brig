@@ -15,17 +15,30 @@ var filenames = []string{
 	"master.key",
 }
 
+func lookupJid(configPath string) (string, error) {
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return "", fmt.Errorf("Could not load config: %v", err)
+	}
+
+	jid, err := cfg.String("repository.jid")
+	if err != nil {
+		return "", fmt.Errorf("No jid in config: %v", err)
+	}
+
+	return jid, nil
+}
+
+// Open unencrypts all sensible data in the repository.
 func Open(pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
 	// Figure out the JID from the config:
-	cfg, err := config.LoadConfig(filepath.Join(brigPath, "config"))
+	jid, err := lookupJid(filepath.Join(brigPath, "config"))
 	if err != nil {
-		return nil, fmt.Errorf("No jid in config: %v", err)
+		return nil, err
 	}
-
-	jid, err := cfg.String("repository.jid")
 
 	// Unlock all files:
 	for _, name := range filenames {
@@ -41,9 +54,11 @@ func Open(pwd, folder string) (*Repository, error) {
 		}
 	}
 
-	return LoadFsRepository(pwd, absFolderPath)
+	return LoadRepository(pwd, absFolderPath)
 }
 
+// Close encrypts sensible files in the repository.
+// The password is taken from Repository.Password.
 func (r *Repository) Close() error {
 	for _, name := range filenames {
 		absName := filepath.Join(r.InternalFolder, name)
@@ -61,15 +76,15 @@ func (r *Repository) Close() error {
 	return nil
 }
 
+// CheckPassword tries to decrypt a file in the repository.
+// If that does not work, an error is returned.
 func CheckPassword(folder, pwd string) error {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
-	// Figure out the JID from the config:
-	cfg, err := config.LoadConfig(filepath.Join(brigPath, "config"))
-	jid, err := cfg.String("repository.jid")
+	jid, err := lookupJid(filepath.Join(brigPath, "config"))
 	if err != nil {
-		return fmt.Errorf("No jid in config: %v", err)
+		return err
 	}
 
 	absName := filepath.Join(brigPath, "master.key")

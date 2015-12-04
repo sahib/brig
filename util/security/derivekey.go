@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-// Scrypt() wraps scrypt.Key with the standard parameters.
+// Scrypt wraps scrypt.Key with the standard parameters.
 func Scrypt(pwd, salt []byte, keyLen int) []byte {
 	// Parameters to be changed in future
 	// https://godoc.org/golang.org/x/crypto/scrypt
@@ -22,8 +22,10 @@ func Scrypt(pwd, salt []byte, keyLen int) []byte {
 	return key
 }
 
+// DeriveAESKey generates an AES key (of keySize bytes) based on jid and password.
+// It returns the key, the used salt and potentially an error.
 func DeriveAESKey(jid, password string, keySize int) ([]byte, []byte, error) {
-	salt := make([]byte, 32)
+	salt := make([]byte, keySize)
 	_, err := rand.Read(salt)
 	if err != nil {
 		return nil, nil, err

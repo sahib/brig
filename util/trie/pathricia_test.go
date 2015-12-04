@@ -30,7 +30,7 @@ func TestPathriciaLinux(t *testing.T) {
 	n = trie.Lookup("/").Remove()
 	fmt.Println(n, n.Root(), n)
 
-	var x *Node = nil
+	var x *Node
 	fmt.Println(x.Path())
 }
 

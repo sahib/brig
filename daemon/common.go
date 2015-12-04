@@ -3,8 +3,9 @@ package daemon
 import (
 	"encoding/binary"
 	"fmt"
-	protobuf "github.com/gogo/protobuf/proto"
 	"io"
+
+	protobuf "github.com/gogo/protobuf/proto"
 )
 
 // send transports a msg over conn with a size header.
