@@ -53,7 +53,7 @@ func recv(conn io.Reader, msg protobuf.Message) error {
 	}
 
 	buf := make([]byte, size)
-	n, err = conn.Read(buf)
+	_, err = conn.Read(buf)
 	if err != nil {
 		return err
 	}

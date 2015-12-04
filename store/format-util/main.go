@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/disorganizer/brig/bit/format"
+	"github.com/disorganizer/brig/store/format"
 )
 
 func main() {

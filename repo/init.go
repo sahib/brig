@@ -24,7 +24,7 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	if _, err := os.Stat(absFolderPath); os.IsExist(err) {
+	if _, err = os.Stat(absFolderPath); os.IsExist(err) {
 		return nil, err
 	}
 

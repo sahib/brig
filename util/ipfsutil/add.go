@@ -41,7 +41,7 @@ func Add(ctx *Context, r io.Reader) ([]byte, error) {
 	}
 
 	// Copy file to ipfs-add's stdin:
-	if _, err := io.Copy(stdin, r); err != nil {
+	if _, err = io.Copy(stdin, r); err != nil {
 		return nil, err
 	}
 
