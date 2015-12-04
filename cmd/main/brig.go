@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/disorganizer/brig/cmdline"
+	"github.com/disorganizer/brig/cmd"
 	"os"
 )
 
