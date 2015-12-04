@@ -192,16 +192,6 @@ func TestSeek(t *testing.T) {
 		t.Errorf("Buffers are not equal")
 		return
 	}
-
-	hashA := decLayer.Hash().Sum(nil)
-	hashB := decLayer.Hash().Sum(nil)
-
-	if !bytes.Equal(hashA, hashB) {
-		fmt.Printf("  %x\n  %x\n", hashA, hashB)
-		t.Errorf("Checksum differs")
-		return
-	}
-
 }
 
 func BenchmarkEncDec(b *testing.B) {
