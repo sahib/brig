@@ -3,7 +3,6 @@ package format
 import (
 	"encoding/binary"
 	"fmt"
-	"hash"
 	"io"
 
 	"github.com/glycerine/rbuf"
@@ -43,11 +42,6 @@ func (w *EncryptedWriter) Write(p []byte) (int, error) {
 func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 	n, err := w.rbuf.Read(w.decBuf[:chunkSize])
 	if err != nil {
-		return 0, err
-	}
-
-	// Try to update the checksum as we run:
-	if _, err := w.hasher.Write(w.decBuf[:n]); err != nil {
 		return 0, err
 	}
 
@@ -94,11 +88,6 @@ func (w *EncryptedWriter) Close() error {
 		}
 	}
 	return nil
-}
-
-// Hash returns the internal hasher
-func (w *EncryptedWriter) Hash() hash.Hash {
-	return w.hasher
 }
 
 // NewEncryptedWriter returns a new EncryptedWriter which encrypts data with a

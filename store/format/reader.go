@@ -3,7 +3,6 @@ package format
 import (
 	"bytes"
 	"fmt"
-	"hash"
 	"io"
 	"os"
 )
@@ -67,10 +66,6 @@ func (r *EncryptedReader) readBlock() (int, error) {
 
 	r.decBuf, err = r.aead.Open(r.decBuf[:0], r.nonce, r.encBuf[:n], nil)
 	if err != nil {
-		return 0, err
-	}
-
-	if _, err = r.hasher.Write(r.decBuf); err != nil {
 		return 0, err
 	}
 
@@ -144,11 +139,6 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 	// Reslice the backlog, so Read() does not return skipped data.
 	r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET)
 	return absOffsetDec, nil
-}
-
-// Hash returns the internal hasher
-func (r *EncryptedReader) Hash() hash.Hash {
-	return r.hasher
 }
 
 // Close does finishing work.

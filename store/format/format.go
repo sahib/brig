@@ -28,10 +28,8 @@ import (
 	"crypto/cipher"
 	"encoding/binary"
 	"fmt"
-	"hash"
 	"io"
 
-	blake2 "github.com/codahale/blake2"
 	chacha "github.com/codahale/chacha20poly1305"
 )
 
@@ -139,9 +137,6 @@ func createAEADWorker(cipherType uint16, key []byte) (cipher.AEAD, error) {
 }
 
 type aeadCommon struct {
-	// Hashing io.Writer for in-band hashing.
-	hasher hash.Hash
-
 	// Nonce that form the first aead.NonceSize() bytes
 	// of the output
 	nonce []byte
@@ -158,8 +153,6 @@ type aeadCommon struct {
 }
 
 func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
-	c.hasher = blake2.NewBlake2B()
-
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
 		return err
