@@ -88,7 +88,6 @@ func handleOpen(ctx climax.Context) int {
 }
 
 func handleClose(ctx climax.Context) int {
-	// Shoot the daemon:
 	client, err := daemon.Dial(6666)
 	if err != nil {
 		log.Warningf("Note: no daemon running: %v", err)

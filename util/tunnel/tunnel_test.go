@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"testing"
 )
 
-func TestTunnel() {
+func TestTunnel(t *testing.T) {
 	m := &bytes.Buffer{}
 
 	ta, err := NewEllipticTunnel(m)
