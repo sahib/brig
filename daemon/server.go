@@ -36,6 +36,10 @@ type Server struct {
 
 	// TCP Listener for incoming connections:
 	listener net.Listener
+
+	// buffered channel with N places,
+	// every active connection holds one.
+	maxConnections chan struct{}
 }
 
 // Summon creates a new up and running Server instance
@@ -70,11 +74,12 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
-		Repo:       repository,
-		signals:    make(chan os.Signal, 1),
-		listener:   listener,
-		ipfsDaemon: proc,
-		ctx:        ctx,
+		Repo:           repository,
+		signals:        make(chan os.Signal, 1),
+		listener:       listener,
+		ipfsDaemon:     proc,
+		maxConnections: make(chan struct{}, 20),
+		ctx:            ctx,
 	}
 
 	go daemon.loop(cancel)
@@ -96,8 +101,13 @@ func (d *Server) Serve() {
 
 // Handle incoming connections:
 func (d *Server) loop(cancel context.CancelFunc) {
-	// Forward signals to the quit channel:
+	// Forward signals to the signals channel:
 	signal.Notify(d.signals, os.Interrupt, os.Kill)
+
+	// Reserve at least cap(d.maxConnections)
+	for i := 0; i < cap(d.maxConnections); i++ {
+		d.maxConnections <- struct{}{}
+	}
 
 	for {
 		select {
@@ -105,26 +115,31 @@ func (d *Server) loop(cancel context.CancelFunc) {
 			// Break the Serve() loop
 			cancel()
 			return
-		default:
+		case <-d.maxConnections:
 			// Listen for an incoming connection.
 			deadline := time.Now().Add(500 * time.Millisecond)
 			err := d.listener.(*net.TCPListener).SetDeadline(deadline)
 			if err != nil {
-				break
+				log.Errorf("BUG: SetDeadline failed: %v", err)
+				return
 			}
 
 			conn, err := d.listener.Accept()
 			if err != nil && err.(*net.OpError).Timeout() {
+				d.maxConnections <- struct{}{}
 				continue
 			}
 
 			if err != nil {
-				log.Errorf("Error accepting: %v", err.Error())
-				break
+				log.Errorf("Error in Accept(): %v", err)
+				return
 			}
 
 			// Handle connections in a new goroutine.
 			go d.handleRequest(d.ctx, conn)
+		default:
+			log.Infof("Max number of connections hit: %d", cap(d.maxConnections))
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 }
@@ -132,6 +147,10 @@ func (d *Server) loop(cancel context.CancelFunc) {
 // Handles incoming requests:
 func (d *Server) handleRequest(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
+
+	// Make sure this connection count gets released
+	defer func() { d.maxConnections <- struct{}{} }()
+
 	tnl, err := tunnel.NewEllipticTunnel(conn)
 	if err != nil {
 		log.Error("Tunnel failed", err)
@@ -148,6 +167,7 @@ func (d *Server) handleRequest(ctx context.Context, conn net.Conn) {
 			return
 		}
 
+		log.Infof("recv: %s: %v", conn.RemoteAddr().String(), msg)
 		d.handleCommand(ctx, msg, tnl)
 	}
 }
@@ -157,8 +177,6 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	// This might be used to enforce timeouts for operations:
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-
-	log.Info("Processing message: ", cmd)
 
 	// Prepare a response template
 	resp := &proto.Response{}
