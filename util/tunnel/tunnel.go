@@ -35,7 +35,7 @@ type ecdhTunnel struct {
 // NewEllipticTunnel creates an io.ReadWriter that transparently encrypts all data.
 func NewEllipticTunnel(rw io.ReadWriter) (io.ReadWriter, error) {
 	// TODO: Find safe elliptic curve
-	return newEllipticTunnelWithCurve(rw, elliptic.P256())
+	return newEllipticTunnelWithCurve(rw, elliptic.P521())
 }
 
 func newEllipticTunnelWithCurve(rw io.ReadWriter, curve elliptic.Curve) (io.ReadWriter, error) {
