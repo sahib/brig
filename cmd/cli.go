@@ -88,16 +88,8 @@ func handleOpen(ctx climax.Context) int {
 }
 
 func handleClose(ctx climax.Context) int {
-	client, err := daemon.Dial(6666)
-	if err != nil {
-		log.Warningf("Note: no daemon running: %v", err)
-		return 1
-	}
-
-	defer client.Close()
-	client.Exorcise()
-
-	return 0
+	// This is currently the same as `brig daemon -q`
+	return handleDaemonQuit()
 }
 
 func handleDaemonPing() int {
