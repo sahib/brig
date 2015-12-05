@@ -19,6 +19,15 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	// MaxConnections is the upper limit of clients that may connect to a daemon
+	// at the same time. Other client will wait in Accept().
+	MaxConnections = 20
+)
+
+// This is just here to make the maxConnections prettier.
+type allowOneConn struct{}
+
 // Server is a TCP server that executed all commands
 // on a single repository. Once the daemon is started, it
 // attempts to open the repository, for which a password is needed.
@@ -29,6 +38,7 @@ type Server struct {
 	// Handle to `ipfs daemon`
 	ipfsDaemon *exec.Cmd
 
+	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
 
 	// Root context for this daemon
@@ -39,7 +49,7 @@ type Server struct {
 
 	// buffered channel with N places,
 	// every active connection holds one.
-	maxConnections chan struct{}
+	maxConnections chan allowOneConn
 }
 
 // Summon creates a new up and running Server instance
@@ -78,7 +88,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		ipfsDaemon:     proc,
-		maxConnections: make(chan struct{}, 20),
+		maxConnections: make(chan allowOneConn, MaxConnections),
 		ctx:            ctx,
 	}
 
@@ -106,7 +116,7 @@ func (d *Server) loop(cancel context.CancelFunc) {
 
 	// Reserve at least cap(d.maxConnections)
 	for i := 0; i < cap(d.maxConnections); i++ {
-		d.maxConnections <- struct{}{}
+		d.maxConnections <- allowOneConn{}
 	}
 
 	for {
@@ -126,7 +136,7 @@ func (d *Server) loop(cancel context.CancelFunc) {
 
 			conn, err := d.listener.Accept()
 			if err != nil && err.(*net.OpError).Timeout() {
-				d.maxConnections <- struct{}{}
+				d.maxConnections <- allowOneConn{}
 				continue
 			}
 
@@ -149,7 +159,9 @@ func (d *Server) handleRequest(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 
 	// Make sure this connection count gets released
-	defer func() { d.maxConnections <- struct{}{} }()
+	defer func() {
+		d.maxConnections <- allowOneConn{}
+	}()
 
 	tnl, err := tunnel.NewEllipticTunnel(conn)
 	if err != nil {
