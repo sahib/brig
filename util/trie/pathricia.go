@@ -203,18 +203,19 @@ func (n *Node) Path() string {
 		return ""
 	}
 
-	// Determinate the path length.
+	// Determine the path length,
+	// the path e.g. /home/a/b/c has a length of four.
 	pathLen := 0
 	n.Up(func(parent *Node) {
 		pathLen++
 	})
 
-	pathChunks := make([]string, pathLen+1)
+	pathChunks := make([]string, pathLen)
 
 	i := pathLen
 	n.Up(func(parent *Node) {
-		if i >= 0 {
-			pathChunks[i] = parent.Name
+		if i > 0 {
+			pathChunks[i-1] = parent.Name
 			i--
 		}
 	})
