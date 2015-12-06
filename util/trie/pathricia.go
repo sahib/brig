@@ -81,6 +81,13 @@ func (n *Node) Insert(path string) *Node {
 		curr = NewTrie()
 	}
 
+	if curr != nil {
+		// TODO: Check if this Lookup fix is correct.
+		// we as we need to start traversing from '/'
+		// and not a relative node
+		curr = curr.Root()
+	}
+
 	wasAdded := false
 
 	for depth, name := range SplitPath(path) {
@@ -115,6 +122,14 @@ func (n *Node) Lookup(path string) *Node {
 		return nil
 	}
 
+	if path == "" || path == "/" {
+		return n.Root()
+	}
+
+	curr = n.Root()
+	// TODO: Check if this fix is correct.
+	// we as we need to start traversing from '/'
+	// and not a relative node
 	for _, name := range SplitPath(path) {
 		child, ok := curr.Children[name]
 		if !ok {
