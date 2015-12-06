@@ -8,5 +8,5 @@ import (
 )
 
 func buildPath(s []string) string {
-	return string(os.PathListSeparator) + filepath.Join(s...)
+	return string(os.PathSeparator) + filepath.Join(s...)
 }
