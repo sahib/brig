@@ -1,58 +1,47 @@
 package trie
 
-import (
-	"encoding/gob"
-	"fmt"
-	"os"
-	"testing"
-)
+import "testing"
 
-func TestPathriciaLinux(t *testing.T) {
+func TestPathriciaInsertTrieLinux(t *testing.T) {
+	tests := []struct {
+		input  string
+		name   string
+		path   string
+		length int64
+	}{
+		//Insert path | expected node name | expected path | path len
+		{"", "", "/", 0},
+		{"\\", "\\", "/\\", 1},
+		{"a", "a", "/a", 2},
+		{"a/b", "b", "/a/b", 3},
+		{"home", "home", "/home", 4},
+		{"sahib", "sahib", "/sahib", 5},
+		{"home/qitta", "qitta", "/home/qitta", 6},
+		{"   ", "   ", "/   ", 7},
+	}
+
 	trie := NewTrie()
-	fmt.Println(trie.Len())
+	for _, test := range tests {
 
-	n := trie.Insert("/home/qitta")
-	fmt.Println(n, n.Root(), n.Parent)
-	n = trie.Insert("/home/sahib/gat/georg")
-	fmt.Println(n, n.Root(), n.Parent)
-	fmt.Println("Whole trie:")
+		// Inserting at the root node.
+		node := trie.Insert(test.input)
+		if node == nil {
+			t.Errorf("Node is nil.", test)
+			continue
+		}
 
-	trie.Walk(false, func(child *Node) {
-		fmt.Println("  :", child)
-	})
+		nodeLen := node.Root().Len()
+		if nodeLen != test.length {
+			t.Errorf("Length differs, got: %d != expected: %d\n", nodeLen, test.length)
+		}
 
-	fmt.Println("----", SplitPath("/home/qitta"))
+		if node.Name != test.name {
+			t.Errorf("Name differs, got: %s != expected: %s\n", node.Name, test.name)
+		}
 
-	n = trie.Lookup("/home/sahib/gat/georg").Remove()
-	fmt.Println(n, n.Root(), n.Parent)
-	n = trie.Lookup("/home").Remove()
-	fmt.Println(n, n.Root(), n.Parent)
-	n = trie.Lookup("/").Remove()
-	fmt.Println(n, n.Root(), n)
+		if node.Path() != test.path {
+			t.Errorf("Path differs, got: %s != expected: %s\n", node.Path(), test.path)
+		}
 
-	var x *Node
-	fmt.Println(x.Path())
-}
-
-func TestPathriciaWindows(t *testing.T) {
-	// TODO: This fails:
-	trie := NewTrie()
-	n := trie.Insert("C:/Albert")
-	fmt.Println(n)
-	trie.Walk(false, func(child *Node) {
-		fmt.Println("  :", child)
-	})
-}
-
-func TestJson(t *testing.T) {
-	trie := NewTrie()
-	trie.Insert("/home/qitta")
-	trie.Insert("/home/sahib")
-
-	enc := gob.NewEncoder(os.Stdout)
-
-	err := enc.Encode(trie)
-	if err != nil {
-		t.Fatalf("Marshal failed: %v", err)
 	}
 }
