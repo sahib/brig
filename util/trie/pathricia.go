@@ -2,7 +2,6 @@
 package trie
 
 import (
-	"fmt"
 	"os"
 	"strings"
 )
@@ -155,7 +154,6 @@ func (n *Node) Remove() *Node {
 		child.Children = nil
 		child.Parent = nil
 	})
-	fmt.Println(parent, parent.Name)
 	return parent
 }
 
