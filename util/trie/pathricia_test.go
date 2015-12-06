@@ -88,3 +88,49 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 	}
 
 }
+
+func TestPathriciaRemoveLinux(t *testing.T) {
+	paths := []string{
+		// Inserting seven elements.
+		"home/qitta",
+		"/sahib",
+		"/eule",
+		"home/eule",
+		"katze/eule",
+		"elch/eule",
+		"elch/eule/meow",
+	}
+
+	trie := NewTrie()
+	for _, path := range paths {
+		trie.Insert(path)
+	}
+
+	tests := []struct {
+		path   string
+		length int64
+		name   string
+	}{
+		{"/home", 5, ""},
+		{"/katze/Eule", 5, ""},
+		{"/katze/eule", 4, "katze"},
+		{"/elch/eule/meow", 3, "eule"},
+		{"/", 0, ""},
+	}
+
+	for _, test := range tests {
+
+		node := trie.Lookup(test.path).Remove()
+		if node == nil {
+			continue
+		}
+
+		if node.Name != test.name {
+			t.Errorf("\nRemoving: [%s]\nName differs, got: %s != expected: %s\n", test.path, node.Name, test.name)
+		}
+
+		if trie.Length != test.length {
+			t.Errorf("Length differs, got: %d != expected: %d\n", trie.Length, test.length)
+		}
+	}
+}
