@@ -2,6 +2,7 @@
 package trie
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -109,6 +110,7 @@ func (n *Node) Insert(path string) *Node {
 }
 
 // Lookup searches a Node by it's absolute path.
+// Returns nil if Node does not exist.
 func (n *Node) Lookup(path string) *Node {
 	curr := n
 	if n == nil {
@@ -132,7 +134,7 @@ func (n *Node) Lookup(path string) *Node {
 // Remove removes the receiver and all of it's children.
 // The removed node's parent is returned.
 func (n *Node) Remove() *Node {
-	if n == nil {
+	if n == nil || n.Name == "" {
 		return nil
 	}
 
@@ -153,6 +155,7 @@ func (n *Node) Remove() *Node {
 		child.Children = nil
 		child.Parent = nil
 	})
+	fmt.Println(parent, parent.Name)
 	return parent
 }
 
