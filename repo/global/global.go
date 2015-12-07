@@ -1,4 +1,5 @@
-// Package global implements the logic behind the global config files in ~/.brig
+// Package global implements the logic behind the global config files in
+// ~/.brigconfig
 package global
 
 import (
@@ -11,13 +12,17 @@ import (
 	yamlConfig "github.com/olebedev/config"
 )
 
+const (
+	DirName = ".brigconfig"
+)
+
 // Repository is the handle for the global repository.
 type Repository struct {
 	Folder string
 	Config *yamlConfig.Config
 }
 
-// RepoListEntry is a single entry in ~/.brig/repos
+// RepoListEntry is a single entry in ~/.brigconfig/repos
 type RepoListEntry struct {
 	UniqueID   string
 	RepoPath   string
@@ -44,7 +49,7 @@ func guessGlobalFolder() string {
 		return os.TempDir()
 	}
 
-	return path.Join(curr.HomeDir, ".brig")
+	return path.Join(curr.HomeDir, DirName)
 }
 
 // Init creates a new global Repository and returns it.
@@ -130,7 +135,7 @@ func (g *Repository) modifyConfig(worker func(cfg *yamlConfig.Config) error) err
 	return nil
 }
 
-// AddRepo adds a new repo to ~/.brig/repos
+// AddRepo adds a new repo to ~/.brigconfig/repos
 func (g *Repository) AddRepo(entry RepoListEntry) error {
 	return g.modifyConfig(func(cfg *yamlConfig.Config) error {
 		repos, err := cfg.Map("repositories")
@@ -143,7 +148,7 @@ func (g *Repository) AddRepo(entry RepoListEntry) error {
 	})
 }
 
-// RemoveRepo deletes an existing repo to ~/.brig/repos
+// RemoveRepo deletes an existing repo to ~/.brigconfig/repos
 func (g *Repository) RemoveRepo(entry RepoListEntry) error {
 	return g.modifyConfig(func(cfg *yamlConfig.Config) error {
 		repos, err := cfg.Map("repositories")
