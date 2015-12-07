@@ -1,6 +1,9 @@
 package trie
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestPathriciaInsertTrieLinux(t *testing.T) {
 	tests := []struct {
@@ -9,7 +12,7 @@ func TestPathriciaInsertTrieLinux(t *testing.T) {
 		path   string
 		length int64
 	}{
-		//Insert path | expected node name | expected path | path len
+		//Insert path | expected node name | expected path | trie.Len()
 		{"", "", "/", 0},
 		{"\\", "\\", "/\\", 1},
 		{"a", "a", "/a", 2},
@@ -22,27 +25,25 @@ func TestPathriciaInsertTrieLinux(t *testing.T) {
 
 	trie := NewTrie()
 	for _, test := range tests {
-
 		// Inserting at the root node.
 		node := trie.Insert(test.input)
 		if node == nil {
-			t.Errorf("Node is nil.", test)
+			t.Errorf("Node is nil: %v", test)
 			continue
 		}
 
 		nodeLen := node.Root().Len()
 		if nodeLen != test.length {
-			t.Errorf("Length differs, got: %d != expected: %d\n", nodeLen, test.length)
+			t.Errorf("Length differs, got: %d != expected: %d", nodeLen, test.length)
 		}
 
 		if node.Name != test.name {
-			t.Errorf("Name differs, got: %s != expected: %s\n", node.Name, test.name)
+			t.Errorf("Name differs, got: %s != expected: %s", node.Name, test.name)
 		}
 
 		if node.Path() != test.path {
-			t.Errorf("Path differs, got: %s != expected: %s\n", node.Path(), test.path)
+			t.Errorf("Path differs, got: %s != expected: %s", node.Path(), test.path)
 		}
-
 	}
 }
 
@@ -53,7 +54,7 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 		path   string
 		length int64
 	}{
-		//Insert path | expected node name | expected path | path len
+		//Insert path | expected node name | expected path | trie.Len()
 		{"", "", "/", 0},
 		{"/", "", "/", 1},
 		{"a", "a", "/a", 2},
@@ -64,9 +65,9 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 	trie := NewTrie()
 	node := trie.Root()
 	for _, test := range tests {
-
 		// Inserting at always at the returned node.
 		node = node.Insert(test.input)
+		fmt.Println("PATH", node.Path())
 		if node == nil {
 			t.Errorf("Node is nil.", test)
 			continue
@@ -91,7 +92,6 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 
 func TestPathriciaRemoveLinux(t *testing.T) {
 	paths := []string{
-		// Inserting seven elements.
 		"home/qitta",
 		"/sahib",
 		"/eule",
@@ -116,10 +116,10 @@ func TestPathriciaRemoveLinux(t *testing.T) {
 		{"/katze/eule", 4, "katze"},
 		{"/elch/eule/meow", 3, "eule"},
 		{"/", 0, ""},
+		{"/", 0, ""},
 	}
 
 	for _, test := range tests {
-
 		node := trie.Lookup(test.path).Remove()
 		if node == nil {
 			continue

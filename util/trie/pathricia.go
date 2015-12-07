@@ -83,7 +83,7 @@ func (n *Node) Insert(path string) *Node {
 
 	wasAdded := false
 
-	for depth, name := range SplitPath(path) {
+	for _, name := range SplitPath(path) {
 		if curr.Children == nil {
 			curr.Children = make(map[string]*Node)
 		}
@@ -92,7 +92,7 @@ func (n *Node) Insert(path string) *Node {
 			child = &Node{
 				Parent: curr,
 				Name:   name,
-				Depth:  uint16(depth + 1),
+				Depth:  uint16(curr.Depth + 1),
 			}
 			curr.Children[name] = child
 			wasAdded = true
@@ -133,7 +133,7 @@ func (n *Node) Lookup(path string) *Node {
 // Remove removes the receiver and all of it's children.
 // The removed node's parent is returned.
 func (n *Node) Remove() *Node {
-	if n == nil || n.Name == "" {
+	if n == nil {
 		return nil
 	}
 
@@ -204,24 +204,15 @@ func (n *Node) Path() string {
 		return ""
 	}
 
-	// Determine the path length,
-	// the path e.g. /home/a/b/c has a length of four.
-	pathLen := 0
+	s := make([]string, n.Depth+2)
+	i := len(s) - 1
+
 	n.Up(func(parent *Node) {
-		pathLen++
+		s[i] = parent.Name
+		i--
 	})
 
-	pathChunks := make([]string, pathLen)
-
-	i := pathLen
-	n.Up(func(parent *Node) {
-		if i > 0 {
-			pathChunks[i-1] = parent.Name
-			i--
-		}
-	})
-
-	return buildPath(pathChunks)
+	return buildPath(s)
 }
 
 // String returns the absolute path of the node.
