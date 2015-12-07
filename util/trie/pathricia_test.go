@@ -67,7 +67,7 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 		// Inserting at always at the returned node.
 		node = node.Insert(test.input)
 		if node == nil {
-			t.Errorf("Node is nil.", test)
+			t.Errorf("Node is nil: %v", test)
 			continue
 		}
 
