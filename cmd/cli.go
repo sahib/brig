@@ -49,7 +49,13 @@ func guessRepoFolder() string {
 	if err != nil {
 		log.Error(err)
 	}
-	return wd
+
+	actualPath := repo.FindRepo(wd)
+	if actualPath == "" {
+		log.Errorf("Unable to find repo in path or any parents:\n%q", wd)
+	}
+
+	return actualPath
 }
 
 func readPassword() (string, error) {
