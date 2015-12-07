@@ -1,6 +1,7 @@
 package repo
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"os"
 	"path/filepath"
 )
@@ -40,4 +41,26 @@ func FindRepo(folder string) string {
 		curr = dirname
 	}
 	return ""
+}
+
+// GuessRepoFolder tries to find the desired brig repo by heuristics.
+// Current heuristics: check env var BRIG_PATH, then the working dir.
+// On failure, it will return an empty string.
+func GuessFolder() string {
+	wd := os.Getenv("BRIG_PATH")
+	if wd == "" {
+		var err error
+		wd, err = os.Getwd()
+		if err != nil {
+			log.Errorf("Unable to fetch working dir: %q", err)
+			return ""
+		}
+	}
+
+	actualPath := FindRepo(wd)
+	if actualPath == "" {
+		log.Errorf("Unable to find repo in path or any parents: %q", wd)
+	}
+
+	return actualPath
 }

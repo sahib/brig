@@ -40,22 +40,12 @@ func formatGroup(category string) string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 func guessRepoFolder() string {
-	wd := os.Getenv("BRIG_PATH")
-	if wd != "" {
-		return wd
+	folder := repo.GuessFolder()
+	if folder == "" {
+		log.Fatalf("This does not like a brig repository (missing .brig)")
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Error(err)
-	}
-
-	actualPath := repo.FindRepo(wd)
-	if actualPath == "" {
-		log.Errorf("Unable to find repo in path or any parents:\n%q", wd)
-	}
-
-	return actualPath
+	return folder
 }
 
 func readPassword() (string, error) {
