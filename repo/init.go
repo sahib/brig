@@ -153,6 +153,11 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
+	otrKeyPath := filepath.Join(brigPath, "otr.key")
+	if err := touch(otrKeyPath); err != nil {
+		return err
+	}
+
 	// Make the key larger than needed:
 	if err := createMasterKey(brigPath, 1024); err != nil {
 		return err

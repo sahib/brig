@@ -1,19 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	xmpp "github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/crypto/otr"
 )
+
+// TODO: Purge dead conversations.
 
 // Client is an xmpp client with OTR support.
 // Before establishing a connection, OTR will be triggered
@@ -23,83 +26,139 @@ type Client struct {
 	// Embedded client
 	C *xmpp.Client
 
+	// Path to a otr-key file. If empty, a new one will be generated.
+	KeyPath string
+
 	// Connection Status channel:
 	Status chan xmpp.Status
 
-	// Map of JID to Conversation layer
+	// Map of JID to Conversation layer.
 	conversations map[xmpp.JID]*otr.Conversation
 
-	// Map of JID to authorisation state
+	// Map of JID to wether we initiated the conversation.
+	initiated map[xmpp.JID]bool
+
+	// Map of JID to authorisation state.
 	authorised map[xmpp.JID]bool
+
+	blockOtr chan error
+
+	Send chan<- xmpp.Stanza
+	Recv <-chan xmpp.Stanza
 }
 
 // NewClient returns a ready client or nil on error.
-func NewClient(jid xmpp.JID, pw string) (*Client, error) {
-	client := &Client{}
-	client.conversations = make(map[xmpp.JID]*otr.Conversation)
-	client.authorised = make(map[xmpp.JID]bool)
+func NewClient(jid xmpp.JID, password string) (*Client, error) {
+	recvChan := make(chan xmpp.Stanza, 10)
+	sendChan := make(chan xmpp.Stanza, 10)
+
+	c := &Client{
+		conversations: make(map[xmpp.JID]*otr.Conversation),
+		authorised:    make(map[xmpp.JID]bool),
+		KeyPath:       "/tmp/otr.key", // TODO
+		initiated:     make(map[xmpp.JID]bool),
+		blockOtr:      make(chan error, 1),
+		Send:          sendChan,
+		Recv:          recvChan,
+	}
 
 	// TODO: This tls config is probably a bad idea.
-	tlsConf := tls.Config{InsecureSkipVerify: true}
-	innerClient, err := xmpp.NewClient(&jid, pw,
-		tlsConf, nil, xmpp.Presence{}, client.Status)
+	innerClient, err := xmpp.NewClient(
+		&jid,
+		password,
+		tls.Config{InsecureSkipVerify: true},
+		nil,
+		xmpp.Presence{},
+		c.Status,
+	)
 
 	if err != nil {
 		log.Fatalf("NewClient(%v): %v", jid, err)
 		return nil, err
 	}
 
-	client.C = innerClient
+	c.C = innerClient
 
 	// Remember to update the status:
 	go func() {
-		for status := range client.Status {
+		for status := range c.Status {
 			fmt.Printf("connection status %d\n", status)
 		}
 	}()
 
-	return client, nil
+	// Recv loop: Handle incoming messages, filter OTR.
+	go func() {
+		for stanza := range c.C.Recv {
+			if msg, ok := stanza.(*xmpp.Message); ok {
+				// fmt.Printf("--->\n%s: %s\n<---\n", msg.From, msg.Body[0].Chardata)
+				if c.doRecv(msg) {
+					recvChan <- msg
+				}
+			}
+		}
+	}()
+
+	// Send loop: Send incoming messages over the network.
+	go func() {
+		for stanza := range sendChan {
+			if msg, ok := stanza.(*xmpp.Message); ok {
+				// TODO:  Join bodies.
+				c.doSend(msg.To, msg.Body[0].Chardata)
+			}
+		}
+	}()
+
+	return c, nil
 }
 
-// TODO: This is only a dummy.
-func loadPrivateKey() *otr.PrivateKey {
+func loadPrivateKey(path string) (*otr.PrivateKey, error) {
 	key := &otr.PrivateKey{}
+	file, err := os.Open(path)
 
-	if file, err := os.Open("/tmp/keyfile"); err != nil {
-		// Generate fresh one:
+	// Generate a fresh one if it does not exist.
+	if os.IsNotExist(err) {
 		key.Generate(rand.Reader)
-		fmt.Printf("Key Generated: %x\n", key.Serialize(nil))
 
-		// Save for next time:
-		ioutil.WriteFile("/tmp/keyfile", key.Serialize(nil), 0775)
-	} else {
-		// TODO: This *seems* to work, assert it does.
-		buffer := make([]byte, 4096)
-		n, _ := file.Read(buffer)
-		_, ok := key.Parse(buffer[:n])
-		fmt.Print("Key was cached: ")
-		if ok {
-			fmt.Println("Success!")
-		} else {
-			fmt.Println("Nope.")
+		if err := ioutil.WriteFile(path, key.Serialize(nil), 0600); err != nil {
+			return key, err
 		}
+
+		log.Infof("Key Generated: %x", key.Serialize(nil))
+		return key, nil
 	}
 
-	return key
+	// There was some other error.
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := key.Parse(data); ok {
+		return key, nil
+	}
+
+	return nil, fmt.Errorf("Parsing otr-key failed.")
 }
 
-func (client *Client) initOtr(jid xmpp.JID) {
-	client.Send(jid, otr.QueryMessage)
-}
-
-func (client *Client) getConversation(jid xmpp.JID) (*otr.Conversation, bool) {
-	con, ok := client.conversations[jid]
+func (c *Client) lookupConv(jid xmpp.JID) (*otr.Conversation, bool) {
+	con, ok := c.conversations[jid]
 	if !ok {
 		fmt.Printf("NEW CONVERSATION: `%v`\n", string(jid))
 		con = &otr.Conversation{}
-		con.PrivateKey = loadPrivateKey()
-		client.conversations[jid] = con
-		client.authorised[jid] = false
+		c.conversations[jid] = con
+		c.authorised[jid] = false
+		c.initiated[jid] = false
+
+		privKey, err := loadPrivateKey(c.KeyPath)
+		if err != nil {
+			log.Errorf("otr-key-gen failed: %v", err)
+		}
+
+		con.PrivateKey = privKey
 	}
 
 	return con, !ok
@@ -113,7 +172,7 @@ func truncate(a string, l int) string {
 	return a
 }
 
-func createMessage(from, to string, text []byte) *xmpp.Message {
+func createMessage(from, to, text string) *xmpp.Message {
 	xmsg := &xmpp.Message{}
 	xmsg.From = xmpp.JID(from)
 	xmsg.To = xmpp.JID(to)
@@ -121,85 +180,132 @@ func createMessage(from, to string, text []byte) *xmpp.Message {
 
 	xmsg.Type = "chat"
 	xmsg.Lang = "en"
-	xmsg.Body = []xmpp.Text{{XMLName: xml.Name{Local: "body"}, Chardata: string(text)}}
+	xmsg.Body = []xmpp.Text{
+		{
+			XMLName:  xml.Name{Local: "body"},
+			Chardata: text,
+		},
+	}
 
 	return xmsg
 }
 
-var isServer = false
-
-// Recv receives a single xmpp.Message which is written to *msg.
-func (client *Client) Recv(msg *xmpp.Message) {
-	con, _ := client.getConversation(msg.From)
-	sendBack := [][]byte{}
+func (c *Client) doRecv(msg *xmpp.Message) bool {
+	buf := &bytes.Buffer{}
 
 	for _, field := range msg.Body {
-		data, encrypted, state, toSend, err := con.Receive([]byte(field.Chardata))
-		if err != nil {
-			fmt.Println("\n\n!!!!! ", err)
-		}
+		buf.Write([]byte(field.Chardata))
+	}
 
-		sendBack = append(sendBack, toSend...)
+	sendBack, wasNormal, err := c.recv(buf.Bytes(), msg.From)
+	if err != nil {
+		log.Warningf("recv failed: %v", err)
+	}
 
-		fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
-			truncate(string(data), 20),
-			truncate(string(field.Chardata), 20),
-			encrypted, con.IsEncrypted(), client.authorised[msg.From], state)
+	for _, outMsg := range sendBack {
+		fmt.Printf("   SEND BACK: `%v`\n", truncate(string(outMsg), 20))
+		c.C.Send <- createMessage(string(c.C.Jid), string(msg.From), string(outMsg))
+	}
 
-		switch state {
-		case otr.NewKeys:
-			if isServer {
-				authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
-				fmt.Println("==> AUTH REQUEST")
-				if authErr != nil {
-					fmt.Println("============ AUTH ==========")
-					fmt.Println(authErr)
-					fmt.Println("============ AUTH ==========")
-				}
-				sendBack = append(sendBack, authToSend...)
+	return wasNormal
+}
+
+func (c *Client) recv(input []byte, from xmpp.JID) ([][]byte, bool, error) {
+	con, isNew := c.lookupConv(from)
+	if isNew {
+		c.initiated[from] = false
+	}
+
+	weStarted := c.initiated[from]
+	sendBack := [][]byte{}
+
+	data, encrypted, state, toSend, err := con.Receive(input)
+	if err != nil {
+		fmt.Println("\n\n!!!!! ", err)
+	}
+
+	sendBack = append(sendBack, toSend...)
+
+	wasNormal := encrypted
+
+	fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
+		truncate(string(data), 20),
+		truncate(string(input), 20),
+		encrypted,
+		con.IsEncrypted(),
+		c.authorised[from],
+		state,
+	)
+
+	if state != otr.NoChange {
+		wasNormal = false
+	}
+
+	switch state {
+	case otr.NewKeys:
+		if weStarted {
+			authToSend, authErr := con.Authenticate("weis nich?", []byte("eule"))
+			fmt.Println("==> AUTH REQUEST")
+			if authErr != nil {
+				fmt.Println(authErr)
 			}
-		case otr.SMPSecretNeeded:
-			question := con.SMPQuestion()
-			fmt.Printf("[!] Answer a question '%s'\n", question)
-			msgs, _ := con.Authenticate(question, []byte("eule"))
-			sendBack = append(sendBack, msgs...)
-		case otr.SMPComplete:
-			fmt.Println("[!] Answer is correct")
-			if isServer == false && client.authorised[msg.From] == false {
-				authToSend, authErr := con.Authenticate("wer weis nich?", []byte("eule"))
-				fmt.Println("==> AUTH REQUEST")
-				if authErr != nil {
-					fmt.Println("============ AUTH ==========")
-					fmt.Println(authErr)
-					fmt.Println("============ AUTH ==========")
-				}
-				sendBack = append(sendBack, authToSend...)
-			}
-			client.authorised[msg.From] = true
-		case otr.SMPFailed:
-			fmt.Println("[!] Answer is wrong")
-			client.authorised[msg.From] = false
+			sendBack = append(sendBack, authToSend...)
 		}
-
-		for _, s := range sendBack {
-			fmt.Printf("   SEND(%v) BACK: `%v`\n", con.IsEncrypted(), truncate(string(s), 20))
-			client.C.Send <- createMessage(string(client.C.Jid), string(msg.From), s)
+	case otr.SMPSecretNeeded:
+		question := con.SMPQuestion()
+		fmt.Printf("[!] Answer a question '%s'\n", question)
+		msgs, _ := con.Authenticate(question, []byte("eule"))
+		sendBack = append(sendBack, msgs...)
+	case otr.SMPComplete: // We completed their quest, ask partner now.
+		fmt.Println("[!] Answer is correct")
+		if weStarted == false && c.authorised[from] == false {
+			authToSend, authErr := con.Authenticate("wer weis nich?", []byte("eule"))
+			fmt.Println("==> AUTH REQUEST")
+			if authErr != nil {
+				fmt.Println(authErr)
+			}
+			sendBack = append(sendBack, authToSend...)
+		}
+		c.authorised[from] = true
+		fmt.Println("BEFORE BLOCK")
+		if weStarted {
+			c.blockOtr <- nil
+		}
+		fmt.Println("AFTER BLOCK")
+	case otr.SMPFailed:
+		fmt.Println("[!] Answer is wrong")
+		c.authorised[from] = false
+		if weStarted {
+			c.blockOtr <- nil
 		}
 	}
+
+	return sendBack, wasNormal, nil
 }
 
 // Send sends `text` to participant `to`.
 // A new otr session will be established if required.
-func (client *Client) Send(to xmpp.JID, text string) {
-	con, wasNew := client.getConversation(to)
+func (c *Client) doSend(to xmpp.JID, text string) {
+	con, isNew := c.lookupConv(to)
+	if isNew {
+		// Do the OTR dance first:
+		c.initiated[to] = true
+		c.send(to, otr.QueryMessage, con)
 
-	if wasNew {
-		client.initOtr(to)
+		// Wait till connection is fully established. TODO: timeout.
+		if err := <-c.blockOtr; err != nil {
+			log.Warningf("blockOtr: %v", err)
+			// TODO: return err
+		}
 	}
 
+	c.send(to, text, con)
+}
+
+func (c *Client) send(to xmpp.JID, text string, con *otr.Conversation) {
 	base64Texts, err := con.Send([]byte(text))
 	fmt.Printf("SEND(%v|%v): %v => %v\n",
-		con.IsEncrypted(), client.authorised[to],
+		con.IsEncrypted(), c.authorised[to],
 		text, truncate(string(base64Texts[0]), 20))
 
 	if err != nil {
@@ -208,7 +314,7 @@ func (client *Client) Send(to xmpp.JID, text string) {
 	}
 
 	for _, base64Text := range base64Texts {
-		client.C.Send <- createMessage(string(client.C.Jid), string(to), base64Text)
+		c.C.Send <- createMessage(string(c.C.Jid), string(to), string(base64Text))
 	}
 }
 
@@ -232,7 +338,7 @@ func init() {
 //   - Was passiert bei einem disconnect?
 
 func main() {
-	jid := flag.String("jid", "", "JID to log in as")
+	jid := flag.String("jid", "alice@jabber.nullcat.de/laptop", "JID to log in as")
 	pwd := flag.String("pw", "", "password")
 	to := flag.String("to", "bob@jabber.nullcat.de/desktop", "Receiver")
 	send := flag.Bool("send", false, "Send otr query")
@@ -254,24 +360,25 @@ func main() {
 
 	go func(ch <-chan xmpp.Stanza) {
 		for stanza := range ch {
-			if msg, ok := stanza.(*xmpp.Message); ok {
+			if _, ok := stanza.(*xmpp.Message); ok {
 				// fmt.Printf("--->\n%s: %s\n<---\n", msg.From, msg.Body[0].Chardata)
-				client.Recv(msg)
 			}
 		}
-	}(client.C.Recv)
+	}(client.Recv)
 
 	sendOtr := true
 	for {
+		text := "Hello me. "
 		if *send {
-			isServer = true
 			if sendOtr {
-				client.Send(xmpp.JID(*to), "Hello me. "+otr.QueryMessage)
+				text += otr.QueryMessage
 				sendOtr = false
-			} else {
-				client.Send(xmpp.JID(*to), "Hello me.")
 			}
+			client.Send <- createMessage(*jid, *to, text)
+			time.Sleep(5 * time.Second)
+		} else {
+			fmt.Println(<-client.Recv)
+			client.Send <- createMessage(*jid, *to, "PONG")
 		}
-		time.Sleep(5 * time.Second)
 	}
 }
