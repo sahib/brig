@@ -1,9 +1,6 @@
 package trie
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestPathriciaInsertTrieLinux(t *testing.T) {
 	tests := []struct {
@@ -60,6 +57,8 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 		{"a", "a", "/a", 2},
 		{"b", "b", "/a/b", 3},
 		{"c", "c", "/a/b/c", 4},
+		{"c/de/fe", "fe", "/a/b/c/c/de/fe", 5},
+		{"c/de/fe/333", "333", "/a/b/c/c/de/fe/c/de/fe/333", 6},
 	}
 
 	trie := NewTrie()
@@ -67,9 +66,8 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 	for _, test := range tests {
 		// Inserting at always at the returned node.
 		node = node.Insert(test.input)
-		fmt.Println("PATH", node.Path())
 		if node == nil {
-			t.Errorf("Node is nil.", test)
+			t.Errorf("Node is nil: %v", test)
 			continue
 		}
 
