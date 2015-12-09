@@ -34,8 +34,7 @@ func (r *EncryptedReader) Read(dest []byte) (int, error) {
 	// Try our best ot fill len(dest)
 	for readBytes < len(dest) {
 		if r.backlog.Len() == 0 {
-			_, err := r.readBlock()
-			if err != nil {
+			if _, err := r.readBlock(); err != nil {
 				return readBytes, err
 			}
 		}
