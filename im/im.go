@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -55,22 +56,23 @@ type Client struct {
 
 	buddies map[xmpp.JID]*buddyInfo
 
-	blockOtr chan error
-	Send     chan<- xmpp.Stanza
-	Recv     <-chan xmpp.Stanza
+	otrAuth chan error
+	Send    chan<- xmpp.Stanza
+	Recv    <-chan xmpp.Stanza
 }
 
 // NewClient returns a ready client or nil on error.
-func NewClient(jid xmpp.JID, password string) (*Client, error) {
+func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
+	// TODO: Make these buffered or unbuffered?
 	recvChan := make(chan xmpp.Stanza, 10)
 	sendChan := make(chan xmpp.Stanza, 10)
 
 	c := &Client{
-		buddies:  make(map[xmpp.JID]*buddyInfo),
-		blockOtr: make(chan error, 1),
-		KeyPath:  "/tmp/otr.key", // TODO
-		Send:     sendChan,
-		Recv:     recvChan,
+		buddies: make(map[xmpp.JID]*buddyInfo),
+		otrAuth: make(chan error, 1),
+		KeyPath: keyPath,
+		Send:    sendChan,
+		Recv:    recvChan,
 	}
 
 	xmppClient, err := xmpp.NewClient(
@@ -95,22 +97,29 @@ func NewClient(jid xmpp.JID, password string) (*Client, error) {
 	// Remember to update the status:
 	go func() {
 		for status := range c.Status {
-			fmt.Printf("connection status %d\n", status)
+			log.Debugf("connection status %d", status)
 		}
 	}()
+
+	lock := sync.Mutex{}
 
 	// Recv loop: Handle incoming messages, filter OTR.
 	go func() {
 		for stanza := range c.C.Recv {
 			if msg, ok := stanza.(*xmpp.Message); ok {
-				isNoOtrMsg, err := c.recv(msg)
+				lock.Lock()
+
+				response, err := c.recv(msg)
 				if err != nil {
 					log.Warningf("im-recv: %v", err)
 				}
 
-				if isNoOtrMsg {
-					recvChan <- msg
+				if response != nil {
+					log.Infof("recv: %v", response.Body[0].Chardata)
+					recvChan <- response
 				}
+
+				lock.Unlock()
 			}
 		}
 	}()
@@ -120,7 +129,10 @@ func NewClient(jid xmpp.JID, password string) (*Client, error) {
 		for stanza := range sendChan {
 			if msg, ok := stanza.(*xmpp.Message); ok {
 				// TODO:  Join bodies, check err.
+				lock.Lock()
+				log.Infof("send: %v", msg.Body[0].Chardata)
 				c.send(msg.To, []byte(msg.Body[0].Chardata))
+				lock.Unlock()
 			}
 		}
 	}()
@@ -167,7 +179,7 @@ func (c *Client) lookupBuddy(jid xmpp.JID) (*buddyInfo, bool, error) {
 	_, ok := c.buddies[jid]
 
 	if !ok {
-		fmt.Printf("NEW CONVERSATION: `%v`\n", string(jid))
+		log.Infof("NEW CONVERSATION: `%v`\n", string(jid))
 		privKey, err := loadPrivateKey(c.KeyPath)
 		if err != nil {
 			log.Errorf("otr-key-gen failed: %v", err)
@@ -193,10 +205,10 @@ func truncate(a string, l int) string {
 	return a
 }
 
-func CreateMessage(from, to, text string) *xmpp.Message {
+func CreateMessage(from, to xmpp.JID, text string) *xmpp.Message {
 	xmsg := &xmpp.Message{}
-	xmsg.From = xmpp.JID(from)
-	xmsg.To = xmpp.JID(to)
+	xmsg.From = from
+	xmsg.To = to
 	xmsg.Id = xmpp.NextId()
 
 	xmsg.Type = "chat"
@@ -211,31 +223,34 @@ func CreateMessage(from, to, text string) *xmpp.Message {
 	return xmsg
 }
 
-func (c *Client) recv(msg *xmpp.Message) (bool, error) {
+func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
 	buf := &bytes.Buffer{}
 	for _, field := range msg.Body {
 		buf.Write([]byte(field.Chardata))
 	}
 
-	sendBack, isNoOtrMsg, err := c.recvRaw(buf.Bytes(), msg.From)
+	plain, responses, isNoOtrMsg, err := c.recvRaw(buf.Bytes(), msg.From)
 	if err != nil {
 		log.Warningf("recv failed: %v", err)
-		return false, err
+		return nil, err
 	}
 
 	// Turn every fragment into a separate xmpp message:
-	for _, outMsg := range sendBack {
-		fmt.Printf("   SEND BACK: `%v`\n", truncate(string(outMsg), 20))
-		c.C.Send <- CreateMessage(string(c.C.Jid), string(msg.From), string(outMsg))
+	for _, outMsg := range responses {
+		c.C.Send <- CreateMessage(c.C.Jid, msg.From, string(outMsg))
 	}
 
-	return isNoOtrMsg, nil
+	if isNoOtrMsg {
+		return CreateMessage(msg.From, c.C.Jid, string(plain)), nil
+	}
+
+	return nil, nil
 }
 
-func (c *Client) recvRaw(input []byte, from xmpp.JID) ([][]byte, bool, error) {
+func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, error) {
 	buddy, isNew, err := c.lookupBuddy(from)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 
 	// We talk to this buddy the first time.
@@ -245,42 +260,37 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([][]byte, bool, error) {
 		// First message should be the otr query. Validate.
 		if !bytes.Contains(input, []byte(otr.QueryMessage)) {
 			err := fmt.Errorf("First message was no OTR query.")
-			c.blockOtr <- err
-			return nil, false, err
+			c.otrAuth <- err
+			return nil, nil, false, err
 		}
 	}
 
 	// Pipe input through the conversation:
 	cnv := buddy.conversation
-	data, encrypted, state, response, err := cnv.Receive(input)
+	data, encrypted, state, responses, err := cnv.Receive(input)
 	if err != nil {
-		fmt.Println("\n\n!!!!! ", err)
-		c.blockOtr <- err
-		return nil, false, err
+		c.otrAuth <- err
+		return nil, nil, false, err
 	}
 
-	fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
-		truncate(string(data), 20),
-		truncate(string(input), 20),
-		encrypted,
-		cnv.IsEncrypted(),
-		buddy.authorised,
-		state,
-	)
-
-	sendBack := [][]byte{}
-	sendBack = append(sendBack, response...)
+	// fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
+	// 	truncate(string(data), 20),
+	// 	truncate(string(input), 20),
+	// 	encrypted,
+	// 	cnv.IsEncrypted(),
+	// 	buddy.authorised,
+	// 	state,
+	// )
 
 	auth := func(question string, answer []byte) error {
-		authToSend, err := cnv.Authenticate(question, answer)
-		fmt.Println("==> AUTH REQUEST")
+		authResp, err := cnv.Authenticate(question, answer)
 		if err != nil {
-			fmt.Println(err)
-			c.blockOtr <- err
+			log.Warningf("im: Authentication error: %v", err)
+			c.otrAuth <- err
 			return err
 		}
 
-		sendBack = append(sendBack, authToSend...)
+		responses = append(responses, authResp...)
 		return nil
 	}
 
@@ -289,38 +299,36 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([][]byte, bool, error) {
 	case otr.NewKeys: // We exchanged keys, channel is encrypted now.
 		if buddy.initiated {
 			if err := auth("weis nich?", []byte("eule")); err != nil {
-				return nil, false, err
+				return nil, nil, false, err
 			}
 		}
 	case otr.SMPSecretNeeded: // We received a question and have to answer.
 		question := cnv.SMPQuestion()
 		fmt.Printf("[!] Answer a question '%s'\n", question)
 		if err := auth(question, []byte("eule")); err != nil {
-			return nil, false, err
+			return nil, nil, false, err
 		}
 	case otr.SMPComplete: // We completed their quest, ask partner now.
 		fmt.Println("[!] Answer is correct")
 		if buddy.initiated == false && buddy.authorised == false {
 			if err := auth("wer weis nich?", []byte("eule")); err != nil {
-				return nil, false, err
+				return nil, nil, false, err
 			}
 		}
 
 		buddy.authorised = true
-		fmt.Println("BEFORE BLOCK")
 		if buddy.initiated {
-			c.blockOtr <- nil
+			c.otrAuth <- nil
 		}
-		fmt.Println("AFTER BLOCK")
 	case otr.SMPFailed: // We failed with our answer.
 		fmt.Println("[!] Answer is wrong")
 		buddy.authorised = false
 		if buddy.initiated {
-			c.blockOtr <- nil
+			c.otrAuth <- nil
 		}
 	}
 
-	return sendBack, state == otr.NoChange && encrypted, nil
+	return data, responses, state == otr.NoChange && encrypted, nil
 }
 
 // Send sends `text` to participant `to`.
@@ -345,9 +353,9 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 		select {
 		case <-ticker.C:
 			return fmt.Errorf("OTR init took too long: %v", timeout)
-		case err := <-c.blockOtr:
+		case err := <-c.otrAuth:
 			if err != nil {
-				log.Warningf("blockOtr: %v", err)
+				log.Warningf("otrAuth: %v", err)
 				return err
 			}
 		}
@@ -360,17 +368,17 @@ func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *buddyInfo) error {
 	base64Texts, err := buddy.conversation.Send(text)
 
 	// TODO: DEBUG
-	fmt.Printf("SEND(%v|%v): %v => %v\n",
-		buddy.conversation.IsEncrypted(), buddy.authorised,
-		text, truncate(string(base64Texts[0]), 20))
+	// fmt.Printf("SEND(%v|%v): %v => %v\n",
+	// 	buddy.conversation.IsEncrypted(), buddy.authorised,
+	// 	text, truncate(string(base64Texts[0]), 20))
 
 	if err != nil {
-		fmt.Println("!! ", err)
+		log.Warningf("im: send:", err)
 		return err
 	}
 
 	for _, base64Text := range base64Texts {
-		c.C.Send <- CreateMessage(string(c.C.Jid), string(to), string(base64Text))
+		c.C.Send <- CreateMessage(c.C.Jid, to, string(base64Text))
 	}
 
 	return nil
@@ -378,8 +386,7 @@ func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *buddyInfo) error {
 
 // Close terminates all open connections.
 func (c *Client) Close() {
-	for jid, buddy := range c.buddies {
-		fmt.Println("Closing OTR conversation to", jid)
+	for _, buddy := range c.buddies {
 		buddy.Adieu()
 	}
 	c.C.Close()
