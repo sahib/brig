@@ -1,70 +1,74 @@
 package main
 
 import (
+	"github.com/golang/snappy"
 	"io"
 	"os"
-
-	lz4 "github.com/bkaradzic/go-lz4"
 )
 
-type Lz4Writer struct {
-	Writer        io.Writer
-	MaxBufferSize uint32
-	HeaderWritten bool
-}
-
-// GenerateLz4Header creates a valid LZ4 1.5 Header.
-// https://docs.google.com/document/d/
-// 1cl8N1bmkTdIpPLtnlzbBSFAdUeyNo5fwfHbHU7VRNWY/edit?pli=1
-func GenerateLz4Header() []byte {
-
-	header := []byte{
-		// LZ4 Magic number, Little Endian (4 Bytes):
-		0x04, 0x22, 0x4d, 0x18,
-		// Frame Descriptor (3-11 Bytes):
-		0x0, 0x1, 0x3,
-	}
-	return header
-}
-
-func (w *Lz4Writer) writeHeader() {
-	if _, err := w.Writer.Write(GenerateLz4Header()); err != nil {
-		panic(err)
-	}
-	w.HeaderWritten = true
-}
-
-func (w *Lz4Writer) Write(data []byte) (int, error) {
-	dst := make([]byte, len(data))
-	compressedBytes, err := lz4.Encode(dst, data)
+// Compress the file at src to dst.
+func CompressFile(src, dst string) (int64, error) {
+	fdFrom, err := os.OpenFile(src, os.O_RDONLY, 0644)
 	if err != nil {
 		return 0, err
 	}
+	defer fdFrom.Close()
 
-	if !w.HeaderWritten {
-		w.writeHeader()
+	fdTo, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return 0, err
 	}
+	defer fdTo.Close()
 
-	bytes, err := w.Writer.Write(compressedBytes)
-	return bytes, err
+	return Compress(fdFrom, fdTo)
+}
+
+// Decompress the file at src to dst.
+func DecompressFile(src, dst string) (int64, error) {
+	fdFrom, err := os.OpenFile(src, os.O_RDONLY, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer fdFrom.Close()
+
+	fdTo, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer fdTo.Close()
+
+	return Decompress(fdFrom, fdTo)
+}
+
+// Compress represents a layer stream compression.
+// As input src and dst io.Reader/io.Writer is expected.
+func Compress(src io.Reader, dst io.Writer) (int64, error) {
+	return io.Copy(snappy.NewWriter(dst), src)
+}
+
+// Decompress represents a layer for stream decompression.
+// As input src and dst io.Reader/io.Writer is expected.
+func Decompress(src io.Reader, dst io.Writer) (int64, error) {
+	return io.Copy(dst, snappy.NewReader(src))
+}
+
+// NewReader returns a new compression Reader.
+func NewReader(r io.Reader) io.Reader {
+	return snappy.NewReader(r)
+}
+
+// NewWriter returns a new compression Writer.
+func NewWriter(w io.Writer) io.Writer {
+	return snappy.NewWriter(w)
 }
 
 func main() {
-	fdFrom, _ := os.OpenFile(os.Args[1], os.O_RDONLY, 0644)
-	defer fdFrom.Close()
-	fdTo, _ := os.OpenFile(os.Args[2], os.O_CREATE|os.O_WRONLY, 0644)
-	defer fdTo.Close()
-	writer := &Lz4Writer{
-		Writer:        fdTo,
-		MaxBufferSize: lz4.MaxInputSize,
+
+	if os.Args[1] == "d" {
+		DecompressFile(os.Args[2], os.Args[3])
 	}
 
-	buffer := make([]byte, 4096)
-	for {
-		read, err := fdFrom.Read(buffer)
-		if err != nil {
-			break
-		}
-		writer.Write(buffer[:read])
+	if os.Args[1] == "c" {
+		CompressFile(os.Args[2], os.Args[3])
 	}
 }
