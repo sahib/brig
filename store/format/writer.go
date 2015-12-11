@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/glycerine/rbuf"
 )
 
@@ -78,10 +79,7 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 // This does not close the underlying data stream.
 func (w *EncryptedWriter) Close() error {
 	for w.rbuf.Readable > 0 {
-		n := MaxBlockSize
-		if n > w.rbuf.Readable {
-			n = w.rbuf.Readable
-		}
+		n := util.Min(MaxBlockSize, w.rbuf.Readable)
 		_, err := w.flushPack(n)
 		if err != nil {
 			return err

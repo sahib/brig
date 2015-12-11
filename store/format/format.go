@@ -82,7 +82,7 @@ func GenerateHeader() []byte {
 		0, 0, 0, 0,
 	}
 
-	binary.BigEndian.PutUint32(header[12:16], uint32(chacha.KeySize))
+	binary.BigEndian.PutUint32(header[12:16], uint32(KeySize))
 	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
 	return header
 }
