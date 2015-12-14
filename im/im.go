@@ -15,12 +15,16 @@ import (
 	"golang.org/x/crypto/otr"
 )
 
+// Debug is a flag that enables some debug prints when set to true.
+var Debug bool
+
 func init() {
+	Debug = false
 	xmpp.Debug = false
 }
 
 // TODO: Purge dead conversations.
-// TODO: Make Client be a io.ReadWriter?
+// TODO: Make buddyInfo be a io.ReadWriter?
 
 type buddyInfo struct {
 	// We initiated the conversation to this buddy.
@@ -28,8 +32,6 @@ type buddyInfo struct {
 
 	// This buddy completed the auth-game
 	authorised bool
-
-	firstAuthorised bool
 
 	// the underlying otr conversation
 	conversation *otr.Conversation
@@ -179,7 +181,8 @@ func (c *Client) lookupBuddy(jid xmpp.JID) (*buddyInfo, bool, error) {
 	_, ok := c.buddies[jid]
 
 	if !ok {
-		log.Infof("NEW CONVERSATION: `%v`", string(jid))
+
+		log.Infof("new otr-conversation: `%v`", string(jid))
 		privKey, err := loadPrivateKey(c.KeyPath)
 		if err != nil {
 			log.Errorf("otr-key-gen failed: %v", err)
@@ -197,7 +200,6 @@ func (c *Client) lookupBuddy(jid xmpp.JID) (*buddyInfo, bool, error) {
 	return c.buddies[jid], !ok, nil
 }
 
-// TODO: debug, remove.
 func truncate(a string, l int) string {
 	if len(a) > l {
 		return a[:l] + "..." + a[len(a)-l:]
@@ -237,7 +239,9 @@ func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
 
 	// Turn every fragment into a separate xmpp message:
 	for _, outMsg := range responses {
-		fmt.Println(" SEND BACK", truncate(string(outMsg), 20))
+		if Debug {
+			fmt.Println("  SEND BACK: %v", truncate(string(outMsg), 30))
+		}
 		c.C.Send <- CreateMessage(c.C.Jid, msg.From, string(outMsg))
 	}
 
@@ -259,28 +263,31 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	if isNew {
 		buddy.initiated = false
 
-		// First message should be the otr query. Validate.
-		// if !bytes.Contains(input, []byte(otr.QueryMessage)) {
-		// 	err := fmt.Errorf("First message was no OTR query: %v", truncate(string(input), 20))
-		// 	return nil, nil, false, err
-		// }
+		// First received message should be the otr query. Validate.
+		if !bytes.Contains(input, []byte(otr.QueryMessage)) {
+			err := fmt.Errorf("First message was no OTR query: %v", truncate(string(input), 20))
+			return nil, nil, false, err
+		}
 	}
 
 	// Pipe input through the conversation:
 	cnv := buddy.conversation
 	data, encrypted, stateChange, responses, err := cnv.Receive(input)
 	if err != nil {
+		fmt.Printf("OTR ERROR ON MSG: %v", truncate(string(input), 30))
 		return nil, nil, false, err
 	}
 
-	fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
-		truncate(string(data), 20),
-		truncate(string(input), 20),
-		encrypted,
-		cnv.IsEncrypted(),
-		buddy.authorised,
-		stateChange,
-	)
+	if Debug {
+		fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
+			truncate(string(data), 30),
+			truncate(string(input), 30),
+			encrypted,
+			cnv.IsEncrypted(),
+			buddy.authorised,
+			stateChange,
+		)
+	}
 
 	auth := func(question string, answer []byte) error {
 		authResp, err := cnv.Authenticate(question, answer)
@@ -308,18 +315,16 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			return nil, nil, false, err
 		}
 	case otr.SMPComplete: // We completed their quest, ask partner now.
-		fmt.Println("[!] Answer is correct", buddy.initiated, buddy.authorised)
+		fmt.Println("[!] Answer is correct")
 		if buddy.initiated == false && buddy.authorised == false {
-			fmt.Println("Send back other auth")
-			buddy.firstAuthorised = true
-
 			if err := auth("wer weis nich?", []byte("eule")); err != nil {
 				return nil, nil, false, err
 			}
+		}
 
-			if err := c.flushBacklog(from, buddy); err != nil {
-				return nil, nil, false, err
-			}
+		if buddy.initiated == true && buddy.authorised {
+			responses = append(responses, buddy.backlog...)
+			buddy.backlog = make([][]byte, 0)
 		}
 
 		buddy.authorised = true
@@ -331,37 +336,6 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	return data, responses, stateChange == otr.NoChange && encrypted, nil
 }
 
-func (c *Client) otrDance(to xmpp.JID, buddy *buddyInfo) error {
-	buddy.initiated = true
-
-	// Send the initial otr query.
-	if err := c.sendRaw(to, []byte(otr.QueryMessage), buddy); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) flushBacklog(to xmpp.JID, buddy *buddyInfo) error {
-	if buddy.firstAuthorised {
-		buddy.firstAuthorised = false
-		fmt.Println("BACKLOG: ", len(buddy.backlog))
-
-		var err error
-		for _, msg := range buddy.backlog {
-			err = c.sendRaw(to, msg, buddy)
-		}
-
-		buddy.backlog = make([][]byte, 0)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // Send sends `text` to participant `to`.
 // A new otr session will be established if required.
 func (c *Client) send(to xmpp.JID, text []byte) error {
@@ -371,14 +345,16 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 	}
 
 	if isNew {
-		if err := c.otrDance(to, buddy); err != nil {
+		buddy.initiated = true
+
+		// Send the initial ?OTRv2? query:
+		if err := c.sendRaw(to, []byte(otr.QueryMessage), buddy); err != nil {
 			return fmt.Errorf("im: OTR Authentication failed: %v", err)
 		}
 	}
 
 	if !buddy.authorised {
 		buddy.backlog = append(buddy.backlog, text)
-		fmt.Println("Backlogged", string(text))
 		return nil
 	}
 
@@ -388,11 +364,12 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *buddyInfo) error {
 	base64Texts, err := buddy.conversation.Send(text)
 
-	// TODO: DEBUG
-	fmt.Printf("SEND(%v|%v): %v => %v\n",
-		buddy.conversation.IsEncrypted(), buddy.authorised,
-		text, truncate(string(base64Texts[0]), 20),
-	)
+	if Debug {
+		fmt.Printf("SEND(%v|%v): %v => %v\n",
+			buddy.conversation.IsEncrypted(), buddy.authorised,
+			string(text), truncate(string(base64Texts[0]), 30),
+		)
+	}
 
 	if err != nil {
 		log.Warningf("im: send:", err)
