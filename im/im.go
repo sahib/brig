@@ -26,6 +26,7 @@ func init() {
 
 // TODO: Prevent send to unavailable partner?
 // TODO: Compare fingerprints. (store to file with key)
+// TODO: Provide Config for Client
 
 type Buddy struct {
 	// Jid of your Buddy.
@@ -34,8 +35,10 @@ type Buddy struct {
 	// Client is a pointer to the client this buddy belongs to.
 	Client *Client
 
-	// TODO doc
+	// Recv provides all messages sent from this buddy.
 	Recv chan []byte
+
+	// Send can be used to send arbitary messages to this buddy.
 	Send chan []byte
 
 	// We initiated the conversation to this buddy.
@@ -60,11 +63,9 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 
 	go func() {
 		for data := range sendChan {
-			client.Lock()
 			if err := client.send(jid, data); err != nil {
 				log.Warningf("im-send: %v", err)
 			}
-			client.Unlock()
 		}
 	}()
 
@@ -93,6 +94,8 @@ func (b *Buddy) Read(buf []byte) (int, error) {
 }
 
 func (b *Buddy) adieu() {
+	b.authorised = false
+
 	if b.conversation != nil {
 		// End() returns some messages that can be used to revert the connection
 		// back to a normal non-OTR connection. We just don't send those.
@@ -124,13 +127,37 @@ type Client struct {
 	// JID to each individual buddy.
 	// Only active connections are stored here.
 	buddies map[xmpp.JID]*Buddy
+
+	// buddies that send initial messages to us are pushed to this chan.
+	incomingBuddies chan *Buddy
+}
+
+// locked buddy lookup
+func (c *Client) lookupBuddy(jid xmpp.JID) (*Buddy, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	buddy, ok := c.buddies[jid]
+	return buddy, ok
+}
+
+func (c *Client) removeBuddy(jid xmpp.JID) {
+	c.Lock()
+	defer c.Unlock()
+
+	if buddy, ok := c.buddies[jid]; ok {
+		buddy.adieu()
+	}
+
+	delete(c.buddies, jid)
 }
 
 // NewClient returns a ready client or nil on error.
 func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
 	c := &Client{
-		buddies: make(map[xmpp.JID]*Buddy),
-		KeyPath: keyPath,
+		buddies:         make(map[xmpp.JID]*Buddy),
+		incomingBuddies: make(chan *Buddy),
+		KeyPath:         keyPath,
 	}
 
 	xmppClient, err := xmpp.NewClient(
@@ -162,8 +189,6 @@ func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
 	// Recv loop: Handle incoming messages, filter OTR.
 	go func() {
 		for stanza := range c.C.Recv {
-			c.Lock()
-
 			switch msg := stanza.(type) {
 			case *xmpp.Message:
 				response, err := c.recv(msg)
@@ -172,22 +197,19 @@ func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
 				}
 
 				if response != nil {
-					if buddy, ok := c.buddies[msg.From]; ok {
+					if buddy, ok := c.lookupBuddy(msg.From); ok {
+						fmt.Println("recv", joinBodies(response), response)
 						buddy.Recv <- joinBodies(response)
 					}
 				}
-
 			case *xmpp.Presence:
 				if msg.Type == "unavailable" {
-					if buddy, ok := c.buddies[msg.From]; ok {
+					if _, ok := c.lookupBuddy(msg.From); ok {
 						log.Infof("Removed otr conversation with %v", msg.From)
-						buddy.adieu()
-						delete(c.buddies, msg.From)
+						c.removeBuddy(msg.From)
 					}
 				}
 			}
-
-			c.Unlock()
 		}
 	}()
 
@@ -196,14 +218,20 @@ func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
 
 // Talk opens a conversation with another peer.
 func (c *Client) Talk(jid xmpp.JID) (*Buddy, error) {
-	c.Lock()
-	defer c.Unlock()
-
 	if err := c.send(jid, nil); err != nil {
 		return nil, err
 	}
 
-	return c.buddies[jid], nil
+	if buddy, ok := c.lookupBuddy(jid); ok {
+		return buddy, nil
+	}
+
+	return nil, nil
+}
+
+// Listen waits for new buddies that talk to us.
+func (c *Client) Listen() *Buddy {
+	return <-c.incomingBuddies
 }
 
 func genPrivateKey(key *otr.PrivateKey, path string) error {
@@ -241,7 +269,8 @@ func loadPrivateKey(path string) (*otr.PrivateKey, error) {
 	return key, nil
 }
 
-func (c *Client) lookupBuddy(jid xmpp.JID) (*Buddy, bool, error) {
+// NOTE: This function has to be called with c.Lock() held!
+func (c *Client) lookupOrInitBuddy(jid xmpp.JID) (*Buddy, bool, error) {
 	_, ok := c.buddies[jid]
 
 	if !ok {
@@ -258,6 +287,7 @@ func (c *Client) lookupBuddy(jid xmpp.JID) (*Buddy, bool, error) {
 	return c.buddies[jid], !ok, nil
 }
 
+// TODO: move those to im/common.go
 func truncate(a string, l int) string {
 	if len(a) > l {
 		return a[:l] + "..." + a[len(a)-l:]
@@ -285,7 +315,7 @@ func createMessage(from, to xmpp.JID, text string) *xmpp.Message {
 }
 
 func joinBodies(msg *xmpp.Message) []byte {
-	if msg != nil {
+	if msg == nil {
 		return nil
 	}
 
@@ -306,7 +336,7 @@ func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
 	// Turn every fragment into a separate xmpp message:
 	for _, outMsg := range responses {
 		if Debug {
-			fmt.Println("  SEND BACK: %v", truncate(string(outMsg), 30))
+			fmt.Printf("  SEND BACK: %v\n", truncate(string(outMsg), 30))
 		}
 		c.C.Send <- createMessage(c.C.Jid, msg.From, string(outMsg))
 	}
@@ -320,7 +350,7 @@ func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
 }
 
 func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, error) {
-	buddy, isNew, err := c.lookupBuddy(from)
+	buddy, isNew, err := c.lookupOrInitBuddy(from)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -328,6 +358,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	// We talk to this buddy the first time.
 	if isNew {
 		buddy.initiated = false
+		c.incomingBuddies <- buddy
 
 		// TODO: This does not seem to work reliable yet.
 		// First received message should be the otr query. Validate.
@@ -398,7 +429,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		fmt.Println("[!] Answer is wrong")
 		buddy.authorised = false
 	case otr.ConversationEnded:
-		buddy.authorised = false
+		buddy.adieu()
 		delete(c.buddies, buddy.Jid)
 	}
 
@@ -410,7 +441,10 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 // It is allowed that `text` to be nil. This might trigger the otr exchange,
 // but does not send any real messages.
 func (c *Client) send(to xmpp.JID, text []byte) error {
-	buddy, isNew, err := c.lookupBuddy(to)
+	c.Lock()
+	defer c.Unlock()
+
+	buddy, isNew, err := c.lookupOrInitBuddy(to)
 	if err != nil {
 		return err
 	}
@@ -460,6 +494,9 @@ func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *Buddy) error {
 
 // Close terminates all open connections.
 func (c *Client) Close() {
+	c.Lock()
+	defer c.Unlock()
+
 	for _, buddy := range c.buddies {
 		buddy.adieu()
 	}
