@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -26,7 +25,7 @@ func init() {
 
 // TODO: Prevent send to unavailable partner?
 // TODO: Compare fingerprints. (store to file with key)
-// TODO: Provide Config for Client
+
 type Config struct {
 	Jid       xmpp.JID
 	TLSConfig tls.Config
@@ -188,6 +187,7 @@ func NewClient(config *Config) (*Client, error) {
 	// Recv loop: Handle incoming messages, filter OTR.
 	go func() {
 		for stanza := range c.C.Recv {
+			// TODO: priority for presence?
 			switch msg := stanza.(type) {
 			case *xmpp.Message:
 				response, err := c.recv(msg)
@@ -197,10 +197,11 @@ func NewClient(config *Config) (*Client, error) {
 
 				if response != nil {
 					if buddy, ok := c.lookupBuddy(msg.From); ok {
-						buddy.Recv <- joinBodies(response)
+						go func() { buddy.Recv <- joinBodies(response) }()
 					}
 				}
 			case *xmpp.Presence:
+				fmt.Println(msg)
 				if msg.Type == "unavailable" {
 					if _, ok := c.lookupBuddy(msg.From); ok {
 						log.Infof("Removed otr conversation with %v", msg.From)
@@ -318,19 +319,19 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		buddy.initiated = false
 		c.incomingBuddies <- buddy
 
-		// TODO: This does not seem to work reliable yet.
-		// First received message should be the otr query. Validate.
-		// if !bytes.Contains(input, []byte(otr.QueryMessage)) {
-		// 	err := fmt.Errorf("First message was no OTR query: %v", truncate(string(input), 20))
-		// 	return nil, nil, false, err
-		// }
+		// First received message should be the otr query.
+		// Sometimes a xmpp server might deliver old messages dating from the
+		// last conversation. In this case we just print a (probably harmless) warning.
+		if !bytes.Contains(input, []byte(otr.QueryMessage)) {
+			return nil, nil, false, fmtOtrErr("init", input, fmt.Errorf("First message was not OTT query"))
+		}
 	}
 
 	// Pipe input through the conversation:
 	cnv := buddy.conversation
 	data, encrypted, stateChange, responses, err := cnv.Receive(input)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, false, fmtOtrErr("recv", input, err)
 	}
 
 	if Debug {
@@ -378,7 +379,14 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		}
 
 		if buddy.initiated == true && buddy.authorised {
-			responses = append(responses, buddy.backlog...)
+			for _, backlogMsg := range buddy.backlog {
+				base64Texts, err := buddy.conversation.Send(backlogMsg)
+				if err != nil {
+					return nil, nil, false, fmtOtrErr("send", backlogMsg, err)
+				}
+
+				responses = append(responses, base64Texts...)
+			}
 			buddy.backlog = make([][]byte, 0)
 		}
 

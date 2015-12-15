@@ -3,6 +3,7 @@ package im
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 
 	"github.com/tsuibin/goxmpp2/xmpp"
 )
@@ -44,4 +45,8 @@ func joinBodies(msg *xmpp.Message) []byte {
 	}
 
 	return buf.Bytes()
+}
+
+func fmtOtrErr(prefix string, msg []byte, err error) error {
+	return fmt.Errorf("otr-%v: %v, on msg: %v", prefix, err, truncate(string(msg), 20))
 }
