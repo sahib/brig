@@ -27,6 +27,12 @@ func init() {
 // TODO: Prevent send to unavailable partner?
 // TODO: Compare fingerprints. (store to file with key)
 // TODO: Provide Config for Client
+type Config struct {
+	Jid       xmpp.JID
+	TLSConfig tls.Config
+	Password  string
+	KeyPath   string
+}
 
 type Buddy struct {
 	// Jid of your Buddy.
@@ -153,27 +159,20 @@ func (c *Client) removeBuddy(jid xmpp.JID) {
 }
 
 // NewClient returns a ready client or nil on error.
-func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
+func NewClient(config *Config) (*Client, error) {
 	c := &Client{
 		buddies:         make(map[xmpp.JID]*Buddy),
 		incomingBuddies: make(chan *Buddy),
-		KeyPath:         keyPath,
+		KeyPath:         config.KeyPath,
 	}
 
 	xmppClient, err := xmpp.NewClient(
-		&jid,
-		password,
-		// TODO: This tls config is probably a bad idea.
-		tls.Config{
-			InsecureSkipVerify: true,
-		},
-		nil,
-		xmpp.Presence{},
-		c.Status,
+		&config.Jid, config.Password, config.TLSConfig,
+		nil, xmpp.Presence{}, c.Status,
 	)
 
 	if err != nil {
-		log.Fatalf("NewClient(%v): %v", jid, err)
+		log.Fatalf("NewClient(%v): %v", config.Jid, err)
 		return nil, err
 	}
 
@@ -198,7 +197,6 @@ func NewClient(jid xmpp.JID, password, keyPath string) (*Client, error) {
 
 				if response != nil {
 					if buddy, ok := c.lookupBuddy(msg.From); ok {
-						fmt.Println("recv", joinBodies(response), response)
 						buddy.Recv <- joinBodies(response)
 					}
 				}
