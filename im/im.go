@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	xmpp "github.com/tsuibin/goxmpp2/xmpp"
@@ -18,6 +20,10 @@ import (
 // Debug is a flag that enables some debug prints when set to true.
 var Debug bool
 
+var (
+	ErrTimeout = fmt.Errorf("Timeout reached during OTR io")
+)
+
 func init() {
 	Debug = false
 	xmpp.Debug = false
@@ -26,13 +32,7 @@ func init() {
 // TODO: Prevent send to unavailable partner?
 // TODO: Compare fingerprints. (store to file with key)
 
-type Config struct {
-	Jid       xmpp.JID
-	TLSConfig tls.Config
-	Password  string
-	KeyPath   string
-}
-
+// TODO: Rename to Conversation?
 type Buddy struct {
 	// Jid of your Buddy.
 	Jid xmpp.JID
@@ -40,13 +40,13 @@ type Buddy struct {
 	// Client is a pointer to the client this buddy belongs to.
 	Client *Client
 
-	// Recv provides all messages sent from this buddy.
-	Recv chan []byte
+	// recv provides all messages sent from this buddy.
+	recv chan []byte
 
-	// Send can be used to send arbitary messages to this buddy.
-	Send chan []byte
+	// send can be used to send arbitary messages to this buddy.
+	send chan []byte
 
-	// We initiated the conversation to this buddy.
+	// Did we initiated the conversation to this buddy?
 	initiated bool
 
 	// This buddy completed the auth-game
@@ -60,6 +60,9 @@ type Buddy struct {
 
 	// used in Read() to compensate against small read-buffers.
 	readBuf *bytes.Buffer
+
+	// This is set to a value > 0 if the conversation ended.
+	cnvIsDead uint32
 }
 
 func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
@@ -77,8 +80,8 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 	return &Buddy{
 		Jid:     jid,
 		Client:  client,
-		Recv:    recvChan,
-		Send:    sendChan,
+		recv:    recvChan,
+		send:    sendChan,
 		backlog: make([][]byte, 0),
 		readBuf: &bytes.Buffer{},
 		conversation: &otr.Conversation{
@@ -88,17 +91,55 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 }
 
 func (b *Buddy) Write(buf []byte) (int, error) {
-	b.Send <- buf
-	return len(buf), nil
+	if atomic.LoadUint32(&b.cnvIsDead) > 0 {
+		return 0, fmt.Errorf("Write: conversation ended.")
+	}
+
+	ticker := time.NewTicker(b.Client.Timeout)
+
+	select {
+	case <-ticker.C:
+		return 0, ErrTimeout
+	case b.send <- buf:
+		return len(buf), nil
+	}
 }
 
 func (b *Buddy) Read(buf []byte) (int, error) {
-	msg := <-b.Recv
+	msg, err := b.ReadMessage()
+	if err != nil {
+		return 0, err
+	}
+
 	b.readBuf.Write(msg)
 	return b.readBuf.Read(buf)
 }
 
+// ReadMessage returns exactly one message.
+func (b *Buddy) ReadMessage() ([]byte, error) {
+	if atomic.LoadUint32(&b.cnvIsDead) > 0 {
+		return nil, fmt.Errorf("Read: conversation ended.")
+	}
+
+	ticker := time.NewTicker(b.Client.Timeout)
+
+	select {
+	case <-ticker.C:
+		return nil, ErrTimeout
+	case msg, ok := <-b.recv:
+		if ok {
+			return msg, nil
+		}
+
+		return nil, fmt.Errorf("Read: conversation ended during read.")
+	}
+}
+
+// NOTE: adieu() is called with c.Lock() hold.
 func (b *Buddy) adieu() {
+	// Make sure Write()/Read() does not block anymore.
+	atomic.StoreUint32(&b.cnvIsDead, 1)
+
 	b.authorised = false
 
 	if b.conversation != nil {
@@ -107,10 +148,30 @@ func (b *Buddy) adieu() {
 		b.conversation.End()
 	}
 
-	if b.Send != nil {
-		close(b.Send)
-		b.Send = nil
-	}
+	// Wakeup any Write/Read calls.
+	close(b.send)
+	close(b.recv)
+}
+
+// TODO: docs
+type Config struct {
+	// Jid is the login user.
+	Jid xmpp.JID
+
+	// TLSConfig is used in building the login communication.
+	TLSConfig tls.Config
+
+	// Password is the XMPP login password.
+	Password string
+
+	// The place where the private otr key is stored.
+	KeyPath string
+
+	// The place where fingerprints are stored.
+	KeyStorePath string
+
+	// Timeout before Read or Write will error with ErrTimeout.
+	Timeout time.Duration
 }
 
 // Client is an XMPP client with OTR support.
@@ -129,12 +190,18 @@ type Client struct {
 	// Connection Status channel:
 	Status chan xmpp.Status
 
+	// Timeout before Write/Read will timeout on error.
+	Timeout time.Duration
+
 	// JID to each individual buddy.
 	// Only active connections are stored here.
 	buddies map[xmpp.JID]*Buddy
 
 	// buddies that send initial messages to us are pushed to this chan.
 	incomingBuddies chan *Buddy
+
+	// Needed to compare previous fingerprints
+	keys KeyStore
 }
 
 // locked buddy lookup
@@ -159,10 +226,21 @@ func (c *Client) removeBuddy(jid xmpp.JID) {
 
 // NewClient returns a ready client or nil on error.
 func NewClient(config *Config) (*Client, error) {
+	keyStore, err := NewFsKeyStore(config.KeyStorePath)
+	if keyStore != nil {
+		return nil, err
+	}
+
 	c := &Client{
+		KeyPath:         config.KeyPath,
+		Timeout:         config.Timeout,
 		buddies:         make(map[xmpp.JID]*Buddy),
 		incomingBuddies: make(chan *Buddy),
-		KeyPath:         config.KeyPath,
+		keys:            keyStore,
+	}
+
+	if config.Timeout <= 0 {
+		c.Timeout = 20 * time.Second
 	}
 
 	xmppClient, err := xmpp.NewClient(
@@ -187,7 +265,6 @@ func NewClient(config *Config) (*Client, error) {
 	// Recv loop: Handle incoming messages, filter OTR.
 	go func() {
 		for stanza := range c.C.Recv {
-			// TODO: priority for presence?
 			switch msg := stanza.(type) {
 			case *xmpp.Message:
 				response, err := c.recv(msg)
@@ -197,11 +274,11 @@ func NewClient(config *Config) (*Client, error) {
 
 				if response != nil {
 					if buddy, ok := c.lookupBuddy(msg.From); ok {
-						go func() { buddy.Recv <- joinBodies(response) }()
+						// Compensate for slow receivers:
+						go func() { buddy.recv <- joinBodies(response) }()
 					}
 				}
 			case *xmpp.Presence:
-				fmt.Println(msg)
 				if msg.Type == "unavailable" {
 					if _, ok := c.lookupBuddy(msg.From); ok {
 						log.Infof("Removed otr conversation with %v", msg.From)
@@ -366,12 +443,12 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		}
 	case otr.SMPSecretNeeded: // We received a question and have to answer.
 		question := cnv.SMPQuestion()
-		fmt.Printf("[!] Answer a question '%s'\n", question)
+		log.Debugf("[!] Answer a question '%s'", question)
 		if err := auth(question, []byte("eule")); err != nil {
 			return nil, nil, false, err
 		}
-	case otr.SMPComplete: // We completed their quest, ask partner now.
-		fmt.Println("[!] Answer is correct")
+	case otr.SMPComplete: // We or they completed the quest.
+		log.Debugf("[!] Answer is correct")
 		if buddy.initiated == false && buddy.authorised == false {
 			if err := auth("wer weis nich?", []byte("eule")); err != nil {
 				return nil, nil, false, err
@@ -391,15 +468,15 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		}
 
 		buddy.authorised = true
-	case otr.SMPFailed: // We failed with our answer.
-		fmt.Println("[!] Answer is wrong")
-		buddy.authorised = false
+	case otr.SMPFailed: // We or they failed.
+		log.Debugf("[!] Answer is wrong")
+		fallthrough
 	case otr.ConversationEnded:
 		buddy.adieu()
 		delete(c.buddies, buddy.Jid)
 	}
 
-	return data, responses, stateChange == otr.NoChange && encrypted, nil
+	return data, responses, stateChange == otr.NoChange && encrypted && len(data) > 0, nil
 }
 
 // Send sends `text` to participant `to`.
