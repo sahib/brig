@@ -156,7 +156,7 @@ func (b *Conversation) Ended() bool {
 	return atomic.LoadUint32(&b.cnvIsDead) > 0
 }
 
-// TODO: docs
+// Config can be passed to NewClient to configure how the details.
 type Config struct {
 	// Jid is the login user.
 	Jid xmpp.JID
@@ -205,6 +205,24 @@ type Client struct {
 
 	// Needed to compare previous fingerprints
 	keys KeyStore
+
+	// Lookup map for online status for Client.C.Roster
+	online map[xmpp.JID]bool
+}
+
+func (c *Client) addPresence(ps *xmpp.Presence) {
+	c.Lock()
+	defer c.Unlock()
+
+	log.Debugf("Partner presence `%v`: %v", ps.From, ps.Type != "unavailable")
+	c.online[ps.From] = (ps.Type != "unavailable")
+}
+
+func (c *Client) isOnline(jid xmpp.JID) bool {
+	c.Lock()
+	defer c.Unlock()
+
+	return c.online[jid]
 }
 
 // locked cnv lookup
@@ -239,6 +257,7 @@ func NewClient(config *Config) (*Client, error) {
 		Timeout:         config.Timeout,
 		buddies:         make(map[xmpp.JID]*Conversation),
 		incomingBuddies: make(chan *Conversation),
+		online:          make(map[xmpp.JID]bool),
 		keys:            keyStore,
 	}
 
@@ -288,6 +307,8 @@ func NewClient(config *Config) (*Client, error) {
 						c.removeConversation(msg.From)
 					}
 				}
+
+				c.addPresence(msg)
 			}
 		}
 	}()
@@ -295,8 +316,16 @@ func NewClient(config *Config) (*Client, error) {
 	return c, nil
 }
 
+// IsOnline cheks if the partner is online.
+// On startup, this might block until the first presence messages are available.
+func (c *Client) IsOnline(jid xmpp.JID) bool {
+	// TODO: Actually wait for first presence.
+	return c.isOnline(jid)
+}
+
 // Talk opens a conversation with another peer.
 func (c *Client) Talk(jid xmpp.JID) (*Conversation, error) {
+	// Begin the OTR dance:
 	if err := c.send(jid, nil); err != nil {
 		return nil, err
 	}
