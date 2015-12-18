@@ -91,7 +91,7 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 }
 
 func (b *Buddy) Write(buf []byte) (int, error) {
-	if atomic.LoadUint32(&b.cnvIsDead) > 0 {
+	if b.Ended() {
 		return 0, fmt.Errorf("Write: conversation ended.")
 	}
 
@@ -117,7 +117,7 @@ func (b *Buddy) Read(buf []byte) (int, error) {
 
 // ReadMessage returns exactly one message.
 func (b *Buddy) ReadMessage() ([]byte, error) {
-	if atomic.LoadUint32(&b.cnvIsDead) > 0 {
+	if b.Ended() {
 		return nil, fmt.Errorf("Read: conversation ended.")
 	}
 
@@ -151,6 +151,10 @@ func (b *Buddy) adieu() {
 	// Wakeup any Write/Read calls.
 	close(b.send)
 	close(b.recv)
+}
+
+func (b *Buddy) Ended() bool {
+	return atomic.LoadUint32(&b.cnvIsDead) > 0
 }
 
 // TODO: docs
@@ -227,7 +231,7 @@ func (c *Client) removeBuddy(jid xmpp.JID) {
 // NewClient returns a ready client or nil on error.
 func NewClient(config *Config) (*Client, error) {
 	keyStore, err := NewFsKeyStore(config.KeyStorePath)
-	if keyStore != nil {
+	if err != nil {
 		return nil, err
 	}
 
