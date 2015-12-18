@@ -49,7 +49,7 @@ type Conversation struct {
 	initiated bool
 
 	// This cnv completed the auth-game
-	authorised bool
+	authenticated bool
 
 	// the underlying otr conversation
 	conversation *otr.Conversation
@@ -139,7 +139,7 @@ func (b *Conversation) adieu() {
 	// Make sure Write()/Read() does not block anymore.
 	atomic.StoreUint32(&b.cnvIsDead, 1)
 
-	b.authorised = false
+	b.authenticated = false
 
 	if b.conversation != nil {
 		// End() returns some messages that can be used to revert the connection
@@ -432,7 +432,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		// Sometimes a xmpp server might deliver old messages dating from the
 		// last conversation. In this case we just print a (probably harmless) warning.
 		if !bytes.Contains(input, []byte(otr.QueryMessage)) {
-			return nil, nil, false, fmtOtrErr("init", input, fmt.Errorf("First message was not OTT query"))
+			return nil, nil, false, fmtOtrErr("init", input, fmt.Errorf("First message was not OTR query"))
 		}
 	}
 
@@ -449,7 +449,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			truncate(string(input), 30),
 			encrypted,
 			otrCnv.IsEncrypted(),
-			cnv.authorised,
+			cnv.authenticated,
 			stateChange,
 		)
 	}
@@ -481,13 +481,13 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		}
 	case otr.SMPComplete: // We or they completed the quest.
 		log.Debugf("[!] Answer is correct")
-		if cnv.initiated == false && cnv.authorised == false {
+		if cnv.initiated == false && cnv.authenticated == false {
 			if err := auth("wer weis nich?", []byte("eule")); err != nil {
 				return nil, nil, false, err
 			}
 		}
 
-		if cnv.initiated == true && cnv.authorised {
+		if cnv.initiated == true && cnv.authenticated {
 			for _, backlogMsg := range cnv.backlog {
 				base64Texts, err := cnv.conversation.Send(backlogMsg)
 				if err != nil {
@@ -499,7 +499,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			cnv.backlog = make([][]byte, 0)
 		}
 
-		cnv.authorised = true
+		cnv.authenticated = true
 	case otr.SMPFailed: // We or they failed.
 		log.Debugf("[!] Answer is wrong")
 		fallthrough
@@ -537,7 +537,7 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 		return nil
 	}
 
-	if !cnv.authorised {
+	if !cnv.authenticated {
 		cnv.backlog = append(cnv.backlog, text)
 		return nil
 	}
@@ -550,7 +550,7 @@ func (c *Client) sendRaw(to xmpp.JID, text []byte, cnv *Conversation) error {
 
 	if Debug {
 		fmt.Printf("SEND(%v|%v): %v => %v\n",
-			cnv.conversation.IsEncrypted(), cnv.authorised,
+			cnv.conversation.IsEncrypted(), cnv.authenticated,
 			string(text), truncate(string(base64Texts[0]), 30),
 		)
 	}
