@@ -42,11 +42,11 @@ func main() {
 	}
 
 	client, err := im.NewClient(&im.Config{
-		Jid:          jid,
-		KeyPath:      "/tmp/otr.key." + password,
-		KeyStorePath: "/tmp/otr.buddies",
-		Password:     password,
-		TLSConfig:    tls.Config{ServerName: jid.Domain()},
+		Jid:                  jid,
+		Password:             password,
+		TLSConfig:            tls.Config{ServerName: jid.Domain()},
+		KeyPath:              "/tmp/otr.key." + password,
+		FingerprintStorePath: "/tmp/otr.buddies." + password,
 	})
 
 	if err != nil {

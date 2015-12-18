@@ -41,7 +41,7 @@ type Config struct {
 	KeyPath string
 
 	// The place where fingerprints are stored.
-	KeyStorePath string
+	FingerprintStorePath string
 
 	// Timeout before Read or Write will error with ErrTimeout.
 	Timeout time.Duration
@@ -81,7 +81,7 @@ type Client struct {
 	presenceOnce sync.Once
 
 	// Needed to compare previous fingerprints
-	keys KeyStore
+	keys FingerprintStore
 
 	// Lookup map for online status for Client.C.Roster
 	online map[xmpp.JID]bool
@@ -89,7 +89,7 @@ type Client struct {
 
 // NewClient returns a ready client or nil on error.
 func NewClient(config *Config) (*Client, error) {
-	keyStore, err := NewFsKeyStore(config.KeyStorePath)
+	keyStore, err := NewFsFingerprintStore(config.FingerprintStorePath)
 	if err != nil {
 		return nil, err
 	}

@@ -12,10 +12,14 @@ import (
 )
 
 var (
-	ErrTimeout          = fmt.Errorf("Timeout reached during OTR io")
+	// ErrTimeout happens when the partner could not be reached after Config.Timeout.
+	ErrTimeout = fmt.Errorf("Timeout reached during OTR io")
+	// ErrDeadConversation happens when the underlying OTR conversation was ended.
 	ErrDeadConversation = fmt.Errorf("Conversation ended already")
 )
 
+// Conversation represents a point to point connection with a buddy.
+// It can be used like a io.ReadWriter over network, encrypted via OTR.
 type Conversation struct {
 	// Jid of your Conversation.
 	Jid xmpp.JID
@@ -29,12 +33,6 @@ type Conversation struct {
 	// send can be used to send arbitary messages to this cnv.
 	send chan []byte
 
-	// Did we initiated the conversation to this cnv?
-	initiated bool
-
-	// This cnv completed the auth-game
-	authenticated bool
-
 	// the underlying otr conversation
 	conversation *otr.Conversation
 
@@ -46,6 +44,12 @@ type Conversation struct {
 
 	// This is set to a value > 0 if the conversation ended.
 	cnvIsDead uint32
+
+	// Did we initiated the conversation to this cnv?
+	initiated bool
+
+	// This cnv completed the auth-game
+	authenticated bool
 }
 
 func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Conversation {
@@ -94,8 +98,8 @@ func (b *Conversation) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	b.readBuf.Write(msg)
-	return b.readBuf.Read(buf)
+	n, _ := b.readBuf.Write(msg)
+	return b.readBuf.Read(buf[:n])
 }
 
 // ReadMessage returns exactly one message.
@@ -136,6 +140,7 @@ func (b *Conversation) adieu() {
 	close(b.recv)
 }
 
+// Ended returns true when the underlying conversation was ended.
 func (b *Conversation) Ended() bool {
 	return atomic.LoadUint32(&b.cnvIsDead) > 0
 }
