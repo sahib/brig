@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,141 +19,12 @@ import (
 // Debug is a flag that enables some debug prints when set to true.
 var Debug bool
 
-var (
-	ErrTimeout = fmt.Errorf("Timeout reached during OTR io")
-)
-
 func init() {
 	Debug = false
 	xmpp.Debug = false
 }
 
-// TODO: Prevent send to unavailable partner?
 // TODO: Compare fingerprints. (store to file with key)
-
-type Conversation struct {
-	// Jid of your Conversation.
-	Jid xmpp.JID
-
-	// Client is a pointer to the client this cnv belongs to.
-	Client *Client
-
-	// recv provides all messages sent from this cnv.
-	recv chan []byte
-
-	// send can be used to send arbitary messages to this cnv.
-	send chan []byte
-
-	// Did we initiated the conversation to this cnv?
-	initiated bool
-
-	// This cnv completed the auth-game
-	authorised bool
-
-	// the underlying otr conversation
-	conversation *otr.Conversation
-
-	// A backlog of messages send before otr auth.
-	backlog [][]byte
-
-	// used in Read() to compensate against small read-buffers.
-	readBuf *bytes.Buffer
-
-	// This is set to a value > 0 if the conversation ended.
-	cnvIsDead uint32
-}
-
-func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Conversation {
-	sendChan := make(chan []byte)
-	recvChan := make(chan []byte)
-
-	go func() {
-		for data := range sendChan {
-			if err := client.send(jid, data); err != nil {
-				log.Warningf("im-send: %v", err)
-			}
-		}
-	}()
-
-	return &Conversation{
-		Jid:     jid,
-		Client:  client,
-		recv:    recvChan,
-		send:    sendChan,
-		backlog: make([][]byte, 0),
-		readBuf: &bytes.Buffer{},
-		conversation: &otr.Conversation{
-			PrivateKey: privKey,
-		},
-	}
-}
-
-func (b *Conversation) Write(buf []byte) (int, error) {
-	if b.Ended() {
-		return 0, fmt.Errorf("Write: conversation ended.")
-	}
-
-	ticker := time.NewTicker(b.Client.Timeout)
-
-	select {
-	case <-ticker.C:
-		return 0, ErrTimeout
-	case b.send <- buf:
-		return len(buf), nil
-	}
-}
-
-func (b *Conversation) Read(buf []byte) (int, error) {
-	msg, err := b.ReadMessage()
-	if err != nil {
-		return 0, err
-	}
-
-	b.readBuf.Write(msg)
-	return b.readBuf.Read(buf)
-}
-
-// ReadMessage returns exactly one message.
-func (b *Conversation) ReadMessage() ([]byte, error) {
-	if b.Ended() {
-		return nil, fmt.Errorf("Read: conversation ended.")
-	}
-
-	ticker := time.NewTicker(b.Client.Timeout)
-
-	select {
-	case <-ticker.C:
-		return nil, ErrTimeout
-	case msg, ok := <-b.recv:
-		if ok {
-			return msg, nil
-		}
-
-		return nil, fmt.Errorf("Read: conversation ended during read.")
-	}
-}
-
-// NOTE: adieu() is called with c.Lock() hold.
-func (b *Conversation) adieu() {
-	// Make sure Write()/Read() does not block anymore.
-	atomic.StoreUint32(&b.cnvIsDead, 1)
-
-	b.authorised = false
-
-	if b.conversation != nil {
-		// End() returns some messages that can be used to revert the connection
-		// back to a normal non-OTR connection. We just don't send those.
-		b.conversation.End()
-	}
-
-	// Wakeup any Write/Read calls.
-	close(b.send)
-	close(b.recv)
-}
-
-func (b *Conversation) Ended() bool {
-	return atomic.LoadUint32(&b.cnvIsDead) > 0
-}
 
 // Config can be passed to NewClient to configure how the details.
 type Config struct {
@@ -203,46 +73,18 @@ type Client struct {
 	// buddies that send initial messages to us are pushed to this chan.
 	incomingBuddies chan *Conversation
 
+	// This channel gets notified and closed after the first presence message.
+	// IsOnline() might wait on startup for presences + a short timeout.
+	incomingPresence chan struct{}
+
+	// Used to protect incomingPresence, so it is only notified once.
+	presenceOnce sync.Once
+
 	// Needed to compare previous fingerprints
 	keys KeyStore
 
 	// Lookup map for online status for Client.C.Roster
 	online map[xmpp.JID]bool
-}
-
-func (c *Client) addPresence(ps *xmpp.Presence) {
-	c.Lock()
-	defer c.Unlock()
-
-	log.Debugf("Partner presence `%v`: %v", ps.From, ps.Type != "unavailable")
-	c.online[ps.From] = (ps.Type != "unavailable")
-}
-
-func (c *Client) isOnline(jid xmpp.JID) bool {
-	c.Lock()
-	defer c.Unlock()
-
-	return c.online[jid]
-}
-
-// locked cnv lookup
-func (c *Client) lookupConversation(jid xmpp.JID) (*Conversation, bool) {
-	c.Lock()
-	defer c.Unlock()
-
-	cnv, ok := c.buddies[jid]
-	return cnv, ok
-}
-
-func (c *Client) removeConversation(jid xmpp.JID) {
-	c.Lock()
-	defer c.Unlock()
-
-	if cnv, ok := c.buddies[jid]; ok {
-		cnv.adieu()
-	}
-
-	delete(c.buddies, jid)
 }
 
 // NewClient returns a ready client or nil on error.
@@ -253,12 +95,13 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	c := &Client{
-		KeyPath:         config.KeyPath,
-		Timeout:         config.Timeout,
-		buddies:         make(map[xmpp.JID]*Conversation),
-		incomingBuddies: make(chan *Conversation),
-		online:          make(map[xmpp.JID]bool),
-		keys:            keyStore,
+		KeyPath:          config.KeyPath,
+		Timeout:          config.Timeout,
+		buddies:          make(map[xmpp.JID]*Conversation),
+		incomingBuddies:  make(chan *Conversation),
+		incomingPresence: make(chan struct{}, 1),
+		online:           make(map[xmpp.JID]bool),
+		keys:             keyStore,
 	}
 
 	if config.Timeout <= 0 {
@@ -319,7 +162,10 @@ func NewClient(config *Config) (*Client, error) {
 // IsOnline cheks if the partner is online.
 // On startup, this might block until the first presence messages are available.
 func (c *Client) IsOnline(jid xmpp.JID) bool {
-	// TODO: Actually wait for first presence.
+	if _, ok := <-c.incomingPresence; !ok {
+		log.Debugf("Sorry, needed to wait for presence stanzas.")
+	}
+
 	return c.isOnline(jid)
 }
 
@@ -340,6 +186,67 @@ func (c *Client) Talk(jid xmpp.JID) (*Conversation, error) {
 // Listen waits for new buddies that talk to us.
 func (c *Client) Listen() *Conversation {
 	return <-c.incomingBuddies
+}
+
+// Close terminates all open connections.
+func (c *Client) Close() {
+	c.Lock()
+	defer c.Unlock()
+
+	for _, cnv := range c.buddies {
+		cnv.adieu()
+	}
+	c.C.Close()
+}
+
+////////////////////////
+// INTERNAL FUNCTIONS //
+////////////////////////
+
+func (c *Client) addPresence(ps *xmpp.Presence) {
+	c.Lock()
+	defer c.Unlock()
+
+	log.Debugf("Partner presence `%v`: %v", ps.From, ps.Type != "unavailable")
+	c.online[ps.From] = (ps.Type != "unavailable")
+
+	// Executed the first time this is called.
+	// Notify IsOnline() that some presence messages are in.
+	// Use a small timeout to be sure that some more messages are collected.
+	c.presenceOnce.Do(func() {
+		go func() {
+			time.Sleep(2)
+			c.incomingPresence <- struct{}{}
+			close(c.incomingPresence)
+		}()
+	})
+}
+
+func (c *Client) isOnline(jid xmpp.JID) bool {
+	c.Lock()
+	defer c.Unlock()
+
+	return c.online[jid]
+}
+
+// locked cnv lookup
+func (c *Client) lookupConversation(jid xmpp.JID) (*Conversation, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	cnv, ok := c.buddies[jid]
+	return cnv, ok
+}
+
+func (c *Client) removeConversation(jid xmpp.JID) {
+	c.Lock()
+	defer c.Unlock()
+
+	if cnv, ok := c.buddies[jid]; ok {
+		cnv.adieu()
+	}
+
+	delete(c.buddies, jid)
 }
 
 func genPrivateKey(key *otr.PrivateKey, path string) error {
@@ -444,7 +351,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	}
 
 	if Debug {
-		fmt.Printf("RECV: `%v` `%v` (encr: %v %v %v) (state-change: %v)\n",
+		fmt.Printf("RECV: `%v` `%v` (encr: %v should: %v auth: %v) (state-change: %v)\n",
 			truncate(string(data), 30),
 			truncate(string(input), 30),
 			encrypted,
@@ -565,15 +472,4 @@ func (c *Client) sendRaw(to xmpp.JID, text []byte, cnv *Conversation) error {
 	}
 
 	return nil
-}
-
-// Close terminates all open connections.
-func (c *Client) Close() {
-	c.Lock()
-	defer c.Unlock()
-
-	for _, cnv := range c.buddies {
-		cnv.adieu()
-	}
-	c.C.Close()
 }

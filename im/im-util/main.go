@@ -43,7 +43,7 @@ func main() {
 
 	client, err := im.NewClient(&im.Config{
 		Jid:          jid,
-		KeyPath:      "/tmp/otr.key",
+		KeyPath:      "/tmp/otr.key." + password,
 		KeyStorePath: "/tmp/otr.buddies",
 		Password:     password,
 		TLSConfig:    tls.Config{InsecureSkipVerify: true},
@@ -55,6 +55,8 @@ func main() {
 	}
 
 	defer client.Close()
+
+	log.Infof("Partner is Online: %v", client.IsOnline(partnerJid))
 
 	if *sendFlag {
 		cnv, err := client.Talk(partnerJid)
