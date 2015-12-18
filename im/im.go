@@ -33,8 +33,8 @@ func init() {
 // TODO: Compare fingerprints. (store to file with key)
 
 // TODO: Rename to Conversation?
-type Buddy struct {
-	// Jid of your Buddy.
+type Conversation struct {
+	// Jid of your Conversation.
 	Jid xmpp.JID
 
 	// Client is a pointer to the client this buddy belongs to.
@@ -65,7 +65,7 @@ type Buddy struct {
 	cnvIsDead uint32
 }
 
-func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
+func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Conversation {
 	sendChan := make(chan []byte)
 	recvChan := make(chan []byte)
 
@@ -77,7 +77,7 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 		}
 	}()
 
-	return &Buddy{
+	return &Conversation{
 		Jid:     jid,
 		Client:  client,
 		recv:    recvChan,
@@ -90,7 +90,7 @@ func newBuddy(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Buddy {
 	}
 }
 
-func (b *Buddy) Write(buf []byte) (int, error) {
+func (b *Conversation) Write(buf []byte) (int, error) {
 	if b.Ended() {
 		return 0, fmt.Errorf("Write: conversation ended.")
 	}
@@ -105,7 +105,7 @@ func (b *Buddy) Write(buf []byte) (int, error) {
 	}
 }
 
-func (b *Buddy) Read(buf []byte) (int, error) {
+func (b *Conversation) Read(buf []byte) (int, error) {
 	msg, err := b.ReadMessage()
 	if err != nil {
 		return 0, err
@@ -116,7 +116,7 @@ func (b *Buddy) Read(buf []byte) (int, error) {
 }
 
 // ReadMessage returns exactly one message.
-func (b *Buddy) ReadMessage() ([]byte, error) {
+func (b *Conversation) ReadMessage() ([]byte, error) {
 	if b.Ended() {
 		return nil, fmt.Errorf("Read: conversation ended.")
 	}
@@ -136,7 +136,7 @@ func (b *Buddy) ReadMessage() ([]byte, error) {
 }
 
 // NOTE: adieu() is called with c.Lock() hold.
-func (b *Buddy) adieu() {
+func (b *Conversation) adieu() {
 	// Make sure Write()/Read() does not block anymore.
 	atomic.StoreUint32(&b.cnvIsDead, 1)
 
@@ -153,7 +153,7 @@ func (b *Buddy) adieu() {
 	close(b.recv)
 }
 
-func (b *Buddy) Ended() bool {
+func (b *Conversation) Ended() bool {
 	return atomic.LoadUint32(&b.cnvIsDead) > 0
 }
 
@@ -199,17 +199,17 @@ type Client struct {
 
 	// JID to each individual buddy.
 	// Only active connections are stored here.
-	buddies map[xmpp.JID]*Buddy
+	buddies map[xmpp.JID]*Conversation
 
 	// buddies that send initial messages to us are pushed to this chan.
-	incomingBuddies chan *Buddy
+	incomingBuddies chan *Conversation
 
 	// Needed to compare previous fingerprints
 	keys KeyStore
 }
 
 // locked buddy lookup
-func (c *Client) lookupBuddy(jid xmpp.JID) (*Buddy, bool) {
+func (c *Client) lookupConversation(jid xmpp.JID) (*Conversation, bool) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -217,7 +217,7 @@ func (c *Client) lookupBuddy(jid xmpp.JID) (*Buddy, bool) {
 	return buddy, ok
 }
 
-func (c *Client) removeBuddy(jid xmpp.JID) {
+func (c *Client) removeConversation(jid xmpp.JID) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -238,8 +238,8 @@ func NewClient(config *Config) (*Client, error) {
 	c := &Client{
 		KeyPath:         config.KeyPath,
 		Timeout:         config.Timeout,
-		buddies:         make(map[xmpp.JID]*Buddy),
-		incomingBuddies: make(chan *Buddy),
+		buddies:         make(map[xmpp.JID]*Conversation),
+		incomingBuddies: make(chan *Conversation),
 		keys:            keyStore,
 	}
 
@@ -277,16 +277,16 @@ func NewClient(config *Config) (*Client, error) {
 				}
 
 				if response != nil {
-					if buddy, ok := c.lookupBuddy(msg.From); ok {
+					if buddy, ok := c.lookupConversation(msg.From); ok {
 						// Compensate for slow receivers:
 						go func() { buddy.recv <- joinBodies(response) }()
 					}
 				}
 			case *xmpp.Presence:
 				if msg.Type == "unavailable" {
-					if _, ok := c.lookupBuddy(msg.From); ok {
+					if _, ok := c.lookupConversation(msg.From); ok {
 						log.Infof("Removed otr conversation with %v", msg.From)
-						c.removeBuddy(msg.From)
+						c.removeConversation(msg.From)
 					}
 				}
 			}
@@ -297,12 +297,12 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 // Talk opens a conversation with another peer.
-func (c *Client) Talk(jid xmpp.JID) (*Buddy, error) {
+func (c *Client) Talk(jid xmpp.JID) (*Conversation, error) {
 	if err := c.send(jid, nil); err != nil {
 		return nil, err
 	}
 
-	if buddy, ok := c.lookupBuddy(jid); ok {
+	if buddy, ok := c.lookupConversation(jid); ok {
 		return buddy, nil
 	}
 
@@ -310,7 +310,7 @@ func (c *Client) Talk(jid xmpp.JID) (*Buddy, error) {
 }
 
 // Listen waits for new buddies that talk to us.
-func (c *Client) Listen() *Buddy {
+func (c *Client) Listen() *Conversation {
 	return <-c.incomingBuddies
 }
 
@@ -350,7 +350,7 @@ func loadPrivateKey(path string) (*otr.PrivateKey, error) {
 }
 
 // NOTE: This function has to be called with c.Lock() held!
-func (c *Client) lookupOrInitBuddy(jid xmpp.JID) (*Buddy, bool, error) {
+func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, error) {
 	_, ok := c.buddies[jid]
 
 	if !ok {
@@ -361,7 +361,7 @@ func (c *Client) lookupOrInitBuddy(jid xmpp.JID) (*Buddy, bool, error) {
 			return nil, false, err
 		}
 
-		c.buddies[jid] = newBuddy(jid, c, privKey)
+		c.buddies[jid] = newConversation(jid, c, privKey)
 	}
 
 	return c.buddies[jid], !ok, nil
@@ -390,7 +390,7 @@ func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
 }
 
 func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, error) {
-	buddy, isNew, err := c.lookupOrInitBuddy(from)
+	buddy, isNew, err := c.lookupOrInitConversation(from)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -491,7 +491,7 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 	c.Lock()
 	defer c.Unlock()
 
-	buddy, isNew, err := c.lookupOrInitBuddy(to)
+	buddy, isNew, err := c.lookupOrInitConversation(to)
 	if err != nil {
 		return err
 	}
@@ -517,7 +517,7 @@ func (c *Client) send(to xmpp.JID, text []byte) error {
 	return c.sendRaw(to, text, buddy)
 }
 
-func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *Buddy) error {
+func (c *Client) sendRaw(to xmpp.JID, text []byte, buddy *Conversation) error {
 	base64Texts, err := buddy.conversation.Send(text)
 
 	if Debug {
