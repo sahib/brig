@@ -33,7 +33,7 @@ type Conversation struct {
 	initiated bool
 
 	// This cnv completed the auth-game
-	authorised bool
+	authenticated bool
 
 	// the underlying otr conversation
 	conversation *otr.Conversation
@@ -123,7 +123,7 @@ func (b *Conversation) adieu() {
 	// Make sure Write()/Read() does not block anymore.
 	atomic.StoreUint32(&b.cnvIsDead, 1)
 
-	b.authorised = false
+	b.authenticated = false
 
 	if b.conversation != nil {
 		// End() returns some messages that can be used to revert the connection
