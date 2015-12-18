@@ -46,7 +46,7 @@ func main() {
 		KeyPath:      "/tmp/otr.key." + password,
 		KeyStorePath: "/tmp/otr.buddies",
 		Password:     password,
-		TLSConfig:    tls.Config{InsecureSkipVerify: true},
+		TLSConfig:    tls.Config{ServerName: jid.Domain()},
 	})
 
 	if err != nil {
