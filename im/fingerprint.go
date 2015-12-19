@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -22,7 +23,8 @@ type FingerprintStore interface {
 
 // FormatFingerprint converts a raw byte string representation to a hex fingerprint.
 func FormatFingerprint(raw []byte) string {
-	return fmt.Sprintf("%X", raw)
+	// NOTE: This is a little stupid, but fits in one line:
+	return strings.Replace(fmt.Sprintf("% X", raw), " ", ":", -1)
 }
 
 // FsFingerprintStore represents a FingerprintStore that saves it's contents to

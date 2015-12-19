@@ -3,6 +3,7 @@ package im
 import (
 	"bytes"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,6 +22,8 @@ var (
 // Conversation represents a point to point connection with a buddy.
 // It can be used like a io.ReadWriter over network, encrypted via OTR.
 type Conversation struct {
+	sync.Mutex
+
 	// Jid of your Conversation.
 	Jid xmpp.JID
 

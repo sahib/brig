@@ -24,8 +24,6 @@ func init() {
 	xmpp.Debug = false
 }
 
-// TODO: Compare fingerprints. (store to file with key)
-
 // Config can be passed to NewClient to configure how the details.
 type Config struct {
 	// Jid is the login user.
@@ -361,8 +359,22 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		)
 	}
 
-	auth := func(question string, answer []byte) error {
-		authResp, err := otrCnv.Authenticate(question, answer)
+	auth := func(question string, jid xmpp.JID) error {
+		var err error
+		var fingerprint string
+
+		if jid == c.C.Jid {
+			fingerprint = FormatFingerprint(otrCnv.PrivateKey.PublicKey.Fingerprint())
+			log.Debugf("    Answering own fingerprint: %v", fingerprint)
+		} else {
+			if fingerprint, err = c.keys.Lookup(string(jid)); err != nil {
+				return err
+			}
+
+			log.Debugf("    Fingerprint %v: %s", jid, fingerprint)
+		}
+
+		authResp, err := otrCnv.Authenticate(question, []byte(fingerprint))
 		if err != nil {
 			log.Warningf("im: Authentication error: %v", err)
 			return err
@@ -376,20 +388,20 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	switch stateChange {
 	case otr.NewKeys: // We exchanged keys, channel is encrypted now.
 		if cnv.initiated {
-			if err := auth("weis nich?", []byte("eule")); err != nil {
+			if err := auth("alice: bob's fingerprint?", from); err != nil {
 				return nil, nil, false, err
 			}
 		}
 	case otr.SMPSecretNeeded: // We received a question and have to answer.
 		question := otrCnv.SMPQuestion()
-		log.Debugf("[!] Answer a question '%s'", question)
-		if err := auth(question, []byte("eule")); err != nil {
+		log.Debugf("[!] Answer a question from %v '%s'", from, question)
+		if err := auth(question, c.C.Jid); err != nil {
 			return nil, nil, false, err
 		}
 	case otr.SMPComplete: // We or they completed the quest.
 		log.Debugf("[!] Answer is correct")
 		if cnv.initiated == false && cnv.authenticated == false {
-			if err := auth("wer weis nich?", []byte("eule")); err != nil {
+			if err := auth("bob: alice's fingerprint?", from); err != nil {
 				return nil, nil, false, err
 			}
 		}
@@ -403,6 +415,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			log.Warningf("Unable to save fingerprints: %v", err)
 		}
 
+		// TODO: Those are not locked yet...
 		if cnv.initiated == true && cnv.authenticated {
 			for _, backlogMsg := range cnv.backlog {
 				base64Texts, err := cnv.conversation.Send(backlogMsg)
