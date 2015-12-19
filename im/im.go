@@ -140,7 +140,7 @@ func NewClient(config *Config) (*Client, error) {
 				if response != nil {
 					if cnv, ok := c.lookupConversation(msg.From); ok {
 						// Compensate for slow receivers:
-						go func() { cnv.recv <- joinBodies(response) }()
+						go func() { cnv.add(joinBodies(response)) }()
 					}
 				}
 			case *xmpp.Presence:
@@ -392,6 +392,15 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			if err := auth("wer weis nich?", []byte("eule")); err != nil {
 				return nil, nil, false, err
 			}
+		}
+
+		err := c.keys.Remember(
+			string(from),
+			FormatFingerprint(otrCnv.TheirPublicKey.Fingerprint()),
+		)
+
+		if err != nil {
+			log.Warningf("Unable to save fingerprints: %v", err)
 		}
 
 		if cnv.initiated == true && cnv.authenticated {

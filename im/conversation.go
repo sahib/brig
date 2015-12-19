@@ -140,6 +140,13 @@ func (b *Conversation) adieu() {
 	close(b.recv)
 }
 
+// Add a message to the conversation
+func (b *Conversation) add(msg []byte) {
+	if !b.Ended() {
+		b.recv <- msg
+	}
+}
+
 // Ended returns true when the underlying conversation was ended.
 func (b *Conversation) Ended() bool {
 	return atomic.LoadUint32(&b.cnvIsDead) > 0
