@@ -59,9 +59,9 @@ func main() {
 	log.Infof("Partner is Online: %v", client.IsOnline(partnerJid))
 
 	if *sendFlag {
-		cnv, err := client.Talk(partnerJid)
+		cnv, err := client.Dial(partnerJid)
 		if err != nil {
-			log.Errorf("Talk: %v", err)
+			log.Errorf("Dial: %v", err)
 			return
 		}
 
@@ -79,7 +79,7 @@ func main() {
 		for {
 			cnv := client.Listen()
 
-			log.Println("Talking to", cnv.Jid)
+			log.Println("Dial to", cnv.Jid)
 			go func() {
 				for i := 0; !cnv.Ended() && i < 10; i++ {
 					msg, err := cnv.ReadMessage()

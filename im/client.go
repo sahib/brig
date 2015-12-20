@@ -167,8 +167,8 @@ func (c *Client) IsOnline(jid xmpp.JID) bool {
 	return c.isOnline(jid)
 }
 
-// Talk opens a conversation with another peer.
-func (c *Client) Talk(jid xmpp.JID) (*Conversation, error) {
+// Dial opens a conversation with another peer.
+func (c *Client) Dial(jid xmpp.JID) (*Conversation, error) {
 	// Begin the OTR dance:
 	if err := c.send(jid, nil); err != nil {
 		return nil, err
