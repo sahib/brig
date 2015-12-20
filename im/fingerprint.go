@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/util"
 	"gopkg.in/yaml.v2"
 )
 
@@ -42,7 +43,7 @@ func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
 		return &k, nil
 	}
 
-	defer fd.Close()
+	defer util.Closer(fd)
 
 	data, err := ioutil.ReadAll(fd)
 	if err != nil {
@@ -72,7 +73,7 @@ func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
 		return err
 	}
 
-	defer fd.Close()
+	defer util.Closer(fd)
 
 	data, err := yaml.Marshal(&k.keys)
 	if err != nil {

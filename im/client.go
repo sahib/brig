@@ -118,7 +118,6 @@ func NewClient(config *Config) (*Client, error) {
 
 	c.C = xmppClient
 
-	// Remember to update the status:
 	go func() {
 		for status := range c.Status {
 			log.Debugf("connection status %d", status)

@@ -165,6 +165,8 @@ func (b *Conversation) Ended() bool {
 	return b.isDead
 }
 
+// Close ends a conversation. You normally do not need to call this directly.
+// There is no guarantee that previously send messages will be actually delivered.
 func (b *Conversation) Close() error {
 	b.adieu()
 	b.Client.removeConversation(b.Jid)

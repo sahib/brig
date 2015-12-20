@@ -2,6 +2,11 @@
 // should be included in the stdlib in our opinion.
 package util
 
+import (
+	log "github.com/Sirupsen/logrus"
+	"io"
+)
+
 // Min returns the minimum of a and b.
 func Min(a, b int) int {
 	if a < b {
@@ -42,4 +47,12 @@ func UMax(a, b uint) uint {
 // UClamp limits x to the range [lo, hi]
 func UClamp(x, lo, hi uint) uint {
 	return UMax(lo, UMin(x, hi))
+}
+
+// Closer closes c. If that fails, it will log the error.
+// The intended usage is for convinient defer calls only!
+func Closer(c io.Closer) {
+	if err := c.Close(); err != nil {
+		log.Errorf("Could not close: %v", err)
+	}
 }
