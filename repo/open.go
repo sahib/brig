@@ -13,6 +13,8 @@ import (
 var filenames = []string{
 	"index.bolt",
 	"master.key",
+	"otr.buddies",
+	"otr.key",
 }
 
 func lookupJid(configPath string) (string, error) {

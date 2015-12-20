@@ -148,14 +148,12 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	boltDbPath := filepath.Join(brigPath, "index.bolt")
-	if err := touch(boltDbPath); err != nil {
-		return err
-	}
-
-	otrKeyPath := filepath.Join(brigPath, "otr.key")
-	if err := touch(otrKeyPath); err != nil {
-		return err
+	empties := []string{"index.bolt", "otr.key", "otr.buddies"}
+	for _, empty := range empties {
+		fullPath := filepath.Join(brigPath, empty)
+		if err := touch(fullPath); err != nil {
+			return err
+		}
 	}
 
 	// Make the key larger than needed:
