@@ -3,8 +3,10 @@
 package util
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"io"
+	"os"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // Min returns the minimum of a and b.
@@ -55,4 +57,14 @@ func Closer(c io.Closer) {
 	if err := c.Close(); err != nil {
 		log.Errorf("Could not close: %v", err)
 	}
+}
+
+// Touch works like the unix touch(1)
+func Touch(path string) error {
+	fd, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	return fd.Close()
 }

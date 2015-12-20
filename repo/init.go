@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util"
 	logutil "github.com/disorganizer/brig/util/log"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
@@ -123,16 +124,6 @@ func LoadRepository(pwd, folder string) (*Repository, error) {
 	return &repo, nil
 }
 
-// touch works like the unix touch(1)
-func touch(path string) error {
-	fd, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-
-	return fd.Close()
-}
-
 func createRepositoryTree(absFolderPath string) error {
 	if err := os.Mkdir(absFolderPath, 0755); err != nil {
 		return err
@@ -151,7 +142,7 @@ func createRepositoryTree(absFolderPath string) error {
 	empties := []string{"index.bolt", "otr.key", "otr.buddies"}
 	for _, empty := range empties {
 		fullPath := filepath.Join(brigPath, empty)
-		if err := touch(fullPath); err != nil {
+		if err := util.Touch(fullPath); err != nil {
 			return err
 		}
 	}

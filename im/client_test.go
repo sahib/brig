@@ -1,15 +1,16 @@
 package im
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/util"
 	colorlog "github.com/disorganizer/brig/util/log"
 	"github.com/tsuibin/goxmpp2/xmpp"
 )
@@ -44,8 +45,6 @@ func writeDummyBuddies(t *testing.T, r *Run) {
 	fa := r.alice.Fingerprint()
 	fb := r.bob.Fingerprint()
 
-	t.Log("FB: ", fb)
-
 	aliceBuddies := fmt.Sprintf("%s: %s\n", r.bob.C.Jid, fb)
 	bobBuddies := fmt.Sprintf("%s: %s\n", r.alice.C.Jid, fa)
 
@@ -68,6 +67,12 @@ func clientPingPong(t *testing.T) {
 			}
 		}
 	}()
+
+	for _, path := range []string{buddyPathA, buddyPathB} {
+		if err := util.Touch(path); err != nil {
+			t.Errorf("touch `%v`: %v", path, err)
+		}
+	}
 
 	client, err := NewClient(&Config{
 		Jid:                  aliceJid,
@@ -111,11 +116,22 @@ func clientPingPong(t *testing.T) {
 
 		for i := 0; !cnv.Ended() && i < 10; i++ {
 			t.Logf("Alice: PING %d", i)
-			cnv.Write([]byte(fmt.Sprintf("PING %d", i)))
+			if _, err := cnv.Write([]byte(fmt.Sprintf("PING %d", i))); err != nil {
+				t.Errorf("alice: write failed: %v", err)
+				return
+			}
 
 			msg, err := cnv.ReadMessage()
 			t.Logf("Alice: RECV %d: %s/%v", i, msg, err)
-			time.Sleep(1 * time.Millisecond)
+			if err != nil {
+				t.Errorf("alice: read failed: %v", err)
+				return
+			}
+
+			if !bytes.Equal(msg, []byte(fmt.Sprintf("PONG %d", i))) {
+				t.Errorf("PING %d does not match PONG %d", i, i)
+				return
+			}
 		}
 
 		done <- true
@@ -127,11 +143,26 @@ func clientPingPong(t *testing.T) {
 	for i := 0; !cnv.Ended() && i < 10; i++ {
 		msg, err := cnv.ReadMessage()
 		t.Logf("Bob: RECV %d: %s/%v", i, msg, err)
+		if err != nil {
+			t.Errorf("bob: read failed: %v", err)
+			return
+		}
+
+		if !bytes.Equal(msg, []byte(fmt.Sprintf("PING %d", i))) {
+			t.Errorf("PING %d does not match PONG %d", i, i)
+			return
+		}
+
 		t.Logf("Bob: PONG %d", i)
-		cnv.Write([]byte(fmt.Sprintf("PONG %d", i)))
+		if _, err = cnv.Write([]byte(fmt.Sprintf("PONG %d", i))); err != nil {
+			t.Errorf("bob: write failed: %v", err)
+			return
+		}
+
 	}
 
 	<-done
+	cnv.Close()
 }
 
 func TestClientPingPong(t *testing.T) {
