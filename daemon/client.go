@@ -115,18 +115,16 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 		}
 	}()
 
-	// Wait at max 5 seconds for the daemon to start up:
+	// Wait at max 15 seconds for the daemon to start up:
 	// (this means, wait till it's network interface is started)
-	for i := 0; i < 5; i++ {
-		time.Sleep(1 * time.Second)
+	for i := 0; i < 15; i++ {
 		client, err := Dial(port)
 		if err != nil {
+			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		if client != nil {
-			return client, nil
-		}
+		return client, nil
 	}
 
 	return nil, fmt.Errorf("Daemon could not be started or took to long.")

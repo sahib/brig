@@ -27,10 +27,14 @@ func LockFile(jid, pass, path string) error {
 		return err
 	}
 
+	encData := make([]byte, 0)
 	dir, base := filepath.Split(path)
-	encData, err := minilock.EncryptFileContents(base, data, keys, keys)
-	if err != nil {
-		return err
+
+	// This seemed to crash minilock otherwise:
+	if len(data) != 0 {
+		if encData, err = minilock.EncryptFileContents(base, data, keys, keys); err != nil {
+			return err
+		}
 	}
 
 	err = ioutil.WriteFile(filepath.Join(dir, base+EncFileSuffix), encData, 0666)

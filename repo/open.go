@@ -13,8 +13,8 @@ import (
 var filenames = []string{
 	"index.bolt",
 	"master.key",
-	"otr.buddies",
-	"otr.key",
+	// "otr.buddies",
+	// "otr.key",
 }
 
 func lookupJid(configPath string) (string, error) {
@@ -70,6 +70,7 @@ func (r *Repository) Close() error {
 			continue
 		}
 
+		log.Infof("Locking file `%v`...", absName)
 		if err := LockFile(r.Jid, r.Password, absName); err != nil {
 			return err
 		}

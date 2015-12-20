@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -12,10 +13,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
@@ -34,6 +37,9 @@ type allowOneConn struct{}
 type Server struct {
 	// The repo we're working on
 	Repo *repo.Repository
+
+	// XMPP is the control client to the outside world.
+	XMPP *im.Client
 
 	// Handle to `ipfs daemon`
 	ipfsDaemon *exec.Cmd
@@ -79,12 +85,29 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
+	xmppClient, err := im.NewClient(
+		&im.Config{
+			Jid:      xmpp.JID(repository.Jid),
+			Password: pwd,
+			TLSConfig: tls.Config{
+				ServerName: xmpp.JID(repository.Jid).Domain(),
+			},
+			KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
+			FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
 		Repo:           repository,
+		XMPP:           xmppClient,
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		ipfsDaemon:     proc,
