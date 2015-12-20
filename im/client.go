@@ -421,7 +421,6 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			log.Warningf("Unable to save fingerprints: %v", err)
 		}
 
-		// TODO: Those are not locked yet...
 		if cnv.initiated == true && cnv.authenticated {
 			for _, backlogMsg := range cnv.backlog {
 				base64Texts, err := cnv.conversation.Send(backlogMsg)

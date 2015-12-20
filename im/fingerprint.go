@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -16,9 +17,6 @@ type FingerprintStore interface {
 
 	// Remember stores the last known fingerprint of this jid.
 	Remember(jid string, fingerprint string) error
-
-	// Match checks if the current fingerprint matches the last one.
-	Match(jid string, current string) bool
 }
 
 // FormatFingerprint converts a raw byte string representation to a hex fingerprint.
@@ -56,13 +54,18 @@ func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
 
 // Lookup returns the last know fingerprint of this jid. No I/O is done.
 func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
-	return k.keys[jid], nil
+	fingerprint, ok := k.keys[jid]
+	if !ok {
+		log.Warningf("No fingerprint known for `%v`.", jid)
+	}
+
+	return fingerprint, nil
 }
 
 // Remember stores the last knwon fingerprint to this jid. It rewrites the
 // fingerprint database on the filesystem
 func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
-	k.keys[jid] = fingerprint[:]
+	k.keys[jid] = fingerprint
 
 	fd, err := os.OpenFile(k.Path, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -81,20 +84,4 @@ func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
 	}
 
 	return nil
-}
-
-// Match does a Lookup and compares it with the current fingerprint for
-// convinience.
-func (k *FsFingerprintStore) Match(jid string, current string) bool {
-	old, err := k.Lookup(jid)
-	if err != nil {
-		return false
-	}
-
-	// TODO: Later this should be only done by the initial auth module.
-	if old == "" {
-		return true
-	}
-
-	return old == current
 }
