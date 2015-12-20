@@ -2,11 +2,8 @@ package im
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"sync"
 	"time"
 
@@ -83,6 +80,9 @@ type Client struct {
 
 	// Lookup map for online status for Client.C.Roster
 	online map[xmpp.JID]bool
+
+	// Current fingerprint
+	fingerprint string
 }
 
 // NewClient returns a ready client or nil on error.
@@ -117,6 +117,14 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	c.C = xmppClient
+
+	// Try to create the otr key or load existing one:
+	privKey, err := loadPrivateKey(c.KeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	c.fingerprint = FormatFingerprint(privKey.PublicKey.Fingerprint())
 
 	go func() {
 		for status := range c.Status {
@@ -185,6 +193,10 @@ func (c *Client) Listen() *Conversation {
 	return <-c.incomingBuddies
 }
 
+func (c *Client) Fingerprint() string {
+	return c.fingerprint
+}
+
 // Close terminates all open connections.
 func (c *Client) Close() {
 	c.Lock()
@@ -247,41 +259,6 @@ func (c *Client) removeConversation(jid xmpp.JID) {
 	delete(c.buddies, jid)
 }
 
-func genPrivateKey(key *otr.PrivateKey, path string) error {
-	key.Generate(rand.Reader)
-	keyDump := key.Serialize(nil)
-
-	if err := ioutil.WriteFile(path, keyDump, 0600); err != nil {
-		return err
-	}
-
-	log.Infof("Key Generated: %x", key.Serialize(nil))
-	return nil
-}
-
-// loadPrivateKey generates a valid otr.PrivateKey.
-// This function should never fail in normal cases since it
-// will attempt to generate a new key and write it to path as fallback.
-func loadPrivateKey(path string) (*otr.PrivateKey, error) {
-	key := &otr.PrivateKey{}
-
-	// Try to load an existing one:
-	if file, err := os.Open(path); err == nil {
-		if data, err := ioutil.ReadAll(file); err == nil {
-			if _, ok := key.Parse(data); ok {
-				return key, nil
-			}
-		}
-	}
-
-	// Generate a new one as fallback or initial case:
-	if err := genPrivateKey(key, path); err != nil {
-		return nil, err
-	}
-
-	return key, nil
-}
-
 func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, error) {
 	c.Lock()
 	defer c.Unlock()
@@ -291,11 +268,13 @@ func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, er
 	if !ok {
 		log.Infof("new otr-conversation: `%v`", string(jid))
 		privKey, err := loadPrivateKey(c.KeyPath)
+
 		if err != nil {
 			log.Errorf("otr-key-gen failed: %v", err)
 			return nil, false, err
 		}
 
+		c.fingerprint = FormatFingerprint(privKey.PublicKey.Fingerprint())
 		c.buddies[jid] = newConversation(jid, c, privKey)
 	}
 

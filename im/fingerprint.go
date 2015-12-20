@@ -33,14 +33,10 @@ type FsFingerprintStore struct {
 	keys map[string]string
 }
 
-// NewFsFingerprintStore returns a new, possibly empty, FingerprintStore
-func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
-	k := FsFingerprintStore{Path: path}
-
-	fd, err := os.Open(path)
+func (k *FsFingerprintStore) load() (map[string]string, error) {
+	fd, err := os.Open(k.Path)
 	if err != nil {
-		k.keys = make(map[string]string)
-		return &k, nil
+		return nil, err
 	}
 
 	defer util.Closer(fd)
@@ -50,12 +46,33 @@ func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
 		return nil, err
 	}
 
-	return &k, yaml.Unmarshal(data, &k.keys)
+	keys := make(map[string]string)
+	return keys, yaml.Unmarshal(data, &keys)
+}
+
+// NewFsFingerprintStore returns a new, possibly empty, FingerprintStore
+func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
+	k := &FsFingerprintStore{Path: path}
+	keys, err := k.load()
+
+	if err != nil {
+		return nil, err
+	}
+
+	k.keys = keys
+	return k, nil
 }
 
 // Lookup returns the last know fingerprint of this jid. No I/O is done.
 func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
-	fingerprint, ok := k.keys[jid]
+	keys, err := k.load()
+	if err != nil {
+		return "", err
+	}
+
+	k.keys = keys
+
+	fingerprint, ok := keys[jid]
 	if !ok {
 		log.Warningf("No fingerprint known for `%v`.", jid)
 	}
