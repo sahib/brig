@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -46,7 +45,7 @@ type Conversation struct {
 	readBuf *bytes.Buffer
 
 	// This is set to a value > 0 if the conversation ended.
-	cnvIsDead uint32
+	isDead bool
 
 	// Did we initiated the conversation to this cnv?
 	initiated bool
@@ -101,6 +100,9 @@ func (b *Conversation) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
+	b.Lock()
+	defer b.Unlock()
+
 	n, _ := b.readBuf.Write(msg)
 	return b.readBuf.Read(buf[:n])
 }
@@ -125,11 +127,12 @@ func (b *Conversation) ReadMessage() ([]byte, error) {
 	}
 }
 
-// NOTE: adieu() is called with c.Lock() hold.
 func (b *Conversation) adieu() {
 	// Make sure Write()/Read() does not block anymore.
-	atomic.StoreUint32(&b.cnvIsDead, 1)
+	b.Lock()
+	defer b.Unlock()
 
+	b.isDead = true
 	b.authenticated = false
 
 	if b.conversation != nil {
@@ -152,5 +155,13 @@ func (b *Conversation) add(msg []byte) {
 
 // Ended returns true when the underlying conversation was ended.
 func (b *Conversation) Ended() bool {
-	return atomic.LoadUint32(&b.cnvIsDead) > 0
+	b.Lock()
+	defer b.Unlock()
+
+	return b.isDead
+}
+
+func (b *Conversation) Close() error {
+	// This is a NO-OP. adieu() should be called by Client.
+	return nil
 }

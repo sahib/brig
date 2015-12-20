@@ -65,22 +65,26 @@ func main() {
 			return
 		}
 
-		for i := 0; !cnv.Ended(); i++ {
-			log.Println("Alice: PING")
+		for i := 0; !cnv.Ended() && i < 10; i++ {
+			log.Infof("Alice: PING %d", i)
 			cnv.Write([]byte(fmt.Sprintf("PING %d", i)))
-			log.Println("Alice: RECV")
+			log.Infof("Alice: RECV %d", i)
 			fmt.Println(cnv.ReadMessage())
 			time.Sleep(2 * time.Second)
 		}
+
+		cnv.Close()
 	} else {
 		for {
 			cnv := client.Listen()
+
 			log.Println("Talking to", cnv.Jid)
 			go func() {
-				for i := 0; !cnv.Ended(); i++ {
-					log.Println("Bob: RECV")
+				defer cnv.Close()
+				for i := 0; !cnv.Ended() && i < 10; i++ {
+					log.Infof("Bob: RECV %d", i)
 					fmt.Println(cnv.ReadMessage())
-					log.Println("Bob: PONG")
+					log.Infof("Bob: PONG %d", i)
 					cnv.Write([]byte(fmt.Sprintf("PONG %d", i)))
 				}
 			}()

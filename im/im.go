@@ -282,8 +282,10 @@ func loadPrivateKey(path string) (*otr.PrivateKey, error) {
 	return key, nil
 }
 
-// NOTE: This function has to be called with c.Lock() held!
 func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, error) {
+	c.Lock()
+	defer c.Unlock()
+
 	_, ok := c.buddies[jid]
 
 	if !ok {
@@ -327,6 +329,9 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 	if err != nil {
 		return nil, nil, false, err
 	}
+
+	cnv.Lock()
+	defer cnv.Unlock()
 
 	// We talk to this cnv the first time.
 	if isNew {
@@ -445,13 +450,13 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 // It is allowed that `text` to be nil. This might trigger the otr exchange,
 // but does not send any real messages.
 func (c *Client) send(to xmpp.JID, text []byte) error {
-	c.Lock()
-	defer c.Unlock()
-
 	cnv, isNew, err := c.lookupOrInitConversation(to)
 	if err != nil {
 		return err
 	}
+
+	cnv.Lock()
+	defer cnv.Unlock()
 
 	if isNew {
 		cnv.initiated = true
