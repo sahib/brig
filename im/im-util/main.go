@@ -68,8 +68,9 @@ func main() {
 		for i := 0; !cnv.Ended() && i < 10; i++ {
 			log.Infof("Alice: PING %d", i)
 			cnv.Write([]byte(fmt.Sprintf("PING %d", i)))
-			log.Infof("Alice: RECV %d", i)
-			fmt.Println(cnv.ReadMessage())
+
+			msg, err := cnv.ReadMessage()
+			log.Infof("Alice: RECV %d: %s/%v", i, msg, err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -80,10 +81,9 @@ func main() {
 
 			log.Println("Talking to", cnv.Jid)
 			go func() {
-				defer cnv.Close()
 				for i := 0; !cnv.Ended() && i < 10; i++ {
-					log.Infof("Bob: RECV %d", i)
-					fmt.Println(cnv.ReadMessage())
+					msg, err := cnv.ReadMessage()
+					log.Infof("Bob: RECV %d: %s/%v", i, msg, err)
 					log.Infof("Bob: PONG %d", i)
 					cnv.Write([]byte(fmt.Sprintf("PONG %d", i)))
 				}

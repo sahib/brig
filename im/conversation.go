@@ -132,6 +132,10 @@ func (b *Conversation) adieu() {
 	b.Lock()
 	defer b.Unlock()
 
+	if b.isDead {
+		return
+	}
+
 	b.isDead = true
 	b.authenticated = false
 
@@ -162,6 +166,7 @@ func (b *Conversation) Ended() bool {
 }
 
 func (b *Conversation) Close() error {
-	// This is a NO-OP. adieu() should be called by Client.
+	b.adieu()
+	b.Client.removeConversation(b.Jid)
 	return nil
 }

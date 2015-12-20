@@ -194,6 +194,7 @@ func (c *Client) Close() {
 	for _, cnv := range c.buddies {
 		cnv.adieu()
 	}
+
 	c.C.Close()
 }
 
@@ -376,7 +377,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 				return err
 			}
 
-			log.Debugf("    Fingerprint %v: %s", jid, fingerprint)
+			log.Debugf("    Finger: %v: %s", jid, fingerprint)
 		}
 
 		authResp, err := otrCnv.Authenticate(question, []byte(fingerprint))
@@ -438,8 +439,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		log.Debugf("[!] Answer is wrong")
 		fallthrough
 	case otr.ConversationEnded:
-		cnv.adieu()
-		delete(c.buddies, cnv.Jid)
+		c.removeConversation(cnv.Jid)
 	}
 
 	return data, responses, stateChange == otr.NoChange && encrypted && len(data) > 0, nil
