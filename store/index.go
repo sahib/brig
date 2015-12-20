@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util/trie"
 	multihash "github.com/jbenet/go-multihash"
@@ -56,15 +57,19 @@ func Open(repoPath string) (*Store, error) {
 	}
 
 	// Create initial buckets:
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		for _, name := range []string{"index", "commits", "pinned"} {
-			_, err := tx.CreateBucketIfNotExists([]byte(name))
-			if err != nil {
-				return fmt.Errorf("create bucket: %s", err)
+			_, berr := tx.CreateBucketIfNotExists([]byte(name))
+			if berr != nil {
+				return fmt.Errorf("create bucket: %s", berr)
 			}
 		}
 		return nil
 	})
+
+	if err != nil {
+		log.Warningf("store-create-table failed: %v", err)
+	}
 
 	if err := store.load(); err != nil {
 		return nil, err
@@ -84,8 +89,13 @@ func (s *Store) Add(path string, r io.Reader) error {
 
 // Close syncs all data. It is an error to use the store afterwards.
 func (s *Store) Close() {
-	s.db.Sync()
-	s.db.Close()
+	if err := s.db.Sync(); err != nil {
+		log.Warningf("store-sync: %v", err)
+	}
+
+	if err := s.db.Close(); err != nil {
+		log.Warningf("store-close: %v", err)
+	}
 }
 
 // Load opens the

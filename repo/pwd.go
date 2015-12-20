@@ -80,7 +80,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rl.Close()
+	defer util.Closer(rl)
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
@@ -139,7 +139,7 @@ func promptPasswordColored(color int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer rl.Close()
+	defer util.Closer(rl)
 
 	return doPromptLine(rl, prompt, true)
 }

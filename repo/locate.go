@@ -43,7 +43,7 @@ func FindRepo(folder string) string {
 	return ""
 }
 
-// GuessRepoFolder tries to find the desired brig repo by heuristics.
+// GuessFolder tries to find the desired brig repo by heuristics.
 // Current heuristics: check env var BRIG_PATH, then the working dir.
 // On failure, it will return an empty string.
 func GuessFolder() string {

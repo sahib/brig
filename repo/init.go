@@ -162,7 +162,7 @@ func createMasterKey(brigPath string, keySize int) error {
 		return err
 	}
 
-	defer fd.Close()
+	defer util.Closer(fd)
 
 	if _, err := io.CopyN(fd, rand.Reader, int64(keySize/8)); err != nil {
 		return err
