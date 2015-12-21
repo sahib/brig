@@ -43,6 +43,7 @@ func Open(pwd, folder string) (*Repository, error) {
 	}
 
 	// Unlock all files:
+	absNames := make([]string, 0)
 	for _, name := range filenames {
 		absName := filepath.Join(brigPath, name)
 		if _, err := os.Stat(absName); err == nil {
@@ -51,9 +52,11 @@ func Open(pwd, folder string) (*Repository, error) {
 			continue
 		}
 
-		if err := UnlockFile(jid, pwd, absName); err != nil {
-			return nil, err
-		}
+		absNames = append(absNames, absName)
+	}
+
+	if err := UnlockFiles(jid, pwd, absNames); err != nil {
+		return nil, err
 	}
 
 	return LoadRepository(pwd, absFolderPath)
@@ -62,6 +65,8 @@ func Open(pwd, folder string) (*Repository, error) {
 // Close encrypts sensible files in the repository.
 // The password is taken from Repository.Password.
 func (r *Repository) Close() error {
+	absNames := make([]string, 0)
+
 	for _, name := range filenames {
 		absName := filepath.Join(r.InternalFolder, name)
 		if _, err := os.Stat(absName); os.IsNotExist(err) {
@@ -71,9 +76,12 @@ func (r *Repository) Close() error {
 		}
 
 		log.Infof("Locking file `%v`...", absName)
-		if err := LockFile(r.Jid, r.Password, absName); err != nil {
-			return err
-		}
+		absNames = append(absNames, absName)
+	}
+
+	fmt.Println(absNames)
+	if err := LockFiles(r.Jid, r.Password, absNames); err != nil {
+		return err
 	}
 
 	return nil

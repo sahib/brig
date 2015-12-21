@@ -6,12 +6,16 @@ import (
 	"path/filepath"
 
 	"github.com/cathalgarvey/go-minilock"
+	"github.com/cathalgarvey/go-minilock/taber"
 )
 
 const (
 	// EncFileSuffix is appended to all encrypted in-repo file paths
 	EncFileSuffix = ".minilock"
 )
+
+// TODO: Build a LockFiles and UnlockFiles variant.
+//       Key gen seems to take about ~1s - slow for many files.
 
 // LockFile encrypts `path` with minilock, using pass and jid as email.
 // The resulting file is written to `path` + EncFileSuffix,
@@ -22,6 +26,26 @@ func LockFile(jid, pass, path string) error {
 		return err
 	}
 
+	return lockFile(keys, jid, pass, path)
+}
+
+// LockFiles works like LockFile but generates the key only once.
+func LockFiles(jid, pass string, paths []string) error {
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	for _, path := range paths {
+		if err := lockFile(keys, jid, pass, path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func lockFile(keys *taber.Keys, jid, pass, path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -50,12 +74,7 @@ func LockFile(jid, pass, path string) error {
 }
 
 // unlockFileReal is the actual implementation of TryUnlock/UnlockFile
-func unlockFileReal(jid, pass, path string, write bool) error {
-	keys, err := minilock.GenerateKey(jid, pass)
-	if err != nil {
-		return err
-	}
-
+func unlockFileReal(keys *taber.Keys, jid, pass, path string, write bool) error {
 	encPath := path + EncFileSuffix
 	data, err := ioutil.ReadFile(encPath)
 	if err != nil {
@@ -91,13 +110,39 @@ func unlockFileReal(jid, pass, path string, write bool) error {
 //
 // If the operation was successful,
 func UnlockFile(jid, pass, path string) error {
-	return unlockFileReal(jid, pass, path, true)
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	return unlockFileReal(keys, jid, pass, path, true)
+}
+
+// UnlockFiles works like UnlockFile for many paths, but generates keys just once.
+func UnlockFiles(jid, pass string, paths []string) error {
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	for _, path := range paths {
+		if err := unlockFileReal(keys, jid, pass, path, true); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // TryUnlock tries to unlock a file, if successful,
 // `path` will not be removed and no encrypted output is written.
 func TryUnlock(jid, pass, path string) error {
-	return unlockFileReal(jid, pass, path, false)
+	keys, err := minilock.GenerateKey(jid, pass)
+	if err != nil {
+		return err
+	}
+
+	return unlockFileReal(keys, jid, pass, path, false)
 }
 
 // EncryptMinilockMsg encrypts a given plaintext for multiple receivers.
