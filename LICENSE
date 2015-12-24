@@ -1,0 +1,11 @@
+--2015-12-24 11:09:26--  https://www.gnu.org/licenses/agpl-3.0.txt
+Auflösen des Hostnamens »www.gnu.org (www.gnu.org)« … 208.118.235.148, 2001:4830:134:3::a
+Verbindungsaufbau zu www.gnu.org (www.gnu.org)|208.118.235.148|:443 … verbunden.
+HTTP-Anforderung gesendet, auf Antwort wird gewartet … 200 OK
+Länge: 34520 (34K) [text/plain]
+Wird in »»agpl-3.0.txt«« gespeichert.
+
+     0K .......... .......... .......... ...                  100%  108K=0,3s
+
+2015-12-24 11:09:27 (108 KB/s) - »»agpl-3.0.txt«« gespeichert [34520/34520]
+
