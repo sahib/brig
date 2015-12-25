@@ -1,0 +1,110 @@
+\usepackage[autostyle=true,german=quotes]{csquotes}
+\usepackage{graphicx}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{garamondx}
+\usepackage[lf,p]{ebgaramond}
+\usepackage{inconsolata}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{color}
+%\definecolor{titlepagecolor}{RGB}{122,153,1}
+% \definecolor{titlepagecolor}{RGB}{253,246,227} %Solarized light background
+% \definecolor{titlepagefontcolor}{RGB}{101,123,131} %Solarized light default text 
+% \definecolor{titlepagecolor}{RGB}{84,153,224} %Solarized light background
+\definecolor{titlepagecolor}{RGB}{40, 59, 84} 
+\definecolor{titlepagefontcolor}{RGB}{225,225,225} %Solarized light default text 
+\usepackage{ifthen}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage[
+  paper=a4paper,
+  left=25mm,
+  right=25mm,
+  top=21mm,
+  bottom=25mm,
+  includefoot,
+  foot=\baselineskip,
+  bindingoffset=0mm]{geometry}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{amssymb}% http://ctan.org/pkg/amssymb
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+\hypersetup{colorlinks,breaklinks,urlcolor=titlepagecolor,linkcolor=titlepagecolor}
+
+\definecolor{gray75}{gray}{0.55}
+\newcommand{\hsp}{\hspace{5pt}}
+
+\titleformat{\chapter}      % Command 2
+    [hang]                  % Shape
+    {\Huge\bfseries}        % Format
+    {\textcolor{titlepagecolor}{\thechapter\hsp|\hsp}}{0pt}
+    {\Huge\bfseries}
+
+\titleformat{\section}
+    {\color{black}\normalfont\Large\bfseries}
+    {\selectfont\color{titlepagecolor}\thesection\hsp|\hsp}{0em}{}
+
+\titleformat{\subsection}
+    {\color{black}\normalfont\large\bfseries}
+    {\color{titlepagecolor}\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\color{black}\normalfont\bfseries}
+    {\color{titlepagecolor}\thesubsubsection}{1em}{}
+
+% Decrease Chapter Spacing.
+\titlespacing{\chapter}{0pt}{0.0em}{2em}
+\pagestyle{fancy}               
+
+\newcommand{\prettypage}{%
+    \scshape{~\thepage~~~}
+}%
+
+% Configure footer and header
+\fancyfoot[C]{%
+    % EasterEgg
+    \ifthenelse{\value{page}=42}{%
+        % Horizontal and vertical flip
+        \reflectbox{\scalebox{1}[-1]{\prettypage}}
+    }{%
+        \ifthenelse{\value{page}=23}{%
+            % Horizontal flip
+            \reflectbox{\prettypage}
+        }{%
+            \prettypage
+        }%
+    }%
+}%
+
+% Remove the header from pages with chapters on them:
+\fancypagestyle{plain}{%
+    \fancyhead{}
+    \renewcommand{\headrule}{}
+}%
+
+% \setlength{\headheight}{24pt} 
+
+% Comment out for normal twoside:
+% \newcommand{\ONESIDEFAKE}
+
+\ifdefined\ONESIDEFAKE
+    \fancyhead[L]{{\nouppercase{\slshape{\leftmark}}}}
+    \fancyhead[R]{{\nouppercase{\scshape{\rightmark}}}}
+\else
+    \fancyhead[LO]{{\nouppercase{\slshape{\leftmark}}}}
+    \fancyhead[RO]{{\nouppercase{\scshape{\rightmark}}}}
+    \fancyhead[LE]{{\nouppercase{\scshape{\rightmark}}}}
+    \fancyhead[RE]{{\nouppercase{\slshape{\leftmark}}}}
+\fi
+
+%\setlength{\topmargin}{-.5in}  %{-.5625in}
+\setlength{\footskip}{25pt} % to put page number 3/4" from the bottom of the page (1/4" from bottom of body text)
+%\setlength{\textheight}{9in}
+%\setlength{\textwidth}{6in}

@@ -10,6 +10,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
+	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util/colors"
@@ -159,6 +160,21 @@ func handleDaemon(ctx climax.Context) int {
 	}
 
 	baal.Serve()
+	return 0
+}
+
+func handleMount(ctx climax.Context) int {
+	if len(ctx.Args) == 0 {
+		fmt.Println("Usage: brig mount [mntpath]")
+		return 1
+	}
+
+	mntpath := ctx.Args[0]
+	if err := fuse.Mount(mntpath); err != nil {
+		log.Errorf("Unable to mount: %v", err)
+		return 2
+	}
+
 	return 0
 }
 
@@ -466,6 +482,12 @@ func RunCmdline() int {
 			Group:  miscGroup,
 			Brief:  "Access, list and modify configuration values.",
 			Handle: handleConfig,
+		},
+		climax.Command{
+			Name:   "mount",
+			Group:  miscGroup,
+			Brief:  "Handle FUSE mountpoints.",
+			Handle: handleMount,
 		},
 		climax.Command{
 			Name:  "update",
