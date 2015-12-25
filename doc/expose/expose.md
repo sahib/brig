@@ -108,10 +108,10 @@ Welche wirtschaftliche Verwertung der Ergebnisse des Vorhabens ist durch die
 jeweiligen Projektpartner geplant?  Was sind die zu erwartenden
 Zielmärkte/Anwender?  Welche Stückzahlen bzw. Umsätze werden angestrebt?
 
-Hebelwirkung für den Wirtschaftsstandort
-----------------------------------------
+Hebelwirkung für den Wirtschaftsstandort Bayern
+-----------------------------------------------
 
-Bayern Welche Auswirkungen auf die bayerischen Standorte der Projektpartner
+Welche Auswirkungen auf die bayerischen Standorte der Projektpartner
 werden erwartet (Umsätze, Arbeitsplätze)?  Wie profitieren gegebenenfalls
 bayerische Zulieferer oder Kunden von den Ergebnissen des Vorhabens?
 
