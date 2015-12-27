@@ -74,6 +74,15 @@ func (n *Node) Root() *Node {
 	return n
 }
 
+// IsLeaf will return true if this node has no other children.
+func (n *Node) IsLeaf() bool {
+	if n == nil {
+		return false
+	}
+
+	return len(n.Children) == 0
+}
+
 // Insert adds a node into the trie at `path`
 func (n *Node) Insert(path string) *Node {
 	curr := n

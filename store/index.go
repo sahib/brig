@@ -9,7 +9,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util/trie"
-	multihash "github.com/jbenet/go-multihash"
 )
 
 var (
@@ -26,21 +25,29 @@ type Store struct {
 	Trie trie.Trie
 }
 
-// FileSize is a large enough integer for file sizes, offering a few util methods.
-type FileSize int64
+// Load opens the
+func (s *Store) loadTrie() error {
+	s.Trie = trie.NewTrie()
 
-// File represents a single file in the repository.
-// It stores all metadata about it and links to the actual data.
-type File struct {
-	// Pointer for dynamic loading of bigger data:
-	*trie.Node
-	s *Store
+	return s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketIndex)
+		if bucket != nil {
+			return nil
+		}
 
-	Size     FileSize
-	Hash     multihash.Multihash
-	IpfsHash multihash.Multihash
+		err := bucket.ForEach(func(k, v []byte) error {
+			// k = absPath, v = File{} value
+			file := &File{s: s}
+			file.Node = s.Trie.Insert(string(k))
+			return nil
+		})
 
-	// Size, modtime etc.
+		if err == nil {
+			return nil
+		}
+
+		return fmt.Errorf("store-load: %v", err)
+	})
 }
 
 // Open loads an existing store, if it does not exist, it is created.
@@ -71,7 +78,7 @@ func Open(repoPath string) (*Store, error) {
 		log.Warningf("store-create-table failed: %v", err)
 	}
 
-	if err := store.load(); err != nil {
+	if err := store.loadTrie(); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +90,7 @@ func Open(repoPath string) (*Store, error) {
 func (s *Store) Add(path string, r io.Reader) error {
 	// gets hash, size, modtime=now, ipfshash...
 	// creates File{} and serializes it to DB using GOB
-	// unsert .Node before serializing, set again after.
+	// insert .Node before serializing, set again after.
 	return nil
 }
 
@@ -98,23 +105,8 @@ func (s *Store) Close() {
 	}
 }
 
-// Load opens the
-func (s *Store) load() error {
-	s.Trie = trie.NewTrie()
-
-	return s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bucketIndex)
-		if bucket != nil {
-			return nil
-		}
-
-		err := bucket.ForEach(func(k, v []byte) error {
-			// k = absPath, v = File{} value
-			file := &File{s: s}
-			file.Node = s.Trie.Insert(string(k))
-			return nil
-		})
-
-		return fmt.Errorf("store-load: %v", err)
-	})
+// Remove will purge a file locally on this node.
+// The file might still be available somewhere else.
+func (s *Store) Remove(path string) error {
+	return nil
 }

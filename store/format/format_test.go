@@ -3,6 +3,7 @@ package format
 import (
 	"bytes"
 	"fmt"
+	"github.com/disorganizer/brig/util/testutil"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,45 +12,6 @@ import (
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
-
-func createDummyBuf(size int64) []byte {
-	buf := make([]byte, size)
-
-	for i := int64(0); i < size; i++ {
-		// Be evil and stripe the data:
-		buf[i] = byte(i % 255)
-	}
-
-	return buf
-}
-
-func createFile(size int64) string {
-	fd, err := ioutil.TempFile("", "brig_test")
-	if err != nil {
-		panic("Cannot create temp file")
-	}
-
-	defer fd.Close()
-
-	blockSize := int64(1 * 1024 * 1024)
-	buf := createDummyBuf(blockSize)
-
-	for size > 0 {
-		take := size
-		if size > int64(len(buf)) {
-			take = int64(len(buf))
-		}
-
-		_, err := fd.Write(buf[:take])
-		if err != nil {
-			panic(err)
-		}
-
-		size -= blockSize
-	}
-
-	return fd.Name()
-}
 
 func encryptFile(key []byte, from, to string) (int64, error) {
 	fdFrom, _ := os.Open(from)
@@ -72,14 +34,13 @@ func decryptFile(key []byte, from, to string) (int64, error) {
 }
 
 func testSimpleEncDec(t *testing.T, size int) {
-	path := createFile(int64(size))
+	path := testutil.CreateFile(int64(size))
 	defer os.Remove(path)
 
 	encPath := path + "_enc"
 	decPath := path + "_dec"
 
-	var err error
-	_, err = encryptFile(TestKey, path, encPath)
+	_, err := encryptFile(TestKey, path, encPath)
 	defer os.Remove(encPath)
 
 	if err != nil {
@@ -97,16 +58,34 @@ func testSimpleEncDec(t *testing.T, size int) {
 
 	a, _ := ioutil.ReadFile(path)
 	b, _ := ioutil.ReadFile(decPath)
+	c, _ := ioutil.ReadFile(encPath)
 
 	if !bytes.Equal(a, b) {
 		t.Errorf("Source and decrypted not equal")
+	}
+
+	if bytes.Equal(a, c) {
+		t.Errorf("Source was not encrypted (same as source)")
 	}
 }
 
 func TestSimpleEncDec(t *testing.T) {
 	t.Parallel()
 
-	sizes := []int{MaxBlockSize - 1, MaxBlockSize, MaxBlockSize + 1}
+	sizes := []int{
+		0,
+		1,
+		MaxBlockSize - 1,
+		MaxBlockSize,
+		MaxBlockSize + 1,
+		GoodDecBufferSize - 1,
+		GoodDecBufferSize,
+		GoodDecBufferSize + 1,
+		GoodEncBufferSize - 1,
+		GoodEncBufferSize,
+		GoodEncBufferSize + 1,
+	}
+
 	for size := range sizes {
 		testSimpleEncDec(t, size)
 	}
@@ -114,7 +93,7 @@ func TestSimpleEncDec(t *testing.T) {
 
 func TestSeek(t *testing.T) {
 	N := int64(2 * MaxBlockSize)
-	a := createDummyBuf(N)
+	a := testutil.CreateDummyBuf(N)
 	b := make([]byte, 0, N)
 
 	source := bytes.NewBuffer(a)

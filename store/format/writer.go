@@ -72,7 +72,7 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 		return seeker.Seek(offset, whence)
 	}
 
-	return 0, fmt.Errorf("Seek is not supported by underlying datastream")
+	return 0, fmt.Errorf("write: Seek is not supported by underlying datastream")
 }
 
 // Close the EncryptedWriter and write any left-over blocks

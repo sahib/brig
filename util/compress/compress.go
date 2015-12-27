@@ -1,9 +1,10 @@
-package main
+package compress
 
 import (
-	"github.com/golang/snappy"
 	"io"
 	"os"
+
+	"github.com/golang/snappy"
 )
 
 // Compress the file at src to dst.
@@ -60,15 +61,4 @@ func NewReader(r io.Reader) io.Reader {
 // NewWriter returns a new compression Writer.
 func NewWriter(w io.Writer) io.Writer {
 	return snappy.NewWriter(w)
-}
-
-func main() {
-
-	if os.Args[1] == "d" {
-		DecompressFile(os.Args[2], os.Args[3])
-	}
-
-	if os.Args[1] == "c" {
-		CompressFile(os.Args[2], os.Args[3])
-	}
 }
