@@ -1,6 +1,6 @@
-====================
-Brig: Ship your data
-====================
+# Brig: Ship your data around the world
+
+![a brig](http://www.rodlangton.com/nnimages/brig1.jpg)
 
 ``brig`` is a distributed & secure file synchronization tool (and more!)
 It is based on ``ipfs``. Here's a list of what it can do:
