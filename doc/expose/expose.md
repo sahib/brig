@@ -29,16 +29,31 @@ entwickelt.
 
 Nutzbar soll das resultierende Produkt, neben dem Standardanwendungsfall der
 Dateisynchronisation, auch als Backup- bzw. Archivierungs-lösung sein
-beziehungsweise auch als verschlüsselter Safe oder gar als Plattform für andere,
-verteilte Anwendungen (aus dem Industrie 4.0 Bereich?).
+beziehungsweise auch als verschlüsselter Daten--Safe oder als Plattform für
+andere, verteilte Anwendungen aus dem Industrie 4.0 Umfeld.
 
 # Projektkonzept
 
 ## Gesamtziel des Vorhabens 
 
-Was soll in dem Vorhaben erreicht werden?  Welches
-Problem wird mit dem Vorhaben gelöst?  Worin besteht die Innovation des
-Vorhabens?
+* Was soll in dem Vorhaben erreicht werden?  
+
+Entwicklung einer sicheren und unternehmenstauglichen
+Dateisynchronisationssoftware. Forschung/Weiterentwicklung beziehungsweise
+Erweiterung der bereits bestehender Standards und Produkte. Erstellung einer neuartigen
+Software auf Basis vorhandener/erweiterter Technologien. Erforschung
+unternehmenstauglicher Technologien um eine Optimierung bezüglich Sicherheit,
+Performance und Benutzerfreundlichkeit (einfache Bedienung) zu ermöglichen.
+
+* Welches Problem wird mit dem Vorhaben gelöst?  
+
+Herstellerunabhängige dezentrale Synchronisation von Daten ohne Cloud. 
+
+* Worin besteht die Innovation des Vorhabens?
+
+Unternehmenstaugliche (benutzerfreundliche) dezentrale und sicher
+Dateisynchronisation  mit Ende zu Ende Verschlüsselung. Unabhängigkeit von
+Hersteller und Cloudservices.
 
 ## Aufgaben der Projektpartner
 
@@ -74,6 +89,14 @@ Vorteile existieren gegenüber bestehenden Lösungen?
 Welche Zielmärkte werden durch das Vorhaben
 adressiert?  Welches wirtschaftliche Volumen haben diese Märkte?  Welche
 Wettbewerber sind auf diesen Märkten präsent?
+
+Es gibt viele verschiedene Lösungen die jeweils immer in Teilaspekten gut
+funktionieren.
+
+* Syncthing
+* git--annex
+* Dropbox + Boxcryptor
+* Et cetera
 
 ## Schutzrechtslage
 
