@@ -13,22 +13,22 @@ type Stream interface {
 	io.Seeker
 }
 
-func NewFromPath(path string) (Stream, error) {
+func NewFromPath(key []byte, path string) (Stream, error) {
 	fd, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewStream(fd, fd)
+	return NewStream(key, fd, fd)
 }
 
-func NewStream(r io.Reader, w io.Writer) (Stream, error) {
-	wFin, err := format.NewEncryptedWriter(compress.NewWriter(w), nil)
+func NewStream(key []byte, r io.Reader, w io.Writer) (Stream, error) {
+	wFin, err := format.NewEncryptedWriter(compress.NewWriter(w), key)
 	if err != nil {
 		return nil, err
 	}
 
-	rFin, err := format.NewEncryptedReader(compress.NewReader(r), nil)
+	rFin, err := format.NewEncryptedReader(compress.NewReader(r), key)
 	if err != nil {
 		return nil, err
 	}

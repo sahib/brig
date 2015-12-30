@@ -152,7 +152,7 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	return createIPFS(ipfsPath)
+	return CreateIpfsRepo(ipfsPath)
 }
 
 func createMasterKey(brigPath string, keySize int) error {
@@ -171,7 +171,7 @@ func createMasterKey(brigPath string, keySize int) error {
 	return nil
 }
 
-func createIPFS(ipfsRootPath string) error {
+func CreateIpfsRepo(ipfsRootPath string) error {
 	logger := &logutil.Writer{Level: log.InfoLevel}
 	cfg, err := ipfsconfig.Init(logger, 2048)
 	if err != nil {
