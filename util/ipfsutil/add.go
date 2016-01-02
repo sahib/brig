@@ -5,12 +5,14 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/jbenet/go-multihash"
+
 	log "github.com/Sirupsen/logrus"
 )
 
 // Add reads `r` and adds it to ipfs.
 // The resulting content hash is returned.
-func Add(ctx *Context, r io.Reader) ([]byte, error) {
+func Add(ctx *Context, r io.Reader) (multihash.Multihash, error) {
 	adder := ipfsCommand(ctx, "add", "-q")
 	// adder := exec.Command("cat")
 	stdin, err := adder.StdinPipe()
@@ -19,6 +21,7 @@ func Add(ctx *Context, r io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
+	stderr, err := adder.StderrPipe()
 	stdout, err := adder.StdoutPipe()
 	if err != nil {
 		log.Warning("stdout failed")
@@ -46,9 +49,17 @@ func Add(ctx *Context, r io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
+	errs, _ := ioutil.ReadAll(stderr)
 	if err := adder.Wait(); err != nil {
 		log.Warningf("`ipfs add` failed: %v", err)
+		log.Warningf("Stderr: %v", string(errs))
 	}
 
-	return bytes.TrimSpace(hash), nil
+	hash = bytes.TrimSpace(hash)
+	mh, err := multihash.FromB58String(string(hash))
+	if err != nil {
+		return nil, err
+	}
+
+	return mh, nil
 }

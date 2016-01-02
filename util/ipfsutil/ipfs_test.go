@@ -2,6 +2,7 @@ package ipfsutil
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,8 +11,8 @@ import (
 	"github.com/disorganizer/brig/repo"
 )
 
-const (
-	TEST_PATH = "/tmp/brig_test_ipfs_repo"
+var (
+	TEST_PATH = filepath.Join(os.TempDir(), "brig_test_ipfs_repo")
 )
 
 func initRepo(t *testing.T) *Context {
@@ -50,12 +51,27 @@ func TestStartDaemon(t *testing.T) {
 }
 
 func TestAddCat(t *testing.T) {
+	fmt.Println("Testing AddCat")
+
 	ctx := initRepo(t)
 	if ctx == nil {
 		return
 	}
 
 	defer os.RemoveAll(TEST_PATH)
+
+	cmd, err := StartDaemon(ctx)
+	if err != nil {
+		t.Errorf("Could not start ipfs daemon: %v", err)
+		return
+	}
+
+	defer func() {
+		if err := cmd.Process.Kill(); err != nil {
+			t.Errorf("Could not kill ipfs daemon: %v", err)
+			return
+		}
+	}()
 
 	// Dummy in-memory reader:
 	origData := []byte("Hello World")
@@ -81,6 +97,6 @@ func TestAddCat(t *testing.T) {
 	}
 
 	if !bytes.Equal(data, origData) {
-		t.Errorf("Data not equal: %v <-> %v", string(data), string(origData))
+		t.Errorf("Data not equal: %v <- -> %v", string(data), string(origData))
 	}
 }

@@ -2,10 +2,11 @@ package ipfsutil
 
 import (
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -28,9 +29,10 @@ func StartDaemon(ctx *Context) (*exec.Cmd, error) {
 	}
 
 	go func() {
+		stderrBytes, _ := ioutil.ReadAll(stderr)
 		if err := daemon.Wait(); err != nil {
 			log.Warningf("ipfs daemon exit: %v", err)
-			io.Copy(os.Stderr, stderr)
+			log.Warningf("Stderr: %v", string(stderrBytes))
 		}
 	}()
 
@@ -43,6 +45,17 @@ func StartDaemon(ctx *Context) (*exec.Cmd, error) {
 		}
 
 		conn.Close()
+
+		// This is pretty stupid. The ipfs daemon first starts the
+		// network interface but is not ready for usage yet.
+		// It appears to be ready once the api/ dir is created.
+		// Maybe better to check for the "Daemon is ready" phrase?
+		// (This is actually a TODO)
+		if _, err := os.Stat(filepath.Join(ctx.Path, "api")); err != nil {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
 		log.Infof("ipfs running on :%d", port)
 		return daemon, nil
 	}
