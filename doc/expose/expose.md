@@ -32,131 +32,145 @@ Dateisynchronisation, auch als Backup- bzw. Archivierungs-lösung sein
 beziehungsweise auch als verschlüsselter Daten--Safe oder als Plattform für
 andere, verteilte Anwendungen aus dem Industrie 4.0 Umfeld.
 
-# Projektkonzept
+5-6 Sätze.
 
-## Gesamtziel des Vorhabens 
+# Projektsteckbrief
 
-* Was soll in dem Vorhaben erreicht werden?  
+## Ziele
 
 Entwicklung einer sicheren und unternehmenstauglichen
 Dateisynchronisationssoftware. Forschung/Weiterentwicklung beziehungsweise
-Erweiterung der bereits bestehender Standards und Produkte. Erstellung einer neuartigen
-Software auf Basis vorhandener/erweiterter Technologien. Erforschung
+Erweiterung der bereits bestehender Standards und Produkte. Erstellung einer
+neuartigen Software auf Basis vorhandener/erweiterter Technologien. Erforschung
 unternehmenstauglicher Technologien um eine Optimierung bezüglich Sicherheit,
 Performance und Benutzerfreundlichkeit (einfache Bedienung) zu ermöglichen.
+TODO: Konkreteres Abstract.
+
+## Use cases
 
 * Welches Problem wird mit dem Vorhaben gelöst?  
 
-Herstellerunabhängige dezentrale Synchronisation von Daten ohne Cloud. 
+Use Cases. Aktuell Cloudproblematik beschreiben. Herstellerunabhängige
+dezentrale Synchronisation von Daten ohne Cloud. 
+
+Nutzbar als…
+
+…Transferlösung (Hyperlinks möglich).
+…Synchronisationslösung.
+…Backup- oder Archivierungslösung.
+…Versionsverwaltung.
+…verschlüsselten Safe.
+…als Plattform für andere Anwendungen.
+
+## Zielgruppen
+
+TODO: Unternehmen. Groß- und Kleinunternehmen. Kundenaustausch. Große
+Unternehmen zur internen Datenverwaltung. Einsatz im Sicherheitskritischen
+Bereichen -> Made In Germany.
+
+Privatpersonen: Schutz der Privatsphäre. 
+
+Plattform für industrielle Anwendungen. (I4.0)
+
+Einsatz im öffentlichen Bereich, Schulen, Universitäten...
+
+## Innovation
 
 * Worin besteht die Innovation des Vorhabens?
 
-Unternehmenstaugliche (benutzerfreundliche) dezentrale und sicher
+TODO: Bekannte Technologien, neu zusammengewürfelt, neue Möglichkeiten.
+
+Unternehmenstaugliche (benutzerfreundliche) dezentrale und sichere
 Dateisynchronisation  mit Ende zu Ende Verschlüsselung. Unabhängigkeit von
 Hersteller und Cloudservices.
 
-## Aufgaben der Projektpartner
+## Lizenz
 
-Wie ist die Aufgabenverteilung im Vorhaben?
+TODO: Warum freie Lizenz. Vorteile -> Sicherheit und Verbreitung. Transparenz.
+Weiterentwicklung/mehr Kontrolle durch Unternehmen. Sichergestellt dass
+Verbesserungen wieder ins Projekt zurückfließen.
 
-## Kompetenzen der beteiligten Partner
 
-Welche projektrelevanten technologischen
-Kompetenzen bringen die Partner ein?  Welche Vorerfahrungen existieren ggf. auf
-dem Technologiegebiet?
-
-## Beschreibung der bayerischen Standorte der Projektpartner
-
-Wie viele Mitarbeiter sind an den bayerischen Standorten beschäftigt?  Welche
-Umsätze werden an den bayerischen Standorten erzielt?  Welche Fertigungs- und
-Entwicklungsressourcen existieren an den bayerischen Standorten?
-
-# Stand der Wissenschaft und Technik; bisherige Arbeiten
+# Stand der Wissenschaft und Technik
 
 ## Stand der Wissenschaft
 
-und Technik Was ist der internationale Stand der
-Technik auf diesem Gebiet?  Was ist der interne Stand der Technik der jeweiligen
-Partner?  Welche Vorarbeiten zu dem Vorhaben existieren ggf.?  Auf welchen
-bestehenden Verfahren/Produkte baut das Vorhaben auf?  Welche für das Vorhaben
-relevanten FuE-Projekte werden zurzeit durchgeführt oder wurden in den letzten
-drei Jahren abgeschlossen?  Welche alternativen Verfahren/Produkte existieren
-bereits?  Wie hebt sich das geplante Vorhaben vom Stand der Technik ab?  Welche
-Vorteile existieren gegenüber bestehenden Lösungen?
+TODO: Zentral, Dezentral, P2P. Technologien wie Cloud, XMPP. Single Point of
+Failure. Propritäre Lösungen -> Sicherheit unklar, Freiheit auch.
 
 ## Markt und Wettbewerber
 
-Welche Zielmärkte werden durch das Vorhaben
-adressiert?  Welches wirtschaftliche Volumen haben diese Märkte?  Welche
-Wettbewerber sind auf diesen Märkten präsent?
-
 Es gibt viele verschiedene Lösungen die jeweils immer in Teilaspekten gut
-funktionieren.
+funktionieren. Beispielhafte Konkurrenten:
 
-* Syncthing
-* git--annex
-* Dropbox + Boxcryptor
-* Et cetera
+* Syncthing -> Heimanwender. Immer physikalische Kopie?
+* Git--annex
+* Owncloud -> Zentrale Lösung.
+* Dropbox und Konsorten + Boxcryptor
 
-## Schutzrechtslage
-
-Sind Schutzrechte Dritter bekannt, die das Vorhaben
-beeinträchtigen könnten?  Ist die Anmeldung eigener Schutzrechte geplant oder
-angestrebt?
 
 # Ausführliche Beschreibung des Vorhabens
 
 ## Wissenschaftliche/technische Arbeitsziele
 
-Welche technischen Ziele sollen erreicht werden?  Welche technischen
-Zielparameter werden angestrebt?
+Finden von Technologien die gut geeignet sind um die oben gelisteten Ziele
+möglichst gut zu erreichen bzw die Probleme möglichst gut zu lösen.
+
+Ziepparameter: Kein SPOF, Datei nur ein Mal im Netz, Bandbreitenrouting,
+Benutzerverwaltung, Einfache Softwareinstallation und Benutzung, Sicherheit Made
+in Germany.
+
+* Verschlüsselte Übertragung und Speicherung.
+* Kompression & Deduplizierung (optional; mittels brotli)
+* Speicherquoten & Pinning (Thin-Client vs. Storage Server)
+* Versionierung mit definierbarer Tiefe.
+* Benutzerverwaltung mittels XMPP.
+* 2F Authentifizierung und paranoide Sicherheit.
 
 ## Lösungsansätze
 
-Durch welche Ansätze sollen die Ziele erreicht werden?
-Welche technischen Arbeiten sind zur Erreichung der Ziele notwendig?
+* IPFS, XMPP, GO, Crypostandards (sym, asym.)
+* Idea!
 
 ## Technische Risiken 
 
-Welche technischen Risiken existieren?  Wie werden diese Risiken minimiert,
-warum erscheinen sie beherrschbar?
+* IPFS ist eine junge Software, optimale Tauglichkeit noch zu erforschen.
+* Problematische Entwicklung bzgl. Kryptographischen Verfahren.
+* Aufwand zur Entwicklung von Brig ist schwer einschätzbar.
+
+TODO: Risikominimierung
+
+* IPFS austauschbar machen. 
 
 # Wirtschaftliches Verwertungskonzept
 
 ## Wirtschaftliche Verwertung 
 
-Welche wirtschaftliche Verwertung der Ergebnisse des Vorhabens ist durch die
-jeweiligen Projektpartner geplant?  Was sind die zu erwartenden
-Zielmärkte/Anwender?  Welche Stückzahlen bzw. Umsätze werden angestrebt?
+Mögliche Einnahmequellen, durch…
 
-## Hebelwirkung für den Wirtschaftsstandort Bayern
+…bezahlte Entwicklung spezieller Features.
+…Supportverträge.
+…Mehrfachlizensierung.
+…Utility Bereitstellung (LDAP, yubikeys, …)
+…zertifizierte NAS-Server.
+…Schulungen, Lehrmaterial und Consulting.
 
-Welche Auswirkungen auf die bayerischen Standorte der Projektpartner
-werden erwartet (Umsätze, Arbeitsplätze)?  Wie profitieren gegebenenfalls
-bayerische Zulieferer oder Kunden von den Ergebnissen des Vorhabens?
+TODO: Made in Germany
 
-# Beschreibung des Arbeitsplans (Grobskizze)
+# Beschreibung des Arbeitsplans
 
 ## Arbeitsschritte
 
-Beiträge der Partner Welche Arbeitspakte (ggf. Unterpakete
-bei >6 PM) sind geplant?  Was sind Inhalt und Ziele der Arbeitspakete?  Welcher
-Partner übernimmt welche Aufgaben pro Arbeitspaket?  Wie viele Personenmonate
-(PM) entfallen auf welchen Partner?
-
-# Zeit- und Personalplan
-
-Planungshilfen Übersicht: Balkenplan (Zeitverlauf)
-der Arbeitspakete Übersicht: Personenmonate pro Partner, pro Arbeitspaket
+* Prototyp als Masterarbeit, grundlegende Features.
+* Erforschung erweiterter verwertbarer Technologien, zweiter Prototyp mit
+  erweiterten Technologischen Möglichkeiten.
+* Iterative weitere Prototypen und Features bis zur stabilen ersten Version,
+  welche unabhängig bezüglich Sicherhetistechnologien zertifiziert werden soll.
 
 ## Meilensteinplanung
 
-Welche Meilensteine im Projekt sind geplant?  Welcher
-Partner ist jeweils am Meilenstein beteiligt?
+Zusammensetzen und Meilensteine definieren.
 
 # Finanzierung des Vorhabens (Grobskizze)
 
-## Kostenplan 
-
-Welche Kosten pro Partner entstehen für Personal (Pauschalen beachten!),
-Material, Fremdleistungen und Sondereinzelkosten?
+TODO: IuK erklären. Grobekostenplanung ~500.000,-
