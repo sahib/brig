@@ -36,30 +36,66 @@ andere, verteilte Anwendungen aus dem Industrie 4.0 Umfeld.
 
 # Projektsteckbrief
 
+## Einleitung
+
+Unternehmen (TODO: Wie VW?) haben hohe Ansprüche an die Sicherheit, welche
+zentrale Alternativen wie Dropbox nicht bieten können. Zwar wird die Übertragung
+von Daten zu den zentralen Dropbox-Servern verschlüsselt, was allerdings danach
+mit den Daten ,,in der Cloud'' passiert liegt nicht mehr in der Kontrolle der
+Nutzer. Dort sind die Daten schonmal für andere Nutzer wegen Bugs einsehbar oder
+werden gar von Dropbox an amerikanische Geheimdienste weitergegeben. 
+(TODO: Footnote links)
+
+[Sprichwörtlich, regnen die Daten irgendwo anders aus der Cloud ab.]
+Tools wie Boxcryptor lindern diese Problematik zwar etwas, heilen aber nur die
+Symptome, nicht das zugrunde liegende Problem.
+TODO: Boxcryptor erwähenn?
+
+Dropbox ist leider kein Einzelfall -- beinahe alle Cloud--Dienste haben, oder
+hatten, architektur-bedingt ähnliche Sicherheitslecks. Für ein Unternehmen wäre
+es vorzuziehen ihre Daten auf Servern zu speichern, die sie selbst
+kontrollieren. Dazu gibt es bereits einige Werkzeuge wie ownCloud oder ein
+Netzwerkverzeichnis wie Samba, doch technisch bilden diese nur die zentrale
+Architektur von Cloud--Diensten innerhalb eines Unternehmens ab. 
+
 ## Ziele
 
-Entwicklung einer sicheren und unternehmenstauglichen
-Dateisynchronisationssoftware. Forschung/Weiterentwicklung beziehungsweise
-Erweiterung der bereits bestehender Standards und Produkte. Erstellung einer
-neuartigen Software auf Basis vorhandener/erweiterter Technologien. Erforschung
-unternehmenstauglicher Technologien um eine Optimierung bezüglich Sicherheit,
-Performance und Benutzerfreundlichkeit (einfache Bedienung) zu ermöglichen.
-TODO: Konkreteres Abstract.
+Ziel ist die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
+Dateisynchronisationssoftware. Die Tauglichkeit für ein Unternehmen ist sehr
+variabel. Wir meinen damit im Folgenden diese Punkte:
+
+- Einfach Benutzbarkeit für nicht-technische Angestellte.
+  (ein einfacher Ordner im Dateimanager)
+- Durchsuchbarkeit.
+- Zentrale Speicherung möglich, aber nicht zwingend. 
+  Von Angestellten unbenutzte Dateien sollen dessen Speicherplatz nicht
+  belasten. (TODO: Drück dich besser aus, Junge.)
+- Kein Vendorlock (-> Open Source)
+- TODO
+
+TODO: Git für große Dateien irgendwo reinbringen. (für technisch versierte)
+
+Um eine solche Software entwickeln, wollen wir auf bestehende Komponenten wie
+IPFS (ein p2p Netzwerk) und XMPP (ein Messanging Protokoll und Infrastruktur)
+aufsetzen. Dies erleichtert unsere Arbeit und macht einen Prototyp der Software
+erst möglich. 
+
+Von einem Prototypen zu einer marktreifen Software ist es allerdings stets ein
+weiter Weg. Daher wollen wir einen großen Teil der darauf folgenden Iterationen
+damit verbringen, die Software bezüglich Sicherheit, Performance und einfacher
+Benutzerfreundlichkeit zu optimieren. Da es dafür keinen standardisierten Weg
+gibt, ist dafür ein großes Maß an Forschung nötig.
 
 ## Use cases
 
-* Welches Problem wird mit dem Vorhaben gelöst?  
-
-Use Cases. Aktuell Cloudproblematik beschreiben. Herstellerunabhängige
-dezentrale Synchronisation von Daten ohne Cloud. 
-
 Nutzbar als…
 
-…Transferlösung (Hyperlinks möglich).
+…Transferlösung (Hyperlinks möglich um einzelne Dateien nach Außen zu sharen).
 …Synchronisationslösung.
 …Backup- oder Archivierungslösung.
 …Versionsverwaltung.
 …verschlüsselten Safe.
+…semantisch durchsuchbares tag basiertes datei systemkkg=
 …als Plattform für andere Anwendungen.
 
 ## Zielgruppen
@@ -76,13 +112,19 @@ Einsatz im öffentlichen Bereich, Schulen, Universitäten...
 
 ## Innovation
 
-* Worin besteht die Innovation des Vorhabens?
+Wie bereits oben angedeutet, gibt es bereits zahlreiche Möglichkeiten Dateien in
+einem Netzwerk auszutauschen. Diese erfüllen aber stets nur Teilaspekte unserer
+obigen Ziele.
 
-TODO: Bekannte Technologien, neu zusammengewürfelt, neue Möglichkeiten.
+Die Innovation bei unserem Projekt (TODO: brig als Name einführen?) besteht
+daher darin bekannte Technologien neu ,,neu zusammen zu stecken'', woraus sich
+neue Möglichkeiten (siehe oben) ergeben.
 
-Unternehmenstaugliche (benutzerfreundliche) dezentrale und sichere
-Dateisynchronisation  mit Ende zu Ende Verschlüsselung. Unabhängigkeit von
-Hersteller und Cloudservices.
+-- TODO: Bekannte Technologien, neu zusammengewürfelt, neue Möglichkeiten.
+-- 
+-- Unternehmenstaugliche (benutzerfreundliche) dezentrale und sichere
+-- Dateisynchronisation  mit Ende zu Ende Verschlüsselung. Unabhängigkeit von
+-- Hersteller und Cloudservices.
 
 ## Lizenz
 
@@ -133,6 +175,9 @@ in Germany.
 * Idea!
 
 ## Technische Risiken 
+
+Der Aufwand für ein Softwareprojekt dieser Größe ist schwer einzuschätzen.
+Da wird auf relativ junge Technologien wie ``ipfs`` setzen.
 
 * IPFS ist eine junge Software, optimale Tauglichkeit noch zu erforschen.
 * Problematische Entwicklung bzgl. Kryptographischen Verfahren.
