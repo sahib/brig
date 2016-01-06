@@ -1,6 +1,6 @@
 ---
 documentclass: scrreprt
-classoption: toc=listof,index=totoc 
+classoption: toc=listof,index=totoc
 include-headers:
     - \usepackage{url} 
     - \usepackage[ngerman]{babel}
@@ -249,7 +249,7 @@ GlusterFS hat, wurden diese oben wegelassen -- einerseits aus Gründen der
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
 unserer Sicht wichtigsten Eigenschaften:
 
-|                      | Open Source         | Dezentral           | No SPoF                     | Versionsverwaltung  | Einfach zu nutzen   |  
+|                      | FOSS                | Dezentral           | No SPoF                     | VCS                 | Einfach nutzbar     |  
 | -------------------- | ------------------- | ------------------- | --------------------------- | ------------------- | ------------------- |
 | *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
 | *ownCloud*           | \cmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
