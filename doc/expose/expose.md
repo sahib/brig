@@ -69,9 +69,9 @@ Unternehmen ist sehr variabel. Wir meinen damit im Folgenden diese Punkte:
 - Automatische Backups: Versionsverwaltung auf Knoten mit großem Speicherplatz.
 
 Um eine solche Software entwickeln, wollen wir auf bestehende Komponenten wie
-InterPlanetaryFileSystem (ein konfigurierbares P2P Netzwerk) und XMPP (ein
-Messenging Protokoll und Infrastruktur) aufsetzen. Dies erleichtert unsere
-Arbeit und macht einen Prototyp der Software erst möglich. 
+InterPlanetaryFileSystem (ein konfigurierbares P2P Netzwerk[@peer2peer]) und
+XMPP (ein Messenging Protokoll und Infrastruktur, siehe [@xmpp]) aufsetzen. Dies
+erleichtert unsere Arbeit und macht einen Prototyp der Software erst möglich. 
 
 Von einem Prototypen zu einer marktreifen Software ist es allerdings stets ein
 weiter Weg. Daher wollen wir einen großen Teil der darauf folgenden Iterationen
@@ -135,8 +135,7 @@ Da ``brig`` auch komplett automatisiert ohne Interaktion nutzbar sein soll,
 kann es auch als Plattform für jede andere Anwendungen genutzt werden, die Dateien
 austauschen und synchronisieren müssen.
 
-Eine Anwendung in der Industrie 4.0 wäre beispielweise die Synchronisierung von
-Konfigurationsdateien im gesamten Netzwerk.
+Eine Anwendung in der Industrie 4.0 wäre beispielweise die Synchronisierung von Konfigurationsdateien im gesamten Netzwerk.
 
 
 ### Einsatz im öffentlichen Bereich
@@ -159,11 +158,13 @@ TODO: Zu kurz?
 ## Stand der Wissenschaft
 
 Zwar ist das Projekt stark anwendungsorientiert, doch basiert es auf gut
-erforschten Technologien wie Peer-to-Peer-Netzwerken (P2P), von der NIST
-zertifizierten kryptografischen Standard-Algorithmen und verteilten Systemen im
-Allgemeinen (wie der freie XMPP Standard). Peer to Peer Netzwerke wurden in den
-letzten Jahren gut erforscht und haben sich auch in der Praxis bewährt (Skype
-ist ein Beispiel für ein kommerzielles P2P Netzwerk). 
+erforschten Technologien wie Peer-to-Peer-Netzwerken (P2P, siehe auch
+[@peer2peer_arch]), von der NIST zertifizierten kryptografischen
+Standard-Algorithmen[@everyday_crypto] und verteilten Systemen im Allgemeinen
+(wie der freie XMPP Standard). Peer to Peer Netzwerke wurden in den letzten
+Jahren gut erforscht und haben sich auch in der Praxis bewährt (Skype ist ein
+Beispiel für ein kommerzielles P2P Netzwerk, siehe
+auch @peer2peer, S.2). 
 
 Allerdings ist uns keine für breite Massen nutzbare Software bekannt, die es
 Nutzern ermöglicht selbst ein P2P Netzwerk aufzuspannen und darin Dateien
@@ -178,10 +179,8 @@ eingebaut werden können.
 
 ## Markt und Wettbewerber
 
-Bereits ein Blick auf Wikipedia[^WIKI] zeigt, dass der momentane Mark an
+Bereits ein Blick auf Wikipedia[@wiki_filesync] zeigt, dass der momentane Mark an
 Dateisynchronisationssoftware (im weitesten Sinne) sehr unübersichtlich ist.
-
-[^WIKI]: \url{https://en.wikipedia.org/wiki/Comparison_of_file_synchronization_software}
 
 Bei einem näheren Blick stellt sich oft heraus, dass die Software dort oft nur
 in Teilaspekten gut funktioniert oder andere nicht lösbare Probleme besitzt.
@@ -231,6 +230,8 @@ Unternehmensanwender
 
 #### Git--annex
 
+Basierend auf git[@git]
+
 + sehr featurereich 
 + special remotes
 + Open Source
@@ -250,12 +251,12 @@ unserer Sicht wichtigsten Eigenschaften:
 
 |                      | Open Source         | Dezentral           | No SPoF                     | Versionsverwaltung  | Einfach zu nutzen   |  
 | -------------------- | ------------------- | ------------------- | --------------------------- | ------------------- | ------------------- |
-| *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | rudimentär          | \checkmark          |
-| *ownCloud*           | \checkmark          | \xmark              | \xmark                      | rudimentär          | \checkmark          |
-| *Syncthing*          | \checkmark          | \checkmark          | \xmark (Keyserver)          | Archivordner        | \checkmark          |
-| *BitTorrent Sync*    | \xmark              | \checkmark          | \checkmark                  | Archivordner        | \checkmark          |
-| *git-annex*          | \checkmark          | \checkmark          | \checkmark                  | \checkmark          | \xmark              |
-| *brig*               | \checkmark          | \checkmark          | \checkmark                  | \checkmark          | \checkmark          |
+| *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
+| *ownCloud*           | \cmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
+| *Syncthing*          | \cmark              | \cmark              | \xmark (Keyserver)          | Archivordner        | \cmark              |
+| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | Archivordner        | \cmark              |
+| *git-annex*          | \cmark              | \cmark              | \cmark                      | \cmark              | \xmark              |
+| *brig*               | \cmark              | \cmark              | \cmark                      | \cmark              | \cmark              |
 
 # Das Projekt
 
@@ -339,10 +340,11 @@ vorher ,,publik'' gemacht werden. Der außenstehende Nutzer kann dann die Datei
 über ein von ``brig`` gestelltes ,,Gateway'' die Datei von einem Rechner ziehen,
 der von außen erreichbar ist.
 
-Um Portabilität zu gewährleisten wird die Software in Go geschrieben sein. Der
-Vorteil hierbei ist, dass am Ende eine einzige sehr portable, statisch gelinkte
-Binärdatei erzeugt wird. Weitere Vorteile sind die hohe Grundperformanz und die
-sehr angenehmen Werkzeuge, die mit der Sprache mitgeliefert werden.
+Um Portabilität zu gewährleisten wird die Software in
+Go[@go_programming_language] geschrieben sein. Der Vorteil hierbei ist, dass am
+Ende eine einzige sehr portable, statisch gelinkte Binärdatei erzeugt wird.
+Weitere Vorteile sind die hohe Grundperformanz und die sehr angenehmen
+Werkzeuge, die mit der Sprache mitgeliefert werden.
 
 ## Technische Risiken 
 
@@ -487,3 +489,5 @@ TODO: Grobekostenplanung ~500.000,-
 ```
 
 TODO: Literatuverzeichnis mit Referenz auf Bücher im Regal?
+
+# Literaturverzeichnis
