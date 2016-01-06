@@ -24,8 +24,8 @@ Ziel des Projektes ist die Entwicklung einer sicheren und dezentralen
 Alternative zu Cloud-Storage Lösungen wie Dropbox, die sowohl für Unternehmen
 als auch für Heimanwender nutzbar ist. Trotz der Prämisse, einfache Nutzbarkeit
 zu gewährleisten, wird auf Sicherheit sehr großen Wert gelegt.  Aus Gründen der
-Transparenz wird die Software mit dem Namen ``brig`` dabei quelloffen unter der AGPLv3 Lizenz
-entwickelt. 
+Transparenz wird die Software mit dem Namen ``brig`` dabei quelloffen unter der
+AGPLv3 Lizenz entwickelt.
 
 Nutzbar soll das resultierende Produkt, neben dem Standardanwendungsfall der
 Dateisynchronisation, auch als Backup- bzw. Archivierungs-lösung sein
@@ -36,17 +36,21 @@ andere, verteilte Anwendungen aus dem Industrie 4.0 Umfeld.
 
 ## Einleitung
 
-Unternehmen (TODO: Wie VW?) haben hohe Ansprüche an die Sicherheit, welche
-zentrale Alternativen wie Dropbox nicht bieten können. Zwar wird die Übertragung
-von Daten zu den zentralen Dropbox-Servern verschlüsselt, was allerdings danach
-mit den Daten ,,in der Cloud'' passiert liegt nicht mehr in der Kontrolle der
-Nutzer. Dort sind die Daten schonmal für andere Nutzer wegen Bugs einsehbar oder
-werden gar von Dropbox an amerikanische Geheimdienste weitergegeben. 
-(TODO: Footnote links)
+Viele Unternehmen haben sehr hohe Ansprüche an die Sicherheit, welche zentrale
+Alternativen wie Dropbox[^Dropbox] nicht bieten können. Zwar wird die
+Übertragung von Daten zu den zentralen Dropbox-Servern verschlüsselt, was
+allerdings danach mit den Daten »in der Cloud« passiert liegt nicht mehr in
+der Kontrolle der Nutzer. Dort sind die Daten schonmal für andere Nutzer wegen
+Bugs einsehbar oder werden gar von Dropbox an amerikanische Geheimdienste
+weitergegeben. 
 
-[Sprichwörtlich, regnen die Daten irgendwo anders aus der Cloud ab.]
-Tools wie Boxcryptor lindern diese Problematik zwar etwas, heilen aber nur die
-Symptome, nicht das zugrunde liegende Problem.
+[^Dropbox]: Mehr Informationen unter \url{https://www.dropbox.com/}
+
+[Sprichwörtlich, regnen die Daten irgendwo anders aus der Cloud ab.] Tools wie
+Boxcryptor[^Boxcryptor] lindern diese Problematik zwar etwas, heilen aber nur
+die Symptome, nicht das zugrunde liegende Problem.
+
+[^Boxcryptor]: Krypto-Layer für Cloud-Dienste, siehe \url{https://www.boxcryptor.com/de}
 
 Dropbox ist leider kein Einzelfall -- beinahe alle Cloud--Dienste haben, oder
 hatten, architektur-bedingt ähnliche Sicherheitslecks. Für ein Unternehmen wäre
@@ -58,7 +62,7 @@ Architektur von Cloud--Diensten innerhalb eines Unternehmens ab.
 ## Ziele
 
 Ziel ist die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
-Dateisynchronisationssoftware names ``brig``. Die ,,Tauglichkeit" für ein
+Dateisynchronisationssoftware names ``brig``. Die »Tauglichkeit« für ein
 Unternehmen ist sehr variabel. Wir meinen damit im Folgenden diese Punkte:
 
 - Einfach Benutzbarkeit für nicht-technische Angestellte: Sichtbar soll nach der
@@ -79,23 +83,23 @@ damit verbringen, die Software bezüglich Sicherheit, Performance und einfacher
 Benutzerfreundlichkeit zu optimieren. Da es dafür keinen standardisierten Weg
 gibt, ist dafür ein großes Maß an Forschung nötig.
 
-## Use cases
+## Einsatzmöglichkeiten
 
 ``brig`` soll deutlich flexibler nutzbar sein als beispielsweise zentrale
 Dienste. Nutzbar soll es unter anderem sein als…
 
 - …**Synchronisationslösung**: Spiegelung von 2-n Ordnern.
-- …**Transferlösung**: "Veröffentlichen" von Dateien nach Außen mittels Hyperlinks.
+- …**Transferlösung**: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
 - …**Versionsverwaltung**: 
   Alle Zugriffe an eine Datei werden aufgezeichnet.
   Bis zu einer bestimmten Tiefe können alte Dateien abgespeichert werden.
 - …**Backup- und Archivierungslösung**: Verschiedene Knoten Typen möglich.
-- …**verschlüsselten Safe**: ein ,,Repository'' kann ,,geschlossen'' werden.
+- …**verschlüsselten Safe**: ein »Repository« kann »geschlossen« werden.
 - …**Semantisch durchsuchbares** tag basiertes Dateisystem[^TAG].
 - …als **Plattform** für andere Anwendungen.
 - …einer beliebigen Kombination der oberen Punkte.
 
-[^TAG]: Ähnlich zu https://en.wikipedia.org/wiki/Tagsistant
+[^TAG]: Mit einem ähnlichen Ansatz wie \url{https://en.wikipedia.org/wiki/Tagsistant}
 
 ## Zielgruppen
 
@@ -109,7 +113,7 @@ verwalten. Besonders sicherheitskritische Dateien entgehen so der Lagerung in
 Cloud Services oder der Gefahr von zig Kopien auf Mitarbeiter-Endgeräten.
 Größere Unternehmen verwalten dabei meist ein Rechenzentrum auf den
 firmeninterne Dokumente gespeichert werden. Diese werden dann meist mittels
-ownCloud, Samba o.ä. von den Nutzern "manuell" heruntergeladen. 
+ownCloud, Samba o.ä. von den Nutzern »manuell« heruntergeladen. 
 
 In diesem Fall könnte man ``brig`` im Rechenzentrum und allen Endgeräten installieren.
 Das Rechenzentrum würde die Datei mit tiefer Versionierung und vollem Caching vorhalten.
@@ -118,7 +122,7 @@ speichern, die sie auch benutzen. Hat ein Kollege im selben Büro beispielsweise
 Datei bereits kann ``brig`` sie dann auch teilweise von ihm holen.
 
 Kleinunternehmen wie Ingenieurbüros können ``brig`` dazu nutzen Dokumente nach
-außen freizugeben, ohne dass sie dazu vorher irgendwo "hochgeladen" werden
+außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
 müssen. 
 
 ### Privatpersonen / Heimanwender
@@ -137,19 +141,18 @@ austauschen und synchronisieren müssen.
 
 Eine Anwendung in der Industrie 4.0 wäre beispielweise die Synchronisierung von Konfigurationsdateien im gesamten Netzwerk.
 
-
 ### Einsatz im öffentlichen Bereich
 
 Aufgrund seiner Transparenz und einfachen Benutzbarkeit wäre ebenfalls eine
 Nutzung an Schulen, Universitäten oder auch in Behörden zum Dokumentenaustausch
 denkbar. Vorteilhaft wäre hierbei vor allem, dass man sich aufgrund des
 Open--Source Modells an keinen Hersteller bindet (Stichwort: Vendor Lock) und
-keine behördlichen Daten in der ,,Cloud" landen.
+keine behördlichen Daten in der »Cloud« landen.
 
 ## Innovation
 
 Die Innovation bei unserem Projekt  besteht daher darin bekannte Technologien
-neu ,,neu zusammen zu stecken'', woraus sich viele neue Möglichkeiten ergeben.
+»neu zusammen zu stecken«, woraus sich viele neue Möglichkeiten ergeben.
 
 TODO: Zu kurz?
 
@@ -158,8 +161,8 @@ TODO: Zu kurz?
 ## Stand der Wissenschaft
 
 Zwar ist das Projekt stark anwendungsorientiert, doch basiert es auf gut
-erforschten Technologien wie Peer-to-Peer-Netzwerken (P2P, siehe auch
-[@peer2peer_arch]), von der NIST zertifizierten kryptografischen
+erforschten Technologien wie Peer-to-Peer-Netzwerken (kurz P2P, siehe auch
+[@peer2peer_arch]), von der NIST[^NIST] zertifizierten kryptografischen
 Standard-Algorithmen[@everyday_crypto] und verteilten Systemen im Allgemeinen
 (wie der freie XMPP Standard). Peer to Peer Netzwerke wurden in den letzten
 Jahren gut erforscht und haben sich auch in der Praxis bewährt (Skype ist ein
@@ -174,8 +177,10 @@ auszutauschen. Am nähsten kommen dabei die beiden Softwareprojekte
 Der wissenschaftliche Beitrag unserer Arbeit wäre daher die Entwicklung einer
 freien Alternative, die von allen eingesehen, auditiert und studiert werden
 kann. Diese freie Herangehensweise ist insbesondere für sicherheitskritische
-Software relevant, da keine offensichtlichen ,,Exploits" in die Software
+Software relevant, da keine offensichtlichen »Exploits« in die Software
 eingebaut werden können.
+
+[^NIST]: NIST: *National Institute of Standards and Technology*
 
 ## Markt und Wettbewerber
 
@@ -226,7 +231,7 @@ Unternehmensanwender
 
 - proprietär und kommerziell
 - Keine Benutzerverwaltung
-- Versionsverwaltung nur als "Archiv-Folder"
+- Versionsverwaltung nur als »Archiv-Folder«
 
 #### Git--annex
 
@@ -255,7 +260,7 @@ unserer Sicht wichtigsten Eigenschaften:
 | *ownCloud*           | \cmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              |
 | *Syncthing*          | \cmark              | \cmark              | \xmark [^syncthing_key]     | \textcolor{YellowOrange}{Archivordner} | \cmark              |
 | *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              |
-| ``git-annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              |
+| ``git annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              |
 | ``brig``             | \cmark              | \cmark              | \cmark                      | \cmark                                 | \cmark              |
 
 [^FOSS]: Free Open Source Software
@@ -265,8 +270,9 @@ unserer Sicht wichtigsten Eigenschaften:
 
 # Das Projekt
 
-Optimal wäre also eine Kombination aus den Vorzügen von Syncthing, BitTorrent
-Sync und git-annex. Unser Versuch diese Balance hinzubekommen heißt ``brig``.
+Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*,
+*BitTorrent Sync* und ``git annex``. Unser Versuch diese Balance hinzubekommen
+heißt ``brig``.
 
 ## Der Name
 
@@ -311,20 +317,24 @@ Unsere technischen Ziele sind daher stichpunkthaft:
 * Versionierung mit definierbarer Tiefe.
 * Benutzerverwaltung mittels XMPP.
 * Zweifaktor-Authentifizierung und paranoide Sicherheit made in Germany.
-* N-Copies? TODO.
+* N-Copies? 
+
+TODO: Ausformulieren.
 
 ## Lösungsansätze
 
-Als Peer-to-Peer Filesystem werden wir das InterPlanetaryFileSystem nutzen.
-(TODO: Link) Dieses implementiert für uns bereits den Dateiaustausch zwischen
+Als Peer-to-Peer Filesystem werden wir das InterPlanetaryFileSystem[^IPFS] nutzen.
+Dieses implementiert für uns bereits den Dateiaustausch zwischen
 den einzelnen IPFS Knoten. Damit die Dateien nicht nur verschlüsselt übertragen
 werden, werden sie vor dem Hinzufügen zu IPFS mittels AES im AEAD Modus von
 ``brig`` verschlüsselt und optional komprimiert. Zur Nutzerseite hin bietet
 ``brig`` dann eine Kommandozeilenanwendung und ein FUSE-Dateisystem, welches
 alle Daten in einem ``brig`` Repository wie normale Dateien in einem Ordner
-aussehen lässt. Beim "Klick" auf eine Datei wird diese von ``brig`` dann, für
+aussehen lässt. Beim »Klick« auf eine Datei wird diese von ``brig`` dann, für
 den Nutzer unsichtbar, im Netzwerk lokalisiert, empfangen, entschlüsselt und
 nach außen gegeben.
+
+[^IPFS]: Mehr Informationen unter \url{http://ipfs.io/}
 
 Der AES Schlüssel wird dabei an ein Passwort geknüpft, welches der Nutzer beim
 Anlegen des Repositories angibt. Das Passwort wiederum ist an einen
@@ -333,16 +343,16 @@ XMPP-Account der Form ``nutzer@server.de/ressource`` geknüpft.
 Alle Änderungen an einem Repository werden in einer Metadatendatenbank
 gespeichert. Diese kann dann mit anderen Teilnehmern über XMPP+OTR ausgetauscht
 werden. Jeder Teilnehmer hat dadurch den gesamten Dateiindex, die eigentlichen
-Dateien können aber ,,irgendwo'' im Teilnehmernetz sein. Sollte eine Datei lokal
-benötigt werden, so kann man sie ,,pinnen'', um sie lokal zu speichern.
+Dateien können aber »irgendwo« im Teilnehmernetz sein. Sollte eine Datei lokal
+benötigt werden, so kann man sie »pinnen«, um sie lokal zu speichern.
 Ansonsten werden nur selbst erstellte Dateien gespeichert und andere Dateien
 maximal solange vorgehalten, bis die Speicherquote erreicht ist.
 
 Nutzer die ``brig`` nicht installiert haben, oder mit denen man aus
 Sicherheitsgründen nicht das gesamte Repository teilen möchte können einzelne
 Dateien ganz normal aus ihrem Browser heraus downloaden. Dazu muss die Datei
-vorher ,,publik'' gemacht werden. Der außenstehende Nutzer kann dann die Datei
-über ein von ``brig`` gestelltes ,,Gateway'' die Datei von einem Rechner ziehen,
+vorher »publik« gemacht werden. Der außenstehende Nutzer kann dann die Datei
+über ein von ``brig`` gestelltes »Gateway« die Datei von einem Rechner ziehen,
 der von außen erreichbar ist.
 
 Um Portabilität zu gewährleisten wird die Software in
@@ -392,7 +402,7 @@ Unternehmen ausgeführt werden könnten.
 
 Die Open-Source-Entwickler Erfahrung der Autoren hat gezeigt, dass sich Nutzer
 oft ungewöhnliche Features wünschen, die sie oft zu einem bestimmten Termin
-brauchen. (TODO: blabla)
+brauchen. (TODO: blabla...)
 
 Allgemein sind zwei Szenarien denkbar:
 
@@ -453,7 +463,7 @@ Performanz und Portabilität sind zu diesem Zeitpunkt aus Zeitmangel allerdings
 noch keine harten Anforderungen.
 
 Die im ersten Prototypen gewonnen Erkenntnisse wollen wir dazu nutzen
-nötigenfalls eine ,,Kurskorrektur" durchzuführen und den ersten Prototypen nach
+nötigenfalls eine »Kurskorrektur« durchzuführen und den ersten Prototypen nach
 Möglichkeit zu vereinfachen und stabilisieren.
 
 Zu diesem zweiten Prototypen werden dann in kleinen Iterationen Features
@@ -475,15 +485,13 @@ TODO: Featureliste für Prototyp I & II
 
 # Finanzierung des Vorhabens
 
-Eine mögliche Finanzierungstrategie bietet das IuK--Programm des Freistaates
+Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des Freistaates
 Bayern. Dabei werden Kooperation zwischen Fachhochschulen und Unternehmen mit
 bis zu 50% gefördert. Gern gesehen ist dabei beispielsweise ein Großunternehmen
 und ein kleines bis mittleres Unternehmen (KMU). 
 
 Beide zusammen würden dann das Fördervolumen stellen, womit die Hochschule dann
 zwei Stellen für wissenschaftliche Arbeiter finanzieren könnte.
-
-http://www.iuk-bayern.de/
 
 Die Höhe des Fördervolumens richtet sich primär nach der Dauer der Förderung und
 dem jeweiligen akademischen Abschluss. Die Dauer würden wir dabei auf mindestens
@@ -497,6 +505,7 @@ TODO: Grobekostenplanung ~500.000,-
 >>> budget = 3 * pro_jahr             # = 342000€
 ```
 
-TODO: Literatuverzeichnis mit Referenz auf Bücher im Regal?
+[^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
+
 
 # Literaturverzeichnis
