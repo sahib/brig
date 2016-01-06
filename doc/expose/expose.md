@@ -249,14 +249,19 @@ GlusterFS hat, wurden diese oben wegelassen -- einerseits aus Gründen der
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
 unserer Sicht wichtigsten Eigenschaften:
 
-|                      | FOSS                | Dezentral           | No SPoF                     | VCS                 | Einfach nutzbar     |  
-| -------------------- | ------------------- | ------------------- | --------------------------- | ------------------- | ------------------- |
-| *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
-| *ownCloud*           | \cmark              | \xmark              | \xmark                      | rudimentär          | \cmark              |
-| *Syncthing*          | \cmark              | \cmark              | \xmark (Keyserver)          | Archivordner        | \cmark              |
-| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | Archivordner        | \cmark              |
-| *git-annex*          | \cmark              | \cmark              | \cmark                      | \cmark              | \xmark              |
-| *brig*               | \cmark              | \cmark              | \cmark                      | \cmark              | \cmark              |
+|                      | **FOSS**[^FOSS]     | **Dezentral**       | **No SPoF**[^SPOF]          | **VCS**[^VCS]                          | **Einfach nutzbar** |  
+| -------------------- | ------------------- | ------------------- | --------------------------- | -------------------------------------- | ------------------- |
+| *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              |
+| *ownCloud*           | \cmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              |
+| *Syncthing*          | \cmark              | \cmark              | \xmark [^syncthing_key]     | \textcolor{YellowOrange}{Archivordner} | \cmark              |
+| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              |
+| ``git-annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              |
+| ``brig``             | \cmark              | \cmark              | \cmark                      | \cmark                                 | \cmark              |
+
+[^FOSS]: Free Open Source Software
+[^SPOF]: Single Point of Failure
+[^VCS]: Version Control System um alte Stände wiederherzustellen
+[^syncthing_key]: *Syncthing* benutzt einen zentralen Keyserver.
 
 # Das Projekt
 
@@ -462,7 +467,11 @@ könnten von Externen auditiert werden.
 
 ## Meilensteinplanung
 
-TODO: Zusammensetzen und Meilensteine definieren.
+![Sehr groben Meilensteinplanung](images/milestones.png){#fig:milestones}
+
+Siehe Abbildung {@fig:milestones}
+
+TODO: Featureliste für Prototyp I & II
 
 # Finanzierung des Vorhabens
 
