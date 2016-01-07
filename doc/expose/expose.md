@@ -153,8 +153,8 @@ keine behördlichen Daten in der »Cloud« landen.
 
 Die Innovation bei unserem Projekt  besteht daher darin bekannte Technologien
 »neu zusammen zu stecken«, woraus sich viele neue Möglichkeiten ergeben.
-
-TODO: Zu kurz?
+Wie im nächsten Kapitel beleuchtet wird, ist ``brig`` die Synthese vieler
+guter, bestehender und praxisgeprüfter Ideen in einem konsistenten Programm.
 
 # Stand der Technik
 
@@ -184,7 +184,7 @@ eingebaut werden können.
 
 ## Markt und Wettbewerber
 
-Bereits ein Blick auf Wikipedia[@wiki_filesync] zeigt, dass der momentane Mark an
+Bereits ein Blick auf Wikipedia[@wiki_filesync] zeigt, dass der momentane Markt an
 Dateisynchronisationssoftware (im weitesten Sinne) sehr unübersichtlich ist.
 
 Bei einem näheren Blick stellt sich oft heraus, dass die Software dort oft nur
@@ -260,8 +260,10 @@ für erfahrene Anwender zu kompliziert, um es praktikabel einzusetzen.
 
 Trotzdem sollen zwei interessante Features nicht verschwiegen werden:
 
-+ special remotes
-+ n-copies
+* *Special Remotes:* »Datenablagen« bei denen ``git-annex`` nicht installiert sein muss.
+                      Damit können beliebige Cloud--Dienste als Speicher genutzt werden.
++ *N-Copies:* Von wichtigen Dateien kann ``git-annex`` bis zu ``N`` Kopien speichern.
+              Versucht man eine Kopie zu löschen, so verweigert ``git-annex`` dies.
 
 ### Zusammenfassung
 
@@ -285,13 +287,11 @@ unserer Sicht wichtigsten Eigenschaften:
 [^SPOF]: Single Point of Failure
 [^VCS]: Version Control System um alte Stände wiederherzustellen
 
-# Das Projekt
+# Das Projekt ``brig``
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*,
 *BitTorrent Sync* und ``git annex``. Unser Versuch diese Balance hinzubekommen
 heißt ``brig``.
-
-TODO: Sicherheitskonzept diagramm?
 
 ## Der Name
 
@@ -327,18 +327,15 @@ gearbeitet wird.
 
 Unsere technischen Ziele sind daher stichpunkthaft:
 
-* Kein Single Point of Failure
-* einfache Benutzung und Installation
-* Verschlüsselte Übertragung und Speicherung.
-* Kompression: Optional mittels snappy.
-* Deduplizierung: Eine selbe Datei wird nur einmal im Netz gespeichert.
-* Speicherquoten & Pinning (Thin-Client vs. Storage Server)
-* Versionierung mit definierbarer Tiefe.
-* Benutzerverwaltung mittels XMPP.
-* Zweifaktor-Authentifizierung und paranoide Sicherheit made in Germany.
-* N-Copies? 
-
-TODO: Ausformulieren.
+* Kein **Single Point of Failure**
+* **Einfache Benutzung** und Installation
+* Verschlüsselte Übertragung **und** Speicherung.
+* **Kompression**: Optional (mittels ``snappy``).
+* **Deduplizierung**: Gleiche Dateien werden nur einmal im Netz gespeichert.
+* **Benutzerverwaltung** mittels XMPP--Logins.
+* **Speicherquoten** & Pinning (Dateien werden lokal »festgehalten«)
+* **Versionierung** mit definierbarer Tiefe.
+* **Zweifaktor-Authentifizierung** und *paranoide* Sicherheit »Made in Germany«.
 
 ## Lösungsansätze
 
@@ -358,6 +355,8 @@ nach außen gegeben.
 Der AES Schlüssel wird dabei an ein Passwort geknüpft, welches der Nutzer beim
 Anlegen des Repositories angibt. Das Passwort wiederum ist an einen
 XMPP-Account der Form ``nutzer@server.de/ressource`` geknüpft.
+Ein grober Überblick über die sicherheitsrelevanten Zusammenhänge findet sich
+in Abbildung {@fig:security}.
 
 Alle Änderungen an einem Repository werden in einer Metadatendatenbank
 gespeichert. Diese kann dann mit anderen Teilnehmern über XMPP+OTR ausgetauscht
@@ -397,6 +396,8 @@ Erfahrungsgemäß nimmt auch die Portierung und Wartung auf anderen Plattformen
 sehr viel Zeit in Anspruch. Durch die Wahl der Programmiersprache Go minimieren
 wir dies drastisch.
 
+![Kommunikation zwischen zwei Partnern mit relevanten Protokollen](images/security.png){#fig:security}
+
 # Wirtschaftliche Verwertung
 
 Als Lizenz für ``brig`` soll die Copyleft--Lizenz ``AGPL``. Diese stellt sicher,
@@ -406,32 +407,33 @@ Dass die Software quelloffen ist ist kein Widerspruch zu wirtschaftlicher
 Verwertung. Statt auf Softwareverkäufe zu setzen lässt sich mit dem Einsatz und
 der Anpassung der Software Geld verdienen.
 
-Open--Source bietet aus unserer Sicht daher einige Vorteile:
+Das Open--Source Modell bietet aus unserer Sicht daher einige Vorteile:
 
-- Schnellere Verbreitung.
+- Schnellere Verbreitung durch fehlende Kosten.
 - Kann von Nutzern und Unternehmen ihren Bedürfnissen angepasst werden.
-- Transparenz in Punkto Sicherheit (keine Exploits)
+- Transparenz in Punkto Sicherheit (keine eingebauten Exploits möglich).
 
-## Wirtschaftliche Verwertung 
+## Verwertungskonzepte
 
-Es folgen einige konkrete Verwertung Strategien, die auch in Partnerschaft mit
-Unternehmen ausgeführt werden könnten.
+Es folgen einige konkrete Verwertung Strategien, die teilweise auch in
+Partnerschaft mit entsprechenden Unternehmen ausgeführt werden könnten.
 
 ### Bezahle Entwicklung spezieller Features
 
-Die Open-Source-Entwickler Erfahrung der Autoren hat gezeigt, dass sich Nutzer
-oft ungewöhnliche Features wünschen, die sie oft zu einem bestimmten Termin
-brauchen. (TODO: blabla...)
+Für sehr spezielle Anwendungsfälle wird auch ``brig`` meist nie alle Features
+anbieten können, die der Nutzer sich wünscht. Das ist auch gut so, da es die
+Programmkomplexität niedriger hält.
 
-Allgemein sind zwei Szenarien denkbar:
+Für Nutzer, die bereit sind für Features zu zahlen, wären zwei Szenarien denkbar:
 
-- *Allgemein nützliche Änderungen:*
-  Diese werden direkt in ``brig`` integriert und sind daher als Open--Source für
-  andere nutzbar.
-- *Spezielle Lösungen:* 
-  Lösungen die nur für Unternehmens-Anwendungsfälle Sinn machen.
-  Beispielsweise ein Skript, dass für jeden Unternehmens-Login einen XMPP
-  Account anlegt. 
+*Allgemein nützliche Änderungen:* Diese werden direkt in ``brig`` integriert
+und sind daher als Open--Source für andere nutzbar. Wenn der Nutzer zustimmt,
+die Änderungen der Allgemeinheit zur Verfügung zu stellen könnte ihm ein Rabatt
+gewährt werden.
+
+*Spezielle Lösungen:* Lösungen die nur für Unternehmens-Anwendungsfälle Sinn
+machen. Beispielsweise ein Skript, dass für jeden Unternehmens-Login einen XMPP
+Account anlegt. 
 
 ### Supportverträge
 
@@ -440,14 +442,21 @@ eingerichten Issue Tracker gemeldet. Die Entwickler können dann, nach einiger
 Diskussion und Zeit, den Fehler reparieren. Unternehmen haben aber für
 gewöhnliche (kurze) Deadlines bis etwas funktionieren muss.
 
-- Priorisierung bei bug reports.
-- Kleinere Anpassungen.
-- Persönlicher Kontakt.
-- Wartung von nicht-öffentlichen Spezialfeatures
-- Installation der Software
-- Installation von YubiKeys oder anderer ZweiFaktor
+Unternehmen mit Supportverträgen würden daher von folgenden Vorteilen profitieren:
+
+- *Priorisierung* bei Bug Reports.
+- Kleinere *Anpassungen*.
+- Persönlicher *Kontakt* zu den Entwicklern.
+- *Wartung* von nicht-öffentlichen Spezialfeatures
+- *Installation* der Software.
+- Installation von *YubiKeys*[^YUBI] oder anderer Zwei--Faktor--Authentifizierung.
+
+[^YUBI]: Ein flexibles 2FA-Token. Mehr Informationen unter \url{https://www.yubico.com/faq/yubikey}
 
 ### Mehrfachlizensierung
+
+Für Unternehmen, die unsere Software als Teil ihres eigenen Angebots nutzen
+wollen kann die Erteilung einer anderen Lizenz in Frage kommen:
 
 Beispiele wären:
 
@@ -461,16 +470,17 @@ Beispiele wären:
 ### Zertifizierte NAS-Server
 
 Besonders für Privatpersonen oder kleine Unternehmen wie Ingenieurbüros wäre
-eine vorgefertigter Rechner mit vorinstallierter Software interessant.
+eine vorgefertigter Rechner mit vorinstallierter Software interessant. Das
+Software- und Hardware--Zusammenspiel könnte dann vorher von uns vorher
+getestet werden und mit der Zeit auch den technischen Fortschritt angepasst
+werden.
 
 ### Lehrmaterial und Consulting.
 
-- Schulungen
-- Gedruckte Bücher oder Manuals
-
-Consulting (welche Zwei Faktor Authentifizierung Sinn machen würde zB)
-
-Man könnte Flaschenschiffe und anderes Merchandise verkaufen :-)
+Auf lange Sicht wären auch Lehrmaterial, Schulungen und Consulting im
+Allgemeinen als Eingabequelle denkbar. 
+Respektable Einnahmen könnte man auch mit Merchandise, wie beispielsweise
+Flaschenschiffen, erzielen. \smiley{}
 
 # Beschreibung des Arbeitsplans
 
@@ -496,11 +506,25 @@ könnten von Externen auditiert werden.
 
 ## Meilensteinplanung
 
+Ein vorläufiger Zeitlan ist in Abbildung {@fig:milestones} zu sehen.
+
 ![Sehr groben Meilensteinplanung](images/milestones.png){#fig:milestones}
 
-Siehe Abbildung {@fig:milestones}
+Dabei sollen Prototyp I & II folgende Feature beeinhalten:
 
-TODO: Featureliste für Prototyp I & II
+*Prototyp I:*
+
+- Grundlegende Dateiübertragung.
+- Verschlüsselte Speicherung.
+- FUSE Layer zum Anzeigen der Dateien als Ordner.
+- …
+
+*Prototyp II:*
+
+- Korrekte XMPP Benutzerverwaltung.
+- Tag basierte Ansicht im FUSE Layer.
+- Erste Effizienzsteigerungen.
+- …
 
 # Finanzierung des Vorhabens
 
@@ -516,15 +540,19 @@ Die Höhe des Fördervolumens richtet sich primär nach der Dauer der Förderung
 dem jeweiligen akademischen Abschluss. Die Dauer würden wir dabei auf mindestens
 zwei, optimalerweise drei Jahre ansetzen. 
 
-TODO: Grobekostenplanung ~500.000,-
+Sehr grob überschlagen kommen wir dabei für das nötige Fördervolumen auf folgende Summe:
 
+```python
+>>> gehalt = (3500 + 2000)
+>>> spesen = 30000
+>>> pro_mann = 12 * gehalt              # =  66000 Euro
+>>> pro_jahr = 2 * pro_mann + spesen    # = 162000 Euro
+>>> budget = 3 * pro_jahr               # = 486000 Euro ≅ 500.000 Euro
 ```
->>> pro_mann = 12 * 3500              # =  42000€
->>> pro_jahr = 2 * pro_mann + 30000   # = 114000€
->>> budget = 3 * pro_jahr             # = 342000€
-```
+
+Für einen erfolgreichen Projektstart sollten daher zwei Unternehmen bereit
+sein, diese Summe gemeinsam aufzubringen.
 
 [^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
-
 
 # Literaturverzeichnis
