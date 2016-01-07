@@ -198,52 +198,70 @@ zu ``brig``, aber viele Usecases überlappen sich.
 
 #### Dropbox + Boxcryptor
 
-+ Was ist eigentlich gut?
-+ Verbreitet und bekannt.
-
-- Zentrale Lösung
-- proprietär
+Der vermutlich bekannteste und am weitesten verbreiteste Dienst zur
+Dateisynchronisation. Verschlüsselung kann man mit Tools wie ``encfs`` oder das
+proprietäre *Boxcryptor*. Es handelt sich um ein zentralen Dienst mit Servern in
+Amerika. Was das Backend tut ist Geheimnis von Dropbox --- das Backend ist nicht
+Open--Source.
 
 #### Owncloud
 
-+ Daten liegen auf eigenen Servern.
-
-- Zentrale Lösung.
-- Zugriff über Weboberfläche
+Unter anderen aus diesen Gründen entstand die Open--Source Lösung Owncloud.
+Nutzer hosten auf ihren Servern selbst eine ownCloud--Instanz und stellen
+ausreichend Speicherplatz bereit. Vorteilhaft ist also, dass die Daten auf den
+eigenen Servern liegt. Nachteilig hingegen, dass das zentrale Modell von Dropbox
+lediglich auf eigene Server übertragen wird. Die Daten müssen zudem von einer
+Weboberfläche geholt werden und nicht in einem »magischen«,
+selbst-synchronisierten Ordner.
 
 #### Syncthing
 
-Heimanwender. Immer physikalische Kopie?
+Das 2013 veröffentliche quelltextfreie *Syncthing* versucht diese zentrale
+Instanz zu vermeiden, indem die Daten jeweils von Peer zu Peer übertragen
+werden. Es ist allerdings kein vollständiges Peer--to--peer--Netzwerk, geteilte
+Dateien liegen immer als Kopie bei allen Teilnehmern, die die Datei haben.
 
-+ Open Source
-+ Einfacher Ordner auf Dateisystemebene.
+Besser als bei ownCloud ist hingegen gelöst, dass ein »magischer« Ordner
+existiert in dem man einach Dateien legen kann, um sie zu teilen. Zudem wird die
+Datei vom nächstgelegenen Knoten übertragen. Praktisch ist auch, dass
+*Syncthing* Instanzen mittels eines zentralen Discovery--Servers entdeckt werden
+können.
 
-- Keine Benutzerverwaltung
-- kein p2p netzwerk
-- zentraler key server
+Nachteilig hingegen ist die fehlende Benutzerverwaltung: Man kann nicht
+festlegen von welchen Nutzern man Änderungen empfangen will und von welchen
+nicht. 
 
 #### BitTorrent Sync
 
-Unternehmensanwender
+In bestimmten Kreisen scheint auch das kommerzielle und proprietäre 
+*BitTorrent Sync* beliebt zu sein. Hier wird das bekannte und freie BitTorrent
+Protokoll zur Übertragung genutzt. Vom Feature--Umfang ist es in etwa
+vergleichbar mit *Syncthing*. Die Dateien werden allerdings noch zusätzlich
+AES verschlüsselt abgespeichert.
 
-+ p2p netzwerk
-+ verschlüsselte Speicherung
-
-- proprietär und kommerziell
-- Keine Benutzerverwaltung
-- Versionsverwaltung nur als »Archiv-Folder«
+Genauere Aussagen kann man leider aufgrund der geschlossenen Natur des Programms
+nicht aussagen. Ähnlich zu *Syncthing* ist allerdings, dass eine
+Versionsverwaltung nur mittels eines »Archivordners« vorhanden ist. Gelöschte
+Dateien werden schlicht in diesen Ordner verschoben und können von dort
+wiederhergestellt werden. Die meisten anderen Vor- und Nachteile von *Syncthing*
+treffen auch hier zu.
 
 #### Git--annex
 
-Basierend auf git[@git]
+Das 2010 erstmals veröffentlichete ``git-annex`` geht in vieler Hinsicht einen
+anderen Weg. Einerseits ist es in Haskell geschrieben, andererseits nutzt es das
+Versionsverwaltung ``git``[@git], um die Metadaten zu den Dateien abzuspeichern, die
+es verwaltet. Auch werden Dateien standardmäßig nicht automatisch
+synchronisiert, man muss Dateien selbst »pushen«.
 
-+ sehr featurereich 
+Dieser »Do-it-yourself« Ansatz ist sehr nützlich, um ``git-annex`` als Teil der
+eigenen Anwendung einzusetzen. Für den alltäglichen Gebrauch ist es aber selbst
+für erfahrene Anwender zu kompliziert, um es praktikabel einzusetzen.
+
+Trotzdem sollen zwei interessante Features nicht verschwiegen werden:
+
 + special remotes
-+ Open Source
 + n-copies
-
-- kein p2p netzwerk
-- Selbst für erfahrene Benutzer nur schwierig zu benutzen
 
 ### Zusammenfassung
 
@@ -258,7 +276,7 @@ unserer Sicht wichtigsten Eigenschaften:
 | -------------------- | ------------------- | ------------------- | --------------------------- | -------------------------------------- | ------------------- |
 | *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              |
 | *ownCloud*           | \cmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              |
-| *Syncthing*          | \cmark              | \cmark              | \xmark [^syncthing_key]     | \textcolor{YellowOrange}{Archivordner} | \cmark              |
+| *Syncthing*          | \cmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              |
 | *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              |
 | ``git annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              |
 | ``brig``             | \cmark              | \cmark              | \cmark                      | \cmark                                 | \cmark              |
@@ -266,13 +284,14 @@ unserer Sicht wichtigsten Eigenschaften:
 [^FOSS]: Free Open Source Software
 [^SPOF]: Single Point of Failure
 [^VCS]: Version Control System um alte Stände wiederherzustellen
-[^syncthing_key]: *Syncthing* benutzt einen zentralen Keyserver.
 
 # Das Projekt
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*,
 *BitTorrent Sync* und ``git annex``. Unser Versuch diese Balance hinzubekommen
 heißt ``brig``.
+
+TODO: Sicherheitskonzept diagramm?
 
 ## Der Name
 
