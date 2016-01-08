@@ -48,9 +48,10 @@ TODO: Links raussuchen.
 
 [^Dropbox]: Mehr Informationen unter \url{https://www.dropbox.com/}
 
-[Sprichwörtlich, regnen die Daten irgendwo anders aus der Cloud ab.] Tools wie
-Boxcryptor[^Boxcryptor] lindern diese Problematik zwar etwas, heilen aber nur
-die Symptome, nicht das zugrunde liegende Problem.
+Sprichwörtlich gesagt, kann man nicht kontrollieren wo die Daten aus der Cloud
+abregnen. Tools wie Boxcryptor[^Boxcryptor] lindern diese Problematik zwar
+etwas indem sie die Dateien verschlüsseln, heilen aber nur die Symptome, nicht
+das zugrunde liegende Problem.
 
 [^Boxcryptor]: Krypto-Layer für Cloud-Dienste, siehe \url{https://www.boxcryptor.com/de}
 
@@ -67,16 +68,16 @@ Ziel ist die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
 Dateisynchronisationssoftware names ``brig``. Die »Tauglichkeit« für ein
 Unternehmen ist sehr variabel. Wir meinen damit im Folgenden diese Punkte:
 
-- *Einfach Benutzbarkeit für nicht-technische Angestellte:* Sichtbar soll nach der
-  Einrichtung nur ein simpler Ordner im Dateimanager sein.
+- *Einfach Benutzbarkeit:* Sichtbar soll nach der
+  Einrichtung nur ein Ordner im Dateimanager sein.
 - *Effiziente Übertragung von Dateien:* Intelligentes Routing vom Speicherort zum Nutzer.
 - *Speicherquoten:* Nur relevante Dateien müssen synchronisiert werden.
 - *Automatische Backups:* Versionsverwaltung auf Knoten mit großem Speicherplatz.
 - *Schnelle Auffindbarkeit:* Kategorisierung durch optionale Verschlagwortung.
 
 Um eine solche Software entwickeln, wollen wir auf bestehende Komponenten wie
-dem InterPlanetaryFileSystem (kurz ``ipfs``, ein flexibles P2P
-Netzwerk[@peer2peer]) und XMPP (ein Messenging Protokoll und Infrastruktur,
+dem *InterPlanetaryFileSystem* (kurz ``ipfs``, ein flexibles P2P
+Netzwerk[@peer2peer]) und *XMPP* (ein Messenging Protokoll und Infrastruktur,
 siehe [@xmpp]) aufsetzen. Dies erleichtert unsere Arbeit und macht einen
 Prototyp der Software vom Aufwand erst möglich. 
 
@@ -89,18 +90,17 @@ standardisierten Weg gibt, ist dafür ein großes Maß an Forschung nötig.
 ## Einsatzmöglichkeiten
 
 ``brig`` soll deutlich flexibler nutzbar sein als beispielsweise zentrale
-Dienste. Nutzbar soll es unter anderem sein als…
+Dienste. Nutzbar soll es sein als…
 
-- **Synchronisationslösung**: Spiegelung von 2-n Ordnern.
-- **Transferlösung**: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
-- **Versionsverwaltung**: 
-  Alle Zugriffe an eine Datei werden aufgezeichnet.
-  Bis zu einer bestimmten Tiefe können alte Dateien abgespeichert werden.
-- **Backup- und Archivierungslösung**: Verschiedene Knoten Typen möglich.
-- **verschlüsselten Safe**: ein »Repository« kann »geschlossen« werden und später
+- *Synchronisationslösung*: Spiegelung von 2-n Ordnern.
+- *Transferlösung*: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
+- *Versionsverwaltung*: 
+  Bis zu einer bestimmten Tiefe können alte Dateien wiederhergestellt werden.
+- *Backup- und Archivierungslösung*: Verschiedene Knoten Typen möglich.
+- *Verschlüsselter Safe*: ein »Repository« kann »geschlossen« werden und 
   wieder »geöffnet« werden.
-- **Semantisch durchsuchbares** tag basiertes Dateisystem[^TAG].
-- als **Plattform** für andere Anwendungen.
+- *Semantisch durchsuchbares* Tag-basiertes Dateisystem[^TAG].
+- als *Plattform* für andere Anwendungen.
 - einer beliebigen Kombination der oberen Punkte.
 
 [^TAG]: Mit einem ähnlichen Ansatz wie \url{https://en.wikipedia.org/wiki/Tagsistant}
@@ -114,43 +114,50 @@ Daneben sind aber auch noch andere Zielgruppen denkbar.
 
 Großunternehmen können ``brig`` nutzen, um ihre Daten und Dokumente intern zu
 verwalten. Besonders sicherheitskritische Dateien entgehen so der Lagerung in
-Cloud Services oder der Gefahr von zig Kopien auf Mitarbeiter-Endgeräten.
-Größere Unternehmen verwalten dabei meist ein Rechenzentrum auf den
-firmeninterne Dokumente gespeichert werden. Diese werden dann meist mittels
-ownCloud, Samba o.ä. von den Nutzern »manuell« heruntergeladen. 
+Cloud Services oder der Gefahr von zig Kopien auf unsicheren
+Mitarbeiter--Endgeräten. Größere Unternehmen verwalten dabei meist ein
+Rechenzentrum auf den firmeninterne Dokumente gespeichert werden. Von den
+Nutzern werden diese dann meist mittels Diensten wie *ownCloud* oder *Samba*
+»händisch« heruntergeladen.
 
 In diesem Fall könnte man ``brig`` im Rechenzentrum und allen Endgeräten installieren.
 Das Rechenzentrum würde die Datei mit tiefer Versionierung und vollem Caching vorhalten.
 Endanwender würden alle Daten sehen, aber auf ihren Gerät nur die Daten tatsächlich
 speichern, die sie auch benutzen. Hat ein Kollege im selben Büro beispielsweise die
-Datei bereits kann ``brig`` sie dann auch teilweise von ihm holen.
+Datei bereits, kann ``brig`` sie dann auch blockweise von seinem Endgerät holen.
 
 Kleinunternehmen wie Ingenieurbüros können ``brig`` dazu nutzen Dokumente nach
 außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
-müssen. 
+müssen. Dies wird dadurch möglich gemacht, dass Dateien mittels eines
+*Hyperlinks* nach außen publik gemacht werden können. So muss die Gegenseite
+``brig`` nicht installiert haben.
 
 ### Privatpersonen / Heimanwender
 
 Heimanwender können ``brig`` für ihren Datenbestand aus Fotos, Filmen, Musik und
 sonstigen Dokumenten nutzen. Ein typischer Anwendungsfall wäre dabei auf einem
-NAS Server, der alle Dateien mit Versionierung speichert. Endgeräte wie Laptops
-und Smartphones würde dann ebenfalls ``brig`` nutzen, aber mit deutlich
-geringeren Speicherquotas.
+NAS Server, der alle Dateien mit Versionierung speichert. Die Endgeräte, wie Laptops
+und Smartphones, würden dann ebenfalls ``brig`` nutzen, aber mit deutlich
+geringeren Speicherquotas, so dass nur die aktuell benötigten Dateien
+physikalisch auf dem Gerät vorhanden sind. Die anderen Dateien lagern »im Netz«
+und können transparent von ``brig`` von anderen verfügbaren Knoten geholt werden.
+Sollte der Nutzer, beispielsweise auf einer längeren Zugfahrt, offline sein, so kann 
+er benötigte Dateien vorher »pinnen«, um sie lokal zu cachen.
 
 ### Plattform für industrielle Anwendungen
 
-Da ``brig`` auch komplett automatisiert ohne Interaktion nutzbar sein soll,
-kann es auch als Plattform für jede andere Anwendungen genutzt werden, die Dateien
-austauschen und synchronisieren müssen.
-
-Eine Anwendung in der Industrie 4.0 wäre beispielweise die Synchronisierung von Konfigurationsdateien im gesamten Netzwerk.
+Da ``brig`` auch komplett automatisiert ohne Interaktion nutzbar sein soll, kann
+es auch als Plattform für jede andere Anwendungen genutzt werden, die Dateien
+austauschen und synchronisieren müssen. Eine Anwendung in der Industrie 4.0 wäre
+beispielweise die Synchronisierung von Konfigurationsdateien im gesamten
+Netzwerk.
 
 ### Einsatz im öffentlichen Bereich
 
 Aufgrund seiner Transparenz und einfachen Benutzbarkeit wäre ebenfalls eine
 Nutzung an Schulen, Universitäten oder auch in Behörden zum Dokumentenaustausch
 denkbar. Vorteilhaft wäre hierbei vor allem, dass man sich aufgrund des
-Open--Source Modells an keinen Hersteller bindet (Stichwort: Vendor Lock) und
+Open--Source Modells an keinen Hersteller bindet (Stichwort: *Vendor Lock*) und
 keine behördlichen Daten in der »Cloud« landen.
 
 ## Innovation
@@ -402,7 +409,7 @@ Erfahrungsgemäß nimmt auch die Portierung und Wartung auf anderen Plattformen
 sehr viel Zeit in Anspruch. Durch die Wahl der Programmiersprache Go minimieren
 wir dies drastisch.
 
-![Kommunikation zwischen zwei Partnern mit relevanten Protokollen](images/security.png){#fig:security}
+![Kommunikation zwischen zwei Partnern mit den relevanten Protokollen](images/security.png){#fig:security}
 
 # Wirtschaftliche Verwertung
 
@@ -428,9 +435,8 @@ Partnerschaft mit entsprechenden Unternehmen ausgeführt werden könnten.
 
 Für sehr spezielle Anwendungsfälle wird auch ``brig`` meist nie alle Features
 anbieten können, die der Nutzer sich wünscht. Das ist auch gut so, da es die
-Programmkomplexität niedriger hält.
-
-Für Nutzer, die bereit sind für Features zu zahlen, wären zwei Szenarien denkbar:
+Programmkomplexität niedriger hält. Für Nutzer, die bereit sind für Features zu
+zahlen, wären zwei Szenarien denkbar:
 
 *Allgemein nützliche Änderungen:* Diese werden direkt in ``brig`` integriert
 und sind daher als Open--Source für andere nutzbar. Wenn der Nutzer zustimmt,
