@@ -21,16 +21,16 @@ date: \today
 # Zusammenfassung der Projektziele
 
 Ziel des Projektes ist die Entwicklung einer sicheren und dezentralen
-Alternative zu Cloud-Storage Lösungen wie Dropbox, die sowohl für Unternehmen
+Alternative zu Cloud--Storage Lösungen wie Dropbox, die sowohl für Unternehmen
 als auch für Heimanwender nutzbar ist. Trotz der Prämisse, einfache Nutzbarkeit
 zu gewährleisten, wird auf Sicherheit sehr großen Wert gelegt.  Aus Gründen der
-Transparenz wird die Software mit dem Namen ``brig`` dabei quelloffen unter der
-AGPLv3 Lizenz entwickelt.
+Transparenz wird die Software mit dem Namen »``brig``« dabei quelloffen unter der
+``AGPL`` Lizenz entwickelt.
 
 Nutzbar soll das resultierende Produkt, neben dem Standardanwendungsfall der
 Dateisynchronisation, auch als Backup- bzw. Archivierungs-lösung sein
 beziehungsweise auch als verschlüsselter Daten--Safe oder als Plattform für
-andere, verteilte Anwendungen aus dem Industrie 4.0 Umfeld.
+andere, verteilte Anwendungen (wie beispielsweise aus dem Industrie 4.0 Umfeld).
 
 # Projektsteckbrief
 
@@ -44,6 +44,8 @@ der Kontrolle der Nutzer. Dort sind die Daten schonmal für andere Nutzer wegen
 Bugs einsehbar oder werden gar von Dropbox an amerikanische Geheimdienste
 weitergegeben. 
 
+TODO: Links raussuchen.
+
 [^Dropbox]: Mehr Informationen unter \url{https://www.dropbox.com/}
 
 [Sprichwörtlich, regnen die Daten irgendwo anders aus der Cloud ab.] Tools wie
@@ -55,9 +57,9 @@ die Symptome, nicht das zugrunde liegende Problem.
 Dropbox ist leider kein Einzelfall -- beinahe alle Cloud--Dienste haben, oder
 hatten, architektur-bedingt ähnliche Sicherheitslecks. Für ein Unternehmen wäre
 es vorzuziehen ihre Daten auf Servern zu speichern, die sie selbst
-kontrollieren. Dazu gibt es bereits einige Werkzeuge wie ownCloud oder ein
-Netzwerkverzeichnis wie Samba, doch technisch bilden diese nur die zentrale
-Architektur von Cloud--Diensten innerhalb eines Unternehmens ab. 
+kontrollieren. Dazu gibt es bereits einige Werkzeuge wie *ownCloud* oder 
+Netzwerkdienste wie *Samba*, doch technisch bilden diese nur die zentrale
+Architektur von Cloud--Diensten innerhalb eines Unternehmen--Netzwerks ab. 
 
 ## Ziele
 
@@ -65,39 +67,41 @@ Ziel ist die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
 Dateisynchronisationssoftware names ``brig``. Die »Tauglichkeit« für ein
 Unternehmen ist sehr variabel. Wir meinen damit im Folgenden diese Punkte:
 
-- Einfach Benutzbarkeit für nicht-technische Angestellte: Sichtbar soll nach der
+- *Einfach Benutzbarkeit für nicht-technische Angestellte:* Sichtbar soll nach der
   Einrichtung nur ein simpler Ordner im Dateimanager sein.
-- Schnelle Auffindbarkeit der Dateien durch Verschlagwortung.
-- Effiziente Übertragung von Dateien: Intelligentes Routing vom Speicherort zum Nutzer.
-- Speicherquoten: Nicht alle Dateien müssen synchronisiert werden.
-- Automatische Backups: Versionsverwaltung auf Knoten mit großem Speicherplatz.
+- *Effiziente Übertragung von Dateien:* Intelligentes Routing vom Speicherort zum Nutzer.
+- *Speicherquoten:* Nur relevante Dateien müssen synchronisiert werden.
+- *Automatische Backups:* Versionsverwaltung auf Knoten mit großem Speicherplatz.
+- *Schnelle Auffindbarkeit:* Kategorisierung durch optionale Verschlagwortung.
 
 Um eine solche Software entwickeln, wollen wir auf bestehende Komponenten wie
-InterPlanetaryFileSystem (ein konfigurierbares P2P Netzwerk[@peer2peer]) und
-XMPP (ein Messenging Protokoll und Infrastruktur, siehe [@xmpp]) aufsetzen. Dies
-erleichtert unsere Arbeit und macht einen Prototyp der Software erst möglich. 
+dem InterPlanetaryFileSystem (kurz ``ipfs``, ein flexibles P2P
+Netzwerk[@peer2peer]) und XMPP (ein Messenging Protokoll und Infrastruktur,
+siehe [@xmpp]) aufsetzen. Dies erleichtert unsere Arbeit und macht einen
+Prototyp der Software vom Aufwand erst möglich. 
 
 Von einem Prototypen zu einer marktreifen Software ist es allerdings stets ein
-weiter Weg. Daher wollen wir einen großen Teil der darauf folgenden Iterationen
-damit verbringen, die Software bezüglich Sicherheit, Performance und einfacher
-Benutzerfreundlichkeit zu optimieren. Da es dafür keinen standardisierten Weg
-gibt, ist dafür ein großes Maß an Forschung nötig.
+weiter Weg. Daher wollen wir einen großen Teil der Zeit nach dem Prototyp damit
+verbringen, die Software bezüglich Sicherheit, Performance und einfacher
+Benutzerfreundlichkeit zu optimieren. Da es dafür nun mal keinen
+standardisierten Weg gibt, ist dafür ein großes Maß an Forschung nötig.
 
 ## Einsatzmöglichkeiten
 
 ``brig`` soll deutlich flexibler nutzbar sein als beispielsweise zentrale
 Dienste. Nutzbar soll es unter anderem sein als…
 
-- …**Synchronisationslösung**: Spiegelung von 2-n Ordnern.
-- …**Transferlösung**: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
-- …**Versionsverwaltung**: 
+- **Synchronisationslösung**: Spiegelung von 2-n Ordnern.
+- **Transferlösung**: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
+- **Versionsverwaltung**: 
   Alle Zugriffe an eine Datei werden aufgezeichnet.
   Bis zu einer bestimmten Tiefe können alte Dateien abgespeichert werden.
-- …**Backup- und Archivierungslösung**: Verschiedene Knoten Typen möglich.
-- …**verschlüsselten Safe**: ein »Repository« kann »geschlossen« werden.
-- …**Semantisch durchsuchbares** tag basiertes Dateisystem[^TAG].
-- …als **Plattform** für andere Anwendungen.
-- …einer beliebigen Kombination der oberen Punkte.
+- **Backup- und Archivierungslösung**: Verschiedene Knoten Typen möglich.
+- **verschlüsselten Safe**: ein »Repository« kann »geschlossen« werden und später
+  wieder »geöffnet« werden.
+- **Semantisch durchsuchbares** tag basiertes Dateisystem[^TAG].
+- als **Plattform** für andere Anwendungen.
+- einer beliebigen Kombination der oberen Punkte.
 
 [^TAG]: Mit einem ähnlichen Ansatz wie \url{https://en.wikipedia.org/wiki/Tagsistant}
 
@@ -181,6 +185,8 @@ Software relevant, da keine offensichtlichen »Exploits« in die Software
 eingebaut werden können.
 
 [^NIST]: NIST: *National Institute of Standards and Technology*
+
+TODO: Repository und ähnliche begriffe einführen?
 
 ## Markt und Wettbewerber
 
@@ -547,7 +553,7 @@ Sehr grob überschlagen kommen wir dabei für das nötige Fördervolumen auf fol
 >>> spesen = 30000
 >>> pro_mann = 12 * gehalt              # =  66000 Euro
 >>> pro_jahr = 2 * pro_mann + spesen    # = 162000 Euro
->>> budget = 3 * pro_jahr               # = 486000 Euro ≅ 500.000 Euro
+>>> budget = 3 * pro_jahr               # = 486000 Euro ~ 500.000 Euro
 ```
 
 Für einen erfolgreichen Projektstart sollten daher zwei Unternehmen bereit

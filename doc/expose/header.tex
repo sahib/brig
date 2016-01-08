@@ -4,8 +4,9 @@
 \usepackage{hyperref}
 \usepackage[utf8]{luainputenc}
 \usepackage[T1]{fontenc}
-% \usepackage{garamondx}
-\usepackage[lf,p]{ebgaramond}
+\usepackage{tgadventor}
+\renewcommand*\familydefault{\sfdefault}
+
 \usepackage{inconsolata}
 \usepackage{fancyhdr}
 \usepackage{color}
@@ -57,6 +58,11 @@
 }
 
 \addtokomafont{chapter}{\color{white}}
+
+\renewcommand{\labelitemi}{\textcolor{titlepagecolor}{$$$\triangleright$}}
+\renewcommand{\labelitemii}{$\cdot$}
+\renewcommand{\labelitemiii}{$\diamond$}
+\renewcommand{\labelitemiv}{$\ast$}
 
 \pagestyle{fancy}               
 
