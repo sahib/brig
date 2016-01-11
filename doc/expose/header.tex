@@ -8,7 +8,8 @@
 %\usepackage{tgpagella}
 %\usepackage[urw-garamond]{mathdesign}
 \usepackage{gentium}
-
+\usepackage{footnote}
+\makesavenoteenv{tabular}
 
 %\usepackage{tgadventor}
 %\renewcommand*\familydefault{\sfdefault}
@@ -60,13 +61,13 @@
 }
 
 \addtokomafont{disposition}{\rmfamily}
-\addtokomafont{chapter}{\sffamily\color{white}}
+\addtokomafont{chapter}{\color{white}}
 \addtokomafont{section}{\color{titlepagecolor}}
 
 \renewcommand{\labelitemi}{\textcolor{titlepagecolor}{$$$\blacktriangleright$}}
-\renewcommand{\labelitemii}{$\cdot$}
-\renewcommand{\labelitemiii}{$\diamond$}
-\renewcommand{\labelitemiv}{$\ast$}
+% \renewcommand{\labelitemii}{$\cdot$}
+% \renewcommand{\labelitemiii}{$\diamond$}
+% \renewcommand{\labelitemiv}{$\ast$}
 
 \pagestyle{fancy}               
 
