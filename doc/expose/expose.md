@@ -39,8 +39,8 @@ abgrenzen:
 - Verschlüsselte Übertragung *und* Speicherung.
 - Unkomplizierte Installation und einfache Nutzung durch simplen Ordner im
   Dateimanager.
-- Transparenz, Anpassbarkeit und Sicherheit durch Open--Source.
-- Kein *Single Point of Failure*, wie bei zentralen Diensten.
+- Transparenz, Anpassbarkeit und Sicherheit durch *Free Open Source Software (FOSS)*.
+- Kein *Single Point of Failure* (*SPoF*), wie bei zentralen Diensten.
 - Dezentrales Peer--to--Peer--Netzwerk auf Basis von ``ipfs``.
 - Benutzerverwaltung auf Basis der ``XMPP``--Infrastruktur.
 - Versionsverwaltung großer Dateien mit definierbarer Tiefe.
@@ -328,7 +328,7 @@ Heimanwendern kaum genutzt werden.
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
 unserer Sicht wichtigsten Eigenschaften: 
 
-|                      | **FOSS**[^FOSS]     | **Dezentral**       | **Kein SPoF**[^SPOF]          | **VCS**[^VCS]                        | **Einfach nutzbar** | **Echtes P2P**        |  
+|                      | **FOSS**            | **Dezentral**       | **Kein SPoF**                 | **Versionierung**                    | **Einfach nutzbar** | **P2P**         |  
 | -------------------- | ------------------- | ------------------- | --------------------------- | -------------------------------------- | ------------------- |------------------|
 | *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              | \xmark           |
 | *ownCloud*           | \cmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              | \xmark           |
@@ -336,10 +336,6 @@ unserer Sicht wichtigsten Eigenschaften:
 | *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              | \xmark           |
 | ``git-annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              | \xmark           |
 | ``brig``             | \cmark              | \cmark              | \cmark                      | \cmark                                 | \cmark              | \cmark           |
-
-[^FOSS]: Free Open Source Software
-[^SPOF]: Single Point of Failure
-[^VCS]: Version Control System um alte Stände wiederherzustellen
 
 # Das Projekt ``brig``
 
