@@ -15,6 +15,8 @@ date: \today
 ---
 
 \newpage
+\pagenumbering{arabic} 
+\setcounter{page}{1}
 
 # Zusammenfassung der Projektziele
 
@@ -26,9 +28,22 @@ Transparenz wird die Software mit dem Namen »``brig``« dabei quelloffen unter 
 ``AGPL`` Lizenz entwickelt.
 
 Nutzbar soll das resultierende Produkt, neben dem Standardanwendungsfall der
-Dateisynchronisation, auch als Backup- bzw. Archivierungs--Lösung sein
-beziehungsweise auch als verschlüsselter Daten--Safe oder als Plattform für
-andere, verteilte Anwendungen (wie beispielsweise aus dem Industrie 4.0 Umfeld).
+Dateisynchronisation, auch als Backup- bzw. Archivierungs--Lösung sein.
+Des Weiteren kann es auch als verschlüsselter Daten--Safe oder als Plattform für
+andere, verteilte Anwendungen (wie beispielsweise aus dem Industrie 4.0 Umfeld)
+dienen.
+
+Von anderen Softwarelösungen soll es sich stichpunkthaft durch folgende Merkmale
+abgrenzen:
+
+- Verschlüsselte Übertragung *und* Speicherung.
+- Unkomplizierte Installation und einfache Nutzung durch simplen Ordner im
+  Dateimanager.
+- Transparenz, Anpassbarkeit und Sicherheit durch Open--Source.
+- Kein *Single Point of Failure*, wie bei zentralen Diensten.
+- Dezentrales Peer--to--Peer--Netzwerk auf Basis von ``ipfs``.
+- Benutzerverwaltung auf Basis der ``XMPP``--Infrastruktur.
+- Versionsverwaltung großer Dateien mit definierbarer Tiefe.
 
 # Steckbrief 
 
@@ -38,7 +53,7 @@ Viele Unternehmen haben sehr hohe Ansprüche an die Sicherheit, welche zentrale
 Alternativen wie beispielsweise Dropbox[^Dropbox] nicht bieten können. Zwar wird
 die Übertragung von Daten zu den zentralen Dropbox-Servern verschlüsselt, was
 allerdings danach mit den Daten »in der Cloud« passiert liegt nicht mehr unter der
-Kontrolle der Nutzer. Dort sind die Daten schon mal für andere Nutzer wegen Bugs
+Kontrolle der Nutzer. Dort sind die Daten schon manchmal für andere Nutzer wegen Bugs
 einsehbar[^BUGS] oder müssen gar von Dropbox an amerikanische Geheimdienste[^NSA]
 weitergegeben werden.
 
@@ -58,7 +73,7 @@ hatten, architekturbedingt ähnliche Sicherheitslecks. Für ein Unternehmen wär
 es vorzuziehen ihre Daten auf Servern zu speichern, die sie selbst
 kontrollieren. Dazu gibt es bereits einige Werkzeuge wie *ownCloud*[^OWNCLOUD]
 oder Netzwerkdienste wie *Samba*, doch technisch bilden diese nur die zentrale
-Architektur von Cloud--Diensten innerhalb eines Unternehmen--Netzwerks ab. 
+Architektur von Cloud--Diensten innerhalb eines Unternehmens ab. 
 
 [^OWNCLOUD]: *ownCloud*--Homepage: \url{https://owncloud.org/}
 
@@ -66,24 +81,24 @@ Architektur von Cloud--Diensten innerhalb eines Unternehmen--Netzwerks ab.
 
 Ziel ist daher die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
 Dateisynchronisationssoftware namens ``brig``. Die »Tauglichkeit« für ein
-Unternehmen ist natürlich sehr variabel. Wir meinen damit im Folgenden diese Punkte:
+Unternehmen ist natürlich sehr individuell. Wir meinen damit im Folgenden diese Punkte:
 
-- *Einfach Benutzbarkeit:* Sichtbar soll nach der
+- *Einfache Benutzbarkeit:* Sichtbar soll nach der
   Einrichtung nur ein Ordner im Dateimanager sein.
 - *Effiziente Übertragung von Dateien:* Intelligentes Routing vom Speicherort zum Nutzer.
 - *Speicherquoten:* Nur relevante Dateien müssen synchronisiert werden.
 - *Automatische Backups:* Versionsverwaltung auf Knoten mit großem Speicherplatz.
 - *Schnelle Auffindbarkeit:* Kategorisierung durch optionale Verschlagwortung.
 
-Um eine solche Software entwickeln, wollen wir auf bestehende Komponenten wie
+Um eine solche Software zu entwickeln, wollen wir auf bestehende Komponenten wie
 dem *InterPlanetaryFileSystem* (kurz ``ipfs``, ein flexibles P2P
 Netzwerk[@peer2peer]) und *XMPP* (ein Messanging Protokoll und Infrastruktur,
-siehe [@xmpp]) aufsetzen. Dies erleichtert unsere Arbeit und macht einen
-Prototyp der Software vom Aufwand erst möglich. 
+siehe [@xmpp]) aufsetzen. Dies macht die Entwicklung eines Prototypen mit
+vertretbaren Aufwand möglich.
 
 Von einem Prototypen zu einer marktreifen Software ist es allerdings stets ein
 weiter Weg. Daher wollen wir einen großen Teil der Zeit nach dem Prototyp damit
-verbringen, die Software bezüglich Sicherheit, Performance und einfacher
+verbringen, die Software bezüglich Sicherheit, Performance und
 Benutzerfreundlichkeit zu optimieren. Da es dafür nun mal keinen
 standardisierten Weg gibt, ist dafür ein gewisses Maß an Forschung nötig.
 
@@ -96,7 +111,7 @@ es sein als…
 - *Transferlösung*: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
 - *Versionsverwaltung*: 
   Bis zu einer bestimmten Tiefe können alte Dateien wiederhergestellt werden.
-- *Backup- und Archivierungslösung*: Verschiedene Knoten Typen möglich.
+- *Backup- und Archivierungslösung*: Verschiedene »Knoten--Typen« möglich.
 - *Verschlüsselter Safe*: ein »Repository«[^REPO] kann »verschlossen« und 
   wieder »geöffnet« werden.
 - *Semantisch durchsuchbares* Tag-basiertes Dateisystem[^TAG].
@@ -108,8 +123,8 @@ es sein als…
 
 ## Zielgruppen
 
-``brig`` zielt hauptsächlich auf Unternehmenskunden und Heimanwender.
-Daneben sind aber auch noch andere Zielgruppen denkbar.
+Die primäre Zielgruppe von ``brig`` sind Unternehmenskunden und Heimanwender.
+Wie man unten sehen kann, sind noch weitere sekundäre Zielgruppen denkbar.
 
 ### Unternehmen
 
@@ -117,18 +132,20 @@ Unternehmen können ``brig`` nutzen, um ihre Daten und Dokumente intern zu
 verwalten. Besonders sicherheitskritische Dateien entgehen so der Lagerung in
 Cloud--Services oder der Gefahr von Kopien auf unsicheren
 Mitarbeiter--Endgeräten. Größere Unternehmen verwalten dabei meist ein
-Rechenzentrum auf den firmeninterne Dokumente gespeichert werden. Von den
+Rechenzentrum in dem firmeninterne Dokumente gespeichert werden. Von den
 Nutzern werden diese dann meist mittels Diensten wie *ownCloud* oder *Samba*
 »händisch« heruntergeladen.
 
-In diesem Fall könnte man ``brig`` im Rechenzentrum und allen Endgeräten installieren.
-Das Rechenzentrum würde die Datei mit tiefer Versionierung vorhalten.
-Endanwender würden alle Daten sehen, aber auf ihren Gerät nur die Daten tatsächlich
-speichern, die sie auch benutzen. Hat ein Kollege im selben Büro beispielsweise die
-Datei bereits, kann ``brig`` sie dann auch blockweise von seinem Endgerät holen.
+In diesem Fall könnte man ``brig`` im Rechenzentrum und auf allen Endgeräten
+installieren. Das Rechenzentrum würde die Datei mit tiefer Versionierung
+vorhalten. Endanwender würden alle Daten sehen, aber auf ihren Gerät nur die
+Daten tatsächlich speichern, die sie auch benutzen. Hat beispielsweise ein
+Kollege im selben Büro die Datei bereits vorliegen, kann brig diese dann direkt
+blockweise vom Endgerät des Kollegen holen.
+
 
 Kleinere Unternehmen, wie Ingenieurbüros, können ``brig`` dazu nutzen Dokumente nach
-außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
+Außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
 müssen. Dies wird dadurch möglich gemacht, dass Dateien mittels eines
 *Hyperlinks* nach außen publik gemacht werden können. So muss die Gegenseite
 ``brig`` nicht installiert haben.
@@ -166,7 +183,7 @@ Studienunterlagen an die Studenten.
 
 # Stand der Technik
 
-Die Innovation bei unserem Projekt  besteht daher hauptsächlich darin bekannte
+Die Innovation bei unserem Projekt  besteht daher hauptsächlich darin, bekannte
 Technologien »neu zusammen zu stecken«, woraus sich viele neue Möglichkeiten
 ergeben.  Wie im nächsten Kapitel beleuchtet wird, ist ``brig`` der Versuch
 viele gute, bestehende und praxisgeprüfte Ideen in einem konsistenten Programm
@@ -184,7 +201,7 @@ vermutlich das bekannteste, kommerzielle P2P Netzwerk (siehe auch @peer2peer, S.
 
 Allerdings ist uns keine für breite Massen nutzbare Software bekannt, die es
 Nutzern ermöglicht selbst ein P2P Netzwerk aufzuspannen und darin Dateien
-auszutauschen. Am nähsten kommen dabei die beiden Softwareprojekte
+auszutauschen. Am nähsten kommen dem die beiden Softwareprojekte
 »``Syncthing``« (OpenSource, [^SYNCTHING]) und »``BitTorrent Sync``«
 (proprietär, [^BITSYNC]). Beide nutzen zwar P2P--Technologie zum Austausch der
 Dateien, modellieren aber kein »echtes« P2P--Netzwerk, bei dem nicht jeder
@@ -211,21 +228,21 @@ behaftet sind.
 
 ### Verschiedene Alternativen
 
-Im Folgenden geben wir eine Auswahl von bekannten
-Dateisynchronisation--Programmen. Nicht alle stehen davon in direkter Konkurrenz
-zu ``brig``, aber viele Szenarien überlappen sich aus Anwendersicht.
+Im Folgenden geben wir eine unvollständige Übersicht über bekannte
+Dateisynchronisations--Programmen. Davon stehen nicht alle in Konkurrenz zu
+``brig``, sind aber aus Anwendersicht ähnlich. 
 
 #### Dropbox + Boxcryptor
 
-Der vermutlich bekannteste und am weitesten verbreitetste zentrale Dienst zur
+Der vermutlich bekannteste und am weitesten verbreitete zentrale Dienst zur
 Dateisynchronisation. Verschlüsselung kann man mit Tools wie ``encfs``
-(Open--Source, [^ENCFS]) oder dem ähnlich umfangreichen, proprietären
-*Boxcryptor* nachgerüstet werden. Was das Backend genau tut ist leider das
+(Open--Source, siehe auch [^ENCFS]) oder dem ähnlich umfangreichen, proprietären
+*Boxcryptor* nachrüsten. Was das Backend genau tut ist leider das
 Geheimnis von Dropbox --- es ist nicht Open--Source. 
 
 [^ENCFS]: Mehr Informationen unter \url{https://de.wikipedia.org/wiki/EncFS}
 
-Die Server von Dropbox stehen dabei in den Vereinigten Staaten, was spätestens
+Die Server von Dropbox stehen in den Vereinigten Staaten, was spätestens
 seit den Snowden--Enthüllungen für ein mulmiges Gefühl sorgen sollte. Wie oben
 erwähnt, kann diese Problematik durch die Verschlüsselungssoftware *Boxcryptor*
 abgemildet werden. Diese kostet aber zusätzlich und benötigt noch einen
@@ -234,8 +251,8 @@ zusätzlichen zentralen Keyserver[^KEYSERVER].
 [^KEYSERVER]: Mehr Informationen zum Keyserver unter \url{https://www.boxcryptor.com/de/technischer-\%C3\%BCberblick\#anc09}
 
 Technisch nachteilhaft ist vor allem, dass jede Datei »über den Pazifik« hinweg
-synchronisiert werden muss, nur um eventuell auf dem Arbeitsrechner nebenan zu
-landen.
+synchronisiert werden muss, nur um eventuell auf dem Arbeitsrechner nebenan 
+anzukommen.
 
 #### ownCloud
 
@@ -253,7 +270,7 @@ Das 2013 veröffentliche quelloffene *Syncthing* versucht diese zentrale
 Instanz zu vermeiden, indem die Daten jeweils von Peer zu Peer übertragen
 werden. Es ist allerdings kein vollständiges Peer--to--peer--Netzwerk: Geteilte
 Dateien liegen immer als Kopie bei allen Teilnehmern, die die Datei haben.
-Alternativ ist aber auch das selektives Synchronisieren von Dateien möglich.
+Alternativ ist aber auch selektives Synchronisieren von Dateien möglich.
 
 Besser als bei ownCloud ist hingegen gelöst, dass ein »magischer« Ordner
 existiert in dem man einfach Dateien legen kann, um sie zu teilen. Zudem wird die
@@ -309,7 +326,7 @@ Gründen der Übersicht, andererseits weil diese andere Ziele verfolgen und von
 Heimanwendern kaum genutzt werden.
 
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
-unserer Sicht wichtigsten Eigenschaften:
+unserer Sicht wichtigsten Eigenschaften: 
 
 |                      | **FOSS**[^FOSS]     | **Dezentral**       | **Kein SPoF**[^SPOF]          | **VCS**[^VCS]                        | **Einfach nutzbar** | **Echtes P2P**        |  
 | -------------------- | ------------------- | ------------------- | --------------------------- | -------------------------------------- | ------------------- |------------------|
@@ -327,15 +344,15 @@ unserer Sicht wichtigsten Eigenschaften:
 # Das Projekt ``brig``
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*, *BitTorrent
-Sync* und ``git-annex``. In diesem Kapitel versuchen wir zu beleuchten, wie wir
-technisch diese kombinierten Vorzüge ohne große Nachteile erreichen wollen.
+Sync* und ``git-annex``. Wie wir diese technichen Vorzüge ohne große Nachteile
+erreichen wollen, wird im Folgenden beleuchtet.
 
 ## Der Name
 
 Eine »Brigg« (englisch »brig«) ist ein kleines und wendiges
 Zweimaster--Segelschiff aus dem 18-ten Jahrhundert. Passend erschien uns der Name
 einerseits, weil wir flexibel »Güter« (in Form von Dateien) in der ganzen Welt
-verteilt, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
+verteilen, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
 
 Dass der Name ähnlich klingt und kurz ist wie ``git``, ist kein Zufall. Das
 Versionsverwaltungssystem (kurz VCS) hat durch seine sehr flexible und dezentrale
@@ -355,7 +372,7 @@ Dateien immer vom zentralen Server (der einen *Single Point of Failure*
 darstelle) geholt werden. Dies ist relativ ineffizient, besonders wenn viele
 Teilnehmer im selben Netz die selbe große Videodatei empfangen wollen. Bei ``brig``
 würde der Fortschritt beim Ziehen der Datei unter den Teilnehmern aufgeteilt
-werden. Hat ein Teilnehmer bereits ein Block einer Datei, so kann er sie mit
+werden. Hat ein Teilnehmer bereits einen Block einer Datei, so kann er sie mit
 anderen direkt ohne Umweg über den Zentralserver teilen.
 
 Zudem reicht es prinzipiell wenn eine Datei nur einmal im Netz vorhanden ist.
@@ -374,7 +391,7 @@ Zu den bereits genannten allgemeinen Zielen kommen also noch folgende technische
 
 ## Lösungsansätze
 
-Als Peer-to-Peer Filesystem werden wir das InterPlanetaryFileSystem[^IPFS]
+Als Peer--to--Peer Filesystem werden wir das InterPlanetaryFileSystem[^IPFS]
 nutzen.  Dieses implementiert für uns bereits den Dateiaustausch zwischen den
 einzelnen ``ipfs``--Knoten. Damit die Dateien nicht nur verschlüsselt übertragen
 sondern auch abgespeichert werden, werden sie vor dem Hinzufügen zu IPFS mittels
@@ -393,7 +410,7 @@ empfangen, entschlüsselt und als Dateistrom nach außen gegeben.
 Der AES--Schlüssel wird dabei an ein Passwort geknüpft, welches der Nutzer beim
 Anlegen des Repositories angibt. Das Passwort wiederum ist an einen
 XMPP--Account der Form ``nutzer@server.de/ressource`` geknüpft.
-Ein grober Überblick über die sicherheitsrelevanten Zusammenhänge findet sich
+Ein Überblick über die sicherheitsrelevanten Zusammenhänge findet sich
 in Abbildung {@fig:security}.
 
 Alle Änderungen an einem Repository werden in einer Metadatendatenbank
@@ -411,8 +428,8 @@ Nutzer die ``brig`` nicht installiert haben, oder mit denen man aus
 Sicherheitsgründen nicht das gesamte Repository teilen möchte, können einzelne
 Dateien ganz normal aus ihrem Browser heraus herunterladen. Dazu muss die Datei
 vorher »publik« gemacht werden. Der außenstehende Nutzer kann dann die Datei
-über ein von ``brig`` bereitgestelltes »Gateway« die Datei von einem Rechner ziehen,
-der von außen erreichbar ist.
+über ein von ``brig`` bereitgestelltes »Gateway« von einem öffentlich
+erreichbaren Rechner mittels einer ``URL`` herunterladen.
 
 Um Portabilität zu gewährleisten wird die Software in der Programmiersprache
 ``Go``[@go_programming_language] geschrieben sein. Der Vorteil hierbei ist, dass am
@@ -428,7 +445,7 @@ $ go get github.com/disorganizer/brig
 ## Technische Risiken 
 
 Der Aufwand für ein Softwareprojekt dieser Größe ist schwer einzuschätzen. Da
-wird auf relativ junge Technologien wie ``ipfs`` setzen, ist zu erwarten dass
+wir auf relativ junge Technologien wie ``ipfs`` setzen, ist zu erwarten, dass
 sich in Details noch Änderungen ergeben. Auch die Tauglichkeit bezüglich
 Performance ist momentan noch schwer einzuschätzen. Aus diesen Gründen werden
 wir zwischen ``brig`` und ``ipfs`` eine Abstraktionsschicht bauen, um notfalls
@@ -444,11 +461,13 @@ Zeit zu einem Sicherheitsrisiko werden.
 
 # Wirtschaftliche Verwertung
 
+## Open--Source--Lizenz und Monetarisierung
+
 Als Lizenz für ``brig`` soll die Copyleft--Lizenz ``AGPL`` zum Einsatz kommen.
 Diese stellt sicher, dass Verbesserungen am Projekt auch wieder in dieses
 zurückfließen müssen.
 
-Dass die Software quelloffen ist ist kein Widerspruch zur wirtschaftlichen
+Dass die Software quelloffen ist, ist kein Widerspruch zur wirtschaftlichen
 Verwertung. Statt auf Softwareverkäufe zu setzen lässt sich mit dem Einsatz und
 der Anpassung der Software Geld verdienen.  Das Open--Source Modell bietet aus
 unserer Sicht hierbei sogar einige Vorteile:
@@ -460,24 +479,25 @@ unserer Sicht hierbei sogar einige Vorteile:
 
 ## Verwertungskonzepte
 
-Es folgen einige konkrete Verwertung--Strategien, die teilweise auch in
+Es folgen einige konkrete Verwertungs--Strategien, die teilweise auch in
 Partnerschaft mit dazu passenden Unternehmen ausgeführt werden könnten.
 Prinzipiell soll die Nutzung für private und gewerbliche Nutzer kostenfrei sein,
 weitergehende Dienstleistungen aber nicht.
 
-### Bezahle Entwicklung spezieller Features
+### Bezahlte Entwicklung spezieller Features
 
 Für sehr spezielle Anwendungsfälle wird auch ``brig`` nie alle Features
 anbieten können, die der Nutzer sich wünscht. Das ist auch gut so, da es die
 Programmkomplexität niedriger hält. Für Nutzer, die bereit sind für Features zu
 zahlen, wären zwei Szenarien denkbar:
 
-*Allgemein nützliche Änderungen:* Diese werden direkt in ``brig`` integriert
-und sind daher als Open--Source für andere nutzbar. Dies bietet Unternehmen
-die Weiterentwicklung von ``brig`` mittels finanziellen Mitteln zu steuern.
+*Allgemein nützliche Änderungen:* Diese werden direkt in ``brig`` integriert und
+sind daher als Open--Source für andere nutzbar. Dies bietet Unternehmen die
+Möglichkeit, die weitere Entwicklung von ``brig`` mittels finanziellen Mitteln
+zu steuern.
 
 *Spezielle Lösungen:* Lösungen die nur für spezifische Anwendungsfälle Sinn
-machen. Ein Beispiel wäre ein Skript, dass für jeden Unternehmen--Login einen
+machen. Ein Beispiel wäre ein Skript, dass für jeden Unternehmens--Login einen
 XMPP--Account anlegt.
 
 ### Supportverträge
@@ -485,7 +505,7 @@ XMPP--Account anlegt.
 Normalerweise werden Fehler bei Open--Source--Projekten auf einen dafür
 eingerichteten Bugtracker gemeldet. Die Entwickler können dann, nach einiger
 Diskussion und Zeit, den Fehler reparieren. Unternehmen haben aber für
-gewöhnliche kurze Deadlines bis etwas funktionieren muss.
+gewöhnlich kurze Deadlines bis etwas funktionieren muss.
 
 Unternehmen mit Supportverträgen würden daher von folgenden Vorteilen profitieren:
 
@@ -513,9 +533,9 @@ wollen, kann die Erteilung einer anderen Lizenz in Frage kommen:
 ### Zertifizierte NAS-Server
 
 Besonders für Privatpersonen oder kleine Unternehmen wie Ingenieurbüros wäre
-eine vorgefertigter Rechner mit vorinstallierter Software interessant. Das
+ein vorgefertigter Rechner mit vorinstallierter Software interessant. Das
 Software- und Hardware--Zusammenspiel könnte dann vorher von uns 
-getestet werden und mit der Zeit auch den technischen Fortschritt angepasst
+getestet werden und mit der Zeit auch dem technischen Fortschritt angepasst
 werden.
 
 ### Lehrmaterial und Consulting.
@@ -529,14 +549,14 @@ Flaschenschiffen, erzielen. \smiley{}
 
 ## Technische Arbeitsschritte
 
-Im Rahmen unserer Masterarbeiten werden wir einen Prototypen entwickeln der
-bereits in Gründzügen die oben beschriebenen Technologien demonstriert.
+Im Rahmen unserer Masterarbeiten werden wir einen Prototypen entwickeln, der
+bereits in Grundzügen die oben beschriebenen Technologien demonstriert.
 Gute Performanz, Portabilität und Anwenderfreundlichkeit sind zu diesem Zeitpunkt aus
 Zeitmangel allerdings noch keine harten Anforderungen.
 
-Die im ersten Prototypen gewonnen Erkenntnisse wollen wir dazu nutzen
+Die im ersten Prototypen gewonnen Erkenntnisse wollen wir dazu nutzen,
 nötigenfalls eine technische »Kurskorrektur« durchzuführen und den ersten
-Prototypen nach Möglichkeit zu vereinfachen und stabilisieren.
+Prototypen nach Möglichkeit zu vereinfachen und zu stabilisieren.
 
 Zu diesem zweiten Prototypen werden dann in kleinen Iterationen Features
 hinzugefügt. Jedes dieser Feature sollte für sich alleine stehen, daher sollte
@@ -552,11 +572,11 @@ könnten von externen Sicherheitsexperten auditiert werden.
 Der oben stehende Zeitplan ist nochmal in Abbildung {@fig:milestones} auf drei Jahre
 gerechnet zu sehen.
 
-![Sehr groben Meilensteinplanung](images/milestones.png){#fig:milestones}
+![Grobe Meilensteinplanung von 2016 bis 2019.](images/milestones.png){#fig:milestones}
 
-Dabei sollen Prototyp I & II mindestens folgende Feature beeinhalten:
+Dabei sollen Prototyp I & II mindestens folgende Features beinhalten:
 
-*Prototyp I:*
+*Prototyp I:*s
 
 - Grundlegende Dateiübertragung.
 - Verschlüsselte Speicherung.
@@ -567,10 +587,10 @@ Dabei sollen Prototyp I & II mindestens folgende Feature beeinhalten:
 
 - Sichere XMPP--Benutzerverwaltung.
 - Erste Effizienzsteigerungen.
-- Tag basierte Ansicht im FUSE Layer.
+- Tag--basierte Ansicht im FUSE Layer.
 - Verlässliche Benutzung auf der Kommandozeile. (ähnlich ``git``)
 
-Weitere Features kommen dann in kleinen, stärker abgekapselten Iterationen hinzu.
+Weitere Features kommen dann in kleinen, stärker abgekapselten, Iterationen hinzu.
 
 # Finanzierung des Vorhabens
 
@@ -578,7 +598,7 @@ Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
 Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens gefördert. Gern gesehen ist dabei
 ein Großunternehmen, welches zusammen mit einem kleinen bis mittleren
-Unternehmen (KMU) das Fördervolumen aufbringt. Aus diesen Mitteln 
+Unternehmen (``KMU``) das Fördervolumen aufbringt. Aus diesen Mitteln 
 könnte die Hochschule Augsburg dann zwei Stellen für wissenschaftliche Mitarbeiter
 über eine gewisse Dauer finanzieren.
 
