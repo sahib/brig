@@ -132,7 +132,7 @@ func (m *Command_AddCmd) GetFilePath() string {
 
 type Command_CatCmd struct {
 	FilePath         *string `protobuf:"bytes,1,req,name=file_path" json:"file_path,omitempty"`
-	Data             []byte  `protobuf:"bytes,2,req,name=data" json:"data,omitempty"`
+	DestPath         *string `protobuf:"bytes,2,req,name=dest_path" json:"dest_path,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -147,11 +147,11 @@ func (m *Command_CatCmd) GetFilePath() string {
 	return ""
 }
 
-func (m *Command_CatCmd) GetData() []byte {
-	if m != nil {
-		return m.Data
+func (m *Command_CatCmd) GetDestPath() string {
+	if m != nil && m.DestPath != nil {
+		return *m.DestPath
 	}
-	return nil
+	return ""
 }
 
 type Command_PingCmd struct {
@@ -339,13 +339,13 @@ func (m *Command_CatCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
 		i += copy(data[i:], *m.FilePath)
 	}
-	if m.Data == nil {
+	if m.DestPath == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
-		i += copy(data[i:], m.Data)
+		i = encodeVarintDaemon(data, i, uint64(len(*m.DestPath)))
+		i += copy(data[i:], *m.DestPath)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -522,8 +522,8 @@ func (m *Command_CatCmd) Size() (n int) {
 		l = len(*m.FilePath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Data != nil {
-		l = len(m.Data)
+	if m.DestPath != nil {
+		l = len(*m.DestPath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -943,9 +943,9 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DestPath", wireType)
 			}
-			var byteLen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -955,19 +955,21 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthDaemon
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + intStringLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
+			s := string(data[iNdEx:postIndex])
+			m.DestPath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		default:

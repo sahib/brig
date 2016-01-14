@@ -7,15 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/store"
-	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
@@ -42,7 +39,6 @@ type Server struct {
 
 	// Handle to `ipfs daemon`
 	ipfsDaemon *exec.Cmd
-	ipfsCtx    *ipfsutil.Context
 
 	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
@@ -68,12 +64,8 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	ipfsCtx := &ipfsutil.Context{
-		Path: filepath.Join(repoFolder, ".brig", "ipfs"),
-	}
-
 	// TODO: Uncomment later.
-	// proc, err := ipfsutil.StartDaemon(ipfsCtx)
+	// proc, err := ipfsutil.StartDaemon(repository.Store.IpfsCtx)
 	// if err != nil {
 	// 	log.Error("Unable to start ipfs daemon: ", err)
 	// 	return nil, err
@@ -113,7 +105,6 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		signals:  make(chan os.Signal, 1),
 		listener: listener,
 		// ipfsDaemon:     proc,
-		ipfsCtx:        ipfsCtx,
 		maxConnections: make(chan allowOneConn, MaxConnections),
 		ctx:            ctx,
 	}
@@ -230,6 +221,7 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	case proto.MessageType_ADD:
 		d.handleAddCommand(ctx, cmd, resp)
 	case proto.MessageType_CAT:
+		d.handleCatCommand(ctx, cmd, resp)
 	case proto.MessageType_QUIT:
 		resp.Response = protobuf.String("BYE")
 		resp.Success = protobuf.Bool(true)
@@ -247,20 +239,15 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	}
 }
 
-// TODO: Move to own files
 func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
 	path := cmd.GetAddCommand().GetFilePath()
-
-	// TODO: Generate from file contents.
-	var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
-
-	stream, err := store.NewFileReaderFromPath(TestKey, path)
+	fd, err := os.Open(path)
 	if err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return
 	}
 
-	hash, err := ipfsutil.Add(d.ipfsCtx, stream)
+	hash, err := d.Repo.Store.Add(path, fd)
 	if err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return
@@ -268,4 +255,22 @@ func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp 
 
 	resp.Success = protobuf.Bool(true)
 	resp.Response = protobuf.String(hash.B58String())
+}
+
+func (d *Server) handleCatCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
+	destPath := cmd.GetCatCommand().GetDestPath()
+	fd, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		resp.Error = protobuf.String(err.Error())
+		return
+	}
+
+	srcPath := cmd.GetCatCommand().GetFilePath()
+	if err := d.Repo.Store.Cat(srcPath, fd); err != nil {
+		resp.Error = protobuf.String(err.Error())
+		return
+	}
+
+	resp.Success = protobuf.Bool(true)
+	resp.Response = protobuf.String(srcPath)
 }

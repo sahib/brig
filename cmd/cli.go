@@ -308,9 +308,40 @@ func handleAdd(ctx climax.Context) int {
 			return 3
 		}
 
-		fmt.Println("%s", hash.B58String())
+		fmt.Println("%s\n", hash.B58String())
 	}
 
+	return 0
+}
+
+func handleCat(ctx climax.Context) int {
+	if len(ctx.Args) < 2 {
+		log.Errorf("cat: Need at least src and dest file.")
+		return 1
+	}
+
+	// TODO: Start daemon if necessary.
+	client, err := daemon.Dial(6666)
+	if err != nil {
+		log.Warning("Unable to dial to daemon: ", err)
+		return 2
+	}
+	defer client.Close()
+
+	dstPath, err := filepath.Abs(ctx.Args[0])
+	absPath, err := filepath.Abs(ctx.Args[1])
+	if err != nil {
+		log.Errorf("Unable to make abs path: %v: %v", absPath, err)
+		return 3
+	}
+
+	newPath, err := client.Cat(dstPath, absPath)
+	if err != nil {
+		log.Errorf("Could not cat file: %v: %v", absPath, err)
+		return 4
+	}
+
+	fmt.Printf("%s\n", newPath)
 	return 0
 }
 
@@ -468,6 +499,14 @@ func RunCmdline() int {
 			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
 			Help:   `TODO`,
 			Handle: handleAdd,
+		},
+		climax.Command{
+			Name:   "get",
+			Group:  wdirGroup,
+			Brief:  "Write ",
+			Usage:  `FILE_OR_FOLDER DEST_PATH`,
+			Help:   `TODO`,
+			Handle: handleCat,
 		},
 		climax.Command{
 			Name:  "find",

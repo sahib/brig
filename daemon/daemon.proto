@@ -15,7 +15,7 @@ message Command {
 
     message CatCmd {
         required string file_path = 1;
-        required bytes data = 2;
+        required string dest_path = 2;
     }
 
     message PingCmd {

@@ -8,7 +8,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
+	"github.com/jbenet/go-multihash"
 )
 
 var (
@@ -23,6 +25,8 @@ type Store struct {
 	// Trie models the directory tree.
 	// The root node is the repository root.
 	Trie trie.Trie
+
+	IpfsCtx *ipfsutil.Context
 }
 
 // Load opens the
@@ -61,13 +65,15 @@ func Open(repoPath string) (*Store, error) {
 
 	store := &Store{
 		db: db,
+		IpfsCtx: &ipfsutil.Context{
+			Path: filepath.Join(repoPath, "ipfs"),
+		},
 	}
 
 	// Create initial buckets:
 	err = db.Update(func(tx *bolt.Tx) error {
 		for _, name := range []string{"index", "commits", "pinned"} {
-			_, berr := tx.CreateBucketIfNotExists([]byte(name))
-			if berr != nil {
+			if _, berr := tx.CreateBucketIfNotExists([]byte(name)); berr != nil {
 				return fmt.Errorf("create bucket: %s", berr)
 			}
 		}
@@ -85,13 +91,91 @@ func Open(repoPath string) (*Store, error) {
 	return store, nil
 }
 
+var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
+
 // Add reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) Add(path string, r io.Reader) error {
+func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
+	// TODO
 	// gets hash, size, modtime=now, ipfshash...
 	// creates File{} and serializes it to DB using GOB
 	// insert .Node before serializing, set again after.
+	stream, err := NewFileReader(TestKey, r)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := ipfsutil.Add(s.IpfsCtx, stream)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketIndex)
+		if bucket == nil {
+			return fmt.Errorf("Add: No index bucket")
+		}
+
+		if err := bucket.Put([]byte(path), hash); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return hash, nil
+}
+
+func (s *Store) Cat(path string, w io.Writer) error {
+	hash, err := s.PathToHash(path)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("HASH", hash.B58String())
+
+	ipfsStream, err := ipfsutil.Cat(s.IpfsCtx, hash)
+	if err != nil {
+		return err
+	}
+	defer ipfsStream.Close()
+
+	cleanStream, err := NewIpfsReader(TestKey, ipfsStream)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(w, cleanStream); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (s *Store) PathToHash(path string) (multihash.Multihash, error) {
+	var hash multihash.Multihash
+
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketIndex)
+		if bucket == nil {
+			return fmt.Errorf("PathToHash: No index bucket")
+		}
+
+		foundHash := bucket.Get([]byte(path))
+		if foundHash == nil {
+			return fmt.Errorf("cat: no hash to path `%s`", path)
+		}
+
+		hash = make([]byte, len(foundHash))
+		copy(hash, foundHash)
+		return nil
+	})
+
+	return hash, err
 }
 
 // Close syncs all data. It is an error to use the store afterwards.

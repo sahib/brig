@@ -174,17 +174,34 @@ func (c *Client) RemoteAddr() net.Addr {
 }
 
 func (c *Client) Add(absPath string) (multihash.Multihash, error) {
-	cmd := &proto.Command{}
-	cmd.CommandType = proto.MessageType_ADD.Enum()
-	cmd.AddCommand = &proto.Command_AddCmd{
-		FilePath: protobuf.String(absPath),
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_ADD.Enum(),
+		AddCommand: &proto.Command_AddCmd{
+			FilePath: protobuf.String(absPath),
+		},
 	}
 
-	c.Send <- cmd
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
-		return nil, fmt.Errorf("client: %v", resp.GetError())
+		return nil, fmt.Errorf("client: add: %v", resp.GetError())
 	}
 
 	return multihash.FromB58String(resp.GetResponse())
+}
+
+func (c *Client) Cat(name, destPath string) (string, error) {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_CAT.Enum(),
+		CatCommand: &proto.Command_CatCmd{
+			DestPath: protobuf.String(destPath),
+			FilePath: protobuf.String(name),
+		},
+	}
+
+	resp := <-c.Recv
+	if resp != nil && !resp.GetSuccess() {
+		return "", fmt.Errorf("client: cat: %v", resp.GetError())
+	}
+
+	return resp.GetResponse(), nil
 }
