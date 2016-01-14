@@ -572,7 +572,7 @@ gerechnet zu sehen.
 
 Dabei sollen Prototyp I & II mindestens folgende Features beinhalten:
 
-*Prototyp I:*s
+*Prototyp I:*
 
 - Grundlegende Dateiübertragung.
 - Verschlüsselte Speicherung.
@@ -584,7 +584,7 @@ Dabei sollen Prototyp I & II mindestens folgende Features beinhalten:
 - Sichere XMPP--Benutzerverwaltung.
 - Erste Effizienzsteigerungen.
 - Tag--basierte Ansicht im FUSE Layer.
-- Verlässliche Benutzung auf der Kommandozeile. (ähnlich ``git``)
+- Verlässliche Benutzung auf der Kommandozeile (ähnlich ``git``).
 
 Weitere Features kommen dann in kleinen, stärker abgekapselten, Iterationen hinzu.
 

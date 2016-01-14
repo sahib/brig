@@ -12,7 +12,7 @@ import (
 func send(conn io.Writer, msg protobuf.Message) error {
 	data, err := protobuf.Marshal(msg)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	sizeBuf := make([]byte, binary.MaxVarintLen64)

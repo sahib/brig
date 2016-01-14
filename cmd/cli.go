@@ -248,13 +248,19 @@ func handleInit(ctx climax.Context) int {
 		folder, _ = ctx.Get("folder")
 	}
 
-	pwd, err := repo.PromptNewPassword(40.0)
-	if err != nil {
-		log.Error(err)
-		return 4
+	pwd, ok := ctx.Get("password")
+	if !ok {
+		var err error
+		pwdBytes, err := repo.PromptNewPassword(40.0)
+		if err != nil {
+			log.Error(err)
+			return 4
+		}
+
+		pwd = string(pwdBytes)
 	}
 
-	repo, err := repo.NewRepository(string(jid), string(pwd), folder)
+	repo, err := repo.NewRepository(string(jid), pwd, folder)
 	if err != nil {
 		log.Error(err)
 		return 5
@@ -265,9 +271,44 @@ func handleInit(ctx climax.Context) int {
 		return 6
 	}
 
-	if _, err := daemon.Reach(string(pwd), folder, 6666); err != nil {
-		log.Errorf("Unable to start daemon: %v", err)
-		return 7
+	if !ctx.Is("nodaemon") {
+		if _, err := daemon.Reach(string(pwd), folder, 6666); err != nil {
+			log.Errorf("Unable to start daemon: %v", err)
+			return 7
+		}
+	}
+
+	return 0
+}
+
+func handleAdd(ctx climax.Context) int {
+	if len(ctx.Args) < 1 {
+		log.Errorf("add: Need at least one file.")
+		return 1
+	}
+
+	// TODO: Start daemon if necessary.
+	client, err := daemon.Dial(6666)
+	if err != nil {
+		log.Warning("Unable to dial to daemon: ", err)
+		return 1
+	}
+	defer client.Close()
+
+	for _, path := range ctx.Args {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			log.Errorf("Unable to make abs path: %v: %v", path, err)
+			continue
+		}
+
+		hash, err := client.Add(absPath)
+		if err != nil {
+			log.Errorf("Could not add file: %v: %v", absPath, err)
+			return 3
+		}
+
+		fmt.Println("%s", hash.B58String())
 	}
 
 	return 0
@@ -298,10 +339,20 @@ func RunCmdline() int {
 			Help:  `Create an empty repository, open it and associate it with the JID`,
 			Flags: []climax.Flag{
 				{
-					Name:     "--folder",
+					Name:     "depth",
 					Short:    "o",
 					Usage:    `--depth="N"`,
 					Help:     `Only clone up to this depth of pinned files`,
+					Variable: true,
+				}, {
+					Name:  "nodaemon",
+					Short: "n",
+					Help:  `Do not start the daemon.`,
+				}, {
+					Name:     "password",
+					Short:    "x",
+					Usage:    `--password PWD`,
+					Help:     `Supply password.`,
 					Variable: true,
 				},
 			},
@@ -411,9 +462,12 @@ func RunCmdline() int {
 			Brief: "Give an overview of brig's current state.",
 		},
 		climax.Command{
-			Name:  "add",
-			Group: wdirGroup,
-			Brief: "Make file to be managed by brig.",
+			Name:   "add",
+			Group:  wdirGroup,
+			Brief:  "Make file to be managed by brig.",
+			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
+			Help:   `TODO`,
+			Handle: handleAdd,
 		},
 		climax.Command{
 			Name:  "find",

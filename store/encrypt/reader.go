@@ -1,4 +1,4 @@
-package format
+package encrypt
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"os"
 )
 
-// EncryptedReader decrypts and encrypted datastream from Reader.
-type EncryptedReader struct {
+// Reader decrypts and encrypted datastream from Reader.
+type Reader struct {
 	aeadCommon
 
 	// Underlying io.Reader
@@ -23,15 +23,15 @@ type EncryptedReader struct {
 	lastSeekPos int64
 }
 
-// Read from source and decrypt + hash it.
+// Read from source and decrypt.
 //
 // This method always decrypts one block to optimize for continous reads. If
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
-func (r *EncryptedReader) Read(dest []byte) (int, error) {
+func (r *Reader) Read(dest []byte) (int, error) {
 	readBytes := 0
 
-	// Try our best ot fill len(dest)
+	// Try our best to fill len(dest)
 	for readBytes < len(dest) {
 		if r.backlog.Len() == 0 {
 			if _, err := r.readBlock(); err != nil {
@@ -48,7 +48,7 @@ func (r *EncryptedReader) Read(dest []byte) (int, error) {
 }
 
 // Fill internal buffer with current block
-func (r *EncryptedReader) readBlock() (int, error) {
+func (r *Reader) readBlock() (int, error) {
 	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
@@ -80,7 +80,7 @@ func (r *EncryptedReader) readBlock() (int, error) {
 // Mixing SEEK_CUR and SEEK_SET might not a good idea,
 // since a seek might involve reading a whole encrypted block.
 // Therefore relative seek offset
-func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
+func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Check if seeking is supported:
 	seeker, ok := r.Reader.(io.ReadSeeker)
 	if !ok {
@@ -144,14 +144,14 @@ func (r *EncryptedReader) Seek(offset int64, whence int) (int64, error) {
 // It does not close the underlying data stream.
 //
 // This is currently a No-Op, but you should not rely on that.
-func (r *EncryptedReader) Close() error {
+func (r *Reader) Close() error {
 	return nil
 }
 
-// NewEncryptedReader creates a new encrypted reader and validates the file header.
+// NewReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
-func NewEncryptedReader(r io.Reader, key []byte) (*EncryptedReader, error) {
-	reader := &EncryptedReader{
+func NewReader(r io.Reader, key []byte) (*Reader, error) {
+	reader := &Reader{
 		Reader:  r,
 		backlog: bytes.NewReader([]byte{}),
 	}

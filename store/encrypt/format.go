@@ -1,4 +1,4 @@
-// Package format implements the encryption and file format layer of brig.
+// Package encrypt implements the encryption layer of brig.
 // The file format used looks something like this:
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
@@ -17,10 +17,10 @@
 //
 // All metadata is encoded in big endian.
 //
-// EncryptedReader/EncryptedWriter are capable or reading/writing this format.
+// Reader/Writer are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
-package format
+package encrypt
 
 import (
 	"bytes"
@@ -170,7 +170,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
 func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
-	layer, err := NewEncryptedWriter(dest, key)
+	layer, err := NewWriter(dest, key)
 	if err != nil {
 		return 0, err
 	}
@@ -182,7 +182,7 @@ func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 // Decrypt is a utility function which decrypts the data from source with key
 // and writes the resulting encrypted data to dest.
 func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
-	layer, err := NewEncryptedReader(source, key)
+	layer, err := NewReader(source, key)
 	if err != nil {
 		return 0, err
 	}

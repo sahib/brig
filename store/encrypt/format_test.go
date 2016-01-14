@@ -1,4 +1,4 @@
-package format
+package encrypt
 
 import (
 	"bytes"
@@ -100,7 +100,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	encLayer, err := NewEncryptedWriter(shared, TestKey)
+	encLayer, err := NewWriter(shared, TestKey)
 	if err != nil {
 		panic(err)
 	}
@@ -118,7 +118,7 @@ func TestSeek(t *testing.T) {
 	encLayer.Close()
 
 	sharedReader := bytes.NewReader(shared.Bytes())
-	decLayer, err := NewEncryptedReader(sharedReader, TestKey)
+	decLayer, err := NewReader(sharedReader, TestKey)
 	if err != nil {
 		panic(err)
 	}

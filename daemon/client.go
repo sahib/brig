@@ -11,6 +11,8 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/util/tunnel"
+	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/jbenet/go-multihash"
 )
 
 // Client is the client API to brigd.
@@ -119,6 +121,7 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 	// (this means, wait till it's network interface is started)
 	for i := 0; i < 15; i++ {
 		client, err := Dial(port)
+		fmt.Println("Try dial", client)
 		if err != nil {
 			time.Sleep(1 * time.Second)
 			continue
@@ -168,4 +171,20 @@ func (c *Client) LocalAddr() net.Addr {
 // RemoteAddr returns a net.Addr with the server end of the Connection
 func (c *Client) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
+}
+
+func (c *Client) Add(absPath string) (multihash.Multihash, error) {
+	cmd := &proto.Command{}
+	cmd.CommandType = proto.MessageType_ADD.Enum()
+	cmd.AddCommand = &proto.Command_AddCmd{
+		FilePath: protobuf.String(absPath),
+	}
+
+	c.Send <- cmd
+	resp := <-c.Recv
+	if resp != nil && !resp.GetSuccess() {
+		return nil, fmt.Errorf("client: %v", resp.GetError())
+	}
+
+	return multihash.FromB58String(resp.GetResponse())
 }

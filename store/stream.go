@@ -1,62 +1,58 @@
 package store
 
 import (
-	"github.com/disorganizer/brig/store/format"
-	"github.com/disorganizer/brig/util/compress"
+	"fmt"
 	"io"
 	"os"
+
+	"github.com/disorganizer/brig/store/compress"
+	"github.com/disorganizer/brig/store/encrypt"
 )
 
-type Stream interface {
-	io.Reader
-	io.Writer
-	io.Seeker
-}
-
-func NewFromPath(key []byte, path string) (Stream, error) {
-	fd, err := os.OpenFile(path, os.O_RDWR, 0)
+func NewIpfsReader(key []byte, r io.Reader) (io.Reader, error) {
+	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewStream(key, fd, fd)
+	return compress.NewReader(rEnc), nil
 }
 
-func NewStream(key []byte, r io.Reader, w io.Writer) (Stream, error) {
-	wFin, err := format.NewEncryptedWriter(compress.NewWriter(w), key)
+// NewFileReaderFromPath is a shortcut for reading a file from disk
+// and returning ipfs-conforming data.
+func NewFileReaderFromPath(key []byte, path string) (io.Reader, error) {
+	fd, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
-	rFin, err := format.NewEncryptedReader(compress.NewReader(r), key)
+	return NewFileReader(key, fd)
+}
+
+// NewFileReader reads an unencrypted, uncompressed file and
+// returns a reader that will yield the data we feed to ipfs.
+func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
+	pr, pw := io.Pipe()
+
+	// Setup the writer part:
+	wEnc, err := encrypt.NewWriter(pw, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ipfsStream{
-		w: wFin,
-		r: rFin,
-	}, nil
-}
+	wZip := compress.NewWriter(wEnc)
 
-type ipfsStream struct {
-	r *format.EncryptedReader
-	w *format.EncryptedWriter
-}
+	go func() {
+		defer func() {
+			wEnc.Close()
+			pw.Close()
+		}()
 
-func (i *ipfsStream) Read(buf []byte) (int, error) {
-	return i.r.Read(buf)
-}
+		if _, err := io.Copy(wZip, r); err != nil {
+			// TODO: Warn or pass to outside?
+			fmt.Println("FUCK", err)
+		}
+	}()
 
-func (i *ipfsStream) Write(buf []byte) (int, error) {
-	return i.w.Write(buf)
-}
-
-func (i *ipfsStream) Seek(offset int64, whence int) (int64, error) {
-	if _, err := i.r.Seek(offset, whence); err != nil {
-		return 0, err
-	}
-
-	// TODO: Implement write-seek?
-	return i.w.Seek(offset, whence)
+	return pr, nil
 }

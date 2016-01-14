@@ -1,4 +1,4 @@
-package format
+package encrypt
 
 import (
 	"encoding/binary"
@@ -9,9 +9,9 @@ import (
 	"github.com/glycerine/rbuf"
 )
 
-// EncryptedWriter encrypts the data stream before writing to Writer.
-type EncryptedWriter struct {
-	// Common fields with EncryptedReader
+// Writer encrypts the data stream before writing to Writer.
+type Writer struct {
+	// Common fields with Reader
 	aeadCommon
 
 	// Internal Writer we would write to.
@@ -20,9 +20,21 @@ type EncryptedWriter struct {
 	// A buffer that is MaxBlockSize big.
 	// Used for caching blocks
 	rbuf *rbuf.FixedSizeRingBuf
+
+	// True after the first write.
+	headerWritten bool
 }
 
-func (w *EncryptedWriter) Write(p []byte) (int, error) {
+func (w *Writer) Write(p []byte) (int, error) {
+	if !w.headerWritten {
+		w.headerWritten = true
+
+		_, err := w.Writer.Write(GenerateHeader())
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	for w.rbuf.Readable >= MaxBlockSize {
 		_, err := w.flushPack(MaxBlockSize)
 		if err != nil {
@@ -40,7 +52,7 @@ func (w *EncryptedWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
+func (w *Writer) flushPack(chunkSize int) (int, error) {
 	n, err := w.rbuf.Read(w.decBuf[:chunkSize])
 	if err != nil {
 		return 0, err
@@ -67,7 +79,7 @@ func (w *EncryptedWriter) flushPack(chunkSize int) (int, error) {
 }
 
 // Seek the write stream. This maps to a seek in the underlying datastream.
-func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
+func (w *Writer) Seek(offset int64, whence int) (int64, error) {
 	if seeker, ok := w.Writer.(io.Seeker); ok {
 		return seeker.Seek(offset, whence)
 	}
@@ -75,9 +87,9 @@ func (w *EncryptedWriter) Seek(offset int64, whence int) (int64, error) {
 	return 0, fmt.Errorf("write: Seek is not supported by underlying datastream")
 }
 
-// Close the EncryptedWriter and write any left-over blocks
+// Close the Writer and write any left-over blocks
 // This does not close the underlying data stream.
-func (w *EncryptedWriter) Close() error {
+func (w *Writer) Close() error {
 	for w.rbuf.Readable > 0 {
 		n := util.Min(MaxBlockSize, w.rbuf.Readable)
 		_, err := w.flushPack(n)
@@ -88,10 +100,10 @@ func (w *EncryptedWriter) Close() error {
 	return nil
 }
 
-// NewEncryptedWriter returns a new EncryptedWriter which encrypts data with a
+// NewWriter returns a new Writer which encrypts data with a
 // certain key.
-func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
-	writer := &EncryptedWriter{
+func NewWriter(w io.Writer, key []byte) (*Writer, error) {
+	writer := &Writer{
 		Writer: w,
 		rbuf:   rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
 	}
@@ -100,9 +112,5 @@ func NewEncryptedWriter(w io.Writer, key []byte) (*EncryptedWriter, error) {
 		return nil, err
 	}
 
-	_, err := w.Write(GenerateHeader())
-	if err != nil {
-		return nil, err
-	}
 	return writer, nil
 }

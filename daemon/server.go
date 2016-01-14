@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -15,10 +14,10 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
-	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
@@ -43,6 +42,7 @@ type Server struct {
 
 	// Handle to `ipfs daemon`
 	ipfsDaemon *exec.Cmd
+	ipfsCtx    *ipfsutil.Context
 
 	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
@@ -68,14 +68,16 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	proc, err := ipfsutil.StartDaemon(&ipfsutil.Context{
+	ipfsCtx := &ipfsutil.Context{
 		Path: filepath.Join(repoFolder, ".brig", "ipfs"),
-	})
-
-	if err != nil {
-		log.Error("Unable to start ipfs daemon: ", err)
-		return nil, err
 	}
+
+	// TODO: Uncomment later.
+	// proc, err := ipfsutil.StartDaemon(ipfsCtx)
+	// if err != nil {
+	// 	log.Error("Unable to start ipfs daemon: ", err)
+	// 	return nil, err
+	// }
 
 	// Listen for incoming connections.
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -85,32 +87,33 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	xmppClient, err := im.NewClient(
-		&im.Config{
-			Jid:      xmpp.JID(repository.Jid),
-			Password: pwd,
-			TLSConfig: tls.Config{
-				ServerName: xmpp.JID(repository.Jid).Domain(),
-			},
-			KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
-			FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
-		},
-	)
-
-	if err != nil {
-		return nil, err
-	}
+	// TODO: Uncomment later
+	// xmppClient, err := im.NewClient(
+	// 	&im.Config{
+	// 		Jid:      xmpp.JID(repository.Jid),
+	// 		Password: pwd,
+	// 		TLSConfig: tls.Config{
+	// 			ServerName: xmpp.JID(repository.Jid).Domain(),
+	// 		},
+	// 		KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
+	// 		FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
+	// 	},
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
-		Repo:           repository,
-		XMPP:           xmppClient,
-		signals:        make(chan os.Signal, 1),
-		listener:       listener,
-		ipfsDaemon:     proc,
+		Repo: repository,
+		// XMPP:     xmppClient,
+		signals:  make(chan os.Signal, 1),
+		listener: listener,
+		// ipfsDaemon:     proc,
+		ipfsCtx:        ipfsCtx,
 		maxConnections: make(chan allowOneConn, MaxConnections),
 		ctx:            ctx,
 	}
@@ -121,10 +124,15 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 // Serve waits until the Server received a quit reason.
 func (d *Server) Serve() {
+	fmt.Println("Serving... ")
 	<-d.ctx.Done()
+	fmt.Println("Serving done... ")
 	d.listener.Close()
-	if err := d.ipfsDaemon.Process.Kill(); err != nil {
-		log.Errorf("Unable to kill off ipfs daemon: %v", err)
+
+	if d.ipfsDaemon != nil {
+		if err := d.ipfsDaemon.Process.Kill(); err != nil {
+			log.Errorf("Unable to kill off ipfs daemon: %v", err)
+		}
 	}
 
 	if err := d.Repo.Close(); err != nil {
@@ -209,22 +217,26 @@ func (d *Server) handleRequest(ctx context.Context, conn net.Conn) {
 
 // Handles the actual incoming commands:
 func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.ReadWriter) {
-	// This might be used to enforce timeouts for operations:
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Prepare a response template
-	resp := &proto.Response{}
-	resp.ResponseType = cmd.CommandType
+	resp := &proto.Response{
+		ResponseType: cmd.CommandType,
+		Success:      protobuf.Bool(false),
+	}
 
 	switch *(cmd.CommandType) {
 	case proto.MessageType_ADD:
+		d.handleAddCommand(ctx, cmd, resp)
 	case proto.MessageType_CAT:
 	case proto.MessageType_QUIT:
 		resp.Response = protobuf.String("BYE")
+		resp.Success = protobuf.Bool(true)
 		d.signals <- os.Interrupt
 	case proto.MessageType_PING:
 		resp.Response = protobuf.String("PONG")
+		resp.Success = protobuf.Bool(true)
 	default:
 		fmt.Println("Unknown message type.")
 		return
@@ -233,4 +245,27 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	if err := send(conn, resp); err != nil {
 		log.Warning("Unable to send message back to client: ", err)
 	}
+}
+
+// TODO: Move to own files
+func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
+	path := cmd.GetAddCommand().GetFilePath()
+
+	// TODO: Generate from file contents.
+	var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
+
+	stream, err := store.NewFileReaderFromPath(TestKey, path)
+	if err != nil {
+		resp.Error = protobuf.String(err.Error())
+		return
+	}
+
+	hash, err := ipfsutil.Add(d.ipfsCtx, stream)
+	if err != nil {
+		resp.Error = protobuf.String(err.Error())
+		return
+	}
+
+	resp.Success = protobuf.Bool(true)
+	resp.Response = protobuf.String(hash.B58String())
 }

@@ -53,12 +53,62 @@ func Decompress(src io.Reader, dst io.Writer) (int64, error) {
 	return io.Copy(dst, snappy.NewReader(src))
 }
 
+type reader struct {
+	rRaw          io.Reader
+	rZip          io.Reader
+	wasCompressed bool
+	readHeader    bool
+}
+
+func (r *reader) Read(buf []byte) (int, error) {
+	if !r.readHeader {
+		r.readHeader = true
+
+		marker := make([]byte, 1)
+		if _, err := r.rRaw.Read(marker); err != nil {
+			return 0, err
+		}
+
+		r.wasCompressed = marker[0] > 0
+	}
+
+	if r.wasCompressed {
+		return r.rZip.Read(buf)
+	}
+
+	return r.rRaw.Read(buf)
+}
+
 // NewReader returns a new compression Reader.
 func NewReader(r io.Reader) io.Reader {
-	return snappy.NewReader(r)
+	return &reader{
+		rRaw: r,
+		rZip: snappy.NewReader(r),
+	}
+}
+
+type writer struct {
+	wRaw          io.Writer
+	wZip          io.Writer
+	headerWritten bool
+}
+
+func (w *writer) Write(buf []byte) (int, error) {
+	if !w.headerWritten {
+		w.headerWritten = true
+
+		if _, err := w.wRaw.Write([]byte{1}); err != nil {
+			return 0, err
+		}
+	}
+
+	return w.wZip.Write(buf)
 }
 
 // NewWriter returns a new compression Writer.
 func NewWriter(w io.Writer) io.Writer {
-	return snappy.NewWriter(w)
+	return &writer{
+		wRaw: w,
+		wZip: snappy.NewWriter(w),
+	}
 }

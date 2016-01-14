@@ -24,10 +24,10 @@ func New(path string) (*File, error) {
 	return nil, nil
 }
 
-func (f *File) Open() (Stream, error) {
-	// Get io.Reader from ipfs cat
-	// Mask with decompressor
-	// Mask with decrypter
-	// return
-	return nil, nil
-}
+// func (f *File) Open() (Stream, error) {
+// 	// Get io.Reader from ipfs cat
+// 	// Mask with decompressor
+// 	// Mask with decrypter
+// 	// return
+// 	return nil, nil
+// }
