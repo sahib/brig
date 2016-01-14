@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disorganizer/brig/repo"
+	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
 var (
@@ -22,7 +23,13 @@ func initRepo(t *testing.T) *Context {
 	}
 
 	ipfsPath := filepath.Join(TEST_PATH, ".ipfs")
-	if err := repo.CreateIpfsRepo(ipfsPath); err != nil {
+	cfg, err := ipfsconfig.Init(os.Stdout, 1024)
+	if err != nil {
+		t.Errorf("Could not create ipfs config %v", err)
+		return nil
+	}
+
+	if err := fsrepo.Init(ipfsPath, cfg); err != nil {
 		t.Errorf("Could not create ipfs repo at %s: %v", TEST_PATH, err)
 		return nil
 	}
@@ -89,6 +96,7 @@ func TestAddCat(t *testing.T) {
 		t.Errorf("Could not cat simple file: %v", err)
 		return
 	}
+	defer reader.Close()
 
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {

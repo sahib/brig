@@ -1,7 +1,6 @@
 package ipfsutil
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os/exec"
