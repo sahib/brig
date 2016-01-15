@@ -42,6 +42,8 @@ func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
 
 	wZip := compress.NewWriter(wEnc)
 
+	// Suck the reader empty and move it to `wZip`.
+	// Every write to wZip will be available as read in `pr`.
 	go func() {
 		defer func() {
 			wEnc.Close()

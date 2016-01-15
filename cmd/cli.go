@@ -68,20 +68,9 @@ func handleVersion(ctx climax.Context) int {
 	return 0
 }
 
-func handleOpen(ctx climax.Context) int {
-	repoFolder := guessRepoFolder()
-	pwd, err := readPassword()
-
-	if err != nil {
-		log.Errorf("Open failed: %v", err)
-		return 1
-	}
-
-	if _, err := daemon.Reach(pwd, repoFolder, 6666); err != nil {
-		log.Errorf("Unable to start daemon: %v", err)
-		return 3
-	}
-	return 0
+func handleOpen(ctx climax.Context, client *daemon.Client) int {
+	log.Infof("Repository is open now.")
+	return Success
 }
 
 func handleClose(ctx climax.Context) int {
@@ -142,7 +131,7 @@ func handleDaemon(ctx climax.Context) int {
 		pwd, err = readPassword()
 		if err != nil {
 			log.Errorf("Could not read password: %v", pwd)
-			return 1
+			return BadPassword
 		}
 	}
 
@@ -150,32 +139,27 @@ func handleDaemon(ctx climax.Context) int {
 	err := repo.CheckPassword(repoFolder, pwd)
 	if err != nil {
 		log.Error("Wrong password.")
-		return 2
+		return BadPassword
 	}
 
 	baal, err := daemon.Summon(pwd, repoFolder, 6666)
 	if err != nil {
 		log.Warning("Unable to start daemon: ", err)
-		return 3
+		return UnknownError
 	}
 
 	baal.Serve()
-	return 0
+	return Success
 }
 
 func handleMount(ctx climax.Context) int {
-	if len(ctx.Args) == 0 {
-		fmt.Println("Usage: brig mount [mntpath]")
-		return 1
-	}
-
 	mntpath := ctx.Args[0]
 	if err := fuse.Mount(mntpath); err != nil {
 		log.Errorf("Unable to mount: %v", err)
-		return 2
+		return UnknownError
 	}
 
-	return 0
+	return Success
 }
 
 func handleConfig(ctx climax.Context) int {
@@ -190,31 +174,34 @@ func handleConfig(ctx climax.Context) int {
 
 	switch len(ctx.Args) {
 	case 0:
+		// No key or value. Print whole config as .yaml
 		yaml, err := yamlConfig.RenderYaml(cfg)
 		if err != nil {
 			log.Errorf("Unable to render config: %v", err)
-			return 3
+			return UnknownError
 		}
 		fmt.Println(yaml)
 	case 1:
+		// Get requested; find value for key.
 		key := ctx.Args[0]
 		value, err := cfg.String(key)
 		if err != nil {
 			log.Errorf("Could not retrieve %s: %v", key, err)
-			return 4
+			return BadArgs
 		}
 		fmt.Println(value)
 	case 2:
+		// Set requested: set key to value.
 		key := ctx.Args[0]
 		value := ctx.Args[1]
 		if err := cfg.Set(key, value); err != nil {
 			log.Errorf("Could not set %s: %v", key, err)
-			return 5
+			return BadArgs
 		}
 
 		if _, err := config.SaveConfig(cfgPath, cfg); err != nil {
 			log.Errorf("Could not save config: %v", err)
-			return 6
+			return UnknownError
 		}
 	}
 
@@ -222,22 +209,17 @@ func handleConfig(ctx climax.Context) int {
 }
 
 func handleInit(ctx climax.Context) int {
-	if len(ctx.Args) < 1 {
-		log.Error("Need your Jabber ID.")
-		return 1
-	}
-
 	jid := xmpp.JID(ctx.Args[0])
 	if jid.Domain() == "" {
-		log.Error("Your JabberID needs a domain.")
-		return 2
+		log.Error("Your JID needs to have a domain.")
+		return BadArgs
 	}
 
 	// Extract the folder from the resource name by default:
 	folder := jid.Resource()
 	if folder == "" {
 		log.Error("Need a resource in your JID.")
-		return 3
+		return BadArgs
 	}
 
 	if envFolder := os.Getenv("BRIG_PATH"); envFolder != "" {
@@ -254,7 +236,7 @@ func handleInit(ctx climax.Context) int {
 		pwdBytes, err := repo.PromptNewPassword(40.0)
 		if err != nil {
 			log.Error(err)
-			return 4
+			return BadPassword
 		}
 
 		pwd = string(pwdBytes)
@@ -263,38 +245,25 @@ func handleInit(ctx climax.Context) int {
 	repo, err := repo.NewRepository(string(jid), pwd, folder)
 	if err != nil {
 		log.Error(err)
-		return 5
+		return UnknownError
 	}
 
 	if err := repo.Close(); err != nil {
 		log.Errorf("close: %v", err)
-		return 6
+		return UnknownError
 	}
 
 	if !ctx.Is("nodaemon") {
 		if _, err := daemon.Reach(string(pwd), folder, 6666); err != nil {
 			log.Errorf("Unable to start daemon: %v", err)
-			return 7
+			return DaemonNotResponding
 		}
 	}
 
-	return 0
+	return Success
 }
 
-func handleAdd(ctx climax.Context) int {
-	if len(ctx.Args) < 1 {
-		log.Errorf("add: Need at least one file.")
-		return 1
-	}
-
-	// TODO: Start daemon if necessary.
-	client, err := daemon.Dial(6666)
-	if err != nil {
-		log.Warning("Unable to dial to daemon: ", err)
-		return 1
-	}
-	defer client.Close()
-
+func handleAdd(ctx climax.Context, client *daemon.Client) int {
 	for _, path := range ctx.Args {
 		absPath, err := filepath.Abs(path)
 		if err != nil {
@@ -305,44 +274,31 @@ func handleAdd(ctx climax.Context) int {
 		hash, err := client.Add(absPath)
 		if err != nil {
 			log.Errorf("Could not add file: %v: %v", absPath, err)
-			return 3
+			return UnknownError
 		}
 
-		fmt.Println("%s\n", hash.B58String())
+		fmt.Println(hash.B58String())
 	}
 
 	return 0
 }
 
-func handleCat(ctx climax.Context) int {
-	if len(ctx.Args) < 2 {
-		log.Errorf("cat: Need at least src and dest file.")
-		return 1
-	}
-
-	// TODO: Start daemon if necessary.
-	client, err := daemon.Dial(6666)
-	if err != nil {
-		log.Warning("Unable to dial to daemon: ", err)
-		return 2
-	}
-	defer client.Close()
-
+func handleCat(ctx climax.Context, client *daemon.Client) int {
 	dstPath, err := filepath.Abs(ctx.Args[0])
 	absPath, err := filepath.Abs(ctx.Args[1])
 	if err != nil {
 		log.Errorf("Unable to make abs path: %v: %v", absPath, err)
-		return 3
+		return UnknownError
 	}
 
 	newPath, err := client.Cat(dstPath, absPath)
 	if err != nil {
 		log.Errorf("Could not cat file: %v: %v", absPath, err)
-		return 4
+		return UnknownError
 	}
 
-	fmt.Printf("%s\n", newPath)
-	return 0
+	fmt.Println(newPath)
+	return Success
 }
 
 ////////////////////////////
@@ -393,9 +349,7 @@ func RunCmdline() int {
 					Description: `Create a folder laptop/ with hidden directories`,
 				},
 			},
-			Handle: func(ctx climax.Context) int {
-				return handleInit(ctx)
-			},
+			Handle: withArgCheck(needAtLeast(1), handleInit),
 		},
 		climax.Command{
 			Name:  "clone",
@@ -418,23 +372,12 @@ func RunCmdline() int {
 					Description: `Clone Alice' contents`,
 				},
 			},
-			Handle: func(ctx climax.Context) int {
-				// TODO: Utils to convert string to int.
-				// TODO: Utils to get default value.
-				depth, ok := ctx.Get("--depth")
-				if !ok {
-					depth = "-1"
-				}
-
-				fmt.Println(depth)
-				return 0
-			},
 		},
 		climax.Command{
 			Name:   "open",
 			Group:  repoGroup,
 			Brief:  "Open an encrypted port. Asks for passphrase.",
-			Handle: handleOpen,
+			Handle: withDaemon(handleOpen),
 		},
 		climax.Command{
 			Name:   "close",
@@ -498,7 +441,7 @@ func RunCmdline() int {
 			Brief:  "Make file to be managed by brig.",
 			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
 			Help:   `TODO`,
-			Handle: handleAdd,
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd)),
 		},
 		climax.Command{
 			Name:   "get",
@@ -506,7 +449,7 @@ func RunCmdline() int {
 			Brief:  "Write ",
 			Usage:  `FILE_OR_FOLDER DEST_PATH`,
 			Help:   `TODO`,
-			Handle: handleCat,
+			Handle: withArgCheck(needAtLeast(2), withDaemon(handleCat)),
 		},
 		climax.Command{
 			Name:  "find",
@@ -580,7 +523,7 @@ func RunCmdline() int {
 			Name:   "mount",
 			Group:  miscGroup,
 			Brief:  "Handle FUSE mountpoints.",
-			Handle: handleMount,
+			Handle: withArgCheck(needAtLeast(1), handleMount),
 		},
 		climax.Command{
 			Name:  "update",
