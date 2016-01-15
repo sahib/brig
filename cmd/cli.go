@@ -65,7 +65,7 @@ func readPassword() (string, error) {
 
 func handleVersion(ctx climax.Context) int {
 	fmt.Println(brig.VersionString())
-	return 0
+	return Success
 }
 
 func handleOpen(ctx climax.Context, client *daemon.Client) int {
@@ -82,7 +82,7 @@ func handleDaemonPing() int {
 	client, err := daemon.Dial(6666)
 	if err != nil {
 		log.Warning("Unable to dial to daemon: ", err)
-		return 1
+		return DaemonNotResponding
 	}
 	defer client.Close()
 
@@ -103,19 +103,19 @@ func handleDaemonPing() int {
 		time.Sleep(1 * time.Second)
 	}
 
-	return 0
+	return Success
 }
 
 func handleDaemonQuit() int {
 	client, err := daemon.Dial(6666)
 	if err != nil {
 		log.Warning("Unable to dial to daemon: ", err)
-		return 1
+		return DaemonNotResponding
 	}
 	defer client.Close()
 
 	client.Exorcise()
-	return 0
+	return Success
 }
 
 func handleDaemon(ctx climax.Context) int {
@@ -169,7 +169,7 @@ func handleConfig(ctx climax.Context) int {
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
 		log.Errorf("Could not load config: %v", err)
-		return 2
+		return BadArgs
 	}
 
 	switch len(ctx.Args) {
@@ -205,7 +205,7 @@ func handleConfig(ctx climax.Context) int {
 		}
 	}
 
-	return 0
+	return Success
 }
 
 func handleInit(ctx climax.Context) int {
@@ -280,7 +280,7 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 		fmt.Println(hash.B58String())
 	}
 
-	return 0
+	return Success
 }
 
 func handleCat(ctx climax.Context, client *daemon.Client) int {
