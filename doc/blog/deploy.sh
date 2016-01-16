@@ -17,5 +17,5 @@ git commit -m "$msg"
 
 # Push source and build repos.
 cd ../../
-git push gitlab master
-git subtree push --prefix=doc/blog/public gitlab gh-pages
+git push github master
+git subtree push --prefix=doc/blog/public github gh-pages

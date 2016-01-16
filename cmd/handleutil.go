@@ -1,25 +1,41 @@
 package cmdline
 
 import (
+	"path/filepath"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon"
+	"github.com/disorganizer/brig/repo"
+	repoconfig "github.com/disorganizer/brig/repo/config"
+	"github.com/olebedev/config"
 	"github.com/tucnak/climax"
 )
 
 type CmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
 
-func withDaemon(handler CmdHandlerWithClient) climax.CmdHandler {
-	// Check if the daemon is running:
-	client, err := daemon.Dial(6666)
-	if err == nil {
-		return func(ctx climax.Context) int {
+func withDaemon(handler CmdHandlerWithClient, startNew bool) climax.CmdHandler {
+	// If not, make sure we start a new one:
+	return func(ctx climax.Context) int {
+		config := loadConfig()
+		port, err := config.Int("daemon.port")
+		if err != nil {
+			log.Fatalf("Cannot find out daemon port: %v", err)
+			return UnknownError
+		}
+
+		// Check if the daemon is running:
+		client, err := daemon.Dial(port)
+		if err == nil {
 			defer client.Close()
 			return handler(ctx, client)
 		}
-	}
 
-	// If not, make sure we start a new one:
-	return func(ctx climax.Context) int {
+		if !startNew {
+			// Daemon was not running and we may not start a new one.
+			log.Warning("Daemon not running.")
+			return DaemonNotResponding
+		}
+
 		// Check if the password was supplied via a commandline flag.
 		pwd, ok := ctx.Get("password")
 		if !ok {
@@ -34,7 +50,7 @@ func withDaemon(handler CmdHandlerWithClient) climax.CmdHandler {
 		}
 
 		// Start the dameon & pass the password:
-		client, err := daemon.Reach(pwd, guessRepoFolder(), 6666)
+		client, err = daemon.Reach(pwd, guessRepoFolder(), port)
 		if err != nil {
 			log.Errorf("Unable to start daemon: %v", err)
 			return DaemonNotResponding
@@ -66,4 +82,15 @@ func needAtLeast(min int) CheckFunc {
 
 		return Success
 	}
+}
+
+func loadConfig() *config.Config {
+	// We do not use guessRepoFolder() here. It might abort
+	folder := repo.GuessFolder()
+	cfg, err := repoconfig.LoadConfig(filepath.Join(folder, "config"))
+	if err != nil {
+		return repoconfig.CreateDefaultConfig()
+	}
+
+	return cfg
 }

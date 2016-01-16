@@ -14,9 +14,6 @@ const (
 	EncFileSuffix = ".minilock"
 )
 
-// TODO: Build a LockFiles and UnlockFiles variant.
-//       Key gen seems to take about ~1s - slow for many files.
-
 // LockFile encrypts `path` with minilock, using pass and jid as email.
 // The resulting file is written to `path` + EncFileSuffix,
 // the source file is removed.

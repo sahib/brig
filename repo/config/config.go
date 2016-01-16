@@ -44,6 +44,9 @@ func CreateDefaultConfig() *config.Config {
 			"mid":  "",
 			"uuid": "",
 		},
+		"daemon": map[string]interface{}{
+			"port": 6666,
+		},
 		"ipfs": map[string]interface{}{
 			"port":     5001,
 			"hostname": "localhost",

@@ -59,7 +59,7 @@ func GuessFolder() string {
 
 	actualPath := FindRepo(wd)
 	if actualPath == "" {
-		log.Errorf("Unable to find repo in path or any parents: %q", wd)
+		log.Debugf("Unable to find repo in path or any parents: %q", wd)
 	}
 
 	return actualPath

@@ -43,7 +43,8 @@ func formatGroup(category string) string {
 func guessRepoFolder() string {
 	folder := repo.GuessFolder()
 	if folder == "" {
-		log.Fatalf("This does not like a brig repository (missing .brig)")
+		log.Errorf("This does not like a brig repository (missing .brig)")
+		os.Exit(BadArgs)
 	}
 
 	return folder
@@ -73,19 +74,12 @@ func handleOpen(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
-func handleClose(ctx climax.Context) int {
-	// This is currently the same as `brig daemon -q`
-	return handleDaemonQuit()
+func handleClose(ctx climax.Context, client *daemon.Client) int {
+	// This is currently the same as `brig daemon-quit`
+	return handleDaemonQuit(ctx, client)
 }
 
-func handleDaemonPing() int {
-	client, err := daemon.Dial(6666)
-	if err != nil {
-		log.Warning("Unable to dial to daemon: ", err)
-		return DaemonNotResponding
-	}
-	defer client.Close()
-
+func handleDaemonPing(ctx climax.Context, client *daemon.Client) int {
 	for i := 0; i < 100; i++ {
 		before := time.Now()
 		symbol := colors.Colorize("✔", colors.Green)
@@ -100,31 +94,19 @@ func handleDaemonPing() int {
 			client.LocalAddr().String(),
 			client.RemoteAddr().String(),
 			symbol, delay)
+
 		time.Sleep(1 * time.Second)
 	}
 
 	return Success
 }
 
-func handleDaemonQuit() int {
-	client, err := daemon.Dial(6666)
-	if err != nil {
-		log.Warning("Unable to dial to daemon: ", err)
-		return DaemonNotResponding
-	}
-	defer client.Close()
-
+func handleDaemonQuit(ctx climax.Context, client *daemon.Client) int {
 	client.Exorcise()
 	return Success
 }
 
 func handleDaemon(ctx climax.Context) int {
-	if ctx.Is("ping") {
-		return handleDaemonPing()
-	} else if ctx.Is("quit") {
-		return handleDaemonQuit()
-	}
-
 	pwd, ok := ctx.Get("password")
 	if !ok {
 		var err error
@@ -142,7 +124,14 @@ func handleDaemon(ctx climax.Context) int {
 		return BadPassword
 	}
 
-	baal, err := daemon.Summon(pwd, repoFolder, 6666)
+	config := loadConfig()
+	port, err := config.Int("daemon.port")
+	if err != nil {
+		log.Fatalf("Cannot find out daemon port: %v", err)
+		return UnknownError
+	}
+
+	baal, err := daemon.Summon(pwd, repoFolder, port)
 	if err != nil {
 		log.Warning("Unable to start daemon: ", err)
 		return UnknownError
@@ -254,7 +243,13 @@ func handleInit(ctx climax.Context) int {
 	}
 
 	if !ctx.Is("nodaemon") {
-		if _, err := daemon.Reach(string(pwd), folder, 6666); err != nil {
+		port, err := repo.Config.Int("daemon.port")
+		if err != nil {
+			log.Errorf("Unable to find out port.")
+			return UnknownError
+		}
+
+		if _, err := daemon.Reach(string(pwd), folder, port); err != nil {
 			log.Errorf("Unable to start daemon: %v", err)
 			return DaemonNotResponding
 		}
@@ -376,13 +371,13 @@ func RunCmdline() int {
 			Name:   "open",
 			Group:  repoGroup,
 			Brief:  "Open an encrypted port. Asks for passphrase.",
-			Handle: withDaemon(handleOpen),
+			Handle: withDaemon(handleOpen, true),
 		},
 		climax.Command{
 			Name:   "close",
 			Group:  repoGroup,
 			Brief:  "Encrypt all metadata in the port and go offline.",
-			Handle: handleClose,
+			Handle: withDaemon(handleClose, false),
 		},
 		climax.Command{
 			Name:  "sync",
@@ -440,7 +435,7 @@ func RunCmdline() int {
 			Brief:  "Make file to be managed by brig.",
 			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(2), withDaemon(handleAdd)),
+			Handle: withArgCheck(needAtLeast(2), withDaemon(handleAdd, true)),
 		},
 		climax.Command{
 			Name:   "cat",
@@ -448,7 +443,7 @@ func RunCmdline() int {
 			Brief:  "Write ",
 			Usage:  `FILE_OR_FOLDER DEST_PATH`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(2), withDaemon(handleCat)),
+			Handle: withArgCheck(needAtLeast(2), withDaemon(handleCat, true)),
 		},
 		climax.Command{
 			Name:  "find",
@@ -481,18 +476,6 @@ func RunCmdline() int {
 			Brief: "Manually run the daemon process.",
 			Flags: []climax.Flag{
 				{
-					Name:  "ping",
-					Short: "p",
-					Usage: `--ping`,
-					Help:  `Ping the dameon to check if it's running.`,
-				},
-				{
-					Name:  "quit",
-					Short: "q",
-					Usage: `--quit`,
-					Help:  `Kill a running daemon.`,
-				},
-				{
 					Name:     "password",
 					Short:    "x",
 					Usage:    `--password PWD`,
@@ -501,6 +484,18 @@ func RunCmdline() int {
 				},
 			},
 			Handle: handleDaemon,
+		},
+		climax.Command{
+			Name:   "daemon-quit",
+			Group:  advnGroup,
+			Brief:  "Manually kill the daemon process.",
+			Handle: withDaemon(handleDaemonQuit, false),
+		},
+		climax.Command{
+			Name:   "daemon-ping",
+			Group:  advnGroup,
+			Brief:  "See if the daemon responds in a timely fashion.",
+			Handle: withDaemon(handleDaemonPing, false),
 		},
 		climax.Command{
 			Name:  "passwd",
