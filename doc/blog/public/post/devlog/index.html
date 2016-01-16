@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="First devlog entry">
+<meta name="keywords" content="">
+<meta name="author" content="">
+<meta name="generator" content="Hugo 0.16-DEV" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/css/style.css" type="text/css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700" type="text/css">
+<link rel="alternate" href="/index.xml" type="application/rss+xml" title="brig devlog">
+<title>A small step for mankind, a big step for brig - brig devlog</title>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a class="path" href="http://replace-this-with-your-hugo-site.com/">[brig devlog]</a>
+    <span class="caret"># _</span>
+  </div>
+</header>
+
+<div class="container">
+
+
+<main role="main" class="article">
+  
+<article class="single" itemscope itemtype="http://schema.org/BlogPosting">
+  <div class="meta">
+
+    <span class="key">published on</span>
+    <span class="val"><time itemprop="datePublished" datetime="2016-01-15">January 15, 2016</time></span>
+
+
+
+    <br>
+    <span class="key">tags:</span>
+    <span class="val">
+
+        <a href="http://replace-this-with-your-hugo-site.com/tags/development">Development</a>
+
+        <a href="http://replace-this-with-your-hugo-site.com/tags/go">Go</a>
+
+        <a href="http://replace-this-with-your-hugo-site.com/tags/brig">brig</a>
+
+    </span>
+
+  </div>
+  <h1 class="headline" itemprop="headline">A small step for mankind, a big step for brig</h1>
+  <section class="body" itemprop="articleBody">
+    <p>A small historic moment was achieved today: The very first file was added to
+<code>brig</code>. There was no way to get it out again, but hey - Progress comes in
+steps. Luckily, just two hours later there was a <code>brig get</code> command that
+could retrieve the file again from <code>ipfs</code>.</p>
+
+<p>This is also my very first devlog entry, so&hellip; Hi. I mainly write this to
+remember what I did (and when) on the course of the project. Also it sometimes
+is really useful to reflect on what kind of boolshit I wrote today. Ever
+noticed that you get the best ideas doing arbitrary things like peeing? That&rsquo;s
+the same effect, I guess. If it&rsquo;s fun to read for others&hellip; that&rsquo;s okay too.
+I try to keep it updated after every more or less productive session.
+That might mean daily, that might also mean once a week.</p>
+
+<p>So, back to the technical side of life. <code>brig add</code> currently works a bit
+confusing. It is supposed to read a regular file on the disk, compress and
+encrypt it and add it to <code>ipfs</code>. The encryption and compression layer uses
+<code>io.Writer</code> though, so we can&rsquo;t just stack <code>io.Reader</code> on top of each
+other. Instead we need to use a nice little feature from the stdlib:
+<code>io.Pipe()</code>. This function returns a <code>io.Writer</code> and a <code>io.Reader</code>. Every
+write on the writer produces a corresponding read on the reader - without internal
+copying of the data. Yay. If you have a piece of API that needs a <code>io.Reader</code>,
+but you just have a <code>io.Writer</code>, then <code>io.Pipe()</code> should pop into your mind now.</p>
+
+<p>Here&rsquo;s how it looks in practice:</p>
+
+<pre><code class="language-go">func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
+	pr, pw := io.Pipe()
+
+	// Setup the writer part:
+	wEnc, err := encrypt.NewWriter(pw, key)
+	if err != nil {
+		return nil, err
+	}
+
+	wZip := compress.NewWriter(wEnc)
+
+	// Suck the reader empty and move it to `wZip`.
+	// Every write to wZip will be available as read in `pr`.
+	go func() {
+		defer func() {
+			wEnc.Close()
+			pw.Close()
+		}()
+
+		if _, err := io.Copy(wZip, r); err != nil {
+			// TODO: Warn or pass to outside?
+			log.Warningf(&quot;add: copy: %v&quot;, err)
+		}
+	}()
+
+	return pr, nil
+}
+</code></pre>
+
+<p>That&rsquo;s all for today! For tomorrow a cleanup session is planned and the piece
+of code that derives the AES-Key from an unencrypted file.</p>
+
+  </section>
+</article>
+
+</main>
+
+
+</div>
+
+<footer>
+  <div class="container">
+    <span class="copyright">&copy; 2016  brig devlog - <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
+

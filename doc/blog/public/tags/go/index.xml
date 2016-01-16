@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Go on brig devlog</title>
+    <link>http://replace-this-with-your-hugo-site.com/tags/go/</link>
+    <description>Recent content in Go on brig devlog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 15 Jan 2016 01:13:07 -0700</lastBuildDate>
+    <atom:link href="http://replace-this-with-your-hugo-site.com/tags/go/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>A small step for mankind, a big step for brig</title>
+      <link>http://replace-this-with-your-hugo-site.com/post/devlog/</link>
+      <pubDate>Fri, 15 Jan 2016 01:13:07 -0700</pubDate>
+      
+      <guid>http://replace-this-with-your-hugo-site.com/post/devlog/</guid>
+      <description>&lt;p&gt;A small historic moment was achieved today: The very first file was added to
+&lt;code&gt;brig&lt;/code&gt;. There was no way to get it out again, but hey - Progress comes in
+steps. Luckily, just two hours later there was a &lt;code&gt;brig get&lt;/code&gt; command that
+could retrieve the file again from &lt;code&gt;ipfs&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;This is also my very first devlog entry, so&amp;hellip; Hi. I mainly write this to
+remember what I did (and when) on the course of the project. Also it sometimes
+is really useful to reflect on what kind of boolshit I wrote today. Ever
+noticed that you get the best ideas doing arbitrary things like peeing? That&amp;rsquo;s
+the same effect, I guess. If it&amp;rsquo;s fun to read for others&amp;hellip; that&amp;rsquo;s okay too.
+I try to keep it updated after every more or less productive session.
+That might mean daily, that might also mean once a week.&lt;/p&gt;
+
+&lt;p&gt;So, back to the technical side of life. &lt;code&gt;brig add&lt;/code&gt; currently works a bit
+confusing. It is supposed to read a regular file on the disk, compress and
+encrypt it and add it to &lt;code&gt;ipfs&lt;/code&gt;. The encryption and compression layer uses
+&lt;code&gt;io.Writer&lt;/code&gt; though, so we can&amp;rsquo;t just stack &lt;code&gt;io.Reader&lt;/code&gt; on top of each
+other. Instead we need to use a nice little feature from the stdlib:
+&lt;code&gt;io.Pipe()&lt;/code&gt;. This function returns a &lt;code&gt;io.Writer&lt;/code&gt; and a &lt;code&gt;io.Reader&lt;/code&gt;. Every
+write on the writer produces a corresponding read on the reader - without internal
+copying of the data. Yay. If you have a piece of API that needs a &lt;code&gt;io.Reader&lt;/code&gt;,
+but you just have a &lt;code&gt;io.Writer&lt;/code&gt;, then &lt;code&gt;io.Pipe()&lt;/code&gt; should pop into your mind now.&lt;/p&gt;
+
+&lt;p&gt;Here&amp;rsquo;s how it looks in practice:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
+	pr, pw := io.Pipe()
+
+	// Setup the writer part:
+	wEnc, err := encrypt.NewWriter(pw, key)
+	if err != nil {
+		return nil, err
+	}
+
+	wZip := compress.NewWriter(wEnc)
+
+	// Suck the reader empty and move it to `wZip`.
+	// Every write to wZip will be available as read in `pr`.
+	go func() {
+		defer func() {
+			wEnc.Close()
+			pw.Close()
+		}()
+
+		if _, err := io.Copy(wZip, r); err != nil {
+			// TODO: Warn or pass to outside?
+			log.Warningf(&amp;quot;add: copy: %v&amp;quot;, err)
+		}
+	}()
+
+	return pr, nil
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;That&amp;rsquo;s all for today! For tomorrow a cleanup session is planned and the piece
+of code that derives the AES-Key from an unencrypted file.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
