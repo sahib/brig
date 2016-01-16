@@ -264,36 +264,35 @@ func handleInit(ctx climax.Context) int {
 }
 
 func handleAdd(ctx climax.Context, client *daemon.Client) int {
-	for _, path := range ctx.Args {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			log.Errorf("Unable to make abs path: %v: %v", path, err)
-			continue
-		}
-
-		hash, err := client.Add(absPath)
-		if err != nil {
-			log.Errorf("Could not add file: %v: %v", absPath, err)
-			return UnknownError
-		}
-
-		fmt.Println(hash.B58String())
+	repoPath := ctx.Args[1]
+	filePath, err := filepath.Abs(ctx.Args[0])
+	if err != nil {
+		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
+		return UnknownError
 	}
 
+	hash, err := client.Add(filePath, repoPath)
+	if err != nil {
+		log.Errorf("Could not add file: %v: %v", filePath, err)
+		return UnknownError
+	}
+
+	fmt.Println(hash.B58String())
 	return Success
 }
 
 func handleCat(ctx climax.Context, client *daemon.Client) int {
-	dstPath, err := filepath.Abs(ctx.Args[0])
-	absPath, err := filepath.Abs(ctx.Args[1])
+	repoPath := ctx.Args[0]
+	filePath, err := filepath.Abs(ctx.Args[1])
+
 	if err != nil {
-		log.Errorf("Unable to make abs path: %v: %v", absPath, err)
+		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
 		return UnknownError
 	}
 
-	newPath, err := client.Cat(dstPath, absPath)
+	newPath, err := client.Cat(repoPath, filePath)
 	if err != nil {
-		log.Errorf("Could not cat file: %v: %v", absPath, err)
+		log.Errorf("Could not cat file: %v: %v", repoPath, err)
 		return UnknownError
 	}
 
@@ -441,10 +440,10 @@ func RunCmdline() int {
 			Brief:  "Make file to be managed by brig.",
 			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd)),
+			Handle: withArgCheck(needAtLeast(2), withDaemon(handleAdd)),
 		},
 		climax.Command{
-			Name:   "get",
+			Name:   "cat",
 			Group:  wdirGroup,
 			Brief:  "Write ",
 			Usage:  `FILE_OR_FOLDER DEST_PATH`,

@@ -116,6 +116,7 @@ func (m *Command) GetQuitCommand() *Command_QuitCmd {
 
 type Command_AddCmd struct {
 	FilePath         *string `protobuf:"bytes,1,req,name=file_path" json:"file_path,omitempty"`
+	RepoPath         *string `protobuf:"bytes,2,req,name=repo_path" json:"repo_path,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -130,9 +131,18 @@ func (m *Command_AddCmd) GetFilePath() string {
 	return ""
 }
 
+func (m *Command_AddCmd) GetRepoPath() string {
+	if m != nil && m.RepoPath != nil {
+		return *m.RepoPath
+	}
+	return ""
+}
+
 type Command_CatCmd struct {
-	FilePath         *string `protobuf:"bytes,1,req,name=file_path" json:"file_path,omitempty"`
-	DestPath         *string `protobuf:"bytes,2,req,name=dest_path" json:"dest_path,omitempty"`
+	// The Path of the file to cat inside the repo.
+	RepoPath *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
+	// Where to stream the result.
+	FilePath         *string `protobuf:"bytes,2,req,name=file_path" json:"file_path,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -140,16 +150,16 @@ func (m *Command_CatCmd) Reset()         { *m = Command_CatCmd{} }
 func (m *Command_CatCmd) String() string { return proto1.CompactTextString(m) }
 func (*Command_CatCmd) ProtoMessage()    {}
 
-func (m *Command_CatCmd) GetFilePath() string {
-	if m != nil && m.FilePath != nil {
-		return *m.FilePath
+func (m *Command_CatCmd) GetRepoPath() string {
+	if m != nil && m.RepoPath != nil {
+		return *m.RepoPath
 	}
 	return ""
 }
 
-func (m *Command_CatCmd) GetDestPath() string {
-	if m != nil && m.DestPath != nil {
-		return *m.DestPath
+func (m *Command_CatCmd) GetFilePath() string {
+	if m != nil && m.FilePath != nil {
+		return *m.FilePath
 	}
 	return ""
 }
@@ -310,6 +320,14 @@ func (m *Command_AddCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
 		i += copy(data[i:], *m.FilePath)
 	}
+	if m.RepoPath == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
+		i += copy(data[i:], *m.RepoPath)
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -331,21 +349,21 @@ func (m *Command_CatCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.FilePath == nil {
+	if m.RepoPath == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
-		i += copy(data[i:], *m.FilePath)
+		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
+		i += copy(data[i:], *m.RepoPath)
 	}
-	if m.DestPath == nil {
+	if m.FilePath == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.DestPath)))
-		i += copy(data[i:], *m.DestPath)
+		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
+		i += copy(data[i:], *m.FilePath)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -509,6 +527,10 @@ func (m *Command_AddCmd) Size() (n int) {
 		l = len(*m.FilePath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
+	if m.RepoPath != nil {
+		l = len(*m.RepoPath)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -518,12 +540,12 @@ func (m *Command_AddCmd) Size() (n int) {
 func (m *Command_CatCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.FilePath != nil {
-		l = len(*m.FilePath)
+	if m.RepoPath != nil {
+		l = len(*m.RepoPath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.DestPath != nil {
-		l = len(*m.DestPath)
+	if m.FilePath != nil {
+		l = len(*m.FilePath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -855,6 +877,37 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 			m.FilePath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RepoPath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.RepoPath = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -872,6 +925,9 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -912,6 +968,37 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RepoPath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.RepoPath = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FilePath", wireType)
 			}
 			var stringLen uint64
@@ -939,37 +1026,6 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 			}
 			s := string(data[iNdEx:postIndex])
 			m.FilePath = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DestPath", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDaemon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthDaemon
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.DestPath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		default:

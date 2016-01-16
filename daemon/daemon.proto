@@ -10,12 +10,17 @@ enum MessageType {
 
 message Command {
     message AddCmd {
+		// The abs path to the file we're going to add.
         required string file_path = 1;
+		// The virtual abs path inside the repo (e.g. /photos/me.png)
+        required string repo_path = 2;
     }
 
     message CatCmd {
-        required string file_path = 1;
-        required string dest_path = 2;
+		// The abs path of the file to cat inside the repo.
+        required string repo_path = 1;
+		// Where to stream the result.
+        required string file_path = 2;
     }
 
     message PingCmd {

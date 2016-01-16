@@ -29,31 +29,6 @@ type Store struct {
 	IpfsCtx *ipfsutil.Context
 }
 
-// Load opens the
-// func (s *Store) loadTrie() error {
-// 	s.Trie = trie.NewTrie()
-//
-// 	return s.db.View(func(tx *bolt.Tx) error {
-// 		bucket := tx.Bucket(bucketIndex)
-// 		if bucket != nil {
-// 			return nil
-// 		}
-//
-// 		err := bucket.ForEach(func(k, v []byte) error {
-// 			// k = absPath, v = File{} value
-// 			file := &File{s: s}
-// 			file.Node = s.Trie.Insert(string(k))
-// 			return nil
-// 		})
-//
-// 		if err == nil {
-// 			return nil
-// 		}
-//
-// 		return fmt.Errorf("store-load: %v", err)
-// 	})
-// }
-
 // Open loads an existing store, if it does not exist, it is created.
 func Open(repoPath string) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
@@ -85,10 +60,6 @@ func Open(repoPath string) (*Store, error) {
 	}
 
 	store.Trie = trie.NewTrie()
-	// if err := store.loadTrie(); err != nil {
-	// 	return nil, err
-	// }
-
 	return store, nil
 }
 
@@ -96,7 +67,7 @@ var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 
 // Add reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
+func (s *Store) Add(filePath, repoPath string, r io.Reader) (multihash.Multihash, error) {
 	// TODO
 	// gets hash, size, modtime=now, ipfshash...
 	// creates File{} and serializes it to DB using GOB
@@ -117,7 +88,7 @@ func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
 			return fmt.Errorf("Add: No index bucket")
 		}
 
-		file, err := NewFile(s, path, hash)
+		file, err := NewFile(s, filePath, hash)
 		if err != nil {
 			return err
 		}
@@ -127,7 +98,7 @@ func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
 			return err
 		}
 
-		if err := bucket.Put([]byte(path), data); err != nil {
+		if err := bucket.Put([]byte(repoPath), data); err != nil {
 			return err
 		}
 

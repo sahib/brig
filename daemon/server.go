@@ -247,7 +247,7 @@ func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp 
 		return
 	}
 
-	hash, err := d.Repo.Store.Add(path, fd)
+	hash, err := d.Repo.Store.Add(path, cmd.GetAddCommand().GetRepoPath(), fd)
 	if err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return
@@ -258,14 +258,15 @@ func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp 
 }
 
 func (d *Server) handleCatCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
-	destPath := cmd.GetCatCommand().GetDestPath()
-	fd, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0644)
+
+	filePath := cmd.GetCatCommand().GetFilePath()
+	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return
 	}
 
-	srcPath := cmd.GetCatCommand().GetFilePath()
+	srcPath := cmd.GetCatCommand().GetRepoPath()
 	if err := d.Repo.Store.Cat(srcPath, fd); err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return

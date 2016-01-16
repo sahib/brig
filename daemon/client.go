@@ -173,11 +173,12 @@ func (c *Client) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *Client) Add(absPath string) (multihash.Multihash, error) {
+func (c *Client) Add(filePath, repoPath string) (multihash.Multihash, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_ADD.Enum(),
 		AddCommand: &proto.Command_AddCmd{
-			FilePath: protobuf.String(absPath),
+			FilePath: protobuf.String(filePath),
+			RepoPath: protobuf.String(repoPath),
 		},
 	}
 
@@ -189,12 +190,12 @@ func (c *Client) Add(absPath string) (multihash.Multihash, error) {
 	return multihash.FromB58String(resp.GetResponse())
 }
 
-func (c *Client) Cat(name, destPath string) (string, error) {
+func (c *Client) Cat(repoPath, filePath string) (string, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_CAT.Enum(),
 		CatCommand: &proto.Command_CatCmd{
-			DestPath: protobuf.String(destPath),
-			FilePath: protobuf.String(name),
+			FilePath: protobuf.String(filePath),
+			RepoPath: protobuf.String(repoPath),
 		},
 	}
 
