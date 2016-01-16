@@ -30,29 +30,29 @@ type Store struct {
 }
 
 // Load opens the
-func (s *Store) loadTrie() error {
-	s.Trie = trie.NewTrie()
-
-	return s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bucketIndex)
-		if bucket != nil {
-			return nil
-		}
-
-		err := bucket.ForEach(func(k, v []byte) error {
-			// k = absPath, v = File{} value
-			file := &File{s: s}
-			file.Node = s.Trie.Insert(string(k))
-			return nil
-		})
-
-		if err == nil {
-			return nil
-		}
-
-		return fmt.Errorf("store-load: %v", err)
-	})
-}
+// func (s *Store) loadTrie() error {
+// 	s.Trie = trie.NewTrie()
+//
+// 	return s.db.View(func(tx *bolt.Tx) error {
+// 		bucket := tx.Bucket(bucketIndex)
+// 		if bucket != nil {
+// 			return nil
+// 		}
+//
+// 		err := bucket.ForEach(func(k, v []byte) error {
+// 			// k = absPath, v = File{} value
+// 			file := &File{s: s}
+// 			file.Node = s.Trie.Insert(string(k))
+// 			return nil
+// 		})
+//
+// 		if err == nil {
+// 			return nil
+// 		}
+//
+// 		return fmt.Errorf("store-load: %v", err)
+// 	})
+// }
 
 // Open loads an existing store, if it does not exist, it is created.
 func Open(repoPath string) (*Store, error) {
@@ -84,9 +84,10 @@ func Open(repoPath string) (*Store, error) {
 		log.Warningf("store-create-table failed: %v", err)
 	}
 
-	if err := store.loadTrie(); err != nil {
-		return nil, err
-	}
+	store.Trie = trie.NewTrie()
+	// if err := store.loadTrie(); err != nil {
+	// 	return nil, err
+	// }
 
 	return store, nil
 }
@@ -116,7 +117,17 @@ func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
 			return fmt.Errorf("Add: No index bucket")
 		}
 
-		if err := bucket.Put([]byte(path), hash); err != nil {
+		file, err := NewFile(s, path, hash)
+		if err != nil {
+			return err
+		}
+
+		data, err := file.Marshal()
+		if err != nil {
+			return err
+		}
+
+		if err := bucket.Put([]byte(path), data); err != nil {
 			return err
 		}
 
@@ -131,14 +142,14 @@ func (s *Store) Add(path string, r io.Reader) (multihash.Multihash, error) {
 }
 
 func (s *Store) Cat(path string, w io.Writer) error {
-	hash, err := s.PathToHash(path)
+	file, err := s.PathToFile(path)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("HASH", hash.B58String())
+	fmt.Println("HASH", file.Hash.B58String())
 
-	ipfsStream, err := ipfsutil.Cat(s.IpfsCtx, hash)
+	ipfsStream, err := ipfsutil.Cat(s.IpfsCtx, file.Hash)
 	if err != nil {
 		return err
 	}
@@ -156,26 +167,29 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
-func (s *Store) PathToHash(path string) (multihash.Multihash, error) {
-	var hash multihash.Multihash
+func (s *Store) PathToFile(path string) (*File, error) {
+	var file *File
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(bucketIndex)
 		if bucket == nil {
-			return fmt.Errorf("PathToHash: No index bucket")
+			return fmt.Errorf("PathToFile: No index bucket")
 		}
 
-		foundHash := bucket.Get([]byte(path))
-		if foundHash == nil {
-			return fmt.Errorf("cat: no hash to path `%s`", path)
+		data := bucket.Get([]byte(path))
+		if data == nil {
+			return fmt.Errorf("cat: no file to path `%s`", path)
 		}
 
-		hash = make([]byte, len(foundHash))
-		copy(hash, foundHash)
+		var err error
+		if file, err = Unmarshal(s, data); err != nil {
+			return err
+		}
+
 		return nil
 	})
 
-	return hash, err
+	return file, err
 }
 
 // Close syncs all data. It is an error to use the store afterwards.

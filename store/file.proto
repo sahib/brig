@@ -1,0 +1,9 @@
+package bolt.protocol;
+option go_package = "proto";
+
+message File {
+    required string path = 1;
+    required bytes key = 2;
+    required bytes hash = 3;
+    required int64 file_size = 4;
+}
