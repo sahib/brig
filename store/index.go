@@ -63,16 +63,15 @@ func Open(repoPath string) (*Store, error) {
 	return store, nil
 }
 
-var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
-
 // Add reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
 func (s *Store) Add(filePath, repoPath string, r io.Reader) (multihash.Multihash, error) {
-	// TODO
-	// gets hash, size, modtime=now, ipfshash...
-	// creates File{} and serializes it to DB using GOB
-	// insert .Node before serializing, set again after.
-	stream, err := NewFileReader(TestKey, r)
+	file, err := NewFile(s, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	stream, err := NewFileReader(file.Key, r)
 	if err != nil {
 		return nil, err
 	}
@@ -82,15 +81,12 @@ func (s *Store) Add(filePath, repoPath string, r io.Reader) (multihash.Multihash
 		return nil, err
 	}
 
+	file.Hash = hash
+
 	err = s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(bucketIndex)
 		if bucket == nil {
 			return fmt.Errorf("Add: No index bucket")
-		}
-
-		file, err := NewFile(s, filePath, hash)
-		if err != nil {
-			return err
 		}
 
 		data, err := file.Marshal()
@@ -119,6 +115,7 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	}
 
 	fmt.Println("HASH", file.Hash.B58String())
+	fmt.Printf("CAT KEY %x\n", file.Key)
 
 	ipfsStream, err := ipfsutil.Cat(s.IpfsCtx, file.Hash)
 	if err != nil {
@@ -126,7 +123,7 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	}
 	defer ipfsStream.Close()
 
-	cleanStream, err := NewIpfsReader(TestKey, ipfsStream)
+	cleanStream, err := NewIpfsReader(file.Key, ipfsStream)
 	if err != nil {
 		return err
 	}

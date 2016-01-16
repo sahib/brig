@@ -28,7 +28,7 @@ type File struct {
 
 // New returns a file inside a repo.
 // Path is relative to the repo root.
-func NewFile(store *Store, path string, hash multihash.Multihash) (*File, error) {
+func NewFile(store *Store, path string) (*File, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,6 @@ func NewFile(store *Store, path string, hash multihash.Multihash) (*File, error)
 		Node:  node,
 		Size:  FileSize(info.Size()),
 		Key:   key,
-		Hash:  hash,
 	}, nil
 }
 
@@ -95,6 +94,7 @@ func Fingerprint(path string) ([]byte, error) {
 		return nil, err
 	}
 
+	// TODO: Make fingerprint size configurable.
 	buf := make([]byte, 8192)
 	if _, err := io.Copy(bytes.NewBuffer(buf), fd); err != nil {
 		return nil, err
@@ -103,6 +103,7 @@ func Fingerprint(path string) ([]byte, error) {
 	sizeBuf := make([]byte, binary.MaxVarintLen64)
 	binary.PutVarint(sizeBuf, info.Size())
 
+	// TODO: Read keylen from config value?
 	cksum := sha512.Sum512(buf)
 	key := security.Scrypt(cksum[:], sizeBuf, 32)
 	return key, nil
