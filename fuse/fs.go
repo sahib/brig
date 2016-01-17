@@ -6,10 +6,9 @@ import (
 )
 
 type FS struct {
-	trie trie.Trie
+	Trie trie.Trie
 }
 
 func (f *FS) Root() (fs.Node, error) {
-	// TODO
-	return nil, nil
+	return &Dir{Node: f.Trie.Root(), fs: f}, nil
 }

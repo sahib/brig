@@ -13,7 +13,11 @@ func mount(mountpoint string) error {
 	}
 	defer c.Close()
 
-	filesys := &FS{}
+	trie := trie.NewTrie()
+	trie.Insert("/home/sahib/test")
+
+	filesys := &FS{Trie: trie}
+
 	if err := fs.Serve(c, filesys); err != nil {
 		return err
 	}
@@ -28,8 +32,5 @@ func mount(mountpoint string) error {
 }
 
 func Mount(mountpoint string) error {
-	trie := trie.NewTrie()
-	trie.Insert("/home/sahib/test")
-
 	return mount(mountpoint)
 }

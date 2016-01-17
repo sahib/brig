@@ -5,6 +5,10 @@ import (
 	"bazil.org/fuse/fs"
 	"github.com/disorganizer/brig/util/trie"
 	"golang.org/x/net/context"
+
+	// Don't panic.
+	// This is just to convert a pointer to an inode.
+	"unsafe"
 )
 
 type File struct {
@@ -14,13 +18,15 @@ type File struct {
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	// TODO: Store special permissions? Is this allowed?
 	a.Mode = 0755
+	a.Size = 200
+	a.Inode = *(*uint64)(unsafe.Pointer(&f.Node))
 	return nil
 }
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	// TODO: Open the file and return a fs.Handle.
 	//       actual data will be read by Read()
-	return nil, nil
+	return f, nil
 }
 
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
@@ -30,6 +36,11 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	// TODO: Read file at req.Offset for req.Size bytes and set resp.Data.
+	resp.Data = make([]byte, req.Size)
+	for i := 0; i < req.Size; i++ {
+		resp.Data[i] = byte("Na"[i%2])
+	}
+
 	return nil
 }
 

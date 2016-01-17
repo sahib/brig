@@ -4,6 +4,7 @@ package trie
 import (
 	"os"
 	"strings"
+	"sync"
 )
 
 // Node represents a single node in a Trie, but it can be used as a whole
@@ -25,6 +26,10 @@ type Node struct {
 
 	// Depth of the node. The root is at depth 0.
 	Depth uint16
+
+	// Mutex protecting access to the trie.
+	// Note that only one mutex exists per trie.
+	mu *sync.RWMutex
 }
 
 // Trie represents the required methods for accessing a directory structure.
@@ -63,7 +68,7 @@ func SplitPath(path string) []string {
 // NewTrie returns a trie with the root element pre-inserted.
 // Note that `nil` is a perfectly valid, but empty trie.
 func NewTrie() *Node {
-	return &Node{}
+	return &Node{mu: &sync.RWMutex{}}
 }
 
 // Root returns the root node of the trie.
@@ -102,6 +107,7 @@ func (n *Node) Insert(path string) *Node {
 				Parent: curr,
 				Name:   name,
 				Depth:  uint16(curr.Depth + 1),
+				mu:     curr.mu,
 			}
 			curr.Children[name] = child
 			wasAdded = true
@@ -230,4 +236,24 @@ func (n *Node) String() string {
 		return "<nil>"
 	}
 	return n.Path()
+}
+
+// Lock locks the whole trie for read/write access.
+func (n *Node) Lock() {
+	n.mu.Lock()
+}
+
+// Unlock unlocks the whole trie for read/write access.
+func (n *Node) Unlock() {
+	n.mu.Unlock()
+}
+
+// RLock locks the whole trie for read access.
+func (n *Node) RLock() {
+	n.mu.RLock()
+}
+
+// RUnlock unlocks the whole trie for read access.
+func (n *Node) RUnlock() {
+	n.mu.RUnlock()
 }
