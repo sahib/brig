@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/disorganizer/brig/store/format"
+	"github.com/disorganizer/brig/store/encrypt"
 )
 
 func main() {
@@ -16,9 +16,9 @@ func main() {
 
 	var err error
 	if *decryptMode == false {
-		_, err = format.Encrypt(key, os.Stdin, os.Stdout)
+		_, err = encrypt.Encrypt(key, os.Stdin, os.Stdout)
 	} else {
-		_, err = format.Decrypt(key, os.Stdin, os.Stdout)
+		_, err = encrypt.Decrypt(key, os.Stdin, os.Stdout)
 	}
 
 	if err != nil {
