@@ -259,11 +259,16 @@ func handleInit(ctx climax.Context) int {
 }
 
 func handleAdd(ctx climax.Context, client *daemon.Client) int {
-	repoPath := ctx.Args[1]
 	filePath, err := filepath.Abs(ctx.Args[0])
 	if err != nil {
 		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
 		return UnknownError
+	}
+
+	// Assume "/file.png" for file.png as repo path, if none given.
+	repoPath := "/" + filepath.Base(filePath)
+	if len(ctx.Args) > 1 {
+		repoPath = ctx.Args[1]
 	}
 
 	hash, err := client.Add(filePath, repoPath)
@@ -283,6 +288,10 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 	if err != nil {
 		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
 		return UnknownError
+	}
+
+	if !strings.HasPrefix(repoPath, "/") {
+		repoPath = "/" + repoPath
 	}
 
 	newPath, err := client.Cat(repoPath, filePath)
@@ -435,7 +444,7 @@ func RunCmdline() int {
 			Brief:  "Make file to be managed by brig.",
 			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(2), withDaemon(handleAdd, true)),
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
 		},
 		climax.Command{
 			Name:   "cat",
