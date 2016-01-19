@@ -12,7 +12,6 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
-	"github.com/jbenet/go-multihash"
 )
 
 // Client is the client API to brigd.
@@ -173,7 +172,7 @@ func (c *Client) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *Client) Add(filePath, repoPath string) (multihash.Multihash, error) {
+func (c *Client) Add(filePath, repoPath string) (string, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_ADD.Enum(),
 		AddCommand: &proto.Command_AddCmd{
@@ -184,10 +183,10 @@ func (c *Client) Add(filePath, repoPath string) (multihash.Multihash, error) {
 
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
-		return nil, fmt.Errorf("client: add: %v", resp.GetError())
+		return "", fmt.Errorf("client: add: %v", resp.GetError())
 	}
 
-	return multihash.FromB58String(resp.GetResponse())
+	return resp.GetResponse(), nil
 }
 
 func (c *Client) Cat(repoPath, filePath string) (string, error) {

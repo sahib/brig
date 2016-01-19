@@ -240,21 +240,17 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 }
 
 func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
-	path := cmd.GetAddCommand().GetFilePath()
-	fd, err := os.Open(path)
-	if err != nil {
-		resp.Error = protobuf.String(err.Error())
-		return
-	}
+	filePath := cmd.GetAddCommand().GetFilePath()
+	repoPath := cmd.GetAddCommand().GetRepoPath()
 
-	hash, err := d.Repo.Store.Add(path, cmd.GetAddCommand().GetRepoPath(), fd)
+	err := d.Repo.Store.Add(filePath, repoPath)
 	if err != nil {
 		resp.Error = protobuf.String(err.Error())
 		return
 	}
 
 	resp.Success = protobuf.Bool(true)
-	resp.Response = protobuf.String(hash.B58String())
+	resp.Response = protobuf.String(repoPath)
 }
 
 func (d *Server) handleCatCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {

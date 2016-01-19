@@ -1,8 +1,10 @@
 package store
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -10,11 +12,11 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
-	"github.com/jbenet/go-multihash"
 )
 
 var (
-	bucketIndex = []byte("index")
+	bucketIndex   = []byte("index")
+	ErrNoSuchFile = fmt.Errorf("No such file or directory")
 )
 
 // Store is responsible for adding & retrieving all files from ipfs,
@@ -63,27 +65,118 @@ func Open(repoPath string) (*Store, error) {
 	return store, nil
 }
 
-// Add reads data from r, encrypts & compresses it while feeding it to ipfs.
-// The resulting hash will be committed to the index.
-func (s *Store) Add(filePath, repoPath string, r io.Reader) (multihash.Multihash, error) {
-	file, err := NewFile(s, filePath)
+// Mkdir creates a new, empty directory.
+// If the directory already exists, this is a NOOP.
+func (s *Store) Mkdir(repoPath string) error {
+	dir, err := NewDir(s, repoPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	stream, err := NewFileReader(file.Key, r)
+	return s.marshalFile(dir, repoPath)
+}
+
+func (s *Store) Add(filePath, repoPath string) error {
+	// TODO: Explain this "trick"
+	return s.AddDir(filePath, repoPath)
+}
+
+func (s *Store) AddDir(filePath, repoPath string) error {
+	err := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
+		// Simply skip errorneous files:
+		if err != nil {
+			log.Warningf("Walk: %v", err)
+			return err
+		}
+
+		// Map the file path relative to repoPath:
+		currPath := filepath.Join(repoPath, path[len(filePath):])
+
+		switch mode := info.Mode(); {
+		case mode.IsRegular():
+			fd, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+
+			err = s.AddFromReader(currPath, fd)
+		case mode.IsDir():
+			err = s.Mkdir(currPath)
+		default:
+			log.Warningf("Recursive add: Ignoring weird file: %v")
+			return nil
+		}
+
+		if err != nil {
+			log.WithFields(log.Fields{
+				"file_path": filePath,
+				"repo_path": repoPath,
+				"curr_path": currPath,
+			}).Warningf("AddDir: %v", err)
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+// Add reads data from r, encrypts & compresses it while feeding it to ipfs.
+// The resulting hash will be committed to the index.
+func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
+	// Check if the file was already added:
+	_, err := s.PathToFile(repoPath)
+
+	log.Infof("bolt lookup: %v", err)
+
 	if err != nil {
-		return nil, err
+		if err != ErrNoSuchFile {
+			return err
+		}
+
+		// We know this file already.
+		log.WithFields(log.Fields{
+			"file": repoPath,
+		}).Info("Updating file.")
+
+		// TODO: Write oldFile to commit history here,.
+	}
+
+	key := make([]byte, 32)
+	n, err := rand.Reader.Read(key)
+	if err != nil {
+		return err
+	}
+
+	if n != 32 {
+		return fmt.Errorf("Read less than desired key size: %v", n)
+	}
+
+	stream, err := NewFileReader(key, r)
+	if err != nil {
+		return err
 	}
 
 	hash, err := ipfsutil.Add(s.IpfsCtx, stream)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	file.Hash = hash
+	file, err := NewFile(s, repoPath, hash, key)
+	if err != nil {
+		return err
+	}
 
-	err = s.db.Update(func(tx *bolt.Tx) error {
+	if err := s.marshalFile(file, repoPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// marshalFile converts a file to a protobuf and
+func (s *Store) marshalFile(file *File, repoPath string) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(bucketIndex)
 		if bucket == nil {
 			return fmt.Errorf("Add: No index bucket")
@@ -100,12 +193,6 @@ func (s *Store) Add(filePath, repoPath string, r io.Reader) (multihash.Multihash
 
 		return nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return hash, nil
 }
 
 func (s *Store) Cat(path string, w io.Writer) error {
@@ -146,7 +233,7 @@ func (s *Store) PathToFile(path string) (*File, error) {
 
 		data := bucket.Get([]byte(path))
 		if data == nil {
-			return fmt.Errorf("cat: no file to path `%s`", path)
+			return ErrNoSuchFile
 		}
 
 		var err error

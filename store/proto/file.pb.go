@@ -28,9 +28,10 @@ var _ = math.Inf
 
 type File struct {
 	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
-	Key              []byte  `protobuf:"bytes,2,req,name=key" json:"key,omitempty"`
-	Hash             []byte  `protobuf:"bytes,3,req,name=hash" json:"hash,omitempty"`
+	Key              []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
+	Hash             []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
 	FileSize         *int64  `protobuf:"varint,4,req,name=file_size" json:"file_size,omitempty"`
+	IsFile           *bool   `protobuf:"varint,5,req,name=is_file" json:"is_file,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -66,6 +67,13 @@ func (m *File) GetFileSize() int64 {
 	return 0
 }
 
+func (m *File) GetIsFile() bool {
+	if m != nil && m.IsFile != nil {
+		return *m.IsFile
+	}
+	return false
+}
+
 func init() {
 	proto1.RegisterType((*File)(nil), "bolt.protocol.File")
 }
@@ -92,17 +100,13 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintFile(data, i, uint64(len(*m.Path)))
 		i += copy(data[i:], *m.Path)
 	}
-	if m.Key == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Key != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintFile(data, i, uint64(len(m.Key)))
 		i += copy(data[i:], m.Key)
 	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Hash != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintFile(data, i, uint64(len(m.Hash)))
@@ -114,6 +118,18 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x20
 		i++
 		i = encodeVarintFile(data, i, uint64(*m.FileSize))
+	}
+	if m.IsFile == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x28
+		i++
+		if *m.IsFile {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -165,6 +181,9 @@ func (m *File) Size() (n int) {
 	}
 	if m.FileSize != nil {
 		n += 1 + sovFile(uint64(*m.FileSize))
+	}
+	if m.IsFile != nil {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -274,7 +293,6 @@ func (m *File) Unmarshal(data []byte) error {
 			}
 			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
@@ -303,7 +321,6 @@ func (m *File) Unmarshal(data []byte) error {
 			}
 			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
@@ -324,7 +341,29 @@ func (m *File) Unmarshal(data []byte) error {
 				}
 			}
 			m.FileSize = &v
-			hasFields[0] |= uint64(0x00000008)
+			hasFields[0] |= uint64(0x00000002)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsFile", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFile
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.IsFile = &b
+			hasFields[0] |= uint64(0x00000004)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipFile(data[iNdEx:])
@@ -348,9 +387,6 @@ func (m *File) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

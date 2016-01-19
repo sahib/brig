@@ -1,14 +1,7 @@
 package store
 
 import (
-	"bytes"
-	"crypto/sha512"
-	"encoding/binary"
-	"io"
-	"os"
-
 	"github.com/disorganizer/brig/store/proto"
-	"github.com/disorganizer/brig/util/security"
 	"github.com/disorganizer/brig/util/trie"
 	protobuf "github.com/gogo/protobuf/proto"
 	"github.com/jbenet/go-multihash"
@@ -21,31 +14,34 @@ type File struct {
 	*trie.Node
 	store *Store
 
+	IsFile bool
+	Size   FileSize
+
 	Key  []byte
-	Size FileSize
 	Hash multihash.Multihash
 }
 
 // New returns a file inside a repo.
 // Path is relative to the repo root.
-func NewFile(store *Store, path string) (*File, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
+func NewFile(store *Store, path string, hash multihash.Multihash, key []byte) (*File, error) {
+	node := store.Trie.Insert(path)
 
-	key, err := Fingerprint(path)
-	if err != nil {
-		return nil, err
-	}
+	return &File{
+		store:  store,
+		Node:   node,
+		Size:   FileSize(0), // TODO: Read from outside?
+		Key:    key,
+		Hash:   hash,
+		IsFile: true,
+	}, nil
+}
 
+func NewDir(store *Store, path string) (*File, error) {
 	node := store.Trie.Insert(path)
 
 	return &File{
 		store: store,
 		Node:  node,
-		Size:  FileSize(info.Size()),
-		Key:   key,
 	}, nil
 }
 
@@ -54,6 +50,7 @@ func (f *File) Marshal() ([]byte, error) {
 		Path:     protobuf.String(f.Path()),
 		Key:      f.Key,
 		FileSize: protobuf.Int64(int64(f.Size)),
+		IsFile:   protobuf.Bool(f.IsFile),
 		Hash:     f.Hash,
 	}
 
@@ -74,37 +71,11 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	node := store.Trie.Insert(dataFile.GetPath())
 
 	return &File{
-		store: store,
-		Node:  node,
-		Size:  FileSize(dataFile.GetFileSize()),
-		Key:   dataFile.GetKey(),
-		Hash:  dataFile.GetHash(),
+		store:  store,
+		Node:   node,
+		IsFile: dataFile.GetIsFile(),
+		Size:   FileSize(dataFile.GetFileSize()),
+		Key:    dataFile.GetKey(),
+		Hash:   dataFile.GetHash(),
 	}, nil
-}
-
-// Fingerprint calculates an AES-Key from a file.
-func Fingerprint(path string) ([]byte, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-
-	fd, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Make fingerprint size configurable.
-	buf := make([]byte, 8192)
-	if _, err := io.Copy(bytes.NewBuffer(buf), fd); err != nil {
-		return nil, err
-	}
-
-	sizeBuf := make([]byte, binary.MaxVarintLen64)
-	binary.PutVarint(sizeBuf, info.Size())
-
-	// TODO: Read keylen from config value?
-	cksum := sha512.Sum512(buf)
-	key := security.Scrypt(cksum[:], sizeBuf, 32)
-	return key, nil
 }

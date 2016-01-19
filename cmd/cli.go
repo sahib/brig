@@ -271,13 +271,13 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 		repoPath = ctx.Args[1]
 	}
 
-	hash, err := client.Add(filePath, repoPath)
+	path, err := client.Add(filePath, repoPath)
 	if err != nil {
 		log.Errorf("Could not add file: %v: %v", filePath, err)
 		return UnknownError
 	}
 
-	fmt.Println(hash.B58String())
+	fmt.Println(path)
 	return Success
 }
 
