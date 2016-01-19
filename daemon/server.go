@@ -11,6 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/tunnel"
@@ -40,6 +41,9 @@ type Server struct {
 	// Handle to `ipfs daemon`
 	ipfsDaemon *exec.Cmd
 
+	// All mountpoints this daemon is serving:
+	Mounts *fuse.MountTable
+
 	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
 
@@ -65,6 +69,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	}
 
 	// TODO: Uncomment later.
+	//       And add option to disable (for tests etc.)
 	// proc, err := ipfsutil.StartDaemon(repository.Store.IpfsCtx)
 	// if err != nil {
 	// 	log.Error("Unable to start ipfs daemon: ", err)
@@ -100,7 +105,8 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
-		Repo: repository,
+		Repo:   repository,
+		Mounts: fuse.NewMountTable(),
 		// XMPP:     xmppClient,
 		signals:  make(chan os.Signal, 1),
 		listener: listener,
@@ -119,6 +125,10 @@ func (d *Server) Serve() {
 	<-d.ctx.Done()
 	fmt.Println("Serving done... ")
 	d.listener.Close()
+
+	if err := d.Mounts.Close(); err != nil {
+		log.Errorf("Error while closing mounts: %v", err)
+	}
 
 	if d.ipfsDaemon != nil {
 		if err := d.ipfsDaemon.Process.Kill(); err != nil {
@@ -168,7 +178,7 @@ func (d *Server) loop(cancel context.CancelFunc) {
 			}
 
 			// Handle connections in a new goroutine.
-			go d.handleRequest(d.ctx, conn)
+			go d.handleConnection(d.ctx, conn)
 		default:
 			log.Infof("Max number of connections hit: %d", cap(d.maxConnections))
 			time.Sleep(500 * time.Millisecond)
@@ -177,10 +187,10 @@ func (d *Server) loop(cancel context.CancelFunc) {
 }
 
 // Handles incoming requests:
-func (d *Server) handleRequest(ctx context.Context, conn net.Conn) {
+func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 
-	// Make sure this connection count gets released
+	// Make sure this connection count gets released:
 	defer func() {
 		d.maxConnections <- allowOneConn{}
 	}()
@@ -211,63 +221,29 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Prepare a response template
+	// Prepare a response template:
 	resp := &proto.Response{
 		ResponseType: cmd.CommandType,
 		Success:      protobuf.Bool(false),
 	}
 
-	switch *(cmd.CommandType) {
-	case proto.MessageType_ADD:
-		d.handleAddCommand(ctx, cmd, resp)
-	case proto.MessageType_CAT:
-		d.handleCatCommand(ctx, cmd, resp)
-	case proto.MessageType_QUIT:
-		resp.Response = protobuf.String("BYE")
-		resp.Success = protobuf.Bool(true)
-		d.signals <- os.Interrupt
-	case proto.MessageType_PING:
-		resp.Response = protobuf.String("PONG")
-		resp.Success = protobuf.Bool(true)
-	default:
-		fmt.Println("Unknown message type.")
-		return
+	// Figure out which handler to call:
+	handlerID := *(cmd.CommandType)
+	if handler, ok := HandlerMap[handlerID]; !ok {
+		resp.Error = protobuf.String(fmt.Sprintf("No handler for Id: %v", handlerID))
+	} else {
+		answer, err := handler(d, ctx, cmd)
+
+		if err != nil {
+			resp.Error = protobuf.String(err.Error())
+		} else {
+			resp.Response = protobuf.String(answer)
+			resp.Success = protobuf.Bool(true)
+		}
 	}
 
+	// Send the response back to the client:
 	if err := send(conn, resp); err != nil {
 		log.Warning("Unable to send message back to client: ", err)
 	}
-}
-
-func (d *Server) handleAddCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
-	filePath := cmd.GetAddCommand().GetFilePath()
-	repoPath := cmd.GetAddCommand().GetRepoPath()
-
-	err := d.Repo.Store.Add(filePath, repoPath)
-	if err != nil {
-		resp.Error = protobuf.String(err.Error())
-		return
-	}
-
-	resp.Success = protobuf.Bool(true)
-	resp.Response = protobuf.String(repoPath)
-}
-
-func (d *Server) handleCatCommand(ctx context.Context, cmd *proto.Command, resp *proto.Response) {
-
-	filePath := cmd.GetCatCommand().GetFilePath()
-	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		resp.Error = protobuf.String(err.Error())
-		return
-	}
-
-	srcPath := cmd.GetCatCommand().GetRepoPath()
-	if err := d.Repo.Store.Cat(srcPath, fd); err != nil {
-		resp.Error = protobuf.String(err.Error())
-		return
-	}
-
-	resp.Success = protobuf.Bool(true)
-	resp.Response = protobuf.String(srcPath)
 }

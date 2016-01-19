@@ -10,7 +10,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
-	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util/colors"
@@ -141,10 +140,19 @@ func handleDaemon(ctx climax.Context) int {
 	return Success
 }
 
-func handleMount(ctx climax.Context) int {
-	mntpath := ctx.Args[0]
-	if err := fuse.Mount(mntpath); err != nil {
-		log.Errorf("Unable to mount: %v", err)
+func handleMount(ctx climax.Context, client *daemon.Client) int {
+	mountPath := ctx.Args[0]
+
+	var err error
+
+	if ctx.Is("unmount") {
+		_, err = client.Unmount(mountPath)
+	} else {
+		_, err = client.Mount(mountPath)
+	}
+
+	if err != nil {
+		log.Errorf("fuse: %v", err)
 		return UnknownError
 	}
 
@@ -523,10 +531,18 @@ func RunCmdline() int {
 			Handle: handleConfig,
 		},
 		climax.Command{
-			Name:   "mount",
-			Group:  miscGroup,
-			Brief:  "Handle FUSE mountpoints.",
-			Handle: withArgCheck(needAtLeast(1), handleMount),
+			Name:  "mount",
+			Group: miscGroup,
+			Brief: "Handle FUSE mountpoints.",
+			Flags: []climax.Flag{
+				{
+					Name:  "unmount",
+					Short: "u",
+					Usage: `--unmount`,
+					Help:  `Unmount the filesystem.`,
+				},
+			},
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleMount, true)),
 		},
 		climax.Command{
 			Name:  "update",

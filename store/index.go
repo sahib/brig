@@ -28,6 +28,8 @@ type Store struct {
 	// The root node is the repository root.
 	Trie trie.Trie
 
+	// IpfsCtx holds information how and where to reach
+	// the ipfs daemon process.
 	IpfsCtx *ipfsutil.Context
 }
 
@@ -133,7 +135,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		if err != ErrNoSuchFile {
 			return err
 		}
-
+	} else {
 		// We know this file already.
 		log.WithFields(log.Fields{
 			"file": repoPath,

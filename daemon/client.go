@@ -11,7 +11,6 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/util/tunnel"
-	protobuf "github.com/gogo/protobuf/proto"
 )
 
 // Client is the client API to brigd.
@@ -170,38 +169,4 @@ func (c *Client) LocalAddr() net.Addr {
 // RemoteAddr returns a net.Addr with the server end of the Connection
 func (c *Client) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
-}
-
-func (c *Client) Add(filePath, repoPath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_ADD.Enum(),
-		AddCommand: &proto.Command_AddCmd{
-			FilePath: protobuf.String(filePath),
-			RepoPath: protobuf.String(repoPath),
-		},
-	}
-
-	resp := <-c.Recv
-	if resp != nil && !resp.GetSuccess() {
-		return "", fmt.Errorf("client: add: %v", resp.GetError())
-	}
-
-	return resp.GetResponse(), nil
-}
-
-func (c *Client) Cat(repoPath, filePath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_CAT.Enum(),
-		CatCommand: &proto.Command_CatCmd{
-			FilePath: protobuf.String(filePath),
-			RepoPath: protobuf.String(repoPath),
-		},
-	}
-
-	resp := <-c.Recv
-	if resp != nil && !resp.GetSuccess() {
-		return "", fmt.Errorf("client: cat: %v", resp.GetError())
-	}
-
-	return resp.GetResponse(), nil
 }

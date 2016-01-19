@@ -6,6 +6,8 @@ enum MessageType {
     CAT = 1;
     PING = 2;
     QUIT = 3;
+    MOUNT = 4;
+    UNMOUNT = 5;
 }
 
 message Command {
@@ -29,12 +31,24 @@ message Command {
     message QuitCmd {
     }
 
+    message MountCmd {
+        // Where to mount the filesystem
+        required string mount_point = 1;
+    }
+
+    message UnmountCmd {
+        // Where to unmount the filesystem
+        required string mount_point = 1;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
     optional CatCmd cat_command = 3;
     optional PingCmd ping_command = 4;
     optional QuitCmd quit_command = 5;
+    optional MountCmd mount_command = 6;
+    optional UnmountCmd unmount_command = 7;
 }
 
 message Response {
