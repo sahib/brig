@@ -61,3 +61,14 @@ func (c *Client) Unmount(mountPath string) (string, error) {
 
 	return c.recvResponse("unmount")
 }
+
+func (c *Client) Rm(repoPath string) (string, error) {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_RM.Enum(),
+		RmCommand: &proto.Command_RmCmd{
+			RepoPath: protobuf.String(repoPath),
+		},
+	}
+
+	return c.recvResponse("rm")
+}

@@ -17,6 +17,7 @@ var HandlerMap = map[proto.MessageType]HandlerFunc{
 	proto.MessageType_QUIT:    handleQuit,
 	proto.MessageType_MOUNT:   handleMount,
 	proto.MessageType_UNMOUNT: handleUnmount,
+	proto.MessageType_RM:      handleRm,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
@@ -75,4 +76,14 @@ func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) (string, 
 	}
 
 	return mountPath, nil
+}
+
+func handleRm(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+	repoPath := cmd.GetRmCommand().GetRepoPath()
+
+	if err := d.Repo.Store.Rm(repoPath); err != nil {
+		return "", err
+	}
+
+	return repoPath, nil
 }

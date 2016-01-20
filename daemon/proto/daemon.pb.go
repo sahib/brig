@@ -36,6 +36,7 @@ const (
 	MessageType_QUIT    MessageType = 3
 	MessageType_MOUNT   MessageType = 4
 	MessageType_UNMOUNT MessageType = 5
+	MessageType_RM      MessageType = 6
 )
 
 var MessageType_name = map[int32]string{
@@ -45,6 +46,7 @@ var MessageType_name = map[int32]string{
 	3: "QUIT",
 	4: "MOUNT",
 	5: "UNMOUNT",
+	6: "RM",
 }
 var MessageType_value = map[string]int32{
 	"ADD":     0,
@@ -53,6 +55,7 @@ var MessageType_value = map[string]int32{
 	"QUIT":    3,
 	"MOUNT":   4,
 	"UNMOUNT": 5,
+	"RM":      6,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -80,6 +83,7 @@ type Command struct {
 	QuitCommand      *Command_QuitCmd    `protobuf:"bytes,5,opt,name=quit_command" json:"quit_command,omitempty"`
 	MountCommand     *Command_MountCmd   `protobuf:"bytes,6,opt,name=mount_command" json:"mount_command,omitempty"`
 	UnmountCommand   *Command_UnmountCmd `protobuf:"bytes,7,opt,name=unmount_command" json:"unmount_command,omitempty"`
+	RmCommand        *Command_RmCmd      `protobuf:"bytes,8,opt,name=rm_command" json:"rm_command,omitempty"`
 	XXX_unrecognized []byte              `json:"-"`
 }
 
@@ -132,6 +136,13 @@ func (m *Command) GetMountCommand() *Command_MountCmd {
 func (m *Command) GetUnmountCommand() *Command_UnmountCmd {
 	if m != nil {
 		return m.UnmountCommand
+	}
+	return nil
+}
+
+func (m *Command) GetRmCommand() *Command_RmCmd {
+	if m != nil {
+		return m.RmCommand
 	}
 	return nil
 }
@@ -221,6 +232,22 @@ func (m *Command_MountCmd) GetMountPoint() string {
 	return ""
 }
 
+type Command_RmCmd struct {
+	RepoPath         *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_RmCmd) Reset()         { *m = Command_RmCmd{} }
+func (m *Command_RmCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_RmCmd) ProtoMessage()    {}
+
+func (m *Command_RmCmd) GetRepoPath() string {
+	if m != nil && m.RepoPath != nil {
+		return *m.RepoPath
+	}
+	return ""
+}
+
 type Command_UnmountCmd struct {
 	// Where to unmount the filesystem
 	MountPoint       *string `protobuf:"bytes,1,req,name=mount_point" json:"mount_point,omitempty"`
@@ -285,6 +312,7 @@ func init() {
 	proto1.RegisterType((*Command_PingCmd)(nil), "daemon.protocol.Command.PingCmd")
 	proto1.RegisterType((*Command_QuitCmd)(nil), "daemon.protocol.Command.QuitCmd")
 	proto1.RegisterType((*Command_MountCmd)(nil), "daemon.protocol.Command.MountCmd")
+	proto1.RegisterType((*Command_RmCmd)(nil), "daemon.protocol.Command.RmCmd")
 	proto1.RegisterType((*Command_UnmountCmd)(nil), "daemon.protocol.Command.UnmountCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
@@ -370,6 +398,16 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n6
+	}
+	if m.RmCommand != nil {
+		data[i] = 0x42
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.RmCommand.Size()))
+		n7, err := m.RmCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -522,6 +560,35 @@ func (m *Command_MountCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_RmCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_RmCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.RepoPath == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
+		i += copy(data[i:], *m.RepoPath)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Command_UnmountCmd) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -660,6 +727,10 @@ func (m *Command) Size() (n int) {
 		l = m.UnmountCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
+	if m.RmCommand != nil {
+		l = m.RmCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -723,6 +794,19 @@ func (m *Command_MountCmd) Size() (n int) {
 	_ = l
 	if m.MountPoint != nil {
 		l = len(*m.MountPoint)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_RmCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.RepoPath != nil {
+		l = len(*m.RepoPath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1026,6 +1110,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.UnmountCommand = &Command_UnmountCmd{}
 			}
 			if err := m.UnmountCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RmCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RmCommand == nil {
+				m.RmCommand = &Command_RmCmd{}
+			}
+			if err := m.RmCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1455,6 +1572,92 @@ func (m *Command_MountCmd) Unmarshal(data []byte) error {
 			}
 			s := string(data[iNdEx:postIndex])
 			m.MountPoint = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_RmCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RmCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RmCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RepoPath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.RepoPath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		default:

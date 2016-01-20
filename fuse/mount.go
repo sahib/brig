@@ -3,6 +3,7 @@ package fuse
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -100,7 +101,7 @@ type MountTable struct {
 }
 
 func NewMountTable() *MountTable {
-	return MountTable{
+	return &MountTable{
 		m: make(map[string]*Mount),
 	}
 }
@@ -131,7 +132,7 @@ func (t *MountTable) Unmount(path string) error {
 		return fmt.Errorf("No mount at `%v`.", path)
 	}
 
-	delete(t.m[path])
+	delete(t.m, path)
 	return m.Close()
 }
 

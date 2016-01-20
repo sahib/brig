@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	bucketIndex   = []byte("index")
 	ErrNoSuchFile = fmt.Errorf("No such file or directory")
 )
 
@@ -176,14 +175,24 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	return nil
 }
 
-// marshalFile converts a file to a protobuf and
-func (s *Store) marshalFile(file *File, repoPath string) error {
-	return s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bucketIndex)
+type BucketHandler func(tx *bolt.Tx, b *bolt.Bucket) error
+
+// withBucket wraps a bolt handler closure and passes a named bucket
+// as extra parameter. Error handling is done universally for convinience.
+func withBucket(name string, handler BucketHandler) func(tx *bolt.Tx) error {
+	return func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(name))
 		if bucket == nil {
-			return fmt.Errorf("Add: No index bucket")
+			return fmt.Errorf("Add: No bucket named `%s`", name)
 		}
 
+		return handler(tx, bucket)
+	}
+}
+
+// marshalFile converts a file to a protobuf and
+func (s *Store) marshalFile(file *File, repoPath string) error {
+	return s.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		data, err := file.Marshal()
 		if err != nil {
 			return err
@@ -194,7 +203,7 @@ func (s *Store) marshalFile(file *File, repoPath string) error {
 		}
 
 		return nil
-	})
+	}))
 }
 
 func (s *Store) Cat(path string, w io.Writer) error {
@@ -227,12 +236,7 @@ func (s *Store) Cat(path string, w io.Writer) error {
 func (s *Store) PathToFile(path string) (*File, error) {
 	var file *File
 
-	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bucketIndex)
-		if bucket == nil {
-			return fmt.Errorf("PathToFile: No index bucket")
-		}
-
+	err := s.db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		data := bucket.Get([]byte(path))
 		if data == nil {
 			return ErrNoSuchFile
@@ -244,7 +248,7 @@ func (s *Store) PathToFile(path string) (*File, error) {
 		}
 
 		return nil
-	})
+	}))
 
 	return file, err
 }
@@ -260,8 +264,17 @@ func (s *Store) Close() {
 	}
 }
 
-// Remove will purge a file locally on this node.
-// The file might still be available somewhere else.
-func (s *Store) Remove(path string) error {
-	return nil
+// Rm will purge a file locally on this node.
+func (s *Store) Rm(path string) error {
+	node := s.Trie.Lookup(path)
+	if node == nil {
+		log.Errorf("Could not remove `%s` from trie.", path)
+	} else {
+		node.Remove()
+	}
+
+	// Remove from trie, remove from bolt db.
+	return s.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
+		return bucket.Delete([]byte(path))
+	}))
 }

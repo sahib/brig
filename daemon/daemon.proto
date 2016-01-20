@@ -8,6 +8,7 @@ enum MessageType {
     QUIT = 3;
     MOUNT = 4;
     UNMOUNT = 5;
+	RM = 6;
 }
 
 message Command {
@@ -36,6 +37,10 @@ message Command {
         required string mount_point = 1;
     }
 
+	message RmCmd {
+		required string repo_path = 1;
+	}
+
     message UnmountCmd {
         // Where to unmount the filesystem
         required string mount_point = 1;
@@ -49,6 +54,7 @@ message Command {
     optional QuitCmd quit_command = 5;
     optional MountCmd mount_command = 6;
     optional UnmountCmd unmount_command = 7;
+    optional RmCmd rm_command = 8;
 }
 
 message Response {
