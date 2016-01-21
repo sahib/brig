@@ -289,6 +289,22 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
+func handleRm(ctx climax.Context, client *daemon.Client) int {
+	repoPath := ctx.Args[0]
+
+	if !strings.HasPrefix(repoPath, "/") {
+		repoPath = "/" + repoPath
+	}
+
+	_, err := client.Rm(repoPath)
+	if err != nil {
+		log.Errorf("Could not remove file: `%s`: %v", repoPath, err)
+		return UnknownError
+	}
+
+	return Success
+}
+
 func handleCat(ctx climax.Context, client *daemon.Client) int {
 	repoPath := ctx.Args[0]
 	filePath, err := filepath.Abs(ctx.Args[1])
@@ -450,9 +466,17 @@ func RunCmdline() int {
 			Name:   "add",
 			Group:  wdirGroup,
 			Brief:  "Make file to be managed by brig.",
-			Usage:  `FILE_OR_FOLDER [FILE_OR_FOLDER ...]`,
+			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
 			Help:   `TODO`,
 			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
+		},
+		climax.Command{
+			Name:   "rm",
+			Group:  wdirGroup,
+			Brief:  "Remove file and optionally old versions of it.",
+			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
+			Help:   `TODO`,
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
 		},
 		climax.Command{
 			Name:   "cat",
