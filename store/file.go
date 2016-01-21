@@ -24,6 +24,9 @@ type File struct {
 // New returns a file inside a repo.
 // Path is relative to the repo root.
 func NewFile(store *Store, path string, hash multihash.Multihash, key []byte) (*File, error) {
+	store.Trie.Lock()
+	defer store.Trie.Unlock()
+
 	node := store.Trie.Insert(path)
 
 	return &File{
@@ -37,6 +40,9 @@ func NewFile(store *Store, path string, hash multihash.Multihash, key []byte) (*
 }
 
 func NewDir(store *Store, path string) (*File, error) {
+	store.Trie.Lock()
+	defer store.Trie.Unlock()
+
 	node := store.Trie.Insert(path)
 
 	return &File{
@@ -67,6 +73,9 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	if err := protobuf.Unmarshal(buf, dataFile); err != nil {
 		return nil, err
 	}
+
+	store.Trie.Lock()
+	defer store.Trie.Unlock()
 
 	node := store.Trie.Insert(dataFile.GetPath())
 

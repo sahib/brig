@@ -40,7 +40,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return &Dir{Node: child, fs: d.fs}, nil
 	}
 
-	return &File{Node: child}, nil
+	return &File{Node: child, fs: d.fs}, nil
 }
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
@@ -63,7 +63,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	// TODO: Differentiate between dir/file
 	child := d.Insert(req.Name)
-	file := &File{Node: child}
+	file := &File{Node: child, fs: d.fs}
 	return file, file, nil
 }
 

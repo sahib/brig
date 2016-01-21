@@ -1,8 +1,11 @@
 package fuse
 
 import (
+	"bytes"
+
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/util/trie"
 	"golang.org/x/net/context"
 
@@ -13,6 +16,7 @@ import (
 
 type File struct {
 	*trie.Node
+	fs *FS
 }
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -34,14 +38,26 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return nil
 }
 
-func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	// TODO: Read file at req.Offset for req.Size bytes and set resp.Data.
-	resp.Data = make([]byte, req.Size)
-	for i := 0; i < req.Size; i++ {
-		resp.Data[i] = byte("Na"[i%2])
+// func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+// 	// TODO: Read file at req.Offset for req.Size bytes and set resp.Data.
+// 	resp.Data = make([]byte, req.Size)
+// 	for i := 0; i < req.Size; i++ {
+// 		resp.Data[i] = byte("Na"[i%2])
+// 	}
+//
+// 	return nil
+// }
+
+func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
+	buf := &bytes.Buffer{}
+
+	path := f.Path()
+	if err := f.fs.Store.Cat(path, buf); err != nil {
+		log.Errorf("fuse: ReadAll: `%s` failed: %v", path, err)
+		return nil, fuse.ENODATA
 	}
 
-	return nil
+	return buf.Bytes(), nil
 }
 
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {

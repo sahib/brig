@@ -52,6 +52,12 @@ type Trie interface {
 	// Len returns the current number of elements in the trie.
 	// This counts only explicitly inserted Nodes.
 	Len() int64
+
+	// TODO
+	Lock()
+	Unlock()
+	RLock()
+	RUnlock()
 }
 
 // SplitPath splits the path according to os.PathSeparator,

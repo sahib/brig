@@ -2,13 +2,13 @@ package fuse
 
 import (
 	"bazil.org/fuse/fs"
-	"github.com/disorganizer/brig/util/trie"
+	"github.com/disorganizer/brig/store"
 )
 
 type FS struct {
-	Trie trie.Trie
+	Store *store.Store
 }
 
 func (f *FS) Root() (fs.Node, error) {
-	return &Dir{Node: f.Trie.Root(), fs: f}, nil
+	return &Dir{Node: f.Store.Trie.Root(), fs: f}, nil
 }

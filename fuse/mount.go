@@ -8,7 +8,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/util/trie"
+	"github.com/disorganizer/brig/store"
 )
 
 // This is very similar (and indeed mostly copied) code from:
@@ -17,8 +17,9 @@ import (
 // code here (also we might do a few things differently).
 
 type Mount struct {
-	Dir string
-	FS  *FS
+	Dir   string
+	FS    *FS
+	Store *store.Store
 
 	closed bool
 	done   chan struct{}
@@ -28,21 +29,20 @@ type Mount struct {
 	Server *fs.Server
 }
 
-func NewMount(mountpoint string) (*Mount, error) {
+func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 	conn, err := fuse.Mount(mountpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	trie := trie.NewTrie()
-	trie.Insert("/home/sahib/test") // TODO
-	filesys := &FS{Trie: trie}
+	filesys := &FS{Store: store}
 
 	mnt := &Mount{
 		Conn:   conn,
 		Server: fs.New(conn, nil),
 		FS:     filesys,
 		Dir:    mountpoint,
+		Store:  store,
 		done:   make(chan struct{}),
 		errors: make(chan error),
 	}
@@ -97,12 +97,14 @@ func (m *Mount) Close() error {
 
 type MountTable struct {
 	sync.Mutex
-	m map[string]*Mount
+	m     map[string]*Mount
+	Store *store.Store
 }
 
-func NewMountTable() *MountTable {
+func NewMountTable(store *store.Store) *MountTable {
 	return &MountTable{
-		m: make(map[string]*Mount),
+		m:     make(map[string]*Mount),
+		Store: store,
 	}
 }
 
@@ -115,7 +117,7 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 		return m, nil
 	}
 
-	m, err := NewMount(path)
+	m, err := NewMount(t.Store, path)
 	if err == nil {
 		t.m[path] = m
 	}

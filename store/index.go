@@ -62,8 +62,16 @@ func Open(repoPath string) (*Store, error) {
 		log.Warningf("store-create-table failed: %v", err)
 	}
 
+	// Load all paths from the database into the trie:
 	store.Trie = trie.NewTrie()
-	return store, nil
+	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
+		return bucket.ForEach(func(k []byte, v []byte) error {
+			store.Trie.Insert(string(k))
+			return nil
+		})
+	}))
+
+	return store, err
 }
 
 // Mkdir creates a new, empty directory.
@@ -266,6 +274,9 @@ func (s *Store) Close() {
 
 // Rm will purge a file locally on this node.
 func (s *Store) Rm(path string) error {
+	s.Trie.Lock()
+	defer s.Trie.Unlock()
+
 	node := s.Trie.Lookup(path)
 	if node == nil {
 		log.Errorf("Could not remove `%s` from trie.", path)

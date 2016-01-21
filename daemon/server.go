@@ -106,7 +106,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
 		Repo:   repository,
-		Mounts: fuse.NewMountTable(),
+		Mounts: fuse.NewMountTable(repository.Store),
 		// XMPP:     xmppClient,
 		signals:  make(chan os.Signal, 1),
 		listener: listener,
