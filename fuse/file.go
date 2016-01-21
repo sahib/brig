@@ -38,6 +38,7 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return nil
 }
 
+// TODO: Implement Read, but that needs seekable compression first.
 // func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 // 	// TODO: Read file at req.Offset for req.Size bytes and set resp.Data.
 // 	resp.Data = make([]byte, req.Size)
@@ -60,6 +61,7 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// TODO: Implement. Needs scratchpad implementation.
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	// TODO: Write req.Data at req.Offset to file.
 	//       Expand file if necessary and update Size.
