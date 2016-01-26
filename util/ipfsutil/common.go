@@ -1,15 +1,15 @@
 package ipfsutil
 
-import "os/exec"
+import (
+	core "github.com/ipfs/go-ipfs/core"
+	"golang.org/x/net/context"
+)
 
 // Context remembers the settings needed for accessing the ipfs daemon.
-type Context struct {
-	// TODO!
-	Path string
-}
+type Node struct {
+	IpfsNode *core.IpfsNode
+	Path     string
 
-func ipfsCommand(ctx *Context, args ...string) *exec.Cmd {
-	cmd := exec.Command("ipfs", args...)
-	cmd.Env = []string{"IPFS_PATH=" + ctx.Path}
-	return cmd
+	Context context.Context
+	Cancel  context.CancelFunc
 }

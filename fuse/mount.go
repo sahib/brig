@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -49,7 +50,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 
 	go func() {
 		defer close(mnt.done)
-		log.Debug("Serving FUSE at %v", mountpoint)
+		log.Debugf("Serving FUSE at %v", mountpoint)
 		mnt.errors <- mnt.Server.Serve(filesys)
 		log.Debug("Stopped serving FUSE at %v", mountpoint)
 	}()
@@ -78,19 +79,25 @@ func (m *Mount) Close() error {
 
 	log.Info("Fuse umount")
 
-	if err := fuse.Unmount(m.Dir); err != nil {
+	for tries := 0; tries < 1000; tries++ {
+		if err := fuse.Unmount(m.Dir); err != nil {
+			log.Printf("unmount error: %v", err)
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+
+		break
+	}
+
+	if err := m.Conn.Close(); err != nil {
 		return err
 	}
+	log.Info("closing con")
 
 	// Wait for serve to return:
 	log.Info("Waitin for done..")
 	<-m.done
 	log.Info("Waitin for done.. done done")
-
-	if err := m.Conn.Close(); err != nil {
-		return err
-	}
-	log.Info("closing cone")
 
 	return nil
 }

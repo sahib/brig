@@ -27,9 +27,9 @@ type Store struct {
 	// The root node is the repository root.
 	Trie trie.Trie
 
-	// IpfsCtx holds information how and where to reach
+	// IpfsNode holds information how and where to reach
 	// the ipfs daemon process.
-	IpfsCtx *ipfsutil.Context
+	IpfsNode *ipfsutil.Node
 }
 
 // Open loads an existing store, if it does not exist, it is created.
@@ -41,11 +41,15 @@ func Open(repoPath string) (*Store, error) {
 		return nil, err
 	}
 
+	ipfsNode, err := ipfsutil.StartNode(filepath.Join(repoPath, "ipfs"))
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	store := &Store{
-		db: db,
-		IpfsCtx: &ipfsutil.Context{
-			Path: filepath.Join(repoPath, "ipfs"),
-		},
+		db:       db,
+		IpfsNode: ipfsNode,
 	}
 
 	// Create initial buckets:
@@ -59,7 +63,7 @@ func Open(repoPath string) (*Store, error) {
 	})
 
 	if err != nil {
-		log.Warningf("store-create-table failed: %v", err)
+		log.Warningf("store-create failed: %v", err)
 	}
 
 	// Load all paths from the database into the trie:
@@ -134,7 +138,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 // The resulting hash will be committed to the index.
 func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	// Check if the file was already added:
-	_, err := s.PathToFile(repoPath)
+	file, err := s.PathToFile(repoPath)
 
 	log.Infof("bolt lookup: %v", err)
 
@@ -151,14 +155,19 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		// TODO: Write oldFile to commit history here,.
 	}
 
-	key := make([]byte, 32)
-	n, err := rand.Reader.Read(key)
-	if err != nil {
-		return err
-	}
+	var key []byte
+	if file == nil {
+		key = make([]byte, 32)
+		n, err := rand.Reader.Read(key)
+		if err != nil {
+			return err
+		}
 
-	if n != 32 {
-		return fmt.Errorf("Read less than desired key size: %v", n)
+		if n != 32 {
+			return fmt.Errorf("Read less than desired key size: %v", n)
+		}
+	} else {
+		key = file.Key
 	}
 
 	stream, err := NewFileReader(key, r)
@@ -166,16 +175,26 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	hash, err := ipfsutil.Add(s.IpfsCtx, stream)
+	hash, err := ipfsutil.Add(s.IpfsNode, stream)
 	if err != nil {
 		return err
 	}
 
-	file, err := NewFile(s, repoPath, hash, key)
-	if err != nil {
-		return err
+	log.Infof("ADD KEY: %x", key)
+	log.Infof("ADD HASH: %s", hash.B58String())
+
+	if file == nil {
+		newFile, err := NewFile(s, repoPath, nil, key)
+		if err != nil {
+			return err
+		}
+
+		file = newFile
 	}
 
+	file.Hash = hash
+
+	fmt.Println("marshal", file, repoPath)
 	if err := s.marshalFile(file, repoPath); err != nil {
 		return err
 	}
@@ -214,22 +233,25 @@ func (s *Store) marshalFile(file *File, repoPath string) error {
 	}))
 }
 
-func (s *Store) Cat(path string, w io.Writer) error {
+func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
 	file, err := s.PathToFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Println("HASH", file.Hash.B58String())
 	fmt.Printf("CAT KEY %x\n", file.Key)
 
-	ipfsStream, err := ipfsutil.Cat(s.IpfsCtx, file.Hash)
+	ipfsStream, err := ipfsutil.Cat(s.IpfsNode, file.Hash)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer ipfsStream.Close()
 
-	cleanStream, err := NewIpfsReader(file.Key, ipfsStream)
+	return NewIpfsReader(file.Key, ipfsStream)
+}
+
+func (s *Store) Cat(path string, w io.Writer) error {
+	cleanStream, err := s.Stream(path)
 	if err != nil {
 		return err
 	}

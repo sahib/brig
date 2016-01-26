@@ -141,10 +141,15 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Close does finishing work.
-// It does not close the underlying data stream.
-//
+// If supported by the underlying data stream, it closes it too.
 // This is currently a No-Op, but you should not rely on that.
 func (r *Reader) Close() error {
+	// Check
+	closer, ok := r.Reader.(io.Closer)
+	if ok {
+		return closer.Close()
+	}
+
 	return nil
 }
 

@@ -1,13 +1,18 @@
 package store
 
-import "sort"
+import (
+	"fmt"
+	"io"
+	"os"
+	"sort"
+)
 
 // Interval represents a 2D range of integers.
 type Interval interface {
 	// Range returns the minimum and maximum of the interval.
 	// Minimum value is inclusive, maximum value exclusive.
 	// In other notation: [min, max)
-	Range() (int, int)
+	Range() (int64, int64)
 
 	// Merge merges the interval `i` to this interval.
 	// The range borders should be fixed accordingly,
@@ -18,7 +23,7 @@ type Interval interface {
 // Modification represents a single write
 type Modification struct {
 	// Offset where the modification started:
-	offset int
+	offset int64
 
 	// Data that was changed:
 	// This might be changed to a mmap'd byte slice later.
@@ -26,8 +31,8 @@ type Modification struct {
 }
 
 // Range returns the fitting integer interval
-func (n *Modification) Range() (int, int) {
-	return n.offset, n.offset + len(n.data)
+func (n *Modification) Range() (int64, int64) {
+	return n.offset, n.offset + int64(len(n.data))
 }
 
 // Merge adds the data of another interval where they intersect.
@@ -70,6 +75,9 @@ func (n *Modification) Merge(i Interval) {
 // Holes between the intervals are allowed.
 type IntervalIndex struct {
 	r []Interval
+
+	// Max is the maximum interval offset given to Add()
+	Max int64
 }
 
 // cut deletes the a[i:j] from a and returns the new slice.
@@ -102,19 +110,26 @@ func (ivl *IntervalIndex) Add(n Interval) {
 	// Initial case: Add as single element.
 	if ivl.r == nil {
 		ivl.r = []Interval{n}
+		ivl.Max = Max
 		return
 	}
 
-	// Finding the lowest fitting interval:
+	// Find the lowest fitting interval:
 	minIdx := sort.Search(len(ivl.r), func(i int) bool {
 		_, iMax := ivl.r[i].Range()
 		return Min <= iMax
 	})
 
+	// Find the highest fitting interval:
 	maxIdx := sort.Search(len(ivl.r), func(i int) bool {
 		iMin, _ := ivl.r[i].Range()
 		return Max <= iMin
 	})
+
+	// Remember biggest offset:
+	if Max > ivl.Max {
+		ivl.Max = Max
+	}
 
 	// New interval is bigger than all others:
 	if minIdx >= len(ivl.r) {
@@ -122,7 +137,7 @@ func (ivl *IntervalIndex) Add(n Interval) {
 		return
 	}
 
-	// New range fits nicely in; just insert it inbetween:
+	// New range fits nicely in; just insert it in between:
 	if minIdx == maxIdx {
 		ivl.r = insert(ivl.r, minIdx, n)
 		return
@@ -136,4 +151,128 @@ func (ivl *IntervalIndex) Add(n Interval) {
 	// Delete old unmerged intervals and substitute with merged:
 	ivl.r[minIdx] = n
 	ivl.r = cut(ivl.r, minIdx+1, maxIdx)
+}
+
+// Overlays returns all intervals that intersect with [start, end)
+func (ivl *IntervalIndex) Overlays(start, end int64) []Interval {
+	// Find the lowest matching interval:
+	lo := sort.Search(len(ivl.r), func(i int) bool {
+		_, iMax := ivl.r[i].Range()
+		return start <= iMax
+	})
+
+	hi := sort.Search(len(ivl.r), func(i int) bool {
+		iMin, _ := ivl.r[i].Range()
+		return end <= iMin
+	})
+
+	return ivl.r[lo:hi]
+}
+
+// min returns the minimum of a and b.
+func min(a, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// max returns the maximum of a and b.
+func max(a, b int64) int64 {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+// Layer is a io.ReadWriter that takes an underlying Reader
+// and caches Writes on top of it. To the outside it delivers
+// a zipped stream of the recent writes and the underlying stream.
+type Layer struct {
+	index *IntervalIndex
+	r     io.ReadSeeker
+	pos   int64
+}
+
+// NewLayer returns a new in memory layer.
+// No IO is performed on creation.
+func NewLayer(r io.ReadSeeker) *Layer {
+	return &Layer{
+		index: &IntervalIndex{},
+		r:     r,
+	}
+}
+
+func (l *Layer) Write(buf []byte) (int, error) {
+	l.index.Add(&Modification{l.pos, buf})
+	l.pos += int64(len(buf))
+	return len(buf), nil
+}
+
+// Read will read from the underlying stream and overlay with the relevant
+// write chunks on it's way, possibly extending the underlying stream.
+func (l *Layer) Read(buf []byte) (int, error) {
+	n, err := l.r.Read(buf)
+	if err == io.EOF && l.pos < l.index.Max {
+		// There's only extend writes left.
+		// Empty `buf` so caller get's defined results.
+		for i := 0; i < len(buf); i++ {
+			buf[i] = byte(0)
+		}
+
+		// Forget about EOF for a short moment.
+		err = nil
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	// Check which write chunks are overlaying this buf:
+	for _, chunk := range l.index.Overlays(l.pos, l.pos+int64(len(buf))) {
+		// Tip: Drawing this on paper helps to understand the following.
+		mod := chunk.(*Modification)
+
+		// Overlapping area in absolute offsets:
+		lo, hi := mod.Range()
+		a, b := max(lo, l.pos), min(hi, l.pos+int64(len(buf)))
+
+		// Convert to relative offsets:
+		overlap, chunkLo, bufLo := int(b-a), int(a-lo), int(a-l.pos)
+
+		// Copy overlapping data:
+		copy(buf[bufLo:bufLo+overlap], mod.data[chunkLo:chunkLo+overlap])
+
+		// Extend, if write chunks go over original data stream:
+		// (caller wants max. offset where we wrote data to buf)
+		if bufLo+overlap > n {
+			n = bufLo + overlap
+		}
+	}
+
+	l.pos += int64(n)
+	return n, nil
+}
+
+// Seek remembers the new position and delegates the seek down.
+func (l *Layer) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case os.SEEK_CUR:
+		l.pos += offset
+	case os.SEEK_SET:
+		l.pos = offset
+	case os.SEEK_END:
+		return 0, fmt.Errorf("layer: SEEK_END not supported")
+	}
+	return l.r.Seek(offset, whence)
+}
+
+// Close tries to close the underlying stream (if supported).
+func (l *Layer) Close() error {
+	closer, ok := l.r.(io.Closer)
+	if ok {
+		return closer.Close()
+	}
+
+	return nil
 }

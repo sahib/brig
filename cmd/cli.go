@@ -2,6 +2,8 @@ package cmdline
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -307,24 +309,46 @@ func handleRm(ctx climax.Context, client *daemon.Client) int {
 
 func handleCat(ctx climax.Context, client *daemon.Client) int {
 	repoPath := ctx.Args[0]
-	filePath, err := filepath.Abs(ctx.Args[1])
-
-	if err != nil {
-		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
-		return UnknownError
-	}
-
 	if !strings.HasPrefix(repoPath, "/") {
 		repoPath = "/" + repoPath
 	}
 
-	newPath, err := client.Cat(repoPath, filePath)
+	filePath := ""
+	if len(ctx.Args) < 2 {
+		tmpFile, err := ioutil.TempFile("", "brig")
+		if err != nil {
+			log.Errorf("Unable to create temp file: %v", err)
+			return UnknownError
+		}
+
+		filePath = tmpFile.Name()
+		defer tmpFile.Close()
+	} else {
+		absPath, err := filepath.Abs(ctx.Args[1])
+		if err != nil {
+			log.Errorf("Unable to make abs path: %v: %v", filePath, err)
+			return UnknownError
+		}
+
+		filePath = absPath
+	}
+
+	_, err := client.Cat(repoPath, filePath)
 	if err != nil {
 		log.Errorf("Could not cat file: %v: %v", repoPath, err)
 		return UnknownError
 	}
 
-	fmt.Println(newPath)
+	if len(ctx.Args) < 2 {
+		fd, err := os.Open(filePath)
+		if err != nil {
+			log.Errorf("Could not open temp file")
+			return UnknownError
+		}
+
+		io.Copy(os.Stdout, fd)
+	}
+
 	return Success
 }
 
@@ -476,7 +500,7 @@ func RunCmdline() int {
 			Brief:  "Remove file and optionally old versions of it.",
 			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
+			Handle: withArgCheck(needAtLeast(0), withDaemon(handleRm, true)),
 		},
 		climax.Command{
 			Name:   "cat",
@@ -484,7 +508,7 @@ func RunCmdline() int {
 			Brief:  "Write ",
 			Usage:  `FILE_OR_FOLDER DEST_PATH`,
 			Help:   `TODO`,
-			Handle: withArgCheck(needAtLeast(2), withDaemon(handleCat, true)),
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
 		},
 		climax.Command{
 			Name:  "find",

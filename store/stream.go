@@ -5,17 +5,24 @@ import (
 	"io"
 	"os"
 
-	"github.com/disorganizer/brig/store/compress"
+	// "github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/encrypt"
 )
 
-func NewIpfsReader(key []byte, r io.Reader) (io.Reader, error) {
+type Reader interface {
+	io.Reader
+	io.Seeker
+	io.Closer
+}
+
+func NewIpfsReader(key []byte, r Reader) (Reader, error) {
 	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return compress.NewReader(rEnc), nil
+	return rEnc, nil
+	// return compress.NewReader(rEnc), nil
 }
 
 // NewFileReaderFromPath is a shortcut for reading a file from disk
@@ -40,7 +47,8 @@ func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
 		return nil, err
 	}
 
-	wZip := compress.NewWriter(wEnc)
+	// TODO: Implement seeking compression.
+	// wZip := compress.NewWriter(wEnc)
 
 	// Suck the reader empty and move it to `wZip`.
 	// Every write to wZip will be available as read in `pr`.
@@ -50,7 +58,7 @@ func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
 			pw.Close()
 		}()
 
-		if _, err := io.Copy(wZip, r); err != nil {
+		if _, err := io.Copy(wEnc, r); err != nil {
 			// TODO: Warn or pass to outside?
 			fmt.Println("FUCK", err)
 		}

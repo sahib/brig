@@ -68,14 +68,6 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	// TODO: Uncomment later.
-	//       And add option to disable (for tests etc.)
-	// proc, err := ipfsutil.StartDaemon(repository.Store.IpfsCtx)
-	// if err != nil {
-	// 	log.Error("Unable to start ipfs daemon: ", err)
-	// 	return nil, err
-	// }
-
 	// Listen for incoming connections.
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
