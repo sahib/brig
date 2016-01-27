@@ -1,14 +1,13 @@
-// Package trie implements a general purpose Path-Trie.
+// Package trie implements a general purpose Path-*Node.
 package trie
 
 import (
 	"os"
 	"strings"
-	"sync"
 )
 
-// Node represents a single node in a Trie, but it can be used as a whole
-// (sub-)Trie through the Trie interface. A node value of `nil` is a perfectly
+// Node represents a single node in a *Node, but it can be used as a whole
+// (sub-)*Node through the *Node interface. A node value of `nil` is a perfectly
 // valid trie. Node is suitable for embedding it into other structs.
 type Node struct {
 	// Pointer to parent node or nil
@@ -27,37 +26,7 @@ type Node struct {
 	// Depth of the node. The root is at depth 0.
 	Depth uint16
 
-	// Mutex protecting access to the trie.
-	// Note that only one mutex exists per trie.
-	mu *sync.RWMutex
-}
-
-// Trie represents the required methods for accessing a directory structure.
-type Trie interface {
-	// Root returns the uppermost node of the trie.
-	Root() *Node
-
-	// Insert adds a new node in the trie at string. If the node already exists,
-	// nothing changes. This operation costs O(log(n)). The newly created or
-	// existant node is returned.
-	Insert(path string) *Node
-
-	// Lookup searches for a node references by a path.
-	Lookup(path string) *Node
-
-	// Remove removes the node at path and all of it's children.
-	// The parent of the removed node is returned, which might be nil.
-	Remove() *Node
-
-	// Len returns the current number of elements in the trie.
-	// This counts only explicitly inserted Nodes.
-	Len() int64
-
-	// TODO
-	Lock()
-	Unlock()
-	RLock()
-	RUnlock()
+	Data interface{}
 }
 
 // SplitPath splits the path according to os.PathSeparator,
@@ -71,10 +40,10 @@ func SplitPath(path string) []string {
 	return names
 }
 
-// NewTrie returns a trie with the root element pre-inserted.
+// New*Node returns a trie with the root element pre-inserted.
 // Note that `nil` is a perfectly valid, but empty trie.
-func NewTrie() *Node {
-	return &Node{mu: &sync.RWMutex{}}
+func NewNode() *Node {
+	return &Node{}
 }
 
 // Root returns the root node of the trie.
@@ -96,9 +65,15 @@ func (n *Node) IsLeaf() bool {
 
 // Insert adds a node into the trie at `path`
 func (n *Node) Insert(path string) *Node {
+	return n.InsertWithData(path, nil)
+}
+
+func (n *Node) InsertWithData(path string, data interface{}) *Node {
 	curr := n
+
+	// Empty node, create new one implicitly:
 	if curr == nil {
-		curr = NewTrie()
+		curr = NewNode()
 	}
 
 	wasAdded := false
@@ -113,16 +88,18 @@ func (n *Node) Insert(path string) *Node {
 				Parent: curr,
 				Name:   name,
 				Depth:  uint16(curr.Depth + 1),
-				mu:     curr.mu,
+				Data:   data,
 			}
+
 			curr.Children[name] = child
 			wasAdded = true
 		}
+
 		curr = child
 	}
 
 	if wasAdded && curr != nil {
-		curr.Up(func(parent *Node) {
+		curr.up(func(parent *Node) {
 			parent.Length++
 		})
 	}
@@ -160,7 +137,7 @@ func (n *Node) Remove() *Node {
 
 	// Adjusts the parent's length:
 	length := n.Length
-	n.Up(func(parent *Node) {
+	n.up(func(parent *Node) {
 		parent.Length -= length
 	})
 
@@ -204,9 +181,16 @@ func (n *Node) Walk(dfs bool, visit func(*Node)) {
 // Up walks from the receiving node to the root node,
 // calling `visit` on each node on it's way.
 func (n *Node) Up(visit func(*Node)) {
+	n.up(func(n *Node) {
+		visit(n)
+	})
+}
+
+// up is the same as Up, but works on the native *Node.
+func (n *Node) up(visit func(*Node)) {
 	if n != nil {
 		visit(n)
-		n.Parent.Up(visit)
+		n.Parent.up(visit)
 	}
 }
 
@@ -228,7 +212,7 @@ func (n *Node) Path() string {
 	s := make([]string, n.Depth+2)
 	i := len(s) - 1
 
-	n.Up(func(parent *Node) {
+	n.up(func(parent *Node) {
 		s[i] = parent.Name
 		i--
 	})
@@ -242,24 +226,4 @@ func (n *Node) String() string {
 		return "<nil>"
 	}
 	return n.Path()
-}
-
-// Lock locks the whole trie for read/write access.
-func (n *Node) Lock() {
-	n.mu.Lock()
-}
-
-// Unlock unlocks the whole trie for read/write access.
-func (n *Node) Unlock() {
-	n.mu.Unlock()
-}
-
-// RLock locks the whole trie for read access.
-func (n *Node) RLock() {
-	n.mu.RLock()
-}
-
-// RUnlock unlocks the whole trie for read access.
-func (n *Node) RUnlock() {
-	n.mu.RUnlock()
 }

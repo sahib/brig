@@ -314,8 +314,10 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 	}
 
 	filePath := ""
-	if len(ctx.Args) < 2 {
-		tmpFile, err := ioutil.TempFile("", "brig")
+	isStdoutMode := len(ctx.Args) < 2
+
+	if isStdoutMode {
+		tmpFile, err := ioutil.TempFile("", ".brig-tmp-")
 		if err != nil {
 			log.Errorf("Unable to create temp file: %v", err)
 			return UnknownError
@@ -323,6 +325,7 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 
 		filePath = tmpFile.Name()
 		defer tmpFile.Close()
+		defer os.Remove(filePath)
 	} else {
 		absPath, err := filepath.Abs(ctx.Args[1])
 		if err != nil {
@@ -339,12 +342,13 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 		return UnknownError
 	}
 
-	if len(ctx.Args) < 2 {
+	if isStdoutMode {
 		fd, err := os.Open(filePath)
 		if err != nil {
 			log.Errorf("Could not open temp file")
 			return UnknownError
 		}
+		defer fd.Close()
 
 		io.Copy(os.Stdout, fd)
 	}

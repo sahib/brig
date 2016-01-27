@@ -27,12 +27,14 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type File struct {
-	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
-	Key              []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	Hash             []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
-	FileSize         *int64  `protobuf:"varint,4,req,name=file_size" json:"file_size,omitempty"`
-	IsFile           *bool   `protobuf:"varint,5,req,name=is_file" json:"is_file,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Path     *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
+	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
+	Hash     []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
+	FileSize *int64  `protobuf:"varint,4,req,name=file_size" json:"file_size,omitempty"`
+	IsFile   *bool   `protobuf:"varint,5,req,name=is_file" json:"is_file,omitempty"`
+	// Timestamp formated as RFC 3339
+	ModTime          []byte `protobuf:"bytes,6,req,name=mod_time" json:"mod_time,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *File) Reset()         { *m = File{} }
@@ -72,6 +74,13 @@ func (m *File) GetIsFile() bool {
 		return *m.IsFile
 	}
 	return false
+}
+
+func (m *File) GetModTime() []byte {
+	if m != nil {
+		return m.ModTime
+	}
+	return nil
 }
 
 func init() {
@@ -131,6 +140,14 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
+	if m.ModTime == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x32
+		i++
+		i = encodeVarintFile(data, i, uint64(len(m.ModTime)))
+		i += copy(data[i:], m.ModTime)
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -184,6 +201,10 @@ func (m *File) Size() (n int) {
 	}
 	if m.IsFile != nil {
 		n += 2
+	}
+	if m.ModTime != nil {
+		l = len(m.ModTime)
+		n += 1 + l + sovFile(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -364,6 +385,35 @@ func (m *File) Unmarshal(data []byte) error {
 			b := bool(v != 0)
 			m.IsFile = &b
 			hasFields[0] |= uint64(0x00000004)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFile
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthFile
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000008)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipFile(data[iNdEx:])
@@ -387,6 +437,9 @@ func (m *File) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

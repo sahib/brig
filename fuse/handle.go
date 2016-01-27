@@ -2,8 +2,10 @@ package fuse
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"sync"
+	"time"
 
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
@@ -12,7 +14,7 @@ import (
 )
 
 type Handle struct {
-	*File
+	*Entry
 	sync.Mutex
 	layer *store.Layer
 }
@@ -35,7 +37,7 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 func (h *Handle) ReadAll(ctx context.Context) ([]byte, error) {
 	buf := &bytes.Buffer{}
 
-	path := h.Path()
+	path := h.File.Path()
 	if err := h.fs.Store.Cat(path, buf); err != nil {
 		log.Errorf("fuse: ReadAll: `%s` failed: %v", path, err)
 		return nil, fuse.ENODATA
@@ -55,7 +57,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	log.Infof("Oh, a write request!")
 
 	if h.layer == nil {
-		stream, err := h.fs.Store.Stream(h.Path())
+		stream, err := h.File.Stream()
 		if err != nil {
 			return fuse.ENODATA
 		}
@@ -105,12 +107,19 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	if err := h.fs.Store.AddFromReader(h.Path(), h.layer); err != nil {
+	// Update the mtime:
+	h.File.Metadata.ModTime = time.Now()
+
+	tee := io.TeeReader(h.layer, os.Stdout)
+
+	if err := h.fs.Store.AddFromReader(h.File.Path(), tee, h.File.Metadata); err != nil {
 		log.Warningf("Add failed: %v", err)
+		return fuse.ENODATA
 	}
 
 	if err := h.layer.Close(); err != nil {
 		log.Warningf("Close failed: %v", err)
+		return fuse.ENODATA
 	}
 
 	return nil

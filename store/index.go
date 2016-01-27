@@ -1,7 +1,6 @@
 package store
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +10,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/disorganizer/brig/util/trie"
 )
 
 var (
@@ -23,9 +21,9 @@ var (
 type Store struct {
 	db *bolt.DB
 
-	// Trie models the directory tree.
+	// Root models the directory tree, aka Trie.
 	// The root node is the repository root.
-	Trie trie.Trie
+	Root *File
 
 	// IpfsNode holds information how and where to reach
 	// the ipfs daemon process.
@@ -65,28 +63,39 @@ func Open(repoPath string) (*Store, error) {
 	if err != nil {
 		log.Warningf("store-create failed: %v", err)
 	}
+	fmt.Println("Done create")
 
 	// Load all paths from the database into the trie:
-	store.Trie = trie.NewTrie()
+	rootDir, err := newDirUnlocked(store, "/")
+	if err != nil {
+		return nil, err
+	}
+
+	store.Root = rootDir
+	fmt.Println("Done newDir")
+
 	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
-			store.Trie.Insert(string(k))
+			fmt.Println("Unmarshal")
+			Unmarshal(store, v)
+			fmt.Println("Unmarshal done")
 			return nil
 		})
 	}))
 
+	fmt.Println("Done open")
 	return store, err
 }
 
 // Mkdir creates a new, empty directory.
 // If the directory already exists, this is a NOOP.
-func (s *Store) Mkdir(repoPath string) error {
+func (s *Store) Mkdir(repoPath string) (*File, error) {
 	dir, err := NewDir(s, repoPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return s.marshalFile(dir, repoPath)
+	return dir, err
 }
 
 func (s *Store) Add(filePath, repoPath string) error {
@@ -111,10 +120,19 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 			if err != nil {
 				return err
 			}
+			defer fd.Close()
 
-			err = s.AddFromReader(currPath, fd)
+			info, err := os.Stat(path)
+			if err != nil {
+				return err
+			}
+
+			err = s.AddFromReader(currPath, fd, &Metadata{
+				Size:    FileSize(info.Size()),
+				ModTime: info.ModTime(),
+			})
 		case mode.IsDir():
-			err = s.Mkdir(currPath)
+			_, err = s.Mkdir(currPath)
 		default:
 			log.Warningf("Recursive add: Ignoring weird file: %v")
 			return nil
@@ -136,41 +154,29 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 
 // Add reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
+func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) error {
 	// Check if the file was already added:
-	file, err := s.PathToFile(repoPath)
+	file := s.Root.Lookup(repoPath)
 
-	log.Infof("bolt lookup: %v", err)
+	log.Infof("bolt lookup: %v", file)
 
-	if err != nil {
-		if err != ErrNoSuchFile {
-			return err
-		}
-	} else {
+	if file != nil {
 		// We know this file already.
 		log.WithFields(log.Fields{
 			"file": repoPath,
 		}).Info("Updating file.")
 
-		// TODO: Write oldFile to commit history here,.
-	}
-
-	var key []byte
-	if file == nil {
-		key = make([]byte, 32)
-		n, err := rand.Reader.Read(key)
+		// TODO: Write oldFile to commit history here...
+	} else {
+		newFile, err := NewFile(s, repoPath, meta)
 		if err != nil {
 			return err
 		}
 
-		if n != 32 {
-			return fmt.Errorf("Read less than desired key size: %v", n)
-		}
-	} else {
-		key = file.Key
+		file = newFile
 	}
 
-	stream, err := NewFileReader(key, r)
+	stream, err := NewFileReader(file.Key, r)
 	if err != nil {
 		return err
 	}
@@ -180,22 +186,10 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	log.Infof("ADD KEY: %x", key)
+	log.Infof("ADD KEY:  %x", file.Key)
 	log.Infof("ADD HASH: %s", hash.B58String())
 
-	if file == nil {
-		newFile, err := NewFile(s, repoPath, nil, key)
-		if err != nil {
-			return err
-		}
-
-		file = newFile
-	}
-
-	file.Hash = hash
-
-	fmt.Println("marshal", file, repoPath)
-	if err := s.marshalFile(file, repoPath); err != nil {
+	if err := file.UpdateHash(hash); err != nil {
 		return err
 	}
 
@@ -210,7 +204,7 @@ func withBucket(name string, handler BucketHandler) func(tx *bolt.Tx) error {
 	return func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(name))
 		if bucket == nil {
-			return fmt.Errorf("Add: No bucket named `%s`", name)
+			return fmt.Errorf("index: No bucket named `%s`", name)
 		}
 
 		return handler(tx, bucket)
@@ -234,20 +228,12 @@ func (s *Store) marshalFile(file *File, repoPath string) error {
 }
 
 func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
-	file, err := s.PathToFile(path)
-	if err != nil {
-		return nil, err
+	file := s.Root.Lookup(path)
+	if file == nil {
+		return nil, ErrNoSuchFile
 	}
 
-	fmt.Println("HASH", file.Hash.B58String())
-	fmt.Printf("CAT KEY %x\n", file.Key)
-
-	ipfsStream, err := ipfsutil.Cat(s.IpfsNode, file.Hash)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewIpfsReader(file.Key, ipfsStream)
+	return file.Stream()
 }
 
 func (s *Store) Cat(path string, w io.Writer) error {
@@ -263,26 +249,6 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
-func (s *Store) PathToFile(path string) (*File, error) {
-	var file *File
-
-	err := s.db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
-		data := bucket.Get([]byte(path))
-		if data == nil {
-			return ErrNoSuchFile
-		}
-
-		var err error
-		if file, err = Unmarshal(s, data); err != nil {
-			return err
-		}
-
-		return nil
-	}))
-
-	return file, err
-}
-
 // Close syncs all data. It is an error to use the store afterwards.
 func (s *Store) Close() {
 	if err := s.db.Sync(); err != nil {
@@ -296,17 +262,17 @@ func (s *Store) Close() {
 
 // Rm will purge a file locally on this node.
 func (s *Store) Rm(path string) error {
-	s.Trie.Lock()
-	defer s.Trie.Unlock()
+	s.Root.Lock()
+	defer s.Root.Unlock()
 
-	node := s.Trie.Lookup(path)
+	node := s.Root.Lookup(path)
 	if node == nil {
 		log.Errorf("Could not remove `%s` from trie.", path)
 	} else {
 		node.Remove()
 	}
 
-	// Remove from trie, remove from bolt db.
+	// Remove from trie & remove from bolt db.
 	return s.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.Delete([]byte(path))
 	}))

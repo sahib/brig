@@ -9,6 +9,6 @@ type FS struct {
 	Store *store.Store
 }
 
-func (f *FS) Root() (fs.Node, error) {
-	return &Dir{Node: f.Store.Trie.Root(), fs: f}, nil
+func (sys *FS) Root() (fs.Node, error) {
+	return &Dir{File: sys.Store.Root, fs: sys}, nil
 }

@@ -20,7 +20,7 @@ func TestPathriciaInsertTrieLinux(t *testing.T) {
 		{"   ", "   ", "/   ", 7},
 	}
 
-	trie := NewTrie()
+	trie := NewNode()
 	for _, test := range tests {
 		// Inserting at the root node.
 		node := trie.Insert(test.input)
@@ -61,7 +61,7 @@ func TestPathriciaInsertRelativeLinux(t *testing.T) {
 		{"c/de/fe/333", "333", "/a/b/c/c/de/fe/c/de/fe/333", 6},
 	}
 
-	trie := NewTrie()
+	trie := NewNode()
 	node := trie.Root()
 	for _, test := range tests {
 		// Inserting at always at the returned node.
@@ -99,7 +99,7 @@ func TestPathriciaRemoveLinux(t *testing.T) {
 		"elch/eule/meow",
 	}
 
-	trie := NewTrie()
+	trie := NewNode()
 	for _, path := range paths {
 		trie.Insert(path)
 	}
