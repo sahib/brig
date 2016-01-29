@@ -5,6 +5,7 @@ package util
 import (
 	"io"
 	"os"
+	"sync/atomic"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -69,4 +70,34 @@ func Touch(path string) error {
 	}
 
 	return fd.Close()
+}
+
+// SizeAccumulator is a io.Writer that simply counts
+// the amount of bytes that has been written to it.
+// It's useful to count the received bytes from a reader
+// in conjunction with a io.TeeReader
+//
+// Example usage without error handling:
+//
+//   s := &SizeAccumulator{}
+//   teeR := io.TeeReader(r, s)
+//   io.Copy(os.Stdout, teeR)
+//   fmt.Printf("Wrote %d bytes to stdout\n", teeR.Size())
+//
+// TODO: write short test.
+type SizeAccumulator struct {
+	size uint64
+}
+
+// Write simply increments the internal size count without any IO.
+// It can be safely called from any go routine.
+func (s *SizeAccumulator) Write(buf []byte) (int, error) {
+	atomic.AddUint64(&s.size, uint64(len(buf)))
+	return len(buf), nil
+}
+
+// Size returns the cumulated written bytes.
+// It can be safely called from any go routine.
+func (s *SizeAccumulator) Size() uint64 {
+	return atomic.LoadUint64(&s.size)
 }

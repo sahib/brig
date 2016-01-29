@@ -37,7 +37,7 @@ type File struct {
 	Key  []byte
 }
 
-func (f *File) insert(root *File, path string, doMarshal bool, size FileSize, modTime time.Time) error {
+func (f *File) insert(root *File, path string, size FileSize, modTime time.Time) error {
 	f.node = root.node.InsertWithData(path, f)
 
 	var outerErr error
@@ -104,7 +104,7 @@ func NewFile(store *Store, path string, meta *Metadata) (*File, error) {
 
 	fmt.Println("add new file")
 
-	if err := file.insert(store.Root, path, true, meta.Size, meta.ModTime); err != nil {
+	if err := file.insert(store.Root, path, meta.Size, meta.ModTime); err != nil {
 		return nil, err
 	}
 
@@ -117,20 +117,6 @@ func NewDir(store *Store, path string) (*File, error) {
 	defer store.Root.Unlock()
 
 	return newDirUnlocked(store, path)
-}
-
-func (f *File) UpdateHash(hash []byte) error {
-	f.Lock()
-	defer f.Unlock()
-
-	f.Hash = hash
-
-	// TODO: queue this up... leads to deadlocks here
-	// if err := f.store.marshalFile(f, f.node.Path()); err != nil {
-	// 	return err
-	// }
-
-	return nil
 }
 
 func newDirUnlocked(store *Store, path string) (*File, error) {
@@ -157,7 +143,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		root = store.Root
 	}
 
-	if err := dir.insert(root, path, true, 0, dir.ModTime); err != nil {
+	if err := dir.insert(root, path, 0, dir.ModTime); err != nil {
 		return nil, err
 	}
 
@@ -219,7 +205,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	fmt.Println("unmarshal lock done")
 
 	path := dataFile.GetPath()
-	if err := file.insert(store.Root, path, false, file.Size, file.ModTime); err != nil {
+	if err := file.insert(store.Root, path, file.Size, file.ModTime); err != nil {
 		return nil, err
 	}
 	fmt.Println("slow insert")
@@ -245,7 +231,7 @@ func (f *File) Insert(path string, isFile bool) (*File, error) {
 	f.Lock()
 	defer f.Unlock()
 
-	if err := child.insert(f, path, true, 0, child.ModTime); err != nil {
+	if err := child.insert(f, path, 0, child.ModTime); err != nil {
 		return nil, err
 	}
 

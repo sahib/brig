@@ -203,6 +203,7 @@ func NewLayer(r io.ReadSeeker) *Layer {
 	}
 }
 
+// Write caches the buffer in memory or on disk until the file is closed.
 func (l *Layer) Write(buf []byte) (int, error) {
 	l.index.Add(&Modification{l.pos, buf})
 	l.pos += int64(len(buf))

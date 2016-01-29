@@ -33,3 +33,27 @@ func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	// TODO: Update {m,c,a}time? Maybe not needed/Unsure when this is called.
 	return nil
 }
+
+func (e *Entry) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	// TODO: fsync is simply ignored for now.
+	return nil
+}
+
+func (e *Entry) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	e.File.Lock()
+	defer e.File.Unlock()
+
+	switch req.Name {
+	case "brig.hash":
+		resp.Xattr = []byte(e.File.Hash.B58String())[:req.Size]
+	default:
+		return fuse.ErrNoXattr
+	}
+
+	return nil
+}
+
+func (e *Entry) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	resp.Append("brig.hash")
+	return nil
+}

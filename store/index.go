@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
@@ -176,7 +177,11 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) erro
 		file = newFile
 	}
 
-	stream, err := NewFileReader(file.Key, r)
+	// Control how many bytes are written to the encryption layer:
+	sizeAcc := &util.SizeAccumulator{}
+	teeR := io.TeeReader(r, sizeAcc)
+
+	stream, err := NewFileReader(file.Key, teeR)
 	if err != nil {
 		return err
 	}
@@ -189,7 +194,16 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) erro
 	log.Infof("ADD KEY:  %x", file.Key)
 	log.Infof("ADD HASH: %s", hash.B58String())
 
-	if err := file.UpdateHash(hash); err != nil {
+	// Update metadata that might have changed:
+	file.Lock()
+	{
+		file.Size = FileSize(sizeAcc.Size())
+		file.ModTime = time.Now()
+		file.Hash = hash
+	}
+	file.Unlock()
+
+	if err := s.marshalFile(file, file.Path()); err != nil {
 		return err
 	}
 
