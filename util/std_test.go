@@ -11,15 +11,15 @@ import (
 
 func TestClamp(t *testing.T) {
 	if Clamp(-1, 0, 1) != 0 {
-		t.Errorf("Clamp: -1 is not in [0, 1)")
+		t.Errorf("Clamp: -1 is not in [0, 1]")
 	}
 
 	if Clamp(+1, 0, 1) != 1 {
-		t.Errorf("Clamp: +1 should be [0, 1)")
+		t.Errorf("Clamp: +1 should be [0, 1]")
 	}
 
 	if Clamp(0, 0, 1) != 0 {
-		t.Errorf("Clamp: 0 should be [0, 1)")
+		t.Errorf("Clamp: 0 should be [0, 1]")
 	}
 
 	if Clamp(+2, 0, 1) != 1 {

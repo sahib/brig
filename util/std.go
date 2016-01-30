@@ -10,6 +10,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// Empty is just an empty struct.
+// Empty{} reads nicer than struct{}{}
+type Empty struct{}
+
 // Min returns the minimum of a and b.
 func Min(a, b int) int {
 	if a < b {

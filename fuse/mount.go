@@ -10,6 +10,7 @@ import (
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util"
 )
 
 // This is very similar (and indeed mostly copied) code from:
@@ -23,7 +24,7 @@ type Mount struct {
 	Store *store.Store
 
 	closed bool
-	done   chan struct{}
+	done   chan util.Empty
 	errors chan error
 
 	Conn   *fuse.Conn
@@ -44,7 +45,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		FS:     filesys,
 		Dir:    mountpoint,
 		Store:  store,
-		done:   make(chan struct{}),
+		done:   make(chan util.Empty),
 		errors: make(chan error),
 	}
 
@@ -52,6 +53,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		defer close(mnt.done)
 		log.Debugf("Serving FUSE at %v", mountpoint)
 		mnt.errors <- mnt.Server.Serve(filesys)
+		mnt.done <- util.Empty{}
 		log.Debug("Stopped serving FUSE at %v", mountpoint)
 	}()
 
@@ -77,7 +79,7 @@ func (m *Mount) Close() error {
 	}
 	m.closed = true
 
-	log.Info("Fuse umount")
+	log.Info("Umount fuse layer...")
 
 	for tries := 0; tries < 1000; tries++ {
 		if err := fuse.Unmount(m.Dir); err != nil {
@@ -92,13 +94,17 @@ func (m *Mount) Close() error {
 	if err := m.Conn.Close(); err != nil {
 		return err
 	}
-	log.Info("closing con")
 
-	// Wait for serve to return:
-	log.Info("Waitin for done..")
+	// Be sure to drain the error channel:
+	select {
+	case err := <-m.errors:
+		// Serve() had some error after some time:
+		if err != nil {
+			log.Warning("fuse returned an error: %v", err)
+		}
+	}
+
 	<-m.done
-	log.Info("Waitin for done.. done done")
-
 	return nil
 }
 

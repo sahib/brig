@@ -1,7 +1,6 @@
 package fuse
 
 import (
-	"bytes"
 	"io"
 	"os"
 	"sync"
@@ -15,7 +14,11 @@ import (
 
 type Handle struct {
 	*Entry
+
+	// Protect access of `layer`
 	sync.Mutex
+
+	// Write in-memory layer
 	layer *store.Layer
 }
 
@@ -23,34 +26,36 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return h.flush()
 }
 
-// TODO: Implement Read, but that needs seekable compression first.
-// func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-// 	// TODO: Read file at req.Offset for req.Size bytes and set resp.Data.
-// 	resp.Data = make([]byte, req.Size)
-// 	for i := 0; i < req.Size; i++ {
-// 		resp.Data[i] = byte("Na"[i%2])
-// 	}
-//
-// 	return nil
-// }
-
-func (h *Handle) ReadAll(ctx context.Context) ([]byte, error) {
-	buf := &bytes.Buffer{}
-
+func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	path := h.File.Path()
-	if err := h.fs.Store.Cat(path, buf); err != nil {
-		log.Errorf("fuse: ReadAll: `%s` failed: %v", path, err)
-		return nil, fuse.ENODATA
+	stream, err := h.File.Stream()
+	if err != nil {
+		log.Errorf("fuse: Read: `%s` failed: %v", path, err)
+		return fuse.ENODATA
 	}
 
-	return buf.Bytes(), nil
+	pos, err := stream.Seek(req.Offset, os.SEEK_SET)
+	if err != nil {
+		log.Errorf("fuse: Read: seek failed on `%s`: %v", path, err)
+		return fuse.ENODATA
+	}
+
+	if pos != req.Offset {
+		log.Warningf("fuse: Read: warning: seek_off (%d) != req_off (%d)", pos, req.Offset)
+	}
+
+	resp.Data = make([]byte, req.Size)
+	n, err := io.ReadAtLeast(stream, resp.Data, req.Size)
+	if err != nil && err != io.ErrUnexpectedEOF {
+		log.Errorf("fuse: Read: streaming `%s` failed: %v", path, err)
+		return fuse.ENODATA
+	}
+
+	resp.Data = resp.Data[:n]
+	return nil
 }
 
-// TODO: Implement. Needs scratchpad implementation.
 func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	// TODO: Write req.Data at req.Offset to file.
-	//       Expand file if necessary and update Size.
-	//       Return the number of written bytes in resp.Size
 	h.Lock()
 	defer h.Unlock()
 
