@@ -104,6 +104,7 @@ func (m *Mount) Close() error {
 		}
 	}
 
+	// Be sure to pull the item from the channel:
 	<-m.done
 	return nil
 }

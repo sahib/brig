@@ -102,6 +102,20 @@ func handleDaemonPing(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
+func handleDaemonWait(ctx climax.Context) int {
+	port := guessPort()
+
+	for {
+		client, err := daemon.Dial(port)
+		if err == nil {
+			client.Close()
+			return Success
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func handleDaemonQuit(ctx climax.Context, client *daemon.Client) int {
 	client.Exorcise()
 	return Success
@@ -125,13 +139,7 @@ func handleDaemon(ctx climax.Context) int {
 		return BadPassword
 	}
 
-	config := loadConfig()
-	port, err := config.Int("daemon.port")
-	if err != nil {
-		log.Fatalf("Cannot find out daemon port: %v", err)
-		return UnknownError
-	}
-
+	port := guessPort()
 	baal, err := daemon.Summon(pwd, repoFolder, port)
 	if err != nil {
 		log.Warning("Unable to start daemon: ", err)
@@ -565,6 +573,12 @@ func RunCmdline() int {
 			Group:  advnGroup,
 			Brief:  "See if the daemon responds in a timely fashion.",
 			Handle: withDaemon(handleDaemonPing, false),
+		},
+		climax.Command{
+			Name:   "daemon-wait",
+			Group:  advnGroup,
+			Brief:  "Block until the daemon is available.",
+			Handle: handleDaemonWait,
 		},
 		climax.Command{
 			Name:  "passwd",

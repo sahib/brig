@@ -1,7 +1,9 @@
 package cmdline
 
 import (
+	"os"
 	"path/filepath"
+	"strconv"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon"
@@ -16,12 +18,7 @@ type CmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
 func withDaemon(handler CmdHandlerWithClient, startNew bool) climax.CmdHandler {
 	// If not, make sure we start a new one:
 	return func(ctx climax.Context) int {
-		config := loadConfig()
-		port, err := config.Int("daemon.port")
-		if err != nil {
-			log.Fatalf("Cannot find out daemon port: %v", err)
-			return UnknownError
-		}
+		port := guessPort()
 
 		// Check if the daemon is running:
 		client, err := daemon.Dial(port)
@@ -93,4 +90,27 @@ func loadConfig() *config.Config {
 	}
 
 	return cfg
+}
+
+func guessPort() int {
+	envPort := os.Getenv("BRIG_PORT")
+	if envPort != "" {
+		// Somebody tried to set BRIG_PORT.
+		// Try to parse and spit errors if wrong.
+		port, err := strconv.Atoi(envPort)
+		if err != nil {
+			log.Fatalf("Could not parse $BRIG_PORT: %v", err)
+		}
+
+		return port
+	}
+
+	// Trie the config elsewhise:
+	config := loadConfig()
+	port, err := config.Int("daemon.port")
+	if err != nil {
+		log.Fatalf("Cannot find out daemon port: %v", err)
+	}
+
+	return port
 }
