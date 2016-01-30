@@ -3,6 +3,7 @@ package fuse
 import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
 	"golang.org/x/net/context"
 
@@ -26,11 +27,20 @@ func (e *Entry) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (e *Entry) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+	log.Debugf("fuse-open: %s", e.File.Path())
 	return &Handle{Entry: e}, nil
 }
 
 func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
 	// TODO: Update {m,c,a}time? Maybe not needed/Unsure when this is called.
+	switch {
+	case req.Valid&fuse.SetattrSize != 0:
+		log.Warningf("SIZE CHANGED OF %s: %d %p", e.File.Path(), req.Size, e.File)
+		e.File.Lock()
+		e.File.Size = store.FileSize(req.Size)
+		e.File.Unlock()
+	}
+
 	return nil
 }
 

@@ -26,6 +26,8 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return h.flush()
 }
 
+// TODO: Honour ctx.Done() and return fuse.EINTR in that case...
+
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	path := h.File.Path()
 	stream, err := h.File.Stream()
@@ -68,6 +70,12 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 		}
 
 		h.layer = store.NewLayer(stream)
+		log.Debugf("fuse: truncating %s to %d %p", h.File.Path(), h.File.Size, h.File)
+		h.File.Lock()
+		{
+			h.layer.Truncate(int64(h.File.Size))
+		}
+		h.File.Unlock()
 	}
 
 	_, err := h.layer.Seek(req.Offset, os.SEEK_SET)
@@ -83,6 +91,18 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	}
 
 	resp.Size = n
+
+	// Update the file size, if it changed; fuse doc demands this:
+	// https://godoc.org/bazil.org/fuse/fs#HandleWriter
+	h.File.Lock()
+	{
+		minSize := store.FileSize(h.layer.MinSize())
+		if h.File.Size < minSize {
+			log.Debugf("fuse: extending file from %d to %d bytes", h.File.Size, minSize)
+			h.File.Size = minSize
+		}
+	}
+	h.File.Unlock()
 	return nil
 }
 
@@ -115,6 +135,7 @@ func (h *Handle) flush() error {
 	// Update the mtime:
 	h.File.Metadata.ModTime = time.Now()
 
+	// TODO: Remove debug tee.
 	tee := io.TeeReader(h.layer, os.Stdout)
 
 	if err := h.fs.Store.AddFromReader(h.File.Path(), tee, h.File.Metadata); err != nil {

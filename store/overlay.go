@@ -192,6 +192,7 @@ type Layer struct {
 	index *IntervalIndex
 	r     io.ReadSeeker
 	pos   int64
+	limit int64
 }
 
 // NewLayer returns a new in memory layer.
@@ -200,31 +201,54 @@ func NewLayer(r io.ReadSeeker) *Layer {
 	return &Layer{
 		index: &IntervalIndex{},
 		r:     r,
+		limit: -1,
 	}
 }
 
 // Write caches the buffer in memory or on disk until the file is closed.
+// If the file was truncated before, the truncate limit is raised again
+// if the write extended the limit.
 func (l *Layer) Write(buf []byte) (int, error) {
 	l.index.Add(&Modification{l.pos, buf})
 	l.pos += int64(len(buf))
+	if l.limit >= 0 && l.pos > l.limit {
+		l.limit = l.pos
+	}
+
 	return len(buf), nil
 }
 
 // Read will read from the underlying stream and overlay with the relevant
 // write chunks on it's way, possibly extending the underlying stream.
 func (l *Layer) Read(buf []byte) (int, error) {
+	// Check for the truncation limit:
+	if l.limit >= 0 {
+		truncateDiff := l.limit - l.pos
+
+		// Seems we're over the limit:
+		if truncateDiff <= 0 {
+			return 0, io.EOF
+		}
+
+		// Truncate buf, so we don't read too much:
+		if truncateDiff < int64(len(buf)) {
+			buf = buf[:truncateDiff]
+		}
+	}
+
 	n, err := l.r.Read(buf)
 	if err == io.EOF && l.pos < l.index.Max {
-		// There's only extend writes left.
+		// There's only extending writes left.
 		// Empty `buf` so caller get's defined results.
 		for i := 0; i < len(buf); i++ {
-			buf[i] = byte(0)
+			buf[i] = byte('@')
 		}
 
 		// Forget about EOF for a short moment.
 		err = nil
 	}
 
+	// Check for other errors:
 	if err != nil {
 		return 0, err
 	}
@@ -257,23 +281,54 @@ func (l *Layer) Read(buf []byte) (int, error) {
 
 // Seek remembers the new position and delegates the seek down.
 func (l *Layer) Seek(offset int64, whence int) (int64, error) {
+	newPos := l.pos
+
 	switch whence {
 	case os.SEEK_CUR:
-		l.pos += offset
+		newPos += offset
 	case os.SEEK_SET:
-		l.pos = offset
+		newPos = offset
 	case os.SEEK_END:
 		return 0, fmt.Errorf("layer: SEEK_END not supported")
 	}
+
+	// Check if we hit the truncate limit:
+	if l.limit >= 0 && l.limit < newPos {
+		return l.pos, io.EOF
+	}
+
+	l.pos = newPos
 	return l.r.Seek(offset, whence)
 }
 
 // Close tries to close the underlying stream (if supported).
 func (l *Layer) Close() error {
-	closer, ok := l.r.(io.Closer)
-	if ok {
+	if closer, ok := l.r.(io.Closer); ok {
 		return closer.Close()
 	}
 
 	return nil
+}
+
+// Truncate cuts off the stream at `size` bytes.
+// After hitting the limit, io.EOF is returned.
+// A value < 0 disables truncation.
+func (l *Layer) Truncate(size int64) {
+	l.limit = size
+}
+
+// Limit returns the current truncation limit
+// or a number < 0 if no truncation is done.
+func (l *Layer) Limit() int64 {
+	return l.limit
+}
+
+// Size returns the minimum size that the layer will have.
+// Underlying stream might be larger, so caller needs to check that.
+func (l *Layer) MinSize() int64 {
+	if l.limit < 0 || l.index.Max < l.limit {
+		return int64(l.index.Max)
+	}
+
+	return int64(l.limit)
 }

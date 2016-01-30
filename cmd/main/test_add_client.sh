@@ -21,11 +21,11 @@ section "=== MOUNT ==="
 mkdir -p /tmp/mount
 brig mount /tmp/mount
 cat /tmp/mount/hello_world | tee >(hash)
-section "=== MODIFY ==="
-echo 'Even more fun.' >> hello_world
-brig add hello_world
-brig cat hello_world | tee >(hash)
-cat /tmp/mount/hello_world | tee >(hash)
+# section "=== MODIFY ==="
+# echo 'Even more fun.' >> hello_world
+# brig add hello_world
+# brig cat hello_world | tee >(hash)
+# cat /tmp/mount/hello_world | tee >(hash)
 section "=== FUSE MODIFY ==="
 echo 'What now?' > /tmp/mount/hello_world
 cat /tmp/mount/hello_world | tee >(hash)

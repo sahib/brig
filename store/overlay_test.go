@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -58,7 +59,7 @@ func createLayer(t *testing.T, modifier func(l *Layer) error) *bytes.Buffer {
 	src := bytes.NewReader(SOURCE)
 	var dst *bytes.Buffer
 
-	for _, size := range []int{1, 2, 3, 4, 8, 16, 32, 64} {
+	for _, size := range []int{ /*1, 2, 3, 4, 8, 16, 32,*/ 64} {
 		tempDst := bytes.NewBuffer(nil)
 		copyBuf := make([]byte, size)
 
@@ -85,7 +86,9 @@ func createLayer(t *testing.T, modifier func(l *Layer) error) *bytes.Buffer {
 		if dst != nil {
 			// Changing the buffer size should not yield a different result:
 			if !bytes.Equal(dst.Bytes(), tempDst.Bytes()) {
-				t.Errorf("")
+				t.Errorf("Different result with different buf size (size: %v)", size)
+				t.Errorf("\tOLD: %x", dst.Bytes())
+				t.Errorf("\tNEW: %x", tempDst.Bytes())
 			}
 		}
 
@@ -157,8 +160,39 @@ var SINGLE_WRITES = map[string]struct {
 		},
 	},
 	"truncate": {
-		[]byte("012345"),
+		[]byte("01234"),
 		func(l *Layer) error {
+			l.Truncate(5)
+
+			if n := l.Limit(); n != 5 {
+				return fmt.Errorf("Truncate() did not cut to 5, but to %v", n)
+			}
+			return nil
+		},
+	},
+	"truncate-seek": {
+		[]byte("01234"),
+		func(l *Layer) error {
+			l.Truncate(5)
+			n, err := l.Seek(5, os.SEEK_SET)
+			if err != nil {
+				return fmt.Errorf("Seek to end failed: %v", err)
+			}
+
+			if n != 5 {
+				return fmt.Errorf("Seek tells the wrong position: 5 != %d", n)
+			}
+
+			n, err = l.Seek(6, os.SEEK_SET)
+			if err != io.EOF {
+				return fmt.Errorf("Seek can seek over the truncation limit")
+			}
+
+			b := make([]byte, 10)
+			if n, err := l.Read(b); n > 0 || err != io.EOF {
+				return fmt.Errorf("Read delivers data over limit (%d bytes): %v", n, err)
+			}
+
 			return nil
 		},
 	},

@@ -54,7 +54,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		log.Debugf("Serving FUSE at %v", mountpoint)
 		mnt.errors <- mnt.Server.Serve(filesys)
 		mnt.done <- util.Empty{}
-		log.Debug("Stopped serving FUSE at %v", mountpoint)
+		log.Debugf("Stopped serving FUSE at %v", mountpoint)
 	}()
 
 	select {
@@ -91,21 +91,21 @@ func (m *Mount) Close() error {
 		break
 	}
 
-	if err := m.Conn.Close(); err != nil {
-		return err
-	}
-
 	// Be sure to drain the error channel:
 	select {
 	case err := <-m.errors:
 		// Serve() had some error after some time:
 		if err != nil {
-			log.Warning("fuse returned an error: %v", err)
+			log.Warningf("fuse returned an error: %v", err)
 		}
 	}
 
 	// Be sure to pull the item from the channel:
 	<-m.done
+
+	if err := m.Conn.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
