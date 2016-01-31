@@ -15,7 +15,9 @@ import (
 	"io"
 
 	"github.com/disorganizer/brig/util/security"
-	"github.com/tang0th/go-ecdh"
+	// TODO: Change back to tang0th when merged:
+	//       https://github.com/tang0th/go-ecdh/pull/1
+	"github.com/sahib/go-ecdh"
 )
 
 type ecdhTunnel struct {
