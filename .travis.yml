@@ -4,6 +4,6 @@ notifications:
       - sahib@online.de
       - christoph@nullcat.de
 install:
-    - go get .
+    - go get -t -v ./...
 script:
     - go test -v ./...
