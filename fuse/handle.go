@@ -9,6 +9,7 @@ import (
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util/ipfsutil"
 	"golang.org/x/net/context"
 )
 
@@ -18,6 +19,7 @@ type Handle struct {
 	// Protect access of `layer`
 	sync.Mutex
 
+	stream ipfsutil.Reader
 	// Write in-memory layer
 	layer *store.Layer
 }
@@ -30,10 +32,17 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	path := h.File.Path()
-	stream, err := h.File.Stream()
-	if err != nil {
-		log.Errorf("fuse: Read: `%s` failed: %v", path, err)
-		return fuse.ENODATA
+
+	h.Lock()
+	defer h.Unlock()
+
+	if h.stream == nil {
+		stream, err := h.File.Stream()
+		if err != nil {
+			return fuse.ENODATA
+		}
+
+		h.stream = stream
 	}
 
 	log.WithFields(log.Fields{
@@ -42,7 +51,7 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 		"size":   req.Size,
 	}).Debugf("fuse read")
 
-	pos, err := stream.Seek(req.Offset, os.SEEK_SET)
+	pos, err := h.stream.Seek(req.Offset, os.SEEK_SET)
 	if err != nil {
 		log.Errorf("fuse: Read: seek failed on `%s`: %v", path, err)
 		return fuse.ENODATA
@@ -52,8 +61,8 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 		log.Warningf("fuse: Read: warning: seek_off (%d) != req_off (%d)", pos, req.Offset)
 	}
 
-	resp.Data = make([]byte, req.Size)
-	n, err := io.ReadAtLeast(stream, resp.Data, req.Size)
+	// resp.Data = make([]byte, req.Size)
+	n, err := io.ReadAtLeast(h.stream, resp.Data[:req.Size], req.Size)
 	if err != nil && err != io.ErrUnexpectedEOF {
 		log.Errorf("fuse: Read: streaming `%s` failed: %v", path, err)
 		return fuse.ENODATA
@@ -70,12 +79,16 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	log.Infof("Oh, a write request!")
 
 	if h.layer == nil {
-		stream, err := h.File.Stream()
-		if err != nil {
-			return fuse.ENODATA
+		if h.stream == nil {
+			stream, err := h.File.Stream()
+			if err != nil {
+				return fuse.ENODATA
+			}
+			h.stream = stream
 		}
 
-		h.layer = store.NewLayer(stream)
+		h.layer = store.NewLayer(h.stream)
+
 		log.Debugf("fuse: truncating %s to %d %p", h.File.Path(), h.File.Size, h.File)
 		h.File.Lock()
 		{

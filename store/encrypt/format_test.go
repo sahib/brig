@@ -196,7 +196,8 @@ func TestSeekThenRead(t *testing.T) {
 		panic(err)
 	}
 
-	buf := make([]byte, GoodEncBufferSize)
+	// Use a different buf size for a change:
+	buf := make([]byte, 4096)
 
 	// Encrypt:
 	_, err = io.CopyBuffer(encLayer, source, buf)
