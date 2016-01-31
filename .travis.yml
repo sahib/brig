@@ -5,3 +5,5 @@ notifications:
       - christoph@nullcat.de
 install:
     - go get .
+script:
+    - go test -v ./...
