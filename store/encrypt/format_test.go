@@ -178,3 +178,73 @@ func BenchmarkEncDec(b *testing.B) {
 		testSimpleEncDec(nil, MaxBlockSize*100)
 	}
 }
+
+// Regression test:
+// check that reader does not read first block first,
+// even if jumping right into the middle of the file.
+func TestSeekThenRead(t *testing.T) {
+	N := int64(2 * MaxBlockSize)
+	a := testutil.CreateDummyBuf(N)
+	b := make([]byte, 0, N)
+
+	source := bytes.NewBuffer(a)
+	shared := &bytes.Buffer{}
+	dest := bytes.NewBuffer(b)
+
+	encLayer, err := NewWriter(shared, TestKey)
+	if err != nil {
+		panic(err)
+	}
+
+	buf := make([]byte, GoodEncBufferSize)
+
+	// Encrypt:
+	_, err = io.CopyBuffer(encLayer, source, buf)
+	if err != nil {
+		panic(err)
+	}
+
+	// This needs to be here, since close writes
+	// left over data to the write stream
+	encLayer.Close()
+
+	sharedReader := bytes.NewReader(shared.Bytes())
+	decLayer, err := NewReader(sharedReader, TestKey)
+	if err != nil {
+		panic(err)
+	}
+	defer decLayer.Close()
+
+	// Jump somewhere inside the large file:
+	jumpPos := N/2 + N/4 + 1
+	newPos, err := decLayer.Seek(jumpPos, os.SEEK_SET)
+	if err != nil {
+		t.Errorf("Seek failed in SeekThenRead: %v", err)
+		return
+	}
+
+	if newPos != jumpPos {
+		t.Errorf("Seek jumped to %v (should be %v)", newPos, N/2+N/4)
+		return
+	}
+
+	// Decrypt:
+	copiedBytes, err := io.CopyBuffer(dest, decLayer, buf)
+	if err != nil {
+		t.Errorf("Decrypt failed: %v", err)
+		return
+	}
+
+	if copiedBytes != N-jumpPos {
+		t.Errorf("Copied different amount of decrypted data than expected.")
+		t.Errorf("Should be %v, was %v bytes.", copiedBytes, N-jumpPos)
+		return
+	}
+
+	// Check the data actually matches the source data.
+	if !bytes.Equal(a[newPos:], dest.Bytes()) {
+		t.Errorf("Seeked data does not match expectations.")
+		t.Errorf("\tEXPECTED: %v...", a[newPos:newPos:10])
+		t.Errorf("\tGOT:      %v...", dest.Bytes()[:10])
+	}
+}

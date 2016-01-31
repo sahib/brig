@@ -106,6 +106,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		return 0, fmt.Errorf("SEEK_END is not supported for encrypted data")
 	}
 
+	if r.lastSeekPos == absOffsetDec {
+		// Nothing changed, why bother?
+		return r.lastSeekPos, nil
+	}
+
 	if absOffsetDec < 0 {
 		return 0, fmt.Errorf("Negative seek index")
 	}

@@ -36,6 +36,12 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 		return fuse.ENODATA
 	}
 
+	log.WithFields(log.Fields{
+		"path":   path,
+		"offset": req.Offset,
+		"size":   req.Size,
+	}).Debugf("fuse read")
+
 	pos, err := stream.Seek(req.Offset, os.SEEK_SET)
 	if err != nil {
 		log.Errorf("fuse: Read: seek failed on `%s`: %v", path, err)
