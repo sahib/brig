@@ -79,7 +79,6 @@ func (r *Repository) Close() error {
 		absNames = append(absNames, absName)
 	}
 
-	fmt.Println(absNames)
 	if err := LockFiles(r.Jid, r.Password, absNames); err != nil {
 		return err
 	}

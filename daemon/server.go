@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	"time"
 
@@ -37,9 +36,6 @@ type Server struct {
 
 	// XMPP is the control client to the outside world.
 	XMPP *im.Client
-
-	// Handle to `ipfs daemon`
-	ipfsDaemon *exec.Cmd
 
 	// All mountpoints this daemon is serving:
 	Mounts *fuse.MountTable
@@ -100,9 +96,8 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		Repo:   repository,
 		Mounts: fuse.NewMountTable(repository.Store),
 		// XMPP:     xmppClient,
-		signals:  make(chan os.Signal, 1),
-		listener: listener,
-		// ipfsDaemon:     proc,
+		signals:        make(chan os.Signal, 1),
+		listener:       listener,
 		maxConnections: make(chan allowOneConn, MaxConnections),
 		ctx:            ctx,
 	}
@@ -113,19 +108,11 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 // Serve waits until the Server received a quit reason.
 func (d *Server) Serve() {
-	fmt.Println("Serving... ")
 	<-d.ctx.Done()
-	fmt.Println("Serving done... ")
 	d.listener.Close()
 
 	if err := d.Mounts.Close(); err != nil {
 		log.Errorf("Error while closing mounts: %v", err)
-	}
-
-	if d.ipfsDaemon != nil {
-		if err := d.ipfsDaemon.Process.Kill(); err != nil {
-			log.Errorf("Unable to kill off ipfs daemon: %v", err)
-		}
 	}
 
 	if err := d.Repo.Close(); err != nil {

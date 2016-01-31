@@ -64,7 +64,6 @@ func Open(repoPath string) (*Store, error) {
 	if err != nil {
 		log.Warningf("store-create failed: %v", err)
 	}
-	fmt.Println("Done create")
 
 	// Load all paths from the database into the trie:
 	rootDir, err := newDirUnlocked(store, "/")
@@ -73,18 +72,14 @@ func Open(repoPath string) (*Store, error) {
 	}
 
 	store.Root = rootDir
-	fmt.Println("Done newDir")
 
 	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
-			fmt.Println("Unmarshal")
 			Unmarshal(store, v)
-			fmt.Println("Unmarshal done")
 			return nil
 		})
 	}))
 
-	fmt.Println("Done open")
 	return store, err
 }
 
@@ -159,7 +154,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) erro
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
 
-	log.Infof("bolt lookup: %v", file)
+	log.Debugf("bolt lookup: %v", file != nil)
 
 	if file != nil {
 		// We know this file already.
@@ -263,15 +258,35 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
+// GoOffline shuts down all store services that need an connection
+// to the outside.
+func (s *Store) GoOffline() error {
+	log.Infof("Going offline (bye, ipfs and xmpp)...")
+	if err := s.IpfsNode.IpfsNode.Close(); err != nil {
+		log.Warningf("Unable to close ipfs node: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 // Close syncs all data. It is an error to use the store afterwards.
-func (s *Store) Close() {
+func (s *Store) Close() error {
+	if err := s.GoOffline(); err != nil {
+		return err
+	}
+
 	if err := s.db.Sync(); err != nil {
 		log.Warningf("store-sync: %v", err)
+		return err
 	}
 
 	if err := s.db.Close(); err != nil {
 		log.Warningf("store-close: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 // Rm will purge a file locally on this node.

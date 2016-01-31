@@ -3,10 +3,10 @@ package store
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store/proto"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
@@ -97,18 +97,14 @@ func NewFile(store *Store, path string, meta *Metadata) (*File, error) {
 		Key:      key,
 		IsFile:   true,
 	}
-	fmt.Println("add lock")
 
 	store.Root.Lock()
 	defer store.Root.Unlock()
-
-	fmt.Println("add new file")
 
 	if err := file.insert(store.Root, path, meta.Size, meta.ModTime); err != nil {
 		return nil, err
 	}
 
-	fmt.Println("add new file done")
 	return file, nil
 }
 
@@ -337,8 +333,7 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Println("CAT HASH", f.Hash.B58String())
-	log.Printf("CAT KEY  %x\n", f.Key)
+	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.Hash.B58String(), f.Key)
 
 	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.Hash)
 	if err != nil {
