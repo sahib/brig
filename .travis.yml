@@ -1,0 +1,7 @@
+language: go
+notifications:
+    email:
+      - sahib@online.de
+      - christoph@nullcat.de
+install:
+    - go get .
