@@ -25,7 +25,7 @@ func TestWriteAndRead(t *testing.T) {
 		return
 	}
 
-	decStream, err := NewIpfsReader(TestKey, encrypted)
+	decStream, err := NewIpfsReader(TestKey, bytes.NewReader(encrypted.Bytes()))
 	if err != nil {
 		t.Errorf("Creating decryption stream failed: %v", err)
 		return

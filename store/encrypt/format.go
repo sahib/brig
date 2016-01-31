@@ -20,6 +20,9 @@
 // Reader/Writer are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
+// TODO: Header needs a MAC to be authenticated and prevent forgery.
+//       Also random nonces might be better suitable for inserting blocks
+//       into the middle (+ a smaller packet size)
 package encrypt
 
 import (

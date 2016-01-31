@@ -15,7 +15,7 @@ type Reader interface {
 	io.Closer
 }
 
-func NewIpfsReader(key []byte, r Reader) (Reader, error) {
+func NewIpfsReader(key []byte, r io.ReadSeeker) (Reader, error) {
 	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err

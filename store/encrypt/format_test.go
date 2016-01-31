@@ -3,12 +3,12 @@ package encrypt
 import (
 	"bytes"
 	"fmt"
-	"github.com/disorganizer/brig/util/testutil"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
+
+	"github.com/disorganizer/brig/util/testutil"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
@@ -44,15 +44,13 @@ func testSimpleEncDec(t *testing.T, size int) {
 	defer os.Remove(encPath)
 
 	if err != nil {
-		log.Println(err)
 		t.Errorf("Encrypt failed: %v", err)
 	}
 
 	_, err = decryptFile(TestKey, encPath, decPath)
 	defer os.Remove(decPath)
 
-	if err != nil {
-		log.Println(err)
+	if (err == io.EOF && size != 0) || (err != nil && err != io.EOF) {
 		t.Errorf("Decrypt failed: %v", err)
 	}
 
@@ -64,8 +62,9 @@ func testSimpleEncDec(t *testing.T, size int) {
 		t.Errorf("Source and decrypted not equal")
 	}
 
-	if bytes.Equal(a, c) {
+	if bytes.Equal(a, c) && size != 0 {
 		t.Errorf("Source was not encrypted (same as source)")
+		t.Errorf("%v|||%v|||%v", a, b, c)
 	}
 }
 
@@ -87,6 +86,7 @@ func TestSimpleEncDec(t *testing.T) {
 	}
 
 	for size := range sizes {
+		t.Logf("Testing SimpleEncDec for size %d", size)
 		testSimpleEncDec(t, size)
 	}
 }

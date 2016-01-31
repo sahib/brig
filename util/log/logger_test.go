@@ -49,6 +49,10 @@ func TestLog(t *testing.T) {
 
 	logrus.Error("Stuff!")
 
+	defer func() {
+		logrus.Infof("Panicked but recovered: %v", recover())
+	}()
+
 	logrus.WithFields(logrus.Fields{
 		"animal": "orca",
 		"size":   9009,
