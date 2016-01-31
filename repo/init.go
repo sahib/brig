@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/repo/global"
@@ -15,6 +14,7 @@ import (
 	logutil "github.com/disorganizer/brig/util/log"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	"github.com/wayn3h0/go-uuid"
 )
 
 // NewRepository creates a new repository at filesystem level
@@ -39,9 +39,14 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
+	repoUUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, err
+	}
+
 	configDefaults := map[string]interface{}{
 		"repository.jid":  jid,
-		"repository.uuid": uuid.NewRandom().String(),
+		"repository.uuid": repoUUID.String(),
 		"repository.mid":  minilockID,
 		"ipfs.path":       filepath.Join(absFolderPath, ".brig", "ipfs"),
 	}
