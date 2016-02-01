@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"bytes"
 	"os"
 	"unsafe"
 
@@ -57,16 +58,28 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 }
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	child, err := d.File.Insert(req.Name, req.Mode&os.ModeDir == 0)
+	// child, err := d.File.Insert(req.Name, req.Mode&os.ModeDir == 0)
+	var err error
+
+	switch {
+	case req.Mode&os.ModeDir != 0:
+		_, err = d.fs.Store.Mkdir(req.Name)
+	default:
+		// TODO: this is kinda stupid, add utility function store.Touch()?
+		r := bytes.NewReader([]byte{})
+		err = d.fs.Store.AddFromReader(req.Name, r)
+	}
+
 	if err != nil {
 		log.WithFields(log.Fields{
-			"child": child,
+			"path":  d.File.Path(),
+			"child": req.Name,
 			"error": err,
 		}).Warning("fuse-create failed")
 		return nil, nil, fuse.ENODATA
 	}
 
-	entry := &Entry{File: child, fs: d.fs}
+	entry := &Entry{File: d.File.Child(req.Name), fs: d.fs}
 	return entry, Handle{Entry: entry}, nil
 }
 

@@ -32,13 +32,13 @@ func (e *Entry) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 }
 
 func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
-	// TODO: Update {m,c,a}time? Maybe not needed/Unsure when this is called.
+	// This is called when any attribute of the file changes,
+	// most importantly the file size. For example it is called when truncating
+	// the file to zero bytes with a size change of `0`.
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
 		log.Warningf("SIZE CHANGED OF %s: %d %p", e.File.Path(), req.Size, e.File)
-		e.File.Lock()
-		e.File.Size = store.FileSize(req.Size)
-		e.File.Unlock()
+		e.File.UpdateSize(req.Size)
 	}
 
 	return nil

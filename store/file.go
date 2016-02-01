@@ -37,11 +37,36 @@ type File struct {
 	Key  []byte
 }
 
-func (f *File) insert(root *File, path string, size FileSize, modTime time.Time) error {
+func (f *File) insert(root *File, path string) {
 	f.node = root.node.InsertWithData(path, f)
+}
 
-	var outerErr error
+func (f *File) Sync() {
+	f.Lock()
+	defer f.Unlock()
 
+	f.sync()
+}
+
+func (f *File) UpdateSize(size uint64) {
+	f.Lock()
+	defer f.Unlock()
+
+	f.Size = FileSize(size)
+	f.ModTime = time.Now()
+	f.sync()
+}
+
+func (f *File) UpdateModTime(modTime time.Time) {
+	f.Lock()
+	defer f.Unlock()
+
+	f.ModTime = modTime
+	f.sync()
+}
+
+func (f *File) sync() {
+	// TODO: Save to bolt.
 	// Create intermediate directories on the way up,
 	// also fix size and mtime accordingly.
 	f.node.Up(func(parent *trie.Node) {
@@ -53,7 +78,7 @@ func (f *File) insert(root *File, path string, size FileSize, modTime time.Time)
 		if parent.Data == nil {
 			newDir := &File{
 				store:    f.store,
-				RWMutex:  root.RWMutex,
+				RWMutex:  f.store.Root.RWMutex,
 				Metadata: &Metadata{},
 			}
 
@@ -62,24 +87,14 @@ func (f *File) insert(root *File, path string, size FileSize, modTime time.Time)
 			parentDir = parent.Data.(*File)
 		}
 
-		parentDir.Size += size
-		parentDir.ModTime = modTime
+		parentDir.Size += f.Size
+		parentDir.ModTime = f.ModTime
 	})
-
-	// TODO: queue this up... leads to deadlocks here
-	// if doMarshal {
-	// 	fmt.Println("Marshalling")
-	// 	if err := f.store.marshalFile(f, path); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	return outerErr
 }
 
 // New returns a file inside a repo.
 // Path is relative to the repo root.
-func NewFile(store *Store, path string, meta *Metadata) (*File, error) {
+func NewFile(store *Store, path string) (*File, error) {
 	key := make([]byte, 32)
 	n, err := rand.Reader.Read(key)
 	if err != nil {
@@ -93,7 +108,7 @@ func NewFile(store *Store, path string, meta *Metadata) (*File, error) {
 	file := &File{
 		store:    store,
 		RWMutex:  store.Root.RWMutex,
-		Metadata: meta,
+		Metadata: &Metadata{},
 		Key:      key,
 		IsFile:   true,
 	}
@@ -101,10 +116,7 @@ func NewFile(store *Store, path string, meta *Metadata) (*File, error) {
 	store.Root.Lock()
 	defer store.Root.Unlock()
 
-	if err := file.insert(store.Root, path, meta.Size, meta.ModTime); err != nil {
-		return nil, err
-	}
-
+	file.insert(store.Root, path)
 	return file, nil
 }
 
@@ -139,10 +151,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		root = store.Root
 	}
 
-	if err := dir.insert(root, path, 0, dir.ModTime); err != nil {
-		return nil, err
-	}
-
+	dir.insert(root, path)
 	return dir, nil
 }
 
@@ -195,16 +204,13 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		},
 	}
 
-	fmt.Println("unmarshal lock")
 	file.Lock()
 	defer file.Unlock()
-	fmt.Println("unmarshal lock done")
 
 	path := dataFile.GetPath()
-	if err := file.insert(store.Root, path, file.Size, file.ModTime); err != nil {
-		return nil, err
-	}
-	fmt.Println("slow insert")
+	file.insert(store.Root, path)
+	file.sync()
+
 	return file, nil
 }
 
@@ -213,6 +219,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 ///////////////////
 
 // The created file is empty and has a size of 0.
+// TODO: That's some ugly API
 func (f *File) Insert(path string, isFile bool) (*File, error) {
 	child := &File{
 		store:   f.store,
@@ -227,10 +234,8 @@ func (f *File) Insert(path string, isFile bool) (*File, error) {
 	f.Lock()
 	defer f.Unlock()
 
-	if err := child.insert(f, path, 0, child.ModTime); err != nil {
-		return nil, err
-	}
-
+	child.insert(f, path)
+	child.sync()
 	return child, nil
 }
 
@@ -320,6 +325,22 @@ func (f *File) Children() []*File {
 	}
 
 	return children
+}
+
+func (f *File) Child(name string) *File {
+	f.RLock()
+	defer f.RUnlock()
+
+	if f.node.Children == nil {
+		return nil
+	}
+
+	child, ok := f.node.Children[name]
+	if ok {
+		return child.Data.(*File)
+	}
+
+	return nil
 }
 
 func (f *File) Name() string {

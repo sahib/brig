@@ -118,15 +118,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 			}
 			defer fd.Close()
 
-			info, err := os.Stat(path)
-			if err != nil {
-				return err
-			}
-
-			err = s.AddFromReader(currPath, fd, &Metadata{
-				Size:    FileSize(info.Size()),
-				ModTime: info.ModTime(),
-			})
+			err = s.AddFromReader(currPath, fd)
 		case mode.IsDir():
 			_, err = s.Mkdir(currPath)
 		default:
@@ -150,10 +142,9 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 
 // Add reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) error {
+func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
-
 	log.Debugf("bolt lookup: %v", file != nil)
 
 	if file != nil {
@@ -164,7 +155,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) erro
 
 		// TODO: Write oldFile to commit history here...
 	} else {
-		newFile, err := NewFile(s, repoPath, meta)
+		newFile, err := NewFile(s, repoPath)
 		if err != nil {
 			return err
 		}
@@ -195,6 +186,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, meta *Metadata) erro
 		file.Size = FileSize(sizeAcc.Size())
 		file.ModTime = time.Now()
 		file.Hash = hash
+		file.sync()
 	}
 	file.Unlock()
 

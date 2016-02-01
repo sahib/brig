@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"sync"
-	"time"
 
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
@@ -19,7 +18,9 @@ type Handle struct {
 	// Protect access of `layer`
 	sync.Mutex
 
+	// actual data stream
 	stream ipfsutil.Reader
+
 	// Write in-memory layer
 	layer *store.Layer
 }
@@ -61,7 +62,6 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 		log.Warningf("fuse: Read: warning: seek_off (%d) != req_off (%d)", pos, req.Offset)
 	}
 
-	// resp.Data = make([]byte, req.Size)
 	n, err := io.ReadAtLeast(h.stream, resp.Data[:req.Size], req.Size)
 	if err != nil && err != io.ErrUnexpectedEOF {
 		log.Errorf("fuse: Read: streaming `%s` failed: %v", path, err)
@@ -90,6 +90,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 		h.layer = store.NewLayer(h.stream)
 
 		log.Debugf("fuse: truncating %s to %d %p", h.File.Path(), h.File.Size, h.File)
+
 		h.File.Lock()
 		{
 			h.layer.Truncate(int64(h.File.Size))
@@ -151,13 +152,10 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	// Update the mtime:
-	h.File.Metadata.ModTime = time.Now()
-
 	// TODO: Remove debug tee.
 	tee := io.TeeReader(h.layer, os.Stdout)
 
-	if err := h.fs.Store.AddFromReader(h.File.Path(), tee, h.File.Metadata); err != nil {
+	if err := h.fs.Store.AddFromReader(h.File.Path(), tee); err != nil {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
 	}

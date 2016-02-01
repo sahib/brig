@@ -3,7 +3,7 @@
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
-// HEADER is 20 bytes big and contains the following fields:
+// HEADER is 28 bytes big and contains the following fields:
 //    - 8 Byte: Magic number (to identify non-brig files quickly)
 //    - 2 Byte: Format version
 //    - 2 Byte: Used cipher type (ChaCha20 or AES-GCM)
