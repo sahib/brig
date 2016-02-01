@@ -54,7 +54,7 @@ const (
 	defaultCipherType = aeadCipherChaCha
 
 	// MaxBlockSize is the maximum number of bytes a single payload may have
-	MaxBlockSize = 1 * 1024 * 1024
+	MaxBlockSize = 64 * 1024
 
 	// GoodEncBufferSize is the recommended size of buffers
 	GoodEncBufferSize = MaxBlockSize + 32

@@ -1,7 +1,7 @@
 package encrypt
 
 import (
-	"encoding/binary"
+	"crypto/rand"
 	"fmt"
 	"io"
 
@@ -59,8 +59,9 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 	}
 
 	// Create a new Nonce for this block:
-	blockNum := binary.BigEndian.Uint64(w.nonce)
-	binary.BigEndian.PutUint64(w.nonce, blockNum+1)
+	if _, err := rand.Read(w.nonce); err != nil {
+		return 0, err
+	}
 
 	// Encrypt the text:
 	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.decBuf[:n], nil)
