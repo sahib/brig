@@ -176,7 +176,7 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 		return nil, fmt.Errorf("No valid header found, damaged file?")
 	}
 
-	version, ciperType, keylen, _, err := ParseHeader(header)
+	version, ciperType, keylen, _, err := ParseHeader(header, key)
 	if err != nil {
 		return nil, err
 	}

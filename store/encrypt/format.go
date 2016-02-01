@@ -9,6 +9,7 @@
 //    - 2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    - 4 Byte: Key length in bytes.
 //	  - 4 Byte: Maximum size of each block (last may be less)
+//    - 8 Byte: MAC protecting the header from forgery
 //
 // BLOCKHEADER contains the following fields:
 //    - 8 Byte: Nonce/Block number
@@ -20,20 +21,19 @@
 // Reader/Writer are capable or reading/writing this format.
 // Additionally, both support efficient seeking into the encrypted data,
 // provided the underlying datastream supports seeking.
-// TODO: Header needs a MAC to be authenticated and prevent forgery.
-//       Also random nonces might be better suitable for inserting blocks
-//       into the middle (+ a smaller packet size)
 package encrypt
 
 import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"encoding/binary"
 	"fmt"
 	"io"
 
 	chacha "github.com/codahale/chacha20poly1305"
+	"golang.org/x/crypto/sha3"
 )
 
 // Possible ciphers in Counter mode:
@@ -45,7 +45,10 @@ const (
 // Other constants:
 const (
 	// Size of the initial header:
-	headerSize = 20
+	headerSize = 28
+
+	// Size of the header mac:
+	macSize = 8
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
@@ -60,6 +63,13 @@ const (
 	GoodDecBufferSize = MaxBlockSize
 )
 
+var (
+	MagicNumber = []byte{
+		0x6d, 0x6f, 0x6f, 0x73,
+		0x65, 0x63, 0x61, 0x74,
+	}
+)
+
 // KeySize of the used cipher's key in bytes.
 var KeySize = chacha.KeySize
 
@@ -68,12 +78,11 @@ var KeySize = chacha.KeySize
 ////////////////////
 
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader() []byte {
+func GenerateHeader(key []byte) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
-		0x6d, 0x6f, 0x6f, 0x73,
-		0x65, 0x63, 0x61, 0x74,
+		0, 0, 0, 0, 0, 0, 0, 0,
 		// File format version (2 Byte):
 		0x0, 0x1,
 		// Cipher type (2 Byte):
@@ -83,19 +92,36 @@ func GenerateHeader() []byte {
 		0, 0, 0, 0,
 		// Block length (4 Byte):
 		0, 0, 0, 0,
+		// MAC Header (8 Byte):
+		0, 0, 0, 0, 0, 0, 0, 0,
 	}
 
+	// Magic number:
+	copy(header[:len(MagicNumber)], MagicNumber)
+
+	// Encode key size:
 	binary.BigEndian.PutUint32(header[12:16], uint32(KeySize))
+
+	// Encode max block size:
 	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
+
+	// This needs to be done last:
+	headerMac := hmac.New(sha3.New224, key)
+	if _, err := headerMac.Write(header[:20]); err != nil {
+		return nil
+	}
+
+	shortHeaderMac := headerMac.Sum(nil)[:8]
+	copy(header[20:28], shortHeaderMac)
+
 	return header
 }
 
 // ParseHeader parses the header of the format file.
 // Returns the format version, cipher type, keylength and block length. If
 // parsing fails, an error is returned.
-func ParseHeader(header []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
-	expected := GenerateHeader()
-	if bytes.Compare(header[:8], expected[:8]) != 0 {
+func ParseHeader(header, key []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
+	if bytes.Compare(header[:len(MagicNumber)], MagicNumber) != 0 {
 		err = fmt.Errorf("Magic number in header differs")
 		return
 	}
@@ -115,6 +141,21 @@ func ParseHeader(header []byte) (format uint16, cipher uint16, keylen uint32, bl
 	blocklen = binary.BigEndian.Uint32(header[16:20])
 	if blocklen != MaxBlockSize {
 		err = fmt.Errorf("Unsupported block length in header: %d", blocklen)
+		return
+	}
+
+	// Check the header mac:
+	headerMac := hmac.New(sha3.New224, key)
+	if _, macErr := headerMac.Write(header[:20]); macErr != nil {
+		err = macErr
+		return
+	}
+
+	storedMac := header[20:28]
+	shortHeaderMac := headerMac.Sum(nil)[:8]
+	if !hmac.Equal(shortHeaderMac, storedMac) {
+		err = fmt.Errorf("Header MAC differs. An attacker might have changed the data!")
+		return
 	}
 
 	return
@@ -144,6 +185,9 @@ type aeadCommon struct {
 	// of the output
 	nonce []byte
 
+	// Key used for encryption/decryption
+	key []byte
+
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
@@ -163,6 +207,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 
 	c.nonce = make([]byte, aead.NonceSize())
 	c.aead = aead
+	c.key = key
 
 	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
 	c.decBuf = make([]byte, 0, MaxBlockSize)

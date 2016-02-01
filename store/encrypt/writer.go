@@ -29,7 +29,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	if !w.headerWritten {
 		w.headerWritten = true
 
-		_, err := w.Writer.Write(GenerateHeader())
+		_, err := w.Writer.Write(GenerateHeader(w.key))
 		if err != nil {
 			return 0, err
 		}
