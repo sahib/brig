@@ -42,7 +42,8 @@ func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
 	pr, pw := io.Pipe()
 
 	// Setup the writer part:
-	wEnc, err := encrypt.NewWriter(pw, key)
+	// TODO: When using compression, pass as `true` to NewWriter.
+	wEnc, err := encrypt.NewWriter(pw, key, false)
 	if err != nil {
 		return nil, err
 	}

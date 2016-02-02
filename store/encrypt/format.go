@@ -6,7 +6,8 @@
 // HEADER is 28 bytes big and contains the following fields:
 //    - 8 Byte: Magic number (to identify non-brig files quickly)
 //    - 2 Byte: Format version
-//    - 2 Byte: Used cipher type (ChaCha20 or AES-GCM)
+//    - 1 Byte: Used cipher type (ChaCha20 or AES-GCM)
+//    - 1 Byte: Compression algorithm (currently 0 for none and 1 for snappy)
 //    - 4 Byte: Key length in bytes.
 //	  - 4 Byte: Maximum size of each block (last may be less)
 //    - 8 Byte: MAC protecting the header from forgery
@@ -44,11 +45,11 @@ const (
 
 // Other constants:
 const (
-	// Size of the initial header:
-	headerSize = 28
-
 	// Size of the header mac:
 	macSize = 8
+
+	// Size of the initial header:
+	headerSize = 20 + macSize
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
@@ -77,17 +78,26 @@ var KeySize = chacha.KeySize
 // Header Parsing //
 ////////////////////
 
+// Sometimes go is a bit weird:
+func btoi(b bool) byte {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader(key []byte) []byte {
+func GenerateHeader(key []byte, compression bool) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
 		// File format version (2 Byte):
 		0x0, 0x1,
-		// Cipher type (2 Byte):
-		defaultCipherType >> 8,
-		defaultCipherType & 0xff,
+		// Cipher type (1 Byte):
+		defaultCipherType,
+		// Cipher type (1 Byte):
+		btoi(compression),
 		// Key length (4 Byte):
 		0, 0, 0, 0,
 		// Block length (4 Byte):
@@ -111,61 +121,73 @@ func GenerateHeader(key []byte) []byte {
 		return nil
 	}
 
-	shortHeaderMac := headerMac.Sum(nil)[:8]
+	shortHeaderMac := headerMac.Sum(nil)[:macSize]
 	copy(header[20:28], shortHeaderMac)
 
 	return header
 }
 
+// TODO: Add explanation:
+type HeaderInfo struct {
+	Version    uint16
+	Cipher     uint8
+	Compressed uint8
+	Keylen     uint32
+	Blocklen   uint32
+}
+
 // ParseHeader parses the header of the format file.
 // Returns the format version, cipher type, keylength and block length. If
 // parsing fails, an error is returned.
-func ParseHeader(header, key []byte) (format uint16, cipher uint16, keylen uint32, blocklen uint32, err error) {
+func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	if bytes.Compare(header[:len(MagicNumber)], MagicNumber) != 0 {
-		err = fmt.Errorf("Magic number in header differs")
-		return
+		return nil, fmt.Errorf("Magic number in header differs")
 	}
 
-	format = binary.BigEndian.Uint16(header[8:10])
-	cipher = binary.BigEndian.Uint16(header[10:12])
+	version := binary.BigEndian.Uint16(header[8:10])
+	cipher := uint8(header[10])
 	switch cipher {
 	case aeadCipherAES:
 	case aeadCipherChaCha:
 		// we support this!
 	default:
-		err = fmt.Errorf("Unknown cipher type: %d", cipher)
-		return
+		return nil, fmt.Errorf("Unknown cipher type: %d", cipher)
 	}
 
-	keylen = binary.BigEndian.Uint32(header[12:16])
-	blocklen = binary.BigEndian.Uint32(header[16:20])
+	compressed := uint8(header[11])
+	keylen := binary.BigEndian.Uint32(header[12:16])
+	blocklen := binary.BigEndian.Uint32(header[16:20])
+
 	if blocklen != MaxBlockSize {
-		err = fmt.Errorf("Unsupported block length in header: %d", blocklen)
-		return
+		return nil, fmt.Errorf("Unsupported block length in header: %d", blocklen)
 	}
 
 	// Check the header mac:
 	headerMac := hmac.New(sha3.New224, key)
-	if _, macErr := headerMac.Write(header[:20]); macErr != nil {
-		err = macErr
-		return
+	if _, err := headerMac.Write(header[:20]); err != nil {
+		return nil, err
 	}
 
 	storedMac := header[20:28]
-	shortHeaderMac := headerMac.Sum(nil)[:8]
+	shortHeaderMac := headerMac.Sum(nil)[:macSize]
 	if !hmac.Equal(shortHeaderMac, storedMac) {
-		err = fmt.Errorf("Header MAC differs. An attacker might have changed the data!")
-		return
+		return nil, fmt.Errorf("Header MAC differs. An attacker might have changed the data!")
 	}
 
-	return
+	return &HeaderInfo{
+		Version:    version,
+		Cipher:     cipher,
+		Keylen:     keylen,
+		Blocklen:   blocklen,
+		Compressed: compressed,
+	}, nil
 }
 
 //////////////////////
 // Common Utilities //
 //////////////////////
 
-func createAEADWorker(cipherType uint16, key []byte) (cipher.AEAD, error) {
+func createAEADWorker(cipherType uint8, key []byte) (cipher.AEAD, error) {
 	switch cipherType {
 	case aeadCipherAES:
 		block, err := aes.NewCipher(key)
@@ -199,7 +221,7 @@ type aeadCommon struct {
 	decBuf []byte
 }
 
-func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
+func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
 		return err
@@ -218,7 +240,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
 func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
-	layer, err := NewWriter(dest, key)
+	layer, err := NewWriter(dest, key, false)
 	if err != nil {
 		return 0, err
 	}

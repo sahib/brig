@@ -100,7 +100,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	encLayer, err := NewWriter(shared, TestKey)
+	encLayer, err := NewWriter(shared, TestKey, false)
 	if err != nil {
 		panic(err)
 	}
@@ -191,7 +191,7 @@ func TestSeekThenRead(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	encLayer, err := NewWriter(shared, TestKey)
+	encLayer, err := NewWriter(shared, TestKey, false)
 	if err != nil {
 		panic(err)
 	}

@@ -21,6 +21,9 @@ type Reader struct {
 	// (Used to avoid re-reads in Seek())
 	// This does *not* equal the seek offset of the underlying stream.
 	lastSeekPos int64
+
+	// Parsed header info
+	info *HeaderInfo
 }
 
 // Read from source and decrypt.
@@ -139,7 +142,6 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			return 0, err
 		}
 	}
-
 	// Reslice the backlog, so Read() does not return skipped data.
 	r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET)
 	return absOffsetDec, nil
@@ -161,13 +163,8 @@ func (r *Reader) Close() error {
 // NewReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
 func NewReader(r io.Reader, key []byte) (*Reader, error) {
-	reader := &Reader{
-		Reader:  r,
-		backlog: bytes.NewReader([]byte{}),
-	}
-
 	header := make([]byte, headerSize)
-	n, err := reader.Reader.Read(header)
+	n, err := r.Read(header)
 	if err != nil {
 		return nil, err
 	}
@@ -176,22 +173,34 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 		return nil, fmt.Errorf("No valid header found, damaged file?")
 	}
 
-	version, ciperType, keylen, _, err := ParseHeader(header, key)
+	info, err := ParseHeader(header, key)
 	if err != nil {
 		return nil, err
 	}
 
-	if version != 1 {
+	if info.Version != 1 {
 		return nil, fmt.Errorf("This implementation does not support versions != 1")
 	}
 
-	if uint32(len(key)) != keylen {
-		return nil, fmt.Errorf("Key length differs: file=%d, user=%d", keylen, len(key))
+	if uint32(len(key)) != info.Keylen {
+		return nil, fmt.Errorf("Key length differs: file=%d, user=%d", info.Keylen, len(key))
 	}
 
-	if err := reader.initAeadCommon(key, ciperType); err != nil {
+	reader := &Reader{
+		Reader:  r,
+		backlog: bytes.NewReader([]byte{}),
+		info:    info,
+	}
+
+	if err := reader.initAeadCommon(key, info.Cipher); err != nil {
 		return nil, err
 	}
 
 	return reader, nil
+}
+
+// IsCompressed returns true when the content need to be decompressed after decrypting.
+// (or to be exact: when the file header states it was compressed)
+func (r *Reader) IsCompressed() bool {
+	return r.info.Compressed > 0
 }

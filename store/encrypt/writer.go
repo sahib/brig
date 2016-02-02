@@ -23,13 +23,17 @@ type Writer struct {
 
 	// True after the first write.
 	headerWritten bool
+
+	// Compression flag for the header.
+	// This module does not compression itself.
+	compressionFlag bool
 }
 
 func (w *Writer) Write(p []byte) (int, error) {
 	if !w.headerWritten {
 		w.headerWritten = true
 
-		_, err := w.Writer.Write(GenerateHeader(w.key))
+		_, err := w.Writer.Write(GenerateHeader(w.key, w.compressionFlag))
 		if err != nil {
 			return 0, err
 		}
@@ -102,11 +106,13 @@ func (w *Writer) Close() error {
 }
 
 // NewWriter returns a new Writer which encrypts data with a
-// certain key.
-func NewWriter(w io.Writer, key []byte) (*Writer, error) {
+// certain key. If `compressionFlag` is true, the compression
+// flag in the file header will also be true. Otherwise no compression is done.
+func NewWriter(w io.Writer, key []byte, compressionFlag bool) (*Writer, error) {
 	writer := &Writer{
-		Writer: w,
-		rbuf:   rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
+		Writer:          w,
+		rbuf:            rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
+		compressionFlag: compressionFlag,
 	}
 
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
