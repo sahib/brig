@@ -61,6 +61,8 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	// child, err := d.File.Insert(req.Name, req.Mode&os.ModeDir == 0)
 	var err error
 
+	log.Debugf("fuse-create: %v", req.Name)
+
 	switch {
 	case req.Mode&os.ModeDir != 0:
 		_, err = d.fs.Store.Mkdir(req.Name)
@@ -79,7 +81,10 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	}
 
 	child := d.File.Child(req.Name)
-	log.Debugf("fuse-create: %v", child.Path())
+	if child == nil {
+		log.Warning("No child %v in %v", req.Name, d)
+		return nil, nil, fuse.ENODATA
+	}
 
 	entry := &Entry{File: d.File.Child(req.Name), fs: d.fs}
 	return entry, &Handle{Entry: entry}, nil

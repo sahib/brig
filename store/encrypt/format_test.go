@@ -249,3 +249,8 @@ func TestSeekThenRead(t *testing.T) {
 		t.Errorf("\tGOT:      %v...", dest.Bytes()[:10])
 	}
 }
+
+func TestEmptyFile(t *testing.T) {
+	emptyBuf := []byte{}
+
+}

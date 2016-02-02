@@ -306,7 +306,12 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 
 	l.pos = newPos
 
-	return l.r.Seek(offset, whence)
+	// Silence EOF:
+	if _, err := l.r.Seek(offset, whence); err != nil && err != io.EOF {
+		return 0, err
+	}
+
+	return l.pos, nil
 }
 
 // Close tries to close the underlying stream (if supported).
