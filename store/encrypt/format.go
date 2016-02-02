@@ -171,7 +171,8 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	storedMac := header[20:28]
 	shortHeaderMac := headerMac.Sum(nil)[:macSize]
 	if !hmac.Equal(shortHeaderMac, storedMac) {
-		return nil, fmt.Errorf("Header MAC differs. An attacker might have changed the data!")
+		fmt.Printf("%x %x\n", storedMac, shortHeaderMac)
+		return nil, fmt.Errorf("Header MAC differs from expected.")
 	}
 
 	return &HeaderInfo{

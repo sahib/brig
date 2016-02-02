@@ -66,8 +66,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		_, err = d.fs.Store.Mkdir(req.Name)
 	default:
 		// TODO: this is kinda stupid, add utility function store.Touch()?
-		r := bytes.NewReader([]byte{})
-		err = d.fs.Store.AddFromReader(req.Name, r)
+		err = d.fs.Store.AddFromReader(req.Name, bytes.NewReader([]byte{}))
 	}
 
 	if err != nil {
@@ -78,6 +77,9 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		}).Warning("fuse-create failed")
 		return nil, nil, fuse.ENODATA
 	}
+
+	child := d.File.Child(req.Name)
+	log.Debugf("fuse-create: %v", child.Path())
 
 	entry := &Entry{File: d.File.Child(req.Name), fs: d.fs}
 	return entry, Handle{Entry: entry}, nil

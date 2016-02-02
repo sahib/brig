@@ -95,6 +95,16 @@ func (w *Writer) Seek(offset int64, whence int) (int64, error) {
 // Close the Writer and write any left-over blocks
 // This does not close the underlying data stream.
 func (w *Writer) Close() error {
+	// Also write a header, even if no write happened:
+	if !w.headerWritten {
+		w.headerWritten = true
+
+		_, err := w.Writer.Write(GenerateHeader(w.key, w.compressionFlag))
+		if err != nil {
+			return err
+		}
+	}
+
 	for w.rbuf.Readable > 0 {
 		n := util.Min(MaxBlockSize, w.rbuf.Readable)
 		_, err := w.flushPack(n)

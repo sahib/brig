@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"bazil.org/fuse"
+	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
@@ -37,34 +38,35 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 	h.Lock()
 	defer h.Unlock()
 
-	if h.stream == nil {
-		stream, err := h.File.Stream()
-		if err != nil {
-			return fuse.ENODATA
-		}
-
-		h.stream = stream
-	}
-
 	log.WithFields(log.Fields{
 		"path":   path,
 		"offset": req.Offset,
 		"size":   req.Size,
 	}).Debugf("fuse read")
 
+	if h.stream == nil {
+		stream, err := h.File.Stream()
+		if err != nil {
+			log.Errorf("fuse-read: Cannot open stream: %v", err)
+			return fuse.ENODATA
+		}
+
+		h.stream = stream
+	}
+
 	pos, err := h.stream.Seek(req.Offset, os.SEEK_SET)
-	if err != nil {
-		log.Errorf("fuse: Read: seek failed on `%s`: %v", path, err)
+	if err != nil && err != io.EOF {
+		log.Errorf("fuse-read: seek failed on `%s`: %v", path, err)
 		return fuse.ENODATA
 	}
 
 	if pos != req.Offset {
-		log.Warningf("fuse: Read: warning: seek_off (%d) != req_off (%d)", pos, req.Offset)
+		log.Warningf("fuse-read: warning: seek_off (%d) != req_off (%d)", pos, req.Offset)
 	}
 
 	n, err := io.ReadAtLeast(h.stream, resp.Data[:req.Size], req.Size)
-	if err != nil && err != io.ErrUnexpectedEOF {
-		log.Errorf("fuse: Read: streaming `%s` failed: %v", path, err)
+	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+		log.Errorf("fuse-read: streaming `%s` failed: %v", path, err)
 		return fuse.ENODATA
 	}
 
@@ -152,10 +154,9 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	// TODO: Remove debug tee.
-	tee := io.TeeReader(h.layer, os.Stdout)
+	log.Debugf("fuse-flush: %v", h.File.Path())
 
-	if err := h.fs.Store.AddFromReader(h.File.Path(), tee); err != nil {
+	if err := h.fs.Store.AddFromReader(h.File.Path(), h.layer); err != nil {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
 	}
@@ -167,3 +168,9 @@ func (h *Handle) flush() error {
 
 	return nil
 }
+
+// Compiler checks to see if we got all the interfaces right:
+var _ = fs.HandleFlusher(&Handle{})
+var _ = fs.HandleReader(&Handle{})
+var _ = fs.HandleReleaser(&Handle{})
+var _ = fs.HandleWriter(&Handle{})

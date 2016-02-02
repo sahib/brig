@@ -24,6 +24,49 @@ type Reader struct {
 
 	// Parsed header info
 	info *HeaderInfo
+
+	// true once readHeader() was called
+	parsedHeader bool
+
+	key []byte
+}
+
+func (r *Reader) readHeaderIfNotDone() error {
+	if r.parsedHeader {
+		return nil
+	}
+
+	r.parsedHeader = true
+
+	header := make([]byte, headerSize)
+	n, err := r.Reader.Read(header)
+	if err != nil {
+		return err
+	}
+
+	if n != headerSize {
+		return fmt.Errorf("No valid header found, damaged file?")
+	}
+
+	info, err := ParseHeader(header, r.key)
+	if err != nil {
+		return err
+	}
+
+	if info.Version != 1 {
+		return fmt.Errorf("This implementation does not support versions != 1")
+	}
+
+	if uint32(len(r.key)) != info.Keylen {
+		return fmt.Errorf("Key length differs: file=%d, user=%d", info.Keylen, len(r.key))
+	}
+
+	r.info = info
+	if err := r.initAeadCommon(r.key, info.Cipher); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Read from source and decrypt.
@@ -33,6 +76,11 @@ type Reader struct {
 // next read.
 func (r *Reader) Read(dest []byte) (int, error) {
 	readBytes := 0
+
+	// Make sure we have the info needed to parse the header:
+	if err := r.readHeaderIfNotDone(); err != nil {
+		return 0, err
+	}
 
 	// Try our best to fill len(dest)
 	for readBytes < len(dest) {
@@ -52,6 +100,10 @@ func (r *Reader) Read(dest []byte) (int, error) {
 
 // Fill internal buffer with current block
 func (r *Reader) readBlock() (int, error) {
+	if r.info == nil {
+		return 0, fmt.Errorf("Header could not been retrieved correctly.")
+	}
+
 	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
@@ -88,6 +140,10 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	seeker, ok := r.Reader.(io.ReadSeeker)
 	if !ok {
 		return 0, fmt.Errorf("Seek is not supported by underlying datastream")
+	}
+
+	if err := r.readHeaderIfNotDone(); err != nil {
+		return 0, err
 	}
 
 	// Constants and assumption on the stream below:
@@ -163,37 +219,11 @@ func (r *Reader) Close() error {
 // NewReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
 func NewReader(r io.Reader, key []byte) (*Reader, error) {
-	header := make([]byte, headerSize)
-	n, err := r.Read(header)
-	if err != nil {
-		return nil, err
-	}
-
-	if n != headerSize {
-		return nil, fmt.Errorf("No valid header found, damaged file?")
-	}
-
-	info, err := ParseHeader(header, key)
-	if err != nil {
-		return nil, err
-	}
-
-	if info.Version != 1 {
-		return nil, fmt.Errorf("This implementation does not support versions != 1")
-	}
-
-	if uint32(len(key)) != info.Keylen {
-		return nil, fmt.Errorf("Key length differs: file=%d, user=%d", info.Keylen, len(key))
-	}
-
 	reader := &Reader{
-		Reader:  r,
-		backlog: bytes.NewReader([]byte{}),
-		info:    info,
-	}
-
-	if err := reader.initAeadCommon(key, info.Cipher); err != nil {
-		return nil, err
+		Reader:       r,
+		backlog:      bytes.NewReader([]byte{}),
+		key:          key,
+		parsedHeader: false,
 	}
 
 	return reader, nil
@@ -202,5 +232,5 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 // IsCompressed returns true when the content need to be decompressed after decrypting.
 // (or to be exact: when the file header states it was compressed)
 func (r *Reader) IsCompressed() bool {
-	return r.info.Compressed > 0
+	return r.info != nil && r.info.Compressed > 0
 }

@@ -50,7 +50,7 @@ func testSimpleEncDec(t *testing.T, size int) {
 	_, err = decryptFile(TestKey, encPath, decPath)
 	defer os.Remove(decPath)
 
-	if (err == io.EOF && size != 0) || (err != nil && err != io.EOF) {
+	if err != nil {
 		t.Errorf("Decrypt failed: %v", err)
 	}
 
