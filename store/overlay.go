@@ -240,7 +240,10 @@ func (l *Layer) Read(buf []byte) (int, error) {
 	if err == io.EOF && l.pos < l.index.Max {
 		// There's only extending writes left.
 		// Empty `buf` so caller get's defined results.
-		for i := 0; i < len(buf); i++ {
+		// This should not happen in practice, but helps identifying bugs.
+		for i := n; i < len(buf); i++ {
+			// TODO: Turn this back to a nul-byte.
+			//       @ just is nice for debugging.
 			buf[i] = byte('@')
 		}
 
@@ -280,6 +283,10 @@ func (l *Layer) Read(buf []byte) (int, error) {
 }
 
 // Seek remembers the new position and delegates the seek down.
+// Note: if the file was truncated before, a seek after the limit
+//       will extend the truncation again and NOT return io.EOF.
+//       This might be surprising, but is convenient for first
+//       truncating to zero and then writing to the file.
 func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 	newPos := l.pos
 
@@ -294,10 +301,11 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 
 	// Check if we hit the truncate limit:
 	if l.limit >= 0 && l.limit < newPos {
-		return l.pos, io.EOF
+		l.limit = newPos
 	}
 
 	l.pos = newPos
+
 	return l.r.Seek(offset, whence)
 }
 

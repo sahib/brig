@@ -170,6 +170,21 @@ var SINGLE_WRITES = map[string]struct {
 			return nil
 		},
 	},
+	"truncate-then-write": {
+		[]byte("0123498765"),
+		func(l *Layer) error {
+			l.Truncate(0)
+			if n, err := l.Seek(5, os.SEEK_SET); err != nil || n != 5 {
+				return fmt.Errorf("Seek() did not work after Truncate(): %v (off: %v)", err, n)
+			}
+
+			if n, err := l.Write([]byte("98765")); err != nil || n != 5 {
+				return fmt.Errorf("Write errored or short write after truncate: %v (bytes: %v)", err, n)
+			}
+
+			return nil
+		},
+	},
 	"truncate-seek": {
 		[]byte("01234"),
 		func(l *Layer) error {
@@ -181,11 +196,6 @@ var SINGLE_WRITES = map[string]struct {
 
 			if n != 5 {
 				return fmt.Errorf("Seek tells the wrong position: 5 != %d", n)
-			}
-
-			n, err = l.Seek(6, os.SEEK_SET)
-			if err != io.EOF {
-				return fmt.Errorf("Seek can seek over the truncation limit")
 			}
 
 			b := make([]byte, 10)

@@ -27,6 +27,6 @@ cat /tmp/mount/hello_world | tee >(hash)
 # brig cat hello_world | tee >(hash)
 # cat /tmp/mount/hello_world | tee >(hash)
 section "=== FUSE MODIFY ==="
-echo 'What now?' > /tmp/mount/hello_world
+echo -n 'What now?' > /tmp/mount/hello_world
 cat /tmp/mount/hello_world | tee >(hash)
 section "=== FINISH ==="
