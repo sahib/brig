@@ -100,7 +100,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	encLayer, err := NewWriter(shared, TestKey, false)
+	enc, err := NewWriter(shared, TestKey, false)
 	if err != nil {
 		panic(err)
 	}
@@ -108,14 +108,14 @@ func TestSeek(t *testing.T) {
 	buf := make([]byte, GoodEncBufferSize)
 
 	// Encrypt:
-	_, err = io.CopyBuffer(encLayer, source, buf)
+	_, err = io.CopyBuffer(enc, source, buf)
 	if err != nil {
 		panic(err)
 	}
 
 	// This needs to be here, since close writes
 	// left over data to the write stream
-	encLayer.Close()
+	enc.Close()
 
 	sharedReader := bytes.NewReader(shared.Bytes())
 	decLayer, err := NewReader(sharedReader, TestKey)
@@ -191,7 +191,7 @@ func TestSeekThenRead(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	encLayer, err := NewWriter(shared, TestKey, false)
+	enc, err := NewWriter(shared, TestKey, false)
 	if err != nil {
 		panic(err)
 	}
@@ -200,14 +200,14 @@ func TestSeekThenRead(t *testing.T) {
 	buf := make([]byte, 4096)
 
 	// Encrypt:
-	_, err = io.CopyBuffer(encLayer, source, buf)
+	_, err = io.CopyBuffer(enc, source, buf)
 	if err != nil {
 		panic(err)
 	}
 
 	// This needs to be here, since close writes
 	// left over data to the write stream
-	encLayer.Close()
+	enc.Close()
 
 	sharedReader := bytes.NewReader(shared.Bytes())
 	decLayer, err := NewReader(sharedReader, TestKey)
@@ -251,6 +251,46 @@ func TestSeekThenRead(t *testing.T) {
 }
 
 func TestEmptyFile(t *testing.T) {
-	emptyBuf := []byte{}
+	srcBuf := []byte{}
+	dstBuf := []byte{}
+	tmpBuf := &bytes.Buffer{}
 
+	src := bytes.NewReader(srcBuf)
+	dst := bytes.NewBuffer(dstBuf)
+
+	enc, err := NewWriter(tmpBuf, TestKey, false)
+	if err != nil {
+		t.Errorf("TestEmpyFile: creating writer failed: %v", err)
+		return
+	}
+
+	if _, err := io.Copy(enc, src); err != nil {
+		t.Errorf("TestEmpyFile: copy(enc, src) failed: %v", err)
+		return
+	}
+
+	if err := enc.Close(); err != nil {
+		t.Errorf("TestEmpyFile: close(enc) failed: %v", err)
+		return
+	}
+
+	dec, err := NewReader(bytes.NewReader(tmpBuf.Bytes()), TestKey)
+	if err != nil {
+		t.Errorf("TestEmpyFile: creating reader failed: %v", err)
+		return
+	}
+
+	dec.Close()
+
+	dec.Seek(10, os.SEEK_SET)
+
+	if _, err := io.Copy(dst, dec); err != nil {
+		t.Errorf("TestEmpyFile: copy(dst, dec) failed: %v", err)
+		return
+	}
+
+	if !bytes.Equal(srcBuf, dstBuf) {
+		t.Errorf("TestEmpyFile: Not empty: src=%v dst=%v", srcBuf, dstBuf)
+		return
+	}
 }
