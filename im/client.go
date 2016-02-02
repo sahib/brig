@@ -193,6 +193,8 @@ func (c *Client) Listen() *Conversation {
 	return <-c.incomingBuddies
 }
 
+// Fingerprint returns a string representation of this client's current
+// fingerprint (which is a hash of the public otr key)
 func (c *Client) Fingerprint() string {
 	return c.fingerprint
 }

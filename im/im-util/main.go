@@ -67,14 +67,24 @@ func main() {
 
 		for i := 0; !cnv.Ended() && i < 10; i++ {
 			log.Infof("Alice: PING %d", i)
-			cnv.Write([]byte(fmt.Sprintf("PING %d", i)))
+			if _, err := cnv.Write([]byte(fmt.Sprintf("PING %d", i))); err != nil {
+				log.Warningf("Alice: Write failed: %v", err)
+				break
+			}
 
 			msg, err := cnv.ReadMessage()
+			if err != nil {
+				log.Warningf("Alice: ReadMessage failed: %v", err)
+				break
+			}
+
 			log.Infof("Alice: RECV %d: %s/%v", i, msg, err)
 			time.Sleep(2 * time.Second)
 		}
 
-		cnv.Close()
+		if err := cnv.Close(); err != nil {
+			log.Warningf("Alice: Close failed: %v", err)
+		}
 	} else {
 		for {
 			cnv := client.Listen()
@@ -85,7 +95,10 @@ func main() {
 					msg, err := cnv.ReadMessage()
 					log.Infof("Bob: RECV %d: %s/%v", i, msg, err)
 					log.Infof("Bob: PONG %d", i)
-					cnv.Write([]byte(fmt.Sprintf("PONG %d", i)))
+					if _, err := cnv.Write([]byte(fmt.Sprintf("PONG %d", i))); err != nil {
+						log.Warningf("Bob: write failed: %v", err)
+						break
+					}
 				}
 			}()
 		}

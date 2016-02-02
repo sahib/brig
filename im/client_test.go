@@ -49,11 +49,11 @@ func writeDummyBuddies(t *testing.T, r *Run) {
 	bobBuddies := fmt.Sprintf("%s: %s\n", r.alice.C.Jid, fa)
 
 	if err := ioutil.WriteFile(buddyPathA, []byte(aliceBuddies), 0644); err != nil {
-		t.Errorf("Could not create %v: %v", buddyPathA)
+		t.Errorf("Could not create %v: %v", buddyPathA, err)
 	}
 
 	if err := ioutil.WriteFile(buddyPathB, []byte(bobBuddies), 0644); err != nil {
-		t.Errorf("Could not create %v: %v", buddyPathB)
+		t.Errorf("Could not create %v: %v", buddyPathB, err)
 	}
 }
 
@@ -162,7 +162,9 @@ func clientPingPong(t *testing.T) {
 	}
 
 	<-done
-	cnv.Close()
+	if err := cnv.Close(); err != nil {
+		t.Errorf("bob: Close failed: %v", err)
+	}
 }
 
 func TestClientPingPong(t *testing.T) {

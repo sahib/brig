@@ -280,7 +280,10 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 
-	dec.Close()
+	if err := dec.Close(); err != nil {
+		t.Errorf("TestEmpyFile: close(dec) failed: %v", err)
+		return
+	}
 
 	dec.Seek(10, os.SEEK_SET)
 
