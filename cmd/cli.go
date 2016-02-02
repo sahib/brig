@@ -14,6 +14,7 @@ import (
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/repo/config"
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	colorlog "github.com/disorganizer/brig/util/log"
 	yamlConfig "github.com/olebedev/config"
@@ -332,8 +333,12 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 		}
 
 		filePath = tmpFile.Name()
-		defer tmpFile.Close()
-		defer os.Remove(filePath)
+		defer util.Closer(tmpFile)
+		defer func() {
+			if err := os.Remove(filePath); err != nil {
+				log.Warningf("Cannot remove temp-file: %v", err)
+			}
+		}()
 	} else {
 		absPath, err := filepath.Abs(ctx.Args[1])
 		if err != nil {
@@ -356,9 +361,15 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 			log.Errorf("Could not open temp file")
 			return UnknownError
 		}
-		defer fd.Close()
 
-		io.Copy(os.Stdout, fd)
+		if _, err := io.Copy(os.Stdout, fd); err != nil {
+			log.Errorf("Cannot copy to stdout: %v", err)
+			return UnknownError
+		}
+
+		if err := fd.Close(); err != nil {
+			log.Warningf("Unable to close tmpfile handle: %v", err)
+		}
 	}
 
 	return Success

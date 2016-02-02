@@ -13,9 +13,9 @@ import (
 	"github.com/tucnak/climax"
 )
 
-type CmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
+type cmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
 
-func withDaemon(handler CmdHandlerWithClient, startNew bool) climax.CmdHandler {
+func withDaemon(handler cmdHandlerWithClient, startNew bool) climax.CmdHandler {
 	// If not, make sure we start a new one:
 	return func(ctx climax.Context) int {
 		port := guessPort()
@@ -37,7 +37,9 @@ func withDaemon(handler CmdHandlerWithClient, startNew bool) climax.CmdHandler {
 		pwd, ok := ctx.Get("password")
 		if !ok {
 			// Prompt the user:
-			cmdPwd, err := readPassword()
+			var cmdPwd string
+
+			cmdPwd, err = readPassword()
 			if err != nil {
 				log.Errorf("Could not read password: %v", pwd)
 				return BadPassword
@@ -58,9 +60,9 @@ func withDaemon(handler CmdHandlerWithClient, startNew bool) climax.CmdHandler {
 	}
 }
 
-type CheckFunc func(ctx climax.Context) int
+type checkFunc func(ctx climax.Context) int
 
-func withArgCheck(checker CheckFunc, handler climax.CmdHandler) climax.CmdHandler {
+func withArgCheck(checker checkFunc, handler climax.CmdHandler) climax.CmdHandler {
 	return func(ctx climax.Context) int {
 		if checker(ctx) != Success {
 			return BadArgs
@@ -70,7 +72,7 @@ func withArgCheck(checker CheckFunc, handler climax.CmdHandler) climax.CmdHandle
 	}
 }
 
-func needAtLeast(min int) CheckFunc {
+func needAtLeast(min int) checkFunc {
 	return func(ctx climax.Context) int {
 		if len(ctx.Args) < min {
 			log.Warningf("Need at least %d arguments.", min)
