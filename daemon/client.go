@@ -157,7 +157,9 @@ func (c *Client) Exorcise() {
 func (c *Client) Close() {
 	if c != nil {
 		c.quit <- true
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			log.Warningf("client-close failed: %v", err)
+		}
 	}
 }
 

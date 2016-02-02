@@ -8,9 +8,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-type HandlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) (string, error)
+type handlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) (string, error)
 
-var HandlerMap = map[proto.MessageType]HandlerFunc{
+var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_ADD:     handleAdd,
 	proto.MessageType_CAT:     handleCat,
 	proto.MessageType_PING:    handlePing,

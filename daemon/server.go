@@ -109,14 +109,17 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 // Serve waits until the Server received a quit reason.
 func (d *Server) Serve() {
 	<-d.ctx.Done()
-	d.listener.Close()
+
+	if err := d.listener.Close(); err != nil {
+		log.Warningf("daemon-close: cannot close listener: %v", err)
+	}
 
 	if err := d.Mounts.Close(); err != nil {
-		log.Errorf("Error while closing mounts: %v", err)
+		log.Errorf("daemon-close: error while closing mounts: %v", err)
 	}
 
 	if err := d.Repo.Close(); err != nil {
-		log.Errorf("Unable to close repository: %v", err)
+		log.Errorf("daemon-close: unable to close repository: %v", err)
 	}
 }
 
@@ -167,10 +170,12 @@ func (d *Server) loop(cancel context.CancelFunc) {
 
 // Handles incoming requests:
 func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
-	defer conn.Close()
-
 	// Make sure this connection count gets released:
 	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Debugf("daemon-loop: connection drop failed: %v", err)
+		}
+
 		d.maxConnections <- allowOneConn{}
 	}()
 
@@ -208,7 +213,7 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 
 	// Figure out which handler to call:
 	handlerID := *(cmd.CommandType)
-	if handler, ok := HandlerMap[handlerID]; !ok {
+	if handler, ok := handlerMap[handlerID]; !ok {
 		resp.Error = protobuf.String(fmt.Sprintf("No handler for Id: %v", handlerID))
 	} else {
 		answer, err := handler(d, ctx, cmd)
