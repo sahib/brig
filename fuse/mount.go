@@ -32,7 +32,12 @@ type Mount struct {
 }
 
 func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
-	conn, err := fuse.Mount(mountpoint)
+	conn, err := fuse.Mount(
+		mountpoint,
+		fuse.FSName("brigfs"),
+		fuse.Subtype("brig"),
+	)
+
 	if err != nil {
 		return nil, err
 	}

@@ -67,3 +67,31 @@ func (e *Entry) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 	resp.Append("brig.hash")
 	return nil
 }
+
+// Compile time checks to see which interfaces we implement:
+// Please update this list when modifying code here.
+var _ = fs.Node(&Entry{})
+var _ = fs.NodeFsyncer(&Entry{})
+var _ = fs.NodeGetxattrer(&Entry{})
+var _ = fs.NodeListxattrer(&Entry{})
+var _ = fs.NodeOpener(&Entry{})
+var _ = fs.NodeSetattrer(&Entry{})
+
+//var _ = fs.NodeReadlinker(&Entry{})
+//var _ = fs.NodeRemover(&Entry{})
+//var _ = fs.NodeRemovexattrer(&Entry{})
+// var _ = fs.NodeRenamer(&Entry{})
+// var _ = fs.NodeRequestLookuper(&Entry{})
+// var _ = fs.NodeAccesser(&Entry{})
+// var _ = fs.NodeForgetter(&Entry{})
+
+//var _ = fs.NodeGetattrer(&Entry{})
+
+//var _ = fs.NodeLinker(&Entry{})
+
+//var _ = fs.NodeMkdirer(&Entry{})
+//var _ = fs.NodeMknoder(&Entry{})
+
+// var _ = fs.NodeSetxattrer(&Entry{})
+// var _ = fs.NodeStringLookuper(&Entry{})
+// var _ = fs.NodeSymlinker(&Entry{})

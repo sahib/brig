@@ -82,7 +82,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	log.Debugf("fuse-create: %v", child.Path())
 
 	entry := &Entry{File: d.File.Child(req.Name), fs: d.fs}
-	return entry, Handle{Entry: entry}, nil
+	return entry, &Handle{Entry: entry}, nil
 }
 
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
