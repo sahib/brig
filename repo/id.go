@@ -48,7 +48,7 @@ func lockFile(keys *taber.Keys, jid, pass, path string) error {
 		return err
 	}
 
-	encData := make([]byte, 0)
+	var encData []byte
 	dir, base := filepath.Split(path)
 
 	// This seemed to crash minilock otherwise:

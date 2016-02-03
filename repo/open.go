@@ -43,7 +43,7 @@ func Open(pwd, folder string) (*Repository, error) {
 	}
 
 	// Unlock all files:
-	absNames := make([]string, 0)
+	var absNames []string
 	for _, name := range filenames {
 		absName := filepath.Join(brigPath, name)
 		if _, err := os.Stat(absName); err == nil {
@@ -65,8 +65,7 @@ func Open(pwd, folder string) (*Repository, error) {
 // Close encrypts sensible files in the repository.
 // The password is taken from Repository.Password.
 func (r *Repository) Close() error {
-	absNames := make([]string, 0)
-
+	var absNames []string
 	for _, name := range filenames {
 		absName := filepath.Join(r.InternalFolder, name)
 		if _, err := os.Stat(absName); os.IsNotExist(err) {

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/olebedev/config"
 )
 
@@ -26,7 +27,8 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
+
+	defer util.Closer(file)
 
 	written, err := file.WriteString(yamlString)
 	if err != nil {

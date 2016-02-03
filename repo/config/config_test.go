@@ -11,7 +11,9 @@ func TestConfig(t *testing.T) {
 	fmt.Println("Creating default config.")
 	cfg := CreateDefaultConfig()
 	fmt.Println("Saving default config to ", configPath)
-	SaveConfig(configPath, cfg)
+	if _, err := SaveConfig(configPath, cfg); err != nil {
+		t.Errorf("Cannot save config: %v", err)
+	}
 	fmt.Println("Loading default config from ", configPath)
 	c, err := LoadConfig(configPath)
 	if err != nil {
@@ -28,11 +30,16 @@ func TestConfig(t *testing.T) {
 	fmt.Println("\nSetting some test parameters...")
 	for key, value := range inputValues {
 		fmt.Printf("Setting %s to %s\n", key, value)
-		c.Set(key, value)
+		if err := c.Set(key, value); err != nil {
+			t.Errorf("Cannot set config value %s: %v", key, value)
+			break
+		}
 	}
 
 	fmt.Println("\nSaving config to ", configPath)
-	SaveConfig(configPath, c)
+	if _, err = SaveConfig(configPath, c); err != nil {
+		t.Errorf("Cannot save config: %v", err)
+	}
 
 	fmt.Println("Loading default config from ", configPath)
 	c, err = LoadConfig(configPath)

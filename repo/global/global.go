@@ -7,13 +7,14 @@ import (
 	"os/user"
 	"path"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util/filelock"
 	yamlConfig "github.com/olebedev/config"
 )
 
 const (
-	DirName = ".brigconfig"
+	dirName = ".brigconfig"
 )
 
 // Repository is the handle for the global repository.
@@ -39,8 +40,10 @@ func (g *Repository) acquireLock() error {
 	return nil
 }
 
-func (g *Repository) releaseLock() error {
-	return filelock.Release(path.Join(g.Folder, "lock"))
+func (g *Repository) releaseLock() {
+	if err := filelock.Release(path.Join(g.Folder, "lock")); err != nil {
+		log.Warningf("global: release-lock failed: %v", err)
+	}
 }
 
 func guessGlobalFolder() string {
@@ -49,7 +52,7 @@ func guessGlobalFolder() string {
 		return os.TempDir()
 	}
 
-	return path.Join(curr.HomeDir, DirName)
+	return path.Join(curr.HomeDir, dirName)
 }
 
 // Init creates a new global Repository and returns it.
@@ -66,6 +69,7 @@ func Init() (*Repository, error) {
 	if err := repo.acquireLock(); err != nil {
 		return nil, err
 	}
+
 	defer repo.releaseLock()
 
 	cfg := &yamlConfig.Config{

@@ -102,12 +102,16 @@ func LoadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	globalRepo.AddRepo(global.RepoListEntry{
+	err = globalRepo.AddRepo(global.RepoListEntry{
 		UniqueID:   configValues["repository.uuid"],
 		RepoPath:   folder,
 		DaemonPort: 6666,
 		IpfsPort:   4001,
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	store, err := store.Open(brigPath)
 	if err != nil {
@@ -176,6 +180,8 @@ func createMasterKey(brigPath string, keySize int) error {
 	return nil
 }
 
+// CreateIpfsRepo initializes an empty .ipfs directory at `ipfsRootPath`.
+// ipfsRootPath should contain the ".ipfs" at the end.
 func CreateIpfsRepo(ipfsRootPath string) error {
 	logger := &logutil.Writer{Level: log.InfoLevel}
 	cfg, err := ipfsconfig.Init(logger, 2048)

@@ -16,7 +16,10 @@ func main() {
 	}
 
 	salt := make([]byte, 32)
-	rand.Reader.Read(salt)
+	if _, err := rand.Reader.Read(salt); err != nil {
+		fmt.Println("Reading salt failed, you're likely doomed.")
+		return
+	}
 
 	key := security.Scrypt([]byte(pwd), salt, 32)
 	fmt.Printf("Key:  %x\nSalt: %x\n", key, salt)
