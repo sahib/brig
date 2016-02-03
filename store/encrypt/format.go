@@ -65,6 +65,8 @@ const (
 )
 
 var (
+	// MagicNumber contains the first 8 byte of every brig header.
+	// For various reasons, it is the ascii string "moosecat".
 	MagicNumber = []byte{
 		0x6d, 0x6f, 0x6f, 0x73,
 		0x65, 0x63, 0x61, 0x74,
@@ -127,13 +129,19 @@ func GenerateHeader(key []byte, compression bool) []byte {
 	return header
 }
 
-// TODO: Add explanation:
+// HeaderInfo represents a parsed header.
 type HeaderInfo struct {
-	Version    uint16
-	Cipher     uint8
+	// Version of the file format. Currently always 1.
+	Version uint16
+	// Cipher type used in the file.
+	Cipher uint8
+	// Compressed stores the compression algorithm id or 0.
 	Compressed uint8
-	Keylen     uint32
-	Blocklen   uint32
+	// Keylen is the number of bytes in the encryption key.
+	Keylen uint32
+	// Blocklen is the max. number of bytes in a block.
+	// The last block might be smaller.
+	Blocklen uint32
 }
 
 // ParseHeader parses the header of the format file.
@@ -240,24 +248,34 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
+func Encrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr error) {
 	layer, err := NewWriter(dest, key, false)
 	if err != nil {
 		return 0, err
 	}
 
-	defer layer.Close()
+	defer func() {
+		if err := layer.Close(); outErr != nil && err != nil {
+			outErr = err
+		}
+	}()
+
 	return io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
+func Decrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr error) {
 	layer, err := NewReader(source, key)
 	if err != nil {
 		return 0, err
 	}
 
-	defer layer.Close()
+	defer func() {
+		if err := layer.Close(); outErr != nil && err != nil {
+			outErr = err
+		}
+	}()
+
 	return io.CopyBuffer(dest, layer, make([]byte, GoodDecBufferSize))
 }

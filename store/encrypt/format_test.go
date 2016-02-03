@@ -13,42 +13,78 @@ import (
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 
-func encryptFile(key []byte, from, to string) (int64, error) {
-	fdFrom, _ := os.Open(from)
-	defer fdFrom.Close()
+func openFiles(from, to string) (*os.File, *os.File, error) {
+	fdFrom, err := os.Open(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	fdTo, _ := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
-	defer fdTo.Close()
+	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		fdFrom.Close()
+		return nil, nil, err
+	}
+
+	return fdFrom, fdTo, nil
+}
+
+func encryptFile(key []byte, from, to string) (n int64, outErr error) {
+	fdFrom, fdTo, err := openFiles(from, to)
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		// Only fdTo needs to be closed, Decrypt closes fdFrom.
+		if err := fdFrom.Close(); err != nil {
+			outErr = err
+		}
+		if err := fdTo.Close(); err != nil {
+			outErr = err
+		}
+	}()
 
 	return Encrypt(key, fdFrom, fdTo)
 }
 
-func decryptFile(key []byte, from, to string) (int64, error) {
-	fdFrom, _ := os.Open(from)
-	defer fdFrom.Close()
+func decryptFile(key []byte, from, to string) (n int64, outErr error) {
+	fdFrom, fdTo, err := openFiles(from, to)
+	if err != nil {
+		return 0, err
+	}
 
-	fdTo, _ := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
-	defer fdTo.Close()
+	defer func() {
+		// Only fdTo needs to be closed, Decrypt closes fdFrom.
+		if err := fdTo.Close(); err != nil {
+			outErr = err
+		}
+	}()
 
 	return Decrypt(key, fdFrom, fdTo)
 }
 
+func remover(t *testing.T, path string) {
+	if err := os.Remove(path); err != nil {
+		t.Errorf("Could not remove temp file: %v", err)
+	}
+}
+
 func testSimpleEncDec(t *testing.T, size int) {
 	path := testutil.CreateFile(int64(size))
-	defer os.Remove(path)
+	defer remover(t, path)
 
 	encPath := path + "_enc"
 	decPath := path + "_dec"
 
 	_, err := encryptFile(TestKey, path, encPath)
-	defer os.Remove(encPath)
+	defer remover(t, encPath)
 
 	if err != nil {
 		t.Errorf("Encrypt failed: %v", err)
 	}
 
 	_, err = decryptFile(TestKey, encPath, decPath)
-	defer os.Remove(decPath)
+	defer remover(t, decPath)
 
 	if err != nil {
 		t.Errorf("Decrypt failed: %v", err)
@@ -115,14 +151,17 @@ func TestSeek(t *testing.T) {
 
 	// This needs to be here, since close writes
 	// left over data to the write stream
-	enc.Close()
+	if err := enc.Close(); err != nil {
+		t.Errorf("close(enc): %v", err)
+		return
+	}
 
 	sharedReader := bytes.NewReader(shared.Bytes())
 	decLayer, err := NewReader(sharedReader, TestKey)
 	if err != nil {
-		panic(err)
+		t.Errorf("cannot create new reader: %v", err)
+		return
 	}
-	defer decLayer.Close()
 
 	seekTest := int64(MaxBlockSize)
 	pos, err := decLayer.Seek(seekTest, os.SEEK_SET)
@@ -164,6 +203,11 @@ func TestSeek(t *testing.T) {
 		return
 	}
 
+	if err := decLayer.Close(); err != nil {
+		t.Errorf("close(dec): %v", err)
+		return
+	}
+
 	if !bytes.Equal(a[seekTest:], dest.Bytes()) {
 		b := dest.Bytes()
 		fmt.Printf("AAA %d %x %x\n", len(a), a[:10], a[len(a)-10:])
@@ -202,19 +246,28 @@ func TestSeekThenRead(t *testing.T) {
 	// Encrypt:
 	_, err = io.CopyBuffer(enc, source, buf)
 	if err != nil {
-		panic(err)
+		t.Errorf("copy(enc, source) failed %v", err)
+		return
 	}
 
 	// This needs to be here, since close writes
 	// left over data to the write stream
-	enc.Close()
+	if err = enc.Close(); err != nil {
+		t.Errorf("close(enc): %v", err)
+		return
+	}
 
 	sharedReader := bytes.NewReader(shared.Bytes())
 	decLayer, err := NewReader(sharedReader, TestKey)
 	if err != nil {
 		panic(err)
 	}
-	defer decLayer.Close()
+
+	defer func() {
+		if err := decLayer.Close(); err != nil {
+			t.Errorf("close(dec) failed: %v", err)
+		}
+	}()
 
 	// Jump somewhere inside the large file:
 	jumpPos := N/2 + N/4 + 1
@@ -264,12 +317,12 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 
-	if _, err := io.Copy(enc, src); err != nil {
+	if _, err = io.Copy(enc, src); err != nil {
 		t.Errorf("TestEmpyFile: copy(enc, src) failed: %v", err)
 		return
 	}
 
-	if err := enc.Close(); err != nil {
+	if err = enc.Close(); err != nil {
 		t.Errorf("TestEmpyFile: close(enc) failed: %v", err)
 		return
 	}
@@ -280,14 +333,17 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 
-	if err := dec.Close(); err != nil {
+	if err = dec.Close(); err != nil {
 		t.Errorf("TestEmpyFile: close(dec) failed: %v", err)
 		return
 	}
 
-	dec.Seek(10, os.SEEK_SET)
+	if _, err = dec.Seek(10, os.SEEK_SET); err != nil {
+		t.Errorf("Seek failed: %v", err)
+		return
+	}
 
-	if _, err := io.Copy(dst, dec); err != nil {
+	if _, err = io.Copy(dst, dec); err != nil {
 		t.Errorf("TestEmpyFile: copy(dst, dec) failed: %v", err)
 		return
 	}

@@ -199,15 +199,16 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		}
 	}
 	// Reslice the backlog, so Read() does not return skipped data.
-	r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET)
+	if _, err := r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET); err != nil {
+		return 0, err
+	}
+
 	return absOffsetDec, nil
 }
 
 // Close does finishing work.
 // If supported by the underlying data stream, it closes it too.
-// This is currently a No-Op, but you should not rely on that.
 func (r *Reader) Close() error {
-	// Check
 	closer, ok := r.Reader.(io.Closer)
 	if ok {
 		return closer.Close()
