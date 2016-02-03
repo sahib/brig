@@ -7,36 +7,58 @@ import (
 	"github.com/golang/snappy"
 )
 
-// Compress the file at src to dst.
-func CompressFile(src, dst string) (int64, error) {
-	fdFrom, err := os.OpenFile(src, os.O_RDONLY, 0644)
+func openFiles(from, to string) (*os.File, *os.File, error) {
+	fdFrom, err := os.Open(from)
 	if err != nil {
-		return 0, err
+		return nil, nil, err
 	}
-	defer fdFrom.Close()
 
-	fdTo, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0644)
+	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		fdFrom.Close()
+		return nil, nil, err
+	}
+
+	return fdFrom, fdTo, nil
+}
+
+// CopyCompressed reads the file at `src` and writes it compressed to `dst`.
+func CopyCompressed(src, dst string) (n int64, outErr error) {
+	fdFrom, fdTo, err := openFiles(src, dst)
 	if err != nil {
 		return 0, err
 	}
-	defer fdTo.Close()
+
+	defer func() {
+		// Only fdTo needs to be closed, Decrypt closes fdFrom.
+		if err := fdFrom.Close(); err != nil {
+			outErr = err
+		}
+		if err := fdTo.Close(); err != nil {
+			outErr = err
+		}
+	}()
 
 	return Compress(fdFrom, fdTo)
 }
 
-// Decompress the file at src to dst.
-func DecompressFile(src, dst string) (int64, error) {
-	fdFrom, err := os.OpenFile(src, os.O_RDONLY, 0644)
+// CopyDecompressed reads the compressed file at `src` and writes the clear file
+// at `dst`.
+func CopyDecompressed(src, dst string) (n int64, outErr error) {
+	fdFrom, fdTo, err := openFiles(src, dst)
 	if err != nil {
 		return 0, err
 	}
-	defer fdFrom.Close()
 
-	fdTo, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return 0, err
-	}
-	defer fdTo.Close()
+	defer func() {
+		// Only fdTo needs to be closed, Decrypt closes fdFrom.
+		if err := fdFrom.Close(); err != nil {
+			outErr = err
+		}
+		if err := fdTo.Close(); err != nil {
+			outErr = err
+		}
+	}()
 
 	return Decompress(fdFrom, fdTo)
 }

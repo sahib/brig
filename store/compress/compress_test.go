@@ -9,22 +9,28 @@ import (
 	"github.com/disorganizer/brig/util/testutil"
 )
 
+func remover(t *testing.T, paths ...string) {
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil {
+			t.Errorf("cannot remove file: %v", err)
+		}
+	}
+}
+
 func testDecAndCompress(t *testing.T, size int64) {
 	path := testutil.CreateFile(size)
 
 	compressedPath := path + ".pack"
 	decompressedPath := path + ".unpack"
 
-	defer os.Remove(path)
-	defer os.Remove(compressedPath)
-	defer os.Remove(decompressedPath)
+	defer remover(t, path, compressedPath, decompressedPath)
 
-	if _, err := CompressFile(path, compressedPath); err != nil {
+	if _, err := CopyCompressed(path, compressedPath); err != nil {
 		t.Errorf("File compression failed: %v", err)
 		return
 	}
 
-	if _, err := DecompressFile(compressedPath, decompressedPath); err != nil {
+	if _, err := CopyDecompressed(compressedPath, decompressedPath); err != nil {
 		t.Errorf("File decompression failed: %v", err)
 		return
 	}
