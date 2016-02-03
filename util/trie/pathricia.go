@@ -40,7 +40,7 @@ func SplitPath(path string) []string {
 	return names
 }
 
-// New*Node returns a trie with the root element pre-inserted.
+// NewNode returns a trie with the root element pre-inserted.
 // Note that `nil` is a perfectly valid, but empty trie.
 func NewNode() *Node {
 	return &Node{}
@@ -68,6 +68,8 @@ func (n *Node) Insert(path string) *Node {
 	return n.InsertWithData(path, nil)
 }
 
+// InsertWithData adds a node into the trie at `path`, storing `data`
+// in the Node.Data field.
 func (n *Node) InsertWithData(path string, data interface{}) *Node {
 	curr := n
 

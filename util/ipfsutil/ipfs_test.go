@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	TEST_PATH = filepath.Join(os.TempDir(), "brig_test_ipfs_repo")
+	TestPath = filepath.Join(os.TempDir(), "brig_test_ipfs_repo")
 )
 
 func initRepo(t *testing.T) string {
-	if err := os.MkdirAll(TEST_PATH, 0744); err != nil {
+	if err := os.MkdirAll(TestPath, 0744); err != nil {
 		t.Errorf("Could not create unit test dir: %v", err)
 		return ""
 	}
 
-	ipfsPath := filepath.Join(TEST_PATH, ".ipfs")
+	ipfsPath := filepath.Join(TestPath, ".ipfs")
 	cfg, err := ipfsconfig.Init(ioutil.Discard, 1024)
 	if err != nil {
 		t.Errorf("Could not create ipfs config %v", err)
@@ -29,7 +29,7 @@ func initRepo(t *testing.T) string {
 	}
 
 	if err := fsrepo.Init(ipfsPath, cfg); err != nil {
-		t.Errorf("Could not create ipfs repo at %s: %v", TEST_PATH, err)
+		t.Errorf("Could not create ipfs repo at %s: %v", TestPath, err)
 		return ""
 	}
 
@@ -39,7 +39,7 @@ func initRepo(t *testing.T) string {
 func TestStartDaemon(t *testing.T) {
 	path := initRepo(t)
 
-	defer os.RemoveAll(TEST_PATH)
+	defer os.RemoveAll(TestPath)
 
 	node, err := StartNode(path)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestStartDaemon(t *testing.T) {
 
 func TestAddCat(t *testing.T) {
 	path := initRepo(t)
-	defer os.RemoveAll(TEST_PATH)
+	defer os.RemoveAll(TestPath)
 
 	node, err := StartNode(path)
 	if err != nil {

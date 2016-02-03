@@ -2,6 +2,8 @@ package testutil
 
 import "io/ioutil"
 
+// CreateDummyBuf creates a byte slice that is `size` big.
+// It's filled with the repeating numbers [0...255].
 func CreateDummyBuf(size int64) []byte {
 	buf := make([]byte, size)
 
@@ -13,6 +15,8 @@ func CreateDummyBuf(size int64) []byte {
 	return buf
 }
 
+// CreateFile creates a temporary file in the systems tmp-folder.
+// The file will be `size` bytes big, filled with content from CreateDummyBuf.
 func CreateFile(size int64) string {
 	fd, err := ioutil.TempFile("", "brig_test")
 	if err != nil {

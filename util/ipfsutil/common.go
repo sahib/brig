@@ -5,7 +5,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Context remembers the settings needed for accessing the ipfs daemon.
+// Node remembers the settings needed for accessing the ipfs daemon.
 type Node struct {
 	IpfsNode *core.IpfsNode
 	Path     string

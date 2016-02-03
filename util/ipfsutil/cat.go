@@ -8,6 +8,7 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
+// Reader accumulates all the interfaces that a brig stream needs to support.
 type Reader interface {
 	io.Reader
 	io.Seeker

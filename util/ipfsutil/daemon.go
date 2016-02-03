@@ -9,6 +9,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+// TODO: Close, Offline, Online functions for *Node
+
+// StartNode starts an ipfs node on the repo.
 func StartNode(ipfsPath string) (*Node, error) {
 	// Basic ipfsnode setup
 	r, err := fsrepo.Open(ipfsPath)
