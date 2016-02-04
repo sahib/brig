@@ -1,6 +1,10 @@
 package testutil
 
-import "io/ioutil"
+import (
+	"io/ioutil"
+	"os"
+	"testing"
+)
 
 // CreateDummyBuf creates a byte slice that is `size` big.
 // It's filled with the repeating numbers [0...255].
@@ -45,4 +49,12 @@ func CreateFile(size int64) string {
 	}
 
 	return fd.Name()
+}
+
+// Remover removes all data in path recursively and errors when it fails.
+// It is no error if there's nothing to delete. It's useful in defer statements.
+func Remover(t *testing.T, path string) {
+	if err := os.RemoveAll(path); err != nil {
+		t.Errorf("removing temp directory failed: %v", err)
+	}
 }

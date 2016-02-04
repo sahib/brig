@@ -66,6 +66,7 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 }
 
 // CloneRepository clones a brig repository in a git like way
+// TODO...
 func CloneRepository() *Repository {
 	return nil
 }

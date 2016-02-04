@@ -13,6 +13,7 @@ import (
 var filenames = []string{
 	"index.bolt",
 	"master.key",
+	// TODO: What about those?
 	// "otr.buddies",
 	// "otr.key",
 }

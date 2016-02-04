@@ -18,7 +18,7 @@ type Handle struct {
 	*Entry
 
 	// Protect access of `layer`
-	sync.Mutex
+	laymu sync.Mutex
 
 	// actual data stream
 	stream ipfsutil.Reader
@@ -38,8 +38,8 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	path := h.Path()
 
-	h.Lock()
-	defer h.Unlock()
+	h.laymu.Lock()
+	defer h.laymu.Unlock()
 
 	log.WithFields(log.Fields{
 		"path":   path,
@@ -79,10 +79,10 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 
 // Write is called to write a block of data at a certain offset.
 func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	h.Lock()
-	defer h.Unlock()
+	h.laymu.Lock()
+	defer h.laymu.Unlock()
 
-	log.Infof("Oh, a write request!")
+	log.Debugf("fuse-write: ")
 
 	if h.layer == nil {
 		if h.stream == nil {
@@ -139,8 +139,8 @@ func (h *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 
 // flush does the actual adding to brig.
 func (h *Handle) flush() error {
-	h.Lock()
-	defer h.Unlock()
+	h.laymu.Lock()
+	defer h.laymu.Unlock()
 
 	if h.layer == nil {
 		return nil

@@ -91,10 +91,10 @@ func (m *Mount) Close() error {
 
 	log.Info("Umount fuse layer...")
 
-	for tries := 0; tries < 1000; tries++ {
+	for tries := 0; tries < 20; tries++ {
 		if err := fuse.Unmount(m.Dir); err != nil {
-			log.Printf("unmount error: %v", err)
-			time.Sleep(10 * time.Millisecond)
+			// log.Printf("unmount error: %v", err)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
