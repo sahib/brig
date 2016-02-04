@@ -47,7 +47,9 @@ func TestSizeAcc(t *testing.T) {
 			for j := 0; j < len(data); j++ {
 				miniBuf := []byte{0}
 				buf.Read(miniBuf)
-				sizeAcc.Write(miniBuf)
+				if _, err := sizeAcc.Write(miniBuf); err != nil {
+					t.Errorf("write(sizeAcc, miniBuf) failed: %v", err)
+				}
 			}
 
 			wg.Done()

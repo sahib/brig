@@ -23,8 +23,6 @@ func CreateFile(size int64) string {
 		panic("Cannot create temp file")
 	}
 
-	defer fd.Close()
-
 	blockSize := int64(1 * 1024 * 1024)
 	buf := CreateDummyBuf(blockSize)
 
@@ -40,6 +38,10 @@ func CreateFile(size int64) string {
 		}
 
 		size -= blockSize
+	}
+
+	if err := fd.Close(); err != nil {
+		return ""
 	}
 
 	return fd.Name()

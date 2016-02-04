@@ -39,7 +39,11 @@ func initRepo(t *testing.T) string {
 func TestStartDaemon(t *testing.T) {
 	path := initRepo(t)
 
-	defer os.RemoveAll(TestPath)
+	defer func() {
+		if err := os.RemoveAll(TestPath); err != nil {
+			t.Errorf("Unable to remove daemon temp dir: %v", err)
+		}
+	}()
 
 	node, err := StartNode(path)
 	if err != nil {
@@ -53,7 +57,12 @@ func TestStartDaemon(t *testing.T) {
 
 func TestAddCat(t *testing.T) {
 	path := initRepo(t)
-	defer os.RemoveAll(TestPath)
+
+	defer func() {
+		if err := os.RemoveAll(TestPath); err != nil {
+			t.Errorf("Unable to remove daemon temp dir: %v", err)
+		}
+	}()
 
 	node, err := StartNode(path)
 	if err != nil {
@@ -84,11 +93,15 @@ func TestAddCat(t *testing.T) {
 		t.Errorf("Could not cat simple file: %v", err)
 		return
 	}
-	defer reader.Close()
 
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		t.Errorf("Could not read back added data: %v", err)
+		return
+	}
+
+	if err = reader.Close(); err != nil {
+		t.Errorf("close(cat) failed: %v", err)
 		return
 	}
 
