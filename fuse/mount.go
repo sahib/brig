@@ -18,6 +18,8 @@ import (
 // Since that's "only" test module, api might change, so better have this
 // code here (also we might do a few things differently).
 
+// Mount represents a fuse endpoint on the filesystem.
+// It is used as top-level API to control a brigfs fuse mount.
 type Mount struct {
 	Dir   string
 	FS    *FS
@@ -31,6 +33,7 @@ type Mount struct {
 	Server *fs.Server
 }
 
+// NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
 func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 	conn, err := fuse.Mount(
 		mountpoint,
@@ -78,6 +81,8 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 	return mnt, nil
 }
 
+// Close will wait until all I/O operations are done and unmount the fuse
+// mount again.
 func (m *Mount) Close() error {
 	if m.closed {
 		return nil
@@ -114,12 +119,16 @@ func (m *Mount) Close() error {
 	return nil
 }
 
+// MountTable is a mapping from the mountpoint to the respective
+// `Mount` struct. It's given as convenient way to maintain several mounts.
+// All operations on the table are safe to call from several goroutines.
 type MountTable struct {
 	sync.Mutex
 	m     map[string]*Mount
 	Store *store.Store
 }
 
+// NewMountTable returns an empty mount table.
 func NewMountTable(store *store.Store) *MountTable {
 	return &MountTable{
 		m:     make(map[string]*Mount),
@@ -127,6 +136,7 @@ func NewMountTable(store *store.Store) *MountTable {
 	}
 }
 
+// AddMount calls NewMount and adds it to the table at `path`.
 func (t *MountTable) AddMount(path string) (*Mount, error) {
 	t.Lock()
 	defer t.Unlock()
@@ -144,6 +154,7 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 	return m, err
 }
 
+// Unmount closes the mount at `path` and deletes it from the table.
 func (t *MountTable) Unmount(path string) error {
 	t.Lock()
 	defer t.Unlock()
@@ -157,6 +168,7 @@ func (t *MountTable) Unmount(path string) error {
 	return m.Close()
 }
 
+// Close unmounts all leftover mounts and clears the table.
 func (t *MountTable) Close() error {
 	t.Lock()
 	defer t.Unlock()
@@ -169,5 +181,6 @@ func (t *MountTable) Close() error {
 		}
 	}
 
+	t.m = make(map[string]*Mount)
 	return err
 }

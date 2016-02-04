@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Handle is an open Entry.
 type Handle struct {
 	*Entry
 
@@ -26,14 +27,16 @@ type Handle struct {
 	layer *store.Layer
 }
 
+// Release is called to close this handle.
 func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return h.flush()
 }
 
 // TODO: Honour ctx.Done() and return fuse.EINTR in that case...
 
+// Read is called to read a block of data at a certain offset.
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	path := h.File.Path()
+	path := h.Path()
 
 	h.Lock()
 	defer h.Unlock()
@@ -45,7 +48,7 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 	}).Debugf("fuse read")
 
 	if h.stream == nil {
-		stream, err := h.File.Stream()
+		stream, err := h.Stream()
 		if err != nil {
 			log.Errorf("fuse-read: Cannot open stream: %v", err)
 			return fuse.ENODATA
@@ -74,6 +77,7 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 	return nil
 }
 
+// Write is called to write a block of data at a certain offset.
 func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	h.Lock()
 	defer h.Unlock()
@@ -82,7 +86,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 
 	if h.layer == nil {
 		if h.stream == nil {
-			stream, err := h.File.Stream()
+			stream, err := h.Stream()
 			if err != nil {
 				return fuse.ENODATA
 			}
@@ -91,13 +95,13 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 
 		h.layer = store.NewLayer(h.stream)
 
-		log.Debugf("fuse: truncating %s to %d %p", h.File.Path(), h.File.Size, h.File)
+		log.Debugf("fuse: truncating %s to %d %p", h.Path(), h.Size, h)
 
-		h.File.Lock()
+		h.Lock()
 		{
-			h.layer.Truncate(int64(h.File.Size))
+			h.layer.Truncate(int64(h.Size))
 		}
-		h.File.Unlock()
+		h.Unlock()
 	}
 
 	_, err := h.layer.Seek(req.Offset, os.SEEK_SET)
@@ -116,22 +120,24 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 
 	// Update the file size, if it changed; fuse doc demands this:
 	// https://godoc.org/bazil.org/fuse/fs#HandleWriter
-	h.File.Lock()
+	h.Lock()
 	{
 		minSize := store.FileSize(h.layer.MinSize())
-		if h.File.Size < minSize {
-			log.Debugf("fuse: extending file from %d to %d bytes", h.File.Size, minSize)
-			h.File.Size = minSize
+		if h.Size < minSize {
+			log.Debugf("fuse: extending file from %d to %d bytes", h.Size, minSize)
+			h.Size = minSize
 		}
 	}
-	h.File.Unlock()
+	h.Unlock()
 	return nil
 }
 
+// Flush is called to make sure all written contents get synced to disk.
 func (h *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 	return h.flush()
 }
 
+// flush does the actual adding to brig.
 func (h *Handle) flush() error {
 	h.Lock()
 	defer h.Unlock()
@@ -154,9 +160,9 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	log.Debugf("fuse-flush: %v", h.File.Path())
+	log.Debugf("fuse-flush: %v", h.Path())
 
-	if err := h.fs.Store.AddFromReader(h.File.Path(), h.layer); err != nil {
+	if err := h.fs.Store.AddFromReader(h.Path(), h.layer); err != nil {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
 	}

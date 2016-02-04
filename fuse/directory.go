@@ -12,11 +12,14 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Dir represents a directory node.
+// TODO: It should always contain the implicit . and .. files.
 type Dir struct {
 	File *store.File
 	fs   *FS
 }
 
+// Attr is called to retrieve stat-metadata about the directory.
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = os.ModeDir | 0755
 	a.Size = uint64(d.File.Size)
@@ -24,6 +27,7 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	return nil
 }
 
+// Lookup is called to lookup a direct child of the directory.
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	child := d.File.Lookup(name)
 	if child == nil {
@@ -43,6 +47,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}, nil
 }
 
+// Mkdir is called to create a new directory node inside the receiver.
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	child, err := d.fs.Store.Mkdir(req.Name)
 	if err != nil {
@@ -57,6 +62,7 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 	return &Dir{File: child, fs: d.fs}, nil
 }
 
+// Create is called to create an opened file or directory  as child of the receiver.
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
 	// child, err := d.File.Insert(req.Name, req.Mode&os.ModeDir == 0)
 	var err error
@@ -90,16 +96,19 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	return entry, &Handle{Entry: entry}, nil
 }
 
+// Remove is called when a direct child in the directory needs to be removed.
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	child := d.File.Lookup(req.Name)
 	if child == nil {
 		return fuse.ENOENT
 	}
 
+	// TODO: Remove from bolt?
 	child.Remove()
 	return nil
 }
 
+// ReadDirAll is called to get a directory listing of the receiver.
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	children := d.File.Children()
 	fuseEnts := make([]fuse.Dirent, 0, len(children))
