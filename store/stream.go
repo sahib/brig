@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -9,20 +8,23 @@ import (
 	"github.com/disorganizer/brig/store/encrypt"
 )
 
+// Reader accumulates all interface brig requests from a stream.
 type Reader interface {
 	io.Reader
 	io.Seeker
 	io.Closer
 }
 
+// NewIpfsReader wraps the raw-data reader `r` and returns a Reader
+// that yields the clear data, if `key` is correct.
 func NewIpfsReader(key []byte, r io.ReadSeeker) (Reader, error) {
 	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: Bring back compression.
 	return rEnc, nil
-	// return compress.NewReader(rEnc), nil
 }
 
 // NewFileReaderFromPath is a shortcut for reading a file from disk
@@ -38,7 +40,7 @@ func NewFileReaderFromPath(key []byte, path string) (io.Reader, error) {
 
 // NewFileReader reads an unencrypted, uncompressed file and
 // returns a reader that will yield the data we feed to ipfs.
-func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
+func NewFileReader(key []byte, r io.Reader) (outR io.Reader, outErr error) {
 	pr, pw := io.Pipe()
 
 	// Setup the writer part:
@@ -55,13 +57,18 @@ func NewFileReader(key []byte, r io.Reader) (io.Reader, error) {
 	// Every write to wZip will be available as read in `pr`.
 	go func() {
 		defer func() {
-			wEnc.Close()
-			pw.Close()
+			if err := wEnc.Close(); err != nil {
+				outErr = err
+			}
+
+			if err := pw.Close(); err != nil {
+				outErr = err
+
+			}
 		}()
 
 		if _, err := io.Copy(wEnc, r); err != nil {
-			// TODO: Warn or pass to outside?
-			fmt.Println("FUCK", err)
+			outErr = err
 		}
 	}()
 

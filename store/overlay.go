@@ -336,7 +336,7 @@ func (l *Layer) Limit() int64 {
 	return l.limit
 }
 
-// Size returns the minimum size that the layer will have.
+// MinSize returns the minimum size that the layer will have.
 // Underlying stream might be larger, so caller needs to check that.
 func (l *Layer) MinSize() int64 {
 	if l.limit < 0 || l.index.Max < l.limit {

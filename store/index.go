@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	// ErrNoSuchFile is returned whenever a path could not be resolved to a file.
 	ErrNoSuchFile = fmt.Errorf("No such file or directory")
 )
 
@@ -75,7 +76,10 @@ func Open(repoPath string) (*Store, error) {
 
 	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
-			Unmarshal(store, v)
+			if _, loadErr := Unmarshal(store, v); loadErr != nil {
+				return loadErr
+			}
+
 			return nil
 		})
 	}))
@@ -94,13 +98,17 @@ func (s *Store) Mkdir(repoPath string) (*File, error) {
 	return dir, err
 }
 
+// Add reads the data at the physical path `filePath` and adds it to the store
+// at `repoPath` by hashing, compressing and encrypting the file.
+// Directories will be added recursively.
 func (s *Store) Add(filePath, repoPath string) error {
-	// TODO: Explain this "trick"
+	// TODO: Explain this "trick" and realise it's stupid.
 	return s.AddDir(filePath, repoPath)
 }
 
+// AddDir traverses all files in a directory and calls AddFromReader on them.
 func (s *Store) AddDir(filePath, repoPath string) error {
-	err := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
+	walkErr := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
 		// Simply skip errorneous files:
 		if err != nil {
 			log.Warningf("Walk: %v", err)
@@ -112,11 +120,11 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 
 		switch mode := info.Mode(); {
 		case mode.IsRegular():
-			fd, err := os.Open(path)
-			if err != nil {
-				return err
+			fd, openErr := os.Open(path)
+			if openErr != nil {
+				return openErr
 			}
-			defer fd.Close()
+			defer util.Closer(fd)
 
 			err = s.AddFromReader(currPath, fd)
 		case mode.IsDir():
@@ -137,10 +145,10 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 		return nil
 	})
 
-	return err
+	return walkErr
 }
 
-// Add reads data from r, encrypts & compresses it while feeding it to ipfs.
+// AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
 func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	// Check if the file was already added:
@@ -197,11 +205,11 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	return nil
 }
 
-type BucketHandler func(tx *bolt.Tx, b *bolt.Bucket) error
+type bucketHandler func(tx *bolt.Tx, b *bolt.Bucket) error
 
 // withBucket wraps a bolt handler closure and passes a named bucket
 // as extra parameter. Error handling is done universally for convinience.
-func withBucket(name string, handler BucketHandler) func(tx *bolt.Tx) error {
+func withBucket(name string, handler bucketHandler) func(tx *bolt.Tx) error {
 	return func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(name))
 		if bucket == nil {
@@ -228,6 +236,7 @@ func (s *Store) marshalFile(file *File, repoPath string) error {
 	}))
 }
 
+// Stream returns the stream of the file at `path`.
 func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
 	file := s.Root.Lookup(path)
 	if file == nil {
@@ -237,6 +246,7 @@ func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
 	return file.Stream()
 }
 
+// Cat will write the contents of the brig file `path` into `w`.
 func (s *Store) Cat(path string, w io.Writer) error {
 	cleanStream, err := s.Stream(path)
 	if err != nil {

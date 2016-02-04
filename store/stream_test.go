@@ -11,7 +11,10 @@ var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 func TestWriteAndRead(t *testing.T) {
 	raw := []byte("Hello World")
 	rawBuf := &bytes.Buffer{}
-	rawBuf.Write(raw)
+	if _, err := rawBuf.Write(raw); err != nil {
+		t.Errorf("Huh, buf-write failed?")
+		return
+	}
 
 	encStream, err := NewFileReader(TestKey, rawBuf)
 	if err != nil {
@@ -20,7 +23,7 @@ func TestWriteAndRead(t *testing.T) {
 	}
 
 	encrypted := &bytes.Buffer{}
-	if _, err := io.Copy(encrypted, encStream); err != nil {
+	if _, err = io.Copy(encrypted, encStream); err != nil {
 		t.Errorf("Reading encrypted data failed: %v", err)
 		return
 	}
@@ -32,7 +35,7 @@ func TestWriteAndRead(t *testing.T) {
 	}
 
 	decrypted := &bytes.Buffer{}
-	if _, err := io.Copy(decrypted, decStream); err != nil {
+	if _, err = io.Copy(decrypted, decStream); err != nil {
 		t.Errorf("Reading decrypted data failed: %v", err)
 		return
 	}

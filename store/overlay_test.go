@@ -64,7 +64,11 @@ func createLayer(t *testing.T, modifier func(l *Layer) error) *bytes.Buffer {
 		copyBuf := make([]byte, size)
 
 		l := NewLayer(src)
-		defer l.Close()
+		defer func() {
+			if err := l.Close(); err != nil {
+				t.Errorf("close(layer) failed: %v", err)
+			}
+		}()
 
 		if modifier != nil {
 			if err := modifier(l); err != nil {
@@ -105,7 +109,7 @@ func TestOverlayClean(t *testing.T) {
 	}
 }
 
-var SINGLE_WRITES = map[string]struct {
+var SingleWrites = map[string]struct {
 	want     []byte
 	modifier func(l *Layer) error
 }{
@@ -209,7 +213,7 @@ var SINGLE_WRITES = map[string]struct {
 }
 
 func TestOverlaySimple(t *testing.T) {
-	for name, test := range SINGLE_WRITES {
+	for name, test := range SingleWrites {
 		buf := createLayer(t, test.modifier)
 		t.Log(buf.Bytes())
 

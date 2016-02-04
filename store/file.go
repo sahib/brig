@@ -14,8 +14,11 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
+// Metadata captures metadata that might be changed by the user.
 type Metadata struct {
-	Size    FileSize
+	// Size is the file size in bytes.
+	Size FileSize
+	// ModTime is the time when the file or it's metadata was last changed.
 	ModTime time.Time
 }
 
@@ -41,6 +44,8 @@ func (f *File) insert(root *File, path string) {
 	f.node = root.node.InsertWithData(path, f)
 }
 
+// Sync writes an up-to-date version of the file metadata to bolt.
+// You probably do not need to call that yourself.
 func (f *File) Sync() {
 	f.Lock()
 	defer f.Unlock()
@@ -48,6 +53,8 @@ func (f *File) Sync() {
 	f.sync()
 }
 
+// UpdateSize updates the size (and therefore also the ModTime) of the file.
+// The change is written to bolt.
 func (f *File) UpdateSize(size uint64) {
 	f.Lock()
 	defer f.Unlock()
@@ -57,6 +64,8 @@ func (f *File) UpdateSize(size uint64) {
 	f.sync()
 }
 
+// UpdateModTime safely updates the ModTime field of the file.
+// The change is written to bolt.
 func (f *File) UpdateModTime(modTime time.Time) {
 	f.Lock()
 	defer f.Unlock()
@@ -92,7 +101,7 @@ func (f *File) sync() {
 	})
 }
 
-// New returns a file inside a repo.
+// NewFile returns a file inside a repo.
 // Path is relative to the repo root.
 func NewFile(store *Store, path string) (*File, error) {
 	key := make([]byte, 32)
@@ -120,6 +129,7 @@ func NewFile(store *Store, path string) (*File, error) {
 	return file, nil
 }
 
+// NewDir returns a new empty directory File.
 func NewDir(store *Store, path string) (*File, error) {
 	store.Root.Lock()
 	defer store.Root.Unlock()
@@ -155,6 +165,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 	return dir, nil
 }
 
+// Marshal converts a file to a protobuf-byte representation.
 func (f *File) Marshal() ([]byte, error) {
 	f.RLock()
 	defer f.RUnlock()
@@ -181,6 +192,8 @@ func (f *File) Marshal() ([]byte, error) {
 	return data, nil
 }
 
+// Unmarshal decodes the data in `buf` and inserts the unmarshaled file
+// into `store`.
 func Unmarshal(store *Store, buf []byte) (*File, error) {
 	dataFile := &proto.File{}
 	if err := protobuf.Unmarshal(buf, dataFile); err != nil {
@@ -218,6 +231,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 // TRIE LIKE API //
 ///////////////////
 
+// Insert inserts `path` into the trie.
 // The created file is empty and has a size of 0.
 // TODO: That's some ugly API
 func (f *File) Insert(path string, isFile bool) (*File, error) {
@@ -239,6 +253,7 @@ func (f *File) Insert(path string, isFile bool) (*File, error) {
 	return child, nil
 }
 
+// Root returns the uppermost node reachable from the receiver.
 func (f *File) Root() *File {
 	f.RLock()
 	defer f.RUnlock()
@@ -279,7 +294,7 @@ func (f *File) Len() int64 {
 	return f.node.Len()
 }
 
-// // Up goes up in the hierarchy and calls `visit` on each visited node.
+// Up goes up in the hierarchy and calls `visit` on each visited node.
 func (f *File) Up(visit func(*File)) {
 	f.RLock()
 	defer f.RUnlock()
@@ -290,6 +305,8 @@ func (f *File) Up(visit func(*File)) {
 	})
 }
 
+// IsLeaf returns true if the file is a leaf node.
+// TODO: needed?
 func (f *File) IsLeaf() bool {
 	f.RLock()
 	defer f.RUnlock()
@@ -297,6 +314,7 @@ func (f *File) IsLeaf() bool {
 	return f.node.IsLeaf()
 }
 
+// Path returns the absolute path of the file inside the repository, starting with /.
 func (f *File) Path() string {
 	f.RLock()
 	defer f.RUnlock()
@@ -304,6 +322,8 @@ func (f *File) Path() string {
 	return f.node.Path()
 }
 
+// Walk recursively calls `visit` on each child and f itself.
+// If `dfs` is true, the order will be depth-first, otherwise breadth-first.
 func (f *File) Walk(dfs bool, visit func(*File)) {
 	f.RLock()
 	defer f.RUnlock()
@@ -313,11 +333,20 @@ func (f *File) Walk(dfs bool, visit func(*File)) {
 	})
 }
 
+var emptyChildren []*File
+
+// Children returns a list of children of the
 func (f *File) Children() []*File {
 	f.RLock()
 	defer f.RUnlock()
 
-	children := make([]*File, 0, len(f.node.Children))
+	// Optimisation: Return the same empty slice for leaf nodes.
+	n := len(f.node.Children)
+	if n == 0 {
+		return emptyChildren
+	}
+
+	children := make([]*File, 0, n)
 	for _, child := range f.node.Children {
 		if child.Data != nil {
 			children = append(children, child.Data.(*File))
@@ -327,6 +356,7 @@ func (f *File) Children() []*File {
 	return children
 }
 
+// Child returns the direct child of the receiver called `name` or nil
 func (f *File) Child(name string) *File {
 	f.RLock()
 	defer f.RUnlock()
@@ -343,6 +373,7 @@ func (f *File) Child(name string) *File {
 	return nil
 }
 
+// Name returns the basename of the file.
 func (f *File) Name() string {
 	f.RLock()
 	defer f.RUnlock()
@@ -350,6 +381,8 @@ func (f *File) Name() string {
 	return f.node.Name
 }
 
+// Stream opens a reader that yields the raw data of the file,
+// already transparently decompressed and decrypted.
 func (f *File) Stream() (ipfsutil.Reader, error) {
 	f.RLock()
 	defer f.RUnlock()
