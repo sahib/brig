@@ -1,4 +1,5 @@
 language: go
+sudo: required
 go:
     - 1.5
 notifications:
@@ -7,5 +8,6 @@ notifications:
       - christoph@nullcat.de
 install:
     - go get -t -v ./...
+    - sudo apt-get install fuse
 script:
     - go test -v github.com/disorganizer/brig/...
