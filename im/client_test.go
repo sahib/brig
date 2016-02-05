@@ -75,7 +75,7 @@ func clientPingPong(t *testing.T) {
 	}
 
 	// Disable tls checks for the sake of getting travis to run:
-	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	tlsConfig := tls.Config{InsecureSkipVerify: true}
 
 	client, err := NewClient(&Config{
 		Jid:                  aliceJid,
