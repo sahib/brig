@@ -264,7 +264,7 @@ func (s *Store) Cat(path string, w io.Writer) error {
 // to the outside.
 func (s *Store) GoOffline() error {
 	log.Infof("Going offline (bye, ipfs and xmpp)...")
-	if err := s.IpfsNode.IpfsNode.Close(); err != nil {
+	if err := s.IpfsNode.Close(); err != nil {
 		log.Warningf("Unable to close ipfs node: %v", err)
 		return err
 	}

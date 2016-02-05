@@ -39,3 +39,7 @@ func StartNode(ipfsPath string) (*Node, error) {
 		Cancel:   cancel,
 	}, nil
 }
+
+func (n *Node) Close() error {
+	return n.IpfsNode.Close()
+}

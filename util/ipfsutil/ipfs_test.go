@@ -40,7 +40,7 @@ func withIpfs(t *testing.T, f func(*Node)) {
 
 	f(node)
 
-	if err := node.IpfsNode.Close(); err != nil {
+	if err := node.Close(); err != nil {
 		t.Errorf("Closing ipfs-daemon failed: %v", err)
 	}
 }
