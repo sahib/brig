@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/store/proto"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
@@ -115,6 +116,23 @@ func (f *File) sync() {
 		parentDir.size += f.size
 		parentDir.modTime = f.modTime
 	})
+
+	path := f.node.Path()
+	log.Debugf("store-sync: %s", path)
+
+	f.store.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
+		data, err := f.marshal()
+		if err != nil {
+			return err
+		}
+
+		if err := bucket.Put([]byte(path), data); err != nil {
+			return err
+		}
+
+		return nil
+	}))
+
 }
 
 // NewFile returns a file inside a repo.
@@ -186,6 +204,10 @@ func (f *File) Marshal() ([]byte, error) {
 	f.RLock()
 	defer f.RUnlock()
 
+	return f.marshal()
+}
+
+func (f *File) marshal() ([]byte, error) {
 	modTimeStamp, err := f.modTime.MarshalText()
 	if err != nil {
 		return nil, err
@@ -234,11 +256,9 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	}
 
 	file.Lock()
-	defer file.Unlock()
-
 	path := dataFile.GetPath()
 	file.insert(store.Root, path)
-	file.sync()
+	file.Unlock()
 
 	return file, nil
 }

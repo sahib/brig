@@ -78,6 +78,7 @@ func Open(repoPath string) (*Store, error) {
 	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
 			if _, loadErr := Unmarshal(store, v); loadErr != nil {
+				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
 				return loadErr
 			}
 
@@ -208,21 +209,6 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 // Touch creates a new empty file.
 func (s *Store) Touch(repoPath string) error {
 	return s.AddFromReader(repoPath, bytes.NewReader([]byte{}), 0)
-}
-
-type bucketHandler func(tx *bolt.Tx, b *bolt.Bucket) error
-
-// withBucket wraps a bolt handler closure and passes a named bucket
-// as extra parameter. Error handling is done universally for convinience.
-func withBucket(name string, handler bucketHandler) func(tx *bolt.Tx) error {
-	return func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(name))
-		if bucket == nil {
-			return fmt.Errorf("index: No bucket named `%s`", name)
-		}
-
-		return handler(tx, bucket)
-	}
 }
 
 // marshalFile converts a file to a protobuf and
