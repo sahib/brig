@@ -35,17 +35,24 @@ func NewFileReaderFromPath(key []byte, path string) (io.Reader, error) {
 		return nil, err
 	}
 
-	return NewFileReader(key, fd)
+	info, err := fd.Stat()
+	if err != nil {
+		fd.Close()
+		return nil, err
+	}
+
+	// TODO: defer close fd?
+	return NewFileReader(key, fd, info.Size())
 }
 
 // NewFileReader reads an unencrypted, uncompressed file and
 // returns a reader that will yield the data we feed to ipfs.
-func NewFileReader(key []byte, r io.Reader) (outR io.Reader, outErr error) {
+func NewFileReader(key []byte, r io.Reader, length int64) (outR io.Reader, outErr error) {
 	pr, pw := io.Pipe()
 
 	// Setup the writer part:
 	// TODO: When using compression, pass as `true` to NewWriter.
-	wEnc, err := encrypt.NewWriter(pw, key, false)
+	wEnc, err := encrypt.NewWriter(pw, key, length, false)
 	if err != nil {
 		return nil, err
 	}

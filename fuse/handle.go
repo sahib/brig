@@ -162,7 +162,12 @@ func (h *Handle) flush() error {
 
 	log.Debugf("fuse-flush: %v", h.Path())
 
-	if err := h.fs.Store.AddFromReader(h.Path(), h.layer); err != nil {
+	// TODO: util function for File.GetSize()
+	h.Lock()
+	size := int64(h.Size)
+	h.Unlock()
+
+	if err := h.fs.Store.AddFromReader(h.Path(), h.layer, size); err != nil {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
 	}

@@ -40,6 +40,8 @@ func StartNode(ipfsPath string) (*Node, error) {
 	}, nil
 }
 
+// Close shuts down the ipfs node.
+// It may not be used afterwards.
 func (n *Node) Close() error {
 	return n.IpfsNode.Close()
 }

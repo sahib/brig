@@ -126,7 +126,12 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 			}
 			defer util.Closer(fd)
 
-			err = s.AddFromReader(currPath, fd)
+			info, statErr := fd.Stat()
+			if err != nil {
+				return statErr
+			}
+
+			err = s.AddFromReader(currPath, fd, info.Size())
 		case mode.IsDir():
 			_, err = s.Mkdir(currPath)
 		default:
@@ -150,7 +155,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
+func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
 	log.Debugf("bolt lookup: %v", file != nil)
@@ -175,7 +180,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
 
-	stream, err := NewFileReader(file.Key, teeR)
+	stream, err := NewFileReader(file.Key, teeR, size)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package encrypt
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -44,7 +43,12 @@ func encryptFile(key []byte, from, to string) (n int64, outErr error) {
 		}
 	}()
 
-	return Encrypt(key, fdFrom, fdTo)
+	info, err := fdFrom.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	return Encrypt(key, fdFrom, fdTo, info.Size())
 }
 
 func decryptFile(key []byte, from, to string) (n int64, outErr error) {
@@ -136,7 +140,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, false)
+	enc, err := NewWriter(shared, TestKey, N, false)
 	if err != nil {
 		panic(err)
 	}
@@ -184,16 +188,36 @@ func TestSeek(t *testing.T) {
 	pos, _ = decLayer.Seek(seekTest/2, os.SEEK_CUR)
 	if pos != seekTest+seekTest/2 {
 		t.Errorf("SEEK_CUR jumped to the wrong pos: %d", pos)
+		return
 	}
 
 	pos, _ = decLayer.Seek(-seekTest, os.SEEK_CUR)
 	if pos != seekTest/2 {
 		t.Errorf("SEEK_CUR does not like negative indices: %d", pos)
+		return
 	}
 
 	pos, _ = decLayer.Seek(seekTest/2, os.SEEK_CUR)
 	if pos != seekTest {
 		t.Errorf("SEEK_CUR has problems after negative indices: %d", pos)
+		return
+	}
+
+	if N != decLayer.info.Length {
+		t.Errorf(
+			"Input length (%d) does not match header length (%d).",
+			N,
+			decLayer.info.Length,
+		)
+		return
+	}
+
+	// Check if SEEK_END appears to work
+	// (jump to same position, but from end of file)
+	endPos, _ := decLayer.Seek(seekTest, os.SEEK_END)
+	if endPos != pos {
+		t.Errorf("SEEK_END failed; should be %d, was %d", pos, endPos)
+		return
 	}
 
 	// Decrypt:
@@ -210,9 +234,9 @@ func TestSeek(t *testing.T) {
 
 	if !bytes.Equal(a[seekTest:], dest.Bytes()) {
 		b := dest.Bytes()
-		fmt.Printf("AAA %d %x %x\n", len(a), a[:10], a[len(a)-10:])
-		fmt.Printf("BBB %d %x %x\n", len(b), b[:10], b[len(b)-10:])
-		t.Errorf("Buffers are not equal")
+		t.Errorf("Buffers are not equal:")
+		t.Errorf("\tAAA %d %x %x\n", len(a), a[:10], a[len(a)-10:])
+		t.Errorf("\tBBB %d %x %x\n", len(b), b[:10], b[len(b)-10:])
 		return
 	}
 }
@@ -235,7 +259,7 @@ func TestSeekThenRead(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, false)
+	enc, err := NewWriter(shared, TestKey, N, false)
 	if err != nil {
 		panic(err)
 	}
@@ -311,7 +335,7 @@ func TestEmptyFile(t *testing.T) {
 	src := bytes.NewReader(srcBuf)
 	dst := bytes.NewBuffer(dstBuf)
 
-	enc, err := NewWriter(tmpBuf, TestKey, false)
+	enc, err := NewWriter(tmpBuf, TestKey, 0, false)
 	if err != nil {
 		t.Errorf("TestEmpyFile: creating writer failed: %v", err)
 		return

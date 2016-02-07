@@ -16,7 +16,7 @@ func TestWriteAndRead(t *testing.T) {
 		return
 	}
 
-	encStream, err := NewFileReader(TestKey, rawBuf)
+	encStream, err := NewFileReader(TestKey, rawBuf, len(raw))
 	if err != nil {
 		t.Errorf("Creating encryption stream failed: %v", err)
 		return

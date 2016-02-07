@@ -161,8 +161,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
-		// We have no idea when the stream ends.
-		return 0, fmt.Errorf("SEEK_END is not supported for encrypted data")
+		if r.info.Length < 0 {
+			// We have no idea when the stream ends.
+			return 0, fmt.Errorf("Cannot seek to end; negative length in header.")
+		}
+
+		absOffsetDec = r.info.Length - offset
 	}
 
 	if r.lastSeekPos == absOffsetDec {
@@ -171,7 +175,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	if absOffsetDec < 0 {
-		return 0, fmt.Errorf("Negative seek index")
+		return 0, fmt.Errorf("Negative seek index: %d", absOffsetDec)
 	}
 
 	// Caller wanted to know only the current stream pos:

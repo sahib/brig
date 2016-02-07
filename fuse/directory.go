@@ -74,7 +74,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		_, err = d.fs.Store.Mkdir(req.Name)
 	default:
 		// TODO: this is kinda stupid, add utility function store.Touch()?
-		err = d.fs.Store.AddFromReader(req.Name, bytes.NewReader([]byte{}))
+		err = d.fs.Store.AddFromReader(req.Name, bytes.NewReader([]byte{}), 0)
 	}
 
 	if err != nil {

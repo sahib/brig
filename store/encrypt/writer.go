@@ -24,6 +24,10 @@ type Writer struct {
 	// True after the first write.
 	headerWritten bool
 
+	// length is the total number of bytes passed to the writer.
+	// This is needed to make SEEK_END on the reader side work.
+	length int64
+
 	// Compression flag for the header.
 	// This module does not compression itself.
 	compressionFlag bool
@@ -33,7 +37,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	if !w.headerWritten {
 		w.headerWritten = true
 
-		_, err := w.Writer.Write(GenerateHeader(w.key, w.compressionFlag))
+		_, err := w.Writer.Write(GenerateHeader(w.key, w.length, w.compressionFlag))
 		if err != nil {
 			return 0, err
 		}
@@ -99,7 +103,7 @@ func (w *Writer) Close() error {
 	if !w.headerWritten {
 		w.headerWritten = true
 
-		_, err := w.Writer.Write(GenerateHeader(w.key, w.compressionFlag))
+		_, err := w.Writer.Write(GenerateHeader(w.key, w.length, w.compressionFlag))
 		if err != nil {
 			return err
 		}
@@ -118,10 +122,12 @@ func (w *Writer) Close() error {
 // NewWriter returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriter(w io.Writer, key []byte, compressionFlag bool) (*Writer, error) {
+//
+func NewWriter(w io.Writer, key []byte, length int64, compressionFlag bool) (*Writer, error) {
 	writer := &Writer{
 		Writer:          w,
 		rbuf:            rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
+		length:          length,
 		compressionFlag: compressionFlag,
 	}
 
