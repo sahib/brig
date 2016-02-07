@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -102,7 +103,6 @@ func (s *Store) Mkdir(repoPath string) (*File, error) {
 // at `repoPath` by hashing, compressing and encrypting the file.
 // Directories will be added recursively.
 func (s *Store) Add(filePath, repoPath string) error {
-	// TODO: Explain this "trick" and realise it's stupid.
 	return s.AddDir(filePath, repoPath)
 }
 
@@ -125,11 +125,6 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 				return openErr
 			}
 			defer util.Closer(fd)
-
-			info, statErr := fd.Stat()
-			if err != nil {
-				return statErr
-			}
 
 			err = s.AddFromReader(currPath, fd, info.Size())
 		case mode.IsDir():
@@ -208,6 +203,11 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	}
 
 	return nil
+}
+
+// Touch creates a new empty file.
+func (s *Store) Touch(repoPath string) error {
+	return s.AddFromReader(repoPath, bytes.NewReader([]byte{}), 0)
 }
 
 type bucketHandler func(tx *bolt.Tx, b *bolt.Bucket) error

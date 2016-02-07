@@ -242,9 +242,7 @@ func (l *Layer) Read(buf []byte) (int, error) {
 		// Empty `buf` so caller get's defined results.
 		// This should not happen in practice, but helps identifying bugs.
 		for i := n; i < len(buf); i++ {
-			// TODO: Turn this back to a nul-byte.
-			//       @ just is nice for debugging.
-			buf[i] = byte('@')
+			buf[i] = byte(0)
 		}
 
 		// Forget about EOF for a short moment.

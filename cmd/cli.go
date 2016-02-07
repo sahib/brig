@@ -512,17 +512,16 @@ func RunCmdline() int {
 		climax.Command{
 			Name:   "add",
 			Group:  wdirGroup,
-			Brief:  "Make file to be managed by brig.",
-			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
-			Help:   `TODO`,
+			Brief:  "Transer file into brig's control.",
+			Usage:  `FILE_OR_FOLDER [PATH_INSIDE_BRIG]`,
+			Help:   `Add a file or directory to brig. The second path is where it will appear in the mount.`,
 			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
 		},
 		climax.Command{
 			Name:   "rm",
 			Group:  wdirGroup,
-			Brief:  "Remove file and optionally old versions of it.",
+			Brief:  "Remove the file and optionally old versions of it.",
 			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
-			Help:   `TODO`,
 			Handle: withArgCheck(needAtLeast(0), withDaemon(handleRm, true)),
 		},
 		climax.Command{
@@ -530,7 +529,6 @@ func RunCmdline() int {
 			Group:  wdirGroup,
 			Brief:  "Write ",
 			Usage:  `FILE_OR_FOLDER DEST_PATH`,
-			Help:   `TODO`,
 			Handle: withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
 		},
 		climax.Command{
@@ -649,17 +647,17 @@ func RunCmdline() int {
 	demo.AddTopic(climax.Topic{
 		Name:  "quickstart",
 		Brief: "A very short introduction to brig",
-		Text:  "TODO: write.",
+		Text:  "Needs to be written.",
 	})
 	demo.AddTopic(climax.Topic{
 		Name:  "tutorial",
 		Brief: "A slightly longer introduction.",
-		Text:  "TODO: write.",
+		Text:  "Needs to be written.",
 	})
 	demo.AddTopic(climax.Topic{
 		Name:  "terms",
 		Brief: "Cheat sheet for often used terms.",
-		Text:  "TODO: write.",
+		Text:  "Needs to be written.",
 	})
 
 	return demo.Run()

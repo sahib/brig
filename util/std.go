@@ -88,7 +88,6 @@ func Touch(path string) error {
 //   io.Copy(os.Stdout, teeR)
 //   fmt.Printf("Wrote %d bytes to stdout\n", teeR.Size())
 //
-// TODO: write short test.
 type SizeAccumulator struct {
 	size uint64
 }

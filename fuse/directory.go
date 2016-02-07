@@ -1,7 +1,6 @@
 package fuse
 
 import (
-	"bytes"
 	"os"
 	"unsafe"
 
@@ -13,7 +12,6 @@ import (
 )
 
 // Dir represents a directory node.
-// TODO: It should always contain the implicit . and .. files.
 type Dir struct {
 	*store.File
 	fs *FS
@@ -72,7 +70,6 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 
 // Create is called to create an opened file or directory  as child of the receiver.
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	// child, err := d.Insert(req.Name, req.Mode&os.ModeDir == 0)
 	var err error
 
 	log.Debugf("fuse-create: %v", req.Name)
@@ -81,8 +78,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	case req.Mode&os.ModeDir != 0:
 		_, err = d.fs.Store.Mkdir(req.Name)
 	default:
-		// TODO: this is kinda stupid, add utility function store.Touch()?
-		err = d.fs.Store.AddFromReader(req.Name, bytes.NewReader([]byte{}), 0)
+		err = d.fs.Store.Touch(req.Name)
 	}
 
 	if err != nil {
@@ -111,8 +107,9 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 		return fuse.ENOENT
 	}
 
-	// TODO: Remove from bolt?
-	child.Remove()
+	if err := child.Remove(); err != nil {
+		log.Errorf("fuse-rm `%s` failed: %v", child.Path(), err)
+	}
 	return nil
 }
 
@@ -128,7 +125,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	}
 
 	fuseEnts[1] = fuse.Dirent{
-		Inode: *(*uint64)(unsafe.Pointer(&d.File)),
+		Inode: *(*uint64)(unsafe.Pointer(&d.File)) + 1,
 		Type:  fuse.DT_Dir,
 		Name:  "..",
 	}
@@ -140,7 +137,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		fuseEnts = append(fuseEnts, fuse.Dirent{
-			Inode: *(*uint64)(unsafe.Pointer(&d.File)),
+			Inode: *(*uint64)(unsafe.Pointer(&child)),
 			Type:  childType,
 			Name:  child.Name(),
 		})

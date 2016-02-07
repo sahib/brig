@@ -50,9 +50,8 @@ func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 }
 
 // Fsync is called when any open buffers need to be written to disk.
+// Currently, fsync is completely ignored.
 func (e *Entry) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
-	// TODO: fsync is simply ignored for now.
-	//       Go over all handles and flush them?
 	return nil
 }
 

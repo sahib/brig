@@ -247,28 +247,6 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 // TRIE LIKE API //
 ///////////////////
 
-// Insert inserts `path` into the trie.
-// The created file is empty and has a size of 0.
-// TODO: That's some ugly API
-func (f *File) Insert(path string, isFile bool) (*File, error) {
-	child := &File{
-		store:   f.store,
-		IsFile:  isFile,
-		RWMutex: f.RWMutex,
-		Metadata: &Metadata{
-			size:    0,
-			modTime: time.Now(),
-		},
-	}
-
-	f.Lock()
-	defer f.Unlock()
-
-	child.insert(f, path)
-	child.sync()
-	return child, nil
-}
-
 // Root returns the uppermost node reachable from the receiver.
 func (f *File) Root() *File {
 	f.RLock()
@@ -292,13 +270,15 @@ func (f *File) Lookup(path string) *File {
 
 // Remove removes the node at path and all of it's children.
 // The parent of the removed node is returned, which might be nil.
-func (f *File) Remove() {
+func (f *File) Remove() error {
 	f.Lock()
 	defer f.Unlock()
 
+	// Remove from trie:
 	f.node.Remove()
 
 	// TODO: remove from bolt
+	return nil
 }
 
 // Len returns the current number of elements in the trie.
