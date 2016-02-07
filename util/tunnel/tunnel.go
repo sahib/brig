@@ -9,23 +9,64 @@ import (
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
 	"io"
 
 	"github.com/disorganizer/brig/util/security"
-	// TODO: Change back to tang0th when merged:
-	//       https://github.com/tang0th/go-ecdh/pull/1
-	"github.com/disorganizer/go-ecdh"
+	"golang.org/x/crypto/curve25519"
 )
+
+////////////////////////////////////////////////////////////////////
+// The following code has been taken from go-ecdh:              //
+// https://github.com/tang0th/go-ecdh/blob/master/curve25519.go //
+// It's here to prevent another external dependency.            //
+////////////////////////////////////////////////////////////////////
+
+func GenerateKey(rand io.Reader) (crypto.PrivateKey, crypto.PublicKey, error) {
+	var pub, priv [32]byte
+	var err error
+
+	_, err = io.ReadFull(rand, priv[:])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	curve25519.ScalarBaseMult(&pub, &priv)
+	return &priv, &pub, nil
+}
+
+func Marshal(p crypto.PublicKey) []byte {
+	pub := p.(*[32]byte)
+	return pub[:]
+}
+
+func Unmarshal(data []byte) (crypto.PublicKey, bool) {
+	var pub [32]byte
+	if len(data) != 32 {
+		return nil, false
+	}
+
+	copy(pub[:], data)
+	return &pub, true
+}
+
+func GenerateSharedSecret(privKey crypto.PrivateKey, pubKey crypto.PublicKey) ([]byte, error) {
+	var priv, pub, secret *[32]byte
+
+	priv = privKey.(*[32]byte)
+	pub = pubKey.(*[32]byte)
+	secret = new([32]byte)
+
+	curve25519.ScalarMult(secret, priv, pub)
+	return secret[:], nil
+}
 
 type ecdhTunnel struct {
 	// Underlying ReadWriter
 	ReadWriter io.ReadWriter
 
-	// Elliptic Curve Diffie Hellman state and keys:
-	ecdh    ecdh.ECDH
+	// Elliptic Curve Diffie Hellman keys:
 	privKey crypto.PrivateKey
 	pubKey  crypto.PublicKey
 
@@ -36,18 +77,12 @@ type ecdhTunnel struct {
 
 // NewEllipticTunnel creates an io.ReadWriter that transparently encrypts all data.
 func NewEllipticTunnel(rw io.ReadWriter) (io.ReadWriter, error) {
-	// TODO: Find safe elliptic curve
-	return newEllipticTunnelWithCurve(rw, elliptic.P521())
-}
-
-func newEllipticTunnelWithCurve(rw io.ReadWriter, curve elliptic.Curve) (io.ReadWriter, error) {
 	tnl := &ecdhTunnel{
 		ReadWriter: rw,
-		ecdh:       ecdh.NewEllipticECDH(curve),
 	}
 
 	var err error
-	tnl.privKey, tnl.pubKey, err = tnl.ecdh.GenerateKey(rand.Reader)
+	tnl.privKey, tnl.pubKey, err = GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +96,7 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return nil
 	}
 
-	pubKeyBuf := tnl.ecdh.Marshal(tnl.pubKey)
+	pubKeyBuf := Marshal(tnl.pubKey)
 	if _, err := tnl.ReadWriter.Write(pubKeyBuf); err != nil {
 		return err
 	}
@@ -71,12 +106,12 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return err
 	}
 
-	partnerKey, ok := tnl.ecdh.Unmarshal(partnerBuf)
+	partnerKey, ok := Unmarshal(partnerBuf)
 	if !ok {
 		return fmt.Errorf("Partner key unmarshal failed")
 	}
 
-	secret, err := tnl.ecdh.GenerateSharedSecret(tnl.privKey, partnerKey)
+	secret, err := GenerateSharedSecret(tnl.privKey, partnerKey)
 	if err != nil {
 		return err
 	}
