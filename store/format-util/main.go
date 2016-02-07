@@ -16,7 +16,7 @@ func main() {
 
 	var err error
 	if *decryptMode == false {
-		_, err = encrypt.Encrypt(key, os.Stdin, os.Stdout)
+		_, err = encrypt.Encrypt(key, os.Stdin, os.Stdout, 0)
 	} else {
 		_, err = encrypt.Decrypt(key, os.Stdin, os.Stdout)
 	}

@@ -22,7 +22,7 @@ type Entry struct {
 func (e *Entry) Attr(ctx context.Context, a *fuse.Attr) error {
 	// TODO: Store special permissions? Is this allowed?
 	a.Mode = 0755
-	a.Size = uint64(e.Size)
+	a.Size = uint64(e.Size())
 	a.Inode = *(*uint64)(unsafe.Pointer(&e))
 	return nil
 }
@@ -43,7 +43,7 @@ func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
 		log.Warningf("SIZE CHANGED OF %s: %d %p", e.Path(), req.Size, e)
-		e.UpdateSize(req.Size)
+		e.UpdateSize(int64(req.Size))
 	}
 
 	return nil

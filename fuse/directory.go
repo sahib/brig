@@ -22,8 +22,8 @@ type Dir struct {
 // Attr is called to retrieve stat-metadata about the directory.
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = os.ModeDir | 0755
-	a.Size = uint64(d.File.Size)
-	a.Mtime = d.File.ModTime
+	a.Size = uint64(d.File.Size())
+	a.Mtime = d.File.ModTime()
 	return nil
 }
 

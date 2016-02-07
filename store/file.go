@@ -17,9 +17,9 @@ import (
 // Metadata captures metadata that might be changed by the user.
 type Metadata struct {
 	// Size is the file size in bytes.
-	Size FileSize
+	size FileSize
 	// ModTime is the time when the file or it's metadata was last changed.
-	ModTime time.Time
+	modTime time.Time
 }
 
 // File represents a single file in the repository.
@@ -55,13 +55,29 @@ func (f *File) Sync() {
 
 // UpdateSize updates the size (and therefore also the ModTime) of the file.
 // The change is written to bolt.
-func (f *File) UpdateSize(size uint64) {
+func (f *File) UpdateSize(size int64) {
 	f.Lock()
 	defer f.Unlock()
 
-	f.Size = FileSize(size)
-	f.ModTime = time.Now()
+	f.size = FileSize(size)
+	f.modTime = time.Now()
 	f.sync()
+}
+
+// Size returns the current size in a threadsafe manner.
+func (f *File) Size() int64 {
+	f.RLock()
+	defer f.RUnlock()
+
+	return int64(f.size)
+}
+
+// ModTime returns the current mtime in a threadsafe manner.
+func (f *File) ModTime() time.Time {
+	f.RLock()
+	defer f.RUnlock()
+
+	return f.modTime
 }
 
 // UpdateModTime safely updates the ModTime field of the file.
@@ -70,7 +86,7 @@ func (f *File) UpdateModTime(modTime time.Time) {
 	f.Lock()
 	defer f.Unlock()
 
-	f.ModTime = modTime
+	f.modTime = modTime
 	f.sync()
 }
 
@@ -96,8 +112,8 @@ func (f *File) sync() {
 			parentDir = parent.Data.(*File)
 		}
 
-		parentDir.Size += f.Size
-		parentDir.ModTime = f.ModTime
+		parentDir.size += f.size
+		parentDir.modTime = f.modTime
 	})
 }
 
@@ -150,7 +166,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		store:   store,
 		RWMutex: mu,
 		Metadata: &Metadata{
-			ModTime: time.Now(),
+			modTime: time.Now(),
 		},
 	}
 
@@ -170,7 +186,7 @@ func (f *File) Marshal() ([]byte, error) {
 	f.RLock()
 	defer f.RUnlock()
 
-	modTimeStamp, err := f.ModTime.MarshalText()
+	modTimeStamp, err := f.modTime.MarshalText()
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +194,7 @@ func (f *File) Marshal() ([]byte, error) {
 	dataFile := &proto.File{
 		Path:     protobuf.String(f.node.Path()),
 		Key:      f.Key,
-		FileSize: protobuf.Int64(int64(f.Size)),
+		FileSize: protobuf.Int64(int64(f.size)),
 		ModTime:  modTimeStamp,
 		IsFile:   protobuf.Bool(f.IsFile),
 		Hash:     f.Hash,
@@ -212,8 +228,8 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		Hash:    dataFile.GetHash(),
 		Key:     dataFile.GetKey(),
 		Metadata: &Metadata{
-			Size:    FileSize(dataFile.GetFileSize()),
-			ModTime: *modTimeStamp,
+			size:    FileSize(dataFile.GetFileSize()),
+			modTime: *modTimeStamp,
 		},
 	}
 
@@ -240,8 +256,8 @@ func (f *File) Insert(path string, isFile bool) (*File, error) {
 		IsFile:  isFile,
 		RWMutex: f.RWMutex,
 		Metadata: &Metadata{
-			Size:    0,
-			ModTime: time.Now(),
+			size:    0,
+			modTime: time.Now(),
 		},
 	}
 
