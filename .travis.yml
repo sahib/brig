@@ -7,6 +7,10 @@ notifications:
       - sahib@online.de
       - christoph@nullcat.de
 install:
+    - go get -d github.com/ipfs/go-ipfs
+    - cd $GOPATH/src/github.com/ipfs/go-ipfs
+    - make install
+    - cd $GOPATH/src/github.com/disorganizer/brig
     - go get -t -v ./...
     - sudo apt-get install fuse
 script:

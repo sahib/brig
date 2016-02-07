@@ -15,15 +15,15 @@ import (
 // Dir represents a directory node.
 // TODO: It should always contain the implicit . and .. files.
 type Dir struct {
-	File *store.File
-	fs   *FS
+	*store.File
+	fs *FS
 }
 
 // Attr is called to retrieve stat-metadata about the directory.
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = os.ModeDir | 0755
-	a.Size = uint64(d.File.Size())
-	a.Mtime = d.File.ModTime()
+	a.Size = uint64(d.Size())
+	a.Mtime = d.ModTime()
 	return nil
 }
 
@@ -32,6 +32,14 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	child := d.File.Lookup(name)
 	if child == nil {
 		return nil, fuse.ENOENT
+	}
+
+	if name == "." {
+		return d, nil
+	}
+
+	if name == ".." {
+		return &Dir{File: d.Parent(), fs: d.fs}, nil
 	}
 
 	if !child.IsLeaf() {
@@ -64,7 +72,7 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 
 // Create is called to create an opened file or directory  as child of the receiver.
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	// child, err := d.File.Insert(req.Name, req.Mode&os.ModeDir == 0)
+	// child, err := d.Insert(req.Name, req.Mode&os.ModeDir == 0)
 	var err error
 
 	log.Debugf("fuse-create: %v", req.Name)
@@ -79,20 +87,20 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"path":  d.File.Path(),
+			"path":  d.Path(),
 			"child": req.Name,
 			"error": err,
 		}).Warning("fuse-create failed")
 		return nil, nil, fuse.ENODATA
 	}
 
-	child := d.File.Child(req.Name)
+	child := d.Child(req.Name)
 	if child == nil {
 		log.Warning("No child %v in %v", req.Name, d)
 		return nil, nil, fuse.ENODATA
 	}
 
-	entry := &Entry{File: d.File.Child(req.Name), fs: d.fs}
+	entry := &Entry{File: d.Child(req.Name), fs: d.fs}
 	return entry, &Handle{Entry: entry}, nil
 }
 
@@ -110,8 +118,20 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
 // ReadDirAll is called to get a directory listing of the receiver.
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	children := d.File.Children()
-	fuseEnts := make([]fuse.Dirent, 0, len(children))
+	children := d.Children()
+	fuseEnts := make([]fuse.Dirent, 2, len(children)+2)
+
+	fuseEnts[0] = fuse.Dirent{
+		Inode: *(*uint64)(unsafe.Pointer(&d.File)),
+		Type:  fuse.DT_Dir,
+		Name:  ".",
+	}
+
+	fuseEnts[1] = fuse.Dirent{
+		Inode: *(*uint64)(unsafe.Pointer(&d.File)),
+		Type:  fuse.DT_Dir,
+		Name:  "..",
+	}
 
 	for _, child := range children {
 		childType := fuse.DT_File

@@ -412,3 +412,17 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 
 	return NewIpfsReader(f.Key, ipfsStream)
 }
+
+// Parent returns the parent directory of File.
+// If `f` is already the root, it will return itself (and never nil).
+func (f *File) Parent() *File {
+	f.RLock()
+	defer f.RUnlock()
+
+	parent := f.node.Parent
+	if parent != nil {
+		return parent.Data.(*File)
+	}
+
+	return f
+}

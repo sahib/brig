@@ -82,7 +82,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
 
-	log.Debugf("fuse-write: ")
+	log.Debugf("fuse-write: %s (off: %d size: %d)", h.Path(), req.Offset, len(req.Data))
 
 	if h.layer == nil {
 		if h.stream == nil {
