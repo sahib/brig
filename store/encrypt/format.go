@@ -21,8 +21,7 @@
 // PAYLOAD contains the actual encrypted data, which includes a MAC.
 // (The size of the MAC depends on the algorithm in use)
 //
-// All header metadata is encoded in big endian.
-// TODO: Move to little endian, like rest of world?
+// All header metadata is encoded in little endian.
 //
 // Reader/Writer are capable or reading/writing this format.  Additionally,
 // Reader supports efficient seeking into the encrypted data, provided the
@@ -53,6 +52,9 @@ const (
 const (
 	// Size of the header mac:
 	macSize = 8
+
+	// current file format version, increment on incompatible changes.
+	version = 1
 
 	// Size of the initial header:
 	headerSize = 28 + macSize
@@ -93,7 +95,7 @@ func GenerateHeader(key []byte, length int64) []byte {
 		// Brigs magic number (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
 		// File format version (2 Byte):
-		0x0, 0x1,
+		0, 0,
 		// Cipher type (2 Byte):
 		0, defaultCipherType,
 		// Key length (4 Byte):
@@ -108,17 +110,17 @@ func GenerateHeader(key []byte, length int64) []byte {
 
 	// Magic number:
 	copy(header[:len(MagicNumber)], MagicNumber)
-
-	binary.BigEndian.PutUint16(header[10:12], uint16(defaultCipherType))
+	binary.LittleEndian.PutUint16(header[8:10], version)
+	binary.LittleEndian.PutUint16(header[10:12], uint16(defaultCipherType))
 
 	// Encode key size:
-	binary.BigEndian.PutUint32(header[12:16], uint32(KeySize))
+	binary.LittleEndian.PutUint32(header[12:16], uint32(KeySize))
 
 	// Encode max block size:
-	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
+	binary.LittleEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
 
 	// Encode number of blocks:
-	binary.BigEndian.PutUint64(header[20:28], uint64(length))
+	binary.LittleEndian.PutUint64(header[20:28], uint64(length))
 
 	// Calculate a MAC of the header; this needs to be done last:
 	headerMac := hmac.New(sha3.New224, key)
@@ -157,8 +159,8 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		return nil, fmt.Errorf("Magic number in header differs")
 	}
 
-	version := binary.BigEndian.Uint16(header[8:10])
-	cipher := binary.BigEndian.Uint16(header[10:12])
+	version := binary.LittleEndian.Uint16(header[8:10])
+	cipher := binary.LittleEndian.Uint16(header[10:12])
 	switch cipher {
 	case aeadCipherAES:
 	case aeadCipherChaCha:
@@ -167,14 +169,14 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		return nil, fmt.Errorf("Unknown cipher type: %d", cipher)
 	}
 
-	keylen := binary.BigEndian.Uint32(header[12:16])
-	blocklen := binary.BigEndian.Uint32(header[16:20])
+	keylen := binary.LittleEndian.Uint32(header[12:16])
+	blocklen := binary.LittleEndian.Uint32(header[16:20])
 
 	if blocklen != MaxBlockSize {
 		return nil, fmt.Errorf("Unsupported block length in header: %d", blocklen)
 	}
 
-	length := binary.BigEndian.Uint64(header[20:28])
+	length := binary.LittleEndian.Uint64(header[20:28])
 
 	// Check the header mac: // TODO: use poly1305?
 	headerMac := hmac.New(sha3.New224, key)

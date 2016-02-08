@@ -78,7 +78,7 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 		return nNonce, err
 	}
 
-	binary.BigEndian.PutUint64(w.blocknum, w.blockCount)
+	binary.LittleEndian.PutUint64(w.blocknum, w.blockCount)
 	nBlockNum, err := w.Writer.Write(w.blocknum)
 	if err != nil {
 		return nNonce + nBlockNum, err

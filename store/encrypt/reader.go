@@ -126,7 +126,7 @@ func (r *Reader) readBlock() (int, error) {
 
 	// Check the block number:
 	currBlockNum := uint64(r.lastSeekPos / MaxBlockSize)
-	readBlockNum := binary.BigEndian.Uint64(r.blocknum)
+	readBlockNum := binary.LittleEndian.Uint64(r.blocknum)
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
 			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
