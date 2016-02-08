@@ -3,7 +3,7 @@
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
-// HEADER is 28 bytes big and contains the following fields:
+// HEADER is 28+16 bytes big and contains the following fields:
 //    -   8 Byte: Magic number (to identify non-brig files quickly)
 //    -   2 Byte: Format version
 //    -   2 Byte: Used cipher type (ChaCha20 or AES-GCM)
@@ -65,10 +65,10 @@ const (
 	// MaxBlockSize is the maximum number of bytes a single payload may have
 	MaxBlockSize = 64 * 1024
 
-	// GoodEncBufferSize is the recommended size of buffers
+	// GoodEncBufferSize is the recommended size of buffers for encryption.
 	GoodEncBufferSize = MaxBlockSize + 40
 
-	// GoodDecBufferSize is the recommended size of buffers
+	// GoodDecBufferSize is the recommended size of buffers for decryption.
 	GoodDecBufferSize = MaxBlockSize
 )
 
@@ -179,7 +179,7 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 
 	length := binary.LittleEndian.Uint64(header[20:28])
 
-	// Check the header mac: // TODO: use poly1305?
+	// Check the header mac:
 	headerMac := hmac.New(sha3.New224, key)
 	if _, err := headerMac.Write(header[:headerSize-macSize]); err != nil {
 		return nil, err
