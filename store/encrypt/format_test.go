@@ -140,7 +140,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, N, false)
+	enc, err := NewWriter(shared, TestKey, N)
 	if err != nil {
 		panic(err)
 	}
@@ -259,7 +259,7 @@ func TestSeekThenRead(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, N, false)
+	enc, err := NewWriter(shared, TestKey, N)
 	if err != nil {
 		panic(err)
 	}
@@ -335,7 +335,7 @@ func TestEmptyFile(t *testing.T) {
 	src := bytes.NewReader(srcBuf)
 	dst := bytes.NewBuffer(dstBuf)
 
-	enc, err := NewWriter(tmpBuf, TestKey, 0, false)
+	enc, err := NewWriter(tmpBuf, TestKey, 0)
 	if err != nil {
 		t.Errorf("TestEmpyFile: creating writer failed: %v", err)
 		return

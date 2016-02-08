@@ -24,18 +24,14 @@ type Writer struct {
 	// length is the total number of bytes passed to the writer.
 	// This is needed to make SEEK_END on the reader side work.
 	length int64
-
-	// Compression flag for the header.
-	// This module does not compression itself.
-	compressionFlag bool
 }
 
 func (w *Writer) emitHeaderIfNeeded() error {
 	if !w.headerWritten {
 		w.headerWritten = true
+		header := GenerateHeader(w.key, w.length)
 
-		_, err := w.Writer.Write(GenerateHeader(w.key, w.length, w.compressionFlag))
-		if err != nil {
+		if _, err := w.Writer.Write(header); err != nil {
 			return err
 		}
 	}
@@ -49,15 +45,13 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	for w.rbuf.Len() >= MaxBlockSize {
-		_, err := w.flushPack(MaxBlockSize)
-		if err != nil {
+		if _, err := w.flushPack(MaxBlockSize); err != nil {
 			return 0, err
 		}
 	}
 
 	// Remember left-overs for next write:
-	_, err := w.rbuf.Write(p)
-	if err != nil {
+	if _, err := w.rbuf.Write(p); err != nil {
 		return 0, nil
 	}
 
@@ -75,22 +69,13 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.rbuf.Next(chunkSize), nil)
 
 	// Pass it to the underlying writer:
-	written := 0
-
-	n, err := w.Writer.Write(w.nonce)
+	nNonce, err := w.Writer.Write(w.nonce)
 	if err != nil {
-		return n, err
+		return nNonce, err
 	}
 
-	written += n
-
-	n, err = w.Writer.Write(w.encBuf)
-	if err != nil {
-		return n, err
-	}
-
-	written += n
-	return written, nil
+	nBuf, err := w.Writer.Write(w.encBuf)
+	return nNonce + nBuf, err
 }
 
 // Close the Writer and write any left-over blocks
@@ -117,12 +102,11 @@ func (w *Writer) Close() error {
 // NewWriter returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriter(w io.Writer, key []byte, length int64, compressionFlag bool) (*Writer, error) {
+func NewWriter(w io.Writer, key []byte, length int64) (*Writer, error) {
 	writer := &Writer{
-		Writer:          w,
-		rbuf:            &bytes.Buffer{},
-		length:          length,
-		compressionFlag: compressionFlag,
+		Writer: w,
+		rbuf:   &bytes.Buffer{},
+		length: length,
 	}
 
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {

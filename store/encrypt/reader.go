@@ -28,10 +28,7 @@ type Reader struct {
 	// true once readHeader() was called
 	parsedHeader bool
 
-	// Key used for decryption
-	key []byte
-
-	// Buffer for decrypted data (MaxBlockSize)
+	// Buffer for decrypted data (MaxBlockSize big)
 	decBuf []byte
 }
 
@@ -231,16 +228,12 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 	reader := &Reader{
 		Reader:       r,
 		backlog:      bytes.NewReader([]byte{}),
-		key:          key,
 		parsedHeader: false,
 		decBuf:       make([]byte, 0, MaxBlockSize),
+		aeadCommon: aeadCommon{
+			key: key,
+		},
 	}
 
 	return reader, nil
-}
-
-// IsCompressed returns true when the content need to be decompressed after decrypting.
-// (or to be exact: when the file header states it was compressed)
-func (r *Reader) IsCompressed() bool {
-	return r.info != nil && r.info.Compressed > 0
 }

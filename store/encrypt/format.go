@@ -6,8 +6,7 @@
 // HEADER is 28 bytes big and contains the following fields:
 //    -  8 Byte: Magic number (to identify non-brig files quickly)
 //    -  2 Byte: Format version
-//    -  1 Byte: Used cipher type (ChaCha20 or AES-GCM)
-//    -  1 Byte: Compression algorithm (currently 0 for none and 1 for snappy)
+//    -  2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    -  4 Byte: Key length in bytes.
 //	  -  4 Byte: Maximum size of each block (last may be less)
 //    - 10 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
@@ -84,26 +83,16 @@ var KeySize = chacha.KeySize
 // Header Parsing //
 ////////////////////
 
-// Sometimes go is a bit weird:
-func btoi(b bool) byte {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader(key []byte, length int64, compression bool) []byte {
+func GenerateHeader(key []byte, length int64) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
 		// File format version (2 Byte):
 		0x0, 0x1,
-		// Cipher type (1 Byte):
-		defaultCipherType,
-		// Cipher type (1 Byte):
-		btoi(compression),
+		// Cipher type (2 Byte):
+		0, defaultCipherType,
 		// Key length (4 Byte):
 		0, 0, 0, 0,
 		// Block length (4 Byte):
@@ -116,6 +105,8 @@ func GenerateHeader(key []byte, length int64, compression bool) []byte {
 
 	// Magic number:
 	copy(header[:len(MagicNumber)], MagicNumber)
+
+	binary.BigEndian.PutUint16(header[10:12], uint16(defaultCipherType))
 
 	// Encode key size:
 	binary.BigEndian.PutUint32(header[12:16], uint32(KeySize))
@@ -144,9 +135,7 @@ type HeaderInfo struct {
 	// Version of the file format. Currently always 1.
 	Version uint16
 	// Cipher type used in the file.
-	Cipher uint8
-	// Compressed stores the compression algorithm id or 0.
-	Compressed uint8
+	Cipher uint16
 	// Keylen is the number of bytes in the encryption key.
 	Keylen uint32
 	// Blocklen is the max. number of bytes in a block.
@@ -165,7 +154,7 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	}
 
 	version := binary.BigEndian.Uint16(header[8:10])
-	cipher := uint8(header[10])
+	cipher := binary.BigEndian.Uint16(header[10:12])
 	switch cipher {
 	case aeadCipherAES:
 	case aeadCipherChaCha:
@@ -174,7 +163,6 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		return nil, fmt.Errorf("Unknown cipher type: %d", cipher)
 	}
 
-	compressed := uint8(header[11])
 	keylen := binary.BigEndian.Uint32(header[12:16])
 	blocklen := binary.BigEndian.Uint32(header[16:20])
 
@@ -200,12 +188,11 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	}
 
 	return &HeaderInfo{
-		Version:    version,
-		Cipher:     cipher,
-		Keylen:     keylen,
-		Blocklen:   blocklen,
-		Length:     length,
-		Compressed: compressed,
+		Version:  version,
+		Cipher:   cipher,
+		Keylen:   keylen,
+		Blocklen: blocklen,
+		Length:   length,
 	}, nil
 }
 
@@ -213,7 +200,7 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 // Common Utilities //
 //////////////////////
 
-func createAEADWorker(cipherType uint8, key []byte) (cipher.AEAD, error) {
+func createAEADWorker(cipherType uint16, key []byte) (cipher.AEAD, error) {
 	switch cipherType {
 	case aeadCipherAES:
 		block, err := aes.NewCipher(key)
@@ -244,7 +231,7 @@ type aeadCommon struct {
 	encBuf []byte
 }
 
-func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
+func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
 		return err
@@ -261,7 +248,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
 func Encrypt(key []byte, source io.Reader, dest io.Writer, size int64) (n int64, outErr error) {
-	layer, err := NewWriter(dest, key, size, false)
+	layer, err := NewWriter(dest, key, size)
 	if err != nil {
 		return 0, err
 	}
