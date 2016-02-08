@@ -28,7 +28,11 @@ type Reader struct {
 	// true once readHeader() was called
 	parsedHeader bool
 
+	// Key used for decryption
 	key []byte
+
+	// Buffer for decrypted data (MaxBlockSize)
+	decBuf []byte
 }
 
 func (r *Reader) readHeaderIfNotDone() error {
@@ -229,6 +233,7 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 		backlog:      bytes.NewReader([]byte{}),
 		key:          key,
 		parsedHeader: false,
+		decBuf:       make([]byte, 0, MaxBlockSize),
 	}
 
 	return reader, nil

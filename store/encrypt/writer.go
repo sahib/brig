@@ -66,23 +66,18 @@ func (w *Writer) Write(p []byte) (int, error) {
 }
 
 func (w *Writer) flushPack(chunkSize int) (int, error) {
-	n, err := w.rbuf.Read(w.decBuf[:chunkSize])
-	if err != nil {
-		return 0, err
-	}
-
 	// Create a new Nonce for this block:
 	if _, err := rand.Read(w.nonce); err != nil {
 		return 0, err
 	}
 
 	// Encrypt the text:
-	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.decBuf[:n], nil)
+	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.rbuf.Next(chunkSize), nil)
 
 	// Pass it to the underlying writer:
 	written := 0
 
-	n, err = w.Writer.Write(w.nonce)
+	n, err := w.Writer.Write(w.nonce)
 	if err != nil {
 		return n, err
 	}

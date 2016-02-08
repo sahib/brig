@@ -108,7 +108,7 @@ func GenerateHeader(key []byte, length int64, compression bool) []byte {
 		0, 0, 0, 0,
 		// Block length (4 Byte):
 		0, 0, 0, 0,
-		// Number of blocks (10 Byte),
+		// Length of input (10 Byte),
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		// MAC Header (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -242,9 +242,6 @@ type aeadCommon struct {
 
 	// Buffer for encrypted data (MaxBlockSize + overhead)
 	encBuf []byte
-
-	// Buffer for decrypted data (MaxBlockSize)
-	decBuf []byte
 }
 
 func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
@@ -258,8 +255,6 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint8) error {
 	c.key = key
 
 	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
-	c.decBuf = make([]byte, 0, MaxBlockSize)
-
 	return nil
 }
 
