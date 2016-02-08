@@ -9,8 +9,7 @@
 //    -  2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    -  4 Byte: Key length in bytes.
 //	  -  4 Byte: Maximum size of each block (last may be less)
-//    TODO: Make that 8 byte, retardo.
-//    - 10 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
+//    -  8 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
 //               This is needed to make SEEK_END work
 //               (and also to make sure all data was decrypted)
 //    -  8 Byte: MAC protecting the header from forgery
@@ -56,7 +55,7 @@ const (
 	macSize = 8
 
 	// Size of the initial header:
-	headerSize = 30 + macSize
+	headerSize = 28 + macSize
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
@@ -101,8 +100,8 @@ func GenerateHeader(key []byte, length int64) []byte {
 		0, 0, 0, 0,
 		// Block length (4 Byte):
 		0, 0, 0, 0,
-		// Length of input (10 Byte),
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		// Length of input (8 Byte),
+		0, 0, 0, 0, 0, 0, 0, 0,
 		// MAC Header (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
 	}
@@ -119,7 +118,7 @@ func GenerateHeader(key []byte, length int64) []byte {
 	binary.BigEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
 
 	// Encode number of blocks:
-	binary.PutVarint(header[20:30], length)
+	binary.BigEndian.PutUint64(header[20:28], uint64(length))
 
 	// Calculate a MAC of the header; this needs to be done last:
 	headerMac := hmac.New(sha3.New224, key)
@@ -146,7 +145,8 @@ type HeaderInfo struct {
 	// The last block might be smaller.
 	Blocklen uint32
 	// Length is the number of bytes that were passed to the encryption.
-	Length int64
+	// It may be 0, when not given (or if it's an empty file)
+	Length uint64
 }
 
 // ParseHeader parses the header of the format file.
@@ -174,12 +174,9 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		return nil, fmt.Errorf("Unsupported block length in header: %d", blocklen)
 	}
 
-	length, overflow := binary.Varint(header[20:30])
-	if overflow <= 0 {
-		return nil, fmt.Errorf("Block size is too big (overflow: %d)", overflow)
-	}
+	length := binary.BigEndian.Uint64(header[20:28])
 
-	// Check the header mac:
+	// Check the header mac: // TODO: use poly1305?
 	headerMac := hmac.New(sha3.New224, key)
 	if _, err := headerMac.Write(header[:headerSize-macSize]); err != nil {
 		return nil, err

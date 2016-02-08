@@ -183,12 +183,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
-		if r.info.Length < 0 {
+		absOffsetDec = int64(r.info.Length) - offset
+		if absOffsetDec < 0 {
 			// We have no idea when the stream ends.
-			return 0, fmt.Errorf("Cannot seek to end; negative length in header.")
+			return 0, fmt.Errorf("Cannot seek to end; bad length in header.")
 		}
-
-		absOffsetDec = r.info.Length - offset
 	}
 
 	if r.lastSeekPos == absOffsetDec {

@@ -203,7 +203,7 @@ func TestSeek(t *testing.T) {
 		return
 	}
 
-	if N != decLayer.info.Length {
+	if N != int64(decLayer.info.Length) {
 		t.Errorf(
 			"Input length (%d) does not match header length (%d).",
 			N,
