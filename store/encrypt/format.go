@@ -4,15 +4,15 @@
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
 // HEADER is 28 bytes big and contains the following fields:
-//    -  8 Byte: Magic number (to identify non-brig files quickly)
-//    -  2 Byte: Format version
-//    -  2 Byte: Used cipher type (ChaCha20 or AES-GCM)
-//    -  4 Byte: Key length in bytes.
-//	  -  4 Byte: Maximum size of each block (last may be less)
-//    -  8 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
-//               This is needed to make SEEK_END work
-//               (and also to make sure all data was decrypted)
-//    -  8 Byte: MAC protecting the header from forgery
+//    -   8 Byte: Magic number (to identify non-brig files quickly)
+//    -   2 Byte: Format version
+//    -   2 Byte: Used cipher type (ChaCha20 or AES-GCM)
+//    -   4 Byte: Key length in bytes.
+//	  -   4 Byte: Maximum size of each block (last may be less)
+//    -   8 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
+//                This is needed to make SEEK_END work
+//                (and also to make sure all data was decrypted)
+//    -  16 Byte: MAC protecting the header from forgery
 //
 // BLOCKHEADER contains the following fields:
 //    - 8 Byte: Nonce: Randomly generated, used as encryption seed.
@@ -51,7 +51,7 @@ const (
 // Other constants:
 const (
 	// Size of the header mac:
-	macSize = 8
+	macSize = 16
 
 	// current file format version, increment on incompatible changes.
 	version = 1
@@ -104,7 +104,8 @@ func GenerateHeader(key []byte, length int64) []byte {
 		0, 0, 0, 0,
 		// Length of input (8 Byte),
 		0, 0, 0, 0, 0, 0, 0, 0,
-		// MAC Header (8 Byte):
+		// MAC Header (16 Byte):
+		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
 	}
 
