@@ -62,7 +62,7 @@ func (e *Entry) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 
 	switch req.Name {
 	case "brig.hash":
-		resp.Xattr = []byte(e.Hash.B58String())[:req.Size]
+		resp.Xattr = []byte(e.Hash().B58String())[:req.Size]
 	default:
 		return fuse.ErrNoXattr
 	}

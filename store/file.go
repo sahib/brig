@@ -18,7 +18,7 @@ import (
 // Metadata captures metadata that might be changed by the user.
 type Metadata struct {
 	// Size is the file size in bytes.
-	size FileSize
+	size int64
 	// ModTime is the time when the file or it's metadata was last changed.
 	modTime time.Time
 }
@@ -35,9 +35,9 @@ type File struct {
 	store *Store
 	node  *trie.Node
 
-	IsFile bool
+	isFile bool
 
-	Hash multihash.Multihash
+	hash multihash.Multihash
 	Key  []byte
 }
 
@@ -60,7 +60,7 @@ func (f *File) UpdateSize(size int64) {
 	f.Lock()
 	defer f.Unlock()
 
-	f.size = FileSize(size)
+	f.size = size
 	f.modTime = time.Now()
 	f.sync()
 }
@@ -153,7 +153,7 @@ func NewFile(store *Store, path string) (*File, error) {
 		RWMutex:  store.Root.RWMutex,
 		Metadata: &Metadata{},
 		Key:      key,
-		IsFile:   true,
+		isFile:   true,
 	}
 
 	store.Root.Lock()
@@ -216,10 +216,10 @@ func (f *File) marshal() ([]byte, error) {
 	dataFile := &proto.File{
 		Path:     protobuf.String(f.node.Path()),
 		Key:      f.Key,
-		FileSize: protobuf.Int64(int64(f.size)),
+		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
-		IsFile:   protobuf.Bool(f.IsFile),
-		Hash:     f.Hash,
+		IsFile:   protobuf.Bool(f.isFile),
+		Hash:     f.Hash(),
 	}
 
 	data, err := protobuf.Marshal(dataFile)
@@ -246,11 +246,11 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	file := &File{
 		store:   store,
 		RWMutex: store.Root.RWMutex,
-		IsFile:  dataFile.GetIsFile(),
-		Hash:    dataFile.GetHash(),
+		isFile:  dataFile.GetIsFile(),
+		hash:    dataFile.GetHash(),
 		Key:     dataFile.GetKey(),
 		Metadata: &Metadata{
-			size:    FileSize(dataFile.GetFileSize()),
+			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
 		},
 	}
@@ -327,7 +327,7 @@ func (f *File) IsLeaf() bool {
 	f.RLock()
 	defer f.RUnlock()
 
-	return f.node.IsLeaf()
+	return f.isFile
 }
 
 // Path returns the absolute path of the file inside the repository, starting with /.
@@ -403,9 +403,9 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.Hash.B58String(), f.Key)
+	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.Key)
 
-	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.Hash)
+	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.hash)
 	if err != nil {
 		return nil, err
 	}
@@ -425,4 +425,60 @@ func (f *File) Parent() *File {
 	}
 
 	return f
+}
+
+// Hash returns the hash of a file. If it is leaf file,
+// the hash is returned directly; directory hashes
+// are computed by combining the child hashes.
+func (f *File) Hash() multihash.Multihash {
+	f.RLock()
+	defer f.RUnlock()
+
+	if f.isFile {
+		if f.hash == nil {
+			log.Warningf("file-hash: BUG: File with no hash: %v", f.node.Path())
+		}
+
+		return f.hash
+	}
+
+	if f.hash != nil {
+		// Directory with pre-computed hash:
+		return f.hash
+	}
+
+	// Compute hash by XOR'ing all child hashes:
+	// (we need XOR because order must be irrelevant)
+	hash := make([]byte, multihash.DefaultLengths[multihash.SHA1])
+	for _, childNode := range f.node.Children {
+		child := childNode.Data.(*File)
+		if child.hash == nil {
+			// Force computation:
+			child.Hash()
+		}
+
+		digest, err := multihash.Decode(child.hash)
+		if err != nil {
+			log.Warningf("file-hash: Invalid cksum: %v: %v", child.hash, err)
+			log.Warningf("file-hash: Resulting hashsum might be incorrect.")
+			continue
+		}
+
+		if len(digest.Digest) != len(hash) {
+			log.Warningf("file-hash: different cksum lengths: %d <->", len(digest.Digest), len(hash))
+			continue
+		}
+
+		for i := 0; i < len(hash); i++ {
+			hash[i] ^= digest.Digest[i]
+		}
+	}
+
+	mhash, err := multihash.Encode(hash, multihash.SHA1)
+	if err != nil {
+		log.Errorf("Unable to decode `%v` as multihash: %v", hash, err)
+	}
+
+	f.hash = mhash
+	return f.hash
 }

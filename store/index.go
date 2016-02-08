@@ -192,16 +192,12 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	// Update metadata that might have changed:
 	file.Lock()
 	{
-		file.size = FileSize(sizeAcc.Size())
+		file.size = int64(sizeAcc.Size())
 		file.modTime = time.Now()
-		file.Hash = hash
+		file.hash = hash
 		file.sync()
 	}
 	file.Unlock()
-
-	if err := s.marshalFile(file, file.Path()); err != nil {
-		return err
-	}
 
 	return nil
 }
