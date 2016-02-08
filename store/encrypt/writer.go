@@ -3,6 +3,7 @@ package encrypt
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/binary"
 	"io"
 )
 
@@ -17,6 +18,9 @@ type Writer struct {
 	// A buffer that is max. MaxBlockSize big.
 	// Used for caching leftover data between writes.
 	rbuf *bytes.Buffer
+
+	// Index of the currently written block.
+	blockCount uint64
 
 	// True after the first write.
 	headerWritten bool
@@ -74,8 +78,15 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 		return nNonce, err
 	}
 
+	binary.BigEndian.PutUint64(w.blocknum, w.blockCount)
+	nBlockNum, err := w.Writer.Write(w.blocknum)
+	if err != nil {
+		return nNonce + nBlockNum, err
+	}
+
+	w.blockCount++
 	nBuf, err := w.Writer.Write(w.encBuf)
-	return nNonce + nBuf, err
+	return nNonce + nBlockNum + nBuf, err
 }
 
 // Close the Writer and write any left-over blocks

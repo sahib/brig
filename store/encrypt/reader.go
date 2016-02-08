@@ -2,6 +2,7 @@ package encrypt
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -30,6 +31,9 @@ type Reader struct {
 
 	// Buffer for decrypted data (MaxBlockSize big)
 	decBuf []byte
+
+	// Currently block we're operating on.
+	blockCount uint64
 }
 
 func (r *Reader) readHeaderIfNotDone() error {
@@ -76,12 +80,12 @@ func (r *Reader) readHeaderIfNotDone() error {
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *Reader) Read(dest []byte) (int, error) {
-	readBytes := 0
-
 	// Make sure we have the info needed to parse the header:
 	if err := r.readHeaderIfNotDone(); err != nil {
 		return 0, err
 	}
+
+	readBytes := 0
 
 	// Try our best to fill len(dest)
 	for readBytes < len(dest) {
@@ -105,11 +109,28 @@ func (r *Reader) readBlock() (int, error) {
 		return 0, fmt.Errorf("Header could not been retrieved correctly.")
 	}
 
+	// Read nonce:
 	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
 		return 0, fmt.Errorf("Nonce size mismatch. Should: %d. Have: %d",
 			r.aead.NonceSize(), n)
+	}
+
+	// Read block number:
+	if n, err := r.Reader.Read(r.blocknum); err != nil {
+		return 0, err
+	} else if n != 8 {
+		return 0, fmt.Errorf("No full blocknum, just %d bytes", n)
+	}
+
+	// Check the block number:
+	currBlockNum := uint64(r.lastSeekPos / MaxBlockSize)
+	readBlockNum := binary.BigEndian.Uint64(r.blocknum)
+	if currBlockNum != readBlockNum {
+		return 0, fmt.Errorf(
+			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
+		)
 	}
 
 	// Read the *whole* block from the fs
@@ -149,7 +170,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	// Constants and assumption on the stream below:
 	blockSize := int64(MaxBlockSize)
-	blockHeaderSize := int64(r.aead.NonceSize())
+	blockHeaderSize := int64(r.aead.NonceSize()) + 8
 	totalBlockSize := blockHeaderSize + blockSize + int64(r.aead.Overhead())
 
 	// absolute Offset in the decrypted stream

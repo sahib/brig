@@ -9,17 +9,21 @@
 //    -  2 Byte: Used cipher type (ChaCha20 or AES-GCM)
 //    -  4 Byte: Key length in bytes.
 //	  -  4 Byte: Maximum size of each block (last may be less)
+//    TODO: Make that 8 byte, retardo.
 //    - 10 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
 //               This is needed to make SEEK_END work
 //               (and also to make sure all data was decrypted)
 //    -  8 Byte: MAC protecting the header from forgery
 //
 // BLOCKHEADER contains the following fields:
-//    - 8 Byte: Nonce/Block number
+//    - 8 Byte: Nonce: Randomly generated, used as encryption seed.
+//    - 8 Byte: Block Number: Needed to force block ordering.
 //
-// PAYLOAD contains the actual encrypted data, possibly with padding.
+// PAYLOAD contains the actual encrypted data, which includes a MAC.
+// (The size of the MAC depends on the algorithm in use)
 //
-// All metadata is encoded in big endian.
+// All header metadata is encoded in big endian.
+// TODO: Move to little endian, like rest of world?
 //
 // Reader/Writer are capable or reading/writing this format.  Additionally,
 // Reader supports efficient seeking into the encrypted data, provided the
@@ -61,7 +65,7 @@ const (
 	MaxBlockSize = 64 * 1024
 
 	// GoodEncBufferSize is the recommended size of buffers
-	GoodEncBufferSize = MaxBlockSize + 32
+	GoodEncBufferSize = MaxBlockSize + 40
 
 	// GoodDecBufferSize is the recommended size of buffers
 	GoodDecBufferSize = MaxBlockSize
@@ -223,6 +227,9 @@ type aeadCommon struct {
 	// Key used for encryption/decryption
 	key []byte
 
+	// Buffer to encode/decode the current blocknumber:
+	blocknum []byte
+
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
@@ -241,6 +248,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	c.aead = aead
 	c.key = key
 
+	c.blocknum = make([]byte, 8)
 	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
 	return nil
 }
