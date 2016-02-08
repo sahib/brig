@@ -1,12 +1,9 @@
 package encrypt
 
 import (
+	"bytes"
 	"crypto/rand"
-	"fmt"
 	"io"
-
-	"github.com/disorganizer/brig/util"
-	"github.com/glycerine/rbuf"
 )
 
 // Writer encrypts the data stream before writing to Writer.
@@ -17,9 +14,9 @@ type Writer struct {
 	// Internal Writer we would write to.
 	Writer io.Writer
 
-	// A buffer that is MaxBlockSize big.
-	// Used for caching blocks
-	rbuf *rbuf.FixedSizeRingBuf
+	// A buffer that is max. MaxBlockSize big.
+	// Used for caching leftover data between writes.
+	rbuf *bytes.Buffer
 
 	// True after the first write.
 	headerWritten bool
@@ -33,17 +30,25 @@ type Writer struct {
 	compressionFlag bool
 }
 
-func (w *Writer) Write(p []byte) (int, error) {
+func (w *Writer) emitHeaderIfNeeded() error {
 	if !w.headerWritten {
 		w.headerWritten = true
 
 		_, err := w.Writer.Write(GenerateHeader(w.key, w.length, w.compressionFlag))
 		if err != nil {
-			return 0, err
+			return err
 		}
 	}
 
-	for w.rbuf.Readable >= MaxBlockSize {
+	return nil
+}
+
+func (w *Writer) Write(p []byte) (int, error) {
+	if err := w.emitHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
+
+	for w.rbuf.Len() >= MaxBlockSize {
 		_, err := w.flushPack(MaxBlockSize)
 		if err != nil {
 			return 0, err
@@ -76,43 +81,38 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 
 	// Pass it to the underlying writer:
 	written := 0
-	if n, err := w.Writer.Write(w.nonce); err == nil {
-		written += n
+
+	n, err = w.Writer.Write(w.nonce)
+	if err != nil {
+		return n, err
 	}
 
-	if n, err := w.Writer.Write(w.encBuf); err == nil {
-		written += n
+	written += n
+
+	n, err = w.Writer.Write(w.encBuf)
+	if err != nil {
+		return n, err
 	}
 
+	written += n
 	return written, nil
-}
-
-// Seek the write stream. This maps to a seek in the underlying datastream.
-func (w *Writer) Seek(offset int64, whence int) (int64, error) {
-	if seeker, ok := w.Writer.(io.Seeker); ok {
-		return seeker.Seek(offset, whence)
-	}
-
-	return 0, fmt.Errorf("write: Seek is not supported by underlying datastream")
 }
 
 // Close the Writer and write any left-over blocks
 // This does not close the underlying data stream.
 func (w *Writer) Close() error {
-	// Also write a header, even if no write happened:
-	if !w.headerWritten {
-		w.headerWritten = true
-
-		_, err := w.Writer.Write(GenerateHeader(w.key, w.length, w.compressionFlag))
-		if err != nil {
-			return err
-		}
+	if err := w.emitHeaderIfNeeded(); err != nil {
+		return err
 	}
 
-	for w.rbuf.Readable > 0 {
-		n := util.Min(MaxBlockSize, w.rbuf.Readable)
-		_, err := w.flushPack(n)
-		if err != nil {
+	// Flush last block of data if any:
+	for w.rbuf.Len() > 0 {
+		n := w.rbuf.Len()
+		if n > MaxBlockSize {
+			n = MaxBlockSize
+		}
+
+		if _, err := w.flushPack(n); err != nil {
 			return err
 		}
 	}
@@ -122,11 +122,10 @@ func (w *Writer) Close() error {
 // NewWriter returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-//
 func NewWriter(w io.Writer, key []byte, length int64, compressionFlag bool) (*Writer, error) {
 	writer := &Writer{
 		Writer:          w,
-		rbuf:            rbuf.NewFixedSizeRingBuf(MaxBlockSize * 2),
+		rbuf:            &bytes.Buffer{},
 		length:          length,
 		compressionFlag: compressionFlag,
 	}
