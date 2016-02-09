@@ -219,7 +219,7 @@ func (f *File) marshal() ([]byte, error) {
 		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
 		IsFile:   protobuf.Bool(f.isFile),
-		Hash:     f.Hash(),
+		Hash:     f.hashUnlocked(),
 	}
 
 	data, err := protobuf.Marshal(dataFile)
@@ -434,6 +434,10 @@ func (f *File) Hash() multihash.Multihash {
 	f.RLock()
 	defer f.RUnlock()
 
+	return f.hashUnlocked()
+}
+
+func (f *File) hashUnlocked() multihash.Multihash {
 	if f.isFile {
 		if f.hash == nil {
 			log.Warningf("file-hash: BUG: File with no hash: %v", f.node.Path())
