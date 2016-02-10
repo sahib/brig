@@ -453,6 +453,7 @@ func (f *File) hashUnlocked() *Hash {
 
 	// Compute hash by XOR'ing all child hashes:
 	// (we need XOR because order must be irrelevant)
+	// TODO: Get actual hash algorithm from config (or something)
 	hash := make([]byte, multihash.DefaultLengths[multihash.SHA1])
 	for _, childNode := range f.node.Children {
 		child := childNode.Data.(*File)

@@ -50,8 +50,6 @@ func Dial(port int) (*Client, error) {
 	}
 
 	go client.handleMessages(tnl)
-
-	client.Ping()
 	return client, nil
 }
 
