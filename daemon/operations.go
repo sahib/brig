@@ -1,9 +1,11 @@
 package daemon
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/store"
 	protobuf "github.com/gogo/protobuf/proto"
 )
 
@@ -77,4 +79,34 @@ func (c *Client) Rm(repoPath string) (string, error) {
 	}
 
 	return c.recvResponse("rm")
+}
+
+// Log returns a series of commits.
+func (c *Client) Log() ([]*store.Commit, error) {
+	c.Send <- &proto.Command{CommandType: proto.MessageType_LOG.Enum()}
+
+	// TODO: Implement.
+	return nil, nil
+}
+
+// Log returns a series of commits.
+func (c *Client) History(repoPath string) (store.History, error) {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_HISTORY.Enum(),
+		HistoryCommand: &proto.Command_HistoryCmd{
+			RepoPath: protobuf.String(repoPath),
+		},
+	}
+
+	jsonData, err := c.recvResponse("history")
+	if err != nil {
+		return nil, err
+	}
+
+	hist := make(store.History, 0)
+	if err := json.Unmarshal([]byte(jsonData), &hist); err != nil {
+		return nil, err
+	}
+
+	return hist, nil
 }

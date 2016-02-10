@@ -55,7 +55,7 @@ func Open(repoPath string) (*Store, error) {
 
 	// Create initial buckets:
 	err = db.Update(func(tx *bolt.Tx) error {
-		for _, name := range []string{"index", "commits", "pinned"} {
+		for _, name := range []string{"index", "commits", "checkpoints"} {
 			if _, berr := tx.CreateBucketIfNotExists([]byte(name)); berr != nil {
 				return fmt.Errorf("create bucket: %s", berr)
 			}
@@ -75,7 +75,7 @@ func Open(repoPath string) (*Store, error) {
 
 	store.Root = rootDir
 
-	err = db.View(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
+	err = store.viewWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
 			if _, loadErr := Unmarshal(store, v); loadErr != nil {
 				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
@@ -84,7 +84,7 @@ func Open(repoPath string) (*Store, error) {
 
 			return nil
 		})
-	}))
+	})
 
 	return store, err
 }
@@ -154,6 +154,8 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
+	oldFile := file
+
 	log.Debugf("bolt lookup: %v", file != nil)
 
 	if file != nil {
@@ -161,8 +163,6 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		log.WithFields(log.Fields{
 			"file": repoPath,
 		}).Info("Updating file.")
-
-		// TODO: Write oldFile to commit history here...
 	} else {
 		newFile, err := NewFile(s, repoPath)
 		if err != nil {
@@ -181,23 +181,27 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	hash, err := ipfsutil.Add(s.IpfsNode, stream)
+	mhash, err := ipfsutil.Add(s.IpfsNode, stream)
 	if err != nil {
 		return err
 	}
 
 	log.Infof("ADD KEY:  %x", file.Key)
-	log.Infof("ADD HASH: %s", hash.B58String())
+	log.Infof("ADD HASH: %s", mhash.B58String())
 
 	// Update metadata that might have changed:
 	file.Lock()
 	{
 		file.size = int64(sizeAcc.Size())
 		file.modTime = time.Now()
-		file.hash = hash
+		file.hash = &Hash{mhash}
 		file.sync()
 	}
 	file.Unlock()
+
+	if _, err := s.MakeCheckpoint(oldFile, file); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -209,7 +213,7 @@ func (s *Store) Touch(repoPath string) error {
 
 // marshalFile converts a file to a protobuf and
 func (s *Store) marshalFile(file *File, repoPath string) error {
-	return s.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
+	return s.updateWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		data, err := file.Marshal()
 		if err != nil {
 			return err
@@ -220,7 +224,7 @@ func (s *Store) marshalFile(file *File, repoPath string) error {
 		}
 
 		return nil
-	}))
+	})
 }
 
 // Stream returns the stream of the file at `path`.
@@ -291,7 +295,13 @@ func (s *Store) Rm(path string) error {
 	}
 
 	// Remove from trie & remove from bolt db.
-	return s.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
-		return bucket.Delete([]byte(path))
-	}))
+	return s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+		return bckt.Delete([]byte(path))
+	})
+
+	if _, err := s.MakeCheckpoint(node, nil); err != nil {
+		return err
+	}
+
+	return nil
 }

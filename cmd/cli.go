@@ -375,6 +375,27 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
+func handleHistory(ctx climax.Context, client *daemon.Client) int {
+	// TODO: util func for this.
+	repoPath := ctx.Args[0]
+	if !strings.HasPrefix(repoPath, "/") {
+		repoPath = "/" + repoPath
+	}
+
+	history, err := client.History(repoPath)
+	if err != nil {
+		log.Errorf("Unable to retrieve history: %v", err)
+		return UnknownError
+	}
+
+	fmt.Println(repoPath)
+	for idx := range history {
+		fmt.Printf(" #%02d: %v\n", idx, history[len(history)-idx-1])
+	}
+
+	return Success
+}
+
 ////////////////////////////
 // Commandline definition //
 ////////////////////////////
@@ -458,6 +479,12 @@ func RunCmdline() int {
 			Group:  repoGroup,
 			Brief:  "Encrypt all metadata in the port and go offline.",
 			Handle: withDaemon(handleClose, false),
+		},
+		climax.Command{
+			Name:   "history",
+			Group:  repoGroup,
+			Brief:  "Show the history of a file.",
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
 		},
 		climax.Command{
 			Name:  "sync",
