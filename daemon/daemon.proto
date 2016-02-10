@@ -9,6 +9,8 @@ enum MessageType {
     MOUNT = 4;
     UNMOUNT = 5;
 	RM = 6;
+    HISTORY = 7;
+    LOG = 8;
 }
 
 message Command {
@@ -37,13 +39,22 @@ message Command {
         required string mount_point = 1;
     }
 
+    message UnmountCmd {
+        // Where to unmount the filesystem
+        required string mount_point = 1;
+    }
+
 	message RmCmd {
 		required string repo_path = 1;
 	}
 
-    message UnmountCmd {
-        // Where to unmount the filesystem
-        required string mount_point = 1;
+    message HistoryCmd {
+        // Which file to show the history of:
+        required string repo_path = 1;
+    }
+
+    message LogCmd {
+        // No arguments yet.
     }
 
     required MessageType command_type = 1;
@@ -55,6 +66,8 @@ message Command {
     optional MountCmd mount_command = 6;
     optional UnmountCmd unmount_command = 7;
     optional RmCmd rm_command = 8;
+    optional HistoryCmd history_command = 9;
+    optional LogCmd log_command = 10;
 }
 
 message Response {

@@ -33,7 +33,7 @@ func dummyFile(t *testing.T, store *Store, path string) *File {
 	return child
 }
 
-func dummyHash(t *testing.T, store *Store, seed byte) multihash.Multihash {
+func dummyHash(t *testing.T, store *Store, seed byte) *Hash {
 	hash, err := multihash.Encode(
 		[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, seed},
 		multihash.SHA1,
@@ -44,7 +44,7 @@ func dummyHash(t *testing.T, store *Store, seed byte) multihash.Multihash {
 		return nil
 	}
 
-	return hash
+	return &Hash{hash}
 }
 
 func TestHash(t *testing.T) {
@@ -59,7 +59,8 @@ func TestHash(t *testing.T) {
 	other := dummyFile(t, store, "/russia/piotr.go")
 	other.hash = dummyHash(t, store, 2)
 
-	rootHash := store.Root.Hash()
+	rootHash := store.Root.Hash().Bytes()
+
 	if rootHash[len(rootHash)-1] != 1^2 {
 		t.Errorf("Root dir has not XOR'd children checksum properly:")
 		t.Errorf("\tEXPECTED: 3 at end; GOT: %v", rootHash)

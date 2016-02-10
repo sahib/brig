@@ -20,3 +20,11 @@ func withBucket(name string, handler bucketHandler) func(tx *bolt.Tx) error {
 		return handler(tx, bucket)
 	}
 }
+
+func (s *Store) updateWithBucket(name string, handler bucketHandler) error {
+	return s.db.Update(withBucket(name, handler))
+}
+
+func (s *Store) viewWithBucket(name string, handler bucketHandler) error {
+	return s.db.View(withBucket(name, handler))
+}

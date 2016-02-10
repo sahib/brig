@@ -37,7 +37,7 @@ type File struct {
 
 	isFile bool
 
-	hash multihash.Multihash
+	hash *Hash
 	Key  []byte
 }
 
@@ -219,7 +219,7 @@ func (f *File) marshal() ([]byte, error) {
 		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
 		IsFile:   protobuf.Bool(f.isFile),
-		Hash:     f.hashUnlocked(),
+		Hash:     f.hashUnlocked().Multihash,
 	}
 
 	data, err := protobuf.Marshal(dataFile)
@@ -247,7 +247,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		isFile:  dataFile.GetIsFile(),
-		hash:    dataFile.GetHash(),
+		hash:    &Hash{dataFile.GetHash()},
 		Key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
@@ -405,7 +405,7 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 
 	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.Key)
 
-	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.hash)
+	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.hash.Multihash)
 	if err != nil {
 		return nil, err
 	}
@@ -430,23 +430,23 @@ func (f *File) Parent() *File {
 // Hash returns the hash of a file. If it is leaf file,
 // the hash is returned directly; directory hashes
 // are computed by combining the child hashes.
-func (f *File) Hash() multihash.Multihash {
+func (f *File) Hash() *Hash {
 	f.RLock()
 	defer f.RUnlock()
 
 	return f.hashUnlocked()
 }
 
-func (f *File) hashUnlocked() multihash.Multihash {
+func (f *File) hashUnlocked() *Hash {
 	if f.isFile {
-		if f.hash == nil {
+		if !f.hash.Valid() {
 			log.Warningf("file-hash: BUG: File with no hash: %v", f.node.Path())
 		}
 
 		return f.hash
 	}
 
-	if f.hash != nil {
+	if f.hash.Valid() {
 		// Directory with pre-computed hash:
 		return f.hash
 	}
@@ -456,12 +456,12 @@ func (f *File) hashUnlocked() multihash.Multihash {
 	hash := make([]byte, multihash.DefaultLengths[multihash.SHA1])
 	for _, childNode := range f.node.Children {
 		child := childNode.Data.(*File)
-		if child.hash == nil {
+		if !child.hash.Valid() {
 			// Force computation:
 			child.Hash()
 		}
 
-		digest, err := multihash.Decode(child.hash)
+		digest, err := multihash.Decode(child.hash.Multihash)
 		if err != nil {
 			log.Warningf("file-hash: Invalid cksum: %v: %v", child.hash, err)
 			log.Warningf("file-hash: Resulting hashsum might be incorrect.")
@@ -483,6 +483,6 @@ func (f *File) hashUnlocked() multihash.Multihash {
 		log.Errorf("Unable to decode `%v` as multihash: %v", hash, err)
 	}
 
-	f.hash = mhash
+	f.hash = &Hash{mhash}
 	return f.hash
 }

@@ -1,10 +1,12 @@
 package daemon
 
 import (
+	"encoding/json"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/store"
 	"golang.org/x/net/context"
 )
 
@@ -18,6 +20,8 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_MOUNT:   handleMount,
 	proto.MessageType_UNMOUNT: handleUnmount,
 	proto.MessageType_RM:      handleRm,
+	proto.MessageType_HISTORY: handleHistory,
+	proto.MessageType_LOG:     handleLog,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
@@ -86,4 +90,30 @@ func handleRm(d *Server, ctx context.Context, cmd *proto.Command) (string, error
 	}
 
 	return repoPath, nil
+}
+
+func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+	repoPath := cmd.GetHistoryCommand().GetRepoPath()
+
+	file := d.Repo.Store.Root.Lookup(repoPath)
+	if file == nil {
+		return "", store.ErrNoSuchFile
+	}
+
+	history, err := d.Repo.Store.History(file)
+	if err != nil {
+		return "", err
+	}
+
+	jsonData, err := json.Marshal(history)
+	if err != nil {
+		return "", err
+	}
+
+	// TODO: Change handlers to return []byte?
+	return string(jsonData), err
+}
+
+func handleLog(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+	return "", nil
 }
