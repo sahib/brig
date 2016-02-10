@@ -142,14 +142,17 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 
 func (sw *snappyWriter) writeHeaderIfNeeded() error {
 	if !sw.headerWritten {
-		sw.headerWritten = true
+		fmt.Println("writing header")
+		buf := [32]byte{}
+		binary.PutUvarint(buf[00:16], sw.compression)
+		binary.PutUvarint(buf[16:32], MaxBlockSize)
+		if _, err := sw.rawW.Write(buf[:]); err != nil {
+			return err
+		}
 	}
 
-	var buf = [32]byte{}
-	binary.PutUvarint(buf[00:16], sw.compression)
-	binary.PutUvarint(buf[16:32], MaxBlockSize)
-	_, err := sw.rawW.Write(buf[:])
-	return err
+	sw.headerWritten = true
+	return nil
 }
 
 func (sw *snappyWriter) appendToBlockIndex(sizeCompressed int) {
