@@ -16,7 +16,9 @@ var (
 )
 
 const (
-	MaxBlockSize = 64 * 1024
+	MaxBlockSize   = 64 * 1024
+	HeaderBufSize  = 32
+	IndexBlockSize = 30
 )
 
 func openFiles(from, to string) (*os.File, *os.File, error) {
@@ -123,8 +125,9 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 			b.unmarshal(sr.tailBuf)
 			sr.index = append(sr.index, b)
 			sr.tailBuf = sr.tailBuf[30:]
+			sr.tailBuf = sr.tailBuf[IndexBlockSize:]
 		}
-		sr.rawR.Seek(32, os.SEEK_SET)
+		sr.rawR.Seek(HeaderBufSize, os.SEEK_SET)
 	}
 
 	// curOff, err := sr.rawR.Seek(0, os.SEEK_CUR)
@@ -213,7 +216,8 @@ func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &snappyReader{
 		rawR:      r,
 		zipR:      snappy.NewReader(io.Reader(r)),
-		headerBuf: make([]byte, 0, 30),
+		headerBuf: make([]byte, 0, HeaderBufSize),
+		readBuf:   &bytes.Buffer{},
 	}
 }
 
@@ -240,13 +244,13 @@ func (sw *snappyWriter) Close() error {
 	sw.appendToBlockIndex(nc)
 
 	// Write compression index tail and close stream.
-	indexSize := uint64(30 * len(sw.index))
+	indexSize := uint64(IndexBlockSize * len(sw.index))
 	tailBuf := make([]byte, indexSize)
 	tailBufStart := tailBuf
 	if len(sw.index) > 0 {
 		for _, blkidx := range sw.index {
 			blkidx.marshal(tailBuf)
-			tailBuf = tailBuf[30:]
+			tailBuf = tailBuf[IndexBlockSize:]
 		}
 	}
 
