@@ -94,6 +94,9 @@ type Checkpoint struct {
 
 	// Change is the detailed type of the modification.
 	Change *ChangeType `json:"change"`
+
+	// Author of the file modifications (jabber id)
+	Author string `json:"author"`
 }
 
 // TODO: nice representation

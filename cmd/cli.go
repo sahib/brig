@@ -375,6 +375,14 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
+var (
+	treeRunePipe   = "│"
+	treeRuneTri    = "├"
+	treeRuneBar    = "──"
+	treeRuneCorner = "└"
+	treeRuneDot    = "⌽" // ⚫
+)
+
 func handleHistory(ctx climax.Context, client *daemon.Client) int {
 	// TODO: util func for this.
 	repoPath := ctx.Args[0]
@@ -388,9 +396,26 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 		return UnknownError
 	}
 
-	fmt.Println(repoPath)
+	fmt.Println(colors.Colorize(repoPath, colors.Magenta))
 	for idx := range history {
-		fmt.Printf(" #%02d: %v\n", idx, history[len(history)-idx-1])
+		checkpoint := history[len(history)-idx-1]
+
+		threeWayRune, twoWayRune := treeRuneTri, treeRunePipe
+		if idx == len(history)-1 {
+			threeWayRune, twoWayRune = treeRuneCorner, " "
+		}
+
+		fmt.Printf(
+			" %s%s %s #%d (%s by %s)\n",
+			threeWayRune,
+			treeRuneBar,
+			colors.Colorize("Checkpoint", colors.Cyan),
+			idx,
+			colors.Colorize(checkpoint.Change.String(), colors.Red),
+			colors.Colorize(checkpoint.Author, colors.Magenta),
+		)
+		fmt.Printf(" %s   ├─ % 9s: %v\n", twoWayRune, colors.Colorize("Hash", colors.Green), checkpoint.Hash.B58String())
+		fmt.Printf(" %s   └─ % 9s: %v\n", twoWayRune, colors.Colorize("Date", colors.Yellow), checkpoint.ModTime)
 	}
 
 	return Success
