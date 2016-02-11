@@ -25,7 +25,7 @@ func openFiles(from, to string) (*os.File, *os.File, error) {
 		return nil, nil, err
 	}
 
-	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		fdFrom.Close()
 		return nil, nil, err
@@ -142,14 +142,17 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 
 func (sw *snappyWriter) writeHeaderIfNeeded() error {
 	if !sw.headerWritten {
-		sw.headerWritten = true
+		fmt.Println("writing header")
+		buf := [32]byte{}
+		binary.PutUvarint(buf[00:16], sw.compression)
+		binary.PutUvarint(buf[16:32], MaxBlockSize)
+		if _, err := sw.rawW.Write(buf[:]); err != nil {
+			return err
+		}
 	}
 
-	var buf = [32]byte{}
-	binary.PutUvarint(buf[00:16], sw.compression)
-	binary.PutUvarint(buf[16:32], MaxBlockSize)
-	_, err := sw.rawW.Write(buf[:])
-	return err
+	sw.headerWritten = true
+	return nil
 }
 
 func (sw *snappyWriter) appendToBlockIndex(sizeCompressed int) {
