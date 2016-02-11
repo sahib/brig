@@ -1,5 +1,5 @@
 all:
-	go install cmd/main/brig.go
+	go install brig/brig.go
 
 lint:
 	gometalinter ./... --deadline 1m | grep -v '.*\.pb\..*'
