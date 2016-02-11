@@ -37,6 +37,7 @@ func openFiles(from, to string) (*os.File, *os.File, error) {
 }
 
 type snappyWriter struct {
+	sizeAcc       *util.SizeAccumulator
 	rawW          io.Writer
 	zipW          io.Writer
 	buf           *bytes.Buffer
@@ -184,14 +185,15 @@ func (sw *snappyWriter) writeHeaderIfNeeded() error {
 	return nil
 }
 
-func (sw *snappyWriter) appendToBlockIndex(sizeCompressed int) {
-	var fOff, zOff, zBlockSize = uint64(0), uint64(0), uint64(sizeCompressed)
+func (sw *snappyWriter) appendToBlockIndex() {
+	var fOff, zOff, zBlockSize = uint64(0), uint64(0), uint64(sw.sizeAcc.Size())
 	if len(sw.index) > 0 {
 		var prevIdx = sw.index[len(sw.index)-1]
 		fOff = prevIdx.fileOffset + MaxBlockSize
-		zOff = prevIdx.zipOffset + uint64(sizeCompressed)
+		zOff = prevIdx.zipOffset + zBlockSize
 	}
 	sw.index = append(sw.index, BlockIndex{fOff, zOff, zBlockSize})
+	sw.sizeAcc.Reset()
 
 }
 
@@ -205,7 +207,7 @@ func (sw *snappyWriter) flushBlock(flushSize int) (int, error) {
 	}
 
 	// Build and update index for the current block.
-	sw.appendToBlockIndex(nc)
+	sw.appendToBlockIndex()
 
 	return nc, nil
 }
@@ -248,8 +250,11 @@ func NewReader(r io.ReadSeeker) io.ReadSeeker {
 }
 
 func NewWriter(w io.Writer) io.WriteCloser {
+	s := &util.SizeAccumulator{}
 	return &snappyWriter{
-		zipW:        snappy.NewWriter(w),
+
+		sizeAcc:     s,
+		zipW:        snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:        w,
 		buf:         &bytes.Buffer{},
 		compression: 1,
@@ -267,7 +272,7 @@ func (sw *snappyWriter) Close() error {
 		fmt.Println("Close():", err)
 		return err
 	}
-	sw.appendToBlockIndex(nc)
+	sw.appendToBlockIndex()
 
 	// Write compression index tail and close stream.
 	indexSize := uint64(IndexBlockSize * len(sw.index))
