@@ -6,7 +6,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
-	"github.com/disorganizer/brig/store"
 	"golang.org/x/net/context"
 )
 
@@ -95,12 +94,7 @@ func handleRm(d *Server, ctx context.Context, cmd *proto.Command) (string, error
 func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
 	repoPath := cmd.GetHistoryCommand().GetRepoPath()
 
-	file := d.Repo.Store.Root.Lookup(repoPath)
-	if file == nil {
-		return "", store.ErrNoSuchFile
-	}
-
-	history, err := d.Repo.Store.History(file)
+	history, err := d.Repo.Store.History(repoPath)
 	if err != nil {
 		return "", err
 	}

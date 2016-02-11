@@ -141,7 +141,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		ModTime: time.Now(),
 		Size:    size,
 		Change:  &change,
-		// TODO: Take the actual one.
+		// TODO: Take the actual one
 		Author: "alice@jabber.nullcat.de/desktop",
 	}
 
@@ -174,11 +174,11 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 
 // History returns all checkpoints a file has.
 // Note: even on error a empty history is returned.
-func (s *Store) History(f *File) (History, error) {
-	hist := make(History, 0)
+func (s *Store) History(path string) (History, error) {
+	var hist History
 
 	return hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		changeBuck := bckt.Bucket([]byte(f.Path()))
+		changeBuck := bckt.Bucket([]byte(path))
 		if changeBuck == nil {
 			// No history yet, return empty.
 			return nil

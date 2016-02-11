@@ -302,24 +302,31 @@ func (s *Store) Close() error {
 
 // Rm will purge a file locally on this node.
 func (s *Store) Rm(path string) error {
-	s.Root.Lock()
-	defer s.Root.Unlock()
-
 	node := s.Root.Lookup(path)
+
 	if node == nil {
-		log.Errorf("Could not remove `%s` from trie.", path)
-	} else {
-		node.Remove()
+		return ErrNoSuchFile
+	}
+
+	// TODO: Implement dir walk...
+	if !node.IsLeaf() {
+		return fmt.Errorf("rm does not work on directories yet.")
 	}
 
 	// Remove from trie & remove from bolt db.
-	return s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+	err := s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		return bckt.Delete([]byte(path))
 	})
 
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("rm: Making checkpoint: %v", node.Metadata)
 	if err := s.MakeCheckpoint(node.Metadata, nil, path, path); err != nil {
 		return err
 	}
 
+	node.Remove()
 	return nil
 }

@@ -290,15 +290,12 @@ func (f *File) Lookup(path string) *File {
 
 // Remove removes the node at path and all of it's children.
 // The parent of the removed node is returned, which might be nil.
-func (f *File) Remove() error {
+func (f *File) Remove() {
 	f.Lock()
 	defer f.Unlock()
 
 	// Remove from trie:
 	f.node.Remove()
-
-	// TODO: remove from bolt
-	return nil
 }
 
 // Len returns the current number of elements in the trie.
