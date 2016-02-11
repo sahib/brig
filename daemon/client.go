@@ -137,7 +137,7 @@ func (c *Client) Ping() bool {
 	c.Send <- cmd
 	resp := <-c.Recv
 	if resp != nil {
-		return "PONG" == resp.GetResponse()
+		return "PONG" == string(resp.GetResponse())
 	}
 
 	return false

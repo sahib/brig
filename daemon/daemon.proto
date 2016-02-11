@@ -73,6 +73,6 @@ message Command {
 message Response {
     required MessageType response_type = 1;
     required bool success = 3;
-    optional string response = 2;
+    optional bytes response = 2;
     optional string error = 4;
 }
