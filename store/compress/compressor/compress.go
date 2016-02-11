@@ -84,6 +84,23 @@ func (sr *snappyReader) Seek(offset int64, whence int) (int64, error) {
 	return offset, nil
 }
 
+func (sr *snappyReader) getCurrentIndexBlock(curIndex uint64) uint64 {
+	// offset | zipOffset | zipSize
+	if len(sr.index) == 0 {
+		panic("Index len is zero.")
+	}
+
+	fileIdx, zipIdx := uint64(0), uint64(0)
+	for _, BlockIndex := range sr.index {
+		zipIdx += BlockIndex.zipSize
+		if zipIdx >= curIndex {
+			return BlockIndex.zipOffset
+		}
+		fileIdx += MaxBlockSize
+	}
+	return 0
+}
+
 // Read a snappy compressed stream, with random access.
 func (sr *snappyReader) Read(p []byte) (int, error) {
 
@@ -135,6 +152,15 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 	// 	fmt.Println(err)
 	// }
 
+	curZipIdx := sr.getCurrentIndexBlock(uint64(curOff))
+	if err != nil {
+		fmt.Println(err)
+	}
+	newOffset, err := sr.rawR.Seek(int64(curZipIdx), os.SEEK_SET)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(newOffset)
 	// Identify current block with getCurrentIndexBlock.
 	// Go to the begining of the current block.
 	// Read block in MaxBlockSize bytes buffer.
