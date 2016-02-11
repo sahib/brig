@@ -13,6 +13,28 @@ import (
 	"github.com/tucnak/climax"
 )
 
+// guessRepoFolder tries to find the repository path
+// by using a number of sources.
+func guessRepoFolder() string {
+	folder := repo.GuessFolder()
+	if folder == "" {
+		log.Errorf("This does not like a brig repository (missing .brig)")
+		os.Exit(BadArgs)
+	}
+
+	return folder
+}
+
+func readPassword() (string, error) {
+	repoFolder := guessRepoFolder()
+	pwd, err := repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+		err := repo.CheckPassword(repoFolder, pwd)
+		return err == nil
+	})
+
+	return pwd, err
+}
+
 type cmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
 
 func withDaemon(handler cmdHandlerWithClient, startNew bool) climax.CmdHandler {
