@@ -63,7 +63,6 @@ type BlockIndex struct {
 }
 
 func (bl *BlockIndex) marshal(buf []byte) {
-
 	binary.PutUvarint(buf[00:10], bl.fileOffset)
 	binary.PutUvarint(buf[10:20], bl.zipOffset)
 	binary.PutUvarint(buf[20:30], bl.zipSize)
@@ -108,24 +107,24 @@ func (sr *snappyReader) getCurrentIndexBlock(curIndex uint64) uint64 {
 func (sr *snappyReader) Read(p []byte) (int, error) {
 
 	// Do on first read when header buffer is empty.
-	fmt.Println(len(sr.headerBuf))
 	if len(sr.headerBuf) == 0 {
 
 		n, err := sr.rawR.Read(sr.headerBuf[:cap(sr.headerBuf)])
 		if err != nil {
 			fmt.Println(err)
+			return 0, err
 		}
-		//fmt.Println(n, "read vrom headerbuffer")
 
-		offset, err := sr.rawR.Seek(-8, os.SEEK_END)
+		_, err = sr.rawR.Seek(-8, os.SEEK_END)
 		if err != nil {
 			fmt.Println(err)
 			return 0, err
 		}
+
 		// Read size of tail.
 		var buf = make([]byte, 8)
-		if n, err := sr.rawR.Read(buf); err != nil || n != 8 {
-			fmt.Println(err)
+		bytes, err := sr.rawR.Read(buf)
+		if err != nil || bytes != 8 {
 			return n, err
 		}
 
@@ -149,11 +148,10 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 		//Build Index
 		for i := uint64(0); i < (tailSize / IndexBlockSize); i++ {
 			b := BlockIndex{}
-			fmt.Println(len(sr.tailBuf))
+
 			b.unmarshal(sr.tailBuf)
-			fmt.Println("Building index:", b)
+
 			sr.index = append(sr.index, b)
-			sr.tailBuf = sr.tailBuf[30:]
 			sr.tailBuf = sr.tailBuf[IndexBlockSize:]
 		}
 		sr.rawR.Seek(HeaderBufSize, os.SEEK_SET)
@@ -162,24 +160,27 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 	curOff, err := sr.rawR.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		fmt.Println(err)
+		return 0, err
 	}
 
 	curZipIdx := sr.getCurrentIndexBlock(uint64(curOff))
 	if err != nil {
 		fmt.Println(err)
+		return 0, err
 	}
 	newOffset, err := sr.rawR.Seek(int64(curZipIdx), os.SEEK_SET)
 	if err != nil {
 		fmt.Println(err)
+		return 0, err
 	}
-	fmt.Println(newOffset)
 
 	for newOffset <= sr.fileEndOff {
-		fmt.Println("OFFSETS:", newOffset, sr.fileEndOff)
+
 		endMarker := util.UMin(uint(newOffset+MaxBlockSize), uint(sr.fileEndOff))
 		n, err := io.CopyN(sr.readBuf, sr.zipR, int64(endMarker))
 		if err != nil {
 			fmt.Println(err, n)
+			return 0, err
 		}
 
 		newOffset += n
@@ -195,12 +196,11 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 func (sw *snappyWriter) writeHeaderIfNeeded() error {
 
 	if !sw.headerWritten {
-		fmt.Println("writing header")
 		buf := [32]byte{}
 		binary.PutUvarint(buf[00:16], sw.compression)
 		binary.PutUvarint(buf[16:32], MaxBlockSize)
-		n, err := sw.rawW.Write(buf[:])
-		if _, err := sw.rawW.Write(buf[:]); err != nil {
+		_, err := sw.rawW.Write(buf[:])
+		if err != nil {
 			return err
 		}
 	}
@@ -311,7 +311,6 @@ func (sw *snappyWriter) Close() error {
 
 	n, err := sw.rawW.Write(tailBufStart)
 	if err != nil || uint64(n) != indexSize {
-		fmt.Println("Close():", err, "n:", n, "idxSize:", indexSize, "TailBufLen:", len(tailBuf))
 		return err
 	}
 
@@ -321,8 +320,8 @@ func (sw *snappyWriter) Close() error {
 	n, err = sw.rawW.Write(tailSizeBuf)
 	if err != nil {
 		fmt.Println("Error writing tailSizeBuf:", err)
+		return err
 	}
-	fmt.Println("Writing indexsize ", indexSize, " to TailSizeBuf, bytes written: ", n)
 
 	cl, ok := sw.rawW.(io.Closer)
 	if ok {
