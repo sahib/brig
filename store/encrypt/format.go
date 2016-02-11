@@ -227,9 +227,6 @@ type aeadCommon struct {
 	// Key used for encryption/decryption
 	key []byte
 
-	// Buffer to encode/decode the current blocknumber:
-	blocknum []byte
-
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
@@ -248,7 +245,6 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	c.aead = aead
 	c.key = key
 
-	c.blocknum = make([]byte, 8)
 	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
 	return nil
 }

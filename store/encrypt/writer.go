@@ -2,7 +2,6 @@ package encrypt
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/binary"
 	"io"
 )
@@ -65,9 +64,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 
 func (w *Writer) flushPack(chunkSize int) (int, error) {
 	// Create a new Nonce for this block:
-	if _, err := rand.Read(w.nonce); err != nil {
-		return 0, err
-	}
+	binary.LittleEndian.PutUint64(w.nonce, w.blockCount)
 
 	// Encrypt the text:
 	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.rbuf.Next(chunkSize), nil)
@@ -78,15 +75,9 @@ func (w *Writer) flushPack(chunkSize int) (int, error) {
 		return nNonce, err
 	}
 
-	binary.LittleEndian.PutUint64(w.blocknum, w.blockCount)
-	nBlockNum, err := w.Writer.Write(w.blocknum)
-	if err != nil {
-		return nNonce + nBlockNum, err
-	}
-
 	w.blockCount++
 	nBuf, err := w.Writer.Write(w.encBuf)
-	return nNonce + nBlockNum + nBuf, err
+	return nNonce + nBuf, err
 }
 
 // Close the Writer and write any left-over blocks
