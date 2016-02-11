@@ -104,3 +104,8 @@ func (s *SizeAccumulator) Write(buf []byte) (int, error) {
 func (s *SizeAccumulator) Size() uint64 {
 	return atomic.LoadUint64(&s.size)
 }
+
+// Reset resets the size counter to 0.
+func (s *SizeAccumulator) Reset() {
+	atomic.StoreUint64(&s.size, 0)
+}
