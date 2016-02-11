@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/jbenet/go-multihash"
@@ -42,4 +43,30 @@ func (h *Hash) Valid() bool {
 // Bytes returns the underlying bytes in the hash.
 func (h *Hash) Bytes() []byte {
 	return []byte(h.Multihash)
+}
+
+// Equal returns true if both hashes are equal.
+// Nil hashes are considered equal.
+func (h *Hash) Equal(other *Hash) bool {
+	if other == h {
+		return true
+	}
+
+	if h == nil && other == nil {
+		return true
+	}
+
+	if h == nil || other == nil {
+		return false
+	}
+
+	if other.Multihash == nil && h.Multihash == nil {
+		return true
+	}
+
+	if other.Multihash == nil || h.Multihash == nil {
+		return false
+	}
+
+	return bytes.Equal(h.Multihash, other.Multihash)
 }

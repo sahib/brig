@@ -19,6 +19,9 @@ const (
 	// The file was modified
 	ChangeModify
 
+	// The file was moved
+	ChangeMove
+
 	// The file was removed.
 	ChangeRemove
 )
@@ -27,16 +30,18 @@ type ChangeType byte
 
 var changeTypeToString = map[ChangeType]string{
 	ChangeInvalid: "invalid",
-	ChangeAdd:     "add",
-	ChangeModify:  "modify",
-	ChangeRemove:  "remove",
+	ChangeAdd:     "added",
+	ChangeModify:  "modified",
+	ChangeRemove:  "removed",
+	ChangeMove:    "moved",
 }
 
 var stringToChangeType = map[string]ChangeType{
-	"invalid": ChangeInvalid,
-	"add":     ChangeAdd,
-	"modify":  ChangeModify,
-	"remove":  ChangeRemove,
+	"invalid":  ChangeInvalid,
+	"added":    ChangeAdd,
+	"modified": ChangeModify,
+	"removed":  ChangeRemove,
+	"moved":    ChangeMove,
 }
 
 var (
@@ -113,23 +118,22 @@ type History []*Checkpoint
 // does not exist anymore). It is an error to pass nil twice.
 //
 // If nothing changed between old and curr, ErrNoChange is returned.
-func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
+func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
 	var change ChangeType
 	var hash *Hash
 	var path string
 	var size int64
 
 	if old == nil {
-		change, path, hash, size = ChangeAdd, curr.Path(), curr.Hash(), curr.Size()
+		change, path, hash, size = ChangeAdd, currPath, curr.hash, curr.size
 	} else if curr == nil {
-		change, path, hash, size = ChangeRemove, old.Path(), old.Hash(), old.Size()
+		change, path, hash, size = ChangeRemove, oldPath, old.hash, old.size
+	} else if !curr.hash.Equal(old.hash) {
+		change, path, hash, size = ChangeModify, currPath, curr.hash, curr.size
+	} else if oldPath != currPath {
+		change, path, hash, size = ChangeMove, currPath, curr.hash, curr.size
 	} else {
-		// TODO: Check if actually something changed before setting that.
-		change, path, hash, size = ChangeModify, curr.Path(), curr.Hash(), curr.Size()
-	}
-
-	if change == ChangeInvalid {
-		return nil, ErrNoChange
+		return ErrNoChange
 	}
 
 	checkpoint := &Checkpoint{
@@ -137,16 +141,18 @@ func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
 		ModTime: time.Now(),
 		Size:    size,
 		Change:  &change,
+		// TODO: Take the actual one.
+		Author: "alice@jabber.nullcat.de/desktop",
 	}
 
 	jsonPoint, err := json.Marshal(checkpoint)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	mtimeJson, err := json.Marshal(checkpoint.ModTime)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dbErr := s.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
@@ -159,11 +165,11 @@ func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
 	})
 
 	if dbErr != nil {
-		return nil, dbErr
+		return dbErr
 	}
 
 	fmt.Println("created check point: ", checkpoint)
-	return checkpoint, nil
+	return nil
 }
 
 // History returns all checkpoints a file has.

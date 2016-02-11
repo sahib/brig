@@ -410,10 +410,11 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 			threeWayRune,
 			treeRuneBar,
 			colors.Colorize("Checkpoint", colors.Cyan),
-			idx,
+			len(history)-idx,
 			colors.Colorize(checkpoint.Change.String(), colors.Red),
 			colors.Colorize(checkpoint.Author, colors.Magenta),
 		)
+
 		fmt.Printf(" %s   ├─ % 9s: %v\n", twoWayRune, colors.Colorize("Hash", colors.Green), checkpoint.Hash.B58String())
 		fmt.Printf(" %s   └─ % 9s: %v\n", twoWayRune, colors.Colorize("Date", colors.Yellow), checkpoint.ModTime)
 	}

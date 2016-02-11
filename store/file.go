@@ -21,6 +21,7 @@ type Metadata struct {
 	size int64
 	// ModTime is the time when the file or it's metadata was last changed.
 	modTime time.Time
+	hash    *Hash
 }
 
 // File represents a single file in the repository.
@@ -37,8 +38,7 @@ type File struct {
 
 	isFile bool
 
-	hash *Hash
-	Key  []byte
+	Key []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -247,11 +247,11 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		isFile:  dataFile.GetIsFile(),
-		hash:    &Hash{dataFile.GetHash()},
 		Key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
+			hash:    &Hash{dataFile.GetHash()},
 		},
 	}
 
@@ -335,6 +335,10 @@ func (f *File) Path() string {
 	f.RLock()
 	defer f.RUnlock()
 
+	return f.node.Path()
+}
+
+func (f *File) path() string {
 	return f.node.Path()
 }
 
