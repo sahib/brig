@@ -2,6 +2,7 @@ package fuse
 
 import (
 	"os"
+	"path/filepath"
 	"unsafe"
 
 	"bazil.org/fuse"
@@ -102,14 +103,12 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 // Remove is called when a direct child in the directory needs to be removed.
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
-	child := d.File.Lookup(req.Name)
-	if child == nil {
+	path := filepath.Join(d.Path(), req.Name)
+	if err := d.fs.Store.Rm(path); err != nil {
+		log.Errorf("fuse-rm `%s` failed: %v", path, err)
 		return fuse.ENOENT
 	}
 
-	if err := child.Remove(); err != nil {
-		log.Errorf("fuse-rm `%s` failed: %v", child.Path(), err)
-	}
 	return nil
 }
 

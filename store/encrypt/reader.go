@@ -76,7 +76,7 @@ func (r *Reader) readHeaderIfNotDone() error {
 
 // Read from source and decrypt.
 //
-// This method always decrypts one block to optimize for continous reads. If
+// This method always decrypts one block to optimize for continuous reads. If
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *Reader) Read(dest []byte) (int, error) {
@@ -117,16 +117,11 @@ func (r *Reader) readBlock() (int, error) {
 			r.aead.NonceSize(), n)
 	}
 
-	// Read block number:
-	if n, err := r.Reader.Read(r.blocknum); err != nil {
-		return 0, err
-	} else if n != 8 {
-		return 0, fmt.Errorf("No full blocknum, just %d bytes", n)
-	}
+	// Convert to block number:
+	readBlockNum := binary.LittleEndian.Uint64(r.nonce)
 
 	// Check the block number:
 	currBlockNum := uint64(r.lastSeekPos / MaxBlockSize)
-	readBlockNum := binary.LittleEndian.Uint64(r.blocknum)
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
 			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
@@ -170,7 +165,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	// Constants and assumption on the stream below:
 	blockSize := int64(MaxBlockSize)
-	blockHeaderSize := int64(r.aead.NonceSize()) + 8
+	blockHeaderSize := int64(r.aead.NonceSize())
 	totalBlockSize := blockHeaderSize + blockSize + int64(r.aead.Overhead())
 
 	// absolute Offset in the decrypted stream

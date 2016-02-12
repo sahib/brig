@@ -6,11 +6,10 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
-	"github.com/disorganizer/brig/store"
 	"golang.org/x/net/context"
 )
 
-type handlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) (string, error)
+type handlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error)
 
 var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_ADD:     handleAdd,
@@ -24,96 +23,91 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_LOG:     handleLog,
 }
 
-func handlePing(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
-	return "PONG", nil
+func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	return []byte("PONG"), nil
 }
 
-func handleQuit(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleQuit(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	d.signals <- os.Interrupt
-	return "BYE", nil
+	return []byte("BYE"), nil
 }
 
-func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	filePath := cmd.GetAddCommand().GetFilePath()
 	repoPath := cmd.GetAddCommand().GetRepoPath()
 
 	err := d.Repo.Store.Add(filePath, repoPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return repoPath, nil
+	return []byte(repoPath), nil
 }
 
-func handleCat(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleCat(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	filePath := cmd.GetCatCommand().GetFilePath()
 	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	srcPath := cmd.GetCatCommand().GetRepoPath()
 	if err := d.Repo.Store.Cat(srcPath, fd); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return srcPath, nil
+	return []byte(srcPath), nil
 }
 
-func handleMount(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleMount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	mountPath := cmd.GetMountCommand().GetMountPoint()
 
 	if _, err := d.Mounts.AddMount(mountPath); err != nil {
 		log.Errorf("Unable to mount `%v`: %v", mountPath, err)
-		return "", err
+		return nil, err
 	}
 
-	return mountPath, nil
+	return []byte(mountPath), nil
 }
 
-func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	mountPath := cmd.GetUnmountCommand().GetMountPoint()
 
 	if err := d.Mounts.Unmount(mountPath); err != nil {
 		log.Errorf("Unable to unmount `%v`: %v", mountPath, err)
-		return "", err
+		return nil, err
 	}
 
-	return mountPath, nil
+	return []byte(mountPath), nil
 }
 
-func handleRm(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	repoPath := cmd.GetRmCommand().GetRepoPath()
 
 	if err := d.Repo.Store.Rm(repoPath); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return repoPath, nil
+	return []byte(repoPath), nil
 }
 
-func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
+func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	repoPath := cmd.GetHistoryCommand().GetRepoPath()
 
-	file := d.Repo.Store.Root.Lookup(repoPath)
-	if file == nil {
-		return "", store.ErrNoSuchFile
-	}
-
-	history, err := d.Repo.Store.History(file)
+	history, err := d.Repo.Store.History(repoPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	jsonData, err := json.Marshal(history)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// TODO: Change handlers to return []byte?
-	return string(jsonData), err
+	return jsonData, err
 }
 
-func handleLog(d *Server, ctx context.Context, cmd *proto.Command) (string, error) {
-	return "", nil
+func handleLog(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	// TODO: Needs implementation.
+	return nil, nil
 }

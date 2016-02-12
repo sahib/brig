@@ -154,7 +154,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
-	oldFile := file
+	initialAdd := false
 
 	log.Debugf("bolt lookup: %v", file != nil)
 
@@ -169,7 +169,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 			return err
 		}
 
-		file = newFile
+		file, initialAdd = newFile, true
 	}
 
 	// Control how many bytes are written to the encryption layer:
@@ -189,19 +189,37 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	log.Infof("ADD KEY:  %x", file.Key)
 	log.Infof("ADD HASH: %s", mhash.B58String())
 
-	// Update metadata that might have changed:
 	file.Lock()
-	{
-		file.size = int64(sizeAcc.Size())
-		file.modTime = time.Now()
-		file.hash = &Hash{mhash}
-		file.sync()
-	}
-	file.Unlock()
+	defer file.Unlock()
 
-	if _, err := s.MakeCheckpoint(oldFile, file); err != nil {
+	// Update metadata that might have changed:
+	if file.hash.Equal(&Hash{mhash}) {
+		log.Debugf("Refusing update.")
+		return ErrNoChange
+	}
+
+	oldMeta := file.Metadata
+	if initialAdd {
+		oldMeta = nil
+	}
+
+	file.Metadata = &Metadata{
+		size:    int64(sizeAcc.Size()),
+		modTime: time.Now(),
+		hash:    &Hash{mhash},
+	}
+
+	log.Debugf("OLD: %v NEW: %v MHASH: %v ANOTER: %v", file.hash, &Hash{mhash}, mhash, &Hash{mhash})
+
+	// Create a checkpoint in the version history.
+	// TODO: Move is not yet supported!
+	err = s.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
+	if err != nil {
 		return err
 	}
+
+	// If all went well, save it to bolt:
+	file.sync()
 
 	return nil
 }
@@ -284,24 +302,31 @@ func (s *Store) Close() error {
 
 // Rm will purge a file locally on this node.
 func (s *Store) Rm(path string) error {
-	s.Root.Lock()
-	defer s.Root.Unlock()
-
 	node := s.Root.Lookup(path)
+
 	if node == nil {
-		log.Errorf("Could not remove `%s` from trie.", path)
-	} else {
-		node.Remove()
+		return ErrNoSuchFile
+	}
+
+	// TODO: Implement dir walk...
+	if !node.IsLeaf() {
+		return fmt.Errorf("rm does not work on directories yet")
 	}
 
 	// Remove from trie & remove from bolt db.
-	return s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+	err := s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		return bckt.Delete([]byte(path))
 	})
 
-	if _, err := s.MakeCheckpoint(node, nil); err != nil {
+	if err != nil {
 		return err
 	}
 
+	log.Debugf("rm: Making checkpoint: %v", node.Metadata)
+	if err := s.MakeCheckpoint(node.Metadata, nil, path, path); err != nil {
+		return err
+	}
+
+	node.Remove()
 	return nil
 }

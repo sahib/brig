@@ -10,13 +10,22 @@ import (
 )
 
 // recvResponse reads one response from the daemon and formats possible errors.
-func (c *Client) recvResponse(logname string) (string, error) {
+func (c *Client) recvResponse(logname string) ([]byte, error) {
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
-		return "", fmt.Errorf("client: %v: %v", logname, resp.GetError())
+		return nil, fmt.Errorf("client: %v: %v", logname, resp.GetError())
 	}
 
 	return resp.GetResponse(), nil
+}
+
+func (c *Client) recvResponseString(logname string) (string, error) {
+	resp, err := c.recvResponse(logname)
+	if err != nil {
+		return "", err
+	}
+
+	return string(resp), nil
 }
 
 // Add adds the data at `filePath` to brig as `repoPath`.
@@ -29,7 +38,7 @@ func (c *Client) Add(filePath, repoPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponse("add")
+	return c.recvResponseString("add")
 }
 
 // Cat outputs the brig file at `repoPath` to `filePath`.
@@ -42,7 +51,7 @@ func (c *Client) Cat(repoPath, filePath string) (string, error) {
 		},
 	}
 
-	return c.recvResponse("cat")
+	return c.recvResponseString("cat")
 }
 
 // Mount serves a fuse endpoint at the specified path.
@@ -54,7 +63,7 @@ func (c *Client) Mount(mountPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponse("mount")
+	return c.recvResponseString("mount")
 }
 
 // Unmount removes a previously mounted fuse endpoint.
@@ -66,7 +75,7 @@ func (c *Client) Unmount(mountPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponse("unmount")
+	return c.recvResponseString("unmount")
 }
 
 // Rm removes the brig file at `repoPath`
@@ -78,7 +87,7 @@ func (c *Client) Rm(repoPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponse("rm")
+	return c.recvResponseString("rm")
 }
 
 // Log returns a series of commits.
@@ -89,7 +98,9 @@ func (c *Client) Log() ([]*store.Commit, error) {
 	return nil, nil
 }
 
-// Log returns a series of commits.
+// History returns the available checkpoints for the file at repoPath.
+// It might have been deleted earlier. Asking for a non-existing file
+// yields an empty history, but is not an error.
 func (c *Client) History(repoPath string) (store.History, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_HISTORY.Enum(),

@@ -315,7 +315,7 @@ func (*Command_LogCmd) ProtoMessage()    {}
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
-	Response         *string      `protobuf:"bytes,2,opt,name=response" json:"response,omitempty"`
+	Response         []byte       `protobuf:"bytes,2,opt,name=response" json:"response,omitempty"`
 	Error            *string      `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
 }
@@ -338,11 +338,11 @@ func (m *Response) GetSuccess() bool {
 	return false
 }
 
-func (m *Response) GetResponse() string {
-	if m != nil && m.Response != nil {
-		return *m.Response
+func (m *Response) GetResponse() []byte {
+	if m != nil {
+		return m.Response
 	}
-	return ""
+	return nil
 }
 
 func (m *Response) GetError() string {
@@ -762,8 +762,8 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 	if m.Response != nil {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Response)))
-		i += copy(data[i:], *m.Response)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Response)))
+		i += copy(data[i:], m.Response)
 	}
 	if m.Success == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -984,7 +984,7 @@ func (m *Response) Size() (n int) {
 		n += 1 + sovDaemon(uint64(*m.ResponseType))
 	}
 	if m.Response != nil {
-		l = len(*m.Response)
+		l = len(m.Response)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.Success != nil {
@@ -2178,7 +2178,7 @@ func (m *Response) Unmarshal(data []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Response", wireType)
 			}
-			var stringLen uint64
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -2188,21 +2188,19 @@ func (m *Response) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthDaemon
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + byteLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Response = &s
+			m.Response = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {

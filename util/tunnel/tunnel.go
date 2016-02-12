@@ -23,7 +23,7 @@ import (
 // It's here to prevent another external dependency.            //
 ////////////////////////////////////////////////////////////////////
 
-func GenerateKey(rand io.Reader) (crypto.PrivateKey, crypto.PublicKey, error) {
+func generateKey(rand io.Reader) (crypto.PrivateKey, crypto.PublicKey, error) {
 	var pub, priv [32]byte
 	var err error
 
@@ -36,12 +36,12 @@ func GenerateKey(rand io.Reader) (crypto.PrivateKey, crypto.PublicKey, error) {
 	return &priv, &pub, nil
 }
 
-func Marshal(p crypto.PublicKey) []byte {
+func marshal(p crypto.PublicKey) []byte {
 	pub := p.(*[32]byte)
 	return pub[:]
 }
 
-func Unmarshal(data []byte) (crypto.PublicKey, bool) {
+func unmarshal(data []byte) (crypto.PublicKey, bool) {
 	var pub [32]byte
 	if len(data) != 32 {
 		return nil, false
@@ -51,7 +51,7 @@ func Unmarshal(data []byte) (crypto.PublicKey, bool) {
 	return &pub, true
 }
 
-func GenerateSharedSecret(privKey crypto.PrivateKey, pubKey crypto.PublicKey) ([]byte, error) {
+func generateSharedSecret(privKey crypto.PrivateKey, pubKey crypto.PublicKey) ([]byte, error) {
 	var priv, pub, secret *[32]byte
 
 	priv = privKey.(*[32]byte)
@@ -82,7 +82,7 @@ func NewEllipticTunnel(rw io.ReadWriter) (io.ReadWriter, error) {
 	}
 
 	var err error
-	tnl.privKey, tnl.pubKey, err = GenerateKey(rand.Reader)
+	tnl.privKey, tnl.pubKey, err = generateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return nil
 	}
 
-	pubKeyBuf := Marshal(tnl.pubKey)
+	pubKeyBuf := marshal(tnl.pubKey)
 	if _, err := tnl.ReadWriter.Write(pubKeyBuf); err != nil {
 		return err
 	}
@@ -106,12 +106,12 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return err
 	}
 
-	partnerKey, ok := Unmarshal(partnerBuf)
+	partnerKey, ok := unmarshal(partnerBuf)
 	if !ok {
 		return fmt.Errorf("Partner key unmarshal failed")
 	}
 
-	secret, err := GenerateSharedSecret(tnl.privKey, partnerKey)
+	secret, err := generateSharedSecret(tnl.privKey, partnerKey)
 	if err != nil {
 		return err
 	}

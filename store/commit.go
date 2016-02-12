@@ -13,44 +13,55 @@ const (
 	// ChangeInvalid indicates a bug.
 	ChangeInvalid = iota
 
-	// The file was newly added.
+	// ChangeAdd means the file was added (initially or after ChangeRemove)
 	ChangeAdd
 
-	// The file was modified
+	// ChangeModify indicates a content modification.
 	ChangeModify
 
-	// The file was removed.
+	// ChangeMove indicates that a file's path changed.
+	ChangeMove
+
+	// ChangeRemove indicates that the file was deleted.
+	// Old versions might still be accessible from the history.
 	ChangeRemove
 )
 
+// ChangeType describes the nature of a change.
 type ChangeType byte
 
 var changeTypeToString = map[ChangeType]string{
 	ChangeInvalid: "invalid",
-	ChangeAdd:     "add",
-	ChangeModify:  "modify",
-	ChangeRemove:  "remove",
+	ChangeAdd:     "added",
+	ChangeModify:  "modified",
+	ChangeRemove:  "removed",
+	ChangeMove:    "moved",
 }
 
 var stringToChangeType = map[string]ChangeType{
-	"invalid": ChangeInvalid,
-	"add":     ChangeAdd,
-	"modify":  ChangeModify,
-	"remove":  ChangeRemove,
+	"invalid":  ChangeInvalid,
+	"added":    ChangeAdd,
+	"modified": ChangeModify,
+	"removed":  ChangeRemove,
+	"moved":    ChangeMove,
 }
 
 var (
+	// ErrNoChange means that nothing changed between two versions (of a file)
 	ErrNoChange = fmt.Errorf("Nothing changed between the given versions")
 )
 
+// String formats a changetype to a human readable verb in past tense.
 func (c *ChangeType) String() string {
 	return changeTypeToString[*c]
 }
 
+// MarshalJSON formats a changetype as json string with String()
 func (c *ChangeType) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Quote(c.String())), nil
 }
 
+// UnmarshalJSON reads a json string and tries to convert it to a ChangeType.
 func (c *ChangeType) UnmarshalJSON(data []byte) error {
 	unquoted, err := strconv.Unquote(string(data))
 	if err != nil {
@@ -94,6 +105,9 @@ type Checkpoint struct {
 
 	// Change is the detailed type of the modification.
 	Change *ChangeType `json:"change"`
+
+	// Author of the file modifications (jabber id)
+	Author string `json:"author"`
 }
 
 // TODO: nice representation
@@ -110,23 +124,22 @@ type History []*Checkpoint
 // does not exist anymore). It is an error to pass nil twice.
 //
 // If nothing changed between old and curr, ErrNoChange is returned.
-func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
+func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
 	var change ChangeType
 	var hash *Hash
 	var path string
 	var size int64
 
 	if old == nil {
-		change, path, hash, size = ChangeAdd, curr.Path(), curr.Hash(), curr.Size()
+		change, path, hash, size = ChangeAdd, currPath, curr.hash, curr.size
 	} else if curr == nil {
-		change, path, hash, size = ChangeRemove, old.Path(), old.Hash(), old.Size()
+		change, path, hash, size = ChangeRemove, oldPath, old.hash, old.size
+	} else if !curr.hash.Equal(old.hash) {
+		change, path, hash, size = ChangeModify, currPath, curr.hash, curr.size
+	} else if oldPath != currPath {
+		change, path, hash, size = ChangeMove, currPath, curr.hash, curr.size
 	} else {
-		// TODO: Check if actually something changed before setting that.
-		change, path, hash, size = ChangeModify, curr.Path(), curr.Hash(), curr.Size()
-	}
-
-	if change == ChangeInvalid {
-		return nil, ErrNoChange
+		return ErrNoChange
 	}
 
 	checkpoint := &Checkpoint{
@@ -134,16 +147,18 @@ func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
 		ModTime: time.Now(),
 		Size:    size,
 		Change:  &change,
+		// TODO: Take the actual one
+		Author: "alice@jabber.nullcat.de/desktop",
 	}
 
 	jsonPoint, err := json.Marshal(checkpoint)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	mtimeJson, err := json.Marshal(checkpoint.ModTime)
+	mtimeJSON, err := json.Marshal(checkpoint.ModTime)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dbErr := s.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
@@ -152,24 +167,24 @@ func (s *Store) MakeCheckpoint(old, curr *File) (*Checkpoint, error) {
 			return err
 		}
 
-		return histBuck.Put(mtimeJson, jsonPoint)
+		return histBuck.Put(mtimeJSON, jsonPoint)
 	})
 
 	if dbErr != nil {
-		return nil, dbErr
+		return dbErr
 	}
 
 	fmt.Println("created check point: ", checkpoint)
-	return checkpoint, nil
+	return nil
 }
 
 // History returns all checkpoints a file has.
 // Note: even on error a empty history is returned.
-func (s *Store) History(f *File) (History, error) {
-	hist := make(History, 0)
+func (s *Store) History(path string) (History, error) {
+	var hist History
 
 	return hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		changeBuck := bckt.Bucket([]byte(f.Path()))
+		changeBuck := bckt.Bucket([]byte(path))
 		if changeBuck == nil {
 			// No history yet, return empty.
 			return nil

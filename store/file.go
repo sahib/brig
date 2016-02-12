@@ -21,6 +21,7 @@ type Metadata struct {
 	size int64
 	// ModTime is the time when the file or it's metadata was last changed.
 	modTime time.Time
+	hash    *Hash
 }
 
 // File represents a single file in the repository.
@@ -37,8 +38,7 @@ type File struct {
 
 	isFile bool
 
-	hash *Hash
-	Key  []byte
+	Key []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -247,11 +247,11 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		isFile:  dataFile.GetIsFile(),
-		hash:    &Hash{dataFile.GetHash()},
 		Key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
+			hash:    &Hash{dataFile.GetHash()},
 		},
 	}
 
@@ -290,15 +290,12 @@ func (f *File) Lookup(path string) *File {
 
 // Remove removes the node at path and all of it's children.
 // The parent of the removed node is returned, which might be nil.
-func (f *File) Remove() error {
+func (f *File) Remove() {
 	f.Lock()
 	defer f.Unlock()
 
 	// Remove from trie:
 	f.node.Remove()
-
-	// TODO: remove from bolt
-	return nil
 }
 
 // Len returns the current number of elements in the trie.
@@ -338,6 +335,10 @@ func (f *File) Path() string {
 	return f.node.Path()
 }
 
+func (f *File) path() string {
+	return f.node.Path()
+}
+
 // Walk recursively calls `visit` on each child and f itself.
 // If `dfs` is true, the order will be depth-first, otherwise breadth-first.
 func (f *File) Walk(dfs bool, visit func(*File)) {
@@ -356,7 +357,7 @@ func (f *File) Children() []*File {
 	f.RLock()
 	defer f.RUnlock()
 
-	// Optimisation: Return the same empty slice for leaf nodes.
+	// Optimization: Return the same empty slice for leaf nodes.
 	n := len(f.node.Children)
 	if n == 0 {
 		return emptyChildren
@@ -453,6 +454,7 @@ func (f *File) hashUnlocked() *Hash {
 
 	// Compute hash by XOR'ing all child hashes:
 	// (we need XOR because order must be irrelevant)
+	// TODO: Get actual hash algorithm from config (or something)
 	hash := make([]byte, multihash.DefaultLengths[multihash.SHA1])
 	for _, childNode := range f.node.Children {
 		child := childNode.Data.(*File)

@@ -15,11 +15,11 @@
 //    -  16 Byte: MAC protecting the header from forgery
 //
 // BLOCKHEADER contains the following fields:
-//    - 8 Byte: Nonce: Randomly generated, used as encryption seed.
-//    - 8 Byte: Block Number: Needed to force block ordering.
+//    - 8 Byte: Nonce: Derived from the current block number.
+//                     The block number is checked to be correct on decryption.
 //
-// PAYLOAD contains the actual encrypted data, which includes a MAC.
-// (The size of the MAC depends on the algorithm in use)
+// PAYLOAD contains the actual encrypted data, which includes a MAC at the end.
+// The size of the MAC depends on the algorithm, for poly1305 it's 16 bytes.
 //
 // All header metadata is encoded in little endian.
 //
@@ -227,9 +227,6 @@ type aeadCommon struct {
 	// Key used for encryption/decryption
 	key []byte
 
-	// Buffer to encode/decode the current blocknumber:
-	blocknum []byte
-
 	// For more information, see:
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
@@ -248,7 +245,6 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	c.aead = aead
 	c.key = key
 
-	c.blocknum = make([]byte, 8)
 	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
 	return nil
 }

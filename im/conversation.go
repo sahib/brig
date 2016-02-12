@@ -32,13 +32,13 @@ type Conversation struct {
 	// recv provides all messages sent from this cnv.
 	recv chan []byte
 
-	// send can be used to send arbitary messages to this cnv.
+	// send can be used to send arbitrary messages to this cnv.
 	send chan []byte
 
-	// the underlying otr conversation
+	// the underlying OTR conversation
 	conversation *otr.Conversation
 
-	// A backlog of messages send before otr auth.
+	// A backlog of messages send before OTR auth.
 	backlog [][]byte
 
 	// used in Read() to compensate against small read-buffers.

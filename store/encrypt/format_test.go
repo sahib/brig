@@ -377,3 +377,36 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 }
+
+// Test if encrypting the same plaintext twice yields
+// the same ciphertext. This is a crucial property for brig, although it
+// has some security implications (i.e. no real random etc.)
+func TestEncryptedTheSame(t *testing.T) {
+	sourceData := testutil.CreateDummyBuf(3 * MaxBlockSize)
+	encOne := &bytes.Buffer{}
+	encTwo := &bytes.Buffer{}
+
+	n1, err := Encrypt(TestKey, bytes.NewReader(sourceData), encOne, int64(len(sourceData)))
+	if err != nil {
+		t.Errorf("TestEncryptedTheSame: Encrypting first failed: %v", err)
+		return
+	}
+
+	n2, err := Encrypt(TestKey, bytes.NewReader(sourceData), encTwo, int64(len(sourceData)))
+	if err != nil {
+		t.Errorf("TestEncryptedTheSame: Encrypting second failed: %v", err)
+		return
+	}
+
+	if n1 != n2 {
+		t.Errorf("TestEncryptedTheSame: Ciphertexts differ in length.")
+		return
+	}
+
+	if !bytes.Equal(encOne.Bytes(), encTwo.Bytes()) {
+		t.Errorf("TestEncryptedTheSame: Ciphertext differ, you failed.")
+		t.Errorf("\tOne: %v", encOne.Bytes())
+		t.Errorf("\tTwo: %v", encTwo.Bytes())
+		return
+	}
+}

@@ -221,7 +221,7 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 		if err != nil {
 			resp.Error = protobuf.String(err.Error())
 		} else {
-			resp.Response = protobuf.String(answer)
+			resp.Response = answer
 			resp.Success = protobuf.Bool(true)
 		}
 	}

@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// FingerprintStore represents an arbitary store where fingerprints are stored.
+// FingerprintStore represents an arbitrary store where fingerprints are stored.
 type FingerprintStore interface {
 	// Lookup returns the last known fingerprint related to this jid.
 	Lookup(jid string) (string, error)
@@ -80,7 +80,7 @@ func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
 	return fingerprint, nil
 }
 
-// Remember stores the last knwon fingerprint to this jid. It rewrites the
+// Remember stores the last known fingerprint to this jid. It rewrites the
 // fingerprint database on the filesystem
 func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
 	k.keys[jid] = fingerprint
