@@ -6,6 +6,21 @@ import (
 	"os"
 )
 
+func openFiles(from, to string) (*os.File, *os.File, error) {
+	fdFrom, err := os.Open(from)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		fdFrom.Close()
+		return nil, nil, err
+	}
+
+	return fdFrom, fdTo, nil
+}
+
 func main() {
 	if os.Args[3] == "c" {
 
