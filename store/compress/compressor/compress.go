@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrBadBlockIndex = errors.New("Invalid byte index while reading index.")
+	ErrBadBlockIndex = errors.New("Invalid byte index while reading index")
 )
 
 const (
