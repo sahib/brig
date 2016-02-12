@@ -13,19 +13,21 @@ const (
 	// ChangeInvalid indicates a bug.
 	ChangeInvalid = iota
 
-	// The file was newly added.
+	// ChangeAdd means the file was added (initially or after ChangeRemove)
 	ChangeAdd
 
-	// The file was modified
+	// ChangeModify indicates a content modification.
 	ChangeModify
 
-	// The file was moved
+	// ChangeMove indicates that a file's path changed.
 	ChangeMove
 
-	// The file was removed.
+	// ChangeRemove indicates that the file was deleted.
+	// Old versions might still be accessible from the history.
 	ChangeRemove
 )
 
+// ChangeType describes the nature of a change.
 type ChangeType byte
 
 var changeTypeToString = map[ChangeType]string{
@@ -45,17 +47,21 @@ var stringToChangeType = map[string]ChangeType{
 }
 
 var (
+	// ErrNoChange means that nothing changed between two versions (of a file)
 	ErrNoChange = fmt.Errorf("Nothing changed between the given versions")
 )
 
+// String formats a changetype to a human readable verb in past tense.
 func (c *ChangeType) String() string {
 	return changeTypeToString[*c]
 }
 
+// MarshalJSON formats a changetype as json string with String()
 func (c *ChangeType) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Quote(c.String())), nil
 }
 
+// UnmarshalJSON reads a json string and tries to convert it to a ChangeType.
 func (c *ChangeType) UnmarshalJSON(data []byte) error {
 	unquoted, err := strconv.Unquote(string(data))
 	if err != nil {
@@ -150,7 +156,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		return err
 	}
 
-	mtimeJson, err := json.Marshal(checkpoint.ModTime)
+	mtimeJSON, err := json.Marshal(checkpoint.ModTime)
 	if err != nil {
 		return err
 	}
@@ -161,7 +167,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 			return err
 		}
 
-		return histBuck.Put(mtimeJson, jsonPoint)
+		return histBuck.Put(mtimeJSON, jsonPoint)
 	})
 
 	if dbErr != nil {

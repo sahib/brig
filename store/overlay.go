@@ -70,7 +70,7 @@ func (n *Modification) Merge(i Interval) {
 	other.data = nil
 }
 
-// IntervalIndex represents a continous array of sorted intervals.
+// IntervalIndex represents a continuous array of sorted intervals.
 // When adding intervals to the index, it will merge them overlapping areas.
 // Holes between the intervals are allowed.
 type IntervalIndex struct {

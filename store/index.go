@@ -310,7 +310,7 @@ func (s *Store) Rm(path string) error {
 
 	// TODO: Implement dir walk...
 	if !node.IsLeaf() {
-		return fmt.Errorf("rm does not work on directories yet.")
+		return fmt.Errorf("rm does not work on directories yet")
 	}
 
 	// Remove from trie & remove from bolt db.

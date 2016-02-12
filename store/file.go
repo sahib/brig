@@ -357,7 +357,7 @@ func (f *File) Children() []*File {
 	f.RLock()
 	defer f.RUnlock()
 
-	// Optimisation: Return the same empty slice for leaf nodes.
+	// Optimization: Return the same empty slice for leaf nodes.
 	n := len(f.node.Children)
 	if n == 0 {
 		return emptyChildren

@@ -98,7 +98,9 @@ func (c *Client) Log() ([]*store.Commit, error) {
 	return nil, nil
 }
 
-// Log returns a series of commits.
+// History returns the available checkpoints for the file at repoPath.
+// It might have been deleted earlier. Asking for a non-existing file
+// yields an empty history, but is not an error.
 func (c *Client) History(repoPath string) (store.History, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_HISTORY.Enum(),

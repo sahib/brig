@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrBadBlockIndex = errors.New("Invalid byte index while reading index.")
+	ErrBadBlockIndex = errors.New("Invalid byte index while reading index")
 )
 
 const (
@@ -133,7 +133,7 @@ func (sr *snappyReader) Read(p []byte) (int, error) {
 	// }
 
 	// Identify current block with getCurrentIndexBlock.
-	// Go to the begining of the current block.
+	// Go to the beginning of the current block.
 	// Read block in MaxBlockSize bytes buffer.
 	// Read from buffer into p until full or eof.
 	// TODO: Don't let snappy read tail.

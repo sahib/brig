@@ -76,7 +76,7 @@ func (r *Reader) readHeaderIfNotDone() error {
 
 // Read from source and decrypt.
 //
-// This method always decrypts one block to optimize for continous reads. If
+// This method always decrypts one block to optimize for continuous reads. If
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 func (r *Reader) Read(dest []byte) (int, error) {

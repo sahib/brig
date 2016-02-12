@@ -12,10 +12,10 @@
 // Fuse will call the respective handlers if it needs information about your
 // nodes. Each request handlers will usually get a `ctx` used to cancel
 // operations, a request structure `req` with detailed query infos and
-// a reponse structure `resp` where results are written. Usually the request
+// a response structure `resp` where results are written. Usually the request
 // handlers might return an error or a new node/handle/fs.
 //
 // Every request handle that may run for a long time should be
-// made interruptable. Especially read and write operations should
+// made interruptible. Especially read and write operations should
 // check the ctx.Done() channel passed to each request handler.
 package fuse
