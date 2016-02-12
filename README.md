@@ -1,4 +1,4 @@
-# Brig: Ship your data around the world
+# ``brig``: Ship your data around the world
 
 ![a somewhat gay brig](https://raw.githubusercontent.com/disorganizer/blog/master/static/img/brig.png)
 
@@ -20,6 +20,13 @@ This is a very early work in progress, so there are no details yet.
 More information will follow once a rough first prototype is ready.
 For now, you can [read this very chaotic blog](https://disorganizer.github.io/blog/).
 
+Summarized in one paragraph, it is an ``syncthing``, ``git-annex`` or
+``BTSync`` alternative, that gives you a commandline interface, a fuse
+filesystem and a library that can encrypt and compress files which are in turn
+distributed through ``ipfs`` while the file metadata is exchanged via XMPP.
+
+Even shorter: It's supposed to be as flexible as ``git``, but for whole files.
+
 ## Installation
 
 ```bash
@@ -30,5 +37,7 @@ If that complains about some ``ipfs`` dependencies, you might need to follow the
 
 ## Authors
 
-Christopher <[sahib](https://github.com/sahib)> Pahl
-Christoph <[qitta](https://github.com/qitta)> Piechula
+| *Name*                                                 | *Active*   |
+|--------------------------------------------------------|------------|
+| Christopher <[sahib](https://github.com/sahib)> Pahl   | 2015-today |
+| Christoph <[qitta](https://github.com/qitta)> Piechula | 2015-today |
