@@ -11,8 +11,8 @@ var (
 
 const (
 	MaxBlockSize   = 64 * 1024
-	HeaderBufSize  = 8
 	IndexBlockSize = 16
+	TailSize       = 16
 )
 
 const (

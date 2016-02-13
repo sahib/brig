@@ -21,22 +21,6 @@ type writer struct {
 	algorithm     Algorithm
 }
 
-func (w *writer) writeHeaderIfNeeded() error {
-	if w.headerWritten {
-		return nil
-	}
-
-	buf := [HeaderBufSize]byte{}
-	binary.LittleEndian.PutUint32(buf[0:4], uint32(w.algorithm))
-	binary.LittleEndian.PutUint32(buf[4:8], MaxBlockSize)
-
-	if _, err := w.rawW.Write(buf[:]); err != nil {
-		return err
-	}
-	w.headerWritten = true
-	return nil
-}
-
 func (w *writer) addToIndex() {
 	a, b := w.rawOff, int64(w.sizeAcc.Size())
 	fmt.Println(a, b)
@@ -57,9 +41,7 @@ func (w *writer) flushBuffer(flushSize int) (int, error) {
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
-	if err := w.writeHeaderIfNeeded(); err != nil {
-		return 0, err
-	}
+
 	pSize := len(p)
 	// Compress only MaxBlockSize equal chunks.
 	for {
@@ -98,8 +80,6 @@ func NewWriter(w io.Writer) io.WriteCloser {
 }
 
 func (w *writer) Close() error {
-	// Write header on empty files.
-	w.writeHeaderIfNeeded()
 
 	// Write remaining bytes left in buffer.
 	if _, err := w.flushBuffer(w.chunkBuf.Len()); err != nil {
@@ -111,6 +91,7 @@ func (w *writer) Close() error {
 
 	// Write compression index tail and close stream.
 	indexSize := uint64(IndexBlockSize * len(w.index))
+
 	tailBuf := make([]byte, indexSize)
 	tailBufStart := tailBuf
 	for _, blkidx := range w.index {
@@ -123,8 +104,10 @@ func (w *writer) Close() error {
 	}
 
 	// Write index tail size at the end of stream.
-	var tailSizeBuf = make([]byte, 8)
-	binary.LittleEndian.PutUint64(tailSizeBuf, indexSize)
+	var tailSizeBuf = make([]byte, TailSize)
+	binary.LittleEndian.PutUint32(tailSizeBuf[0:4], uint32(w.algorithm))
+	binary.LittleEndian.PutUint32(tailSizeBuf[4:8], MaxBlockSize)
+	binary.LittleEndian.PutUint64(tailSizeBuf[8:], indexSize)
 	if _, err := w.rawW.Write(tailSizeBuf); err != nil {
 		fmt.Println("Error writing tailSizeBuf:", err)
 		return err
