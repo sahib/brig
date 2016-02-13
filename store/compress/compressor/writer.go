@@ -66,16 +66,16 @@ func (w *writer) Write(p []byte) (n int, err error) {
 		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), MaxBlockSize)])
 
 		// Flush the current block.
-		fmt.Println("buflen und max:", w.chunkBuf.Len(), MaxBlockSize)
+		//fmt.Println("buflen und max:", w.chunkBuf.Len(), MaxBlockSize)
 		if w.chunkBuf.Len() >= MaxBlockSize {
 			if _, err := w.flushBuffer(MaxBlockSize); err != nil {
 				fmt.Println(err)
 				return 0, err
 			}
 			// Forget flushed input.
-			fmt.Println("p1", len(p), n)
+			//fmt.Println("p1", len(p), n)
 			p = p[n:]
-			fmt.Println("p2", len(p), n)
+			//fmt.Println("p2", len(p), n)
 			continue
 		}
 		break

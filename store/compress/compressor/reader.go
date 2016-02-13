@@ -22,8 +22,6 @@ type reader struct {
 	tailBuf      []byte
 	readBuf      *bytes.Buffer
 	headerParsed bool
-	blockStarted bool
-	blockSize    int64
 }
 
 func (r *reader) Seek(offset int64, whence int) (int64, error) {
@@ -31,15 +29,16 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Optimierung: Nutze binäre suche um korrekten index zu finden.
-func (r *reader) currBlock(currOff int64) int64 {
-	prevZipOff := int64(0)
-	for _, block := range r.index {
+func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
+	var prevBlock, currBlock *Block
+	for i, block := range r.index {
+		currBlock = &r.index[i]
 		if block.zipOff > currOff {
-			break
+			return prevBlock, currBlock
 		}
-		prevZipOff = block.zipOff
+		prevBlock = &r.index[i]
 	}
-	return prevZipOff + HeaderBufSize
+	return prevBlock, currBlock
 }
 
 func (r *reader) parseHeaderIfNeeded() error {
@@ -80,6 +79,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	for i := uint64(0); i < (tailSize / IndexBlockSize); i++ {
 		b := Block{}
 		b.unmarshal(r.tailBuf)
+		fmt.Println("INDEX", b)
 		r.index = append(r.index, b)
 		r.tailBuf = r.tailBuf[IndexBlockSize:]
 	}
@@ -91,19 +91,6 @@ func (r *reader) parseHeaderIfNeeded() error {
 	return nil
 }
 
-// Macht fast dasselbe wie currBlock? Ineffizient/unnötig?
-func (r *reader) rawBlockSize(currOff int64) int64 {
-	prevOff, nextOff := int64(0), int64(0)
-	for _, block := range r.index {
-		nextOff = block.rawOff
-		if block.rawOff >= currOff && block.rawOff != 0 {
-			break
-		}
-		prevOff = block.rawOff
-	}
-	return nextOff - prevOff
-}
-
 func (r *reader) Read(p []byte) (int, error) {
 	if err := r.parseHeaderIfNeeded(); err != nil {
 		fmt.Println(err)
@@ -111,37 +98,28 @@ func (r *reader) Read(p []byte) (int, error) {
 	}
 
 	read := 0
-	if r.readBuf.Len() != 0 {
-		n, err := r.readBlockBuffered(p)
-		if err != nil {
-			return n, err
+	for {
+		fmt.Println("READBUF LEN:", r.readBuf.Len())
+		if r.readBuf.Len() != 0 {
+			n := copy(p, r.readBuf.Next(len(p)))
+			read += n
+			p = p[n:]
+			fmt.Println("P:", len(p))
 		}
-		read += n
-	} else {
-		currZipOff, err := r.startReadOffset()
-		if err != nil {
-			return 0, err
+		if len(p) == 0 {
+			break
 		}
 
-		r.blockSize = r.rawBlockSize(currZipOff)
-		fmt.Println("blockSize:", r.blockSize)
-		if r.blockSize == 0 {
-			// TODO?!
-			return 0, io.EOF
+		if _, err := r.readBlockBuffered(); err != nil {
+			fmt.Println("EOF?", read, err)
+			return read, err
 		}
 	}
-
-	n, err := r.readBlockBuffered(p[read:])
-	if err != nil {
-		return n, err
-	}
-
-	read += n
-	fmt.Println("read", read, len(p))
+	fmt.Println("END:", read)
 	return read, nil
 }
 
-func (r *reader) startReadOffset() (int64, error) {
+func (r *reader) readBlockBuffered() (int64, error) {
 	// Get current raw position
 	curOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	fmt.Println("CurrentOff:", curOff)
@@ -150,34 +128,28 @@ func (r *reader) startReadOffset() (int64, error) {
 	}
 
 	// Get zip offset and set cursor to that position
-	currZipOff := r.currBlock(curOff)
-	fmt.Println("CurrentZIPOff:", currZipOff)
+	prevBlock, currBlock := r.blockLookup(curOff)
+	fmt.Println("PREV AND CURR", prevBlock, currBlock)
+	if currBlock == nil {
+		return 0, io.EOF
+	}
+
+	currZipOff := prevBlock.zipOff + HeaderBufSize
+	fmt.Println("CURROFF:", currZipOff)
 	if _, err = r.rawR.Seek(currZipOff, os.SEEK_SET); err != nil {
 		fmt.Println(err)
 		return 0, err
 	}
-	r.blockStarted = true
-	return currZipOff, nil
-}
 
-func (r *reader) readBlockBuffered(p []byte) (int, error) {
-	n, err := io.CopyN(r.readBuf, r.zipR, r.blockSize)
-	r.blockSize -= n
-	if err != nil {
-		return 0, err
+	blockSize := currBlock.rawOff
+	if prevBlock != nil {
+		blockSize -= prevBlock.rawOff
+	}
+	if blockSize == 0 {
+		return 0, io.EOF
 	}
 
-	// Nothing to read, block finished.
-	if n == 0 {
-		r.blockStarted = false
-	}
-
-	nb, err := r.readBuf.Read(p) // Schreibe N in p
-	if err != nil {
-		return 0, err
-	}
-	fmt.Println("buff", nb)
-	return nb, nil
+	return io.CopyN(r.readBuf, r.zipR, blockSize)
 }
 
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
