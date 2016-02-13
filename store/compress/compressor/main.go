@@ -12,7 +12,7 @@ func openFiles(from, to string) (*os.File, *os.File, error) {
 		return nil, nil, err
 	}
 
-	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	fdTo, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		fdFrom.Close()
 		return nil, nil, err
@@ -30,6 +30,7 @@ func main() {
 		}
 
 		sw := NewWriter(to)
+
 		io.Copy(sw, from)
 		//if err := to.Close(); err != nil {
 		//	fmt.Println(err)

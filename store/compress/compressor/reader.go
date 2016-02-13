@@ -10,6 +10,9 @@ import (
 	"github.com/golang/snappy"
 )
 
+// TODO: Tests schreiben.
+// TODO: linter durchlaufen lassen.
+
 type reader struct {
 	rawR         io.ReadSeeker
 	zipR         io.Reader
@@ -27,6 +30,7 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 	return offset, nil
 }
 
+// Optimierung: Nutze binäre suche um korrekten index zu finden.
 func (r *reader) currBlock(currOff int64) int64 {
 	prevZipOff := int64(0)
 	for _, block := range r.index {
@@ -87,6 +91,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	return nil
 }
 
+// Macht fast dasselbe wie currBlock? Ineffizient/unnötig?
 func (r *reader) rawBlockSize(currOff int64) int64 {
 	prevOff, nextOff := int64(0), int64(0)
 	for _, block := range r.index {
@@ -107,15 +112,12 @@ func (r *reader) Read(p []byte) (int, error) {
 
 	read := 0
 	if r.readBuf.Len() != 0 {
-		n, err := r.readBlockBuffered(&p)
+		n, err := r.readBlockBuffered(p)
 		if err != nil {
 			return n, err
 		}
 		read += n
-	}
-
-	if !r.blockStarted {
-
+	} else {
 		currZipOff, err := r.startReadOffset()
 		if err != nil {
 			return 0, err
@@ -124,20 +126,22 @@ func (r *reader) Read(p []byte) (int, error) {
 		r.blockSize = r.rawBlockSize(currZipOff)
 		fmt.Println("blockSize:", r.blockSize)
 		if r.blockSize == 0 {
+			// TODO?!
 			return 0, io.EOF
 		}
 	}
 
-	n, err := r.readBlockBuffered(&p)
+	n, err := r.readBlockBuffered(p[read:])
 	if err != nil {
 		return n, err
 	}
+
 	read += n
-	return len(p), nil
+	fmt.Println("read", read, len(p))
+	return read, nil
 }
 
 func (r *reader) startReadOffset() (int64, error) {
-
 	// Get current raw position
 	curOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	fmt.Println("CurrentOff:", curOff)
@@ -156,7 +160,7 @@ func (r *reader) startReadOffset() (int64, error) {
 	return currZipOff, nil
 }
 
-func (r *reader) readBlockBuffered(p *[]byte) (int, error) {
+func (r *reader) readBlockBuffered(p []byte) (int, error) {
 	n, err := io.CopyN(r.readBuf, r.zipR, r.blockSize)
 	r.blockSize -= n
 	if err != nil {
@@ -168,10 +172,11 @@ func (r *reader) readBlockBuffered(p *[]byte) (int, error) {
 		r.blockStarted = false
 	}
 
-	nb, err := r.readBuf.Read(*p) // Schreibe N in p
+	nb, err := r.readBuf.Read(p) // Schreibe N in p
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("buff", nb)
 	return nb, nil
 }
 
