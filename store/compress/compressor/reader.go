@@ -12,8 +12,6 @@ import (
 
 // TODO: Tests schreiben (leere dateien, blockgröße -1, +0, +1 etc.)
 // TODO: linter durchlaufen lassen.
-// TODO: Sicherheitsprüfungen:
-//       - prüfen ob blockSize > 0
 // TODO: Seek.
 
 type reader struct {
@@ -32,6 +30,10 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // TODO: Optimierung: Nutze binäre suche um korrekten index zu finden.
+// Return start (prevOff) and end (currOff) offset of the block currOff is
+// located in. If currOff is 0, the first and second block is returned.  If
+// currOff is at the end of file the last block is returned twice. The
+// difference between prevBlock and currBlock is then equal to 0.
 func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
 	var prevBlock, currBlock *Block
 	for i, block := range r.index {
@@ -44,6 +46,7 @@ func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
 	return prevBlock, currBlock
 }
 
+//TODO: Clean code.
 func (r *reader) parseHeaderIfNeeded() error {
 	if r.headerParsed {
 		return nil
@@ -125,32 +128,27 @@ func (r *reader) Read(p []byte) (int, error) {
 
 func (r *reader) readBlockBuffered() (int64, error) {
 	// Get current raw position
-	curOff, err := r.rawR.Seek(0, os.SEEK_CUR)
-	fmt.Println("CurrentOff:", curOff)
+	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
 	}
 
-	// Get zip offset and set cursor to that position
-	prevBlock, currBlock := r.blockLookup(curOff)
-	fmt.Println("PREV AND CURR", prevBlock, currBlock)
-	if currBlock == nil {
+	// Get compressed offset and set cursor to that position.
+	prevBlock, currBlock := r.blockLookup(currOff)
+	fmt.Println("#########################", currOff, prevBlock, currBlock)
+	if currBlock == nil || prevBlock == nil {
+		return 0, ErrBadIndex
+	}
+
+	// Blocksize should only be 0 on empty file or at the end of file.
+	blockSize := currBlock.rawOff - prevBlock.rawOff
+	if blockSize == 0 {
 		return 0, io.EOF
 	}
 
 	currZipOff := prevBlock.zipOff
-	fmt.Println("CURROFF:", currZipOff)
 	if _, err = r.rawR.Seek(currZipOff, os.SEEK_SET); err != nil {
-		fmt.Println(err)
 		return 0, err
-	}
-
-	blockSize := currBlock.rawOff
-	if prevBlock != nil {
-		blockSize -= prevBlock.rawOff
-	}
-	if blockSize == 0 {
-		return 0, io.EOF
 	}
 
 	return io.CopyN(r.readBuf, r.zipR, blockSize)
