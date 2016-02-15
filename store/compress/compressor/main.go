@@ -22,6 +22,10 @@ func openFiles(from, to string) (*os.File, *os.File, error) {
 }
 
 func main() {
+	// TODO: flags package nutzen!!!!
+	// TODO: ..und am besten gleich in format-util einbauen.
+	// TODO: ..dieses package dann nicht als `main` sondern
+	//       als das was momentan `compress` ist.
 	if os.Args[3] == "c" {
 
 		from, to, err := openFiles(os.Args[1], os.Args[2])

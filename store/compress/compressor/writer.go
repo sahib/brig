@@ -11,14 +11,13 @@ import (
 )
 
 type writer struct {
-	sizeAcc       *util.SizeAccumulator
-	rawW          io.Writer
-	zipW          io.Writer
-	chunkBuf      *bytes.Buffer
-	index         []Block
-	headerWritten bool
-	rawOff        int64
-	algorithm     Algorithm
+	sizeAcc   *util.SizeAccumulator
+	rawW      io.Writer
+	zipW      io.Writer
+	chunkBuf  *bytes.Buffer
+	index     []Block
+	rawOff    int64
+	algorithm Algorithm
 }
 
 func (w *writer) addToIndex() {
@@ -92,6 +91,7 @@ func (w *writer) Close() error {
 	// Write compression index tail and close stream.
 	indexSize := uint64(IndexBlockSize * len(w.index))
 
+	// TODO: Variablen bezeichnungen noch etwas aufräumen?
 	tailBuf := make([]byte, indexSize)
 	tailBufStart := tailBuf
 	for _, blkidx := range w.index {

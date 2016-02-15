@@ -18,10 +18,12 @@ const (
 const (
 	AlgoNone = iota
 	AlgoSnappy
+	// TODO: AlgoLZ4?
 )
 
 type Algorithm byte
 
+// Ist Block ein exportierter Typ?
 type Block struct {
 	rawOff int64
 	zipOff int64

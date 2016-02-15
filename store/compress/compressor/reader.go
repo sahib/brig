@@ -10,13 +10,18 @@ import (
 	"github.com/golang/snappy"
 )
 
-// TODO: Tests schreiben.
+// TODO: Tests schreiben (leere dateien, blockgröße -1, +0, +1 etc.)
 // TODO: linter durchlaufen lassen.
+// TODO: Sicherheitsprüfungen:
+//       - prüfen ob index sortiert ist.
+//       - prüfen ob blockSize > 0
+// TODO: Seek.
 
 type reader struct {
-	rawR         io.ReadSeeker
-	zipR         io.Reader
-	index        []Block
+	rawR  io.ReadSeeker
+	zipR  io.Reader
+	index []Block
+	// TODO: Noch benötigt?
 	fileEndOff   int64
 	tailBuf      []byte
 	readBuf      *bytes.Buffer
@@ -27,7 +32,7 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 	return offset, nil
 }
 
-// Optimierung: Nutze binäre suche um korrekten index zu finden.
+// TODO: Optimierung: Nutze binäre suche um korrekten index zu finden.
 func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
 	var prevBlock, currBlock *Block
 	for i, block := range r.index {
