@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrBadBlockIndex = errors.New("Invalid byte index while reading index.")
+	ErrBadIndex = errors.New("Broken compression index.")
 )
 
 const (

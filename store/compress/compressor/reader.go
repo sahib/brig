@@ -13,7 +13,6 @@ import (
 // TODO: Tests schreiben (leere dateien, blockgröße -1, +0, +1 etc.)
 // TODO: linter durchlaufen lassen.
 // TODO: Sicherheitsprüfungen:
-//       - prüfen ob index sortiert ist.
 //       - prüfen ob blockSize > 0
 // TODO: Seek.
 
@@ -76,11 +75,16 @@ func (r *reader) parseHeaderIfNeeded() error {
 	}
 
 	//Build Index
+	prevBlock := Block{-1, -1}
 	for i := uint64(0); i < (tailSize / IndexBlockSize); i++ {
-		b := Block{}
-		b.unmarshal(r.tailBuf)
-		fmt.Println("INDEX", b)
-		r.index = append(r.index, b)
+		currBlock := Block{}
+		currBlock.unmarshal(r.tailBuf)
+
+		if prevBlock.rawOff >= currBlock.rawOff && prevBlock.zipOff >= currBlock.zipOff {
+			return ErrBadIndex
+		}
+
+		r.index = append(r.index, currBlock)
 		r.tailBuf = r.tailBuf[IndexBlockSize:]
 	}
 	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
