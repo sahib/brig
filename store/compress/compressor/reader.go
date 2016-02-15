@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/golang/snappy"
 )
@@ -29,21 +30,24 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 	return offset, nil
 }
 
-// TODO: Optimierung: Nutze binäre suche um korrekten index zu finden.
-// Return start (prevOff) and end (currOff) offset of the block currOff is
-// located in. If currOff is 0, the first and second block is returned.  If
-// currOff is at the end of file the last block is returned twice. The
-// difference between prevBlock and currBlock is then equal to 0.
+// Return start (prev offset) and end (curr offset) of the block currOff is
+// located in. If currOff is 0, the startoffset of the first and second block is
+// returned. If currOff is at the end of file the end offset of the last block
+// is returned twice.  The difference between prev block and curr block is then
+// equal to 0.
 func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
-	var prevBlock, currBlock *Block
-	for i, block := range r.index {
-		currBlock = &r.index[i]
-		if block.zipOff > currOff {
-			return prevBlock, currBlock
-		}
-		prevBlock = &r.index[i]
+	i := sort.Search(len(r.index), func(i int) bool {
+		return r.index[i].zipOff > currOff
+	})
+	// Beginning of the file, first block: prev offset is 0, curr offset is 1
+	if i == 0 {
+		return &r.index[i], &r.index[i+1]
 	}
-	return prevBlock, currBlock
+	// End of the file, last block: prev and curr offset is the last index.
+	if i == len(r.index) {
+		return &r.index[i-1], &r.index[i-1]
+	}
+	return &r.index[i-1], &r.index[i]
 }
 
 //TODO: Clean code.
