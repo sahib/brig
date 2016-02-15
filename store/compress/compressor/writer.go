@@ -57,15 +57,14 @@ func (w *writer) Write(p []byte) (n int, err error) {
 	return pSize, nil
 }
 
-//TODO: Make algorithm a function parameter.
-func NewWriter(w io.Writer) io.WriteCloser {
+func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 	s := &util.SizeAccumulator{}
 	return &writer{
 		sizeAcc:   s,
 		zipW:      snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:      w,
 		chunkBuf:  &bytes.Buffer{},
-		algorithm: AlgoSnappy,
+		algorithm: algo,
 	}
 }
 

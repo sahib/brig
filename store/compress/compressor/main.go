@@ -33,7 +33,7 @@ func main() {
 			fmt.Println(err)
 		}
 
-		sw := NewWriter(to)
+		sw := NewWriter(to, AlgoSnappy)
 
 		io.Copy(sw, from)
 		//if err := to.Close(); err != nil {
