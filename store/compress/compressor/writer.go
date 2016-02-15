@@ -40,29 +40,20 @@ func (w *writer) flushBuffer(flushSize int) (int, error) {
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
-
 	pSize := len(p)
 	// Compress only MaxBlockSize equal chunks.
 	for {
 		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), MaxBlockSize)])
 
-		// Flush the current block.
-		//fmt.Println("buflen und max:", w.chunkBuf.Len(), MaxBlockSize)
-		if w.chunkBuf.Len() >= MaxBlockSize {
-			if _, err := w.flushBuffer(MaxBlockSize); err != nil {
-				fmt.Println(err)
-				return 0, err
-			}
-			// Forget flushed input.
-			//fmt.Println("p1", len(p), n)
-			p = p[n:]
-			//fmt.Println("p2", len(p), n)
-			continue
+		if w.chunkBuf.Len() < MaxBlockSize {
+			break
 		}
-		break
-	}
 
-	// Fake bytes written, as expeted by some functions.
+		if _, err := w.flushBuffer(MaxBlockSize); err != nil {
+			return 0, err
+		}
+		p = p[n:]
+	}
 	return pSize, nil
 }
 
