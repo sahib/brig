@@ -24,7 +24,7 @@ type reader struct {
 	index []Record
 
 	// Buffer holds currently read data; MaxChunkSize.
-	readBuf *bytes.Buffer
+	chunkBuf *bytes.Buffer
 
 	// Structure with parsed trailer.
 	trailer *Trailer
@@ -117,8 +117,8 @@ func (r *reader) Read(p []byte) (int, error) {
 
 	read := 0
 	for {
-		if r.readBuf.Len() != 0 {
-			n := copy(p, r.readBuf.Next(len(p)))
+		if r.chunkBuf.Len() != 0 {
+			n := copy(p, r.chunkBuf.Next(len(p)))
 			read += n
 			p = p[n:]
 		}
@@ -159,7 +159,7 @@ func (r *reader) readChunk() (int64, error) {
 		return 0, err
 	}
 
-	return io.CopyN(r.readBuf, r.zipR, chunkSize)
+	return io.CopyN(r.chunkBuf, r.zipR, chunkSize)
 }
 
 // Return a new ReadSeeker with compression support. As random access is the
@@ -167,8 +167,8 @@ func (r *reader) readChunk() (int64, error) {
 // compression algorithm is chosen based on trailer information.
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{
-		rawR:    r,
-		zipR:    snappy.NewReader(r),
-		readBuf: &bytes.Buffer{},
+		rawR:     r,
+		zipR:     snappy.NewReader(r),
+		chunkBuf: &bytes.Buffer{},
 	}
 }
