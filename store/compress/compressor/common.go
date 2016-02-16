@@ -18,6 +18,7 @@ const (
 const (
 	AlgoNone = iota
 	AlgoSnappy
+	AlgoLZ4
 	// TODO: AlgoLZ4?
 )
 
@@ -27,6 +28,24 @@ type Algorithm byte
 type Block struct {
 	rawOff int64
 	zipOff int64
+}
+
+type Trailer struct {
+	algo      Algorithm
+	blocksize uint32
+	indexSize uint64
+}
+
+func (t *Trailer) marshal(buf []byte) {
+	binary.LittleEndian.PutUint32(buf[0:4], uint32(t.algo))
+	binary.LittleEndian.PutUint32(buf[4:8], t.blocksize)
+	binary.LittleEndian.PutUint64(buf[8:], t.indexSize)
+}
+
+func (t *Trailer) unmarshal(buf []byte) {
+	t.algo = Algorithm(binary.LittleEndian.Uint32(buf[0:4]))
+	t.blocksize = binary.LittleEndian.Uint32(buf[4:8])
+	t.indexSize = binary.LittleEndian.Uint64(buf[8:])
 }
 
 func (bl *Block) marshal(buf []byte) {

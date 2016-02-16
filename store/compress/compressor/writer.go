@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -11,13 +10,13 @@ import (
 )
 
 type writer struct {
-	sizeAcc   *util.SizeAccumulator
-	rawW      io.Writer
-	zipW      io.Writer
-	chunkBuf  *bytes.Buffer
-	index     []Block
-	rawOff    int64
-	algorithm Algorithm
+	sizeAcc  *util.SizeAccumulator
+	rawW     io.Writer
+	zipW     io.Writer
+	chunkBuf *bytes.Buffer
+	index    []Block
+	rawOff   int64
+	trailer  *Trailer
 }
 
 func (w *writer) addToIndex() {
@@ -60,11 +59,11 @@ func (w *writer) Write(p []byte) (n int, err error) {
 func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 	s := &util.SizeAccumulator{}
 	return &writer{
-		sizeAcc:   s,
-		zipW:      snappy.NewWriter(io.MultiWriter(w, s)),
-		rawW:      w,
-		chunkBuf:  &bytes.Buffer{},
-		algorithm: algo,
+		sizeAcc:  s,
+		zipW:     snappy.NewWriter(io.MultiWriter(w, s)),
+		rawW:     w,
+		chunkBuf: &bytes.Buffer{},
+		trailer:  &Trailer{},
 	}
 }
 
@@ -79,25 +78,26 @@ func (w *writer) Close() error {
 	w.addToIndex()
 
 	// Write compression index tail and close stream.
-	indexSize := uint64(IndexBlockSize * len(w.index))
+	w.trailer.indexSize = uint64(IndexBlockSize * len(w.index))
 
 	// TODO: Variablen bezeichnungen noch etwas aufräumen?
-	tailBuf := make([]byte, indexSize)
+	tailBuf := make([]byte, w.trailer.indexSize)
 	tailBufStart := tailBuf
 	for _, blkidx := range w.index {
 		blkidx.marshal(tailBuf)
 		tailBuf = tailBuf[IndexBlockSize:]
 	}
 
-	if n, err := w.rawW.Write(tailBufStart); err != nil || uint64(n) != indexSize {
+	if n, err := w.rawW.Write(tailBufStart); err != nil || uint64(n) != w.trailer.indexSize {
 		return err
 	}
 
 	// Write index tail size at the end of stream.
 	var tailSizeBuf = make([]byte, TailSize)
-	binary.LittleEndian.PutUint32(tailSizeBuf[0:4], uint32(w.algorithm))
-	binary.LittleEndian.PutUint32(tailSizeBuf[4:8], MaxBlockSize)
-	binary.LittleEndian.PutUint64(tailSizeBuf[8:], indexSize)
+	w.trailer.marshal(tailSizeBuf)
+	//binary.LittleEndian.PutUint32(tailSizeBuf[0:4], uint32(w.trailer.algo))
+	//binary.LittleEndian.PutUint32(tailSizeBuf[4:8], MaxBlockSize)
+	//binary.LittleEndian.PutUint64(tailSizeBuf[8:], w.trailer.indexSize)
 	if _, err := w.rawW.Write(tailSizeBuf); err != nil {
 		fmt.Println("Error writing tailSizeBuf:", err)
 		return err

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -24,6 +23,7 @@ type reader struct {
 	tailBuf      []byte
 	readBuf      *bytes.Buffer
 	headerParsed bool
+	trailer      *Trailer
 }
 
 func (r *reader) Seek(offset int64, whence int) (int64, error) {
@@ -60,17 +60,15 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return err
 	}
 
-	// Read size of tail.
-	buf := [TailSize]byte{}
+	buf := [TailSize + 16]byte{}
 	if n, err := r.rawR.Read(buf[:]); err != nil || n != TailSize {
 		return err
 	}
+	r.trailer.unmarshal(buf[:])
+	r.tailBuf = make([]byte, r.trailer.indexSize)
 
-	//TODO: Header parsing.
-	tailSize := binary.LittleEndian.Uint64(buf[8:])
-	r.tailBuf = make([]byte, tailSize)
 	var err error
-	seekIdx := -(int64(tailSize) + TailSize)
+	seekIdx := -(int64(r.trailer.indexSize) + TailSize)
 	if r.fileEndOff, err = r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		fmt.Println(err)
 		return err
@@ -83,7 +81,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 
 	//Build Index
 	prevBlock := Block{-1, -1}
-	for i := uint64(0); i < (tailSize / IndexBlockSize); i++ {
+	for i := uint64(0); i < (r.trailer.indexSize / IndexBlockSize); i++ {
 		currBlock := Block{}
 		currBlock.unmarshal(r.tailBuf)
 
@@ -163,5 +161,6 @@ func NewReader(r io.ReadSeeker) io.ReadSeeker {
 		rawR:    r,
 		zipR:    snappy.NewReader(r),
 		readBuf: &bytes.Buffer{},
+		trailer: &Trailer{},
 	}
 }
