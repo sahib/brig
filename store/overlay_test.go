@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 	"testing"
+
+	"github.com/disorganizer/brig/store/encrypt"
+	"github.com/disorganizer/brig/util/testutil"
 )
 
 func makeMod(off, size int64) *Modification {
@@ -223,5 +226,63 @@ func TestOverlaySimple(t *testing.T) {
 			t.Errorf("\tGot:      %v", buf.Bytes())
 			return
 		}
+	}
+}
+
+func TestBigFile(t *testing.T) {
+	src := testutil.CreateDummyBuf(147611)
+	dst := &bytes.Buffer{}
+
+	srcEnc := &bytes.Buffer{}
+	wEnc, err := encrypt.NewWriter(srcEnc, TestKey, 0)
+	if err != nil {
+		t.Errorf("Cannot create write-encryption layer: %v", err)
+		return
+	}
+
+	if err := wEnc.Close(); err != nil {
+		t.Errorf("Cannot close write-encryption layer: %v", err)
+		return
+	}
+
+	wDec, err := encrypt.NewReader(bytes.NewReader(srcEnc.Bytes()), TestKey)
+	if err != nil {
+		t.Errorf("Cannot create read-encryption layer: %v", err)
+		return
+	}
+
+	defer wDec.Close()
+
+	// Act a bit like the fuse layer:
+	lay := NewLayer(wDec)
+	lay.Truncate(0)
+
+	bufSize := 128 * 1024
+	if _, err := io.CopyBuffer(lay, bytes.NewReader(src), make([]byte, bufSize)); err != nil {
+		t.Errorf("Could not encrypt data")
+		return
+	}
+
+	lay.Truncate(int64(len(src)))
+
+	if _, err := lay.Seek(0, os.SEEK_SET); err != nil {
+		t.Errorf("Seeking to 0 in big file failed: %v", err)
+		return
+	}
+
+	n, err := io.CopyBuffer(dst, lay, make([]byte, bufSize))
+	if err != nil {
+		t.Errorf("Could not copy big file data over overlay: %v", err)
+		return
+	}
+
+	if n != int64(len(src)) {
+		t.Errorf("Did not fully copy big file: got %d, should be %d bytes", n, len(src))
+		return
+	}
+
+	if !bytes.Equal(dst.Bytes(), src) {
+		t.Errorf("Source and destination buffers differ.")
+		return
 	}
 }

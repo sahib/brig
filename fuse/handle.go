@@ -93,7 +93,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 			h.stream = stream
 		}
 
-		log.Debugf("fuse-write: truncating %s to %d %p", h.Path(), h.Size, h)
+		log.Debugf("fuse-write: truncating %s to %d %p", h.Path(), h.Size(), h)
 		h.layer = store.NewLayer(h.stream)
 		h.layer.Truncate(h.Size())
 	}
@@ -116,7 +116,7 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	// https://godoc.org/bazil.org/fuse/fs#HandleWriter
 	minSize := h.layer.MinSize()
 	if h.Size() < minSize {
-		log.Debugf("fuse-write: extending file from %d to %d bytes", h.Size, minSize)
+		log.Debugf("fuse-write: extending file from %d to %d bytes", h.Size(), minSize)
 		h.UpdateSize(minSize)
 	}
 
@@ -132,6 +132,8 @@ func (h *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 func (h *Handle) flush() error {
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
+
+	log.Debugf("fuse-flush: %v (%p)", h.Path(), h.layer)
 
 	if h.layer == nil {
 		return nil
@@ -151,9 +153,8 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	log.Debugf("fuse-flush: %v", h.Path())
-
-	if err := h.fs.Store.AddFromReader(h.Path(), h.layer, h.Size()); err != nil {
+	err = h.fs.Store.AddFromReader(h.Path(), h.layer, h.Size())
+	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
 	}

@@ -209,10 +209,8 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		hash:    &Hash{mhash},
 	}
 
-	log.Debugf("OLD: %v NEW: %v MHASH: %v ANOTER: %v", file.hash, &Hash{mhash}, mhash, &Hash{mhash})
-
 	// Create a checkpoint in the version history.
-	// TODO: Move is not yet supported!
+	// TODO: Move is not yet supported, probably use own function for this.
 	err = s.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
 	if err != nil {
 		return err
@@ -220,7 +218,6 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 
 	// If all went well, save it to bolt:
 	file.sync()
-
 	return nil
 }
 

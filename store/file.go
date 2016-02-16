@@ -118,7 +118,7 @@ func (f *File) sync() {
 	})
 
 	path := f.node.Path()
-	log.Debugf("store-sync: %s", path)
+	log.Debugf("store-sync: %s (size: %d  mod: %v)", path, f.size, f.modTime)
 
 	f.store.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		data, err := f.marshal()

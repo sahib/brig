@@ -85,7 +85,7 @@ func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
 func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
 	k.keys[jid] = fingerprint
 
-	fd, err := os.OpenFile(k.Path, os.O_CREATE|O_TRUNC|os.O_WRONLY, 0644)
+	fd, err := os.OpenFile(k.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
