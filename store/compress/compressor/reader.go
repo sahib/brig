@@ -52,27 +52,27 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return nil
 	}
 
-	if _, err := r.rawR.Seek(-TailSize, os.SEEK_END); err != nil {
+	if _, err := r.rawR.Seek(-TrailerSize, os.SEEK_END); err != nil {
 		return err
 	}
 
-	buf := [TailSize]byte{}
-	if n, err := r.rawR.Read(buf[:]); err != nil || n != TailSize {
+	buf := [TrailerSize]byte{}
+	if n, err := r.rawR.Read(buf[:]); err != nil || n != TrailerSize {
 		return err
 	}
 
 	r.trailer = &Trailer{}
 	r.trailer.unmarshal(buf[:])
-	tailBuf := make([]byte, r.trailer.indexSize)
+	trailerBuf := make([]byte, r.trailer.indexSize)
 
 	var err error
-	seekIdx := -(int64(r.trailer.indexSize) + TailSize)
+	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err = r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if _, err := r.rawR.Read(tailBuf); err != nil {
+	if _, err := r.rawR.Read(trailerBuf); err != nil {
 		fmt.Println(err)
 		return err
 	}
@@ -81,14 +81,14 @@ func (r *reader) parseHeaderIfNeeded() error {
 	prevBlock := Block{-1, -1}
 	for i := uint64(0); i < (r.trailer.indexSize / IndexBlockSize); i++ {
 		currBlock := Block{}
-		currBlock.unmarshal(tailBuf)
+		currBlock.unmarshal(trailerBuf)
 
 		if prevBlock.rawOff >= currBlock.rawOff && prevBlock.zipOff >= currBlock.zipOff {
 			return ErrBadIndex
 		}
 
 		r.index = append(r.index, currBlock)
-		tailBuf = tailBuf[IndexBlockSize:]
+		trailerBuf = trailerBuf[IndexBlockSize:]
 	}
 
 	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {

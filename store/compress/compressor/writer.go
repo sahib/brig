@@ -77,29 +77,29 @@ func (w *writer) Close() error {
 	}
 	w.addToIndex()
 
-	// Write compression index tail and close stream.
+	// Write compression index trailer and close stream.
 	w.trailer.indexSize = uint64(IndexBlockSize * len(w.index))
 
 	// TODO: Variablen bezeichnungen noch etwas aufräumen?
-	tailBuf := make([]byte, w.trailer.indexSize)
-	tailBufStart := tailBuf
+	trailerBuf := make([]byte, w.trailer.indexSize)
+	trailerBufStart := trailerBuf
 	for _, blkidx := range w.index {
-		blkidx.marshal(tailBuf)
-		tailBuf = tailBuf[IndexBlockSize:]
+		blkidx.marshal(trailerBuf)
+		trailerBuf = trailerBuf[IndexBlockSize:]
 	}
 
-	if n, err := w.rawW.Write(tailBufStart); err != nil || uint64(n) != w.trailer.indexSize {
+	if n, err := w.rawW.Write(trailerBufStart); err != nil || uint64(n) != w.trailer.indexSize {
 		return err
 	}
 
-	// Write index tail size at the end of stream.
-	var tailSizeBuf = make([]byte, TailSize)
-	w.trailer.marshal(tailSizeBuf)
-	//binary.LittleEndian.PutUint32(tailSizeBuf[0:4], uint32(w.trailer.algo))
-	//binary.LittleEndian.PutUint32(tailSizeBuf[4:8], MaxBlockSize)
-	//binary.LittleEndian.PutUint64(tailSizeBuf[8:], w.trailer.indexSize)
-	if _, err := w.rawW.Write(tailSizeBuf); err != nil {
-		fmt.Println("Error writing tailSizeBuf:", err)
+	// Write index trailer size at the end of stream.
+	var trailerSizeBuf = make([]byte, TrailerSize)
+	w.trailer.marshal(trailerSizeBuf)
+	//binary.LittleEndian.PutUint32(trailerSizeBuf[0:4], uint32(w.trailer.algo))
+	//binary.LittleEndian.PutUint32(trailerSizeBuf[4:8], MaxBlockSize)
+	//binary.LittleEndian.PutUint64(trailerSizeBuf[8:], w.trailer.indexSize)
+	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {
+		fmt.Println("Error writing trailerSizeBuf:", err)
 		return err
 	}
 

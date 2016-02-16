@@ -12,7 +12,7 @@ var (
 const (
 	MaxBlockSize   = 64 * 1024
 	IndexBlockSize = 16
-	TailSize       = 16
+	TrailerSize       = 16
 )
 
 const (
