@@ -14,10 +14,19 @@ import (
 // TODO: Seek.
 
 type reader struct {
-	rawR    io.ReadSeeker
-	zipR    io.Reader
-	index   []Record
+	// Underlying raw, compressed datastream.
+	rawR io.ReadSeeker
+
+	// Decompression layer, reader is based on chosen algorithm.
+	zipR io.Reader
+
+	// Index with records which contain block offsets.
+	index []Record
+
+	// Buffer holds currently read data; MaxBlockSize.
 	readBuf *bytes.Buffer
+
+	// Structure with parsed trailer.
 	trailer *Trailer
 }
 
@@ -52,6 +61,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return nil
 	}
 
+	// Goto end of file and read trailer buffer.
 	if _, err := r.rawR.Seek(-TrailerSize, os.SEEK_END); err != nil {
 		return err
 	}
@@ -63,13 +73,13 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &Trailer{}
 	r.trailer.unmarshal(buf[:])
 
+	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		return err
 	}
-
-	trailerBuf := make([]byte, r.trailer.indexSize)
-	if _, err := r.rawR.Read(trailerBuf); err != nil {
+	indexBuf := make([]byte, r.trailer.indexSize)
+	if _, err := r.rawR.Read(indexBuf); err != nil {
 		return err
 	}
 
@@ -78,22 +88,28 @@ func (r *reader) parseHeaderIfNeeded() error {
 	prevRecord := Record{-1, -1}
 	for i := uint64(0); i < (r.trailer.indexSize / IndexBlockSize); i++ {
 		currRecord := Record{}
-		currRecord.unmarshal(trailerBuf)
+		currRecord.unmarshal(indexBuf)
 
-		if prevRecord.rawOff >= currRecord.rawOff && prevRecord.zipOff >= currRecord.zipOff {
+		if prevRecord.rawOff >= currRecord.rawOff {
+			return ErrBadIndex
+		}
+
+		if prevRecord.zipOff >= currRecord.zipOff {
 			return ErrBadIndex
 		}
 
 		r.index = append(r.index, currRecord)
-		trailerBuf = trailerBuf[IndexBlockSize:]
+		indexBuf = indexBuf[IndexBlockSize:]
 	}
 
+	// Set reader to beginning of file
 	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
 	return nil
 }
 
+// Read reads len(p) bytes from the compressed stream into p.
 func (r *reader) Read(p []byte) (int, error) {
 	if err := r.parseHeaderIfNeeded(); err != nil {
 		return 0, err
@@ -120,26 +136,26 @@ func (r *reader) Read(p []byte) (int, error) {
 }
 
 func (r *reader) readBlock() (int64, error) {
-	// Get current position of reader (offset of the compressed file).
+	// Get current position of the reader; offset of the compressed file.
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
 	}
 
-	// Get the start and end record of the block currOff is located in
+	// Get the start and end record of the block currOff is located in.
 	prevRecord, currRecord := r.blockLookup(currOff)
 	if currRecord == nil || prevRecord == nil {
 		return 0, ErrBadIndex
 	}
 
-	// Blocksize should only be 0 on empty file or at the end of file.
+	// Determinate uncompressed blocksize; should only be 0 on empty file or at the end of file.
 	blockSize := currRecord.rawOff - prevRecord.rawOff
 	if blockSize == 0 {
 		return 0, io.EOF
 	}
 
-	currZipOff := prevRecord.zipOff
-	if _, err = r.rawR.Seek(currZipOff, os.SEEK_SET); err != nil {
+	// Set reader to compressed offset.
+	if _, err = r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
