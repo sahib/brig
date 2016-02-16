@@ -109,3 +109,15 @@ func (s *SizeAccumulator) Size() uint64 {
 func (s *SizeAccumulator) Reset() {
 	atomic.StoreUint64(&s.size, 0)
 }
+
+// NopCloser returns a WriteCloser with a no-op Close method wrapping
+// the provided Writer w.
+func NopWriteCloser(w io.Writer) io.WriteCloser {
+	return nopCloser{w}
+}
+
+type nopCloser struct {
+	io.Writer
+}
+
+func (nopCloser) Close() error { return nil }
