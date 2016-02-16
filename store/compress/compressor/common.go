@@ -12,7 +12,7 @@ var (
 const (
 	MaxBlockSize   = 64 * 1024
 	IndexBlockSize = 16
-	TrailerSize       = 16
+	TrailerSize    = 16
 )
 
 const (
@@ -24,8 +24,7 @@ const (
 
 type Algorithm byte
 
-// Ist Block ein exportierter Typ?
-type Block struct {
+type Record struct {
 	rawOff int64
 	zipOff int64
 }
@@ -48,12 +47,12 @@ func (t *Trailer) unmarshal(buf []byte) {
 	t.indexSize = binary.LittleEndian.Uint64(buf[8:])
 }
 
-func (bl *Block) marshal(buf []byte) {
-	binary.LittleEndian.PutUint64(buf[0:8], uint64(bl.rawOff))
-	binary.LittleEndian.PutUint64(buf[8:16], uint64(bl.zipOff))
+func (rc *Record) marshal(buf []byte) {
+	binary.LittleEndian.PutUint64(buf[0:8], uint64(rc.rawOff))
+	binary.LittleEndian.PutUint64(buf[8:16], uint64(rc.zipOff))
 }
 
-func (bl *Block) unmarshal(buf []byte) {
-	bl.rawOff = int64(binary.LittleEndian.Uint64(buf[0:8]))
-	bl.zipOff = int64(binary.LittleEndian.Uint64(buf[8:16]))
+func (rc *Record) unmarshal(buf []byte) {
+	rc.rawOff = int64(binary.LittleEndian.Uint64(buf[0:8]))
+	rc.zipOff = int64(binary.LittleEndian.Uint64(buf[8:16]))
 }
