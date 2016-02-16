@@ -176,7 +176,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
 
-	stream, err := NewFileReader(file.Key, teeR, size)
+	stream, err := NewFileReader(file.Key(), teeR, size)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	log.Infof("ADD KEY:  %x", file.Key)
+	log.Infof("ADD KEY:  %x", file.Key())
 	log.Infof("ADD HASH: %s", mhash.B58String())
 
 	file.Lock()
@@ -268,6 +268,7 @@ func (s *Store) Cat(path string, w io.Writer) error {
 
 // GoOffline shuts down all store services that need an connection
 // to the outside.
+// TODO: Make this work with xmpp etc.
 func (s *Store) GoOffline() error {
 	log.Infof("Going offline (bye, ipfs and xmpp)...")
 	if err := s.IpfsNode.Close(); err != nil {

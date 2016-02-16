@@ -31,14 +31,14 @@ type File struct {
 
 	// Mutex protecting access to the trie.
 	// Note that only one mutex exists per trie.
-	*sync.RWMutex
+	*sync.RWMutex `json:"-"`
 
-	store *Store
-	node  *trie.Node
+	store *Store     `json:"-"`
+	node  *trie.Node `json:"-"`
 
 	isFile bool
 
-	Key []byte
+	key []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -152,7 +152,7 @@ func NewFile(store *Store, path string) (*File, error) {
 		store:    store,
 		RWMutex:  store.Root.RWMutex,
 		Metadata: &Metadata{},
-		Key:      key,
+		key:      key,
 		isFile:   true,
 	}
 
@@ -215,7 +215,7 @@ func (f *File) marshal() ([]byte, error) {
 
 	dataFile := &proto.File{
 		Path:     protobuf.String(f.node.Path()),
-		Key:      f.Key,
+		Key:      f.key,
 		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
 		IsFile:   protobuf.Bool(f.isFile),
@@ -247,7 +247,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		isFile:  dataFile.GetIsFile(),
-		Key:     dataFile.GetKey(),
+		key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
@@ -411,7 +411,7 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 		return nil, err
 	}
 
-	return NewIpfsReader(f.Key, ipfsStream)
+	return NewIpfsReader(f.key, ipfsStream)
 }
 
 // Parent returns the parent directory of File.
@@ -487,4 +487,11 @@ func (f *File) hashUnlocked() *Hash {
 
 	f.hash = &Hash{mhash}
 	return f.hash
+}
+
+func (f *File) Key() []byte {
+	f.RLock()
+	defer f.RUnlock()
+
+	return f.key
 }

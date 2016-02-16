@@ -242,7 +242,7 @@ func (l *Layer) Read(buf []byte) (int, error) {
 
 	// TODO: Optimisation: Check if our write data fully occludes underlying stream.
 	//       If that's the case, do not read from underyling stream.
-
+	//       Alternatively, read only the un-occluded parts.
 	overlays := l.index.Overlays(l.pos, l.pos+int64(len(buf)))
 	// for _, chunk := range overlays {
 	// 	lo, hi := chunk.Range()
