@@ -15,15 +15,11 @@ import (
 // TODO: Seek.
 
 type reader struct {
-	rawR  io.ReadSeeker
-	zipR  io.Reader
-	index []Block
-	// TODO: Noch benötigt?
-	fileEndOff   int64
-	tailBuf      []byte
-	readBuf      *bytes.Buffer
-	headerParsed bool
-	trailer      *Trailer
+	rawR    io.ReadSeeker
+	zipR    io.Reader
+	index   []Block
+	readBuf *bytes.Buffer
+	trailer *Trailer
 }
 
 func (r *reader) Seek(offset int64, whence int) (int64, error) {
@@ -52,7 +48,7 @@ func (r *reader) blockLookup(currOff int64) (*Block, *Block) {
 
 //TODO: Clean code.
 func (r *reader) parseHeaderIfNeeded() error {
-	if r.headerParsed {
+	if r.trailer != nil {
 		return nil
 	}
 
@@ -60,21 +56,23 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return err
 	}
 
-	buf := [TailSize + 16]byte{}
+	buf := [TailSize]byte{}
 	if n, err := r.rawR.Read(buf[:]); err != nil || n != TailSize {
 		return err
 	}
+
+	r.trailer = &Trailer{}
 	r.trailer.unmarshal(buf[:])
-	r.tailBuf = make([]byte, r.trailer.indexSize)
+	tailBuf := make([]byte, r.trailer.indexSize)
 
 	var err error
 	seekIdx := -(int64(r.trailer.indexSize) + TailSize)
-	if r.fileEndOff, err = r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
+	if _, err = r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if _, err := r.rawR.Read(r.tailBuf); err != nil {
+	if _, err := r.rawR.Read(tailBuf); err != nil {
 		fmt.Println(err)
 		return err
 	}
@@ -83,19 +81,19 @@ func (r *reader) parseHeaderIfNeeded() error {
 	prevBlock := Block{-1, -1}
 	for i := uint64(0); i < (r.trailer.indexSize / IndexBlockSize); i++ {
 		currBlock := Block{}
-		currBlock.unmarshal(r.tailBuf)
+		currBlock.unmarshal(tailBuf)
 
 		if prevBlock.rawOff >= currBlock.rawOff && prevBlock.zipOff >= currBlock.zipOff {
 			return ErrBadIndex
 		}
 
 		r.index = append(r.index, currBlock)
-		r.tailBuf = r.tailBuf[IndexBlockSize:]
+		tailBuf = tailBuf[IndexBlockSize:]
 	}
+
 	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
-	r.headerParsed = true
 
 	return nil
 }
@@ -128,6 +126,7 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
+// TODO: Ist das noch "buffered"?
 func (r *reader) readBlockBuffered() (int64, error) {
 	// Get current raw position
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
@@ -161,6 +160,5 @@ func NewReader(r io.ReadSeeker) io.ReadSeeker {
 		rawR:    r,
 		zipR:    snappy.NewReader(r),
 		readBuf: &bytes.Buffer{},
-		trailer: &Trailer{},
 	}
 }
