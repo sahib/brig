@@ -19,7 +19,7 @@ type writer struct {
 	chunkBuf *bytes.Buffer
 
 	// Index with records which contain chunk offsets.
-	index []Record
+	index []record
 
 	// Accumulator representing uncompressed offset.
 	rawOff int64
@@ -28,12 +28,12 @@ type writer struct {
 	sizeAcc *util.SizeAccumulator
 
 	// Holds trailer data.
-	trailer *Trailer
+	trailer *trailer
 }
 
 func (w *writer) addToIndex() {
 	a, b := w.rawOff, int64(w.sizeAcc.Size())
-	w.index = append(w.index, Record{a, b})
+	w.index = append(w.index, record{a, b})
 }
 
 func (w *writer) flushBuffer(flushSize int) (int, error) {
@@ -83,7 +83,7 @@ func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 		zipW:     snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:     w,
 		chunkBuf: &bytes.Buffer{},
-		trailer:  &Trailer{},
+		trailer:  &trailer{},
 	}
 }
 

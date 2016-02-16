@@ -21,13 +21,13 @@ type reader struct {
 	zipR io.Reader
 
 	// Index with records which contain chunk offsets.
-	index []Record
+	index []record
 
 	// Buffer holds currently read data; MaxChunkSize.
 	chunkBuf *bytes.Buffer
 
 	// Structure with parsed trailer.
-	trailer *Trailer
+	trailer *trailer
 }
 
 func (r *reader) Seek(offset int64, whence int) (int64, error) {
@@ -39,7 +39,7 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 // returned. If currOff is at the end of file the end offset of the last chunk
 // is returned twice.  The difference between prev record and curr chunk is then
 // equal to 0.
-func (r *reader) chunkLookup(currOff int64) (*Record, *Record) {
+func (r *reader) chunkLookup(currOff int64) (*record, *record) {
 	i := sort.Search(len(r.index), func(i int) bool {
 		return r.index[i].zipOff > currOff
 	})
@@ -70,7 +70,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	if n, err := r.rawR.Read(buf[:]); err != nil || n != TrailerSize {
 		return err
 	}
-	r.trailer = &Trailer{}
+	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
 	// Seek and read index into buffer.
@@ -83,11 +83,11 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return err
 	}
 
-	// Build index with Records. A record encapsulates a raw offset and the
+	// Build index with records. A record encapsulates a raw offset and the
 	// compressed offset it is mapped to.
-	prevRecord := Record{-1, -1}
+	prevRecord := record{-1, -1}
 	for i := uint64(0); i < (r.trailer.indexSize / IndexChunkSize); i++ {
-		currRecord := Record{}
+		currRecord := record{}
 		currRecord.unmarshal(indexBuf)
 
 		if prevRecord.rawOff >= currRecord.rawOff {
