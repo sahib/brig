@@ -9,7 +9,7 @@ import (
 	"github.com/golang/snappy"
 )
 
-// TODO: Tests schreiben (leere dateien, blockgröße -1, +0, +1 etc.)
+// TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
 // TODO: linter durchlaufen lassen.
 // TODO: Seek.
 
@@ -20,10 +20,10 @@ type reader struct {
 	// Decompression layer, reader is based on chosen algorithm.
 	zipR io.Reader
 
-	// Index with records which contain block offsets.
+	// Index with records which contain chunk offsets.
 	index []Record
 
-	// Buffer holds currently read data; MaxBlockSize.
+	// Buffer holds currently read data; MaxChunkSize.
 	readBuf *bytes.Buffer
 
 	// Structure with parsed trailer.
@@ -34,22 +34,22 @@ func (r *reader) Seek(offset int64, whence int) (int64, error) {
 	return offset, nil
 }
 
-// Return start (prev offset) and end (curr offset) of the block currOff is
+// Return start (prev offset) and end (curr offset) of the chunk currOff is
 // located in. If currOff is 0, the startoffset of the first and second record is
-// returned. If currOff is at the end of file the end offset of the last block
-// is returned twice.  The difference between prev record and curr block is then
+// returned. If currOff is at the end of file the end offset of the last chunk
+// is returned twice.  The difference between prev record and curr chunk is then
 // equal to 0.
-func (r *reader) blockLookup(currOff int64) (*Record, *Record) {
+func (r *reader) chunkLookup(currOff int64) (*Record, *Record) {
 	i := sort.Search(len(r.index), func(i int) bool {
 		return r.index[i].zipOff > currOff
 	})
 
-	// Beginning of the file, first block: prev offset is 0, curr offset is 1
+	// Beginning of the file, first chunk: prev offset is 0, curr offset is 1
 	if i == 0 {
 		return &r.index[i], &r.index[i+1]
 	}
 
-	// End of the file, last block: prev and curr offset is the last index.
+	// End of the file, last chunk: prev and curr offset is the last index.
 	if i == len(r.index) {
 		return &r.index[i-1], &r.index[i-1]
 	}
@@ -86,7 +86,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	// Build index with Records. A record encapsulates a raw offset and the
 	// compressed offset it is mapped to.
 	prevRecord := Record{-1, -1}
-	for i := uint64(0); i < (r.trailer.indexSize / IndexBlockSize); i++ {
+	for i := uint64(0); i < (r.trailer.indexSize / IndexChunkSize); i++ {
 		currRecord := Record{}
 		currRecord.unmarshal(indexBuf)
 
@@ -99,7 +99,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 		}
 
 		r.index = append(r.index, currRecord)
-		indexBuf = indexBuf[IndexBlockSize:]
+		indexBuf = indexBuf[IndexChunkSize:]
 	}
 
 	// Set reader to beginning of file
@@ -127,7 +127,7 @@ func (r *reader) Read(p []byte) (int, error) {
 			break
 		}
 
-		if _, err := r.readBlock(); err != nil {
+		if _, err := r.readChunk(); err != nil {
 			return read, err
 		}
 	}
@@ -135,22 +135,22 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-func (r *reader) readBlock() (int64, error) {
+func (r *reader) readChunk() (int64, error) {
 	// Get current position of the reader; offset of the compressed file.
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
 	}
 
-	// Get the start and end record of the block currOff is located in.
-	prevRecord, currRecord := r.blockLookup(currOff)
+	// Get the start and end record of the chunk currOff is located in.
+	prevRecord, currRecord := r.chunkLookup(currOff)
 	if currRecord == nil || prevRecord == nil {
 		return 0, ErrBadIndex
 	}
 
-	// Determinate uncompressed blocksize; should only be 0 on empty file or at the end of file.
-	blockSize := currRecord.rawOff - prevRecord.rawOff
-	if blockSize == 0 {
+	// Determinate uncompressed chunksize; should only be 0 on empty file or at the end of file.
+	chunkSize := currRecord.rawOff - prevRecord.rawOff
+	if chunkSize == 0 {
 		return 0, io.EOF
 	}
 
@@ -159,7 +159,7 @@ func (r *reader) readBlock() (int64, error) {
 		return 0, err
 	}
 
-	return io.CopyN(r.readBuf, r.zipR, blockSize)
+	return io.CopyN(r.readBuf, r.zipR, chunkSize)
 }
 
 // Return a new ReadSeeker with compression support. As random access is the
