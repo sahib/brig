@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"sort"
 
@@ -30,8 +31,35 @@ type reader struct {
 	trailer *trailer
 }
 
-func (r *reader) Seek(offset int64, whence int) (int64, error) {
-	return offset, nil
+func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
+
+	if whence == os.SEEK_END {
+		if rawOff > 0 {
+			return 0, io.EOF
+		}
+		return r.Seek(r.index[len(r.index)-1].rawOff+rawOff, os.SEEK_SET)
+	}
+
+	if whence == os.SEEK_CUR {
+		currPos, err := r.rawR.Seek(0, os.SEEK_CUR)
+		if err != nil {
+			return currPos, err
+		}
+		return r.Seek(currPos+rawOff, os.SEEK_SET)
+	}
+
+	prevRecord, _ := r.chunkLookup(rawOff)
+	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
+		return 0, err
+	}
+
+	toRead := rawOff - prevRecord.rawOff
+	if _, err := io.CopyN(ioutil.Discard, r.zipR, toRead); err != nil {
+		return 0, err
+	}
+	r.chunkBuf.Reset()
+
+	return rawOff, nil
 }
 
 // Return start (prev offset) and end (curr offset) of the chunk currOff is
