@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/disorganizer/brig/util"
@@ -10,53 +9,74 @@ import (
 )
 
 type writer struct {
-	sizeAcc  *util.SizeAccumulator
-	rawW     io.Writer
-	zipW     io.Writer
+	// Underlying raw, uncompressed data stream.
+	rawW io.Writer
+
+	// Compression layer.
+	zipW io.Writer
+
+	// Buffers data into MaxChunkSize chunks.
 	chunkBuf *bytes.Buffer
-	index    []Block
-	rawOff   int64
-	trailer  *Trailer
+
+	// Index with records which contain chunk offsets.
+	index []Record
+
+	// Accumulator representing uncompressed offset.
+	rawOff int64
+
+	// Accumulator representing compressed offset.
+	sizeAcc *util.SizeAccumulator
+
+	// Holds trailer data.
+	trailer *Trailer
 }
 
 func (w *writer) addToIndex() {
 	a, b := w.rawOff, int64(w.sizeAcc.Size())
-	fmt.Println(a, b)
-	w.index = append(w.index, Block{a, b})
+	w.index = append(w.index, Record{a, b})
 }
 
 func (w *writer) flushBuffer(flushSize int) (int, error) {
+	// Add record with start offset of the current chunk.
 	w.addToIndex()
-	// Compress and flush the current block.
+
+	// Compress and flush the current chunk.
 	rawN, err := w.zipW.Write(w.chunkBuf.Next(flushSize))
 	if err != nil {
 		return rawN, err
 	}
 
-	// Build and update index for the current block.
+	// Update offset for the current chunk. The compressed data
+	// offset is updated in background using a SizeAccumulator
+	// in combination with a MultiWriter.
 	w.rawOff += int64(rawN)
 	return rawN, nil
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
-	pSize := len(p)
-	// Compress only MaxBlockSize equal chunks.
+	written := len(p)
+	// Compress only MaxChunkSize equal chunks.
 	for {
-		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), MaxBlockSize)])
+		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), MaxChunkSize)])
 
-		if w.chunkBuf.Len() < MaxBlockSize {
+		if w.chunkBuf.Len() < MaxChunkSize {
 			break
 		}
 
-		if _, err := w.flushBuffer(MaxBlockSize); err != nil {
+		if _, err := w.flushBuffer(MaxChunkSize); err != nil {
 			return 0, err
 		}
 		p = p[n:]
 	}
-	return pSize, nil
+	return written, nil
 }
 
+// Return a WriteCloser with compression support.
 func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
+	if algo == AlgoNone {
+		return util.NopWriteCloser(w)
+	}
+
 	s := &util.SizeAccumulator{}
 	return &writer{
 		sizeAcc:  s,
@@ -68,44 +88,37 @@ func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 }
 
 func (w *writer) Close() error {
-
-	// Write remaining bytes left in buffer.
+	// Write remaining bytes left in buffer and update index.
 	if _, err := w.flushBuffer(w.chunkBuf.Len()); err != nil {
-
-		fmt.Println("Close():", err)
 		return err
 	}
 	w.addToIndex()
 
 	// Write compression index trailer and close stream.
-	w.trailer.indexSize = uint64(IndexBlockSize * len(w.index))
+	w.trailer.indexSize = uint64(IndexChunkSize * len(w.index))
+	indexBuf := make([]byte, w.trailer.indexSize)
+	indexBufStartOff := indexBuf
 
-	// TODO: Variablen bezeichnungen noch etwas aufräumen?
-	trailerBuf := make([]byte, w.trailer.indexSize)
-	trailerBufStart := trailerBuf
-	for _, blkidx := range w.index {
-		blkidx.marshal(trailerBuf)
-		trailerBuf = trailerBuf[IndexBlockSize:]
+	for _, record := range w.index {
+		record.marshal(indexBuf)
+		indexBuf = indexBuf[IndexChunkSize:]
 	}
 
-	if n, err := w.rawW.Write(trailerBufStart); err != nil || uint64(n) != w.trailer.indexSize {
+	if n, err := w.rawW.Write(indexBufStartOff); err != nil || uint64(n) != w.trailer.indexSize {
 		return err
 	}
 
-	// Write index trailer size at the end of stream.
+	// Write trailer buffer (algo, chunksize, indexsize)
+	// at the end of file and close the stream.
 	var trailerSizeBuf = make([]byte, TrailerSize)
 	w.trailer.marshal(trailerSizeBuf)
-	//binary.LittleEndian.PutUint32(trailerSizeBuf[0:4], uint32(w.trailer.algo))
-	//binary.LittleEndian.PutUint32(trailerSizeBuf[4:8], MaxBlockSize)
-	//binary.LittleEndian.PutUint64(trailerSizeBuf[8:], w.trailer.indexSize)
+
 	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {
-		fmt.Println("Error writing trailerSizeBuf:", err)
 		return err
 	}
 
 	if cl, ok := w.rawW.(io.Closer); ok {
 		return cl.Close()
 	}
-
 	return nil
 }
