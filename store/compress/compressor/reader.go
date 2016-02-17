@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 
@@ -12,7 +10,62 @@ import (
 
 // TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
 // TODO: linter durchlaufen lassen.
-// TODO: Seek.
+
+type chunkBuffer struct {
+	buf      [MaxChunkSize]byte
+	readOff  int64
+	writeOff int64
+	size     int64
+}
+
+func (c *chunkBuffer) Write(p []byte) (int, error) {
+	n := copy(c.buf[c.writeOff:MaxChunkSize], p)
+	c.writeOff += int64(n)
+	if c.writeOff > c.size {
+		c.size = c.writeOff
+	}
+	return n, nil
+}
+
+func (c *chunkBuffer) Reset() {
+	c.readOff = 0
+	c.writeOff = 0
+	c.size = 0
+}
+
+func (c *chunkBuffer) Len() int {
+	return int(c.size - c.readOff)
+}
+
+func (c *chunkBuffer) Read(p []byte) (int, error) {
+	n := copy(p, c.buf[c.readOff:c.size])
+	c.readOff += int64(n)
+	if n == 0 {
+		return n, io.EOF
+	}
+	return n, nil
+}
+
+func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case os.SEEK_CUR:
+		c.readOff += offset
+	case os.SEEK_END:
+		c.readOff = c.size + offset
+	case os.SEEK_SET:
+		c.readOff = offset
+	}
+
+	if c.readOff > c.size {
+		c.readOff = c.size
+	}
+	c.writeOff = c.readOff
+	return c.readOff, nil
+}
+
+func newChunkBuffer() chunkBuffer {
+	return chunkBuffer{}
+}
 
 type reader struct {
 	// Underlying raw, compressed datastream.
@@ -25,7 +78,7 @@ type reader struct {
 	index []record
 
 	// Buffer holds currently read data; MaxChunkSize.
-	chunkBuf *bytes.Buffer
+	chunkBuf chunkBuffer
 
 	// Structure with parsed trailer.
 	trailer *trailer
@@ -48,16 +101,29 @@ func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
 		return r.Seek(currPos+rawOff, os.SEEK_SET)
 	}
 
+	// Check if given raw offset equals current offset.
+	currRawOff, err := r.rawR.Seek(0, os.SEEK_CUR)
+	if err != nil || currRawOff == rawOff {
+		return currRawOff, err
+	}
+
+	currRecord, _ := r.chunkLookup(currRawOff)
 	prevRecord, _ := r.chunkLookup(rawOff)
 	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
+	// Don't re-read if offset is in current chunk.
+	if currRecord.rawOff == prevRecord.rawOff {
+		if _, err := r.readChunk(); err != nil {
+			return 0, err
+		}
+	}
+
 	toRead := rawOff - prevRecord.rawOff
-	if _, err := io.CopyN(ioutil.Discard, r.zipR, toRead); err != nil {
+	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
 		return 0, err
 	}
-	r.chunkBuf.Reset()
 
 	return rawOff, nil
 }
@@ -146,7 +212,10 @@ func (r *reader) Read(p []byte) (int, error) {
 	read := 0
 	for {
 		if r.chunkBuf.Len() != 0 {
-			n := copy(p, r.chunkBuf.Next(len(p)))
+			n, err := r.chunkBuf.Read(p)
+			if err != nil {
+				return n, err
+			}
 			read += n
 			p = p[n:]
 		}
@@ -165,6 +234,7 @@ func (r *reader) Read(p []byte) (int, error) {
 
 func (r *reader) readChunk() (int64, error) {
 	// Get current position of the reader; offset of the compressed file.
+	r.chunkBuf.Reset()
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return 0, err
@@ -187,7 +257,8 @@ func (r *reader) readChunk() (int64, error) {
 		return 0, err
 	}
 
-	return io.CopyN(r.chunkBuf, r.zipR, chunkSize)
+	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
+	return n, err
 }
 
 // Return a new ReadSeeker with compression support. As random access is the
@@ -197,6 +268,6 @@ func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{
 		rawR:     r,
 		zipR:     snappy.NewReader(r),
-		chunkBuf: &bytes.Buffer{},
+		chunkBuf: newChunkBuffer(),
 	}
 }
