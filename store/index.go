@@ -2,10 +2,12 @@ package store
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -97,6 +99,7 @@ func (s *Store) Mkdir(repoPath string) (*File, error) {
 		return nil, err
 	}
 
+	dir.sync()
 	return dir, err
 }
 
@@ -164,6 +167,16 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 			"file": repoPath,
 		}).Info("Updating file.")
 	} else {
+		// Create intermediate directories:
+		elems := strings.Split(repoPath, string(filepath.Separator))
+		for idx := range elems[1 : len(elems)-1] {
+			dir := strings.Join(elems[idx:len(elems)-1], string(filepath.Separator))
+
+			if _, err := s.Mkdir(dir); err != nil {
+				log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+			}
+		}
+
 		newFile, err := NewFile(s, repoPath)
 		if err != nil {
 			return err
@@ -186,13 +199,12 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	log.Infof("ADD KEY:  %x", file.Key())
-	log.Infof("ADD HASH: %s", mhash.B58String())
+	log.Infof("store-add: %s (hash: %s, key: %x)", repoPath, mhash.B58String(), file.Key()[10:])
 
+	// Update metadata that might have changed:
 	file.Lock()
 	defer file.Unlock()
 
-	// Update metadata that might have changed:
 	if file.hash.Equal(&Hash{mhash}) {
 		log.Debugf("Refusing update.")
 		return ErrNoChange
@@ -211,6 +223,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 
 	// Create a checkpoint in the version history.
 	// TODO: Move is not yet supported, probably use own function for this.
+	//       (store.Move() or something)
 	err = s.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
 	if err != nil {
 		return err
@@ -326,5 +339,58 @@ func (s *Store) Rm(path string) error {
 	}
 
 	node.Remove()
+	return nil
+}
+
+// Export marshals all relevant inside the database, so a cloned
+// repository may import them again.
+// The exported data includes:
+//  - All files (including their history and keys)
+//  - All commits.
+//  - Pinning information.
+//
+// TODO: Describe json stream format.
+//
+// w is not closed after Export.
+func (s *Store) Export(w io.Writer) (n int, err error) {
+	// TODO: Export commits (not implemented)
+	// TODO: Export pinning information.
+	s.Root.Walk(true, func(child *File) bool {
+		data, errJSON := child.MarshalJSON()
+		if err != nil {
+			err = errJSON
+			return false
+		}
+
+		ndata, errWrite := w.Write(data)
+		if errWrite != nil {
+			err = errWrite
+			return false
+		}
+
+		n += ndata
+		return true
+	})
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// Import unmarshals the data written by export.
+// If succesful, a new store with the data is created.
+func (s *Store) Import(repoPath string, r io.Reader) error {
+	dec := json.NewDecoder(r)
+	for {
+		var m map[string]interface{}
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

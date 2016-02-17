@@ -26,6 +26,7 @@ type Node struct {
 	// Depth of the node. The root is at depth 0.
 	Depth uint16
 
+	// Arbitrary data pointer
 	Data interface{}
 }
 
@@ -150,23 +151,26 @@ func (n *Node) Remove() *Node {
 
 	// Make children garbage collectable:
 	parent := n.Parent
-	n.Walk(true, func(child *Node) {
+	n.Walk(true, func(child *Node) bool {
 		child.Children = nil
 		child.Parent = nil
+		return true
 	})
 	return parent
 }
 
 // Walk iterates over all (including intermediate )nodes in the trie.
 // Depending on dfs the nodes are visited in depth-first or breadth-first.
-// The supplied callback is called for each visited node.
-func (n *Node) Walk(dfs bool, visit func(*Node)) {
+// The supplied callback is called once for each visited node.
+func (n *Node) Walk(dfs bool, visit func(*Node) bool) {
 	if n == nil {
 		return
 	}
 
 	if !dfs {
-		visit(n)
+		if !visit(n) {
+			return
+		}
 	}
 
 	if n.Children != nil {
@@ -176,7 +180,9 @@ func (n *Node) Walk(dfs bool, visit func(*Node)) {
 	}
 
 	if dfs {
-		visit(n)
+		if !visit(n) {
+			return
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package store
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/jbenet/go-base58"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -31,14 +33,13 @@ type File struct {
 
 	// Mutex protecting access to the trie.
 	// Note that only one mutex exists per trie.
-	*sync.RWMutex `json:"-"`
+	*sync.RWMutex
 
-	store *Store     `json:"-"`
-	node  *trie.Node `json:"-"`
+	store *Store
+	node  *trie.Node
 
 	isFile bool
-
-	key []byte
+	key    []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -92,31 +93,6 @@ func (f *File) UpdateModTime(modTime time.Time) {
 }
 
 func (f *File) sync() {
-	// TODO: Save to bolt.
-	// Create intermediate directories on the way up,
-	// also fix size and mtime accordingly.
-	f.node.Up(func(parent *trie.Node) {
-		if parent.Data == f {
-			return
-		}
-
-		var parentDir *File
-		if parent.Data == nil {
-			newDir := &File{
-				store:    f.store,
-				RWMutex:  f.store.Root.RWMutex,
-				Metadata: &Metadata{},
-			}
-
-			parentDir = newDir
-		} else {
-			parentDir = parent.Data.(*File)
-		}
-
-		parentDir.size += f.size
-		parentDir.modTime = f.modTime
-	})
-
 	path := f.node.Path()
 	log.Debugf("store-sync: %s (size: %d  mod: %v)", path, f.size, f.modTime)
 
@@ -341,12 +317,13 @@ func (f *File) path() string {
 
 // Walk recursively calls `visit` on each child and f itself.
 // If `dfs` is true, the order will be depth-first, otherwise breadth-first.
-func (f *File) Walk(dfs bool, visit func(*File)) {
+func (f *File) Walk(dfs bool, visit func(*File) bool) {
 	f.RLock()
 	defer f.RUnlock()
 
-	f.node.Walk(dfs, func(n *trie.Node) {
-		visit(n.Data.(*File))
+	f.node.Walk(dfs, func(n *trie.Node) bool {
+		fmt.Printf("Visit %s %p\n", n.Path(), n.Data)
+		return visit(n.Data.(*File))
 	})
 }
 
@@ -471,7 +448,7 @@ func (f *File) hashUnlocked() *Hash {
 		}
 
 		if len(digest.Digest) != len(hash) {
-			log.Warningf("file-hash: different cksum lengths: %d <->", len(digest.Digest), len(hash))
+			log.Warningf("file-hash: different cksum lengths: %d <-> %d", len(digest.Digest), len(hash))
 			continue
 		}
 
@@ -494,4 +471,33 @@ func (f *File) Key() []byte {
 	defer f.RUnlock()
 
 	return f.key
+}
+
+func (f *File) MarshalJSON() ([]byte, error) {
+	f.RLock()
+	defer f.RUnlock()
+
+	path := f.node.Path()
+	history, err := f.store.History(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Usual marshalling does not work well for *File,
+	// since it contains recursive data and some data
+	// is stored only implicitly (e.g. Path())
+	data := map[string]interface{}{
+		"size":    f.size,
+		"modtime": f.modTime,
+		"hash":    f.hashUnlocked().B58String(),
+		"path":    path,
+		"key":     base58.Encode(f.key),
+		"history": history,
+	}
+
+	if history == nil {
+		delete(data, "history")
+	}
+
+	return json.MarshalIndent(data, "", "\t")
 }
