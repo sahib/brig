@@ -2,61 +2,74 @@ package compress
 
 import (
 	"bytes"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
-
-	"github.com/disorganizer/brig/util/testutil"
 )
 
-func remover(t *testing.T, paths ...string) {
-	for _, path := range paths {
-		if err := os.Remove(path); err != nil {
-			t.Errorf("cannot remove file: %v", err)
-		}
+var (
+	plainFile   string = "WWarum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?Warum bin ich nur eine kleine Katzen aus dem polnischen Lande?arum bin ich nur eine kleine Katzen aus dem polnischen Lande?"
+	ZipFilePath        = filepath.Join(os.TempDir(), "compressed.zip")
+)
+
+func openDest(src string) *os.File {
+	if _, err := os.Stat(src); !os.IsNotExist(err) {
+		fmt.Printf("%s already exists.\n", src)
+		os.Exit(-1)
+	}
+
+	fd, err := os.OpenFile(src, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	return fd
+}
+
+func openSrc(dest string) *os.File {
+	fd, err := os.Open(ZipFilePath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	return fd
+}
+
+func cleanTestdata(path string) {
+	if err := os.Remove(path); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
 	}
 }
 
-func testDecAndCompress(t *testing.T, size int64) {
-	path := testutil.CreateFile(size)
+func TestCompressDecompress(t *testing.T) {
+	// Fake data file is written to disk,
+	// as compression reader has to be a ReadSeeker.
+	dataToZip := bytes.NewBufferString(plainFile)
+	zipFileDest := openDest(ZipFilePath)
 
-	compressedPath := path + ".pack"
-	decompressedPath := path + ".unpack"
+	// Compress.
+	w := NewWriter(zipFileDest, AlgoSnappy)
+	io.Copy(w, dataToZip)
+	w.Close()
+	zipFileDest.Close()
 
-	defer remover(t, path, compressedPath, decompressedPath)
+	// Read compressed file into buffer.
+	dataUncomp := bytes.NewBufferString("")
+	dataFromZip := openSrc(ZipFilePath)
+	defer dataFromZip.Close()
 
-	if _, err := CopyCompressed(path, compressedPath); err != nil {
-		t.Errorf("File compression failed: %v", err)
-		return
+	// Uncompress.
+	r := NewReader(dataFromZip)
+	io.Copy(dataUncomp, r)
+
+	// Compare.
+	if strings.Compare(dataUncomp.String(), plainFile) != 0 {
+		fmt.Println("Uncompressed data and plain file does not match.")
+		os.Exit(-1)
 	}
-
-	if _, err := CopyDecompressed(compressedPath, decompressedPath); err != nil {
-		t.Errorf("File decompression failed: %v", err)
-		return
-	}
-
-	a, _ := ioutil.ReadFile(path)
-	b, _ := ioutil.ReadFile(decompressedPath)
-	c, _ := ioutil.ReadFile(compressedPath)
-
-	if !bytes.Equal(a, b) {
-		t.Errorf("Source and decompressed not equal")
-	}
-
-	if bytes.Equal(a, c) && size != 0 {
-		t.Errorf("Source was not compressed (same as source)")
-	}
-}
-
-func TestDecAndCompress(t *testing.T) {
-	sizes := []int64{0, 1, 1024, 1024 * 1024}
-	for _, size := range sizes {
-		testDecAndCompress(t, size)
-	}
-}
-
-func BenchmarkCompress(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		testDecAndCompress(nil, 1024*1024*10)
-	}
+	cleanTestdata(ZipFilePath)
 }
