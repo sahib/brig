@@ -1,6 +1,7 @@
 package compress
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -85,6 +86,9 @@ type reader struct {
 }
 
 func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
+	if err := r.parseHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
 
 	if whence == os.SEEK_END {
 		if rawOff > 0 {
@@ -140,6 +144,7 @@ func (r *reader) chunkLookup(currOff int64) (*record, *record) {
 
 	// Beginning of the file, first chunk: prev offset is 0, curr offset is 1
 	if i == 0 {
+		fmt.Println("INDEX:", r.index, i, currOff)
 		return &r.index[i], &r.index[i+1]
 	}
 
@@ -191,7 +196,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 		if prevRecord.zipOff >= currRecord.zipOff {
 			return ErrBadIndex
 		}
-
+		fmt.Println(i, currRecord)
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[IndexChunkSize:]
 	}
