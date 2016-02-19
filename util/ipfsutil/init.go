@@ -3,7 +3,6 @@ package ipfsutil
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
@@ -16,15 +15,14 @@ func InitRepo(path string, keySize int) (string, error) {
 		return "", err
 	}
 
-	ipfsPath := filepath.Join(path, ".ipfs")
 	cfg, err := ipfsconfig.Init(ioutil.Discard, keySize)
 	if err != nil {
 		return "", err
 	}
 
-	if err := fsrepo.Init(ipfsPath, cfg); err != nil {
+	if err := fsrepo.Init(path, cfg); err != nil {
 		return "", err
 	}
 
-	return ipfsPath, nil
+	return path, nil
 }

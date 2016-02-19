@@ -132,3 +132,34 @@ func TestPathriciaRemoveLinux(t *testing.T) {
 		}
 	}
 }
+
+func TestWalk(t *testing.T) {
+	trie := NewNode()
+	trie.Insert("/pics/me.png")
+
+	expected := []string{
+		"/pics/me.png", "/pics", "/",
+	}
+
+	trie.Walk(true, func(n *Node) bool {
+		if expected[0] != n.Path() {
+			t.Errorf("DFS Walk is broken. Expected %s, got %s", expected[0], n.Path())
+			return false
+		}
+		expected = expected[1:]
+		return true
+	})
+
+	expected = []string{
+		"/", "/pics", "/pics/me.png",
+	}
+
+	trie.Walk(false, func(n *Node) bool {
+		if expected[0] != n.Path() {
+			t.Errorf("BFS Walk is broken. Expected %s, got %s", expected[0], n.Path())
+			return false
+		}
+		expected = expected[1:]
+		return true
+	})
+}

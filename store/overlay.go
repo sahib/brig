@@ -7,7 +7,7 @@ import (
 	"sort"
 )
 
-// Interval represents a 2D range of integers.
+// Interval represents a 2er set of integers modelling a range.
 type Interval interface {
 	// Range returns the minimum and maximum of the interval.
 	// Minimum value is inclusive, maximum value exclusive.
@@ -209,7 +209,11 @@ func NewLayer(r io.ReadSeeker) *Layer {
 // If the file was truncated before, the truncate limit is raised again
 // if the write extended the limit.
 func (l *Layer) Write(buf []byte) (int, error) {
-	l.index.Add(&Modification{l.pos, buf})
+	// Copy the buffer, since we cannot rely on it being valid forever.
+	modBuf := make([]byte, len(buf))
+	copy(modBuf, buf)
+
+	l.index.Add(&Modification{l.pos, modBuf})
 	l.pos += int64(len(buf))
 	if l.limit >= 0 && l.pos > l.limit {
 		l.limit = l.pos
@@ -236,13 +240,21 @@ func (l *Layer) Read(buf []byte) (int, error) {
 		}
 	}
 
+	// TODO: Optimisation: Check if our write data fully occludes underlying stream.
+	//       If that's the case, do not read from underyling stream.
+	//       Alternatively, read only the un-occluded parts.
+	overlays := l.index.Overlays(l.pos, l.pos+int64(len(buf)))
+	// for _, chunk := range overlays {
+	// 	lo, hi := chunk.Range()
+	// }
+
 	n, err := l.r.Read(buf)
 	if err == io.EOF && l.pos < l.index.Max {
 		// There's only extending writes left.
 		// Empty `buf` so caller get's defined results.
 		// This should not happen in practice, but helps identifying bugs.
 		for i := n; i < len(buf); i++ {
-			buf[i] = byte(0)
+			buf[i] = byte('@')
 		}
 
 		// Forget about EOF for a short moment.
@@ -251,11 +263,11 @@ func (l *Layer) Read(buf []byte) (int, error) {
 
 	// Check for other errors:
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 
 	// Check which write chunks are overlaying this buf:
-	for _, chunk := range l.index.Overlays(l.pos, l.pos+int64(len(buf))) {
+	for _, chunk := range overlays {
 		// Tip: Drawing this on paper helps to understand the following.
 		mod := chunk.(*Modification)
 
@@ -264,15 +276,15 @@ func (l *Layer) Read(buf []byte) (int, error) {
 		a, b := max(lo, l.pos), min(hi, l.pos+int64(len(buf)))
 
 		// Convert to relative offsets:
-		overlap, chunkLo, bufLo := int(b-a), int(a-lo), int(a-l.pos)
+		overlap, chunkLo, bufLo := int64(b-a), int64(a-lo), int64(a-l.pos)
 
 		// Copy overlapping data:
 		copy(buf[bufLo:bufLo+overlap], mod.data[chunkLo:chunkLo+overlap])
 
 		// Extend, if write chunks go over original data stream:
 		// (caller wants max. offset where we wrote data to buf)
-		if bufLo+overlap > n {
-			n = bufLo + overlap
+		if bufLo+overlap > int64(n) {
+			n = int(bufLo + overlap)
 		}
 	}
 

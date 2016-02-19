@@ -46,7 +46,7 @@ func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, erro
 
 func handleCat(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	filePath := cmd.GetCatCommand().GetFilePath()
-	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
+	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return nil, err
 	}

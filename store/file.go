@@ -2,6 +2,7 @@ package store
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/jbenet/go-base58"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -37,8 +39,7 @@ type File struct {
 	node  *trie.Node
 
 	isFile bool
-
-	Key []byte
+	key    []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -92,33 +93,8 @@ func (f *File) UpdateModTime(modTime time.Time) {
 }
 
 func (f *File) sync() {
-	// TODO: Save to bolt.
-	// Create intermediate directories on the way up,
-	// also fix size and mtime accordingly.
-	f.node.Up(func(parent *trie.Node) {
-		if parent.Data == f {
-			return
-		}
-
-		var parentDir *File
-		if parent.Data == nil {
-			newDir := &File{
-				store:    f.store,
-				RWMutex:  f.store.Root.RWMutex,
-				Metadata: &Metadata{},
-			}
-
-			parentDir = newDir
-		} else {
-			parentDir = parent.Data.(*File)
-		}
-
-		parentDir.size += f.size
-		parentDir.modTime = f.modTime
-	})
-
 	path := f.node.Path()
-	log.Debugf("store-sync: %s", path)
+	log.Debugf("store-sync: %s (size: %d  mod: %v)", path, f.size, f.modTime)
 
 	f.store.db.Update(withBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		data, err := f.marshal()
@@ -152,7 +128,7 @@ func NewFile(store *Store, path string) (*File, error) {
 		store:    store,
 		RWMutex:  store.Root.RWMutex,
 		Metadata: &Metadata{},
-		Key:      key,
+		key:      key,
 		isFile:   true,
 	}
 
@@ -215,7 +191,7 @@ func (f *File) marshal() ([]byte, error) {
 
 	dataFile := &proto.File{
 		Path:     protobuf.String(f.node.Path()),
-		Key:      f.Key,
+		Key:      f.key,
 		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
 		IsFile:   protobuf.Bool(f.isFile),
@@ -247,7 +223,7 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		isFile:  dataFile.GetIsFile(),
-		Key:     dataFile.GetKey(),
+		key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
@@ -341,12 +317,13 @@ func (f *File) path() string {
 
 // Walk recursively calls `visit` on each child and f itself.
 // If `dfs` is true, the order will be depth-first, otherwise breadth-first.
-func (f *File) Walk(dfs bool, visit func(*File)) {
+func (f *File) Walk(dfs bool, visit func(*File) bool) {
 	f.RLock()
 	defer f.RUnlock()
 
-	f.node.Walk(dfs, func(n *trie.Node) {
-		visit(n.Data.(*File))
+	f.node.Walk(dfs, func(n *trie.Node) bool {
+		fmt.Printf("Visit %s %p\n", n.Path(), n.Data)
+		return visit(n.Data.(*File))
 	})
 }
 
@@ -411,7 +388,7 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 		return nil, err
 	}
 
-	return NewIpfsReader(f.Key, ipfsStream)
+	return NewIpfsReader(f.key, ipfsStream)
 }
 
 // Parent returns the parent directory of File.
@@ -471,7 +448,7 @@ func (f *File) hashUnlocked() *Hash {
 		}
 
 		if len(digest.Digest) != len(hash) {
-			log.Warningf("file-hash: different cksum lengths: %d <->", len(digest.Digest), len(hash))
+			log.Warningf("file-hash: different cksum lengths: %d <-> %d", len(digest.Digest), len(hash))
 			continue
 		}
 
@@ -487,4 +464,40 @@ func (f *File) hashUnlocked() *Hash {
 
 	f.hash = &Hash{mhash}
 	return f.hash
+}
+
+func (f *File) Key() []byte {
+	f.RLock()
+	defer f.RUnlock()
+
+	return f.key
+}
+
+func (f *File) MarshalJSON() ([]byte, error) {
+	f.RLock()
+	defer f.RUnlock()
+
+	path := f.node.Path()
+	history, err := f.store.History(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Usual marshalling does not work well for *File,
+	// since it contains recursive data and some data
+	// is stored only implicitly (e.g. Path())
+	data := map[string]interface{}{
+		"size":    f.size,
+		"modtime": f.modTime,
+		"hash":    f.hashUnlocked().B58String(),
+		"path":    path,
+		"key":     base58.Encode(f.key),
+		"history": history,
+	}
+
+	if history == nil {
+		delete(data, "history")
+	}
+
+	return json.MarshalIndent(data, "", "\t")
 }

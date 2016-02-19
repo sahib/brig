@@ -167,7 +167,7 @@ func createRepositoryTree(absFolderPath string) error {
 
 func createMasterKey(brigPath string, keySize int) error {
 	keyPath := filepath.Join(brigPath, "master.key")
-	fd, err := os.OpenFile(keyPath, os.O_CREATE|os.O_WRONLY, 0755)
+	fd, err := os.OpenFile(keyPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
 	if err != nil {
 		return err
 	}

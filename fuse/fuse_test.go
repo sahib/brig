@@ -89,8 +89,14 @@ func checkForCorrectFile(t *testing.T, path string, data []byte) bool {
 		}
 	}()
 
-	if _, err := io.Copy(helloBuffer, fd); err != nil {
+	n, err := io.CopyBuffer(helloBuffer, fd, make([]byte, 128*1024))
+	if err != nil {
 		t.Errorf("Unable to read full simple file over fuse: %v", err)
+		return false
+	}
+
+	if n != int64(len(data)) {
+		t.Errorf("Data differs over fuse: got %d, should be %d bytes", n, len(data))
 		return false
 	}
 
@@ -105,14 +111,16 @@ func checkForCorrectFile(t *testing.T, path string, data []byte) bool {
 }
 
 var (
-	DataSizes = []int64{0, 1, 2, 4, 8, 16, 32, 64, 1024, 2048, 4095, 4096, 4097}
+	DataSizes = []int64{
+		// 0, 1, 2, 4, 8, 16, 32, 64, 1024, 2048, 4095, 4096, 4097,
+		147611,
+	}
 )
 
 func TestRead(t *testing.T) {
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			helloData := testutil.CreateDummyBuf(size)
-			// helloData := []byte("Unter der Asche ist noch Gluten.")
 
 			// Add a simple file:
 			name := fmt.Sprintf("hello_%d", size)
@@ -137,6 +145,33 @@ func TestWrite(t *testing.T) {
 			path := filepath.Join(mount.Dir, fmt.Sprintf("hello_%d", size))
 
 			// Write a simple file via the fuse layer:
+			err := ioutil.WriteFile(path, helloData, 0644)
+			if err != nil {
+				t.Errorf("Could not write simple file via fuse layer: %v", err)
+				return
+			}
+
+			if !checkForCorrectFile(t, path, helloData) {
+				break
+			}
+		}
+	})
+}
+
+// Regression test for copying larger file to the mount.
+func TestTouchWrite(t *testing.T) {
+	withMount(t, func(mount *Mount) {
+		for _, size := range DataSizes {
+			name := fmt.Sprintf("/empty_%d", size)
+			if err := mount.Store.Touch(name); err != nil {
+				t.Errorf("Could not touch an empty file: %v", err)
+				return
+			}
+
+			path := filepath.Join(mount.Dir, name)
+
+			// Write a simple file via the fuse layer:
+			helloData := testutil.CreateDummyBuf(size)
 			err := ioutil.WriteFile(path, helloData, 0644)
 			if err != nil {
 				t.Errorf("Could not write simple file via fuse layer: %v", err)
