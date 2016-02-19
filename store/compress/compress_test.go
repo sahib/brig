@@ -2,61 +2,82 @@ package compress
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-func remover(t *testing.T, paths ...string) {
-	for _, path := range paths {
-		if err := os.Remove(path); err != nil {
-			t.Errorf("cannot remove file: %v", err)
-		}
+var (
+	ZipFilePath = filepath.Join(os.TempDir(), "compressed.zip")
+)
+
+func openDest(t *testing.T, dest string) *os.File {
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Fatalf("Opening destination %v failed: %v\n", dest, err)
+	}
+
+	fd, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		t.Fatalf("Opening srouce %v failed: %v\n", dest, err)
+	}
+	return fd
+}
+
+func openSrc(t *testing.T, src string) *os.File {
+	fd, err := os.Open(src)
+	if err != nil {
+		t.Fatalf("Opening srouce %v failed: %v\n", src, err)
+	}
+	return fd
+}
+
+const (
+	C64K = 64 * 1024
+	C32K = 32 * 1024
+)
+
+func TestCompressDecompress(t *testing.T) {
+	testValues := []int64{0, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
+	for _, size := range testValues {
+		testCompressDecompress(t, size)
 	}
 }
 
-func testDecAndCompress(t *testing.T, size int64) {
-	path := testutil.CreateFile(size)
+func testCompressDecompress(t *testing.T, size int64) {
+	// Fake data file is written to disk,
+	// as compression reader has to be a ReadSeeker.
+	data := testutil.CreateDummyBuf(size)
+	zipFileDest := openDest(t, ZipFilePath)
 
-	compressedPath := path + ".pack"
-	decompressedPath := path + ".unpack"
-
-	defer remover(t, path, compressedPath, decompressedPath)
-
-	if _, err := CopyCompressed(path, compressedPath); err != nil {
-		t.Errorf("File compression failed: %v", err)
-		return
+	// Compress.
+	w := NewWriter(zipFileDest, AlgoSnappy)
+	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
+		t.Errorf("Compress failed %v", err)
 	}
 
-	if _, err := CopyDecompressed(compressedPath, decompressedPath); err != nil {
-		t.Errorf("File decompression failed: %v", err)
-		return
+	if err := w.Close(); err != nil {
+		t.Errorf("Compression writer close failed: %v", err)
 	}
 
-	a, _ := ioutil.ReadFile(path)
-	b, _ := ioutil.ReadFile(decompressedPath)
-	c, _ := ioutil.ReadFile(compressedPath)
+	// Read compressed file into buffer.
+	dataUncomp := bytes.NewBuffer(nil)
+	dataFromZip := openSrc(t, ZipFilePath)
 
-	if !bytes.Equal(a, b) {
-		t.Errorf("Source and decompressed not equal")
+	// Uncompress.
+	r := NewReader(dataFromZip)
+	if _, err := io.Copy(dataUncomp, r); err != nil {
+		t.Errorf("Decompression failed: %v", err)
+	}
+	if err := dataFromZip.Close(); err != nil {
+		t.Errorf("Zip close failed: %v", err)
 	}
 
-	if bytes.Equal(a, c) && size != 0 {
-		t.Errorf("Source was not compressed (same as source)")
+	// Compare.
+	if !bytes.Equal(dataUncomp.Bytes(), data) {
+		t.Error("Uncompressed data and input data does not match.")
 	}
-}
-
-func TestDecAndCompress(t *testing.T) {
-	sizes := []int64{0, 1, 1024, 1024 * 1024}
-	for _, size := range sizes {
-		testDecAndCompress(t, size)
-	}
-}
-
-func BenchmarkCompress(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		testDecAndCompress(nil, 1024*1024*10)
-	}
+	testutil.Remover(t, ZipFilePath)
 }
