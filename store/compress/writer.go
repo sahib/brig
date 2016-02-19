@@ -83,7 +83,7 @@ func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 		zipW:     snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:     w,
 		chunkBuf: &bytes.Buffer{},
-		trailer:  &trailer{},
+		trailer:  &trailer{algo: algo},
 	}
 }
 
