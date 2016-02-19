@@ -40,7 +40,7 @@ const (
 )
 
 func TestCompressDecompress(t *testing.T) {
-	testValues := []int64{0, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
+	testValues := []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
 	for _, size := range testValues {
 		testCompressDecompress(t, size)
 	}
@@ -56,10 +56,12 @@ func testCompressDecompress(t *testing.T, size int64) {
 	w := NewWriter(zipFileDest, AlgoSnappy)
 	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
 		t.Errorf("Compress failed %v", err)
+		return
 	}
 
 	if err := w.Close(); err != nil {
 		t.Errorf("Compression writer close failed: %v", err)
+		return
 	}
 
 	// Read compressed file into buffer.
@@ -70,14 +72,17 @@ func testCompressDecompress(t *testing.T, size int64) {
 	r := NewReader(dataFromZip)
 	if _, err := io.Copy(dataUncomp, r); err != nil {
 		t.Errorf("Decompression failed: %v", err)
+		return
 	}
 	if err := dataFromZip.Close(); err != nil {
 		t.Errorf("Zip close failed: %v", err)
+		return
 	}
 
 	// Compare.
 	if !bytes.Equal(dataUncomp.Bytes(), data) {
 		t.Error("Uncompressed data and input data does not match.")
+		return
 	}
 	testutil.Remover(t, ZipFilePath)
 }
