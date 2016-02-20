@@ -119,7 +119,7 @@ func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
 
 	// Don't re-read if offset is in current chunk.
 	if currRecord.rawOff == prevRecord.rawOff {
-		if _, err := r.readChunk(); err != nil {
+		if _, err := r.readZipChunk(); err != nil {
 			return 0, err
 		}
 	}
@@ -224,6 +224,17 @@ func (r *reader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
+	// Handle uncompressed stream.
+	if r.trailer.algo == AlgoNone {
+		maxOff, errMax := r.maxOff(int64(len(p)))
+		n, err := r.rawR.Read(p[:maxOff])
+		if err != nil {
+			return n, err
+		}
+		return n, errMax
+	}
+
+	// Handle stream using compression.
 	read := 0
 	for {
 		if r.chunkBuf.Len() != 0 {
@@ -239,7 +250,7 @@ func (r *reader) Read(p []byte) (int, error) {
 			break
 		}
 
-		if _, err := r.readChunk(); err != nil {
+		if _, err := r.readZipChunk(); err != nil {
 			return read, err
 		}
 	}
