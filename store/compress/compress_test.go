@@ -40,20 +40,30 @@ const (
 )
 
 func TestCompressDecompress(t *testing.T) {
-	testValues := []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
-	for _, size := range testValues {
-		testCompressDecompress(t, size)
+	sizes := []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
+	algos := []Algorithm{AlgoNone, AlgoSnappy}
+	for _, algo := range algos {
+		switch algo {
+		case AlgoNone:
+			fmt.Println("Tests without compression, using size:")
+		case AlgoSnappy:
+			fmt.Println("Tests using snappy compression, using size:")
+		}
+		for _, size := range sizes {
+			fmt.Println(size)
+			testCompressDecompress(t, size, algo)
+		}
 	}
 }
 
-func testCompressDecompress(t *testing.T, size int64) {
+func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
 	data := testutil.CreateDummyBuf(size)
 	zipFileDest := openDest(t, ZipFilePath)
 
 	// Compress.
-	w := NewWriter(zipFileDest, AlgoSnappy)
+	w := NewWriter(zipFileDest, algo)
 	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
