@@ -247,7 +247,34 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-func (r *reader) readChunk() (int64, error) {
+//TODO: Save maxOffset in trailer and read from trailer instead of SEEK.
+func (r *reader) maxOff(pSize int64) (int64, error) {
+	// get current position.
+	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return currOff, err
+	}
+
+	// get max offset (possition without trailer).
+	maxOff, err := r.rawR.Seek(-TrailerSize, os.SEEK_END)
+	if err != nil {
+		return maxOff, err
+	}
+
+	// go back to current offset.
+	_, err = r.rawR.Seek(currOff, os.SEEK_SET)
+	if err != nil {
+		return 0, err
+	}
+
+	// determinate max offset using.
+	if pSize+currOff > maxOff {
+		return maxOff - currOff, io.EOF
+	}
+	return pSize, nil
+}
+
+func (r *reader) readZipChunk() (int64, error) {
 	// Get current position of the reader; offset of the compressed file.
 	r.chunkBuf.Reset()
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
