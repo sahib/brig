@@ -172,6 +172,16 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
+	// Handle uncompressed stream.
+	if r.trailer.algo == AlgoNone {
+		if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
+			return err
+		}
+		// No need to go further.
+		return nil
+	}
+
+	// Handle compressed stream.
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
