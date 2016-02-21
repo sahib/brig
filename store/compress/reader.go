@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/golang/snappy"
 )
 
@@ -22,9 +23,7 @@ type chunkBuffer struct {
 func (c *chunkBuffer) Write(p []byte) (int, error) {
 	n := copy(c.buf[c.writeOff:MaxChunkSize], p)
 	c.writeOff += int64(n)
-	if c.writeOff > c.size {
-		c.size = c.writeOff
-	}
+	c.size = util.Max64(c.size, c.writeOff)
 	return n, nil
 }
 
@@ -56,10 +55,7 @@ func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_SET:
 		c.readOff = offset
 	}
-
-	if c.readOff > c.size {
-		c.readOff = c.size
-	}
+	c.readOff = util.Min64(c.readOff, c.size)
 	c.writeOff = c.readOff
 	return c.readOff, nil
 }
