@@ -24,8 +24,22 @@ func Min(a, b int) int {
 	return b
 }
 
+func Min64(a, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // Max returns the maximum of a and b.
 func Max(a, b int) int {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func Max64(a, b int64) int64 {
 	if a < b {
 		return b
 	}

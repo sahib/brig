@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/golang/snappy"
 )
 
@@ -22,9 +23,7 @@ type chunkBuffer struct {
 func (c *chunkBuffer) Write(p []byte) (int, error) {
 	n := copy(c.buf[c.writeOff:MaxChunkSize], p)
 	c.writeOff += int64(n)
-	if c.writeOff > c.size {
-		c.size = c.writeOff
-	}
+	c.size = util.Max64(c.size, c.writeOff)
 	return n, nil
 }
 
@@ -56,10 +55,7 @@ func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_SET:
 		c.readOff = offset
 	}
-
-	if c.readOff > c.size {
-		c.readOff = c.size
-	}
+	c.readOff = util.Min64(c.readOff, c.size)
 	c.writeOff = c.readOff
 	return c.readOff, nil
 }
@@ -119,7 +115,7 @@ func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
 
 	// Don't re-read if offset is in current chunk.
 	if currRecord.rawOff == prevRecord.rawOff {
-		if _, err := r.readChunk(); err != nil {
+		if _, err := r.readZipChunk(); err != nil {
 			return 0, err
 		}
 	}
@@ -172,6 +168,16 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
+	// Handle uncompressed stream.
+	if r.trailer.algo == AlgoNone {
+		if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
+			return err
+		}
+		// No need to go further.
+		return nil
+	}
+
+	// Handle compressed stream.
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
@@ -214,6 +220,17 @@ func (r *reader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
+	// Handle uncompressed stream.
+	if r.trailer.algo == AlgoNone {
+		maxOff, errMax := r.maxOff(int64(len(p)))
+		n, err := r.rawR.Read(p[:maxOff])
+		if err != nil {
+			return n, err
+		}
+		return n, errMax
+	}
+
+	// Handle stream using compression.
 	read := 0
 	for {
 		if r.chunkBuf.Len() != 0 {
@@ -229,7 +246,7 @@ func (r *reader) Read(p []byte) (int, error) {
 			break
 		}
 
-		if _, err := r.readChunk(); err != nil {
+		if _, err := r.readZipChunk(); err != nil {
 			return read, err
 		}
 	}
@@ -237,7 +254,34 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-func (r *reader) readChunk() (int64, error) {
+//TODO: Save maxOffset in trailer and read from trailer instead of SEEK.
+func (r *reader) maxOff(pSize int64) (int64, error) {
+	// get current position.
+	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
+	if err != nil {
+		return currOff, err
+	}
+
+	// get max offset (possition without trailer).
+	maxOff, err := r.rawR.Seek(-TrailerSize, os.SEEK_END)
+	if err != nil {
+		return maxOff, err
+	}
+
+	// go back to current offset.
+	_, err = r.rawR.Seek(currOff, os.SEEK_SET)
+	if err != nil {
+		return 0, err
+	}
+
+	// determinate max offset using.
+	if pSize+currOff > maxOff {
+		return maxOff - currOff, io.EOF
+	}
+	return pSize, nil
+}
+
+func (r *reader) readZipChunk() (int64, error) {
 	// Get current position of the reader; offset of the compressed file.
 	r.chunkBuf.Reset()
 	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)

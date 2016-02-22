@@ -54,6 +54,12 @@ func (w *writer) flushBuffer(flushSize int) (int, error) {
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
+	// Handle uncompressed stream.
+	if w.trailer.algo == AlgoNone {
+		return w.rawW.Write(p)
+	}
+
+	// Handle compressed stream.
 	written := len(p)
 	// Compress only MaxChunkSize equal chunks.
 	for {
@@ -73,27 +79,40 @@ func (w *writer) Write(p []byte) (n int, err error) {
 
 // Return a WriteCloser with compression support.
 func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
-	if algo == AlgoNone {
-		return util.NopWriteCloser(w)
-	}
-
 	s := &util.SizeAccumulator{}
 	return &writer{
 		sizeAcc:  s,
 		zipW:     snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:     w,
 		chunkBuf: &bytes.Buffer{},
-		trailer:  &trailer{},
+		trailer:  &trailer{algo: algo},
 	}
 }
 
 func (w *writer) Close() error {
+	// Handle trailer of uncompressed file.
+	if w.trailer.algo == AlgoNone {
+		var trailerSizeBuf = make([]byte, TrailerSize)
+		w.trailer.marshal(trailerSizeBuf)
+
+		_, err := w.rawW.Write(trailerSizeBuf)
+		if err != nil {
+			return err
+		}
+
+		if cl, ok := w.rawW.(io.Closer); ok {
+			return cl.Close()
+		}
+		return nil
+	}
+
 	// Write remaining bytes left in buffer and update index.
 	if _, err := w.flushBuffer(w.chunkBuf.Len()); err != nil {
 		return err
 	}
 	w.addToIndex()
 
+	// Handle trailer of uncompressed file.
 	// Write compression index trailer and close stream.
 	w.trailer.indexSize = uint64(IndexChunkSize * len(w.index))
 	indexBuf := make([]byte, w.trailer.indexSize)
