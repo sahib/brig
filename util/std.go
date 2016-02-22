@@ -4,10 +4,12 @@ package util
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -183,4 +185,33 @@ func (b *SyncBuffer) Write(p []byte) (int, error) {
 	defer b.Unlock()
 
 	return b.buf.Write(p)
+}
+
+type timeoutWriter struct {
+	io.Writer
+	wait time.Duration
+}
+
+var ErrTimeout = errors.New("TimeoutWriter: Operation timed out.")
+
+func (w *timeoutWriter) Write(p []byte) (n int, err error) {
+	done, deadline := make(chan bool), time.After(w.wait)
+
+	go func() {
+		n, err = w.Writer.Write(p)
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		return
+	case <-deadline:
+		return 0, ErrTimeout
+	}
+}
+
+// TimeoutWriter wraps `w` and returns a io.Writer that times out
+// after `d` elapsed with ErrTimeout if `w` didn't succeed in that time.
+func TimeoutWriter(w io.Writer, d time.Duration) io.Writer {
+	return &timeoutWriter{w, d}
 }
