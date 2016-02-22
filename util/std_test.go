@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestClamp(t *testing.T) {
@@ -94,6 +95,40 @@ func TestTouch(t *testing.T) {
 			t.Errorf("touch-test: `%v` does not exist after Touch()", touchPath)
 			return
 		}
+	}
+}
+
+type slowWriter struct{}
+
+func (w slowWriter) Write(buf []byte) (int, error) {
+	time.Sleep(500 * time.Millisecond)
+	return 0, nil
+}
+
+func TestTimeoutWriter(t *testing.T) {
+	fast := TimeoutWriter(&bytes.Buffer{}, 500*time.Millisecond)
+	beforeFast := time.Now()
+	fast.Write([]byte("Hello World"))
+	fastTook := time.Since(beforeFast)
+
+	if fastTook > 50*time.Millisecond {
+		t.Errorf("TimeoutWriter did wait too long.")
+		return
+	}
+
+	beforeSlow := time.Now()
+	slow := TimeoutWriter(slowWriter{}, 250*time.Millisecond)
+	slow.Write([]byte("Hello World"))
+	slowTook := time.Since(beforeSlow)
+
+	if slowTook > 300*time.Millisecond {
+		t.Errorf("TimeoutWriter did not kill write fast enough.")
+		return
+	}
+
+	if slowTook < 200*time.Millisecond {
+		t.Errorf("TimeoutWriter did return too fast.")
+		return
 	}
 }
 
