@@ -1,34 +1,13 @@
 package transfer
 
 import (
-	"bytes"
 	"fmt"
-	"sync"
+	"github.com/disorganizer/brig/util"
 	"testing"
 )
 
-// TODO: generally useful? Move to utils?
-type SyncBuffer struct {
-	sync.RWMutex
-	buf bytes.Buffer
-}
-
-func (b *SyncBuffer) Read(p []byte) (int, error) {
-	b.Lock()
-	defer b.Unlock()
-
-	return b.buf.Read(p)
-}
-
-func (b *SyncBuffer) Write(p []byte) (int, error) {
-	b.Lock()
-	defer b.Unlock()
-
-	return b.buf.Write(p)
-}
-
 func TestCommunication(t *testing.T) {
-	im := &SyncBuffer{}
+	im := &util.SyncBuffer{}
 	cl := NewClient(im)
 	sv := NewServer(im)
 

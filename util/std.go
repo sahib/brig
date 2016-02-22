@@ -3,8 +3,10 @@
 package util
 
 import (
+	"bytes"
 	"io"
 	"os"
+	"sync"
 	"sync/atomic"
 
 	log "github.com/Sirupsen/logrus"
@@ -121,3 +123,50 @@ type nopCloser struct {
 }
 
 func (nopCloser) Close() error { return nil }
+
+type syncReadWriter struct {
+	io.ReadWriter
+	sync.Mutex
+}
+
+func (s *syncReadWriter) Write(buf []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.ReadWriter.Write(buf)
+}
+
+func (s *syncReadWriter) Read(buf []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.ReadWriter.Read(buf)
+}
+
+// SyncedReadWriter returns a io.ReadWriter that protects each call
+// to Read() and Write() with a sync.Mutex.
+func SyncedReadWriter(w io.ReadWriter) io.ReadWriter {
+	return &syncReadWriter{ReadWriter: w}
+}
+
+// SyncBuffer is a bytes.Buffer that protects each call
+// to Read() and Write() with a sync.RWMutex, i.e. parallel
+// access to Read() is possible, but blocks when doing a Write().
+type SyncBuffer struct {
+	sync.RWMutex
+	buf bytes.Buffer
+}
+
+func (b *SyncBuffer) Read(p []byte) (int, error) {
+	b.Lock()
+	defer b.Unlock()
+
+	return b.buf.Read(p)
+}
+
+func (b *SyncBuffer) Write(p []byte) (int, error) {
+	b.Lock()
+	defer b.Unlock()
+
+	return b.buf.Write(p)
+}

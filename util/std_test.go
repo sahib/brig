@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -94,4 +95,12 @@ func TestTouch(t *testing.T) {
 			return
 		}
 	}
+}
+
+func ExampleAccumulateSize() {
+	s := &SizeAccumulator{}
+	teeR := io.TeeReader(bytes.NewReader([]byte("Hello, ")), s)
+	io.Copy(os.Stdout, teeR)
+	fmt.Printf("wrote %d bytes to stdout\n", s.Size())
+	// Output: Hello, wrote 7 bytes to stdout
 }
