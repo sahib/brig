@@ -64,7 +64,7 @@ func generateSharedSecret(privKey crypto.PrivateKey, pubKey crypto.PublicKey) ([
 
 type ecdhTunnel struct {
 	// Underlying ReadWriter
-	ReadWriter io.ReadWriter
+	io.ReadWriter
 
 	// Elliptic Curve Diffie Hellman keys:
 	privKey crypto.PrivateKey

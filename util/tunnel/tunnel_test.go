@@ -2,7 +2,6 @@ package tunnel
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -12,18 +11,33 @@ func TestTunnel(t *testing.T) {
 
 	ta, err := NewEllipticTunnel(m)
 	if err != nil {
-		panic(err)
+		t.Errorf("Could not create tunnel: %v", err)
+		return
 	}
 
-	fmt.Println(ta.Write([]byte("Hello")))
-	fmt.Println(m)
-	fmt.Println(ta.Write([]byte("World")))
-	fmt.Println(m)
+	n, err := ta.Write([]byte("Hello"))
+	if n != 5 {
+		t.Errorf("Short write on tunnel: %v", err)
+		return
+	}
 
-	o, _ := ioutil.ReadAll(ta)
+	if m.Len() > 0 && string(m.Bytes()) == "Hello" {
+		t.Errorf("Tunnel failed to encrypt: %v", m)
+		return
+	}
 
-	fmt.Println(string(o))
-	if string(o) != "HelloWorld" {
-		panic(o)
+	n, err = ta.Write([]byte("World"))
+	if n != 5 {
+		t.Errorf("Short write on tunnel: %v", err)
+		return
+	}
+
+	data, _ := ioutil.ReadAll(ta)
+
+	if string(data) != "HelloWorld" {
+		t.Errorf("decrypted differs from source.")
+		t.Errorf("\tWant: %v", "HelloWorld")
+		t.Errorf("\tGot:  %v", string(data))
+		return
 	}
 }
