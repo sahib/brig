@@ -2,7 +2,6 @@ package transfer
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"time"
 
@@ -17,51 +16,56 @@ type Server struct {
 	decoder *json.Decoder
 }
 
-func (sv *Server) handleCmd() {
+func (sv *Server) handleCmd() bool {
 	cmd := &Command{}
 	if err := sv.decoder.Decode(&cmd); err != nil {
+		// TODO: Is there a better way than polling?
 		if err == io.EOF {
-			time.Sleep(50 * time.Millisecond)
-			return
+			time.Sleep(100 * time.Millisecond)
+			return true
 		}
 
 		log.Warningf("Unable to decode item from json stream: %v", err)
-		return
+		return true
 	}
 
 	handler, ok := handlerMap[cmd.ID]
 	if !ok {
 		log.Warningf("Unknown command id: %d", cmd.ID)
-		return
+		return true
 	}
 
 	resp, err := handler(sv, cmd)
 	if err != nil {
 		log.Warningf("Handling %s failed: %v", cmd.ID.String(), err)
-		return
+		return true
 	}
 
 	if resp == nil {
 		// We don't want to answer.
-		return
+		return true
 	}
 
 	resp.ID = cmd.ID
-	fmt.Println("Sending", resp)
 	if err := sv.encoder.Encode(&resp); err != nil {
 		log.Warningf("Casting response to json failed: %v", err)
-		return
+		return true
 	}
+
+	return cmd.ID != CmdQuit
 }
 
 func (sv *Server) loop() {
 	for {
 		select {
 		case _ = <-sv.done:
-			fmt.Println("Done. bye")
+			sv.errors <- nil
 			return
 		default:
-			sv.handleCmd()
+			if !sv.handleCmd() {
+				sv.errors <- nil
+				return
+			}
 		}
 	}
 }
@@ -71,6 +75,8 @@ func NewServer(im io.ReadWriter) *Server {
 		im:      im,
 		encoder: json.NewEncoder(im),
 		decoder: json.NewDecoder(im),
+		done:    make(chan bool, 1),
+		errors:  make(chan error),
 	}
 
 	go sv.loop()
@@ -84,5 +90,5 @@ func (sv *Server) Serve() error {
 }
 
 func (sv *Server) Quit() {
-
+	sv.done <- true
 }

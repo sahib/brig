@@ -3,9 +3,13 @@
 package util
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"os"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -137,3 +141,79 @@ type nopCloser struct {
 }
 
 func (nopCloser) Close() error { return nil }
+
+type syncReadWriter struct {
+	io.ReadWriter
+	sync.Mutex
+}
+
+func (s *syncReadWriter) Write(buf []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.ReadWriter.Write(buf)
+}
+
+func (s *syncReadWriter) Read(buf []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.ReadWriter.Read(buf)
+}
+
+// SyncedReadWriter returns a io.ReadWriter that protects each call
+// to Read() and Write() with a sync.Mutex.
+func SyncedReadWriter(w io.ReadWriter) io.ReadWriter {
+	return &syncReadWriter{ReadWriter: w}
+}
+
+// SyncBuffer is a bytes.Buffer that protects each call
+// to Read() and Write() with a sync.RWMutex, i.e. parallel
+// access to Read() is possible, but blocks when doing a Write().
+type SyncBuffer struct {
+	sync.RWMutex
+	buf bytes.Buffer
+}
+
+func (b *SyncBuffer) Read(p []byte) (int, error) {
+	b.Lock()
+	defer b.Unlock()
+
+	return b.buf.Read(p)
+}
+
+func (b *SyncBuffer) Write(p []byte) (int, error) {
+	b.Lock()
+	defer b.Unlock()
+
+	return b.buf.Write(p)
+}
+
+type timeoutWriter struct {
+	io.Writer
+	wait time.Duration
+}
+
+var ErrTimeout = errors.New("TimeoutWriter: Operation timed out.")
+
+func (w *timeoutWriter) Write(p []byte) (n int, err error) {
+	done, deadline := make(chan bool), time.After(w.wait)
+
+	go func() {
+		n, err = w.Writer.Write(p)
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		return
+	case <-deadline:
+		return 0, ErrTimeout
+	}
+}
+
+// TimeoutWriter wraps `w` and returns a io.Writer that times out
+// after `d` elapsed with ErrTimeout if `w` didn't succeed in that time.
+func TimeoutWriter(w io.Writer, d time.Duration) io.Writer {
+	return &timeoutWriter{w, d}
+}

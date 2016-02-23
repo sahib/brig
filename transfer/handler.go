@@ -14,5 +14,5 @@ func handleQuit(sv *Server, cmd *Command) (*Response, error) {
 }
 
 func handleClone(sv *Server, cmd *Command) (*Response, error) {
-	return nil, nil
+	return &Response{data: []byte("CLONE")}, nil
 }
