@@ -3,7 +3,13 @@ package encrypt
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
+)
+
+var (
+	ErrBadBlockSize = errors.New("Underlying reader failed to read full MaxBlockSize")
+	ErrMixedMethods = errors.New("Mixing Write() and ReadFrom() is not allowed.")
 )
 
 // Writer encrypts the data stream before writing to Writer.
@@ -48,7 +54,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	for w.rbuf.Len() >= MaxBlockSize {
-		if _, err := w.flushPack(MaxBlockSize); err != nil {
+		if _, err := w.flushPack(w.rbuf.Next(MaxBlockSize)); err != nil {
 			return 0, err
 		}
 	}
@@ -62,12 +68,12 @@ func (w *Writer) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *Writer) flushPack(chunkSize int) (int, error) {
+func (w *Writer) flushPack(pack []byte) (int, error) {
 	// Create a new Nonce for this block:
 	binary.LittleEndian.PutUint64(w.nonce, w.blockCount)
 
 	// Encrypt the text:
-	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, w.rbuf.Next(chunkSize), nil)
+	w.encBuf = w.aead.Seal(w.encBuf[:0], w.nonce, pack, nil)
 
 	// Pass it to the underlying writer:
 	nNonce, err := w.Writer.Write(w.nonce)
@@ -94,11 +100,57 @@ func (w *Writer) Close() error {
 			n = MaxBlockSize
 		}
 
-		if _, err := w.flushPack(n); err != nil {
+		if _, err := w.flushPack(w.rbuf.Next(n)); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// R
+func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
+	if err := w.emitHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
+
+	n, nprev := int64(0), -1
+	buf := make([]byte, GoodDecBufferSize)
+
+	// Check if a previous Write() wrote to rbuf.
+	if w.rbuf.Len() > 0 {
+		return 0, ErrMixedMethods
+	}
+
+	for {
+		nread, rerr := r.Read(buf)
+		if rerr != nil && rerr != io.EOF {
+			return n, rerr
+		}
+
+		n += int64(nread)
+
+		// Sanity check: check if previous block was properly aligned:
+		if nprev >= 0 && nprev != MaxBlockSize && rerr != io.EOF {
+			return n, ErrBadBlockSize
+		}
+
+		if nread > 0 {
+			_, werr := w.flushPack(buf[:nread])
+			w.rbuf.Reset()
+
+			if werr != nil {
+				return n, werr
+			}
+		}
+
+		nprev = nread
+
+		if rerr == io.EOF {
+			break
+		}
+	}
+
+	return n, nil
 }
 
 // NewWriter returns a new Writer which encrypts data with a

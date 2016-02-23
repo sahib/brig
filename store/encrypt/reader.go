@@ -226,6 +226,52 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	return absOffsetDec, nil
 }
 
+func (r *Reader) WriteTo(w io.Writer) (int64, error) {
+	// Make sure we have the info needed to parse the header:
+	if err := r.readHeaderIfNotDone(); err != nil {
+		return 0, err
+	}
+
+	n := int64(0)
+
+	// Backlog might be still filled if previous Read() or Seek() was done.
+	if r.backlog.Len() > 0 {
+		bn, err := r.backlog.WriteTo(w)
+		if err != nil {
+			return bn, err
+		}
+
+		n += bn
+		r.lastSeekPos += bn
+	}
+
+	for {
+		nread, rerr := r.readBlock()
+		if rerr != nil && rerr != io.EOF {
+			return n, rerr
+		}
+
+		r.lastSeekPos += int64(nread)
+
+		nwrite, werr := w.Write(r.decBuf[:nread])
+		if werr != nil {
+			return n, werr
+		}
+
+		n += int64(nwrite)
+
+		if nwrite != nread {
+			return n, io.ErrShortWrite
+		}
+
+		if rerr == io.EOF {
+			break
+		}
+	}
+
+	return n, nil
+}
+
 // NewReader creates a new encrypted reader and validates the file header.
 // The key is required to be KeySize bytes long.
 func NewReader(r io.Reader, key []byte) (*Reader, error) {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -130,7 +131,7 @@ func TestSimpleEncDec(t *testing.T) {
 		GoodEncBufferSize + 1,
 	}
 
-	for size := range sizes {
+	for _, size := range sizes {
 		t.Logf("Testing SimpleEncDec for size %d", size)
 		testSimpleEncDec(t, size)
 	}
@@ -236,7 +237,7 @@ func TestSeek(t *testing.T) {
 		b := dest.Bytes()
 		t.Errorf("Buffers are not equal:")
 		t.Errorf("\tAAA %d %x %x\n", len(a), a[:10], a[len(a)-10:])
-		t.Errorf("\tBBB %d %x %x\n", len(b), b[:10], b[len(b)-10:])
+		t.Errorf("\tBBB %d %x %x\n", len(b), b[:util.Min(10, len(b))], b[util.Max(0, len(b)-10):])
 		return
 	}
 }
