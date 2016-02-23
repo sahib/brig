@@ -58,9 +58,14 @@ func decryptFile(key []byte, from, to string) (n int64, outErr error) {
 	}
 
 	defer func() {
-		// Only fdTo needs to be closed, Decrypt closes fdFrom.
 		if err := fdTo.Close(); err != nil {
 			outErr = err
+			return
+		}
+
+		if err := fdFrom.Close(); err != nil {
+			outErr = err
+			return
 		}
 	}()
 
@@ -227,11 +232,6 @@ func TestSeek(t *testing.T) {
 		return
 	}
 
-	if err := decLayer.Close(); err != nil {
-		t.Errorf("close(dec): %v", err)
-		return
-	}
-
 	if !bytes.Equal(a[seekTest:], dest.Bytes()) {
 		b := dest.Bytes()
 		t.Errorf("Buffers are not equal:")
@@ -286,12 +286,6 @@ func TestSeekThenRead(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
-	defer func() {
-		if err := decLayer.Close(); err != nil {
-			t.Errorf("close(dec) failed: %v", err)
-		}
-	}()
 
 	// Jump somewhere inside the large file:
 	jumpPos := N/2 + N/4 + 1
@@ -354,11 +348,6 @@ func TestEmptyFile(t *testing.T) {
 	dec, err := NewReader(bytes.NewReader(tmpBuf.Bytes()), TestKey)
 	if err != nil {
 		t.Errorf("TestEmpyFile: creating reader failed: %v", err)
-		return
-	}
-
-	if err = dec.Close(); err != nil {
-		t.Errorf("TestEmpyFile: close(dec) failed: %v", err)
 		return
 	}
 

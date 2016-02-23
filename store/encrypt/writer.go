@@ -8,11 +8,11 @@ import (
 
 // Writer encrypts the data stream before writing to Writer.
 type Writer struct {
+	// Internal Writer we would write to.
+	io.Writer
+
 	// Common fields with Reader
 	aeadCommon
-
-	// Internal Writer we would write to.
-	Writer io.Writer
 
 	// A buffer that is max. MaxBlockSize big.
 	// Used for caching leftover data between writes.

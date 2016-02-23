@@ -274,11 +274,5 @@ func Decrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr erro
 		return 0, err
 	}
 
-	defer func() {
-		if err := layer.Close(); outErr != nil && err != nil {
-			outErr = err
-		}
-	}()
-
 	return io.CopyBuffer(dest, layer, make([]byte, GoodDecBufferSize))
 }

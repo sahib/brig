@@ -61,9 +61,7 @@ func (sv *Server) loop() {
 			fmt.Println("Done. bye")
 			return
 		default:
-			fmt.Println("handle")
 			sv.handleCmd()
-			fmt.Println("handled")
 		}
 	}
 }
@@ -83,4 +81,8 @@ func (sv *Server) Serve() error {
 	err := <-sv.errors
 	sv.done <- true
 	return err
+}
+
+func (sv *Server) Quit() {
+
 }

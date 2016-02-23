@@ -10,10 +10,10 @@ import (
 
 // Reader decrypts and encrypted datastream from Reader.
 type Reader struct {
-	aeadCommon
+	// Underlying reader
+	io.Reader
 
-	// Underlying io.Reader
-	Reader io.Reader
+	aeadCommon
 
 	// Caches leftovers from unread blocks
 	backlog *bytes.Reader
@@ -224,17 +224,6 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	return absOffsetDec, nil
-}
-
-// Close does finishing work.
-// If supported by the underlying data stream, it closes it too.
-func (r *Reader) Close() error {
-	closer, ok := r.Reader.(io.Closer)
-	if ok {
-		return closer.Close()
-	}
-
-	return nil
 }
 
 // NewReader creates a new encrypted reader and validates the file header.
