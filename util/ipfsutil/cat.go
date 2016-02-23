@@ -15,6 +15,7 @@ type Reader interface {
 	io.Closer
 
 	// TODO: ipfs supports this, we don't yet.
+	//       (-> compression layer is missing)
 	// io.WriterTo
 }
 

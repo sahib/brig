@@ -1,11 +1,13 @@
 package daemon
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,6 +17,7 @@ import (
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
@@ -73,29 +76,31 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	}
 
 	// TODO: Uncomment later
-	// xmppClient, err := im.NewClient(
-	// 	&im.Config{
-	// 		Jid:      xmpp.JID(repository.Jid),
-	// 		Password: pwd,
-	// 		TLSConfig: tls.Config{
-	// 			ServerName: xmpp.JID(repository.Jid).Domain(),
-	// 		},
-	// 		KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
-	// 		FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
-	// 	},
-	// )
-	// if err != nil {
-	// 	return nil, err
-	// }
+	fmt.Println("password", pwd)
+	xmppClient, err := im.NewClient(
+		&im.Config{
+			Jid:      xmpp.JID(repository.Jid),
+			Password: pwd,
+			TLSConfig: tls.Config{
+				ServerName: xmpp.JID(repository.Jid).Domain(),
+			},
+			KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
+			FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
-		Repo:   repository,
-		Mounts: fuse.NewMountTable(repository.Store),
-		// XMPP:     xmppClient,
+		Repo:           repository,
+		Mounts:         fuse.NewMountTable(repository.Store),
+		XMPP:           xmppClient,
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		maxConnections: make(chan allowOneConn, MaxConnections),

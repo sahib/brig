@@ -2,12 +2,14 @@ package store
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 
 	// "github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/encrypt"
 )
 
+// TODO: needed?
 // Reader accumulates all interface brig requests from a stream.
 type Reader interface {
 	io.Reader
@@ -15,16 +17,26 @@ type Reader interface {
 	io.Closer
 }
 
+type reader struct {
+	io.Reader
+	io.Seeker
+	io.Closer
+}
+
 // NewIpfsReader wraps the raw-data reader `r` and returns a Reader
 // that yields the clear data, if `key` is correct.
-func NewIpfsReader(key []byte, r io.ReadSeeker) (Reader, error) {
+func NewIpfsReader(key []byte, r Reader) (Reader, error) {
 	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: Bring back compression.
-	return rEnc, nil
+	return reader{
+		Reader: rEnc,
+		Seeker: rEnc,
+		Closer: ioutil.NopCloser(rEnc),
+	}, nil
 }
 
 // NewFileReaderFromPath is a shortcut for reading a file from disk
