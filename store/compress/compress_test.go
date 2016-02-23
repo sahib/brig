@@ -54,6 +54,8 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 	data := testutil.CreateDummyBuf(size)
 	zipFileDest := openDest(t, ZipFilePath)
 
+	defer testutil.Remover(t, ZipFilePath)
+
 	// Compress.
 	w := NewWriter(zipFileDest, algo)
 	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
@@ -65,6 +67,12 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 		t.Errorf("Compression writer close failed: %v", err)
 		return
 	}
+
+	if err := zipFileDest.Close(); err != nil {
+		t.Errorf("close(zipFileDest) failed: %v", err)
+		return
+	}
+
 	defer zipFileDest.Close()
 	// Read compressed file into buffer.
 	dataUncomp := bytes.NewBuffer(nil)
@@ -86,7 +94,6 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 		t.Error("Uncompressed data and input data does not match.")
 		return
 	}
-	testutil.Remover(t, ZipFilePath)
 }
 
 func TestSeek(t *testing.T) {
@@ -116,6 +123,11 @@ func testSeek(t *testing.T, size, offset int64) {
 
 	if err := w.Close(); err != nil {
 		t.Errorf("Compression writer close failed: %v", err)
+		return
+	}
+
+	if err := zipFileDest.Close(); err != nil {
+		t.Errorf("close(zipFileDest) failed: %v", err)
 		return
 	}
 

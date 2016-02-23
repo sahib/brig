@@ -30,6 +30,22 @@ func Max(a, b int) int {
 	return a
 }
 
+// Min64 returns the minimum of a and b.
+func Min64(a, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// Max64 returns the maximum of a and b.
+func Max64(a, b int64) int64 {
+	if a < b {
+		return b
+	}
+	return a
+}
+
 // Clamp limits x to the range [lo, hi]
 func Clamp(x, lo, hi int) int {
 	return Max(lo, Min(x, hi))

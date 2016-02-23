@@ -100,9 +100,6 @@ func (w *writer) Close() error {
 			return err
 		}
 
-		if cl, ok := w.rawW.(io.Closer); ok {
-			return cl.Close()
-		}
 		return nil
 	}
 
@@ -136,8 +133,5 @@ func (w *writer) Close() error {
 		return err
 	}
 
-	if cl, ok := w.rawW.(io.Closer); ok {
-		return cl.Close()
-	}
 	return nil
 }
