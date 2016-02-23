@@ -107,7 +107,12 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-// R
+// ReadFrom writes all readable from `r` into `w`.
+//
+// It is intentend as optimized way to copy the whole stream without
+// unneeded copying in between. io.Copy() will use this function automatically.
+//
+// It returns the number of read bytes and any encountered error (no io.EOF)
 func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 	if err := w.emitHeaderIfNeeded(); err != nil {
 		return 0, err

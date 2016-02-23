@@ -226,6 +226,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	return absOffsetDec, nil
 }
 
+// WriteTo copies all data from `r` to `w`.
+//
+// It is intented to avoid unneeded copying by choosing a suitable buffer size
+// and by directly reading block after block. io.Copy will use it automatically.
+//
+// It returns the number of written bytes and possible errors (but no io.EOF)
 func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 	// Make sure we have the info needed to parse the header:
 	if err := r.readHeaderIfNotDone(); err != nil {
@@ -234,7 +240,7 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 
 	n := int64(0)
 
-	// Backlog might be still filled if previous Read() or Seek() was done.
+	// Backlog might be still filled if Read() or Seek() was done before:
 	if r.backlog.Len() > 0 {
 		bn, err := r.backlog.WriteTo(w)
 		if err != nil {
