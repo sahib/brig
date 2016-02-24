@@ -1,12 +1,18 @@
 package repo
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
+)
+
+var (
+	ErrBadPassword = errors.New("Bad password.")
 )
 
 // Filenames that will be encrypted on close:
@@ -97,9 +103,14 @@ func CheckPassword(folder, pwd string) error {
 		return err
 	}
 
-	absName := filepath.Join(brigPath, "master.key")
-	if err := TryUnlock(jid, pwd, absName); err != nil {
+	entry, err := parseShadowFile(brigPath, jid)
+	if err != nil {
 		return err
+	}
+
+	attempt := hashPassword(entry.salt, pwd)
+	if !bytes.Equal(attempt, entry.hash) {
+		return ErrBadPassword
 	}
 
 	return nil

@@ -11,6 +11,7 @@ import (
 )
 
 // Scrypt wraps scrypt.Key with the standard parameters.
+// keyLen is in bytes, not bits.
 func Scrypt(pwd, salt []byte, keyLen int) []byte {
 	// Parameters to be changed in future
 	// https://godoc.org/golang.org/x/crypto/scrypt

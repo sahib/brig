@@ -33,6 +33,11 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
+	brigPath := filepath.Join(absFolderPath, ".brig")
+	if err := createShadowFile(brigPath, jid, pwd); err != nil {
+		return nil, err
+	}
+
 	cfg := config.CreateDefaultConfig()
 	minilockID, err := GenerateMinilockID(jid, pwd)
 	if err != nil {
@@ -48,7 +53,7 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		"repository.jid":  jid,
 		"repository.uuid": repoUUID.String(),
 		"repository.mid":  minilockID,
-		"ipfs.path":       filepath.Join(absFolderPath, ".brig", "ipfs"),
+		"ipfs.path":       filepath.Join(brigPath, "ipfs"),
 	}
 
 	for key, value := range configDefaults {
@@ -57,7 +62,7 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		}
 	}
 
-	configPath := filepath.Join(absFolderPath, ".brig", "config")
+	configPath := filepath.Join(brigPath, "config")
 	if _, err := config.SaveConfig(configPath, cfg); err != nil {
 		return nil, err
 	}
@@ -149,7 +154,7 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	empties := []string{"index.bolt", "otr.key", "otr.buddies"}
+	empties := []string{"index.bolt", "otr.key", "otr.buddies", "shadow"}
 	for _, empty := range empties {
 		fullPath := filepath.Join(brigPath, empty)
 		if err := util.Touch(fullPath); err != nil {
