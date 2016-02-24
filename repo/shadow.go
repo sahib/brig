@@ -12,7 +12,6 @@ import (
 	"github.com/disorganizer/brig/util/security"
 )
 
-// TODO: use scrypt?
 func hashPassword(salt []byte, password string) []byte {
 	return security.Scrypt([]byte(password), salt, 32)
 }

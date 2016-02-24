@@ -75,8 +75,6 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	// TODO: Uncomment later
-	fmt.Println("password", pwd)
 	xmppClient, err := im.NewClient(
 		&im.Config{
 			Jid:      xmpp.JID(repository.Jid),
