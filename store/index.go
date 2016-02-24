@@ -169,11 +169,13 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	} else {
 		// Create intermediate directories:
 		elems := strings.Split(repoPath, string(filepath.Separator))
-		for idx := range elems[1 : len(elems)-1] {
-			dir := strings.Join(elems[idx:len(elems)-1], string(filepath.Separator))
+		if len(elems) > 1 {
+			for idx := range elems[1 : len(elems)-1] {
+				dir := strings.Join(elems[idx:len(elems)-1], string(filepath.Separator))
 
-			if _, err := s.Mkdir(dir); err != nil {
-				log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+				if _, err := s.Mkdir(dir); err != nil {
+					log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+				}
 			}
 		}
 
