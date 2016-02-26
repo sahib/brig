@@ -1,19 +1,16 @@
 package daemon
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/fuse"
-	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
@@ -37,9 +34,6 @@ type Server struct {
 	// The repo we're working on
 	Repo *repo.Repository
 
-	// XMPP is the control client to the outside world.
-	XMPP *im.Client
-
 	// All mountpoints this daemon is serving:
 	Mounts *fuse.MountTable
 
@@ -61,7 +55,7 @@ type Server struct {
 func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	// Load the on-disk repository:
 	log.Infof("Opening repo: %s", repoFolder)
-	repository, err := repo.Open(pwd, repoFolder)
+	rep, err := repo.Open(pwd, repoFolder)
 	if err != nil {
 		log.Error("Could not load repository: ", err)
 		return nil, err
@@ -75,18 +69,6 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	xmppClient, err := im.NewClient(
-		&im.Config{
-			Jid:      xmpp.JID(repository.Jid),
-			Password: pwd,
-			TLSConfig: tls.Config{
-				ServerName: xmpp.JID(repository.Jid).Domain(),
-			},
-			KeyPath:              filepath.Join(repository.InternalFolder, "otr.key"),
-			FingerprintStorePath: filepath.Join(repository.InternalFolder, "otr.buddies"),
-		},
-	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -96,13 +78,17 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
-		Repo:           repository,
-		Mounts:         fuse.NewMountTable(repository.Store),
-		XMPP:           xmppClient,
+		Repo:           rep,
+		Mounts:         fuse.NewMountTable(rep.Store),
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		maxConnections: make(chan allowOneConn, MaxConnections),
 		ctx:            ctx,
+	}
+
+	// TODO: Make this start in parallel? Needs locking in store.Store.
+	if err := rep.Store.Connect(xmpp.JID(rep.Jid), rep.Password); err != nil {
+		return nil, err
 	}
 
 	go daemon.loop(cancel)

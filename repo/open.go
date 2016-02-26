@@ -9,6 +9,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
+	"github.com/disorganizer/brig/repo/global"
+	"github.com/disorganizer/brig/store"
 )
 
 var (
@@ -16,10 +18,10 @@ var (
 )
 
 // Filenames that will be encrypted on close:
-var filenames = []string{
+var lockPaths = []string{
 	"index.bolt",
 	"master.key",
-	// TODO: What about those?
+	// TODO: What about those? Encrypt them?
 	// "otr.buddies",
 	// "otr.key",
 }
@@ -51,7 +53,7 @@ func Open(pwd, folder string) (*Repository, error) {
 
 	// Unlock all files:
 	var absNames []string
-	for _, name := range filenames {
+	for _, name := range lockPaths {
 		absName := filepath.Join(brigPath, name)
 		if _, err := os.Stat(absName); err == nil {
 			// File exists, this might happen on a crash or killed daemon.
@@ -66,14 +68,14 @@ func Open(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	return LoadRepository(pwd, absFolderPath)
+	return loadRepository(pwd, absFolderPath)
 }
 
 // Close encrypts sensible files in the repository.
 // The password is taken from Repository.Password.
 func (r *Repository) Close() error {
 	var absNames []string
-	for _, name := range filenames {
+	for _, name := range lockPaths {
 		absName := filepath.Join(r.InternalFolder, name)
 		if _, err := os.Stat(absName); os.IsNotExist(err) {
 			// File does not exist. Might be already locked.
@@ -114,4 +116,67 @@ func CheckPassword(folder, pwd string) error {
 	}
 
 	return nil
+}
+
+// loadRepository load a brig repository from a given folder.
+func loadRepository(pwd, folder string) (*Repository, error) {
+	absFolderPath, err := filepath.Abs(folder)
+	if err != nil {
+		return nil, err
+	}
+
+	brigPath := filepath.Join(absFolderPath, ".brig")
+	cfg, err := config.LoadConfig(filepath.Join(brigPath, "config"))
+	if err != nil {
+		return nil, err
+	}
+
+	configValues := map[string]string{
+		"repository.jid":  "",
+		"repository.mid":  "",
+		"repository.uuid": "",
+	}
+
+	for key := range configValues {
+		configValues[key], err = cfg.String(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Init the global repo (similar to .gitconfig)
+	globalRepo, err := global.New()
+	if err != nil {
+		return nil, err
+	}
+
+	err = globalRepo.AddRepo(global.RepoListEntry{
+		UniqueID:   configValues["repository.uuid"],
+		RepoPath:   folder,
+		DaemonPort: 6666,
+		IpfsPort:   4001,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := store.Open(brigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	repo := Repository{
+		Jid:            configValues["repository.jid"],
+		Mid:            configValues["repository.mid"],
+		Folder:         absFolderPath,
+		InternalFolder: brigPath,
+		UniqueID:       configValues["repository.uuid"],
+		Config:         cfg,
+		globalRepo:     globalRepo,
+		Store:          store,
+		Password:       pwd,
+	}
+
+	return &repo, nil
 }

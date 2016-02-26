@@ -376,3 +376,43 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 
 	return Success
 }
+
+func handleOffline(ctx climax.Context, client *daemon.Client) int {
+	status, err := client.IsOnline()
+	if err != nil {
+		log.Errorf("Failed to check online-status: %v", err)
+		return UnknownError
+	}
+
+	if !status {
+		log.Infof("Already offline.")
+		return Success
+	}
+
+	if err := client.Offline(); err != nil {
+		log.Errorf("Failed to go offline: %v", err)
+		return UnknownError
+	}
+
+	return Success
+}
+
+func handleOnline(ctx climax.Context, client *daemon.Client) int {
+	status, err := client.IsOnline()
+	if err != nil {
+		log.Errorf("Failed to check online-status: %v", err)
+		return UnknownError
+	}
+
+	if status {
+		log.Infof("Already online.")
+		return Success
+	}
+
+	if err := client.Online(); err != nil {
+		log.Errorf("Failed to go online: %v", err)
+		return UnknownError
+	}
+
+	return Success
+}

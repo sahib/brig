@@ -383,7 +383,12 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 
 	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.Key)
 
-	ipfsStream, err := ipfsutil.Cat(f.store.IpfsNode, f.hash.Multihash)
+	ipfsNode, err := f.store.IpfsNode()
+	if err != nil {
+		return nil, err
+	}
+
+	ipfsStream, err := ipfsutil.Cat(ipfsNode, f.hash.Multihash)
 	if err != nil {
 		return nil, err
 	}

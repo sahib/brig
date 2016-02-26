@@ -9,18 +9,28 @@ import (
 	protobuf "github.com/gogo/protobuf/proto"
 )
 
-// recvResponse reads one response from the daemon and formats possible errors.
-func (c *Client) recvResponse(logname string) ([]byte, error) {
+// recvResponseBytes reads one response from the daemon and formats possible errors.
+func (c *Client) recvResponse(logname string) (*proto.Response, error) {
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
 		return nil, fmt.Errorf("client: %v: %v", logname, resp.GetError())
+	}
+
+	return resp, nil
+}
+
+// recvResponseBytes reads one response from the daemon and formats possible errors.
+func (c *Client) recvResponseBytes(logname string) ([]byte, error) {
+	resp, err := c.recvResponse(logname)
+	if err != nil {
+		return nil, err
 	}
 
 	return resp.GetResponse(), nil
 }
 
 func (c *Client) recvResponseString(logname string) (string, error) {
-	resp, err := c.recvResponse(logname)
+	resp, err := c.recvResponseBytes(logname)
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +119,9 @@ func (c *Client) History(repoPath string) (store.History, error) {
 		},
 	}
 
-	jsonData, err := c.recvResponse("history")
+	// TODO: Sending json over protobuf is pretty hilarious/stupid.
+	//       Do something else, but be consistent this time.
+	jsonData, err := c.recvResponseBytes("history")
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +132,47 @@ func (c *Client) History(repoPath string) (store.History, error) {
 	}
 
 	return hist, nil
+}
+
+func (c *Client) alterOnlineStatus(query proto.OnlineQuery) ([]byte, error) {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_ONLINE_STATUS.Enum(),
+		OnlineStatusCommand: &proto.Command_OnlineStatusCmd{
+			Query: &query,
+		},
+	}
+
+	data, err := c.recvResponseBytes("online-status")
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (c *Client) Online() error {
+	_, err := c.alterOnlineStatus(proto.OnlineQuery_GO_ONLINE)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) Offline() error {
+	_, err := c.alterOnlineStatus(proto.OnlineQuery_GO_OFFLINE)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) IsOnline() (bool, error) {
+	data, err := c.alterOnlineStatus(proto.OnlineQuery_IS_ONLINE)
+	if err != nil {
+		return false, err
+	}
+
+	return string(data) == "online", nil
 }

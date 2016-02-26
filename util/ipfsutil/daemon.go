@@ -9,10 +9,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-// TODO: Close, Offline, Online functions for *Node
-
 // StartNode starts an ipfs node on the repo.
-func StartNode(ipfsPath string) (*Node, error) {
+// If `online` is true, the node will try to connect to the global ipfs net.
+func StartNode(ipfsPath string, online bool) (*Node, error) {
 	// Basic ipfsnode setup
 	r, err := fsrepo.Open(ipfsPath)
 	if err != nil {
@@ -24,10 +23,11 @@ func StartNode(ipfsPath string) (*Node, error) {
 
 	cfg := &core.BuildCfg{
 		Repo:   r,
-		Online: false,
+		Online: online,
 	}
 
 	nd, err := core.NewNode(ctx, cfg)
+	nd.OnlineMode()
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +38,10 @@ func StartNode(ipfsPath string) (*Node, error) {
 		Context:  ctx,
 		Cancel:   cancel,
 	}, nil
+}
+
+func (n *Node) IsOnline() bool {
+	return n.IpfsNode.OnlineMode()
 }
 
 // Close shuts down the ipfs node.

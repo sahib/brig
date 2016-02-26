@@ -8,8 +8,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
-	"github.com/disorganizer/brig/repo/global"
-	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util"
 	logutil "github.com/disorganizer/brig/util/log"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
@@ -67,76 +65,13 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	return LoadRepository(pwd, absFolderPath)
+	return loadRepository(pwd, absFolderPath)
 }
 
 // CloneRepository clones a brig repository in a git like way
 // TODO: Actually implement that.
 func CloneRepository() *Repository {
 	return nil
-}
-
-// LoadRepository load a brig repository from a given folder.
-func LoadRepository(pwd, folder string) (*Repository, error) {
-	absFolderPath, err := filepath.Abs(folder)
-	if err != nil {
-		return nil, err
-	}
-
-	brigPath := filepath.Join(absFolderPath, ".brig")
-	cfg, err := config.LoadConfig(filepath.Join(brigPath, "config"))
-	if err != nil {
-		return nil, err
-	}
-
-	configValues := map[string]string{
-		"repository.jid":  "",
-		"repository.mid":  "",
-		"repository.uuid": "",
-	}
-
-	for key := range configValues {
-		configValues[key], err = cfg.String(key)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Init the global repo (similar to .gitconfig)
-	globalRepo, err := global.New()
-	if err != nil {
-		return nil, err
-	}
-
-	err = globalRepo.AddRepo(global.RepoListEntry{
-		UniqueID:   configValues["repository.uuid"],
-		RepoPath:   folder,
-		DaemonPort: 6666,
-		IpfsPort:   4001,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	store, err := store.Open(brigPath)
-	if err != nil {
-		return nil, err
-	}
-
-	repo := Repository{
-		Jid:            configValues["repository.jid"],
-		Mid:            configValues["repository.mid"],
-		Folder:         absFolderPath,
-		InternalFolder: brigPath,
-		UniqueID:       configValues["repository.uuid"],
-		Config:         cfg,
-		globalRepo:     globalRepo,
-		Store:          store,
-		Password:       pwd,
-	}
-
-	return &repo, nil
 }
 
 func createRepositoryTree(absFolderPath string) error {

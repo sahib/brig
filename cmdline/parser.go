@@ -114,6 +114,18 @@ func RunCmdline() int {
 			Handle: withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
 		},
 		climax.Command{
+			Name:   "offline",
+			Group:  repoGroup,
+			Brief:  "Disconnect from the outside world. The daemon will continue running.",
+			Handle: withDaemon(handleOffline, true),
+		},
+		climax.Command{
+			Name:   "online",
+			Group:  repoGroup,
+			Brief:  "Connect the daemon to the outside world.",
+			Handle: withDaemon(handleOnline, true),
+		},
+		climax.Command{
 			Name:  "sync",
 			Group: repoGroup,
 			Brief: "Sync with all or selected trusted peers.",

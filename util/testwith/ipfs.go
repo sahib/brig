@@ -9,7 +9,7 @@ import (
 
 func WithIpfs(t *testing.T, root string, f func(*ipfsutil.Node)) {
 	WithIpfsRepo(t, root, func(path string) {
-		node, err := ipfsutil.StartNode(path)
+		node, err := ipfsutil.StartNode(path, false)
 		if err != nil {
 			t.Errorf("")
 		}

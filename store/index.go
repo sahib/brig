@@ -14,6 +14,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -30,12 +31,35 @@ type Store struct {
 	// The root node is the repository root.
 	Root *File
 
+	// Internal path of the repository.
+	repoPath string
+
 	// IpfsNode holds information how and where to reach
 	// the ipfs daemon process.
-	IpfsNode *ipfsutil.Node
+	ipfsNode *ipfsutil.Node
+
+	// xmpp connection wrapper
+	XMPP *Connector
+}
+
+func (s *Store) IpfsNode() (*ipfsutil.Node, error) {
+	if s.ipfsNode != nil {
+		return s.ipfsNode, nil
+	}
+
+	// Start an offline node until we're fully connected.
+	// Local operations will work with an offline mode too.
+	ipfsNode, err := ipfsutil.StartNode(filepath.Join(s.repoPath, "ipfs"), false)
+	if err != nil {
+		return nil, err
+	}
+
+	s.ipfsNode = ipfsNode
+	return ipfsNode, nil
 }
 
 // Open loads an existing store, if it does not exist, it is created.
+// For full function, Connect() should be called afterwards.
 func Open(repoPath string) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	db, err := bolt.Open(filepath.Join(repoPath, "index.bolt"), 0600, options)
@@ -44,15 +68,10 @@ func Open(repoPath string) (*Store, error) {
 		return nil, err
 	}
 
-	ipfsNode, err := ipfsutil.StartNode(filepath.Join(repoPath, "ipfs"))
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
 	store := &Store{
 		db:       db,
-		IpfsNode: ipfsNode,
+		repoPath: repoPath,
+		XMPP:     NewConnector(repoPath),
 	}
 
 	// Create initial buckets:
@@ -155,6 +174,11 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
 func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
+	ipfsNode, err := s.IpfsNode()
+	if err != nil {
+		return err
+	}
+
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
 	initialAdd := false
@@ -196,7 +220,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	mhash, err := ipfsutil.Add(s.IpfsNode, stream)
+	mhash, err := ipfsutil.Add(ipfsNode, stream)
 	if err != nil {
 		return err
 	}
@@ -281,22 +305,65 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
-// GoOffline shuts down all store services that need an connection
-// to the outside.
-// TODO: Make this work with xmpp etc.
-func (s *Store) GoOffline() error {
-	log.Infof("Going offline (bye, ipfs and xmpp)...")
-	if err := s.IpfsNode.Close(); err != nil {
-		log.Warningf("Unable to close ipfs node: %v", err)
+// Connect tries to connect the xmpp client and the ipfs daemon to the outside world.
+func (s *Store) Connect(jid xmpp.JID, password string) error {
+	if err := s.XMPP.Connect(jid, password); err != nil {
+		log.Warningf("Unable to connect xmpp client: %v", err)
 		return err
+	}
+
+	// Check if a previous offline mode was there:
+	if s.ipfsNode != nil && !s.ipfsNode.IsOnline() {
+		node := s.ipfsNode
+		s.ipfsNode = nil
+
+		if err := node.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Try to register a fresh online mode:
+	if s.ipfsNode == nil {
+		ipfsNode, err := ipfsutil.StartNode(filepath.Join(s.repoPath, "ipfs"), true)
+		if err != nil {
+			// Try to mantain a consistent state by disconnecting on error:
+			s.XMPP.Disconnect()
+			return err
+		}
+
+		s.ipfsNode = ipfsNode
 	}
 
 	return nil
 }
 
+// Disconnect shuts down all store services that need an connection
+// to the outside.
+// TODO: Make this work with xmpp etc.
+func (s *Store) Disconnect() (err error) {
+	log.Infof("Going offline (bye, ipfs and xmpp)...")
+	if s.ipfsNode != nil {
+		if err = s.ipfsNode.Close(); err != nil {
+			log.Warningf("Unable to close ipfs node: %v", err)
+		}
+	}
+
+	// Try to close xmpp, even if ipfs is still running:
+	if err = s.XMPP.Disconnect(); err != nil {
+		log.Warningf("Unable to disconnect xmpp client: %v", err)
+	}
+
+	return err
+}
+
+// IsOnline checks if both xmpp and ipfs is up and running.
+func (s *Store) IsOnline() bool {
+	return s.XMPP.IsOnline() && (s.ipfsNode != nil && s.ipfsNode.IsOnline())
+}
+
 // Close syncs all data. It is an error to use the store afterwards.
 func (s *Store) Close() error {
-	if err := s.GoOffline(); err != nil {
+	if err := s.Disconnect(); err != nil {
 		return err
 	}
 

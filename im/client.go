@@ -36,7 +36,7 @@ type Config struct {
 	KeyPath string
 
 	// The place where fingerprints are stored.
-	FingerprintStorePath string
+	FingerprintPath string
 
 	// Timeout before Read or Write will error with ErrTimeout.
 	Timeout time.Duration
@@ -87,7 +87,7 @@ type Client struct {
 
 // NewClient returns a ready client or nil on error.
 func NewClient(config *Config) (*Client, error) {
-	keyStore, err := NewFsFingerprintStore(config.FingerprintStorePath)
+	keyStore, err := NewFsFingerprintStore(config.FingerprintPath)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (c *Client) Fingerprint() string {
 }
 
 // Close terminates all open connections.
-func (c *Client) Close() {
+func (c *Client) Close() error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -209,6 +209,7 @@ func (c *Client) Close() {
 	}
 
 	c.C.Close()
+	return nil
 }
 
 ////////////////////////

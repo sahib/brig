@@ -2,25 +2,28 @@ package daemon
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
 type handlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error)
 
 var handlerMap = map[proto.MessageType]handlerFunc{
-	proto.MessageType_ADD:     handleAdd,
-	proto.MessageType_CAT:     handleCat,
-	proto.MessageType_PING:    handlePing,
-	proto.MessageType_QUIT:    handleQuit,
-	proto.MessageType_MOUNT:   handleMount,
-	proto.MessageType_UNMOUNT: handleUnmount,
-	proto.MessageType_RM:      handleRm,
-	proto.MessageType_HISTORY: handleHistory,
-	proto.MessageType_LOG:     handleLog,
+	proto.MessageType_ADD:           handleAdd,
+	proto.MessageType_CAT:           handleCat,
+	proto.MessageType_PING:          handlePing,
+	proto.MessageType_QUIT:          handleQuit,
+	proto.MessageType_MOUNT:         handleMount,
+	proto.MessageType_UNMOUNT:       handleUnmount,
+	proto.MessageType_RM:            handleRm,
+	proto.MessageType_HISTORY:       handleHistory,
+	proto.MessageType_LOG:           handleLog,
+	proto.MessageType_ONLINE_STATUS: handleOnlineStatus,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
@@ -110,4 +113,22 @@ func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 func handleLog(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	// TODO: Needs implementation.
 	return nil, nil
+}
+
+func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	qry := cmd.GetOnlineStatusCommand().GetQuery()
+	switch qry {
+	case proto.OnlineQuery_IS_ONLINE:
+		if d.Repo.Store.IsOnline() {
+			return []byte("online"), nil
+		} else {
+			return []byte("offline"), nil
+		}
+	case proto.OnlineQuery_GO_ONLINE:
+		return nil, d.Repo.Store.Connect(xmpp.JID(d.Repo.Jid), d.Repo.Password)
+	case proto.OnlineQuery_GO_OFFLINE:
+		return nil, d.Repo.Store.Disconnect()
+	}
+
+	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }

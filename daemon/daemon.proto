@@ -11,6 +11,16 @@ enum MessageType {
 	RM = 6;
     HISTORY = 7;
     LOG = 8;
+    ONLINE_STATUS = 9;
+}
+
+enum OnlineQuery {
+    // Connect ipfs and to xmpp:
+    GO_ONLINE = 0;
+    // Disconnect all:
+    GO_OFFLINE = 1;
+    // Do not alter status; just return current:
+    IS_ONLINE = 2;
 }
 
 message Command {
@@ -57,6 +67,10 @@ message Command {
         // No arguments yet.
     }
 
+    message OnlineStatusCmd {
+        required online_query = 1;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -68,6 +82,7 @@ message Command {
     optional RmCmd rm_command = 8;
     optional HistoryCmd history_command = 9;
     optional LogCmd log_command = 10;
+    optional OnlineStatusCmd online_status_command = 11;
 }
 
 message Response {

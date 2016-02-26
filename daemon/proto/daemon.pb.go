@@ -30,15 +30,16 @@ var _ = math.Inf
 type MessageType int32
 
 const (
-	MessageType_ADD     MessageType = 0
-	MessageType_CAT     MessageType = 1
-	MessageType_PING    MessageType = 2
-	MessageType_QUIT    MessageType = 3
-	MessageType_MOUNT   MessageType = 4
-	MessageType_UNMOUNT MessageType = 5
-	MessageType_RM      MessageType = 6
-	MessageType_HISTORY MessageType = 7
-	MessageType_LOG     MessageType = 8
+	MessageType_ADD           MessageType = 0
+	MessageType_CAT           MessageType = 1
+	MessageType_PING          MessageType = 2
+	MessageType_QUIT          MessageType = 3
+	MessageType_MOUNT         MessageType = 4
+	MessageType_UNMOUNT       MessageType = 5
+	MessageType_RM            MessageType = 6
+	MessageType_HISTORY       MessageType = 7
+	MessageType_LOG           MessageType = 8
+	MessageType_ONLINE_STATUS MessageType = 9
 )
 
 var MessageType_name = map[int32]string{
@@ -51,17 +52,19 @@ var MessageType_name = map[int32]string{
 	6: "RM",
 	7: "HISTORY",
 	8: "LOG",
+	9: "ONLINE_STATUS",
 }
 var MessageType_value = map[string]int32{
-	"ADD":     0,
-	"CAT":     1,
-	"PING":    2,
-	"QUIT":    3,
-	"MOUNT":   4,
-	"UNMOUNT": 5,
-	"RM":      6,
-	"HISTORY": 7,
-	"LOG":     8,
+	"ADD":           0,
+	"CAT":           1,
+	"PING":          2,
+	"QUIT":          3,
+	"MOUNT":         4,
+	"UNMOUNT":       5,
+	"RM":            6,
+	"HISTORY":       7,
+	"LOG":           8,
+	"ONLINE_STATUS": 9,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -81,18 +84,58 @@ func (x *MessageType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type OnlineQuery int32
+
+const (
+	// Connect ipfs and to xmpp:
+	OnlineQuery_GO_ONLINE OnlineQuery = 0
+	// Disconnect all:
+	OnlineQuery_GO_OFFLINE OnlineQuery = 1
+	// Do not alter status; just return current:
+	OnlineQuery_IS_ONLINE OnlineQuery = 2
+)
+
+var OnlineQuery_name = map[int32]string{
+	0: "GO_ONLINE",
+	1: "GO_OFFLINE",
+	2: "IS_ONLINE",
+}
+var OnlineQuery_value = map[string]int32{
+	"GO_ONLINE":  0,
+	"GO_OFFLINE": 1,
+	"IS_ONLINE":  2,
+}
+
+func (x OnlineQuery) Enum() *OnlineQuery {
+	p := new(OnlineQuery)
+	*p = x
+	return p
+}
+func (x OnlineQuery) String() string {
+	return proto1.EnumName(OnlineQuery_name, int32(x))
+}
+func (x *OnlineQuery) UnmarshalJSON(data []byte) error {
+	value, err := proto1.UnmarshalJSONEnum(OnlineQuery_value, data, "OnlineQuery")
+	if err != nil {
+		return err
+	}
+	*x = OnlineQuery(value)
+	return nil
+}
+
 type Command struct {
-	CommandType      *MessageType        `protobuf:"varint,1,req,name=command_type,enum=daemon.protocol.MessageType" json:"command_type,omitempty"`
-	AddCommand       *Command_AddCmd     `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
-	CatCommand       *Command_CatCmd     `protobuf:"bytes,3,opt,name=cat_command" json:"cat_command,omitempty"`
-	PingCommand      *Command_PingCmd    `protobuf:"bytes,4,opt,name=ping_command" json:"ping_command,omitempty"`
-	QuitCommand      *Command_QuitCmd    `protobuf:"bytes,5,opt,name=quit_command" json:"quit_command,omitempty"`
-	MountCommand     *Command_MountCmd   `protobuf:"bytes,6,opt,name=mount_command" json:"mount_command,omitempty"`
-	UnmountCommand   *Command_UnmountCmd `protobuf:"bytes,7,opt,name=unmount_command" json:"unmount_command,omitempty"`
-	RmCommand        *Command_RmCmd      `protobuf:"bytes,8,opt,name=rm_command" json:"rm_command,omitempty"`
-	HistoryCommand   *Command_HistoryCmd `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
-	LogCommand       *Command_LogCmd     `protobuf:"bytes,10,opt,name=log_command" json:"log_command,omitempty"`
-	XXX_unrecognized []byte              `json:"-"`
+	CommandType         *MessageType             `protobuf:"varint,1,req,name=command_type,enum=daemon.protocol.MessageType" json:"command_type,omitempty"`
+	AddCommand          *Command_AddCmd          `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
+	CatCommand          *Command_CatCmd          `protobuf:"bytes,3,opt,name=cat_command" json:"cat_command,omitempty"`
+	PingCommand         *Command_PingCmd         `protobuf:"bytes,4,opt,name=ping_command" json:"ping_command,omitempty"`
+	QuitCommand         *Command_QuitCmd         `protobuf:"bytes,5,opt,name=quit_command" json:"quit_command,omitempty"`
+	MountCommand        *Command_MountCmd        `protobuf:"bytes,6,opt,name=mount_command" json:"mount_command,omitempty"`
+	UnmountCommand      *Command_UnmountCmd      `protobuf:"bytes,7,opt,name=unmount_command" json:"unmount_command,omitempty"`
+	RmCommand           *Command_RmCmd           `protobuf:"bytes,8,opt,name=rm_command" json:"rm_command,omitempty"`
+	HistoryCommand      *Command_HistoryCmd      `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
+	LogCommand          *Command_LogCmd          `protobuf:"bytes,10,opt,name=log_command" json:"log_command,omitempty"`
+	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,11,opt,name=online_status_command" json:"online_status_command,omitempty"`
+	XXX_unrecognized    []byte                   `json:"-"`
 }
 
 func (m *Command) Reset()         { *m = Command{} }
@@ -165,6 +208,13 @@ func (m *Command) GetHistoryCommand() *Command_HistoryCmd {
 func (m *Command) GetLogCommand() *Command_LogCmd {
 	if m != nil {
 		return m.LogCommand
+	}
+	return nil
+}
+
+func (m *Command) GetOnlineStatusCommand() *Command_OnlineStatusCmd {
+	if m != nil {
+		return m.OnlineStatusCommand
 	}
 	return nil
 }
@@ -312,6 +362,22 @@ func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
 func (m *Command_LogCmd) String() string { return proto1.CompactTextString(m) }
 func (*Command_LogCmd) ProtoMessage()    {}
 
+type Command_OnlineStatusCmd struct {
+	Query            *OnlineQuery `protobuf:"varint,1,req,name=query,enum=daemon.protocol.OnlineQuery" json:"query,omitempty"`
+	XXX_unrecognized []byte       `json:"-"`
+}
+
+func (m *Command_OnlineStatusCmd) Reset()         { *m = Command_OnlineStatusCmd{} }
+func (m *Command_OnlineStatusCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_OnlineStatusCmd) ProtoMessage()    {}
+
+func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
+	if m != nil && m.Query != nil {
+		return *m.Query
+	}
+	return OnlineQuery_GO_ONLINE
+}
+
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
@@ -363,8 +429,10 @@ func init() {
 	proto1.RegisterType((*Command_RmCmd)(nil), "daemon.protocol.Command.RmCmd")
 	proto1.RegisterType((*Command_HistoryCmd)(nil), "daemon.protocol.Command.HistoryCmd")
 	proto1.RegisterType((*Command_LogCmd)(nil), "daemon.protocol.Command.LogCmd")
+	proto1.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
+	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
 func (m *Command) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -477,6 +545,16 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n9
+	}
+	if m.OnlineStatusCommand != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusCommand.Size()))
+		n10, err := m.OnlineStatusCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -737,6 +815,34 @@ func (m *Command_LogCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_OnlineStatusCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_OnlineStatusCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Query == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		i = encodeVarintDaemon(data, i, uint64(*m.Query))
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -858,6 +964,10 @@ func (m *Command) Size() (n int) {
 		l = m.LogCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
+	if m.OnlineStatusCommand != nil {
+		l = m.OnlineStatusCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -971,6 +1081,18 @@ func (m *Command_HistoryCmd) Size() (n int) {
 func (m *Command_LogCmd) Size() (n int) {
 	var l int
 	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_OnlineStatusCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Query != nil {
+		n += 1 + sovDaemon(uint64(*m.Query))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1358,6 +1480,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.LogCommand = &Command_LogCmd{}
 			}
 			if err := m.LogCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OnlineStatusCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OnlineStatusCommand == nil {
+				m.OnlineStatusCommand = &Command_OnlineStatusCmd{}
+			}
+			if err := m.OnlineStatusCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2116,6 +2271,82 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OnlineStatusCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OnlineStatusCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Query", wireType)
+			}
+			var v OnlineQuery
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (OnlineQuery(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Query = &v
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
