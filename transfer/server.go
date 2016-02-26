@@ -85,7 +85,7 @@ func NewServer(im io.ReadWriter) *Server {
 
 func (sv *Server) Serve() error {
 	err := <-sv.errors
-	sv.done <- true
+	sv.Quit()
 	return err
 }
 

@@ -189,6 +189,7 @@ func (c *Client) Dial(jid xmpp.JID) (*Conversation, error) {
 }
 
 // Listen waits for new buddies that talk to us.
+// If client gets shut down, Listen() will return nil.
 func (c *Client) Listen() *Conversation {
 	return <-c.incomingBuddies
 }

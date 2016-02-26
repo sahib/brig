@@ -6,12 +6,12 @@ import (
 )
 
 type Client struct {
-	im      io.ReadWriter
+	im      io.ReadWriteCloser
 	encoder *json.Encoder
 	decoder *json.Decoder
 }
 
-func NewClient(im io.ReadWriter) *Client {
+func NewClient(im io.ReadWriteCloser) *Client {
 	return &Client{
 		im:      im,
 		encoder: json.NewEncoder(im),
@@ -30,4 +30,8 @@ func (c *Client) Send(cmd *Command) (*Response, error) {
 	}
 
 	return resp, nil
+}
+
+func (c *Client) Close() error {
+	return c.im.Close()
 }
