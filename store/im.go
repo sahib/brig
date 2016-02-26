@@ -49,7 +49,9 @@ func (c *Connector) Disconnect() error {
 		return nil
 	}
 
-	return c.client.Close()
+	cl := c.client
+	c.client = nil
+	return cl.Close()
 }
 
 func (c *Connector) IsOnline() bool {

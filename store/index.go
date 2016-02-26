@@ -307,6 +307,10 @@ func (s *Store) Cat(path string, w io.Writer) error {
 
 // Connect tries to connect the xmpp client and the ipfs daemon to the outside world.
 func (s *Store) Connect(jid xmpp.JID, password string) error {
+	if s.IsOnline() {
+		return nil
+	}
+
 	if err := s.XMPP.Connect(jid, password); err != nil {
 		log.Warningf("Unable to connect xmpp client: %v", err)
 		return err
@@ -341,12 +345,22 @@ func (s *Store) Connect(jid xmpp.JID, password string) error {
 // to the outside.
 // TODO: Make this work with xmpp etc.
 func (s *Store) Disconnect() (err error) {
-	log.Infof("Going offline (bye, ipfs and xmpp)...")
+	if !s.IsOnline() {
+		return nil
+	}
+
+	log.Debugf("Disconnecting ipfs daemon.")
+
 	if s.ipfsNode != nil {
-		if err = s.ipfsNode.Close(); err != nil {
+		node := s.ipfsNode
+		s.ipfsNode = nil
+
+		if err = node.Close(); err != nil {
 			log.Warningf("Unable to close ipfs node: %v", err)
 		}
 	}
+
+	log.Debugf("Disconnecting xmpp client.")
 
 	// Try to close xmpp, even if ipfs is still running:
 	if err = s.XMPP.Disconnect(); err != nil {

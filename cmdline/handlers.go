@@ -397,6 +397,17 @@ func handleOffline(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
+func handleIsOnline(ctx climax.Context, client *daemon.Client) int {
+	status, err := client.IsOnline()
+	if err != nil {
+		log.Errorf("Failed to check online-status: %v", err)
+		return UnknownError
+	}
+
+	fmt.Println(status)
+	return Success
+}
+
 func handleOnline(ctx climax.Context, client *daemon.Client) int {
 	status, err := client.IsOnline()
 	if err != nil {

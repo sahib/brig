@@ -126,6 +126,12 @@ func RunCmdline() int {
 			Handle: withDaemon(handleOnline, true),
 		},
 		climax.Command{
+			Name:   "is-online",
+			Group:  repoGroup,
+			Brief:  "Check if the daemon is online.",
+			Handle: withDaemon(handleIsOnline, true),
+		},
+		climax.Command{
 			Name:  "sync",
 			Group: repoGroup,
 			Brief: "Sync with all or selected trusted peers.",
