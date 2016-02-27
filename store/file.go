@@ -53,8 +53,12 @@ type File struct {
 	// Note that only one mutex exists per trie.
 	*sync.RWMutex
 
+	// Pointer to the store (for easy access)
 	store *Store
-	node  *trie.Node
+
+	// trie.Node inside the Trie.
+	// The file struct is stored as node.Data internally.
+	node *trie.Node
 }
 
 func (f *File) insert(root *File, path string) {
@@ -107,6 +111,43 @@ func (f *File) UpdateModTime(modTime time.Time) {
 	f.sync()
 }
 
+func (f *File) xorHash(hash *Hash) error {
+	if f.kind != FileTypeDir {
+		log.Warningf("Not a directory TODO")
+		return nil
+	}
+
+	digest, err := multihash.Decode(hash.Multihash)
+	if err != nil {
+		return err
+	}
+
+	var ownHash []byte
+	if f.hash == nil {
+		ownHash = make([]byte, multihash.DefaultLengths[digest.Code]+2)
+	} else {
+		ownDigest, err := multihash.Decode(f.hash.Multihash)
+		if err != nil {
+			return err
+		}
+
+		ownHash = ownDigest.Digest
+	}
+
+	for i := 0; i < len(ownHash); i++ {
+		ownHash[i] ^= digest.Digest[i]
+	}
+
+	mhash, err := multihash.Encode(ownHash, digest.Code)
+	if err != nil {
+		log.Errorf("Unable to decode `%v` as multihash: %v", hash, err)
+		return err
+	}
+
+	f.hash = &Hash{mhash}
+	return nil
+}
+
 func (f *File) sync() {
 	path := f.node.Path()
 	log.Debugf("store-sync: %s (size: %d  mod: %v)", path, f.size, f.modTime)
@@ -124,6 +165,21 @@ func (f *File) sync() {
 		return nil
 	}))
 
+	now := time.Now()
+
+	if f.kind == FileTypeRegular {
+		f.node.Up(func(parentNode *trie.Node) {
+			parent := parentNode.Data.(*File)
+			if parent == f {
+				return
+			}
+
+			parent.xorHash(f.hash)
+			parent.Metadata.size += f.Metadata.size
+			parent.Metadata.modTime = now
+			parent.sync()
+		})
+	}
 }
 
 // NewFile returns a file inside a repo.
@@ -178,6 +234,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		RWMutex: mu,
 		Metadata: &Metadata{
 			modTime: time.Now(),
+			kind:    FileTypeDir,
 		},
 	}
 
@@ -442,59 +499,23 @@ func (f *File) hashUnlocked() *Hash {
 	}
 
 	if f.hash.Valid() {
-		// Directory with pre-computed hash:
+		// Directory has children with valid hashes:
 		return f.hash
 	}
 
-	// Compute hash by XOR'ing all child hashes:
-	// (we need XOR because order must be irrelevant)
-	// TODO: Get actual hash algorithm from config (or something)
-	var hash []byte
-	var code int
-
-	for _, childNode := range f.node.Children {
-		child := childNode.Data.(*File)
-		if !child.hash.Valid() {
-			// Force computation:
-			child.Hash()
-		}
-
-		digest, err := multihash.Decode(child.hash.Multihash)
-		if err != nil {
-			log.Warningf("file-hash: Invalid checksum: %v: %v", child.hash, err)
-			log.Warningf("file-hash: Resulting hashsum might be incorrect.")
-			log.Warningf("           On directories: %s %s", f.node.Path(), child.node.Path())
-			continue
-		}
-
-		// Allocate the suitable amount of bytes to hold the child's cksum:
-		if hash == nil {
-			code = digest.Code
-			hash = make([]byte, multihash.DefaultLengths[code])
-		}
-
-		// Sanity: check if we mixed together different algorithms:
-		if len(digest.Digest) != len(hash) {
-			log.Warningf("file-hash: different cksum lengths: %d <-> %d", len(digest.Digest), len(hash))
-			log.Warningf("           On directories: %s %s", f.node.Path(), child.node.Path())
-			continue
-		}
-
-		for i := 0; i < len(hash); i++ {
-			hash[i] ^= digest.Digest[i]
-		}
-	}
-
-	mhash, err := multihash.Encode(hash, code)
+	// Take a lucky guess:
+	code := multihash.BLAKE2S
+	mhash, err := multihash.Encode(make([]byte, multihash.DefaultLengths[code]), code)
 	if err != nil {
-		log.Errorf("Unable to decode `%v` as multihash: %v", hash, err)
+		// TODO: check if this is a good idea at all.
+		log.Errorf("Oops")
+		return nil
 	}
 
-	f.hash = &Hash{mhash}
-	log.Errorf("Merged: %v %v %v", f.node.Path(), f.hash.B58String(), hash)
-	return f.hash
+	return &Hash{mhash}
 }
 
+// Key returns the encryption key.
 func (f *File) Key() []byte {
 	f.RLock()
 	defer f.RUnlock()
@@ -520,6 +541,7 @@ func (f *File) MarshalJSON() ([]byte, error) {
 		"modtime": f.modTime,
 		"hash":    f.hashUnlocked().B58String(),
 		"path":    path,
+		"kind":    f.kind,
 	}
 
 	if history != nil {

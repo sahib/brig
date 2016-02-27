@@ -245,7 +245,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		size:    int64(sizeAcc.Size()),
 		modTime: time.Now(),
 		hash:    &Hash{mhash},
-		key:     oldMeta.key,
+		key:     file.Metadata.key,
 	}
 
 	// Create a checkpoint in the version history.
@@ -256,7 +256,8 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	// If all went well, save it to bolt:
+	// If all went well, save it to bolt.
+	// This will also sync intermediate directories.
 	file.sync()
 	return nil
 }
