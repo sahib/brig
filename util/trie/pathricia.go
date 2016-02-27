@@ -47,6 +47,11 @@ func NewNode() *Node {
 	return &Node{}
 }
 
+// NewNodeWithData works like NewNode but populates the .Data field.
+func NewNodeWithData(data interface{}) *Node {
+	return &Node{Data: data}
+}
+
 // Root returns the root node of the trie.
 func (n *Node) Root() *Node {
 	if n != nil && n.Parent != nil {

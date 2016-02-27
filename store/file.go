@@ -17,11 +17,28 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
+// TODO: Potential performance problem.
+//       sync() can be slow when updating a file often.
+//       Pool sync() therefore?
+
 const (
 	FileTypeInvalid = iota
 	FileTypeRegular
 	FileTypeDir
 )
+
+var (
+	emptyChildren []*File
+)
+
+// ErrBadMap is returned by FromMap if the passed map is malformed.
+type ErrBadMap struct {
+	missing string
+}
+
+func (e ErrBadMap) Error() string {
+	return fmt.Sprintf("can't import file: bad map, `%s` missing or wrong type.", e.missing)
+}
 
 type FileType int
 
@@ -124,7 +141,7 @@ func (f *File) xorHash(hash *Hash) error {
 
 	var ownHash []byte
 	if f.hash == nil {
-		ownHash = make([]byte, multihash.DefaultLengths[digest.Code]+2)
+		ownHash = make([]byte, multihash.DefaultLengths[digest.Code])
 	} else {
 		ownDigest, err := multihash.Decode(f.hash.Multihash)
 		if err != nil {
@@ -164,22 +181,6 @@ func (f *File) sync() {
 
 		return nil
 	}))
-
-	now := time.Now()
-
-	if f.kind == FileTypeRegular {
-		f.node.Up(func(parentNode *trie.Node) {
-			parent := parentNode.Data.(*File)
-			if parent == f {
-				return
-			}
-
-			parent.xorHash(f.hash)
-			parent.Metadata.size += f.Metadata.size
-			parent.Metadata.modTime = now
-			parent.sync()
-		})
-	}
 }
 
 // NewFile returns a file inside a repo.
@@ -196,12 +197,14 @@ func NewFile(store *Store, path string) (*File, error) {
 		return nil, fmt.Errorf("Read less than desired key size: %v", n)
 	}
 
+	now := time.Now()
 	file := &File{
 		store:   store,
 		RWMutex: store.Root.RWMutex,
 		Metadata: &Metadata{
-			key:  key,
-			kind: FileTypeRegular,
+			key:     key,
+			kind:    FileTypeRegular,
+			modTime: now,
 		},
 	}
 
@@ -209,6 +212,19 @@ func NewFile(store *Store, path string) (*File, error) {
 	defer store.Root.Unlock()
 
 	file.insert(store.Root, path)
+
+	file.node.Up(func(parentNode *trie.Node) {
+		parent := parentNode.Data.(*File)
+		if parent == file {
+			return
+		}
+
+		parent.xorHash(file.hash)
+		parent.Metadata.size += file.Metadata.size
+		parent.Metadata.modTime = now
+		parent.sync()
+	})
+
 	return file, nil
 }
 
@@ -238,14 +254,12 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		},
 	}
 
-	var root *File
 	if store.Root == nil {
-		root = dir
+		dir.node = trie.NewNodeWithData(dir)
 	} else {
-		root = store.Root
+		dir.insert(store.Root, path)
 	}
 
-	dir.insert(root, path)
 	return dir, nil
 }
 
@@ -305,8 +319,9 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 		},
 	}
 
-	file.Lock()
 	path := dataFile.GetPath()
+
+	file.Lock()
 	file.insert(store.Root, path)
 	file.Unlock()
 
@@ -395,8 +410,6 @@ func (f *File) Walk(dfs bool, visit func(*File) bool) {
 		return visit(n.Data.(*File))
 	})
 }
-
-var emptyChildren []*File
 
 // Children returns a list of children of the
 func (f *File) Children() []*File {
@@ -553,4 +566,87 @@ func (f *File) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.MarshalIndent(data, "", "\t")
+}
+
+// TODO: This sucks badly.
+func FromMap(store *Store, m map[string]interface{}) (*File, error) {
+	fmt.Println("IMPORT", m)
+	path, ok := m["path"].(string)
+	if !ok {
+		return nil, ErrBadMap{"path"}
+	}
+
+	modTimeStr, ok := m["modtime"].(string)
+	if !ok {
+		return nil, ErrBadMap{"modtime"}
+	}
+
+	modTime := time.Time{}
+	if err := modTime.UnmarshalText([]byte(modTimeStr)); err != nil {
+		return nil, ErrBadMap{"modtime"}
+	}
+
+	size, ok := m["size"].(float64)
+	if !ok {
+		return nil, ErrBadMap{"size"}
+	}
+
+	kind, ok := m["kind"].(float64)
+	if !ok {
+		return nil, ErrBadMap{"kind"}
+	}
+
+	keyStr, ok := m["key"].(string)
+	if !ok {
+		// Missing key is OK for directories.
+		// TODO: check kind.
+		if kind == FileTypeRegular {
+			return nil, fmt.Errorf("Regular file without key received: %s", path)
+		}
+
+		keyStr = ""
+	}
+
+	key := base58.Decode(keyStr)
+
+	hashB58Str, ok := m["hash"].(string)
+	if !ok {
+		fmt.Println("Fail to unmarshal", hashB58Str)
+		return nil, ErrBadMap{"hash"}
+	}
+
+	hash, err := multihash.FromB58String(hashB58Str)
+	if err != nil {
+		fmt.Println("Fail to parse", err, hashB58Str)
+		return nil, ErrBadMap{"hash"}
+	}
+
+	newMeta := &Metadata{
+		modTime: modTime,
+		size:    int64(size),
+		kind:    FileType(kind),
+		hash:    &Hash{hash},
+		key:     key,
+	}
+
+	// Check if we know this file already:
+	file := store.Root.Lookup(path)
+	if file == nil {
+		// No such file yet. Create new.
+		file, err = NewFile(store, path)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: Import history.
+	} else {
+		// Previous version here, create checkpoint before updating metadata.
+		err = store.MakeCheckpoint(file.Metadata, newMeta, path, file.Path())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	file.Metadata = newMeta
+	return file, nil
 }

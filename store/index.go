@@ -475,6 +475,14 @@ func (s *Store) Import(repoPath string, r io.Reader) error {
 		} else if err != nil {
 			return err
 		}
+
+		file, err := FromMap(s, m)
+		if err != nil {
+			return err
+		}
+
+		log.Warningf("Imported: %v", file.Path())
+		file.Sync()
 	}
 
 	return nil
