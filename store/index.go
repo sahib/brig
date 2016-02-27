@@ -98,7 +98,7 @@ func Open(repoPath string) (*Store, error) {
 
 	err = store.viewWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
-			if _, loadErr := Unmarshal(store, v); loadErr != nil {
+			if _, loadErr := UnmarshalFile(store, v); loadErr != nil {
 				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
 				return loadErr
 			}
@@ -247,6 +247,8 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		hash:    &Hash{mhash},
 		key:     file.Metadata.key,
 	}
+
+	file.updateParents()
 
 	// Create a checkpoint in the version history.
 	// TODO: Move is not yet supported, probably use own function for this.
@@ -427,6 +429,14 @@ func (s *Store) Rm(path string) error {
 	return nil
 }
 
+type packedFile struct {
+	// Protobuf encoded file metadata
+	Metadata []byte
+
+	// history of the file
+	History History
+}
+
 // Export marshals all relevant inside the database, so a cloned
 // repository may import them again.
 // The exported data includes:
@@ -437,46 +447,52 @@ func (s *Store) Rm(path string) error {
 // TODO: Describe json stream format.
 //
 // w is not closed after Export.
-func (s *Store) Export(w io.Writer) (n int, err error) {
+func (s *Store) Export(w io.Writer) (err error) {
 	// TODO: Export commits (not implemented)
 	// TODO: Export pinning information.
+	jsonEnc := json.NewEncoder(w)
+
 	s.Root.Walk(true, func(child *File) bool {
-		data, errJSON := child.MarshalJSON()
+		// Note: Walk() already calls Lock()
+		data, errPb := child.marshal()
 		if err != nil {
+			err = errPb
+			return false
+		}
+
+		history, errHist := s.History(child.node.Path())
+		if errHist != nil {
+			err = errHist
+			return false
+		}
+
+		pack := &packedFile{data, history}
+		if errJSON := jsonEnc.Encode(&pack); err != nil {
 			err = errJSON
 			return false
 		}
 
-		ndata, errWrite := w.Write(data)
-		if errWrite != nil {
-			err = errWrite
-			return false
-		}
-
-		n += ndata
 		return true
 	})
 
-	if err != nil {
-		return
-	}
-
-	return
+	return err
 }
 
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
 func (s *Store) Import(repoPath string, r io.Reader) error {
 	dec := json.NewDecoder(r)
+
 	for {
-		var m map[string]interface{}
-		if err := dec.Decode(&m); err == io.EOF {
+		pack := &packedFile{}
+
+		if err := dec.Decode(&pack); err == io.EOF {
 			break
 		} else if err != nil {
 			return err
 		}
 
-		file, err := FromMap(s, m)
+		file, err := ImportFile(s, pack.Metadata)
 		if err != nil {
 			return err
 		}

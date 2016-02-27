@@ -59,8 +59,7 @@ func TestExport(t *testing.T) {
 			}
 		}
 
-		_, err := store.Export(exportBuf)
-		if err != nil {
+		if err := store.Export(exportBuf); err != nil {
 			t.Errorf("store-export failed: %v", err)
 			return
 		}

@@ -2,7 +2,6 @@ package store
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
 	protobuf "github.com/gogo/protobuf/proto"
-	"github.com/jbenet/go-base58"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -140,6 +138,7 @@ func (f *File) xorHash(hash *Hash) error {
 	}
 
 	var ownHash []byte
+
 	if f.hash == nil {
 		ownHash = make([]byte, multihash.DefaultLengths[digest.Code])
 	} else {
@@ -183,6 +182,23 @@ func (f *File) sync() {
 	}))
 }
 
+// Update size and hash of the parent directories
+func (f *File) updateParents() {
+	now := time.Now()
+
+	f.node.Up(func(parentNode *trie.Node) {
+		parent := parentNode.Data.(*File)
+		if parent == f {
+			return
+		}
+
+		parent.xorHash(f.hash)
+		parent.Metadata.size += f.Metadata.size
+		parent.Metadata.modTime = now
+		parent.sync()
+	})
+}
+
 // NewFile returns a file inside a repo.
 // Path is relative to the repo root.
 func NewFile(store *Store, path string) (*File, error) {
@@ -212,18 +228,6 @@ func NewFile(store *Store, path string) (*File, error) {
 	defer store.Root.Unlock()
 
 	file.insert(store.Root, path)
-
-	file.node.Up(func(parentNode *trie.Node) {
-		parent := parentNode.Data.(*File)
-		if parent == file {
-			return
-		}
-
-		parent.xorHash(file.hash)
-		parent.Metadata.size += file.Metadata.size
-		parent.Metadata.modTime = now
-		parent.sync()
-	})
 
 	return file, nil
 }
@@ -296,15 +300,36 @@ func (f *File) marshal() ([]byte, error) {
 
 // Unmarshal decodes the data in `buf` and inserts the unmarshaled file
 // into `store`.
-func Unmarshal(store *Store, buf []byte) (*File, error) {
+func UnmarshalFile(store *Store, buf []byte) (*File, error) {
+	file, _, err := unmarshalProto(store, buf)
+	return file, err
+}
+
+// Import works like Unmarshal, but
+func ImportFile(store *Store, buf []byte) (*File, error) {
+	file, meta, err := unmarshalProto(store, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	path := file.Path()
+	err = store.MakeCheckpoint(meta, file.Metadata, path, path)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+func unmarshalProto(store *Store, buf []byte) (*File, *Metadata, error) {
 	dataFile := &proto.File{}
 	if err := protobuf.Unmarshal(buf, dataFile); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	modTimeStamp := &time.Time{}
 	if err := modTimeStamp.UnmarshalText(dataFile.GetModTime()); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	file := &File{
@@ -320,12 +345,17 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	}
 
 	path := dataFile.GetPath()
+	var oldMetadata *Metadata
+	oldFile := store.Root.Lookup(path)
+	if oldFile != nil {
+		oldMetadata = oldFile.Metadata
+	}
 
 	file.Lock()
 	file.insert(store.Root, path)
 	file.Unlock()
 
-	return file, nil
+	return file, oldMetadata, nil
 }
 
 ///////////////////
@@ -406,7 +436,6 @@ func (f *File) Walk(dfs bool, visit func(*File) bool) {
 	defer f.RUnlock()
 
 	f.node.Walk(dfs, func(n *trie.Node) bool {
-		fmt.Printf("Visit %s %p\n", n.Path(), n.Data)
 		return visit(n.Data.(*File))
 	})
 }
@@ -536,117 +565,24 @@ func (f *File) Key() []byte {
 	return f.key
 }
 
-func (f *File) MarshalJSON() ([]byte, error) {
-	f.RLock()
-	defer f.RUnlock()
-
-	path := f.node.Path()
-	history, err := f.store.History(path)
-	if err != nil {
-		return nil, err
-	}
-
-	// Usual marshalling does not work well for *File,
-	// since it contains recursive data and some data
-	// is stored only implicitly (e.g. Path())
-	data := map[string]interface{}{
-		"size":    f.size,
-		"modtime": f.modTime,
-		"hash":    f.hashUnlocked().B58String(),
-		"path":    path,
-		"kind":    f.kind,
-	}
-
-	if history != nil {
-		data["history"] = history
-	}
-
-	if f.key != nil {
-		data["key"] = base58.Encode(f.key)
-	}
-
-	return json.MarshalIndent(data, "", "\t")
-}
-
-// TODO: This sucks badly.
-func FromMap(store *Store, m map[string]interface{}) (*File, error) {
-	fmt.Println("IMPORT", m)
-	path, ok := m["path"].(string)
-	if !ok {
-		return nil, ErrBadMap{"path"}
-	}
-
-	modTimeStr, ok := m["modtime"].(string)
-	if !ok {
-		return nil, ErrBadMap{"modtime"}
-	}
-
-	modTime := time.Time{}
-	if err := modTime.UnmarshalText([]byte(modTimeStr)); err != nil {
-		return nil, ErrBadMap{"modtime"}
-	}
-
-	size, ok := m["size"].(float64)
-	if !ok {
-		return nil, ErrBadMap{"size"}
-	}
-
-	kind, ok := m["kind"].(float64)
-	if !ok {
-		return nil, ErrBadMap{"kind"}
-	}
-
-	keyStr, ok := m["key"].(string)
-	if !ok {
-		// Missing key is OK for directories.
-		// TODO: check kind.
-		if kind == FileTypeRegular {
-			return nil, fmt.Errorf("Regular file without key received: %s", path)
-		}
-
-		keyStr = ""
-	}
-
-	key := base58.Decode(keyStr)
-
-	hashB58Str, ok := m["hash"].(string)
-	if !ok {
-		fmt.Println("Fail to unmarshal", hashB58Str)
-		return nil, ErrBadMap{"hash"}
-	}
-
-	hash, err := multihash.FromB58String(hashB58Str)
-	if err != nil {
-		fmt.Println("Fail to parse", err, hashB58Str)
-		return nil, ErrBadMap{"hash"}
-	}
-
-	newMeta := &Metadata{
-		modTime: modTime,
-		size:    int64(size),
-		kind:    FileType(kind),
-		hash:    &Hash{hash},
-		key:     key,
-	}
-
-	// Check if we know this file already:
-	file := store.Root.Lookup(path)
-	if file == nil {
-		// No such file yet. Create new.
-		file, err = NewFile(store, path)
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: Import history.
-	} else {
-		// Previous version here, create checkpoint before updating metadata.
-		err = store.MakeCheckpoint(file.Metadata, newMeta, path, file.Path())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	file.Metadata = newMeta
-	return file, nil
-}
+// 	// Check if we know this file already:
+// 	file := store.Root.Lookup(path)
+// 	if file == nil {
+// 		// No such file yet. Create new.
+// 		file, err = NewFile(store, path)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		// TODO: Import history.
+// 	} else {
+// 		// Previous version here, create checkpoint before updating metadata.
+// 		err = store.MakeCheckpoint(file.Metadata, newMeta, path, file.Path())
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
+//
+// 	file.Metadata = newMeta
+// 	return file, nil
+// }
