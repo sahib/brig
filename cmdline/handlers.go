@@ -173,8 +173,8 @@ func handleConfig(ctx climax.Context) int {
 
 func handleInit(ctx climax.Context) int {
 	jid := xmpp.JID(ctx.Args[0])
-	if jid.Domain() == "" {
-		log.Error("Your JID needs to have a domain.")
+	if err := checkJID(jid); err != nil {
+		log.Errorf("Bad Jabber ID: %v", err)
 		return BadArgs
 	}
 
@@ -227,6 +227,35 @@ func handleInit(ctx climax.Context) int {
 			log.Errorf("Unable to start daemon: %v", err)
 			return DaemonNotResponding
 		}
+	}
+
+	return Success
+}
+
+func handleClone(ctx climax.Context) int {
+	remoteJID := xmpp.JID(ctx.Args[1])
+	if err := checkJID(remoteJID); err != nil {
+		log.Warningf("Bad remote Jabber ID: %v", err)
+		return BadArgs
+	}
+
+	rc := handleInit(ctx)
+	if rc != Success {
+		return rc
+	}
+
+	// Daemon should be up and running by now:
+	port := guessPort()
+
+	// Check if the daemon is running:
+	client, err := daemon.Dial(port)
+	if err == nil {
+		return DaemonNotResponding
+	}
+
+	if err := client.Clone(remoteJID); err != nil {
+		log.Errorf("clone failed: %v", err)
+		return UnknownError
 	}
 
 	return Success

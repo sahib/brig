@@ -161,7 +161,6 @@ func clientPingPong(t *testing.T) {
 			t.Errorf("bob: write failed: %v", err)
 			return
 		}
-
 	}
 
 	<-done

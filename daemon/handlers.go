@@ -132,3 +132,14 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]b
 
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }
+
+func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	// cloneCmd := cmd.GetCloneCommand()
+	// who := xmpp.JID(cloneCmd.GetWho())
+
+	// client := connector.Talk(who)
+	// importData := client.SendClone()
+	// store.Import(importData)
+	// TODO
+	return nil, nil
+}

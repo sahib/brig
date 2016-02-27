@@ -48,12 +48,6 @@ func RunCmdline() int {
 			Help:  `Create an empty repository, open it and associate it with the JID`,
 			Flags: []climax.Flag{
 				{
-					Name:     "depth",
-					Short:    "o",
-					Usage:    `--depth="N"`,
-					Help:     `Only clone up to this depth of pinned files`,
-					Variable: true,
-				}, {
 					Name:  "nodaemon",
 					Short: "n",
 					Help:  `Do not start the daemon.`,
@@ -74,17 +68,22 @@ func RunCmdline() int {
 			Handle: withArgCheck(needAtLeast(1), handleInit),
 		},
 		climax.Command{
-			Name:  "clone",
-			Brief: "Clone an repository from somebody else",
-			Group: repoGroup,
-			Usage: `<OTHER_JID> <YOUR_JID> [<PATH>]`,
-			Help:  `...`,
+			Name:   "clone",
+			Brief:  "Clone an repository from somebody else",
+			Group:  repoGroup,
+			Usage:  `<YOUR_JID> <REMOTE_JID> [<PATH>]`,
+			Help:   `...`,
+			Handle: withArgCheck(needAtLeast(2), handleClone),
 			Flags: []climax.Flag{
 				{
-					Name:     "--depth",
-					Short:    "d",
-					Usage:    `--depth="N"`,
-					Help:     `Only clone up to this depth of pinned files`,
+					Name:  "nodaemon",
+					Short: "n",
+					Help:  `Do not start the daemon.`,
+				}, {
+					Name:     "password",
+					Short:    "x",
+					Usage:    `--password PWD`,
+					Help:     `Supply password.`,
 					Variable: true,
 				},
 			},
@@ -98,13 +97,13 @@ func RunCmdline() int {
 		climax.Command{
 			Name:   "open",
 			Group:  repoGroup,
-			Brief:  "Open an encrypted port. Asks for passphrase.",
+			Brief:  "Open an encrypted repository. Asks for passphrase.",
 			Handle: withDaemon(handleOpen, true),
 		},
 		climax.Command{
 			Name:   "close",
 			Group:  repoGroup,
-			Brief:  "Encrypt all metadata in the port and go offline.",
+			Brief:  "Encrypt all metadata in the repository and go offline.",
 			Handle: withDaemon(handleClose, false),
 		},
 		climax.Command{

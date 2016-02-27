@@ -7,6 +7,7 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/store"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 // recvResponseBytes reads one response from the daemon and formats possible errors.
@@ -175,4 +176,20 @@ func (c *Client) IsOnline() (bool, error) {
 	}
 
 	return string(data) == "online", nil
+}
+
+func (c *Client) Clone(who xmpp.JID) error {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_CLONE.Enum(),
+		CloneCommand: &proto.Command_CloneCmd{
+			Who: protobuf.String(string(who)),
+		},
+	}
+
+	_, err := c.recvResponseBytes("clone")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

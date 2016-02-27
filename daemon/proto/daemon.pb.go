@@ -27,6 +27,9 @@ var _ = proto1.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// The ordering in here has no particular meaning.
+// The numbers just get incremented in the order that
+// they were added - which is a nice history book of brig.
 type MessageType int32
 
 const (
@@ -40,19 +43,21 @@ const (
 	MessageType_HISTORY       MessageType = 7
 	MessageType_LOG           MessageType = 8
 	MessageType_ONLINE_STATUS MessageType = 9
+	MessageType_CLONE         MessageType = 10
 )
 
 var MessageType_name = map[int32]string{
-	0: "ADD",
-	1: "CAT",
-	2: "PING",
-	3: "QUIT",
-	4: "MOUNT",
-	5: "UNMOUNT",
-	6: "RM",
-	7: "HISTORY",
-	8: "LOG",
-	9: "ONLINE_STATUS",
+	0:  "ADD",
+	1:  "CAT",
+	2:  "PING",
+	3:  "QUIT",
+	4:  "MOUNT",
+	5:  "UNMOUNT",
+	6:  "RM",
+	7:  "HISTORY",
+	8:  "LOG",
+	9:  "ONLINE_STATUS",
+	10: "CLONE",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -65,6 +70,7 @@ var MessageType_value = map[string]int32{
 	"HISTORY":       7,
 	"LOG":           8,
 	"ONLINE_STATUS": 9,
+	"CLONE":         10,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -135,6 +141,7 @@ type Command struct {
 	HistoryCommand      *Command_HistoryCmd      `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
 	LogCommand          *Command_LogCmd          `protobuf:"bytes,10,opt,name=log_command" json:"log_command,omitempty"`
 	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,11,opt,name=online_status_command" json:"online_status_command,omitempty"`
+	CloneCommand        *Command_CloneCmd        `protobuf:"bytes,12,opt,name=clone_command" json:"clone_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -215,6 +222,13 @@ func (m *Command) GetLogCommand() *Command_LogCmd {
 func (m *Command) GetOnlineStatusCommand() *Command_OnlineStatusCmd {
 	if m != nil {
 		return m.OnlineStatusCommand
+	}
+	return nil
+}
+
+func (m *Command) GetCloneCommand() *Command_CloneCmd {
+	if m != nil {
+		return m.CloneCommand
 	}
 	return nil
 }
@@ -378,6 +392,22 @@ func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
 	return OnlineQuery_GO_ONLINE
 }
 
+type Command_CloneCmd struct {
+	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_CloneCmd) Reset()         { *m = Command_CloneCmd{} }
+func (m *Command_CloneCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_CloneCmd) ProtoMessage()    {}
+
+func (m *Command_CloneCmd) GetWho() string {
+	if m != nil && m.Who != nil {
+		return *m.Who
+	}
+	return ""
+}
+
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
@@ -430,6 +460,7 @@ func init() {
 	proto1.RegisterType((*Command_HistoryCmd)(nil), "daemon.protocol.Command.HistoryCmd")
 	proto1.RegisterType((*Command_LogCmd)(nil), "daemon.protocol.Command.LogCmd")
 	proto1.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
+	proto1.RegisterType((*Command_CloneCmd)(nil), "daemon.protocol.Command.CloneCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
 	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
@@ -555,6 +586,16 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n10
+	}
+	if m.CloneCommand != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.CloneCommand.Size()))
+		n11, err := m.CloneCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n11
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -843,6 +884,35 @@ func (m *Command_OnlineStatusCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_CloneCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_CloneCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Who == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
+		i += copy(data[i:], *m.Who)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -966,6 +1036,10 @@ func (m *Command) Size() (n int) {
 	}
 	if m.OnlineStatusCommand != nil {
 		l = m.OnlineStatusCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.CloneCommand != nil {
+		l = m.CloneCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1092,6 +1166,19 @@ func (m *Command_OnlineStatusCmd) Size() (n int) {
 	_ = l
 	if m.Query != nil {
 		n += 1 + sovDaemon(uint64(*m.Query))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_CloneCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Who != nil {
+		l = len(*m.Who)
+		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1513,6 +1600,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.OnlineStatusCommand = &Command_OnlineStatusCmd{}
 			}
 			if err := m.OnlineStatusCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CloneCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CloneCommand == nil {
+				m.CloneCommand = &Command_CloneCmd{}
+			}
+			if err := m.CloneCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2328,6 +2448,92 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 				}
 			}
 			m.Query = &v
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_CloneCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CloneCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CloneCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Who", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Who = &s
+			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
