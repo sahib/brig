@@ -3,10 +3,16 @@ package store
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"testing"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
+
+type wrapReader struct {
+	io.ReadSeeker
+	io.Closer
+}
 
 func TestWriteAndRead(t *testing.T) {
 	raw := []byte("Hello World")
@@ -28,7 +34,12 @@ func TestWriteAndRead(t *testing.T) {
 		return
 	}
 
-	decStream, err := NewIpfsReader(TestKey, bytes.NewReader(encrypted.Bytes()))
+	r := wrapReader{
+		bytes.NewReader(encrypted.Bytes()),
+		ioutil.NopCloser(nil),
+	}
+
+	decStream, err := NewIpfsReader(TestKey, r)
 	if err != nil {
 		t.Errorf("Creating decryption stream failed: %v", err)
 		return

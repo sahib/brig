@@ -251,8 +251,6 @@ func TestBigFile(t *testing.T) {
 		return
 	}
 
-	defer wDec.Close()
-
 	// Act a bit like the fuse layer:
 	lay := NewLayer(wDec)
 	lay.Truncate(0)
