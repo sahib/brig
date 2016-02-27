@@ -128,7 +128,6 @@ func (f *File) UpdateModTime(modTime time.Time) {
 
 func (f *File) xorHash(hash *Hash) error {
 	if f.kind != FileTypeDir {
-		log.Warningf("Not a directory TODO")
 		return nil
 	}
 
@@ -164,6 +163,26 @@ func (f *File) xorHash(hash *Hash) error {
 	return nil
 }
 
+// Update size and hash of the parent directories
+// Must be called locked.
+func (f *File) updateParents() {
+	now := time.Now()
+
+	f.node.Up(func(parentNode *trie.Node) {
+		parent := parentNode.Data.(*File)
+		if parent.kind != FileTypeDir {
+			return
+		}
+
+		parent.xorHash(f.hash)
+		parent.Metadata.size += f.Metadata.size
+		parent.Metadata.modTime = now
+		parent.sync()
+	})
+}
+
+// sync file's metadata into bolt.
+// Must be called locked.
 func (f *File) sync() {
 	path := f.node.Path()
 	log.Debugf("store-sync: %s (size: %d  mod: %v)", path, f.size, f.modTime)
@@ -180,23 +199,6 @@ func (f *File) sync() {
 
 		return nil
 	}))
-}
-
-// Update size and hash of the parent directories
-func (f *File) updateParents() {
-	now := time.Now()
-
-	f.node.Up(func(parentNode *trie.Node) {
-		parent := parentNode.Data.(*File)
-		if parent == f {
-			return
-		}
-
-		parent.xorHash(f.hash)
-		parent.Metadata.size += f.Metadata.size
-		parent.Metadata.modTime = now
-		parent.sync()
-	})
 }
 
 // NewFile returns a file inside a repo.
@@ -564,25 +566,3 @@ func (f *File) Key() []byte {
 
 	return f.key
 }
-
-// 	// Check if we know this file already:
-// 	file := store.Root.Lookup(path)
-// 	if file == nil {
-// 		// No such file yet. Create new.
-// 		file, err = NewFile(store, path)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-//
-// 		// TODO: Import history.
-// 	} else {
-// 		// Previous version here, create checkpoint before updating metadata.
-// 		err = store.MakeCheckpoint(file.Metadata, newMeta, path, file.Path())
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-//
-// 	file.Metadata = newMeta
-// 	return file, nil
-// }

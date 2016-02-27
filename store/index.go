@@ -497,8 +497,9 @@ func (s *Store) Import(repoPath string, r io.Reader) error {
 			return err
 		}
 
-		log.Warningf("Imported: %v", file.Path())
+		log.Debugf("Imported: %v", file.Path())
 		file.Sync()
+		file.updateParents()
 	}
 
 	return nil
