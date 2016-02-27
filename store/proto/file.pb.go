@@ -31,7 +31,7 @@ type File struct {
 	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
 	Hash     []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
 	FileSize *int64  `protobuf:"varint,4,req,name=file_size" json:"file_size,omitempty"`
-	IsFile   *bool   `protobuf:"varint,5,req,name=is_file" json:"is_file,omitempty"`
+	Kind     *int32  `protobuf:"varint,5,req,name=kind" json:"kind,omitempty"`
 	// Timestamp formated as RFC 3339
 	ModTime          []byte `protobuf:"bytes,6,req,name=mod_time" json:"mod_time,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
@@ -69,11 +69,11 @@ func (m *File) GetFileSize() int64 {
 	return 0
 }
 
-func (m *File) GetIsFile() bool {
-	if m != nil && m.IsFile != nil {
-		return *m.IsFile
+func (m *File) GetKind() int32 {
+	if m != nil && m.Kind != nil {
+		return *m.Kind
 	}
-	return false
+	return 0
 }
 
 func (m *File) GetModTime() []byte {
@@ -128,17 +128,12 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintFile(data, i, uint64(*m.FileSize))
 	}
-	if m.IsFile == nil {
+	if m.Kind == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x28
 		i++
-		if *m.IsFile {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
+		i = encodeVarintFile(data, i, uint64(*m.Kind))
 	}
 	if m.ModTime == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -199,8 +194,8 @@ func (m *File) Size() (n int) {
 	if m.FileSize != nil {
 		n += 1 + sovFile(uint64(*m.FileSize))
 	}
-	if m.IsFile != nil {
-		n += 2
+	if m.Kind != nil {
+		n += 1 + sovFile(uint64(*m.Kind))
 	}
 	if m.ModTime != nil {
 		l = len(m.ModTime)
@@ -365,9 +360,9 @@ func (m *File) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000002)
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IsFile", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
 			}
-			var v int
+			var v int32
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowFile
@@ -377,13 +372,12 @@ func (m *File) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsFile = &b
+			m.Kind = &v
 			hasFields[0] |= uint64(0x00000004)
 		case 6:
 			if wireType != 2 {

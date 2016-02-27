@@ -41,17 +41,15 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return &Dir{File: d.Parent(), fs: d.fs}, nil
 	}
 
-	if !child.IsLeaf() {
-		return &Dir{
-			File: child,
-			fs:   d.fs,
-		}, nil
+	switch knd := child.Kind(); knd {
+	case store.FileTypeRegular:
+		return &Entry{File: child, fs: d.fs}, nil
+	case store.FileTypeDir:
+		return &Dir{File: child, fs: d.fs}, nil
+	default:
+		log.Errorf("Bad/unsupported file type: %d", knd)
+		return nil, fuse.EIO
 	}
-
-	return &Entry{
-		File: child,
-		fs:   d.fs,
-	}, nil
 }
 
 // Mkdir is called to create a new directory node inside the receiver.
@@ -131,8 +129,14 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	for _, child := range children {
 		childType := fuse.DT_File
-		if !child.IsLeaf() {
+		switch kind := child.Kind(); kind {
+		case store.FileTypeDir:
 			childType = fuse.DT_Dir
+		case store.FileTypeRegular:
+			childType = fuse.DT_File
+		default:
+			log.Errorf("Warning: Bad/unsupported file type: %v", kind)
+			return nil, fuse.EIO
 		}
 
 		fuseEnts = append(fuseEnts, fuse.Dirent{

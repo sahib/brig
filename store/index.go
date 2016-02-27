@@ -245,6 +245,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		size:    int64(sizeAcc.Size()),
 		modTime: time.Now(),
 		hash:    &Hash{mhash},
+		key:     oldMeta.key,
 	}
 
 	// Create a checkpoint in the version history.
@@ -403,8 +404,8 @@ func (s *Store) Rm(path string) error {
 	}
 
 	// TODO: Implement dir walk...
-	if !node.IsLeaf() {
-		return fmt.Errorf("rm does not work on directories yet")
+	if node.Kind() != FileTypeRegular {
+		return fmt.Errorf("TODO: rm does not work on directories yet")
 	}
 
 	// Remove from trie & remove from bolt db.

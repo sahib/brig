@@ -17,13 +17,31 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
-// Metadata captures metadata that might be changed by the user.
+const (
+	FileTypeInvalid = iota
+	FileTypeRegular
+	FileTypeDir
+)
+
+type FileType int
+
+// Metadata is the metadata that might change during modifications of the file.
+// (key should not change)
 type Metadata struct {
-	// Size is the file size in bytes.
+	// size is the file size in bytes.
 	size int64
-	// ModTime is the time when the file or it's metadata was last changed.
+
+	// modTime is the time when the file or it's metadata was last changed.
 	modTime time.Time
-	hash    *Hash
+
+	// hash is the ipfs multihash of the file.
+	hash *Hash
+
+	// key is the key that was used to encrypt this file.
+	key []byte
+
+	// kind is the type of the file (type is reserved...)
+	kind FileType
 }
 
 // File represents a single file in the repository.
@@ -37,9 +55,6 @@ type File struct {
 
 	store *Store
 	node  *trie.Node
-
-	isFile bool
-	key    []byte
 }
 
 func (f *File) insert(root *File, path string) {
@@ -114,6 +129,7 @@ func (f *File) sync() {
 // NewFile returns a file inside a repo.
 // Path is relative to the repo root.
 func NewFile(store *Store, path string) (*File, error) {
+	// TODO: Make this configurable?
 	key := make([]byte, 32)
 	n, err := rand.Reader.Read(key)
 	if err != nil {
@@ -125,11 +141,12 @@ func NewFile(store *Store, path string) (*File, error) {
 	}
 
 	file := &File{
-		store:    store,
-		RWMutex:  store.Root.RWMutex,
-		Metadata: &Metadata{},
-		key:      key,
-		isFile:   true,
+		store:   store,
+		RWMutex: store.Root.RWMutex,
+		Metadata: &Metadata{
+			key:  key,
+			kind: FileTypeRegular,
+		},
 	}
 
 	store.Root.Lock()
@@ -194,7 +211,7 @@ func (f *File) marshal() ([]byte, error) {
 		Key:      f.key,
 		FileSize: protobuf.Int64(f.size),
 		ModTime:  modTimeStamp,
-		IsFile:   protobuf.Bool(f.isFile),
+		Kind:     protobuf.Int32(int32(f.kind)),
 		Hash:     f.hashUnlocked().Multihash,
 	}
 
@@ -222,12 +239,12 @@ func Unmarshal(store *Store, buf []byte) (*File, error) {
 	file := &File{
 		store:   store,
 		RWMutex: store.Root.RWMutex,
-		isFile:  dataFile.GetIsFile(),
-		key:     dataFile.GetKey(),
 		Metadata: &Metadata{
 			size:    dataFile.GetFileSize(),
 			modTime: *modTimeStamp,
 			hash:    &Hash{dataFile.GetHash()},
+			key:     dataFile.GetKey(),
+			kind:    FileType(dataFile.GetKind()),
 		},
 	}
 
@@ -294,13 +311,12 @@ func (f *File) Up(visit func(*File)) {
 	})
 }
 
-// IsLeaf returns true if the file is a leaf node.
-// TODO: needed?
-func (f *File) IsLeaf() bool {
+// Kind returns the FileType
+func (f *File) Kind() FileType {
 	f.RLock()
 	defer f.RUnlock()
 
-	return f.isFile
+	return f.kind
 }
 
 // Path returns the absolute path of the file inside the repository, starting with /.
@@ -308,10 +324,6 @@ func (f *File) Path() string {
 	f.RLock()
 	defer f.RUnlock()
 
-	return f.node.Path()
-}
-
-func (f *File) path() string {
 	return f.node.Path()
 }
 
@@ -381,7 +393,7 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.Key)
+	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.key)
 
 	ipfsNode, err := f.store.IpfsNode()
 	if err != nil {
@@ -421,7 +433,7 @@ func (f *File) Hash() *Hash {
 }
 
 func (f *File) hashUnlocked() *Hash {
-	if f.isFile {
+	if f.kind == FileTypeRegular {
 		if !f.hash.Valid() {
 			log.Warningf("file-hash: BUG: File with no hash: %v", f.node.Path())
 		}
@@ -437,7 +449,9 @@ func (f *File) hashUnlocked() *Hash {
 	// Compute hash by XOR'ing all child hashes:
 	// (we need XOR because order must be irrelevant)
 	// TODO: Get actual hash algorithm from config (or something)
-	hash := make([]byte, multihash.DefaultLengths[multihash.SHA1])
+	var hash []byte
+	var code int
+
 	for _, childNode := range f.node.Children {
 		child := childNode.Data.(*File)
 		if !child.hash.Valid() {
@@ -447,13 +461,22 @@ func (f *File) hashUnlocked() *Hash {
 
 		digest, err := multihash.Decode(child.hash.Multihash)
 		if err != nil {
-			log.Warningf("file-hash: Invalid cksum: %v: %v", child.hash, err)
+			log.Warningf("file-hash: Invalid checksum: %v: %v", child.hash, err)
 			log.Warningf("file-hash: Resulting hashsum might be incorrect.")
+			log.Warningf("           On directories: %s %s", f.node.Path(), child.node.Path())
 			continue
 		}
 
+		// Allocate the suitable amount of bytes to hold the child's cksum:
+		if hash == nil {
+			code = digest.Code
+			hash = make([]byte, multihash.DefaultLengths[code])
+		}
+
+		// Sanity: check if we mixed together different algorithms:
 		if len(digest.Digest) != len(hash) {
 			log.Warningf("file-hash: different cksum lengths: %d <-> %d", len(digest.Digest), len(hash))
+			log.Warningf("           On directories: %s %s", f.node.Path(), child.node.Path())
 			continue
 		}
 
@@ -462,12 +485,13 @@ func (f *File) hashUnlocked() *Hash {
 		}
 	}
 
-	mhash, err := multihash.Encode(hash, multihash.SHA1)
+	mhash, err := multihash.Encode(hash, code)
 	if err != nil {
 		log.Errorf("Unable to decode `%v` as multihash: %v", hash, err)
 	}
 
 	f.hash = &Hash{mhash}
+	log.Errorf("Merged: %v %v %v", f.node.Path(), f.hash.B58String(), hash)
 	return f.hash
 }
 
@@ -496,12 +520,14 @@ func (f *File) MarshalJSON() ([]byte, error) {
 		"modtime": f.modTime,
 		"hash":    f.hashUnlocked().B58String(),
 		"path":    path,
-		"key":     base58.Encode(f.key),
-		"history": history,
 	}
 
-	if history == nil {
-		delete(data, "history")
+	if history != nil {
+		data["history"] = history
+	}
+
+	if f.key != nil {
+		data["key"] = base58.Encode(f.key)
 	}
 
 	return json.MarshalIndent(data, "", "\t")

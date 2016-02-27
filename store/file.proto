@@ -6,7 +6,7 @@ message File {
     optional bytes key = 2;
     optional bytes hash = 3;
     required int64 file_size = 4;
-    required bool is_file = 5;
+    required int32 kind = 5;
     
     // Timestamp formated as RFC 3339
     required bytes mod_time = 6;
