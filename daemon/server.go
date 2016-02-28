@@ -12,6 +12,7 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
 	"github.com/tsuibin/goxmpp2/xmpp"
@@ -174,10 +175,12 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 		return
 	}
 
+	p := protocol.NewProtocol(tnl, false)
+
 	// Loop until client disconnect or dies otherwise:
 	for {
 		msg := &proto.Command{}
-		if err := recv(tnl, msg); err != nil {
+		if err := p.Recv(msg); err != nil {
 			if err != io.EOF {
 				log.Warning("daemon-recv: ", err)
 			}
@@ -185,12 +188,12 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 		}
 
 		log.Infof("recv: %s: %v", conn.RemoteAddr().String(), msg)
-		d.handleCommand(ctx, msg, tnl)
+		d.handleCommand(ctx, msg, p)
 	}
 }
 
 // Handles the actual incoming commands:
-func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.ReadWriter) {
+func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, p *protocol.Protocol) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -216,7 +219,7 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, conn io.
 	}
 
 	// Send the response back to the client:
-	if err := send(conn, resp); err != nil {
+	if err := p.Send(resp); err != nil {
 		log.Warning("Unable to send message back to client: ", err)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 )
 
@@ -57,19 +58,22 @@ func Dial(port int) (*Client, error) {
 // and actually sends them over the network. It then waits
 // for the response and puts it in the Recv channel.
 func (c *Client) handleMessages(tnl io.ReadWriter) {
+	// We don't need compression for a local socket:
+	protocol := protocol.NewProtocol(tnl, false)
+
 	for {
 		select {
 		case <-c.quit:
 			return
 		case msg := <-c.Send:
-			if err := send(tnl, msg); err != nil {
+			if err := protocol.Send(msg); err != nil {
 				log.Warning("client-send: ", err)
 				c.Recv <- nil
 				continue
 			}
 
 			resp := &proto.Response{}
-			if err := recv(tnl, resp); err != nil {
+			if err := protocol.Recv(resp); err != nil {
 				log.Warning("client-recv: ", err)
 				c.Recv <- nil
 				continue
