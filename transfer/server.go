@@ -18,13 +18,10 @@ type Server struct {
 
 func (sv *Server) handleCmd() bool {
 	cmd := &Command{}
-	if err := sv.decoder.Decode(&cmd); err != nil {
-		// TODO: Is there a better way than polling?
-		if err == io.EOF {
-			time.Sleep(100 * time.Millisecond)
-			return true
-		}
 
+	// NOTE: We rely on the underlying stream to not return io.EOF
+	//       early (i.e. when no data is yet available)
+	if err := sv.decoder.Decode(&cmd); err != nil {
 		log.Warningf("Unable to decode item from json stream: %v", err)
 		return true
 	}
