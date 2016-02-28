@@ -1,55 +1,52 @@
 package transfer
 
 import (
-	"encoding/json"
 	"io"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/transfer/proto"
 )
 
 type Server struct {
-	im      io.ReadWriter
-	errors  chan error
-	done    chan bool
-	encoder *json.Encoder
-	decoder *json.Decoder
+	im     io.ReadWriter
+	errors chan error
+	done   chan bool
+	ptcl   *ServerProtocol
 }
 
 func (sv *Server) handleCmd() bool {
-	cmd := &Command{}
-
 	// NOTE: We rely on the underlying stream to not return io.EOF
 	//       early (i.e. when no data is yet available)
-	if err := sv.decoder.Decode(&cmd); err != nil {
+	req, err := sv.ptcl.Decode()
+	if err != nil {
 		log.Warningf("Unable to decode item from json stream: %v", err)
 		return true
 	}
 
-	handler, ok := handlerMap[cmd.ID]
+	handler, ok := handlerMap[req.GetType()]
 	if !ok {
-		log.Warningf("Unknown command id: %d", cmd.ID)
+		log.Warningf("Unknown command id: %d", req.GetType())
 		return true
 	}
 
-	resp, err := handler(sv, cmd)
+	resp, err := handler(sv, req)
 	if err != nil {
-		log.Warningf("Handling %s failed: %v", cmd.ID.String(), err)
+		log.Warningf("Handling %s failed: %v", req.GetType().String(), err)
 		return true
 	}
 
 	if resp == nil {
-		// We don't want to answer.
+		// We don't want to answer. That's okay for introverts.
 		return true
 	}
 
-	resp.ID = cmd.ID
-	if err := sv.encoder.Encode(&resp); err != nil {
+	resp.Type = req.GetType().Enum()
+	if err := sv.ptcl.Encode(resp); err != nil {
 		log.Warningf("Casting response to json failed: %v", err)
 		return true
 	}
 
-	return cmd.ID != CmdQuit
+	return req.GetType() != proto.RequestType_QUIT
 }
 
 func (sv *Server) loop() {
@@ -69,11 +66,10 @@ func (sv *Server) loop() {
 
 func NewServer(im io.ReadWriter) *Server {
 	sv := &Server{
-		im:      im,
-		encoder: json.NewEncoder(im),
-		decoder: json.NewDecoder(im),
-		done:    make(chan bool, 1),
-		errors:  make(chan error),
+		im:     im,
+		ptcl:   NewServerProtocol(im),
+		done:   make(chan bool, 1),
+		errors: make(chan error),
 	}
 
 	go sv.loop()

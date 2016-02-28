@@ -3,9 +3,10 @@ option go_package = "proto";
 
 enum RequestType {
     INVALID = 0;
-    ERROR = 1;
-    CLONE = 2;
-    UPDATE_FILE = 3;
+	QUIT = 1;
+    ERROR = 2;
+    CLONE = 3;
+    UPDATE_FILE = 4;
 }
 
 message Request {

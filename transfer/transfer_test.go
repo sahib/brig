@@ -1,8 +1,11 @@
 package transfer
 
 import (
+	"fmt"
 	"io"
 	"testing"
+
+	"github.com/disorganizer/brig/transfer/proto"
 )
 
 type Network struct {
@@ -40,25 +43,32 @@ func TestIO(t *testing.T) {
 
 	// Client side is just a goroutine:
 	go func() {
-		resp, err := cl.Send(&Command{ID: CmdClone})
+		resp, err := cl.Send(&proto.Request{
+			Type: proto.RequestType_CLONE.Enum(),
+			//Data: testutil.CreateDummyBuf(20),
+		})
+
 		if err != nil {
 			t.Errorf("Sending clone failed: %v", err)
 			return
 		}
 
-		if resp.ID != CmdClone {
-			t.Errorf("Got a wrong id from command: %v", resp.ID)
+		if resp.GetType() != proto.RequestType_CLONE {
+			fmt.Println("SEND SUCCESS NOW QUIOT", resp.GetType())
+			t.Errorf("Got a wrong id from command: %v", resp.GetType())
 			return
 		}
 
-		resp, err = cl.Send(&Command{ID: CmdQuit})
+		resp, err = cl.Send(&proto.Request{
+			Type: proto.RequestType_QUIT.Enum(),
+		})
 		if err != nil {
 			t.Errorf("Sending quit failed: %v", err)
 			return
 		}
 
-		if resp.ID != CmdQuit {
-			t.Errorf("Got a wrong id from command: %v", resp.ID)
+		if resp.GetType() != proto.RequestType_QUIT {
+			t.Errorf("Got a wrong id for the quit command: %v", resp.GetType())
 			return
 		}
 	}()

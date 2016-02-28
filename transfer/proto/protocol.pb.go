@@ -31,22 +31,25 @@ type RequestType int32
 
 const (
 	RequestType_INVALID     RequestType = 0
-	RequestType_ERROR       RequestType = 1
-	RequestType_CLONE       RequestType = 2
-	RequestType_UPDATE_FILE RequestType = 3
+	RequestType_QUIT        RequestType = 1
+	RequestType_ERROR       RequestType = 2
+	RequestType_CLONE       RequestType = 3
+	RequestType_UPDATE_FILE RequestType = 4
 )
 
 var RequestType_name = map[int32]string{
 	0: "INVALID",
-	1: "ERROR",
-	2: "CLONE",
-	3: "UPDATE_FILE",
+	1: "QUIT",
+	2: "ERROR",
+	3: "CLONE",
+	4: "UPDATE_FILE",
 }
 var RequestType_value = map[string]int32{
 	"INVALID":     0,
-	"ERROR":       1,
-	"CLONE":       2,
-	"UPDATE_FILE": 3,
+	"QUIT":        1,
+	"ERROR":       2,
+	"CLONE":       3,
+	"UPDATE_FILE": 4,
 }
 
 func (x RequestType) Enum() *RequestType {
