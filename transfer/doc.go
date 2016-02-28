@@ -1,5 +1,5 @@
 // Package transfer implements the transfer protocol between to brig nodes.
-// The protocol is JSON based.
+// The protocol is based on protobuf.
 //
 // Every transfer node acts as server and client.
 // The server receives commands and sends responses.
