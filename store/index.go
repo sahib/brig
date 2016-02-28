@@ -480,7 +480,7 @@ func (s *Store) Export(w io.Writer) (err error) {
 
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
-func (s *Store) Import(repoPath string, r io.Reader) error {
+func (s *Store) Import(r io.Reader) error {
 	dec := json.NewDecoder(r)
 
 	for {

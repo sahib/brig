@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -134,12 +135,23 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]b
 }
 
 func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
-	// cloneCmd := cmd.GetCloneCommand()
-	// who := xmpp.JID(cloneCmd.GetWho())
+	cloneCmd := cmd.GetCloneCommand()
+	who := xmpp.JID(cloneCmd.GetWho())
 
-	// client := connector.Talk(who)
-	// importData := client.SendClone()
-	// store.Import(importData)
-	// TODO
+	client, err := d.Repo.Store.XMPP.Talk(who)
+	if err != nil {
+		return nil, err
+	}
+
+	importData, err := client.SendClone()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := d.Repo.Store.Import(bytes.NewReader(importData)); err != nil {
+		return nil, err
+	}
+
+	// TODO: what to return on success?
 	return nil, nil
 }

@@ -3,6 +3,7 @@ package im
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -13,9 +14,7 @@ import (
 
 var (
 	// ErrTimeout happens when the partner could not be reached after Config.Timeout.
-	ErrTimeout = fmt.Errorf("Timeout reached during OTR io")
-	// ErrDeadConversation happens when the underlying OTR conversation was ended.
-	ErrDeadConversation = fmt.Errorf("Conversation ended already")
+	ErrTimeout = fmt.Errorf("Timeout reached during OTR I/O")
 )
 
 // Conversation represents a point to point connection with a buddy.
@@ -81,7 +80,7 @@ func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Con
 
 func (b *Conversation) Write(buf []byte) (int, error) {
 	if b.Ended() {
-		return 0, ErrDeadConversation
+		return 0, io.EOF
 	}
 
 	ticker := time.NewTicker(b.Client.Timeout)
@@ -110,7 +109,7 @@ func (b *Conversation) Read(buf []byte) (int, error) {
 // ReadMessage returns exactly one message.
 func (b *Conversation) ReadMessage() ([]byte, error) {
 	if b.Ended() {
-		return nil, ErrDeadConversation
+		return nil, io.EOF
 	}
 
 	ticker := time.NewTicker(b.Client.Timeout)
@@ -123,7 +122,7 @@ func (b *Conversation) ReadMessage() ([]byte, error) {
 			return msg, nil
 		}
 
-		return nil, ErrDeadConversation
+		return nil, io.EOF
 	}
 }
 

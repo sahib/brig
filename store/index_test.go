@@ -69,7 +69,7 @@ func TestExport(t *testing.T) {
 	fmt.Println(string(exportData))
 
 	withEmptyStore(t, func(store *Store) {
-		if err := store.Import(TestPath, bytes.NewReader(exportData)); err != nil {
+		if err := store.Import(bytes.NewReader(exportData)); err != nil {
 			t.Errorf("Could not import data: %v", err)
 			return
 		}

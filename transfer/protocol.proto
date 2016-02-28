@@ -1,0 +1,18 @@
+package transfer.protocol;
+option go_package = "proto";
+
+enum RequestType {
+    INVALID = 0;
+    ERROR = 1;
+    CLONE = 2;
+    UPDATE_FILE = 3;
+}
+
+message Request {
+	required RequestType type = 1;
+}
+
+message Response {
+	required RequestType type = 1;
+	required bytes data = 2;
+}

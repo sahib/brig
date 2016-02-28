@@ -1,4 +1,4 @@
-package encrypt
+	if ackage encrypt
 
 import (
 	"bytes"

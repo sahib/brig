@@ -35,3 +35,8 @@ func (c *Client) Send(cmd *Command) (*Response, error) {
 func (c *Client) Close() error {
 	return c.im.Close()
 }
+
+func (c *Client) SendClone() ([]byte, error) {
+	// TODO
+	return nil, nil
+}

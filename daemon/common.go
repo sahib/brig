@@ -39,6 +39,8 @@ func send(conn io.Writer, msg protobuf.Message) error {
 	return nil
 }
 
+// TODO: use little endian, not varint.
+
 // recv reads a size-prefixed protobuf buffer
 func recv(conn io.Reader, msg protobuf.Message) error {
 	sizeBuf := make([]byte, binary.MaxVarintLen64)

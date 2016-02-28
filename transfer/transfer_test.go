@@ -18,7 +18,12 @@ func (n *Network) Write(p []byte) (int, error) {
 	return n.Writer.Write(p)
 }
 
-func connect() (io.ReadWriter, io.ReadWriter) {
+func (n *Network) Close() error {
+	// NO-OP
+	return nil
+}
+
+func connect() (io.ReadWriteCloser, io.ReadWriteCloser) {
 	// That looks easy, but I spend a very confused hour of
 	// debugging to get the order right. Embarassing, I know.
 	ar, bw := io.Pipe()
