@@ -3,6 +3,7 @@ package repo
 import (
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util/ipfsutil"
 	yamlConfig "github.com/olebedev/config"
 )
 
@@ -25,7 +26,12 @@ type Repository struct {
 	// User supplied password:
 	Password string
 
-	Config     *yamlConfig.Config
-	Store      *store.Store
+	Config *yamlConfig.Config
+	Store  *store.Store
+
+	// IPFS management layer.
+	IPFS *ipfsutil.Node
+
+	// TODO: document...
 	globalRepo *global.Repository
 }

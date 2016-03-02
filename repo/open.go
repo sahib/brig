@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
 var (
@@ -161,7 +162,9 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	store, err := store.Open(brigPath)
+	ipfsLayer := ipfsutil.New(filepath.Join(brigPath, "ipfs"))
+
+	store, err := store.Open(brigPath, ipfsLayer)
 	if err != nil {
 		return nil, err
 	}

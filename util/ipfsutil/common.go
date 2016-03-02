@@ -7,7 +7,7 @@ import (
 
 // Node remembers the settings needed for accessing the ipfs daemon.
 type Node struct {
-	IpfsNode *core.IpfsNode
+	ipfsNode *core.IpfsNode
 	Path     string
 
 	Context context.Context

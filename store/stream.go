@@ -68,6 +68,7 @@ func NewFileReader(key []byte, r io.Reader, length int64) (outR io.Reader, outEr
 		return nil, err
 	}
 
+	// TODO: Can ReadFrom/WriteTo be used here?
 	// TODO: Implement seeking compression.
 	// wZip := compress.NewWriter(wEnc)
 

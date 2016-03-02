@@ -14,7 +14,6 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -34,33 +33,13 @@ type Store struct {
 	// Internal path of the repository.
 	repoPath string
 
-	// IpfsNode holds information how and where to reach
-	// the ipfs daemon process.
-	ipfsNode *ipfsutil.Node
-
-	// xmpp connection wrapper
-	XMPP *Connector
-}
-
-func (s *Store) IpfsNode() (*ipfsutil.Node, error) {
-	if s.ipfsNode != nil {
-		return s.ipfsNode, nil
-	}
-
-	// Start an offline node until we're fully connected.
-	// Local operations will work with an offline mode too.
-	ipfsNode, err := ipfsutil.StartNode(filepath.Join(s.repoPath, "ipfs"), false)
-	if err != nil {
-		return nil, err
-	}
-
-	s.ipfsNode = ipfsNode
-	return ipfsNode, nil
+	// IPFS manager layer (from daemon.Server)
+	IPFS *ipfsutil.Node
 }
 
 // Open loads an existing store, if it does not exist, it is created.
 // For full function, Connect() should be called afterwards.
-func Open(repoPath string) (*Store, error) {
+func Open(repoPath string, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	db, err := bolt.Open(filepath.Join(repoPath, "index.bolt"), 0600, options)
 
@@ -71,7 +50,7 @@ func Open(repoPath string) (*Store, error) {
 	store := &Store{
 		db:       db,
 		repoPath: repoPath,
-		XMPP:     NewConnector(repoPath),
+		IPFS:     IPFS,
 	}
 
 	// Create initial buckets:
@@ -174,11 +153,6 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
 func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
-	ipfsNode, err := s.IpfsNode()
-	if err != nil {
-		return err
-	}
-
 	// Check if the file was already added:
 	file := s.Root.Lookup(repoPath)
 	initialAdd := false
@@ -220,7 +194,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		return err
 	}
 
-	mhash, err := ipfsutil.Add(ipfsNode, stream)
+	mhash, err := ipfsutil.Add(s.IPFS, stream)
 	if err != nil {
 		return err
 	}
@@ -309,82 +283,8 @@ func (s *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
-// Connect tries to connect the xmpp client and the ipfs daemon to the outside world.
-func (s *Store) Connect(jid xmpp.JID, password string) error {
-	if s.IsOnline() {
-		return nil
-	}
-
-	if err := s.XMPP.Connect(jid, password); err != nil {
-		log.Warningf("Unable to connect xmpp client: %v", err)
-		return err
-	}
-
-	// Check if a previous offline mode was there:
-	if s.ipfsNode != nil && !s.ipfsNode.IsOnline() {
-		node := s.ipfsNode
-		s.ipfsNode = nil
-
-		if err := node.Close(); err != nil {
-			return err
-		}
-	}
-
-	// Try to register a fresh online mode:
-	if s.ipfsNode == nil {
-		ipfsNode, err := ipfsutil.StartNode(filepath.Join(s.repoPath, "ipfs"), true)
-		if err != nil {
-			// Try to mantain a consistent state by disconnecting on error:
-			s.XMPP.Disconnect()
-			return err
-		}
-
-		s.ipfsNode = ipfsNode
-	}
-
-	return nil
-}
-
-// Disconnect shuts down all store services that need an connection
-// to the outside.
-// TODO: Make this work with xmpp etc.
-func (s *Store) Disconnect() (err error) {
-	if !s.IsOnline() {
-		return nil
-	}
-
-	log.Debugf("Disconnecting ipfs daemon.")
-
-	if s.ipfsNode != nil {
-		node := s.ipfsNode
-		s.ipfsNode = nil
-
-		if err = node.Close(); err != nil {
-			log.Warningf("Unable to close ipfs node: %v", err)
-		}
-	}
-
-	log.Debugf("Disconnecting xmpp client.")
-
-	// Try to close xmpp, even if ipfs is still running:
-	if err = s.XMPP.Disconnect(); err != nil {
-		log.Warningf("Unable to disconnect xmpp client: %v", err)
-	}
-
-	return err
-}
-
-// IsOnline checks if both xmpp and ipfs is up and running.
-func (s *Store) IsOnline() bool {
-	return s.XMPP.IsOnline() && (s.ipfsNode != nil && s.ipfsNode.IsOnline())
-}
-
 // Close syncs all data. It is an error to use the store afterwards.
 func (s *Store) Close() error {
-	if err := s.Disconnect(); err != nil {
-		return err
-	}
-
 	if err := s.db.Sync(); err != nil {
 		log.Warningf("store-sync: %v", err)
 		return err

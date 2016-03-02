@@ -120,15 +120,15 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]b
 	qry := cmd.GetOnlineStatusCommand().GetQuery()
 	switch qry {
 	case proto.OnlineQuery_IS_ONLINE:
-		if d.Repo.Store.IsOnline() {
+		if d.IsOnline() {
 			return []byte("online"), nil
 		} else {
 			return []byte("offline"), nil
 		}
 	case proto.OnlineQuery_GO_ONLINE:
-		return nil, d.Repo.Store.Connect(xmpp.JID(d.Repo.Jid), d.Repo.Password)
+		return nil, d.Connect(xmpp.JID(d.Repo.Jid), d.Repo.Password)
 	case proto.OnlineQuery_GO_OFFLINE:
-		return nil, d.Repo.Store.Disconnect()
+		return nil, d.Disconnect()
 	}
 
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
@@ -138,7 +138,7 @@ func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	cloneCmd := cmd.GetCloneCommand()
 	who := xmpp.JID(cloneCmd.GetWho())
 
-	client, err := d.Repo.Store.XMPP.Talk(who)
+	client, err := d.XMPP.Talk(who)
 	if err != nil {
 		return nil, err
 	}

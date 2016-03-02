@@ -175,6 +175,9 @@ func (c *Client) IsOnline(jid xmpp.JID) bool {
 }
 
 // Dial opens a conversation with another peer.
+// NOTE: Calling Dial() twice on the same jid will
+//       cause a new OTR session dance, but not yield
+//       a new connection.
 func (c *Client) Dial(jid xmpp.JID) (*Conversation, error) {
 	// Begin the OTR dance:
 	if err := c.send(jid, nil); err != nil {

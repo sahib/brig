@@ -39,7 +39,7 @@ func TestIO(t *testing.T) {
 	alice, bob := connect()
 
 	cl := NewClient(alice)
-	sv := NewServer(bob)
+	sv := NewServer(bob, nil)
 
 	// Client side is just a goroutine:
 	go func() {

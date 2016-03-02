@@ -12,6 +12,7 @@ import (
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 	protobuf "github.com/gogo/protobuf/proto"
@@ -37,6 +38,9 @@ type Server struct {
 
 	// All mountpoints this daemon is serving:
 	Mounts *fuse.MountTable
+
+	// The xmpp management layer.
+	XMPP *transfer.Connector
 
 	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
@@ -87,12 +91,13 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 		ctx:            ctx,
 	}
 
-	// TODO: Make this start in parallel? Needs locking in store.Store.
-	if err := rep.Store.Connect(xmpp.JID(rep.Jid), rep.Password); err != nil {
+	go daemon.loop(cancel)
+
+	// TODO: Make this start in parallel?
+	if err := daemon.Connect(xmpp.JID(rep.Jid), rep.Password); err != nil {
 		return nil, err
 	}
 
-	go daemon.loop(cancel)
 	return daemon, nil
 }
 
@@ -102,6 +107,10 @@ func (d *Server) Serve() {
 
 	if err := d.listener.Close(); err != nil {
 		log.Warningf("daemon-close: cannot close listener: %v", err)
+	}
+
+	if err := d.Disconnect(); err != nil {
+		log.Warningf("Could not shut down online services: %v", err)
 	}
 
 	if err := d.Mounts.Close(); err != nil {
@@ -222,4 +231,52 @@ func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, p *proto
 	if err := p.Send(resp); err != nil {
 		log.Warning("Unable to send message back to client: ", err)
 	}
+}
+
+// Connect tries to connect the xmpp client and the ipfs daemon to the outside world.
+func (sv *Server) Connect(jid xmpp.JID, password string) error {
+	if sv.IsOnline() {
+		return nil
+	}
+
+	if err := sv.XMPP.Connect(jid, password); err != nil {
+		log.Warningf("Unable to connect xmpp client: %v", err)
+		return err
+	}
+
+	// Check if a previous offline mode was there:
+	if err := sv.Repo.IPFS.Online(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Disconnect shuts down all store services that need an connection
+// to the outside.
+// TODO: Make this work with xmpp etc.
+func (sv *Server) Disconnect() (err error) {
+	if !sv.IsOnline() {
+		return nil
+	}
+
+	log.Debugf("Disconnecting ipfs daemon.")
+
+	if err = sv.Repo.IPFS.Close(); err != nil {
+		log.Warningf("Unable to close ipfs node: %v", err)
+	}
+
+	log.Debugf("Disconnecting xmpp client.")
+
+	// Try to close xmpp, even if ipfs is still running:
+	if err = sv.XMPP.Disconnect(); err != nil {
+		log.Warningf("Unable to disconnect xmpp client: %v", err)
+	}
+
+	return err
+}
+
+// IsOnline checks if both xmpp and ipfs is up and running.
+func (sv *Server) IsOnline() bool {
+	return sv.XMPP.IsOnline() && sv.Repo.IPFS.IsOnline()
 }

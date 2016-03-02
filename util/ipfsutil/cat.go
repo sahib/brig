@@ -21,7 +21,12 @@ type Reader interface {
 
 // Cat returns an io.Reader that reads from ipfs.
 func Cat(node *Node, hash multihash.Multihash) (Reader, error) {
-	reader, err := coreunix.Cat(node.Context, node.IpfsNode, hash.B58String())
+	nd, err := node.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	reader, err := coreunix.Cat(node.Context, nd, hash.B58String())
 	if err != nil {
 		log.Warningf("ipfs cat: %v", err)
 		return nil, err

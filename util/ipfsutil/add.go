@@ -12,7 +12,12 @@ import (
 // Add reads `r` and adds it to ipfs.
 // The resulting content hash is returned.
 func Add(node *Node, r io.Reader) (multihash.Multihash, error) {
-	hash, err := coreunix.Add(node.IpfsNode, r)
+	nd, err := node.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := coreunix.Add(nd, r)
 	if err != nil {
 		log.Warningf("ipfs add: %v", err)
 		return nil, err

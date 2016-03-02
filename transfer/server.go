@@ -4,14 +4,32 @@ import (
 	"io"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer/proto"
 )
 
+// Server receives proto.Requests through a io.ReadWriter, processes them
+// and writes a proto.Response back to the writer part.
+//
+// Semantically, it is similar to daemon.Server, but is supposed
+// to react to outside commands instead of local ones.
 type Server struct {
-	im     io.ReadWriter
+	// underlying layer - for correct function it's expected
+	// that Read() blocks until data is available.
+	im io.ReadWriter
+
+	// Serve() waits on this channel
 	errors chan error
-	done   chan bool
-	ptcl   *ServerProtocol
+
+	// gets signalled once loop() is supposed to break out
+	done chan bool
+
+	// Protocol layer for decoding requests and encoding responses.
+	ptcl *ServerProtocol
+
+	// Repository reference (required for handlers)
+	// (This may be nil for testing purpose)
+	rp *repo.Repository
 }
 
 func (sv *Server) handleCmd() bool {
@@ -64,12 +82,13 @@ func (sv *Server) loop() {
 	}
 }
 
-func NewServer(im io.ReadWriter) *Server {
+func NewServer(im io.ReadWriter, rp *repo.Repository) *Server {
 	sv := &Server{
 		im:     im,
 		ptcl:   NewServerProtocol(im),
 		done:   make(chan bool, 1),
 		errors: make(chan error),
+		rp:     rp,
 	}
 
 	go sv.loop()
