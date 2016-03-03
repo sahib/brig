@@ -179,6 +179,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		globalRepo:     globalRepo,
 		Store:          store,
 		Password:       pwd,
+		IPFS:           ipfsLayer,
 	}
 
 	return &repo, nil

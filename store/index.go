@@ -220,6 +220,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 		modTime: time.Now(),
 		hash:    &Hash{mhash},
 		key:     file.Metadata.key,
+		kind:    FileTypeRegular,
 	}
 
 	file.updateParents()

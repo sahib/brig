@@ -85,6 +85,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	daemon := &Server{
 		Repo:           rep,
 		Mounts:         fuse.NewMountTable(rep.Store),
+		XMPP:           transfer.NewConnector(rep),
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		maxConnections: make(chan allowOneConn, MaxConnections),
