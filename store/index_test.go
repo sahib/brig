@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testwith"
 )
 
@@ -15,7 +16,7 @@ var TestPath = filepath.Join(os.TempDir(), "brig-store-test")
 func withEmptyStore(t *testing.T, f func(*Store)) {
 	ipfsPath := filepath.Join(TestPath, "ipfs")
 
-	testwith.WithIpfsRepo(t, ipfsPath, func(ipfsRepoPath string) {
+	testwith.WithIpfs(t, ipfsPath, func(node *ipfsutil.Node) {
 		if err := os.MkdirAll(TestPath, 0744); err != nil {
 			t.Errorf("Could not create store dir at %s: %v", TestPath, err)
 			return
@@ -29,7 +30,7 @@ func withEmptyStore(t *testing.T, f func(*Store)) {
 		}()
 
 		// We need the filesystem for ipfs here:
-		store, err := Open(TestPath)
+		store, err := Open(TestPath, node)
 		if err != nil {
 			t.Errorf("Could not open empty store at %s: %v", TestPath, err)
 			return

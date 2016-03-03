@@ -78,11 +78,11 @@ func clientPingPong(t *testing.T) {
 	tlsConfig := tls.Config{InsecureSkipVerify: true}
 
 	client, err := NewClient(&Config{
-		Jid:                  aliceJid,
-		Password:             alicePwd,
-		TLSConfig:            tlsConfig,
-		KeyPath:              aliceKey,
-		FingerprintStorePath: buddyPathA,
+		Jid:             aliceJid,
+		Password:        alicePwd,
+		TLSConfig:       tlsConfig,
+		KeyPath:         aliceKey,
+		FingerprintPath: buddyPathA,
 	})
 
 	if err != nil {
@@ -93,11 +93,11 @@ func clientPingPong(t *testing.T) {
 	r.alice = client
 
 	client, err = NewClient(&Config{
-		Jid:                  bobJid,
-		Password:             bobPwd,
-		TLSConfig:            tlsConfig,
-		KeyPath:              bobKey,
-		FingerprintStorePath: buddyPathB,
+		Jid:             bobJid,
+		Password:        bobPwd,
+		TLSConfig:       tlsConfig,
+		KeyPath:         bobKey,
+		FingerprintPath: buddyPathB,
 	})
 
 	if err != nil {

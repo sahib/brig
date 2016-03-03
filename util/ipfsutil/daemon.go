@@ -115,5 +115,9 @@ func (n *Node) Close() error {
 		n.Cancel()
 	}
 
-	return n.ipfsNode.Close()
+	if n.ipfsNode != nil {
+		return n.ipfsNode.Close()
+	}
+
+	return nil
 }

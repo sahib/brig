@@ -15,14 +15,6 @@ var (
 	TestPath = filepath.Join(os.TempDir(), "brig_test_ipfs_repo")
 )
 
-func TestStartDaemon(t *testing.T) {
-	testwith.WithIpfs(t, TestPath, func(node *ipfsutil.Node) {
-		if node.IpfsNode == nil {
-			t.Errorf("withIpfs created an invalid Node.")
-		}
-	})
-}
-
 func TestAddCat(t *testing.T) {
 	testwith.WithIpfs(t, TestPath, func(node *ipfsutil.Node) {
 		// Dummy in-memory reader:
