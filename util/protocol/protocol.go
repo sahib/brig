@@ -11,8 +11,6 @@ import (
 	"github.com/golang/snappy"
 )
 
-// TODO: daemon/common.go has very similar code, merge?
-
 const (
 	// Maximum size a single message may have:
 	MessageSizeLimit = 5 * 1024 * 1024
@@ -20,7 +18,11 @@ const (
 
 // ErrMalformed is returned when the size tag is missing
 // or is too short. Bad data in the payload will return a protobuf error.
-var ErrMalformed = errors.New("Malformed protocol data (not enough data)")
+var (
+	ErrMalformed = errors.New("Malformed protocol data (not enough data)")
+	ErrNoReader  = errors.New("Protocol was created without reader part")
+	ErrNoWriter  = errors.New("Protocol was created without writer part")
+)
 
 // ErrMessageTooBig is returned when the received message is bigger
 // than MessageSizeLimit and is therefore refused for security reasons.
@@ -33,15 +35,28 @@ func (e ErrMessageTooBig) Error() string {
 }
 
 type Protocol struct {
-	rw       io.ReadWriter
+	r        io.Reader
+	w        io.Writer
 	compress bool
 }
 
 func NewProtocol(rw io.ReadWriter, compress bool) *Protocol {
-	return &Protocol{rw: rw, compress: compress}
+	return &Protocol{r: rw, w: rw, compress: compress}
+}
+
+func NewProtocolReader(r io.Reader, compress bool) *Protocol {
+	return &Protocol{r: r, w: nil, compress: compress}
+}
+
+func NewProtocolWriter(w io.Writer, compress bool) *Protocol {
+	return &Protocol{r: nil, w: w, compress: compress}
 }
 
 func (p *Protocol) Send(msg protobuf.Message) error {
+	if p.r == nil {
+		return ErrNoWriter
+	}
+
 	data, err := protobuf.Marshal(msg)
 	if err != nil {
 		return err
@@ -53,11 +68,11 @@ func (p *Protocol) Send(msg protobuf.Message) error {
 
 	sizeBuf := make([]byte, 4)
 	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(data)))
-	if _, err := p.rw.Write(sizeBuf); err != nil {
+	if _, err := p.w.Write(sizeBuf); err != nil {
 		return err
 	}
 
-	if _, err := p.rw.Write(data); err != nil {
+	if _, err := p.w.Write(data); err != nil {
 		return err
 	}
 
@@ -65,8 +80,12 @@ func (p *Protocol) Send(msg protobuf.Message) error {
 }
 
 func (p *Protocol) Recv(resp protobuf.Message) error {
+	if p.r == nil {
+		return ErrNoReader
+	}
+
 	sizeBuf := make([]byte, 4)
-	n, err := p.rw.Read(sizeBuf)
+	n, err := p.r.Read(sizeBuf)
 
 	if err != nil {
 		return err
@@ -84,7 +103,7 @@ func (p *Protocol) Recv(resp protobuf.Message) error {
 	data := make([]byte, 0, size)
 	buf := bytes.NewBuffer(data)
 
-	if _, err = io.CopyN(buf, p.rw, int64(size)); err != nil {
+	if _, err = io.CopyN(buf, p.r, int64(size)); err != nil {
 		return err
 	}
 

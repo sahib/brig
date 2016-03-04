@@ -278,21 +278,12 @@ func (f *File) Marshal() ([]byte, error) {
 }
 
 func (f *File) marshal() ([]byte, error) {
-	modTimeStamp, err := f.modTime.MarshalText()
+	protoFile, err := f.toProtoMessage()
 	if err != nil {
 		return nil, err
 	}
 
-	dataFile := &proto.File{
-		Path:     protobuf.String(f.node.Path()),
-		Key:      f.key,
-		FileSize: protobuf.Int64(f.size),
-		ModTime:  modTimeStamp,
-		Kind:     protobuf.Int32(int32(f.kind)),
-		Hash:     f.hashUnlocked().Multihash,
-	}
-
-	data, err := protobuf.Marshal(dataFile)
+	data, err := protobuf.Marshal(protoFile)
 	if err != nil {
 		return nil, err
 	}
@@ -300,64 +291,61 @@ func (f *File) marshal() ([]byte, error) {
 	return data, nil
 }
 
-// Unmarshal decodes the data in `buf` and inserts the unmarshaled file
-// into `store`.
-func UnmarshalFile(store *Store, buf []byte) (*File, error) {
-	file, _, err := unmarshalProto(store, buf)
-	return file, err
+func (f *File) toProtoMessage() (*proto.File, error) {
+	modTimeStamp, err := f.modTime.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.File{
+		Path:     protobuf.String(f.node.Path()),
+		Key:      f.key,
+		FileSize: protobuf.Int64(f.size),
+		ModTime:  modTimeStamp,
+		Kind:     protobuf.Int32(int32(f.kind)),
+		Hash:     f.hashUnlocked().Multihash,
+	}, nil
 }
 
-// Import works like Unmarshal, but
-func ImportFile(store *Store, buf []byte) (*File, error) {
-	file, meta, err := unmarshalProto(store, buf)
-	if err != nil {
+// Unmarshal decodes the data in `buf` and inserts the unmarshaled file
+// into `store`. // TODO: make file receiver?
+func UnmarshalFile(store *Store, buf []byte) (*File, error) {
+	file := &File{
+		store:   store,
+		RWMutex: store.Root.RWMutex,
+	}
+
+	protoFile := &proto.File{}
+	if err := protobuf.Unmarshal(buf, protoFile); err != nil {
 		return nil, err
 	}
 
-	path := file.Path()
-	err = store.MakeCheckpoint(meta, file.Metadata, path, path)
-	if err != nil {
+	if err := file.fromProtoMsg(protoFile); err != nil {
 		return nil, err
 	}
+
+	file.Lock()
+	file.insert(store.Root, protoFile.GetPath())
+	file.Unlock()
 
 	return file, nil
 }
 
-func unmarshalProto(store *Store, buf []byte) (*File, *Metadata, error) {
-	dataFile := &proto.File{}
-	if err := protobuf.Unmarshal(buf, dataFile); err != nil {
-		return nil, nil, err
-	}
-
+func (fi *File) fromProtoMsg(protoFile *proto.File) error {
 	modTimeStamp := &time.Time{}
-	if err := modTimeStamp.UnmarshalText(dataFile.GetModTime()); err != nil {
-		return nil, nil, err
+	if err := modTimeStamp.UnmarshalText(protoFile.GetModTime()); err != nil {
+		return err
 	}
 
-	file := &File{
-		store:   store,
-		RWMutex: store.Root.RWMutex,
-		Metadata: &Metadata{
-			size:    dataFile.GetFileSize(),
-			modTime: *modTimeStamp,
-			hash:    &Hash{dataFile.GetHash()},
-			key:     dataFile.GetKey(),
-			kind:    FileType(dataFile.GetKind()),
-		},
+	fi.Metadata = &Metadata{
+		size:    protoFile.GetFileSize(),
+		modTime: *modTimeStamp,
+		hash:    &Hash{protoFile.GetHash()},
+		key:     protoFile.GetKey(),
+		kind:    FileType(protoFile.GetKind()),
 	}
 
-	path := dataFile.GetPath()
-	var oldMetadata *Metadata
-	oldFile := store.Root.Lookup(path)
-	if oldFile != nil {
-		oldMetadata = oldFile.Metadata
-	}
-
-	file.Lock()
-	file.insert(store.Root, path)
-	file.Unlock()
-
-	return file, oldMetadata, nil
+	return nil
 }
 
 ///////////////////

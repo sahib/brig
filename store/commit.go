@@ -173,7 +173,7 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 // New changes get appended to the end.
 type History []*Checkpoint
 
-func (hy *History) Marshal() ([]byte, error) {
+func (hy *History) toProtoMessage() (*proto.History, error) {
 	protoHist := &proto.History{}
 
 	for _, ck := range *hy {
@@ -185,6 +185,15 @@ func (hy *History) Marshal() ([]byte, error) {
 		protoHist.Hist = append(protoHist.Hist, protoCheck)
 	}
 
+	return protoHist, nil
+}
+
+func (hy *History) Marshal() ([]byte, error) {
+	protoHist, err := hy.toProtoMessage()
+	if err != nil {
+		return nil, err
+	}
+
 	data, err := protobuf.Marshal(protoHist)
 	if err != nil {
 		return nil, err
@@ -193,13 +202,7 @@ func (hy *History) Marshal() ([]byte, error) {
 	return data, nil
 }
 
-func (hy *History) Unmarshal(data []byte) error {
-	protoHist := &proto.History{}
-
-	if err := protobuf.Unmarshal(data, protoHist); err != nil {
-		return err
-	}
-
+func (hy *History) fromProtoMessage(protoHist *proto.History) error {
 	for _, protoCheck := range protoHist.Hist {
 		ck := &Checkpoint{}
 		if err := ck.fromProtoMessage(protoCheck); err != nil {
@@ -210,6 +213,16 @@ func (hy *History) Unmarshal(data []byte) error {
 	}
 
 	return nil
+}
+
+func (hy *History) Unmarshal(data []byte) error {
+	protoHist := &proto.History{}
+
+	if err := protobuf.Unmarshal(data, protoHist); err != nil {
+		return err
+	}
+
+	return hy.fromProtoMessage(protoHist)
 }
 
 // MakeCheckpoint creates a new checkpoint in the version history of `curr`.

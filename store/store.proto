@@ -24,3 +24,11 @@ message Checkpoint {
 message History {
     repeated Checkpoint hist = 1 [packed=false];
 }
+
+// A pack stores the history of a file besides it's metadata.
+// i.e. everything needed for an exported file.
+message Pack {
+    required File file = 1;
+    required History history = 2;
+}
+

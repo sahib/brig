@@ -2,7 +2,6 @@ package store
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -12,8 +11,10 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/store/proto"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/disorganizer/brig/util/protocol"
 )
 
 var (
@@ -330,14 +331,6 @@ func (s *Store) Rm(path string) error {
 	return nil
 }
 
-type packedFile struct {
-	// Protobuf encoded file metadata
-	Metadata []byte
-
-	// history of the file
-	History *History
-}
-
 // Export marshals all relevant inside the database, so a cloned
 // repository may import them again.
 // The exported data includes:
@@ -351,13 +344,13 @@ type packedFile struct {
 func (s *Store) Export(w io.Writer) (err error) {
 	// TODO: Export commits (not implemented)
 	// TODO: Export pinning information.
-	jsonEnc := json.NewEncoder(w)
+	enc := protocol.NewProtocolWriter(w, true)
 
 	s.Root.Walk(true, func(child *File) bool {
 		// Note: Walk() already calls Lock()
-		data, errPb := child.marshal()
+		protoFile, errPbf := child.toProtoMessage()
 		if err != nil {
-			err = errPb
+			err = errPbf
 			return false
 		}
 
@@ -367,9 +360,19 @@ func (s *Store) Export(w io.Writer) (err error) {
 			return false
 		}
 
-		pack := &packedFile{data, history}
-		if errJSON := jsonEnc.Encode(&pack); err != nil {
-			err = errJSON
+		protoHist, errPbh := history.toProtoMessage()
+		if err != nil {
+			err = errPbh
+			return false
+		}
+
+		protoPack := &proto.Pack{
+			File:    protoFile,
+			History: protoHist,
+		}
+
+		if errSend := enc.Send(protoPack); err != nil {
+			err = errSend
 			return false
 		}
 
@@ -382,21 +385,24 @@ func (s *Store) Export(w io.Writer) (err error) {
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
 func (s *Store) Import(r io.Reader) error {
-	dec := json.NewDecoder(r)
+	dec := protocol.NewProtocolReader(r, true)
 
 	for {
-		pack := &packedFile{}
+		pack := &proto.Pack{}
 
-		if err := dec.Decode(&pack); err == io.EOF {
+		if err := dec.Recv(pack); err == io.EOF {
 			break
 		} else if err != nil {
 			return err
 		}
 
-		file, err := ImportFile(s, pack.Metadata)
-		if err != nil {
+		// TODO?
+		file := &File{store: s, RWMutex: s.Root.RWMutex}
+		if err := file.fromProtoMsg(pack.GetFile()); err != nil {
 			return err
 		}
+
+		// TODO: Insert history.
 
 		log.Debugf("Imported: %v", file.Path())
 		file.Sync()
