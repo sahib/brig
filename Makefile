@@ -3,7 +3,6 @@ all:
 
 lint:
 	gometalinter ./... --deadline 1m | grep -v '.*\.pb\..*'
-
 proto:
 	@make -C store
 	@make -C daemon

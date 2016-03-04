@@ -1,12 +1,13 @@
 package store
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/store/proto"
+	protobuf "github.com/gogo/protobuf/proto"
 )
 
 const (
@@ -56,19 +57,14 @@ func (c *ChangeType) String() string {
 	return changeTypeToString[*c]
 }
 
-// MarshalJSON formats a changetype as json string with String()
-func (c *ChangeType) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.Quote(c.String())), nil
-}
-
 // UnmarshalJSON reads a json string and tries to convert it to a ChangeType.
-func (c *ChangeType) UnmarshalJSON(data []byte) error {
-	unquoted, err := strconv.Unquote(string(data))
-	if err != nil {
-		return err
+func (c *ChangeType) Unmarshal(data []byte) error {
+	var ok bool
+	*c, ok = stringToChangeType[string(data)]
+	if !ok {
+		return fmt.Errorf("Bad change type: %v", string(data))
 	}
 
-	*c = stringToChangeType[unquoted]
 	return nil
 }
 
@@ -95,29 +91,126 @@ type Checkpoint struct {
 	// Hash is the hash of the file at this point.
 	// It may, or may not be retrievable from ipfs.
 	// For ChangeRemove the hash is the hash of the last existing file.
-	Hash *Hash `json:"hash"`
+	Hash *Hash
 
 	// ModTime is the time the checkpoint was made.
-	ModTime time.Time `json:"modtime"`
+	ModTime time.Time
 
 	// Size is the size of the file in bytes at this point.
-	Size int64 `json:"size"`
+	Size int64
 
 	// Change is the detailed type of the modification.
-	Change *ChangeType `json:"change"`
+	Change ChangeType
 
 	// Author of the file modifications (jabber id)
-	Author string `json:"author"`
+	Author string
 }
 
 // TODO: nice representation
 func (c *Checkpoint) String() string {
-	return fmt.Sprintf("%-7s %+7s@%s", c.Change, c.Hash.B58String(), c.ModTime.String())
+	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
+}
+
+func (cp *Checkpoint) toProtoMessage() (*proto.Checkpoint, error) {
+	mtimeBin, err := cp.ModTime.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	protoCheck := &proto.Checkpoint{
+		Hash:     cp.Hash.Bytes(),
+		ModTime:  mtimeBin,
+		FileSize: protobuf.Int64(cp.Size),
+		Change:   protobuf.Int32(int32(cp.Change)),
+		Author:   protobuf.String(cp.Author),
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return protoCheck, nil
+}
+
+func (cp *Checkpoint) fromProtoMessage(msg *proto.Checkpoint) error {
+	modTime := time.Time{}
+	if err := modTime.UnmarshalBinary(msg.GetModTime()); err != nil {
+		return err
+	}
+
+	cp.Hash = &Hash{msg.GetHash()}
+	cp.ModTime = modTime
+	cp.Size = msg.GetFileSize()
+	cp.Change = ChangeType(msg.GetChange())
+	cp.Author = msg.GetAuthor()
+	return nil
+}
+
+func (cp *Checkpoint) Marshal() ([]byte, error) {
+	protoCheck, err := cp.toProtoMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	protoData, err := protobuf.Marshal(protoCheck)
+	if err != nil {
+		return nil, err
+	}
+
+	return protoData, nil
+}
+
+func (cp *Checkpoint) Unmarshal(data []byte) error {
+	protoCheck := &proto.Checkpoint{}
+	if err := protobuf.Unmarshal(data, protoCheck); err != nil {
+		return err
+	}
+
+	return cp.fromProtoMessage(protoCheck)
 }
 
 // History remembers the changes made to a file.
 // New changes get appended to the end.
 type History []*Checkpoint
+
+func (hy *History) Marshal() ([]byte, error) {
+	protoHist := &proto.History{}
+
+	for _, ck := range *hy {
+		protoCheck, err := ck.toProtoMessage()
+		if err != nil {
+			return nil, err
+		}
+
+		protoHist.Hist = append(protoHist.Hist, protoCheck)
+	}
+
+	data, err := protobuf.Marshal(protoHist)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (hy *History) Unmarshal(data []byte) error {
+	protoHist := &proto.History{}
+
+	if err := protobuf.Unmarshal(data, protoHist); err != nil {
+		return err
+	}
+
+	for _, protoCheck := range protoHist.Hist {
+		ck := &Checkpoint{}
+		if err := ck.fromProtoMessage(protoCheck); err != nil {
+			return err
+		}
+
+		*hy = append(*hy, ck)
+	}
+
+	return nil
+}
 
 // MakeCheckpoint creates a new checkpoint in the version history of `curr`.
 // One of old or curr may be nil (if no old version exists or new version
@@ -146,17 +239,17 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		Hash:    hash,
 		ModTime: time.Now(),
 		Size:    size,
-		Change:  &change,
+		Change:  change,
 		// TODO: Take the actual one
 		Author: "alice@jabber.nullcat.de/desktop",
 	}
 
-	jsonPoint, err := json.Marshal(checkpoint)
+	protoData, err := checkpoint.Marshal()
 	if err != nil {
 		return err
 	}
 
-	mtimeJSON, err := json.Marshal(checkpoint.ModTime)
+	mtimeBin, err := checkpoint.ModTime.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -167,23 +260,23 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 			return err
 		}
 
-		return histBuck.Put(mtimeJSON, jsonPoint)
+		return histBuck.Put(mtimeBin, protoData)
 	})
 
 	if dbErr != nil {
 		return dbErr
 	}
 
-	fmt.Println("created check point: ", checkpoint)
+	log.Debugf("created check point: ", checkpoint)
 	return nil
 }
 
 // History returns all checkpoints a file has.
 // Note: even on error a empty history is returned.
-func (s *Store) History(path string) (History, error) {
+func (s *Store) History(path string) (*History, error) {
 	var hist History
 
-	return hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+	return &hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		changeBuck := bckt.Bucket([]byte(path))
 		if changeBuck == nil {
 			// No history yet, return empty.
@@ -192,7 +285,7 @@ func (s *Store) History(path string) (History, error) {
 
 		return changeBuck.ForEach(func(k, v []byte) error {
 			ck := &Checkpoint{}
-			if err := json.Unmarshal(v, &ck); err != nil {
+			if err := ck.Unmarshal(v); err != nil {
 				return err
 			}
 

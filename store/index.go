@@ -335,7 +335,7 @@ type packedFile struct {
 	Metadata []byte
 
 	// history of the file
-	History History
+	History *History
 }
 
 // Export marshals all relevant inside the database, so a cloned

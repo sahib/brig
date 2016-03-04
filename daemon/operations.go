@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/disorganizer/brig/daemon/proto"
@@ -122,17 +121,17 @@ func (c *Client) History(repoPath string) (store.History, error) {
 
 	// TODO: Sending json over protobuf is pretty hilarious/stupid.
 	//       Do something else, but be consistent this time.
-	jsonData, err := c.recvResponseBytes("history")
+	protoData, err := c.recvResponseBytes("history")
 	if err != nil {
 		return nil, err
 	}
 
-	hist := make(store.History, 0)
-	if err := json.Unmarshal([]byte(jsonData), &hist); err != nil {
+	hist := &store.History{}
+	if err := hist.Unmarshal(protoData); err != nil {
 		return nil, err
 	}
 
-	return hist, nil
+	return *hist, nil
 }
 
 func (c *Client) alterOnlineStatus(query proto.OnlineQuery) ([]byte, error) {

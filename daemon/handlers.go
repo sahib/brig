@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -103,12 +102,12 @@ func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 		return nil, err
 	}
 
-	jsonData, err := json.Marshal(history)
+	protoData, err := history.Marshal()
 	if err != nil {
 		return nil, err
 	}
 
-	return jsonData, err
+	return protoData, err
 }
 
 func handleLog(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {

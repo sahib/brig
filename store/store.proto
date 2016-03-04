@@ -1,0 +1,26 @@
+package bolt.protocol;
+option go_package = "proto";
+
+message File {
+    required string path = 1;
+    optional bytes key = 2;
+    optional bytes hash = 3;
+    required int64 file_size = 4;
+    required int32 kind = 5;
+    
+    // Timestamp formated as RFC 3339
+    required bytes mod_time = 6;
+}
+
+message Checkpoint {
+    required bytes hash = 1;
+    required bytes mod_time = 2;
+    required int64 file_size = 3;
+    required int32 change = 4;
+    // TODO: add authorship message and struct.
+    required string author = 5;
+}
+
+message History {
+    repeated Checkpoint hist = 1 [packed=false];
+}
