@@ -78,7 +78,8 @@ func Open(repoPath string, IPFS *ipfsutil.Node) (*Store, error) {
 
 	err = store.viewWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
 		return bucket.ForEach(func(k []byte, v []byte) error {
-			if _, loadErr := UnmarshalFile(store, v); loadErr != nil {
+			file := emptyFile(store)
+			if loadErr := file.Unmarshal(store, v); loadErr != nil {
 				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
 				return loadErr
 			}
@@ -396,13 +397,12 @@ func (s *Store) Import(r io.Reader) error {
 			return err
 		}
 
-		// TODO?
-		file := &File{store: s, RWMutex: s.Root.RWMutex}
-		if err := file.fromProtoMsg(pack.GetFile()); err != nil {
+		file := emptyFile(s)
+		if err := file.Import(pack.GetFile()); err != nil {
 			return err
 		}
 
-		// TODO: Insert history.
+		// TODO: Insert history?
 
 		log.Debugf("Imported: %v", file.Path())
 		file.Sync()

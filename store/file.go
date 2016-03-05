@@ -201,6 +201,13 @@ func (f *File) sync() {
 	}))
 }
 
+func emptyFile(st *Store) *File {
+	return &File{
+		store:   st,
+		RWMutex: st.Root.RWMutex,
+	}
+}
+
 // NewFile returns a file inside a repo.
 // Path is relative to the repo root.
 func NewFile(store *Store, path string) (*File, error) {
@@ -215,15 +222,11 @@ func NewFile(store *Store, path string) (*File, error) {
 		return nil, fmt.Errorf("Read less than desired key size: %v", n)
 	}
 
-	now := time.Now()
-	file := &File{
-		store:   store,
-		RWMutex: store.Root.RWMutex,
-		Metadata: &Metadata{
-			key:     key,
-			kind:    FileTypeRegular,
-			modTime: now,
-		},
+	file := emptyFile(store)
+	file.Metadata = &Metadata{
+		key:     key,
+		kind:    FileTypeRegular,
+		modTime: time.Now(),
 	}
 
 	store.Root.Lock()
@@ -309,29 +312,28 @@ func (f *File) toProtoMessage() (*proto.File, error) {
 
 // Unmarshal decodes the data in `buf` and inserts the unmarshaled file
 // into `store`. // TODO: make file receiver?
-func UnmarshalFile(store *Store, buf []byte) (*File, error) {
-	file := &File{
-		store:   store,
-		RWMutex: store.Root.RWMutex,
-	}
-
+func (fi *File) Unmarshal(store *Store, buf []byte) error {
 	protoFile := &proto.File{}
 	if err := protobuf.Unmarshal(buf, protoFile); err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := file.fromProtoMsg(protoFile); err != nil {
-		return nil, err
-	}
-
-	file.Lock()
-	file.insert(store.Root, protoFile.GetPath())
-	file.Unlock()
-
-	return file, nil
+	return fi.Import(protoFile)
 }
 
-func (fi *File) fromProtoMsg(protoFile *proto.File) error {
+func (fi *File) Import(protoFile *proto.File) error {
+	if err := fi.fromProtoMessage(protoFile); err != nil {
+		return err
+	}
+
+	fi.Lock()
+	fi.insert(fi.store.Root, protoFile.GetPath())
+	fi.Unlock()
+
+	return nil
+}
+
+func (fi *File) fromProtoMessage(protoFile *proto.File) error {
 	modTimeStamp := &time.Time{}
 	if err := modTimeStamp.UnmarshalText(protoFile.GetModTime()); err != nil {
 		return err

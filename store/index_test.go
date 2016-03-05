@@ -67,7 +67,11 @@ func TestExport(t *testing.T) {
 	})
 
 	exportData := exportBuf.Bytes()
-	fmt.Println(string(exportData))
+
+	if len(exportData) == 0 {
+		t.Errorf("Exported data is empty.")
+		return
+	}
 
 	withEmptyStore(t, func(store *Store) {
 		if err := store.Import(bytes.NewReader(exportData)); err != nil {

@@ -1,3 +1,6 @@
+// Package protocol implements a encoder and decoder for a protobuf based
+// communication protocol. Any protobuf.Message might be send and received.
+// Optionally, the messages might be compressed using snappy.
 package protocol
 
 import (
@@ -53,7 +56,7 @@ func NewProtocolWriter(w io.Writer, compress bool) *Protocol {
 }
 
 func (p *Protocol) Send(msg protobuf.Message) error {
-	if p.r == nil {
+	if p.w == nil {
 		return ErrNoWriter
 	}
 
