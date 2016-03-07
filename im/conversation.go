@@ -12,6 +12,13 @@ import (
 	"golang.org/x/crypto/otr"
 )
 
+const (
+	// ChunkSize is the maximum size of one chunk of data.
+	// XMPP does not allow arbitary big messages, therefore
+	// we need to distribute big writes over several messages.
+	ChunkSize = 8 * 1024
+)
+
 var (
 	// ErrTimeout happens when the partner could not be reached after Config.Timeout.
 	ErrTimeout = fmt.Errorf("Timeout reached during OTR I/O")
@@ -78,6 +85,65 @@ func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Con
 	}
 }
 
+func escape(data []byte) []byte {
+	buf := &bytes.Buffer{}
+
+	for _, b := range data {
+		switch b {
+		case 0:
+			buf.Write([]byte{'\\', '0'})
+		case '\\':
+			buf.Write([]byte{'\\', '\\'})
+		default:
+			buf.WriteByte(b)
+		}
+	}
+
+	return buf.Bytes()
+}
+
+func unescape(data []byte) []byte {
+	// I'm lazy, this could be more efficient...
+	data = bytes.Replace(data, []byte{'\\', '\\'}, []byte{'\\'}, -1)
+	data = bytes.Replace(data, []byte{'\\', '0'}, []byte{0}, -1)
+	return data
+}
+
+// func (b *Conversation) Write(buf []byte) (int, error) {
+// 	if len(buf) == 0 {
+// 		return 0, nil
+// 	}
+//
+// 	n := 0
+// 	chunks := bytes.NewBuffer(buf)
+//
+// 	sizeBuf := make([]byte, 4)
+// 	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(buf)))
+// 	// TODO: hash the whole data and send that hash too?
+//
+// 	fmt.Println("write header", sizeBuf)
+// 	if _, err := b.writeChunk(sizeBuf); err != nil {
+// 		return 0, err
+// 	}
+//
+// 	for {
+// 		chunk := chunks.Next(ChunkSize)
+// 		if len(chunk) == 0 {
+// 			break
+// 		}
+//
+// 		nn, err := b.writeChunk(chunk)
+// 		fmt.Println("write chunk", nn, err, chunk)
+// 		if err != nil {
+// 			return n, err
+// 		}
+//
+// 		n += nn
+// 	}
+//
+// 	return n, nil
+// }
+
 func (b *Conversation) Write(buf []byte) (int, error) {
 	if b.Ended() {
 		return 0, io.EOF
@@ -85,10 +151,15 @@ func (b *Conversation) Write(buf []byte) (int, error) {
 
 	ticker := time.NewTicker(b.Client.Timeout)
 
+	// This is retarted and the result of crack-misuse by the OTR designers.
+	// Sending nul bytes as part of `buf` is not allowed, since the protocol
+	// uses \0 to split off the TLV data (length, type etc.) - which goes
+	// wrong when having nul bytes in the actual data. Why the heck didn't
+	// they just prepend it to the data?
 	select {
 	case <-ticker.C:
 		return 0, ErrTimeout
-	case b.send <- buf:
+	case b.send <- escape(buf):
 		return len(buf), nil
 	}
 }
@@ -106,6 +177,44 @@ func (b *Conversation) Read(buf []byte) (int, error) {
 	return b.readBuf.Read(buf[:n])
 }
 
+// func (b *Conversation) ReadMessage() ([]byte, error) {
+// 	header, err := b.readChunk()
+// 	if err != nil {
+// 		fmt.Println("Reading header failed")
+// 		return nil, err
+// 	}
+//
+// 	fmt.Println("Read header size", header)
+//
+// 	if len(header) < 4 {
+// 		fmt.Println("Weird header", header)
+// 		return nil, fmt.Errorf("Bad header")
+// 	}
+//
+// 	size := binary.LittleEndian.Uint32(header)
+// 	buf := bytes.NewBuffer(make([]byte, 0, size))
+// 	fmt.Println("Read header size in bytes", size)
+//
+// 	nchunks := int(size / ChunkSize)
+// 	if size%ChunkSize != 0 {
+// 		nchunks += 1
+// 	}
+//
+// 	for i := 0; i < nchunks; i++ {
+// 		chunk, err := b.readChunk()
+//
+// 		if chunk != nil {
+// 			buf.Write(chunk)
+// 		}
+//
+// 		if err != nil {
+// 			return buf.Bytes(), err
+// 		}
+// 	}
+//
+// 	return buf.Bytes(), nil
+// }
+
 // ReadMessage returns exactly one message.
 func (b *Conversation) ReadMessage() ([]byte, error) {
 	if b.Ended() {
@@ -119,7 +228,8 @@ func (b *Conversation) ReadMessage() ([]byte, error) {
 		return nil, ErrTimeout
 	case msg, ok := <-b.recv:
 		if ok {
-			return msg, nil
+			// See comment in Write() for explanation.
+			return unescape(msg), nil
 		}
 
 		return nil, io.EOF
@@ -151,7 +261,10 @@ func (b *Conversation) adieu() {
 
 // Add a message to the conversation
 func (b *Conversation) add(msg []byte) {
-	if !b.Ended() {
+	b.Lock()
+	defer b.Unlock()
+
+	if !b.isDead {
 		b.recv <- msg
 	}
 }

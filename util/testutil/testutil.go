@@ -51,10 +51,12 @@ func CreateFile(size int64) string {
 	return fd.Name()
 }
 
-// Remover removes all data in path recursively and errors when it fails.
+// Remover removes all files in paths recursively and errors when it fails.
 // It is no error if there's nothing to delete. It's useful in defer statements.
-func Remover(t *testing.T, path string) {
-	if err := os.RemoveAll(path); err != nil {
-		t.Errorf("removing temp directory failed: %v", err)
+func Remover(t *testing.T, paths ...string) {
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			t.Errorf("removing temp directory failed: %v", err)
+		}
 	}
 }

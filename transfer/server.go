@@ -37,7 +37,7 @@ func (sv *Server) handleCmd() bool {
 	//       early (i.e. when no data is yet available)
 	req, err := sv.ptcl.Decode()
 	if err != nil {
-		log.Warningf("Unable to decode item from json stream: %v", err)
+		log.Warningf("Unable to decode item from protobuf stream: %v", err)
 		return true
 	}
 
@@ -60,7 +60,7 @@ func (sv *Server) handleCmd() bool {
 
 	resp.Type = req.GetType().Enum()
 	if err := sv.ptcl.Encode(resp); err != nil {
-		log.Warningf("Casting response to json failed: %v", err)
+		log.Warningf("Casting response to protobuf failed: %v", err)
 		return true
 	}
 

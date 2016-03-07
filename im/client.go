@@ -139,7 +139,7 @@ func NewClient(config *Config) (*Client, error) {
 			case *xmpp.Message:
 				response, err := c.recv(msg)
 				if err != nil {
-					log.Warningf("im-recv: %v", err)
+					log.Warningf("im-recv(%v): %v", c.C.Jid, err)
 				}
 
 				if response != nil {
@@ -390,7 +390,7 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			return nil, nil, false, err
 		}
 	case otr.SMPComplete: // We or they completed the quest.
-		log.Debugf("[!] Answer is correct")
+		log.Debugf("[!] %v thinks answer is correct", c.C.Jid)
 		if cnv.initiated == false && cnv.authenticated == false {
 			if err := auth("bob: alice's fingerprint?", from); err != nil {
 				return nil, nil, false, err
@@ -406,6 +406,8 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 			log.Warningf("Unable to save fingerprints: %v", err)
 		}
 
+		// Authentication is complete; check if we need to send messages
+		// that were Write()n, but not send yet.
 		if cnv.initiated == true && cnv.authenticated {
 			for _, backlogMsg := range cnv.backlog {
 				base64Texts, err := cnv.conversation.Send(backlogMsg)
@@ -415,6 +417,8 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 
 				responses = append(responses, base64Texts...)
 			}
+
+			// Clear the backlog
 			cnv.backlog = make([][]byte, 0)
 		}
 
