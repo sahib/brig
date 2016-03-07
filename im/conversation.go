@@ -103,7 +103,7 @@ func escape(data []byte) []byte {
 }
 
 func unescape(data []byte) []byte {
-	// I'm lazy, this could be more efficient...
+	// TODO: I'm lazy, this could be more efficient...
 	data = bytes.Replace(data, []byte{'\\', '\\'}, []byte{'\\'}, -1)
 	data = bytes.Replace(data, []byte{'\\', '0'}, []byte{0}, -1)
 	return data

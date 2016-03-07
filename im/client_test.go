@@ -22,8 +22,6 @@ func init() {
 }
 
 func TestClientPingPong(t *testing.T) {
-	return // TODO
-
 	clientAlice, err := NewDummyClient(AliceJid, AlicePwd)
 	if err != nil {
 		t.Errorf("Creating Alice' client failed: %v", err)
@@ -46,8 +44,6 @@ func TestClientPingPong(t *testing.T) {
 
 	done := make(chan bool)
 
-	suffix := testutil.CreateDummyBuf(8 * 1024 * 1024)
-
 	go func() {
 		cnv, err := clientAlice.Dial(BobJid)
 		if err != nil {
@@ -57,7 +53,7 @@ func TestClientPingPong(t *testing.T) {
 
 		for i := 0; !cnv.Ended() && i < 10; i++ {
 			t.Logf("Alice: PING %d", i)
-			data := []byte(fmt.Sprintf("PING %d - %v", i, suffix))
+			data := []byte(fmt.Sprintf("PING %d", i))
 
 			if _, err := cnv.Write(data); err != nil {
 				t.Errorf("alice: write failed: %v", err)
@@ -71,7 +67,7 @@ func TestClientPingPong(t *testing.T) {
 				return
 			}
 
-			if !bytes.Equal(msg, []byte(fmt.Sprintf("PONG %d - %v", i, suffix))) {
+			if !bytes.Equal(msg, []byte(fmt.Sprintf("PONG %d", i))) {
 				t.Errorf("PING %d does not match PONG %d", i, i)
 				return
 			}
@@ -91,13 +87,13 @@ func TestClientPingPong(t *testing.T) {
 			return
 		}
 
-		if !bytes.Equal(msg, []byte(fmt.Sprintf("PING %d - %v", i, suffix))) {
+		if !bytes.Equal(msg, []byte(fmt.Sprintf("PING %d", i))) {
 			t.Errorf("PING %d does not match PONG %d", i, i)
 			return
 		}
 
 		t.Logf("Bob: PONG %d", i)
-		if _, err = cnv.Write([]byte(fmt.Sprintf("PONG %d - %v", i, suffix))); err != nil {
+		if _, err = cnv.Write([]byte(fmt.Sprintf("PONG %d", i))); err != nil {
 			t.Errorf("bob: write failed: %v", err)
 			return
 		}
@@ -110,7 +106,6 @@ func TestClientPingPong(t *testing.T) {
 }
 
 func TestLargeMessage(t *testing.T) {
-	// return // TODO
 	clientAlice, err := NewDummyClient(AliceJid, AlicePwd)
 	if err != nil {
 		t.Errorf("Creating Alice' client failed: %v", err)
@@ -163,14 +158,14 @@ func TestLargeMessage(t *testing.T) {
 		return
 	}
 
-	recvBuf, err := cnv.ReadMessage()
+	recvBuf := make([]byte, N)
+	n, err := cnv.Read(recvBuf)
 	if err != nil {
-		fmt.Println("test recv err", err)
 		t.Errorf("Receiving from alice failed: %v", err)
 		return
 	}
 
-	if len(recvBuf) != N {
+	if n != N {
 		t.Errorf("Received weird amount of bytes from alice: %d; should be %d", len(recvBuf), N)
 		return
 	}
