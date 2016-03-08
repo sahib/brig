@@ -84,7 +84,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
 		Repo:           rep,
-		Mounts:         fuse.NewMountTable(rep.Store),
+		Mounts:         fuse.NewMountTable(rep.OwnStore),
 		XMPP:           transfer.NewConnector(rep),
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
@@ -255,7 +255,6 @@ func (sv *Server) Connect(jid xmpp.JID, password string) error {
 
 // Disconnect shuts down all store services that need an connection
 // to the outside.
-// TODO: Make this work with xmpp etc.
 func (sv *Server) Disconnect() (err error) {
 	if !sv.IsOnline() {
 		return nil

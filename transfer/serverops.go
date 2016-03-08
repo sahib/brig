@@ -22,7 +22,7 @@ func handleQuit(sv *Server, req *proto.Request) (*proto.Response, error) {
 func handleClone(sv *Server, req *proto.Request) (*proto.Response, error) {
 	buf := &bytes.Buffer{}
 
-	if err := sv.rp.Store.Export(buf); err != nil {
+	if err := sv.rp.OwnStore.Export(buf); err != nil {
 		return nil, err
 	}
 

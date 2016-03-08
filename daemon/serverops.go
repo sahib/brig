@@ -39,7 +39,7 @@ func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, erro
 	filePath := cmd.GetAddCommand().GetFilePath()
 	repoPath := cmd.GetAddCommand().GetRepoPath()
 
-	err := d.Repo.Store.Add(filePath, repoPath)
+	err := d.Repo.OwnStore.Add(filePath, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func handleCat(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, erro
 	}
 
 	srcPath := cmd.GetCatCommand().GetRepoPath()
-	if err := d.Repo.Store.Cat(srcPath, fd); err != nil {
+	if err := d.Repo.OwnStore.Cat(srcPath, fd); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	repoPath := cmd.GetRmCommand().GetRepoPath()
 
-	if err := d.Repo.Store.Rm(repoPath); err != nil {
+	if err := d.Repo.OwnStore.Rm(repoPath); err != nil {
 		return nil, err
 	}
 
@@ -97,7 +97,7 @@ func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error
 func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
 	repoPath := cmd.GetHistoryCommand().GetRepoPath()
 
-	history, err := d.Repo.Store.History(repoPath)
+	history, err := d.Repo.OwnStore.History(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 		return nil, err
 	}
 
-	if err := d.Repo.Store.Import(bytes.NewReader(importData)); err != nil {
+	if err := d.Repo.OwnStore.Import(bytes.NewReader(importData)); err != nil {
 		return nil, err
 	}
 

@@ -12,6 +12,7 @@ import (
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -164,20 +165,24 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 
 	ipfsLayer := ipfsutil.New(filepath.Join(brigPath, "ipfs"))
 
-	store, err := store.Open(brigPath, ipfsLayer)
+	ownStore, err := store.Open(brigPath, ipfsLayer)
 	if err != nil {
 		return nil, err
 	}
 
+	jid := configValues["repository.jid"]
+	allStores := make(map[xmpp.JID]*store.Store)
+	allStores[xmpp.JID(jid)] = ownStore
+
 	repo := Repository{
-		Jid:            configValues["repository.jid"],
+		Jid:            jid,
 		Mid:            configValues["repository.mid"],
 		Folder:         absFolderPath,
 		InternalFolder: brigPath,
 		UniqueID:       configValues["repository.uuid"],
 		Config:         cfg,
 		globalRepo:     globalRepo,
-		Store:          store,
+		OwnStore:       ownStore,
 		Password:       pwd,
 		IPFS:           ipfsLayer,
 	}

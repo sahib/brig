@@ -5,6 +5,7 @@ import (
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	yamlConfig "github.com/olebedev/config"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 // Repository represents a handle to one physical brig repository.
@@ -27,11 +28,28 @@ type Repository struct {
 	Password string
 
 	Config *yamlConfig.Config
-	Store  *store.Store
+
+	allStores map[xmpp.JID]*store.Store
+
+	// OwnStore is the store.Store used to save our own files in.
+	// This is guaranteed to be non-nil.
+	OwnStore *store.Store
 
 	// IPFS management layer.
 	IPFS *ipfsutil.Node
 
 	// TODO: document...
 	globalRepo *global.Repository
+}
+
+func (rp *Repository) AddStore(jid xmpp.JID, st *store.Store) {
+	rp.allStores[jid] = st
+}
+
+func (rp *Repository) RmStore(jid xmpp.JID) {
+	delete(rp.allStores, jid)
+}
+
+func (rp *Repository) Store(jid xmpp.JID) *store.Store {
+	return rp.allStores[jid]
 }
