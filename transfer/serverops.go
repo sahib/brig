@@ -1,6 +1,10 @@
 package transfer
 
-import "github.com/disorganizer/brig/transfer/proto"
+import (
+	"bytes"
+
+	"github.com/disorganizer/brig/transfer/proto"
+)
 
 type handler func(*Server, *proto.Request) (*proto.Response, error)
 
@@ -16,5 +20,11 @@ func handleQuit(sv *Server, req *proto.Request) (*proto.Response, error) {
 }
 
 func handleClone(sv *Server, req *proto.Request) (*proto.Response, error) {
-	return &proto.Response{Data: []byte("CLONE")}, nil
+	buf := &bytes.Buffer{}
+
+	if err := sv.rp.Store.Export(buf); err != nil {
+		return nil, err
+	}
+
+	return &proto.Response{Data: buf.Bytes()}, nil
 }

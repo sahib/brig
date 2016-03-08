@@ -142,7 +142,7 @@ func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 		return nil, err
 	}
 
-	importData, err := client.SendClone()
+	importData, err := client.DoClone()
 	if err != nil {
 		return nil, err
 	}

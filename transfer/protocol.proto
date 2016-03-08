@@ -15,5 +15,6 @@ message Request {
 
 message Response {
 	required RequestType type = 1;
-	required bytes data = 2;
+	optional bytes data = 2;
+    optional string error = 3;
 }

@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer/proto"
+	protobuf "github.com/gogo/protobuf/proto"
 )
 
 // Server receives proto.Requests through a io.ReadWriter, processes them
@@ -50,6 +51,16 @@ func (sv *Server) handleCmd() bool {
 	resp, err := handler(sv, req)
 	if err != nil {
 		log.Warningf("Handling %s failed: %v", req.GetType().String(), err)
+
+		resp = &proto.Response{
+			Type:  req.GetType().Enum(),
+			Error: protobuf.String(err.Error()),
+		}
+
+		if err := sv.ptcl.Encode(resp); err != nil {
+			log.Warningf("...also unable to send the error to the client: %v", err)
+		}
+
 		return true
 	}
 

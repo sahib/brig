@@ -87,7 +87,8 @@ func (m *Request) GetType() RequestType {
 
 type Response struct {
 	Type             *RequestType `protobuf:"varint,1,req,name=type,enum=transfer.protocol.RequestType" json:"type,omitempty"`
-	Data             []byte       `protobuf:"bytes,2,req,name=data" json:"data,omitempty"`
+	Data             []byte       `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	Error            *string      `protobuf:"bytes,3,opt,name=error" json:"error,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
 }
 
@@ -107,6 +108,13 @@ func (m *Response) GetData() []byte {
 		return m.Data
 	}
 	return nil
+}
+
+func (m *Response) GetError() string {
+	if m != nil && m.Error != nil {
+		return *m.Error
+	}
+	return ""
 }
 
 func init() {
@@ -164,13 +172,17 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintProtocol(data, i, uint64(*m.Type))
 	}
-	if m.Data == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Data != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintProtocol(data, i, uint64(len(m.Data)))
 		i += copy(data[i:], m.Data)
+	}
+	if m.Error != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintProtocol(data, i, uint64(len(*m.Error)))
+		i += copy(data[i:], *m.Error)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -225,6 +237,10 @@ func (m *Response) Size() (n int) {
 	}
 	if m.Data != nil {
 		l = len(m.Data)
+		n += 1 + l + sovProtocol(uint64(l))
+	}
+	if m.Error != nil {
+		l = len(*m.Error)
 		n += 1 + l + sovProtocol(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -401,7 +417,36 @@ func (m *Response) Unmarshal(data []byte) error {
 			}
 			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Error = &s
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtocol(data[iNdEx:])
@@ -419,9 +464,6 @@ func (m *Response) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

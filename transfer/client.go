@@ -1,6 +1,9 @@
 package transfer
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 import "github.com/disorganizer/brig/transfer/proto"
 
 type Client struct {
@@ -32,7 +35,21 @@ func (c *Client) Close() error {
 	return c.im.Close()
 }
 
-func (c *Client) SendClone() ([]byte, error) {
-	// TODO
-	return nil, nil
+func (c *Client) unpack(req *proto.Request) ([]byte, error) {
+	resp, err := c.Send(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.GetError() != "" {
+		return nil, errors.New(resp.GetError())
+	}
+
+	return resp.GetData(), nil
+}
+
+func (c *Client) DoClone() ([]byte, error) {
+	return c.unpack(&proto.Request{
+		Type: proto.RequestType_CLONE.Enum(),
+	})
 }
