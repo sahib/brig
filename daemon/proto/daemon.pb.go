@@ -43,7 +43,8 @@ const (
 	MessageType_HISTORY       MessageType = 7
 	MessageType_LOG           MessageType = 8
 	MessageType_ONLINE_STATUS MessageType = 9
-	MessageType_CLONE         MessageType = 10
+	MessageType_FETCH         MessageType = 10
+	MessageType_LIST          MessageType = 11
 )
 
 var MessageType_name = map[int32]string{
@@ -57,7 +58,8 @@ var MessageType_name = map[int32]string{
 	7:  "HISTORY",
 	8:  "LOG",
 	9:  "ONLINE_STATUS",
-	10: "CLONE",
+	10: "FETCH",
+	11: "LIST",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -70,7 +72,8 @@ var MessageType_value = map[string]int32{
 	"HISTORY":       7,
 	"LOG":           8,
 	"ONLINE_STATUS": 9,
-	"CLONE":         10,
+	"FETCH":         10,
+	"LIST":          11,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -141,7 +144,8 @@ type Command struct {
 	HistoryCommand      *Command_HistoryCmd      `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
 	LogCommand          *Command_LogCmd          `protobuf:"bytes,10,opt,name=log_command" json:"log_command,omitempty"`
 	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,11,opt,name=online_status_command" json:"online_status_command,omitempty"`
-	CloneCommand        *Command_CloneCmd        `protobuf:"bytes,12,opt,name=clone_command" json:"clone_command,omitempty"`
+	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,12,opt,name=fetch_command" json:"fetch_command,omitempty"`
+	ListCommand         *Command_ListCmd         `protobuf:"bytes,13,opt,name=list_command" json:"list_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -226,9 +230,16 @@ func (m *Command) GetOnlineStatusCommand() *Command_OnlineStatusCmd {
 	return nil
 }
 
-func (m *Command) GetCloneCommand() *Command_CloneCmd {
+func (m *Command) GetFetchCommand() *Command_FetchCmd {
 	if m != nil {
-		return m.CloneCommand
+		return m.FetchCommand
+	}
+	return nil
+}
+
+func (m *Command) GetListCommand() *Command_ListCmd {
+	if m != nil {
+		return m.ListCommand
 	}
 	return nil
 }
@@ -392,20 +403,44 @@ func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
 	return OnlineQuery_GO_ONLINE
 }
 
-type Command_CloneCmd struct {
+type Command_FetchCmd struct {
 	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_CloneCmd) Reset()         { *m = Command_CloneCmd{} }
-func (m *Command_CloneCmd) String() string { return proto1.CompactTextString(m) }
-func (*Command_CloneCmd) ProtoMessage()    {}
+func (m *Command_FetchCmd) Reset()         { *m = Command_FetchCmd{} }
+func (m *Command_FetchCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_FetchCmd) ProtoMessage()    {}
 
-func (m *Command_CloneCmd) GetWho() string {
+func (m *Command_FetchCmd) GetWho() string {
 	if m != nil && m.Who != nil {
 		return *m.Who
 	}
 	return ""
+}
+
+type Command_ListCmd struct {
+	Root             *string `protobuf:"bytes,1,req,name=root" json:"root,omitempty"`
+	Depth            *int32  `protobuf:"varint,2,req,name=depth" json:"depth,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_ListCmd) Reset()         { *m = Command_ListCmd{} }
+func (m *Command_ListCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_ListCmd) ProtoMessage()    {}
+
+func (m *Command_ListCmd) GetRoot() string {
+	if m != nil && m.Root != nil {
+		return *m.Root
+	}
+	return ""
+}
+
+func (m *Command_ListCmd) GetDepth() int32 {
+	if m != nil && m.Depth != nil {
+		return *m.Depth
+	}
+	return 0
 }
 
 type Response struct {
@@ -460,7 +495,8 @@ func init() {
 	proto1.RegisterType((*Command_HistoryCmd)(nil), "daemon.protocol.Command.HistoryCmd")
 	proto1.RegisterType((*Command_LogCmd)(nil), "daemon.protocol.Command.LogCmd")
 	proto1.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
-	proto1.RegisterType((*Command_CloneCmd)(nil), "daemon.protocol.Command.CloneCmd")
+	proto1.RegisterType((*Command_FetchCmd)(nil), "daemon.protocol.Command.FetchCmd")
+	proto1.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
 	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
@@ -587,15 +623,25 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 		}
 		i += n10
 	}
-	if m.CloneCommand != nil {
+	if m.FetchCommand != nil {
 		data[i] = 0x62
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.CloneCommand.Size()))
-		n11, err := m.CloneCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.FetchCommand.Size()))
+		n11, err := m.FetchCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n11
+	}
+	if m.ListCommand != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ListCommand.Size()))
+		n12, err := m.ListCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -884,7 +930,7 @@ func (m *Command_OnlineStatusCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Command_CloneCmd) Marshal() (data []byte, err error) {
+func (m *Command_FetchCmd) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -894,7 +940,7 @@ func (m *Command_CloneCmd) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Command_CloneCmd) MarshalTo(data []byte) (int, error) {
+func (m *Command_FetchCmd) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -906,6 +952,42 @@ func (m *Command_CloneCmd) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
 		i += copy(data[i:], *m.Who)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_ListCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_ListCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Root == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Root)))
+		i += copy(data[i:], *m.Root)
+	}
+	if m.Depth == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x10
+		i++
+		i = encodeVarintDaemon(data, i, uint64(*m.Depth))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1038,8 +1120,12 @@ func (m *Command) Size() (n int) {
 		l = m.OnlineStatusCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.CloneCommand != nil {
-		l = m.CloneCommand.Size()
+	if m.FetchCommand != nil {
+		l = m.FetchCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.ListCommand != nil {
+		l = m.ListCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1173,12 +1259,28 @@ func (m *Command_OnlineStatusCmd) Size() (n int) {
 	return n
 }
 
-func (m *Command_CloneCmd) Size() (n int) {
+func (m *Command_FetchCmd) Size() (n int) {
 	var l int
 	_ = l
 	if m.Who != nil {
 		l = len(*m.Who)
 		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_ListCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Root != nil {
+		l = len(*m.Root)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.Depth != nil {
+		n += 1 + sovDaemon(uint64(*m.Depth))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1605,7 +1707,7 @@ func (m *Command) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CloneCommand", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field FetchCommand", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1629,10 +1731,43 @@ func (m *Command) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.CloneCommand == nil {
-				m.CloneCommand = &Command_CloneCmd{}
+			if m.FetchCommand == nil {
+				m.FetchCommand = &Command_FetchCmd{}
 			}
-			if err := m.CloneCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.FetchCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListCommand == nil {
+				m.ListCommand = &Command_ListCmd{}
+			}
+			if err := m.ListCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2474,7 +2609,7 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Command_CloneCmd) Unmarshal(data []byte) error {
+func (m *Command_FetchCmd) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -2498,10 +2633,10 @@ func (m *Command_CloneCmd) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CloneCmd: wiretype end group for non-group")
+			return fmt.Errorf("proto: FetchCmd: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CloneCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: FetchCmd: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2552,6 +2687,116 @@ func (m *Command_CloneCmd) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_ListCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Root = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Depth", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Depth = &v
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

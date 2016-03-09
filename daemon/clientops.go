@@ -1,10 +1,13 @@
 package daemon
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/disorganizer/brig/daemon/proto"
 	"github.com/disorganizer/brig/store"
+	storeproto "github.com/disorganizer/brig/store/proto"
+	"github.com/disorganizer/brig/util/protocol"
 	protobuf "github.com/gogo/protobuf/proto"
 	"github.com/tsuibin/goxmpp2/xmpp"
 )
@@ -177,15 +180,39 @@ func (c *Client) IsOnline() (bool, error) {
 	return string(data) == "online", nil
 }
 
-func (c *Client) Clone(who xmpp.JID) error {
+func (c *Client) List(root string, depth int) ([]*storeproto.Dirent, error) {
 	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_CLONE.Enum(),
-		CloneCommand: &proto.Command_CloneCmd{
+		CommandType: proto.MessageType_LIST.Enum(),
+		ListCommand: &proto.Command_ListCmd{
+			Root:  protobuf.String(root),
+			Depth: protobuf.Int(depth),
+		},
+	}
+
+	listData, err := c.recvResponseBytes("list")
+	if err != nil {
+		return nil, err
+	}
+
+	dec := protocol.NewProtocolReader(bytes.NewReader(listData), true)
+	dirlist := &storeproto.Dirlist{}
+
+	if err := dec.Recv(dirlist); err != nil {
+		return nil, err
+	}
+
+	return dirlist.Entries, nil
+}
+
+func (c *Client) Fetch(who xmpp.JID) error {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_FETCH.Enum(),
+		FetchCommand: &proto.Command_FetchCmd{
 			Who: protobuf.String(string(who)),
 		},
 	}
 
-	_, err := c.recvResponseBytes("clone")
+	_, err := c.recvResponseBytes("fetch")
 	if err != nil {
 		return err
 	}

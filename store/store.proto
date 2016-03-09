@@ -12,6 +12,18 @@ message File {
     required bytes mod_time = 6;
 }
 
+// Dirent is like a file, but does not include sensitive information.
+message Dirent {
+    required string path = 1;
+    required int64 file_size = 2;
+    required int32 kind = 3;
+    required bytes mod_time = 4;
+}
+
+message Dirlist {
+    repeated Dirent entries = 1;
+}
+
 message Checkpoint {
     required bytes hash = 1;
     required bytes mod_time = 2;

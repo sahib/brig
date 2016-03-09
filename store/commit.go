@@ -280,7 +280,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		return dbErr
 	}
 
-	log.Debugf("created check point: ", checkpoint)
+	log.Debugf("created check point: %v", checkpoint)
 	return nil
 }
 

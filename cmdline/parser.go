@@ -176,6 +176,30 @@ func RunCmdline() int {
 			Brief: "Change priority of a peer.",
 		},
 		climax.Command{
+			Name:   "ls",
+			Brief:  "List files",
+			Group:  wdirGroup,
+			Usage:  `[<PATH>]`,
+			Help:   `...`,
+			Handle: withDaemon(handleList, true),
+			Flags: []climax.Flag{
+				{
+					Name:     "depth",
+					Short:    "d",
+					Help:     `List directories only into certain depth.`,
+					Variable: true,
+				}, {
+					Name:  "recursive",
+					Short: "r",
+					Help:  `List directories recursively.`,
+				}, {
+					Name:  "tree",
+					Short: "T",
+					Help:  `Show a tree of the repo.`,
+				},
+			},
+		},
+		climax.Command{
 			Name:  "status",
 			Group: wdirGroup,
 			Brief: "Give an overview of brig's current state.",

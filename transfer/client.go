@@ -48,8 +48,8 @@ func (c *Client) unpack(req *proto.Request) ([]byte, error) {
 	return resp.GetData(), nil
 }
 
-func (c *Client) DoClone() ([]byte, error) {
+func (c *Client) DoFetch() ([]byte, error) {
 	return c.unpack(&proto.Request{
-		Type: proto.RequestType_CLONE.Enum(),
+		Type: proto.RequestType_FETCH.Enum(),
 	})
 }

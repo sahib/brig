@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -332,6 +333,51 @@ func (s *Store) Rm(path string) error {
 	return nil
 }
 
+// List exports a directory listing of `root` up to `depth` levels down.
+// The results are marshaled into a proto.Dirlist message and written to `w`.
+// `depth` may be negative for unlimited recursion.
+func (st *Store) List(w io.Writer, root string, depth int) (err error) {
+	node := st.Root.Lookup(root)
+	if node == nil {
+		return ErrNoSuchFile
+	}
+
+	if depth < 0 {
+		depth = math.MaxInt32
+	}
+
+	protoDirlist := &proto.Dirlist{}
+	node.Walk(true, func(child *File) bool {
+		if child.Depth() > depth {
+			return false
+		}
+
+		protoFile, errPbf := child.toProtoMessage()
+		if err != nil {
+			err = errPbf
+			return false
+		}
+
+		// Be sure to mask out key and hash.
+		protoDirent := &proto.Dirent{
+			Path:     protoFile.Path,
+			FileSize: protoFile.FileSize,
+			Kind:     protoFile.Kind,
+			ModTime:  protoFile.ModTime,
+		}
+
+		protoDirlist.Entries = append(protoDirlist.Entries, protoDirent)
+		return true
+	})
+
+	enc := protocol.NewProtocolWriter(w, true)
+	if errSend := enc.Send(protoDirlist); err != nil {
+		return errSend
+	}
+
+	return
+}
+
 // Export marshals all relevant inside the database, so a cloned
 // repository may import them again.
 // The exported data includes:
@@ -339,7 +385,7 @@ func (s *Store) Rm(path string) error {
 //  - All commits.
 //  - Pinning information.
 //
-// TODO: Describe json stream format.
+// TODO: Describe stream format.
 //
 // w is not closed after Export.
 func (s *Store) Export(w io.Writer) (err error) {

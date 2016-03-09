@@ -15,7 +15,8 @@ enum MessageType {
     HISTORY = 7;
     LOG = 8;
     ONLINE_STATUS = 9;
-    CLONE = 10;
+    FETCH = 10;
+    LIST = 11;
 }
 
 enum OnlineQuery {
@@ -75,8 +76,13 @@ message Command {
         required OnlineQuery query = 1;
     }
 
-    message CloneCmd {
+    message FetchCmd {
         required string who = 1;
+    }
+
+    message ListCmd {
+        required string root = 1;
+        required int32 depth = 2;
     }
 
     required MessageType command_type = 1;
@@ -91,7 +97,8 @@ message Command {
     optional HistoryCmd history_command = 9;
     optional LogCmd log_command = 10;
     optional OnlineStatusCmd online_status_command = 11;
-    optional CloneCmd clone_command = 12;
+    optional FetchCmd fetch_command = 12;
+    optional ListCmd list_command = 13;
 }
 
 message Response {

@@ -33,7 +33,7 @@ const (
 	RequestType_INVALID     RequestType = 0
 	RequestType_QUIT        RequestType = 1
 	RequestType_ERROR       RequestType = 2
-	RequestType_CLONE       RequestType = 3
+	RequestType_FETCH       RequestType = 3
 	RequestType_UPDATE_FILE RequestType = 4
 )
 
@@ -41,14 +41,14 @@ var RequestType_name = map[int32]string{
 	0: "INVALID",
 	1: "QUIT",
 	2: "ERROR",
-	3: "CLONE",
+	3: "FETCH",
 	4: "UPDATE_FILE",
 }
 var RequestType_value = map[string]int32{
 	"INVALID":     0,
 	"QUIT":        1,
 	"ERROR":       2,
-	"CLONE":       3,
+	"FETCH":       3,
 	"UPDATE_FILE": 4,
 }
 

@@ -5,7 +5,7 @@ enum RequestType {
     INVALID = 0;
 	QUIT = 1;
     ERROR = 2;
-    CLONE = 3;
+    FETCH = 3;
     UPDATE_FILE = 4;
 }
 

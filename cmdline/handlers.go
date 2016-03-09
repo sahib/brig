@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -253,8 +254,8 @@ func handleClone(ctx climax.Context) int {
 		return DaemonNotResponding
 	}
 
-	if err := client.Clone(remoteJID); err != nil {
-		log.Errorf("clone failed: %v", err)
+	if err := client.Fetch(remoteJID); err != nil {
+		log.Errorf("fetch failed: %v", err)
 		return UnknownError
 	}
 
@@ -452,6 +453,49 @@ func handleOnline(ctx climax.Context, client *daemon.Client) int {
 	if err := client.Online(); err != nil {
 		log.Errorf("Failed to go online: %v", err)
 		return UnknownError
+	}
+
+	return Success
+}
+
+func handleList(ctx climax.Context, client *daemon.Client) int {
+	path := "/"
+	if len(ctx.Args) > 0 {
+		path = ctx.Args[0]
+	}
+
+	depth := -1
+
+	// TODO: This screams for a util func. GetInt() with default maybe.
+	depthStr, ok := ctx.Get("depth")
+	if ok {
+		parsedDepth, err := strconv.Atoi(depthStr)
+		if err != nil {
+			log.Warningf("Invalid depth: %d", depthStr)
+			return BadArgs
+		}
+
+		depth = parsedDepth
+	}
+
+	if ctx.Is("recursive") {
+		depth = -1
+	}
+
+	dirlist, err := client.List(path, depth)
+	if err != nil {
+		log.Warningf("ls: %v", err)
+		return UnknownError
+	}
+
+	// TODO: Nicer formatting.
+	for _, dirent := range dirlist {
+		fmt.Printf(
+			"%5d %s %s\n",
+			dirent.GetFileSize(),
+			dirent.GetModTime(),
+			dirent.GetPath(),
+		)
 	}
 
 	return Success

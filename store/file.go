@@ -394,6 +394,15 @@ func (f *File) Len() int64 {
 	return f.node.Len()
 }
 
+// Len returns the current number of elements in the trie.
+// This counts only explicitly inserted Nodes.
+func (f *File) Depth() int {
+	f.RLock()
+	defer f.RUnlock()
+
+	return int(f.node.Depth)
+}
+
 // Up goes up in the hierarchy and calls `visit` on each visited node.
 func (f *File) Up(visit func(*File)) {
 	f.RLock()
@@ -423,6 +432,7 @@ func (f *File) Path() string {
 
 // Walk recursively calls `visit` on each child and f itself.
 // If `dfs` is true, the order will be depth-first, otherwise breadth-first.
+// The `visit` function might return false to stop recursing into childs.
 func (f *File) Walk(dfs bool, visit func(*File) bool) {
 	f.RLock()
 	defer f.RUnlock()

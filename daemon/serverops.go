@@ -24,6 +24,8 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_HISTORY:       handleHistory,
 	proto.MessageType_LOG:           handleLog,
 	proto.MessageType_ONLINE_STATUS: handleOnlineStatus,
+	proto.MessageType_FETCH:         handleFetch,
+	proto.MessageType_LIST:          handleList,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
@@ -133,16 +135,20 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]b
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }
 
-func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
-	cloneCmd := cmd.GetCloneCommand()
-	who := xmpp.JID(cloneCmd.GetWho())
+func handleFetch(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	fetchCmd := cmd.GetFetchCommand()
+	who := xmpp.JID(fetchCmd.GetWho())
+
+	if !d.XMPP.IsOnline() {
+		return nil, fmt.Errorf("XMPP client is not online.")
+	}
 
 	client, err := d.XMPP.Talk(who)
 	if err != nil {
 		return nil, err
 	}
 
-	importData, err := client.DoClone()
+	importData, err := client.DoFetch()
 	if err != nil {
 		return nil, err
 	}
@@ -152,5 +158,17 @@ func handleClone(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	}
 
 	// TODO: what to return on success?
-	return nil, nil
+	return []byte("OK"), nil
+}
+
+func handleList(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	listCmd := cmd.GetListCommand()
+	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
+	buf := &bytes.Buffer{}
+
+	if err := d.Repo.OwnStore.List(buf, root, int(depth)); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
