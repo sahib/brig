@@ -8,12 +8,64 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
+	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/util"
 	logutil "github.com/disorganizer/brig/util/log"
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	yamlConfig "github.com/olebedev/config"
 	"github.com/wayn3h0/go-uuid"
 )
+
+func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
+	globalRepo, err := global.New()
+	if err != nil {
+		return err
+	}
+
+	ipfsAPIPort, err := globalRepo.NextIPFSAPIPort()
+	if err != nil {
+		return err
+	}
+
+	ipfsSwarmPort, err := globalRepo.NextIPFSSwarmPort()
+	if err != nil {
+		return err
+	}
+
+	daemonPort, err := globalRepo.NextDaemonPort()
+	if err != nil {
+		return err
+	}
+
+	cfg.Set("ipfs.apiport", ipfsAPIPort)
+	cfg.Set("ipfs.swarmport", ipfsSwarmPort)
+	cfg.Set("daemon.port", daemonPort)
+
+	log.Debugf(
+		"Using ports: %d (ipfs-api) %d (ipfs-swarm) %d (brigd)",
+		ipfsAPIPort, ipfsSwarmPort, daemonPort,
+	)
+
+	uuid, err := cfg.String("repository.uuid")
+	if err != nil {
+		return err
+	}
+
+	err = globalRepo.AddRepo(global.RepoListEntry{
+		UniqueID:      uuid,
+		RepoPath:      folder,
+		DaemonPort:    daemonPort,
+		IpfsAPIPort:   ipfsAPIPort,
+		IpfsSwarmPort: ipfsSwarmPort,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // NewRepository creates a new repository at filesystem level
 // and returns a Repository interface
@@ -60,18 +112,16 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 		}
 	}
 
+	if err := initIntoGlobal(brigPath, cfg); err != nil {
+		return nil, err
+	}
+
 	configPath := filepath.Join(brigPath, "config")
 	if _, err := config.SaveConfig(configPath, cfg); err != nil {
 		return nil, err
 	}
 
 	return loadRepository(pwd, absFolderPath)
-}
-
-// CloneRepository clones a brig repository in a git like way
-// TODO: Actually implement that.
-func CloneRepository() *Repository {
-	return nil
 }
 
 func createRepositoryTree(absFolderPath string) error {

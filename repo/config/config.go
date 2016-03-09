@@ -50,9 +50,9 @@ func CreateDefaultConfig() *config.Config {
 			"port": 6666,
 		},
 		"ipfs": map[string]interface{}{
-			"port":     5001,
-			"hostname": "localhost",
-			"path":     "",
+			"apiport":   5001,
+			"swarmport": 4001,
+			"path":      "",
 		},
 	}
 

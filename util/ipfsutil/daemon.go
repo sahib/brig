@@ -1,6 +1,8 @@
 package ipfsutil
 
 import (
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 
 	core "github.com/ipfs/go-ipfs/core"
@@ -9,36 +11,55 @@ import (
 	"golang.org/x/net/context"
 )
 
-func createNode(ipfsPath string, online bool, ctx context.Context) (*core.IpfsNode, error) {
-	// Basic ipfsnode setup
-	r, err := fsrepo.Open(ipfsPath)
+func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, error) {
+	// `nd` only contains the prepopulated fields as in New().
+	rp, err := fsrepo.Open(nd.Path)
 	if err != nil {
-		log.Errorf("Unable to open repo `%s`: %v", ipfsPath, err)
+		log.Errorf("Unable to open repo `%s`: %v", nd.Path, err)
+		return nil, err
+	}
+
+	apiAddr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", nd.APIPort)
+	if err := rp.SetConfigKey("Addresses.API", apiAddr); err != nil {
+		return nil, err
+	}
+
+	swarmAddrs := []string{
+		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", nd.SwarmPort),
+		fmt.Sprintf("/ip6/::/tcp/%d", nd.SwarmPort),
+	}
+
+	if err := rp.SetConfigKey("Addresses.Swarm", swarmAddrs); err != nil {
 		return nil, err
 	}
 
 	cfg := &core.BuildCfg{
-		Repo:   r,
+		Repo:   rp,
 		Online: online,
 	}
 
-	nd, err := core.NewNode(ctx, cfg)
-	nd.OnlineMode()
+	ipfsNode, err := core.NewNode(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return nd, nil
+	return ipfsNode, nil
 }
 
 // New creates a new ipfs node manager.
 // No daemon is started yet.
 func New(ipfsPath string) *Node {
+	return NewWithPorts(ipfsPath, 5001, 4001)
+}
+
+func NewWithPorts(ipfsPath string, apiPort int, swarmPort int) *Node {
 	return &Node{
-		Path:     ipfsPath,
-		ipfsNode: nil,
-		Context:  nil,
-		Cancel:   nil,
+		Path:      ipfsPath,
+		APIPort:   apiPort,
+		SwarmPort: swarmPort,
+		ipfsNode:  nil,
+		Context:   nil,
+		Cancel:    nil,
 	}
 }
 
@@ -59,7 +80,7 @@ func (n *Node) Online() error {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	nd, err := createNode(n.Path, true, ctx)
+	nd, err := createNode(n, true, ctx)
 
 	if err != nil {
 		return err
@@ -94,7 +115,7 @@ func (n *Node) proc() (*core.IpfsNode, error) {
 
 	if n.ipfsNode == nil {
 		ctx, cancel := context.WithCancel(context.Background())
-		nd, err := createNode(n.Path, false, ctx)
+		nd, err := createNode(n, false, ctx)
 
 		if err != nil {
 			return nil, err

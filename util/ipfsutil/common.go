@@ -7,8 +7,10 @@ import (
 
 // Node remembers the settings needed for accessing the ipfs daemon.
 type Node struct {
-	ipfsNode *core.IpfsNode
-	Path     string
+	ipfsNode  *core.IpfsNode
+	Path      string
+	APIPort   int
+	SwarmPort int
 
 	Context context.Context
 	Cancel  context.CancelFunc

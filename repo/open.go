@@ -9,7 +9,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo/config"
-	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/tsuibin/goxmpp2/xmpp"
@@ -146,42 +145,52 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		}
 	}
 
-	// Init the global repo (similar to .gitconfig)
-	globalRepo, err := global.New()
+	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
 	if err != nil {
 		return nil, err
 	}
 
-	err = globalRepo.AddRepo(global.RepoListEntry{
-		UniqueID:   configValues["repository.uuid"],
-		RepoPath:   folder,
-		DaemonPort: 6666,
-		IpfsPort:   4001,
-	})
-
+	ipfsSwarmPort, err := cfg.Int("ipfs.swarmport")
 	if err != nil {
 		return nil, err
 	}
 
-	ipfsLayer := ipfsutil.New(filepath.Join(brigPath, "ipfs"))
+	ipfsLayer := ipfsutil.NewWithPorts(
+		filepath.Join(brigPath, "ipfs"),
+		ipfsAPIPort,
+		ipfsSwarmPort,
+	)
 
 	ownStore, err := store.Open(brigPath, ipfsLayer)
 	if err != nil {
 		return nil, err
 	}
 
-	jid := configValues["repository.jid"]
+	jid, err := cfg.String("repository.jid")
+	if err != nil {
+		return nil, err
+	}
+
+	mid, err := cfg.String("repository.mid")
+	if err != nil {
+		return nil, err
+	}
+
+	uuid, err := cfg.String("repository.uuid")
+	if err != nil {
+		return nil, err
+	}
+
 	allStores := make(map[xmpp.JID]*store.Store)
 	allStores[xmpp.JID(jid)] = ownStore
 
 	repo := Repository{
 		Jid:            jid,
-		Mid:            configValues["repository.mid"],
+		Mid:            mid,
 		Folder:         absFolderPath,
 		InternalFolder: brigPath,
-		UniqueID:       configValues["repository.uuid"],
+		UniqueID:       uuid,
 		Config:         cfg,
-		globalRepo:     globalRepo,
 		OwnStore:       ownStore,
 		Password:       pwd,
 		IPFS:           ipfsLayer,

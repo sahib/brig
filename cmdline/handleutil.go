@@ -109,8 +109,10 @@ func needAtLeast(min int) checkFunc {
 func loadConfig() *config.Config {
 	// We do not use guessRepoFolder() here. It might abort
 	folder := repo.GuessFolder()
-	cfg, err := repoconfig.LoadConfig(filepath.Join(folder, "config"))
+	cfg, err := repoconfig.LoadConfig(filepath.Join(folder, ".brig", "config"))
 	if err != nil {
+		log.Warningf("Could not load config: %v", err)
+		log.Warningf("Falling back on config defaults...")
 		return repoconfig.CreateDefaultConfig()
 	}
 
