@@ -141,9 +141,10 @@ func RunCmdline() int {
 			Brief: "Push your content to all or selected trusted peers.",
 		},
 		climax.Command{
-			Name:  "pull",
-			Group: repoGroup,
-			Brief: "Pull content from all or selected trusted peers.",
+			Name:   "pull",
+			Group:  repoGroup,
+			Brief:  "Pull content from all or selected trusted peers.",
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handlePull, true)),
 		},
 		climax.Command{
 			Name:  "watch",

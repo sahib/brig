@@ -500,3 +500,18 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 
 	return Success
 }
+
+func handlePull(ctx climax.Context, client *daemon.Client) int {
+	remoteJID := xmpp.JID(ctx.Args[0])
+	if err := checkJID(remoteJID); err != nil {
+		log.Warningf("Bad remote Jabber ID: %v", err)
+		return BadArgs
+	}
+
+	if err := client.Fetch(remoteJID); err != nil {
+		log.Errorf("fetch failed: %v", err)
+		return UnknownError
+	}
+
+	return Success
+}
