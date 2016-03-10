@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rand"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -560,4 +561,16 @@ func (f *File) Key() []byte {
 	defer f.RUnlock()
 
 	return f.key
+}
+
+func (f *File) Print() {
+	f.RLock()
+	defer f.RUnlock()
+
+	f.node.Walk(false, func(n *trie.Node) bool {
+		child := n.Data.(*File)
+		space := strings.Repeat(" ", int(n.Depth)*4)
+		fmt.Printf("%s%s [%p]\n", space, child.node.Path(), child)
+		return true
+	})
 }

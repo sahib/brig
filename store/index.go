@@ -41,6 +41,7 @@ type Store struct {
 
 // Open loads an existing store, if it does not exist, it is created.
 // For full function, Connect() should be called afterwards.
+// TODO: Add jid.
 func Open(repoPath string, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	db, err := bolt.Open(filepath.Join(repoPath, "index.bolt"), 0600, options)
@@ -101,6 +102,7 @@ func (s *Store) Mkdir(repoPath string) (*File, error) {
 	}
 
 	dir.sync()
+
 	return dir, err
 }
 
@@ -170,16 +172,17 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	} else {
 		// Create intermediate directories:
 		elems := strings.Split(repoPath, string(filepath.Separator))
-		if len(elems) > 1 {
-			for idx := range elems[1 : len(elems)-1] {
-				dir := strings.Join(elems[idx:len(elems)-1], string(filepath.Separator))
+		sep := string(filepath.Separator)
 
-				if _, err := s.Mkdir(dir); err != nil {
-					log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
-				}
+		for idx := 1; idx < len(elems)-1; idx++ {
+			dir := strings.Join(elems[:len(elems)-idx], sep)
+			if _, err := s.Mkdir(dir); err != nil {
+				log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+				return err
 			}
 		}
 
+		// Create a new file at specified path:
 		newFile, err := NewFile(s, repoPath)
 		if err != nil {
 			return err
@@ -243,6 +246,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 }
 
 // Touch creates a new empty file.
+// It is provided as convenience wrapper around AddFromReader.
 func (s *Store) Touch(repoPath string) error {
 	return s.AddFromReader(repoPath, bytes.NewReader([]byte{}), 0)
 }
@@ -333,21 +337,19 @@ func (s *Store) Rm(path string) error {
 	return nil
 }
 
-// List exports a directory listing of `root` up to `depth` levels down.
-// The results are marshaled into a proto.Dirlist message and written to `w`.
-// `depth` may be negative for unlimited recursion.
-func (st *Store) List(w io.Writer, root string, depth int) (err error) {
+func (st *Store) ListEntries(root string, depth int) (dirlist *proto.Dirlist, err error) {
 	node := st.Root.Lookup(root)
 	if node == nil {
-		return ErrNoSuchFile
+		return nil, ErrNoSuchFile
 	}
 
 	if depth < 0 {
 		depth = math.MaxInt32
 	}
 
-	protoDirlist := &proto.Dirlist{}
-	node.Walk(true, func(child *File) bool {
+	dirlist = &proto.Dirlist{}
+
+	node.Walk(false, func(child *File) bool {
 		if child.Depth() > depth {
 			return false
 		}
@@ -366,16 +368,28 @@ func (st *Store) List(w io.Writer, root string, depth int) (err error) {
 			ModTime:  protoFile.ModTime,
 		}
 
-		protoDirlist.Entries = append(protoDirlist.Entries, protoDirent)
+		dirlist.Entries = append(dirlist.Entries, protoDirent)
 		return true
 	})
 
-	enc := protocol.NewProtocolWriter(w, true)
-	if errSend := enc.Send(protoDirlist); err != nil {
-		return errSend
+	return
+}
+
+// List exports a directory listing of `root` up to `depth` levels down.
+// The results are marshaled into a proto.Dirlist message and written to `w`.
+// `depth` may be negative for unlimited recursion.
+func (st *Store) List(w io.Writer, root string, depth int) error {
+	dirlist, err := st.ListEntries(root, depth)
+	if err != nil {
+		return err
 	}
 
-	return
+	enc := protocol.NewProtocolWriter(w, true)
+	if err := enc.Send(dirlist); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Export marshals all relevant inside the database, so a cloned

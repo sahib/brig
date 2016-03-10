@@ -2,6 +2,7 @@
 package trie
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -102,6 +103,11 @@ func (n *Node) InsertWithData(path string, data interface{}) *Node {
 			parent.Length++
 		})
 	}
+
+	if curr != nil {
+		curr.Data = data
+	}
+
 	return curr
 }
 
@@ -180,6 +186,14 @@ func (n *Node) Walk(dfs bool, visit func(*Node) bool) {
 			return
 		}
 	}
+}
+
+// Print dumps a debugging representation of the trie on stdout.
+func (n *Node) Print() {
+	n.Walk(false, func(child *Node) bool {
+		fmt.Println(strings.Repeat(" ", int(child.Depth)*4), child.Name)
+		return true
+	})
 }
 
 // Up walks from the receiving node to the root node,
