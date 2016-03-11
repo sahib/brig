@@ -218,7 +218,14 @@ func RunCmdline() int {
 			Group:  wdirGroup,
 			Brief:  "Remove the file and optionally old versions of it.",
 			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
-			Handle: withArgCheck(needAtLeast(0), withDaemon(handleRm, true)),
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
+		},
+		climax.Command{
+			Name:   "mv",
+			Group:  wdirGroup,
+			Brief:  "Move a file from SOURCE to DEST.",
+			Usage:  `SOURCE_FILE_OR_FOLDER DEST_FILE_OR_FOLDER`,
+			Handle: withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
 		},
 		climax.Command{
 			Name:   "cat",

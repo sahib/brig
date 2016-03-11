@@ -17,6 +17,7 @@ enum MessageType {
     ONLINE_STATUS = 9;
     FETCH = 10;
     LIST = 11;
+    MV = 12;
 }
 
 enum OnlineQuery {
@@ -85,6 +86,11 @@ message Command {
         required int32 depth = 2;
     }
 
+    message MvCmd {
+        required string source = 1;
+        required string dest = 2;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -99,6 +105,7 @@ message Command {
     optional OnlineStatusCmd online_status_command = 11;
     optional FetchCmd fetch_command = 12;
     optional ListCmd list_command = 13;
+    optional MvCmd mv_command = 14;
 }
 
 message Response {

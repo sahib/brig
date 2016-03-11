@@ -21,6 +21,7 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_MOUNT:         handleMount,
 	proto.MessageType_UNMOUNT:       handleUnmount,
 	proto.MessageType_RM:            handleRm,
+	proto.MessageType_MV:            handleMv,
 	proto.MessageType_HISTORY:       handleHistory,
 	proto.MessageType_LOG:           handleLog,
 	proto.MessageType_ONLINE_STATUS: handleOnlineStatus,
@@ -94,6 +95,15 @@ func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error
 	}
 
 	return []byte(repoPath), nil
+}
+
+func handleMv(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	mvCmd := cmd.GetMvCommand()
+	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest()); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {

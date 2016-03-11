@@ -45,6 +45,7 @@ const (
 	MessageType_ONLINE_STATUS MessageType = 9
 	MessageType_FETCH         MessageType = 10
 	MessageType_LIST          MessageType = 11
+	MessageType_MV            MessageType = 12
 )
 
 var MessageType_name = map[int32]string{
@@ -60,6 +61,7 @@ var MessageType_name = map[int32]string{
 	9:  "ONLINE_STATUS",
 	10: "FETCH",
 	11: "LIST",
+	12: "MV",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -74,6 +76,7 @@ var MessageType_value = map[string]int32{
 	"ONLINE_STATUS": 9,
 	"FETCH":         10,
 	"LIST":          11,
+	"MV":            12,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -146,6 +149,7 @@ type Command struct {
 	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,11,opt,name=online_status_command" json:"online_status_command,omitempty"`
 	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,12,opt,name=fetch_command" json:"fetch_command,omitempty"`
 	ListCommand         *Command_ListCmd         `protobuf:"bytes,13,opt,name=list_command" json:"list_command,omitempty"`
+	MvCommand           *Command_MvCmd           `protobuf:"bytes,14,opt,name=mv_command" json:"mv_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -240,6 +244,13 @@ func (m *Command) GetFetchCommand() *Command_FetchCmd {
 func (m *Command) GetListCommand() *Command_ListCmd {
 	if m != nil {
 		return m.ListCommand
+	}
+	return nil
+}
+
+func (m *Command) GetMvCommand() *Command_MvCmd {
+	if m != nil {
+		return m.MvCommand
 	}
 	return nil
 }
@@ -443,6 +454,30 @@ func (m *Command_ListCmd) GetDepth() int32 {
 	return 0
 }
 
+type Command_MvCmd struct {
+	Source           *string `protobuf:"bytes,1,req,name=source" json:"source,omitempty"`
+	Dest             *string `protobuf:"bytes,2,req,name=dest" json:"dest,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_MvCmd) Reset()         { *m = Command_MvCmd{} }
+func (m *Command_MvCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_MvCmd) ProtoMessage()    {}
+
+func (m *Command_MvCmd) GetSource() string {
+	if m != nil && m.Source != nil {
+		return *m.Source
+	}
+	return ""
+}
+
+func (m *Command_MvCmd) GetDest() string {
+	if m != nil && m.Dest != nil {
+		return *m.Dest
+	}
+	return ""
+}
+
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
@@ -497,6 +532,7 @@ func init() {
 	proto1.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
 	proto1.RegisterType((*Command_FetchCmd)(nil), "daemon.protocol.Command.FetchCmd")
 	proto1.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
+	proto1.RegisterType((*Command_MvCmd)(nil), "daemon.protocol.Command.MvCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
 	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
@@ -642,6 +678,16 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n12
+	}
+	if m.MvCommand != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.MvCommand.Size()))
+		n13, err := m.MvCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -995,6 +1041,43 @@ func (m *Command_ListCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_MvCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_MvCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Source == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Source)))
+		i += copy(data[i:], *m.Source)
+	}
+	if m.Dest == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Dest)))
+		i += copy(data[i:], *m.Dest)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1126,6 +1209,10 @@ func (m *Command) Size() (n int) {
 	}
 	if m.ListCommand != nil {
 		l = m.ListCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.MvCommand != nil {
+		l = m.MvCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1281,6 +1368,23 @@ func (m *Command_ListCmd) Size() (n int) {
 	}
 	if m.Depth != nil {
 		n += 1 + sovDaemon(uint64(*m.Depth))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_MvCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Source != nil {
+		l = len(*m.Source)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.Dest != nil {
+		l = len(*m.Dest)
+		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1768,6 +1872,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.ListCommand = &Command_ListCmd{}
 			}
 			if err := m.ListCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MvCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.MvCommand == nil {
+				m.MvCommand = &Command_MvCmd{}
+			}
+			if err := m.MvCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2776,6 +2913,126 @@ func (m *Command_ListCmd) Unmarshal(data []byte) error {
 				}
 			}
 			m.Depth = &v
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_MvCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MvCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MvCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Source", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Source = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Dest", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Dest = &s
+			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex

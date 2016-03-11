@@ -103,6 +103,22 @@ func (c *Client) Rm(repoPath string) (string, error) {
 	return c.recvResponseString("rm")
 }
 
+func (c *Client) Move(source, dest string) error {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_MV.Enum(),
+		MvCommand: &proto.Command_MvCmd{
+			Source: protobuf.String(source),
+			Dest:   protobuf.String(dest),
+		},
+	}
+
+	if _, err := c.recvResponseString("mv"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Log returns a series of commits.
 func (c *Client) Log() ([]*store.Commit, error) {
 	c.Send <- &proto.Command{CommandType: proto.MessageType_LOG.Enum()}

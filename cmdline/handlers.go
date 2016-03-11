@@ -515,3 +515,14 @@ func handlePull(ctx climax.Context, client *daemon.Client) int {
 
 	return Success
 }
+
+func handleMv(ctx climax.Context, client *daemon.Client) int {
+	source, dest := ctx.Args[0], ctx.Args[1]
+
+	if err := client.Move(source, dest); err != nil {
+		log.Warningf("move failed: %v", err)
+		return UnknownError
+	}
+
+	return Success
+}
