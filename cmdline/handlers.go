@@ -15,6 +15,7 @@ import (
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
+	"github.com/dustin/go-humanize"
 	yamlConfig "github.com/olebedev/config"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
@@ -480,11 +481,26 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 
 	// TODO: Nicer formatting.
 	for _, dirent := range dirlist {
+		modTime := time.Time{}
+		if err := modTime.UnmarshalText(dirent.GetModTime()); err != nil {
+			log.Warningf("Could not parse mtime (%s): %v", dirent.GetModTime(), err)
+			continue
+		}
+
 		fmt.Printf(
-			"%5d %s %s\n",
-			dirent.GetFileSize(),
-			dirent.GetModTime(),
-			dirent.GetPath(),
+			"%s\t%s\t%s\n",
+			colors.Colorize(
+				humanize.Bytes(uint64(dirent.GetFileSize())),
+				colors.Green,
+			),
+			colors.Colorize(
+				humanize.Time(modTime),
+				colors.Cyan,
+			),
+			colors.Colorize(
+				dirent.GetPath(),
+				colors.Magenta,
+			),
 		)
 	}
 
