@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/disorganizer/brig/util/testwith"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var TestPath = filepath.Join(os.TempDir(), "brig-store-test")
@@ -32,7 +33,7 @@ func withEmptyStore(t *testing.T, f func(*Store)) {
 		}()
 
 		// We need the filesystem for ipfs here:
-		store, err := Open(TestPath, node)
+		store, err := Open(TestPath, xmpp.JID("alice@jabber.de/desktop"), node)
 		if err != nil {
 			t.Errorf("Could not open empty store at %s: %v", TestPath, err)
 			return

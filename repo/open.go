@@ -145,6 +145,11 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		}
 	}
 
+	jid, err := cfg.String("repository.jid")
+	if err != nil {
+		return nil, err
+	}
+
 	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
 	if err != nil {
 		return nil, err
@@ -161,12 +166,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		ipfsSwarmPort,
 	)
 
-	ownStore, err := store.Open(brigPath, ipfsLayer)
-	if err != nil {
-		return nil, err
-	}
-
-	jid, err := cfg.String("repository.jid")
+	ownStore, err := store.Open(brigPath, xmpp.JID(jid), ipfsLayer)
 	if err != nil {
 		return nil, err
 	}

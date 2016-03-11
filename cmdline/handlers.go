@@ -397,7 +397,7 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 			colors.Colorize("Checkpoint", colors.Cyan),
 			len(history)-idx,
 			colors.Colorize(checkpoint.Change.String(), colors.Red),
-			colors.Colorize(checkpoint.Author, colors.Magenta),
+			colors.Colorize(string(checkpoint.Author), colors.Magenta),
 		)
 
 		fmt.Printf(" %s   ├─ % 9s: %v\n", twoWayRune, colors.Colorize("Hash", colors.Green), checkpoint.Hash.B58String())

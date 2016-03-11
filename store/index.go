@@ -16,6 +16,7 @@ import (
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -35,6 +36,9 @@ type Store struct {
 	// Internal path of the repository.
 	repoPath string
 
+	// The jabber id this store is associated to.
+	jid xmpp.JID
+
 	// IPFS manager layer (from daemon.Server)
 	IPFS *ipfsutil.Node
 }
@@ -42,7 +46,7 @@ type Store struct {
 // Open loads an existing store, if it does not exist, it is created.
 // For full function, Connect() should be called afterwards.
 // TODO: Add jid.
-func Open(repoPath string, IPFS *ipfsutil.Node) (*Store, error) {
+func Open(repoPath string, jid xmpp.JID, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	db, err := bolt.Open(filepath.Join(repoPath, "index.bolt"), 0600, options)
 
@@ -52,6 +56,7 @@ func Open(repoPath string, IPFS *ipfsutil.Node) (*Store, error) {
 
 	store := &Store{
 		db:       db,
+		jid:      jid,
 		repoPath: repoPath,
 		IPFS:     IPFS,
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/store/proto"
 	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 const (
@@ -103,7 +104,8 @@ type Checkpoint struct {
 	Change ChangeType
 
 	// Author of the file modifications (jabber id)
-	Author string
+	// TODO: Make separate Authorship struct.
+	Author xmpp.JID
 }
 
 // TODO: nice representation
@@ -122,7 +124,7 @@ func (cp *Checkpoint) toProtoMessage() (*proto.Checkpoint, error) {
 		ModTime:  mtimeBin,
 		FileSize: protobuf.Int64(cp.Size),
 		Change:   protobuf.Int32(int32(cp.Change)),
-		Author:   protobuf.String(cp.Author),
+		Author:   protobuf.String(string(cp.Author)),
 	}
 
 	if err != nil {
@@ -142,7 +144,7 @@ func (cp *Checkpoint) fromProtoMessage(msg *proto.Checkpoint) error {
 	cp.ModTime = modTime
 	cp.Size = msg.GetFileSize()
 	cp.Change = ChangeType(msg.GetChange())
-	cp.Author = msg.GetAuthor()
+	cp.Author = xmpp.JID(msg.GetAuthor())
 	return nil
 }
 
@@ -230,7 +232,7 @@ func (hy *History) Unmarshal(data []byte) error {
 // does not exist anymore). It is an error to pass nil twice.
 //
 // If nothing changed between old and curr, ErrNoChange is returned.
-func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
+func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
 	var change ChangeType
 	var hash *Hash
 	var path string
@@ -253,8 +255,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		ModTime: time.Now(),
 		Size:    size,
 		Change:  change,
-		// TODO: Take the actual one
-		Author: "alice@jabber.nullcat.de/desktop",
+		Author:  st.jid,
 	}
 
 	protoData, err := checkpoint.Marshal()
@@ -267,7 +268,7 @@ func (s *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) er
 		return err
 	}
 
-	dbErr := s.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+	dbErr := st.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		histBuck, err := bckt.CreateBucketIfNotExists([]byte(path))
 		if err != nil {
 			return err
