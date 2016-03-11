@@ -59,11 +59,18 @@ func TestAddCat(t *testing.T) {
 		withEmptyStore(t, func(st *Store) {
 			if err := st.AddFromReader(path, bytes.NewReader(data), size); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
+				return
 			}
 
 			recvBuf := &bytes.Buffer{}
 			if err := st.Cat(path, recvBuf); err != nil {
 				t.Errorf("Catting of `%s` failed: %v", path, err)
+				return
+			}
+
+			if !bytes.Equal(recvBuf.Bytes(), data) {
+				t.Errorf("Data differs between add and cat")
+				return
 			}
 		})
 	}
@@ -160,6 +167,49 @@ func TestExport(t *testing.T) {
 	withEmptyStore(t, func(store *Store) {
 		if err := store.Import(bytes.NewReader(exportData)); err != nil {
 			t.Errorf("Could not import data: %v", err)
+			return
+		}
+	})
+}
+
+func TestMove(t *testing.T) {
+	data := testutil.CreateDummyBuf(1024)
+
+	withEmptyStore(t, func(st *Store) {
+		if err := st.AddFromReader("dummy", bytes.NewReader(data), int64(len(data))); err != nil {
+			t.Errorf("Could not add dummy file for move: %v", err)
+			return
+		}
+
+		check := func(path string) {
+			recvBuf := &bytes.Buffer{}
+			if err := st.Cat(path, recvBuf); err != nil {
+				t.Errorf("Catting of `%s` failed: %v", path, err)
+				return
+			}
+
+			if !bytes.Equal(recvBuf.Bytes(), data) {
+				t.Errorf("Data differs between add/move/cat")
+				return
+			}
+		}
+
+		check("dummy")
+
+		if err := st.Move("dummy", "new_dummy"); err != nil {
+			t.Errorf("Move failed: %v", err)
+			return
+		}
+
+		if err := st.Cat("dummy", &bytes.Buffer{}); err != ErrNoSuchFile {
+			t.Errorf("Move: dummy still reachable")
+			return
+		}
+
+		check("new_dummy")
+
+		if err := st.Move("dummy", "new_dummy"); err != ErrNoSuchFile {
+			t.Errorf("Move could move dead file: %v")
 			return
 		}
 	})

@@ -307,9 +307,9 @@ func (s *Store) Close() error {
 }
 
 // Rm will purge a file locally on this node.
+// TODO: rename in Remove() (like other functions)
 func (s *Store) Rm(path string) error {
 	node := s.Root.Lookup(path)
-
 	if node == nil {
 		return ErrNoSuchFile
 	}
@@ -386,6 +386,38 @@ func (st *Store) List(w io.Writer, root string, depth int) error {
 
 	enc := protocol.NewProtocolWriter(w, true)
 	if err := enc.Send(dirlist); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (st *Store) Move(oldPath, newPath string) error {
+	node := st.Root.Lookup(oldPath)
+	if node == nil {
+		return ErrNoSuchFile
+	}
+
+	// TODO: Implement dir walk...
+	if node.Kind() != FileTypeRegular {
+		return fmt.Errorf("TODO: move does not work on directories yet")
+	}
+
+	// Remove from trie & remove from bolt db.
+	err := st.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+		return bckt.Delete([]byte(oldPath))
+	})
+
+	if err != nil {
+		return err
+	}
+
+	node.Remove()
+	node.insert(st.Root, newPath)
+
+	log.Debugf("rm: Making checkpoint: %v", node.Metadata)
+	md := node.Metadata
+	if err := st.MakeCheckpoint(md, md, oldPath, newPath); err != nil {
 		return err
 	}
 
