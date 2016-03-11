@@ -166,7 +166,7 @@ func handleList(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, err
 	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
 	buf := &bytes.Buffer{}
 
-	if err := d.Repo.OwnStore.List(buf, root, int(depth)); err != nil {
+	if err := d.Repo.OwnStore.ListMarshalled(buf, root, int(depth)); err != nil {
 		return nil, err
 	}
 

@@ -76,7 +76,7 @@ func TestAddCat(t *testing.T) {
 	}
 }
 
-func TestListEntries(t *testing.T) {
+func TestList(t *testing.T) {
 	paths := []string{
 		"/a", "/b/b1", "/b/b2", "/c/cc/ccc",
 	}
@@ -104,15 +104,15 @@ func TestListEntries(t *testing.T) {
 
 		// Run the actual tests on it:
 		for _, test := range tests {
-			dirlist, err := st.ListEntries(test.root, test.depth)
+			dirlist, err := st.List(test.root, test.depth)
 			if err != nil {
 				t.Errorf("Listing `%s` failed: %v", "/", err)
 				break
 			}
 
 			sorted := []string{}
-			for _, e := range dirlist.Entries {
-				sorted = append(sorted, e.GetPath())
+			for _, e := range dirlist {
+				sorted = append(sorted, e.Path())
 			}
 
 			sort.Strings(sorted)

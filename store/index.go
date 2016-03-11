@@ -337,7 +337,10 @@ func (s *Store) Rm(path string) error {
 	return nil
 }
 
-func (st *Store) ListEntries(root string, depth int) (dirlist *proto.Dirlist, err error) {
+// List exports a directory listing of `root` up to `depth` levels down.
+func (st *Store) List(root string, depth int) (entries []*File, err error) {
+	entries = []*File{}
+
 	node := st.Root.Lookup(root)
 	if node == nil {
 		return nil, ErrNoSuchFile
@@ -347,41 +350,40 @@ func (st *Store) ListEntries(root string, depth int) (dirlist *proto.Dirlist, er
 		depth = math.MaxInt32
 	}
 
-	dirlist = &proto.Dirlist{}
-
 	node.Walk(false, func(child *File) bool {
 		if child.Depth() > depth {
 			return false
 		}
 
-		protoFile, errPbf := child.toProtoMessage()
-		if err != nil {
-			err = errPbf
-			return false
-		}
-
-		// Be sure to mask out key and hash.
-		protoDirent := &proto.Dirent{
-			Path:     protoFile.Path,
-			FileSize: protoFile.FileSize,
-			Kind:     protoFile.Kind,
-			ModTime:  protoFile.ModTime,
-		}
-
-		dirlist.Entries = append(dirlist.Entries, protoDirent)
+		entries = append(entries, child)
 		return true
 	})
 
 	return
 }
 
-// List exports a directory listing of `root` up to `depth` levels down.
 // The results are marshaled into a proto.Dirlist message and written to `w`.
 // `depth` may be negative for unlimited recursion.
-func (st *Store) List(w io.Writer, root string, depth int) error {
-	dirlist, err := st.ListEntries(root, depth)
+func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
+	entries, err := st.List(root, depth)
 	if err != nil {
 		return err
+	}
+
+	dirlist := &proto.Dirlist{}
+	for _, entry := range entries {
+		protoFile, err := entry.toProtoMessage()
+		if err != nil {
+			return err
+		}
+
+		// Be sure to mask out key and hash.
+		dirlist.Entries = append(dirlist.Entries, &proto.Dirent{
+			Path:     protoFile.Path,
+			FileSize: protoFile.FileSize,
+			Kind:     protoFile.Kind,
+			ModTime:  protoFile.ModTime,
+		})
 	}
 
 	enc := protocol.NewProtocolWriter(w, true)
