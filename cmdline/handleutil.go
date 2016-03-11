@@ -167,3 +167,16 @@ func checkJID(jid xmpp.JID) error {
 
 	return nil
 }
+
+func ctxGetIntWithDefault(ctx climax.Context, param string, def int) (int, error) {
+	if s, ok := ctx.Get(param); ok {
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, err
+		}
+
+		return i, nil
+	}
+
+	return def, nil
+}

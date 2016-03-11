@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -460,21 +459,13 @@ func handleOnline(ctx climax.Context, client *daemon.Client) int {
 func handleList(ctx climax.Context, client *daemon.Client) int {
 	path := "/"
 	if len(ctx.Args) > 0 {
-		path = ctx.Args[0]
+		path = prefixSlash(ctx.Args[0])
 	}
 
-	depth := -1
-
-	// TODO: This screams for a util func. GetInt() with default maybe.
-	depthStr, ok := ctx.Get("depth")
-	if ok {
-		parsedDepth, err := strconv.Atoi(depthStr)
-		if err != nil {
-			log.Warningf("Invalid depth: %d", depthStr)
-			return BadArgs
-		}
-
-		depth = parsedDepth
+	depth, err := ctxGetIntWithDefault(ctx, "depth", -1)
+	if err != nil {
+		log.Warningf("Invalid depth: %v", err)
+		return BadArgs
 	}
 
 	if ctx.Is("recursive") {
