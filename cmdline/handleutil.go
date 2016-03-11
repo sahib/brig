@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon"
@@ -35,6 +36,14 @@ func readPassword() (string, error) {
 	})
 
 	return pwd, err
+}
+
+func prefixSlash(s string) string {
+	if !strings.HasPrefix(s, "/") {
+		return "/" + s
+	}
+
+	return s
 }
 
 type cmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int

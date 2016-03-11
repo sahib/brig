@@ -22,6 +22,7 @@ import (
 var (
 	// ErrNoSuchFile is returned whenever a path could not be resolved to a file.
 	ErrNoSuchFile = fmt.Errorf("No such file or directory")
+	ErrExists     = fmt.Errorf("File exists")
 )
 
 // Store is responsible for adding & retrieving all files from ipfs,
@@ -308,7 +309,7 @@ func (s *Store) Close() error {
 	return nil
 }
 
-// Rm will purge a file locally on this node.
+// Remove will purge a file locally on this node.
 func (s *Store) Remove(path string) error {
 	node := s.Root.Lookup(path)
 	if node == nil {
@@ -329,7 +330,6 @@ func (s *Store) Remove(path string) error {
 		return err
 	}
 
-	log.Debugf("rm: Making checkpoint: %v", node.Metadata)
 	if err := s.MakeCheckpoint(node.Metadata, nil, path, path); err != nil {
 		return err
 	}
@@ -401,6 +401,10 @@ func (st *Store) Move(oldPath, newPath string) error {
 		return ErrNoSuchFile
 	}
 
+	if newNode := st.Root.Lookup(newPath); newNode != nil {
+		return ErrExists
+	}
+
 	// TODO: Implement dir walk...
 	if node.Kind() != FileTypeRegular {
 		return fmt.Errorf("TODO: move does not work on directories yet")
@@ -418,7 +422,6 @@ func (st *Store) Move(oldPath, newPath string) error {
 	node.Remove()
 	node.insert(st.Root, newPath)
 
-	log.Debugf("rm: Making checkpoint: %v", node.Metadata)
 	md := node.Metadata
 	if err := st.MakeCheckpoint(md, md, oldPath, newPath); err != nil {
 		return err

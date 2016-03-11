@@ -274,6 +274,23 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 			return err
 		}
 
+		// On a "move" we need to move the old data to the new path.
+		if change == ChangeMove {
+			if oldBuck := bckt.Bucket([]byte(oldPath)); oldBuck != nil {
+				err = oldBuck.ForEach(func(k, v []byte) error {
+					return histBuck.Put(k, v)
+				})
+
+				if err != nil {
+					return err
+				}
+
+				if err := bckt.DeleteBucket([]byte(oldPath)); err != nil {
+					return err
+				}
+			}
+		}
+
 		return histBuck.Put(mtimeBin, protoData)
 	})
 
@@ -293,8 +310,7 @@ func (s *Store) History(path string) (*History, error) {
 	return &hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		changeBuck := bckt.Bucket([]byte(path))
 		if changeBuck == nil {
-			// No history yet, return empty.
-			return nil
+			return ErrNoSuchFile
 		}
 
 		return changeBuck.ForEach(func(k, v []byte) error {

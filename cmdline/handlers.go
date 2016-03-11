@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -286,11 +285,7 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 }
 
 func handleRm(ctx climax.Context, client *daemon.Client) int {
-	repoPath := ctx.Args[0]
-
-	if !strings.HasPrefix(repoPath, "/") {
-		repoPath = "/" + repoPath
-	}
+	repoPath := prefixSlash(ctx.Args[0])
 
 	_, err := client.Rm(repoPath)
 	if err != nil {
@@ -302,10 +297,7 @@ func handleRm(ctx climax.Context, client *daemon.Client) int {
 }
 
 func handleCat(ctx climax.Context, client *daemon.Client) int {
-	repoPath := ctx.Args[0]
-	if !strings.HasPrefix(repoPath, "/") {
-		repoPath = "/" + repoPath
-	}
+	repoPath := prefixSlash(ctx.Args[0])
 
 	filePath := ""
 	isStdoutMode := len(ctx.Args) < 2
@@ -369,11 +361,7 @@ var (
 )
 
 func handleHistory(ctx climax.Context, client *daemon.Client) int {
-	// TODO: util func for this.
-	repoPath := ctx.Args[0]
-	if !strings.HasPrefix(repoPath, "/") {
-		repoPath = "/" + repoPath
-	}
+	repoPath := prefixSlash(ctx.Args[0])
 
 	history, err := client.History(repoPath)
 	if err != nil {
@@ -400,8 +388,19 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 			colors.Colorize(string(checkpoint.Author), colors.Magenta),
 		)
 
-		fmt.Printf(" %s   ├─ % 9s: %v\n", twoWayRune, colors.Colorize("Hash", colors.Green), checkpoint.Hash.B58String())
-		fmt.Printf(" %s   └─ % 9s: %v\n", twoWayRune, colors.Colorize("Date", colors.Yellow), checkpoint.ModTime)
+		fmt.Printf(
+			" %s   ├─ % 9s: %v\n",
+			twoWayRune,
+			colors.Colorize("Hash", colors.Green),
+			checkpoint.Hash.B58String(),
+		)
+
+		fmt.Printf(
+			" %s   └─ % 9s: %v\n",
+			twoWayRune,
+			colors.Colorize("Date", colors.Yellow),
+			checkpoint.ModTime,
+		)
 	}
 
 	return Success
@@ -517,7 +516,7 @@ func handlePull(ctx climax.Context, client *daemon.Client) int {
 }
 
 func handleMv(ctx climax.Context, client *daemon.Client) int {
-	source, dest := ctx.Args[0], ctx.Args[1]
+	source, dest := prefixSlash(ctx.Args[0]), prefixSlash(ctx.Args[1])
 
 	if err := client.Move(source, dest); err != nil {
 		log.Warningf("move failed: %v", err)
