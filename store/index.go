@@ -45,7 +45,6 @@ type Store struct {
 
 // Open loads an existing store, if it does not exist, it is created.
 // For full function, Connect() should be called afterwards.
-// TODO: Add jid.
 func Open(repoPath string, jid xmpp.JID, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	db, err := bolt.Open(filepath.Join(repoPath, "index.bolt"), 0600, options)
@@ -237,8 +236,6 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	file.updateParents()
 
 	// Create a checkpoint in the version history.
-	// TODO: Move is not yet supported, probably use own function for this.
-	//       (store.Move() or something)
 	err = s.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
 	if err != nil {
 		return err
@@ -312,8 +309,7 @@ func (s *Store) Close() error {
 }
 
 // Rm will purge a file locally on this node.
-// TODO: rename in Remove() (like other functions)
-func (s *Store) Rm(path string) error {
+func (s *Store) Remove(path string) error {
 	node := s.Root.Lookup(path)
 	if node == nil {
 		return ErrNoSuchFile
