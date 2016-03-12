@@ -352,14 +352,6 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
-var (
-	treeRunePipe   = "│"
-	treeRuneTri    = "├"
-	treeRuneBar    = "──"
-	treeRuneCorner = "└"
-	treeRuneDot    = "⌽" // ⚫
-)
-
 func handleHistory(ctx climax.Context, client *daemon.Client) int {
 	repoPath := prefixSlash(ctx.Args[0])
 
@@ -477,6 +469,15 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 	if err != nil {
 		log.Warningf("ls: %v", err)
 		return UnknownError
+	}
+
+	if ctx.Is("tree") {
+		if err := showTree(dirlist, depth); err != nil {
+			log.Warningf("Printing tree failed: %v", err)
+			return UnknownError
+		}
+
+		return Success
 	}
 
 	// TODO: Nicer formatting.
