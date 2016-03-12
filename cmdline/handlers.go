@@ -480,7 +480,6 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 		return Success
 	}
 
-	// TODO: Nicer formatting.
 	for _, dirent := range dirlist {
 		modTime := time.Time{}
 		if err := modTime.UnmarshalText(dirent.GetModTime()); err != nil {
@@ -503,6 +502,32 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 				colors.Magenta,
 			),
 		)
+	}
+
+	return Success
+}
+
+func handleTree(ctx climax.Context, client *daemon.Client) int {
+	path := "/"
+	if len(ctx.Args) > 0 {
+		path = prefixSlash(ctx.Args[0])
+	}
+
+	depth, err := ctxGetIntWithDefault(ctx, "depth", -1)
+	if err != nil {
+		log.Warningf("Invalid depth: %v", err)
+		return BadArgs
+	}
+
+	dirlist, err := client.List(path, depth)
+	if err != nil {
+		log.Warningf("ls: %v", err)
+		return UnknownError
+	}
+
+	if err := showTree(dirlist, depth); err != nil {
+		log.Warningf("Printing tree failed: %v", err)
+		return UnknownError
 	}
 
 	return Success
