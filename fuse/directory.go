@@ -102,7 +102,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 // Remove is called when a direct child in the directory needs to be removed.
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	path := filepath.Join(d.Path(), req.Name)
-	if err := d.fs.Store.Remove(path); err != nil {
+	if err := d.fs.Store.Remove(path, false); err != nil {
 		log.Errorf("fuse-rm `%s` failed: %v", path, err)
 		return fuse.ENOENT
 	}

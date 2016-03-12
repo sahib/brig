@@ -89,9 +89,11 @@ func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 }
 
 func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
-	repoPath := cmd.GetRmCommand().GetRepoPath()
+	rmCmd := cmd.GetRmCommand()
+	repoPath := rmCmd.GetRepoPath()
+	recursive := rmCmd.GetRecursive()
 
-	if err := d.Repo.OwnStore.Remove(repoPath); err != nil {
+	if err := d.Repo.OwnStore.Remove(repoPath, recursive); err != nil {
 		return nil, err
 	}
 

@@ -370,6 +370,7 @@ func (m *Command_UnmountCmd) GetMountPoint() string {
 
 type Command_RmCmd struct {
 	RepoPath         *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
+	Recursive        *bool   `protobuf:"varint,2,req,name=recursive" json:"recursive,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -382,6 +383,13 @@ func (m *Command_RmCmd) GetRepoPath() string {
 		return *m.RepoPath
 	}
 	return ""
+}
+
+func (m *Command_RmCmd) GetRecursive() bool {
+	if m != nil && m.Recursive != nil {
+		return *m.Recursive
+	}
+	return false
 }
 
 type Command_HistoryCmd struct {
@@ -930,6 +938,18 @@ func (m *Command_RmCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
 		i += copy(data[i:], *m.RepoPath)
 	}
+	if m.Recursive == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x10
+		i++
+		if *m.Recursive {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -1376,6 +1396,9 @@ func (m *Command_RmCmd) Size() (n int) {
 	if m.RepoPath != nil {
 		l = len(*m.RepoPath)
 		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.Recursive != nil {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2625,6 +2648,28 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 			m.RepoPath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Recursive", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.Recursive = &b
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -2642,6 +2687,9 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

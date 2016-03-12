@@ -173,27 +173,35 @@ func TestExport(t *testing.T) {
 	})
 }
 
+func createDirAndFile(t *testing.T, st *Store, data []byte) error {
+	if err := st.AddFromReader("/dummy", bytes.NewReader(data), int64(len(data))); err != nil {
+		t.Errorf("Could not add dummy file for move: %v", err)
+		return err
+	}
+
+	if _, err := st.Mkdir("/dir"); err != nil {
+		t.Errorf("Mkdir(/dir) failed: %v", err)
+		return err
+	}
+
+	if err := st.Touch("/dir/a"); err != nil {
+		t.Errorf("Touch(/dir/a) failed: %v", err)
+		return err
+	}
+
+	if err := st.Touch("/dir/b"); err != nil {
+		t.Errorf("Touch(/dir/b) failed: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func TestMove(t *testing.T) {
 	data := testutil.CreateDummyBuf(1024)
 
 	withEmptyStore(t, func(st *Store) {
-		if err := st.AddFromReader("/dummy", bytes.NewReader(data), int64(len(data))); err != nil {
-			t.Errorf("Could not add dummy file for move: %v", err)
-			return
-		}
-
-		if _, err := st.Mkdir("/dir"); err != nil {
-			t.Errorf("Mkdir(/dir) failed: %v", err)
-			return
-		}
-
-		if err := st.Touch("/dir/a"); err != nil {
-			t.Errorf("Touch(/dir/a) failed: %v", err)
-			return
-		}
-
-		if err := st.Touch("/dir/b"); err != nil {
-			t.Errorf("Touch(/dir/b) failed: %v", err)
+		if err := createDirAndFile(t, st, data); err != nil {
 			return
 		}
 
@@ -244,6 +252,46 @@ func TestMove(t *testing.T) {
 
 		if err := st.Cat("/dir/b", &bytes.Buffer{}); err != ErrNoSuchFile {
 			t.Errorf("Move: /dir/b still reachable")
+			return
+		}
+	})
+}
+
+func TestRemove(t *testing.T) {
+	data := testutil.CreateDummyBuf(1024)
+
+	withEmptyStore(t, func(st *Store) {
+		if err := createDirAndFile(t, st, data); err != nil {
+			return
+		}
+
+		if _, err := st.Mkdir("/empty_dir"); err != nil {
+			t.Errorf("Could not mkdir /empty_dir: %v", err)
+			return
+		}
+
+		if err := st.Remove("/dummy", false); err != nil {
+			t.Errorf("Could not remove /dummy: %v", err)
+			return
+		}
+
+		if err := st.Remove("/dummy", false); err != ErrNoSuchFile {
+			t.Errorf("Could remove /dummy twice: %v", err)
+			return
+		}
+
+		if err := st.Remove("/dir", false); err != ErrNotEmpty {
+			t.Errorf("Remove did not deny removing non-empty dir: %v", err)
+			return
+		}
+
+		if err := st.Remove("/dir", true); err != nil {
+			t.Errorf("Could not remove /dir recursively: %v", err)
+			return
+		}
+
+		if err := st.Remove("/empty_dir", false); err != nil {
+			t.Errorf("Could not remove /empty_dir non-recursively: %v", err)
 			return
 		}
 	})

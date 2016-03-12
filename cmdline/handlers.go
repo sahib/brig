@@ -287,8 +287,7 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 func handleRm(ctx climax.Context, client *daemon.Client) int {
 	repoPath := prefixSlash(ctx.Args[0])
 
-	_, err := client.Rm(repoPath)
-	if err != nil {
+	if _, err := client.Remove(repoPath, ctx.Is("recursive")); err != nil {
 		log.Errorf("Could not remove file: `%s`: %v", repoPath, err)
 		return UnknownError
 	}

@@ -235,8 +235,15 @@ func RunCmdline() int {
 			Name:   "rm",
 			Group:  wdirGroup,
 			Brief:  "Remove the file and optionally old versions of it.",
-			Usage:  `FILE_OR_FOLDER PATH_INSIDE_BRIG`,
+			Usage:  `FILE_OR_FOLDER`,
 			Handle: withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
+			Flags: []climax.Flag{
+				{
+					Name:  "recursive",
+					Short: "r",
+					Help:  `Recursive delete.`,
+				},
+			},
 		},
 		climax.Command{
 			Name:   "mv",

@@ -91,12 +91,13 @@ func (c *Client) Unmount(mountPath string) (string, error) {
 	return c.recvResponseString("unmount")
 }
 
-// Rm removes the brig file at `repoPath`
-func (c *Client) Rm(repoPath string) (string, error) {
+// Remove removes the brig file at `repoPath`
+func (c *Client) Remove(repoPath string, recursive bool) (string, error) {
 	c.Send <- &proto.Command{
 		CommandType: proto.MessageType_RM.Enum(),
 		RmCommand: &proto.Command_RmCmd{
-			RepoPath: protobuf.String(repoPath),
+			RepoPath:  protobuf.String(repoPath),
+			Recursive: protobuf.Bool(recursive),
 		},
 	}
 

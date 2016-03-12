@@ -261,6 +261,7 @@ func newDirUnlocked(store *Store, path string) (*File, error) {
 		Metadata: &Metadata{
 			modTime: time.Now(),
 			kind:    FileTypeDir,
+			hash:    &Hash{},
 		},
 	}
 
@@ -312,7 +313,7 @@ func (f *File) toProtoMessage() (*proto.File, error) {
 }
 
 // Unmarshal decodes the data in `buf` and inserts the unmarshaled file
-// into `store`. // TODO: make file receiver?
+// into `store`.
 func (fi *File) Unmarshal(store *Store, buf []byte) error {
 	protoFile := &proto.File{}
 	if err := protobuf.Unmarshal(buf, protoFile); err != nil {
@@ -464,6 +465,14 @@ func (f *File) Children() []*File {
 	return children
 }
 
+// NChildren returns the number of children this file node has.
+func (f *File) NChildren() int {
+	f.RLock()
+	defer f.RUnlock()
+
+	return len(f.node.Children)
+}
+
 // Child returns the direct child of the receiver called `name` or nil
 func (f *File) Child(name string) *File {
 	f.RLock()
@@ -544,6 +553,7 @@ func (f *File) hashUnlocked() *Hash {
 	}
 
 	// Take a lucky guess:
+	// TODO: Is this bullshit here needed?
 	code := multihash.BLAKE2S
 	mhash, err := multihash.Encode(make([]byte, multihash.DefaultLengths[code]), code)
 	if err != nil {

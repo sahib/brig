@@ -63,6 +63,7 @@ message Command {
 
 	message RmCmd {
 		required string repo_path = 1;
+        required bool recursive = 2;
 	}
 
     message HistoryCmd {

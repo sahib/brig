@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 
 	"github.com/jbenet/go-multihash"
@@ -15,12 +16,20 @@ type Hash struct {
 
 // MarshalJSON converts a hash into a base58 string representation.
 func (h *Hash) MarshalJSON() ([]byte, error) {
+	if h == nil {
+		return nil, fmt.Errorf("Empty hash")
+	}
+
 	return []byte(strconv.Quote(h.B58String())), nil
 }
 
 // UnmarshalJSON loads a base58 string representation of a hash
 // and converts it to raw bytes.
 func (h *Hash) UnmarshalJSON(data []byte) error {
+	if h == nil {
+		h = &Hash{}
+	}
+
 	unquoted, err := strconv.Unquote(string(data))
 	if err != nil {
 		return err
@@ -42,6 +51,10 @@ func (h *Hash) Valid() bool {
 
 // Bytes returns the underlying bytes in the hash.
 func (h *Hash) Bytes() []byte {
+	if h == nil {
+		return []byte{}
+	}
+
 	return []byte(h.Multihash)
 }
 
