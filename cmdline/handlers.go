@@ -558,3 +558,14 @@ func handleMv(ctx climax.Context, client *daemon.Client) int {
 
 	return Success
 }
+
+func handleMkdir(ctx climax.Context, client *daemon.Client) int {
+	path := prefixSlash(ctx.Args[0])
+
+	if err := client.Mkdir(path); err != nil {
+		log.Warningf("mkdir failed: %v", err)
+		return UnknownError
+	}
+
+	return Success
+}

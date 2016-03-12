@@ -27,6 +27,7 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_ONLINE_STATUS: handleOnlineStatus,
 	proto.MessageType_FETCH:         handleFetch,
 	proto.MessageType_LIST:          handleList,
+	proto.MessageType_MKDIR:         handleMkdir,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
@@ -181,4 +182,14 @@ func handleList(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, err
 	}
 
 	return buf.Bytes(), nil
+}
+
+func handleMkdir(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	path := cmd.GetMkdirCommand().GetPath()
+
+	if _, err := d.Repo.OwnStore.Mkdir(path); err != nil {
+		return nil, err
+	}
+
+	return []byte("OK"), nil
 }

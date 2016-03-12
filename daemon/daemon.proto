@@ -18,6 +18,7 @@ enum MessageType {
     FETCH = 10;
     LIST = 11;
     MV = 12;
+    MKDIR = 13;
 }
 
 enum OnlineQuery {
@@ -91,6 +92,10 @@ message Command {
         required string dest = 2;
     }
 
+    message MkdirCmd {
+        required string path = 1;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -106,6 +111,7 @@ message Command {
     optional FetchCmd fetch_command = 12;
     optional ListCmd list_command = 13;
     optional MvCmd mv_command = 14;
+    optional MkdirCmd mkdir_command = 15;
 }
 
 message Response {

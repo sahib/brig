@@ -46,6 +46,7 @@ const (
 	MessageType_FETCH         MessageType = 10
 	MessageType_LIST          MessageType = 11
 	MessageType_MV            MessageType = 12
+	MessageType_MKDIR         MessageType = 13
 )
 
 var MessageType_name = map[int32]string{
@@ -62,6 +63,7 @@ var MessageType_name = map[int32]string{
 	10: "FETCH",
 	11: "LIST",
 	12: "MV",
+	13: "MKDIR",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -77,6 +79,7 @@ var MessageType_value = map[string]int32{
 	"FETCH":         10,
 	"LIST":          11,
 	"MV":            12,
+	"MKDIR":         13,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -150,6 +153,7 @@ type Command struct {
 	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,12,opt,name=fetch_command" json:"fetch_command,omitempty"`
 	ListCommand         *Command_ListCmd         `protobuf:"bytes,13,opt,name=list_command" json:"list_command,omitempty"`
 	MvCommand           *Command_MvCmd           `protobuf:"bytes,14,opt,name=mv_command" json:"mv_command,omitempty"`
+	MkdirCommand        *Command_MkdirCmd        `protobuf:"bytes,15,opt,name=mkdir_command" json:"mkdir_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -251,6 +255,13 @@ func (m *Command) GetListCommand() *Command_ListCmd {
 func (m *Command) GetMvCommand() *Command_MvCmd {
 	if m != nil {
 		return m.MvCommand
+	}
+	return nil
+}
+
+func (m *Command) GetMkdirCommand() *Command_MkdirCmd {
+	if m != nil {
+		return m.MkdirCommand
 	}
 	return nil
 }
@@ -478,6 +489,22 @@ func (m *Command_MvCmd) GetDest() string {
 	return ""
 }
 
+type Command_MkdirCmd struct {
+	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_MkdirCmd) Reset()         { *m = Command_MkdirCmd{} }
+func (m *Command_MkdirCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_MkdirCmd) ProtoMessage()    {}
+
+func (m *Command_MkdirCmd) GetPath() string {
+	if m != nil && m.Path != nil {
+		return *m.Path
+	}
+	return ""
+}
+
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
@@ -533,6 +560,7 @@ func init() {
 	proto1.RegisterType((*Command_FetchCmd)(nil), "daemon.protocol.Command.FetchCmd")
 	proto1.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
 	proto1.RegisterType((*Command_MvCmd)(nil), "daemon.protocol.Command.MvCmd")
+	proto1.RegisterType((*Command_MkdirCmd)(nil), "daemon.protocol.Command.MkdirCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
 	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
@@ -688,6 +716,16 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n13
+	}
+	if m.MkdirCommand != nil {
+		data[i] = 0x7a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.MkdirCommand.Size()))
+		n14, err := m.MkdirCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1078,6 +1116,35 @@ func (m *Command_MvCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_MkdirCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_MkdirCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Path == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Path)))
+		i += copy(data[i:], *m.Path)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1213,6 +1280,10 @@ func (m *Command) Size() (n int) {
 	}
 	if m.MvCommand != nil {
 		l = m.MvCommand.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.MkdirCommand != nil {
+		l = m.MkdirCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1384,6 +1455,19 @@ func (m *Command_MvCmd) Size() (n int) {
 	}
 	if m.Dest != nil {
 		l = len(*m.Dest)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_MkdirCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Path != nil {
+		l = len(*m.Path)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1905,6 +1989,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.MvCommand = &Command_MvCmd{}
 			}
 			if err := m.MvCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MkdirCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.MkdirCommand == nil {
+				m.MkdirCommand = &Command_MkdirCmd{}
+			}
+			if err := m.MkdirCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3054,6 +3171,92 @@ func (m *Command_MvCmd) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MkdirCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MkdirCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Path = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

@@ -213,6 +213,12 @@ func RunCmdline() int {
 			},
 		},
 		climax.Command{
+			Name:   "mkdir",
+			Group:  wdirGroup,
+			Brief:  "Create an empty directory.",
+			Handle: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
+		},
+		climax.Command{
 			Name:  "status",
 			Group: wdirGroup,
 			Brief: "Give an overview of brig's current state.",

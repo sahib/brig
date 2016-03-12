@@ -228,8 +228,22 @@ func (c *Client) Fetch(who xmpp.JID) error {
 		},
 	}
 
-	_, err := c.recvResponseBytes("fetch")
-	if err != nil {
+	if _, err := c.recvResponseBytes("fetch"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) Mkdir(path string) error {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_MKDIR.Enum(),
+		MkdirCommand: &proto.Command_MkdirCmd{
+			Path: protobuf.String(string(path)),
+		},
+	}
+
+	if _, err := c.recvResponseBytes("mkdir"); err != nil {
 		return err
 	}
 
