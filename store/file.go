@@ -504,6 +504,10 @@ func (f *File) Stream() (ipfsutil.Reader, error) {
 	f.RLock()
 	defer f.RUnlock()
 
+	if f.kind != FileTypeRegular {
+		return nil, fmt.Errorf("Only files can be streamed")
+	}
+
 	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.key)
 
 	ipfsStream, err := ipfsutil.Cat(f.store.IPFS, f.hash.Multihash)

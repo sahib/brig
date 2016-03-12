@@ -51,7 +51,7 @@ func (h *Hash) Valid() bool {
 
 // Bytes returns the underlying bytes in the hash.
 func (h *Hash) Bytes() []byte {
-	if h == nil {
+	if h == nil || h.Multihash == nil {
 		return []byte{}
 	}
 

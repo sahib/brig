@@ -233,12 +233,12 @@ func TestMove(t *testing.T) {
 		check("/new_dummy", data)
 
 		if err := st.Move("/dummy", "/new_dummy"); err != ErrNoSuchFile {
-			t.Errorf("Move could move dead file: %v")
+			t.Errorf("Move could move dead file: %v", err)
 			return
 		}
 
 		if err := st.Move("/dir", "/other"); err != nil {
-			t.Errorf("Move could move dir: %v")
+			t.Errorf("Move could not move dir: %v", err)
 			return
 		}
 
