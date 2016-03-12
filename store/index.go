@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -405,26 +406,40 @@ func (st *Store) Move(oldPath, newPath string) error {
 		return ErrExists
 	}
 
-	// TODO: Implement dir walk...
-	if node.Kind() != FileTypeRegular {
-		return fmt.Errorf("TODO: move does not work on directories yet")
-	}
+	toBeRemoved := make(map[string]*File)
+	var err error
 
-	// Remove from trie & remove from bolt db.
-	err := st.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		return bckt.Delete([]byte(oldPath))
+	// Work recursively for directories:
+	node.Walk(true, func(child *File) bool {
+		oldChildPath := child.Path()
+		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
+
+		// Remove from trie & remove from bolt db.
+		err = st.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+			return bckt.Delete([]byte(oldChildPath))
+		})
+
+		if err != nil {
+			return false
+		}
+
+		toBeRemoved[newChildPath] = child
+
+		md := node.Metadata
+		if err = st.MakeCheckpoint(md, md, oldChildPath, newChildPath); err != nil {
+			return false
+		}
+
+		return true
 	})
 
 	if err != nil {
 		return err
 	}
 
-	node.Remove()
-	node.insert(st.Root, newPath)
-
-	md := node.Metadata
-	if err := st.MakeCheckpoint(md, md, oldPath, newPath); err != nil {
-		return err
+	for newPath, node := range toBeRemoved {
+		node.Remove()
+		node.insert(st.Root, newPath)
 	}
 
 	return nil

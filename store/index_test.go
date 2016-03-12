@@ -177,40 +177,73 @@ func TestMove(t *testing.T) {
 	data := testutil.CreateDummyBuf(1024)
 
 	withEmptyStore(t, func(st *Store) {
-		if err := st.AddFromReader("dummy", bytes.NewReader(data), int64(len(data))); err != nil {
+		if err := st.AddFromReader("/dummy", bytes.NewReader(data), int64(len(data))); err != nil {
 			t.Errorf("Could not add dummy file for move: %v", err)
 			return
 		}
 
-		check := func(path string) {
+		if _, err := st.Mkdir("/dir"); err != nil {
+			t.Errorf("Mkdir(/dir) failed: %v", err)
+			return
+		}
+
+		if err := st.Touch("/dir/a"); err != nil {
+			t.Errorf("Touch(/dir/a) failed: %v", err)
+			return
+		}
+
+		if err := st.Touch("/dir/b"); err != nil {
+			t.Errorf("Touch(/dir/b) failed: %v", err)
+			return
+		}
+
+		check := func(path string, expect []byte) {
 			recvBuf := &bytes.Buffer{}
 			if err := st.Cat(path, recvBuf); err != nil {
 				t.Errorf("Catting of `%s` failed: %v", path, err)
 				return
 			}
 
-			if !bytes.Equal(recvBuf.Bytes(), data) {
+			if !bytes.Equal(recvBuf.Bytes(), expect) {
 				t.Errorf("Data differs between add/move/cat")
 				return
 			}
 		}
 
-		check("dummy")
+		check("/dummy", data)
 
-		if err := st.Move("dummy", "new_dummy"); err != nil {
+		if err := st.Move("/dummy", "/new_dummy"); err != nil {
 			t.Errorf("Move failed: %v", err)
 			return
 		}
 
-		if err := st.Cat("dummy", &bytes.Buffer{}); err != ErrNoSuchFile {
+		if err := st.Cat("/dummy", &bytes.Buffer{}); err != ErrNoSuchFile {
 			t.Errorf("Move: dummy still reachable")
 			return
 		}
 
-		check("new_dummy")
+		check("/new_dummy", data)
 
-		if err := st.Move("dummy", "new_dummy"); err != ErrNoSuchFile {
+		if err := st.Move("/dummy", "/new_dummy"); err != ErrNoSuchFile {
 			t.Errorf("Move could move dead file: %v")
+			return
+		}
+
+		if err := st.Move("/dir", "/other"); err != nil {
+			t.Errorf("Move could move dir: %v")
+			return
+		}
+
+		check("/other/a", []byte{})
+		check("/other/b", []byte{})
+
+		if err := st.Cat("/dir/a", &bytes.Buffer{}); err != ErrNoSuchFile {
+			t.Errorf("Move: /dir/a still reachable")
+			return
+		}
+
+		if err := st.Cat("/dir/b", &bytes.Buffer{}); err != ErrNoSuchFile {
+			t.Errorf("Move: /dir/b still reachable")
 			return
 		}
 	})
