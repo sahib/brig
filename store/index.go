@@ -59,7 +59,16 @@ func prefixSlash(s string) string {
 // afterwards.
 func Open(brigPath string, jid xmpp.JID, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
-	db, err := bolt.Open(filepath.Join(brigPath, "index.bolt"), 0600, options)
+	dbDir := filepath.Join(
+		brigPath,
+		"bolt."+strings.Replace(string(jid), "/", "-", -1),
+	)
+
+	if err := os.MkdirAll(dbDir, 0777); err != nil {
+		return nil, err
+	}
+
+	db, err := bolt.Open(filepath.Join(dbDir, "index.bolt"), 0600, options)
 
 	if err != nil {
 		return nil, err

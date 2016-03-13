@@ -139,7 +139,7 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	empties := []string{"index.bolt", "otr.key", "otr.buddies", "shadow"}
+	empties := []string{"otr.key", "otr.buddies", "shadow"}
 	for _, empty := range empties {
 		fullPath := filepath.Join(brigPath, empty)
 		if err := util.Touch(fullPath); err != nil {

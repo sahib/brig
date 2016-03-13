@@ -18,13 +18,30 @@ var (
 	ErrBadPassword = errors.New("Bad password.")
 )
 
-// Filenames that will be encrypted on close:
-var lockPaths = []string{
-	"index.bolt",
-	"master.key",
-	// TODO: What about those? Encrypt them?
-	// "otr.buddies",
-	// "otr.key",
+// Filenames that will be encrypted on close
+// and decrypted upon opening the repository.
+func absLockPaths(brigPath string) []string {
+	lockPaths := []string{
+		filepath.Join(brigPath, "master.key"),
+		// TODO: Minilock fails on empty files.
+		//       This is pretty embarrassing.
+		//       Reported at: https://github.com/cathalgarvey/go-minilock/issues/8
+		// filepath.Join(brigPath, "otr.key"),
+		// filepath.Join(brigPath, "otr.buddies"),
+	}
+
+	fmt.Println("globbed")
+	matches, err := filepath.Glob(filepath.Join(brigPath, "bolt.*"))
+	if err != nil {
+		panic(fmt.Sprintf("Bad pattern in glob: %s", err))
+	}
+
+	for _, match := range matches {
+		lockPaths = append(lockPaths, filepath.Join(match, "index.bolt"))
+	}
+
+	fmt.Println("Lock paths", lockPaths)
+	return lockPaths
 }
 
 func lookupJid(configPath string) (string, error) {
@@ -41,7 +58,7 @@ func lookupJid(configPath string) (string, error) {
 	return jid, nil
 }
 
-// Open unencrypts all sensible data in the repository.
+// Open decrypts all sensible data in the repository.
 func Open(pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
@@ -54,8 +71,7 @@ func Open(pwd, folder string) (*Repository, error) {
 
 	// Unlock all files:
 	var absNames []string
-	for _, name := range lockPaths {
-		absName := filepath.Join(brigPath, name)
+	for _, absName := range absLockPaths(brigPath) {
 		if _, err := os.Stat(absName); err == nil {
 			// File exists, this might happen on a crash or killed daemon.
 			log.Warningf("File is already unlocked: %s", absName)
@@ -76,8 +92,7 @@ func Open(pwd, folder string) (*Repository, error) {
 // The password is taken from Repository.Password.
 func (r *Repository) Close() error {
 	var absNames []string
-	for _, name := range lockPaths {
-		absName := filepath.Join(r.InternalFolder, name)
+	for _, absName := range absLockPaths(r.InternalFolder) {
 		if _, err := os.Stat(absName); os.IsNotExist(err) {
 			// File does not exist. Might be already locked.
 			log.Warningf("File is already locked: %s", absName)
