@@ -26,11 +26,10 @@ func absLockPaths(brigPath string) []string {
 		// TODO: Minilock fails on empty files.
 		//       This is pretty embarrassing.
 		//       Reported at: https://github.com/cathalgarvey/go-minilock/issues/8
-		// filepath.Join(brigPath, "otr.key"),
-		// filepath.Join(brigPath, "otr.buddies"),
+		filepath.Join(brigPath, "otr.key"),
+		filepath.Join(brigPath, "otr.buddies"),
 	}
 
-	fmt.Println("globbed")
 	matches, err := filepath.Glob(filepath.Join(brigPath, "bolt.*"))
 	if err != nil {
 		panic(fmt.Sprintf("Bad pattern in glob: %s", err))
@@ -40,7 +39,6 @@ func absLockPaths(brigPath string) []string {
 		lockPaths = append(lockPaths, filepath.Join(match, "index.bolt"))
 	}
 
-	fmt.Println("Lock paths", lockPaths)
 	return lockPaths
 }
 
@@ -93,9 +91,16 @@ func Open(pwd, folder string) (*Repository, error) {
 func (r *Repository) Close() error {
 	var absNames []string
 	for _, absName := range absLockPaths(r.InternalFolder) {
-		if _, err := os.Stat(absName); os.IsNotExist(err) {
+		info, err := os.Stat(absName)
+		if os.IsNotExist(err) {
 			// File does not exist. Might be already locked.
 			log.Warningf("File is already locked: %s", absName)
+			continue
+		}
+
+		if info.Size() == 0 {
+			log.Warningf("Working around minilock bug, not encrypting empty file `%s`", absName)
+			log.Warningf("See: https://github.com/cathalgarvey/go-minilock/issues/8")
 			continue
 		}
 

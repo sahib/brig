@@ -66,7 +66,8 @@ func genPrivateKey(key *otr.PrivateKey, path string) error {
 	}
 
 	keyString := fmt.Sprintf("%X", key.Serialize(nil))
-	log.Infof("Key Generated: %x", truncate(keyString, 40))
+	log.Debugf("Key Generated: %x", truncate(keyString, 15))
+	log.Infof("Fingerprint: %v", FormatFingerprint(key.Fingerprint()))
 	return nil
 }
 
