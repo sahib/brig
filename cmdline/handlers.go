@@ -568,3 +568,30 @@ func handleMkdir(ctx climax.Context, client *daemon.Client) int {
 
 	return Success
 }
+
+func handleAuth(ctx climax.Context, client *daemon.Client) int {
+	if ctx.Is("add") {
+		if len(ctx.Args) < 2 {
+			log.Warningf("Need jid and fingerprint.")
+			return BadArgs
+		}
+
+		jid, finger := ctx.Args[0], ctx.Args[1]
+
+		if err := client.AuthAdd(xmpp.JID(jid), finger); err != nil {
+			log.Warningf("auth: %v", err)
+			return UnknownError
+		}
+
+		return Success
+	}
+
+	finger, err := client.AuthPrint()
+	if err != nil {
+		log.Warningf("Printing fingerprint failed: %v", err)
+		return UnknownError
+	}
+
+	fmt.Println(finger)
+	return Success
+}

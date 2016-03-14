@@ -19,6 +19,8 @@ enum MessageType {
     LIST = 11;
     MV = 12;
     MKDIR = 13;
+    AUTH_ADD = 14;
+    AUTH_PRINT = 15;
 }
 
 enum OnlineQuery {
@@ -97,6 +99,15 @@ message Command {
         required string path = 1;
     }
 
+    message AuthAddCmd {
+        required string who = 1;
+        required string fingerprint = 2;
+    }
+
+    message AuthPrintCmd {
+        // No arguments yet.
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -113,6 +124,8 @@ message Command {
     optional ListCmd list_command = 13;
     optional MvCmd mv_command = 14;
     optional MkdirCmd mkdir_command = 15;
+    optional AuthAddCmd auth_add_command = 16;
+    optional AuthPrintCmd auth_print_command = 17;
 }
 
 message Response {

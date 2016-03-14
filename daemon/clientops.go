@@ -250,3 +250,33 @@ func (c *Client) Mkdir(path string) error {
 
 	return nil
 }
+
+func (c *Client) AuthAdd(jid xmpp.JID, finger string) error {
+	c.Send <- &proto.Command{
+		CommandType: proto.MessageType_AUTH_ADD.Enum(),
+		AuthAddCommand: &proto.Command_AuthAddCmd{
+			Who:         protobuf.String(string(jid)),
+			Fingerprint: protobuf.String(finger),
+		},
+	}
+
+	if _, err := c.recvResponseBytes("auth-add"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) AuthPrint() (string, error) {
+	c.Send <- &proto.Command{
+		CommandType:      proto.MessageType_AUTH_PRINT.Enum(),
+		AuthPrintCommand: &proto.Command_AuthPrintCmd{},
+	}
+
+	finger, err := c.recvResponseBytes("auth-print")
+	if err != nil {
+		return "", err
+	}
+
+	return string(finger), nil
+}

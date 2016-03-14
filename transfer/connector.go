@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"crypto/tls"
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -9,6 +10,10 @@ import (
 	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
 	"github.com/tsuibin/goxmpp2/xmpp"
+)
+
+var (
+	ErrOffline = errors.New("Client is offline")
 )
 
 // Connector is a pool of xmpp connections.
@@ -21,8 +26,8 @@ import (
 //
 // It is okay to call Connector from more than one goroutine.
 type Connector struct {
-	// The "own" client. Created on Connect()
-	xmpp *im.Client
+	// Client is the underlying otr authenticated xmpp client, created on Connect()
+	client *im.Client
 
 	// Open repo. required for answering requests.
 	// (might be nil for tests if no handlers are tested)
@@ -46,7 +51,7 @@ func NewConnector(rp *repo.Repository) *Connector {
 // Mainloop for incoming conversations.
 func (c *Connector) loop() {
 	for {
-		cnv := c.xmpp.Listen()
+		cnv := c.client.Listen()
 		if cnv == nil {
 			log.Debugf("connector: server: quitting loop...")
 			break
@@ -78,7 +83,7 @@ func (c *Connector) Talk(jid xmpp.JID) (*Client, error) {
 	}
 	c.mu.Unlock()
 
-	cnv, err := c.xmpp.Dial(jid)
+	cnv, err := c.client.Dial(jid)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +98,7 @@ func (c *Connector) Talk(jid xmpp.JID) (*Client, error) {
 func (c *Connector) Connect(jid xmpp.JID, password string) error {
 	// Already connected?
 	c.mu.Lock()
-	if c.xmpp != nil {
+	if c.client != nil {
 		return nil
 	}
 	c.mu.Unlock()
@@ -113,7 +118,7 @@ func (c *Connector) Connect(jid xmpp.JID, password string) error {
 	}
 
 	c.mu.Lock()
-	c.xmpp = xmpp
+	c.client = xmpp
 	c.mu.Unlock()
 
 	go c.loop()
@@ -122,13 +127,13 @@ func (c *Connector) Connect(jid xmpp.JID, password string) error {
 
 func (c *Connector) Disconnect() error {
 	// Already disconnected?
-	if c.xmpp == nil {
+	if c.client == nil {
 		return nil
 	}
 
 	c.mu.Lock()
-	cl := c.xmpp
-	c.xmpp = nil
+	cl := c.client
+	c.client = nil
 	c.mu.Unlock()
 
 	return cl.Close()
@@ -138,5 +143,27 @@ func (c *Connector) IsOnline() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.xmpp != nil
+	return c.client != nil
+}
+
+func (c *Connector) Auth(jid xmpp.JID, finger string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.client == nil {
+		return ErrOffline
+	}
+
+	return c.client.Auth(jid, finger)
+}
+
+func (c *Connector) Fingerprint() (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.client == nil {
+		return "", ErrOffline
+	}
+
+	return c.client.Fingerprint(), nil
 }

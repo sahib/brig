@@ -47,6 +47,8 @@ const (
 	MessageType_LIST          MessageType = 11
 	MessageType_MV            MessageType = 12
 	MessageType_MKDIR         MessageType = 13
+	MessageType_AUTH_ADD      MessageType = 14
+	MessageType_AUTH_PRINT    MessageType = 15
 )
 
 var MessageType_name = map[int32]string{
@@ -64,6 +66,8 @@ var MessageType_name = map[int32]string{
 	11: "LIST",
 	12: "MV",
 	13: "MKDIR",
+	14: "AUTH_ADD",
+	15: "AUTH_PRINT",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -80,6 +84,8 @@ var MessageType_value = map[string]int32{
 	"LIST":          11,
 	"MV":            12,
 	"MKDIR":         13,
+	"AUTH_ADD":      14,
+	"AUTH_PRINT":    15,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -154,6 +160,8 @@ type Command struct {
 	ListCommand         *Command_ListCmd         `protobuf:"bytes,13,opt,name=list_command" json:"list_command,omitempty"`
 	MvCommand           *Command_MvCmd           `protobuf:"bytes,14,opt,name=mv_command" json:"mv_command,omitempty"`
 	MkdirCommand        *Command_MkdirCmd        `protobuf:"bytes,15,opt,name=mkdir_command" json:"mkdir_command,omitempty"`
+	AuthAddCommand      *Command_AuthAddCmd      `protobuf:"bytes,16,opt,name=auth_add_command" json:"auth_add_command,omitempty"`
+	AuthPrintCommand    *Command_AuthPrintCmd    `protobuf:"bytes,17,opt,name=auth_print_command" json:"auth_print_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -262,6 +270,20 @@ func (m *Command) GetMvCommand() *Command_MvCmd {
 func (m *Command) GetMkdirCommand() *Command_MkdirCmd {
 	if m != nil {
 		return m.MkdirCommand
+	}
+	return nil
+}
+
+func (m *Command) GetAuthAddCommand() *Command_AuthAddCmd {
+	if m != nil {
+		return m.AuthAddCommand
+	}
+	return nil
+}
+
+func (m *Command) GetAuthPrintCommand() *Command_AuthPrintCmd {
+	if m != nil {
+		return m.AuthPrintCommand
 	}
 	return nil
 }
@@ -513,6 +535,38 @@ func (m *Command_MkdirCmd) GetPath() string {
 	return ""
 }
 
+type Command_AuthAddCmd struct {
+	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
+	Fingerprint      *string `protobuf:"bytes,2,req,name=fingerprint" json:"fingerprint,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_AuthAddCmd) Reset()         { *m = Command_AuthAddCmd{} }
+func (m *Command_AuthAddCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_AuthAddCmd) ProtoMessage()    {}
+
+func (m *Command_AuthAddCmd) GetWho() string {
+	if m != nil && m.Who != nil {
+		return *m.Who
+	}
+	return ""
+}
+
+func (m *Command_AuthAddCmd) GetFingerprint() string {
+	if m != nil && m.Fingerprint != nil {
+		return *m.Fingerprint
+	}
+	return ""
+}
+
+type Command_AuthPrintCmd struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_AuthPrintCmd) Reset()         { *m = Command_AuthPrintCmd{} }
+func (m *Command_AuthPrintCmd) String() string { return proto1.CompactTextString(m) }
+func (*Command_AuthPrintCmd) ProtoMessage()    {}
+
 type Response struct {
 	ResponseType     *MessageType `protobuf:"varint,1,req,name=response_type,enum=daemon.protocol.MessageType" json:"response_type,omitempty"`
 	Success          *bool        `protobuf:"varint,3,req,name=success" json:"success,omitempty"`
@@ -569,6 +623,8 @@ func init() {
 	proto1.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
 	proto1.RegisterType((*Command_MvCmd)(nil), "daemon.protocol.Command.MvCmd")
 	proto1.RegisterType((*Command_MkdirCmd)(nil), "daemon.protocol.Command.MkdirCmd")
+	proto1.RegisterType((*Command_AuthAddCmd)(nil), "daemon.protocol.Command.AuthAddCmd")
+	proto1.RegisterType((*Command_AuthPrintCmd)(nil), "daemon.protocol.Command.AuthPrintCmd")
 	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
 	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
 	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
@@ -734,6 +790,30 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n14
+	}
+	if m.AuthAddCommand != nil {
+		data[i] = 0x82
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.AuthAddCommand.Size()))
+		n15, err := m.AuthAddCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
+	}
+	if m.AuthPrintCommand != nil {
+		data[i] = 0x8a
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.AuthPrintCommand.Size()))
+		n16, err := m.AuthPrintCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n16
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1165,6 +1245,64 @@ func (m *Command_MkdirCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_AuthAddCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_AuthAddCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Who == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
+		i += copy(data[i:], *m.Who)
+	}
+	if m.Fingerprint == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Fingerprint)))
+		i += copy(data[i:], *m.Fingerprint)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_AuthPrintCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_AuthPrintCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1305,6 +1443,14 @@ func (m *Command) Size() (n int) {
 	if m.MkdirCommand != nil {
 		l = m.MkdirCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.AuthAddCommand != nil {
+		l = m.AuthAddCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.AuthPrintCommand != nil {
+		l = m.AuthPrintCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1493,6 +1639,32 @@ func (m *Command_MkdirCmd) Size() (n int) {
 		l = len(*m.Path)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_AuthAddCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Who != nil {
+		l = len(*m.Who)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.Fingerprint != nil {
+		l = len(*m.Fingerprint)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_AuthPrintCmd) Size() (n int) {
+	var l int
+	_ = l
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -2045,6 +2217,72 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.MkdirCommand = &Command_MkdirCmd{}
 			}
 			if err := m.MkdirCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 16:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuthAddCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AuthAddCommand == nil {
+				m.AuthAddCommand = &Command_AuthAddCmd{}
+			}
+			if err := m.AuthAddCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuthPrintCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AuthPrintCommand == nil {
+				m.AuthPrintCommand = &Command_AuthPrintCmd{}
+			}
+			if err := m.AuthPrintCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3306,6 +3544,177 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_AuthAddCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthAddCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthAddCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Who", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Who = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Fingerprint", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Fingerprint = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_AuthPrintCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthPrintCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthPrintCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
 	}
 
 	if iNdEx > l {

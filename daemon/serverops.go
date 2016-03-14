@@ -28,6 +28,8 @@ var handlerMap = map[proto.MessageType]handlerFunc{
 	proto.MessageType_FETCH:         handleFetch,
 	proto.MessageType_LIST:          handleList,
 	proto.MessageType_MKDIR:         handleMkdir,
+	proto.MessageType_AUTH_ADD:      handleAuthAdd,
+	proto.MessageType_AUTH_PRINT:    handleAuthPrint,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
@@ -194,4 +196,24 @@ func handleMkdir(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	}
 
 	return []byte("OK"), nil
+}
+
+func handleAuthAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	authCmd := cmd.GetAuthAddCommand()
+	jid, fingerprint := authCmd.GetWho(), authCmd.GetFingerprint()
+
+	if err := d.XMPP.Auth(xmpp.JID(jid), fingerprint); err != nil {
+		return nil, err
+	}
+
+	return []byte("OK"), nil
+}
+
+func handleAuthPrint(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+	finger, err := d.XMPP.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(finger), nil
 }

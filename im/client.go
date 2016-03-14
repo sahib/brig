@@ -203,6 +203,13 @@ func (c *Client) Fingerprint() string {
 	return c.fingerprint
 }
 
+// Auth remembers the fingerprint of `jid` and allows a connection
+// on the next Dial(). If a previous fingerprint already existed for
+// this jid, it is overwritten.
+func (c *Client) Auth(jid xmpp.JID, finger string) error {
+	return c.keys.Remember(string(jid), finger)
+}
+
 // Close terminates all open connections.
 func (c *Client) Close() error {
 	c.Lock()

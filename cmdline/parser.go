@@ -131,6 +131,23 @@ func RunCmdline() int {
 			Handle: withDaemon(handleIsOnline, true),
 		},
 		climax.Command{
+			Name:   "auth",
+			Group:  xmppGroup,
+			Brief:  "Authorise other repos.",
+			Handle: withDaemon(handleAuth, true),
+			Flags: []climax.Flag{
+				{
+					Name:  "add",
+					Short: "a",
+					Help:  `Authorise other repo.`,
+				}, {
+					Name:  "print",
+					Short: "p",
+					Help:  `Print own fingerprint.`,
+				},
+			},
+		},
+		climax.Command{
 			Name:  "sync",
 			Group: repoGroup,
 			Brief: "Sync with all or selected trusted peers.",
