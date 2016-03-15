@@ -40,7 +40,7 @@ func connect() (io.ReadWriteCloser, io.ReadWriteCloser) {
 func testIO(t *testing.T, cl *Client) {
 	// Client side is just a goroutine:
 	resp, err := cl.Send(&proto.Request{
-		Type: proto.RequestType_CLONE.Enum(),
+		Type: proto.RequestType_PING.Enum(),
 		//Data: testutil.CreateDummyBuf(20),
 	})
 
@@ -49,7 +49,7 @@ func testIO(t *testing.T, cl *Client) {
 		return
 	}
 
-	if resp.GetType() != proto.RequestType_CLONE {
+	if resp.GetType() != proto.RequestType_PING {
 		fmt.Println("SEND SUCCESS NOW QUIOT", resp.GetType())
 		t.Errorf("Got a wrong id from command: %v", resp.GetType())
 		return

@@ -11,12 +11,17 @@ type handler func(*Server, *proto.Request) (*proto.Response, error)
 var (
 	handlerMap = map[proto.RequestType]handler{
 		proto.RequestType_QUIT:  handleQuit,
+		proto.RequestType_PING:  handlePing,
 		proto.RequestType_FETCH: handleFetch,
 	}
 )
 
 func handleQuit(sv *Server, req *proto.Request) (*proto.Response, error) {
 	return &proto.Response{Data: []byte("BYE")}, nil
+}
+
+func handlePing(sv *Server, req *proto.Request) (*proto.Response, error) {
+	return &proto.Response{Data: []byte("PONG")}, nil
 }
 
 func handleFetch(sv *Server, req *proto.Request) (*proto.Response, error) {

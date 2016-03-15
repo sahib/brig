@@ -23,9 +23,6 @@ var (
 func absLockPaths(brigPath string) []string {
 	lockPaths := []string{
 		filepath.Join(brigPath, "master.key"),
-		// TODO: Minilock fails on empty files.
-		//       This is pretty embarrassing.
-		//       Reported at: https://github.com/cathalgarvey/go-minilock/issues/8
 		filepath.Join(brigPath, "otr.key"),
 		filepath.Join(brigPath, "otr.buddies"),
 	}
@@ -70,9 +67,11 @@ func Open(pwd, folder string) (*Repository, error) {
 	// Unlock all files:
 	var absNames []string
 	for _, absName := range absLockPaths(brigPath) {
-		if _, err := os.Stat(absName); err == nil {
+		if info, err := os.Stat(absName); err == nil {
 			// File exists, this might happen on a crash or killed daemon.
-			log.Warningf("File is already unlocked: %s", absName)
+			if info.Size() != 0 {
+				log.Warningf("File is already unlocked: %s", absName)
+			}
 			continue
 		}
 
@@ -98,9 +97,9 @@ func (r *Repository) Close() error {
 			continue
 		}
 
+		// Work around minilock refusing to encrypt empty files.
+		// (leave them as they are)
 		if info.Size() == 0 {
-			log.Warningf("Working around minilock bug, not encrypting empty file `%s`", absName)
-			log.Warningf("See: https://github.com/cathalgarvey/go-minilock/issues/8")
 			continue
 		}
 

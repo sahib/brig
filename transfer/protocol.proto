@@ -5,8 +5,9 @@ enum RequestType {
     INVALID = 0;
 	QUIT = 1;
     ERROR = 2;
-    FETCH = 3;
-    UPDATE_FILE = 4;
+    PING = 3;
+    FETCH = 4;
+    UPDATE_FILE = 5;
 }
 
 message Request {
