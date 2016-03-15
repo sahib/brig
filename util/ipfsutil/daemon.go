@@ -132,13 +132,26 @@ func (n *Node) proc() (*core.IpfsNode, error) {
 // Close shuts down the ipfs node.
 // It may not be used afterwards.
 func (n *Node) Close() error {
+	nd := n.ipfsNode
+	if nd != nil {
+		n.ipfsNode = nil
+		return nd.Close()
+	}
+
 	if n.Cancel != nil {
 		n.Cancel()
+		n.Cancel = nil
 	}
-
-	if n.ipfsNode != nil {
-		return n.ipfsNode.Close()
-	}
-
 	return nil
+}
+
+// Identity returns the base58 encoded id of the own ipfs node.
+func (n *Node) Identity() (string, error) {
+	nd, err := n.proc()
+	if err != nil {
+		log.Warningf("ipfs identity: %v", err)
+		return "", err
+	}
+
+	return nd.Identity.Pretty(), nil
 }
