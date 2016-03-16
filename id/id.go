@@ -4,6 +4,7 @@
 package id
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/disorganizer/brig/util/ipfsutil"
 
+	log "github.com/Sirupsen/logrus"
 	mh "github.com/jbenet/go-multihash"
 	"golang.org/x/text/unicode/norm"
 )
@@ -28,6 +30,10 @@ func (e ErrBadID) Error() string {
 }
 
 func valid(id string) error {
+	if utf8.RuneCountInString(id) == 0 {
+		return ErrBadID{"Empty ID is not allowed"}
+	}
+
 	if !utf8.ValidString(id) {
 		return ErrBadID{fmt.Sprintf("Invalid utf-8: %v", id)}
 	}
@@ -105,6 +111,8 @@ var (
 
 func (id ID) Register(node *ipfsutil.Node) error {
 	blockData := id.asBlockData()
+
+	// TODO: Is there
 	hash, err := mh.Sum(blockData, mh.SHA2_256, -1)
 	if err != nil {
 		return err
@@ -136,7 +144,9 @@ func (id ID) Register(node *ipfsutil.Node) error {
 
 	// If it was an timeout, it's probably not yet registered.
 	otherHash, err := ipfsutil.AddBlock(node, blockData)
-	fmt.Println(otherHash, hash) // TODO: should be same
+	if !bytes.Equal(otherHash, hash) {
+		log.Warningf("Hash differ during register; did the hash func changed?")
+	}
 
 	if err != nil {
 		return err

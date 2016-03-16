@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,12 +11,8 @@ import (
 	"github.com/disorganizer/brig/util/testwith"
 )
 
-var (
-	TestPath = filepath.Join(os.TempDir(), "brig_test_ipfs_repo")
-)
-
 func TestAddCat(t *testing.T) {
-	testwith.WithIpfs(t, TestPath, func(node *ipfsutil.Node) {
+	testwith.WithIpfs(t, func(node *ipfsutil.Node) {
 		// Dummy in-memory reader:
 		origData := []byte("Hello World")
 		buf := &bytes.Buffer{}
@@ -54,7 +48,7 @@ func TestAddCat(t *testing.T) {
 }
 
 func TestDHT(t *testing.T) {
-	testwith.WithIpfs(t, TestPath, func(node *ipfsutil.Node) {
+	testwith.WithIpfs(t, func(node *ipfsutil.Node) {
 		if err := node.Online(); err != nil {
 			t.Errorf("Failed to go online: %v", err)
 			return

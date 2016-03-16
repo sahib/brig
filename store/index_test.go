@@ -19,7 +19,7 @@ var TestPath = filepath.Join(os.TempDir(), "brig-store-test")
 func withEmptyStore(t *testing.T, f func(*Store)) {
 	ipfsPath := filepath.Join(TestPath, "ipfs")
 
-	testwith.WithIpfs(t, ipfsPath, func(node *ipfsutil.Node) {
+	testwith.WithIpfsAtPath(t, ipfsPath, func(node *ipfsutil.Node) {
 		if err := os.MkdirAll(TestPath, 0744); err != nil {
 			t.Errorf("Could not create store dir at %s: %v", TestPath, err)
 			return

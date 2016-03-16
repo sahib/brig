@@ -1,13 +1,23 @@
 package testwith
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-func WithIpfs(t *testing.T, root string, f func(*ipfsutil.Node)) {
+var (
+	TestDir = filepath.Join(os.TempDir(), ".brig_ipfs_tests")
+)
+
+func WithIpfs(t *testing.T, f func(*ipfsutil.Node)) {
+	WithIpfsAtPath(t, TestDir, f)
+}
+
+func WithIpfsAtPath(t *testing.T, root string, f func(*ipfsutil.Node)) {
 	WithIpfsRepo(t, root, func(path string) {
 		node := ipfsutil.New(path)
 		f(node)

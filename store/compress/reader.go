@@ -11,6 +11,11 @@ import (
 )
 
 // TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
+// TODO: os.Seek(0, os.CURR) möglichst beseitigen; mit normalen index ersetzen.
+// TODO: Dokumentation schreiben.
+// TODO: ReadFrom und WriteTo implementieren.
+// TODO: Mehr Algorithmen anbieten (lz4, brotli?)
+// TODO: In store/stream.go einbauen.
 // TODO: linter durchlaufen lassen.
 
 type chunkBuffer struct {
