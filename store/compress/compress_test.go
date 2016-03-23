@@ -97,9 +97,8 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 }
 
 func TestSeek(t *testing.T) {
-	// TODO: Add more complex test cases.
-	sizes := []int64{C64K, C32K}
-	offsets := []int64{0, 1, 5, 10, 100, 200}
+	sizes := []int64{0, 1, 5, 10, 100, 200, 5000, C64K, C32K}
+	offsets := []int64{0, 1, 5, 10, 100, 200, 5000, C64K, C32K}
 	for _, size := range sizes {
 		for _, off := range offsets {
 			testSeek(t, size, off)
@@ -138,10 +137,15 @@ func testSeek(t *testing.T, size, offset int64) {
 
 	// Set specific offset before read.
 	_, err := zr.Seek(offset, os.SEEK_SET)
-	if err != nil {
+	if err == io.EOF && offset <= size {
 		t.Errorf("Seek failed: %v", err)
 		return
 	}
+	if err != io.EOF && err != nil {
+		t.Errorf("Seek failed: %v", err)
+		return
+	}
+
 	// Read starting at a specific offset.
 	if _, err := io.Copy(dataUncomp, zr); err != nil {
 		t.Errorf("Decompression failed: %v", err)
