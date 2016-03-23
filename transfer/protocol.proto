@@ -12,10 +12,13 @@ enum RequestType {
 
 message Request {
 	required RequestType type = 1;
+    required int64 ID = 2;
+    optional bytes broadcast_data = 3;
 }
 
 message Response {
 	required RequestType type = 1;
-	optional bytes data = 2;
-    optional string error = 3;
+    required int64 ID = 2;
+	optional bytes data = 3;
+    optional string error = 4;
 }

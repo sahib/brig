@@ -2,18 +2,13 @@ package transfer
 
 import (
 	"crypto/tls"
-	"errors"
 	"path/filepath"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/im"
 	"github.com/disorganizer/brig/repo"
-	"github.com/tsuibin/goxmpp2/xmpp"
-)
-
-var (
-	ErrOffline = errors.New("Client is offline")
+	"github.com/disorganizer/brig/transfer/xmpp"
+	goxmpp "github.com/tsuibin/goxmpp2/xmpp"
 )
 
 // Connector is a pool of xmpp connections.
@@ -27,14 +22,14 @@ var (
 // It is okay to call Connector from more than one goroutine.
 type Connector struct {
 	// Client is the underlying otr authenticated xmpp client, created on Connect()
-	client *im.Client
+	client *xmpp.Client
 
 	// Open repo. required for answering requests.
 	// (might be nil for tests if no handlers are tested)
 	rp *repo.Repository
 
 	// Map of open conversations
-	open map[xmpp.JID]*im.Conversation
+	open map[goxmpp.JID]*xmpp.Conversation
 
 	// lock for `open`
 	mu sync.Mutex
@@ -44,7 +39,7 @@ type Connector struct {
 func NewConnector(rp *repo.Repository) *Connector {
 	return &Connector{
 		rp:   rp,
-		open: make(map[xmpp.JID]*im.Conversation),
+		open: make(map[goxmpp.JID]*xmpp.Conversation),
 	}
 }
 
@@ -58,7 +53,7 @@ func (c *Connector) loop() {
 		}
 
 		// Establish a ServerProtocol on the conversation:
-		go func(cnv *im.Conversation) {
+		go func(cnv *xmpp.Conversation) {
 			server := NewServer(cnv, c.rp)
 			if err := server.Serve(); err != nil {
 				log.Warningf("connector: server: %v", err)
@@ -75,7 +70,7 @@ func (c *Connector) loop() {
 	}
 }
 
-func (c *Connector) Talk(jid xmpp.JID) (*Client, error) {
+func (c *Connector) Talk(jid goxmpp.JID) (*Client, error) {
 	c.mu.Lock()
 	if cnv, ok := c.open[jid]; ok {
 		c.mu.Unlock()
@@ -95,7 +90,7 @@ func (c *Connector) Talk(jid xmpp.JID) (*Client, error) {
 	return NewClient(cnv), nil
 }
 
-func (c *Connector) Connect(jid xmpp.JID, password string) error {
+func (c *Connector) Connect(jid goxmpp.JID, password string) error {
 	// Already connected?
 	c.mu.Lock()
 	if c.client != nil {
@@ -104,7 +99,7 @@ func (c *Connector) Connect(jid xmpp.JID, password string) error {
 	c.mu.Unlock()
 
 	serverName := jid.Domain()
-	cfg := &im.Config{
+	cfg := &xmpp.Config{
 		Jid:             jid,
 		Password:        password,
 		TLSConfig:       tls.Config{ServerName: serverName},
@@ -112,7 +107,7 @@ func (c *Connector) Connect(jid xmpp.JID, password string) error {
 		FingerprintPath: filepath.Join(c.rp.InternalFolder, "otr.buddies"),
 	}
 
-	xmpp, err := im.NewClient(cfg)
+	xmpp, err := xmpp.NewClient(cfg)
 	if err != nil {
 		return err
 	}
@@ -146,7 +141,7 @@ func (c *Connector) IsOnline() bool {
 	return c.client != nil
 }
 
-func (c *Connector) Auth(jid xmpp.JID, finger string) error {
+func (c *Connector) Auth(jid goxmpp.JID, finger string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

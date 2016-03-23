@@ -8,9 +8,9 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/im"
+	"github.com/disorganizer/brig/transfer/xmpp"
 	colorlog "github.com/disorganizer/brig/util/log"
-	"github.com/tsuibin/goxmpp2/xmpp"
+	goxmpp "github.com/tsuibin/goxmpp2/xmpp"
 )
 
 func init() {
@@ -28,12 +28,12 @@ func main() {
 
 	flag.Parse()
 
-	var jid xmpp.JID
-	var partnerJid xmpp.JID
+	var jid goxmpp.JID
+	var partnerJid goxmpp.JID
 	var password string
 
-	aliceJid := xmpp.JID("alice@jabber.nullcat.de/laptop")
-	bobJid := xmpp.JID("bob@jabber.nullcat.de/desktop")
+	aliceJid := goxmpp.JID("alice@jabber.nullcat.de/laptop")
+	bobJid := goxmpp.JID("bob@jabber.nullcat.de/desktop")
 
 	if *sendFlag {
 		jid, partnerJid, password = aliceJid, bobJid, "ThiuJ9wesh"
@@ -41,7 +41,7 @@ func main() {
 		jid, partnerJid, password = bobJid, aliceJid, "eecot3oXan"
 	}
 
-	client, err := im.NewClient(&im.Config{
+	client, err := xmpp.NewClient(&xmpp.Config{
 		Jid:             jid,
 		Password:        password,
 		TLSConfig:       tls.Config{ServerName: jid.Domain()},
