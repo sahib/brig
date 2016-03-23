@@ -1,7 +1,6 @@
 package compress
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -112,8 +111,8 @@ func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
 		return currRawOff, err
 	}
 
-	currRecord, _ := r.chunkLookup(currRawOff)
-	prevRecord, _ := r.chunkLookup(rawOff)
+	currRecord, _ := r.chunkLookup(currRawOff, true)
+	prevRecord, _ := r.chunkLookup(rawOff, true)
 	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
 		return 0, err
 	}
@@ -138,14 +137,18 @@ func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
 // returned. If currOff is at the end of file the end offset of the last chunk
 // is returned twice.  The difference between prev record and curr chunk is then
 // equal to 0.
-func (r *reader) chunkLookup(currOff int64) (*record, *record) {
+func (r *reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
+	// Get smallest index that is before given currOff.
 	i := sort.Search(len(r.index), func(i int) bool {
-		return r.index[i].zipOff > currOff
+		if isRawOff {
+			return r.index[i].rawOff > currOff
+		} else {
+			return r.index[i].zipOff > currOff
+		}
 	})
 
-	// Beginning of the file, first chunk: prev offset is 0, curr offset is 1
+	// Beginning of the file, first chunk: prev offset is 0, curr offset is 1.
 	if i == 0 {
-		fmt.Println("INDEX:", r.index, i, currOff)
 		return &r.index[i], &r.index[i+1]
 	}
 
@@ -207,7 +210,6 @@ func (r *reader) parseHeaderIfNeeded() error {
 		if prevRecord.zipOff >= currRecord.zipOff {
 			return ErrBadIndex
 		}
-		fmt.Println(i, currRecord)
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[IndexChunkSize:]
 	}
@@ -295,7 +297,7 @@ func (r *reader) readZipChunk() (int64, error) {
 	}
 
 	// Get the start and end record of the chunk currOff is located in.
-	prevRecord, currRecord := r.chunkLookup(currOff)
+	prevRecord, currRecord := r.chunkLookup(currOff, false)
 	if currRecord == nil || prevRecord == nil {
 		return 0, ErrBadIndex
 	}
