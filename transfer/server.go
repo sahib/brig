@@ -5,12 +5,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/transfer/proto"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/gogo/protobuf/proto"
 )
 
-// Server receives proto.Requests through a io.ReadWriter, processes them
-// and writes a proto.Response back to the writer part.
+// Server receives wire.Requests through a io.ReadWriter, processes them
+// and writes a wire.Response back to the writer part.
 //
 // Semantically, it is similar to daemon.Server, but is supposed
 // to react to outside commands instead of local ones.
@@ -52,9 +52,9 @@ func (sv *Server) handleCmd() bool {
 	if err != nil {
 		log.Warningf("Handling %s failed: %v", req.GetType().String(), err)
 
-		resp = &proto.Response{
+		resp = &wire.Response{
 			Type:  req.GetType().Enum(),
-			Error: protobuf.String(err.Error()),
+			Error: proto.String(err.Error()),
 		}
 
 		if err := sv.ptcl.Encode(resp); err != nil {
@@ -75,7 +75,7 @@ func (sv *Server) handleCmd() bool {
 		return true
 	}
 
-	return req.GetType() != proto.RequestType_QUIT
+	return req.GetType() != wire.RequestType_QUIT
 }
 
 func (sv *Server) loop() {

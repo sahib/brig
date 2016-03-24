@@ -5,8 +5,8 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
-	"github.com/disorganizer/brig/transfer/proto"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
@@ -24,7 +24,7 @@ type Layer struct {
 	// cancel interrupts `ctx`.
 	cancel context.CancelFunc
 	//
-	handlers map[proto.RequestType]transfer.HandlerFunc
+	handlers map[wire.RequestType]transfer.HandlerFunc
 }
 
 func NewLayer(self id.Peer) transfer.Layer {
@@ -34,7 +34,7 @@ func NewLayer(self id.Peer) transfer.Layer {
 		ctx:      ctx,
 		cancel:   cancel,
 		tab:      make(map[id.ID]*client),
-		handlers: make(map[proto.RequestType]transfer.HandlerFunc),
+		handlers: make(map[wire.RequestType]transfer.HandlerFunc),
 	}
 }
 
@@ -97,8 +97,8 @@ func (lay *Layer) IsOnlineMode() bool {
 	return lay.srv != nil
 }
 
-func (lay *Layer) Broadcast(req *proto.Request) error {
-	data, err := protobuf.Marshal(req)
+func (lay *Layer) Broadcast(req *wire.Request) error {
+	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
 	}
@@ -147,6 +147,6 @@ func (lay *Layer) Close() error {
 	return lay.Disconnect()
 }
 
-func (lay *Layer) RegisterHandler(typ proto.RequestType, handler transfer.HandlerFunc) {
+func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
 }

@@ -9,7 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
-	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 )
@@ -17,10 +17,10 @@ import (
 // Client is the client API to brigd.
 type Client struct {
 	// Use this channel to send commands to the daemon
-	Send chan *proto.Command
+	Send chan *wire.Command
 
 	// Responses are sent to this channel
-	Recv chan *proto.Response
+	Recv chan *wire.Response
 
 	// Underlying tcp connection:
 	conn net.Conn
@@ -32,8 +32,8 @@ type Client struct {
 // Dial connects to a running daemon instance.
 func Dial(port int) (*Client, error) {
 	client := &Client{
-		Send: make(chan *proto.Command),
-		Recv: make(chan *proto.Response),
+		Send: make(chan *wire.Command),
+		Recv: make(chan *wire.Response),
 		quit: make(chan bool, 1),
 	}
 
@@ -72,7 +72,7 @@ func (c *Client) handleMessages(tnl io.ReadWriter) {
 				continue
 			}
 
-			resp := &proto.Response{}
+			resp := &wire.Response{}
 			if err := protocol.Recv(resp); err != nil {
 				log.Warning("client-recv: ", err)
 				c.Recv <- nil
@@ -135,8 +135,8 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 
 // Ping returns true if the daemon is running and responds correctly.
 func (c *Client) Ping() bool {
-	cmd := &proto.Command{}
-	cmd.CommandType = proto.MessageType_PING.Enum()
+	cmd := &wire.Command{}
+	cmd.CommandType = wire.MessageType_PING.Enum()
 
 	c.Send <- cmd
 	resp := <-c.Recv
@@ -149,8 +149,8 @@ func (c *Client) Ping() bool {
 
 // Exorcise sends a QUIT message to the daemon.
 func (c *Client) Exorcise() {
-	cmd := &proto.Command{}
-	cmd.CommandType = proto.MessageType_QUIT.Enum()
+	cmd := &wire.Command{}
+	cmd.CommandType = wire.MessageType_QUIT.Enum()
 	c.Send <- cmd
 	<-c.Recv
 }

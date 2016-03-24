@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-	Package proto is a generated protocol buffer package.
+	Package wire is a generated protocol buffer package.
 
 	It is generated from these files:
 		protocol.proto
@@ -12,9 +12,9 @@
 		Request
 		Response
 */
-package proto
+package wire
 
-import proto1 "github.com/golang/protobuf/proto"
+import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -23,7 +23,7 @@ import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto1.Marshal
+var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
@@ -61,10 +61,10 @@ func (x RequestType) Enum() *RequestType {
 	return p
 }
 func (x RequestType) String() string {
-	return proto1.EnumName(RequestType_name, int32(x))
+	return proto.EnumName(RequestType_name, int32(x))
 }
 func (x *RequestType) UnmarshalJSON(data []byte) error {
-	value, err := proto1.UnmarshalJSONEnum(RequestType_value, data, "RequestType")
+	value, err := proto.UnmarshalJSONEnum(RequestType_value, data, "RequestType")
 	if err != nil {
 		return err
 	}
@@ -75,11 +75,12 @@ func (x *RequestType) UnmarshalJSON(data []byte) error {
 type Request struct {
 	Type             *RequestType `protobuf:"varint,1,req,name=type,enum=transfer.protocol.RequestType" json:"type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
+	BroadcastData    []byte       `protobuf:"bytes,3,opt,name=broadcast_data" json:"broadcast_data,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
 }
 
 func (m *Request) Reset()         { *m = Request{} }
-func (m *Request) String() string { return proto1.CompactTextString(m) }
+func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 
 func (m *Request) GetType() RequestType {
@@ -96,6 +97,13 @@ func (m *Request) GetID() int64 {
 	return 0
 }
 
+func (m *Request) GetBroadcastData() []byte {
+	if m != nil {
+		return m.BroadcastData
+	}
+	return nil
+}
+
 type Response struct {
 	Type             *RequestType `protobuf:"varint,1,req,name=type,enum=transfer.protocol.RequestType" json:"type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
@@ -105,7 +113,7 @@ type Response struct {
 }
 
 func (m *Response) Reset()         { *m = Response{} }
-func (m *Response) String() string { return proto1.CompactTextString(m) }
+func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 
 func (m *Response) GetType() RequestType {
@@ -137,9 +145,9 @@ func (m *Response) GetError() string {
 }
 
 func init() {
-	proto1.RegisterType((*Request)(nil), "transfer.protocol.Request")
-	proto1.RegisterType((*Response)(nil), "transfer.protocol.Response")
-	proto1.RegisterEnum("transfer.protocol.RequestType", RequestType_name, RequestType_value)
+	proto.RegisterType((*Request)(nil), "transfer.protocol.Request")
+	proto.RegisterType((*Response)(nil), "transfer.protocol.Response")
+	proto.RegisterEnum("transfer.protocol.RequestType", RequestType_name, RequestType_value)
 }
 func (m *Request) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -169,6 +177,12 @@ func (m *Request) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x10
 		i++
 		i = encodeVarintProtocol(data, i, uint64(*m.ID))
+	}
+	if m.BroadcastData != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintProtocol(data, i, uint64(len(m.BroadcastData)))
+		i += copy(data[i:], m.BroadcastData)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -258,6 +272,10 @@ func (m *Request) Size() (n int) {
 	}
 	if m.ID != nil {
 		n += 1 + sovProtocol(uint64(*m.ID))
+	}
+	if m.BroadcastData != nil {
+		l = len(m.BroadcastData)
+		n += 1 + l + sovProtocol(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -373,6 +391,34 @@ func (m *Request) Unmarshal(data []byte) error {
 			}
 			m.ID = &v
 			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BroadcastData", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BroadcastData = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtocol(data[iNdEx:])

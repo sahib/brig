@@ -9,8 +9,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
-	"github.com/disorganizer/brig/transfer/proto"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/gogo/protobuf/proto"
 	"github.com/surgemq/message"
 	"github.com/surgemq/surgemq/service"
 )
@@ -27,7 +27,7 @@ type client struct {
 	lastHearbeat time.Time
 
 	// I guess, that's a very "WAT" inducing type signature.
-	respbox map[int64]chan *proto.Response
+	respbox map[int64]chan *wire.Response
 	respctr int64
 }
 
@@ -37,7 +37,7 @@ func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
 		client:        nil,
 		execRequests:  execRequests,
 		peer:          peer,
-		respbox:       make(map[int64]chan *proto.Response),
+		respbox:       make(map[int64]chan *wire.Response),
 		responseTopic: "response/" + lay.self.Hash(),
 		respctr:       0,
 		lastHearbeat:  time.Now(),
@@ -84,9 +84,9 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	}
 
 	reqData := msg.Payload()
-	req := &proto.Request{}
+	req := &wire.Request{}
 
-	if err := protobuf.Unmarshal(reqData, req); err != nil {
+	if err := proto.Unmarshal(reqData, req); err != nil {
 		return err
 	}
 
@@ -104,7 +104,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 		return nil
 	}
 
-	respData, err := protobuf.Marshal(resp)
+	respData, err := proto.Marshal(resp)
 	if err != nil {
 		return err
 	}
@@ -139,8 +139,8 @@ func (cv *client) handleBroadcast(msg *message.PublishMessage) error {
 }
 
 func (cv *client) handleResponse(msg *message.PublishMessage) error {
-	resp := &proto.Response{}
-	if err := protobuf.Unmarshal(msg.Payload(), resp); err != nil {
+	resp := &wire.Response{}
+	if err := proto.Unmarshal(msg.Payload(), resp); err != nil {
 		return err
 	}
 
@@ -221,14 +221,14 @@ func (cv *client) disconnect() error {
 	return nil
 }
 
-func (cv *client) SendAsync(req *proto.Request, handler transfer.AsyncFunc) error {
-	data, err := protobuf.Marshal(req)
+func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error {
+	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
 	}
 
 	// Guard against mixed up sends and responses:
-	respnotify := make(chan *proto.Response)
+	respnotify := make(chan *wire.Response)
 	cv.respbox[cv.respctr] = respnotify
 	cv.respctr++
 

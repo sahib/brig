@@ -6,42 +6,42 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
-type handlerFunc func(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error)
+type handlerFunc func(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error)
 
-var handlerMap = map[proto.MessageType]handlerFunc{
-	proto.MessageType_ADD:           handleAdd,
-	proto.MessageType_CAT:           handleCat,
-	proto.MessageType_PING:          handlePing,
-	proto.MessageType_QUIT:          handleQuit,
-	proto.MessageType_MOUNT:         handleMount,
-	proto.MessageType_UNMOUNT:       handleUnmount,
-	proto.MessageType_RM:            handleRm,
-	proto.MessageType_MV:            handleMv,
-	proto.MessageType_HISTORY:       handleHistory,
-	proto.MessageType_LOG:           handleLog,
-	proto.MessageType_ONLINE_STATUS: handleOnlineStatus,
-	proto.MessageType_FETCH:         handleFetch,
-	proto.MessageType_LIST:          handleList,
-	proto.MessageType_MKDIR:         handleMkdir,
-	proto.MessageType_AUTH_ADD:      handleAuthAdd,
-	proto.MessageType_AUTH_PRINT:    handleAuthPrint,
+var handlerMap = map[wire.MessageType]handlerFunc{
+	wire.MessageType_ADD:           handleAdd,
+	wire.MessageType_CAT:           handleCat,
+	wire.MessageType_PING:          handlePing,
+	wire.MessageType_QUIT:          handleQuit,
+	wire.MessageType_MOUNT:         handleMount,
+	wire.MessageType_UNMOUNT:       handleUnmount,
+	wire.MessageType_RM:            handleRm,
+	wire.MessageType_MV:            handleMv,
+	wire.MessageType_HISTORY:       handleHistory,
+	wire.MessageType_LOG:           handleLog,
+	wire.MessageType_ONLINE_STATUS: handleOnlineStatus,
+	wire.MessageType_FETCH:         handleFetch,
+	wire.MessageType_LIST:          handleList,
+	wire.MessageType_MKDIR:         handleMkdir,
+	wire.MessageType_AUTH_ADD:      handleAuthAdd,
+	wire.MessageType_AUTH_PRINT:    handleAuthPrint,
 }
 
-func handlePing(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handlePing(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	return []byte("PONG"), nil
 }
 
-func handleQuit(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	d.signals <- os.Interrupt
 	return []byte("BYE"), nil
 }
 
-func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	filePath := cmd.GetAddCommand().GetFilePath()
 	repoPath := cmd.GetAddCommand().GetRepoPath()
 
@@ -53,7 +53,7 @@ func handleAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, erro
 	return []byte(repoPath), nil
 }
 
-func handleCat(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleCat(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	filePath := cmd.GetCatCommand().GetFilePath()
 	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -68,7 +68,7 @@ func handleCat(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, erro
 	return []byte(srcPath), nil
 }
 
-func handleMount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleMount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	mountPath := cmd.GetMountCommand().GetMountPoint()
 
 	if _, err := d.Mounts.AddMount(mountPath); err != nil {
@@ -79,7 +79,7 @@ func handleMount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	return []byte(mountPath), nil
 }
 
-func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	mountPath := cmd.GetUnmountCommand().GetMountPoint()
 
 	if err := d.Mounts.Unmount(mountPath); err != nil {
@@ -90,7 +90,7 @@ func handleUnmount(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 	return []byte(mountPath), nil
 }
 
-func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleRm(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	rmCmd := cmd.GetRmCommand()
 	repoPath := rmCmd.GetRepoPath()
 	recursive := rmCmd.GetRecursive()
@@ -102,7 +102,7 @@ func handleRm(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error
 	return []byte(repoPath), nil
 }
 
-func handleMv(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleMv(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	mvCmd := cmd.GetMvCommand()
 	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest()); err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func handleMv(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error
 	return nil, nil
 }
 
-func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	repoPath := cmd.GetHistoryCommand().GetRepoPath()
 
 	history, err := d.Repo.OwnStore.History(repoPath)
@@ -127,30 +127,30 @@ func handleHistory(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 	return protoData, err
 }
 
-func handleLog(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleLog(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	// TODO: Needs implementation.
 	return nil, nil
 }
 
-func handleOnlineStatus(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	qry := cmd.GetOnlineStatusCommand().GetQuery()
 	switch qry {
-	case proto.OnlineQuery_IS_ONLINE:
+	case wire.OnlineQuery_IS_ONLINE:
 		if d.IsOnline() {
 			return []byte("online"), nil
 		} else {
 			return []byte("offline"), nil
 		}
-	case proto.OnlineQuery_GO_ONLINE:
+	case wire.OnlineQuery_GO_ONLINE:
 		return nil, d.Connect(xmpp.JID(d.Repo.Jid), d.Repo.Password)
-	case proto.OnlineQuery_GO_OFFLINE:
+	case wire.OnlineQuery_GO_OFFLINE:
 		return nil, d.Disconnect()
 	}
 
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }
 
-func handleFetch(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	fetchCmd := cmd.GetFetchCommand()
 	who := xmpp.JID(fetchCmd.GetWho())
 
@@ -176,7 +176,7 @@ func handleFetch(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	return []byte("OK"), nil
 }
 
-func handleList(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleList(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	listCmd := cmd.GetListCommand()
 	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
 	buf := &bytes.Buffer{}
@@ -188,7 +188,7 @@ func handleList(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, err
 	return buf.Bytes(), nil
 }
 
-func handleMkdir(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	path := cmd.GetMkdirCommand().GetPath()
 
 	if _, err := d.Repo.OwnStore.Mkdir(path); err != nil {
@@ -198,7 +198,7 @@ func handleMkdir(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, er
 	return []byte("OK"), nil
 }
 
-func handleAuthAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	authCmd := cmd.GetAuthAddCommand()
 	jid, fingerprint := authCmd.GetWho(), authCmd.GetFingerprint()
 
@@ -209,7 +209,7 @@ func handleAuthAdd(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, 
 	return []byte("OK"), nil
 }
 
-func handleAuthPrint(d *Server, ctx context.Context, cmd *proto.Command) ([]byte, error) {
+func handleAuthPrint(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	finger, err := d.XMPP.Fingerprint()
 	if err != nil {
 		return nil, err

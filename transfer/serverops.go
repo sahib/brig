@@ -3,32 +3,32 @@ package transfer
 import (
 	"bytes"
 
-	"github.com/disorganizer/brig/transfer/proto"
+	"github.com/disorganizer/brig/transfer/wire"
 )
 
-type handler func(*Server, *proto.Request) (*proto.Response, error)
+type handler func(*Server, *wire.Request) (*wire.Response, error)
 
 var (
-	handlerMap = map[proto.RequestType]handler{
-		proto.RequestType_QUIT:  handleQuit,
-		proto.RequestType_PING:  handlePing,
-		proto.RequestType_FETCH: handleFetch,
+	handlerMap = map[wire.RequestType]handler{
+		wire.RequestType_QUIT:  handleQuit,
+		wire.RequestType_PING:  handlePing,
+		wire.RequestType_FETCH: handleFetch,
 	}
 )
 
-func handleQuit(sv *Server, req *proto.Request) (*proto.Response, error) {
-	return &proto.Response{Data: []byte("BYE")}, nil
+func handleQuit(sv *Server, req *wire.Request) (*wire.Response, error) {
+	return &wire.Response{Data: []byte("BYE")}, nil
 }
 
-func handlePing(sv *Server, req *proto.Request) (*proto.Response, error) {
-	return &proto.Response{Data: []byte("PONG")}, nil
+func handlePing(sv *Server, req *wire.Request) (*wire.Response, error) {
+	return &wire.Response{Data: []byte("PONG")}, nil
 }
 
-func handleFetch(sv *Server, req *proto.Request) (*proto.Response, error) {
+func handleFetch(sv *Server, req *wire.Request) (*wire.Response, error) {
 	buf := &bytes.Buffer{}
 	if err := sv.rp.OwnStore.Export(buf); err != nil {
 		return nil, err
 	}
 
-	return &proto.Response{Data: buf.Bytes()}, nil
+	return &wire.Response{Data: buf.Bytes()}, nil
 }

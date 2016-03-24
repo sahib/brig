@@ -1,5 +1,5 @@
 // Package protocol implements a encoder and decoder for a protobuf based
-// communication protocol. Any protobuf.Message might be send and received.
+// communication protocol. Any proto.Message might be send and received.
 // Optionally, the messages might be compressed using snappy.
 package protocol
 
@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 )
 
@@ -55,12 +55,12 @@ func NewProtocolWriter(w io.Writer, compress bool) *Protocol {
 	return &Protocol{r: nil, w: w, compress: compress}
 }
 
-func (p *Protocol) Send(msg protobuf.Message) error {
+func (p *Protocol) Send(msg proto.Message) error {
 	if p.w == nil {
 		return ErrNoWriter
 	}
 
-	data, err := protobuf.Marshal(msg)
+	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (p *Protocol) Send(msg protobuf.Message) error {
 	return nil
 }
 
-func (p *Protocol) Recv(resp protobuf.Message) error {
+func (p *Protocol) Recv(resp proto.Message) error {
 	if p.r == nil {
 		return ErrNoReader
 	}
@@ -119,7 +119,7 @@ func (p *Protocol) Recv(resp protobuf.Message) error {
 		data = buf.Bytes()
 	}
 
-	if err := protobuf.Unmarshal(data, resp); err != nil {
+	if err := proto.Unmarshal(data, resp); err != nil {
 		return err
 	}
 

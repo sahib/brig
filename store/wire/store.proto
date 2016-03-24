@@ -1,5 +1,5 @@
 package bolt.protocol;
-option go_package = "proto";
+option go_package = "wire";
 
 message File {
     required string path = 1;

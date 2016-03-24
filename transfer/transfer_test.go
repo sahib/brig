@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/disorganizer/brig/im"
-	"github.com/disorganizer/brig/transfer/proto"
+	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -39,8 +39,8 @@ func connect() (io.ReadWriteCloser, io.ReadWriteCloser) {
 
 func testIO(t *testing.T, cl *Client) {
 	// Client side is just a goroutine:
-	resp, err := cl.Send(&proto.Request{
-		Type: proto.RequestType_PING.Enum(),
+	resp, err := cl.Send(&wire.Request{
+		Type: wire.RequestType_PING.Enum(),
 		//Data: testutil.CreateDummyBuf(20),
 	})
 
@@ -49,21 +49,21 @@ func testIO(t *testing.T, cl *Client) {
 		return
 	}
 
-	if resp.GetType() != proto.RequestType_PING {
+	if resp.GetType() != wire.RequestType_PING {
 		fmt.Println("SEND SUCCESS NOW QUIOT", resp.GetType())
 		t.Errorf("Got a wrong id from command: %v", resp.GetType())
 		return
 	}
 
-	resp, err = cl.Send(&proto.Request{
-		Type: proto.RequestType_QUIT.Enum(),
+	resp, err = cl.Send(&wire.Request{
+		Type: wire.RequestType_QUIT.Enum(),
 	})
 	if err != nil {
 		t.Errorf("Sending quit failed: %v", err)
 		return
 	}
 
-	if resp.GetType() != proto.RequestType_QUIT {
+	if resp.GetType() != wire.RequestType_QUIT {
 		t.Errorf("Got a wrong id for the quit command: %v", resp.GetType())
 		return
 	}

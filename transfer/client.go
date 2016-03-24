@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 )
-import "github.com/disorganizer/brig/transfer/proto"
+import "github.com/disorganizer/brig/transfer/wire"
 
 type Client struct {
 	im   io.ReadWriteCloser
@@ -18,7 +18,7 @@ func NewClient(im io.ReadWriteCloser) *Client {
 	}
 }
 
-func (c *Client) Send(req *proto.Request) (*proto.Response, error) {
+func (c *Client) Send(req *wire.Request) (*wire.Response, error) {
 	if err := c.ptcl.Encode(req); err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (c *Client) Close() error {
 	return c.im.Close()
 }
 
-func (c *Client) unpack(req *proto.Request) ([]byte, error) {
+func (c *Client) unpack(req *wire.Request) ([]byte, error) {
 	resp, err := c.Send(req)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (c *Client) unpack(req *proto.Request) ([]byte, error) {
 }
 
 func (c *Client) DoFetch() ([]byte, error) {
-	return c.unpack(&proto.Request{
-		Type: proto.RequestType_FETCH.Enum(),
+	return c.unpack(&wire.Request{
+		Type: wire.RequestType_FETCH.Enum(),
 	})
 }

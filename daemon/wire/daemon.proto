@@ -1,5 +1,5 @@
 package daemon.protocol;
-option go_package = "proto";
+option go_package = "wire";
 
 // The ordering in here has no particular meaning.
 // The numbers just get incremented in the order that

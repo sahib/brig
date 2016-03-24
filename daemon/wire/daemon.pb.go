@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-	Package proto is a generated protocol buffer package.
+	Package wire is a generated protocol buffer package.
 
 	It is generated from these files:
 		daemon.proto
@@ -12,9 +12,9 @@
 		Command
 		Response
 */
-package proto
+package wire
 
-import proto1 "github.com/golang/protobuf/proto"
+import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -23,7 +23,7 @@ import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto1.Marshal
+var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
@@ -94,10 +94,10 @@ func (x MessageType) Enum() *MessageType {
 	return p
 }
 func (x MessageType) String() string {
-	return proto1.EnumName(MessageType_name, int32(x))
+	return proto.EnumName(MessageType_name, int32(x))
 }
 func (x *MessageType) UnmarshalJSON(data []byte) error {
-	value, err := proto1.UnmarshalJSONEnum(MessageType_value, data, "MessageType")
+	value, err := proto.UnmarshalJSONEnum(MessageType_value, data, "MessageType")
 	if err != nil {
 		return err
 	}
@@ -133,10 +133,10 @@ func (x OnlineQuery) Enum() *OnlineQuery {
 	return p
 }
 func (x OnlineQuery) String() string {
-	return proto1.EnumName(OnlineQuery_name, int32(x))
+	return proto.EnumName(OnlineQuery_name, int32(x))
 }
 func (x *OnlineQuery) UnmarshalJSON(data []byte) error {
-	value, err := proto1.UnmarshalJSONEnum(OnlineQuery_value, data, "OnlineQuery")
+	value, err := proto.UnmarshalJSONEnum(OnlineQuery_value, data, "OnlineQuery")
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ type Command struct {
 }
 
 func (m *Command) Reset()         { *m = Command{} }
-func (m *Command) String() string { return proto1.CompactTextString(m) }
+func (m *Command) String() string { return proto.CompactTextString(m) }
 func (*Command) ProtoMessage()    {}
 
 func (m *Command) GetCommandType() MessageType {
@@ -297,7 +297,7 @@ type Command_AddCmd struct {
 }
 
 func (m *Command_AddCmd) Reset()         { *m = Command_AddCmd{} }
-func (m *Command_AddCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_AddCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_AddCmd) ProtoMessage()    {}
 
 func (m *Command_AddCmd) GetFilePath() string {
@@ -323,7 +323,7 @@ type Command_CatCmd struct {
 }
 
 func (m *Command_CatCmd) Reset()         { *m = Command_CatCmd{} }
-func (m *Command_CatCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_CatCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_CatCmd) ProtoMessage()    {}
 
 func (m *Command_CatCmd) GetRepoPath() string {
@@ -345,7 +345,7 @@ type Command_PingCmd struct {
 }
 
 func (m *Command_PingCmd) Reset()         { *m = Command_PingCmd{} }
-func (m *Command_PingCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_PingCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_PingCmd) ProtoMessage()    {}
 
 type Command_QuitCmd struct {
@@ -353,7 +353,7 @@ type Command_QuitCmd struct {
 }
 
 func (m *Command_QuitCmd) Reset()         { *m = Command_QuitCmd{} }
-func (m *Command_QuitCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_QuitCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_QuitCmd) ProtoMessage()    {}
 
 type Command_MountCmd struct {
@@ -363,7 +363,7 @@ type Command_MountCmd struct {
 }
 
 func (m *Command_MountCmd) Reset()         { *m = Command_MountCmd{} }
-func (m *Command_MountCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_MountCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MountCmd) ProtoMessage()    {}
 
 func (m *Command_MountCmd) GetMountPoint() string {
@@ -380,7 +380,7 @@ type Command_UnmountCmd struct {
 }
 
 func (m *Command_UnmountCmd) Reset()         { *m = Command_UnmountCmd{} }
-func (m *Command_UnmountCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_UnmountCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_UnmountCmd) ProtoMessage()    {}
 
 func (m *Command_UnmountCmd) GetMountPoint() string {
@@ -397,7 +397,7 @@ type Command_RmCmd struct {
 }
 
 func (m *Command_RmCmd) Reset()         { *m = Command_RmCmd{} }
-func (m *Command_RmCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_RmCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RmCmd) ProtoMessage()    {}
 
 func (m *Command_RmCmd) GetRepoPath() string {
@@ -421,7 +421,7 @@ type Command_HistoryCmd struct {
 }
 
 func (m *Command_HistoryCmd) Reset()         { *m = Command_HistoryCmd{} }
-func (m *Command_HistoryCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_HistoryCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_HistoryCmd) ProtoMessage()    {}
 
 func (m *Command_HistoryCmd) GetRepoPath() string {
@@ -436,7 +436,7 @@ type Command_LogCmd struct {
 }
 
 func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
-func (m *Command_LogCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_LogCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_LogCmd) ProtoMessage()    {}
 
 type Command_OnlineStatusCmd struct {
@@ -445,7 +445,7 @@ type Command_OnlineStatusCmd struct {
 }
 
 func (m *Command_OnlineStatusCmd) Reset()         { *m = Command_OnlineStatusCmd{} }
-func (m *Command_OnlineStatusCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_OnlineStatusCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_OnlineStatusCmd) ProtoMessage()    {}
 
 func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
@@ -461,7 +461,7 @@ type Command_FetchCmd struct {
 }
 
 func (m *Command_FetchCmd) Reset()         { *m = Command_FetchCmd{} }
-func (m *Command_FetchCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_FetchCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_FetchCmd) ProtoMessage()    {}
 
 func (m *Command_FetchCmd) GetWho() string {
@@ -478,7 +478,7 @@ type Command_ListCmd struct {
 }
 
 func (m *Command_ListCmd) Reset()         { *m = Command_ListCmd{} }
-func (m *Command_ListCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_ListCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_ListCmd) ProtoMessage()    {}
 
 func (m *Command_ListCmd) GetRoot() string {
@@ -502,7 +502,7 @@ type Command_MvCmd struct {
 }
 
 func (m *Command_MvCmd) Reset()         { *m = Command_MvCmd{} }
-func (m *Command_MvCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_MvCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MvCmd) ProtoMessage()    {}
 
 func (m *Command_MvCmd) GetSource() string {
@@ -525,7 +525,7 @@ type Command_MkdirCmd struct {
 }
 
 func (m *Command_MkdirCmd) Reset()         { *m = Command_MkdirCmd{} }
-func (m *Command_MkdirCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_MkdirCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MkdirCmd) ProtoMessage()    {}
 
 func (m *Command_MkdirCmd) GetPath() string {
@@ -542,7 +542,7 @@ type Command_AuthAddCmd struct {
 }
 
 func (m *Command_AuthAddCmd) Reset()         { *m = Command_AuthAddCmd{} }
-func (m *Command_AuthAddCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_AuthAddCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_AuthAddCmd) ProtoMessage()    {}
 
 func (m *Command_AuthAddCmd) GetWho() string {
@@ -564,7 +564,7 @@ type Command_AuthPrintCmd struct {
 }
 
 func (m *Command_AuthPrintCmd) Reset()         { *m = Command_AuthPrintCmd{} }
-func (m *Command_AuthPrintCmd) String() string { return proto1.CompactTextString(m) }
+func (m *Command_AuthPrintCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_AuthPrintCmd) ProtoMessage()    {}
 
 type Response struct {
@@ -576,7 +576,7 @@ type Response struct {
 }
 
 func (m *Response) Reset()         { *m = Response{} }
-func (m *Response) String() string { return proto1.CompactTextString(m) }
+func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 
 func (m *Response) GetResponseType() MessageType {
@@ -608,26 +608,26 @@ func (m *Response) GetError() string {
 }
 
 func init() {
-	proto1.RegisterType((*Command)(nil), "daemon.protocol.Command")
-	proto1.RegisterType((*Command_AddCmd)(nil), "daemon.protocol.Command.AddCmd")
-	proto1.RegisterType((*Command_CatCmd)(nil), "daemon.protocol.Command.CatCmd")
-	proto1.RegisterType((*Command_PingCmd)(nil), "daemon.protocol.Command.PingCmd")
-	proto1.RegisterType((*Command_QuitCmd)(nil), "daemon.protocol.Command.QuitCmd")
-	proto1.RegisterType((*Command_MountCmd)(nil), "daemon.protocol.Command.MountCmd")
-	proto1.RegisterType((*Command_UnmountCmd)(nil), "daemon.protocol.Command.UnmountCmd")
-	proto1.RegisterType((*Command_RmCmd)(nil), "daemon.protocol.Command.RmCmd")
-	proto1.RegisterType((*Command_HistoryCmd)(nil), "daemon.protocol.Command.HistoryCmd")
-	proto1.RegisterType((*Command_LogCmd)(nil), "daemon.protocol.Command.LogCmd")
-	proto1.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
-	proto1.RegisterType((*Command_FetchCmd)(nil), "daemon.protocol.Command.FetchCmd")
-	proto1.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
-	proto1.RegisterType((*Command_MvCmd)(nil), "daemon.protocol.Command.MvCmd")
-	proto1.RegisterType((*Command_MkdirCmd)(nil), "daemon.protocol.Command.MkdirCmd")
-	proto1.RegisterType((*Command_AuthAddCmd)(nil), "daemon.protocol.Command.AuthAddCmd")
-	proto1.RegisterType((*Command_AuthPrintCmd)(nil), "daemon.protocol.Command.AuthPrintCmd")
-	proto1.RegisterType((*Response)(nil), "daemon.protocol.Response")
-	proto1.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
-	proto1.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
+	proto.RegisterType((*Command)(nil), "daemon.protocol.Command")
+	proto.RegisterType((*Command_AddCmd)(nil), "daemon.protocol.Command.AddCmd")
+	proto.RegisterType((*Command_CatCmd)(nil), "daemon.protocol.Command.CatCmd")
+	proto.RegisterType((*Command_PingCmd)(nil), "daemon.protocol.Command.PingCmd")
+	proto.RegisterType((*Command_QuitCmd)(nil), "daemon.protocol.Command.QuitCmd")
+	proto.RegisterType((*Command_MountCmd)(nil), "daemon.protocol.Command.MountCmd")
+	proto.RegisterType((*Command_UnmountCmd)(nil), "daemon.protocol.Command.UnmountCmd")
+	proto.RegisterType((*Command_RmCmd)(nil), "daemon.protocol.Command.RmCmd")
+	proto.RegisterType((*Command_HistoryCmd)(nil), "daemon.protocol.Command.HistoryCmd")
+	proto.RegisterType((*Command_LogCmd)(nil), "daemon.protocol.Command.LogCmd")
+	proto.RegisterType((*Command_OnlineStatusCmd)(nil), "daemon.protocol.Command.OnlineStatusCmd")
+	proto.RegisterType((*Command_FetchCmd)(nil), "daemon.protocol.Command.FetchCmd")
+	proto.RegisterType((*Command_ListCmd)(nil), "daemon.protocol.Command.ListCmd")
+	proto.RegisterType((*Command_MvCmd)(nil), "daemon.protocol.Command.MvCmd")
+	proto.RegisterType((*Command_MkdirCmd)(nil), "daemon.protocol.Command.MkdirCmd")
+	proto.RegisterType((*Command_AuthAddCmd)(nil), "daemon.protocol.Command.AuthAddCmd")
+	proto.RegisterType((*Command_AuthPrintCmd)(nil), "daemon.protocol.Command.AuthPrintCmd")
+	proto.RegisterType((*Response)(nil), "daemon.protocol.Response")
+	proto.RegisterEnum("daemon.protocol.MessageType", MessageType_name, MessageType_value)
+	proto.RegisterEnum("daemon.protocol.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
 func (m *Command) Marshal() (data []byte, err error) {
 	size := m.Size()

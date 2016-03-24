@@ -9,13 +9,13 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
@@ -189,7 +189,7 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 
 	// Loop until client disconnect or dies otherwise:
 	for {
-		msg := &proto.Command{}
+		msg := &wire.Command{}
 		if err := p.Recv(msg); err != nil {
 			if err != io.EOF {
 				log.Warning("daemon-recv: ", err)
@@ -203,28 +203,28 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 }
 
 // Handles the actual incoming commands:
-func (d *Server) handleCommand(ctx context.Context, cmd *proto.Command, p *protocol.Protocol) {
+func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protocol.Protocol) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Prepare a response template:
-	resp := &proto.Response{
+	resp := &wire.Response{
 		ResponseType: cmd.CommandType,
-		Success:      protobuf.Bool(false),
+		Success:      proto.Bool(false),
 	}
 
 	// Figure out which handler to call:
 	handlerID := *(cmd.CommandType)
 	if handler, ok := handlerMap[handlerID]; !ok {
-		resp.Error = protobuf.String(fmt.Sprintf("No handler for Id: %v", handlerID))
+		resp.Error = proto.String(fmt.Sprintf("No handler for Id: %v", handlerID))
 	} else {
 		answer, err := handler(d, ctx, cmd)
 
 		if err != nil {
-			resp.Error = protobuf.String(err.Error())
+			resp.Error = proto.String(err.Error())
 		} else {
 			resp.Response = answer
-			resp.Success = protobuf.Bool(true)
+			resp.Success = proto.Bool(true)
 		}
 	}
 

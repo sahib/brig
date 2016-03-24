@@ -5,8 +5,8 @@ import (
 	"io"
 
 	"github.com/disorganizer/brig/id"
-	"github.com/disorganizer/brig/transfer/proto"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 	ErrOffline = errors.New("Transfer layer is offline")
 )
 
-type AsyncFunc func(resp protobuf.Message)
+type AsyncFunc func(resp proto.Message)
 
 // Conversation is a open channel to another peer
 // used to exchange metadata over protobuf messages.
@@ -25,19 +25,19 @@ type Conversation interface {
 	// Send delivers `req` exactly once to the conversation peer.
 	// TODO: handle commands docs?
 	//
-	// The message might be any protobuf.Message,
-	// but is usually proto.Request on the client side
-	// and proto.Response on the server side.
+	// The message might be any proto.Message,
+	// but is usually wire.Request on the client side
+	// and wire.Response on the server side.
 	// `callback` will not be called if no answer was received.
-	SendAsync(req *proto.Request, callback AsyncFunc) error
+	SendAsync(req *wire.Request, callback AsyncFunc) error
 
 	// Peer returns the peer we're talking to.
 	Peer() id.Peer
 }
 
-// HandlerFunc handles a single proto.Request and returns
-// a fitting proto.Response.
-type HandlerFunc func(Layer, *proto.Request) (*proto.Response, error)
+// HandlerFunc handles a single wire.Request and returns
+// a fitting wire.Response.
+type HandlerFunc func(Layer, *wire.Request) (*wire.Response, error)
 
 // Layer is the interface that all metadata-networking layers
 // of brig have to fulfill.
@@ -73,12 +73,12 @@ type Layer interface {
 
 	// RegisterHandler will register  a handler for the request type `typ`.
 	// `handler` will be called once a request with this type is received.
-	RegisterHandler(typ proto.RequestType, handler HandlerFunc)
+	RegisterHandler(typ wire.RequestType, handler HandlerFunc)
 
 	// Broadcast sends a request to all connected peers.
 	// No answers will be collected.
 	// It's usecase is to send quick updates to all peers.
-	Broadcast(req *proto.Request) error
+	Broadcast(req *wire.Request) error
 }
 
 // TODO: Interface for authentication?

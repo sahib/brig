@@ -3,7 +3,7 @@ package transfer
 import (
 	"io"
 
-	"github.com/disorganizer/brig/transfer/proto"
+	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util/protocol"
 )
 
@@ -15,12 +15,12 @@ func NewClientProtocol(rw io.ReadWriter) *ClientProtocol {
 	return &ClientProtocol{protocol.NewProtocol(rw, true)}
 }
 
-func (c *ClientProtocol) Encode(req *proto.Request) error {
+func (c *ClientProtocol) Encode(req *wire.Request) error {
 	return c.p.Send(req)
 }
 
-func (c *ClientProtocol) Decode() (*proto.Response, error) {
-	resp := &proto.Response{}
+func (c *ClientProtocol) Decode() (*wire.Response, error) {
+	resp := &wire.Response{}
 	if err := c.p.Recv(resp); err != nil {
 		return nil, err
 	}
@@ -36,12 +36,12 @@ func NewServerProtocol(rw io.ReadWriter) *ServerProtocol {
 	return &ServerProtocol{protocol.NewProtocol(rw, true)}
 }
 
-func (c *ServerProtocol) Encode(resp *proto.Response) error {
+func (c *ServerProtocol) Encode(resp *wire.Response) error {
 	return c.p.Send(resp)
 }
 
-func (c *ServerProtocol) Decode() (*proto.Request, error) {
-	req := &proto.Request{}
+func (c *ServerProtocol) Decode() (*wire.Request, error) {
+	req := &wire.Request{}
 	if err := c.p.Recv(req); err != nil {
 		return nil, err
 	}
