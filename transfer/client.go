@@ -50,6 +50,6 @@ func (c *Client) unpack(req *wire.Request) ([]byte, error) {
 
 func (c *Client) DoFetch() ([]byte, error) {
 	return c.unpack(&wire.Request{
-		Type: wire.RequestType_FETCH.Enum(),
+		ReqType: wire.RequestType_FETCH.Enum(),
 	})
 }

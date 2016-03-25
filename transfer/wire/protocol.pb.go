@@ -73,7 +73,7 @@ func (x *RequestType) UnmarshalJSON(data []byte) error {
 }
 
 type Request struct {
-	Type             *RequestType `protobuf:"varint,1,req,name=type,enum=transfer.protocol.RequestType" json:"type,omitempty"`
+	ReqType          *RequestType `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
 	BroadcastData    []byte       `protobuf:"bytes,3,opt,name=broadcast_data" json:"broadcast_data,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
@@ -83,9 +83,9 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 
-func (m *Request) GetType() RequestType {
-	if m != nil && m.Type != nil {
-		return *m.Type
+func (m *Request) GetReqType() RequestType {
+	if m != nil && m.ReqType != nil {
+		return *m.ReqType
 	}
 	return RequestType_INVALID
 }
@@ -105,7 +105,7 @@ func (m *Request) GetBroadcastData() []byte {
 }
 
 type Response struct {
-	Type             *RequestType `protobuf:"varint,1,req,name=type,enum=transfer.protocol.RequestType" json:"type,omitempty"`
+	ReqType          *RequestType `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
 	Data             []byte       `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
 	Error            *string      `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
@@ -116,9 +116,9 @@ func (m *Response) Reset()         { *m = Response{} }
 func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 
-func (m *Response) GetType() RequestType {
-	if m != nil && m.Type != nil {
-		return *m.Type
+func (m *Response) GetReqType() RequestType {
+	if m != nil && m.ReqType != nil {
+		return *m.ReqType
 	}
 	return RequestType_INVALID
 }
@@ -164,12 +164,12 @@ func (m *Request) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Type == nil {
+	if m.ReqType == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x8
 		i++
-		i = encodeVarintProtocol(data, i, uint64(*m.Type))
+		i = encodeVarintProtocol(data, i, uint64(*m.ReqType))
 	}
 	if m.ID == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -205,12 +205,12 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Type == nil {
+	if m.ReqType == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x8
 		i++
-		i = encodeVarintProtocol(data, i, uint64(*m.Type))
+		i = encodeVarintProtocol(data, i, uint64(*m.ReqType))
 	}
 	if m.ID == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -267,8 +267,8 @@ func encodeVarintProtocol(data []byte, offset int, v uint64) int {
 func (m *Request) Size() (n int) {
 	var l int
 	_ = l
-	if m.Type != nil {
-		n += 1 + sovProtocol(uint64(*m.Type))
+	if m.ReqType != nil {
+		n += 1 + sovProtocol(uint64(*m.ReqType))
 	}
 	if m.ID != nil {
 		n += 1 + sovProtocol(uint64(*m.ID))
@@ -286,8 +286,8 @@ func (m *Request) Size() (n int) {
 func (m *Response) Size() (n int) {
 	var l int
 	_ = l
-	if m.Type != nil {
-		n += 1 + sovProtocol(uint64(*m.Type))
+	if m.ReqType != nil {
+		n += 1 + sovProtocol(uint64(*m.ReqType))
 	}
 	if m.ID != nil {
 		n += 1 + sovProtocol(uint64(*m.ID))
@@ -351,7 +351,7 @@ func (m *Request) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ReqType", wireType)
 			}
 			var v RequestType
 			for shift := uint(0); ; shift += 7 {
@@ -368,7 +368,7 @@ func (m *Request) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			m.Type = &v
+			m.ReqType = &v
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
@@ -479,7 +479,7 @@ func (m *Response) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ReqType", wireType)
 			}
 			var v RequestType
 			for shift := uint(0); ; shift += 7 {
@@ -496,7 +496,7 @@ func (m *Response) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			m.Type = &v
+			m.ReqType = &v
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {

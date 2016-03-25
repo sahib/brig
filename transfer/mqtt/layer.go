@@ -2,7 +2,10 @@ package mqtt
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
@@ -15,6 +18,8 @@ type Layer struct {
 	self id.Peer
 	// srv is a mqtt broker wrapper
 	srv *server
+	// port of the mqtt broker
+	port int
 	// own is the client connected to srv
 	own *client
 	// tab maps IDs top open conversations
@@ -23,18 +28,25 @@ type Layer struct {
 	ctx context.Context
 	// cancel interrupts `ctx`.
 	cancel context.CancelFunc
-	//
+	// TODO: Explain
+	mu sync.Mutex
+
 	handlers map[wire.RequestType]transfer.HandlerFunc
+	respbox  map[int64]chan *wire.Response
+	respctr  int64
 }
 
-func NewLayer(self id.Peer) transfer.Layer {
+func NewLayer(self id.Peer, brokerPort int) transfer.Layer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Layer{
+		port:     brokerPort,
 		self:     self,
 		ctx:      ctx,
 		cancel:   cancel,
 		tab:      make(map[id.ID]*client),
 		handlers: make(map[wire.RequestType]transfer.HandlerFunc),
+		respbox:  make(map[int64]chan *wire.Response),
+		respctr:  0,
 	}
 }
 
@@ -112,16 +124,34 @@ func (lay *Layer) Connect() (err error) {
 	}
 
 	// TODO: Pass correct port in
-	srv, err := newServer(1883)
+	srv, err := newServer(lay.port)
 	if err != nil {
 		return
 	}
 
-	lay.srv = srv
-
-	own, err := newClient(lay, lay.self, true)
-	if err = own.connect(lay.srv.addr()); err != nil {
+	if err = srv.connect(); err != nil {
 		return
+	}
+
+	lay.srv = srv
+	log.Debugf("MQTT broker running on port %d", lay.port)
+
+	var lastError error
+	own, err := newClient(lay, lay.self, true)
+	log.Debugf("Own MQTT Client connecting to %s", lay.srv.addr())
+
+	for i := 0; i < 10; i++ {
+		if err = own.connect(lay.srv.addr()); err != nil {
+			lastError = err
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		break
+	}
+
+	if lastError != nil {
+		return lastError
 	}
 
 	lay.own = own
@@ -133,6 +163,10 @@ func (lay *Layer) Disconnect() (err error) {
 		return nil
 	}
 
+	if err = lay.own.disconnect(); err != nil {
+		return
+	}
+
 	if err = lay.srv.disconnect(); err != nil {
 		return
 	}
@@ -140,6 +174,7 @@ func (lay *Layer) Disconnect() (err error) {
 	lay.tab = make(map[id.ID]*client)
 	lay.cancel()
 	lay.ctx, lay.cancel = context.WithCancel(context.Background())
+	lay.srv = nil
 	return nil
 }
 
@@ -147,6 +182,66 @@ func (lay *Layer) Close() error {
 	return lay.Disconnect()
 }
 
+func (lay *Layer) Self() id.Peer {
+	return lay.self
+}
+
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
+}
+
+func (lay *Layer) addReqRespPair(req *wire.Request) chan *wire.Response {
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
+
+	respnotify := make(chan *wire.Response)
+	oldCounter := lay.respctr
+	lay.respctr++
+
+	lay.respbox[oldCounter] = respnotify
+	req.ID = proto.Int64(oldCounter)
+
+	// Remember to purge the channel after a timeout
+	// if no response was received in a timely fashion.
+	go func() {
+		time.Sleep(20 * time.Second)
+		lay.mu.Lock()
+		delete(lay.respbox, oldCounter)
+		lay.mu.Unlock()
+	}()
+
+	return respnotify
+}
+
+func (lay *Layer) forwardResponse(resp *wire.Response) error {
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
+
+	respnotify, ok := lay.respbox[resp.GetID()]
+
+	if !ok {
+		return fmt.Errorf("No request for ID %d", resp.GetID())
+	}
+
+	delete(lay.respbox, resp.GetID())
+	respnotify <- resp
+
+	// Remove the result channel again:
+	return nil
+}
+
+func (lay *Layer) Wait() error {
+	for {
+		lay.mu.Lock()
+		// Timeout in addReqRespPair ensures that
+		// lay.respbox will drain with time.
+		if len(lay.respbox) == 0 {
+			return nil
+		}
+		lay.mu.Unlock()
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	return nil
 }

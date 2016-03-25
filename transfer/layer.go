@@ -6,7 +6,6 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -15,7 +14,7 @@ var (
 	ErrOffline = errors.New("Transfer layer is offline")
 )
 
-type AsyncFunc func(resp proto.Message)
+type AsyncFunc func(resp *wire.Response)
 
 // Conversation is a open channel to another peer
 // used to exchange metadata over protobuf messages.
@@ -29,6 +28,7 @@ type Conversation interface {
 	// but is usually wire.Request on the client side
 	// and wire.Response on the server side.
 	// `callback` will not be called if no answer was received.
+	// `callback` may be nil for fire-and-forget messages.
 	SendAsync(req *wire.Request, callback AsyncFunc) error
 
 	// Peer returns the peer we're talking to.
@@ -79,6 +79,13 @@ type Layer interface {
 	// No answers will be collected.
 	// It's usecase is to send quick updates to all peers.
 	Broadcast(req *wire.Request) error
+
+	// Self returns the peer we're acting as.
+	Self() id.Peer
+
+	// Wait blocks until all requests were handled.
+	// It is mainly useful for debugging.
+	Wait() error
 }
 
 // TODO: Interface for authentication?

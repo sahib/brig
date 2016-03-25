@@ -35,7 +35,7 @@ func newServer(port int) (*server, error) {
 
 func (srv *server) addr() net.Addr {
 	return &net.TCPAddr{
-		IP:   net.IP{0, 0, 0, 0},
+		IP:   net.IP{127, 0, 0, 1},
 		Port: srv.port,
 	}
 }
@@ -51,7 +51,7 @@ func (srv *server) connect() (err error) {
 
 	log.Infof("Starting server...")
 	go func() {
-		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://0.0.0.0:%d", srv.port))
+		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://:%d", srv.port))
 		log.Infof("Server stopped...: %v", err)
 
 		// TODO: Initial publish of topcis needed?
@@ -65,6 +65,10 @@ func (srv *server) connect() (err error) {
 
 func (srv *server) disconnect() error {
 	s := srv.srv
-	srv.srv = nil
-	return s.Close()
+	if s != nil {
+		srv.srv = nil
+		return s.Close()
+	}
+
+	return nil
 }

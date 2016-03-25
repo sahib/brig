@@ -42,19 +42,19 @@ func (sv *Server) handleCmd() bool {
 		return true
 	}
 
-	handler, ok := handlerMap[req.GetType()]
+	handler, ok := handlerMap[req.GetReqType()]
 	if !ok {
-		log.Warningf("Unknown command id: %d", req.GetType())
+		log.Warningf("Unknown command id: %d", req.GetReqType())
 		return true
 	}
 
 	resp, err := handler(sv, req)
 	if err != nil {
-		log.Warningf("Handling %s failed: %v", req.GetType().String(), err)
+		log.Warningf("Handling %s failed: %v", req.GetReqType().String(), err)
 
 		resp = &wire.Response{
-			Type:  req.GetType().Enum(),
-			Error: proto.String(err.Error()),
+			ReqType: req.GetReqType().Enum(),
+			Error:   proto.String(err.Error()),
 		}
 
 		if err := sv.ptcl.Encode(resp); err != nil {
@@ -69,13 +69,13 @@ func (sv *Server) handleCmd() bool {
 		return true
 	}
 
-	resp.Type = req.GetType().Enum()
+	resp.ReqType = req.GetReqType().Enum()
 	if err := sv.ptcl.Encode(resp); err != nil {
 		log.Warningf("Casting response to protobuf failed: %v", err)
 		return true
 	}
 
-	return req.GetType() != wire.RequestType_QUIT
+	return req.GetReqType() != wire.RequestType_QUIT
 }
 
 func (sv *Server) loop() {

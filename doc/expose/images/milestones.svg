@@ -28,17 +28,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="90.509668"
-     inkscape:cx="148.90536"
-     inkscape:cy="773.48201"
+     inkscape:zoom="11.313709"
+     inkscape:cx="144.54191"
+     inkscape:cy="690.26379"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-text-baseline="true"
-     inkscape:window-width="1916"
-     inkscape:window-height="1145"
+     inkscape:window-width="1276"
+     inkscape:window-height="937"
      inkscape:window-x="0"
-     inkscape:window-y="32"
+     inkscape:window-y="64"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -48,7 +48,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -238,7 +238,7 @@
     <rect
        style="fill:#0388bf;fill-opacity:1;stroke-width:1.01300001;stroke-miterlimit:4;stroke-dasharray:none"
        id="rect4371"
-       width="22.610022"
+       width="31.828299"
        height="9.5355339"
        x="134.1564"
        y="365.34964"
@@ -248,16 +248,16 @@
        y="355.32822"
        x="136.69885"
        height="9.5355339"
-       width="25.107418"
+       width="29.261671"
        id="rect4373"
        style="fill:#0388bf;fill-opacity:1;stroke-width:1.01300001;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:export-xdpi="900"
        inkscape:export-ydpi="900" />
     <rect
        y="345.76157"
-       x="162.63382"
+       x="166.50882"
        height="9.5355339"
-       width="33.385593"
+       width="29.510593"
        id="rect4373-9"
        style="fill:#0388bf;fill-opacity:1;stroke-width:1.01300001;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:export-xdpi="900"
@@ -360,9 +360,9 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5px;line-height:125%;font-family:'Ubuntu Condensed';-inkscape-font-specification:'Ubuntu Condensed, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff">Masterarbeit</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;opacity:0.6;"
-       x="-167.86295"
-       y="389.76065"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:0.6;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="-163.97386"
+       y="393.64975"
        id="text4305-3-5"
        sodipodi:linespacing="125%"
        transform="matrix(0.70710678,-0.70710678,0.70710678,0.70710678,0,0)"
@@ -370,9 +370,9 @@
        inkscape:export-ydpi="900"><tspan
          sodipodi:role="line"
          id="tspan4307-2-7"
-         x="-167.86295"
-         y="389.76065"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.5px;line-height:125%;font-family:'Ubuntu Condensed';-inkscape-font-specification:'Ubuntu Condensed, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;">Juli</tspan></text>
+         x="-163.97386"
+         y="393.64975"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.5px;line-height:125%;font-family:'Ubuntu Condensed';-inkscape-font-specification:'Ubuntu Condensed, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start">Juli</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;opacity:0.6;"
@@ -391,7 +391,7 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="169.28078"
+       x="172.34328"
        y="352.76721"
        id="text4595-1"
        sodipodi:linespacing="125%"
@@ -399,7 +399,7 @@
        inkscape:export-ydpi="900"><tspan
          sodipodi:role="line"
          id="tspan4597-6"
-         x="169.28078"
+         x="172.34328"
          y="352.76721"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5px;line-height:125%;font-family:'Ubuntu Condensed';-inkscape-font-specification:'Ubuntu Condensed, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff">Prototyp II</tspan></text>
     <text
@@ -533,7 +533,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5px;line-height:125%;font-family:'Ubuntu Condensed';-inkscape-font-specification:'Ubuntu Condensed, Normal';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff">...</tspan></text>
     <path
        style="opacity:0.42000002;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.46262035;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.7757222, 0.46262038;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 162.125,288.44581 0,91.0828"
+       d="m 166.25716,288.44581 0,91.0828"
        id="path4155-4-7-3-5"
        inkscape:connector-curvature="0"
        inkscape:export-xdpi="900"
