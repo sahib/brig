@@ -9,10 +9,10 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
-	"github.com/disorganizer/brig/store/proto"
+	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -288,7 +288,7 @@ func (f *File) marshal() ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := protobuf.Marshal(protoFile)
+	data, err := proto.Marshal(protoFile)
 	if err != nil {
 		return nil, err
 	}
@@ -296,18 +296,18 @@ func (f *File) marshal() ([]byte, error) {
 	return data, nil
 }
 
-func (f *File) toProtoMessage() (*proto.File, error) {
+func (f *File) toProtoMessage() (*wire.File, error) {
 	modTimeStamp, err := f.modTime.MarshalText()
 	if err != nil {
 		return nil, err
 	}
 
-	return &proto.File{
-		Path:     protobuf.String(f.node.Path()),
+	return &wire.File{
+		Path:     proto.String(f.node.Path()),
 		Key:      f.key,
-		FileSize: protobuf.Int64(f.size),
+		FileSize: proto.Int64(f.size),
 		ModTime:  modTimeStamp,
-		Kind:     protobuf.Int32(int32(f.kind)),
+		Kind:     proto.Int32(int32(f.kind)),
 		Hash:     f.hashUnlocked().Multihash,
 	}, nil
 }
@@ -315,15 +315,15 @@ func (f *File) toProtoMessage() (*proto.File, error) {
 // Unmarshal decodes the data in `buf` and inserts the unmarshaled file
 // into `store`.
 func (fi *File) Unmarshal(store *Store, buf []byte) error {
-	protoFile := &proto.File{}
-	if err := protobuf.Unmarshal(buf, protoFile); err != nil {
+	protoFile := &wire.File{}
+	if err := proto.Unmarshal(buf, protoFile); err != nil {
 		return err
 	}
 
 	return fi.Import(protoFile)
 }
 
-func (fi *File) Import(protoFile *proto.File) error {
+func (fi *File) Import(protoFile *wire.File) error {
 	if err := fi.fromProtoMessage(protoFile); err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func (fi *File) Import(protoFile *proto.File) error {
 	return nil
 }
 
-func (fi *File) fromProtoMessage(protoFile *proto.File) error {
+func (fi *File) fromProtoMessage(protoFile *wire.File) error {
 	modTimeStamp := &time.Time{}
 	if err := modTimeStamp.UnmarshalText(protoFile.GetModTime()); err != nil {
 		return err

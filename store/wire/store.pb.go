@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-	Package proto is a generated protocol buffer package.
+	Package wire is a generated protocol buffer package.
 
 	It is generated from these files:
 		store.proto
@@ -16,9 +16,9 @@
 		History
 		Pack
 */
-package proto
+package wire
 
-import proto1 "github.com/golang/protobuf/proto"
+import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -27,7 +27,7 @@ import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto1.Marshal
+var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
@@ -43,7 +43,7 @@ type File struct {
 }
 
 func (m *File) Reset()         { *m = File{} }
-func (m *File) String() string { return proto1.CompactTextString(m) }
+func (m *File) String() string { return proto.CompactTextString(m) }
 func (*File) ProtoMessage()    {}
 
 func (m *File) GetPath() string {
@@ -98,7 +98,7 @@ type Dirent struct {
 }
 
 func (m *Dirent) Reset()         { *m = Dirent{} }
-func (m *Dirent) String() string { return proto1.CompactTextString(m) }
+func (m *Dirent) String() string { return proto.CompactTextString(m) }
 func (*Dirent) ProtoMessage()    {}
 
 func (m *Dirent) GetPath() string {
@@ -135,7 +135,7 @@ type Dirlist struct {
 }
 
 func (m *Dirlist) Reset()         { *m = Dirlist{} }
-func (m *Dirlist) String() string { return proto1.CompactTextString(m) }
+func (m *Dirlist) String() string { return proto.CompactTextString(m) }
 func (*Dirlist) ProtoMessage()    {}
 
 func (m *Dirlist) GetEntries() []*Dirent {
@@ -156,7 +156,7 @@ type Checkpoint struct {
 }
 
 func (m *Checkpoint) Reset()         { *m = Checkpoint{} }
-func (m *Checkpoint) String() string { return proto1.CompactTextString(m) }
+func (m *Checkpoint) String() string { return proto.CompactTextString(m) }
 func (*Checkpoint) ProtoMessage()    {}
 
 func (m *Checkpoint) GetHash() []byte {
@@ -200,7 +200,7 @@ type History struct {
 }
 
 func (m *History) Reset()         { *m = History{} }
-func (m *History) String() string { return proto1.CompactTextString(m) }
+func (m *History) String() string { return proto.CompactTextString(m) }
 func (*History) ProtoMessage()    {}
 
 func (m *History) GetHist() []*Checkpoint {
@@ -219,7 +219,7 @@ type Pack struct {
 }
 
 func (m *Pack) Reset()         { *m = Pack{} }
-func (m *Pack) String() string { return proto1.CompactTextString(m) }
+func (m *Pack) String() string { return proto.CompactTextString(m) }
 func (*Pack) ProtoMessage()    {}
 
 func (m *Pack) GetFile() *File {
@@ -237,12 +237,12 @@ func (m *Pack) GetHistory() *History {
 }
 
 func init() {
-	proto1.RegisterType((*File)(nil), "bolt.protocol.File")
-	proto1.RegisterType((*Dirent)(nil), "bolt.protocol.Dirent")
-	proto1.RegisterType((*Dirlist)(nil), "bolt.protocol.Dirlist")
-	proto1.RegisterType((*Checkpoint)(nil), "bolt.protocol.Checkpoint")
-	proto1.RegisterType((*History)(nil), "bolt.protocol.History")
-	proto1.RegisterType((*Pack)(nil), "bolt.protocol.Pack")
+	proto.RegisterType((*File)(nil), "bolt.protocol.File")
+	proto.RegisterType((*Dirent)(nil), "bolt.protocol.Dirent")
+	proto.RegisterType((*Dirlist)(nil), "bolt.protocol.Dirlist")
+	proto.RegisterType((*Checkpoint)(nil), "bolt.protocol.Checkpoint")
+	proto.RegisterType((*History)(nil), "bolt.protocol.History")
+	proto.RegisterType((*Pack)(nil), "bolt.protocol.Pack")
 }
 func (m *File) Marshal() (data []byte, err error) {
 	size := m.Size()

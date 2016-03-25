@@ -127,7 +127,7 @@ func (m *Request) MarshalTo(data []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Type == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return 0, new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	} else {
 		data[i] = 0x8
 		i++
@@ -155,14 +155,14 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Type == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return 0, new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	} else {
 		data[i] = 0x8
 		i++
 		i = encodeVarintProtocol(data, i, uint64(*m.Type))
 	}
 	if m.Data == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return 0, new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	} else {
 		data[i] = 0x12
 		i++
@@ -311,7 +311,7 @@ func (m *Request) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -416,10 +416,10 @@ func (m *Response) Unmarshal(data []byte) error {
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return new(github_com_golang_protobuf_wire.RequiredNotSetError)
 	}
 
 	if iNdEx > l {

@@ -14,8 +14,8 @@ func testProtocol(t *testing.T, compress bool) {
 
 	// Test with varying potential for compression:
 	for i := 0; i < 5; i++ {
-		msg := &testproto.Response{
-			Type: testproto.RequestType_CLONE.Enum(),
+		msg := &testwire.Response{
+			Type: testwire.RequestType_CLONE.Enum(),
 			Data: testutil.CreateDummyBuf(int64(i) * 255),
 		}
 
@@ -24,7 +24,7 @@ func testProtocol(t *testing.T, compress bool) {
 			return
 		}
 
-		remoteMsg := &testproto.Response{}
+		remoteMsg := &testwire.Response{}
 		if err := p.Recv(remoteMsg); err != nil {
 			t.Errorf("Recv failed: %v", err)
 			return

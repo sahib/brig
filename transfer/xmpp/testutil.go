@@ -1,4 +1,4 @@
-package im
+package xmpp
 
 import (
 	"crypto/tls"

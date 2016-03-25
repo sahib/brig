@@ -6,8 +6,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
-	"github.com/disorganizer/brig/store/proto"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/disorganizer/brig/store/wire"
+	"github.com/gogo/protobuf/proto"
 	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
@@ -113,18 +113,18 @@ func (c *Checkpoint) String() string {
 	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
 }
 
-func (cp *Checkpoint) toProtoMessage() (*proto.Checkpoint, error) {
+func (cp *Checkpoint) toProtoMessage() (*wire.Checkpoint, error) {
 	mtimeBin, err := cp.ModTime.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 
-	protoCheck := &proto.Checkpoint{
+	protoCheck := &wire.Checkpoint{
 		Hash:     cp.Hash.Bytes(),
 		ModTime:  mtimeBin,
-		FileSize: protobuf.Int64(cp.Size),
-		Change:   protobuf.Int32(int32(cp.Change)),
-		Author:   protobuf.String(string(cp.Author)),
+		FileSize: proto.Int64(cp.Size),
+		Change:   proto.Int32(int32(cp.Change)),
+		Author:   proto.String(string(cp.Author)),
 	}
 
 	if err != nil {
@@ -134,7 +134,7 @@ func (cp *Checkpoint) toProtoMessage() (*proto.Checkpoint, error) {
 	return protoCheck, nil
 }
 
-func (cp *Checkpoint) fromProtoMessage(msg *proto.Checkpoint) error {
+func (cp *Checkpoint) fromProtoMessage(msg *wire.Checkpoint) error {
 	modTime := time.Time{}
 	if err := modTime.UnmarshalBinary(msg.GetModTime()); err != nil {
 		return err
@@ -154,7 +154,7 @@ func (cp *Checkpoint) Marshal() ([]byte, error) {
 		return nil, err
 	}
 
-	protoData, err := protobuf.Marshal(protoCheck)
+	protoData, err := proto.Marshal(protoCheck)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +163,8 @@ func (cp *Checkpoint) Marshal() ([]byte, error) {
 }
 
 func (cp *Checkpoint) Unmarshal(data []byte) error {
-	protoCheck := &proto.Checkpoint{}
-	if err := protobuf.Unmarshal(data, protoCheck); err != nil {
+	protoCheck := &wire.Checkpoint{}
+	if err := proto.Unmarshal(data, protoCheck); err != nil {
 		return err
 	}
 
@@ -175,8 +175,8 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 // New changes get appended to the end.
 type History []*Checkpoint
 
-func (hy *History) toProtoMessage() (*proto.History, error) {
-	protoHist := &proto.History{}
+func (hy *History) toProtoMessage() (*wire.History, error) {
+	protoHist := &wire.History{}
 
 	for _, ck := range *hy {
 		protoCheck, err := ck.toProtoMessage()
@@ -196,7 +196,7 @@ func (hy *History) Marshal() ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := protobuf.Marshal(protoHist)
+	data, err := proto.Marshal(protoHist)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (hy *History) Marshal() ([]byte, error) {
 	return data, nil
 }
 
-func (hy *History) fromProtoMessage(protoHist *proto.History) error {
+func (hy *History) fromProtoMessage(protoHist *wire.History) error {
 	for _, protoCheck := range protoHist.Hist {
 		ck := &Checkpoint{}
 		if err := ck.fromProtoMessage(protoCheck); err != nil {
@@ -218,9 +218,9 @@ func (hy *History) fromProtoMessage(protoHist *proto.History) error {
 }
 
 func (hy *History) Unmarshal(data []byte) error {
-	protoHist := &proto.History{}
+	protoHist := &wire.History{}
 
-	if err := protobuf.Unmarshal(data, protoHist); err != nil {
+	if err := proto.Unmarshal(data, protoHist); err != nil {
 		return err
 	}
 

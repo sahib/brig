@@ -19,6 +19,10 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var (
+	ErrNoAddrs = errors.New("No addrs found for id (online?)")
+)
+
 type ID string
 
 type ErrBadID struct {
@@ -69,6 +73,19 @@ func IsValid(id string) bool {
 	return valid(id) == nil
 }
 
+func (id ID) Hash() mh.Multihash {
+	// TODO: Use go-ipfs-util.DefaultIpfsHash
+	//		 https://github.com/ipfs/go-ipfs-util/pull/1
+	hash, err := mh.Sum(id.asBlockData(), mh.SHA2_256, -1)
+
+	// Mulithash should only fail if an invalid len or code was passed.
+	if err != nil {
+		panic(err)
+	}
+
+	return hash
+}
+
 func (id ID) Domain() string {
 	a := strings.IndexRune(string(id), '@')
 	if a < 0 {
@@ -110,13 +127,7 @@ var (
 )
 
 func (id ID) Register(node *ipfsutil.Node) error {
-	blockData := id.asBlockData()
-
-	// TODO: Is there
-	hash, err := mh.Sum(blockData, mh.SHA2_256, -1)
-	if err != nil {
-		return err
-	}
+	hash := id.Hash()
 
 	peers, err := ipfsutil.Locate(node, hash, 1, 5*time.Second)
 	if err != nil && err != ipfsutil.ErrTimeout {
@@ -143,7 +154,7 @@ func (id ID) Register(node *ipfsutil.Node) error {
 	}
 
 	// If it was an timeout, it's probably not yet registered.
-	otherHash, err := ipfsutil.AddBlock(node, blockData)
+	otherHash, err := ipfsutil.AddBlock(node, id.asBlockData())
 	if !bytes.Equal(otherHash, hash) {
 		log.Warningf("Hash differ during register; did the hash func changed?")
 	}
@@ -155,6 +166,27 @@ func (id ID) Register(node *ipfsutil.Node) error {
 	return nil
 }
 
-func (id ID) Lookup(node *ipfsutil.Node) error {
+// TODO: Not sure if the next functions are actually useful...
+// DelBlock just deletes the block *locally*
+// Lookup returns the brig:$id value
+
+func (id ID) Unregister(node *ipfsutil.Node) error {
+	hash := id.Hash()
+
+	if err := ipfsutil.DelBlock(node, hash); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (id ID) Taken(node *ipfsutil.Node) (bool, error) {
+	data, err := ipfsutil.CatBlock(node, id.Hash(), 5*time.Second)
+	if err != nil {
+		return false, err
+	}
+
+	// This is kinda paranoid...
+	// (Disclaimer: I doubt hash collisions, but bugs are everywhere)
+	return bytes.Equal(data, id.asBlockData()), nil
 }

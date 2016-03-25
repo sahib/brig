@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/disorganizer/brig/store"
-	storeproto "github.com/disorganizer/brig/store/proto"
+	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/colors"
 )
 
@@ -24,12 +24,12 @@ type treeNode struct {
 	isLast   bool
 	parent   *treeNode
 	depth    int
-	entry    *storeproto.Dirent
+	entry    *storewire.Dirent
 }
 
 // This is a very stripped down version util.Trie.Insert()
 // but with support for ordering the elements.
-func (n *treeNode) Insert(entry *storeproto.Dirent) {
+func (n *treeNode) Insert(entry *storewire.Dirent) {
 	parts := strings.Split(entry.GetPath(), "/")
 	if len(parts) > 0 && parts[0] == "" {
 		parts = parts[1:]
@@ -125,7 +125,7 @@ func (n *treeNode) Print() {
 	}
 }
 
-func showTree(entries []*storeproto.Dirent, maxDepth int) error {
+func showTree(entries []*storewire.Dirent, maxDepth int) error {
 	root := &treeNode{name: "/"}
 	nfiles, ndirs := 0, 0
 

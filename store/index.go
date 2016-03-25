@@ -13,7 +13,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
-	"github.com/disorganizer/brig/store/proto"
+	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
@@ -408,7 +408,7 @@ func (st *Store) List(root string, depth int) (entries []*File, err error) {
 	return
 }
 
-// The results are marshaled into a proto.Dirlist message and written to `w`.
+// The results are marshaled into a wire.Dirlist message and written to `w`.
 // `depth` may be negative for unlimited recursion.
 func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
 	entries, err := st.List(root, depth)
@@ -416,7 +416,7 @@ func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
 		return err
 	}
 
-	dirlist := &proto.Dirlist{}
+	dirlist := &wire.Dirlist{}
 	for _, entry := range entries {
 		protoFile, err := entry.toProtoMessage()
 		if err != nil {
@@ -424,7 +424,7 @@ func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
 		}
 
 		// Be sure to mask out key and hash.
-		dirlist.Entries = append(dirlist.Entries, &proto.Dirent{
+		dirlist.Entries = append(dirlist.Entries, &wire.Dirent{
 			Path:     protoFile.Path,
 			FileSize: protoFile.FileSize,
 			Kind:     protoFile.Kind,
@@ -525,7 +525,7 @@ func (s *Store) Export(w io.Writer) (err error) {
 			return false
 		}
 
-		protoPack := &proto.Pack{
+		protoPack := &wire.Pack{
 			File:    protoFile,
 			History: protoHist,
 		}
@@ -547,7 +547,7 @@ func (s *Store) Import(r io.Reader) error {
 	dec := protocol.NewProtocolReader(r, true)
 
 	for {
-		pack := &proto.Pack{}
+		pack := &wire.Pack{}
 
 		if err := dec.Recv(pack); err == io.EOF {
 			break

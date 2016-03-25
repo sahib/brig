@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/disorganizer/brig/daemon/proto"
+	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/store"
-	storeproto "github.com/disorganizer/brig/store/proto"
+	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/protocol"
-	protobuf "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 // recvResponseBytes reads one response from the daemon and formats possible errors.
-func (c *Client) recvResponse(logname string) (*proto.Response, error) {
+func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
 		return nil, fmt.Errorf("client: %v: %v", logname, resp.GetError())
@@ -43,11 +43,11 @@ func (c *Client) recvResponseString(logname string) (string, error) {
 
 // Add adds the data at `filePath` to brig as `repoPath`.
 func (c *Client) Add(filePath, repoPath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_ADD.Enum(),
-		AddCommand: &proto.Command_AddCmd{
-			FilePath: protobuf.String(filePath),
-			RepoPath: protobuf.String(repoPath),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_ADD.Enum(),
+		AddCommand: &wire.Command_AddCmd{
+			FilePath: proto.String(filePath),
+			RepoPath: proto.String(repoPath),
 		},
 	}
 
@@ -56,11 +56,11 @@ func (c *Client) Add(filePath, repoPath string) (string, error) {
 
 // Cat outputs the brig file at `repoPath` to `filePath`.
 func (c *Client) Cat(repoPath, filePath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_CAT.Enum(),
-		CatCommand: &proto.Command_CatCmd{
-			FilePath: protobuf.String(filePath),
-			RepoPath: protobuf.String(repoPath),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_CAT.Enum(),
+		CatCommand: &wire.Command_CatCmd{
+			FilePath: proto.String(filePath),
+			RepoPath: proto.String(repoPath),
 		},
 	}
 
@@ -69,10 +69,10 @@ func (c *Client) Cat(repoPath, filePath string) (string, error) {
 
 // Mount serves a fuse endpoint at the specified path.
 func (c *Client) Mount(mountPath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_MOUNT.Enum(),
-		MountCommand: &proto.Command_MountCmd{
-			MountPoint: protobuf.String(mountPath),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_MOUNT.Enum(),
+		MountCommand: &wire.Command_MountCmd{
+			MountPoint: proto.String(mountPath),
 		},
 	}
 
@@ -81,10 +81,10 @@ func (c *Client) Mount(mountPath string) (string, error) {
 
 // Unmount removes a previously mounted fuse endpoint.
 func (c *Client) Unmount(mountPath string) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_UNMOUNT.Enum(),
-		UnmountCommand: &proto.Command_UnmountCmd{
-			MountPoint: protobuf.String(mountPath),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_UNMOUNT.Enum(),
+		UnmountCommand: &wire.Command_UnmountCmd{
+			MountPoint: proto.String(mountPath),
 		},
 	}
 
@@ -93,11 +93,11 @@ func (c *Client) Unmount(mountPath string) (string, error) {
 
 // Remove removes the brig file at `repoPath`
 func (c *Client) Remove(repoPath string, recursive bool) (string, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_RM.Enum(),
-		RmCommand: &proto.Command_RmCmd{
-			RepoPath:  protobuf.String(repoPath),
-			Recursive: protobuf.Bool(recursive),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_RM.Enum(),
+		RmCommand: &wire.Command_RmCmd{
+			RepoPath:  proto.String(repoPath),
+			Recursive: proto.Bool(recursive),
 		},
 	}
 
@@ -105,11 +105,11 @@ func (c *Client) Remove(repoPath string, recursive bool) (string, error) {
 }
 
 func (c *Client) Move(source, dest string) error {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_MV.Enum(),
-		MvCommand: &proto.Command_MvCmd{
-			Source: protobuf.String(source),
-			Dest:   protobuf.String(dest),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_MV.Enum(),
+		MvCommand: &wire.Command_MvCmd{
+			Source: proto.String(source),
+			Dest:   proto.String(dest),
 		},
 	}
 
@@ -122,7 +122,7 @@ func (c *Client) Move(source, dest string) error {
 
 // Log returns a series of commits.
 func (c *Client) Log() ([]*store.Commit, error) {
-	c.Send <- &proto.Command{CommandType: proto.MessageType_LOG.Enum()}
+	c.Send <- &wire.Command{CommandType: wire.MessageType_LOG.Enum()}
 
 	// TODO: Implement.
 	return nil, nil
@@ -132,10 +132,10 @@ func (c *Client) Log() ([]*store.Commit, error) {
 // It might have been deleted earlier. Asking for a non-existing file
 // yields an empty history, but is not an error.
 func (c *Client) History(repoPath string) (store.History, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_HISTORY.Enum(),
-		HistoryCommand: &proto.Command_HistoryCmd{
-			RepoPath: protobuf.String(repoPath),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_HISTORY.Enum(),
+		HistoryCommand: &wire.Command_HistoryCmd{
+			RepoPath: proto.String(repoPath),
 		},
 	}
 
@@ -154,10 +154,10 @@ func (c *Client) History(repoPath string) (store.History, error) {
 	return *hist, nil
 }
 
-func (c *Client) alterOnlineStatus(query proto.OnlineQuery) ([]byte, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_ONLINE_STATUS.Enum(),
-		OnlineStatusCommand: &proto.Command_OnlineStatusCmd{
+func (c *Client) alterOnlineStatus(query wire.OnlineQuery) ([]byte, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_ONLINE_STATUS.Enum(),
+		OnlineStatusCommand: &wire.Command_OnlineStatusCmd{
 			Query: &query,
 		},
 	}
@@ -171,7 +171,7 @@ func (c *Client) alterOnlineStatus(query proto.OnlineQuery) ([]byte, error) {
 }
 
 func (c *Client) Online() error {
-	_, err := c.alterOnlineStatus(proto.OnlineQuery_GO_ONLINE)
+	_, err := c.alterOnlineStatus(wire.OnlineQuery_GO_ONLINE)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (c *Client) Online() error {
 }
 
 func (c *Client) Offline() error {
-	_, err := c.alterOnlineStatus(proto.OnlineQuery_GO_OFFLINE)
+	_, err := c.alterOnlineStatus(wire.OnlineQuery_GO_OFFLINE)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (c *Client) Offline() error {
 }
 
 func (c *Client) IsOnline() (bool, error) {
-	data, err := c.alterOnlineStatus(proto.OnlineQuery_IS_ONLINE)
+	data, err := c.alterOnlineStatus(wire.OnlineQuery_IS_ONLINE)
 	if err != nil {
 		return false, err
 	}
@@ -197,12 +197,12 @@ func (c *Client) IsOnline() (bool, error) {
 	return string(data) == "online", nil
 }
 
-func (c *Client) List(root string, depth int) ([]*storeproto.Dirent, error) {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_LIST.Enum(),
-		ListCommand: &proto.Command_ListCmd{
-			Root:  protobuf.String(root),
-			Depth: protobuf.Int(depth),
+func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_LIST.Enum(),
+		ListCommand: &wire.Command_ListCmd{
+			Root:  proto.String(root),
+			Depth: proto.Int(depth),
 		},
 	}
 
@@ -212,7 +212,7 @@ func (c *Client) List(root string, depth int) ([]*storeproto.Dirent, error) {
 	}
 
 	dec := protocol.NewProtocolReader(bytes.NewReader(listData), true)
-	dirlist := &storeproto.Dirlist{}
+	dirlist := &storewire.Dirlist{}
 
 	if err := dec.Recv(dirlist); err != nil {
 		return nil, err
@@ -222,10 +222,10 @@ func (c *Client) List(root string, depth int) ([]*storeproto.Dirent, error) {
 }
 
 func (c *Client) Fetch(who xmpp.JID) error {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_FETCH.Enum(),
-		FetchCommand: &proto.Command_FetchCmd{
-			Who: protobuf.String(string(who)),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_FETCH.Enum(),
+		FetchCommand: &wire.Command_FetchCmd{
+			Who: proto.String(string(who)),
 		},
 	}
 
@@ -237,10 +237,10 @@ func (c *Client) Fetch(who xmpp.JID) error {
 }
 
 func (c *Client) Mkdir(path string) error {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_MKDIR.Enum(),
-		MkdirCommand: &proto.Command_MkdirCmd{
-			Path: protobuf.String(string(path)),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_MKDIR.Enum(),
+		MkdirCommand: &wire.Command_MkdirCmd{
+			Path: proto.String(string(path)),
 		},
 	}
 
@@ -252,11 +252,11 @@ func (c *Client) Mkdir(path string) error {
 }
 
 func (c *Client) AuthAdd(jid xmpp.JID, finger string) error {
-	c.Send <- &proto.Command{
-		CommandType: proto.MessageType_AUTH_ADD.Enum(),
-		AuthAddCommand: &proto.Command_AuthAddCmd{
-			Who:         protobuf.String(string(jid)),
-			Fingerprint: protobuf.String(finger),
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_AUTH_ADD.Enum(),
+		AuthAddCommand: &wire.Command_AuthAddCmd{
+			Who:         proto.String(string(jid)),
+			Fingerprint: proto.String(finger),
 		},
 	}
 
@@ -268,9 +268,9 @@ func (c *Client) AuthAdd(jid xmpp.JID, finger string) error {
 }
 
 func (c *Client) AuthPrint() (string, error) {
-	c.Send <- &proto.Command{
-		CommandType:      proto.MessageType_AUTH_PRINT.Enum(),
-		AuthPrintCommand: &proto.Command_AuthPrintCmd{},
+	c.Send <- &wire.Command{
+		CommandType:      wire.MessageType_AUTH_PRINT.Enum(),
+		AuthPrintCommand: &wire.Command_AuthPrintCmd{},
 	}
 
 	finger, err := c.recvResponseBytes("auth-print")
