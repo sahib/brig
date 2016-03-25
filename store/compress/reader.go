@@ -274,29 +274,9 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-//TODO: Save maxOffset in trailer and read from trailer instead of SEEK.
 func (r *reader) maxOff(pSize int64) (int64, error) {
-	// get current position.
-	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return currOff, err
-	}
-
-	// get max offset (possition without trailer).
-	maxOff, err := r.rawR.Seek(-TrailerSize, os.SEEK_END)
-	if err != nil {
-		return maxOff, err
-	}
-
-	// go back to current offset.
-	_, err = r.rawR.Seek(currOff, os.SEEK_SET)
-	if err != nil {
-		return 0, err
-	}
-
-	// determinate max offset using.
-	if pSize+currOff > maxOff {
-		return maxOff - currOff, io.EOF
+	if pSize+r.zipSeekOffset > int64(r.trailer.maxFileOffset) {
+		return int64(r.trailer.maxFileOffset) - r.zipSeekOffset, io.EOF
 	}
 	return pSize, nil
 }

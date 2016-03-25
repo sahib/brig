@@ -58,7 +58,12 @@ func (w *writer) flushBuffer(flushSize int) (int, error) {
 func (w *writer) Write(p []byte) (n int, err error) {
 	// Handle uncompressed stream.
 	if w.trailer.algo == AlgoNone {
-		return w.rawW.Write(p)
+		n, err := w.rawW.Write(p)
+		if err != nil {
+			return n, err
+		}
+		w.rawOff += int64(n)
+		return n, nil
 	}
 
 	// Handle compressed stream.
@@ -94,8 +99,8 @@ func (w *writer) Close() error {
 	// Handle trailer of uncompressed file.
 	if w.trailer.algo == AlgoNone {
 		var trailerSizeBuf = make([]byte, TrailerSize)
+		w.trailer.maxFileOffset = uint64(w.rawOff)
 		w.trailer.marshal(trailerSizeBuf)
-
 		_, err := w.rawW.Write(trailerSizeBuf)
 		if err != nil {
 			return err
@@ -128,6 +133,7 @@ func (w *writer) Close() error {
 	// Write trailer buffer (algo, chunksize, indexsize)
 	// at the end of file and close the stream.
 	var trailerSizeBuf = make([]byte, TrailerSize)
+	w.trailer.maxFileOffset = uint64(w.rawOff)
 	w.trailer.marshal(trailerSizeBuf)
 
 	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {
