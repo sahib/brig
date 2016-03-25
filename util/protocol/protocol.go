@@ -125,3 +125,51 @@ func (p *Protocol) Recv(resp proto.Message) error {
 
 	return nil
 }
+
+// ProtocolEncoder is a utility that uses `Protocol` to
+// encode an arbitary protobuf message to a byte slice.
+type ProtocolEncoder struct {
+	p *Protocol
+	b *bytes.Buffer
+}
+
+// NewProtocolEncoder returns a valid ProtocolEncoder, which
+// will compress it's data when flagged accordingly.
+func NewProtocolEncoder(compress bool) *ProtocolEncoder {
+	b := &bytes.Buffer{}
+	return &ProtocolEncoder{p: NewProtocolWriter(b, compress), b: b}
+}
+
+// Encode returns a byte representation of `msg`.
+func (pe *ProtocolEncoder) Encode(msg proto.Message) ([]byte, error) {
+	if err := pe.p.Send(msg); err != nil {
+		return nil, err
+	}
+
+	data := pe.b.Bytes()
+	pe.b.Reset()
+	return data, nil
+}
+
+// ProtocolDecoder is a utility that uses `Protocol` to
+// decode a byte representation of a message to a protobuf message.
+type ProtocolDecoder struct {
+	p *Protocol
+}
+
+// NewProtocolDecoder returns a new ProtocolDecoder which
+// decompresses the data passed into it if needed.
+func NewProtocolDecoder(decompress bool) *ProtocolDecoder {
+	return &ProtocolDecoder{p: NewProtocolReader(nil, decompress)}
+}
+
+// Decode decodes `data` and writes the result into `msg`.
+func (pd *ProtocolDecoder) Decode(msg proto.Message, data []byte) error {
+	pd.p.r = bytes.NewReader(data)
+
+	if err := pd.p.Recv(msg); err != nil {
+		return err
+	}
+
+	return nil
+}

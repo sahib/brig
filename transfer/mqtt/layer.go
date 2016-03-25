@@ -28,12 +28,16 @@ type Layer struct {
 	ctx context.Context
 	// cancel interrupts `ctx`.
 	cancel context.CancelFunc
-	// TODO: Explain
-	mu sync.Mutex
-
+	// handler map for RegisterHandler
 	handlers map[wire.RequestType]transfer.HandlerFunc
-	respbox  map[int64]chan *wire.Response
-	respctr  int64
+	// Lock for respbox and respctr
+	mu sync.Mutex
+	// respbox holds all open channels that may be filled
+	// with a response. Channels will be deleted after a certain time.
+	// Acess is locked by `mu`.
+	respbox map[int64]chan *wire.Response
+	// respctr is a running counter for responses
+	respctr int64
 }
 
 func NewLayer(self id.Peer, brokerPort int) transfer.Layer {
@@ -123,7 +127,6 @@ func (lay *Layer) Connect() (err error) {
 		return nil
 	}
 
-	// TODO: Pass correct port in
 	srv, err := newServer(lay.port)
 	if err != nil {
 		return

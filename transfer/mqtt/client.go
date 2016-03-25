@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/bkaradzic/go-lz4"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
@@ -58,7 +59,7 @@ func (cv *client) heartbeat(msg, ack message.Message, err error) error {
 		return err
 	}
 
-	// BEAT IT, JUST BEAT IT!
+	// BEAT IT, JUST BEAT IT! (Sorry, catchy tune.)
 	cv.lastHearbeat = time.Now()
 	return nil
 }
@@ -79,6 +80,33 @@ func (cv *client) notifyStatus(status string) error {
 	)
 }
 
+func payloadToProto(msg proto.Message, data []byte) error {
+	decompData, err := lz4.Decode(data, data)
+	if err != nil {
+		return err
+	}
+
+	if err := proto.Unmarshal(decompData, msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func protoToPayload(msg proto.Message) ([]byte, error) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	compData, err := lz4.Encode(data, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return compData, nil
+}
+
 func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error {
 	if !cv.execRequests {
 		return nil
@@ -92,7 +120,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	reqData := msg.Payload()
 	req := &wire.Request{}
 
-	if err := proto.Unmarshal(reqData, req); err != nil {
+	if err := payloadToProto(req, reqData); err != nil {
 		return err
 	}
 
@@ -121,9 +149,8 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	resp.ID = proto.Int64(req.GetID())
 	resp.ReqType = req.GetReqType().Enum()
 
-	respData, err := proto.Marshal(resp)
+	respData, err := protoToPayload(resp)
 	if err != nil {
-		fmt.Println("proto failed")
 		log.Debugf("Invalid proto response: %v", err)
 		return err
 	}
@@ -167,7 +194,7 @@ func (cv *client) handleBroadcast(msg *message.PublishMessage) error {
 
 func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	resp := &wire.Response{}
-	if err := proto.Unmarshal(msg.Payload(), resp); err != nil {
+	if err := payloadToProto(resp, msg.Payload()); err != nil {
 		return err
 	}
 
@@ -254,7 +281,7 @@ func (cv *client) disconnect() error {
 func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error {
 	respnotify := cv.layer.addReqRespPair(req)
 
-	data, err := proto.Marshal(req)
+	data, err := protoToPayload(req)
 	if err != nil {
 		return err
 	}
