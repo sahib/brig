@@ -40,6 +40,8 @@ func (w *writer) flushBuffer(flushSize int) (int, error) {
 	// Add record with start offset of the current chunk.
 	w.addToIndex()
 
+	w.zipW = snappy.NewWriter(io.MultiWriter(w.rawW, w.sizeAcc))
+
 	// Compress and flush the current chunk.
 	rawN, err := w.zipW.Write(w.chunkBuf.Next(flushSize))
 	if err != nil {
@@ -82,7 +84,6 @@ func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
 	s := &util.SizeAccumulator{}
 	return &writer{
 		sizeAcc:  s,
-		zipW:     snappy.NewWriter(io.MultiWriter(w, s)),
 		rawW:     w,
 		chunkBuf: &bytes.Buffer{},
 		trailer:  &trailer{algo: algo},
