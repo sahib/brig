@@ -84,11 +84,14 @@ type reader struct {
 	// Structure with parsed trailer.
 	trailer *trailer
 
-	// Current seek offset in the compressed stream
+	// Current seek offset in the compressed stream.
 	rawSeekOffset int64
 
-	// Current seek offset in the uncompressed stream
+	// Current seek offset in the uncompressed stream.
 	zipSeekOffset int64
+
+	// Marker to identify initial read.
+	isInitialRead bool
 }
 
 func (r *reader) Seek(destOff int64, whence int) (int64, error) {
@@ -113,31 +116,24 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	}
 
 	// Check if given raw offset equals current offset.
-	prevRecord, _ := r.chunkLookup(destOff, true)
-	// if err != nil || currRawOff == destOff {
-	// 	return currRawOff, err
-	// }
+	if r.zipSeekOffset == destOff {
+		return destOff, nil
+	}
 
-	//currRecord, _ := r.chunkLookup(currRawOff, false)
-	// if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
-	//return 0, err
-	//}
-	r.rawSeekOffset = prevRecord.zipOff
+	destRecord, _ := r.chunkLookup(destOff, true)
+	currRecord, _ := r.chunkLookup(r.zipSeekOffset, true)
+
+	r.rawSeekOffset = destRecord.zipOff
 	r.zipSeekOffset = destOff
 
-	// Don't re-read if offset is in current chunk.
-	// if currRecord.rawOff == prevRecord.rawOff {
-	// 	if _, err := r.readZipChunk(); err != nil {
-	// 		return 0, err
-	// 	}
-	// }
-
-	if _, err := r.readZipChunk(); err != nil {
-		return 0, err
+	//Don't re-read if offset is in current chunk.
+	if currRecord.rawOff != destRecord.rawOff || !r.isInitialRead {
+		if _, err := r.readZipChunk(); err != nil {
+			return 0, err
+		}
 	}
-	//fmt.Println(r.index)
-	toRead := destOff - prevRecord.rawOff
-	//fmt.Println("Seek", toRead, destOff, prevRecord.zipOff)
+
+	toRead := destOff - destRecord.rawOff
 	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
 		return 0, err
 	}
@@ -329,6 +325,7 @@ func (r *reader) readZipChunk() (int64, error) {
 	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
 	r.rawSeekOffset = currRecord.zipOff
 	r.zipSeekOffset = prevRecord.rawOff
+	r.isInitialRead = false
 	return n, err
 }
 
