@@ -36,23 +36,53 @@ func (w *writer) addToIndex() {
 	w.index = append(w.index, record{a, b})
 }
 
-func (w *writer) flushBuffer(flushSize int) (int, error) {
+func (w *writer) flushBuffer(data []byte) error {
+
+	if len(data) <= 0 {
+		return nil
+	}
+
 	// Add record with start offset of the current chunk.
 	w.addToIndex()
 
 	w.zipW = snappy.NewWriter(io.MultiWriter(w.rawW, w.sizeAcc))
 
 	// Compress and flush the current chunk.
-	rawN, err := w.zipW.Write(w.chunkBuf.Next(flushSize))
+	rawN, err := w.zipW.Write(data)
 	if err != nil {
-		return rawN, err
+		return err
 	}
 
 	// Update offset for the current chunk. The compressed data
 	// offset is updated in background using a SizeAccumulator
 	// in combination with a MultiWriter.
 	w.rawOff += int64(rawN)
-	return rawN, nil
+	return nil
+}
+
+func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
+	read := 0
+	buf := [MaxChunkSize]byte{}
+	for {
+		n, rerr := r.Read(buf[:])
+		read += n
+		if rerr != nil && rerr != io.EOF {
+			return int64(read), rerr
+		}
+
+		var werr error
+		if w.trailer.algo == AlgoNone {
+			_, werr = w.Write(buf[:n])
+		} else {
+			werr = w.flushBuffer(buf[:n])
+		}
+		if werr != nil && werr != io.EOF {
+			return int64(read), werr
+		}
+		if werr == io.EOF || rerr == io.EOF {
+			return int64(read), nil
+		}
+	}
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
@@ -76,7 +106,7 @@ func (w *writer) Write(p []byte) (n int, err error) {
 			break
 		}
 
-		if _, err := w.flushBuffer(MaxChunkSize); err != nil {
+		if err := w.flushBuffer(w.chunkBuf.Next(MaxChunkSize)); err != nil {
 			return 0, err
 		}
 		p = p[n:]
@@ -110,7 +140,7 @@ func (w *writer) Close() error {
 	}
 
 	// Write remaining bytes left in buffer and update index.
-	if _, err := w.flushBuffer(w.chunkBuf.Len()); err != nil {
+	if err := w.flushBuffer(w.chunkBuf.Bytes()); err != nil {
 		return err
 	}
 	w.addToIndex()
