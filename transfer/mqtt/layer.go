@@ -142,7 +142,6 @@ func (lay *Layer) Connect() (err error) {
 	}
 
 	lay.srv = srv
-	log.Debugf("MQTT broker running on port %d", lay.port)
 
 	var lastError error
 	own, err := newClient(lay, lay.self, true)

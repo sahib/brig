@@ -141,8 +141,6 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 		cv.layer.self.Hash(),
 	)
 
-	fmt.Println("Publish response back to", respTopic)
-
 	// Publish response:
 	if err := cv.publish(respData, []byte(respTopic)); err != nil {
 		return err
@@ -211,7 +209,7 @@ func (cv *client) connect(addr net.Addr) error {
 	msg.SetClientId(cv.formatClientID())
 	msg.SetKeepAlive(300)
 
-	// Credentials:
+	// Credentials: (TODO)
 	msg.SetUsername([]byte("elch"))
 	msg.SetPassword([]byte("wald"))
 
@@ -238,11 +236,9 @@ func (cv *client) connect(addr net.Addr) error {
 		topicHandlers["request/+"] = cv.handleRequests
 	}
 
-	fmt.Println("Im ", cv.layer.self.Hash())
 	for name, handler := range topicHandlers {
 		submsg := message.NewSubscribeMessage()
 		submsg.AddTopic(cv.peerTopic(name), 2)
-		fmt.Println("  Subscribing to", string(cv.peerTopic(name)))
 
 		// There does not seem to be an easier way to register
 		// different callbacks per
@@ -265,8 +261,41 @@ func (cv *client) disconnect() error {
 		return nil
 	}
 
-	if err := cv.notifyStatus("offline"); err != nil {
-		log.Warningf("Could not publish an offline notify: %v", err)
+	statusData, statusTopic := cv.statusMessage("offline")
+	pubmsg := message.NewPublishMessage()
+	pubmsg.SetTopic(statusTopic)
+	pubmsg.SetPayload(statusData)
+	pubmsg.SetQoS(2)
+
+	done := make(chan bool)
+
+	err := cv.client.Publish(pubmsg, func(_, _ message.Message, _ error) error {
+		// OnCompleteFunc is called once broker acknowledged the message.
+		// Still, surgemq seems to a little bit of time before disconnecting
+		// fully to prevent weird messages (about closed connections) in the log.
+		time.Sleep(100 * time.Millisecond)
+		done <- true
+		return nil
+	})
+
+	if err != nil {
+		log.Warningf("Could not publish status notify.")
+		log.Warningf("Client might appear still online to others.")
+
+		// Just in case:
+		done <- false
+	}
+
+	delete(cv.layer.tab, cv.peer.Hash())
+
+	// Give notifyStatus a short bit of time to finish
+	timeout := time.NewTimer(2 * time.Second)
+
+	select {
+	case <-done:
+		break
+	case <-timeout.C:
+		log.Warningf("Could not send offline notify: timeout")
 	}
 
 	cv.client.Disconnect()

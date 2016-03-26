@@ -213,13 +213,15 @@ func TestIsOnline(t *testing.T) {
 			return
 		}
 
-		if _, err := layA.Talk(RslvB); err != nil {
+		cnvB, err := layA.Talk(RslvB)
+		if err != nil {
 			t.Errorf("Talk(bob) failed: %v", err)
 			return
 		}
 
-		if _, err := layB.Talk(RslvA); err != nil {
-			t.Errorf("Talk(bob) failed: %v", err)
+		cnvA, err := layB.Talk(RslvA)
+		if err != nil {
+			t.Errorf("Talk(alice) failed: %v", err)
 			return
 		}
 
@@ -230,6 +232,16 @@ func TestIsOnline(t *testing.T) {
 
 		if !layB.IsOnline(PeerA) {
 			t.Errorf("Bob does not see Alice online.")
+			return
+		}
+
+		if err := cnvA.Close(); err != nil {
+			t.Errorf("Closing conversation failed")
+			return
+		}
+
+		if err := cnvB.Close(); err != nil {
+			t.Errorf("Closing conversation failed")
 			return
 		}
 	})
