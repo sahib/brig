@@ -8,7 +8,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/bkaradzic/go-lz4"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
@@ -18,9 +17,13 @@ import (
 )
 
 type client struct {
-	layer        *Layer
-	client       *service.Client
-	peer         id.Peer
+	layer  *Layer
+	client *service.Client
+	peer   id.Peer
+
+	// execRequests is only true for the `own` client
+	// of `layer`. It will receive commands and process
+	// them and also process status messages.
 	execRequests bool
 
 	// A unique client id, used for the mqtt id.
@@ -73,38 +76,15 @@ func (cv *client) publish(data []byte, topic []byte) error {
 	return cv.client.Publish(pubmsg, cv.heartbeat)
 }
 
+func (cv *client) statusMessage(status string) ([]byte, []byte) {
+	data := []byte(fmt.Sprintf("%s:%s", status, cv.layer.self.ID()))
+	topic := cv.peerTopic("status/" + cv.layer.self.Hash())
+	return data, topic
+}
+
 func (cv *client) notifyStatus(status string) error {
-	return cv.publish(
-		[]byte(status),
-		cv.peerTopic("status/"+cv.layer.self.Hash()),
-	)
-}
-
-func payloadToProto(msg proto.Message, data []byte) error {
-	decompData, err := lz4.Decode(data, data)
-	if err != nil {
-		return err
-	}
-
-	if err := proto.Unmarshal(decompData, msg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func protoToPayload(msg proto.Message) ([]byte, error) {
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	compData, err := lz4.Encode(data, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return compData, nil
+	data, topic := cv.statusMessage(status)
+	return cv.publish(data, topic)
 }
 
 func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error {
@@ -129,7 +109,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 		return fmt.Errorf("No such request handler: %d", req.GetReqType())
 	}
 
-	resp, err := handler(cv.layer, req)
+	resp, err := handler(req)
 	if err != nil {
 		return err
 	}
@@ -172,15 +152,33 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 }
 
 func (cv *client) handleStatus(msg *message.PublishMessage) error {
-	data := msg.Payload()
-
-	parsed := bytes.SplitN(msg.Topic(), []byte{'/'}, 3)
-	if len(parsed) != 3 {
+	parsedTopic := bytes.SplitN(msg.Topic(), []byte{'/'}, 3)
+	if len(parsedTopic) != 3 {
 		return fmt.Errorf("Invalid online notification: %s", msg.Topic())
 	}
 
-	// TODO: Somehow update Layer's online infos.
-	fmt.Printf("# %s is going %s\n", parsed[2], string(data))
+	data := msg.Payload()
+	parsedData := bytes.SplitN(data, []byte{':'}, 2)
+	if len(parsedData) != 2 {
+		return fmt.Errorf("Invalid online notification data: %s", data)
+	}
+
+	hash, status := string(parsedTopic[2]), string(parsedData[0])
+
+	switch status {
+	case "offline":
+		// Remove the conversation from the tab and close it.
+		// User will get a EOF on the next operation.
+		if client, ok := cv.layer.tab[hash]; ok {
+			if err := client.Close(); err != nil {
+				log.Warningf("Could not close offline client: %v", err)
+			}
+			delete(cv.layer.tab, hash)
+		}
+	default:
+		return fmt.Errorf("Invalid status message: %s", status)
+	}
+
 	return nil
 }
 
@@ -199,7 +197,6 @@ func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	}
 
 	// Send the response to the requesting client:
-	fmt.Println("Handle response", resp)
 	if err := cv.layer.forwardResponse(resp); err != nil {
 		log.Warningf("forward failed: %v", err)
 	}
@@ -213,17 +210,16 @@ func (cv *client) connect(addr net.Addr) error {
 	msg.SetCleanSession(true)
 	msg.SetClientId(cv.formatClientID())
 	msg.SetKeepAlive(300)
-	msg.SetWillQos(1)
 
-	// Where to publish our death:
-	msg.SetWillTopic(cv.peerTopic("status"))
-	msg.SetWillMessage([]byte(
-		fmt.Sprintf(
-			"%s-%s",
-			cv.layer.self.Hash(),
-			"offline",
-		),
-	))
+	// Credentials:
+	msg.SetUsername([]byte("elch"))
+	msg.SetPassword([]byte("wald"))
+
+	// Plan for our own death:
+	statusData, statusTopic := cv.statusMessage("offline")
+	msg.SetWillTopic(statusTopic)
+	msg.SetWillMessage(statusData)
+	msg.SetWillQos(1)
 
 	client := &service.Client{}
 
@@ -279,6 +275,10 @@ func (cv *client) disconnect() error {
 }
 
 func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error {
+	if cv.client == nil {
+		return transfer.ErrOffline
+	}
+
 	respnotify := cv.layer.addReqRespPair(req)
 
 	data, err := protoToPayload(req)

@@ -22,8 +22,8 @@ type Layer struct {
 	port int
 	// own is the client connected to srv
 	own *client
-	// tab maps IDs top open conversations
-	tab map[id.ID]*client
+	// tab maps peer hashes to open conversations
+	tab map[string]*client
 	// ctx is passed to long-running operations that may timeout.
 	ctx context.Context
 	// cancel interrupts `ctx`.
@@ -31,7 +31,7 @@ type Layer struct {
 	// handler map for RegisterHandler
 	handlers map[wire.RequestType]transfer.HandlerFunc
 	// Lock for respbox and respctr
-	mu sync.Mutex
+	resplock sync.Mutex
 	// respbox holds all open channels that may be filled
 	// with a response. Channels will be deleted after a certain time.
 	// Acess is locked by `mu`.
@@ -47,7 +47,7 @@ func NewLayer(self id.Peer, brokerPort int) transfer.Layer {
 		self:     self,
 		ctx:      ctx,
 		cancel:   cancel,
-		tab:      make(map[id.ID]*client),
+		tab:      make(map[string]*client),
 		handlers: make(map[wire.RequestType]transfer.HandlerFunc),
 		respbox:  make(map[int64]chan *wire.Response),
 		respctr:  0,
@@ -69,7 +69,7 @@ func (lay *Layer) Talk(rslv id.Resolver) (transfer.Conversation, error) {
 		return nil, err
 	}
 
-	// TODO: This is brute force.
+	// TODO: This is kinda brute force.
 	var lastError error
 
 	for _, addr := range addrs {
@@ -82,31 +82,34 @@ func (lay *Layer) Talk(rslv id.Resolver) (transfer.Conversation, error) {
 
 	if lastError != nil {
 		cnv = nil
+	} else {
+		lay.tab[cnv.peer.Hash()] = cnv
 	}
 
 	return cnv, lastError
 }
 
-func (lay *Layer) IsOnline(peer id.ID) (bool, error) {
+func (lay *Layer) IsOnline(peer id.Peer) bool {
 	if !lay.IsOnlineMode() {
-		return false, transfer.ErrOffline
+		return false
 	}
 
-	if peer == lay.self.ID() {
-		return true, nil
+	if peer.Hash() == lay.self.Hash() {
+		return true
 	}
 
-	client, ok := lay.tab[peer]
+	client, ok := lay.tab[peer.Hash()]
 	if !ok {
-		return false, fmt.Errorf("No peer with that ID: %s", peer)
+		return false
 	}
 
 	reachable, err := client.ping()
 	if err != nil {
-		return false, err
+		log.Debugf("Ping failed: %v", err)
+		return false
 	}
 
-	return reachable, nil
+	return reachable
 }
 
 func (lay *Layer) IsOnlineMode() bool {
@@ -114,7 +117,9 @@ func (lay *Layer) IsOnlineMode() bool {
 }
 
 func (lay *Layer) Broadcast(req *wire.Request) error {
-	data, err := proto.Marshal(req)
+	req.ID = proto.Int64(-1)
+
+	data, err := protoToPayload(req)
 	if err != nil {
 		return err
 	}
@@ -174,7 +179,7 @@ func (lay *Layer) Disconnect() (err error) {
 		return
 	}
 
-	lay.tab = make(map[id.ID]*client)
+	lay.tab = make(map[string]*client)
 	lay.cancel()
 	lay.ctx, lay.cancel = context.WithCancel(context.Background())
 	lay.srv = nil
@@ -194,8 +199,8 @@ func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.Handler
 }
 
 func (lay *Layer) addReqRespPair(req *wire.Request) chan *wire.Response {
-	lay.mu.Lock()
-	defer lay.mu.Unlock()
+	lay.resplock.Lock()
+	defer lay.resplock.Unlock()
 
 	respnotify := make(chan *wire.Response)
 	oldCounter := lay.respctr
@@ -208,17 +213,17 @@ func (lay *Layer) addReqRespPair(req *wire.Request) chan *wire.Response {
 	// if no response was received in a timely fashion.
 	go func() {
 		time.Sleep(20 * time.Second)
-		lay.mu.Lock()
+		lay.resplock.Lock()
 		delete(lay.respbox, oldCounter)
-		lay.mu.Unlock()
+		lay.resplock.Unlock()
 	}()
 
 	return respnotify
 }
 
 func (lay *Layer) forwardResponse(resp *wire.Response) error {
-	lay.mu.Lock()
-	defer lay.mu.Unlock()
+	lay.resplock.Lock()
+	defer lay.resplock.Unlock()
 
 	respnotify, ok := lay.respbox[resp.GetID()]
 
@@ -235,13 +240,13 @@ func (lay *Layer) forwardResponse(resp *wire.Response) error {
 
 func (lay *Layer) Wait() error {
 	for {
-		lay.mu.Lock()
+		lay.resplock.Lock()
 		// Timeout in addReqRespPair ensures that
 		// lay.respbox will drain with time.
 		if len(lay.respbox) == 0 {
 			return nil
 		}
-		lay.mu.Unlock()
+		lay.resplock.Unlock()
 
 		time.Sleep(50 * time.Millisecond)
 	}

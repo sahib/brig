@@ -14,6 +14,7 @@ import (
 type authenticator struct{}
 
 func (au *authenticator) Authenticate(id string, cred interface{}) error {
+	fmt.Printf("ID %v is registering with cred %v (%T)\n", id, cred, cred)
 	return nil
 }
 
@@ -49,10 +50,14 @@ func (srv *server) connect() (err error) {
 		TopicsProvider:   "mem", // keeps topic subscriptions in memory
 	}
 
-	log.Infof("Starting server...")
+	log.Infof("Starting MQTT broker on port %d...", srv.port)
 	go func() {
 		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://:%d", srv.port))
-		log.Infof("Server stopped...: %v", err)
+		if err != nil {
+			log.Warningf("Broker running on port %d died: %v", srv.port, err)
+		} else {
+			log.Infof("Broker running on port %d exited", srv.port)
+		}
 
 		// TODO: Initial publish of topcis needed?
 		srv.srv = nil

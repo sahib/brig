@@ -1,7 +1,7 @@
 package mqtt
 
 import (
-	"fmt"
+	"bytes"
 	"net"
 	"testing"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/disorganizer/brig/util/testutil"
 )
 
 type DummyResolver struct {
@@ -64,7 +65,7 @@ func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
 	f()
 
 	if t.Failed() {
-		t.Errorf("Handler for `%s` failed; see output above", name)
+		t.Errorf("Handler for `%s` failed; see output above.", name)
 	}
 
 	if err := lay.Close(); err != nil {
@@ -73,50 +74,65 @@ func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
 	}
 }
 
-func TestIO(t *testing.T) {
+func withBadRomance(t *testing.T, f func(layA, layB transfer.Layer)) {
 	layA := NewLayer(PeerA, PortA)
 	layB := NewLayer(PeerB, PortB)
 
 	withOnlineLayer(t, layA, func() {
 		withOnlineLayer(t, layB, func() {
-			layB.RegisterHandler(
-				wire.RequestType_FETCH,
-				func(_ transfer.Layer, req *wire.Request) (*wire.Response, error) {
-					fmt.Println("processing response", req)
-					return &wire.Response{Data: []byte("World")}, nil
-				},
-			)
+			f(layA, layB)
+		})
+	})
+}
 
-			// Let's talk to shy bob:
-			cnv, err := layA.Talk(RslvB)
-			if err != nil {
-				t.Errorf("Talk(bob) failed: %v", err)
-				return
-			}
+func TestIO(t *testing.T) {
+	reqData := testutil.CreateDummyBuf(4 * 1024 * 1024)
+	rspData := testutil.CreateDummyBuf(8 * 1024 * 1024)
 
-			// Send some dummy request:
-			req := &wire.Request{
-				ReqType:       wire.RequestType_FETCH.Enum(),
-				BroadcastData: []byte("Hello World!"),
-			}
+	withBadRomance(t, func(layA, layB transfer.Layer) {
+		layB.RegisterHandler(
+			// FETCH is arbitary; Layer does not handle anything of fetch logic.
+			wire.RequestType_FETCH,
+			func(req *wire.Request) (*wire.Response, error) {
+				if !bytes.Equal(req.GetBroadcastData(), reqData) {
+					t.Errorf("Request data differs between peers")
+				}
 
-			err = cnv.SendAsync(req, func(resp *wire.Response) {
-				fmt.Println("Response", resp)
-			})
+				return &wire.Response{Data: rspData}, nil
+			},
+		)
 
-			if err != nil {
-				t.Errorf("Send async failed: %v", err)
-				return
-			}
+		// Let's talk to shy bob:
+		cnv, err := layA.Talk(RslvB)
+		if err != nil {
+			t.Errorf("Talk(bob) failed: %v", err)
+			return
+		}
 
-			layA.Wait()
-			// time.Sleep(5 * time.Second)
+		// Send some dummy request:
+		req := &wire.Request{
+			ReqType:       wire.RequestType_FETCH.Enum(),
+			BroadcastData: reqData,
+		}
 
-			if err := cnv.Close(); err != nil {
-				t.Errorf("Close failed: %v", err)
-				return
+		err = cnv.SendAsync(req, func(rsp *wire.Response) {
+			if !bytes.Equal(rsp.GetData(), rspData) {
+				t.Errorf("Response data differs between peers")
 			}
 		})
+
+		if err != nil {
+			t.Errorf("Send async failed: %v", err)
+			return
+		}
+
+		// Wait for requests to finish:
+		layA.Wait()
+
+		if err := cnv.Close(); err != nil {
+			t.Errorf("Close failed: %v", err)
+			return
+		}
 	})
 }
 
@@ -124,23 +140,96 @@ func TestOnOff(t *testing.T) {
 	layA := NewLayer(PeerA, PortA)
 
 	withOnlineLayer(t, layA, func() {
-		if err := layA.Disconnect(); err != nil {
-			t.Errorf("Disconnect failed: %v", err)
+		for i := 0; i < 10; i++ {
+			if err := layA.Disconnect(); err != nil {
+				t.Errorf("Disconnect failed: %v", err)
+				return
+			}
+
+			if layA.IsOnlineMode() {
+				t.Errorf("alice is online after disconnect")
+				return
+			}
+
+			if err := layA.Connect(); err != nil {
+				t.Errorf("Disconnect failed: %v", err)
+				return
+			}
+
+			if !layA.IsOnlineMode() {
+				t.Errorf("alice is offline after connect")
+				return
+			}
+		}
+	})
+}
+
+func TestBroadcast(t *testing.T) {
+	withBadRomance(t, func(layA, layB transfer.Layer) {
+		broadcastData := testutil.CreateDummyBuf(8 * 1024 * 1024)
+
+		layB.RegisterHandler(
+			wire.RequestType_FETCH,
+			func(req *wire.Request) (*wire.Response, error) {
+				if !bytes.Equal(req.GetBroadcastData(), broadcastData) {
+					t.Errorf("Broadcast data differs between peers")
+				}
+
+				// Broadcasts do not need to be answered:
+				return nil, nil
+			},
+		)
+
+		req := &wire.Request{
+			ReqType:       wire.RequestType_FETCH.Enum(),
+			BroadcastData: broadcastData,
+		}
+
+		if err := layA.Broadcast(req); err != nil {
+			t.Errorf("Broadcast failed: %v", err)
+			return
+		}
+	})
+}
+
+func TestIsOnline(t *testing.T) {
+	withBadRomance(t, func(layA, layB transfer.Layer) {
+		if !layA.IsOnline(PeerA) {
+			t.Errorf("Alice does not see herself online.")
+			return
+		}
+		if !layB.IsOnline(PeerB) {
+			t.Errorf("Bob does not see herself online.")
 			return
 		}
 
-		if layA.IsOnlineMode() {
-			t.Errorf("alice is online after disconnect")
+		if layA.IsOnline(PeerB) {
+			t.Errorf("Alice can see Bob without talking to him.")
 			return
 		}
 
-		if err := layA.Connect(); err != nil {
-			t.Errorf("Disconnect failed: %v", err)
+		if layB.IsOnline(PeerA) {
+			t.Errorf("Bob can see Alice without talking to him.")
 			return
 		}
 
-		if !layA.IsOnlineMode() {
-			t.Errorf("alice is offline after connect")
+		if _, err := layA.Talk(RslvB); err != nil {
+			t.Errorf("Talk(bob) failed: %v", err)
+			return
+		}
+
+		if _, err := layB.Talk(RslvA); err != nil {
+			t.Errorf("Talk(bob) failed: %v", err)
+			return
+		}
+
+		if !layA.IsOnline(PeerB) {
+			t.Errorf("Alice does not see Bob online.")
+			return
+		}
+
+		if !layB.IsOnline(PeerA) {
+			t.Errorf("Bob does not see Alice online.")
 			return
 		}
 	})
