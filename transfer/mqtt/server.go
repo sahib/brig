@@ -14,6 +14,7 @@ import (
 type authenticator struct{}
 
 func (au *authenticator) Authenticate(id string, cred interface{}) error {
+	fmt.Printf("ID %v is registering with cred %v (%T)\n", id, cred, cred)
 	return nil
 }
 
@@ -35,7 +36,7 @@ func newServer(port int) (*server, error) {
 
 func (srv *server) addr() net.Addr {
 	return &net.TCPAddr{
-		IP:   net.IP{0, 0, 0, 0},
+		IP:   net.IP{127, 0, 0, 1},
 		Port: srv.port,
 	}
 }
@@ -49,10 +50,14 @@ func (srv *server) connect() (err error) {
 		TopicsProvider:   "mem", // keeps topic subscriptions in memory
 	}
 
-	log.Infof("Starting server...")
+	log.Infof("Starting MQTT broker on port %d...", srv.port)
 	go func() {
-		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://0.0.0.0:%d", srv.port))
-		log.Infof("Server stopped...: %v", err)
+		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://:%d", srv.port))
+		if err != nil {
+			log.Warningf("Broker running on port %d died: %v", srv.port, err)
+		} else {
+			log.Infof("Broker running on port %d exited", srv.port)
+		}
 
 		// TODO: Initial publish of topcis needed?
 		srv.srv = nil
@@ -65,6 +70,10 @@ func (srv *server) connect() (err error) {
 
 func (srv *server) disconnect() error {
 	s := srv.srv
-	srv.srv = nil
-	return s.Close()
+	if s != nil {
+		srv.srv = nil
+		return s.Close()
+	}
+
+	return nil
 }

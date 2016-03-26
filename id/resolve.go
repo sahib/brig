@@ -11,6 +11,12 @@ import (
 	"golang.org/x/net/context"
 )
 
+// TODO: Proposal:
+// Parse the domain and register a ipfs block for that too.
+// auto discovery can limit the search to those then.
+// Also: register a common "brig" block, making discovery of all nodes
+// possible.
+
 type Peer interface {
 	ID() ID
 	Hash() string
@@ -34,17 +40,6 @@ func (ip *ipfsPeer) Hash() string {
 }
 
 type Addresses []net.Addr
-
-// func (addrs Addresses) Local() ma.Multiaddr {
-// 	// TODO: This is so stupid, it hurts.
-// 	for _, addr := range addrs {
-// 		if strings.Contains(addr.String(), "192.") {
-// 			return addr
-// 		}
-// 	}
-//
-// 	return nil
-// }
 
 type Resolver interface {
 	Resolve(ctx context.Context) (Addresses, error)

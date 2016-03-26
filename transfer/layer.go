@@ -6,7 +6,6 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -15,7 +14,7 @@ var (
 	ErrOffline = errors.New("Transfer layer is offline")
 )
 
-type AsyncFunc func(resp proto.Message)
+type AsyncFunc func(resp *wire.Response)
 
 // Conversation is a open channel to another peer
 // used to exchange metadata over protobuf messages.
@@ -29,6 +28,7 @@ type Conversation interface {
 	// but is usually wire.Request on the client side
 	// and wire.Response on the server side.
 	// `callback` will not be called if no answer was received.
+	// `callback` may be nil for fire-and-forget messages.
 	SendAsync(req *wire.Request, callback AsyncFunc) error
 
 	// Peer returns the peer we're talking to.
@@ -37,7 +37,7 @@ type Conversation interface {
 
 // HandlerFunc handles a single wire.Request and returns
 // a fitting wire.Response.
-type HandlerFunc func(Layer, *wire.Request) (*wire.Response, error)
+type HandlerFunc func(*wire.Request) (*wire.Response, error)
 
 // Layer is the interface that all metadata-networking layers
 // of brig have to fulfill.
@@ -49,13 +49,19 @@ type Layer interface {
 	// in order to authenticate itself.
 	//
 	// Talk() shall return ErrOffline when not in online mode.
-	// TODO pass additional credentials.
+	// TODO pass additional login credentials.
 	Talk(rslv id.Resolver) (Conversation, error)
 
-	// IsOnline shall return true if the peer knows as `id` is online and
+	// IsOnline shall return true if the peer knows as `peer` is online and
 	// responding. It is allowed that the implementation may cache the
-	// answer for a short time.
-	IsOnline(ident id.ID) (bool, error)
+	// answer for a short time, therefore changes might be visible only
+	// after a certain timeout.
+	//
+	// IsOnline only can give sensible answers when IsOnlineMode() is true
+	// and we're currently talking to this peer.
+	// If you want to "peek" if the other client is online, you have
+	// to do a Talk() before.
+	IsOnline(peer id.Peer) bool
 
 	// IsOnlineMode returns true if the layer is online and may respond
 	// to requests or send requests itself. It should be true after
@@ -79,6 +85,13 @@ type Layer interface {
 	// No answers will be collected.
 	// It's usecase is to send quick updates to all peers.
 	Broadcast(req *wire.Request) error
+
+	// Self returns the peer we're acting as.
+	Self() id.Peer
+
+	// Wait blocks until all requests were handled.
+	// It is mainly useful for debugging.
+	Wait() error
 }
 
 // TODO: Interface for authentication?

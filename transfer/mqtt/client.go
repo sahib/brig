@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -16,40 +17,44 @@ import (
 )
 
 type client struct {
-	layer         *Layer
-	client        *service.Client
-	peer          id.Peer
-	execRequests  bool
-	responseTopic string
+	layer  *Layer
+	client *service.Client
+	peer   id.Peer
+
+	// execRequests is only true for the `own` client
+	// of `layer`. It will receive commands and process
+	// them and also process status messages.
+	execRequests bool
+
+	// A unique client id, used for the mqtt id.
+	clientIdx uint32
 
 	// Last time we heard from our peer
 	// (not only for ping, but for all operations)
 	lastHearbeat time.Time
-
-	// I guess, that's a very "WAT" inducing type signature.
-	respbox map[int64]chan *wire.Response
-	respctr int64
 }
 
+var GlobalClientIdx = uint32(0)
+
 func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
+	defer atomic.AddUint32(&GlobalClientIdx, 1)
+
 	return &client{
-		layer:         lay,
-		client:        nil,
-		execRequests:  execRequests,
-		peer:          peer,
-		respbox:       make(map[int64]chan *wire.Response),
-		responseTopic: "response/" + lay.self.Hash(),
-		respctr:       0,
-		lastHearbeat:  time.Now(),
+		layer:        lay,
+		client:       nil,
+		execRequests: execRequests,
+		peer:         peer,
+		lastHearbeat: time.Now(),
+		clientIdx:    GlobalClientIdx,
 	}, nil
 }
 
 func (cv *client) peerTopic(sub string) []byte {
-	return []byte(fmt.Sprintf("%s/%s", cv.peer.Hash, sub))
+	return []byte(fmt.Sprintf("%s/%s", cv.peer.Hash(), sub))
 }
 
 func (cv *client) formatClientID() []byte {
-	return []byte(fmt.Sprintf("brig:%s", cv.peer.Hash))
+	return []byte(fmt.Sprintf("%s%d", cv.peer.Hash(), cv.clientIdx))
 }
 
 func (cv *client) heartbeat(msg, ack message.Message, err error) error {
@@ -57,7 +62,7 @@ func (cv *client) heartbeat(msg, ack message.Message, err error) error {
 		return err
 	}
 
-	// BEAT IT, JUST BEAT IT!
+	// BEAT IT, JUST BEAT IT! (Sorry, catchy tune.)
 	cv.lastHearbeat = time.Now()
 	return nil
 }
@@ -71,11 +76,15 @@ func (cv *client) publish(data []byte, topic []byte) error {
 	return cv.client.Publish(pubmsg, cv.heartbeat)
 }
 
+func (cv *client) statusMessage(status string) ([]byte, []byte) {
+	data := []byte(fmt.Sprintf("%s:%s", status, cv.layer.self.ID()))
+	topic := cv.peerTopic("status/" + cv.layer.self.Hash())
+	return data, topic
+}
+
 func (cv *client) notifyStatus(status string) error {
-	return cv.publish(
-		[]byte(status),
-		cv.peerTopic("status/"+cv.layer.self.Hash()),
-	)
+	data, topic := cv.statusMessage(status)
+	return cv.publish(data, topic)
 }
 
 func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error {
@@ -83,34 +92,59 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 		return nil
 	}
 
+	parts := bytes.SplitN(msg.Topic(), []byte{'/'}, 3)
+	if len(parts) < 3 {
+		return fmt.Errorf("Bad topic: %v", msg.Topic())
+	}
+
 	reqData := msg.Payload()
 	req := &wire.Request{}
 
-	if err := proto.Unmarshal(reqData, req); err != nil {
+	if err := payloadToProto(req, reqData); err != nil {
 		return err
 	}
 
-	handler, ok := cv.layer.handlers[req.GetType()]
+	handler, ok := cv.layer.handlers[req.GetReqType()]
 	if !ok {
-		return fmt.Errorf("No such request type: %d", req.GetType())
+		return fmt.Errorf("No such request handler: %d", req.GetReqType())
 	}
 
-	resp, err := handler(cv.layer, req)
+	resp, err := handler(req)
 	if err != nil {
 		return err
 	}
 
-	if !answer {
+	if !answer || (resp == nil && err == nil) {
 		return nil
 	}
 
-	respData, err := proto.Marshal(resp)
+	// Respond error back if any:
+	if resp == nil {
+		resp = &wire.Response{
+			Error: proto.String(err.Error()),
+		}
+	}
+
+	// Autofill the internal fields:
+	resp.ID = proto.Int64(req.GetID())
+	resp.ReqType = req.GetReqType().Enum()
+
+	respData, err := protoToPayload(resp)
 	if err != nil {
+		log.Debugf("Invalid proto response: %v", err)
 		return err
 	}
 
+	respTopic := fmt.Sprintf(
+		"%s/response/%s",
+		parts[2],
+		cv.layer.self.Hash(),
+	)
+
+	fmt.Println("Publish response back to", respTopic)
+
 	// Publish response:
-	if err := cv.publish(respData, cv.peerTopic(cv.responseTopic)); err != nil {
+	if err := cv.publish(respData, []byte(respTopic)); err != nil {
 		return err
 	}
 
@@ -118,15 +152,33 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 }
 
 func (cv *client) handleStatus(msg *message.PublishMessage) error {
-	data := msg.Payload()
-
-	parsed := bytes.SplitN(msg.Topic(), []byte("/"), 1)
-	if len(parsed) != 2 {
+	parsedTopic := bytes.SplitN(msg.Topic(), []byte{'/'}, 3)
+	if len(parsedTopic) != 3 {
 		return fmt.Errorf("Invalid online notification: %s", msg.Topic())
 	}
 
-	// TODO: Somehow update Layer's online infos.
-	fmt.Println("%s is going %s", parsed[1], string(data))
+	data := msg.Payload()
+	parsedData := bytes.SplitN(data, []byte{':'}, 2)
+	if len(parsedData) != 2 {
+		return fmt.Errorf("Invalid online notification data: %s", data)
+	}
+
+	hash, status := string(parsedTopic[2]), string(parsedData[0])
+
+	switch status {
+	case "offline":
+		// Remove the conversation from the tab and close it.
+		// User will get a EOF on the next operation.
+		if client, ok := cv.layer.tab[hash]; ok {
+			if err := client.Close(); err != nil {
+				log.Warningf("Could not close offline client: %v", err)
+			}
+			delete(cv.layer.tab, hash)
+		}
+	default:
+		return fmt.Errorf("Invalid status message: %s", status)
+	}
+
 	return nil
 }
 
@@ -140,17 +192,15 @@ func (cv *client) handleBroadcast(msg *message.PublishMessage) error {
 
 func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	resp := &wire.Response{}
-	if err := proto.Unmarshal(msg.Payload(), resp); err != nil {
+	if err := payloadToProto(resp, msg.Payload()); err != nil {
 		return err
 	}
 
-	respnotify, ok := cv.respbox[resp.GetID()]
-	if !ok {
-		// Probably not from us.
-		return nil
+	// Send the response to the requesting client:
+	if err := cv.layer.forwardResponse(resp); err != nil {
+		log.Warningf("forward failed: %v", err)
 	}
 
-	respnotify <- resp
 	return nil
 }
 
@@ -160,36 +210,39 @@ func (cv *client) connect(addr net.Addr) error {
 	msg.SetCleanSession(true)
 	msg.SetClientId(cv.formatClientID())
 	msg.SetKeepAlive(300)
+
+	// Credentials:
+	msg.SetUsername([]byte("elch"))
+	msg.SetPassword([]byte("wald"))
+
+	// Plan for our own death:
+	statusData, statusTopic := cv.statusMessage("offline")
+	msg.SetWillTopic(statusTopic)
+	msg.SetWillMessage(statusData)
 	msg.SetWillQos(1)
 
-	// Where to publish our death:
-	msg.SetWillTopic(cv.peerTopic("status"))
-	msg.SetWillMessage([]byte(
-		fmt.Sprintf(
-			"%s-%s",
-			cv.layer.self.Hash(),
-			"offline",
-		),
-	))
-
 	client := &service.Client{}
-	if err := client.Connect("tcp://"+addr.String(), msg); err != nil {
+
+	fullAddr := "tcp://" + addr.String()
+	if err := client.Connect(fullAddr, msg); err != nil {
 		return err
 	}
 
 	topicHandlers := map[string]func(msg *message.PublishMessage) error{
-		"status/+":       cv.handleStatus,
-		"broadcast":      cv.handleBroadcast,
-		cv.responseTopic: cv.handleResponse,
+		"broadcast":  cv.handleBroadcast,
+		"response/+": cv.handleResponse,
 	}
 
 	if cv.execRequests {
-		topicHandlers["request"] = cv.handleRequests
+		topicHandlers["status/+"] = cv.handleStatus
+		topicHandlers["request/+"] = cv.handleRequests
 	}
 
+	fmt.Println("Im ", cv.layer.self.Hash())
 	for name, handler := range topicHandlers {
 		submsg := message.NewSubscribeMessage()
 		submsg.AddTopic(cv.peerTopic(name), 2)
+		fmt.Println("  Subscribing to", string(cv.peerTopic(name)))
 
 		// There does not seem to be an easier way to register
 		// different callbacks per
@@ -222,15 +275,16 @@ func (cv *client) disconnect() error {
 }
 
 func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error {
-	data, err := proto.Marshal(req)
+	if cv.client == nil {
+		return transfer.ErrOffline
+	}
+
+	respnotify := cv.layer.addReqRespPair(req)
+
+	data, err := protoToPayload(req)
 	if err != nil {
 		return err
 	}
-
-	// Guard against mixed up sends and responses:
-	respnotify := make(chan *wire.Response)
-	cv.respbox[cv.respctr] = respnotify
-	cv.respctr++
 
 	// Start before publish to fix a very unlikely race.
 	go func() {
@@ -239,17 +293,16 @@ func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error
 
 		select {
 		case resp, ok := <-respnotify:
-			if resp != nil && ok {
+			if resp != nil && ok && handler != nil {
 				handler(resp)
 			}
 		case <-ticker.C:
 		}
-
-		// Remove the result channel again:
-		delete(cv.respbox, cv.respctr)
 	}()
 
-	if err := cv.publish(data, cv.peerTopic("request")); err != nil {
+	reqTopic := cv.peerTopic("request/" + cv.layer.self.Hash())
+	log.Debugf("Publish request on %s", reqTopic)
+	if err := cv.publish(data, reqTopic); err != nil {
 		return err
 	}
 
