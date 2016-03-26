@@ -12,7 +12,7 @@ var (
 const (
 	MaxChunkSize   = 64 * 1024
 	IndexChunkSize = 16
-	TrailerSize    = 16
+	TrailerSize    = 24
 )
 
 const (
@@ -30,21 +30,24 @@ type record struct {
 }
 
 type trailer struct {
-	algo      Algorithm
-	chunksize uint32
-	indexSize uint64
+	algo          Algorithm
+	chunksize     uint32
+	indexSize     uint64
+	maxFileOffset uint64
 }
 
 func (t *trailer) marshal(buf []byte) {
 	binary.LittleEndian.PutUint32(buf[0:4], uint32(t.algo))
 	binary.LittleEndian.PutUint32(buf[4:8], t.chunksize)
-	binary.LittleEndian.PutUint64(buf[8:], t.indexSize)
+	binary.LittleEndian.PutUint64(buf[8:16], t.indexSize)
+	binary.LittleEndian.PutUint64(buf[16:], t.maxFileOffset)
 }
 
 func (t *trailer) unmarshal(buf []byte) {
 	t.algo = Algorithm(binary.LittleEndian.Uint32(buf[0:4]))
 	t.chunksize = binary.LittleEndian.Uint32(buf[4:8])
-	t.indexSize = binary.LittleEndian.Uint64(buf[8:])
+	t.indexSize = binary.LittleEndian.Uint64(buf[8:16])
+	t.maxFileOffset = binary.LittleEndian.Uint64(buf[16:])
 }
 
 func (rc *record) marshal(buf []byte) {

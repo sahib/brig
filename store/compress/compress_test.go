@@ -2,6 +2,7 @@ package compress
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 
 var (
 	ZipFilePath = filepath.Join(os.TempDir(), "compressed.zip")
+	TestOffsets = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
+	TestSizes   = []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 )
 
 func openDest(t *testing.T, dest string) *os.File {
@@ -39,7 +42,7 @@ const (
 )
 
 func TestCompressDecompress(t *testing.T) {
-	sizes := []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1}
+	sizes := TestSizes
 	algos := []Algorithm{AlgoNone, AlgoSnappy}
 	for _, algo := range algos {
 		for _, size := range sizes {
@@ -51,6 +54,7 @@ func TestCompressDecompress(t *testing.T) {
 func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
+	testutil.Remover(t, ZipFilePath)
 	data := testutil.CreateDummyBuf(size)
 	zipFileDest := openDest(t, ZipFilePath)
 
@@ -73,7 +77,6 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 		return
 	}
 
-	defer zipFileDest.Close()
 	// Read compressed file into buffer.
 	dataUncomp := bytes.NewBuffer(nil)
 	dataFromZip := openSrc(t, ZipFilePath)
@@ -97,8 +100,8 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 }
 
 func TestSeek(t *testing.T) {
-	sizes := []int64{0, 1, 5, 10, 100, 200, 5000, C64K, C32K}
-	offsets := []int64{0, 1, 5, 10, 100, 200, 5000, C64K, C32K}
+	sizes := TestSizes
+	offsets := TestOffsets
 	for _, size := range sizes {
 		for _, off := range offsets {
 			testSeek(t, size, off)
@@ -106,9 +109,24 @@ func TestSeek(t *testing.T) {
 	}
 }
 
+func omit(data []byte, lim int) string {
+	lo := lim
+	if lo > len(data) {
+		lo = len(data)
+	}
+
+	hi := len(data) - lim
+	if hi < 0 {
+		hi = len(data)
+	}
+
+	return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
+}
+
 func testSeek(t *testing.T, size, offset int64) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
+	testutil.Remover(t, ZipFilePath)
 	data := testutil.CreateDummyBuf(size)
 	zipFileDest := openDest(t, ZipFilePath)
 
@@ -137,8 +155,8 @@ func testSeek(t *testing.T, size, offset int64) {
 
 	// Set specific offset before read.
 	_, err := zr.Seek(offset, os.SEEK_SET)
-	if err == io.EOF && offset <= size {
-		t.Errorf("Seek failed: %v", err)
+	if err == io.EOF && offset < size && offset > -1 {
+		t.Errorf("Seek failed even with EOF: %d <= %d", offset, size)
 		return
 	}
 	if err != io.EOF && err != nil {
@@ -156,23 +174,21 @@ func testSeek(t *testing.T, size, offset int64) {
 		return
 	}
 
-	// Set specific offset on raw data.
-	dataRaw := bytes.NewBuffer(nil)
-	rr := bytes.NewReader(data)
-	_, err = rr.Seek(offset, os.SEEK_SET)
-	if err != nil {
-		t.Errorf("Seek failed: %v", err)
-		return
-	}
-	// Read raw data at specific offset.
-	if _, err := io.Copy(dataRaw, rr); err != nil {
-		t.Errorf("Decompression failed: %v", err)
-		return
+	// Compare.
+	maxOffset := offset
+	if offset > size {
+		maxOffset = size
 	}
 
-	// Compare.
-	if !bytes.Equal(dataUncomp.Bytes(), dataRaw.Bytes()) {
+	if offset < 0 {
+		maxOffset = 0
+	}
+
+	got, want := dataUncomp.Bytes(), data[maxOffset:]
+	if !bytes.Equal(got, want) {
 		t.Error("Uncompressed data and input data does not match.")
+		t.Errorf("\tGOT:   %v", omit(got, 10))
+		t.Errorf("\tWANT:  %v", omit(want, 10))
 		return
 	}
 }

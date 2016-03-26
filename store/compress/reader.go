@@ -83,53 +83,62 @@ type reader struct {
 
 	// Structure with parsed trailer.
 	trailer *trailer
+
+	// Current seek offset in the compressed stream.
+	rawSeekOffset int64
+
+	// Current seek offset in the uncompressed stream.
+	zipSeekOffset int64
+
+	// Marker to identify initial read.
+	isInitialRead bool
 }
 
-func (r *reader) Seek(rawOff int64, whence int) (int64, error) {
+func (r *reader) Seek(destOff int64, whence int) (int64, error) {
+
+	if whence == os.SEEK_END {
+		if destOff > 0 {
+			return 0, io.EOF
+		}
+		return r.Seek(r.index[len(r.index)-1].rawOff+destOff, os.SEEK_SET)
+	}
+
+	if whence == os.SEEK_CUR {
+		return r.Seek(r.zipSeekOffset+destOff, os.SEEK_SET)
+	}
+
+	if destOff < 0 {
+		return 0, io.EOF
+	}
+
 	if err := r.parseHeaderIfNeeded(); err != nil {
 		return 0, err
 	}
 
-	if whence == os.SEEK_END {
-		if rawOff > 0 {
-			return 0, io.EOF
-		}
-		return r.Seek(r.index[len(r.index)-1].rawOff+rawOff, os.SEEK_SET)
-	}
-
-	if whence == os.SEEK_CUR {
-		currPos, err := r.rawR.Seek(0, os.SEEK_CUR)
-		if err != nil {
-			return currPos, err
-		}
-		return r.Seek(currPos+rawOff, os.SEEK_SET)
-	}
-
 	// Check if given raw offset equals current offset.
-	currRawOff, err := r.rawR.Seek(0, os.SEEK_CUR)
-	if err != nil || currRawOff == rawOff {
-		return currRawOff, err
+	if r.zipSeekOffset == destOff {
+		return destOff, nil
 	}
 
-	currRecord, _ := r.chunkLookup(currRawOff, true)
-	prevRecord, _ := r.chunkLookup(rawOff, true)
-	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
-		return 0, err
-	}
+	destRecord, _ := r.chunkLookup(destOff, true)
+	currRecord, _ := r.chunkLookup(r.zipSeekOffset, true)
 
-	// Don't re-read if offset is in current chunk.
-	if currRecord.rawOff == prevRecord.rawOff {
+	r.rawSeekOffset = destRecord.zipOff
+	r.zipSeekOffset = destOff
+
+	//Don't re-read if offset is in current chunk.
+	if currRecord.rawOff != destRecord.rawOff || !r.isInitialRead {
 		if _, err := r.readZipChunk(); err != nil {
 			return 0, err
 		}
 	}
 
-	toRead := rawOff - prevRecord.rawOff
+	toRead := destOff - destRecord.rawOff
 	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
-	return rawOff, nil
+	return destOff, nil
 }
 
 // Return start (prev offset) and end (curr offset) of the chunk currOff is
@@ -218,6 +227,8 @@ func (r *reader) parseHeaderIfNeeded() error {
 	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
+	r.rawSeekOffset = 0
+	r.zipSeekOffset = 0
 	return nil
 }
 
@@ -231,6 +242,7 @@ func (r *reader) Read(p []byte) (int, error) {
 	if r.trailer.algo == AlgoNone {
 		maxOff, errMax := r.maxOff(int64(len(p)))
 		n, err := r.rawR.Read(p[:maxOff])
+		r.zipSeekOffset += int64(n)
 		if err != nil {
 			return n, err
 		}
@@ -245,6 +257,7 @@ func (r *reader) Read(p []byte) (int, error) {
 			if err != nil {
 				return n, err
 			}
+			r.zipSeekOffset += int64(n)
 			read += n
 			p = p[n:]
 		}
@@ -261,29 +274,9 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-//TODO: Save maxOffset in trailer and read from trailer instead of SEEK.
 func (r *reader) maxOff(pSize int64) (int64, error) {
-	// get current position.
-	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return currOff, err
-	}
-
-	// get max offset (possition without trailer).
-	maxOff, err := r.rawR.Seek(-TrailerSize, os.SEEK_END)
-	if err != nil {
-		return maxOff, err
-	}
-
-	// go back to current offset.
-	_, err = r.rawR.Seek(currOff, os.SEEK_SET)
-	if err != nil {
-		return 0, err
-	}
-
-	// determinate max offset using.
-	if pSize+currOff > maxOff {
-		return maxOff - currOff, io.EOF
+	if pSize+r.zipSeekOffset > int64(r.trailer.maxFileOffset) {
+		return int64(r.trailer.maxFileOffset) - r.zipSeekOffset, io.EOF
 	}
 	return pSize, nil
 }
@@ -291,13 +284,9 @@ func (r *reader) maxOff(pSize int64) (int64, error) {
 func (r *reader) readZipChunk() (int64, error) {
 	// Get current position of the reader; offset of the compressed file.
 	r.chunkBuf.Reset()
-	currOff, err := r.rawR.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return 0, err
-	}
 
 	// Get the start and end record of the chunk currOff is located in.
-	prevRecord, currRecord := r.chunkLookup(currOff, false)
+	prevRecord, currRecord := r.chunkLookup(r.rawSeekOffset, false)
 	if currRecord == nil || prevRecord == nil {
 		return 0, ErrBadIndex
 	}
@@ -309,11 +298,14 @@ func (r *reader) readZipChunk() (int64, error) {
 	}
 
 	// Set reader to compressed offset.
-	if _, err = r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
+	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
 	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
+	r.rawSeekOffset = currRecord.zipOff
+	r.zipSeekOffset = prevRecord.rawOff
+	r.isInitialRead = false
 	return n, err
 }
 
