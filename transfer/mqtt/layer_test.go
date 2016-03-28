@@ -75,8 +75,8 @@ func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
 }
 
 func withBadRomance(t *testing.T, f func(layA, layB transfer.Layer)) {
-	layA := NewLayer(PeerA, PortA)
-	layB := NewLayer(PeerB, PortB)
+	layA := NewLayer(PeerA, PortA, transfer.MockAuthManager{})
+	layB := NewLayer(PeerB, PortB, transfer.MockAuthManager{})
 
 	withOnlineLayer(t, layA, func() {
 		withOnlineLayer(t, layB, func() {
@@ -137,7 +137,7 @@ func TestIO(t *testing.T) {
 }
 
 func TestOnOff(t *testing.T) {
-	layA := NewLayer(PeerA, PortA)
+	layA := NewLayer(PeerA, PortA, transfer.MockAuthManager{})
 
 	withOnlineLayer(t, layA, func() {
 		for i := 0; i < 10; i++ {

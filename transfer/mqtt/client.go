@@ -37,7 +37,7 @@ type client struct {
 var GlobalClientIdx = uint32(0)
 
 func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
-	defer atomic.AddUint32(&GlobalClientIdx, 1)
+	idx := atomic.AddUint32(&GlobalClientIdx, 1)
 
 	return &client{
 		layer:        lay,
@@ -45,7 +45,7 @@ func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
 		execRequests: execRequests,
 		peer:         peer,
 		lastHearbeat: time.Now(),
-		clientIdx:    GlobalClientIdx,
+		clientIdx:    idx,
 	}, nil
 }
 
@@ -100,7 +100,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	reqData := msg.Payload()
 	req := &wire.Request{}
 
-	if err := payloadToProto(req, reqData); err != nil {
+	if err := payloadToProto(req, reqData, cv.layer.authMgr); err != nil {
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	resp.ID = proto.Int64(req.GetID())
 	resp.ReqType = req.GetReqType().Enum()
 
-	respData, err := protoToPayload(resp)
+	respData, err := protoToPayload(resp, cv.layer.authMgr)
 	if err != nil {
 		log.Debugf("Invalid proto response: %v", err)
 		return err
@@ -190,7 +190,7 @@ func (cv *client) handleBroadcast(msg *message.PublishMessage) error {
 
 func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	resp := &wire.Response{}
-	if err := payloadToProto(resp, msg.Payload()); err != nil {
+	if err := payloadToProto(resp, msg.Payload(), cv.layer.authMgr); err != nil {
 		return err
 	}
 
@@ -310,7 +310,7 @@ func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error
 
 	respnotify := cv.layer.addReqRespPair(req)
 
-	data, err := protoToPayload(req)
+	data, err := protoToPayload(req, cv.layer.authMgr)
 	if err != nil {
 		return err
 	}

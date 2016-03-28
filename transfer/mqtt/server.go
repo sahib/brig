@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -12,26 +13,40 @@ import (
 	"github.com/surgemq/surgemq/service"
 )
 
-type authenticator struct{}
+type authenticator struct {
+}
 
 func (au *authenticator) Authenticate(id string, cred interface{}) error {
 	// fmt.Printf("ID %v is registering with cred %v (%T)\n", id, cred, cred)
 	return nil
 }
 
-func init() {
-	auth.Register("brigAuth", &authenticator{})
+type server struct {
+	srv      *service.Server
+	port     int
+	authMgr  *authenticator
+	authName string
 }
 
-type server struct {
-	srv  *service.Server
-	port int
-}
+// Running counter; incremented for each authenticator
+var globalAuthCount = int32(0)
 
 func newServer(port int) (*server, error) {
+	// Apply a crude hack: We need to pass data to the
+	// authenticator. SurgeMQ has no means to do that (except globals),
+	// so we register a new authenticator for each server.
+	// (at least in tests we need more than one server)
+	authMgr := &authenticator{}
+	name := fmt.Sprintf(
+		"brig-auth-%d",
+		atomic.AddInt32(&globalAuthCount, 1),
+	)
+
+	auth.Register(name, authMgr)
 	return &server{
-		srv:  nil,
-		port: port,
+		srv:     nil,
+		port:    port,
+		authMgr: authMgr,
 	}, nil
 }
 
@@ -54,10 +69,10 @@ var portMapLock sync.Mutex
 
 func (srv *server) connect() (err error) {
 	srv.srv = &service.Server{
-		KeepAlive:        300,   // seconds
-		ConnectTimeout:   2,     // seconds
+		KeepAlive:        300, // seconds
+		ConnectTimeout:   2,   // seconds
+		Authenticator:    srv.authName,
 		SessionsProvider: "mem", // keeps sessions in memory
-		Authenticator:    "brigAuth",
 		TopicsProvider:   "mem", // keeps topic subscriptions in memory
 	}
 
@@ -100,6 +115,7 @@ func (srv *server) connect() (err error) {
 func (srv *server) disconnect() error {
 	s := srv.srv
 	if s != nil {
+		auth.Unregister(srv.authName)
 		srv.srv = nil
 		return s.Close()
 	}

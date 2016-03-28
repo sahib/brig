@@ -14,6 +14,8 @@ var (
 	ErrOffline = errors.New("Transfer layer is offline")
 )
 
+// AsyncFunc is used as argument to SendAsync
+// It will be called whenever a response arrives at the layer.
 type AsyncFunc func(resp *wire.Response)
 
 // Conversation is a open channel to another peer
@@ -49,7 +51,6 @@ type Layer interface {
 	// in order to authenticate itself.
 	//
 	// Talk() shall return ErrOffline when not in online mode.
-	// TODO pass additional login credentials.
 	Talk(rslv id.Resolver) (Conversation, error)
 
 	// IsOnline shall return true if the peer knows as `peer` is online and
@@ -70,6 +71,7 @@ type Layer interface {
 
 	// Connect to the net. A freshly created Layer should not be
 	// connected upon construction.
+	//
 	// A Connect() when IsOnlineMode() is true is a no-op.
 	Connect() error
 
@@ -94,4 +96,30 @@ type Layer interface {
 	Wait() error
 }
 
-// TODO: Interface for authentication?
+// AuthManager shall be passed to a layer upon creation.
+// The layer will use it to encrypt the communication
+// between the peers and handle the login procedure.
+type AuthManager interface {
+	Authenticate(id id.Peer, cred interface{}) error
+	Encrypt(data []byte) ([]byte, error)
+	Decrypt(data []byte) ([]byte, error)
+}
+
+// MockAuthManager fullfills AuthManager by doing nothing.
+// It is meant for tests. Production code users will be shot.
+type MockAuthManager struct{}
+
+// Authenticate just nods yes to everything.
+func (mam MockAuthManager) Authenticate(id id.Peer, cred interface{}) error {
+	return nil
+}
+
+// Encrypt does not encrypt. It returns `data`.
+func (mam MockAuthManager) Encrypt(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+// Decrypt does not decrypt. It returns `data`.
+func (mam MockAuthManager) Decrypt(data []byte) ([]byte, error) {
+	return data, nil
+}

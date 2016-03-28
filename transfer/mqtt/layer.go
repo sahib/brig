@@ -16,31 +16,43 @@ import (
 type Layer struct {
 	// self is our own ID and ipfs ID
 	self id.Peer
+
 	// srv is a mqtt broker wrapper
 	srv *server
+
 	// port of the mqtt broker
 	port int
+
 	// own is the client connected to srv
 	own *client
+
 	// tab maps peer hashes to open conversations
 	tab map[string]*client
+
 	// ctx is passed to long-running operations that may timeout.
 	ctx context.Context
+
 	// cancel interrupts `ctx`.
 	cancel context.CancelFunc
+
 	// handler map for RegisterHandler
 	handlers map[wire.RequestType]transfer.HandlerFunc
 	// Lock for respbox and respctr
 	resplock sync.Mutex
+
 	// respbox holds all open channels that may be filled
 	// with a response. Channels will be deleted after a certain time.
 	// Acess is locked by `mu`.
 	respbox map[int64]chan *wire.Response
+
 	// respctr is a running counter for responses
 	respctr int64
+
+	// Used to handle authentication and encryption
+	authMgr transfer.AuthManager
 }
 
-func NewLayer(self id.Peer, brokerPort int) transfer.Layer {
+func NewLayer(self id.Peer, brokerPort int, authMgr transfer.AuthManager) transfer.Layer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Layer{
 		port:     brokerPort,
@@ -51,6 +63,7 @@ func NewLayer(self id.Peer, brokerPort int) transfer.Layer {
 		handlers: make(map[wire.RequestType]transfer.HandlerFunc),
 		respbox:  make(map[int64]chan *wire.Response),
 		respctr:  0,
+		authMgr:  authMgr,
 	}
 }
 
@@ -59,12 +72,17 @@ func (lay *Layer) Talk(rslv id.Resolver) (transfer.Conversation, error) {
 		return nil, transfer.ErrOffline
 	}
 
+	cnv, ok := lay.tab[rslv.Peer().Hash()]
+	if ok {
+		return cnv, nil
+	}
+
 	addrs, err := rslv.Resolve(lay.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	cnv, err := newClient(lay, rslv.Peer(), false)
+	cnv, err = newClient(lay, rslv.Peer(), false)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +137,7 @@ func (lay *Layer) IsOnlineMode() bool {
 func (lay *Layer) Broadcast(req *wire.Request) error {
 	req.ID = proto.Int64(-1)
 
-	data, err := protoToPayload(req)
+	data, err := protoToPayload(req, lay.authMgr)
 	if err != nil {
 		return err
 	}
