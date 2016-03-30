@@ -46,6 +46,7 @@ func (w *writer) flushBuffer(data []byte) error {
 	w.addToIndex()
 
 	w.zipW = snappy.NewWriter(io.MultiWriter(w.rawW, w.sizeAcc))
+	//w.zipW = WrapWriter(io.MultiWriter(w.rawW, w.sizeAcc))
 
 	// Compress and flush the current chunk.
 	rawN, err := w.zipW.Write(data)
@@ -114,8 +115,13 @@ func (w *writer) Write(p []byte) (n int, err error) {
 	return written, nil
 }
 
+type Algorithm interface {
+	WrapWriter(w io.Writer) io.WriteCloser
+	WrapReader(r io.ReadSeeker) io.ReadSeeker
+}
+
 // Return a WriteCloser with compression support.
-func NewWriter(w io.Writer, algo Algorithm) io.WriteCloser {
+func NewWriter(w io.Writer, algo AlgorithmType) io.WriteCloser {
 	s := &util.SizeAccumulator{}
 	return &writer{
 		sizeAcc:  s,

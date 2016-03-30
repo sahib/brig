@@ -22,7 +22,7 @@ const (
 	// TODO: AlgoLZ4?
 )
 
-type Algorithm byte
+type AlgorithmType byte
 
 type record struct {
 	rawOff int64
@@ -30,7 +30,7 @@ type record struct {
 }
 
 type trailer struct {
-	algo          Algorithm
+	algo          AlgorithmType
 	chunksize     uint32
 	indexSize     uint64
 	maxFileOffset uint64
@@ -44,7 +44,7 @@ func (t *trailer) marshal(buf []byte) {
 }
 
 func (t *trailer) unmarshal(buf []byte) {
-	t.algo = Algorithm(binary.LittleEndian.Uint32(buf[0:4]))
+	t.algo = AlgorithmType(binary.LittleEndian.Uint32(buf[0:4]))
 	t.chunksize = binary.LittleEndian.Uint32(buf[4:8])
 	t.indexSize = binary.LittleEndian.Uint64(buf[8:16])
 	t.maxFileOffset = binary.LittleEndian.Uint64(buf[16:])
