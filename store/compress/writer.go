@@ -133,7 +133,6 @@ func (w *writer) Close() error {
 	// Write trailer buffer (algo, chunksize, indexsize)
 	// at the end of file and close the stream.
 	var trailerSizeBuf = make([]byte, TrailerSize)
-	w.trailer.maxFileOffset = uint64(w.rawOff)
 	w.trailer.marshal(trailerSizeBuf)
 
 	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {
