@@ -93,7 +93,6 @@ type reader struct {
 }
 
 func (r *reader) Seek(destOff int64, whence int) (int64, error) {
-
 	if whence == os.SEEK_END {
 		if destOff > 0 {
 			return 0, io.EOF
@@ -135,7 +134,6 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
 		return 0, err
 	}
-
 	return destOff, nil
 }
 
@@ -225,14 +223,21 @@ func (r *reader) parseHeaderIfNeeded() error {
 	return nil
 }
 
-func (r *reader) WriteTo(w io.Writer) (n int64, err error) {
+func (r *reader) WriteTo(w io.Writer) (int64, error) {
+	if err := r.parseHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
 
 	written := int64(0)
+	n, cerr := io.Copy(w, &r.chunkBuf)
+	if cerr != nil {
+		return n, cerr
+	}
+	written += n
 	for {
-
 		chunkSize, rerr := r.fixZipChunk()
 		if rerr != nil && rerr != io.EOF {
-			return written, rerr
+			return 0, rerr
 		}
 		n, werr := io.CopyN(w, r.zipR, chunkSize)
 		written += int64(n)

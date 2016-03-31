@@ -120,7 +120,6 @@ func (w *writer) Close() error {
 	w.trailer.indexSize = uint64(IndexChunkSize * len(w.index))
 	indexBuf := make([]byte, w.trailer.indexSize)
 	indexBufStartOff := indexBuf
-
 	for _, record := range w.index {
 		record.marshal(indexBuf)
 		indexBuf = indexBuf[IndexChunkSize:]
