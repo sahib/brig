@@ -69,12 +69,7 @@ func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 			return int64(read), rerr
 		}
 
-		var werr error
-		if w.trailer.algo == AlgoNone {
-			_, werr = w.Write(buf[:n])
-		} else {
-			werr = w.flushBuffer(buf[:n])
-		}
+		werr := w.flushBuffer(buf[:n])
 		if werr != nil && werr != io.EOF {
 			return int64(read), werr
 		}
@@ -85,17 +80,6 @@ func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
-	// Handle uncompressed stream.
-	if w.trailer.algo == AlgoNone {
-		n, err := w.rawW.Write(p)
-		if err != nil {
-			return n, err
-		}
-		w.rawOff += int64(n)
-		return n, nil
-	}
-
-	// Handle compressed stream.
 	written := len(p)
 	// Compress only MaxChunkSize equal chunks.
 	for {
@@ -125,19 +109,6 @@ func NewWriter(w io.Writer, algo AlgorithmType) io.WriteCloser {
 }
 
 func (w *writer) Close() error {
-	// Handle trailer of uncompressed file.
-	if w.trailer.algo == AlgoNone {
-		var trailerSizeBuf = make([]byte, TrailerSize)
-		w.trailer.maxFileOffset = uint64(w.rawOff)
-		w.trailer.marshal(trailerSizeBuf)
-		_, err := w.rawW.Write(trailerSizeBuf)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
 	// Write remaining bytes left in buffer and update index.
 	if err := w.flushBuffer(w.chunkBuf.Bytes()); err != nil {
 		return err

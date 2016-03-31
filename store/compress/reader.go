@@ -11,7 +11,6 @@ import (
 
 // TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
 // TODO: Dokumentation schreiben.
-// TODO: ReadFrom und WriteTo implementieren.
 // TODO: In store/stream.go einbauen.
 // TODO: linter durchlaufen lassen.
 // TODO: Mehr Algorithmen anbieten (lz4, brotli?)
@@ -110,19 +109,8 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		return 0, err
 	}
 
-	if destOff < 0 || destOff >= int64(r.trailer.maxFileOffset) {
-		r.zipSeekOffset = int64(r.trailer.maxFileOffset)
-		if _, err := r.rawR.Seek(destOff, os.SEEK_SET); err != nil {
-			return 0, err
-		}
+	if destOff < 0 {
 		return 0, io.EOF
-	}
-	// Handle uncompressed Seek when using AlgoNone.
-	if r.trailer.algo == AlgoNone {
-		if _, err := r.rawR.Seek(destOff, os.SEEK_SET); err != nil {
-			return 0, err
-		}
-		return destOff, nil
 	}
 
 	// Check if given raw offset equals current offset.
@@ -200,16 +188,6 @@ func (r *reader) parseHeaderIfNeeded() error {
 		return fmt.Errorf("Invalid algorithm type: %d", r.trailer.algo)
 	}
 
-	// Handle uncompressed stream.
-	if r.trailer.algo == AlgoNone {
-		if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
-			return err
-		}
-		// No need to go further.
-		return nil
-	}
-
-	// Handle compressed stream.
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
@@ -275,17 +253,6 @@ func (r *reader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
-	// Handle uncompressed stream.
-	if r.trailer.algo == AlgoNone {
-		maxOff, errMax := r.maxOff(int64(len(p)))
-		n, err := r.rawR.Read(p[:maxOff])
-		r.zipSeekOffset += int64(n)
-		if err != nil {
-			return n, err
-		}
-		return n, errMax
-	}
-
 	// Handle stream using compression.
 	read := 0
 	for {
@@ -309,13 +276,6 @@ func (r *reader) Read(p []byte) (int, error) {
 	}
 
 	return read, nil
-}
-
-func (r *reader) maxOff(pSize int64) (int64, error) {
-	if pSize+r.zipSeekOffset > int64(r.trailer.maxFileOffset) {
-		return int64(r.trailer.maxFileOffset) - r.zipSeekOffset, io.EOF
-	}
-	return pSize, nil
 }
 
 func (r *reader) fixZipChunk() (int64, error) {

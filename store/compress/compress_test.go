@@ -162,12 +162,9 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 }
 
 func TestSeek(t *testing.T) {
-	//sizes := TestSizes
-	//offsets := TestOffsets
-	sizes := []int64{C64K}
-	offsets := []int64{C64K}
-	//algos := []AlgorithmType{AlgoNone, AlgoSnappy}
-	algos := []AlgorithmType{AlgoNone}
+	sizes := TestSizes
+	offsets := TestOffsets
+	algos := []AlgorithmType{AlgoNone, AlgoSnappy}
 	for _, algo := range algos {
 		for _, size := range sizes {
 			for _, off := range offsets {
