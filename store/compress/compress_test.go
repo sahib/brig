@@ -47,7 +47,10 @@ func TestCompressDecompress(t *testing.T) {
 
 	for _, algo := range algos {
 		for _, size := range sizes {
+			testCompressDecompress(t, size, algo, true, true)
 			testCompressDecompress(t, size, algo, false, false)
+			testCompressDecompress(t, size, algo, true, false)
+			testCompressDecompress(t, size, algo, false, true)
 		}
 	}
 }
@@ -117,7 +120,7 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 
 	// Compress.
 	w := NewWriter(zipFileDest, algo)
-	if _, err := Copy(w, bytes.NewReader(data), false, false); err != nil {
+	if _, err := Copy(w, bytes.NewReader(data), useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
 	}
@@ -169,6 +172,9 @@ func TestSeek(t *testing.T) {
 		for _, size := range sizes {
 			for _, off := range offsets {
 				testSeek(t, size, off, algo, false, false)
+				testSeek(t, size, off, algo, true, true)
+				testSeek(t, size, off, algo, false, true)
+				testSeek(t, size, off, algo, true, false)
 			}
 		}
 	}
