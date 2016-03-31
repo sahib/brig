@@ -1,12 +1,12 @@
 package compress
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sort"
 
 	"github.com/disorganizer/brig/util"
-	"github.com/golang/snappy"
 )
 
 // TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
@@ -195,6 +195,11 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
+	r.zipR = wrapReader(r.rawR, r.trailer.algo)
+	if r.zipR == nil {
+		return fmt.Errorf("Invalid algorithm type: %d", r.trailer.algo)
+	}
+
 	// Handle uncompressed stream.
 	if r.trailer.algo == AlgoNone {
 		if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
@@ -354,7 +359,6 @@ func (r *reader) readZipChunk() (int64, error) {
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{
 		rawR:     r,
-		zipR:     snappy.NewReader(r),
 		chunkBuf: newChunkBuffer(),
 	}
 }

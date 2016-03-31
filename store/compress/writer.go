@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/disorganizer/brig/util"
-	"github.com/golang/snappy"
 )
 
 type writer struct {
@@ -45,8 +44,7 @@ func (w *writer) flushBuffer(data []byte) error {
 	// Add record with start offset of the current chunk.
 	w.addToIndex()
 
-	w.zipW = snappy.NewWriter(io.MultiWriter(w.rawW, w.sizeAcc))
-	//w.zipW = WrapWriter(io.MultiWriter(w.rawW, w.sizeAcc))
+	w.zipW = wrapWriter(io.MultiWriter(w.rawW, w.sizeAcc), w.trailer.algo)
 
 	// Compress and flush the current chunk.
 	rawN, err := w.zipW.Write(data)
@@ -113,11 +111,6 @@ func (w *writer) Write(p []byte) (n int, err error) {
 		p = p[n:]
 	}
 	return written, nil
-}
-
-type Algorithm interface {
-	WrapWriter(w io.Writer) io.WriteCloser
-	WrapReader(r io.ReadSeeker) io.ReadSeeker
 }
 
 // Return a WriteCloser with compression support.
