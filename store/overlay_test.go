@@ -234,7 +234,7 @@ func TestBigFile(t *testing.T) {
 	dst := &bytes.Buffer{}
 
 	srcEnc := &bytes.Buffer{}
-	wEnc, err := encrypt.NewWriter(srcEnc, TestKey, 0)
+	wEnc, err := encrypt.NewWriter(srcEnc, TestKey)
 	if err != nil {
 		t.Errorf("Cannot create write-encryption layer: %v", err)
 		return

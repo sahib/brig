@@ -190,11 +190,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			return 0, err
 		}
 
-		// TODO: This is... uh... well, don't drink and code
-		// totalBlockSize should never be 0
+		// This computation is verbose on purporse,
+		// since the details might be confusing.
 		encLen := (endOffsetEnc - headerSize)
 		encRest := encLen % totalBlockSize
 		decBlocks := encLen / totalBlockSize
+
 		endOffsetDec := decBlocks*MaxBlockSize + (encRest - blockOverhead)
 		absOffsetDec = endOffsetDec + offset
 
