@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	// "github.com/disorganizer/brig/store/compress"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/encrypt"
 )
 
@@ -15,12 +15,14 @@ type Reader interface {
 	io.Reader
 	io.Seeker
 	io.Closer
+	io.WriterTo
 }
 
 type reader struct {
 	io.Reader
 	io.Seeker
 	io.Closer
+	io.WriterTo
 }
 
 // NewIpfsReader wraps the raw-data reader `r` and returns a Reader
@@ -31,11 +33,13 @@ func NewIpfsReader(key []byte, r Reader) (Reader, error) {
 		return nil, err
 	}
 
+	rZip := compress.NewReader(rEnc)
 	// TODO: Bring back compression.
 	return reader{
-		Reader: rEnc,
-		Seeker: rEnc,
-		Closer: ioutil.NopCloser(rEnc),
+		Reader:   rZip,
+		Seeker:   rZip,
+		WriterTo: rZip,
+		Closer:   ioutil.NopCloser(rZip),
 	}, nil
 }
 
@@ -67,15 +71,19 @@ func NewFileReader(key []byte, r io.Reader, length int64) (outR io.Reader, outEr
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Can ReadFrom/WriteTo be used here?
-	// TODO: Implement seeking compression.
-	// wZip := compress.NewWriter(wEnc)
+	// TODO: Paremetrize algo et cetera.
+	wZip, err := compress.NewWriter(wEnc, compress.AlgoSnappy)
+	if err != nil {
+		return nil, err
+	}
 
 	// Suck the reader empty and move it to `wZip`.
 	// Every write to wZip will be available as read in `pr`.
 	go func() {
 		defer func() {
+			if err := wZip.Close(); err != nil {
+				outErr = err
+			}
 			if err := wEnc.Close(); err != nil {
 				outErr = err
 			}
@@ -86,7 +94,7 @@ func NewFileReader(key []byte, r io.Reader, length int64) (outR io.Reader, outEr
 			}
 		}()
 
-		if _, err := io.Copy(wEnc, r); err != nil {
+		if _, err := io.Copy(wZip, r); err != nil {
 			outErr = err
 		}
 	}()

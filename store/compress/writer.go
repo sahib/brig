@@ -100,7 +100,7 @@ func (w *writer) Write(p []byte) (n int, err error) {
 }
 
 // NewWriter returns a WriteCloser with compression support.
-func NewWriter(w io.Writer, algoType AlgorithmType) (io.WriteCloser, error) {
+func NewWriter(w io.Writer, algoType AlgorithmType) (*writer, error) {
 	algo, err := AlgorithmFromType(algoType)
 	if err != nil {
 		return nil, err
