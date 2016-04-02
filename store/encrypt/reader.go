@@ -34,6 +34,9 @@ type Reader struct {
 
 	// Currently block we're operating on.
 	blockCount uint64
+
+	// true as long readBlock was not succesful
+	isInitialRead bool
 }
 
 func (r *Reader) readHeaderIfNotDone() error {
@@ -106,7 +109,7 @@ func (r *Reader) Read(dest []byte) (int, error) {
 // Fill internal buffer with current block
 func (r *Reader) readBlock() (int, error) {
 	if r.info == nil {
-		return 0, fmt.Errorf("Header could not been retrieved correctly.")
+		return 0, fmt.Errorf("Invalid header data")
 	}
 
 	// Read nonce:
@@ -128,7 +131,7 @@ func (r *Reader) readBlock() (int, error) {
 		)
 	}
 
-	// Read the *whole* block from the fs
+	// Read the *whole* block from the raw stream
 	N := MaxBlockSize + r.aead.Overhead()
 	n, err := io.ReadAtLeast(r.Reader, r.encBuf[:N], N)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
@@ -141,6 +144,7 @@ func (r *Reader) readBlock() (int, error) {
 	}
 
 	r.backlog = bytes.NewReader(r.decBuf)
+	r.isInitialRead = false
 	return len(r.decBuf), nil
 }
 
@@ -165,7 +169,8 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	// Constants and assumption on the stream below:
 	blockHeaderSize := int64(r.aead.NonceSize())
-	totalBlockSize := blockHeaderSize + MaxBlockSize + int64(r.aead.Overhead())
+	blockOverhead := blockHeaderSize + int64(r.aead.Overhead())
+	totalBlockSize := blockOverhead + MaxBlockSize
 
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
@@ -185,14 +190,17 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			return 0, err
 		}
 
+		// TODO: This is... uh... well, don't drink and code
 		// totalBlockSize should never be 0
-		endOffsetDec := ((endOffsetEnc - headerSize) / totalBlockSize) * MaxBlockSize
-		absOffsetDec = endOffsetDec - offset
+		encLen := (endOffsetEnc - headerSize)
+		encRest := encLen % totalBlockSize
+		decBlocks := encLen / totalBlockSize
+		endOffsetDec := decBlocks*MaxBlockSize + (encRest - blockOverhead)
+		absOffsetDec = endOffsetDec + offset
 
-		// TODO: Needed
 		if absOffsetDec < 0 {
-			// We have no idea when the stream ends.
-			return 0, fmt.Errorf("Cannot perform SEEK_END")
+			// That's the wrong end of file...
+			return 0, io.EOF
 		}
 	}
 
@@ -218,7 +226,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	lastBlockNum := r.lastSeekPos / MaxBlockSize
 	r.lastSeekPos = absOffsetDec
 
-	if lastBlockNum != blockNum {
+	if lastBlockNum != blockNum || r.isInitialRead {
 		// Seek to the beginning of the encrypted block:
 		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
 			return 0, err
@@ -229,6 +237,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			return 0, err
 		}
 	}
+
 	// Reslice the backlog, so Read() does not return skipped data.
 	if _, err := r.backlog.Seek(absOffsetDec%MaxBlockSize, os.SEEK_SET); err != nil {
 		return 0, err
@@ -293,10 +302,11 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 // The key is required to be KeySize bytes long.
 func NewReader(r io.Reader, key []byte) (*Reader, error) {
 	reader := &Reader{
-		Reader:       r,
-		backlog:      bytes.NewReader([]byte{}),
-		parsedHeader: false,
-		decBuf:       make([]byte, 0, MaxBlockSize),
+		Reader:        r,
+		backlog:       bytes.NewReader([]byte{}),
+		parsedHeader:  false,
+		decBuf:        make([]byte, 0, MaxBlockSize),
+		isInitialRead: true,
 		aeadCommon: aeadCommon{
 			key: key,
 		},
