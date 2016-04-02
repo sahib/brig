@@ -13,10 +13,7 @@ type Reader interface {
 	io.Reader
 	io.Seeker
 	io.Closer
-
-	// TODO: ipfs supports this, we don't yet.
-	//       (-> compression layer is missing)
-	// io.WriterTo
+	io.WriterTo
 }
 
 // Cat returns an io.Reader that reads from ipfs.

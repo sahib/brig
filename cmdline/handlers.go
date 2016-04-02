@@ -11,13 +11,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	"github.com/dustin/go-humanize"
 	yamlConfig "github.com/olebedev/config"
-	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
 )
 
@@ -172,14 +172,15 @@ func handleConfig(ctx climax.Context) int {
 }
 
 func handleInit(ctx climax.Context) int {
-	jid := xmpp.JID(ctx.Args[0])
-	if err := checkJID(jid); err != nil {
-		log.Errorf("Bad Jabber ID: %v", err)
+	ID, err := id.Cast(ctx.Args[0])
+	if err != nil {
+		log.Errorf("Bad ID: %v", err)
 		return BadArgs
 	}
 
 	// Extract the folder from the resource name by default:
-	folder := jid.Resource()
+	// TODO: Add another variable
+	folder := ID.Resource()
 	if folder == "" {
 		log.Error("Need a resource in your JID.")
 		return BadArgs
@@ -205,7 +206,7 @@ func handleInit(ctx climax.Context) int {
 		pwd = string(pwdBytes)
 	}
 
-	repo, err := repo.NewRepository(string(jid), pwd, folder)
+	repo, err := repo.NewRepository(string(ID), pwd, folder)
 	if err != nil {
 		log.Error(err)
 		return UnknownError
@@ -233,8 +234,8 @@ func handleInit(ctx climax.Context) int {
 }
 
 func handleClone(ctx climax.Context) int {
-	remoteJID := xmpp.JID(ctx.Args[1])
-	if err := checkJID(remoteJID); err != nil {
+	remoteJID, err := id.Cast(ctx.Args[1])
+	if err != nil {
 		log.Warningf("Bad remote Jabber ID: %v", err)
 		return BadArgs
 	}
@@ -533,9 +534,9 @@ func handleTree(ctx climax.Context, client *daemon.Client) int {
 }
 
 func handlePull(ctx climax.Context, client *daemon.Client) int {
-	remoteJID := xmpp.JID(ctx.Args[0])
-	if err := checkJID(remoteJID); err != nil {
-		log.Warningf("Bad remote Jabber ID: %v", err)
+	remoteID, err := id.Cast(ctx.Args[0])
+	if err != nil {
+		log.Warningf("Bad remote ID: %v", err)
 		return BadArgs
 	}
 
@@ -572,13 +573,18 @@ func handleMkdir(ctx climax.Context, client *daemon.Client) int {
 func handleAuth(ctx climax.Context, client *daemon.Client) int {
 	if ctx.Is("add") {
 		if len(ctx.Args) < 2 {
-			log.Warningf("Need jid and fingerprint.")
+			log.Warningf("Need ID and fingerprint.")
 			return BadArgs
 		}
 
-		jid, finger := ctx.Args[0], ctx.Args[1]
+		idString, peerHash := ctx.Args[0], ctx.Args[1]
+		ID, err := id.Cast(idString)
+		if err != nil {
+			log.Warningf("Bad ID: %v", err)
+			return BadArgs
+		}
 
-		if err := client.AuthAdd(xmpp.JID(jid), finger); err != nil {
+		if err := client.AuthAdd(ID, peerHash); err != nil {
 			log.Warningf("auth: %v", err)
 			return UnknownError
 		}

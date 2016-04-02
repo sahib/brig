@@ -104,6 +104,10 @@ type Layer interface {
 	// Wait blocks until all requests were handled.
 	// It is mainly useful for debugging.
 	Wait() error
+
+	// ProtocolID returns a unique protocol id
+	// that will be used to differentiate between other protocols.
+	ProtocolID() string
 }
 
 // AuthManager shall be passed to a layer upon creation.

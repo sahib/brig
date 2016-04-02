@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	AliceJid = xmpp.JID("alice@jabber.nullcat.de/laptop")
-	BobJid   = xmpp.JID("bob@jabber.nullcat.de/desktop")
+	AliceJid = xmpp.JID("alice@nullcat.de/laptop")
+	BobJid   = xmpp.JID("bob@nullcat.de/desktop")
 	AlicePwd = "ThiuJ9wesh"
 	BobPwd   = "eecot3oXan"
 )

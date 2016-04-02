@@ -13,11 +13,9 @@ import (
 	// TODO: GAAAAAH
 	p2pnet "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/net"
 	peer "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/peer"
+	protocol "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/protocol"
 	manet "gx/ipfs/QmQB7mNP3QE7b4zP2MQmsyJDqG5hzYE2CL8k1VyLWky2Ed/go-multiaddr-net"
 )
-
-// TODO: Move this to the respective module
-const BrigProtocolID = "/brig/mqtt"
 
 type streamConn struct {
 	stream p2pnet.Stream
@@ -97,6 +95,7 @@ func (il *ipfsListener) Accept() (net.Conn, error) {
 
 func (il *ipfsListener) Close() error {
 	il.cancel()
+
 	// TODO: unregister handler from peerhost
 	return nil
 }
@@ -108,7 +107,7 @@ func (il *ipfsListener) Addr() net.Addr {
 	}
 }
 
-func (nd *Node) Listen() (net.Listener, error) {
+func (nd *Node) Listen(proto string) (net.Listener, error) {
 	if !nd.IsOnline() {
 		return nil, fmt.Errorf("Not online") // TODO: common error?
 	}
@@ -126,7 +125,8 @@ func (nd *Node) Listen() (net.Listener, error) {
 		cancel: cancel,
 	}
 
-	node.PeerHost.SetStreamHandler(BrigProtocolID, func(s p2pnet.Stream) {
+	protoID := protocol.ID(proto)
+	node.PeerHost.SetStreamHandler(protoID, func(s p2pnet.Stream) {
 		fmt.Println("Received a stream", s)
 		select {
 		case list.conCh <- s:
@@ -138,14 +138,13 @@ func (nd *Node) Listen() (net.Listener, error) {
 	return list, nil
 }
 
-func (nd *Node) Dial(peerHash string) (net.Conn, error) {
+func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	peerID, err := peer.IDB58Decode(peerHash)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Peer id", peerID)
-	stream, err := corenet.Dial(nd.ipfsNode, peerID, BrigProtocolID)
+	stream, err := corenet.Dial(nd.ipfsNode, peerID, protocol)
 	if err != nil {
 		return nil, err
 	}

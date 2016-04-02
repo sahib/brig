@@ -24,7 +24,7 @@ enum MessageType {
 }
 
 enum OnlineQuery {
-    // Connect ipfs and to xmpp:
+    // Connect to the network:
     GO_ONLINE = 0;
     // Disconnect all:
     GO_OFFLINE = 1;

@@ -13,11 +13,11 @@ import (
 
 // FingerprintStore represents an arbitrary store where fingerprints are stored.
 type FingerprintStore interface {
-	// Lookup returns the last known fingerprint related to this jid.
-	Lookup(jid string) (string, error)
+	// Lookup returns the last known fingerprint related to this ID.
+	Lookup(ID string) (string, error)
 
-	// Remember stores the last known fingerprint of this jid.
-	Remember(jid string, fingerprint string) error
+	// Remember stores the last known fingerprint of this ID.
+	Remember(ID string, fingerprint string) error
 }
 
 // FormatFingerprint converts a raw byte string representation to a hex fingerprint.
@@ -63,8 +63,8 @@ func NewFsFingerprintStore(path string) (*FsFingerprintStore, error) {
 	return k, nil
 }
 
-// Lookup returns the last know fingerprint of this jid. No I/O is done.
-func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
+// Lookup returns the last know fingerprint of this ID. No I/O is done.
+func (k *FsFingerprintStore) Lookup(ID string) (string, error) {
 	keys, err := k.load()
 	if err != nil {
 		return "", err
@@ -72,18 +72,18 @@ func (k *FsFingerprintStore) Lookup(jid string) (string, error) {
 
 	k.keys = keys
 
-	fingerprint, ok := keys[jid]
+	fingerprint, ok := keys[ID]
 	if !ok {
-		log.Warningf("No fingerprint known for `%v`.", jid)
+		log.Warningf("No fingerprint known for `%v`.", ID)
 	}
 
 	return fingerprint, nil
 }
 
-// Remember stores the last known fingerprint to this jid. It rewrites the
+// Remember stores the last known fingerprint to this ID. It rewrites the
 // fingerprint database on the filesystem
-func (k *FsFingerprintStore) Remember(jid string, fingerprint string) error {
-	k.keys[jid] = fingerprint
+func (k *FsFingerprintStore) Remember(ID string, fingerprint string) error {
+	k.keys[ID] = fingerprint
 
 	fd, err := os.OpenFile(k.Path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {

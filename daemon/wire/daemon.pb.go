@@ -108,7 +108,7 @@ func (x *MessageType) UnmarshalJSON(data []byte) error {
 type OnlineQuery int32
 
 const (
-	// Connect ipfs and to xmpp:
+	// Connect ipfs and the network:
 	OnlineQuery_GO_ONLINE OnlineQuery = 0
 	// Disconnect all:
 	OnlineQuery_GO_OFFLINE OnlineQuery = 1

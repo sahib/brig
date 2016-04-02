@@ -16,7 +16,7 @@ func hashPassword(salt []byte, password string) []byte {
 	return security.Scrypt([]byte(password), salt, 32)
 }
 
-func createShadowFile(brigPath string, jid, password string) error {
+func createShadowFile(brigPath string, ID, password string) error {
 	shadowPath := filepath.Join(brigPath, "shadow")
 	fd, err := os.OpenFile(shadowPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
 	if err != nil {
@@ -35,7 +35,7 @@ func createShadowFile(brigPath string, jid, password string) error {
 		return fmt.Errorf("Inadeqaute salt length from random generator.")
 	}
 
-	entry := fmt.Sprintf("%s %x %x\n", jid, salt, hashPassword(salt, password))
+	entry := fmt.Sprintf("%s %x %x\n", ID, salt, hashPassword(salt, password))
 	if _, err := fd.Write([]byte(entry)); err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func createShadowFile(brigPath string, jid, password string) error {
 }
 
 type shadowEntry struct {
-	jid  string
+	ID   string
 	salt []byte
 	hash []byte
 }
@@ -60,16 +60,16 @@ func parseShadowFile(brigPath string, who string) (*shadowEntry, error) {
 	var entry *shadowEntry
 	bufd := bufio.NewScanner(fd)
 	for bufd.Scan() {
-		var jid string
+		var ID string
 		var salt, hash []byte
 
-		_, err = fmt.Sscanf(bufd.Text(), "%s %x %x", &jid, &salt, &hash)
+		_, err = fmt.Sscanf(bufd.Text(), "%s %x %x", &ID, &salt, &hash)
 		if err != nil && err != io.EOF {
 			return nil, err
 		}
 
-		if jid == who {
-			entry = &shadowEntry{jid: jid, salt: salt, hash: hash}
+		if ID == who {
+			entry = &shadowEntry{ID: ID, salt: salt, hash: hash}
 		}
 	}
 

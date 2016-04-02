@@ -279,3 +279,7 @@ func (lay *layer) Wait() error {
 
 	return nil
 }
+
+func (lay *layer) ProtocolID() string {
+	return "/brig/mqtt/v1"
+}

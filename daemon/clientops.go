@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/disorganizer/brig/daemon/wire"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store"
 	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 // recvResponseBytes reads one response from the daemon and formats possible errors.
@@ -221,7 +221,7 @@ func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
 	return dirlist.Entries, nil
 }
 
-func (c *Client) Fetch(who xmpp.JID) error {
+func (c *Client) Fetch(who id.ID) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_FETCH.Enum(),
 		FetchCommand: &wire.Command_FetchCmd{
@@ -251,11 +251,11 @@ func (c *Client) Mkdir(path string) error {
 	return nil
 }
 
-func (c *Client) AuthAdd(jid xmpp.JID, finger string) error {
+func (c *Client) AuthAdd(ident id.ID, finger string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_AUTH_ADD.Enum(),
 		AuthAddCommand: &wire.Command_AuthAddCmd{
-			Who:         proto.String(string(jid)),
+			Who:         proto.String(string(ident)),
 			Fingerprint: proto.String(finger),
 		},
 	}

@@ -19,7 +19,7 @@ var (
 )
 
 const (
-	DummyUser = "user@jabber.de/desktop"
+	DummyUser = "user@nullcat.de/desktop"
 	DummyPass = "hello_world"
 )
 

@@ -7,7 +7,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/wire"
-	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
@@ -142,7 +141,7 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 			return []byte("offline"), nil
 		}
 	case wire.OnlineQuery_GO_ONLINE:
-		return nil, d.Connect(xmpp.JID(d.Repo.Jid), d.Repo.Password)
+		return nil, d.Connect(d.Repo.ID, d.Repo.Password)
 	case wire.OnlineQuery_GO_OFFLINE:
 		return nil, d.Disconnect()
 	}
@@ -152,13 +151,16 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 
 func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	fetchCmd := cmd.GetFetchCommand()
-	who := xmpp.JID(fetchCmd.GetWho())
-
-	if !d.XMPP.IsOnline() {
-		return nil, fmt.Errorf("XMPP client is not online.")
+	who, err := id.Cast(fetchCmd.GetWho())
+	if err != nil {
+		return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.Who(), err)
 	}
 
-	client, err := d.XMPP.Talk(who)
+	if !d.MetaHost.IsOnline() {
+		return nil, fmt.Errorf("Metadata Host is not online.")
+	}
+
+	client, err := d.MetaHost.Talk(who)
 	if err != nil {
 		return nil, err
 	}
@@ -200,9 +202,9 @@ func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, err
 
 func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	authCmd := cmd.GetAuthAddCommand()
-	jid, fingerprint := authCmd.GetWho(), authCmd.GetFingerprint()
+	id, peerHash := authCmd.GetWho(), authCmd.GetPeerHash()
 
-	if err := d.XMPP.Auth(xmpp.JID(jid), fingerprint); err != nil {
+	if err := d.MetaHost.Auth(id, peerHash); err != nil {
 		return nil, err
 	}
 
@@ -210,10 +212,10 @@ func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, e
 }
 
 func handleAuthPrint(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	finger, err := d.XMPP.Fingerprint()
+	peerHash, err := d.Repo.IPFS.Identity()
 	if err != nil {
 		return nil, err
 	}
 
-	return []byte(finger), nil
+	return []byte(peerHash), nil
 }

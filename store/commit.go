@@ -6,9 +6,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 const (
@@ -105,7 +105,7 @@ type Checkpoint struct {
 
 	// Author of the file modifications (jabber id)
 	// TODO: Make separate Authorship struct.
-	Author xmpp.JID
+	Author id.ID
 }
 
 // TODO: nice representation
@@ -144,7 +144,11 @@ func (cp *Checkpoint) fromProtoMessage(msg *wire.Checkpoint) error {
 	cp.ModTime = modTime
 	cp.Size = msg.GetFileSize()
 	cp.Change = ChangeType(msg.GetChange())
-	cp.Author = xmpp.JID(msg.GetAuthor())
+
+	ID, err := id.Cast(msg.GetAuthor())
+	if err != nil {
+		cp.Author = ID
+	}
 	return nil
 }
 
@@ -255,7 +259,7 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 		ModTime: time.Now(),
 		Size:    size,
 		Change:  change,
-		Author:  st.jid,
+		Author:  st.ID,
 	}
 
 	protoData, err := checkpoint.Marshal()

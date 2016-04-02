@@ -23,9 +23,9 @@ func Scrypt(pwd, salt []byte, keyLen int) []byte {
 	return key
 }
 
-// DeriveAESKey generates an AES key (of keySize bytes) based on jid and password.
+// DeriveAESKey generates an AES key (of keySize bytes) based on ID and password.
 // It returns the key, the used salt and potentially an error.
-func DeriveAESKey(jid, password string, keySize int) ([]byte, []byte, error) {
+func DeriveAESKey(ID, password string, keySize int) ([]byte, []byte, error) {
 	salt := make([]byte, keySize)
 	_, err := rand.Read(salt)
 	if err != nil {

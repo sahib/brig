@@ -343,7 +343,7 @@ func (r *reader) readZipChunk() ([]byte, error) {
 // NewReader returns a new ReadSeeker with compression support. As random access
 // is the purpose of this layer, a ReadSeeker is required as parameter. The used
 // compression algorithm is chosen based on trailer information.
-func NewReader(r io.ReadSeeker) io.ReadSeeker {
+func NewReader(r io.ReadSeeker) *reader {
 	return &reader{
 		rawR:      r,
 		decodeBuf: &bytes.Buffer{},

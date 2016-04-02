@@ -60,20 +60,20 @@ type Conversation struct {
 	authenticated bool
 }
 
-func newConversation(jid xmpp.JID, client *Client, privKey *otr.PrivateKey) *Conversation {
+func newConversation(ID xmpp.JID, client *Client, privKey *otr.PrivateKey) *Conversation {
 	sendChan := make(chan []byte)
 	recvChan := make(chan []byte)
 
 	go func() {
 		for data := range sendChan {
-			if err := client.send(jid, data); err != nil {
+			if err := client.send(ID, data); err != nil {
 				log.Warningf("im-send: %v", err)
 			}
 		}
 	}()
 
 	return &Conversation{
-		Jid:     jid,
+		Jid:     ID,
 		Client:  client,
 		recv:    recvChan,
 		send:    sendChan,

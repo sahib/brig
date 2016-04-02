@@ -166,25 +166,25 @@ func NewClient(config *Config) (*Client, error) {
 
 // IsOnline cheks if the partner is online.
 // On startup, this might block until the first presence messages are available.
-func (c *Client) IsOnline(jid xmpp.JID) bool {
+func (c *Client) IsOnline(ID xmpp.JID) bool {
 	if _, ok := <-c.incomingPresence; !ok {
 		log.Debugf("Sorry, needed to wait for presence stanzas.")
 	}
 
-	return c.isOnline(jid)
+	return c.isOnline(ID)
 }
 
 // Dial opens a conversation with another peer.
-// NOTE: Calling Dial() twice on the same jid will
+// NOTE: Calling Dial() twice on the same ID will
 //       cause a new OTR session dance, but not yield
 //       a new connection.
-func (c *Client) Dial(jid xmpp.JID) (*Conversation, error) {
+func (c *Client) Dial(ID xmpp.JID) (*Conversation, error) {
 	// Begin the OTR dance:
-	if err := c.send(jid, nil); err != nil {
+	if err := c.send(ID, nil); err != nil {
 		return nil, err
 	}
 
-	if cnv, ok := c.lookupConversation(jid); ok {
+	if cnv, ok := c.lookupConversation(ID); ok {
 		return cnv, nil
 	}
 
@@ -203,11 +203,11 @@ func (c *Client) Fingerprint() string {
 	return c.fingerprint
 }
 
-// Auth remembers the fingerprint of `jid` and allows a connection
+// Auth remembers the fingerprint of `ID` and allows a connection
 // on the next Dial(). If a previous fingerprint already existed for
-// this jid, it is overwritten.
-func (c *Client) Auth(jid xmpp.JID, finger string) error {
-	return c.keys.Remember(string(jid), finger)
+// this ID, it is overwritten.
+func (c *Client) Auth(ID xmpp.JID, finger string) error {
+	return c.keys.Remember(string(ID), finger)
 }
 
 // Close terminates all open connections.
@@ -246,41 +246,41 @@ func (c *Client) addPresence(ps *xmpp.Presence) {
 	})
 }
 
-func (c *Client) isOnline(jid xmpp.JID) bool {
+func (c *Client) isOnline(ID xmpp.JID) bool {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.online[jid]
+	return c.online[ID]
 }
 
 // locked cnv lookup
-func (c *Client) lookupConversation(jid xmpp.JID) (*Conversation, bool) {
+func (c *Client) lookupConversation(ID xmpp.JID) (*Conversation, bool) {
 	c.Lock()
 	defer c.Unlock()
 
-	cnv, ok := c.buddies[jid]
+	cnv, ok := c.buddies[ID]
 	return cnv, ok
 }
 
-func (c *Client) removeConversation(jid xmpp.JID) {
+func (c *Client) removeConversation(ID xmpp.JID) {
 	c.Lock()
 	defer c.Unlock()
 
-	if cnv, ok := c.buddies[jid]; ok {
+	if cnv, ok := c.buddies[ID]; ok {
 		cnv.adieu()
 	}
 
-	delete(c.buddies, jid)
+	delete(c.buddies, ID)
 }
 
-func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, error) {
+func (c *Client) lookupOrInitConversation(ID xmpp.JID) (*Conversation, bool, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	_, ok := c.buddies[jid]
+	_, ok := c.buddies[ID]
 
 	if !ok {
-		log.Infof("new otr-conversation: `%v`", string(jid))
+		log.Infof("new otr-conversation: `%v`", string(ID))
 		privKey, err := loadPrivateKey(c.KeyPath)
 
 		if err != nil {
@@ -289,10 +289,10 @@ func (c *Client) lookupOrInitConversation(jid xmpp.JID) (*Conversation, bool, er
 		}
 
 		c.fingerprint = FormatFingerprint(privKey.PublicKey.Fingerprint())
-		c.buddies[jid] = newConversation(jid, c, privKey)
+		c.buddies[ID] = newConversation(ID, c, privKey)
 	}
 
-	return c.buddies[jid], !ok, nil
+	return c.buddies[ID], !ok, nil
 }
 
 func (c *Client) recv(msg *xmpp.Message) (*xmpp.Message, error) {
@@ -357,19 +357,19 @@ func (c *Client) recvRaw(input []byte, from xmpp.JID) ([]byte, [][]byte, bool, e
 		)
 	}
 
-	auth := func(question string, jid xmpp.JID) error {
+	auth := func(question string, ID xmpp.JID) error {
 		var err error
 		var fingerprint string
 
-		if jid == c.C.Jid {
+		if ID == c.C.Jid {
 			fingerprint = FormatFingerprint(otrCnv.PrivateKey.PublicKey.Fingerprint())
 			log.Debugf("    Answering own fingerprint: %v", fingerprint)
 		} else {
-			if fingerprint, err = c.keys.Lookup(string(jid)); err != nil {
+			if fingerprint, err = c.keys.Lookup(string(ID)); err != nil {
 				return err
 			}
 
-			log.Debugf("    Finger: %v: %s", jid, fingerprint)
+			log.Debugf("    Finger: %v: %s", ID, fingerprint)
 		}
 
 		authResp, err := otrCnv.Authenticate(question, []byte(fingerprint))

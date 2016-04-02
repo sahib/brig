@@ -28,23 +28,23 @@ func main() {
 
 	flag.Parse()
 
-	var jid goxmpp.JID
+	var ID goxmpp.JID
 	var partnerJid goxmpp.JID
 	var password string
 
-	aliceJid := goxmpp.JID("alice@jabber.nullcat.de/laptop")
-	bobJid := goxmpp.JID("bob@jabber.nullcat.de/desktop")
+	aliceJid := goxmpp.JID("alice@nullcat.de/laptop")
+	bobJid := goxmpp.JID("bob@nullcat.de/desktop")
 
 	if *sendFlag {
-		jid, partnerJid, password = aliceJid, bobJid, "ThiuJ9wesh"
+		ID, partnerJid, password = aliceJid, bobJid, "ThiuJ9wesh"
 	} else {
-		jid, partnerJid, password = bobJid, aliceJid, "eecot3oXan"
+		ID, partnerJid, password = bobJid, aliceJid, "eecot3oXan"
 	}
 
 	client, err := xmpp.NewClient(&xmpp.Config{
-		Jid:             jid,
+		Jid:             ID,
 		Password:        password,
-		TLSConfig:       tls.Config{ServerName: jid.Domain()},
+		TLSConfig:       tls.Config{ServerName: ID.Domain()},
 		KeyPath:         "/tmp/otr.key." + password,
 		FingerprintPath: "/tmp/otr.buddies." + password,
 	})

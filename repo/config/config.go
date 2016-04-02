@@ -42,8 +42,8 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 func CreateDefaultConfig() *config.Config {
 	cfg := map[string]interface{}{
 		"repository": map[string]interface{}{
-			"jid":  "",
-			"mid":  "",
+			"id":   "",
+			"mid":  "", // TODO: Is still relevant?
 			"uuid": "",
 		},
 		"daemon": map[string]interface{}{

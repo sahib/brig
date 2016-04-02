@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -39,18 +39,23 @@ func absLockPaths(brigPath string) []string {
 	return lockPaths
 }
 
-func lookupJid(configPath string) (string, error) {
+func lookupID(configPath string) (id.ID, error) {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		return "", fmt.Errorf("Could not load config: %v", err)
 	}
 
-	jid, err := cfg.String("repository.jid")
+	idString, err := cfg.String("repository.id")
 	if err != nil {
-		return "", fmt.Errorf("No jid in config: %v", err)
+		return "", fmt.Errorf("No ID in config: %v", err)
 	}
 
-	return jid, nil
+	ID, err := id.Cast(idString)
+	if err != nil {
+		return "", err
+	}
+
+	return ID, nil
 }
 
 // Open decrypts all sensible data in the repository.
@@ -59,7 +64,7 @@ func Open(pwd, folder string) (*Repository, error) {
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
 	// Figure out the JID from the config:
-	jid, err := lookupJid(filepath.Join(brigPath, "config"))
+	ID, err := lookupID(filepath.Join(brigPath, "config"))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +83,7 @@ func Open(pwd, folder string) (*Repository, error) {
 		absNames = append(absNames, absName)
 	}
 
-	if err := UnlockFiles(jid, pwd, absNames); err != nil {
+	if err := UnlockFiles(string(ID), pwd, absNames); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +112,7 @@ func (r *Repository) Close() error {
 		absNames = append(absNames, absName)
 	}
 
-	if err := LockFiles(r.Jid, r.Password, absNames); err != nil {
+	if err := LockFiles(string(r.ID), r.Password, absNames); err != nil {
 		return err
 	}
 
@@ -120,12 +125,12 @@ func CheckPassword(folder, pwd string) error {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
-	jid, err := lookupJid(filepath.Join(brigPath, "config"))
+	ID, err := lookupID(filepath.Join(brigPath, "config"))
 	if err != nil {
 		return err
 	}
 
-	entry, err := parseShadowFile(brigPath, jid)
+	entry, err := parseShadowFile(brigPath, string(ID))
 	if err != nil {
 		return err
 	}
@@ -152,7 +157,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 	}
 
 	configValues := map[string]string{
-		"repository.jid":  "",
+		"repository.id":   "",
 		"repository.mid":  "",
 		"repository.uuid": "",
 	}
@@ -164,11 +169,17 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		}
 	}
 
-	jid, err := cfg.String("repository.jid")
+	idString, err := cfg.String("repository.id")
 	if err != nil {
 		return nil, err
 	}
 
+	ID, err := id.Cast(idString)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: remove?
 	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
 	if err != nil {
 		return nil, err
@@ -185,7 +196,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		ipfsSwarmPort,
 	)
 
-	ownStore, err := store.Open(brigPath, xmpp.JID(jid), ipfsLayer)
+	ownStore, err := store.Open(brigPath, ID, ipfsLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -200,11 +211,11 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	allStores := make(map[xmpp.JID]*store.Store)
-	allStores[xmpp.JID(jid)] = ownStore
+	allStores := make(map[id.ID]*store.Store)
+	allStores[ID] = ownStore
 
 	repo := Repository{
-		Jid:            jid,
+		ID:             ID,
 		Mid:            mid,
 		Folder:         absFolderPath,
 		InternalFolder: brigPath,

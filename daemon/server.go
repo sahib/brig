@@ -13,10 +13,10 @@ import (
 	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
+	"github.com/disorganizer/brig/transfer/mqtt"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tsuibin/goxmpp2/xmpp"
 	"golang.org/x/net/context"
 )
 
@@ -39,8 +39,8 @@ type Server struct {
 	// All mountpoints this daemon is serving:
 	Mounts *fuse.MountTable
 
-	// The xmpp management layer.
-	XMPP *transfer.Connector
+	// The metadata networkinglayer.
+	MetaHost *transfer.Connector
 
 	// signals (external and self triggered) arrive on this channel.
 	signals chan os.Signal
@@ -52,7 +52,7 @@ type Server struct {
 	listener net.Listener
 
 	// buffered channel with N places,
-	// every active connection holds one.
+	// - every active connection holds one.
 	maxConnections chan allowOneConn
 }
 
@@ -80,12 +80,14 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
+	// TODO: Auth mgr and peer
+	layer := mqtt.NewLayer(nil, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{
 		Repo:           rep,
 		Mounts:         fuse.NewMountTable(rep.OwnStore),
-		XMPP:           transfer.NewConnector(rep),
+		MetaHost:       transfer.NewConnector(layer, rep),
 		signals:        make(chan os.Signal, 1),
 		listener:       listener,
 		maxConnections: make(chan allowOneConn, MaxConnections),
@@ -95,7 +97,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	go daemon.loop(cancel)
 
 	// TODO: Make this start in parallel?
-	if err := daemon.Connect(xmpp.JID(rep.Jid), rep.Password); err != nil {
+	if err := daemon.Connect(rep.ID, rep.Password); err != nil {
 		return nil, err
 	}
 
@@ -234,14 +236,14 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 	}
 }
 
-// Connect tries to connect the xmpp client and the ipfs daemon to the outside world.
-func (sv *Server) Connect(jid xmpp.JID, password string) error {
+// Connect tries to connect the client and the ipfs daemon to the outside world.
+func (sv *Server) Connect(ident id.ID, password string) error {
 	if sv.IsOnline() {
 		return nil
 	}
 
-	if err := sv.XMPP.Connect(jid, password); err != nil {
-		log.Warningf("Unable to connect xmpp client: %v", err)
+	if err := sv.MetaHost.Connect(ident, password); err != nil {
+		log.Warningf("Unable to connect metadata client: %v", err)
 		return err
 	}
 
@@ -266,17 +268,17 @@ func (sv *Server) Disconnect() (err error) {
 		log.Warningf("Unable to close ipfs node: %v", err)
 	}
 
-	log.Debugf("Disconnecting xmpp client.")
+	log.Debugf("Disconnecting metadata host.")
 
-	// Try to close xmpp, even if ipfs is still running:
-	if err = sv.XMPP.Disconnect(); err != nil {
-		log.Warningf("Unable to disconnect xmpp client: %v", err)
+	// Try to close metadata host, even if ipfs is still running:
+	if err = sv.MetaHost.Disconnect(); err != nil {
+		log.Warningf("Unable to disconnect metadata host: %v", err)
 	}
 
 	return err
 }
 
-// IsOnline checks if both xmpp and ipfs is up and running.
+// IsOnline checks if both meta host and ipfs is up and running.
 func (sv *Server) IsOnline() bool {
-	return sv.XMPP.IsOnline() && sv.Repo.IPFS.IsOnline()
+	return sv.MetaHost.IsOnline() && sv.Repo.IPFS.IsOnline()
 }

@@ -14,27 +14,27 @@ const (
 	EncFileSuffix = ".minilock"
 )
 
-// LockFile encrypts `path` with minilock, using pass and jid as email.
+// LockFile encrypts `path` with minilock, using pass and ID as email.
 // The resulting file is written to `path` + EncFileSuffix,
 // the source file is removed.
-func LockFile(jid, pass, path string) error {
-	keys, err := minilock.GenerateKey(jid, pass)
+func LockFile(ID, pass, path string) error {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return err
 	}
 
-	return lockFile(keys, jid, pass, path)
+	return lockFile(keys, ID, pass, path)
 }
 
 // LockFiles works like LockFile but generates the key only once.
-func LockFiles(jid, pass string, paths []string) error {
-	keys, err := minilock.GenerateKey(jid, pass)
+func LockFiles(ID, pass string, paths []string) error {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return err
 	}
 
 	for _, path := range paths {
-		if err := lockFile(keys, jid, pass, path); err != nil {
+		if err := lockFile(keys, ID, pass, path); err != nil {
 			return err
 		}
 	}
@@ -42,7 +42,7 @@ func LockFiles(jid, pass string, paths []string) error {
 	return nil
 }
 
-func lockFile(keys *taber.Keys, jid, pass, path string) error {
+func lockFile(keys *taber.Keys, ID, pass, path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func lockFile(keys *taber.Keys, jid, pass, path string) error {
 }
 
 // unlockFileReal is the actual implementation of TryUnlock/UnlockFile
-func unlockFileReal(keys *taber.Keys, jid, pass, path string, write bool) error {
+func unlockFileReal(keys *taber.Keys, ID, pass, path string, write bool) error {
 	encPath := path + EncFileSuffix
 	data, err := ioutil.ReadFile(encPath)
 	if err != nil {
@@ -106,24 +106,24 @@ func unlockFileReal(keys *taber.Keys, jid, pass, path string, write bool) error 
 //        i.e. the same path as given to LockFile!
 //
 // If the operation was successful,
-func UnlockFile(jid, pass, path string) error {
-	keys, err := minilock.GenerateKey(jid, pass)
+func UnlockFile(ID, pass, path string) error {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return err
 	}
 
-	return unlockFileReal(keys, jid, pass, path, true)
+	return unlockFileReal(keys, ID, pass, path, true)
 }
 
 // UnlockFiles works like UnlockFile for many paths, but generates keys just once.
-func UnlockFiles(jid, pass string, paths []string) error {
-	keys, err := minilock.GenerateKey(jid, pass)
+func UnlockFiles(ID, pass string, paths []string) error {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return err
 	}
 
 	for _, path := range paths {
-		if err := unlockFileReal(keys, jid, pass, path, true); err != nil {
+		if err := unlockFileReal(keys, ID, pass, path, true); err != nil {
 			return err
 		}
 	}
@@ -133,21 +133,21 @@ func UnlockFiles(jid, pass string, paths []string) error {
 
 // TryUnlock tries to unlock a file, if successful,
 // `path` will not be removed and no encrypted output is written.
-func TryUnlock(jid, pass, path string) error {
-	keys, err := minilock.GenerateKey(jid, pass)
+func TryUnlock(ID, pass, path string) error {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return err
 	}
 
-	return unlockFileReal(keys, jid, pass, path, false)
+	return unlockFileReal(keys, ID, pass, path, false)
 }
 
 // EncryptMinilockMsg encrypts a given plaintext for multiple receivers.
-func EncryptMinilockMsg(jid, pass, plaintext string, mid ...string) (string, error) {
+func EncryptMinilockMsg(ID, pass, plaintext string, mid ...string) (string, error) {
 	ciphertext, err := minilock.EncryptFileContentsWithStrings(
 		"Minilock Filename.",
 		[]byte(plaintext),
-		jid, pass, false, mid...,
+		ID, pass, false, mid...,
 	)
 	if err != nil {
 		return "", nil
@@ -156,8 +156,8 @@ func EncryptMinilockMsg(jid, pass, plaintext string, mid ...string) (string, err
 }
 
 // DecryptMinilockMsg decrypts a given ciphertext.
-func DecryptMinilockMsg(jid, pass, ciphertext string) (string, error) {
-	userKey, err := minilock.GenerateKey(jid, pass)
+func DecryptMinilockMsg(ID, pass, ciphertext string) (string, error) {
+	userKey, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return "", nil
 	}
@@ -166,8 +166,8 @@ func DecryptMinilockMsg(jid, pass, ciphertext string) (string, error) {
 }
 
 // GenerateMinilockID generates a base58-encoded pubkey + 1-byte blake2s checksum as a string
-func GenerateMinilockID(jid, pass string) (string, error) {
-	keys, err := minilock.GenerateKey(jid, pass)
+func GenerateMinilockID(ID, pass string) (string, error) {
+	keys, err := minilock.GenerateKey(ID, pass)
 	if err != nil {
 		return "", err
 	}
