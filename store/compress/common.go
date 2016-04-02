@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrBadIndex = errors.New("Broken compression index.")
+	ErrBadIndex = errors.New("Broken compression index")
 )
 
 const (

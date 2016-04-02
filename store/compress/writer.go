@@ -11,9 +11,6 @@ type writer struct {
 	// Underlying raw, uncompressed data stream.
 	rawW io.Writer
 
-	// Compression layer.
-	zipW io.Writer
-
 	// Buffers data into MaxChunkSize chunks.
 	chunkBuf *bytes.Buffer
 
@@ -24,15 +21,17 @@ type writer struct {
 	rawOff int64
 
 	// Accumulator representing compressed offset.
-	sizeAcc *util.SizeAccumulator
+	zipOff int64
 
 	// Holds trailer data.
 	trailer *trailer
+
+	// Holds algorithm interface.
+	algo Algorithm
 }
 
 func (w *writer) addToIndex() {
-	a, b := w.rawOff, int64(w.sizeAcc.Size())
-	w.index = append(w.index, record{a, b})
+	w.index = append(w.index, record{w.rawOff, w.zipOff})
 }
 
 func (w *writer) flushBuffer(data []byte) error {
@@ -44,10 +43,12 @@ func (w *writer) flushBuffer(data []byte) error {
 	// Add record with start offset of the current chunk.
 	w.addToIndex()
 
-	w.zipW = wrapWriter(io.MultiWriter(w.rawW, w.sizeAcc), w.trailer.algo)
-
 	// Compress and flush the current chunk.
-	rawN, err := w.zipW.Write(data)
+	encData, err := w.algo.Encode(data)
+	if err != nil {
+		return err
+	}
+	n, err := w.rawW.Write(encData)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,8 @@ func (w *writer) flushBuffer(data []byte) error {
 	// Update offset for the current chunk. The compressed data
 	// offset is updated in background using a SizeAccumulator
 	// in combination with a MultiWriter.
-	w.rawOff += int64(rawN)
+	w.rawOff += int64(len(data))
+	w.zipOff += int64(n)
 	return nil
 }
 
@@ -98,14 +100,17 @@ func (w *writer) Write(p []byte) (n int, err error) {
 }
 
 // Return a WriteCloser with compression support.
-func NewWriter(w io.Writer, algo AlgorithmType) io.WriteCloser {
-	s := &util.SizeAccumulator{}
-	return &writer{
-		sizeAcc:  s,
-		rawW:     w,
-		chunkBuf: &bytes.Buffer{},
-		trailer:  &trailer{algo: algo},
+func NewWriter(w io.Writer, algoType AlgorithmType) (io.WriteCloser, error) {
+	algo, err := AlgorithmFromType(algoType)
+	if err != nil {
+		return nil, err
 	}
+	return &writer{
+		rawW:     w,
+		algo:     algo,
+		chunkBuf: &bytes.Buffer{},
+		trailer:  &trailer{algo: algoType},
+	}, nil
 }
 
 func (w *writer) Close() error {
@@ -131,12 +136,11 @@ func (w *writer) Close() error {
 
 	// Write trailer buffer (algo, chunksize, indexsize)
 	// at the end of file and close the stream.
-	var trailerSizeBuf = make([]byte, TrailerSize)
+	trailerSizeBuf := make([]byte, TrailerSize)
 	w.trailer.marshal(trailerSizeBuf)
 
 	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {
 		return err
 	}
-
 	return nil
 }

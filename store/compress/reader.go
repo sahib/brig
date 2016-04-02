@@ -1,7 +1,7 @@
 package compress
 
 import (
-	"fmt"
+	"bytes"
 	"io"
 	"os"
 	"sort"
@@ -16,7 +16,7 @@ import (
 // TODO: Mehr Algorithmen anbieten (lz4, brotli?)
 
 type chunkBuffer struct {
-	buf      [MaxChunkSize]byte
+	buf      []byte
 	readOff  int64
 	writeOff int64
 	size     int64
@@ -62,16 +62,16 @@ func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	return c.readOff, nil
 }
 
-func newChunkBuffer() chunkBuffer {
-	return chunkBuffer{}
+func newChunkBuffer(data []byte) chunkBuffer {
+	if data == nil {
+		data = make([]byte, MaxChunkSize)
+	}
+	return chunkBuffer{buf: data, size: int64(len(data))}
 }
 
 type reader struct {
 	// Underlying raw, compressed datastream.
 	rawR io.ReadSeeker
-
-	// Decompression layer, reader is based on chosen algorithm.
-	zipR io.Reader
 
 	// Index with records which contain chunk offsets.
 	index []record
@@ -90,6 +90,11 @@ type reader struct {
 
 	// Marker to identify initial read.
 	isInitialRead bool
+
+	// Holds algorithm interface.
+	algo Algorithm
+
+	decodeBuf *bytes.Buffer
 }
 
 func (r *reader) Seek(destOff int64, whence int) (int64, error) {
@@ -181,10 +186,11 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
-	r.zipR = wrapReader(r.rawR, r.trailer.algo)
-	if r.zipR == nil {
-		return fmt.Errorf("Invalid algorithm type: %d", r.trailer.algo)
+	algo, err := AlgorithmFromType(r.trailer.algo)
+	if err != nil {
+		return err
 	}
+	r.algo = algo
 
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
@@ -235,20 +241,26 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 	}
 	written += n
 	for {
-		chunkSize, rerr := r.fixZipChunk()
-		if rerr != nil && rerr != io.EOF {
-			return 0, rerr
+		decData, rerr := r.readZipChunk()
+		if rerr == io.EOF {
+			return written, nil
 		}
-		n, werr := io.CopyN(w, r.zipR, chunkSize)
+
+		if rerr != nil {
+			return written, rerr
+		}
+
+		n, werr := w.Write(decData)
+		if werr != nil {
+			return written, werr
+		}
+
 		written += int64(n)
 
 		if werr != nil {
 			return written, werr
 		}
 
-		if rerr == io.EOF {
-			return written, nil
-		}
 	}
 }
 
@@ -291,7 +303,7 @@ func (r *reader) fixZipChunk() (int64, error) {
 	}
 
 	// Determinate uncompressed chunksize; should only be 0 on empty file or at the end of file.
-	chunkSize := currRecord.rawOff - prevRecord.rawOff
+	chunkSize := currRecord.zipOff - prevRecord.zipOff
 	if chunkSize == 0 {
 		return 0, io.EOF
 	}
@@ -307,15 +319,27 @@ func (r *reader) fixZipChunk() (int64, error) {
 	return chunkSize, nil
 }
 
-func (r *reader) readZipChunk() (int64, error) {
+func (r *reader) readZipChunk() ([]byte, error) {
 	// Get current position of the reader; offset of the compressed file.
 	r.chunkBuf.Reset()
 	chunkSize, err := r.fixZipChunk()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
-	return n, err
+
+	r.decodeBuf.Reset()
+	_, err = io.CopyN(r.decodeBuf, r.rawR, chunkSize)
+	if err != nil {
+		return nil, err
+	}
+
+	decData, err := r.algo.Decode(r.decodeBuf.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	r.chunkBuf = newChunkBuffer(decData)
+
+	return decData, nil
 }
 
 // Return a new ReadSeeker with compression support. As random access is the
@@ -323,7 +347,7 @@ func (r *reader) readZipChunk() (int64, error) {
 // compression algorithm is chosen based on trailer information.
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{
-		rawR:     r,
-		chunkBuf: newChunkBuffer(),
+		rawR:      r,
+		decodeBuf: &bytes.Buffer{},
 	}
 }
