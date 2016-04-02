@@ -23,7 +23,7 @@ func openDest(t *testing.T, dest string) *os.File {
 	}
 	fd, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
-		t.Fatalf("Opening srouce %v failed: %v\n", dest, err)
+		t.Fatalf("Opening source %v failed: %v\n", dest, err)
 	}
 	return fd
 }
@@ -31,7 +31,7 @@ func openDest(t *testing.T, dest string) *os.File {
 func openSrc(t *testing.T, src string) *os.File {
 	fd, err := os.Open(src)
 	if err != nil {
-		t.Fatalf("Opening srouce %v failed: %v\n", src, err)
+		t.Fatalf("Opening source %v failed: %v\n", src, err)
 	}
 	return fd
 }
@@ -43,15 +43,73 @@ const (
 
 func TestCompressDecompress(t *testing.T) {
 	sizes := TestSizes
-	algos := []Algorithm{AlgoNone, AlgoSnappy}
+	algos := []AlgorithmType{AlgoNone, AlgoSnappy}
+
 	for _, algo := range algos {
 		for _, size := range sizes {
-			testCompressDecompress(t, size, algo)
+			testCompressDecompress(t, size, algo, true, true)
+			testCompressDecompress(t, size, algo, false, false)
+			testCompressDecompress(t, size, algo, true, false)
+			testCompressDecompress(t, size, algo, false, true)
 		}
 	}
 }
+func Copy(dst io.Writer, src io.Reader, useReadFrom, useWriteTo bool) (written int64, err error) {
+	return copyBuffer(dst, src, nil, useReadFrom, useWriteTo)
+}
 
-func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
+// CopyBuffer is identical to Copy except that it stages through the
+// provided buffer (if one is required) rather than allocating a
+// temporary one. If buf is nil, one is allocated; otherwise if it has
+// zero length, CopyBuffer panics.
+func CopyBuffer(dst io.Writer, src io.Reader, buf []byte, useReadFrom, useWriteTo bool) (written int64, err error) {
+	if buf != nil && len(buf) == 0 {
+		panic("empty buffer in io.CopyBuffer")
+	}
+	return copyBuffer(dst, src, buf, useReadFrom, useWriteTo)
+}
+
+func copyBuffer(dst io.Writer, src io.Reader, buf []byte, useReadFrom, useWriteTo bool) (written int64, err error) {
+	// If the reader has a WriteTo method, use it to do the copy.
+	// Avoids an allocation and a copy.
+	if wt, ok := src.(io.WriterTo); ok && useWriteTo {
+		return wt.WriteTo(dst)
+	}
+	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
+	if rt, ok := dst.(io.ReaderFrom); ok && useReadFrom {
+		return rt.ReadFrom(src)
+	}
+	if buf == nil {
+		buf = make([]byte, 32*1024)
+	}
+	for {
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if er == io.EOF {
+			break
+		}
+		if er != nil {
+			err = er
+			break
+		}
+	}
+	return written, err
+}
+
+func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useReadFrom, useWriteTo bool) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
 	testutil.Remover(t, ZipFilePath)
@@ -62,7 +120,7 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 
 	// Compress.
 	w := NewWriter(zipFileDest, algo)
-	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
+	if _, err := Copy(w, bytes.NewReader(data), useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
 	}
@@ -83,7 +141,7 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 
 	// Uncompress.
 	r := NewReader(dataFromZip)
-	if _, err := io.Copy(dataUncomp, r); err != nil {
+	if _, err := Copy(dataUncomp, r, useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Decompression failed: %v", err)
 		return
 	}
@@ -93,8 +151,15 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 	}
 
 	// Compare.
-	if !bytes.Equal(dataUncomp.Bytes(), data) {
+	//if !bytes.Equal(dataUncomp.Bytes(), data) {
+	//	t.Error("Uncompressed data and input data does not match.")
+	//	return
+	//}
+	got, want := dataUncomp.Bytes(), data
+	if !bytes.Equal(got, want) {
 		t.Error("Uncompressed data and input data does not match.")
+		t.Errorf("\tGOT:   %v", omit(got, 10))
+		t.Errorf("\tWANT:  %v", omit(want, 10))
 		return
 	}
 }
@@ -102,9 +167,15 @@ func testCompressDecompress(t *testing.T, size int64, algo Algorithm) {
 func TestSeek(t *testing.T) {
 	sizes := TestSizes
 	offsets := TestOffsets
-	for _, size := range sizes {
-		for _, off := range offsets {
-			testSeek(t, size, off)
+	algos := []AlgorithmType{AlgoNone, AlgoSnappy}
+	for _, algo := range algos {
+		for _, size := range sizes {
+			for _, off := range offsets {
+				testSeek(t, size, off, algo, false, false)
+				testSeek(t, size, off, algo, true, true)
+				testSeek(t, size, off, algo, false, true)
+				testSeek(t, size, off, algo, true, false)
+			}
 		}
 	}
 }
@@ -123,7 +194,7 @@ func omit(data []byte, lim int) string {
 	return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
 }
 
-func testSeek(t *testing.T, size, offset int64) {
+func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom, useWriteTo bool) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
 	testutil.Remover(t, ZipFilePath)
@@ -131,8 +202,8 @@ func testSeek(t *testing.T, size, offset int64) {
 	zipFileDest := openDest(t, ZipFilePath)
 
 	// Compress.
-	w := NewWriter(zipFileDest, AlgoSnappy)
-	if _, err := io.Copy(w, bytes.NewReader(data)); err != nil {
+	w := NewWriter(zipFileDest, algo)
+	if _, err := Copy(w, bytes.NewReader(data), useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
 	}
@@ -165,7 +236,7 @@ func testSeek(t *testing.T, size, offset int64) {
 	}
 
 	// Read starting at a specific offset.
-	if _, err := io.Copy(dataUncomp, zr); err != nil {
+	if _, err := Copy(dataUncomp, zr, useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Decompression failed: %v", err)
 		return
 	}

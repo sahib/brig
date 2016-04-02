@@ -1,21 +1,19 @@
 package compress
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sort"
 
 	"github.com/disorganizer/brig/util"
-	"github.com/golang/snappy"
 )
 
 // TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
-// TODO: os.Seek(0, os.CURR) möglichst beseitigen; mit normalen index ersetzen.
 // TODO: Dokumentation schreiben.
-// TODO: ReadFrom und WriteTo implementieren.
-// TODO: Mehr Algorithmen anbieten (lz4, brotli?)
 // TODO: In store/stream.go einbauen.
 // TODO: linter durchlaufen lassen.
+// TODO: Mehr Algorithmen anbieten (lz4, brotli?)
 
 type chunkBuffer struct {
 	buf      [MaxChunkSize]byte
@@ -95,7 +93,6 @@ type reader struct {
 }
 
 func (r *reader) Seek(destOff int64, whence int) (int64, error) {
-
 	if whence == os.SEEK_END {
 		if destOff > 0 {
 			return 0, io.EOF
@@ -107,12 +104,12 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		return r.Seek(r.zipSeekOffset+destOff, os.SEEK_SET)
 	}
 
-	if destOff < 0 {
-		return 0, io.EOF
-	}
-
 	if err := r.parseHeaderIfNeeded(); err != nil {
 		return 0, err
+	}
+
+	if destOff < 0 {
+		return 0, io.EOF
 	}
 
 	// Check if given raw offset equals current offset.
@@ -137,7 +134,6 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
 		return 0, err
 	}
-
 	return destOff, nil
 }
 
@@ -185,16 +181,11 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
-	// Handle uncompressed stream.
-	if r.trailer.algo == AlgoNone {
-		if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
-			return err
-		}
-		// No need to go further.
-		return nil
+	r.zipR = wrapReader(r.rawR, r.trailer.algo)
+	if r.zipR == nil {
+		return fmt.Errorf("Invalid algorithm type: %d", r.trailer.algo)
 	}
 
-	// Handle compressed stream.
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
@@ -232,21 +223,39 @@ func (r *reader) parseHeaderIfNeeded() error {
 	return nil
 }
 
-// Read reads len(p) bytes from the compressed stream into p.
-func (r *reader) Read(p []byte) (int, error) {
+func (r *reader) WriteTo(w io.Writer) (int64, error) {
 	if err := r.parseHeaderIfNeeded(); err != nil {
 		return 0, err
 	}
 
-	// Handle uncompressed stream.
-	if r.trailer.algo == AlgoNone {
-		maxOff, errMax := r.maxOff(int64(len(p)))
-		n, err := r.rawR.Read(p[:maxOff])
-		r.zipSeekOffset += int64(n)
-		if err != nil {
-			return n, err
+	written := int64(0)
+	n, cerr := io.Copy(w, &r.chunkBuf)
+	if cerr != nil {
+		return n, cerr
+	}
+	written += n
+	for {
+		chunkSize, rerr := r.fixZipChunk()
+		if rerr != nil && rerr != io.EOF {
+			return 0, rerr
 		}
-		return n, errMax
+		n, werr := io.CopyN(w, r.zipR, chunkSize)
+		written += int64(n)
+
+		if werr != nil {
+			return written, werr
+		}
+
+		if rerr == io.EOF {
+			return written, nil
+		}
+	}
+}
+
+// Read reads len(p) bytes from the compressed stream into p.
+func (r *reader) Read(p []byte) (int, error) {
+	if err := r.parseHeaderIfNeeded(); err != nil {
+		return 0, err
 	}
 
 	// Handle stream using compression.
@@ -274,17 +283,7 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-func (r *reader) maxOff(pSize int64) (int64, error) {
-	if pSize+r.zipSeekOffset > int64(r.trailer.maxFileOffset) {
-		return int64(r.trailer.maxFileOffset) - r.zipSeekOffset, io.EOF
-	}
-	return pSize, nil
-}
-
-func (r *reader) readZipChunk() (int64, error) {
-	// Get current position of the reader; offset of the compressed file.
-	r.chunkBuf.Reset()
-
+func (r *reader) fixZipChunk() (int64, error) {
 	// Get the start and end record of the chunk currOff is located in.
 	prevRecord, currRecord := r.chunkLookup(r.rawSeekOffset, false)
 	if currRecord == nil || prevRecord == nil {
@@ -302,10 +301,20 @@ func (r *reader) readZipChunk() (int64, error) {
 		return 0, err
 	}
 
-	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
 	r.rawSeekOffset = currRecord.zipOff
 	r.zipSeekOffset = prevRecord.rawOff
 	r.isInitialRead = false
+	return chunkSize, nil
+}
+
+func (r *reader) readZipChunk() (int64, error) {
+	// Get current position of the reader; offset of the compressed file.
+	r.chunkBuf.Reset()
+	chunkSize, err := r.fixZipChunk()
+	if err != nil {
+		return 0, err
+	}
+	n, err := io.CopyN(&r.chunkBuf, r.zipR, chunkSize)
 	return n, err
 }
 
@@ -315,7 +324,6 @@ func (r *reader) readZipChunk() (int64, error) {
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{
 		rawR:     r,
-		zipR:     snappy.NewReader(r),
 		chunkBuf: newChunkBuffer(),
 	}
 }
