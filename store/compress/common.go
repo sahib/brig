@@ -6,29 +6,41 @@ import (
 )
 
 var (
+	// ErrBadIndex is returned on invalid compression index.
 	ErrBadIndex = errors.New("Broken compression index")
 )
 
 const (
-	MaxChunkSize   = 64 * 1024
-	IndexChunkSize = 16
-	TrailerSize    = 16
+	maxChunkSize   = 64 * 1024
+	indexChunkSize = 16
+	trailerSize    = 16
 )
 
 const (
+	// AlgoNone represents a ,,uncompressed'' algorithm.
 	AlgoNone = iota
+
+	// AlgoSnappy represents the snappy compression algorithm:
+	// https://en.wikipedia.org/wiki/Snappy_(software)
 	AlgoSnappy
+
+	//AlgoLZ4 represents the lz4 compression algorithm:
+	// https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
 	AlgoLZ4
-	// TODO: AlgoLZ4?
 )
 
+// AlgorithmType user defined type to store the algorithm type.
 type AlgorithmType byte
 
+// record structure reprenents a offset mapping {uncompressed offset, compressedOffset}.
+// A chunk of maxChunkSize is defined by two records. The size of a specific
+// record can be determinated by a simple substitution of two record offsets.
 type record struct {
 	rawOff int64
 	zipOff int64
 }
 
+// trailer holds basic information about the compressed file.
 type trailer struct {
 	algo      AlgorithmType
 	chunksize uint32

@@ -9,12 +9,10 @@ import (
 	"github.com/disorganizer/brig/util"
 )
 
-// TODO: Tests schreiben (leere dateien, chunkgröße -1, +0, +1 etc.)
-// TODO: Dokumentation schreiben.
 // TODO: In store/stream.go einbauen.
-// TODO: linter durchlaufen lassen.
-// TODO: Mehr Algorithmen anbieten (lz4, brotli?)
 
+// chunkBuffer represents a custom buffer struct with Read/Write and Seek
+// support.
 type chunkBuffer struct {
 	buf      []byte
 	readOff  int64
@@ -23,7 +21,7 @@ type chunkBuffer struct {
 }
 
 func (c *chunkBuffer) Write(p []byte) (int, error) {
-	n := copy(c.buf[c.writeOff:MaxChunkSize], p)
+	n := copy(c.buf[c.writeOff:maxChunkSize], p)
 	c.writeOff += int64(n)
 	c.size = util.Max64(c.size, c.writeOff)
 	return n, nil
@@ -62,9 +60,11 @@ func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	return c.readOff, nil
 }
 
+// newChunkBuffer returns a chunkBuffer with the given data. if data is nil a
+// chunkBuffer with maxChunkSize is returned.
 func newChunkBuffer(data []byte) chunkBuffer {
 	if data == nil {
-		data = make([]byte, MaxChunkSize)
+		data = make([]byte, maxChunkSize)
 	}
 	return chunkBuffer{buf: data, size: int64(len(data))}
 }
@@ -76,7 +76,7 @@ type reader struct {
 	// Index with records which contain chunk offsets.
 	index []record
 
-	// Buffer holds currently read data; MaxChunkSize.
+	// Buffer holds currently read data; maxChunkSize.
 	chunkBuf chunkBuffer
 
 	// Structure with parsed trailer.
@@ -109,7 +109,7 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		return r.Seek(r.zipSeekOffset+destOff, os.SEEK_SET)
 	}
 
-	if err := r.parseHeaderIfNeeded(); err != nil {
+	if err := r.parseTrailerIfNeeded(); err != nil {
 		return 0, err
 	}
 
@@ -142,19 +142,17 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	return destOff, nil
 }
 
-// Return start (prev offset) and end (curr offset) of the chunk currOff is
-// located in. If currOff is 0, the startoffset of the first and second record is
-// returned. If currOff is at the end of file the end offset of the last chunk
-// is returned twice.  The difference between prev record and curr chunk is then
-// equal to 0.
+// Return start (prevRecord) and end (currRecord) of a chunk currOff is located
+// in. If currOff is 0, the first and second record is returned. If currOff is
+// at the end of file the end record (currRecord) is returned twice.  The offset
+// difference (chunksize) between prevRecord and currRecord is then equal to 0.
 func (r *reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
 	// Get smallest index that is before given currOff.
 	i := sort.Search(len(r.index), func(i int) bool {
 		if isRawOff {
 			return r.index[i].rawOff > currOff
-		} else {
-			return r.index[i].zipOff > currOff
 		}
+		return r.index[i].zipOff > currOff
 	})
 
 	// Beginning of the file, first chunk: prev offset is 0, curr offset is 1.
@@ -169,18 +167,18 @@ func (r *reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
 	return &r.index[i-1], &r.index[i]
 }
 
-func (r *reader) parseHeaderIfNeeded() error {
+func (r *reader) parseTrailerIfNeeded() error {
 	if r.trailer != nil {
 		return nil
 	}
 
 	// Goto end of file and read trailer buffer.
-	if _, err := r.rawR.Seek(-TrailerSize, os.SEEK_END); err != nil {
+	if _, err := r.rawR.Seek(-trailerSize, os.SEEK_END); err != nil {
 		return err
 	}
 
-	buf := [TrailerSize]byte{}
-	if n, err := r.rawR.Read(buf[:]); err != nil || n != TrailerSize {
+	buf := [trailerSize]byte{}
+	if n, err := r.rawR.Read(buf[:]); err != nil || n != trailerSize {
 		return err
 	}
 	r.trailer = &trailer{}
@@ -193,7 +191,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	r.algo = algo
 
 	// Seek and read index into buffer.
-	seekIdx := -(int64(r.trailer.indexSize) + TrailerSize)
+	seekIdx := -(int64(r.trailer.indexSize) + trailerSize)
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		return err
 	}
@@ -205,7 +203,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 	// Build index with records. A record encapsulates a raw offset and the
 	// compressed offset it is mapped to.
 	prevRecord := record{-1, -1}
-	for i := uint64(0); i < (r.trailer.indexSize / IndexChunkSize); i++ {
+	for i := uint64(0); i < (r.trailer.indexSize / indexChunkSize); i++ {
 		currRecord := record{}
 		currRecord.unmarshal(indexBuf)
 
@@ -217,7 +215,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 			return ErrBadIndex
 		}
 		r.index = append(r.index, currRecord)
-		indexBuf = indexBuf[IndexChunkSize:]
+		indexBuf = indexBuf[indexChunkSize:]
 	}
 
 	// Set reader to beginning of file
@@ -230,7 +228,7 @@ func (r *reader) parseHeaderIfNeeded() error {
 }
 
 func (r *reader) WriteTo(w io.Writer) (int64, error) {
-	if err := r.parseHeaderIfNeeded(); err != nil {
+	if err := r.parseTrailerIfNeeded(); err != nil {
 		return 0, err
 	}
 
@@ -266,7 +264,7 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 
 // Read reads len(p) bytes from the compressed stream into p.
 func (r *reader) Read(p []byte) (int, error) {
-	if err := r.parseHeaderIfNeeded(); err != nil {
+	if err := r.parseTrailerIfNeeded(); err != nil {
 		return 0, err
 	}
 
@@ -342,8 +340,8 @@ func (r *reader) readZipChunk() ([]byte, error) {
 	return decData, nil
 }
 
-// Return a new ReadSeeker with compression support. As random access is the
-// purpose of this layer, a ReadSeeker is required as parameter. The used
+// NewReader returns a new ReadSeeker with compression support. As random access
+// is the purpose of this layer, a ReadSeeker is required as parameter. The used
 // compression algorithm is chosen based on trailer information.
 func NewReader(r io.ReadSeeker) io.ReadSeeker {
 	return &reader{

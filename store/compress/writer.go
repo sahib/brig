@@ -11,7 +11,7 @@ type writer struct {
 	// Underlying raw, uncompressed data stream.
 	rawW io.Writer
 
-	// Buffers data into MaxChunkSize chunks.
+	// Buffers data into maxChunkSize chunks.
 	chunkBuf *bytes.Buffer
 
 	// Index with records which contain chunk offsets.
@@ -30,7 +30,7 @@ type writer struct {
 	algo Algorithm
 }
 
-func (w *writer) addToIndex() {
+func (w *writer) addRecordToIndex() {
 	w.index = append(w.index, record{w.rawOff, w.zipOff})
 }
 
@@ -41,7 +41,7 @@ func (w *writer) flushBuffer(data []byte) error {
 	}
 
 	// Add record with start offset of the current chunk.
-	w.addToIndex()
+	w.addRecordToIndex()
 
 	// Compress and flush the current chunk.
 	encData, err := w.algo.Encode(data)
@@ -63,7 +63,7 @@ func (w *writer) flushBuffer(data []byte) error {
 
 func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 	read := 0
-	buf := [MaxChunkSize]byte{}
+	buf := [maxChunkSize]byte{}
 	for {
 		n, rerr := r.Read(buf[:])
 		read += n
@@ -83,15 +83,15 @@ func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 
 func (w *writer) Write(p []byte) (n int, err error) {
 	written := len(p)
-	// Compress only MaxChunkSize equal chunks.
+	// Compress only maxChunkSize equal chunks.
 	for {
-		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), MaxChunkSize)])
+		n, _ := w.chunkBuf.Write(p[:util.Min(len(p), maxChunkSize)])
 
-		if w.chunkBuf.Len() < MaxChunkSize {
+		if w.chunkBuf.Len() < maxChunkSize {
 			break
 		}
 
-		if err := w.flushBuffer(w.chunkBuf.Next(MaxChunkSize)); err != nil {
+		if err := w.flushBuffer(w.chunkBuf.Next(maxChunkSize)); err != nil {
 			return 0, err
 		}
 		p = p[n:]
@@ -99,7 +99,7 @@ func (w *writer) Write(p []byte) (n int, err error) {
 	return written, nil
 }
 
-// Return a WriteCloser with compression support.
+// NewWriter returns a WriteCloser with compression support.
 func NewWriter(w io.Writer, algoType AlgorithmType) (io.WriteCloser, error) {
 	algo, err := AlgorithmFromType(algoType)
 	if err != nil {
@@ -118,16 +118,16 @@ func (w *writer) Close() error {
 	if err := w.flushBuffer(w.chunkBuf.Bytes()); err != nil {
 		return err
 	}
-	w.addToIndex()
+	w.addRecordToIndex()
 
 	// Handle trailer of uncompressed file.
 	// Write compression index trailer and close stream.
-	w.trailer.indexSize = uint64(IndexChunkSize * len(w.index))
+	w.trailer.indexSize = uint64(indexChunkSize * len(w.index))
 	indexBuf := make([]byte, w.trailer.indexSize)
 	indexBufStartOff := indexBuf
 	for _, record := range w.index {
 		record.marshal(indexBuf)
-		indexBuf = indexBuf[IndexChunkSize:]
+		indexBuf = indexBuf[indexChunkSize:]
 	}
 
 	if n, err := w.rawW.Write(indexBufStartOff); err != nil || uint64(n) != w.trailer.indexSize {
@@ -136,7 +136,7 @@ func (w *writer) Close() error {
 
 	// Write trailer buffer (algo, chunksize, indexsize)
 	// at the end of file and close the stream.
-	trailerSizeBuf := make([]byte, TrailerSize)
+	trailerSizeBuf := make([]byte, trailerSize)
 	w.trailer.marshal(trailerSizeBuf)
 
 	if _, err := w.rawW.Write(trailerSizeBuf); err != nil {

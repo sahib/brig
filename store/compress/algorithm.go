@@ -8,54 +8,57 @@ import (
 )
 
 var (
+	// ErrBadAlgo is returned on a unsupported/unknown algorithm.
 	ErrBadAlgo = errors.New("Invalid algorithm type")
 )
 
+// Algorithm is the common interface for all supported algorithms.
 type Algorithm interface {
 	Encode([]byte) ([]byte, error)
 	Decode([]byte) ([]byte, error)
 }
 
-type NoneAlgo struct{}
-type SnappyAlgo struct{}
-type LZ4Algo struct{}
+type noneAlgo struct{}
+type snappyAlgo struct{}
+type lz4Algo struct{}
 
-var AlgoMap = map[AlgorithmType]Algorithm{
-	AlgoNone:   NoneAlgo{},
-	AlgoSnappy: SnappyAlgo{},
-	AlgoLZ4:    LZ4Algo{},
+var algoMap = map[AlgorithmType]Algorithm{
+	AlgoNone:   noneAlgo{},
+	AlgoSnappy: snappyAlgo{},
+	AlgoLZ4:    lz4Algo{},
 }
 
 // AlgoNone
-func (_ NoneAlgo) Encode(src []byte) ([]byte, error) {
+func (a noneAlgo) Encode(src []byte) ([]byte, error) {
 	return src, nil
 }
 
-func (_ NoneAlgo) Decode(src []byte) ([]byte, error) {
+func (a noneAlgo) Decode(src []byte) ([]byte, error) {
 	return src, nil
 }
 
 // AlgoSnappy
-func (_ SnappyAlgo) Encode(src []byte) ([]byte, error) {
+func (a snappyAlgo) Encode(src []byte) ([]byte, error) {
 	return snappy.Encode(src, src), nil
 
 }
 
-func (_ SnappyAlgo) Decode(src []byte) ([]byte, error) {
+func (a snappyAlgo) Decode(src []byte) ([]byte, error) {
 	return snappy.Decode(src, src)
 }
 
 // AlgoLZ4
-func (_ LZ4Algo) Encode(src []byte) ([]byte, error) {
+func (a lz4Algo) Encode(src []byte) ([]byte, error) {
 	return lz4.Encode(src, src)
 }
 
-func (_ LZ4Algo) Decode(src []byte) ([]byte, error) {
+func (a lz4Algo) Decode(src []byte) ([]byte, error) {
 	return lz4.Decode(src, src)
 }
 
+// AlgorithmFromType returns a interface to the given AlgorithmType.
 func AlgorithmFromType(a AlgorithmType) (Algorithm, error) {
-	if algo, ok := AlgoMap[a]; ok {
+	if algo, ok := algoMap[a]; ok {
 		return algo, nil
 	}
 	return nil, ErrBadAlgo
