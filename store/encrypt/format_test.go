@@ -44,12 +44,7 @@ func encryptFile(key []byte, from, to string) (n int64, outErr error) {
 		}
 	}()
 
-	info, err := fdFrom.Stat()
-	if err != nil {
-		return 0, err
-	}
-
-	return Encrypt(key, fdFrom, fdTo, info.Size())
+	return Encrypt(key, fdFrom, fdTo)
 }
 
 func decryptFile(key []byte, from, to string) (n int64, outErr error) {
@@ -146,7 +141,7 @@ func TestSeek(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, N)
+	enc, err := NewWriter(shared, TestKey)
 	if err != nil {
 		panic(err)
 	}
@@ -209,18 +204,14 @@ func TestSeek(t *testing.T) {
 		return
 	}
 
-	if N != int64(decLayer.info.Length) {
-		t.Errorf(
-			"Input length (%d) does not match header length (%d).",
-			N,
-			decLayer.info.Length,
-		)
+	// Check if SEEK_END appears to work
+	// (jump to same position, but from end of file)
+	endPos, err := decLayer.Seek(seekTest, os.SEEK_END)
+	if err != nil {
+		t.Errorf("Seek(%d, SEEK_END) failed: %v", err)
 		return
 	}
 
-	// Check if SEEK_END appears to work
-	// (jump to same position, but from end of file)
-	endPos, _ := decLayer.Seek(seekTest, os.SEEK_END)
 	if endPos != pos {
 		t.Errorf("SEEK_END failed; should be %d, was %d", pos, endPos)
 		return
@@ -260,7 +251,7 @@ func TestSeekThenRead(t *testing.T) {
 	shared := &bytes.Buffer{}
 	dest := bytes.NewBuffer(b)
 
-	enc, err := NewWriter(shared, TestKey, N)
+	enc, err := NewWriter(shared, TestKey)
 	if err != nil {
 		panic(err)
 	}
@@ -330,7 +321,7 @@ func TestEmptyFile(t *testing.T) {
 	src := bytes.NewReader(srcBuf)
 	dst := bytes.NewBuffer(dstBuf)
 
-	enc, err := NewWriter(tmpBuf, TestKey, 0)
+	enc, err := NewWriter(tmpBuf, TestKey)
 	if err != nil {
 		t.Errorf("TestEmpyFile: creating writer failed: %v", err)
 		return
@@ -376,13 +367,13 @@ func TestEncryptedTheSame(t *testing.T) {
 	encOne := &bytes.Buffer{}
 	encTwo := &bytes.Buffer{}
 
-	n1, err := Encrypt(TestKey, bytes.NewReader(sourceData), encOne, int64(len(sourceData)))
+	n1, err := Encrypt(TestKey, bytes.NewReader(sourceData), encOne)
 	if err != nil {
 		t.Errorf("TestEncryptedTheSame: Encrypting first failed: %v", err)
 		return
 	}
 
-	n2, err := Encrypt(TestKey, bytes.NewReader(sourceData), encTwo, int64(len(sourceData)))
+	n2, err := Encrypt(TestKey, bytes.NewReader(sourceData), encTwo)
 	if err != nil {
 		t.Errorf("TestEncryptedTheSame: Encrypting second failed: %v", err)
 		return

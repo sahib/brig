@@ -3,15 +3,12 @@
 //
 // [HEADER][[BLOCKHEADER][PAYLOAD]...]
 //
-// HEADER is 28+16 bytes big and contains the following fields:
+// HEADER is 20+16 bytes big and contains the following fields:
 //    -   8 Byte: Magic number (to identify non-brig files quickly)
 //    -   2 Byte: Format version
-//    -   2 Byte: Used cipher type (ChaCha20 or AES-GCM)
+//    -   2 Byte: Used cipher type (ChaCha20 or AES-GCM currently)
 //    -   4 Byte: Key length in bytes.
 //	  -   4 Byte: Maximum size of each block (last may be less)
-//    -   8 Byte: Number of bytes passed to encryption (i.e. len of decrypted data)
-//                This is needed to make SEEK_END work
-//                (and also to make sure all data was decrypted)
 //    -  16 Byte: MAC protecting the header from forgery
 //
 // BLOCKHEADER contains the following fields:
@@ -57,7 +54,7 @@ const (
 	version = 1
 
 	// Size of the initial header:
-	headerSize = 28 + macSize
+	headerSize = 20 + macSize
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
@@ -89,7 +86,7 @@ var KeySize = chacha.KeySize
 ////////////////////
 
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader(key []byte, length int64) []byte {
+func GenerateHeader(key []byte) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
@@ -102,8 +99,6 @@ func GenerateHeader(key []byte, length int64) []byte {
 		0, 0, 0, 0,
 		// Block length (4 Byte):
 		0, 0, 0, 0,
-		// Length of input (8 Byte),
-		0, 0, 0, 0, 0, 0, 0, 0,
 		// MAC Header (16 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -119,9 +114,6 @@ func GenerateHeader(key []byte, length int64) []byte {
 
 	// Encode max block size:
 	binary.LittleEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
-
-	// Encode number of blocks:
-	binary.LittleEndian.PutUint64(header[20:28], uint64(length))
 
 	// Calculate a MAC of the header; this needs to be done last:
 	headerMac := hmac.New(sha3.New224, key)
@@ -147,9 +139,6 @@ type HeaderInfo struct {
 	// Blocklen is the max. number of bytes in a block.
 	// The last block might be smaller.
 	Blocklen uint32
-	// Length is the number of bytes that were passed to the encryption.
-	// It may be 0, when not given (or if it's an empty file)
-	Length uint64
 }
 
 // ParseHeader parses the header of the format file.
@@ -177,8 +166,6 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		return nil, fmt.Errorf("Unsupported block length in header: %d", blocklen)
 	}
 
-	length := binary.LittleEndian.Uint64(header[20:28])
-
 	// Check the header mac:
 	headerMac := hmac.New(sha3.New224, key)
 	if _, err := headerMac.Write(header[:headerSize-macSize]); err != nil {
@@ -196,7 +183,6 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 		Cipher:   cipher,
 		Keylen:   keylen,
 		Blocklen: blocklen,
-		Length:   length,
 	}, nil
 }
 
@@ -251,8 +237,8 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.Reader, dest io.Writer, size int64) (n int64, outErr error) {
-	layer, err := NewWriter(dest, key, size)
+func Encrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr error) {
+	layer, err := NewWriter(dest, key)
 	if err != nil {
 		return 0, err
 	}

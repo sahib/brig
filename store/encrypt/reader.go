@@ -164,9 +164,8 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Constants and assumption on the stream below:
-	blockSize := int64(MaxBlockSize)
 	blockHeaderSize := int64(r.aead.NonceSize())
-	totalBlockSize := blockHeaderSize + blockSize + int64(r.aead.Overhead())
+	totalBlockSize := blockHeaderSize + MaxBlockSize + int64(r.aead.Overhead())
 
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
@@ -178,10 +177,22 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
-		absOffsetDec = int64(r.info.Length) - offset
+		// Try to figure out the end of the stream.
+		// This might be inefficient for some underlying readers,
+		// but is probably okay for ipfs.
+		endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
+		if err != nil {
+			return 0, err
+		}
+
+		// totalBlockSize should never be 0
+		endOffsetDec := ((endOffsetEnc - headerSize) / totalBlockSize) * MaxBlockSize
+		absOffsetDec = endOffsetDec - offset
+
+		// TODO: Needed
 		if absOffsetDec < 0 {
 			// We have no idea when the stream ends.
-			return 0, fmt.Errorf("Cannot seek to end; bad length in header.")
+			return 0, fmt.Errorf("Cannot perform SEEK_END")
 		}
 	}
 
@@ -200,11 +211,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := headerSize + ((absOffsetDec / blockSize) * totalBlockSize)
+	absOffsetEnc := headerSize + ((absOffsetDec / MaxBlockSize) * totalBlockSize)
 
 	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
-	lastBlockNum := r.lastSeekPos / blockSize
+	lastBlockNum := r.lastSeekPos / MaxBlockSize
 	r.lastSeekPos = absOffsetDec
 
 	if lastBlockNum != blockNum {
@@ -219,7 +230,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		}
 	}
 	// Reslice the backlog, so Read() does not return skipped data.
-	if _, err := r.backlog.Seek(absOffsetDec%blockSize, os.SEEK_SET); err != nil {
+	if _, err := r.backlog.Seek(absOffsetDec%MaxBlockSize, os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
