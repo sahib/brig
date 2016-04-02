@@ -106,7 +106,7 @@ func (w slowWriter) Write(buf []byte) (int, error) {
 }
 
 func TestTimeoutWriter(t *testing.T) {
-	fast := TimeoutWriter(&bytes.Buffer{}, 500*time.Millisecond)
+	fast := NewTimeoutWriter(&bytes.Buffer{}, 500*time.Millisecond)
 	beforeFast := time.Now()
 	fast.Write([]byte("Hello World"))
 	fastTook := time.Since(beforeFast)
@@ -117,7 +117,7 @@ func TestTimeoutWriter(t *testing.T) {
 	}
 
 	beforeSlow := time.Now()
-	slow := TimeoutWriter(slowWriter{}, 250*time.Millisecond)
+	slow := NewTimeoutWriter(slowWriter{}, 250*time.Millisecond)
 	slow.Write([]byte("Hello World"))
 	slowTook := time.Since(beforeSlow)
 

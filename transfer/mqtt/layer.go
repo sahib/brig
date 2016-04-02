@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -13,18 +14,18 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Layer struct {
+type layer struct {
 	// self is our own ID and ipfs ID
 	self id.Peer
 
 	// srv is a mqtt broker wrapper
 	srv *server
 
-	// port of the mqtt broker
-	port int
-
 	// own is the client connected to srv
 	own *client
+
+	// dialing interface for outside connections
+	dialer transfer.Dialer
 
 	// tab maps peer hashes to open conversations
 	tab map[string]*client
@@ -52,10 +53,9 @@ type Layer struct {
 	authMgr transfer.AuthManager
 }
 
-func NewLayer(self id.Peer, brokerPort int, authMgr transfer.AuthManager) transfer.Layer {
+func NewLayer(self id.Peer, authMgr transfer.AuthManager) transfer.Layer {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Layer{
-		port:     brokerPort,
+	return &layer{
 		self:     self,
 		ctx:      ctx,
 		cancel:   cancel,
@@ -67,47 +67,40 @@ func NewLayer(self id.Peer, brokerPort int, authMgr transfer.AuthManager) transf
 	}
 }
 
-func (lay *Layer) Talk(rslv id.Resolver) (transfer.Conversation, error) {
+func (lay *layer) Talk(peer id.Peer) (transfer.Conversation, error) {
 	if !lay.IsOnlineMode() {
 		return nil, transfer.ErrOffline
 	}
 
-	cnv, ok := lay.tab[rslv.Peer().Hash()]
+	tunnel, err := lay.authMgr.TunnelFor(peer)
+	if err != nil {
+		return nil, err
+	}
+
+	cnv, ok := lay.tab[peer.Hash()]
 	if ok {
 		return cnv, nil
 	}
 
-	addrs, err := rslv.Resolve(lay.ctx)
+	cnv, err = newClient(lay, tunnel, peer, false)
 	if err != nil {
 		return nil, err
 	}
 
-	cnv, err = newClient(lay, rslv.Peer(), false)
+	conn, err := lay.dialer.Dial(peer)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: This is kinda brute force.
-	var lastError error
-
-	for _, addr := range addrs {
-		if err := cnv.connect(addr); err != nil {
-			lastError = err
-		} else {
-			break
-		}
+	if err := cnv.connect(conn); err != nil {
+		return nil, err
 	}
 
-	if lastError != nil {
-		cnv = nil
-	} else {
-		lay.tab[cnv.peer.Hash()] = cnv
-	}
-
-	return cnv, lastError
+	lay.tab[peer.Hash()] = cnv
+	return cnv, nil
 }
 
-func (lay *Layer) IsOnline(peer id.Peer) bool {
+func (lay *layer) IsOnline(peer id.Peer) bool {
 	if !lay.IsOnlineMode() {
 		return false
 	}
@@ -130,14 +123,14 @@ func (lay *Layer) IsOnline(peer id.Peer) bool {
 	return reachable
 }
 
-func (lay *Layer) IsOnlineMode() bool {
+func (lay *layer) IsOnlineMode() bool {
 	return lay.srv != nil
 }
 
-func (lay *Layer) Broadcast(req *wire.Request) error {
+func (lay *layer) Broadcast(req *wire.Request) error {
 	req.ID = proto.Int64(-1)
 
-	data, err := protoToPayload(req, lay.authMgr)
+	data, err := lay.own.protoToPayload(req)
 	if err != nil {
 		return err
 	}
@@ -145,12 +138,20 @@ func (lay *Layer) Broadcast(req *wire.Request) error {
 	return lay.own.publish(data, lay.own.peerTopic("broadcast"))
 }
 
-func (lay *Layer) Connect() (err error) {
+func (lay *layer) Connect(listener net.Listener, dialer transfer.Dialer) (err error) {
 	if lay.IsOnlineMode() {
 		return nil
 	}
 
-	srv, err := newServer(lay.port)
+	lay.dialer = dialer
+
+	// Get a encrypted tunnel for the own client:
+	tunnel, tnlErr := lay.authMgr.TunnelFor(lay.self)
+	if tnlErr != nil {
+		return tnlErr
+	}
+
+	srv, err := newServer(lay, listener)
 	if err != nil {
 		return
 	}
@@ -162,17 +163,25 @@ func (lay *Layer) Connect() (err error) {
 	lay.srv = srv
 
 	var lastError error
-	own, err := newClient(lay, lay.self, true)
-	log.Debugf("Own MQTT Client connecting to %s", lay.srv.addr())
+	own, err := newClient(lay, tunnel, lay.self, true)
+	log.Debugf("Own MQTT Client connecting")
 
 	for i := 0; i < 10; i++ {
-		if err = own.connect(lay.srv.addr()); err != nil {
-			lastError = err
-			time.Sleep(100 * time.Millisecond)
-			continue
+		conn, err := dialer.Dial(lay.self)
+		if err == nil && conn != nil {
+			if err = own.connect(conn); err == nil {
+				fmt.Println("Connected!")
+				break
+			}
 		}
 
-		break
+		if conn != nil {
+			conn.Close()
+		}
+
+		fmt.Println("Connect", err, conn)
+		lastError = err
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	if lastError != nil {
@@ -183,7 +192,7 @@ func (lay *Layer) Connect() (err error) {
 	return
 }
 
-func (lay *Layer) Disconnect() (err error) {
+func (lay *layer) Disconnect() (err error) {
 	if !lay.IsOnlineMode() {
 		return nil
 	}
@@ -203,19 +212,19 @@ func (lay *Layer) Disconnect() (err error) {
 	return nil
 }
 
-func (lay *Layer) Close() error {
+func (lay *layer) Close() error {
 	return lay.Disconnect()
 }
 
-func (lay *Layer) Self() id.Peer {
+func (lay *layer) Self() id.Peer {
 	return lay.self
 }
 
-func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
+func (lay *layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
 }
 
-func (lay *Layer) addReqRespPair(req *wire.Request) chan *wire.Response {
+func (lay *layer) addReqRespPair(req *wire.Request) chan *wire.Response {
 	lay.resplock.Lock()
 	defer lay.resplock.Unlock()
 
@@ -238,7 +247,7 @@ func (lay *Layer) addReqRespPair(req *wire.Request) chan *wire.Response {
 	return respnotify
 }
 
-func (lay *Layer) forwardResponse(resp *wire.Response) error {
+func (lay *layer) forwardResponse(resp *wire.Response) error {
 	lay.resplock.Lock()
 	defer lay.resplock.Unlock()
 
@@ -255,7 +264,7 @@ func (lay *Layer) forwardResponse(resp *wire.Response) error {
 	return nil
 }
 
-func (lay *Layer) Wait() error {
+func (lay *layer) Wait() error {
 	for {
 		lay.resplock.Lock()
 		// Timeout in addReqRespPair ensures that

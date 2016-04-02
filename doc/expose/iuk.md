@@ -77,9 +77,9 @@ Welche Fertigungs- und Entwicklungsressourcen existieren an den bayerischen Stan
 
 \textcolor{Red}{TODO}
 
-# Stand der Wissenschaft und Technik; bisherige Arbeiten:
+# Stand der Wissenschaft und Technik
 
-## Stand der Wissenschaft und Technik
+## Stand der Technik
 
 Die Innovation bei unserem Projekt  besteht daher hauptsächlich darin, bekannte
 Technologien »neu zusammen zu stecken«, woraus sich viele neue Möglichkeiten
@@ -153,7 +153,7 @@ Es sind uns keine Schutzrechte Dritter bekannt. Bei der Entwicklung wird auf
 freie Software gesetzt, die eine libertäre Nutzung der Software ermöglicht und
 selbst zudem so gut wie immer frei von Schutzrechten ist.
 
-# Ausführliche Beschreibung des Vorhabens:
+# Ausführliche Beschreibung des Vorhabens
 
 ## Der Name
 

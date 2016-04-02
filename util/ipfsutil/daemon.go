@@ -60,6 +60,7 @@ func New(ipfsPath string) *Node {
 	return NewWithPorts(ipfsPath, 5001, 4001)
 }
 
+// TODO: We dont need API port; remove
 func NewWithPorts(ipfsPath string, apiPort int, swarmPort int) *Node {
 	return &Node{
 		Path:      ipfsPath,

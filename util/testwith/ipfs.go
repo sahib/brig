@@ -17,9 +17,17 @@ func WithIpfs(t *testing.T, f func(*ipfsutil.Node)) {
 	WithIpfsAtPath(t, TestDir, f)
 }
 
+func WithIpfsAtPort(t *testing.T, port int, f func(*ipfsutil.Node)) {
+	WithIpfsAtPathAndPort(t, TestDir, port, f)
+}
+
 func WithIpfsAtPath(t *testing.T, root string, f func(*ipfsutil.Node)) {
+	WithIpfsAtPathAndPort(t, root, 4001, f)
+}
+
+func WithIpfsAtPathAndPort(t *testing.T, root string, port int, f func(*ipfsutil.Node)) {
 	WithIpfsRepo(t, root, func(path string) {
-		node := ipfsutil.New(path)
+		node := ipfsutil.NewWithPorts(path, 1000+port, port)
 		f(node)
 
 		if err := node.Close(); err != nil {
