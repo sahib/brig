@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	ZipFilePath = filepath.Join(os.TempDir(), "compressed.zip")
-	TestOffsets = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
-	TestSizes   = []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
+	ZipFilePath      = filepath.Join(os.TempDir(), "compressed.zip")
+	TestOffsets      = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
+	TestSizes        = []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
+	CompressionAlgos = []AlgorithmType{AlgoLZ4}
 )
 
 func openDest(t *testing.T, dest string) *os.File {
@@ -43,7 +44,7 @@ const (
 
 func TestCompressDecompress(t *testing.T) {
 	sizes := TestSizes
-	algos := []AlgorithmType{AlgoNone, AlgoSnappy}
+	algos := CompressionAlgos
 
 	for _, algo := range algos {
 		for _, size := range sizes {
@@ -119,7 +120,12 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 	defer testutil.Remover(t, ZipFilePath)
 
 	// Compress.
-	w := NewWriter(zipFileDest, algo)
+	w, err := NewWriter(zipFileDest, algo)
+	if err != nil {
+		t.Errorf("Writer init failed %v", err)
+		return
+
+	}
 	if _, err := Copy(w, bytes.NewReader(data), useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
@@ -151,10 +157,6 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 	}
 
 	// Compare.
-	//if !bytes.Equal(dataUncomp.Bytes(), data) {
-	//	t.Error("Uncompressed data and input data does not match.")
-	//	return
-	//}
 	got, want := dataUncomp.Bytes(), data
 	if !bytes.Equal(got, want) {
 		t.Error("Uncompressed data and input data does not match.")
@@ -167,7 +169,7 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 func TestSeek(t *testing.T) {
 	sizes := TestSizes
 	offsets := TestOffsets
-	algos := []AlgorithmType{AlgoNone, AlgoSnappy}
+	algos := CompressionAlgos
 	for _, algo := range algos {
 		for _, size := range sizes {
 			for _, off := range offsets {
@@ -202,7 +204,11 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 	zipFileDest := openDest(t, ZipFilePath)
 
 	// Compress.
-	w := NewWriter(zipFileDest, algo)
+	w, err := NewWriter(zipFileDest, algo)
+	if err != nil {
+		t.Errorf("Writer init failed %v", err)
+		return
+	}
 	if _, err := Copy(w, bytes.NewReader(data), useReadFrom, useWriteTo); err != nil {
 		t.Errorf("Compress failed %v", err)
 		return
@@ -225,7 +231,7 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 	zr := NewReader(dataFromZip)
 
 	// Set specific offset before read.
-	_, err := zr.Seek(offset, os.SEEK_SET)
+	_, err = zr.Seek(offset, os.SEEK_SET)
 	if err == io.EOF && offset < size && offset > -1 {
 		t.Errorf("Seek failed even with EOF: %d <= %d", offset, size)
 		return
