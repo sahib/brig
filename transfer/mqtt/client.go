@@ -8,18 +8,21 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/bkaradzic/go-lz4"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/disorganizer/surgemq/service"
 	"github.com/gogo/protobuf/proto"
 	"github.com/surgemq/message"
-	"github.com/surgemq/surgemq/service"
 )
 
 type client struct {
-	layer  *Layer
+	layer  *layer
 	client *service.Client
 	peer   id.Peer
+
+	tunnel transfer.AuthTunnel
 
 	// execRequests is only true for the `own` client
 	// of `layer`. It will receive commands and process
@@ -36,7 +39,7 @@ type client struct {
 
 var GlobalClientIdx = uint32(0)
 
-func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
+func newClient(lay *layer, tunnel transfer.AuthTunnel, peer id.Peer, execRequests bool) (*client, error) {
 	idx := atomic.AddUint32(&GlobalClientIdx, 1)
 
 	return &client{
@@ -45,6 +48,7 @@ func newClient(lay *Layer, peer id.Peer, execRequests bool) (*client, error) {
 		execRequests: execRequests,
 		peer:         peer,
 		lastHearbeat: time.Now(),
+		tunnel:       tunnel,
 		clientIdx:    idx,
 	}, nil
 }
@@ -100,7 +104,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	reqData := msg.Payload()
 	req := &wire.Request{}
 
-	if err := payloadToProto(req, reqData, cv.layer.authMgr); err != nil {
+	if err := cv.payloadToProto(req, reqData); err != nil {
 		return err
 	}
 
@@ -129,7 +133,7 @@ func (cv *client) processRequest(msg *message.PublishMessage, answer bool) error
 	resp.ID = proto.Int64(req.GetID())
 	resp.ReqType = req.GetReqType().Enum()
 
-	respData, err := protoToPayload(resp, cv.layer.authMgr)
+	respData, err := cv.protoToPayload(resp)
 	if err != nil {
 		log.Debugf("Invalid proto response: %v", err)
 		return err
@@ -190,7 +194,7 @@ func (cv *client) handleBroadcast(msg *message.PublishMessage) error {
 
 func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	resp := &wire.Response{}
-	if err := payloadToProto(resp, msg.Payload(), cv.layer.authMgr); err != nil {
+	if err := cv.payloadToProto(resp, msg.Payload()); err != nil {
 		return err
 	}
 
@@ -202,16 +206,21 @@ func (cv *client) handleResponse(msg *message.PublishMessage) error {
 	return nil
 }
 
-func (cv *client) connect(addr net.Addr) error {
+func (cv *client) connect(conn net.Conn) error {
+	cred, err := cv.layer.authMgr.Credentials(cv.peer)
+	if err != nil {
+		return err
+	}
+
 	msg := message.NewConnectMessage()
 	msg.SetVersion(4)
 	msg.SetCleanSession(true)
 	msg.SetClientId(cv.formatClientID())
 	msg.SetKeepAlive(300)
 
-	// Credentials: (TODO)
-	msg.SetUsername([]byte("elch"))
-	msg.SetPassword([]byte("wald"))
+	// Set login credentials:
+	msg.SetUsername([]byte(cv.layer.self.ID()))
+	msg.SetPassword(cred)
 
 	// Plan for our own death:
 	statusData, statusTopic := cv.statusMessage("offline")
@@ -221,8 +230,7 @@ func (cv *client) connect(addr net.Addr) error {
 
 	client := &service.Client{}
 
-	fullAddr := "tcp://" + addr.String()
-	if err := client.Connect(fullAddr, msg); err != nil {
+	if err := client.ConnectOverConn(conn, msg); err != nil {
 		return err
 	}
 
@@ -310,7 +318,7 @@ func (cv *client) SendAsync(req *wire.Request, handler transfer.AsyncFunc) error
 
 	respnotify := cv.layer.addReqRespPair(req)
 
-	data, err := protoToPayload(req, cv.layer.authMgr)
+	data, err := cv.protoToPayload(req)
 	if err != nil {
 		return err
 	}
@@ -361,4 +369,43 @@ func (cv *client) ping() (bool, error) {
 
 func (cv *client) Peer() id.Peer {
 	return cv.peer
+}
+
+func (cv *client) payloadToProto(msg proto.Message, data []byte) error {
+	decryptData, err := cv.tunnel.Decrypt(data)
+	if err != nil {
+		return err
+	}
+
+	decompData, err := lz4.Decode(decryptData, decryptData)
+	if err != nil {
+		return err
+	}
+
+	if err := proto.Unmarshal(decompData, msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cv *client) protoToPayload(msg proto.Message) ([]byte, error) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	compData, err := lz4.Encode(data, data)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf(
+		"Compressed message from %.1fKB to %1.fKB (%.1f%%)",
+		float64(len(data))/1024,
+		float64(len(compData))/1024,
+		float64(len(compData))/float64(len(data))*100,
+	)
+
+	return cv.tunnel.Encrypt(compData)
 }

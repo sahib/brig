@@ -2,10 +2,10 @@ package mqtt
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"testing"
-
-	"golang.org/x/net/context"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
@@ -14,38 +14,54 @@ import (
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-type DummyResolver struct {
-	Port int
-	peer id.Peer
-}
-
-func (dr *DummyResolver) Resolve(ctx context.Context) (id.Addresses, error) {
-	return id.Addresses{
-		&net.TCPAddr{
-			IP:   net.IPv4(127, 0, 0, 1),
-			Port: dr.Port,
-		},
-	}, nil
-}
-
-func (dr *DummyResolver) Peer() id.Peer {
-	return dr.peer
-}
-
 var (
 	PeerA = id.NewPeer("alice", "QmdEcweCLrhwQCSe5yrYYZ7CP8i1t6PzakQXsf2LoM3eHv")
 	PeerB = id.NewPeer("bob", "QmSoLnSGccFuZQJzRadHn95W2CrSFmZuTdDWP8HXaHca9z")
 	PortA = 1883
 	PortB = 1884
-	RslvA = &DummyResolver{PortA, PeerA}
-	RslvB = &DummyResolver{PortB, PeerB}
 )
 
 func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
+type DummyDialer struct{}
+
+func (d *DummyDialer) Dial(peer id.Peer) (net.Conn, error) {
+	var port int
+
+	switch h := peer.Hash(); h {
+	case PeerA.Hash():
+		port = PortA
+	case PeerB.Hash():
+		port = PortB
+	default:
+		return nil, fmt.Errorf("Unable to dial %s", h)
+	}
+
+	return net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+}
+
+func dummyNetwork(t *testing.T, port int) (net.Listener, transfer.Dialer) {
+	var lastError error
+
+	for i := 0; i < 10; i++ {
+		l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			time.Sleep(200 * time.Millisecond)
+			lastError = err
+			fmt.Println(".")
+			continue
+		}
+
+		return l, &DummyDialer{}
+	}
+
+	t.Errorf("Failed to create listener: %v", lastError)
+	return nil, nil
+}
+
+func withOnlineLayer(t *testing.T, port int, lay transfer.Layer, f func()) {
 	name := lay.Self().ID()
 
 	if lay.IsOnlineMode() {
@@ -53,7 +69,8 @@ func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
 		return
 	}
 
-	if err := lay.Connect(); err != nil {
+	l, d := dummyNetwork(t, port)
+	if err := lay.Connect(l, d); err != nil {
 		t.Fatalf("Layer `%s` could not connect: %v", name, err)
 	}
 
@@ -75,11 +92,11 @@ func withOnlineLayer(t *testing.T, lay transfer.Layer, f func()) {
 }
 
 func withBadRomance(t *testing.T, f func(layA, layB transfer.Layer)) {
-	layA := NewLayer(PeerA, PortA, transfer.MockAuthManager{})
-	layB := NewLayer(PeerB, PortB, transfer.MockAuthManager{})
+	layA := NewLayer(PeerA, transfer.MockAuthSuccess)
+	layB := NewLayer(PeerB, transfer.MockAuthSuccess)
 
-	withOnlineLayer(t, layA, func() {
-		withOnlineLayer(t, layB, func() {
+	withOnlineLayer(t, PortA, layA, func() {
+		withOnlineLayer(t, PortB, layB, func() {
 			f(layA, layB)
 		})
 	})
@@ -103,7 +120,7 @@ func TestIO(t *testing.T) {
 		)
 
 		// Let's talk to shy bob:
-		cnv, err := layA.Talk(RslvB)
+		cnv, err := layA.Talk(PeerB)
 		if err != nil {
 			t.Errorf("Talk(bob) failed: %v", err)
 			return
@@ -137,9 +154,9 @@ func TestIO(t *testing.T) {
 }
 
 func TestOnOff(t *testing.T) {
-	layA := NewLayer(PeerA, PortA, transfer.MockAuthManager{})
+	layA := NewLayer(PeerA, transfer.MockAuthSuccess)
 
-	withOnlineLayer(t, layA, func() {
+	withOnlineLayer(t, PortA, layA, func() {
 		for i := 0; i < 10; i++ {
 			if err := layA.Disconnect(); err != nil {
 				t.Errorf("Disconnect failed: %v", err)
@@ -151,7 +168,8 @@ func TestOnOff(t *testing.T) {
 				return
 			}
 
-			if err := layA.Connect(); err != nil {
+			l, d := dummyNetwork(t, PortA)
+			if err := layA.Connect(l, d); err != nil {
 				t.Errorf("Disconnect failed: %v", err)
 				return
 			}
@@ -213,13 +231,13 @@ func TestIsOnline(t *testing.T) {
 			return
 		}
 
-		cnvB, err := layA.Talk(RslvB)
+		cnvB, err := layA.Talk(PeerB)
 		if err != nil {
 			t.Errorf("Talk(bob) failed: %v", err)
 			return
 		}
 
-		cnvA, err := layB.Talk(RslvA)
+		cnvA, err := layB.Talk(PeerA)
 		if err != nil {
 			t.Errorf("Talk(alice) failed: %v", err)
 			return
@@ -244,5 +262,40 @@ func TestIsOnline(t *testing.T) {
 			t.Errorf("Closing conversation failed")
 			return
 		}
+	})
+}
+
+type authAllowSelf string
+
+// Authenticate just nods yes to everything.
+func (s authAllowSelf) Authenticate(id string, cred []byte) error {
+	fmt.Println("%s == %s", s, id)
+	if string(s) == id {
+		return nil
+	} else {
+		return fmt.Errorf("You shall not pass")
+	}
+}
+
+func (_ authAllowSelf) Credentials(id id.Peer) ([]byte, error) {
+	return nil, nil
+}
+
+func (_ authAllowSelf) TunnelFor(id id.Peer) (transfer.AuthTunnel, error) {
+	return nil, nil
+}
+
+func TestNoAuth(t *testing.T) {
+	// TODO: This fails for obscure reasons.
+	layA := NewLayer(PeerA, authAllowSelf(PeerA.ID()))
+	layB := NewLayer(PeerB, authAllowSelf(PeerB.ID()))
+
+	withOnlineLayer(t, PortA, layA, func() {
+		withOnlineLayer(t, PortB, layB, func() {
+			_, err := layA.Talk(PeerB)
+			if err == nil {
+				t.Errorf("Auth was not denied")
+			}
+		})
 	})
 }

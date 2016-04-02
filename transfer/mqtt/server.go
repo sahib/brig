@@ -9,52 +9,65 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/surgemq/surgemq/auth"
-	"github.com/surgemq/surgemq/service"
+	"github.com/disorganizer/surgemq/auth"
+	"github.com/disorganizer/surgemq/service"
 )
 
-type authenticator struct {
+type ErrAuthDenied struct {
+	id string
 }
 
-func (au *authenticator) Authenticate(id string, cred interface{}) error {
-	// fmt.Printf("ID %v is registering with cred %v (%T)\n", id, cred, cred)
-	return nil
+func (e *ErrAuthDenied) Error() string {
+	return fmt.Sprintf("Denying access to `%s`", e.id)
 }
 
 type server struct {
 	srv      *service.Server
-	port     int
-	authMgr  *authenticator
+	lay      *layer
+	listener net.Listener
 	authName string
 }
 
 // Running counter; incremented for each authenticator
 var globalAuthCount = int32(0)
 
-func newServer(port int) (*server, error) {
+func newServer(lay *layer, listener net.Listener) (*server, error) {
 	// Apply a crude hack: We need to pass data to the
 	// authenticator. SurgeMQ has no means to do that (except globals),
 	// so we register a new authenticator for each server.
 	// (at least in tests we need more than one server)
-	authMgr := &authenticator{}
-	name := fmt.Sprintf(
+	authName := fmt.Sprintf(
 		"brig-auth-%d",
 		atomic.AddInt32(&globalAuthCount, 1),
 	)
 
-	auth.Register(name, authMgr)
-	return &server{
-		srv:     nil,
-		port:    port,
-		authMgr: authMgr,
-	}, nil
+	server := &server{
+		srv:      nil,
+		lay:      lay,
+		listener: listener,
+		authName: authName,
+	}
+
+	auth.Register(authName, server)
+	return server, nil
 }
 
-func (srv *server) addr() net.Addr {
-	return &net.TCPAddr{
-		IP:   net.IP{127, 0, 0, 1},
-		Port: srv.port,
+// Authenticate is called whenever a client needs to be tunnels
+// on the server.
+func (srv *server) Authenticate(id string, cred interface{}) error {
+	credData, ok := cred.(string)
+	if !ok {
+		log.Debugf("Denying; cred was no string")
+		return &ErrAuthDenied{id}
 	}
+
+	if err := srv.lay.authMgr.Authenticate(id, []byte(credData)); err != nil {
+		log.Debugf("Permission to `%s` denied", id)
+		return &ErrAuthDenied{id}
+	}
+
+	log.Debugf("`%s` granting access to `%s`", srv.lay.self.ID(), id)
+	return nil
 }
 
 // Sometimes it might happen that a server is disconnected
@@ -64,7 +77,7 @@ func (srv *server) addr() net.Addr {
 // a bit until the port is ready.
 type portReservation struct{}
 
-var portMap = make(map[int]chan portReservation)
+var portMap = make(map[string]chan portReservation)
 var portMapLock sync.Mutex
 
 func (srv *server) connect() (err error) {
@@ -76,34 +89,33 @@ func (srv *server) connect() (err error) {
 		TopicsProvider:   "mem", // keeps topic subscriptions in memory
 	}
 
-	portMapLock.Lock()
-	reserved, ok := portMap[srv.port]
-	if ok {
-		log.Infof("Waiting for port %d", srv.port)
-		<-reserved
-	}
-	portMapLock.Unlock()
+	addrKey := srv.listener.Addr().String()
 
-	log.Infof("Starting MQTT broker on port %d...", srv.port)
+	// portMapLock.Lock()
+	// reserved, ok := portMap[addrKey]
+	// if ok {
+	// 	log.Infof("Waiting for broker addr %s", addrKey)
+	// 	<-reserved
+	// }
+	// portMapLock.Unlock()
+
+	log.Infof("Starting MQTT broker on %s...", addrKey)
 	go func() {
 		portMapLock.Lock()
-		reservation := make(chan portReservation)
-		portMap[srv.port] = reservation
+		reservation := make(chan portReservation, 1)
+		portMap[addrKey] = reservation
 		portMapLock.Unlock()
 
-		err = srv.srv.ListenAndServe(fmt.Sprintf("tcp://:%d", srv.port))
+		err = srv.srv.Serve(srv.listener)
 		if err != nil {
-			log.Warningf("Broker running on port %d died: %v", srv.port, err)
+			log.Warningf("Broker running on addr %s died: %v", addrKey, err)
 		} else {
-			log.Infof("Broker running on port %d exited", srv.port)
+			log.Infof("Broker running on addr %s exited", addrKey)
 		}
 
 		// Sometimes some background services might take a bit longer:
 		time.Sleep(2000 * time.Millisecond)
-
 		reservation <- portReservation{}
-
-		// TODO: Initial publish of topcis needed?
 		srv.srv = nil
 	}()
 
