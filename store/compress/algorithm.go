@@ -1,52 +1,62 @@
 package compress
 
 import (
+	"errors"
+
+	"github.com/bkaradzic/go-lz4"
 	"github.com/golang/snappy"
-	"io"
+)
+
+var (
+	ErrBadAlgo = errors.New("Invalid algorithm type")
 )
 
 type Algorithm interface {
-	WrapWriter(w io.Writer) io.Writer
-	WrapReader(r io.ReadSeeker) io.Reader
+	Encode([]byte) ([]byte, error)
+	Decode([]byte) ([]byte, error)
 }
 
-type NoneAlgo struct {
-}
-
-type SnappyAlgo struct {
-}
+type NoneAlgo struct{}
+type SnappyAlgo struct{}
+type LZ4Algo struct{}
 
 var AlgoMap = map[AlgorithmType]Algorithm{
-	AlgoNone:   &NoneAlgo{},
-	AlgoSnappy: &SnappyAlgo{},
+	AlgoNone:   NoneAlgo{},
+	AlgoSnappy: SnappyAlgo{},
+	AlgoLZ4:    LZ4Algo{},
 }
 
-func (na *NoneAlgo) WrapWriter(w io.Writer) io.Writer {
-	return w
+// AlgoNone
+func (_ NoneAlgo) Encode(src []byte) ([]byte, error) {
+	return src, nil
 }
 
-func (na *NoneAlgo) WrapReader(r io.ReadSeeker) io.Reader {
-	return r
+func (_ NoneAlgo) Decode(src []byte) ([]byte, error) {
+	return src, nil
 }
 
-func (na *SnappyAlgo) WrapWriter(w io.Writer) io.Writer {
-	return snappy.NewWriter(w)
+// AlgoSnappy
+func (_ SnappyAlgo) Encode(src []byte) ([]byte, error) {
+	return snappy.Encode(src, src), nil
+
 }
 
-func (na *SnappyAlgo) WrapReader(r io.ReadSeeker) io.Reader {
-	return snappy.NewReader(r)
+func (_ SnappyAlgo) Decode(src []byte) ([]byte, error) {
+	return snappy.Decode(src, src)
 }
 
-func wrapWriter(w io.Writer, algo AlgorithmType) io.Writer {
-	if algoInf, ok := AlgoMap[algo]; ok {
-		return algoInf.WrapWriter(w)
+// AlgoLZ4
+func (_ LZ4Algo) Encode(src []byte) ([]byte, error) {
+	return lz4.Encode(src, src)
+}
+
+func (_ LZ4Algo) Decode(src []byte) ([]byte, error) {
+	return lz4.Decode(src, src)
+}
+
+func AlgorithmFromType(a AlgorithmType) (Algorithm, error) {
+	if algo, ok := AlgoMap[a]; ok {
+		return algo, nil
 	}
-	return nil
-}
-
-func wrapReader(r io.ReadSeeker, algo AlgorithmType) io.Reader {
-	if algoInf, ok := AlgoMap[algo]; ok {
-		return algoInf.WrapReader(r)
-	}
-	return nil
+	return nil, ErrBadAlgo
 }
