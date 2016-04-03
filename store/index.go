@@ -13,6 +13,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
@@ -223,7 +224,9 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
 
-	stream, err := NewFileReader(file.Key(), teeR)
+	// TODO: Make algo configurable/add heuristic too choose
+	//       a suitable algorithm
+	stream, err := NewFileReader(file.Key(), teeR, compress.AlgoSnappy)
 	if err != nil {
 		return err
 	}

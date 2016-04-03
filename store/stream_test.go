@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -18,15 +19,14 @@ type wrapReader struct {
 	io.WriterTo
 }
 
-func testWriteAndRead(size int64, t *testing.T) {
-	raw := testutil.CreateDummyBuf(size)
+func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType) {
 	rawBuf := &bytes.Buffer{}
 	if _, err := rawBuf.Write(raw); err != nil {
 		t.Errorf("Huh, buf-write failed?")
 		return
 	}
 
-	encStream, err := NewFileReader(TestKey, rawBuf)
+	encStream, err := NewFileReader(TestKey, rawBuf, algoType)
 	if err != nil {
 		t.Errorf("Creating encryption stream failed: %v", err)
 		return
@@ -70,8 +70,19 @@ func testWriteAndRead(size int64, t *testing.T) {
 
 func TestWriteAndRead(t *testing.T) {
 	s64k := int64(64 * 1024)
-	for _, size := range []int64{0, 1, 10, s64k, s64k - 1, s64k + 1, s64k * 2} {
+	sizes := []int64{
+		0, 1, 10, s64k, s64k - 1, s64k + 1,
+		s64k * 2, s64k * 1024, s64k * 2048,
+	}
+
+	for _, size := range sizes {
 		t.Logf("Testing stream at size %d", size)
-		testWriteAndRead(size, t)
+		for algoType, _ := range compress.AlgoMap {
+			data := testutil.CreateDummyBuf(size)
+			testWriteAndRead(t, data, algoType)
+
+			data = testutil.CreateRandomDummyBuf(size, 42)
+			testWriteAndRead(t, data, algoType)
+		}
 	}
 }
