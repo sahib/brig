@@ -20,29 +20,70 @@ date: \today
 
 # Abstract
 
+Zusammenfassung in wenigen Worten.
+
 # Danksagung
+
+...
 
 # Abbildungsverzeichnis
 
+...
+
 # Abkürzungsverzeichnis
+
+...
 
 # Einleitung
 
-## Motivation
+## Motivation und Problemstellung
+
+Zentral vs Dezentral
+NSA, Snowden
+Die meiste Software zu schwer zu benutzen
 
 ## Projektziel
 
-## Zielgruppe
-
-## Einsatzszenarien
+Vorstellung von brig
 
 ## Der Name
 
+Siehe Expose
+
+## Zielgruppe
+
+- Endanwender
+- Unternehmen
+- Behörden
+
+## Einsatzszenarien
+
+- Dateitransfer
+- Dateisynchronisation
+- Datentresor
+- Plattform für weitere Anwendungen
+
+(siehe auch Expose)
+
 ## Lizensierung
+
+AGPL, siehe Expose
 
 # Stand der Technik
 
+Viele Teillösungen, manche mehr oder weniger
+gut, manche propetiär (siehe Konkurrenzanalyse)
+
+brig versucht Sicherheit und Usability zu vereinen, da (Rob Pike) "Usability >
+Sicherheit" oder "Geringe Absicherung ist trotzdem viel besser als gar keine"
+Trotzdem Einsatz bewährter kryptografischer Protokolle und Primitiven, dieses
+soll aber möglichst vom Benutzer versteckt werden.
+
 ## Wissenschaftlicher Stand
+
+Eigenschaften eines P2P Netzwerkes
+
+(syncthing kann zB keine daten routen)
 
 ### P2P-Netzwerke
 
@@ -133,6 +174,10 @@ date: \today
 ## Weitere Entwicklung
 
 ## Wirtschaftliche Verwertung
+
+## Beiträge zu anderen Open Source Projekten
+
+... minilock, goxmpp, ipfs...
 
 # Anhänge
 
