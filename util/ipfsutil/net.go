@@ -3,6 +3,7 @@ package ipfsutil
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -11,10 +12,10 @@ import (
 	"github.com/ipfs/go-ipfs/core/corenet"
 
 	// TODO: GAAAAAH
-	p2pnet "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/net"
-	peer "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/peer"
-	protocol "gx/ipfs/QmNefBbWHR9JEiP3KDVqZsBLQVRmH3GBG2D2Ke24SsFqfW/go-libp2p/p2p/protocol"
 	manet "gx/ipfs/QmQB7mNP3QE7b4zP2MQmsyJDqG5hzYE2CL8k1VyLWky2Ed/go-multiaddr-net"
+	p2pnet "gx/ipfs/QmSN2ELGRp4T9kjqiSsSNJRUeR9JKXzQEgwe1HH3tdSGbC/go-libp2p/p2p/net"
+	peer "gx/ipfs/QmSN2ELGRp4T9kjqiSsSNJRUeR9JKXzQEgwe1HH3tdSGbC/go-libp2p/p2p/peer"
+	protocol "gx/ipfs/QmSN2ELGRp4T9kjqiSsSNJRUeR9JKXzQEgwe1HH3tdSGbC/go-libp2p/p2p/protocol"
 )
 
 type streamConn struct {
@@ -151,4 +152,68 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 
 	fmt.Println("wrap stream", peerID)
 	return wrapStream(stream), nil
+}
+
+type Pinger struct {
+	lastSeen  time.Time
+	roundtrip time.Duration
+	cancel    func()
+	mu        sync.Mutex
+}
+
+func (p *Pinger) LastSeen() time.Time {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.lastSeen
+}
+
+func (p *Pinger) Roundtrip() time.Duration {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.roundtrip
+}
+
+func (p *Pinger) Close() error {
+	p.cancel()
+	return nil
+}
+
+func (nd *Node) Ping(peerHash string) (*Pinger, error) {
+	if !nd.IsOnline() {
+		return nil, fmt.Errorf("Not online") // TODO: common error?
+	}
+
+	node, err := nd.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	peerID, err := peer.IDB58Decode(peerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithCancel(nd.Context)
+	pingCh, err := node.Ping.Ping(ctx, peerID)
+	if err != nil {
+		return nil, err
+	}
+
+	pinger := &Pinger{
+		lastSeen: time.Now(),
+		cancel:   cancel,
+	}
+
+	go func() {
+		for roundtrip := range pingCh {
+			pinger.mu.Lock()
+			pinger.roundtrip = roundtrip
+			pinger.lastSeen = time.Now()
+			pinger.mu.Unlock()
+		}
+	}()
+
+	return pinger, nil
 }

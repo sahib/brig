@@ -57,25 +57,15 @@ type Dialer interface {
 type Layer interface {
 	io.Closer
 
-	// Talk opens a new connection to the peer conn is opened to.
-	// Talk() shall return ErrOffline when not in online mode.
-	Talk(peer id.Peer) (Conversation, error)
-
-	// IsOnline shall return true if the peer knows as `peer` is online and
-	// responding. It is allowed that the implementation may cache the
-	// answer for a short time, therefore changes might be visible only
-	// after a certain timeout.
-	//
-	// IsOnline only can give sensible answers when IsOnlineMode() is true
-	// and we're currently talking to this peer.
-	// If you want to "peek" if the other client is online, you have
-	// to do a Talk() before.
-	IsOnline(peer id.Peer) bool
+	// Dial opens a new connection to the peer conn is opened to.
+	// Dial() shall return ErrOffline when not in online mode.
+	// TODO: Rename to Dial()
+	Dial(peer id.Peer) (Conversation, error)
 
 	// IsOnlineMode returns true if the layer is online and may respond
 	// to requests or send requests itself. It should be true after
 	// a succesful Connect().
-	IsOnlineMode() bool
+	IsInOnlineMode() bool
 
 	// Connect to the net. A freshly created Layer should not be
 	// connected upon construction. The passed listener will
@@ -93,20 +83,13 @@ type Layer interface {
 	// `handler` will be called once a request with this type is received.
 	RegisterHandler(typ wire.RequestType, handler HandlerFunc)
 
-	// Broadcast sends a request to all connected peers.
-	// No answers will be collected.
-	// It's usecase is to send quick updates to all peers.
-	Broadcast(req *wire.Request) error
-
-	// Self returns the peer we're acting as.
-	Self() id.Peer
-
 	// Wait blocks until all requests were handled.
 	// It is mainly useful for debugging.
 	Wait() error
 
 	// ProtocolID returns a unique protocol id
 	// that will be used to differentiate between other protocols.
+	// Example: "/brig/mqtt/v1"
 	ProtocolID() string
 }
 

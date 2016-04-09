@@ -11,9 +11,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/fuse"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
-	"github.com/disorganizer/brig/transfer/mqtt"
+	"github.com/disorganizer/brig/transfer/moose"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
@@ -81,7 +82,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
 	// TODO: Auth mgr and peer
-	layer := mqtt.NewLayer(nil, nil)
+	layer := moose.NewLayer(rep.IPFS)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	daemon := &Server{

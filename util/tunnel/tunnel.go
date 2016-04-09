@@ -76,7 +76,7 @@ type ecdhTunnel struct {
 }
 
 // NewEllipticTunnel creates an io.ReadWriter that transparently encrypts all data.
-func NewEllipticTunnel(rw io.ReadWriter) (io.ReadWriter, error) {
+func NewEllipticTunnel(rw io.ReadWriter) (*ecdhTunnel, error) {
 	tnl := &ecdhTunnel{
 		ReadWriter: rw,
 	}

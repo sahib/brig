@@ -4,20 +4,14 @@ import (
 	"net"
 	"sync"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
-// Connector is a pool of metadata connections.
-// It listens for new connections and establishes a ServerProtocol on them.
-// Clients can talk to other parties with the Talk() function, which
-// esatblishes a ready to use ClientProtocol.
-//
-// Connector tries to hold the connections open as long as possible,
-// since building the conversations is expensive due to OTR.
-//
-// It is okay to call Connector from more than one goroutine.
 type Connector struct {
 	layer Layer
 
@@ -56,87 +50,97 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	}
 }
 
-// Mainloop for incoming conversations.
-// func (c *Connector) loop() {
-// 	for {
-// 		cnv := c.client.Listen()
-// 		if cnv == nil {
-// 			log.Debugf("connector: server: quitting loop...")
-// 			break
-// 		}
-//
-// 		// Establish a ServerProtocol on the conversation:
-// 		go func(cnv *xmpp.Conversation) {
-// 			server := NewServer(cnv, c.rp)
-// 			if err := server.Serve(); err != nil {
-// 				log.Warningf("connector: server: %v", err)
-// 			}
-//
-// 			if err := cnv.Close(); err != nil {
-// 				log.Warningf("connector: server: Could not terminate conv: %v", err)
-// 			}
-//
-// 			c.mu.Lock()
-// 			delete(c.open, cnv.Jid)
-// 			c.mu.Unlock()
-// 		}(cnv)
-// 	}
-// }
-//
-// func (c *Connector) Talk(ID goxmpp.JID) (*Client, error) {
-// 	c.mu.Lock()
-// 	if cnv, ok := c.open[ID]; ok {
-// 		c.mu.Unlock()
-// 		return NewClient(cnv), nil
-// 	}
-// 	c.mu.Unlock()
-//
-// 	cnv, err := c.client.Dial(ID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	c.mu.Lock()
-// 	c.open[ID] = cnv
-// 	c.mu.Unlock()
-//
-// 	return NewClient(cnv), nil
-// }
+func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
+	if !cn.IsInOnlineMode() {
+		return nil, ErrOffline
+	}
+
+	cnv, err := cn.layer.Dial(peer)
+	if err != nil {
+		return nil, err
+	}
+
+	cn.mu.Lock()
+	cn.open[peer.ID()] = cnv
+	cn.mu.Unlock()
+
+	return newAPIClient(cnv, cn.rp.IPFS)
+}
+
+func (cn *Connector) IsOnline(peer id.Peer) bool {
+	if !cn.IsInOnlineMode() {
+		return false
+	}
+
+	// cn.mu.Lock()
+	// defer cn.mu.Unlock()
+	return false
+}
+
+func (cn *Connector) Broadcast(req *wire.Request) error {
+	var errs util.Errors
+
+	for _, cnv := range cn.open {
+		if err := cnv.SendAsync(req, nil); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
 
 func (c *Connector) Layer() Layer {
 	return c.layer
 }
 
-func (c *Connector) Connect() error {
-	ls, err := c.rp.IPFS.Listen(c.layer.ProtocolID())
+func (cn *Connector) Connect() error {
+	ls, err := cn.rp.IPFS.Listen(cn.layer.ProtocolID())
 	if err != nil {
 		return err
 	}
 
-	return c.layer.Connect(ls, &dialer{c.layer, c.rp.IPFS})
+	go func() {
+		for _, remote := range cn.rp.Remotes.List() {
+			cnv, err := cn.layer.Dial(remote)
+			if err != nil {
+				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
+				continue
+			}
+
+			cn.mu.Lock()
+			cn.open[remote.ID()] = cnv
+			cn.mu.Unlock()
+		}
+	}()
+
+	return cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS})
 }
 
-func (c *Connector) Disconnect() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (cn *Connector) Disconnect() error {
+	cn.mu.Lock()
+	defer cn.mu.Unlock()
 
-	return c.layer.Disconnect()
-}
-
-func (c *Connector) IsOnlineMode() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	return c.layer.IsOnlineMode()
-}
-
-func (c *Connector) Auth(ID id.ID, peerHash string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.client == nil {
-		return ErrOffline
+	for _, cnv := range cn.open {
+		cnv.Close()
 	}
 
-	return c.client.Auth(ID, finger)
+	return cn.layer.Disconnect()
 }
+
+func (cn *Connector) IsInOnlineMode() bool {
+	cn.mu.Lock()
+	defer cn.mu.Unlock()
+
+	return cn.layer.IsInOnlineMode()
+}
+
+// func (c *Connector) Auth(ID id.ID, peerHash string) error {
+// 	c.mu.Lock()
+// 	defer c.mu.Unlock()
+//
+// 	if c.client == nil {
+// 		return ErrOffline
+// 	}
+//
+// 	return c.client.Auth(ID, finger)
+// }
