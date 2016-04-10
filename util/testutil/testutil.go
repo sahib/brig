@@ -27,7 +27,7 @@ func CreateRandomDummyBuf(size, seed int64) []byte {
 	buf := make([]byte, size)
 
 	for i := int64(0); i < size; i++ {
-		buf[i] = byte(src.Int63() % 255)
+		buf[i] = byte(src.Int63() % 256)
 	}
 
 	return buf
