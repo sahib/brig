@@ -54,12 +54,18 @@ func main() {
 	}
 	decompressMode := flag.Bool("d", false, "Decompress.")
 	compressMode := flag.Bool("c", false, "Compress.")
-	useAlgo := flag.String("s", "none", "Compression algorithm to be used.")
+	useAlgo := flag.String("s", "none", "Possible compression algorithms: none, snappy, lz4.")
 	forceOverwrite := flag.Bool("f", false, "Force overwriting destination file.")
 	flag.Parse()
 	Args := flag.Args()
-	srcPath := Args[0]
 
+	if len(Args) != 1 || !((*compressMode || *decompressMode) && !(*compressMode && *decompressMode)) {
+		fmt.Printf("Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(-1)
+	}
+
+	srcPath := Args[0]
 	algo, ok := algorithms[*useAlgo]
 	if !ok {
 		log.Fatalf("Invalid algorithm type: %s", *useAlgo)
@@ -72,7 +78,7 @@ func main() {
 	defer dst.Close()
 	defer src.Close()
 
-	nBytes, err := int64(0), errors.New("huh, this should never happen.")
+	nBytes, err := int64(0), errors.New("huh, this should never happen")
 	if *compressMode {
 		zw, err := compress.NewWriter(dst, compress.AlgorithmType(algo))
 		checkError(err)
