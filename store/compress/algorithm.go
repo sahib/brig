@@ -40,21 +40,21 @@ func (a noneAlgo) Decode(src []byte) ([]byte, error) {
 
 // AlgoSnappy
 func (a snappyAlgo) Encode(src []byte) ([]byte, error) {
-	return snappy.Encode(src, src), nil
+	return snappy.Encode(nil, src), nil
 
 }
 
 func (a snappyAlgo) Decode(src []byte) ([]byte, error) {
-	return snappy.Decode(src, src)
+	return snappy.Decode(nil, src)
 }
 
 // AlgoLZ4
 func (a lz4Algo) Encode(src []byte) ([]byte, error) {
-	return lz4.Encode(src, src)
+	return lz4.Encode(nil, src)
 }
 
 func (a lz4Algo) Decode(src []byte) ([]byte, error) {
-	return lz4.Decode(src, src)
+	return lz4.Decode(nil, src)
 }
 
 // AlgorithmFromType returns a interface to the given AlgorithmType.
