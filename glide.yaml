@@ -3,32 +3,29 @@ import:
 - package: bazil.org/fuse
   subpackages:
   - fs
-- package: code.google.com/p/go-uuid
-  subpackages:
-  - /uuid
+- package: github.com/wayn3h0/go-uuid
 - package: github.com/Sirupsen/logrus
-- package: github.com/VividCortex/godaemon
 - package: github.com/boltdb/bolt
 - package: github.com/cathalgarvey/go-minilock
   subpackages:
   - taber
 - package: github.com/chzyer/readline
+- package: github.com/codahale/chacha20
 - package: github.com/codahale/chacha20poly1305
-- package: github.com/glycerine/rbuf
 - package: github.com/gogo/protobuf
   subpackages:
   - /proto
 - package: github.com/golang/protobuf
   subpackages:
   - /proto
+- package: github.com/bkaradzic/go-lz4
 - package: github.com/golang/snappy
 - package: github.com/ipfs/go-ipfs
   subpackages:
-  - /repo/config
+  - repo/config
   - repo/fsrepo
 - package: github.com/jbenet/go-multihash
 - package: github.com/nbutton23/zxcvbn-go
-- package: github.com/nightlyone/lockfile
 - package: github.com/olebedev/config
 - package: github.com/tang0th/go-ecdh
 - package: github.com/tsuibin/goxmpp2
@@ -37,9 +34,20 @@ import:
 - package: github.com/tucnak/climax
 - package: golang.org/x/crypto
   subpackages:
-  - /otr
+  - otr
   - scrypt
+  - sha3
+  - curve25519
+  - pbkdf2
+  - poly1305
 - package: golang.org/x/net
   subpackages:
   - /context
 - package: gopkg.in/yaml.v2
+- package: bitbucket.org/taruti/mimemagic
+- package: github.com/codahale/chacha20poly1305
+- package: github.com/fatih/color
+- package: github.com/mattn/go-colorable
+- package: github.com/mattn/go-isatty
+- package: github.com/nightlyone/lockfile
+- package: github.com/olebedev/config
