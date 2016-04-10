@@ -14,15 +14,19 @@ import (
 func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
-		panic(err)
 		os.Exit(-1)
 	}
 }
 
-func openDest(dest string) *os.File {
+func openDst(dest string, overwrite bool) *os.File {
+	if !overwrite {
+		if _, err := os.Stat(dest); !os.IsNotExist(err) {
+			log.Fatalf("Opening destination failed, %v exists.\n", dest)
+		}
+	}
 	fd, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
-		log.Fatalf("Opening source %v failed: %v\n", dest, err)
+		log.Fatalf("Opening destination %v failed: %v\n", dest, err)
 	}
 	return fd
 }
@@ -50,7 +54,8 @@ func main() {
 	}
 	decompressMode := flag.Bool("d", false, "Decompress.")
 	compressMode := flag.Bool("c", false, "Compress.")
-	useAlgo := flag.String("s", "none", "Compression algorithm used")
+	useAlgo := flag.String("s", "none", "Compression algorithm to be used.")
+	forceOverwrite := flag.Bool("f", false, "Force overwriting destination file.")
 	flag.Parse()
 	Args := flag.Args()
 	srcPath := Args[0]
@@ -63,7 +68,7 @@ func main() {
 
 	src := openSrc(srcPath)
 	dstFileName := getDstFilename(*compressMode, srcPath, *useAlgo)
-	dst := openDest(dstFileName)
+	dst := openDst(dstFileName, *forceOverwrite)
 	defer dst.Close()
 	defer src.Close()
 
