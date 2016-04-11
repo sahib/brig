@@ -43,7 +43,6 @@ func CreateDefaultConfig() *config.Config {
 	cfg := map[string]interface{}{
 		"repository": map[string]interface{}{
 			"id":   "",
-			"mid":  "", // TODO: Is still relevant?
 			"uuid": "",
 		},
 		"daemon": map[string]interface{}{

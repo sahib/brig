@@ -14,9 +14,6 @@ type Repository struct {
 	// Repository is identified by a brig account
 	ID id.ID
 
-	// Minilock ID
-	Mid string
-
 	// Folder of repository
 	Folder         string
 	InternalFolder string

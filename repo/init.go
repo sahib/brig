@@ -89,10 +89,6 @@ func NewRepository(ID, pwd, folder string) (*Repository, error) {
 	}
 
 	cfg := config.CreateDefaultConfig()
-	minilockID, err := GenerateMinilockID(ID, pwd)
-	if err != nil {
-		return nil, err
-	}
 
 	repoUUID, err := uuid.NewRandom()
 	if err != nil {
@@ -100,9 +96,8 @@ func NewRepository(ID, pwd, folder string) (*Repository, error) {
 	}
 
 	configDefaults := map[string]interface{}{
-		"repository.ID":  ID,
+		"repository.ID":   ID,
 		"repository.uuid": repoUUID.String(),
-		"repository.mid":  minilockID,
 		"ipfs.path":       filepath.Join(brigPath, "ipfs"),
 	}
 

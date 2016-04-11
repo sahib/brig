@@ -59,7 +59,6 @@ type Layer interface {
 
 	// Dial opens a new connection to the peer conn is opened to.
 	// Dial() shall return ErrOffline when not in online mode.
-	// TODO: Rename to Dial()
 	Dial(peer id.Peer) (Conversation, error)
 
 	// IsOnlineMode returns true if the layer is online and may respond

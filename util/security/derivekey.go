@@ -5,8 +5,6 @@
 package security
 
 import (
-	"crypto/rand"
-
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -21,16 +19,4 @@ func Scrypt(pwd, salt []byte, keyLen int) []byte {
 	}
 
 	return key
-}
-
-// DeriveAESKey generates an AES key (of keySize bytes) based on ID and password.
-// It returns the key, the used salt and potentially an error.
-func DeriveAESKey(ID, password string, keySize int) ([]byte, []byte, error) {
-	salt := make([]byte, keySize)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return Scrypt([]byte(password), salt, keySize), salt, nil
 }
