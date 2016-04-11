@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 
@@ -15,7 +14,7 @@ const (
 )
 
 func generateKey(id, pwd string) []byte {
-	return security.Scrypt([]byte(pwd), []byte(id), 64)
+	return security.Scrypt([]byte(pwd), []byte(id), 32)
 }
 
 // LockFile encrypts `path` with AES and scrypt, using pass and ID as email.
@@ -56,16 +55,7 @@ func lockFile(key []byte, ID, pass, path string) error {
 
 	defer dstFd.Close()
 
-	wEnc, err := encrypt.NewWriter(dstFd, key)
-	if err != nil {
-		return err
-	}
-
-	if _, err := io.Copy(wEnc, srcFd); err != nil {
-		return err
-	}
-
-	if err := wEnc.Close(); err != nil {
+	if _, err := encrypt.Encrypt(key, srcFd, dstFd); err != nil {
 		return err
 	}
 
@@ -94,12 +84,7 @@ func unlockFileReal(key []byte, ID, pass, path string) error {
 
 	defer dstFd.Close()
 
-	rEnc, err := encrypt.NewReader(srcFd, key)
-	if err != nil {
-		return err
-	}
-
-	if _, err := io.Copy(dstFd, rEnc); err != nil {
+	if _, err := encrypt.Decrypt(key, srcFd, dstFd); err != nil {
 		return err
 	}
 
