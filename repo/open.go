@@ -23,6 +23,7 @@ var (
 func absLockPaths(brigPath string) []string {
 	lockPaths := []string{
 		filepath.Join(brigPath, "master.key"),
+		filepath.Join(brigPath, "remotes.yml"),
 		filepath.Join(brigPath, "otr.key"),
 		filepath.Join(brigPath, "otr.buddies"),
 	}
@@ -179,6 +180,16 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
+	fd, err := os.Open(filepath.Join(brigPath, "remotes.yml"))
+	if err != nil {
+		return nil, err
+	}
+
+	remoteStore, err := NewYAMLRemotes(fd)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: remove?
 	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
 	if err != nil {
@@ -218,6 +229,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		ID:             ID,
 		Mid:            mid,
 		Folder:         absFolderPath,
+		Remotes:        remoteStore,
 		InternalFolder: brigPath,
 		UniqueID:       uuid,
 		Config:         cfg,

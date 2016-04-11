@@ -7,6 +7,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/wire"
+	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/repo"
 	"golang.org/x/net/context"
 )
 
@@ -150,29 +152,32 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 }
 
 func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	fetchCmd := cmd.GetFetchCommand()
-	who, err := id.Cast(fetchCmd.GetWho())
-	if err != nil {
-		return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.Who(), err)
-	}
+	// fetchCmd := cmd.GetFetchCommand()
+	// who, err := id.Cast(fetchCmd.GetWho())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.GetWho(), err)
+	// }
 
-	if !d.MetaHost.IsOnline() {
-		return nil, fmt.Errorf("Metadata Host is not online.")
-	}
+	// if !d.MetaHost.IsInOnlineMode() {
+	// 	return nil, fmt.Errorf("Metadata Host is not online.")
+	// }
 
-	client, err := d.MetaHost.Talk(who)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: Resolve to peer id
 
-	importData, err := client.DoFetch()
-	if err != nil {
-		return nil, err
-	}
+	// client, err := d.MetaHost.Dial(who)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err := d.Repo.OwnStore.Import(bytes.NewReader(importData)); err != nil {
-		return nil, err
-	}
+	// // TODO
+	// // importData, err := client.DoFetch()
+	// // if err != nil {
+	// // 	return nil, err
+	// // }
+
+	// if err := d.Repo.OwnStore.Import(bytes.NewReader(importData)); err != nil {
+	// 	return nil, err
+	// }
 
 	// TODO: what to return on success?
 	return []byte("OK"), nil
@@ -202,9 +207,15 @@ func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, err
 
 func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	authCmd := cmd.GetAuthAddCommand()
-	id, peerHash := authCmd.GetWho(), authCmd.GetPeerHash()
+	idString, peerHash := authCmd.GetWho(), authCmd.GetPeerHash()
 
-	if err := d.MetaHost.Auth(id, peerHash); err != nil {
+	id, err := id.Cast(idString)
+	if err != nil {
+		return nil, err
+	}
+
+	remote := repo.NewRemote(id, peerHash)
+	if err := d.Repo.Remotes.Insert(remote); err != nil {
 		return nil, err
 	}
 

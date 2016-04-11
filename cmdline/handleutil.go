@@ -1,7 +1,6 @@
 package cmdline
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"

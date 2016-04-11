@@ -108,7 +108,7 @@ func (x *MessageType) UnmarshalJSON(data []byte) error {
 type OnlineQuery int32
 
 const (
-	// Connect ipfs and the network:
+	// Connect to the network:
 	OnlineQuery_GO_ONLINE OnlineQuery = 0
 	// Disconnect all:
 	OnlineQuery_GO_OFFLINE OnlineQuery = 1
@@ -537,7 +537,7 @@ func (m *Command_MkdirCmd) GetPath() string {
 
 type Command_AuthAddCmd struct {
 	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
-	Fingerprint      *string `protobuf:"bytes,2,req,name=fingerprint" json:"fingerprint,omitempty"`
+	PeerHash         *string `protobuf:"bytes,2,req,name=peer_hash" json:"peer_hash,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -552,9 +552,9 @@ func (m *Command_AuthAddCmd) GetWho() string {
 	return ""
 }
 
-func (m *Command_AuthAddCmd) GetFingerprint() string {
-	if m != nil && m.Fingerprint != nil {
-		return *m.Fingerprint
+func (m *Command_AuthAddCmd) GetPeerHash() string {
+	if m != nil && m.PeerHash != nil {
+		return *m.PeerHash
 	}
 	return ""
 }
@@ -1268,13 +1268,13 @@ func (m *Command_AuthAddCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
 		i += copy(data[i:], *m.Who)
 	}
-	if m.Fingerprint == nil {
+	if m.PeerHash == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Fingerprint)))
-		i += copy(data[i:], *m.Fingerprint)
+		i = encodeVarintDaemon(data, i, uint64(len(*m.PeerHash)))
+		i += copy(data[i:], *m.PeerHash)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1652,8 +1652,8 @@ func (m *Command_AuthAddCmd) Size() (n int) {
 		l = len(*m.Who)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Fingerprint != nil {
-		l = len(*m.Fingerprint)
+	if m.PeerHash != nil {
+		l = len(*m.PeerHash)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3614,7 +3614,7 @@ func (m *Command_AuthAddCmd) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Fingerprint", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerHash", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3640,7 +3640,7 @@ func (m *Command_AuthAddCmd) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			s := string(data[iNdEx:postIndex])
-			m.Fingerprint = &s
+			m.PeerHash = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		default:

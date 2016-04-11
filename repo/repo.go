@@ -29,6 +29,9 @@ type Repository struct {
 
 	Config *yamlConfig.Config
 
+	// Remotes stores the metadata of all communication partners
+	Remotes RemoteStore
+
 	allStores map[id.ID]*store.Store
 
 	// OwnStore is the store.Store used to save our own files in.

@@ -540,7 +540,7 @@ func handlePull(ctx climax.Context, client *daemon.Client) int {
 		return BadArgs
 	}
 
-	if err := client.Fetch(remoteJID); err != nil {
+	if err := client.Fetch(remoteID); err != nil {
 		log.Errorf("fetch failed: %v", err)
 		return UnknownError
 	}

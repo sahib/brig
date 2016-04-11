@@ -251,12 +251,12 @@ func (c *Client) Mkdir(path string) error {
 	return nil
 }
 
-func (c *Client) AuthAdd(ident id.ID, finger string) error {
+func (c *Client) AuthAdd(ident id.ID, peerHash string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_AUTH_ADD.Enum(),
 		AuthAddCommand: &wire.Command_AuthAddCmd{
-			Who:         proto.String(string(ident)),
-			Fingerprint: proto.String(finger),
+			Who:      proto.String(string(ident)),
+			PeerHash: proto.String(peerHash),
 		},
 	}
 

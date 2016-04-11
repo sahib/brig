@@ -100,7 +100,7 @@ func (cn *Connector) Connect() error {
 	}
 
 	go func() {
-		for _, remote := range cn.rp.Remotes.List() {
+		for remote := range cn.rp.Remotes.Iter() {
 			cnv, err := cn.layer.Dial(remote)
 			if err != nil {
 				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)

@@ -238,12 +238,13 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 }
 
 // Connect tries to connect the client and the ipfs daemon to the outside world.
+// TODO: remove password and ident params
 func (sv *Server) Connect(ident id.ID, password string) error {
 	if sv.IsOnline() {
 		return nil
 	}
 
-	if err := sv.MetaHost.Connect(ident, password); err != nil {
+	if err := sv.MetaHost.Connect(); err != nil {
 		log.Warningf("Unable to connect metadata client: %v", err)
 		return err
 	}
@@ -281,5 +282,5 @@ func (sv *Server) Disconnect() (err error) {
 
 // IsOnline checks if both meta host and ipfs is up and running.
 func (sv *Server) IsOnline() bool {
-	return sv.MetaHost.IsOnline() && sv.Repo.IPFS.IsOnline()
+	return sv.MetaHost.IsInOnlineMode() && sv.Repo.IPFS.IsOnline()
 }
