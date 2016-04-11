@@ -1,21 +1,30 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/disorganizer/brig/store/compress"
 )
 
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(-1)
-	}
+type options struct {
+	algo              string
+	args              []string
+	compress          bool
+	decompress        bool
+	useDevNull        bool
+	forceDstOverwrite bool
+}
+
+func withTime(fn func()) time.Duration {
+	now := time.Now()
+	fn()
+	return time.Since(now)
 }
 
 func openDst(dest string, overwrite bool) *os.File {
@@ -24,6 +33,7 @@ func openDst(dest string, overwrite bool) *os.File {
 			log.Fatalf("Opening destination failed, %v exists.\n", dest)
 		}
 	}
+
 	fd, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		log.Fatalf("Opening destination %v failed: %v\n", dest, err)
@@ -39,57 +49,97 @@ func openSrc(src string) *os.File {
 	return fd
 }
 
-func getDstFilename(compressor bool, src, algo string) string {
+func dstFilename(compressor bool, src, algo string) string {
 	if compressor {
 		return fmt.Sprintf("%s.%s", src, algo)
 	}
 	return fmt.Sprintf("%s.%s", src, "uncompressed")
 }
 
-func main() {
-	algorithms := map[string]int{
-		"none":   0,
-		"snappy": 1,
-		"lz4":    2,
-	}
-	decompressMode := flag.Bool("d", false, "Decompress.")
-	compressMode := flag.Bool("c", false, "Compress.")
-	useAlgo := flag.String("s", "none", "Possible compression algorithms: none, snappy, lz4.")
-	forceOverwrite := flag.Bool("f", false, "Force overwriting destination file.")
+func dieWithUsage() {
+	fmt.Printf("Usage of %s:\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(-1)
+
+}
+
+func die(err error) {
+	log.Fatal(err)
+	os.Exit(-1)
+}
+
+func parseFlags() options {
+	decompress := flag.Bool("d", false, "Decompress.")
+	compress := flag.Bool("c", false, "Compress.")
+	algo := flag.String("a", "none", "Possible compression algorithms: none, snappy, lz4.")
+	forceDstOverwrite := flag.Bool("f", false, "Force overwriting destination file.")
+	useDevNull := flag.Bool("D", false, "Write to /dev/null.")
 	flag.Parse()
-	Args := flag.Args()
+	return options{
+		decompress:        *decompress,
+		compress:          *compress,
+		algo:              *algo,
+		forceDstOverwrite: *forceDstOverwrite,
+		useDevNull:        *useDevNull,
+		args:              flag.Args(),
+	}
+}
 
-	if len(Args) != 1 || !((*compressMode || *decompressMode) && !(*compressMode && *decompressMode)) {
-		fmt.Printf("Usage of %s:\n", os.Args[0])
-		flag.PrintDefaults()
-		os.Exit(-1)
+func main() {
+	opts := parseFlags()
+
+	if len(opts.args) != 1 {
+		dieWithUsage()
+	}
+	if opts.compress && opts.decompress {
+		dieWithUsage()
+	}
+	if !opts.compress && !opts.decompress {
+		dieWithUsage()
 	}
 
-	srcPath := Args[0]
-	algo, ok := algorithms[*useAlgo]
-	if !ok {
-		log.Fatalf("Invalid algorithm type: %s", *useAlgo)
-		os.Exit(-1)
+	srcPath := opts.args[0]
+	algo, err := compress.FromString(opts.algo)
+	if err != nil {
+		die(err)
 	}
 
 	src := openSrc(srcPath)
-	dstFileName := getDstFilename(*compressMode, srcPath, *useAlgo)
-	dst := openDst(dstFileName, *forceOverwrite)
-	defer dst.Close()
 	defer src.Close()
 
-	nBytes, err := int64(0), errors.New("huh, this should never happen")
-	if *compressMode {
-		zw, err := compress.NewWriter(dst, compress.AlgorithmType(algo))
-		checkError(err)
-		nBytes, err = io.Copy(zw, src)
-		checkError(err)
-		zw.Close()
+	dstPath := dstFilename(opts.compress, srcPath, opts.algo)
+	if opts.useDevNull {
+		dstPath = os.DevNull
 	}
-	if *decompressMode {
-		zr := compress.NewReader(src)
-		nBytes, err = io.Copy(dst, zr)
-		checkError(err)
-	}
-	fmt.Printf("%s created, %d bytes processed.\n", dstFileName, nBytes)
+
+	dst := openDst(dstPath, opts.forceDstOverwrite)
+	defer dst.Close()
+
+	nBytes := int64(0)
+	elapsed := withTime(func() {
+		if opts.compress {
+			zw, err := compress.NewWriter(dst, algo)
+			if err != nil {
+				die(err)
+			}
+			nBytes, err = io.Copy(zw, src)
+			if err != nil {
+				die(err)
+			}
+			if err := zw.Close(); err != nil {
+				die(err)
+			}
+		}
+		if opts.decompress {
+			zr := compress.NewReader(src)
+			nBytes, err = io.Copy(dst, zr)
+			if err != nil {
+				die(err)
+			}
+		}
+	})
+	fmt.Printf(
+		"%s created, %s processed in %.2f seconds.\n",
+		dstPath, humanize.Bytes(uint64(nBytes)), elapsed.Seconds(),
+	)
 }
