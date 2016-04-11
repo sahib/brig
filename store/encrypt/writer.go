@@ -29,16 +29,12 @@ type Writer struct {
 
 	// True after the first write.
 	headerWritten bool
-
-	// length is the total number of bytes passed to the writer.
-	// This is needed to make SEEK_END on the reader side work.
-	length int64
 }
 
 func (w *Writer) emitHeaderIfNeeded() error {
 	if !w.headerWritten {
 		w.headerWritten = true
-		header := GenerateHeader(w.key, w.length)
+		header := GenerateHeader(w.key)
 
 		if _, err := w.Writer.Write(header); err != nil {
 			return err
@@ -161,11 +157,10 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 // NewWriter returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriter(w io.Writer, key []byte, length int64) (*Writer, error) {
+func NewWriter(w io.Writer, key []byte) (*Writer, error) {
 	writer := &Writer{
 		Writer: w,
 		rbuf:   &bytes.Buffer{},
-		length: length,
 	}
 
 	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {

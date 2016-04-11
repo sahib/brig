@@ -3,7 +3,6 @@ package store
 import (
 	"io"
 	"io/ioutil"
-	"os"
 
 	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/encrypt"
@@ -42,61 +41,41 @@ func NewIpfsReader(key []byte, r Reader) (Reader, error) {
 	}, nil
 }
 
-// NewFileReaderFromPath is a shortcut for reading a file from disk
-// and returning ipfs-conforming data.
-func NewFileReaderFromPath(key []byte, path string) (io.Reader, error) {
-	fd, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	info, err := fd.Stat()
-	if err != nil {
-		fd.Close()
-		return nil, err
-	}
-
-	// TODO: defer close fd?
-	return NewFileReader(key, fd, info.Size())
-}
-
 // NewFileReader reads an unencrypted, uncompressed file and
 // returns a reader that will yield the data we feed to ipfs.
-func NewFileReader(key []byte, r io.Reader, length int64) (outR io.Reader, outErr error) {
+func NewFileReader(key []byte, r io.Reader, algo compress.AlgorithmType) (or io.Reader, err error) {
 	pr, pw := io.Pipe()
 
 	// Setup the writer part:
-	wEnc, err := encrypt.NewWriter(pw, key, length)
-	if err != nil {
-		return nil, err
+	wEnc, encErr := encrypt.NewWriter(pw, key)
+	if encErr != nil {
+		return nil, encErr
 	}
 
-	// TODO: Pass in the correct algorithm.
-	wZip, err := compress.NewWriter(wEnc, compress.AlgoSnappy)
-	if err != nil {
-		// Should only happen for a bad algorithm:
-		return nil, err
+	wZip, zipErr := compress.NewWriter(wEnc, algo)
+	if zipErr != nil {
+		return nil, zipErr
 	}
 
 	// Suck the reader empty and move it to `wZip`.
 	// Every write to wZip will be available as read in `pr`.
 	go func() {
 		defer func() {
-			if err := wZip.Close(); err != nil {
-				outErr = err
+			if zipCloseErr := wZip.Close(); zipCloseErr != nil {
+				err = zipCloseErr
 			}
 
-			if err := wEnc.Close(); err != nil {
-				outErr = err
+			if encCloseErr := wEnc.Close(); encCloseErr != nil {
+				err = encCloseErr
 			}
 
-			if err := pw.Close(); err != nil {
-				outErr = err
+			if pwErr := pw.Close(); pwErr != nil {
+				err = pwErr
 			}
 		}()
 
-		if _, err := io.Copy(wZip, r); err != nil {
-			outErr = err
+		if _, copyErr := io.Copy(wZip, r); copyErr != nil {
+			err = copyErr
 		}
 	}()
 

@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"testing"
 )
@@ -14,6 +15,19 @@ func CreateDummyBuf(size int64) []byte {
 	for i := int64(0); i < size; i++ {
 		// Be evil and stripe the data:
 		buf[i] = byte(i % 255)
+	}
+
+	return buf
+}
+
+// CreateRandomDummyBuf creates data that is evenly distributed
+// and therefore notirously hard to compress.
+func CreateRandomDummyBuf(size, seed int64) []byte {
+	src := rand.NewSource(seed)
+	buf := make([]byte, size)
+
+	for i := int64(0); i < size; i++ {
+		buf[i] = byte(src.Int63() % 256)
 	}
 
 	return buf

@@ -9,8 +9,6 @@ import (
 	"github.com/disorganizer/brig/util"
 )
 
-// TODO: In store/stream.go einbauen.
-
 // chunkBuffer represents a custom buffer struct with Read/Write and Seek
 // support.
 type chunkBuffer struct {
@@ -181,6 +179,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 	if n, err := r.rawR.Read(buf[:]); err != nil || n != trailerSize {
 		return err
 	}
+
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
@@ -249,16 +248,11 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 		}
 
 		n, werr := w.Write(decData)
-		if werr != nil {
-			return written, werr
-		}
-
 		written += int64(n)
 
 		if werr != nil {
 			return written, werr
 		}
-
 	}
 }
 

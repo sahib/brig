@@ -22,7 +22,8 @@ type noneAlgo struct{}
 type snappyAlgo struct{}
 type lz4Algo struct{}
 
-var algoMap = map[AlgorithmType]Algorithm{
+// AlgoMap maps the algorithm type to the respective Algorithm interface
+var AlgoMap = map[AlgorithmType]Algorithm{
 	AlgoNone:   noneAlgo{},
 	AlgoSnappy: snappyAlgo{},
 	AlgoLZ4:    lz4Algo{},
@@ -39,26 +40,26 @@ func (a noneAlgo) Decode(src []byte) ([]byte, error) {
 
 // AlgoSnappy
 func (a snappyAlgo) Encode(src []byte) ([]byte, error) {
-	return snappy.Encode(src, src), nil
+	return snappy.Encode(nil, src), nil
 
 }
 
 func (a snappyAlgo) Decode(src []byte) ([]byte, error) {
-	return snappy.Decode(src, src)
+	return snappy.Decode(nil, src)
 }
 
 // AlgoLZ4
 func (a lz4Algo) Encode(src []byte) ([]byte, error) {
-	return lz4.Encode(src, src)
+	return lz4.Encode(nil, src)
 }
 
 func (a lz4Algo) Decode(src []byte) ([]byte, error) {
-	return lz4.Decode(src, src)
+	return lz4.Decode(nil, src)
 }
 
 // AlgorithmFromType returns a interface to the given AlgorithmType.
 func AlgorithmFromType(a AlgorithmType) (Algorithm, error) {
-	if algo, ok := algoMap[a]; ok {
+	if algo, ok := AlgoMap[a]; ok {
 		return algo, nil
 	}
 	return nil, ErrBadAlgo

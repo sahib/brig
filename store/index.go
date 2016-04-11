@@ -14,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
@@ -159,7 +160,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 			}
 			defer util.Closer(fd)
 
-			err = s.AddFromReader(currPath, fd, info.Size())
+			err = s.AddFromReader(currPath, fd)
 		case mode.IsDir():
 			_, err = s.Mkdir(currPath)
 		default:
@@ -183,7 +184,7 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
+func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	repoPath = prefixSlash(repoPath)
 
 	// Check if the file was already added:
@@ -223,7 +224,9 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
 
-	stream, err := NewFileReader(file.Key(), teeR, size)
+	// TODO: Make algo configurable/add heuristic too choose
+	//       a suitable algorithm
+	stream, err := NewFileReader(file.Key(), teeR, compress.AlgoSnappy)
 	if err != nil {
 		return err
 	}
@@ -279,7 +282,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader, size int64) error {
 // Touch creates a new empty file.
 // It is provided as convenience wrapper around AddFromReader.
 func (s *Store) Touch(repoPath string) error {
-	return s.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}), 0)
+	return s.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
 // marshalFile converts a file to a protobuf and

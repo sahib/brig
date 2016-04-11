@@ -58,7 +58,7 @@ func TestAddCat(t *testing.T) {
 		path := fmt.Sprintf("dummy_%d", size)
 
 		withEmptyStore(t, func(st *Store) {
-			if err := st.AddFromReader(path, bytes.NewReader(data), size); err != nil {
+			if err := st.AddFromReader(path, bytes.NewReader(data)); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				return
 			}
@@ -97,7 +97,7 @@ func TestList(t *testing.T) {
 	withEmptyStore(t, func(st *Store) {
 		// Build the tree:
 		for _, path := range paths {
-			if err := st.AddFromReader(path, bytes.NewReader(nil), 0); err != nil {
+			if err := st.AddFromReader(path, bytes.NewReader(nil)); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				break
 			}
@@ -174,7 +174,7 @@ func TestExport(t *testing.T) {
 }
 
 func createDirAndFile(t *testing.T, st *Store, data []byte) error {
-	if err := st.AddFromReader("/dummy", bytes.NewReader(data), int64(len(data))); err != nil {
+	if err := st.AddFromReader("/dummy", bytes.NewReader(data)); err != nil {
 		t.Errorf("Could not add dummy file for move: %v", err)
 		return err
 	}

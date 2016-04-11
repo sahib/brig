@@ -153,7 +153,7 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	err = h.fs.Store.AddFromReader(h.Path(), h.layer, h.Size())
+	err = h.fs.Store.AddFromReader(h.Path(), h.layer)
 	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA
