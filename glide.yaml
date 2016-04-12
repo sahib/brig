@@ -1,0 +1,55 @@
+package: github.com/disorganizer/brig
+import:
+- package: bazil.org/fuse
+  subpackages:
+  - fs
+- package: bitbucket.org/taruti/mimemagic
+- package: github.com/Sirupsen/logrus
+- package: github.com/VividCortex/godaemon
+- package: github.com/bkaradzic/go-lz4
+- package: github.com/boltdb/bolt
+- package: github.com/chzyer/readline
+- package: github.com/codahale/chacha20poly1305
+- package: github.com/dustin/go-humanize
+- package: github.com/fatih/color
+- package: github.com/gogo/protobuf
+  subpackages:
+  - proto
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/golang/snappy
+- package: github.com/ipfs/go-ipfs
+  subpackages:
+  - blocks
+  - blocks/key
+  - core
+  - core/commands
+  - core/corenet
+  - core/coreunix
+  - repo/config
+  - repo/fsrepo
+  - routing/dht
+- package: github.com/jbenet/go-multiaddr
+- package: github.com/jbenet/go-multihash
+- package: github.com/nbutton23/zxcvbn-go
+- package: github.com/nightlyone/lockfile
+- package: github.com/olebedev/config
+- package: github.com/tucnak/climax
+- package: github.com/wayn3h0/go-uuid
+- package: golang.org/x/crypto
+  subpackages:
+  - curve25519
+  - scrypt
+  - sha3
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: golang.org/x/text
+  subpackages:
+  - unicode/norm
+- package: gopkg.in/yaml.v2
+- package: gx/ipfs/QmYVqhVfbK4BKvbW88Lhm26b3ud14sTBvcm1H7uWUx1Fkp/go-multiaddr-net
+- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/net
+- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/peer
+- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/protocol
