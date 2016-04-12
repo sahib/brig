@@ -2,12 +2,13 @@ package encrypt
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -112,125 +113,68 @@ func testSimpleEncDec(t *testing.T, size int) {
 func TestSimpleEncDec(t *testing.T) {
 	t.Parallel()
 
-	sizes := []int{
-		0,
-		1,
-		MaxBlockSize - 1,
-		MaxBlockSize,
-		MaxBlockSize + 1,
-		GoodDecBufferSize - 1,
-		GoodDecBufferSize,
-		GoodDecBufferSize + 1,
-		GoodEncBufferSize - 1,
-		GoodEncBufferSize,
-		GoodEncBufferSize + 1,
-	}
-
-	for _, size := range sizes {
+	for _, size := range SizeTests {
 		t.Logf("Testing SimpleEncDec for size %d", size)
 		testSimpleEncDec(t, size)
 	}
 }
 
-func TestSeek(t *testing.T) {
-	N := int64(2 * MaxBlockSize)
-	a := testutil.CreateDummyBuf(N)
-	b := make([]byte, 0, N)
-
-	source := bytes.NewBuffer(a)
-	shared := &bytes.Buffer{}
-	dest := bytes.NewBuffer(b)
-
-	enc, err := NewWriter(shared, TestKey)
-	if err != nil {
-		panic(err)
+// TODO: add to general testutils?
+func omit(data []byte, lim int) string {
+	lo := lim
+	if lo > len(data) {
+		lo = len(data)
 	}
 
-	buf := make([]byte, GoodEncBufferSize)
-
-	// Encrypt:
-	_, err = io.CopyBuffer(enc, source, buf)
-	if err != nil {
-		panic(err)
+	hi := len(data) - lim
+	if hi < 0 {
+		hi = len(data)
 	}
 
-	// This needs to be here, since close writes
-	// left over data to the write stream
-	if err := enc.Close(); err != nil {
-		t.Errorf("close(enc): %v", err)
-		return
+	if len(data[hi:]) > 0 {
+		return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
+	} else {
+		return fmt.Sprintf("%v", data[:lo])
 	}
+}
 
-	sharedReader := bytes.NewReader(shared.Bytes())
-	decLayer, err := NewReader(sharedReader, TestKey)
-	if err != nil {
-		t.Errorf("cannot create new reader: %v", err)
-		return
-	}
+var SizeTests = []int{
+	0,
+	1,
+	MaxBlockSize - 1,
+	MaxBlockSize,
+	MaxBlockSize + 1,
+	GoodDecBufferSize - 1,
+	GoodDecBufferSize,
+	GoodDecBufferSize + 1,
+	GoodEncBufferSize - 1,
+	GoodEncBufferSize,
+	7 * GoodEncBufferSize,
+	7*GoodEncBufferSize - 1,
+	GoodEncBufferSize + 1,
+}
 
-	seekTest := int64(MaxBlockSize)
-	pos, err := decLayer.Seek(seekTest, os.SEEK_SET)
-	if err != nil {
-		t.Errorf("Seek error'd: %v", err)
-		return
-	}
-
-	if pos != seekTest {
-		t.Errorf("Seek is a bad jumper: %d (should %d)", pos, MaxBlockSize)
-		return
-	}
-
-	pos, _ = decLayer.Seek(0, os.SEEK_CUR)
-	if pos != seekTest {
-		t.Errorf("SEEK_CUR(0) deliverd wrong status")
-		return
-	}
-
-	pos, _ = decLayer.Seek(seekTest/2, os.SEEK_CUR)
-	if pos != seekTest+seekTest/2 {
-		t.Errorf("SEEK_CUR jumped to the wrong pos: %d", pos)
-		return
-	}
-
-	pos, _ = decLayer.Seek(-seekTest, os.SEEK_CUR)
-	if pos != seekTest/2 {
-		t.Errorf("SEEK_CUR does not like negative indices: %d", pos)
-		return
-	}
-
-	pos, _ = decLayer.Seek(seekTest/2, os.SEEK_CUR)
-	if pos != seekTest {
-		t.Errorf("SEEK_CUR has problems after negative indices: %d", pos)
-		return
-	}
-
-	// Check if SEEK_END appears to work
-	// (jump to same position, but from end of file)
-	endPos, err := decLayer.Seek(seekTest, os.SEEK_END)
-	if err != nil {
-		t.Errorf("Seek(%d, SEEK_END) failed: %v", err)
-		return
-	}
-
-	if endPos != pos {
-		t.Errorf("SEEK_END failed; should be %d, was %d", pos, endPos)
-		return
-	}
-
-	// Decrypt:
-	_, err = io.CopyBuffer(dest, decLayer, buf)
-	if err != nil {
-		t.Errorf("Decrypt failed: %v", err)
-		return
-	}
-
-	if !bytes.Equal(a[seekTest:], dest.Bytes()) {
-		b := dest.Bytes()
-		t.Errorf("Buffers are not equal:")
-		t.Errorf("\tAAA %d %x %x\n", len(a), a[:10], a[len(a)-10:])
-		t.Errorf("\tBBB %d %x %x\n", len(b), b[:util.Min(10, len(b))], b[util.Max(0, len(b)-10):])
-		return
-	}
+var SeekTests = []struct {
+	Whence int
+	Offset float64
+	Error  error
+}{
+	// Jump to the mid:
+	{os.SEEK_SET, 0.5, nil},
+	// Should stay the same:
+	{os.SEEK_CUR, 0, nil},
+	// Jump a quarter forth:
+	{os.SEEK_CUR, 0.25, nil},
+	// Jump a half back:
+	{os.SEEK_CUR, -0.5, nil},
+	// Jump back to the half:
+	{os.SEEK_CUR, 0.25, nil},
+	// See if SEEK_END works:
+	{os.SEEK_END, -0.5, nil},
+	// This triggered a crash earlier:
+	{os.SEEK_END, -2, io.EOF},
+	// Im guessing now:
+	{os.SEEK_END, -1.0 / 4096, nil},
 }
 
 func BenchmarkEncDec(b *testing.B) {
@@ -239,29 +183,31 @@ func BenchmarkEncDec(b *testing.B) {
 	}
 }
 
-// Regression test:
-// check that reader does not read first block first,
-// even if jumping right into the middle of the file.
-func TestSeekThenRead(t *testing.T) {
-	N := int64(2 * MaxBlockSize)
-	a := testutil.CreateDummyBuf(N)
-	b := make([]byte, 0, N)
+func TestSeek(t *testing.T) {
+	for _, size := range SizeTests {
+		testSeek(t, int64(size))
 
-	source := bytes.NewBuffer(a)
+		if t.Failed() {
+			break
+		}
+	}
+}
+
+func testSeek(t *testing.T, N int64) {
+	sourceData := testutil.CreateDummyBuf(N)
+	source := bytes.NewBuffer(sourceData)
 	shared := &bytes.Buffer{}
-	dest := bytes.NewBuffer(b)
+
+	t.Logf("Testing seek for size %d", N)
 
 	enc, err := NewWriter(shared, TestKey)
 	if err != nil {
-		panic(err)
+		t.Errorf("Creating an encrypted writer failed: %v", err)
+		return
 	}
 
-	// Use a different buf size for a change:
-	buf := make([]byte, 4096)
-
 	// Encrypt:
-	_, err = io.CopyBuffer(enc, source, buf)
-	if err != nil {
+	if _, err = io.Copy(enc, source); err != nil {
 		t.Errorf("copy(enc, source) failed %v", err)
 		return
 	}
@@ -276,40 +222,106 @@ func TestSeekThenRead(t *testing.T) {
 	sharedReader := bytes.NewReader(shared.Bytes())
 	decLayer, err := NewReader(sharedReader, TestKey)
 	if err != nil {
-		panic(err)
-	}
-
-	// Jump somewhere inside the large file:
-	jumpPos := N/2 + N/4 + 1
-	newPos, err := decLayer.Seek(jumpPos, os.SEEK_SET)
-	if err != nil {
-		t.Errorf("Seek failed in SeekThenRead: %v", err)
+		t.Errorf("creating new reader failed: %v", err)
 		return
 	}
 
-	if newPos != jumpPos {
-		t.Errorf("Seek jumped to %v (should be %v)", newPos, N/2+N/4)
-		return
-	}
+	lastJump := int64(0)
 
-	// Decrypt:
-	copiedBytes, err := io.CopyBuffer(dest, decLayer, buf)
-	if err != nil {
-		t.Errorf("Decrypt failed: %v", err)
-		return
-	}
+	for _, test := range SeekTests {
+		realOffset := int64(math.Floor(.5 + test.Offset*float64(N)))
 
-	if copiedBytes != N-jumpPos {
-		t.Errorf("Copied different amount of decrypted data than expected.")
-		t.Errorf("Should be %v, was %v bytes.", copiedBytes, N-jumpPos)
-		return
-	}
+		whence := map[int]string{
+			0: "SEEK_SET",
+			1: "SEEK_CUR",
+			2: "SEEK_END",
+		}[test.Whence]
 
-	// Check the data actually matches the source data.
-	if !bytes.Equal(a[newPos:], dest.Bytes()) {
-		t.Errorf("Seeked data does not match expectations.")
-		t.Errorf("\tEXPECTED: %v...", a[newPos:newPos:10])
-		t.Errorf("\tGOT:      %v...", dest.Bytes()[:10])
+		exptOffset := int64(0)
+		switch test.Whence {
+		case os.SEEK_SET:
+			exptOffset = realOffset
+		case os.SEEK_CUR:
+			exptOffset = lastJump + realOffset
+		case os.SEEK_END:
+			exptOffset = N + realOffset
+		default:
+			panic("Bad whence")
+		}
+
+		t.Logf(
+			" => Seek(%v, %v) -> %v (size: %v)",
+			realOffset,
+			whence,
+			exptOffset,
+			N,
+		)
+
+		jumpedTo, err := decLayer.Seek(realOffset, test.Whence)
+		if err != test.Error {
+			if err != io.EOF && N != 0 {
+				t.Errorf(
+					"Seek(%v, %v) produced an error: %v (should be %v)",
+					realOffset,
+					whence,
+					err,
+					test.Error,
+				)
+			}
+			return
+		}
+
+		if test.Error != nil {
+			continue
+		}
+
+		if jumpedTo != exptOffset {
+			t.Errorf(
+				"Seek(%v, %v) jumped badly. Should be %v, was %v",
+				realOffset,
+				whence,
+				exptOffset,
+				jumpedTo,
+			)
+			return
+		}
+
+		lastJump = jumpedTo
+
+		// Decrypt and check if the contents are okay:
+		dest := bytes.NewBuffer(nil)
+		copiedBytes, err := io.Copy(dest, decLayer)
+		if err != nil {
+			t.Errorf("Decrypt failed: %v", err)
+			return
+		}
+
+		if copiedBytes != N-jumpedTo {
+			t.Errorf("Copied different amount of decrypted data than expected.")
+			t.Errorf("Should be %v, was %v bytes.", N-jumpedTo, copiedBytes)
+			return
+		}
+
+		// Check the data actually matches the source data.
+		if !bytes.Equal(sourceData[jumpedTo:], dest.Bytes()) {
+			t.Errorf("Seeked data does not match expectations.")
+			t.Errorf("\tEXPECTED: %v", omit(sourceData[jumpedTo:], 10))
+			t.Errorf("\tGOT:      %v", omit(dest.Bytes(), 10))
+			return
+		}
+
+		// Jump back, so the other tests continue to work:
+		jumpedAgain, err := decLayer.Seek(jumpedTo, os.SEEK_SET)
+		if err != nil {
+			t.Errorf("Seeking not possible after reading: %v", err)
+			return
+		}
+
+		if jumpedTo != jumpedAgain {
+			t.Errorf("Jumping back to original pos failed.")
+			t.Errorf("Should be %v, was %v.", jumpedTo, jumpedAgain)
+			return
+		}
 	}
 }
 

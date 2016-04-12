@@ -21,7 +21,8 @@ type Reader struct {
 	// Last index of the byte the user visited.
 	// (Used to avoid re-reads in Seek())
 	// This does *not* equal the seek offset of the underlying stream.
-	lastSeekPos int64
+	lastDecSeekPos int64
+	lastEncSeekPos int64
 
 	// Parsed header info
 	info *HeaderInfo
@@ -74,6 +75,7 @@ func (r *Reader) readHeaderIfNotDone() error {
 		return err
 	}
 
+	r.lastEncSeekPos += headerSize
 	return nil
 }
 
@@ -100,7 +102,7 @@ func (r *Reader) Read(dest []byte) (int, error) {
 
 		n, _ := r.backlog.Read(dest[readBytes:])
 		readBytes += n
-		r.lastSeekPos += int64(n)
+		r.lastDecSeekPos += int64(n)
 	}
 
 	return readBytes, nil
@@ -124,7 +126,7 @@ func (r *Reader) readBlock() (int, error) {
 	readBlockNum := binary.LittleEndian.Uint64(r.nonce)
 
 	// Check the block number:
-	currBlockNum := uint64(r.lastSeekPos / MaxBlockSize)
+	currBlockNum := uint64(r.lastDecSeekPos / MaxBlockSize)
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
 			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
@@ -137,6 +139,8 @@ func (r *Reader) readBlock() (int, error) {
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return 0, err
 	}
+
+	r.lastEncSeekPos += int64(n) + int64(len(r.nonce))
 
 	r.decBuf, err = r.aead.Open(r.decBuf[:0], r.nonce, r.encBuf[:n], nil)
 	if err != nil {
@@ -158,7 +162,7 @@ func (r *Reader) readBlock() (int, error) {
 // Therefore relative seek offset
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Check if seeking is supported:
-	seeker, ok := r.Reader.(io.ReadSeeker)
+	seeker, ok := r.Reader.(io.Seeker)
 	if !ok {
 		return 0, fmt.Errorf("Seek is not supported by underlying datastream")
 	}
@@ -178,7 +182,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Convert possibly relative offset to absolute offset:
 	switch whence {
 	case os.SEEK_CUR:
-		absOffsetDec = r.lastSeekPos + offset
+		absOffsetDec = r.lastDecSeekPos + offset
 	case os.SEEK_SET:
 		absOffsetDec = offset
 	case os.SEEK_END:
@@ -186,7 +190,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		// This might be inefficient for some underlying readers,
 		// but is probably okay for ipfs.
 		endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return 0, err
 		}
 
@@ -196,7 +200,10 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		encRest := encLen % totalBlockSize
 		decBlocks := encLen / totalBlockSize
 
-		endOffsetDec := decBlocks*MaxBlockSize + (encRest - blockOverhead)
+		endOffsetDec := decBlocks * MaxBlockSize
+		if encRest > 0 {
+			endOffsetDec += encRest - blockOverhead
+		}
 		absOffsetDec = endOffsetDec + offset
 
 		if absOffsetDec < 0 {
@@ -205,17 +212,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		}
 	}
 
-	if r.lastSeekPos == absOffsetDec {
-		// Nothing changed, why bother?
-		return r.lastSeekPos, nil
-	}
-
 	if absOffsetDec < 0 {
 		return 0, fmt.Errorf("Negative seek index: %d", absOffsetDec)
 	}
 
 	// Caller wanted to know only the current stream pos:
-	if absOffsetDec == r.lastSeekPos {
+	if absOffsetDec == r.lastDecSeekPos {
 		return absOffsetDec, nil
 	}
 
@@ -224,10 +226,13 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
-	lastBlockNum := r.lastSeekPos / MaxBlockSize
-	r.lastSeekPos = absOffsetDec
+	lastBlockNum := r.lastDecSeekPos / MaxBlockSize
+
+	r.lastDecSeekPos = absOffsetDec
 
 	if lastBlockNum != blockNum || r.isInitialRead {
+		r.lastEncSeekPos = absOffsetEnc
+
 		// Seek to the beginning of the encrypted block:
 		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
 			return 0, err
@@ -269,7 +274,18 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 		}
 
 		n += bn
-		r.lastSeekPos += bn
+		r.lastDecSeekPos += bn
+	}
+
+	// This is kinda weird, but it might happen that the underlying stream
+	// might be positioned at the end of the next block already,
+	// so we need to re-position to the beginning of this block.
+	seeker, ok := r.Reader.(io.Seeker)
+	if ok {
+		// Seek to the beginning of the encrypted block:
+		if _, err := seeker.Seek(r.lastEncSeekPos, os.SEEK_SET); err != nil {
+			return 0, err
+		}
 	}
 
 	for {
@@ -278,7 +294,7 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 			return n, rerr
 		}
 
-		r.lastSeekPos += int64(nread)
+		r.lastDecSeekPos += int64(nread)
 
 		nwrite, werr := w.Write(r.decBuf[:nread])
 		if werr != nil {
