@@ -22,6 +22,9 @@ type Reader struct {
 	// (Used to avoid re-reads in Seek())
 	// This does *not* equal the seek offset of the underlying stream.
 	lastDecSeekPos int64
+
+	// lastEncSeekPos saves the current position of the underlying stream.
+	// it is used mostly for ensureing SEEK_END works.
 	lastEncSeekPos int64
 
 	// Parsed header info
@@ -95,14 +98,18 @@ func (r *Reader) Read(dest []byte) (int, error) {
 	// Try our best to fill len(dest)
 	for readBytes < len(dest) {
 		if r.backlog.Len() == 0 {
-			if _, err := r.readBlock(); err != nil {
-				return readBytes, err
+			if _, rerr := r.readBlock(); rerr != nil && rerr != io.EOF {
+				return readBytes, rerr
 			}
 		}
 
-		n, _ := r.backlog.Read(dest[readBytes:])
-		readBytes += n
+		n, berr := r.backlog.Read(dest[readBytes:])
 		r.lastDecSeekPos += int64(n)
+		readBytes += n
+
+		if berr == io.EOF {
+			return readBytes, io.EOF
+		}
 	}
 
 	return readBytes, nil
@@ -149,6 +156,7 @@ func (r *Reader) readBlock() (int, error) {
 
 	r.backlog = bytes.NewReader(r.decBuf)
 	r.isInitialRead = false
+
 	return len(r.decBuf), nil
 }
 
@@ -170,6 +178,9 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	if err := r.readHeaderIfNotDone(); err != nil {
 		return 0, err
 	}
+
+	// set to true when an actual call to seeker.Seek() was made.
+	wasMoved := false
 
 	// Constants and assumption on the stream below:
 	blockHeaderSize := int64(r.aead.NonceSize())
@@ -210,6 +221,15 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			// That's the wrong end of file...
 			return 0, io.EOF
 		}
+
+		// For SEEK_END we need to make sure that we move the seek pointer
+		// back to a sensible position when we decide that no actual move
+		// is necessary further down this function.
+		defer func() {
+			if !wasMoved {
+				seeker.Seek(r.lastEncSeekPos, os.SEEK_SET)
+			}
+		}()
 	}
 
 	if absOffsetDec < 0 {
@@ -230,10 +250,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	r.lastDecSeekPos = absOffsetDec
 
-	if lastBlockNum != blockNum || r.isInitialRead {
+	if lastBlockNum != blockNum || r.isInitialRead || whence == os.SEEK_END {
 		r.lastEncSeekPos = absOffsetEnc
 
 		// Seek to the beginning of the encrypted block:
+		wasMoved = true
 		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
 			return 0, err
 		}

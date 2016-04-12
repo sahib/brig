@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -73,4 +74,45 @@ func Remover(t *testing.T, paths ...string) {
 			t.Errorf("removing temp directory failed: %v", err)
 		}
 	}
+}
+
+// DumbCopy works like io.Copy but may be instructed to not use WriteTo or ReadFrom
+func DumbCopy(dst io.Writer, src io.Reader, useReadFrom, useWriteTo bool) (written int64, err error) {
+	// If the reader has a WriteTo method, use it to do the copy.
+	// Avoids an allocation and a copy.
+	if wt, ok := src.(io.WriterTo); ok && useWriteTo {
+		return wt.WriteTo(dst)
+	}
+	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
+	if rt, ok := dst.(io.ReaderFrom); ok && useReadFrom {
+		return rt.ReadFrom(src)
+	}
+
+	buf := make([]byte, 32*1024)
+
+	for {
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if er == io.EOF {
+			break
+		}
+		if er != nil {
+			err = er
+			break
+		}
+	}
+	return written, err
 }

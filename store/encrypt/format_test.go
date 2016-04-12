@@ -143,7 +143,7 @@ var SizeTests = []int{
 	1,
 	MaxBlockSize - 1,
 	MaxBlockSize,
-	MaxBlockSize + 1,
+	MaxBlockSize + 10,
 	GoodDecBufferSize - 1,
 	GoodDecBufferSize,
 	GoodDecBufferSize + 1,
@@ -185,7 +185,10 @@ func BenchmarkEncDec(b *testing.B) {
 
 func TestSeek(t *testing.T) {
 	for _, size := range SizeTests {
-		testSeek(t, int64(size))
+		testSeek(t, int64(size), false, false)
+		testSeek(t, int64(size), false, true)
+		testSeek(t, int64(size), true, false)
+		testSeek(t, int64(size), true, true)
 
 		if t.Failed() {
 			break
@@ -193,7 +196,7 @@ func TestSeek(t *testing.T) {
 	}
 }
 
-func testSeek(t *testing.T, N int64) {
+func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 	sourceData := testutil.CreateDummyBuf(N)
 	source := bytes.NewBuffer(sourceData)
 	shared := &bytes.Buffer{}
@@ -207,7 +210,7 @@ func testSeek(t *testing.T, N int64) {
 	}
 
 	// Encrypt:
-	if _, err = io.Copy(enc, source); err != nil {
+	if _, err = testutil.DumbCopy(enc, source, readFrom, writeTo); err != nil {
 		t.Errorf("copy(enc, source) failed %v", err)
 		return
 	}
@@ -290,7 +293,8 @@ func testSeek(t *testing.T, N int64) {
 
 		// Decrypt and check if the contents are okay:
 		dest := bytes.NewBuffer(nil)
-		copiedBytes, err := io.Copy(dest, decLayer)
+
+		copiedBytes, err := testutil.DumbCopy(dest, decLayer, readFrom, writeTo)
 		if err != nil {
 			t.Errorf("Decrypt failed: %v", err)
 			return
@@ -299,7 +303,6 @@ func testSeek(t *testing.T, N int64) {
 		if copiedBytes != N-jumpedTo {
 			t.Errorf("Copied different amount of decrypted data than expected.")
 			t.Errorf("Should be %v, was %v bytes.", N-jumpedTo, copiedBytes)
-			return
 		}
 
 		// Check the data actually matches the source data.
@@ -355,7 +358,7 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 
-	if _, err = dec.Seek(10, os.SEEK_SET); err != nil {
+	if _, err = dec.Seek(10, os.SEEK_SET); err != io.EOF {
 		t.Errorf("Seek failed: %v", err)
 		return
 	}
