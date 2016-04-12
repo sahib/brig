@@ -1,0 +1,90 @@
+hash: 24cfa41ae349a9d3b3b0e0cd2dc6721bc442ef1c97f30c70beea8cf929d3c26c
+updated: 2016-04-12T18:41:15.338755446+02:00
+imports:
+- name: bazil.org/fuse
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - fs
+- name: bitbucket.org/taruti/mimemagic
+  version: e5179c80a024
+- name: github.com/bkaradzic/go-lz4
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/boltdb/bolt
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/chzyer/readline
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/codahale/chacha20
+  version: ec07b4f69a3f70b1dd2a8ad77230deb1ba5d6953
+- name: github.com/codahale/chacha20poly1305
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/dustin/go-humanize
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/fatih/color
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/gogo/protobuf
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - proto
+- name: github.com/golang/protobuf
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - proto
+- name: github.com/golang/snappy
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/ipfs/go-ipfs
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - blocks
+  - blocks/key
+  - core
+  - core/commands
+  - core/corenet
+  - core/coreunix
+  - repo/config
+  - repo/fsrepo
+  - routing/dht
+- name: github.com/jbenet/go-base58
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/jbenet/go-multiaddr
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/jbenet/go-multihash
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/nbutton23/zxcvbn-go
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/nightlyone/lockfile
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/olebedev/config
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/Sirupsen/logrus
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/tucnak/climax
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/VividCortex/godaemon
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: github.com/wayn3h0/go-uuid
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: golang.org/x/crypto
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - curve25519
+  - scrypt
+  - sha3
+- name: golang.org/x/net
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - context
+- name: golang.org/x/text
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+  subpackages:
+  - unicode/norm
+- name: gopkg.in/yaml.v2
+  version: f828d5cd21fd29de8e818226560fcf931a9d67d3
+- name: gx/ipfs/QmYVqhVfbK4BKvbW88Lhm26b3ud14sTBvcm1H7uWUx1Fkp/go-multiaddr-net
+  version: ""
+- name: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/net
+  version: ""
+- name: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/peer
+  version: ""
+- name: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/protocol
+  version: ""
+devImports: []
