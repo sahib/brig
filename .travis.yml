@@ -8,6 +8,8 @@ notifications:
       - christoph@nullcat.de
 install:
     - sudo apt-get install fuse
+    - github.com/Masterminds/glide
     - go get -t -v github.com/disorganizer/brig
 script:
-    - go test -v github.com/disorganizer/brig/...
+    - cd $GOPATH/src/github.com/disorganizer/brig
+    - go test -v $(glide novendor)
