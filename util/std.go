@@ -297,3 +297,22 @@ func NewTimeoutReadWriter(rw io.ReadWriter, d time.Duration) *TimeoutReadWriter 
 		rtimeout: d, wtimeout: d,
 	}
 }
+
+// Errors is a list of errors that render to one single message
+type Errors []error
+
+func (es Errors) Error() string {
+	switch len(es) {
+	case 0:
+		return ""
+	case 1:
+		return es[0].Error()
+	default:
+		base := "More than one error happended:\n"
+		for _, err := range es {
+			base += "\t" + err.Error() + "\n"
+		}
+
+		return base
+	}
+}

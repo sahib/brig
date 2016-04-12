@@ -3,6 +3,7 @@ package ipfsutil
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -13,10 +14,8 @@ import (
 	manet "gx/ipfs/QmYVqhVfbK4BKvbW88Lhm26b3ud14sTBvcm1H7uWUx1Fkp/go-multiaddr-net"
 	p2pnet "gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/net"
 	peer "gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/peer"
+	protocol "gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/protocol"
 )
-
-// TODO: Move this to the respective module
-const BrigProtocolID = "/brig/mqtt"
 
 type streamConn struct {
 	stream p2pnet.Stream
@@ -96,6 +95,7 @@ func (il *ipfsListener) Accept() (net.Conn, error) {
 
 func (il *ipfsListener) Close() error {
 	il.cancel()
+
 	// TODO: unregister handler from peerhost
 	return nil
 }
@@ -107,7 +107,7 @@ func (il *ipfsListener) Addr() net.Addr {
 	}
 }
 
-func (nd *Node) Listen() (net.Listener, error) {
+func (nd *Node) Listen(proto string) (net.Listener, error) {
 	if !nd.IsOnline() {
 		return nil, fmt.Errorf("Not online") // TODO: common error?
 	}
@@ -125,7 +125,8 @@ func (nd *Node) Listen() (net.Listener, error) {
 		cancel: cancel,
 	}
 
-	node.PeerHost.SetStreamHandler(BrigProtocolID, func(s p2pnet.Stream) {
+	protoID := protocol.ID(proto)
+	node.PeerHost.SetStreamHandler(protoID, func(s p2pnet.Stream) {
 		fmt.Println("Received a stream", s)
 		select {
 		case list.conCh <- s:
@@ -137,18 +138,81 @@ func (nd *Node) Listen() (net.Listener, error) {
 	return list, nil
 }
 
-func (nd *Node) Dial(peerHash string) (net.Conn, error) {
+func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	peerID, err := peer.IDB58Decode(peerHash)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Peer id", peerID)
-	stream, err := corenet.Dial(nd.ipfsNode, peerID, BrigProtocolID)
+	stream, err := corenet.Dial(nd.ipfsNode, peerID, protocol)
 	if err != nil {
 		return nil, err
 	}
 
 	fmt.Println("wrap stream", peerID)
 	return wrapStream(stream), nil
+}
+
+type Pinger struct {
+	lastSeen  time.Time
+	roundtrip time.Duration
+	cancel    func()
+	mu        sync.Mutex
+}
+
+func (p *Pinger) LastSeen() time.Time {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.lastSeen
+}
+
+func (p *Pinger) Roundtrip() time.Duration {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.roundtrip
+}
+
+func (p *Pinger) Close() error {
+	p.cancel()
+	return nil
+}
+
+func (nd *Node) Ping(peerHash string) (*Pinger, error) {
+	if !nd.IsOnline() {
+		return nil, fmt.Errorf("Not online") // TODO: common error?
+	}
+
+	node, err := nd.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	peerID, err := peer.IDB58Decode(peerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithCancel(nd.Context)
+	pingCh, err := node.Ping.Ping(ctx, peerID)
+	if err != nil {
+		return nil, err
+	}
+
+	pinger := &Pinger{
+		lastSeen: time.Now(),
+		cancel:   cancel,
+	}
+
+	go func() {
+		for roundtrip := range pingCh {
+			pinger.mu.Lock()
+			pinger.roundtrip = roundtrip
+			pinger.lastSeen = time.Now()
+			pinger.mu.Unlock()
+		}
+	}()
+
+	return pinger, nil
 }

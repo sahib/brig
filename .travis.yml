@@ -1,17 +1,13 @@
 language: go
 sudo: required
 go:
-    - 1.5
+    - 1.6
 notifications:
     email:
       - sahib@online.de
       - christoph@nullcat.de
 install:
-    - go get -d github.com/ipfs/go-ipfs
-    - cd $GOPATH/src/github.com/ipfs/go-ipfs
-    - make install
-    - cd $GOPATH/src/github.com/disorganizer/brig
-    - go get -t -v ./...
     - sudo apt-get install fuse
+    - go get -t -v github.com/disorganizer/brig
 script:
     - go test -v github.com/disorganizer/brig/...

@@ -237,24 +237,23 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr error) {
+func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewWriter(dest, key)
 	if err != nil {
 		return 0, err
 	}
 
-	defer func() {
-		if err := layer.Close(); outErr != nil && err != nil {
-			outErr = err
-		}
-	}()
+	n, err := io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
+	if closeErr := layer.Close(); closeErr != nil {
+		return n, closeErr
+	}
 
-	return io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
+	return n, nil
 }
 
 // Decrypt is a utility function which decrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Decrypt(key []byte, source io.Reader, dest io.Writer) (n int64, outErr error) {
+func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	layer, err := NewReader(source, key)
 	if err != nil {
 		return 0, err

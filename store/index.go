@@ -13,12 +13,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -41,7 +41,7 @@ type Store struct {
 	repoPath string
 
 	// The jabber id this store is associated to.
-	jid xmpp.JID
+	ID id.ID
 
 	// IPFS manager layer (from daemon.Server)
 	IPFS *ipfsutil.Node
@@ -55,14 +55,14 @@ func prefixSlash(s string) string {
 	return s
 }
 
-// Open loads an existing store at `brigPath/$jid/index.bolt`, if it does not
+// Open loads an existing store at `brigPath/$ID/index.bolt`, if it does not
 // exist, it is created.  For full function, Connect() should be called
 // afterwards.
-func Open(brigPath string, jid xmpp.JID, IPFS *ipfsutil.Node) (*Store, error) {
+func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	dbDir := filepath.Join(
 		brigPath,
-		"bolt."+strings.Replace(string(jid), "/", "-", -1),
+		"bolt."+strings.Replace(string(ID), "/", "-", -1),
 	)
 
 	if err := os.MkdirAll(dbDir, 0777); err != nil {
@@ -77,7 +77,7 @@ func Open(brigPath string, jid xmpp.JID, IPFS *ipfsutil.Node) (*Store, error) {
 
 	store := &Store{
 		db:       db,
-		jid:      jid,
+		ID:       ID,
 		repoPath: brigPath,
 		IPFS:     IPFS,
 	}

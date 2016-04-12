@@ -1,164 +1,146 @@
 package transfer
 
 import (
-	"crypto/tls"
-	"path/filepath"
+	"net"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/transfer/xmpp"
-	goxmpp "github.com/tsuibin/goxmpp2/xmpp"
+	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
-// Connector is a pool of xmpp connections.
-// It listens for new connections and establishes a ServerProtocol on them.
-// Clients can talk to other parties with the Talk() function, which
-// esatblishes a ready to use ClientProtocol.
-//
-// Connector tries to hold the connections open as long as possible,
-// since building the conversations is expensive due to OTR.
-//
-// It is okay to call Connector from more than one goroutine.
 type Connector struct {
-	// Client is the underlying otr authenticated xmpp client, created on Connect()
-	client *xmpp.Client
+	layer Layer
 
 	// Open repo. required for answering requests.
 	// (might be nil for tests if no handlers are tested)
 	rp *repo.Repository
 
 	// Map of open conversations
-	open map[goxmpp.JID]*xmpp.Conversation
+	open map[id.ID]Conversation
 
 	// lock for `open`
 	mu sync.Mutex
 }
 
+type dialer struct {
+	layer Layer
+	node  *ipfsutil.Node
+}
+
+func (d *dialer) Dial(peer id.Peer) (net.Conn, error) {
+	return d.node.Dial(peer.Hash(), d.layer.ProtocolID())
+}
+
 // NewConnector returns an unconnected Connector.
-func NewConnector(rp *repo.Repository) *Connector {
+func NewConnector(layer Layer, rp *repo.Repository) *Connector {
+	// TODO: pass authMgr.
+	// authMgr := MockAuthSuccess
+
+	// TODO: register handlers
+	// layer.RegisterHandler(...)
+
 	return &Connector{
-		rp:   rp,
-		open: make(map[goxmpp.JID]*xmpp.Conversation),
+		rp:    rp,
+		layer: layer,
+		open:  make(map[id.ID]Conversation),
 	}
 }
 
-// Mainloop for incoming conversations.
-func (c *Connector) loop() {
-	for {
-		cnv := c.client.Listen()
-		if cnv == nil {
-			log.Debugf("connector: server: quitting loop...")
-			break
-		}
-
-		// Establish a ServerProtocol on the conversation:
-		go func(cnv *xmpp.Conversation) {
-			server := NewServer(cnv, c.rp)
-			if err := server.Serve(); err != nil {
-				log.Warningf("connector: server: %v", err)
-			}
-
-			if err := cnv.Close(); err != nil {
-				log.Warningf("connector: server: Could not terminate conv: %v", err)
-			}
-
-			c.mu.Lock()
-			delete(c.open, cnv.Jid)
-			c.mu.Unlock()
-		}(cnv)
+func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
+	if !cn.IsInOnlineMode() {
+		return nil, ErrOffline
 	}
-}
 
-func (c *Connector) Talk(jid goxmpp.JID) (*Client, error) {
-	c.mu.Lock()
-	if cnv, ok := c.open[jid]; ok {
-		c.mu.Unlock()
-		return NewClient(cnv), nil
-	}
-	c.mu.Unlock()
-
-	cnv, err := c.client.Dial(jid)
+	cnv, err := cn.layer.Dial(peer)
 	if err != nil {
 		return nil, err
 	}
 
-	c.mu.Lock()
-	c.open[jid] = cnv
-	c.mu.Unlock()
+	cn.mu.Lock()
+	cn.open[peer.ID()] = cnv
+	cn.mu.Unlock()
 
-	return NewClient(cnv), nil
+	return newAPIClient(cnv, cn.rp.IPFS)
 }
 
-func (c *Connector) Connect(jid goxmpp.JID, password string) error {
-	// Already connected?
-	c.mu.Lock()
-	if c.client != nil {
-		return nil
-	}
-	c.mu.Unlock()
-
-	serverName := jid.Domain()
-	cfg := &xmpp.Config{
-		Jid:             jid,
-		Password:        password,
-		TLSConfig:       tls.Config{ServerName: serverName},
-		KeyPath:         filepath.Join(c.rp.InternalFolder, "otr.key"),
-		FingerprintPath: filepath.Join(c.rp.InternalFolder, "otr.buddies"),
+func (cn *Connector) IsOnline(peer id.Peer) bool {
+	if !cn.IsInOnlineMode() {
+		return false
 	}
 
-	xmpp, err := xmpp.NewClient(cfg)
+	// cn.mu.Lock()
+	// defer cn.mu.Unlock()
+	return false
+}
+
+func (cn *Connector) Broadcast(req *wire.Request) error {
+	var errs util.Errors
+
+	for _, cnv := range cn.open {
+		if err := cnv.SendAsync(req, nil); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (c *Connector) Layer() Layer {
+	return c.layer
+}
+
+func (cn *Connector) Connect() error {
+	ls, err := cn.rp.IPFS.Listen(cn.layer.ProtocolID())
 	if err != nil {
 		return err
 	}
 
-	c.mu.Lock()
-	c.client = xmpp
-	c.mu.Unlock()
+	go func() {
+		for remote := range cn.rp.Remotes.Iter() {
+			cnv, err := cn.layer.Dial(remote)
+			if err != nil {
+				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
+				continue
+			}
 
-	go c.loop()
-	return nil
+			cn.mu.Lock()
+			cn.open[remote.ID()] = cnv
+			cn.mu.Unlock()
+		}
+	}()
+
+	return cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS})
 }
 
-func (c *Connector) Disconnect() error {
-	// Already disconnected?
-	if c.client == nil {
-		return nil
+func (cn *Connector) Disconnect() error {
+	cn.mu.Lock()
+	defer cn.mu.Unlock()
+
+	for _, cnv := range cn.open {
+		cnv.Close()
 	}
 
-	c.mu.Lock()
-	cl := c.client
-	c.client = nil
-	c.mu.Unlock()
-
-	return cl.Close()
+	return cn.layer.Disconnect()
 }
 
-func (c *Connector) IsOnline() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (cn *Connector) IsInOnlineMode() bool {
+	cn.mu.Lock()
+	defer cn.mu.Unlock()
 
-	return c.client != nil
+	return cn.layer.IsInOnlineMode()
 }
 
-func (c *Connector) Auth(jid goxmpp.JID, finger string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.client == nil {
-		return ErrOffline
-	}
-
-	return c.client.Auth(jid, finger)
-}
-
-func (c *Connector) Fingerprint() (string, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.client == nil {
-		return "", ErrOffline
-	}
-
-	return c.client.Fingerprint(), nil
-}
+// func (c *Connector) Auth(ID id.ID, peerHash string) error {
+// 	c.mu.Lock()
+// 	defer c.mu.Unlock()
+//
+// 	if c.client == nil {
+// 		return ErrOffline
+// 	}
+//
+// 	return c.client.Auth(ID, finger)
+// }

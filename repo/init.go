@@ -69,7 +69,7 @@ func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
 
 // NewRepository creates a new repository at filesystem level
 // and returns a Repository interface
-func NewRepository(jid, pwd, folder string) (*Repository, error) {
+func NewRepository(ID, pwd, folder string) (*Repository, error) {
 	absFolderPath, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
@@ -84,15 +84,11 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 	}
 
 	brigPath := filepath.Join(absFolderPath, ".brig")
-	if err := createShadowFile(brigPath, jid, pwd); err != nil {
+	if err := createShadowFile(brigPath, ID, pwd); err != nil {
 		return nil, err
 	}
 
 	cfg := config.CreateDefaultConfig()
-	minilockID, err := GenerateMinilockID(jid, pwd)
-	if err != nil {
-		return nil, err
-	}
 
 	repoUUID, err := uuid.NewRandom()
 	if err != nil {
@@ -100,9 +96,8 @@ func NewRepository(jid, pwd, folder string) (*Repository, error) {
 	}
 
 	configDefaults := map[string]interface{}{
-		"repository.jid":  jid,
+		"repository.ID":   ID,
 		"repository.uuid": repoUUID.String(),
-		"repository.mid":  minilockID,
 		"ipfs.path":       filepath.Join(brigPath, "ipfs"),
 	}
 

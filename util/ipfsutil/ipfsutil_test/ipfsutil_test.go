@@ -118,7 +118,6 @@ func TestNet(t *testing.T) {
 			}
 
 			fmt.Println("bob is online.")
-			time.Sleep(60 * time.Second)
 
 			ls, err := bob.Listen()
 			if err != nil {

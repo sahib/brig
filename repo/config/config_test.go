@@ -22,7 +22,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	inputValues := map[string]string{
-		"repository.jid":  "test@jabber.fr/waffeln",
+		"repository.id":   "test@enterprise.fr/waffeln",
 		"repository.uuid": "L@#K:JLKR:O#KJRLKQR",
 		"ipfs.path":       "/tmp/katzenauge",
 	}
@@ -50,7 +50,7 @@ func TestConfig(t *testing.T) {
 
 	fmt.Println("\nPrinting config after manipulating parameters...")
 	expectedValues := map[string]interface{}{
-		"repository.jid":  "test@jabber.fr/waffeln",
+		"repository.id":   "test@enterprise.fr/waffeln",
 		"repository.uuid": "L@#K:JLKR:O#KJRLKQR",
 		"repository.mid":  "",
 		"ipfs.path":       "/tmp/katzenauge",

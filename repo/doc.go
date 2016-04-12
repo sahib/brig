@@ -5,13 +5,14 @@
 // /path/to/repo
 // └── .brig
 //     ├── config
-//     ├── index.bolt[.minilock]
-//     ├── master.key[.minilock]
+//     ├── remotes.yml[.locked]
+//     ├── index.bolt[.locked]
+//     ├── master.key[.locked]
 //     └── ipfs
 //         └── ...
 //
 // Directly after `init`, the index and key files will be still encrypted
-// with minilock. `open` will use the user's password to decrypt those.
+// with AES-GCM. `open` will use the user's password to decrypt those.
 // `close` reverses this by encrypting them again.
 //
 // The `Repository` structure aids in accessing all those files and offers

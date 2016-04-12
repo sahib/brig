@@ -1,7 +1,6 @@
 package cmdline
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"github.com/disorganizer/brig/repo"
 	repoconfig "github.com/disorganizer/brig/repo/config"
 	"github.com/olebedev/config"
-	"github.com/tsuibin/goxmpp2/xmpp"
 	"github.com/tucnak/climax"
 )
 
@@ -149,23 +147,6 @@ func guessPort() int {
 	}
 
 	return port
-}
-
-// checkJID runs sanity checks on a JID and returns a descriptive error.
-func checkJID(jid xmpp.JID) error {
-	if jid.Domain() == "" {
-		return fmt.Errorf("Need a domain (user@domain.com/resource)")
-	}
-
-	if jid.Resource() == "" {
-		return fmt.Errorf("Need a /resource (user@domain.com/resource)")
-	}
-
-	if jid.Node() == "" {
-		return fmt.Errorf("Need a user (user@domain.com/resource)")
-	}
-
-	return nil
 }
 
 func ctxGetIntWithDefault(ctx climax.Context, param string, def int) (int, error) {

@@ -30,11 +30,11 @@ func formatGroup(category string) string {
 // RunCmdline starts a brig commandline tool.
 func RunCmdline() int {
 	demo := climax.New("brig")
-	demo.Brief = "brig is a decentralized file syncer based on IPFS and XMPP."
+	demo.Brief = "brig is a decentralized file syncer based on IPFS"
 	demo.Version = "unstable"
 
 	repoGroup := demo.AddGroup(formatGroup("repository"))
-	xmppGroup := demo.AddGroup(formatGroup("xmpp helper"))
+	idntGroup := demo.AddGroup(formatGroup("id helper"))
 	wdirGroup := demo.AddGroup(formatGroup("working"))
 	advnGroup := demo.AddGroup(formatGroup("advanced"))
 	miscGroup := demo.AddGroup(formatGroup("misc"))
@@ -61,7 +61,7 @@ func RunCmdline() int {
 			},
 			Examples: []climax.Example{
 				{
-					Usecase:     `alice@jabber.de/laptop`,
+					Usecase:     `alice@nullcat.de/laptop`,
 					Description: `Create a folder laptop/ with hidden directories`,
 				},
 			},
@@ -89,7 +89,7 @@ func RunCmdline() int {
 			},
 			Examples: []climax.Example{
 				{
-					Usecase:     `alice@jabber.de/laptop bob@jabber.de/desktop`,
+					Usecase:     `alice@nullcat.de/laptop bob@nullcat.de/desktop`,
 					Description: `Clone Alice' contents`,
 				},
 			},
@@ -132,7 +132,7 @@ func RunCmdline() int {
 		},
 		climax.Command{
 			Name:   "auth",
-			Group:  xmppGroup,
+			Group:  idntGroup,
 			Brief:  "Authorise other repos.",
 			Handle: withDaemon(handleAuth, true),
 			Flags: []climax.Flag{
@@ -170,27 +170,27 @@ func RunCmdline() int {
 		},
 		climax.Command{
 			Name:  "discover",
-			Group: xmppGroup,
+			Group: idntGroup,
 			Brief: "Try to find other brig users near you.",
 		},
 		climax.Command{
 			Name:  "friends",
-			Group: xmppGroup,
+			Group: idntGroup,
 			Brief: "List your trusted peers.",
 		},
 		climax.Command{
 			Name:  "beg",
-			Group: xmppGroup,
+			Group: idntGroup,
 			Brief: "Request authorisation from a buddy.",
 		},
 		climax.Command{
 			Name:  "ban",
-			Group: xmppGroup,
+			Group: idntGroup,
 			Brief: "Discontinue friendship with a peer.",
 		},
 		climax.Command{
 			Name:  "prio",
-			Group: xmppGroup,
+			Group: idntGroup,
 			Brief: "Change priority of a peer.",
 		},
 		climax.Command{
@@ -337,7 +337,7 @@ func RunCmdline() int {
 		climax.Command{
 			Name:  "passwd",
 			Group: advnGroup,
-			Brief: "Set your XMPP and access password.",
+			Brief: "Set your ID and access password.",
 		},
 		climax.Command{
 			Name:  "yubi",

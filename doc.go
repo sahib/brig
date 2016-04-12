@@ -1,3 +1,2 @@
-// Package brig implements a distributed, encrypted & compressed filesystem,
-// based on ipfs (for storage and distribution) and xmpp (for authentication).
+// Package brig implements a distributed, encrypted filesystem based on IPFS.
 package brig

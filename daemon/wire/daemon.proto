@@ -24,7 +24,7 @@ enum MessageType {
 }
 
 enum OnlineQuery {
-    // Connect ipfs and to xmpp:
+    // Connect to the network:
     GO_ONLINE = 0;
     // Disconnect all:
     GO_OFFLINE = 1;
@@ -101,7 +101,7 @@ message Command {
 
     message AuthAddCmd {
         required string who = 1;
-        required string fingerprint = 2;
+        required string peer_hash = 2;
     }
 
     message AuthPrintCmd {

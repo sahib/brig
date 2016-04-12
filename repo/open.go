@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/tsuibin/goxmpp2/xmpp"
 )
 
 var (
@@ -23,6 +23,7 @@ var (
 func absLockPaths(brigPath string) []string {
 	lockPaths := []string{
 		filepath.Join(brigPath, "master.key"),
+		filepath.Join(brigPath, "remotes.yml"),
 		filepath.Join(brigPath, "otr.key"),
 		filepath.Join(brigPath, "otr.buddies"),
 	}
@@ -39,18 +40,23 @@ func absLockPaths(brigPath string) []string {
 	return lockPaths
 }
 
-func lookupJid(configPath string) (string, error) {
+func lookupID(configPath string) (id.ID, error) {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		return "", fmt.Errorf("Could not load config: %v", err)
 	}
 
-	jid, err := cfg.String("repository.jid")
+	idString, err := cfg.String("repository.id")
 	if err != nil {
-		return "", fmt.Errorf("No jid in config: %v", err)
+		return "", fmt.Errorf("No ID in config: %v", err)
 	}
 
-	return jid, nil
+	ID, err := id.Cast(idString)
+	if err != nil {
+		return "", err
+	}
+
+	return ID, nil
 }
 
 // Open decrypts all sensible data in the repository.
@@ -59,7 +65,7 @@ func Open(pwd, folder string) (*Repository, error) {
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
 	// Figure out the JID from the config:
-	jid, err := lookupJid(filepath.Join(brigPath, "config"))
+	ID, err := lookupID(filepath.Join(brigPath, "config"))
 	if err != nil {
 		return nil, err
 	}
@@ -67,18 +73,15 @@ func Open(pwd, folder string) (*Repository, error) {
 	// Unlock all files:
 	var absNames []string
 	for _, absName := range absLockPaths(brigPath) {
-		if info, err := os.Stat(absName); err == nil {
+		if _, err := os.Stat(absName); err == nil {
 			// File exists, this might happen on a crash or killed daemon.
-			if info.Size() != 0 {
-				log.Warningf("File is already unlocked: %s", absName)
-			}
 			continue
 		}
 
 		absNames = append(absNames, absName)
 	}
 
-	if err := UnlockFiles(jid, pwd, absNames); err != nil {
+	if err := UnlockFiles(string(ID), pwd, absNames); err != nil {
 		return nil, err
 	}
 
@@ -90,16 +93,9 @@ func Open(pwd, folder string) (*Repository, error) {
 func (r *Repository) Close() error {
 	var absNames []string
 	for _, absName := range absLockPaths(r.InternalFolder) {
-		info, err := os.Stat(absName)
-		if os.IsNotExist(err) {
+		if _, err := os.Stat(absName); os.IsNotExist(err) {
 			// File does not exist. Might be already locked.
 			log.Warningf("File is already locked: %s", absName)
-			continue
-		}
-
-		// Work around minilock refusing to encrypt empty files.
-		// (leave them as they are)
-		if info.Size() == 0 {
 			continue
 		}
 
@@ -107,7 +103,7 @@ func (r *Repository) Close() error {
 		absNames = append(absNames, absName)
 	}
 
-	if err := LockFiles(r.Jid, r.Password, absNames); err != nil {
+	if err := LockFiles(string(r.ID), r.Password, absNames); err != nil {
 		return err
 	}
 
@@ -120,12 +116,12 @@ func CheckPassword(folder, pwd string) error {
 	absFolderPath, err := filepath.Abs(folder)
 	brigPath := filepath.Join(absFolderPath, ".brig")
 
-	jid, err := lookupJid(filepath.Join(brigPath, "config"))
+	ID, err := lookupID(filepath.Join(brigPath, "config"))
 	if err != nil {
 		return err
 	}
 
-	entry, err := parseShadowFile(brigPath, jid)
+	entry, err := parseShadowFile(brigPath, string(ID))
 	if err != nil {
 		return err
 	}
@@ -152,8 +148,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 	}
 
 	configValues := map[string]string{
-		"repository.jid":  "",
-		"repository.mid":  "",
+		"repository.id":   "",
 		"repository.uuid": "",
 	}
 
@@ -164,11 +159,27 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		}
 	}
 
-	jid, err := cfg.String("repository.jid")
+	idString, err := cfg.String("repository.id")
 	if err != nil {
 		return nil, err
 	}
 
+	ID, err := id.Cast(idString)
+	if err != nil {
+		return nil, err
+	}
+
+	fd, err := os.Open(filepath.Join(brigPath, "remotes.yml"))
+	if err != nil {
+		return nil, err
+	}
+
+	remoteStore, err := NewYAMLRemotes(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: remove?
 	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
 	if err != nil {
 		return nil, err
@@ -185,12 +196,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		ipfsSwarmPort,
 	)
 
-	ownStore, err := store.Open(brigPath, xmpp.JID(jid), ipfsLayer)
-	if err != nil {
-		return nil, err
-	}
-
-	mid, err := cfg.String("repository.mid")
+	ownStore, err := store.Open(brigPath, ID, ipfsLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -200,13 +206,13 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	allStores := make(map[xmpp.JID]*store.Store)
-	allStores[xmpp.JID(jid)] = ownStore
+	allStores := make(map[id.ID]*store.Store)
+	allStores[ID] = ownStore
 
 	repo := Repository{
-		Jid:            jid,
-		Mid:            mid,
+		ID:             ID,
 		Folder:         absFolderPath,
+		Remotes:        remoteStore,
 		InternalFolder: brigPath,
 		UniqueID:       uuid,
 		Config:         cfg,
