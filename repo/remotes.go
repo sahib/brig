@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"sync"
 	"time"
 
@@ -12,20 +13,32 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type ErrRemoteHashExists struct {
+	hash, id string
+}
+
+func (e ErrRemoteHashExists) Error() string {
+	return fmt.Sprintf("Hash with this id (%v) exists already: %v", e.id, e.hash)
+}
+
 // ErrNoSuchRemote is returned when an ID could not have been resolved to an ID
 type ErrNoSuchRemote id.ID
 
 func (e ErrNoSuchRemote) Error() string {
-	return fmt.Sprintf("No such remote `%s` found", e)
+	return fmt.Sprintf("No such remote `%s` found", string(e))
 }
 
 // Remote is the metadata of a single communication partner
 // It contains the id and authentication info for each partner.
 type Remote interface {
+	// ID returns the ID of the remote partner
 	ID() id.ID
+	// Hash returns the peer hash of the partner
 	Hash() string
 }
 
+// NewRemote returns a struct that fulfills the Remote interface
+// fille with the passed in parameters.
 func NewRemote(ID id.ID, hash string) Remote {
 	// Re-use the yaml remote here, but don't tell anyone.
 	return &yamlRemote{
@@ -34,6 +47,11 @@ func NewRemote(ID id.ID, hash string) Remote {
 			PeerHash: hash,
 		},
 	}
+}
+
+// RemoteIsEqual returns true when two remotes have the same id and hash
+func RemoteIsEqual(a, b Remote) bool {
+	return a.ID() == b.ID() && a.Hash() == b.Hash()
 }
 
 type FileHandle interface {
@@ -50,7 +68,9 @@ type RemoteStore interface {
 	io.Closer
 
 	// Insert stores `r` for the partner `ID`.
-	// If it exists already, it will be overwritten.
+	// If there is already a remote with this hash but with a
+	// different ID, ErrRemoteHashExists should be returned.
+	// If the ID exists already, it will be overwritten.
 	Insert(r Remote) error
 
 	// Get returns the Remote info for `ID`
@@ -60,6 +80,7 @@ type RemoteStore interface {
 	Remove(ID id.ID) error
 
 	// Iter returns a channel that yields every remote in the store.
+	// The elements should be sorted in the alphabetic order of the ID.
 	Iter() chan Remote
 }
 
@@ -92,7 +113,21 @@ func (ye *yamlRemote) Hash() string {
 	return ye.PeerHash
 }
 
-type yamlRemotes struct {
+type yamlRemotes []*yamlRemote
+
+func (yl yamlRemotes) Len() int {
+	return len(yl)
+}
+
+func (yl yamlRemotes) Less(i, j int) bool {
+	return yl[i].ID() < yl[j].ID()
+}
+
+func (yl yamlRemotes) Swap(i, j int) {
+	yl[i], yl[j] = yl[j], yl[i]
+}
+
+type yamlRemoteStore struct {
 	mu     sync.Mutex
 	fd     FileHandle
 	parsed map[id.ID]*yamlRemoteEntry
@@ -102,7 +137,7 @@ type yamlRemotes struct {
 // its data in the open file pointed to by `fd`.
 // (os.Open() returns a suitable FileHandle)
 func NewYAMLRemotes(fd FileHandle) (RemoteStore, error) {
-	remotes := &yamlRemotes{fd: fd}
+	remotes := &yamlRemoteStore{fd: fd}
 	if err := remotes.load(); err != nil {
 		return nil, err
 	}
@@ -110,7 +145,7 @@ func NewYAMLRemotes(fd FileHandle) (RemoteStore, error) {
 	return remotes, nil
 }
 
-func (yr *yamlRemotes) load() error {
+func (yr *yamlRemoteStore) load() error {
 	if _, err := yr.fd.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
@@ -129,7 +164,7 @@ func (yr *yamlRemotes) load() error {
 	return nil
 }
 
-func (yr *yamlRemotes) save() error {
+func (yr *yamlRemoteStore) save() error {
 	data, err := yaml.Marshal(yr.parsed)
 	if err != nil {
 		return err
@@ -151,23 +186,34 @@ func (yr *yamlRemotes) save() error {
 		return err
 	}
 
+	if _, err := yr.fd.Seek(0, os.SEEK_SET); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (yr *yamlRemotes) Insert(r Remote) error {
+func (yr *yamlRemoteStore) Insert(r Remote) error {
 	yr.mu.Lock()
 	defer yr.mu.Unlock()
 
-	entry := &yamlRemoteEntry{
+	// Sanity check:
+	hash := r.Hash()
+	for id, entry := range yr.parsed {
+		if id != r.ID() && entry.PeerHash == hash {
+			return ErrRemoteHashExists{string(id), hash}
+		}
+	}
+
+	yr.parsed[r.ID()] = &yamlRemoteEntry{
 		PeerHash:  r.Hash(),
 		Timestamp: time.Now(),
 	}
 
-	yr.parsed[r.ID()] = entry
 	return yr.save()
 }
 
-func (yr *yamlRemotes) Get(ID id.ID) (Remote, error) {
+func (yr *yamlRemoteStore) Get(ID id.ID) (Remote, error) {
 	yr.mu.Lock()
 	defer yr.mu.Unlock()
 
@@ -182,7 +228,7 @@ func (yr *yamlRemotes) Get(ID id.ID) (Remote, error) {
 	}, nil
 }
 
-func (yr *yamlRemotes) Remove(ID id.ID) error {
+func (yr *yamlRemoteStore) Remove(ID id.ID) error {
 	yr.mu.Lock()
 	defer yr.mu.Unlock()
 
@@ -194,18 +240,26 @@ func (yr *yamlRemotes) Remove(ID id.ID) error {
 	return yr.save()
 }
 
-func (yr *yamlRemotes) Iter() chan Remote {
+func (yr *yamlRemoteStore) Iter() chan Remote {
 	rmCh := make(chan Remote)
 
 	go func() {
 		yr.mu.Lock()
 		defer yr.mu.Unlock()
 
+		var remotes yamlRemotes
+
 		for ident, entry := range yr.parsed {
-			rmCh <- &yamlRemote{
+			remotes = append(remotes, &yamlRemote{
 				Identity:        ident,
 				yamlRemoteEntry: entry,
-			}
+			})
+		}
+
+		sort.Sort(remotes)
+
+		for _, rm := range remotes {
+			rmCh <- rm
 		}
 
 		close(rmCh)
@@ -214,6 +268,6 @@ func (yr *yamlRemotes) Iter() chan Remote {
 	return rmCh
 }
 
-func (yr *yamlRemotes) Close() error {
+func (yr *yamlRemoteStore) Close() error {
 	return yr.fd.Close()
 }

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/disorganizer/brig/util/protocol/testproto"
+	"github.com/disorganizer/brig/util/protocol/wire"
 	"github.com/disorganizer/brig/util/testutil"
+	"github.com/gogo/protobuf/proto"
 )
 
 func testProtocol(t *testing.T, compress bool) {
@@ -14,9 +15,9 @@ func testProtocol(t *testing.T, compress bool) {
 
 	// Test with varying potential for compression:
 	for i := 0; i < 5; i++ {
-		msg := &testwire.Response{
-			Type: testwire.RequestType_CLONE.Enum(),
-			Data: testutil.CreateDummyBuf(int64(i) * 255),
+		msg := &wire.Response{
+			ReqType: wire.RequestType_DUMMY.Enum(),
+			Data:    testutil.CreateDummyBuf(int64(i) * 255),
 		}
 
 		if err := p.Send(msg); err != nil {
@@ -24,7 +25,11 @@ func testProtocol(t *testing.T, compress bool) {
 			return
 		}
 
-		remoteMsg := &testwire.Response{}
+		remoteMsg := &wire.Response{
+			ReqType: wire.RequestType_DUMMY.Enum(),
+			ID:      proto.Int64(0),
+		}
+
 		if err := p.Recv(remoteMsg); err != nil {
 			t.Errorf("Recv failed: %v", err)
 			return
@@ -37,7 +42,7 @@ func testProtocol(t *testing.T, compress bool) {
 			return
 		}
 
-		if msg.GetType() != remoteMsg.GetType() {
+		if msg.GetReqType() != remoteMsg.GetReqType() {
 			t.Errorf("Types differ.")
 			return
 		}

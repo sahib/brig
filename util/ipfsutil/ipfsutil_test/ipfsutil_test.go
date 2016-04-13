@@ -103,6 +103,8 @@ func TestDHT(t *testing.T) {
 	})
 }
 
+var TestProtocol = "/brig/unittest"
+
 func TestNet(t *testing.T) {
 	testwith.WithIpfsAtPort(t, 4002, func(alice *ipfsutil.Node) {
 		if err := alice.Online(); err != nil {
@@ -119,7 +121,7 @@ func TestNet(t *testing.T) {
 
 			fmt.Println("bob is online.")
 
-			ls, err := bob.Listen()
+			ls, err := bob.Listen(TestProtocol)
 			if err != nil {
 				t.Errorf("Failed to listen on ipfs: %v", err)
 				return
@@ -165,7 +167,7 @@ func TestNet(t *testing.T) {
 			}
 
 			fmt.Println("Dial", bobId)
-			conn, err := alice.Dial(bobId)
+			conn, err := alice.Dial(bobId, TestProtocol)
 			if err != nil {
 				t.Errorf("Dial(self) did not work: %v", err)
 				return
