@@ -1,0 +1,19 @@
+package transfer.protocol;
+option go_package = "wire";
+
+enum RequestType {
+    INVALID = 0;
+    DUMMY = 1;
+}
+
+message Request {
+	required RequestType req_type = 1;
+    required bytes data = 2;
+}
+
+message Response {
+	required RequestType req_type = 1;
+	required bytes data = 2;
+    optional int64 ID = 3;
+    optional string error = 4;
+}
