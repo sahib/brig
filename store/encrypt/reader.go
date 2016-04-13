@@ -298,17 +298,6 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 		r.lastDecSeekPos += bn
 	}
 
-	// This is kinda weird, but it might happen that the underlying stream
-	// might be positioned at the end of the next block already,
-	// so we need to re-position to the beginning of this block.
-	seeker, ok := r.Reader.(io.Seeker)
-	if ok {
-		// Seek to the beginning of the encrypted block:
-		if _, err := seeker.Seek(r.lastEncSeekPos, os.SEEK_SET); err != nil {
-			return 0, err
-		}
-	}
-
 	for {
 		nread, rerr := r.readBlock()
 		if rerr != nil && rerr != io.EOF {
