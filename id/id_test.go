@@ -2,6 +2,7 @@ package id
 
 import (
 	"testing"
+	"time"
 
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testwith"
@@ -87,6 +88,8 @@ func TestRegister(t *testing.T) {
 			t.Errorf("Could not register `%s`: %v", id, err)
 			return
 		}
+
+		time.Sleep(2 * time.Second)
 
 		if err := id.Register(node); err != ErrAlreadyRegistered {
 			t.Errorf("Could register `%s` twice? (%v)", id, err)

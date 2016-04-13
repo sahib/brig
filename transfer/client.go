@@ -40,16 +40,3 @@ func (acl *APIClient) Close() error {
 	acl.pinger.Close()
 	return acl.cnv.Close()
 }
-
-// func (c *Client) unpack(req *wire.Request) ([]byte, error) {
-// 	resp, err := c.Send(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	if resp.GetError() != "" {
-// 		return nil, errors.New(resp.GetError())
-// 	}
-//
-// 	return resp.GetData(), nil
-// }

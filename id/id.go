@@ -126,6 +126,7 @@ var (
 	ErrAlreadyRegistered = errors.New("Username already registered")
 )
 
+// TODO: bad name? Does not really register; just publishes the block(s)
 func (id ID) Register(node *ipfsutil.Node) error {
 	hash := id.Hash()
 

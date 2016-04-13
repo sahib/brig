@@ -60,7 +60,7 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 	defer testutil.Remover(t, mntPath)
 
 	withRepo(t, func(rep *repo.Repository) {
-		mount, err := NewMount(rep.Store, mntPath)
+		mount, err := NewMount(rep.OwnStore, mntPath)
 		if err != nil {
 			t.Errorf("Cannot create mount: %v", err)
 			return

@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"os"
 	"testing"
 

@@ -55,8 +55,6 @@ type Dialer interface {
 // Layer is the interface that all metadata-networking layers
 // of brig have to fulfill.
 type Layer interface {
-	io.Closer
-
 	// Dial opens a new connection to the peer conn is opened to.
 	// Dial() shall return ErrOffline when not in online mode.
 	Dial(peer id.Peer) (Conversation, error)

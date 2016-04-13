@@ -1,16 +1,18 @@
 package moose
 
 import (
+	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
+	"github.com/disorganizer/brig/util/security"
 	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
 )
@@ -24,7 +26,12 @@ type Conversation struct {
 	notifees map[int64]transfer.AsyncFunc
 }
 
-func wrapConnAsProto(conn net.Conn) (*protocol.Protocol, error) {
+type closeWrapper struct {
+	io.ReadWriter
+	io.Closer
+}
+
+func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*protocol.Protocol, error) {
 	tnl, err := tunnel.NewEllipticTunnel(conn)
 	if err != nil {
 		return nil, err
@@ -34,12 +41,28 @@ func wrapConnAsProto(conn net.Conn) (*protocol.Protocol, error) {
 		return nil, err
 	}
 
-	// TODO: auth
-	return protocol.NewProtocol(tnl, true), nil
+	pub, err := node.PublicKeyFor(peer.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := node.PrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// Use tunnel for R/W; but close `conn` on Close()
+	closeWrapper := closeWrapper{
+		ReadWriter: tnl,
+		Closer:     conn,
+	}
+
+	authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
+	return protocol.NewProtocol(authrw, true), nil
 }
 
 func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
-	proto, err := wrapConnAsProto(conn)
+	proto, err := wrapConnAsProto(conn, node, peer)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +110,6 @@ func (cnv *Conversation) Close() error {
 }
 
 func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFunc) error {
-	// TODO: Rate limiting to counteract DDOS:
-	//       only let cnv.notifees grow up to a certain size
 	cnv.Lock()
 	defer cnv.Unlock()
 
@@ -104,28 +125,19 @@ type Layer struct {
 	node     *ipfsutil.Node
 	dialer   transfer.Dialer
 	listener net.Listener
-
-	open     map[id.Peer]Conversation
 	handlers map[wire.RequestType]transfer.HandlerFunc
+
+	serverCount int32
+	quit        chan bool
+	waitgroup   *sync.WaitGroup
 }
 
 func NewLayer(node *ipfsutil.Node) *Layer {
 	return &Layer{
-		node: node,
-		open: make(map[id.Peer]Conversation),
+		node:      node,
+		quit:      make(chan bool),
+		waitgroup: &sync.WaitGroup{},
 	}
-}
-
-func (lay *Layer) Close() error {
-	var errs util.Errors
-
-	for _, cnv := range lay.open {
-		if err := cnv.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
 }
 
 func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
@@ -142,8 +154,18 @@ func (lay *Layer) IsInOnlineMode() bool {
 }
 
 func (lay *Layer) handleServerConn(conn net.Conn) {
+	atomic.AddInt32(&lay.serverCount, +1)
+	lay.waitgroup.Add(1)
+
 	prot := protocol.NewProtocol(conn, true)
 	for {
+		// Check if we need to quit:
+		select {
+		case <-lay.quit:
+			atomic.AddInt32(&lay.serverCount, -1)
+			break
+		}
+
 		req := wire.Request{}
 		if err := prot.Recv(&req); err != nil {
 			log.Warning("Server side recv: %v", err)
@@ -175,6 +197,8 @@ func (lay *Layer) handleServerConn(conn net.Conn) {
 			break
 		}
 	}
+
+	lay.waitgroup.Done()
 }
 
 func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
@@ -199,11 +223,20 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 }
 
 func (lay *Layer) Disconnect() error {
-	l := lay.listener
+	if err := lay.listener.Close(); err != nil {
+		return err
+	}
+
 	lay.listener = nil
 	lay.dialer = nil
 
-	return l.Close()
+	// Bring down the server-side handlers:
+	cnt := int(atomic.LoadInt32(&lay.serverCount))
+	for i := 0; i < cnt; i++ {
+		lay.quit <- true
+	}
+
+	return nil
 }
 
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
@@ -211,7 +244,7 @@ func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.Handler
 }
 
 func (lay *Layer) Wait() error {
-	// TODO
+	lay.waitgroup.Wait()
 	return nil
 }
 

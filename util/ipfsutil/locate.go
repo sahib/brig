@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/disorganizer/brig/util/cryptutil"
+	"github.com/disorganizer/brig/util/security"
 	"github.com/ipfs/go-ipfs/blocks/key"
 	"github.com/ipfs/go-ipfs/core/commands"
 	ma "github.com/jbenet/go-multiaddr"
@@ -26,7 +26,7 @@ import (
 type PeerInfo struct {
 	ID     string
 	Addrs  []ma.Multiaddr
-	PubKey cryptutil.PubKey
+	PubKey security.PubKey
 }
 
 // Locate finds the object pointed to by `hash`. It will wait

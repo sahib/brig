@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/util/security"
 	"github.com/ipfs/go-ipfs/core/corenet"
 
 	manet "gx/ipfs/QmYVqhVfbK4BKvbW88Lhm26b3ud14sTBvcm1H7uWUx1Fkp/go-multiaddr-net"
@@ -179,6 +180,9 @@ func (p *Pinger) Close() error {
 	return nil
 }
 
+// Ping returns a new Pinger. It can be used to
+// query the time the remote was last seen. It will be
+// constantly updated until close is called on it.
 func (nd *Node) Ping(peerHash string) (*Pinger, error) {
 	if !nd.IsOnline() {
 		return nil, fmt.Errorf("Not online") // TODO: common error?
@@ -215,4 +219,32 @@ func (nd *Node) Ping(peerHash string) (*Pinger, error) {
 	}()
 
 	return pinger, nil
+}
+
+func (nd *Node) PrivateKey() (security.PrivateKey, error) {
+	node, err := nd.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	return node.PrivateKey, nil
+}
+
+func (nd *Node) PublicKeyFor(peerHash string) (security.PublicKey, error) {
+	node, err := nd.proc()
+	if err != nil {
+		return nil, err
+	}
+
+	peerID, err := peer.IDB58Decode(peerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	pub := node.Peerstore.PubKey(peerID)
+	if pub == nil {
+		return nil, fmt.Errorf("No public key for `%s`", peerHash)
+	}
+
+	return pub, nil
 }
