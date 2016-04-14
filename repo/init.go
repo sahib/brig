@@ -96,7 +96,7 @@ func NewRepository(ID, pwd, folder string) (*Repository, error) {
 	}
 
 	configDefaults := map[string]interface{}{
-		"repository.ID":   ID,
+		"repository.id":   ID,
 		"repository.uuid": repoUUID.String(),
 		"ipfs.path":       filepath.Join(brigPath, "ipfs"),
 	}
@@ -134,7 +134,7 @@ func createRepositoryTree(absFolderPath string) error {
 		return err
 	}
 
-	empties := []string{"otr.key", "otr.buddies", "shadow"}
+	empties := []string{"otr.key", "otr.buddies", "shadow", "remotes.yml"}
 	for _, empty := range empties {
 		fullPath := filepath.Join(brigPath, empty)
 		if err := util.Touch(fullPath); err != nil {

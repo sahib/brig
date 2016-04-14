@@ -72,17 +72,17 @@ func TestWriteAndRead(t *testing.T) {
 	s64k := int64(64 * 1024)
 	sizes := []int64{
 		0, 1, 10, s64k, s64k - 1, s64k + 1,
-		s64k * 2, s64k * 1024, s64k * 2048,
+		s64k * 2, s64k * 1024,
 	}
 
 	for _, size := range sizes {
 		t.Logf("Testing stream at size %d", size)
-		for algoType, _ := range compress.AlgoMap {
-			data := testutil.CreateDummyBuf(size)
-			testWriteAndRead(t, data, algoType)
+		regularData := testutil.CreateDummyBuf(size)
+		randomData := testutil.CreateRandomDummyBuf(size, 42)
 
-			data = testutil.CreateRandomDummyBuf(size, 42)
-			testWriteAndRead(t, data, algoType)
+		for algoType, _ := range compress.AlgoMap {
+			testWriteAndRead(t, regularData, algoType)
+			testWriteAndRead(t, randomData, algoType)
 		}
 	}
 }

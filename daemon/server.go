@@ -11,7 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/fuse"
-	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/moose"
@@ -97,8 +96,7 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	go daemon.loop(cancel)
 
-	// TODO: Make this start in parallel?
-	if err := daemon.Connect(rep.ID, rep.Password); err != nil {
+	if err := daemon.Connect(); err != nil {
 		return nil, err
 	}
 
@@ -238,10 +236,14 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 }
 
 // Connect tries to connect the client and the ipfs daemon to the outside world.
-// TODO: remove password and ident params
-func (sv *Server) Connect(ident id.ID, password string) error {
+func (sv *Server) Connect() error {
 	if sv.IsOnline() {
 		return nil
+	}
+
+	// Check if a previous offline mode was there:
+	if err := sv.Repo.IPFS.Online(); err != nil {
+		return err
 	}
 
 	if err := sv.MetaHost.Connect(); err != nil {
@@ -249,10 +251,7 @@ func (sv *Server) Connect(ident id.ID, password string) error {
 		return err
 	}
 
-	// Check if a previous offline mode was there:
-	if err := sv.Repo.IPFS.Online(); err != nil {
-		return err
-	}
+	log.Infof("Connected to the network")
 
 	return nil
 }

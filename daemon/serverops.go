@@ -143,7 +143,7 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 			return []byte("offline"), nil
 		}
 	case wire.OnlineQuery_GO_ONLINE:
-		return nil, d.Connect(d.Repo.ID, d.Repo.Password)
+		return nil, d.Connect()
 	case wire.OnlineQuery_GO_OFFLINE:
 		return nil, d.Disconnect()
 	}
