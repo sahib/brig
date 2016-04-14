@@ -2,20 +2,22 @@ package repo
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
+	"github.com/disorganizer/brig/util/testutil"
 )
 
 func TestRemote(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	fd, err := fs.OpenFile("remotes.yml", os.O_CREATE|os.O_RDWR, 0666)
+	path := filepath.Join(os.TempDir(), "brig-test-remote.yml")
+	fd, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		t.Errorf("Could not open in memory: %v", err)
 		return
 	}
 
 	defer fd.Close()
+	defer testutil.Remover(t, path)
 
 	rms, err := NewYAMLRemotes(fd)
 	if err != nil {
