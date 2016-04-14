@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/disorganizer/brig/store/compress"
+	"github.com/disorganizer/brig/store/encrypt"
+	"github.com/disorganizer/brig/util/pwd"
+	"golang.org/x/crypto/scrypt"
 )
 
 type options struct {
@@ -85,6 +88,14 @@ func parseFlags() options {
 	}
 }
 
+func derivateAesKey(pwd, salt []byte, keyLen int) []byte {
+	key, err := scrypt.Key(pwd, salt, 16384, 8, 1, keyLen)
+	if err != nil {
+		panic("Bad scrypt parameters: " + err.Error())
+	}
+	return key
+}
+
 func main() {
 	opts := parseFlags()
 
@@ -115,10 +126,25 @@ func main() {
 	dst := openDst(dstPath, opts.forceDstOverwrite)
 	defer dst.Close()
 
+	pass, err := pwd.PromptPassword()
+	if err != nil {
+		die(err)
+	}
+
+	key := derivateAesKey([]byte(pass), nil, 32)
+	if key == nil {
+		die(err)
+	}
+
+	fmt.Println("Processing...")
 	nBytes := int64(0)
 	elapsed := withTime(func() {
 		if opts.compress {
-			zw, err := compress.NewWriter(dst, algo)
+			ew, err := encrypt.NewWriter(dst, key)
+			if err != nil {
+				die(err)
+			}
+			zw, err := compress.NewWriter(ew, algo)
 			if err != nil {
 				die(err)
 			}
@@ -129,9 +155,16 @@ func main() {
 			if err := zw.Close(); err != nil {
 				die(err)
 			}
+			if err := ew.Close(); err != nil {
+				die(err)
+			}
 		}
 		if opts.decompress {
-			zr := compress.NewReader(src)
+			er, err := encrypt.NewReader(src, key)
+			if err != nil {
+				die(err)
+			}
+			zr := compress.NewReader(er)
 			nBytes, err = io.Copy(dst, zr)
 			if err != nil {
 				die(err)
