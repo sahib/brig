@@ -4,12 +4,12 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/pwd"
 	"github.com/disorganizer/brig/util/security"
 )
 
 func main() {
-	pwd, err := repo.PromptNewPassword(40.0)
+	pwd, err := pwd.PromptNewPassword(40.0)
 	if err != nil {
 		fmt.Println("Failed: ", err)
 		return
