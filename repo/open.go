@@ -99,7 +99,7 @@ func (r *Repository) Close() error {
 			continue
 		}
 
-		log.Infof("Locking file `%v`...", absName)
+		log.Debugf("Locking file `%v`...", absName)
 		absNames = append(absNames, absName)
 	}
 

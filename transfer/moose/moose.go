@@ -121,11 +121,13 @@ func (cnv *Conversation) Peer() id.Peer {
 	return cnv.peer
 }
 
+type handlerMap map[wire.RequestType]transfer.HandlerFunc
+
 type Layer struct {
 	node     *ipfsutil.Node
 	dialer   transfer.Dialer
 	listener net.Listener
-	handlers map[wire.RequestType]transfer.HandlerFunc
+	handlers handlerMap
 
 	serverCount int32
 	quit        chan bool
@@ -137,6 +139,7 @@ func NewLayer(node *ipfsutil.Node) *Layer {
 		node:      node,
 		quit:      make(chan bool),
 		waitgroup: &sync.WaitGroup{},
+		handlers:  make(handlerMap),
 	}
 }
 
