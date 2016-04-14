@@ -2,6 +2,7 @@ package compress
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -176,8 +177,13 @@ func (r *reader) parseTrailerIfNeeded() error {
 	}
 
 	buf := [trailerSize]byte{}
-	if n, err := r.rawR.Read(buf[:]); err != nil || n != trailerSize {
+	n, err := r.rawR.Read(buf[:])
+	if err != nil {
 		return err
+	}
+
+	if n != trailerSize {
+		return fmt.Errorf("read trailer was too small: %d bytes", n)
 	}
 
 	r.trailer = &trailer{}
@@ -194,6 +200,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
 		return err
 	}
+
 	indexBuf := make([]byte, r.trailer.indexSize)
 	if _, err := r.rawR.Read(indexBuf); err != nil {
 		return err
