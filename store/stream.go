@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -49,11 +50,13 @@ func NewFileReader(key []byte, r io.Reader, algo compress.AlgorithmType) (or io.
 	// Setup the writer part:
 	wEnc, encErr := encrypt.NewWriter(pw, key)
 	if encErr != nil {
+		fmt.Println("Enc w fail", err)
 		return nil, encErr
 	}
 
 	wZip, zipErr := compress.NewWriter(wEnc, algo)
 	if zipErr != nil {
+		fmt.Println("zip w fail", err)
 		return nil, zipErr
 	}
 
@@ -62,19 +65,23 @@ func NewFileReader(key []byte, r io.Reader, algo compress.AlgorithmType) (or io.
 	go func() {
 		defer func() {
 			if zipCloseErr := wZip.Close(); zipCloseErr != nil {
+				fmt.Println("wenc close")
 				err = zipCloseErr
 			}
 
 			if encCloseErr := wEnc.Close(); encCloseErr != nil {
+				fmt.Println("wenc close")
 				err = encCloseErr
 			}
 
 			if pwErr := pw.Close(); pwErr != nil {
+				fmt.Println("pw close")
 				err = pwErr
 			}
 		}()
 
 		if _, copyErr := io.Copy(wZip, r); copyErr != nil {
+			fmt.Println("copy fucked up")
 			err = copyErr
 		}
 	}()

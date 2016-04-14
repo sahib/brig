@@ -317,10 +317,12 @@ func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
 func (s *Store) Cat(path string, w io.Writer) error {
 	cleanStream, err := s.Stream(path)
 	if err != nil {
+		log.Warningf("Could not create stream: %v", err)
 		return err
 	}
 
 	if _, err := io.Copy(w, cleanStream); err != nil {
+		log.Warningf("Could not copy stream: %v", err)
 		return err
 	}
 
