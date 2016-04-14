@@ -41,6 +41,10 @@ type Reader struct {
 
 	// true as long readBlock was not succesful
 	isInitialRead bool
+
+	// Total size of the underlying stream in bytes.
+	// This is only set when SEEK_END was used.
+	endOffsetEnc int64
 }
 
 func (r *Reader) readHeaderIfNotDone() error {
@@ -200,14 +204,22 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		// Try to figure out the end of the stream.
 		// This might be inefficient for some underlying readers,
 		// but is probably okay for ipfs.
-		endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
-		if err != nil && err != io.EOF {
-			return 0, err
+		//
+		// NOTE: We cache this not only for performance, but also
+		//       as a workaround for a bug in ipfs.
+		//       See: TODO
+		if r.endOffsetEnc < 0 {
+			endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
+			if err != nil && err != io.EOF {
+				return 0, err
+			}
+
+			r.endOffsetEnc = endOffsetEnc
 		}
 
 		// This computation is verbose on purporse,
 		// since the details might be confusing.
-		encLen := (endOffsetEnc - headerSize)
+		encLen := (r.endOffsetEnc - headerSize)
 		encRest := encLen % totalBlockSize
 		decBlocks := encLen / totalBlockSize
 
@@ -334,6 +346,7 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 		parsedHeader:  false,
 		decBuf:        make([]byte, 0, MaxBlockSize),
 		isInitialRead: true,
+		endOffsetEnc:  -1,
 		aeadCommon: aeadCommon{
 			key: key,
 		},
