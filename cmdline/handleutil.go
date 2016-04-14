@@ -10,6 +10,7 @@ import (
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
 	repoconfig "github.com/disorganizer/brig/repo/config"
+	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/olebedev/config"
 	"github.com/tucnak/climax"
 )
@@ -28,7 +29,7 @@ func guessRepoFolder() string {
 
 func readPassword() (string, error) {
 	repoFolder := guessRepoFolder()
-	pwd, err := repo.PromptPasswordMaxTries(4, func(pwd string) bool {
+	pwd, err := pwdutil.PromptPasswordMaxTries(4, func(pwd string) bool {
 		err := repo.CheckPassword(repoFolder, pwd)
 		return err == nil
 	})

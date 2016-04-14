@@ -16,6 +16,7 @@ import (
 	"github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
+	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/dustin/go-humanize"
 	yamlConfig "github.com/olebedev/config"
 	"github.com/tucnak/climax"
@@ -197,7 +198,7 @@ func handleInit(ctx climax.Context) int {
 	pwd, ok := ctx.Get("password")
 	if !ok {
 		var err error
-		pwdBytes, err := repo.PromptNewPassword(40.0)
+		pwdBytes, err := pwdutil.PromptNewPassword(40.0)
 		if err != nil {
 			log.Error(err)
 			return BadPassword
