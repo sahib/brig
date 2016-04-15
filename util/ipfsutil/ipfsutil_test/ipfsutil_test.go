@@ -103,25 +103,40 @@ func TestDHT(t *testing.T) {
 	})
 }
 
-var TestProtocol = "/brig/unittest"
+var (
+	TestProtocol = "/brig/unittest"
+	hello        = []byte("Hello")
+	world        = []byte("World")
+)
 
 func TestNet(t *testing.T) {
-	t.Skip("TestNet needs avice from the ipfs people first.")
-
 	testwith.WithIpfsAtPort(t, 4002, func(alice *ipfsutil.Node) {
 		if err := alice.Online(); err != nil {
 			t.Errorf("alice failed to go online: %v", err)
 			return
 		}
 
-		fmt.Println("Alice is online.")
+		aliceID, err := alice.Identity()
+		if err != nil {
+			t.Errorf("Could not get alice's identity %v", err)
+			return
+		}
+
+		bobId := ""
+		t.Logf("Alice is online (%v).", aliceID)
 		testwith.WithIpfsAtPort(t, 4003, func(bob *ipfsutil.Node) {
 			if err := bob.Online(); err != nil {
-				t.Errorf("bob failed to go online: %v", err)
+				t.Errorf("Bob failed to go online: %v", err)
 				return
 			}
 
-			fmt.Println("bob is online.")
+			bobId, err = bob.Identity()
+			if err != nil {
+				t.Errorf("Could not get bob's identity: %v", err)
+				return
+			}
+
+			t.Logf("Bob is online. (%v)", bobId)
 
 			ls, err := bob.Listen(TestProtocol)
 			if err != nil {
@@ -130,22 +145,24 @@ func TestNet(t *testing.T) {
 			}
 
 			go func() {
-				fmt.Println("Accept")
 				conn, err := ls.Accept()
 				if err != nil {
 					t.Errorf("Accept() failed: %v", err)
 					return
 				}
 
-				fmt.Println("Accept-Read")
 				buf := make([]byte, 5)
 				if n, err := conn.Read(buf); err != nil && n != len(buf) {
 					t.Errorf("Listen-Read failed: %v (len: %d)", err, n)
 					return
 				}
 
-				fmt.Println("Accept-Write")
-				if _, err := conn.Write([]byte("World")); err != nil {
+				if !bytes.Equal(buf, []byte(hello)) {
+					t.Errorf("Read data does not match. Expected '%s'; got '%s'", hello, buf)
+					return
+				}
+
+				if _, err := conn.Write(world); err != nil {
 					t.Errorf("Liste-Write failed: %v", err)
 					return
 				}
@@ -162,21 +179,13 @@ func TestNet(t *testing.T) {
 			}()
 
 			// Alice sending data to bob:
-			bobId, err := bob.Identity()
-			if err != nil {
-				t.Errorf("Could not get self identity: %v", err)
-				return
-			}
-
-			fmt.Println("Dial", bobId)
 			conn, err := alice.Dial(bobId, TestProtocol)
 			if err != nil {
 				t.Errorf("Dial(self) did not work: %v", err)
 				return
 			}
 
-			fmt.Println("Write")
-			if _, err := conn.Write([]byte("Hello")); err != nil {
+			if _, err := conn.Write([]byte(hello)); err != nil {
 				t.Errorf("Write(self) failed: %v", err)
 				return
 			}
@@ -187,8 +196,8 @@ func TestNet(t *testing.T) {
 				return
 			}
 
-			if !bytes.Equal(buf, []byte("World")) {
-				t.Errorf("Read data does not match. Expected 'World'; got '%s'", buf)
+			if !bytes.Equal(buf, []byte(world)) {
+				t.Errorf("Read data does not match. Expected '%s'; got '%s'", world, buf)
 				return
 			}
 
@@ -196,7 +205,6 @@ func TestNet(t *testing.T) {
 				t.Errorf("Closing conn failed: %v", err)
 				return
 			}
-
 		})
 	})
 }
