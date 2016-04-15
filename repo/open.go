@@ -179,20 +179,13 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	// TODO: remove?
-	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
-	if err != nil {
-		return nil, err
-	}
-
 	ipfsSwarmPort, err := cfg.Int("ipfs.swarmport")
 	if err != nil {
 		return nil, err
 	}
 
-	ipfsLayer := ipfsutil.NewWithPorts(
+	ipfsLayer := ipfsutil.NewWithPort(
 		filepath.Join(brigPath, "ipfs"),
-		ipfsAPIPort,
 		ipfsSwarmPort,
 	)
 

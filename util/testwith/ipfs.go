@@ -27,7 +27,7 @@ func WithIpfsAtPath(t *testing.T, root string, f func(*ipfsutil.Node)) {
 
 func WithIpfsAtPathAndPort(t *testing.T, root string, port int, f func(*ipfsutil.Node)) {
 	WithIpfsRepo(t, root, func(path string) {
-		node := ipfsutil.NewWithPorts(path, 1000+port, port)
+		node := ipfsutil.NewWithPort(path, port)
 		f(node)
 
 		if err := node.Close(); err != nil {

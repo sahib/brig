@@ -27,11 +27,6 @@ func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, err
 		return nil, err
 	}
 
-	apiAddr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", nd.APIPort)
-	if err := rp.SetConfigKey("Addresses.API", apiAddr); err != nil {
-		return nil, err
-	}
-
 	swarmAddrs := []string{
 		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", nd.SwarmPort),
 		fmt.Sprintf("/ip6/::/tcp/%d", nd.SwarmPort),
@@ -57,14 +52,12 @@ func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, err
 // New creates a new ipfs node manager.
 // No daemon is started yet.
 func New(ipfsPath string) *Node {
-	return NewWithPorts(ipfsPath, 5001, 4001)
+	return NewWithPort(ipfsPath, 4001)
 }
 
-// TODO: We dont need API port; remove
-func NewWithPorts(ipfsPath string, apiPort int, swarmPort int) *Node {
+func NewWithPort(ipfsPath string, swarmPort int) *Node {
 	return &Node{
 		Path:      ipfsPath,
-		APIPort:   apiPort,
 		SwarmPort: swarmPort,
 		ipfsNode:  nil,
 		Context:   nil,

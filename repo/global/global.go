@@ -36,7 +36,6 @@ type RepoListEntry struct {
 	RepoPath      string
 	DaemonPort    int
 	IpfsSwarmPort int
-	IpfsAPIPort   int
 }
 
 func (g *Repository) acquireLock() error {
@@ -237,10 +236,6 @@ func (g *Repository) findMaxPort(maxPort int) (int, error) {
 	err := g.view(func(lst *repoList) {
 		for _, repo := range lst.Repos {
 			// There might be better heuristics than this:
-			if maxPort < repo.IpfsAPIPort {
-				maxPort = repo.IpfsAPIPort + 1
-			}
-
 			if maxPort < repo.IpfsSwarmPort {
 				maxPort = repo.IpfsSwarmPort + 1
 			}
@@ -256,10 +251,6 @@ func (g *Repository) findMaxPort(maxPort int) (int, error) {
 	}
 
 	return nextFreePort(maxPort)
-}
-
-func (g *Repository) NextIPFSAPIPort() (int, error) {
-	return g.findMaxPort(5001)
 }
 
 func (g *Repository) NextIPFSSwarmPort() (int, error) {
