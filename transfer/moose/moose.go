@@ -113,7 +113,12 @@ func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFun
 	cnv.Lock()
 	defer cnv.Unlock()
 
-	cnv.notifees[req.GetID()] = callback
+	// Broadcast messages usually do not register a callback.
+	// (it wouldn't have been called anyways)
+	if callback != nil {
+		cnv.notifees[req.GetID()] = callback
+	}
+
 	return cnv.proto.Send(req)
 }
 
@@ -226,6 +231,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 }
 
 func (lay *Layer) Disconnect() error {
+	// This should break the loop in Connect()
 	if err := lay.listener.Close(); err != nil {
 		return err
 	}
@@ -233,6 +239,7 @@ func (lay *Layer) Disconnect() error {
 	lay.listener = nil
 	lay.dialer = nil
 
+	// TODO: A "channel broadcast" pattern here would be nicer.
 	// Bring down the server-side handlers:
 	cnt := int(atomic.LoadInt32(&lay.serverCount))
 	for i := 0; i < cnt; i++ {

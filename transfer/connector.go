@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -40,6 +41,57 @@ func (d *dialer) Dial(peer id.Peer) (net.Conn, error) {
 	return d.node.Dial(peer.Hash(), d.layer.ProtocolID())
 }
 
+// listenerFilter filters
+type listenerFilter struct {
+	ls   net.Listener
+	rms  repo.RemoteStore
+	quit bool
+}
+
+func newListenerFilter(ls net.Listener, rms repo.RemoteStore) *listenerFilter {
+	return &listenerFilter{
+		ls:  ls,
+		rms: rms,
+	}
+}
+
+func (lf *listenerFilter) Accept() (net.Conn, error) {
+	for !lf.quit {
+		conn, err := lf.ls.Accept()
+		if err != nil {
+			return nil, err
+		}
+
+		streamConn, ok := conn.(*ipfsutil.StreamConn)
+		if !ok {
+			// TODO
+			return nil, fmt.Errorf("Not used with ipfs listener?")
+		}
+
+		hash := streamConn.PeerHash()
+
+		// Check if we know of this hash:
+		for remote := range lf.rms.Iter() {
+			if remote.Hash() == hash {
+				return streamConn, nil
+			}
+		}
+
+		log.Warningf("Denying incoming connection from `%s`", hash)
+	}
+
+	return nil, fmt.Errorf("Listener was closed")
+}
+
+func (lf *listenerFilter) Close() error {
+	lf.quit = true
+	return lf.ls.Close()
+}
+
+func (lf *listenerFilter) Addr() net.Addr {
+	return lf.Addr()
+}
+
 // NewConnector returns an unconnected Connector.
 func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	// TODO: pass authMgr.
@@ -63,15 +115,31 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	return cnc
 }
 
+func partnerIsAllowed(rms repo.RemoteStore, ID id.ID) error {
+	_, err := rms.Get(ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 	if !cn.IsInOnlineMode() {
 		return nil, ErrOffline
 	}
 
-	// TODO: use the remote here somehow :)
-	_, err := cn.rp.Remotes.Get(peer.ID())
-	if err != nil {
+	if err := partnerIsAllowed(cn.rp.Remotes, peer.ID()); err != nil {
 		return nil, err
+	}
+
+	// Lookup if a conversation was already established:
+	cn.mu.Lock()
+	cnv, ok := cn.open[peer.ID()]
+	cn.mu.Unlock()
+
+	if ok {
+		return newAPIClient(cnv, cn.rp.IPFS)
 	}
 
 	cnv, err := cn.layer.Dial(peer)
@@ -79,6 +147,7 @@ func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 		return nil, err
 	}
 
+	// Remember conversation:
 	cn.mu.Lock()
 	cn.open[peer.ID()] = cnv
 	cn.mu.Unlock()

@@ -38,7 +38,9 @@ type Repository struct {
 	// IPFS management layer.
 	IPFS *ipfsutil.Node
 
-	// TODO: document...
+	// globalRepo is a common file of all brig instances
+	// on a machine. It's purpose to make the brig repos
+	// easily findable and to avoid collisions on network ports.
 	globalRepo *global.Repository
 }
 

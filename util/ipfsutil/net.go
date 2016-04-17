@@ -18,31 +18,35 @@ import (
 	protocol "gx/ipfs/QmccGfZs3rzku8Bv6sTPH3bMUKD1EVod8srgRjt5csdmva/go-libp2p/p2p/protocol"
 )
 
-type streamConn struct {
+type StreamConn struct {
 	stream p2pnet.Stream
 	torw   *util.TimeoutReadWriter
 }
 
-func wrapStream(stream p2pnet.Stream) net.Conn {
-	return &streamConn{
+func wrapStream(stream p2pnet.Stream) *StreamConn {
+	return &StreamConn{
 		stream: stream,
 		torw:   util.NewTimeoutReadWriter(stream, 20*time.Minute),
 	}
 }
 
-func (sc *streamConn) Read(buf []byte) (int, error) {
+func (sc *StreamConn) Read(buf []byte) (int, error) {
 	return sc.torw.Read(buf)
 }
 
-func (sc *streamConn) Write(buf []byte) (n int, err error) {
+func (sc *StreamConn) Write(buf []byte) (n int, err error) {
 	return sc.torw.Write(buf)
 }
 
-func (sc *streamConn) Close() error {
+func (sc *StreamConn) PeerHash() string {
+	return sc.stream.Conn().RemotePeer().String()
+}
+
+func (sc *StreamConn) Close() error {
 	return sc.stream.Close()
 }
 
-func (sc *streamConn) LocalAddr() net.Addr {
+func (sc *StreamConn) LocalAddr() net.Addr {
 	if c := sc.stream.Conn(); c != nil {
 		addr, err := manet.ToNetAddr(c.LocalMultiaddr())
 		if err != nil {
@@ -55,7 +59,7 @@ func (sc *streamConn) LocalAddr() net.Addr {
 	return nil
 }
 
-func (sc *streamConn) RemoteAddr() net.Addr {
+func (sc *StreamConn) RemoteAddr() net.Addr {
 	if c := sc.stream.Conn(); c != nil {
 		addr, err := manet.ToNetAddr(c.RemoteMultiaddr())
 		if err != nil {
@@ -68,13 +72,13 @@ func (sc *streamConn) RemoteAddr() net.Addr {
 	return nil
 }
 
-func (sc *streamConn) SetDeadline(t time.Time) error {
+func (sc *StreamConn) SetDeadline(t time.Time) error {
 	return sc.torw.SetDeadline(t)
 }
-func (sc *streamConn) SetReadDeadline(t time.Time) error {
+func (sc *StreamConn) SetReadDeadline(t time.Time) error {
 	return sc.torw.SetReadDeadline(t)
 }
-func (sc *streamConn) SetWriteDeadline(t time.Time) error {
+func (sc *StreamConn) SetWriteDeadline(t time.Time) error {
 	return sc.torw.SetWriteDeadline(t)
 }
 
