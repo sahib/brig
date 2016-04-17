@@ -22,9 +22,8 @@ func TestConfig(t *testing.T) {
 	}
 
 	inputValues := map[string]string{
-		"repository.id":   "test@enterprise.fr/waffeln",
-		"repository.uuid": "L@#K:JLKR:O#KJRLKQR",
-		"ipfs.path":       "/tmp/katzenauge",
+		"repository.id": "test@enterprise.fr/waffeln",
+		"ipfs.path":     "/tmp/katzenauge",
 	}
 
 	fmt.Println("\nSetting some test parameters...")
@@ -50,10 +49,9 @@ func TestConfig(t *testing.T) {
 
 	fmt.Println("\nPrinting config after manipulating parameters...")
 	expectedValues := map[string]interface{}{
-		"repository.id":   "test@enterprise.fr/waffeln",
-		"repository.uuid": "L@#K:JLKR:O#KJRLKQR",
-		"repository.mid":  "",
-		"ipfs.path":       "/tmp/katzenauge",
+		"repository.id":  "test@enterprise.fr/waffeln",
+		"repository.mid": "",
+		"ipfs.path":      "/tmp/katzenauge",
 	}
 	for key, expectedValue := range expectedValues {
 		configValue, _ := c.String(key)

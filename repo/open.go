@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	ErrBadPassword = errors.New("Bad password.")
+	ErrBadPassword = errors.New("Bad password")
 )
 
 // Filenames that will be encrypted on close
@@ -58,6 +58,8 @@ func lookupID(configPath string) (id.ID, error) {
 
 	return ID, nil
 }
+
+// TODO: Only decrypt files into memory.
 
 // Open decrypts all sensible data in the repository.
 func Open(pwd, folder string) (*Repository, error) {
@@ -148,8 +150,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 	}
 
 	configValues := map[string]string{
-		"repository.id":   "",
-		"repository.uuid": "",
+		"repository.id": "",
 	}
 
 	for key := range configValues {
@@ -194,11 +195,6 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	uuid, err := cfg.String("repository.uuid")
-	if err != nil {
-		return nil, err
-	}
-
 	allStores := make(map[id.ID]*store.Store)
 	allStores[ID] = ownStore
 
@@ -207,7 +203,6 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		Folder:         absFolderPath,
 		Remotes:        remoteStore,
 		InternalFolder: brigPath,
-		UniqueID:       uuid,
 		Config:         cfg,
 		OwnStore:       ownStore,
 		Password:       pwd,

@@ -8,6 +8,8 @@ import (
 	yamlConfig "github.com/olebedev/config"
 )
 
+// TODO: Make ipfs keypair export/import-able to enable rescue-mode.
+
 // Repository represents a handle to one physical brig repository.
 // It groups the APIs to all useful files in it.
 type Repository struct {
@@ -18,9 +20,7 @@ type Repository struct {
 	Folder         string
 	InternalFolder string
 
-	// UUID which represents a unique repository
-	UniqueID string
-
+	// TODO: still required?
 	// User supplied password:
 	Password string
 
