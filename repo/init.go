@@ -14,7 +14,6 @@ import (
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	yamlConfig "github.com/olebedev/config"
-	"github.com/wayn3h0/go-uuid"
 )
 
 func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
@@ -47,13 +46,7 @@ func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
 		ipfsAPIPort, ipfsSwarmPort, daemonPort,
 	)
 
-	uuid, err := cfg.String("repository.uuid")
-	if err != nil {
-		return err
-	}
-
 	err = globalRepo.AddRepo(global.RepoListEntry{
-		UniqueID:      uuid,
 		RepoPath:      folder,
 		DaemonPort:    daemonPort,
 		IpfsAPIPort:   ipfsAPIPort,
@@ -90,15 +83,9 @@ func NewRepository(ID, pwd, folder string) (*Repository, error) {
 
 	cfg := config.CreateDefaultConfig()
 
-	repoUUID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
-	}
-
 	configDefaults := map[string]interface{}{
-		"repository.id":   ID,
-		"repository.uuid": repoUUID.String(),
-		"ipfs.path":       filepath.Join(brigPath, "ipfs"),
+		"repository.id": ID,
+		"ipfs.path":     filepath.Join(brigPath, "ipfs"),
 	}
 
 	for key, value := range configDefaults {

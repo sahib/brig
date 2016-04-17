@@ -128,7 +128,6 @@ func (nd *Node) Listen(proto string) (net.Listener, error) {
 
 	protoID := protocol.ID(proto)
 	node.PeerHost.SetStreamHandler(protoID, func(s p2pnet.Stream) {
-		fmt.Println("Received a stream", s)
 		select {
 		case list.conCh <- s:
 		case <-ctx.Done():
@@ -150,7 +149,6 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 		return nil, err
 	}
 
-	fmt.Println("wrap stream", peerID)
 	return wrapStream(stream), nil
 }
 

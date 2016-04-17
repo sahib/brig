@@ -1,24 +1,29 @@
 package testwith
 
 import (
-	"os"
-	"path/filepath"
+	"io/ioutil"
 	"testing"
 
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-var (
-	TestDir = filepath.Join(os.TempDir(), ".brig_ipfs_tests")
-)
-
 func WithIpfs(t *testing.T, f func(*ipfsutil.Node)) {
-	WithIpfsAtPath(t, TestDir, f)
+	tmpDir, err := ioutil.TempDir("", "brig-ipfs")
+	if err != nil {
+		t.Errorf("Cannot create temp dir %v", err)
+		return
+	}
+	WithIpfsAtPath(t, tmpDir, f)
 }
 
 func WithIpfsAtPort(t *testing.T, port int, f func(*ipfsutil.Node)) {
-	WithIpfsAtPathAndPort(t, TestDir, port, f)
+	tmpDir, err := ioutil.TempDir("", "brig-ipfs")
+	if err != nil {
+		t.Errorf("Cannot create temp dir %v", err)
+		return
+	}
+	WithIpfsAtPathAndPort(t, tmpDir, port, f)
 }
 
 func WithIpfsAtPath(t *testing.T, root string, f func(*ipfsutil.Node)) {

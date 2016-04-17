@@ -263,17 +263,17 @@ func (sv *Server) Disconnect() (err error) {
 		return nil
 	}
 
-	log.Debugf("Disconnecting ipfs daemon.")
-
-	if err = sv.Repo.IPFS.Close(); err != nil {
-		log.Warningf("Unable to close ipfs node: %v", err)
-	}
-
 	log.Debugf("Disconnecting metadata host.")
 
 	// Try to close metadata host, even if ipfs is still running:
 	if err = sv.MetaHost.Disconnect(); err != nil {
 		log.Warningf("Unable to disconnect metadata host: %v", err)
+	}
+
+	log.Debugf("Disconnecting ipfs daemon.")
+
+	if err = sv.Repo.IPFS.Close(); err != nil {
+		log.Warningf("Unable to close ipfs node: %v", err)
 	}
 
 	return err
