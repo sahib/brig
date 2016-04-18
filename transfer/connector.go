@@ -20,6 +20,11 @@ type Connector struct {
 	// (might be nil for tests if no handlers are tested)
 	rp *repo.Repository
 
+	// Conversation pool handling.
+	cp *ConversationPool
+}
+
+type ConversationPool struct {
 	// Map of open conversations
 	open map[id.ID]Conversation
 
@@ -28,6 +33,79 @@ type Connector struct {
 
 	// lock for `open`
 	mu sync.Mutex
+
+	rp *repo.Repository
+}
+
+func newConversationPool(rp *repo.Repository) *ConversationPool {
+	return &ConversationPool{
+		open:      make(map[id.ID]Conversation),
+		heartbeat: make(map[id.ID]*ipfsutil.Pinger),
+		rp:        rp,
+	}
+}
+
+// Set add a conversation for a specific to the pool.
+func (cp *ConversationPool) Set(peer id.Peer, cnv Conversation) error {
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+
+	cp.open[peer.ID()] = cnv
+
+	if _, ok := cp.heartbeat[peer.ID()]; !ok {
+		pinger, err := cp.rp.IPFS.Ping(peer.Hash())
+		if err != nil {
+			return err
+		}
+		cp.heartbeat[peer.ID()] = pinger
+	}
+
+	return nil
+}
+
+// Iter iterates over the conversation pool.
+func (cp *ConversationPool) Iter() chan Conversation {
+	cnvs := make(chan Conversation)
+	go func() {
+		cp.mu.Lock()
+		defer cp.mu.Unlock()
+
+		for _, cnv := range cp.open {
+			cnvs <- cnv
+		}
+		close(cnvs)
+	}()
+	return cnvs
+}
+
+// LastSeen timestamp of a specific peer.
+func (cp *ConversationPool) LastSeen(peer id.Peer) time.Time {
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+
+	if pinger := cp.heartbeat[peer.ID()]; pinger != nil {
+		return pinger.LastSeen()
+	}
+
+	return time.Unix(0, 0)
+}
+
+// Close the complete conversation pool and free ressources.
+func (cp *ConversationPool) Close() error {
+	var errs util.Errors
+
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+
+	for _, cnv := range cp.open {
+		if err := cnv.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	cp.open = make(map[id.ID]Conversation)
+	cp.heartbeat = make(map[id.ID]*ipfsutil.Pinger)
+
+	return errs
 }
 
 // dialer uses ipfs to create a net.Conn to another node.
@@ -45,10 +123,9 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	// TODO: pass authMgr.
 	// authMgr := MockAuthSuccess
 	cnc := &Connector{
-		rp:        rp,
-		layer:     layer,
-		open:      make(map[id.ID]Conversation),
-		heartbeat: make(map[id.ID]*ipfsutil.Pinger),
+		rp:    rp,
+		layer: layer,
+		cp:    newConversationPool(rp),
 	}
 
 	handlerMap := map[wire.RequestType]HandlerFunc{
@@ -79,9 +156,9 @@ func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 		return nil, err
 	}
 
-	cn.mu.Lock()
-	cn.open[peer.ID()] = cnv
-	cn.mu.Unlock()
+	if err := cn.cp.Set(peer, cnv); err != nil {
+		return nil, err
+	}
 
 	return newAPIClient(cnv, cn.rp.IPFS)
 }
@@ -91,36 +168,17 @@ func (cn *Connector) IsOnline(peer id.Peer) bool {
 		return false
 	}
 
-	cn.mu.Lock()
-	defer cn.mu.Unlock()
-
-	pinger, ok := cn.heartbeat[peer.ID()]
-	if !ok {
-		var err error
-
-		pinger, err = cn.rp.IPFS.Ping(peer.Hash())
-		if err != nil {
-			return false
-		}
-
-		cn.heartbeat[peer.ID()] = pinger
-	}
-
-	if time.Since(pinger.LastSeen()) < 5*time.Second {
+	if time.Since(cn.cp.LastSeen(peer)) < 15*time.Second {
 		return true
 	}
 
-	// If creating the pinger worked, remote should be online.
-	return true
+	return false
 }
 
 func (cn *Connector) Broadcast(req *wire.Request) error {
 	var errs util.Errors
 
-	cn.mu.Lock()
-	defer cn.mu.Unlock()
-
-	for _, cnv := range cn.open {
+	for cnv := range cn.cp.Iter() {
 		if err := cnv.SendAsync(req, nil); err != nil {
 			errs = append(errs, err)
 		}
@@ -130,9 +188,6 @@ func (cn *Connector) Broadcast(req *wire.Request) error {
 }
 
 func (cn *Connector) Layer() Layer {
-	cn.mu.Lock()
-	defer cn.mu.Unlock()
-
 	return cn.layer
 }
 
@@ -150,9 +205,9 @@ func (cn *Connector) Connect() error {
 				continue
 			}
 
-			cn.mu.Lock()
-			cn.open[remote.ID()] = cnv
-			cn.mu.Unlock()
+			if err := cn.cp.Set(remote, cnv); err != nil {
+				log.Warningf("Cannot create pinger: %v", err)
+			}
 		}
 	}()
 
@@ -160,23 +215,14 @@ func (cn *Connector) Connect() error {
 }
 
 func (cn *Connector) Disconnect() error {
-	var errs util.Errors
-
-	cn.mu.Lock()
-	defer cn.mu.Unlock()
-
-	for _, cnv := range cn.open {
-		peer := cnv.Peer()
-
-		delete(cn.open, peer.ID())
-		delete(cn.heartbeat, peer.ID())
-
-		if err := cnv.Close(); err != nil {
-			errs = append(errs, err)
-		}
+	errs := util.Errors{}
+	if err := cn.cp.Close(); err != nil {
+		errs = append(errs, err)
 	}
-
-	return cn.layer.Disconnect()
+	if err := cn.layer.Disconnect(); err != nil {
+		errs = append(errs, err)
+	}
+	return errs
 }
 
 func (cn *Connector) Close() error {
@@ -184,8 +230,5 @@ func (cn *Connector) Close() error {
 }
 
 func (cn *Connector) IsInOnlineMode() bool {
-	cn.mu.Lock()
-	defer cn.mu.Unlock()
-
 	return cn.layer.IsInOnlineMode()
 }
