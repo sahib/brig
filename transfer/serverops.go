@@ -2,7 +2,6 @@ package transfer
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/gogo/protobuf/proto"
@@ -25,7 +24,6 @@ func (sv *Connector) handleUpdateFile(req *wire.Request) (*wire.Response, error)
 }
 
 func (sv *Connector) handleStoreVersion(req *wire.Request) (*wire.Response, error) {
-	fmt.Println("handle store version")
 	return &wire.Response{
 		StoreVersionResp: &wire.StoreVersionResponse{
 			// TODO: Use actual version when ready

@@ -41,13 +41,10 @@ func (acl *APIClient) send(req *wire.Request) (resp *wire.Response, err error) {
 
 	done := make(chan util.Empty)
 
-	fmt.Println("Sending")
 	err = acl.cnv.SendAsync(req, func(respIn *wire.Response) {
-		fmt.Println("Got response", resp)
 		resp = respIn
 		done <- util.Empty{}
 	})
-	fmt.Println("Sending done")
 
 	// TODO: Make that configurable.
 	timer := time.NewTimer(10 * time.Second)

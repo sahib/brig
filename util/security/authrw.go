@@ -160,7 +160,7 @@ func (ath *AuthReadWriter) runAuth() error {
 	return nil
 }
 
-func (ath *AuthReadWriter) checkAuth() error {
+func (ath *AuthReadWriter) Trigger() error {
 	if !ath.Authorised() {
 		if err := ath.runAuth(); err != nil {
 			ath.rwc.Close()
@@ -172,7 +172,7 @@ func (ath *AuthReadWriter) checkAuth() error {
 }
 
 func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
-	if err := ath.checkAuth(); err != nil {
+	if err := ath.Trigger(); err != nil {
 		return 0, err
 	}
 
@@ -180,7 +180,7 @@ func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 }
 
 func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
-	if err := ath.checkAuth(); err != nil {
+	if err := ath.Trigger(); err != nil {
 		return 0, err
 	}
 

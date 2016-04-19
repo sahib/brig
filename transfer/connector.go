@@ -108,9 +108,9 @@ func (cp *ConversationPool) Close() error {
 			errs = append(errs, err)
 		}
 	}
+
 	cp.open = make(map[id.ID]Conversation)
 	cp.heartbeat = make(map[id.ID]*ipfsutil.Pinger)
-
 	return errs.ToErr()
 }
 
@@ -121,7 +121,7 @@ type dialer struct {
 }
 
 func (d *dialer) Dial(peer id.Peer) (net.Conn, error) {
-	fmt.Println("--- IPFS dialing to ", peer.Hash())
+	log.Debugf("IPFS dialing to %v", peer.Hash())
 	return d.node.Dial(peer.Hash(), d.layer.ProtocolID())
 }
 
@@ -295,15 +295,14 @@ func (cn *Connector) Connect() error {
 
 func (cn *Connector) Disconnect() error {
 	errs := util.Errors{}
-	fmt.Println("Closing connection pool")
 	if err := cn.cp.Close(); err != nil {
 		errs = append(errs, err)
 	}
-	fmt.Println("Closing layer")
+
 	if err := cn.layer.Disconnect(); err != nil {
 		errs = append(errs, err)
 	}
-	fmt.Println("closed all")
+
 	return errs.ToErr()
 }
 

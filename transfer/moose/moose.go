@@ -1,7 +1,6 @@
 package moose
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -14,7 +13,7 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
-	// "github.com/disorganizer/brig/util/security"
+	"github.com/disorganizer/brig/util/security"
 	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
 )
@@ -43,17 +42,15 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 		return nil, err
 	}
 
-	// pub, err := node.PublicKeyFor(peerHash)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	pub, err := node.PublicKeyFor(peerHash)
+	if err != nil {
+		return nil, err
+	}
 
-	// priv, err := node.PrivateKey()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// fmt.Println("Public/Private", pub, priv)
+	priv, err := node.PrivateKey()
+	if err != nil {
+		return nil, err
+	}
 
 	// Use tunnel for R/W; but close `conn` on Close()
 	closeWrapper := closeWrapper{
@@ -61,8 +58,12 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 		Closer:     conn,
 	}
 
-	// authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
-	return protocol.NewProtocol(closeWrapper, true), nil
+	authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
+	if err := authrw.Trigger(); err != nil {
+		return nil, err
+	}
+
+	return protocol.NewProtocol(authrw, true), nil
 }
 
 func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
@@ -149,7 +150,6 @@ type Layer struct {
 	parentCtx context.Context
 	childCtx  context.Context
 	cancel    context.CancelFunc
-	waitgroup *sync.WaitGroup
 
 	// Locking for functions that are not
 	// inherently threadsafe
@@ -163,7 +163,6 @@ func NewLayer(node *ipfsutil.Node, parentCtx context.Context) *Layer {
 		parentCtx: parentCtx,
 		childCtx:  childCtx,
 		cancel:    cancel,
-		waitgroup: &sync.WaitGroup{},
 		handlers:  make(handlerMap),
 	}
 }
@@ -191,9 +190,6 @@ func (lay *Layer) IsInOnlineMode() bool {
 }
 
 func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
-	lay.waitgroup.Add(1)
-	defer lay.waitgroup.Done()
-
 	for {
 		// Check if we need to quit:
 		select {
@@ -210,11 +206,11 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 		}
 
 		if err != nil {
-			log.Warning("Server side recv: %v", err)
+			log.Warningf("Server side recv: %v", err)
 			break
 		}
 
-		log.Warningf("Got request: %v", req)
+		log.Debugf("Got request: %v", req)
 
 		typ := req.GetReqType()
 		fn, ok := lay.handlers[typ]
@@ -241,7 +237,7 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 		resp.ReqType = req.ReqType
 		resp.ID = req.ID
 
-		log.Warningf("Sending back %v", resp)
+		log.Debugf("Sending back %v", resp)
 
 		if err := prot.Send(resp); err != nil {
 			log.Warningf("Unable to send back response: %v", err)
@@ -308,20 +304,12 @@ func (lay *Layer) Disconnect() error {
 	lay.cancel()
 
 	// This should break the loop in Connect()
-	fmt.Println("listener close")
 	if err := lay.listener.Close(); err != nil {
 		return err
 	}
-	fmt.Println("listener close done")
 
 	lay.listener = nil
 	lay.dialer = nil
-
-	//	cnt := int(atomic.LoadInt32(&lay.serverCount))
-	//	fmt.Println("Bringing down all the stuff", cnt)
-	//	for i := 0; i < cnt; i++ {
-	//		lay.quit <- true
-	//	}
 
 	return nil
 }

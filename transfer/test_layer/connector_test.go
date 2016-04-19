@@ -1,9 +1,7 @@
 package testlayer
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -14,8 +12,7 @@ import (
 )
 
 func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
-	pass := user + "pass"
-	testwith.WithRepo(t, user, pass, func(rp *repo.Repository) {
+	testwith.WithRepo(t, user, user+"pass", func(rp *repo.Repository) {
 		if err := rp.IPFS.Online(); err != nil {
 			t.Errorf("Cannot go online with IPFS repo: %v", err)
 			return
@@ -28,16 +25,15 @@ func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
 			t.Errorf("Cannot connect: %v", err)
 			return
 		}
-		fmt.Println("before fc", rp.InternalFolder)
-		fc(con)
-		fmt.Println("after fc")
 
-		fmt.Println("after wait")
+		t.Logf("Entering test for %s's connector", user)
+		fc(con)
+		t.Logf("Leaving test for %s's connector", user)
+
 		if err := con.Disconnect(); err != nil {
 			t.Errorf("Cannot disconnect: %v", err)
 			return
 		}
-		fmt.Println("after disconnect")
 	})
 }
 
@@ -46,9 +42,7 @@ func TestConversation(t *testing.T) {
 		WithConnector(t, "bob", func(bc *transfer.Connector) {
 			br, ar := bc.Repo(), ac.Repo()
 			berr := br.Remotes.Insert(repo.NewRemoteFromPeer(ar.Peer()))
-			time.Sleep(0 * time.Second)
 			if berr != nil {
-				fmt.Println("bob remote add")
 				t.Errorf("Bob has no friends: %v", berr)
 				return
 			}
@@ -59,7 +53,6 @@ func TestConversation(t *testing.T) {
 				return
 			}
 
-			fmt.Println("Alice %v dials bob %v", ar.Peer(), br.Peer())
 			apc, err := ac.Dial(br.Peer())
 			if err != nil {
 				t.Errorf("Alice cannot dial to bob: %v", err)
@@ -74,12 +67,12 @@ func TestConversation(t *testing.T) {
 					return
 				}
 
-				fmt.Println("Version", v)
+				if v <= 0 {
+					t.Errorf("Version should be any positive number")
+					return
+				}
 			}
 
-			apc.Close()
-
-			fmt.Println("close api")
 			if err := apc.Close(); err != nil {
 				t.Errorf("Alice cannot close apiclient to bob: %v", err)
 				return
