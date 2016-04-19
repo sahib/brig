@@ -211,6 +211,9 @@ func (cn *Connector) Connect() error {
 		return err
 	}
 
+	// Make sure we filter unauthorized incoming connections:
+	filter := newListenerFilter(ls, cn.rp.Remotes)
+
 	go func() {
 		for remote := range cn.rp.Remotes.Iter() {
 			cnv, err := cn.layer.Dial(remote)
@@ -225,7 +228,7 @@ func (cn *Connector) Connect() error {
 		}
 	}()
 
-	return cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS})
+	return cn.layer.Connect(filter, &dialer{cn.layer, cn.rp.IPFS})
 }
 
 func (cn *Connector) Disconnect() error {
