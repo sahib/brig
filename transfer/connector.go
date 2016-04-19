@@ -204,11 +204,15 @@ func (cn *Connector) Connect() error {
 		return err
 	}
 
-	if err := cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS}); err != nil {
+	// Make sure we filter unauthorized incoming connections:
+	filter := newListenerFilter(ls, cn.rp.Remotes)
+
+	if err := cn.layer.Connect(filter, &dialer{cn.layer, cn.rp.IPFS}); err != nil {
 		return err
 	}
 
 	fmt.Println("Is connected", cn.rp.ID)
+
 	go func() {
 		for remote := range cn.rp.Remotes.Iter() {
 			fmt.Println("   connect", remote, cn.rp.ID)
