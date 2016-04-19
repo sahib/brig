@@ -150,7 +150,7 @@ func NewYAMLRemotes(path string) (RemoteStore, error) {
 }
 
 func (yr *yamlRemoteStore) load() error {
-	fd, err := os.Open(yr.path)
+	fd, err := os.OpenFile(yr.path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}

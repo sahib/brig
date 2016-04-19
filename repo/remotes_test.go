@@ -10,16 +10,10 @@ import (
 
 func TestRemote(t *testing.T) {
 	path := filepath.Join(os.TempDir(), "brig-test-remote.yml")
-	fd, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
-	if err != nil {
-		t.Errorf("Could not open in memory: %v", err)
-		return
-	}
 
-	defer fd.Close()
 	defer testutil.Remover(t, path)
 
-	rms, err := NewYAMLRemotes(fd)
+	rms, err := NewYAMLRemotes(path)
 	if err != nil {
 		t.Errorf("Creating yaml store failed: %v", err)
 		return
