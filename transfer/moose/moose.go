@@ -5,7 +5,8 @@ import (
 	"io"
 	"net"
 	"sync"
-	"sync/atomic"
+
+	"golang.org/x/net/context"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
@@ -13,7 +14,7 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
-	"github.com/disorganizer/brig/util/security"
+	// "github.com/disorganizer/brig/util/security"
 	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
 )
@@ -37,22 +38,22 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Elliptic tunnel created")
 
 	if err := tnl.Exchange(); err != nil {
 		return nil, err
 	}
-	fmt.Println("Elliptic tunnel exchanged")
 
-	pub, err := node.PublicKeyFor(peerHash)
-	if err != nil {
-		return nil, err
-	}
+	// pub, err := node.PublicKeyFor(peerHash)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	priv, err := node.PrivateKey()
-	if err != nil {
-		return nil, err
-	}
+	// priv, err := node.PrivateKey()
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// fmt.Println("Public/Private", pub, priv)
 
 	// Use tunnel for R/W; but close `conn` on Close()
 	closeWrapper := closeWrapper{
@@ -60,9 +61,8 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 		Closer:     conn,
 	}
 
-	authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
-	fmt.Println(".... authenticated!")
-	return protocol.NewProtocol(authrw, true), nil
+	// authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
+	return protocol.NewProtocol(closeWrapper, true), nil
 }
 
 func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
@@ -84,8 +84,9 @@ func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Convers
 		for {
 			resp := wire.Response{}
 			err := cnv.proto.Recv(&resp)
+
 			// TODO: That's not my fault.
-			if err == io.EOF || err.Error() == "stream closed" {
+			if err == io.EOF || (err != nil && err.Error() == "stream closed") {
 				break
 			}
 
@@ -144,16 +145,24 @@ type Layer struct {
 	listener net.Listener
 	handlers handlerMap
 
-	serverCount int32
-	quit        chan bool
-	waitgroup   *sync.WaitGroup
-	mu          sync.Mutex
+	// Cancellation related:
+	parentCtx context.Context
+	childCtx  context.Context
+	cancel    context.CancelFunc
+	waitgroup *sync.WaitGroup
+
+	// Locking for functions that are not
+	// inherently threadsafe
+	mu sync.Mutex
 }
 
-func NewLayer(node *ipfsutil.Node) *Layer {
+func NewLayer(node *ipfsutil.Node, parentCtx context.Context) *Layer {
+	childCtx, cancel := context.WithCancel(parentCtx)
 	return &Layer{
 		node:      node,
-		quit:      make(chan bool),
+		parentCtx: parentCtx,
+		childCtx:  childCtx,
+		cancel:    cancel,
 		waitgroup: &sync.WaitGroup{},
 		handlers:  make(handlerMap),
 	}
@@ -166,15 +175,12 @@ func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
-	fmt.Println("Dial: Lay", lay, peer)
-	fmt.Println("Dial: Dailer", lay.dialer, peer)
 
 	conn, err := lay.dialer.Dial(peer)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Dial to", peer, "done")
 	return NewConversation(conn, lay.node, peer)
 }
 
@@ -185,22 +191,30 @@ func (lay *Layer) IsInOnlineMode() bool {
 }
 
 func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
-	atomic.AddInt32(&lay.serverCount, +1)
 	lay.waitgroup.Add(1)
+	defer lay.waitgroup.Done()
 
 	for {
 		// Check if we need to quit:
 		select {
-		case <-lay.quit:
-			atomic.AddInt32(&lay.serverCount, -1)
+		case <-lay.childCtx.Done():
+			return
+		default:
 			break
 		}
 
 		req := wire.Request{}
-		if err := prot.Recv(&req); err != nil {
+		err := prot.Recv(&req)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
 			log.Warning("Server side recv: %v", err)
 			break
 		}
+
+		log.Warningf("Got request: %v", req)
 
 		typ := req.GetReqType()
 		fn, ok := lay.handlers[typ]
@@ -219,50 +233,66 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 
 		if resp == nil {
 			// No response is valid too.
+			// TODO: really?
 			continue
 		}
+
+		// Auto-fill the type and ID fields from the response:
+		resp.ReqType = req.ReqType
+		resp.ID = req.ID
+
+		log.Warningf("Sending back %v", resp)
 
 		if err := prot.Send(resp); err != nil {
 			log.Warningf("Unable to send back response: %v", err)
 			break
 		}
 	}
-
-	lay.waitgroup.Done()
 }
 
 func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
+
 	lay.dialer = d
 	lay.listener = l
-
-	fmt.Println("Connect: Lay", lay)
-	fmt.Println("Connect: Dailer", lay.dialer)
+	lay.childCtx, lay.cancel = context.WithCancel(lay.parentCtx)
 
 	// Listen for incoming connections as long the listener is open:
 	go func() {
 		for {
 			conn, err := l.Accept()
 			if err != nil {
-				log.Warningf("Listener: %v", err)
+				// *sigh* Again, not my fault.
+				if err != transfer.ErrListenerWasClosed {
+					if err.Error() != "context canceled" {
+						log.Warningf("Listener: %T '%v'", err, err)
+					}
+				}
+
 				break
 			}
 
+			// We currently rely on an ipfs connection here,
+			// so testing it without ipfs is not directly possible.
 			streamConn, ok := conn.(*ipfsutil.StreamConn)
 			if !ok {
 				log.Warningf("Denying non-stream conn connection, sorry.")
 				return
 			}
 
+			// Attempt to establish a full authenticated connection:
 			hash := streamConn.PeerHash()
 			proto, err := wrapConnAsProto(conn, lay.node, hash)
 			if err != nil {
-				log.Warningf("Could not establish connection to %s", hash)
+				log.Warningf(
+					"Could not establish incoming connection to %s: %v",
+					hash, err,
+				)
 				return
 			}
 
-			// Handle conn in server mode:
+			// Handle protocol in server mode:
 			go lay.handleServerConn(proto)
 		}
 	}()
@@ -273,33 +303,31 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 func (lay *Layer) Disconnect() error {
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
+
+	// Bring down the server-side handlers:
+	lay.cancel()
+
 	// This should break the loop in Connect()
+	fmt.Println("listener close")
 	if err := lay.listener.Close(); err != nil {
 		return err
 	}
-
-	fmt.Println("Disconnect: Lay", lay)
-	fmt.Println("Disconnect: Dailer", lay.dialer)
+	fmt.Println("listener close done")
 
 	lay.listener = nil
 	lay.dialer = nil
 
-	// Bring down the server-side handlers:
-	cnt := int(atomic.LoadInt32(&lay.serverCount))
-	for i := 0; i < cnt; i++ {
-		lay.quit <- true
-	}
+	//	cnt := int(atomic.LoadInt32(&lay.serverCount))
+	//	fmt.Println("Bringing down all the stuff", cnt)
+	//	for i := 0; i < cnt; i++ {
+	//		lay.quit <- true
+	//	}
 
 	return nil
 }
 
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
-}
-
-func (lay *Layer) Wait() error {
-	lay.waitgroup.Wait()
-	return nil
 }
 
 func (lay *Layer) ProtocolID() string {

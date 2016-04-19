@@ -96,19 +96,16 @@ func (tnl *ecdhTunnel) Exchange() error {
 		return nil
 	}
 
-	fmt.Println("write pub")
 	pubKeyBuf := marshal(tnl.pubKey)
 	if _, err := tnl.ReadWriter.Write(pubKeyBuf); err != nil {
 		return err
 	}
 
-	fmt.Println("read pub")
 	partnerBuf := make([]byte, len(pubKeyBuf))
 	if _, err := tnl.ReadWriter.Read(partnerBuf); err != nil {
 		return err
 	}
 
-	fmt.Println("okay")
 	partnerKey, ok := unmarshal(partnerBuf)
 	if !ok {
 		return fmt.Errorf("Partner key unmarshal failed")

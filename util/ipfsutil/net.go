@@ -39,7 +39,7 @@ func (sc *StreamConn) Write(buf []byte) (n int, err error) {
 }
 
 func (sc *StreamConn) PeerHash() string {
-	return sc.stream.Conn().RemotePeer().String()
+	return sc.stream.Conn().RemotePeer().Pretty()
 }
 
 func (sc *StreamConn) Close() error {

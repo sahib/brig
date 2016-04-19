@@ -4,7 +4,8 @@ option go_package = "wire";
 enum RequestType {
     INVALID = 0;
     FETCH = 1;
-    UPDATE_FILE = 2;
+    STORE_VERSION = 2;
+    UPDATE_FILE = 3;
 }
 
 message Request {
@@ -13,9 +14,15 @@ message Request {
     optional bytes broadcast_data = 3;
 }
 
+message StoreVersionResponse {
+    required int32 version = 1;
+}
+
 message Response {
 	required RequestType req_type = 1;
     required int64 ID = 2;
 	optional bytes data = 3;
     optional string error = 4;
+
+    optional StoreVersionResponse store_version_resp = 5;
 }

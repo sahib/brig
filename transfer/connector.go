@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -12,6 +13,10 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+)
+
+var (
+	ErrListenerWasClosed = errors.New("Listener was closed")
 )
 
 type Connector struct {
@@ -120,6 +125,66 @@ func (d *dialer) Dial(peer id.Peer) (net.Conn, error) {
 	return d.node.Dial(peer.Hash(), d.layer.ProtocolID())
 }
 
+type listenerFilter struct {
+	ls   net.Listener
+	rms  repo.RemoteStore
+	quit chan bool
+}
+
+func newListenerFilter(ls net.Listener, rms repo.RemoteStore) *listenerFilter {
+	return &listenerFilter{
+		ls:   ls,
+		rms:  rms,
+		quit: make(chan bool, 1),
+	}
+}
+
+func (lf *listenerFilter) Accept() (net.Conn, error) {
+	for {
+		conn, err := lf.ls.Accept()
+		if err != nil {
+			return nil, err
+		}
+
+		select {
+		case <-lf.quit:
+			return nil, ErrListenerWasClosed
+		default:
+			break
+		}
+
+		streamConn, ok := conn.(*ipfsutil.StreamConn)
+		if !ok {
+			return nil, fmt.Errorf("Not used with ipfs listener?")
+		}
+
+		hash := streamConn.PeerHash()
+
+		// Check if we know of this hash:
+		for remote := range lf.rms.Iter() {
+			if remote.Hash() == hash {
+				return streamConn, nil
+			}
+		}
+
+		log.Warningf("Denying incoming connection from `%s`", hash)
+	}
+
+	return nil, ErrListenerWasClosed
+}
+
+func (lf *listenerFilter) Close() error {
+	// quit is buffered, this will return immediately.
+	// The Accept() loop might have errored out before,
+	// so we don't want this to block if it won't be read.
+	lf.quit <- true
+	return lf.ls.Close()
+}
+
+func (lf *listenerFilter) Addr() net.Addr {
+	return lf.Addr()
+}
+
 // NewConnector returns an unconnected Connector.
 func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	// TODO: pass authMgr.
@@ -131,8 +196,9 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	}
 
 	handlerMap := map[wire.RequestType]HandlerFunc{
-		wire.RequestType_FETCH:       cnc.handleFetch,
-		wire.RequestType_UPDATE_FILE: cnc.handleUpdateFile,
+		wire.RequestType_FETCH:         cnc.handleFetch,
+		wire.RequestType_UPDATE_FILE:   cnc.handleUpdateFile,
+		wire.RequestType_STORE_VERSION: cnc.handleStoreVersion,
 	}
 
 	for typ, handler := range handlerMap {
@@ -158,7 +224,6 @@ func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 		return nil, err
 	}
 
-	fmt.Println("pool set", peer)
 	if err := cn.cp.Set(peer, cnv); err != nil {
 		return nil, err
 	}
@@ -211,11 +276,8 @@ func (cn *Connector) Connect() error {
 		return err
 	}
 
-	fmt.Println("Is connected", cn.rp.ID)
-
 	go func() {
 		for remote := range cn.rp.Remotes.Iter() {
-			fmt.Println("   connect", remote, cn.rp.ID)
 			cnv, err := cn.layer.Dial(remote)
 			if err != nil {
 				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
@@ -233,12 +295,15 @@ func (cn *Connector) Connect() error {
 
 func (cn *Connector) Disconnect() error {
 	errs := util.Errors{}
+	fmt.Println("Closing connection pool")
 	if err := cn.cp.Close(); err != nil {
 		errs = append(errs, err)
 	}
+	fmt.Println("Closing layer")
 	if err := cn.layer.Disconnect(); err != nil {
 		errs = append(errs, err)
 	}
+	fmt.Println("closed all")
 	return errs.ToErr()
 }
 

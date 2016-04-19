@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/moose"
@@ -18,7 +20,8 @@ func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
 			t.Errorf("Cannot go online with IPFS repo: %v", err)
 			return
 		}
-		lay := moose.NewLayer(rp.IPFS)
+
+		lay := moose.NewLayer(rp.IPFS, context.Background())
 		con := transfer.NewConnector(lay, rp)
 
 		if err := con.Connect(); err != nil {
@@ -29,10 +32,12 @@ func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
 		fc(con)
 		fmt.Println("after fc")
 
+		fmt.Println("after wait")
 		if err := con.Disconnect(); err != nil {
 			t.Errorf("Cannot disconnect: %v", err)
 			return
 		}
+		fmt.Println("after disconnect")
 	})
 }
 
@@ -60,6 +65,20 @@ func TestConversation(t *testing.T) {
 				t.Errorf("Alice cannot dial to bob: %v", err)
 				return
 			}
+
+			// Spam in some queries:
+			for i := 0; i < 10; i++ {
+				v, err := apc.QueryStoreVersion()
+				if err != nil {
+					t.Errorf("Usage of api client failed: %v", err)
+					return
+				}
+
+				fmt.Println("Version", v)
+			}
+
+			apc.Close()
+
 			fmt.Println("close api")
 			if err := apc.Close(); err != nil {
 				t.Errorf("Alice cannot close apiclient to bob: %v", err)

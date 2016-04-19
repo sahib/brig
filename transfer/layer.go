@@ -80,10 +80,6 @@ type Layer interface {
 	// `handler` will be called once a request with this type is received.
 	RegisterHandler(typ wire.RequestType, handler HandlerFunc)
 
-	// Wait blocks until all requests were handled.
-	// It is mainly useful for debugging.
-	Wait() error
-
 	// ProtocolID returns a unique protocol id
 	// that will be used to differentiate between other protocols.
 	// Example: "/brig/mqtt/v1"
