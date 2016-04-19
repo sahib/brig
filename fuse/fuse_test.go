@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/testutil"
+	"github.com/disorganizer/brig/util/testwith"
 )
 
 var (
@@ -22,28 +23,6 @@ const (
 	DummyUser = "user@nullcat.de/desktop"
 	DummyPass = "hello_world"
 )
-
-func withRepo(t *testing.T, f func(*repo.Repository)) {
-	if err := os.RemoveAll(TestPath); err != nil {
-		t.Errorf("previous repo exists; cannot delete it though: %v", err)
-		return
-	}
-
-	rep, err := repo.NewRepository(DummyUser, DummyPass, TestPath)
-	if err != nil {
-		t.Errorf("creating repo failed: %v", err)
-		return
-	}
-
-	defer testutil.Remover(t, TestPath)
-
-	f(rep)
-
-	if err := rep.Close(); err != nil {
-		t.Errorf("closing repo failed: %v", err)
-		return
-	}
-}
 
 func withMount(t *testing.T, f func(mount *Mount)) {
 	mntPath := filepath.Join(os.TempDir(), "brig_fuse_mountdir")
@@ -59,7 +38,7 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 
 	defer testutil.Remover(t, mntPath)
 
-	withRepo(t, func(rep *repo.Repository) {
+	testwith.WithRepo(t, TestPath, DummyUser, DummyPass, func(rep *repo.Repository) {
 		mount, err := NewMount(rep.OwnStore, mntPath)
 		if err != nil {
 			t.Errorf("Cannot create mount: %v", err)

@@ -1,6 +1,7 @@
 package moose
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -31,17 +32,19 @@ type closeWrapper struct {
 	io.Closer
 }
 
-func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*protocol.Protocol, error) {
+func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
 	tnl, err := tunnel.NewEllipticTunnel(conn)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Elliptic tunnel created")
 
 	if err := tnl.Exchange(); err != nil {
 		return nil, err
 	}
+	fmt.Println("Elliptic tunnel exchanged")
 
-	pub, err := node.PublicKeyFor(peer.Hash())
+	pub, err := node.PublicKeyFor(peerHash)
 	if err != nil {
 		return nil, err
 	}
@@ -58,11 +61,12 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*protoco
 	}
 
 	authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
+	fmt.Println(".... authenticated!")
 	return protocol.NewProtocol(authrw, true), nil
 }
 
 func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
-	proto, err := wrapConnAsProto(conn, node, peer)
+	proto, err := wrapConnAsProto(conn, node, peer.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +83,13 @@ func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Convers
 	go func() {
 		for {
 			resp := wire.Response{}
-			if err := cnv.proto.Recv(&resp); err != nil {
+			err := cnv.proto.Recv(&resp)
+			// TODO: That's not my fault.
+			if err == io.EOF || err.Error() == "stream closed" {
+				break
+			}
+
+			if err != nil {
 				log.Warningf("Error while receiving data: %v", err)
 				continue
 			}
@@ -113,7 +123,12 @@ func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFun
 	cnv.Lock()
 	defer cnv.Unlock()
 
-	cnv.notifees[req.GetID()] = callback
+	// Broadcast messages usually do not register a callback.
+	// (it wouldn't have been called anyways)
+	if callback != nil {
+		cnv.notifees[req.GetID()] = callback
+	}
+
 	return cnv.proto.Send(req)
 }
 
@@ -132,6 +147,7 @@ type Layer struct {
 	serverCount int32
 	quit        chan bool
 	waitgroup   *sync.WaitGroup
+	mu          sync.Mutex
 }
 
 func NewLayer(node *ipfsutil.Node) *Layer {
@@ -144,23 +160,34 @@ func NewLayer(node *ipfsutil.Node) *Layer {
 }
 
 func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
+	if !lay.IsInOnlineMode() {
+		return nil, transfer.ErrOffline
+	}
+
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
+	fmt.Println("Dial: Lay", lay, peer)
+	fmt.Println("Dial: Dailer", lay.dialer, peer)
+
 	conn, err := lay.dialer.Dial(peer)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("Dial to", peer, "done")
 	return NewConversation(conn, lay.node, peer)
 }
 
 func (lay *Layer) IsInOnlineMode() bool {
-	return lay.listener == nil
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
+	return lay.listener != nil
 }
 
-func (lay *Layer) handleServerConn(conn net.Conn) {
+func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 	atomic.AddInt32(&lay.serverCount, +1)
 	lay.waitgroup.Add(1)
 
-	prot := protocol.NewProtocol(conn, true)
 	for {
 		// Check if we need to quit:
 		select {
@@ -205,8 +232,13 @@ func (lay *Layer) handleServerConn(conn net.Conn) {
 }
 
 func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
 	lay.dialer = d
 	lay.listener = l
+
+	fmt.Println("Connect: Lay", lay)
+	fmt.Println("Connect: Dailer", lay.dialer)
 
 	// Listen for incoming connections as long the listener is open:
 	go func() {
@@ -217,8 +249,21 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 				break
 			}
 
+			streamConn, ok := conn.(*ipfsutil.StreamConn)
+			if !ok {
+				log.Warningf("Denying non-stream conn connection, sorry.")
+				return
+			}
+
+			hash := streamConn.PeerHash()
+			proto, err := wrapConnAsProto(conn, lay.node, hash)
+			if err != nil {
+				log.Warningf("Could not establish connection to %s", hash)
+				return
+			}
+
 			// Handle conn in server mode:
-			go lay.handleServerConn(conn)
+			go lay.handleServerConn(proto)
 		}
 	}()
 
@@ -226,9 +271,15 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 }
 
 func (lay *Layer) Disconnect() error {
+	lay.mu.Lock()
+	defer lay.mu.Unlock()
+	// This should break the loop in Connect()
 	if err := lay.listener.Close(); err != nil {
 		return err
 	}
+
+	fmt.Println("Disconnect: Lay", lay)
+	fmt.Println("Disconnect: Dailer", lay.dialer)
 
 	lay.listener = nil
 	lay.dialer = nil

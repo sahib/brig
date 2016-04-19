@@ -170,18 +170,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	fd, err := os.Open(filepath.Join(brigPath, "remotes.yml"))
-	if err != nil {
-		return nil, err
-	}
-
-	remoteStore, err := NewYAMLRemotes(fd)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: remove?
-	ipfsAPIPort, err := cfg.Int("ipfs.apiport")
+	remoteStore, err := NewYAMLRemotes(filepath.Join(brigPath, "remotes.yml"))
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +180,8 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	ipfsLayer := ipfsutil.NewWithPorts(
+	ipfsLayer := ipfsutil.NewWithPort(
 		filepath.Join(brigPath, "ipfs"),
-		ipfsAPIPort,
 		ipfsSwarmPort,
 	)
 

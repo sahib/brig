@@ -316,3 +316,10 @@ func (es Errors) Error() string {
 		return base
 	}
 }
+
+func (es Errors) ToErr() error {
+	if len(es) > 0 {
+		return es
+	}
+	return nil
+}

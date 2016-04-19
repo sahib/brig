@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -105,7 +106,7 @@ func (cp *ConversationPool) Close() error {
 	cp.open = make(map[id.ID]Conversation)
 	cp.heartbeat = make(map[id.ID]*ipfsutil.Pinger)
 
-	return errs
+	return errs.ToErr()
 }
 
 // dialer uses ipfs to create a net.Conn to another node.
@@ -115,6 +116,7 @@ type dialer struct {
 }
 
 func (d *dialer) Dial(peer id.Peer) (net.Conn, error) {
+	fmt.Println("--- IPFS dialing to ", peer.Hash())
 	return d.node.Dial(peer.Hash(), d.layer.ProtocolID())
 }
 
@@ -156,11 +158,16 @@ func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 		return nil, err
 	}
 
+	fmt.Println("pool set", peer)
 	if err := cn.cp.Set(peer, cnv); err != nil {
 		return nil, err
 	}
 
 	return newAPIClient(cnv, cn.rp.IPFS)
+}
+
+func (c *Connector) Repo() *repo.Repository {
+	return c.rp
 }
 
 func (cn *Connector) IsOnline(peer id.Peer) bool {
@@ -197,8 +204,14 @@ func (cn *Connector) Connect() error {
 		return err
 	}
 
+	if err := cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS}); err != nil {
+		return err
+	}
+
+	fmt.Println("Is connected", cn.rp.ID)
 	go func() {
 		for remote := range cn.rp.Remotes.Iter() {
+			fmt.Println("   connect", remote, cn.rp.ID)
 			cnv, err := cn.layer.Dial(remote)
 			if err != nil {
 				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
@@ -211,7 +224,7 @@ func (cn *Connector) Connect() error {
 		}
 	}()
 
-	return cn.layer.Connect(ls, &dialer{cn.layer, cn.rp.IPFS})
+	return nil
 }
 
 func (cn *Connector) Disconnect() error {
@@ -222,7 +235,7 @@ func (cn *Connector) Disconnect() error {
 	if err := cn.layer.Disconnect(); err != nil {
 		errs = append(errs, err)
 	}
-	return errs
+	return errs.ToErr()
 }
 
 func (cn *Connector) Close() error {

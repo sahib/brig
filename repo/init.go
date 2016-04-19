@@ -22,11 +22,6 @@ func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
 		return err
 	}
 
-	ipfsAPIPort, err := globalRepo.NextIPFSAPIPort()
-	if err != nil {
-		return err
-	}
-
 	ipfsSwarmPort, err := globalRepo.NextIPFSSwarmPort()
 	if err != nil {
 		return err
@@ -37,19 +32,17 @@ func initIntoGlobal(folder string, cfg *yamlConfig.Config) error {
 		return err
 	}
 
-	cfg.Set("ipfs.apiport", ipfsAPIPort)
 	cfg.Set("ipfs.swarmport", ipfsSwarmPort)
 	cfg.Set("daemon.port", daemonPort)
 
 	log.Debugf(
-		"Using ports: %d (ipfs-api) %d (ipfs-swarm) %d (brigd)",
-		ipfsAPIPort, ipfsSwarmPort, daemonPort,
+		"Using ports: %d (ipfs-swarm) %d (brigd)",
+		ipfsSwarmPort, daemonPort,
 	)
 
 	err = globalRepo.AddRepo(global.RepoListEntry{
 		RepoPath:      folder,
 		DaemonPort:    daemonPort,
-		IpfsAPIPort:   ipfsAPIPort,
 		IpfsSwarmPort: ipfsSwarmPort,
 	})
 

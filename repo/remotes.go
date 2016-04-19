@@ -49,6 +49,10 @@ func NewRemote(ID id.ID, hash string) Remote {
 	}
 }
 
+func NewRemoteFromPeer(peer id.Peer) Remote {
+	return NewRemote(peer.ID(), peer.Hash())
+}
+
 // RemoteIsEqual returns true when two remotes have the same id and hash
 func RemoteIsEqual(a, b Remote) bool {
 	return a.ID() == b.ID() && a.Hash() == b.Hash()
@@ -129,15 +133,15 @@ func (yl yamlRemotes) Swap(i, j int) {
 
 type yamlRemoteStore struct {
 	mu     sync.Mutex
-	fd     FileHandle
+	path   string
 	parsed map[id.ID]*yamlRemoteEntry
 }
 
 // NewYAMLRemotes returns a new remote store that stores
 // its data in the open file pointed to by `fd`.
 // (os.Open() returns a suitable FileHandle)
-func NewYAMLRemotes(fd FileHandle) (RemoteStore, error) {
-	remotes := &yamlRemoteStore{fd: fd}
+func NewYAMLRemotes(path string) (RemoteStore, error) {
+	remotes := &yamlRemoteStore{path: path}
 	if err := remotes.load(); err != nil {
 		return nil, err
 	}
@@ -146,11 +150,13 @@ func NewYAMLRemotes(fd FileHandle) (RemoteStore, error) {
 }
 
 func (yr *yamlRemoteStore) load() error {
-	if _, err := yr.fd.Seek(0, os.SEEK_SET); err != nil {
+	fd, err := os.Open(yr.path)
+	if err != nil {
 		return err
 	}
+	defer fd.Close()
 
-	data, err := ioutil.ReadAll(yr.fd)
+	data, err := ioutil.ReadAll(fd)
 	if err != nil {
 		return err
 	}
@@ -165,28 +171,22 @@ func (yr *yamlRemoteStore) load() error {
 }
 
 func (yr *yamlRemoteStore) save() error {
+	fd, err := os.OpenFile(yr.path, os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
 	data, err := yaml.Marshal(yr.parsed)
 	if err != nil {
 		return err
 	}
 
-	if _, err := yr.fd.Seek(0, os.SEEK_SET); err != nil {
+	if _, err := fd.Write(data); err != nil {
 		return err
 	}
 
-	if err := yr.fd.Truncate(0); err != nil {
-		return err
-	}
-
-	if _, err := yr.fd.Write(data); err != nil {
-		return err
-	}
-
-	if err := yr.fd.Sync(); err != nil {
-		return err
-	}
-
-	if _, err := yr.fd.Seek(0, os.SEEK_SET); err != nil {
+	if err := fd.Sync(); err != nil {
 		return err
 	}
 
@@ -269,5 +269,6 @@ func (yr *yamlRemoteStore) Iter() chan Remote {
 }
 
 func (yr *yamlRemoteStore) Close() error {
-	return yr.fd.Close()
+	// TODO: Needed?
+	return nil
 }

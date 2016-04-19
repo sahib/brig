@@ -1,6 +1,7 @@
 package repo
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo/global"
 	"github.com/disorganizer/brig/store"
@@ -38,8 +39,20 @@ type Repository struct {
 	// IPFS management layer.
 	IPFS *ipfsutil.Node
 
-	// TODO: document...
+	// globalRepo is a common file of all brig instances
+	// on a machine. It's purpose to make the brig repos
+	// easily findable and to avoid collisions on network ports.
 	globalRepo *global.Repository
+}
+
+func (rp *Repository) Peer() id.Peer {
+	hash, err := rp.IPFS.Identity()
+	if err != nil {
+		log.Warningf("Cannot retrieve ipfs id: %v", err)
+		hash = ""
+	}
+	return id.NewPeer(rp.ID, hash)
+
 }
 
 func (rp *Repository) AddStore(ID id.ID, st *store.Store) {
