@@ -13,6 +13,7 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -244,8 +245,14 @@ func (cn *Connector) IsOnline(peer id.Peer) bool {
 	return false
 }
 
-func (cn *Connector) Broadcast(req *wire.Request) error {
+func (cn *Connector) Broadcaster() *Broadcaster {
+	return &Broadcaster{cn}
+}
+
+func (cn *Connector) broadcast(req *wire.Request) error {
 	var errs util.Errors
+
+	req.ID = proto.Int64(0)
 
 	for cnv := range cn.cp.Iter() {
 		if err := cnv.SendAsync(req, nil); err != nil {

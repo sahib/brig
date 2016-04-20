@@ -10,9 +10,7 @@ import (
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/moose"
-	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util/testwith"
-	"github.com/gogo/protobuf/proto"
 )
 
 func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
@@ -181,11 +179,10 @@ func TestBroadcast(t *testing.T) {
 		MakeFriends(t, cs...)
 		//time.Sleep(5 * time.Second)
 		a, _, _ := cs[0], cs[1], cs[2]
-		req := &wire.Request{
-			ReqType: wire.RequestType_UPDATE_FILE.Enum(),
-			ID:      proto.Int64(0),
-		}
-		if err := a.Broadcast(req); err != nil {
+
+		// TODO: Fill in with something more meaningful.
+		bcaster := a.Broadcaster()
+		if err := bcaster.FileUpdate(nil); err != nil {
 			t.Errorf("Could not broadcast: %v", err)
 			return
 		}
