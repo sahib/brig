@@ -2,11 +2,16 @@ package security
 
 import (
 	"bytes"
+	"crypto/aes"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"golang.org/x/crypto/sha3"
 )
+
+const nonceSize = 62
 
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
 // that adds authentication of the communication partners.
@@ -15,8 +20,8 @@ import (
 //  Alice                        Bob
 //         ->  Pub_Bob(rA)   ->
 //         <-  Pub_Alice(rB) <-
-//         <------  rA  <------
-//         ------>  rB  ------>
+//         <---  sha3(rA)  <--
+//         --->  sha3(rB)  --->
 //
 // Where rA and rB are randomly generated 8 byte nonces.
 // By being able to decrypt the nonce, alice and bob
@@ -26,15 +31,16 @@ import (
 // if not Close() will be called an Authorised() will return false.
 type AuthReadWriter struct {
 	rwc     io.ReadWriteCloser
-	pubKey  PubKey
-	privKey PrivKey
+	pubKey  Encrypter
+	privKey Decrypter
+	crypted io.ReadWriter
 
 	authorised bool
 }
 
 // NewAuthReadWriter returns a new AuthReadWriter, authenticating rwc.
 // `own` is our own private key, while `partner` is the partner's public key.
-func NewAuthReadWriter(rwc io.ReadWriteCloser, own PrivKey, partner PubKey) *AuthReadWriter {
+func NewAuthReadWriter(rwc io.ReadWriteCloser, own Decrypter, partner Encrypter) *AuthReadWriter {
 	return &AuthReadWriter{
 		rwc:     rwc,
 		privKey: own,
@@ -64,13 +70,8 @@ func writeSizePack(w io.Writer, data []byte) (int, error) {
 // If the block appears too large, it will error out.
 func readSizePack(r io.Reader) ([]byte, error) {
 	sizeBuf := make([]byte, 8)
-	n, err := r.Read(sizeBuf)
-	if err != nil {
+	if _, err := io.ReadFull(r, sizeBuf); err != nil {
 		return nil, err
-	}
-
-	if n < 8 {
-		return nil, fmt.Errorf("Insufficiently sized data: %d", n)
 	}
 
 	size := binary.LittleEndian.Uint64(sizeBuf)
@@ -90,8 +91,8 @@ func readSizePack(r io.Reader) ([]byte, error) {
 
 // runAuth runs the protocol pointed out above.
 func (ath *AuthReadWriter) runAuth() error {
-	// Generate an 8 byte nonce:
-	rA := make([]byte, 8)
+	// Generate our own nonce:
+	rA := make([]byte, nonceSize)
 	if _, err := io.ReadFull(rand.Reader, rA); err != nil {
 		return err
 	}
@@ -112,23 +113,34 @@ func (ath *AuthReadWriter) runAuth() error {
 		return err
 	}
 
-	respForBob, err := ath.privKey.Decrypt(chlFromBob)
+	// nonceFromBob is their nonce:
+	nonceFromBob, err := ath.privKey.Decrypt(chlFromBob)
 	if err != nil {
 		return err
 	}
 
+	if len(nonceFromBob) != nonceSize {
+		return fmt.Errorf(
+			"Bad nonce size from partner: %d (not %d)",
+			len(nonceFromBob),
+			nonceSize,
+		)
+	}
+
 	// Send back our challenge-response
-	if _, err := ath.rwc.Write(respForBob); err != nil {
+	respHash := sha3.Sum512(nonceFromBob)
+	if _, err := ath.rwc.Write(respHash[:]); err != nil {
 		return err
 	}
 
 	// Read the response from bob to our challenge
-	respFromBob := make([]byte, 8)
-	if _, err := io.ReadFull(ath.rwc, respFromBob); err != nil {
+	hashFromBob := make([]byte, 512/8)
+	if _, err := io.ReadFull(ath.rwc, hashFromBob); err != nil {
 		return err
 	}
 
-	if !bytes.Equal(respFromBob, rA) {
+	ownHash := sha3.Sum512(rA)
+	if !bytes.Equal(hashFromBob, ownHash[:]) {
 		return fmt.Errorf("Bad nonce; might communicate with imposter")
 	}
 
@@ -146,6 +158,20 @@ func (ath *AuthReadWriter) runAuth() error {
 		return fmt.Errorf("Received no OK: %v", okBuf)
 	}
 
+	keySource := make([]byte, nonceSize)
+	for i := range keySource {
+		keySource[i] = nonceFromBob[i] ^ rA[i]
+	}
+
+	key := Scrypt(keySource, keySource[:nonceSize/2], 32)
+	inv := Scrypt(keySource, keySource[nonceSize/2:], aes.BlockSize)
+
+	rw, err := WrapReadWriter(inv, key, ath.rwc)
+	if err != nil {
+		return err
+	}
+
+	ath.crypted = rw
 	ath.authorised = true
 	return nil
 }
@@ -166,7 +192,7 @@ func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	return ath.rwc.Read(buf)
+	return ath.crypted.Read(buf)
 }
 
 func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
@@ -174,5 +200,5 @@ func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	return ath.rwc.Write(buf)
+	return ath.crypted.Write(buf)
 }

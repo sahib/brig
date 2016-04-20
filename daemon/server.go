@@ -15,7 +15,7 @@ import (
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/moose"
 	"github.com/disorganizer/brig/util/protocol"
-	"github.com/disorganizer/brig/util/tunnel"
+	"github.com/disorganizer/brig/util/security"
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
@@ -179,14 +179,13 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 		d.maxConnections <- allowOneConn{}
 	}()
 
-	tnl, err := tunnel.NewEllipticTunnel(conn)
+	tnl, err := security.NewEllipticTunnel(conn)
 	if err != nil {
 		log.Error("Tunnel failed", err)
 		return
 	}
 
-	// TODO: make NewEllipticTunnel serve as Tunnel?
-	p := protocol.NewProtocol(tnl, nil, false)
+	p := protocol.NewProtocol(tnl, false)
 
 	// Loop until client disconnect or dies otherwise:
 	for {

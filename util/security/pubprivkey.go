@@ -34,9 +34,11 @@ type PubKey interface {
 	Encrypt(data []byte) ([]byte, error)
 }
 
-// Tunnel knows how encrypt and decrypt data.
-type Tunnel interface {
+type Encrypter interface {
 	Encrypt(data []byte) ([]byte, error)
+}
+
+type Decrypter interface {
 	Decrypt(data []byte) ([]byte, error)
 }
 

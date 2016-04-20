@@ -437,7 +437,7 @@ func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
 		})
 	}
 
-	enc := protocol.NewProtocolWriter(w, nil, true)
+	enc := protocol.NewProtocolWriter(w, true)
 	if err := enc.Send(dirlist); err != nil {
 		return err
 	}
@@ -508,7 +508,7 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 func (s *Store) Export(w io.Writer) (err error) {
 	// TODO: Export commits (not implemented)
 	// TODO: Export pinning information.
-	enc := protocol.NewProtocolWriter(w, nil, true)
+	enc := protocol.NewProtocolWriter(w, true)
 
 	s.Root.Walk(true, func(child *File) bool {
 		// Note: Walk() already calls Lock()
@@ -549,7 +549,7 @@ func (s *Store) Export(w io.Writer) (err error) {
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
 func (s *Store) Import(r io.Reader) error {
-	dec := protocol.NewProtocolReader(r, nil, true)
+	dec := protocol.NewProtocolReader(r, true)
 
 	for {
 		pack := &wire.Pack{}

@@ -3,7 +3,7 @@
 // before the first read or write (or triggered manually using Exchange())
 //
 // All communication over the tunnel is encrypted with AES using CFB mode.
-package tunnel
+package security
 
 import (
 	"crypto"
@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/disorganizer/brig/util/security"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -70,9 +69,7 @@ type ecdhTunnel struct {
 	privKey crypto.PrivateKey
 	pubKey  crypto.PublicKey
 
-	// CFB streaming ciphers for Read()/Write():
-	streamW *cipher.StreamWriter
-	streamR *cipher.StreamReader
+	crypted io.ReadWriter
 }
 
 // NewEllipticTunnel creates an io.ReadWriter that transparently encrypts all data.
@@ -92,7 +89,7 @@ func NewEllipticTunnel(rw io.ReadWriter) (*ecdhTunnel, error) {
 
 // Exchange triggers the Diffie Hellman key exchange manually.
 func (tnl *ecdhTunnel) Exchange() error {
-	if tnl.streamW != nil || tnl.streamR != nil {
+	if tnl.crypted != nil {
 		return nil
 	}
 
@@ -117,23 +114,40 @@ func (tnl *ecdhTunnel) Exchange() error {
 	}
 
 	// Transform the secret to a usable 32 byte key:
-	key := security.Scrypt(secret, secret[:16], 32)
-	inv := security.Scrypt(secret, secret[16:], aes.BlockSize)
+	key := Scrypt(secret, secret[:16], 32)
+	inv := Scrypt(secret, secret[16:], aes.BlockSize)
 
-	blockCipher, err := aes.NewCipher(key)
+	rw, err := WrapReadWriter(inv, key, tnl.ReadWriter)
 	if err != nil {
 		return err
 	}
 
-	tnl.streamW = &cipher.StreamWriter{
-		S: cipher.NewCFBEncrypter(blockCipher, inv),
-		W: tnl.ReadWriter,
-	}
-	tnl.streamR = &cipher.StreamReader{
-		S: cipher.NewCFBDecrypter(blockCipher, inv),
-		R: tnl.ReadWriter,
-	}
+	tnl.crypted = rw
 	return nil
+}
+
+type rwCapsule struct {
+	io.Reader
+	io.Writer
+}
+
+func WrapReadWriter(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
+	blockCipher, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	streamW := &cipher.StreamWriter{
+		S: cipher.NewCFBEncrypter(blockCipher, iv),
+		W: rw,
+	}
+
+	streamR := &cipher.StreamReader{
+		S: cipher.NewCFBDecrypter(blockCipher, iv),
+		R: rw,
+	}
+
+	return rwCapsule{streamR, streamW}, nil
 }
 
 // Read decrypts underlying data using CFB and will trigger a key exchange
@@ -143,7 +157,7 @@ func (tnl *ecdhTunnel) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	return tnl.streamR.Read(buf)
+	return tnl.crypted.Read(buf)
 }
 
 // Write encrypts incoming data using CFB and will trigger a key exchange
@@ -153,6 +167,6 @@ func (tnl *ecdhTunnel) Write(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	n, e := tnl.streamW.Write(buf)
+	n, e := tnl.crypted.Write(buf)
 	return n, e
 }

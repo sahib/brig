@@ -211,7 +211,7 @@ func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
 		return nil, err
 	}
 
-	dec := protocol.NewProtocolReader(bytes.NewReader(listData), nil, true)
+	dec := protocol.NewProtocolReader(bytes.NewReader(listData), true)
 	dirlist := &storewire.Dirlist{}
 
 	if err := dec.Recv(dirlist); err != nil {

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/disorganizer/brig/util/security"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 )
@@ -20,12 +19,9 @@ const (
 	MessageSizeLimit = 5 * 1024 * 1024
 )
 
-// ErrMalformed is returned when the size tag is missing
-// or is too short. Bad data in the payload will return a protobuf error.
 var (
-	ErrMalformed = errors.New("Malformed protocol data (not enough data)")
-	ErrNoReader  = errors.New("Protocol was created without reader part")
-	ErrNoWriter  = errors.New("Protocol was created without writer part")
+	ErrNoReader = errors.New("Protocol was created without reader part")
+	ErrNoWriter = errors.New("Protocol was created without writer part")
 )
 
 // ErrMessageTooBig is returned when the received message is bigger
@@ -42,19 +38,18 @@ type Protocol struct {
 	r        io.Reader
 	w        io.Writer
 	compress bool
-	tnl      security.Tunnel
 }
 
-func NewProtocol(rw io.ReadWriter, tnl security.Tunnel, compress bool) *Protocol {
-	return &Protocol{r: rw, w: rw, compress: compress, tnl: tnl}
+func NewProtocol(rw io.ReadWriter, compress bool) *Protocol {
+	return &Protocol{r: rw, w: rw, compress: compress}
 }
 
-func NewProtocolReader(r io.Reader, tnl security.Tunnel, compress bool) *Protocol {
-	return &Protocol{r: r, w: nil, compress: compress, tnl: tnl}
+func NewProtocolReader(r io.Reader, compress bool) *Protocol {
+	return &Protocol{r: r, w: nil, compress: compress}
 }
 
-func NewProtocolWriter(w io.Writer, tnl security.Tunnel, compress bool) *Protocol {
-	return &Protocol{r: nil, w: w, compress: compress, tnl: tnl}
+func NewProtocolWriter(w io.Writer, compress bool) *Protocol {
+	return &Protocol{r: nil, w: w, compress: compress}
 }
 
 func (p *Protocol) Send(msg proto.Message) error {
@@ -68,14 +63,7 @@ func (p *Protocol) Send(msg proto.Message) error {
 	}
 
 	if p.compress {
-		data = snappy.Encode(data, data)
-	}
-
-	if p.tnl != nil {
-		data, err = p.tnl.Encrypt(data)
-		if err != nil {
-			return err
-		}
+		data = snappy.Encode(nil, data)
 	}
 
 	sizeBuf := make([]byte, 4)
@@ -97,14 +85,8 @@ func (p *Protocol) Recv(resp proto.Message) error {
 	}
 
 	sizeBuf := make([]byte, 4)
-	n, err := p.r.Read(sizeBuf)
-
-	if err != nil {
+	if _, err := io.ReadAtLeast(p.r, sizeBuf, len(sizeBuf)); err != nil {
 		return err
-	}
-
-	if n < 4 {
-		return ErrMalformed
 	}
 
 	size := binary.LittleEndian.Uint32(sizeBuf)
@@ -112,27 +94,19 @@ func (p *Protocol) Recv(resp proto.Message) error {
 		return ErrMessageTooBig{size}
 	}
 
-	data := make([]byte, 0, size)
-	buf := bytes.NewBuffer(data)
+	buf := bytes.NewBuffer(make([]byte, 0, size))
 
-	if _, err = io.CopyN(buf, p.r, int64(size)); err != nil {
+	if _, err := io.CopyN(buf, p.r, int64(size)); err != nil {
 		return err
 	}
 
-	if p.tnl != nil {
-		data, err = p.tnl.Decrypt(data)
-		if err != nil {
-			return err
-		}
-	}
+	data := buf.Bytes()
 
+	var err error
 	if p.compress {
-		data, err = snappy.Decode(buf.Bytes(), buf.Bytes())
-		if err != nil {
+		if data, err = snappy.Decode(nil, data); err != nil {
 			return err
 		}
-	} else {
-		data = buf.Bytes()
 	}
 
 	if err := proto.Unmarshal(data, resp); err != nil {
@@ -152,9 +126,9 @@ type ProtocolEncoder struct {
 // NewProtocolEncoder returns a valid ProtocolEncoder, which
 // will compress it's data when flagged accordingly.
 // If tnl is non-nil it will also encrypt the data.
-func NewProtocolEncoder(tnl security.Tunnel, compress bool) *ProtocolEncoder {
+func NewProtocolEncoder(compress bool) *ProtocolEncoder {
 	b := &bytes.Buffer{}
-	return &ProtocolEncoder{p: NewProtocolWriter(b, tnl, compress), b: b}
+	return &ProtocolEncoder{p: NewProtocolWriter(b, compress), b: b}
 }
 
 // Encode returns a byte representation of `msg`.
@@ -176,8 +150,8 @@ type ProtocolDecoder struct {
 
 // NewProtocolDecoder returns a new ProtocolDecoder which
 // decompresses the data passed into it if needed.
-func NewProtocolDecoder(tnl security.Tunnel, decompress bool) *ProtocolDecoder {
-	return &ProtocolDecoder{p: NewProtocolReader(nil, tnl, decompress)}
+func NewProtocolDecoder(decompress bool) *ProtocolDecoder {
+	return &ProtocolDecoder{p: NewProtocolReader(nil, decompress)}
 }
 
 // Decode decodes `data` and writes the result into `msg`.

@@ -11,7 +11,7 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/util/protocol"
-	"github.com/disorganizer/brig/util/tunnel"
+	"github.com/disorganizer/brig/util/security"
 )
 
 // Client is the client API to brigd.
@@ -44,7 +44,7 @@ func Dial(port int) (*Client, error) {
 	}
 
 	client.conn = conn
-	tnl, err := tunnel.NewEllipticTunnel(conn)
+	tnl, err := security.NewEllipticTunnel(conn)
 	if err != nil {
 		log.Error("Tunneling failed: ", err)
 		return nil, err
@@ -59,7 +59,7 @@ func Dial(port int) (*Client, error) {
 // for the response and puts it in the Recv channel.
 func (c *Client) handleMessages(tnl io.ReadWriter) {
 	// We don't need compression for a local socket:
-	protocol := protocol.NewProtocol(tnl, nil, false)
+	protocol := protocol.NewProtocol(tnl, false)
 
 	for {
 		select {

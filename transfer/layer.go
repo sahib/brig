@@ -7,7 +7,6 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/disorganizer/brig/util/security"
 )
 
 var (
@@ -84,15 +83,4 @@ type Layer interface {
 	// that will be used to differentiate between other protocols.
 	// Example: "/brig/mqtt/v1"
 	ProtocolID() string
-
-	SetAuthManager(authMgr AuthManager)
-}
-
-// AuthManager shall be passed to a layer upon creation.
-// The layer will use it to encrypt the communication
-// between the peers and handle the login procedure.
-type AuthManager interface {
-	// TunnelFor should return a AuthTunnel that
-	// encrypts the traffic between us and `hash`.
-	TunnelFor(hash string) (security.Tunnel, error)
 }

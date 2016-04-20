@@ -15,7 +15,6 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/security"
-	"github.com/disorganizer/brig/util/tunnel"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -28,21 +27,7 @@ type Conversation struct {
 	notifees map[int64]transfer.AsyncFunc
 }
 
-type closeWrapper struct {
-	io.ReadWriter
-	io.Closer
-}
-
-func wrapConnAsProto(authMgr transfer.AuthManager, conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
-	tnl, err := tunnel.NewEllipticTunnel(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tnl.Exchange(); err != nil {
-		return nil, err
-	}
-
+func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
 	pub, err := node.PublicKeyFor(peerHash)
 	if err != nil {
 		return nil, err
@@ -53,27 +38,17 @@ func wrapConnAsProto(authMgr transfer.AuthManager, conn net.Conn, node *ipfsutil
 		return nil, err
 	}
 
-	// Use tunnel for R/W; but close `conn` on Close()
-	closeWrapper := closeWrapper{
-		ReadWriter: tnl,
-		Closer:     conn,
-	}
-
-	authrw := security.NewAuthReadWriter(closeWrapper, priv, pub)
+	// TODO: also sign messages?
+	authrw := security.NewAuthReadWriter(conn, priv, pub)
 	if err := authrw.Trigger(); err != nil {
 		return nil, err
 	}
 
-	protoTnl, err := authMgr.TunnelFor(peerHash)
-	if err != nil {
-		return nil, err
-	}
-
-	return protocol.NewProtocol(authrw, protoTnl, true), nil
+	return protocol.NewProtocol(authrw, true), nil
 }
 
-func NewConversation(authMgr transfer.AuthManager, conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
-	proto, err := wrapConnAsProto(authMgr, conn, node, peer.Hash())
+func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
+	proto, err := wrapConnAsProto(conn, node, peer.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +130,6 @@ type Layer struct {
 	dialer   transfer.Dialer
 	listener net.Listener
 	handlers handlerMap
-	authMgr  transfer.AuthManager
 
 	// Cancellation related:
 	parentCtx context.Context
@@ -191,7 +165,7 @@ func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 		return nil, err
 	}
 
-	return NewConversation(lay.authMgr, conn, lay.node, peer)
+	return NewConversation(conn, lay.node, peer)
 }
 
 func (lay *Layer) IsInOnlineMode() bool {
@@ -290,7 +264,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 
 			// Attempt to establish a full authenticated connection:
 			hash := streamConn.PeerHash()
-			proto, err := wrapConnAsProto(lay.authMgr, conn, lay.node, hash)
+			proto, err := wrapConnAsProto(conn, lay.node, hash)
 			if err != nil {
 				log.Warningf(
 					"Could not establish incoming connection to %s: %v",
@@ -327,10 +301,6 @@ func (lay *Layer) Disconnect() error {
 
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
-}
-
-func (lay *Layer) SetAuthManager(authMgr transfer.AuthManager) {
-	lay.authMgr = authMgr
 }
 
 func (lay *Layer) ProtocolID() string {

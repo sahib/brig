@@ -13,7 +13,6 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/disorganizer/brig/util/security"
 )
 
 var (
@@ -29,41 +28,6 @@ type Connector struct {
 
 	// Conversation pool handling.
 	cp *conversationPool
-}
-
-type authTunnel struct {
-	priv security.PrivKey
-	pub  security.PubKey
-}
-
-func (at *authTunnel) Encrypt(data []byte) ([]byte, error) {
-	// TODO: use keys.
-	// return at.pub.Encrypt(data)
-	return data, nil
-}
-
-func (at *authTunnel) Decrypt(data []byte) ([]byte, error) {
-	// TODO: use keys.
-	// return at.priv.Decrypt(data)
-	return data, nil
-}
-
-type authManager struct {
-	node *ipfsutil.Node
-}
-
-func (am *authManager) TunnelFor(hash string) (security.Tunnel, error) {
-	pub, err := am.node.PublicKeyFor(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	priv, err := am.node.PrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	return &authTunnel{priv, pub}, nil
 }
 
 type conversationPool struct {
@@ -228,8 +192,6 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 		layer: layer,
 		cp:    newConversationPool(rp),
 	}
-
-	layer.SetAuthManager(&authManager{rp.IPFS})
 
 	handlerMap := map[wire.RequestType]HandlerFunc{
 		wire.RequestType_FETCH:         cnc.handleFetch,

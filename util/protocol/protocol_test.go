@@ -9,11 +9,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-// TODO: Test encrypt tunnel functionality.
-
 func testProtocol(t *testing.T, compress bool) {
 	b := &bytes.Buffer{}
-	p := NewProtocol(b, nil, compress)
+	alice := NewProtocol(b, compress)
+	bob := NewProtocol(b, compress)
 
 	// Test with varying potential for compression:
 	for i := 0; i < 5; i++ {
@@ -22,7 +21,7 @@ func testProtocol(t *testing.T, compress bool) {
 			Data:    testutil.CreateDummyBuf(int64(i) * 255),
 		}
 
-		if err := p.Send(msg); err != nil {
+		if err := alice.Send(msg); err != nil {
 			t.Errorf("Send failed: %v", err)
 			return
 		}
@@ -32,7 +31,7 @@ func testProtocol(t *testing.T, compress bool) {
 			ID:      proto.Int64(0),
 		}
 
-		if err := p.Recv(remoteMsg); err != nil {
+		if err := bob.Recv(remoteMsg); err != nil {
 			t.Errorf("Recv failed: %v", err)
 			return
 		}

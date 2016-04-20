@@ -75,7 +75,7 @@ func (kp *KeyPair) Decrypt(data []byte) ([]byte, error) {
 	return kp.priv.Decrypt(rand.Reader, data, opts)
 }
 
-func genKeyPair(t *testing.T) (PrivateKey, PublicKey, error) {
+func genKeyPair(t *testing.T) (Decrypter, Encrypter, error) {
 	// Generate an dummy pub/priv keypair using ecdsa
 	// Note: We just use the same pair for one auther.
 	// In practice, this should be
@@ -91,7 +91,6 @@ func genKeyPair(t *testing.T) (PrivateKey, PublicKey, error) {
 
 func TestAuthProcess(t *testing.T) {
 	withLoopbackConnection(t, func(a, b net.Conn) {
-
 		aliPriv, aliPub, err := genKeyPair(t)
 		if err != nil {
 			return
