@@ -9,9 +9,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+// TODO: Test encrypt tunnel functionality.
+
 func testProtocol(t *testing.T, compress bool) {
 	b := &bytes.Buffer{}
-	p := NewProtocol(b, compress)
+	p := NewProtocol(b, nil, compress)
 
 	// Test with varying potential for compression:
 	for i := 0; i < 5; i++ {

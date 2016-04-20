@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/disorganizer/brig/util/security"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 )
@@ -41,18 +42,19 @@ type Protocol struct {
 	r        io.Reader
 	w        io.Writer
 	compress bool
+	tnl      security.Tunnel
 }
 
-func NewProtocol(rw io.ReadWriter, compress bool) *Protocol {
-	return &Protocol{r: rw, w: rw, compress: compress}
+func NewProtocol(rw io.ReadWriter, tnl security.Tunnel, compress bool) *Protocol {
+	return &Protocol{r: rw, w: rw, compress: compress, tnl: tnl}
 }
 
-func NewProtocolReader(r io.Reader, compress bool) *Protocol {
-	return &Protocol{r: r, w: nil, compress: compress}
+func NewProtocolReader(r io.Reader, tnl security.Tunnel, compress bool) *Protocol {
+	return &Protocol{r: r, w: nil, compress: compress, tnl: tnl}
 }
 
-func NewProtocolWriter(w io.Writer, compress bool) *Protocol {
-	return &Protocol{r: nil, w: w, compress: compress}
+func NewProtocolWriter(w io.Writer, tnl security.Tunnel, compress bool) *Protocol {
+	return &Protocol{r: nil, w: w, compress: compress, tnl: tnl}
 }
 
 func (p *Protocol) Send(msg proto.Message) error {
@@ -67,6 +69,13 @@ func (p *Protocol) Send(msg proto.Message) error {
 
 	if p.compress {
 		data = snappy.Encode(data, data)
+	}
+
+	if p.tnl != nil {
+		data, err = p.tnl.Encrypt(data)
+		if err != nil {
+			return err
+		}
 	}
 
 	sizeBuf := make([]byte, 4)
@@ -110,6 +119,13 @@ func (p *Protocol) Recv(resp proto.Message) error {
 		return err
 	}
 
+	if p.tnl != nil {
+		data, err = p.tnl.Decrypt(data)
+		if err != nil {
+			return err
+		}
+	}
+
 	if p.compress {
 		data, err = snappy.Decode(buf.Bytes(), buf.Bytes())
 		if err != nil {
@@ -135,9 +151,10 @@ type ProtocolEncoder struct {
 
 // NewProtocolEncoder returns a valid ProtocolEncoder, which
 // will compress it's data when flagged accordingly.
-func NewProtocolEncoder(compress bool) *ProtocolEncoder {
+// If tnl is non-nil it will also encrypt the data.
+func NewProtocolEncoder(tnl security.Tunnel, compress bool) *ProtocolEncoder {
 	b := &bytes.Buffer{}
-	return &ProtocolEncoder{p: NewProtocolWriter(b, compress), b: b}
+	return &ProtocolEncoder{p: NewProtocolWriter(b, tnl, compress), b: b}
 }
 
 // Encode returns a byte representation of `msg`.
@@ -159,8 +176,8 @@ type ProtocolDecoder struct {
 
 // NewProtocolDecoder returns a new ProtocolDecoder which
 // decompresses the data passed into it if needed.
-func NewProtocolDecoder(decompress bool) *ProtocolDecoder {
-	return &ProtocolDecoder{p: NewProtocolReader(nil, decompress)}
+func NewProtocolDecoder(tnl security.Tunnel, decompress bool) *ProtocolDecoder {
+	return &ProtocolDecoder{p: NewProtocolReader(nil, tnl, decompress)}
 }
 
 // Decode decodes `data` and writes the result into `msg`.

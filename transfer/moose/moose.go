@@ -2,6 +2,7 @@ package moose
 
 import (
 	"io"
+	"math/rand"
 	"net"
 	"sync"
 
@@ -32,7 +33,7 @@ type closeWrapper struct {
 	io.Closer
 }
 
-func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
+func wrapConnAsProto(authMgr transfer.AuthManager, conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
 	tnl, err := tunnel.NewEllipticTunnel(conn)
 	if err != nil {
 		return nil, err
@@ -63,11 +64,16 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 		return nil, err
 	}
 
-	return protocol.NewProtocol(authrw, true), nil
+	protoTnl, err := authMgr.TunnelFor(peerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return protocol.NewProtocol(authrw, protoTnl, true), nil
 }
 
-func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
-	proto, err := wrapConnAsProto(conn, node, peer.Hash())
+func NewConversation(authMgr transfer.AuthManager, conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
+	proto, err := wrapConnAsProto(authMgr, conn, node, peer.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +131,10 @@ func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFun
 	cnv.Lock()
 	defer cnv.Unlock()
 
+	// Add a nonce so that the same message is guaranteed to result
+	// in a different ciphertext:
+	req.Nonce = proto.Int64(rand.Int63())
+
 	// Broadcast messages usually do not register a callback.
 	// (it wouldn't have been called anyways)
 	if callback != nil {
@@ -145,6 +155,7 @@ type Layer struct {
 	dialer   transfer.Dialer
 	listener net.Listener
 	handlers handlerMap
+	authMgr  transfer.AuthManager
 
 	// Cancellation related:
 	parentCtx context.Context
@@ -180,7 +191,7 @@ func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 		return nil, err
 	}
 
-	return NewConversation(conn, lay.node, peer)
+	return NewConversation(lay.authMgr, conn, lay.node, peer)
 }
 
 func (lay *Layer) IsInOnlineMode() bool {
@@ -236,6 +247,7 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 		// Auto-fill the type and ID fields from the response:
 		resp.ReqType = req.ReqType
 		resp.ID = req.ID
+		resp.Nonce = req.Nonce
 
 		log.Debugf("Sending back %v", resp)
 
@@ -279,7 +291,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 
 			// Attempt to establish a full authenticated connection:
 			hash := streamConn.PeerHash()
-			proto, err := wrapConnAsProto(conn, lay.node, hash)
+			proto, err := wrapConnAsProto(lay.authMgr, conn, lay.node, hash)
 			if err != nil {
 				log.Warningf(
 					"Could not establish incoming connection to %s: %v",
@@ -316,6 +328,10 @@ func (lay *Layer) Disconnect() error {
 
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
+}
+
+func (lay *Layer) SetAuthManager(authMgr transfer.AuthManager) {
+	lay.authMgr = authMgr
 }
 
 func (lay *Layer) ProtocolID() string {

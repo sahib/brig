@@ -70,7 +70,7 @@ func (x *RequestType) UnmarshalJSON(data []byte) error {
 type Request struct {
 	ReqType          *RequestType `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
-	BroadcastData    []byte       `protobuf:"bytes,3,opt,name=broadcast_data" json:"broadcast_data,omitempty"`
+	Nonce            *int64       `protobuf:"varint,3,req,name=nonce" json:"nonce,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
 }
 
@@ -92,11 +92,11 @@ func (m *Request) GetID() int64 {
 	return 0
 }
 
-func (m *Request) GetBroadcastData() []byte {
-	if m != nil {
-		return m.BroadcastData
+func (m *Request) GetNonce() int64 {
+	if m != nil && m.Nonce != nil {
+		return *m.Nonce
 	}
-	return nil
+	return 0
 }
 
 type StoreVersionResponse struct {
@@ -118,7 +118,7 @@ func (m *StoreVersionResponse) GetVersion() int32 {
 type Response struct {
 	ReqType          *RequestType          `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
 	ID               *int64                `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
-	Data             []byte                `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+	Nonce            *int64                `protobuf:"varint,3,req,name=nonce" json:"nonce,omitempty"`
 	Error            *string               `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
 	StoreVersionResp *StoreVersionResponse `protobuf:"bytes,5,opt,name=store_version_resp" json:"store_version_resp,omitempty"`
 	XXX_unrecognized []byte                `json:"-"`
@@ -142,11 +142,11 @@ func (m *Response) GetID() int64 {
 	return 0
 }
 
-func (m *Response) GetData() []byte {
-	if m != nil {
-		return m.Data
+func (m *Response) GetNonce() int64 {
+	if m != nil && m.Nonce != nil {
+		return *m.Nonce
 	}
-	return nil
+	return 0
 }
 
 func (m *Response) GetError() string {
@@ -198,11 +198,12 @@ func (m *Request) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintProtocol(data, i, uint64(*m.ID))
 	}
-	if m.BroadcastData != nil {
-		data[i] = 0x1a
+	if m.Nonce == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x18
 		i++
-		i = encodeVarintProtocol(data, i, uint64(len(m.BroadcastData)))
-		i += copy(data[i:], m.BroadcastData)
+		i = encodeVarintProtocol(data, i, uint64(*m.Nonce))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -267,11 +268,12 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintProtocol(data, i, uint64(*m.ID))
 	}
-	if m.Data != nil {
-		data[i] = 0x1a
+	if m.Nonce == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x18
 		i++
-		i = encodeVarintProtocol(data, i, uint64(len(m.Data)))
-		i += copy(data[i:], m.Data)
+		i = encodeVarintProtocol(data, i, uint64(*m.Nonce))
 	}
 	if m.Error != nil {
 		data[i] = 0x22
@@ -331,9 +333,8 @@ func (m *Request) Size() (n int) {
 	if m.ID != nil {
 		n += 1 + sovProtocol(uint64(*m.ID))
 	}
-	if m.BroadcastData != nil {
-		l = len(m.BroadcastData)
-		n += 1 + l + sovProtocol(uint64(l))
+	if m.Nonce != nil {
+		n += 1 + sovProtocol(uint64(*m.Nonce))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -362,9 +363,8 @@ func (m *Response) Size() (n int) {
 	if m.ID != nil {
 		n += 1 + sovProtocol(uint64(*m.ID))
 	}
-	if m.Data != nil {
-		l = len(m.Data)
-		n += 1 + l + sovProtocol(uint64(l))
+	if m.Nonce != nil {
+		n += 1 + sovProtocol(uint64(*m.Nonce))
 	}
 	if m.Error != nil {
 		l = len(*m.Error)
@@ -466,10 +466,10 @@ func (m *Request) Unmarshal(data []byte) error {
 			m.ID = &v
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BroadcastData", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nonce", wireType)
 			}
-			var byteLen int
+			var v int64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProtocol
@@ -479,20 +479,13 @@ func (m *Request) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
+				v |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProtocol
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BroadcastData = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
+			m.Nonce = &v
+			hasFields[0] |= uint64(0x00000004)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtocol(data[iNdEx:])
@@ -513,6 +506,9 @@ func (m *Request) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -670,10 +666,10 @@ func (m *Response) Unmarshal(data []byte) error {
 			m.ID = &v
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nonce", wireType)
 			}
-			var byteLen int
+			var v int64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProtocol
@@ -683,20 +679,13 @@ func (m *Response) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
+				v |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProtocol
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
+			m.Nonce = &v
+			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
@@ -780,6 +769,9 @@ func (m *Response) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

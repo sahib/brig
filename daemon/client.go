@@ -59,7 +59,7 @@ func Dial(port int) (*Client, error) {
 // for the response and puts it in the Recv channel.
 func (c *Client) handleMessages(tnl io.ReadWriter) {
 	// We don't need compression for a local socket:
-	protocol := protocol.NewProtocol(tnl, false)
+	protocol := protocol.NewProtocol(tnl, nil, false)
 
 	for {
 		select {

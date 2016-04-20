@@ -13,7 +13,7 @@ import (
 
 // APIClient is a high-level client that talks to
 // other peers in brig's network. Calls on it will
-// directly
+// directly talk to the other side.
 type APIClient struct {
 	cnv   Conversation
 	node  *ipfsutil.Node

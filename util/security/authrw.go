@@ -8,16 +8,6 @@ import (
 	"io"
 )
 
-// PublicKey is used as encryption key when passed to AuthReadWriter.
-type PublicKey interface {
-	Encrypt(data []byte) ([]byte, error)
-}
-
-// PrivateKey is used as decryption key when passed to AuthReadWriter.
-type PrivateKey interface {
-	Decrypt(data []byte) ([]byte, error)
-}
-
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
 // that adds authentication of the communication partners.
 // It does this by employing the following protocol:
@@ -36,15 +26,15 @@ type PrivateKey interface {
 // if not Close() will be called an Authorised() will return false.
 type AuthReadWriter struct {
 	rwc     io.ReadWriteCloser
-	pubKey  PublicKey
-	privKey PrivateKey
+	pubKey  PubKey
+	privKey PrivKey
 
 	authorised bool
 }
 
 // NewAuthReadWriter returns a new AuthReadWriter, authenticating rwc.
 // `own` is our own private key, while `partner` is the partner's public key.
-func NewAuthReadWriter(rwc io.ReadWriteCloser, own PrivateKey, partner PublicKey) *AuthReadWriter {
+func NewAuthReadWriter(rwc io.ReadWriteCloser, own PrivKey, partner PubKey) *AuthReadWriter {
 	return &AuthReadWriter{
 		rwc:     rwc,
 		privKey: own,

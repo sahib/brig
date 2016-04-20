@@ -186,7 +186,8 @@ func (d *Server) handleConnection(ctx context.Context, conn net.Conn) {
 		return
 	}
 
-	p := protocol.NewProtocol(tnl, false)
+	// TODO: make NewEllipticTunnel serve as Tunnel?
+	p := protocol.NewProtocol(tnl, nil, false)
 
 	// Loop until client disconnect or dies otherwise:
 	for {

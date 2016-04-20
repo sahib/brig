@@ -2,12 +2,12 @@ package transfer
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer/wire"
+	"github.com/disorganizer/brig/util/security"
 )
 
 var (
@@ -84,53 +84,25 @@ type Layer interface {
 	// that will be used to differentiate between other protocols.
 	// Example: "/brig/mqtt/v1"
 	ProtocolID() string
+
+	SetAuthManager(authMgr AuthManager)
 }
 
 // AuthManager shall be passed to a layer upon creation.
 // The layer will use it to encrypt the communication
 // between the peers and handle the login procedure.
 type AuthManager interface {
-	// Authenticate decides wether `id` is allowed to access
-	// this node when by looking at the credentials in `cred`.
-	Authenticate(id string, cred []byte) error
-
-	// Credentials return the login credentials used
-	// when talking to other clients.
-	Credentials(peer id.Peer) ([]byte, error)
-
 	// TunnelFor should return a AuthTunnel that
-	// encrypts the traffic between us and `id`.
-	TunnelFor(id id.Peer) (AuthTunnel, error)
-}
-
-// AuthTunnel secures the communication between two peers
-// in a implementation defined manner.
-type AuthTunnel interface {
-	// Encrypt encrypts `data`.
-	Encrypt(data []byte) ([]byte, error)
-
-	// Decrypt decrypts `data`.
-	Decrypt(data []byte) ([]byte, error)
+	// encrypts the traffic between us and `hash`.
+	TunnelFor(hash string) (security.Tunnel, error)
 }
 
 // mockAuthManager fullfills AuthManager by doing nothing.
 // It is meant for tests. Production code users will be shot.
 type mockAuthManager bool
 
-// Authenticate just nods yes to everything.
-func (y mockAuthManager) Authenticate(id string, cred []byte) error {
-	if y {
-		return nil
-	} else {
-		return fmt.Errorf("You shall not pass")
-	}
-}
-
-func (_ mockAuthManager) Credentials(id id.Peer) ([]byte, error) {
-	return []byte("wald"), nil
-}
-
-func (_ mockAuthManager) TunnelFor(id id.Peer) (AuthTunnel, error) {
+// TODO: Move to util/security?
+func (_ mockAuthManager) TunnelFor(hash string) (security.Tunnel, error) {
 	return mockAuthTunnel{}, nil
 }
 

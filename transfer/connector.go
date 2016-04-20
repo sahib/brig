@@ -13,6 +13,7 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/disorganizer/brig/util/security"
 )
 
 var (
@@ -27,10 +28,45 @@ type Connector struct {
 	rp *repo.Repository
 
 	// Conversation pool handling.
-	cp *ConversationPool
+	cp *conversationPool
 }
 
-type ConversationPool struct {
+type authTunnel struct {
+	priv security.PrivKey
+	pub  security.PubKey
+}
+
+func (at *authTunnel) Encrypt(data []byte) ([]byte, error) {
+	// TODO: use keys.
+	// return at.pub.Encrypt(data)
+	return data, nil
+}
+
+func (at *authTunnel) Decrypt(data []byte) ([]byte, error) {
+	// TODO: use keys.
+	// return at.priv.Decrypt(data)
+	return data, nil
+}
+
+type authManager struct {
+	node *ipfsutil.Node
+}
+
+func (am *authManager) TunnelFor(hash string) (security.Tunnel, error) {
+	pub, err := am.node.PublicKeyFor(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := am.node.PrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	return &authTunnel{priv, pub}, nil
+}
+
+type conversationPool struct {
 	// Map of open conversations
 	open map[id.ID]Conversation
 
@@ -43,8 +79,8 @@ type ConversationPool struct {
 	rp *repo.Repository
 }
 
-func newConversationPool(rp *repo.Repository) *ConversationPool {
-	return &ConversationPool{
+func newConversationPool(rp *repo.Repository) *conversationPool {
+	return &conversationPool{
 		open:      make(map[id.ID]Conversation),
 		heartbeat: make(map[id.ID]*ipfsutil.Pinger),
 		rp:        rp,
@@ -52,7 +88,7 @@ func newConversationPool(rp *repo.Repository) *ConversationPool {
 }
 
 // Set add a conversation for a specific to the pool.
-func (cp *ConversationPool) Set(peer id.Peer, cnv Conversation) error {
+func (cp *conversationPool) Set(peer id.Peer, cnv Conversation) error {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
@@ -70,7 +106,7 @@ func (cp *ConversationPool) Set(peer id.Peer, cnv Conversation) error {
 }
 
 // Iter iterates over the conversation pool.
-func (cp *ConversationPool) Iter() chan Conversation {
+func (cp *conversationPool) Iter() chan Conversation {
 	cnvs := make(chan Conversation)
 	go func() {
 		cp.mu.Lock()
@@ -85,7 +121,7 @@ func (cp *ConversationPool) Iter() chan Conversation {
 }
 
 // LastSeen timestamp of a specific peer.
-func (cp *ConversationPool) LastSeen(peer id.Peer) time.Time {
+func (cp *conversationPool) LastSeen(peer id.Peer) time.Time {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
@@ -97,7 +133,7 @@ func (cp *ConversationPool) LastSeen(peer id.Peer) time.Time {
 }
 
 // Close the complete conversation pool and free ressources.
-func (cp *ConversationPool) Close() error {
+func (cp *conversationPool) Close() error {
 	var errs util.Errors
 
 	cp.mu.Lock()
@@ -194,6 +230,8 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 		layer: layer,
 		cp:    newConversationPool(rp),
 	}
+
+	layer.SetAuthManager(&authManager{rp.IPFS})
 
 	handlerMap := map[wire.RequestType]HandlerFunc{
 		wire.RequestType_FETCH:         cnc.handleFetch,

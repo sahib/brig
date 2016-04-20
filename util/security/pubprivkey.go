@@ -33,3 +33,9 @@ type PubKey interface {
 	// Encrypt data in a way that can be decrypted by a paired private key
 	Encrypt(data []byte) ([]byte, error)
 }
+
+// TODO: docs
+type Tunnel interface {
+	Encrypt(data []byte) ([]byte, error)
+	Decrypt(data []byte) ([]byte, error)
+}

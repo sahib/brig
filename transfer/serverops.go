@@ -16,7 +16,7 @@ func (sv *Connector) handleFetch(req *wire.Request) (*wire.Response, error) {
 		return nil, err
 	}
 
-	return &wire.Response{Data: buf.Bytes()}, nil
+	return &wire.Response{}, nil
 }
 
 func (sv *Connector) handleUpdateFile(req *wire.Request) (*wire.Response, error) {

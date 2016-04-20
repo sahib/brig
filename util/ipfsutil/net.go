@@ -223,7 +223,7 @@ func (nd *Node) Ping(peerHash string) (*Pinger, error) {
 	return pinger, nil
 }
 
-func (nd *Node) PrivateKey() (security.PrivateKey, error) {
+func (nd *Node) PrivateKey() (security.PrivKey, error) {
 	node, err := nd.proc()
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (nd *Node) PrivateKey() (security.PrivateKey, error) {
 	return node.PrivateKey, nil
 }
 
-func (nd *Node) PublicKeyFor(peerHash string) (security.PublicKey, error) {
+func (nd *Node) PublicKeyFor(peerHash string) (security.PubKey, error) {
 	node, err := nd.proc()
 	if err != nil {
 		return nil, err

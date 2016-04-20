@@ -11,7 +11,7 @@ enum RequestType {
 message Request {
 	required RequestType req_type = 1;
     required int64 ID = 2;
-    optional bytes broadcast_data = 3;
+    required int64 nonce = 3;
 }
 
 message StoreVersionResponse {
@@ -21,7 +21,7 @@ message StoreVersionResponse {
 message Response {
 	required RequestType req_type = 1;
     required int64 ID = 2;
-	optional bytes data = 3;
+    required int64 nonce = 3;
     optional string error = 4;
 
     optional StoreVersionResponse store_version_resp = 5;
