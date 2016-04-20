@@ -256,7 +256,7 @@ func (cn *Connector) Broadcast(req *wire.Request) error {
 		}
 	}
 
-	return errs
+	return errs.ToErr()
 }
 
 func (cn *Connector) Layer() Layer {
