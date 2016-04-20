@@ -239,8 +239,7 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 		}
 
 		if resp == nil {
-			// No response is valid too.
-			// TODO: really?
+			log.Warningf("Handle for `%d` failed to return a response or error", typ)
 			continue
 		}
 

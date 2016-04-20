@@ -80,10 +80,9 @@ func Summon(pwd, repoFolder string, port int) (*Server, error) {
 
 	// Close the listener when the application closes.
 	log.Info("Listening on ", addr)
-	// TODO: Auth mgr and peer
-	layer := moose.NewLayer(rep.IPFS)
-
 	ctx, cancel := context.WithCancel(context.Background())
+	layer := moose.NewLayer(rep.IPFS, ctx)
+
 	daemon := &Server{
 		Repo:           rep,
 		Mounts:         fuse.NewMountTable(rep.OwnStore),

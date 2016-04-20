@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testwith"
 )
@@ -95,7 +96,7 @@ func TestDHT(t *testing.T) {
 		// Modify the hash and hope it there is none like that yet.
 		mh[0] = 0
 		_, err = ipfsutil.CatBlock(node, mh, 1*time.Second)
-		if err != ipfsutil.ErrTimeout {
+		if err != util.ErrTimeout {
 			t.Errorf("Oops, is there really a hash like that? %v", err)
 			return
 		}

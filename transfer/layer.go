@@ -96,31 +96,3 @@ type AuthManager interface {
 	// encrypts the traffic between us and `hash`.
 	TunnelFor(hash string) (security.Tunnel, error)
 }
-
-// mockAuthManager fullfills AuthManager by doing nothing.
-// It is meant for tests. Production code users will be shot.
-type mockAuthManager bool
-
-// TODO: Move to util/security?
-func (_ mockAuthManager) TunnelFor(hash string) (security.Tunnel, error) {
-	return mockAuthTunnel{}, nil
-}
-
-type mockAuthTunnel struct{}
-
-// Encrypt does not encrypt. It returns `data`.
-func (_ mockAuthTunnel) Encrypt(data []byte) ([]byte, error) {
-	return data, nil
-}
-
-// Decrypt does not decrypt. It returns `data`.
-func (mam mockAuthTunnel) Decrypt(data []byte) ([]byte, error) {
-	return data, nil
-}
-
-var (
-	// MockAuthSuccess is a AuthManager that blindly lets everything through
-	MockAuthSuccess = mockAuthManager(true)
-	// MockAuthDeny is a AuthManager that denies every access
-	MockAuthDeny = mockAuthManager(false)
-)

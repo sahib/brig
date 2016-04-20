@@ -1,7 +1,6 @@
 package transfer
 
 import (
-	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -54,8 +53,7 @@ func (acl *APIClient) send(req *wire.Request) (resp *wire.Response, err error) {
 		break
 	case stamp := <-timer.C:
 		log.Warningf("APIClient operation timed out at %v", stamp)
-		// TODO: common error
-		return nil, fmt.Errorf("Timeout during APIClient-IO")
+		return nil, util.ErrTimeout
 	}
 
 	return

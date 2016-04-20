@@ -4,6 +4,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/util"
 	"github.com/ipfs/go-ipfs/blocks"
 	"github.com/ipfs/go-ipfs/blocks/key"
 	gmh "github.com/jbenet/go-multihash"
@@ -36,7 +37,7 @@ func AddBlock(node *Node, data []byte) (gmh.Multihash, error) {
 }
 
 // CatBlock retuns the data stored in the block pointed to by `hash`.
-// It will timeout with ErrTimeout if the operation takes too long,
+// It will timeout with util.ErrTimeout if the operation takes too long,
 // this includes querying for an non-existing hash.
 //
 // This operation works offline and online, but if the block is stored
@@ -54,7 +55,7 @@ func CatBlock(node *Node, hash gmh.Multihash, timeout time.Duration) ([]byte, er
 	k := key.B58KeyDecode(hash.B58String())
 	block, err := nd.Blocks.GetBlock(ctx, k)
 	if err == context.DeadlineExceeded {
-		return nil, ErrTimeout
+		return nil, util.ErrTimeout
 	}
 
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 
 	log "github.com/Sirupsen/logrus"
@@ -131,7 +132,7 @@ func (id ID) Register(node *ipfsutil.Node) error {
 	hash := id.Hash()
 
 	peers, err := ipfsutil.Locate(node, hash, 1, 5*time.Second)
-	if err != nil && err != ipfsutil.ErrTimeout {
+	if err != nil && err != util.ErrTimeout {
 		return err
 	}
 

@@ -223,8 +223,6 @@ func (lf *listenerFilter) Addr() net.Addr {
 
 // NewConnector returns an unconnected Connector.
 func NewConnector(layer Layer, rp *repo.Repository) *Connector {
-	// TODO: pass authMgr.
-	// authMgr := MockAuthSuccess
 	cnc := &Connector{
 		rp:    rp,
 		layer: layer,
@@ -251,7 +249,6 @@ func (cn *Connector) Dial(peer id.Peer) (*APIClient, error) {
 		return nil, ErrOffline
 	}
 
-	// TODO: use the remote here somehow :)
 	_, err := cn.rp.Remotes.Get(peer.ID())
 	if err != nil {
 		return nil, err

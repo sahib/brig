@@ -34,8 +34,21 @@ type PubKey interface {
 	Encrypt(data []byte) ([]byte, error)
 }
 
-// TODO: docs
+// Tunnel knows how encrypt and decrypt data.
 type Tunnel interface {
 	Encrypt(data []byte) ([]byte, error)
 	Decrypt(data []byte) ([]byte, error)
+}
+
+// MockAuthTunnel does no encryption. Use it for tests.
+type MockAuthTunnel struct{}
+
+// Encrypt does not encrypt. It returns `data`.
+func (_ MockAuthTunnel) Encrypt(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+// Decrypt does not decrypt. It returns `data`.
+func (_ MockAuthTunnel) Decrypt(data []byte) ([]byte, error) {
+	return data, nil
 }

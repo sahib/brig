@@ -13,8 +13,6 @@ import (
 )
 
 var (
-	// ErrTimeout is returned when ipfs takes longer than the supplied duration.
-	ErrTimeout = errors.New("IPFS operation timed out")
 	// ErrIsOffline is returned when an online operation was done offline.
 	ErrIsOffline = errors.New("Node is offline")
 )
