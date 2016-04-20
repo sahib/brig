@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/disorganizer/brig/util/testwith"
@@ -16,7 +17,7 @@ import (
 
 var TestPath = filepath.Join(os.TempDir(), "brig-store-test")
 
-func withEmptyStore(t *testing.T, f func(*Store)) {
+func withEmptyStore(t *testing.T, f func(*store.Store)) {
 	ipfsPath := filepath.Join(TestPath, "ipfs")
 
 	testwith.WithIpfsAtPath(t, ipfsPath, func(node *ipfsutil.Node) {
@@ -33,15 +34,15 @@ func withEmptyStore(t *testing.T, f func(*Store)) {
 		}()
 
 		// We need the filesystem for ipfs here:
-		store, err := Open(TestPath, id.ID("alice@nullcat.de/desktop"), node)
+		st, err := store.Open(TestPath, id.ID("alice@nullcat.de/desktop"), node)
 		if err != nil {
 			t.Errorf("Could not open empty store at %s: %v", TestPath, err)
 			return
 		}
 
-		f(store)
+		f(st)
 
-		if err := store.Close(); err != nil {
+		if err := st.Close(); err != nil {
 			t.Errorf("Unable to close empty store: %v", err)
 			return
 		}
@@ -57,7 +58,7 @@ func TestAddCat(t *testing.T) {
 		data := testutil.CreateDummyBuf(size)
 		path := fmt.Sprintf("dummy_%d", size)
 
-		withEmptyStore(t, func(st *Store) {
+		withEmptyStore(t, func(st *store.Store) {
 			if err := st.AddFromReader(path, bytes.NewReader(data)); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				return
@@ -94,7 +95,7 @@ func TestList(t *testing.T) {
 		{"/a", -1, []string{"/a"}},
 	}
 
-	withEmptyStore(t, func(st *Store) {
+	withEmptyStore(t, func(st *store.Store) {
 		// Build the tree:
 		for _, path := range paths {
 			if err := st.AddFromReader(path, bytes.NewReader(nil)); err != nil {
@@ -144,15 +145,15 @@ func TestExport(t *testing.T) {
 
 	exportBuf := &bytes.Buffer{}
 
-	withEmptyStore(t, func(store *Store) {
+	withEmptyStore(t, func(st *store.Store) {
 		for _, path := range paths {
-			if err := store.Touch(path); err != nil {
+			if err := st.Touch(path); err != nil {
 				t.Errorf("Touching file `%s` failed: %v", path, err)
 				return
 			}
 		}
 
-		if err := store.Export(exportBuf); err != nil {
+		if err := st.Export(exportBuf); err != nil {
 			t.Errorf("store-export failed: %v", err)
 			return
 		}
@@ -165,15 +166,15 @@ func TestExport(t *testing.T) {
 		return
 	}
 
-	withEmptyStore(t, func(store *Store) {
-		if err := store.Import(bytes.NewReader(exportData)); err != nil {
+	withEmptyStore(t, func(st *store.Store) {
+		if err := st.Import(bytes.NewReader(exportData)); err != nil {
 			t.Errorf("Could not import data: %v", err)
 			return
 		}
 	})
 }
 
-func createDirAndFile(t *testing.T, st *Store, data []byte) error {
+func createDirAndFile(t *testing.T, st *store.Store, data []byte) error {
 	if err := st.AddFromReader("/dummy", bytes.NewReader(data)); err != nil {
 		t.Errorf("Could not add dummy file for move: %v", err)
 		return err
@@ -200,7 +201,7 @@ func createDirAndFile(t *testing.T, st *Store, data []byte) error {
 func TestMove(t *testing.T) {
 	data := testutil.CreateDummyBuf(1024)
 
-	withEmptyStore(t, func(st *Store) {
+	withEmptyStore(t, func(st *store.Store) {
 		if err := createDirAndFile(t, st, data); err != nil {
 			return
 		}
@@ -225,14 +226,14 @@ func TestMove(t *testing.T) {
 			return
 		}
 
-		if err := st.Cat("/dummy", &bytes.Buffer{}); err != ErrNoSuchFile {
+		if err := st.Cat("/dummy", &bytes.Buffer{}); err != store.ErrNoSuchFile {
 			t.Errorf("Move: dummy still reachable")
 			return
 		}
 
 		check("/new_dummy", data)
 
-		if err := st.Move("/dummy", "/new_dummy"); err != ErrNoSuchFile {
+		if err := st.Move("/dummy", "/new_dummy"); err != store.ErrNoSuchFile {
 			t.Errorf("Move could move dead file: %v", err)
 			return
 		}
@@ -245,12 +246,12 @@ func TestMove(t *testing.T) {
 		check("/other/a", []byte{})
 		check("/other/b", []byte{})
 
-		if err := st.Cat("/dir/a", &bytes.Buffer{}); err != ErrNoSuchFile {
+		if err := st.Cat("/dir/a", &bytes.Buffer{}); err != store.ErrNoSuchFile {
 			t.Errorf("Move: /dir/a still reachable")
 			return
 		}
 
-		if err := st.Cat("/dir/b", &bytes.Buffer{}); err != ErrNoSuchFile {
+		if err := st.Cat("/dir/b", &bytes.Buffer{}); err != store.ErrNoSuchFile {
 			t.Errorf("Move: /dir/b still reachable")
 			return
 		}
@@ -260,7 +261,7 @@ func TestMove(t *testing.T) {
 func TestRemove(t *testing.T) {
 	data := testutil.CreateDummyBuf(1024)
 
-	withEmptyStore(t, func(st *Store) {
+	withEmptyStore(t, func(st *store.Store) {
 		if err := createDirAndFile(t, st, data); err != nil {
 			return
 		}
@@ -275,12 +276,12 @@ func TestRemove(t *testing.T) {
 			return
 		}
 
-		if err := st.Remove("/dummy", false); err != ErrNoSuchFile {
+		if err := st.Remove("/dummy", false); err != store.ErrNoSuchFile {
 			t.Errorf("Could remove /dummy twice: %v", err)
 			return
 		}
 
-		if err := st.Remove("/dir", false); err != ErrNotEmpty {
+		if err := st.Remove("/dir", false); err != store.ErrNotEmpty {
 			t.Errorf("Remove did not deny removing non-empty dir: %v", err)
 			return
 		}

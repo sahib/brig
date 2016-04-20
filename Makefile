@@ -2,7 +2,7 @@ all:
 	go install brig/brig.go
 
 test:
-	go test $(glide novendor)
+	go test -v `glide novendor`
 
 lint:
 	gometalinter ./... --deadline 1m | grep -v '.*\.pb\..*'

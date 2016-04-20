@@ -15,15 +15,6 @@ import (
 	"github.com/disorganizer/brig/util/testwith"
 )
 
-var (
-	TestPath = filepath.Join(os.TempDir(), "brig_fuse_testdir")
-)
-
-const (
-	DummyUser = "user@nullcat.de/desktop"
-	DummyPass = "hello_world"
-)
-
 func withMount(t *testing.T, f func(mount *Mount)) {
 	mntPath := filepath.Join(os.TempDir(), "brig_fuse_mountdir")
 
@@ -38,7 +29,7 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 
 	defer testutil.Remover(t, mntPath)
 
-	testwith.WithRepo(t, TestPath, DummyUser, DummyPass, func(rep *repo.Repository) {
+	testwith.WithAliceRepo(t, func(rep *repo.Repository) {
 		mount, err := NewMount(rep.OwnStore, mntPath)
 		if err != nil {
 			t.Errorf("Cannot create mount: %v", err)
