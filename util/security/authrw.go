@@ -23,6 +23,7 @@ const nonceSize = 62
 //         <---  sha3(rA)  <--
 //         --->  sha3(rB)  --->
 //
+// TODO: Update.
 // Where rA and rB are randomly generated 8 byte nonces.
 // By being able to decrypt the nonce, alice and bob
 // proved knowledge of the private key.
@@ -142,20 +143,6 @@ func (ath *AuthReadWriter) runAuth() error {
 	ownHash := sha3.Sum512(rA)
 	if !bytes.Equal(hashFromBob, ownHash[:]) {
 		return fmt.Errorf("Bad nonce; might communicate with imposter")
-	}
-
-	okSend := []byte("OK")
-	if _, err := ath.rwc.Write(okSend); err != nil {
-		return err
-	}
-
-	okBuf := make([]byte, 2)
-	if _, err := io.ReadFull(ath.rwc, okBuf); err != nil {
-		return err
-	}
-
-	if !bytes.Equal(okBuf, okSend) {
-		return fmt.Errorf("Received no OK: %v", okBuf)
 	}
 
 	keySource := make([]byte, nonceSize)

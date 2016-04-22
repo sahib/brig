@@ -58,14 +58,31 @@ func RemoteIsEqual(a, b Remote) bool {
 	return a.ID() == b.ID() && a.Hash() == b.Hash()
 }
 
-type FileHandle interface {
-	io.Reader
-	io.Writer
-	io.Seeker
-	io.Closer
-	Truncate(size int64) error
-	Sync() error
+const (
+	// RemoteChangeInvalid should never happen.
+	RemoteChangeInvalid = iota
+	// RemoteChangeAdded means a new remote was added.
+	RemoteChangeAdded
+	// RemoteChangeRemoved means a remote was removed.
+	RemoteChangeRemoved
+	// RemoteChangeModified means a remote was modified
+	// (i.e. different hash)
+	RemoteChangeModified
+)
+
+// RemoteChange represents a single change in the remote store.
+type RemoteChange struct {
+	// ChangeType describes what happened to remote.
+	ChangeType int
+
+	// Remote is the new remote (or nil for RemoteChangeRemoved)
+	Remote Remote
+
+	// OldRemote is the old remote (or nil for RemoteChangeAdded)
+	OldRemote Remote
 }
+
+type RemoteChangeCallback func(rc *RemoteChange)
 
 // RemoteStore is a store for several Remotes.
 type RemoteStore interface {
@@ -85,7 +102,10 @@ type RemoteStore interface {
 
 	// Iter returns a channel that yields every remote in the store.
 	// The elements should be sorted in the alphabetic order of the ID.
-	Iter() chan Remote
+	Iter() <-chan Remote
+
+	// Register calls `f` whenever a change in the store happens.
+	Register(f RemoteChangeCallback)
 }
 
 // AsList converts a RemoteStore into a list of Remotes.
@@ -132,14 +152,14 @@ func (yl yamlRemotes) Swap(i, j int) {
 }
 
 type yamlRemoteStore struct {
-	mu     sync.Mutex
-	path   string
-	parsed map[id.ID]*yamlRemoteEntry
+	mu        sync.Mutex
+	path      string
+	parsed    map[id.ID]*yamlRemoteEntry
+	callbacks []RemoteChangeCallback
 }
 
 // NewYAMLRemotes returns a new remote store that stores
-// its data in the open file pointed to by `fd`.
-// (os.Open() returns a suitable FileHandle)
+// its data in the file pointed to by path.
 func NewYAMLRemotes(path string) (RemoteStore, error) {
 	remotes := &yamlRemoteStore{path: path}
 	if err := remotes.load(); err != nil {
@@ -205,11 +225,32 @@ func (yr *yamlRemoteStore) Insert(r Remote) error {
 		}
 	}
 
+	change := &RemoteChange{
+		ChangeType: RemoteChangeAdded,
+		Remote:     r,
+	}
+
+	oldEntry := yr.parsed[r.ID()]
+	if oldEntry != nil {
+		change.ChangeType = RemoteChangeModified
+		change.OldRemote = &yamlRemote{
+			Identity:        r.ID(),
+			yamlRemoteEntry: oldEntry,
+		}
+
+		// If it equals the previous remote,
+		// we can safely abort here and not notify old remotes.
+		if RemoteIsEqual(change.OldRemote, r) {
+			return nil
+		}
+	}
+
 	yr.parsed[r.ID()] = &yamlRemoteEntry{
 		PeerHash:  r.Hash(),
 		Timestamp: time.Now(),
 	}
 
+	yr.notify(change)
 	return yr.save()
 }
 
@@ -232,15 +273,27 @@ func (yr *yamlRemoteStore) Remove(ID id.ID) error {
 	yr.mu.Lock()
 	defer yr.mu.Unlock()
 
-	if _, ok := yr.parsed[ID]; !ok {
+	ent, ok := yr.parsed[ID]
+	if !ok {
 		return ErrNoSuchRemote(ID)
 	}
 
+	change := &RemoteChange{
+		ChangeType: RemoteChangeRemoved,
+		Remote:     nil,
+		OldRemote: &yamlRemote{
+			Identity:        ID,
+			yamlRemoteEntry: ent,
+		},
+	}
+
 	delete(yr.parsed, ID)
+	yr.notify(change)
+
 	return yr.save()
 }
 
-func (yr *yamlRemoteStore) Iter() chan Remote {
+func (yr *yamlRemoteStore) Iter() <-chan Remote {
 	rmCh := make(chan Remote)
 
 	go func() {
@@ -269,6 +322,18 @@ func (yr *yamlRemoteStore) Iter() chan Remote {
 }
 
 func (yr *yamlRemoteStore) Close() error {
-	// TODO: Needed?
 	return nil
+}
+
+func (yr *yamlRemoteStore) Register(f RemoteChangeCallback) {
+	yr.mu.Lock()
+	defer yr.mu.Unlock()
+
+	yr.callbacks = append(yr.callbacks, f)
+}
+
+func (yr *yamlRemoteStore) notify(rmc *RemoteChange) {
+	for _, cb := range yr.callbacks {
+		cb(rmc)
+	}
 }
