@@ -27,6 +27,10 @@ type Conversation struct {
 	notifees map[int64]transfer.AsyncFunc
 }
 
+func isEOFError(err error) bool {
+	return err == io.EOF || (err != nil && err.Error() == "stream closed")
+}
+
 func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
 	pub, err := node.PublicKeyFor(peerHash)
 	if err != nil {
@@ -67,8 +71,7 @@ func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Convers
 			resp := wire.Response{}
 			err := cnv.proto.Recv(&resp)
 
-			// TODO: That's not my fault.
-			if err == io.EOF || (err != nil && err.Error() == "stream closed") {
+			if isEOFError(err) {
 				break
 			}
 
@@ -213,7 +216,10 @@ func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
 		}
 
 		if resp == nil {
-			log.Warningf("Handle for `%d` failed to return a response or error", typ)
+			// '0' is the ID for broadcast:
+			if req.GetID() != 0 {
+				log.Warningf("Handle for `%d` failed to return a response or error", typ)
+			}
 			continue
 		}
 

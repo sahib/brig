@@ -66,7 +66,7 @@ func TestRemote(t *testing.T) {
 			return
 		}
 
-		lst := AsList(rms)
+		lst := rms.List()
 		if lst[0].ID() != "bob" {
 			t.Errorf("Not bob")
 		}

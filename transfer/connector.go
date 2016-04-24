@@ -41,15 +41,102 @@ type conversationPool struct {
 	// lock for `open`
 	mu sync.Mutex
 
-	rp *repo.Repository
+	rp    *repo.Repository
+	layer Layer
 }
 
-func newConversationPool(rp *repo.Repository) *conversationPool {
-	return &conversationPool{
+func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
+	cp := &conversationPool{
 		open:      make(map[id.ID]Conversation),
 		heartbeat: make(map[id.ID]*ipfsutil.Pinger),
 		rp:        rp,
+		layer:     layer,
 	}
+
+	changeCh := make(chan *repo.RemoteChange)
+	rp.Remotes.Register(func(change *repo.RemoteChange) {
+		changeCh <- change
+	})
+
+	go func() {
+		for change := range changeCh {
+			doRemove, doUpdate := false, false
+			switch change.ChangeType {
+			case repo.RemoteChangeAdded:
+				doUpdate = true
+			case repo.RemoteChangeModified:
+				doUpdate, doRemove = true, true
+			case repo.RemoteChangeRemoved:
+				doRemove = true
+			default:
+				log.Warningf("Invalid remote change type: %d", change.ChangeType)
+				return
+			}
+
+			if doRemove {
+				if err := cp.Remove(change.OldRemote); err != nil {
+					log.Warningf(
+						"Cannot remove `%s` from connection pool: %v",
+						change.OldRemote.ID(),
+						err,
+					)
+				}
+			}
+
+			if doUpdate {
+				cp.UpdateConnections()
+			}
+		}
+	}()
+
+	return cp
+}
+
+func (cp *conversationPool) UpdateConnections() {
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+
+	for _, remote := range cp.rp.Remotes.List() {
+		_, ok := cp.open[remote.ID()]
+
+		// We already have an open connection:
+		if ok {
+			continue
+		}
+
+		cnv, err := cp.layer.Dial(remote)
+
+		if err != nil {
+			log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
+			continue
+		}
+
+		if err := cp.setUnlocked(remote, cnv); err != nil {
+			log.Warningf("Cannot create pinger: %v", err)
+		}
+	}
+}
+
+func (cp *conversationPool) Remove(peer id.Peer) error {
+	cp.mu.Lock()
+	defer cp.mu.Unlock()
+
+	peerID := peer.ID()
+	cnv, ok := cp.open[peerID]
+	if !ok {
+		return repo.ErrNoSuchRemote(peerID)
+	}
+
+	pinger, ok := cp.heartbeat[peerID]
+	if !ok {
+		return fmt.Errorf("No pinger for `%s`?", peerID)
+	}
+
+	delete(cp.open, peerID)
+	delete(cp.heartbeat, peerID)
+
+	pinger.Close()
+	return cnv.Close()
 }
 
 // Set add a conversation for a specific to the pool.
@@ -57,6 +144,10 @@ func (cp *conversationPool) Set(peer id.Peer, cnv Conversation) error {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
+	return cp.setUnlocked(peer, cnv)
+}
+
+func (cp *conversationPool) setUnlocked(peer id.Peer, cnv Conversation) error {
 	cp.open[peer.ID()] = cnv
 
 	if _, ok := cp.heartbeat[peer.ID()]; !ok {
@@ -71,7 +162,7 @@ func (cp *conversationPool) Set(peer id.Peer, cnv Conversation) error {
 }
 
 // Iter iterates over the conversation pool.
-func (cp *conversationPool) Iter() chan Conversation {
+func (cp *conversationPool) Iter() <-chan Conversation {
 	cnvs := make(chan Conversation)
 	go func() {
 		cp.mu.Lock()
@@ -162,7 +253,7 @@ func (lf *listenerFilter) Accept() (net.Conn, error) {
 		hash := streamConn.PeerHash()
 
 		// Check if we know of this hash:
-		for remote := range lf.rms.Iter() {
+		for _, remote := range lf.rms.List() {
 			if remote.Hash() == hash {
 				return streamConn, nil
 			}
@@ -191,7 +282,7 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	cnc := &Connector{
 		rp:    rp,
 		layer: layer,
-		cp:    newConversationPool(rp),
+		cp:    newConversationPool(rp, layer),
 	}
 
 	handlerMap := map[wire.RequestType]HandlerFunc{
@@ -263,10 +354,6 @@ func (cn *Connector) broadcast(req *wire.Request) error {
 	return errs.ToErr()
 }
 
-func (cn *Connector) Layer() Layer {
-	return cn.layer
-}
-
 func (cn *Connector) Connect() error {
 	ls, err := cn.rp.IPFS.Listen(cn.layer.ProtocolID())
 	if err != nil {
@@ -275,25 +362,13 @@ func (cn *Connector) Connect() error {
 
 	// Make sure we filter unauthorized incoming connections:
 	filter := newListenerFilter(ls, cn.rp.Remotes)
+	dialer := &dialer{cn.layer, cn.rp.IPFS}
 
-	if err := cn.layer.Connect(filter, &dialer{cn.layer, cn.rp.IPFS}); err != nil {
+	if err := cn.layer.Connect(filter, dialer); err != nil {
 		return err
 	}
 
-	go func() {
-		for remote := range cn.rp.Remotes.Iter() {
-			cnv, err := cn.layer.Dial(remote)
-			if err != nil {
-				log.Warningf("Could not connect to `%s`: %v", remote.ID(), err)
-				continue
-			}
-
-			if err := cn.cp.Set(remote, cnv); err != nil {
-				log.Warningf("Cannot create pinger: %v", err)
-			}
-		}
-	}()
-
+	go cn.cp.UpdateConnections()
 	return nil
 }
 

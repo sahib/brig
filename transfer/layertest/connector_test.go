@@ -41,21 +41,10 @@ func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
 
 func TestConversation(t *testing.T) {
 	WithParallelConnectors(t, []string{"alice", "bob"}, func(cs []*transfer.Connector) {
+		MakeFriends(t, cs...)
 		ac, bc := cs[0], cs[1]
-		br, ar := bc.Repo(), ac.Repo()
-		berr := br.Remotes.Insert(repo.NewRemoteFromPeer(ar.Peer()))
-		if berr != nil {
-			t.Errorf("Bob has no friends: %v", berr)
-			return
-		}
 
-		aerr := ar.Remotes.Insert(repo.NewRemoteFromPeer(br.Peer()))
-		if aerr != nil {
-			t.Errorf("Alice has no friends: %v", aerr)
-			return
-		}
-
-		apc, err := ac.Dial(br.Peer())
+		apc, err := ac.Dial(bc.Repo().Peer())
 		if err != nil {
 			t.Errorf("Alice cannot dial to bob: %v", err)
 			return
@@ -177,17 +166,48 @@ func MakeFriends(t *testing.T, cs ...*transfer.Connector) {
 func TestBroadcast(t *testing.T) {
 	WithParallelConnectors(t, []string{"alice", "charlie", "bob"}, func(cs []*transfer.Connector) {
 		MakeFriends(t, cs...)
-		//time.Sleep(5 * time.Second)
-		a, _, _ := cs[0], cs[1], cs[2]
 
-		// TODO: Fill in with something more meaningful.
-		bcaster := a.Broadcaster()
+		// Might take a little bit to startup fully:
+		// (this is the same time as ipfs' "backoff" mechanism)
+		time.Sleep(5 * time.Second)
+
+		for i := 0; i < len(cs); i++ {
+			for j := i + 1; j < len(cs); j++ {
+				a, b := cs[i].Repo().Peer(), cs[j].Repo().Peer()
+				aSeesB := cs[i].IsOnline(b)
+				bSeesA := cs[j].IsOnline(a)
+
+				if !aSeesB {
+					t.Errorf("%s sees %s not as online", a.ID(), b.ID())
+					return
+				}
+
+				if !bSeesA {
+					t.Errorf("%s sees %s not as online", b.ID(), a.ID())
+					return
+				}
+			}
+		}
+
+		// Make alice broadcast a FileUpdate to bob and charlie.
+		bcaster := cs[0].Broadcaster()
 		if err := bcaster.FileUpdate(nil); err != nil {
 			t.Errorf("Could not broadcast: %v", err)
 			return
 		}
 
-		// TODO: Actually implement broadcasting.
+		if err := cs[0].Repo().Remotes.Remove("bob"); err != nil {
+			t.Errorf("Unable to remove bob from friend list")
+			return
+		}
+
+		// Give bob and charlie a bit time to receive the message
 		time.Sleep(1 * time.Second)
+
+		if err := bcaster.FileUpdate(nil); err != nil {
+			t.Errorf("Could not broadcast the second time: %v", err)
+			return
+		}
+
 	})
 }

@@ -102,21 +102,10 @@ type RemoteStore interface {
 
 	// Iter returns a channel that yields every remote in the store.
 	// The elements should be sorted in the alphabetic order of the ID.
-	Iter() <-chan Remote
+	List() []Remote
 
 	// Register calls `f` whenever a change in the store happens.
 	Register(f RemoteChangeCallback)
-}
-
-// AsList converts a RemoteStore into a list of Remotes.
-func AsList(r RemoteStore) []Remote {
-	var rms []Remote
-
-	for rm := range r.Iter() {
-		rms = append(rms, rm)
-	}
-
-	return rms
 }
 
 type yamlRemote struct {
@@ -293,32 +282,28 @@ func (yr *yamlRemoteStore) Remove(ID id.ID) error {
 	return yr.save()
 }
 
-func (yr *yamlRemoteStore) Iter() <-chan Remote {
-	rmCh := make(chan Remote)
+func (yr *yamlRemoteStore) List() (outRemotes []Remote) {
+	yr.mu.Lock()
+	defer yr.mu.Unlock()
 
-	go func() {
-		yr.mu.Lock()
-		defer yr.mu.Unlock()
+	var remotes yamlRemotes
+	for ident, entry := range yr.parsed {
+		remotes = append(remotes, &yamlRemote{
+			Identity:        ident,
+			yamlRemoteEntry: entry,
+		})
+	}
 
-		var remotes yamlRemotes
+	sort.Sort(remotes)
 
-		for ident, entry := range yr.parsed {
-			remotes = append(remotes, &yamlRemote{
-				Identity:        ident,
-				yamlRemoteEntry: entry,
-			})
-		}
+	// sadly []*yamlRemote is not a []Remote,
+	// although *yamlRemote is a Remote.
+	// Curse you, go lang.
+	for _, rm := range remotes {
+		outRemotes = append(outRemotes, rm)
+	}
 
-		sort.Sort(remotes)
-
-		for _, rm := range remotes {
-			rmCh <- rm
-		}
-
-		close(rmCh)
-	}()
-
-	return rmCh
+	return outRemotes
 }
 
 func (yr *yamlRemoteStore) Close() error {
@@ -334,6 +319,7 @@ func (yr *yamlRemoteStore) Register(f RemoteChangeCallback) {
 
 func (yr *yamlRemoteStore) notify(rmc *RemoteChange) {
 	for _, cb := range yr.callbacks {
-		cb(rmc)
+		// Don't wait on whatever the caller does:
+		go cb(rmc)
 	}
 }
