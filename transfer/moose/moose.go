@@ -42,7 +42,6 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 		return nil, err
 	}
 
-	// TODO: also sign messages?
 	authrw := security.NewAuthReadWriter(conn, priv, pub)
 	if err := authrw.Trigger(); err != nil {
 		return nil, err

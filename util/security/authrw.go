@@ -23,13 +23,15 @@ const nonceSize = 62
 //         <---  sha3(rA)  <--
 //         --->  sha3(rB)  --->
 //
-// TODO: Update.
-// Where rA and rB are randomly generated 8 byte nonces.
+// Where rA and rB are randomly generated $nonceSize byte nonces.
 // By being able to decrypt the nonce, alice and bob
-// proved knowledge of the private key.
-// If the protocol ran through succesfully, Read()
-// and Write() will delegate to the underlying ReadWriteCloser,
-// if not Close() will be called an Authorised() will return false.
+// proved knowledge of the private key. The response to the challenge
+// is exchanged as sha3-hash (512 bit) of the original nonce.
+// This way an attacker is not able to read the nonces.
+//
+// If the protocol ran through succesfully, a symmetric session key is generated
+// by xoring both nonces.  Read() and Write() will then proceed to use
+// it to encrypt all messages written over it using CFB mode.
 type AuthReadWriter struct {
 	rwc     io.ReadWriteCloser
 	pubKey  Encrypter
