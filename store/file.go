@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -214,13 +215,8 @@ func emptyFile(st *Store) *File {
 func NewFile(store *Store, path string) (*File, error) {
 	// TODO: Make this configurable?
 	key := make([]byte, 32)
-	n, err := rand.Reader.Read(key)
-	if err != nil {
+	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		return nil, err
-	}
-
-	if n != 32 {
-		return nil, fmt.Errorf("Read less than desired key size: %v", n)
 	}
 
 	file := emptyFile(store)
