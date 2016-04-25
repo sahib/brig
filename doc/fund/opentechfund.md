@@ -15,6 +15,7 @@ obvious risks like:
 
     * privacy issues, access by third party
     * data loss
+
     * restrictive Internet filtering by technical methods (IP blocking, DNS filtering, TCP RST, DPI, etc.)
     * Blocking, filtering, or modification of political, social, and/or religious content (including apps)
     * Technical attacks against government critics, journalists, and/or human rights organizations (Cyberattacks)
