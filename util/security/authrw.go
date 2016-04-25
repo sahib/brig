@@ -3,6 +3,7 @@ package security
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/hmac"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -11,7 +12,10 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-const nonceSize = 62
+const (
+	nonceSize      = 62
+	MaxMessageSize = 16 * 1024 * 1024
+)
 
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
 // that adds authentication of the communication partners.
@@ -33,12 +37,13 @@ const nonceSize = 62
 // by xoring both nonces.  Read() and Write() will then proceed to use
 // it to encrypt all messages written over it using CFB mode.
 type AuthReadWriter struct {
-	rwc     io.ReadWriteCloser
-	pubKey  Encrypter
-	privKey Decrypter
-	crypted io.ReadWriter
-
+	rwc        io.ReadWriteCloser
+	pubKey     Encrypter
+	privKey    Decrypter
+	crypted    io.ReadWriter
+	symkey     []byte
 	authorised bool
+	readBuf    *bytes.Buffer
 }
 
 // NewAuthReadWriter returns a new AuthReadWriter, authenticating rwc.
@@ -48,6 +53,7 @@ func NewAuthReadWriter(rwc io.ReadWriteCloser, own Decrypter, partner Encrypter)
 		rwc:     rwc,
 		privKey: own,
 		pubKey:  partner,
+		readBuf: &bytes.Buffer{},
 	}
 }
 
@@ -160,6 +166,7 @@ func (ath *AuthReadWriter) runAuth() error {
 		return err
 	}
 
+	ath.symkey = key
 	ath.crypted = rw
 	ath.authorised = true
 	return nil
@@ -176,17 +183,116 @@ func (ath *AuthReadWriter) Trigger() error {
 	return nil
 }
 
+func (ath *AuthReadWriter) readMessage() ([]byte, error) {
+	header := make([]byte, 28+4)
+
+	if _, err := io.ReadFull(ath.rwc, header); err != nil {
+		return nil, err
+	}
+
+	size := binary.LittleEndian.Uint32(header[28:])
+	if size > MaxMessageSize {
+		return nil, fmt.Errorf("Message too large (%d/%d)", size, MaxMessageSize)
+	}
+
+	buf := make([]byte, size)
+
+	if _, err := io.ReadAtLeast(ath.crypted, buf, int(size)); err != nil {
+		return nil, err
+	}
+
+	macWriter := hmac.New(sha3.New224, ath.symkey)
+	if _, err := macWriter.Write(buf); err != nil {
+		return nil, err
+	}
+
+	mac := macWriter.Sum(nil)
+	if !hmac.Equal(mac, header[:28]) {
+		return nil, fmt.Errorf("Mac differs in received metadata message")
+	}
+
+	return buf, nil
+}
+
 func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 	if err := ath.Trigger(); err != nil {
 		return 0, err
 	}
 
-	return ath.crypted.Read(buf)
+	n := 0
+	bufLen := len(buf)
+
+	for {
+		if ath.readBuf.Len() > 0 {
+			bn, berr := ath.readBuf.Read(buf)
+			if berr != nil && berr != io.EOF {
+				return n, berr
+			}
+
+			n += bn
+			buf = buf[bn:]
+
+			if berr == io.EOF {
+				break
+			}
+		}
+
+		if n >= bufLen {
+			return n, nil
+		}
+
+		msg, err := ath.readMessage()
+		if err != nil {
+			return n, err
+		}
+
+		if _, werr := ath.readBuf.Write(msg); werr != nil {
+			return n, err
+		}
+	}
+
+	return n, nil
 }
 
 func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 	if err := ath.Trigger(); err != nil {
 		return 0, err
+	}
+
+	macWriter := hmac.New(sha3.New224, ath.symkey)
+	if _, err := macWriter.Write(buf); err != nil {
+		return -1, err
+	}
+
+	mac := macWriter.Sum(nil)
+	n, err := ath.rwc.Write(mac)
+	if err != nil {
+		return -2, err
+	}
+
+	if n != len(mac) {
+		return -3, fmt.Errorf(
+			"Unable to write full mac. Should be %d; was %d",
+			len(mac),
+			n,
+		)
+	}
+
+	// Note: this assumes that `crypted` does not pad the data.
+	sizeBuf := make([]byte, 4)
+	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(buf)))
+
+	n, err = ath.rwc.Write(sizeBuf)
+	if err != nil {
+		return -4, err
+	}
+
+	if n != len(sizeBuf) {
+		return -5, fmt.Errorf(
+			"Unable to write full size buf. Should be %d; was %d",
+			len(sizeBuf),
+			n,
+		)
 	}
 
 	return ath.crypted.Write(buf)

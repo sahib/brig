@@ -6,8 +6,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"io"
 	"net"
 	"testing"
+
+	"github.com/disorganizer/brig/util/testutil"
 )
 
 const (
@@ -89,7 +92,7 @@ func genKeyPair(t *testing.T) (Decrypter, Encrypter, error) {
 	return kp, kp, nil
 }
 
-func TestAuthProcess(t *testing.T) {
+func testAuthProcess(t *testing.T, size int64) {
 	withLoopbackConnection(t, func(a, b net.Conn) {
 		aliPriv, aliPub, err := genKeyPair(t)
 		if err != nil {
@@ -104,7 +107,7 @@ func TestAuthProcess(t *testing.T) {
 		autherA := NewAuthReadWriter(a, aliPriv, bobPub)
 		autherB := NewAuthReadWriter(b, bobPriv, aliPub)
 
-		expect := []byte("Hello")
+		expect := testutil.CreateDummyBuf(size)
 		answer := make([]byte, len(expect))
 
 		// Sort out connection based troubles quickly:
@@ -114,7 +117,7 @@ func TestAuthProcess(t *testing.T) {
 			return
 		}
 
-		if _, err := b.Read(answer); err != nil {
+		if _, err := b.Read(answer); err != nil && (err != io.EOF && size == 0) {
 			t.Errorf("Normal read failed: %v", err)
 			return
 		}
@@ -143,4 +146,20 @@ func TestAuthProcess(t *testing.T) {
 			return
 		}
 	})
+}
+
+func TestAuthProcess(t *testing.T) {
+	sizes := []int64{0, 255}
+	for i := uint(0); i < 18; i++ {
+		sizes = append(sizes, int64(1<<i))
+	}
+
+	for _, size := range sizes {
+		t.Logf("Testing size %d", size)
+		testAuthProcess(t, size)
+
+		if t.Failed() {
+			break
+		}
+	}
 }
