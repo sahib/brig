@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"time"
@@ -11,10 +10,11 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
-type handlerFunc func(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error)
+type handlerFunc func(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error)
 
 var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_ADD:           handleAdd,
@@ -38,16 +38,16 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_REMOTE_SELF:   handleRemoteSelf,
 }
 
-func handlePing(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	return []byte("PONG"), nil
+func handlePing(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	return nil, nil
 }
 
-func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	d.signals <- os.Interrupt
-	return []byte("BYE"), nil
+	return nil, nil
 }
 
-func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	filePath := cmd.GetAddCommand().GetFilePath()
 	repoPath := cmd.GetAddCommand().GetRepoPath()
 
@@ -56,10 +56,10 @@ func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error
 		return nil, err
 	}
 
-	return []byte(repoPath), nil
+	return nil, nil
 }
 
-func handleCat(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleCat(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	filePath := cmd.GetCatCommand().GetFilePath()
 	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
@@ -71,10 +71,10 @@ func handleCat(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error
 		return nil, err
 	}
 
-	return []byte(srcPath), nil
+	return nil, nil
 }
 
-func handleMount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleMount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mountPath := cmd.GetMountCommand().GetMountPoint()
 
 	if _, err := d.Mounts.AddMount(mountPath); err != nil {
@@ -82,10 +82,10 @@ func handleMount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, err
 		return nil, err
 	}
 
-	return []byte(mountPath), nil
+	return nil, nil
 }
 
-func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mountPath := cmd.GetUnmountCommand().GetMountPoint()
 
 	if err := d.Mounts.Unmount(mountPath); err != nil {
@@ -93,10 +93,10 @@ func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, e
 		return nil, err
 	}
 
-	return []byte(mountPath), nil
+	return nil, nil
 }
 
-func handleRm(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleRm(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	rmCmd := cmd.GetRmCommand()
 	repoPath := rmCmd.GetRepoPath()
 	recursive := rmCmd.GetRecursive()
@@ -105,10 +105,10 @@ func handleRm(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error)
 		return nil, err
 	}
 
-	return []byte(repoPath), nil
+	return nil, nil
 }
 
-func handleMv(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleMv(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mvCmd := cmd.GetMvCommand()
 	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest()); err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func handleMv(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error)
 	return nil, nil
 }
 
-func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	repoPath := cmd.GetHistoryCommand().GetRepoPath()
 
 	history, err := d.Repo.OwnStore.History(repoPath)
@@ -125,28 +125,32 @@ func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, e
 		return nil, err
 	}
 
-	protoData, err := history.Marshal()
+	histProto, err := history.ToProto()
 	if err != nil {
 		return nil, err
 	}
 
-	return protoData, err
+	return &wire.Response{
+		HistoryResp: &wire.Response_HistoryResp{
+			History: histProto,
+		},
+	}, nil
 }
 
-func handleLog(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	// TODO: Needs implementation.
 	return nil, nil
 }
 
-func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	qry := cmd.GetOnlineStatusCommand().GetQuery()
 	switch qry {
 	case wire.OnlineQuery_IS_ONLINE:
-		if d.IsOnline() {
-			return []byte("online"), nil
-		} else {
-			return []byte("offline"), nil
-		}
+		return &wire.Response{
+			OnlineStatusResp: &wire.Response_OnlineStatusResp{
+				IsOnline: proto.Bool(d.IsOnline()),
+			},
+		}, nil
 	case wire.OnlineQuery_GO_ONLINE:
 		return nil, d.Connect()
 	case wire.OnlineQuery_GO_OFFLINE:
@@ -156,7 +160,7 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }
 
-func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	// fetchCmd := cmd.GetFetchCommand()
 	// who, err := id.Cast(fetchCmd.GetWho())
 	// if err != nil {
@@ -185,32 +189,36 @@ func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, err
 	// }
 
 	// TODO: what to return on success?
-	return []byte("OK"), nil
+	return nil, nil
 }
 
-func handleList(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	listCmd := cmd.GetListCommand()
 	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
-	buf := &bytes.Buffer{}
 
-	if err := d.Repo.OwnStore.ListMarshalled(buf, root, int(depth)); err != nil {
+	dirlist, err := d.Repo.OwnStore.ListProto(root, int(depth))
+	if err != nil {
 		return nil, err
 	}
 
-	return buf.Bytes(), nil
+	return &wire.Response{
+		ListResp: &wire.Response_ListResp{
+			Dirlist: dirlist,
+		},
+	}, nil
 }
 
-func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	path := cmd.GetMkdirCommand().GetPath()
 
 	if _, err := d.Repo.OwnStore.Mkdir(path); err != nil {
 		return nil, err
 	}
 
-	return []byte("OK"), nil
+	return nil, nil
 }
 
-func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	remoteAddCmd := cmd.GetRemoteAddCommand()
 	idString, peerHash := remoteAddCmd.GetId(), remoteAddCmd.GetHash()
 
@@ -224,10 +232,10 @@ func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte,
 		return nil, err
 	}
 
-	return []byte("OK"), nil
+	return nil, nil
 }
 
-func handleRemoteRemove(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleRemoteRemove(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	idString := cmd.GetRemoteRemoveCommand().GetId()
 
 	id, err := id.Cast(idString)
@@ -239,24 +247,28 @@ func handleRemoteRemove(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 		return nil, err
 	}
 
-	return []byte("OK"), nil
+	return nil, nil
 }
 
-func handleRemoteList(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	resp := ""
-	for idx, rm := range d.Repo.Remotes.List() {
-		state := "offline"
-		if d.MetaHost.IsOnline(rm) {
-			state = "online"
+func handleRemoteList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	resp := &wire.Response_RemoteListResp{}
+
+	for _, rm := range d.Repo.Remotes.List() {
+		protoRm := &wire.Remote{
+			Id:       proto.String(string(rm.ID())),
+			Hash:     proto.String(rm.Hash()),
+			IsOnline: proto.Bool(d.MetaHost.IsOnline(rm)),
 		}
 
-		resp += fmt.Sprintf("#%02d %s: %s\n", idx+1, rm.ID(), rm.Hash(), state)
+		resp.Remotes = append(resp.Remotes, protoRm)
 	}
 
-	return []byte(resp), nil
+	return &wire.Response{
+		RemoteListResp: resp,
+	}, nil
 }
 
-func handleRemoteLocate(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleRemoteLocate(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	locateCmd := cmd.GetRemoteLocateCommand()
 	idString, peerLimit := locateCmd.GetId(), int(locateCmd.GetPeerLimit())
 	timeout := time.Duration(locateCmd.GetTimeoutMs()) * time.Millisecond
@@ -275,19 +287,26 @@ func handleRemoteLocate(d *Server, ctx context.Context, cmd *wire.Command) ([]by
 		return nil, err
 	}
 
-	resp := ""
+	resp := &wire.Response_RemoteLocateResp{}
 	for _, peer := range peers {
-		resp += peer.ID + "\n"
+		resp.Hashes = append(resp.Hashes, peer.ID)
 	}
 
-	return []byte(resp), nil
+	return &wire.Response{
+		RemoteLocateResp: resp,
+	}, nil
 }
 
-func handleRemoteSelf(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	peerHash, err := d.Repo.IPFS.Identity()
-	if err != nil {
-		return nil, err
-	}
+func handleRemoteSelf(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	self := d.Repo.Peer()
 
-	return []byte(peerHash), nil
+	return &wire.Response{
+		RemoteSelfResp: &wire.Response_RemoteSelfResp{
+			Self: &wire.Remote{
+				Id:       proto.String(string(self.ID())),
+				Hash:     proto.String(self.Hash()),
+				IsOnline: proto.Bool(d.IsOnline()),
+			},
+		},
+	}, nil
 }

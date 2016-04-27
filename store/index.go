@@ -415,17 +415,17 @@ func (st *Store) List(root string, depth int) (entries []*File, err error) {
 
 // The results are marshaled into a wire.Dirlist message and written to `w`.
 // `depth` may be negative for unlimited recursion.
-func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
+func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 	entries, err := st.List(root, depth)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dirlist := &wire.Dirlist{}
 	for _, entry := range entries {
 		protoFile, err := entry.toProtoMessage()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Be sure to mask out key and hash.
@@ -437,12 +437,7 @@ func (st *Store) ListMarshalled(w io.Writer, root string, depth int) error {
 		})
 	}
 
-	enc := protocol.NewProtocolWriter(w, true)
-	if err := enc.Send(dirlist); err != nil {
-		return err
-	}
-
-	return nil
+	return dirlist, nil
 }
 
 func (st *Store) Move(oldPath, newPath string) (err error) {

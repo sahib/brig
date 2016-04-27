@@ -1,4 +1,4 @@
-package bolt.protocol;
+package brig.store;
 option go_package = "wire";
 
 message File {

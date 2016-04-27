@@ -207,30 +207,35 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Prepare a response template:
-	resp := &wire.Response{
-		ResponseType: cmd.CommandType,
-		Success:      proto.Bool(false),
-	}
-
 	// Figure out which handler to call:
 	handlerID := *(cmd.CommandType)
-	if handler, ok := handlerMap[handlerID]; !ok {
-		resp.Error = proto.String(fmt.Sprintf("No handler for Id: %v", handlerID))
-	} else {
-		answer, err := handler(d, ctx, cmd)
+	handler, ok := handlerMap[handlerID]
 
-		if err != nil {
-			resp.Error = proto.String(err.Error())
-		} else {
-			resp.Response = answer
-			resp.Success = proto.Bool(true)
-		}
+	if !ok {
+		log.Warningf("No handler for ID: %v", handlerID)
+		return
+	}
+
+	resp, err := handler(d, ctx, cmd)
+
+	// Empty response or error response:
+	if resp == nil {
+		resp = &wire.Response{}
+	}
+
+	resp.ResponseType = cmd.CommandType
+	resp.Success = proto.Bool(false)
+
+	if err != nil {
+		resp.Error = proto.String(err.Error())
+	} else {
+		resp.Success = proto.Bool(true)
 	}
 
 	// Send the response back to the client:
+	fmt.Println(resp)
 	if err := p.Send(resp); err != nil {
-		log.Warning("Unable to send message back to client: ", err)
+		log.Warning("Unable to send response back to client: ", err)
 	}
 }
 

@@ -1,5 +1,7 @@
-package daemon.protocol;
+package brig.daemon;
 option go_package = "wire";
+
+import "store.proto";
 
 // The ordering in here has no particular meaning.
 // The numbers just get incremented in the order that
@@ -149,9 +151,45 @@ message Command {
     optional RemoteSelfCmd remote_self_command = 20;
 }
 
+message Remote {
+    required string id = 1;
+    required string hash = 2;
+    optional bool is_online = 3;
+}
+
 message Response {
+    message ListResp {
+        required brig.store.Dirlist dirlist = 1;
+    }
+
+    message HistoryResp {
+        required brig.store.History history = 1;
+    }
+
+    message RemoteListResp {
+        repeated Remote remotes = 1;
+    }
+
+    message RemoteLocateResp {
+        repeated string hashes = 1;
+    }
+
+    message RemoteSelfResp {
+        required Remote self = 1;
+    }
+
+    message OnlineStatusResp {
+        required bool is_online = 1;
+    }
+
     required MessageType response_type = 1;
-    required bool success = 3;
-    optional bytes response = 2;
-    optional string error = 4;
+    required bool success = 2;
+    optional string error = 3;
+
+    optional HistoryResp history_resp = 4;
+    optional ListResp list_resp = 5;
+    optional RemoteListResp remote_list_resp = 6;
+    optional RemoteLocateResp remote_locate_resp = 7;   
+    optional RemoteSelfResp remote_self_resp = 8;
+    optional OnlineStatusResp online_status_resp = 9;
 }

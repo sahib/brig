@@ -1,18 +1,15 @@
 package daemon
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store"
 	storewire "github.com/disorganizer/brig/store/wire"
-	"github.com/disorganizer/brig/util/protocol"
 	"github.com/gogo/protobuf/proto"
 )
 
-// recvResponseBytes reads one response from the daemon and formats possible errors.
 func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 	resp := <-c.Recv
 	if resp != nil && !resp.GetSuccess() {
@@ -22,27 +19,8 @@ func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 	return resp, nil
 }
 
-// recvResponseBytes reads one response from the daemon and formats possible errors.
-func (c *Client) recvResponseBytes(logname string) ([]byte, error) {
-	resp, err := c.recvResponse(logname)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.GetResponse(), nil
-}
-
-func (c *Client) recvResponseString(logname string) (string, error) {
-	resp, err := c.recvResponseBytes(logname)
-	if err != nil {
-		return "", err
-	}
-
-	return string(resp), nil
-}
-
 // Add adds the data at `filePath` to brig as `repoPath`.
-func (c *Client) Add(filePath, repoPath string) (string, error) {
+func (c *Client) Add(filePath, repoPath string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_ADD.Enum(),
 		AddCommand: &wire.Command_AddCmd{
@@ -51,11 +29,15 @@ func (c *Client) Add(filePath, repoPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponseString("add")
+	if _, err := c.recvResponse("add"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Cat outputs the brig file at `repoPath` to `filePath`.
-func (c *Client) Cat(repoPath, filePath string) (string, error) {
+func (c *Client) Cat(repoPath, filePath string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_CAT.Enum(),
 		CatCommand: &wire.Command_CatCmd{
@@ -64,11 +46,15 @@ func (c *Client) Cat(repoPath, filePath string) (string, error) {
 		},
 	}
 
-	return c.recvResponseString("cat")
+	if _, err := c.recvResponse("cat"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Mount serves a fuse endpoint at the specified path.
-func (c *Client) Mount(mountPath string) (string, error) {
+func (c *Client) Mount(mountPath string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_MOUNT.Enum(),
 		MountCommand: &wire.Command_MountCmd{
@@ -76,11 +62,15 @@ func (c *Client) Mount(mountPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponseString("mount")
+	if _, err := c.recvResponse("mount"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Unmount removes a previously mounted fuse endpoint.
-func (c *Client) Unmount(mountPath string) (string, error) {
+func (c *Client) Unmount(mountPath string) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_UNMOUNT.Enum(),
 		UnmountCommand: &wire.Command_UnmountCmd{
@@ -88,11 +78,15 @@ func (c *Client) Unmount(mountPath string) (string, error) {
 		},
 	}
 
-	return c.recvResponseString("unmount")
+	if _, err := c.recvResponse("unmount"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Remove removes the brig file at `repoPath`
-func (c *Client) Remove(repoPath string, recursive bool) (string, error) {
+func (c *Client) Remove(repoPath string, recursive bool) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_RM.Enum(),
 		RmCommand: &wire.Command_RmCmd{
@@ -101,7 +95,11 @@ func (c *Client) Remove(repoPath string, recursive bool) (string, error) {
 		},
 	}
 
-	return c.recvResponseString("rm")
+	if _, err := c.recvResponse("rm"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) Move(source, dest string) error {
@@ -113,7 +111,7 @@ func (c *Client) Move(source, dest string) error {
 		},
 	}
 
-	if _, err := c.recvResponseString("mv"); err != nil {
+	if _, err := c.recvResponse("mv"); err != nil {
 		return err
 	}
 
@@ -139,22 +137,22 @@ func (c *Client) History(repoPath string) (store.History, error) {
 		},
 	}
 
-	// TODO: Sending json over protobuf is pretty hilarious/stupid.
-	//       Do something else, but be consistent this time.
-	protoData, err := c.recvResponseBytes("history")
+	resp, err := c.recvResponse("history")
 	if err != nil {
 		return nil, err
 	}
 
 	hist := &store.History{}
-	if err := hist.Unmarshal(protoData); err != nil {
+	protoHist := resp.GetHistoryResp().GetHistory()
+
+	if err := hist.FromProto(protoHist); err != nil {
 		return nil, err
 	}
 
 	return *hist, nil
 }
 
-func (c *Client) alterOnlineStatus(query wire.OnlineQuery) ([]byte, error) {
+func (c *Client) alterOnlineStatus(query wire.OnlineQuery) (*wire.Response, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_ONLINE_STATUS.Enum(),
 		OnlineStatusCommand: &wire.Command_OnlineStatusCmd{
@@ -162,12 +160,7 @@ func (c *Client) alterOnlineStatus(query wire.OnlineQuery) ([]byte, error) {
 		},
 	}
 
-	data, err := c.recvResponseBytes("online-status")
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return c.recvResponse("online-status")
 }
 
 func (c *Client) Online() error {
@@ -189,12 +182,12 @@ func (c *Client) Offline() error {
 }
 
 func (c *Client) IsOnline() (bool, error) {
-	data, err := c.alterOnlineStatus(wire.OnlineQuery_IS_ONLINE)
+	resp, err := c.alterOnlineStatus(wire.OnlineQuery_IS_ONLINE)
 	if err != nil {
 		return false, err
 	}
 
-	return string(data) == "online", nil
+	return resp.GetOnlineStatusResp().GetIsOnline(), nil
 }
 
 func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
@@ -206,18 +199,12 @@ func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
 		},
 	}
 
-	listData, err := c.recvResponseBytes("list")
+	resp, err := c.recvResponse("list")
 	if err != nil {
 		return nil, err
 	}
 
-	dec := protocol.NewProtocolReader(bytes.NewReader(listData), true)
-	dirlist := &storewire.Dirlist{}
-
-	if err := dec.Recv(dirlist); err != nil {
-		return nil, err
-	}
-
+	dirlist := resp.GetListResp().GetDirlist()
 	return dirlist.Entries, nil
 }
 
@@ -229,7 +216,7 @@ func (c *Client) Fetch(who id.ID) error {
 		},
 	}
 
-	if _, err := c.recvResponseBytes("fetch"); err != nil {
+	if _, err := c.recvResponse("fetch"); err != nil {
 		return err
 	}
 
@@ -244,7 +231,7 @@ func (c *Client) Mkdir(path string) error {
 		},
 	}
 
-	if _, err := c.recvResponseBytes("mkdir"); err != nil {
+	if _, err := c.recvResponse("mkdir"); err != nil {
 		return err
 	}
 
@@ -260,7 +247,7 @@ func (c *Client) RemoteAdd(ident id.ID, peerHash string) error {
 		},
 	}
 
-	if _, err := c.recvResponseBytes("remote-add"); err != nil {
+	if _, err := c.recvResponse("remote-add"); err != nil {
 		return err
 	}
 
@@ -275,15 +262,20 @@ func (c *Client) RemoteRemove(ident id.ID) error {
 		},
 	}
 
-	if _, err := c.recvResponseBytes("remote-remove"); err != nil {
+	if _, err := c.recvResponse("remote-remove"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) RemoteList() (string, error) {
-	// TODO: Use protobuf for requests. (dumbass.)
+type RemoteEntry struct {
+	Hash     string
+	Ident    string
+	IsOnline bool
+}
+
+func (c *Client) RemoteList() ([]*RemoteEntry, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_REMOTE_LIST.Enum(),
 		RemoteListCommand: &wire.Command_RemoteListCmd{
@@ -291,25 +283,39 @@ func (c *Client) RemoteList() (string, error) {
 		},
 	}
 
-	list, err := c.recvResponseBytes("remote-list")
+	resp, err := c.recvResponse("remote-list")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(list), nil
+	entries := []*RemoteEntry{}
+	for _, entry := range resp.GetRemoteListResp().GetRemotes() {
+		entries = append(entries, &RemoteEntry{
+			Ident:    entry.GetId(),
+			Hash:     entry.GetHash(),
+			IsOnline: entry.GetIsOnline(),
+		})
+	}
+
+	return entries, nil
 }
 
 // TODO: Implement RemoteLocate
 
-func (c *Client) RemoteSelf() (string, error) {
+func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_REMOTE_SELF.Enum(),
 	}
 
-	hash, err := c.recvResponseBytes("remote-self")
+	resp, err := c.recvResponse("remote-self")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(hash), nil
+	self := resp.GetRemoteSelfResp().GetSelf()
+	return &RemoteEntry{
+		Ident:    self.GetId(),
+		Hash:     self.GetHash(),
+		IsOnline: self.GetIsOnline(),
+	}, nil
 }

@@ -113,9 +113,9 @@ func handleMount(ctx climax.Context, client *daemon.Client) int {
 	var err error
 
 	if ctx.Is("unmount") {
-		_, err = client.Unmount(mountPath)
+		err = client.Unmount(mountPath)
 	} else {
-		_, err = client.Mount(mountPath)
+		err = client.Mount(mountPath)
 	}
 
 	if err != nil {
@@ -276,20 +276,19 @@ func handleAdd(ctx climax.Context, client *daemon.Client) int {
 		repoPath = ctx.Args[1]
 	}
 
-	path, err := client.Add(filePath, repoPath)
-	if err != nil {
+	if err := client.Add(filePath, repoPath); err != nil {
 		log.Errorf("Could not add file: %v: %v", filePath, err)
 		return UnknownError
 	}
 
-	fmt.Println(path)
+	fmt.Println(repoPath)
 	return Success
 }
 
 func handleRm(ctx climax.Context, client *daemon.Client) int {
 	repoPath := prefixSlash(ctx.Args[0])
 
-	if _, err := client.Remove(repoPath, ctx.Is("recursive")); err != nil {
+	if err := client.Remove(repoPath, ctx.Is("recursive")); err != nil {
 		log.Errorf("Could not remove file: `%s`: %v", repoPath, err)
 		return UnknownError
 	}
@@ -327,8 +326,7 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 		filePath = absPath
 	}
 
-	_, err := client.Cat(repoPath, filePath)
-	if err != nil {
+	if err := client.Cat(repoPath, filePath); err != nil {
 		log.Errorf("Could not cat file: %v: %v", repoPath, err)
 		return UnknownError
 	}
@@ -623,35 +621,3 @@ func handleRemote(ctx climax.Context, client *daemon.Client) int {
 	log.Warningf("No remote subcommand `%s`", ctx.Args[0])
 	return BadArgs
 }
-
-// func handleAuth(ctx climax.Context, client *daemon.Client) int {
-// 	if ctx.Is("add") {
-// 		if len(ctx.Args) < 2 {
-// 			log.Warningf("Need ID and fingerprint.")
-// 			return BadArgs
-// 		}
-//
-// 		idString, peerHash := ctx.Args[0], ctx.Args[1]
-// 		ID, err := id.Cast(idString)
-// 		if err != nil {
-// 			log.Warningf("Bad ID: %v", err)
-// 			return BadArgs
-// 		}
-//
-// 		if err := client.AuthAdd(ID, peerHash); err != nil {
-// 			log.Warningf("auth: %v", err)
-// 			return UnknownError
-// 		}
-//
-// 		return Success
-// 	}
-//
-// 	finger, err := client.AuthPrint()
-// 	if err != nil {
-// 		log.Warningf("Printing fingerprint failed: %v", err)
-// 		return UnknownError
-// 	}
-//
-// 	fmt.Println(finger)
-// 	return Success
-// }

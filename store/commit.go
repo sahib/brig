@@ -194,6 +194,15 @@ func (hy *History) toProtoMessage() (*wire.History, error) {
 	return protoHist, nil
 }
 
+// TODO: Just make toProtoMessage and make that an interface.
+func (hy *History) ToProto() (*wire.History, error) {
+	return hy.toProtoMessage()
+}
+
+func (hy *History) FromProto(msg *wire.History) error {
+	return hy.fromProtoMessage(msg)
+}
+
 func (hy *History) Marshal() ([]byte, error) {
 	protoHist, err := hy.toProtoMessage()
 	if err != nil {
