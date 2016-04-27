@@ -251,32 +251,65 @@ func (c *Client) Mkdir(path string) error {
 	return nil
 }
 
-func (c *Client) AuthAdd(ident id.ID, peerHash string) error {
+func (c *Client) RemoteAdd(ident id.ID, peerHash string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_AUTH_ADD.Enum(),
-		AuthAddCommand: &wire.Command_AuthAddCmd{
-			Who:      proto.String(string(ident)),
-			PeerHash: proto.String(peerHash),
+		CommandType: wire.MessageType_REMOTE_ADD.Enum(),
+		RemoteAddCommand: &wire.Command_RemoteAddCmd{
+			Id:   proto.String(string(ident)),
+			Hash: proto.String(peerHash),
 		},
 	}
 
-	if _, err := c.recvResponseBytes("auth-add"); err != nil {
+	if _, err := c.recvResponseBytes("remote-add"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) AuthPrint() (string, error) {
+func (c *Client) RemoteRemove(ident id.ID) error {
 	c.Send <- &wire.Command{
-		CommandType:      wire.MessageType_AUTH_PRINT.Enum(),
-		AuthPrintCommand: &wire.Command_AuthPrintCmd{},
+		CommandType: wire.MessageType_REMOTE_REMOVE.Enum(),
+		RemoteRemoveCommand: &wire.Command_RemoteRemoveCmd{
+			Id: proto.String(string(ident)),
+		},
 	}
 
-	finger, err := c.recvResponseBytes("auth-print")
+	if _, err := c.recvResponseBytes("remote-remove"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) RemoteList() (string, error) {
+	// TODO: Use protobuf for requests. (dumbass.)
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_REMOTE_LIST.Enum(),
+		RemoteListCommand: &wire.Command_RemoteListCmd{
+			NeedsOnline: proto.Bool(true),
+		},
+	}
+
+	list, err := c.recvResponseBytes("remote-list")
 	if err != nil {
 		return "", err
 	}
 
-	return string(finger), nil
+	return string(list), nil
+}
+
+// TODO: Implement RemoteLocate
+
+func (c *Client) RemoteSelf() (string, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_REMOTE_SELF.Enum(),
+	}
+
+	hash, err := c.recvResponseBytes("remote-self")
+	if err != nil {
+		return "", err
+	}
+
+	return string(hash), nil
 }

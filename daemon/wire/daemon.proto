@@ -19,8 +19,12 @@ enum MessageType {
     LIST = 11;
     MV = 12;
     MKDIR = 13;
-    AUTH_ADD = 14;
-    AUTH_PRINT = 15;
+
+    REMOTE_ADD = 14;
+    REMOTE_REMOVE = 15;
+    REMOTE_LIST = 16;
+    REMOTE_LOCATE = 17;
+    REMOTE_SELF = 18;
 }
 
 enum OnlineQuery {
@@ -99,13 +103,26 @@ message Command {
         required string path = 1;
     }
 
-    message AuthAddCmd {
-        required string who = 1;
-        required string peer_hash = 2;
+    message RemoteAddCmd {
+        required string id = 1;
+        required string hash = 2;
     }
 
-    message AuthPrintCmd {
-        // No arguments yet.
+    message RemoteRemoveCmd {
+        required string id = 1;
+    }
+
+    message RemoteListCmd {
+        optional bool needsOnline = 1;
+    }
+
+    message RemoteLocateCmd {
+        required string id = 1;
+        optional int32 peer_limit = 2;
+        optional int32 timeout_ms = 3;
+    }
+
+    message RemoteSelfCmd  {
     }
 
     required MessageType command_type = 1;
@@ -124,8 +141,12 @@ message Command {
     optional ListCmd list_command = 13;
     optional MvCmd mv_command = 14;
     optional MkdirCmd mkdir_command = 15;
-    optional AuthAddCmd auth_add_command = 16;
-    optional AuthPrintCmd auth_print_command = 17;
+
+    optional RemoteAddCmd remote_add_command = 16;
+    optional RemoteRemoveCmd remote_remove_command = 17;
+    optional RemoteListCmd remote_list_command = 18;
+    optional RemoteLocateCmd remote_locate_command = 19;
+    optional RemoteSelfCmd remote_self_command = 20;
 }
 
 message Response {

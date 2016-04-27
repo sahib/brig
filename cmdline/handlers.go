@@ -571,34 +571,87 @@ func handleMkdir(ctx climax.Context, client *daemon.Client) int {
 	return Success
 }
 
-func handleAuth(ctx climax.Context, client *daemon.Client) int {
-	if ctx.Is("add") {
-		if len(ctx.Args) < 2 {
-			log.Warningf("Need ID and fingerprint.")
-			return BadArgs
-		}
-
-		idString, peerHash := ctx.Args[0], ctx.Args[1]
-		ID, err := id.Cast(idString)
-		if err != nil {
-			log.Warningf("Bad ID: %v", err)
-			return BadArgs
-		}
-
-		if err := client.AuthAdd(ID, peerHash); err != nil {
-			log.Warningf("auth: %v", err)
-			return UnknownError
-		}
-
-		return Success
+func handleRemoteAdd(ctx climax.Context, client *daemon.Client) int {
+	if len(ctx.Args) < 3 {
+		log.Warningf("Need an id and a peer hash.")
+		return BadArgs
 	}
 
-	finger, err := client.AuthPrint()
+	idString, hash := ctx.Args[1], ctx.Args[2]
+
+	id, err := id.Cast(idString)
 	if err != nil {
-		log.Warningf("Printing fingerprint failed: %v", err)
+		log.Errorf("Invalid ID: %v", err)
+		return BadArgs
+	}
+
+	if err := client.RemoteAdd(id, hash); err != nil {
+		log.Errorf("Unable to add remote: %v", err)
 		return UnknownError
 	}
 
-	fmt.Println(finger)
 	return Success
 }
+
+func handleRemoteList(ctx climax.Context, client *daemon.Client) int {
+	list, err := client.RemoteList()
+	if err != nil {
+		log.Errorf("Unable to list remotes: %v", err)
+		return UnknownError
+	}
+
+	fmt.Println(list)
+	return Success
+}
+
+func handleRemote(ctx climax.Context, client *daemon.Client) int {
+	if len(ctx.Args) == 0 {
+		return handleRemoteList(ctx, client)
+	}
+
+	switch ctx.Args[0] {
+	case "add":
+		return handleRemoteAdd(ctx, client)
+	// TODO!
+	case "remove":
+	case "list":
+		return handleRemoteList(ctx, client)
+	case "locate":
+	case "self":
+	}
+
+	log.Warningf("No remote subcommand `%s`", ctx.Args[0])
+	return BadArgs
+}
+
+// func handleAuth(ctx climax.Context, client *daemon.Client) int {
+// 	if ctx.Is("add") {
+// 		if len(ctx.Args) < 2 {
+// 			log.Warningf("Need ID and fingerprint.")
+// 			return BadArgs
+// 		}
+//
+// 		idString, peerHash := ctx.Args[0], ctx.Args[1]
+// 		ID, err := id.Cast(idString)
+// 		if err != nil {
+// 			log.Warningf("Bad ID: %v", err)
+// 			return BadArgs
+// 		}
+//
+// 		if err := client.AuthAdd(ID, peerHash); err != nil {
+// 			log.Warningf("auth: %v", err)
+// 			return UnknownError
+// 		}
+//
+// 		return Success
+// 	}
+//
+// 	finger, err := client.AuthPrint()
+// 	if err != nil {
+// 		log.Warningf("Printing fingerprint failed: %v", err)
+// 		return UnknownError
+// 	}
+//
+// 	fmt.Println(finger)
+// 	return Success
+// }

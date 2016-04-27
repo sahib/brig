@@ -98,6 +98,7 @@ type RemoteStore interface {
 	Get(ID id.ID) (Remote, error)
 
 	// Remove purges the partner with `ID` from he store.
+	// ErrNoSuchRemote should be returnd when there is no such ID.
 	Remove(ID id.ID) error
 
 	// Iter returns a channel that yields every remote in the store.

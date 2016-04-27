@@ -131,21 +131,10 @@ func RunCmdline() int {
 			Handle: withDaemon(handleIsOnline, true),
 		},
 		climax.Command{
-			Name:   "auth",
+			Name:   "remote",
 			Group:  idntGroup,
-			Brief:  "Authorise other repos.",
-			Handle: withDaemon(handleAuth, true),
-			Flags: []climax.Flag{
-				{
-					Name:  "add",
-					Short: "a",
-					Help:  `Authorise other repo.`,
-				}, {
-					Name:  "print",
-					Short: "p",
-					Help:  `Print own fingerprint.`,
-				},
-			},
+			Brief:  "Manage remotes.",
+			Handle: withDaemon(handleRemote, true),
 		},
 		climax.Command{
 			Name:  "sync",

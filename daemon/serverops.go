@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/util/ipfsutil"
 	"golang.org/x/net/context"
 )
 
@@ -29,8 +31,11 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_FETCH:         handleFetch,
 	wire.MessageType_LIST:          handleList,
 	wire.MessageType_MKDIR:         handleMkdir,
-	wire.MessageType_AUTH_ADD:      handleAuthAdd,
-	wire.MessageType_AUTH_PRINT:    handleAuthPrint,
+	wire.MessageType_REMOTE_ADD:    handleRemoteAdd,
+	wire.MessageType_REMOTE_REMOVE: handleRemoteRemove,
+	wire.MessageType_REMOTE_LIST:   handleRemoteList,
+	wire.MessageType_REMOTE_LOCATE: handleRemoteLocate,
+	wire.MessageType_REMOTE_SELF:   handleRemoteSelf,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
@@ -205,9 +210,9 @@ func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, err
 	return []byte("OK"), nil
 }
 
-func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
-	authCmd := cmd.GetAuthAddCommand()
-	idString, peerHash := authCmd.GetWho(), authCmd.GetPeerHash()
+func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+	remoteAddCmd := cmd.GetRemoteAddCommand()
+	idString, peerHash := remoteAddCmd.GetId(), remoteAddCmd.GetHash()
 
 	id, err := id.Cast(idString)
 	if err != nil {
@@ -222,7 +227,63 @@ func handleAuthAdd(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, e
 	return []byte("OK"), nil
 }
 
-func handleAuthPrint(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+func handleRemoteRemove(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+	idString := cmd.GetRemoteRemoveCommand().GetId()
+
+	id, err := id.Cast(idString)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := d.Repo.Remotes.Remove(id); err != nil {
+		return nil, err
+	}
+
+	return []byte("OK"), nil
+}
+
+func handleRemoteList(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+	resp := ""
+	for idx, rm := range d.Repo.Remotes.List() {
+		state := "offline"
+		if d.MetaHost.IsOnline(rm) {
+			state = "online"
+		}
+
+		resp += fmt.Sprintf("#%02d %s: %s\n", idx+1, rm.ID(), rm.Hash(), state)
+	}
+
+	return []byte(resp), nil
+}
+
+func handleRemoteLocate(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
+	locateCmd := cmd.GetRemoteLocateCommand()
+	idString, peerLimit := locateCmd.GetId(), int(locateCmd.GetPeerLimit())
+	timeout := time.Duration(locateCmd.GetTimeoutMs()) * time.Millisecond
+
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+
+	id, err := id.Cast(idString)
+	if err != nil {
+		return nil, err
+	}
+
+	peers, err := ipfsutil.Locate(d.Repo.IPFS, id.Hash(), peerLimit, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := ""
+	for _, peer := range peers {
+		resp += peer.ID + "\n"
+	}
+
+	return []byte(resp), nil
+}
+
+func handleRemoteSelf(d *Server, ctx context.Context, cmd *wire.Command) ([]byte, error) {
 	peerHash, err := d.Repo.IPFS.Identity()
 	if err != nil {
 		return nil, err
