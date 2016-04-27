@@ -9,11 +9,13 @@ brig - Research and development on a distributed and secure file synchronisation
 ## Your name 
 
 Christopher Pahl 
+
 Christoph Piechula
 
 ## E-mail
 
 christopher.pahl@hs-augsburg.de
+
 christoph.piechula@hs-augsburg.de
 
 ## Have you ever applied to or received funding as an OTF project?
@@ -46,7 +48,7 @@ It is therefore hard to block or throttle the network access, whereas
 centralized cloud services depend on the availability of the service itself. 
 
 **Version control system for large files:** Since ipfs uses content addressed
-storage (ie. files are addressed by their checksum), it is easy to build a
+storage (i.e. files are addressed by their checksum), it is easy to build a
 version control system for binary files.
 
 **No vendor lock-in:** Both ipfs and brig is free software, everybody can
@@ -54,7 +56,7 @@ download, redistribute or modify the software. Even if ipfs or brig development
 stalls, users will still be able to access their files or fork the original
 project.
 
-**Storage quotas:**: On devices with limited storage space, a user will be able
+**Storage quotas:** On devices with limited storage space, a user will be able
 to access files directly in the ipfs network, without having a full copy of all
 the files. File deduplication and compression further reduces the storage
 needed, making it suitable for low-end hardware and mobile devices.
@@ -63,10 +65,10 @@ Since ipfs is not easily usable by itself and has no focus on security, brig
 attempts to fix this by making these features accessible through a simple
 interface. This enables the following use cases:
 
-* Secure file synchronisation and transfer
-* Encrypted backup or archive possibilities
-* Usable as encrypted offline container
-* Platform for other security focused applications
+* Secure file synchronisation and transfer.
+* Encrypted backup or archive possibilities.
+* Usable as encrypted offline container.
+* Platform for other security focused applications.
 
 ## What are hoped for goals or longer term effects of the project?
 
@@ -86,18 +88,18 @@ On the other hand all the listed benefits can be introduced in our everyday's li
 while sharing sensible data with your doctor, your lawyer or just applying for a job.
 
 The licence and distributed infrastructure ensures that, like the world wide
-web, the service is always available and cannot just get 'turned off' even
-if a government decides to pull the plug. It is however possible that an
-oppressive regime blocks or filters access to brig. This could be fixed in the
-future by offering to use brig in conjunction with the tor onion routing
-project. 
+web, the service is always available and cannot just get 'turned off' even if a
+government decides to pull the plug. It is however possible that an oppressive
+regime blocks or filters access to brig. This could be fixed or mitigated in the
+future by offering to use brig in conjunction with the tor project. 
 
 In a world where brig would be used instead of Dropbox, mass surveillance would
 get tremendously harder since the data is no longer in the cloud (with companies
 behind that may be potentially gagged by institutions like the NSA), but on
 peers in almost every home and company.
 
-In a nutshell: More protection for human rights and democracy.
+In a nutshell: More protection for human rights and democracy by lowering the
+hurdle to share documents securely.
 
 <!-- We want to know how you think the world could be, what larger purpose this
 project is a part of, and/or the bigger target you aiming for. Bulleted lists
@@ -105,24 +107,24 @@ are good. -->
 
 ## Focus *
 
-Awareness of privacy and security threats
-Privacy enhancement
-Security from danger or threat online
+* Awareness of privacy and security threats
+* Privacy enhancement
+* Security from danger or threat online
 
 ## Status *
 
-It Exists! (Alpha/Beta)
+* It Exists! (Alpha/Beta)
 
 ## Technology attributes *
 
-User interface/experience
-Application deployment
-Server daemon
-Cryptography
-Desktop client
-Sensitive data
-Networking
-Other
+* User interface/experience
+* Application deployment
+* Server daemon
+* Cryptography
+* Desktop client
+* Sensitive data
+* Networking
+* Other
 
 <!-- If the proposed project is working very closely with technology such as
 developing software or hardware, select any of the following that could describe
@@ -136,12 +138,13 @@ the technology. -->
 briefly. These should be specific, measurable, attainable, realistic, and
 time-relatable. Bulleted lists are ideal. -->
 
-We are two computer science master students at the university of applied science
-Augsburg, Germany. Currently we are working on a proof of concept code base
+We are two computer science master students at the university of applied
+sciences Augsburg, Germany. Currently we are working on a proof of concept code base
 for brig, which should be available at the end of our master thesis.
 
 Generally, our primary goal is to work on the topic of secure and distributed file
-synchronization as research fellows, possibly also as PhD students. (TODO: @schöler: passt das?)
+synchronization as research fellows, possibly also as PhD students. (TODO:
+@schöler: passt der ausdruck dafür?)
 To finance these positions a sound funding is required.  In turn we would be
 able to steadily continue the research and development of brig. Sadly, funding
 is hard to get on such a general topic that is additionally open source and
@@ -168,16 +171,18 @@ We're planning these milestones:
   to non-technical users. Planned to be finished half a year after the technical
   prototype (Sept/Oct. 2017).
 
+We hope to get funding beginning at Sept/Oct. 2016.
+
 ## Objective(s)
 
-Research
-Technology development
-Deploying technology Software or hardware development
-Testing
+* Research
+* Technology development
+* Deploying technology Software or hardware development
+* Testing
 
 ## How long will it take?
 
-(TODO: @schöler: Summe und Zeitraum wurde gewählt weil projekte mit weniger als
+(TODO: @Schöler: Summe und Zeitraum wurde gewählt weil projekte mit weniger als
 300.000$ und weniger als 12 Monaten Zeitraum bevorzugt werden)
 
 12 months
@@ -194,7 +199,8 @@ Testing
 effort and how well do you know them?
 -->
 
-TODO: Noch etwas weiter ausformulieren?
+TODO: Noch etwas weiter ausformulieren? 
+TODO: @Schöler: Oder noch andere Usecases?
 
 File synchronization is useful for everyone, but secure file sharing is
 particularly useful for the following groups:
@@ -214,6 +220,9 @@ particularly useful for the following groups:
   it might be used as internal storage for documents (similar to companies) or as
   exchange platform between students and a lecturer or between government
   offices and citizens.
+* *Usage in Industry 4.0 or Smart Home:* brig could be used as flexible network
+  mount to safely exchange e.g. log data between several distributed instances
+  in this area.
 
 ## What community currently exists around this project?
 
@@ -233,18 +242,18 @@ distributions all around the world.
 
 ## Beneficiaries
 
-General public
-Activists
-Journalists
-Advocacy groups/NGOs
-Academia
-Technologists
-Entrepreneurs
-Government
+* General public
+* Activists
+* Journalists
+* Advocacy groups/NGOs
+* Academia
+* Technologists
+* Entrepreneurs
+* Government
 
 ## Region
 
-Global
+* Global
 
 # Why is this project needed?
 
@@ -291,29 +300,32 @@ that is suitable to serve as secure standard document exchange software.
 
 ## Addressed problems
 
-Restrictive Internet filtering by technical methods (IP blocking, DNS filtering, TCP RST, DPI, etc.)
-Blocking, filtering, or modification of political, social, and/or religious content (including apps)
-Technical attacks against government critics, journalists, and/or human rights organizations (Cyberattacks)
-Localized or nationwide communications shut down or throttling (Blackouts)
-Physical intimidation, arrest, violence (including device seizure or destruction), and death for political or social reasons
-Repressive surveillance or monitoring of communication
-Policies, laws, or directives that increase surveillance, censorship, and punishment
-Government practices that hold intermediaries (social networks or ISPs) liable for user content
-Other
+* Restrictive Internet filtering by technical methods (IP blocking, DNS filtering, TCP RST, DPI, etc.)
+* Blocking, filtering, or modification of political, social, and/or religious content (including apps)
+* Technical attacks against government critics, journalists, and/or human rights organizations (Cyberattacks)
+* Localized or nationwide communications shut down or throttling (Blackouts)
+* Physical intimidation, arrest, violence (including device seizure or destruction), and death for political or social reasons
+* Repressive surveillance or monitoring of communication
+* Policies, laws, or directives that increase surveillance, censorship, and punishment
+* Government practices that hold intermediaries (social networks or ISPs) liable for user content
+* Other
 
 # Other information
 
 brig is currently hosted on GitHub and under heavy development:
 
-https://github.com/disorganizer/brig
+* https://github.com/disorganizer/brig
 
 The public open source software of the two developers can be viewed here:
 
-https://github.com/sahib (christopher.pahl@hs-augsburg.de)
-https://github.com/qitta (christoph.piechula@hs-augsburg.de)
+* https://github.com/sahib (christopher.pahl@hs-augsburg.de)
+* https://github.com/qitta (christoph.piechula@hs-augsburg.de)
 
 Research and development on brig is done in cooperation with our university, the
 university of applied sciences Augsburg (https://www.hs-augsburg.de/).
+The current code is capable of storing encrypted files and serving them again
+via a fuse layer. Network synchronisation will be available in the very near
+future.
 
 As we also might want to graduate as PhD students, we have a time frame of around
 3 years that has been estimated by our university where we can fully concentrate on
