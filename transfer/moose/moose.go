@@ -18,6 +18,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+// Conversation implements layer.Conversation
+// by using ipfs' swarming functionality and building a protocol on top.
 type Conversation struct {
 	sync.Mutex
 	conn     net.Conn
@@ -27,10 +29,13 @@ type Conversation struct {
 	notifees map[int64]transfer.AsyncFunc
 }
 
+// isEOFError checks if `err` means something like io.EOF.
+// Sadly, we need to match the error string since no distinct error exists.
 func isEOFError(err error) bool {
 	return err == io.EOF || (err != nil && err.Error() == "stream closed")
 }
 
+// wrapConnAsProto establishes the moose protocol on the raw ipfs connection
 func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
 	pub, err := node.PublicKeyFor(peerHash)
 	if err != nil {
@@ -50,6 +55,7 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 	return protocol.NewProtocol(authrw, true), nil
 }
 
+// NewConversation returns a conversation that exchanges data over `conn`.
 func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
 	proto, err := wrapConnAsProto(conn, node, peer.Hash())
 	if err != nil {
@@ -100,10 +106,12 @@ func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Convers
 	return cnv, nil
 }
 
+// Close terminates the conversation by closing the underlying connection
 func (cnv *Conversation) Close() error {
 	return cnv.conn.Close()
 }
 
+// SendAsync sends `req` to the other end and calls callback on the response.
 func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFunc) error {
 	cnv.Lock()
 	defer cnv.Unlock()
@@ -121,13 +129,18 @@ func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFun
 	return cnv.proto.Send(req)
 }
 
+// Peer returns the remote peer this conversation is connected to.
 func (cnv *Conversation) Peer() id.Peer {
 	return cnv.peer
 }
 
+// typedef that so we don't need to repeat that long type...
 type handlerMap map[wire.RequestType]transfer.HandlerFunc
 
+// Layer implements the moose protocol by handling incoming requests
+// and creating Conversations to other peers.
 type Layer struct {
+	// Core functionality:
 	node     *ipfsutil.Node
 	dialer   transfer.Dialer
 	listener net.Listener
@@ -139,10 +152,11 @@ type Layer struct {
 	cancel    context.CancelFunc
 
 	// Locking for functions that are not
-	// inherently threadsafe
+	// inherently threadsafe.
 	mu sync.Mutex
 }
 
+// NewLayer returns a freshly setup layer that is not connected yet.
 func NewLayer(node *ipfsutil.Node, parentCtx context.Context) *Layer {
 	childCtx, cancel := context.WithCancel(parentCtx)
 	return &Layer{
@@ -154,6 +168,7 @@ func NewLayer(node *ipfsutil.Node, parentCtx context.Context) *Layer {
 	}
 }
 
+// Dial creates a new and ready Conversation to `peer`
 func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 	if !lay.IsInOnlineMode() {
 		return nil, transfer.ErrOffline
@@ -170,72 +185,79 @@ func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 	return NewConversation(conn, lay.node, peer)
 }
 
+// IsInOnlineMode returns true after an success Connect()
 func (lay *Layer) IsInOnlineMode() bool {
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
 	return lay.listener != nil
 }
 
+// handleServerConn handles incoming messages and calls the respective
+// handler on the request. Response are transmitted back afterwards.
 func (lay *Layer) handleServerConn(prot *protocol.Protocol) {
-	for {
-		// Check if we need to quit:
-		select {
-		case <-lay.childCtx.Done():
-			return
-		default:
-			break
-		}
-
-		req := wire.Request{}
-		err := prot.Recv(&req)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			log.Warningf("Server side recv: %v", err)
-			break
-		}
-
-		log.Debugf("Got request: %v", req)
-
-		typ := req.GetReqType()
-		fn, ok := lay.handlers[typ]
-		if !ok {
-			log.Warningf("Received packet without registerd handler (%d)", typ)
-			log.Warningf("Package will be dropped silently.")
-			continue
-		}
-
-		resp, err := fn(&req)
-		if err != nil {
-			resp = &wire.Response{
-				Error: proto.String(err.Error()),
-			}
-		}
-
-		if resp == nil {
-			// '0' is the ID for broadcast:
-			if req.GetID() != 0 {
-				log.Warningf("Handle for `%d` failed to return a response or error", typ)
-			}
-			continue
-		}
-
-		// Auto-fill the type and ID fields from the response:
-		resp.ReqType = req.ReqType
-		resp.ID = req.ID
-		resp.Nonce = req.Nonce
-
-		log.Debugf("Sending back %v", resp)
-
-		if err := prot.Send(resp); err != nil {
-			log.Warningf("Unable to send back response: %v", err)
-			break
-		}
+	for lay.loopServerConn(prot) {
+		// ...
 	}
 }
 
+func (lay *Layer) loopServerConn(prot *protocol.Protocol) bool {
+	// Check if we need to quit:
+	select {
+	case <-lay.childCtx.Done():
+		return false
+	default:
+		break
+	}
+
+	req := wire.Request{}
+	if err := prot.Recv(&req); err != nil {
+		if err == io.EOF {
+			log.Warningf("Server side recv: %v", err)
+		}
+
+		return false
+	}
+
+	log.Debugf("Got request: %v", req)
+	fn, ok := lay.handlers[req.GetReqType()]
+	if !ok {
+		log.Warningf("Received packet without registerd handler (%d)", req.GetReqType())
+		log.Warningf("Package will be dropped.")
+		return true
+	}
+
+	resp, err := fn(&req)
+	if err != nil {
+		resp = &wire.Response{
+			Error: proto.String(err.Error()),
+		}
+	}
+
+	if resp == nil {
+		// '0' is the ID for broadcast. Empty response are valid there.
+		if req.GetID() != 0 {
+			log.Warningf("Handle for `%d` failed to return a response or error", req.GetReqType())
+		}
+
+		return true
+	}
+
+	// Auto-fill the type and ID fields from the response:
+	resp.ReqType = req.ReqType
+	resp.ID = req.ID
+	resp.Nonce = req.Nonce
+
+	log.Debugf("Sending back %v", resp)
+	if err := prot.Send(resp); err != nil {
+		log.Warningf("Unable to send back response: %v", err)
+		return false
+	}
+
+	return true
+}
+
+// Connect will start listening on incoming connections and remember
+// dialer so that calls to Dial() can succeed.
 func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
@@ -286,6 +308,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 	return nil
 }
 
+// Disconnect brings down all resources needed to server responses.
 func (lay *Layer) Disconnect() error {
 	lay.mu.Lock()
 	defer lay.mu.Unlock()
@@ -304,10 +327,13 @@ func (lay *Layer) Disconnect() error {
 	return nil
 }
 
+// RegisterHandler remembers to call `handler` for `typ`.
+// It is no error to call RegisterHandler twice for the same typ.
 func (lay *Layer) RegisterHandler(typ wire.RequestType, handler transfer.HandlerFunc) {
 	lay.handlers[typ] = handler
 }
 
+// ProtocolID returns the name of the moose protocol.
 func (lay *Layer) ProtocolID() string {
 	return "/brig/moose/v1"
 }

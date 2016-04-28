@@ -1,6 +1,7 @@
 package brig.daemon;
 option go_package = "wire";
 
+import "github.com/jbenet/go-multihash"
 import "store.proto";
 
 // The ordering in here has no particular meaning.
