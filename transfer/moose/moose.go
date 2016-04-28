@@ -211,7 +211,7 @@ func (lay *Layer) loopServerConn(prot *protocol.Protocol) bool {
 
 	req := wire.Request{}
 	if err := prot.Recv(&req); err != nil {
-		if err == io.EOF {
+		if err != io.EOF {
 			log.Warningf("Server side recv: %v", err)
 		}
 

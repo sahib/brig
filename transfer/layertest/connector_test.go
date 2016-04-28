@@ -28,6 +28,8 @@ func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
 			return
 		}
 
+		con.WaitForPool()
+
 		t.Logf("Entering test for %s's connector", user)
 		fc(con)
 		t.Logf("Leaving test for %s's connector", user)
@@ -63,11 +65,6 @@ func TestConversation(t *testing.T) {
 				return
 			}
 		}
-
-		if err := apc.Close(); err != nil {
-			t.Errorf("Alice cannot close apiclient to bob: %v", err)
-			return
-		}
 	})
 }
 
@@ -95,7 +92,7 @@ func WithParallelConnectors(t *testing.T, users []string, f func(cs []*transfer.
 	setupWg := sync.WaitGroup{}
 	setupWg.Add(len(users))
 
-	cns := []*transfer.Connector{}
+	cns := make(map[string]*transfer.Connector)
 	mu := sync.Mutex{}
 
 	// Trigger setup of connectors in parallel:
@@ -104,7 +101,7 @@ func WithParallelConnectors(t *testing.T, users []string, f func(cs []*transfer.
 			WithConnector(t, user, func(cn *transfer.Connector) {
 				// Append it to the connector list:
 				mu.Lock()
-				cns = append(cns, cn)
+				cns[user] = cn
 				mu.Unlock()
 
 				// Count down one setup'd connector:
@@ -126,8 +123,15 @@ func WithParallelConnectors(t *testing.T, users []string, f func(cs []*transfer.
 	// wait a short bit therefore.
 	time.Sleep(2 * time.Second)
 
+	// Reorder cns, so that order is preserved:
+	cnsSorted := []*transfer.Connector{}
+
+	for _, user := range users {
+		cnsSorted = append(cnsSorted, cns[user])
+	}
+
 	// Call testcase:
-	f(cns)
+	f(cnsSorted)
 
 	// Notify go routines that the testcase finished
 	// and we may cleanup the connectors again:
@@ -197,7 +201,7 @@ func TestBroadcast(t *testing.T) {
 		}
 
 		if err := cs[0].Repo().Remotes.Remove("bob"); err != nil {
-			t.Errorf("Unable to remove bob from friend list")
+			t.Errorf("Unable to remove bob from friend list: %v", err)
 			return
 		}
 

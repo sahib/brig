@@ -157,6 +157,12 @@ func (cp *conversationPool) UpdateConnections() {
 	}
 }
 
+func (cp *conversationPool) WaitForUpdate() {
+	// UpdateConnections locks the mutex
+	cp.mu.Lock()
+	cp.mu.Unlock()
+}
+
 // Forget removes a peer from the pool and cleans up after it.
 func (cp *conversationPool) Forget(peer id.Peer) error {
 	cp.mu.Lock()
@@ -457,9 +463,22 @@ func (cn *Connector) Connect() error {
 }
 
 // WaitForPool blocks until the connection pool tried it's best to
-// connect to all remotes.
+// connect to all remotes or until RemoteStore changed and the pool
+// adapted to reflect the change.
+//
+// Or in short words: It waits until Connector portrays reality.
+// If the connector is offline, WaitForPool returns ErrOffline immediately.
 func (cn *Connector) WaitForPool() error {
-	// TODO: Implement.
+	if !cn.IsInOnlineMode() {
+		return ErrOffline
+	}
+
+	// If WaitForPool is called directly after Connect,
+	// it might lock the mutex before UpdateConnections does.
+	time.Sleep(10 * time.Millisecond)
+
+	// Wait until UpdateConnections ran through:
+	cn.cp.WaitForUpdate()
 	return nil
 }
 
