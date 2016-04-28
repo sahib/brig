@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/id"
@@ -300,7 +301,23 @@ func (c *Client) RemoteList() ([]*RemoteEntry, error) {
 	return entries, nil
 }
 
-// TODO: Implement RemoteLocate
+func (c *Client) RemoteLocate(ident id.ID, limit int, timeout time.Duration) ([]string, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_REMOTE_LOCATE.Enum(),
+		RemoteLocateCommand: &wire.Command_RemoteLocateCmd{
+			Id:        proto.String(string(ident)),
+			PeerLimit: proto.Int32(int32(limit)),
+			TimeoutMs: proto.Int32(int32(timeout / time.Millisecond)),
+		},
+	}
+
+	resp, err := c.recvResponse("remote-locate")
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetRemoteLocateResp().GetHashes(), nil
+}
 
 func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 	c.Send <- &wire.Command{
