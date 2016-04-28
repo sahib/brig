@@ -1,7 +1,6 @@
 package ipfsutil
 
 import (
-	"math"
 	"time"
 
 	"github.com/disorganizer/brig/util/security"
@@ -39,8 +38,10 @@ func Locate(node *Node, hash gmh.Multihash, n int, t time.Duration) ([]*PeerInfo
 		return []*PeerInfo{}, nil
 	}
 
+	// Note: Do not use Maxint32. That makes ipfs allocate
+	//       a whole lot of memory. Just assume that 100 is fine.
 	if n < 0 {
-		n = math.MaxInt32
+		n = 100
 	}
 
 	if !node.IsOnline() {
