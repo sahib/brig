@@ -18,6 +18,7 @@ import (
 	"github.com/disorganizer/brig/util/colors"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/dustin/go-humanize"
+	"github.com/jbenet/go-multihash"
 	yamlConfig "github.com/olebedev/config"
 	"github.com/tucnak/climax"
 )
@@ -580,6 +581,11 @@ func handleRemoteAdd(ctx climax.Context, client *daemon.Client) int {
 	id, err := id.Cast(idString)
 	if err != nil {
 		log.Errorf("Invalid ID: %v", err)
+		return BadArgs
+	}
+
+	if _, err := multihash.FromB58String(hash); err != nil {
+		log.Errorf("Bad hash `%s`: %v", hash, err)
 		return BadArgs
 	}
 
