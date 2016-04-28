@@ -233,7 +233,6 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 	}
 
 	// Send the response back to the client:
-	fmt.Println(resp)
 	if err := p.Send(resp); err != nil {
 		log.Warning("Unable to send response back to client: ", err)
 	}
