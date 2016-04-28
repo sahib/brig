@@ -21,6 +21,7 @@ var (
 )
 
 type Connector struct {
+	// Underlying protocol layer.
 	layer Layer
 
 	// Open repo. required for answering requests.
@@ -41,25 +42,34 @@ type conversationPool struct {
 	// lock for `open`
 	mu sync.Mutex
 
-	rp    *repo.Repository
+	// repo passed from Connector
+	rp *repo.Repository
+
+	// layer passed from Connector
 	layer Layer
+
+	changeCh     chan *repo.RemoteChange
+	updateTicker *time.Ticker
 }
 
 func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 	cp := &conversationPool{
-		open:      make(map[id.ID]Conversation),
-		heartbeat: make(map[id.ID]*ipfsutil.Pinger),
-		rp:        rp,
-		layer:     layer,
+		open:         make(map[id.ID]Conversation),
+		heartbeat:    make(map[id.ID]*ipfsutil.Pinger),
+		rp:           rp,
+		layer:        layer,
+		changeCh:     make(chan *repo.RemoteChange),
+		updateTicker: time.NewTicker(120 * time.Second),
 	}
 
-	changeCh := make(chan *repo.RemoteChange)
 	rp.Remotes.Register(func(change *repo.RemoteChange) {
-		changeCh <- change
+		cp.changeCh <- change
 	})
 
+	// Make sure we immediately dis/connect to other peers
+	// when the remote store changes externally.
 	go func() {
-		for change := range changeCh {
+		for change := range cp.changeCh {
 			doRemove, doUpdate := false, false
 			switch change.ChangeType {
 			case repo.RemoteChangeAdded:
@@ -86,6 +96,13 @@ func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 			if doUpdate {
 				cp.UpdateConnections()
 			}
+		}
+	}()
+
+	// Keep connection pool updates in a certain interval:
+	go func() {
+		for range cp.updateTicker.C {
+			cp.UpdateConnections()
 		}
 	}()
 
@@ -192,6 +209,11 @@ func (cp *conversationPool) LastSeen(peer id.Peer) time.Time {
 func (cp *conversationPool) Close() error {
 	var errs util.Errors
 
+	// Make sure we kill down the go routines
+	// in newConversationPool to prevent leaks.
+	close(cp.changeCh)
+	cp.updateTicker.Stop()
+
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
@@ -261,8 +283,6 @@ func (lf *listenerFilter) Accept() (net.Conn, error) {
 
 		log.Warningf("Denying incoming connection from `%s`", hash)
 	}
-
-	return nil, ErrListenerWasClosed
 }
 
 func (lf *listenerFilter) Close() error {
