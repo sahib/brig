@@ -1,22 +1,21 @@
 package transfer
 
 import (
-	"bytes"
-
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/gogo/protobuf/proto"
 )
 
-// NOTE: New handlers need to be registered in handlerMap in NewConnector.
-//       (The map is not here, because we use method values)
-
 func (sv *Connector) handleFetch(req *wire.Request) (*wire.Response, error) {
-	buf := &bytes.Buffer{}
-	if err := sv.rp.OwnStore.Export(buf); err != nil {
+	protoStore, err := sv.rp.OwnStore.Export()
+	if err != nil {
 		return nil, err
 	}
 
-	return &wire.Response{}, nil
+	return &wire.Response{
+		FetchResp: &wire.FetchResponse{
+			Store: protoStore,
+		},
+	}, nil
 }
 
 func (sv *Connector) handleUpdateFile(req *wire.Request) (*wire.Response, error) {

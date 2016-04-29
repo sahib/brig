@@ -161,34 +161,31 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wir
 }
 
 func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	// fetchCmd := cmd.GetFetchCommand()
-	// who, err := id.Cast(fetchCmd.GetWho())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.GetWho(), err)
-	// }
+	fetchCmd := cmd.GetFetchCommand()
+	who, err := id.Cast(fetchCmd.GetWho())
+	if err != nil {
+		return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.GetWho(), err)
+	}
 
-	// if !d.MetaHost.IsInOnlineMode() {
-	// 	return nil, fmt.Errorf("Metadata Host is not online.")
-	// }
+	if !d.MetaHost.IsInOnlineMode() {
+		return nil, fmt.Errorf("Metadata Host is not online.")
+	}
 
-	// TODO: Resolve to peer id
+	client, err := d.MetaHost.DialID(who)
+	if err != nil {
+		return nil, err
+	}
 
-	// client, err := d.MetaHost.Dial(who)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	// TODO: Acutally create the store (in .Store()?)
+	remoteStore := d.Repo.Store(who)
+	if remoteStore == nil {
+		return nil, fmt.Errorf("No store for `%s`", who)
+	}
 
-	// // TODO
-	// // importData, err := client.DoFetch()
-	// // if err != nil {
-	// // 	return nil, err
-	// // }
+	if err := client.Fetch(remoteStore); err != nil {
+		return nil, err
+	}
 
-	// if err := d.Repo.OwnStore.Import(bytes.NewReader(importData)); err != nil {
-	// 	return nil, err
-	// }
-
-	// TODO: what to return on success?
 	return nil, nil
 }
 

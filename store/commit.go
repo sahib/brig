@@ -113,7 +113,7 @@ func (c *Checkpoint) String() string {
 	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
 }
 
-func (cp *Checkpoint) toProtoMessage() (*wire.Checkpoint, error) {
+func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 	mtimeBin, err := cp.ModTime.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (cp *Checkpoint) toProtoMessage() (*wire.Checkpoint, error) {
 	return protoCheck, nil
 }
 
-func (cp *Checkpoint) fromProtoMessage(msg *wire.Checkpoint) error {
+func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	modTime := time.Time{}
 	if err := modTime.UnmarshalBinary(msg.GetModTime()); err != nil {
 		return err
@@ -153,7 +153,7 @@ func (cp *Checkpoint) fromProtoMessage(msg *wire.Checkpoint) error {
 }
 
 func (cp *Checkpoint) Marshal() ([]byte, error) {
-	protoCheck, err := cp.toProtoMessage()
+	protoCheck, err := cp.ToProto()
 	if err != nil {
 		return nil, err
 	}
@@ -172,18 +172,18 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 		return err
 	}
 
-	return cp.fromProtoMessage(protoCheck)
+	return cp.FromProto(protoCheck)
 }
 
 // History remembers the changes made to a file.
 // New changes get appended to the end.
 type History []*Checkpoint
 
-func (hy *History) toProtoMessage() (*wire.History, error) {
+func (hy *History) ToProto() (*wire.History, error) {
 	protoHist := &wire.History{}
 
 	for _, ck := range *hy {
-		protoCheck, err := ck.toProtoMessage()
+		protoCheck, err := ck.ToProto()
 		if err != nil {
 			return nil, err
 		}
@@ -194,17 +194,8 @@ func (hy *History) toProtoMessage() (*wire.History, error) {
 	return protoHist, nil
 }
 
-// TODO: Just make toProtoMessage and make that an interface.
-func (hy *History) ToProto() (*wire.History, error) {
-	return hy.toProtoMessage()
-}
-
-func (hy *History) FromProto(msg *wire.History) error {
-	return hy.fromProtoMessage(msg)
-}
-
 func (hy *History) Marshal() ([]byte, error) {
-	protoHist, err := hy.toProtoMessage()
+	protoHist, err := hy.ToProto()
 	if err != nil {
 		return nil, err
 	}
@@ -217,10 +208,10 @@ func (hy *History) Marshal() ([]byte, error) {
 	return data, nil
 }
 
-func (hy *History) fromProtoMessage(protoHist *wire.History) error {
+func (hy *History) FromProto(protoHist *wire.History) error {
 	for _, protoCheck := range protoHist.Hist {
 		ck := &Checkpoint{}
-		if err := ck.fromProtoMessage(protoCheck); err != nil {
+		if err := ck.FromProto(protoCheck); err != nil {
 			return err
 		}
 
@@ -237,7 +228,7 @@ func (hy *History) Unmarshal(data []byte) error {
 		return err
 	}
 
-	return hy.fromProtoMessage(protoHist)
+	return hy.FromProto(protoHist)
 }
 
 // MakeCheckpoint creates a new checkpoint in the version history of `curr`.

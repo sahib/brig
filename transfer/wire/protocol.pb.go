@@ -11,6 +11,7 @@
 	It has these top-level messages:
 		Request
 		StoreVersionResponse
+		FetchResponse
 		Response
 */
 package wire
@@ -18,6 +19,7 @@ package wire
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import brig_store "github.com/disorganizer/brig/store/wire"
 
 import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
 
@@ -68,7 +70,7 @@ func (x *RequestType) UnmarshalJSON(data []byte) error {
 }
 
 type Request struct {
-	ReqType          *RequestType `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
+	ReqType          *RequestType `protobuf:"varint,1,req,name=req_type,enum=brig.transfer.RequestType" json:"req_type,omitempty"`
 	ID               *int64       `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
 	Nonce            *int64       `protobuf:"varint,3,req,name=nonce" json:"nonce,omitempty"`
 	XXX_unrecognized []byte       `json:"-"`
@@ -115,12 +117,29 @@ func (m *StoreVersionResponse) GetVersion() int32 {
 	return 0
 }
 
+type FetchResponse struct {
+	Store            *brig_store.Store `protobuf:"bytes,1,req,name=store" json:"store,omitempty"`
+	XXX_unrecognized []byte            `json:"-"`
+}
+
+func (m *FetchResponse) Reset()         { *m = FetchResponse{} }
+func (m *FetchResponse) String() string { return proto.CompactTextString(m) }
+func (*FetchResponse) ProtoMessage()    {}
+
+func (m *FetchResponse) GetStore() *brig_store.Store {
+	if m != nil {
+		return m.Store
+	}
+	return nil
+}
+
 type Response struct {
-	ReqType          *RequestType          `protobuf:"varint,1,req,name=req_type,enum=transfer.protocol.RequestType" json:"req_type,omitempty"`
+	ReqType          *RequestType          `protobuf:"varint,1,req,name=req_type,enum=brig.transfer.RequestType" json:"req_type,omitempty"`
 	ID               *int64                `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
 	Nonce            *int64                `protobuf:"varint,3,req,name=nonce" json:"nonce,omitempty"`
 	Error            *string               `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
 	StoreVersionResp *StoreVersionResponse `protobuf:"bytes,5,opt,name=store_version_resp" json:"store_version_resp,omitempty"`
+	FetchResp        *FetchResponse        `protobuf:"bytes,6,opt,name=fetch_resp" json:"fetch_resp,omitempty"`
 	XXX_unrecognized []byte                `json:"-"`
 }
 
@@ -163,11 +182,19 @@ func (m *Response) GetStoreVersionResp() *StoreVersionResponse {
 	return nil
 }
 
+func (m *Response) GetFetchResp() *FetchResponse {
+	if m != nil {
+		return m.FetchResp
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*Request)(nil), "transfer.protocol.Request")
-	proto.RegisterType((*StoreVersionResponse)(nil), "transfer.protocol.StoreVersionResponse")
-	proto.RegisterType((*Response)(nil), "transfer.protocol.Response")
-	proto.RegisterEnum("transfer.protocol.RequestType", RequestType_name, RequestType_value)
+	proto.RegisterType((*Request)(nil), "brig.transfer.Request")
+	proto.RegisterType((*StoreVersionResponse)(nil), "brig.transfer.StoreVersionResponse")
+	proto.RegisterType((*FetchResponse)(nil), "brig.transfer.FetchResponse")
+	proto.RegisterType((*Response)(nil), "brig.transfer.Response")
+	proto.RegisterEnum("brig.transfer.RequestType", RequestType_name, RequestType_value)
 }
 func (m *Request) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -239,6 +266,39 @@ func (m *StoreVersionResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *FetchResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *FetchResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Store == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintProtocol(data, i, uint64(m.Store.Size()))
+		n1, err := m.Store.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Response) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -285,11 +345,21 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintProtocol(data, i, uint64(m.StoreVersionResp.Size()))
-		n1, err := m.StoreVersionResp.MarshalTo(data[i:])
+		n2, err := m.StoreVersionResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n2
+	}
+	if m.FetchResp != nil {
+		data[i] = 0x32
+		i++
+		i = encodeVarintProtocol(data, i, uint64(m.FetchResp.Size()))
+		n3, err := m.FetchResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -354,6 +424,19 @@ func (m *StoreVersionResponse) Size() (n int) {
 	return n
 }
 
+func (m *FetchResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Store != nil {
+		l = m.Store.Size()
+		n += 1 + l + sovProtocol(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Response) Size() (n int) {
 	var l int
 	_ = l
@@ -372,6 +455,10 @@ func (m *Response) Size() (n int) {
 	}
 	if m.StoreVersionResp != nil {
 		l = m.StoreVersionResp.Size()
+		n += 1 + l + sovProtocol(uint64(l))
+	}
+	if m.FetchResp != nil {
+		l = m.FetchResp.Size()
 		n += 1 + l + sovProtocol(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -593,6 +680,95 @@ func (m *StoreVersionResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *FetchResponse) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProtocol
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FetchResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FetchResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Store", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Store == nil {
+				m.Store = &brig_store.Store{}
+			}
+			if err := m.Store.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProtocol(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Response) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -746,6 +922,39 @@ func (m *Response) Unmarshal(data []byte) error {
 				m.StoreVersionResp = &StoreVersionResponse{}
 			}
 			if err := m.StoreVersionResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FetchResp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtocol
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProtocol
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.FetchResp == nil {
+				m.FetchResp = &FetchResponse{}
+			}
+			if err := m.FetchResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

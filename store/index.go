@@ -18,7 +18,6 @@ import (
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/disorganizer/brig/util/protocol"
 )
 
 var (
@@ -423,7 +422,7 @@ func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 
 	dirlist := &wire.Dirlist{}
 	for _, entry := range entries {
-		protoFile, err := entry.toProtoMessage()
+		protoFile, err := entry.ToProto()
 		if err != nil {
 			return nil, err
 		}
@@ -500,14 +499,16 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 // TODO: Describe stream format.
 //
 // w is not closed after Export.
-func (s *Store) Export(w io.Writer) (err error) {
+func (s *Store) Export() (*wire.Store, error) {
 	// TODO: Export commits (not implemented)
 	// TODO: Export pinning information.
-	enc := protocol.NewProtocolWriter(w, true)
+	protoStore := &wire.Store{}
+
+	var err error
 
 	s.Root.Walk(true, func(child *File) bool {
 		// Note: Walk() already calls Lock()
-		protoFile, errPbf := child.toProtoMessage()
+		protoFile, errPbf := child.ToProto()
 		if err != nil {
 			err = errPbf
 			return false
@@ -519,7 +520,7 @@ func (s *Store) Export(w io.Writer) (err error) {
 			return false
 		}
 
-		protoHist, errPbh := history.toProtoMessage()
+		protoHist, errPbh := history.ToProto()
 		if err != nil {
 			err = errPbh
 			return false
@@ -530,38 +531,27 @@ func (s *Store) Export(w io.Writer) (err error) {
 			History: protoHist,
 		}
 
-		if errSend := enc.Send(protoPack); err != nil {
-			err = errSend
-			return false
-		}
-
+		protoStore.Packs = append(protoStore.Packs, protoPack)
 		return true
 	})
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return protoStore, nil
 }
 
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
-func (s *Store) Import(r io.Reader) error {
-	dec := protocol.NewProtocolReader(r, true)
-
-	for {
-		pack := &wire.Pack{}
-
-		if err := dec.Recv(pack); err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
+func (s *Store) Import(protoStore *wire.Store) error {
+	for _, pack := range protoStore.Packs {
 		file := emptyFile(s)
 		if err := file.Import(pack.GetFile()); err != nil {
 			return err
 		}
 
-		// TODO: Insert history?
-
+		// TODO: Restore history.
 		log.Debugf("Imported: %v", file.Path())
 		file.Sync()
 		file.updateParents()

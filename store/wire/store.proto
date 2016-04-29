@@ -44,3 +44,7 @@ message Pack {
     required History history = 2;
 }
 
+// Store is the exported form of a store.
+message Store {
+    repeated Pack packs = 1;
+}

@@ -279,7 +279,7 @@ func (f *File) Marshal() ([]byte, error) {
 }
 
 func (f *File) marshal() ([]byte, error) {
-	protoFile, err := f.toProtoMessage()
+	protoFile, err := f.ToProto()
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (f *File) marshal() ([]byte, error) {
 	return data, nil
 }
 
-func (f *File) toProtoMessage() (*wire.File, error) {
+func (f *File) ToProto() (*wire.File, error) {
 	modTimeStamp, err := f.modTime.MarshalText()
 	if err != nil {
 		return nil, err
@@ -320,7 +320,7 @@ func (fi *File) Unmarshal(store *Store, buf []byte) error {
 }
 
 func (fi *File) Import(protoFile *wire.File) error {
-	if err := fi.fromProtoMessage(protoFile); err != nil {
+	if err := fi.FromProto(protoFile); err != nil {
 		return err
 	}
 
@@ -331,7 +331,7 @@ func (fi *File) Import(protoFile *wire.File) error {
 	return nil
 }
 
-func (fi *File) fromProtoMessage(protoFile *wire.File) error {
+func (fi *File) FromProto(protoFile *wire.File) error {
 	modTimeStamp := &time.Time{}
 	if err := modTimeStamp.UnmarshalText(protoFile.GetModTime()); err != nil {
 		return err

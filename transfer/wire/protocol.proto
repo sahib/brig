@@ -1,5 +1,7 @@
-package transfer.protocol;
+package brig.transfer;
 option go_package = "wire";
+
+import "store.proto";
 
 enum RequestType {
     INVALID = 0;
@@ -18,6 +20,10 @@ message StoreVersionResponse {
     required int32 version = 1;
 }
 
+message FetchResponse {
+    required brig.store.Store store = 1;
+}
+
 message Response {
 	required RequestType req_type = 1;
     required int64 ID = 2;
@@ -25,4 +31,5 @@ message Response {
     optional string error = 4;
 
     optional StoreVersionResponse store_version_resp = 5;
+    optional FetchResponse fetch_resp = 6;
 }

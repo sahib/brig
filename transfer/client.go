@@ -4,6 +4,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
@@ -69,4 +70,18 @@ func (acl *APIClient) QueryStoreVersion() (int32, error) {
 	}
 
 	return resp.GetStoreVersionResp().GetVersion(), nil
+}
+
+func (acl *APIClient) Fetch(s *store.Store) error {
+	req := &wire.Request{
+		ReqType: wire.RequestType_FETCH.Enum(),
+	}
+
+	resp, err := acl.send(req)
+	if err != nil {
+		return err
+	}
+
+	protoStore := resp.GetFetchResp().GetStore()
+	return s.Import(protoStore)
 }

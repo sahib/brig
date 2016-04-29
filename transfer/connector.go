@@ -363,6 +363,17 @@ func NewConnector(layer Layer, rp *repo.Repository) *Connector {
 	return cnc
 }
 
+// DialID looks up the hash of `ident` from the remotes.
+// Otherwise it's the same as the regular Dial()
+func (cn *Connector) DialID(ident id.ID) (*APIClient, error) {
+	remote, err := cn.rp.Remotes.Get(ident)
+	if err != nil {
+		return nil, err
+	}
+
+	return cn.Dial(remote)
+}
+
 // Dial returns an APIClient that is connected to `peer`.
 // If there's already a conversation to that peer no new
 // connection will be created.

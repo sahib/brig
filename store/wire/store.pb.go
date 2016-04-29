@@ -15,6 +15,7 @@
 		Checkpoint
 		History
 		Pack
+		Store
 */
 package wire
 
@@ -236,13 +237,31 @@ func (m *Pack) GetHistory() *History {
 	return nil
 }
 
+// Store is the exported form of a store.
+type Store struct {
+	Packs            []*Pack `protobuf:"bytes,1,rep,name=packs" json:"packs,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Store) Reset()         { *m = Store{} }
+func (m *Store) String() string { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()    {}
+
+func (m *Store) GetPacks() []*Pack {
+	if m != nil {
+		return m.Packs
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*File)(nil), "bolt.protocol.File")
-	proto.RegisterType((*Dirent)(nil), "bolt.protocol.Dirent")
-	proto.RegisterType((*Dirlist)(nil), "bolt.protocol.Dirlist")
-	proto.RegisterType((*Checkpoint)(nil), "bolt.protocol.Checkpoint")
-	proto.RegisterType((*History)(nil), "bolt.protocol.History")
-	proto.RegisterType((*Pack)(nil), "bolt.protocol.Pack")
+	proto.RegisterType((*File)(nil), "brig.store.File")
+	proto.RegisterType((*Dirent)(nil), "brig.store.Dirent")
+	proto.RegisterType((*Dirlist)(nil), "brig.store.Dirlist")
+	proto.RegisterType((*Checkpoint)(nil), "brig.store.Checkpoint")
+	proto.RegisterType((*History)(nil), "brig.store.History")
+	proto.RegisterType((*Pack)(nil), "brig.store.Pack")
+	proto.RegisterType((*Store)(nil), "brig.store.Store")
 }
 func (m *File) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -528,6 +547,39 @@ func (m *Pack) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Store) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Store) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Packs) > 0 {
+		for _, msg := range m.Packs {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeFixed64Store(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -676,6 +728,21 @@ func (m *Pack) Size() (n int) {
 	if m.History != nil {
 		l = m.History.Size()
 		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Store) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Packs) > 0 {
+		for _, e := range m.Packs {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1565,6 +1632,88 @@ func (m *Pack) Unmarshal(data []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Store) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Store: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Packs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Packs = append(m.Packs, &Pack{})
+			if err := m.Packs[len(m.Packs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
 	}
 
 	if iNdEx > l {

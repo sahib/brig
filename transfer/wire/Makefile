@@ -1,2 +1,3 @@
 all:
-	protoc --proto_path=. --gofast_out . *.proto
+	protoc --proto_path=. --gofast_out . *.proto -I ../../store/wire
+	sed -i 's#brig_store "."#brig_store "github.com/disorganizer/brig/store/wire"#g' *.go
