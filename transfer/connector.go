@@ -83,7 +83,10 @@ func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 	}
 
 	rp.Remotes.Register(func(change *repo.RemoteChange) {
-		cp.changeCh <- change
+		go func() {
+			time.Sleep(1 * time.Second)
+			cp.changeCh <- change
+		}()
 	})
 
 	// Make sure we immediately dis/connect to other peers
