@@ -25,24 +25,22 @@ Alternative zu Cloud--Storage Lösungen wie Dropbox, die sowohl für Unternehmen
 als auch für Heimanwender nutzbar ist. Trotz der Prämisse, einfache Nutzbarkeit
 zu gewährleisten, wird auf Sicherheit sehr großen Wert gelegt.  Aus Gründen der
 Transparenz wird die Software mit dem Namen »``brig``« dabei quelloffen unter der
-``AGPL`` Lizenz entwickelt.
+``AGPLv3`` Lizenz entwickelt.
 
 Nutzbar soll das resultierende Produkt, neben dem Standardanwendungsfall der
-Dateisynchronisation, auch als Backup- bzw. Archivierungs--Lösung sein.
-Des Weiteren kann es auch als verschlüsselter Daten--Safe oder als Plattform für
-andere, verteilte Anwendungen (wie beispielsweise aus dem Industrie 4.0 Umfeld)
-dienen.
+Dateisynchronisation, auch als Backup- bzw. Archivierungs--Lösung sein. Des
+Weiteren kann es auch als verschlüsselter Daten--Safe oder als Plattform für
+andere, verteilte Anwendungen dienen -- wie beispielsweise aus dem Industrie 4.0 Umfeld.
 
 Von anderen Softwarelösungen soll es sich stichpunkthaft durch folgende Merkmale
 abgrenzen:
 
 - Verschlüsselte Übertragung *und* Speicherung.
-- Unkomplizierte Installation und einfache Nutzung durch simplen Ordner im
-  Dateimanager.
+- Unkomplizierte Installation und einfache Nutzung durch simplen Ordner im Dateimanager.
 - Transparenz, Anpassbarkeit und Sicherheit durch *Free Open Source Software (FOSS)*.
 - Kein *Single Point of Failure* (*SPoF*), wie bei zentralen Diensten.
 - Dezentrales Peer--to--Peer--Netzwerk auf Basis von ``ipfs``.
-- Benutzerverwaltung auf Basis der ``XMPP``--Infrastruktur.
+- Globales Benutzermanagement auf Basis von ``ipfs`` (Anbindung an existierende Systeme technisch möglich).
 - Versionsverwaltung großer Dateien mit definierbarer Tiefe.
 
 # Steckbrief 
@@ -62,9 +60,12 @@ weitergegeben werden.
 [^Dropbox]: Mehr Informationen unter \url{https://www.dropbox.com/}
 
 Sprichwörtlich gesagt, kann man nicht kontrollieren wo die Daten aus der Cloud
-abregnen. Tools wie Boxcryptor[^Boxcryptor] lindern diese Problematik zwar
-etwas indem sie die Dateien verschlüsseln, heilen aber nur die Symptome und nicht
-das zugrunde liegende Problem.
+abregnen. Tools wie Boxcryptor[^Boxcryptor] lindern diese Problematik zwar etwas
+indem sie die Dateien verschlüsseln, heilen aber nur die Symptome und nicht das
+zugrunde liegende Problem. Ein weiteres Problem bei zentralen Diensten ist die
+Abhängigkeit von der Verfügbarkeit des Dienstes. Daten können nur ausgetauscht
+werden solange der Dienst existiert, online ist und die Kosten regelmäßig
+beglichen werden.
 
 [^Boxcryptor]: Krypto-Layer für Cloud-Dienste, siehe \url{https://www.boxcryptor.com/de}
 
@@ -83,51 +84,61 @@ Ziel ist daher die Entwicklung einer sicheren, dezentralen und unternehmenstaugl
 Dateisynchronisationssoftware namens ``brig``. Die »Tauglichkeit« für ein
 Unternehmen ist natürlich sehr individuell. Wir meinen damit im Folgenden diese Punkte:
 
-- *Einfache Benutzbarkeit:* Sichtbar soll nach der
-  Einrichtung nur ein Ordner im Dateimanager sein.
+- *Balance zwischen Benutzbarkeit und Sicherheit:* Sichtbar soll nach der
+  Einrichtung nur ein Ordner im Dateimanager sein, alle Daten werden 
+  auf Basis von einem einzigen Passwort verschlüsselt, welches beispielsweise
+  aus einem bestehendem System abgeleitet werden kann.
 - *Effiziente Übertragung von Dateien:* Intelligentes Routing vom Speicherort zum Nutzer.
 - *Speicherquoten:* Nur relevante Dateien müssen synchronisiert werden.
 - *Automatische Backups:* Versionsverwaltung auf Knoten mit großem Speicherplatz.
 - *Schnelle Auffindbarkeit:* Kategorisierung durch optionale Verschlagwortung.
+- *Kein Vendor Lock-In dank freier Software:* Herstellerunabhängigkeit
+  gewährleistet volle Kontrolle über die Software, selbst wenn die Entwicklung
+  eingestellt werden sollte. Daten sind immer verfügbar, da kein Dienst
+  »abgeschaltet« werden kann.
 
-Um eine solche Software zu entwickeln, wollen wir auf bestehende Komponenten wie
-dem *InterPlanetaryFileSystem* (kurz ``ipfs``, ein flexibles P2P
-Netzwerk[@peer2peer]) und *XMPP* (ein Messanging Protokoll und Infrastruktur,
-siehe [@xmpp]) aufsetzen. Dies macht die Entwicklung eines Prototypen mit
-vertretbaren Aufwand möglich.
+Um eine solche Software zu entwickeln, wollen wir auf bestehende Komponenten
+aufsetzen. Die grundlegende Basis bildet dabei das *InterPlanetaryFileSystem*
+(kurz ``ipfs``, ein verteiltes »Dateisystem« [@peer2peer]). Dies macht die
+Entwicklung eines Prototypen mit vertretbaren Aufwand möglich.
 
 Von einem Prototypen zu einer marktreifen Software ist es allerdings stets ein
-weiter Weg. Daher wollen wir einen großen Teil der Zeit nach dem Prototyp damit
-verbringen, die Software bezüglich Sicherheit, Performance und
-Benutzerfreundlichkeit zu optimieren. Da es dafür nun mal keinen
-standardisierten Weg gibt, ist dafür ein gewisses Maß an Forschung nötig.
+sehr weiter Weg. Daher wollen in den Folgejahren, neben der Weiterentwicklung,
+einen großen Teil der Zeit damit verbringen, die Software bezüglich Sicherheit,
+Performance und Benutzerfreundlichkeit zu optimieren. Da es dafür keinen
+standardisierten Weg gibt, ist hier auch ein dementsprechend hoher
+Forschungsaufwand nötig.
 
 ## Einsatzmöglichkeiten
 
-``brig`` soll deutlich flexibler nutzbar sein als zentrale Dienste. Nutzbar soll
-es sein als…
+``brig`` soll deutlich flexibler nutzbar sein als zentrale Dienste und
+vergleichbare Software. Nutzbar soll es sein als…
 
 - *Synchronisationslösung*: Spiegelung von zwei oder mehr Ordnern.
 - *Transferlösung*: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
-- *Versionsverwaltung*: 
-  Bis zu einer bestimmten Tiefe können alte Dateien wiederhergestellt werden.
+- *Versionsverwaltung*: Bis zu einer konfigurierbaren Tiefe können alte Dateien wiederhergestellt werden.
 - *Backup- und Archivierungslösung*: Verschiedene »Knoten--Typen« möglich.
-- *Verschlüsselter Safe*: ein »Repository«[^REPO] kann »verschlossen« und 
-  wieder »geöffnet« werden.
+- *Verschlüsselter Safe*: ein »Repository«[^REPO] kann »verschlossen« und wieder »geöffnet« werden.
 - *Semantisch durchsuchbares* Tag-basiertes Dateisystem[^TAG].
-- *Plattform* für verteilte Anwendungen.
-- einer beliebigen Kombination der oberen Punkte.
+- *Plattform* für verteilte und sicherheitskritische Anwendungen.
+- …einer beliebigen Kombination der oberen Punkte.
 
 [^TAG]: Mit einem ähnlichen Ansatz wie \url{https://en.wikipedia.org/wiki/Tagsistant}
 [^REPO]: *Repository:* Hier ein »magischer« Ordner in denen alle Dateien im Netzwerk angezeigt werden.
 
 ## Zielgruppen
 
-Die primäre Zielgruppe von ``brig`` sind Unternehmenskunden und Heimanwender.
-Wie man unten sehen kann, sind noch weitere sekundäre Zielgruppen denkbar.
+Auch wenn ``brig`` extrem flexibel einsetzbar ist, sind die primären Zielgruppen
+Unternehmen und Heimanwender. Aufgrund der starken Ende-zu-Ende Verschlüsselung
+ist ``brig`` auch für Berufsgruppen, bei denen eine hohe Diskretion bezüglich
+Datenschutz gewahrt werden muss, attraktiv. Hier wären in erster Linie
+Journalisten, Anwälte, Ärzte mit Schweigepflicht auch Aktivisten und politisch
+verfolgte Minderheiten, zu nennen.
 
 ### Unternehmen
 
+<!-- TODO: Industriespionage als Problem erwähnen. -->
+<!-- TODO: Sicherheitsgängelung beschreiben. -->
 Unternehmen können ``brig`` nutzen, um ihre Daten und Dokumente intern zu
 verwalten. Besonders sicherheitskritische Dateien entgehen so der Lagerung in
 Cloud--Services oder der Gefahr von Kopien auf unsicheren
@@ -138,11 +149,15 @@ Nutzern werden diese dann meist mittels Diensten wie *ownCloud* oder *Samba*
 
 In diesem Fall könnte man ``brig`` im Rechenzentrum und auf allen Endgeräten
 installieren. Das Rechenzentrum würde die Datei mit tiefer Versionierung
-vorhalten. Endanwender würden alle Daten sehen, aber auf ihren Gerät nur die
-Daten tatsächlich speichern, die sie auch benutzen. Hat beispielsweise ein
-Kollege im selben Büro die Datei bereits vorliegen, kann brig diese dann direkt
-blockweise vom Endgerät des Kollegen holen.
-
+vorhalten. Endanwender würden alle Daten sehen, aber auf ihrem Gerät nur die
+Daten tatsächlich speichern, die sie auch benötigen. Hat beispielsweise ein
+Kollege im selben Büro die Datei bereits vorliegen, kann ``brig`` diese dann
+direkt transparent vom Endgerät des Kollegen holen. Das »intelligente Routing«
+erlaubt den Einsatz von ``brig`` auf Smartphones, Tablets und anderen
+speicherplatz-limitierten Geräten. Nutzer die eine physikalische Kopie der Datei
+auf ihrem Gerät haben wollen, können das entsprechende Dokument »pinnen«. Ist
+ein Außendienstmitarbeiter beispielsweise im Zug unterwegs, kann er vorher eine
+benötigtes Dokument pinnen, damit ``brig`` die Datei persistent verfügbar macht.
 
 Kleinere Unternehmen, wie Ingenieurbüros, können ``brig`` dazu nutzen Dokumente nach
 Außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
