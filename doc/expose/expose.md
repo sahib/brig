@@ -154,73 +154,77 @@ Daten tatsächlich speichern, die sie auch benötigen. Hat beispielsweise ein
 Kollege im selben Büro die Datei bereits vorliegen, kann ``brig`` diese dann
 direkt transparent vom Endgerät des Kollegen holen. Das »intelligente Routing«
 erlaubt den Einsatz von ``brig`` auf Smartphones, Tablets und anderen
-speicherplatz-limitierten Geräten. Nutzer die eine physikalische Kopie der Datei
+speicherplatz-limitierten Geräten. Nutzer, die eine physikalische Kopie der Datei
 auf ihrem Gerät haben wollen, können das entsprechende Dokument »pinnen«. Ist
 ein Außendienstmitarbeiter beispielsweise im Zug unterwegs, kann er vorher eine
 benötigtes Dokument pinnen, damit ``brig`` die Datei persistent verfügbar macht.
 
-Kleinere Unternehmen, wie Ingenieurbüros, können ``brig`` dazu nutzen Dokumente nach
-Außen freizugeben, ohne dass sie dazu vorher irgendwo »hochgeladen« werden
-müssen. Dies wird dadurch möglich gemacht, dass Dateien mittels eines
-*Hyperlinks* nach außen publik gemacht werden können. So muss die Gegenseite
-``brig`` nicht installiert haben.
+Da ``brig`` auch das Teilen von Dateien mittels Hyperlinks über ein »Gateway«
+erlaubt, ist beispielsweise ein Kunde eines Ingenieurbüros nicht genötigt
+``brig`` ebenso installieren zu müssen.
 
 ### Privatpersonen / Heimanwender
 
 Heimanwender können ``brig`` für ihren Datenbestand aus Fotos, Filmen, Musik und
-sonstigen Dokumenten nutzen. Ein typischer Anwendungsfall wäre dabei auf einem
-NAS Server, der alle Dateien mit niedriger Versionierung speichert. Die
+sonstigen Dokumenten nutzen. Ein typischer Anwendungsfall wäre dabei ein  
+NAS--Server, der alle Dateien mit niedriger Versionierung speichert. 
 Endgeräte, wie Laptops und Smartphones, würden dann ebenfalls ``brig`` nutzen,
 aber mit deutlich geringeren Speicherquotas (maximales Speicherlimit), so dass
 nur die aktuell benötigten Dateien physikalisch auf dem Gerät vorhanden sind.
 Die anderen Dateien lagern »im Netz« und können transparent von ``brig`` von
-anderen verfügbaren Knoten geholt werden. Sollte der Nutzer, beispielsweise auf
-einer längeren Zugfahrt, offline sein, so kann er benötigte Dateien vorher
-»pinnen«, um sie lokal zwischenzuspeichern.
+anderen verfügbaren Knoten geholt werden. 
 
 ### Plattform für industrielle Anwendungen
 
-Da ``brig`` auch komplett automatisiert und ohne Interaktion nutzbar sein soll, kann
-es auch als Plattform für jede andere Anwendungen genutzt werden, die Dateien
-austauschen und synchronisieren müssen. Eine Anwendung in der Industrie 4.0 wäre
-beispielweise die Synchronisierung von Konfigurationsdateien im gesamten
-Netzwerk.
+Da ``brig`` auch komplett automatisiert und ohne Interaktion nutzbar sein soll,
+kann es auch als Plattform für jede andere Anwendung genutzt werden, die Dateien
+sicher austauschen und synchronisieren müssen. Eine Anwendung in der Industrie 4.0 
+wäre beispielsweise die Synchronisierung von Konfigurationsdateien im gesamten Netzwerk.
+
 
 ### Einsatz im öffentlichen Bereich
 
-Aufgrund seiner Transparenz und einfachen Benutzbarkeit wäre ebenfalls eine
-Nutzung an Schulen, Universitäten oder auch in Behörden zum Dokumentenaustausch
+Aufgrund der Ende-zu-Ende Verschlüsselung und einfachen Benutzbarkeit ist eine
+Nutzung an Schulen, Universitäten sowie auch in Behörden zum Dokumentenaustausch
 denkbar. Vorteilhaft wäre für die jeweiligen Institutionen hierbei vor allem,
 dass man sich aufgrund des Open--Source Modells an keinen Hersteller bindet
-(Stichwort: *Vendor Lock*) und keine behördlichen Daten in der »Cloud« landen.
-Eine praktische Anwendung im universitären Bereich wäre die Verteilung von
-Studienunterlagen an die Studenten.
+(Stichwort: *Vendor Lock--In*) und keine behördlichen Daten in der »Cloud«
+landen. Eine praktische Anwendung im universitären Bereich wäre die Verteilung
+von Studienunterlagen an die Studenten. Mangels einer »Standardlösung« ist es
+heutzutage schwierig Dokumente sicher mit Behörden auszutauschen. ``brig``
+könnte hier einen »Standard« etablieren und in Zukunft als eine »Plattform«
+dienen, um beispielsweise Steuerdokumente mit dem Finanzamt auszutauschen.
+
+### Berufsgruppen mit hohen Sicherheitsanforderungen 
+
+Hier wären in erster Line Berufsgruppen mit Schweigepflicht zu nennen wie Ärzte,
+Notare und Anwälte aber auch Journalisten und politisch verfolgte Aktivisten zu
+nennen. Leider ist zum jetzigen Zeitpunkt keine zusätzliche Anonymisierung
+vorgesehen, die es erlauben würde auch die Quelle der Daten unkenntlich zu
+machen. Dies könnte allerdings später mit Hilfe des Tor Netzwerks (Tor Onion
+Routing Projekt) realisiert werden.
 
 # Stand der Technik
 
-Die Innovation bei unserem Projekt  besteht daher hauptsächlich darin, bekannte
+Die Innovation bei unserem Projekt besteht hauptsächlich darin, bekannte
 Technologien »neu zusammen zu stecken«, woraus sich viele neue Möglichkeiten
 ergeben.  Wie im nächsten Kapitel beleuchtet wird, ist ``brig`` der Versuch
-viele gute, bestehende und praxisgeprüfte Ideen in einem konsistenten Programm
-zu vereinen.
+viele gute, bestehende und praxisgeprüfte Ideen in einem konsistenten Konzept zu
+vereinen.
 
 ## Stand der Wissenschaft
 
 Zwar ist das Projekt stark anwendungsorientiert, doch basiert es auf gut
-erforschten Technologien wie Peer--to--Peer-Netzwerken (kurz *P2P*, siehe auch
-[@peer2peer_arch]), von der NIST[^NIST] zertifizierten kryptografischen
-Standard-Algorithmen[@everyday_crypto] und verteilten Systemen im Allgemeinen
-(wie der freie XMPP Standard). P2P--Netzwerke wurden in den letzten
-Jahren gut erforscht und haben sich auch in der Praxis bewährt: Skype ist
-vermutlich das bekannteste, kommerzielle P2P Netzwerk (siehe auch @peer2peer, S.2). 
+erforschten Technologien wie verteilten Netzwerken und von u.a. der NIST[^NIST]
+zertifizierten kryptografischen Standard-Algorithmen[@everyday_crypto].
+Verteilte Netzwerke wurden in den letzten Jahren gut erforscht und haben sich auch in der Praxis
+bewährt: Skype ist vermutlich das bekannteste, kommerzielle »distributed Network«.
 
 Allerdings ist uns keine für breite Massen nutzbare Software bekannt, die es
-Nutzern ermöglicht selbst ein P2P Netzwerk aufzuspannen und darin Dateien
+Nutzern ermöglicht selbst ein verteiltes Netzwerk aufzuspannen, um Dateien
 auszutauschen. Am nähsten kommen dem die beiden Softwareprojekte
 »``Syncthing``« (OpenSource, [^SYNCTHING]) und »``BitTorrent Sync``«
-(proprietär, [^BITSYNC]). Beide nutzen zwar P2P--Technologie zum Austausch der
-Dateien, modellieren aber kein »echtes« P2P--Netzwerk, bei dem nicht jeder
-Teilnehmer eine volle Kopie sämtlicher Daten haben muss.
+(proprietär, [^BITSYNC]). 
 
 [^SYNCTHING]: Siehe auch dazu: \url{https://syncthing.net/}
 [^BITSYNC]: Siehe Hersteller--Webpräsenz: \url{https://www.getsync.com/}
@@ -237,37 +241,40 @@ eingebaut werden können.
 
 Bereits ein Blick auf Wikipedia[@wiki_filesync] zeigt, dass der momentane Markt
 an Dateisynchronisationssoftware (im weitesten Sinne) sehr unübersichtlich ist.
-Ein näherer Blick zeigt, dass die Software dort oft nur
-in Teilaspekten gut funktioniert oder mit anderen unlösbaren Problemen
-behaftet sind.
+Ein näherer Blick zeigt, dass die Softwareprojekte dort oft nur in Teilaspekten
+gut funktionieren oder mit anderen unlösbaren Problemen behaftet sind.
 
 ### Verschiedene Alternativen
 
 Im Folgenden geben wir eine unvollständige Übersicht über bekannte
-Dateisynchronisations--Programmen. Davon stehen nicht alle in Konkurrenz zu
-``brig``, sind aber aus Anwendersicht ähnlich. 
+Dateisynchronisations--Programme. Davon stehen nicht alle in Konkurrenz zu
+``brig``, sind aber zumindest aus Anwendersicht ähnlich. ``brig`` hat sich zum
+Ziel gesetzt, die Vorteile der unterschiedlichen Werkzeuge in Punkto Sicherheit
+und Benutzerfreundlichkeit zu vereinen, mit dem Versuch die Probleme der
+einzelnen Alternative zu minimieren.
 
 #### Dropbox + Boxcryptor
 
 Der vermutlich bekannteste und am weitesten verbreitete zentrale Dienst zur
 Dateisynchronisation. Verschlüsselung kann man mit Tools wie ``encfs``
-(Open--Source, siehe auch [^ENCFS]) oder dem ähnlich umfangreichen, proprietären
-*Boxcryptor* nachrüsten. Was das Backend genau tut ist leider das
-Geheimnis von Dropbox --- es ist nicht Open--Source. 
+(Open--Source, siehe auch [^ENCFS]) oder dem etwas umfangreicheren, proprietären
+*Boxcryptor* nachrüsten. Was das Backend genau tut ist leider das Geheimnis von
+Dropbox --- es ist nicht Open--Source. 
 
 [^ENCFS]: Mehr Informationen unter \url{https://de.wikipedia.org/wiki/EncFS}
 
-Die Server von Dropbox stehen in den Vereinigten Staaten, was spätestens
-seit den Snowden--Enthüllungen für ein mulmiges Gefühl sorgen sollte. Wie oben
+Die Server von Dropbox stehen in den Vereinigten Staaten, was spätestens seit
+den Snowden--Enthüllungen für ein mulmiges Gefühl sorgen sollte. Wie oben
 erwähnt, kann diese Problematik durch die Verschlüsselungssoftware *Boxcryptor*
 abgemildet werden. Diese kostet aber zusätzlich und benötigt noch einen
-zusätzlichen zentralen Keyserver[^KEYSERVER]. 
+zusätzlichen zentralen Keyserver[^KEYSERVER]. Ein weiterer Nachteil ist hier die
+Abhängigkeit von der Verfügbarkeit des Dienstes.
 
 [^KEYSERVER]: Mehr Informationen zum Keyserver unter \url{https://www.boxcryptor.com/de/technischer-\%C3\%BCberblick\#anc09}
 
 Technisch nachteilhaft ist vor allem, dass jede Datei »über den Pazifik« hinweg
-synchronisiert werden muss, nur um eventuell auf dem Arbeitsrechner nebenan 
-anzukommen.
+synchronisiert werden muss, nur um schließlich auf dem Arbeitsrechner 
+»nebenan« anzukommen.
 
 #### ownCloud
 
@@ -275,40 +282,40 @@ Aus dieser Problemstellung heraus entstand die Open--Source Lösung *ownCloud*.
 Nutzer hosten auf ihren Servern selbst eine ownCloud--Instanz und stellen
 ausreichend Speicherplatz bereit. Vorteilhaft ist also, dass die Daten auf den
 eigenen Servern liegen. Nachteilig hingegen, dass das zentrale Modell von Dropbox
-lediglich auf eigene Server übertragen wird. Die Daten müssen zudem von einer
-Weboberfläche geholt werden und liegen nicht in einem »magischen«,
-selbst--synchronisierenden Ordner.
+lediglich auf eigene Server übertragen wird. Einerseits ist ownCloud nicht so
+stark wie ``brig`` auf Sicherheit fokusiert, andererseits ist die Installation
+eines Serversystems für viele Nutzer eine »große« Hürde und somit zumindest für
+den Heimanwender nicht praktikabel.
+
 
 #### Syncthing
 
-Das 2013 veröffentliche quelloffene *Syncthing* versucht diese zentrale
-Instanz zu vermeiden, indem die Daten jeweils von Peer zu Peer übertragen
-werden. Es ist allerdings kein vollständiges Peer--to--peer--Netzwerk: Geteilte
-Dateien liegen immer als Kopie bei allen Teilnehmern, die die Datei haben.
-Alternativ ist aber auch selektives Synchronisieren von Dateien möglich.
+Das 2013 veröffentliche quelloffene *Syncthing* versucht diese zentrale Instanz
+zu vermeiden, indem die Daten jeweils von Peer zu Peer übertragen werden. Es ist
+allerdings kein vollständiges Peer--to--peer--Netzwerk: Geteilte Dateien liegen
+immer als vollständige Kopie bei allen Teilnehmern, welche die Datei haben.
+Alternativ ist selektives Synchronisieren von Dateien möglich.
 
-Besser als bei ownCloud ist hingegen gelöst, dass ein »magischer« Ordner
-existiert in dem man einfach Dateien legen kann, um sie zu teilen. Zudem wird die
-Datei vom nächstgelegenen Knoten übertragen. Praktisch ist auch, dass
-*Syncthing* Instanzen mittels eines zentralen Discovery--Servers entdeckt werden
-können.  Nachteilig hingegen ist die fehlende Benutzerverwaltung: Man kann nicht
-festlegen von welchen Nutzern man Änderungen empfangen will und von welchen
-nicht. 
+*Syncthing* besitzt bereits eine Art »intelligentes Routing«, d.h. Dateien werden
+vom nächstgelegenen Peer mit der höchsten Bandbreite übertragen. Praktisch ist
+auch, dass *Syncthing* Instanzen mittels eines zentralen Discovery--Servers
+entdeckt werden können. Nachteilig hingegen ist die fehlende
+Benutzerverwaltung: Man kann nicht festlegen von welchen Nutzern man Änderungen
+empfangen will und von welchen nicht. 
 
 #### BitTorrent Sync
 
-In bestimmten Kreisen scheint auch das kommerzielle und proprietäre 
-*BitTorrent Sync* beliebt zu sein. Hier wird das bekannte und freie BitTorrent
-Protokoll zur Übertragung genutzt. Vom Feature--Umfang ist es in etwa
-vergleichbar mit *Syncthing*. Die Dateien werden allerdings noch zusätzlich
-AES--verschlüsselt abgespeichert.
+In bestimmten Kreisen scheint auch das kommerzielle und proprietäre *BitTorrent
+Sync* beliebt zu sein. Hier wird das bekannte und freie BitTorrent Protokoll zur
+Übertragung genutzt. Vom Feature--Umfang ist es in etwa vergleichbar mit
+*Syncthing*. Die Dateien werden allerdings noch zusätzlich AES--verschlüsselt
+abgespeichert.
 
 Genauere Aussagen kann man leider aufgrund der geschlossenen Natur des Programms
 und der eher vagen Werbeprosa nicht treffen. Ähnlich zu *Syncthing* ist
 allerdings, dass eine Versionsverwaltung nur mittels eines »Archivordners«
 vorhanden ist. Gelöschte Dateien werden schlicht in diesen Ordner verschoben und
-können von dort wiederhergestellt werden. Die meisten anderen Vor- und Nachteile
-von *Syncthing* treffen auch hier zu.
+können von dort wiederhergestellt werden. 
 
 #### ``git-annex``
 
@@ -316,8 +323,8 @@ Das 2010 erstmals veröffentlichte ``git-annex``[^ANNEX] geht in vielerlei Hinsi
 einen anderen Weg. Einerseits ist es in der funktionalen Programmiersprache
 Haskell geschrieben, andererseits nutzt es das Versionsverwaltungssystem ``git``[@git],
 um die Metadaten zu den Dateien abzuspeichern, die es verwaltet. Auch werden
-Dateien standardmäßig nicht automatisch synchronisiert, man muss Dateien selbst
-»pushen«, beziehungsweise »pullen«.
+Dateien standardmäßig nicht automatisch synchronisiert, hier ist die Grundidee
+die Dateien selbst zu »pushen«, beziehungsweise zu »pullen«.
 
 [^ANNEX]: Webpräsenz: \url{https://git-annex.branchable.com/}
 
@@ -338,79 +345,99 @@ langfristig gesehen auch in ``brig`` realisieren wollen:
 Obwohl ``brig`` eine gewisse Ähnlichkeit mit verteilten Dateisystemen, wie
 *GlusterFS* hat, wurden diese in der Übersicht weggelassen --- einerseits aus
 Gründen der Übersicht, andererseits weil diese andere Ziele verfolgen und von
-Heimanwendern kaum genutzt werden.
+Heimanwendern kaum genutzt werden. Zudem ist der Vollständigkeit halber auch
+OpenPGP zu nennen, was viele Nutzer Verschlüsseln von E-Mails benutzen. Aber
+auch hier ist der größte Nachteil die schwierige Einrichtung.
 
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
 unserer Sicht wichtigsten Eigenschaften: 
 
-|                      | **FOSS**            | **Dezentral**       | **Kein SPoF**                 | **Versionierung**                    | **Einfach nutzbar** | **P2P**         |  
-| -------------------- | ------------------- | ------------------- | --------------------------- | -------------------------------------- | ------------------- |------------------|
-| *Dropbox/Boxcryptor* | \xmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              | \xmark           |
-| *ownCloud*           | \cmark              | \xmark              | \xmark                      | \textcolor{YellowOrange}{Rudimentär}   | \cmark              | \xmark           |
-| *Syncthing*          | \cmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              | \xmark           |
-| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                      | \textcolor{YellowOrange}{Archivordner} | \cmark              | \xmark           |
-| ``git-annex``        | \cmark              | \cmark              | \cmark                      | \cmark                                 | \xmark              | \xmark           |
-| ``brig``             | \cmark              | \cmark              | \cmark                      | \cmark                                 | \cmark              | \cmark           |
+Technische Aspekte:
+
+<!-- TODO: dedup und compression, num of copies -->
+|                      | **Dezentral**       | **Clientseitig**                 | **Versionierung**                      |  **Quotas**       |  
+| -------------------- | ------------------- | -------------------------------- | -------------------------------------- | ------------------|
+| *Dropbox/Boxcryptor* | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
+| *ownCloud*           | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
+| *Syncthing*          | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           |
+| *BitTorrent Sync*    | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           |
+| ``git-annex``        | \cmark              | \cmark                           | \cmark                                 |  \xmark           |
+| ``brig``             | \cmark              | \cmark                           | \cmark                                 |  \cmark           |
+
+
+Praktische Aspekte:
+
+|                      | **FOSS**            | **Einfach nutzbar** | **Einfache Installation**  | **Intelligentes Routing** |
+| -------------------- | ------------------- | ------------------- |--------------------------  | ------------------------- |
+| *Dropbox/Boxcryptor* | \xmark              | \cmark              | \cmark                     |  \xmark                   |
+| *ownCloud*           | \cmark              | \cmark              | \xmark                     |  \xmark                   |
+| *Syncthing*          | \cmark              | \cmark              | \cmark                     |  \cmark                   |
+| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                     |  \cmark                   |
+| ``git-annex``        | \cmark              | \xmark              | \xmark                     |  \xmark                   |
+| ``brig``             | \cmark              | \cmark              | \cmark                     |  \cmark                   |
+
 
 # Das Projekt ``brig``
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*, *BitTorrent
-Sync* und ``git-annex``. Wie wir diese technichen Vorzüge ohne große Nachteile
+Sync* und ``git-annex``. Wie wir diese technischen Vorzüge ohne große Nachteile
 erreichen wollen, wird im Folgenden beleuchtet.
 
 ## Der Name
 
 Eine »Brigg« (englisch »brig«) ist ein kleines und wendiges
-Zweimaster--Segelschiff aus dem 18-ten Jahrhundert. Passend erschien uns der Name
-einerseits, weil wir flexibel »Güter« (in Form von Dateien) in der ganzen Welt
-verteilen, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
+Zweimaster--Segelschiff aus dem 18-ten Jahrhundert. Passend erschien uns der
+Name einerseits, weil wir flexibel »Güter« (in Form von Dateien) in der ganzen
+Welt verteilen, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
 
 Dass der Name ähnlich klingt und kurz ist wie ``git``, ist kein Zufall. Das
-Versionsverwaltungssystem (kurz VCS) hat durch seine sehr flexible und dezentrale
-Arbeitsweise bestehende zentrale Alternativen wie ``svn`` oder ``cvs`` fast
-vollständig abgelöst. Zusätzlich ist der Gesamteinsatz von
-Versionsverwaltungssystemen durch die verhältnismäßige einfache Anwendung
-gestiegen.
-Wir hoffen mit ``brig`` eine ähnlich flexible Lösung für große Dateien
-etablieren zu können. 
+Versionsverwaltungssystem (version control system, kurz VCS) hat durch seine
+sehr flexible und dezentrale Arbeitsweise bestehende zentrale Alternativen wie
+``svn`` oder ``cvs`` fast vollständig abgelöst. Zusätzlich ist der Gesamteinsatz
+von Versionsverwaltungssystemen durch die verhältnismäßige einfache Anwendung
+gestiegen. Wir hoffen mit ``brig`` eine ähnlich flexible Lösung für große
+Dateien etablieren zu können. 
 
 ## Wissenschaftliche und technische Arbeitsziele
 
 Um die oben genannten Ziele zu realisieren ist eine sorgfältige Auswahl der
-Technologien wichtig. Der Einsatz eines Peer--to--Peer Netzwerk zum Dateiaustausch
-ermöglicht interessante neue Möglichkeiten. Bei zentralen Ansätzen müssen
-Dateien immer vom zentralen Server (der einen *Single Point of Failure*
-darstelle) geholt werden. Dies ist relativ ineffizient, besonders wenn viele
-Teilnehmer im selben Netz die selbe große Videodatei empfangen wollen. Bei ``brig``
-würde der Fortschritt beim Ziehen der Datei unter den Teilnehmern aufgeteilt
-werden. Hat ein Teilnehmer bereits einen Block einer Datei, so kann er sie mit
-anderen direkt ohne Umweg über den Zentralserver teilen.
+Technologien wichtig. Der Einsatz eines Peer--to--Peer Netzwerk zum
+Dateiaustausch ermöglicht interessante neue Möglichkeiten. Bei zentralen
+Ansätzen müssen Dateien immer vom zentralen Server (der einen *Single Point of
+Failure* darstellt) geholt werden. Dies ist vergleichsweise ineffizient,
+besonders wenn viele Teilnehmer im selben Netz die selbe große Videodatei
+empfangen wollen. Bei ``brig`` würde der Fortschritt beim Ziehen der Datei unter
+den Teilnehmern aufgeteilt werden. Hat ein Teilnehmer bereits einen Block einer
+Datei, so kann er sie mit anderen direkt ohne Umweg über den Zentralserver
+teilen. Der Nutzer sieht dabei ganz normal die Datei, ``brig`` erledigt dabei
+das Routing transparent im Hintergrund.
 
 Zudem reicht es prinzipiell wenn eine Datei nur einmal im Netz vorhanden ist.
 Ein Rechenzentrum mit mehr Speicherplatz könnte alle Dateien zwischenhalten,
 während ein *Thin--Client* nur die Dateien vorhalten muss mit denen gerade
 gearbeitet wird.
+
 Zu den bereits genannten allgemeinen Zielen kommen also noch folgende technischen Ziele:
 
-* Verschlüsselte Übertragung *und* Speicherung.
+<!-- TODO: ALle punkte -->
+* *Ende--zu--Ende Verschlüsselung*: Verschlüsselte Übertragung *und* Speicherung.
 * *Deduplizierung*: Gleiche Dateien werden nur einmal im Netz gespeichert.
-* *Benutzerverwaltung* mittels XMPP--Logins.
 * *Speicherquoten* & Pinning (Dateien werden lokal »festgehalten«)
 * Kein offensichtlicher *Single Point of Failure*.
 * Optionale *Kompression* mittels der Algorithmen ``snappy`` oder ``brotli``.
-* *Zweifaktor-Authentifizierung* und *paranoide* Sicherheit--Standards »Made in Germany«.
+* *Zweifaktor-Authentifizierung*.
 
 ## Lösungsansätze
 
-Als Peer--to--Peer Filesystem werden wir das InterPlanetaryFileSystem[^IPFS]
+Als verteiltes Dateisystem werden wir das InterPlanetaryFileSystem[^IPFS]
 nutzen.  Dieses implementiert für uns bereits den Dateiaustausch zwischen den
 einzelnen ``ipfs``--Knoten. Damit die Dateien nicht nur verschlüsselt übertragen
 sondern auch abgespeichert werden, werden sie vor dem Hinzufügen zu IPFS mittels
-AES im GCM--Modus von ``brig`` verschlüsselt und optional komprimiert. Zur
-Nutzerseite hin bietet ``brig`` dann eine Kommandozeilenanwendung und ein
+AES im GCM--Modus von ``brig`` verschlüsselt und zuvor optional komprimiert. Zur
+Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung und ein
 FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository wie normale
 Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei wird diese
-von ``brig`` dann, für den Nutzer unsichtbar, im Netzwerk lokalisiert,
+von ``brig`` dann, für den Nutzer transparent, im Netzwerk lokalisiert,
 empfangen, entschlüsselt und als Dateistrom nach außen gegeben.
 
 [^IPFS]: Mehr Informationen unter \url{http://ipfs.io/}
