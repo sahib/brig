@@ -242,7 +242,14 @@ eingebaut werden können.
 Bereits ein Blick auf Wikipedia[@wiki_filesync] zeigt, dass der momentane Markt
 an Dateisynchronisationssoftware (im weitesten Sinne) sehr unübersichtlich ist.
 Ein näherer Blick zeigt, dass die Softwareprojekte dort oft nur in Teilaspekten
-gut funktionieren oder mit anderen unlösbaren Problemen behaftet sind.
+gut funktionieren oder mit anderen unlösbaren Problemen behaftet sind. Manch
+andere Software wie ``bazil``[^BAZIL] oder ``infinit``[^INFINIT] ist
+vielversprechender, allerdings ebenfalls noch im Entstehen und im Falle von
+``infinit`` auch nur teilweise quelloffen.
+
+[^BAZIL]: \url{https://bazil.org}
+[^INFINIT]: \url{http://infinit.sh}
+
 
 ### Verschiedene Alternativen
 
@@ -355,7 +362,8 @@ unserer Sicht wichtigsten Eigenschaften:
 Technische Aspekte:
 
 <!-- TODO: dedup und compression, num of copies -->
-|                      | **Dezentral**       | **Clientseitig**                 | **Versionierung**                      |  **Quotas**       |  
+
+|                      | **Dezentral**       | **Clientseitige Verschlüsselung**| **Versionierung**                      |  **Quotas**       |  
 | -------------------- | ------------------- | -------------------------------- | -------------------------------------- | ------------------|
 | *Dropbox/Boxcryptor* | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
 | *ownCloud*           | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
@@ -376,91 +384,100 @@ Praktische Aspekte:
 | ``git-annex``        | \cmark              | \xmark              | \xmark                     |  \xmark                   |
 | ``brig``             | \cmark              | \cmark              | \cmark                     |  \cmark                   |
 
-
 # Das Projekt ``brig``
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*, *BitTorrent
-Sync* und ``git-annex``. Wie wir diese technischen Vorzüge ohne große Nachteile
-erreichen wollen, wird im Folgenden beleuchtet.
-
-## Der Name
-
-Eine »Brigg« (englisch »brig«) ist ein kleines und wendiges
-Zweimaster--Segelschiff aus dem 18-ten Jahrhundert. Passend erschien uns der
-Name einerseits, weil wir flexibel »Güter« (in Form von Dateien) in der ganzen
-Welt verteilen, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
-
-Dass der Name ähnlich klingt und kurz ist wie ``git``, ist kein Zufall. Das
-Versionsverwaltungssystem (version control system, kurz VCS) hat durch seine
-sehr flexible und dezentrale Arbeitsweise bestehende zentrale Alternativen wie
-``svn`` oder ``cvs`` fast vollständig abgelöst. Zusätzlich ist der Gesamteinsatz
-von Versionsverwaltungssystemen durch die verhältnismäßige einfache Anwendung
-gestiegen. Wir hoffen mit ``brig`` eine ähnlich flexible Lösung für große
-Dateien etablieren zu können. 
+Sync* und ``git-annex``. Wie wir die technischen Vorzüge der genannten Lösungen
+in einem Produkt vereinen wollen, beleuchten wir in den nächsten Abschnitten.
 
 ## Wissenschaftliche und technische Arbeitsziele
 
 Um die oben genannten Ziele zu realisieren ist eine sorgfältige Auswahl der
-Technologien wichtig. Der Einsatz eines Peer--to--Peer Netzwerk zum
-Dateiaustausch ermöglicht interessante neue Möglichkeiten. Bei zentralen
-Ansätzen müssen Dateien immer vom zentralen Server (der einen *Single Point of
-Failure* darstellt) geholt werden. Dies ist vergleichsweise ineffizient,
-besonders wenn viele Teilnehmer im selben Netz die selbe große Videodatei
-empfangen wollen. Bei ``brig`` würde der Fortschritt beim Ziehen der Datei unter
-den Teilnehmern aufgeteilt werden. Hat ein Teilnehmer bereits einen Block einer
-Datei, so kann er sie mit anderen direkt ohne Umweg über den Zentralserver
-teilen. Der Nutzer sieht dabei ganz normal die Datei, ``brig`` erledigt dabei
-das Routing transparent im Hintergrund.
+Technologien wichtig. Der Einsatz eines Content--Adressable--Network (CAN[^CAN])
+Netzwerk ermöglicht eine vergleichsweise leichte Umsetzung der oben genannten
+Features. Jeder Teilnehmer der ein Dokument aus dem Netzwerk empfangen will,
+muss nur die Prüfsumme des Dokumentes kennen. ``brig`` kann basierend darauf für
+alle Dateien, die es kennt eine Historie mit allen Prüfsummen des Dokumentes
+speichern. Sobald der Zugriff auf den aktuellen Stand gefordert wird, kann
+``brig`` die aktuelle Prüfsumme für den Dateinamen nachschlagen und sie aus dem
+*CAN* holen. Alte Stände können, sofern vorhanden, ebenfalls von ``brig``
+wiederhergestellt werden, indem die Historie des Dokumentes betrachtet wird.
+
+[^CAN]: Näheres dazu hier: \url{https://en.wikipedia.org/wiki/Content_addressable_network}
+
+Im Vergleich zu zentralen Ansätzen (bei dem der zentrale Server einen *Single
+Point of Failure* darstellt) können Dateien intelligent geroutet werden und
+müssen nicht physikalisch auf allen Geräten verfügbar sein. Wird beispielsweise
+ein großes Festplattenimage (~2GB) in einem Vorlesungssaal von jedem Teilnehmer
+heruntergeladen, so muss bei zentralen Diensten die Datei zigmal über das
+vermutlich ausgelastete Netzwerk der Hochschule gezogen werden. In einem *CAN*
+kann die Datei in Blöcke unterteilt werden, die von jedem Teilnehmer gleich
+wieder verteilt werden können,  sobald sie heruntergeladen wurden. Der Nutzer
+sieht dabei ganz normal die Datei, ``brig``, bzw. das *CAN* erledigt dabei das
+Routing transparent im Hintergrund.
 
 Zudem reicht es prinzipiell wenn eine Datei nur einmal im Netz vorhanden ist.
 Ein Rechenzentrum mit mehr Speicherplatz könnte alle Dateien zwischenhalten,
 während ein *Thin--Client* nur die Dateien vorhalten muss mit denen gerade
 gearbeitet wird.
 
-Zu den bereits genannten allgemeinen Zielen kommen also noch folgende technischen Ziele:
-
-<!-- TODO: ALle punkte -->
-* *Ende--zu--Ende Verschlüsselung*: Verschlüsselte Übertragung *und* Speicherung.
-* *Deduplizierung*: Gleiche Dateien werden nur einmal im Netz gespeichert.
-* *Speicherquoten* & Pinning (Dateien werden lokal »festgehalten«)
-* Kein offensichtlicher *Single Point of Failure*.
-* Optionale *Kompression* mittels der Algorithmen ``snappy`` oder ``brotli``.
-* *Zweifaktor-Authentifizierung*.
+Da eine gute Balance zwischen Usability und Sicherheit hergestellt werden soll,
+muss der Nutzer nach der Einrichtung nur beim Entsperren eines ``brig``--Ordners
+(»Repository« genannt) ein Passwort eingeben. Das dahinterliegende
+Sicherheitsmodell soll möglichst vom Nutzer versteckt werden. 
 
 ## Lösungsansätze
 
-Als verteiltes Dateisystem werden wir das InterPlanetaryFileSystem[^IPFS]
+Als *CAN* werden wir das freie *InterPlanetary FileSystem*[^IPFS]
 nutzen.  Dieses implementiert für uns bereits den Dateiaustausch zwischen den
 einzelnen ``ipfs``--Knoten. Damit die Dateien nicht nur verschlüsselt übertragen
 sondern auch abgespeichert werden, werden sie vor dem Hinzufügen zu IPFS mittels
-AES im GCM--Modus von ``brig`` verschlüsselt und zuvor optional komprimiert. Zur
+AES--128 im GCM--Modus von ``brig`` verschlüsselt und zuvor optional komprimiert. Zur
 Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung und ein
 FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository wie normale
 Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei wird diese
 von ``brig`` dann, für den Nutzer transparent, im Netzwerk lokalisiert,
 empfangen, entschlüsselt und als Dateistrom nach außen gegeben.
+Das Windows--Betriebbssystem unterstützt leider kein *FUSE*, daher wird im
+späteren Verlauf auch ein WebDAV--Server implementiert.
 
 [^IPFS]: Mehr Informationen unter \url{http://ipfs.io/}
 [^FUSE]: FUSE: *Filesystem in Userspace*, siehe auch \url{https://de.wikipedia.org/wiki/Filesystem_in_Userspace}
+[^WEBDAV]: Siehe dazu auch: \url{https://de.wikipedia.org/wiki/WebDAV}
+
+TODO: Grafik anpassen und aufhübschen.
 
 ![Übersicht über die Kommunikation zwischen zwei Partnern/Repositories, mit den relevanten Sicherheits--Protokollen](images/security.png){#fig:security}
 
-Der AES--Schlüssel wird dabei an ein Passwort geknüpft, welches der Nutzer beim
-Anlegen des Repositories angibt. Das Passwort wiederum ist an einen
-XMPP--Account der Form ``nutzer@server.de/ressource`` geknüpft.
-Ein Überblick über die sicherheitsrelevanten Zusammenhänge findet sich
-in Abbildung {@fig:security}.
+Jedes Repository besitzt nach der Einrichtung über einen öffentlichen und
+privaten Schlüssel. Das Schlüsselpaar ist verfügbar sobald der Nutzer sein
+Passwort eingegeben hat und ``brig`` eines mittels ``scrypt`` abgeleiteten 
+Schlüssels das Repository »öffnet«.
+
+Im Netzwerk identifiziert sich ein Knoten dabei über den Hash--Wert des
+öffentlichen Schlüssels und weist seine Identität über ein
+Challenge--Response--Verfahren nach. Da dieser Hash--Wert natürlich 
+nur schwer vom Benutzer zu merken ist, vergibt dieser beim Anlegen eines
+Repositories einen Benutzernamen im Jabber--ähnlichen Schema 
+``nutzer@gruppe.domain/ressource``. Dabei sind alle Teile nach dem ``@``
+optional. Die Gruppe kann dabei von Unternehmen genutzt werden andere
+``brig``--Teilnehmer automatisch zu entdecken.
 
 Alle Änderungen an einem Repository werden in einer Metadatendatenbank
-gespeichert. Diese kann dann mit anderen Teilnehmern über XMPP, und
-verschlüsselt via OTR[^OTR], ausgetauscht werden. Jeder Teilnehmer hat dadurch
-den gesamten Dateiindex. Die eigentlichen Dateien können aber »irgendwo« im
+gespeichert. Diese wird dann mit anderen Teilnehmern über einen separaten,
+verschlüsselten und authentifizierten Seitenkanal ausgetauscht. Sowohl der
+Seitenkanal als auch die eigentliche Dateiübertragung kann dabei NAT--Grenzen
+mittels Hole--Punching[^HOLE] überwinden und benötigt normalerweise keine
+gesonderte Konfiguration.
+
+Jeder Teilnehmer hat ähnliche wie bei ``git`` den gesamten Dateiindex jedes
+anderen Teilnehmers. Die eigentlichen Dateien können aber »irgendwo« im
 Teilnehmernetz sein. Sollte eine Datei lokal benötigt werden, so kann man sie
 »pinnen«, um sie lokal zu speichern. Ansonsten werden nur selbst erstellte
 Dateien gespeichert und andere Dateien maximal solange vorgehalten, bis die
 Speicherquote erreicht ist.
 
-[^OTR]: *Off--the--Record--Messaging:* Mehr Informationen unter \url{https://de.wikipedia.org/wiki/Off-the-Record_Messaging}
+[^HOLE]: Siehe dazu auch \url{https://de.wikipedia.org/wiki/Hole_Punching}
 
 Nutzer die ``brig`` nicht installiert haben, oder mit denen man aus
 Sicherheitsgründen nicht das gesamte Repository teilen möchte, können einzelne
@@ -487,7 +504,7 @@ wir auf relativ junge Technologien wie ``ipfs`` setzen, ist zu erwarten, dass
 sich in Details noch Änderungen ergeben. Auch die Tauglichkeit bezüglich
 Performance ist momentan noch schwer einzuschätzen. Aus diesen Gründen werden
 wir zwischen ``brig`` und ``ipfs`` eine Abstraktionsschicht bauen, um notfalls
-den Einsatz anderer Backends zu ermöglichen.
+den Einsatz eines anderen *CANs* zu ermöglichen.
 
 Erfahrungsgemäß nimmt auch die Portierung und Wartung auf anderen Plattformen
 sehr viel Zeit in Anspruch. Durch die Wahl der hochportablen Programmiersprache
@@ -518,9 +535,9 @@ unserer Sicht hierbei sogar einige Vorteile:
 ## Verwertungskonzepte
 
 Es folgen einige konkrete Verwertungs--Strategien, die teilweise auch in
-Partnerschaft mit dazu passenden Unternehmen ausgeführt werden könnten.
-Prinzipiell soll die Nutzung für private und gewerbliche Nutzer kostenfrei sein,
-weitergehende Dienstleistungen aber nicht.
+Partnerschaft mit dazu passenden Unternehmen oder Institutionen ausgeführt
+werden könnten. Prinzipiell soll die Nutzung für private und gewerbliche Nutzer
+kostenfrei sein, weitergehende Dienstleistungen aber nicht.
 
 ### Bezahlte Entwicklung spezieller Features
 
@@ -535,8 +552,9 @@ Möglichkeit, die weitere Entwicklung von ``brig`` mittels finanziellen Mitteln
 zu steuern.
 
 *Spezielle Lösungen:* Lösungen die nur für spezifische Anwendungsfälle Sinn
-machen. Ein Beispiel wäre ein Skript, dass für jeden Unternehmens--Login einen
-XMPP--Account anlegt.
+machen. Ein Beispiel wäre ein Skript, dass für jeden Unternehmens--Login ein
+``brig``--Repository lokal mit passenden Nutzernamen und Passwort anlegt
+(beispielsweise mittels LDAP--Anbindung).
 
 ### Supportverträge
 
@@ -564,7 +582,7 @@ wollen, kann die Erteilung einer anderen Lizenz in Frage kommen:
   Speziallösungen zu entwickeln, die sie dann nicht als *Open--Source*
   veröffentlichen müssen.
 
-- Ein Hosting Anbieter der ``brig`` nutzen möchte, müsste wegen der ``AGPL``
+- Ein Hosting Anbieter der ``brig`` nutzen möchte, müsste wegen der ``AGPLv3``
   dazu erst die Erlaubnis bei uns einholen.  Je nach Fall könnte dann ein
   entsprechender Vertrag ausgehandelt werden.
 
@@ -587,23 +605,30 @@ Flaschenschiffen, erzielen. \smiley{}
 
 ## Technische Arbeitsschritte
 
-Im Rahmen unserer Masterarbeiten werden wir einen Prototypen entwickeln, der
+Im Rahmen unserer Masterarbeiten werden wir ein Proof--of--Concept entwickeln, der
 bereits in Grundzügen die oben beschriebenen Technologien demonstriert.
 Gute Performanz, Portabilität und Anwenderfreundlichkeit sind zu diesem Zeitpunkt aus
 Zeitmangel allerdings noch keine harten Anforderungen.
+In diesem ersten Prototypen sollen bereits die grundlegenden Features von
+``brig`` vorhanden sein:  die verschlüsselte Speicherung in ``ipfs``, der
+Zugriff über FUSE und grundlegende Synchronisationsfähigkeiten.
 
-Die im ersten Prototypen gewonnen Erkenntnisse wollen wir dazu nutzen,
-nötigenfalls eine technische »Kurskorrektur« durchzuführen und den ersten
-Prototypen nach Möglichkeit zu vereinfachen und zu stabilisieren.
+Die dabei gewonnen Erkenntnisse wollen wir dazu nutzen, einen Prototypen für
+technische Nutzer zu entwickeln und dabei nötigenfalls eine »Kurskorrektur«
+durchzuführen, wobei nach Möglichkeit die Codebasis bereits vereinfacht und
+stabilisiert werden sollte. Zu diesem Zeitpunkt soll ``brig`` bereits ähnlich
+wie ``git`` als »Toolbox« für Dateisynchronisation benutzbar sein.
 
-Zu diesem zweiten Prototypen werden dann in kleinen Iterationen Features
-hinzugefügt. Jedes dieser Feature sollte für sich alleine stehen, daher sollte
-zu diesem Zeitpunkt bereits die grundlegende Architektur relativ stabil sein.
+In einem zweiten Endnutzer--orientierten  Prototypen werden dann in kleinen
+Iterationen Features hinzugefügt. Jedes dieser Feature sollte für sich alleine
+stehen, daher sollte zu diesem Zeitpunkt bereits die grundlegende Architektur
+relativ stabil sein.
 
-Nachdem ein gewisses Mindestmaß an nützlichen Features hinzugekommen ist, wäre
-ein erstes öffentliches Release anzustreben. Dies hätte bereits eine gewisse
-Verbreitung zur Folge und die in ``brig`` eingesetzten Sicherheitstechnologien
-könnten von externen Sicherheitsexperten auditiert werden.
+Nach einer gewissen Stabilisierungsphase wollen wir ein erstes öffentliches
+Release in der Open--Source--Community anstrebgen. Dies hätte bereits eine
+gewisse Verbreitung zur Folge und die in ``brig`` eingesetzten
+Sicherheitstechnologien könnten von externen Sicherheitsexperten auditiert
+werden.
 
 ## Meilensteinplanung
 
@@ -632,6 +657,8 @@ Weitere Features kommen dann in kleinen, stärker abgekapselten, Iterationen hin
 
 # Finanzierung des Vorhabens
 
+## Über IuK--Bayern
+
 Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
 Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens gefördert. Gern gesehen ist dabei
@@ -659,6 +686,26 @@ natürlich aus der fertigen Software, andererseits aus möglichen weiteren darau
 resultierenden Kooperationen.
 
 [^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
+
+# Über uns
+
+TODO!
+
+## Der Name
+
+Eine »Brigg« (englisch »brig«) ist ein kleines und wendiges
+Zweimaster--Segelschiff aus dem 18-ten Jahrhundert. Passend erschien uns der
+Name einerseits, weil wir flexibel »Güter« (in Form von Dateien) in der ganzen
+Welt verteilen, andererseits weil ``brig`` auf (Datei-)Strömen operiert.
+
+Dass der Name ähnlich klingt und kurz ist wie ``git``, ist kein Zufall. Das
+Versionsverwaltungssystem (version control system, kurz VCS) hat durch seine
+sehr flexible und dezentrale Arbeitsweise bestehende zentrale Alternativen wie
+``svn`` oder ``cvs`` fast vollständig abgelöst. Zusätzlich ist der Gesamteinsatz
+von Versionsverwaltungssystemen durch die verhältnismäßige einfache Anwendung
+gestiegen. Wir hoffen mit ``brig`` eine ähnlich flexible Lösung für große
+Dateien etablieren zu können. 
+
 
 \newpage
 
