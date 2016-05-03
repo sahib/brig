@@ -40,9 +40,9 @@ abgrenzen:
 - Transparenz, Anpassbarkeit und Sicherheit durch *Free Open Source Software (FOSS)*.
 - Kein *Single Point of Failure* (*SPoF*), wie bei zentralen Diensten.
 - Dezentrales Peer--to--Peer--Netzwerk auf Basis von ``ipfs``.
+- Versionsverwaltung großer Dateien mit definierbarer Tiefe.
 - Globales Benutzermanagement auf Basis von ``ipfs`` (Anbindung an existierende
   Systeme sowie Single--Sign--On technisch möglich).
-- Versionsverwaltung großer Dateien mit definierbarer Tiefe.
 
 # Steckbrief 
 
@@ -108,7 +108,7 @@ Performance und Benutzerfreundlichkeit zu optimieren. Da es dafür keinen
 standardisierten Weg gibt, ist hier auch ein dementsprechend hoher
 Forschungsaufwand nötig.
 
-``brig`` soll letzendlich deutlich flexibler nutzbar sein als zentrale Dienste
+``brig`` soll letztendlich deutlich flexibler nutzbar sein als zentrale Dienste
 und vergleichbare Software. Nutzbar soll es sein als…
 
 - *Synchronisationslösung*: Spiegelung von zwei oder mehr Ordnern.
@@ -199,7 +199,7 @@ dienen, um beispielsweise medizinische Unterlagen mit dem Hospital auszutauschen
 
 ### Berufsgruppen mit hohen Sicherheitsanforderungen 
 
-Hier wären in erster Line Berufsgruppen mit Schweigepflicht zu nennen wie Ärzte,
+Hier wären in erster Linie Berufsgruppen mit Schweigepflicht zu nennen wie Ärzte,
 Notare und Anwälte aber auch Journalisten und politisch verfolgte Aktivisten.
 Leider ist zum jetzigen Zeitpunkt keine zusätzliche Anonymisierung vorgesehen,
 die es erlauben würde auch die Quelle der Daten unkenntlich zu machen. Dies
@@ -224,7 +224,7 @@ bewährt: Skype ist vermutlich das bekannteste, kommerzielle »distributed Netwo
 
 Allerdings ist uns keine für breite Massen nutzbare Software bekannt, die es
 Nutzern ermöglicht selbst ein verteiltes Netzwerk aufzuspannen, um Dateien
-auszutauschen. Am nähsten kommen dem die beiden Softwareprojekte
+auszutauschen. Am nähesten kommen dem die beiden Softwareprojekte
 »``Syncthing``« (OpenSource, [^SYNCTHING]) und »``BitTorrent Sync``«
 (proprietär, [^BITSYNC]). 
 
@@ -258,7 +258,7 @@ vielversprechender, allerdings ebenfalls noch im Entstehen und im Falle von
 Im Folgenden geben wir eine unvollständige Übersicht über bekannte
 Dateisynchronisations--Programme. Davon stehen nicht alle in Konkurrenz zu
 ``brig``, sind aber zumindest aus Anwendersicht ähnlich. ``brig`` hat sich zum
-Ziel gesetzt, die Vorteile der unterschiedlichen Werkzeuge in Punkto Sicherheit
+Ziel gesetzt, die Vorteile der unterschiedlichen Werkzeuge in puncto Sicherheit
 und Benutzerfreundlichkeit zu vereinen, mit dem Versuch die Probleme der
 einzelnen Alternative zu minimieren.
 
@@ -275,7 +275,7 @@ Dropbox --- es ist nicht Open--Source.
 Die Server von Dropbox stehen in den Vereinigten Staaten, was spätestens seit
 den Snowden--Enthüllungen für ein mulmiges Gefühl sorgen sollte. Wie oben
 erwähnt, kann diese Problematik durch die Verschlüsselungssoftware *Boxcryptor*
-abgemildet werden. Diese kostet aber zusätzlich und benötigt noch einen
+abgemildert werden. Diese kostet aber zusätzlich und benötigt noch einen
 zusätzlichen zentralen Keyserver[^KEYSERVER]. Ein weiterer Nachteil ist hier die
 Abhängigkeit von der Verfügbarkeit des Dienstes.
 
@@ -292,7 +292,7 @@ Nutzer hosten auf ihren Servern selbst eine ownCloud--Instanz und stellen
 ausreichend Speicherplatz bereit. Vorteilhaft ist also, dass die Daten auf den
 eigenen Servern liegen. Nachteilig hingegen, dass das zentrale Modell von Dropbox
 lediglich auf eigene Server übertragen wird. Einerseits ist ownCloud nicht so
-stark wie ``brig`` auf Sicherheit fokusiert, andererseits ist die Installation
+stark wie ``brig`` auf Sicherheit fokussiert, andererseits ist die Installation
 eines Serversystems für viele Nutzer eine »große« Hürde und somit zumindest für
 den Heimanwender nicht praktikabel.
 
@@ -531,7 +531,7 @@ unserer Sicht hierbei sogar einige grundlegende Vorteile:
 
 - Schnellere Verbreitung durch fehlende Kostenbarriere auf Nutzerseite.
 - Kann von Nutzern und Unternehmen ihren Bedürfnissen angepasst werden.
-- Transparenz in Punkto Sicherheit (keine offensichtlichen Backdoors möglich).
+- Transparenz in puncto Sicherheit (keine offensichtlichen Backdoors möglich).
 - Fehlerkorrekturen, Weiterentwicklung und Testing aus der Community.
 
 ## Verwertungskonzepte
@@ -582,7 +582,7 @@ wollen, kann die Erteilung einer anderen Lizenz in Frage kommen:
   Speziallösungen zu entwickeln, die sie dann nicht als *Open--Source*
   veröffentlichen müssen.
 
-- Ein Hosting Anbieter der ``brig`` nutzen möchte, müsste wegen der ``AGPLv3``
+- Ein Hosting--Anbieter der ``brig`` nutzen möchte, müsste wegen der ``AGPLv3``
   dazu erst die Erlaubnis bei uns einholen.  Je nach Fall könnte dann ein
   entsprechender Vertrag ausgehandelt werden.
 
@@ -722,7 +722,7 @@ in jedem Fall Sept/Okt. 2016 und würde optimalerweise über drei Jahre gehen.
 
 ## Mittels IuK--Bayern
 
-Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
+Eine mögliche Finanzierungsstrategie bietet das IuK--Programm[^IUK] des
 Freistaates Bayern. Dabei werden Kooperationen zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
 Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
@@ -730,7 +730,7 @@ mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
 aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann bis zu zwei
 volle Stellen für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
 
-Konkret berechnet sich das dabei folgedermaßen: Ein oder mehr Unternehmen
+Konkret berechnet sich das dabei folgendermaßen: Ein oder mehr Unternehmen
 bringen ein gewissen Betrag auf mit denen sie interne Arbeitskräfte bezahlen
 die an dem gemeinsamen Kooperationsprojekt arbeiten. Dieser Betrag wird dann
 vom Freistaat Bayern verdoppelt. Von der zweiten Hälfte werden dann
