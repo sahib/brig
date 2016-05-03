@@ -156,7 +156,7 @@ auf ihrem Gerät haben wollen, können das entsprechende Dokument »pinnen«. Is
 ein Außendienstmitarbeiter beispielsweise im Zug unterwegs, kann er vorher eine
 benötigtes Dokument pinnen, damit ``brig`` die Datei persistent verfügbar macht.
 
-Indirekt sorgt auch die einfache Benutzbarkeit von ``brig`` zu höherer
+Indirekt sorgt auch die einfache Benutzbarkeit von ``brig`` für höhere
 Sicherheit, da Mitarbeiter sich weniger durch die Sicherheitsrichtlinien ihres
 Unternehmens gegängelt fühlen und nicht die Notwenigkeit sehen, wichtige
 Dokumente auf private Geräte oder Speicher zu kopieren. Dies wirkt ebenfalls
@@ -398,12 +398,12 @@ in einem Produkt vereinen wollen, beleuchten wir in den nächsten Abschnitten.
 Um die oben genannten Ziele zu realisieren ist eine sorgfältige Auswahl der
 Technologien wichtig. Der Einsatz eines Content--Adressable--Network (CAN[^CAN])
 Netzwerk ermöglicht eine vergleichsweise leichte Umsetzung der oben genannten
-Features. Jeder Teilnehmer der ein Dokument aus dem Netzwerk empfangen will,
+Features. Jeder Teilnehmer, der ein Dokument aus dem Netzwerk empfangen will,
 muss nur die Prüfsumme des Dokumentes kennen. ``brig`` kann basierend darauf für
 alle Dateien, die es kennt eine Historie mit allen Prüfsummen des Dokumentes
 speichern. Sobald der Zugriff auf den aktuellen Stand gefordert wird, kann
 ``brig`` die aktuelle Prüfsumme für den Dateinamen nachschlagen und sie aus dem
-*CAN* holen. Alte Stände können, sofern vorhanden, ebenfalls von ``brig``
+*CAN* holen. Alte Stände können, sofern noch im Netzwerk vorhanden, ebenfalls von ``brig``
 wiederhergestellt werden, indem die Historie des Dokumentes betrachtet wird.
 
 [^CAN]: Näheres dazu hier: \url{https://en.wikipedia.org/wiki/Content_addressable_network}
@@ -413,9 +413,9 @@ Point of Failure* darstellt) können Dateien intelligent geroutet werden und
 müssen nicht physikalisch auf allen Geräten verfügbar sein. Wird beispielsweise
 ein großes Festplattenimage (~2GB) in einem Vorlesungssaal von jedem Teilnehmer
 heruntergeladen, so muss bei zentralen Diensten die Datei zigmal über das
-vermutlich ausgelastete Netzwerk der Hochschule gezogen werden. In einem *CAN*
+vermutlich bereits ausgelastete Netzwerk der Hochschule gezogen werden. In einem *CAN*
 kann die Datei in Blöcke unterteilt werden, die von jedem Teilnehmer gleich
-wieder verteilt werden können,  sobald sie heruntergeladen wurden. Der Nutzer
+wieder verteilt werden können, sobald sie heruntergeladen wurden. Der Nutzer
 sieht dabei ganz normal die Datei, ``brig``, bzw. das *CAN* erledigt dabei das
 Routing transparent im Hintergrund.
 
@@ -431,20 +431,20 @@ Sicherheitsmodell soll möglichst vom Nutzer versteckt werden.
 
 ## Lösungsansätze
 
-Als *CAN* werden wir das freie *InterPlanetary FileSystem*[^IPFS]
-nutzen.  Dieses implementiert für uns bereits den Dateiaustausch zwischen den
-einzelnen ``ipfs``--Knoten. Damit die Dateien nicht nur verschlüsselt übertragen
-sondern auch abgespeichert werden, werden sie vor dem Hinzufügen zu IPFS mittels
-AES--128 im GCM--Modus von ``brig`` verschlüsselt und zuvor optional komprimiert. Zur
-Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung und ein
-FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository wie normale
-Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei wird diese
-von ``brig`` dann, für den Nutzer transparent, im Netzwerk lokalisiert,
-empfangen, entschlüsselt und als Dateistrom nach außen gegeben.
-Das Windows--Betriebbssystem unterstützt leider kein *FUSE*, daher wird im
-späteren Verlauf auch ein WebDAV--Server implementiert.
+Als *CAN* werden wir das freie *InterPlanetary FileSystem*[^ipfs] nutzen.
+Dieses implementiert für uns bereits den Dateiaustausch zwischen den einzelnen
+``ipfs``--Knoten. Damit die Dateien nicht nur verschlüsselt übertragen sondern
+auch abgespeichert werden, werden sie vor dem Hinzufügen zu ``ipfs`` mittels
+AES--128 im GCM--Modus von ``brig`` verschlüsselt und zuvor optional
+komprimiert. Zur Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung
+und ein FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository
+wie normale Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei
+wird diese von ``brig`` dann, für den Nutzer transparent, im Netzwerk
+lokalisiert, empfangen, entschlüsselt und als Dateistrom nach außen gegeben. Das
+Windows--Betriebbssystem unterstützt leider kein *FUSE*, daher wird im späteren
+Verlauf auch ein WebDAV--Server implementiert.
 
-[^IPFS]: Mehr Informationen unter \url{http://ipfs.io/}
+[^ipfs]: Mehr Informationen unter \url{http://ipfs.io/}
 [^FUSE]: FUSE: *Filesystem in Userspace*, siehe auch \url{https://de.wikipedia.org/wiki/Filesystem_in_Userspace}
 [^WEBDAV]: Siehe dazu auch: \url{https://de.wikipedia.org/wiki/WebDAV}
 
@@ -519,14 +519,14 @@ Zeit zu einem Sicherheitsrisiko werden.
 
 ## Open--Source--Lizenz und Monetarisierung
 
-Als Lizenz für ``brig`` soll die Copyleft--Lizenz ``AGPL`` zum Einsatz kommen.
+Als Lizenz für ``brig`` soll die Copyleft--Lizenz ``AGPLv3`` zum Einsatz kommen.
 Diese stellt sicher, dass Verbesserungen am Projekt auch wieder in dieses
 zurückfließen müssen.
 
 Dass die Software quelloffen ist, ist kein Widerspruch zur wirtschaftlichen
 Verwertung. Statt auf Softwareverkäufe zu setzen lässt sich mit dem Einsatz und
 der Anpassung der Software Geld verdienen.  Das Open--Source Modell bietet aus
-unserer Sicht hierbei sogar einige Vorteile:
+unserer Sicht hierbei sogar einige grundlegende Vorteile:
 
 - Schnellere Verbreitung durch fehlende Kostenbarriere auf Nutzerseite.
 - Kann von Nutzern und Unternehmen ihren Bedürfnissen angepasst werden.
@@ -625,9 +625,10 @@ werden.
 ## Meilensteinplanung
 
 Der oben stehende Zeitplan ist nochmal in Abbildung {@fig:milestones} als
-Gantt--Diagramm auf drei Jahre gerechnet zu sehen. Bestimmte Aufgaben wie Tests
-und Benchmarks werden iterativ bei jedem Meilenstein wiederholt und werden nicht 
-explizit aufgeführt.
+Gantt--Diagramm auf drei Jahre gerechnet zu sehen. Dort sind auch die jeweiligen
+Features eingetragen, die wir uns für den jeweiligen Entwicklungsstand wünschen.
+Bestimmte Aufgaben wie Tests und Benchmarks werden iterativ bei jedem
+Meilenstein wiederholt und werden nicht explizit aufgeführt.
 
 ![Grobe Meilensteinplanung von 2016 bis 2019.](images/gantt.png){#fig:milestones}
 
@@ -702,24 +703,25 @@ laufen, um mit der Gegenseite zu kommunizieren.
 
 # Finanzierung des Vorhabens
 
-Die Entwicklung von ``brig`` ist sehr zeitraubend, daher ist eine Finanzierung
-unablässig. Um eine freie und kontinuierliche Entwicklung in einem akademischen
-Umfeld zu gewährleisten, streben wir an als wissenschaftliche Mitarbeiter im
-Hochschulbereich angestellt zu werden. Da die Hochschule Augsburg allerdings
-nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu finanzieren,
-benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle Optionen
-offen, im Folgenden stellen wir aber eine auf Unternehmen zugeschnittene
-Kooperationsmöglichkeit vor.
+Die Entwicklung von ``brig`` ist sehr zeitraubend, daher ist eine solide
+Finanzierung unablässig. Um eine freie und kontinuierliche Entwicklung in einem
+akademischen Umfeld zu gewährleisten, streben wir an als wissenschaftliche
+Mitarbeiter im Hochschulbereich angestellt zu werden. Da die Hochschule Augsburg
+allerdings nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu
+finanzieren, benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle
+Optionen offen, im Folgenden stellen wir aber eine auf Unternehmen
+zugeschnittene Kooperationsmöglichkeit vor. Der gewünschte Förderungsbeginn wäre
+im jeden Fall Sept/Okt. 2016 und würde optimalerweise über zwei bis drei Jahre
+gehen.
 
 ## Mittels IuK--Bayern
 
 Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
 Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
-
 Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
 mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
-aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann zwei Stellen
+aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann bis zu zwei Stellen
 für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
 
 Konkret berechnet sich das dabei folgedermaßen: Ein oder mehr Unternehmen
@@ -744,6 +746,9 @@ ergeben sich beispielsweise folgende grob gerechnete Möglichkeiten:
   in Vollzeit beim Unternehmen plus 20.000 Euro Sachmittel benötigt ein Betrag 
   von etwa 420.000 Euro auf Unternehmensseite. Das Unternehmen erhält eine etwa 
   20%-ige Förderquote.
+
+Dieses Exposé enthält bereits alle Informationen und Textbausteine zur
+Formulierung eines IuK--Antrags. 
 
 [^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
 
