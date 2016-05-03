@@ -574,8 +574,6 @@ Unternehmen mit Supportverträgen würden daher von folgenden Vorteilen profitie
 
 [^YUBI]: Ein flexibles 2FA-Token. Mehr Informationen unter \url{https://www.yubico.com/faq/yubikey}
 
-### Mehrfachlizensierung
-
 Für Unternehmen, die unsere Software als Teil ihres eigenen Angebots nutzen
 wollen, kann die Erteilung einer anderen Lizenz in Frage kommen:
 
