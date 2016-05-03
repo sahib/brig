@@ -249,8 +249,8 @@ andere Software wie ``bazil``[^BAZIL] oder ``infinit``[^INFINIT] ist
 vielversprechender, allerdings ebenfalls noch im Entstehen und im Falle von
 ``infinit`` auch nur teilweise quelloffen.
 
-[^BAZIL]: \url{https://bazil.org}
-[^INFINIT]: \url{http://infinit.sh}
+[^BAZIL]: Webpräsenz: \url{https://bazil.org}
+[^INFINIT]: Webpräsenz: \url{http://infinit.sh}
 
 
 ## Verschiedene Alternativen
@@ -438,13 +438,19 @@ komprimiert. Zur Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung
 und ein FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository
 wie normale Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei
 wird diese von ``brig`` dann, für den Nutzer transparent, im Netzwerk
-lokalisiert, empfangen, entschlüsselt und als Dateistrom nach außen gegeben. 
+lokalisiert, empfangen, entschlüsselt und als Dateistrom nach außen gegeben.
+Abbildung \ref{fig:security} zeigt die Kommunikation zwischen zwei Repositories.
+
+\begin{figure}[ht]
+  \centering
+     \includegraphics[width=1\textwidth]{images/security.png}
+    \caption{Übersicht über die Kommunikation zwischen zwei Partnern/Repositories, mit den relevanten Sicherheits--Protokollen}
+      \label{fig:security}
+\end{figure}
 
 [^ipfs]: Mehr Informationen unter \url{http://ipfs.io/}
 [^FUSE]: FUSE: *Filesystem in Userspace*, siehe auch \url{https://de.wikipedia.org/wiki/Filesystem_in_Userspace}
 [^WEBDAV]: Siehe dazu auch: \url{https://de.wikipedia.org/wiki/WebDAV}
-
-![Übersicht über die Kommunikation zwischen zwei Partnern/Repositories, mit den relevanten Sicherheits--Protokollen](images/security.png){#fig:security}
 
 Jedes Repository besitzt nach der Einrichtung über einen öffentlichen und
 privaten Schlüssel. Das Schlüsselpaar ist verfügbar sobald der Nutzer sein
@@ -455,10 +461,10 @@ Im Netzwerk identifiziert sich ein Knoten dabei über den Hash--Wert des
 öffentlichen Schlüssels und weist seine Identität über ein
 Challenge--Response--Verfahren nach. Da dieser Hash--Wert natürlich 
 nur schwer vom Benutzer zu merken ist, vergibt dieser beim Anlegen eines
-Repositories einen Benutzernamen im Jabber--ähnlichen Schema 
-``nutzer@gruppe.domain/ressource``. Dabei sind alle Teile nach dem ``@``
-optional. Die Gruppe kann dabei von Unternehmen genutzt werden andere
-``brig``--Teilnehmer automatisch zu entdecken.
+Repositories einen Benutzernamen in einem E--Mail--ähnlichen Schema 
+»``nutzer@gruppe.domain/ressource``«. Dabei sind alle Teile nach dem »``@``« 
+optional. Die Gruppe kann dabei von Unternehmen genutzt werden, um andere
+``brig``--Teilnehmer automatisch aufzulisten.
 
 Alle Änderungen an einem Repository werden in einer Metadatendatenbank
 gespeichert. Diese wird dann mit anderen Teilnehmern über einen separaten,
@@ -467,12 +473,11 @@ Seitenkanal als auch die eigentliche Dateiübertragung kann dabei NAT--Grenzen
 mittels Hole--Punching[^HOLE] überwinden und benötigt normalerweise keine
 gesonderte Konfiguration.
 
-Jeder Teilnehmer hat ähnliche wie bei ``git`` den gesamten Dateiindex jedes
-anderen Teilnehmers. Die eigentlichen Dateien können aber »irgendwo« im
-Teilnehmernetz sein. Sollte eine Datei lokal benötigt werden, so kann man sie
-»pinnen«, um sie lokal zu speichern. Ansonsten werden nur selbst erstellte
-Dateien gespeichert und andere Dateien maximal solange vorgehalten, bis die
-Speicherquote erreicht ist.
+Jeder Teilnehmer hat, ähnlich wie bei ``git``, den gesamten Dateiindex jedes
+anderen Teilnehmers. Die Dateien können aber »irgendwo« im Teilnehmernetz sein.
+Sollte eine Datei lokal benötigt werden, so kann man sie »pinnen«, um sie lokal
+zu speichern. Ansonsten werden nur selbst erstellte Dateien gespeichert und
+andere Dateien maximal solange vorgehalten, bis die Speicherquote erreicht ist.
 
 [^HOLE]: Siehe dazu auch \url{https://de.wikipedia.org/wiki/Hole_Punching}
 
@@ -484,8 +489,8 @@ vorher »publik« gemacht werden. Der außenstehende Nutzer kann dann die Datei
 erreichbaren Rechner mittels einer ``URL`` herunterladen.
 
 Um Portabilität zu gewährleisten wird die Software in der Programmiersprache
-``Go``[@go_programming_language] geschrieben sein. Der Vorteil hierbei ist, dass am
-Ende eine einzige sehr portable, statisch gelinkte Binärdatei erzeugt wird.
+``Go``[@go_programming_language] geschrieben. Der Vorteil hierbei ist, dass am
+Ende eine einzige, sehr portable, statisch gelinkte Binärdatei erzeugt wird.
 Weitere Vorteile sind die hohe Grundperformanz und die sehr angenehmen
 Werkzeuge, die mit der Sprache mitgeliefert werden. Die Installation von
 ``brig`` ist beispielsweise unter Unix nur ein einzelner Befehl:
@@ -613,34 +618,40 @@ stehen, daher sollte zu diesem Zeitpunkt bereits die grundlegende Architektur
 relativ stabil sein.
 
 Nach einer gewissen Stabilisierungsphase wollen wir ein erstes öffentliches
-Release in der Open--Source--Community anstrebgen. Dies hätte bereits eine
+Release in der Open--Source--Community anstreben. Dies hätte bereits eine
 gewisse Verbreitung zur Folge und die in ``brig`` eingesetzten
 Sicherheitstechnologien könnten von externen Sicherheitsexperten auditiert
 werden.
 
 ## Meilensteinplanung
 
-Der oben stehende Zeitplan ist nochmal in Abbildung {@fig:milestones} als
+Der oben stehende Zeitplan ist nochmal in Abbildung \ref{fig:gull} als
 Gantt--Diagramm auf drei Jahre gerechnet zu sehen. Dort sind auch die jeweiligen
 Features eingetragen, die wir uns für den jeweiligen Entwicklungsstand wünschen.
 Bestimmte Aufgaben wie Tests und Benchmarks werden iterativ bei jedem
 Meilenstein wiederholt und werden nicht explizit aufgeführt.
 
-![Grobe Meilensteinplanung von 2016 bis 2019.](images/gantt.png){#fig:milestones}
+<!--[](images/gantt.png){#fig:m} -->
+\begin{figure}
+  \centering
+     \includegraphics[width=0.44\textwidth]{images/gantt.png}
+    \caption{Grobe Meilensteinplanung von 2016 bis 2019.}
+      \label{fig:gull}
+\end{figure}
 
 # Über uns
 
-Wir sind zwei Master--Studenten an der Hochschule Augsburg, die von freier
+Wir sind zwei Master--Studenten an der Hochschule Augsburg, die von Freier
 Software begeistert sind und mit ihr die Welt ein bisschen besser machen wollen.
 Momentan entwickeln wir ``brig`` im Rahmen unserer Masterarbeiten bei Prof
 Dr.-Ing. Thorsten Schöler in der Distributed--Systems--Group[^DSG]. 
 Wir haben beide Erfahrung darin Open--Source--Software zu entwickeln und zu
-betreuen, weswegen wir das nun auch gerne hauptberuflich fortführen würden.
+betreuen, weswegen wir das nun auch gerne »hauptberuflich« fortführen würden.
 
 Unsere momentanen sonstigen Projekte finden sich auf GitHub:
 
 * \url{https://github.com/sahib} (Projekte von Christopher Pahl)
-* \url{https://github.com/qitta} (Projekte von Christop Piechula)
+* \url{https://github.com/qitta} (Projekte von Christoph Piechula)
 * \url{https://github.com/studentkittens} (gemeinsame Projekte und Studienarbeiten)
 
 [^DSG]: Siehe auch: \url{http://dsg.hs-augsburg.de/}
@@ -662,9 +673,9 @@ Dateien etablieren zu können.
 
 ## Aktueller Projektstatus
 
-Wir sind bereits auf gutem Wege das Proof--of--Concept fertig zustellen. Die
+Wir sind bereits auf gutem Wege das Proof--of--Concept fertigzustellen. Die
 momentane Codebasis unterstützt bereits Verschlüsselung, Streaming--Kompression,
-ein Daemon--Server Modus mit Kommandozeilen--Anwendung, ein FUSE--Dateisystem
+ein Daemon--Server mit Kommandozeilen--Anwendung, ein FUSE--Dateisystem
 und einen authentifizierten und verschlüsselten Seitenkanal, um Metadaten
 auszutauschen.
 
@@ -693,9 +704,9 @@ Differenzen zwischen zwei Ständen anzeigen, da es nur auf den Metadaten von
 Dateien arbeitet. Auch muss auf der Gegenseite ein ``brig``--Daemon--Prozess
 laufen, um mit der Gegenseite zu kommunizieren.
 
-[^CEPH]: \url{http://ceph.com}
-[^GLUSTER]:  \url{https://www.gluster.org}
-[^ABSTREIT]: \url{https://de.wikipedia.org/wiki/VeraCrypt\#Glaubhafte_Abstreitbarkeit}
+[^CEPH]: Webpräsenz: \url{http://ceph.com}
+[^GLUSTER]: Webpräsenz: \url{https://www.gluster.org}
+[^ABSTREIT]: Siehe auch: \url{https://de.wikipedia.org/wiki/VeraCrypt\#Glaubhafte_Abstreitbarkeit}
 
 # Finanzierung des Vorhabens
 
@@ -707,12 +718,12 @@ allerdings nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu
 finanzieren, benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle
 Optionen offen, im Folgenden stellen wir aber eine auf Unternehmen
 zugeschnittene Kooperationsmöglichkeit vor. Der gewünschte Förderungsbeginn wäre
-im jedem Fall Sept/Okt. 2016 und würde optimalerweise über drei Jahre gehen.
+in jedem Fall Sept/Okt. 2016 und würde optimalerweise über drei Jahre gehen.
 
 ## Mittels IuK--Bayern
 
 Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
-Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
+Freistaates Bayern. Dabei werden Kooperationen zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
 Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
 mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
@@ -726,7 +737,7 @@ vom Freistaat Bayern verdoppelt. Von der zweiten Hälfte werden dann
 wissenschaftliche Mitarbeiter an der Hochschule Augsburg bezahlt. Bleibt ein
 Überschuss übrig, so fließt dieser zurück an die Unternehmen.
 
-Steigt ein einzelnes Unternehmen in das IuK--Programm mit ein, so
+Steigt ein einzelnes Unternehmen in das IuK--Programm ein, so
 ergeben sich beispielsweise folgende grob gerechnete Möglichkeiten:
 
 * Ein wissenschaftlicher Mitarbeiter in Halbzeit an der HSA und ein Mitarbeiter
