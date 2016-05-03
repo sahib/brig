@@ -94,9 +94,7 @@ Unternehmen ist natürlich sehr individuell. Wir meinen damit im Folgenden diese
 - *Automatische Backups:* Versionsverwaltung auf Knoten mit großem Speicherplatz.
 - *Schnelle Auffindbarkeit:* Kategorisierung durch optionale Verschlagwortung.
 - *Kein Vendor Lock-In dank freier Software:* Herstellerunabhängigkeit
-  gewährleistet volle Kontrolle über die Software, selbst wenn die Entwicklung
-  eingestellt werden sollte. Daten sind immer verfügbar, da kein Dienst
-  »abgeschaltet« werden kann.
+  gewährleistet volle Kontrolle über die Software und gewährleistet den Fortbestand.
 
 Um eine solche Software zu entwickeln, wollen wir auf bestehende Komponenten
 aufsetzen. Die grundlegende Basis bildet dabei das *InterPlanetaryFileSystem*
@@ -115,7 +113,7 @@ und vergleichbare Software. Nutzbar soll es sein als…
 
 - *Synchronisationslösung*: Spiegelung von zwei oder mehr Ordnern.
 - *Transferlösung*: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
-- *Versionsverwaltung*: Bis zu einer konfigurierbaren Tiefe können alte Dateien wiederhergestellt werden.
+- *Versionsverwaltung*: Bis zu einer konfigurierbaren Tiefe können Dateien wiederhergestellt werden.
 - *Backup- und Archivierungslösung*: Verschiedene »Knoten--Typen« möglich.
 - *Verschlüsselter Safe*: ein »Repository«[^REPO] kann »verschlossen« und wieder »geöffnet« werden.
 - *Semantisch durchsuchbares* Tag-basiertes Dateisystem[^TAG].
@@ -170,13 +168,13 @@ erlaubt, ist beispielsweise ein Kunde eines Ingenieurbüros nicht genötigt
 ### Privatpersonen / Heimanwender
 
 Heimanwender können ``brig`` für ihren Datenbestand aus Fotos, Filmen, Musik und
-sonstigen Dokumenten nutzen. Ein typischer Anwendungsfall wäre dabei ein  
-NAS--Server, der alle Dateien mit niedriger Versionierung speichert. 
-Endgeräte, wie Laptops und Smartphones, würden dann ebenfalls ``brig`` nutzen,
-aber mit deutlich geringeren Speicherquotas (maximales Speicherlimit), so dass
-nur die aktuell benötigten Dateien physikalisch auf dem Gerät vorhanden sind.
-Die anderen Dateien lagern »im Netz« und können transparent von ``brig`` von
-anderen verfügbaren Knoten geholt werden. 
+sonstigen Dokumenten nutzen. Ein typischer Anwendungsfall wäre dabei ein
+NAS--Server, der alle Dateien mit niedriger Versionierung speichert. Endgeräte,
+wie Laptops und Smartphones, würden dann ebenfalls ``brig`` nutzen, aber mit
+deutlich geringeren Speicherquotas (maximales Speicherlimit), so dass nur die
+aktuell benötigten Dateien physikalisch auf dem Gerät vorhanden sind. Die
+anderen Dateien lagern »im Netz« und können transparent von ``brig`` von anderen
+verfügbaren Knoten geholt werden. 
 
 ### Plattform für industrielle Anwendungen
 
@@ -197,16 +195,16 @@ landen. Eine praktische Anwendung im universitären Bereich wäre die Verteilung
 von Studienunterlagen an die Studenten. Mangels einer »Standardlösung« ist es
 heutzutage schwierig Dokumente sicher mit Behörden auszutauschen. ``brig``
 könnte hier einen »Standard« etablieren und in Zukunft als eine »Plattform«
-dienen, um beispielsweise Steuerdokumente mit dem Finanzamt auszutauschen.
+dienen, um beispielsweise medizinische Unterlagen mit dem Hospital auszutauschen.
 
 ### Berufsgruppen mit hohen Sicherheitsanforderungen 
 
 Hier wären in erster Line Berufsgruppen mit Schweigepflicht zu nennen wie Ärzte,
-Notare und Anwälte aber auch Journalisten und politisch verfolgte Aktivisten zu
-nennen. Leider ist zum jetzigen Zeitpunkt keine zusätzliche Anonymisierung
-vorgesehen, die es erlauben würde auch die Quelle der Daten unkenntlich zu
-machen. Dies könnte allerdings später mit Hilfe des Tor Netzwerks (Tor Onion
-Routing Projekt) realisiert werden.
+Notare und Anwälte aber auch Journalisten und politisch verfolgte Aktivisten.
+Leider ist zum jetzigen Zeitpunkt keine zusätzliche Anonymisierung vorgesehen,
+die es erlauben würde auch die Quelle der Daten unkenntlich zu machen. Dies
+könnte allerdings später mit Hilfe des Tor Netzwerks (Tor Onion Routing Projekt)
+realisiert werden.
 
 # Stand der Technik
 
@@ -355,9 +353,9 @@ langfristig gesehen auch in ``brig`` realisieren wollen:
 Dateisystemen, wie *GlusterFS* hat, wurden diese in der Übersicht weggelassen
 --- einerseits aus Gründen der Übersicht, andererseits weil diese andere Ziele
 verfolgen und von Heimanwendern kaum genutzt werden. Zudem ist der
-Vollständigkeit halber auch OpenPGP zu nennen, was viele Nutzer Verschlüsseln
-von E-Mails benutzen. Aber auch hier ist der größte Nachteil die schwierige
-Einrichtung.
+Vollständigkeit halber auch OpenPGP zu nennen, was viele Nutzer zum
+Verschlüsseln von E-Mails benutzen. Aber auch hier ist der größte Nachteil die
+für den Ottonormalbenutzer schwierige Einrichtung und Benutzung.
 
 \newpage
 
@@ -366,7 +364,7 @@ unserer Sicht wichtigsten Eigenschaften:
 
 **Technische Aspekte:**
 
-|                      | **Dezentral**       | **Clientseitige Verschlüsselung**| **Versionierung**                      |  **Quotas**       | **N-Kopien**    |  
+|                      | **Dezentral**       | **Verschlüsselung (Client)**     | **Versionierung**                      |  **Quotas**       | **N-Kopien**    |  
 | -------------------- | ------------------- | -------------------------------- | -------------------------------------- | ------------------|------------------|
 | *Dropbox/Boxcryptor* | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           | \xmark          |
 | *ownCloud*           | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           | \xmark          |
@@ -387,7 +385,7 @@ unserer Sicht wichtigsten Eigenschaften:
 | ``git-annex``        | \cmark              | \xmark              | \xmark                     |  \xmark                   | \xmark          |
 | ``brig``             | \cmark              | \cmark              | \cmark                     |  \cmark                   | \cmark          |
 
-# Das Projekt ``brig``
+# Das Projekt »``brig``« 
 
 Optimal wäre also eine Kombination aus den Vorzügen von *Syncthing*, *BitTorrent
 Sync* und ``git-annex``. Wie wir die technischen Vorzüge der genannten Lösungen
@@ -397,7 +395,7 @@ in einem Produkt vereinen wollen, beleuchten wir in den nächsten Abschnitten.
 
 Um die oben genannten Ziele zu realisieren ist eine sorgfältige Auswahl der
 Technologien wichtig. Der Einsatz eines Content--Adressable--Network (CAN[^CAN])
-Netzwerk ermöglicht eine vergleichsweise leichte Umsetzung der oben genannten
+ermöglicht eine vergleichsweise leichte Umsetzung der oben genannten
 Features. Jeder Teilnehmer, der ein Dokument aus dem Netzwerk empfangen will,
 muss nur die Prüfsumme des Dokumentes kennen. ``brig`` kann basierend darauf für
 alle Dateien, die es kennt eine Historie mit allen Prüfsummen des Dokumentes
@@ -411,13 +409,13 @@ wiederhergestellt werden, indem die Historie des Dokumentes betrachtet wird.
 Im Vergleich zu zentralen Ansätzen (bei dem der zentrale Server einen *Single
 Point of Failure* darstellt) können Dateien intelligent geroutet werden und
 müssen nicht physikalisch auf allen Geräten verfügbar sein. Wird beispielsweise
-ein großes Festplattenimage (~2GB) in einem Vorlesungssaal von jedem Teilnehmer
-heruntergeladen, so muss bei zentralen Diensten die Datei zigmal über das
-vermutlich bereits ausgelastete Netzwerk der Hochschule gezogen werden. In einem *CAN*
-kann die Datei in Blöcke unterteilt werden, die von jedem Teilnehmer gleich
-wieder verteilt werden können, sobald sie heruntergeladen wurden. Der Nutzer
-sieht dabei ganz normal die Datei, ``brig``, bzw. das *CAN* erledigt dabei das
-Routing transparent im Hintergrund.
+ein großes Festplattenimage (~8GB) in einem Vorlesungssaal von jedem Teilnehmer
+heruntergeladen, so muss bei zentralen Diensten die Datei vielmals über das
+vermutlich bereits ausgelastete Netzwerk der Hochschule gezogen werden. In einem
+*CAN*, kann die Datei in Blöcke unterteilt werden, die von jedem Teilnehmer
+gleich wieder verteilt werden können, sobald sie heruntergeladen wurden. Der
+Nutzer sieht dabei ganz normal die Datei, ``brig``, bzw. das *CAN* erledigt
+dabei das Routing transparent im Hintergrund.
 
 Zudem reicht es prinzipiell wenn eine Datei nur einmal im Netz vorhanden ist.
 Ein Rechenzentrum mit mehr Speicherplatz könnte alle Dateien zwischenhalten,
@@ -440,9 +438,7 @@ komprimiert. Zur Nutzerseite hin bietet ``brig`` eine Kommandozeilenanwendung
 und ein FUSE-Dateisystem[^FUSE], welches alle Daten in einem ``brig`` Repository
 wie normale Dateien in einem Ordner aussehen lässt. Beim »Klick« auf eine Datei
 wird diese von ``brig`` dann, für den Nutzer transparent, im Netzwerk
-lokalisiert, empfangen, entschlüsselt und als Dateistrom nach außen gegeben. Das
-Windows--Betriebbssystem unterstützt leider kein *FUSE*, daher wird im späteren
-Verlauf auch ein WebDAV--Server implementiert.
+lokalisiert, empfangen, entschlüsselt und als Dateistrom nach außen gegeben. 
 
 [^ipfs]: Mehr Informationen unter \url{http://ipfs.io/}
 [^FUSE]: FUSE: *Filesystem in Userspace*, siehe auch \url{https://de.wikipedia.org/wiki/Filesystem_in_Userspace}
@@ -703,16 +699,15 @@ laufen, um mit der Gegenseite zu kommunizieren.
 
 # Finanzierung des Vorhabens
 
-Die Entwicklung von ``brig`` ist sehr zeitraubend, daher ist eine solide
-Finanzierung unablässig. Um eine freie und kontinuierliche Entwicklung in einem
+Die Entwicklung von ``brig`` ist sehr zeitintensiv, daher ist eine solide
+Finanzierung unerlässlich. Um eine freie und kontinuierliche Entwicklung in einem
 akademischen Umfeld zu gewährleisten, streben wir an als wissenschaftliche
 Mitarbeiter im Hochschulbereich angestellt zu werden. Da die Hochschule Augsburg
 allerdings nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu
 finanzieren, benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle
 Optionen offen, im Folgenden stellen wir aber eine auf Unternehmen
 zugeschnittene Kooperationsmöglichkeit vor. Der gewünschte Förderungsbeginn wäre
-im jeden Fall Sept/Okt. 2016 und würde optimalerweise über zwei bis drei Jahre
-gehen.
+im jedem Fall Sept/Okt. 2016 und würde optimalerweise über drei Jahre gehen.
 
 ## Mittels IuK--Bayern
 
@@ -721,8 +716,8 @@ Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
 Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
 mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
-aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann bis zu zwei Stellen
-für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
+aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann bis zu zwei
+volle Stellen für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
 
 Konkret berechnet sich das dabei folgedermaßen: Ein oder mehr Unternehmen
 bringen ein gewissen Betrag auf mit denen sie interne Arbeitskräfte bezahlen

@@ -12,9 +12,11 @@
 \usepackage{fancyhdr}
 \usepackage{color}
 \usepackage{wasysym}
-\definecolor{titlepagecolor}{RGB}{55, 127, 161} 
-%\definecolor{titlepagecolor}{RGB}{40, 59, 84} 
-\definecolor{titlepagefontcolor}{RGB}{245,245,245} %Solarized light default text 
+\definecolor{titlepagefontcolor}{RGB}{47, 90, 130} 
+%\definecolor{titlepagecolor}{RGB}{55, 127, 161} 
+%\definecolor{titlepagefontcolor}{RGB}{245,245,245} %Solarized light default text 
+%\definecolor{titlepagefontcolor}{RGB}{55, 127, 161} 
+\definecolor{titlepagecolor}{RGB}{245,245,245} %Solarized light default text 
 \usepackage{ifthen}
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage[
@@ -35,7 +37,7 @@
 \newcommand{\cmark}{\textcolor{ForestGreen}{\ding{51}}}%
 \newcommand{\xmark}{\textcolor{red}{\ding{55}}}%
 
-\hypersetup{colorlinks,breaklinks,urlcolor=titlepagecolor,linkcolor=titlepagecolor}
+\hypersetup{colorlinks,breaklinks,urlcolor=titlepagefontcolor,linkcolor=titlepagefontcolor}
 
 \definecolor{gray75}{gray}{0.55}
 \newcommand{\hsp}{\hspace{5pt}}
@@ -46,7 +48,7 @@
 \appto\chapterheadstartvskip{%
   \vspace{-7.7em} % Pull up chapter a bit.
   \smash{\makebox[0pt]{%
-    \textcolor{titlepagecolor}{%
+    \textcolor{titlepagefontcolor}{%
       \usesizeofkomafont{chapter}\rule[-2\ht\strutbox-\dp\strutbox]{2\paperwidth}{1.65\baselineskip}%
 }}}}
 \renewcommand\chapterformat{%
@@ -55,10 +57,12 @@
 }
 
 \addtokomafont{disposition}{\rmfamily}
-\addtokomafont{chapter}{\color{white}}
-\addtokomafont{section}{\color{titlepagecolor}}
+\addtokomafont{chapter}{\color{titlepagecolor}}
+\addtokomafont{section}{\color{titlepagefontcolor}}
+\addtokomafont{subsection}{\color{titlepagefontcolor}}
+\addtokomafont{subsubsection}{\color{titlepagefontcolor}}
 
-\renewcommand{\labelitemi}{\textcolor{titlepagecolor}{$$$\blacktriangleright$}}
+\renewcommand{\labelitemi}{\textcolor{titlepagefontcolor}{$$$\blacktriangleright$}}
 % \renewcommand{\labelitemii}{$\cdot$}
 % \renewcommand{\labelitemiii}{$\diamond$}
 % \renewcommand{\labelitemiv}{$\ast$}
