@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?><project name="brig Meilensteinplanung" company="" webLink="http://" view-date="2016-01-01" view-index="0" gantt-divider-location="489" resource-divider-location="300" version="2.7.2" locale="de">
+<?xml version="1.0" encoding="UTF-8"?><project name="brig Meilensteinplanung" company="" webLink="http://" view-date="2016-03-01" view-index="0" gantt-divider-location="480" resource-divider-location="300" version="2.7.2" locale="de">
     <description/>
     <view zooming-state="default:11" id="gantt-chart">
-        <field id="tpd3" name="Vorgang" width="66" order="0"/>
-        <field id="tpd4" name="Anfang" width="18" order="1"/>
-        <field id="tpd5" name="Ende" width="15" order="2"/>
+        <field id="tpd3" name="Vorgang" width="74" order="0"/>
+        <field id="tpd4" name="Anfang" width="12" order="1"/>
+        <field id="tpd5" name="Ende" width="12" order="2"/>
         <option id="color.recent"><![CDATA[#66ccff #ff33cc #ccffcc #ff0033 #3300ff #ff6666 #66ff66]]></option>
     </view>
     <view id="resource-table">
@@ -41,7 +41,7 @@
             <task id="38" name="Masterarbeit" color="#ff6666" meeting="false" start="2016-04-01" duration="131" complete="0" expand="true"/>
         </task>
         <task id="2" name="Prototyp II" color="#8cb6ce" meeting="false" start="2016-10-03" duration="145" complete="0" expand="true">
-            <task id="85" name="Beginn der IuK Förderung" color="#ff33cc" meeting="true" start="2016-10-03" duration="0" complete="0" expand="true"/>
+            <task id="85" name="Beginn der möglichen IuK Förderung" color="#ff33cc" meeting="true" start="2016-10-03" duration="0" complete="0" expand="true"/>
             <task id="40" name="Authentifizierungsschicht" meeting="false" start="2016-10-03" duration="41" complete="0" expand="true"/>
             <task id="21" name="Dateiübertragung über das Internet" color="#66ff66" meeting="false" start="2016-10-10" duration="69" complete="0" expand="true"/>
             <task id="26" name="Datenkompression" color="#66ff66" meeting="false" start="2016-10-17" duration="94" complete="0" expand="true"/>
@@ -77,10 +77,10 @@
     <taskdisplaycolumns>
         <displaycolumn property-id="tpd1" order="-1" width="75" visible="false"/>
         <displaycolumn property-id="tpd0" order="-1" width="75" visible="false"/>
-        <displaycolumn property-id="tpd3" order="0" width="319" visible="true"/>
-        <displaycolumn property-id="tpd4" order="1" width="87" visible="true"/>
+        <displaycolumn property-id="tpd3" order="0" width="351" visible="true"/>
+        <displaycolumn property-id="tpd4" order="1" width="61" visible="true"/>
         <displaycolumn property-id="tpd6" order="-1" width="75" visible="false"/>
-        <displaycolumn property-id="tpd5" order="2" width="76" visible="true"/>
+        <displaycolumn property-id="tpd5" order="2" width="61" visible="true"/>
         <displaycolumn property-id="tpd7" order="-1" width="75" visible="false"/>
         <displaycolumn property-id="tpd11" order="-1" width="75" visible="false"/>
         <displaycolumn property-id="tpd10" order="-1" width="75" visible="false"/>

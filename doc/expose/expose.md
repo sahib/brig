@@ -40,7 +40,8 @@ abgrenzen:
 - Transparenz, Anpassbarkeit und Sicherheit durch *Free Open Source Software (FOSS)*.
 - Kein *Single Point of Failure* (*SPoF*), wie bei zentralen Diensten.
 - Dezentrales Peer--to--Peer--Netzwerk auf Basis von ``ipfs``.
-- Globales Benutzermanagement auf Basis von ``ipfs`` (Anbindung an existierende Systeme technisch möglich).
+- Globales Benutzermanagement auf Basis von ``ipfs`` (Anbindung an existierende
+  Systeme sowie Single--Sign--On technisch möglich).
 - Versionsverwaltung großer Dateien mit definierbarer Tiefe.
 
 # Steckbrief 
@@ -78,7 +79,7 @@ Architektur von Cloud--Diensten innerhalb eines Unternehmens ab.
 
 [^OWNCLOUD]: *ownCloud*--Homepage: \url{https://owncloud.org/}
 
-## Ziele
+## Ziele und Einsatzmöglichkeiten
 
 Ziel ist daher die Entwicklung einer sicheren, dezentralen und unternehmenstauglichen
 Dateisynchronisationssoftware namens ``brig``. Die »Tauglichkeit« für ein
@@ -109,10 +110,8 @@ Performance und Benutzerfreundlichkeit zu optimieren. Da es dafür keinen
 standardisierten Weg gibt, ist hier auch ein dementsprechend hoher
 Forschungsaufwand nötig.
 
-## Einsatzmöglichkeiten
-
-``brig`` soll deutlich flexibler nutzbar sein als zentrale Dienste und
-vergleichbare Software. Nutzbar soll es sein als…
+``brig`` soll letzendlich deutlich flexibler nutzbar sein als zentrale Dienste
+und vergleichbare Software. Nutzbar soll es sein als…
 
 - *Synchronisationslösung*: Spiegelung von zwei oder mehr Ordnern.
 - *Transferlösung*: »Veröffentlichen« von Dateien nach Außen mittels Hyperlinks.
@@ -137,8 +136,6 @@ verfolgte Minderheiten, zu nennen.
 
 ### Unternehmen
 
-<!-- TODO: Industriespionage als Problem erwähnen. -->
-<!-- TODO: Sicherheitsgängelung beschreiben. -->
 Unternehmen können ``brig`` nutzen, um ihre Daten und Dokumente intern zu
 verwalten. Besonders sicherheitskritische Dateien entgehen so der Lagerung in
 Cloud--Services oder der Gefahr von Kopien auf unsicheren
@@ -159,9 +156,16 @@ auf ihrem Gerät haben wollen, können das entsprechende Dokument »pinnen«. Is
 ein Außendienstmitarbeiter beispielsweise im Zug unterwegs, kann er vorher eine
 benötigtes Dokument pinnen, damit ``brig`` die Datei persistent verfügbar macht.
 
+Indirekt sorgt auch die einfache Benutzbarkeit von ``brig`` zu höherer
+Sicherheit, da Mitarbeiter sich weniger durch die Sicherheitsrichtlinien ihres
+Unternehmens gegängelt fühlen und nicht die Notwenigkeit sehen, wichtige
+Dokumente auf private Geräte oder Speicher zu kopieren. Dies wirkt ebenfalls
+Gefahren wie Industriespionage entgegen.
+
 Da ``brig`` auch das Teilen von Dateien mittels Hyperlinks über ein »Gateway«
 erlaubt, ist beispielsweise ein Kunde eines Ingenieurbüros nicht genötigt
 ``brig`` ebenso installieren zu müssen.
+
 
 ### Privatpersonen / Heimanwender
 
@@ -251,7 +255,7 @@ vielversprechender, allerdings ebenfalls noch im Entstehen und im Falle von
 [^INFINIT]: \url{http://infinit.sh}
 
 
-### Verschiedene Alternativen
+## Verschiedene Alternativen
 
 Im Folgenden geben wir eine unvollständige Übersicht über bekannte
 Dateisynchronisations--Programme. Davon stehen nicht alle in Konkurrenz zu
@@ -347,42 +351,41 @@ langfristig gesehen auch in ``brig`` realisieren wollen:
 + *N-Copies:* Von wichtigen Dateien kann ``git-annex`` bis zu ``N`` Kopien speichern.
               Versucht man eine Kopie zu löschen, so verweigert ``git-annex`` dies.
 
-### Zusammenfassung
+*Zusammenfassung:* Obwohl ``brig`` eine gewisse Ähnlichkeit mit verteilten
+Dateisystemen, wie *GlusterFS* hat, wurden diese in der Übersicht weggelassen
+--- einerseits aus Gründen der Übersicht, andererseits weil diese andere Ziele
+verfolgen und von Heimanwendern kaum genutzt werden. Zudem ist der
+Vollständigkeit halber auch OpenPGP zu nennen, was viele Nutzer Verschlüsseln
+von E-Mails benutzen. Aber auch hier ist der größte Nachteil die schwierige
+Einrichtung.
 
-Obwohl ``brig`` eine gewisse Ähnlichkeit mit verteilten Dateisystemen, wie
-*GlusterFS* hat, wurden diese in der Übersicht weggelassen --- einerseits aus
-Gründen der Übersicht, andererseits weil diese andere Ziele verfolgen und von
-Heimanwendern kaum genutzt werden. Zudem ist der Vollständigkeit halber auch
-OpenPGP zu nennen, was viele Nutzer Verschlüsseln von E-Mails benutzen. Aber
-auch hier ist der größte Nachteil die schwierige Einrichtung.
+\newpage
 
 Zusammengefasst findet sich hier noch eine tabellarische Übersicht mit den aus
 unserer Sicht wichtigsten Eigenschaften: 
 
-Technische Aspekte:
+**Technische Aspekte:**
 
-<!-- TODO: dedup und compression, num of copies -->
-
-|                      | **Dezentral**       | **Clientseitige Verschlüsselung**| **Versionierung**                      |  **Quotas**       |  
-| -------------------- | ------------------- | -------------------------------- | -------------------------------------- | ------------------|
-| *Dropbox/Boxcryptor* | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
-| *ownCloud*           | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           |
-| *Syncthing*          | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           |
-| *BitTorrent Sync*    | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           |
-| ``git-annex``        | \cmark              | \cmark                           | \cmark                                 |  \xmark           |
-| ``brig``             | \cmark              | \cmark                           | \cmark                                 |  \cmark           |
+|                      | **Dezentral**       | **Clientseitige Verschlüsselung**| **Versionierung**                      |  **Quotas**       | **N-Kopien**    |  
+| -------------------- | ------------------- | -------------------------------- | -------------------------------------- | ------------------|------------------|
+| *Dropbox/Boxcryptor* | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           | \xmark          |
+| *ownCloud*           | \xmark              | \xmark                           | \textcolor{YellowOrange}{Rudimentär}   |  \xmark           | \xmark          |
+| *Syncthing*          | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           | \xmark          |
+| *BitTorrent Sync*    | \cmark              | \cmark                           | \textcolor{YellowOrange}{Archivordner} |  \xmark           | \xmark          |
+| ``git-annex``        | \cmark              | \cmark                           | \cmark                                 |  \xmark           |  \cmark         |
+| ``brig``             | \cmark              | \cmark                           | \cmark                                 |  \cmark           |  \cmark         |
 
 
-Praktische Aspekte:
+**Praktische Aspekte:**
 
-|                      | **FOSS**            | **Einfach nutzbar** | **Einfache Installation**  | **Intelligentes Routing** |
-| -------------------- | ------------------- | ------------------- |--------------------------  | ------------------------- |
-| *Dropbox/Boxcryptor* | \xmark              | \cmark              | \cmark                     |  \xmark                   |
-| *ownCloud*           | \cmark              | \cmark              | \xmark                     |  \xmark                   |
-| *Syncthing*          | \cmark              | \cmark              | \cmark                     |  \cmark                   |
-| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                     |  \cmark                   |
-| ``git-annex``        | \cmark              | \xmark              | \xmark                     |  \xmark                   |
-| ``brig``             | \cmark              | \cmark              | \cmark                     |  \cmark                   |
+|                      | **FOSS**            | **Einfach nutzbar** | **Einfache Installation**  | **Intelligentes Routing** | **Kompression** |
+| -------------------- | ------------------- | ------------------- |--------------------------  | ------------------------- |-----------------|
+| *Dropbox/Boxcryptor* | \xmark              | \cmark              | \cmark                     |  \xmark                   | \xmark          |
+| *ownCloud*           | \cmark              | \cmark              | \xmark                     |  \xmark                   | \xmark          |
+| *Syncthing*          | \cmark              | \cmark              | \cmark                     |  \cmark                   | \xmark          |
+| *BitTorrent Sync*    | \xmark              | \cmark              | \cmark                     |  \cmark                   | \xmark          |
+| ``git-annex``        | \cmark              | \xmark              | \xmark                     |  \xmark                   | \xmark          |
+| ``brig``             | \cmark              | \cmark              | \cmark                     |  \cmark                   | \cmark          |
 
 # Das Projekt ``brig``
 
@@ -444,8 +447,6 @@ späteren Verlauf auch ein WebDAV--Server implementiert.
 [^IPFS]: Mehr Informationen unter \url{http://ipfs.io/}
 [^FUSE]: FUSE: *Filesystem in Userspace*, siehe auch \url{https://de.wikipedia.org/wiki/Filesystem_in_Userspace}
 [^WEBDAV]: Siehe dazu auch: \url{https://de.wikipedia.org/wiki/WebDAV}
-
-TODO: Grafik anpassen und aufhübschen.
 
 ![Übersicht über die Kommunikation zwischen zwei Partnern/Repositories, mit den relevanten Sicherheits--Protokollen](images/security.png){#fig:security}
 
@@ -556,7 +557,7 @@ machen. Ein Beispiel wäre ein Skript, dass für jeden Unternehmens--Login ein
 ``brig``--Repository lokal mit passenden Nutzernamen und Passwort anlegt
 (beispielsweise mittels LDAP--Anbindung).
 
-### Supportverträge
+### Supportverträge und Consulting
 
 Normalerweise werden Fehler bei Open--Source--Projekten auf einen dafür
 eingerichteten Bugtracker gemeldet. Die Entwickler können dann, nach einiger
@@ -594,13 +595,6 @@ Software- und Hardware--Zusammenspiel könnte dann vorher von uns
 getestet werden und mit der Zeit auch dem technischen Fortschritt angepasst
 werden.
 
-### Lehrmaterial und Consulting.
-
-Auf lange Sicht wären auch Lehrmaterial, Schulungen und Consulting im
-Allgemeinen als Eingabequelle denkbar. 
-Respektable Einnahmen könnte man auch mit Merchandise, wie beispielsweise
-Flaschenschiffen, erzielen. \smiley{}
-
 # Beschreibung des Arbeitsplans
 
 ## Technische Arbeitsschritte
@@ -632,64 +626,29 @@ werden.
 
 ## Meilensteinplanung
 
-Der oben stehende Zeitplan ist nochmal in Abbildung {@fig:milestones} auf drei Jahre
-gerechnet zu sehen.
+Der oben stehende Zeitplan ist nochmal in Abbildung {@fig:milestones} als
+Gantt--Diagramm auf drei Jahre gerechnet zu sehen. Bestimmte Aufgaben wie Tests
+und Benchmarks werden iterativ bei jedem Meilenstein wiederholt und werden nicht 
+explizit aufgeführt.
 
-![Grobe Meilensteinplanung von 2016 bis 2019.](images/milestones.png){#fig:milestones}
-
-Dabei sollen Prototyp I & II mindestens folgende Features beinhalten:
-
-*Prototyp I:*
-
-- Grundlegende Dateiübertragung.
-- Verschlüsselte Speicherung.
-- FUSE Layer zum Anzeigen der Dateien in einem »magischen« Ordner.
-
-
-*Prototyp II:*
-
-- Sichere XMPP--Benutzerverwaltung.
-- Erste Effizienzsteigerungen.
-- Tag--basierte Ansicht im FUSE Layer.
-- Verlässliche Benutzung auf der Kommandozeile (ähnlich ``git``).
-
-Weitere Features kommen dann in kleinen, stärker abgekapselten, Iterationen hinzu.
-
-# Finanzierung des Vorhabens
-
-## Über IuK--Bayern
-
-Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
-Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
-Unternehmen mit bis zu 50% des Fördervolumens gefördert. Gern gesehen ist dabei
-ein Großunternehmen, welches zusammen mit einem kleinen bis mittleren
-Unternehmen (``KMU``) das Fördervolumen aufbringt. Aus diesen Mitteln 
-könnte die Hochschule Augsburg dann zwei Stellen für wissenschaftliche Mitarbeiter
-über eine gewisse Dauer finanzieren.
-
-Die Höhe des Fördervolumens richtet sich primär nach der Dauer der Förderung und
-dem jeweiligen akademischen Abschluss. Die Dauer würden wir dabei auf mindestens
-zwei, optimalerweise drei Jahre ansetzen. Sehr grob überschlagen kommen wir
-dabei für das nötige Fördervolumen auf folgende Summe:
-
-```python
->>> gehalt = 3500 + 2000                # Bruttogehalt + Arbeitgeberanteil 
->>> spesen = 30000                      # Anschaffungen, Büro, etc.
->>> pro_mann = 12 * gehalt              # =  66000 Euro
->>> pro_jahr = 2 * pro_mann + spesen    # = 162000 Euro
->>> budget = 3 * pro_jahr               # = 486000 Euro ~ 500.000 Euro
-```
-
-Für einen erfolgreichen Projektstart sollten daher zwei Unternehmen bereit sein,
-diese Summe gemeinsam aufzubringen. Die Gegenleistung bestünde dann einerseits
-natürlich aus der fertigen Software, andererseits aus möglichen weiteren daraus
-resultierenden Kooperationen.
-
-[^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
+![Grobe Meilensteinplanung von 2016 bis 2019.](images/gantt.png){#fig:milestones}
 
 # Über uns
 
-TODO!
+Wir sind zwei Master--Studenten an der Hochschule Augsburg, die von freier
+Software begeistert sind und mit ihr die Welt ein bisschen besser machen wollen.
+Momentan entwickeln wir ``brig`` im Rahmen unserer Masterarbeiten bei Prof
+Dr.-Ing. Thorsten Schöler in der Distributed--Systems--Group[^DSG]. 
+Wir haben beide Erfahrung darin Open--Source--Software zu entwickeln und zu
+betreuen, weswegen wir das nun auch gerne hauptberuflich fortführen würden.
+
+Unsere momentanen sonstigen Projekte finden sich auf GitHub:
+
+* \url{https://github.com/sahib} (Projekte von Christopher Pahl)
+* \url{https://github.com/qitta} (Projekte von Christop Piechula)
+* \url{https://github.com/studentkittens} (gemeinsame Projekte und Studienarbeiten)
+
+[^DSG]: Siehe auch: \url{http://dsg.hs-augsburg.de/}
 
 ## Der Name
 
@@ -706,6 +665,89 @@ von Versionsverwaltungssystemen durch die verhältnismäßige einfache Anwendung
 gestiegen. Wir hoffen mit ``brig`` eine ähnlich flexible Lösung für große
 Dateien etablieren zu können. 
 
+## Aktueller Projektstatus
+
+Wir sind bereits auf gutem Wege das Proof--of--Concept fertig zustellen. Die
+momentane Codebasis unterstützt bereits Verschlüsselung, Streaming--Kompression,
+ein Daemon--Server Modus mit Kommandozeilen--Anwendung, ein FUSE--Dateisystem
+und einen authentifizierten und verschlüsselten Seitenkanal, um Metadaten
+auszutauschen.
+
+Die aktuelle Entwicklung ist öffentlich und kann auf GitHub verfolgt werden:
+
+* \url{https://github.com/disorganizer/brig}
+
+## Was ``brig`` *nicht* ist
+
+Auch wenn ``brig`` sehr flexibel einsetzbar ist, ist und soll es keineswegs die
+beste Alternative in allen Bereichen sein. Keine Software kann eine »eierlegende
+Wollmilchsau« sein und sollte auch nicht als solche benutzt werden.
+
+Besonders im Bereich Effizienz kann es nicht mit hochperformanten
+Cluster--Dateisystemen wie Ceph[^CEPH] oder GlusterFS[^GLUSTER] mithalten.  Das
+liegt besonders an der sicheren Ausrichtung von ``brig``, welche oft
+Rechenleistung zugunsten von Sicherheit eintauscht. Auch kann ``brig`` keine
+Echtzeit--Garantien geben. 
+
+Auch wenn ein ``brig``--Repository in der geschlossenen Form als sicherer
+»Datensafe« einsetzbar ist, so bietet ``brig`` nicht die Eigenschaft der
+»glaubhaften Abstreitbarkeit«[^ABSTREIT], die Werkzeuge wie Veracrypt bieten. 
+
+Im Gegensatz zu Versionsverwaltungssystemen wie ``git``, kann ``brig`` keine
+Differenzen zwischen zwei Ständen anzeigen, da es nur auf den Metadaten von
+Dateien arbeitet. Auch muss auf der Gegenseite ein ``brig``--Daemon--Prozess
+laufen, um mit der Gegenseite zu kommunizieren.
+
+[^CEPH]: \url{http://ceph.com}
+[^GLUSTER]:  \url{https://www.gluster.org}
+[^ABSTREIT]: \url{https://de.wikipedia.org/wiki/VeraCrypt\#Glaubhafte_Abstreitbarkeit}
+
+# Finanzierung des Vorhabens
+
+Die Entwicklung von ``brig`` ist sehr zeitraubend, daher ist eine Finanzierung
+unablässig. Um eine freie und kontinuierliche Entwicklung in einem akademischen
+Umfeld zu gewährleisten, streben wir an als wissenschaftliche Mitarbeiter im
+Hochschulbereich angestellt zu werden. Da die Hochschule Augsburg allerdings
+nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu finanzieren,
+benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle Optionen
+offen, im Folgenden stellen wir aber eine auf Unternehmen zugeschnittene
+Kooperationsmöglichkeit vor.
+
+## Mittels IuK--Bayern
+
+Eine mögliche Finanzierungstrategie bietet das IuK--Programm[^IUK] des
+Freistaates Bayern. Dabei werden Kooperation zwischen Fachhochschulen und
+Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
+
+Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
+mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
+aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann zwei Stellen
+für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
+
+Konkret berechnet sich das dabei folgedermaßen: Ein oder mehr Unternehmen
+bringen ein gewissen Betrag auf mit denen sie interne Arbeitskräfte bezahlen
+die an dem gemeinsamen Kooperationsprojekt arbeiten. Dieser Betrag wird dann
+vom Freistaat Bayern verdoppelt. Von der zweiten Hälfte werden dann
+wissenschaftliche Mitarbeiter an der Hochschule Augsburg bezahlt. Bleibt ein
+Überschuss übrig, so fließt dieser zurück an die Unternehmen.
+
+Steigt ein einzelnes Unternehmen in das IuK--Programm mit ein, so
+ergeben sich beispielsweise folgende grob gerechnete Möglichkeiten:
+
+* Ein wissenschaftlicher Mitarbeiter in Halbzeit an der HSA und ein Mitarbeiter
+  in Vollzeit beim Unternehmen plus 10.000 Euro Sachmittel benötigt ein Betrag
+  von etwa 105.000 Euro auf Unternehmensseite. An das Unternehmen fließen keine
+  Fördergelder zurück.
+* Ein wissenschaftlicher Mitarbeiter in Vollzeit an der HSA und zwei Mitarbeiter
+  in Vollzeit beim Unternehmen plus 10.000 Euro Sachmittel benötigt ein Betrag 
+  von etwa 210.000 Euro auf Unternehmensseite. Das Unternehmen erhält eine etwa
+  30%-ige Förderquote.
+* Zwei wissenschaftliche Mitarbeiter in Vollzeit an der HSA und zwei Mitarbeiter
+  in Vollzeit beim Unternehmen plus 20.000 Euro Sachmittel benötigt ein Betrag 
+  von etwa 420.000 Euro auf Unternehmensseite. Das Unternehmen erhält eine etwa 
+  20%-ige Förderquote.
+
+[^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
 
 \newpage
 
