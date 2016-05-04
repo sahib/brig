@@ -711,52 +711,38 @@ laufen, um mit der Gegenseite zu kommunizieren.
 # Finanzierung des Vorhabens
 
 Die Entwicklung von ``brig`` ist sehr zeitintensiv, daher ist eine solide
-Finanzierung unerlässlich. Um eine freie und kontinuierliche Entwicklung in einem
-akademischen Umfeld zu gewährleisten, streben wir an als wissenschaftliche
+Finanzierung unerlässlich. Um eine freie und kontinuierliche Entwicklung in
+einem akademischen Umfeld zu gewährleisten, streben wir an als wissenschaftliche
 Mitarbeiter im Hochschulbereich angestellt zu werden. Da die Hochschule Augsburg
 allerdings nicht über die Mittel verfügt zwei neue Stellen von Grund auf zu
-finanzieren, benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für alle
-Optionen offen, im Folgenden stellen wir aber eine auf Unternehmen
-zugeschnittene Kooperationsmöglichkeit vor. Der gewünschte Förderungsbeginn wäre
-in jedem Fall Sept/Okt. 2016 und würde optimalerweise über drei Jahre gehen.
+finanzieren, benötigen wir ein oder mehrere Sponsoren. Dabei sind wir für
+verschiedene Optionen offen. 
 
-## Mittels IuK--Bayern
+Eckdaten zum Umfang des Vorhabens bzw. für die benötigte Förderung kurz
+zusammengefasst:
+
+- Prototyp mit Masterarbeit fertig.
+- Danach Forschung und Weiterentwicklung in diesem Bereich mit der Aussicht auf Promotion.
+- Benötigte Förderung für zwei Vollzeitstellen als wissenschaftliche Mitarbeiter (Gehaltsstufe E13) 
+- Förderbeginn ab ca. Oktober 2016 (angesetzter Zeitraum sind drei Jahre)
+
 
 Eine mögliche Finanzierungsstrategie bietet das IuK--Programm[^IUK] des
 Freistaates Bayern. Dabei werden Kooperationen zwischen Fachhochschulen und
 Unternehmen mit bis zu 50% des Fördervolumens vom Freistaat Bayern gefördert.
 Vom IuK--Programm gern gesehen ist dabei ein Großunternehmen, welches zusammen
 mit einem kleinen bis mittleren Unternehmen (``KMU``) das Fördervolumen
-aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann bis zu zwei
-volle Stellen für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
-
-Konkret berechnet sich das dabei folgendermaßen: Ein oder mehr Unternehmen
-bringen ein gewissen Betrag auf mit denen sie interne Arbeitskräfte bezahlen
-die an dem gemeinsamen Kooperationsprojekt arbeiten. Dieser Betrag wird dann
-vom Freistaat Bayern verdoppelt. Von der zweiten Hälfte werden dann
-wissenschaftliche Mitarbeiter an der Hochschule Augsburg bezahlt. Bleibt ein
-Überschuss übrig, so fließt dieser zurück an die Unternehmen.
-
-Steigt ein einzelnes Unternehmen in das IuK--Programm ein, so
-ergeben sich beispielsweise folgende grob gerechnete Möglichkeiten:
-
-* Ein wissenschaftlicher Mitarbeiter in Halbzeit an der HSA und ein Mitarbeiter
-  in Vollzeit beim Unternehmen plus 10.000 Euro Sachmittel benötigt ein Betrag
-  von etwa 105.000 Euro auf Unternehmensseite. An das Unternehmen fließen keine
-  Fördergelder zurück.
-* Ein wissenschaftlicher Mitarbeiter in Vollzeit an der HSA und zwei Mitarbeiter
-  in Vollzeit beim Unternehmen plus 10.000 Euro Sachmittel benötigt ein Betrag 
-  von etwa 210.000 Euro auf Unternehmensseite. Das Unternehmen erhält eine etwa
-  30%-ige Förderquote.
-* Zwei wissenschaftliche Mitarbeiter in Vollzeit an der HSA und zwei Mitarbeiter
-  in Vollzeit beim Unternehmen plus 20.000 Euro Sachmittel benötigt ein Betrag 
-  von etwa 420.000 Euro auf Unternehmensseite. Das Unternehmen erhält eine etwa 
-  20%-ige Förderquote.
-
+aufbringt. Aus diesen Mitteln könnte die Hochschule Augsburg dann zwei volle
+Stellen für wissenschaftliche Mitarbeiter über eine gewisse Dauer finanzieren.
 Dieses Exposé enthält bereits alle Informationen und Textbausteine zur
-Formulierung eines IuK--Antrags. 
+Formulierung eines IuK–Antrags.
+
+Eine weitere Möglichkeit wären unter Umständen auch die Innovationsgutscheine
+des Freistaates Bayern [^INNO].
+
 
 [^IUK]: Mehr Informationen unter \url{http://www.iuk-bayern.de/}
+[^INNO]: Mehr Informationen unter \url{http://www.innovationsgutschein-bayern.de/startseite.html}
 
 \newpage
 
