@@ -78,14 +78,20 @@ func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 		heartbeat:    make(map[id.ID]*ipfsutil.Pinger),
 		rp:           rp,
 		layer:        layer,
-		changeCh:     make(chan *repo.RemoteChange),
+		changeCh:     make(chan *repo.RemoteChange, 10),
 		updateTicker: time.NewTicker(120 * time.Second),
 	}
 
 	rp.Remotes.Register(func(change *repo.RemoteChange) {
 		go func() {
 			time.Sleep(1 * time.Second)
-			cp.changeCh <- change
+
+			// Better check if the channel wasn't closed yet:
+			cp.mu.Lock()
+			if cp.changeCh != nil {
+				cp.changeCh <- change
+			}
+			cp.mu.Unlock()
 		}()
 	})
 
@@ -244,11 +250,15 @@ func (cp *conversationPool) Close() error {
 
 	// Make sure we kill down the go routines
 	// in newConversationPool to prevent leaks.
-	close(cp.changeCh)
 	cp.updateTicker.Stop()
 
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
+
+	// Set changeCh to nil, so potential remote
+	// events notice that the pool was closed.
+	close(cp.changeCh)
+	cp.changeCh = nil
 
 	// Close all conversations. Does not need to be done by Layer.
 	for _, cnv := range cp.open {
