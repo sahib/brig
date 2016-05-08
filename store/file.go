@@ -135,6 +135,7 @@ func (f *File) xorHash(hash *Hash) error {
 
 	digest, err := multihash.Decode(hash.Multihash)
 	if err != nil {
+		fmt.Println("remote multihash", hash.Multihash)
 		return err
 	}
 
@@ -165,6 +166,19 @@ func (f *File) xorHash(hash *Hash) error {
 	return nil
 }
 
+func (f *File) purgeHash() {
+	f.node.Up(func(parentNode *trie.Node) {
+		parent := parentNode.Data.(*File)
+		if parent.kind != FileTypeDir {
+			return
+		}
+
+		if err := parent.xorHash(f.hash); err != nil {
+			log.Errorf("Could not purge parent hash: %v", err)
+		}
+	})
+}
+
 // Update size and hash of the parent directories
 // Must be called locked.
 func (f *File) updateParents() {
@@ -176,8 +190,10 @@ func (f *File) updateParents() {
 			return
 		}
 
-		if err := parent.xorHash(f.hash); err != nil {
-			log.Errorf("Could not update parent hash: %v", err)
+		if f.kind == FileTypeRegular {
+			if err := parent.xorHash(f.hash); err != nil {
+				log.Errorf("Could not update parent hash of `%s`: %v", f.node.Path(), err)
+			}
 		}
 
 		parent.Metadata.size += f.Metadata.size

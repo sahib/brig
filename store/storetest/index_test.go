@@ -308,5 +308,10 @@ func TestRemove(t *testing.T) {
 			t.Errorf("Could not remove /empty_dir non-recursively: %v", err)
 			return
 		}
+
+		if st.Root.Size() != 0 {
+			t.Errorf("Size of the tree is not 0 after deletion (%d)", st.Root.Size())
+			return
+		}
 	})
 }

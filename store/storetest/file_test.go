@@ -67,7 +67,8 @@ func TestHash(t *testing.T) {
 			return
 		}
 
-		// Skip the "Qm" in the beginning:
+		// Check if root hash is really the xor of the two others:
+		// (but skip the "Qm" in the beginning)
 		for idx := 2; idx < len(hash1); idx++ {
 			if hash1[idx]^hash2[idx] != rootHash[idx] {
 				t.Errorf(
@@ -86,10 +87,19 @@ func TestHash(t *testing.T) {
 		}
 
 		// Check if roothash equals the file with `hash2`
-		rootHash = st.Root.Hash().Bytes()
+		rootHash = []byte(string(st.Root.Hash().Bytes()))
 
 		if !bytes.Equal(hash2, rootHash) {
 			t.Errorf("Root hash is not the same as single member")
+			return
+		}
+
+		// Try to modify the russian file:
+		hash3 := creator("/russia/piotr.go", []byte("Comrade!"))
+
+		newRootHash := st.Root.Hash().Bytes()
+		if !bytes.Equal(hash3, newRootHash) {
+			t.Errorf("Modifying leads to dirty traces of old hashes")
 			return
 		}
 	})

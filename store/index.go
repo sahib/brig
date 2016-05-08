@@ -254,6 +254,10 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	oldMeta := file.Metadata
 	if initialAdd {
 		oldMeta = nil
+	} else {
+		// Remove the current hash from the merkle tree
+		// before setting the new one:
+		file.purgeHash()
 	}
 
 	file.Metadata = &Metadata{
@@ -381,7 +385,10 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 	})
 
 	for _, child := range toBeRemoved {
+		child.Lock()
+		child.Metadata.size *= -1
 		child.updateParents()
+		child.Unlock()
 		child.Remove()
 	}
 	return nil
