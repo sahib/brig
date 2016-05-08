@@ -6,7 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/id"
-	"github.com/qitta/minilock/colors"
+	"github.com/disorganizer/brig/util/colors"
 	"github.com/tucnak/climax"
 )
 

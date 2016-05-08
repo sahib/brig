@@ -381,6 +381,7 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 	})
 
 	for _, child := range toBeRemoved {
+		child.updateParents()
 		child.Remove()
 	}
 	return nil

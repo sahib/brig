@@ -140,7 +140,7 @@ func (f *File) xorHash(hash *Hash) error {
 
 	var ownHash []byte
 
-	if f.hash == nil {
+	if f.hash == nil || len(f.hash.Multihash) == 0 {
 		ownHash = make([]byte, multihash.DefaultLengths[digest.Code])
 	} else {
 		ownDigest, err := multihash.Decode(f.hash.Multihash)
@@ -176,7 +176,10 @@ func (f *File) updateParents() {
 			return
 		}
 
-		parent.xorHash(f.hash)
+		if err := parent.xorHash(f.hash); err != nil {
+			log.Errorf("Could not update parent hash: %v", err)
+		}
+
 		parent.Metadata.size += f.Metadata.size
 		parent.Metadata.modTime = now
 		parent.sync()

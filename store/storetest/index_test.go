@@ -10,9 +10,11 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/disorganizer/brig/util/testwith"
+	"github.com/gogo/protobuf/proto"
 )
 
 var TestPath = filepath.Join(os.TempDir(), "brig-store-test")
@@ -143,7 +145,7 @@ func TestExport(t *testing.T) {
 		"/root", "/pics/me.png", "/pics/him.png",
 	}
 
-	exportBuf := &bytes.Buffer{}
+	var exportData []byte
 
 	withEmptyStore(t, func(st *store.Store) {
 		for _, path := range paths {
@@ -153,21 +155,32 @@ func TestExport(t *testing.T) {
 			}
 		}
 
-		if err := st.Export(exportBuf); err != nil {
+		protoStore, err := st.Export()
+		if err != nil {
 			t.Errorf("store-export failed: %v", err)
 			return
 		}
-	})
 
-	exportData := exportBuf.Bytes()
+		exportData, err = proto.Marshal(protoStore)
+		if err != nil {
+			t.Errorf("Failed to marshal exported data: %v", err)
+			return
+		}
+	})
 
 	if len(exportData) == 0 {
 		t.Errorf("Exported data is empty.")
 		return
 	}
 
+	protoStore := &wire.Store{}
+	if err := proto.Unmarshal(exportData, protoStore); err != nil {
+		t.Errorf("Failed to unmarshal exported data: %v", err)
+		return
+	}
+
 	withEmptyStore(t, func(st *store.Store) {
-		if err := st.Import(bytes.NewReader(exportData)); err != nil {
+		if err := st.Import(protoStore); err != nil {
 			t.Errorf("Could not import data: %v", err)
 			return
 		}
