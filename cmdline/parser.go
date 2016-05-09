@@ -46,7 +46,7 @@ func RunCmdline() int {
 			Name: "nodaemon,n",
 		},
 		cli.StringFlag{
-			Name:  "password,x",
+			Name:  "password, x",
 			Usage: "Supply user password",
 			Value: "",
 		},

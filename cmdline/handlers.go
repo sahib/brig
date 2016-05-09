@@ -79,7 +79,7 @@ func handleDaemonQuit(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleDaemon(ctx *cli.Context) error {
-	pwd := ctx.String("password")
+	pwd := ctx.GlobalString("password")
 	if pwd == "" {
 		var err error
 		pwd, err = readPassword()
@@ -186,12 +186,14 @@ func handleInit(ctx *cli.Context) error {
 	}
 
 	// Extract the folder from the resource name by default:
-	folder := ctx.String("path")
+	folder := ctx.GlobalString("path")
+	fmt.Println("Folder:", folder)
 	if folder == "." {
 		folder = ID.AsPath()
 	}
 
-	pwd := ctx.String("password")
+	pwd := ctx.GlobalString("password")
+	fmt.Println(pwd)
 	if pwd == "" {
 		pwdBytes, err := pwdutil.PromptNewPassword(40.0)
 		if err != nil {
@@ -213,7 +215,7 @@ func handleInit(ctx *cli.Context) error {
 		}
 	}
 
-	if !ctx.Bool("nodaemon") {
+	if !ctx.GlobalBool("nodaemon") {
 		port, err := repo.Config.Int("daemon.port")
 		if err != nil {
 			return ExitCode{UnknownError, "Unable to find out port"}
