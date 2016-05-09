@@ -3,90 +3,89 @@ package cmdline
 import (
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/id"
 	"github.com/qitta/minilock/colors"
-	"github.com/tucnak/climax"
 )
 
-func handleRemoteAdd(ctx climax.Context, client *daemon.Client) int {
-	if len(ctx.Args) < 3 {
-		log.Warningf("Need an id and a peer hash.")
-		return BadArgs
-	}
-
-	idString, hash := ctx.Args[1], ctx.Args[2]
+func handleRemoteAdd(ctx *cli.Context, client *daemon.Client) error {
+	idString, hash := ctx.Args()[0], ctx.Args()[1]
 
 	id, err := id.Cast(idString)
 	if err != nil {
-		log.Errorf("Invalid ID: %v", err)
-		return BadArgs
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Invalid ID: %v", err),
+		}
 	}
 
 	if err := client.RemoteAdd(id, hash); err != nil {
-		log.Errorf("Unable to add remote: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to add remote: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleRemoteRemove(ctx climax.Context, client *daemon.Client) int {
-	if len(ctx.Args) < 2 {
-		log.Warningf("Need an id of the remote to remove.")
-		return BadArgs
-	}
-
-	idString := ctx.Args[1]
+func handleRemoteRemove(ctx *cli.Context, client *daemon.Client) error {
+	idString := ctx.Args()[0]
 	id, err := id.Cast(idString)
 	if err != nil {
-		log.Errorf("Invalid ID: %v", err)
-		return BadArgs
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Invalid ID: %v", err),
+		}
 	}
 
 	if client.RemoteRemove(id) != nil {
-		log.Errorf("Unable to remove remote: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to remove remote: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleRemoteList(ctx climax.Context, client *daemon.Client) int {
+func handleRemoteList(ctx *cli.Context, client *daemon.Client) error {
 	data, err := client.RemoteList()
 	if err != nil {
-		log.Errorf("Unable to list remotes: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to list remotes: %v", err),
+		}
 	}
 	for _, entry := range data {
 		printRemoteEntry(entry)
 	}
-	return Success
+	return nil
 }
 
-func handleRemoteLocate(ctx climax.Context, client *daemon.Client) int {
-	if len(ctx.Args) < 2 {
-		return BadArgs
-	}
-
-	id, err := id.Cast(ctx.Args[1])
+func handleRemoteLocate(ctx *cli.Context, client *daemon.Client) error {
+	id, err := id.Cast(ctx.Args()[0])
 	if err != nil {
-		log.Errorf("Invalid ID: %v", err)
-		return BadArgs
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Invalid ID: %v", err),
+		}
 	}
 
 	hashes, err := client.RemoteLocate(id, 10, 50000)
 	if err != nil {
-		log.Errorf("Unable to locate ipfs peers: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to locate ipfs peers: %v", err),
+		}
 	}
 
 	for _, hash := range hashes {
 		fmt.Println(hash)
 	}
 
-	return Success
+	return nil
 }
 
 func printRemoteEntry(re *daemon.RemoteEntry) {
@@ -98,35 +97,15 @@ func printRemoteEntry(re *daemon.RemoteEntry) {
 	fmt.Printf("%s %-7s %s\n", re.Hash, state, re.Ident)
 }
 
-func handleRemoteSelf(ctx climax.Context, client *daemon.Client) int {
+func handleRemoteSelf(ctx *cli.Context, client *daemon.Client) error {
 	re, err := client.RemoteSelf()
 	if err != nil {
-		log.Errorf("Unable to list remote self information: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to list remote self information: %v", err),
+		}
 	}
 
 	printRemoteEntry(re)
-	return Success
-}
-
-func handleRemote(ctx climax.Context, client *daemon.Client) int {
-	if len(ctx.Args) == 0 {
-		return handleRemoteList(ctx, client)
-	}
-
-	switch ctx.Args[0] {
-	case "add":
-		return handleRemoteAdd(ctx, client)
-	case "remove":
-		return handleRemoteRemove(ctx, client)
-	case "list":
-		return handleRemoteList(ctx, client)
-	case "locate":
-		return handleRemoteLocate(ctx, client)
-	case "self":
-		return handleRemoteSelf(ctx, client)
-	}
-
-	log.Warningf("No remote subcommand `%s`", ctx.Args[0])
-	return BadArgs
+	return nil
 }

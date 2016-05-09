@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -108,6 +109,16 @@ func (id ID) Resource() string {
 	}
 
 	return string(id)[idx+1:]
+}
+
+func (id ID) AsPath() string {
+	path := id.User()
+	rsrc := id.Resource()
+	if rsrc != "" {
+		path += "-" + rsrc
+	}
+
+	return strings.Replace(path, string(os.PathSeparator), "|", -1)
 }
 
 func (id ID) User() string {

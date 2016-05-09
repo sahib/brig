@@ -9,35 +9,35 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/repo/config"
+	repoconfig "github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/dustin/go-humanize"
-	yamlConfig "github.com/olebedev/config"
-	"github.com/tucnak/climax"
+	"github.com/olebedev/config"
 )
 
-func handleVersion(ctx climax.Context) int {
+func handleVersion(ctx *cli.Context) error {
 	fmt.Println(brig.VersionString())
-	return Success
+	return nil
 }
 
-func handleOpen(ctx climax.Context, client *daemon.Client) int {
+func handleOpen(ctx *cli.Context, client *daemon.Client) error {
 	log.Infof("Repository is open now.")
-	return Success
+	return nil
 }
 
-func handleClose(ctx climax.Context, client *daemon.Client) int {
+func handleClose(ctx *cli.Context, client *daemon.Client) error {
 	// This is currently the same as `brig daemon-quit`
 	return handleDaemonQuit(ctx, client)
 }
 
-func handleDaemonPing(ctx climax.Context, client *daemon.Client) int {
+func handleDaemonPing(ctx *cli.Context, client *daemon.Client) error {
 	for i := 0; i < 100; i++ {
 		before := time.Now()
 		symbol := colors.Colorize("✔", colors.Green)
@@ -56,152 +56,146 @@ func handleDaemonPing(ctx climax.Context, client *daemon.Client) int {
 		time.Sleep(1 * time.Second)
 	}
 
-	return Success
+	return nil
 }
 
-func handleDaemonWait(ctx climax.Context) int {
+func handleDaemonWait(ctx *cli.Context) error {
 	port := guessPort()
 
 	for {
 		client, err := daemon.Dial(port)
 		if err == nil {
 			client.Close()
-			return Success
+			return nil
 		}
 
 		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func handleDaemonQuit(ctx climax.Context, client *daemon.Client) int {
+func handleDaemonQuit(ctx *cli.Context, client *daemon.Client) error {
 	client.Exorcise()
-	return Success
+	return nil
 }
 
-func handleDaemon(ctx climax.Context) int {
-	pwd, ok := ctx.Get("password")
-	if !ok {
+func handleDaemon(ctx *cli.Context) error {
+	pwd := ctx.String("password")
+	if pwd == "" {
 		var err error
 		pwd, err = readPassword()
 		if err != nil {
-			log.Errorf("Could not read password: %v", pwd)
-			return BadPassword
+			return ExitCode{
+				BadPassword,
+				fmt.Sprintf("Could not read password: %v", pwd),
+			}
 		}
 	}
 
 	repoFolder := guessRepoFolder()
 	err := repo.CheckPassword(repoFolder, pwd)
 	if err != nil {
-		log.Error("Wrong password.")
-		return BadPassword
+		return ExitCode{
+			BadPassword,
+			"Wrong password",
+		}
 	}
 
 	port := guessPort()
 	baal, err := daemon.Summon(pwd, repoFolder, port)
 	if err != nil {
-		log.Warning("Unable to start daemon: ", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to start daemon: %v", err),
+		}
 	}
 
 	baal.Serve()
-	return Success
+	return nil
 }
 
-func handleMount(ctx climax.Context, client *daemon.Client) int {
-	mountPath := ctx.Args[0]
+func handleMount(ctx *cli.Context, client *daemon.Client) error {
+	mountPath := ctx.Args()[0]
 
 	var err error
 
-	if ctx.Is("unmount") {
+	if ctx.Bool("unmount") {
 		err = client.Unmount(mountPath)
 	} else {
 		err = client.Mount(mountPath)
 	}
 
 	if err != nil {
-		log.Errorf("fuse: %v", err)
-		return UnknownError
+		return ExitCode{UnknownError, fmt.Sprintf("fuse: %v", err)}
 	}
 
-	return Success
+	return nil
 }
 
-func handleConfig(ctx climax.Context) int {
-	folder := guessRepoFolder()
-	cfgPath := filepath.Join(folder, ".brig", "config")
-
-	cfg, err := config.LoadConfig(cfgPath)
+func handleConfigList(cli *cli.Context, cfg *config.Config) error {
+	yaml, err := config.RenderYaml(cfg)
 	if err != nil {
-		log.Errorf("Could not load config: %v", err)
-		return BadArgs
-	}
-
-	switch len(ctx.Args) {
-	case 0:
-		// No key or value. Print whole config as .yaml
-		yaml, err := yamlConfig.RenderYaml(cfg)
-		if err != nil {
-			log.Errorf("Unable to render config: %v", err)
-			return UnknownError
-		}
-		fmt.Println(yaml)
-	case 1:
-		// Get requested; find value for key.
-		key := ctx.Args[0]
-		value, err := cfg.String(key)
-		if err != nil {
-			log.Errorf("Could not retrieve %s: %v", key, err)
-			return BadArgs
-		}
-		fmt.Println(value)
-	case 2:
-		// Set requested: set key to value.
-		key := ctx.Args[0]
-		value := ctx.Args[1]
-		if err := cfg.Set(key, value); err != nil {
-			log.Errorf("Could not set %s: %v", key, err)
-			return BadArgs
-		}
-
-		if _, err := config.SaveConfig(cfgPath, cfg); err != nil {
-			log.Errorf("Could not save config: %v", err)
-			return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to render config: %v", err),
 		}
 	}
-
-	return Success
+	fmt.Println(yaml)
+	return nil
 }
 
-func handleInit(ctx climax.Context) int {
-	ID, err := id.Cast(ctx.Args[0])
+func handleConfigGet(ctx *cli.Context, cfg *config.Config) error {
+	key := ctx.Args()[0]
+	value, err := cfg.String(key)
 	if err != nil {
-		log.Errorf("Bad ID: %v", err)
-		return BadArgs
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Could not retrieve %s: %v", key, err),
+		}
+	}
+	fmt.Println(value)
+	return nil
+}
+
+func handleConfigSet(ctx *cli.Context, cfg *config.Config) error {
+	key := ctx.Args()[0]
+	value := ctx.Args()[1]
+	if err := cfg.Set(key, value); err != nil {
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Could not set %s: %v", key, err),
+		}
+	}
+
+	folder := repo.GuessFolder()
+	if _, err := repoconfig.SaveConfig(filepath.Join(folder, ".brig", "config"), cfg); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Could not save config: %v", err),
+		}
+	}
+	return nil
+}
+
+func handleInit(ctx *cli.Context) error {
+	ID, err := id.Cast(ctx.Args()[0])
+	if err != nil {
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Bad ID: %v", err),
+		}
 	}
 
 	// Extract the folder from the resource name by default:
-	// TODO: Add another variable
-	folder := ID.Resource()
-	if folder == "" {
-		log.Error("Need a resource in your JID.")
-		return BadArgs
+	folder := ctx.String("path")
+	if folder == "." {
+		folder = ID.AsPath()
 	}
 
-	if envFolder := os.Getenv("BRIG_PATH"); envFolder != "" {
-		folder = envFolder
-	}
-
-	if ctx.Is("folder") {
-		folder, _ = ctx.Get("folder")
-	}
-
-	pwd, ok := ctx.Get("password")
-	if !ok {
-		var err error
+	pwd := ctx.String("password")
+	if pwd == "" {
 		pwdBytes, err := pwdutil.PromptNewPassword(40.0)
 		if err != nil {
-			log.Error(err)
-			return BadPassword
+			return ExitCode{BadPassword, err.Error()}
 		}
 
 		pwd = string(pwdBytes)
@@ -209,104 +203,85 @@ func handleInit(ctx climax.Context) int {
 
 	repo, err := repo.NewRepository(string(ID), pwd, folder)
 	if err != nil {
-		log.Error(err)
-		return UnknownError
+		return ExitCode{UnknownError, err.Error()}
 	}
 
 	if err := repo.Close(); err != nil {
-		log.Errorf("close: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("close: %v", err),
+		}
 	}
 
-	if !ctx.Is("nodaemon") {
+	if !ctx.Bool("nodaemon") {
 		port, err := repo.Config.Int("daemon.port")
 		if err != nil {
-			log.Errorf("Unable to find out port.")
-			return UnknownError
+			return ExitCode{UnknownError, "Unable to find out port"}
 		}
 
 		if _, err := daemon.Reach(string(pwd), folder, port); err != nil {
-			log.Errorf("Unable to start daemon: %v", err)
-			return DaemonNotResponding
+			return ExitCode{
+				DaemonNotResponding,
+				fmt.Sprintf("Unable to start daemon: %v", err),
+			}
 		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleClone(ctx climax.Context) int {
-	remoteJID, err := id.Cast(ctx.Args[1])
+func handleAdd(ctx *cli.Context, client *daemon.Client) error {
+	filePath, err := filepath.Abs(ctx.Args()[0])
 	if err != nil {
-		log.Warningf("Bad remote Jabber ID: %v", err)
-		return BadArgs
-	}
-
-	rc := handleInit(ctx)
-	if rc != Success {
-		return rc
-	}
-
-	// Daemon should be up and running by now:
-	port := guessPort()
-
-	// Check if the daemon is running:
-	client, err := daemon.Dial(port)
-	if err == nil {
-		return DaemonNotResponding
-	}
-
-	if err := client.Fetch(remoteJID); err != nil {
-		log.Errorf("fetch failed: %v", err)
-		return UnknownError
-	}
-
-	return Success
-}
-
-func handleAdd(ctx climax.Context, client *daemon.Client) int {
-	filePath, err := filepath.Abs(ctx.Args[0])
-	if err != nil {
-		log.Errorf("Unable to make abs path: %v: %v", filePath, err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to make abs path: %v: %v", filePath, err),
+		}
 	}
 
 	// Assume "/file.png" for file.png as repo path, if none given.
 	repoPath := "/" + filepath.Base(filePath)
-	if len(ctx.Args) > 1 {
-		repoPath = ctx.Args[1]
+	if ctx.NArg() > 1 {
+		repoPath = ctx.Args()[1]
 	}
 
 	if err := client.Add(filePath, repoPath); err != nil {
-		log.Errorf("Could not add file: %v: %v", filePath, err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Could not add file: %v: %v", filePath, err),
+		}
 	}
 
 	fmt.Println(repoPath)
-	return Success
+	return nil
 }
 
-func handleRm(ctx climax.Context, client *daemon.Client) int {
-	repoPath := prefixSlash(ctx.Args[0])
+func handleRm(ctx *cli.Context, client *daemon.Client) error {
+	repoPath := prefixSlash(ctx.Args()[0])
 
-	if err := client.Remove(repoPath, ctx.Is("recursive")); err != nil {
-		log.Errorf("Could not remove file: `%s`: %v", repoPath, err)
-		return UnknownError
+	if err := client.Remove(repoPath, ctx.Bool("recursive")); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Could not remove file: `%s`: %v", repoPath, err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleCat(ctx climax.Context, client *daemon.Client) int {
-	repoPath := prefixSlash(ctx.Args[0])
+func handleCat(ctx *cli.Context, client *daemon.Client) error {
+	repoPath := prefixSlash(ctx.Args()[0])
 
 	filePath := ""
-	isStdoutMode := len(ctx.Args) < 2
+	isStdoutMode := ctx.NArg() < 2
 
 	if isStdoutMode {
 		tmpFile, err := ioutil.TempFile("", ".brig-tmp-")
 		if err != nil {
-			log.Errorf("Unable to create temp file: %v", err)
-			return UnknownError
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("Unable to create temp file: %v", err),
+			}
 		}
 
 		filePath = tmpFile.Name()
@@ -317,30 +292,38 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 			}
 		}()
 	} else {
-		absPath, err := filepath.Abs(ctx.Args[1])
+		absPath, err := filepath.Abs(ctx.Args()[1])
 		if err != nil {
-			log.Errorf("Unable to make abs path: %v: %v", filePath, err)
-			return UnknownError
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("Unable to make abs path: %v: %v", filePath, err),
+			}
 		}
 
 		filePath = absPath
 	}
 
 	if err := client.Cat(repoPath, filePath); err != nil {
-		log.Errorf("Could not cat file: %v: %v", repoPath, err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Could not cat file: %v: %v", repoPath, err),
+		}
 	}
 
 	if isStdoutMode {
 		fd, err := os.Open(filePath)
 		if err != nil {
-			log.Errorf("Could not open temp file")
-			return UnknownError
+			return ExitCode{
+				UnknownError,
+				"Could not open temp file",
+			}
 		}
 
 		if _, err := io.Copy(os.Stdout, fd); err != nil {
-			log.Errorf("Cannot copy to stdout: %v", err)
-			return UnknownError
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("Cannot copy to stdout: %v", err),
+			}
 		}
 
 		if err := fd.Close(); err != nil {
@@ -348,16 +331,18 @@ func handleCat(ctx climax.Context, client *daemon.Client) int {
 		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleHistory(ctx climax.Context, client *daemon.Client) int {
-	repoPath := prefixSlash(ctx.Args[0])
+func handleHistory(ctx *cli.Context, client *daemon.Client) error {
+	repoPath := prefixSlash(ctx.Args()[0])
 
 	history, err := client.History(repoPath)
 	if err != nil {
-		log.Errorf("Unable to retrieve history: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to retrieve history: %v", err),
+		}
 	}
 
 	fmt.Println(colors.Colorize(repoPath, colors.Magenta))
@@ -394,89 +379,87 @@ func handleHistory(ctx climax.Context, client *daemon.Client) int {
 		)
 	}
 
-	return Success
+	return nil
 }
 
-func handleOffline(ctx climax.Context, client *daemon.Client) int {
+func handleOffline(ctx *cli.Context, client *daemon.Client) error {
 	status, err := client.IsOnline()
 	if err != nil {
-		log.Errorf("Failed to check online-status: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to check online-status: %v", err),
+		}
 	}
 
 	if !status {
 		log.Infof("Already offline.")
-		return Success
+		return nil
 	}
 
 	if err := client.Offline(); err != nil {
-		log.Errorf("Failed to go offline: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to go offline: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleIsOnline(ctx climax.Context, client *daemon.Client) int {
+func handleIsOnline(ctx *cli.Context, client *daemon.Client) error {
 	status, err := client.IsOnline()
 	if err != nil {
-		log.Errorf("Failed to check online-status: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to check online-status: %v", err),
+		}
 	}
 
 	fmt.Println(status)
-	return Success
+	return nil
 }
 
-func handleOnline(ctx climax.Context, client *daemon.Client) int {
+func handleOnline(ctx *cli.Context, client *daemon.Client) error {
 	status, err := client.IsOnline()
 	if err != nil {
-		log.Errorf("Failed to check online-status: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to check online-status: %v", err),
+		}
 	}
 
 	if status {
 		log.Infof("Already online.")
-		return Success
+		return nil
 	}
 
 	if err := client.Online(); err != nil {
-		log.Errorf("Failed to go online: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to go online: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleList(ctx climax.Context, client *daemon.Client) int {
+func handleList(ctx *cli.Context, client *daemon.Client) error {
 	path := "/"
-	if len(ctx.Args) > 0 {
-		path = prefixSlash(ctx.Args[0])
+	if ctx.NArg() > 0 {
+		path = prefixSlash(ctx.Args()[0])
 	}
 
-	depth, err := ctxGetIntWithDefault(ctx, "depth", -1)
-	if err != nil {
-		log.Warningf("Invalid depth: %v", err)
-		return BadArgs
-	}
-
-	if ctx.Is("recursive") {
+	depth := ctx.Int("depth")
+	if ctx.Bool("recursive") {
 		depth = -1
 	}
 
 	dirlist, err := client.List(path, depth)
 	if err != nil {
-		log.Warningf("ls: %v", err)
-		return UnknownError
-	}
-
-	if ctx.Is("tree") {
-		if err := showTree(dirlist, depth); err != nil {
-			log.Warningf("Printing tree failed: %v", err)
-			return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("ls: %v", err),
 		}
-
-		return Success
 	}
 
 	for _, dirent := range dirlist {
@@ -503,68 +486,75 @@ func handleList(ctx climax.Context, client *daemon.Client) int {
 		)
 	}
 
-	return Success
+	return nil
 }
 
-func handleTree(ctx climax.Context, client *daemon.Client) int {
+func handleTree(ctx *cli.Context, client *daemon.Client) error {
 	path := "/"
-	if len(ctx.Args) > 0 {
-		path = prefixSlash(ctx.Args[0])
+	if ctx.NArg() > 0 {
+		path = prefixSlash(ctx.Args()[0])
 	}
 
-	depth, err := ctxGetIntWithDefault(ctx, "depth", -1)
-	if err != nil {
-		log.Warningf("Invalid depth: %v", err)
-		return BadArgs
-	}
-
+	depth := ctx.Int("depth")
 	dirlist, err := client.List(path, depth)
 	if err != nil {
-		log.Warningf("ls: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("ls: %v", err),
+		}
 	}
 
 	if err := showTree(dirlist, depth); err != nil {
-		log.Warningf("Printing tree failed: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Printing tree failed: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handlePull(ctx climax.Context, client *daemon.Client) int {
-	remoteID, err := id.Cast(ctx.Args[0])
+func handlePull(ctx *cli.Context, client *daemon.Client) error {
+	remoteID, err := id.Cast(ctx.Args()[0])
 	if err != nil {
-		log.Warningf("Bad remote ID: %v", err)
-		return BadArgs
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Bad remote ID: %v", err),
+		}
 	}
 
 	if err := client.Fetch(remoteID); err != nil {
-		log.Errorf("fetch failed: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("fetch failed: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleMv(ctx climax.Context, client *daemon.Client) int {
-	source, dest := prefixSlash(ctx.Args[0]), prefixSlash(ctx.Args[1])
+func handleMv(ctx *cli.Context, client *daemon.Client) error {
+	source, dest := prefixSlash(ctx.Args()[0]), prefixSlash(ctx.Args()[1])
 
 	if err := client.Move(source, dest); err != nil {
-		log.Warningf("move failed: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("move failed: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
 
-func handleMkdir(ctx climax.Context, client *daemon.Client) int {
-	path := prefixSlash(ctx.Args[0])
+func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
+	path := prefixSlash(ctx.Args()[0])
 
 	if err := client.Mkdir(path); err != nil {
-		log.Warningf("mkdir failed: %v", err)
-		return UnknownError
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("mkdir failed: %v", err),
+		}
 	}
 
-	return Success
+	return nil
 }
