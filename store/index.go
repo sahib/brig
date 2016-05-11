@@ -54,6 +54,65 @@ func prefixSlash(s string) string {
 	return s
 }
 
+func (st *Store) loadIndex() error {
+	return st.viewWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		// Check if the root directory already exists:
+		if bkt.Get([]byte("/")) == nil {
+			rootDir, err := newDirUnlocked(st, "/")
+			if err != nil {
+				return err
+			}
+
+			st.Root = rootDir
+		}
+
+		return bkt.ForEach(func(k []byte, v []byte) error {
+			file := emptyFile(st)
+			if err := file.Unmarshal(st, v); err != nil {
+				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
+				return err
+			}
+
+			return nil
+		})
+	})
+}
+
+func (st *Store) createInitialCommit() error {
+	needsInit := false
+
+	err := st.viewWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		needsInit = (bkt.Get([]byte("HEAD")) == nil)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !needsInit {
+		return nil
+	}
+
+	// No commit yet, create initial commit.
+	rootCommit := NewEmptyCommit(st, st.ID)
+	rootCommit.Message = "Initial commit"
+	rootCommit.Hash = st.Root.Hash().Clone()
+
+	return st.updateHEAD(rootCommit)
+}
+
+func (st *Store) updateHEAD(cmt *Commit) error {
+	return st.updateWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		data, err := cmt.MarshalProto()
+		if err != nil {
+			return err
+		}
+
+		return bkt.Put([]byte("HEAD"), data)
+	})
+}
+
 // Open loads an existing store at `brigPath/$ID/index.bolt`, if it does not
 // exist, it is created.  For full function, Connect() should be called
 // afterwards.
@@ -74,7 +133,7 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 		return nil, err
 	}
 
-	store := &Store{
+	st := &Store{
 		db:       db,
 		ID:       ID,
 		repoPath: brigPath,
@@ -83,7 +142,14 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 
 	// Create initial buckets:
 	err = db.Update(func(tx *bolt.Tx) error {
-		for _, name := range []string{"index", "commits", "checkpoints"} {
+		buckets := []string{
+			"index",       // File-Path to file protobuf.
+			"commits",     // Commit-Hash to commit protobuf.
+			"checkpoints", // File-Path to History (== mod_time to checkpoint)
+			"refs",        // Special names for certain commits (e.g. HEAD)
+		}
+
+		for _, name := range buckets {
 			if _, berr := tx.CreateBucketIfNotExists([]byte(name)); berr != nil {
 				return fmt.Errorf("create bucket: %s", berr)
 			}
@@ -95,27 +161,17 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 		log.Warningf("store-create failed: %v", err)
 	}
 
-	// Load all paths from the database into the trie:
-	rootDir, err := newDirUnlocked(store, "/")
-	if err != nil {
+	// Load all paths from the database into the trie.
+	// This also creates a root node if none exists yet.
+	if err := st.loadIndex(); err != nil {
 		return nil, err
 	}
 
-	store.Root = rootDir
+	if err := st.createInitialCommit(); err != nil {
+		return nil, err
+	}
 
-	err = store.viewWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
-		return bucket.ForEach(func(k []byte, v []byte) error {
-			file := emptyFile(store)
-			if loadErr := file.Unmarshal(store, v); loadErr != nil {
-				log.Warningf("store-unmarshal: fail on `%s`: %v", k, err)
-				return loadErr
-			}
-
-			return nil
-		})
-	})
-
-	return store, err
+	return st, err
 }
 
 // Mkdir creates a new, empty directory.
@@ -564,6 +620,41 @@ func (s *Store) Import(protoStore *wire.Store) error {
 		file.Sync()
 		file.updateParents()
 	}
+
+	return nil
+}
+
+// Head returns the most recent commit.
+// Commit will be always non-nil if error is nil,
+// the initial commit has no changes.
+func (st *Store) Head() (*Commit, error) {
+	cmt := NewEmptyCommit(st, st.ID)
+
+	err := st.viewWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		data := bkt.Get([]byte("HEAD"))
+		if data == nil {
+			return fmt.Errorf("No HEAD in database")
+		}
+
+		return cmt.UnmarshalProto(data)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmt, nil
+}
+
+// Commit saves a commit in the store history.
+// TODO: It currently packs all files into a commit since we have no Diff yet.
+func (st *Store) MakeCommit(msg string) error {
+	head, err := st.Head()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(head)
 
 	return nil
 }

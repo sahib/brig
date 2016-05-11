@@ -84,7 +84,9 @@ func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 
 	rp.Remotes.Register(func(change *repo.RemoteChange) {
 		go func() {
-			time.Sleep(1 * time.Second)
+			// Wait a bit of time in the case that both parties
+			// just added them as remotes respecitvely.
+			time.Sleep(500 * time.Millisecond)
 
 			// Better check if the channel wasn't closed yet:
 			cp.mu.Lock()

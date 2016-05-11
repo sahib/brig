@@ -9,6 +9,7 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/gogo/protobuf/proto"
+	"github.com/jbenet/go-multihash"
 )
 
 const (
@@ -71,20 +72,153 @@ func (c *ChangeType) Unmarshal(data []byte) error {
 
 // Commit groups a change set
 type Commit struct {
-	// Optional commit message
-	Message string `json:"message"`
+	// Commit message (might be auto-generated)
+	Message string
 
-	// Author is the jabber id of the committer.
-	Author string `json:"author"`
+	// Author is the id of the committer.
+	Author id.ID
 
 	// Time at this commit was conceived.
-	ModTime time.Time `json:"modtime"`
+	ModTime time.Time
 
 	// Set of files that were changed.
-	Changes map[string]*Checkpoint `json:"changes"`
+	Changes map[*File]*Checkpoint
+
+	// Hash of this commit (== hash of the root node)
+	Hash *Hash
 
 	// Parent commit (only nil for initial commit)
-	Parent *Commit `json:"-"`
+	Parent *Commit
+
+	store *Store
+}
+
+func NewEmptyCommit(store *Store, author id.ID) *Commit {
+	return &Commit{
+		store:   store,
+		ModTime: time.Now(),
+		Author:  author,
+		Changes: make(map[*File]*Checkpoint),
+	}
+}
+
+func (cm *Commit) FromProto(c *wire.Commit) error {
+	author, err := id.Cast(c.GetAuthor())
+	if err != nil {
+		return err
+	}
+
+	modTime := time.Time{}
+	if err := modTime.UnmarshalBinary(c.GetModTime()); err != nil {
+		return err
+	}
+
+	hash, err := multihash.Cast(c.GetHash())
+	if err != nil {
+		return err
+	}
+
+	changes := make(map[*File]*Checkpoint)
+
+	for _, change := range c.GetChanges() {
+		file := cm.store.Root.Lookup(change.GetPath())
+		if file == nil {
+			// TODO: Which file? Make this a more specific error.
+			return ErrNoSuchFile
+		}
+
+		checkpoint := &Checkpoint{}
+		if err := checkpoint.FromProto(change.GetCheckpoint()); err != nil {
+			return err
+		}
+
+		changes[file] = checkpoint
+	}
+
+	var parentCommit *Commit
+
+	if c.GetParentHash() != nil {
+		err = cm.store.viewWithBucket(
+			"commits",
+			func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+				parentData := bckt.Get(c.GetParentHash())
+				if parentData == nil {
+					return ErrNoSuchFile
+				}
+
+				protoCommit := &wire.Commit{}
+				if err := proto.Unmarshal(parentData, protoCommit); err != nil {
+					return err
+				}
+
+				return NewEmptyCommit(cm.store, "").FromProto(protoCommit)
+			},
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set commit data if everything worked:
+	cm.Message = c.GetMessage()
+	cm.Author = author
+	cm.ModTime = modTime
+	cm.Changes = changes
+	cm.Hash = &Hash{hash}
+	cm.Parent = parentCommit
+	return nil
+}
+
+func (cm *Commit) ToProto() (*wire.Commit, error) {
+	pcm := &wire.Commit{}
+	modTime, err := cm.ModTime.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	var changes []*wire.Change
+	for file, checkpoint := range cm.Changes {
+		protoCheckpoint, err := checkpoint.ToProto()
+		if err != nil {
+			return nil, err
+		}
+
+		changes = append(changes, &wire.Change{
+			Path:       proto.String(file.Path()),
+			Checkpoint: protoCheckpoint,
+		})
+	}
+
+	pcm.Message = proto.String(cm.Message)
+	pcm.Author = proto.String(string(cm.Author))
+	pcm.ModTime = modTime
+	pcm.Hash = cm.Hash.Bytes()
+	pcm.Changes = changes
+
+	if cm.Parent != nil {
+		pcm.ParentHash = cm.Parent.Hash.Bytes()
+	}
+
+	return pcm, nil
+}
+
+func (cm *Commit) MarshalProto() ([]byte, error) {
+	protoCmt, err := cm.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return proto.Marshal(protoCmt)
+}
+
+func (cm *Commit) UnmarshalProto(data []byte) error {
+	protoCmt := &wire.Commit{}
+	if err := proto.Unmarshal(data, protoCmt); err != nil {
+		return err
+	}
+
+	return cm.FromProto(protoCmt)
 }
 
 // Checkpoint remembers one state of a single file.

@@ -14,6 +14,7 @@ type Hash struct {
 	multihash.Multihash
 }
 
+// TODO: needed?
 // MarshalJSON converts a hash into a base58 string representation.
 func (h *Hash) MarshalJSON() ([]byte, error) {
 	if h == nil {
@@ -56,6 +57,22 @@ func (h *Hash) Bytes() []byte {
 	}
 
 	return []byte(h.Multihash)
+}
+
+// Clone returns the same hash as `h`,
+// but with a different underlying array.
+func (h *Hash) Clone() *Hash {
+	if h == nil {
+		return nil
+	}
+
+	if h.Multihash == nil {
+		return &Hash{nil}
+	}
+
+	cpy := make([]byte, len([]byte(h.Multihash)))
+	copy(cpy, h.Multihash)
+	return &Hash{cpy}
 }
 
 // Equal returns true if both hashes are equal.
