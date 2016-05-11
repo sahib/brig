@@ -16,6 +16,8 @@ import (
 	"github.com/olebedev/config"
 )
 
+// ExitCode is an error that maps the error interface to a specific error
+// message and a unix exit code
 type ExitCode struct {
 	Code    int
 	Message string
@@ -136,6 +138,7 @@ func needAtLeast(min int) checkFunc {
 	return func(ctx *cli.Context) int {
 		if ctx.NArg() < min {
 			log.Warningf("Need at least %d arguments.", min)
+			cli.ShowSubcommandHelp(ctx)
 			return BadArgs
 		}
 
