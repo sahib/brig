@@ -7,6 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/disorganizer/brig"
 	colorlog "github.com/disorganizer/brig/util/log"
 )
 
@@ -29,14 +30,14 @@ func formatGroup(category string) string {
 ////////////////////////////
 
 // RunCmdline starts a brig commandline tool.
-func RunCmdline(major, minor, patch, gitrev, buildtime string) int {
-
+func RunCmdline() int {
 	app := cli.NewApp()
 	app.Name = "brig"
 	app.Usage = "Secure and dezentralized file synchronization"
 	app.Version = fmt.Sprintf(
-		"%s.%s.%s-rev-%s [Buildtime: %s]",
-		major, minor, patch, gitrev[0:6], buildtime,
+		"%s [buildtime: %s]",
+		brig.VersionString(),
+		brig.BuildTime,
 	)
 
 	//groups

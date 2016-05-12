@@ -1,5 +1,24 @@
+IMPORT="github.com/disorganizer/brig"
+
+# Build metadata:
+VERSION_MAJOR=0
+VERSION_MINOR=1
+VERSION_PATCH=0
+RELEASETYPE=alpha
+BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
+GITREV=`git rev-parse HEAD`
+
 all:
-	go install -ldflags  "-X main.Major=0 -X main.Minor=1 -X main.Patch=0 -X main.Buildtime=`date -u '+%Y-%m-%d_%I:%M:%S%p'` -X main.Gitrev=`git rev-parse HEAD`" brig/brig.go
+	go install -ldflags \
+		" \
+			-X $(IMPORT).Major=$(VERSION_MAJOR) \
+			-X $(IMPORT).Minor=$(VERSION_MINOR) \
+			-X $(IMPORT).Patch=$(VERSION_PATCH) \
+			-X $(IMPORT).ReleaseType=$(RELEASETYPE) \
+			-X $(IMPORT).BuildTime=$(BUILDTIME) \
+			-X $(IMPORT).GitRev=$(GITREV) \
+		" \
+		brig/brig.go
 
 test:
 	go test -v `glide novendor`

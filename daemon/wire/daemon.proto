@@ -14,19 +14,23 @@ enum MessageType {
     MOUNT = 4;
     UNMOUNT = 5;
 	RM = 6;
-    HISTORY = 7;
-    LOG = 8;
-    ONLINE_STATUS = 9;
-    FETCH = 10;
-    LIST = 11;
-    MV = 12;
-    MKDIR = 13;
+    ONLINE_STATUS = 7;
+    FETCH = 8;
+    LIST = 9;
+    MV = 10;
+    MKDIR = 11;
 
-    REMOTE_ADD = 14;
-    REMOTE_REMOVE = 15;
-    REMOTE_LIST = 16;
-    REMOTE_LOCATE = 17;
-    REMOTE_SELF = 18;
+    REMOTE_ADD = 12;
+    REMOTE_REMOVE = 13;
+    REMOTE_LIST = 14;
+    REMOTE_LOCATE = 15;
+    REMOTE_SELF = 16;
+
+    HISTORY = 17;
+    STATUS = 18;
+    COMMIT = 19;
+    DIFF = 20;
+    LOG = 21;
 }
 
 enum OnlineQuery {
@@ -125,6 +129,9 @@ message Command {
     }
 
     message RemoteSelfCmd  {
+    }
+
+    message {
     }
 
     required MessageType command_type = 1;
