@@ -59,7 +59,6 @@ func (c *ChangeType) String() string {
 	return changeTypeToString[*c]
 }
 
-// UnmarshalJSON reads a json string and tries to convert it to a ChangeType.
 func (c *ChangeType) Unmarshal(data []byte) error {
 	var ok bool
 	*c, ok = stringToChangeType[string(data)]
@@ -143,7 +142,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 			func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 				parentData := bckt.Get(c.GetParentHash())
 				if parentData == nil {
-					return ErrNoSuchFile
+					return fmt.Errorf("No commit with hash `%x`", c.GetParentHash())
 				}
 
 				protoCommit := &wire.Commit{}
@@ -267,6 +266,8 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 
 	return protoCheck, nil
 }
+
+// TODO: consistent UnmarshalProto/MarshalProto functions.
 
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	modTime := time.Time{}
@@ -430,6 +431,14 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 		}
 
 		return histBuck.Put(mtimeBin, protoData)
+	})
+
+	if dbErr != nil {
+		return dbErr
+	}
+
+	dbErr = st.updateWithBucket("stage", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
+		return bckt.Put([]byte(path), protoData)
 	})
 
 	if dbErr != nil {

@@ -25,6 +25,7 @@ var (
 	ErrNoSuchFile = fmt.Errorf("No such file or directory")
 	ErrExists     = fmt.Errorf("File exists")
 	ErrNotEmpty   = fmt.Errorf("Cannot remove: Directory is not empty")
+	ErrEmptyStage = fmt.Errorf("Nothing staged. No commit done.")
 )
 
 // Store is responsible for adding & retrieving all files from ipfs,
@@ -99,6 +100,16 @@ func (st *Store) createInitialCommit() error {
 	rootCommit.Message = "Initial commit"
 	rootCommit.Hash = st.Root.Hash().Clone()
 
+	data, err := rootCommit.MarshalProto()
+	if err != nil {
+		return err
+	}
+
+	// Insert initial commit to `commits` bucket:
+	err = st.updateWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.Put(rootCommit.Hash.Bytes(), data)
+	})
+
 	return st.updateHEAD(rootCommit)
 }
 
@@ -144,6 +155,7 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 	err = db.Update(func(tx *bolt.Tx) error {
 		buckets := []string{
 			"index",       // File-Path to file protobuf.
+			"stage",       // Staged files (path to current checkpoint)
 			"commits",     // Commit-Hash to commit protobuf.
 			"checkpoints", // File-Path to History (== mod_time to checkpoint)
 			"refs",        // Special names for certain commits (e.g. HEAD)
@@ -646,15 +658,93 @@ func (st *Store) Head() (*Commit, error) {
 	return cmt, nil
 }
 
-// Commit saves a commit in the store history.
-// TODO: It currently packs all files into a commit since we have no Diff yet.
-func (st *Store) MakeCommit(msg string) error {
+// Status shows how a Commit would look like if Commit() would be called.
+func (st *Store) Status() (*Commit, error) {
 	head, err := st.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	cmt := NewEmptyCommit(st, st.ID)
+	cmt.Parent = head
+	cmt.Hash = st.Root.Hash().Clone()
+
+	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(bpath, bckpnt []byte) error {
+			file := st.Root.Lookup(string(bpath))
+			if file == nil {
+				return ErrNoSuchFile
+			}
+
+			// TODO: unmarshal
+			checkpoint := &Checkpoint{}
+			if err := checkpoint.Unmarshal(bckpnt); err != nil {
+				return err
+			}
+
+			cmt.Changes[file] = checkpoint
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmt, nil
+}
+
+// TODO: Global store lock, calling MakeCommit more than once is racy!
+
+// Commit saves a commit in the store history.
+func (st *Store) MakeCommit(msg string) error {
+	cmt, err := st.Status()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(head)
+	return st.db.Update(func(tx *bolt.Tx) error {
+		// Check if the stage area contains something:
+		stage := tx.Bucket([]byte("stage"))
+		if stage == nil {
+			return ErrNoSuchBucket{"stage"}
+		}
 
-	return nil
+		if stage.Stats().KeyN == 0 {
+			return ErrEmptyStage
+		}
+
+		// Flush the staging area:
+		if err := tx.DeleteBucket([]byte("stage")); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucket([]byte("stage")); err != nil {
+			return err
+		}
+
+		cmts := tx.Bucket([]byte("commits"))
+		if cmts == nil {
+			return ErrNoSuchBucket{"commits"}
+		}
+
+		// Put the new commit in the commits bucket:
+		cmt.Message = msg
+		data, err := cmt.MarshalProto()
+		if err != nil {
+			return err
+		}
+
+		if err := cmts.Put(cmt.Hash.Bytes(), data); err != nil {
+			return err
+		}
+
+		// Update HEAD
+		refs := tx.Bucket([]byte("refs"))
+		if refs == nil {
+			return ErrNoSuchBucket{"refs"}
+		}
+
+		return refs.Put([]byte("HEAD"), data)
+	})
 }
