@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	colorlog "github.com/disorganizer/brig/util/log"
-	"github.com/tucnak/climax"
 )
 
 func init() {
@@ -20,7 +20,7 @@ func init() {
 }
 
 func formatGroup(category string) string {
-	return strings.ToUpper(category) + " COMMANDS:"
+	return strings.ToUpper(category) + " COMMANDS"
 }
 
 ////////////////////////////
@@ -29,370 +29,293 @@ func formatGroup(category string) string {
 
 // RunCmdline starts a brig commandline tool.
 func RunCmdline() int {
-	demo := climax.New("brig")
-	demo.Brief = "brig is a decentralized file syncer based on IPFS"
-	demo.Version = "unstable"
 
-	repoGroup := demo.AddGroup(formatGroup("repository"))
-	idntGroup := demo.AddGroup(formatGroup("id helper"))
-	wdirGroup := demo.AddGroup(formatGroup("working"))
-	advnGroup := demo.AddGroup(formatGroup("advanced"))
-	miscGroup := demo.AddGroup(formatGroup("misc"))
+	app := cli.NewApp()
+	app.Name = "brig"
+	app.Usage = "Secure and dezentralized file synchronization"
 
-	commands := []climax.Command{
-		climax.Command{
-			Name:  "init",
-			Brief: "Initialize an empty repository and open it",
-			Group: repoGroup,
-			Usage: `<JID> [<PATH>]`,
-			Help:  `Create an empty repository, open it and associate it with the JID`,
-			Flags: []climax.Flag{
-				{
-					Name:  "nodaemon",
-					Short: "n",
-					Help:  `Do not start the daemon.`,
-				}, {
-					Name:     "password",
-					Short:    "x",
-					Usage:    `--password PWD`,
-					Help:     `Supply password.`,
-					Variable: true,
-				},
-			},
-			Examples: []climax.Example{
-				{
-					Usecase:     `alice@nullcat.de/laptop`,
-					Description: `Create a folder laptop/ with hidden directories`,
-				},
-			},
-			Handle: withArgCheck(needAtLeast(1), handleInit),
+	//groups
+	repoGroup := formatGroup("repository")
+	wdirGroup := formatGroup("working")
+	advnGroup := formatGroup("advanced")
+	miscGroup := formatGroup("misc")
+
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "nodaemon,n",
+			Usage: "Don't run the daemon",
 		},
-		climax.Command{
-			Name:   "clone",
-			Brief:  "Clone an repository from somebody else",
-			Group:  repoGroup,
-			Usage:  `<YOUR_JID> <REMOTE_JID> [<PATH>]`,
-			Help:   `...`,
-			Handle: withArgCheck(needAtLeast(2), handleClone),
-			Flags: []climax.Flag{
-				{
-					Name:  "nodaemon",
-					Short: "n",
-					Help:  `Do not start the daemon.`,
-				}, {
-					Name:     "password",
-					Short:    "x",
-					Usage:    `--password PWD`,
-					Help:     `Supply password.`,
-					Variable: true,
-				},
-			},
-			Examples: []climax.Example{
-				{
-					Usecase:     `alice@nullcat.de/laptop bob@nullcat.de/desktop`,
-					Description: `Clone Alice' contents`,
-				},
-			},
+		cli.StringFlag{
+			Name:  "password, x",
+			Usage: "Supply user password",
+			Value: "",
 		},
-		climax.Command{
-			Name:   "open",
-			Group:  repoGroup,
-			Brief:  "Open an encrypted repository. Asks for passphrase.",
-			Handle: withDaemon(handleOpen, true),
-		},
-		climax.Command{
-			Name:   "close",
-			Group:  repoGroup,
-			Brief:  "Encrypt all metadata in the repository and go offline.",
-			Handle: withDaemon(handleClose, false),
-		},
-		climax.Command{
-			Name:   "history",
-			Group:  repoGroup,
-			Brief:  "Show the history of a file.",
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
-		},
-		climax.Command{
-			Name:   "offline",
-			Group:  repoGroup,
-			Brief:  "Disconnect from the outside world. The daemon will continue running.",
-			Handle: withDaemon(handleOffline, true),
-		},
-		climax.Command{
-			Name:   "online",
-			Group:  repoGroup,
-			Brief:  "Connect the daemon to the outside world.",
-			Handle: withDaemon(handleOnline, true),
-		},
-		climax.Command{
-			Name:   "is-online",
-			Group:  repoGroup,
-			Brief:  "Check if the daemon is online.",
-			Handle: withDaemon(handleIsOnline, true),
-		},
-		climax.Command{
-			Name:   "remote",
-			Group:  idntGroup,
-			Brief:  "Manage remotes.",
-			Handle: withDaemon(handleRemote, true),
-		},
-		climax.Command{
-			Name:  "sync",
-			Group: repoGroup,
-			Brief: "Sync with all or selected trusted peers.",
-		},
-		climax.Command{
-			Name:  "push",
-			Group: repoGroup,
-			Brief: "Push your content to all or selected trusted peers.",
-		},
-		climax.Command{
-			Name:   "pull",
-			Group:  repoGroup,
-			Brief:  "Pull content from all or selected trusted peers.",
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handlePull, true)),
-		},
-		climax.Command{
-			Name:  "watch",
-			Group: repoGroup,
-			Brief: "Enable or disable watch mode.",
-		},
-		climax.Command{
-			Name:  "discover",
-			Group: idntGroup,
-			Brief: "Try to find other brig users near you.",
-		},
-		climax.Command{
-			Name:  "friends",
-			Group: idntGroup,
-			Brief: "List your trusted peers.",
-		},
-		climax.Command{
-			Name:  "beg",
-			Group: idntGroup,
-			Brief: "Request authorisation from a buddy.",
-		},
-		climax.Command{
-			Name:  "ban",
-			Group: idntGroup,
-			Brief: "Discontinue friendship with a peer.",
-		},
-		climax.Command{
-			Name:  "prio",
-			Group: idntGroup,
-			Brief: "Change priority of a peer.",
-		},
-		climax.Command{
-			Name:   "tree",
-			Brief:  "List files in a tree",
-			Group:  wdirGroup,
-			Usage:  `[<PATH>]`,
-			Help:   `...`,
-			Handle: withDaemon(handleTree, true),
-			Flags: []climax.Flag{
-				{
-					Name:     "depth",
-					Short:    "d",
-					Help:     `List directories only into certain depth.`,
-					Variable: true,
-				},
-			},
-		},
-		climax.Command{
-			Name:   "ls",
-			Brief:  "List files",
-			Group:  wdirGroup,
-			Usage:  `[<PATH>]`,
-			Help:   `...`,
-			Handle: withDaemon(handleList, true),
-			Flags: []climax.Flag{
-				{
-					Name:     "depth",
-					Short:    "d",
-					Help:     `List directories only into certain depth.`,
-					Variable: true,
-				}, {
-					Name:  "recursive",
-					Short: "r",
-					Help:  `List directories recursively.`,
-				},
-			},
-		},
-		climax.Command{
-			Name:   "mkdir",
-			Group:  wdirGroup,
-			Brief:  "Create an empty directory.",
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
-		},
-		climax.Command{
-			Name:  "status",
-			Group: wdirGroup,
-			Brief: "Give an overview of brig's current state.",
-		},
-		climax.Command{
-			Name:   "add",
-			Group:  wdirGroup,
-			Brief:  "Transer file into brig's control.",
-			Usage:  `FILE_OR_FOLDER [PATH_INSIDE_BRIG]`,
-			Help:   `Add a file or directory to brig. The second path is where it will appear in the mount.`,
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
-		},
-		climax.Command{
-			Name:   "rm",
-			Group:  wdirGroup,
-			Brief:  "Remove the file and optionally old versions of it.",
-			Usage:  `FILE_OR_FOLDER`,
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
-			Flags: []climax.Flag{
-				{
-					Name:  "recursive",
-					Short: "r",
-					Help:  `Recursive delete.`,
-				},
-			},
-		},
-		climax.Command{
-			Name:   "mv",
-			Group:  wdirGroup,
-			Brief:  "Move a file from SOURCE to DEST.",
-			Usage:  `SOURCE_FILE_OR_FOLDER DEST_FILE_OR_FOLDER`,
-			Handle: withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
-		},
-		climax.Command{
-			Name:   "cat",
-			Group:  wdirGroup,
-			Brief:  "Write ",
-			Usage:  `FILE_OR_FOLDER DEST_PATH`,
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
-		},
-		climax.Command{
-			Name:  "find",
-			Group: wdirGroup,
-			Brief: "Find filenames in the fleet.",
-		},
-		climax.Command{
-			Name:  "rm",
-			Group: wdirGroup,
-			Brief: "Remove file from brig's control.",
-		},
-		climax.Command{
-			Name:  "log",
-			Group: wdirGroup,
-			Brief: "Visualize changelog tree.",
-		},
-		climax.Command{
-			Name:  "checkout",
-			Group: wdirGroup,
-			Brief: "Attempt to checkout previous version of a file.",
-		},
-		climax.Command{
-			Name:  "fsck",
-			Group: advnGroup,
-			Brief: "Verify, and possibly fix, broken files.",
-		},
-		climax.Command{
-			Name:  "daemon",
-			Group: advnGroup,
-			Brief: "Manually run the daemon process.",
-			Flags: []climax.Flag{
-				{
-					Name:     "password",
-					Short:    "x",
-					Usage:    `--password PWD`,
-					Help:     `Supply password.`,
-					Variable: true,
-				},
-			},
-			Handle: handleDaemon,
-		},
-		climax.Command{
-			Name:   "daemon-quit",
-			Group:  advnGroup,
-			Brief:  "Manually kill the daemon process.",
-			Handle: withDaemon(handleDaemonQuit, false),
-		},
-		climax.Command{
-			Name:   "daemon-ping",
-			Group:  advnGroup,
-			Brief:  "See if the daemon responds in a timely fashion.",
-			Handle: withDaemon(handleDaemonPing, false),
-		},
-		climax.Command{
-			Name:   "daemon-wait",
-			Group:  advnGroup,
-			Brief:  "Block until the daemon is available.",
-			Handle: handleDaemonWait,
-		},
-		climax.Command{
-			Name:  "passwd",
-			Group: advnGroup,
-			Brief: "Set your ID and access password.",
-		},
-		climax.Command{
-			Name:  "yubi",
-			Group: advnGroup,
-			Brief: "Manage YubiKeys.",
-		},
-		climax.Command{
-			Name:   "config",
-			Group:  miscGroup,
-			Brief:  "Access, list and modify configuration values.",
-			Handle: handleConfig,
-		},
-		climax.Command{
-			Name:  "mount",
-			Group: miscGroup,
-			Brief: "Handle FUSE mountpoints.",
-			Flags: []climax.Flag{
-				{
-					Name:  "unmount",
-					Short: "u",
-					Usage: `--unmount`,
-					Help:  `Unmount the filesystem.`,
-				},
-			},
-			Handle: withArgCheck(needAtLeast(1), withDaemon(handleMount, true)),
-		},
-		climax.Command{
-			Name:  "update",
-			Group: miscGroup,
-			Brief: "Try to securely update brig.",
-		},
-		climax.Command{
-			Name:  "help",
-			Group: miscGroup,
-			Brief: "Print some help",
-			Usage: "Did you really need help on help?",
-		},
-		climax.Command{
-			Name:   "version",
-			Group:  miscGroup,
-			Brief:  "Print current version.",
-			Usage:  "Print current version.",
-			Handle: handleVersion,
+		cli.StringFlag{
+			Name:   "path",
+			Usage:  "Path of the repository",
+			Value:  ".",
+			EnvVar: "BRIG_PATH",
 		},
 	}
 
-	for _, command := range commands {
-		demo.AddCommand(command)
+	// Commands.
+	app.Commands = []cli.Command{
+		{
+			Name:        "init",
+			Category:    repoGroup,
+			Usage:       "Initialize an empty repository",
+			ArgsUsage:   "<brig-id>",
+			Description: "Creates a new brig repository folder and unlocks it.\n   The name of the folder is derivated from the given brig-id.\n   brig-id example: yourname@optionaldomain/ressource",
+			Action:      withArgCheck(needAtLeast(1), withExit(handleInit)),
+		},
+		cli.Command{
+			Name:        "open",
+			Category:    repoGroup,
+			Usage:       "Open an encrypted repository",
+			ArgsUsage:   "[--password|-x]",
+			Description: "Open a closed (encrypted) brig repository by providing a password",
+			Action:      withDaemon(handleOpen, true),
+		},
+		cli.Command{
+			Name:        "close",
+			Category:    repoGroup,
+			Usage:       "Close an encrypted repository",
+			Description: "Encrypt all metadata in the repository and go offline",
+			Action:      withDaemon(handleClose, false),
+		},
+		cli.Command{
+			Name:        "history",
+			Category:    repoGroup,
+			Usage:       "Show the history of the given brig file",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
+			Description: "history lists all modifications of a given file",
+			ArgsUsage:   "<filename>",
+		},
+		cli.Command{
+			Name:        "net",
+			Category:    repoGroup,
+			Usage:       "Query and modify network status",
+			ArgsUsage:   "[offline|online|status]",
+			Description: "Query and modify the connection state to the ipfs network",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:   "offline",
+					Usage:  "Disconnect from the outside world. The daemon will continue running",
+					Action: withDaemon(handleOffline, true),
+				},
+				cli.Command{
+					Name:   "online",
+					Usage:  "Connect the daemon to the outside world",
+					Action: withDaemon(handleOnline, true),
+				},
+				cli.Command{
+					Name:   "status",
+					Usage:  "Check if the daemon is online",
+					Action: withDaemon(handleIsOnline, true),
+				},
+			},
+		},
+
+		cli.Command{
+			Name:        "remote",
+			Category:    repoGroup,
+			Usage:       "Remote management.",
+			ArgsUsage:   "[add|remove|list|locate|self]",
+			Description: "Add, remove, list, locate remotes and print own identity",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:        "add",
+					Usage:       "Add a specific remote",
+					ArgsUsage:   "<brig-id> <ipfs-hash>",
+					Description: "Adds a specific user (brig-remote-id) with a specific identity (ipfs-hash) to remotes",
+					Action:      withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
+				},
+				cli.Command{
+					Name:        "remove",
+					Usage:       "Remove a specifc remote",
+					ArgsUsage:   "<brig-remote-id>",
+					Description: "Removes a specific remote from remotes.",
+					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
+				},
+				cli.Command{
+					Name:        "list",
+					Usage:       "List status of known remotes",
+					Description: "Lists all known remotes and their status",
+					Action:      withDaemon(handleRemoteList, true),
+				},
+				cli.Command{
+					Name:        "locate",
+					Usage:       "Search a specific remote",
+					ArgsUsage:   "<brig-remote-id>",
+					Description: "Locates all remotes with the given brig-remote-id ",
+					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteLocate, true)),
+				},
+				cli.Command{
+					Name:        "self",
+					Usage:       "Print identity",
+					Description: "Prints the users identity and online status",
+					Action:      withDaemon(handleRemoteSelf, true),
+				},
+			},
+		},
+		cli.Command{
+			Name:        "tree",
+			Usage:       "List files in a tree",
+			ArgsUsage:   "[/brig-path] [--depth|-d]",
+			Description: "Lists all files of a specific brig path in a tree like-manner",
+			Category:    wdirGroup,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "depth, d",
+					Usage: "Max depth to traverse",
+					Value: -1,
+				},
+			},
+			Action: withDaemon(handleTree, true),
+		},
+		cli.Command{
+			Name:        "ls",
+			Usage:       "List files",
+			ArgsUsage:   "[/brig-path] [--depth|-d] [--recursive|-r]",
+			Description: "Lists all files of a specific brig path in a ls-like manner",
+			Category:    wdirGroup,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "depth, d",
+					Usage: "Max depth to traverse",
+					Value: -1,
+				},
+				cli.BoolFlag{
+					Name:  "recursive,r",
+					Usage: "Allow recursive traverse",
+				},
+			},
+			Action: withDaemon(handleList, true),
+		},
+		cli.Command{
+			Name:        "mkdir",
+			Category:    wdirGroup,
+			Usage:       "Create an empty directory",
+			ArgsUsage:   "</dirname>",
+			Description: "Create a empty directory",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
+		},
+		cli.Command{
+			Name:        "add",
+			Category:    wdirGroup,
+			Usage:       "Transer file into brig's control",
+			ArgsUsage:   "</file>",
+			Description: "Add a specific file to the brig repository",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
+		},
+		cli.Command{
+			Name:        "rm",
+			Category:    wdirGroup,
+			Usage:       "Remove the file and optionally old versions of it",
+			ArgsUsage:   "</file> [--recursive|-r]",
+			Description: "Remove a spcific file or directory",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "recursive,r",
+					Usage: "Remove directories recursively",
+				},
+			},
+		},
+		cli.Command{
+			Name:        "mv",
+			Category:    wdirGroup,
+			Usage:       "Move a specific file",
+			ArgsUsage:   "</sourcefile> </destinationfile>",
+			Description: "Move a file from SOURCE to DEST",
+			Action:      withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
+		},
+		cli.Command{
+			Name:        "cat",
+			Category:    wdirGroup,
+			Usage:       "Concatenates a file",
+			ArgsUsage:   "</file>",
+			Description: "Concatenates files and print them on stdout",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
+		},
+		cli.Command{
+			Name:     "daemon",
+			Category: advnGroup,
+			Usage:    "Manually run the daemon process",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:        "launch",
+					Category:    advnGroup,
+					Usage:       "Start the daemon process",
+					Description: "Start the brig daemon process, unlock the repository and go online",
+					Action:      withExit(handleDaemon),
+				},
+				cli.Command{
+					Name:        "quit",
+					Category:    advnGroup,
+					Usage:       "Manually kill the daemon process",
+					Description: "Disconnect from ipfs network, shutdown the daemon and lock the repository",
+					Action:      withDaemon(handleDaemonQuit, false),
+				},
+				cli.Command{
+					Name:        "ping",
+					Category:    advnGroup,
+					Usage:       "See if the daemon responds in a timely fashion",
+					Description: "Checks if deamon is running and reports the response time",
+					Action:      withDaemon(handleDaemonPing, false),
+				},
+				cli.Command{
+					Name:        "wait",
+					Category:    advnGroup,
+					Usage:       "Block until the daemon is available",
+					Description: "Wait blocks until the daemon is available",
+					Action:      withExit(handleDaemonWait),
+				},
+			},
+		},
+		cli.Command{
+			Name:     "config",
+			Category: miscGroup,
+			Usage:    "Access, list and modify configuration values",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:        "list",
+					Usage:       "Show current config values",
+					Description: "Show the current brig configuration",
+					Action:      withExit(withConfig(handleConfigList)),
+				},
+				cli.Command{
+					Name:        "get",
+					Usage:       "Get a specific config value",
+					Description: "Get a specific config value and print it to stdout",
+					ArgsUsage:   "<configkey>",
+					Action:      withArgCheck(needAtLeast(1), withExit(withConfig(handleConfigGet))),
+				},
+				cli.Command{
+					Name:        "set",
+					Usage:       "Set a specific config value",
+					Description: "Set a given config option to the given value",
+					ArgsUsage:   "<configkey> <value>",
+					Action:      withArgCheck(needAtLeast(2), withExit(withConfig(handleConfigSet))),
+				},
+			},
+		},
+		cli.Command{
+			Name:        "mount",
+			Category:    miscGroup,
+			Usage:       "Mount a brig repository",
+			ArgsUsage:   "[--umount|-u] <mountpath>",
+			Description: "Mount a brig repository as FUSE filesystem",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "umount,u",
+					Usage: "Unmount the specified directory",
+				},
+			},
+			Action: withArgCheck(needAtLeast(1), withDaemon(handleMount, true)),
+		},
 	}
 
-	// Help topics:
-	demo.AddTopic(climax.Topic{
-		Name:  "quickstart",
-		Brief: "A very short introduction to brig",
-		Text:  "Needs to be written.",
-	})
-	demo.AddTopic(climax.Topic{
-		Name:  "tutorial",
-		Brief: "A slightly longer introduction.",
-		Text:  "Needs to be written.",
-	})
-	demo.AddTopic(climax.Topic{
-		Name:  "terms",
-		Brief: "Cheat sheet for often used terms.",
-		Text:  "Needs to be written.",
-	})
-
-	return demo.Run()
+	app.Run(os.Args)
+	return 0
 }

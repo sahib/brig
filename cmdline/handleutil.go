@@ -1,19 +1,31 @@
 package cmdline
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/daemon"
 	"github.com/disorganizer/brig/repo"
 	repoconfig "github.com/disorganizer/brig/repo/config"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/olebedev/config"
-	"github.com/tucnak/climax"
 )
+
+// ExitCode is an error that maps the error interface to a specific error
+// message and a unix exit code
+type ExitCode struct {
+	Code    int
+	Message string
+}
+
+func (err ExitCode) Error() string {
+	return err.Message
+}
 
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
@@ -45,11 +57,11 @@ func prefixSlash(s string) string {
 	return s
 }
 
-type cmdHandlerWithClient func(ctx climax.Context, client *daemon.Client) int
+type cmdHandlerWithClient func(ctx *cli.Context, client *daemon.Client) error
 
-func withDaemon(handler cmdHandlerWithClient, startNew bool) climax.CmdHandler {
+func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) {
 	// If not, make sure we start a new one:
-	return func(ctx climax.Context) int {
+	return withExit(func(ctx *cli.Context) error {
 		port := guessPort()
 
 		// Check if the daemon is running:
@@ -60,20 +72,21 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) climax.CmdHandler {
 
 		if !startNew {
 			// Daemon was not running and we may not start a new one.
-			log.Warning("Daemon not running.")
-			return DaemonNotResponding
+			return ExitCode{DaemonNotResponding, "Daemon not running"}
 		}
 
 		// Check if the password was supplied via a commandline flag.
-		pwd, ok := ctx.Get("password")
-		if !ok {
+		pwd := ctx.String("password")
+		if pwd == "" {
 			// Prompt the user:
 			var cmdPwd string
 
 			cmdPwd, err = readPassword()
 			if err != nil {
-				log.Errorf("Could not read password: %v", pwd)
-				return BadPassword
+				return ExitCode{
+					BadPassword,
+					fmt.Sprintf("Could not read password: %v", pwd),
+				}
 			}
 
 			pwd = cmdPwd
@@ -82,35 +95,64 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) climax.CmdHandler {
 		// Start the dameon & pass the password:
 		client, err = daemon.Reach(pwd, guessRepoFolder(), port)
 		if err != nil {
-			log.Errorf("Unable to start daemon: %v", err)
-			return DaemonNotResponding
+			return ExitCode{
+				DaemonNotResponding,
+				fmt.Sprintf("Unable to start daemon: %v", err),
+			}
 		}
 
 		// Run the actual handler:
 		return handler(ctx, client)
+	})
+}
+
+type checkFunc func(ctx *cli.Context) int
+
+func withArgCheck(checker checkFunc, handler func(*cli.Context)) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		if checker(ctx) != Success {
+			os.Exit(BadArgs)
+		}
+
+		handler(ctx)
 	}
 }
 
-type checkFunc func(ctx climax.Context) int
+func withExit(handler func(*cli.Context) error) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		if err := handler(ctx); err != nil {
+			log.Error(err.Error())
+			cerr, ok := err.(ExitCode)
+			if !ok {
+				os.Exit(UnknownError)
+			}
 
-func withArgCheck(checker checkFunc, handler climax.CmdHandler) climax.CmdHandler {
-	return func(ctx climax.Context) int {
-		if checker(ctx) != Success {
-			return BadArgs
+			os.Exit(cerr.Code)
 		}
 
-		return handler(ctx)
+		os.Exit(Success)
 	}
 }
 
 func needAtLeast(min int) checkFunc {
-	return func(ctx climax.Context) int {
-		if len(ctx.Args) < min {
-			log.Warningf("Need at least %d arguments.", min)
+	return func(ctx *cli.Context) int {
+		if ctx.NArg() < min {
+			if min == 1 {
+				log.Warningf("Need at least %d argument.", min)
+			} else {
+				log.Warningf("Need at least %d arguments.", min)
+			}
+			cli.ShowCommandHelp(ctx, ctx.Command.Name)
 			return BadArgs
 		}
 
 		return Success
+	}
+}
+
+func withConfig(handler func(*cli.Context, *config.Config) error) func(*cli.Context) error {
+	return func(ctx *cli.Context) error {
+		return handler(ctx, loadConfig())
 	}
 }
 
@@ -148,17 +190,4 @@ func guessPort() int {
 	}
 
 	return port
-}
-
-func ctxGetIntWithDefault(ctx climax.Context, param string, def int) (int, error) {
-	if s, ok := ctx.Get(param); ok {
-		i, err := strconv.Atoi(s)
-		if err != nil {
-			return 0, err
-		}
-
-		return i, nil
-	}
-
-	return def, nil
 }
