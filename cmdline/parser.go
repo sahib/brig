@@ -72,7 +72,7 @@ func RunCmdline() int {
 			Name:        "open",
 			Category:    repoGroup,
 			Usage:       "Open an encrypted repository",
-			ArgsUsage:   "[--password]",
+			ArgsUsage:   "[--password|-x]",
 			Description: "Open a closed (encrypted) brig repository by providing a password",
 			Action:      withDaemon(handleOpen, true),
 		},
@@ -95,7 +95,7 @@ func RunCmdline() int {
 			Name:        "net",
 			Category:    repoGroup,
 			Usage:       "Query and modify network status",
-			ArgsUsage:   "[offline | online | status]",
+			ArgsUsage:   "[offline|online|status]",
 			Description: "Query and modify the connection state to the ipfs network",
 			Subcommands: []cli.Command{
 				cli.Command{
@@ -120,7 +120,7 @@ func RunCmdline() int {
 			Name:        "remote",
 			Category:    repoGroup,
 			Usage:       "Remote management.",
-			ArgsUsage:   "[add | remove | list | locate | self]",
+			ArgsUsage:   "[add|remove|list|locate|self]",
 			Description: "Add, remove, list, locate remotes and print own identity",
 			Subcommands: []cli.Command{
 				cli.Command{
@@ -288,13 +288,15 @@ func RunCmdline() int {
 					Name:        "get",
 					Usage:       "Get a specific config value",
 					Description: "Get a specific config value and print it to stdout",
-					Action:      withExit(withConfig(handleConfigGet)),
+					ArgsUsage:   "<configkey>",
+					Action:      withArgCheck(needAtLeast(1), withExit(withConfig(handleConfigGet))),
 				},
 				cli.Command{
 					Name:        "set",
 					Usage:       "Set a specific config value",
 					Description: "Set a given config option to the given value",
-					Action:      withExit(withConfig(handleConfigSet)),
+					ArgsUsage:   "<configkey> <value>",
+					Action:      withArgCheck(needAtLeast(2), withExit(withConfig(handleConfigSet))),
 				},
 			},
 		},
