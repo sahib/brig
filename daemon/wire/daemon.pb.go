@@ -42,18 +42,21 @@ const (
 	MessageType_MOUNT         MessageType = 4
 	MessageType_UNMOUNT       MessageType = 5
 	MessageType_RM            MessageType = 6
-	MessageType_HISTORY       MessageType = 7
-	MessageType_LOG           MessageType = 8
-	MessageType_ONLINE_STATUS MessageType = 9
-	MessageType_FETCH         MessageType = 10
-	MessageType_LIST          MessageType = 11
-	MessageType_MV            MessageType = 12
-	MessageType_MKDIR         MessageType = 13
-	MessageType_REMOTE_ADD    MessageType = 14
-	MessageType_REMOTE_REMOVE MessageType = 15
-	MessageType_REMOTE_LIST   MessageType = 16
-	MessageType_REMOTE_LOCATE MessageType = 17
-	MessageType_REMOTE_SELF   MessageType = 18
+	MessageType_ONLINE_STATUS MessageType = 7
+	MessageType_FETCH         MessageType = 8
+	MessageType_LIST          MessageType = 9
+	MessageType_MV            MessageType = 10
+	MessageType_MKDIR         MessageType = 11
+	MessageType_REMOTE_ADD    MessageType = 12
+	MessageType_REMOTE_REMOVE MessageType = 13
+	MessageType_REMOTE_LIST   MessageType = 14
+	MessageType_REMOTE_LOCATE MessageType = 15
+	MessageType_REMOTE_SELF   MessageType = 16
+	MessageType_HISTORY       MessageType = 17
+	MessageType_STATUS        MessageType = 18
+	MessageType_COMMIT        MessageType = 19
+	MessageType_DIFF          MessageType = 20
+	MessageType_LOG           MessageType = 21
 )
 
 var MessageType_name = map[int32]string{
@@ -64,18 +67,21 @@ var MessageType_name = map[int32]string{
 	4:  "MOUNT",
 	5:  "UNMOUNT",
 	6:  "RM",
-	7:  "HISTORY",
-	8:  "LOG",
-	9:  "ONLINE_STATUS",
-	10: "FETCH",
-	11: "LIST",
-	12: "MV",
-	13: "MKDIR",
-	14: "REMOTE_ADD",
-	15: "REMOTE_REMOVE",
-	16: "REMOTE_LIST",
-	17: "REMOTE_LOCATE",
-	18: "REMOTE_SELF",
+	7:  "ONLINE_STATUS",
+	8:  "FETCH",
+	9:  "LIST",
+	10: "MV",
+	11: "MKDIR",
+	12: "REMOTE_ADD",
+	13: "REMOTE_REMOVE",
+	14: "REMOTE_LIST",
+	15: "REMOTE_LOCATE",
+	16: "REMOTE_SELF",
+	17: "HISTORY",
+	18: "STATUS",
+	19: "COMMIT",
+	20: "DIFF",
+	21: "LOG",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -85,18 +91,21 @@ var MessageType_value = map[string]int32{
 	"MOUNT":         4,
 	"UNMOUNT":       5,
 	"RM":            6,
-	"HISTORY":       7,
-	"LOG":           8,
-	"ONLINE_STATUS": 9,
-	"FETCH":         10,
-	"LIST":          11,
-	"MV":            12,
-	"MKDIR":         13,
-	"REMOTE_ADD":    14,
-	"REMOTE_REMOVE": 15,
-	"REMOTE_LIST":   16,
-	"REMOTE_LOCATE": 17,
-	"REMOTE_SELF":   18,
+	"ONLINE_STATUS": 7,
+	"FETCH":         8,
+	"LIST":          9,
+	"MV":            10,
+	"MKDIR":         11,
+	"REMOTE_ADD":    12,
+	"REMOTE_REMOVE": 13,
+	"REMOTE_LIST":   14,
+	"REMOTE_LOCATE": 15,
+	"REMOTE_SELF":   16,
+	"HISTORY":       17,
+	"STATUS":        18,
+	"COMMIT":        19,
+	"DIFF":          20,
+	"LOG":           21,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -165,17 +174,20 @@ type Command struct {
 	UnmountCommand      *Command_UnmountCmd      `protobuf:"bytes,7,opt,name=unmount_command" json:"unmount_command,omitempty"`
 	RmCommand           *Command_RmCmd           `protobuf:"bytes,8,opt,name=rm_command" json:"rm_command,omitempty"`
 	HistoryCommand      *Command_HistoryCmd      `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
-	LogCommand          *Command_LogCmd          `protobuf:"bytes,10,opt,name=log_command" json:"log_command,omitempty"`
-	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,11,opt,name=online_status_command" json:"online_status_command,omitempty"`
-	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,12,opt,name=fetch_command" json:"fetch_command,omitempty"`
-	ListCommand         *Command_ListCmd         `protobuf:"bytes,13,opt,name=list_command" json:"list_command,omitempty"`
-	MvCommand           *Command_MvCmd           `protobuf:"bytes,14,opt,name=mv_command" json:"mv_command,omitempty"`
-	MkdirCommand        *Command_MkdirCmd        `protobuf:"bytes,15,opt,name=mkdir_command" json:"mkdir_command,omitempty"`
-	RemoteAddCommand    *Command_RemoteAddCmd    `protobuf:"bytes,16,opt,name=remote_add_command" json:"remote_add_command,omitempty"`
-	RemoteRemoveCommand *Command_RemoteRemoveCmd `protobuf:"bytes,17,opt,name=remote_remove_command" json:"remote_remove_command,omitempty"`
-	RemoteListCommand   *Command_RemoteListCmd   `protobuf:"bytes,18,opt,name=remote_list_command" json:"remote_list_command,omitempty"`
-	RemoteLocateCommand *Command_RemoteLocateCmd `protobuf:"bytes,19,opt,name=remote_locate_command" json:"remote_locate_command,omitempty"`
-	RemoteSelfCommand   *Command_RemoteSelfCmd   `protobuf:"bytes,20,opt,name=remote_self_command" json:"remote_self_command,omitempty"`
+	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,10,opt,name=online_status_command" json:"online_status_command,omitempty"`
+	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,11,opt,name=fetch_command" json:"fetch_command,omitempty"`
+	ListCommand         *Command_ListCmd         `protobuf:"bytes,12,opt,name=list_command" json:"list_command,omitempty"`
+	MvCommand           *Command_MvCmd           `protobuf:"bytes,13,opt,name=mv_command" json:"mv_command,omitempty"`
+	MkdirCommand        *Command_MkdirCmd        `protobuf:"bytes,14,opt,name=mkdir_command" json:"mkdir_command,omitempty"`
+	RemoteAddCommand    *Command_RemoteAddCmd    `protobuf:"bytes,15,opt,name=remote_add_command" json:"remote_add_command,omitempty"`
+	RemoteRemoveCommand *Command_RemoteRemoveCmd `protobuf:"bytes,16,opt,name=remote_remove_command" json:"remote_remove_command,omitempty"`
+	RemoteListCommand   *Command_RemoteListCmd   `protobuf:"bytes,17,opt,name=remote_list_command" json:"remote_list_command,omitempty"`
+	RemoteLocateCommand *Command_RemoteLocateCmd `protobuf:"bytes,18,opt,name=remote_locate_command" json:"remote_locate_command,omitempty"`
+	RemoteSelfCommand   *Command_RemoteSelfCmd   `protobuf:"bytes,19,opt,name=remote_self_command" json:"remote_self_command,omitempty"`
+	StatusCommand       *Command_StatusCmd       `protobuf:"bytes,20,opt,name=status_command" json:"status_command,omitempty"`
+	CommitCommand       *Command_CommitCmd       `protobuf:"bytes,21,opt,name=commit_command" json:"commit_command,omitempty"`
+	DiffCommand         *Command_DiffCmd         `protobuf:"bytes,22,opt,name=diff_command" json:"diff_command,omitempty"`
+	LogCommand          *Command_LogCmd          `protobuf:"bytes,23,opt,name=log_command" json:"log_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -246,13 +258,6 @@ func (m *Command) GetHistoryCommand() *Command_HistoryCmd {
 	return nil
 }
 
-func (m *Command) GetLogCommand() *Command_LogCmd {
-	if m != nil {
-		return m.LogCommand
-	}
-	return nil
-}
-
 func (m *Command) GetOnlineStatusCommand() *Command_OnlineStatusCmd {
 	if m != nil {
 		return m.OnlineStatusCommand
@@ -319,6 +324,34 @@ func (m *Command) GetRemoteLocateCommand() *Command_RemoteLocateCmd {
 func (m *Command) GetRemoteSelfCommand() *Command_RemoteSelfCmd {
 	if m != nil {
 		return m.RemoteSelfCommand
+	}
+	return nil
+}
+
+func (m *Command) GetStatusCommand() *Command_StatusCmd {
+	if m != nil {
+		return m.StatusCommand
+	}
+	return nil
+}
+
+func (m *Command) GetCommitCommand() *Command_CommitCmd {
+	if m != nil {
+		return m.CommitCommand
+	}
+	return nil
+}
+
+func (m *Command) GetDiffCommand() *Command_DiffCmd {
+	if m != nil {
+		return m.DiffCommand
+	}
+	return nil
+}
+
+func (m *Command) GetLogCommand() *Command_LogCmd {
+	if m != nil {
+		return m.LogCommand
 	}
 	return nil
 }
@@ -465,14 +498,6 @@ func (m *Command_HistoryCmd) GetRepoPath() string {
 	}
 	return ""
 }
-
-type Command_LogCmd struct {
-	XXX_unrecognized []byte `json:"-"`
-}
-
-func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
-func (m *Command_LogCmd) String() string { return proto.CompactTextString(m) }
-func (*Command_LogCmd) ProtoMessage()    {}
 
 type Command_OnlineStatusCmd struct {
 	Query            *OnlineQuery `protobuf:"varint,1,req,name=query,enum=brig.daemon.OnlineQuery" json:"query,omitempty"`
@@ -666,6 +691,78 @@ func (m *Command_RemoteSelfCmd) Reset()         { *m = Command_RemoteSelfCmd{} }
 func (m *Command_RemoteSelfCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteSelfCmd) ProtoMessage()    {}
 
+type Command_StatusCmd struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_StatusCmd) Reset()         { *m = Command_StatusCmd{} }
+func (m *Command_StatusCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_StatusCmd) ProtoMessage()    {}
+
+type Command_CommitCmd struct {
+	Message          *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_CommitCmd) Reset()         { *m = Command_CommitCmd{} }
+func (m *Command_CommitCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_CommitCmd) ProtoMessage()    {}
+
+func (m *Command_CommitCmd) GetMessage() string {
+	if m != nil && m.Message != nil {
+		return *m.Message
+	}
+	return ""
+}
+
+type Command_DiffCmd struct {
+	Low              []byte `protobuf:"bytes,1,opt,name=low" json:"low,omitempty"`
+	High             []byte `protobuf:"bytes,2,opt,name=high" json:"high,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_DiffCmd) Reset()         { *m = Command_DiffCmd{} }
+func (m *Command_DiffCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_DiffCmd) ProtoMessage()    {}
+
+func (m *Command_DiffCmd) GetLow() []byte {
+	if m != nil {
+		return m.Low
+	}
+	return nil
+}
+
+func (m *Command_DiffCmd) GetHigh() []byte {
+	if m != nil {
+		return m.High
+	}
+	return nil
+}
+
+type Command_LogCmd struct {
+	Low              []byte `protobuf:"bytes,1,opt,name=low" json:"low,omitempty"`
+	High             []byte `protobuf:"bytes,2,opt,name=high" json:"high,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
+func (m *Command_LogCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_LogCmd) ProtoMessage()    {}
+
+func (m *Command_LogCmd) GetLow() []byte {
+	if m != nil {
+		return m.Low
+	}
+	return nil
+}
+
+func (m *Command_LogCmd) GetHigh() []byte {
+	if m != nil {
+		return m.High
+	}
+	return nil
+}
+
 type Remote struct {
 	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
 	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
@@ -708,6 +805,7 @@ type Response struct {
 	RemoteLocateResp *Response_RemoteLocateResp `protobuf:"bytes,7,opt,name=remote_locate_resp" json:"remote_locate_resp,omitempty"`
 	RemoteSelfResp   *Response_RemoteSelfResp   `protobuf:"bytes,8,opt,name=remote_self_resp" json:"remote_self_resp,omitempty"`
 	OnlineStatusResp *Response_OnlineStatusResp `protobuf:"bytes,9,opt,name=online_status_resp" json:"online_status_resp,omitempty"`
+	StatusResp       *Response_StatusResp       `protobuf:"bytes,10,opt,name=status_resp" json:"status_resp,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
@@ -774,6 +872,13 @@ func (m *Response) GetRemoteSelfResp() *Response_RemoteSelfResp {
 func (m *Response) GetOnlineStatusResp() *Response_OnlineStatusResp {
 	if m != nil {
 		return m.OnlineStatusResp
+	}
+	return nil
+}
+
+func (m *Response) GetStatusResp() *Response_StatusResp {
+	if m != nil {
+		return m.StatusResp
 	}
 	return nil
 }
@@ -874,6 +979,22 @@ func (m *Response_OnlineStatusResp) GetIsOnline() bool {
 	return false
 }
 
+type Response_StatusResp struct {
+	StageCommit      *brig_store.Commit `protobuf:"bytes,1,req,name=stage_commit" json:"stage_commit,omitempty"`
+	XXX_unrecognized []byte             `json:"-"`
+}
+
+func (m *Response_StatusResp) Reset()         { *m = Response_StatusResp{} }
+func (m *Response_StatusResp) String() string { return proto.CompactTextString(m) }
+func (*Response_StatusResp) ProtoMessage()    {}
+
+func (m *Response_StatusResp) GetStageCommit() *brig_store.Commit {
+	if m != nil {
+		return m.StageCommit
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Command)(nil), "brig.daemon.Command")
 	proto.RegisterType((*Command_AddCmd)(nil), "brig.daemon.Command.AddCmd")
@@ -884,7 +1005,6 @@ func init() {
 	proto.RegisterType((*Command_UnmountCmd)(nil), "brig.daemon.Command.UnmountCmd")
 	proto.RegisterType((*Command_RmCmd)(nil), "brig.daemon.Command.RmCmd")
 	proto.RegisterType((*Command_HistoryCmd)(nil), "brig.daemon.Command.HistoryCmd")
-	proto.RegisterType((*Command_LogCmd)(nil), "brig.daemon.Command.LogCmd")
 	proto.RegisterType((*Command_OnlineStatusCmd)(nil), "brig.daemon.Command.OnlineStatusCmd")
 	proto.RegisterType((*Command_FetchCmd)(nil), "brig.daemon.Command.FetchCmd")
 	proto.RegisterType((*Command_ListCmd)(nil), "brig.daemon.Command.ListCmd")
@@ -895,6 +1015,10 @@ func init() {
 	proto.RegisterType((*Command_RemoteListCmd)(nil), "brig.daemon.Command.RemoteListCmd")
 	proto.RegisterType((*Command_RemoteLocateCmd)(nil), "brig.daemon.Command.RemoteLocateCmd")
 	proto.RegisterType((*Command_RemoteSelfCmd)(nil), "brig.daemon.Command.RemoteSelfCmd")
+	proto.RegisterType((*Command_StatusCmd)(nil), "brig.daemon.Command.StatusCmd")
+	proto.RegisterType((*Command_CommitCmd)(nil), "brig.daemon.Command.CommitCmd")
+	proto.RegisterType((*Command_DiffCmd)(nil), "brig.daemon.Command.DiffCmd")
+	proto.RegisterType((*Command_LogCmd)(nil), "brig.daemon.Command.LogCmd")
 	proto.RegisterType((*Remote)(nil), "brig.daemon.Remote")
 	proto.RegisterType((*Response)(nil), "brig.daemon.Response")
 	proto.RegisterType((*Response_ListResp)(nil), "brig.daemon.Response.ListResp")
@@ -903,6 +1027,7 @@ func init() {
 	proto.RegisterType((*Response_RemoteLocateResp)(nil), "brig.daemon.Response.RemoteLocateResp")
 	proto.RegisterType((*Response_RemoteSelfResp)(nil), "brig.daemon.Response.RemoteSelfResp")
 	proto.RegisterType((*Response_OnlineStatusResp)(nil), "brig.daemon.Response.OnlineStatusResp")
+	proto.RegisterType((*Response_StatusResp)(nil), "brig.daemon.Response.StatusResp")
 	proto.RegisterEnum("brig.daemon.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("brig.daemon.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
@@ -1008,125 +1133,161 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 		}
 		i += n8
 	}
-	if m.LogCommand != nil {
+	if m.OnlineStatusCommand != nil {
 		data[i] = 0x52
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.LogCommand.Size()))
-		n9, err := m.LogCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusCommand.Size()))
+		n9, err := m.OnlineStatusCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n9
 	}
-	if m.OnlineStatusCommand != nil {
+	if m.FetchCommand != nil {
 		data[i] = 0x5a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusCommand.Size()))
-		n10, err := m.OnlineStatusCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.FetchCommand.Size()))
+		n10, err := m.FetchCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n10
 	}
-	if m.FetchCommand != nil {
+	if m.ListCommand != nil {
 		data[i] = 0x62
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.FetchCommand.Size()))
-		n11, err := m.FetchCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.ListCommand.Size()))
+		n11, err := m.ListCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n11
 	}
-	if m.ListCommand != nil {
+	if m.MvCommand != nil {
 		data[i] = 0x6a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ListCommand.Size()))
-		n12, err := m.ListCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.MvCommand.Size()))
+		n12, err := m.MvCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n12
 	}
-	if m.MvCommand != nil {
+	if m.MkdirCommand != nil {
 		data[i] = 0x72
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.MvCommand.Size()))
-		n13, err := m.MvCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.MkdirCommand.Size()))
+		n13, err := m.MkdirCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n13
 	}
-	if m.MkdirCommand != nil {
+	if m.RemoteAddCommand != nil {
 		data[i] = 0x7a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.MkdirCommand.Size()))
-		n14, err := m.MkdirCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteAddCommand.Size()))
+		n14, err := m.RemoteAddCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n14
 	}
-	if m.RemoteAddCommand != nil {
+	if m.RemoteRemoveCommand != nil {
 		data[i] = 0x82
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteAddCommand.Size()))
-		n15, err := m.RemoteAddCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteRemoveCommand.Size()))
+		n15, err := m.RemoteRemoveCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n15
 	}
-	if m.RemoteRemoveCommand != nil {
+	if m.RemoteListCommand != nil {
 		data[i] = 0x8a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteRemoveCommand.Size()))
-		n16, err := m.RemoteRemoveCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteListCommand.Size()))
+		n16, err := m.RemoteListCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n16
 	}
-	if m.RemoteListCommand != nil {
+	if m.RemoteLocateCommand != nil {
 		data[i] = 0x92
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteListCommand.Size()))
-		n17, err := m.RemoteListCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateCommand.Size()))
+		n17, err := m.RemoteLocateCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n17
 	}
-	if m.RemoteLocateCommand != nil {
+	if m.RemoteSelfCommand != nil {
 		data[i] = 0x9a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateCommand.Size()))
-		n18, err := m.RemoteLocateCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfCommand.Size()))
+		n18, err := m.RemoteSelfCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n18
 	}
-	if m.RemoteSelfCommand != nil {
+	if m.StatusCommand != nil {
 		data[i] = 0xa2
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfCommand.Size()))
-		n19, err := m.RemoteSelfCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.StatusCommand.Size()))
+		n19, err := m.StatusCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n19
+	}
+	if m.CommitCommand != nil {
+		data[i] = 0xaa
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.CommitCommand.Size()))
+		n20, err := m.CommitCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n20
+	}
+	if m.DiffCommand != nil {
+		data[i] = 0xb2
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.DiffCommand.Size()))
+		n21, err := m.DiffCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n21
+	}
+	if m.LogCommand != nil {
+		data[i] = 0xba
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.LogCommand.Size()))
+		n22, err := m.LogCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n22
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1372,27 +1533,6 @@ func (m *Command_HistoryCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
 		i += copy(data[i:], *m.RepoPath)
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Command_LogCmd) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Command_LogCmd) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -1715,6 +1855,122 @@ func (m *Command_RemoteSelfCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_StatusCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_StatusCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_CommitCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_CommitCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Message == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Message)))
+		i += copy(data[i:], *m.Message)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_DiffCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_DiffCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Low != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
+		i += copy(data[i:], m.Low)
+	}
+	if m.High != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.High)))
+		i += copy(data[i:], m.High)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_LogCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_LogCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Low != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
+		i += copy(data[i:], m.Low)
+	}
+	if m.High != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.High)))
+		i += copy(data[i:], m.High)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Remote) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1806,61 +2062,71 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.HistoryResp.Size()))
-		n20, err := m.HistoryResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n20
-	}
-	if m.ListResp != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
-		n21, err := m.ListResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n21
-	}
-	if m.RemoteListResp != nil {
-		data[i] = 0x32
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
-		n22, err := m.RemoteListResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n22
-	}
-	if m.RemoteLocateResp != nil {
-		data[i] = 0x3a
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
-		n23, err := m.RemoteLocateResp.MarshalTo(data[i:])
+		n23, err := m.HistoryResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n23
 	}
-	if m.RemoteSelfResp != nil {
-		data[i] = 0x42
+	if m.ListResp != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
-		n24, err := m.RemoteSelfResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
+		n24, err := m.ListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n24
 	}
-	if m.OnlineStatusResp != nil {
-		data[i] = 0x4a
+	if m.RemoteListResp != nil {
+		data[i] = 0x32
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
-		n25, err := m.OnlineStatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
+		n25, err := m.RemoteListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n25
+	}
+	if m.RemoteLocateResp != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
+		n26, err := m.RemoteLocateResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n26
+	}
+	if m.RemoteSelfResp != nil {
+		data[i] = 0x42
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
+		n27, err := m.RemoteSelfResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
+	}
+	if m.OnlineStatusResp != nil {
+		data[i] = 0x4a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
+		n28, err := m.OnlineStatusResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n28
+	}
+	if m.StatusResp != nil {
+		data[i] = 0x52
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
+		n29, err := m.StatusResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n29
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1889,11 +2155,11 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Dirlist.Size()))
-		n26, err := m.Dirlist.MarshalTo(data[i:])
+		n30, err := m.Dirlist.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n30
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1922,11 +2188,11 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
-		n27, err := m.History.MarshalTo(data[i:])
+		n31, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n27
+		i += n31
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2024,11 +2290,11 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
-		n28, err := m.Self.MarshalTo(data[i:])
+		n32, err := m.Self.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n28
+		i += n32
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2062,6 +2328,39 @@ func (m *Response_OnlineStatusResp) MarshalTo(data []byte) (int, error) {
 			data[i] = 0
 		}
 		i++
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Response_StatusResp) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.StageCommit == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
+		n33, err := m.StageCommit.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n33
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2134,10 +2433,6 @@ func (m *Command) Size() (n int) {
 		l = m.HistoryCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.LogCommand != nil {
-		l = m.LogCommand.Size()
-		n += 1 + l + sovDaemon(uint64(l))
-	}
 	if m.OnlineStatusCommand != nil {
 		l = m.OnlineStatusCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
@@ -2160,7 +2455,7 @@ func (m *Command) Size() (n int) {
 	}
 	if m.RemoteAddCommand != nil {
 		l = m.RemoteAddCommand.Size()
-		n += 2 + l + sovDaemon(uint64(l))
+		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.RemoteRemoveCommand != nil {
 		l = m.RemoteRemoveCommand.Size()
@@ -2176,6 +2471,22 @@ func (m *Command) Size() (n int) {
 	}
 	if m.RemoteSelfCommand != nil {
 		l = m.RemoteSelfCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.StatusCommand != nil {
+		l = m.StatusCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.CommitCommand != nil {
+		l = m.CommitCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.DiffCommand != nil {
+		l = m.DiffCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.LogCommand != nil {
+		l = m.LogCommand.Size()
 		n += 2 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -2285,15 +2596,6 @@ func (m *Command_HistoryCmd) Size() (n int) {
 		l = len(*m.RepoPath)
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Command_LogCmd) Size() (n int) {
-	var l int
-	_ = l
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -2441,6 +2743,62 @@ func (m *Command_RemoteSelfCmd) Size() (n int) {
 	return n
 }
 
+func (m *Command_StatusCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_CommitCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Message != nil {
+		l = len(*m.Message)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_DiffCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Low != nil {
+		l = len(m.Low)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.High != nil {
+		l = len(m.High)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_LogCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Low != nil {
+		l = len(m.Low)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.High != nil {
+		l = len(m.High)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Remote) Size() (n int) {
 	var l int
 	_ = l
@@ -2496,6 +2854,10 @@ func (m *Response) Size() (n int) {
 	}
 	if m.OnlineStatusResp != nil {
 		l = m.OnlineStatusResp.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.StatusResp != nil {
+		l = m.StatusResp.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -2578,6 +2940,19 @@ func (m *Response_OnlineStatusResp) Size() (n int) {
 	_ = l
 	if m.IsOnline != nil {
 		n += 2
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Response_StatusResp) Size() (n int) {
+	var l int
+	_ = l
+	if m.StageCommit != nil {
+		l = m.StageCommit.Size()
+		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2915,39 +3290,6 @@ func (m *Command) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LogCommand", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDaemon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthDaemon
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.LogCommand == nil {
-				m.LogCommand = &Command_LogCmd{}
-			}
-			if err := m.LogCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 11:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OnlineStatusCommand", wireType)
 			}
 			var msglen int
@@ -2979,7 +3321,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 12:
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FetchCommand", wireType)
 			}
@@ -3012,7 +3354,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 13:
+		case 12:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ListCommand", wireType)
 			}
@@ -3045,7 +3387,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 14:
+		case 13:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MvCommand", wireType)
 			}
@@ -3078,7 +3420,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 15:
+		case 14:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MkdirCommand", wireType)
 			}
@@ -3111,7 +3453,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 16:
+		case 15:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RemoteAddCommand", wireType)
 			}
@@ -3144,7 +3486,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 17:
+		case 16:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RemoteRemoveCommand", wireType)
 			}
@@ -3177,7 +3519,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 18:
+		case 17:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RemoteListCommand", wireType)
 			}
@@ -3210,7 +3552,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 19:
+		case 18:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RemoteLocateCommand", wireType)
 			}
@@ -3243,7 +3585,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 20:
+		case 19:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RemoteSelfCommand", wireType)
 			}
@@ -3273,6 +3615,138 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.RemoteSelfCommand = &Command_RemoteSelfCmd{}
 			}
 			if err := m.RemoteSelfCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 20:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StatusCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StatusCommand == nil {
+				m.StatusCommand = &Command_StatusCmd{}
+			}
+			if err := m.StatusCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 21:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CommitCommand == nil {
+				m.CommitCommand = &Command_CommitCmd{}
+			}
+			if err := m.CommitCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 22:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DiffCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DiffCommand == nil {
+				m.DiffCommand = &Command_DiffCmd{}
+			}
+			if err := m.DiffCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 23:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LogCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LogCommand == nil {
+				m.LogCommand = &Command_LogCmd{}
+			}
+			if err := m.LogCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4005,57 +4479,6 @@ func (m *Command_HistoryCmd) Unmarshal(data []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Command_LogCmd) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowDaemon
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LogCmd: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LogCmd: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipDaemon(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthDaemon
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
 	}
 
 	if iNdEx > l {
@@ -4996,6 +5419,357 @@ func (m *Command_RemoteSelfCmd) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Command_StatusCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StatusCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StatusCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_CommitCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CommitCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CommitCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Message = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_DiffCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DiffCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DiffCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Low", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Low = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field High", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.High = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_LogCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LogCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LogCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Low", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Low = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field High", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.High = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Remote) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -5435,6 +6209,39 @@ func (m *Response) Unmarshal(data []byte) error {
 				m.OnlineStatusResp = &Response_OnlineStatusResp{}
 			}
 			if err := m.OnlineStatusResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StatusResp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StatusResp == nil {
+				m.StatusResp = &Response_StatusResp{}
+			}
+			if err := m.StatusResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5946,6 +6753,95 @@ func (m *Response_OnlineStatusResp) Unmarshal(data []byte) error {
 			}
 			b := bool(v != 0)
 			m.IsOnline = &b
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Response_StatusResp) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StatusResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StatusResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StageCommit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StageCommit == nil {
+				m.StageCommit = &brig_store.Commit{}
+			}
+			if err := m.StageCommit.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex

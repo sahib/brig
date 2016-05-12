@@ -560,3 +560,33 @@ func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
 
 	return nil
 }
+
+func handleStatus(ctx *cli.Context, client *daemon.Client) error {
+	status, err := client.Status()
+	if err != nil {
+		return err
+	}
+
+	// TODO: format nicely.
+	fmt.Println(status)
+	return nil
+}
+
+func handleCommit(ctx *cli.Context, client *daemon.Client) error {
+	message := ctx.String("message")
+	if message == "" {
+		message = fmt.Sprintf("Update on %s", time.Now().String())
+	}
+
+	return client.MakeCommit(message)
+}
+
+func handleLog(ctx *cli.Context, client *daemon.Client) error {
+	// TODO
+	return nil
+}
+
+func handleDiff(ctx *cli.Context, client *daemon.Client) error {
+	// TODO
+	return nil
+}

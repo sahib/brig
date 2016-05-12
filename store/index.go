@@ -668,6 +668,7 @@ func (st *Store) Status() (*Commit, error) {
 	cmt := NewEmptyCommit(st, st.ID)
 	cmt.Parent = head
 	cmt.Hash = st.Root.Hash().Clone()
+	cmt.Message = "Uncommitted changes"
 
 	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 		return bkt.ForEach(func(bpath, bckpnt []byte) error {

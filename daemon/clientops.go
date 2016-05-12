@@ -336,3 +336,29 @@ func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 		IsOnline: self.GetIsOnline(),
 	}, nil
 }
+
+func (c *Client) Status() (*storewire.Commit, error) {
+	c.Send <- &wire.Command{CommandType: wire.MessageType_STATUS.Enum()}
+
+	resp, err := c.recvResponse("status")
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetStatusResp().GetStageCommit(), nil
+}
+
+func (c *Client) MakeCommit(msg string) error {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_COMMIT.Enum(),
+		CommitCommand: &wire.Command_CommitCmd{
+			Message: proto.String(msg),
+		},
+	}
+
+	if _, err := c.recvResponse("commit"); err != nil {
+		return err
+	}
+
+	return nil
+}

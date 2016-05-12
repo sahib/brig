@@ -39,7 +39,7 @@ message History {
 
 // A pack stores the history of a file besides it's metadata.
 // i.e. everything needed for an exported file.
-message Pack 
+message Pack {
     required File file = 1;
     required History history = 2;
 }

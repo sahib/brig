@@ -30,7 +30,7 @@ func formatGroup(category string) string {
 ////////////////////////////
 
 // RunCmdline starts a brig commandline tool.
-func RunCmdline() int {
+func RunCmdline(args []string) int {
 	app := cli.NewApp()
 	app.Name = "brig"
 	app.Usage = "Secure and dezentralized file synchronization"
@@ -40,9 +40,10 @@ func RunCmdline() int {
 		brig.BuildTime,
 	)
 
-	//groups
+	// Groups:
 	repoGroup := formatGroup("repository")
 	wdirGroup := formatGroup("working")
+	vcscGroup := formatGroup("version control")
 	advnGroup := formatGroup("advanced")
 	miscGroup := formatGroup("misc")
 
@@ -121,7 +122,67 @@ func RunCmdline() int {
 				},
 			},
 		},
-
+		cli.Command{
+			Name:        "status",
+			Category:    vcscGroup,
+			Usage:       "Print which file are in the staging area",
+			Description: "Show all changed files since the last commit and what a new commit would contain",
+			Action:      withDaemon(handleStatus, true),
+		},
+		cli.Command{
+			Name:        "diff",
+			Category:    vcscGroup,
+			Usage:       "Show what changed between two commits",
+			ArgsUsage:   "[--from <hash> | --to <hash>]",
+			Description: "Show the difference between two points in the history",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "from,f",
+					Value: "",
+					Usage: "Lower range limit; initial commit if omitted",
+				},
+				cli.StringFlag{
+					Name:  "to,t",
+					Value: "",
+					Usage: "Upper range limit; HEAD if omitted",
+				},
+			},
+			Action: withDaemon(handleDiff, true),
+		},
+		cli.Command{
+			Name:        "log",
+			Category:    vcscGroup,
+			Usage:       "Show all commits in a certain range",
+			ArgsUsage:   "[--from <hash> | --to <hash>]",
+			Description: "List a short summary of all commits in a range or all of them",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "from,f",
+					Value: "",
+					Usage: "Lower range limit; initial commit if omitted",
+				},
+				cli.StringFlag{
+					Name:  "to,t",
+					Value: "",
+					Usage: "Upper range limit; HEAD if omitted",
+				},
+			},
+			Action: withDaemon(handleLog, true),
+		},
+		cli.Command{
+			Name:        "commit",
+			Category:    vcscGroup,
+			Usage:       "Print which file are in the staging area",
+			Description: "Show all changed files since the last commit and what a new commit would contain",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "message,m",
+					Value: "",
+					Usage: "Provide a meaningful commit message",
+				},
+			},
+			Action: withDaemon(handleCommit, true),
+		},
 		cli.Command{
 			Name:        "remote",
 			Category:    repoGroup,
@@ -322,6 +383,6 @@ func RunCmdline() int {
 		},
 	}
 
-	app.Run(os.Args)
+	app.Run(args)
 	return 0
 }

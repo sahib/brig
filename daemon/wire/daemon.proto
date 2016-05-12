@@ -83,10 +83,6 @@ message Command {
         required string repo_path = 1;
     }
 
-    message LogCmd {
-        // No arguments yet.
-    }
-
     message OnlineStatusCmd {
         required OnlineQuery query = 1;
     }
@@ -131,7 +127,21 @@ message Command {
     message RemoteSelfCmd  {
     }
 
-    message {
+    message StatusCmd {
+    }
+
+    message CommitCmd {
+        required string message = 1;
+    }
+
+    message DiffCmd {
+        optional bytes low = 1;
+        optional bytes high = 2;
+    }
+
+    message LogCmd {
+        optional bytes low = 1;
+        optional bytes high = 2;
     }
 
     required MessageType command_type = 1;
@@ -144,18 +154,22 @@ message Command {
     optional UnmountCmd unmount_command = 7;
     optional RmCmd rm_command = 8;
     optional HistoryCmd history_command = 9;
-    optional LogCmd log_command = 10;
-    optional OnlineStatusCmd online_status_command = 11;
-    optional FetchCmd fetch_command = 12;
-    optional ListCmd list_command = 13;
-    optional MvCmd mv_command = 14;
-    optional MkdirCmd mkdir_command = 15;
+    optional OnlineStatusCmd online_status_command = 10;
+    optional FetchCmd fetch_command = 11;
+    optional ListCmd list_command = 12;
+    optional MvCmd mv_command = 13;
+    optional MkdirCmd mkdir_command = 14;
 
-    optional RemoteAddCmd remote_add_command = 16;
-    optional RemoteRemoveCmd remote_remove_command = 17;
-    optional RemoteListCmd remote_list_command = 18;
-    optional RemoteLocateCmd remote_locate_command = 19;
-    optional RemoteSelfCmd remote_self_command = 20;
+    optional RemoteAddCmd remote_add_command = 15;
+    optional RemoteRemoveCmd remote_remove_command = 16;
+    optional RemoteListCmd remote_list_command = 17;
+    optional RemoteLocateCmd remote_locate_command = 18;
+    optional RemoteSelfCmd remote_self_command = 19;
+
+    optional StatusCmd status_command = 20;
+    optional CommitCmd commit_command = 21;
+    optional DiffCmd diff_command = 22;
+    optional LogCmd log_command = 23;
 }
 
 message Remote {
@@ -189,6 +203,10 @@ message Response {
         required bool is_online = 1;
     }
 
+    message StatusResp {
+        required brig.store.Commit stage_commit = 1;
+    }
+
     required MessageType response_type = 1;
     required bool success = 2;
     optional string error = 3;
@@ -199,4 +217,5 @@ message Response {
     optional RemoteLocateResp remote_locate_resp = 7;   
     optional RemoteSelfResp remote_self_resp = 8;
     optional OnlineStatusResp online_status_resp = 9;
+    optional StatusResp status_resp = 10;
 }

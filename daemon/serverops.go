@@ -26,7 +26,6 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_RM:            handleRm,
 	wire.MessageType_MV:            handleMv,
 	wire.MessageType_HISTORY:       handleHistory,
-	wire.MessageType_LOG:           handleLog,
 	wire.MessageType_ONLINE_STATUS: handleOnlineStatus,
 	wire.MessageType_FETCH:         handleFetch,
 	wire.MessageType_LIST:          handleList,
@@ -36,6 +35,10 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_REMOTE_LIST:   handleRemoteList,
 	wire.MessageType_REMOTE_LOCATE: handleRemoteLocate,
 	wire.MessageType_REMOTE_SELF:   handleRemoteSelf,
+	wire.MessageType_STATUS:        handleStatus,
+	wire.MessageType_COMMIT:        handleCommit,
+	wire.MessageType_DIFF:          handleDiff,
+	wire.MessageType_LOG:           handleLog,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
@@ -135,11 +138,6 @@ func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Res
 			History: histProto,
 		},
 	}, nil
-}
-
-func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	// TODO: Needs implementation.
-	return nil, nil
 }
 
 func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
@@ -306,4 +304,42 @@ func handleRemoteSelf(d *Server, ctx context.Context, cmd *wire.Command) (*wire.
 			},
 		},
 	}, nil
+}
+
+func handleStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	status, err := d.Repo.OwnStore.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	protoCommit, err := status.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return &wire.Response{
+		StatusResp: &wire.Response_StatusResp{
+			StageCommit: protoCommit,
+		},
+	}, nil
+}
+
+func handleCommit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	message := cmd.GetCommitCommand().GetMessage()
+
+	if err := d.Repo.OwnStore.MakeCommit(message); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func handleDiff(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	// TODO: Implementation missing.
+	return nil, nil
+}
+
+func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	// TODO: Implementation missing.
+	return nil, nil
 }
