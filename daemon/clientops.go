@@ -119,14 +119,6 @@ func (c *Client) Move(source, dest string) error {
 	return nil
 }
 
-// Log returns a series of commits.
-func (c *Client) Log() ([]*store.Commit, error) {
-	c.Send <- &wire.Command{CommandType: wire.MessageType_LOG.Enum()}
-
-	// TODO: Implement.
-	return nil, nil
-}
-
 // History returns the available checkpoints for the file at repoPath.
 // It might have been deleted earlier. Asking for a non-existing file
 // yields an empty history, but is not an error.
@@ -361,4 +353,21 @@ func (c *Client) MakeCommit(msg string) error {
 	}
 
 	return nil
+}
+
+func (c *Client) Log(from, to *store.Hash) (*storewire.Commits, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_LOG.Enum(),
+		LogCommand: &wire.Command_LogCmd{
+			Low:  from.Bytes(),
+			High: to.Bytes(),
+		},
+	}
+
+	resp, err := c.recvResponse("log")
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetLogResp().GetCommits(), nil
 }

@@ -582,7 +582,12 @@ func handleCommit(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleLog(ctx *cli.Context, client *daemon.Client) error {
-	// TODO
+	log, err := client.Log(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(log)
 	return nil
 }
 

@@ -207,6 +207,10 @@ message Response {
         required brig.store.Commit stage_commit = 1;
     }
 
+    message LogResp {
+        required brig.store.Commits Commits = 1;
+    }
+
     required MessageType response_type = 1;
     required bool success = 2;
     optional string error = 3;
@@ -218,4 +222,5 @@ message Response {
     optional RemoteSelfResp remote_self_resp = 8;
     optional OnlineStatusResp online_status_resp = 9;
     optional StatusResp status_resp = 10;
+    optional LogResp log_resp = 11;
 }

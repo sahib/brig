@@ -70,3 +70,8 @@ message Commit {
     // Link to parent hash:
     optional bytes parent_hash = 6;
 }
+
+// Commits is an ordered list of commits
+message Commits {
+    repeated Commit commits = 1;
+}

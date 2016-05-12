@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -436,8 +437,8 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 		childPath := child.Path()
 
 		// Remove from trie & remove from bolt db.
-		err = s.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-			return bckt.Delete([]byte(childPath))
+		err = s.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+			return bkt.Delete([]byte(childPath))
 		})
 
 		if err != nil {
@@ -535,8 +536,8 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
 
 		// Remove from trie & remove from bolt db.
-		err = st.updateWithBucket("index", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-			return bckt.Delete([]byte(oldChildPath))
+		err = st.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+			return bkt.Delete([]byte(oldChildPath))
 		})
 
 		if err != nil {
@@ -740,7 +741,7 @@ func (st *Store) MakeCommit(msg string) error {
 			return err
 		}
 
-		// Update HEAD
+		// Update HEAD:
 		refs := tx.Bucket([]byte("refs"))
 		if refs == nil {
 			return ErrNoSuchBucket{"refs"}
@@ -748,4 +749,28 @@ func (st *Store) MakeCommit(msg string) error {
 
 		return refs.Put([]byte("HEAD"), data)
 	})
+}
+
+// TODO: respect from/to ranges
+func (st *Store) Log() (Commits, error) {
+	var cmts Commits
+
+	err := st.viewWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(k, v []byte) error {
+			cmt := NewEmptyCommit(st, st.ID)
+			if err := cmt.UnmarshalProto(v); err != nil {
+				return err
+			}
+
+			cmts = append(cmts, cmt)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(cmts)
+	return cmts, nil
 }

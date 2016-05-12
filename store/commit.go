@@ -310,6 +310,55 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 	return cp.FromProto(protoCheck)
 }
 
+// Commits is a list of single commits.
+// It is used to enable chronological sorting of a bunch of commits.
+type Commits []*Commit
+
+func (cs Commits) Len() int {
+	return len(cs)
+}
+
+func (cs Commits) Less(i, j int) bool {
+	return cs[i].ModTime.Before(cs[j].ModTime)
+}
+
+func (cs Commits) Swap(i, j int) {
+	cs[i], cs[j] = cs[j], cs[i]
+}
+
+func (cs Commits) ToProto() (*wire.Commits, error) {
+	protoCmts := &wire.Commits{}
+
+	for _, cmt := range cs {
+		protoCmt, err := cmt.ToProto()
+		if err != nil {
+			return nil, err
+		}
+
+		protoCmts.Commits = append(protoCmts.Commits, protoCmt)
+	}
+
+	return protoCmts, nil
+}
+
+// TODO: This has some problems...
+// func (cs Commits) UnmarshalProto(data []byte) error {
+// 	protoCmts := &wire.Commits{}
+// 	if err := proto.Unmarshal(data, protoCmts); err != nil {
+// 		return err
+// 	}
+//
+// 	for _, protoCmt := range protoCmts.GetCommits() {
+// TODO: store
+// 		cmt := NewEmptyCommit()
+//
+// TODO: does this even work?
+// 		cs = append(cs, )
+// 	}
+//
+// 	return nil
+// }
+
 // History remembers the changes made to a file.
 // New changes get appended to the end.
 type History []*Checkpoint

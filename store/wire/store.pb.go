@@ -18,6 +18,7 @@
 		Store
 		Change
 		Commit
+		Commits
 */
 package wire
 
@@ -341,6 +342,23 @@ func (m *Commit) GetParentHash() []byte {
 	return nil
 }
 
+// Commits is an ordered list of commits
+type Commits struct {
+	Commits          []*Commit `protobuf:"bytes,1,rep,name=commits" json:"commits,omitempty"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *Commits) Reset()         { *m = Commits{} }
+func (m *Commits) String() string { return proto.CompactTextString(m) }
+func (*Commits) ProtoMessage()    {}
+
+func (m *Commits) GetCommits() []*Commit {
+	if m != nil {
+		return m.Commits
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*File)(nil), "brig.store.File")
 	proto.RegisterType((*Dirent)(nil), "brig.store.Dirent")
@@ -351,6 +369,7 @@ func init() {
 	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterType((*Change)(nil), "brig.store.Change")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
+	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 }
 func (m *File) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -781,6 +800,39 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Commits) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Commits) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Commits) > 0 {
+		for _, msg := range m.Commits {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeFixed64Store(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -996,6 +1048,21 @@ func (m *Commit) Size() (n int) {
 	if m.ParentHash != nil {
 		l = len(m.ParentHash)
 		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Commits) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Commits) > 0 {
+		for _, e := range m.Commits {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2333,6 +2400,88 @@ func (m *Commit) Unmarshal(data []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Commits) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Commits: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Commits: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Commits", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Commits = append(m.Commits, &Commit{})
+			if err := m.Commits[len(m.Commits)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
 	}
 
 	if iNdEx > l {

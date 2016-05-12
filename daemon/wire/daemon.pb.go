@@ -806,6 +806,7 @@ type Response struct {
 	RemoteSelfResp   *Response_RemoteSelfResp   `protobuf:"bytes,8,opt,name=remote_self_resp" json:"remote_self_resp,omitempty"`
 	OnlineStatusResp *Response_OnlineStatusResp `protobuf:"bytes,9,opt,name=online_status_resp" json:"online_status_resp,omitempty"`
 	StatusResp       *Response_StatusResp       `protobuf:"bytes,10,opt,name=status_resp" json:"status_resp,omitempty"`
+	LogResp          *Response_LogResp          `protobuf:"bytes,11,opt,name=log_resp" json:"log_resp,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
@@ -879,6 +880,13 @@ func (m *Response) GetOnlineStatusResp() *Response_OnlineStatusResp {
 func (m *Response) GetStatusResp() *Response_StatusResp {
 	if m != nil {
 		return m.StatusResp
+	}
+	return nil
+}
+
+func (m *Response) GetLogResp() *Response_LogResp {
+	if m != nil {
+		return m.LogResp
 	}
 	return nil
 }
@@ -995,6 +1003,22 @@ func (m *Response_StatusResp) GetStageCommit() *brig_store.Commit {
 	return nil
 }
 
+type Response_LogResp struct {
+	Commits          *brig_store.Commits `protobuf:"bytes,1,req,name=Commits" json:"Commits,omitempty"`
+	XXX_unrecognized []byte              `json:"-"`
+}
+
+func (m *Response_LogResp) Reset()         { *m = Response_LogResp{} }
+func (m *Response_LogResp) String() string { return proto.CompactTextString(m) }
+func (*Response_LogResp) ProtoMessage()    {}
+
+func (m *Response_LogResp) GetCommits() *brig_store.Commits {
+	if m != nil {
+		return m.Commits
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Command)(nil), "brig.daemon.Command")
 	proto.RegisterType((*Command_AddCmd)(nil), "brig.daemon.Command.AddCmd")
@@ -1028,6 +1052,7 @@ func init() {
 	proto.RegisterType((*Response_RemoteSelfResp)(nil), "brig.daemon.Response.RemoteSelfResp")
 	proto.RegisterType((*Response_OnlineStatusResp)(nil), "brig.daemon.Response.OnlineStatusResp")
 	proto.RegisterType((*Response_StatusResp)(nil), "brig.daemon.Response.StatusResp")
+	proto.RegisterType((*Response_LogResp)(nil), "brig.daemon.Response.LogResp")
 	proto.RegisterEnum("brig.daemon.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("brig.daemon.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
@@ -2128,6 +2153,16 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		}
 		i += n29
 	}
+	if m.LogResp != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
+		n30, err := m.LogResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n30
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -2155,11 +2190,11 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Dirlist.Size()))
-		n30, err := m.Dirlist.MarshalTo(data[i:])
+		n31, err := m.Dirlist.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n30
+		i += n31
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2188,11 +2223,11 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
-		n31, err := m.History.MarshalTo(data[i:])
+		n32, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n32
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2290,11 +2325,11 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
-		n32, err := m.Self.MarshalTo(data[i:])
+		n33, err := m.Self.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n33
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2356,11 +2391,44 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
-		n33, err := m.StageCommit.MarshalTo(data[i:])
+		n34, err := m.StageCommit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
+		i += n34
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Response_LogResp) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Commits == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.Commits.Size()))
+		n35, err := m.Commits.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n35
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2860,6 +2928,10 @@ func (m *Response) Size() (n int) {
 		l = m.StatusResp.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
+	if m.LogResp != nil {
+		l = m.LogResp.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -2952,6 +3024,19 @@ func (m *Response_StatusResp) Size() (n int) {
 	_ = l
 	if m.StageCommit != nil {
 		l = m.StageCommit.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Response_LogResp) Size() (n int) {
+	var l int
+	_ = l
+	if m.Commits != nil {
+		l = m.Commits.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -6245,6 +6330,39 @@ func (m *Response) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LogResp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LogResp == nil {
+				m.LogResp = &Response_LogResp{}
+			}
+			if err := m.LogResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6839,6 +6957,95 @@ func (m *Response_StatusResp) Unmarshal(data []byte) error {
 				m.StageCommit = &brig_store.Commit{}
 			}
 			if err := m.StageCommit.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Response_LogResp) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LogResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LogResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Commits", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Commits == nil {
+				m.Commits = &brig_store.Commits{}
+			}
+			if err := m.Commits.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

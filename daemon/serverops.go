@@ -340,6 +340,20 @@ func handleDiff(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 }
 
 func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	// TODO: Implementation missing.
-	return nil, nil
+	// TODO: Respect from/to
+	cmts, err := d.Repo.OwnStore.Log()
+	if err != nil {
+		return nil, err
+	}
+
+	protoCmts, err := cmts.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return &wire.Response{
+		LogResp: &wire.Response_LogResp{
+			Commits: protoCmts,
+		},
+	}, nil
 }
