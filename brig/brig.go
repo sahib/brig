@@ -5,7 +5,16 @@ import (
 	"os"
 )
 
+var (
+	Major     = "unknown"
+	Minor     = "unknown"
+	Patch     = "unknown"
+	Gitrev    = "unknown"
+	Buildtime = "unknown"
+)
+
 func main() {
-	x := cmdline.RunCmdline()
-	os.Exit(x)
+	os.Exit(
+		cmdline.RunCmdline(Major, Minor, Patch, Gitrev, Buildtime),
+	)
 }

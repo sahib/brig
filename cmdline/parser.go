@@ -1,6 +1,7 @@
 package cmdline
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -28,11 +29,15 @@ func formatGroup(category string) string {
 ////////////////////////////
 
 // RunCmdline starts a brig commandline tool.
-func RunCmdline() int {
+func RunCmdline(major, minor, patch, gitrev, buildtime string) int {
 
 	app := cli.NewApp()
 	app.Name = "brig"
 	app.Usage = "Secure and dezentralized file synchronization"
+	app.Version = fmt.Sprintf(
+		"%s.%s.%s-rev-%s [Buildtime: %s]",
+		major, minor, patch, gitrev[0:6], buildtime,
+	)
 
 	//groups
 	repoGroup := formatGroup("repository")
