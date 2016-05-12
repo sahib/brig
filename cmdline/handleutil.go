@@ -137,8 +137,12 @@ func withExit(handler func(*cli.Context) error) func(*cli.Context) {
 func needAtLeast(min int) checkFunc {
 	return func(ctx *cli.Context) int {
 		if ctx.NArg() < min {
-			log.Warningf("Need at least %d arguments.", min)
-			cli.ShowSubcommandHelp(ctx)
+			if min == 1 {
+				log.Warningf("Need at least %d argument.", min)
+			} else {
+				log.Warningf("Need at least %d arguments.", min)
+			}
+			cli.ShowCommandHelp(ctx, ctx.Command.Name)
 			return BadArgs
 		}
 
