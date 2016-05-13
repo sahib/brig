@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -46,6 +47,11 @@ type Store struct {
 
 	// IPFS manager layer (from daemon.Server)
 	IPFS *ipfsutil.Node
+
+	// Lock for atomic operations inside the store
+	// where several db operations happen in a row.
+	// Access to the trie is secured by store.Root.RWMutex.
+	mu sync.Mutex
 }
 
 func prefixSlash(s string) string {
@@ -250,14 +256,31 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 	return walkErr
 }
 
+func (st *Store) mkdirParents(path string) error {
+	elems := strings.Split(path, "/")
+
+	for idx := 1; idx < len(elems)-1; idx++ {
+		dir := strings.Join(elems[:len(elems)-idx], "/")
+		if _, err := st.Mkdir(dir); err != nil {
+			log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
+func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	repoPath = prefixSlash(repoPath)
+	initialAdd := false
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
 	// Check if the file was already added:
-	file := s.Root.Lookup(repoPath)
-	initialAdd := false
+	file := st.Root.Lookup(repoPath)
 
 	log.Debugf("bolt lookup: %v", file != nil)
 
@@ -267,20 +290,12 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 			"file": repoPath,
 		}).Info("Updating file.")
 	} else {
-		// Create intermediate directories:
-		elems := strings.Split(repoPath, string(filepath.Separator))
-		sep := string(filepath.Separator)
-
-		for idx := 1; idx < len(elems)-1; idx++ {
-			dir := strings.Join(elems[:len(elems)-idx], sep)
-			if _, err := s.Mkdir(dir); err != nil {
-				log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
-				return err
-			}
+		if err := st.mkdirParents(repoPath); err != nil {
+			return err
 		}
 
 		// Create a new file at specified path:
-		newFile, err := NewFile(s, repoPath)
+		newFile, err := NewFile(st, repoPath)
 		if err != nil {
 			return err
 		}
@@ -299,7 +314,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	mhash, err := ipfsutil.Add(s.IPFS, stream)
+	mhash, err := ipfsutil.Add(st.IPFS, stream)
 	if err != nil {
 		return err
 	}
@@ -308,7 +323,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
 		mhash.B58String(),
-		file.Key()[10:],
+		file.Key()[10:], // TODO: Make omit() a util func
 	)
 
 	// Update metadata that might have changed:
@@ -340,7 +355,7 @@ func (s *Store) AddFromReader(repoPath string, r io.Reader) error {
 	file.updateParents()
 
 	// Create a checkpoint in the version history.
-	err = s.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
+	err = st.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
 	if err != nil {
 		return err
 	}
@@ -357,27 +372,12 @@ func (s *Store) Touch(repoPath string) error {
 	return s.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
-// marshalFile converts a file to a protobuf and
-func (s *Store) marshalFile(file *File, repoPath string) error {
-	repoPath = prefixSlash(repoPath)
-
-	return s.updateWithBucket("index", func(tx *bolt.Tx, bucket *bolt.Bucket) error {
-		data, err := file.Marshal()
-		if err != nil {
-			return err
-		}
-
-		if err := bucket.Put([]byte(repoPath), data); err != nil {
-			return err
-		}
-
-		return nil
-	})
-}
-
 // Stream returns the stream of the file at `path`.
-func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
-	file := s.Root.Lookup(prefixSlash(path))
+func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	file := st.Root.Lookup(prefixSlash(path))
 	if file == nil {
 		return nil, ErrNoSuchFile
 	}
@@ -386,12 +386,14 @@ func (s *Store) Stream(path string) (ipfsutil.Reader, error) {
 }
 
 // Cat will write the contents of the brig file `path` into `w`.
-func (s *Store) Cat(path string, w io.Writer) error {
-	cleanStream, err := s.Stream(path)
+func (st *Store) Cat(path string, w io.Writer) error {
+	cleanStream, err := st.Stream(path)
 	if err != nil {
 		log.Warningf("Could not create stream: %v", err)
 		return err
 	}
+
+	// No locking required, data comes from ipfs.
 
 	if _, err := io.Copy(w, cleanStream); err != nil {
 		log.Warningf("Could not copy stream: %v", err)
@@ -402,13 +404,16 @@ func (s *Store) Cat(path string, w io.Writer) error {
 }
 
 // Close syncs all data. It is an error to use the store afterwards.
-func (s *Store) Close() error {
-	if err := s.db.Sync(); err != nil {
+func (st *Store) Close() error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	if err := st.db.Sync(); err != nil {
 		log.Warningf("store-sync: %v", err)
 		return err
 	}
 
-	if err := s.db.Close(); err != nil {
+	if err := st.db.Close(); err != nil {
 		log.Warningf("store-close: %v", err)
 		return err
 	}
@@ -420,9 +425,13 @@ func (s *Store) Close() error {
 // If `recursive` is true and if `path` is a directory, all files
 // in it will be removed. If `recursive` is false, ErrNotEmpty will
 // be returned upon non-empty directories.
-func (s *Store) Remove(path string, recursive bool) (err error) {
+func (st *Store) Remove(path string, recursive bool) (err error) {
 	path = prefixSlash(path)
-	node := s.Root.Lookup(path)
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	node := st.Root.Lookup(path)
 	if node == nil {
 		return ErrNoSuchFile
 	}
@@ -437,7 +446,7 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 		childPath := child.Path()
 
 		// Remove from trie & remove from bolt db.
-		err = s.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		err = st.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 			return bkt.Delete([]byte(childPath))
 		})
 
@@ -445,7 +454,7 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 			return false
 		}
 
-		if err = s.MakeCheckpoint(node.Metadata, nil, childPath, childPath); err != nil {
+		if err = st.MakeCheckpoint(node.Metadata, nil, childPath, childPath); err != nil {
 			return false
 		}
 
@@ -467,6 +476,9 @@ func (s *Store) Remove(path string, recursive bool) (err error) {
 func (st *Store) List(root string, depth int) (entries []*File, err error) {
 	root = prefixSlash(root)
 	entries = []*File{}
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
 	node := st.Root.Lookup(root)
 	if node == nil {
@@ -497,6 +509,8 @@ func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 		return nil, err
 	}
 
+	// No locking required; only some in-memory conversion follows.
+
 	dirlist := &wire.Dirlist{}
 	for _, entry := range entries {
 		protoFile, err := entry.ToProto()
@@ -518,6 +532,9 @@ func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 
 func (st *Store) Move(oldPath, newPath string) (err error) {
 	oldPath, newPath = prefixSlash(oldPath), prefixSlash(newPath)
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
 	node := st.Root.Lookup(oldPath)
 	if node == nil {
@@ -576,14 +593,17 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 // TODO: Describe stream format.
 //
 // w is not closed after Export.
-func (s *Store) Export() (*wire.Store, error) {
+func (st *Store) Export() (*wire.Store, error) {
 	// TODO: Export commits (not implemented)
 	// TODO: Export pinning information.
 	protoStore := &wire.Store{}
 
 	var err error
 
-	s.Root.Walk(true, func(child *File) bool {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	st.Root.Walk(true, func(child *File) bool {
 		// Note: Walk() already calls Lock()
 		protoFile, errPbf := child.ToProto()
 		if err != nil {
@@ -591,7 +611,7 @@ func (s *Store) Export() (*wire.Store, error) {
 			return false
 		}
 
-		history, errHist := s.History(child.node.Path())
+		history, errHist := st.History(child.node.Path())
 		if errHist != nil {
 			err = errHist
 			return false
@@ -621,9 +641,12 @@ func (s *Store) Export() (*wire.Store, error) {
 
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
-func (s *Store) Import(protoStore *wire.Store) error {
+func (st *Store) Import(protoStore *wire.Store) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
 	for _, pack := range protoStore.Packs {
-		file := emptyFile(s)
+		file := emptyFile(st)
 		if err := file.Import(pack.GetFile()); err != nil {
 			return err
 		}
@@ -641,6 +664,14 @@ func (s *Store) Import(protoStore *wire.Store) error {
 // Commit will be always non-nil if error is nil,
 // the initial commit has no changes.
 func (st *Store) Head() (*Commit, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.head()
+}
+
+// Unlocked version of Head()
+func (st *Store) head() (*Commit, error) {
 	cmt := NewEmptyCommit(st, st.ID)
 
 	err := st.viewWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
@@ -661,7 +692,15 @@ func (st *Store) Head() (*Commit, error) {
 
 // Status shows how a Commit would look like if Commit() would be called.
 func (st *Store) Status() (*Commit, error) {
-	head, err := st.Head()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.status()
+}
+
+// Unlocked version of Status()
+func (st *Store) status() (*Commit, error) {
+	head, err := st.head()
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +717,6 @@ func (st *Store) Status() (*Commit, error) {
 				return ErrNoSuchFile
 			}
 
-			// TODO: unmarshal
 			checkpoint := &Checkpoint{}
 			if err := checkpoint.Unmarshal(bckpnt); err != nil {
 				return err
@@ -696,11 +734,12 @@ func (st *Store) Status() (*Commit, error) {
 	return cmt, nil
 }
 
-// TODO: Global store lock, calling MakeCommit more than once is racy!
-
 // Commit saves a commit in the store history.
 func (st *Store) MakeCommit(msg string) error {
-	cmt, err := st.Status()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	cmt, err := st.status()
 	if err != nil {
 		return err
 	}
@@ -754,6 +793,9 @@ func (st *Store) MakeCommit(msg string) error {
 // TODO: respect from/to ranges
 func (st *Store) Log() (Commits, error) {
 	var cmts Commits
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
 	err := st.viewWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 		return bkt.ForEach(func(k, v []byte) error {
