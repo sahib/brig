@@ -210,16 +210,36 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 	return st, err
 }
 
-// Mkdir creates a new, empty directory.
-// If the directory already exists, this is a NOOP.
-func (s *Store) Mkdir(repoPath string) (*File, error) {
-	dir, err := NewDir(s, prefixSlash(repoPath))
+// Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
+func (st *Store) Mkdir(repoPath string) (*File, error) {
+	return st.mkdir(repoPath, false)
+}
+
+// MkdirAll is like Mkdir but creates intermediate directories conviniently.
+func (st *Store) MkdirAll(repoPath string) (*File, error) {
+	return st.mkdir(repoPath, true)
+}
+
+func (st *Store) mkdir(repoPath string, createParents bool) (*File, error) {
+	if createParents {
+		if err := st.mkdirParents(repoPath); err != nil {
+			return nil, err
+		}
+	} else {
+		// Check if the parent exists (would result in weird undefined
+		// intermediates otherwise)
+		parentPath := path.Dir(repoPath)
+		if parent := st.Root.Lookup(parentPath); parent == nil {
+			return nil, NoSuchFile(parentPath)
+		}
+	}
+
+	dir, err := NewDir(st, prefixSlash(repoPath))
 	if err != nil {
 		return nil, err
 	}
 
 	dir.sync()
-
 	return dir, err
 }
 
@@ -231,7 +251,7 @@ func (s *Store) Add(filePath, repoPath string) error {
 }
 
 // AddDir traverses all files in a directory and calls AddFromReader on them.
-func (s *Store) AddDir(filePath, repoPath string) error {
+func (st *Store) AddDir(filePath, repoPath string) error {
 	walkErr := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
 		// Simply skip errorneous files:
 		if err != nil {
@@ -251,9 +271,9 @@ func (s *Store) AddDir(filePath, repoPath string) error {
 			}
 			defer util.Closer(fd)
 
-			err = s.AddFromReader(currPath, fd)
+			err = st.AddFromReader(currPath, fd)
 		case mode.IsDir():
-			_, err = s.Mkdir(currPath)
+			_, err = st.Mkdir(currPath)
 		default:
 			log.Warningf("Recursive add: Ignoring weird file: %v")
 			return nil

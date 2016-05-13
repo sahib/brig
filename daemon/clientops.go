@@ -217,10 +217,19 @@ func (c *Client) Fetch(who id.ID) error {
 }
 
 func (c *Client) Mkdir(path string) error {
+	return c.mkdir(path, false)
+}
+
+func (c *Client) MkdirAll(path string) error {
+	return c.mkdir(path, true)
+}
+
+func (c *Client) mkdir(path string, createParents bool) error {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_MKDIR.Enum(),
 		MkdirCommand: &wire.Command_MkdirCmd{
-			Path: proto.String(string(path)),
+			Path:          proto.String(string(path)),
+			CreateParents: proto.Bool(createParents),
 		},
 	}
 

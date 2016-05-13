@@ -551,7 +551,15 @@ func handleMv(ctx *cli.Context, client *daemon.Client) error {
 func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
 	path := prefixSlash(ctx.Args()[0])
 
-	if err := client.Mkdir(path); err != nil {
+	var err error
+
+	if ctx.Bool("--parents") {
+		err = client.MkdirAll(path)
+	} else {
+		err = client.Mkdir(path)
+	}
+
+	if err != nil {
 		return ExitCode{
 			UnknownError,
 			fmt.Sprintf("mkdir failed: %v", err),

@@ -581,6 +581,7 @@ func (m *Command_MvCmd) GetDest() string {
 
 type Command_MkdirCmd struct {
 	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
+	CreateParents    *bool   `protobuf:"varint,2,opt,name=create_parents" json:"create_parents,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -593,6 +594,13 @@ func (m *Command_MkdirCmd) GetPath() string {
 		return *m.Path
 	}
 	return ""
+}
+
+func (m *Command_MkdirCmd) GetCreateParents() bool {
+	if m != nil && m.CreateParents != nil {
+		return *m.CreateParents
+	}
+	return false
 }
 
 type Command_RemoteAddCmd struct {
@@ -1717,6 +1725,16 @@ func (m *Command_MkdirCmd) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDaemon(data, i, uint64(len(*m.Path)))
 		i += copy(data[i:], *m.Path)
 	}
+	if m.CreateParents != nil {
+		data[i] = 0x10
+		i++
+		if *m.CreateParents {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -2734,6 +2752,9 @@ func (m *Command_MkdirCmd) Size() (n int) {
 	if m.Path != nil {
 		l = len(*m.Path)
 		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.CreateParents != nil {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -5024,6 +5045,27 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 			m.Path = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateParents", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.CreateParents = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
