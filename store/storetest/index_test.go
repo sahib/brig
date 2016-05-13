@@ -239,14 +239,14 @@ func TestMove(t *testing.T) {
 			return
 		}
 
-		if err := st.Cat("/dummy", &bytes.Buffer{}); err != store.ErrNoSuchFile {
+		if err := st.Cat("/dummy", &bytes.Buffer{}); !store.IsNoSuchFileError(err) {
 			t.Errorf("Move: dummy still reachable")
 			return
 		}
 
 		check("/new_dummy", data)
 
-		if err := st.Move("/dummy", "/new_dummy"); err != store.ErrNoSuchFile {
+		if err := st.Move("/dummy", "/new_dummy"); !store.IsNoSuchFileError(err) {
 			t.Errorf("Move could move dead file: %v", err)
 			return
 		}
@@ -259,12 +259,12 @@ func TestMove(t *testing.T) {
 		check("/other/a", []byte{})
 		check("/other/b", []byte{})
 
-		if err := st.Cat("/dir/a", &bytes.Buffer{}); err != store.ErrNoSuchFile {
+		if err := st.Cat("/dir/a", &bytes.Buffer{}); !store.IsNoSuchFileError(err) {
 			t.Errorf("Move: /dir/a still reachable")
 			return
 		}
 
-		if err := st.Cat("/dir/b", &bytes.Buffer{}); err != store.ErrNoSuchFile {
+		if err := st.Cat("/dir/b", &bytes.Buffer{}); !store.IsNoSuchFileError(err) {
 			t.Errorf("Move: /dir/b still reachable")
 			return
 		}
@@ -289,7 +289,7 @@ func TestRemove(t *testing.T) {
 			return
 		}
 
-		if err := st.Remove("/dummy", false); err != store.ErrNoSuchFile {
+		if err := st.Remove("/dummy", false); !store.IsNoSuchFileError(err) {
 			t.Errorf("Could remove /dummy twice: %v", err)
 			return
 		}

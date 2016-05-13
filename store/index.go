@@ -23,12 +23,29 @@ import (
 )
 
 var (
-	// ErrNoSuchFile is returned whenever a path could not be resolved to a file.
-	ErrNoSuchFile = fmt.Errorf("No such file or directory")
 	ErrExists     = fmt.Errorf("File exists")
 	ErrNotEmpty   = fmt.Errorf("Cannot remove: Directory is not empty")
 	ErrEmptyStage = fmt.Errorf("Nothing staged. No commit done.")
 )
+
+type errNoSuchFile struct {
+	path string
+}
+
+func (e *errNoSuchFile) Error() string {
+	return "No such file or directory: " + e.path
+}
+
+// NoSuchFile creates a new error that reports `path` as missing
+func NoSuchFile(path string) error {
+	return &errNoSuchFile{path}
+}
+
+// IsNoSuchFileError asserts that `err` means that the file could not be found
+func IsNoSuchFileError(err error) bool {
+	_, ok := err.(*errNoSuchFile)
+	return ok
+}
 
 // Store is responsible for adding & retrieving all files from ipfs,
 // while managing their metadata in a boltDB.
@@ -379,7 +396,7 @@ func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
 
 	file := st.Root.Lookup(prefixSlash(path))
 	if file == nil {
-		return nil, ErrNoSuchFile
+		return nil, NoSuchFile(path)
 	}
 
 	return file.Stream()
@@ -433,7 +450,7 @@ func (st *Store) Remove(path string, recursive bool) (err error) {
 
 	node := st.Root.Lookup(path)
 	if node == nil {
-		return ErrNoSuchFile
+		return NoSuchFile(path)
 	}
 
 	if node.Kind() == FileTypeDir && node.NChildren() > 0 && !recursive {
@@ -482,7 +499,7 @@ func (st *Store) List(root string, depth int) (entries []*File, err error) {
 
 	node := st.Root.Lookup(root)
 	if node == nil {
-		return nil, ErrNoSuchFile
+		return nil, NoSuchFile(root)
 	}
 
 	if depth < 0 {
@@ -538,7 +555,7 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 
 	node := st.Root.Lookup(oldPath)
 	if node == nil {
-		return ErrNoSuchFile
+		return NoSuchFile(oldPath)
 	}
 
 	if newNode := st.Root.Lookup(newPath); newNode != nil {
@@ -714,7 +731,7 @@ func (st *Store) status() (*Commit, error) {
 		return bkt.ForEach(func(bpath, bckpnt []byte) error {
 			file := st.Root.Lookup(string(bpath))
 			if file == nil {
-				return ErrNoSuchFile
+				return NoSuchFile(string(bpath))
 			}
 
 			checkpoint := &Checkpoint{}
