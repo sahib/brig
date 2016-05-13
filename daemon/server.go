@@ -249,6 +249,10 @@ func (sv *Server) Connect() error {
 		return err
 	}
 
+	if err := sv.Repo.ID.Register(sv.Repo.IPFS); err != nil {
+		return err
+	}
+
 	if err := sv.MetaHost.Connect(); err != nil {
 		log.Warningf("Unable to connect metadata client: %v", err)
 		return err
