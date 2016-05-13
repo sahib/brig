@@ -265,7 +265,13 @@ func RunCmdline(args []string) int {
 			Usage:       "Create an empty directory",
 			ArgsUsage:   "</dirname>",
 			Description: "Create a empty directory",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "parents, p",
+					Usage: "Create parent directories as needed",
+				},
+			},
+			Action: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
 		},
 		cli.Command{
 			Name:        "add",

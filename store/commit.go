@@ -122,8 +122,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 	for _, change := range c.GetChanges() {
 		file := cm.store.Root.Lookup(change.GetPath())
 		if file == nil {
-			// TODO: Which file? Make this a more specific error.
-			return ErrNoSuchFile
+			return NoSuchFile(change.GetPath())
 		}
 
 		checkpoint := &Checkpoint{}
@@ -282,8 +281,11 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
+		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.GetAuthor(), err)
+	} else {
 		cp.Author = ID
 	}
+
 	return nil
 }
 
@@ -506,7 +508,7 @@ func (s *Store) History(path string) (*History, error) {
 	return &hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		changeBuck := bckt.Bucket([]byte(path))
 		if changeBuck == nil {
-			return ErrNoSuchFile
+			return NoSuchFile(path)
 		}
 
 		return changeBuck.ForEach(func(k, v []byte) error {

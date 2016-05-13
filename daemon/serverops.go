@@ -204,9 +204,17 @@ func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 }
 
 func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	path := cmd.GetMkdirCommand().GetPath()
+	mkdirCmd := cmd.GetMkdirCommand()
+	path := mkdirCmd.GetPath()
 
-	if _, err := d.Repo.OwnStore.Mkdir(path); err != nil {
+	var err error
+	if mkdirCmd.GetCreateParents() {
+		_, err = d.Repo.OwnStore.MkdirAll(path)
+	} else {
+		_, err = d.Repo.OwnStore.Mkdir(path)
+	}
+
+	if err != nil {
 		return nil, err
 	}
 

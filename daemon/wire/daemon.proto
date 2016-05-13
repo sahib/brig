@@ -103,6 +103,7 @@ message Command {
 
     message MkdirCmd {
         required string path = 1;
+        optional bool create_parents = 2;
     }
 
     message RemoteAddCmd {
