@@ -62,7 +62,7 @@ func CatBlock(node *Node, hash gmh.Multihash, timeout time.Duration) ([]byte, er
 		return nil, err
 	}
 
-	return block.Data, nil
+	return block.Data(), nil
 }
 
 // DelBlock deletes the block pointed to by `hash`.

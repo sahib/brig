@@ -35,8 +35,7 @@ import:
 - package: github.com/nbutton23/zxcvbn-go
 - package: github.com/nightlyone/lockfile
 - package: github.com/olebedev/config
-- package: github.com/tucnak/climax
-- package: github.com/wayn3h0/go-uuid
+- package: github.com/codegangsta/cli
 - package: golang.org/x/crypto
   subpackages:
   - curve25519
@@ -49,10 +48,6 @@ import:
   subpackages:
   - unicode/norm
 - package: gopkg.in/yaml.v2
-- package: gx/ipfs/QmYVqhVfbK4BKvbW88Lhm26b3ud14sTBvcm1H7uWUx1Fkp/go-multiaddr-net
-- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/net
-- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/peer
-- package: gx/ipfs/QmZMehXD2w81qeVJP6r1mmocxwsD7kqAvuzGm2QWDw1H88/go-libp2p/p2p/protocol
 - package: github.com/jbenet/go-base58
 - package: github.com/codahale/chacha20
 - package: github.com/spf13/afero
