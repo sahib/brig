@@ -282,8 +282,11 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
+		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.GetAuthor(), err)
+	} else {
 		cp.Author = ID
 	}
+
 	return nil
 }
 
