@@ -31,6 +31,7 @@ message Checkpoint {
     required int32 change = 4;
     // TODO: add authorship message and struct.
     required string author = 5;
+    required string path = 6;
 }
 
 message History {
@@ -50,12 +51,6 @@ message Store {
     // TODO: List of commits.
 }
 
-// Change is a pair of Checkpoint and file path
-message Change {
-    required string path = 1;
-    required Checkpoint checkpoint = 2;
-}
-
 // Commit is a bag of changes, either automatically done
 // or by the user.
 message Commit {
@@ -65,7 +60,7 @@ message Commit {
     required bytes hash = 4;
 
     // List of checkpoints: 
-    repeated Change changes = 5;
+    repeated Checkpoint checkpoints = 5;
 
     // Link to parent hash:
     optional bytes parent_hash = 6;

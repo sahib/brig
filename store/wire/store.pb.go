@@ -16,7 +16,6 @@
 		History
 		Pack
 		Store
-		Change
 		Commit
 		Commits
 */
@@ -156,6 +155,7 @@ type Checkpoint struct {
 	Change   *int32 `protobuf:"varint,4,req,name=change" json:"change,omitempty"`
 	// TODO: add authorship message and struct.
 	Author           *string `protobuf:"bytes,5,req,name=author" json:"author,omitempty"`
+	Path             *string `protobuf:"bytes,6,req,name=path" json:"path,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -194,6 +194,13 @@ func (m *Checkpoint) GetChange() int32 {
 func (m *Checkpoint) GetAuthor() string {
 	if m != nil && m.Author != nil {
 		return *m.Author
+	}
+	return ""
+}
+
+func (m *Checkpoint) GetPath() string {
+	if m != nil && m.Path != nil {
+		return *m.Path
 	}
 	return ""
 }
@@ -257,31 +264,6 @@ func (m *Store) GetPacks() []*Pack {
 	return nil
 }
 
-// Change is a pair of Checkpoint and file path
-type Change struct {
-	Path             *string     `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
-	Checkpoint       *Checkpoint `protobuf:"bytes,2,req,name=checkpoint" json:"checkpoint,omitempty"`
-	XXX_unrecognized []byte      `json:"-"`
-}
-
-func (m *Change) Reset()         { *m = Change{} }
-func (m *Change) String() string { return proto.CompactTextString(m) }
-func (*Change) ProtoMessage()    {}
-
-func (m *Change) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *Change) GetCheckpoint() *Checkpoint {
-	if m != nil {
-		return m.Checkpoint
-	}
-	return nil
-}
-
 // Commit is a bag of changes, either automatically done
 // or by the user.
 type Commit struct {
@@ -290,7 +272,7 @@ type Commit struct {
 	ModTime []byte  `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
 	Hash    []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
 	// List of checkpoints:
-	Changes []*Change `protobuf:"bytes,5,rep,name=changes" json:"changes,omitempty"`
+	Checkpoints []*Checkpoint `protobuf:"bytes,5,rep,name=checkpoints" json:"checkpoints,omitempty"`
 	// Link to parent hash:
 	ParentHash       []byte `protobuf:"bytes,6,opt,name=parent_hash" json:"parent_hash,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
@@ -328,9 +310,9 @@ func (m *Commit) GetHash() []byte {
 	return nil
 }
 
-func (m *Commit) GetChanges() []*Change {
+func (m *Commit) GetCheckpoints() []*Checkpoint {
 	if m != nil {
-		return m.Changes
+		return m.Checkpoints
 	}
 	return nil
 }
@@ -367,7 +349,6 @@ func init() {
 	proto.RegisterType((*History)(nil), "brig.store.History")
 	proto.RegisterType((*Pack)(nil), "brig.store.Pack")
 	proto.RegisterType((*Store)(nil), "brig.store.Store")
-	proto.RegisterType((*Change)(nil), "brig.store.Change")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
 	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 }
@@ -571,6 +552,14 @@ func (m *Checkpoint) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintStore(data, i, uint64(len(*m.Author)))
 		i += copy(data[i:], *m.Author)
 	}
+	if m.Path == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x32
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
+		i += copy(data[i:], *m.Path)
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -688,47 +677,6 @@ func (m *Store) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Change) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Change) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Path == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
-		i += copy(data[i:], *m.Path)
-	}
-	if m.Checkpoint == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Checkpoint.Size()))
-		n3, err := m.Checkpoint.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
 func (m *Commit) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -776,8 +724,8 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
 		i += copy(data[i:], m.Hash)
 	}
-	if len(m.Changes) > 0 {
-		for _, msg := range m.Changes {
+	if len(m.Checkpoints) > 0 {
+		for _, msg := range m.Checkpoints {
 			data[i] = 0x2a
 			i++
 			i = encodeVarintStore(data, i, uint64(msg.Size()))
@@ -950,6 +898,10 @@ func (m *Checkpoint) Size() (n int) {
 		l = len(*m.Author)
 		n += 1 + l + sovStore(uint64(l))
 	}
+	if m.Path != nil {
+		l = len(*m.Path)
+		n += 1 + l + sovStore(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1003,23 +955,6 @@ func (m *Store) Size() (n int) {
 	return n
 }
 
-func (m *Change) Size() (n int) {
-	var l int
-	_ = l
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Checkpoint != nil {
-		l = m.Checkpoint.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *Commit) Size() (n int) {
 	var l int
 	_ = l
@@ -1039,8 +974,8 @@ func (m *Commit) Size() (n int) {
 		l = len(m.Hash)
 		n += 1 + l + sovStore(uint64(l))
 	}
-	if len(m.Changes) > 0 {
-		for _, e := range m.Changes {
+	if len(m.Checkpoints) > 0 {
+		for _, e := range m.Checkpoints {
 			l = e.Size()
 			n += 1 + l + sovStore(uint64(l))
 		}
@@ -1714,6 +1649,37 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			m.Author = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Path = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000020)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -1743,6 +1709,9 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000010) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000020) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -2041,129 +2010,6 @@ func (m *Store) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Change) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Change: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Change: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Path = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoint", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Checkpoint == nil {
-				m.Checkpoint = &Checkpoint{}
-			}
-			if err := m.Checkpoint.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *Commit) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -2316,7 +2162,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Changes", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2340,8 +2186,8 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Changes = append(m.Changes, &Change{})
-			if err := m.Changes[len(m.Changes)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			m.Checkpoints = append(m.Checkpoints, &Checkpoint{})
+			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

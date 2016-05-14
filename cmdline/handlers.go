@@ -603,10 +603,10 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 	)
 	fmt.Println(commitMgs)
 
-	for i, change := range status.GetChanges() {
+	for i, checkpoint := range status.GetCheckpoints() {
 		st := &store.Checkpoint{}
-		st.FromProto(change.GetCheckpoint())
-		printCheckpoint(st, i, len(status.GetChanges()))
+		st.FromProto(checkpoint)
+		printCheckpoint(st, i, len(status.GetCheckpoints()))
 	}
 	return nil
 }

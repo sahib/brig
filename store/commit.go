@@ -80,8 +80,8 @@ type Commit struct {
 	// Time at this commit was conceived.
 	ModTime time.Time
 
-	// Set of files that were changed.
-	Changes map[*File]*Checkpoint
+	// Checkpoints is the bag of actual changes.
+	Checkpoints []*Checkpoint
 
 	// Hash of this commit (== hash of the root node)
 	Hash *Hash
@@ -97,7 +97,6 @@ func NewEmptyCommit(store *Store, author id.ID) *Commit {
 		store:   store,
 		ModTime: time.Now(),
 		Author:  author,
-		Changes: make(map[*File]*Checkpoint),
 	}
 }
 
@@ -117,20 +116,15 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 		return err
 	}
 
-	changes := make(map[*File]*Checkpoint)
+	var checkpoints []*Checkpoint
 
-	for _, change := range c.GetChanges() {
-		file := cm.store.Root.Lookup(change.GetPath())
-		if file == nil {
-			return NoSuchFile(change.GetPath())
-		}
-
+	for _, protoCheckpoint := range c.GetCheckpoints() {
 		checkpoint := &Checkpoint{}
-		if err := checkpoint.FromProto(change.GetCheckpoint()); err != nil {
+		if err := checkpoint.FromProto(protoCheckpoint); err != nil {
 			return err
 		}
 
-		changes[file] = checkpoint
+		checkpoints = append(checkpoints, checkpoint)
 	}
 
 	var parentCommit *Commit
@@ -162,7 +156,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 	cm.Message = c.GetMessage()
 	cm.Author = author
 	cm.ModTime = modTime
-	cm.Changes = changes
+	cm.Checkpoints = checkpoints
 	cm.Hash = &Hash{hash}
 	cm.Parent = parentCommit
 	return nil
@@ -175,24 +169,22 @@ func (cm *Commit) ToProto() (*wire.Commit, error) {
 		return nil, err
 	}
 
-	var changes []*wire.Change
-	for file, checkpoint := range cm.Changes {
+	var checkpoints []*wire.Checkpoint
+
+	for _, checkpoint := range cm.Checkpoints {
 		protoCheckpoint, err := checkpoint.ToProto()
 		if err != nil {
 			return nil, err
 		}
 
-		changes = append(changes, &wire.Change{
-			Path:       proto.String(file.Path()),
-			Checkpoint: protoCheckpoint,
-		})
+		checkpoints = append(checkpoints, protoCheckpoint)
 	}
 
 	pcm.Message = proto.String(cm.Message)
 	pcm.Author = proto.String(string(cm.Author))
 	pcm.ModTime = modTime
 	pcm.Hash = cm.Hash.Bytes()
-	pcm.Changes = changes
+	pcm.Checkpoints = checkpoints
 
 	if cm.Parent != nil {
 		pcm.ParentHash = cm.Parent.Hash.Bytes()
@@ -238,6 +230,12 @@ type Checkpoint struct {
 	// Author of the file modifications (jabber id)
 	// TODO: Make separate Authorship struct.
 	Author id.ID
+
+	// Path of the file:
+	//   - if added/modified: the current file path.
+	//   - if removed: the old file path.
+	//   - if moved: The new file path.
+	Path string
 }
 
 // TODO: nice representation
@@ -257,6 +255,7 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 		FileSize: proto.Int64(cp.Size),
 		Change:   proto.Int32(int32(cp.Change)),
 		Author:   proto.String(string(cp.Author)),
+		Path:     proto.String(cp.Path),
 	}
 
 	if err != nil {
@@ -278,6 +277,7 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	cp.ModTime = modTime
 	cp.Size = msg.GetFileSize()
 	cp.Change = ChangeType(msg.GetChange())
+	cp.Path = msg.GetPath()
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
@@ -446,6 +446,7 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 		Size:    size,
 		Change:  change,
 		Author:  st.ID,
+		Path:    path,
 	}
 
 	protoData, err := checkpoint.Marshal()

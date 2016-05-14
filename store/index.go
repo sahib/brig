@@ -740,6 +740,7 @@ func (st *Store) status() (*Commit, error) {
 		return nil, err
 	}
 
+	// TODO: Add hash of parent and message
 	cmt := NewEmptyCommit(st, st.ID)
 	cmt.Parent = head
 	cmt.Hash = st.Root.Hash().Clone()
@@ -747,17 +748,12 @@ func (st *Store) status() (*Commit, error) {
 
 	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 		return bkt.ForEach(func(bpath, bckpnt []byte) error {
-			file := st.Root.Lookup(string(bpath))
-			if file == nil {
-				return NoSuchFile(string(bpath))
-			}
-
 			checkpoint := &Checkpoint{}
 			if err := checkpoint.Unmarshal(bckpnt); err != nil {
 				return err
 			}
 
-			cmt.Changes[file] = checkpoint
+			cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
 			return nil
 		})
 	})

@@ -15,8 +15,8 @@ func TestCommitting(t *testing.T) {
 			return
 		}
 
-		if len(head.Changes) != 0 {
-			t.Errorf("Initial commit has changes?")
+		if len(head.Checkpoints) != 0 {
+			t.Errorf("Initial commit has Checkpoints?")
 			return
 		}
 
@@ -52,20 +52,74 @@ func TestCommitting(t *testing.T) {
 			return
 		}
 
-		if len(head.Changes) != 1 {
-			t.Errorf("More or less changes than expected: %d", len(head.Changes))
+		if len(head.Checkpoints) != 1 {
+			t.Errorf("More or less Checkpoints than expected: %d", len(head.Checkpoints))
 			return
 		}
 
-		file := st.Root.Lookup("/hello.world")
-		checkpoint, ok := head.Changes[file]
-		if !ok {
-			t.Errorf("No such file in changeset: %v", file)
-			return
-		}
-
+		checkpoint := head.Checkpoints[0]
 		if checkpoint.Change != store.ChangeAdd {
 			t.Errorf("Empty file was not added?")
+			return
+		}
+	})
+}
+
+func TestStatus(t *testing.T) {
+	withIpfsStore(t, "alice", func(st *store.Store) {
+		status, err := st.Status()
+		if err != nil {
+			t.Errorf("Could not retrieve initial status: %v", err)
+			return
+		}
+
+		// TODO: Check more than .Checkpoints (also Hash, Size, etc.)
+		if len(status.Checkpoints) != 0 {
+			t.Errorf("There are checkpoint after initial commit: %d", len(status.Checkpoints))
+			return
+		}
+
+		if err := st.Touch("/hello.world"); err != nil {
+			t.Errorf("Unable to touch hello.world: %v", err)
+			return
+		}
+
+		status, err = st.Status()
+		if err != nil {
+			t.Errorf("Could not retrieve status with one added file: %v", err)
+			return
+		}
+
+		ck := status.Checkpoints[0]
+		if ck.Path != "/hello.world" {
+			t.Errorf("Bad path after touching file: ", ck.Path)
+			return
+		}
+
+		if ck.Change != store.ChangeAdd {
+			t.Errorf("Bad change type after touching file: %s", ck.Change.String())
+			return
+		}
+
+		if err := st.Remove("/hello.world", false); err != nil {
+			t.Errorf("Unable to remove /hello.world again: %v", err)
+			return
+		}
+
+		status, err = st.Status()
+		if err != nil {
+			t.Errorf("Could not retrieve status with one deleted file: %v", err)
+			return
+		}
+
+		ck = status.Checkpoints[0]
+		if ck.Path != "/hello.world" {
+			t.Errorf("Bad path after removing file: ", ck.Path)
+			return
+		}
+
+		if ck.Change != store.ChangeRemove {
+			t.Errorf("Bad change type after removing file: %s", ck.Change.String())
 			return
 		}
 	})
