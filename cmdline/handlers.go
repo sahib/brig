@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
 	"time"
+
+	"github.com/jbenet/go-multihash"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -15,6 +18,7 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
 	repoconfig "github.com/disorganizer/brig/repo/config"
+	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
@@ -335,6 +339,37 @@ func handleCat(ctx *cli.Context, client *daemon.Client) error {
 
 	return nil
 }
+func printCheckpoint(checkpoint *store.Checkpoint, idx, historylen int) {
+
+	threeWayRune, twoWayRune := treeRuneTri, treeRunePipe
+	if idx == historylen-1 {
+		threeWayRune, twoWayRune = treeRuneCorner, " "
+	}
+
+	fmt.Printf(
+		" %s%s %s #%d (%s by %s)\n",
+		threeWayRune,
+		treeRuneBar,
+		colors.Colorize("Checkpoint", colors.Cyan),
+		historylen-idx,
+		colors.Colorize(checkpoint.Change.String(), colors.Red),
+		colors.Colorize(string(checkpoint.Author), colors.Magenta),
+	)
+
+	fmt.Printf(
+		" %s   ├─ % 9s: %v\n",
+		twoWayRune,
+		colors.Colorize("Hash", colors.Green),
+		checkpoint.Hash.B58String(),
+	)
+
+	fmt.Printf(
+		" %s   └─ % 9s: %v\n",
+		twoWayRune,
+		colors.Colorize("Date", colors.Yellow),
+		checkpoint.ModTime,
+	)
+}
 
 func handleHistory(ctx *cli.Context, client *daemon.Client) error {
 	repoPath := prefixSlash(ctx.Args()[0])
@@ -350,37 +385,9 @@ func handleHistory(ctx *cli.Context, client *daemon.Client) error {
 	fmt.Println(colors.Colorize(repoPath, colors.Magenta))
 	for idx := range history {
 		checkpoint := history[len(history)-idx-1]
+		printCheckpoint(checkpoint, idx, len(history))
 
-		threeWayRune, twoWayRune := treeRuneTri, treeRunePipe
-		if idx == len(history)-1 {
-			threeWayRune, twoWayRune = treeRuneCorner, " "
-		}
-
-		fmt.Printf(
-			" %s%s %s #%d (%s by %s)\n",
-			threeWayRune,
-			treeRuneBar,
-			colors.Colorize("Checkpoint", colors.Cyan),
-			len(history)-idx,
-			colors.Colorize(checkpoint.Change.String(), colors.Red),
-			colors.Colorize(string(checkpoint.Author), colors.Magenta),
-		)
-
-		fmt.Printf(
-			" %s   ├─ % 9s: %v\n",
-			twoWayRune,
-			colors.Colorize("Hash", colors.Green),
-			checkpoint.Hash.B58String(),
-		)
-
-		fmt.Printf(
-			" %s   └─ % 9s: %v\n",
-			twoWayRune,
-			colors.Colorize("Date", colors.Yellow),
-			checkpoint.ModTime,
-		)
 	}
-
 	return nil
 }
 
@@ -575,8 +582,32 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	// TODO: format nicely.
-	fmt.Println(status)
+	msg := status.GetMessage()
+	author := status.GetAuthor()
+	modTime := time.Time{}
+	modTime.UnmarshalBinary(status.GetModTime())
+	parentHash, err := multihash.Cast(status.GetParentHash())
+	if err != nil {
+		fmt.Println(err)
+	}
+	hash, err := multihash.Cast(status.GetHash())
+	if err != nil {
+		fmt.Println(err)
+	}
+	commitMgs := fmt.Sprintf("commit:\t%s\nparent:\t%s\nAuthor:\t%s\nDate:\t%s\n%s:\n",
+		hash.B58String(),
+		parentHash.B58String(),
+		author,
+		modTime,
+		msg,
+	)
+	fmt.Println(commitMgs)
+
+	for i, change := range status.GetChanges() {
+		st := &store.Checkpoint{}
+		st.FromProto(change.GetCheckpoint())
+		printCheckpoint(st, i, len(status.GetChanges()))
+	}
 	return nil
 }
 
