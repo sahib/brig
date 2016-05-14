@@ -5,6 +5,7 @@ package util
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -322,4 +323,33 @@ func (es Errors) ToErr() error {
 		return es
 	}
 	return nil
+}
+
+// OmitBytes converts a byte slice into a string representation that
+// omits data in the middle if necessary. It is useful for testing
+// and printing user information. `lim` is the number of bytes
+//
+// Example:
+//
+// OmitBytes([]byte{1,2,3,4}, 2)
+// -> [1 ... 2]
+// OmitBytes([]byte{1,2,3,4}, 4)
+// -> [1, 2, 3, 4]
+//
+func OmitBytes(data []byte, lim int) string {
+	lo := lim
+	if lo > len(data) {
+		lo = len(data)
+	}
+
+	hi := len(data) - lim
+	if hi < 0 {
+		hi = len(data)
+	}
+
+	if len(data[hi:]) > 0 {
+		return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
+	} else {
+		return fmt.Sprintf("%v", data[:lo])
+	}
 }

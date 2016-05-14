@@ -2,12 +2,12 @@ package compress
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -107,8 +107,8 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 	got, want := dataUncomp.Bytes(), data
 	if !bytes.Equal(got, want) {
 		t.Error("Uncompressed data and input data does not match.")
-		t.Errorf("\tGOT:   %v", omit(got, 10))
-		t.Errorf("\tWANT:  %v", omit(want, 10))
+		t.Errorf("\tGOT:   %v", util.OmitBytes(got, 10))
+		t.Errorf("\tWANT:  %v", util.OmitBytes(want, 10))
 		return
 	}
 }
@@ -127,20 +127,6 @@ func TestSeek(t *testing.T) {
 			}
 		}
 	}
-}
-
-func omit(data []byte, lim int) string {
-	lo := lim
-	if lo > len(data) {
-		lo = len(data)
-	}
-
-	hi := len(data) - lim
-	if hi < 0 {
-		hi = len(data)
-	}
-
-	return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
 }
 
 func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom, useWriteTo bool) {
@@ -211,8 +197,8 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 	got, want := dataUncomp.Bytes(), data[maxOffset:]
 	if !bytes.Equal(got, want) {
 		t.Error("Uncompressed data and input data does not match.")
-		t.Errorf("\tGOT:   %v", omit(got, 10))
-		t.Errorf("\tWANT:  %v", omit(want, 10))
+		t.Errorf("\tGOT:   %v", util.OmitBytes(got, 10))
+		t.Errorf("\tWANT:  %v", util.OmitBytes(want, 10))
 		return
 	}
 }

@@ -2,13 +2,13 @@ package encrypt
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
 	"os"
 	"testing"
 
+	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -116,25 +116,6 @@ func TestSimpleEncDec(t *testing.T) {
 	for _, size := range SizeTests {
 		t.Logf("Testing SimpleEncDec for size %d", size)
 		testSimpleEncDec(t, size)
-	}
-}
-
-// TODO: add to general testutils?
-func omit(data []byte, lim int) string {
-	lo := lim
-	if lo > len(data) {
-		lo = len(data)
-	}
-
-	hi := len(data) - lim
-	if hi < 0 {
-		hi = len(data)
-	}
-
-	if len(data[hi:]) > 0 {
-		return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
-	} else {
-		return fmt.Sprintf("%v", data[:lo])
 	}
 }
 
@@ -308,8 +289,8 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 		// Check the data actually matches the source data.
 		if !bytes.Equal(sourceData[jumpedTo:], dest.Bytes()) {
 			t.Errorf("Seeked data does not match expectations.")
-			t.Errorf("\tEXPECTED: %v", omit(sourceData[jumpedTo:], 10))
-			t.Errorf("\tGOT:      %v", omit(dest.Bytes(), 10))
+			t.Errorf("\tEXPECTED: %v", util.OmitBytes(sourceData[jumpedTo:], 10))
+			t.Errorf("\tGOT:      %v", util.OmitBytes(dest.Bytes(), 10))
 			return
 		}
 

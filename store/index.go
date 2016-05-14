@@ -319,13 +319,11 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	// Check if the file was already added:
 	file := st.Root.Lookup(repoPath)
 
-	log.Debugf("bolt lookup: %v", file != nil)
-
 	if file != nil {
 		// We know this file already.
 		log.WithFields(log.Fields{
 			"file": repoPath,
-		}).Info("Updating file.")
+		}).Info("File exists; modifying.")
 	} else {
 		if err := st.mkdirParents(repoPath); err != nil {
 			return err
