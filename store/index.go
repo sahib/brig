@@ -297,9 +297,9 @@ func (st *Store) mkdirParents(path string) error {
 	elems := strings.Split(path, "/")
 
 	for idx := 1; idx < len(elems)-1; idx++ {
-		dir := strings.Join(elems[:len(elems)-idx], "/")
+		dir := strings.Join(elems[:idx+1], "/")
 		if _, err := st.Mkdir(dir); err != nil {
-			log.Warningf("store-add: failed to create intermediate dir %s: %v", dir, err)
+			log.Warningf("store-add: failed to create intermediate dir `%s`: %v", dir, err)
 			return err
 		}
 	}

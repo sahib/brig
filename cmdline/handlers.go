@@ -553,7 +553,7 @@ func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
 
 	var err error
 
-	if ctx.Bool("--parents") {
+	if ctx.Bool("parents") {
 		err = client.MkdirAll(path)
 	} else {
 		err = client.Mkdir(path)
