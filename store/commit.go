@@ -129,7 +129,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 
 	var parentCommit *Commit
 
-	if c.GetParentHash() != nil {
+	if c.GetParentHash() != nil && cm.store != nil {
 		err = cm.store.viewWithBucket(
 			"commits",
 			func(tx *bolt.Tx, bckt *bolt.Bucket) error {
@@ -228,7 +228,6 @@ type Checkpoint struct {
 	Change ChangeType
 
 	// Author of the file modifications (jabber id)
-	// TODO: Make separate Authorship struct.
 	Author id.ID
 
 	// Path of the file:
@@ -316,22 +315,22 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 // It is used to enable chronological sorting of a bunch of commits.
 type Commits []*Commit
 
-func (cs Commits) Len() int {
-	return len(cs)
+func (cs *Commits) Len() int {
+	return len(*cs)
 }
 
-func (cs Commits) Less(i, j int) bool {
-	return cs[i].ModTime.Before(cs[j].ModTime)
+func (cs *Commits) Less(i, j int) bool {
+	return (*cs)[i].ModTime.Before((*cs)[j].ModTime)
 }
 
-func (cs Commits) Swap(i, j int) {
-	cs[i], cs[j] = cs[j], cs[i]
+func (cs *Commits) Swap(i, j int) {
+	(*cs)[i], (*cs)[j] = (*cs)[j], (*cs)[i]
 }
 
-func (cs Commits) ToProto() (*wire.Commits, error) {
+func (cs *Commits) ToProto() (*wire.Commits, error) {
 	protoCmts := &wire.Commits{}
 
-	for _, cmt := range cs {
+	for _, cmt := range *cs {
 		protoCmt, err := cmt.ToProto()
 		if err != nil {
 			return nil, err
@@ -343,23 +342,27 @@ func (cs Commits) ToProto() (*wire.Commits, error) {
 	return protoCmts, nil
 }
 
-// TODO: This has some problems...
-// func (cs Commits) UnmarshalProto(data []byte) error {
-// 	protoCmts := &wire.Commits{}
-// 	if err := proto.Unmarshal(data, protoCmts); err != nil {
-// 		return err
-// 	}
-//
-// 	for _, protoCmt := range protoCmts.GetCommits() {
-// TODO: store
-// 		cmt := NewEmptyCommit()
-//
-// TODO: does this even work?
-// 		cs = append(cs, )
-// 	}
-//
-// 	return nil
-// }
+func (cs *Commits) UnmarshalProto(data []byte) error {
+	protoCmts := &wire.Commits{}
+	if err := proto.Unmarshal(data, protoCmts); err != nil {
+		return err
+	}
+
+	return cs.FromProto(protoCmts)
+}
+
+func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
+	for _, protoCmt := range protoCmts.GetCommits() {
+		cmt := NewEmptyCommit(nil, "")
+		if err := cmt.FromProto(protoCmt); err != nil {
+			return err
+		}
+
+		*cs = append(*cs, cmt)
+	}
+
+	return nil
+}
 
 // History remembers the changes made to a file.
 // New changes get appended to the end.

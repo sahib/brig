@@ -849,7 +849,7 @@ func (st *Store) MakeCommit(msg string) error {
 }
 
 // TODO: respect from/to ranges
-func (st *Store) Log() (Commits, error) {
+func (st *Store) Log() (*Commits, error) {
 	var cmts Commits
 
 	st.mu.Lock()
@@ -871,6 +871,6 @@ func (st *Store) Log() (Commits, error) {
 		return nil, err
 	}
 
-	sort.Sort(cmts)
-	return cmts, nil
+	sort.Sort(&cmts)
+	return &cmts, nil
 }
