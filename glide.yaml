@@ -19,6 +19,7 @@ import:
   subpackages:
   - proto
 - package: github.com/golang/snappy
+- package: github.com/ipfs/go-ipfs-util
 - package: github.com/ipfs/go-ipfs
   subpackages:
   - blocks

@@ -14,6 +14,7 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
+	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -571,13 +572,13 @@ func (f *File) hashUnlocked() *Hash {
 		return f.hash
 	}
 
-	// Take a lucky guess:
-	// TODO: Is this bullshit here needed?
-	code := multihash.BLAKE2S
-	mhash, err := multihash.Encode(make([]byte, multihash.DefaultLengths[code]), code)
+	// Create a new empty checksum by figuring out the default:
+	code := goipfsutil.DefaultIpfsHash
+	length := multihash.DefaultLengths[code]
+
+	mhash, err := multihash.Encode(make([]byte, length), code)
 	if err != nil {
-		// TODO: check if this is a good idea at all.
-		log.Errorf("Oops")
+		log.Errorf("BUG: Bad default hash code in go-ipfs-util: %d", code)
 		return nil
 	}
 

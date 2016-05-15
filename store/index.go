@@ -23,9 +23,10 @@ import (
 )
 
 var (
-	ErrExists     = fmt.Errorf("File exists")
-	ErrNotEmpty   = fmt.Errorf("Cannot remove: Directory is not empty")
-	ErrEmptyStage = fmt.Errorf("Nothing staged. No commit done.")
+	ErrExists             = fmt.Errorf("File exists")
+	ErrNotEmpty           = fmt.Errorf("Cannot remove: Directory is not empty")
+	ErrEmptyStage         = fmt.Errorf("Nothing staged. No commit done")
+	ErrEmptyCommitMessage = fmt.Errorf("Not doing a commit due to missing messsage")
 )
 
 type errNoSuchFile struct {
@@ -733,6 +734,23 @@ func (st *Store) Status() (*Commit, error) {
 	return st.status()
 }
 
+func (st *Store) makeCommitHash(current, parent *Commit) (*Hash, error) {
+	// This is inefficient, but is supposed to be easy to understand
+	// while this is still playground stuff.
+	s := ""
+	s += fmt.Sprintf("Parent:  %s\n", parent.Hash.B58String())
+	s += fmt.Sprintf("ModTime: %s\n", current.ModTime.String())
+	s += fmt.Sprintf("Author:  %s\n", current.Author)
+	s += fmt.Sprintf("Message: %s\n", current.Message)
+
+	hash := st.Root.Hash().Clone()
+	if err := hash.MixIn([]byte(s)); err != nil {
+		return nil, err
+	}
+
+	return hash, nil
+}
+
 // Unlocked version of Status()
 func (st *Store) status() (*Commit, error) {
 	head, err := st.head()
@@ -740,11 +758,16 @@ func (st *Store) status() (*Commit, error) {
 		return nil, err
 	}
 
-	// TODO: Add hash of parent and message
 	cmt := NewEmptyCommit(st, st.ID)
 	cmt.Parent = head
-	cmt.Hash = st.Root.Hash().Clone()
 	cmt.Message = "Uncommitted changes"
+
+	hash, err := st.makeCommitHash(cmt, head)
+	if err != nil {
+		return nil, err
+	}
+
+	cmt.Hash = hash
 
 	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 		return bkt.ForEach(func(bpath, bckpnt []byte) error {
@@ -769,6 +792,10 @@ func (st *Store) status() (*Commit, error) {
 func (st *Store) MakeCommit(msg string) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+
+	if msg == "" {
+		return ErrEmptyCommitMessage
+	}
 
 	cmt, err := st.status()
 	if err != nil {

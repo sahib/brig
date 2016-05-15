@@ -100,3 +100,24 @@ func (h *Hash) Equal(other *Hash) bool {
 
 	return bytes.Equal(h.Multihash, other.Multihash)
 }
+
+// Add hashes `data` and xors the resulting hash to `h`.
+// The hash algorithm and length depends on what kind
+// of hash `h` currently holds.
+func (h *Hash) MixIn(data []byte) error {
+	dec, err := multihash.Decode(h.Multihash)
+	if err != nil {
+		return err
+	}
+
+	dataMH, err := multihash.Sum(h.Multihash, dec.Code, dec.Length)
+	if err != nil {
+		return err
+	}
+
+	for i := 2; i < len(dataMH); i++ {
+		h.Multihash[i] ^= dataMH[i]
+	}
+
+	return nil
+}
