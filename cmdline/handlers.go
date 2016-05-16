@@ -634,3 +634,28 @@ func handleDiff(ctx *cli.Context, client *daemon.Client) error {
 	// TODO
 	return nil
 }
+
+func handlePin(ctx *cli.Context, client *daemon.Client) error {
+	path := ctx.Args()[0]
+
+	if ctx.Bool("is-pinned") {
+		isPinned, err := client.IsPinned(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("%s: %t\n", path, isPinned)
+		return nil
+	}
+
+	fn := client.Pin
+	if ctx.Bool("unpin") {
+		fn = client.Unpin
+	}
+
+	if err := fn(path); err != nil {
+		return err
+	}
+
+	return nil
+}

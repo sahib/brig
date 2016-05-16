@@ -380,3 +380,40 @@ func (c *Client) Log(from, to *store.Hash) (*storewire.Commits, error) {
 
 	return resp.GetLogResp().GetCommits(), nil
 }
+
+func (c *Client) doPin(path string, balance int) (bool, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_PIN.Enum(),
+		PinCommand: &wire.Command_PinCmd{
+			Path:    proto.String(path),
+			Balance: proto.Int32(int32(balance)),
+		},
+	}
+
+	resp, err := c.recvResponse("pin")
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetPinResp().GetIsPinned(), nil
+}
+
+func (c *Client) Pin(path string) error {
+	if _, err := c.doPin(path, +1); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) Unpin(path string) error {
+	if _, err := c.doPin(path, -1); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) IsPinned(path string) (bool, error) {
+	return c.doPin(path, 0)
+}

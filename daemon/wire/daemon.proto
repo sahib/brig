@@ -31,6 +31,8 @@ enum MessageType {
     COMMIT = 19;
     DIFF = 20;
     LOG = 21;
+
+    PIN = 22;
 }
 
 enum OnlineQuery {
@@ -145,6 +147,16 @@ message Command {
         optional bytes high = 2;
     }
 
+    message PinCmd {
+        // Balance can be either:
+        //  > 0: Pin the path.
+        // == 0: Do nothing (but respond pinning status)
+        //  < 0: Unpin the object. 
+        // Future implementation might use the exact value.
+        required int32 balance = 1;
+        required string path = 2;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -171,6 +183,8 @@ message Command {
     optional CommitCmd commit_command = 21;
     optional DiffCmd diff_command = 22;
     optional LogCmd log_command = 23;
+
+    optional PinCmd pin_command = 24;
 }
 
 message Remote {
@@ -212,6 +226,10 @@ message Response {
         required brig.store.Commits Commits = 1;
     }
 
+    message PinResp {
+        required bool is_pinned = 1;
+    }
+
     required MessageType response_type = 1;
     required bool success = 2;
     optional string error = 3;
@@ -224,4 +242,5 @@ message Response {
     optional OnlineStatusResp online_status_resp = 9;
     optional StatusResp status_resp = 10;
     optional LogResp log_resp = 11;
+    optional PinResp pin_resp = 12;
 }

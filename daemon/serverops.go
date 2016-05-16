@@ -39,6 +39,7 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_COMMIT:        handleCommit,
 	wire.MessageType_DIFF:          handleDiff,
 	wire.MessageType_LOG:           handleLog,
+	wire.MessageType_PIN:           handlePin,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
@@ -362,6 +363,37 @@ func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respons
 	return &wire.Response{
 		LogResp: &wire.Response_LogResp{
 			Commits: protoCmts,
+		},
+	}, nil
+}
+
+func handlePin(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	pinCmd := cmd.GetPinCommand()
+	var isPinned bool
+
+	switch balance := pinCmd.GetBalance(); {
+	case balance < 0:
+		if err := d.Repo.OwnStore.Unpin(pinCmd.GetPath()); err != nil {
+			return nil, err
+		}
+
+		isPinned = false
+	case balance > 0:
+		if err := d.Repo.OwnStore.Pin(pinCmd.GetPath()); err != nil {
+			return nil, err
+		}
+
+		isPinned = true
+	case balance == 0:
+		var err error
+		if isPinned, err = d.Repo.OwnStore.IsPinned(pinCmd.GetPath()); err != nil {
+			return nil, err
+		}
+	}
+
+	return &wire.Response{
+		PinResp: &wire.Response_PinResp{
+			IsPinned: proto.Bool(isPinned),
 		},
 	}, nil
 }

@@ -187,6 +187,10 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
+	if err := st.IPFS.Pin(mhash); err != nil {
+		return err
+	}
+
 	log.Infof(
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
@@ -234,10 +238,71 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	return nil
 }
 
+func (st *Store) pinOp(repoPath string, doUnpin bool) error {
+	node := st.Root.Lookup(repoPath)
+	if node == nil {
+		return NoSuchFile(repoPath)
+	}
+
+	var pinMe []*File
+
+	switch kind := node.Kind(); kind {
+	case FileTypeDir:
+		node.Walk(true, func(child *File) bool {
+			if child.kind == FileTypeRegular {
+				pinMe = append(pinMe, child)
+			}
+
+			return true
+		})
+	case FileTypeRegular:
+		pinMe = append(pinMe, node)
+	default:
+		return fmt.Errorf("Bad node kind: %d", kind)
+	}
+
+	fn := st.IPFS.Pin
+	if doUnpin {
+		fn = st.IPFS.Unpin
+	}
+
+	var errs util.Errors
+	for _, toPin := range pinMe {
+		if err := fn(toPin.Hash().Multihash); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs.ToErr()
+}
+
+func (st *Store) Pin(repoPath string) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.pinOp(repoPath, false)
+}
+
+func (st *Store) Unpin(repoPath string) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.pinOp(repoPath, false)
+}
+
+func (st *Store) IsPinned(repoPath string) (bool, error) {
+	node := st.Root.Lookup(repoPath)
+	if node == nil {
+		return false, NoSuchFile(repoPath)
+	}
+
+	return st.IPFS.IsPinned(node.Hash().Multihash)
+}
+
 // Touch creates a new empty file.
 // It is provided as convenience wrapper around AddFromReader.
-func (s *Store) Touch(repoPath string) error {
-	return s.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
+func (st *Store) Touch(repoPath string) error {
+	return st.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
 // Stream returns the stream of the file at `path`.
@@ -312,14 +377,24 @@ func (st *Store) Remove(path string, recursive bool) (err error) {
 		return true
 	})
 
+	errs := util.Errors{}
+
 	for _, child := range toBeRemoved {
+		if child.Kind() == FileTypeRegular {
+			if err := st.IPFS.Unpin(child.Hash().Multihash); err != nil {
+				errs = append(errs, err)
+			}
+		}
+
 		child.Lock()
 		child.Metadata.size *= -1
 		child.updateParents()
 		child.Unlock()
 		child.Remove()
+
 	}
-	return nil
+
+	return errs.ToErr()
 }
 
 // List exports a directory listing of `root` up to `depth` levels down.
@@ -395,7 +470,7 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 		return ErrExists
 	}
 
-	toBeRemoved := make(map[string]*File)
+	newPaths := make(map[string]*File)
 
 	// Work recursively for directories:
 	node.Walk(true, func(child *File) bool {
@@ -411,7 +486,7 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 			return false
 		}
 
-		toBeRemoved[newChildPath] = child
+		newPaths[newChildPath] = child
 
 		md := node.Metadata
 		if err = st.MakeCheckpoint(md, md, oldChildPath, newChildPath); err != nil {
@@ -425,7 +500,9 @@ func (st *Store) Move(oldPath, newPath string) (err error) {
 		return err
 	}
 
-	for newPath, node := range toBeRemoved {
+	// Note: No pinning information needs to change,
+	//       Move() does not influence the Hash() of the file.
+	for newPath, node := range newPaths {
 		node.Remove()
 		node.insert(st.Root, newPath)
 	}
