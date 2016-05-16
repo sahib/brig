@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
+	"strings"
 	"time"
-
-	"github.com/jbenet/go-multihash"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -576,37 +574,72 @@ func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
 	return nil
 }
 
+type changeByType map[store.ChangeType][]*store.Checkpoint
+
 func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 	status, err := client.Status()
 	if err != nil {
 		return err
 	}
 
-	msg := status.GetMessage()
-	author := status.GetAuthor()
-	modTime := time.Time{}
-	modTime.UnmarshalBinary(status.GetModTime())
-	parentHash, err := multihash.Cast(status.GetParentHash())
-	if err != nil {
-		fmt.Println(err)
+	if len(status.GetCheckpoints()) == 0 {
+		fmt.Println("Nothing to commit.")
+		return nil
 	}
-	hash, err := multihash.Cast(status.GetHash())
-	if err != nil {
-		fmt.Println(err)
-	}
-	commitMgs := fmt.Sprintf("commit:\t%s\nparent:\t%s\nAuthor:\t%s\nDate:\t%s\n%s:\n",
-		hash.B58String(),
-		parentHash.B58String(),
-		author,
-		modTime,
-		msg,
-	)
-	fmt.Println(commitMgs)
 
-	for i, checkpoint := range status.GetCheckpoints() {
-		st := &store.Checkpoint{}
-		st.FromProto(checkpoint)
-		printCheckpoint(st, i, len(status.GetCheckpoints()))
+	userToChanges := make(map[id.ID]changeByType)
+	for _, checkpoint := range status.GetCheckpoints() {
+		cp := &store.Checkpoint{}
+		if err := cp.FromProto(checkpoint); err != nil {
+			return err
+		}
+
+		byAuthor, ok := userToChanges[cp.Author]
+		if !ok {
+			byAuthor = make(changeByType)
+			userToChanges[cp.Author] = byAuthor
+		}
+
+		byAuthor[cp.Change] = append(byAuthor[cp.Change], cp)
+	}
+
+	for user, changesByuser := range userToChanges {
+		fmt.Printf(
+			"Changes by %s:\n",
+			colors.Colorize(string(user), colors.Magenta),
+		)
+		printChangesByUser(changesByuser)
+	}
+
+	return nil
+}
+
+func printChangesByUser(changesByuser changeByType) error {
+	for typ, checkpoints := range changesByuser {
+		fmt.Printf("\n    %s:\n", strings.Title(typ.String()))
+		for _, change := range checkpoints {
+
+			msg := fmt.Sprintf(
+				"        %s (%s)",
+				change.Path, humanize.Bytes(uint64(change.Size)),
+			)
+
+			color := 0
+			switch typ {
+			case store.ChangeAdd:
+				color = colors.Green
+			case store.ChangeRemove:
+				color = colors.Red
+			case store.ChangeModify:
+				color = colors.Yellow
+			case store.ChangeMove:
+				color = colors.Cyan
+			default:
+				return fmt.Errorf("Invalid change type")
+
+			}
+			fmt.Println(colors.Colorize(msg, color))
+		}
 	}
 	return nil
 }
