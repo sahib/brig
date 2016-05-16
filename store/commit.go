@@ -31,8 +31,11 @@ type Commit struct {
 	// Checkpoints is the bag of actual changes.
 	Checkpoints []*Checkpoint
 
-	// Hash of this commit (== hash of the root node)
+	// Hash of this commit
 	Hash *Hash
+
+	// TreeHash is the hash of the root node at this point in time
+	TreeHash *Hash
 
 	// Parent commit (only nil for initial commit)
 	Parent *Commit
@@ -61,6 +64,11 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 	}
 
 	hash, err := multihash.Cast(c.GetHash())
+	if err != nil {
+		return err
+	}
+
+	treeHash, err := multihash.Cast(c.GetTreeHash())
 	if err != nil {
 		return err
 	}
@@ -107,6 +115,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 	cm.ModTime = modTime
 	cm.Checkpoints = checkpoints
 	cm.Hash = &Hash{hash}
+	cm.TreeHash = &Hash{treeHash}
 	cm.Parent = parentCommit
 	return nil
 }
@@ -133,6 +142,7 @@ func (cm *Commit) ToProto() (*wire.Commit, error) {
 	pcm.Author = proto.String(string(cm.Author))
 	pcm.ModTime = modTime
 	pcm.Hash = cm.Hash.Bytes()
+	pcm.TreeHash = cm.TreeHash.Bytes()
 	pcm.Checkpoints = checkpoints
 
 	if cm.Parent != nil {
@@ -207,11 +217,12 @@ func (st *Store) makeCommitHash(current, parent *Commit) (*Hash, error) {
 	// while this is still playground stuff.
 	s := ""
 	s += fmt.Sprintf("Parent:  %s\n", parent.Hash.B58String())
-	s += fmt.Sprintf("ModTime: %s\n", current.ModTime.String())
-	s += fmt.Sprintf("Author:  %s\n", current.Author)
 	s += fmt.Sprintf("Message: %s\n", current.Message)
+	s += fmt.Sprintf("Author:  %s\n", current.Author)
 
-	hash := st.Root.Hash().Clone()
+	hash := current.TreeHash.Clone()
+
+	fmt.Printf("tree %v\nhash %v\n", current.TreeHash, hash)
 	if err := hash.MixIn([]byte(s)); err != nil {
 		return nil, err
 	}
@@ -229,6 +240,7 @@ func (st *Store) status() (*Commit, error) {
 	cmt := NewEmptyCommit(st, st.ID)
 	cmt.Parent = head
 	cmt.Message = "Uncommitted changes"
+	cmt.TreeHash = st.Root.Hash().Clone()
 
 	hash, err := st.makeCommitHash(cmt, head)
 	if err != nil {

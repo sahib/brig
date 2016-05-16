@@ -91,6 +91,7 @@ func (st *Store) createInitialCommit() error {
 	rootCommit := NewEmptyCommit(st, st.ID)
 	rootCommit.Message = "Initial commit"
 	rootCommit.Hash = st.Root.Hash().Clone()
+	rootCommit.TreeHash = st.Root.Hash().Clone()
 
 	data, err := rootCommit.MarshalProto()
 	if err != nil {

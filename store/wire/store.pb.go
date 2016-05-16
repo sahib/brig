@@ -149,11 +149,10 @@ func (m *Dirlist) GetEntries() []*Dirent {
 }
 
 type Checkpoint struct {
-	Hash     []byte `protobuf:"bytes,1,req,name=hash" json:"hash,omitempty"`
-	ModTime  []byte `protobuf:"bytes,2,req,name=mod_time" json:"mod_time,omitempty"`
-	FileSize *int64 `protobuf:"varint,3,req,name=file_size" json:"file_size,omitempty"`
-	Change   *int32 `protobuf:"varint,4,req,name=change" json:"change,omitempty"`
-	// TODO: add authorship message and struct.
+	Hash             []byte  `protobuf:"bytes,1,req,name=hash" json:"hash,omitempty"`
+	ModTime          []byte  `protobuf:"bytes,2,req,name=mod_time" json:"mod_time,omitempty"`
+	FileSize         *int64  `protobuf:"varint,3,req,name=file_size" json:"file_size,omitempty"`
+	Change           *int32  `protobuf:"varint,4,req,name=change" json:"change,omitempty"`
 	Author           *string `protobuf:"bytes,5,req,name=author" json:"author,omitempty"`
 	Path             *string `protobuf:"bytes,6,req,name=path" json:"path,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -267,14 +266,15 @@ func (m *Store) GetPacks() []*Pack {
 // Commit is a bag of changes, either automatically done
 // or by the user.
 type Commit struct {
-	Message *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	Author  *string `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
-	ModTime []byte  `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
-	Hash    []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
+	Message  *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
+	Author   *string `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
+	ModTime  []byte  `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
+	Hash     []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
+	TreeHash []byte  `protobuf:"bytes,5,req,name=tree_hash" json:"tree_hash,omitempty"`
 	// List of checkpoints:
-	Checkpoints []*Checkpoint `protobuf:"bytes,5,rep,name=checkpoints" json:"checkpoints,omitempty"`
+	Checkpoints []*Checkpoint `protobuf:"bytes,6,rep,name=checkpoints" json:"checkpoints,omitempty"`
 	// Link to parent hash:
-	ParentHash       []byte `protobuf:"bytes,6,opt,name=parent_hash" json:"parent_hash,omitempty"`
+	ParentHash       []byte `protobuf:"bytes,7,opt,name=parent_hash" json:"parent_hash,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
@@ -306,6 +306,13 @@ func (m *Commit) GetModTime() []byte {
 func (m *Commit) GetHash() []byte {
 	if m != nil {
 		return m.Hash
+	}
+	return nil
+}
+
+func (m *Commit) GetTreeHash() []byte {
+	if m != nil {
+		return m.TreeHash
 	}
 	return nil
 }
@@ -724,9 +731,17 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
 		i += copy(data[i:], m.Hash)
 	}
+	if m.TreeHash == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.TreeHash)))
+		i += copy(data[i:], m.TreeHash)
+	}
 	if len(m.Checkpoints) > 0 {
 		for _, msg := range m.Checkpoints {
-			data[i] = 0x2a
+			data[i] = 0x32
 			i++
 			i = encodeVarintStore(data, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(data[i:])
@@ -737,7 +752,7 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.ParentHash != nil {
-		data[i] = 0x32
+		data[i] = 0x3a
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.ParentHash)))
 		i += copy(data[i:], m.ParentHash)
@@ -972,6 +987,10 @@ func (m *Commit) Size() (n int) {
 	}
 	if m.Hash != nil {
 		l = len(m.Hash)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.TreeHash != nil {
+		l = len(m.TreeHash)
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if len(m.Checkpoints) > 0 {
@@ -2162,6 +2181,35 @@ func (m *Commit) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TreeHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TreeHash = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
 			}
 			var msglen int
@@ -2191,7 +2239,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ParentHash", wireType)
 			}
@@ -2245,6 +2293,9 @@ func (m *Commit) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
