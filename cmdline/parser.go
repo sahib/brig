@@ -99,6 +99,24 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "<filename>",
 		},
 		cli.Command{
+			Name:        "pin",
+			Category:    repoGroup,
+			Usage:       "Pin a file locally to this machine",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
+			ArgsUsage:   "<file>",
+			Description: "Ensure that <file> is physically stored on this machine.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "unpin,u",
+					Usage: "Remove a pin again",
+				},
+				cli.BoolFlag{
+					Name:  "is-pinned, i",
+					Usage: "Check if <file> is pinned",
+				},
+			},
+		},
+		cli.Command{
 			Name:        "net",
 			Category:    repoGroup,
 			Usage:       "Query and modify network status",

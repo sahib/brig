@@ -57,6 +57,7 @@ const (
 	MessageType_COMMIT        MessageType = 19
 	MessageType_DIFF          MessageType = 20
 	MessageType_LOG           MessageType = 21
+	MessageType_PIN           MessageType = 22
 )
 
 var MessageType_name = map[int32]string{
@@ -82,6 +83,7 @@ var MessageType_name = map[int32]string{
 	19: "COMMIT",
 	20: "DIFF",
 	21: "LOG",
+	22: "PIN",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -106,6 +108,7 @@ var MessageType_value = map[string]int32{
 	"COMMIT":        19,
 	"DIFF":          20,
 	"LOG":           21,
+	"PIN":           22,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -188,6 +191,7 @@ type Command struct {
 	CommitCommand       *Command_CommitCmd       `protobuf:"bytes,21,opt,name=commit_command" json:"commit_command,omitempty"`
 	DiffCommand         *Command_DiffCmd         `protobuf:"bytes,22,opt,name=diff_command" json:"diff_command,omitempty"`
 	LogCommand          *Command_LogCmd          `protobuf:"bytes,23,opt,name=log_command" json:"log_command,omitempty"`
+	PinCommand          *Command_PinCmd          `protobuf:"bytes,24,opt,name=pin_command" json:"pin_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
@@ -352,6 +356,13 @@ func (m *Command) GetDiffCommand() *Command_DiffCmd {
 func (m *Command) GetLogCommand() *Command_LogCmd {
 	if m != nil {
 		return m.LogCommand
+	}
+	return nil
+}
+
+func (m *Command) GetPinCommand() *Command_PinCmd {
+	if m != nil {
+		return m.PinCommand
 	}
 	return nil
 }
@@ -771,6 +782,35 @@ func (m *Command_LogCmd) GetHigh() []byte {
 	return nil
 }
 
+type Command_PinCmd struct {
+	// Balance can be either:
+	//  > 0: Pin the path.
+	// == 0: Do nothing (but respond pinning status)
+	//  < 0: Unpin the object.
+	// Future implementation might use the exact value.
+	Balance          *int32  `protobuf:"varint,1,req,name=balance" json:"balance,omitempty"`
+	Path             *string `protobuf:"bytes,2,req,name=path" json:"path,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Command_PinCmd) Reset()         { *m = Command_PinCmd{} }
+func (m *Command_PinCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_PinCmd) ProtoMessage()    {}
+
+func (m *Command_PinCmd) GetBalance() int32 {
+	if m != nil && m.Balance != nil {
+		return *m.Balance
+	}
+	return 0
+}
+
+func (m *Command_PinCmd) GetPath() string {
+	if m != nil && m.Path != nil {
+		return *m.Path
+	}
+	return ""
+}
+
 type Remote struct {
 	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
 	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
@@ -815,6 +855,7 @@ type Response struct {
 	OnlineStatusResp *Response_OnlineStatusResp `protobuf:"bytes,9,opt,name=online_status_resp" json:"online_status_resp,omitempty"`
 	StatusResp       *Response_StatusResp       `protobuf:"bytes,10,opt,name=status_resp" json:"status_resp,omitempty"`
 	LogResp          *Response_LogResp          `protobuf:"bytes,11,opt,name=log_resp" json:"log_resp,omitempty"`
+	PinResp          *Response_PinResp          `protobuf:"bytes,12,opt,name=pin_resp" json:"pin_resp,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
@@ -895,6 +936,13 @@ func (m *Response) GetStatusResp() *Response_StatusResp {
 func (m *Response) GetLogResp() *Response_LogResp {
 	if m != nil {
 		return m.LogResp
+	}
+	return nil
+}
+
+func (m *Response) GetPinResp() *Response_PinResp {
+	if m != nil {
+		return m.PinResp
 	}
 	return nil
 }
@@ -1027,6 +1075,22 @@ func (m *Response_LogResp) GetCommits() *brig_store.Commits {
 	return nil
 }
 
+type Response_PinResp struct {
+	IsPinned         *bool  `protobuf:"varint,1,req,name=is_pinned" json:"is_pinned,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Response_PinResp) Reset()         { *m = Response_PinResp{} }
+func (m *Response_PinResp) String() string { return proto.CompactTextString(m) }
+func (*Response_PinResp) ProtoMessage()    {}
+
+func (m *Response_PinResp) GetIsPinned() bool {
+	if m != nil && m.IsPinned != nil {
+		return *m.IsPinned
+	}
+	return false
+}
+
 func init() {
 	proto.RegisterType((*Command)(nil), "brig.daemon.Command")
 	proto.RegisterType((*Command_AddCmd)(nil), "brig.daemon.Command.AddCmd")
@@ -1051,6 +1115,7 @@ func init() {
 	proto.RegisterType((*Command_CommitCmd)(nil), "brig.daemon.Command.CommitCmd")
 	proto.RegisterType((*Command_DiffCmd)(nil), "brig.daemon.Command.DiffCmd")
 	proto.RegisterType((*Command_LogCmd)(nil), "brig.daemon.Command.LogCmd")
+	proto.RegisterType((*Command_PinCmd)(nil), "brig.daemon.Command.PinCmd")
 	proto.RegisterType((*Remote)(nil), "brig.daemon.Remote")
 	proto.RegisterType((*Response)(nil), "brig.daemon.Response")
 	proto.RegisterType((*Response_ListResp)(nil), "brig.daemon.Response.ListResp")
@@ -1061,6 +1126,7 @@ func init() {
 	proto.RegisterType((*Response_OnlineStatusResp)(nil), "brig.daemon.Response.OnlineStatusResp")
 	proto.RegisterType((*Response_StatusResp)(nil), "brig.daemon.Response.StatusResp")
 	proto.RegisterType((*Response_LogResp)(nil), "brig.daemon.Response.LogResp")
+	proto.RegisterType((*Response_PinResp)(nil), "brig.daemon.Response.PinResp")
 	proto.RegisterEnum("brig.daemon.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("brig.daemon.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
@@ -1321,6 +1387,18 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n22
+	}
+	if m.PinCommand != nil {
+		data[i] = 0xc2
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.PinCommand.Size()))
+		n23, err := m.PinCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n23
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2014,6 +2092,42 @@ func (m *Command_LogCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_PinCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_PinCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Balance == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		i = encodeVarintDaemon(data, i, uint64(*m.Balance))
+	}
+	if m.Path == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Path)))
+		i += copy(data[i:], *m.Path)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Remote) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -2105,81 +2219,91 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.HistoryResp.Size()))
-		n23, err := m.HistoryResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n23
-	}
-	if m.ListResp != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
-		n24, err := m.ListResp.MarshalTo(data[i:])
+		n24, err := m.HistoryResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n24
 	}
-	if m.RemoteListResp != nil {
-		data[i] = 0x32
+	if m.ListResp != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
-		n25, err := m.RemoteListResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
+		n25, err := m.ListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n25
 	}
-	if m.RemoteLocateResp != nil {
-		data[i] = 0x3a
+	if m.RemoteListResp != nil {
+		data[i] = 0x32
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
-		n26, err := m.RemoteLocateResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
+		n26, err := m.RemoteListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n26
 	}
-	if m.RemoteSelfResp != nil {
-		data[i] = 0x42
+	if m.RemoteLocateResp != nil {
+		data[i] = 0x3a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
-		n27, err := m.RemoteSelfResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
+		n27, err := m.RemoteLocateResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n27
 	}
-	if m.OnlineStatusResp != nil {
-		data[i] = 0x4a
+	if m.RemoteSelfResp != nil {
+		data[i] = 0x42
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
-		n28, err := m.OnlineStatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
+		n28, err := m.RemoteSelfResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n28
 	}
-	if m.StatusResp != nil {
-		data[i] = 0x52
+	if m.OnlineStatusResp != nil {
+		data[i] = 0x4a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
-		n29, err := m.StatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
+		n29, err := m.OnlineStatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n29
 	}
-	if m.LogResp != nil {
-		data[i] = 0x5a
+	if m.StatusResp != nil {
+		data[i] = 0x52
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
-		n30, err := m.LogResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
+		n30, err := m.StatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n30
+	}
+	if m.LogResp != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
+		n31, err := m.LogResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n31
+	}
+	if m.PinResp != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.PinResp.Size()))
+		n32, err := m.PinResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n32
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2208,11 +2332,11 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Dirlist.Size()))
-		n31, err := m.Dirlist.MarshalTo(data[i:])
+		n33, err := m.Dirlist.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n33
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2241,11 +2365,11 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
-		n32, err := m.History.MarshalTo(data[i:])
+		n34, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n34
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2343,11 +2467,11 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
-		n33, err := m.Self.MarshalTo(data[i:])
+		n35, err := m.Self.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
+		i += n35
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2409,11 +2533,11 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
-		n34, err := m.StageCommit.MarshalTo(data[i:])
+		n36, err := m.StageCommit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n36
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2442,11 +2566,44 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Commits.Size()))
-		n35, err := m.Commits.MarshalTo(data[i:])
+		n37, err := m.Commits.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n37
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Response_PinResp) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Response_PinResp) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.IsPinned == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		if *m.IsPinned {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2573,6 +2730,10 @@ func (m *Command) Size() (n int) {
 	}
 	if m.LogCommand != nil {
 		l = m.LogCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.PinCommand != nil {
+		l = m.PinCommand.Size()
 		n += 2 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -2888,6 +3049,22 @@ func (m *Command_LogCmd) Size() (n int) {
 	return n
 }
 
+func (m *Command_PinCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Balance != nil {
+		n += 1 + sovDaemon(uint64(*m.Balance))
+	}
+	if m.Path != nil {
+		l = len(*m.Path)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Remote) Size() (n int) {
 	var l int
 	_ = l
@@ -2951,6 +3128,10 @@ func (m *Response) Size() (n int) {
 	}
 	if m.LogResp != nil {
 		l = m.LogResp.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.PinResp != nil {
+		l = m.PinResp.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3059,6 +3240,18 @@ func (m *Response_LogResp) Size() (n int) {
 	if m.Commits != nil {
 		l = m.Commits.Size()
 		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Response_PinResp) Size() (n int) {
+	var l int
+	_ = l
+	if m.IsPinned != nil {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -3853,6 +4046,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.LogCommand = &Command_LogCmd{}
 			}
 			if err := m.LogCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 24:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PinCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PinCommand == nil {
+				m.PinCommand = &Command_PinCmd{}
+			}
+			if err := m.PinCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5897,6 +6123,116 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Command_PinCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PinCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PinCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Balance", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Balance = &v
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Path = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Remote) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -6402,6 +6738,39 @@ func (m *Response) Unmarshal(data []byte) error {
 				m.LogResp = &Response_LogResp{}
 			}
 			if err := m.LogResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PinResp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PinResp == nil {
+				m.PinResp = &Response_PinResp{}
+			}
+			if err := m.PinResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7091,6 +7460,83 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Response_PinResp) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PinResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PinResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsPinned", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.IsPinned = &b
 			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex

@@ -2,9 +2,9 @@ package store
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
@@ -12,62 +12,10 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
-const (
-	// ChangeInvalid indicates a bug.
-	ChangeInvalid = iota
-
-	// ChangeAdd means the file was added (initially or after ChangeRemove)
-	ChangeAdd
-
-	// ChangeModify indicates a content modification.
-	ChangeModify
-
-	// ChangeMove indicates that a file's path changed.
-	ChangeMove
-
-	// ChangeRemove indicates that the file was deleted.
-	// Old versions might still be accessible from the history.
-	ChangeRemove
-)
-
-// ChangeType describes the nature of a change.
-type ChangeType byte
-
-var changeTypeToString = map[ChangeType]string{
-	ChangeInvalid: "invalid",
-	ChangeAdd:     "added",
-	ChangeModify:  "modified",
-	ChangeRemove:  "removed",
-	ChangeMove:    "moved",
-}
-
-var stringToChangeType = map[string]ChangeType{
-	"invalid":  ChangeInvalid,
-	"added":    ChangeAdd,
-	"modified": ChangeModify,
-	"removed":  ChangeRemove,
-	"moved":    ChangeMove,
-}
-
 var (
-	// ErrNoChange means that nothing changed between two versions (of a file)
-	ErrNoChange = fmt.Errorf("Nothing changed between the given versions")
+	ErrEmptyStage         = fmt.Errorf("Nothing staged. No commit done")
+	ErrEmptyCommitMessage = fmt.Errorf("Not doing a commit due to missing messsage")
 )
-
-// String formats a changetype to a human readable verb in past tense.
-func (c *ChangeType) String() string {
-	return changeTypeToString[*c]
-}
-
-func (c *ChangeType) Unmarshal(data []byte) error {
-	var ok bool
-	*c, ok = stringToChangeType[string(data)]
-	if !ok {
-		return fmt.Errorf("Bad change type: %v", string(data))
-	}
-
-	return nil
-}
 
 // Commit groups a change set
 type Commit struct {
@@ -89,6 +37,7 @@ type Commit struct {
 	// Parent commit (only nil for initial commit)
 	Parent *Commit
 
+	// store is needed to marshal/unmarshal properly
 	store *Store
 }
 
@@ -129,7 +78,7 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 
 	var parentCommit *Commit
 
-	if c.GetParentHash() != nil {
+	if c.GetParentHash() != nil && cm.store != nil {
 		err = cm.store.viewWithBucket(
 			"commits",
 			func(tx *bolt.Tx, bckt *bolt.Bucket) error {
@@ -211,315 +160,185 @@ func (cm *Commit) UnmarshalProto(data []byte) error {
 	return cm.FromProto(protoCmt)
 }
 
-// Checkpoint remembers one state of a single file.
-type Checkpoint struct {
-	// Hash is the hash of the file at this point.
-	// It may, or may not be retrievable from ipfs.
-	// For ChangeRemove the hash is the hash of the last existing file.
-	Hash *Hash
+///////////////////////////////////
+/// STORE METHOD IMPLEMENTATION ///
+///////////////////////////////////
 
-	// ModTime is the time the checkpoint was made.
-	ModTime time.Time
+// Head returns the most recent commit.
+// Commit will be always non-nil if error is nil,
+// the initial commit has no changes.
+func (st *Store) Head() (*Commit, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
-	// Size is the size of the file in bytes at this point.
-	Size int64
-
-	// Change is the detailed type of the modification.
-	Change ChangeType
-
-	// Author of the file modifications (jabber id)
-	// TODO: Make separate Authorship struct.
-	Author id.ID
-
-	// Path of the file:
-	//   - if added/modified: the current file path.
-	//   - if removed: the old file path.
-	//   - if moved: The new file path.
-	Path string
+	return st.head()
 }
 
-// TODO: nice representation
-func (c *Checkpoint) String() string {
-	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
-}
+// Unlocked version of Head()
+func (st *Store) head() (*Commit, error) {
+	cmt := NewEmptyCommit(st, st.ID)
 
-func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
-	mtimeBin, err := cp.ModTime.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-
-	protoCheck := &wire.Checkpoint{
-		Hash:     cp.Hash.Bytes(),
-		ModTime:  mtimeBin,
-		FileSize: proto.Int64(cp.Size),
-		Change:   proto.Int32(int32(cp.Change)),
-		Author:   proto.String(string(cp.Author)),
-		Path:     proto.String(cp.Path),
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return protoCheck, nil
-}
-
-// TODO: consistent UnmarshalProto/MarshalProto functions.
-
-func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
-	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(msg.GetModTime()); err != nil {
-		return err
-	}
-
-	cp.Hash = &Hash{msg.GetHash()}
-	cp.ModTime = modTime
-	cp.Size = msg.GetFileSize()
-	cp.Change = ChangeType(msg.GetChange())
-	cp.Path = msg.GetPath()
-
-	ID, err := id.Cast(msg.GetAuthor())
-	if err != nil {
-		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.GetAuthor(), err)
-	} else {
-		cp.Author = ID
-	}
-
-	return nil
-}
-
-func (cp *Checkpoint) Marshal() ([]byte, error) {
-	protoCheck, err := cp.ToProto()
-	if err != nil {
-		return nil, err
-	}
-
-	protoData, err := proto.Marshal(protoCheck)
-	if err != nil {
-		return nil, err
-	}
-
-	return protoData, nil
-}
-
-func (cp *Checkpoint) Unmarshal(data []byte) error {
-	protoCheck := &wire.Checkpoint{}
-	if err := proto.Unmarshal(data, protoCheck); err != nil {
-		return err
-	}
-
-	return cp.FromProto(protoCheck)
-}
-
-// Commits is a list of single commits.
-// It is used to enable chronological sorting of a bunch of commits.
-type Commits []*Commit
-
-func (cs Commits) Len() int {
-	return len(cs)
-}
-
-func (cs Commits) Less(i, j int) bool {
-	return cs[i].ModTime.Before(cs[j].ModTime)
-}
-
-func (cs Commits) Swap(i, j int) {
-	cs[i], cs[j] = cs[j], cs[i]
-}
-
-func (cs Commits) ToProto() (*wire.Commits, error) {
-	protoCmts := &wire.Commits{}
-
-	for _, cmt := range cs {
-		protoCmt, err := cmt.ToProto()
-		if err != nil {
-			return nil, err
+	err := st.viewWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		data := bkt.Get([]byte("HEAD"))
+		if data == nil {
+			return fmt.Errorf("No HEAD in database")
 		}
 
-		protoCmts.Commits = append(protoCmts.Commits, protoCmt)
-	}
-
-	return protoCmts, nil
-}
-
-// TODO: This has some problems...
-// func (cs Commits) UnmarshalProto(data []byte) error {
-// 	protoCmts := &wire.Commits{}
-// 	if err := proto.Unmarshal(data, protoCmts); err != nil {
-// 		return err
-// 	}
-//
-// 	for _, protoCmt := range protoCmts.GetCommits() {
-// TODO: store
-// 		cmt := NewEmptyCommit()
-//
-// TODO: does this even work?
-// 		cs = append(cs, )
-// 	}
-//
-// 	return nil
-// }
-
-// History remembers the changes made to a file.
-// New changes get appended to the end.
-type History []*Checkpoint
-
-func (hy *History) ToProto() (*wire.History, error) {
-	protoHist := &wire.History{}
-
-	for _, ck := range *hy {
-		protoCheck, err := ck.ToProto()
-		if err != nil {
-			return nil, err
-		}
-
-		protoHist.Hist = append(protoHist.Hist, protoCheck)
-	}
-
-	return protoHist, nil
-}
-
-func (hy *History) Marshal() ([]byte, error) {
-	protoHist, err := hy.ToProto()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := proto.Marshal(protoHist)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
-func (hy *History) FromProto(protoHist *wire.History) error {
-	for _, protoCheck := range protoHist.Hist {
-		ck := &Checkpoint{}
-		if err := ck.FromProto(protoCheck); err != nil {
-			return err
-		}
-
-		*hy = append(*hy, ck)
-	}
-
-	return nil
-}
-
-func (hy *History) Unmarshal(data []byte) error {
-	protoHist := &wire.History{}
-
-	if err := proto.Unmarshal(data, protoHist); err != nil {
-		return err
-	}
-
-	return hy.FromProto(protoHist)
-}
-
-// MakeCheckpoint creates a new checkpoint in the version history of `curr`.
-// One of old or curr may be nil (if no old version exists or new version
-// does not exist anymore). It is an error to pass nil twice.
-//
-// If nothing changed between old and curr, ErrNoChange is returned.
-func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
-	var change ChangeType
-	var hash *Hash
-	var path string
-	var size int64
-
-	if old == nil {
-		change, path, hash, size = ChangeAdd, currPath, curr.hash, curr.size
-	} else if curr == nil {
-		change, path, hash, size = ChangeRemove, oldPath, old.hash, old.size
-	} else if !curr.hash.Equal(old.hash) {
-		change, path, hash, size = ChangeModify, currPath, curr.hash, curr.size
-	} else if oldPath != currPath {
-		change, path, hash, size = ChangeMove, currPath, curr.hash, curr.size
-	} else {
-		return ErrNoChange
-	}
-
-	checkpoint := &Checkpoint{
-		Hash:    hash,
-		ModTime: time.Now(),
-		Size:    size,
-		Change:  change,
-		Author:  st.ID,
-		Path:    path,
-	}
-
-	protoData, err := checkpoint.Marshal()
-	if err != nil {
-		return err
-	}
-
-	mtimeBin, err := checkpoint.ModTime.MarshalBinary()
-	if err != nil {
-		return err
-	}
-
-	dbErr := st.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		histBuck, err := bckt.CreateBucketIfNotExists([]byte(path))
-		if err != nil {
-			return err
-		}
-
-		// On a "move" we need to move the old data to the new path.
-		if change == ChangeMove {
-			if oldBuck := bckt.Bucket([]byte(oldPath)); oldBuck != nil {
-				err = oldBuck.ForEach(func(k, v []byte) error {
-					return histBuck.Put(k, v)
-				})
-
-				if err != nil {
-					return err
-				}
-
-				if err := bckt.DeleteBucket([]byte(oldPath)); err != nil {
-					return err
-				}
-			}
-		}
-
-		return histBuck.Put(mtimeBin, protoData)
+		return cmt.UnmarshalProto(data)
 	})
 
-	if dbErr != nil {
-		return dbErr
+	if err != nil {
+		return nil, err
 	}
 
-	dbErr = st.updateWithBucket("stage", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		return bckt.Put([]byte(path), protoData)
-	})
-
-	if dbErr != nil {
-		return dbErr
-	}
-
-	log.Debugf("created check point: %v", checkpoint)
-	return nil
+	return cmt, nil
 }
 
-// History returns all checkpoints a file has.
-// Note: even on error a empty history is returned.
-func (s *Store) History(path string) (*History, error) {
-	var hist History
+// Status shows how a Commit would look like if Commit() would be called.
+func (st *Store) Status() (*Commit, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
-	return &hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		changeBuck := bckt.Bucket([]byte(path))
-		if changeBuck == nil {
-			return NoSuchFile(path)
-		}
+	return st.status()
+}
 
-		return changeBuck.ForEach(func(k, v []byte) error {
-			ck := &Checkpoint{}
-			if err := ck.Unmarshal(v); err != nil {
+func (st *Store) makeCommitHash(current, parent *Commit) (*Hash, error) {
+	// This is inefficient, but is supposed to be easy to understand
+	// while this is still playground stuff.
+	s := ""
+	s += fmt.Sprintf("Parent:  %s\n", parent.Hash.B58String())
+	s += fmt.Sprintf("ModTime: %s\n", current.ModTime.String())
+	s += fmt.Sprintf("Author:  %s\n", current.Author)
+	s += fmt.Sprintf("Message: %s\n", current.Message)
+
+	hash := st.Root.Hash().Clone()
+	if err := hash.MixIn([]byte(s)); err != nil {
+		return nil, err
+	}
+
+	return hash, nil
+}
+
+// Unlocked version of Status()
+func (st *Store) status() (*Commit, error) {
+	head, err := st.head()
+	if err != nil {
+		return nil, err
+	}
+
+	cmt := NewEmptyCommit(st, st.ID)
+	cmt.Parent = head
+	cmt.Message = "Uncommitted changes"
+
+	hash, err := st.makeCommitHash(cmt, head)
+	if err != nil {
+		return nil, err
+	}
+
+	cmt.Hash = hash
+
+	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(bpath, bckpnt []byte) error {
+			checkpoint := &Checkpoint{}
+			if err := checkpoint.Unmarshal(bckpnt); err != nil {
 				return err
 			}
 
-			hist = append(hist, ck)
+			cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
 			return nil
 		})
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmt, nil
+}
+
+// Commit saves a commit in the store history.
+func (st *Store) MakeCommit(msg string) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	if msg == "" {
+		return ErrEmptyCommitMessage
+	}
+
+	cmt, err := st.status()
+	if err != nil {
+		return err
+	}
+
+	return st.db.Update(func(tx *bolt.Tx) error {
+		// Check if the stage area contains something:
+		stage := tx.Bucket([]byte("stage"))
+		if stage == nil {
+			return ErrNoSuchBucket{"stage"}
+		}
+
+		if stage.Stats().KeyN == 0 {
+			return ErrEmptyStage
+		}
+
+		// Flush the staging area:
+		if err := tx.DeleteBucket([]byte("stage")); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucket([]byte("stage")); err != nil {
+			return err
+		}
+
+		cmts := tx.Bucket([]byte("commits"))
+		if cmts == nil {
+			return ErrNoSuchBucket{"commits"}
+		}
+
+		// Put the new commit in the commits bucket:
+		cmt.Message = msg
+		data, err := cmt.MarshalProto()
+		if err != nil {
+			return err
+		}
+
+		if err := cmts.Put(cmt.Hash.Bytes(), data); err != nil {
+			return err
+		}
+
+		// Update HEAD:
+		refs := tx.Bucket([]byte("refs"))
+		if refs == nil {
+			return ErrNoSuchBucket{"refs"}
+		}
+
+		return refs.Put([]byte("HEAD"), data)
+	})
+}
+
+// TODO: respect from/to ranges
+func (st *Store) Log() (*Commits, error) {
+	var cmts Commits
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	err := st.viewWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(k, v []byte) error {
+			cmt := NewEmptyCommit(st, st.ID)
+			if err := cmt.UnmarshalProto(v); err != nil {
+				return err
+			}
+
+			cmts = append(cmts, cmt)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(&cmts)
+	return &cmts, nil
 }
