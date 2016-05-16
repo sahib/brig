@@ -224,6 +224,11 @@ func (st *Store) Export() (*wire.Store, error) {
 			return false
 		}
 
+		if child.kind != FileTypeRegular {
+			// Directories are implicit:
+			return true
+		}
+
 		history, errHist := st.History(child.node.Path())
 		if errHist != nil {
 			err = errHist
