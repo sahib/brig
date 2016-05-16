@@ -649,6 +649,21 @@ func handleCommit(ctx *cli.Context, client *daemon.Client) error {
 	if message == "" {
 		message = fmt.Sprintf("Update on %s", time.Now().String())
 	}
+	status, err := client.Status()
+	if err != nil {
+		return err
+	}
+
+	commitCnt := len(status.GetCheckpoints())
+	if commitCnt == 0 {
+		fmt.Println("Nothing to commit.")
+		return nil
+	}
+	if commitCnt != 1 {
+		fmt.Printf("%d changes commited.\n", commitCnt)
+	} else {
+		fmt.Printf("%d change commited.\n", commitCnt)
+	}
 
 	return client.MakeCommit(message)
 }
