@@ -21,6 +21,7 @@ import (
 	"github.com/disorganizer/brig/util/colors"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/dustin/go-humanize"
+	"github.com/jbenet/go-multihash"
 	"github.com/olebedev/config"
 )
 
@@ -674,7 +675,24 @@ func handleLog(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	fmt.Println(log)
+	for _, l := range log.GetCommits() {
+		commitMultihash, err := multihash.Cast(l.GetHash())
+		if err != nil {
+			return err
+		}
+		treeMultihash, err := multihash.Cast(l.GetTreeHash())
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf(
+			"%s/%s by %s, %s\n",
+			colors.Colorize(commitMultihash.B58String()[:10], colors.Green),
+			colors.Colorize(treeMultihash.B58String()[:10], colors.Magenta),
+			l.GetAuthor(),
+			l.GetMessage(),
+		)
+	}
 	return nil
 }
 
