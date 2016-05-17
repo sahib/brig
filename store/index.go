@@ -209,7 +209,7 @@ func (st *Store) Close() error {
 // w is not closed after Export.
 func (st *Store) Export() (*wire.Store, error) {
 	// TODO: Export commits (not implemented)
-	// TODO: Export pinning information.
+	// TODO: Export pinning information?
 	protoStore := &wire.Store{}
 
 	var err error
@@ -250,6 +250,10 @@ func (st *Store) Export() (*wire.Store, error) {
 		protoStore.Packs = append(protoStore.Packs, protoPack)
 		return true
 	})
+
+	// TODO: Get Head() and traverse down to root.
+	//       -> History is linear?
+	//       -> Merge commits have a special Merge attr?
 
 	if err != nil {
 		return nil, err

@@ -47,7 +47,7 @@ message Pack {
 // Store is the exported form of a store.
 message Store {
     repeated Pack packs = 1;
-    // TODO: List of commits.
+    required Commits commits = 2;
 }
 
 // Commit is a bag of changes, either automatically done
