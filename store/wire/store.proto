@@ -50,6 +50,12 @@ message Store {
     required Commits commits = 2;
 }
 
+// Optional merge information for merge commits
+message Merge {
+    required string with = 1;
+    required bytes hash = 2;
+}
+
 // Commit is a bag of changes, either automatically done
 // or by the user.
 message Commit {
@@ -62,8 +68,11 @@ message Commit {
     // List of checkpoints: 
     repeated Checkpoint checkpoints = 6;
 
-    // Link to parent hash:
+    // Link to parent hash (empty for initial commit):
     optional bytes parent_hash = 7;
+
+    // Merge information if this is a merge commit.
+    optional Merge merge = 8;
 }
 
 // Commits is an ordered list of commits

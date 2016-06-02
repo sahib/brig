@@ -17,6 +17,38 @@ var (
 	ErrEmptyCommitMessage = fmt.Errorf("Not doing a commit due to missing messsage")
 )
 
+// Merge describes the merge of two stores at one point in history.
+type Merge struct {
+	// With is the store owner of the store we merged with.
+	With id.ID
+
+	// Hash of the commit in the other store we merged with.
+	Hash *Hash
+}
+
+func (mg *Merge) ToProto() (*wire.Merge, error) {
+	return &wire.Merge{
+		With: proto.String(string(mg.With)),
+		Hash: mg.Hash.Bytes(),
+	}, nil
+}
+
+func (mg *Merge) FromProto(protoMerge *wire.Merge) error {
+	ID, err := id.Cast(protoMerge.GetWith())
+	if err != nil {
+		return err
+	}
+
+	hash, err := multihash.Cast(protoMerge.GetHash())
+	if err != nil {
+		return err
+	}
+
+	mg.With = ID
+	mg.Hash = &Hash{hash}
+	return nil
+}
+
 // Commit groups a change set
 type Commit struct {
 	// Commit message (might be auto-generated)
@@ -42,6 +74,9 @@ type Commit struct {
 
 	// store is needed to marshal/unmarshal properly
 	store *Store
+
+	// Merge is set if this is a merge commit (nil otherwise)
+	Merge *Merge
 }
 
 func NewEmptyCommit(store *Store, author id.ID) *Commit {
@@ -109,6 +144,16 @@ func (cm *Commit) FromProto(c *wire.Commit) error {
 		}
 	}
 
+	protoMergeInfo := c.GetMerge()
+	if protoMergeInfo != nil {
+		mergeInfo := &Merge{}
+		if err := mergeInfo.FromProto(protoMergeInfo); err != nil {
+			return err
+		}
+
+		cm.Merge = mergeInfo
+	}
+
 	// Set commit data if everything worked:
 	cm.Message = c.GetMessage()
 	cm.Author = author
@@ -136,6 +181,15 @@ func (cm *Commit) ToProto() (*wire.Commit, error) {
 		}
 
 		checkpoints = append(checkpoints, protoCheckpoint)
+	}
+
+	if cm.Merge != nil {
+		protoMergeInfo, err := cm.Merge.ToProto()
+		if err != nil {
+			return nil, err
+		}
+
+		pcm.Merge = protoMergeInfo
 	}
 
 	pcm.Message = proto.String(cm.Message)
