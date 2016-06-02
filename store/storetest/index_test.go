@@ -145,11 +145,17 @@ func TestExport(t *testing.T) {
 		"/root", "/pics/me.png", "/pics/him.png",
 	}
 
+	dummyData := [][]byte{
+		[]byte("Im root"),
+		[]byte("Im me.png"),
+		[]byte("Im him.png"),
+	}
+
 	var exportData []byte
 
 	withEmptyStore(t, func(st *store.Store) {
-		for _, path := range paths {
-			if err := st.Touch(path); err != nil {
+		for idx, path := range paths {
+			if err := st.AddFromReader(path, bytes.NewReader(dummyData[idx])); err != nil {
 				t.Errorf("Touching file `%s` failed: %v", path, err)
 				return
 			}
@@ -183,6 +189,17 @@ func TestExport(t *testing.T) {
 		if err := st.Import(protoStore); err != nil {
 			t.Errorf("Could not import data: %v", err)
 			return
+		}
+
+		// Check if we still can read all the paths:
+		// (NOTE: Can't get file data, since it's an offline ipfs store)
+		for _, path := range paths {
+			file := st.Root.Lookup(path)
+
+			if file == nil {
+				t.Errorf("Imported store forgot a file: %s", path)
+				return
+			}
 		}
 	})
 }

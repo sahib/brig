@@ -13,6 +13,7 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/gogo/protobuf/proto"
 )
 
 // Store is responsible for adding & retrieving all files from ipfs,
@@ -251,14 +252,33 @@ func (st *Store) Export() (*wire.Store, error) {
 		return true
 	})
 
+	// TODO: Export refs, only commits are exported currently.
 	// TODO: Get Head() and traverse down to root.
 	//       -> History is linear?
 	//       -> Merge commits have a special Merge attr?
+	if err != nil {
+		return nil, err
+	}
+
+	cmts := &wire.Commits{}
+
+	err = st.viewWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(k, v []byte) error {
+			cmt := &wire.Commit{}
+			if err := proto.Unmarshal(v, cmt); err != nil {
+				return err
+			}
+
+			cmts.Commits = append(cmts.Commits, cmt)
+			return nil
+		})
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
+	protoStore.Commits = cmts
 	return protoStore, nil
 }
 
@@ -274,11 +294,39 @@ func (st *Store) Import(protoStore *wire.Store) error {
 			return err
 		}
 
-		// TODO: Restore history.
-		log.Debugf("Imported: %v", file.Path())
+		log.Debugf("-- Imported: %v", file.Path())
 		file.Sync()
 		file.updateParents()
+
+		// TODO: Only make one transaction after the for{}.
+		for _, protoCheckpoint := range pack.GetHistory().GetHist() {
+			err := st.updateWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+				data, err := proto.Marshal(protoCheckpoint)
+				if err != nil {
+					return err
+				}
+
+				return bkt.Put(protoCheckpoint.GetModTime(), data)
+			})
+
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	return nil
+	return st.updateWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		for _, protoCommit := range protoStore.GetCommits().GetCommits() {
+			data, err := proto.Marshal(protoCommit)
+			if err != nil {
+				return err
+			}
+
+			if err := bkt.Put(protoCommit.GetHash(), data); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }

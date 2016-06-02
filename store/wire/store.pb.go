@@ -34,6 +34,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
 type File struct {
 	Path     *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
 	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
@@ -45,9 +49,10 @@ type File struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *File) Reset()         { *m = File{} }
-func (m *File) String() string { return proto.CompactTextString(m) }
-func (*File) ProtoMessage()    {}
+func (m *File) Reset()                    { *m = File{} }
+func (m *File) String() string            { return proto.CompactTextString(m) }
+func (*File) ProtoMessage()               {}
+func (*File) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{0} }
 
 func (m *File) GetPath() string {
 	if m != nil && m.Path != nil {
@@ -100,9 +105,10 @@ type Dirent struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Dirent) Reset()         { *m = Dirent{} }
-func (m *Dirent) String() string { return proto.CompactTextString(m) }
-func (*Dirent) ProtoMessage()    {}
+func (m *Dirent) Reset()                    { *m = Dirent{} }
+func (m *Dirent) String() string            { return proto.CompactTextString(m) }
+func (*Dirent) ProtoMessage()               {}
+func (*Dirent) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{1} }
 
 func (m *Dirent) GetPath() string {
 	if m != nil && m.Path != nil {
@@ -137,9 +143,10 @@ type Dirlist struct {
 	XXX_unrecognized []byte    `json:"-"`
 }
 
-func (m *Dirlist) Reset()         { *m = Dirlist{} }
-func (m *Dirlist) String() string { return proto.CompactTextString(m) }
-func (*Dirlist) ProtoMessage()    {}
+func (m *Dirlist) Reset()                    { *m = Dirlist{} }
+func (m *Dirlist) String() string            { return proto.CompactTextString(m) }
+func (*Dirlist) ProtoMessage()               {}
+func (*Dirlist) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{2} }
 
 func (m *Dirlist) GetEntries() []*Dirent {
 	if m != nil {
@@ -158,9 +165,10 @@ type Checkpoint struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Checkpoint) Reset()         { *m = Checkpoint{} }
-func (m *Checkpoint) String() string { return proto.CompactTextString(m) }
-func (*Checkpoint) ProtoMessage()    {}
+func (m *Checkpoint) Reset()                    { *m = Checkpoint{} }
+func (m *Checkpoint) String() string            { return proto.CompactTextString(m) }
+func (*Checkpoint) ProtoMessage()               {}
+func (*Checkpoint) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{3} }
 
 func (m *Checkpoint) GetHash() []byte {
 	if m != nil {
@@ -209,9 +217,10 @@ type History struct {
 	XXX_unrecognized []byte        `json:"-"`
 }
 
-func (m *History) Reset()         { *m = History{} }
-func (m *History) String() string { return proto.CompactTextString(m) }
-func (*History) ProtoMessage()    {}
+func (m *History) Reset()                    { *m = History{} }
+func (m *History) String() string            { return proto.CompactTextString(m) }
+func (*History) ProtoMessage()               {}
+func (*History) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{4} }
 
 func (m *History) GetHist() []*Checkpoint {
 	if m != nil {
@@ -228,9 +237,10 @@ type Pack struct {
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *Pack) Reset()         { *m = Pack{} }
-func (m *Pack) String() string { return proto.CompactTextString(m) }
-func (*Pack) ProtoMessage()    {}
+func (m *Pack) Reset()                    { *m = Pack{} }
+func (m *Pack) String() string            { return proto.CompactTextString(m) }
+func (*Pack) ProtoMessage()               {}
+func (*Pack) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{5} }
 
 func (m *Pack) GetFile() *File {
 	if m != nil {
@@ -248,17 +258,26 @@ func (m *Pack) GetHistory() *History {
 
 // Store is the exported form of a store.
 type Store struct {
-	Packs            []*Pack `protobuf:"bytes,1,rep,name=packs" json:"packs,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Packs            []*Pack  `protobuf:"bytes,1,rep,name=packs" json:"packs,omitempty"`
+	Commits          *Commits `protobuf:"bytes,2,req,name=commits" json:"commits,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *Store) Reset()         { *m = Store{} }
-func (m *Store) String() string { return proto.CompactTextString(m) }
-func (*Store) ProtoMessage()    {}
+func (m *Store) Reset()                    { *m = Store{} }
+func (m *Store) String() string            { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()               {}
+func (*Store) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{6} }
 
 func (m *Store) GetPacks() []*Pack {
 	if m != nil {
 		return m.Packs
+	}
+	return nil
+}
+
+func (m *Store) GetCommits() *Commits {
+	if m != nil {
+		return m.Commits
 	}
 	return nil
 }
@@ -278,9 +297,10 @@ type Commit struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Commit) Reset()         { *m = Commit{} }
-func (m *Commit) String() string { return proto.CompactTextString(m) }
-func (*Commit) ProtoMessage()    {}
+func (m *Commit) Reset()                    { *m = Commit{} }
+func (m *Commit) String() string            { return proto.CompactTextString(m) }
+func (*Commit) ProtoMessage()               {}
+func (*Commit) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{7} }
 
 func (m *Commit) GetMessage() string {
 	if m != nil && m.Message != nil {
@@ -337,9 +357,10 @@ type Commits struct {
 	XXX_unrecognized []byte    `json:"-"`
 }
 
-func (m *Commits) Reset()         { *m = Commits{} }
-func (m *Commits) String() string { return proto.CompactTextString(m) }
-func (*Commits) ProtoMessage()    {}
+func (m *Commits) Reset()                    { *m = Commits{} }
+func (m *Commits) String() string            { return proto.CompactTextString(m) }
+func (*Commits) ProtoMessage()               {}
+func (*Commits) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{8} }
 
 func (m *Commits) GetCommits() []*Commit {
 	if m != nil {
@@ -678,6 +699,18 @@ func (m *Store) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
+	if m.Commits == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Commits.Size()))
+		n3, err := m.Commits.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -964,6 +997,10 @@ func (m *Store) Size() (n int) {
 			n += 1 + l + sovStore(uint64(l))
 		}
 	}
+	if m.Commits != nil {
+		l = m.Commits.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1124,7 +1161,10 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Key = append(m.Key[:0], data[iNdEx:postIndex]...)
+			if m.Key == nil {
+				m.Key = []byte{}
+			}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -1152,7 +1192,10 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
+			if m.Hash == nil {
+				m.Hash = []byte{}
+			}
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -1222,7 +1265,10 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
+			if m.ModTime == nil {
+				m.ModTime = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		default:
@@ -1388,7 +1434,10 @@ func (m *Dirent) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
+			if m.ModTime == nil {
+				m.ModTime = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		default:
@@ -1563,7 +1612,10 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
+			if m.Hash == nil {
+				m.Hash = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
@@ -1592,7 +1644,10 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
+			if m.ModTime == nil {
+				m.ModTime = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
@@ -1948,6 +2003,7 @@ func (m *Pack) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Store) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2007,6 +2063,40 @@ func (m *Store) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Commits", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Commits == nil {
+				m.Commits = &Commits{}
+			}
+			if err := m.Commits.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -2022,6 +2112,9 @@ func (m *Store) Unmarshal(data []byte) error {
 			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -2147,7 +2240,10 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
+			if m.ModTime == nil {
+				m.ModTime = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000004)
 		case 4:
@@ -2176,7 +2272,10 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
+			if m.Hash == nil {
+				m.Hash = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
@@ -2205,7 +2304,10 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TreeHash = append([]byte{}, data[iNdEx:postIndex]...)
+			m.TreeHash = append(m.TreeHash[:0], data[iNdEx:postIndex]...)
+			if m.TreeHash == nil {
+				m.TreeHash = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000010)
 		case 6:
@@ -2265,7 +2367,10 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ParentHash = append([]byte{}, data[iNdEx:postIndex]...)
+			m.ParentHash = append(m.ParentHash[:0], data[iNdEx:postIndex]...)
+			if m.ParentHash == nil {
+				m.ParentHash = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2490,3 +2595,35 @@ var (
 	ErrInvalidLengthStore = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowStore   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorStore = []byte{
+	// 435 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x7c, 0x52, 0xcd, 0x6a, 0xdb, 0x40,
+	0x10, 0xb6, 0xa4, 0x95, 0x54, 0x8d, 0x44, 0xeb, 0xae, 0xc1, 0xe8, 0xe4, 0x1a, 0xb5, 0x07, 0x41,
+	0x41, 0x07, 0xf7, 0x0d, 0xec, 0x52, 0x5a, 0x28, 0xa5, 0xd0, 0x5b, 0x2f, 0x46, 0x96, 0xb7, 0xd6,
+	0x22, 0xcb, 0x12, 0xda, 0x2d, 0xc5, 0x7d, 0x92, 0x9c, 0xf2, 0x3c, 0x39, 0xe6, 0x11, 0x42, 0xf2,
+	0x22, 0xd9, 0x1f, 0xc9, 0x96, 0x12, 0x93, 0xc3, 0xc2, 0xce, 0xec, 0xec, 0xf7, 0x7d, 0xf3, 0xcd,
+	0x80, 0xcf, 0x78, 0xd5, 0x90, 0xa4, 0x6e, 0x2a, 0x5e, 0x61, 0xd8, 0x34, 0x74, 0x97, 0xa8, 0x4c,
+	0xb4, 0x01, 0xf4, 0x85, 0xee, 0x09, 0x0e, 0x00, 0xd5, 0x29, 0xcf, 0x43, 0x63, 0x6e, 0xc6, 0x1e,
+	0xf6, 0xc1, 0x2a, 0xc8, 0x31, 0x34, 0xe7, 0x46, 0x1c, 0xc8, 0xa7, 0x3c, 0x65, 0x79, 0x68, 0xa9,
+	0xe8, 0x2d, 0x78, 0x7f, 0xc4, 0x87, 0x35, 0xa3, 0xff, 0x49, 0x88, 0x44, 0xb5, 0x25, 0x0b, 0x0a,
+	0x7a, 0xd8, 0x86, 0xb6, 0x88, 0x6c, 0x3c, 0x86, 0x57, 0x65, 0xb5, 0x5d, 0x73, 0x5a, 0x92, 0xd0,
+	0x11, 0x99, 0x20, 0xfa, 0x06, 0xce, 0x67, 0xda, 0x90, 0x03, 0x7f, 0xc2, 0x32, 0x80, 0x32, 0x07,
+	0x50, 0xd6, 0x33, 0x28, 0xa4, 0xa0, 0x12, 0x70, 0x05, 0xd4, 0x9e, 0x32, 0x8e, 0xdf, 0x83, 0x2b,
+	0x20, 0x1b, 0x4a, 0x98, 0x80, 0xb3, 0x62, 0x7f, 0x81, 0x93, 0x73, 0x5f, 0x89, 0x26, 0x8c, 0x4a,
+	0x80, 0x55, 0x4e, 0xb2, 0xa2, 0xae, 0xa8, 0xa6, 0x57, 0x9d, 0x48, 0xfa, 0x60, 0x80, 0x6e, 0xaa,
+	0xcc, 0x40, 0x90, 0xa5, 0x04, 0xbd, 0x06, 0x27, 0xcb, 0xd3, 0xc3, 0x4e, 0x0b, 0xb0, 0x65, 0x9c,
+	0xfe, 0xe5, 0x79, 0xd5, 0xa8, 0x6e, 0xbd, 0x53, 0x47, 0xb2, 0x53, 0x2f, 0xfa, 0x04, 0xee, 0x57,
+	0x2a, 0x05, 0x1c, 0x71, 0x2c, 0xb8, 0xc4, 0xb5, 0xd5, 0x36, 0xed, 0x6b, 0x3b, 0x2b, 0x5a, 0x9a,
+	0xe3, 0x51, 0xf4, 0x1d, 0xd0, 0xcf, 0x34, 0x2b, 0xf0, 0x0c, 0x90, 0x64, 0x57, 0xea, 0xfc, 0xc5,
+	0xb8, 0xff, 0x43, 0x8d, 0xe8, 0x03, 0xb8, 0xb9, 0x06, 0x57, 0x72, 0xfd, 0xc5, 0xa4, 0x5f, 0xd2,
+	0xf2, 0x46, 0x3f, 0xc0, 0xfe, 0x25, 0x13, 0xf8, 0x1d, 0xd8, 0xb5, 0x80, 0xed, 0xdc, 0x19, 0xe0,
+	0x29, 0x3e, 0x81, 0x97, 0x55, 0x65, 0x49, 0x39, 0xbb, 0x84, 0xb7, 0xd2, 0x4f, 0xd1, 0xb5, 0x01,
+	0x8e, 0xbe, 0xe3, 0x37, 0xe0, 0x96, 0x84, 0xb1, 0x74, 0x47, 0xda, 0x01, 0x9e, 0xcd, 0x30, 0x55,
+	0xdc, 0x77, 0xd4, 0x52, 0x8e, 0x76, 0x8e, 0xa3, 0xce, 0x5f, 0xde, 0x10, 0xb2, 0x56, 0x29, 0x5b,
+	0xa5, 0x3e, 0x82, 0x9f, 0x9d, 0xec, 0x60, 0xc2, 0xc6, 0x17, 0xdc, 0xc2, 0x13, 0xf0, 0xeb, 0x54,
+	0xce, 0x55, 0x23, 0xb8, 0x72, 0x21, 0xe5, 0x4a, 0xb4, 0x5a, 0xe5, 0x4a, 0x74, 0x1d, 0x5d, 0x58,
+	0x09, 0x5d, 0xb5, 0x9c, 0xde, 0xdc, 0xcf, 0x8c, 0x5b, 0x71, 0xee, 0xc4, 0xb9, 0x7a, 0x98, 0x8d,
+	0x7e, 0xa3, 0x7f, 0x62, 0x59, 0x1e, 0x03, 0x00, 0x00, 0xff, 0xff, 0x2f, 0x9d, 0xe9, 0x72, 0x23,
+	0x03, 0x00, 0x00,
+}
