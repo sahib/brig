@@ -61,7 +61,7 @@ type Commit struct {
 	ModTime time.Time
 
 	// Checkpoints is the bag of actual changes.
-	Checkpoints []*Checkpoint
+	Checkpoints Checkpoints
 
 	// Hash of this commit
 	Hash *Hash
@@ -407,4 +407,35 @@ func (st *Store) Log() (*Commits, error) {
 
 	sort.Sort(&cmts)
 	return &cmts, nil
+}
+
+// Commits is a list of single commits.
+// It is used to enable chronological sorting of a bunch of commits.
+type Commits []*Commit
+
+func (cs *Commits) Len() int {
+	return len(*cs)
+}
+
+func (cs *Commits) Less(i, j int) bool {
+	return (*cs)[i].ModTime.Before((*cs)[j].ModTime)
+}
+
+func (cs *Commits) Swap(i, j int) {
+	(*cs)[i], (*cs)[j] = (*cs)[j], (*cs)[i]
+}
+
+func (cs *Commits) ToProto() (*wire.Commits, error) {
+	protoCmts := &wire.Commits{}
+
+	for _, cmt := range *cs {
+		protoCmt, err := cmt.ToProto()
+		if err != nil {
+			return nil, err
+		}
+
+		protoCmts.Commits = append(protoCmts.Commits, protoCmt)
+	}
+
+	return protoCmts, nil
 }

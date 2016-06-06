@@ -92,11 +92,30 @@ type Checkpoint struct {
 	//   - if removed: the old file path.
 	//   - if moved: The new file path.
 	Path string
+
+	// OldPath is the path of the file before moving (for ChangeMove only)
+	OldPath string
 }
 
 // TODO: nice representation
 func (c *Checkpoint) String() string {
 	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
+}
+
+// Checkpoints is a list of checkpoints.
+// It is used to enable sorting by path.
+type Checkpoints []*Checkpoint
+
+func (cps *Checkpoints) Len() int {
+	return len(*cps)
+}
+
+func (cps *Checkpoints) Less(i, j int) bool {
+	return (*cps)[i].Path < (*cps)[j].Path
+}
+
+func (cps *Checkpoints) Swap(i, j int) {
+	(*cps)[i], (*cps)[j] = (*cps)[j], (*cps)[i]
 }
 
 func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
@@ -112,6 +131,7 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 		Change:   proto.Int32(int32(cp.Change)),
 		Author:   proto.String(string(cp.Author)),
 		Path:     proto.String(cp.Path),
+		OldPath:  proto.String(cp.OldPath),
 	}
 
 	if err != nil {
@@ -134,6 +154,7 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	cp.Size = msg.GetFileSize()
 	cp.Change = ChangeType(msg.GetChange())
 	cp.Path = msg.GetPath()
+	cp.OldPath = msg.GetOldPath()
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
@@ -166,37 +187,6 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 	}
 
 	return cp.FromProto(protoCheck)
-}
-
-// Commits is a list of single commits.
-// It is used to enable chronological sorting of a bunch of commits.
-type Commits []*Commit
-
-func (cs *Commits) Len() int {
-	return len(*cs)
-}
-
-func (cs *Commits) Less(i, j int) bool {
-	return (*cs)[i].ModTime.Before((*cs)[j].ModTime)
-}
-
-func (cs *Commits) Swap(i, j int) {
-	(*cs)[i], (*cs)[j] = (*cs)[j], (*cs)[i]
-}
-
-func (cs *Commits) ToProto() (*wire.Commits, error) {
-	protoCmts := &wire.Commits{}
-
-	for _, cmt := range *cs {
-		protoCmt, err := cmt.ToProto()
-		if err != nil {
-			return nil, err
-		}
-
-		protoCmts.Commits = append(protoCmts.Commits, protoCmt)
-	}
-
-	return protoCmts, nil
 }
 
 func (cs *Commits) UnmarshalProto(data []byte) error {
@@ -327,6 +317,8 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 
 		// On a "move" we need to move the old data to the new path.
 		if change == ChangeMove {
+			checkpoint.OldPath = oldPath
+
 			if oldBuck := bckt.Bucket([]byte(oldPath)); oldBuck != nil {
 				err = oldBuck.ForEach(func(k, v []byte) error {
 					return histBuck.Put(k, v)

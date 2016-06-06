@@ -2,7 +2,11 @@ package store
 
 import (
 	"fmt"
+	"sort"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/boltdb/bolt"
 )
 
 type Diff struct {
@@ -25,6 +29,8 @@ type Diff struct {
 	BMergedAlready bool
 }
 
+// diff returns the commits a has, that b does not.
+// Oldest commit is first.
 func diff(a, b *Store) ([]*Commit, bool, error) {
 	curr, err := a.Head()
 	if err != nil {
@@ -48,6 +54,12 @@ func diff(a, b *Store) ([]*Commit, bool, error) {
 
 		path = append(path, curr)
 		curr = curr.Parent
+	}
+
+	// Reverse the order, so that older commits are first:
+	for i := 0; i < len(path)/2; i++ {
+		end := len(path) - i - 1
+		path[i], path[end] = path[end], path[i]
 	}
 
 	return path, mergedAlready, nil
@@ -76,7 +88,10 @@ func (st *Store) Diff(other *Store) (*Diff, error) {
 }
 
 // Squash combines all commits in a diff into one single merge commit.
-// The merge commit also has the `Merge` attribute filled correctly.
+// It looks at both AWants and BWants, where commits from `A` win.
+// The merge commit also has the `Merge` attribute filled correctly,
+// but not the TreeHash and Hash attribute, since the merge commit
+// was not applied yet onto the store.
 func (df *Diff) Squash() (*Commit, error) {
 	if len(df.AWants) == 0 {
 		return nil, fmt.Errorf("Cannot squash empty diff")
@@ -87,26 +102,133 @@ func (df *Diff) Squash() (*Commit, error) {
 		return nil, err
 	}
 
-	merged := NewEmptyCommit(df.A, df.B.ID)
+	merged := NewEmptyCommit(df.A, df.A.ID)
 	merged.ModTime = time.Now()
 	merged.Parent = aHead
 	merged.Merge = &Merge{
 		With: df.B.ID,
-		Hash: df.AWants[0].Hash,
+		Hash: df.AWants[len(df.AWants)-1].Hash, // Newest commit that we want.
 	}
 
+	changeset := make(map[string]*Checkpoint)
+
+	message := fmt.Sprintf("Merged with `%s`:\n", df.B.ID)
+
+	// Only take the last checkpoint of a file:
 	for _, cmt := range df.AWants {
-		// TODO: Filter duplicate checkpoints?
 		for _, ckpnt := range cmt.Checkpoints {
-			merged.Checkpoints = append(merged.Checkpoints, ckpnt)
+			curr, ok := changeset[ckpnt.Path]
+			if !ok || ckpnt.ModTime.After(curr.ModTime) {
+				changeset[ckpnt.Path] = ckpnt
+			}
 		}
 	}
 
-	return nil, nil
+	// If we had modifications on our own in the meantime,
+	// let them win over other's modifications.
+	for _, cmt := range df.BWants {
+		for _, ckpnt := range cmt.Checkpoints {
+			curr, ok := changeset[ckpnt.Path]
+			if ok && !curr.Hash.Equal(ckpnt.Hash) {
+				// Uh-oh, both sides have modified this path.
+				// Keep our change, but backup their change as ''
+				conflictPath := fmt.Sprintf("%s.%s", ckpnt.Path, df.B.ID.AsPath())
+
+				log.Warningf(
+					"%s was changed by both differently; keeping %s's version as %s",
+					ckpnt.Path, df.B.ID, conflictPath,
+				)
+
+				changeset[ckpnt.Path] = ckpnt
+				curr.Path = conflictPath
+				changeset[conflictPath] = curr
+			}
+		}
+	}
+
+	// Convert map to checkpoint slice:
+	for _, ckpnt := range changeset {
+		merged.Checkpoints = append(merged.Checkpoints, ckpnt)
+	}
+
+	// Sort by path:
+	sort.Stable(&merged.Checkpoints)
+
+	// Be nice and create a commit summary:
+	for _, ckpnt := range merged.Checkpoints {
+		message += fmt.Sprintf("  %s %s\n", ckpnt.Change.String(), ckpnt.Path)
+	}
+
+	merged.Message = message
+	return merged, nil
 }
 
 // Apply applies `diff` onto `st`.
-// A new merge commit will be created if fast forward was not possible.
 func (st *Store) Apply(diff *Diff) error {
-	return nil
+	merged, err := diff.Squash()
+	if err != nil {
+		return err
+	}
+
+	return st.ApplyMergeCommit(merged)
+}
+
+// ApplyMergeCommit will apply the checkpoints in `cmt` onto `st`.
+// It will also fill in the Hash and TreeHash attribute of `cmt`
+// since it will (likely) have changed after merging.
+func (st *Store) ApplyMergeCommit(cmt *Commit) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	var err error
+
+	for _, ckpnt := range cmt.Checkpoints {
+		switch ckpnt.Change {
+		case ChangeAdd:
+			file, err := NewFile(st, ckpnt.Path)
+			if err != nil {
+				return err
+			}
+
+			err = st.insertMetadata(file, ckpnt.Path, ckpnt.Hash, true, ckpnt.Size)
+		case ChangeModify:
+			file := st.Root.Lookup(ckpnt.Path)
+			if file == nil {
+				return NoSuchFile(ckpnt.Path)
+			}
+
+			err = st.insertMetadata(file, ckpnt.Path, ckpnt.Hash, false, ckpnt.Size)
+		case ChangeRemove:
+			err = st.remove(ckpnt.Path, false)
+		case ChangeMove:
+			err = st.move(ckpnt.OldPath, ckpnt.Path)
+		default:
+			return fmt.Errorf("Invalid change type `%d`", ckpnt.Change)
+		}
+	}
+
+	cmt.TreeHash = st.Root.Hash().Clone()
+	hash, err := st.makeCommitHash(cmt, cmt.Parent)
+
+	if err != nil {
+		log.Errorf("Unable to create commit hash of merge commit: %v", err)
+		return err
+	}
+
+	cmt.Hash = hash
+
+	// Update HEAD - TODO: finally neeed proper refs.
+	return st.db.Update(func(tx *bolt.Tx) error {
+		refs := tx.Bucket([]byte("refs"))
+		if refs == nil {
+			return ErrNoSuchBucket{"refs"}
+		}
+
+		data, err := cmt.MarshalProto()
+		if err != nil {
+			return err
+		}
+
+		return refs.Put([]byte("HEAD"), data)
+	})
 }

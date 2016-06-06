@@ -191,18 +191,24 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
+	file.Lock()
+	defer file.Unlock()
+
+	return st.insertMetadata(
+		file, repoPath, &Hash{mhash}, initialAdd, int64(sizeAcc.Size()),
+	)
+}
+
+func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size int64) error {
 	log.Infof(
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
-		mhash.B58String(),
+		newHash.B58String(),
 		file.Key()[10:], // TODO: Make omit() a util func
 	)
 
 	// Update metadata that might have changed:
-	file.Lock()
-	defer file.Unlock()
-
-	if file.hash.Equal(&Hash{mhash}) {
+	if file.hash.Equal(newHash) {
 		log.Debugf("Refusing update.")
 		return ErrNoChange
 	}
@@ -217,9 +223,9 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	}
 
 	file.Metadata = &Metadata{
-		size:    int64(sizeAcc.Size()),
+		size:    size,
 		modTime: time.Now(),
-		hash:    &Hash{mhash},
+		hash:    newHash,
 		key:     file.Metadata.key,
 		kind:    FileTypeRegular,
 	}
@@ -227,8 +233,7 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	file.updateParents()
 
 	// Create a checkpoint in the version history.
-	err = st.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath)
-	if err != nil {
+	if err := st.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath); err != nil {
 		return err
 	}
 
@@ -340,11 +345,15 @@ func (st *Store) Cat(path string, w io.Writer) error {
 // If `recursive` is true and if `path` is a directory, all files
 // in it will be removed. If `recursive` is false, ErrNotEmpty will
 // be returned upon non-empty directories.
-func (st *Store) Remove(path string, recursive bool) (err error) {
-	path = prefixSlash(path)
-
+func (st *Store) Remove(path string, recursive bool) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+
+	return st.remove(path, recursive)
+}
+
+func (st *Store) remove(path string, recursive bool) (err error) {
+	path = prefixSlash(path)
 
 	node := st.Root.Lookup(path)
 	if node == nil {
@@ -455,11 +464,15 @@ func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 	return dirlist, nil
 }
 
-func (st *Store) Move(oldPath, newPath string) (err error) {
-	oldPath, newPath = prefixSlash(oldPath), prefixSlash(newPath)
-
+func (st *Store) Move(oldPath, newPath string) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+
+	return st.move(oldPath, newPath)
+}
+
+func (st *Store) move(oldPath, newPath string) (err error) {
+	oldPath, newPath = prefixSlash(oldPath), prefixSlash(newPath)
 
 	node := st.Root.Lookup(oldPath)
 	if node == nil {

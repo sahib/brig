@@ -31,6 +31,7 @@ message Checkpoint {
     required int32 change = 4;
     required string author = 5;
     required string path = 6;
+    required string old_path = 7;
 }
 
 message History {
