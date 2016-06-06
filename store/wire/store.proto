@@ -80,3 +80,9 @@ message Commit {
 message Commits {
     repeated Commit commits = 1;
 }
+
+message Ref {
+    required string name = 1;
+    required bytes hash = 2;
+    required int32 type = 3;
+}

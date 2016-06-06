@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
 )
 
 type Diff struct {
@@ -218,17 +217,5 @@ func (st *Store) ApplyMergeCommit(cmt *Commit) error {
 	cmt.Hash = hash
 
 	// Update HEAD - TODO: finally neeed proper refs.
-	return st.db.Update(func(tx *bolt.Tx) error {
-		refs := tx.Bucket([]byte("refs"))
-		if refs == nil {
-			return ErrNoSuchBucket{"refs"}
-		}
-
-		data, err := cmt.MarshalProto()
-		if err != nil {
-			return err
-		}
-
-		return refs.Put([]byte("HEAD"), data)
-	})
+	return st.updateHEAD(cmt)
 }

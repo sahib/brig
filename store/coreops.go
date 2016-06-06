@@ -191,15 +191,15 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	file.Lock()
-	defer file.Unlock()
-
 	return st.insertMetadata(
 		file, repoPath, &Hash{mhash}, initialAdd, int64(sizeAcc.Size()),
 	)
 }
 
 func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size int64) error {
+	file.Lock()
+	defer file.Unlock()
+
 	log.Infof(
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
