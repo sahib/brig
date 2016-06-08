@@ -197,15 +197,15 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 }
 
 func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size int64) error {
-	file.Lock()
-	defer file.Unlock()
-
 	log.Infof(
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
 		newHash.B58String(),
 		file.Key()[10:], // TODO: Make omit() a util func
 	)
+
+	file.Lock()
+	defer file.Unlock()
 
 	// Update metadata that might have changed:
 	if file.hash.Equal(newHash) {
