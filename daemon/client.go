@@ -99,7 +99,9 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 
 	// Start a new daemon process:
 	log.Info("Starting daemon: ", exePath)
-	proc := exec.Command(exePath, "-x", pwd, "daemon", "launch")
+
+	// TODO: pass real log location:
+	proc := exec.Command(exePath, "-l", "/tmp/brig.log", "-x", pwd, "daemon", "launch")
 
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
