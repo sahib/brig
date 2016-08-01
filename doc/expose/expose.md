@@ -702,7 +702,7 @@ Auch wenn ein ``brig``--Repository in der geschlossenen Form als sicherer
 Im Gegensatz zu Versionsverwaltungssystemen wie ``git``, kann ``brig`` keine
 Differenzen zwischen zwei Ständen anzeigen, da es nur auf den Metadaten von
 Dateien arbeitet. Auch muss auf der Gegenseite ein ``brig``--Daemon--Prozess
-laufen, um mit der Gegenseite zu kommunizieren.
+laufen, um mit der Gegenseite zu kommunizieren. 
 
 [^CEPH]: Webpräsenz: \url{http://ceph.com}
 [^GLUSTER]: Webpräsenz: \url{https://www.gluster.org}
