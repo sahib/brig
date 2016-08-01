@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"os/exec"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -99,20 +99,23 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 
 	// Start a new daemon process:
 	log.Info("Starting daemon: ", exePath)
-	proc, err := os.StartProcess(
-		exePath,
-		[]string{"brig", "daemon", "-x", pwd},
-		&os.ProcAttr{},
-	)
+	proc := exec.Command(exePath, "-x", pwd, "daemon", "launch")
 
-	if err != nil {
+	if err := proc.Start(); err != nil {
+		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err
 	}
 
 	// Make sure it it's still referenced:
 	go func() {
-		log.Info("Daemon has PID: ", proc.Pid)
-		if _, err := proc.Wait(); err != nil {
+		pid := 0
+		if proc.Process != nil {
+			pid = proc.Process.Pid
+		}
+
+		log.Info("Daemon has PID: ", pid)
+
+		if err := proc.Wait(); err != nil {
 			log.Warning("Bad exit state: ", err)
 		}
 	}()
