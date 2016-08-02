@@ -389,6 +389,24 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
+			Name:     "debug",
+			Category: miscGroup,
+			Usage:    "Access to several debugging facilities",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:        "export",
+					Usage:       "Export the currently loaded, own store to stdout",
+					Description: "This is mainly useful for analyzing the current store contents",
+					Action:      withDaemon(handleDebugExport, true),
+				},
+				cli.Command{
+					Name:   "import",
+					Usage:  "Import a previosuly exported store from stdin",
+					Action: withDaemon(handleDebugImport, true),
+				},
+			},
+		},
+		cli.Command{
 			Name:     "config",
 			Category: miscGroup,
 			Usage:    "Access, list and modify configuration values",

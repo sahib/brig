@@ -33,6 +33,9 @@ enum MessageType {
     LOG = 21;
 
     PIN = 22;
+
+    EXPORT = 23;
+    IMPORT = 24;
 }
 
 enum OnlineQuery {
@@ -157,6 +160,13 @@ message Command {
         required string path = 2;
     }
 
+    message ExportCmd {
+    }
+
+    message ImportCmd {
+        required bytes data = 1;
+    }
+
     required MessageType command_type = 1;
 
     optional AddCmd add_command = 2;
@@ -185,6 +195,9 @@ message Command {
     optional LogCmd log_command = 23;
 
     optional PinCmd pin_command = 24;
+
+    optional ExportCmd export_command = 25;
+    optional ImportCmd import_command = 26;
 }
 
 message Remote {
@@ -230,6 +243,10 @@ message Response {
         required bool is_pinned = 1;
     }
 
+    message ExportResp {
+        required bytes data = 1;
+    }
+
     required MessageType response_type = 1;
     required bool success = 2;
     optional string error = 3;
@@ -237,10 +254,11 @@ message Response {
     optional HistoryResp history_resp = 4;
     optional ListResp list_resp = 5;
     optional RemoteListResp remote_list_resp = 6;
-    optional RemoteLocateResp remote_locate_resp = 7;   
+    optional RemoteLocateResp remote_locate_resp = 7;
     optional RemoteSelfResp remote_self_resp = 8;
     optional OnlineStatusResp online_status_resp = 9;
     optional StatusResp status_resp = 10;
     optional LogResp log_resp = 11;
     optional PinResp pin_resp = 12;
+    optional ExportResp export_resp = 13;
 }

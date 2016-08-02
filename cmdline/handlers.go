@@ -1,6 +1,7 @@
 package cmdline
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -724,4 +725,27 @@ func handlePin(ctx *cli.Context, client *daemon.Client) error {
 	}
 
 	return nil
+}
+
+func handleDebugExport(ctx *cli.Context, client *daemon.Client) error {
+	data, err := client.Export()
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stdout.Write(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func handleDebugImport(ctx *cli.Context, client *daemon.Client) error {
+	buf := &bytes.Buffer{}
+
+	if _, err := io.Copy(buf, os.Stdin); err != nil {
+		return err
+	}
+
+	return client.Import(buf.Bytes())
 }

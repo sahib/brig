@@ -29,10 +29,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
-
 // The ordering in here has no particular meaning.
 // The numbers just get incremented in the order that
 // they were added - which is a nice history book of brig.
@@ -62,6 +58,8 @@ const (
 	MessageType_DIFF          MessageType = 20
 	MessageType_LOG           MessageType = 21
 	MessageType_PIN           MessageType = 22
+	MessageType_EXPORT        MessageType = 23
+	MessageType_IMPORT        MessageType = 24
 )
 
 var MessageType_name = map[int32]string{
@@ -88,6 +86,8 @@ var MessageType_name = map[int32]string{
 	20: "DIFF",
 	21: "LOG",
 	22: "PIN",
+	23: "EXPORT",
+	24: "IMPORT",
 }
 var MessageType_value = map[string]int32{
 	"ADD":           0,
@@ -113,6 +113,8 @@ var MessageType_value = map[string]int32{
 	"DIFF":          20,
 	"LOG":           21,
 	"PIN":           22,
+	"EXPORT":        23,
+	"IMPORT":        24,
 }
 
 func (x MessageType) Enum() *MessageType {
@@ -131,7 +133,6 @@ func (x *MessageType) UnmarshalJSON(data []byte) error {
 	*x = MessageType(value)
 	return nil
 }
-func (MessageType) EnumDescriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0} }
 
 type OnlineQuery int32
 
@@ -171,7 +172,6 @@ func (x *OnlineQuery) UnmarshalJSON(data []byte) error {
 	*x = OnlineQuery(value)
 	return nil
 }
-func (OnlineQuery) EnumDescriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{1} }
 
 type Command struct {
 	CommandType         *MessageType             `protobuf:"varint,1,req,name=command_type,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
@@ -198,13 +198,14 @@ type Command struct {
 	DiffCommand         *Command_DiffCmd         `protobuf:"bytes,22,opt,name=diff_command" json:"diff_command,omitempty"`
 	LogCommand          *Command_LogCmd          `protobuf:"bytes,23,opt,name=log_command" json:"log_command,omitempty"`
 	PinCommand          *Command_PinCmd          `protobuf:"bytes,24,opt,name=pin_command" json:"pin_command,omitempty"`
+	ExportCommand       *Command_ExportCmd       `protobuf:"bytes,25,opt,name=export_command" json:"export_command,omitempty"`
+	ImportCommand       *Command_ImportCmd       `protobuf:"bytes,26,opt,name=import_command" json:"import_command,omitempty"`
 	XXX_unrecognized    []byte                   `json:"-"`
 }
 
-func (m *Command) Reset()                    { *m = Command{} }
-func (m *Command) String() string            { return proto.CompactTextString(m) }
-func (*Command) ProtoMessage()               {}
-func (*Command) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0} }
+func (m *Command) Reset()         { *m = Command{} }
+func (m *Command) String() string { return proto.CompactTextString(m) }
+func (*Command) ProtoMessage()    {}
 
 func (m *Command) GetCommandType() MessageType {
 	if m != nil && m.CommandType != nil {
@@ -374,6 +375,20 @@ func (m *Command) GetPinCommand() *Command_PinCmd {
 	return nil
 }
 
+func (m *Command) GetExportCommand() *Command_ExportCmd {
+	if m != nil {
+		return m.ExportCommand
+	}
+	return nil
+}
+
+func (m *Command) GetImportCommand() *Command_ImportCmd {
+	if m != nil {
+		return m.ImportCommand
+	}
+	return nil
+}
+
 type Command_AddCmd struct {
 	// The abs path to the file we're going to add.
 	FilePath *string `protobuf:"bytes,1,req,name=file_path" json:"file_path,omitempty"`
@@ -382,10 +397,9 @@ type Command_AddCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_AddCmd) Reset()                    { *m = Command_AddCmd{} }
-func (m *Command_AddCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_AddCmd) ProtoMessage()               {}
-func (*Command_AddCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 0} }
+func (m *Command_AddCmd) Reset()         { *m = Command_AddCmd{} }
+func (m *Command_AddCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_AddCmd) ProtoMessage()    {}
 
 func (m *Command_AddCmd) GetFilePath() string {
 	if m != nil && m.FilePath != nil {
@@ -409,10 +423,9 @@ type Command_CatCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_CatCmd) Reset()                    { *m = Command_CatCmd{} }
-func (m *Command_CatCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_CatCmd) ProtoMessage()               {}
-func (*Command_CatCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 1} }
+func (m *Command_CatCmd) Reset()         { *m = Command_CatCmd{} }
+func (m *Command_CatCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_CatCmd) ProtoMessage()    {}
 
 func (m *Command_CatCmd) GetRepoPath() string {
 	if m != nil && m.RepoPath != nil {
@@ -432,19 +445,17 @@ type Command_PingCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_PingCmd) Reset()                    { *m = Command_PingCmd{} }
-func (m *Command_PingCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_PingCmd) ProtoMessage()               {}
-func (*Command_PingCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 2} }
+func (m *Command_PingCmd) Reset()         { *m = Command_PingCmd{} }
+func (m *Command_PingCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_PingCmd) ProtoMessage()    {}
 
 type Command_QuitCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_QuitCmd) Reset()                    { *m = Command_QuitCmd{} }
-func (m *Command_QuitCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_QuitCmd) ProtoMessage()               {}
-func (*Command_QuitCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 3} }
+func (m *Command_QuitCmd) Reset()         { *m = Command_QuitCmd{} }
+func (m *Command_QuitCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_QuitCmd) ProtoMessage()    {}
 
 type Command_MountCmd struct {
 	// Where to mount the filesystem
@@ -452,10 +463,9 @@ type Command_MountCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_MountCmd) Reset()                    { *m = Command_MountCmd{} }
-func (m *Command_MountCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_MountCmd) ProtoMessage()               {}
-func (*Command_MountCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 4} }
+func (m *Command_MountCmd) Reset()         { *m = Command_MountCmd{} }
+func (m *Command_MountCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_MountCmd) ProtoMessage()    {}
 
 func (m *Command_MountCmd) GetMountPoint() string {
 	if m != nil && m.MountPoint != nil {
@@ -470,10 +480,9 @@ type Command_UnmountCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_UnmountCmd) Reset()                    { *m = Command_UnmountCmd{} }
-func (m *Command_UnmountCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_UnmountCmd) ProtoMessage()               {}
-func (*Command_UnmountCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 5} }
+func (m *Command_UnmountCmd) Reset()         { *m = Command_UnmountCmd{} }
+func (m *Command_UnmountCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_UnmountCmd) ProtoMessage()    {}
 
 func (m *Command_UnmountCmd) GetMountPoint() string {
 	if m != nil && m.MountPoint != nil {
@@ -488,10 +497,9 @@ type Command_RmCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_RmCmd) Reset()                    { *m = Command_RmCmd{} }
-func (m *Command_RmCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_RmCmd) ProtoMessage()               {}
-func (*Command_RmCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 6} }
+func (m *Command_RmCmd) Reset()         { *m = Command_RmCmd{} }
+func (m *Command_RmCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_RmCmd) ProtoMessage()    {}
 
 func (m *Command_RmCmd) GetRepoPath() string {
 	if m != nil && m.RepoPath != nil {
@@ -513,10 +521,9 @@ type Command_HistoryCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_HistoryCmd) Reset()                    { *m = Command_HistoryCmd{} }
-func (m *Command_HistoryCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_HistoryCmd) ProtoMessage()               {}
-func (*Command_HistoryCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 7} }
+func (m *Command_HistoryCmd) Reset()         { *m = Command_HistoryCmd{} }
+func (m *Command_HistoryCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_HistoryCmd) ProtoMessage()    {}
 
 func (m *Command_HistoryCmd) GetRepoPath() string {
 	if m != nil && m.RepoPath != nil {
@@ -530,10 +537,9 @@ type Command_OnlineStatusCmd struct {
 	XXX_unrecognized []byte       `json:"-"`
 }
 
-func (m *Command_OnlineStatusCmd) Reset()                    { *m = Command_OnlineStatusCmd{} }
-func (m *Command_OnlineStatusCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_OnlineStatusCmd) ProtoMessage()               {}
-func (*Command_OnlineStatusCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 8} }
+func (m *Command_OnlineStatusCmd) Reset()         { *m = Command_OnlineStatusCmd{} }
+func (m *Command_OnlineStatusCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_OnlineStatusCmd) ProtoMessage()    {}
 
 func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
 	if m != nil && m.Query != nil {
@@ -547,10 +553,9 @@ type Command_FetchCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_FetchCmd) Reset()                    { *m = Command_FetchCmd{} }
-func (m *Command_FetchCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_FetchCmd) ProtoMessage()               {}
-func (*Command_FetchCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 9} }
+func (m *Command_FetchCmd) Reset()         { *m = Command_FetchCmd{} }
+func (m *Command_FetchCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_FetchCmd) ProtoMessage()    {}
 
 func (m *Command_FetchCmd) GetWho() string {
 	if m != nil && m.Who != nil {
@@ -565,10 +570,9 @@ type Command_ListCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_ListCmd) Reset()                    { *m = Command_ListCmd{} }
-func (m *Command_ListCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_ListCmd) ProtoMessage()               {}
-func (*Command_ListCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 10} }
+func (m *Command_ListCmd) Reset()         { *m = Command_ListCmd{} }
+func (m *Command_ListCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_ListCmd) ProtoMessage()    {}
 
 func (m *Command_ListCmd) GetRoot() string {
 	if m != nil && m.Root != nil {
@@ -590,10 +594,9 @@ type Command_MvCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_MvCmd) Reset()                    { *m = Command_MvCmd{} }
-func (m *Command_MvCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_MvCmd) ProtoMessage()               {}
-func (*Command_MvCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 11} }
+func (m *Command_MvCmd) Reset()         { *m = Command_MvCmd{} }
+func (m *Command_MvCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_MvCmd) ProtoMessage()    {}
 
 func (m *Command_MvCmd) GetSource() string {
 	if m != nil && m.Source != nil {
@@ -615,10 +618,9 @@ type Command_MkdirCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_MkdirCmd) Reset()                    { *m = Command_MkdirCmd{} }
-func (m *Command_MkdirCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_MkdirCmd) ProtoMessage()               {}
-func (*Command_MkdirCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 12} }
+func (m *Command_MkdirCmd) Reset()         { *m = Command_MkdirCmd{} }
+func (m *Command_MkdirCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_MkdirCmd) ProtoMessage()    {}
 
 func (m *Command_MkdirCmd) GetPath() string {
 	if m != nil && m.Path != nil {
@@ -640,10 +642,9 @@ type Command_RemoteAddCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_RemoteAddCmd) Reset()                    { *m = Command_RemoteAddCmd{} }
-func (m *Command_RemoteAddCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_RemoteAddCmd) ProtoMessage()               {}
-func (*Command_RemoteAddCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 13} }
+func (m *Command_RemoteAddCmd) Reset()         { *m = Command_RemoteAddCmd{} }
+func (m *Command_RemoteAddCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_RemoteAddCmd) ProtoMessage()    {}
 
 func (m *Command_RemoteAddCmd) GetId() string {
 	if m != nil && m.Id != nil {
@@ -667,9 +668,6 @@ type Command_RemoteRemoveCmd struct {
 func (m *Command_RemoteRemoveCmd) Reset()         { *m = Command_RemoteRemoveCmd{} }
 func (m *Command_RemoteRemoveCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteRemoveCmd) ProtoMessage()    {}
-func (*Command_RemoteRemoveCmd) Descriptor() ([]byte, []int) {
-	return fileDescriptorDaemon, []int{0, 14}
-}
 
 func (m *Command_RemoteRemoveCmd) GetId() string {
 	if m != nil && m.Id != nil {
@@ -683,10 +681,9 @@ type Command_RemoteListCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_RemoteListCmd) Reset()                    { *m = Command_RemoteListCmd{} }
-func (m *Command_RemoteListCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_RemoteListCmd) ProtoMessage()               {}
-func (*Command_RemoteListCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 15} }
+func (m *Command_RemoteListCmd) Reset()         { *m = Command_RemoteListCmd{} }
+func (m *Command_RemoteListCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_RemoteListCmd) ProtoMessage()    {}
 
 func (m *Command_RemoteListCmd) GetNeedsOnline() bool {
 	if m != nil && m.NeedsOnline != nil {
@@ -705,9 +702,6 @@ type Command_RemoteLocateCmd struct {
 func (m *Command_RemoteLocateCmd) Reset()         { *m = Command_RemoteLocateCmd{} }
 func (m *Command_RemoteLocateCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteLocateCmd) ProtoMessage()    {}
-func (*Command_RemoteLocateCmd) Descriptor() ([]byte, []int) {
-	return fileDescriptorDaemon, []int{0, 16}
-}
 
 func (m *Command_RemoteLocateCmd) GetId() string {
 	if m != nil && m.Id != nil {
@@ -734,29 +728,26 @@ type Command_RemoteSelfCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_RemoteSelfCmd) Reset()                    { *m = Command_RemoteSelfCmd{} }
-func (m *Command_RemoteSelfCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_RemoteSelfCmd) ProtoMessage()               {}
-func (*Command_RemoteSelfCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 17} }
+func (m *Command_RemoteSelfCmd) Reset()         { *m = Command_RemoteSelfCmd{} }
+func (m *Command_RemoteSelfCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_RemoteSelfCmd) ProtoMessage()    {}
 
 type Command_StatusCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_StatusCmd) Reset()                    { *m = Command_StatusCmd{} }
-func (m *Command_StatusCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_StatusCmd) ProtoMessage()               {}
-func (*Command_StatusCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 18} }
+func (m *Command_StatusCmd) Reset()         { *m = Command_StatusCmd{} }
+func (m *Command_StatusCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_StatusCmd) ProtoMessage()    {}
 
 type Command_CommitCmd struct {
 	Message          *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_CommitCmd) Reset()                    { *m = Command_CommitCmd{} }
-func (m *Command_CommitCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_CommitCmd) ProtoMessage()               {}
-func (*Command_CommitCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 19} }
+func (m *Command_CommitCmd) Reset()         { *m = Command_CommitCmd{} }
+func (m *Command_CommitCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_CommitCmd) ProtoMessage()    {}
 
 func (m *Command_CommitCmd) GetMessage() string {
 	if m != nil && m.Message != nil {
@@ -771,10 +762,9 @@ type Command_DiffCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_DiffCmd) Reset()                    { *m = Command_DiffCmd{} }
-func (m *Command_DiffCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_DiffCmd) ProtoMessage()               {}
-func (*Command_DiffCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 20} }
+func (m *Command_DiffCmd) Reset()         { *m = Command_DiffCmd{} }
+func (m *Command_DiffCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_DiffCmd) ProtoMessage()    {}
 
 func (m *Command_DiffCmd) GetLow() []byte {
 	if m != nil {
@@ -796,10 +786,9 @@ type Command_LogCmd struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Command_LogCmd) Reset()                    { *m = Command_LogCmd{} }
-func (m *Command_LogCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_LogCmd) ProtoMessage()               {}
-func (*Command_LogCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 21} }
+func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
+func (m *Command_LogCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_LogCmd) ProtoMessage()    {}
 
 func (m *Command_LogCmd) GetLow() []byte {
 	if m != nil {
@@ -826,10 +815,9 @@ type Command_PinCmd struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_PinCmd) Reset()                    { *m = Command_PinCmd{} }
-func (m *Command_PinCmd) String() string            { return proto.CompactTextString(m) }
-func (*Command_PinCmd) ProtoMessage()               {}
-func (*Command_PinCmd) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{0, 22} }
+func (m *Command_PinCmd) Reset()         { *m = Command_PinCmd{} }
+func (m *Command_PinCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_PinCmd) ProtoMessage()    {}
 
 func (m *Command_PinCmd) GetBalance() int32 {
 	if m != nil && m.Balance != nil {
@@ -845,6 +833,30 @@ func (m *Command_PinCmd) GetPath() string {
 	return ""
 }
 
+type Command_ExportCmd struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_ExportCmd) Reset()         { *m = Command_ExportCmd{} }
+func (m *Command_ExportCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_ExportCmd) ProtoMessage()    {}
+
+type Command_ImportCmd struct {
+	Data             []byte `protobuf:"bytes,1,req,name=data" json:"data,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Command_ImportCmd) Reset()         { *m = Command_ImportCmd{} }
+func (m *Command_ImportCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_ImportCmd) ProtoMessage()    {}
+
+func (m *Command_ImportCmd) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type Remote struct {
 	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
 	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
@@ -852,10 +864,9 @@ type Remote struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Remote) Reset()                    { *m = Remote{} }
-func (m *Remote) String() string            { return proto.CompactTextString(m) }
-func (*Remote) ProtoMessage()               {}
-func (*Remote) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{1} }
+func (m *Remote) Reset()         { *m = Remote{} }
+func (m *Remote) String() string { return proto.CompactTextString(m) }
+func (*Remote) ProtoMessage()    {}
 
 func (m *Remote) GetId() string {
 	if m != nil && m.Id != nil {
@@ -891,13 +902,13 @@ type Response struct {
 	StatusResp       *Response_StatusResp       `protobuf:"bytes,10,opt,name=status_resp" json:"status_resp,omitempty"`
 	LogResp          *Response_LogResp          `protobuf:"bytes,11,opt,name=log_resp" json:"log_resp,omitempty"`
 	PinResp          *Response_PinResp          `protobuf:"bytes,12,opt,name=pin_resp" json:"pin_resp,omitempty"`
+	ExportResp       *Response_ExportResp       `protobuf:"bytes,13,opt,name=export_resp" json:"export_resp,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
-func (m *Response) Reset()                    { *m = Response{} }
-func (m *Response) String() string            { return proto.CompactTextString(m) }
-func (*Response) ProtoMessage()               {}
-func (*Response) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2} }
+func (m *Response) Reset()         { *m = Response{} }
+func (m *Response) String() string { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()    {}
 
 func (m *Response) GetResponseType() MessageType {
 	if m != nil && m.ResponseType != nil {
@@ -983,15 +994,21 @@ func (m *Response) GetPinResp() *Response_PinResp {
 	return nil
 }
 
+func (m *Response) GetExportResp() *Response_ExportResp {
+	if m != nil {
+		return m.ExportResp
+	}
+	return nil
+}
+
 type Response_ListResp struct {
 	Dirlist          *brig_store.Dirlist `protobuf:"bytes,1,req,name=dirlist" json:"dirlist,omitempty"`
 	XXX_unrecognized []byte              `json:"-"`
 }
 
-func (m *Response_ListResp) Reset()                    { *m = Response_ListResp{} }
-func (m *Response_ListResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_ListResp) ProtoMessage()               {}
-func (*Response_ListResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 0} }
+func (m *Response_ListResp) Reset()         { *m = Response_ListResp{} }
+func (m *Response_ListResp) String() string { return proto.CompactTextString(m) }
+func (*Response_ListResp) ProtoMessage()    {}
 
 func (m *Response_ListResp) GetDirlist() *brig_store.Dirlist {
 	if m != nil {
@@ -1005,10 +1022,9 @@ type Response_HistoryResp struct {
 	XXX_unrecognized []byte              `json:"-"`
 }
 
-func (m *Response_HistoryResp) Reset()                    { *m = Response_HistoryResp{} }
-func (m *Response_HistoryResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_HistoryResp) ProtoMessage()               {}
-func (*Response_HistoryResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 1} }
+func (m *Response_HistoryResp) Reset()         { *m = Response_HistoryResp{} }
+func (m *Response_HistoryResp) String() string { return proto.CompactTextString(m) }
+func (*Response_HistoryResp) ProtoMessage()    {}
 
 func (m *Response_HistoryResp) GetHistory() *brig_store.History {
 	if m != nil {
@@ -1022,10 +1038,9 @@ type Response_RemoteListResp struct {
 	XXX_unrecognized []byte    `json:"-"`
 }
 
-func (m *Response_RemoteListResp) Reset()                    { *m = Response_RemoteListResp{} }
-func (m *Response_RemoteListResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_RemoteListResp) ProtoMessage()               {}
-func (*Response_RemoteListResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 2} }
+func (m *Response_RemoteListResp) Reset()         { *m = Response_RemoteListResp{} }
+func (m *Response_RemoteListResp) String() string { return proto.CompactTextString(m) }
+func (*Response_RemoteListResp) ProtoMessage()    {}
 
 func (m *Response_RemoteListResp) GetRemotes() []*Remote {
 	if m != nil {
@@ -1042,9 +1057,6 @@ type Response_RemoteLocateResp struct {
 func (m *Response_RemoteLocateResp) Reset()         { *m = Response_RemoteLocateResp{} }
 func (m *Response_RemoteLocateResp) String() string { return proto.CompactTextString(m) }
 func (*Response_RemoteLocateResp) ProtoMessage()    {}
-func (*Response_RemoteLocateResp) Descriptor() ([]byte, []int) {
-	return fileDescriptorDaemon, []int{2, 3}
-}
 
 func (m *Response_RemoteLocateResp) GetHashes() []string {
 	if m != nil {
@@ -1058,10 +1070,9 @@ type Response_RemoteSelfResp struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Response_RemoteSelfResp) Reset()                    { *m = Response_RemoteSelfResp{} }
-func (m *Response_RemoteSelfResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_RemoteSelfResp) ProtoMessage()               {}
-func (*Response_RemoteSelfResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 4} }
+func (m *Response_RemoteSelfResp) Reset()         { *m = Response_RemoteSelfResp{} }
+func (m *Response_RemoteSelfResp) String() string { return proto.CompactTextString(m) }
+func (*Response_RemoteSelfResp) ProtoMessage()    {}
 
 func (m *Response_RemoteSelfResp) GetSelf() *Remote {
 	if m != nil {
@@ -1078,9 +1089,6 @@ type Response_OnlineStatusResp struct {
 func (m *Response_OnlineStatusResp) Reset()         { *m = Response_OnlineStatusResp{} }
 func (m *Response_OnlineStatusResp) String() string { return proto.CompactTextString(m) }
 func (*Response_OnlineStatusResp) ProtoMessage()    {}
-func (*Response_OnlineStatusResp) Descriptor() ([]byte, []int) {
-	return fileDescriptorDaemon, []int{2, 5}
-}
 
 func (m *Response_OnlineStatusResp) GetIsOnline() bool {
 	if m != nil && m.IsOnline != nil {
@@ -1094,10 +1102,9 @@ type Response_StatusResp struct {
 	XXX_unrecognized []byte             `json:"-"`
 }
 
-func (m *Response_StatusResp) Reset()                    { *m = Response_StatusResp{} }
-func (m *Response_StatusResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_StatusResp) ProtoMessage()               {}
-func (*Response_StatusResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 6} }
+func (m *Response_StatusResp) Reset()         { *m = Response_StatusResp{} }
+func (m *Response_StatusResp) String() string { return proto.CompactTextString(m) }
+func (*Response_StatusResp) ProtoMessage()    {}
 
 func (m *Response_StatusResp) GetStageCommit() *brig_store.Commit {
 	if m != nil {
@@ -1111,10 +1118,9 @@ type Response_LogResp struct {
 	XXX_unrecognized []byte              `json:"-"`
 }
 
-func (m *Response_LogResp) Reset()                    { *m = Response_LogResp{} }
-func (m *Response_LogResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_LogResp) ProtoMessage()               {}
-func (*Response_LogResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 7} }
+func (m *Response_LogResp) Reset()         { *m = Response_LogResp{} }
+func (m *Response_LogResp) String() string { return proto.CompactTextString(m) }
+func (*Response_LogResp) ProtoMessage()    {}
 
 func (m *Response_LogResp) GetCommits() *brig_store.Commits {
 	if m != nil {
@@ -1128,16 +1134,31 @@ type Response_PinResp struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Response_PinResp) Reset()                    { *m = Response_PinResp{} }
-func (m *Response_PinResp) String() string            { return proto.CompactTextString(m) }
-func (*Response_PinResp) ProtoMessage()               {}
-func (*Response_PinResp) Descriptor() ([]byte, []int) { return fileDescriptorDaemon, []int{2, 8} }
+func (m *Response_PinResp) Reset()         { *m = Response_PinResp{} }
+func (m *Response_PinResp) String() string { return proto.CompactTextString(m) }
+func (*Response_PinResp) ProtoMessage()    {}
 
 func (m *Response_PinResp) GetIsPinned() bool {
 	if m != nil && m.IsPinned != nil {
 		return *m.IsPinned
 	}
 	return false
+}
+
+type Response_ExportResp struct {
+	Data             []byte `protobuf:"bytes,1,req,name=data" json:"data,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Response_ExportResp) Reset()         { *m = Response_ExportResp{} }
+func (m *Response_ExportResp) String() string { return proto.CompactTextString(m) }
+func (*Response_ExportResp) ProtoMessage()    {}
+
+func (m *Response_ExportResp) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
 }
 
 func init() {
@@ -1165,6 +1186,8 @@ func init() {
 	proto.RegisterType((*Command_DiffCmd)(nil), "brig.daemon.Command.DiffCmd")
 	proto.RegisterType((*Command_LogCmd)(nil), "brig.daemon.Command.LogCmd")
 	proto.RegisterType((*Command_PinCmd)(nil), "brig.daemon.Command.PinCmd")
+	proto.RegisterType((*Command_ExportCmd)(nil), "brig.daemon.Command.ExportCmd")
+	proto.RegisterType((*Command_ImportCmd)(nil), "brig.daemon.Command.ImportCmd")
 	proto.RegisterType((*Remote)(nil), "brig.daemon.Remote")
 	proto.RegisterType((*Response)(nil), "brig.daemon.Response")
 	proto.RegisterType((*Response_ListResp)(nil), "brig.daemon.Response.ListResp")
@@ -1176,6 +1199,7 @@ func init() {
 	proto.RegisterType((*Response_StatusResp)(nil), "brig.daemon.Response.StatusResp")
 	proto.RegisterType((*Response_LogResp)(nil), "brig.daemon.Response.LogResp")
 	proto.RegisterType((*Response_PinResp)(nil), "brig.daemon.Response.PinResp")
+	proto.RegisterType((*Response_ExportResp)(nil), "brig.daemon.Response.ExportResp")
 	proto.RegisterEnum("brig.daemon.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("brig.daemon.OnlineQuery", OnlineQuery_name, OnlineQuery_value)
 }
@@ -1448,6 +1472,30 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n23
+	}
+	if m.ExportCommand != nil {
+		data[i] = 0xca
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ExportCommand.Size()))
+		n24, err := m.ExportCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n24
+	}
+	if m.ImportCommand != nil {
+		data[i] = 0xd2
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ImportCommand.Size()))
+		n25, err := m.ImportCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n25
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2177,6 +2225,56 @@ func (m *Command_PinCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_ExportCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_ExportCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Command_ImportCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_ImportCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Data == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
+		i += copy(data[i:], m.Data)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Remote) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -2268,91 +2366,101 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.HistoryResp.Size()))
-		n24, err := m.HistoryResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n24
-	}
-	if m.ListResp != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
-		n25, err := m.ListResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n25
-	}
-	if m.RemoteListResp != nil {
-		data[i] = 0x32
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
-		n26, err := m.RemoteListResp.MarshalTo(data[i:])
+		n26, err := m.HistoryResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n26
 	}
-	if m.RemoteLocateResp != nil {
-		data[i] = 0x3a
+	if m.ListResp != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
-		n27, err := m.RemoteLocateResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
+		n27, err := m.ListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n27
 	}
-	if m.RemoteSelfResp != nil {
-		data[i] = 0x42
+	if m.RemoteListResp != nil {
+		data[i] = 0x32
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
-		n28, err := m.RemoteSelfResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
+		n28, err := m.RemoteListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n28
 	}
-	if m.OnlineStatusResp != nil {
-		data[i] = 0x4a
+	if m.RemoteLocateResp != nil {
+		data[i] = 0x3a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
-		n29, err := m.OnlineStatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
+		n29, err := m.RemoteLocateResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n29
 	}
-	if m.StatusResp != nil {
-		data[i] = 0x52
+	if m.RemoteSelfResp != nil {
+		data[i] = 0x42
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
-		n30, err := m.StatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
+		n30, err := m.RemoteSelfResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n30
 	}
-	if m.LogResp != nil {
-		data[i] = 0x5a
+	if m.OnlineStatusResp != nil {
+		data[i] = 0x4a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
-		n31, err := m.LogResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
+		n31, err := m.OnlineStatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n31
 	}
-	if m.PinResp != nil {
-		data[i] = 0x62
+	if m.StatusResp != nil {
+		data[i] = 0x52
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.PinResp.Size()))
-		n32, err := m.PinResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
+		n32, err := m.StatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n32
+	}
+	if m.LogResp != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
+		n33, err := m.LogResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n33
+	}
+	if m.PinResp != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.PinResp.Size()))
+		n34, err := m.PinResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n34
+	}
+	if m.ExportResp != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ExportResp.Size()))
+		n35, err := m.ExportResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n35
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2381,11 +2489,11 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Dirlist.Size()))
-		n33, err := m.Dirlist.MarshalTo(data[i:])
+		n36, err := m.Dirlist.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
+		i += n36
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2414,11 +2522,11 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
-		n34, err := m.History.MarshalTo(data[i:])
+		n37, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n37
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2516,11 +2624,11 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
-		n35, err := m.Self.MarshalTo(data[i:])
+		n38, err := m.Self.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n38
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2582,11 +2690,11 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
-		n36, err := m.StageCommit.MarshalTo(data[i:])
+		n39, err := m.StageCommit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n36
+		i += n39
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2615,11 +2723,11 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Commits.Size()))
-		n37, err := m.Commits.MarshalTo(data[i:])
+		n40, err := m.Commits.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n37
+		i += n40
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2653,6 +2761,35 @@ func (m *Response_PinResp) MarshalTo(data []byte) (int, error) {
 			data[i] = 0
 		}
 		i++
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Response_ExportResp) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Response_ExportResp) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Data == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
+		i += copy(data[i:], m.Data)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -2783,6 +2920,14 @@ func (m *Command) Size() (n int) {
 	}
 	if m.PinCommand != nil {
 		l = m.PinCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.ExportCommand != nil {
+		l = m.ExportCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.ImportCommand != nil {
+		l = m.ImportCommand.Size()
 		n += 2 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3114,6 +3259,28 @@ func (m *Command_PinCmd) Size() (n int) {
 	return n
 }
 
+func (m *Command_ExportCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Command_ImportCmd) Size() (n int) {
+	var l int
+	_ = l
+	if m.Data != nil {
+		l = len(m.Data)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Remote) Size() (n int) {
 	var l int
 	_ = l
@@ -3181,6 +3348,10 @@ func (m *Response) Size() (n int) {
 	}
 	if m.PinResp != nil {
 		l = m.PinResp.Size()
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	if m.ExportResp != nil {
+		l = m.ExportResp.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3301,6 +3472,19 @@ func (m *Response_PinResp) Size() (n int) {
 	_ = l
 	if m.IsPinned != nil {
 		n += 2
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Response_ExportResp) Size() (n int) {
+	var l int
+	_ = l
+	if m.Data != nil {
+		l = len(m.Data)
+		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -4128,6 +4312,72 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.PinCommand = &Command_PinCmd{}
 			}
 			if err := m.PinCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 25:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExportCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExportCommand == nil {
+				m.ExportCommand = &Command_ExportCmd{}
+			}
+			if err := m.ExportCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 26:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ImportCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ImportCommand == nil {
+				m.ImportCommand = &Command_ImportCmd{}
+			}
+			if err := m.ImportCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -6013,10 +6263,7 @@ func (m *Command_DiffCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Low = append(m.Low[:0], data[iNdEx:postIndex]...)
-			if m.Low == nil {
-				m.Low = []byte{}
-			}
+			m.Low = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -6044,10 +6291,7 @@ func (m *Command_DiffCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.High = append(m.High[:0], data[iNdEx:postIndex]...)
-			if m.High == nil {
-				m.High = []byte{}
-			}
+			m.High = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6126,10 +6370,7 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Low = append(m.Low[:0], data[iNdEx:postIndex]...)
-			if m.Low == nil {
-				m.Low = []byte{}
-			}
+			m.Low = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -6157,10 +6398,7 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.High = append(m.High[:0], data[iNdEx:postIndex]...)
-			if m.High == nil {
-				m.High = []byte{}
-			}
+			m.High = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6286,6 +6524,141 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_ExportCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExportCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExportCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_ImportCmd) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ImportCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ImportCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -6832,6 +7205,39 @@ func (m *Response) Unmarshal(data []byte) error {
 				m.PinResp = &Response_PinResp{}
 			}
 			if err := m.PinResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExportResp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExportResp == nil {
+				m.ExportResp = &Response_ExportResp{}
+			}
+			if err := m.ExportResp.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7624,6 +8030,90 @@ func (m *Response_PinResp) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Response_ExportResp) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExportResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExportResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipDaemon(data []byte) (n int, err error) {
 	l := len(data)
 	iNdEx := 0
@@ -7728,94 +8218,3 @@ var (
 	ErrInvalidLengthDaemon = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowDaemon   = fmt.Errorf("proto: integer overflow")
 )
-
-var fileDescriptorDaemon = []byte{
-	// 1377 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x97, 0xdb, 0x6e, 0xdb, 0x46,
-	0x13, 0xc7, 0x63, 0xd9, 0x92, 0xc8, 0xa1, 0x64, 0xd1, 0x74, 0xe2, 0x18, 0xfc, 0x72, 0xf4, 0x97,
-	0x13, 0x02, 0x54, 0x49, 0xdd, 0x26, 0x2d, 0x5a, 0xb4, 0x85, 0x23, 0x4b, 0x89, 0x50, 0xc9, 0x4a,
-	0x24, 0x39, 0x40, 0x7b, 0x23, 0x30, 0xe2, 0x5a, 0x26, 0x2a, 0x91, 0x0a, 0x49, 0x39, 0xc8, 0x43,
-	0xb4, 0xd7, 0x7d, 0x83, 0xbe, 0x4a, 0x2f, 0xfb, 0x08, 0x45, 0xfb, 0x22, 0x9d, 0xd9, 0x5d, 0x9e,
-	0x14, 0x96, 0xe9, 0x85, 0x21, 0x92, 0x3b, 0xbf, 0xd9, 0xe1, 0xcc, 0xec, 0x7f, 0x68, 0xa8, 0xd9,
-	0x16, 0x5b, 0x78, 0x6e, 0x73, 0xe9, 0x7b, 0xa1, 0x67, 0x68, 0x6f, 0x7c, 0x67, 0xd6, 0x14, 0x8f,
-	0x4c, 0x2d, 0x08, 0x3d, 0x9f, 0x89, 0x95, 0x83, 0x9f, 0x77, 0xa0, 0xda, 0xf2, 0x16, 0x0b, 0xcb,
-	0xb5, 0x8d, 0x26, 0xd4, 0xa6, 0xe2, 0x72, 0x12, 0xbe, 0x5f, 0xb2, 0xfd, 0x8d, 0x5b, 0xa5, 0x07,
-	0xdb, 0x87, 0xfb, 0xcd, 0x14, 0xdc, 0xec, 0xb3, 0x20, 0xb0, 0x66, 0x6c, 0x8c, 0xeb, 0xc6, 0x63,
-	0xd0, 0x2c, 0xdb, 0x9e, 0x48, 0x66, 0xbf, 0x74, 0x6b, 0xe3, 0x81, 0x76, 0xf8, 0xbf, 0x8c, 0xb9,
-	0x74, 0xdd, 0x3c, 0xb2, 0xed, 0xd6, 0xc2, 0x26, 0x62, 0x6a, 0x85, 0x31, 0xb1, 0x59, 0x40, 0xb4,
-	0xac, 0x90, 0x88, 0x43, 0xa8, 0x2d, 0x1d, 0x77, 0x16, 0x23, 0x5b, 0x1c, 0xb9, 0x96, 0x8b, 0xbc,
-	0x44, 0x43, 0xc9, 0xbc, 0x5d, 0x39, 0xc9, 0x36, 0xe5, 0x02, 0xe6, 0x15, 0x1a, 0x12, 0xf3, 0x39,
-	0xd4, 0x17, 0xde, 0xca, 0x4d, 0xa0, 0x0a, 0x87, 0xae, 0xe7, 0x42, 0x7d, 0xb2, 0x24, 0xea, 0x4b,
-	0x68, 0xac, 0xdc, 0x2c, 0x57, 0xe5, 0xdc, 0xcd, 0x5c, 0xee, 0x54, 0xd8, 0x12, 0xd9, 0x04, 0xf0,
-	0x17, 0x31, 0xa4, 0x70, 0xc8, 0xcc, 0x85, 0x86, 0x0b, 0xb9, 0xd3, 0xb9, 0x43, 0x85, 0x7b, 0x1f,
-	0x43, 0x6a, 0xc1, 0x4e, 0x2f, 0x84, 0x2d, 0x91, 0x2d, 0xb8, 0xe2, 0xb9, 0x73, 0xc7, 0x65, 0x93,
-	0x20, 0xb4, 0xc2, 0x55, 0x10, 0xf3, 0xc0, 0xf9, 0x3b, 0xb9, 0xfc, 0x80, 0x13, 0x23, 0x0e, 0xc8,
-	0xf4, 0x9c, 0xb1, 0x70, 0x7a, 0x1e, 0xc3, 0x5a, 0x41, 0x7a, 0x3a, 0x64, 0x29, 0x0b, 0x31, 0xc7,
-	0x40, 0x62, 0xa8, 0x56, 0x50, 0x88, 0x1e, 0x1a, 0xca, 0xc4, 0x2c, 0x2e, 0x62, 0xa2, 0x5e, 0x90,
-	0x98, 0xfe, 0x45, 0x54, 0xb8, 0x9f, 0x6c, 0xc7, 0x8f, 0x91, 0xed, 0xa2, 0xc2, 0x91, 0x25, 0x51,
-	0xdf, 0x80, 0xe1, 0xe3, 0x4a, 0xc8, 0x26, 0xe9, 0x0e, 0x6e, 0x70, 0xf4, 0x76, 0x7e, 0x19, 0xb8,
-	0xb9, 0xec, 0x63, 0xcc, 0xa9, 0xc4, 0xe9, 0xe7, 0x82, 0xc5, 0x1e, 0xf4, 0x82, 0x9c, 0x0a, 0x0f,
-	0x43, 0x0e, 0x90, 0x93, 0xef, 0x60, 0x57, 0x3a, 0xc9, 0x24, 0x69, 0x87, 0xbb, 0x38, 0x28, 0x70,
-	0x11, 0xa5, 0x2a, 0x89, 0x62, 0xee, 0xe1, 0xb1, 0x4a, 0xa2, 0x30, 0x3e, 0x1a, 0x45, 0x8f, 0x03,
-	0xd9, 0x28, 0x02, 0x36, 0x3f, 0x8b, 0x5d, 0xec, 0x7e, 0x34, 0x8a, 0x11, 0x9a, 0x93, 0x83, 0xa7,
-	0xb0, 0xbd, 0xd6, 0x58, 0x97, 0x39, 0x7b, 0x23, 0x97, 0x4d, 0x5a, 0x0a, 0x39, 0x02, 0x52, 0xe7,
-	0xf4, 0x4a, 0x01, 0xd7, 0xe2, 0xa6, 0xb2, 0xa9, 0x6c, 0xe7, 0x2c, 0x89, 0x74, 0xaf, 0xa0, 0xa9,
-	0x8e, 0xd1, 0x50, 0xea, 0xce, 0xdc, 0x4b, 0x44, 0xe4, 0x6a, 0x81, 0xee, 0xf4, 0xbc, 0x99, 0x24,
-	0x50, 0x77, 0x62, 0x62, 0xbf, 0x80, 0x40, 0xd9, 0x41, 0xc2, 0x6c, 0x42, 0x45, 0x76, 0xc7, 0x0e,
-	0xa8, 0x67, 0xce, 0x9c, 0x4d, 0x96, 0x56, 0x78, 0xce, 0x45, 0x54, 0xa5, 0x47, 0x3e, 0x5b, 0x7a,
-	0xe2, 0x51, 0x89, 0x1e, 0x91, 0xbd, 0xd4, 0xb8, 0xcc, 0x62, 0x6c, 0x9f, 0xb8, 0x10, 0xf6, 0x2a,
-	0x54, 0xa5, 0xc0, 0xd1, 0xa5, 0xd4, 0x2d, 0xf3, 0x26, 0x28, 0xb1, 0x1a, 0xed, 0x82, 0x26, 0xb4,
-	0x68, 0xe9, 0x39, 0x6e, 0x28, 0x3c, 0x99, 0xb7, 0x01, 0x52, 0xb2, 0x93, 0x6b, 0xf2, 0x09, 0x94,
-	0x85, 0xc8, 0xe4, 0x07, 0xe2, 0xb3, 0xe9, 0xca, 0x0f, 0x9c, 0x0b, 0xc6, 0x03, 0x51, 0x70, 0x4b,
-	0x48, 0xc9, 0xcb, 0x87, 0x8c, 0xf9, 0x15, 0x34, 0xd6, 0xf5, 0xe3, 0x3e, 0x94, 0xdf, 0xae, 0x98,
-	0xff, 0x3e, 0x77, 0xa6, 0x08, 0xe3, 0x57, 0xb4, 0x6e, 0x5e, 0x05, 0x25, 0x96, 0x0f, 0x0d, 0x36,
-	0xdf, 0x9d, 0x7b, 0xd2, 0xe9, 0x3d, 0xa8, 0x46, 0x7d, 0x5f, 0x83, 0x2d, 0xdf, 0xf3, 0x64, 0xf4,
-	0x46, 0x1d, 0xca, 0x36, 0x5b, 0xca, 0x34, 0x95, 0xcd, 0xbb, 0x50, 0x16, 0xc2, 0xb0, 0x0d, 0x95,
-	0xc0, 0x5b, 0xf9, 0x53, 0x26, 0xed, 0x90, 0xb2, 0x59, 0x10, 0xca, 0x6c, 0x3e, 0xc6, 0xbc, 0x45,
-	0x62, 0x80, 0x2b, 0xa9, 0x37, 0xde, 0xc3, 0xbe, 0xf4, 0x19, 0x1d, 0xa7, 0xa5, 0xe5, 0x33, 0x37,
-	0x0c, 0xf8, 0x60, 0x53, 0xcc, 0x07, 0x50, 0xcb, 0x68, 0x00, 0x40, 0xc9, 0xb1, 0x13, 0xdf, 0xe7,
-	0x56, 0x10, 0x55, 0xea, 0x3a, 0x34, 0xd6, 0xcf, 0x7a, 0xca, 0xd8, 0xbc, 0x03, 0xf5, 0xec, 0x39,
-	0xc6, 0xa2, 0xb8, 0x8c, 0xd9, 0x81, 0xc8, 0x03, 0x5a, 0xd1, 0x76, 0xed, 0xc8, 0x49, 0x72, 0x54,
-	0xd3, 0x3b, 0xe2, 0xcd, 0x92, 0x31, 0x1f, 0xa5, 0x03, 0x8f, 0x05, 0x8f, 0xb0, 0x4c, 0xcf, 0x42,
-	0x67, 0xc1, 0xbc, 0x55, 0x38, 0x59, 0x04, 0x7c, 0xb8, 0x96, 0xcd, 0x46, 0xb4, 0x99, 0x3c, 0xae,
-	0xa6, 0x06, 0x6a, 0x5c, 0x16, 0xf3, 0x1a, 0xa8, 0xc9, 0xc1, 0x6a, 0x40, 0x75, 0x21, 0xa6, 0x7b,
-	0x1c, 0x68, 0x35, 0x3a, 0x40, 0x58, 0x8a, 0xb9, 0xf7, 0x8e, 0x87, 0x56, 0xe3, 0x6f, 0xeb, 0xcc,
-	0xce, 0xf9, 0xae, 0x35, 0xf3, 0xff, 0x50, 0x91, 0x67, 0xa6, 0xc0, 0xe8, 0x3e, 0x54, 0xc4, 0x31,
-	0xa1, 0x5d, 0xde, 0x58, 0x73, 0xcb, 0x95, 0x75, 0x29, 0xc7, 0xd9, 0xe7, 0xb9, 0x3b, 0x78, 0x02,
-	0x15, 0x11, 0xef, 0xbf, 0xe7, 0x97, 0x5a, 0xce, 0x09, 0x26, 0x62, 0xa8, 0xf1, 0xd7, 0x54, 0x0e,
-	0x7e, 0x51, 0x40, 0x19, 0xb2, 0x60, 0xe9, 0xb9, 0x01, 0x33, 0x1e, 0x41, 0xdd, 0x97, 0xd7, 0xff,
-	0xed, 0x43, 0x06, 0x63, 0x0a, 0x56, 0xd3, 0x29, 0x3e, 0x11, 0x2d, 0x4e, 0x3d, 0xc5, 0x7c, 0xdf,
-	0xf3, 0xb9, 0x77, 0xd5, 0xf8, 0x02, 0x6a, 0xd1, 0xf0, 0x25, 0xc7, 0xf2, 0x23, 0x24, 0x3b, 0x27,
-	0xa2, 0xdd, 0xa3, 0xd1, 0x4b, 0xf7, 0xc6, 0xa7, 0xa0, 0x72, 0x6d, 0xe7, 0x54, 0x39, 0x47, 0xde,
-	0x62, 0x8a, 0x7a, 0x81, 0x23, 0xdf, 0x82, 0x9e, 0x9e, 0x0a, 0x9c, 0xac, 0xe4, 0xe8, 0x79, 0x4c,
-	0x26, 0xbd, 0xc4, 0xf9, 0x67, 0xf1, 0x64, 0x93, 0x43, 0x81, 0x7b, 0x10, 0x5f, 0x25, 0xf7, 0x0a,
-	0x3d, 0x70, 0xf3, 0xb5, 0x18, 0xf8, 0x4c, 0xe0, 0x1e, 0x94, 0x8f, 0xc7, 0x40, 0x2d, 0x16, 0xc5,
-	0x90, 0xfd, 0xe4, 0xe0, 0x1e, 0xd4, 0xa2, 0x18, 0xd2, 0x82, 0xc1, 0x7d, 0x3c, 0x01, 0x2d, 0x0d,
-	0x8b, 0x8f, 0x95, 0x5b, 0xf9, 0x70, 0x0a, 0x7b, 0x04, 0x0a, 0x29, 0x3d, 0x67, 0xf2, 0xbe, 0x51,
-	0x92, 0x84, 0x7b, 0xb3, 0x08, 0x20, 0xa1, 0xe7, 0x40, 0xad, 0x08, 0xc0, 0xfe, 0xa5, 0x6b, 0x52,
-	0x8e, 0x38, 0xd9, 0x78, 0x42, 0x50, 0x43, 0xa8, 0x50, 0xbc, 0xc7, 0xb4, 0xc3, 0x5d, 0xc1, 0x8a,
-	0x2f, 0xec, 0x63, 0xb1, 0x64, 0x7e, 0x06, 0x5a, 0xba, 0x29, 0x10, 0x92, 0xdd, 0x94, 0x07, 0x49,
-	0x4b, 0x13, 0xc7, 0xe3, 0x5a, 0x65, 0x91, 0x13, 0x55, 0x09, 0x90, 0xdb, 0x4c, 0xb8, 0x38, 0x50,
-	0x5a, 0x33, 0x0f, 0x40, 0xff, 0xa0, 0x9e, 0x28, 0x85, 0x74, 0x7c, 0x24, 0xa8, 0x62, 0x40, 0xdb,
-	0x6b, 0x15, 0xbb, 0x0d, 0x5b, 0x54, 0xea, 0x6c, 0x40, 0x59, 0xc7, 0x77, 0x41, 0xff, 0xa0, 0x48,
-	0x99, 0x93, 0xb8, 0xc1, 0xa7, 0xc3, 0x53, 0x80, 0x94, 0x01, 0x8a, 0x26, 0x56, 0x71, 0x26, 0x3e,
-	0x4d, 0x9c, 0x28, 0x4b, 0x46, 0xfa, 0x85, 0x85, 0x00, 0x99, 0x8f, 0x50, 0xdf, 0x65, 0x49, 0xee,
-	0x88, 0x7f, 0x49, 0x9c, 0x30, 0xc8, 0x4b, 0x90, 0x5c, 0x42, 0xed, 0xaa, 0xca, 0x92, 0xc8, 0x30,
-	0xb0, 0x8c, 0x2e, 0x13, 0x8a, 0xa1, 0x3c, 0xfc, 0xad, 0x04, 0x5a, 0xfa, 0x88, 0x57, 0x61, 0xf3,
-	0xe8, 0xf8, 0x58, 0xbf, 0x44, 0x17, 0xad, 0xa3, 0xb1, 0xbe, 0x61, 0x28, 0xb0, 0xf5, 0xb2, 0x7b,
-	0xf2, 0x5c, 0x2f, 0xd1, 0xd5, 0xab, 0xd3, 0xee, 0x58, 0xdf, 0x34, 0x54, 0x1c, 0x1e, 0x83, 0xd3,
-	0x93, 0xb1, 0xbe, 0x85, 0x62, 0x56, 0x3d, 0x3d, 0x11, 0x37, 0x65, 0xa3, 0x02, 0xa5, 0x61, 0x5f,
-	0xaf, 0xe0, 0x46, 0xf5, 0xc1, 0x49, 0xaf, 0x7b, 0xd2, 0x9e, 0x8c, 0xc6, 0x47, 0xe3, 0xd3, 0x91,
-	0x5e, 0x25, 0xa4, 0xd3, 0x1e, 0xb7, 0x5e, 0xe8, 0x0a, 0xf9, 0xe9, 0x75, 0x47, 0x63, 0x5d, 0x25,
-	0xfb, 0xfe, 0x6b, 0x1d, 0xb8, 0xbf, 0xef, 0x8f, 0xbb, 0x43, 0x5d, 0xc3, 0x1a, 0xc0, 0xb0, 0xdd,
-	0x1f, 0x8c, 0xdb, 0x13, 0x8a, 0xa3, 0x46, 0xae, 0xe4, 0x3d, 0xfd, 0xbc, 0x6e, 0xeb, 0x75, 0x94,
-	0x21, 0x4d, 0x3e, 0xe2, 0x6e, 0xb6, 0x53, 0x36, 0xbd, 0x01, 0x06, 0xdd, 0xd6, 0x1b, 0x29, 0x9b,
-	0x51, 0xbb, 0xd7, 0xd1, 0x75, 0x8a, 0xf3, 0x05, 0x5a, 0x0f, 0x86, 0x3f, 0xe8, 0x3b, 0xa8, 0x99,
-	0x15, 0x19, 0x18, 0x0d, 0x83, 0x4a, 0x6b, 0xd0, 0xef, 0xe3, 0x7b, 0xed, 0x52, 0x64, 0xc7, 0xdd,
-	0x4e, 0x47, 0xbf, 0x4c, 0xaf, 0xdf, 0x1b, 0x3c, 0xd7, 0xaf, 0xd0, 0x05, 0xbe, 0xbe, 0xbe, 0xf7,
-	0xf0, 0x6b, 0xd0, 0x52, 0x03, 0x18, 0xa5, 0x4f, 0x7d, 0x3e, 0x98, 0x88, 0xb7, 0xc4, 0x74, 0x61,
-	0xd8, 0x74, 0xdb, 0xe9, 0xf0, 0xfb, 0x0d, 0x5a, 0xee, 0x8e, 0xa2, 0xe5, 0xd2, 0xb3, 0xbd, 0xdf,
-	0xff, 0xba, 0xb1, 0xf1, 0x07, 0xfe, 0xfd, 0x89, 0x7f, 0xbf, 0xfe, 0x7d, 0xe3, 0xd2, 0x8f, 0x5b,
-	0xef, 0x1c, 0x9f, 0xfd, 0x13, 0x00, 0x00, 0xff, 0xff, 0x72, 0x16, 0xd7, 0xc1, 0x7f, 0x0e, 0x00,
-	0x00,
-}

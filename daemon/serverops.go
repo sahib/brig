@@ -9,6 +9,7 @@ import (
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
+	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
@@ -40,6 +41,8 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_DIFF:          handleDiff,
 	wire.MessageType_LOG:           handleLog,
 	wire.MessageType_PIN:           handlePin,
+	wire.MessageType_EXPORT:        handleExport,
+	wire.MessageType_IMPORT:        handleImport,
 }
 
 func handlePing(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
@@ -394,6 +397,39 @@ func handlePin(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respons
 	return &wire.Response{
 		PinResp: &wire.Response_PinResp{
 			IsPinned: proto.Bool(isPinned),
+		},
+	}, nil
+}
+
+func handleImport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	pbData := cmd.GetImportCommand().GetData()
+
+	pbStore := storewire.Store{}
+	if err := proto.Unmarshal(pbData, &pbStore); err != nil {
+		return nil, err
+	}
+
+	if err := d.Repo.OwnStore.Import(&pbStore); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func handleExport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	pbStore, err := d.Repo.OwnStore.Export()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := proto.Marshal(pbStore)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wire.Response{
+		ExportResp: &wire.Response_ExportResp{
+			Data: data,
 		},
 	}, nil
 }

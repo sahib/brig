@@ -36,10 +36,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
-
 type File struct {
 	Path     *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
 	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
@@ -51,10 +47,9 @@ type File struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *File) Reset()                    { *m = File{} }
-func (m *File) String() string            { return proto.CompactTextString(m) }
-func (*File) ProtoMessage()               {}
-func (*File) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{0} }
+func (m *File) Reset()         { *m = File{} }
+func (m *File) String() string { return proto.CompactTextString(m) }
+func (*File) ProtoMessage()    {}
 
 func (m *File) GetPath() string {
 	if m != nil && m.Path != nil {
@@ -107,10 +102,9 @@ type Dirent struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Dirent) Reset()                    { *m = Dirent{} }
-func (m *Dirent) String() string            { return proto.CompactTextString(m) }
-func (*Dirent) ProtoMessage()               {}
-func (*Dirent) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{1} }
+func (m *Dirent) Reset()         { *m = Dirent{} }
+func (m *Dirent) String() string { return proto.CompactTextString(m) }
+func (*Dirent) ProtoMessage()    {}
 
 func (m *Dirent) GetPath() string {
 	if m != nil && m.Path != nil {
@@ -145,10 +139,9 @@ type Dirlist struct {
 	XXX_unrecognized []byte    `json:"-"`
 }
 
-func (m *Dirlist) Reset()                    { *m = Dirlist{} }
-func (m *Dirlist) String() string            { return proto.CompactTextString(m) }
-func (*Dirlist) ProtoMessage()               {}
-func (*Dirlist) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{2} }
+func (m *Dirlist) Reset()         { *m = Dirlist{} }
+func (m *Dirlist) String() string { return proto.CompactTextString(m) }
+func (*Dirlist) ProtoMessage()    {}
 
 func (m *Dirlist) GetEntries() []*Dirent {
 	if m != nil {
@@ -168,10 +161,9 @@ type Checkpoint struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Checkpoint) Reset()                    { *m = Checkpoint{} }
-func (m *Checkpoint) String() string            { return proto.CompactTextString(m) }
-func (*Checkpoint) ProtoMessage()               {}
-func (*Checkpoint) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{3} }
+func (m *Checkpoint) Reset()         { *m = Checkpoint{} }
+func (m *Checkpoint) String() string { return proto.CompactTextString(m) }
+func (*Checkpoint) ProtoMessage()    {}
 
 func (m *Checkpoint) GetHash() []byte {
 	if m != nil {
@@ -227,10 +219,9 @@ type History struct {
 	XXX_unrecognized []byte        `json:"-"`
 }
 
-func (m *History) Reset()                    { *m = History{} }
-func (m *History) String() string            { return proto.CompactTextString(m) }
-func (*History) ProtoMessage()               {}
-func (*History) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{4} }
+func (m *History) Reset()         { *m = History{} }
+func (m *History) String() string { return proto.CompactTextString(m) }
+func (*History) ProtoMessage()    {}
 
 func (m *History) GetHist() []*Checkpoint {
 	if m != nil {
@@ -247,10 +238,9 @@ type Pack struct {
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *Pack) Reset()                    { *m = Pack{} }
-func (m *Pack) String() string            { return proto.CompactTextString(m) }
-func (*Pack) ProtoMessage()               {}
-func (*Pack) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{5} }
+func (m *Pack) Reset()         { *m = Pack{} }
+func (m *Pack) String() string { return proto.CompactTextString(m) }
+func (*Pack) ProtoMessage()    {}
 
 func (m *Pack) GetFile() *File {
 	if m != nil {
@@ -273,10 +263,9 @@ type Store struct {
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *Store) Reset()                    { *m = Store{} }
-func (m *Store) String() string            { return proto.CompactTextString(m) }
-func (*Store) ProtoMessage()               {}
-func (*Store) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{6} }
+func (m *Store) Reset()         { *m = Store{} }
+func (m *Store) String() string { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()    {}
 
 func (m *Store) GetPacks() []*Pack {
 	if m != nil {
@@ -299,10 +288,9 @@ type Merge struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Merge) Reset()                    { *m = Merge{} }
-func (m *Merge) String() string            { return proto.CompactTextString(m) }
-func (*Merge) ProtoMessage()               {}
-func (*Merge) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{7} }
+func (m *Merge) Reset()         { *m = Merge{} }
+func (m *Merge) String() string { return proto.CompactTextString(m) }
+func (*Merge) ProtoMessage()    {}
 
 func (m *Merge) GetWith() string {
 	if m != nil && m.With != nil {
@@ -335,10 +323,9 @@ type Commit struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Commit) Reset()                    { *m = Commit{} }
-func (m *Commit) String() string            { return proto.CompactTextString(m) }
-func (*Commit) ProtoMessage()               {}
-func (*Commit) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{8} }
+func (m *Commit) Reset()         { *m = Commit{} }
+func (m *Commit) String() string { return proto.CompactTextString(m) }
+func (*Commit) ProtoMessage()    {}
 
 func (m *Commit) GetMessage() string {
 	if m != nil && m.Message != nil {
@@ -402,10 +389,9 @@ type Commits struct {
 	XXX_unrecognized []byte    `json:"-"`
 }
 
-func (m *Commits) Reset()                    { *m = Commits{} }
-func (m *Commits) String() string            { return proto.CompactTextString(m) }
-func (*Commits) ProtoMessage()               {}
-func (*Commits) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{9} }
+func (m *Commits) Reset()         { *m = Commits{} }
+func (m *Commits) String() string { return proto.CompactTextString(m) }
+func (*Commits) ProtoMessage()    {}
 
 func (m *Commits) GetCommits() []*Commit {
 	if m != nil {
@@ -421,10 +407,9 @@ type Ref struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Ref) Reset()                    { *m = Ref{} }
-func (m *Ref) String() string            { return proto.CompactTextString(m) }
-func (*Ref) ProtoMessage()               {}
-func (*Ref) Descriptor() ([]byte, []int) { return fileDescriptorStore, []int{10} }
+func (m *Ref) Reset()         { *m = Ref{} }
+func (m *Ref) String() string { return proto.CompactTextString(m) }
+func (*Ref) ProtoMessage()    {}
 
 func (m *Ref) GetName() string {
 	if m != nil && m.Name != nil {
@@ -1385,10 +1370,7 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], data[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
-			}
+			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -1416,10 +1398,7 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
-			if m.Hash == nil {
-				m.Hash = []byte{}
-			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -1489,10 +1468,7 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
-			if m.ModTime == nil {
-				m.ModTime = []byte{}
-			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		default:
@@ -1658,10 +1634,7 @@ func (m *Dirent) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
-			if m.ModTime == nil {
-				m.ModTime = []byte{}
-			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		default:
@@ -1836,10 +1809,7 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
-			if m.Hash == nil {
-				m.Hash = []byte{}
-			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
@@ -1868,10 +1838,7 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
-			if m.ModTime == nil {
-				m.ModTime = []byte{}
-			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
@@ -2467,10 +2434,7 @@ func (m *Merge) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
-			if m.Hash == nil {
-				m.Hash = []byte{}
-			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		default:
@@ -2619,10 +2583,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ModTime = append(m.ModTime[:0], data[iNdEx:postIndex]...)
-			if m.ModTime == nil {
-				m.ModTime = []byte{}
-			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000004)
 		case 4:
@@ -2651,10 +2612,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
-			if m.Hash == nil {
-				m.Hash = []byte{}
-			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
@@ -2683,10 +2641,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TreeHash = append(m.TreeHash[:0], data[iNdEx:postIndex]...)
-			if m.TreeHash == nil {
-				m.TreeHash = []byte{}
-			}
+			m.TreeHash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000010)
 		case 6:
@@ -2746,10 +2701,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ParentHash = append(m.ParentHash[:0], data[iNdEx:postIndex]...)
-			if m.ParentHash == nil {
-				m.ParentHash = []byte{}
-			}
+			m.ParentHash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -2990,10 +2942,7 @@ func (m *Ref) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Hash = append(m.Hash[:0], data[iNdEx:postIndex]...)
-			if m.Hash == nil {
-				m.Hash = []byte{}
-			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
@@ -3152,38 +3101,3 @@ var (
 	ErrInvalidLengthStore = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowStore   = fmt.Errorf("proto: integer overflow")
 )
-
-var fileDescriptorStore = []byte{
-	// 493 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x7c, 0x52, 0xcd, 0x8a, 0x13, 0x41,
-	0x10, 0xde, 0xcc, 0xef, 0xa6, 0x26, 0x68, 0xb6, 0x17, 0x96, 0x39, 0xc5, 0xd0, 0xeb, 0x21, 0x20,
-	0x8c, 0x10, 0xdf, 0x60, 0x57, 0x44, 0x41, 0x45, 0xf4, 0xe6, 0x25, 0xcc, 0x4e, 0x3a, 0x99, 0x26,
-	0x99, 0xcc, 0xd0, 0xdd, 0x22, 0xf1, 0xe2, 0x6b, 0xf8, 0x38, 0x1e, 0x3d, 0xfa, 0x08, 0xa2, 0x2f,
-	0x62, 0x75, 0x75, 0x26, 0xc9, 0x68, 0xd8, 0xc3, 0xc0, 0x54, 0x75, 0xd5, 0x57, 0xdf, 0xf7, 0x55,
-	0x41, 0xa2, 0x4d, 0xad, 0x44, 0xd6, 0xa8, 0xda, 0xd4, 0x0c, 0xee, 0x94, 0x5c, 0x66, 0x94, 0xe1,
-	0x77, 0x10, 0xbc, 0x90, 0x6b, 0xc1, 0x06, 0x10, 0x34, 0xb9, 0x29, 0xd3, 0xde, 0xd8, 0x9b, 0xf4,
-	0x59, 0x02, 0xfe, 0x4a, 0x6c, 0x53, 0x6f, 0xdc, 0x9b, 0x0c, 0xec, 0x53, 0x99, 0xeb, 0x32, 0xf5,
-	0x29, 0xba, 0x80, 0xfe, 0x02, 0x1b, 0x66, 0x5a, 0x7e, 0x11, 0x69, 0x80, 0xd5, 0xbe, 0x2d, 0x58,
-	0xc9, 0xcd, 0x3c, 0x0d, 0x31, 0x0a, 0xd9, 0x10, 0xce, 0xab, 0x7a, 0x3e, 0x33, 0xb2, 0x12, 0x69,
-	0x84, 0x99, 0x01, 0x7f, 0x05, 0xd1, 0x73, 0xa9, 0xc4, 0xc6, 0xfc, 0x33, 0xa5, 0x03, 0xe5, 0x75,
-	0xa0, 0xfc, 0xff, 0xa0, 0x02, 0x82, 0xca, 0x20, 0x46, 0xa8, 0xb5, 0xd4, 0x86, 0x5d, 0x43, 0x8c,
-	0x90, 0x4a, 0x0a, 0x8d, 0x70, 0xfe, 0x24, 0x99, 0xb2, 0xec, 0xa0, 0x2b, 0x73, 0x03, 0xf9, 0x57,
-	0x80, 0xdb, 0x52, 0x14, 0xab, 0xa6, 0x96, 0x6e, 0x3c, 0x29, 0xb1, 0xe3, 0x07, 0x1d, 0x74, 0x8f,
-	0x32, 0x1d, 0x42, 0x3e, 0x11, 0x7a, 0x00, 0x51, 0x51, 0xe6, 0x9b, 0xa5, 0x23, 0x10, 0xda, 0x38,
-	0xff, 0x64, 0xca, 0x5a, 0x91, 0xda, 0xfe, 0x5e, 0x51, 0x44, 0x11, 0x42, 0xd6, 0xeb, 0xf9, 0x8c,
-	0x32, 0xb1, 0xcd, 0xf0, 0x67, 0x10, 0xbf, 0x94, 0x96, 0xd2, 0x96, 0x4d, 0x70, 0x3a, 0xfe, 0xee,
-	0xd8, 0x5e, 0x1d, 0xb3, 0x3d, 0x70, 0xbc, 0xf1, 0x86, 0x67, 0xfc, 0x35, 0x04, 0xef, 0xf2, 0x62,
-	0xc5, 0x46, 0x10, 0x58, 0x3e, 0xc4, 0x37, 0x99, 0x0e, 0x8f, 0x3b, 0x68, 0x69, 0x8f, 0x21, 0x2e,
-	0x1d, 0x38, 0x09, 0x48, 0xa6, 0x97, 0xc7, 0x25, 0xbb, 0xb9, 0xfc, 0x2d, 0x84, 0x1f, 0x6c, 0x82,
-	0x3d, 0x82, 0xb0, 0x41, 0xd8, 0xd6, 0xaf, 0x0e, 0x1e, 0xcd, 0x43, 0xbc, 0xa2, 0xae, 0x2a, 0x69,
-	0xf4, 0x29, 0xbc, 0x5b, 0xf7, 0xc4, 0xaf, 0x21, 0x7c, 0x23, 0xd4, 0x92, 0x6e, 0xe6, 0xb3, 0xdc,
-	0x6f, 0xb3, 0x35, 0x97, 0xac, 0xe4, 0xdf, 0x7b, 0x10, 0xb9, 0x06, 0xf6, 0x10, 0xe2, 0x4a, 0x68,
-	0x9d, 0x2f, 0xc5, 0xae, 0xf2, 0xe0, 0xa1, 0xd7, 0xba, 0xb6, 0x5f, 0x84, 0x4f, 0x8b, 0x68, 0xb1,
-	0x82, 0x76, 0x2d, 0x46, 0x09, 0x31, 0xa3, 0x54, 0x48, 0xa9, 0x27, 0x90, 0x14, 0x7b, 0xcf, 0x34,
-	0xba, 0x7f, 0x8f, 0xa5, 0xec, 0x12, 0x92, 0x26, 0xb7, 0xe7, 0xe0, 0x10, 0x62, 0xba, 0xe3, 0x31,
-	0x84, 0x95, 0x55, 0x91, 0x9e, 0x63, 0x98, 0x4c, 0x2f, 0x8e, 0x7b, 0x49, 0x9e, 0xbd, 0xb5, 0x9d,
-	0x64, 0x7b, 0x6b, 0xad, 0x31, 0x27, 0x6e, 0xcd, 0x55, 0xf1, 0xa7, 0xe0, 0xbf, 0x17, 0x0b, 0xcb,
-	0x7d, 0x93, 0x57, 0xe2, 0x94, 0x2b, 0x36, 0x32, 0xdb, 0xc6, 0xa9, 0x0c, 0x6f, 0xae, 0x7e, 0xfc,
-	0x1e, 0xf5, 0x7e, 0xe2, 0xf7, 0x0b, 0xbf, 0x6f, 0x7f, 0x46, 0x67, 0x1f, 0xd1, 0x4f, 0x25, 0xfe,
-	0x06, 0x00, 0x00, 0xff, 0xff, 0xd4, 0xb1, 0x41, 0xe5, 0xad, 0x03, 0x00, 0x00,
-}

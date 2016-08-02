@@ -417,3 +417,29 @@ func (c *Client) Unpin(path string) error {
 func (c *Client) IsPinned(path string) (bool, error) {
 	return c.doPin(path, 0)
 }
+
+func (c *Client) Export() ([]byte, error) {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_EXPORT.Enum(),
+	}
+
+	resp, err := c.recvResponse("export")
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetExportResp().GetData(), nil
+}
+
+func (c *Client) Import(data []byte) error {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_IMPORT.Enum(),
+		ImportCommand: &wire.Command_ImportCmd{
+			Data: data,
+		},
+	}
+
+	// TODO: add a 'checkErrResponse()' func?
+	_, err := c.recvResponse("import")
+	return err
+}
