@@ -25,6 +25,24 @@ func formatGroup(category string) string {
 	return strings.ToUpper(category) + " COMMANDS"
 }
 
+func setLogPath(path string) error {
+	switch path {
+	case "stdout":
+		log.SetOutput(os.Stdout)
+	case "stderr":
+		log.SetOutput(os.Stderr)
+	default:
+		fd, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+
+		log.SetOutput(fd)
+	}
+
+	return nil
+}
+
 ////////////////////////////
 // Commandline definition //
 ////////////////////////////
@@ -53,7 +71,7 @@ func RunCmdline(args []string) int {
 			Usage: "Don't run the daemon",
 		},
 		cli.StringFlag{
-			Name:  "password, x",
+			Name:  "password,x",
 			Usage: "Supply user password",
 			Value: "",
 		},
@@ -62,6 +80,12 @@ func RunCmdline(args []string) int {
 			Usage:  "Path of the repository",
 			Value:  ".",
 			EnvVar: "BRIG_PATH",
+		},
+		cli.StringFlag{
+			Name:   "log-path,l",
+			Usage:  "Where to output the log. May be 'stderr' (default) or 'stdout'",
+			Value:  "stderr",
+			EnvVar: "BRIG_LOG",
 		},
 	}
 
@@ -405,6 +429,10 @@ func RunCmdline(args []string) int {
 			},
 			Action: withArgCheck(needAtLeast(1), withDaemon(handleMount, true)),
 		},
+	}
+
+	app.Before = func(ctx *cli.Context) error {
+		return setLogPath(ctx.String("log-path"))
 	}
 
 	app.Run(args)
