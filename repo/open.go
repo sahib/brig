@@ -185,7 +185,12 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		ipfsSwarmPort,
 	)
 
-	ownStore, err := store.Open(brigPath, ID, ipfsLayer)
+	hash, err := ipfsLayer.Identity()
+	if err != nil {
+		return nil, err
+	}
+
+	ownStore, err := store.Open(brigPath, id.NewPeer(ID, hash), ipfsLayer)
 	if err != nil {
 		return nil, err
 	}

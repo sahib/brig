@@ -21,7 +21,7 @@ func withStore(t *testing.T, ID id.ID, IPFS *ipfsutil.Node, fn func(st *store.St
 
 	defer testutil.Remover(t, tempDir)
 
-	st, err := store.Open(tempDir, ID, IPFS)
+	st, err := store.Open(tempDir, id.NewPeer(ID, "QmIMACOW"), IPFS)
 	if err != nil {
 		t.Fatalf("Could not create store: %v", err)
 		return

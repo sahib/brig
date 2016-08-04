@@ -121,11 +121,11 @@ func (st *Store) updateHEAD(cmt *Commit) error {
 // Open loads an existing store at `brigPath/$ID/index.bolt`, if it does not
 // exist, it is created.  For full function, Connect() should be called
 // afterwards.
-func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
+func Open(brigPath string, owner id.Peer, IPFS *ipfsutil.Node) (*Store, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 	dbDir := filepath.Join(
 		brigPath,
-		"bolt."+strings.Replace(string(ID), "/", "-", -1),
+		"bolt."+strings.Replace(string(owner.ID()), "/", "-", -1),
 	)
 
 	if err := os.MkdirAll(dbDir, 0777); err != nil {
@@ -140,12 +140,12 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 
 	st := &Store{
 		db:       db,
-		ID:       ID,
+		ID:       owner.ID(),
 		repoPath: brigPath,
 		IPFS:     IPFS,
 	}
 
-	// Create initial buckets:
+	// Create initial buckets if they do not exist yet:
 	err = db.Update(func(tx *bolt.Tx) error {
 		buckets := []string{
 			"index",       // File-Path to file protobuf.
@@ -153,6 +153,7 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 			"commits",     // Commit-Hash to commit protobuf.
 			"checkpoints", // File-Path to History (== mod_time to checkpoint)
 			"refs",        // Special names for certain commits (e.g. HEAD)
+			"metadata",    // Context information about the store itself.
 		}
 
 		for _, name := range buckets {
@@ -177,7 +178,29 @@ func Open(brigPath string, ID id.ID, IPFS *ipfsutil.Node) (*Store, error) {
 		return nil, err
 	}
 
+	// Insert some metadata about the store:
+	err = st.updateWithBucket("metadata", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		if err := bkt.Put([]byte("id"), []byte(owner.Hash())); err != nil {
+			return err
+		}
+
+		return bkt.Put([]byte("name"), []byte(owner.ID()))
+	})
+
 	return st, err
+}
+
+// Owner returns the owner of the store (name + hash)
+func (st *Store) Owner() (owner id.Peer, err error) {
+	return owner, st.viewWithBucket("metadata", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		ID, err := id.Cast(string(bkt.Get([]byte("name"))))
+		if err != nil {
+			return err
+		}
+
+		owner = id.NewPeer(ID, string(bkt.Get([]byte("hash"))))
+		return nil
+	})
 }
 
 // Close syncs all data. It is an error to use the store afterwards.
