@@ -199,6 +199,7 @@ func handleInit(ctx *cli.Context) error {
 	pwd := ctx.GlobalString("password")
 	fmt.Println(pwd)
 	if pwd == "" {
+		// TODO: Lower this or make it at least configurable
 		pwdBytes, err := pwdutil.PromptNewPassword(40.0)
 		if err != nil {
 			return ExitCode{BadPassword, err.Error()}
@@ -206,6 +207,11 @@ func handleInit(ctx *cli.Context) error {
 
 		pwd = string(pwdBytes)
 	}
+
+	log.Warning("============================================")
+	log.Warning("Please make sure to remember the passphrase!")
+	log.Warning("Your data will not be accessible without it.")
+	log.Warning("============================================")
 
 	repo, err := repo.NewRepository(string(ID), pwd, folder)
 	if err != nil {
