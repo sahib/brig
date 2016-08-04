@@ -3,7 +3,7 @@
 export BRIG_PATH=/tmp/bob
 rm -rf $BRIG_PATH
 echo "=== INIT ==="
-brig init bob@jabber.nullcat.de/desktop -x eecot3oXan --nodaemon
+brig -x eecot3oXan --nodaemon init bob@jabber.nullcat.de/desktop 
 echo "=== DAEMON ==="
-brig daemon -x eecot3oXan
+brig -x eecot3oXan daemon launch
 echo "=== FINISH ==="
