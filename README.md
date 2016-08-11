@@ -23,9 +23,15 @@ For now, you can [read this very chaotic blog](https://disorganizer.github.io/bl
 Summarized in one paragraph, it is an ``syncthing``, ``git-annex`` or
 ``BTSync`` alternative, that gives you a commandline interface, a fuse
 filesystem and a library that can encrypt and compress files which are in turn
-distributed through ``ipfs`` while the file metadata is exchanged via XMPP.
+distributed through ``ipfs`` while the file metadata is transmitted separetely.
+It's a bit similar to the currently also unfinished [bazil](https://bazil.org) maybe.
 
 Even shorter: It's supposed to be as flexible as ``git``, but for whole files.
+
+We're writing our master thesis on ``brig``, [but it's in german only](https://github.com/disorganizer/brig-thesis).
+That doesn't mean we're planning to discontinue it after though - actually we'd love to get paid for developement?[^MONEY]
+
+[^MONEY]: Care to through money at us?
 
 ## Installation
 
@@ -33,7 +39,8 @@ Even shorter: It's supposed to be as flexible as ``git``, but for whole files.
 $ go get github.com/disorganizer/brig/brig
 ```
 
-If that complains about some ``ipfs`` dependencies, you might need to follow the ``ipfs`` [install guide](https://github.com/ipfs/go-ipfs#build-from-source).
+That should just work if you previously [setup Go](https://golang.org/doc/install).
+
 
 ## Authors
 
