@@ -28,10 +28,9 @@ It's a bit similar to the currently also unfinished [bazil](https://bazil.org) m
 
 Even shorter: It's supposed to be as flexible as ``git``, but for whole files.
 
-We're writing our master thesis on ``brig``, [but it's in german only](https://github.com/disorganizer/brig-thesis).
-That doesn't mean we're planning to discontinue it after though - actually we'd love to get paid for developement?[^MONEY]
-
-[^MONEY]: Care to through money at us?
+We're writing our master thesis on ``brig`` ([but it's in german only](https://github.com/disorganizer/brig-thesis)).
+That doesn't mean we're planning to discontinue it after though - actually we'd love to get paid for developement! 
+Care to throw money at us?
 
 ## Installation
 
