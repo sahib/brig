@@ -39,6 +39,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		mountpoint,
 		fuse.FSName("brigfs"),
 		fuse.Subtype("brig"),
+		fuse.AllowNonEmptyMount(),
 	)
 
 	if err != nil {

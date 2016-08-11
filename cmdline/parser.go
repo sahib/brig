@@ -445,7 +445,7 @@ func RunCmdline(args []string) int {
 					Usage: "Unmount the specified directory",
 				},
 			},
-			Action: withArgCheck(needAtLeast(1), withDaemon(handleMount, true)),
+			Action: withDaemon(handleMount, true),
 		},
 	}
 

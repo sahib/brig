@@ -118,7 +118,15 @@ func handleDaemon(ctx *cli.Context) error {
 }
 
 func handleMount(ctx *cli.Context, client *daemon.Client) error {
-	mountPath := ctx.Args()[0]
+	mountPath := ""
+	if len(ctx.Args()) > 0 {
+		mountPath = ctx.Args()[0]
+	} else {
+		mountPath = filepath.Join(guessRepoFolder(), "mount")
+		if err := os.Mkdir(mountPath, 0744); err != nil {
+			return err
+		}
+	}
 
 	var err error
 
