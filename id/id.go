@@ -140,6 +140,23 @@ var (
 
 // TODO: bad name? Does not really register; just publishes the block(s)
 func (id ID) Register(node *ipfsutil.Node) error {
+	if err := register(node, id); err != nil {
+		return err
+	}
+
+	domain := id.Domain()
+	if domain == "" {
+		return nil
+	}
+
+	if err := register(node, ID(domain)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func register(node *ipfsutil.Node, id ID) error {
 	hash := id.Hash()
 
 	peers, err := ipfsutil.Locate(node, hash, 1, 5*time.Second)
