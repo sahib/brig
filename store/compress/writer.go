@@ -35,7 +35,6 @@ func (w *writer) addRecordToIndex() {
 }
 
 func (w *writer) flushBuffer(data []byte) error {
-
 	if len(data) <= 0 {
 		return nil
 	}

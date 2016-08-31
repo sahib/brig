@@ -1,7 +1,9 @@
 package store
 
 import (
+	"encoding/binary"
 	"fmt"
+	"sort"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -75,6 +77,9 @@ type Checkpoint struct {
 	// For ChangeRemove the hash is the hash of the last existing file.
 	Hash *Hash
 
+	// Index is a a unique counter on the number of checkpoints
+	Index uint64
+
 	// ModTime is the time the checkpoint was made.
 	ModTime time.Time
 
@@ -132,6 +137,7 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 		Author:   proto.String(string(cp.Author)),
 		Path:     proto.String(cp.Path),
 		OldPath:  proto.String(cp.OldPath),
+		Index:    proto.Uint64(cp.Index),
 	}
 
 	if err != nil {
@@ -155,6 +161,7 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	cp.Change = ChangeType(msg.GetChange())
 	cp.Path = msg.GetPath()
 	cp.OldPath = msg.GetOldPath()
+	cp.Index = msg.GetIndex()
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
@@ -214,6 +221,19 @@ func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
 // History remembers the changes made to a file.
 // New changes get appended to the end.
 type History []*Checkpoint
+
+// Len conforming sort.Interface
+func (hy *History) Len() int {
+	return len(*hy)
+}
+
+func (hy *History) Less(i, j int) bool {
+	return (*hy)[i].Index < (*hy)[j].Index
+}
+
+func (hy *History) Swap(i, j int) {
+	(*hy)[i], (*hy)[j] = (*hy)[j], (*hy)[i]
+}
 
 func (hy *History) ToProto() (*wire.History, error) {
 	protoHist := &wire.History{}
@@ -304,11 +324,6 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 		return err
 	}
 
-	mtimeBin, err := checkpoint.ModTime.MarshalBinary()
-	if err != nil {
-		return err
-	}
-
 	dbErr := st.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
 		histBuck, err := bckt.CreateBucketIfNotExists([]byte(path))
 		if err != nil {
@@ -334,7 +349,9 @@ func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) e
 			}
 		}
 
-		return histBuck.Put(mtimeBin, protoData)
+		key := make([]byte, 8)
+		binary.LittleEndian.PutUint64(key, checkpoint.Index)
+		return histBuck.Put(key, protoData)
 	})
 
 	if dbErr != nil {
@@ -364,7 +381,7 @@ func (s *Store) History(path string) (*History, error) {
 			return NoSuchFile(path)
 		}
 
-		return changeBuck.ForEach(func(k, v []byte) error {
+		err := changeBuck.ForEach(func(_, v []byte) error {
 			ck := &Checkpoint{}
 			if err := ck.Unmarshal(v); err != nil {
 				return err
@@ -373,5 +390,13 @@ func (s *Store) History(path string) (*History, error) {
 			hist = append(hist, ck)
 			return nil
 		})
+
+		if err != nil {
+			return err
+		}
+
+		// Make sure we're in order.
+		sort.Sort(&hist)
+		return nil
 	})
 }

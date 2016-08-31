@@ -7,7 +7,7 @@ message File {
     optional bytes hash = 3;
     required int64 file_size = 4;
     required int32 kind = 5;
-    
+
     // Timestamp formated as RFC 3339
     required bytes mod_time = 6;
 }
@@ -32,6 +32,7 @@ message Checkpoint {
     required string author = 5;
     required string path = 6;
     required string old_path = 7;
+    required uint64 index = 8;
 }
 
 message History {

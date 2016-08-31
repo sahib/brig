@@ -158,6 +158,7 @@ type Checkpoint struct {
 	Author           *string `protobuf:"bytes,5,req,name=author" json:"author,omitempty"`
 	Path             *string `protobuf:"bytes,6,req,name=path" json:"path,omitempty"`
 	OldPath          *string `protobuf:"bytes,7,req,name=old_path" json:"old_path,omitempty"`
+	Index            *uint64 `protobuf:"varint,8,req,name=index" json:"index,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
@@ -212,6 +213,13 @@ func (m *Checkpoint) GetOldPath() string {
 		return *m.OldPath
 	}
 	return ""
+}
+
+func (m *Checkpoint) GetIndex() uint64 {
+	if m != nil && m.Index != nil {
+		return *m.Index
+	}
+	return 0
 }
 
 type History struct {
@@ -660,6 +668,13 @@ func (m *Checkpoint) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintStore(data, i, uint64(len(*m.OldPath)))
 		i += copy(data[i:], *m.OldPath)
+	}
+	if m.Index == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x40
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.Index))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1117,6 +1132,9 @@ func (m *Checkpoint) Size() (n int) {
 	if m.OldPath != nil {
 		l = len(*m.OldPath)
 		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Index != nil {
+		n += 1 + sovStore(uint64(*m.Index))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1976,6 +1994,27 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			m.OldPath = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000040)
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Index = &v
+			hasFields[0] |= uint64(0x00000080)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -2011,6 +2050,9 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000040) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000080) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
