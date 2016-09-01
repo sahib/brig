@@ -9,6 +9,7 @@ import (
 	"github.com/disorganizer/brig/daemon/wire"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/store"
 	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/gogo/protobuf/proto"
@@ -28,7 +29,7 @@ var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_MV:            handleMv,
 	wire.MessageType_HISTORY:       handleHistory,
 	wire.MessageType_ONLINE_STATUS: handleOnlineStatus,
-	wire.MessageType_FETCH:         handleFetch,
+	wire.MessageType_SYNC:          handleSync,
 	wire.MessageType_LIST:          handleList,
 	wire.MessageType_MKDIR:         handleMkdir,
 	wire.MessageType_REMOTE_ADD:    handleRemoteAdd,
@@ -162,11 +163,11 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wir
 	return nil, fmt.Errorf("handleOnlineStatus: Bad query received: %v", qry)
 }
 
-func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	fetchCmd := cmd.GetFetchCommand()
-	who, err := id.Cast(fetchCmd.GetWho())
+func handleSync(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	syncCmd := cmd.GetSyncCommand()
+	who, err := id.Cast(syncCmd.GetWho())
 	if err != nil {
-		return nil, fmt.Errorf("Bad id `%s`: %v", fetchCmd.GetWho(), err)
+		return nil, fmt.Errorf("Bad id `%s`: %v", syncCmd.GetWho(), err)
 	}
 
 	if !d.MetaHost.IsInOnlineMode() {
@@ -178,10 +179,10 @@ func handleFetch(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respo
 		return nil, err
 	}
 
-	// TODO: Acutally create the store (in .Store()?)
-	remoteStore := d.Repo.Store(who)
-	if remoteStore == nil {
-		return nil, fmt.Errorf("No store for `%s`", who)
+	// This might create a new, empty store if it does not exist yet:
+	remoteStore, err := d.Repo.Store(who)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := client.Fetch(remoteStore); err != nil {
@@ -417,7 +418,25 @@ func handleImport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Resp
 }
 
 func handleExport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	pbStore, err := d.Repo.OwnStore.Export()
+	who := cmd.GetExportCommand().GetWho()
+
+	// Figure out the correct store:
+	var st *store.Store
+	if who == "" {
+		st = d.Repo.OwnStore
+	} else {
+		whoID, err := id.Cast(who)
+		if err != nil {
+			return nil, err
+		}
+
+		st, err = d.Repo.Store(whoID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	pbStore, err := st.Export()
 	if err != nil {
 		return nil, err
 	}

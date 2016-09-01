@@ -207,6 +207,7 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		OwnStore:       ownStore,
 		Password:       pwd,
 		IPFS:           ipfsLayer,
+		allStores:      make(map[id.ID]*store.Store),
 	}
 
 	return &repo, nil

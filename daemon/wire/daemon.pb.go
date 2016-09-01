@@ -43,7 +43,7 @@ const (
 	MessageType_UNMOUNT       MessageType = 5
 	MessageType_RM            MessageType = 6
 	MessageType_ONLINE_STATUS MessageType = 7
-	MessageType_FETCH         MessageType = 8
+	MessageType_SYNC          MessageType = 8
 	MessageType_LIST          MessageType = 9
 	MessageType_MV            MessageType = 10
 	MessageType_MKDIR         MessageType = 11
@@ -71,7 +71,7 @@ var MessageType_name = map[int32]string{
 	5:  "UNMOUNT",
 	6:  "RM",
 	7:  "ONLINE_STATUS",
-	8:  "FETCH",
+	8:  "SYNC",
 	9:  "LIST",
 	10: "MV",
 	11: "MKDIR",
@@ -98,7 +98,7 @@ var MessageType_value = map[string]int32{
 	"UNMOUNT":       5,
 	"RM":            6,
 	"ONLINE_STATUS": 7,
-	"FETCH":         8,
+	"SYNC":          8,
 	"LIST":          9,
 	"MV":            10,
 	"MKDIR":         11,
@@ -184,7 +184,7 @@ type Command struct {
 	RmCommand           *Command_RmCmd           `protobuf:"bytes,8,opt,name=rm_command" json:"rm_command,omitempty"`
 	HistoryCommand      *Command_HistoryCmd      `protobuf:"bytes,9,opt,name=history_command" json:"history_command,omitempty"`
 	OnlineStatusCommand *Command_OnlineStatusCmd `protobuf:"bytes,10,opt,name=online_status_command" json:"online_status_command,omitempty"`
-	FetchCommand        *Command_FetchCmd        `protobuf:"bytes,11,opt,name=fetch_command" json:"fetch_command,omitempty"`
+	SyncCommand         *Command_SyncCmd         `protobuf:"bytes,11,opt,name=sync_command" json:"sync_command,omitempty"`
 	ListCommand         *Command_ListCmd         `protobuf:"bytes,12,opt,name=list_command" json:"list_command,omitempty"`
 	MvCommand           *Command_MvCmd           `protobuf:"bytes,13,opt,name=mv_command" json:"mv_command,omitempty"`
 	MkdirCommand        *Command_MkdirCmd        `protobuf:"bytes,14,opt,name=mkdir_command" json:"mkdir_command,omitempty"`
@@ -277,9 +277,9 @@ func (m *Command) GetOnlineStatusCommand() *Command_OnlineStatusCmd {
 	return nil
 }
 
-func (m *Command) GetFetchCommand() *Command_FetchCmd {
+func (m *Command) GetSyncCommand() *Command_SyncCmd {
 	if m != nil {
-		return m.FetchCommand
+		return m.SyncCommand
 	}
 	return nil
 }
@@ -548,16 +548,16 @@ func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
 	return OnlineQuery_GO_ONLINE
 }
 
-type Command_FetchCmd struct {
+type Command_SyncCmd struct {
 	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Command_FetchCmd) Reset()         { *m = Command_FetchCmd{} }
-func (m *Command_FetchCmd) String() string { return proto.CompactTextString(m) }
-func (*Command_FetchCmd) ProtoMessage()    {}
+func (m *Command_SyncCmd) Reset()         { *m = Command_SyncCmd{} }
+func (m *Command_SyncCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_SyncCmd) ProtoMessage()    {}
 
-func (m *Command_FetchCmd) GetWho() string {
+func (m *Command_SyncCmd) GetWho() string {
 	if m != nil && m.Who != nil {
 		return *m.Who
 	}
@@ -834,12 +834,21 @@ func (m *Command_PinCmd) GetPath() string {
 }
 
 type Command_ExportCmd struct {
-	XXX_unrecognized []byte `json:"-"`
+	// Which store to export?
+	Who              *string `protobuf:"bytes,1,opt,name=who" json:"who,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
 }
 
 func (m *Command_ExportCmd) Reset()         { *m = Command_ExportCmd{} }
 func (m *Command_ExportCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_ExportCmd) ProtoMessage()    {}
+
+func (m *Command_ExportCmd) GetWho() string {
+	if m != nil && m.Who != nil {
+		return *m.Who
+	}
+	return ""
+}
 
 type Command_ImportCmd struct {
 	Data             []byte `protobuf:"bytes,1,req,name=data" json:"data,omitempty"`
@@ -1172,7 +1181,7 @@ func init() {
 	proto.RegisterType((*Command_RmCmd)(nil), "brig.daemon.Command.RmCmd")
 	proto.RegisterType((*Command_HistoryCmd)(nil), "brig.daemon.Command.HistoryCmd")
 	proto.RegisterType((*Command_OnlineStatusCmd)(nil), "brig.daemon.Command.OnlineStatusCmd")
-	proto.RegisterType((*Command_FetchCmd)(nil), "brig.daemon.Command.FetchCmd")
+	proto.RegisterType((*Command_SyncCmd)(nil), "brig.daemon.Command.SyncCmd")
 	proto.RegisterType((*Command_ListCmd)(nil), "brig.daemon.Command.ListCmd")
 	proto.RegisterType((*Command_MvCmd)(nil), "brig.daemon.Command.MvCmd")
 	proto.RegisterType((*Command_MkdirCmd)(nil), "brig.daemon.Command.MkdirCmd")
@@ -1315,11 +1324,11 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 		}
 		i += n9
 	}
-	if m.FetchCommand != nil {
+	if m.SyncCommand != nil {
 		data[i] = 0x5a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.FetchCommand.Size()))
-		n10, err := m.FetchCommand.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.SyncCommand.Size()))
+		n10, err := m.SyncCommand.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1775,7 +1784,7 @@ func (m *Command_OnlineStatusCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Command_FetchCmd) Marshal() (data []byte, err error) {
+func (m *Command_SyncCmd) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1785,7 +1794,7 @@ func (m *Command_FetchCmd) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Command_FetchCmd) MarshalTo(data []byte) (int, error) {
+func (m *Command_SyncCmd) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2240,6 +2249,12 @@ func (m *Command_ExportCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Who != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
+		i += copy(data[i:], *m.Who)
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -2866,8 +2881,8 @@ func (m *Command) Size() (n int) {
 		l = m.OnlineStatusCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.FetchCommand != nil {
-		l = m.FetchCommand.Size()
+	if m.SyncCommand != nil {
+		l = m.SyncCommand.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.ListCommand != nil {
@@ -3055,7 +3070,7 @@ func (m *Command_OnlineStatusCmd) Size() (n int) {
 	return n
 }
 
-func (m *Command_FetchCmd) Size() (n int) {
+func (m *Command_SyncCmd) Size() (n int) {
 	var l int
 	_ = l
 	if m.Who != nil {
@@ -3262,6 +3277,10 @@ func (m *Command_PinCmd) Size() (n int) {
 func (m *Command_ExportCmd) Size() (n int) {
 	var l int
 	_ = l
+	if m.Who != nil {
+		l = len(*m.Who)
+		n += 1 + l + sovDaemon(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -3855,7 +3874,7 @@ func (m *Command) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FetchCommand", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SyncCommand", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3879,10 +3898,10 @@ func (m *Command) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.FetchCommand == nil {
-				m.FetchCommand = &Command_FetchCmd{}
+			if m.SyncCommand == nil {
+				m.SyncCommand = &Command_SyncCmd{}
 			}
-			if err := m.FetchCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.SyncCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5193,7 +5212,7 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Command_FetchCmd) Unmarshal(data []byte) error {
+func (m *Command_SyncCmd) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -5217,10 +5236,10 @@ func (m *Command_FetchCmd) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: FetchCmd: wiretype end group for non-group")
+			return fmt.Errorf("proto: SyncCmd: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FetchCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: SyncCmd: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -6561,6 +6580,36 @@ func (m *Command_ExportCmd) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: ExportCmd: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Who", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Who = &s
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])

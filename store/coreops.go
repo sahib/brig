@@ -59,8 +59,8 @@ func (st *Store) mkdir(repoPath string, createParents bool) (*File, error) {
 			return nil, err
 		}
 	} else {
-		// Check if the parent exists (would result in weird undefined
-		// intermediates otherwise)
+		// Check if the parent exists.
+		// (would result in weird undefined intermediates otherwise)
 		parentPath := path.Dir(repoPath)
 		if parent := st.Root.Lookup(parentPath); parent == nil {
 			return nil, NoSuchFile(parentPath)

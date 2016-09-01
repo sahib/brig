@@ -63,6 +63,22 @@ func (rp *Repository) RmStore(ID id.ID) {
 	delete(rp.allStores, ID)
 }
 
-func (rp *Repository) Store(ID id.ID) *store.Store {
-	return rp.allStores[ID]
+func (rp *Repository) Store(ID id.ID) (*store.Store, error) {
+	// Check if we already have a store under that ID:
+	if store, ok := rp.allStores[ID]; ok {
+		return store, nil
+	}
+
+	remote, err := rp.Remotes.Get(ID)
+	if err != nil {
+		return nil, err
+	}
+
+	newStore, err := store.Open(rp.InternalFolder, remote, rp.IPFS)
+	if err != nil {
+		return nil, err
+	}
+
+	rp.allStores[ID] = newStore
+	return newStore, nil
 }

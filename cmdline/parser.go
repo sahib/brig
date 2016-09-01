@@ -115,6 +115,13 @@ func RunCmdline(args []string) int {
 			Action:      withDaemon(handleClose, false),
 		},
 		cli.Command{
+			Name:        "sync",
+			Category:    repoGroup,
+			Usage:       "Sync with any partner in your remote list",
+			Description: "Attempt to synchronize your files with any partner",
+			Action:      withDaemon(handleSync, false),
+		},
+		cli.Command{
 			Name:        "history",
 			Category:    repoGroup,
 			Usage:       "Show the history of the given brig file",

@@ -201,15 +201,15 @@ func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
 	return dirlist.Entries, nil
 }
 
-func (c *Client) Fetch(who id.ID) error {
+func (c *Client) Sync(who id.ID) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_FETCH.Enum(),
-		FetchCommand: &wire.Command_FetchCmd{
+		CommandType: wire.MessageType_SYNC.Enum(),
+		SyncCommand: &wire.Command_SyncCmd{
 			Who: proto.String(string(who)),
 		},
 	}
 
-	if _, err := c.recvResponse("fetch"); err != nil {
+	if _, err := c.recvResponse("sync"); err != nil {
 		return err
 	}
 
@@ -418,9 +418,12 @@ func (c *Client) IsPinned(path string) (bool, error) {
 	return c.doPin(path, 0)
 }
 
-func (c *Client) Export() ([]byte, error) {
+func (c *Client) Export(who id.ID) ([]byte, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_EXPORT.Enum(),
+		ExportCommand: &wire.Command_ExportCmd{
+			Who: proto.String(string(who)),
+		},
 	}
 
 	resp, err := c.recvResponse("export")

@@ -537,25 +537,6 @@ func handleTree(ctx *cli.Context, client *daemon.Client) error {
 	return nil
 }
 
-func handlePull(ctx *cli.Context, client *daemon.Client) error {
-	remoteID, err := id.Cast(ctx.Args()[0])
-	if err != nil {
-		return ExitCode{
-			BadArgs,
-			fmt.Sprintf("Bad remote ID: %v", err),
-		}
-	}
-
-	if err := client.Fetch(remoteID); err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("fetch failed: %v", err),
-		}
-	}
-
-	return nil
-}
-
 func handleMv(ctx *cli.Context, client *daemon.Client) error {
 	source, dest := prefixSlash(ctx.Args()[0]), prefixSlash(ctx.Args()[1])
 
@@ -742,7 +723,20 @@ func handlePin(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleDebugExport(ctx *cli.Context, client *daemon.Client) error {
-	data, err := client.Export()
+	who := ctx.Args().First()
+
+	var whoID id.ID
+
+	if who != "" {
+		validID, err := id.Cast(who)
+		if err != nil {
+			return err
+		}
+
+		whoID = validID
+	}
+
+	data, err := client.Export(whoID)
 	if err != nil {
 		return err
 	}
@@ -762,4 +756,48 @@ func handleDebugImport(ctx *cli.Context, client *daemon.Client) error {
 	}
 
 	return client.Import(buf.Bytes())
+}
+
+func handleSyncSingle(ctx *cli.Context, client *daemon.Client, idStr string) error {
+	ID, err := id.Cast(idStr)
+
+	if err != nil {
+		return ExitCode{
+			BadArgs,
+			fmt.Sprintf("Bad ID: %v", err),
+		}
+	}
+
+	log.Infof("Syncing with %s", ID)
+	if err := client.Sync(ID); err != nil {
+		log.Errorf("Failed: %v", err)
+		return ExitCode{UnknownError, err.Error()}
+	}
+
+	return nil
+}
+
+func handleSync(ctx *cli.Context, client *daemon.Client) error {
+	// With no arguments, we should sync with everyone around.
+	if len(ctx.Args()) != 0 {
+		// Pass over to single ID handling:
+		return handleSyncSingle(ctx, client, ctx.Args().First())
+	}
+
+	// Iterate over all remotes brigd knows about:
+	data, err := client.RemoteList()
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to list remotes: %v", err),
+		}
+	}
+
+	for _, entry := range data {
+		if err := handleSyncSingle(ctx, client, entry.Ident); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

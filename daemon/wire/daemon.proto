@@ -15,7 +15,7 @@ enum MessageType {
     UNMOUNT = 5;
 	RM = 6;
     ONLINE_STATUS = 7;
-    FETCH = 8;
+    SYNC = 8;
     LIST = 9;
     MV = 10;
     MKDIR = 11;
@@ -92,7 +92,7 @@ message Command {
         required OnlineQuery query = 1;
     }
 
-    message FetchCmd {
+    message SyncCmd {
         required string who = 1;
     }
 
@@ -161,6 +161,8 @@ message Command {
     }
 
     message ExportCmd {
+      // Which store to export?
+      optional string who = 1;
     }
 
     message ImportCmd {
@@ -178,7 +180,7 @@ message Command {
     optional RmCmd rm_command = 8;
     optional HistoryCmd history_command = 9;
     optional OnlineStatusCmd online_status_command = 10;
-    optional FetchCmd fetch_command = 11;
+    optional SyncCmd sync_command = 11;
     optional ListCmd list_command = 12;
     optional MvCmd mv_command = 13;
     optional MkdirCmd mkdir_command = 14;
