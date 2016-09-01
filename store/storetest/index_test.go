@@ -193,7 +193,7 @@ func TestExport(t *testing.T) {
 		}
 
 		// Check if we still can read all the paths:
-		// (NOTE: Can't get file data, since it's an offline ipfs store)
+		// (NOTE: Can't get file data (yet), since it's an offline ipfs store)
 		for _, path := range paths {
 			file := st.Root.Lookup(path)
 
