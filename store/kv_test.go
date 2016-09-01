@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestKVBasic(t *testing.T) {
 		return
 	}
 
-	buck, err := kv.Bucket("name")
+	buck, err := kv.Bucket([]string{"name"})
 	if err != nil {
 		t.Errorf("Failed to create bucket")
 		return
@@ -34,7 +35,7 @@ func TestKVBasic(t *testing.T) {
 		return
 	}
 
-	sub, err := buck.Bucket("sub")
+	sub, err := buck.Bucket([]string{"sub"})
 	if err != nil {
 		t.Errorf("Could not create sub bucket: %v", err)
 		return
@@ -56,6 +57,9 @@ func TestKVBasic(t *testing.T) {
 		t.Errorf("Expected: sub-data Got: %s", subData)
 		return
 	}
+
+	pathSubData, err := getPath(kv, "/name/key")
+	fmt.Println(string(pathSubData))
 
 	if err := kv.Close(); err != nil {
 		t.Errorf("Failed to close bolt kv: %v", err)

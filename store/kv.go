@@ -1,30 +1,100 @@
 package store
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
 )
 
+var (
+	ErrEmptyPath    = errors.New("Bucket path is empty")
+	ErrPathTooShort = errors.New("Path needs at least two elements for this")
+)
+
 type KV interface {
-	Bucket(name string) (Bucket, error)
+	Bucket(path []string) (Bucket, error)
 	Close() error
 }
 
 type Bucket interface {
 	Get(key string) ([]byte, error)
 	Put(key string, data []byte) error
-	Bucket(name string) (Bucket, error)
+	Bucket(path []string) (Bucket, error)
 }
 
 // Utility, not interface:
 // GetPath(path string) ([]byte, error)
 // SetPath(path string, data) error
+func findBucket(kv KV, path string) (Bucket, string, error) {
+	elems := strings.Split(path, "/")
+	if len(elems) == 0 {
+		return nil, "", ErrEmptyPath
+	}
 
-// GetNode(path string, nd Node) error
-// SetNode(path string, nd Node) error
+	if elems[0] == "" {
+		elems = elems[1:]
+	}
+
+	if len(elems) == 0 {
+		return nil, "", ErrPathTooShort
+	}
+
+	// Get the parent bucket:
+	bkt, err := kv.Bucket(elems[:len(elems)-1])
+	if err != nil {
+		return nil, "", err
+	}
+
+	return bkt, elems[len(elems)-1], nil
+}
+
+func getPath(kv KV, path string) ([]byte, error) {
+	bkt, key, err := findBucket(kv, path)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := bkt.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func putPath(kv KV, path string, data []byte) error {
+	bkt, key, err := findBucket(kv, path)
+	if err != nil {
+		return err
+	}
+
+	return bkt.Put(key, data)
+}
+
+func getNode(kv KV, nd Node) error {
+	data, err := getPath(kv, nodePath(nd))
+	if err != nil {
+		return err
+	}
+
+	return nd.Unmarshal(data)
+}
+
+func putNode(kv KV, nd Node) error {
+	data, err := nd.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return putPath(kv, nodePath(nd), data)
+}
+
+//////////////////////////////////
 
 type BoltKV struct {
 	db *bolt.DB
@@ -45,9 +115,23 @@ func NewBoltKV(path string) (KV, error) {
 	return &BoltKV{db}, nil
 }
 
-func (kv *BoltKV) Bucket(name string) (Bucket, error) {
+func (kv *BoltKV) Bucket(path []string) (Bucket, error) {
+	if len(path) == 0 {
+		return nil, fmt.Errorf("Empty path given to Bucket()")
+	}
+
 	err := kv.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(name))
+		curr, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+		if err != nil {
+			return err
+		}
+
+		for _, name := range path[1:] {
+			curr, err = curr.CreateBucketIfNotExists([]byte(name))
+			if err != nil {
+				return err
+			}
+		}
 		return err
 	})
 
@@ -55,7 +139,7 @@ func (kv *BoltKV) Bucket(name string) (Bucket, error) {
 		return nil, err
 	}
 
-	return &BoltBucket{kv.db, []string{name}}, nil
+	return &BoltBucket{kv.db, path}, nil
 }
 
 func (kv *BoltKV) Close() error {
@@ -120,10 +204,19 @@ func (bb *BoltBucket) Put(key string, data []byte) error {
 	})
 }
 
-func (bb *BoltBucket) Bucket(name string) (Bucket, error) {
+func (bb *BoltBucket) Bucket(path []string) (Bucket, error) {
 	err := bb.dig(bb.path, true, func(bucket *bolt.Bucket) error {
-		_, err := bucket.CreateBucketIfNotExists([]byte(name))
-		return err
+		curr := bucket
+		var err error
+
+		for _, name := range path {
+			curr, err = curr.CreateBucketIfNotExists([]byte(name))
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 
 	// Silence `data` if some error happened:
@@ -133,6 +226,6 @@ func (bb *BoltBucket) Bucket(name string) (Bucket, error) {
 
 	return &BoltBucket{
 		db:   bb.db,
-		path: append(bb.path, name),
+		path: append(bb.path, path...),
 	}, nil
 }
