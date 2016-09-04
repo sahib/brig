@@ -27,9 +27,6 @@ type Bucket interface {
 	Bucket(path []string) (Bucket, error)
 }
 
-// Utility, not interface:
-// GetPath(path string) ([]byte, error)
-// SetPath(path string, data) error
 func findBucket(kv KV, path string) (Bucket, string, error) {
 	elems := strings.Split(path, "/")
 	if len(elems) == 0 {

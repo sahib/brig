@@ -10,6 +10,7 @@
 
 	It has these top-level messages:
 		File
+		Directory
 		Dirent
 		Dirlist
 		Checkpoint
@@ -89,6 +90,62 @@ func (m *File) GetKind() int32 {
 func (m *File) GetModTime() []byte {
 	if m != nil {
 		return m.ModTime
+	}
+	return nil
+}
+
+type Directory struct {
+	Name             *string  `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	FileSize         *uint64  `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
+	Parent           []byte   `protobuf:"bytes,3,req,name=parent" json:"parent,omitempty"`
+	Hash             []byte   `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
+	ModTime          []byte   `protobuf:"bytes,5,req,name=mod_time" json:"mod_time,omitempty"`
+	Links            [][]byte `protobuf:"bytes,6,rep,name=links" json:"links,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
+}
+
+func (m *Directory) Reset()         { *m = Directory{} }
+func (m *Directory) String() string { return proto.CompactTextString(m) }
+func (*Directory) ProtoMessage()    {}
+
+func (m *Directory) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+func (m *Directory) GetFileSize() uint64 {
+	if m != nil && m.FileSize != nil {
+		return *m.FileSize
+	}
+	return 0
+}
+
+func (m *Directory) GetParent() []byte {
+	if m != nil {
+		return m.Parent
+	}
+	return nil
+}
+
+func (m *Directory) GetHash() []byte {
+	if m != nil {
+		return m.Hash
+	}
+	return nil
+}
+
+func (m *Directory) GetModTime() []byte {
+	if m != nil {
+		return m.ModTime
+	}
+	return nil
+}
+
+func (m *Directory) GetLinks() [][]byte {
+	if m != nil {
+		return m.Links
 	}
 	return nil
 }
@@ -442,6 +499,7 @@ func (m *Ref) GetType() int32 {
 
 func init() {
 	proto.RegisterType((*File)(nil), "brig.store.File")
+	proto.RegisterType((*Directory)(nil), "brig.store.Directory")
 	proto.RegisterType((*Dirent)(nil), "brig.store.Dirent")
 	proto.RegisterType((*Dirlist)(nil), "brig.store.Dirlist")
 	proto.RegisterType((*Checkpoint)(nil), "brig.store.Checkpoint")
@@ -509,6 +567,74 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
 		i += copy(data[i:], m.ModTime)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Directory) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Directory) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Name == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
+		i += copy(data[i:], *m.Name)
+	}
+	if m.FileSize == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x10
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.FileSize))
+	}
+	if m.Parent == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
+		i += copy(data[i:], m.Parent)
+	}
+	if m.Hash == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x22
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
+		i += copy(data[i:], m.Hash)
+	}
+	if m.ModTime == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
+		i += copy(data[i:], m.ModTime)
+	}
+	if len(m.Links) > 0 {
+		for _, b := range m.Links {
+			data[i] = 0x32
+			i++
+			i = encodeVarintStore(data, i, uint64(len(b)))
+			i += copy(data[i:], b)
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1066,6 +1192,40 @@ func (m *File) Size() (n int) {
 	return n
 }
 
+func (m *Directory) Size() (n int) {
+	var l int
+	_ = l
+	if m.Name != nil {
+		l = len(*m.Name)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.FileSize != nil {
+		n += 1 + sovStore(uint64(*m.FileSize))
+	}
+	if m.Parent != nil {
+		l = len(m.Parent)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Hash != nil {
+		l = len(m.Hash)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.ModTime != nil {
+		l = len(m.ModTime)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if len(m.Links) > 0 {
+		for _, b := range m.Links {
+			l = len(b)
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Dirent) Size() (n int) {
 	var l int
 	_ = l
@@ -1515,6 +1675,241 @@ func (m *File) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Directory) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Directory: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Directory: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Name = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.FileSize = &v
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000008)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Links", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Links = append(m.Links, make([]byte, postIndex-iNdEx))
+			copy(m.Links[len(m.Links)-1], data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
