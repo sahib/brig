@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,12 +13,12 @@ type Directory struct {
 	// TODO: Needed?
 	sync.RWMutex
 
-	name    string
-	size    uint64
-	modTime time.Time
-	parent  *Hash
-	hash    *Hash
-	links   []*Hash
+	name     string
+	size     uint64
+	modTime  time.Time
+	parent   *Hash
+	hash     *Hash
+	children map[string]*Hash
 
 	fs *FS
 }
@@ -31,8 +32,11 @@ func (d *Directory) ToProto() (*wire.Directory, error) {
 	}
 
 	binLinks := [][]byte{}
-	for _, link := range d.links {
+	binNames := []string{}
+
+	for name, link := range d.children {
 		binLinks = append(binLinks, link.Bytes())
+		binNames = append(binNames, name)
 	}
 
 	return &wire.Directory{
@@ -41,6 +45,7 @@ func (d *Directory) ToProto() (*wire.Directory, error) {
 		Hash:     d.hash.Bytes(),
 		Parent:   d.parent.Bytes(),
 		Links:    binLinks,
+		Names:    binNames,
 		Name:     proto.String(d.name),
 	}, nil
 }
@@ -65,10 +70,17 @@ func (d *Directory) FromProto(pbd *wire.Directory) error {
 	d.size = pbd.GetFileSize()
 	d.hash = &Hash{pbd.GetHash()}
 	d.name = pbd.GetName()
+	d.children = make(map[string]*Hash)
 
-	d.links = []*Hash{}
-	for _, link := range pbd.GetLinks() {
-		d.links = append(d.links, &Hash{link})
+	// Find our place in the world:
+	links := pbd.GetLinks()
+	for idx, name := range pbd.GetNames() {
+		// Be cautious, input might come from everywhere:
+		if idx >= 0 && idx < len(links) {
+			return fmt.Errorf("Malformed input: More or less names than links in `%s`", d.name)
+		}
+
+		d.children[name] = &Hash{links[idx]}
 	}
 
 	return nil
@@ -102,7 +114,7 @@ func (d *Directory) ModTime() time.Time {
 }
 
 func (d *Directory) NChildren() int {
-	return len(d.links)
+	return len(d.children)
 }
 
 func (d *Directory) Child(name string) (Node, error) {
@@ -112,6 +124,17 @@ func (d *Directory) Child(name string) (Node, error) {
 
 func (d *Directory) Parent() (Node, error) {
 	return d.fs.DirectoryByHash(d.parent)
+}
+
+func (d *Directory) SetParent(nd Node) error {
+	if nd == nil {
+		d.parent = EmptyHash
+	} else {
+		d.parent = nd.Hash()
+	}
+
+	// TODO: error needed?
+	return nil
 }
 
 ////////////// TREE MOVEMENT /////////////////
@@ -133,31 +156,45 @@ func (d *Directory) Up(visit func(par *Directory) error) error {
 	return nil
 }
 
-/////////////////////////////////
+//////////// STATE ALTERING METHODS //////////////
 
-// TODO: move to test
-func (d *Directory) Equal(o *Directory) bool {
-	return d.name == o.name && d.hash.Equal(o.hash) && d.size == o.size && d.modTime.Equal(o.modTime)
+func (d *Directory) Add(nd Node) error {
+	if err := nd.SetParent(d); err != nil {
+		return err
+	}
+
+	d.children[nd.Name()] = nd.Hash()
+	nodeSize := nd.Size()
+	nodeHash := nd.Hash().Bytes()
+
+	return d.Up(func(parent *Directory) error {
+		parent.size += nodeSize
+		return parent.hash.MixIn(nodeHash)
+	})
 }
 
-func (d *Directory) Insert(nd Node) error {
-	d.links = append(d.links, nd.Hash())
+// RemoveChild removes the child named `name` from it's children.
+//
+// Note that there is no general Remove() function that works on itself.
+// It is therefore not possible (or a good idea) to remove the root node.
+func (d *Directory) RemoveChild(nd Node) error {
+	name := nd.Name()
+	if _, ok := d.children[name]; !ok {
+		return NoSuchFile(name)
+	}
+
+	// Unset parent from child:
+	if err := nd.SetParent(nil); err != nil {
+		return err
+	}
+
+	delete(d.children, name)
 
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash().Bytes()
 
-	err := d.Up(func(parent *Directory) error {
-		parent.size += nodeSize
+	return d.Up(func(parent *Directory) error {
+		parent.size -= nodeSize
 		return parent.hash.MixIn(nodeHash)
 	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (d *Directory) Remove(name string) {
-	// Update hash sizes
 }

@@ -19,7 +19,9 @@ type Node interface {
 
 	NChildren() int
 	Child(name string) (Node, error)
+
 	Parent() (Node, error)
+	SetParent(nd Node) error
 }
 
 func nodePath(nd Node) string {

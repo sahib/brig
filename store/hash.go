@@ -5,23 +5,31 @@ import (
 	"fmt"
 	"strconv"
 
+	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/jbenet/go-multihash"
 )
+
+var (
+	// EmptyHash is the hash Qm0000[...], representing an empty hash.
+	EmptyHash *Hash
+)
+
+func init() {
+	data := make([]byte, multihash.DefaultLengths[goipfsutil.DefaultIpfsHash])
+	hash, err := multihash.Encode(data, goipfsutil.DefaultIpfsHash)
+
+	// No point in living elsewhise...
+	if err != nil {
+		panic(fmt.Sprintf("Unable to create empty hash: %v", err))
+	}
+
+	EmptyHash = &Hash{hash}
+}
 
 // Hash is like multihash.Multihash but also supports serializing to json.
 // Otherwise all multihash features are supported.
 type Hash struct {
 	multihash.Multihash
-}
-
-// TODO: needed?
-// MarshalJSON converts a hash into a base58 string representation.
-func (h *Hash) MarshalJSON() ([]byte, error) {
-	if h == nil {
-		return nil, fmt.Errorf("Empty hash")
-	}
-
-	return []byte(strconv.Quote(h.B58String())), nil
 }
 
 // UnmarshalJSON loads a base58 string representation of a hash
@@ -47,7 +55,7 @@ func (h *Hash) UnmarshalJSON(data []byte) error {
 
 // Valid returns true if the hash contains a defined value.
 func (h *Hash) Valid() bool {
-	return h != nil && h.Multihash != nil
+	return h != nil && h.Multihash != nil && h != EmptyHash
 }
 
 // Bytes returns the underlying bytes in the hash.

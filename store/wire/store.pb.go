@@ -95,12 +95,14 @@ func (m *File) GetModTime() []byte {
 }
 
 type Directory struct {
-	Name             *string  `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	FileSize         *uint64  `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
-	Parent           []byte   `protobuf:"bytes,3,req,name=parent" json:"parent,omitempty"`
-	Hash             []byte   `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
-	ModTime          []byte   `protobuf:"bytes,5,req,name=mod_time" json:"mod_time,omitempty"`
+	Name     *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	FileSize *uint64 `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
+	Parent   []byte  `protobuf:"bytes,3,req,name=parent" json:"parent,omitempty"`
+	Hash     []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
+	ModTime  []byte  `protobuf:"bytes,5,req,name=mod_time" json:"mod_time,omitempty"`
+	// Directory contents:
 	Links            [][]byte `protobuf:"bytes,6,rep,name=links" json:"links,omitempty"`
+	Names            []string `protobuf:"bytes,7,rep,name=names" json:"names,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
@@ -150,7 +152,15 @@ func (m *Directory) GetLinks() [][]byte {
 	return nil
 }
 
+func (m *Directory) GetNames() []string {
+	if m != nil {
+		return m.Names
+	}
+	return nil
+}
+
 // Dirent is like a file, but does not include sensitive information.
+// TODO: remove this
 type Dirent struct {
 	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
 	FileSize         *int64  `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
@@ -634,6 +644,21 @@ func (m *Directory) MarshalTo(data []byte) (int, error) {
 			i++
 			i = encodeVarintStore(data, i, uint64(len(b)))
 			i += copy(data[i:], b)
+		}
+	}
+	if len(m.Names) > 0 {
+		for _, s := range m.Names {
+			data[i] = 0x3a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
 		}
 	}
 	if m.XXX_unrecognized != nil {
@@ -1217,6 +1242,12 @@ func (m *Directory) Size() (n int) {
 	if len(m.Links) > 0 {
 		for _, b := range m.Links {
 			l = len(b)
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if len(m.Names) > 0 {
+		for _, s := range m.Names {
+			l = len(s)
 			n += 1 + l + sovStore(uint64(l))
 		}
 	}
@@ -1880,6 +1911,35 @@ func (m *Directory) Unmarshal(data []byte) error {
 			}
 			m.Links = append(m.Links, make([]byte, postIndex-iNdEx))
 			copy(m.Links[len(m.Links)-1], data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Names", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Names = append(m.Names, string(data[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

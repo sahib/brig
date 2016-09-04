@@ -18,10 +18,14 @@ message Directory {
     required bytes parent = 3;
     required bytes hash = 4;
     required bytes mod_time = 5;
+
+    // Directory contents:
     repeated bytes links = 6;
+    repeated string names = 7;
 }
 
 // Dirent is like a file, but does not include sensitive information.
+// TODO: remove this
 message Dirent {
     required string path = 1;
     required int64 file_size = 2;
