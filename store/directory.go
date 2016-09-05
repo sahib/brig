@@ -165,11 +165,11 @@ func (d *Directory) Add(nd Node) error {
 
 	d.children[nd.Name()] = nd.Hash()
 	nodeSize := nd.Size()
-	nodeHash := nd.Hash().Bytes()
+	nodeHash := nd.Hash()
 
 	return d.Up(func(parent *Directory) error {
 		parent.size += nodeSize
-		return parent.hash.MixIn(nodeHash)
+		return parent.hash.Xor(nodeHash)
 	})
 }
 
@@ -191,10 +191,10 @@ func (d *Directory) RemoveChild(nd Node) error {
 	delete(d.children, name)
 
 	nodeSize := nd.Size()
-	nodeHash := nd.Hash().Bytes()
+	nodeHash := nd.Hash()
 
 	return d.Up(func(parent *Directory) error {
 		parent.size -= nodeSize
-		return parent.hash.MixIn(nodeHash)
+		return parent.hash.Xor(nodeHash)
 	})
 }

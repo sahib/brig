@@ -109,7 +109,7 @@ func (h *Hash) Equal(other *Hash) bool {
 	return bytes.Equal(h.Multihash, other.Multihash)
 }
 
-// Add hashes `data` and xors the resulting hash to `h`.
+// MixIn hashes `data` and xors the resulting hash to `h`.
 // The hash algorithm and length depends on what kind
 // of hash `h` currently holds.
 func (h *Hash) MixIn(data []byte) error {
@@ -118,7 +118,7 @@ func (h *Hash) MixIn(data []byte) error {
 		return err
 	}
 
-	dataMH, err := multihash.Sum(h.Multihash, dec.Code, dec.Length)
+	dataMH, err := multihash.Sum(data, dec.Code, dec.Length)
 	if err != nil {
 		return err
 	}
@@ -127,5 +127,33 @@ func (h *Hash) MixIn(data []byte) error {
 		h.Multihash[i] ^= dataMH[i]
 	}
 
+	return nil
+}
+
+func (h *Hash) Xor(o *Hash) error {
+	decH, err := multihash.Decode(h.Multihash)
+	if err != nil {
+		return err
+	}
+
+	decO, err := multihash.Decode(h.Multihash)
+	if err != nil {
+		return err
+	}
+
+	if decO.Length != decH.Length {
+		return fmt.Errorf("xor: hash have different lengths: %d != %d", decH.Length, decO.Length)
+	}
+
+	for i := 0; i < decH.Length; i++ {
+		decH.Digest[i] ^= decO.Digest[i]
+	}
+
+	mh, err := multihash.Encode(decH.Digest, decH.Code)
+	if err != nil {
+		return err
+	}
+
+	h.Multihash = mh
 	return nil
 }
