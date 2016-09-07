@@ -1,6 +1,24 @@
 package brig.store;
 option go_package = "wire";
 
+// Might be extended with more esoteric types in the future.
+enum NodeType {
+  UNKNOWN = 0;
+  FILE = 1;
+  DIRECTORY = 2;
+  COMMIT = 3;
+}
+
+// An Object is a container for a file, a directory or a Ref.
+message Node {
+  required NodeType type = 1;
+
+  // Individual types:
+  optional File file = 2;
+  optional Directory directory = 3;
+  optional Commit commit = 4;
+}
+
 message File {
     required string path = 1;
     optional bytes key = 2;
@@ -34,6 +52,7 @@ message Dirent {
 }
 
 message Dirlist {
+  // TODO: replace with Object
     repeated Dirent entries = 1;
 }
 
@@ -80,7 +99,7 @@ message Commit {
     required bytes hash = 4;
     required bytes tree_hash = 5;
 
-    // List of checkpoints: 
+    // List of checkpoints:
     repeated Checkpoint checkpoints = 6;
 
     // Link to parent hash (empty for initial commit):

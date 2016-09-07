@@ -9,6 +9,7 @@
 		store.proto
 
 	It has these top-level messages:
+		Node
 		File
 		Directory
 		Dirent
@@ -36,6 +37,88 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// Might be extended with more esoteric types in the future.
+type NodeType int32
+
+const (
+	NodeType_UNKNOWN   NodeType = 0
+	NodeType_FILE      NodeType = 1
+	NodeType_DIRECTORY NodeType = 2
+	NodeType_COMMIT    NodeType = 3
+)
+
+var NodeType_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "FILE",
+	2: "DIRECTORY",
+	3: "COMMIT",
+}
+var NodeType_value = map[string]int32{
+	"UNKNOWN":   0,
+	"FILE":      1,
+	"DIRECTORY": 2,
+	"COMMIT":    3,
+}
+
+func (x NodeType) Enum() *NodeType {
+	p := new(NodeType)
+	*p = x
+	return p
+}
+func (x NodeType) String() string {
+	return proto.EnumName(NodeType_name, int32(x))
+}
+func (x *NodeType) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(NodeType_value, data, "NodeType")
+	if err != nil {
+		return err
+	}
+	*x = NodeType(value)
+	return nil
+}
+
+// An Object is a container for a file, a directory or a Ref.
+type Node struct {
+	Type *NodeType `protobuf:"varint,1,req,name=type,enum=brig.store.NodeType" json:"type,omitempty"`
+	// Individual types:
+	File             *File      `protobuf:"bytes,2,opt,name=file" json:"file,omitempty"`
+	Directory        *Directory `protobuf:"bytes,3,opt,name=directory" json:"directory,omitempty"`
+	Commit           *Commit    `protobuf:"bytes,4,opt,name=commit" json:"commit,omitempty"`
+	XXX_unrecognized []byte     `json:"-"`
+}
+
+func (m *Node) Reset()         { *m = Node{} }
+func (m *Node) String() string { return proto.CompactTextString(m) }
+func (*Node) ProtoMessage()    {}
+
+func (m *Node) GetType() NodeType {
+	if m != nil && m.Type != nil {
+		return *m.Type
+	}
+	return NodeType_UNKNOWN
+}
+
+func (m *Node) GetFile() *File {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
+func (m *Node) GetDirectory() *Directory {
+	if m != nil {
+		return m.Directory
+	}
+	return nil
+}
+
+func (m *Node) GetCommit() *Commit {
+	if m != nil {
+		return m.Commit
+	}
+	return nil
+}
 
 type File struct {
 	Path     *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
@@ -202,6 +285,7 @@ func (m *Dirent) GetModTime() []byte {
 }
 
 type Dirlist struct {
+	// TODO: replace with Object
 	Entries          []*Dirent `protobuf:"bytes,1,rep,name=entries" json:"entries,omitempty"`
 	XXX_unrecognized []byte    `json:"-"`
 }
@@ -508,6 +592,7 @@ func (m *Ref) GetType() int32 {
 }
 
 func init() {
+	proto.RegisterType((*Node)(nil), "brig.store.Node")
 	proto.RegisterType((*File)(nil), "brig.store.File")
 	proto.RegisterType((*Directory)(nil), "brig.store.Directory")
 	proto.RegisterType((*Dirent)(nil), "brig.store.Dirent")
@@ -520,7 +605,66 @@ func init() {
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
 	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
+	proto.RegisterEnum("brig.store.NodeType", NodeType_name, NodeType_value)
 }
+func (m *Node) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Node) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.Type))
+	}
+	if m.File != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(m.File.Size()))
+		n1, err := m.File.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.Directory != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Directory.Size()))
+		n2, err := m.Directory.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	if m.Commit != nil {
+		data[i] = 0x22
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Commit.Size()))
+		n3, err := m.Commit.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *File) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -887,11 +1031,11 @@ func (m *Pack) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintStore(data, i, uint64(m.File.Size()))
-		n1, err := m.File.MarshalTo(data[i:])
+		n4, err := m.File.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n4
 	}
 	if m.History == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -899,11 +1043,11 @@ func (m *Pack) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintStore(data, i, uint64(m.History.Size()))
-		n2, err := m.History.MarshalTo(data[i:])
+		n5, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n5
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -944,11 +1088,11 @@ func (m *Store) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Commits.Size()))
-		n3, err := m.Commits.MarshalTo(data[i:])
+		n6, err := m.Commits.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n6
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1070,11 +1214,11 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x42
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
-		n4, err := m.Merge.MarshalTo(data[i:])
+		n7, err := m.Merge.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n7
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1186,6 +1330,30 @@ func encodeVarintStore(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
+func (m *Node) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != nil {
+		n += 1 + sovStore(uint64(*m.Type))
+	}
+	if m.File != nil {
+		l = m.File.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Directory != nil {
+		l = m.Directory.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Commit != nil {
+		l = m.Commit.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *File) Size() (n int) {
 	var l int
 	_ = l
@@ -1491,6 +1659,181 @@ func sovStore(x uint64) (n int) {
 }
 func sozStore(x uint64) (n int) {
 	return sovStore(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *Node) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Node: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Node: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v NodeType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (NodeType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Type = &v
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.File == nil {
+				m.File = &File{}
+			}
+			if err := m.File.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Directory", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Directory == nil {
+				m.Directory = &Directory{}
+			}
+			if err := m.Directory.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Commit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Commit == nil {
+				m.Commit = &Commit{}
+			}
+			if err := m.Commit.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *File) Unmarshal(data []byte) error {
 	var hasFields [1]uint64

@@ -4,13 +4,38 @@ import (
 	"path"
 	"sync"
 	"time"
+
+	"github.com/disorganizer/brig/store/wire"
 )
 
+const (
+	NodeTypeUnknown = iota
+	NodeTypeFile
+	NodeTypeDirectory
+	NodeTypeCommit
+)
+
+type NodeType uint8
+
+func (nt NodeType) String() string {
+	switch nt {
+	case NodeTypeFile:
+		return "file"
+	case NodeTypeDirectory:
+		return "directory"
+	case NodeTypeCommit:
+		return "commit"
+	}
+
+	return "unknown"
+}
+
+// TODO: Document
 type Node interface {
 	sync.Locker
 
-	Marshal() ([]byte, error)
-	Unmarshal(data []byte) error
+	ToProto() (*wire.Node, error)
+	FromProto(*wire.Node) error
 
 	Name() string
 	Hash() *Hash
@@ -19,9 +44,10 @@ type Node interface {
 
 	NChildren() int
 	Child(name string) (Node, error)
-
 	Parent() (Node, error)
 	SetParent(nd Node) error
+
+	GetType() NodeType
 }
 
 func nodePath(nd Node) string {

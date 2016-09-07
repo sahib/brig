@@ -7,6 +7,8 @@ import (
 
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/gogo/protobuf/proto"
+	goipfsutil "github.com/ipfs/go-ipfs-util"
+	"github.com/jbenet/go-multihash"
 )
 
 type Directory struct {
@@ -20,12 +22,29 @@ type Directory struct {
 	hash     *Hash
 	children map[string]*Hash
 
+	// This is not set by FromProto() and must be passed
+	// on creating by FS.
 	fs *FS
+}
+
+// emptyDirectory creates a new empty directory that is not yet present
+// in the store. It should not be used directtly.
+func emptyDirectory(fs *FS, name string) *Directory {
+	code := goipfsutil.DefaultIpfsHash
+	length := multihash.DefaultLengths[code]
+
+	mh, err := multihash.Sum([]byte(name), code, length)
+	if err != nil {
+		// The programmer has fucked up:
+		panic(fmt.Sprintf("Failed to calculate basic checksum of a string: %v", err))
+	}
+
+	return &Directory{fs: fs, hash: &Hash{mh}}
 }
 
 ////////////// MARSHALLING ////////////////
 
-func (d *Directory) ToProto() (*wire.Directory, error) {
+func (d *Directory) ToProto() (*wire.Node, error) {
 	binModTime, err := d.modTime.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -39,14 +58,17 @@ func (d *Directory) ToProto() (*wire.Directory, error) {
 		binNames = append(binNames, name)
 	}
 
-	return &wire.Directory{
-		FileSize: proto.Uint64(d.size),
-		ModTime:  binModTime,
-		Hash:     d.hash.Bytes(),
-		Parent:   d.parent.Bytes(),
-		Links:    binLinks,
-		Names:    binNames,
-		Name:     proto.String(d.name),
+	return &wire.Node{
+		Type: wire.NodeType_DIRECTORY.Enum(),
+		Directory: &wire.Directory{
+			FileSize: proto.Uint64(d.size),
+			ModTime:  binModTime,
+			Hash:     d.hash.Bytes(),
+			Parent:   d.parent.Bytes(),
+			Links:    binLinks,
+			Names:    binNames,
+			Name:     proto.String(d.name),
+		},
 	}, nil
 }
 
@@ -59,7 +81,9 @@ func (d *Directory) Marshal() ([]byte, error) {
 	return proto.Marshal(pbd)
 }
 
-func (d *Directory) FromProto(pbd *wire.Directory) error {
+func (d *Directory) FromProto(pnd *wire.Node) error {
+	pbd := pnd.GetDirectory()
+
 	modTime := time.Time{}
 	if err := modTime.UnmarshalBinary(pbd.GetModTime()); err != nil {
 		return err
@@ -87,7 +111,7 @@ func (d *Directory) FromProto(pbd *wire.Directory) error {
 }
 
 func (d *Directory) Unmarshal(data []byte) error {
-	pbd := &wire.Directory{}
+	pbd := &wire.Node{}
 	if err := proto.Unmarshal(data, pbd); err != nil {
 		return err
 	}
@@ -123,7 +147,7 @@ func (d *Directory) Child(name string) (Node, error) {
 }
 
 func (d *Directory) Parent() (Node, error) {
-	return d.fs.DirectoryByHash(d.parent)
+	return d.fs.NodeByHash(d.parent)
 }
 
 func (d *Directory) SetParent(nd Node) error {
@@ -135,6 +159,10 @@ func (d *Directory) SetParent(nd Node) error {
 
 	// TODO: error needed?
 	return nil
+}
+
+func (d *Directory) GetType() NodeType {
+	return NodeTypeDirectory
 }
 
 ////////////// TREE MOVEMENT /////////////////

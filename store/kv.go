@@ -73,24 +73,6 @@ func putPath(kv KV, path string, data []byte) error {
 	return bkt.Put(key, data)
 }
 
-func getNode(kv KV, nd Node) error {
-	data, err := getPath(kv, nodePath(nd))
-	if err != nil {
-		return err
-	}
-
-	return nd.Unmarshal(data)
-}
-
-func putNode(kv KV, nd Node) error {
-	data, err := nd.Marshal()
-	if err != nil {
-		return err
-	}
-
-	return putPath(kv, nodePath(nd), data)
-}
-
 //////////////////////////////////
 
 type BoltKV struct {
@@ -183,7 +165,11 @@ func (bb *BoltBucket) dig(path []string, writable bool, fn func(bucket *bolt.Buc
 
 func (bb *BoltBucket) Get(key string) (data []byte, err error) {
 	err = bb.dig(bb.path, false, func(bucket *bolt.Bucket) error {
-		data = bucket.Get([]byte(key))
+		bdata := bucket.Get([]byte(key))
+
+		// We need to copy the data, since it's only valid for this transaction:
+		data = make([]byte, len(bdata))
+		copy(data, bdata)
 		return nil
 	})
 
