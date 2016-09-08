@@ -67,7 +67,8 @@ func (n *Node) Insert(path string) *Node {
 }
 
 // InsertWithData adds a node into the trie at `path`, storing `data`
-// in the Node.Data field.
+// in the Node.Data field. If the node already exists, data will
+// be set anyways.
 func (n *Node) InsertWithData(path string, data interface{}) *Node {
 	curr := n
 

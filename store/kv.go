@@ -25,6 +25,10 @@ type Bucket interface {
 	Get(key string) ([]byte, error)
 	Put(key string, data []byte) error
 	Bucket(path []string) (Bucket, error)
+
+	// TODO:
+	// Clear() error
+	// CopyTo(b Bucket) error
 }
 
 func findBucket(kv KV, path string) (Bucket, string, error) {
@@ -66,6 +70,7 @@ func getPath(kv KV, path string) ([]byte, error) {
 
 func putPath(kv KV, path string, data []byte) error {
 	bkt, key, err := findBucket(kv, path)
+	fmt.Println("putPath", path, bkt, err, key, data)
 	if err != nil {
 		return err
 	}
@@ -163,9 +168,14 @@ func (bb *BoltBucket) dig(path []string, writable bool, fn func(bucket *bolt.Buc
 	return nil
 }
 
+// TODO: Transactions? GetMany? PutMany?
+
 func (bb *BoltBucket) Get(key string) (data []byte, err error) {
 	err = bb.dig(bb.path, false, func(bucket *bolt.Bucket) error {
 		bdata := bucket.Get([]byte(key))
+		if bdata == nil {
+			return nil
+		}
 
 		// We need to copy the data, since it's only valid for this transaction:
 		data = make([]byte, len(bdata))

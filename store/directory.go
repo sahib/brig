@@ -39,7 +39,11 @@ func emptyDirectory(fs *FS, name string) *Directory {
 		panic(fmt.Sprintf("Failed to calculate basic checksum of a string: %v", err))
 	}
 
-	return &Directory{fs: fs, hash: &Hash{mh}}
+	return &Directory{
+		fs:   fs,
+		hash: &Hash{mh},
+		name: name,
+	}
 }
 
 ////////////// MARSHALLING ////////////////
@@ -147,6 +151,10 @@ func (d *Directory) Child(name string) (Node, error) {
 }
 
 func (d *Directory) Parent() (Node, error) {
+	if d.parent == nil {
+		return nil, nil
+	}
+
 	return d.fs.NodeByHash(d.parent)
 }
 

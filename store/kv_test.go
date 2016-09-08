@@ -3,8 +3,30 @@ package store
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 )
+
+func withDummyKv(t *testing.T, fn func(kv KV)) {
+	path := "/tmp/brig.test.bolt"
+
+	// This may fail:
+	os.Remove(path)
+
+	kv, err := NewBoltKV(path)
+	if err != nil {
+		t.Errorf("Unable to create bolt kv: %v", err)
+		return
+	}
+
+	defer os.Remove(path)
+
+	fn(kv)
+
+	if err := kv.Close(); err != nil {
+		t.Errorf("Closing the kv failed: %v", err)
+	}
+}
 
 func TestKVBasic(t *testing.T) {
 	kv, err := NewBoltKV("/tmp/bolt.kv.test")
@@ -65,4 +87,35 @@ func TestKVBasic(t *testing.T) {
 		t.Errorf("Failed to close bolt kv: %v", err)
 		return
 	}
+}
+
+func TestKVPaths(t *testing.T) {
+	paths := []string{
+		"stage/tree/root/.",
+		"stage/tree/.",
+		"stage/.",
+	}
+
+	data := []byte("Hello World")
+
+	withDummyKv(t, func(kv KV) {
+		for _, path := range paths {
+			if err := putPath(kv, path, data); err != nil {
+				t.Errorf("putPath() failed for %s: %v", path, err)
+				return
+			}
+
+			getData, err := getPath(kv, path)
+			if err != nil {
+				t.Errorf("getPath() failed for %s: %v", path, err)
+				return
+			}
+
+			if !bytes.Equal(getData, data) {
+				t.Errorf("path-data differs for %s", path)
+				t.Errorf("Want: '%s' Got: '%s'", data, getData)
+				return
+			}
+		}
+	})
 }

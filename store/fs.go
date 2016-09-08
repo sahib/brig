@@ -1,9 +1,23 @@
 package store
 
+// Layout of the bolt database:
+//
+// objects/<NODE_HASH>            => NODE_METADATA
+// tree/<FULL_NODE_PATH>          => NODE_HASH
+// refs/<REFNAME>                 => NODE_HASH
+// checkpoints/<NODE_HASH>/<IDX>  => CHECKPOINT_DATA
+// stage/objects/<NODE_HASH>      => NODE_METADATA
+// stage/tree/<FULL_NODE_PATH>    => NODE_HASH
+//
+// NODE is either a Commit, a Directory or a File.
+// FULL_NODE_PATH may contain slashes and in case of directories,
+// it will contain a trailing slash.
+
 import (
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/trie"
@@ -28,7 +42,16 @@ type ErrNoHashFound struct {
 }
 
 func (e ErrNoHashFound) Error() string {
-	return fmt.Sprintf("No such hash in `%s`: %s", e.where, e.b58hash)
+	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
+}
+
+type ErrNoPathFound struct {
+	path  string
+	where string
+}
+
+func (e ErrNoPathFound) Error() string {
+	return fmt.Sprintf("No such path in `%s`: '%s'", e.where, e.path)
 }
 
 type FS struct {
@@ -41,22 +64,57 @@ type FS struct {
 	index map[string]*trie.Node
 }
 
+func NewFilesystem(kv KV) *FS {
+	return &FS{
+		kv:    kv,
+		root:  trie.NewNode(),
+		index: make(map[string]*trie.Node),
+	}
+}
+
+var (
+	loadableBuckets = []string{"objects", "stage/objects"}
+)
+
 // LoadObject loads an individual object by its hash from the object store.
 func (fs *FS) loadNode(hash *Hash) (Node, error) {
-	bkt, err := fs.kv.Bucket([]string{"objects"})
-	if err != nil {
-		return nil, err
+	var data []byte
+	var err error
+
+	b58hash := hash.B58String()
+
+	for _, bucketPath := range loadableBuckets {
+		var bkt Bucket
+		bkt, err = fs.kv.Bucket([]string{bucketPath})
+		if err != nil {
+			return nil, err
+		}
+
+		data, err = bkt.Get(b58hash)
+		if err != nil {
+			return nil, err
+		}
+
+		if data != nil {
+			break
+		}
 	}
 
-	data, err := bkt.Get(hash.B58String())
-	if err != nil {
-		return nil, err
+	fmt.Println("lookupNode", data, b58hash)
+
+	// Damn, no hash found:
+	if data == nil {
+		return nil, ErrNoHashFound{
+			b58hash,
+			strings.Join(loadableBuckets, " + "),
+		}
 	}
 
 	node := &wire.Node{}
 	if err := proto.Unmarshal(data, node); err != nil {
 		return nil, err
 	}
+	fmt.Println("lookupNode unmarshal done")
 
 	typ := node.GetType()
 	switch typ {
@@ -101,25 +159,44 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.root.Lookup(nodePath)
-	if trieNode != nil {
+	if trieNode != nil && trieNode.Data != nil {
 		return trieNode.Data.(Node), nil
 	}
 
-	// The actual hash of a directory is contained in the "." field:
-	lookupPath := path.Join("tree", path.Clean(nodePath))
+	var hash []byte
+	var err error
 
-	// getPath() does a hierarchical lookup:
-	hash, err := getPath(fs.kv, lookupPath)
-	if err != nil {
-		return nil, err
+	prefixes := []string{"tree/", "stage/tree/"}
+	for _, prefix := range prefixes {
+		// getPath() does a hierarchical lookup:
+		hash, err = getPath(fs.kv, prefix+nodePath)
+		fmt.Println("looking up path:", prefix+nodePath)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if hash != nil {
+			break
+		}
 	}
+
+	if hash == nil {
+		return nil, ErrNoPathFound{
+			nodePath,
+			strings.Join(prefixes, " and "),
+		}
+	}
+
+	x := &Hash{hash}
+	fmt.Println("Resolved to hash:", string(hash), string(x.Bytes()))
 
 	// Delegate the actual directory loading to Directory()
 	return fs.NodeByHash(&Hash{hash})
 }
 
-func (fs *FS) SaveNode(nd Node) error {
-	bkt, err := fs.kv.Bucket([]string{"staged"})
+func (fs *FS) StageNode(nd Node) error {
+	bkt, err := fs.kv.Bucket([]string{"stage/objects"})
 	if err != nil {
 		return err
 	}
@@ -140,15 +217,19 @@ func (fs *FS) SaveNode(nd Node) error {
 	}
 
 	// Clean() will also remove trailing slashes:
-	hashPath := path.Join("objects", path.Clean(nodePath(nd)))
+	hashPath := path.Join("stage/tree", path.Clean(nodePath(nd)))
 	switch nd.GetType() {
 	case NodeTypeDirectory:
-		hashPath += "/"
+		hashPath += "/."
 	}
 
-	if err := putPath(fs.kv, hashPath, []byte(b58Hash)); err != nil {
+	fmt.Println(hashPath, nodePath(nd), "insert", b58Hash)
+
+	if err := putPath(fs.kv, hashPath, nd.Hash().Bytes()); err != nil {
 		return err
 	}
+
+	// TODO: Insert to fs.index and fs.root.
 
 	// We need to save parent directories too, in case the hash changed:
 	par, err := nd.Parent()
@@ -156,8 +237,8 @@ func (fs *FS) SaveNode(nd Node) error {
 		return err
 	}
 
-	if nd != nil {
-		if err := fs.SaveNode(par); err != nil {
+	if par != nil {
+		if err := fs.StageNode(par); err != nil {
 			return err
 		}
 	}
@@ -166,17 +247,18 @@ func (fs *FS) SaveNode(nd Node) error {
 }
 
 func (fs *FS) MakeCommit() (*Commit, error) {
-	// TODO
+	// TODO: Copy everything in stage/objects and stage/tree to
+	//       objects/ and tree/. Also make a commit of all current checkpoints.
 	return nil, nil
 }
 
 func ResolveRef(refname string) (Node, error) {
-	// TODO
+	// TODO: Resolve refs/<refname> to objects/$HASH
 	return nil, nil
 }
 
 func (fs *FS) SaveRef(refname string, nd Node) error {
-	// TODO
+	// TODO: Place refname and nd.Hash() in refs/<refname>
 	return nil
 }
 
@@ -205,7 +287,7 @@ func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 }
 
 func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
-	nd, err := fs.ResolveNode(path.Join(dirpath, "/"))
+	nd, err := fs.ResolveNode(path.Clean(dirpath) + "/.")
 	if err != nil {
 		return nil, err
 	}

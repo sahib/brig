@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"path"
 	"sync"
 	"time"
@@ -30,7 +31,7 @@ func (nt NodeType) String() string {
 	return "unknown"
 }
 
-// TODO: Document
+// TODO: Document api
 type Node interface {
 	sync.Locker
 
@@ -58,10 +59,12 @@ func nodePath(nd Node) string {
 		elems = append(elems, nd.Name())
 
 		nd, err = nd.Parent()
-		if err != nil {
+		if err != nil || nd == nil {
 			break
 		}
 	}
+
+	fmt.Println("elems", elems)
 
 	for i := 0; i < len(elems)/2; i++ {
 		elems[i], elems[len(elems)-i-1] = elems[len(elems)-i-1], elems[i]
