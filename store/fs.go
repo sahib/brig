@@ -106,7 +106,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 	if data == nil {
 		return nil, ErrNoHashFound{
 			b58hash,
-			strings.Join(loadableBuckets, " + "),
+			strings.Join(loadableBuckets, " and "),
 		}
 	}
 
@@ -156,6 +156,28 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	return nd, nil
 }
 
+func appendDot(path string) string {
+	// path.Join() calls path.Clean() which in turn
+	// removes the '.' at the end when trying to join that.
+	if strings.HasSuffix(path, "/") {
+		return path + "."
+	}
+
+	return path + "/."
+}
+
+func joinButLeaveLastDot(elems ...string) string {
+	if len(elems) == 0 {
+		return ""
+	}
+
+	if strings.HasSuffix(elems[len(elems)-1], "/.") {
+		return appendDot(path.Join(elems...))
+	}
+
+	return path.Join(elems...)
+}
+
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.root.Lookup(nodePath)
@@ -169,8 +191,8 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	prefixes := []string{"tree/", "stage/tree/"}
 	for _, prefix := range prefixes {
 		// getPath() does a hierarchical lookup:
-		hash, err = getPath(fs.kv, prefix+nodePath)
-		fmt.Println("looking up path:", prefix+nodePath)
+		fmt.Println("looking up path:", joinButLeaveLastDot(prefix, nodePath), nodePath)
+		hash, err = getPath(fs.kv, joinButLeaveLastDot(prefix, nodePath))
 
 		if err != nil {
 			return nil, err
@@ -187,9 +209,6 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 			strings.Join(prefixes, " and "),
 		}
 	}
-
-	x := &Hash{hash}
-	fmt.Println("Resolved to hash:", string(hash), string(x.Bytes()))
 
 	// Delegate the actual directory loading to Directory()
 	return fs.NodeByHash(&Hash{hash})
@@ -216,20 +235,22 @@ func (fs *FS) StageNode(nd Node) error {
 		return err
 	}
 
-	// Clean() will also remove trailing slashes:
-	hashPath := path.Join("stage/tree", path.Clean(nodePath(nd)))
+	// The key is the path of the
+	nodePath := nodePath(nd)
+	hashPath := path.Join("stage/tree", nodePath)
 	switch nd.GetType() {
 	case NodeTypeDirectory:
-		hashPath += "/."
+		hashPath = appendDot(hashPath)
 	}
 
-	fmt.Println(hashPath, nodePath(nd), "insert", b58Hash)
+	fmt.Println("Stage:", hashPath)
 
 	if err := putPath(fs.kv, hashPath, nd.Hash().Bytes()); err != nil {
 		return err
 	}
 
-	// TODO: Insert to fs.index and fs.root.
+	// Remember/Update this node in the cache if it's not yet there:
+	fs.index[b58Hash] = fs.root.InsertWithData(nodePath, nd)
 
 	// We need to save parent directories too, in case the hash changed:
 	par, err := nd.Parent()
@@ -287,7 +308,7 @@ func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 }
 
 func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
-	nd, err := fs.ResolveNode(path.Clean(dirpath) + "/.")
+	nd, err := fs.ResolveNode(appendDot(path.Clean(dirpath)))
 	if err != nil {
 		return nil, err
 	}
