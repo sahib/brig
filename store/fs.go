@@ -45,6 +45,7 @@ func (e ErrNoHashFound) Error() string {
 	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
 }
 
+// TODO: Exchange with NoSuchFile
 type ErrNoPathFound struct {
 	path  string
 	where string
@@ -62,6 +63,40 @@ type FS struct {
 
 	// B58Hash to node
 	index map[string]*trie.Node
+}
+
+func marshalNode(nd Node) ([]byte, error) {
+	pnd, err := nd.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return proto.Marshal(pnd)
+}
+
+func unmarshalNode(fs *FS, data []byte) (Node, error) {
+	pnd := &wire.Node{}
+	if err := proto.Unmarshal(data, pnd); err != nil {
+		return nil, err
+	}
+
+	switch typ := pnd.GetType(); typ {
+	case wire.NodeType_FILE:
+		// TODO
+		return nil, nil
+	case wire.NodeType_DIRECTORY:
+		dir := &Directory{fs: fs}
+		if err := dir.FromProto(pnd); err != nil {
+			return nil, err
+		}
+
+		return dir, nil
+	case wire.NodeType_COMMIT:
+		// TODO
+		return nil, nil
+	default:
+		return nil, ErrBadNodeType(typ)
+	}
 }
 
 func NewFilesystem(kv KV) *FS {
@@ -110,28 +145,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 		}
 	}
 
-	node := &wire.Node{}
-	if err := proto.Unmarshal(data, node); err != nil {
-		return nil, err
-	}
-	fmt.Println("lookupNode unmarshal done")
-
-	typ := node.GetType()
-	switch typ {
-	case wire.NodeType_FILE:
-		// TODO
-	case wire.NodeType_DIRECTORY:
-		dir := &Directory{fs: fs}
-		if err := dir.FromProto(node); err != nil {
-			return nil, err
-		}
-
-		return dir, nil
-	case wire.NodeType_COMMIT:
-		// TODO
-	}
-
-	return nil, ErrBadNodeType(typ)
+	return unmarshalNode(fs, data)
 }
 
 // TODO: Root() should read HEAD and return the referenced directory in there.

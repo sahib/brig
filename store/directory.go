@@ -29,21 +29,29 @@ type Directory struct {
 
 // emptyDirectory creates a new empty directory that is not yet present
 // in the store. It should not be used directtly.
-func emptyDirectory(fs *FS, name string) *Directory {
+func emptyDirectory(fs *FS, parent *Directory, name string) (*Directory, error) {
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 
 	mh, err := multihash.Sum([]byte(name), code, length)
 	if err != nil {
 		// The programmer has fucked up:
-		panic(fmt.Sprintf("Failed to calculate basic checksum of a string: %v", err))
+		return nil, fmt.Errorf("Failed to calculate basic checksum of a string: %v", err)
 	}
 
-	return &Directory{
+	dir := &Directory{
 		fs:   fs,
 		hash: &Hash{mh},
 		name: name,
 	}
+
+	if parent != nil {
+		if err := parent.Add(dir); err != nil {
+			return nil, err
+		}
+	}
+
+	return dir, nil
 }
 
 ////////////// MARSHALLING ////////////////
@@ -175,6 +183,21 @@ func (d *Directory) GetType() NodeType {
 
 ////////////// TREE MOVEMENT /////////////////
 
+func (d *Directory) VisitChildren(fn func(*Directory) error) error {
+	for _, hash := range d.children {
+		child, err := d.fs.DirectoryByHash(hash)
+		if err != nil {
+			return err
+		}
+
+		if err := fn(child); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (d *Directory) Up(visit func(par *Directory) error) error {
 	var err error
 
@@ -192,20 +215,28 @@ func (d *Directory) Up(visit func(par *Directory) error) error {
 	return nil
 }
 
-//////////// STATE ALTERING METHODS //////////////
-
-func (d *Directory) Add(nd Node) error {
-	if err := nd.SetParent(d); err != nil {
+func (d *Directory) xorHash(hash *Hash) error {
+	if err := d.hash.Xor(hash); err != nil {
 		return err
 	}
 
+	// We need to update the direct children since the parent hash changed.
+	return d.VisitChildren(func(child *Directory) error {
+		return child.SetParent(d)
+	})
+}
+
+//////////// STATE ALTERING METHODS //////////////
+
+// TODO: Grafik dafür in der Masterarbeit machen!
+func (d *Directory) Add(nd Node) error {
 	d.children[nd.Name()] = nd.Hash()
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
 
 	return d.Up(func(parent *Directory) error {
 		parent.size += nodeSize
-		return parent.hash.Xor(nodeHash)
+		return parent.xorHash(nodeHash)
 	})
 }
 
@@ -231,6 +262,6 @@ func (d *Directory) RemoveChild(nd Node) error {
 
 	return d.Up(func(parent *Directory) error {
 		parent.size -= nodeSize
-		return parent.hash.Xor(nodeHash)
+		return parent.xorHash(nodeHash)
 	})
 }

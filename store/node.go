@@ -1,8 +1,8 @@
 package store
 
 import (
-	"fmt"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,23 +32,34 @@ func (nt NodeType) String() string {
 }
 
 // TODO: Document api
+// TODO: Split in sub-interfaces
 type Node interface {
 	sync.Locker
 
+	// Unmarshalling
 	ToProto() (*wire.Node, error)
 	FromProto(*wire.Node) error
 
+	// Metadata
 	Name() string
 	Hash() *Hash
 	Size() uint64
 	ModTime() time.Time
 
+	// Hierarchy
 	NChildren() int
 	Child(name string) (Node, error)
 	Parent() (Node, error)
 	SetParent(nd Node) error
-
 	GetType() NodeType
+}
+
+func prefixSlash(s string) string {
+	if !strings.HasPrefix(s, "/") {
+		return "/" + s
+	}
+
+	return s
 }
 
 func nodePath(nd Node) string {
@@ -64,11 +75,9 @@ func nodePath(nd Node) string {
 		}
 	}
 
-	fmt.Println("elems", elems)
-
 	for i := 0; i < len(elems)/2; i++ {
 		elems[i], elems[len(elems)-i-1] = elems[len(elems)-i-1], elems[i]
 	}
 
-	return "/" + path.Join(elems...)
+	return prefixSlash(path.Join(elems...))
 }

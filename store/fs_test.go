@@ -8,7 +8,11 @@ import (
 func TestFSInsertRoot(t *testing.T) {
 	withDummyKv(t, func(kv KV) {
 		fs := NewFilesystem(kv)
-		root := emptyDirectory(fs, "/")
+		root, err := emptyDirectory(fs, nil, "/")
+		if err != nil {
+			t.Errorf("Creating empty dir failed: %v", err)
+			return
+		}
 
 		if err := fs.StageNode(root); err != nil {
 			t.Errorf("Staging root failed: %v", err)

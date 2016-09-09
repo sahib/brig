@@ -40,14 +40,6 @@ type Store struct {
 	mu sync.Mutex
 }
 
-func prefixSlash(s string) string {
-	if !strings.HasPrefix(s, "/") {
-		return "/" + s
-	}
-
-	return s
-}
-
 func (st *Store) loadIndex() error {
 	return st.viewWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
 		// Check if the root directory already exists:
