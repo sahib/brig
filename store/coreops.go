@@ -33,6 +33,7 @@ func (e *errNoSuchFile) Error() string {
 }
 
 // NoSuchFile creates a new error that reports `path` as missing
+// TODO: move to errors.go?
 func NoSuchFile(path string) error {
 	return &errNoSuchFile{path}
 }

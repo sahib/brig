@@ -11,20 +11,26 @@ enum NodeType {
 
 // An Object is a container for a file, a directory or a Ref.
 message Node {
+  // Type of this node (see above)
   required NodeType type = 1;
+  // Global identifier of this node, since hash and path
+  // might change sometimes.
+  required uint64 ID = 2;
 
   // Individual types:
-  optional File file = 2;
-  optional Directory directory = 3;
-  optional Commit commit = 4;
+  optional File file = 3;
+  optional Directory directory = 4;
+  optional Commit commit = 5;
 }
 
+// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
+
 message File {
-    required string path = 1;
+    required string name = 1;
     optional bytes key = 2;
     optional bytes hash = 3;
-    required int64 file_size = 4;
-    required int32 kind = 5;
+    required bytes parent = 4;
+    required int64 file_size = 5;
 
     // Timestamp formated as RFC 3339
     required bytes mod_time = 6;
@@ -37,7 +43,7 @@ message Directory {
     required bytes hash = 4;
     required bytes mod_time = 5;
 
-    // Directory contents:
+    // Directory contents (hashtable contents [name => link]):
     repeated bytes links = 6;
     repeated string names = 7;
 }
@@ -57,14 +63,11 @@ message Dirlist {
 }
 
 message Checkpoint {
-    required bytes hash = 1;
-    required bytes mod_time = 2;
-    required int64 file_size = 3;
+    required uint64 id = 1;
+    required bytes hash = 2;
+    required uint64 index = 3;
     required int32 change = 4;
     required string author = 5;
-    required string path = 6;
-    required string old_path = 7;
-    required uint64 index = 8;
 }
 
 message History {
@@ -97,7 +100,7 @@ message Commit {
     required string author = 2;
     required bytes mod_time = 3;
     required bytes hash = 4;
-    required bytes tree_hash = 5;
+    required bytes root = 5;
 
     // List of checkpoints:
     repeated Checkpoint checkpoints = 6;
@@ -117,5 +120,4 @@ message Commits {
 message Ref {
     required string name = 1;
     required bytes hash = 2;
-    required int32 type = 3;
 }

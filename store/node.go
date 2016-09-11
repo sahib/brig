@@ -3,10 +3,10 @@ package store
 import (
 	"path"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/disorganizer/brig/store/wire"
+	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
 const (
@@ -31,28 +31,53 @@ func (nt NodeType) String() string {
 	return "unknown"
 }
 
-// TODO: Document api
-// TODO: Split in sub-interfaces
-type Node interface {
-	sync.Locker
+// NOTE: The name sounds funny.
+type Metadatable interface {
+	// Name returns the name of the object, i.e. the last part of the path,
+	// which is also commonly called 'basename' in unix filesystems.
+	Name() string
 
-	// Unmarshalling
+	// Hash returns the hash value of the node.
+	//
+	// It is an error to modify the hash value.
+	// If you need to modify it, you have to make an own copy via .Clone().
+	Hash() *Hash
+
+	// Size returns the size of the node in bytes.
+	Size() uint64
+
+	// ModTime returns the time when the last modification to the node happened.
+	ModTime() time.Time
+}
+
+type Serializable interface {
 	ToProto() (*wire.Node, error)
 	FromProto(*wire.Node) error
+}
 
-	// Metadata
-	Name() string
-	Hash() *Hash
-	Size() uint64
-	ModTime() time.Time
-
-	// Hierarchy
+type HierarchyEntry interface {
 	NChildren() int
 	Child(name string) (Node, error)
 	Parent() (Node, error)
 	SetParent(nd Node) error
 	GetType() NodeType
 }
+
+type Streamable interface {
+	Key() []byte
+	Stream() (ipfsutil.Reader, error)
+}
+
+// TODO: Document api
+// TODO: StreambleNode?
+type Node interface {
+	// TODO: sync.Locker needed?
+	Metadatable
+	Serializable
+	HierarchyEntry
+}
+
+//////////////// UTILITY FUNCTIONS ////////////////
 
 func prefixSlash(s string) string {
 	if !strings.HasPrefix(s, "/") {

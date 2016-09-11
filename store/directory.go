@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"sync"
+	"path"
 	"time"
 
 	"github.com/disorganizer/brig/store/wire"
@@ -12,15 +12,13 @@ import (
 )
 
 type Directory struct {
-	// TODO: Needed?
-	sync.RWMutex
-
 	name     string
 	size     uint64
 	modTime  time.Time
 	parent   *Hash
 	hash     *Hash
 	children map[string]*Hash
+	id       uint64
 
 	// This is not set by FromProto() and must be passed
 	// on creating by FS.
@@ -33,14 +31,21 @@ func emptyDirectory(fs *FS, parent *Directory, name string) (*Directory, error) 
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 
-	mh, err := multihash.Sum([]byte(name), code, length)
+	path := path.Join(nodePath, name)
+	mh, err := multihash.Sum([]byte(path), code, length)
 	if err != nil {
-		// The programmer has fucked up:
+		// The programmer has likely fucked up:
 		return nil, fmt.Errorf("Failed to calculate basic checksum of a string: %v", err)
+	}
+
+	id, err := fs.NextID()
+	if err != nil {
+		return nil, err
 	}
 
 	dir := &Directory{
 		fs:   fs,
+		id:   id,
 		hash: &Hash{mh},
 		name: name,
 	}
@@ -71,6 +76,7 @@ func (d *Directory) ToProto() (*wire.Node, error) {
 	}
 
 	return &wire.Node{
+		ID:   proto.Uint64(id),
 		Type: wire.NodeType_DIRECTORY.Enum(),
 		Directory: &wire.Directory{
 			FileSize: proto.Uint64(d.size),
@@ -101,6 +107,7 @@ func (d *Directory) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
+	d.id = pnd.GetID()
 	d.modTime = modTime
 	d.parent = &Hash{pbd.GetParent()}
 	d.size = pbd.GetFileSize()

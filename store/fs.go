@@ -2,12 +2,14 @@ package store
 
 // Layout of the bolt database:
 //
-// objects/<NODE_HASH>            => NODE_METADATA
-// tree/<FULL_NODE_PATH>          => NODE_HASH
-// refs/<REFNAME>                 => NODE_HASH
-// checkpoints/<NODE_HASH>/<IDX>  => CHECKPOINT_DATA
-// stage/objects/<NODE_HASH>      => NODE_METADATA
-// stage/tree/<FULL_NODE_PATH>    => NODE_HASH
+// objects/<NODE_HASH>                 => NODE_METADATA
+// tree/<FULL_NODE_PATH>               => NODE_HASH
+// refs/<REFNAME>                      => NODE_HASH
+// checkpoints/<NODE_HASH>/<IDX>       => CHECKPOINT_DATA
+// stage/objects/<NODE_HASH>           => NODE_METADATA
+// stage/tree/<FULL_NODE_PATH>         => NODE_HASH
+// stage/checkpoints/<NODE_HASH>/<IDX> => CHECKPOINT_DATA
+// ident/<CURR>
 //
 // NODE is either a Commit, a Directory or a File.
 // FULL_NODE_PATH may contain slashes and in case of directories,
@@ -22,7 +24,10 @@ import (
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
+	"github.com/jbenet/go-multihash"
 )
+
+// TODO: Clear cache when invalid?
 
 /////////////// ERRORS ///////////////
 
@@ -80,23 +85,24 @@ func unmarshalNode(fs *FS, data []byte) (Node, error) {
 		return nil, err
 	}
 
+	var node Node
+
 	switch typ := pnd.GetType(); typ {
 	case wire.NodeType_FILE:
-		// TODO
-		return nil, nil
+		node = &File{fs: fs}
 	case wire.NodeType_DIRECTORY:
-		dir := &Directory{fs: fs}
-		if err := dir.FromProto(pnd); err != nil {
-			return nil, err
-		}
-
-		return dir, nil
+		node = &Directory{fs: fs}
 	case wire.NodeType_COMMIT:
-		// TODO
-		return nil, nil
+		node = &Commit{fs: fs}
 	default:
 		return nil, ErrBadNodeType(typ)
 	}
+
+	if err := node.FromProto(pnd); err != nil {
+		return nil, err
+	}
+
+	return node, nil
 }
 
 func NewFilesystem(kv KV) *FS {
@@ -107,9 +113,37 @@ func NewFilesystem(kv KV) *FS {
 	}
 }
 
-var (
-	loadableBuckets = []string{"objects", "stage/objects"}
-)
+//////////////////////////
+// COMMON NODE HANDLING //
+//////////////////////////
+
+// TODO: is uint64 enough? Probably...
+func (fs *FS) NextID() (uint64, error) {
+	bkt, err := fs.kv.Bucket([]string{"metadata"})
+	if err != nil {
+		return 0, err
+	}
+
+	nodeCount, err := bkt.Get("node-count")
+	if err != nil {
+		return 0, err
+	}
+
+	// nodeCount might be nil on startup:
+	cnt := 1
+	if nodeCount != nil {
+		cnt = binary.BigEndian.Uint64(nodeCount) + 1
+	}
+
+	cntBuf := make([]byte, 8)
+	binary.BigEndian.PutUint64(cntBuf, cnt)
+
+	if err := bkt.Put("node-count", cntBuf); err != nil {
+		return nil
+	}
+
+	return cnt, nil
+}
 
 // LoadObject loads an individual object by its hash from the object store.
 func (fs *FS) loadNode(hash *Hash) (Node, error) {
@@ -118,6 +152,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 
 	b58hash := hash.B58String()
 
+	loadableBuckets := []string{"objects", "stage/objects"}
 	for _, bucketPath := range loadableBuckets {
 		var bkt Bucket
 		bkt, err = fs.kv.Bucket([]string{bucketPath})
@@ -205,8 +240,9 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	prefixes := []string{"tree/", "stage/tree/"}
 	for _, prefix := range prefixes {
 		// getPath() does a hierarchical lookup:
-		fmt.Println("looking up path:", joinButLeaveLastDot(prefix, nodePath), nodePath)
-		hash, err = getPath(fs.kv, joinButLeaveLastDot(prefix, nodePath))
+		joinedPath := joinButLeaveLastDot(prefix, nodePath)
+		fmt.Println("looking up path:", joinedPath, nodePath)
+		hash, err = getPath(fs.kv, joinedPath)
 
 		if err != nil {
 			return nil, err
@@ -229,6 +265,10 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 }
 
 func (fs *FS) StageNode(nd Node) error {
+	if nd.GetType() == NodeTypeCommit {
+		return fmt.Errorf("Please use SubmitCommit() for commits.")
+	}
+
 	bkt, err := fs.kv.Bucket([]string{"stage/objects"})
 	if err != nil {
 		return err
@@ -281,20 +321,66 @@ func (fs *FS) StageNode(nd Node) error {
 	return nil
 }
 
-func (fs *FS) MakeCommit() (*Commit, error) {
+func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
+
+}
+
+/////////////////////
+// COMMIT HANDLING //
+/////////////////////
+
+func (fs *FS) SubmitCommit(cm *Commit) error {
 	// TODO: Copy everything in stage/objects and stage/tree to
 	//       objects/ and tree/. Also make a commit of all current checkpoints.
+	//       Update HEAD when done.
 	return nil, nil
 }
 
-func ResolveRef(refname string) (Node, error) {
-	// TODO: Resolve refs/<refname> to objects/$HASH
-	return nil, nil
+////////////////////////
+// REFERENCE HANDLING //
+////////////////////////
+
+func (fs *FS) ResolveRef(refname string) (Node, error) {
+	bkt, err := fs.kv.Bucket([]string{"refs"})
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := bkt.Get(refname)
+	if err != nil {
+		return nil, err
+	}
+
+	mh, err := multihash.Cast(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.NodeByHash(&Hash{mh})
 }
 
 func (fs *FS) SaveRef(refname string, nd Node) error {
-	// TODO: Place refname and nd.Hash() in refs/<refname>
-	return nil
+	bkt, err := fs.kv.Bucket([]string{"refs"})
+	if err != nil {
+		return nil, err
+	}
+
+	return bkt.Put(refname, nd.Hash().Bytes())
+}
+
+// Basically a shortcut for fs.ResolveRef("HEAD").(*Commit)
+func (fs *FS) Head() (*Commit, error) {
+	nd, err := fs.ResolveRef("HEAD")
+	if err != nil {
+		return nil, err
+	}
+
+	cmt, ok := nd.(*Commit)
+	if !ok {
+		return nil, fmt.Errorf("oh-oh, HEAD is not a Commit...")
+	}
+
+	return cmt, nil
 }
 
 func (fs *FS) RemoveUnreffedNodes() error {
@@ -305,7 +391,9 @@ func (fs *FS) RemoveUnreffedNodes() error {
 	return nil
 }
 
-////////////////////////////
+/////////////////////////////////
+// CONVINIENT ACCESS FUNCTIONS //
+/////////////////////////////////
 
 func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 	nd, err := fs.NodeByHash(hash)
@@ -333,4 +421,46 @@ func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
 	}
 
 	return dir, nil
+}
+
+func (fs *FS) FileByHash(hash *Hash) (*File, error) {
+	nd, err := fs.NodeByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	file, ok := nd.(*File)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return file, nil
+}
+
+func (fs *FS) FileByHash(filepath string) (*File, error) {
+	nd, err := fs.ResolveNode(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	file, ok := nd.(*File)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return file, nil
+}
+
+func (fs *FS) CommitByHash(hash *Hash) (*Commit, error) {
+	nd, err := fs.NodeByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	cmt, ok := nd.(*Commit)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return cmt, nil
 }
