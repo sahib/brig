@@ -8,6 +8,8 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
+// TODO: Is this used?
+
 // Ref is a named reference to a commit
 type Ref struct {
 	Name string

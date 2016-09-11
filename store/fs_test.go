@@ -8,7 +8,7 @@ import (
 func TestFSInsertRoot(t *testing.T) {
 	withDummyKv(t, func(kv KV) {
 		fs := NewFilesystem(kv)
-		root, err := emptyDirectory(fs, nil, "/")
+		root, err := newEmptyDirectory(fs, nil, "/")
 		if err != nil {
 			t.Errorf("Creating empty dir failed: %v", err)
 			return

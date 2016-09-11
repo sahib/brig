@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -522,4 +523,79 @@ func (st *Store) move(oldPath, newPath string) (err error) {
 	}
 
 	return nil
+}
+
+// Status shows how a Commit would look like if Commit() would be called.
+func (st *Store) Status() (*Commit, error) {
+	return st.status()
+}
+
+// Unlocked version of Status()
+func (st *Store) status() (*Commit, error) {
+	head, err := st.head()
+	if err != nil {
+		return nil, err
+	}
+
+	cmt := NewEmptyCommit(st, st.ID)
+	cmt.Parent = head
+	cmt.Message = "Uncommitted changes"
+	cmt.TreeHash = st.Root.Hash().Clone()
+
+	hash, err := st.makeCommitHash(cmt, head)
+	if err != nil {
+		return nil, err
+	}
+
+	cmt.Hash = hash
+
+	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+		return bkt.ForEach(func(bpath, bckpnt []byte) error {
+			checkpoint := &Checkpoint{}
+			if err := checkpoint.Unmarshal(bckpnt); err != nil {
+				return err
+			}
+
+			cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmt, nil
+}
+
+// Commit saves a commit in the store history.
+func (st *Store) MakeCommit(msg string) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	if msg == "" {
+		return ErrEmptyCommitMessage
+	}
+
+	cmt, err := st.status()
+	if err != nil {
+		return err
+	}
+}
+
+// TODO: respect from/to ranges
+func (fs *FS) Log() (*Commits, error) {
+	var cmts Commits
+
+	head, err := fs.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	for curr := head; curr != nil; curr = curr.ParentCommit() {
+		cmts = append(cmts, curr)
+	}
+
+	sort.Sort(&cmts)
+	return &cmts, nil
 }

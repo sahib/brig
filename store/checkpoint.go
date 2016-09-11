@@ -60,11 +60,20 @@ func (c *ChangeType) String() string {
 	return changeTypeToString[*c]
 }
 
+func (c *ChangeType) Marshal() ([]byte, error) {
+	dec, ok := changeTypeToString[*c]
+	if !ok {
+		return nil, fmt.Errorf("Bad change type `%d`", *c)
+	}
+
+	return []byte(dec)
+}
+
 func (c *ChangeType) Unmarshal(data []byte) error {
 	var ok bool
 	*c, ok = stringToChangeType[string(data)]
 	if !ok {
-		return fmt.Errorf("Bad change type: %v", string(data))
+		return fmt.Errorf("Unknown change type: %s", string(data))
 	}
 
 	return nil
@@ -72,55 +81,41 @@ func (c *ChangeType) Unmarshal(data []byte) error {
 
 // Checkpoint remembers one state of a single file.
 type Checkpoint struct {
+	// IDLink references the history of a single file
+	idLink uint64
+
 	// Hash is the hash of the file at this point.
 	// It may, or may not be retrievable from ipfs.
 	// For ChangeRemove the hash is the hash of the last existing file.
-	Hash *Hash
+	hash *Hash
 
 	// Index is a a unique counter on the number of checkpoints
-	Index uint64
+	index uint64
 
 	// ModTime is the time the checkpoint was made.
-	ModTime time.Time
+	modTime time.Time
 
 	// Size is the size of the file in bytes at this point.
-	Size int64
-
 	// Change is the detailed type of the modification.
-	Change ChangeType
+	change ChangeType
 
 	// Author of the file modifications (jabber id)
-	Author id.ID
-
-	// Path of the file:
-	//   - if added/modified: the current file path.
-	//   - if removed: the old file path.
-	//   - if moved: The new file path.
-	Path string
-
-	// OldPath is the path of the file before moving (for ChangeMove only)
-	OldPath string
+	author id.ID
 }
 
 // TODO: nice representation
 func (c *Checkpoint) String() string {
-	return fmt.Sprintf("%-7s %+7s@%s", c.Change.String(), c.Hash.B58String(), c.ModTime.String())
+	return fmt.Sprintf(
+		"%x:%x@%s(%s)",
+		c.idLink,
+		c.index,
+		c.change.String(),
+		c.hash.B58String(),
 }
 
-// Checkpoints is a list of checkpoints.
-// It is used to enable sorting by path.
-type Checkpoints []*Checkpoint
-
-func (cps *Checkpoints) Len() int {
-	return len(*cps)
-}
-
-func (cps *Checkpoints) Less(i, j int) bool {
-	return (*cps)[i].Path < (*cps)[j].Path
-}
-
-func (cps *Checkpoints) Swap(i, j int) {
-	(*cps)[i], (*cps)[j] = (*cps)[j], (*cps)[i]
+func newEmptyCheckpoint() *Checkpoint {
+	// This is here to make sure api changes cause compile errors.
+	return &Checkpoint{}
 }
 
 func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
@@ -130,14 +125,12 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 	}
 
 	protoCheck := &wire.Checkpoint{
-		Hash:     cp.Hash.Bytes(),
+		IdLink:   proto.Uint64(cp.idLink),
+		Hash:     cp.hash.Bytes(),
 		ModTime:  mtimeBin,
-		FileSize: proto.Int64(cp.Size),
-		Change:   proto.Int32(int32(cp.Change)),
-		Author:   proto.String(string(cp.Author)),
-		Path:     proto.String(cp.Path),
-		OldPath:  proto.String(cp.OldPath),
-		Index:    proto.Uint64(cp.Index),
+		Change:   proto.Int32(int32(cp.change)),
+		Author:   proto.String(string(cp.author)),
+		Index:    proto.Uint64(cp.index),
 	}
 
 	if err != nil {
@@ -155,21 +148,18 @@ func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 		return err
 	}
 
-	cp.Hash = &Hash{msg.GetHash()}
-	cp.ModTime = modTime
-	cp.Size = msg.GetFileSize()
-	cp.Change = ChangeType(msg.GetChange())
-	cp.Path = msg.GetPath()
-	cp.OldPath = msg.GetOldPath()
-	cp.Index = msg.GetIndex()
+	cp.hash = &Hash{msg.GetHash()}
+	cp.modTime = modTime
+	cp.change = ChangeType(msg.GetChange())
+	cp.index = msg.GetIndex()
 
 	ID, err := id.Cast(msg.GetAuthor())
 	if err != nil {
 		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.GetAuthor(), err)
-	} else {
-		cp.Author = ID
+		return err
 	}
 
+	cp.author = ID
 	return nil
 }
 
@@ -196,27 +186,46 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 	return cp.FromProto(protoCheck)
 }
 
-func (cs *Commits) UnmarshalProto(data []byte) error {
-	protoCmts := &wire.Commits{}
-	if err := proto.Unmarshal(data, protoCmts); err != nil {
-		return err
-	}
-
-	return cs.FromProto(protoCmts)
+type CheckpointLink struct {
+	IDLink uint64
+	Index uint64
 }
 
-func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
-	for _, protoCmt := range protoCmts.GetCommits() {
-		cmt := NewEmptyCommit(nil, "")
-		if err := cmt.FromProto(protoCmt); err != nil {
-			return err
-		}
+func (cl *CheckpointLink) String() string {
+	return fmt.Sprintf("%x:%x", cl.IDLink, cl.Index)
+}
 
-		*cs = append(*cs, cmt)
-	}
-
+func (cl *CheckpointLink) FromProto(pcl *wire.CheckpointLink) error {
+	cl.IDLink = pcl.GetIdLink()
+	cl.Index = pcl.GetIndex()
 	return nil
 }
+
+func (cl *CheckpointLink) ToProto() (*wire.CheckpointLink, error) {
+	return &wire.CheckpointLink{
+		IdLink: proto.Uint64(cl.IDLink),
+		Index: proto.Uint64(cl.Index),
+	}, nil
+}
+
+func (cl *CheckpointLink) Resolve(fs *FS) (*Checkpoint, error) {
+	// TODO: This is a bit inefficient. Just load a single checkpoint? :P
+	hist, err := fs.History(cl.IDLink)
+	if err != nil {
+		return nil, err
+	}
+
+	ckp := hist.At(cl.Index)
+	if ckp == nil {
+		return nil, fmt.Errorf("Invalid checkpoint-link %s", cl.String())
+	}
+
+	return ckp, nil
+}
+
+////////////////////////////
+// HISTORY IMPLEMENTATION //
+////////////////////////////
 
 // History remembers the changes made to a file.
 // New changes get appended to the end.
@@ -287,116 +296,46 @@ func (hy *History) Unmarshal(data []byte) error {
 	return hy.FromProto(protoHist)
 }
 
-// MakeCheckpoint creates a new checkpoint in the version history of `curr`.
-// One of old or curr may be nil (if no old version exists or new version
-// does not exist anymore). It is an error to pass nil twice.
-//
-// If nothing changed between old and curr, ErrNoChange is returned.
-func (st *Store) MakeCheckpoint(old, curr *Metadata, oldPath, currPath string) error {
-	var change ChangeType
-	var hash *Hash
-	var path string
-	var size int64
-
-	if old == nil {
-		change, path, hash, size = ChangeAdd, currPath, curr.hash, curr.size
-	} else if curr == nil {
-		change, path, hash, size = ChangeRemove, oldPath, old.hash, old.size
-	} else if !curr.hash.Equal(old.hash) {
-		change, path, hash, size = ChangeModify, currPath, curr.hash, curr.size
-	} else if oldPath != currPath {
-		change, path, hash, size = ChangeMove, currPath, curr.hash, curr.size
-	} else {
-		return ErrNoChange
+// At is like the normal array subscription, but does not crash when
+// getting passed an invalid index. If the index is invalid, nil is returned.
+func (hy *History) At(index int) *Checkpoint {
+	if index < 0 || index >= len(hy) {
+		return nil
 	}
 
-	checkpoint := &Checkpoint{
-		Hash:    hash,
-		ModTime: time.Now(),
-		Size:    size,
-		Change:  change,
-		Author:  st.ID,
-		Path:    path,
-	}
-
-	protoData, err := checkpoint.Marshal()
-	if err != nil {
-		return err
-	}
-
-	dbErr := st.updateWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		histBuck, err := bckt.CreateBucketIfNotExists([]byte(path))
-		if err != nil {
-			return err
-		}
-
-		// On a "move" we need to move the old data to the new path.
-		if change == ChangeMove {
-			checkpoint.OldPath = oldPath
-
-			if oldBuck := bckt.Bucket([]byte(oldPath)); oldBuck != nil {
-				err = oldBuck.ForEach(func(k, v []byte) error {
-					return histBuck.Put(k, v)
-				})
-
-				if err != nil {
-					return err
-				}
-
-				if err := bckt.DeleteBucket([]byte(oldPath)); err != nil {
-					return err
-				}
-			}
-		}
-
-		key := make([]byte, 8)
-		binary.LittleEndian.PutUint64(key, checkpoint.Index)
-		return histBuck.Put(key, protoData)
-	})
-
-	if dbErr != nil {
-		return dbErr
-	}
-
-	dbErr = st.updateWithBucket("stage", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		return bckt.Put([]byte(path), protoData)
-	})
-
-	if dbErr != nil {
-		return dbErr
-	}
-
-	log.Debugf("created check point: %v", checkpoint)
-	return nil
+	return hy[index]
 }
 
-// History returns all checkpoints a file has.
-// Note: even on error a empty history is returned.
-func (s *Store) History(path string) (*History, error) {
-	var hist History
+func (ckp *Checkpoint) Fork(author id.ID, old, new Node) (*Checkpoint, error){
+	var change ChangeType
+	var hash *Hash
 
-	return &hist, s.viewWithBucket("checkpoints", func(tx *bolt.Tx, bckt *bolt.Bucket) error {
-		changeBuck := bckt.Bucket([]byte(path))
-		if changeBuck == nil {
-			return NoSuchFile(path)
-		}
+	if old == nil {
+		change, hash = ChangeAdd, new.Hash()
+	} else if new == nil {
+		change, hash = ChangeRemove, old.Hash()
+	} else if new.hash.Equal(old.hash) == false {
+		change, hash = ChangeModify, new.Hash()
+	} else if nodePath(old) != nodePath(new) {
+		change, hash = ChangeMove, new.Hash()
+	} else {
+		return nil, ErrNoChange
+	}
 
-		err := changeBuck.ForEach(func(_, v []byte) error {
-			ck := &Checkpoint{}
-			if err := ck.Unmarshal(v); err != nil {
-				return err
-			}
+	var idLink int
+	var index int
 
-			hist = append(hist, ck)
-			return nil
-		})
+	if ckp != nil {
+		idLink = ckp.idLink
+		index = ckp.index
+	}
 
-		if err != nil {
-			return err
-		}
-
-		// Make sure we're in order.
-		sort.Sort(&hist)
-		return nil
-	})
+	return &Checkpoint{
+		idLink: idLink,
+		index: index + 1,
+		hash:    hash,
+		modTime: time.Now(),
+		change:  change,
+		author:  author,
+	}, nil
 }

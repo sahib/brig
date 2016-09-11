@@ -75,6 +75,11 @@ type Node interface {
 	Metadatable
 	Serializable
 	HierarchyEntry
+
+	// ID returns the numeric identifier of this node.
+	// It stays the same, even when the node was modified
+	// or the path was moved.
+	ID() uint64
 }
 
 //////////////// UTILITY FUNCTIONS ////////////////

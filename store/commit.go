@@ -63,7 +63,7 @@ type Commit struct {
 	modTime time.Time
 
 	// Checkpoints is the bag of actual changes.
-	heckpoints Checkpoints
+	changeset []*CheckpointLink
 
 	// Hash of this commit
 	hash *Hash
@@ -123,15 +123,15 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
-	var checkpoints []*Checkpoint
+	var changeset []*CheckpointLink
 
-	for _, protoCheckpoint := range pcm.GetCheckpoints() {
-		checkpoint := &Checkpoint{}
-		if err := checkpoint.FromProto(protoCheckpoint); err != nil {
+	for _, pcl := range pcm.GetChangeset() {
+		cl := &CheckpointLink{}
+		if err := cl.FromProto(pcl); err != nil {
 			return err
 		}
 
-		checkpoints = append(checkpoints, checkpoint)
+		changeset = append(changeset, cl)
 	}
 
 	protoMergeInfo := c.GetMerge()
@@ -246,13 +246,16 @@ return (cm *Commit) GetType() NodeType {
 	return NodeTypeCommit
 }
 
-///////////////////////////////////
-/// STORE METHOD IMPLEMENTATION ///
-///////////////////////////////////
+///////////////////////////////
+/// OWN COMMIT FUNCTIONALITY //
+///////////////////////////////
 
-// Status shows how a Commit would look like if Commit() would be called.
-func (st *Store) Status() (*Commit, error) {
-	return st.status()
+func (cm *Commit) Root() *Hash {
+	return cm.root
+}
+
+func (cm *Commit) SetRoot(root *Hash) error {
+	cm.root = root.Clone()
 }
 
 func (cm *Commit) Finalize(message string, parent *Commit) error {
@@ -276,76 +279,6 @@ func (cm *Commit) Finalize(message string, parent *Commit) error {
 	}
 
 	return nil
-}
-
-// Unlocked version of Status()
-func (st *Store) status() (*Commit, error) {
-	head, err := st.head()
-	if err != nil {
-		return nil, err
-	}
-
-	cmt := NewEmptyCommit(st, st.ID)
-	cmt.Parent = head
-	cmt.Message = "Uncommitted changes"
-	cmt.TreeHash = st.Root.Hash().Clone()
-
-	hash, err := st.makeCommitHash(cmt, head)
-	if err != nil {
-		return nil, err
-	}
-
-	cmt.Hash = hash
-
-	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-		return bkt.ForEach(func(bpath, bckpnt []byte) error {
-			checkpoint := &Checkpoint{}
-			if err := checkpoint.Unmarshal(bckpnt); err != nil {
-				return err
-			}
-
-			cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
-			return nil
-		})
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cmt, nil
-}
-
-// Commit saves a commit in the store history.
-func (st *Store) MakeCommit(msg string) error {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	if msg == "" {
-		return ErrEmptyCommitMessage
-	}
-
-	cmt, err := st.status()
-	if err != nil {
-		return err
-	}
-}
-
-// TODO: respect from/to ranges
-func (fs *FS) Log() (*Commits, error) {
-	var cmts Commits
-
-	head, err := fs.Head()
-	if err != nil {
-		return nil, err
-	}
-
-	for curr := head; curr != nil; curr = curr.ParentCommit() {
-		cmts = append(cmts, curr)
-	}
-
-	sort.Sort(&cmts)
-	return &cmts, nil
 }
 
 // Commits is a list of single commits.
@@ -377,4 +310,27 @@ func (cs *Commits) ToProto() (*wire.Commits, error) {
 	}
 
 	return protoCmts, nil
+}
+
+
+func (cs *Commits) Unmarshal(data []byte) error {
+	protoCmts := &wire.Commits{}
+	if err := proto.Unmarshal(data, protoCmts); err != nil {
+		return err
+	}
+
+	return cs.FromProto(protoCmts)
+}
+
+func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
+	for _, protoCmt := range protoCmts.GetCommits() {
+		cmt := NewEmptyCommit(nil, "")
+		if err := cmt.FromProto(protoCmt); err != nil {
+			return err
+		}
+
+		*cs = append(*cs, cmt)
+	}
+
+	return nil
 }

@@ -23,6 +23,11 @@ message Node {
   optional Commit commit = 5;
 }
 
+// Just a collection of nodes:
+message Nodes {
+  repeated Node nodes = 1;
+}
+
 // TODO: Move some of the attrs to the common node (file_size, hash, parent)?
 
 message File {
@@ -48,28 +53,19 @@ message Directory {
     repeated string names = 7;
 }
 
-// Dirent is like a file, but does not include sensitive information.
-// TODO: remove this
-message Dirent {
-    required string path = 1;
-    required int64 file_size = 2;
-    required int32 kind = 3;
-    required bytes mod_time = 4;
-}
-
-message Dirlist {
-  // TODO: replace with Object
-    repeated Dirent entries = 1;
-}
-
 message Checkpoint {
-    required uint64 id = 1;
-    required bytes hash = 2;
-    required uint64 index = 3;
-    required int32 change = 4;
-    required string author = 5;
+  // Link to the node id:
+  required uint64 id_link = 1;
+  required bytes hash = 2;
+  required uint64 index = 3;
+  required int32 change = 4;
+  required string author = 5;
+
+  // TODO: Should include a hash/mac on itself,
+  //       so forgery is not possible/harder.
 }
 
+// History is the history of a file:
 message History {
     repeated Checkpoint hist = 1 [packed=false];
 }
@@ -93,6 +89,11 @@ message Merge {
     required bytes hash = 2;
 }
 
+message CheckpointLink {
+  required uint64 id_link = 1;
+  required uint64 index = 2;
+}
+
 // Commit is a bag of changes, either automatically done
 // or by the user.
 message Commit {
@@ -102,8 +103,7 @@ message Commit {
     required bytes hash = 4;
     required bytes root = 5;
 
-    // List of checkpoints:
-    repeated Checkpoint checkpoints = 6;
+    repeated CheckpointLink changeset = 6;
 
     // Link to parent hash (empty for initial commit):
     optional bytes parent_hash = 7;

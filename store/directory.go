@@ -25,9 +25,9 @@ type Directory struct {
 	fs *FS
 }
 
-// emptyDirectory creates a new empty directory that is not yet present
+// newEmptyDirectory creates a new empty directory that is not yet present
 // in the store. It should not be used directtly.
-func emptyDirectory(fs *FS, parent *Directory, name string) (*Directory, error) {
+func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, error) {
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 

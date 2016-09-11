@@ -10,15 +10,15 @@
 
 	It has these top-level messages:
 		Node
+		Nodes
 		File
 		Directory
-		Dirent
-		Dirlist
 		Checkpoint
 		History
 		Pack
 		Store
 		Merge
+		CheckpointLink
 		Commit
 		Commits
 		Ref
@@ -127,6 +127,23 @@ func (m *Node) GetDirectory() *Directory {
 func (m *Node) GetCommit() *Commit {
 	if m != nil {
 		return m.Commit
+	}
+	return nil
+}
+
+// Just a collection of nodes:
+type Nodes struct {
+	Nodes            []*Node `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Nodes) Reset()         { *m = Nodes{} }
+func (m *Nodes) String() string { return proto.CompactTextString(m) }
+func (*Nodes) ProtoMessage()    {}
+
+func (m *Nodes) GetNodes() []*Node {
+	if m != nil {
+		return m.Nodes
 	}
 	return nil
 }
@@ -253,80 +270,26 @@ func (m *Directory) GetNames() []string {
 	return nil
 }
 
-// Dirent is like a file, but does not include sensitive information.
-// TODO: remove this
-type Dirent struct {
-	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
-	FileSize         *int64  `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
-	Kind             *int32  `protobuf:"varint,3,req,name=kind" json:"kind,omitempty"`
-	ModTime          []byte  `protobuf:"bytes,4,req,name=mod_time" json:"mod_time,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Dirent) Reset()         { *m = Dirent{} }
-func (m *Dirent) String() string { return proto.CompactTextString(m) }
-func (*Dirent) ProtoMessage()    {}
-
-func (m *Dirent) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *Dirent) GetFileSize() int64 {
-	if m != nil && m.FileSize != nil {
-		return *m.FileSize
-	}
-	return 0
-}
-
-func (m *Dirent) GetKind() int32 {
-	if m != nil && m.Kind != nil {
-		return *m.Kind
-	}
-	return 0
-}
-
-func (m *Dirent) GetModTime() []byte {
-	if m != nil {
-		return m.ModTime
-	}
-	return nil
-}
-
-type Dirlist struct {
-	// TODO: replace with Object
-	Entries          []*Dirent `protobuf:"bytes,1,rep,name=entries" json:"entries,omitempty"`
-	XXX_unrecognized []byte    `json:"-"`
-}
-
-func (m *Dirlist) Reset()         { *m = Dirlist{} }
-func (m *Dirlist) String() string { return proto.CompactTextString(m) }
-func (*Dirlist) ProtoMessage()    {}
-
-func (m *Dirlist) GetEntries() []*Dirent {
-	if m != nil {
-		return m.Entries
-	}
-	return nil
-}
-
 type Checkpoint struct {
-	Hash             []byte  `protobuf:"bytes,1,req,name=hash" json:"hash,omitempty"`
-	ModTime          []byte  `protobuf:"bytes,2,req,name=mod_time" json:"mod_time,omitempty"`
-	FileSize         *int64  `protobuf:"varint,3,req,name=file_size" json:"file_size,omitempty"`
+	// Link to the node id:
+	IdLink           *uint64 `protobuf:"varint,1,req,name=id_link" json:"id_link,omitempty"`
+	Hash             []byte  `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
+	Index            *uint64 `protobuf:"varint,3,req,name=index" json:"index,omitempty"`
 	Change           *int32  `protobuf:"varint,4,req,name=change" json:"change,omitempty"`
 	Author           *string `protobuf:"bytes,5,req,name=author" json:"author,omitempty"`
-	Path             *string `protobuf:"bytes,6,req,name=path" json:"path,omitempty"`
-	OldPath          *string `protobuf:"bytes,7,req,name=old_path" json:"old_path,omitempty"`
-	Index            *uint64 `protobuf:"varint,8,req,name=index" json:"index,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
 func (m *Checkpoint) Reset()         { *m = Checkpoint{} }
 func (m *Checkpoint) String() string { return proto.CompactTextString(m) }
 func (*Checkpoint) ProtoMessage()    {}
+
+func (m *Checkpoint) GetIdLink() uint64 {
+	if m != nil && m.IdLink != nil {
+		return *m.IdLink
+	}
+	return 0
+}
 
 func (m *Checkpoint) GetHash() []byte {
 	if m != nil {
@@ -335,16 +298,9 @@ func (m *Checkpoint) GetHash() []byte {
 	return nil
 }
 
-func (m *Checkpoint) GetModTime() []byte {
-	if m != nil {
-		return m.ModTime
-	}
-	return nil
-}
-
-func (m *Checkpoint) GetFileSize() int64 {
-	if m != nil && m.FileSize != nil {
-		return *m.FileSize
+func (m *Checkpoint) GetIndex() uint64 {
+	if m != nil && m.Index != nil {
+		return *m.Index
 	}
 	return 0
 }
@@ -363,27 +319,7 @@ func (m *Checkpoint) GetAuthor() string {
 	return ""
 }
 
-func (m *Checkpoint) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *Checkpoint) GetOldPath() string {
-	if m != nil && m.OldPath != nil {
-		return *m.OldPath
-	}
-	return ""
-}
-
-func (m *Checkpoint) GetIndex() uint64 {
-	if m != nil && m.Index != nil {
-		return *m.Index
-	}
-	return 0
-}
-
+// History is the history of a file:
 type History struct {
 	Hist             []*Checkpoint `protobuf:"bytes,1,rep,name=hist" json:"hist,omitempty"`
 	XXX_unrecognized []byte        `json:"-"`
@@ -476,16 +412,39 @@ func (m *Merge) GetHash() []byte {
 	return nil
 }
 
+type CheckpointLink struct {
+	IdLink           *uint64 `protobuf:"varint,1,req,name=id_link" json:"id_link,omitempty"`
+	Index            *uint64 `protobuf:"varint,2,req,name=index" json:"index,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *CheckpointLink) Reset()         { *m = CheckpointLink{} }
+func (m *CheckpointLink) String() string { return proto.CompactTextString(m) }
+func (*CheckpointLink) ProtoMessage()    {}
+
+func (m *CheckpointLink) GetIdLink() uint64 {
+	if m != nil && m.IdLink != nil {
+		return *m.IdLink
+	}
+	return 0
+}
+
+func (m *CheckpointLink) GetIndex() uint64 {
+	if m != nil && m.Index != nil {
+		return *m.Index
+	}
+	return 0
+}
+
 // Commit is a bag of changes, either automatically done
 // or by the user.
 type Commit struct {
-	Message *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	Author  *string `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
-	ModTime []byte  `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
-	Hash    []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
-	Root    []byte  `protobuf:"bytes,5,req,name=root" json:"root,omitempty"`
-	// List of checkpoints:
-	Checkpoints []*Checkpoint `protobuf:"bytes,6,rep,name=checkpoints" json:"checkpoints,omitempty"`
+	Message   *string           `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
+	Author    *string           `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
+	ModTime   []byte            `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
+	Hash      []byte            `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
+	Root      []byte            `protobuf:"bytes,5,req,name=root" json:"root,omitempty"`
+	Changeset []*CheckpointLink `protobuf:"bytes,6,rep,name=changeset" json:"changeset,omitempty"`
 	// Link to parent hash (empty for initial commit):
 	ParentHash []byte `protobuf:"bytes,7,opt,name=parent_hash" json:"parent_hash,omitempty"`
 	// Merge information if this is a merge commit.
@@ -532,9 +491,9 @@ func (m *Commit) GetRoot() []byte {
 	return nil
 }
 
-func (m *Commit) GetCheckpoints() []*Checkpoint {
+func (m *Commit) GetChangeset() []*CheckpointLink {
 	if m != nil {
-		return m.Checkpoints
+		return m.Changeset
 	}
 	return nil
 }
@@ -596,15 +555,15 @@ func (m *Ref) GetHash() []byte {
 
 func init() {
 	proto.RegisterType((*Node)(nil), "brig.store.Node")
+	proto.RegisterType((*Nodes)(nil), "brig.store.Nodes")
 	proto.RegisterType((*File)(nil), "brig.store.File")
 	proto.RegisterType((*Directory)(nil), "brig.store.Directory")
-	proto.RegisterType((*Dirent)(nil), "brig.store.Dirent")
-	proto.RegisterType((*Dirlist)(nil), "brig.store.Dirlist")
 	proto.RegisterType((*Checkpoint)(nil), "brig.store.Checkpoint")
 	proto.RegisterType((*History)(nil), "brig.store.History")
 	proto.RegisterType((*Pack)(nil), "brig.store.Pack")
 	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterType((*Merge)(nil), "brig.store.Merge")
+	proto.RegisterType((*CheckpointLink)(nil), "brig.store.CheckpointLink")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
 	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
@@ -668,6 +627,39 @@ func (m *Node) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n3
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Nodes) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Nodes) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Nodes) > 0 {
+		for _, msg := range m.Nodes {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -822,90 +814,6 @@ func (m *Directory) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Dirent) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Dirent) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Path == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
-		i += copy(data[i:], *m.Path)
-	}
-	if m.FileSize == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x10
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.FileSize))
-	}
-	if m.Kind == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x18
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.Kind))
-	}
-	if m.ModTime == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x22
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
-		i += copy(data[i:], m.ModTime)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Dirlist) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Dirlist) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Entries) > 0 {
-		for _, msg := range m.Entries {
-			data[i] = 0xa
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
 func (m *Checkpoint) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -921,28 +829,27 @@ func (m *Checkpoint) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Hash == nil {
+	if m.IdLink == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
-		data[i] = 0xa
+		data[i] = 0x8
 		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
-		i += copy(data[i:], m.Hash)
+		i = encodeVarintStore(data, i, uint64(*m.IdLink))
 	}
-	if m.ModTime == nil {
+	if m.Hash == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x12
 		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
-		i += copy(data[i:], m.ModTime)
+		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
+		i += copy(data[i:], m.Hash)
 	}
-	if m.FileSize == nil {
+	if m.Index == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x18
 		i++
-		i = encodeVarintStore(data, i, uint64(*m.FileSize))
+		i = encodeVarintStore(data, i, uint64(*m.Index))
 	}
 	if m.Change == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -958,29 +865,6 @@ func (m *Checkpoint) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintStore(data, i, uint64(len(*m.Author)))
 		i += copy(data[i:], *m.Author)
-	}
-	if m.Path == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x32
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
-		i += copy(data[i:], *m.Path)
-	}
-	if m.OldPath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x3a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.OldPath)))
-		i += copy(data[i:], *m.OldPath)
-	}
-	if m.Index == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x40
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.Index))
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1148,6 +1032,41 @@ func (m *Merge) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CheckpointLink) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CheckpointLink) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.IdLink == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.IdLink))
+	}
+	if m.Index == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x10
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.Index))
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Commit) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1203,8 +1122,8 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintStore(data, i, uint64(len(m.Root)))
 		i += copy(data[i:], m.Root)
 	}
-	if len(m.Checkpoints) > 0 {
-		for _, msg := range m.Checkpoints {
+	if len(m.Changeset) > 0 {
+		for _, msg := range m.Changeset {
 			data[i] = 0x32
 			i++
 			i = encodeVarintStore(data, i, uint64(msg.Size()))
@@ -1361,6 +1280,21 @@ func (m *Node) Size() (n int) {
 	return n
 }
 
+func (m *Nodes) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Nodes) > 0 {
+		for _, e := range m.Nodes {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *File) Size() (n int) {
 	var l int
 	_ = l
@@ -1433,57 +1367,18 @@ func (m *Directory) Size() (n int) {
 	return n
 }
 
-func (m *Dirent) Size() (n int) {
-	var l int
-	_ = l
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.FileSize != nil {
-		n += 1 + sovStore(uint64(*m.FileSize))
-	}
-	if m.Kind != nil {
-		n += 1 + sovStore(uint64(*m.Kind))
-	}
-	if m.ModTime != nil {
-		l = len(m.ModTime)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Dirlist) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Entries) > 0 {
-		for _, e := range m.Entries {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *Checkpoint) Size() (n int) {
 	var l int
 	_ = l
+	if m.IdLink != nil {
+		n += 1 + sovStore(uint64(*m.IdLink))
+	}
 	if m.Hash != nil {
 		l = len(m.Hash)
 		n += 1 + l + sovStore(uint64(l))
 	}
-	if m.ModTime != nil {
-		l = len(m.ModTime)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.FileSize != nil {
-		n += 1 + sovStore(uint64(*m.FileSize))
+	if m.Index != nil {
+		n += 1 + sovStore(uint64(*m.Index))
 	}
 	if m.Change != nil {
 		n += 1 + sovStore(uint64(*m.Change))
@@ -1491,17 +1386,6 @@ func (m *Checkpoint) Size() (n int) {
 	if m.Author != nil {
 		l = len(*m.Author)
 		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.OldPath != nil {
-		l = len(*m.OldPath)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Index != nil {
-		n += 1 + sovStore(uint64(*m.Index))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1577,6 +1461,21 @@ func (m *Merge) Size() (n int) {
 	return n
 }
 
+func (m *CheckpointLink) Size() (n int) {
+	var l int
+	_ = l
+	if m.IdLink != nil {
+		n += 1 + sovStore(uint64(*m.IdLink))
+	}
+	if m.Index != nil {
+		n += 1 + sovStore(uint64(*m.Index))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Commit) Size() (n int) {
 	var l int
 	_ = l
@@ -1600,8 +1499,8 @@ func (m *Commit) Size() (n int) {
 		l = len(m.Root)
 		n += 1 + l + sovStore(uint64(l))
 	}
-	if len(m.Checkpoints) > 0 {
-		for _, e := range m.Checkpoints {
+	if len(m.Changeset) > 0 {
+		for _, e := range m.Changeset {
 			l = e.Size()
 			n += 1 + l + sovStore(uint64(l))
 		}
@@ -1857,6 +1756,88 @@ func (m *Node) Unmarshal(data []byte) error {
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Nodes) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Nodes: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Nodes: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nodes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Nodes = append(m.Nodes, &Node{})
+			if err := m.Nodes[len(m.Nodes)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
 	}
 
 	if iNdEx > l {
@@ -2358,254 +2339,6 @@ func (m *Directory) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Dirent) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Dirent: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Dirent: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Path = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
-			}
-			var v int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.FileSize = &v
-			hasFields[0] |= uint64(0x00000002)
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
-			}
-			var v int32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Kind = &v
-			hasFields[0] |= uint64(0x00000004)
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000008)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Dirlist) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Dirlist: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Dirlist: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Entries = append(m.Entries, &Dirent{})
-			if err := m.Entries[len(m.Entries)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *Checkpoint) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -2637,6 +2370,27 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdLink", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IdLink = &v
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
 			}
@@ -2664,41 +2418,12 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			}
 			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
 			}
-			var v int64
+			var v uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -2708,12 +2433,12 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int64(b) & 0x7F) << shift
+				v |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.FileSize = &v
+			m.Index = &v
 			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 0 {
@@ -2767,89 +2492,6 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 			m.Author = &s
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000010)
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Path = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000020)
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OldPath", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.OldPath = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000040)
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
-			}
-			var v uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Index = &v
-			hasFields[0] |= uint64(0x00000080)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -2879,15 +2521,6 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000010) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000020) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000040) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000080) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -3342,6 +2975,106 @@ func (m *Merge) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *CheckpointLink) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CheckpointLink: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CheckpointLink: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdLink", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IdLink = &v
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Index = &v
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Commit) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -3523,7 +3256,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000010)
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Changeset", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3547,8 +3280,8 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Checkpoints = append(m.Checkpoints, &Checkpoint{})
-			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			m.Changeset = append(m.Changeset, &CheckpointLink{})
+			if err := m.Changeset[len(m.Changeset)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

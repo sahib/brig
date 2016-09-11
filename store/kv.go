@@ -25,10 +25,9 @@ type Bucket interface {
 	Get(key string) ([]byte, error)
 	Put(key string, data []byte) error
 	Bucket(path []string) (Bucket, error)
-
-	// TODO:
-	// Clear() error
-	// CopyTo(b Bucket) error
+	Foreach(fn func(key string, value []byte) error) error
+	Clear() error
+	CopyTo(b Bucket) error
 }
 
 func findBucket(kv KV, path string) (Bucket, string, error) {
@@ -194,6 +193,62 @@ func (bb *BoltBucket) Get(key string) (data []byte, err error) {
 func (bb *BoltBucket) Put(key string, data []byte) error {
 	return bb.dig(bb.path, true, func(bucket *bolt.Bucket) error {
 		return bucket.Put([]byte(key), data)
+	})
+}
+
+func (bb *BoltBucket) Foreach(fn func(key string, value []byte) error) error {
+	return bb.dig(bb.path, false, func(bkt *bolt.Bucket) error {
+		cur := bkt.Cursor()
+		for key, val := cur.First(); key != nil; key, val = cur.Next() {
+			var copyValue []byte
+
+			if val != nil {
+				copyValue := make([]byte, len(val))
+				copy(copyValue, val)
+			}
+
+			if err := fn(string(key), copyValue); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func (bb *BoltBucket) CopyTo(other Bucket) error {
+	data := [][]byte{}
+
+	err := bb.Foreach(func(key string, value []byte) error {
+		data = append(data, []byte(key), value)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return other.dig(other.path, true, func(bkt *bolt.Bucket) error {
+		for _, elem := range data {
+			if err := bkt.Put(elem[0], elem[1]); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	})
+}
+
+func (bb *BoltBucket) Clear() error {
+	if len(bb.path) < 1 {
+		return ErrEmptyPath
+	}
+
+	dirname := bb.path[:len(bb.path)-1]
+	basename := bb.path[len(bb.path)-1]
+
+	return bb.dig(dirname, true, func(parBkt *bolt.Bucket) error {
+		return parBkt.DeleteBucket(basename)
 	})
 }
 

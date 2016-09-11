@@ -9,7 +9,8 @@ package store
 // stage/objects/<NODE_HASH>           => NODE_METADATA
 // stage/tree/<FULL_NODE_PATH>         => NODE_HASH
 // stage/checkpoints/<NODE_HASH>/<IDX> => CHECKPOINT_DATA
-// ident/<CURR>
+// stats/node-count/<COUNT>            => UINT64
+// metadata/
 //
 // NODE is either a Commit, a Directory or a File.
 // FULL_NODE_PATH may contain slashes and in case of directories,
@@ -119,7 +120,7 @@ func NewFilesystem(kv KV) *FS {
 
 // TODO: is uint64 enough? Probably...
 func (fs *FS) NextID() (uint64, error) {
-	bkt, err := fs.kv.Bucket([]string{"metadata"})
+	bkt, err := fs.kv.Bucket([]string{"stats"})
 	if err != nil {
 		return 0, err
 	}
@@ -321,8 +322,73 @@ func (fs *FS) StageNode(nd Node) error {
 	return nil
 }
 
-func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
+/////////////////////////
+// CHECKPOINT HANDLING //
+/////////////////////////
 
+func (fs *FS) History(IDLink uint64) (History, error) {
+	key := strconv.FormatUint(IDLink, 16)
+	history := []History{}
+
+	btkPaths := [][]string{
+		[]string{"checkpoints", key},
+		[]string{"stage", "checkpoints", key},
+	}
+
+	for _, bktPath := range btkPaths {
+		bkt, err := fs.kv.Bucket(bktPath)
+		if err != nil {
+			return nil, err
+		}
+
+		err = bkt.Foreach(func(key string, value []byte) error {
+			ckp := newEmptyCheckpoint()
+			if err := ckp.Unmarshal(value); err != nil {
+				return err
+			}
+
+			history = append(history, ckp)
+			return nil
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Sort the history by the checkpoint indices.
+	// This is likely not needed, just to be sure...
+	sort.Sort(&history)
+	return history, nil
+}
+
+func (fs *FS) HistoryByPath(nodePath string) (History, error) {
+	nd, err := fs.ResolveNode(nodePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.History(nd.ID())
+}
+
+func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
+	pckp, err := ckp.ToProto()
+	if err != nil {
+		return err
+	}
+
+	data, err := proto.Marshal(pckp)
+	if err != nil {
+		return err
+	}
+
+	bkt, err := fs.kv.Bucket([]string{"stage", "checkpoints"})
+	if err != nil {
+		return err
+	}
+
+	key := strconv.FormatUint(pckp.GetIdLink(), 16)
+	return bkt.Put(key, data)
 }
 
 /////////////////////
@@ -330,10 +396,64 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 /////////////////////
 
 func (fs *FS) SubmitCommit(cm *Commit) error {
-	// TODO: Copy everything in stage/objects and stage/tree to
+	// TODO: Copy everything in stage/objects, stage/tree, stage/checkpoints to
 	//       objects/ and tree/. Also make a commit of all current checkpoints.
 	//       Update HEAD when done.
-	return nil, nil
+	head, err := fs.Head()
+	if err != nil {
+		return err
+	}
+
+	if cm.Root().Equal(head.Root()) {
+		return ErrNoChange
+	}
+
+	copyList := [][]string{
+		[]string{"stage", "objects"},
+		[]string{"stage", "tree"},
+	}
+
+	ckBkt, err := fs.kv.Bucket([]string{"stage", "checkpoints"})
+	if err != nil {
+		return err
+	}
+
+	err = ckBkt.Foreach(func(key string, _ []byte) error {
+		copyList = append(copyList, []string{"stage", "checkpoints", key})
+		// TODO: Remember checkpointlinks for this commit
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// TODO: go over copyList and copy + clear
+
+	return fs.SaveRef("HEAD", cm)
+}
+
+///////////////////////
+// METADATA HANDLING //
+///////////////////////
+
+// TODO: use this for owner / db-version / etc.
+func (fs *FS) MetadataPut(key string, value []byte) error {
+	bkt, err := fs.kv.Bucket([]string{"metadata"})
+	if err != nil {
+		return err
+	}
+
+	return bkt.Put(key, []byte(value))
+}
+
+func (fs *FS) MetadataGet(key string) ([]byte, error) {
+	bkt, err := fs.kv.Bucket([]string{"metadata"})
+	if err != nil {
+		return err
+	}
+
+	return bkt.Get(key)
 }
 
 ////////////////////////
@@ -341,6 +461,7 @@ func (fs *FS) SubmitCommit(cm *Commit) error {
 ////////////////////////
 
 func (fs *FS) ResolveRef(refname string) (Node, error) {
+	refname = strings.ToLower(refname)
 	bkt, err := fs.kv.Bucket([]string{"refs"})
 	if err != nil {
 		return nil, err
@@ -360,6 +481,7 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 }
 
 func (fs *FS) SaveRef(refname string, nd Node) error {
+	refname = strings.ToLower(refname)
 	bkt, err := fs.kv.Bucket([]string{"refs"})
 	if err != nil {
 		return nil, err
@@ -383,11 +505,37 @@ func (fs *FS) Head() (*Commit, error) {
 	return cmt, nil
 }
 
+func (fs *FS) Root() (*Directory, error) {
+	nd, err := fs.ResolveDirectory("/")
+	if err != nil {
+		return nil, err
+	}
+
+	return newEmptyDirectory(fs, nil, "/")
+}
+
+func (fs *FS) Status() (*Commit, error) {
+	cmt, err := newEmptyCommit(fs, "") // TODO: Author?
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := fs.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	cmt.SetRoot(root)
+
+	return cmt, nil
+}
+
 func (fs *FS) RemoveUnreffedNodes() error {
 	// TODO: This is a NO-OP currently.
 	// In future this needs to be called periodically and do the following:
 	// - Go through all commits and remember all hashes of all trees.
 	// - Go through all hash-buckets and delete all unreffed hashes.
+	// - Also delete checkpoints of removed files.
 	return nil
 }
 
@@ -437,7 +585,7 @@ func (fs *FS) FileByHash(hash *Hash) (*File, error) {
 	return file, nil
 }
 
-func (fs *FS) FileByHash(filepath string) (*File, error) {
+func (fs *FS) ResolveFile(filepath string) (*File, error) {
 	nd, err := fs.ResolveNode(filepath)
 	if err != nil {
 		return nil, err
