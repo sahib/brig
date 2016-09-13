@@ -1,13 +1,9 @@
 package store
 
 import (
-	"encoding/binary"
 	"fmt"
-	"sort"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/gogo/protobuf/proto"
@@ -66,7 +62,7 @@ func (c *ChangeType) Marshal() ([]byte, error) {
 		return nil, fmt.Errorf("Bad change type `%d`", *c)
 	}
 
-	return []byte(dec)
+	return []byte(dec), nil
 }
 
 func (c *ChangeType) Unmarshal(data []byte) error {
@@ -92,9 +88,6 @@ type Checkpoint struct {
 	// Index is a a unique counter on the number of checkpoints
 	index uint64
 
-	// ModTime is the time the checkpoint was made.
-	modTime time.Time
-
 	// Size is the size of the file in bytes at this point.
 	// Change is the detailed type of the modification.
 	change ChangeType
@@ -111,6 +104,7 @@ func (c *Checkpoint) String() string {
 		c.index,
 		c.change.String(),
 		c.hash.B58String(),
+	)
 }
 
 func newEmptyCheckpoint() *Checkpoint {
@@ -119,37 +113,19 @@ func newEmptyCheckpoint() *Checkpoint {
 }
 
 func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
-	mtimeBin, err := cp.ModTime.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-
-	protoCheck := &wire.Checkpoint{
-		IdLink:   proto.Uint64(cp.idLink),
-		Hash:     cp.hash.Bytes(),
-		ModTime:  mtimeBin,
-		Change:   proto.Int32(int32(cp.change)),
-		Author:   proto.String(string(cp.author)),
-		Index:    proto.Uint64(cp.index),
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return protoCheck, nil
+	return &wire.Checkpoint{
+		IdLink: proto.Uint64(cp.idLink),
+		Hash:   cp.hash.Bytes(),
+		Change: proto.Int32(int32(cp.change)),
+		Author: proto.String(string(cp.author)),
+		Index:  proto.Uint64(cp.index),
+	}, nil
 }
 
 // TODO: consistent UnmarshalProto/MarshalProto functions.
 
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
-	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(msg.GetModTime()); err != nil {
-		return err
-	}
-
 	cp.hash = &Hash{msg.GetHash()}
-	cp.modTime = modTime
 	cp.change = ChangeType(msg.GetChange())
 	cp.index = msg.GetIndex()
 
@@ -188,7 +164,7 @@ func (cp *Checkpoint) Unmarshal(data []byte) error {
 
 type CheckpointLink struct {
 	IDLink uint64
-	Index uint64
+	Index  uint64
 }
 
 func (cl *CheckpointLink) String() string {
@@ -204,7 +180,7 @@ func (cl *CheckpointLink) FromProto(pcl *wire.CheckpointLink) error {
 func (cl *CheckpointLink) ToProto() (*wire.CheckpointLink, error) {
 	return &wire.CheckpointLink{
 		IdLink: proto.Uint64(cl.IDLink),
-		Index: proto.Uint64(cl.Index),
+		Index:  proto.Uint64(cl.Index),
 	}, nil
 }
 
@@ -215,7 +191,7 @@ func (cl *CheckpointLink) Resolve(fs *FS) (*Checkpoint, error) {
 		return nil, err
 	}
 
-	ckp := hist.At(cl.Index)
+	ckp := hist.At(int(cl.Index))
 	if ckp == nil {
 		return nil, fmt.Errorf("Invalid checkpoint-link %s", cl.String())
 	}
@@ -237,7 +213,7 @@ func (hy *History) Len() int {
 }
 
 func (hy *History) Less(i, j int) bool {
-	return (*hy)[i].Index < (*hy)[j].Index
+	return (*hy)[i].index < (*hy)[j].index
 }
 
 func (hy *History) Swap(i, j int) {
@@ -299,31 +275,31 @@ func (hy *History) Unmarshal(data []byte) error {
 // At is like the normal array subscription, but does not crash when
 // getting passed an invalid index. If the index is invalid, nil is returned.
 func (hy *History) At(index int) *Checkpoint {
-	if index < 0 || index >= len(hy) {
+	if index < 0 || index >= len(*hy) {
 		return nil
 	}
 
-	return hy[index]
+	return (*hy)[index]
 }
 
-func (ckp *Checkpoint) Fork(author id.ID, old, new Node) (*Checkpoint, error){
+func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPath string) (*Checkpoint, error) {
 	var change ChangeType
 	var hash *Hash
 
-	if old == nil {
-		change, hash = ChangeAdd, new.Hash()
-	} else if new == nil {
-		change, hash = ChangeRemove, old.Hash()
-	} else if new.hash.Equal(old.hash) == false {
-		change, hash = ChangeModify, new.Hash()
-	} else if nodePath(old) != nodePath(new) {
-		change, hash = ChangeMove, new.Hash()
+	if oldHash == nil {
+		change, hash = ChangeAdd, newHash
+	} else if newHash == nil {
+		change, hash = ChangeRemove, oldHash
+	} else if newHash.Equal(oldHash) == false {
+		change, hash = ChangeModify, newHash
+	} else if oldPath != newPath {
+		change, hash = ChangeMove, newHash
 	} else {
 		return nil, ErrNoChange
 	}
 
-	var idLink int
-	var index int
+	var idLink uint64
+	var index uint64
 
 	if ckp != nil {
 		idLink = ckp.idLink
@@ -332,10 +308,9 @@ func (ckp *Checkpoint) Fork(author id.ID, old, new Node) (*Checkpoint, error){
 
 	return &Checkpoint{
 		idLink: idLink,
-		index: index + 1,
-		hash:    hash,
-		modTime: time.Now(),
-		change:  change,
-		author:  author,
+		index:  index + 1,
+		hash:   hash,
+		change: change,
+		author: author,
 	}, nil
 }

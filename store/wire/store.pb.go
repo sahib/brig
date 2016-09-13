@@ -153,7 +153,7 @@ type File struct {
 	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
 	Hash     []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
 	Parent   []byte  `protobuf:"bytes,4,req,name=parent" json:"parent,omitempty"`
-	FileSize *int64  `protobuf:"varint,5,req,name=file_size" json:"file_size,omitempty"`
+	FileSize *uint64 `protobuf:"varint,5,req,name=file_size" json:"file_size,omitempty"`
 	// Timestamp formated as RFC 3339
 	ModTime          []byte `protobuf:"bytes,6,req,name=mod_time" json:"mod_time,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
@@ -191,7 +191,7 @@ func (m *File) GetParent() []byte {
 	return nil
 }
 
-func (m *File) GetFileSize() int64 {
+func (m *File) GetFileSize() uint64 {
 	if m != nil && m.FileSize != nil {
 		return *m.FileSize
 	}
@@ -1995,7 +1995,7 @@ func (m *File) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
 			}
-			var v int64
+			var v uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -2005,7 +2005,7 @@ func (m *File) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int64(b) & 0x7F) << shift
+				v |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

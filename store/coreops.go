@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
@@ -46,36 +45,81 @@ func IsNoSuchFileError(err error) bool {
 }
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
-func (st *Store) Mkdir(repoPath string) (*File, error) {
+func (st *Store) Mkdir(repoPath string) (*Directory, error) {
 	return st.mkdir(repoPath, false)
 }
 
 // MkdirAll is like Mkdir but creates intermediate directories conviniently.
-func (st *Store) MkdirAll(repoPath string) (*File, error) {
+func (st *Store) MkdirAll(repoPath string) (*Directory, error) {
 	return st.mkdir(repoPath, true)
 }
 
-func (st *Store) mkdir(repoPath string, createParents bool) (*File, error) {
-	if createParents {
-		if err := st.mkdirParents(repoPath); err != nil {
+func (st *Store) mkdirParents(path string) (*Directory, error) {
+	elems := strings.Split(path, "/")
+
+	for idx := 1; idx < len(elems)-1; idx++ {
+		dirname := strings.Join(elems[:idx+1], "/")
+		dir, err := st.mkdir(dirname, false)
+
+		if err != nil {
+			log.Warningf("store-add: failed to create intermediate dir `%s`: %v", dirname, err)
 			return nil, err
 		}
-	} else {
-		// Check if the parent exists.
-		// (would result in weird undefined intermediates otherwise)
-		parentPath := path.Dir(repoPath)
-		if parent := st.Root.Lookup(parentPath); parent == nil {
-			return nil, NoSuchFile(parentPath)
+
+		// Return it, if it's the last path component:
+		if idx+1 == len(elems)-1 {
+			return dir, nil
 		}
 	}
 
-	dir, err := NewDir(st, prefixSlash(repoPath))
+	return nil, fmt.Errorf("Empty path")
+}
+
+func (st *Store) mkdir(repoPath string, createParents bool) (*Directory, error) {
+	dirname, basename := path.Split(repoPath)
+
+	// Check if the parent exists.
+	// (would result in weird undefined intermediates otherwise)
+	parent, err := st.fs.ResolveDirectory(dirname)
 	if err != nil {
 		return nil, err
 	}
 
-	dir.sync()
-	return dir, err
+	// If it's nil, we might need to create it:
+	if parent == nil {
+		if !createParents {
+			return nil, NoSuchFile(dirname)
+		}
+
+		parent, err = st.mkdirParents(repoPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	child, err := parent.Child(basename)
+	if err != nil {
+		return nil, err
+	}
+
+	if child.GetType() != NodeTypeDirectory {
+		return nil, fmt.Errorf("`%s` exists and is not a directory", repoPath)
+	} else {
+		// Notthing to do really. Return the old child.
+		return child.(*Directory), nil
+	}
+
+	// Create it then!
+	dir, err := newEmptyDirectory(st.fs, parent, basename)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := st.fs.StageNode(dir); err != nil {
+		return nil, err
+	}
+
+	return dir, nil
 }
 
 // Add reads the data at the physical path `filePath` and adds it to the store
@@ -110,7 +154,7 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 		case mode.IsDir():
 			_, err = st.Mkdir(currPath)
 		default:
-			log.Warningf("Recursive add: Ignoring weird file: %v")
+			log.Warningf("Recursive add: Ignoring weird file type: %v")
 			return nil
 		}
 
@@ -128,20 +172,6 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 	return walkErr
 }
 
-func (st *Store) mkdirParents(path string) error {
-	elems := strings.Split(path, "/")
-
-	for idx := 1; idx < len(elems)-1; idx++ {
-		dir := strings.Join(elems[:idx+1], "/")
-		if _, err := st.Mkdir(dir); err != nil {
-			log.Warningf("store-add: failed to create intermediate dir `%s`: %v", dir, err)
-			return err
-		}
-	}
-
-	return nil
-}
-
 // AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
 func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
@@ -152,7 +182,10 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	defer st.mu.Unlock()
 
 	// Check if the file was already added:
-	file := st.Root.Lookup(repoPath)
+	file, err := st.fs.ResolveFile(repoPath)
+	if err != nil {
+		return err
+	}
 
 	if file != nil {
 		// We know this file already.
@@ -160,13 +193,18 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 			"file": repoPath,
 		}).Info("File exists; modifying.")
 	} else {
-		if err := st.mkdirParents(repoPath); err != nil {
+		parent, err := st.mkdirParents(repoPath)
+		if err != nil {
 			return err
 		}
 
 		// Create a new file at specified path:
-		newFile, err := NewFile(st, repoPath)
+		newFile, err := newEmptyFile(st.fs, path.Base(repoPath))
 		if err != nil {
+			return err
+		}
+
+		if err := parent.Add(parent); err != nil {
 			return err
 		}
 
@@ -194,11 +232,11 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	}
 
 	return st.insertMetadata(
-		file, repoPath, &Hash{mhash}, initialAdd, int64(sizeAcc.Size()),
+		file, repoPath, &Hash{mhash}, initialAdd, sizeAcc.Size(),
 	)
 }
 
-func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size int64) error {
+func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size uint64) error {
 	log.Infof(
 		"store-add: %s (hash: %s, key: %x)",
 		repoPath,
@@ -206,67 +244,48 @@ func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, init
 		file.Key()[10:], // TODO: Make omit() a util func
 	)
 
-	file.Lock()
-	defer file.Unlock()
-
 	// Update metadata that might have changed:
 	if file.hash.Equal(newHash) {
 		log.Debugf("Refusing update.")
 		return ErrNoChange
 	}
 
-	oldMeta := file.Metadata
+	oldHash := file.Hash().Clone()
 	if initialAdd {
-		oldMeta = nil
-	} else {
-		// Remove the current hash from the merkle tree
-		// before setting the new one:
-		file.purgeHash()
+		oldHash = nil
 	}
 
-	file.Metadata = &Metadata{
-		size:    size,
-		modTime: time.Now(),
-		hash:    newHash,
-		key:     file.Metadata.key,
-		kind:    FileTypeRegular,
-	}
-
-	file.updateParents()
+	file.SetSize(size)
+	file.SetModTime(time.Now())
+	file.SetHash(newHash)
 
 	// Create a checkpoint in the version history.
-	if err := st.MakeCheckpoint(oldMeta, file.Metadata, repoPath, repoPath); err != nil {
+	if err := st.makeCheckpoint(file.ID(), oldHash, newHash, repoPath, repoPath); err != nil {
 		return err
 	}
 
-	// If all went well, save it to bolt.
-	// This will also sync intermediate directories.
-	file.sync()
-	return nil
+	return st.fs.StageNode(file)
 }
 
 func (st *Store) pinOp(repoPath string, doUnpin bool) error {
-	node := st.Root.Lookup(repoPath)
+	node, err := st.fs.ResolveNode(repoPath)
+	if err != nil {
+		return err
+	}
+
 	if node == nil {
 		return NoSuchFile(repoPath)
 	}
 
-	var pinMe []*File
+	var pinMe []Node
 
-	switch kind := node.Kind(); kind {
-	case FileTypeDir:
-		node.Walk(true, func(child *File) bool {
-			if child.kind == FileTypeRegular {
-				pinMe = append(pinMe, child)
-			}
+	err = Walk(node, true, func(child Node) error {
+		if child.GetType() == NodeTypeFile {
+			pinMe = append(pinMe, child)
+		}
 
-			return true
-		})
-	case FileTypeRegular:
-		pinMe = append(pinMe, node)
-	default:
-		return fmt.Errorf("Bad node kind: %d", kind)
-	}
+		return nil
+	})
 
 	fn := st.IPFS.Pin
 	if doUnpin {
@@ -298,7 +317,11 @@ func (st *Store) Unpin(repoPath string) error {
 }
 
 func (st *Store) IsPinned(repoPath string) (bool, error) {
-	node := st.Root.Lookup(repoPath)
+	node, err := st.fs.ResolveDirectory(repoPath)
+	if err != nil {
+		return false, err
+	}
+
 	if node == nil {
 		return false, NoSuchFile(repoPath)
 	}
@@ -312,17 +335,40 @@ func (st *Store) Touch(repoPath string) error {
 	return st.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
+func (st *Store) makeCheckpoint(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
+	owner, err := st.Owner()
+	if err != nil {
+		return err
+	}
+
+	ckp, err := st.fs.LastCheckpoint(ID)
+	if err != nil {
+		return err
+	}
+
+	newCkp, err := ckp.Fork(owner.ID(), oldHash, newHash, oldPath, newPath)
+	if err != nil {
+		return err
+	}
+
+	return st.fs.StageCheckpoint(newCkp)
+}
+
 // Stream returns the stream of the file at `path`.
 func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	file := st.Root.Lookup(prefixSlash(path))
+	file, err := st.fs.ResolveFile(prefixSlash(path))
+	if err != nil {
+		return nil, err
+	}
+
 	if file == nil {
 		return nil, NoSuchFile(path)
 	}
 
-	return file.Stream()
+	return file.Stream(st.IPFS)
 }
 
 // Cat will write the contents of the brig file `path` into `w`.
@@ -354,69 +400,76 @@ func (st *Store) Remove(path string, recursive bool) error {
 	return st.remove(path, recursive)
 }
 
-func (st *Store) remove(path string, recursive bool) (err error) {
-	path = prefixSlash(path)
-
-	node := st.Root.Lookup(path)
-	if node == nil {
-		return NoSuchFile(path)
+func (st *Store) remove(repoPath string, recursive bool) (err error) {
+	repoPath = prefixSlash(repoPath)
+	node, err := st.fs.ResolveNode(repoPath)
+	if err != nil {
+		return err
 	}
 
-	if node.Kind() == FileTypeDir && node.NChildren() > 0 && !recursive {
+	if node == nil {
+		return NoSuchFile(repoPath)
+	}
+
+	if node.GetType() == NodeTypeDirectory && node.NChildren() > 0 && !recursive {
 		return ErrNotEmpty
 	}
 
-	toBeRemoved := []*File{}
+	toBeRemoved := []Node{}
 
-	node.Walk(true, func(child *File) bool {
-		childPath := child.Path()
-
-		// Remove from trie & remove from bolt db.
-		err = st.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			return bkt.Delete([]byte(childPath))
-		})
-
-		if err != nil {
-			return false
-		}
-
-		if err = st.MakeCheckpoint(node.Metadata, nil, childPath, childPath); err != nil {
-			return false
-		}
-
+	err = Walk(node, true, func(child Node) error {
 		toBeRemoved = append(toBeRemoved, child)
-		return true
+		return nil
 	})
 
-	errs := util.Errors{}
+	if err != nil {
+		return err
+	}
 
+	errs := util.Errors{}
 	for _, child := range toBeRemoved {
-		if child.Kind() == FileTypeRegular {
+		childPath := nodePath(child)
+		if err = st.makeCheckpoint(child.ID(), child.Hash(), nil, childPath, childPath); err != nil {
+			return err
+		}
+
+		if child.GetType() == NodeTypeFile {
 			if err := st.IPFS.Unpin(child.Hash().Multihash); err != nil {
 				errs = append(errs, err)
 			}
 		}
 
-		child.Lock()
-		child.Metadata.size *= -1
-		child.updateParents()
-		child.Unlock()
-		child.Remove()
+		parentNode, err := child.Parent()
+		if err != nil {
+			return err
+		}
 
+		parent, ok := parentNode.(*Directory)
+		if !ok {
+			return ErrBadNode
+		}
+
+		if err := parent.RemoveChild(child); err != nil {
+			return err
+		}
 	}
 
 	return errs.ToErr()
 }
 
 // List exports a directory listing of `root` up to `depth` levels down.
-func (st *Store) List(root string, depth int) (entries []*File, err error) {
+func (st *Store) List(root string, depth int) ([]Node, error) {
 	root = prefixSlash(root)
-	entries = []*File{}
+	entries := []Node{}
 
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	node := st.Root.Lookup(root)
+	node, err := st.fs.ResolveDirectory(root)
+	if err != nil {
+		return nil, err
+	}
+
 	if node == nil {
 		return nil, NoSuchFile(root)
 	}
@@ -425,21 +478,25 @@ func (st *Store) List(root string, depth int) (entries []*File, err error) {
 		depth = math.MaxInt32
 	}
 
-	node.Walk(false, func(child *File) bool {
-		if child.Depth() > depth {
-			return false
+	err = Walk(node, false, func(child Node) error {
+		if nodeDepth(child) > depth {
+			return nil
 		}
 
 		entries = append(entries, child)
-		return true
+		return nil
 	})
 
-	return
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, err
 }
 
 // The results are marshaled into a wire.Dirlist message and written to `w`.
 // `depth` may be negative for unlimited recursion.
-func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
+func (st *Store) ListNodes(root string, depth int) (*wire.Nodes, error) {
 	entries, err := st.List(root, depth)
 	if err != nil {
 		return nil, err
@@ -447,79 +504,103 @@ func (st *Store) ListProto(root string, depth int) (*wire.Dirlist, error) {
 
 	// No locking required; only some in-memory conversion follows.
 
-	dirlist := &wire.Dirlist{}
-	for _, entry := range entries {
-		protoFile, err := entry.ToProto()
+	nodes := &wire.Nodes{}
+	for _, node := range entries {
+		pnode, err := node.ToProto()
 		if err != nil {
 			return nil, err
 		}
 
-		// Be sure to mask out key and hash.
-		dirlist.Entries = append(dirlist.Entries, &wire.Dirent{
-			Path:     protoFile.Path,
-			FileSize: protoFile.FileSize,
-			Kind:     protoFile.Kind,
-			ModTime:  protoFile.ModTime,
-		})
+		nodes.Nodes = append(nodes.Nodes, pnode)
 	}
 
-	return dirlist, nil
+	return nodes, nil
 }
 
-func (st *Store) Move(oldPath, newPath string) error {
+func (st *Store) Move(oldPath, newPath string, force bool) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	return st.move(oldPath, newPath)
+	return st.move(oldPath, newPath, force)
 }
 
-func (st *Store) move(oldPath, newPath string) (err error) {
-	oldPath, newPath = prefixSlash(oldPath), prefixSlash(newPath)
+func (st *Store) move(oldPath, newPath string, force bool) error {
+	oldPath = prefixSlash(path.Clean(oldPath))
+	newPath = prefixSlash(path.Clean(newPath))
 
-	node := st.Root.Lookup(oldPath)
+	node, err := st.fs.ResolveNode(oldPath)
+	if err != nil {
+		return err
+	}
+
 	if node == nil {
 		return NoSuchFile(oldPath)
 	}
 
-	if newNode := st.Root.Lookup(newPath); newNode != nil {
+	newNode, err := st.fs.ResolveNode(newPath)
+	if err != nil {
+		return err
+	}
+
+	if newNode != nil && newNode.GetType() != NodeTypeDirectory && !force {
 		return ErrExists
 	}
 
 	newPaths := make(map[string]*File)
 
 	// Work recursively for directories:
-	node.Walk(true, func(child *File) bool {
-		oldChildPath := child.Path()
+	err = Walk(node, true, func(child Node) error {
+		if child.GetType() != NodeTypeFile {
+			return nil
+		}
+
+		oldChildPath := nodePath(child)
 		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
+		newPaths[newChildPath] = child.(*File)
 
-		// Remove from trie & remove from bolt db.
-		err = st.updateWithBucket("index", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			return bkt.Delete([]byte(oldChildPath))
-		})
-
-		if err != nil {
-			return false
+		hash := child.Hash()
+		if err = st.makeCheckpoint(newNode.ID(), hash, hash, oldChildPath, newChildPath); err != nil {
+			return err
 		}
 
-		newPaths[newChildPath] = child
-
-		md := node.Metadata
-		if err = st.MakeCheckpoint(md, md, oldChildPath, newChildPath); err != nil {
-			return false
-		}
-
-		return true
+		return nil
 	})
 
 	if err != nil {
 		return err
 	}
 
-	// Note: No pinning information needs to change,
+	// If the node at newPath was a file, we need to remove it.
+	if newNode != nil && newNode.GetType() == NodeTypeFile {
+		if err := nodeRemove(newNode); err != nil {
+			return err
+		}
+	}
+
+	// NOTE: No pinning information needs to change,
 	//       Move() does not influence the Hash() of the file.
-	for newPath, node := range newPaths {
-		node.Remove()
-		node.insert(st.Root, newPath)
+	for newPath, file := range newPaths {
+		dest, err := st.mkdirParents(newPath)
+		if err != nil {
+			return err
+		}
+
+		if dest == nil {
+			return NoSuchFile(newPath)
+		}
+
+		// Basename might have changed:
+		file.SetName(path.Base(newPath))
+
+		// Add to new parent:
+		if err := dest.Add(file); err != nil {
+			return err
+		}
+
+		// Remove from old Parent:
+		if err := nodeRemove(file); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -532,40 +613,47 @@ func (st *Store) Status() (*Commit, error) {
 
 // Unlocked version of Status()
 func (st *Store) status() (*Commit, error) {
-	head, err := st.head()
-	if err != nil {
-		return nil, err
-	}
+	/*
+		head, err := st.HEAD()
+		if err != nil {
+			return nil, err
+		}
 
-	cmt := NewEmptyCommit(st, st.ID)
-	cmt.Parent = head
-	cmt.Message = "Uncommitted changes"
-	cmt.TreeHash = st.Root.Hash().Clone()
+		// TODO: Author?
+		cmt := newEmptyCommit(fs, id.ID(""))
 
-	hash, err := st.makeCommitHash(cmt, head)
-	if err != nil {
-		return nil, err
-	}
+		cmt := NewEmptyCommit(st, st.ID)
+		cmt.Parent = head
+		cmt.Message = "Uncommitted changes"
+		cmt.TreeHash = st.Root.Hash().Clone()
 
-	cmt.Hash = hash
+		hash, err := st.makeCommitHash(cmt, head)
+		if err != nil {
+			return nil, err
+		}
 
-	err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-		return bkt.ForEach(func(bpath, bckpnt []byte) error {
-			checkpoint := &Checkpoint{}
-			if err := checkpoint.Unmarshal(bckpnt); err != nil {
-				return err
-			}
+		cmt.Hash = hash
 
-			cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
-			return nil
+		err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
+			return bkt.ForEach(func(bpath, bckpnt []byte) error {
+				checkpoint := &Checkpoint{}
+				if err := checkpoint.Unmarshal(bckpnt); err != nil {
+					return err
+				}
+
+				cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
+				return nil
+			})
 		})
-	})
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	return cmt, nil
+		return cmt, nil
+	*/
+	// TODO: Finalize stage concept
+	return nil, nil
 }
 
 // Commit saves a commit in the store history.
@@ -573,14 +661,8 @@ func (st *Store) MakeCommit(msg string) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	if msg == "" {
-		return ErrEmptyCommitMessage
-	}
-
-	cmt, err := st.status()
-	if err != nil {
-		return err
-	}
+	// TODO: Call fs.SubmitCommit machinery.
+	return nil
 }
 
 // TODO: respect from/to ranges
@@ -592,8 +674,25 @@ func (fs *FS) Log() (*Commits, error) {
 		return nil, err
 	}
 
-	for curr := head; curr != nil; curr = curr.ParentCommit() {
+	curr := head
+	for curr != nil {
 		cmts = append(cmts, curr)
+
+		parNode, err := curr.Parent()
+		if err != nil {
+			return nil, err
+		}
+
+		if parNode == nil {
+			break
+		}
+
+		parCommit, ok := parNode.(*Commit)
+		if !ok {
+			return nil, ErrBadNode
+		}
+
+		curr = parCommit
 	}
 
 	sort.Sort(&cmts)

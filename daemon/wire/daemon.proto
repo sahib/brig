@@ -210,7 +210,7 @@ message Remote {
 
 message Response {
     message ListResp {
-        required brig.store.Dirlist dirlist = 1;
+        required brig.store.Nodes dirlist = 1;
     }
 
     message HistoryResp {

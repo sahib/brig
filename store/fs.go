@@ -2,24 +2,33 @@ package store
 
 // Layout of the bolt database:
 //
-// objects/<NODE_HASH>                 => NODE_METADATA
-// tree/<FULL_NODE_PATH>               => NODE_HASH
-// refs/<REFNAME>                      => NODE_HASH
-// checkpoints/<NODE_HASH>/<IDX>       => CHECKPOINT_DATA
-// stage/objects/<NODE_HASH>           => NODE_METADATA
-// stage/tree/<FULL_NODE_PATH>         => NODE_HASH
-// stage/checkpoints/<NODE_HASH>/<IDX> => CHECKPOINT_DATA
-// stats/node-count/<COUNT>            => UINT64
-// metadata/
+// objects/<NODE_HASH>                   => NODE_METADATA
+// tree/<FULL_NODE_PATH>                 => NODE_HASH
+// checkpoints/<HEX_NODE_ID>/<IDX>       => CHECKPOINT_DATA
+//
+// stage/objects/<NODE_HASH>             => NODE_METADATA
+// stage/tree/<FULL_NODE_PATH>           => NODE_HASH
+// stage/checkpoints/<HEX_NODE_ID>/<IDX> => CHECKPOINT_DATA
+//
+// stats/node-count/<COUNT>              => UINT64
+// refs/<REFNAME>                        => NODE_HASH
+// metadata/                             => BYTES (Caller defined data)
+//
+// Defined by caller:
+// metadata/id    => USER_ID
+// metadata/hash  => USER_HASH
 //
 // NODE is either a Commit, a Directory or a File.
 // FULL_NODE_PATH may contain slashes and in case of directories,
 // it will contain a trailing slash.
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"path"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/disorganizer/brig/store/wire"
@@ -131,7 +140,7 @@ func (fs *FS) NextID() (uint64, error) {
 	}
 
 	// nodeCount might be nil on startup:
-	cnt := 1
+	cnt := uint64(1)
 	if nodeCount != nil {
 		cnt = binary.BigEndian.Uint64(nodeCount) + 1
 	}
@@ -140,7 +149,7 @@ func (fs *FS) NextID() (uint64, error) {
 	binary.BigEndian.PutUint64(cntBuf, cnt)
 
 	if err := bkt.Put("node-count", cntBuf); err != nil {
-		return nil
+		return 0, nil
 	}
 
 	return cnt, nil
@@ -254,11 +263,9 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 		}
 	}
 
+	// Return both nil if nothing found:
 	if hash == nil {
-		return nil, ErrNoPathFound{
-			nodePath,
-			strings.Join(prefixes, " and "),
-		}
+		return nil, nil
 	}
 
 	// Delegate the actual directory loading to Directory()
@@ -308,6 +315,8 @@ func (fs *FS) StageNode(nd Node) error {
 	fs.index[b58Hash] = fs.root.InsertWithData(nodePath, nd)
 
 	// We need to save parent directories too, in case the hash changed:
+	// TODO: Is that a good idea? Many stages will cause many pointless
+	//       root dirs with different checksums.
 	par, err := nd.Parent()
 	if err != nil {
 		return err
@@ -326,9 +335,38 @@ func (fs *FS) StageNode(nd Node) error {
 // CHECKPOINT HANDLING //
 /////////////////////////
 
+func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
+	key := strconv.FormatUint(IDLink, 16)
+	btkPaths := [][]string{
+		[]string{"checkpoints", key},
+		[]string{"stage", "checkpoints", key},
+	}
+
+	for _, bktPath := range btkPaths {
+		bkt, err := fs.kv.Bucket(bktPath)
+		if err != nil {
+			return nil, err
+		}
+
+		pckp, err := bkt.Last()
+		if err != nil {
+			return nil, err
+		}
+
+		ckp := newEmptyCheckpoint()
+		if err := ckp.Unmarshal(pckp); err != nil {
+			return nil, err
+		}
+
+		return ckp, nil
+	}
+
+	return nil, fmt.Errorf("No last checkpoint")
+}
+
 func (fs *FS) History(IDLink uint64) (History, error) {
 	key := strconv.FormatUint(IDLink, 16)
-	history := []History{}
+	history := History{}
 
 	btkPaths := [][]string{
 		[]string{"checkpoints", key},
@@ -418,9 +456,9 @@ func (fs *FS) SubmitCommit(cm *Commit) error {
 		return err
 	}
 
+	histList := [][]string{}
 	err = ckBkt.Foreach(func(key string, _ []byte) error {
-		copyList = append(copyList, []string{"stage", "checkpoints", key})
-		// TODO: Remember checkpointlinks for this commit
+		histList = append(histList, []string{"stage", "checkpoints", key})
 		return nil
 	})
 
@@ -428,7 +466,56 @@ func (fs *FS) SubmitCommit(cm *Commit) error {
 		return err
 	}
 
-	// TODO: go over copyList and copy + clear
+	// TODO: This looks pretty ugly:
+	for _, histKey := range histList {
+		IDLink, err := strconv.ParseUint(histKey[2], 16, 64)
+		if err != nil {
+			return err
+		}
+
+		histBkt, err := fs.kv.Bucket(histKey)
+		if err != nil {
+			return err
+		}
+
+		err = histBkt.Foreach(func(indexStr string, _ []byte) error {
+			index, err := strconv.ParseUint(indexStr, 16, 64)
+			if err != nil {
+				return err
+			}
+
+			link := &CheckpointLink{IDLink, index}
+			cm.changeset = append(cm.changeset, link)
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	copyList = append(copyList, histList...)
+
+	// TODO: This needs a proper transaction mechanism.
+	// for _, key := range copyList {
+	// 	srcBkt, err := fs.kv.Bucket(key)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	dstBkt, err := fs.kv.Bucket(key[1:])
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	if err := srcBkt.CopyTo(dstBkt); err != nil {
+	// 		return err
+	// 	}
+
+	// 	if err := srcBkt.Clear(srcBkt); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return fs.SaveRef("HEAD", cm)
 }
@@ -450,7 +537,7 @@ func (fs *FS) MetadataPut(key string, value []byte) error {
 func (fs *FS) MetadataGet(key string) ([]byte, error) {
 	bkt, err := fs.kv.Bucket([]string{"metadata"})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return bkt.Get(key)
@@ -484,7 +571,7 @@ func (fs *FS) SaveRef(refname string, nd Node) error {
 	refname = strings.ToLower(refname)
 	bkt, err := fs.kv.Bucket([]string{"refs"})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	return bkt.Put(refname, nd.Hash().Bytes())
@@ -506,14 +593,20 @@ func (fs *FS) Head() (*Commit, error) {
 }
 
 func (fs *FS) Root() (*Directory, error) {
+	// TODO: Implement
 	nd, err := fs.ResolveDirectory("/")
 	if err != nil {
 		return nil, err
 	}
 
+	if nd != nil {
+		return nd, nil
+	}
+
 	return newEmptyDirectory(fs, nil, "/")
 }
 
+// TODO: re-design
 func (fs *FS) Status() (*Commit, error) {
 	cmt, err := newEmptyCommit(fs, "") // TODO: Author?
 	if err != nil {
@@ -525,8 +618,7 @@ func (fs *FS) Status() (*Commit, error) {
 		return nil, err
 	}
 
-	cmt.SetRoot(root)
-
+	cmt.SetRoot(root.Hash())
 	return cmt, nil
 }
 
@@ -563,6 +655,10 @@ func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
 		return nil, err
 	}
 
+	if nd == nil {
+		return nil, nil
+	}
+
 	dir, ok := nd.(*Directory)
 	if !ok {
 		return nil, ErrBadNode
@@ -589,6 +685,10 @@ func (fs *FS) ResolveFile(filepath string) (*File, error) {
 	nd, err := fs.ResolveNode(filepath)
 	if err != nil {
 		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
 	}
 
 	file, ok := nd.(*File)

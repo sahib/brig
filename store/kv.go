@@ -28,6 +28,7 @@ type Bucket interface {
 	Foreach(fn func(key string, value []byte) error) error
 	Clear() error
 	CopyTo(b Bucket) error
+	Last() ([]byte, error)
 }
 
 func findBucket(kv KV, path string) (Bucket, string, error) {
@@ -217,10 +218,10 @@ func (bb *BoltBucket) Foreach(fn func(key string, value []byte) error) error {
 }
 
 func (bb *BoltBucket) CopyTo(other Bucket) error {
-	data := [][]byte{}
+	data := [][][]byte{}
 
 	err := bb.Foreach(func(key string, value []byte) error {
-		data = append(data, []byte(key), value)
+		data = append(data, [][]byte{[]byte(key), value})
 		return nil
 	})
 
@@ -228,15 +229,14 @@ func (bb *BoltBucket) CopyTo(other Bucket) error {
 		return err
 	}
 
-	return other.dig(other.path, true, func(bkt *bolt.Bucket) error {
-		for _, elem := range data {
-			if err := bkt.Put(elem[0], elem[1]); err != nil {
-				return err
-			}
-
-			return nil
+	// TODO: This really needs transactions...
+	for _, elem := range data {
+		if err := other.Put(string(elem[0]), elem[1]); err != nil {
+			return err
 		}
-	})
+	}
+
+	return nil
 }
 
 func (bb *BoltBucket) Clear() error {
@@ -248,7 +248,7 @@ func (bb *BoltBucket) Clear() error {
 	basename := bb.path[len(bb.path)-1]
 
 	return bb.dig(dirname, true, func(parBkt *bolt.Bucket) error {
-		return parBkt.DeleteBucket(basename)
+		return parBkt.DeleteBucket([]byte(basename))
 	})
 }
 
@@ -276,4 +276,20 @@ func (bb *BoltBucket) Bucket(path []string) (Bucket, error) {
 		db:   bb.db,
 		path: append(bb.path, path...),
 	}, nil
+}
+
+func (bb *BoltBucket) Last() ([]byte, error) {
+	var data []byte
+
+	err := bb.dig(bb.path, false, func(bucket *bolt.Bucket) error {
+		cursor := bucket.Cursor()
+		_, data = cursor.Last()
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

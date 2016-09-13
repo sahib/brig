@@ -4,18 +4,12 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
-	"strings"
-	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
-	goipfsutil "github.com/ipfs/go-ipfs-util"
-	"github.com/jbenet/go-multihash"
 )
 
 // File represents a single file in the repository.
@@ -32,20 +26,7 @@ type File struct {
 	fs *FS
 }
 
-// UpdateSize updates the size (and therefore also the ModTime) of the file.
-// The change is written to bolt.
-func (f *File) UpdateSize(size uint64) {
-	f.size = size
-	f.modTime = time.Now()
-}
-
-// UpdateModTime safely updates the ModTime field of the file.
-// The change is written to bolt.
-func (f *File) UpdateModTime(modTime time.Time) {
-	f.modTime = modTime
-}
-
-func newEmptyFile(fs *FS, name string) (Node, error) {
+func newEmptyFile(fs *FS, name string) (*File, error) {
 	id, err := fs.NextID()
 	if err != nil {
 		return nil, err
@@ -57,17 +38,15 @@ func newEmptyFile(fs *FS, name string) (Node, error) {
 		return nil, err
 	}
 
-	file := emptyFile(store)
-	file.Metadata = &Metadata{
-		key:     key,
-		kind:    FileTypeRegular,
+	return &File{
+		name:    name,
+		id:      id,
 		modTime: time.Now(),
-	}
-
-	return file, nil
+		fs:      fs,
+	}, nil
 }
 
-func (f *File) ToProto() (*wire.File, error) {
+func (f *File) ToProto() (*wire.Node, error) {
 	binModTime, err := f.modTime.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -75,14 +54,14 @@ func (f *File) ToProto() (*wire.File, error) {
 
 	return &wire.Node{
 		ID:   proto.Uint64(f.id),
-		Type: wire.NodeType_FILE,
+		Type: wire.NodeType_FILE.Enum(),
 		File: &wire.File{
 			Name:     proto.String(f.name),
 			Key:      f.key,
 			FileSize: proto.Uint64(f.size),
 			ModTime:  binModTime,
 			Hash:     f.hash.Bytes(),
-			parent:   f.parent.Bytes(),
+			Parent:   f.parent.Bytes(),
 		},
 	}, nil
 }
@@ -111,21 +90,19 @@ func (f *File) FromProto(pnd *wire.Node) error {
 ////////////////// METADATA INTERFACE //////////////////
 
 // Name returns the basename of the file.
-func (f *File) Name() string {
-	return f.name
-}
+func (f *File) ID() uint64         { return f.id }
+func (f *File) Name() string       { return f.name }
+func (f *File) Hash() *Hash        { return f.hash }
+func (f *File) Size() uint64       { return f.size }
+func (f *File) ModTime() time.Time { return f.modTime }
 
-func (f *File) Hash() *Hash {
-	return f.hash
-}
+////////////////// ATTRIBUTE SETTERS //////////////////
 
-func (f *File) Size() uint64 {
-	return f.size
-}
-
-func (f *File) ModTime() time.Time {
-	return f.modTime
-}
+func (f *File) SetSize(s uint64)       { f.size = s }
+func (f *File) SetModTime(t time.Time) { f.modTime = t }
+func (f *File) SetHash(h *Hash)        { f.hash = h }
+func (f *File) SetName(n string)       { f.name = n }
+func (f *File) SetKey(k []byte)        { f.key = k }
 
 ////////////////// HIERARCHY INTERFACE //////////////////
 
@@ -164,10 +141,15 @@ func (f *File) GetType() NodeType {
 
 // Stream opens a reader that yields the raw data of the file,
 // already transparently decompressed and decrypted.
-func (f *File) Stream() (ipfsutil.Reader, error) {
-	log.Debugf("Stream `%s` (hash: %s) (key: %x)", f.node.Path(), f.hash.B58String(), f.key)
+func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
+	log.Debugf(
+		"Stream `%s` (hash: %s) (key: %x)",
+		nodePath(f),
+		f.hash.B58String(),
+		f.key,
+	)
 
-	ipfsStream, err := ipfsutil.Cat(f.store.IPFS, f.hash.Multihash)
+	ipfsStream, err := ipfsutil.Cat(ipfs, f.hash.Multihash)
 	if err != nil {
 		return nil, err
 	}

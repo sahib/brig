@@ -1,12 +1,6 @@
 package store
 
-import (
-	"fmt"
-	"sort"
-	"time"
-
-	log "github.com/Sirupsen/logrus"
-)
+/*
 
 type Diff struct {
 	// A is the store we will merge to.
@@ -219,3 +213,4 @@ func (st *Store) ApplyMergeCommit(cmt *Commit) error {
 	// Update HEAD - TODO: finally neeed proper refs.
 	return st.updateHEAD(cmt)
 }
+*/

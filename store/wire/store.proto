@@ -35,7 +35,7 @@ message File {
     optional bytes key = 2;
     optional bytes hash = 3;
     required bytes parent = 4;
-    required int64 file_size = 5;
+    required uint64 file_size = 5;
 
     // Timestamp formated as RFC 3339
     required bytes mod_time = 6;

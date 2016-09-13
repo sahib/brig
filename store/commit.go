@@ -2,10 +2,8 @@ package store
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/gogo/protobuf/proto"
@@ -90,7 +88,7 @@ func newEmptyCommit(fs *FS, author id.ID) (*Commit, error) {
 	}
 
 	return &Commit{
-		id: id,
+		id:      id,
 		fs:      fs,
 		modTime: time.Now(),
 		author:  author,
@@ -118,7 +116,12 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
-	treeHash, err := multihash.Cast(pcm.GetTreeHash())
+	root, err := multihash.Cast(pcm.GetRoot())
+	if err != nil {
+		return err
+	}
+
+	parent, err := multihash.Cast(pcm.GetParentHash())
 	if err != nil {
 		return err
 	}
@@ -134,14 +137,14 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		changeset = append(changeset, cl)
 	}
 
-	protoMergeInfo := c.GetMerge()
+	protoMergeInfo := pcm.GetMerge()
 	if protoMergeInfo != nil {
 		mergeInfo := &Merge{}
 		if err := mergeInfo.FromProto(protoMergeInfo); err != nil {
 			return err
 		}
 
-		cm.Merge = mergeInfo
+		cm.merge = mergeInfo
 	}
 
 	// Set commit data if everything worked:
@@ -150,54 +153,55 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	cm.parent = &Hash{pcm.GetParentHash()}
 	cm.author = author
 	cm.modTime = modTime
-	cm.checkpoints = checkpoints
 	cm.hash = &Hash{hash}
-	cm.treeHash = &Hash{treeHash}
-	cm.parent = parentCommit
+	cm.root = &Hash{root}
+	cm.parent = &Hash{parent}
 	return nil
 }
 
-func (cm *Commit) ToProto() (*wire.Commit, error) {
+func (cm *Commit) ToProto() (*wire.Node, error) {
 	pcm := &wire.Commit{}
-	modTime, err := cm.ModTime.MarshalBinary()
+	modTime, err := cm.modTime.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 
-	var checkpoints []*wire.Checkpoint
+	var changeset []*wire.CheckpointLink
 
-	for _, checkpoint := range cm.Checkpoints {
-		protoCheckpoint, err := checkpoint.ToProto()
+	for _, link := range cm.changeset {
+		plink, err := link.ToProto()
 		if err != nil {
 			return nil, err
 		}
 
-		checkpoints = append(checkpoints, protoCheckpoint)
+		changeset = append(changeset, plink)
 	}
 
-	if cm.Merge != nil {
-		protoMergeInfo, err := cm.Merge.ToProto()
+	if cm.merge != nil {
+		pmerge, err := cm.merge.ToProto()
 		if err != nil {
 			return nil, err
 		}
 
-		pcm.Merge = protoMergeInfo
+		pcm.Merge = pmerge
 	}
 
-	pcm.ID = proto.Uint64(cm.id)
 	pcm.Message = proto.String(cm.message)
 	pcm.Author = proto.String(string(cm.author))
 	pcm.ModTime = modTime
 	pcm.Hash = cm.hash.Bytes()
 	pcm.Root = cm.root.Bytes()
-	pcm.Checkpoints = checkpoints
+	pcm.Changeset = changeset
 
 	// Check if it's the initial commit:
 	if cm.parent != nil {
-		pcm.ParentHash = cm.parent.Hash().Bytes()
+		pcm.ParentHash = cm.parent.Bytes()
 	}
 
-	return pcm, nil
+	return &wire.Node{
+		ID:     proto.Uint64(cm.id),
+		Commit: pcm,
+	}, nil
 }
 
 /////////////////// METADATA INTERFACE ///////////////////
@@ -223,6 +227,10 @@ func (cm *Commit) ModTime() time.Time {
 	return cm.modTime
 }
 
+func (cm *Commit) ID() uint64 {
+	return cm.id
+}
+
 /////////////// HIERARCHY INTERFACE ///////////////
 
 func (cm *Commit) NChildren() int {
@@ -242,7 +250,7 @@ func (cm *Commit) SetParent(nd Node) error {
 	return nil
 }
 
-return (cm *Commit) GetType() NodeType {
+func (cm *Commit) GetType() NodeType {
 	return NodeTypeCommit
 }
 
@@ -256,6 +264,7 @@ func (cm *Commit) Root() *Hash {
 
 func (cm *Commit) SetRoot(root *Hash) error {
 	cm.root = root.Clone()
+	return nil
 }
 
 func (cm *Commit) Finalize(message string, parent *Commit) error {
@@ -267,13 +276,12 @@ func (cm *Commit) Finalize(message string, parent *Commit) error {
 	// This is inefficient, but is supposed to be easy to understand
 	// while this is still playground stuff.
 	s := ""
-	s += fmt.Sprintf("Parent:  %s\n", parent.Hash.B58String())
-	s += fmt.Sprintf("Message: %s\n", current.Message)
-	s += fmt.Sprintf("Author:  %s\n", current.Author)
+	s += fmt.Sprintf("Parent:  %s\n", parent.Hash().B58String())
+	s += fmt.Sprintf("Message: %s\n", cm.message)
+	s += fmt.Sprintf("Author:  %s\n", cm.author)
 
-	hash := current.Root.Clone()
-
-	fmt.Printf("tree %v\nhash %v\n", current.Root, hash)
+	hash := cm.root.Clone()
+	fmt.Printf("tree %v\nhash %v\n", cm.root, hash)
 	if err := hash.MixIn([]byte(s)); err != nil {
 		return err
 	}
@@ -290,7 +298,7 @@ func (cs *Commits) Len() int {
 }
 
 func (cs *Commits) Less(i, j int) bool {
-	return (*cs)[i].ModTime.Before((*cs)[j].ModTime)
+	return (*cs)[i].modTime.Before((*cs)[j].modTime)
 }
 
 func (cs *Commits) Swap(i, j int) {
@@ -306,12 +314,11 @@ func (cs *Commits) ToProto() (*wire.Commits, error) {
 			return nil, err
 		}
 
-		protoCmts.Commits = append(protoCmts.Commits, protoCmt)
+		protoCmts.Commits = append(protoCmts.Commits, protoCmt.GetCommit())
 	}
 
 	return protoCmts, nil
 }
-
 
 func (cs *Commits) Unmarshal(data []byte) error {
 	protoCmts := &wire.Commits{}
@@ -324,8 +331,17 @@ func (cs *Commits) Unmarshal(data []byte) error {
 
 func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
 	for _, protoCmt := range protoCmts.GetCommits() {
-		cmt := NewEmptyCommit(nil, "")
-		if err := cmt.FromProto(protoCmt); err != nil {
+		cmt, err := newEmptyCommit(nil, "")
+		if err != nil {
+			return err
+		}
+
+		pnode := &wire.Node{
+			Type:   wire.NodeType_COMMIT.Enum(),
+			Commit: protoCmt,
+		}
+
+		if err := cmt.FromProto(pnode); err != nil {
 			return err
 		}
 

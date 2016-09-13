@@ -31,7 +31,7 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 
-	path := path.Join(nodePath, name)
+	path := path.Join(nodePath(parent), name)
 	mh, err := multihash.Sum([]byte(path), code, length)
 	if err != nil {
 		// The programmer has likely fucked up:
@@ -76,7 +76,7 @@ func (d *Directory) ToProto() (*wire.Node, error) {
 	}
 
 	return &wire.Node{
-		ID:   proto.Uint64(id),
+		ID:   proto.Uint64(d.id),
 		Type: wire.NodeType_DIRECTORY.Enum(),
 		Directory: &wire.Directory{
 			FileSize: proto.Uint64(d.size),
@@ -188,6 +188,10 @@ func (d *Directory) GetType() NodeType {
 	return NodeTypeDirectory
 }
 
+func (d *Directory) ID() uint64 {
+	return d.id
+}
+
 ////////////// TREE MOVEMENT /////////////////
 
 func (d *Directory) VisitChildren(fn func(*Directory) error) error {
@@ -231,6 +235,40 @@ func (d *Directory) xorHash(hash *Hash) error {
 	return d.VisitChildren(func(child *Directory) error {
 		return child.SetParent(d)
 	})
+}
+
+func Walk(node Node, dfs bool, visit func(child Node) error) error {
+	if node.GetType() != NodeTypeDirectory {
+		return visit(node)
+	}
+
+	d, ok := node.(*Directory)
+	if !ok {
+		return ErrBadNode
+	}
+
+	if !dfs {
+		if err := visit(node); err != nil {
+			return err
+		}
+	}
+
+	for _, link := range d.children {
+		child, err := d.fs.NodeByHash(link)
+		if err != nil {
+			return err
+		}
+
+		return Walk(child, dfs, visit)
+	}
+
+	if dfs {
+		if err := visit(node); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 //////////// STATE ALTERING METHODS //////////////

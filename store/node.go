@@ -111,3 +111,73 @@ func nodePath(nd Node) string {
 
 	return prefixSlash(path.Join(elems...))
 }
+
+func nodeDepth(nd Node) int {
+	var depth int
+	var curr Node = nd
+	var err error
+
+	for curr != nil {
+		curr, err = curr.Parent()
+		if err != nil {
+			return -1
+		}
+
+		depth++
+	}
+
+	return depth
+}
+
+func nodeRemove(nd Node) error {
+	parDir, err := nodeParentDir(nd)
+	if err != nil {
+		return err
+	}
+
+	// Cannot remove root:
+	if parDir == nil {
+		return nil
+	}
+
+	return parDir.RemoveChild(nd)
+}
+
+func nodeParentDir(nd Node) (*Directory, error) {
+	par, err := nd.Parent()
+	if err != nil {
+		return nil, err
+	}
+
+	if par == nil {
+		return nil, nil
+	}
+
+	parDir, ok := par.(*Directory)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return parDir, nil
+}
+
+type metaRecord struct {
+	hash    *Hash
+	name    string
+	size    uint64
+	modTime time.Time
+}
+
+func (mr *metaRecord) Hash() *Hash        { return mr.hash }
+func (mr *metaRecord) Name() string       { return mr.name }
+func (mr *metaRecord) Size() uint64       { return mr.size }
+func (mr *metaRecord) ModTime() time.Time { return mr.modTime }
+
+func Metadata(nd Node) Metadatable {
+	return &metaRecord{
+		hash:    nd.Hash(),
+		name:    nd.Name(),
+		size:    nd.Size(),
+		modTime: nd.ModTime(),
+	}
+}

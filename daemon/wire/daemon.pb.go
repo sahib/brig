@@ -1011,15 +1011,15 @@ func (m *Response) GetExportResp() *Response_ExportResp {
 }
 
 type Response_ListResp struct {
-	Dirlist          *brig_store.Dirlist `protobuf:"bytes,1,req,name=dirlist" json:"dirlist,omitempty"`
-	XXX_unrecognized []byte              `json:"-"`
+	Dirlist          *brig_store.Nodes `protobuf:"bytes,1,req,name=dirlist" json:"dirlist,omitempty"`
+	XXX_unrecognized []byte            `json:"-"`
 }
 
 func (m *Response_ListResp) Reset()         { *m = Response_ListResp{} }
 func (m *Response_ListResp) String() string { return proto.CompactTextString(m) }
 func (*Response_ListResp) ProtoMessage()    {}
 
-func (m *Response_ListResp) GetDirlist() *brig_store.Dirlist {
+func (m *Response_ListResp) GetDirlist() *brig_store.Nodes {
 	if m != nil {
 		return m.Dirlist
 	}
@@ -7375,7 +7375,7 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Dirlist == nil {
-				m.Dirlist = &brig_store.Dirlist{}
+				m.Dirlist = &brig_store.Nodes{}
 			}
 			if err := m.Dirlist.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
