@@ -8,15 +8,16 @@ package store
 //
 // stage/objects/<NODE_HASH>             => NODE_METADATA
 // stage/tree/<FULL_NODE_PATH>           => NODE_HASH
-// stage/checkpoints/<HEX_NODE_ID>/<IDX> => CHECKPOINT_DATA
+// stage/STATUS                          => COMMIT_METADATA
 //
 // stats/node-count/<COUNT>              => UINT64
 // refs/<REFNAME>                        => NODE_HASH
 // metadata/                             => BYTES (Caller defined data)
 //
 // Defined by caller:
-// metadata/id    => USER_ID
-// metadata/hash  => USER_HASH
+// metadata/id      => USER_ID
+// metadata/hash    => USER_HASH
+// metadata/version => DB_FORMAT_VERSION_NUMBER
 //
 // NODE is either a Commit, a Directory or a File.
 // FULL_NODE_PATH may contain slashes and in case of directories,
@@ -31,6 +32,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
@@ -193,8 +195,6 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 	return unmarshalNode(fs, data)
 }
 
-// TODO: Root() should read HEAD and return the referenced directory in there.
-
 func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
@@ -274,12 +274,7 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 
 func (fs *FS) StageNode(nd Node) error {
 	if nd.GetType() == NodeTypeCommit {
-		return fmt.Errorf("Please use SubmitCommit() for commits.")
-	}
-
-	bkt, err := fs.kv.Bucket([]string{"stage/objects"})
-	if err != nil {
-		return err
+		return fmt.Errorf("Commits cannot be staged")
 	}
 
 	object, err := nd.ToProto()
@@ -293,7 +288,7 @@ func (fs *FS) StageNode(nd Node) error {
 	}
 
 	b58Hash := nd.Hash().B58String()
-	if err := bkt.Put(b58Hash, data); err != nil {
+	if err := putPath(fs.kv, "stage/objects/"+b58Hash, data); err != nil {
 		return err
 	}
 
@@ -321,7 +316,6 @@ func (fs *FS) StageNode(nd Node) error {
 	if err != nil {
 		return err
 	}
-
 	if par != nil {
 		if err := fs.StageNode(par); err != nil {
 			return err
@@ -337,61 +331,49 @@ func (fs *FS) StageNode(nd Node) error {
 
 func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
 	key := strconv.FormatUint(IDLink, 16)
-	btkPaths := [][]string{
-		[]string{"checkpoints", key},
-		[]string{"stage", "checkpoints", key},
+	bkt, err := fs.kv.Bucket([]string{"checkpoints", key})
+	if err != nil {
+		return nil, err
 	}
 
-	for _, bktPath := range btkPaths {
-		bkt, err := fs.kv.Bucket(bktPath)
-		if err != nil {
-			return nil, err
-		}
-
-		pckp, err := bkt.Last()
-		if err != nil {
-			return nil, err
-		}
-
-		ckp := newEmptyCheckpoint()
-		if err := ckp.Unmarshal(pckp); err != nil {
-			return nil, err
-		}
-
-		return ckp, nil
+	data, err := bkt.Last()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("No last checkpoint")
+	if data == nil {
+		return nil, fmt.Errorf("No last checkpoint")
+	}
+
+	ckp := newEmptyCheckpoint()
+	if err := ckp.Unmarshal(data); err != nil {
+		return nil, err
+	}
+
+	return ckp, nil
 }
 
 func (fs *FS) History(IDLink uint64) (History, error) {
 	key := strconv.FormatUint(IDLink, 16)
 	history := History{}
 
-	btkPaths := [][]string{
-		[]string{"checkpoints", key},
-		[]string{"stage", "checkpoints", key},
+	bkt, err := fs.kv.Bucket([]string{"checkpoints", key})
+	if err != nil {
+		return nil, err
 	}
 
-	for _, bktPath := range btkPaths {
-		bkt, err := fs.kv.Bucket(bktPath)
-		if err != nil {
-			return nil, err
+	err = bkt.Foreach(func(key string, value []byte) error {
+		ckp := newEmptyCheckpoint()
+		if err := ckp.Unmarshal(value); err != nil {
+			return err
 		}
 
-		err = bkt.Foreach(func(key string, value []byte) error {
-			ckp := newEmptyCheckpoint()
-			if err := ckp.Unmarshal(value); err != nil {
-				return err
-			}
+		history = append(history, ckp)
+		return nil
+	})
 
-			history = append(history, ckp)
-			return nil
-		})
-
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	// Sort the history by the checkpoint indices.
@@ -420,45 +402,75 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 		return err
 	}
 
-	bkt, err := fs.kv.Bucket([]string{"stage", "checkpoints"})
+	bkt, err := fs.kv.Bucket([]string{"checkpoints"})
 	if err != nil {
 		return err
 	}
 
 	key := strconv.FormatUint(pckp.GetIdLink(), 16)
-	return bkt.Put(key, data)
+	if err := bkt.Put(key, data); err != nil {
+		return err
+	}
+
+	status, err := fs.Status()
+	if err != nil {
+		return err
+	}
+
+	status.AddCheckpointLink(ckp.MakeLink())
+	return fs.saveStatus(status)
 }
 
 /////////////////////
 // COMMIT HANDLING //
 /////////////////////
 
-func (fs *FS) SubmitCommit(cm *Commit) error {
-	// TODO: Copy everything in stage/objects, stage/tree, stage/checkpoints to
-	//       objects/ and tree/. Also make a commit of all current checkpoints.
-	//       Update HEAD when done.
+func (fs *FS) MakeCommit(author id.Peer, message string) error {
 	head, err := fs.Head()
 	if err != nil {
 		return err
 	}
 
-	if cm.Root().Equal(head.Root()) {
-		return ErrNoChange
-	}
-
-	copyList := [][]string{
-		[]string{"stage", "objects"},
-		[]string{"stage", "tree"},
-	}
-
-	ckBkt, err := fs.kv.Bucket([]string{"stage", "checkpoints"})
+	status, err := fs.Status()
 	if err != nil {
 		return err
 	}
 
-	histList := [][]string{}
-	err = ckBkt.Foreach(func(key string, _ []byte) error {
-		histList = append(histList, []string{"stage", "checkpoints", key})
+	if status.Root().Equal(head.Root()) {
+		return ErrNoChange
+	}
+
+	rootDir, err := fs.Root()
+	if err != nil {
+		return err
+	}
+
+	objBkt, err := fs.kv.Bucket([]string{"objects"})
+	if err != nil {
+		return err
+	}
+
+	treeBkt, err := fs.kv.Bucket([]string{"tree"})
+	if err != nil {
+		return err
+	}
+
+	err = Walk(rootDir, true, func(child Node) error {
+		data, err := marshalNode(child)
+		if err != nil {
+			return err
+		}
+
+		b58Hash := child.Hash().B58String()
+		if err := objBkt.Put(b58Hash, data); err != nil {
+			return err
+		}
+
+		path := nodePath(child)
+		if err := treeBkt.Put(path, []byte(b58Hash)); err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -466,58 +478,46 @@ func (fs *FS) SubmitCommit(cm *Commit) error {
 		return err
 	}
 
-	// TODO: This looks pretty ugly:
-	for _, histKey := range histList {
-		IDLink, err := strconv.ParseUint(histKey[2], 16, 64)
+	if err := status.Finalize(author, message, head); err != nil {
+		return err
+	}
+
+	statusData, err := marshalNode(status)
+	if err != nil {
+		return err
+	}
+
+	statusB58Hash := status.Hash().B58String()
+	if err := objBkt.Put(statusB58Hash, statusData); err != nil {
+		return err
+	}
+
+	if err := fs.SaveRef("HEAD", status); err != nil {
+		return err
+	}
+
+	toClear := [][]string{
+		[]string{"stage", "objects"},
+		[]string{"stage", "tree"},
+	}
+
+	for _, key := range toClear {
+		clearBkt, err := fs.kv.Bucket(key)
 		if err != nil {
 			return err
 		}
 
-		histBkt, err := fs.kv.Bucket(histKey)
-		if err != nil {
-			return err
-		}
-
-		err = histBkt.Foreach(func(indexStr string, _ []byte) error {
-			index, err := strconv.ParseUint(indexStr, 16, 64)
-			if err != nil {
-				return err
-			}
-
-			link := &CheckpointLink{IDLink, index}
-			cm.changeset = append(cm.changeset, link)
-			return nil
-		})
-
-		if err != nil {
+		if err := clearBkt.Clear(); err != nil {
 			return err
 		}
 	}
 
-	copyList = append(copyList, histList...)
+	stageBkt, err := fs.kv.Bucket([]string{"stage"})
+	if err != nil {
+		return err
+	}
 
-	// TODO: This needs a proper transaction mechanism.
-	// for _, key := range copyList {
-	// 	srcBkt, err := fs.kv.Bucket(key)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	dstBkt, err := fs.kv.Bucket(key[1:])
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	if err := srcBkt.CopyTo(dstBkt); err != nil {
-	// 		return err
-	// 	}
-
-	// 	if err := srcBkt.Clear(srcBkt); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	return fs.SaveRef("HEAD", cm)
+	return stageBkt.Put("STATUS", nil)
 }
 
 ///////////////////////
@@ -593,33 +593,83 @@ func (fs *FS) Head() (*Commit, error) {
 }
 
 func (fs *FS) Root() (*Directory, error) {
-	// TODO: Implement
-	nd, err := fs.ResolveDirectory("/")
+	// NOTE: Status() might call Root() and not other way round.
+	//       We're on duty of creating a new root if necessary.
+	dir, err := fs.ResolveDirectory("/")
 	if err != nil {
 		return nil, err
 	}
 
-	if nd != nil {
-		return nd, nil
+	if dir != nil {
+		return dir, nil
 	}
 
+	// No root directory yet? Create a shiny new one.
 	return newEmptyDirectory(fs, nil, "/")
 }
 
-// TODO: re-design
+// Guarantee it's not nil when err == nil
 func (fs *FS) Status() (*Commit, error) {
-	cmt, err := newEmptyCommit(fs, "") // TODO: Author?
+	bkt, err := fs.kv.Bucket([]string{"stage"})
 	if err != nil {
 		return nil, err
 	}
 
-	root, err := fs.Root()
+	data, err := bkt.Get("STATUS")
 	if err != nil {
 		return nil, err
 	}
 
-	cmt.SetRoot(root.Hash())
+	cmt, err := newEmptyCommit(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	if data == nil {
+		// Setup a new commit and set root.
+		head, err := fs.Head()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := cmt.SetParent(head); err != nil {
+			return nil, err
+		}
+
+		root, err := fs.Root()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := cmt.SetRoot(root.Hash()); err != nil {
+			return nil, err
+		}
+	} else {
+		pnode := &wire.Node{}
+		if err := proto.Unmarshal(data, pnode); err != nil {
+			return nil, err
+		}
+
+		if err := cmt.FromProto(pnode); err != nil {
+			return nil, err
+		}
+	}
+
 	return cmt, nil
+}
+
+func (fs *FS) saveStatus(cmt *Commit) error {
+	bkt, err := fs.kv.Bucket([]string{"stage"})
+	if err != nil {
+		return err
+	}
+
+	data, err := marshalNode(cmt)
+	if err != nil {
+		return err
+	}
+
+	return bkt.Put("STATUS", data)
 }
 
 func (fs *FS) RemoveUnreffedNodes() error {
@@ -634,6 +684,15 @@ func (fs *FS) RemoveUnreffedNodes() error {
 /////////////////////////////////
 // CONVINIENT ACCESS FUNCTIONS //
 /////////////////////////////////
+
+func (fs *FS) LookupNode(repoPath string) (Node, error) {
+	root, err := fs.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	return root.Lookup(repoPath)
+}
 
 func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 	nd, err := fs.NodeByHash(hash)
@@ -667,6 +726,24 @@ func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
 	return dir, nil
 }
 
+func (fs *FS) LookupDirectory(repoPath string) (*Directory, error) {
+	nd, err := fs.LookupNode(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
+	}
+
+	dir, ok := nd.(*Directory)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return dir, nil
+}
+
 func (fs *FS) FileByHash(hash *Hash) (*File, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
@@ -683,6 +760,24 @@ func (fs *FS) FileByHash(hash *Hash) (*File, error) {
 
 func (fs *FS) ResolveFile(filepath string) (*File, error) {
 	nd, err := fs.ResolveNode(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
+	}
+
+	file, ok := nd.(*File)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return file, nil
+}
+
+func (fs *FS) LookupFile(repoPath string) (*File, error) {
+	nd, err := fs.LookupNode(repoPath)
 	if err != nil {
 		return nil, err
 	}

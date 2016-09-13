@@ -70,13 +70,6 @@ message History {
     repeated Checkpoint hist = 1 [packed=false];
 }
 
-// A pack stores the history of a file besides it's metadata.
-// i.e. everything needed for an exported file.
-message Pack {
-    required File file = 1;
-    required History history = 2;
-}
-
 // Store is the exported form of a store.
 message Store {
     repeated Pack packs = 1;
@@ -94,11 +87,16 @@ message CheckpointLink {
   required uint64 index = 2;
 }
 
+message Author {
+  required string name = 1;
+  required string hash = 2;
+}
+
 // Commit is a bag of changes, either automatically done
 // or by the user.
 message Commit {
     required string message = 1;
-    required string author = 2;
+    required Author author = 2;
     required bytes mod_time = 3;
     required bytes hash = 4;
     required bytes root = 5;

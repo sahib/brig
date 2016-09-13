@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/disorganizer/brig/store/wire"
@@ -269,6 +270,31 @@ func Walk(node Node, dfs bool, visit func(child Node) error) error {
 	}
 
 	return nil
+}
+
+func (d *Directory) Lookup(repoPath string) (Node, error) {
+	repoPath = prefixSlash(path.Clean(repoPath))
+	elems := strings.Split(repoPath, "/")
+
+	if len(elems) == 1 {
+		return d, nil
+	}
+
+	var curr Node = d
+	var err error
+
+	for _, elem := range elems {
+		curr, err = curr.Child(elem)
+		if err != nil {
+			return nil, err
+		}
+
+		if curr == nil {
+			return nil, nil
+		}
+	}
+
+	return curr, nil
 }
 
 //////////// STATE ALTERING METHODS //////////////

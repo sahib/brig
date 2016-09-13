@@ -1,12 +1,5 @@
 package id
 
-import (
-	"bytes"
-	"fmt"
-
-	multihash "github.com/jbenet/go-multihash"
-)
-
 // TODO: Proposal:
 // Parse the domain and register a ipfs block for that too.
 // auto discovery can limit the search to those then.
@@ -16,30 +9,6 @@ import (
 type Peer interface {
 	ID() ID
 	Hash() string
-}
-
-func MarshalPeer(p Peer) ([]byte, error) {
-	return []byte(p.Hash() + "=" + string(p.ID())), nil
-}
-
-func UnmarshalPeer(data []byte) (Peer, error) {
-	split := bytes.SplitN(data, []byte("="), 1)
-
-	if len(split) < 2 {
-		return nil, fmt.Errorf("Marshalled peer has no `=` in it")
-	}
-
-	id, err := Cast(string(split[1]))
-	if err != nil {
-		return nil, err
-	}
-
-	mh, err := multihash.FromB58String(string(split[0]))
-	if err != nil {
-		return nil, err
-	}
-
-	return NewPeer(id, mh.B58String()), nil
 }
 
 type ipfsPeer struct {

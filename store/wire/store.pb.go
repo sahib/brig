@@ -19,6 +19,7 @@
 		Store
 		Merge
 		CheckpointLink
+		Author
 		Commit
 		Commits
 		Ref
@@ -436,11 +437,35 @@ func (m *CheckpointLink) GetIndex() uint64 {
 	return 0
 }
 
+type Author struct {
+	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Author) Reset()         { *m = Author{} }
+func (m *Author) String() string { return proto.CompactTextString(m) }
+func (*Author) ProtoMessage()    {}
+
+func (m *Author) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+func (m *Author) GetHash() string {
+	if m != nil && m.Hash != nil {
+		return *m.Hash
+	}
+	return ""
+}
+
 // Commit is a bag of changes, either automatically done
 // or by the user.
 type Commit struct {
 	Message   *string           `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	Author    *string           `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
+	Author    *Author           `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
 	ModTime   []byte            `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
 	Hash      []byte            `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
 	Root      []byte            `protobuf:"bytes,5,req,name=root" json:"root,omitempty"`
@@ -463,11 +488,11 @@ func (m *Commit) GetMessage() string {
 	return ""
 }
 
-func (m *Commit) GetAuthor() string {
-	if m != nil && m.Author != nil {
-		return *m.Author
+func (m *Commit) GetAuthor() *Author {
+	if m != nil {
+		return m.Author
 	}
-	return ""
+	return nil
 }
 
 func (m *Commit) GetModTime() []byte {
@@ -564,6 +589,7 @@ func init() {
 	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterType((*Merge)(nil), "brig.store.Merge")
 	proto.RegisterType((*CheckpointLink)(nil), "brig.store.CheckpointLink")
+	proto.RegisterType((*Author)(nil), "brig.store.Author")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
 	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
@@ -1067,6 +1093,43 @@ func (m *CheckpointLink) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Author) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Author) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Name == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
+		i += copy(data[i:], *m.Name)
+	}
+	if m.Hash == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Hash)))
+		i += copy(data[i:], *m.Hash)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func (m *Commit) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1095,8 +1158,12 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	} else {
 		data[i] = 0x12
 		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Author)))
-		i += copy(data[i:], *m.Author)
+		i = encodeVarintStore(data, i, uint64(m.Author.Size()))
+		n7, err := m.Author.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
 	}
 	if m.ModTime == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
@@ -1144,11 +1211,11 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x42
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
-		n7, err := m.Merge.MarshalTo(data[i:])
+		n8, err := m.Merge.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1476,6 +1543,23 @@ func (m *CheckpointLink) Size() (n int) {
 	return n
 }
 
+func (m *Author) Size() (n int) {
+	var l int
+	_ = l
+	if m.Name != nil {
+		l = len(*m.Name)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Hash != nil {
+		l = len(*m.Hash)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *Commit) Size() (n int) {
 	var l int
 	_ = l
@@ -1484,7 +1568,7 @@ func (m *Commit) Size() (n int) {
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.Author != nil {
-		l = len(*m.Author)
+		l = m.Author.Size()
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.ModTime != nil {
@@ -3075,6 +3159,126 @@ func (m *CheckpointLink) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Author) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Author: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Author: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Name = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Hash = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Commit) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -3140,7 +3344,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Author", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -3150,21 +3354,24 @@ func (m *Commit) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthStore
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Author = &s
+			if m.Author == nil {
+				m.Author = &Author{}
+			}
+			if err := m.Author.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:

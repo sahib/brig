@@ -29,45 +29,6 @@ type Store struct {
 	mu sync.Mutex
 }
 
-func (st *Store) createInitialCommit() error {
-	/*
-		needsInit := false
-
-		err := st.viewWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			needsInit = (bkt.Get([]byte("HEAD")) == nil)
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
-
-		if !needsInit {
-			return nil
-		}
-
-		// No commit yet, create initial commit.
-		rootCommit := NewEmptyCommit(st, st.ID)
-		rootCommit.Message = "Initial commit"
-		rootCommit.Hash = st.Root.Hash().Clone()
-		rootCommit.TreeHash = st.Root.Hash().Clone()
-
-		data, err := rootCommit.MarshalProto()
-		if err != nil {
-			return err
-		}
-
-		// Insert initial commit to `commits` bucket:
-		err = st.updateWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			return bkt.Put(rootCommit.Hash.Bytes(), data)
-		})
-
-		return st.updateHEAD(rootCommit)
-	*/
-	// TODO: needs design
-	return nil
-}
-
 // Open loads an existing store at `brigPath/$ID/index.bolt`, if it does not
 // exist, it is created.  For full function, Connect() should be called
 // afterwards.
@@ -91,7 +52,8 @@ func Open(brigPath string, owner id.Peer, IPFS *ipfsutil.Node) (*Store, error) {
 		kv:       kv,
 	}
 
-	if err := st.createInitialCommit(); err != nil {
+	// This version does not attempt any version checking:
+	if err := fs.MetadataPut("version", []byte("1")); err != nil {
 		return nil, err
 	}
 

@@ -122,8 +122,6 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 	}, nil
 }
 
-// TODO: consistent UnmarshalProto/MarshalProto functions.
-
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	cp.hash = &Hash{msg.GetHash()}
 	cp.change = ChangeType(msg.GetChange())
@@ -280,6 +278,13 @@ func (hy *History) At(index int) *Checkpoint {
 	}
 
 	return (*hy)[index]
+}
+
+func (ckp *Checkpoint) MakeLink() *CheckpointLink {
+	return &CheckpointLink{
+		IDLink: ckp.index,
+		Index:  ckp.index,
+	}
 }
 
 func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPath string) (*Checkpoint, error) {

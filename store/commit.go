@@ -49,13 +49,51 @@ func (mg *Merge) FromProto(protoMerge *wire.Merge) error {
 
 ////////////////////////
 
+type Author struct {
+	ident id.ID
+	hash  *Hash
+}
+
+func (a *Author) ID() id.ID {
+	return a.ident
+}
+
+func (a *Author) Hash() string {
+	return a.hash.B58String()
+}
+
+func (a *Author) FromProto(pa *wire.Author) error {
+	ident, err := id.Cast(pa.GetName())
+	if err != nil {
+		return err
+	}
+
+	mh, err := multihash.FromB58String(pa.GetHash())
+	if err != nil {
+		return err
+	}
+
+	a.ident = ident
+	a.hash = &Hash{mh}
+	return nil
+}
+
+func (a *Author) ToProto() (*wire.Author, error) {
+	return &wire.Author{
+		Name: proto.String(string(a.ident)),
+		Hash: proto.String(a.hash.B58String()),
+	}, nil
+}
+
+////////////////////////
+
 // Commit groups a change set
 type Commit struct {
 	// Commit message (might be auto-generated)
 	message string
 
 	// Author is the id of the committer.
-	author id.ID
+	author *Author
 
 	// Time at this commit was conceived.
 	modTime time.Time
@@ -81,7 +119,7 @@ type Commit struct {
 	id uint64
 }
 
-func newEmptyCommit(fs *FS, author id.ID) (*Commit, error) {
+func newEmptyCommit(fs *FS) (*Commit, error) {
 	id, err := fs.NextID()
 	if err != nil {
 		return nil, err
@@ -91,7 +129,6 @@ func newEmptyCommit(fs *FS, author id.ID) (*Commit, error) {
 		id:      id,
 		fs:      fs,
 		modTime: time.Now(),
-		author:  author,
 	}, nil
 }
 
@@ -101,8 +138,8 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return fmt.Errorf("No commit attr in protobuf. Probably not a commit.")
 	}
 
-	author, err := id.Cast(pcm.GetAuthor())
-	if err != nil {
+	author := &Author{}
+	if err := author.FromProto(pcm.GetAuthor()); err != nil {
 		return err
 	}
 
@@ -186,8 +223,13 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 		pcm.Merge = pmerge
 	}
 
+	pauthor, err := cm.author.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
 	pcm.Message = proto.String(cm.message)
-	pcm.Author = proto.String(string(cm.author))
+	pcm.Author = pauthor
 	pcm.ModTime = modTime
 	pcm.Hash = cm.hash.Bytes()
 	pcm.Root = cm.root.Bytes()
@@ -262,12 +304,16 @@ func (cm *Commit) Root() *Hash {
 	return cm.root
 }
 
+func (cm *Commit) AddCheckpointLink(cl *CheckpointLink) {
+	cm.changeset = append(cm.changeset, cl)
+}
+
 func (cm *Commit) SetRoot(root *Hash) error {
 	cm.root = root.Clone()
 	return nil
 }
 
-func (cm *Commit) Finalize(message string, parent *Commit) error {
+func (cm *Commit) Finalize(author id.Peer, message string, parent *Commit) error {
 	cm.message = message
 	if err := cm.SetParent(parent); err != nil {
 		return err
@@ -286,9 +332,11 @@ func (cm *Commit) Finalize(message string, parent *Commit) error {
 		return err
 	}
 
+	cm.modTime = time.Now()
 	return nil
 }
 
+// TODO: is this needed?
 // Commits is a list of single commits.
 // It is used to enable chronological sorting of a bunch of commits.
 type Commits []*Commit
@@ -331,7 +379,7 @@ func (cs *Commits) Unmarshal(data []byte) error {
 
 func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
 	for _, protoCmt := range protoCmts.GetCommits() {
-		cmt, err := newEmptyCommit(nil, "")
+		cmt, err := newEmptyCommit(nil)
 		if err != nil {
 			return err
 		}

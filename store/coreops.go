@@ -80,7 +80,7 @@ func (st *Store) mkdir(repoPath string, createParents bool) (*Directory, error) 
 
 	// Check if the parent exists.
 	// (would result in weird undefined intermediates otherwise)
-	parent, err := st.fs.ResolveDirectory(dirname)
+	parent, err := st.fs.LookupDirectory(dirname)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	defer st.mu.Unlock()
 
 	// Check if the file was already added:
-	file, err := st.fs.ResolveFile(repoPath)
+	file, err := st.fs.LookupFile(repoPath)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, init
 }
 
 func (st *Store) pinOp(repoPath string, doUnpin bool) error {
-	node, err := st.fs.ResolveNode(repoPath)
+	node, err := st.fs.LookupNode(repoPath)
 	if err != nil {
 		return err
 	}
@@ -317,7 +317,7 @@ func (st *Store) Unpin(repoPath string) error {
 }
 
 func (st *Store) IsPinned(repoPath string) (bool, error) {
-	node, err := st.fs.ResolveDirectory(repoPath)
+	node, err := st.fs.LookupDirectory(repoPath)
 	if err != nil {
 		return false, err
 	}
@@ -359,7 +359,7 @@ func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	file, err := st.fs.ResolveFile(prefixSlash(path))
+	file, err := st.fs.LookupFile(prefixSlash(path))
 	if err != nil {
 		return nil, err
 	}
@@ -389,20 +389,23 @@ func (st *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
+func (st *Store) Lookup(repoPath string) (Node, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.fs.LookupNode(repoPath)
+}
+
 // Remove will purge a file locally on this node.
 // If `recursive` is true and if `path` is a directory, all files
 // in it will be removed. If `recursive` is false, ErrNotEmpty will
 // be returned upon non-empty directories.
-func (st *Store) Remove(path string, recursive bool) error {
+func (st *Store) Remove(repoPath string, recursive bool) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	return st.remove(path, recursive)
-}
-
-func (st *Store) remove(repoPath string, recursive bool) (err error) {
 	repoPath = prefixSlash(repoPath)
-	node, err := st.fs.ResolveNode(repoPath)
+	node, err := st.fs.LookupNode(repoPath)
 	if err != nil {
 		return err
 	}
@@ -465,7 +468,7 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	node, err := st.fs.ResolveDirectory(root)
+	node, err := st.fs.LookupDirectory(root)
 	if err != nil {
 		return nil, err
 	}
@@ -528,7 +531,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 	oldPath = prefixSlash(path.Clean(oldPath))
 	newPath = prefixSlash(path.Clean(newPath))
 
-	node, err := st.fs.ResolveNode(oldPath)
+	node, err := st.fs.LookupNode(oldPath)
 	if err != nil {
 		return err
 	}
@@ -537,7 +540,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 		return NoSuchFile(oldPath)
 	}
 
-	newNode, err := st.fs.ResolveNode(newPath)
+	newNode, err := st.fs.LookupNode(newPath)
 	if err != nil {
 		return err
 	}
@@ -608,52 +611,10 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 
 // Status shows how a Commit would look like if Commit() would be called.
 func (st *Store) Status() (*Commit, error) {
-	return st.status()
-}
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
-// Unlocked version of Status()
-func (st *Store) status() (*Commit, error) {
-	/*
-		head, err := st.HEAD()
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: Author?
-		cmt := newEmptyCommit(fs, id.ID(""))
-
-		cmt := NewEmptyCommit(st, st.ID)
-		cmt.Parent = head
-		cmt.Message = "Uncommitted changes"
-		cmt.TreeHash = st.Root.Hash().Clone()
-
-		hash, err := st.makeCommitHash(cmt, head)
-		if err != nil {
-			return nil, err
-		}
-
-		cmt.Hash = hash
-
-		err = st.viewWithBucket("stage", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			return bkt.ForEach(func(bpath, bckpnt []byte) error {
-				checkpoint := &Checkpoint{}
-				if err := checkpoint.Unmarshal(bckpnt); err != nil {
-					return err
-				}
-
-				cmt.Checkpoints = append(cmt.Checkpoints, checkpoint)
-				return nil
-			})
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		return cmt, nil
-	*/
-	// TODO: Finalize stage concept
-	return nil, nil
+	return st.fs.Status()
 }
 
 // Commit saves a commit in the store history.
@@ -661,8 +622,12 @@ func (st *Store) MakeCommit(msg string) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	// TODO: Call fs.SubmitCommit machinery.
-	return nil
+	owner, err := st.Owner()
+	if err != nil {
+		return err
+	}
+
+	return st.fs.MakeCommit(owner, msg)
 }
 
 // TODO: respect from/to ranges
