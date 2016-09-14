@@ -18,11 +18,12 @@ import (
 	"github.com/disorganizer/brig/repo"
 	repoconfig "github.com/disorganizer/brig/repo/config"
 	"github.com/disorganizer/brig/store"
+	storewire "github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/colors"
 	pwdutil "github.com/disorganizer/brig/util/pwd"
 	"github.com/dustin/go-humanize"
-	"github.com/jbenet/go-multihash"
+	multihash "github.com/jbenet/go-multihash"
 	"github.com/olebedev/config"
 )
 
@@ -366,22 +367,22 @@ func printCheckpoint(checkpoint *store.Checkpoint, idx, historylen int) {
 		treeRuneBar,
 		colors.Colorize("Checkpoint", colors.Cyan),
 		historylen-idx,
-		colors.Colorize(checkpoint.Change.String(), colors.Red),
-		colors.Colorize(string(checkpoint.Author), colors.Magenta),
+		colors.Colorize(checkpoint.ChangeType().String(), colors.Red),
+		colors.Colorize(string(checkpoint.Author()), colors.Magenta),
 	)
 
 	fmt.Printf(
 		" %s   ├─ % 9s: %v\n",
 		twoWayRune,
 		colors.Colorize("Hash", colors.Green),
-		checkpoint.Hash.B58String(),
+		checkpoint.Hash().B58String(),
 	)
 
 	fmt.Printf(
 		" %s   └─ % 9s: %v\n",
 		twoWayRune,
 		colors.Colorize("Date", colors.Yellow),
-		checkpoint.ModTime,
+		time.Now(), // TODO: Use actual checkpoint mtime
 	)
 }
 
@@ -477,7 +478,7 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 		depth = -1
 	}
 
-	dirlist, err := client.List(path, depth)
+	entries, err := client.List(path, depth)
 	if err != nil {
 		return ExitCode{
 			UnknownError,
@@ -485,17 +486,17 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 		}
 	}
 
-	for _, dirent := range dirlist {
+	for _, entry := range entries {
 		modTime := time.Time{}
-		if err := modTime.UnmarshalText(dirent.GetModTime()); err != nil {
-			log.Warningf("Could not parse mtime (%s): %v", dirent.GetModTime(), err)
+		if err := modTime.UnmarshalText(entry.GetModTime()); err != nil {
+			log.Warningf("Could not parse mtime (%s): %v", entry.GetModTime(), err)
 			continue
 		}
 
 		fmt.Printf(
 			"%s\t%s\t%s\n",
 			colors.Colorize(
-				humanize.Bytes(uint64(dirent.GetFileSize())),
+				humanize.Bytes(uint64(entry.GetNodeSize())),
 				colors.Green,
 			),
 			colors.Colorize(
@@ -503,7 +504,7 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 				colors.Cyan,
 			),
 			colors.Colorize(
-				dirent.GetPath(),
+				entry.GetPath(),
 				colors.Magenta,
 			),
 		)
@@ -571,7 +572,7 @@ func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
 	return nil
 }
 
-type changeByType map[store.ChangeType][]*store.Checkpoint
+type changeByType map[int32][]*storewire.Checkpoint
 
 func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 	status, err := client.Status()
@@ -579,25 +580,26 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	if len(status.GetCheckpoints()) == 0 {
+	statusCmt := status.GetCommit()
+	if statusCmt == nil {
+		return fmt.Errorf("Empty status commit in response.")
+	}
+
+	checkpoints := statusCmt.GetCheckpoints()
+	if len(checkpoints) == 0 {
 		fmt.Println("Nothing to commit.")
 		return nil
 	}
 
 	userToChanges := make(map[id.ID]changeByType)
-	for _, checkpoint := range status.GetCheckpoints() {
-		cp := &store.Checkpoint{}
-		if err := cp.FromProto(checkpoint); err != nil {
-			return err
-		}
-
-		byAuthor, ok := userToChanges[cp.Author]
+	for _, pckp := range checkpoints {
+		byAuthor, ok := userToChanges[id.ID(pckp.GetAuthor())]
 		if !ok {
 			byAuthor = make(changeByType)
-			userToChanges[cp.Author] = byAuthor
+			userToChanges[id.ID(pckp.GetAuthor())] = byAuthor
 		}
 
-		byAuthor[cp.Change] = append(byAuthor[cp.Change], cp)
+		byAuthor[pckp.GetChange()] = append(byAuthor[pckp.GetChange()], pckp)
 	}
 
 	for user, changesByuser := range userToChanges {
@@ -613,12 +615,14 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 
 func printChangesByUser(changesByuser changeByType) error {
 	for typ, checkpoints := range changesByuser {
-		fmt.Printf("\n    %s:\n", strings.Title(typ.String()))
-		for _, change := range checkpoints {
+		changeType := store.ChangeType(typ)
 
+		fmt.Printf("\n    %s:\n", strings.Title((&changeType).String()))
+		for _, change := range checkpoints {
 			msg := fmt.Sprintf(
 				"        %s (%s)",
-				change.Path, humanize.Bytes(uint64(change.Size)),
+				"TODO: resolve checkpoint to path",
+				humanize.Bytes(uint64(change.Size())),
 			)
 
 			color := 0
@@ -638,6 +642,7 @@ func printChangesByUser(changesByuser changeByType) error {
 			fmt.Println(colors.Colorize(msg, color))
 		}
 	}
+
 	return nil
 }
 
@@ -651,7 +656,12 @@ func handleCommit(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	commitCnt := len(status.GetCheckpoints())
+	statusCmt := status.GetCommit()
+	if statusCmt == nil {
+		return fmt.Errorf("Empty status commit in response.")
+	}
+
+	commitCnt := len(statusCmt.GetChangeset())
 	if commitCnt == 0 {
 		fmt.Println("Nothing to commit.")
 		return nil
@@ -671,22 +681,28 @@ func handleLog(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	for _, l := range log.GetCommits() {
-		commitMultihash, err := multihash.Cast(l.GetHash())
+	for _, pnode := range log.GetNodes() {
+		commitMH, err := multihash.Cast(pnode.GetHash())
 		if err != nil {
 			return err
 		}
-		treeMultihash, err := multihash.Cast(l.GetTreeHash())
+
+		pcmt := pnode.GetCommit()
+		if pcmt == nil {
+			return fmt.Errorf("Empty commit in log-commit")
+		}
+
+		rootMH, err := multihash.Cast(pcmt.GetRoot())
 		if err != nil {
 			return err
 		}
 
 		fmt.Printf(
 			"%s/%s by %s, %s\n",
-			colors.Colorize(commitMultihash.B58String()[:10], colors.Green),
-			colors.Colorize(treeMultihash.B58String()[:10], colors.Magenta),
-			l.GetAuthor(),
-			l.GetMessage(),
+			colors.Colorize(commitMH.B58String()[:10], colors.Green),
+			colors.Colorize(rootMH.B58String()[:10], colors.Magenta),
+			pcmt.GetAuthor(),
+			pcmt.GetMessage(),
 		)
 	}
 	return nil

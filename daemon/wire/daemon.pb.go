@@ -1011,7 +1011,7 @@ func (m *Response) GetExportResp() *Response_ExportResp {
 }
 
 type Response_ListResp struct {
-	Dirlist          *brig_store.Nodes `protobuf:"bytes,1,req,name=dirlist" json:"dirlist,omitempty"`
+	Entries          *brig_store.Nodes `protobuf:"bytes,1,req,name=entries" json:"entries,omitempty"`
 	XXX_unrecognized []byte            `json:"-"`
 }
 
@@ -1019,9 +1019,9 @@ func (m *Response_ListResp) Reset()         { *m = Response_ListResp{} }
 func (m *Response_ListResp) String() string { return proto.CompactTextString(m) }
 func (*Response_ListResp) ProtoMessage()    {}
 
-func (m *Response_ListResp) GetDirlist() *brig_store.Nodes {
+func (m *Response_ListResp) GetEntries() *brig_store.Nodes {
 	if m != nil {
-		return m.Dirlist
+		return m.Entries
 	}
 	return nil
 }
@@ -1107,15 +1107,15 @@ func (m *Response_OnlineStatusResp) GetIsOnline() bool {
 }
 
 type Response_StatusResp struct {
-	StageCommit      *brig_store.Commit `protobuf:"bytes,1,req,name=stage_commit" json:"stage_commit,omitempty"`
-	XXX_unrecognized []byte             `json:"-"`
+	StageCommit      *brig_store.Node `protobuf:"bytes,1,req,name=stage_commit" json:"stage_commit,omitempty"`
+	XXX_unrecognized []byte           `json:"-"`
 }
 
 func (m *Response_StatusResp) Reset()         { *m = Response_StatusResp{} }
 func (m *Response_StatusResp) String() string { return proto.CompactTextString(m) }
 func (*Response_StatusResp) ProtoMessage()    {}
 
-func (m *Response_StatusResp) GetStageCommit() *brig_store.Commit {
+func (m *Response_StatusResp) GetStageCommit() *brig_store.Node {
 	if m != nil {
 		return m.StageCommit
 	}
@@ -1123,17 +1123,17 @@ func (m *Response_StatusResp) GetStageCommit() *brig_store.Commit {
 }
 
 type Response_LogResp struct {
-	Commits          *brig_store.Commits `protobuf:"bytes,1,req,name=Commits" json:"Commits,omitempty"`
-	XXX_unrecognized []byte              `json:"-"`
+	Nodes            *brig_store.Nodes `protobuf:"bytes,1,req,name=Nodes" json:"Nodes,omitempty"`
+	XXX_unrecognized []byte            `json:"-"`
 }
 
 func (m *Response_LogResp) Reset()         { *m = Response_LogResp{} }
 func (m *Response_LogResp) String() string { return proto.CompactTextString(m) }
 func (*Response_LogResp) ProtoMessage()    {}
 
-func (m *Response_LogResp) GetCommits() *brig_store.Commits {
+func (m *Response_LogResp) GetNodes() *brig_store.Nodes {
 	if m != nil {
-		return m.Commits
+		return m.Nodes
 	}
 	return nil
 }
@@ -2498,13 +2498,13 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Dirlist == nil {
+	if m.Entries == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.Dirlist.Size()))
-		n36, err := m.Dirlist.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.Entries.Size()))
+		n36, err := m.Entries.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2732,13 +2732,13 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Commits == nil {
+	if m.Nodes == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.Commits.Size()))
-		n40, err := m.Commits.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.Nodes.Size()))
+		n40, err := m.Nodes.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -3382,8 +3382,8 @@ func (m *Response) Size() (n int) {
 func (m *Response_ListResp) Size() (n int) {
 	var l int
 	_ = l
-	if m.Dirlist != nil {
-		l = m.Dirlist.Size()
+	if m.Entries != nil {
+		l = m.Entries.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -3476,8 +3476,8 @@ func (m *Response_StatusResp) Size() (n int) {
 func (m *Response_LogResp) Size() (n int) {
 	var l int
 	_ = l
-	if m.Commits != nil {
-		l = m.Commits.Size()
+	if m.Nodes != nil {
+		l = m.Nodes.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -7350,7 +7350,7 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Dirlist", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7374,10 +7374,10 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Dirlist == nil {
-				m.Dirlist = &brig_store.Nodes{}
+			if m.Entries == nil {
+				m.Entries = &brig_store.Nodes{}
 			}
-			if err := m.Dirlist.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Entries.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7881,7 +7881,7 @@ func (m *Response_StatusResp) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.StageCommit == nil {
-				m.StageCommit = &brig_store.Commit{}
+				m.StageCommit = &brig_store.Node{}
 			}
 			if err := m.StageCommit.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -7945,7 +7945,7 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Commits", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Nodes", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7969,10 +7969,10 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Commits == nil {
-				m.Commits = &brig_store.Commits{}
+			if m.Nodes == nil {
+				m.Nodes = &brig_store.Nodes{}
 			}
-			if err := m.Commits.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Nodes.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

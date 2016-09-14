@@ -92,9 +92,14 @@ type Checkpoint struct {
 	// Change is the detailed type of the modification.
 	change ChangeType
 
-	// Author of the file modifications (jabber id)
+	// Author of the file modifications
+	// TODO: use commit.Author?
 	author id.ID
 }
+
+func (c *Checkpoint) ChangeType() *ChangeType { return &c.change }
+func (c *Checkpoint) Hash() *Hash             { return c.hash }
+func (c *Checkpoint) Author() id.ID           { return c.author }
 
 // TODO: nice representation
 func (c *Checkpoint) String() string {

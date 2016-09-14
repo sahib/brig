@@ -183,7 +183,7 @@ func (c *Client) IsOnline() (bool, error) {
 	return resp.GetOnlineStatusResp().GetIsOnline(), nil
 }
 
-func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
+func (c *Client) List(root string, depth int) ([]*storewire.Node, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_LIST.Enum(),
 		ListCommand: &wire.Command_ListCmd{
@@ -197,8 +197,8 @@ func (c *Client) List(root string, depth int) ([]*storewire.Dirent, error) {
 		return nil, err
 	}
 
-	dirlist := resp.GetListResp().GetDirlist()
-	return dirlist.Entries, nil
+	entries := resp.GetListResp().GetEntries()
+	return entries.GetNodes(), nil
 }
 
 func (c *Client) Sync(who id.ID) error {
@@ -338,7 +338,7 @@ func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 	}, nil
 }
 
-func (c *Client) Status() (*storewire.Commit, error) {
+func (c *Client) Status() (*storewire.Node, error) {
 	c.Send <- &wire.Command{CommandType: wire.MessageType_STATUS.Enum()}
 
 	resp, err := c.recvResponse("status")
@@ -364,7 +364,7 @@ func (c *Client) MakeCommit(msg string) error {
 	return nil
 }
 
-func (c *Client) Log(from, to *store.Hash) (*storewire.Commits, error) {
+func (c *Client) Log(from, to *store.Hash) (*storewire.Nodes, error) {
 	c.Send <- &wire.Command{
 		CommandType: wire.MessageType_LOG.Enum(),
 		LogCommand: &wire.Command_LogCmd{
@@ -378,7 +378,7 @@ func (c *Client) Log(from, to *store.Hash) (*storewire.Commits, error) {
 		return nil, err
 	}
 
-	return resp.GetLogResp().GetCommits(), nil
+	return resp.GetLogResp().GetNodes(), nil
 }
 
 func (c *Client) doPin(path string, balance int) (bool, error) {

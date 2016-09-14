@@ -53,15 +53,15 @@ func (f *File) ToProto() (*wire.Node, error) {
 	}
 
 	return &wire.Node{
-		ID:   proto.Uint64(f.id),
-		Type: wire.NodeType_FILE.Enum(),
+		ID:       proto.Uint64(f.id),
+		Type:     wire.NodeType_FILE.Enum(),
+		Name:     proto.String(f.name),
+		NodeSize: proto.Uint64(f.size),
+		ModTime:  binModTime,
+		Parent:   f.parent.Bytes(),
+		Hash:     f.hash.Bytes(),
 		File: &wire.File{
-			Name:     proto.String(f.name),
-			Key:      f.key,
-			FileSize: proto.Uint64(f.size),
-			ModTime:  binModTime,
-			Hash:     f.hash.Bytes(),
-			Parent:   f.parent.Bytes(),
+			Key: f.key,
 		},
 	}, nil
 }
@@ -73,17 +73,17 @@ func (f *File) FromProto(pnd *wire.Node) error {
 	}
 
 	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(pfi.GetModTime()); err != nil {
+	if err := modTime.UnmarshalBinary(pnd.GetModTime()); err != nil {
 		return err
 	}
 
 	f.id = pnd.GetID()
-	f.size = pfi.GetFileSize()
+	f.size = pnd.GetNodeSize()
 	f.modTime = modTime
-	f.hash = &Hash{pfi.GetHash()}
-	f.parent = &Hash{pfi.GetParent()}
+	f.hash = &Hash{pnd.GetHash()}
+	f.parent = &Hash{pnd.GetParent()}
+	f.name = pnd.GetName()
 	f.key = pfi.GetKey()
-	f.name = pfi.GetName()
 	return nil
 }
 

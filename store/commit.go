@@ -144,11 +144,11 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	}
 
 	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(pcm.GetModTime()); err != nil {
+	if err := modTime.UnmarshalBinary(pnd.GetModTime()); err != nil {
 		return err
 	}
 
-	hash, err := multihash.Cast(pcm.GetHash())
+	hash, err := multihash.Cast(pnd.GetHash())
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
-	parent, err := multihash.Cast(pcm.GetParentHash())
+	parent, err := multihash.Cast(pnd.GetParent())
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	// Set commit data if everything worked:
 	cm.id = pnd.GetID()
 	cm.message = pcm.GetMessage()
-	cm.parent = &Hash{pcm.GetParentHash()}
+	cm.parent = &Hash{pnd.GetParent()}
 	cm.author = author
 	cm.modTime = modTime
 	cm.hash = &Hash{hash}
@@ -230,19 +230,24 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 	pcm.Message = proto.String(cm.message)
 	pcm.Author = pauthor
-	pcm.ModTime = modTime
-	pcm.Hash = cm.hash.Bytes()
 	pcm.Root = cm.root.Bytes()
 	pcm.Changeset = changeset
 
 	// Check if it's the initial commit:
+	var parentHash []byte
 	if cm.parent != nil {
-		pcm.ParentHash = cm.parent.Bytes()
+		parentHash = cm.parent.Bytes()
 	}
 
+	// TODO: Store something more meaningful in 'name':
 	return &wire.Node{
-		ID:     proto.Uint64(cm.id),
-		Commit: pcm,
+		NodeSize: proto.Uint64(0),
+		ModTime:  modTime,
+		Hash:     cm.hash.Bytes(),
+		Name:     proto.String("commit"),
+		Parent:   parentHash,
+		ID:       proto.Uint64(cm.id),
+		Commit:   pcm,
 	}, nil
 }
 
@@ -333,41 +338,5 @@ func (cm *Commit) Finalize(author id.Peer, message string, parent *Commit) error
 	}
 
 	cm.modTime = time.Now()
-	return nil
-}
-
-// TODO: is this needed?
-// Commits is a list of single commits.
-// It is used to enable chronological sorting of a bunch of commits.
-type Commits []*Commit
-
-func (cs *Commits) Unmarshal(data []byte) error {
-	protoCmts := &wire.Commits{}
-	if err := proto.Unmarshal(data, protoCmts); err != nil {
-		return err
-	}
-
-	return cs.FromProto(protoCmts)
-}
-
-func (cs *Commits) FromProto(protoCmts *wire.Commits) error {
-	for _, protoCmt := range protoCmts.GetCommits() {
-		cmt, err := newEmptyCommit(nil)
-		if err != nil {
-			return err
-		}
-
-		pnode := &wire.Node{
-			Type:   wire.NodeType_COMMIT.Enum(),
-			Commit: protoCmt,
-		}
-
-		if err := cmt.FromProto(pnode); err != nil {
-			return err
-		}
-
-		*cs = append(*cs, cmt)
-	}
-
 	return nil
 }

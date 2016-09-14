@@ -118,7 +118,7 @@ func handleRm(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response
 
 func handleMv(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mvCmd := cmd.GetMvCommand()
-	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest()); err != nil {
+	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest(), true); err != nil {
 		return nil, err
 	}
 
@@ -196,14 +196,14 @@ func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 	listCmd := cmd.GetListCommand()
 	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
 
-	dirlist, err := d.Repo.OwnStore.ListProto(root, int(depth))
+	entries, err := d.Repo.OwnStore.ListProtoNodes(root, int(depth))
 	if err != nil {
 		return nil, err
 	}
 
 	return &wire.Response{
 		ListResp: &wire.Response_ListResp{
-			Dirlist: dirlist,
+			Entries: entries,
 		},
 	}, nil
 }
@@ -325,14 +325,14 @@ func handleStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Resp
 		return nil, err
 	}
 
-	protoCommit, err := status.ToProto()
+	pstatus, err := status.ToProto()
 	if err != nil {
 		return nil, err
 	}
 
 	return &wire.Response{
 		StatusResp: &wire.Response_StatusResp{
-			StageCommit: protoCommit,
+			StageCommit: pstatus,
 		},
 	}, nil
 }
@@ -354,19 +354,24 @@ func handleDiff(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 
 func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	// TODO: Respect from/to
-	cmts, err := d.Repo.OwnStore.Log()
+	nodes, err := d.Repo.OwnStore.Log()
 	if err != nil {
 		return nil, err
 	}
 
-	protoCmts, err := cmts.ToProto()
-	if err != nil {
-		return nil, err
+	pnodes := &storewire.Nodes{}
+	for _, node := range nodes {
+		pnode, err := node.ToProto()
+		if err != nil {
+			return nil, err
+		}
+
+		pnodes.Nodes = append(pnodes.Nodes, pnode)
 	}
 
 	return &wire.Response{
 		LogResp: &wire.Response_LogResp{
-			Commits: protoCmts,
+			Nodes: pnodes,
 		},
 	}, nil
 }

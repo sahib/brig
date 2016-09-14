@@ -210,7 +210,7 @@ message Remote {
 
 message Response {
     message ListResp {
-        required brig.store.Nodes dirlist = 1;
+        required brig.store.Nodes entries = 1;
     }
 
     message HistoryResp {
@@ -234,11 +234,11 @@ message Response {
     }
 
     message StatusResp {
-        required brig.store.Commit stage_commit = 1;
+        required brig.store.Node stage_commit = 1;
     }
 
     message LogResp {
-        required brig.store.Commits Commits = 1;
+        required brig.store.Nodes Nodes = 1;
     }
 
     message PinResp {

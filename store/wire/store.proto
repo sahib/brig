@@ -1,60 +1,18 @@
 package brig.store;
 option go_package = "wire";
 
-// Might be extended with more esoteric types in the future.
-enum NodeType {
-  UNKNOWN = 0;
-  FILE = 1;
-  DIRECTORY = 2;
-  COMMIT = 3;
-}
-
-// An Object is a container for a file, a directory or a Ref.
-// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
-message Node {
-  // Type of this node (see above)
-  required NodeType type = 1;
-  // Global identifier of this node, since hash and path
-  // might change sometimes.
-  required uint64 ID = 2;
-
-  // Individual types:
-  optional File file = 3;
-  optional Directory directory = 4;
-  optional Commit commit = 5;
-}
-
-// Just a collection of nodes:
-message Nodes {
-  repeated Node nodes = 1;
-}
-
-////////////// CONCRETE NODES /////////////
-
-message File {
-    required string name = 1;
-    optional bytes key = 2;
-    optional bytes hash = 3;
-    required bytes parent = 4;
-    required uint64 file_size = 5;
-
-    // Timestamp formated as RFC 3339
-    required bytes mod_time = 6;
-}
-
-message Directory {
-    required string name = 1;
-    required uint64 file_size = 2;
-    required bytes parent = 3;
-    required bytes hash = 4;
-    required bytes mod_time = 5;
-
-    // Directory contents (hashtable contents [name => link]):
-    repeated bytes links = 6;
-    repeated string names = 7;
-}
-
 ///////////// VERSION CONTROL STRUCTURES ///////////
+
+message Author {
+  required string name = 1;
+  required string hash = 2;
+}
+
+// Optional merge information for merge commits
+message Merge {
+    required string with = 1;
+    required bytes hash = 2;
+}
 
 message Checkpoint {
   // Link to the node id:
@@ -73,44 +31,17 @@ message History {
     repeated Checkpoint hist = 1 [packed=false];
 }
 
-// Optional merge information for merge commits
-message Merge {
-    required string with = 1;
-    required bytes hash = 2;
-}
-
 message CheckpointLink {
   required uint64 id_link = 1;
   required uint64 index = 2;
-}
-
-message Author {
-  required string name = 1;
-  required string hash = 2;
-}
-
-// Commit is a bag of changes, either automatically done
-// or by the user.
-message Commit {
-    required string message = 1;
-    required Author author = 2;
-    required bytes mod_time = 3;
-    required bytes hash = 4;
-    required bytes root = 5;
-
-    repeated CheckpointLink changeset = 6;
-
-    // Link to parent hash (empty for initial commit):
-    optional bytes parent_hash = 7;
-
-    // Merge information if this is a merge commit.
-    optional Merge merge = 8;
 }
 
 // Commits is an ordered list of commits
 message Commits {
     repeated Commit commits = 1;
 }
+
+////////////////// MISC STRUCTURES /////////////
 
 message Ref {
     required string name = 1;
@@ -131,6 +62,87 @@ message Store {
     repeated Ref refs = 5;
     required StoreMetadata metadata = 6;
 
-    required uint64 node_count = 4;
+    required uint64 node_count = 7;
+}
+
+////////////// NODE BASICS /////////////
+
+// Might be extended with more esoteric types in the future.
+enum NodeType {
+  UNKNOWN = 0;
+  FILE = 1;
+  DIRECTORY = 2;
+  COMMIT = 3;
+}
+
+// An Object is a container for a file, a directory or a Ref.
+// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
+message Node {
+  // Type of this node (see above)
+  required NodeType type = 1;
+  // Global identifier of this node, since hash and path
+  // might change sometimes.
+  required uint64 ID = 2;
+
+  // Size of the node in bytes:
+  required uint64 node_size = 3;
+
+  // Timestamp formated as RFC 3339
+  required bytes mod_time = 4;
+
+  // Hash of the node as multihash:
+  required bytes hash = 5;
+
+  // Name of this node (i.e. path element)
+  required string name = 6;
+
+  // Parent hash of this node (might be nil)
+  optional bytes parent = 7;
+
+  // Path must only be filled when exported to a client.
+  // It may not be used internally and is not saved to the kv-store.
+  optional string path = 8;
+
+  // Individual types:
+  optional File file = 9;
+  optional Directory directory = 10;
+  optional Commit commit = 11;
+}
+
+// Just a collection of nodes:
+message Nodes {
+  repeated Node nodes = 1;
+}
+
+////////////// CONCRETE NODES /////////////
+
+message File {
+    optional bytes key = 1;
+}
+
+message Directory {
+    // Directory contents (hashtable contents [name => link]):
+    repeated bytes links = 1;
+    repeated string names = 2;
+}
+
+// Commit is a bag of changes, either automatically done or by the user.
+message Commit {
+    required string message = 1;
+    required Author author = 2;
+
+    // Hash to the root tree:
+    required bytes root = 3;
+
+    // List of checkpoints (one per file):
+    repeated CheckpointLink changeset = 4;
+
+    // Merge information if this is a merge commit.
+    optional Merge merge = 5;
+
+    // Checkpoints stored in the commit.
+    // This is only used when exported to the client,
+    // it is not stored in the kv-store.
+    repeated Checkpoint checkpoints = 6;
 }
 

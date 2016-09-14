@@ -24,12 +24,12 @@ type treeNode struct {
 	isLast   bool
 	parent   *treeNode
 	depth    int
-	entry    *storewire.Dirent
+	entry    *storewire.Node
 }
 
 // This is a very stripped down version util.Trie.Insert()
 // but with support for ordering the elements.
-func (n *treeNode) Insert(entry *storewire.Dirent) {
+func (n *treeNode) Insert(entry *storewire.Node) {
 	parts := strings.Split(entry.GetPath(), "/")
 	if len(parts) > 0 && parts[0] == "" {
 		parts = parts[1:]
@@ -114,7 +114,7 @@ func (n *treeNode) Print() {
 	switch {
 	case n.name == "/":
 		name, prefix = colors.Colorize(n.name, colors.Magenta), ""
-	case n.entry.GetKind() == store.FileTypeDir:
+	case n.entry.GetType() == store.NodeTypeDirectory:
 		name = colors.Colorize(name, colors.Green)
 	}
 
@@ -125,7 +125,7 @@ func (n *treeNode) Print() {
 	}
 }
 
-func showTree(entries []*storewire.Dirent, maxDepth int) error {
+func showTree(entries []*storewire.Node, maxDepth int) error {
 	root := &treeNode{name: "/"}
 	nfiles, ndirs := 0, 0
 
@@ -136,10 +136,10 @@ func showTree(entries []*storewire.Dirent, maxDepth int) error {
 			root.Insert(entry)
 		}
 
-		switch entry.GetKind() {
-		case store.FileTypeRegular:
+		switch entry.GetType() {
+		case store.NodeTypeFile:
 			nfiles++
-		case store.FileTypeDir:
+		case store.NodeTypeDirectory:
 			ndirs++
 		}
 	}

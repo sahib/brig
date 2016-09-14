@@ -9,20 +9,20 @@
 		store.proto
 
 	It has these top-level messages:
+		Author
+		Merge
+		Checkpoint
+		History
+		CheckpointLink
+		Commits
+		Ref
+		StoreMetadata
+		Store
 		Node
 		Nodes
 		File
 		Directory
-		Checkpoint
-		History
-		Pack
-		Store
-		Merge
-		CheckpointLink
-		Author
 		Commit
-		Commits
-		Ref
 */
 package wire
 
@@ -79,194 +79,51 @@ func (x *NodeType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// An Object is a container for a file, a directory or a Ref.
-type Node struct {
-	// Type of this node (see above)
-	Type *NodeType `protobuf:"varint,1,req,name=type,enum=brig.store.NodeType" json:"type,omitempty"`
-	// Global identifier of this node, since hash and path
-	// might change sometimes.
-	ID *uint64 `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
-	// Individual types:
-	File             *File      `protobuf:"bytes,3,opt,name=file" json:"file,omitempty"`
-	Directory        *Directory `protobuf:"bytes,4,opt,name=directory" json:"directory,omitempty"`
-	Commit           *Commit    `protobuf:"bytes,5,opt,name=commit" json:"commit,omitempty"`
-	XXX_unrecognized []byte     `json:"-"`
-}
-
-func (m *Node) Reset()         { *m = Node{} }
-func (m *Node) String() string { return proto.CompactTextString(m) }
-func (*Node) ProtoMessage()    {}
-
-func (m *Node) GetType() NodeType {
-	if m != nil && m.Type != nil {
-		return *m.Type
-	}
-	return NodeType_UNKNOWN
-}
-
-func (m *Node) GetID() uint64 {
-	if m != nil && m.ID != nil {
-		return *m.ID
-	}
-	return 0
-}
-
-func (m *Node) GetFile() *File {
-	if m != nil {
-		return m.File
-	}
-	return nil
-}
-
-func (m *Node) GetDirectory() *Directory {
-	if m != nil {
-		return m.Directory
-	}
-	return nil
-}
-
-func (m *Node) GetCommit() *Commit {
-	if m != nil {
-		return m.Commit
-	}
-	return nil
-}
-
-// Just a collection of nodes:
-type Nodes struct {
-	Nodes            []*Node `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
+type Author struct {
+	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Nodes) Reset()         { *m = Nodes{} }
-func (m *Nodes) String() string { return proto.CompactTextString(m) }
-func (*Nodes) ProtoMessage()    {}
+func (m *Author) Reset()         { *m = Author{} }
+func (m *Author) String() string { return proto.CompactTextString(m) }
+func (*Author) ProtoMessage()    {}
 
-func (m *Nodes) GetNodes() []*Node {
-	if m != nil {
-		return m.Nodes
-	}
-	return nil
-}
-
-type File struct {
-	Name     *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Key      []byte  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	Hash     []byte  `protobuf:"bytes,3,opt,name=hash" json:"hash,omitempty"`
-	Parent   []byte  `protobuf:"bytes,4,req,name=parent" json:"parent,omitempty"`
-	FileSize *uint64 `protobuf:"varint,5,req,name=file_size" json:"file_size,omitempty"`
-	// Timestamp formated as RFC 3339
-	ModTime          []byte `protobuf:"bytes,6,req,name=mod_time" json:"mod_time,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
-}
-
-func (m *File) Reset()         { *m = File{} }
-func (m *File) String() string { return proto.CompactTextString(m) }
-func (*File) ProtoMessage()    {}
-
-func (m *File) GetName() string {
+func (m *Author) GetName() string {
 	if m != nil && m.Name != nil {
 		return *m.Name
 	}
 	return ""
 }
 
-func (m *File) GetKey() []byte {
-	if m != nil {
-		return m.Key
-	}
-	return nil
-}
-
-func (m *File) GetHash() []byte {
-	if m != nil {
-		return m.Hash
-	}
-	return nil
-}
-
-func (m *File) GetParent() []byte {
-	if m != nil {
-		return m.Parent
-	}
-	return nil
-}
-
-func (m *File) GetFileSize() uint64 {
-	if m != nil && m.FileSize != nil {
-		return *m.FileSize
-	}
-	return 0
-}
-
-func (m *File) GetModTime() []byte {
-	if m != nil {
-		return m.ModTime
-	}
-	return nil
-}
-
-type Directory struct {
-	Name     *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	FileSize *uint64 `protobuf:"varint,2,req,name=file_size" json:"file_size,omitempty"`
-	Parent   []byte  `protobuf:"bytes,3,req,name=parent" json:"parent,omitempty"`
-	Hash     []byte  `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
-	ModTime  []byte  `protobuf:"bytes,5,req,name=mod_time" json:"mod_time,omitempty"`
-	// Directory contents (hashtable contents [name => link]):
-	Links            [][]byte `protobuf:"bytes,6,rep,name=links" json:"links,omitempty"`
-	Names            []string `protobuf:"bytes,7,rep,name=names" json:"names,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
-}
-
-func (m *Directory) Reset()         { *m = Directory{} }
-func (m *Directory) String() string { return proto.CompactTextString(m) }
-func (*Directory) ProtoMessage()    {}
-
-func (m *Directory) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
+func (m *Author) GetHash() string {
+	if m != nil && m.Hash != nil {
+		return *m.Hash
 	}
 	return ""
 }
 
-func (m *Directory) GetFileSize() uint64 {
-	if m != nil && m.FileSize != nil {
-		return *m.FileSize
-	}
-	return 0
+// Optional merge information for merge commits
+type Merge struct {
+	With             *string `protobuf:"bytes,1,req,name=with" json:"with,omitempty"`
+	Hash             []byte  `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Directory) GetParent() []byte {
-	if m != nil {
-		return m.Parent
+func (m *Merge) Reset()         { *m = Merge{} }
+func (m *Merge) String() string { return proto.CompactTextString(m) }
+func (*Merge) ProtoMessage()    {}
+
+func (m *Merge) GetWith() string {
+	if m != nil && m.With != nil {
+		return *m.With
 	}
-	return nil
+	return ""
 }
 
-func (m *Directory) GetHash() []byte {
+func (m *Merge) GetHash() []byte {
 	if m != nil {
 		return m.Hash
-	}
-	return nil
-}
-
-func (m *Directory) GetModTime() []byte {
-	if m != nil {
-		return m.ModTime
-	}
-	return nil
-}
-
-func (m *Directory) GetLinks() [][]byte {
-	if m != nil {
-		return m.Links
-	}
-	return nil
-}
-
-func (m *Directory) GetNames() []string {
-	if m != nil {
-		return m.Names
 	}
 	return nil
 }
@@ -337,82 +194,6 @@ func (m *History) GetHist() []*Checkpoint {
 	return nil
 }
 
-// A pack stores the history of a file besides it's metadata.
-// i.e. everything needed for an exported file.
-type Pack struct {
-	File             *File    `protobuf:"bytes,1,req,name=file" json:"file,omitempty"`
-	History          *History `protobuf:"bytes,2,req,name=history" json:"history,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
-}
-
-func (m *Pack) Reset()         { *m = Pack{} }
-func (m *Pack) String() string { return proto.CompactTextString(m) }
-func (*Pack) ProtoMessage()    {}
-
-func (m *Pack) GetFile() *File {
-	if m != nil {
-		return m.File
-	}
-	return nil
-}
-
-func (m *Pack) GetHistory() *History {
-	if m != nil {
-		return m.History
-	}
-	return nil
-}
-
-// Store is the exported form of a store.
-type Store struct {
-	Packs            []*Pack  `protobuf:"bytes,1,rep,name=packs" json:"packs,omitempty"`
-	Commits          *Commits `protobuf:"bytes,2,req,name=commits" json:"commits,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
-}
-
-func (m *Store) Reset()         { *m = Store{} }
-func (m *Store) String() string { return proto.CompactTextString(m) }
-func (*Store) ProtoMessage()    {}
-
-func (m *Store) GetPacks() []*Pack {
-	if m != nil {
-		return m.Packs
-	}
-	return nil
-}
-
-func (m *Store) GetCommits() *Commits {
-	if m != nil {
-		return m.Commits
-	}
-	return nil
-}
-
-// Optional merge information for merge commits
-type Merge struct {
-	With             *string `protobuf:"bytes,1,req,name=with" json:"with,omitempty"`
-	Hash             []byte  `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Merge) Reset()         { *m = Merge{} }
-func (m *Merge) String() string { return proto.CompactTextString(m) }
-func (*Merge) ProtoMessage()    {}
-
-func (m *Merge) GetWith() string {
-	if m != nil && m.With != nil {
-		return *m.With
-	}
-	return ""
-}
-
-func (m *Merge) GetHash() []byte {
-	if m != nil {
-		return m.Hash
-	}
-	return nil
-}
-
 type CheckpointLink struct {
 	IdLink           *uint64 `protobuf:"varint,1,req,name=id_link" json:"id_link,omitempty"`
 	Index            *uint64 `protobuf:"varint,2,req,name=index" json:"index,omitempty"`
@@ -435,106 +216,6 @@ func (m *CheckpointLink) GetIndex() uint64 {
 		return *m.Index
 	}
 	return 0
-}
-
-type Author struct {
-	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Author) Reset()         { *m = Author{} }
-func (m *Author) String() string { return proto.CompactTextString(m) }
-func (*Author) ProtoMessage()    {}
-
-func (m *Author) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Author) GetHash() string {
-	if m != nil && m.Hash != nil {
-		return *m.Hash
-	}
-	return ""
-}
-
-// Commit is a bag of changes, either automatically done
-// or by the user.
-type Commit struct {
-	Message   *string           `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	Author    *Author           `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
-	ModTime   []byte            `protobuf:"bytes,3,req,name=mod_time" json:"mod_time,omitempty"`
-	Hash      []byte            `protobuf:"bytes,4,req,name=hash" json:"hash,omitempty"`
-	Root      []byte            `protobuf:"bytes,5,req,name=root" json:"root,omitempty"`
-	Changeset []*CheckpointLink `protobuf:"bytes,6,rep,name=changeset" json:"changeset,omitempty"`
-	// Link to parent hash (empty for initial commit):
-	ParentHash []byte `protobuf:"bytes,7,opt,name=parent_hash" json:"parent_hash,omitempty"`
-	// Merge information if this is a merge commit.
-	Merge            *Merge `protobuf:"bytes,8,opt,name=merge" json:"merge,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
-}
-
-func (m *Commit) Reset()         { *m = Commit{} }
-func (m *Commit) String() string { return proto.CompactTextString(m) }
-func (*Commit) ProtoMessage()    {}
-
-func (m *Commit) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
-func (m *Commit) GetAuthor() *Author {
-	if m != nil {
-		return m.Author
-	}
-	return nil
-}
-
-func (m *Commit) GetModTime() []byte {
-	if m != nil {
-		return m.ModTime
-	}
-	return nil
-}
-
-func (m *Commit) GetHash() []byte {
-	if m != nil {
-		return m.Hash
-	}
-	return nil
-}
-
-func (m *Commit) GetRoot() []byte {
-	if m != nil {
-		return m.Root
-	}
-	return nil
-}
-
-func (m *Commit) GetChangeset() []*CheckpointLink {
-	if m != nil {
-		return m.Changeset
-	}
-	return nil
-}
-
-func (m *Commit) GetParentHash() []byte {
-	if m != nil {
-		return m.ParentHash
-	}
-	return nil
-}
-
-func (m *Commit) GetMerge() *Merge {
-	if m != nil {
-		return m.Merge
-	}
-	return nil
 }
 
 // Commits is an ordered list of commits
@@ -578,24 +259,343 @@ func (m *Ref) GetHash() []byte {
 	return nil
 }
 
+type StoreMetadata struct {
+	Owner            *Author `protobuf:"bytes,1,req,name=owner" json:"owner,omitempty"`
+	Version          *string `protobuf:"bytes,2,req,name=version" json:"version,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *StoreMetadata) Reset()         { *m = StoreMetadata{} }
+func (m *StoreMetadata) String() string { return proto.CompactTextString(m) }
+func (*StoreMetadata) ProtoMessage()    {}
+
+func (m *StoreMetadata) GetOwner() *Author {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
+func (m *StoreMetadata) GetVersion() string {
+	if m != nil && m.Version != nil {
+		return *m.Version
+	}
+	return ""
+}
+
+// Store is the exported form of a store.
+type Store struct {
+	Objects          *Nodes         `protobuf:"bytes,1,req,name=objects" json:"objects,omitempty"`
+	StageObjects     *Nodes         `protobuf:"bytes,2,req,name=stage_objects" json:"stage_objects,omitempty"`
+	Checkpoints      []*Checkpoint  `protobuf:"bytes,3,rep,name=checkpoints" json:"checkpoints,omitempty"`
+	Status           *Commit        `protobuf:"bytes,4,req,name=status" json:"status,omitempty"`
+	Refs             []*Ref         `protobuf:"bytes,5,rep,name=refs" json:"refs,omitempty"`
+	Metadata         *StoreMetadata `protobuf:"bytes,6,req,name=metadata" json:"metadata,omitempty"`
+	NodeCount        *uint64        `protobuf:"varint,7,req,name=node_count" json:"node_count,omitempty"`
+	XXX_unrecognized []byte         `json:"-"`
+}
+
+func (m *Store) Reset()         { *m = Store{} }
+func (m *Store) String() string { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()    {}
+
+func (m *Store) GetObjects() *Nodes {
+	if m != nil {
+		return m.Objects
+	}
+	return nil
+}
+
+func (m *Store) GetStageObjects() *Nodes {
+	if m != nil {
+		return m.StageObjects
+	}
+	return nil
+}
+
+func (m *Store) GetCheckpoints() []*Checkpoint {
+	if m != nil {
+		return m.Checkpoints
+	}
+	return nil
+}
+
+func (m *Store) GetStatus() *Commit {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *Store) GetRefs() []*Ref {
+	if m != nil {
+		return m.Refs
+	}
+	return nil
+}
+
+func (m *Store) GetMetadata() *StoreMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *Store) GetNodeCount() uint64 {
+	if m != nil && m.NodeCount != nil {
+		return *m.NodeCount
+	}
+	return 0
+}
+
+// An Object is a container for a file, a directory or a Ref.
+// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
+type Node struct {
+	// Type of this node (see above)
+	Type *NodeType `protobuf:"varint,1,req,name=type,enum=brig.store.NodeType" json:"type,omitempty"`
+	// Global identifier of this node, since hash and path
+	// might change sometimes.
+	ID *uint64 `protobuf:"varint,2,req,name=ID" json:"ID,omitempty"`
+	// Size of the node in bytes:
+	NodeSize *uint64 `protobuf:"varint,3,req,name=node_size" json:"node_size,omitempty"`
+	// Timestamp formated as RFC 3339
+	ModTime []byte `protobuf:"bytes,4,req,name=mod_time" json:"mod_time,omitempty"`
+	// Hash of the node as multihash:
+	Hash []byte `protobuf:"bytes,5,req,name=hash" json:"hash,omitempty"`
+	// Name of this node (i.e. path element)
+	Name *string `protobuf:"bytes,6,req,name=name" json:"name,omitempty"`
+	// Parent hash of this node (might be nil)
+	Parent []byte `protobuf:"bytes,7,opt,name=parent" json:"parent,omitempty"`
+	// Path must only be filled when exported to a client.
+	// It may not be used internally and is not saved to the kv-store.
+	Path *string `protobuf:"bytes,8,opt,name=path" json:"path,omitempty"`
+	// Individual types:
+	File             *File      `protobuf:"bytes,9,opt,name=file" json:"file,omitempty"`
+	Directory        *Directory `protobuf:"bytes,10,opt,name=directory" json:"directory,omitempty"`
+	Commit           *Commit    `protobuf:"bytes,11,opt,name=commit" json:"commit,omitempty"`
+	XXX_unrecognized []byte     `json:"-"`
+}
+
+func (m *Node) Reset()         { *m = Node{} }
+func (m *Node) String() string { return proto.CompactTextString(m) }
+func (*Node) ProtoMessage()    {}
+
+func (m *Node) GetType() NodeType {
+	if m != nil && m.Type != nil {
+		return *m.Type
+	}
+	return NodeType_UNKNOWN
+}
+
+func (m *Node) GetID() uint64 {
+	if m != nil && m.ID != nil {
+		return *m.ID
+	}
+	return 0
+}
+
+func (m *Node) GetNodeSize() uint64 {
+	if m != nil && m.NodeSize != nil {
+		return *m.NodeSize
+	}
+	return 0
+}
+
+func (m *Node) GetModTime() []byte {
+	if m != nil {
+		return m.ModTime
+	}
+	return nil
+}
+
+func (m *Node) GetHash() []byte {
+	if m != nil {
+		return m.Hash
+	}
+	return nil
+}
+
+func (m *Node) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+func (m *Node) GetParent() []byte {
+	if m != nil {
+		return m.Parent
+	}
+	return nil
+}
+
+func (m *Node) GetPath() string {
+	if m != nil && m.Path != nil {
+		return *m.Path
+	}
+	return ""
+}
+
+func (m *Node) GetFile() *File {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
+func (m *Node) GetDirectory() *Directory {
+	if m != nil {
+		return m.Directory
+	}
+	return nil
+}
+
+func (m *Node) GetCommit() *Commit {
+	if m != nil {
+		return m.Commit
+	}
+	return nil
+}
+
+// Just a collection of nodes:
+type Nodes struct {
+	Nodes            []*Node `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Nodes) Reset()         { *m = Nodes{} }
+func (m *Nodes) String() string { return proto.CompactTextString(m) }
+func (*Nodes) ProtoMessage()    {}
+
+func (m *Nodes) GetNodes() []*Node {
+	if m != nil {
+		return m.Nodes
+	}
+	return nil
+}
+
+type File struct {
+	Key              []byte `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *File) Reset()         { *m = File{} }
+func (m *File) String() string { return proto.CompactTextString(m) }
+func (*File) ProtoMessage()    {}
+
+func (m *File) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+type Directory struct {
+	// Directory contents (hashtable contents [name => link]):
+	Links            [][]byte `protobuf:"bytes,1,rep,name=links" json:"links,omitempty"`
+	Names            []string `protobuf:"bytes,2,rep,name=names" json:"names,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
+}
+
+func (m *Directory) Reset()         { *m = Directory{} }
+func (m *Directory) String() string { return proto.CompactTextString(m) }
+func (*Directory) ProtoMessage()    {}
+
+func (m *Directory) GetLinks() [][]byte {
+	if m != nil {
+		return m.Links
+	}
+	return nil
+}
+
+func (m *Directory) GetNames() []string {
+	if m != nil {
+		return m.Names
+	}
+	return nil
+}
+
+// Commit is a bag of changes, either automatically done or by the user.
+type Commit struct {
+	Message *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
+	Author  *Author `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
+	// Hash to the root tree:
+	Root []byte `protobuf:"bytes,3,req,name=root" json:"root,omitempty"`
+	// List of checkpoints (one per file):
+	Changeset []*CheckpointLink `protobuf:"bytes,4,rep,name=changeset" json:"changeset,omitempty"`
+	// Merge information if this is a merge commit.
+	Merge *Merge `protobuf:"bytes,5,opt,name=merge" json:"merge,omitempty"`
+	// Checkpoints stored in the commit.
+	// This is only used when exported to the client,
+	// it is not stored in the kv-store.
+	Checkpoints      []*Checkpoint `protobuf:"bytes,6,rep,name=checkpoints" json:"checkpoints,omitempty"`
+	XXX_unrecognized []byte        `json:"-"`
+}
+
+func (m *Commit) Reset()         { *m = Commit{} }
+func (m *Commit) String() string { return proto.CompactTextString(m) }
+func (*Commit) ProtoMessage()    {}
+
+func (m *Commit) GetMessage() string {
+	if m != nil && m.Message != nil {
+		return *m.Message
+	}
+	return ""
+}
+
+func (m *Commit) GetAuthor() *Author {
+	if m != nil {
+		return m.Author
+	}
+	return nil
+}
+
+func (m *Commit) GetRoot() []byte {
+	if m != nil {
+		return m.Root
+	}
+	return nil
+}
+
+func (m *Commit) GetChangeset() []*CheckpointLink {
+	if m != nil {
+		return m.Changeset
+	}
+	return nil
+}
+
+func (m *Commit) GetMerge() *Merge {
+	if m != nil {
+		return m.Merge
+	}
+	return nil
+}
+
+func (m *Commit) GetCheckpoints() []*Checkpoint {
+	if m != nil {
+		return m.Checkpoints
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*Author)(nil), "brig.store.Author")
+	proto.RegisterType((*Merge)(nil), "brig.store.Merge")
+	proto.RegisterType((*Checkpoint)(nil), "brig.store.Checkpoint")
+	proto.RegisterType((*History)(nil), "brig.store.History")
+	proto.RegisterType((*CheckpointLink)(nil), "brig.store.CheckpointLink")
+	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
+	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
+	proto.RegisterType((*StoreMetadata)(nil), "brig.store.StoreMetadata")
+	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterType((*Node)(nil), "brig.store.Node")
 	proto.RegisterType((*Nodes)(nil), "brig.store.Nodes")
 	proto.RegisterType((*File)(nil), "brig.store.File")
 	proto.RegisterType((*Directory)(nil), "brig.store.Directory")
-	proto.RegisterType((*Checkpoint)(nil), "brig.store.Checkpoint")
-	proto.RegisterType((*History)(nil), "brig.store.History")
-	proto.RegisterType((*Pack)(nil), "brig.store.Pack")
-	proto.RegisterType((*Store)(nil), "brig.store.Store")
-	proto.RegisterType((*Merge)(nil), "brig.store.Merge")
-	proto.RegisterType((*CheckpointLink)(nil), "brig.store.CheckpointLink")
-	proto.RegisterType((*Author)(nil), "brig.store.Author")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
-	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
-	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
 	proto.RegisterEnum("brig.store.NodeType", NodeType_name, NodeType_value)
 }
-func (m *Node) Marshal() (data []byte, err error) {
+func (m *Author) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -605,105 +605,7 @@ func (m *Node) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Node) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Type == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x8
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.Type))
-	}
-	if m.ID == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x10
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.ID))
-	}
-	if m.File != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintStore(data, i, uint64(m.File.Size()))
-		n1, err := m.File.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.Directory != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Directory.Size()))
-		n2, err := m.Directory.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if m.Commit != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Commit.Size()))
-		n3, err := m.Commit.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Nodes) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Nodes) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Nodes) > 0 {
-		for _, msg := range m.Nodes {
-			data[i] = 0xa
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *File) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *File) MarshalTo(data []byte) (int, error) {
+func (m *Author) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -715,124 +617,51 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
 		i += copy(data[i:], *m.Name)
-	}
-	if m.Key != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Key)))
-		i += copy(data[i:], m.Key)
-	}
-	if m.Hash != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
-		i += copy(data[i:], m.Hash)
-	}
-	if m.Parent == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x22
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
-		i += copy(data[i:], m.Parent)
-	}
-	if m.FileSize == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x28
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.FileSize))
-	}
-	if m.ModTime == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x32
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
-		i += copy(data[i:], m.ModTime)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Directory) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Directory) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Name == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
-		i += copy(data[i:], *m.Name)
-	}
-	if m.FileSize == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x10
-		i++
-		i = encodeVarintStore(data, i, uint64(*m.FileSize))
-	}
-	if m.Parent == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
-		i += copy(data[i:], m.Parent)
 	}
 	if m.Hash == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
-		data[i] = 0x22
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Hash)))
+		i += copy(data[i:], *m.Hash)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Merge) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Merge) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.With == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.With)))
+		i += copy(data[i:], *m.With)
+	}
+	if m.Hash == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
 		i += copy(data[i:], m.Hash)
-	}
-	if m.ModTime == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
-		i += copy(data[i:], m.ModTime)
-	}
-	if len(m.Links) > 0 {
-		for _, b := range m.Links {
-			data[i] = 0x32
-			i++
-			i = encodeVarintStore(data, i, uint64(len(b)))
-			i += copy(data[i:], b)
-		}
-	}
-	if len(m.Names) > 0 {
-		for _, s := range m.Names {
-			data[i] = 0x3a
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			data[i] = uint8(l)
-			i++
-			i += copy(data[i:], s)
-		}
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -931,133 +760,6 @@ func (m *History) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Pack) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Pack) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.File == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(m.File.Size()))
-		n4, err := m.File.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	if m.History == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(m.History.Size()))
-		n5, err := m.History.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Store) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Store) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Packs) > 0 {
-		for _, msg := range m.Packs {
-			data[i] = 0xa
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.Commits == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Commits.Size()))
-		n6, err := m.Commits.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Merge) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Merge) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.With == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.With)))
-		i += copy(data[i:], *m.With)
-	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
-		i += copy(data[i:], m.Hash)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
 func (m *CheckpointLink) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1086,136 +788,6 @@ func (m *CheckpointLink) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x10
 		i++
 		i = encodeVarintStore(data, i, uint64(*m.Index))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Author) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Author) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Name == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
-		i += copy(data[i:], *m.Name)
-	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Hash)))
-		i += copy(data[i:], *m.Hash)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Commit) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Commit) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Message == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(len(*m.Message)))
-		i += copy(data[i:], *m.Message)
-	}
-	if m.Author == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Author.Size()))
-		n7, err := m.Author.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
-	if m.ModTime == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
-		i += copy(data[i:], m.ModTime)
-	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x22
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
-		i += copy(data[i:], m.Hash)
-	}
-	if m.Root == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Root)))
-		i += copy(data[i:], m.Root)
-	}
-	if len(m.Changeset) > 0 {
-		for _, msg := range m.Changeset {
-			data[i] = 0x32
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.ParentHash != nil {
-		data[i] = 0x3a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.ParentHash)))
-		i += copy(data[i:], m.ParentHash)
-	}
-	if m.Merge != nil {
-		data[i] = 0x42
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
-		n8, err := m.Merge.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n8
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -1293,6 +865,442 @@ func (m *Ref) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *StoreMetadata) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *StoreMetadata) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Owner == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Owner.Size()))
+		n1, err := m.Owner.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.Version == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Version)))
+		i += copy(data[i:], *m.Version)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Store) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Store) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Objects == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Objects.Size()))
+		n2, err := m.Objects.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	if m.StageObjects == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(m.StageObjects.Size()))
+		n3, err := m.StageObjects.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if len(m.Checkpoints) > 0 {
+		for _, msg := range m.Checkpoints {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Status == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x22
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Status.Size()))
+		n4, err := m.Status.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
+	if len(m.Refs) > 0 {
+		for _, msg := range m.Refs {
+			data[i] = 0x2a
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Metadata == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x32
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Metadata.Size()))
+		n5, err := m.Metadata.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	if m.NodeCount == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x38
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.NodeCount))
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Node) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Node) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.Type))
+	}
+	if m.ID == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x10
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.ID))
+	}
+	if m.NodeSize == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x18
+		i++
+		i = encodeVarintStore(data, i, uint64(*m.NodeSize))
+	}
+	if m.ModTime == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x22
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.ModTime)))
+		i += copy(data[i:], m.ModTime)
+	}
+	if m.Hash == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Hash)))
+		i += copy(data[i:], m.Hash)
+	}
+	if m.Name == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x32
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
+		i += copy(data[i:], *m.Name)
+	}
+	if m.Parent != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
+		i += copy(data[i:], m.Parent)
+	}
+	if m.Path != nil {
+		data[i] = 0x42
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
+		i += copy(data[i:], *m.Path)
+	}
+	if m.File != nil {
+		data[i] = 0x4a
+		i++
+		i = encodeVarintStore(data, i, uint64(m.File.Size()))
+		n6, err := m.File.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	if m.Directory != nil {
+		data[i] = 0x52
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Directory.Size()))
+		n7, err := m.Directory.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	if m.Commit != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Commit.Size()))
+		n8, err := m.Commit.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Nodes) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Nodes) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Nodes) > 0 {
+		for _, msg := range m.Nodes {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *File) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *File) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Key != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Key)))
+		i += copy(data[i:], m.Key)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Directory) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Directory) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Links) > 0 {
+		for _, b := range m.Links {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(len(b)))
+			i += copy(data[i:], b)
+		}
+	}
+	if len(m.Names) > 0 {
+		for _, s := range m.Names {
+			data[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Commit) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Commit) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Message == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Message)))
+		i += copy(data[i:], *m.Message)
+	}
+	if m.Author == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Author.Size()))
+		n9, err := m.Author.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
+	if m.Root == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Root)))
+		i += copy(data[i:], m.Root)
+	}
+	if len(m.Changeset) > 0 {
+		for _, msg := range m.Changeset {
+			data[i] = 0x22
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Merge != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
+		n10, err := m.Merge.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	if len(m.Checkpoints) > 0 {
+		for _, msg := range m.Checkpoints {
+			data[i] = 0x32
+			i++
+			i = encodeVarintStore(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeFixed64Store(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -1320,72 +1328,15 @@ func encodeVarintStore(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
-func (m *Node) Size() (n int) {
-	var l int
-	_ = l
-	if m.Type != nil {
-		n += 1 + sovStore(uint64(*m.Type))
-	}
-	if m.ID != nil {
-		n += 1 + sovStore(uint64(*m.ID))
-	}
-	if m.File != nil {
-		l = m.File.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Directory != nil {
-		l = m.Directory.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Commit != nil {
-		l = m.Commit.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Nodes) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Nodes) > 0 {
-		for _, e := range m.Nodes {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *File) Size() (n int) {
+func (m *Author) Size() (n int) {
 	var l int
 	_ = l
 	if m.Name != nil {
 		l = len(*m.Name)
 		n += 1 + l + sovStore(uint64(l))
 	}
-	if m.Key != nil {
-		l = len(m.Key)
-		n += 1 + l + sovStore(uint64(l))
-	}
 	if m.Hash != nil {
-		l = len(m.Hash)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Parent != nil {
-		l = len(m.Parent)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.FileSize != nil {
-		n += 1 + sovStore(uint64(*m.FileSize))
-	}
-	if m.ModTime != nil {
-		l = len(m.ModTime)
+		l = len(*m.Hash)
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1394,39 +1345,16 @@ func (m *File) Size() (n int) {
 	return n
 }
 
-func (m *Directory) Size() (n int) {
+func (m *Merge) Size() (n int) {
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.FileSize != nil {
-		n += 1 + sovStore(uint64(*m.FileSize))
-	}
-	if m.Parent != nil {
-		l = len(m.Parent)
+	if m.With != nil {
+		l = len(*m.With)
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.Hash != nil {
 		l = len(m.Hash)
 		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.ModTime != nil {
-		l = len(m.ModTime)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if len(m.Links) > 0 {
-		for _, b := range m.Links {
-			l = len(b)
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if len(m.Names) > 0 {
-		for _, s := range m.Names {
-			l = len(s)
-			n += 1 + l + sovStore(uint64(l))
-		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1475,59 +1403,6 @@ func (m *History) Size() (n int) {
 	return n
 }
 
-func (m *Pack) Size() (n int) {
-	var l int
-	_ = l
-	if m.File != nil {
-		l = m.File.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.History != nil {
-		l = m.History.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Store) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Packs) > 0 {
-		for _, e := range m.Packs {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.Commits != nil {
-		l = m.Commits.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Merge) Size() (n int) {
-	var l int
-	_ = l
-	if m.With != nil {
-		l = len(*m.With)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Hash != nil {
-		l = len(m.Hash)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *CheckpointLink) Size() (n int) {
 	var l int
 	_ = l
@@ -1536,66 +1411,6 @@ func (m *CheckpointLink) Size() (n int) {
 	}
 	if m.Index != nil {
 		n += 1 + sovStore(uint64(*m.Index))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Author) Size() (n int) {
-	var l int
-	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Hash != nil {
-		l = len(*m.Hash)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Commit) Size() (n int) {
-	var l int
-	_ = l
-	if m.Message != nil {
-		l = len(*m.Message)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Author != nil {
-		l = m.Author.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.ModTime != nil {
-		l = len(m.ModTime)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Hash != nil {
-		l = len(m.Hash)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Root != nil {
-		l = len(m.Root)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if len(m.Changeset) > 0 {
-		for _, e := range m.Changeset {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.ParentHash != nil {
-		l = len(m.ParentHash)
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.Merge != nil {
-		l = m.Merge.Size()
-		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1635,6 +1450,199 @@ func (m *Ref) Size() (n int) {
 	return n
 }
 
+func (m *StoreMetadata) Size() (n int) {
+	var l int
+	_ = l
+	if m.Owner != nil {
+		l = m.Owner.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Version != nil {
+		l = len(*m.Version)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Store) Size() (n int) {
+	var l int
+	_ = l
+	if m.Objects != nil {
+		l = m.Objects.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.StageObjects != nil {
+		l = m.StageObjects.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if len(m.Checkpoints) > 0 {
+		for _, e := range m.Checkpoints {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if len(m.Refs) > 0 {
+		for _, e := range m.Refs {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.Metadata != nil {
+		l = m.Metadata.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.NodeCount != nil {
+		n += 1 + sovStore(uint64(*m.NodeCount))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Node) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != nil {
+		n += 1 + sovStore(uint64(*m.Type))
+	}
+	if m.ID != nil {
+		n += 1 + sovStore(uint64(*m.ID))
+	}
+	if m.NodeSize != nil {
+		n += 1 + sovStore(uint64(*m.NodeSize))
+	}
+	if m.ModTime != nil {
+		l = len(m.ModTime)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Hash != nil {
+		l = len(m.Hash)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Name != nil {
+		l = len(*m.Name)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Parent != nil {
+		l = len(m.Parent)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Path != nil {
+		l = len(*m.Path)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.File != nil {
+		l = m.File.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Directory != nil {
+		l = m.Directory.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Commit != nil {
+		l = m.Commit.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Nodes) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Nodes) > 0 {
+		for _, e := range m.Nodes {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *File) Size() (n int) {
+	var l int
+	_ = l
+	if m.Key != nil {
+		l = len(m.Key)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Directory) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Links) > 0 {
+		for _, b := range m.Links {
+			l = len(b)
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if len(m.Names) > 0 {
+		for _, s := range m.Names {
+			l = len(s)
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Commit) Size() (n int) {
+	var l int
+	_ = l
+	if m.Message != nil {
+		l = len(*m.Message)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Author != nil {
+		l = m.Author.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.Root != nil {
+		l = len(m.Root)
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if len(m.Changeset) > 0 {
+		for _, e := range m.Changeset {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.Merge != nil {
+		l = m.Merge.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if len(m.Checkpoints) > 0 {
+		for _, e := range m.Checkpoints {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func sovStore(x uint64) (n int) {
 	for {
 		n++
@@ -1648,7 +1656,7 @@ func sovStore(x uint64) (n int) {
 func sozStore(x uint64) (n int) {
 	return sovStore(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *Node) Unmarshal(data []byte) error {
+func (m *Author) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -1672,291 +1680,10 @@ func (m *Node) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Node: wiretype end group for non-group")
+			return fmt.Errorf("proto: Author: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Node: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var v NodeType
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (NodeType(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Type = &v
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			var v uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ID = &v
-			hasFields[0] |= uint64(0x00000002)
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.File == nil {
-				m.File = &File{}
-			}
-			if err := m.File.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Directory", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Directory == nil {
-				m.Directory = &Directory{}
-			}
-			if err := m.Directory.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Commit", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Commit == nil {
-				m.Commit = &Commit{}
-			}
-			if err := m.Commit.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Nodes) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Nodes: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Nodes: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Nodes", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Nodes = append(m.Nodes, &Node{})
-			if err := m.Nodes[len(m.Nodes)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *File) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: File: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: File: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Author: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1992,206 +1719,7 @@ func (m *File) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
-			}
-			var v uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.FileSize = &v
-			hasFields[0] |= uint64(0x00000004)
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000008)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Directory) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Directory: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Directory: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2217,60 +1745,99 @@ func (m *Directory) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			s := string(data[iNdEx:postIndex])
-			m.Name = &s
+			m.Hash = &s
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FileSize", wireType)
-			}
-			var v uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.FileSize = &v
 			hasFields[0] |= uint64(0x00000002)
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
 			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
+			if skippy < 0 {
 				return ErrInvalidLengthStore
 			}
-			postIndex := iNdEx + byteLen
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Merge) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Merge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Merge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field With", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
+			s := string(data[iNdEx:postIndex])
+			m.With = &s
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000004)
-		case 4:
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
 			}
@@ -2298,94 +1865,7 @@ func (m *Directory) Unmarshal(data []byte) error {
 			}
 			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000008)
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000010)
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Links", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Links = append(m.Links, make([]byte, postIndex-iNdEx))
-			copy(m.Links[len(m.Links)-1], data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Names", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Names = append(m.Names, string(data[iNdEx:postIndex]))
-			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -2406,15 +1886,6 @@ func (m *Directory) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000010) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -2695,370 +2166,6 @@ func (m *History) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Pack) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Pack: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Pack: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.File == nil {
-				m.File = &File{}
-			}
-			if err := m.File.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field History", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.History == nil {
-				m.History = &History{}
-			}
-			if err := m.History.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Store) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Store: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Packs", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Packs = append(m.Packs, &Pack{})
-			if err := m.Packs[len(m.Packs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Commits", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Commits == nil {
-				m.Commits = &Commits{}
-			}
-			if err := m.Commits.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Merge) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Merge: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Merge: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field With", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.With = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *CheckpointLink) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
@@ -3151,437 +2258,6 @@ func (m *CheckpointLink) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Author) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Author: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Author: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Name = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Hash = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Commit) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Commit: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Commit: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Message = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Author", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Author == nil {
-				m.Author = &Author{}
-			}
-			if err := m.Author.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000004)
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000008)
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Root = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000010)
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Changeset", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Changeset = append(m.Changeset, &CheckpointLink{})
-			if err := m.Changeset[len(m.Changeset)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ParentHash", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ParentHash = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-		case 8:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Merge", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Merge == nil {
-				m.Merge = &Merge{}
-			}
-			if err := m.Merge.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000010) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
@@ -3782,6 +2458,1314 @@ func (m *Ref) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StoreMetadata) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StoreMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StoreMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Owner == nil {
+				m.Owner = &Author{}
+			}
+			if err := m.Owner.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Version = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Store) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Store: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Objects", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Objects == nil {
+				m.Objects = &Nodes{}
+			}
+			if err := m.Objects.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StageObjects", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StageObjects == nil {
+				m.StageObjects = &Nodes{}
+			}
+			if err := m.StageObjects.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Checkpoints = append(m.Checkpoints, &Checkpoint{})
+			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &Commit{}
+			}
+			if err := m.Status.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000004)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Refs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Refs = append(m.Refs, &Ref{})
+			if err := m.Refs[len(m.Refs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Metadata == nil {
+				m.Metadata = &StoreMetadata{}
+			}
+			if err := m.Metadata.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000008)
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeCount", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.NodeCount = &v
+			hasFields[0] |= uint64(0x00000010)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Node) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Node: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Node: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v NodeType
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (NodeType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Type = &v
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ID = &v
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeSize", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.NodeSize = &v
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModTime", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ModTime = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000008)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Name = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000020)
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Path = &s
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.File == nil {
+				m.File = &File{}
+			}
+			if err := m.File.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Directory", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Directory == nil {
+				m.Directory = &Directory{}
+			}
+			if err := m.Directory.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Commit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Commit == nil {
+				m.Commit = &Commit{}
+			}
+			if err := m.Commit.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000020) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Nodes) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Nodes: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Nodes: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nodes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Nodes = append(m.Nodes, &Node{})
+			if err := m.Nodes[len(m.Nodes)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *File) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: File: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: File: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Directory) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Directory: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Directory: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Links", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Links = append(m.Links, make([]byte, postIndex-iNdEx))
+			copy(m.Links[len(m.Links)-1], data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Names", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Names = append(m.Names, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Commit) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Commit: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Commit: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Message = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Author", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Author == nil {
+				m.Author = &Author{}
+			}
+			if err := m.Author.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Root = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Changeset", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Changeset = append(m.Changeset, &CheckpointLink{})
+			if err := m.Changeset[len(m.Changeset)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Merge", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Merge == nil {
+				m.Merge = &Merge{}
+			}
+			if err := m.Merge.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Checkpoints = append(m.Checkpoints, &Checkpoint{})
+			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -505,7 +506,8 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 
 // The results are marshaled into a wire.Dirlist message and written to `w`.
 // `depth` may be negative for unlimited recursion.
-func (st *Store) ListNodes(root string, depth int) (*wire.Nodes, error) {
+// TODO: Is this really a core-op?
+func (st *Store) ListProtoNodes(root string, depth int) (*wire.Nodes, error) {
 	entries, err := st.List(root, depth)
 	if err != nil {
 		return nil, err
@@ -520,6 +522,8 @@ func (st *Store) ListNodes(root string, depth int) (*wire.Nodes, error) {
 			return nil, err
 		}
 
+		// Fill in the path for the sake of exporting:
+		pnode.Path = proto.String(NodePath(node))
 		nodes.Nodes = append(nodes.Nodes, pnode)
 	}
 
@@ -623,6 +627,13 @@ func (st *Store) Status() (*Commit, error) {
 	return st.fs.Status()
 }
 
+func (st *Store) History(repoPath string) (History, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.fs.HistoryByPath(repoPath)
+}
+
 // Commit saves a commit in the store history.
 func (st *Store) MakeCommit(msg string) error {
 	st.mu.Lock()
@@ -637,15 +648,18 @@ func (st *Store) MakeCommit(msg string) error {
 }
 
 // TODO: respect from/to ranges
-func (fs *FS) Log() (*Commits, error) {
-	var cmts Commits
+func (st *Store) Log() ([]Node, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
-	head, err := fs.Head()
+	var cmts []Node
+
+	head, err := st.fs.Head()
 	if err != nil {
 		return nil, err
 	}
 
-	curr := head
+	var curr Node = head
 	for curr != nil {
 		cmts = append(cmts, curr)
 
@@ -658,13 +672,8 @@ func (fs *FS) Log() (*Commits, error) {
 			break
 		}
 
-		parCommit, ok := parNode.(*Commit)
-		if !ok {
-			return nil, ErrBadNode
-		}
-
-		curr = parCommit
+		curr = parNode
 	}
 
-	return &cmts, nil
+	return cmts, nil
 }
