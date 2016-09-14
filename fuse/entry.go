@@ -31,7 +31,7 @@ func (e *Entry) Attr(ctx context.Context, a *fuse.Attr) error {
 
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (e *Entry) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
-	log.Debugf("fuse-open: %s", e.Path())
+	log.Debugf("fuse-open: %s", store.NodePath(e))
 	return &Handle{Entry: e}, nil
 }
 
@@ -44,8 +44,8 @@ func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	// the file to zero bytes with a size change of `0`.
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
-		log.Warningf("SIZE CHANGED OF %s: %d %p", e.Path(), req.Size, e)
-		e.UpdateSize(int64(req.Size))
+		log.Warningf("SIZE CHANGED OF %s: %d %p", store.NodePath(e), req.Size, e)
+		e.SetSize(req.Size)
 	}
 
 	return nil
@@ -59,8 +59,9 @@ func (e *Entry) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (e *Entry) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	e.Lock()
-	defer e.Unlock()
+	// TODO:
+	// e.Lock()
+	// defer e.Unlock()
 
 	switch req.Name {
 	case "brig.hash":
@@ -84,8 +85,9 @@ func (e *Entry) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.N
 		return fuse.EIO
 	}
 
-	newPath := path.Join(newParent.Path(), req.NewName)
-	if err := e.fs.Store.Move(e.Path(), newPath); err != nil {
+	newParentPath := store.NodePath(newParent)
+	newPath := path.Join(newParentPath, req.NewName)
+	if err := e.fs.Store.Move(store.NodePath(e), newPath, true); err != nil {
 		log.Warningf("mv failed: %v", err)
 		return err
 	}

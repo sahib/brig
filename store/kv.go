@@ -168,8 +168,6 @@ func (bb *BoltBucket) dig(path []string, writable bool, fn func(bucket *bolt.Buc
 	return nil
 }
 
-// TODO: Transactions? GetMany? PutMany?
-
 func (bb *BoltBucket) Get(key string) (data []byte, err error) {
 	err = bb.dig(bb.path, false, func(bucket *bolt.Bucket) error {
 		bdata := bucket.Get([]byte(key))

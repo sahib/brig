@@ -10,6 +10,7 @@ enum NodeType {
 }
 
 // An Object is a container for a file, a directory or a Ref.
+// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
 message Node {
   // Type of this node (see above)
   required NodeType type = 1;
@@ -28,7 +29,7 @@ message Nodes {
   repeated Node nodes = 1;
 }
 
-// TODO: Move some of the attrs to the common node (file_size, hash, parent)?
+////////////// CONCRETE NODES /////////////
 
 message File {
     required string name = 1;
@@ -53,6 +54,8 @@ message Directory {
     repeated string names = 7;
 }
 
+///////////// VERSION CONTROL STRUCTURES ///////////
+
 message Checkpoint {
   // Link to the node id:
   required uint64 id_link = 1;
@@ -68,12 +71,6 @@ message Checkpoint {
 // History is the history of a file:
 message History {
     repeated Checkpoint hist = 1 [packed=false];
-}
-
-// Store is the exported form of a store.
-message Store {
-    repeated Pack packs = 1;
-    required Commits commits = 2;
 }
 
 // Optional merge information for merge commits
@@ -119,3 +116,21 @@ message Ref {
     required string name = 1;
     required bytes hash = 2;
 }
+
+message StoreMetadata {
+  required Author owner = 1;
+  required string version = 2;
+}
+
+// Store is the exported form of a store.
+message Store {
+    required Nodes objects = 1;
+    required Nodes stage_objects = 2;
+    repeated Checkpoint checkpoints = 3;
+    required Commit status = 4;
+    repeated Ref refs = 5;
+    required StoreMetadata metadata = 6;
+
+    required uint64 node_count = 4;
+}
+

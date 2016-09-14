@@ -32,7 +32,7 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 
-	path := path.Join(nodePath(parent), name)
+	path := path.Join(NodePath(parent), name)
 	mh, err := multihash.Sum([]byte(path), code, length)
 	if err != nil {
 		// The programmer has likely fucked up:

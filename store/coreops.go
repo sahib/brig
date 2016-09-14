@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -396,6 +395,13 @@ func (st *Store) Lookup(repoPath string) (Node, error) {
 	return st.fs.LookupNode(repoPath)
 }
 
+func (st *Store) Root() (*Directory, error) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	return st.fs.Root()
+}
+
 // Remove will purge a file locally on this node.
 // If `recursive` is true and if `path` is a directory, all files
 // in it will be removed. If `recursive` is false, ErrNotEmpty will
@@ -431,7 +437,7 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 
 	errs := util.Errors{}
 	for _, child := range toBeRemoved {
-		childPath := nodePath(child)
+		childPath := NodePath(child)
 		if err = st.makeCheckpoint(child.ID(), child.Hash(), nil, childPath, childPath); err != nil {
 			return err
 		}
@@ -482,7 +488,7 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 	}
 
 	err = Walk(node, false, func(child Node) error {
-		if nodeDepth(child) > depth {
+		if NodeDepth(child) > depth {
 			return nil
 		}
 
@@ -557,7 +563,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 			return nil
 		}
 
-		oldChildPath := nodePath(child)
+		oldChildPath := NodePath(child)
 		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
 		newPaths[newChildPath] = child.(*File)
 
@@ -660,6 +666,5 @@ func (fs *FS) Log() (*Commits, error) {
 		curr = parCommit
 	}
 
-	sort.Sort(&cmts)
 	return &cmts, nil
 }

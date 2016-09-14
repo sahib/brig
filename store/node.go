@@ -92,7 +92,7 @@ func prefixSlash(s string) string {
 	return s
 }
 
-func nodePath(nd Node) string {
+func NodePath(nd Node) string {
 	var err error
 	elems := []string{}
 
@@ -112,7 +112,7 @@ func nodePath(nd Node) string {
 	return prefixSlash(path.Join(elems...))
 }
 
-func nodeDepth(nd Node) int {
+func NodeDepth(nd Node) int {
 	var depth int
 	var curr Node = nd
 	var err error

@@ -32,7 +32,7 @@ func TestFSInsertRoot(t *testing.T) {
 
 		ptrRoot, err := fs.ResolveDirectory("/")
 
-		fmt.Println(nodePath(sameRoot))
+		fmt.Println(NodePath(sameRoot))
 		fmt.Printf("%p %p %p\n", ptrRoot, sameRoot, root)
 	})
 }

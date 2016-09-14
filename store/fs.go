@@ -62,16 +62,6 @@ func (e ErrNoHashFound) Error() string {
 	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
 }
 
-// TODO: Exchange with NoSuchFile
-type ErrNoPathFound struct {
-	path  string
-	where string
-}
-
-func (e ErrNoPathFound) Error() string {
-	return fmt.Sprintf("No such path in `%s`: '%s'", e.where, e.path)
-}
-
 type FS struct {
 	kv KV
 
@@ -129,7 +119,6 @@ func NewFilesystem(kv KV) *FS {
 // COMMON NODE HANDLING //
 //////////////////////////
 
-// TODO: is uint64 enough? Probably...
 func (fs *FS) NextID() (uint64, error) {
 	bkt, err := fs.kv.Bucket([]string{"stats"})
 	if err != nil {
@@ -211,7 +200,7 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// NOTE: This will indirectly load parent directories (by calling
 	//       Parent(), if not done yet!  We might be stuck in an endless loop if we
 	//       have cycles in our DAG.
-	fs.index[b58Hash] = fs.root.InsertWithData(nodePath(nd), nd)
+	fs.index[b58Hash] = fs.root.InsertWithData(NodePath(nd), nd)
 	return nd, nil
 }
 
@@ -293,7 +282,7 @@ func (fs *FS) StageNode(nd Node) error {
 	}
 
 	// The key is the path of the
-	nodePath := nodePath(nd)
+	nodePath := NodePath(nd)
 	hashPath := path.Join("stage/tree", nodePath)
 	switch nd.GetType() {
 	case NodeTypeDirectory:
@@ -466,7 +455,7 @@ func (fs *FS) MakeCommit(author id.Peer, message string) error {
 			return err
 		}
 
-		path := nodePath(child)
+		path := NodePath(child)
 		if err := treeBkt.Put(path, []byte(b58Hash)); err != nil {
 			return err
 		}
@@ -524,7 +513,6 @@ func (fs *FS) MakeCommit(author id.Peer, message string) error {
 // METADATA HANDLING //
 ///////////////////////
 
-// TODO: use this for owner / db-version / etc.
 func (fs *FS) MetadataPut(key string, value []byte) error {
 	bkt, err := fs.kv.Bucket([]string{"metadata"})
 	if err != nil {

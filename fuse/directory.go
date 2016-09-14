@@ -14,8 +14,38 @@ import (
 
 // Dir represents a directory node.
 type Dir struct {
-	*store.File
+	*store.Directory
 	fs *FS
+}
+
+// This is just a small utility to save some code:
+func toDir(nd store.Node, err error) (*store.Directory, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	dir, ok := nd.(*store.Directory)
+	if !ok {
+		log.Warningf("Failed to convert to directory: %v", nd)
+		return nil, fuse.EIO
+	}
+
+	return dir, nil
+}
+
+// This is just a small utility to save some code:
+func toFile(nd store.Node, err error) (*store.File, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	file, ok := nd.(*store.File)
+	if !ok {
+		log.Warningf("Failed to convert to file: %v", nd)
+		return nil, fuse.EIO
+	}
+
+	return file, nil
 }
 
 // Attr is called to retrieve stat-metadata about the directory.
@@ -28,7 +58,14 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 // Lookup is called to lookup a direct child of the directory.
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	child := d.File.Lookup(name)
+	// TODO: lock store?
+	// d.fs.store.Lock()
+
+	child, err := d.Directory.Lookup(name)
+	if err != nil {
+		return nil, fuse.EIO
+	}
+
 	if child == nil {
 		return nil, fuse.ENOENT
 	}
@@ -38,14 +75,33 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 
 	if name == ".." {
-		return &Dir{File: d.Parent(), fs: d.fs}, nil
+		parent, err := toDir(d.Parent())
+		if err != nil {
+			log.Warningf("Failed to get parent: %v", d)
+			return nil, fuse.EIO
+		}
+
+		return &Dir{Directory: parent, fs: d.fs}, nil
 	}
 
-	switch knd := child.Kind(); knd {
-	case store.FileTypeRegular:
-		return &Entry{File: child, fs: d.fs}, nil
-	case store.FileTypeDir:
-		return &Dir{File: child, fs: d.fs}, nil
+	switch knd := child.GetType(); knd {
+	case store.NodeTypeFile:
+		file, err := toFile(child, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return &Entry{File: file, fs: d.fs}, nil
+	case store.NodeTypeDirectory:
+		dir, err := toDir(child, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return &Dir{Directory: dir, fs: d.fs}, nil
+	case store.NodeTypeCommit:
+		// TODO: Not yet implemented/used.
+		fallthrough
 	default:
 		log.Errorf("Bad/unsupported file type: %d", knd)
 		return nil, fuse.EIO
@@ -64,7 +120,7 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		return nil, fuse.ENODATA
 	}
 
-	return &Dir{File: child, fs: d.fs}, nil
+	return &Dir{Directory: child, fs: d.fs}, nil
 }
 
 // Create is called to create an opened file or directory  as child of the receiver.
@@ -82,26 +138,30 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	if err != nil {
 		log.WithFields(log.Fields{
-			"path":  d.Path(),
+			"path":  d.Name(),
 			"child": req.Name,
 			"error": err,
 		}).Warning("fuse-create failed")
 		return nil, nil, fuse.ENODATA
 	}
 
-	child := d.Child(req.Name)
+	child, err := toFile(d.Child(req.Name))
+	if err != nil {
+		return nil, nil, fuse.EIO
+	}
+
 	if child == nil {
-		log.Warning("No child %v in %v", req.Name, d)
+		log.Warning("No child %v in %v after creation.", req.Name, d)
 		return nil, nil, fuse.ENODATA
 	}
 
-	entry := &Entry{File: d.Child(req.Name), fs: d.fs}
+	entry := &Entry{File: child, fs: d.fs}
 	return entry, &Handle{Entry: entry}, nil
 }
 
 // Remove is called when a direct child in the directory needs to be removed.
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
-	path := filepath.Join(d.Path(), req.Name)
+	path := filepath.Join(store.NodePath(d), req.Name)
 	if err := d.fs.Store.Remove(path, false); err != nil {
 		log.Errorf("fuse-rm `%s` failed: %v", path, err)
 		return fuse.ENOENT
@@ -112,31 +172,30 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
 // ReadDirAll is called to get a directory listing of the receiver.
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	children := d.Children()
-	fuseEnts := make([]fuse.Dirent, 2, len(children)+2)
+	fuseEnts := make([]fuse.Dirent, 2, d.NChildren()+2)
 
 	fuseEnts[0] = fuse.Dirent{
-		Inode: *(*uint64)(unsafe.Pointer(&d.File)),
+		Inode: *(*uint64)(unsafe.Pointer(&d.Directory)),
 		Type:  fuse.DT_Dir,
 		Name:  ".",
 	}
 
 	fuseEnts[1] = fuse.Dirent{
-		Inode: *(*uint64)(unsafe.Pointer(&d.File)) + 1,
+		Inode: *(*uint64)(unsafe.Pointer(&d.Directory)) + 1,
 		Type:  fuse.DT_Dir,
 		Name:  "..",
 	}
 
-	for _, child := range children {
+	err := d.VisitChildren(func(child *store.Directory) error {
 		childType := fuse.DT_File
-		switch kind := child.Kind(); kind {
-		case store.FileTypeDir:
+		switch kind := child.GetType(); kind {
+		case store.NodeTypeDirectory:
 			childType = fuse.DT_Dir
-		case store.FileTypeRegular:
+		case store.NodeTypeFile:
 			childType = fuse.DT_File
 		default:
 			log.Errorf("Warning: Bad/unsupported file type: %v", kind)
-			return nil, fuse.EIO
+			return fuse.EIO
 		}
 
 		fuseEnts = append(fuseEnts, fuse.Dirent{
@@ -144,6 +203,13 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			Type:  childType,
 			Name:  child.Name(),
 		})
+
+		return nil
+	})
+
+	if err != nil {
+		log.Warningf("ReadDirAll failed: %v", err)
+		return nil, fuse.EIO
 	}
 
 	return fuseEnts, nil

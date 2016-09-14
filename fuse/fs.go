@@ -1,7 +1,9 @@
 package fuse
 
 import (
+	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
 )
 
@@ -12,6 +14,12 @@ type FS struct {
 
 // Root returns the topmost directory node.
 // It will have the path "/".
-func (sys *FS) Root() (fs.Node, error) {
-	return &Dir{File: sys.Store.Root, fs: sys}, nil
+func (fs *FS) Root() (fs.Node, error) {
+	root, err := fs.Store.Root()
+	if err != nil {
+		log.Warningf("fs: failed to retrieve root: %v", err)
+		return nil, fuse.EIO
+	}
+
+	return &Dir{Directory: root, fs: fs}, nil
 }

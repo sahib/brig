@@ -98,11 +98,14 @@ func (f *File) ModTime() time.Time { return f.modTime }
 
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
-func (f *File) SetSize(s uint64)       { f.size = s }
 func (f *File) SetModTime(t time.Time) { f.modTime = t }
 func (f *File) SetHash(h *Hash)        { f.hash = h }
 func (f *File) SetName(n string)       { f.name = n }
 func (f *File) SetKey(k []byte)        { f.key = k }
+func (f *File) SetSize(s uint64) {
+	f.size = s
+	f.SetModTime(time.Now())
+}
 
 ////////////////// HIERARCHY INTERFACE //////////////////
 
@@ -144,7 +147,7 @@ func (f *File) GetType() NodeType {
 func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
 	log.Debugf(
 		"Stream `%s` (hash: %s) (key: %x)",
-		nodePath(f),
+		NodePath(f),
 		f.hash.B58String(),
 		f.key,
 	)

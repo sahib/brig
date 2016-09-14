@@ -36,7 +36,7 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 // Read is called to read a block of data at a certain offset.
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	path := h.Path()
+	path := store.NodePath(h)
 
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
@@ -48,7 +48,7 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 	}).Debugf("fuse read")
 
 	if h.stream == nil {
-		stream, err := h.Stream()
+		stream, err := h.Stream(h.fs.Store.IPFS)
 		if err != nil {
 			log.Errorf("fuse-read: Cannot open stream: %v", err)
 			return fuse.ENODATA
@@ -82,20 +82,30 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
 
-	log.Debugf("fuse-write: %s (off: %d size: %d)", h.Path(), req.Offset, len(req.Data))
+	log.Debugf(
+		"fuse-write: %s (off: %d size: %d)",
+		store.NodePath(h),
+		req.Offset,
+		len(req.Data),
+	)
 
 	if h.layer == nil {
 		if h.stream == nil {
-			stream, err := h.Stream()
+			stream, err := h.Stream(h.fs.Store.IPFS)
 			if err != nil {
 				return fuse.ENODATA
 			}
 			h.stream = stream
 		}
 
-		log.Debugf("fuse-write: truncating %s to %d %p", h.Path(), h.Size(), h)
+		log.Debugf(
+			"fuse-write: truncating %s to %d %p",
+			store.NodePath(h),
+			h.Size(),
+			h,
+		)
 		h.layer = store.NewLayer(h.stream)
-		h.layer.Truncate(h.Size())
+		h.layer.Truncate(int64(h.Size()))
 	}
 
 	_, err := h.layer.Seek(req.Offset, os.SEEK_SET)
@@ -114,10 +124,10 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 
 	// Update the file size, if it changed; fuse doc demands this:
 	// https://godoc.org/bazil.org/fuse/fs#HandleWriter
-	minSize := h.layer.MinSize()
+	minSize := uint64(h.layer.MinSize())
 	if h.Size() < minSize {
 		log.Debugf("fuse-write: extending file from %d to %d bytes", h.Size(), minSize)
-		h.UpdateSize(minSize)
+		h.SetSize(minSize)
 	}
 
 	return nil
@@ -133,7 +143,8 @@ func (h *Handle) flush() error {
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
 
-	log.Debugf("fuse-flush: %v (%p)", h.Path(), h.layer)
+	path := store.NodePath(h)
+	log.Debugf("fuse-flush: %v (%p)", path, h.layer)
 
 	if h.layer == nil {
 		return nil
@@ -153,7 +164,7 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	err = h.fs.Store.AddFromReader(h.Path(), h.layer)
+	err = h.fs.Store.AddFromReader(path, h.layer)
 	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA

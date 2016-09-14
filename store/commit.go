@@ -341,33 +341,6 @@ func (cm *Commit) Finalize(author id.Peer, message string, parent *Commit) error
 // It is used to enable chronological sorting of a bunch of commits.
 type Commits []*Commit
 
-func (cs *Commits) Len() int {
-	return len(*cs)
-}
-
-func (cs *Commits) Less(i, j int) bool {
-	return (*cs)[i].modTime.Before((*cs)[j].modTime)
-}
-
-func (cs *Commits) Swap(i, j int) {
-	(*cs)[i], (*cs)[j] = (*cs)[j], (*cs)[i]
-}
-
-func (cs *Commits) ToProto() (*wire.Commits, error) {
-	protoCmts := &wire.Commits{}
-
-	for _, cmt := range *cs {
-		protoCmt, err := cmt.ToProto()
-		if err != nil {
-			return nil, err
-		}
-
-		protoCmts.Commits = append(protoCmts.Commits, protoCmt.GetCommit())
-	}
-
-	return protoCmts, nil
-}
-
 func (cs *Commits) Unmarshal(data []byte) error {
 	protoCmts := &wire.Commits{}
 	if err := proto.Unmarshal(data, protoCmts); err != nil {
