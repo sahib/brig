@@ -27,7 +27,6 @@ type Bucket interface {
 	Bucket(path []string) (Bucket, error)
 	Foreach(fn func(key string, value []byte) error) error
 	Clear() error
-	CopyTo(b Bucket) error
 	Last() ([]byte, error)
 }
 
@@ -65,12 +64,13 @@ func getPath(kv KV, path string) ([]byte, error) {
 		return nil, err
 	}
 
+	// fmt.Printf("getPath %s -> %x\n", path, data)
 	return data, nil
 }
 
 func putPath(kv KV, path string, data []byte) error {
 	bkt, key, err := findBucket(kv, path)
-	fmt.Println("putPath", path, bkt, err, key, data)
+	// fmt.Printf("putPath %s <- %x\n", path, data)
 	if err != nil {
 		return err
 	}
@@ -213,28 +213,6 @@ func (bb *BoltBucket) Foreach(fn func(key string, value []byte) error) error {
 
 		return nil
 	})
-}
-
-func (bb *BoltBucket) CopyTo(other Bucket) error {
-	data := [][][]byte{}
-
-	err := bb.Foreach(func(key string, value []byte) error {
-		data = append(data, [][]byte{[]byte(key), value})
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	// TODO: This really needs transactions...
-	for _, elem := range data {
-		if err := other.Put(string(elem[0]), elem[1]); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (bb *BoltBucket) Clear() error {

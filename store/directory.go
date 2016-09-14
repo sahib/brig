@@ -32,8 +32,12 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 	code := goipfsutil.DefaultIpfsHash
 	length := multihash.DefaultLengths[code]
 
-	path := path.Join(NodePath(parent), name)
-	mh, err := multihash.Sum([]byte(path), code, length)
+	absPath := ""
+	if parent != nil {
+		absPath = path.Join(NodePath(parent), name)
+	}
+
+	mh, err := multihash.Sum([]byte(absPath), code, length)
 	if err != nil {
 		// The programmer has likely fucked up:
 		return nil, fmt.Errorf("Failed to calculate basic checksum of a string: %v", err)
@@ -44,20 +48,21 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 		return nil, err
 	}
 
-	dir := &Directory{
-		fs:   fs,
-		id:   id,
-		hash: &Hash{mh},
-		name: name,
+	newDir := &Directory{
+		fs:       fs,
+		id:       id,
+		hash:     &Hash{mh},
+		name:     name,
+		children: make(map[string]*Hash),
 	}
 
 	if parent != nil {
-		if err := parent.Add(dir); err != nil {
+		if err := parent.Add(newDir); err != nil {
 			return nil, err
 		}
 	}
 
-	return dir, nil
+	return newDir, nil
 }
 
 ////////////// MARSHALLING ////////////////
@@ -162,8 +167,12 @@ func (d *Directory) NChildren() int {
 }
 
 func (d *Directory) Child(name string) (Node, error) {
-	// TODO: efficient lookup?
-	return nil, nil
+	childHash, ok := d.children[name]
+	if !ok {
+		return nil, nil
+	}
+
+	return d.fs.NodeByHash(childHash)
 }
 
 func (d *Directory) Parent() (Node, error) {
@@ -181,7 +190,6 @@ func (d *Directory) SetParent(nd Node) error {
 		d.parent = nd.Hash()
 	}
 
-	// TODO: error needed?
 	return nil
 }
 
@@ -196,10 +204,14 @@ func (d *Directory) ID() uint64 {
 ////////////// TREE MOVEMENT /////////////////
 
 func (d *Directory) VisitChildren(fn func(*Directory) error) error {
-	for _, hash := range d.children {
+	for name, hash := range d.children {
 		child, err := d.fs.DirectoryByHash(hash)
 		if err != nil {
 			return err
+		}
+
+		if child == nil {
+			return fmt.Errorf("BUG: dead link in tree: %s => %s", name, hash.B58String())
 		}
 
 		if err := fn(child); err != nil {
@@ -239,6 +251,10 @@ func (d *Directory) xorHash(hash *Hash) error {
 }
 
 func Walk(node Node, dfs bool, visit func(child Node) error) error {
+	if node == nil {
+		return nil
+	}
+
 	if node.GetType() != NodeTypeDirectory {
 		return visit(node)
 	}
@@ -255,12 +271,16 @@ func Walk(node Node, dfs bool, visit func(child Node) error) error {
 	}
 
 	for _, link := range d.children {
+
 		child, err := d.fs.NodeByHash(link)
 		if err != nil {
 			return err
 		}
+		fmt.Println("Sub Walking", link, child)
 
-		return Walk(child, dfs, visit)
+		if err := Walk(child, dfs, visit); err != nil {
+			return err
+		}
 	}
 
 	if dfs {
@@ -276,7 +296,10 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 	repoPath = prefixSlash(path.Clean(repoPath))
 	elems := strings.Split(repoPath, "/")
 
-	if len(elems) == 1 {
+	// Strip off the first empty field:
+	elems = elems[1:]
+
+	if len(elems) == 1 && elems[0] == "" {
 		return d, nil
 	}
 
@@ -301,14 +324,27 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 
 // TODO: Grafik dafür in der Masterarbeit machen!
 func (d *Directory) Add(nd Node) error {
-	d.children[nd.Name()] = nd.Hash()
+	if _, ok := d.children[nd.Name()]; ok {
+		return ErrExists
+	}
+
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
 
-	return d.Up(func(parent *Directory) error {
+	err := d.Up(func(parent *Directory) error {
 		parent.size += nodeSize
 		return parent.xorHash(nodeHash)
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// Establish the link between parent and child:
+	// (must be done last, because d's hashed changed)
+	nd.SetParent(d)
+	d.children[nd.Name()] = nodeHash
+	return nil
 }
 
 // RemoveChild removes the child named `name` from it's children.

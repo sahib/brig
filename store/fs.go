@@ -25,13 +25,13 @@ package store
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
 
+	// log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/trie"
@@ -42,25 +42,6 @@ import (
 // TODO: Clear cache when invalid?
 
 /////////////// ERRORS ///////////////
-
-var (
-	ErrBadNode = errors.New("Cannot convert to concrete type. Broken input data?")
-)
-
-type ErrBadNodeType int
-
-func (e ErrBadNodeType) Error() string {
-	return fmt.Sprintf("Bad node type in db: %d", int(e))
-}
-
-type ErrNoHashFound struct {
-	b58hash string
-	where   string
-}
-
-func (e ErrNoHashFound) Error() string {
-	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
-}
 
 type FS struct {
 	kv KV
@@ -153,7 +134,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 
 	b58hash := hash.B58String()
 
-	loadableBuckets := []string{"objects", "stage/objects"}
+	loadableBuckets := []string{"stage/objects", "objects"}
 	for _, bucketPath := range loadableBuckets {
 		var bkt Bucket
 		bkt, err = fs.kv.Bucket([]string{bucketPath})
@@ -171,14 +152,9 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 		}
 	}
 
-	fmt.Println("lookupNode", data, b58hash)
-
 	// Damn, no hash found:
 	if data == nil {
-		return nil, ErrNoHashFound{
-			b58hash,
-			strings.Join(loadableBuckets, " and "),
-		}
+		return nil, nil
 	}
 
 	return unmarshalNode(fs, data)
@@ -195,6 +171,12 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	nd, err := fs.loadNode(hash)
 	if err != nil {
 		return nil, err
+	}
+
+	if nd == nil {
+		// TODO?
+		// log.Warningf("Could not load hash `%s`", hash.B58String())
+		return nil, nil
 	}
 
 	// NOTE: This will indirectly load parent directories (by calling
@@ -236,11 +218,10 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	var hash []byte
 	var err error
 
-	prefixes := []string{"tree/", "stage/tree/"}
+	prefixes := []string{"stage/tree/", "tree/"}
 	for _, prefix := range prefixes {
 		// getPath() does a hierarchical lookup:
 		joinedPath := joinButLeaveLastDot(prefix, nodePath)
-		fmt.Println("looking up path:", joinedPath, nodePath)
 		hash, err = getPath(fs.kv, joinedPath)
 
 		if err != nil {
@@ -276,20 +257,22 @@ func (fs *FS) StageNode(nd Node) error {
 		return err
 	}
 
+	fmt.Println("Post marshal")
 	b58Hash := nd.Hash().B58String()
 	if err := putPath(fs.kv, "stage/objects/"+b58Hash, data); err != nil {
 		return err
 	}
 
+	fmt.Println("Post putPath")
 	// The key is the path of the
 	nodePath := NodePath(nd)
+	fmt.Println("Post ndoe path")
+
 	hashPath := path.Join("stage/tree", nodePath)
 	switch nd.GetType() {
 	case NodeTypeDirectory:
 		hashPath = appendDot(hashPath)
 	}
-
-	fmt.Println("Stage:", hashPath)
 
 	if err := putPath(fs.kv, hashPath, nd.Hash().Bytes()); err != nil {
 		return err
@@ -306,6 +289,7 @@ func (fs *FS) StageNode(nd Node) error {
 		return err
 	}
 	if par != nil {
+		fmt.Println("Staging parent")
 		if err := fs.StageNode(par); err != nil {
 			return err
 		}
@@ -592,8 +576,17 @@ func (fs *FS) Root() (*Directory, error) {
 		return dir, nil
 	}
 
-	// No root directory yet? Create a shiny new one.
-	return newEmptyDirectory(fs, nil, "/")
+	// No root directory yet? Create a shiny new one and stage it.
+	newRoot, err := newEmptyDirectory(fs, nil, "/")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := fs.StageNode(newRoot); err != nil {
+		return nil, err
+	}
+
+	return newRoot, nil
 }
 
 // Guarantee it's not nil when err == nil
@@ -686,6 +679,10 @@ func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
 		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
 	}
 
 	dir, ok := nd.(*Directory)

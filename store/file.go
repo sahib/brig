@@ -1,9 +1,7 @@
 package store
 
 import (
-	"crypto/rand"
 	"fmt"
-	"io"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -29,12 +27,6 @@ type File struct {
 func newEmptyFile(fs *FS, name string) (*File, error) {
 	id, err := fs.NextID()
 	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Make this configurable?
-	key := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		return nil, err
 	}
 
@@ -99,13 +91,14 @@ func (f *File) ModTime() time.Time { return f.modTime }
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
 func (f *File) SetModTime(t time.Time) { f.modTime = t }
-func (f *File) SetHash(h *Hash)        { f.hash = h }
 func (f *File) SetName(n string)       { f.name = n }
 func (f *File) SetKey(k []byte)        { f.key = k }
 func (f *File) SetSize(s uint64) {
 	f.size = s
 	f.SetModTime(time.Now())
 }
+
+func (f *File) SetHash(h *Hash) { f.hash = h }
 
 ////////////////// HIERARCHY INTERFACE //////////////////
 
@@ -163,12 +156,3 @@ func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
 func (f *File) Key() []byte {
 	return f.key
 }
-
-// func (f *File) Print() {
-// 	f.node.Walk(false, func(n *trie.Node) bool {
-// 		child := n.Data.(*File)
-// 		space := strings.Repeat(" ", int(n.Depth)*4)
-// 		fmt.Printf("%s%s [%p]\n", space, child.node.Path(), child)
-// 		return true
-// 	})
-// }

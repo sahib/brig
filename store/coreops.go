@@ -2,14 +2,12 @@ package store
 
 import (
 	"bytes"
-	"fmt"
+	"crypto/rand"
 	"io"
 	"math"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store/compress"
@@ -19,107 +17,14 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-var (
-	ErrExists   = fmt.Errorf("File exists")
-	ErrNotEmpty = fmt.Errorf("Cannot remove: Directory is not empty")
-)
-
-type errNoSuchFile struct {
-	path string
-}
-
-func (e *errNoSuchFile) Error() string {
-	return "No such file or directory: " + e.path
-}
-
-// NoSuchFile creates a new error that reports `path` as missing
-// TODO: move to errors.go?
-func NoSuchFile(path string) error {
-	return &errNoSuchFile{path}
-}
-
-// IsNoSuchFileError asserts that `err` means that the file could not be found
-func IsNoSuchFileError(err error) bool {
-	_, ok := err.(*errNoSuchFile)
-	return ok
-}
-
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
 func (st *Store) Mkdir(repoPath string) (*Directory, error) {
-	return st.mkdir(repoPath, false)
+	return mkdir(st.fs, repoPath, false)
 }
 
 // MkdirAll is like Mkdir but creates intermediate directories conviniently.
 func (st *Store) MkdirAll(repoPath string) (*Directory, error) {
-	return st.mkdir(repoPath, true)
-}
-
-func (st *Store) mkdirParents(path string) (*Directory, error) {
-	elems := strings.Split(path, "/")
-
-	for idx := 1; idx < len(elems)-1; idx++ {
-		dirname := strings.Join(elems[:idx+1], "/")
-		dir, err := st.mkdir(dirname, false)
-
-		if err != nil {
-			log.Warningf("store-add: failed to create intermediate dir `%s`: %v", dirname, err)
-			return nil, err
-		}
-
-		// Return it, if it's the last path component:
-		if idx+1 == len(elems)-1 {
-			return dir, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Empty path")
-}
-
-func (st *Store) mkdir(repoPath string, createParents bool) (*Directory, error) {
-	dirname, basename := path.Split(repoPath)
-
-	// Check if the parent exists.
-	// (would result in weird undefined intermediates otherwise)
-	parent, err := st.fs.LookupDirectory(dirname)
-	if err != nil {
-		return nil, err
-	}
-
-	// If it's nil, we might need to create it:
-	if parent == nil {
-		if !createParents {
-			return nil, NoSuchFile(dirname)
-		}
-
-		parent, err = st.mkdirParents(repoPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	child, err := parent.Child(basename)
-	if err != nil {
-		return nil, err
-	}
-
-	if child.GetType() != NodeTypeDirectory {
-		return nil, fmt.Errorf("`%s` exists and is not a directory", repoPath)
-	} else {
-		// Notthing to do really. Return the old child.
-		return child.(*Directory), nil
-	}
-
-	// Create it then!
-	dir, err := newEmptyDirectory(st.fs, parent, basename)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := st.fs.StageNode(dir); err != nil {
-		return nil, err
-	}
-
-	return dir, nil
+	return mkdir(st.fs, repoPath, true)
 }
 
 // Add reads the data at the physical path `filePath` and adds it to the store
@@ -176,48 +81,22 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 // The resulting hash will be committed to the index.
 func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 	repoPath = prefixSlash(repoPath)
-	initialAdd := false
 
 	st.mu.Lock()
 	defer st.mu.Unlock()
-
-	// Check if the file was already added:
-	file, err := st.fs.LookupFile(repoPath)
-	if err != nil {
-		return err
-	}
-
-	if file != nil {
-		// We know this file already.
-		log.WithFields(log.Fields{
-			"file": repoPath,
-		}).Info("File exists; modifying.")
-	} else {
-		parent, err := st.mkdirParents(repoPath)
-		if err != nil {
-			return err
-		}
-
-		// Create a new file at specified path:
-		newFile, err := newEmptyFile(st.fs, path.Base(repoPath))
-		if err != nil {
-			return err
-		}
-
-		if err := parent.Add(parent); err != nil {
-			return err
-		}
-
-		file, initialAdd = newFile, true
-	}
 
 	// Control how many bytes are written to the encryption layer:
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
 
+	key := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, key); err != nil {
+		return err
+	}
+
 	// TODO: Make algo configurable/add heuristic too choose
 	//       a suitable algorithm
-	stream, err := NewFileReader(file.Key(), teeR, compress.AlgoSnappy)
+	stream, err := NewFileReader(key, teeR, compress.AlgoSnappy)
 	if err != nil {
 		return err
 	}
@@ -231,40 +110,16 @@ func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	return st.insertMetadata(
-		file, repoPath, &Hash{mhash}, initialAdd, sizeAcc.Size(),
-	)
-}
-
-func (st *Store) insertMetadata(file *File, repoPath string, newHash *Hash, initialAdd bool, size uint64) error {
-	log.Infof(
-		"store-add: %s (hash: %s, key: %x)",
-		repoPath,
-		newHash.B58String(),
-		file.Key()[10:], // TODO: Make omit() a util func
-	)
-
-	// Update metadata that might have changed:
-	if file.hash.Equal(newHash) {
-		log.Debugf("Refusing update.")
-		return ErrNoChange
-	}
-
-	oldHash := file.Hash().Clone()
-	if initialAdd {
-		oldHash = nil
-	}
-
-	file.SetSize(size)
-	file.SetModTime(time.Now())
-	file.SetHash(newHash)
-
-	// Create a checkpoint in the version history.
-	if err := st.makeCheckpoint(file.ID(), oldHash, newHash, repoPath, repoPath); err != nil {
+	owner, err := st.Owner()
+	if err != nil {
 		return err
 	}
 
-	return st.fs.StageNode(file)
+	if _, err := createFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (st *Store) pinOp(repoPath string, doUnpin bool) error {
@@ -335,23 +190,13 @@ func (st *Store) Touch(repoPath string) error {
 	return st.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
-func (st *Store) makeCheckpoint(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
+func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
 	owner, err := st.Owner()
 	if err != nil {
 		return err
 	}
 
-	ckp, err := st.fs.LastCheckpoint(ID)
-	if err != nil {
-		return err
-	}
-
-	newCkp, err := ckp.Fork(owner.ID(), oldHash, newHash, oldPath, newPath)
-	if err != nil {
-		return err
-	}
-
-	return st.fs.StageCheckpoint(newCkp)
+	return makeCheckpoint(st.fs, owner.ID(), ID, oldHash, newHash, oldPath, newPath)
 }
 
 // Stream returns the stream of the file at `path`.
@@ -439,7 +284,7 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 	errs := util.Errors{}
 	for _, child := range toBeRemoved {
 		childPath := NodePath(child)
-		if err = st.makeCheckpoint(child.ID(), child.Hash(), nil, childPath, childPath); err != nil {
+		if err = st.makeCheckpointByOwner(child.ID(), child.Hash(), nil, childPath, childPath); err != nil {
 			return err
 		}
 
@@ -572,7 +417,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 		newPaths[newChildPath] = child.(*File)
 
 		hash := child.Hash()
-		if err = st.makeCheckpoint(newNode.ID(), hash, hash, oldChildPath, newChildPath); err != nil {
+		if err = st.makeCheckpointByOwner(newNode.ID(), hash, hash, oldChildPath, newChildPath); err != nil {
 			return err
 		}
 
@@ -593,7 +438,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 	// NOTE: No pinning information needs to change,
 	//       Move() does not influence the Hash() of the file.
 	for newPath, file := range newPaths {
-		dest, err := st.mkdirParents(newPath)
+		dest, err := mkdirParents(st.fs, newPath)
 		if err != nil {
 			return err
 		}

@@ -136,7 +136,7 @@ func (h *Hash) Xor(o *Hash) error {
 		return err
 	}
 
-	decO, err := multihash.Decode(h.Multihash)
+	decO, err := multihash.Decode(o.Multihash)
 	if err != nil {
 		return err
 	}
