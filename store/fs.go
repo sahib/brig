@@ -569,29 +569,12 @@ func (fs *FS) Head() (*Commit, error) {
 }
 
 func (fs *FS) Root() (*Directory, error) {
-	// NOTE: Status() might call Root() and not other way round.
-	//       We're on duty of creating a new root if necessary.
-	// TODO: Get Stage commit, retriebe root from there.
-	dir, err := fs.ResolveDirectory("/")
+	status, err := fs.Status()
 	if err != nil {
 		return nil, err
 	}
 
-	if dir != nil {
-		return dir, nil
-	}
-
-	// No root directory yet? Create a shiny new one and stage it.
-	newRoot, err := newEmptyDirectory(fs, nil, "/")
-	if err != nil {
-		return nil, err
-	}
-
-	if err := fs.StageNode(newRoot); err != nil {
-		return nil, err
-	}
-
-	return newRoot, nil
+	return fs.DirectoryByHash(status.Root())
 }
 
 // Guarantee it's not nil when err == nil
@@ -611,26 +594,8 @@ func (fs *FS) Status() (*Commit, error) {
 		return nil, err
 	}
 
-	if data == nil {
-		// Setup a new commit and set root.
-		head, err := fs.Head()
-		if err != nil {
-			return nil, err
-		}
-
-		if err := cmt.SetParent(head); err != nil {
-			return nil, err
-		}
-
-		root, err := fs.Root()
-		if err != nil {
-			return nil, err
-		}
-
-		if err := cmt.SetRoot(root.Hash()); err != nil {
-			return nil, err
-		}
-	} else {
+	if data != nil {
+		// It's there already. Just unmarshal it.
 		pnode := &wire.Node{}
 		if err := proto.Unmarshal(data, pnode); err != nil {
 			return nil, err
@@ -639,6 +604,45 @@ func (fs *FS) Status() (*Commit, error) {
 		if err := cmt.FromProto(pnode); err != nil {
 			return nil, err
 		}
+
+		return cmt, nil
+	}
+
+	// Setup a new commit and set root from last HEAD or new one.
+	head, err := fs.Head()
+	if err != nil && !IsErrNoSuchRef(err) {
+		return nil, err
+	}
+
+	var rootHash *Hash
+
+	if IsErrNoSuchRef(err) {
+		// There probably wasn't a HEAD yet.
+		// No root directory yet then. Create a shiny new one and stage it.
+		newRoot, err := newEmptyDirectory(fs, nil, "/")
+		if err != nil {
+			return nil, err
+		}
+
+		if err := fs.StageNode(newRoot); err != nil {
+			return nil, err
+		}
+
+		rootHash = newRoot.Hash()
+	} else {
+		if err := cmt.SetParent(head); err != nil {
+			return nil, err
+		}
+
+		rootHash = head.Root()
+	}
+
+	if err := cmt.SetRoot(rootHash); err != nil {
+		return nil, err
+	}
+
+	if err := fs.saveStatus(cmt); err != nil {
+		return nil, err
 	}
 
 	return cmt, nil

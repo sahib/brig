@@ -59,3 +59,8 @@ type ErrNoSuchRef string
 func (e ErrNoSuchRef) Error() string {
 	return fmt.Sprintf("No ref found named `%s`", string(e))
 }
+
+func IsErrNoSuchRef(err error) bool {
+	_, ok := err.(*ErrNoSuchRef)
+	return ok
+}
