@@ -97,18 +97,18 @@ type Checkpoint struct {
 	author id.ID
 }
 
-func (c *Checkpoint) ChangeType() *ChangeType { return &c.change }
-func (c *Checkpoint) Hash() *Hash             { return c.hash }
-func (c *Checkpoint) Author() id.ID           { return c.author }
+func (cp *Checkpoint) ChangeType() *ChangeType { return &cp.change }
+func (cp *Checkpoint) Hash() *Hash             { return cp.hash }
+func (cp *Checkpoint) Author() id.ID           { return cp.author }
 
 // TODO: nice representation
-func (c *Checkpoint) String() string {
+func (cp *Checkpoint) String() string {
 	return fmt.Sprintf(
 		"%x:%x@%s(%s)",
-		c.idLink,
-		c.index,
-		c.change.String(),
-		c.hash.B58String(),
+		cp.idLink,
+		cp.index,
+		cp.change.String(),
+		cp.hash.B58String(),
 	)
 }
 
@@ -300,7 +300,7 @@ func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPa
 		change, hash = ChangeAdd, newHash
 	} else if newHash == nil {
 		change, hash = ChangeRemove, oldHash
-	} else if newHash.Equal(oldHash) == false {
+	} else if !newHash.Equal(oldHash) {
 		change, hash = ChangeModify, newHash
 	} else if oldPath != newPath {
 		change, hash = ChangeMove, newHash

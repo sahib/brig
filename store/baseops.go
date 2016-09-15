@@ -79,10 +79,10 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	if child != nil {
 		if child.GetType() != NodeTypeDirectory {
 			return nil, fmt.Errorf("`%s` exists and is not a directory", repoPath)
-		} else {
-			// Notthing to do really. Return the old child.
-			return child.(*Directory), nil
 		}
+
+		// Notthing to do really. Return the old child.
+		return child.(*Directory), nil
 	}
 
 	printTree(fs)

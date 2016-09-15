@@ -202,7 +202,7 @@ func (bb *BoltBucket) Foreach(fn func(key string, value []byte) error) error {
 			var copyValue []byte
 
 			if val != nil {
-				copyValue := make([]byte, len(val))
+				copyValue = make([]byte, len(val))
 				copy(copyValue, val)
 			}
 

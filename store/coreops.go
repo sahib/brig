@@ -30,8 +30,8 @@ func (st *Store) MkdirAll(repoPath string) (*Directory, error) {
 // Add reads the data at the physical path `filePath` and adds it to the store
 // at `repoPath` by hashing, compressing and encrypting the file.
 // Directories will be added recursively.
-func (s *Store) Add(filePath, repoPath string) error {
-	return s.AddDir(filePath, prefixSlash(repoPath))
+func (st *Store) Add(filePath, repoPath string) error {
+	return st.AddDir(filePath, prefixSlash(repoPath))
 }
 
 // AddDir traverses all files in a directory and calls AddFromReader on them.
@@ -141,6 +141,10 @@ func (st *Store) pinOp(repoPath string, doUnpin bool) error {
 
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
 
 	fn := st.IPFS.Pin
 	if doUnpin {
@@ -417,11 +421,13 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 		newPaths[newChildPath] = child.(*File)
 
 		hash := child.Hash()
-		if err = st.makeCheckpointByOwner(newNode.ID(), hash, hash, oldChildPath, newChildPath); err != nil {
-			return err
-		}
-
-		return nil
+		return st.makeCheckpointByOwner(
+			newNode.ID(),
+			hash,
+			hash,
+			oldChildPath,
+			newChildPath,
+		)
 	})
 
 	if err != nil {

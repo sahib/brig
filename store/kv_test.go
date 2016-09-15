@@ -81,6 +81,10 @@ func TestKVBasic(t *testing.T) {
 	}
 
 	pathSubData, err := getPath(kv, "/name/key")
+	if err != nil {
+		t.Errorf("Sub data failed")
+		return
+	}
 	fmt.Println(string(pathSubData))
 
 	if err := kv.Close(); err != nil {
