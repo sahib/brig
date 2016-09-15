@@ -97,6 +97,14 @@ func (st *Store) Owner() (id.Peer, error) {
 	return id.NewPeer(ident, string(bhash)), nil
 }
 
+// TODO: Use this for the fuse layer.
+func (st *Store) Transaction(fn func() error) error {
+	st.Lock()
+	defer st.mu.Unlock()
+
+	return fn()
+}
+
 // Close syncs all data. It is an error to use the store afterwards.
 func (st *Store) Close() error {
 	st.mu.Lock()
