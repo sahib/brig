@@ -1,7 +1,6 @@
 package store
 
 import (
-	"path"
 	"strings"
 	"time"
 
@@ -48,6 +47,9 @@ type Metadatable interface {
 
 	// ModTime returns the time when the last modification to the node happened.
 	ModTime() time.Time
+
+	// Path of this node.
+	Path() string
 }
 
 type Serializable interface {
@@ -93,23 +95,8 @@ func prefixSlash(s string) string {
 }
 
 func NodePath(nd Node) string {
-	var err error
-	elems := []string{}
-
-	for nd != nil {
-		elems = append(elems, nd.Name())
-
-		nd, err = nd.Parent()
-		if err != nil || nd == nil {
-			break
-		}
-	}
-
-	for i := 0; i < len(elems)/2; i++ {
-		elems[i], elems[len(elems)-i-1] = elems[len(elems)-i-1], elems[i]
-	}
-
-	return prefixSlash(path.Join(elems...))
+	// Remove; not needed anymore.
+	return nd.Path()
 }
 
 func NodeDepth(nd Node) int {
@@ -159,25 +146,4 @@ func nodeParentDir(nd Node) (*Directory, error) {
 	}
 
 	return parDir, nil
-}
-
-type metaRecord struct {
-	hash    *Hash
-	name    string
-	size    uint64
-	modTime time.Time
-}
-
-func (mr *metaRecord) Hash() *Hash        { return mr.hash }
-func (mr *metaRecord) Name() string       { return mr.name }
-func (mr *metaRecord) Size() uint64       { return mr.size }
-func (mr *metaRecord) ModTime() time.Time { return mr.modTime }
-
-func Metadata(nd Node) Metadatable {
-	return &metaRecord{
-		hash:    nd.Hash(),
-		name:    nd.Name(),
-		size:    nd.Size(),
-		modTime: nd.ModTime(),
-	}
 }

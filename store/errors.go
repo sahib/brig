@@ -19,6 +19,8 @@ func (e *errNoSuchFile) Error() string {
 	return "No such file or directory: " + e.path
 }
 
+//////////////
+
 // NoSuchFile creates a new error that reports `path` as missing
 // TODO: move to errors.go?
 func NoSuchFile(path string) error {
@@ -31,11 +33,15 @@ func IsNoSuchFileError(err error) bool {
 	return ok
 }
 
+//////////////
+
 type ErrBadNodeType int
 
 func (e ErrBadNodeType) Error() string {
 	return fmt.Sprintf("Bad node type in db: %d", int(e))
 }
+
+//////////////
 
 type ErrNoHashFound struct {
 	b58hash string
@@ -44,4 +50,12 @@ type ErrNoHashFound struct {
 
 func (e ErrNoHashFound) Error() string {
 	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
+}
+
+//////////////
+
+type ErrNoSuchRef string
+
+func (e ErrNoSuchRef) Error() string {
+	return fmt.Sprintf("No ref found named `%s`", string(e))
 }

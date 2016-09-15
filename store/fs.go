@@ -531,6 +531,10 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 		return nil, err
 	}
 
+	if hash == nil {
+		return nil, ErrNoSuchRef(refname)
+	}
+
 	mh, err := multihash.Cast(hash)
 	if err != nil {
 		return nil, err
@@ -567,6 +571,7 @@ func (fs *FS) Head() (*Commit, error) {
 func (fs *FS) Root() (*Directory, error) {
 	// NOTE: Status() might call Root() and not other way round.
 	//       We're on duty of creating a new root if necessary.
+	// TODO: Get Stage commit, retriebe root from there.
 	dir, err := fs.ResolveDirectory("/")
 	if err != nil {
 		return nil, err

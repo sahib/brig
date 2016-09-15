@@ -95,23 +95,11 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 		return nil, err
 	}
 
-	fmt.Println("PRINTING FOR", parent.Name(), "AND", dir.Name())
-	fmt.Println("ROOT HASH AFTER:", parent.Hash().B58String())
-	if parent.parent != nil {
-		fmt.Println("PARENT HASH OF PARENT", parent.parent.B58String())
-	}
-
-	fmt.Println("CHILD HASH:", dir.hash.B58String())
-	fmt.Println("CHILD PARENT HASH:", dir.parent.B58String())
-
 	if err := fs.StageNode(dir); err != nil {
 		return nil, err
 	}
 
-	fmt.Println("post stage")
-
 	printTree(fs)
-	fmt.Println("post print")
 
 	return dir, nil
 }

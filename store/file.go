@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"path"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -16,7 +17,7 @@ type File struct {
 	name    string
 	key     []byte
 	hash    *Hash
-	parent  *Hash
+	parent  string
 	size    uint64
 	modTime time.Time
 	id      uint64
@@ -50,10 +51,10 @@ func (f *File) ToProto() (*wire.Node, error) {
 		Name:     proto.String(f.name),
 		NodeSize: proto.Uint64(f.size),
 		ModTime:  binModTime,
-		Parent:   f.parent.Bytes(),
 		Hash:     f.hash.Bytes(),
 		File: &wire.File{
-			Key: f.key,
+			Parent: proto.String(f.parent),
+			Key:    f.key,
 		},
 	}, nil
 }
@@ -73,7 +74,7 @@ func (f *File) FromProto(pnd *wire.Node) error {
 	f.size = pnd.GetNodeSize()
 	f.modTime = modTime
 	f.hash = &Hash{pnd.GetHash()}
-	f.parent = &Hash{pnd.GetParent()}
+	f.parent = pfi.GetParent()
 	f.name = pnd.GetName()
 	f.key = pfi.GetKey()
 	return nil
@@ -100,6 +101,10 @@ func (f *File) SetSize(s uint64) {
 
 func (f *File) SetHash(h *Hash) { f.hash = h }
 
+func (f *File) Path() string {
+	return prefixSlash(path.Join(f.parent, f.name))
+}
+
 ////////////////// HIERARCHY INTERFACE //////////////////
 
 // NChildren returns the number of children this file node has.
@@ -115,17 +120,15 @@ func (f *File) Child(name string) (Node, error) {
 // Parent returns the parent directory of File.
 // If `f` is already the root, it will return itself (and never nil).
 func (f *File) Parent() (Node, error) {
-	return f.fs.FileByHash(f.parent)
+	return f.fs.LookupNode(f.parent)
 }
 
-// Parent returns the parent directory of File.
-// If `f` is already the root, it will return itself (and never nil).
 func (f *File) SetParent(parent Node) error {
 	if parent == nil {
 		return nil
 	}
 
-	f.parent = parent.Hash()
+	f.parent = parent.Path()
 	return nil
 }
 

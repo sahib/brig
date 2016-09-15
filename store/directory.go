@@ -16,7 +16,7 @@ type Directory struct {
 	name     string
 	size     uint64
 	modTime  time.Time
-	parent   *Hash
+	parent   string
 	hash     *Hash
 	children map[string]*Hash
 	id       uint64
@@ -88,10 +88,10 @@ func (d *Directory) ToProto() (*wire.Node, error) {
 		NodeSize: proto.Uint64(d.size),
 		Hash:     d.hash.Bytes(),
 		Name:     proto.String(d.name),
-		Parent:   d.parent.Bytes(),
 		Directory: &wire.Directory{
-			Links: binLinks,
-			Names: binNames,
+			Parent: proto.String(d.parent),
+			Links:  binLinks,
+			Names:  binNames,
 		},
 	}, nil
 }
@@ -115,7 +115,7 @@ func (d *Directory) FromProto(pnd *wire.Node) error {
 
 	d.id = pnd.GetID()
 	d.modTime = modTime
-	d.parent = &Hash{pnd.GetParent()}
+	d.parent = pbd.GetParent()
 	d.size = pnd.GetNodeSize()
 	d.hash = &Hash{pnd.GetHash()}
 	d.name = pnd.GetName()
@@ -158,6 +158,10 @@ func (d *Directory) Size() uint64 {
 	return d.size
 }
 
+func (d *Directory) Path() string {
+	return prefixSlash(path.Join(d.parent, d.name))
+}
+
 func (d *Directory) ModTime() time.Time {
 	return d.modTime
 }
@@ -176,20 +180,19 @@ func (d *Directory) Child(name string) (Node, error) {
 }
 
 func (d *Directory) Parent() (Node, error) {
-	if d.parent == nil {
+	if d.parent == "" {
 		return nil, nil
 	}
 
-	return d.fs.NodeByHash(d.parent)
+	return d.fs.LookupNode(d.parent)
 }
 
 func (d *Directory) SetParent(nd Node) error {
 	if nd == nil {
-		d.parent = EmptyHash
+		d.parent = ""
 	} else {
-		d.parent = nd.Hash()
+		d.parent = nd.Path()
 	}
-
 	return nil
 }
 
@@ -223,15 +226,37 @@ func (d *Directory) VisitChildren(fn func(*Directory) error) error {
 }
 
 func (d *Directory) Up(visit func(par *Directory) error) error {
-	var err error
+	root, err := d.fs.Root()
+	if err != nil {
+		return err
+	}
 
-	for curr := d; curr.parent != nil; {
-		if err := visit(curr); err != nil {
+	elems := strings.Split(d.Path(), "/")
+	dirs := []*Directory{root}
+	curr := root
+
+	for _, elem := range elems {
+		if elem == "" {
+			continue
+		}
+
+		childHash, ok := curr.children[elem]
+		if !ok {
+			return fmt.Errorf("BUG: Cannot reach self from root in Up()")
+		}
+
+		child, err := d.fs.DirectoryByHash(childHash)
+		if err != nil {
 			return err
 		}
 
-		curr, err = d.fs.DirectoryByHash(curr.parent)
-		if err != nil {
+		dirs = append(dirs, child)
+		curr = child
+	}
+
+	// Visit the nodes in reverse order, self first, root last:
+	for idx := len(dirs) - 1; idx >= 0; idx-- {
+		if err := visit(dirs[idx]); err != nil {
 			return err
 		}
 	}
@@ -240,14 +265,7 @@ func (d *Directory) Up(visit func(par *Directory) error) error {
 }
 
 func (d *Directory) xorHash(hash *Hash) error {
-	if err := d.hash.Xor(hash); err != nil {
-		return err
-	}
-
-	// We need to update the direct children since the parent hash changed.
-	return d.VisitChildren(func(child *Directory) error {
-		return child.SetParent(d)
-	})
+	return d.hash.Xor(hash)
 }
 
 func Walk(node Node, dfs bool, visit func(child Node) error) error {
@@ -271,7 +289,6 @@ func Walk(node Node, dfs bool, visit func(child Node) error) error {
 	}
 
 	for _, link := range d.children {
-
 		child, err := d.fs.NodeByHash(link)
 		if err != nil {
 			return err

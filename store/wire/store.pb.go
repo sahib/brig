@@ -364,15 +364,13 @@ type Node struct {
 	Hash []byte `protobuf:"bytes,5,req,name=hash" json:"hash,omitempty"`
 	// Name of this node (i.e. path element)
 	Name *string `protobuf:"bytes,6,req,name=name" json:"name,omitempty"`
-	// Parent hash of this node (might be nil)
-	Parent []byte `protobuf:"bytes,7,opt,name=parent" json:"parent,omitempty"`
 	// Path must only be filled when exported to a client.
 	// It may not be used internally and is not saved to the kv-store.
-	Path *string `protobuf:"bytes,8,opt,name=path" json:"path,omitempty"`
+	Path *string `protobuf:"bytes,7,opt,name=path" json:"path,omitempty"`
 	// Individual types:
-	File             *File      `protobuf:"bytes,9,opt,name=file" json:"file,omitempty"`
-	Directory        *Directory `protobuf:"bytes,10,opt,name=directory" json:"directory,omitempty"`
-	Commit           *Commit    `protobuf:"bytes,11,opt,name=commit" json:"commit,omitempty"`
+	File             *File      `protobuf:"bytes,8,opt,name=file" json:"file,omitempty"`
+	Directory        *Directory `protobuf:"bytes,9,opt,name=directory" json:"directory,omitempty"`
+	Commit           *Commit    `protobuf:"bytes,10,opt,name=commit" json:"commit,omitempty"`
 	XXX_unrecognized []byte     `json:"-"`
 }
 
@@ -422,13 +420,6 @@ func (m *Node) GetName() string {
 	return ""
 }
 
-func (m *Node) GetParent() []byte {
-	if m != nil {
-		return m.Parent
-	}
-	return nil
-}
-
 func (m *Node) GetPath() string {
 	if m != nil && m.Path != nil {
 		return *m.Path
@@ -475,13 +466,23 @@ func (m *Nodes) GetNodes() []*Node {
 }
 
 type File struct {
-	Key              []byte `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
+	// Path to parent directory
+	Parent *string `protobuf:"bytes,1,req,name=parent" json:"parent,omitempty"`
+	// Key of this file:
+	Key              []byte `protobuf:"bytes,2,req,name=key" json:"key,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *File) Reset()         { *m = File{} }
 func (m *File) String() string { return proto.CompactTextString(m) }
 func (*File) ProtoMessage()    {}
+
+func (m *File) GetParent() string {
+	if m != nil && m.Parent != nil {
+		return *m.Parent
+	}
+	return ""
+}
 
 func (m *File) GetKey() []byte {
 	if m != nil {
@@ -491,15 +492,24 @@ func (m *File) GetKey() []byte {
 }
 
 type Directory struct {
+	// Path to parent object:
+	Parent *string `protobuf:"bytes,1,req,name=parent" json:"parent,omitempty"`
 	// Directory contents (hashtable contents [name => link]):
-	Links            [][]byte `protobuf:"bytes,1,rep,name=links" json:"links,omitempty"`
-	Names            []string `protobuf:"bytes,2,rep,name=names" json:"names,omitempty"`
+	Links            [][]byte `protobuf:"bytes,2,rep,name=links" json:"links,omitempty"`
+	Names            []string `protobuf:"bytes,3,rep,name=names" json:"names,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
 func (m *Directory) Reset()         { *m = Directory{} }
 func (m *Directory) String() string { return proto.CompactTextString(m) }
 func (*Directory) ProtoMessage()    {}
+
+func (m *Directory) GetParent() string {
+	if m != nil && m.Parent != nil {
+		return *m.Parent
+	}
+	return ""
+}
 
 func (m *Directory) GetLinks() [][]byte {
 	if m != nil {
@@ -517,24 +527,35 @@ func (m *Directory) GetNames() []string {
 
 // Commit is a bag of changes, either automatically done or by the user.
 type Commit struct {
-	Message *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	Author  *Author `protobuf:"bytes,2,req,name=author" json:"author,omitempty"`
+	// Hash of the parent commit:
+	Parent []byte `protobuf:"bytes,1,req,name=parent" json:"parent,omitempty"`
+	// Commit message:
+	Message *string `protobuf:"bytes,2,req,name=message" json:"message,omitempty"`
+	// Author of this commit:
+	Author *Author `protobuf:"bytes,3,req,name=author" json:"author,omitempty"`
 	// Hash to the root tree:
-	Root []byte `protobuf:"bytes,3,req,name=root" json:"root,omitempty"`
+	Root []byte `protobuf:"bytes,4,req,name=root" json:"root,omitempty"`
 	// List of checkpoints (one per file):
-	Changeset []*CheckpointLink `protobuf:"bytes,4,rep,name=changeset" json:"changeset,omitempty"`
+	Changeset []*CheckpointLink `protobuf:"bytes,5,rep,name=changeset" json:"changeset,omitempty"`
 	// Merge information if this is a merge commit.
-	Merge *Merge `protobuf:"bytes,5,opt,name=merge" json:"merge,omitempty"`
+	Merge *Merge `protobuf:"bytes,6,opt,name=merge" json:"merge,omitempty"`
 	// Checkpoints stored in the commit.
 	// This is only used when exported to the client,
 	// it is not stored in the kv-store.
-	Checkpoints      []*Checkpoint `protobuf:"bytes,6,rep,name=checkpoints" json:"checkpoints,omitempty"`
+	Checkpoints      []*Checkpoint `protobuf:"bytes,7,rep,name=checkpoints" json:"checkpoints,omitempty"`
 	XXX_unrecognized []byte        `json:"-"`
 }
 
 func (m *Commit) Reset()         { *m = Commit{} }
 func (m *Commit) String() string { return proto.CompactTextString(m) }
 func (*Commit) ProtoMessage()    {}
+
+func (m *Commit) GetParent() []byte {
+	if m != nil {
+		return m.Parent
+	}
+	return nil
+}
 
 func (m *Commit) GetMessage() string {
 	if m != nil && m.Message != nil {
@@ -1066,20 +1087,14 @@ func (m *Node) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintStore(data, i, uint64(len(*m.Name)))
 		i += copy(data[i:], *m.Name)
 	}
-	if m.Parent != nil {
-		data[i] = 0x3a
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
-		i += copy(data[i:], m.Parent)
-	}
 	if m.Path != nil {
-		data[i] = 0x42
+		data[i] = 0x3a
 		i++
 		i = encodeVarintStore(data, i, uint64(len(*m.Path)))
 		i += copy(data[i:], *m.Path)
 	}
 	if m.File != nil {
-		data[i] = 0x4a
+		data[i] = 0x42
 		i++
 		i = encodeVarintStore(data, i, uint64(m.File.Size()))
 		n6, err := m.File.MarshalTo(data[i:])
@@ -1089,7 +1104,7 @@ func (m *Node) MarshalTo(data []byte) (int, error) {
 		i += n6
 	}
 	if m.Directory != nil {
-		data[i] = 0x52
+		data[i] = 0x4a
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Directory.Size()))
 		n7, err := m.Directory.MarshalTo(data[i:])
@@ -1099,7 +1114,7 @@ func (m *Node) MarshalTo(data []byte) (int, error) {
 		i += n7
 	}
 	if m.Commit != nil {
-		data[i] = 0x5a
+		data[i] = 0x52
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Commit.Size()))
 		n8, err := m.Commit.MarshalTo(data[i:])
@@ -1162,8 +1177,18 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Key != nil {
+	if m.Parent == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
 		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Parent)))
+		i += copy(data[i:], *m.Parent)
+	}
+	if m.Key == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.Key)))
 		i += copy(data[i:], m.Key)
@@ -1189,9 +1214,17 @@ func (m *Directory) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Parent == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(*m.Parent)))
+		i += copy(data[i:], *m.Parent)
+	}
 	if len(m.Links) > 0 {
 		for _, b := range m.Links {
-			data[i] = 0xa
+			data[i] = 0x12
 			i++
 			i = encodeVarintStore(data, i, uint64(len(b)))
 			i += copy(data[i:], b)
@@ -1199,7 +1232,7 @@ func (m *Directory) MarshalTo(data []byte) (int, error) {
 	}
 	if len(m.Names) > 0 {
 		for _, s := range m.Names {
-			data[i] = 0x12
+			data[i] = 0x1a
 			i++
 			l = len(s)
 			for l >= 1<<7 {
@@ -1233,10 +1266,18 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Message == nil {
+	if m.Parent == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0xa
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Parent)))
+		i += copy(data[i:], m.Parent)
+	}
+	if m.Message == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
 		i++
 		i = encodeVarintStore(data, i, uint64(len(*m.Message)))
 		i += copy(data[i:], *m.Message)
@@ -1244,7 +1285,7 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	if m.Author == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
-		data[i] = 0x12
+		data[i] = 0x1a
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Author.Size()))
 		n9, err := m.Author.MarshalTo(data[i:])
@@ -1256,14 +1297,14 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	if m.Root == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
-		data[i] = 0x1a
+		data[i] = 0x22
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.Root)))
 		i += copy(data[i:], m.Root)
 	}
 	if len(m.Changeset) > 0 {
 		for _, msg := range m.Changeset {
-			data[i] = 0x22
+			data[i] = 0x2a
 			i++
 			i = encodeVarintStore(data, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(data[i:])
@@ -1274,7 +1315,7 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.Merge != nil {
-		data[i] = 0x2a
+		data[i] = 0x32
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
 		n10, err := m.Merge.MarshalTo(data[i:])
@@ -1285,7 +1326,7 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 	}
 	if len(m.Checkpoints) > 0 {
 		for _, msg := range m.Checkpoints {
-			data[i] = 0x32
+			data[i] = 0x3a
 			i++
 			i = encodeVarintStore(data, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(data[i:])
@@ -1531,10 +1572,6 @@ func (m *Node) Size() (n int) {
 		l = len(*m.Name)
 		n += 1 + l + sovStore(uint64(l))
 	}
-	if m.Parent != nil {
-		l = len(m.Parent)
-		n += 1 + l + sovStore(uint64(l))
-	}
 	if m.Path != nil {
 		l = len(*m.Path)
 		n += 1 + l + sovStore(uint64(l))
@@ -1575,6 +1612,10 @@ func (m *Nodes) Size() (n int) {
 func (m *File) Size() (n int) {
 	var l int
 	_ = l
+	if m.Parent != nil {
+		l = len(*m.Parent)
+		n += 1 + l + sovStore(uint64(l))
+	}
 	if m.Key != nil {
 		l = len(m.Key)
 		n += 1 + l + sovStore(uint64(l))
@@ -1588,6 +1629,10 @@ func (m *File) Size() (n int) {
 func (m *Directory) Size() (n int) {
 	var l int
 	_ = l
+	if m.Parent != nil {
+		l = len(*m.Parent)
+		n += 1 + l + sovStore(uint64(l))
+	}
 	if len(m.Links) > 0 {
 		for _, b := range m.Links {
 			l = len(b)
@@ -1609,6 +1654,10 @@ func (m *Directory) Size() (n int) {
 func (m *Commit) Size() (n int) {
 	var l int
 	_ = l
+	if m.Parent != nil {
+		l = len(m.Parent)
+		n += 1 + l + sovStore(uint64(l))
+	}
 	if m.Message != nil {
 		l = len(*m.Message)
 		n += 1 + l + sovStore(uint64(l))
@@ -3059,34 +3108,6 @@ func (m *Node) Unmarshal(data []byte) error {
 			hasFields[0] |= uint64(0x00000020)
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-		case 8:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
 			}
 			var stringLen uint64
@@ -3115,7 +3136,7 @@ func (m *Node) Unmarshal(data []byte) error {
 			s := string(data[iNdEx:postIndex])
 			m.Path = &s
 			iNdEx = postIndex
-		case 9:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
 			}
@@ -3148,7 +3169,7 @@ func (m *Node) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 10:
+		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Directory", wireType)
 			}
@@ -3181,7 +3202,7 @@ func (m *Node) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 11:
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Commit", wireType)
 			}
@@ -3337,6 +3358,7 @@ func (m *Nodes) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *File) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3367,6 +3389,37 @@ func (m *File) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Parent = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var byteLen int
@@ -3393,6 +3446,7 @@ func (m *File) Unmarshal(data []byte) error {
 			}
 			m.Key = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -3409,6 +3463,12 @@ func (m *File) Unmarshal(data []byte) error {
 			iNdEx += skippy
 		}
 	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
 
 	if iNdEx > l {
 		return io.ErrUnexpectedEOF
@@ -3416,6 +3476,7 @@ func (m *File) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Directory) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3446,6 +3507,37 @@ func (m *Directory) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Parent = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Links", wireType)
 			}
 			var byteLen int
@@ -3473,7 +3565,7 @@ func (m *Directory) Unmarshal(data []byte) error {
 			m.Links = append(m.Links, make([]byte, postIndex-iNdEx))
 			copy(m.Links[len(m.Links)-1], data[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Names", wireType)
 			}
@@ -3518,6 +3610,9 @@ func (m *Directory) Unmarshal(data []byte) error {
 			iNdEx += skippy
 		}
 	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
 
 	if iNdEx > l {
 		return io.ErrUnexpectedEOF
@@ -3556,6 +3651,35 @@ func (m *Commit) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parent", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Parent = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
 			}
 			var stringLen uint64
@@ -3584,8 +3708,8 @@ func (m *Commit) Unmarshal(data []byte) error {
 			s := string(data[iNdEx:postIndex])
 			m.Message = &s
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Author", wireType)
 			}
@@ -3618,8 +3742,8 @@ func (m *Commit) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		case 3:
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
 			}
@@ -3647,8 +3771,8 @@ func (m *Commit) Unmarshal(data []byte) error {
 			}
 			m.Root = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000004)
-		case 4:
+			hasFields[0] |= uint64(0x00000008)
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Changeset", wireType)
 			}
@@ -3679,7 +3803,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Merge", wireType)
 			}
@@ -3712,7 +3836,7 @@ func (m *Commit) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
 			}
@@ -3766,6 +3890,9 @@ func (m *Commit) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 

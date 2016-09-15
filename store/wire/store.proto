@@ -96,17 +96,14 @@ message Node {
   // Name of this node (i.e. path element)
   required string name = 6;
 
-  // Parent hash of this node (might be nil)
-  optional bytes parent = 7;
-
   // Path must only be filled when exported to a client.
   // It may not be used internally and is not saved to the kv-store.
-  optional string path = 8;
+  optional string path = 7;
 
   // Individual types:
-  optional File file = 9;
-  optional Directory directory = 10;
-  optional Commit commit = 11;
+  optional File file = 8;
+  optional Directory directory = 9;
+  optional Commit commit = 10;
 }
 
 // Just a collection of nodes:
@@ -117,32 +114,45 @@ message Nodes {
 ////////////// CONCRETE NODES /////////////
 
 message File {
-    optional bytes key = 1;
+  // Path to parent directory
+  required string parent = 1;
+
+  // Key of this file:
+  required bytes key = 2;
 }
 
 message Directory {
-    // Directory contents (hashtable contents [name => link]):
-    repeated bytes links = 1;
-    repeated string names = 2;
+  // Path to parent object:
+  required string parent = 1;
+
+  // Directory contents (hashtable contents [name => link]):
+  repeated bytes links = 2;
+  repeated string names = 3;
 }
 
 // Commit is a bag of changes, either automatically done or by the user.
 message Commit {
-    required string message = 1;
-    required Author author = 2;
+  // Hash of the parent commit:
+  required bytes parent = 1;
 
-    // Hash to the root tree:
-    required bytes root = 3;
+  // Commit message:
+  required string message = 2;
 
-    // List of checkpoints (one per file):
-    repeated CheckpointLink changeset = 4;
+  // Author of this commit:
+  required Author author = 3;
 
-    // Merge information if this is a merge commit.
-    optional Merge merge = 5;
+  // Hash to the root tree:
+  required bytes root = 4;
 
-    // Checkpoints stored in the commit.
-    // This is only used when exported to the client,
-    // it is not stored in the kv-store.
-    repeated Checkpoint checkpoints = 6;
+  // List of checkpoints (one per file):
+  repeated CheckpointLink changeset = 5;
+
+  // Merge information if this is a merge commit.
+  optional Merge merge = 6;
+
+  // Checkpoints stored in the commit.
+  // This is only used when exported to the client,
+  // it is not stored in the kv-store.
+  repeated Checkpoint checkpoints = 7;
 }
 

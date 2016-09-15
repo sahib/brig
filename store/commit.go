@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/disorganizer/brig/id"
@@ -158,7 +159,7 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
-	parent, err := multihash.Cast(pnd.GetParent())
+	parent, err := multihash.Cast(pcm.GetParent())
 	if err != nil {
 		return err
 	}
@@ -187,7 +188,6 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	// Set commit data if everything worked:
 	cm.id = pnd.GetID()
 	cm.message = pcm.GetMessage()
-	cm.parent = &Hash{pnd.GetParent()}
 	cm.author = author
 	cm.modTime = modTime
 	cm.hash = &Hash{hash}
@@ -239,13 +239,14 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 		parentHash = cm.parent.Bytes()
 	}
 
+	pcm.Parent = parentHash
+
 	// TODO: Store something more meaningful in 'name':
 	return &wire.Node{
 		NodeSize: proto.Uint64(0),
 		ModTime:  modTime,
 		Hash:     cm.hash.Bytes(),
 		Name:     proto.String("commit"),
-		Parent:   parentHash,
 		ID:       proto.Uint64(cm.id),
 		Commit:   pcm,
 	}, nil
@@ -255,6 +256,10 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 func (cm *Commit) Name() string {
 	return cm.hash.B58String()
+}
+
+func (cm *Commit) Path() string {
+	return prefixSlash(path.Join(".snapshots", cm.Name()))
 }
 
 func (cm *Commit) Size() uint64 {
