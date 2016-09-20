@@ -285,6 +285,22 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 		return err
 	}
 
+	// Only kill the link of the node to it's parent. If `node` is a directory
+	// it already contains the hashes of it's children.
+	parentNode, err := node.Parent()
+	if err != nil {
+		return err
+	}
+
+	parent, ok := parentNode.(*Directory)
+	if !ok {
+		return ErrBadNode
+	}
+
+	if err := parent.RemoveChild(node); err != nil {
+		return err
+	}
+
 	errs := util.Errors{}
 	for _, child := range toBeRemoved {
 		childPath := NodePath(child)
@@ -296,20 +312,6 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 			if err := st.IPFS.Unpin(child.Hash().Multihash); err != nil {
 				errs = append(errs, err)
 			}
-		}
-
-		parentNode, err := child.Parent()
-		if err != nil {
-			return err
-		}
-
-		parent, ok := parentNode.(*Directory)
-		if !ok {
-			return ErrBadNode
-		}
-
-		if err := parent.RemoveChild(child); err != nil {
-			return err
 		}
 	}
 

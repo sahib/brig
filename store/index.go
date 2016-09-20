@@ -99,7 +99,7 @@ func (st *Store) Owner() (id.Peer, error) {
 
 // TODO: Use this for the fuse layer.
 func (st *Store) Transaction(fn func() error) error {
-	st.Lock()
+	st.mu.Lock()
 	defer st.mu.Unlock()
 
 	return fn()
