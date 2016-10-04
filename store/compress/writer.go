@@ -28,6 +28,12 @@ type writer struct {
 
 	// Holds algorithm interface.
 	algo Algorithm
+
+	// Type of the algorithm
+	algoType AlgorithmType
+
+	// Becomes true after the first write.
+	headerWritten bool
 }
 
 func (w *writer) addRecordToIndex() {
@@ -60,9 +66,28 @@ func (w *writer) flushBuffer(data []byte) error {
 	return nil
 }
 
+func (w *writer) writeHeaderIfNeeded() error {
+	if w.headerWritten {
+		return nil
+	}
+
+	if _, err := w.rawW.Write(makeHeader(w.algoType, currentVersion)); err != nil {
+		return err
+	}
+
+	w.headerWritten = true
+	w.zipOff += headerSize
+	return nil
+}
+
 func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 	read := 0
 	buf := [maxChunkSize]byte{}
+
+	if err := w.writeHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
+
 	for {
 		n, rerr := r.Read(buf[:])
 		read += n
@@ -81,6 +106,10 @@ func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (w *writer) Write(p []byte) (n int, err error) {
+	if err := w.writeHeaderIfNeeded(); err != nil {
+		return 0, err
+	}
+
 	written := len(p)
 	// Compress only maxChunkSize equal chunks.
 	for {
@@ -107,12 +136,17 @@ func NewWriter(w io.Writer, algoType AlgorithmType) (*writer, error) {
 	return &writer{
 		rawW:     w,
 		algo:     algo,
+		algoType: algoType,
 		chunkBuf: &bytes.Buffer{},
-		trailer:  &trailer{algo: algoType},
+		trailer:  &trailer{},
 	}, nil
 }
 
 func (w *writer) Close() error {
+	if err := w.writeHeaderIfNeeded(); err != nil {
+		return err
+	}
+
 	// Write remaining bytes left in buffer and update index.
 	if err := w.flushBuffer(w.chunkBuf.Bytes()); err != nil {
 		return err

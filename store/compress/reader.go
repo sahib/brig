@@ -116,6 +116,9 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		return 0, io.EOF
 	}
 
+	// Skip the header for seeking:
+	// destOff += headerSize
+
 	// Check if given raw offset equals current offset.
 	if r.zipSeekOffset == destOff {
 		return destOff, nil
@@ -127,7 +130,7 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	r.rawSeekOffset = destRecord.zipOff
 	r.zipSeekOffset = destOff
 
-	//Don't re-read if offset is in current chunk.
+	// Don't re-read if offset is in current chunk.
 	if currRecord.rawOff != destRecord.rawOff || !r.isInitialRead {
 		if _, err := r.readZipChunk(); err != nil {
 			return 0, err
@@ -171,6 +174,17 @@ func (r *reader) parseTrailerIfNeeded() error {
 		return nil
 	}
 
+	// Attempt to read the front header:
+	headerBuf := [headerSize]byte{}
+	if _, err := r.rawR.Read(headerBuf[:]); err != nil {
+		return err
+	}
+
+	header, err := readHeader(headerBuf[:])
+	if err != nil {
+		return err
+	}
+
 	// Goto end of file and read trailer buffer.
 	if _, err := r.rawR.Seek(-trailerSize, os.SEEK_END); err != nil {
 		return err
@@ -189,7 +203,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
-	algo, err := AlgorithmFromType(r.trailer.algo)
+	algo, err := AlgorithmFromType(header.algo)
 	if err != nil {
 		return err
 	}
@@ -225,10 +239,11 @@ func (r *reader) parseTrailerIfNeeded() error {
 	}
 
 	// Set reader to beginning of file
-	if _, err := r.rawR.Seek(0, os.SEEK_SET); err != nil {
+	if _, err := r.rawR.Seek(headerSize, os.SEEK_SET); err != nil {
 		return err
 	}
-	r.rawSeekOffset = 0
+
+	r.rawSeekOffset = headerSize
 	r.zipSeekOffset = 0
 	return nil
 }
@@ -336,8 +351,8 @@ func (r *reader) readZipChunk() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.chunkBuf = newChunkBuffer(decData)
 
+	r.chunkBuf = newChunkBuffer(decData)
 	return decData, nil
 }
 
