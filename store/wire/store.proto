@@ -1,26 +1,27 @@
+syntax = "proto3";
 package brig.store;
 option go_package = "wire";
 
 ///////////// VERSION CONTROL STRUCTURES ///////////
 
 message Author {
-  required string name = 1;
-  required string hash = 2;
+  string name = 1;
+  string hash = 2;
 }
 
 // Optional merge information for merge commits
 message Merge {
-    required string with = 1;
-    required bytes hash = 2;
+    string with = 1;
+    bytes hash = 2;
 }
 
 message Checkpoint {
   // Link to the node id:
-  required uint64 id_link = 1;
-  required bytes hash = 2;
-  required uint64 index = 3;
-  required int32 change = 4;
-  required string author = 5;
+  uint64 id_link = 1;
+  bytes hash = 2;
+  uint64 index = 3;
+  int32 change = 4;
+  string author = 5;
 
   // TODO: Should include a hash/mac on itself,
   //       so forgery is not possible/harder.
@@ -32,8 +33,8 @@ message History {
 }
 
 message CheckpointLink {
-  required uint64 id_link = 1;
-  required uint64 index = 2;
+  uint64 id_link = 1;
+  uint64 index = 2;
 }
 
 // Commits is an ordered list of commits
@@ -44,25 +45,25 @@ message Commits {
 ////////////////// MISC STRUCTURES /////////////
 
 message Ref {
-    required string name = 1;
-    required bytes hash = 2;
+    string name = 1;
+    bytes hash = 2;
 }
 
 message StoreMetadata {
-  required Author owner = 1;
-  required string version = 2;
+  Author owner = 1;
+  string version = 2;
 }
 
 // Store is the exported form of a store.
 message Store {
-    required Nodes objects = 1;
-    required Nodes stage_objects = 2;
+    Nodes objects = 1;
+    Nodes stage_objects = 2;
     repeated Checkpoint checkpoints = 3;
-    required Commit status = 4;
+    Commit status = 4;
     repeated Ref refs = 5;
-    required StoreMetadata metadata = 6;
+    StoreMetadata metadata = 6;
 
-    required uint64 node_count = 7;
+    uint64 node_count = 7;
 }
 
 ////////////// NODE BASICS /////////////
@@ -79,31 +80,31 @@ enum NodeType {
 // TODO: Move some of the attrs to the common node (file_size, hash, parent)?
 message Node {
   // Type of this node (see above)
-  required NodeType type = 1;
+  NodeType type = 1;
   // Global identifier of this node, since hash and path
   // might change sometimes.
-  required uint64 ID = 2;
+  uint64 ID = 2;
 
   // Size of the node in bytes:
-  required uint64 node_size = 3;
+  uint64 node_size = 3;
 
   // Timestamp formated as RFC 3339
-  required bytes mod_time = 4;
+  bytes mod_time = 4;
 
   // Hash of the node as multihash:
-  required bytes hash = 5;
+  bytes hash = 5;
 
   // Name of this node (i.e. path element)
-  required string name = 6;
+  string name = 6;
 
   // Path must only be filled when exported to a client.
   // It may not be used internally and is not saved to the kv-store.
-  optional string path = 7;
+  string path = 7;
 
   // Individual types:
-  optional File file = 8;
-  optional Directory directory = 9;
-  optional Commit commit = 10;
+  File file = 8;
+  Directory directory = 9;
+  Commit commit = 10;
 }
 
 // Just a collection of nodes:
@@ -115,15 +116,15 @@ message Nodes {
 
 message File {
   // Path to parent directory
-  required string parent = 1;
+  string parent = 1;
 
   // Key of this file:
-  required bytes key = 2;
+  bytes key = 2;
 }
 
 message Directory {
   // Path to parent object:
-  required string parent = 1;
+  string parent = 1;
 
   // Directory contents (hashtable contents [name => link]):
   repeated bytes links = 2;
@@ -133,22 +134,22 @@ message Directory {
 // Commit is a bag of changes, either automatically done or by the user.
 message Commit {
   // Hash of the parent commit:
-  required bytes parent = 1;
+  bytes parent = 1;
 
   // Commit message:
-  required string message = 2;
+  string message = 2;
 
   // Author of this commit:
-  required Author author = 3;
+  Author author = 3;
 
   // Hash to the root tree:
-  required bytes root = 4;
+  bytes root = 4;
 
   // List of checkpoints (one per file):
   repeated CheckpointLink changeset = 5;
 
   // Merge information if this is a merge commit.
-  optional Merge merge = 6;
+  Merge merge = 6;
 
   // Checkpoints stored in the commit.
   // This is only used when exported to the client,

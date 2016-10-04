@@ -1,3 +1,4 @@
+syntax = "proto3";
 package brig.daemon;
 option go_package = "wire";
 
@@ -50,16 +51,16 @@ enum OnlineQuery {
 message Command {
     message AddCmd {
 		// The abs path to the file we're going to add.
-        required string file_path = 1;
+        string file_path = 1;
 		// The virtual abs path inside the repo (e.g. /photos/me.png)
-        required string repo_path = 2;
+        string repo_path = 2;
     }
 
     message CatCmd {
 		// The abs path of the file to cat inside the repo.
-        required string repo_path = 1;
+        string repo_path = 1;
 		// Where to stream the result.
-        required string file_path = 2;
+        string file_path = 2;
     }
 
     message PingCmd {
@@ -70,64 +71,64 @@ message Command {
 
     message MountCmd {
         // Where to mount the filesystem
-        required string mount_point = 1;
+        string mount_point = 1;
     }
 
     message UnmountCmd {
         // Where to unmount the filesystem
-        required string mount_point = 1;
+        string mount_point = 1;
     }
 
 	message RmCmd {
-		required string repo_path = 1;
-        required bool recursive = 2;
+		string repo_path = 1;
+        bool recursive = 2;
 	}
 
     message HistoryCmd {
         // Which file to show the history of:
-        required string repo_path = 1;
+        string repo_path = 1;
     }
 
     message OnlineStatusCmd {
-        required OnlineQuery query = 1;
+        OnlineQuery query = 1;
     }
 
     message SyncCmd {
-        required string who = 1;
+        string who = 1;
     }
 
     message ListCmd {
-        required string root = 1;
-        required int32 depth = 2;
+        string root = 1;
+        int32 depth = 2;
     }
 
     message MvCmd {
-        required string source = 1;
-        required string dest = 2;
+        string source = 1;
+        string dest = 2;
     }
 
     message MkdirCmd {
-        required string path = 1;
-        optional bool create_parents = 2;
+        string path = 1;
+        bool create_parents = 2;
     }
 
     message RemoteAddCmd {
-        required string id = 1;
-        required string hash = 2;
+        string id = 1;
+        string hash = 2;
     }
 
     message RemoteRemoveCmd {
-        required string id = 1;
+        string id = 1;
     }
 
     message RemoteListCmd {
-        optional bool needsOnline = 1;
+        bool needsOnline = 1;
     }
 
     message RemoteLocateCmd {
-        required string id = 1;
-        optional int32 peer_limit = 2;
-        optional int32 timeout_ms = 3;
+        string id = 1;
+        int32 peer_limit = 2;
+        int32 timeout_ms = 3;
     }
 
     message RemoteSelfCmd  {
@@ -137,17 +138,17 @@ message Command {
     }
 
     message CommitCmd {
-        required string message = 1;
+        string message = 1;
     }
 
     message DiffCmd {
-        optional bytes low = 1;
-        optional bytes high = 2;
+        bytes low = 1;
+        bytes high = 2;
     }
 
     message LogCmd {
-        optional bytes low = 1;
-        optional bytes high = 2;
+        bytes low = 1;
+        bytes high = 2;
     }
 
     message PinCmd {
@@ -156,65 +157,65 @@ message Command {
         // == 0: Do nothing (but respond pinning status)
         //  < 0: Unpin the object. 
         // Future implementation might use the exact value.
-        required int32 balance = 1;
-        required string path = 2;
+        int32 balance = 1;
+        string path = 2;
     }
 
     message ExportCmd {
       // Which store to export?
-      optional string who = 1;
+      string who = 1;
     }
 
     message ImportCmd {
-        required bytes data = 1;
+        bytes data = 1;
     }
 
-    required MessageType command_type = 1;
+    MessageType command_type = 1;
 
-    optional AddCmd add_command = 2;
-    optional CatCmd cat_command = 3;
-    optional PingCmd ping_command = 4;
-    optional QuitCmd quit_command = 5;
-    optional MountCmd mount_command = 6;
-    optional UnmountCmd unmount_command = 7;
-    optional RmCmd rm_command = 8;
-    optional HistoryCmd history_command = 9;
-    optional OnlineStatusCmd online_status_command = 10;
-    optional SyncCmd sync_command = 11;
-    optional ListCmd list_command = 12;
-    optional MvCmd mv_command = 13;
-    optional MkdirCmd mkdir_command = 14;
+    AddCmd add_command = 2;
+    CatCmd cat_command = 3;
+    PingCmd ping_command = 4;
+    QuitCmd quit_command = 5;
+    MountCmd mount_command = 6;
+    UnmountCmd unmount_command = 7;
+    RmCmd rm_command = 8;
+    HistoryCmd history_command = 9;
+    OnlineStatusCmd online_status_command = 10;
+    SyncCmd sync_command = 11;
+    ListCmd list_command = 12;
+    MvCmd mv_command = 13;
+    MkdirCmd mkdir_command = 14;
 
-    optional RemoteAddCmd remote_add_command = 15;
-    optional RemoteRemoveCmd remote_remove_command = 16;
-    optional RemoteListCmd remote_list_command = 17;
-    optional RemoteLocateCmd remote_locate_command = 18;
-    optional RemoteSelfCmd remote_self_command = 19;
+    RemoteAddCmd remote_add_command = 15;
+    RemoteRemoveCmd remote_remove_command = 16;
+    RemoteListCmd remote_list_command = 17;
+    RemoteLocateCmd remote_locate_command = 18;
+    RemoteSelfCmd remote_self_command = 19;
 
-    optional StatusCmd status_command = 20;
-    optional CommitCmd commit_command = 21;
-    optional DiffCmd diff_command = 22;
-    optional LogCmd log_command = 23;
+    StatusCmd status_command = 20;
+    CommitCmd commit_command = 21;
+    DiffCmd diff_command = 22;
+    LogCmd log_command = 23;
 
-    optional PinCmd pin_command = 24;
+    PinCmd pin_command = 24;
 
-    optional ExportCmd export_command = 25;
-    optional ImportCmd import_command = 26;
+    ExportCmd export_command = 25;
+    ImportCmd import_command = 26;
 }
 
 message Remote {
-    required string id = 1;
-    required string hash = 2;
-    optional bool is_online = 3;
+    string id = 1;
+    string hash = 2;
+    bool is_online = 3;
 }
 
 message Response {
     message ListResp {
-        required brig.store.Nodes entries = 1;
+        brig.store.Nodes entries = 1;
     }
 
     message HistoryResp {
-        required brig.store.History history = 1;
+        brig.store.History history = 1;
     }
 
     message RemoteListResp {
@@ -226,41 +227,41 @@ message Response {
     }
 
     message RemoteSelfResp {
-        required Remote self = 1;
+        Remote self = 1;
     }
 
     message OnlineStatusResp {
-        required bool is_online = 1;
+        bool is_online = 1;
     }
 
     message StatusResp {
-        required brig.store.Node stage_commit = 1;
+        brig.store.Node stage_commit = 1;
     }
 
     message LogResp {
-        required brig.store.Nodes Nodes = 1;
+        brig.store.Nodes Nodes = 1;
     }
 
     message PinResp {
-        required bool is_pinned = 1;
+        bool is_pinned = 1;
     }
 
     message ExportResp {
-        required bytes data = 1;
+        bytes data = 1;
     }
 
-    required MessageType response_type = 1;
-    required bool success = 2;
-    optional string error = 3;
+    MessageType response_type = 1;
+    bool success = 2;
+    string error = 3;
 
-    optional HistoryResp history_resp = 4;
-    optional ListResp list_resp = 5;
-    optional RemoteListResp remote_list_resp = 6;
-    optional RemoteLocateResp remote_locate_resp = 7;
-    optional RemoteSelfResp remote_self_resp = 8;
-    optional OnlineStatusResp online_status_resp = 9;
-    optional StatusResp status_resp = 10;
-    optional LogResp log_resp = 11;
-    optional PinResp pin_resp = 12;
-    optional ExportResp export_resp = 13;
+    HistoryResp history_resp = 4;
+    ListResp list_resp = 5;
+    RemoteListResp remote_list_resp = 6;
+    RemoteLocateResp remote_locate_resp = 7;
+    RemoteSelfResp remote_self_resp = 8;
+    OnlineStatusResp online_status_resp = 9;
+    StatusResp status_resp = 10;
+    LogResp log_resp = 11;
+    PinResp pin_resp = 12;
+    ExportResp export_resp = 13;
 }

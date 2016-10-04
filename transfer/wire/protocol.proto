@@ -1,3 +1,4 @@
+syntax = "proto3";
 package brig.transfer;
 option go_package = "wire";
 
@@ -11,25 +12,25 @@ enum RequestType {
 }
 
 message Request {
-	required RequestType req_type = 1;
-    required int64 ID = 2;
-    required int64 nonce = 3;
+	RequestType req_type = 1;
+    int64 ID = 2;
+    int64 nonce = 3;
 }
 
 message StoreVersionResponse {
-    required int32 version = 1;
+    int32 version = 1;
 }
 
 message FetchResponse {
-    required brig.store.Store store = 1;
+    brig.store.Store store = 1;
 }
 
 message Response {
-	required RequestType req_type = 1;
-    required int64 ID = 2;
-    required int64 nonce = 3;
-    optional string error = 4;
+	RequestType req_type = 1;
+    int64 ID = 2;
+    int64 nonce = 3;
+    string error = 4;
 
-    optional StoreVersionResponse store_version_resp = 5;
-    optional FetchResponse fetch_resp = 6;
+    StoreVersionResponse store_version_resp = 5;
+    FetchResponse fetch_resp = 6;
 }

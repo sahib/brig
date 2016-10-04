@@ -20,8 +20,6 @@ import fmt "fmt"
 import math "math"
 import brig_store "github.com/disorganizer/brig/store/wire"
 
-import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -117,21 +115,8 @@ var MessageType_value = map[string]int32{
 	"IMPORT":        24,
 }
 
-func (x MessageType) Enum() *MessageType {
-	p := new(MessageType)
-	*p = x
-	return p
-}
 func (x MessageType) String() string {
 	return proto.EnumName(MessageType_name, int32(x))
-}
-func (x *MessageType) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(MessageType_value, data, "MessageType")
-	if err != nil {
-		return err
-	}
-	*x = MessageType(value)
-	return nil
 }
 
 type OnlineQuery int32
@@ -156,25 +141,12 @@ var OnlineQuery_value = map[string]int32{
 	"IS_ONLINE":  2,
 }
 
-func (x OnlineQuery) Enum() *OnlineQuery {
-	p := new(OnlineQuery)
-	*p = x
-	return p
-}
 func (x OnlineQuery) String() string {
 	return proto.EnumName(OnlineQuery_name, int32(x))
 }
-func (x *OnlineQuery) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(OnlineQuery_value, data, "OnlineQuery")
-	if err != nil {
-		return err
-	}
-	*x = OnlineQuery(value)
-	return nil
-}
 
 type Command struct {
-	CommandType         *MessageType             `protobuf:"varint,1,req,name=command_type,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
+	CommandType         MessageType              `protobuf:"varint,1,opt,name=command_type,proto3,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
 	AddCommand          *Command_AddCmd          `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
 	CatCommand          *Command_CatCmd          `protobuf:"bytes,3,opt,name=cat_command" json:"cat_command,omitempty"`
 	PingCommand         *Command_PingCmd         `protobuf:"bytes,4,opt,name=ping_command" json:"ping_command,omitempty"`
@@ -200,19 +172,11 @@ type Command struct {
 	PinCommand          *Command_PinCmd          `protobuf:"bytes,24,opt,name=pin_command" json:"pin_command,omitempty"`
 	ExportCommand       *Command_ExportCmd       `protobuf:"bytes,25,opt,name=export_command" json:"export_command,omitempty"`
 	ImportCommand       *Command_ImportCmd       `protobuf:"bytes,26,opt,name=import_command" json:"import_command,omitempty"`
-	XXX_unrecognized    []byte                   `json:"-"`
 }
 
 func (m *Command) Reset()         { *m = Command{} }
 func (m *Command) String() string { return proto.CompactTextString(m) }
 func (*Command) ProtoMessage()    {}
-
-func (m *Command) GetCommandType() MessageType {
-	if m != nil && m.CommandType != nil {
-		return *m.CommandType
-	}
-	return MessageType_ADD
-}
 
 func (m *Command) GetAddCommand() *Command_AddCmd {
 	if m != nil {
@@ -391,58 +355,27 @@ func (m *Command) GetImportCommand() *Command_ImportCmd {
 
 type Command_AddCmd struct {
 	// The abs path to the file we're going to add.
-	FilePath *string `protobuf:"bytes,1,req,name=file_path" json:"file_path,omitempty"`
+	FilePath string `protobuf:"bytes,1,opt,name=file_path,proto3" json:"file_path,omitempty"`
 	// The virtual abs path inside the repo (e.g. /photos/me.png)
-	RepoPath         *string `protobuf:"bytes,2,req,name=repo_path" json:"repo_path,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	RepoPath string `protobuf:"bytes,2,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
 }
 
 func (m *Command_AddCmd) Reset()         { *m = Command_AddCmd{} }
 func (m *Command_AddCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_AddCmd) ProtoMessage()    {}
 
-func (m *Command_AddCmd) GetFilePath() string {
-	if m != nil && m.FilePath != nil {
-		return *m.FilePath
-	}
-	return ""
-}
-
-func (m *Command_AddCmd) GetRepoPath() string {
-	if m != nil && m.RepoPath != nil {
-		return *m.RepoPath
-	}
-	return ""
-}
-
 type Command_CatCmd struct {
 	// The abs path of the file to cat inside the repo.
-	RepoPath *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
+	RepoPath string `protobuf:"bytes,1,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
 	// Where to stream the result.
-	FilePath         *string `protobuf:"bytes,2,req,name=file_path" json:"file_path,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	FilePath string `protobuf:"bytes,2,opt,name=file_path,proto3" json:"file_path,omitempty"`
 }
 
 func (m *Command_CatCmd) Reset()         { *m = Command_CatCmd{} }
 func (m *Command_CatCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_CatCmd) ProtoMessage()    {}
 
-func (m *Command_CatCmd) GetRepoPath() string {
-	if m != nil && m.RepoPath != nil {
-		return *m.RepoPath
-	}
-	return ""
-}
-
-func (m *Command_CatCmd) GetFilePath() string {
-	if m != nil && m.FilePath != nil {
-		return *m.FilePath
-	}
-	return ""
-}
-
 type Command_PingCmd struct {
-	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *Command_PingCmd) Reset()         { *m = Command_PingCmd{} }
@@ -450,7 +383,6 @@ func (m *Command_PingCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_PingCmd) ProtoMessage()    {}
 
 type Command_QuitCmd struct {
-	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *Command_QuitCmd) Reset()         { *m = Command_QuitCmd{} }
@@ -459,273 +391,119 @@ func (*Command_QuitCmd) ProtoMessage()    {}
 
 type Command_MountCmd struct {
 	// Where to mount the filesystem
-	MountPoint       *string `protobuf:"bytes,1,req,name=mount_point" json:"mount_point,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	MountPoint string `protobuf:"bytes,1,opt,name=mount_point,proto3" json:"mount_point,omitempty"`
 }
 
 func (m *Command_MountCmd) Reset()         { *m = Command_MountCmd{} }
 func (m *Command_MountCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MountCmd) ProtoMessage()    {}
 
-func (m *Command_MountCmd) GetMountPoint() string {
-	if m != nil && m.MountPoint != nil {
-		return *m.MountPoint
-	}
-	return ""
-}
-
 type Command_UnmountCmd struct {
 	// Where to unmount the filesystem
-	MountPoint       *string `protobuf:"bytes,1,req,name=mount_point" json:"mount_point,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	MountPoint string `protobuf:"bytes,1,opt,name=mount_point,proto3" json:"mount_point,omitempty"`
 }
 
 func (m *Command_UnmountCmd) Reset()         { *m = Command_UnmountCmd{} }
 func (m *Command_UnmountCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_UnmountCmd) ProtoMessage()    {}
 
-func (m *Command_UnmountCmd) GetMountPoint() string {
-	if m != nil && m.MountPoint != nil {
-		return *m.MountPoint
-	}
-	return ""
-}
-
 type Command_RmCmd struct {
-	RepoPath         *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
-	Recursive        *bool   `protobuf:"varint,2,req,name=recursive" json:"recursive,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	RepoPath  string `protobuf:"bytes,1,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
+	Recursive bool   `protobuf:"varint,2,opt,name=recursive,proto3" json:"recursive,omitempty"`
 }
 
 func (m *Command_RmCmd) Reset()         { *m = Command_RmCmd{} }
 func (m *Command_RmCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RmCmd) ProtoMessage()    {}
 
-func (m *Command_RmCmd) GetRepoPath() string {
-	if m != nil && m.RepoPath != nil {
-		return *m.RepoPath
-	}
-	return ""
-}
-
-func (m *Command_RmCmd) GetRecursive() bool {
-	if m != nil && m.Recursive != nil {
-		return *m.Recursive
-	}
-	return false
-}
-
 type Command_HistoryCmd struct {
 	// Which file to show the history of:
-	RepoPath         *string `protobuf:"bytes,1,req,name=repo_path" json:"repo_path,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	RepoPath string `protobuf:"bytes,1,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
 }
 
 func (m *Command_HistoryCmd) Reset()         { *m = Command_HistoryCmd{} }
 func (m *Command_HistoryCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_HistoryCmd) ProtoMessage()    {}
 
-func (m *Command_HistoryCmd) GetRepoPath() string {
-	if m != nil && m.RepoPath != nil {
-		return *m.RepoPath
-	}
-	return ""
-}
-
 type Command_OnlineStatusCmd struct {
-	Query            *OnlineQuery `protobuf:"varint,1,req,name=query,enum=brig.daemon.OnlineQuery" json:"query,omitempty"`
-	XXX_unrecognized []byte       `json:"-"`
+	Query OnlineQuery `protobuf:"varint,1,opt,name=query,proto3,enum=brig.daemon.OnlineQuery" json:"query,omitempty"`
 }
 
 func (m *Command_OnlineStatusCmd) Reset()         { *m = Command_OnlineStatusCmd{} }
 func (m *Command_OnlineStatusCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_OnlineStatusCmd) ProtoMessage()    {}
 
-func (m *Command_OnlineStatusCmd) GetQuery() OnlineQuery {
-	if m != nil && m.Query != nil {
-		return *m.Query
-	}
-	return OnlineQuery_GO_ONLINE
-}
-
 type Command_SyncCmd struct {
-	Who              *string `protobuf:"bytes,1,req,name=who" json:"who,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Who string `protobuf:"bytes,1,opt,name=who,proto3" json:"who,omitempty"`
 }
 
 func (m *Command_SyncCmd) Reset()         { *m = Command_SyncCmd{} }
 func (m *Command_SyncCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_SyncCmd) ProtoMessage()    {}
 
-func (m *Command_SyncCmd) GetWho() string {
-	if m != nil && m.Who != nil {
-		return *m.Who
-	}
-	return ""
-}
-
 type Command_ListCmd struct {
-	Root             *string `protobuf:"bytes,1,req,name=root" json:"root,omitempty"`
-	Depth            *int32  `protobuf:"varint,2,req,name=depth" json:"depth,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Root  string `protobuf:"bytes,1,opt,name=root,proto3" json:"root,omitempty"`
+	Depth int32  `protobuf:"varint,2,opt,name=depth,proto3" json:"depth,omitempty"`
 }
 
 func (m *Command_ListCmd) Reset()         { *m = Command_ListCmd{} }
 func (m *Command_ListCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_ListCmd) ProtoMessage()    {}
 
-func (m *Command_ListCmd) GetRoot() string {
-	if m != nil && m.Root != nil {
-		return *m.Root
-	}
-	return ""
-}
-
-func (m *Command_ListCmd) GetDepth() int32 {
-	if m != nil && m.Depth != nil {
-		return *m.Depth
-	}
-	return 0
-}
-
 type Command_MvCmd struct {
-	Source           *string `protobuf:"bytes,1,req,name=source" json:"source,omitempty"`
-	Dest             *string `protobuf:"bytes,2,req,name=dest" json:"dest,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Source string `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Dest   string `protobuf:"bytes,2,opt,name=dest,proto3" json:"dest,omitempty"`
 }
 
 func (m *Command_MvCmd) Reset()         { *m = Command_MvCmd{} }
 func (m *Command_MvCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MvCmd) ProtoMessage()    {}
 
-func (m *Command_MvCmd) GetSource() string {
-	if m != nil && m.Source != nil {
-		return *m.Source
-	}
-	return ""
-}
-
-func (m *Command_MvCmd) GetDest() string {
-	if m != nil && m.Dest != nil {
-		return *m.Dest
-	}
-	return ""
-}
-
 type Command_MkdirCmd struct {
-	Path             *string `protobuf:"bytes,1,req,name=path" json:"path,omitempty"`
-	CreateParents    *bool   `protobuf:"varint,2,opt,name=create_parents" json:"create_parents,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Path          string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	CreateParents bool   `protobuf:"varint,2,opt,name=create_parents,proto3" json:"create_parents,omitempty"`
 }
 
 func (m *Command_MkdirCmd) Reset()         { *m = Command_MkdirCmd{} }
 func (m *Command_MkdirCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_MkdirCmd) ProtoMessage()    {}
 
-func (m *Command_MkdirCmd) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *Command_MkdirCmd) GetCreateParents() bool {
-	if m != nil && m.CreateParents != nil {
-		return *m.CreateParents
-	}
-	return false
-}
-
 type Command_RemoteAddCmd struct {
-	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
-	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Hash string `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
 }
 
 func (m *Command_RemoteAddCmd) Reset()         { *m = Command_RemoteAddCmd{} }
 func (m *Command_RemoteAddCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteAddCmd) ProtoMessage()    {}
 
-func (m *Command_RemoteAddCmd) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
-func (m *Command_RemoteAddCmd) GetHash() string {
-	if m != nil && m.Hash != nil {
-		return *m.Hash
-	}
-	return ""
-}
-
 type Command_RemoteRemoveCmd struct {
-	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *Command_RemoteRemoveCmd) Reset()         { *m = Command_RemoteRemoveCmd{} }
 func (m *Command_RemoteRemoveCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteRemoveCmd) ProtoMessage()    {}
 
-func (m *Command_RemoteRemoveCmd) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
 type Command_RemoteListCmd struct {
-	NeedsOnline      *bool  `protobuf:"varint,1,opt,name=needsOnline" json:"needsOnline,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	NeedsOnline bool `protobuf:"varint,1,opt,name=needsOnline,proto3" json:"needsOnline,omitempty"`
 }
 
 func (m *Command_RemoteListCmd) Reset()         { *m = Command_RemoteListCmd{} }
 func (m *Command_RemoteListCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteListCmd) ProtoMessage()    {}
 
-func (m *Command_RemoteListCmd) GetNeedsOnline() bool {
-	if m != nil && m.NeedsOnline != nil {
-		return *m.NeedsOnline
-	}
-	return false
-}
-
 type Command_RemoteLocateCmd struct {
-	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
-	PeerLimit        *int32  `protobuf:"varint,2,opt,name=peer_limit" json:"peer_limit,omitempty"`
-	TimeoutMs        *int32  `protobuf:"varint,3,opt,name=timeout_ms" json:"timeout_ms,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Id        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PeerLimit int32  `protobuf:"varint,2,opt,name=peer_limit,proto3" json:"peer_limit,omitempty"`
+	TimeoutMs int32  `protobuf:"varint,3,opt,name=timeout_ms,proto3" json:"timeout_ms,omitempty"`
 }
 
 func (m *Command_RemoteLocateCmd) Reset()         { *m = Command_RemoteLocateCmd{} }
 func (m *Command_RemoteLocateCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_RemoteLocateCmd) ProtoMessage()    {}
 
-func (m *Command_RemoteLocateCmd) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
-func (m *Command_RemoteLocateCmd) GetPeerLimit() int32 {
-	if m != nil && m.PeerLimit != nil {
-		return *m.PeerLimit
-	}
-	return 0
-}
-
-func (m *Command_RemoteLocateCmd) GetTimeoutMs() int32 {
-	if m != nil && m.TimeoutMs != nil {
-		return *m.TimeoutMs
-	}
-	return 0
-}
-
 type Command_RemoteSelfCmd struct {
-	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *Command_RemoteSelfCmd) Reset()         { *m = Command_RemoteSelfCmd{} }
@@ -733,7 +511,6 @@ func (m *Command_RemoteSelfCmd) String() string { return proto.CompactTextString
 func (*Command_RemoteSelfCmd) ProtoMessage()    {}
 
 type Command_StatusCmd struct {
-	XXX_unrecognized []byte `json:"-"`
 }
 
 func (m *Command_StatusCmd) Reset()         { *m = Command_StatusCmd{} }
@@ -741,68 +518,30 @@ func (m *Command_StatusCmd) String() string { return proto.CompactTextString(m) 
 func (*Command_StatusCmd) ProtoMessage()    {}
 
 type Command_CommitCmd struct {
-	Message          *string `protobuf:"bytes,1,req,name=message" json:"message,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 }
 
 func (m *Command_CommitCmd) Reset()         { *m = Command_CommitCmd{} }
 func (m *Command_CommitCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_CommitCmd) ProtoMessage()    {}
 
-func (m *Command_CommitCmd) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
 type Command_DiffCmd struct {
-	Low              []byte `protobuf:"bytes,1,opt,name=low" json:"low,omitempty"`
-	High             []byte `protobuf:"bytes,2,opt,name=high" json:"high,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Low  []byte `protobuf:"bytes,1,opt,name=low,proto3" json:"low,omitempty"`
+	High []byte `protobuf:"bytes,2,opt,name=high,proto3" json:"high,omitempty"`
 }
 
 func (m *Command_DiffCmd) Reset()         { *m = Command_DiffCmd{} }
 func (m *Command_DiffCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_DiffCmd) ProtoMessage()    {}
 
-func (m *Command_DiffCmd) GetLow() []byte {
-	if m != nil {
-		return m.Low
-	}
-	return nil
-}
-
-func (m *Command_DiffCmd) GetHigh() []byte {
-	if m != nil {
-		return m.High
-	}
-	return nil
-}
-
 type Command_LogCmd struct {
-	Low              []byte `protobuf:"bytes,1,opt,name=low" json:"low,omitempty"`
-	High             []byte `protobuf:"bytes,2,opt,name=high" json:"high,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Low  []byte `protobuf:"bytes,1,opt,name=low,proto3" json:"low,omitempty"`
+	High []byte `protobuf:"bytes,2,opt,name=high,proto3" json:"high,omitempty"`
 }
 
 func (m *Command_LogCmd) Reset()         { *m = Command_LogCmd{} }
 func (m *Command_LogCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_LogCmd) ProtoMessage()    {}
-
-func (m *Command_LogCmd) GetLow() []byte {
-	if m != nil {
-		return m.Low
-	}
-	return nil
-}
-
-func (m *Command_LogCmd) GetHigh() []byte {
-	if m != nil {
-		return m.High
-	}
-	return nil
-}
 
 type Command_PinCmd struct {
 	// Balance can be either:
@@ -810,98 +549,45 @@ type Command_PinCmd struct {
 	// == 0: Do nothing (but respond pinning status)
 	//  < 0: Unpin the object.
 	// Future implementation might use the exact value.
-	Balance          *int32  `protobuf:"varint,1,req,name=balance" json:"balance,omitempty"`
-	Path             *string `protobuf:"bytes,2,req,name=path" json:"path,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Balance int32  `protobuf:"varint,1,opt,name=balance,proto3" json:"balance,omitempty"`
+	Path    string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 }
 
 func (m *Command_PinCmd) Reset()         { *m = Command_PinCmd{} }
 func (m *Command_PinCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_PinCmd) ProtoMessage()    {}
 
-func (m *Command_PinCmd) GetBalance() int32 {
-	if m != nil && m.Balance != nil {
-		return *m.Balance
-	}
-	return 0
-}
-
-func (m *Command_PinCmd) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
 type Command_ExportCmd struct {
 	// Which store to export?
-	Who              *string `protobuf:"bytes,1,opt,name=who" json:"who,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Who string `protobuf:"bytes,1,opt,name=who,proto3" json:"who,omitempty"`
 }
 
 func (m *Command_ExportCmd) Reset()         { *m = Command_ExportCmd{} }
 func (m *Command_ExportCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_ExportCmd) ProtoMessage()    {}
 
-func (m *Command_ExportCmd) GetWho() string {
-	if m != nil && m.Who != nil {
-		return *m.Who
-	}
-	return ""
-}
-
 type Command_ImportCmd struct {
-	Data             []byte `protobuf:"bytes,1,req,name=data" json:"data,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (m *Command_ImportCmd) Reset()         { *m = Command_ImportCmd{} }
 func (m *Command_ImportCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_ImportCmd) ProtoMessage()    {}
 
-func (m *Command_ImportCmd) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
 type Remote struct {
-	Id               *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
-	Hash             *string `protobuf:"bytes,2,req,name=hash" json:"hash,omitempty"`
-	IsOnline         *bool   `protobuf:"varint,3,opt,name=is_online" json:"is_online,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Hash     string `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	IsOnline bool   `protobuf:"varint,3,opt,name=is_online,proto3" json:"is_online,omitempty"`
 }
 
 func (m *Remote) Reset()         { *m = Remote{} }
 func (m *Remote) String() string { return proto.CompactTextString(m) }
 func (*Remote) ProtoMessage()    {}
 
-func (m *Remote) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
-func (m *Remote) GetHash() string {
-	if m != nil && m.Hash != nil {
-		return *m.Hash
-	}
-	return ""
-}
-
-func (m *Remote) GetIsOnline() bool {
-	if m != nil && m.IsOnline != nil {
-		return *m.IsOnline
-	}
-	return false
-}
-
 type Response struct {
-	ResponseType     *MessageType               `protobuf:"varint,1,req,name=response_type,enum=brig.daemon.MessageType" json:"response_type,omitempty"`
-	Success          *bool                      `protobuf:"varint,2,req,name=success" json:"success,omitempty"`
-	Error            *string                    `protobuf:"bytes,3,opt,name=error" json:"error,omitempty"`
+	ResponseType     MessageType                `protobuf:"varint,1,opt,name=response_type,proto3,enum=brig.daemon.MessageType" json:"response_type,omitempty"`
+	Success          bool                       `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	Error            string                     `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	HistoryResp      *Response_HistoryResp      `protobuf:"bytes,4,opt,name=history_resp" json:"history_resp,omitempty"`
 	ListResp         *Response_ListResp         `protobuf:"bytes,5,opt,name=list_resp" json:"list_resp,omitempty"`
 	RemoteListResp   *Response_RemoteListResp   `protobuf:"bytes,6,opt,name=remote_list_resp" json:"remote_list_resp,omitempty"`
@@ -912,33 +598,11 @@ type Response struct {
 	LogResp          *Response_LogResp          `protobuf:"bytes,11,opt,name=log_resp" json:"log_resp,omitempty"`
 	PinResp          *Response_PinResp          `protobuf:"bytes,12,opt,name=pin_resp" json:"pin_resp,omitempty"`
 	ExportResp       *Response_ExportResp       `protobuf:"bytes,13,opt,name=export_resp" json:"export_resp,omitempty"`
-	XXX_unrecognized []byte                     `json:"-"`
 }
 
 func (m *Response) Reset()         { *m = Response{} }
 func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
-
-func (m *Response) GetResponseType() MessageType {
-	if m != nil && m.ResponseType != nil {
-		return *m.ResponseType
-	}
-	return MessageType_ADD
-}
-
-func (m *Response) GetSuccess() bool {
-	if m != nil && m.Success != nil {
-		return *m.Success
-	}
-	return false
-}
-
-func (m *Response) GetError() string {
-	if m != nil && m.Error != nil {
-		return *m.Error
-	}
-	return ""
-}
 
 func (m *Response) GetHistoryResp() *Response_HistoryResp {
 	if m != nil {
@@ -1011,8 +675,7 @@ func (m *Response) GetExportResp() *Response_ExportResp {
 }
 
 type Response_ListResp struct {
-	Entries          *brig_store.Nodes `protobuf:"bytes,1,req,name=entries" json:"entries,omitempty"`
-	XXX_unrecognized []byte            `json:"-"`
+	Entries *brig_store.Nodes `protobuf:"bytes,1,opt,name=entries" json:"entries,omitempty"`
 }
 
 func (m *Response_ListResp) Reset()         { *m = Response_ListResp{} }
@@ -1027,8 +690,7 @@ func (m *Response_ListResp) GetEntries() *brig_store.Nodes {
 }
 
 type Response_HistoryResp struct {
-	History          *brig_store.History `protobuf:"bytes,1,req,name=history" json:"history,omitempty"`
-	XXX_unrecognized []byte              `json:"-"`
+	History *brig_store.History `protobuf:"bytes,1,opt,name=history" json:"history,omitempty"`
 }
 
 func (m *Response_HistoryResp) Reset()         { *m = Response_HistoryResp{} }
@@ -1043,8 +705,7 @@ func (m *Response_HistoryResp) GetHistory() *brig_store.History {
 }
 
 type Response_RemoteListResp struct {
-	Remotes          []*Remote `protobuf:"bytes,1,rep,name=remotes" json:"remotes,omitempty"`
-	XXX_unrecognized []byte    `json:"-"`
+	Remotes []*Remote `protobuf:"bytes,1,rep,name=remotes" json:"remotes,omitempty"`
 }
 
 func (m *Response_RemoteListResp) Reset()         { *m = Response_RemoteListResp{} }
@@ -1059,24 +720,15 @@ func (m *Response_RemoteListResp) GetRemotes() []*Remote {
 }
 
 type Response_RemoteLocateResp struct {
-	Hashes           []string `protobuf:"bytes,1,rep,name=hashes" json:"hashes,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
+	Hashes []string `protobuf:"bytes,1,rep,name=hashes" json:"hashes,omitempty"`
 }
 
 func (m *Response_RemoteLocateResp) Reset()         { *m = Response_RemoteLocateResp{} }
 func (m *Response_RemoteLocateResp) String() string { return proto.CompactTextString(m) }
 func (*Response_RemoteLocateResp) ProtoMessage()    {}
 
-func (m *Response_RemoteLocateResp) GetHashes() []string {
-	if m != nil {
-		return m.Hashes
-	}
-	return nil
-}
-
 type Response_RemoteSelfResp struct {
-	Self             *Remote `protobuf:"bytes,1,req,name=self" json:"self,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Self *Remote `protobuf:"bytes,1,opt,name=self" json:"self,omitempty"`
 }
 
 func (m *Response_RemoteSelfResp) Reset()         { *m = Response_RemoteSelfResp{} }
@@ -1091,24 +743,15 @@ func (m *Response_RemoteSelfResp) GetSelf() *Remote {
 }
 
 type Response_OnlineStatusResp struct {
-	IsOnline         *bool  `protobuf:"varint,1,req,name=is_online" json:"is_online,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	IsOnline bool `protobuf:"varint,1,opt,name=is_online,proto3" json:"is_online,omitempty"`
 }
 
 func (m *Response_OnlineStatusResp) Reset()         { *m = Response_OnlineStatusResp{} }
 func (m *Response_OnlineStatusResp) String() string { return proto.CompactTextString(m) }
 func (*Response_OnlineStatusResp) ProtoMessage()    {}
 
-func (m *Response_OnlineStatusResp) GetIsOnline() bool {
-	if m != nil && m.IsOnline != nil {
-		return *m.IsOnline
-	}
-	return false
-}
-
 type Response_StatusResp struct {
-	StageCommit      *brig_store.Node `protobuf:"bytes,1,req,name=stage_commit" json:"stage_commit,omitempty"`
-	XXX_unrecognized []byte           `json:"-"`
+	StageCommit *brig_store.Node `protobuf:"bytes,1,opt,name=stage_commit" json:"stage_commit,omitempty"`
 }
 
 func (m *Response_StatusResp) Reset()         { *m = Response_StatusResp{} }
@@ -1123,8 +766,7 @@ func (m *Response_StatusResp) GetStageCommit() *brig_store.Node {
 }
 
 type Response_LogResp struct {
-	Nodes            *brig_store.Nodes `protobuf:"bytes,1,req,name=Nodes" json:"Nodes,omitempty"`
-	XXX_unrecognized []byte            `json:"-"`
+	Nodes *brig_store.Nodes `protobuf:"bytes,1,opt,name=Nodes" json:"Nodes,omitempty"`
 }
 
 func (m *Response_LogResp) Reset()         { *m = Response_LogResp{} }
@@ -1139,36 +781,20 @@ func (m *Response_LogResp) GetNodes() *brig_store.Nodes {
 }
 
 type Response_PinResp struct {
-	IsPinned         *bool  `protobuf:"varint,1,req,name=is_pinned" json:"is_pinned,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	IsPinned bool `protobuf:"varint,1,opt,name=is_pinned,proto3" json:"is_pinned,omitempty"`
 }
 
 func (m *Response_PinResp) Reset()         { *m = Response_PinResp{} }
 func (m *Response_PinResp) String() string { return proto.CompactTextString(m) }
 func (*Response_PinResp) ProtoMessage()    {}
 
-func (m *Response_PinResp) GetIsPinned() bool {
-	if m != nil && m.IsPinned != nil {
-		return *m.IsPinned
-	}
-	return false
-}
-
 type Response_ExportResp struct {
-	Data             []byte `protobuf:"bytes,1,req,name=data" json:"data,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (m *Response_ExportResp) Reset()         { *m = Response_ExportResp{} }
 func (m *Response_ExportResp) String() string { return proto.CompactTextString(m) }
 func (*Response_ExportResp) ProtoMessage()    {}
-
-func (m *Response_ExportResp) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
 
 func init() {
 	proto.RegisterType((*Command)(nil), "brig.daemon.Command")
@@ -1227,12 +853,10 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.CommandType == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.CommandType != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.CommandType))
+		i = encodeVarintDaemon(data, i, uint64(m.CommandType))
 	}
 	if m.AddCommand != nil {
 		data[i] = 0x12
@@ -1506,9 +1130,6 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 		}
 		i += n25
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -1527,24 +1148,17 @@ func (m *Command_AddCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.FilePath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.FilePath) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
-		i += copy(data[i:], *m.FilePath)
+		i = encodeVarintDaemon(data, i, uint64(len(m.FilePath)))
+		i += copy(data[i:], m.FilePath)
 	}
-	if m.RepoPath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.RepoPath) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
-		i += copy(data[i:], *m.RepoPath)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.RepoPath)))
+		i += copy(data[i:], m.RepoPath)
 	}
 	return i, nil
 }
@@ -1564,24 +1178,17 @@ func (m *Command_CatCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.RepoPath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.RepoPath) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
-		i += copy(data[i:], *m.RepoPath)
+		i = encodeVarintDaemon(data, i, uint64(len(m.RepoPath)))
+		i += copy(data[i:], m.RepoPath)
 	}
-	if m.FilePath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.FilePath) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.FilePath)))
-		i += copy(data[i:], *m.FilePath)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.FilePath)))
+		i += copy(data[i:], m.FilePath)
 	}
 	return i, nil
 }
@@ -1601,9 +1208,6 @@ func (m *Command_PingCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -1622,9 +1226,6 @@ func (m *Command_QuitCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -1643,16 +1244,11 @@ func (m *Command_MountCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MountPoint == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.MountPoint) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.MountPoint)))
-		i += copy(data[i:], *m.MountPoint)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.MountPoint)))
+		i += copy(data[i:], m.MountPoint)
 	}
 	return i, nil
 }
@@ -1672,16 +1268,11 @@ func (m *Command_UnmountCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MountPoint == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.MountPoint) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.MountPoint)))
-		i += copy(data[i:], *m.MountPoint)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.MountPoint)))
+		i += copy(data[i:], m.MountPoint)
 	}
 	return i, nil
 }
@@ -1701,28 +1292,21 @@ func (m *Command_RmCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.RepoPath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.RepoPath) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
-		i += copy(data[i:], *m.RepoPath)
+		i = encodeVarintDaemon(data, i, uint64(len(m.RepoPath)))
+		i += copy(data[i:], m.RepoPath)
 	}
-	if m.Recursive == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Recursive {
 		data[i] = 0x10
 		i++
-		if *m.Recursive {
+		if m.Recursive {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1742,16 +1326,11 @@ func (m *Command_HistoryCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.RepoPath == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.RepoPath) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.RepoPath)))
-		i += copy(data[i:], *m.RepoPath)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.RepoPath)))
+		i += copy(data[i:], m.RepoPath)
 	}
 	return i, nil
 }
@@ -1771,15 +1350,10 @@ func (m *Command_OnlineStatusCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Query == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Query != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.Query))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(m.Query))
 	}
 	return i, nil
 }
@@ -1799,16 +1373,11 @@ func (m *Command_SyncCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Who == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Who) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
-		i += copy(data[i:], *m.Who)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Who)))
+		i += copy(data[i:], m.Who)
 	}
 	return i, nil
 }
@@ -1828,23 +1397,16 @@ func (m *Command_ListCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Root == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Root) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Root)))
-		i += copy(data[i:], *m.Root)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Root)))
+		i += copy(data[i:], m.Root)
 	}
-	if m.Depth == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Depth != 0 {
 		data[i] = 0x10
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.Depth))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(m.Depth))
 	}
 	return i, nil
 }
@@ -1864,24 +1426,17 @@ func (m *Command_MvCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Source == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Source) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Source)))
-		i += copy(data[i:], *m.Source)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Source)))
+		i += copy(data[i:], m.Source)
 	}
-	if m.Dest == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Dest) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Dest)))
-		i += copy(data[i:], *m.Dest)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Dest)))
+		i += copy(data[i:], m.Dest)
 	}
 	return i, nil
 }
@@ -1901,26 +1456,21 @@ func (m *Command_MkdirCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Path == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Path) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Path)))
-		i += copy(data[i:], *m.Path)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Path)))
+		i += copy(data[i:], m.Path)
 	}
-	if m.CreateParents != nil {
+	if m.CreateParents {
 		data[i] = 0x10
 		i++
-		if *m.CreateParents {
+		if m.CreateParents {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1940,24 +1490,17 @@ func (m *Command_RemoteAddCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Id)))
-		i += copy(data[i:], *m.Id)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
 	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Hash) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Hash)))
-		i += copy(data[i:], *m.Hash)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Hash)))
+		i += copy(data[i:], m.Hash)
 	}
 	return i, nil
 }
@@ -1977,16 +1520,11 @@ func (m *Command_RemoteRemoveCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Id)))
-		i += copy(data[i:], *m.Id)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
 	}
 	return i, nil
 }
@@ -2006,18 +1544,15 @@ func (m *Command_RemoteListCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.NeedsOnline != nil {
+	if m.NeedsOnline {
 		data[i] = 0x8
 		i++
-		if *m.NeedsOnline {
+		if m.NeedsOnline {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2037,26 +1572,21 @@ func (m *Command_RemoteLocateCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Id)))
-		i += copy(data[i:], *m.Id)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
 	}
-	if m.PeerLimit != nil {
+	if m.PeerLimit != 0 {
 		data[i] = 0x10
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.PeerLimit))
+		i = encodeVarintDaemon(data, i, uint64(m.PeerLimit))
 	}
-	if m.TimeoutMs != nil {
+	if m.TimeoutMs != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.TimeoutMs))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(m.TimeoutMs))
 	}
 	return i, nil
 }
@@ -2076,9 +1606,6 @@ func (m *Command_RemoteSelfCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -2097,9 +1624,6 @@ func (m *Command_StatusCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -2118,16 +1642,11 @@ func (m *Command_CommitCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Message == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Message) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Message)))
-		i += copy(data[i:], *m.Message)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Message)))
+		i += copy(data[i:], m.Message)
 	}
 	return i, nil
 }
@@ -2148,19 +1667,20 @@ func (m *Command_DiffCmd) MarshalTo(data []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Low != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
-		i += copy(data[i:], m.Low)
+		if len(m.Low) > 0 {
+			data[i] = 0xa
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
+			i += copy(data[i:], m.Low)
+		}
 	}
 	if m.High != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.High)))
-		i += copy(data[i:], m.High)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		if len(m.High) > 0 {
+			data[i] = 0x12
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.High)))
+			i += copy(data[i:], m.High)
+		}
 	}
 	return i, nil
 }
@@ -2181,19 +1701,20 @@ func (m *Command_LogCmd) MarshalTo(data []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Low != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
-		i += copy(data[i:], m.Low)
+		if len(m.Low) > 0 {
+			data[i] = 0xa
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.Low)))
+			i += copy(data[i:], m.Low)
+		}
 	}
 	if m.High != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.High)))
-		i += copy(data[i:], m.High)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		if len(m.High) > 0 {
+			data[i] = 0x12
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.High)))
+			i += copy(data[i:], m.High)
+		}
 	}
 	return i, nil
 }
@@ -2213,23 +1734,16 @@ func (m *Command_PinCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Balance == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Balance != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.Balance))
+		i = encodeVarintDaemon(data, i, uint64(m.Balance))
 	}
-	if m.Path == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Path) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Path)))
-		i += copy(data[i:], *m.Path)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Path)))
+		i += copy(data[i:], m.Path)
 	}
 	return i, nil
 }
@@ -2249,14 +1763,11 @@ func (m *Command_ExportCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Who != nil {
+	if len(m.Who) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Who)))
-		i += copy(data[i:], *m.Who)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Who)))
+		i += copy(data[i:], m.Who)
 	}
 	return i, nil
 }
@@ -2276,16 +1787,13 @@ func (m *Command_ImportCmd) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Data == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
-		i += copy(data[i:], m.Data)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+	if m.Data != nil {
+		if len(m.Data) > 0 {
+			data[i] = 0xa
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
+			i += copy(data[i:], m.Data)
+		}
 	}
 	return i, nil
 }
@@ -2305,34 +1813,27 @@ func (m *Remote) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Id)))
-		i += copy(data[i:], *m.Id)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
 	}
-	if m.Hash == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Hash) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Hash)))
-		i += copy(data[i:], *m.Hash)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Hash)))
+		i += copy(data[i:], m.Hash)
 	}
-	if m.IsOnline != nil {
+	if m.IsOnline {
 		data[i] = 0x18
 		i++
-		if *m.IsOnline {
+		if m.IsOnline {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2352,30 +1853,26 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ResponseType == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.ResponseType != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintDaemon(data, i, uint64(*m.ResponseType))
+		i = encodeVarintDaemon(data, i, uint64(m.ResponseType))
 	}
-	if m.Success == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Success {
 		data[i] = 0x10
 		i++
-		if *m.Success {
+		if m.Success {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
 	}
-	if m.Error != nil {
+	if len(m.Error) > 0 {
 		data[i] = 0x1a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(len(*m.Error)))
-		i += copy(data[i:], *m.Error)
+		i = encodeVarintDaemon(data, i, uint64(len(m.Error)))
+		i += copy(data[i:], m.Error)
 	}
 	if m.HistoryResp != nil {
 		data[i] = 0x22
@@ -2477,9 +1974,6 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		}
 		i += n35
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -2498,9 +1992,7 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Entries == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Entries != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Entries.Size()))
@@ -2509,9 +2001,6 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n36
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2531,9 +2020,7 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.History == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.History != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
@@ -2542,9 +2029,6 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n37
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2575,9 +2059,6 @@ func (m *Response_RemoteListResp) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2612,9 +2093,6 @@ func (m *Response_RemoteLocateResp) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], s)
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -2633,9 +2111,7 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Self == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Self != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
@@ -2644,9 +2120,6 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n38
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2666,20 +2139,15 @@ func (m *Response_OnlineStatusResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.IsOnline == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.IsOnline {
 		data[i] = 0x8
 		i++
-		if *m.IsOnline {
+		if m.IsOnline {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2699,9 +2167,7 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.StageCommit == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.StageCommit != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
@@ -2710,9 +2176,6 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n39
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2732,9 +2195,7 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Nodes == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Nodes != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Nodes.Size()))
@@ -2743,9 +2204,6 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n40
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2765,20 +2223,15 @@ func (m *Response_PinResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.IsPinned == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.IsPinned {
 		data[i] = 0x8
 		i++
-		if *m.IsPinned {
+		if m.IsPinned {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -2798,16 +2251,13 @@ func (m *Response_ExportResp) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Data == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
-		i += copy(data[i:], m.Data)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+	if m.Data != nil {
+		if len(m.Data) > 0 {
+			data[i] = 0xa
+			i++
+			i = encodeVarintDaemon(data, i, uint64(len(m.Data)))
+			i += copy(data[i:], m.Data)
+		}
 	}
 	return i, nil
 }
@@ -2842,8 +2292,8 @@ func encodeVarintDaemon(data []byte, offset int, v uint64) int {
 func (m *Command) Size() (n int) {
 	var l int
 	_ = l
-	if m.CommandType != nil {
-		n += 1 + sovDaemon(uint64(*m.CommandType))
+	if m.CommandType != 0 {
+		n += 1 + sovDaemon(uint64(m.CommandType))
 	}
 	if m.AddCommand != nil {
 		l = m.AddCommand.Size()
@@ -2945,25 +2395,19 @@ func (m *Command) Size() (n int) {
 		l = m.ImportCommand.Size()
 		n += 2 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Command_AddCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.FilePath != nil {
-		l = len(*m.FilePath)
+	l = len(m.FilePath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.RepoPath != nil {
-		l = len(*m.RepoPath)
+	l = len(m.RepoPath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -2971,16 +2415,13 @@ func (m *Command_AddCmd) Size() (n int) {
 func (m *Command_CatCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.RepoPath != nil {
-		l = len(*m.RepoPath)
+	l = len(m.RepoPath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.FilePath != nil {
-		l = len(*m.FilePath)
+	l = len(m.FilePath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -2988,30 +2429,21 @@ func (m *Command_CatCmd) Size() (n int) {
 func (m *Command_PingCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Command_QuitCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Command_MountCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.MountPoint != nil {
-		l = len(*m.MountPoint)
+	l = len(m.MountPoint)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3019,12 +2451,9 @@ func (m *Command_MountCmd) Size() (n int) {
 func (m *Command_UnmountCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.MountPoint != nil {
-		l = len(*m.MountPoint)
+	l = len(m.MountPoint)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3032,15 +2461,12 @@ func (m *Command_UnmountCmd) Size() (n int) {
 func (m *Command_RmCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.RepoPath != nil {
-		l = len(*m.RepoPath)
+	l = len(m.RepoPath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Recursive != nil {
+	if m.Recursive {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3048,12 +2474,9 @@ func (m *Command_RmCmd) Size() (n int) {
 func (m *Command_HistoryCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.RepoPath != nil {
-		l = len(*m.RepoPath)
+	l = len(m.RepoPath)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3061,11 +2484,8 @@ func (m *Command_HistoryCmd) Size() (n int) {
 func (m *Command_OnlineStatusCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Query != nil {
-		n += 1 + sovDaemon(uint64(*m.Query))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+	if m.Query != 0 {
+		n += 1 + sovDaemon(uint64(m.Query))
 	}
 	return n
 }
@@ -3073,12 +2493,9 @@ func (m *Command_OnlineStatusCmd) Size() (n int) {
 func (m *Command_SyncCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Who != nil {
-		l = len(*m.Who)
+	l = len(m.Who)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3086,15 +2503,12 @@ func (m *Command_SyncCmd) Size() (n int) {
 func (m *Command_ListCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Root != nil {
-		l = len(*m.Root)
+	l = len(m.Root)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Depth != nil {
-		n += 1 + sovDaemon(uint64(*m.Depth))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+	if m.Depth != 0 {
+		n += 1 + sovDaemon(uint64(m.Depth))
 	}
 	return n
 }
@@ -3102,16 +2516,13 @@ func (m *Command_ListCmd) Size() (n int) {
 func (m *Command_MvCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Source != nil {
-		l = len(*m.Source)
+	l = len(m.Source)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Dest != nil {
-		l = len(*m.Dest)
+	l = len(m.Dest)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3119,15 +2530,12 @@ func (m *Command_MvCmd) Size() (n int) {
 func (m *Command_MkdirCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Path != nil {
-		l = len(*m.Path)
+	l = len(m.Path)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.CreateParents != nil {
+	if m.CreateParents {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3135,16 +2543,13 @@ func (m *Command_MkdirCmd) Size() (n int) {
 func (m *Command_RemoteAddCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Id != nil {
-		l = len(*m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Hash != nil {
-		l = len(*m.Hash)
+	l = len(m.Hash)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3152,12 +2557,9 @@ func (m *Command_RemoteAddCmd) Size() (n int) {
 func (m *Command_RemoteRemoveCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Id != nil {
-		l = len(*m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3165,11 +2567,8 @@ func (m *Command_RemoteRemoveCmd) Size() (n int) {
 func (m *Command_RemoteListCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.NeedsOnline != nil {
+	if m.NeedsOnline {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3177,18 +2576,15 @@ func (m *Command_RemoteListCmd) Size() (n int) {
 func (m *Command_RemoteLocateCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Id != nil {
-		l = len(*m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.PeerLimit != nil {
-		n += 1 + sovDaemon(uint64(*m.PeerLimit))
+	if m.PeerLimit != 0 {
+		n += 1 + sovDaemon(uint64(m.PeerLimit))
 	}
-	if m.TimeoutMs != nil {
-		n += 1 + sovDaemon(uint64(*m.TimeoutMs))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+	if m.TimeoutMs != 0 {
+		n += 1 + sovDaemon(uint64(m.TimeoutMs))
 	}
 	return n
 }
@@ -3196,30 +2592,21 @@ func (m *Command_RemoteLocateCmd) Size() (n int) {
 func (m *Command_RemoteSelfCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Command_StatusCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Command_CommitCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Message != nil {
-		l = len(*m.Message)
+	l = len(m.Message)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3229,14 +2616,15 @@ func (m *Command_DiffCmd) Size() (n int) {
 	_ = l
 	if m.Low != nil {
 		l = len(m.Low)
-		n += 1 + l + sovDaemon(uint64(l))
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	if m.High != nil {
 		l = len(m.High)
-		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	return n
 }
@@ -3246,14 +2634,15 @@ func (m *Command_LogCmd) Size() (n int) {
 	_ = l
 	if m.Low != nil {
 		l = len(m.Low)
-		n += 1 + l + sovDaemon(uint64(l))
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	if m.High != nil {
 		l = len(m.High)
-		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	return n
 }
@@ -3261,15 +2650,12 @@ func (m *Command_LogCmd) Size() (n int) {
 func (m *Command_PinCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Balance != nil {
-		n += 1 + sovDaemon(uint64(*m.Balance))
+	if m.Balance != 0 {
+		n += 1 + sovDaemon(uint64(m.Balance))
 	}
-	if m.Path != nil {
-		l = len(*m.Path)
+	l = len(m.Path)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3277,12 +2663,9 @@ func (m *Command_PinCmd) Size() (n int) {
 func (m *Command_ExportCmd) Size() (n int) {
 	var l int
 	_ = l
-	if m.Who != nil {
-		l = len(*m.Who)
+	l = len(m.Who)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3292,10 +2675,9 @@ func (m *Command_ImportCmd) Size() (n int) {
 	_ = l
 	if m.Data != nil {
 		l = len(m.Data)
-		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	return n
 }
@@ -3303,19 +2685,16 @@ func (m *Command_ImportCmd) Size() (n int) {
 func (m *Remote) Size() (n int) {
 	var l int
 	_ = l
-	if m.Id != nil {
-		l = len(*m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.Hash != nil {
-		l = len(*m.Hash)
+	l = len(m.Hash)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.IsOnline != nil {
+	if m.IsOnline {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3323,14 +2702,14 @@ func (m *Remote) Size() (n int) {
 func (m *Response) Size() (n int) {
 	var l int
 	_ = l
-	if m.ResponseType != nil {
-		n += 1 + sovDaemon(uint64(*m.ResponseType))
+	if m.ResponseType != 0 {
+		n += 1 + sovDaemon(uint64(m.ResponseType))
 	}
-	if m.Success != nil {
+	if m.Success {
 		n += 2
 	}
-	if m.Error != nil {
-		l = len(*m.Error)
+	l = len(m.Error)
+	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
 	if m.HistoryResp != nil {
@@ -3373,9 +2752,6 @@ func (m *Response) Size() (n int) {
 		l = m.ExportResp.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -3386,9 +2762,6 @@ func (m *Response_ListResp) Size() (n int) {
 		l = m.Entries.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -3398,9 +2771,6 @@ func (m *Response_HistoryResp) Size() (n int) {
 	if m.History != nil {
 		l = m.History.Size()
 		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3414,9 +2784,6 @@ func (m *Response_RemoteListResp) Size() (n int) {
 			n += 1 + l + sovDaemon(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -3429,9 +2796,6 @@ func (m *Response_RemoteLocateResp) Size() (n int) {
 			n += 1 + l + sovDaemon(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -3442,20 +2806,14 @@ func (m *Response_RemoteSelfResp) Size() (n int) {
 		l = m.Self.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Response_OnlineStatusResp) Size() (n int) {
 	var l int
 	_ = l
-	if m.IsOnline != nil {
+	if m.IsOnline {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3467,9 +2825,6 @@ func (m *Response_StatusResp) Size() (n int) {
 		l = m.StageCommit.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -3480,20 +2835,14 @@ func (m *Response_LogResp) Size() (n int) {
 		l = m.Nodes.Size()
 		n += 1 + l + sovDaemon(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Response_PinResp) Size() (n int) {
 	var l int
 	_ = l
-	if m.IsPinned != nil {
+	if m.IsPinned {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -3503,10 +2852,9 @@ func (m *Response_ExportResp) Size() (n int) {
 	_ = l
 	if m.Data != nil {
 		l = len(m.Data)
-		n += 1 + l + sovDaemon(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+		if l > 0 {
+			n += 1 + l + sovDaemon(uint64(l))
+		}
 	}
 	return n
 }
@@ -3525,7 +2873,6 @@ func sozDaemon(x uint64) (n int) {
 	return sovDaemon(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (m *Command) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3558,7 +2905,7 @@ func (m *Command) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CommandType", wireType)
 			}
-			var v MessageType
+			m.CommandType = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -3568,13 +2915,11 @@ func (m *Command) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (MessageType(b) & 0x7F) << shift
+				m.CommandType |= (MessageType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.CommandType = &v
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AddCommand", wireType)
@@ -4412,12 +3757,8 @@ func (m *Command) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -4426,7 +3767,6 @@ func (m *Command) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_AddCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4482,10 +3822,8 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.FilePath = &s
+			m.FilePath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RepoPath", wireType)
@@ -4513,10 +3851,8 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.RepoPath = &s
+			m.RepoPath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -4529,15 +3865,8 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -4546,7 +3875,6 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_CatCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4602,10 +3930,8 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.RepoPath = &s
+			m.RepoPath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FilePath", wireType)
@@ -4633,10 +3959,8 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.FilePath = &s
+			m.FilePath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -4649,15 +3973,8 @@ func (m *Command_CatCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -4706,7 +4023,6 @@ func (m *Command_PingCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -4757,7 +4073,6 @@ func (m *Command_QuitCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -4768,7 +4083,6 @@ func (m *Command_QuitCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_MountCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4824,10 +4138,8 @@ func (m *Command_MountCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MountPoint = &s
+			m.MountPoint = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -4840,12 +4152,8 @@ func (m *Command_MountCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -4854,7 +4162,6 @@ func (m *Command_MountCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_UnmountCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4910,10 +4217,8 @@ func (m *Command_UnmountCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MountPoint = &s
+			m.MountPoint = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -4926,12 +4231,8 @@ func (m *Command_UnmountCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -4940,7 +4241,6 @@ func (m *Command_UnmountCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_RmCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4996,10 +4296,8 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.RepoPath = &s
+			m.RepoPath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Recursive", wireType)
@@ -5019,9 +4317,7 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Recursive = &b
-			hasFields[0] |= uint64(0x00000002)
+			m.Recursive = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5034,15 +4330,8 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5051,7 +4340,6 @@ func (m *Command_RmCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_HistoryCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5107,10 +4395,8 @@ func (m *Command_HistoryCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.RepoPath = &s
+			m.RepoPath = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5123,12 +4409,8 @@ func (m *Command_HistoryCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5137,7 +4419,6 @@ func (m *Command_HistoryCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5170,7 +4451,7 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Query", wireType)
 			}
-			var v OnlineQuery
+			m.Query = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -5180,13 +4461,11 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (OnlineQuery(b) & 0x7F) << shift
+				m.Query |= (OnlineQuery(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Query = &v
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5199,12 +4478,8 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5213,7 +4488,6 @@ func (m *Command_OnlineStatusCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_SyncCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5269,10 +4543,8 @@ func (m *Command_SyncCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Who = &s
+			m.Who = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5285,12 +4557,8 @@ func (m *Command_SyncCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5299,7 +4567,6 @@ func (m *Command_SyncCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_ListCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5355,15 +4622,13 @@ func (m *Command_ListCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Root = &s
+			m.Root = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Depth", wireType)
 			}
-			var v int32
+			m.Depth = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -5373,13 +4638,11 @@ func (m *Command_ListCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.Depth |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Depth = &v
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5392,15 +4655,8 @@ func (m *Command_ListCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5409,7 +4665,6 @@ func (m *Command_ListCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_MvCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5465,10 +4720,8 @@ func (m *Command_MvCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Source = &s
+			m.Source = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Dest", wireType)
@@ -5496,10 +4749,8 @@ func (m *Command_MvCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Dest = &s
+			m.Dest = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5512,15 +4763,8 @@ func (m *Command_MvCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5529,7 +4773,6 @@ func (m *Command_MvCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5585,10 +4828,8 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Path = &s
+			m.Path = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CreateParents", wireType)
@@ -5608,8 +4849,7 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.CreateParents = &b
+			m.CreateParents = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5622,12 +4862,8 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5636,7 +4872,6 @@ func (m *Command_MkdirCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_RemoteAddCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5692,10 +4927,8 @@ func (m *Command_RemoteAddCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Id = &s
+			m.Id = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
@@ -5723,10 +4956,8 @@ func (m *Command_RemoteAddCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Hash = &s
+			m.Hash = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5739,15 +4970,8 @@ func (m *Command_RemoteAddCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5756,7 +4980,6 @@ func (m *Command_RemoteAddCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_RemoteRemoveCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5812,10 +5035,8 @@ func (m *Command_RemoteRemoveCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Id = &s
+			m.Id = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5828,12 +5049,8 @@ func (m *Command_RemoteRemoveCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -5889,8 +5106,7 @@ func (m *Command_RemoteListCmd) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.NeedsOnline = &b
+			m.NeedsOnline = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -5903,7 +5119,6 @@ func (m *Command_RemoteListCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -5914,7 +5129,6 @@ func (m *Command_RemoteListCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_RemoteLocateCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5970,15 +5184,13 @@ func (m *Command_RemoteLocateCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Id = &s
+			m.Id = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PeerLimit", wireType)
 			}
-			var v int32
+			m.PeerLimit = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -5988,17 +5200,16 @@ func (m *Command_RemoteLocateCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.PeerLimit |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.PeerLimit = &v
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutMs", wireType)
 			}
-			var v int32
+			m.TimeoutMs = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -6008,12 +5219,11 @@ func (m *Command_RemoteLocateCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.TimeoutMs |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.TimeoutMs = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6026,12 +5236,8 @@ func (m *Command_RemoteLocateCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -6080,7 +5286,6 @@ func (m *Command_RemoteSelfCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -6131,7 +5336,6 @@ func (m *Command_StatusCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -6142,7 +5346,6 @@ func (m *Command_StatusCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_CommitCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6198,10 +5401,8 @@ func (m *Command_CommitCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Message = &s
+			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6214,12 +5415,8 @@ func (m *Command_CommitCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -6324,7 +5521,6 @@ func (m *Command_DiffCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -6431,7 +5627,6 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -6442,7 +5637,6 @@ func (m *Command_LogCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_PinCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6475,7 +5669,7 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Balance", wireType)
 			}
-			var v int32
+			m.Balance = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -6485,13 +5679,11 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.Balance |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Balance = &v
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
@@ -6519,10 +5711,8 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Path = &s
+			m.Path = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6535,15 +5725,8 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -6607,8 +5790,7 @@ func (m *Command_ExportCmd) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Who = &s
+			m.Who = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6622,7 +5804,6 @@ func (m *Command_ExportCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -6633,7 +5814,6 @@ func (m *Command_ExportCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Command_ImportCmd) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6690,7 +5870,6 @@ func (m *Command_ImportCmd) Unmarshal(data []byte) error {
 			}
 			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6703,12 +5882,8 @@ func (m *Command_ImportCmd) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -6717,7 +5892,6 @@ func (m *Command_ImportCmd) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Remote) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6773,10 +5947,8 @@ func (m *Remote) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Id = &s
+			m.Id = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
@@ -6804,10 +5976,8 @@ func (m *Remote) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Hash = &s
+			m.Hash = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field IsOnline", wireType)
@@ -6827,8 +5997,7 @@ func (m *Remote) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsOnline = &b
+			m.IsOnline = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -6841,15 +6010,8 @@ func (m *Remote) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -6858,7 +6020,6 @@ func (m *Remote) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6891,7 +6052,7 @@ func (m *Response) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ResponseType", wireType)
 			}
-			var v MessageType
+			m.ResponseType = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDaemon
@@ -6901,13 +6062,11 @@ func (m *Response) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (MessageType(b) & 0x7F) << shift
+				m.ResponseType |= (MessageType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.ResponseType = &v
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
@@ -6927,9 +6086,7 @@ func (m *Response) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Success = &b
-			hasFields[0] |= uint64(0x00000002)
+			m.Success = bool(v != 0)
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
@@ -6957,8 +6114,7 @@ func (m *Response) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Error = &s
+			m.Error = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -7302,15 +6458,8 @@ func (m *Response) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7319,7 +6468,6 @@ func (m *Response) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_ListResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7381,7 +6529,6 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7394,12 +6541,8 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7408,7 +6551,6 @@ func (m *Response_ListResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_HistoryResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7470,7 +6612,6 @@ func (m *Response_HistoryResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7483,12 +6624,8 @@ func (m *Response_HistoryResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7568,7 +6705,6 @@ func (m *Response_RemoteListResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -7648,7 +6784,6 @@ func (m *Response_RemoteLocateResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -7659,7 +6794,6 @@ func (m *Response_RemoteLocateResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_RemoteSelfResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7721,7 +6855,6 @@ func (m *Response_RemoteSelfResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7734,12 +6867,8 @@ func (m *Response_RemoteSelfResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7748,7 +6877,6 @@ func (m *Response_RemoteSelfResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_OnlineStatusResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7796,9 +6924,7 @@ func (m *Response_OnlineStatusResp) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsOnline = &b
-			hasFields[0] |= uint64(0x00000001)
+			m.IsOnline = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7811,12 +6937,8 @@ func (m *Response_OnlineStatusResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7825,7 +6947,6 @@ func (m *Response_OnlineStatusResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_StatusResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7887,7 +7008,6 @@ func (m *Response_StatusResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7900,12 +7020,8 @@ func (m *Response_StatusResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -7914,7 +7030,6 @@ func (m *Response_StatusResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_LogResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7976,7 +7091,6 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -7989,12 +7103,8 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -8003,7 +7113,6 @@ func (m *Response_LogResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_PinResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8051,9 +7160,7 @@ func (m *Response_PinResp) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsPinned = &b
-			hasFields[0] |= uint64(0x00000001)
+			m.IsPinned = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -8066,12 +7173,8 @@ func (m *Response_PinResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -8080,7 +7183,6 @@ func (m *Response_PinResp) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Response_ExportResp) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8137,7 +7239,6 @@ func (m *Response_ExportResp) Unmarshal(data []byte) error {
 			}
 			m.Data = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDaemon(data[iNdEx:])
@@ -8150,12 +7251,8 @@ func (m *Response_ExportResp) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {

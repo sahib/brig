@@ -7,13 +7,13 @@ enum RequestType {
 }
 
 message Request {
-	required RequestType req_type = 1;
-    required bytes data = 2;
+	RequestType req_type = 1;
+    bytes data = 2;
 }
 
 message Response {
-	required RequestType req_type = 1;
-	required bytes data = 2;
-    optional int64 ID = 3;
-    optional string error = 4;
+	RequestType req_type = 1;
+	bytes data = 2;
+    int64 ID = 3;
+    string error = 4;
 }
