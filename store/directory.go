@@ -82,14 +82,14 @@ func (d *Directory) ToProto() (*wire.Node, error) {
 	}
 
 	return &wire.Node{
-		ID:       proto.Uint64(d.id),
-		Type:     wire.NodeType_DIRECTORY.Enum(),
+		ID:       d.id,
+		Type:     wire.NodeType_DIRECTORY,
 		ModTime:  binModTime,
-		NodeSize: proto.Uint64(d.size),
+		NodeSize: d.size,
 		Hash:     d.hash.Bytes(),
-		Name:     proto.String(d.name),
+		Name:     d.name,
 		Directory: &wire.Directory{
-			Parent: proto.String(d.parent),
+			Parent: d.parent,
 			Links:  binLinks,
 			Names:  binNames,
 		},
@@ -106,24 +106,24 @@ func (d *Directory) Marshal() ([]byte, error) {
 }
 
 func (d *Directory) FromProto(pnd *wire.Node) error {
-	pbd := pnd.GetDirectory()
+	pbd := pnd.Directory
 
 	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(pnd.GetModTime()); err != nil {
+	if err := modTime.UnmarshalBinary(pnd.ModTime); err != nil {
 		return err
 	}
 
-	d.id = pnd.GetID()
+	d.id = pnd.ID
 	d.modTime = modTime
-	d.parent = pbd.GetParent()
-	d.size = pnd.GetNodeSize()
-	d.hash = &Hash{pnd.GetHash()}
-	d.name = pnd.GetName()
+	d.parent = pbd.Parent
+	d.size = pnd.NodeSize
+	d.hash = &Hash{pnd.Hash}
+	d.name = pnd.Name
 	d.children = make(map[string]*Hash)
 
 	// Find our place in the world:
-	links := pbd.GetLinks()
-	for idx, name := range pbd.GetNames() {
+	links := pbd.Links
+	for idx, name := range pbd.Names {
 		// Be cautious, input might come from everywhere:
 		if idx >= 0 && idx < len(links) {
 			return fmt.Errorf("Malformed input: More or less names than links in `%s`", d.name)

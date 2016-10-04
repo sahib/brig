@@ -13,7 +13,6 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/gogo/protobuf/proto"
 )
 
 var (
@@ -454,7 +453,7 @@ func (cn *Connector) Broadcaster() *Broadcaster {
 func (cn *Connector) broadcast(req *wire.Request) error {
 	var errs util.Errors
 
-	req.ID = proto.Int64(0)
+	req.ID = 0
 
 	for cnv := range cn.cp.Iter() {
 		if err := cnv.SendAsync(req, nil); err != nil {

@@ -70,7 +70,7 @@ func unmarshalNode(fs *FS, data []byte) (Node, error) {
 
 	var node Node
 
-	switch typ := pnd.GetType(); typ {
+	switch typ := pnd.Type; typ {
 	case wire.NodeType_FILE:
 		node = &File{fs: fs}
 	case wire.NodeType_DIRECTORY:
@@ -380,7 +380,7 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 		return err
 	}
 
-	key := strconv.FormatUint(pckp.GetIdLink(), 16)
+	key := strconv.FormatUint(pckp.IdLink, 16)
 	if err := bkt.Put(key, data); err != nil {
 		return err
 	}

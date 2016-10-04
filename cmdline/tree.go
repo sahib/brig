@@ -30,7 +30,7 @@ type treeNode struct {
 // This is a very stripped down version util.Trie.Insert()
 // but with support for ordering the elements.
 func (n *treeNode) Insert(entry *storewire.Node) {
-	parts := strings.Split(entry.GetPath(), "/")
+	parts := strings.Split(entry.Path, "/")
 	if len(parts) > 0 && parts[0] == "" {
 		parts = parts[1:]
 	}
@@ -114,7 +114,7 @@ func (n *treeNode) Print() {
 	switch {
 	case n.name == "/":
 		name, prefix = colors.Colorize(n.name, colors.Magenta), ""
-	case n.entry.GetType() == store.NodeTypeDirectory:
+	case n.entry.Type == store.NodeTypeDirectory:
 		name = colors.Colorize(name, colors.Green)
 	}
 
@@ -130,13 +130,13 @@ func showTree(entries []*storewire.Node, maxDepth int) error {
 	nfiles, ndirs := 0, 0
 
 	for _, entry := range entries {
-		if entry.GetPath() == "/" {
+		if entry.Path == "/" {
 			root.entry = entry
 		} else {
 			root.Insert(entry)
 		}
 
-		switch entry.GetType() {
+		switch entry.Type {
 		case store.NodeTypeFile:
 			nfiles++
 		case store.NodeTypeDirectory:

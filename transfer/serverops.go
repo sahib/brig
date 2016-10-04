@@ -1,9 +1,6 @@
 package transfer
 
-import (
-	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/gogo/protobuf/proto"
-)
+import "github.com/disorganizer/brig/transfer/wire"
 
 func (sv *Connector) handleFetch(req *wire.Request) (*wire.Response, error) {
 	protoStore, err := sv.rp.OwnStore.Export()
@@ -26,7 +23,7 @@ func (sv *Connector) handleStoreVersion(req *wire.Request) (*wire.Response, erro
 	return &wire.Response{
 		StoreVersionResp: &wire.StoreVersionResponse{
 			// TODO: Use actual version when ready
-			Version: proto.Int32(42),
+			Version: 42,
 		},
 	}, nil
 }

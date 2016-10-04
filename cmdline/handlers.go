@@ -488,15 +488,15 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 
 	for _, entry := range entries {
 		modTime := time.Time{}
-		if err := modTime.UnmarshalText(entry.GetModTime()); err != nil {
-			log.Warningf("Could not parse mtime (%s): %v", entry.GetModTime(), err)
+		if err := modTime.UnmarshalText(entry.ModTime); err != nil {
+			log.Warningf("Could not parse mtime (%s): %v", entry.ModTime, err)
 			continue
 		}
 
 		fmt.Printf(
 			"%s\t%s\t%s\n",
 			colors.Colorize(
-				humanize.Bytes(uint64(entry.GetNodeSize())),
+				humanize.Bytes(uint64(entry.NodeSize)),
 				colors.Green,
 			),
 			colors.Colorize(
@@ -504,7 +504,7 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 				colors.Cyan,
 			),
 			colors.Colorize(
-				entry.GetPath(),
+				entry.Path,
 				colors.Magenta,
 			),
 		)
@@ -580,12 +580,12 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	statusCmt := status.GetCommit()
+	statusCmt := status.Commit
 	if statusCmt == nil {
 		return fmt.Errorf("Empty status commit in response.")
 	}
 
-	checkpoints := statusCmt.GetCheckpoints()
+	checkpoints := statusCmt.Checkpoints
 	if len(checkpoints) == 0 {
 		fmt.Println("Nothing to commit.")
 		return nil
@@ -593,13 +593,13 @@ func handleStatus(ctx *cli.Context, client *daemon.Client) error {
 
 	userToChanges := make(map[id.ID]changeByType)
 	for _, pckp := range checkpoints {
-		byAuthor, ok := userToChanges[id.ID(pckp.GetAuthor())]
+		byAuthor, ok := userToChanges[id.ID(pckp.Author)]
 		if !ok {
 			byAuthor = make(changeByType)
-			userToChanges[id.ID(pckp.GetAuthor())] = byAuthor
+			userToChanges[id.ID(pckp.Author)] = byAuthor
 		}
 
-		byAuthor[pckp.GetChange()] = append(byAuthor[pckp.GetChange()], pckp)
+		byAuthor[pckp.Change] = append(byAuthor[pckp.Change], pckp)
 	}
 
 	for user, changesByuser := range userToChanges {
@@ -656,12 +656,12 @@ func handleCommit(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	statusCmt := status.GetCommit()
+	statusCmt := status.Commit
 	if statusCmt == nil {
 		return fmt.Errorf("Empty status commit in response.")
 	}
 
-	commitCnt := len(statusCmt.GetChangeset())
+	commitCnt := len(statusCmt.Changeset)
 	if commitCnt == 0 {
 		fmt.Println("Nothing to commit.")
 		return nil
@@ -681,18 +681,18 @@ func handleLog(ctx *cli.Context, client *daemon.Client) error {
 		return err
 	}
 
-	for _, pnode := range log.GetNodes() {
-		commitMH, err := multihash.Cast(pnode.GetHash())
+	for _, pnode := range log.Nodes {
+		commitMH, err := multihash.Cast(pnode.Hash)
 		if err != nil {
 			return err
 		}
 
-		pcmt := pnode.GetCommit()
+		pcmt := pnode.Commit
 		if pcmt == nil {
 			return fmt.Errorf("Empty commit in log-commit")
 		}
 
-		rootMH, err := multihash.Cast(pcmt.GetRoot())
+		rootMH, err := multihash.Cast(pcmt.Root)
 		if err != nil {
 			return err
 		}
@@ -701,8 +701,8 @@ func handleLog(ctx *cli.Context, client *daemon.Client) error {
 			"%s/%s by %s, %s\n",
 			colors.Colorize(commitMH.B58String()[:10], colors.Green),
 			colors.Colorize(rootMH.B58String()[:10], colors.Magenta),
-			pcmt.GetAuthor(),
-			pcmt.GetMessage(),
+			pcmt.Author,
+			pcmt.Message,
 		)
 	}
 	return nil

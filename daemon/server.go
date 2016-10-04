@@ -16,7 +16,6 @@ import (
 	"github.com/disorganizer/brig/transfer/moose"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/security"
-	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
@@ -208,11 +207,9 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 	defer cancel()
 
 	// Figure out which handler to call:
-	handlerID := *(cmd.CommandType)
-	handler, ok := handlerMap[handlerID]
-
+	handler, ok := handlerMap[cmd.CommandType]
 	if !ok {
-		log.Warningf("No handler for ID: %v", handlerID)
+		log.Warningf("No handler for ID: %v", cmd.CommandType)
 		return
 	}
 
@@ -224,12 +221,12 @@ func (d *Server) handleCommand(ctx context.Context, cmd *wire.Command, p *protoc
 	}
 
 	resp.ResponseType = cmd.CommandType
-	resp.Success = proto.Bool(false)
+	resp.Success = false
 
 	if err != nil {
-		resp.Error = proto.String(err.Error())
+		resp.Error = err.Error()
 	} else {
-		resp.Success = proto.Bool(true)
+		resp.Success = true
 	}
 
 	// Send the response back to the client:

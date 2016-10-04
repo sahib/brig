@@ -8,13 +8,12 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store"
 	storewire "github.com/disorganizer/brig/store/wire"
-	"github.com/gogo/protobuf/proto"
 )
 
 func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 	resp := <-c.Recv
-	if resp != nil && !resp.GetSuccess() {
-		return nil, fmt.Errorf("client: %v: %v", logname, resp.GetError())
+	if resp != nil && !resp.Success {
+		return nil, fmt.Errorf("client: %v: %v", logname, resp.Error)
 	}
 
 	return resp, nil
@@ -23,10 +22,10 @@ func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 // Add adds the data at `filePath` to brig as `repoPath`.
 func (c *Client) Add(filePath, repoPath string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_ADD.Enum(),
+		CommandType: wire.MessageType_ADD,
 		AddCommand: &wire.Command_AddCmd{
-			FilePath: proto.String(filePath),
-			RepoPath: proto.String(repoPath),
+			FilePath: filePath,
+			RepoPath: repoPath,
 		},
 	}
 
@@ -40,10 +39,10 @@ func (c *Client) Add(filePath, repoPath string) error {
 // Cat outputs the brig file at `repoPath` to `filePath`.
 func (c *Client) Cat(repoPath, filePath string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_CAT.Enum(),
+		CommandType: wire.MessageType_CAT,
 		CatCommand: &wire.Command_CatCmd{
-			FilePath: proto.String(filePath),
-			RepoPath: proto.String(repoPath),
+			FilePath: filePath,
+			RepoPath: repoPath,
 		},
 	}
 
@@ -57,9 +56,9 @@ func (c *Client) Cat(repoPath, filePath string) error {
 // Mount serves a fuse endpoint at the specified path.
 func (c *Client) Mount(mountPath string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_MOUNT.Enum(),
+		CommandType: wire.MessageType_MOUNT,
 		MountCommand: &wire.Command_MountCmd{
-			MountPoint: proto.String(mountPath),
+			MountPoint: mountPath,
 		},
 	}
 
@@ -73,9 +72,9 @@ func (c *Client) Mount(mountPath string) error {
 // Unmount removes a previously mounted fuse endpoint.
 func (c *Client) Unmount(mountPath string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_UNMOUNT.Enum(),
+		CommandType: wire.MessageType_UNMOUNT,
 		UnmountCommand: &wire.Command_UnmountCmd{
-			MountPoint: proto.String(mountPath),
+			MountPoint: mountPath,
 		},
 	}
 
@@ -89,10 +88,10 @@ func (c *Client) Unmount(mountPath string) error {
 // Remove removes the brig file at `repoPath`
 func (c *Client) Remove(repoPath string, recursive bool) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_RM.Enum(),
+		CommandType: wire.MessageType_RM,
 		RmCommand: &wire.Command_RmCmd{
-			RepoPath:  proto.String(repoPath),
-			Recursive: proto.Bool(recursive),
+			RepoPath:  repoPath,
+			Recursive: recursive,
 		},
 	}
 
@@ -105,10 +104,10 @@ func (c *Client) Remove(repoPath string, recursive bool) error {
 
 func (c *Client) Move(source, dest string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_MV.Enum(),
+		CommandType: wire.MessageType_MV,
 		MvCommand: &wire.Command_MvCmd{
-			Source: proto.String(source),
-			Dest:   proto.String(dest),
+			Source: source,
+			Dest:   dest,
 		},
 	}
 
@@ -124,9 +123,9 @@ func (c *Client) Move(source, dest string) error {
 // yields an empty history, but is not an error.
 func (c *Client) History(repoPath string) (store.History, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_HISTORY.Enum(),
+		CommandType: wire.MessageType_HISTORY,
 		HistoryCommand: &wire.Command_HistoryCmd{
-			RepoPath: proto.String(repoPath),
+			RepoPath: repoPath,
 		},
 	}
 
@@ -136,7 +135,7 @@ func (c *Client) History(repoPath string) (store.History, error) {
 	}
 
 	hist := &store.History{}
-	protoHist := resp.GetHistoryResp().GetHistory()
+	protoHist := resp.GetHistoryResp().History
 
 	if err := hist.FromProto(protoHist); err != nil {
 		return nil, err
@@ -147,9 +146,9 @@ func (c *Client) History(repoPath string) (store.History, error) {
 
 func (c *Client) alterOnlineStatus(query wire.OnlineQuery) (*wire.Response, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_ONLINE_STATUS.Enum(),
+		CommandType: wire.MessageType_ONLINE_STATUS,
 		OnlineStatusCommand: &wire.Command_OnlineStatusCmd{
-			Query: &query,
+			Query: query,
 		},
 	}
 
@@ -180,15 +179,15 @@ func (c *Client) IsOnline() (bool, error) {
 		return false, err
 	}
 
-	return resp.GetOnlineStatusResp().GetIsOnline(), nil
+	return resp.GetOnlineStatusResp().IsOnline, nil
 }
 
 func (c *Client) List(root string, depth int) ([]*storewire.Node, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_LIST.Enum(),
+		CommandType: wire.MessageType_LIST,
 		ListCommand: &wire.Command_ListCmd{
-			Root:  proto.String(root),
-			Depth: proto.Int(depth),
+			Root:  root,
+			Depth: int32(depth),
 		},
 	}
 
@@ -197,15 +196,14 @@ func (c *Client) List(root string, depth int) ([]*storewire.Node, error) {
 		return nil, err
 	}
 
-	entries := resp.GetListResp().GetEntries()
-	return entries.GetNodes(), nil
+	return resp.GetListResp().Entries.GetNodes(), nil
 }
 
 func (c *Client) Sync(who id.ID) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_SYNC.Enum(),
+		CommandType: wire.MessageType_SYNC,
 		SyncCommand: &wire.Command_SyncCmd{
-			Who: proto.String(string(who)),
+			Who: string(who),
 		},
 	}
 
@@ -226,10 +224,10 @@ func (c *Client) MkdirAll(path string) error {
 
 func (c *Client) mkdir(path string, createParents bool) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_MKDIR.Enum(),
+		CommandType: wire.MessageType_MKDIR,
 		MkdirCommand: &wire.Command_MkdirCmd{
-			Path:          proto.String(string(path)),
-			CreateParents: proto.Bool(createParents),
+			Path:          string(path),
+			CreateParents: createParents,
 		},
 	}
 
@@ -242,10 +240,10 @@ func (c *Client) mkdir(path string, createParents bool) error {
 
 func (c *Client) RemoteAdd(ident id.ID, peerHash string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_REMOTE_ADD.Enum(),
+		CommandType: wire.MessageType_REMOTE_ADD,
 		RemoteAddCommand: &wire.Command_RemoteAddCmd{
-			Id:   proto.String(string(ident)),
-			Hash: proto.String(peerHash),
+			Id:   string(ident),
+			Hash: peerHash,
 		},
 	}
 
@@ -258,9 +256,9 @@ func (c *Client) RemoteAdd(ident id.ID, peerHash string) error {
 
 func (c *Client) RemoteRemove(ident id.ID) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_REMOTE_REMOVE.Enum(),
+		CommandType: wire.MessageType_REMOTE_REMOVE,
 		RemoteRemoveCommand: &wire.Command_RemoteRemoveCmd{
-			Id: proto.String(string(ident)),
+			Id: string(ident),
 		},
 	}
 
@@ -279,9 +277,9 @@ type RemoteEntry struct {
 
 func (c *Client) RemoteList() ([]*RemoteEntry, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_REMOTE_LIST.Enum(),
+		CommandType: wire.MessageType_REMOTE_LIST,
 		RemoteListCommand: &wire.Command_RemoteListCmd{
-			NeedsOnline: proto.Bool(true),
+			NeedsOnline: true,
 		},
 	}
 
@@ -291,11 +289,11 @@ func (c *Client) RemoteList() ([]*RemoteEntry, error) {
 	}
 
 	entries := []*RemoteEntry{}
-	for _, entry := range resp.GetRemoteListResp().GetRemotes() {
+	for _, entry := range resp.GetRemoteListResp().Remotes {
 		entries = append(entries, &RemoteEntry{
-			Ident:    entry.GetId(),
-			Hash:     entry.GetHash(),
-			IsOnline: entry.GetIsOnline(),
+			Ident:    entry.Id,
+			Hash:     entry.Hash,
+			IsOnline: entry.IsOnline,
 		})
 	}
 
@@ -304,11 +302,11 @@ func (c *Client) RemoteList() ([]*RemoteEntry, error) {
 
 func (c *Client) RemoteLocate(ident id.ID, limit int, timeout time.Duration) ([]string, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_REMOTE_LOCATE.Enum(),
+		CommandType: wire.MessageType_REMOTE_LOCATE,
 		RemoteLocateCommand: &wire.Command_RemoteLocateCmd{
-			Id:        proto.String(string(ident)),
-			PeerLimit: proto.Int32(int32(limit)),
-			TimeoutMs: proto.Int32(int32(timeout / time.Millisecond)),
+			Id:        string(ident),
+			PeerLimit: int32(limit),
+			TimeoutMs: int32(timeout / time.Millisecond),
 		},
 	}
 
@@ -317,12 +315,12 @@ func (c *Client) RemoteLocate(ident id.ID, limit int, timeout time.Duration) ([]
 		return nil, err
 	}
 
-	return resp.GetRemoteLocateResp().GetHashes(), nil
+	return resp.GetRemoteLocateResp().Hashes, nil
 }
 
 func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_REMOTE_SELF.Enum(),
+		CommandType: wire.MessageType_REMOTE_SELF,
 	}
 
 	resp, err := c.recvResponse("remote-self")
@@ -330,30 +328,30 @@ func (c *Client) RemoteSelf() (*RemoteEntry, error) {
 		return nil, err
 	}
 
-	self := resp.GetRemoteSelfResp().GetSelf()
+	self := resp.GetRemoteSelfResp().Self
 	return &RemoteEntry{
-		Ident:    self.GetId(),
-		Hash:     self.GetHash(),
-		IsOnline: self.GetIsOnline(),
+		Ident:    self.Id,
+		Hash:     self.Hash,
+		IsOnline: self.IsOnline,
 	}, nil
 }
 
 func (c *Client) Status() (*storewire.Node, error) {
-	c.Send <- &wire.Command{CommandType: wire.MessageType_STATUS.Enum()}
+	c.Send <- &wire.Command{CommandType: wire.MessageType_STATUS}
 
 	resp, err := c.recvResponse("status")
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.GetStatusResp().GetStageCommit(), nil
+	return resp.GetStatusResp().StageCommit, nil
 }
 
 func (c *Client) MakeCommit(msg string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_COMMIT.Enum(),
+		CommandType: wire.MessageType_COMMIT,
 		CommitCommand: &wire.Command_CommitCmd{
-			Message: proto.String(msg),
+			Message: msg,
 		},
 	}
 
@@ -366,7 +364,7 @@ func (c *Client) MakeCommit(msg string) error {
 
 func (c *Client) Log(from, to *store.Hash) (*storewire.Nodes, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_LOG.Enum(),
+		CommandType: wire.MessageType_LOG,
 		LogCommand: &wire.Command_LogCmd{
 			Low:  from.Bytes(),
 			High: to.Bytes(),
@@ -383,10 +381,10 @@ func (c *Client) Log(from, to *store.Hash) (*storewire.Nodes, error) {
 
 func (c *Client) doPin(path string, balance int) (bool, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_PIN.Enum(),
+		CommandType: wire.MessageType_PIN,
 		PinCommand: &wire.Command_PinCmd{
-			Path:    proto.String(path),
-			Balance: proto.Int32(int32(balance)),
+			Path:    path,
+			Balance: int32(balance),
 		},
 	}
 
@@ -395,7 +393,7 @@ func (c *Client) doPin(path string, balance int) (bool, error) {
 		return false, err
 	}
 
-	return resp.GetPinResp().GetIsPinned(), nil
+	return resp.GetPinResp().IsPinned, nil
 }
 
 func (c *Client) Pin(path string) error {
@@ -420,9 +418,9 @@ func (c *Client) IsPinned(path string) (bool, error) {
 
 func (c *Client) Export(who id.ID) ([]byte, error) {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_EXPORT.Enum(),
+		CommandType: wire.MessageType_EXPORT,
 		ExportCommand: &wire.Command_ExportCmd{
-			Who: proto.String(string(who)),
+			Who: string(who),
 		},
 	}
 
@@ -431,12 +429,12 @@ func (c *Client) Export(who id.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	return resp.GetExportResp().GetData(), nil
+	return resp.GetExportResp().Data, nil
 }
 
 func (c *Client) Import(data []byte) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_IMPORT.Enum(),
+		CommandType: wire.MessageType_IMPORT,
 		ImportCommand: &wire.Command_ImportCmd{
 			Data: data,
 		},

@@ -56,8 +56,8 @@ func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 }
 
 func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	filePath := cmd.GetAddCommand().GetFilePath()
-	repoPath := cmd.GetAddCommand().GetRepoPath()
+	filePath := cmd.GetAddCommand().FilePath
+	repoPath := cmd.GetAddCommand().RepoPath
 
 	err := d.Repo.OwnStore.Add(filePath, repoPath)
 	if err != nil {
@@ -68,13 +68,13 @@ func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respons
 }
 
 func handleCat(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	filePath := cmd.GetCatCommand().GetFilePath()
+	filePath := cmd.GetCatCommand().FilePath
 	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return nil, err
 	}
 
-	srcPath := cmd.GetCatCommand().GetRepoPath()
+	srcPath := cmd.GetCatCommand().RepoPath
 	if err := d.Repo.OwnStore.Cat(srcPath, fd); err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func handleCat(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respons
 }
 
 func handleMount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	mountPath := cmd.GetMountCommand().GetMountPoint()
+	mountPath := cmd.GetMountCommand().MountPoint
 
 	if _, err := d.Mounts.AddMount(mountPath); err != nil {
 		log.Errorf("Unable to mount `%v`: %v", mountPath, err)
@@ -94,7 +94,7 @@ func handleMount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respo
 }
 
 func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	mountPath := cmd.GetUnmountCommand().GetMountPoint()
+	mountPath := cmd.GetUnmountCommand().MountPoint
 
 	if err := d.Mounts.Unmount(mountPath); err != nil {
 		log.Errorf("Unable to unmount `%v`: %v", mountPath, err)
@@ -106,8 +106,8 @@ func handleUnmount(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Res
 
 func handleRm(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	rmCmd := cmd.GetRmCommand()
-	repoPath := rmCmd.GetRepoPath()
-	recursive := rmCmd.GetRecursive()
+	repoPath := rmCmd.RepoPath
+	recursive := rmCmd.Recursive
 
 	if err := d.Repo.OwnStore.Remove(repoPath, recursive); err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func handleRm(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response
 
 func handleMv(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mvCmd := cmd.GetMvCommand()
-	if err := d.Repo.OwnStore.Move(mvCmd.GetSource(), mvCmd.GetDest(), true); err != nil {
+	if err := d.Repo.OwnStore.Move(mvCmd.Source, mvCmd.Dest, true); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func handleMv(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response
 }
 
 func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	repoPath := cmd.GetHistoryCommand().GetRepoPath()
+	repoPath := cmd.GetHistoryCommand().RepoPath
 
 	history, err := d.Repo.OwnStore.History(repoPath)
 	if err != nil {
@@ -146,12 +146,12 @@ func handleHistory(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Res
 }
 
 func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	qry := cmd.GetOnlineStatusCommand().GetQuery()
+	qry := cmd.GetOnlineStatusCommand().Query
 	switch qry {
 	case wire.OnlineQuery_IS_ONLINE:
 		return &wire.Response{
 			OnlineStatusResp: &wire.Response_OnlineStatusResp{
-				IsOnline: proto.Bool(d.IsOnline()),
+				IsOnline: d.IsOnline(),
 			},
 		}, nil
 	case wire.OnlineQuery_GO_ONLINE:
@@ -165,9 +165,9 @@ func handleOnlineStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wir
 
 func handleSync(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	syncCmd := cmd.GetSyncCommand()
-	who, err := id.Cast(syncCmd.GetWho())
+	who, err := id.Cast(syncCmd.Who)
 	if err != nil {
-		return nil, fmt.Errorf("Bad id `%s`: %v", syncCmd.GetWho(), err)
+		return nil, fmt.Errorf("Bad id `%s`: %v", syncCmd.Who, err)
 	}
 
 	if !d.MetaHost.IsInOnlineMode() {
@@ -194,7 +194,7 @@ func handleSync(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 
 func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	listCmd := cmd.GetListCommand()
-	root, depth := listCmd.GetRoot(), listCmd.GetDepth()
+	root, depth := listCmd.Root, listCmd.Depth
 
 	entries, err := d.Repo.OwnStore.ListProtoNodes(root, int(depth))
 	if err != nil {
@@ -210,10 +210,10 @@ func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 
 func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	mkdirCmd := cmd.GetMkdirCommand()
-	path := mkdirCmd.GetPath()
+	path := mkdirCmd.Path
 
 	var err error
-	if mkdirCmd.GetCreateParents() {
+	if mkdirCmd.CreateParents {
 		_, err = d.Repo.OwnStore.MkdirAll(path)
 	} else {
 		_, err = d.Repo.OwnStore.Mkdir(path)
@@ -228,7 +228,7 @@ func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respo
 
 func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	remoteAddCmd := cmd.GetRemoteAddCommand()
-	idString, peerHash := remoteAddCmd.GetId(), remoteAddCmd.GetHash()
+	idString, peerHash := remoteAddCmd.Id, remoteAddCmd.Hash
 
 	id, err := id.Cast(idString)
 	if err != nil {
@@ -244,7 +244,7 @@ func handleRemoteAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.R
 }
 
 func handleRemoteRemove(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	idString := cmd.GetRemoteRemoveCommand().GetId()
+	idString := cmd.GetRemoteRemoveCommand().Id
 
 	id, err := id.Cast(idString)
 	if err != nil {
@@ -263,9 +263,9 @@ func handleRemoteList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.
 
 	for _, rm := range d.Repo.Remotes.List() {
 		protoRm := &wire.Remote{
-			Id:       proto.String(string(rm.ID())),
-			Hash:     proto.String(rm.Hash()),
-			IsOnline: proto.Bool(d.MetaHost.IsOnline(rm)),
+			Id:       string(rm.ID()),
+			Hash:     rm.Hash(),
+			IsOnline: d.MetaHost.IsOnline(rm),
 		}
 
 		resp.Remotes = append(resp.Remotes, protoRm)
@@ -278,8 +278,8 @@ func handleRemoteList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.
 
 func handleRemoteLocate(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	locateCmd := cmd.GetRemoteLocateCommand()
-	idString, peerLimit := locateCmd.GetId(), int(locateCmd.GetPeerLimit())
-	timeout := time.Duration(locateCmd.GetTimeoutMs()) * time.Millisecond
+	idString, peerLimit := locateCmd.Id, int(locateCmd.PeerLimit)
+	timeout := time.Duration(locateCmd.TimeoutMs) * time.Millisecond
 
 	if timeout <= 0 {
 		timeout = 5 * time.Second
@@ -311,9 +311,9 @@ func handleRemoteSelf(d *Server, ctx context.Context, cmd *wire.Command) (*wire.
 	return &wire.Response{
 		RemoteSelfResp: &wire.Response_RemoteSelfResp{
 			Self: &wire.Remote{
-				Id:       proto.String(string(self.ID())),
-				Hash:     proto.String(self.Hash()),
-				IsOnline: proto.Bool(d.IsOnline()),
+				Id:       string(self.ID()),
+				Hash:     self.Hash(),
+				IsOnline: d.IsOnline(),
 			},
 		},
 	}, nil
@@ -338,7 +338,7 @@ func handleStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Resp
 }
 
 func handleCommit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	message := cmd.GetCommitCommand().GetMessage()
+	message := cmd.GetCommitCommand().Message
 
 	if err := d.Repo.OwnStore.MakeCommit(message); err != nil {
 		return nil, err
@@ -380,35 +380,35 @@ func handlePin(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respons
 	pinCmd := cmd.GetPinCommand()
 	var isPinned bool
 
-	switch balance := pinCmd.GetBalance(); {
+	switch balance := pinCmd.Balance; {
 	case balance < 0:
-		if err := d.Repo.OwnStore.Unpin(pinCmd.GetPath()); err != nil {
+		if err := d.Repo.OwnStore.Unpin(pinCmd.Path); err != nil {
 			return nil, err
 		}
 
 		isPinned = false
 	case balance > 0:
-		if err := d.Repo.OwnStore.Pin(pinCmd.GetPath()); err != nil {
+		if err := d.Repo.OwnStore.Pin(pinCmd.Path); err != nil {
 			return nil, err
 		}
 
 		isPinned = true
 	case balance == 0:
 		var err error
-		if isPinned, err = d.Repo.OwnStore.IsPinned(pinCmd.GetPath()); err != nil {
+		if isPinned, err = d.Repo.OwnStore.IsPinned(pinCmd.Path); err != nil {
 			return nil, err
 		}
 	}
 
 	return &wire.Response{
 		PinResp: &wire.Response_PinResp{
-			IsPinned: proto.Bool(isPinned),
+			IsPinned: isPinned,
 		},
 	}, nil
 }
 
 func handleImport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	pbData := cmd.GetImportCommand().GetData()
+	pbData := cmd.GetImportCommand().Data
 
 	pbStore := storewire.Store{}
 	if err := proto.Unmarshal(pbData, &pbStore); err != nil {
@@ -423,7 +423,7 @@ func handleImport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Resp
 }
 
 func handleExport(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
-	who := cmd.GetExportCommand().GetWho()
+	who := cmd.GetExportCommand().Who
 
 	// Figure out the correct store:
 	var st *store.Store

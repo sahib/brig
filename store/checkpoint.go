@@ -119,22 +119,22 @@ func newEmptyCheckpoint() *Checkpoint {
 
 func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 	return &wire.Checkpoint{
-		IdLink: proto.Uint64(cp.idLink),
+		IdLink: cp.idLink,
 		Hash:   cp.hash.Bytes(),
-		Change: proto.Int32(int32(cp.change)),
-		Author: proto.String(string(cp.author)),
-		Index:  proto.Uint64(cp.index),
+		Change: int32(cp.change),
+		Author: string(cp.author),
+		Index:  cp.index,
 	}, nil
 }
 
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
-	cp.hash = &Hash{msg.GetHash()}
-	cp.change = ChangeType(msg.GetChange())
-	cp.index = msg.GetIndex()
+	cp.hash = &Hash{msg.Hash}
+	cp.change = ChangeType(msg.Change)
+	cp.index = msg.Index
 
-	ID, err := id.Cast(msg.GetAuthor())
+	ID, err := id.Cast(msg.Author)
 	if err != nil {
-		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.GetAuthor(), err)
+		log.Warningf("Bad author-id `%s` in proto-checkpoint: %v", msg.Author, err)
 		return err
 	}
 
@@ -175,15 +175,15 @@ func (cl *CheckpointLink) String() string {
 }
 
 func (cl *CheckpointLink) FromProto(pcl *wire.CheckpointLink) error {
-	cl.IDLink = pcl.GetIdLink()
-	cl.Index = pcl.GetIndex()
+	cl.IDLink = pcl.IdLink
+	cl.Index = pcl.Index
 	return nil
 }
 
 func (cl *CheckpointLink) ToProto() (*wire.CheckpointLink, error) {
 	return &wire.CheckpointLink{
-		IdLink: proto.Uint64(cl.IDLink),
-		Index:  proto.Uint64(cl.Index),
+		IdLink: cl.IDLink,
+		Index:  cl.Index,
 	}, nil
 }
 

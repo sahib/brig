@@ -7,7 +7,6 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
-	"github.com/gogo/protobuf/proto"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -27,18 +26,18 @@ type Merge struct {
 
 func (mg *Merge) ToProto() (*wire.Merge, error) {
 	return &wire.Merge{
-		With: proto.String(string(mg.With)),
+		With: string(mg.With),
 		Hash: mg.Hash.Bytes(),
 	}, nil
 }
 
 func (mg *Merge) FromProto(protoMerge *wire.Merge) error {
-	ID, err := id.Cast(protoMerge.GetWith())
+	ID, err := id.Cast(protoMerge.With)
 	if err != nil {
 		return err
 	}
 
-	hash, err := multihash.Cast(protoMerge.GetHash())
+	hash, err := multihash.Cast(protoMerge.Hash)
 	if err != nil {
 		return err
 	}
@@ -64,12 +63,12 @@ func (a *Author) Hash() string {
 }
 
 func (a *Author) FromProto(pa *wire.Author) error {
-	ident, err := id.Cast(pa.GetName())
+	ident, err := id.Cast(pa.Name)
 	if err != nil {
 		return err
 	}
 
-	mh, err := multihash.FromB58String(pa.GetHash())
+	mh, err := multihash.FromB58String(pa.Hash)
 	if err != nil {
 		return err
 	}
@@ -81,8 +80,8 @@ func (a *Author) FromProto(pa *wire.Author) error {
 
 func (a *Author) ToProto() (*wire.Author, error) {
 	return &wire.Author{
-		Name: proto.String(string(a.ident)),
-		Hash: proto.String(a.hash.B58String()),
+		Name: string(a.ident),
+		Hash: a.hash.B58String(),
 	}, nil
 }
 
@@ -134,39 +133,39 @@ func newEmptyCommit(fs *FS) (*Commit, error) {
 }
 
 func (cm *Commit) FromProto(pnd *wire.Node) error {
-	pcm := pnd.GetCommit()
+	pcm := pnd.Commit
 	if pcm == nil {
 		return fmt.Errorf("No commit attr in protobuf. Probably not a commit.")
 	}
 
 	author := &Author{}
-	if err := author.FromProto(pcm.GetAuthor()); err != nil {
+	if err := author.FromProto(pcm.Author); err != nil {
 		return err
 	}
 
 	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(pnd.GetModTime()); err != nil {
+	if err := modTime.UnmarshalBinary(pnd.ModTime); err != nil {
 		return err
 	}
 
-	hash, err := multihash.Cast(pnd.GetHash())
+	hash, err := multihash.Cast(pnd.Hash)
 	if err != nil {
 		return err
 	}
 
-	root, err := multihash.Cast(pcm.GetRoot())
+	root, err := multihash.Cast(pcm.Root)
 	if err != nil {
 		return err
 	}
 
-	parent, err := multihash.Cast(pcm.GetParent())
+	parent, err := multihash.Cast(pcm.Parent)
 	if err != nil {
 		return err
 	}
 
 	var changeset []*CheckpointLink
 
-	for _, pcl := range pcm.GetChangeset() {
+	for _, pcl := range pcm.Changeset {
 		cl := &CheckpointLink{}
 		if err := cl.FromProto(pcl); err != nil {
 			return err
@@ -175,7 +174,7 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		changeset = append(changeset, cl)
 	}
 
-	protoMergeInfo := pcm.GetMerge()
+	protoMergeInfo := pcm.Merge
 	if protoMergeInfo != nil {
 		mergeInfo := &Merge{}
 		if err := mergeInfo.FromProto(protoMergeInfo); err != nil {
@@ -186,8 +185,8 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	}
 
 	// Set commit data if everything worked:
-	cm.id = pnd.GetID()
-	cm.message = pcm.GetMessage()
+	cm.id = pnd.ID
+	cm.message = pcm.Message
 	cm.author = author
 	cm.modTime = modTime
 	cm.hash = &Hash{hash}
@@ -228,7 +227,7 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 		return nil, err
 	}
 
-	pcm.Message = proto.String(cm.message)
+	pcm.Message = cm.message
 	pcm.Author = pauthor
 	pcm.Root = cm.root.Bytes()
 	pcm.Changeset = changeset
@@ -243,11 +242,11 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 	// TODO: Store something more meaningful in 'name':
 	return &wire.Node{
-		NodeSize: proto.Uint64(0),
+		NodeSize: 0,
 		ModTime:  modTime,
 		Hash:     cm.hash.Bytes(),
-		Name:     proto.String("commit"),
-		ID:       proto.Uint64(cm.id),
+		Name:     "commit",
+		ID:       cm.id,
 		Commit:   pcm,
 	}, nil
 }

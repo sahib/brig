@@ -15,7 +15,6 @@ import (
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/security"
-	"github.com/gogo/protobuf/proto"
 )
 
 // Conversation implements layer.Conversation
@@ -85,7 +84,7 @@ func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Convers
 				continue
 			}
 
-			respID := resp.GetID()
+			respID := resp.ID
 
 			cnv.Lock()
 			fn, ok := cnv.notifees[respID]
@@ -118,12 +117,12 @@ func (cnv *Conversation) SendAsync(req *wire.Request, callback transfer.AsyncFun
 
 	// Add a nonce so that the same message is guaranteed to result
 	// in a different ciphertext:
-	req.Nonce = proto.Int64(rand.Int63())
+	req.Nonce = rand.Int63()
 
 	// Broadcast messages usually do not register a callback.
 	// (it wouldn't have been called anyways)
 	if callback != nil {
-		cnv.notifees[req.GetID()] = callback
+		cnv.notifees[req.ID] = callback
 	}
 
 	return cnv.proto.Send(req)
@@ -219,9 +218,9 @@ func (lay *Layer) loopServerConn(prot *protocol.Protocol) bool {
 	}
 
 	log.Debugf("Got request: %v", req)
-	fn, ok := lay.handlers[req.GetReqType()]
+	fn, ok := lay.handlers[req.ReqType]
 	if !ok {
-		log.Warningf("Received packet without registerd handler (%d)", req.GetReqType())
+		log.Warningf("Received packet without registerd handler (%d)", req.ReqType)
 		log.Warningf("Package will be dropped.")
 		return true
 	}
@@ -229,14 +228,14 @@ func (lay *Layer) loopServerConn(prot *protocol.Protocol) bool {
 	resp, err := fn(&req)
 	if err != nil {
 		resp = &wire.Response{
-			Error: proto.String(err.Error()),
+			Error: err.Error(),
 		}
 	}
 
 	if resp == nil {
 		// '0' is the ID for broadcast. Empty response are valid there.
-		if req.GetID() != 0 {
-			log.Warningf("Handle for `%d` failed to return a response or error", req.GetReqType())
+		if req.ID != 0 {
+			log.Warningf("Handle for `%d` failed to return a response or error", req.ReqType)
 		}
 
 		return true

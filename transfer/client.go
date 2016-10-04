@@ -8,7 +8,6 @@ import (
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/gogo/protobuf/proto"
 )
 
 // APIClient is a high-level client that talks to
@@ -34,7 +33,7 @@ func (acl *APIClient) send(req *wire.Request) (resp *wire.Response, err error) {
 	// `0` is reserved for broadcast counters,
 	// increment first therefore.
 	acl.idcnt++
-	req.ID = proto.Int64(acl.idcnt)
+	req.ID = acl.idcnt
 
 	done := make(chan util.Empty)
 	err = acl.cnv.SendAsync(req, func(respIn *wire.Response) {
@@ -61,7 +60,7 @@ func (acl *APIClient) send(req *wire.Request) (resp *wire.Response, err error) {
 // QueryStoreVersion returns the storage version of the remote store.
 func (acl *APIClient) QueryStoreVersion() (int32, error) {
 	req := &wire.Request{
-		ReqType: wire.RequestType_STORE_VERSION.Enum(),
+		ReqType: wire.RequestType_STORE_VERSION,
 	}
 
 	resp, err := acl.send(req)
@@ -69,12 +68,12 @@ func (acl *APIClient) QueryStoreVersion() (int32, error) {
 		return -1, err
 	}
 
-	return resp.GetStoreVersionResp().GetVersion(), nil
+	return resp.GetStoreVersionResp().Version, nil
 }
 
 func (acl *APIClient) Fetch(s *store.Store) error {
 	req := &wire.Request{
-		ReqType: wire.RequestType_FETCH.Enum(),
+		ReqType: wire.RequestType_FETCH,
 	}
 
 	resp, err := acl.send(req)

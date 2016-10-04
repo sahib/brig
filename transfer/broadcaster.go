@@ -15,7 +15,7 @@ type Broadcaster struct {
 func (bc *Broadcaster) FileUpdate(file *store.File) error {
 	// TODO: Use `file` somehow (also: Document)
 	req := &wire.Request{
-		ReqType: wire.RequestType_UPDATE_FILE.Enum(),
+		ReqType: wire.RequestType_UPDATE_FILE,
 	}
 	return bc.cnc.broadcast(req)
 }

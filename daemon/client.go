@@ -141,7 +141,7 @@ func Reach(pwd, repoPath string, port int) (*Client, error) {
 // Ping returns true if the daemon is running and responds correctly.
 func (c *Client) Ping() bool {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_PING.Enum(),
+		CommandType: wire.MessageType_PING,
 	}
 
 	select {
@@ -155,7 +155,7 @@ func (c *Client) Ping() bool {
 // Exorcise sends a QUIT message to the daemon.
 func (c *Client) Exorcise() {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_QUIT.Enum(),
+		CommandType: wire.MessageType_QUIT,
 	}
 
 	<-c.Recv

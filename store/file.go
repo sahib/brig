@@ -8,7 +8,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/gogo/protobuf/proto"
 )
 
 // File represents a single file in the repository.
@@ -46,37 +45,37 @@ func (f *File) ToProto() (*wire.Node, error) {
 	}
 
 	return &wire.Node{
-		ID:       proto.Uint64(f.id),
-		Type:     wire.NodeType_FILE.Enum(),
-		Name:     proto.String(f.name),
-		NodeSize: proto.Uint64(f.size),
+		ID:       f.id,
+		Type:     wire.NodeType_FILE,
+		Name:     f.name,
+		NodeSize: f.size,
 		ModTime:  binModTime,
 		Hash:     f.hash.Bytes(),
 		File: &wire.File{
-			Parent: proto.String(f.parent),
+			Parent: f.parent,
 			Key:    f.key,
 		},
 	}, nil
 }
 
 func (f *File) FromProto(pnd *wire.Node) error {
-	pfi := pnd.GetFile()
+	pfi := pnd.File
 	if pfi == nil {
 		return fmt.Errorf("File attribute is empty. This is likely not a real file.")
 	}
 
 	modTime := time.Time{}
-	if err := modTime.UnmarshalBinary(pnd.GetModTime()); err != nil {
+	if err := modTime.UnmarshalBinary(pnd.ModTime); err != nil {
 		return err
 	}
 
-	f.id = pnd.GetID()
-	f.size = pnd.GetNodeSize()
+	f.id = pnd.ID
+	f.size = pnd.NodeSize
 	f.modTime = modTime
-	f.hash = &Hash{pnd.GetHash()}
-	f.parent = pfi.GetParent()
-	f.name = pnd.GetName()
-	f.key = pfi.GetKey()
+	f.hash = &Hash{pnd.Hash}
+	f.parent = pfi.Parent
+	f.name = pnd.Name
+	f.key = pfi.Key
 	return nil
 }
 

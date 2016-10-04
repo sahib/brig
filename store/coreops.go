@@ -14,7 +14,6 @@ import (
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
-	"github.com/gogo/protobuf/proto"
 )
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
@@ -374,7 +373,7 @@ func (st *Store) ListProtoNodes(root string, depth int) (*wire.Nodes, error) {
 		}
 
 		// Fill in the path for the sake of exporting:
-		pnode.Path = proto.String(NodePath(node))
+		pnode.Path = NodePath(node)
 		nodes.Nodes = append(nodes.Nodes, pnode)
 	}
 
