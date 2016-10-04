@@ -19,7 +19,7 @@ import (
 type handlerFunc func(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error)
 
 var handlerMap = map[wire.MessageType]handlerFunc{
-	wire.MessageType_ADD:           handleAdd,
+	wire.MessageType_STAGE:         handleStage,
 	wire.MessageType_CAT:           handleCat,
 	wire.MessageType_PING:          handlePing,
 	wire.MessageType_QUIT:          handleQuit,
@@ -55,11 +55,11 @@ func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 	return nil, nil
 }
 
-func handleAdd(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+func handleStage(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	filePath := cmd.GetAddCommand().FilePath
 	repoPath := cmd.GetAddCommand().RepoPath
 
-	err := d.Repo.OwnStore.Add(filePath, repoPath)
+	err := d.Repo.OwnStore.Stage(filePath, repoPath)
 	if err != nil {
 		return nil, err
 	}

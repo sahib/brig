@@ -33,7 +33,7 @@ var _ = math.Inf
 type MessageType int32
 
 const (
-	MessageType_ADD           MessageType = 0
+	MessageType_STAGE         MessageType = 0
 	MessageType_CAT           MessageType = 1
 	MessageType_PING          MessageType = 2
 	MessageType_QUIT          MessageType = 3
@@ -61,7 +61,7 @@ const (
 )
 
 var MessageType_name = map[int32]string{
-	0:  "ADD",
+	0:  "STAGE",
 	1:  "CAT",
 	2:  "PING",
 	3:  "QUIT",
@@ -88,7 +88,7 @@ var MessageType_name = map[int32]string{
 	24: "IMPORT",
 }
 var MessageType_value = map[string]int32{
-	"ADD":           0,
+	"STAGE":         0,
 	"CAT":           1,
 	"PING":          2,
 	"QUIT":          3,
@@ -147,7 +147,7 @@ func (x OnlineQuery) String() string {
 
 type Command struct {
 	CommandType         MessageType              `protobuf:"varint,1,opt,name=command_type,proto3,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
-	AddCommand          *Command_AddCmd          `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
+	AddCommand          *Command_StageCmd        `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
 	CatCommand          *Command_CatCmd          `protobuf:"bytes,3,opt,name=cat_command" json:"cat_command,omitempty"`
 	PingCommand         *Command_PingCmd         `protobuf:"bytes,4,opt,name=ping_command" json:"ping_command,omitempty"`
 	QuitCommand         *Command_QuitCmd         `protobuf:"bytes,5,opt,name=quit_command" json:"quit_command,omitempty"`
@@ -178,7 +178,7 @@ func (m *Command) Reset()         { *m = Command{} }
 func (m *Command) String() string { return proto.CompactTextString(m) }
 func (*Command) ProtoMessage()    {}
 
-func (m *Command) GetAddCommand() *Command_AddCmd {
+func (m *Command) GetAddCommand() *Command_StageCmd {
 	if m != nil {
 		return m.AddCommand
 	}
@@ -353,16 +353,16 @@ func (m *Command) GetImportCommand() *Command_ImportCmd {
 	return nil
 }
 
-type Command_AddCmd struct {
+type Command_StageCmd struct {
 	// The abs path to the file we're going to add.
 	FilePath string `protobuf:"bytes,1,opt,name=file_path,proto3" json:"file_path,omitempty"`
 	// The virtual abs path inside the repo (e.g. /photos/me.png)
 	RepoPath string `protobuf:"bytes,2,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
 }
 
-func (m *Command_AddCmd) Reset()         { *m = Command_AddCmd{} }
-func (m *Command_AddCmd) String() string { return proto.CompactTextString(m) }
-func (*Command_AddCmd) ProtoMessage()    {}
+func (m *Command_StageCmd) Reset()         { *m = Command_StageCmd{} }
+func (m *Command_StageCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_StageCmd) ProtoMessage()    {}
 
 type Command_CatCmd struct {
 	// The abs path of the file to cat inside the repo.
@@ -798,7 +798,7 @@ func (*Response_ExportResp) ProtoMessage()    {}
 
 func init() {
 	proto.RegisterType((*Command)(nil), "brig.daemon.Command")
-	proto.RegisterType((*Command_AddCmd)(nil), "brig.daemon.Command.AddCmd")
+	proto.RegisterType((*Command_StageCmd)(nil), "brig.daemon.Command.StageCmd")
 	proto.RegisterType((*Command_CatCmd)(nil), "brig.daemon.Command.CatCmd")
 	proto.RegisterType((*Command_PingCmd)(nil), "brig.daemon.Command.PingCmd")
 	proto.RegisterType((*Command_QuitCmd)(nil), "brig.daemon.Command.QuitCmd")
@@ -1133,7 +1133,7 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Command_AddCmd) Marshal() (data []byte, err error) {
+func (m *Command_StageCmd) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1143,7 +1143,7 @@ func (m *Command_AddCmd) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Command_AddCmd) MarshalTo(data []byte) (int, error) {
+func (m *Command_StageCmd) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2398,7 +2398,7 @@ func (m *Command) Size() (n int) {
 	return n
 }
 
-func (m *Command_AddCmd) Size() (n int) {
+func (m *Command_StageCmd) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.FilePath)
@@ -2947,7 +2947,7 @@ func (m *Command) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AddCommand == nil {
-				m.AddCommand = &Command_AddCmd{}
+				m.AddCommand = &Command_StageCmd{}
 			}
 			if err := m.AddCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -3766,7 +3766,7 @@ func (m *Command) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Command_AddCmd) Unmarshal(data []byte) error {
+func (m *Command_StageCmd) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3789,10 +3789,10 @@ func (m *Command_AddCmd) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: AddCmd: wiretype end group for non-group")
+			return fmt.Errorf("proto: StageCmd: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AddCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: StageCmd: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

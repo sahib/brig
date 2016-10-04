@@ -251,7 +251,7 @@ func handleInit(ctx *cli.Context) error {
 	return nil
 }
 
-func handleAdd(ctx *cli.Context, client *daemon.Client) error {
+func handleStage(ctx *cli.Context, client *daemon.Client) error {
 	filePath, err := filepath.Abs(ctx.Args()[0])
 	if err != nil {
 		return ExitCode{
@@ -266,10 +266,10 @@ func handleAdd(ctx *cli.Context, client *daemon.Client) error {
 		repoPath = ctx.Args()[1]
 	}
 
-	if err := client.Add(filePath, repoPath); err != nil {
+	if err := client.Stage(filePath, repoPath); err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("Could not add file: %v: %v", filePath, err),
+			fmt.Sprintf("Could not stage file: %v: %v", filePath, err),
 		}
 	}
 

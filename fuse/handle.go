@@ -164,7 +164,7 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	err = h.fs.Store.AddFromReader(path, h.layer)
+	err = h.fs.Store.StageFromReader(path, h.layer)
 	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA

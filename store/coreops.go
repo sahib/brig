@@ -26,15 +26,15 @@ func (st *Store) MkdirAll(repoPath string) (*Directory, error) {
 	return mkdir(st.fs, repoPath, true)
 }
 
-// Add reads the data at the physical path `filePath` and adds it to the store
+// Stage reads the data at the physical path `filePath` and adds it to the store
 // at `repoPath` by hashing, compressing and encrypting the file.
 // Directories will be added recursively.
-func (st *Store) Add(filePath, repoPath string) error {
-	return st.AddDir(filePath, prefixSlash(repoPath))
+func (st *Store) Stage(filePath, repoPath string) error {
+	return st.StageDir(filePath, prefixSlash(repoPath))
 }
 
-// AddDir traverses all files in a directory and calls AddFromReader on them.
-func (st *Store) AddDir(filePath, repoPath string) error {
+// StageDir traverses all files in a directory and calls StageFromReader on them.
+func (st *Store) StageDir(filePath, repoPath string) error {
 	walkErr := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
 		// Simply skip errorneous files:
 		if err != nil {
@@ -54,7 +54,7 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 			}
 			defer util.Closer(fd)
 
-			err = st.AddFromReader(currPath, fd)
+			err = st.StageFromReader(currPath, fd)
 		case mode.IsDir():
 			_, err = st.Mkdir(currPath)
 		default:
@@ -67,7 +67,7 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 				"file_path": filePath,
 				"repo_path": repoPath,
 				"curr_path": currPath,
-			}).Warningf("AddDir: %v", err)
+			}).Warningf("StageDir: %v", err)
 		}
 
 		return nil
@@ -76,9 +76,9 @@ func (st *Store) AddDir(filePath, repoPath string) error {
 	return walkErr
 }
 
-// AddFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
+// StageFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (st *Store) AddFromReader(repoPath string, r io.Reader) error {
+func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
 	repoPath = prefixSlash(repoPath)
 
 	st.mu.Lock()
@@ -188,9 +188,9 @@ func (st *Store) IsPinned(repoPath string) (bool, error) {
 }
 
 // Touch creates a new empty file.
-// It is provided as convenience wrapper around AddFromReader.
+// It is provided as convenience wrapper around StageFromReader.
 func (st *Store) Touch(repoPath string) error {
-	return st.AddFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
+	return st.StageFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
 }
 
 func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {

@@ -20,16 +20,16 @@ func (c *Client) recvResponse(logname string) (*wire.Response, error) {
 }
 
 // Add adds the data at `filePath` to brig as `repoPath`.
-func (c *Client) Add(filePath, repoPath string) error {
+func (c *Client) Stage(filePath, repoPath string) error {
 	c.Send <- &wire.Command{
-		CommandType: wire.MessageType_ADD,
-		AddCommand: &wire.Command_AddCmd{
+		CommandType: wire.MessageType_STAGE,
+		AddCommand: &wire.Command_StageCmd{
 			FilePath: filePath,
 			RepoPath: repoPath,
 		},
 	}
 
-	if _, err := c.recvResponse("add"); err != nil {
+	if _, err := c.recvResponse("stage"); err != nil {
 		return err
 	}
 

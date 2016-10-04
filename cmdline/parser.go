@@ -323,12 +323,12 @@ func RunCmdline(args []string) int {
 			Action: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
 		},
 		cli.Command{
-			Name:        "add",
+			Name:        "stage",
 			Category:    wdirGroup,
-			Usage:       "Transer file into brig's control",
+			Usage:       "Transer a file into brig's control or update an existing one",
 			ArgsUsage:   "</file>",
-			Description: "Add a specific file to the brig repository",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleAdd, true)),
+			Description: "Stage a specific file into the brig repository",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
 		},
 		cli.Command{
 			Name:        "rm",

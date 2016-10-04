@@ -8,7 +8,7 @@ import "store.proto";
 // The numbers just get incremented in the order that
 // they were added - which is a nice history book of brig.
 enum MessageType {
-    ADD = 0;
+    STAGE = 0;
     CAT = 1;
     PING = 2;
     QUIT = 3;
@@ -49,7 +49,7 @@ enum OnlineQuery {
 }
 
 message Command {
-    message AddCmd {
+    message StageCmd {
 		// The abs path to the file we're going to add.
         string file_path = 1;
 		// The virtual abs path inside the repo (e.g. /photos/me.png)
@@ -172,7 +172,7 @@ message Command {
 
     MessageType command_type = 1;
 
-    AddCmd add_command = 2;
+    StageCmd add_command = 2;
     CatCmd cat_command = 3;
     PingCmd ping_command = 4;
     QuitCmd quit_command = 5;
