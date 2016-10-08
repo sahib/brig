@@ -24,18 +24,21 @@ type File struct {
 	fs *FS
 }
 
-func newEmptyFile(fs *FS, name string) (*File, error) {
+func newEmptyFile(fs *FS, parent *Directory, name string) (*File, error) {
 	id, err := fs.NextID()
 	if err != nil {
 		return nil, err
 	}
 
-	return &File{
+	file := &File{
 		name:    name,
 		id:      id,
 		modTime: time.Now(),
 		fs:      fs,
-	}, nil
+		parent:  parent.Path(),
+	}
+
+	return file, nil
 }
 
 func (f *File) ToProto() (*wire.Node, error) {

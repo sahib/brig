@@ -61,6 +61,6 @@ func (e ErrNoSuchRef) Error() string {
 }
 
 func IsErrNoSuchRef(err error) bool {
-	_, ok := err.(*ErrNoSuchRef)
+	_, ok := err.(ErrNoSuchRef)
 	return ok
 }

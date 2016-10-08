@@ -174,7 +174,6 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	}
 
 	if nd == nil {
-		// TODO?
 		// log.Warningf("Could not load hash `%s`", hash.B58String())
 		return nil, nil
 	}
@@ -242,9 +241,15 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	return fs.NodeByHash(&Hash{hash})
 }
 
+func (fs *FS) AddToMemIndex(nd Node) {
+	// TODO: Delete old hashes, since they would point to the new instance.
+	b58Hash := nd.Hash().B58String()
+	fs.index[b58Hash] = fs.root.InsertWithData(nd.Path(), nd)
+}
+
 func (fs *FS) StageNode(nd Node) error {
 	if nd.GetType() == NodeTypeCommit {
-		return fmt.Errorf("Commits cannot be staged")
+		return fmt.Errorf("BUG: Commits cannot be staged; Use MakeCommit()")
 	}
 
 	object, err := nd.ToProto()
@@ -257,16 +262,13 @@ func (fs *FS) StageNode(nd Node) error {
 		return err
 	}
 
-	fmt.Println("Post marshal")
 	b58Hash := nd.Hash().B58String()
 	if err := putPath(fs.kv, "stage/objects/"+b58Hash, data); err != nil {
 		return err
 	}
 
-	fmt.Println("Post putPath")
 	// The key is the path of the
 	nodePath := NodePath(nd)
-	fmt.Println("Post ndoe path")
 
 	hashPath := path.Join("stage/tree", nodePath)
 	switch nd.GetType() {
@@ -280,21 +282,6 @@ func (fs *FS) StageNode(nd Node) error {
 
 	// Remember/Update this node in the cache if it's not yet there:
 	fs.index[b58Hash] = fs.root.InsertWithData(nodePath, nd)
-
-	// We need to save parent directories too, in case the hash changed:
-	// TODO: Is that a good idea? Many stages will cause many pointless
-	//       root dirs with different checksums.
-	par, err := nd.Parent()
-	if err != nil {
-		return err
-	}
-	if par != nil {
-		fmt.Println("Staging parent")
-		if err := fs.StageNode(par); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -315,10 +302,10 @@ func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
 	}
 
 	if data == nil {
-		return nil, fmt.Errorf("No last checkpoint")
+		return nil, nil
 	}
 
-	ckp := newEmptyCheckpoint()
+	ckp := &Checkpoint{}
 	if err := ckp.Unmarshal(data); err != nil {
 		return nil, err
 	}
@@ -336,7 +323,7 @@ func (fs *FS) History(IDLink uint64) (History, error) {
 	}
 
 	err = bkt.Foreach(func(key string, value []byte) error {
-		ckp := newEmptyCheckpoint()
+		ckp := &Checkpoint{}
 		if err := ckp.Unmarshal(value); err != nil {
 			return err
 		}
@@ -375,13 +362,14 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 		return err
 	}
 
-	bkt, err := fs.kv.Bucket([]string{"checkpoints"})
+	key := strconv.FormatUint(pckp.IdLink, 16)
+	bkt, err := fs.kv.Bucket([]string{"checkpoints", key})
 	if err != nil {
 		return err
 	}
 
-	key := strconv.FormatUint(pckp.IdLink, 16)
-	if err := bkt.Put(key, data); err != nil {
+	idx := strconv.FormatUint(pckp.Index, 16)
+	if err := bkt.Put(idx, data); err != nil {
 		return err
 	}
 
@@ -568,6 +556,8 @@ func (fs *FS) Head() (*Commit, error) {
 	return cmt, nil
 }
 
+// Root returns the current root directory of CURR.
+// It is never nil when err is nil.
 func (fs *FS) Root() (*Directory, error) {
 	status, err := fs.Status()
 	if err != nil {
@@ -615,6 +605,7 @@ func (fs *FS) Status() (*Commit, error) {
 	}
 
 	var rootHash *Hash
+	var setHead = false
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
@@ -629,6 +620,7 @@ func (fs *FS) Status() (*Commit, error) {
 		}
 
 		rootHash = newRoot.Hash()
+		setHead = true
 	} else {
 		if err := cmt.SetParent(head); err != nil {
 			return nil, err
@@ -643,6 +635,12 @@ func (fs *FS) Status() (*Commit, error) {
 
 	if err := fs.saveStatus(cmt); err != nil {
 		return nil, err
+	}
+
+	if setHead {
+		if err := fs.SaveRef("HEAD", cmt); err != nil {
+			return nil, err
+		}
 	}
 
 	return cmt, nil

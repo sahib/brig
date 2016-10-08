@@ -79,6 +79,14 @@ func (a *Author) FromProto(pa *wire.Author) error {
 }
 
 func (a *Author) ToProto() (*wire.Author, error) {
+	// Author might be nil for the staging commit:
+	if a == nil {
+		return &wire.Author{
+			Name: "unknown",
+			Hash: EmptyHash.B58String(),
+		}, nil
+	}
+
 	return &wire.Author{
 		Name: string(a.ident),
 		Hash: a.hash.B58String(),
@@ -158,9 +166,12 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 		return err
 	}
 
-	parent, err := multihash.Cast(pcm.Parent)
-	if err != nil {
-		return err
+	var parent multihash.Multihash
+	if len(pcm.Parent) > 0 {
+		parent, err = multihash.Cast(pcm.Parent)
+		if err != nil {
+			return err
+		}
 	}
 
 	var changeset []*CheckpointLink
@@ -191,7 +202,10 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	cm.modTime = modTime
 	cm.hash = &Hash{hash}
 	cm.root = &Hash{root}
-	cm.parent = &Hash{parent}
+
+	if parent != nil {
+		cm.parent = &Hash{parent}
+	}
 	return nil
 }
 
@@ -240,11 +254,16 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 	pcm.Parent = parentHash
 
+	hashBytes := cm.hash.Bytes()
+	if len(hashBytes) == 0 {
+		hashBytes = EmptyHash.Bytes()
+	}
+
 	// TODO: Store something more meaningful in 'name':
 	return &wire.Node{
 		NodeSize: 0,
 		ModTime:  modTime,
-		Hash:     cm.hash.Bytes(),
+		Hash:     hashBytes,
 		Name:     "commit",
 		ID:       cm.id,
 		Commit:   pcm,

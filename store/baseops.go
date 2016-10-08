@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/util"
 )
 
 func mkdirParents(fs *FS, repoPath string) (*Directory, error) {
@@ -35,32 +36,35 @@ func mkdirParents(fs *FS, repoPath string) (*Directory, error) {
 }
 
 func printTree(fs *FS) {
-	fmt.Println("***** PRINT PRINT PRINT PRINT PRINT")
+	fmt.Println("*****")
 	root, err := fs.Root()
 	if err != nil {
-		fmt.Println("print", err)
 		return
 	}
-	fmt.Println("Printing", root)
 
-	Walk(root, true, func(child Node) error {
-		fmt.Println(NodePath(child), child.Hash().B58String())
+	err = Walk(root, true, func(child Node) error {
+		fmt.Printf("%-47s %s\n", child.Hash().B58String(), NodePath(child))
 		return nil
 	})
-	fmt.Println("+++++ PRINT PRINT PRINT PRINT PRINT")
+	fmt.Println("+++++", err)
 }
 
 func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	dirname, basename := path.Split(repoPath)
+	if basename == "" {
+		return fs.Root()
+	}
 
 	// Check if the parent exists:
 	parent, err := fs.LookupDirectory(dirname)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("mkdir:", repoPath, parent, dirname, basename)
 
 	// If it's nil, we might need to create it:
 	if parent == nil {
+		fmt.Println("Parent is nil, create them", dirname)
 		if !createParents {
 			return nil, NoSuchFile(dirname)
 		}
@@ -81,13 +85,9 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 			return nil, fmt.Errorf("`%s` exists and is not a directory", repoPath)
 		}
 
-		// Notthing to do really. Return the old child.
+		// Nothing to do really. Return the old child.
 		return child.(*Directory), nil
 	}
-
-	printTree(fs)
-
-	fmt.Println("ROOT HASH BEFORE:", parent.Hash().B58String())
 
 	// Create it then!
 	dir, err := newEmptyDirectory(fs, parent, basename)
@@ -100,7 +100,6 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	}
 
 	printTree(fs)
-
 	return dir, nil
 }
 
@@ -112,27 +111,35 @@ func createFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64,
 		return nil, err
 	}
 
+	needRemove := false
+
 	if file != nil {
 		// We know this file already.
 		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
 		oldHash = file.Hash().Clone()
+		needRemove = true
 	} else {
-		if _, err := mkdirParents(fs, repoPath); err != nil {
+		par, err := mkdirParents(fs, repoPath)
+		if err != nil {
 			return nil, err
 		}
 
 		// Create a new file at specified path:
-		file, err = newEmptyFile(fs, path.Base(repoPath))
+		file, err = newEmptyFile(fs, par, path.Base(repoPath))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	log.Infof("store-add: %s (hash: %s, key: %x)", repoPath, newHash.B58String(), file.Key()[10:])
+	log.Infof(
+		"store-add: %s (hash: %s, key: %x)",
+		repoPath,
+		newHash.B58String(),
+		util.OmitBytes(file.Key(), 10),
+	)
 
-	// Update metadata that might have changed:
 	if file.Hash().Equal(newHash) {
-		log.Debugf("Refusing update.")
+		log.Debugf("Hash was not modified. Refusing update.")
 		return nil, ErrNoChange
 	}
 
@@ -150,9 +157,11 @@ func createFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64,
 		return nil, ErrBadNode
 	}
 
-	// Remove the child before changing the hash:
-	if err := parDir.RemoveChild(file); err != nil {
-		return nil, err
+	if needRemove {
+		// Remove the child before changing the hash:
+		if err := parDir.RemoveChild(file); err != nil {
+			return nil, err
+		}
 	}
 
 	file.SetSize(size)
@@ -181,6 +190,11 @@ func makeCheckpoint(fs *FS, author id.ID, ID uint64, oldHash, newHash *Hash, old
 	ckp, err := fs.LastCheckpoint(ID)
 	if err != nil {
 		return err
+	}
+
+	// There was probably no checkpoint yet:
+	if ckp == nil {
+		ckp = newEmptyCheckpoint(ID, oldHash, author)
 	}
 
 	newCkp, err := ckp.Fork(author, oldHash, newHash, oldPath, newPath)

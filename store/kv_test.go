@@ -11,7 +11,7 @@ func withDummyKv(t *testing.T, fn func(kv KV)) {
 	path := "/tmp/brig.test.bolt"
 
 	// This may fail:
-	os.Remove(path)
+	os.RemoveAll(path)
 
 	kv, err := NewBoltKV(path)
 	if err != nil {

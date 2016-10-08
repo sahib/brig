@@ -48,6 +48,8 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 		return nil, err
 	}
 
+	fmt.Println("New hash of ", name, "is", mh.B58String(), absPath)
+
 	newDir := &Directory{
 		fs:       fs,
 		id:       id,
@@ -67,6 +69,7 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 
 ////////////// MARSHALLING ////////////////
 
+// TODO: Make directory_test.go for proto load/save.
 func (d *Directory) ToProto() (*wire.Node, error) {
 	binModTime, err := d.modTime.MarshalBinary()
 	if err != nil {
@@ -188,11 +191,16 @@ func (d *Directory) Parent() (Node, error) {
 }
 
 func (d *Directory) SetParent(nd Node) error {
+	if d.Path() == "/" {
+		return nil
+	}
+
 	if nd == nil {
 		d.parent = ""
 	} else {
 		d.parent = nd.Path()
 	}
+
 	return nil
 }
 
@@ -265,7 +273,12 @@ func (d *Directory) Up(visit func(par *Directory) error) error {
 }
 
 func (d *Directory) xorHash(hash *Hash) error {
-	return d.hash.Xor(hash)
+	if err := d.hash.Xor(hash); err != nil {
+		return err
+	}
+
+	d.fs.AddToMemIndex(d)
+	return nil
 }
 
 func Walk(node Node, dfs bool, visit func(child Node) error) error {
@@ -288,12 +301,15 @@ func Walk(node Node, dfs bool, visit func(child Node) error) error {
 		}
 	}
 
-	for _, link := range d.children {
+	for name, link := range d.children {
 		child, err := d.fs.NodeByHash(link)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Sub Walking", link, child)
+
+		if child == nil {
+			return fmt.Errorf("Walk: could not resolve %s (%s)", name, link.B58String())
+		}
 
 		if err := Walk(child, dfs, visit); err != nil {
 			return err
@@ -341,6 +357,10 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 
 // TODO: Grafik dafür in der Masterarbeit machen!
 func (d *Directory) Add(nd Node) error {
+	if nd == d {
+		return fmt.Errorf("ADD-BUG: attempting to add `%s` to itself", nd.Path())
+	}
+
 	if _, ok := d.children[nd.Name()]; ok {
 		return ErrExists
 	}
@@ -359,6 +379,7 @@ func (d *Directory) Add(nd Node) error {
 
 	// Establish the link between parent and child:
 	// (must be done last, because d's hashed changed)
+	fmt.Println("Add of ", nd.Name(), "to", d.Path())
 	nd.SetParent(d)
 	d.children[nd.Name()] = nodeHash
 	return nil

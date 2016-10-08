@@ -97,6 +97,16 @@ type Checkpoint struct {
 	author id.ID
 }
 
+func newEmptyCheckpoint(ID uint64, hash *Hash, author id.ID) *Checkpoint {
+	return &Checkpoint{
+		idLink: ID,
+		hash:   hash,
+		index:  0,
+		change: ChangeAdd,
+		author: author,
+	}
+}
+
 func (cp *Checkpoint) ChangeType() *ChangeType { return &cp.change }
 func (cp *Checkpoint) Hash() *Hash             { return cp.hash }
 func (cp *Checkpoint) Author() id.ID           { return cp.author }
@@ -110,11 +120,6 @@ func (cp *Checkpoint) String() string {
 		cp.change.String(),
 		cp.hash.B58String(),
 	)
-}
-
-func newEmptyCheckpoint() *Checkpoint {
-	// This is here to make sure api changes cause compile errors.
-	return &Checkpoint{}
 }
 
 func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
