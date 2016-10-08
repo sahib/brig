@@ -64,7 +64,6 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 
 	// If it's nil, we might need to create it:
 	if parent == nil {
-		fmt.Println("Parent is nil, create them", dirname)
 		if !createParents {
 			return nil, NoSuchFile(dirname)
 		}
