@@ -165,6 +165,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
+	fmt.Println("node by has", b58Hash)
 	if trieNode, ok := fs.index[b58Hash]; ok && trieNode.Data != nil {
 		return trieNode.Data.(Node), nil
 	}
@@ -183,7 +184,7 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// NOTE: This will indirectly load parent directories (by calling
 	//       Parent(), if not done yet!  We might be stuck in an endless loop if we
 	//       have cycles in our DAG.
-	fs.index[b58Hash] = fs.ptrie.InsertWithData(NodePath(nd), nd)
+	fs.SwapIntoMemIndex(nd, nil)
 	return nd, nil
 }
 
@@ -212,7 +213,9 @@ func joinButLeaveLastDot(elems ...string) string {
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.ptrie.Lookup(nodePath)
+	fmt.Println("Resolve", nodePath, trieNode)
 	if trieNode != nil && trieNode.Data != nil {
+		fmt.Println("is cached")
 		return trieNode.Data.(Node), nil
 	}
 
@@ -292,6 +295,21 @@ func (fs *FS) StageNode(nd Node) error {
 
 	// Remember/Update this node in the cache if it's not yet there:
 	fs.index[b58Hash] = fs.ptrie.InsertWithData(nodePath, nd)
+
+	// We need to save parent directories too, in case the hash changed:
+	// TODO: This creates many pointless roots in the stage/ area.
+	//       Maybe remember some do a bit of garbage collect from time to time.
+	par, err := nd.Parent()
+	if err != nil {
+		return err
+	}
+
+	if par != nil {
+		if err := fs.StageNode(par); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

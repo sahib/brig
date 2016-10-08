@@ -95,7 +95,7 @@ func prefixSlash(s string) string {
 }
 
 func NodePath(nd Node) string {
-	// Remove; not needed anymore.
+	// TODO: Remove; not needed anymore.
 	return nd.Path()
 }
 

@@ -109,6 +109,7 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			return
 		}
 
+		fmt.Println(newRootDir, newRootDir)
 		if !newRootDir.Hash().Equal(root.Hash()) {
 			t.Errorf("New / and old / have different hashes, despite being same instance")
 			return
@@ -125,8 +126,9 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			return
 		}
 
-		if len(fs.index) != 6 {
-			t.Errorf("Index does not contain the expected 6 elements.")
+		// Index shall only contain the nodes with their most current hash values.
+		if len(fs.index) != 3 {
+			t.Errorf("Index does not contain the expected 3 elements.")
 			return
 		}
 	})
