@@ -1,12 +1,6 @@
 package storetest
 
-import (
-	"strings"
-	"testing"
-
-	"github.com/disorganizer/brig/store"
-)
-
+/*
 func TestCommitting(t *testing.T) {
 	withIpfsStore(t, "alice", func(st *store.Store) {
 		head, err := st.Head()
@@ -124,3 +118,4 @@ func TestStatus(t *testing.T) {
 		}
 	})
 }
+*/

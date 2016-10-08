@@ -36,7 +36,7 @@ func withEmptyStore(t *testing.T, f func(*store.Store)) {
 		}()
 
 		// We need the filesystem for ipfs here:
-		peer := id.Peer(id.ID("alice@nullcat.de/desktop"), "QmIMAHORSE")
+		peer := id.NewPeer(id.ID("alice@nullcat.de/desktop"), "QmIMAHORSE")
 		st, err := store.Open(TestPath, peer, node)
 		if err != nil {
 			t.Errorf("Could not open empty store at %s: %v", TestPath, err)
@@ -62,7 +62,7 @@ func TestAddCat(t *testing.T) {
 		path := fmt.Sprintf("dummy_%d", size)
 
 		withEmptyStore(t, func(st *store.Store) {
-			if err := st.AddFromReader(path, bytes.NewReader(data)); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(data)); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				return
 			}
@@ -101,7 +101,7 @@ func TestList(t *testing.T) {
 	withEmptyStore(t, func(st *store.Store) {
 		// Build the tree:
 		for _, path := range paths {
-			if err := st.AddFromReader(path, bytes.NewReader(nil)); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(nil)); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				break
 			}
@@ -156,7 +156,7 @@ func TestExport(t *testing.T) {
 
 	withEmptyStore(t, func(st *store.Store) {
 		for idx, path := range paths {
-			if err := st.AddFromReader(path, bytes.NewReader(dummyData[idx])); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(dummyData[idx])); err != nil {
 				t.Errorf("Touching file `%s` failed: %v", path, err)
 				return
 			}
@@ -195,7 +195,11 @@ func TestExport(t *testing.T) {
 		// Check if we still can read all the paths:
 		// (NOTE: Can't get file data (yet), since it's an offline ipfs store)
 		for _, path := range paths {
-			file := st.Root.Lookup(path)
+			file, err := st.Lookup(path)
+			if err != nil {
+				t.Errorf("Failed to lookup `%s`: %v", path, err)
+				return
+			}
 
 			if file == nil {
 				t.Errorf("Imported store forgot a file: %s", path)
@@ -206,7 +210,7 @@ func TestExport(t *testing.T) {
 }
 
 func createDirAndFile(t *testing.T, st *store.Store, data []byte) error {
-	if err := st.AddFromReader("/dummy", bytes.NewReader(data)); err != nil {
+	if err := st.StageFromReader("/dummy", bytes.NewReader(data)); err != nil {
 		t.Errorf("Could not add dummy file for move: %v", err)
 		return err
 	}
@@ -252,7 +256,7 @@ func TestMove(t *testing.T) {
 
 		check("/dummy", data)
 
-		if err := st.Move("/dummy", "/new_dummy"); err != nil {
+		if err := st.Move("/dummy", "/new_dummy", true); err != nil {
 			t.Errorf("Move failed: %v", err)
 			return
 		}
@@ -264,12 +268,12 @@ func TestMove(t *testing.T) {
 
 		check("/new_dummy", data)
 
-		if err := st.Move("/dummy", "/new_dummy"); !store.IsNoSuchFileError(err) {
+		if err := st.Move("/dummy", "/new_dummy", true); !store.IsNoSuchFileError(err) {
 			t.Errorf("Move could move dead file: %v", err)
 			return
 		}
 
-		if err := st.Move("/dir", "/other"); err != nil {
+		if err := st.Move("/dir", "/other", true); err != nil {
 			t.Errorf("Move could not move dir: %v", err)
 			return
 		}
@@ -327,8 +331,14 @@ func TestRemove(t *testing.T) {
 			return
 		}
 
-		if st.Root.Size() != 0 {
-			t.Errorf("Size of the tree is not 0 after deletion (%d)", st.Root.Size())
+		root, err := st.Root()
+		if err != nil {
+			t.Errorf("Failed to get root: %v", err)
+			return
+		}
+
+		if root.Size() != 0 {
+			t.Errorf("Size of the tree is not 0 after deletion (%d)", root.Size())
 			return
 		}
 	})

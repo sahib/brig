@@ -114,7 +114,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	if _, err := createFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
+	if _, err := touchFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
 		return err
 	}
 

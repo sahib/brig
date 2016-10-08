@@ -101,7 +101,7 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	return dir, nil
 }
 
-func createFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, author id.ID) (*File, error) {
+func touchFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, author id.ID) (*File, error) {
 	var oldHash *Hash
 
 	file, err := fs.LookupFile(repoPath)

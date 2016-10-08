@@ -13,7 +13,6 @@ import (
 // Store is responsible for adding & retrieving all files from ipfs,
 // while managing their metadata in a boltDB.
 type Store struct {
-	// TODO: Load this.
 	fs *FS
 	kv KV
 
@@ -57,15 +56,14 @@ func Open(brigPath string, owner id.Peer, IPFS *ipfsutil.Node) (*Store, error) {
 		return nil, err
 	}
 
-	// TODO: Insert metadata here
-	if err := st.storeOwner(owner); err != nil {
+	if err := st.setStoreOwner(owner); err != nil {
 		return nil, err
 	}
 
 	return st, err
 }
 
-func (st *Store) storeOwner(owner id.Peer) error {
+func (st *Store) setStoreOwner(owner id.Peer) error {
 	if err := st.fs.MetadataPut("id", []byte(owner.ID())); err != nil {
 		return err
 	}

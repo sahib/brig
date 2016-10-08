@@ -36,16 +36,35 @@ func withIpfsStore(t *testing.T, ID id.ID, fn func(st *store.Store)) {
 	})
 }
 
-func TestHash(t *testing.T) {
+func getRootHash(t *testing.T, st *store.Store) []byte {
+	root, err := st.Root()
+	if err != nil {
+		t.Fatalf("Failed to retrieve root: %v", err)
+		return nil
+	}
 
+	return root.Hash().Bytes()
+}
+
+func TestHash(t *testing.T) {
 	withIpfsStore(t, "alice", func(st *store.Store) {
 		creator := func(path string, data []byte) []byte {
-			if err := st.AddFromReader(path, bytes.NewReader(data)); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(data)); err != nil {
 				t.Fatalf("Adding `%s` failed: %v", path, err)
 				return nil
 			}
 
-			return st.Root.Lookup(path).Hash().Bytes()
+			nd, err := st.Lookup(path)
+			if err != nil {
+				t.Fatalf("Failed lookup of `%s`: %v", path, err)
+				return nil
+			}
+
+			if nd == nil {
+				t.Fatalf("No such node at `%s`", path)
+			}
+
+			return nd.Hash().Bytes()
 		}
 
 		hash1 := creator("/child.go", []byte("Hello"))
@@ -56,7 +75,7 @@ func TestHash(t *testing.T) {
 			return
 		}
 
-		rootHash := st.Root.Hash().Bytes()
+		rootHash := getRootHash(t, st)
 		if len(rootHash) != len(hash1) {
 			t.Errorf("Root hash length changed")
 			return
@@ -87,7 +106,7 @@ func TestHash(t *testing.T) {
 		}
 
 		// Check if roothash equals the file with `hash2`
-		rootHash = []byte(string(st.Root.Hash().Bytes()))
+		rootHash = getRootHash(t, st)
 
 		if !bytes.Equal(hash2, rootHash) {
 			t.Errorf("Root hash is not the same as single member")
@@ -97,7 +116,7 @@ func TestHash(t *testing.T) {
 		// Try to modify the russian file:
 		hash3 := creator("/russia/piotr.go", []byte("Comrade!"))
 
-		newRootHash := st.Root.Hash().Bytes()
+		newRootHash := getRootHash(t, st)
 		if !bytes.Equal(hash3, newRootHash) {
 			t.Errorf("Modifying leads to dirty traces of old hashes")
 			return

@@ -65,7 +65,7 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 			return
 		}
 
-		file, err := createFile(fs, dummyPath, dummyHash(t, 0), dummyKey, 17, "alice")
+		file, err := touchFile(fs, dummyPath, dummyHash(t, 0), dummyKey, 17, "alice")
 		if err != nil {
 			t.Errorf("Failed to create file: %v", err)
 			return
@@ -88,7 +88,7 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 
 		printTree(fs)
 
-		modFile, err := createFile(fs, dummyPath, dummyHash(t, 1), dummyKey, 19, "alice")
+		modFile, err := touchFile(fs, dummyPath, dummyHash(t, 1), dummyKey, 19, "alice")
 		if err != nil {
 			t.Errorf("Modification was not possible: %v", err)
 			return
