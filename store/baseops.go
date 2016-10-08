@@ -36,7 +36,7 @@ func mkdirParents(fs *FS, repoPath string) (*Directory, error) {
 }
 
 func printTree(fs *FS) {
-	fmt.Println("*****")
+	fmt.Println("=== PRINT ===")
 	root, err := fs.Root()
 	if err != nil {
 		return
@@ -46,7 +46,6 @@ func printTree(fs *FS) {
 		fmt.Printf("%-47s %s\n", child.Hash().B58String(), NodePath(child))
 		return nil
 	})
-	fmt.Println("+++++", err)
 }
 
 func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {

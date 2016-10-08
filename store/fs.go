@@ -46,8 +46,10 @@ import (
 type FS struct {
 	kv KV
 
+	root *Directory
+
 	// Path lookup trie
-	root *trie.Node
+	ptrie *trie.Node
 
 	// B58Hash to node
 	index map[string]*trie.Node
@@ -91,7 +93,7 @@ func unmarshalNode(fs *FS, data []byte) (Node, error) {
 func NewFilesystem(kv KV) *FS {
 	return &FS{
 		kv:    kv,
-		root:  trie.NewNode(),
+		ptrie: trie.NewNode(),
 		index: make(map[string]*trie.Node),
 	}
 }
@@ -181,7 +183,7 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// NOTE: This will indirectly load parent directories (by calling
 	//       Parent(), if not done yet!  We might be stuck in an endless loop if we
 	//       have cycles in our DAG.
-	fs.index[b58Hash] = fs.root.InsertWithData(NodePath(nd), nd)
+	fs.index[b58Hash] = fs.ptrie.InsertWithData(NodePath(nd), nd)
 	return nd, nil
 }
 
@@ -209,7 +211,7 @@ func joinButLeaveLastDot(elems ...string) string {
 
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
-	trieNode := fs.root.Lookup(nodePath)
+	trieNode := fs.ptrie.Lookup(nodePath)
 	if trieNode != nil && trieNode.Data != nil {
 		return trieNode.Data.(Node), nil
 	}
@@ -241,10 +243,18 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	return fs.NodeByHash(&Hash{hash})
 }
 
-func (fs *FS) AddToMemIndex(nd Node) {
-	// TODO: Delete old hashes, since they would point to the new instance.
+func (fs *FS) SwapIntoMemIndex(nd Node, oldHash *Hash) {
+	// We need to delete the old hash, pointing to the old version.
+	// When loaded through the index, it would still load the new
+	// in memory version that was modified.
+	// When deleting the entry, it will be reloaded from the boltdb,
+	// and get a proper new instance (if needed).
+	if oldHash != nil {
+		delete(fs.index, oldHash.B58String())
+	}
+
 	b58Hash := nd.Hash().B58String()
-	fs.index[b58Hash] = fs.root.InsertWithData(nd.Path(), nd)
+	fs.index[b58Hash] = fs.ptrie.InsertWithData(nd.Path(), nd)
 }
 
 func (fs *FS) StageNode(nd Node) error {
@@ -281,7 +291,7 @@ func (fs *FS) StageNode(nd Node) error {
 	}
 
 	// Remember/Update this node in the cache if it's not yet there:
-	fs.index[b58Hash] = fs.root.InsertWithData(nodePath, nd)
+	fs.index[b58Hash] = fs.ptrie.InsertWithData(nodePath, nd)
 	return nil
 }
 
@@ -556,9 +566,19 @@ func (fs *FS) Head() (*Commit, error) {
 	return cmt, nil
 }
 
+// SetMemRoot sets the current root, but does not store it yet.
+// It's supposed to be called after in-memory modifications.
+func (fs *FS) SetMemRoot(root *Directory) {
+	fs.root = root
+}
+
 // Root returns the current root directory of CURR.
 // It is never nil when err is nil.
 func (fs *FS) Root() (*Directory, error) {
+	if fs.root != nil {
+		return fs.root, nil
+	}
+
 	status, err := fs.Status()
 	if err != nil {
 		return nil, err

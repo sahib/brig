@@ -272,12 +272,21 @@ func (d *Directory) Up(visit func(par *Directory) error) error {
 	return nil
 }
 
+func (d *Directory) IsRoot() bool {
+	return d.parent == ""
+}
+
 func (d *Directory) xorHash(hash *Hash) error {
+	oldHash := d.hash.Clone()
 	if err := d.hash.Xor(hash); err != nil {
 		return err
 	}
 
-	d.fs.AddToMemIndex(d)
+	if d.IsRoot() {
+		d.fs.SetMemRoot(d)
+	}
+
+	d.fs.SwapIntoMemIndex(d, oldHash)
 	return nil
 }
 
@@ -355,7 +364,6 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 
 //////////// STATE ALTERING METHODS //////////////
 
-// TODO: Grafik dafür in der Masterarbeit machen!
 func (d *Directory) Add(nd Node) error {
 	if nd == d {
 		return fmt.Errorf("ADD-BUG: attempting to add `%s` to itself", nd.Path())
@@ -378,8 +386,7 @@ func (d *Directory) Add(nd Node) error {
 	}
 
 	// Establish the link between parent and child:
-	// (must be done last, because d's hashed changed)
-	fmt.Println("Add of ", nd.Name(), "to", d.Path())
+	// (must be done last, because d's hash changed)
 	nd.SetParent(d)
 	d.children[nd.Name()] = nodeHash
 	return nil
