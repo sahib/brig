@@ -1,64 +1,85 @@
 package storetest
 
-/*
-func TestCommitting(t *testing.T) {
-	withIpfsStore(t, "alice", func(st *store.Store) {
-		head, err := st.Head()
-		if err != nil {
-			t.Errorf("Unable to peek head at beginning: %v", err)
+import (
+	"testing"
+
+	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/util/testutil"
+)
+
+func TestCommit(t *testing.T) {
+	data := testutil.CreateDummyBuf(1024)
+
+	withEmptyStore(t, func(st *store.Store) {
+		if err := createDummySetup(t, st, data); err != nil {
 			return
 		}
 
-		if len(head.Checkpoints) != 0 {
-			t.Errorf("Initial commit has Checkpoints?")
-			return
-		}
-
-		if !strings.Contains(strings.ToLower(head.Message), "initial") {
-			t.Errorf("Initial commit does not name itself like that.")
-			return
-		}
-
-		// Stage is empty after initial commit:
-		if err := st.MakeCommit("empty."); err != store.ErrEmptyStage {
-			t.Errorf("Empty commits are now allowed: %v", err)
-			return
-		}
-
-		if err := st.Touch("/hello.world"); err != nil {
-			t.Errorf("Unable to touch empty file: %v", err)
-			return
-		}
-
-		if err := st.MakeCommit("testing around"); err != nil {
-			t.Errorf("Could not commit: %v", err)
-			return
-		}
-
-		head, err = st.Head()
-		if err != nil {
-			t.Errorf("Unable to peek head the second time: %v", err)
-			return
-		}
-
-		if head.Message != "testing around" {
-			t.Errorf("Bad commit message: %s", head.Message)
-			return
-		}
-
-		if len(head.Checkpoints) != 1 {
-			t.Errorf("More or less Checkpoints than expected: %d", len(head.Checkpoints))
-			return
-		}
-
-		checkpoint := head.Checkpoints[0]
-		if checkpoint.Change != store.ChangeAdd {
-			t.Errorf("Empty file was not added?")
+		if err := st.MakeCommit("Im cool."); err != nil {
+			t.Errorf("Making first commit failed: %v", err)
 			return
 		}
 	})
+	/*
+		withIpfsStore(t, "alice", func(st *store.Store) {
+			head, err := st.Head()
+			if err != nil {
+				t.Errorf("Unable to peek head at beginning: %v", err)
+				return
+			}
+
+			if len(head.Checkpoints) != 0 {
+				t.Errorf("Initial commit has Checkpoints?")
+				return
+			}
+
+			if !strings.Contains(strings.ToLower(head.Message), "initial") {
+				t.Errorf("Initial commit does not name itself like that.")
+				return
+			}
+
+			// Stage is empty after initial commit:
+			if err := st.MakeCommit("empty."); err != store.ErrEmptyStage {
+				t.Errorf("Empty commits are now allowed: %v", err)
+				return
+			}
+
+			if err := st.Touch("/hello.world"); err != nil {
+				t.Errorf("Unable to touch empty file: %v", err)
+				return
+			}
+
+			if err := st.MakeCommit("testing around"); err != nil {
+				t.Errorf("Could not commit: %v", err)
+				return
+			}
+
+			head, err = st.Head()
+			if err != nil {
+				t.Errorf("Unable to peek head the second time: %v", err)
+				return
+			}
+
+			if head.Message != "testing around" {
+				t.Errorf("Bad commit message: %s", head.Message)
+				return
+			}
+
+			if len(head.Checkpoints) != 1 {
+				t.Errorf("More or less Checkpoints than expected: %d", len(head.Checkpoints))
+				return
+			}
+
+			checkpoint := head.Checkpoints[0]
+			if checkpoint.Change != store.ChangeAdd {
+				t.Errorf("Empty file was not added?")
+				return
+			}
+		})
+	*/
 }
 
+/*
 func TestStatus(t *testing.T) {
 	withIpfsStore(t, "alice", func(st *store.Store) {
 		status, err := st.Status()

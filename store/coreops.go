@@ -423,7 +423,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 
 		hash := child.Hash()
 		return st.makeCheckpointByOwner(
-			newNode.ID(),
+			node.ID(),
 			hash,
 			hash,
 			oldChildPath,
@@ -437,6 +437,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 
 	// If the node at newPath was a file, we need to remove it.
 	if newNode != nil && newNode.GetType() == NodeTypeFile {
+		// TODO: use store.Remove() here (for checkpoints)
 		if err := nodeRemove(newNode); err != nil {
 			return err
 		}
@@ -454,6 +455,11 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 			return NoSuchFile(newPath)
 		}
 
+		// Remove from old Parent:
+		if err := nodeRemove(file); err != nil {
+			return err
+		}
+
 		// Basename might have changed:
 		file.SetName(path.Base(newPath))
 
@@ -462,10 +468,6 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 			return err
 		}
 
-		// Remove from old Parent:
-		if err := nodeRemove(file); err != nil {
-			return err
-		}
 	}
 
 	return nil

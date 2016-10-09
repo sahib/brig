@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"unsafe"
+
+	"github.com/disorganizer/brig/id"
 )
 
 func TestFSInsertRoot(t *testing.T) {
@@ -44,6 +46,50 @@ func TestFSInsertRoot(t *testing.T) {
 
 		if unsafe.Pointer(ptrRoot) != unsafe.Pointer(sameRoot) {
 			t.Errorf("Second root did not come from the cache")
+			return
+		}
+	})
+}
+
+func TestFSRefs(t *testing.T) {
+	peer := id.NewPeer(id.ID("alice@nullcat.de/desktop"), "QmIMAHORSE")
+	withDummyKv(t, func(kv KV) {
+		fs := NewFilesystem(kv)
+
+		root, err := fs.Root()
+		if err != nil {
+			t.Errorf("Failed to create root: %v", err)
+			return
+		}
+
+		newFile, err := newEmptyFile(fs, root, "cat.png")
+		if err != nil {
+			t.Errorf("Failed to create empty file: %v", err)
+			return
+		}
+
+		newFile.SetSize(10)
+		newFile.SetHash(dummyHash(t, 1))
+
+		if err := root.Add(newFile); err != nil {
+			t.Errorf("Adding empty file failed: %v", err)
+			return
+		}
+
+		if err := fs.StageNode(newFile); err != nil {
+			t.Errorf("Staging new file failed: %v", err)
+			return
+		}
+
+		cmt, err := fs.Status()
+		if err != nil {
+			t.Errorf("Failed to retrieve status: %v", err)
+			return
+		}
+
+		fmt.Println(cmt)
+		if err := fs.MakeCommit(peer, "First commit"); err != nil {
+			t.Errorf("Making commit failed: %v", err)
 			return
 		}
 	})

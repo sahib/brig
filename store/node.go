@@ -99,18 +99,20 @@ func NodePath(nd Node) string {
 	return nd.Path()
 }
 
+// NodeDepth returns the depth of the node.
+// It does this by looking at the path separators.
+// The depth of "/" is defined as 0.
 func NodeDepth(nd Node) int {
-	var depth int
-	var curr Node = nd
-	var err error
+	path := nd.Path()
+	if path == "/" {
+		return 0
+	}
 
-	for curr != nil {
-		curr, err = curr.Parent()
-		if err != nil {
-			return -1
+	depth := 0
+	for _, rn := range path {
+		if rn == '/' {
+			depth++
 		}
-
-		depth++
 	}
 
 	return depth

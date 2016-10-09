@@ -47,6 +47,10 @@ func (mg *Merge) FromProto(protoMerge *wire.Merge) error {
 	return nil
 }
 
+func (mg *Merge) String() string {
+	return fmt.Sprintf("merge(%s:%s)", mg.With, mg.Hash.B58String())
+}
+
 ////////////////////////
 
 type Author struct {
@@ -138,6 +142,15 @@ func newEmptyCommit(fs *FS) (*Commit, error) {
 		fs:      fs,
 		modTime: time.Now(),
 	}, nil
+}
+
+func (cm *Commit) String() string {
+	return fmt.Sprintf(
+		"commit %s/%s <%s>",
+		cm.hash.B58String(),
+		cm.root.B58String(),
+		cm.message,
+	)
 }
 
 func (cm *Commit) FromProto(pnd *wire.Node) error {

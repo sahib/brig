@@ -101,7 +101,11 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) SetHash(h *Hash) { f.hash = h }
+func (f *File) SetHash(h *Hash) {
+	oldHash := f.hash
+	f.hash = h
+	f.fs.SwapIntoMemIndex(f, oldHash)
+}
 
 func (f *File) Path() string {
 	return prefixSlash(path.Join(f.parent, f.name))

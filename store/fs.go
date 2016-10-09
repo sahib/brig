@@ -165,7 +165,6 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
-	fmt.Println("node by has", b58Hash)
 	if trieNode, ok := fs.index[b58Hash]; ok && trieNode.Data != nil {
 		return trieNode.Data.(Node), nil
 	}
@@ -261,6 +260,29 @@ func (fs *FS) SwapIntoMemIndex(nd Node, oldHash *Hash) {
 }
 
 func (fs *FS) StageNode(nd Node) error {
+	if err := fs.stageNodeRecursive(nd); err != nil {
+		return err
+	}
+
+	// Update the staging commit's root hash:
+	status, err := fs.Status()
+	if err != nil {
+		return err
+	}
+
+	root, err := fs.Root()
+	if err != nil {
+		return err
+	}
+
+	if err := status.SetRoot(root.Hash()); err != nil {
+		return err
+	}
+
+	return fs.saveStatus(status)
+}
+
+func (fs *FS) stageNodeRecursive(nd Node) error {
 	if nd.GetType() == NodeTypeCommit {
 		return fmt.Errorf("BUG: Commits cannot be staged; Use MakeCommit()")
 	}
@@ -547,9 +569,10 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 		return nil, err
 	}
 
-	if hash == nil {
+	if len(hash) == 0 {
 		return nil, ErrNoSuchRef(refname)
 	}
+	fmt.Println("resolveref cast", hash, hash == nil)
 
 	mh, err := multihash.Cast(hash)
 	if err != nil {
@@ -653,7 +676,9 @@ func (fs *FS) Status() (*Commit, error) {
 			return nil, err
 		}
 
-		if err := fs.StageNode(newRoot); err != nil {
+		// Can't call StageNode(), since that would call Status(),
+		// causing and endless loop of grief and doom.
+		if err := fs.stageNodeRecursive(newRoot); err != nil {
 			return nil, err
 		}
 
@@ -676,6 +701,7 @@ func (fs *FS) Status() (*Commit, error) {
 	}
 
 	if setHead {
+		fmt.Println("Setting head")
 		if err := fs.SaveRef("HEAD", cmt); err != nil {
 			return nil, err
 		}

@@ -32,6 +32,10 @@ type Hash struct {
 	multihash.Multihash
 }
 
+func (h *Hash) String() string {
+	return h.B58String()
+}
+
 // UnmarshalJSON loads a base58 string representation of a hash
 // and converts it to raw bytes.
 func (h *Hash) UnmarshalJSON(data []byte) error {
@@ -142,7 +146,7 @@ func (h *Hash) Xor(o *Hash) error {
 	}
 
 	if decO.Length != decH.Length {
-		return fmt.Errorf("xor: hash have different lengths: %d != %d", decH.Length, decO.Length)
+		return fmt.Errorf("xor: hashs have different lengths: %d != %d", decH.Length, decO.Length)
 	}
 
 	for i := 0; i < decH.Length; i++ {
