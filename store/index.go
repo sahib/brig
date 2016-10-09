@@ -8,6 +8,7 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/ipfsutil"
+	multihash "github.com/jbenet/go-multihash"
 )
 
 // Store is responsible for adding & retrieving all files from ipfs,
@@ -76,7 +77,7 @@ func (st *Store) setStoreOwner(owner id.Peer) error {
 }
 
 // Owner returns the owner of the store (name + hash)
-func (st *Store) Owner() (id.Peer, error) {
+func (st *Store) Owner() (*Author, error) {
 	bid, err := st.fs.MetadataGet("id")
 	if err != nil {
 		return nil, err
@@ -92,7 +93,12 @@ func (st *Store) Owner() (id.Peer, error) {
 		return nil, err
 	}
 
-	return id.NewPeer(ident, string(bhash)), nil
+	hash, err := multihash.Cast(bhash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Author{ident, &Hash{hash}}, nil
 }
 
 // TODO: Use this for the fuse layer.

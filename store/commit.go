@@ -66,6 +66,10 @@ func (a *Author) Hash() string {
 	return a.hash.B58String()
 }
 
+func StageAuthor() *Author {
+	return &Author{"unknown", EmptyHash.Clone()}
+}
+
 func (a *Author) FromProto(pa *wire.Author) error {
 	ident, err := id.Cast(pa.Name)
 	if err != nil {
@@ -85,10 +89,7 @@ func (a *Author) FromProto(pa *wire.Author) error {
 func (a *Author) ToProto() (*wire.Author, error) {
 	// Author might be nil for the staging commit:
 	if a == nil {
-		return &wire.Author{
-			Name: "unknown",
-			Hash: EmptyHash.B58String(),
-		}, nil
+		return StageAuthor().ToProto()
 	}
 
 	return &wire.Author{
@@ -274,6 +275,7 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 	// TODO: Store something more meaningful in 'name':
 	return &wire.Node{
+		Type:     wire.NodeType_COMMIT,
 		NodeSize: 0,
 		ModTime:  modTime,
 		Hash:     hashBytes,
@@ -354,25 +356,30 @@ func (cm *Commit) SetRoot(root *Hash) error {
 	return nil
 }
 
-func (cm *Commit) Finalize(author id.Peer, message string, parent *Commit) error {
+func (cm *Commit) Finalize(author *Author, message string, parent *Commit) error {
 	cm.message = message
-	if err := cm.SetParent(parent); err != nil {
-		return err
+
+	if parent != nil {
+		if err := cm.SetParent(parent); err != nil {
+			return err
+		}
 	}
 
 	// This is inefficient, but is supposed to be easy to understand
 	// while this is still playground stuff.
 	s := ""
-	s += fmt.Sprintf("Parent:  %s\n", parent.Hash().B58String())
 	s += fmt.Sprintf("Message: %s\n", cm.message)
 	s += fmt.Sprintf("Author:  %s\n", cm.author)
+	if parent != nil {
+		s += fmt.Sprintf("Parent:  %s\n", parent.Hash().B58String())
+	}
 
 	hash := cm.root.Clone()
-	fmt.Printf("tree %v\nhash %v\n", cm.root, hash)
 	if err := hash.MixIn([]byte(s)); err != nil {
 		return err
 	}
 
+	cm.hash = hash
 	cm.modTime = time.Now()
 	return nil
 }

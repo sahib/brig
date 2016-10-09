@@ -31,8 +31,6 @@ import (
 	"strconv"
 	"strings"
 
-	// log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
@@ -436,9 +434,9 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 // COMMIT HANDLING //
 /////////////////////
 
-func (fs *FS) MakeCommit(author id.Peer, message string) error {
+func (fs *FS) MakeCommit(author *Author, message string) error {
 	head, err := fs.Head()
-	if err != nil {
+	if err != nil && !IsErrNoSuchRef(err) {
 		return err
 	}
 
@@ -447,8 +445,12 @@ func (fs *FS) MakeCommit(author id.Peer, message string) error {
 		return err
 	}
 
-	if status.Root().Equal(head.Root()) {
-		return ErrNoChange
+	// Only compare with previous if we have a HEAD yet.
+	if head != nil {
+		fmt.Println("Compare head", head)
+		if status.Root().Equal(head.Root()) {
+			return ErrNoChange
+		}
 	}
 
 	rootDir, err := fs.Root()
@@ -489,6 +491,7 @@ func (fs *FS) MakeCommit(author id.Peer, message string) error {
 		return err
 	}
 
+	// NOTE: `head` may be nil, if it couldn't be resolved.
 	if err := status.Finalize(author, message, head); err != nil {
 		return err
 	}
@@ -523,12 +526,14 @@ func (fs *FS) MakeCommit(author id.Peer, message string) error {
 		}
 	}
 
-	stageBkt, err := fs.kv.Bucket([]string{"stage"})
+	newStatus, err := newEmptyCommit(fs)
 	if err != nil {
 		return err
 	}
 
-	return stageBkt.Put("STATUS", nil)
+	newStatus.SetParent(status)
+	newStatus.SetRoot(status.Root())
+	return fs.saveStatus(newStatus)
 }
 
 ///////////////////////
@@ -572,13 +577,13 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 	if len(hash) == 0 {
 		return nil, ErrNoSuchRef(refname)
 	}
-	fmt.Println("resolveref cast", hash, hash == nil)
 
 	mh, err := multihash.Cast(hash)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("ResolveRef", mh.B58String())
 	return fs.NodeByHash(&Hash{mh})
 }
 
@@ -592,16 +597,29 @@ func (fs *FS) SaveRef(refname string, nd Node) error {
 	return bkt.Put(refname, nd.Hash().Bytes())
 }
 
-// Basically a shortcut for fs.ResolveRef("HEAD").(*Commit)
 func (fs *FS) Head() (*Commit, error) {
 	nd, err := fs.ResolveRef("HEAD")
 	if err != nil {
 		return nil, err
 	}
 
+	// There is no HEAD yet. Just return the status.
+	// if IsErrNoSuchRef(err) {
+	// 	status, err := fs.loadStatus()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	if status == nil {
+	// 		return nil, ErrNoSuchRef("HEAD")
+	// 	}
+
+	// 	return status, nil
+	// }
+
 	cmt, ok := nd.(*Commit)
 	if !ok {
-		return nil, fmt.Errorf("oh-oh, HEAD is not a Commit...")
+		return nil, fmt.Errorf("oh-oh, HEAD is not a Commit... %v", nd == nil)
 	}
 
 	return cmt, nil
@@ -630,6 +648,7 @@ func (fs *FS) Root() (*Directory, error) {
 
 // Guarantee it's not nil when err == nil
 func (fs *FS) Status() (*Commit, error) {
+	// TODO: Make this call loadStatus()
 	bkt, err := fs.kv.Bucket([]string{"stage"})
 	if err != nil {
 		return nil, err
@@ -666,7 +685,6 @@ func (fs *FS) Status() (*Commit, error) {
 	}
 
 	var rootHash *Hash
-	var setHead = false
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
@@ -683,7 +701,6 @@ func (fs *FS) Status() (*Commit, error) {
 		}
 
 		rootHash = newRoot.Hash()
-		setHead = true
 	} else {
 		if err := cmt.SetParent(head); err != nil {
 			return nil, err
@@ -700,17 +717,47 @@ func (fs *FS) Status() (*Commit, error) {
 		return nil, err
 	}
 
-	if setHead {
-		fmt.Println("Setting head")
-		if err := fs.SaveRef("HEAD", cmt); err != nil {
-			return nil, err
-		}
+	return cmt, nil
+}
+
+func (fs *FS) loadStatus() (*Commit, error) {
+	bkt, err := fs.kv.Bucket([]string{"stage"})
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := bkt.Get("STATUS")
+	if err != nil {
+		return nil, err
+	}
+
+	cmt, err := newEmptyCommit(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	if data == nil {
+		return nil, nil
+	}
+
+	// It's there already. Just unmarshal it.
+	pnode := &wire.Node{}
+	if err := proto.Unmarshal(data, pnode); err != nil {
+		return nil, err
+	}
+
+	if err := cmt.FromProto(pnode); err != nil {
+		return nil, err
 	}
 
 	return cmt, nil
 }
 
 func (fs *FS) saveStatus(cmt *Commit) error {
+	if err := cmt.Finalize(StageAuthor(), "", nil); err != nil {
+		return err
+	}
+
 	bkt, err := fs.kv.Bucket([]string{"stage"})
 	if err != nil {
 		return err
@@ -721,7 +768,15 @@ func (fs *FS) saveStatus(cmt *Commit) error {
 		return err
 	}
 
-	return bkt.Put("STATUS", data)
+	if err := bkt.Put("STATUS", data); err != nil {
+		return err
+	}
+
+	if err := fs.SaveRef("CURR", cmt); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (fs *FS) RemoveUnreffedNodes() error {

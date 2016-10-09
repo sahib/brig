@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 	"unsafe"
-
-	"github.com/disorganizer/brig/id"
 )
 
 func TestFSInsertRoot(t *testing.T) {
@@ -52,7 +50,7 @@ func TestFSInsertRoot(t *testing.T) {
 }
 
 func TestFSRefs(t *testing.T) {
-	peer := id.NewPeer(id.ID("alice@nullcat.de/desktop"), "QmIMAHORSE")
+	author := StageAuthor()
 	withDummyKv(t, func(kv KV) {
 		fs := NewFilesystem(kv)
 
@@ -81,6 +79,11 @@ func TestFSRefs(t *testing.T) {
 			return
 		}
 
+		if _, err := fs.Head(); !IsErrNoSuchRef(err) {
+			t.Errorf("There is a HEAD from start?!")
+			return
+		}
+
 		cmt, err := fs.Status()
 		if err != nil {
 			t.Errorf("Failed to retrieve status: %v", err)
@@ -88,8 +91,30 @@ func TestFSRefs(t *testing.T) {
 		}
 
 		fmt.Println(cmt)
-		if err := fs.MakeCommit(peer, "First commit"); err != nil {
+		if err := fs.MakeCommit(author, "First commit"); err != nil {
 			t.Errorf("Making commit failed: %v", err)
+			return
+		}
+
+		head, err := fs.Head()
+		if err != nil {
+			t.Errorf("Obtaining HEAD failed: %v", err)
+			return
+		}
+
+		status, err := fs.Status()
+		if err != nil {
+			t.Errorf("Failed to obtain the status: %v", err)
+			return
+		}
+
+		if !head.Root().Equal(status.Root()) {
+			t.Errorf("HEAD and CURR are not equal after first commit.")
+			return
+		}
+
+		if err := fs.MakeCommit(author, "Second commit?"); err != ErrNoChange {
+			t.Errorf("Committing without change lead to a new commit.")
 			return
 		}
 	})
