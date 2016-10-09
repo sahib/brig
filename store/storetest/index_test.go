@@ -34,7 +34,11 @@ func withEmptyStore(t *testing.T, f func(*store.Store)) {
 		}()
 
 		// We need the filesystem for ipfs here:
-		peer := id.NewPeer(id.ID("alice@nullcat.de/desktop"), "QmIMAHORSE")
+		peer := id.NewPeer(
+			id.ID("alice@nullcat.de/desktop"),
+			store.EmptyHash.B58String(),
+		)
+
 		st, err := store.Open(TestPath, peer, node)
 		if err != nil {
 			t.Errorf("Could not open empty store at %s: %v", TestPath, err)

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -93,7 +94,8 @@ func (st *Store) Owner() (*Author, error) {
 		return nil, err
 	}
 
-	hash, err := multihash.Cast(bhash)
+	fmt.Println("Owner", string(bhash))
+	hash, err := multihash.FromB58String(string(bhash))
 	if err != nil {
 		return nil, err
 	}
