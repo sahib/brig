@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,8 @@ var (
 
 type KV interface {
 	Bucket(path []string) (Bucket, error)
+	Export(w io.Writer) error
+	Import(r io.Reader) error
 	Close() error
 }
 
@@ -78,13 +81,13 @@ func putPath(kv KV, path string, data []byte) error {
 	return bkt.Put(key, data)
 }
 
-//////////////////////////////////
+///////// BOLT KEY/VALUE IMPLEMENTATION //////////
 
 type BoltKV struct {
 	db *bolt.DB
 }
 
-func NewBoltKV(path string) (KV, error) {
+func NewBoltKV(path string) (*BoltKV, error) {
 	options := &bolt.Options{Timeout: 1 * time.Second}
 
 	if err := os.MkdirAll(path, 0777); err != nil {
@@ -95,6 +98,7 @@ func NewBoltKV(path string) (KV, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.Path()
 
 	return &BoltKV{db}, nil
 }
@@ -129,6 +133,43 @@ func (kv *BoltKV) Bucket(path []string) (Bucket, error) {
 func (kv *BoltKV) Close() error {
 	return kv.db.Close()
 }
+
+func (kv *BoltKV) Export(w io.Writer) error {
+	return kv.db.View(func(tx *bolt.Tx) error {
+		_, err := tx.WriteTo(w)
+		return err
+	})
+}
+
+func (kv *BoltKV) Import(r io.Reader) error {
+	path := kv.db.Path()
+
+	if err := kv.Close(); err != nil {
+		return err
+	}
+
+	fd, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+
+	if _, err := io.Copy(fd, r); err != nil {
+		return err
+	}
+
+	newKv, err := NewBoltKV(path)
+	if err != nil {
+		return err
+	}
+
+	*kv = *newKv
+
+	return nil
+}
+
+////////////
 
 type BoltBucket struct {
 	db   *bolt.DB

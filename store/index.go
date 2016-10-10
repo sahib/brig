@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -119,142 +120,25 @@ func (st *Store) Close() error {
 	return st.kv.Close()
 }
 
-// Export marshals all relevant inside the database, so a cloned
-// repository may import them again.
-// The exported data includes:
-//  - All files (including their history and keys)
-//  - All commits.
-//  - Pinning information.
-//
-// TODO: Describe stream format.
-//
-// w is not closed after Export.
+// Export marshals all relevant inside the database, so a cloned repository may
+// import them again. Currently it justs packs the whole boltdb into a byte
+// message.
 func (st *Store) Export() (*wire.Store, error) {
-	// TODO: Export commits (not implemented)
-	// TODO: Export pinning information?
-	/*
-		protoStore := &wire.Store{}
+	b := &bytes.Buffer{}
+	if err := st.kv.Export(b); err != nil {
+		return nil, err
+	}
 
-		var err error
-
-		st.mu.Lock()
-		defer st.mu.Unlock()
-
-		st.Root.Walk(true, func(child *File) bool {
-			// Note: Walk() already calls Lock()
-			protoFile, errPbf := child.ToProto()
-			if err != nil {
-				err = errPbf
-				return false
-			}
-
-			if child.kind != FileTypeRegular {
-				// Directories are implicit:
-				return true
-			}
-
-			history, errHist := st.History(child.node.Path())
-			if errHist != nil {
-				err = errHist
-				return false
-			}
-
-			protoHist, errPbh := history.ToProto()
-			if err != nil {
-				err = errPbh
-				return false
-			}
-
-			protoPack := &wire.Pack{
-				File:    protoFile,
-				History: protoHist,
-			}
-
-			protoStore.Packs = append(protoStore.Packs, protoPack)
-			return true
-		})
-
-		// TODO: Export refs, only commits are exported currently.
-		// TODO: Get Head() and traverse down to root.
-		//       -> History is linear?
-		//       -> Merge commits have a special Merge attr?
-		if err != nil {
-			return nil, err
-		}
-
-		cmts := &wire.Commits{}
-
-		err = st.viewWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			return bkt.ForEach(func(k, v []byte) error {
-				cmt := &wire.Commit{}
-				if err := proto.Unmarshal(v, cmt); err != nil {
-					return err
-				}
-
-				cmts.Commits = append(cmts.Commits, cmt)
-				return nil
-			})
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		protoStore.Commits = cmts
-		return protoStore, nil
-	*/
-	return nil, nil
+	return &wire.Store{
+		Boltdb: b.Bytes(),
+	}, nil
 }
 
 // Import unmarshals the data written by export.
 // If succesful, a new store with the data is created.
-func (st *Store) Import(protoStore *wire.Store) error {
+func (st *Store) Import(pstore *wire.Store) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	// TODO: re-design
-	/*
-		for _, pack := range protoStore.Packs {
-			file := emptyFile(st)
-			if err := file.Import(pack.GetFile()); err != nil {
-				return err
-			}
-
-			log.Debugf("-- Imported: %v", file.Path())
-			file.Sync()
-			file.updateParents()
-
-			// TODO: Only make one transaction after the for{}.
-			for _, protoCheckpoint := range pack.GetHistory().GetHist() {
-				err := st.updateWithBucket("refs", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-					data, err := proto.Marshal(protoCheckpoint)
-					if err != nil {
-						return err
-					}
-
-					return bkt.Put(protoCheckpoint.GetModTime(), data)
-				})
-
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		return st.updateWithBucket("commits", func(tx *bolt.Tx, bkt *bolt.Bucket) error {
-			for _, protoCommit := range protoStore.GetCommits().GetCommits() {
-				data, err := proto.Marshal(protoCommit)
-				if err != nil {
-					return err
-				}
-
-				if err := bkt.Put(protoCommit.GetHash(), data); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-	*/
-	return nil
+	return st.kv.Import(bytes.NewReader(pstore.Boltdb))
 }

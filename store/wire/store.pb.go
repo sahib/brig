@@ -16,13 +16,12 @@
 		CheckpointLink
 		Commits
 		Ref
-		StoreMetadata
-		Store
 		Node
 		Nodes
 		File
 		Directory
 		Commit
+		Store
 */
 package wire
 
@@ -137,6 +136,7 @@ func (m *Commits) GetCommits() []*Commit {
 	return nil
 }
 
+// Ref is a pointer to a single commit
 type Ref struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Hash []byte `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -145,79 +145,6 @@ type Ref struct {
 func (m *Ref) Reset()         { *m = Ref{} }
 func (m *Ref) String() string { return proto.CompactTextString(m) }
 func (*Ref) ProtoMessage()    {}
-
-type StoreMetadata struct {
-	Owner   *Author `protobuf:"bytes,1,opt,name=owner" json:"owner,omitempty"`
-	Version string  `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-}
-
-func (m *StoreMetadata) Reset()         { *m = StoreMetadata{} }
-func (m *StoreMetadata) String() string { return proto.CompactTextString(m) }
-func (*StoreMetadata) ProtoMessage()    {}
-
-func (m *StoreMetadata) GetOwner() *Author {
-	if m != nil {
-		return m.Owner
-	}
-	return nil
-}
-
-// Store is the exported form of a store.
-type Store struct {
-	Objects      *Nodes         `protobuf:"bytes,1,opt,name=objects" json:"objects,omitempty"`
-	StageObjects *Nodes         `protobuf:"bytes,2,opt,name=stage_objects" json:"stage_objects,omitempty"`
-	Checkpoints  []*Checkpoint  `protobuf:"bytes,3,rep,name=checkpoints" json:"checkpoints,omitempty"`
-	Status       *Commit        `protobuf:"bytes,4,opt,name=status" json:"status,omitempty"`
-	Refs         []*Ref         `protobuf:"bytes,5,rep,name=refs" json:"refs,omitempty"`
-	Metadata     *StoreMetadata `protobuf:"bytes,6,opt,name=metadata" json:"metadata,omitempty"`
-	NodeCount    uint64         `protobuf:"varint,7,opt,name=node_count,proto3" json:"node_count,omitempty"`
-}
-
-func (m *Store) Reset()         { *m = Store{} }
-func (m *Store) String() string { return proto.CompactTextString(m) }
-func (*Store) ProtoMessage()    {}
-
-func (m *Store) GetObjects() *Nodes {
-	if m != nil {
-		return m.Objects
-	}
-	return nil
-}
-
-func (m *Store) GetStageObjects() *Nodes {
-	if m != nil {
-		return m.StageObjects
-	}
-	return nil
-}
-
-func (m *Store) GetCheckpoints() []*Checkpoint {
-	if m != nil {
-		return m.Checkpoints
-	}
-	return nil
-}
-
-func (m *Store) GetStatus() *Commit {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-func (m *Store) GetRefs() []*Ref {
-	if m != nil {
-		return m.Refs
-	}
-	return nil
-}
-
-func (m *Store) GetMetadata() *StoreMetadata {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
 
 // An Object is a container for a file, a directory or a Ref.
 // TODO: Move some of the attrs to the common node (file_size, hash, parent)?
@@ -360,6 +287,16 @@ func (m *Commit) GetCheckpoints() []*Checkpoint {
 	return nil
 }
 
+// Store is the exported form of a store.
+type Store struct {
+	// The boltdb format.
+	Boltdb []byte `protobuf:"bytes,1,opt,name=boltdb,proto3" json:"boltdb,omitempty"`
+}
+
+func (m *Store) Reset()         { *m = Store{} }
+func (m *Store) String() string { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()    {}
+
 func init() {
 	proto.RegisterType((*Author)(nil), "brig.store.Author")
 	proto.RegisterType((*Merge)(nil), "brig.store.Merge")
@@ -368,13 +305,12 @@ func init() {
 	proto.RegisterType((*CheckpointLink)(nil), "brig.store.CheckpointLink")
 	proto.RegisterType((*Commits)(nil), "brig.store.Commits")
 	proto.RegisterType((*Ref)(nil), "brig.store.Ref")
-	proto.RegisterType((*StoreMetadata)(nil), "brig.store.StoreMetadata")
-	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterType((*Node)(nil), "brig.store.Node")
 	proto.RegisterType((*Nodes)(nil), "brig.store.Nodes")
 	proto.RegisterType((*File)(nil), "brig.store.File")
 	proto.RegisterType((*Directory)(nil), "brig.store.Directory")
 	proto.RegisterType((*Commit)(nil), "brig.store.Commit")
+	proto.RegisterType((*Store)(nil), "brig.store.Store")
 	proto.RegisterEnum("brig.store.NodeType", NodeType_name, NodeType_value)
 }
 func (m *Author) Marshal() (data []byte, err error) {
@@ -606,127 +542,6 @@ func (m *Ref) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *StoreMetadata) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *StoreMetadata) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Owner != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Owner.Size()))
-		n1, err := m.Owner.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if len(m.Version) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(len(m.Version)))
-		i += copy(data[i:], m.Version)
-	}
-	return i, nil
-}
-
-func (m *Store) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Store) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Objects != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Objects.Size()))
-		n2, err := m.Objects.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if m.StageObjects != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintStore(data, i, uint64(m.StageObjects.Size()))
-		n3, err := m.StageObjects.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if len(m.Checkpoints) > 0 {
-		for _, msg := range m.Checkpoints {
-			data[i] = 0x1a
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.Status != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Status.Size()))
-		n4, err := m.Status.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	if len(m.Refs) > 0 {
-		for _, msg := range m.Refs {
-			data[i] = 0x2a
-			i++
-			i = encodeVarintStore(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.Metadata != nil {
-		data[i] = 0x32
-		i++
-		i = encodeVarintStore(data, i, uint64(m.Metadata.Size()))
-		n5, err := m.Metadata.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
-	if m.NodeCount != 0 {
-		data[i] = 0x38
-		i++
-		i = encodeVarintStore(data, i, uint64(m.NodeCount))
-	}
-	return i, nil
-}
-
 func (m *Node) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -789,31 +604,31 @@ func (m *Node) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x42
 		i++
 		i = encodeVarintStore(data, i, uint64(m.File.Size()))
-		n6, err := m.File.MarshalTo(data[i:])
+		n1, err := m.File.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n1
 	}
 	if m.Directory != nil {
 		data[i] = 0x4a
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Directory.Size()))
-		n7, err := m.Directory.MarshalTo(data[i:])
+		n2, err := m.Directory.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n2
 	}
 	if m.Commit != nil {
 		data[i] = 0x52
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Commit.Size()))
-		n8, err := m.Commit.MarshalTo(data[i:])
+		n3, err := m.Commit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n3
 	}
 	return i, nil
 }
@@ -960,11 +775,11 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Author.Size()))
-		n9, err := m.Author.MarshalTo(data[i:])
+		n4, err := m.Author.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n4
 	}
 	if m.Root != nil {
 		if len(m.Root) > 0 {
@@ -990,11 +805,11 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintStore(data, i, uint64(m.Merge.Size()))
-		n10, err := m.Merge.MarshalTo(data[i:])
+		n5, err := m.Merge.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n5
 	}
 	if len(m.Checkpoints) > 0 {
 		for _, msg := range m.Checkpoints {
@@ -1006,6 +821,32 @@ func (m *Commit) MarshalTo(data []byte) (int, error) {
 				return 0, err
 			}
 			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *Store) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Store) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Boltdb != nil {
+		if len(m.Boltdb) > 0 {
+			data[i] = 0xa
+			i++
+			i = encodeVarintStore(data, i, uint64(len(m.Boltdb)))
+			i += copy(data[i:], m.Boltdb)
 		}
 	}
 	return i, nil
@@ -1145,57 +986,6 @@ func (m *Ref) Size() (n int) {
 	return n
 }
 
-func (m *StoreMetadata) Size() (n int) {
-	var l int
-	_ = l
-	if m.Owner != nil {
-		l = m.Owner.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	l = len(m.Version)
-	if l > 0 {
-		n += 1 + l + sovStore(uint64(l))
-	}
-	return n
-}
-
-func (m *Store) Size() (n int) {
-	var l int
-	_ = l
-	if m.Objects != nil {
-		l = m.Objects.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.StageObjects != nil {
-		l = m.StageObjects.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if len(m.Checkpoints) > 0 {
-		for _, e := range m.Checkpoints {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if len(m.Refs) > 0 {
-		for _, e := range m.Refs {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovStore(uint64(l))
-	}
-	if m.NodeCount != 0 {
-		n += 1 + sovStore(uint64(m.NodeCount))
-	}
-	return n
-}
-
 func (m *Node) Size() (n int) {
 	var l int
 	_ = l
@@ -1329,6 +1119,18 @@ func (m *Commit) Size() (n int) {
 	if len(m.Checkpoints) > 0 {
 		for _, e := range m.Checkpoints {
 			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *Store) Size() (n int) {
+	var l int
+	_ = l
+	if m.Boltdb != nil {
+		l = len(m.Boltdb)
+		if l > 0 {
 			n += 1 + l + sovStore(uint64(l))
 		}
 	}
@@ -2063,381 +1865,6 @@ func (m *Ref) Unmarshal(data []byte) error {
 			}
 			m.Hash = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *StoreMetadata) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: StoreMetadata: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: StoreMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Owner == nil {
-				m.Owner = &Author{}
-			}
-			if err := m.Owner.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Version = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStore(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStore
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Store) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStore
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Store: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Objects", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Objects == nil {
-				m.Objects = &Nodes{}
-			}
-			if err := m.Objects.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StageObjects", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.StageObjects == nil {
-				m.StageObjects = &Nodes{}
-			}
-			if err := m.StageObjects.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Checkpoints = append(m.Checkpoints, &Checkpoint{})
-			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &Commit{}
-			}
-			if err := m.Status.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Refs", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Refs = append(m.Refs, &Ref{})
-			if err := m.Refs[len(m.Refs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Metadata == nil {
-				m.Metadata = &StoreMetadata{}
-			}
-			if err := m.Metadata.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NodeCount", wireType)
-			}
-			m.NodeCount = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.NodeCount |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(data[iNdEx:])
@@ -3345,6 +2772,84 @@ func (m *Commit) Unmarshal(data []byte) error {
 			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Store) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Store: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Boltdb", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Boltdb = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

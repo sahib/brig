@@ -42,28 +42,10 @@ message Commits {
     repeated Commit commits = 1;
 }
 
-////////////////// MISC STRUCTURES /////////////
-
+// Ref is a pointer to a single commit
 message Ref {
     string name = 1;
     bytes hash = 2;
-}
-
-message StoreMetadata {
-  Author owner = 1;
-  string version = 2;
-}
-
-// Store is the exported form of a store.
-message Store {
-    Nodes objects = 1;
-    Nodes stage_objects = 2;
-    repeated Checkpoint checkpoints = 3;
-    Commit status = 4;
-    repeated Ref refs = 5;
-    StoreMetadata metadata = 6;
-
-    uint64 node_count = 7;
 }
 
 ////////////// NODE BASICS /////////////
@@ -157,3 +139,11 @@ message Commit {
   repeated Checkpoint checkpoints = 7;
 }
 
+
+//////////// EXPORT/IMPORT DATA //////////////
+
+// Store is the exported form of a store.
+message Store {
+  // The boltdb format.
+  bytes boltdb = 1;
+}
