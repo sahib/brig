@@ -159,7 +159,7 @@ func (kv *BoltKV) Import(r io.Reader) error {
 		return err
 	}
 
-	newKv, err := NewBoltKV(path)
+	newKv, err := NewBoltKV(filepath.Dir(path))
 	if err != nil {
 		return err
 	}

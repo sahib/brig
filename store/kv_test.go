@@ -123,3 +123,38 @@ func TestKVPaths(t *testing.T) {
 		}
 	})
 }
+
+func TestKVExportImport(t *testing.T) {
+	data := []byte("Hello World")
+	exportData := &bytes.Buffer{}
+
+	withDummyKv(t, func(kv KV) {
+		if err := putPath(kv, "stage/tree/root/.", data); err != nil {
+			t.Errorf("putPath() failed before export: %v", err)
+			return
+		}
+
+		if err := kv.Export(exportData); err != nil {
+			t.Errorf("Export failed!")
+			return
+		}
+	})
+
+	withDummyKv(t, func(kv KV) {
+		if err := kv.Import(exportData); err != nil {
+			t.Errorf("Import of data failed: %v", err)
+			return
+		}
+
+		cmpData, err := getPath(kv, "stage/tree/root/.")
+		if err != nil {
+			t.Errorf("Key not in imported db :( - %v", err)
+			return
+		}
+
+		if !bytes.Equal(cmpData, data) {
+			t.Errorf("Exported and imported data differs")
+			return
+		}
+	})
+}
