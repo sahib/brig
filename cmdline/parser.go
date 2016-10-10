@@ -148,6 +148,14 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
+			Name:        "unpin",
+			Category:    repoGroup,
+			Usage:       "Unpin a file from this machine's local storage",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),
+			ArgsUsage:   "<file>",
+			Description: "Shortcut for brig pin -u",
+		},
+		cli.Command{
 			Name:        "net",
 			Category:    repoGroup,
 			Usage:       "Query and modify network status",
@@ -453,6 +461,14 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleMount, true),
+		},
+		cli.Command{
+			Name:        "unmount",
+			Category:    miscGroup,
+			Usage:       "Unmount a previosuly mounted directory",
+			ArgsUsage:   "<mountpath>",
+			Description: "Unmounts a FUSE filesystem",
+			Action:      withDaemon(handleUnmount, true),
 		},
 	}
 

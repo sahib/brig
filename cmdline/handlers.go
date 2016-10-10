@@ -118,7 +118,7 @@ func handleDaemon(ctx *cli.Context) error {
 	return nil
 }
 
-func handleMount(ctx *cli.Context, client *daemon.Client) error {
+func doMount(ctx *cli.Context, client *daemon.Client, mount bool) error {
 	mountPath := ""
 	if len(ctx.Args()) > 0 {
 		mountPath = ctx.Args()[0]
@@ -131,10 +131,10 @@ func handleMount(ctx *cli.Context, client *daemon.Client) error {
 
 	var err error
 
-	if ctx.Bool("unmount") {
-		err = client.Unmount(mountPath)
-	} else {
+	if mount {
 		err = client.Mount(mountPath)
+	} else {
+		err = client.Unmount(mountPath)
 	}
 
 	if err != nil {
@@ -142,6 +142,14 @@ func handleMount(ctx *cli.Context, client *daemon.Client) error {
 	}
 
 	return nil
+}
+
+func handleMount(ctx *cli.Context, client *daemon.Client) error {
+	return doMount(ctx, client, ctx.Bool("unmount"))
+}
+
+func handleUnmount(ctx *cli.Context, client *daemon.Client) error {
+	return doMount(ctx, client, false)
 }
 
 func handleConfigList(cli *cli.Context, cfg *config.Config) error {
@@ -736,6 +744,10 @@ func handlePin(ctx *cli.Context, client *daemon.Client) error {
 	}
 
 	return nil
+}
+
+func handleUnpin(ctx *cli.Context, client *daemon.Client) error {
+	return client.Unpin(ctx.Args()[0])
 }
 
 func handleDebugExport(ctx *cli.Context, client *daemon.Client) error {
