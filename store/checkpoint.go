@@ -290,6 +290,43 @@ func (hy *History) At(index int) *Checkpoint {
 	return (*hy)[index]
 }
 
+func (hy *History) Equal(hb *History) bool {
+	// TODO
+	return false
+}
+
+func (hy *History) MostCurrentPath(fs *FS) string {
+	if len(*hy) == 0 {
+		return ""
+	}
+
+	// id := (*hy)[len(*hy)-1].idLink
+	// TODO: resolve id to file, return file.path?
+	return ""
+}
+
+func (hy *History) AllPaths() []string {
+	// TODO
+	return nil
+}
+
+func (hy *History) IsPrefix(hb *History) bool {
+	// TODO
+	return false
+}
+
+func (hy *History) CommonRoot(hb *History) int {
+	// TODO
+	return -1
+}
+
+func (hy *History) ConflictingChanges(hb *History, since int) error {
+	// TODO? return?
+	return nil
+}
+
+//////////////////////////
+
 func (ckp *Checkpoint) MakeLink() *CheckpointLink {
 	return &CheckpointLink{
 		IDLink: ckp.index,
