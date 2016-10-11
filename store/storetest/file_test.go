@@ -35,15 +35,15 @@ func withIpfsStore(t *testing.T, ID id.ID, fn func(st *store.Store)) {
 	})
 }
 
-func getRootHash(t *testing.T, st *store.Store) []byte {
-	root, err := st.Root()
-	if err != nil {
-		t.Fatalf("Failed to retrieve root: %v", err)
-		return nil
-	}
-
-	return root.Hash().Bytes()
-}
+// func getRootHash(t *testing.T, st *store.Store) []byte {
+// 	root, err := st.Root()
+// 	if err != nil {
+// 		t.Fatalf("Failed to retrieve root: %v", err)
+// 		return nil
+// 	}
+//
+// 	return root.Hash().Bytes()
+// }
 
 func TestHash(t *testing.T) {
 	// TODO: Either remove or refactor.

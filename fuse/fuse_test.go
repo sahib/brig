@@ -95,7 +95,7 @@ func TestRead(t *testing.T) {
 			// Add a simple file:
 			name := fmt.Sprintf("hello_%d", size)
 			reader := bytes.NewReader(helloData)
-			if err := mount.Store.AddFromReader("/"+name, reader); err != nil {
+			if err := mount.Store.StageFromReader("/"+name, reader); err != nil {
 				t.Errorf("Adding simple file from reader failed: %v", err)
 				return
 			}

@@ -338,14 +338,14 @@ func TestRemove(t *testing.T) {
 			return
 		}
 
-		root, err := st.Root()
-		if err != nil {
-			t.Errorf("Failed to get root: %v", err)
-			return
-		}
+		if err := st.ViewDir("/", func(root *store.Directory) error {
+			if root.Size() != 0 {
+				return fmt.Errorf("Size of the tree is not 0 after deletion (%d)", root.Size())
+			}
 
-		if root.Size() != 0 {
-			t.Errorf("Size of the tree is not 0 after deletion (%d)", root.Size())
+			return nil
+		}); err != nil {
+			t.Errorf("Failed to get root: %v", err)
 			return
 		}
 	})
