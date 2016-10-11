@@ -104,12 +104,44 @@ func (st *Store) Owner() (*Author, error) {
 	return &Author{ident, &Hash{hash}}, nil
 }
 
-// TODO: Use this for the fuse layer.
-func (st *Store) Transaction(fn func() error) error {
+// View provides a locked view on a node in the store.
+// The node may be modified in the ViewNode method.
+func (st *Store) ViewNode(path string, fn func(node Node) error) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	return fn()
+	node, err := st.fs.LookupNode(path)
+	if err != nil {
+		return err
+	}
+
+	return fn(node)
+}
+
+// ViewFile works like ViewNode, but provides a file to the closure.
+func (st *Store) ViewFile(path string, fn func(file *File) error) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	file, err := st.fs.LookupFile(path)
+	if err != nil {
+		return err
+	}
+
+	return fn(file)
+}
+
+// ViewDir works like ViewNode, but provides a file to the closure.
+func (st *Store) ViewDir(path string, fn func(dir *Directory) error) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	dir, err := st.fs.LookupDirectory(path)
+	if err != nil {
+		return err
+	}
+
+	return fn(dir)
 }
 
 // Close syncs all data. It is an error to use the store afterwards.

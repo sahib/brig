@@ -56,7 +56,7 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 
 	// Check if the parent exists:
 	parent, err := fs.LookupDirectory(dirname)
-	if err != nil {
+	if err != nil && !IsNoSuchFileError(err) {
 		return nil, err
 	}
 	fmt.Println("mkdir:", repoPath, parent, dirname, basename)
@@ -101,11 +101,11 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	return dir, nil
 }
 
-func touchFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, author id.ID) (*File, error) {
+func stageFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, author id.ID) (*File, error) {
 	var oldHash *Hash
 
 	file, err := fs.LookupFile(repoPath)
-	if err != nil {
+	if err != nil && !IsNoSuchFileError(err) {
 		return nil, err
 	}
 

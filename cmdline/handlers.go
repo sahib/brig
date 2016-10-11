@@ -145,7 +145,7 @@ func doMount(ctx *cli.Context, client *daemon.Client, mount bool) error {
 }
 
 func handleMount(ctx *cli.Context, client *daemon.Client) error {
-	return doMount(ctx, client, ctx.Bool("unmount"))
+	return doMount(ctx, client, !ctx.Bool("unmount"))
 }
 
 func handleUnmount(ctx *cli.Context, client *daemon.Client) error {
@@ -363,7 +363,6 @@ func handleCat(ctx *cli.Context, client *daemon.Client) error {
 	return nil
 }
 func printCheckpoint(checkpoint *store.Checkpoint, idx, historylen int) {
-
 	threeWayRune, twoWayRune := treeRuneTri, treeRunePipe
 	if idx == historylen-1 {
 		threeWayRune, twoWayRune = treeRuneCorner, " "

@@ -8,30 +8,27 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
 	"golang.org/x/net/context"
-
-	// Don't panic.
-	// This is just to convert a pointer to an inode.
-	"unsafe"
 )
 
 // Entry is a file inside a directory.
 type Entry struct {
-	*store.File
-	fs *FS
+	path string
+	fsys *Filesystem
 }
 
 // Attr is called to get the stat(2) attributes of a file.
 func (e *Entry) Attr(ctx context.Context, a *fuse.Attr) error {
-	// TODO: Store special permissions? Is this allowed?
-	a.Mode = 0755
-	a.Size = uint64(e.Size())
-	a.Inode = *(*uint64)(unsafe.Pointer(&e))
-	return nil
+	return Errorize("entry-attr", e.fsys.Store.ViewNode(e.path, func(nd store.Node) error {
+		a.Mode = 0755
+		a.Size = nd.Size()
+		a.Mtime = nd.ModTime()
+		return nil
+	}))
 }
 
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (e *Entry) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
-	log.Debugf("fuse-open: %s", store.NodePath(e))
+	log.Debugf("fuse-open: %s", e.path)
 	return &Handle{Entry: e}, nil
 }
 
@@ -44,8 +41,11 @@ func (e *Entry) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	// the file to zero bytes with a size change of `0`.
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
-		log.Warningf("SIZE CHANGED OF %s: %d %p", store.NodePath(e), req.Size, e)
-		e.SetSize(req.Size)
+		log.Warningf("SIZE CHANGED OF %s: %d %p", e.path, req.Size, e)
+		return Errorize("entry-setattr", e.fsys.Store.ViewFile(e.path, func(file *store.File) error {
+			file.SetSize(req.Size)
+			return nil
+		}))
 	}
 
 	return nil
@@ -59,13 +59,10 @@ func (e *Entry) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (e *Entry) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	// TODO:
-	// e.Lock()
-	// defer e.Unlock()
-
 	switch req.Name {
-	case "brig.hash":
-		resp.Xattr = []byte(e.Hash().B58String())[:req.Size]
+	// TODO;
+	// case "brig.hash":
+	// 	resp.Xattr = []byte(e.Hash().B58String())[:req.Size]
 	default:
 		return fuse.ErrNoXattr
 	}
@@ -85,10 +82,9 @@ func (e *Entry) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.N
 		return fuse.EIO
 	}
 
-	newParentPath := store.NodePath(newParent)
-	newPath := path.Join(newParentPath, req.NewName)
-	if err := e.fs.Store.Move(store.NodePath(e), newPath, true); err != nil {
-		log.Warningf("mv failed: %v", err)
+	newPath := path.Join(newParent.path, req.NewName)
+	if err := e.fsys.Store.Move(e.path, newPath, true); err != nil {
+		log.Warningf("fuse: entry: mv: %v", err)
 		return err
 	}
 

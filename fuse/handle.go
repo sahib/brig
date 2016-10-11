@@ -36,7 +36,7 @@ func (h *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 // Read is called to read a block of data at a certain offset.
 func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	path := store.NodePath(h)
+	path := h.path
 
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
@@ -45,10 +45,10 @@ func (h *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Rea
 		"path":   path,
 		"offset": req.Offset,
 		"size":   req.Size,
-	}).Debugf("fuse read")
+	}).Debugf("fuse: handle: read")
 
 	if h.stream == nil {
-		stream, err := h.Stream(h.fs.Store.IPFS)
+		stream, err := h.fsys.Store.Stream(h.path)
 		if err != nil {
 			log.Errorf("fuse-read: Cannot open stream: %v", err)
 			return fuse.ENODATA
@@ -84,31 +84,37 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 
 	log.Debugf(
 		"fuse-write: %s (off: %d size: %d)",
-		store.NodePath(h),
+		h.path,
 		req.Offset,
 		len(req.Data),
 	)
 
+	size := uint64(0)
+	err := Errorize("handle-write", h.fsys.Store.ViewFile(h.path, func(file *store.File) error {
+		size = file.Size()
+		return nil
+	}))
+
+	if err != nil {
+		return err
+	}
+
 	if h.layer == nil {
 		if h.stream == nil {
-			stream, err := h.Stream(h.fs.Store.IPFS)
+			stream, err := h.fsys.Store.Stream(h.path)
 			if err != nil {
 				return fuse.ENODATA
 			}
+
 			h.stream = stream
 		}
 
-		log.Debugf(
-			"fuse-write: truncating %s to %d %p",
-			store.NodePath(h),
-			h.Size(),
-			h,
-		)
+		log.Debugf("fuse-write: truncating %s to %d %p", h.path, size)
 		h.layer = store.NewLayer(h.stream)
-		h.layer.Truncate(int64(h.Size()))
+		h.layer.Truncate(int64(size))
 	}
 
-	_, err := h.layer.Seek(req.Offset, os.SEEK_SET)
+	_, err = h.layer.Seek(req.Offset, os.SEEK_SET)
 	if err != nil {
 		log.Warningf("Seek failure: %v", err)
 		return fuse.ENODATA
@@ -125,9 +131,16 @@ func (h *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.W
 	// Update the file size, if it changed; fuse doc demands this:
 	// https://godoc.org/bazil.org/fuse/fs#HandleWriter
 	minSize := uint64(h.layer.MinSize())
-	if h.Size() < minSize {
-		log.Debugf("fuse-write: extending file from %d to %d bytes", h.Size(), minSize)
-		h.SetSize(minSize)
+	if size < minSize {
+		log.Debugf("fuse-write: extending file from %d to %d bytes", size, minSize)
+		err := Errorize("handle-write-fin", h.fsys.Store.ViewFile(h.path, func(file *store.File) error {
+			file.SetSize(minSize)
+			return nil
+		}))
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -143,8 +156,7 @@ func (h *Handle) flush() error {
 	h.laymu.Lock()
 	defer h.laymu.Unlock()
 
-	path := store.NodePath(h)
-	log.Debugf("fuse-flush: %v (%p)", path, h.layer)
+	log.Debugf("fuse-flush: %v (%p)", h.path, h.layer)
 
 	if h.layer == nil {
 		return nil
@@ -164,7 +176,7 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	err = h.fs.Store.StageFromReader(path, h.layer)
+	err = h.fsys.Store.StageFromReader(h.path, h.layer)
 	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA

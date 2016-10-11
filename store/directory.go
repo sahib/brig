@@ -214,9 +214,9 @@ func (d *Directory) ID() uint64 {
 
 ////////////// TREE MOVEMENT /////////////////
 
-func (d *Directory) VisitChildren(fn func(*Directory) error) error {
+func (d *Directory) VisitChildren(fn func(nd Node) error) error {
 	for name, hash := range d.children {
-		child, err := d.fs.DirectoryByHash(hash)
+		child, err := d.fs.NodeByHash(hash)
 		if err != nil {
 			return err
 		}
@@ -355,7 +355,7 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 		}
 
 		if curr == nil {
-			return nil, nil
+			return nil, NoSuchFile(repoPath)
 		}
 	}
 

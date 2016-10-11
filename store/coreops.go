@@ -17,6 +17,7 @@ import (
 )
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
+// TODO: Do not return directory - it's not locked.
 func (st *Store) Mkdir(repoPath string) (*Directory, error) {
 	return mkdir(st.fs, repoPath, false)
 }
@@ -114,7 +115,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
 		return err
 	}
 
-	if _, err := touchFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
+	if _, err := stageFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
 		return err
 	}
 
@@ -125,10 +126,6 @@ func (st *Store) pinOp(repoPath string, doUnpin bool) error {
 	node, err := st.fs.LookupNode(repoPath)
 	if err != nil {
 		return err
-	}
-
-	if node == nil {
-		return NoSuchFile(repoPath)
 	}
 
 	var pinMe []Node
@@ -180,10 +177,6 @@ func (st *Store) IsPinned(repoPath string) (bool, error) {
 		return false, err
 	}
 
-	if node == nil {
-		return false, NoSuchFile(repoPath)
-	}
-
 	return st.IPFS.IsPinned(node.Hash().Multihash)
 }
 
@@ -212,10 +205,6 @@ func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
 		return nil, err
 	}
 
-	if file == nil {
-		return nil, NoSuchFile(path)
-	}
-
 	return file.Stream(st.IPFS)
 }
 
@@ -237,20 +226,6 @@ func (st *Store) Cat(path string, w io.Writer) error {
 	return nil
 }
 
-func (st *Store) Lookup(repoPath string) (Node, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.fs.LookupNode(repoPath)
-}
-
-func (st *Store) Root() (*Directory, error) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-
-	return st.fs.Root()
-}
-
 // Remove will purge a file locally on this node.
 // If `recursive` is true and if `path` is a directory, all files
 // in it will be removed. If `recursive` is false, ErrNotEmpty will
@@ -263,10 +238,6 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 	node, err := st.fs.LookupNode(repoPath)
 	if err != nil {
 		return err
-	}
-
-	if node == nil {
-		return NoSuchFile(repoPath)
 	}
 
 	if node.GetType() == NodeTypeDirectory && node.NChildren() > 0 && !recursive {
@@ -318,6 +289,7 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 }
 
 // List exports a directory listing of `root` up to `depth` levels down.
+// TODO: This should use a locked closure.
 func (st *Store) List(root string, depth int) ([]Node, error) {
 	root = prefixSlash(root)
 	entries := []Node{}
@@ -328,10 +300,6 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 	node, err := st.fs.LookupDirectory(root)
 	if err != nil {
 		return nil, err
-	}
-
-	if node == nil {
-		return nil, NoSuchFile(root)
 	}
 
 	if depth < 0 {
@@ -354,9 +322,9 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 	return entries, err
 }
 
-// The results are marshaled into a wire.Dirlist message and written to `w`.
-// `depth` may be negative for unlimited recursion.
-// TODO: Is this really a core-op?
+// The results are marshaled into a wire.Dirlist message and written to
+// `w`. `depth` may be negative for unlimited recursion.
+// TODO: Is this really a core-op? Let that do the daemon?
 func (st *Store) ListProtoNodes(root string, depth int) (*wire.Nodes, error) {
 	entries, err := st.List(root, depth)
 	if err != nil {
@@ -396,12 +364,8 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 		return err
 	}
 
-	if node == nil {
-		return NoSuchFile(oldPath)
-	}
-
 	newNode, err := st.fs.LookupNode(newPath)
-	if err != nil {
+	if err != nil && !IsNoSuchFileError(err) {
 		return err
 	}
 
@@ -502,6 +466,8 @@ func (st *Store) MakeCommit(msg string) error {
 }
 
 // TODO: respect from/to ranges
+// TODO: This should use a locked closure.
+// TODO: return []Commit?
 func (st *Store) Log() ([]Node, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()

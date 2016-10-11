@@ -95,7 +95,7 @@ func (st *Store) addLeftovers(bob *Store, bobMap PathToHistory) error {
 			return err
 		}
 
-		_, err = touchFile(st.fs, path, file.Hash(), file.Key(), file.Size(), owner.ID())
+		_, err = stageFile(st.fs, path, file.Hash(), file.Key(), file.Size(), owner.ID())
 		if err != nil {
 			return err
 		}

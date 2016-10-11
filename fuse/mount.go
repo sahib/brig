@@ -22,7 +22,7 @@ import (
 // It is used as top-level API to control a brigfs fuse mount.
 type Mount struct {
 	Dir   string
-	FS    *FS
+	FS    *Filesystem
 	Store *store.Store
 
 	closed bool
@@ -46,7 +46,7 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		return nil, err
 	}
 
-	filesys := &FS{Store: store}
+	filesys := &Filesystem{Store: store}
 
 	mnt := &Mount{
 		Conn:   conn,
