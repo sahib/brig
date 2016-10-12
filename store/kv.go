@@ -239,6 +239,10 @@ func (bb *BoltBucket) Put(key string, data []byte) error {
 func (bb *BoltBucket) Foreach(fn func(key string, value []byte) error) error {
 	return bb.dig(bb.path, false, func(bkt *bolt.Bucket) error {
 		cur := bkt.Cursor()
+		bkt.ForEach(func(k, v []byte) error {
+			return nil
+		})
+
 		for key, val := cur.First(); key != nil; key, val = cur.Next() {
 			var copyValue []byte
 

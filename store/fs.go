@@ -210,9 +210,7 @@ func joinButLeaveLastDot(elems ...string) string {
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.ptrie.Lookup(nodePath)
-	fmt.Println("Resolve", nodePath, trieNode)
 	if trieNode != nil && trieNode.Data != nil {
-		fmt.Println("is cached")
 		return trieNode.Data.(Node), nil
 	}
 
@@ -447,7 +445,6 @@ func (fs *FS) MakeCommit(author *Author, message string) error {
 
 	// Only compare with previous if we have a HEAD yet.
 	if head != nil {
-		fmt.Println("Compare head", head)
 		if status.Root().Equal(head.Root()) {
 			return ErrNoChange
 		}
@@ -583,7 +580,6 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 		return nil, err
 	}
 
-	fmt.Println("ResolveRef", mh.B58String())
 	return fs.NodeByHash(&Hash{mh})
 }
 
@@ -602,20 +598,6 @@ func (fs *FS) Head() (*Commit, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// There is no HEAD yet. Just return the status.
-	// if IsErrNoSuchRef(err) {
-	// 	status, err := fs.loadStatus()
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	if status == nil {
-	// 		return nil, ErrNoSuchRef("HEAD")
-	// 	}
-
-	// 	return status, nil
-	// }
 
 	cmt, ok := nd.(*Commit)
 	if !ok {

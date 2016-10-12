@@ -37,7 +37,6 @@ func TestStoreBaseOpMkdir(t *testing.T) {
 
 func dummyHash(t *testing.T, seed byte) *Hash {
 	data := make([]byte, multihash.DefaultLengths[goipfsutil.DefaultIpfsHash])
-
 	for idx := range data {
 		data[idx] = seed
 	}
@@ -50,6 +49,21 @@ func dummyHash(t *testing.T, seed byte) *Hash {
 	}
 
 	return &Hash{hash}
+}
+
+func getHistory(t *testing.T, fs *FS, path string) History {
+	history, err := fs.HistoryByPath(path)
+	if err != nil {
+		t.Fatalf("Failed to retrieve history: %v", err)
+		return nil
+	}
+
+	fmt.Println("=== HISTORY")
+	for _, ckp := range history {
+		fmt.Println(ckp)
+	}
+
+	return history
 }
 
 func TestStoreBaseOpCreateFile(t *testing.T) {
@@ -87,6 +101,16 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 		}
 
 		printTree(fs)
+		oldHist := getHistory(t, fs, dummyPath)
+		if len(oldHist) != 1 {
+			t.Errorf("More than one checkpointer after add")
+			return
+		}
+
+		if oldHist[0].ChangeType() != ChangeAdd {
+			t.Errorf("First checkpoint is not a add")
+			return
+		}
 
 		modFile, err := stageFile(fs, dummyPath, dummyHash(t, 1), dummyKey, 19, "alice")
 		if err != nil {
@@ -99,6 +123,17 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 		}
 
 		printTree(fs)
+
+		newHist := getHistory(t, fs, dummyPath)
+		if len(newHist) != 2 {
+			t.Errorf("History has no two checkpoints after add+modify.")
+			return
+		}
+
+		if newHist[1].ChangeType() != ChangeModify {
+			t.Errorf("Second checkpoint is not a modification")
+			return
+		}
 
 		resolveModFile, err := fs.ResolveFile(dummyPath)
 		if err != nil {

@@ -107,9 +107,9 @@ func newEmptyCheckpoint(ID uint64, hash *Hash, author id.ID) *Checkpoint {
 	}
 }
 
-func (cp *Checkpoint) ChangeType() *ChangeType { return &cp.change }
-func (cp *Checkpoint) Hash() *Hash             { return cp.hash }
-func (cp *Checkpoint) Author() id.ID           { return cp.author }
+func (cp *Checkpoint) ChangeType() ChangeType { return cp.change }
+func (cp *Checkpoint) Hash() *Hash            { return cp.hash }
+func (cp *Checkpoint) Author() id.ID          { return cp.author }
 
 // TODO: nice representation
 func (cp *Checkpoint) String() string {
@@ -135,6 +135,7 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
 	cp.hash = &Hash{msg.Hash}
 	cp.change = ChangeType(msg.Change)
+	cp.idLink = msg.IdLink
 	cp.index = msg.Index
 
 	ID, err := id.Cast(msg.Author)
