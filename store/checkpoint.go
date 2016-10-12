@@ -359,9 +359,14 @@ func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPa
 		index = ckp.index
 	}
 
+	newIndex := index
+	if ckp.ChangeType() != change {
+		newIndex += 1
+	}
+
 	return &Checkpoint{
 		idLink: idLink,
-		index:  index + 1,
+		index:  newIndex,
 		hash:   hash,
 		change: change,
 		author: author,

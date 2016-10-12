@@ -37,10 +37,12 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
-// TODO: Clear cache when invalid?
-
 /////////////// ERRORS ///////////////
 
+// FS implements the logic of brig's data model.
+// It uses an underlying key/value database to
+// storea a Merkle-DAG with versioned metadata,
+// similar to what git does internally.
 type FS struct {
 	kv KV
 
@@ -88,6 +90,8 @@ func unmarshalNode(fs *FS, data []byte) (Node, error) {
 	return node, nil
 }
 
+// NewFilesystem returns a new FS, ready to use. It assumes the key value store
+// is working and does no check on this.
 func NewFilesystem(kv KV) *FS {
 	return &FS{
 		kv:    kv,
@@ -100,6 +104,8 @@ func NewFilesystem(kv KV) *FS {
 // COMMON NODE HANDLING //
 //////////////////////////
 
+// NextID() returns a unique identifier, used to identify a single node. You
+// should not need to call this function, except when implementing own nodes.
 func (fs *FS) NextID() (uint64, error) {
 	bkt, err := fs.kv.Bucket([]string{"stats"})
 	if err != nil {
@@ -127,7 +133,8 @@ func (fs *FS) NextID() (uint64, error) {
 	return cnt, nil
 }
 
-// LoadObject loads an individual object by its hash from the object store.
+// loadNode loads an individual object by its hash from the object store. It
+// will return nil if the hash is not existant.
 func (fs *FS) loadNode(hash *Hash) (Node, error) {
 	var data []byte
 	var err error
@@ -160,6 +167,8 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 	return unmarshalNode(fs, data)
 }
 
+// NodeByHash returns the node identified by hash.
+// If no such hash could be found, nil is returned.
 func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
@@ -178,9 +187,9 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 		return nil, nil
 	}
 
-	// NOTE: This will indirectly load parent directories (by calling
-	//       Parent(), if not done yet!  We might be stuck in an endless loop if we
-	//       have cycles in our DAG.
+	// NOTE: This will indirectly load parent directories (by calling Parent(),
+	// if not done yet! We might be stuck in an endless loop if we have cycles
+	// in our DAG, so look at this place first when an endless loop occurs.
 	fs.SwapIntoMemIndex(nd, nil)
 	return nd, nil
 }
@@ -195,6 +204,7 @@ func appendDot(path string) string {
 	return path + "/."
 }
 
+// Same as path.Join, but does not remove the last '.' needed for directories.
 func joinButLeaveLastDot(elems ...string) string {
 	if len(elems) == 0 {
 		return ""
@@ -207,6 +217,8 @@ func joinButLeaveLastDot(elems ...string) string {
 	return path.Join(elems...)
 }
 
+// ResolveNode resolves a path to a hash and resolves the corresponding node by
+// calling NodeByHash(). If no node could be resolved, nil is returned.
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.ptrie.Lookup(nodePath)
@@ -241,12 +253,16 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	return fs.NodeByHash(&Hash{hash})
 }
 
+// SwapIntoMemIndex updates an entry of the in memory index, by deleting
+// the old entry referenced by oldHash (may be nil). This is necessary
+// to ensure that old hashes do not resolve to the new, updated instance.
+// If the old instance is needed, it will be loaded as new instance.
+// You should not need to call this function, except when implementing own Nodes.
 func (fs *FS) SwapIntoMemIndex(nd Node, oldHash *Hash) {
-	// We need to delete the old hash, pointing to the old version.
-	// When loaded through the index, it would still load the new
-	// in memory version that was modified.
-	// When deleting the entry, it will be reloaded from the boltdb,
-	// and get a proper new instance (if needed).
+	// We need to delete the old hash, pointing to the old version. When loaded
+	// through the index, it would still load the new in memory version that
+	// was modified. When deleting the entry, it will be reloaded from the
+	// boltdb, and get a proper new instance (if needed).
 	if oldHash != nil {
 		delete(fs.index, oldHash.B58String())
 	}
@@ -255,6 +271,10 @@ func (fs *FS) SwapIntoMemIndex(nd Node, oldHash *Hash) {
 	fs.index[b58Hash] = fs.ptrie.InsertWithData(nd.Path(), nd)
 }
 
+// StageNode inserts a modified node to the staging area, making sure the
+// modification is persistent and part of the staging commit. All parent
+// directories of the node in question will be staged automatically. If there
+// was no modification it will be a (quite expensive) NOOP.
 func (fs *FS) StageNode(nd Node) error {
 	if err := fs.stageNodeRecursive(nd); err != nil {
 		return err
@@ -315,8 +335,8 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 	fs.index[b58Hash] = fs.ptrie.InsertWithData(nodePath, nd)
 
 	// We need to save parent directories too, in case the hash changed:
-	// TODO: This creates many pointless roots in the stage/ area.
-	//       Maybe remember some do a bit of garbage collect from time to time.
+	// TODO: This creates many pointless roots in the stage. Maybe remember
+	// some in a kill-list & do a bit of garbage collect from time to time.
 	par, err := nd.Parent()
 	if err != nil {
 		return err
@@ -335,6 +355,7 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 // CHECKPOINT HANDLING //
 /////////////////////////
 
+// LastCheckpoint returns the last known checkpoint for the UID referenced by `IDLink`.
 func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
 	key := strconv.FormatUint(IDLink, 16)
 	bkt, err := fs.kv.Bucket([]string{"checkpoints", key})
@@ -359,6 +380,7 @@ func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
 	return ckp, nil
 }
 
+// History returns all checkpoints for the file referenced by the UID `IDLink`.
 func (fs *FS) History(IDLink uint64) (History, error) {
 	key := strconv.FormatUint(IDLink, 16)
 	history := History{}
@@ -388,6 +410,8 @@ func (fs *FS) History(IDLink uint64) (History, error) {
 	return history, nil
 }
 
+// HistoryByPath is a convinience function. It resolves `nodePath` to a Node,
+// and calls History() with the node's UID.
 func (fs *FS) HistoryByPath(nodePath string) (History, error) {
 	nd, err := fs.ResolveNode(nodePath)
 	if err != nil {
@@ -397,6 +421,8 @@ func (fs *FS) HistoryByPath(nodePath string) (History, error) {
 	return fs.History(nd.ID())
 }
 
+// StageCheckpoint remembers a checkpoint the staging commit and saves it to
+// the file's history.
 func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 	pckp, err := ckp.ToProto()
 	if err != nil {
@@ -432,6 +458,10 @@ func (fs *FS) StageCheckpoint(ckp *Checkpoint) error {
 // COMMIT HANDLING //
 /////////////////////
 
+// MakeCommit creates a new full commit in the version history.
+// The current staging commit is finalized with `author` and `message`
+// and gets saved. A new, identical staging commit is created pointing
+// to the root of the now new HEAD.
 func (fs *FS) MakeCommit(author *Author, message string) error {
 	head, err := fs.Head()
 	if err != nil && !IsErrNoSuchRef(err) {
@@ -537,6 +567,8 @@ func (fs *FS) MakeCommit(author *Author, message string) error {
 // METADATA HANDLING //
 ///////////////////////
 
+// MetadataPut remembers a value persisntenly identified by `key`.
+// It can be used as single-level key value store for user purposes.
 func (fs *FS) MetadataPut(key string, value []byte) error {
 	bkt, err := fs.kv.Bucket([]string{"metadata"})
 	if err != nil {
@@ -546,6 +578,8 @@ func (fs *FS) MetadataPut(key string, value []byte) error {
 	return bkt.Put(key, []byte(value))
 }
 
+// MetadataGet retriesves a previosuly put key value pair.
+// It will return nil if no such value could be retrieved.
 func (fs *FS) MetadataGet(key string) ([]byte, error) {
 	bkt, err := fs.kv.Bucket([]string{"metadata"})
 	if err != nil {
@@ -559,6 +593,9 @@ func (fs *FS) MetadataGet(key string) ([]byte, error) {
 // REFERENCE HANDLING //
 ////////////////////////
 
+// ResolveRef resolves the hash associated with `refname`. If the ref could not
+// be resolved, ErrNoSuchRef is returned. Typically, Node will be a Commit. But
+// there are no technical restrictions on which node typ to use.
 func (fs *FS) ResolveRef(refname string) (Node, error) {
 	refname = strings.ToLower(refname)
 	bkt, err := fs.kv.Bucket([]string{"refs"})
@@ -583,6 +620,9 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 	return fs.NodeByHash(&Hash{mh})
 }
 
+// SaveRef stores a reference to `nd` persistently. The caller is responsbiel
+// to ensure that the node is already in the blockstore, otherwise it won't be
+// resolvable.
 func (fs *FS) SaveRef(refname string, nd Node) error {
 	refname = strings.ToLower(refname)
 	bkt, err := fs.kv.Bucket([]string{"refs"})
@@ -593,6 +633,7 @@ func (fs *FS) SaveRef(refname string, nd Node) error {
 	return bkt.Put(refname, nd.Hash().Bytes())
 }
 
+// Head is just a shortcut for ResolveRef("HEAD").
 func (fs *FS) Head() (*Commit, error) {
 	nd, err := fs.ResolveRef("HEAD")
 	if err != nil {
@@ -607,8 +648,9 @@ func (fs *FS) Head() (*Commit, error) {
 	return cmt, nil
 }
 
-// SetMemRoot sets the current root, but does not store it yet.
-// It's supposed to be called after in-memory modifications.
+// SetMemRoot sets the current root, but does not store it yet. It's supposed
+// to be called after in-memory modifications. Only implementors of new Nodes
+// might need to call this function.
 func (fs *FS) SetMemRoot(root *Directory) {
 	fs.root = root
 }
@@ -628,36 +670,21 @@ func (fs *FS) Root() (*Directory, error) {
 	return fs.DirectoryByHash(status.Root())
 }
 
-// Guarantee it's not nil when err == nil
+// Status returns the current staging commit.
+// It is never nil, unless err is nil.
 func (fs *FS) Status() (*Commit, error) {
-	// TODO: Make this call loadStatus()
-	bkt, err := fs.kv.Bucket([]string{"stage"})
+	cmt, err := fs.loadStatus()
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := bkt.Get("STATUS")
-	if err != nil {
-		return nil, err
-	}
-
-	cmt, err := newEmptyCommit(fs)
-	if err != nil {
-		return nil, err
-	}
-
-	if data != nil {
-		// It's there already. Just unmarshal it.
-		pnode := &wire.Node{}
-		if err := proto.Unmarshal(data, pnode); err != nil {
-			return nil, err
-		}
-
-		if err := cmt.FromProto(pnode); err != nil {
-			return nil, err
-		}
-
+	if cmt != nil {
 		return cmt, nil
+	}
+
+	cmt, err = newEmptyCommit(fs)
+	if err != nil {
+		return nil, err
 	}
 
 	// Setup a new commit and set root from last HEAD or new one.
@@ -670,7 +697,7 @@ func (fs *FS) Status() (*Commit, error) {
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
-		// No root directory yet then. Create a shiny new one and stage it.
+		// No root directory then. Create a shiny new one and stage it.
 		newRoot, err := newEmptyDirectory(fs, nil, "/")
 		if err != nil {
 			return nil, err
@@ -713,13 +740,13 @@ func (fs *FS) loadStatus() (*Commit, error) {
 		return nil, err
 	}
 
+	if data == nil {
+		return nil, nil
+	}
+
 	cmt, err := newEmptyCommit(fs)
 	if err != nil {
 		return nil, err
-	}
-
-	if data == nil {
-		return nil, nil
 	}
 
 	// It's there already. Just unmarshal it.
@@ -735,6 +762,7 @@ func (fs *FS) loadStatus() (*Commit, error) {
 	return cmt, nil
 }
 
+// saveStatus copies cmt to stage/STATUS.
 func (fs *FS) saveStatus(cmt *Commit) error {
 	if err := cmt.Finalize(StageAuthor(), "", nil); err != nil {
 		return err
@@ -761,12 +789,14 @@ func (fs *FS) saveStatus(cmt *Commit) error {
 	return nil
 }
 
-func (fs *FS) RemoveUnreffedNodes() error {
-	// TODO: This is a NO-OP currently.
-	// In future this needs to be called periodically and do the following:
-	// - Go through all commits and remember all hashes of all trees.
-	// - Go through all hash-buckets and delete all unreffed hashes.
-	// - Also delete checkpoints of removed files.
+// ValidateRefs checks for any dead references in the merkle dag.
+// Dead should currently happen on bugs. Everybody knows that
+// there are no bugs here, that's why this functions is currently a NOOP.
+//
+// In future this needs to be called periodically and do the following:
+// - Go through all commits and remember all hashes of all trees.
+// - Go through all hash-buckets and delete all unreffed hashes.
+func (fs *FS) ValidateRefs() error {
 	return nil
 }
 
@@ -774,6 +804,9 @@ func (fs *FS) RemoveUnreffedNodes() error {
 // CONVINIENT ACCESS FUNCTIONS //
 /////////////////////////////////
 
+// LookupNode takes the root node and tries to resolve the path from there.
+// Deleted paths are recognized in contrast to ResolveNode.
+// If a path does not exist NoSuchFile is returned.
 func (fs *FS) LookupNode(repoPath string) (Node, error) {
 	root, err := fs.Root()
 	if err != nil {
@@ -783,6 +816,8 @@ func (fs *FS) LookupNode(repoPath string) (Node, error) {
 	return root.Lookup(repoPath)
 }
 
+// DirectoryByHash calls NodeByHash and attempts to convert
+// it to a Directory as convinience.
 func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
@@ -801,6 +836,7 @@ func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
 	return dir, nil
 }
 
+// ResolveDirectory calls ResolveNode and converts the result to a Directory.
 func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
 	nd, err := fs.ResolveNode(appendDot(path.Clean(dirpath)))
 	if err != nil {
@@ -819,6 +855,7 @@ func (fs *FS) ResolveDirectory(dirpath string) (*Directory, error) {
 	return dir, nil
 }
 
+// LookupDirectory calls LookupNode and converts the result to a Directory.
 func (fs *FS) LookupDirectory(repoPath string) (*Directory, error) {
 	nd, err := fs.LookupNode(repoPath)
 	if err != nil {
@@ -837,6 +874,7 @@ func (fs *FS) LookupDirectory(repoPath string) (*Directory, error) {
 	return dir, nil
 }
 
+// FileByHash calls NodeByHash and converts the result to a File.
 func (fs *FS) FileByHash(hash *Hash) (*File, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
@@ -851,6 +889,7 @@ func (fs *FS) FileByHash(hash *Hash) (*File, error) {
 	return file, nil
 }
 
+// ResolveFile calls ResolveNode and converts the result to a file.
 func (fs *FS) ResolveFile(filepath string) (*File, error) {
 	nd, err := fs.ResolveNode(filepath)
 	if err != nil {
@@ -869,6 +908,7 @@ func (fs *FS) ResolveFile(filepath string) (*File, error) {
 	return file, nil
 }
 
+// LookupFile calls LookupNode and converts the result to a file.
 func (fs *FS) LookupFile(repoPath string) (*File, error) {
 	nd, err := fs.LookupNode(repoPath)
 	if err != nil {
@@ -887,10 +927,16 @@ func (fs *FS) LookupFile(repoPath string) (*File, error) {
 	return file, nil
 }
 
+// CommitByHash lookups a commit by it's hash.
+// If the commit could not be found, nil is returned.
 func (fs *FS) CommitByHash(hash *Hash) (*Commit, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
 		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
 	}
 
 	cmt, ok := nd.(*Commit)
