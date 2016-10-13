@@ -271,6 +271,10 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 		return err
 	}
 
+	if err := st.fs.StageNode(parent); err != nil {
+		return err
+	}
+
 	errs := util.Errors{}
 	for _, child := range toBeRemoved {
 		childPath := NodePath(child)

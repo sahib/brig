@@ -52,14 +52,14 @@ var stringToChangeType = map[string]ChangeType{
 }
 
 // String formats a changetype to a human readable verb in past tense.
-func (c *ChangeType) String() string {
-	return changeTypeToString[*c]
+func (c ChangeType) String() string {
+	return changeTypeToString[c]
 }
 
-func (c *ChangeType) Marshal() ([]byte, error) {
-	dec, ok := changeTypeToString[*c]
+func (c ChangeType) Marshal() ([]byte, error) {
+	dec, ok := changeTypeToString[c]
 	if !ok {
-		return nil, fmt.Errorf("Bad change type `%d`", *c)
+		return nil, fmt.Errorf("Bad change type `%d`", c)
 	}
 
 	return []byte(dec), nil

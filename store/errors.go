@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	ErrExists   = errors.New("File exists")
-	ErrNotEmpty = errors.New("Cannot remove: Directory is not empty")
-	ErrBadNode  = errors.New("Cannot convert to concrete type. Broken input data?")
+	ErrExists        = errors.New("File exists")
+	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
+	ErrBadNode       = errors.New("Cannot convert to concrete type. Broken input data?")
+	ErrStageNotEmpty = errors.New("There are changes in the staging area")
 )
 
 type errNoSuchFile struct {

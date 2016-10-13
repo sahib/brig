@@ -946,3 +946,123 @@ func (fs *FS) CommitByHash(hash *Hash) (*Commit, error) {
 
 	return cmt, nil
 }
+
+// Unstage resets the state of a node back to the last known commited state.
+func (fs *FS) Unstage(nd Node) error {
+	head, err := fs.Head()
+	if err != nil {
+		return err
+	}
+
+	return fs.CheckoutFile(head, nd)
+}
+
+// HaveStagedChanges returns true if there were changes in the staging area.
+// If an error occurs, the first return value is undefined.
+func (fs *FS) HaveStagedChanges() (bool, error) {
+	head, err := fs.Head()
+	if err != nil && !IsErrNoSuchRef(err) {
+		return false, err
+	}
+
+	if !IsErrNoSuchRef(err) {
+		// There is no HEAD yet.
+		// Assume we have changes.
+		return true, nil
+	}
+
+	status, err := fs.Status()
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the root hashes of CURR and HEAD differ.
+	return !status.Root().Equal(head.Root()), nil
+}
+
+// CheckoutCommit resets the current staging commit back to the commit
+// referenced by cmt. If force is false, it will check if there any stages in
+// the staging area and return ErrStageNotEmpty if there are any. If force is
+// true, all changes will be overwritten.
+func (fs *FS) CheckoutCommit(cmt *Commit, force bool) error {
+	// Check if the staging area is empty if no force given:
+	if !force {
+		haveStaged, err := fs.HaveStagedChanges()
+		if err != nil {
+			return err
+		}
+
+		if haveStaged {
+			return ErrStageNotEmpty
+		}
+	}
+
+	status, err := fs.Status()
+	if err != nil {
+		return err
+	}
+
+	if err := status.SetRoot(cmt.Root()); err != nil {
+		return err
+	}
+
+	// Invalidate the cache, causing NodeByHash and ResolveNode to load the
+	// file from the boltdb again:
+	fs.ptrie = trie.NewNode()
+	fs.index = make(map[string]*trie.Node)
+	return fs.saveStatus(status)
+}
+
+// CheckoutFile resets a certain file to the state it had in cmt. If the file
+// did not exist back then, it will be deleted. `nd` is usually retrieved by
+// calling ResolveNode() and sorts.
+func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
+	root, err := fs.DirectoryByHash(cmt.Root())
+	if err != nil {
+		return err
+	}
+
+	if root == nil {
+		// TODO: Valid?
+		return fmt.Errorf("No root to reset to.")
+	}
+
+	// TODO: Better resolve by UID here?
+	//       Need a way to resolve uid -> node though.
+	oldNode, err := root.Lookup(nd.Path())
+	if err != nil {
+		return err
+	}
+
+	// Invalidate the respective index entry, so the instance gets reloaded:
+	fs.ptrie.Lookup(nd.Path()).Remove()
+	delete(fs.index, nd.Hash().B58String())
+
+	par, err := nodeParentDir(nd)
+	if err != nil {
+		return err
+	}
+
+	if err := par.RemoveChild(nd); err != nil {
+		return err
+	}
+
+	if err := fs.StageNode(par); err != nil {
+		return err
+	}
+
+	if oldNode == nil {
+		// oldNode did not exist back then. Just delete the file.
+		// TODO: make remove checkpoint
+		return nil
+
+	}
+
+	if err := par.Add(oldNode); err != nil {
+		return err
+	}
+
+	// TODO: create modify checkpoint.
+	// Stage the old node
+	return fs.StageNode(oldNode)
+}
