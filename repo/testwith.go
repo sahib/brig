@@ -5,19 +5,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-func WithAliceRepo(t *testing.T, f func(*repo.Repository)) {
+func WithAliceRepo(t *testing.T, f func(*Repository)) {
 	WithRepo(t, "alice", "alicepass", f)
 }
 
-func WithBobRepo(t *testing.T, f func(*repo.Repository)) {
+func WithBobRepo(t *testing.T, f func(*Repository)) {
 	WithRepo(t, "bob", "bobpass", f)
 }
 
-func WithRepo(t *testing.T, user, pass string, f func(*repo.Repository)) {
+func WithRepo(t *testing.T, user, pass string, f func(*Repository)) {
 	path, err := ioutil.TempDir("", "brig-repotest")
 	if err != nil {
 		t.Fatalf("Cannot create test repo: %v", err)
@@ -26,13 +25,13 @@ func WithRepo(t *testing.T, user, pass string, f func(*repo.Repository)) {
 	WithRepoAtPath(t, path, user, pass, f)
 }
 
-func WithRepoAtPath(t *testing.T, path, user, pass string, f func(*repo.Repository)) {
+func WithRepoAtPath(t *testing.T, path, user, pass string, f func(*Repository)) {
 	if err := os.RemoveAll(path); err != nil {
 		t.Errorf("previous repo exists; cannot delete it though: %v", err)
 		return
 	}
 
-	rep, err := repo.NewRepository(user, pass, path)
+	rep, err := NewRepository(user, pass, path)
 	if err != nil {
 		t.Errorf("creating repo failed: %v", err)
 		return

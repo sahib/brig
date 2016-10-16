@@ -121,7 +121,7 @@ func handleDaemon(ctx *cli.Context) error {
 func doMount(ctx *cli.Context, client *daemon.Client, mount bool) error {
 	mountPath := ""
 	if len(ctx.Args()) > 0 {
-		mountPath = ctx.Args()[0]
+		mountPath = ctx.Args().First()
 	} else {
 		mountPath = filepath.Join(guessRepoFolder(), "mount")
 		if err := os.Mkdir(mountPath, 0744); err != nil {
@@ -165,7 +165,7 @@ func handleConfigList(cli *cli.Context, cfg *config.Config) error {
 }
 
 func handleConfigGet(ctx *cli.Context, cfg *config.Config) error {
-	key := ctx.Args()[0]
+	key := ctx.Args().First()
 	value, err := cfg.String(key)
 	if err != nil {
 		return ExitCode{
@@ -178,8 +178,8 @@ func handleConfigGet(ctx *cli.Context, cfg *config.Config) error {
 }
 
 func handleConfigSet(ctx *cli.Context, cfg *config.Config) error {
-	key := ctx.Args()[0]
-	value := ctx.Args()[1]
+	key := ctx.Args().First()
+	value := ctx.Args().Get(1)
 	if err := cfg.Set(key, value); err != nil {
 		return ExitCode{
 			BadArgs,
@@ -198,7 +198,7 @@ func handleConfigSet(ctx *cli.Context, cfg *config.Config) error {
 }
 
 func handleInit(ctx *cli.Context) error {
-	ID, err := id.Cast(ctx.Args()[0])
+	ID, err := id.Cast(ctx.Args().First())
 	if err != nil {
 		return ExitCode{
 			BadArgs,
@@ -260,7 +260,7 @@ func handleInit(ctx *cli.Context) error {
 }
 
 func handleStage(ctx *cli.Context, client *daemon.Client) error {
-	filePath, err := filepath.Abs(ctx.Args()[0])
+	filePath, err := filepath.Abs(ctx.Args().First())
 	if err != nil {
 		return ExitCode{
 			UnknownError,
@@ -286,7 +286,7 @@ func handleStage(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleRm(ctx *cli.Context, client *daemon.Client) error {
-	repoPath := prefixSlash(ctx.Args()[0])
+	repoPath := prefixSlash(ctx.Args().First())
 
 	if err := client.Remove(repoPath, ctx.Bool("recursive")); err != nil {
 		return ExitCode{
@@ -299,7 +299,7 @@ func handleRm(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleCat(ctx *cli.Context, client *daemon.Client) error {
-	repoPath := prefixSlash(ctx.Args()[0])
+	repoPath := prefixSlash(ctx.Args().First())
 
 	filePath := ""
 	isStdoutMode := ctx.NArg() < 2
@@ -394,7 +394,7 @@ func printCheckpoint(checkpoint *store.Checkpoint, idx, historylen int) {
 }
 
 func handleHistory(ctx *cli.Context, client *daemon.Client) error {
-	repoPath := prefixSlash(ctx.Args()[0])
+	repoPath := prefixSlash(ctx.Args().First())
 
 	history, err := client.History(repoPath)
 	if err != nil {
@@ -477,7 +477,7 @@ func handleOnline(ctx *cli.Context, client *daemon.Client) error {
 func handleList(ctx *cli.Context, client *daemon.Client) error {
 	path := "/"
 	if ctx.NArg() > 0 {
-		path = prefixSlash(ctx.Args()[0])
+		path = prefixSlash(ctx.Args().First())
 	}
 
 	depth := ctx.Int("depth")
@@ -523,7 +523,7 @@ func handleList(ctx *cli.Context, client *daemon.Client) error {
 func handleTree(ctx *cli.Context, client *daemon.Client) error {
 	path := "/"
 	if ctx.NArg() > 0 {
-		path = prefixSlash(ctx.Args()[0])
+		path = prefixSlash(ctx.Args().First())
 	}
 
 	depth := ctx.Int("depth")
@@ -546,7 +546,7 @@ func handleTree(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleMv(ctx *cli.Context, client *daemon.Client) error {
-	source, dest := prefixSlash(ctx.Args()[0]), prefixSlash(ctx.Args()[1])
+	source, dest := prefixSlash(ctx.Args().First()), prefixSlash(ctx.Args().Get(1))
 
 	if err := client.Move(source, dest); err != nil {
 		return ExitCode{
@@ -559,7 +559,7 @@ func handleMv(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleMkdir(ctx *cli.Context, client *daemon.Client) error {
-	path := prefixSlash(ctx.Args()[0])
+	path := prefixSlash(ctx.Args().First())
 
 	var err error
 
@@ -721,7 +721,7 @@ func handleDiff(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handlePin(ctx *cli.Context, client *daemon.Client) error {
-	path := ctx.Args()[0]
+	path := ctx.Args().First()
 
 	if ctx.Bool("is-pinned") {
 		isPinned, err := client.IsPinned(path)
@@ -746,7 +746,7 @@ func handlePin(ctx *cli.Context, client *daemon.Client) error {
 }
 
 func handleUnpin(ctx *cli.Context, client *daemon.Client) error {
-	return client.Unpin(ctx.Args()[0])
+	return client.Unpin(ctx.Args().First())
 }
 
 func handleDebugExport(ctx *cli.Context, client *daemon.Client) error {
