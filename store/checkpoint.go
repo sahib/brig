@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
@@ -11,7 +12,8 @@ import (
 
 var (
 	// ErrNoChange means that nothing changed between two versions (of a file)
-	ErrNoChange = fmt.Errorf("Nothing changed between the given versions")
+	ErrNoChange   = errors.New("Nothing changed between the given versions")
+	ErrBadHistory = errors.New("Failed to resolve history to file")
 )
 
 const (
@@ -291,42 +293,95 @@ func (hy *History) At(index int) *Checkpoint {
 	return (*hy)[index]
 }
 
-func (hy *History) Equal(hb *History) bool {
-	// TODO
-	return false
-}
-
-func (hy *History) MostCurrentPath(fs *FS) string {
+func (hy *History) MostCurrentPath(fs *FS) (string, error) {
 	if len(*hy) == 0 {
-		return ""
+		return "", nil
 	}
 
-	// id := (*hy)[len(*hy)-1].idLink
-	// TODO: resolve id to file, return file.path?
-	return ""
+	uid := (*hy)[len(*hy)-1].idLink
+	nd, err := fs.NodeByUID(uid)
+	if err != nil {
+		return "", nil
+	}
+
+	if nd == nil {
+		return "", ErrBadHistory
+	}
+
+	return nd.Path(), nil
 }
 
-func (hy *History) AllPaths() []string {
-	// TODO
-	return nil
+func (hy *History) AllPaths(fs *FS) ([]string, error) {
+	paths := []string{}
+
+	for _, ckp := range *hy {
+		nd, err := fs.NodeByUID(ckp.idLink)
+		if err != nil {
+			return nil, err
+		}
+
+		if nd == nil {
+			return nil, ErrBadHistory
+		}
+
+		paths = append(paths, nd.Path())
+	}
+
+	return paths, nil
 }
 
-func (hy *History) IsPrefix(hb *History) bool {
-	// TODO
-	return false
+func (hy *History) HasSharedPrefix(hb *History) bool {
+	hr, hl := hy, hb
+	if len(*hr) < len(*hl) {
+		hr, hl = hr, hl
+	}
+
+	// Check if the prefix is equal:
+	for idx := len(*hl) - 1; idx >= 0; idx-- {
+		if !(*hl)[idx].Equal((*hr)[idx]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (hy *History) toMap() map[string]*Checkpoint {
+	m := make(map[string]*Checkpoint)
+	for _, ckp := range *hy {
+		m[ckp.hash.B58String()] = ckp
+	}
+
+	return m
 }
 
 func (hy *History) CommonRoot(hb *History) int {
-	// TODO
+	mb := hb.toMap()
+	for idx := len(*hy) - 1; idx >= 0; idx-- {
+		ckp := (*hy)[idx]
+		if _, ok := mb[ckp.Hash().B58String()]; ok {
+			return idx
+		}
+	}
+
 	return -1
 }
 
 func (hy *History) ConflictingChanges(hb *History, since int) error {
-	// TODO? return?
+	// TODO: Use the table in the thesis here.
 	return nil
 }
 
 //////////////////////////
+
+// Equal returns true if the two checkpoints point to the same type and hash.
+func (ckp *Checkpoint) Equal(cko *Checkpoint) bool {
+	if ckp.change != cko.change {
+		return false
+	}
+
+	return ckp.Hash().Equal(cko.Hash())
+}
 
 func (ckp *Checkpoint) MakeLink() *CheckpointLink {
 	return &CheckpointLink{

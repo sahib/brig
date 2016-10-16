@@ -4,6 +4,7 @@ package store
 //
 // objects/<NODE_HASH>                   => NODE_METADATA
 // tree/<FULL_NODE_PATH>                 => NODE_HASH
+// uid/<NODE_HASH>                       => NODE_HASH
 // checkpoints/<HEX_NODE_ID>/<IDX>       => CHECKPOINT_DATA
 //
 // stage/objects/<NODE_HASH>             => NODE_METADATA
@@ -52,7 +53,10 @@ type FS struct {
 	ptrie *trie.Node
 
 	// B58Hash to node
-	index map[string]*trie.Node
+	index map[string]Node
+
+	// UID to node
+	uidIndex map[uint64]Node
 }
 
 func marshalNode(nd Node) ([]byte, error) {
@@ -93,11 +97,45 @@ func unmarshalNode(fs *FS, data []byte) (Node, error) {
 // NewFilesystem returns a new FS, ready to use. It assumes the key value store
 // is working and does no check on this.
 func NewFilesystem(kv KV) *FS {
-	return &FS{
-		kv:    kv,
-		ptrie: trie.NewNode(),
-		index: make(map[string]*trie.Node),
+	fs := &FS{kv: kv}
+	fs.MemIndexClear()
+	return fs
+}
+
+//  MemIndexAdd adds `nd` to the in memory index.
+func (fs *FS) MemIndexAdd(nd Node) {
+	fs.index[nd.Hash().B58String()] = nd
+	fs.uidIndex[nd.ID()] = nd
+	fs.ptrie.InsertWithData(nd.Path(), nd)
+}
+
+// MemIndexSwap updates an entry of the in memory index, by deleting
+// the old entry referenced by oldHash (may be nil). This is necessary
+// to ensure that old hashes do not resolve to the new, updated instance.
+// If the old instance is needed, it will be loaded as new instance.
+// You should not need to call this function, except when implementing own Nodes.
+func (fs *FS) MemIndexSwap(nd Node, oldHash *Hash) {
+	if oldHash != nil {
+		delete(fs.index, oldHash.B58String())
 	}
+
+	fs.index[nd.Hash().B58String()] = nd
+	fs.uidIndex[nd.ID()] = nd
+	fs.ptrie.InsertWithData(nd.Path(), nd)
+}
+
+// MemIndexPurge removes `nd` from the memory index.
+func (fs *FS) MemIndexPurge(nd Node) {
+	delete(fs.uidIndex, nd.ID())
+	delete(fs.index, nd.Hash().B58String())
+	fs.ptrie.Lookup(nd.Path()).Remove()
+}
+
+// MemIndexClear resets the memory index to zero.
+func (fs *FS) MemIndexClear() {
+	fs.ptrie = trie.NewNode()
+	fs.index = make(map[string]Node)
+	fs.uidIndex = make(map[uint64]Node)
 }
 
 //////////////////////////
@@ -172,8 +210,8 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
-	if trieNode, ok := fs.index[b58Hash]; ok && trieNode.Data != nil {
-		return trieNode.Data.(Node), nil
+	if cachedNode, ok := fs.index[b58Hash]; ok {
+		return cachedNode, nil
 	}
 
 	// Node was not in the cache, load directly from bolt.
@@ -190,7 +228,7 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 	// NOTE: This will indirectly load parent directories (by calling Parent(),
 	// if not done yet! We might be stuck in an endless loop if we have cycles
 	// in our DAG, so look at this place first when an endless loop occurs.
-	fs.SwapIntoMemIndex(nd, nil)
+	fs.MemIndexSwap(nd, nil)
 	return nd, nil
 }
 
@@ -253,24 +291,6 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	return fs.NodeByHash(&Hash{hash})
 }
 
-// SwapIntoMemIndex updates an entry of the in memory index, by deleting
-// the old entry referenced by oldHash (may be nil). This is necessary
-// to ensure that old hashes do not resolve to the new, updated instance.
-// If the old instance is needed, it will be loaded as new instance.
-// You should not need to call this function, except when implementing own Nodes.
-func (fs *FS) SwapIntoMemIndex(nd Node, oldHash *Hash) {
-	// We need to delete the old hash, pointing to the old version. When loaded
-	// through the index, it would still load the new in memory version that
-	// was modified. When deleting the entry, it will be reloaded from the
-	// boltdb, and get a proper new instance (if needed).
-	if oldHash != nil {
-		delete(fs.index, oldHash.B58String())
-	}
-
-	b58Hash := nd.Hash().B58String()
-	fs.index[b58Hash] = fs.ptrie.InsertWithData(nd.Path(), nd)
-}
-
 // StageNode inserts a modified node to the staging area, making sure the
 // modification is persistent and part of the staging commit. All parent
 // directories of the node in question will be staged automatically. If there
@@ -298,6 +318,23 @@ func (fs *FS) StageNode(nd Node) error {
 	return fs.saveStatus(status)
 }
 
+// NodeByUID resolves a node by it's unique ID.
+// It will return nil if no corresponding node was found.
+func (fs *FS) NodeByUID(uid uint64) (Node, error) {
+	uidKey := strconv.FormatUint(uid, 16)
+	hash, err := getPath(fs.kv, "uid/"+uidKey)
+	if err != nil {
+		return nil, err
+	}
+
+	mh, err := multihash.Cast(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.NodeByHash(&Hash{mh})
+}
+
 func (fs *FS) stageNodeRecursive(nd Node) error {
 	if nd.GetType() == NodeTypeCommit {
 		return fmt.Errorf("BUG: Commits cannot be staged; Use MakeCommit()")
@@ -318,6 +355,11 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 		return err
 	}
 
+	uidKey := strconv.FormatUint(nd.ID(), 16)
+	if err := putPath(fs.kv, "uid/"+uidKey, nd.Hash().Bytes()); err != nil {
+		return err
+	}
+
 	// The key is the path of the
 	nodePath := NodePath(nd)
 
@@ -332,7 +374,7 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 	}
 
 	// Remember/Update this node in the cache if it's not yet there:
-	fs.index[b58Hash] = fs.ptrie.InsertWithData(nodePath, nd)
+	fs.MemIndexAdd(nd)
 
 	// We need to save parent directories too, in case the hash changed:
 	// TODO: This creates many pointless roots in the stage. Maybe remember
@@ -416,6 +458,10 @@ func (fs *FS) HistoryByPath(nodePath string) (History, error) {
 	nd, err := fs.ResolveNode(nodePath)
 	if err != nil {
 		return nil, err
+	}
+
+	if nd == nil {
+		return nil, NoSuchFile(nodePath)
 	}
 
 	return fs.History(nd.ID())
@@ -984,6 +1030,7 @@ func (fs *FS) HaveStagedChanges() (bool, error) {
 // referenced by cmt. If force is false, it will check if there any stages in
 // the staging area and return ErrStageNotEmpty if there are any. If force is
 // true, all changes will be overwritten.
+// TODO: write test for this.
 func (fs *FS) CheckoutCommit(cmt *Commit, force bool) error {
 	// Check if the staging area is empty if no force given:
 	if !force {
@@ -1008,14 +1055,14 @@ func (fs *FS) CheckoutCommit(cmt *Commit, force bool) error {
 
 	// Invalidate the cache, causing NodeByHash and ResolveNode to load the
 	// file from the boltdb again:
-	fs.ptrie = trie.NewNode()
-	fs.index = make(map[string]*trie.Node)
+	fs.MemIndexClear()
 	return fs.saveStatus(status)
 }
 
 // CheckoutFile resets a certain file to the state it had in cmt. If the file
 // did not exist back then, it will be deleted. `nd` is usually retrieved by
 // calling ResolveNode() and sorts.
+// TODO: write test for this.
 func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 	root, err := fs.DirectoryByHash(cmt.Root())
 	if err != nil {
@@ -1028,15 +1075,14 @@ func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 	}
 
 	// TODO: Better resolve by UID here?
-	//       Need a way to resolve uid -> node though.
+	//       Would need to find the commit with the last modification though.
 	oldNode, err := root.Lookup(nd.Path())
 	if err != nil {
 		return err
 	}
 
 	// Invalidate the respective index entry, so the instance gets reloaded:
-	fs.ptrie.Lookup(nd.Path()).Remove()
-	delete(fs.index, nd.Hash().B58String())
+	fs.MemIndexPurge(nd)
 
 	par, err := nodeParentDir(nd)
 	if err != nil {

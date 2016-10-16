@@ -104,7 +104,7 @@ func (f *File) SetSize(s uint64) {
 func (f *File) SetHash(h *Hash) {
 	oldHash := f.hash
 	f.hash = h
-	f.fs.SwapIntoMemIndex(f, oldHash)
+	f.fs.MemIndexSwap(f, oldHash)
 }
 
 func (f *File) Path() string {

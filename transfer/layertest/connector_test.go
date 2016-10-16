@@ -10,11 +10,10 @@ import (
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/moose"
-	"github.com/disorganizer/brig/util/testwith"
 )
 
 func WithConnector(t *testing.T, user string, fc func(c *transfer.Connector)) {
-	testwith.WithRepo(t, user, user+"pass", func(rp *repo.Repository) {
+	repo.WithRepo(t, user, user+"pass", func(rp *repo.Repository) {
 		if err := rp.IPFS.Online(); err != nil {
 			t.Errorf("Cannot go online with IPFS repo: %v", err)
 			return

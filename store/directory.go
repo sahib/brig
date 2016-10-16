@@ -286,7 +286,7 @@ func (d *Directory) xorHash(hash *Hash) error {
 		d.fs.SetMemRoot(d)
 	}
 
-	d.fs.SwapIntoMemIndex(d, oldHash)
+	d.fs.MemIndexSwap(d, oldHash)
 	return nil
 }
 

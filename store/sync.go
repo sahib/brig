@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 )
 
 var (
@@ -10,11 +11,18 @@ var (
 	ErrConflict       = errors.New("Conflicting changes")
 )
 
-// Ein assoziatives Array mit dem Pfad zu der Historie
-// seit dem letzten gemeinsamen Merge-Point.
-type PathToHistory map[string]*History
+// candidate is a single candidate that needs some sort of action.
+type candidate struct {
+	ownPath  string
+	bobPath  string
+	bobStore *Store
+	ownStore *Store
+}
 
-func indexStore(bob *Store) (PathToHistory, error) {
+type pathToHistory map[string]*History
+
+// collectHistoryMap iterates over all files and creates a pathHistory
+func collectHistoryMap(bob *Store) (pathToHistory, error) {
 	bobRoot, err := bob.fs.Root()
 	if err != nil {
 		return nil, err
@@ -41,28 +49,112 @@ func indexStore(bob *Store) (PathToHistory, error) {
 	return bobMap, nil
 }
 
-func (st *Store) syncByMapping(bob *Store, bobMap PathToHistory) error {
+// handleFastForward assumes that we already have this path.
+func handleFastForward(cnd candidate) error {
+	bobFile, err := cnd.bobStore.fs.ResolveFile(cnd.bobPath)
+	if err != nil {
+		return err
+	}
+
+	bobOwner, err := cnd.bobStore.Owner()
+	if err != nil {
+		return err
+	}
+
+	bobHash := bobFile.Hash()
+	bobSize := bobFile.Size()
+	bobKey := bobFile.Key()
+
+	log.Infof("Fast forwarding %s to %s", cnd.ownPath, bobFile.Hash())
+
+	_, err = stageFile(
+		cnd.ownStore.fs,
+		cnd.ownPath,
+		bobHash,
+		bobKey,
+		bobSize,
+		bobOwner.ID(),
+	)
+
+	return err
+}
+
+// handleConflict takes a candidate and adds it as conflict file.
+// If the conflict file already exists, it will be updated.
+func handleConflict(cnd candidate) error {
+	log.Infof("Conflicting files: %s (own) <-> %s (remote)", cnd.ownPath, cnd.bobPath)
+	bobOwner, err := cnd.bobStore.Owner()
+	if err != nil {
+		return err
+	}
+
+	bobFile, err := cnd.bobStore.fs.LookupFile(cnd.bobPath)
+	if err != nil {
+		return err
+	}
+
+	conflictPath := cnd.ownPath + "." + bobOwner.ID().User() + ".conflict"
+	log.Infof("Creating conflict file: %s", conflictPath)
+
+	bobHash := bobFile.Hash()
+	bobSize := bobFile.Size()
+	bobKey := bobFile.Key()
+
+	_, err = stageFile(
+		cnd.ownStore.fs,
+		conflictPath,
+		bobHash,
+		bobKey,
+		bobSize,
+		bobOwner.ID(),
+	)
+
+	if err == ErrNoChange {
+		return nil
+	}
+
+	return err
+}
+
+func (st *Store) syncByMapping(bob *Store, bobMap pathToHistory) error {
 	ownRoot, err := st.fs.Root()
 	if err != nil {
 		return err
 	}
 
+	// Collect files that we need to handle. Modifying them while iterating
+	// over the tree might is not the brightest idea.
+	var conflicts, fastForward []candidate
+
 	// Walk over the paths of alice and guess for each node
 	// with which node of bob we have to synchronize.
-	return Walk(ownRoot, true, func(child Node) error {
-		path := child.Path()
-		histA, err := st.fs.History(child.ID())
-		if err != nil {
-			return fmt.Errorf("No history from alice for `%s`: %v", path, err)
+	err = Walk(ownRoot, true, func(child Node) error {
+		// TODO: Make sure to synchronize empty dirs later on:
+		if child.GetType() != NodeTypeFile {
+			return nil
 		}
 
-		bobPath, err := st.mapPath(histA, bobMap)
+		ownPath := child.Path()
+
+		fmt.Println("visit", ownPath)
+		histA, err := st.fs.History(child.ID())
+		if err != nil {
+			return fmt.Errorf("No history from alice for `%s`: %v", ownPath, err)
+		}
+
+		bobPath, err := st.mapPath(bob, histA, bobMap)
 		if err != nil && err != ErrNoMappingFound {
 			return err
 		}
 
+		if err == ErrNoMappingFound {
+			fmt.Println("no mapping found for", bobPath, "to", ownPath)
+			return nil
+		}
+
+		fmt.Println("Mapping was", bobPath)
 		histB, err := bob.fs.HistoryByPath(bobPath)
-		if err != nil && err != ErrNoMappingFound {
+		if err != nil {
 			return err
 		}
 
@@ -72,17 +164,52 @@ func (st *Store) syncByMapping(bob *Store, bobMap PathToHistory) error {
 			return nil
 		}
 
-		if err := st.syncSingleFile(&histA, &histB); err != nil {
+		canFF, err := st.decideSingleFile(&histA, &histB)
+		if err == ErrConflict {
+			// Handle conflict.
+			conflicts = append(conflicts, candidate{ownPath, bobPath, bob, st})
+			delete(bobMap, bobPath)
+			return nil
+		}
+
+		if err != nil {
 			return err
+		}
+
+		if canFF {
+			fastForward = append(fastForward, candidate{ownPath, bobPath, bob, st})
+			delete(bobMap, bobPath)
+			return nil
 		}
 
 		// Remember that we handled this file.
 		delete(bobMap, bobPath)
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// Handle the candidates we've found:
+
+	for _, cnd := range conflicts {
+		if err := handleConflict(cnd); err != nil {
+			return err
+		}
+	}
+
+	for _, cnd := range fastForward {
+		if err := handleFastForward(cnd); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (st *Store) addLeftovers(bob *Store, bobMap PathToHistory) error {
+// addLeftovers takes the paths from bob that alice doesn't posess.
+func (st *Store) addLeftovers(bob *Store, bobMap pathToHistory) error {
 	owner, err := st.Owner()
 	if err != nil {
 		return err
@@ -90,9 +217,19 @@ func (st *Store) addLeftovers(bob *Store, bobMap PathToHistory) error {
 
 	for path := range bobMap {
 		// TODO: what to do with bob's history? Ignore for now?
-		file, err := bob.fs.LookupFile(path)
+		node, err := bob.fs.LookupNode(path)
 		if err != nil {
 			return err
+		}
+
+		if node.GetType() != NodeTypeFile {
+			continue
+		}
+
+		file, ok := node.(*File)
+		if !ok {
+			log.Warningf("Syncing messed up file types; not a file: %v", file)
+			continue
 		}
 
 		_, err = stageFile(st.fs, path, file.Hash(), file.Key(), file.Size(), owner.ID())
@@ -113,7 +250,7 @@ func (st *Store) SyncWith(bob *Store) error {
 	bob.mu.Lock()
 	defer bob.mu.Unlock()
 
-	bobMap, err := indexStore(bob)
+	bobMap, err := collectHistoryMap(bob)
 	if err != nil {
 		return err
 	}
@@ -123,25 +260,35 @@ func (st *Store) SyncWith(bob *Store) error {
 		return err
 	}
 
-	return nil
+	return st.addLeftovers(bob, bobMap)
 }
 
-// mapPath maps the file described by the history HistA from Alice
+// mapPath maps the file described by the history histA from Alice
 // to a coressponding file in Bob's set of files.
 // If no matching file could be found ErrNoMappingFound is returned.
-func (st *Store) mapPath(HistA History, BobMapping PathToHistory) (string, error) {
+func (st *Store) mapPath(bobStore *Store, histA History, bobMapping pathToHistory) (string, error) {
 	// Iterate over all pathes in alice' history of this file.
 	// Usually this is just one path.
-	for _, path := range HistA.AllPaths() {
+	paths, err := histA.AllPaths(st.fs)
+	if err != nil {
+		return "", err
+	}
+
+	for _, path := range paths {
 		// Test if bob has a file with this path.
-		histB, ok := BobMapping[path]
+		histB, ok := bobMapping[path]
 		if !ok {
 			continue
 		}
 
 		// If yes, just return the newest path.
 		// (i.e. the path after all moves)
-		return histB.MostCurrentPath(st.fs), nil
+		bobPath, err := histB.MostCurrentPath(bobStore.fs)
+		if err != nil {
+			return "", err
+		}
+
+		return bobPath, nil
 	}
 
 	// Whoops, no corresponding file found in bob's set.
@@ -149,37 +296,36 @@ func (st *Store) mapPath(HistA History, BobMapping PathToHistory) (string, error
 	return "", ErrNoMappingFound
 }
 
-func (st *Store) syncSingleFile(historyA, historyB *History) error {
-	if historyA.Equal(historyB) {
-		// Keine weitere Aktion nötig.
-		return nil
+func (st *Store) decideSingleFile(historyA, historyB *History) (bool, error) {
+	hasPrefix := historyA.HasSharedPrefix(historyB)
+	if len(*historyA) == len(*historyB) && hasPrefix {
+		// Both histories are the same. Nothing needs to be done.
+		return false, nil
 	}
 
-	// Prüfe, ob historyA mit den Checkpoints von historyB beginnt.
-	if historyA.IsPrefix(historyB) {
-		// B hängt A hinterher.
-		return nil
+	if hasPrefix && len(*historyA) < len(*historyB) {
+		// We are behind B. Fast forward the file.
+		return true, nil
 	}
 
-	if historyB.IsPrefix(historyA) {
-		// A hängt B hinterher. Kopiere B zu A ("fast forward").
-		// TODO
-		// copy(B, A)
-		return nil
+	if hasPrefix && len(*historyA) > len(*historyB) {
+		// We have more checkpoints than B. Do nothing.
+		return false, nil
 	}
 
-	if rootIdx := historyA.CommonRoot(historyB); rootIdx >= 0 {
-		// A und B haben trotzdem eine gemeinsame Historie,
-		// haben sich aber auseinanderentwickelt.
-		if historyA.ConflictingChanges(historyB, rootIdx) == nil {
-			// Die Änderungen sind verträglich und
-			// können automatisch aufgelöst werden.
-			// ResolveConflict(historyA, historyB, root)
-			return nil
-		}
-	}
+	// TODO: Check if histories have a common root and if so,
+	//       if the checkpoints since then have compatible changes.
+	//  rootIdx := historyA.CommonRoot(historyB)
+	//  if rootIdx < 0 {
+	//     // No root found, check all checkpoints.
+	//     rootIdx = 0
+	//  }
+	//
+	// 	if historyA.ConflictingChanges(historyB, rootIdx) == nil {
+	// 		return ResolveConflict(historyA, historyB, root)
+	// 	}
+	// }
 
-	// Keine gemeinsame Historie.
-	// TODO: handle history.
-	return ErrConflict
+	// Can't do much here without asking the user.
+	return false, ErrConflict
 }

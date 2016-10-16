@@ -163,6 +163,13 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			return
 		}
 
+		uidSubDir, err := fs.NodeByUID(sameSubDir.ID())
+		if err != nil {
+			t.Errorf("Resolving /sub by ID (%d) failed: %v", sameSubDir.ID(), err)
+		}
+
+		fmt.Println("UID SUB", uidSubDir)
+
 		subpub, err := newEmptyDirectory(fs, sameSubDir, "pub")
 		if err != nil {
 			t.Errorf("Creating of deep sub failed")
