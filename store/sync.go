@@ -28,6 +28,8 @@ func collectHistoryMap(bob *Store) (pathToHistory, error) {
 		return nil, err
 	}
 
+	fmt.Println("Bob root", bobRoot)
+
 	// Walk over the contents of bob and remember all
 	// histories under their path.
 	bobMap := make(map[string]*History)

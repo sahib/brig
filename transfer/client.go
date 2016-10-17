@@ -81,8 +81,7 @@ func (acl *APIClient) Fetch(s *store.Store) error {
 		return err
 	}
 
-	log.Info("Got response: %v", resp)
-
+	log.Info("Got response: %v", resp.ReqType)
 	protoStore := resp.GetFetchResp().GetStore()
 	return s.Import(protoStore)
 }

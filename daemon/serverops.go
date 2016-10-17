@@ -189,6 +189,10 @@ func handleSync(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 		return nil, err
 	}
 
+	if err := d.Repo.OwnStore.SyncWith(remoteStore); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

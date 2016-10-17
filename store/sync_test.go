@@ -62,7 +62,6 @@ func TestStoreSync(t *testing.T) {
 				return
 			}
 
-			printTree(alice.fs)
 			fmt.Println("+=======")
 
 			if err := alice.SyncWith(bob); err != nil {

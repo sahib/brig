@@ -179,10 +179,13 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 
 	b58hash := hash.B58String()
 
-	loadableBuckets := []string{"stage/objects", "objects"}
+	loadableBuckets := [][]string{
+		[]string{"stage", "objects"},
+		[]string{"objects"},
+	}
 	for _, bucketPath := range loadableBuckets {
 		var bkt Bucket
-		bkt, err = fs.kv.Bucket([]string{bucketPath})
+		bkt, err = fs.kv.Bucket(bucketPath)
 		if err != nil {
 			return nil, err
 		}
@@ -225,9 +228,6 @@ func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
 		return nil, nil
 	}
 
-	// NOTE: This will indirectly load parent directories (by calling Parent(),
-	// if not done yet! We might be stuck in an endless loop if we have cycles
-	// in our DAG, so look at this place first when an endless loop occurs.
 	fs.MemIndexSwap(nd, nil)
 	return nd, nil
 }

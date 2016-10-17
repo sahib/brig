@@ -124,14 +124,14 @@ func (d *Directory) FromProto(pnd *wire.Node) error {
 	d.name = pnd.Name
 	d.children = make(map[string]*Hash)
 
-	// Find our place in the world:
+	// Be cautious, input might come from everywhere:
 	links := pbd.Links
-	for idx, name := range pbd.Names {
-		// Be cautious, input might come from everywhere:
-		if idx >= 0 && idx < len(links) {
-			return fmt.Errorf("Malformed input: More or less names than links in `%s`", d.name)
-		}
+	if len(pbd.Names) != len(links) {
+		return fmt.Errorf("Malformed input: More or less names than links in `%s`", d.name)
+	}
 
+	// Find our place in the world:
+	for idx, name := range pbd.Names {
 		d.children[name] = &Hash{links[idx]}
 	}
 
