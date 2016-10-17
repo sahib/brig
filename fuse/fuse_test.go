@@ -12,7 +12,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/testutil"
-	"github.com/disorganizer/brig/util/testwith"
 )
 
 func withMount(t *testing.T, f func(mount *Mount)) {
@@ -29,7 +28,7 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 
 	defer testutil.Remover(t, mntPath)
 
-	testwith.WithAliceRepo(t, func(rep *repo.Repository) {
+	repo.WithAliceRepo(t, func(rep *repo.Repository) {
 		mount, err := NewMount(rep.OwnStore, mntPath)
 		if err != nil {
 			t.Errorf("Cannot create mount: %v", err)
