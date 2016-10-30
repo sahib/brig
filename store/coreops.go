@@ -85,6 +85,16 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
+	var compressAlgo compress.AlgorithmType
+	compressAlgo = compress.AlgoNone
+	if rs, ok := r.(io.ReadSeeker); ok {
+		var err error
+		compressAlgo, err = compress.ChooseCompressAlgo(repoPath, rs)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Control how many bytes are written to the encryption layer:
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
@@ -96,7 +106,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
 
 	// TODO: Make algo configurable/add heuristic too choose
 	//       a suitable algorithm
-	stream, err := NewFileReader(key, teeR, compress.AlgoSnappy)
+	stream, err := NewFileReader(key, teeR, compressAlgo)
 	if err != nil {
 		return err
 	}
