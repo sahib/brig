@@ -66,19 +66,20 @@ func isCompressable(mimetype string) bool {
 	return true
 }
 
-func ChooseCompressAlgo(repoPath string, rs io.ReadSeeker) (AlgorithmType, error) {
+func ChooseCompressAlgo(path string, rs io.ReadSeeker) (AlgorithmType, error) {
 	buf := make([]byte, Threshold)
+
 	bytesRead, err := rs.Read(buf)
 	if err != nil {
 		return AlgoNone, err
 	}
 
-	mime := guessMime(repoPath, buf)
-	compressAble := isCompressable(mime)
-
-	if _, err := rs.Seek(0, os.SEEK_SET); err != nil {
-		return AlgoNone, err
+	if _, errSeek := rs.Seek(0, os.SEEK_SET); err != nil {
+		return AlgoNone, errSeek
 	}
+
+	mime := guessMime(path, buf)
+	compressAble := isCompressable(mime)
 
 	if !compressAble || int64(bytesRead) != Threshold {
 		return AlgoNone, nil

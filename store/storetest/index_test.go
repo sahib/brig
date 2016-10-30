@@ -10,6 +10,7 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/disorganizer/brig/util/testwith"
@@ -64,7 +65,7 @@ func TestAddCat(t *testing.T) {
 		path := fmt.Sprintf("dummy_%d", size)
 
 		withEmptyStore(t, func(st *store.Store) {
-			if err := st.StageFromReader(path, bytes.NewReader(data)); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(data), compress.AlgoNone); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				return
 			}
@@ -103,7 +104,7 @@ func TestList(t *testing.T) {
 	withEmptyStore(t, func(st *store.Store) {
 		// Build the tree:
 		for _, path := range paths {
-			if err := st.StageFromReader(path, bytes.NewReader(nil)); err != nil {
+			if err := st.StageFromReader(path, bytes.NewReader(nil), compress.AlgoNone); err != nil {
 				t.Errorf("Adding of `%s` failed: %v", path, err)
 				break
 			}
@@ -217,7 +218,7 @@ func TestExport(t *testing.T) {
 }
 
 func createDummySetup(t *testing.T, st *store.Store, data []byte) error {
-	if err := st.StageFromReader("/dummy", bytes.NewReader(data)); err != nil {
+	if err := st.StageFromReader("/dummy", bytes.NewReader(data), compress.AlgoNone); err != nil {
 		t.Errorf("Could not add dummy file for move: %v", err)
 		return err
 	}

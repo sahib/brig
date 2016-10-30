@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+
+	"github.com/disorganizer/brig/store/compress"
 )
 
 func TestStoreImportExport(t *testing.T) {
 	data := []byte{1, 2, 3}
 
 	withIpfsStore(t, "alice", func(alice *Store) {
-		if err := alice.StageFromReader("/hello.go", bytes.NewReader(data)); err != nil {
+		if err := alice.StageFromReader("/hello.go", bytes.NewReader(data), compress.AlgoNone); err != nil {
 			t.Errorf("Failed to stage /hello.go: %v", err)
 			return
 		}

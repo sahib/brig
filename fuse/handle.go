@@ -9,6 +9,7 @@ import (
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"golang.org/x/net/context"
 )
@@ -176,7 +177,7 @@ func (h *Handle) flush() error {
 		log.Warningf("Seek offset is not 0")
 	}
 
-	err = h.fsys.Store.StageFromReader(h.path, h.layer)
+	err = h.fsys.Store.StageFromReader(h.path, h.layer, compress.AlgoSnappy)
 	if err != nil && err != store.ErrNoChange {
 		log.Warningf("Add failed: %v", err)
 		return fuse.ENODATA

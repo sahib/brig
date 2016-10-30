@@ -11,6 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -94,7 +95,7 @@ func TestRead(t *testing.T) {
 			// Add a simple file:
 			name := fmt.Sprintf("hello_%d", size)
 			reader := bytes.NewReader(helloData)
-			if err := mount.Store.StageFromReader("/"+name, reader); err != nil {
+			if err := mount.Store.StageFromReader("/"+name, reader, compress.AlgoNone); err != nil {
 				t.Errorf("Adding simple file from reader failed: %v", err)
 				return
 			}

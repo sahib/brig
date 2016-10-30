@@ -55,7 +55,12 @@ func (st *Store) StageDir(filePath, repoPath string) error {
 			}
 			defer util.Closer(fd)
 
-			err = st.StageFromReader(currPath, fd)
+			compressAlgo, chooseErr := compress.ChooseCompressAlgo(path, fd)
+			if err != nil {
+				return chooseErr
+			}
+
+			err = st.StageFromReader(currPath, fd, compressAlgo)
 		case mode.IsDir():
 			_, err = st.Mkdir(currPath)
 		default:
@@ -79,21 +84,11 @@ func (st *Store) StageDir(filePath, repoPath string) error {
 
 // StageFromReader reads data from r, encrypts & compresses it while feeding it to ipfs.
 // The resulting hash will be committed to the index.
-func (st *Store) StageFromReader(repoPath string, r io.Reader) error {
+func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo compress.AlgorithmType) error {
 	repoPath = prefixSlash(repoPath)
 
 	st.mu.Lock()
 	defer st.mu.Unlock()
-
-	var compressAlgo compress.AlgorithmType
-	compressAlgo = compress.AlgoNone
-	if rs, ok := r.(io.ReadSeeker); ok {
-		var err error
-		compressAlgo, err = compress.ChooseCompressAlgo(repoPath, rs)
-		if err != nil {
-			return err
-		}
-	}
 
 	// Control how many bytes are written to the encryption layer:
 	sizeAcc := &util.SizeAccumulator{}
@@ -193,7 +188,7 @@ func (st *Store) IsPinned(repoPath string) (bool, error) {
 // Touch creates a new empty file.
 // It is provided as convenience wrapper around StageFromReader.
 func (st *Store) Touch(repoPath string) error {
-	return st.StageFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}))
+	return st.StageFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}), compress.AlgoNone)
 }
 
 func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/disorganizer/brig/util/testwith"
@@ -43,16 +44,16 @@ func TestStoreSync(t *testing.T) {
 
 	withIpfsStore(t, "alice", func(alice *Store) {
 		withIpfsStore(t, "bob", func(bob *Store) {
-			if err := alice.StageFromReader(path, bytes.NewReader(data)); err != nil {
+			if err := alice.StageFromReader(path, bytes.NewReader(data), compress.AlgoNone); err != nil {
 				t.Errorf("Failed to stage alice' file: %v", err)
 				return
 			}
 
-			if err := bob.StageFromReader(path, bytes.NewReader(data)); err != nil {
+			if err := bob.StageFromReader(path, bytes.NewReader(data), compress.AlgoNone); err != nil {
 				t.Errorf("Failed to stage bob's file: %v", err)
 				return
 			}
-			if err := bob.StageFromReader(path+".surprise", bytes.NewReader(data)); err != nil {
+			if err := bob.StageFromReader(path+".surprise", bytes.NewReader(data), compress.AlgoNone); err != nil {
 				t.Errorf("Failed to stage bob's file: %v", err)
 				return
 			}
