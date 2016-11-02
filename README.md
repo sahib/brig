@@ -21,16 +21,17 @@ More information will follow once a rough first prototype is ready.
 For now, you can [read this very chaotic blog](https://disorganizer.github.io/blog/).
 
 Summarized in one paragraph, it is an ``syncthing``, ``git-annex`` or
-``BTSync`` alternative, that gives you a commandline interface, a fuse
+``Resilio``-alternative, that gives you a commandline interface, a fuse
 filesystem and a library that can encrypt and compress files which are in turn
 distributed through ``ipfs`` while the file metadata is transmitted separetely.
 It's a bit similar to the currently also unfinished [bazil](https://bazil.org) maybe.
 
-Even shorter: It's supposed to be as flexible as ``git``, but for whole files.
+Even shorter: It's supposed to be as flexible as ``git``, but for complete files.
 
-We're writing our master thesis on ``brig`` ([but it's in german only](https://github.com/disorganizer/brig-thesis)).
-That doesn't mean we're planning to discontinue it after though - actually we'd love to get paid for developement! 
-Care to throw money at us?
+A master thesis on ``brig`` [has been written](https://github.com/disorganizer/brig-thesis), 
+which is only available in german though. That doesn't mean we're planning to
+discontinue it after that thesis - actually we'd love to get paid for
+developement! Care to throw money at us?
 
 ## Installation
 
@@ -38,8 +39,10 @@ Care to throw money at us?
 $ go get github.com/disorganizer/brig/brig
 ```
 
-That should just work if you previously [setup Go](https://golang.org/doc/install).
-
+That should just work if you previously [setup
+Go](https://golang.org/doc/install). Afterwards you'll have a ``brig`` command
+on your computer, which will print it's help when invoked without any
+arguments.
 
 ## Authors
 
