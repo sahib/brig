@@ -104,7 +104,7 @@ func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 			doRemove, doUpdate := false, false
 			switch change.ChangeType {
 			case repo.RemoteChangeAdded:
-				doUpdate = true
+				//doUpdate = true
 			case repo.RemoteChangeModified:
 				doUpdate, doRemove = true, true
 			case repo.RemoteChangeRemoved:
