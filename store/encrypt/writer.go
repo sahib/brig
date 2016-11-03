@@ -158,12 +158,16 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
 func NewWriter(w io.Writer, key []byte) (*Writer, error) {
+	return NewWriterWithType(w, key, defaultCipherType)
+}
+
+func NewWriterWithType(w io.Writer, key []byte, chiperType uint16) (*Writer, error) {
 	writer := &Writer{
 		Writer: w,
 		rbuf:   &bytes.Buffer{},
 	}
 
-	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
+	if err := writer.initAeadCommon(key, chiperType); err != nil {
 		return nil, err
 	}
 
