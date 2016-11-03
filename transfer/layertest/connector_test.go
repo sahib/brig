@@ -120,7 +120,7 @@ func WithParallelConnectors(t *testing.T, users []string, f func(cs []*transfer.
 
 	// Sometimes ipfs does not seem to be fully online yet,
 	// wait a short bit therefore.
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Reorder cns, so that order is preserved:
 	cnsSorted := []*transfer.Connector{}
