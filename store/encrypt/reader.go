@@ -78,11 +78,12 @@ func (r *Reader) readHeaderIfNotDone() error {
 	}
 
 	r.info = info
-	if err := r.initAeadCommon(r.key, info.Cipher); err != nil {
+	if err := r.initAeadCommon(r.key, info.Cipher, int64(r.info.Blocklen)); err != nil {
 		return err
 	}
 
 	r.lastEncSeekPos += headerSize
+	r.decBuf = make([]byte, 0, r.info.Blocklen)
 	return nil
 }
 
@@ -137,7 +138,7 @@ func (r *Reader) readBlock() (int, error) {
 	readBlockNum := binary.LittleEndian.Uint64(r.nonce)
 
 	// Check the block number:
-	currBlockNum := uint64(r.lastDecSeekPos / MaxBlockSize)
+	currBlockNum := uint64(r.lastDecSeekPos / int64(r.info.Blocklen))
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
 			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
@@ -145,7 +146,7 @@ func (r *Reader) readBlock() (int, error) {
 	}
 
 	// Read the *whole* block from the raw stream
-	N := MaxBlockSize + r.aead.Overhead()
+	N := int(r.info.Blocklen) + r.aead.Overhead()
 	n, err := io.ReadAtLeast(r.Reader, r.encBuf[:N], N)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return 0, err
@@ -189,7 +190,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Constants and assumption on the stream below:
 	blockHeaderSize := int64(r.aead.NonceSize())
 	blockOverhead := blockHeaderSize + int64(r.aead.Overhead())
-	totalBlockSize := blockOverhead + MaxBlockSize
+	totalBlockSize := blockOverhead + int64(r.info.Blocklen)
 
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
@@ -223,7 +224,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		encRest := encLen % totalBlockSize
 		decBlocks := encLen / totalBlockSize
 
-		endOffsetDec := decBlocks * MaxBlockSize
+		endOffsetDec := decBlocks * int64(r.info.Blocklen)
 		if encRest > 0 {
 			endOffsetDec += encRest - blockOverhead
 		}
@@ -254,11 +255,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := headerSize + ((absOffsetDec / MaxBlockSize) * totalBlockSize)
+	absOffsetEnc := headerSize + ((absOffsetDec / int64(r.info.Blocklen)) * totalBlockSize)
 
 	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
-	lastBlockNum := r.lastDecSeekPos / MaxBlockSize
+	lastBlockNum := r.lastDecSeekPos / int64(r.info.Blocklen)
 
 	r.lastDecSeekPos = absOffsetDec
 
@@ -278,7 +279,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Reslice the backlog, so Read() does not return skipped data.
-	if _, err := r.backlog.Seek(absOffsetDec%MaxBlockSize, os.SEEK_SET); err != nil {
+	if _, err := r.backlog.Seek(absOffsetDec%int64(r.info.Blocklen), os.SEEK_SET); err != nil {
 		return 0, err
 	}
 
@@ -344,7 +345,6 @@ func NewReader(r io.Reader, key []byte) (*Reader, error) {
 		Reader:        r,
 		backlog:       bytes.NewReader([]byte{}),
 		parsedHeader:  false,
-		decBuf:        make([]byte, 0, MaxBlockSize),
 		isInitialRead: true,
 		endOffsetEnc:  -1,
 		aeadCommon: aeadCommon{

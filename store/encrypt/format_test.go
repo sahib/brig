@@ -75,7 +75,7 @@ func remover(t *testing.T, path string) {
 	}
 }
 
-func testSimpleEncDec(t *testing.T, size int) {
+func testSimpleEncDec(t *testing.T, size int64) {
 	path := testutil.CreateFile(int64(size))
 	defer remover(t, path)
 
@@ -119,20 +119,20 @@ func TestSimpleEncDec(t *testing.T) {
 	}
 }
 
-var SizeTests = []int{
+var SizeTests = []int64{
 	0,
 	1,
-	MaxBlockSize - 1,
-	MaxBlockSize,
-	MaxBlockSize + 10,
-	GoodDecBufferSize - 1,
-	GoodDecBufferSize,
-	GoodDecBufferSize + 1,
-	GoodEncBufferSize - 1,
-	GoodEncBufferSize,
-	7 * GoodEncBufferSize,
-	7*GoodEncBufferSize - 1,
-	GoodEncBufferSize + 1,
+	defaultMaxBlockSize - 1,
+	defaultMaxBlockSize,
+	defaultMaxBlockSize + 10,
+	defaultDecBufferSize - 1,
+	defaultDecBufferSize,
+	defaultDecBufferSize + 1,
+	defaultEncBufferSize - 1,
+	defaultEncBufferSize,
+	7 * defaultEncBufferSize,
+	7*defaultEncBufferSize - 1,
+	defaultEncBufferSize + 1,
 }
 
 var SeekTests = []struct {
@@ -160,7 +160,7 @@ var SeekTests = []struct {
 
 func BenchmarkEncDec(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		testSimpleEncDec(nil, MaxBlockSize*100)
+		testSimpleEncDec(nil, defaultMaxBlockSize*100)
 	}
 }
 
@@ -359,7 +359,7 @@ func TestEmptyFile(t *testing.T) {
 // the same ciphertext. This is a crucial property for brig, although it
 // has some security implications (i.e. no real random etc.)
 func TestEncryptedTheSame(t *testing.T) {
-	sourceData := testutil.CreateDummyBuf(3 * MaxBlockSize)
+	sourceData := testutil.CreateDummyBuf(3 * defaultMaxBlockSize)
 	encOne := &bytes.Buffer{}
 	encTwo := &bytes.Buffer{}
 

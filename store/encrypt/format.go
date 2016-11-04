@@ -59,14 +59,11 @@ const (
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
 	defaultCipherType = aeadCipherChaCha
 
-	// MaxBlockSize is the maximum number of bytes a single payload may have
-	MaxBlockSize = 64 * 1024
+	// Default maxBlockSize if not set
+	defaultMaxBlockSize = 64 * 1024
 
-	// GoodEncBufferSize is the recommended size of buffers for encryption.
-	GoodEncBufferSize = MaxBlockSize + 40
-
-	// GoodDecBufferSize is the recommended size of buffers for decryption.
-	GoodDecBufferSize = MaxBlockSize
+	defaultDecBufferSize = defaultMaxBlockSize
+	defaultEncBufferSize = defaultMaxBlockSize + 40
 )
 
 var (
@@ -86,7 +83,7 @@ var KeySize = chacha.KeySize
 ////////////////////
 
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader(key []byte) []byte {
+func GenerateHeader(key []byte, maxBlockSize int64) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
@@ -113,7 +110,7 @@ func GenerateHeader(key []byte) []byte {
 	binary.LittleEndian.PutUint32(header[12:16], uint32(KeySize))
 
 	// Encode max block size:
-	binary.LittleEndian.PutUint32(header[16:20], uint32(MaxBlockSize))
+	binary.LittleEndian.PutUint32(header[16:20], uint32(maxBlockSize))
 
 	// Calculate a MAC of the header; this needs to be done last:
 	headerMac := hmac.New(sha3.New224, key)
@@ -161,10 +158,6 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 
 	keylen := binary.LittleEndian.Uint32(header[12:16])
 	blocklen := binary.LittleEndian.Uint32(header[16:20])
-
-	if blocklen != MaxBlockSize {
-		return nil, fmt.Errorf("Unsupported block length in header: %d", blocklen)
-	}
 
 	// Check the header mac:
 	headerMac := hmac.New(sha3.New224, key)
@@ -217,11 +210,11 @@ type aeadCommon struct {
 	// https://en.wikipedia.org/wiki/Authenticated_encryption
 	aead cipher.AEAD
 
-	// Buffer for encrypted data (MaxBlockSize + overhead)
+	// Buffer for encrypted data (maxBlockSize + overhead)
 	encBuf []byte
 }
 
-func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
+func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16, maxBlockSize int64) error {
 	aead, err := createAEADWorker(cipherType, key)
 	if err != nil {
 		return err
@@ -231,7 +224,7 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16) error {
 	c.aead = aead
 	c.key = key
 
-	c.encBuf = make([]byte, 0, MaxBlockSize+aead.Overhead())
+	c.encBuf = make([]byte, 0, maxBlockSize+int64(aead.Overhead()))
 	return nil
 }
 
@@ -243,7 +236,7 @@ func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 		return 0, err
 	}
 
-	n, err := io.CopyBuffer(layer, source, make([]byte, GoodEncBufferSize))
+	n, err := io.CopyBuffer(layer, source, make([]byte, defaultEncBufferSize))
 	if closeErr := layer.Close(); closeErr != nil {
 		return n, closeErr
 	}
@@ -259,5 +252,5 @@ func Decrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 		return 0, err
 	}
 
-	return io.CopyBuffer(dest, layer, make([]byte, GoodDecBufferSize))
+	return io.CopyBuffer(dest, layer, make([]byte, defaultDecBufferSize))
 }
