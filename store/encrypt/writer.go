@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrBadBlockSize = errors.New("Underlying reader failed to read full MaxBlockSize")
+	ErrBadBlockSize = errors.New("Underlying reader failed to read full w.maxBlockSize")
 	ErrMixedMethods = errors.New("Mixing Write() and ReadFrom() is not allowed.")
 )
 
@@ -20,7 +20,7 @@ type Writer struct {
 	// Common fields with Reader
 	aeadCommon
 
-	// A buffer that is max. MaxBlockSize big.
+	// A buffer that is max. w.maxBlockSize big.
 	// Used for caching leftover data between writes.
 	rbuf *bytes.Buffer
 
@@ -29,12 +29,23 @@ type Writer struct {
 
 	// True after the first write.
 	headerWritten bool
+
+	// w.maxBlockSize is the maximum number of bytes a single payload may have
+	maxBlockSize int64
+}
+
+func (w *Writer) GoodDecBufferSize() int64 {
+	return w.maxBlockSize
+}
+
+func (w *Writer) GoodEncBufferSize() int64 {
+	return w.maxBlockSize + 40
 }
 
 func (w *Writer) emitHeaderIfNeeded() error {
 	if !w.headerWritten {
 		w.headerWritten = true
-		header := GenerateHeader(w.key)
+		header := GenerateHeader(w.key, w.maxBlockSize)
 
 		if _, err := w.Writer.Write(header); err != nil {
 			return err
@@ -49,8 +60,8 @@ func (w *Writer) Write(p []byte) (int, error) {
 		return 0, err
 	}
 
-	for w.rbuf.Len() >= MaxBlockSize {
-		if _, err := w.flushPack(w.rbuf.Next(MaxBlockSize)); err != nil {
+	for int64(w.rbuf.Len()) >= w.maxBlockSize {
+		if _, err := w.flushPack(w.rbuf.Next(int(w.maxBlockSize))); err != nil {
 			return 0, err
 		}
 	}
@@ -91,12 +102,12 @@ func (w *Writer) Close() error {
 
 	// Flush last block of data if any:
 	for w.rbuf.Len() > 0 {
-		n := w.rbuf.Len()
-		if n > MaxBlockSize {
-			n = MaxBlockSize
+		n := int64(w.rbuf.Len())
+		if n > w.maxBlockSize {
+			n = w.maxBlockSize
 		}
 
-		if _, err := w.flushPack(w.rbuf.Next(n)); err != nil {
+		if _, err := w.flushPack(w.rbuf.Next(int(n))); err != nil {
 			return err
 		}
 	}
@@ -115,7 +126,7 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 	}
 
 	n, nprev := int64(0), -1
-	buf := make([]byte, GoodDecBufferSize)
+	buf := make([]byte, defaultDecBufferSize)
 
 	// Check if a previous Write() wrote to rbuf.
 	if w.rbuf.Len() > 0 {
@@ -131,7 +142,7 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 		n += int64(nread)
 
 		// Sanity check: check if previous block was properly aligned:
-		if nprev >= 0 && nprev != MaxBlockSize && rerr != io.EOF {
+		if nprev >= 0 && int64(nprev) != w.maxBlockSize && rerr != io.EOF {
 			return n, ErrBadBlockSize
 		}
 
@@ -154,18 +165,30 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 	return n, nil
 }
 
-// NewWriter returns a new Writer which encrypts data with a
+// NewWriter calls NewWriterWithTypeAndBlockSize with a sane default cipher type
+// and a sane default max block size.
+func NewWriter(w io.Writer, key []byte) (*Writer, error) {
+	return NewWriterWithType(w, key, defaultCipherType)
+}
+
+// NewWriterWithType calls NewWriterWithTypeAndBlockSize with a a sane default maxblocksize.
+func NewWriterWithType(w io.Writer, key []byte, cipherType uint16) (*Writer, error) {
+	return NewWriterWithTypeAndBlockSize(w, key, cipherType, defaultMaxBlockSize)
+}
+
+// NewWriterWithTypeAndBlockSize returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriter(w io.Writer, key []byte) (*Writer, error) {
-	writer := &Writer{
-		Writer: w,
-		rbuf:   &bytes.Buffer{},
+func NewWriterWithTypeAndBlockSize(w io.Writer, key []byte, cipherType uint16, maxBlockSize int64) (*Writer, error) {
+	ew := &Writer{
+		Writer:       w,
+		rbuf:         &bytes.Buffer{},
+		maxBlockSize: maxBlockSize,
 	}
 
-	if err := writer.initAeadCommon(key, defaultCipherType); err != nil {
+	if err := ew.initAeadCommon(key, cipherType, ew.maxBlockSize); err != nil {
 		return nil, err
 	}
 
-	return writer, nil
+	return ew, nil
 }
