@@ -223,7 +223,6 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherType uint16, maxBlockSize 
 	c.nonce = make([]byte, aead.NonceSize())
 	c.aead = aead
 	c.key = key
-
 	c.encBuf = make([]byte, 0, maxBlockSize+int64(aead.Overhead()))
 	return nil
 }
