@@ -83,7 +83,7 @@ var KeySize = chacha.KeySize
 ////////////////////
 
 // GenerateHeader creates a valid header for the format file
-func GenerateHeader(key []byte, maxBlockSize int64) []byte {
+func GenerateHeader(key []byte, maxBlockSize int64, cipher uint16) []byte {
 	// This is in big endian:
 	header := []byte{
 		// Brigs magic number (8 Byte):
@@ -91,7 +91,7 @@ func GenerateHeader(key []byte, maxBlockSize int64) []byte {
 		// File format version (2 Byte):
 		0, 0,
 		// Cipher type (2 Byte):
-		0, defaultCipherType,
+		0, 0,
 		// Key length (4 Byte):
 		0, 0, 0, 0,
 		// Block length (4 Byte):
@@ -104,7 +104,7 @@ func GenerateHeader(key []byte, maxBlockSize int64) []byte {
 	// Magic number:
 	copy(header[:len(MagicNumber)], MagicNumber)
 	binary.LittleEndian.PutUint16(header[8:10], version)
-	binary.LittleEndian.PutUint16(header[10:12], uint16(defaultCipherType))
+	binary.LittleEndian.PutUint16(header[10:12], cipher)
 
 	// Encode key size:
 	binary.LittleEndian.PutUint32(header[12:16], uint32(KeySize))

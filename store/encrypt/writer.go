@@ -32,6 +32,9 @@ type Writer struct {
 
 	// w.maxBlockSize is the maximum number of bytes a single payload may have
 	maxBlockSize int64
+
+	// Used encryption algorithm
+	cipher uint16
 }
 
 func (w *Writer) GoodDecBufferSize() int64 {
@@ -45,7 +48,7 @@ func (w *Writer) GoodEncBufferSize() int64 {
 func (w *Writer) emitHeaderIfNeeded() error {
 	if !w.headerWritten {
 		w.headerWritten = true
-		header := GenerateHeader(w.key, w.maxBlockSize)
+		header := GenerateHeader(w.key, w.maxBlockSize, w.cipher)
 
 		if _, err := w.Writer.Write(header); err != nil {
 			return err
@@ -184,6 +187,7 @@ func NewWriterWithTypeAndBlockSize(w io.Writer, key []byte, cipherType uint16, m
 		Writer:       w,
 		rbuf:         &bytes.Buffer{},
 		maxBlockSize: maxBlockSize,
+		cipher:       cipherType,
 	}
 
 	if err := ew.initAeadCommon(key, cipherType, ew.maxBlockSize); err != nil {
