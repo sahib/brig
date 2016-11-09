@@ -25,6 +25,7 @@ type options struct {
 	args              []string
 	compress          bool
 	encrypt           bool
+	maxblocksize      int64
 	decompress        bool
 	useDevNull        bool
 	forceDstOverwrite bool
@@ -81,6 +82,7 @@ func parseFlags() options {
 	decompress := flag.Bool("d", false, "Decompress.")
 	compress := flag.Bool("c", false, "Compress.")
 	encrypt := flag.Bool("e", false, "Enable encryption/decryption.")
+	maxblocksize := flag.Int64("b", 1, "BlockSize.")
 	algo := flag.String("a", "none", "Possible compression algorithms: none, snappy, lz4.")
 	encalgo := flag.String("n", "aes", "Possible encryption algorithms: aes, chacha.")
 	forceDstOverwrite := flag.Bool("f", false, "Force overwriting destination file.")
@@ -92,6 +94,7 @@ func parseFlags() options {
 		encrypt:           *encrypt,
 		algo:              *algo,
 		encalgo:           *encalgo,
+		maxblocksize:      *maxblocksize,
 		forceDstOverwrite: *forceDstOverwrite,
 		useDevNull:        *useDevNull,
 		args:              flag.Args(),
@@ -136,11 +139,6 @@ func main() {
 	dst := openDst(dstPath, opts.forceDstOverwrite)
 	defer dst.Close()
 
-	//pass, err := pwd.PromptPassword()
-	//if err != nil {
-	//	die(err)
-	//}
-
 	key := derivateAesKey([]byte("defaultpassword"), nil, 32)
 	if key == nil {
 		die(err)
@@ -150,49 +148,50 @@ func main() {
 		chiper = aeadCipherChaCha
 	}
 
-	nBytes := int64(0)
-	withTime(func() {
-		if opts.compress {
-			ew := io.WriteCloser(dst)
-			if opts.encrypt {
-				ew, err = encrypt.NewWriterWithType(dst, key, chiper)
-				if err != nil {
-					die(err)
-				}
-			}
-			zw, err := compress.NewWriter(ew, algo)
-			if err != nil {
-				die(err)
-			}
-			nBytes, err = io.Copy(zw, src)
-			if err != nil {
-				die(err)
-			}
-			if err := zw.Close(); err != nil {
-				die(err)
-			}
-			if err := ew.Close(); err != nil {
-				die(err)
-			}
-		}
-		if opts.decompress {
-			var reader io.ReadSeeker = src
-			if opts.encrypt {
-				er, err := encrypt.NewReader(src, key)
-				if err != nil {
-					die(err)
-				}
-				reader = er
-			}
-			zr := compress.NewReader(reader)
-			nBytes, err = io.Copy(dst, zr)
+	if opts.encalgo == "aes" {
+		chiper = aeadCipherAES
+	}
+
+	if opts.encalgo == "none" {
+		opts.encrypt = false
+	}
+
+	if opts.compress {
+		ew := io.WriteCloser(dst)
+		if opts.encrypt {
+			ew, err = encrypt.NewWriterWithTypeAndBlockSize(dst, key, chiper, opts.maxblocksize)
 			if err != nil {
 				die(err)
 			}
 		}
-	})
-	//fmt.Printf(
-	//	"%s created, %s processed in %.2f seconds.\n",
-	//	dstPath, humanize.Bytes(uint64(nBytes)), elapsed.Seconds(),
-	//)
+		zw, err := compress.NewWriter(ew, algo)
+		if err != nil {
+			die(err)
+		}
+		_, err = io.Copy(zw, src)
+		if err != nil {
+			die(err)
+		}
+		if err := zw.Close(); err != nil {
+			die(err)
+		}
+		if err := ew.Close(); err != nil {
+			die(err)
+		}
+	}
+	if opts.decompress {
+		var reader io.ReadSeeker = src
+		if opts.encrypt {
+			er, err := encrypt.NewReader(src, key)
+			if err != nil {
+				die(err)
+			}
+			reader = er
+		}
+		zr := compress.NewReader(reader)
+		_, err = io.Copy(dst, zr)
+		if err != nil {
+			die(err)
+		}
+	}
 }
