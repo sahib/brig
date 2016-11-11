@@ -34,9 +34,10 @@ enum MessageType {
     LOG = 21;
 
     PIN = 22;
+    RESET= 23;
 
-    EXPORT = 23;
-    IMPORT = 24;
+    EXPORT = 24;
+    IMPORT = 25;
 }
 
 enum OnlineQuery {
@@ -161,6 +162,11 @@ message Command {
         string path = 2;
     }
 
+    message ResetCmd {
+      string repo_path = 1;
+      string commit_ref = 2;
+    }
+
     message ExportCmd {
       // Which store to export?
       string who = 1;
@@ -172,6 +178,7 @@ message Command {
 
     MessageType command_type = 1;
 
+    // TODO: rename to stage command
     StageCmd add_command = 2;
     CatCmd cat_command = 3;
     PingCmd ping_command = 4;
@@ -201,6 +208,8 @@ message Command {
 
     ExportCmd export_command = 25;
     ImportCmd import_command = 26;
+
+    ResetCmd reset_command = 27;
 }
 
 message Remote {

@@ -84,6 +84,18 @@ type Node interface {
 	ID() uint64
 }
 
+// SettableNode is a node that supports modification of
+// it's core attributes. File and Directory are settable,
+// but a commit is not.
+type SettableNode interface {
+	Node
+
+	SetSize(size uint64)
+	SetModTime(modTime time.Time)
+	SetName(name string)
+	SetHash(hash *Hash)
+}
+
 //////////////// UTILITY FUNCTIONS ////////////////
 
 func prefixSlash(s string) string {

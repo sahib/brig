@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -120,7 +121,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo comp
 		return err
 	}
 
-	if _, err := stageFile(st.fs, repoPath, &Hash{mhash}, key, sizeAcc.Size(), owner.ID()); err != nil {
+	if _, err := stageFile(st.fs, repoPath, &Hash{mhash}, sizeAcc.Size(), owner.ID(), key); err != nil {
 		return err
 	}
 
@@ -505,4 +506,34 @@ func (st *Store) Log() ([]Node, error) {
 	}
 
 	return cmts, nil
+}
+
+// Reset resets `repoPath` to the state pointed to as `commitRef`.
+// If the file did not exist back then, it will be deleted.
+// A Reset("/path", "HEAD") equals an unstage operation.
+// A Reset("/", "QmXYZ") resets the working tree to QmXYZ.
+// Note that uncommitted changes will be lost!
+func (st *Store) Reset(repoPath, commitRef string) error {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	repoPath = prefixSlash(repoPath)
+	node, err := st.fs.LookupSettableNode(repoPath)
+	if err != nil {
+		return err
+	}
+
+	cmt, err := resolveCommitRef(st.fs, commitRef)
+	if err != nil {
+		return err
+	}
+
+	switch typ := node.GetType(); typ {
+	case NodeTypeFile, NodeTypeDirectory:
+		return resetNode(st.fs, node, cmt)
+	case NodeTypeCommit:
+		return fmt.Errorf("Can't reset a commit (use checkout?)")
+	default:
+		return fmt.Errorf("BUG: Unhandled node type in reset: %d", typ)
+	}
 }

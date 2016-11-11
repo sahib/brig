@@ -36,6 +36,22 @@ func (c *Client) Stage(filePath, repoPath string) error {
 	return nil
 }
 
+func (c *Client) Reset(repoPath, commitRef string) error {
+	c.Send <- &wire.Command{
+		CommandType: wire.MessageType_RESET,
+		ResetCommand: &wire.Command_ResetCmd{
+			RepoPath:  repoPath,
+			CommitRef: commitRef,
+		},
+	}
+
+	if _, err := c.recvResponse("reset"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Cat outputs the brig file at `repoPath` to `filePath`.
 func (c *Client) Cat(repoPath, filePath string) error {
 	c.Send <- &wire.Command{

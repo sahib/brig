@@ -73,9 +73,9 @@ func handleFastForward(cnd candidate) error {
 		cnd.ownStore.fs,
 		cnd.ownPath,
 		bobHash,
-		bobKey,
 		bobSize,
 		bobOwner.ID(),
+		bobKey,
 	)
 
 	return err
@@ -106,9 +106,9 @@ func handleConflict(cnd candidate) error {
 		cnd.ownStore.fs,
 		conflictPath,
 		bobHash,
-		bobKey,
 		bobSize,
 		bobOwner.ID(),
+		bobKey,
 	)
 
 	if err == ErrNoChange {
@@ -234,7 +234,7 @@ func (st *Store) addLeftovers(bob *Store, bobMap pathToHistory) error {
 			continue
 		}
 
-		_, err = stageFile(st.fs, path, file.Hash(), file.Key(), file.Size(), owner.ID())
+		_, err = stageNode(st.fs, path, file.Hash(), file.Size(), owner.ID())
 		if err != nil {
 			return err
 		}

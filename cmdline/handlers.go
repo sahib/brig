@@ -285,6 +285,35 @@ func handleStage(ctx *cli.Context, client *daemon.Client) error {
 	return nil
 }
 
+func handleReset(ctx *cli.Context, client *daemon.Client) error {
+	repoPath, err := filepath.Abs(ctx.Args().First())
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Unable to make abs path: %v: %v", repoPath, err),
+		}
+	}
+
+	commitRef := "HEAD"
+	if ctx.NArg() > 1 {
+		commitRef = ctx.Args().Get(1)
+	}
+
+	if err := client.Reset(repoPath, commitRef); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf(
+				"Failed to reset file `%s` to `%s`: %v",
+				repoPath,
+				commitRef,
+				err,
+			),
+		}
+	}
+
+	return nil
+}
+
 func handleRm(ctx *cli.Context, client *daemon.Client) error {
 	repoPath := prefixSlash(ctx.Args().First())
 

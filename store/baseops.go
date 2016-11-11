@@ -8,7 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
-	"github.com/disorganizer/brig/util"
+	"github.com/jbenet/go-multihash"
 )
 
 func mkdirParents(fs *FS, repoPath string) (*Directory, error) {
@@ -101,20 +101,76 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	return dir, nil
 }
 
-func stageFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, author id.ID) (*File, error) {
+func resetNode(fs *FS, node SettableNode, commit *Commit) error {
+	oldRoot, err := fs.DirectoryByHash(commit.Root())
+	if err != nil {
+		return err
+	}
+
+	repoPath := node.Path()
+	oldNode, err := oldRoot.Lookup(repoPath)
+	if IsNoSuchFileError(err) {
+		// Node did not exist back then. Remove the current node.
+		parent, err := node.Parent()
+		if err != nil {
+			return err
+		}
+
+		if err := fs.StageNode(parent); err != nil {
+			return err
+		}
+
+		return makeCheckpoint(
+			fs, "TODO",
+			node.ID(), node.Hash(), nil,
+			repoPath, repoPath,
+		)
+	}
+
+	// Different error, abort.
+	if err != nil {
+		return err
+	}
+
+	_, err = stageNode(fs, repoPath, oldNode.Hash(), oldNode.Size(), "TODO")
+	return err
+}
+
+func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID, key []byte) (*File, error) {
+	node, err := stageNode(fs, repoPath, newHash, size, author)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("survived stageNode")
+
+	if node.GetType() != NodeTypeFile {
+		return nil, ErrBadNode
+	}
+
+	file, ok := node.(*File)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	file.SetKey(key)
+	return file, nil
+}
+
+func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID) (Node, error) {
 	var oldHash *Hash
 
-	file, err := fs.LookupFile(repoPath)
+	node, err := fs.LookupSettableNode(repoPath)
 	if err != nil && !IsNoSuchFileError(err) {
 		return nil, err
 	}
 
 	needRemove := false
 
-	if file != nil {
+	if node != nil {
 		// We know this file already.
-		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
-		oldHash = file.Hash().Clone()
+		log.WithFields(log.Fields{"node": repoPath}).Info("File exists; modifying.")
+		oldHash = node.Hash().Clone()
 		needRemove = true
 	} else {
 		par, err := mkdirParents(fs, repoPath)
@@ -123,25 +179,26 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, 
 		}
 
 		// Create a new file at specified path:
-		file, err = newEmptyFile(fs, par, path.Base(repoPath))
+		node, err = newEmptyFile(fs, par, path.Base(repoPath))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	log.Infof(
-		"store-add: %s (hash: %s, key: %x)",
-		repoPath,
-		newHash.B58String(),
-		util.OmitBytes(file.Key(), 10),
-	)
+	// TODO: move to coreops
+	// log.Infof(
+	// 	"store-add: %s (hash: %s, key: %x)",
+	// 	repoPath,
+	// 	newHash.B58String(),
+	// 	util.OmitBytes(file.Key(), 10),
+	// )
 
-	if file.Hash().Equal(newHash) {
+	if node.Hash().Equal(newHash) {
 		log.Debugf("Hash was not modified. Refusing update.")
 		return nil, ErrNoChange
 	}
 
-	parNode, err := file.Parent()
+	parNode, err := node.Parent()
 	if err != nil {
 		return nil, err
 	}
@@ -157,31 +214,30 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, key []byte, size uint64, 
 
 	if needRemove {
 		// Remove the child before changing the hash:
-		if err := parDir.RemoveChild(file); err != nil {
+		if err := parDir.RemoveChild(node); err != nil {
 			return nil, err
 		}
 	}
 
-	file.SetSize(size)
-	file.SetModTime(time.Now())
-	file.SetKey(key)
-	file.SetHash(newHash)
+	node.SetSize(size)
+	node.SetModTime(time.Now())
+	node.SetHash(newHash)
 
 	// Add it again when the hash was changed.
-	if err := parDir.Add(file); err != nil {
+	if err := parDir.Add(node); err != nil {
 		return nil, err
 	}
 
 	// Create a checkpoint in the version history.
-	if err := makeCheckpoint(fs, author, file.ID(), oldHash, newHash, repoPath, repoPath); err != nil {
+	if err := makeCheckpoint(fs, author, node.ID(), oldHash, newHash, repoPath, repoPath); err != nil {
 		return nil, err
 	}
 
-	if err := fs.StageNode(file); err != nil {
+	if err := fs.StageNode(node); err != nil {
 		return nil, err
 	}
 
-	return file, err
+	return node, err
 }
 
 func makeCheckpoint(fs *FS, author id.ID, ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
@@ -201,4 +257,24 @@ func makeCheckpoint(fs *FS, author id.ID, ID uint64, oldHash, newHash *Hash, old
 	}
 
 	return fs.StageCheckpoint(newCkp)
+}
+
+func resolveCommitRef(fs *FS, commitRef string) (*Commit, error) {
+	mh, err := multihash.FromB58String(commitRef)
+	if err != nil {
+		// Does not look like a hash, maybe a normal ref?
+		nd, err := fs.ResolveRef(commitRef)
+		if err != nil {
+			return nil, err
+		}
+
+		cmt, ok := nd.(*Commit)
+		if !ok {
+			return nil, ErrBadNode
+		}
+
+		return cmt, nil
+	}
+
+	return fs.CommitByHash(&Hash{mh})
 }

@@ -862,6 +862,24 @@ func (fs *FS) LookupNode(repoPath string) (Node, error) {
 	return root.Lookup(repoPath)
 }
 
+func (fs *FS) LookupSettableNode(repoPath string) (SettableNode, error) {
+	node, err := fs.LookupNode(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if node == nil {
+		return nil, nil
+	}
+
+	snode, ok := node.(SettableNode)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return snode, nil
+}
+
 // DirectoryByHash calls NodeByHash and attempts to convert
 // it to a Directory as convinience.
 func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {

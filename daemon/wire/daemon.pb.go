@@ -56,8 +56,9 @@ const (
 	MessageType_DIFF          MessageType = 20
 	MessageType_LOG           MessageType = 21
 	MessageType_PIN           MessageType = 22
-	MessageType_EXPORT        MessageType = 23
-	MessageType_IMPORT        MessageType = 24
+	MessageType_RESET         MessageType = 23
+	MessageType_EXPORT        MessageType = 24
+	MessageType_IMPORT        MessageType = 25
 )
 
 var MessageType_name = map[int32]string{
@@ -84,8 +85,9 @@ var MessageType_name = map[int32]string{
 	20: "DIFF",
 	21: "LOG",
 	22: "PIN",
-	23: "EXPORT",
-	24: "IMPORT",
+	23: "RESET",
+	24: "EXPORT",
+	25: "IMPORT",
 }
 var MessageType_value = map[string]int32{
 	"STAGE":         0,
@@ -111,8 +113,9 @@ var MessageType_value = map[string]int32{
 	"DIFF":          20,
 	"LOG":           21,
 	"PIN":           22,
-	"EXPORT":        23,
-	"IMPORT":        24,
+	"RESET":         23,
+	"EXPORT":        24,
+	"IMPORT":        25,
 }
 
 func (x MessageType) String() string {
@@ -172,6 +175,7 @@ type Command struct {
 	PinCommand          *Command_PinCmd          `protobuf:"bytes,24,opt,name=pin_command" json:"pin_command,omitempty"`
 	ExportCommand       *Command_ExportCmd       `protobuf:"bytes,25,opt,name=export_command" json:"export_command,omitempty"`
 	ImportCommand       *Command_ImportCmd       `protobuf:"bytes,26,opt,name=import_command" json:"import_command,omitempty"`
+	ResetCommand        *Command_ResetCmd        `protobuf:"bytes,27,opt,name=reset_command" json:"reset_command,omitempty"`
 }
 
 func (m *Command) Reset()         { *m = Command{} }
@@ -349,6 +353,13 @@ func (m *Command) GetExportCommand() *Command_ExportCmd {
 func (m *Command) GetImportCommand() *Command_ImportCmd {
 	if m != nil {
 		return m.ImportCommand
+	}
+	return nil
+}
+
+func (m *Command) GetResetCommand() *Command_ResetCmd {
+	if m != nil {
+		return m.ResetCommand
 	}
 	return nil
 }
@@ -556,6 +567,15 @@ type Command_PinCmd struct {
 func (m *Command_PinCmd) Reset()         { *m = Command_PinCmd{} }
 func (m *Command_PinCmd) String() string { return proto.CompactTextString(m) }
 func (*Command_PinCmd) ProtoMessage()    {}
+
+type Command_ResetCmd struct {
+	RepoPath  string `protobuf:"bytes,1,opt,name=repo_path,proto3" json:"repo_path,omitempty"`
+	CommitRef string `protobuf:"bytes,2,opt,name=commit_ref,proto3" json:"commit_ref,omitempty"`
+}
+
+func (m *Command_ResetCmd) Reset()         { *m = Command_ResetCmd{} }
+func (m *Command_ResetCmd) String() string { return proto.CompactTextString(m) }
+func (*Command_ResetCmd) ProtoMessage()    {}
 
 type Command_ExportCmd struct {
 	// Which store to export?
@@ -821,6 +841,7 @@ func init() {
 	proto.RegisterType((*Command_DiffCmd)(nil), "brig.daemon.Command.DiffCmd")
 	proto.RegisterType((*Command_LogCmd)(nil), "brig.daemon.Command.LogCmd")
 	proto.RegisterType((*Command_PinCmd)(nil), "brig.daemon.Command.PinCmd")
+	proto.RegisterType((*Command_ResetCmd)(nil), "brig.daemon.Command.ResetCmd")
 	proto.RegisterType((*Command_ExportCmd)(nil), "brig.daemon.Command.ExportCmd")
 	proto.RegisterType((*Command_ImportCmd)(nil), "brig.daemon.Command.ImportCmd")
 	proto.RegisterType((*Remote)(nil), "brig.daemon.Remote")
@@ -1129,6 +1150,18 @@ func (m *Command) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n25
+	}
+	if m.ResetCommand != nil {
+		data[i] = 0xda
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ResetCommand.Size()))
+		n26, err := m.ResetCommand.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n26
 	}
 	return i, nil
 }
@@ -1748,6 +1781,36 @@ func (m *Command_PinCmd) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Command_ResetCmd) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Command_ResetCmd) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.RepoPath) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.RepoPath)))
+		i += copy(data[i:], m.RepoPath)
+	}
+	if len(m.CommitRef) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDaemon(data, i, uint64(len(m.CommitRef)))
+		i += copy(data[i:], m.CommitRef)
+	}
+	return i, nil
+}
+
 func (m *Command_ExportCmd) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1878,101 +1941,101 @@ func (m *Response) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.HistoryResp.Size()))
-		n26, err := m.HistoryResp.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n26
-	}
-	if m.ListResp != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
-		n27, err := m.ListResp.MarshalTo(data[i:])
+		n27, err := m.HistoryResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n27
 	}
-	if m.RemoteListResp != nil {
-		data[i] = 0x32
+	if m.ListResp != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
-		n28, err := m.RemoteListResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.ListResp.Size()))
+		n28, err := m.ListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n28
 	}
-	if m.RemoteLocateResp != nil {
-		data[i] = 0x3a
+	if m.RemoteListResp != nil {
+		data[i] = 0x32
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
-		n29, err := m.RemoteLocateResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteListResp.Size()))
+		n29, err := m.RemoteListResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n29
 	}
-	if m.RemoteSelfResp != nil {
-		data[i] = 0x42
+	if m.RemoteLocateResp != nil {
+		data[i] = 0x3a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
-		n30, err := m.RemoteSelfResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteLocateResp.Size()))
+		n30, err := m.RemoteLocateResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n30
 	}
-	if m.OnlineStatusResp != nil {
-		data[i] = 0x4a
+	if m.RemoteSelfResp != nil {
+		data[i] = 0x42
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
-		n31, err := m.OnlineStatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.RemoteSelfResp.Size()))
+		n31, err := m.RemoteSelfResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n31
 	}
-	if m.StatusResp != nil {
-		data[i] = 0x52
+	if m.OnlineStatusResp != nil {
+		data[i] = 0x4a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
-		n32, err := m.StatusResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.OnlineStatusResp.Size()))
+		n32, err := m.OnlineStatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n32
 	}
-	if m.LogResp != nil {
-		data[i] = 0x5a
+	if m.StatusResp != nil {
+		data[i] = 0x52
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
-		n33, err := m.LogResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.StatusResp.Size()))
+		n33, err := m.StatusResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n33
 	}
-	if m.PinResp != nil {
-		data[i] = 0x62
+	if m.LogResp != nil {
+		data[i] = 0x5a
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.PinResp.Size()))
-		n34, err := m.PinResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.LogResp.Size()))
+		n34, err := m.LogResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n34
 	}
-	if m.ExportResp != nil {
-		data[i] = 0x6a
+	if m.PinResp != nil {
+		data[i] = 0x62
 		i++
-		i = encodeVarintDaemon(data, i, uint64(m.ExportResp.Size()))
-		n35, err := m.ExportResp.MarshalTo(data[i:])
+		i = encodeVarintDaemon(data, i, uint64(m.PinResp.Size()))
+		n35, err := m.PinResp.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n35
+	}
+	if m.ExportResp != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintDaemon(data, i, uint64(m.ExportResp.Size()))
+		n36, err := m.ExportResp.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n36
 	}
 	return i, nil
 }
@@ -1996,11 +2059,11 @@ func (m *Response_ListResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Entries.Size()))
-		n36, err := m.Entries.MarshalTo(data[i:])
+		n37, err := m.Entries.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n36
+		i += n37
 	}
 	return i, nil
 }
@@ -2024,11 +2087,11 @@ func (m *Response_HistoryResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.History.Size()))
-		n37, err := m.History.MarshalTo(data[i:])
+		n38, err := m.History.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n37
+		i += n38
 	}
 	return i, nil
 }
@@ -2115,11 +2178,11 @@ func (m *Response_RemoteSelfResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Self.Size()))
-		n38, err := m.Self.MarshalTo(data[i:])
+		n39, err := m.Self.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n38
+		i += n39
 	}
 	return i, nil
 }
@@ -2171,11 +2234,11 @@ func (m *Response_StatusResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.StageCommit.Size()))
-		n39, err := m.StageCommit.MarshalTo(data[i:])
+		n40, err := m.StageCommit.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n39
+		i += n40
 	}
 	return i, nil
 }
@@ -2199,11 +2262,11 @@ func (m *Response_LogResp) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintDaemon(data, i, uint64(m.Nodes.Size()))
-		n40, err := m.Nodes.MarshalTo(data[i:])
+		n41, err := m.Nodes.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n40
+		i += n41
 	}
 	return i, nil
 }
@@ -2393,6 +2456,10 @@ func (m *Command) Size() (n int) {
 	}
 	if m.ImportCommand != nil {
 		l = m.ImportCommand.Size()
+		n += 2 + l + sovDaemon(uint64(l))
+	}
+	if m.ResetCommand != nil {
+		l = m.ResetCommand.Size()
 		n += 2 + l + sovDaemon(uint64(l))
 	}
 	return n
@@ -2654,6 +2721,20 @@ func (m *Command_PinCmd) Size() (n int) {
 		n += 1 + sovDaemon(uint64(m.Balance))
 	}
 	l = len(m.Path)
+	if l > 0 {
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	return n
+}
+
+func (m *Command_ResetCmd) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.RepoPath)
+	if l > 0 {
+		n += 1 + l + sovDaemon(uint64(l))
+	}
+	l = len(m.CommitRef)
 	if l > 0 {
 		n += 1 + l + sovDaemon(uint64(l))
 	}
@@ -3742,6 +3823,39 @@ func (m *Command) Unmarshal(data []byte) error {
 				m.ImportCommand = &Command_ImportCmd{}
 			}
 			if err := m.ImportCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 27:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResetCommand", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ResetCommand == nil {
+				m.ResetCommand = &Command_ResetCmd{}
+			}
+			if err := m.ResetCommand.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5712,6 +5826,114 @@ func (m *Command_PinCmd) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Path = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDaemon(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Command_ResetCmd) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDaemon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ResetCmd: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ResetCmd: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RepoPath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RepoPath = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitRef", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDaemon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDaemon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CommitRef = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

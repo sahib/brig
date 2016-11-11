@@ -20,6 +20,7 @@ type handlerFunc func(d *Server, ctx context.Context, cmd *wire.Command) (*wire.
 
 var handlerMap = map[wire.MessageType]handlerFunc{
 	wire.MessageType_STAGE:         handleStage,
+	wire.MessageType_RESET:         handleReset,
 	wire.MessageType_CAT:           handleCat,
 	wire.MessageType_PING:          handlePing,
 	wire.MessageType_QUIT:          handleQuit,
@@ -58,13 +59,13 @@ func handleQuit(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 func handleStage(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	filePath := cmd.GetAddCommand().FilePath
 	repoPath := cmd.GetAddCommand().RepoPath
+	return nil, d.Repo.OwnStore.Stage(filePath, repoPath)
+}
 
-	err := d.Repo.OwnStore.Stage(filePath, repoPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+func handleReset(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
+	repoPath := cmd.GetResetCommand().RepoPath
+	commitRef := cmd.GetResetCommand().CommitRef
+	return nil, d.Repo.OwnStore.Reset(repoPath, commitRef)
 }
 
 func handleCat(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {

@@ -364,6 +364,11 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 
 //////////// STATE ALTERING METHODS //////////////
 
+func (d *Directory) SetSize(size uint64)          { d.size = size }
+func (d *Directory) SetModTime(modTime time.Time) { d.modTime = modTime }
+func (d *Directory) SetName(name string)          { d.name = name }
+func (d *Directory) SetHash(hash *Hash)           { d.hash = hash }
+
 func (d *Directory) Add(nd Node) error {
 	if nd == d {
 		return fmt.Errorf("ADD-BUG: attempting to add `%s` to itself", nd.Path())
