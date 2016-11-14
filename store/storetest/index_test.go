@@ -113,7 +113,13 @@ func TestList(t *testing.T) {
 		// Run the actual tests on it:
 		for _, test := range tests {
 			t.Logf("Testing `%s` as root", test.root)
-			dirlist, err := st.List(test.root, test.depth)
+
+			var dirlist []Node
+			err := st.List(test.root, test.depth, func(nd Node) error {
+				dirlist = append(dirlist, nd)
+				return nil
+			})
+
 			if err != nil {
 				t.Errorf("Listing `%s` failed: %v", test.root, err)
 				break

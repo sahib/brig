@@ -12,7 +12,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/store/compress"
-	"github.com/disorganizer/brig/store/wire"
 	"github.com/disorganizer/brig/util"
 	"github.com/disorganizer/brig/util/ipfsutil"
 )
@@ -102,8 +101,6 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo comp
 		return err
 	}
 
-	// TODO: Make algo configurable/add heuristic too choose
-	//       a suitable algorithm
 	stream, err := NewFileReader(key, teeR, compressAlgo)
 	if err != nil {
 		return err
@@ -302,16 +299,15 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 
 // List exports a directory listing of `root` up to `depth` levels down.
 // TODO: This should use a locked closure.
-func (st *Store) List(root string, depth int) ([]Node, error) {
+func (st *Store) List(root string, depth int, visit func(Node) error) error {
 	root = prefixSlash(root)
-	entries := []Node{}
 
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
 	node, err := st.fs.LookupDirectory(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if depth < 0 {
@@ -323,41 +319,14 @@ func (st *Store) List(root string, depth int) ([]Node, error) {
 			return nil
 		}
 
-		entries = append(entries, child)
-		return nil
+		return visit(child)
 	})
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return entries, err
-}
-
-// The results are marshaled into a wire.Dirlist message and written to
-// `w`. `depth` may be negative for unlimited recursion.
-// TODO: Is this really a core-op? Let that do the daemon?
-func (st *Store) ListProtoNodes(root string, depth int) (*wire.Nodes, error) {
-	entries, err := st.List(root, depth)
-	if err != nil {
-		return nil, err
-	}
-
-	// No locking required; only some in-memory conversion follows.
-
-	nodes := &wire.Nodes{}
-	for _, node := range entries {
-		pnode, err := node.ToProto()
-		if err != nil {
-			return nil, err
-		}
-
-		// Fill in the path for the sake of exporting:
-		pnode.Path = NodePath(node)
-		nodes.Nodes = append(nodes.Nodes, pnode)
-	}
-
-	return nodes, nil
+	return err
 }
 
 func (st *Store) Move(oldPath, newPath string, force bool) error {

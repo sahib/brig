@@ -201,7 +201,17 @@ func handleList(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 	listCmd := cmd.GetListCommand()
 	root, depth := listCmd.Root, listCmd.Depth
 
-	entries, err := d.Repo.OwnStore.ListProtoNodes(root, int(depth))
+	entries := &storewire.Nodes{}
+	err := d.Repo.OwnStore.List(root, int(depth), func(nd store.Node) error {
+		pnode, err := nd.ToProto()
+		if err != nil {
+			return err
+		}
+
+		entries.Nodes = append(entries.Nodes, pnode)
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
