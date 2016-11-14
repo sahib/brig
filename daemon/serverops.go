@@ -219,9 +219,9 @@ func handleMkdir(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respo
 
 	var err error
 	if mkdirCmd.CreateParents {
-		_, err = d.Repo.OwnStore.MkdirAll(path)
+		err = d.Repo.OwnStore.MkdirAll(path)
 	} else {
-		_, err = d.Repo.OwnStore.Mkdir(path)
+		err = d.Repo.OwnStore.Mkdir(path)
 	}
 
 	if err != nil {
@@ -365,19 +365,19 @@ func handleDiff(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Respon
 
 func handleLog(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Response, error) {
 	// TODO: Respect from/to
-	nodes, err := d.Repo.OwnStore.Log()
-	if err != nil {
-		return nil, err
-	}
-
 	pnodes := &storewire.Nodes{}
-	for _, node := range nodes {
-		pnode, err := node.ToProto()
+	err := d.Repo.OwnStore.Log(func(cmt *store.Commit) error {
+		pnode, err := cmt.ToProto()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		pnodes.Nodes = append(pnodes.Nodes, pnode)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &wire.Response{

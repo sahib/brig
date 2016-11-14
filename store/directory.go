@@ -69,7 +69,6 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 
 ////////////// MARSHALLING ////////////////
 
-// TODO: Make directory_test.go for proto load/save.
 func (d *Directory) ToProto() (*wire.Node, error) {
 	binModTime, err := d.modTime.MarshalBinary()
 	if err != nil {

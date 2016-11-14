@@ -19,13 +19,15 @@ import (
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
 // TODO: Do not return directory - it's not locked.
-func (st *Store) Mkdir(repoPath string) (*Directory, error) {
-	return mkdir(st.fs, repoPath, false)
+func (st *Store) Mkdir(repoPath string) error {
+	_, err := mkdir(st.fs, repoPath, false)
+	return err
 }
 
 // MkdirAll is like Mkdir but creates intermediate directories conviniently.
-func (st *Store) MkdirAll(repoPath string) (*Directory, error) {
-	return mkdir(st.fs, repoPath, true)
+func (st *Store) MkdirAll(repoPath string) error {
+	_, err := mkdir(st.fs, repoPath, true)
+	return err
 }
 
 // Stage reads the data at the physical path `filePath` and adds it to the store
@@ -63,7 +65,7 @@ func (st *Store) StageDir(filePath, repoPath string) error {
 
 			err = st.StageFromReader(currPath, fd, compressAlgo)
 		case mode.IsDir():
-			_, err = st.Mkdir(currPath)
+			err = st.Mkdir(currPath)
 		default:
 			log.Warningf("Recursive add: Ignoring weird file type: %v")
 			return nil
@@ -478,24 +480,29 @@ func (st *Store) MakeCommit(msg string) error {
 // TODO: respect from/to ranges
 // TODO: This should use a locked closure.
 // TODO: return []Commit?
-func (st *Store) Log() ([]Node, error) {
+func (st *Store) Log(visit func(*Commit) error) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
-	var cmts []Node
-
 	head, err := st.fs.Head()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var curr Node = head
 	for curr != nil {
-		cmts = append(cmts, curr)
+		currCmt, ok := curr.(*Commit)
+		if !ok {
+			return ErrBadNode
+		}
+
+		if err := visit(currCmt); err != nil {
+			return err
+		}
 
 		parNode, err := curr.Parent()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if parNode == nil {
@@ -505,7 +512,7 @@ func (st *Store) Log() ([]Node, error) {
 		curr = parNode
 	}
 
-	return cmts, nil
+	return nil
 }
 
 // Reset resets `repoPath` to the state pointed to as `commitRef`.

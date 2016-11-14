@@ -84,8 +84,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 // Mkdir is called to create a new directory node inside the receiver.
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	childPath := path.Join(d.path, req.Name)
-	_, err := d.fsys.Store.Mkdir(childPath)
-	if err != nil {
+	if err := d.fsys.Store.Mkdir(childPath); err != nil {
 		log.WithFields(log.Fields{
 			"path":  childPath,
 			"error": err,
@@ -104,7 +103,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	switch {
 	case req.Mode&os.ModeDir != 0:
-		_, err = d.fsys.Store.Mkdir(req.Name)
+		err = d.fsys.Store.Mkdir(req.Name)
 	default:
 		err = d.fsys.Store.Touch(req.Name)
 	}

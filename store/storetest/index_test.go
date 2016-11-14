@@ -223,7 +223,7 @@ func createDummySetup(t *testing.T, st *store.Store, data []byte) error {
 		return err
 	}
 
-	if _, err := st.Mkdir("/dir"); err != nil {
+	if err := st.Mkdir("/dir"); err != nil {
 		t.Errorf("Mkdir(/dir) failed: %v", err)
 		return err
 	}
@@ -309,7 +309,7 @@ func TestRemove(t *testing.T) {
 			return
 		}
 
-		if _, err := st.Mkdir("/empty_dir"); err != nil {
+		if err := st.Mkdir("/empty_dir"); err != nil {
 			t.Errorf("Could not mkdir /empty_dir: %v", err)
 			return
 		}
