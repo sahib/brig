@@ -11,8 +11,8 @@ message Author {
 
 // Optional merge information for merge commits
 message Merge {
-    string with = 1;
-    bytes hash = 2;
+  string with = 1;
+  bytes hash = 2;
 }
 
 message Checkpoint {
@@ -25,6 +25,10 @@ message Checkpoint {
 
   // TODO: Should include a hash/mac on itself,
   //       so forgery is not possible/harder.
+
+  // path attribute is only set when exported to the daemon client.
+  // Do not rely on it to be set internally due to memory reasons.
+  string path = 6;
 }
 
 // History is the history of a file:

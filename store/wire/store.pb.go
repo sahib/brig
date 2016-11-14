@@ -89,6 +89,9 @@ type Checkpoint struct {
 	Index  uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
 	Change int32  `protobuf:"varint,4,opt,name=change,proto3" json:"change,omitempty"`
 	Author string `protobuf:"bytes,5,opt,name=author,proto3" json:"author,omitempty"`
+	// path attribute is only set when exported to the daemon client.
+	// Do not rely on it to be set internally due to memory reasons.
+	Path string `protobuf:"bytes,6,opt,name=path,proto3" json:"path,omitempty"`
 }
 
 func (m *Checkpoint) Reset()         { *m = Checkpoint{} }
@@ -418,6 +421,12 @@ func (m *Checkpoint) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintStore(data, i, uint64(len(m.Author)))
 		i += copy(data[i:], m.Author)
+	}
+	if len(m.Path) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintStore(data, i, uint64(len(m.Path)))
+		i += copy(data[i:], m.Path)
 	}
 	return i, nil
 }
@@ -928,6 +937,10 @@ func (m *Checkpoint) Size() (n int) {
 		n += 1 + sovStore(uint64(m.Change))
 	}
 	l = len(m.Author)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	l = len(m.Path)
 	if l > 0 {
 		n += 1 + l + sovStore(uint64(l))
 	}
@@ -1507,6 +1520,35 @@ func (m *Checkpoint) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Author = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Path", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Path = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

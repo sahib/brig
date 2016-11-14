@@ -79,6 +79,11 @@ func TestFSRefs(t *testing.T) {
 			return
 		}
 
+		if err := makeCheckpoint(fs, "alice", newFile.ID(), nil, newFile.Hash(), "/cat.png", "/cat.png"); err != nil {
+			t.Errorf("makeCheckpoint failed: %v", err)
+			return
+		}
+
 		if _, err := fs.Head(); !IsErrNoSuchRef(err) {
 			t.Errorf("There is a HEAD from start?!")
 			return
@@ -90,7 +95,11 @@ func TestFSRefs(t *testing.T) {
 			return
 		}
 
-		fmt.Println(cmt)
+		if len(cmt.changeset) != 1 {
+			t.Errorf("Number of changes pre commit is not 1 (is %d)", len(cmt.changeset))
+			return
+		}
+
 		if err := fs.MakeCommit(author, "First commit"); err != nil {
 			t.Errorf("Making commit failed: %v", err)
 			return
@@ -102,9 +111,19 @@ func TestFSRefs(t *testing.T) {
 			return
 		}
 
+		if len(head.changeset) != 1 {
+			t.Errorf("Number of changes of HEAD post commit is not 1 (is %d)", len(head.changeset))
+			return
+		}
+
 		status, err := fs.Status()
 		if err != nil {
 			t.Errorf("Failed to obtain the status: %v", err)
+			return
+		}
+
+		if len(status.changeset) != 0 {
+			t.Errorf("Number of changes post commit is not 0 (is %d)", len(status.changeset))
 			return
 		}
 

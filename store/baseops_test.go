@@ -79,7 +79,7 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 			return
 		}
 
-		file, err := stageFile(fs, dummyPath, dummyHash(t, 0), dummyKey, 17, "alice")
+		file, err := stageFile(fs, dummyPath, dummyHash(t, 0), 17, "alice", dummyKey)
 		if err != nil {
 			t.Errorf("Failed to create file: %v", err)
 			return
@@ -112,7 +112,7 @@ func TestStoreBaseOpCreateFile(t *testing.T) {
 			return
 		}
 
-		modFile, err := stageFile(fs, dummyPath, dummyHash(t, 1), dummyKey, 19, "alice")
+		modFile, err := stageFile(fs, dummyPath, dummyHash(t, 1), 19, "alice", dummyKey)
 		if err != nil {
 			t.Errorf("Modification was not possible: %v", err)
 			return

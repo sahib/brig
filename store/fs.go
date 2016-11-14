@@ -422,6 +422,30 @@ func (fs *FS) LastCheckpoint(IDLink uint64) (*Checkpoint, error) {
 	return ckp, nil
 }
 
+// CheckpointAt returns the checkpoint of the file identified by the node id
+// `IDLink` at `index`. If it could not be retrieved, an Error is returned.
+func (fs *FS) CheckpointAt(IDLink, index uint64) (*Checkpoint, error) {
+	key := strconv.FormatUint(IDLink, 16)
+
+	bkt, err := fs.kv.Bucket([]string{"checkpoints", key})
+	if err != nil {
+		return nil, err
+	}
+
+	subKey := strconv.FormatUint(index, 16)
+	data, err := bkt.Get(subKey)
+	if err != nil {
+		return nil, err
+	}
+
+	ckp := &Checkpoint{}
+	if err := ckp.Unmarshal(data); err != nil {
+		return nil, err
+	}
+
+	return ckp, nil
+}
+
 // History returns all checkpoints for the file referenced by the UID `IDLink`.
 func (fs *FS) History(IDLink uint64) (History, error) {
 	key := strconv.FormatUint(IDLink, 16)

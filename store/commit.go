@@ -154,6 +154,10 @@ func (cm *Commit) String() string {
 	)
 }
 
+func (cm *Commit) GetChangeset() []*CheckpointLink {
+	return cm.changeset
+}
+
 func (cm *Commit) FromProto(pnd *wire.Node) error {
 	pcm := pnd.Commit
 	if pcm == nil {
@@ -216,10 +220,33 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	cm.modTime = modTime
 	cm.hash = &Hash{hash}
 	cm.root = &Hash{root}
+	cm.changeset = changeset
 
 	if parent != nil {
 		cm.parent = &Hash{parent}
 	}
+	return nil
+}
+
+func (cm *Commit) ExpandProto(pnd *wire.Node) error {
+	for _, link := range cm.changeset {
+		ckp, err := link.Resolve(cm.fs)
+		if err != nil {
+			return err
+		}
+
+		pckp, err := ckp.ToProto()
+		if err != nil {
+			return err
+		}
+
+		if err := ckp.ExpandProto(cm.fs, pckp); err != nil {
+			return err
+		}
+
+		pnd.Commit.Checkpoints = append(pnd.Commit.Checkpoints, pckp)
+	}
+
 	return nil
 }
 

@@ -149,7 +149,8 @@ func (x OnlineQuery) String() string {
 }
 
 type Command struct {
-	CommandType         MessageType              `protobuf:"varint,1,opt,name=command_type,proto3,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
+	CommandType MessageType `protobuf:"varint,1,opt,name=command_type,proto3,enum=brig.daemon.MessageType" json:"command_type,omitempty"`
+	// TODO: rename to stage command
 	AddCommand          *Command_StageCmd        `protobuf:"bytes,2,opt,name=add_command" json:"add_command,omitempty"`
 	CatCommand          *Command_CatCmd          `protobuf:"bytes,3,opt,name=cat_command" json:"cat_command,omitempty"`
 	PingCommand         *Command_PingCmd         `protobuf:"bytes,4,opt,name=ping_command" json:"ping_command,omitempty"`

@@ -335,6 +335,12 @@ func handleStatus(d *Server, ctx context.Context, cmd *wire.Command) (*wire.Resp
 		return nil, err
 	}
 
+	// Make sure the exported commit contains the checkpoints filled in.
+	// Normal protobuf commits only contain the checkpoint links.
+	if err := status.ExpandProto(pstatus); err != nil {
+		return nil, err
+	}
+
 	return &wire.Response{
 		StatusResp: &wire.Response_StatusResp{
 			StageCommit: pstatus,

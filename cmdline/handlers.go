@@ -657,7 +657,7 @@ func printChangesByUser(changesByuser changeByType) error {
 		for _, change := range checkpoints {
 			msg := fmt.Sprintf(
 				"        %s (%s)",
-				"TODO: resolve checkpoint to path",
+				change.Path,
 				humanize.Bytes(uint64(change.Size())),
 			)
 
@@ -687,6 +687,7 @@ func handleCommit(ctx *cli.Context, client *daemon.Client) error {
 	if message == "" {
 		message = fmt.Sprintf("Update on %s", time.Now().String())
 	}
+
 	status, err := client.Status()
 	if err != nil {
 		return err

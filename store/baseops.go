@@ -142,8 +142,6 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 		return nil, err
 	}
 
-	fmt.Println("survived stageNode")
-
 	if node.GetType() != NodeTypeFile {
 		return nil, ErrBadNode
 	}

@@ -30,4 +30,3 @@ proto:
 	@make -C store/wire
 	@make -C daemon/wire
 	@make -C transfer/wire
-

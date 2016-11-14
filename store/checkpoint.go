@@ -196,18 +196,7 @@ func (cl *CheckpointLink) ToProto() (*wire.CheckpointLink, error) {
 }
 
 func (cl *CheckpointLink) Resolve(fs *FS) (*Checkpoint, error) {
-	// TODO: This is a bit inefficient. Just load a single checkpoint? :P
-	hist, err := fs.History(cl.IDLink)
-	if err != nil {
-		return nil, err
-	}
-
-	ckp := hist.At(int(cl.Index))
-	if ckp == nil {
-		return nil, fmt.Errorf("Invalid checkpoint-link %s", cl.String())
-	}
-
-	return ckp, nil
+	return fs.CheckpointAt(cl.IDLink, cl.Index)
 }
 
 ////////////////////////////
@@ -385,7 +374,7 @@ func (ckp *Checkpoint) Equal(cko *Checkpoint) bool {
 
 func (ckp *Checkpoint) MakeLink() *CheckpointLink {
 	return &CheckpointLink{
-		IDLink: ckp.index,
+		IDLink: ckp.idLink,
 		Index:  ckp.index,
 	}
 }
@@ -426,4 +415,14 @@ func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPa
 		change: change,
 		author: author,
 	}, nil
+}
+
+func (ckp *Checkpoint) ExpandProto(fs *FS, pckp *wire.Checkpoint) error {
+	nd, err := fs.NodeByUID(ckp.idLink)
+	if err != nil {
+		return err
+	}
+
+	pckp.Path = nd.Path()
+	return nil
 }
