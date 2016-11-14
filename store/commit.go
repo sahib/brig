@@ -354,6 +354,10 @@ func (cm *Commit) Child(name string) (Node, error) {
 }
 
 func (cm *Commit) Parent() (Node, error) {
+	if cm.parent == nil {
+		return nil, nil
+	}
+
 	return cm.fs.CommitByHash(cm.parent)
 }
 
