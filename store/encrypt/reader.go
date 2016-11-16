@@ -208,7 +208,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		//
 		// NOTE: We cache this not only for performance, but also
 		//       as a workaround for a bug in ipfs.
-		//       See: TODO
+		//       See: https://github.com/ipfs/go-ipfs/issues/2567
 		if r.endOffsetEnc < 0 {
 			endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
 			if err != nil && err != io.EOF {

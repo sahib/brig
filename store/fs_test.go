@@ -31,7 +31,7 @@ func TestFSInsertRoot(t *testing.T) {
 			return
 		}
 
-		if path := NodePath(sameRoot); path != "/" {
+		if path := sameRoot.Path(); path != "/" {
 			t.Errorf("Path of root is not /: %s", path)
 			return
 		}

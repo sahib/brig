@@ -9,7 +9,6 @@ import (
 	"github.com/disorganizer/brig/store/encrypt"
 )
 
-// TODO: needed?
 // Reader accumulates all interface brig requests from a stream.
 type Reader interface {
 	io.Reader
@@ -81,8 +80,6 @@ func NewFileReader(key []byte, r io.Reader, algo compress.AlgorithmType) (or io.
 		}()
 
 		if _, copyErr := io.Copy(wZip, r); copyErr != nil {
-			// TODO: yup.
-			fmt.Println("copy fucked up")
 			err = copyErr
 		}
 	}()

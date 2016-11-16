@@ -17,7 +17,6 @@ import (
 )
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
-// TODO: Do not return directory - it's not locked.
 func (st *Store) Mkdir(repoPath string) error {
 	_, err := mkdir(st.fs, repoPath, false)
 	return err
@@ -282,7 +281,7 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 
 	errs := util.Errors{}
 	for _, child := range toBeRemoved {
-		childPath := NodePath(child)
+		childPath := child.Path()
 		if err = st.makeCheckpointByOwner(child.ID(), child.Hash(), nil, childPath, childPath); err != nil {
 			return err
 		}
@@ -298,7 +297,6 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 }
 
 // List exports a directory listing of `root` up to `depth` levels down.
-// TODO: This should use a locked closure.
 func (st *Store) List(root string, depth int, visit func(Node) error) error {
 	root = prefixSlash(root)
 
@@ -362,7 +360,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 			return nil
 		}
 
-		oldChildPath := NodePath(child)
+		oldChildPath := child.Path()
 		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
 		newPaths[newChildPath] = child.(*File)
 
@@ -382,8 +380,19 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 
 	// If the node at newPath was a file, we need to remove it.
 	if newNode != nil && newNode.GetType() == NodeTypeFile {
-		// TODO: use store.Remove() here (for checkpoints)
 		if err := nodeRemove(newNode); err != nil {
+			return err
+		}
+
+		err = st.makeCheckpointByOwner(
+			newNode.ID(),
+			newNode.Hash(),
+			nil,
+			newNode.Path(),
+			"",
+		)
+
+		if err != nil {
 			return err
 		}
 	}
@@ -448,7 +457,6 @@ func (st *Store) MakeCommit(msg string) error {
 
 // TODO: respect from/to ranges
 // TODO: This should use a locked closure.
-// TODO: return []Commit?
 func (st *Store) Log(visit func(*Commit) error) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -504,9 +512,14 @@ func (st *Store) Reset(repoPath, commitRef string) error {
 		return err
 	}
 
+	owner, err := st.Owner()
+	if err != nil {
+		return err
+	}
+
 	switch typ := node.GetType(); typ {
 	case NodeTypeFile, NodeTypeDirectory:
-		return resetNode(st.fs, node, cmt)
+		return resetNode(st.fs, node, cmt, owner.ID())
 	case NodeTypeCommit:
 		return fmt.Errorf("Can't reset a commit (use checkout?)")
 	default:

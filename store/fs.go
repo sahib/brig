@@ -361,7 +361,7 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 	}
 
 	// The key is the path of the
-	nodePath := NodePath(nd)
+	nodePath := nd.Path()
 
 	hashPath := path.Join("stage/tree", nodePath)
 	switch nd.GetType() {
@@ -576,7 +576,7 @@ func (fs *FS) MakeCommit(author *Author, message string) error {
 			return err
 		}
 
-		path := NodePath(child)
+		path := child.Path()
 		if err := treeBkt.Put(path, []byte(b58Hash)); err != nil {
 			return err
 		}

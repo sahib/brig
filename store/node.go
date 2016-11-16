@@ -30,7 +30,7 @@ func (nt NodeType) String() string {
 	return "unknown"
 }
 
-// NOTE: The name sounds funny.
+// Metadatable is a thing that accumulates certain common node attributes.
 type Metadatable interface {
 	// Name returns the name of the object, i.e. the last part of the path,
 	// which is also commonly called 'basename' in unix filesystems.
@@ -52,28 +52,42 @@ type Metadatable interface {
 	Path() string
 }
 
+// Serializable is a thing that can be converted to a wire.Node protobuf message.
 type Serializable interface {
 	ToProto() (*wire.Node, error)
 	FromProto(*wire.Node) error
 }
 
+// HierarchyEntry represents a thing that is placed in
+// a file hierarchy and may have other children beneath it.
 type HierarchyEntry interface {
+	// NChildren returns the total number of children to a node.
 	NChildren() int
+
+	// Child returns a named child.
 	Child(name string) (Node, error)
+
+	// Parent returns the parent node or nil if there is none.
 	Parent() (Node, error)
+
+	// SetParent sets the parent new.  Care must be taken to remove old
+	// references to the node to avoid loops.
 	SetParent(nd Node) error
+
+	// GetType returns the type of the node.
 	GetType() NodeType
 }
 
+// Streamable represents a thing that can be streamed,
+// given a cryptographic key.
 type Streamable interface {
 	Key() []byte
 	Stream() (ipfsutil.Reader, error)
 }
 
-// TODO: Document api
-// TODO: StreambleNode?
+// Node is a single node in brig's MDAG.
+// It is currently either a Commit, a File or a Directory.
 type Node interface {
-	// TODO: sync.Locker needed?
 	Metadatable
 	Serializable
 	HierarchyEntry
@@ -104,11 +118,6 @@ func prefixSlash(s string) string {
 	}
 
 	return s
-}
-
-func NodePath(nd Node) string {
-	// TODO: Remove; not needed anymore.
-	return nd.Path()
 }
 
 // NodeDepth returns the depth of the node.

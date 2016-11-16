@@ -24,7 +24,7 @@ func TestStoreBaseOpMkdir(t *testing.T) {
 				return
 			}
 
-			dirPath := NodePath(dir)
+			dirPath := dir.Path()
 			if dirPath != path {
 				t.Errorf("`%s` was inserted at `%s` :(", path, dirPath)
 				return

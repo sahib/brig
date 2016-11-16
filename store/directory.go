@@ -34,7 +34,7 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 
 	absPath := ""
 	if parent != nil {
-		absPath = path.Join(NodePath(parent), name)
+		absPath = path.Join(parent.Path(), name)
 	}
 
 	mh, err := multihash.Sum([]byte(absPath), code, length)

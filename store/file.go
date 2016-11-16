@@ -149,7 +149,7 @@ func (f *File) GetType() NodeType {
 func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
 	log.Debugf(
 		"Stream `%s` (hash: %s) (key: %x)",
-		NodePath(f),
+		f.Path(),
 		f.hash.B58String(),
 		f.key,
 	)

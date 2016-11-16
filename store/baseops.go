@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
+	"github.com/disorganizer/brig/util"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -43,7 +44,7 @@ func printTree(fs *FS) {
 	}
 
 	err = Walk(root, true, func(child Node) error {
-		fmt.Printf("%-47s %s\n", child.Hash().B58String(), NodePath(child))
+		fmt.Printf("%-47s %s\n", child.Hash().B58String(), child.Path())
 		return nil
 	})
 }
@@ -101,7 +102,7 @@ func mkdir(fs *FS, repoPath string, createParents bool) (*Directory, error) {
 	return dir, nil
 }
 
-func resetNode(fs *FS, node SettableNode, commit *Commit) error {
+func resetNode(fs *FS, node SettableNode, commit *Commit, author id.ID) error {
 	oldRoot, err := fs.DirectoryByHash(commit.Root())
 	if err != nil {
 		return err
@@ -121,7 +122,7 @@ func resetNode(fs *FS, node SettableNode, commit *Commit) error {
 		}
 
 		return makeCheckpoint(
-			fs, "TODO",
+			fs, author,
 			node.ID(), node.Hash(), nil,
 			repoPath, repoPath,
 		)
@@ -132,7 +133,7 @@ func resetNode(fs *FS, node SettableNode, commit *Commit) error {
 		return err
 	}
 
-	_, err = stageNode(fs, repoPath, oldNode.Hash(), oldNode.Size(), "TODO")
+	_, err = stageNode(fs, repoPath, oldNode.Hash(), oldNode.Size(), author)
 	return err
 }
 
@@ -150,6 +151,13 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 	if !ok {
 		return nil, ErrBadNode
 	}
+
+	log.Infof(
+		"store-add: %s (hash: %s, key: %x)",
+		repoPath,
+		newHash.B58String(),
+		util.OmitBytes(key, 10),
+	)
 
 	file.SetKey(key)
 	return file, nil
@@ -182,14 +190,6 @@ func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 			return nil, err
 		}
 	}
-
-	// TODO: move to coreops
-	// log.Infof(
-	// 	"store-add: %s (hash: %s, key: %x)",
-	// 	repoPath,
-	// 	newHash.B58String(),
-	// 	util.OmitBytes(file.Key(), 10),
-	// )
 
 	if node.Hash().Equal(newHash) {
 		log.Debugf("Hash was not modified. Refusing update.")
