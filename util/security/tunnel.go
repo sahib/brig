@@ -31,6 +31,10 @@ func generateKey(rand io.Reader) (crypto.PrivateKey, crypto.PublicKey, error) {
 		return nil, nil, err
 	}
 
+	priv[0] &= 248
+	priv[31] &= 127
+	priv[31] |= 64
+
 	curve25519.ScalarBaseMult(&pub, &priv)
 	return &priv, &pub, nil
 }
