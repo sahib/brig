@@ -355,7 +355,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 
 	newPaths := make(map[string]*File)
 
-	// Work recursively for directories:
+	// Work recursively for directories and add a 'moved' checkpoint.
 	err = Walk(node, true, func(child Node) error {
 		if child.GetType() != NodeTypeFile {
 			return nil
@@ -398,7 +398,7 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 		}
 	}
 
-	// NOTE: No pinning information needs to change,
+	// NOTE: No pinning information needs to change, since
 	//       Move() does not influence the Hash() of the file.
 	for newPath, file := range newPaths {
 		dest, err := mkdirParents(st.fs, newPath)
@@ -423,6 +423,11 @@ func (st *Store) move(oldPath, newPath string, force bool) error {
 			return err
 		}
 
+		// Even if the hash did not change, we need to stage the file,
+		// since the changed name needs to be written to the database.
+		if err := st.fs.StageNode(file); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -213,7 +213,6 @@ func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 	if needRemove {
 		// Remove the child before changing the hash:
 		if err := parDir.RemoveChild(node); err != nil && !IsNoSuchFileError(err) {
-			fmt.Println("Remove failed")
 			return nil, err
 		}
 	}

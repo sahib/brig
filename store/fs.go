@@ -38,8 +38,6 @@ import (
 	"github.com/jbenet/go-multihash"
 )
 
-/////////////// ERRORS ///////////////
-
 // FS implements the logic of brig's data model.
 // It uses an underlying key/value database to
 // storea a Merkle-DAG with versioned metadata,
@@ -387,7 +385,7 @@ func (fs *FS) stageNodeRecursive(nd Node) error {
 	}
 
 	if par != nil {
-		if err := fs.StageNode(par); err != nil {
+		if err := fs.stageNodeRecursive(par); err != nil {
 			return err
 		}
 	}
