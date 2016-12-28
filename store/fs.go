@@ -1112,27 +1112,37 @@ func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 	}
 
 	if root == nil {
-		// TODO: Valid?
-		return fmt.Errorf("No root to reset to.")
+		// TODO: Is this valid?
+		return fmt.Errorf("No root to reset to")
 	}
 
 	// TODO: Better resolve by UID here?
 	//       Would need to find the commit with the last modification though.
 	oldNode, err := root.Lookup(nd.Path())
-	if err != nil {
+	if err != nil && !IsNoSuchFileError(err) {
 		return err
 	}
 
 	// Invalidate the respective index entry, so the instance gets reloaded:
-	fs.MemIndexPurge(nd)
+	err = Walk(nd, true, func(child Node) error {
+		fs.MemIndexPurge(child)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
 
 	par, err := nodeParentDir(nd)
 	if err != nil {
 		return err
 	}
 
-	if err := par.RemoveChild(nd); err != nil {
-		return err
+	// nd might be root itself, so par may be nil.
+	if par != nil {
+		if err := par.RemoveChild(nd); err != nil {
+			return err
+		}
 	}
 
 	if err := fs.StageNode(par); err != nil {
@@ -1140,10 +1150,14 @@ func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 	}
 
 	if oldNode == nil {
-		// oldNode did not exist back then. Just delete the file.
-		// TODO: make remove checkpoint
-		return nil
-
+		// oldNode did not exist back then.
+		// Just keep the file deleted and create a remove checkpoint.
+		return makeCheckpoint(
+			fs, cmt.author.ID(),
+			nd.ID(),
+			nd.Hash(), nil,
+			nd.Path(), "",
+		)
 	}
 
 	if err := par.Add(oldNode); err != nil {
@@ -1152,5 +1166,16 @@ func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 
 	// TODO: create modify checkpoint.
 	// Stage the old node
+	err = makeCheckpoint(
+		fs, cmt.author.ID(),
+		nd.ID(),
+		oldNode.Hash(), nd.Hash(),
+		oldNode.Path(), nd.Path(),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return fs.StageNode(oldNode)
 }

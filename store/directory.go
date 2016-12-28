@@ -48,8 +48,6 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 		return nil, err
 	}
 
-	fmt.Println("New hash of ", name, "is", mh.B58String(), absPath)
-
 	newDir := &Directory{
 		fs:       fs,
 		id:       id,

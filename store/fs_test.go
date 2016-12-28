@@ -230,3 +230,111 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 		}
 	})
 }
+
+func withEmptyRoot(t *testing.T, f func(fs *FS, root *Directory)) {
+	withDummyKv(t, func(kv KV) {
+		fs := NewFilesystem(kv)
+		root, err := newEmptyDirectory(fs, nil, "/")
+		if err != nil {
+			t.Errorf("Creating empty dir failed: %v", err)
+			return
+		}
+
+		if err := fs.StageNode(root); err != nil {
+			t.Errorf("Failed to stage root: %v", err)
+			return
+		}
+
+		if err := fs.MakeCommit(StageAuthor(), "initial commit"); err != nil {
+			t.Errorf("Failed to create initial commit")
+			return
+		}
+
+		f(fs, root)
+	})
+}
+
+func modFile(t *testing.T, fs *FS, file *File, seed int) {
+	root, err := fs.Root()
+	if err != nil {
+		t.Fatalf("Failed to get root: %v", err)
+		return
+	}
+
+	if err := root.RemoveChild(file); err != nil && !IsNoSuchFileError(err) {
+		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
+		return
+	}
+
+	file.SetSize(uint64(seed))
+	file.SetHash(dummyHash(t, byte(seed)))
+
+	if err := root.Add(file); err != nil {
+		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
+		return
+	}
+
+	if err := fs.StageNode(file); err != nil {
+		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
+		return
+	}
+}
+
+func TestCheckoutFile(t *testing.T) {
+	withEmptyRoot(t, func(fs *FS, root *Directory) {
+		file, err := newEmptyFile(fs, root, "cat.png")
+		if err != nil {
+			t.Errorf("Failed to create cat.png: %v", err)
+			return
+		}
+
+		modFile(t, fs, file, 1)
+
+		if err := fs.MakeCommit(StageAuthor(), "second commit"); err != nil {
+			t.Errorf("Failed to make second commit: %v", err)
+			return
+		}
+
+		modFile(t, fs, file, 2)
+
+		if err := fs.MakeCommit(StageAuthor(), "third commit"); err != nil {
+			t.Errorf("Failed to make third commit: %v", err)
+			return
+		}
+
+		head, err := fs.Head()
+		if err != nil {
+			t.Errorf("Failed to get HEAD: %v", err)
+			return
+		}
+
+		lastCommitNd, err := head.Parent()
+		if err != nil {
+			t.Errorf("Failed to get second commit: %v", err)
+			return
+		}
+
+		lastCommit := lastCommitNd.(*Commit)
+
+		if err := fs.CheckoutFile(lastCommit, file); err != nil {
+			t.Errorf("Failed to checkout file before commit: %v", err)
+			return
+		}
+
+		lastVersion, err := fs.LookupFile("/cat.png")
+		if err != nil {
+			t.Errorf("Failed to lookup /cat.png post checkout")
+			return
+		}
+
+		if !lastVersion.Hash().Equal(dummyHash(t, 1)) {
+			t.Errorf("Hash of checkout'd file is not from second commit")
+			return
+		}
+
+		if lastVersion.Size() != 1 {
+			t.Errorf("Size of checkout'd file is not from second commit")
+			return
+		}
+	})
+}
