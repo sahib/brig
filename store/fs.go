@@ -257,6 +257,8 @@ func joinButLeaveLastDot(elems ...string) string {
 
 // ResolveNode resolves a path to a hash and resolves the corresponding node by
 // calling NodeByHash(). If no node could be resolved, nil is returned.
+// It does not matter if the nodes was deleted in the meantime. If so,
+// the last known state is retrieved for this nodePath (see also LookupNode)
 func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	// Check if it's cached already:
 	trieNode := fs.ptrie.Lookup(nodePath)
@@ -904,6 +906,24 @@ func (fs *FS) LookupSettableNode(repoPath string) (SettableNode, error) {
 	return snode, nil
 }
 
+func (fs *FS) ResolveSettableNode(repoPath string) (SettableNode, error) {
+	node, err := fs.ResolveNode(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if node == nil {
+		return nil, nil
+	}
+
+	snode, ok := node.(SettableNode)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return snode, nil
+}
+
 // DirectoryByHash calls NodeByHash and attempts to convert
 // it to a Directory as convinience.
 func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
@@ -1104,7 +1124,6 @@ func (fs *FS) CheckoutCommit(cmt *Commit, force bool) error {
 // CheckoutFile resets a certain file to the state it had in cmt. If the file
 // did not exist back then, it will be deleted. `nd` is usually retrieved by
 // calling ResolveNode() and sorts.
-// TODO: write test for this.
 func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 	root, err := fs.DirectoryByHash(cmt.Root())
 	if err != nil {
@@ -1164,8 +1183,6 @@ func (fs *FS) CheckoutFile(cmt *Commit, nd Node) error {
 		return err
 	}
 
-	// TODO: create modify checkpoint.
-	// Stage the old node
 	err = makeCheckpoint(
 		fs, cmt.author.ID(),
 		nd.ID(),

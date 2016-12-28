@@ -120,6 +120,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo comp
 	}
 
 	if _, err := stageFile(st.fs, repoPath, &Hash{mhash}, sizeAcc.Size(), owner.ID(), key); err != nil {
+		fmt.Println("stageFile failed")
 		return err
 	}
 

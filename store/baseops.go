@@ -166,7 +166,7 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID) (Node, error) {
 	var oldHash *Hash
 
-	node, err := fs.LookupSettableNode(repoPath)
+	node, err := fs.ResolveSettableNode(repoPath)
 	if err != nil && !IsNoSuchFileError(err) {
 		return nil, err
 	}
@@ -212,7 +212,8 @@ func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 
 	if needRemove {
 		// Remove the child before changing the hash:
-		if err := parDir.RemoveChild(node); err != nil {
+		if err := parDir.RemoveChild(node); err != nil && !IsNoSuchFileError(err) {
+			fmt.Println("Remove failed")
 			return nil, err
 		}
 	}
