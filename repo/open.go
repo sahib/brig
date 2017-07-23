@@ -190,7 +190,9 @@ func loadRepository(pwd, folder string) (*Repository, error) {
 		return nil, err
 	}
 
-	ownStore, err := store.Open(brigPath, id.NewPeer(ID, hash), ipfsLayer)
+	// TODO: remove ipfsLayer, once backend is only way
+	backend := &ipfsutil.IpfsBackend{Node: ipfsLayer}
+	ownStore, err := store.Open(brigPath, id.NewPeer(ID, hash), backend)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/transfer"
 	"github.com/disorganizer/brig/transfer/wire"
-	"github.com/disorganizer/brig/util/ipfsutil"
 	"github.com/disorganizer/brig/util/protocol"
 	"github.com/disorganizer/brig/util/security"
 )
@@ -22,7 +21,7 @@ import (
 type Conversation struct {
 	sync.Mutex
 	conn     net.Conn
-	node     *ipfsutil.Node
+	backend  Backend
 	proto    *protocol.Protocol
 	peer     id.Peer
 	notifees map[int64]transfer.AsyncFunc
@@ -35,13 +34,13 @@ func isEOFError(err error) bool {
 }
 
 // wrapConnAsProto establishes the moose protocol on the raw ipfs connection
-func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*protocol.Protocol, error) {
-	pub, err := node.PublicKeyFor(peerHash)
+func wrapConnAsProto(conn net.Conn, bk Backend, peerHash string) (*protocol.Protocol, error) {
+	pub, err := bk.PublicKeyFor(peerHash)
 	if err != nil {
 		return nil, err
 	}
 
-	priv, err := node.PrivateKey()
+	priv, err := bk.PrivateKey()
 	if err != nil {
 		return nil, err
 	}
@@ -55,15 +54,15 @@ func wrapConnAsProto(conn net.Conn, node *ipfsutil.Node, peerHash string) (*prot
 }
 
 // NewConversation returns a conversation that exchanges data over `conn`.
-func NewConversation(conn net.Conn, node *ipfsutil.Node, peer id.Peer) (*Conversation, error) {
-	proto, err := wrapConnAsProto(conn, node, peer.Hash())
+func NewConversation(conn net.Conn, backend Backend, peer id.Peer) (*Conversation, error) {
+	proto, err := wrapConnAsProto(conn, bk, peer.Hash())
 	if err != nil {
 		return nil, err
 	}
 
 	cnv := &Conversation{
 		conn:     conn,
-		node:     node,
+		backend:  backend,
 		peer:     peer,
 		proto:    proto,
 		notifees: make(map[int64]transfer.AsyncFunc),
@@ -140,7 +139,7 @@ type handlerMap map[wire.RequestType]transfer.HandlerFunc
 // and creating Conversations to other peers.
 type Layer struct {
 	// Core functionality:
-	node     *ipfsutil.Node
+	backend  Backend
 	dialer   transfer.Dialer
 	listener net.Listener
 	handlers handlerMap
@@ -156,10 +155,10 @@ type Layer struct {
 }
 
 // NewLayer returns a freshly setup layer that is not connected yet.
-func NewLayer(node *ipfsutil.Node, parentCtx context.Context) *Layer {
+func NewLayer(backend Backend, parentCtx context.Context) *Layer {
 	childCtx, cancel := context.WithCancel(parentCtx)
 	return &Layer{
-		node:      node,
+		backend:   Backend,
 		parentCtx: parentCtx,
 		childCtx:  childCtx,
 		cancel:    cancel,
@@ -181,7 +180,7 @@ func (lay *Layer) Dial(peer id.Peer) (transfer.Conversation, error) {
 		return nil, err
 	}
 
-	return NewConversation(conn, lay.node, peer)
+	return NewConversation(conn, lay.backend, peer)
 }
 
 // IsInOnlineMode returns true after an success Connect()
@@ -282,7 +281,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 
 			// We currently rely on an ipfs connection here,
 			// so testing it without ipfs is not directly possible.
-			streamConn, ok := conn.(*ipfsutil.StreamConn)
+			streamConn, ok := conn.(StreamConn)
 			if !ok {
 				log.Warningf("Denying non-stream conn connection, sorry.")
 				return
@@ -290,7 +289,7 @@ func (lay *Layer) Connect(l net.Listener, d transfer.Dialer) error {
 
 			// Attempt to establish a full authenticated connection:
 			hash := streamConn.PeerHash()
-			proto, err := wrapConnAsProto(conn, lay.node, hash)
+			proto, err := wrapConnAsProto(conn, lay.backend, hash)
 			if err != nil {
 				log.Warningf(
 					"Could not establish incoming connection to %s: %v",

@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/util"
+	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -137,7 +138,7 @@ func resetNode(fs *FS, node SettableNode, commit *Commit, author id.ID) error {
 	return err
 }
 
-func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID, key []byte) (*File, error) {
+func stageFile(fs *FS, repoPath string, newHash *h.Hash, size uint64, author id.ID, key []byte) (*File, error) {
 	node, err := stageNode(fs, repoPath, newHash, size, author)
 	if err != nil {
 		return nil, err
@@ -163,8 +164,8 @@ func stageFile(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 	return file, nil
 }
 
-func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID) (Node, error) {
-	var oldHash *Hash
+func stageNode(fs *FS, repoPath string, newHash *h.Hash, size uint64, author id.ID) (Node, error) {
+	var oldHash *h.Hash
 
 	node, err := fs.ResolveSettableNode(repoPath)
 	if err != nil && !IsNoSuchFileError(err) {
@@ -238,7 +239,7 @@ func stageNode(fs *FS, repoPath string, newHash *Hash, size uint64, author id.ID
 	return node, err
 }
 
-func makeCheckpoint(fs *FS, author id.ID, ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
+func makeCheckpoint(fs *FS, author id.ID, ID uint64, oldHash, newHash *h.Hash, oldPath, newPath string) error {
 	ckp, err := fs.LastCheckpoint(ID)
 	if err != nil {
 		return err
@@ -274,5 +275,5 @@ func resolveCommitRef(fs *FS, commitRef string) (*Commit, error) {
 		return cmt, nil
 	}
 
-	return fs.CommitByHash(&Hash{mh})
+	return fs.CommitByHash(&h.Hash{mh})
 }

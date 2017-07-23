@@ -10,64 +10,6 @@ import (
 	"github.com/disorganizer/brig/util"
 )
 
-// chunkBuffer represents a custom buffer struct with Read/Write and Seek
-// support.
-type chunkBuffer struct {
-	buf      []byte
-	readOff  int64
-	writeOff int64
-	size     int64
-}
-
-func (c *chunkBuffer) Write(p []byte) (int, error) {
-	n := copy(c.buf[c.writeOff:maxChunkSize], p)
-	c.writeOff += int64(n)
-	c.size = util.Max64(c.size, c.writeOff)
-	return n, nil
-}
-
-func (c *chunkBuffer) Reset() {
-	c.readOff = 0
-	c.writeOff = 0
-	c.size = 0
-}
-
-func (c *chunkBuffer) Len() int {
-	return int(c.size - c.readOff)
-}
-
-func (c *chunkBuffer) Read(p []byte) (int, error) {
-	n := copy(p, c.buf[c.readOff:c.size])
-	c.readOff += int64(n)
-	if n == 0 {
-		return n, io.EOF
-	}
-	return n, nil
-}
-
-func (c *chunkBuffer) Seek(offset int64, whence int) (int64, error) {
-	switch whence {
-	case os.SEEK_CUR:
-		c.readOff += offset
-	case os.SEEK_END:
-		c.readOff = c.size + offset
-	case os.SEEK_SET:
-		c.readOff = offset
-	}
-	c.readOff = util.Min64(c.readOff, c.size)
-	c.writeOff = c.readOff
-	return c.readOff, nil
-}
-
-// newChunkBuffer returns a chunkBuffer with the given data. if data is nil a
-// chunkBuffer with maxChunkSize is returned.
-func newChunkBuffer(data []byte) chunkBuffer {
-	if data == nil {
-		data = make([]byte, maxChunkSize)
-	}
-	return chunkBuffer{buf: data, size: int64(len(data))}
-}
-
 type reader struct {
 	// Underlying raw, compressed datastream.
 	rawR io.ReadSeeker
@@ -76,7 +18,7 @@ type reader struct {
 	index []record
 
 	// Buffer holds currently read data; maxChunkSize.
-	chunkBuf chunkBuffer
+	chunkBuf util.ChunkBuffer
 
 	// Structure with parsed trailer.
 	trailer *trailer
@@ -352,7 +294,7 @@ func (r *reader) readZipChunk() ([]byte, error) {
 		return nil, err
 	}
 
-	r.chunkBuf = newChunkBuffer(decData)
+	r.chunkBuf = util.NewChunkBuffer(decData)
 	return decData, nil
 }
 

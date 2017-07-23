@@ -6,8 +6,9 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/interfaces"
 	"github.com/disorganizer/brig/store/wire"
-	"github.com/disorganizer/brig/util/ipfsutil"
+	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 // File represents a single file in the repository.
@@ -15,7 +16,7 @@ import (
 type File struct {
 	name    string
 	key     []byte
-	hash    *Hash
+	hash    *h.Hash
 	parent  string
 	size    uint64
 	modTime time.Time
@@ -75,7 +76,7 @@ func (f *File) FromProto(pnd *wire.Node) error {
 	f.id = pnd.ID
 	f.size = pnd.NodeSize
 	f.modTime = modTime
-	f.hash = &Hash{pnd.Hash}
+	f.hash = &h.Hash{pnd.Hash}
 	f.parent = pfi.Parent
 	f.name = pnd.Name
 	f.key = pfi.Key
@@ -87,7 +88,7 @@ func (f *File) FromProto(pnd *wire.Node) error {
 // Name returns the basename of the file.
 func (f *File) ID() uint64         { return f.id }
 func (f *File) Name() string       { return f.name }
-func (f *File) Hash() *Hash        { return f.hash }
+func (f *File) Hash() *h.Hash      { return f.hash }
 func (f *File) Size() uint64       { return f.size }
 func (f *File) ModTime() time.Time { return f.modTime }
 
@@ -101,7 +102,7 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) SetHash(h *Hash) {
+func (f *File) SetHash(h *h.Hash) {
 	oldHash := f.hash
 	f.hash = h
 	f.fs.MemIndexSwap(f, oldHash)
@@ -146,7 +147,7 @@ func (f *File) GetType() NodeType {
 
 // Stream opens a reader that yields the raw data of the file,
 // already transparently decompressed and decrypted.
-func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
+func (f *File) Stream(backend Backend) (interfaces.OutStream, error) {
 	log.Debugf(
 		"Stream `%s` (hash: %s) (key: %x)",
 		f.Path(),
@@ -154,7 +155,7 @@ func (f *File) Stream(ipfs *ipfsutil.Node) (ipfsutil.Reader, error) {
 		f.key,
 	)
 
-	ipfsStream, err := ipfsutil.Cat(ipfs, f.hash.Multihash)
+	ipfsStream, err := backend.Cat(f.hash)
 	if err != nil {
 		return nil, err
 	}

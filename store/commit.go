@@ -7,6 +7,7 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
+	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/jbenet/go-multihash"
 )
 
@@ -21,7 +22,7 @@ type Merge struct {
 	With id.ID
 
 	// Hash of the commit in the other store we merged with.
-	Hash *Hash
+	Hash *h.Hash
 }
 
 func (mg *Merge) ToProto() (*wire.Merge, error) {
@@ -43,7 +44,7 @@ func (mg *Merge) FromProto(protoMerge *wire.Merge) error {
 	}
 
 	mg.With = ID
-	mg.Hash = &Hash{hash}
+	mg.Hash = &h.Hash{hash}
 	return nil
 }
 
@@ -55,7 +56,7 @@ func (mg *Merge) String() string {
 
 type Author struct {
 	ident id.ID
-	hash  *Hash
+	hash  *h.Hash
 }
 
 func (a *Author) ID() id.ID {
@@ -67,7 +68,7 @@ func (a *Author) Hash() string {
 }
 
 func StageAuthor() *Author {
-	return &Author{"unknown", EmptyHash.Clone()}
+	return &Author{"unknown", h.EmptyHash.Clone()}
 }
 
 func (a *Author) FromProto(pa *wire.Author) error {
@@ -82,7 +83,7 @@ func (a *Author) FromProto(pa *wire.Author) error {
 	}
 
 	a.ident = ident
-	a.hash = &Hash{mh}
+	a.hash = &h.Hash{mh}
 	return nil
 }
 
@@ -115,13 +116,13 @@ type Commit struct {
 	changeset []*CheckpointLink
 
 	// Hash of this commit
-	hash *Hash
+	hash *h.Hash
 
 	// TreeHash is the hash of the root node at this point in time
-	root *Hash
+	root *h.Hash
 
 	// Parent hash (only nil for initial commit)
-	parent *Hash
+	parent *h.Hash
 
 	// store is needed to marshal/unmarshal properly
 	fs *FS
@@ -218,12 +219,12 @@ func (cm *Commit) FromProto(pnd *wire.Node) error {
 	cm.message = pcm.Message
 	cm.author = author
 	cm.modTime = modTime
-	cm.hash = &Hash{hash}
-	cm.root = &Hash{root}
+	cm.hash = &h.Hash{hash}
+	cm.root = &h.Hash{root}
 	cm.changeset = changeset
 
 	if parent != nil {
-		cm.parent = &Hash{parent}
+		cm.parent = &h.Hash{parent}
 	}
 	return nil
 }
@@ -297,7 +298,7 @@ func (cm *Commit) ToProto() (*wire.Node, error) {
 
 	hashBytes := cm.hash.Bytes()
 	if len(hashBytes) == 0 {
-		hashBytes = EmptyHash.Bytes()
+		hashBytes = h.EmptyHash.Bytes()
 	}
 
 	// TODO: Store something more meaningful in 'name':
@@ -331,7 +332,7 @@ func (cm *Commit) Size() uint64 {
 	return root.Size()
 }
 
-func (cm *Commit) Hash() *Hash {
+func (cm *Commit) Hash() *h.Hash {
 	return cm.hash
 }
 
@@ -374,7 +375,7 @@ func (cm *Commit) GetType() NodeType {
 /// OWN COMMIT FUNCTIONALITY //
 ///////////////////////////////
 
-func (cm *Commit) Root() *Hash {
+func (cm *Commit) Root() *h.Hash {
 	return cm.root
 }
 
@@ -382,7 +383,7 @@ func (cm *Commit) AddCheckpointLink(cl *CheckpointLink) {
 	cm.changeset = append(cm.changeset, cl)
 }
 
-func (cm *Commit) SetRoot(root *Hash) error {
+func (cm *Commit) SetRoot(root *h.Hash) error {
 	cm.root = root.Clone()
 	return nil
 }

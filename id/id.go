@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/ipfsutil"
+	h "github.com/disorganizer/brig/util/hashlib"
 
 	log "github.com/Sirupsen/logrus"
 	mh "github.com/jbenet/go-multihash"
@@ -75,7 +75,7 @@ func IsValid(id string) bool {
 	return valid(id) == nil
 }
 
-func (id ID) Hash() mh.Multihash {
+func (id ID) Hash() *h.Hash {
 	// TODO: Use go-ipfs-util.DefaultIpfsHash
 	//		 https://github.com/ipfs/go-ipfs-util/pull/1
 	hash, err := mh.Sum(id.asBlockData(), mh.SHA2_256, -1)
@@ -85,7 +85,7 @@ func (id ID) Hash() mh.Multihash {
 		panic(err)
 	}
 
-	return hash
+	return &h.Hash{hash}
 }
 
 func (id ID) Domain() string {
@@ -139,8 +139,8 @@ var (
 )
 
 // TODO: bad name? Does not really register; just publishes the block(s)
-func (id ID) Register(node *ipfsutil.Node) error {
-	if err := register(node, id); err != nil {
+func (id ID) Register(backend Backend) error {
+	if err := register(backend, id); err != nil {
 		return err
 	}
 
@@ -149,43 +149,36 @@ func (id ID) Register(node *ipfsutil.Node) error {
 		return nil
 	}
 
-	if err := register(node, ID(domain)); err != nil {
+	if err := register(backend, ID(domain)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func register(node *ipfsutil.Node, id ID) error {
+func register(backend Backend, id ID) error {
 	hash := id.Hash()
 
-	peers, err := ipfsutil.Locate(node, hash, 1, 5*time.Second)
+	peers, err := backend.Locate(hash, 1, 5*time.Second)
 	if err != nil && err != util.ErrTimeout {
 		return err
 	}
 
 	// Check if some id is our own:
 	if len(peers) > 0 {
-		self, err := node.Identity()
+		self, err := backend.Identity()
 		if err != nil {
 			return err
 		}
 
-		wasSelf := false
-		for _, peer := range peers {
-			if peer.ID == self {
-				wasSelf = true
-			}
-		}
-
-		if wasSelf {
+		if _, wasSelf := peers[self]; wasSelf {
 			return ErrAlreadyRegistered
 		}
 	}
 
 	// If it was an timeout, it's probably not yet registered.
-	otherHash, err := ipfsutil.AddBlock(node, id.asBlockData())
-	if !bytes.Equal(otherHash, hash) {
+	otherHash, err := backend.AddBlock(id.asBlockData())
+	if otherHash.Equal(hash) {
 		log.Warningf("Hash differ during register; did the hash func changed?")
 	}
 
@@ -200,18 +193,18 @@ func register(node *ipfsutil.Node, id ID) error {
 // DelBlock just deletes the block *locally*
 // Lookup returns the brig:$id value
 
-func (id ID) Unregister(node *ipfsutil.Node) error {
+func (id ID) Unregister(backend Backend) error {
 	hash := id.Hash()
 
-	if err := ipfsutil.DelBlock(node, hash); err != nil {
+	if err := backend.DelBlock(hash); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (id ID) Taken(node *ipfsutil.Node) (bool, error) {
-	data, err := ipfsutil.CatBlock(node, id.Hash(), 5*time.Second)
+func (id ID) Taken(backend Backend) (bool, error) {
+	data, err := backend.CatBlock(id.Hash(), 5*time.Second)
 	if err != nil {
 		return false, err
 	}

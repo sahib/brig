@@ -8,9 +8,9 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/interfaces"
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/store/compress"
-	"github.com/disorganizer/brig/util/ipfsutil"
 	"golang.org/x/net/context"
 )
 
@@ -22,7 +22,7 @@ type Handle struct {
 	laymu sync.Mutex
 
 	// actual data stream
-	stream ipfsutil.Reader
+	stream interfaces.OutStream
 
 	// Write in-memory layer
 	layer *store.Layer

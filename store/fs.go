@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"github.com/disorganizer/brig/store/wire"
+	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/disorganizer/brig/util/trie"
 	"github.com/gogo/protobuf/proto"
 	"github.com/jbenet/go-multihash"
@@ -112,7 +113,7 @@ func (fs *FS) MemIndexAdd(nd Node) {
 // to ensure that old hashes do not resolve to the new, updated instance.
 // If the old instance is needed, it will be loaded as new instance.
 // You should not need to call this function, except when implementing own Nodes.
-func (fs *FS) MemIndexSwap(nd Node, oldHash *Hash) {
+func (fs *FS) MemIndexSwap(nd Node, oldHash *h.Hash) {
 	if oldHash != nil {
 		delete(fs.index, oldHash.B58String())
 	}
@@ -171,7 +172,7 @@ func (fs *FS) NextID() (uint64, error) {
 
 // loadNode loads an individual object by its hash from the object store. It
 // will return nil if the hash is not existant.
-func (fs *FS) loadNode(hash *Hash) (Node, error) {
+func (fs *FS) loadNode(hash *h.Hash) (Node, error) {
 	var data []byte
 	var err error
 
@@ -208,7 +209,7 @@ func (fs *FS) loadNode(hash *Hash) (Node, error) {
 
 // NodeByHash returns the node identified by hash.
 // If no such hash could be found, nil is returned.
-func (fs *FS) NodeByHash(hash *Hash) (Node, error) {
+func (fs *FS) NodeByHash(hash *h.Hash) (Node, error) {
 	// Check if we have this this node in the cache already:
 	b58Hash := hash.B58String()
 	if cachedNode, ok := fs.index[b58Hash]; ok {
@@ -288,7 +289,7 @@ func (fs *FS) ResolveNode(nodePath string) (Node, error) {
 	}
 
 	// Delegate the actual directory loading to Directory()
-	return fs.NodeByHash(&Hash{hash})
+	return fs.NodeByHash(&h.Hash{hash})
 }
 
 // StageNode inserts a modified node to the staging area, making sure the
@@ -332,7 +333,7 @@ func (fs *FS) NodeByUID(uid uint64) (Node, error) {
 		return nil, err
 	}
 
-	return fs.NodeByHash(&Hash{mh})
+	return fs.NodeByHash(&h.Hash{mh})
 }
 
 func (fs *FS) stageNodeRecursive(nd Node) error {
@@ -687,7 +688,7 @@ func (fs *FS) ResolveRef(refname string) (Node, error) {
 		return nil, err
 	}
 
-	return fs.NodeByHash(&Hash{mh})
+	return fs.NodeByHash(&h.Hash{mh})
 }
 
 // SaveRef stores a reference to `nd` persistently. The caller is responsbiel
@@ -763,7 +764,7 @@ func (fs *FS) Status() (*Commit, error) {
 		return nil, err
 	}
 
-	var rootHash *Hash
+	var rootHash *h.Hash
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
@@ -924,7 +925,7 @@ func (fs *FS) ResolveSettableNode(repoPath string) (SettableNode, error) {
 
 // DirectoryByHash calls NodeByHash and attempts to convert
 // it to a Directory as convinience.
-func (fs *FS) DirectoryByHash(hash *Hash) (*Directory, error) {
+func (fs *FS) DirectoryByHash(hash *h.Hash) (*Directory, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
 		return nil, err
@@ -981,7 +982,7 @@ func (fs *FS) LookupDirectory(repoPath string) (*Directory, error) {
 }
 
 // FileByHash calls NodeByHash and converts the result to a File.
-func (fs *FS) FileByHash(hash *Hash) (*File, error) {
+func (fs *FS) FileByHash(hash *h.Hash) (*File, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
 		return nil, err
@@ -1035,7 +1036,7 @@ func (fs *FS) LookupFile(repoPath string) (*File, error) {
 
 // CommitByHash lookups a commit by it's hash.
 // If the commit could not be found, nil is returned.
-func (fs *FS) CommitByHash(hash *Hash) (*Commit, error) {
+func (fs *FS) CommitByHash(hash *h.Hash) (*Commit, error) {
 	nd, err := fs.NodeByHash(hash)
 	if err != nil {
 		return nil, err

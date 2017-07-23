@@ -8,7 +8,7 @@ import (
 
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
-	"github.com/disorganizer/brig/util/ipfsutil"
+	h "github.com/disorganizer/brig/util/hashlib"
 	multihash "github.com/jbenet/go-multihash"
 )
 
@@ -21,8 +21,9 @@ type Store struct {
 	// Internal path of the repository.
 	repoPath string
 
-	// IPFS manager layer (from daemon.Server)
-	IPFS *ipfsutil.Node
+	// Backend used to store the real data.
+	// (might be IPFS, but also memory for testing)
+	backend Backend
 
 	// Lock for atomic operations inside the store
 	// where several db operations happen in a row.
@@ -33,7 +34,7 @@ type Store struct {
 // Open loads an existing store at `brigPath/$ID/index.bolt`, if it does not
 // exist, it is created.  For full function, Connect() should be called
 // afterwards.
-func Open(brigPath string, owner id.Peer, IPFS *ipfsutil.Node) (*Store, error) {
+func Open(brigPath string, owner id.Peer, backend Backend) (*Store, error) {
 	dbDir := filepath.Join(
 		brigPath,
 		"bolt."+strings.Replace(string(owner.ID()), "/", "-", -1),
@@ -48,7 +49,7 @@ func Open(brigPath string, owner id.Peer, IPFS *ipfsutil.Node) (*Store, error) {
 
 	st := &Store{
 		repoPath: brigPath,
-		IPFS:     IPFS,
+		backend:  backend,
 		fs:       fs,
 		kv:       kv,
 	}
@@ -99,7 +100,7 @@ func (st *Store) Owner() (*Author, error) {
 		return nil, err
 	}
 
-	return &Author{ident, &Hash{hash}}, nil
+	return &Author{ident, &h.Hash{hash}}, nil
 }
 
 // View provides a locked view on a node in the store.

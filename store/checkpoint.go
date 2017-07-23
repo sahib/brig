@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/id"
 	"github.com/disorganizer/brig/store/wire"
+	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -85,7 +86,7 @@ type Checkpoint struct {
 	// Hash is the hash of the file at this point.
 	// It may, or may not be retrievable from ipfs.
 	// For ChangeRemove the hash is the hash of the last existing file.
-	hash *Hash
+	hash *h.Hash
 
 	// Index is a a unique counter on the number of checkpoints
 	index uint64
@@ -99,7 +100,7 @@ type Checkpoint struct {
 	author id.ID
 }
 
-func newEmptyCheckpoint(ID uint64, hash *Hash, author id.ID) *Checkpoint {
+func newEmptyCheckpoint(ID uint64, hash *h.Hash, author id.ID) *Checkpoint {
 	return &Checkpoint{
 		idLink: ID,
 		hash:   hash,
@@ -110,7 +111,7 @@ func newEmptyCheckpoint(ID uint64, hash *Hash, author id.ID) *Checkpoint {
 }
 
 func (cp *Checkpoint) ChangeType() ChangeType { return cp.change }
-func (cp *Checkpoint) Hash() *Hash            { return cp.hash }
+func (cp *Checkpoint) Hash() *h.Hash          { return cp.hash }
 func (cp *Checkpoint) Author() id.ID          { return cp.author }
 
 // TODO: nice representation
@@ -135,7 +136,7 @@ func (cp *Checkpoint) ToProto() (*wire.Checkpoint, error) {
 }
 
 func (cp *Checkpoint) FromProto(msg *wire.Checkpoint) error {
-	cp.hash = &Hash{msg.Hash}
+	cp.hash = &h.Hash{msg.Hash}
 	cp.change = ChangeType(msg.Change)
 	cp.idLink = msg.IdLink
 	cp.index = msg.Index
@@ -379,9 +380,9 @@ func (ckp *Checkpoint) MakeLink() *CheckpointLink {
 	}
 }
 
-func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *Hash, oldPath, newPath string) (*Checkpoint, error) {
+func (ckp *Checkpoint) Fork(author id.ID, oldHash, newHash *h.Hash, oldPath, newPath string) (*Checkpoint, error) {
 	var change ChangeType
-	var hash *Hash
+	var hash *h.Hash
 
 	if oldHash == nil {
 		change, hash = ChangeAdd, newHash

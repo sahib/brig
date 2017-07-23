@@ -1,19 +1,23 @@
-package store
+package nodes
 
 import (
-	"strings"
 	"time"
 
 	"github.com/disorganizer/brig/interfaces"
-	"github.com/disorganizer/brig/store/wire"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 const (
+	// NodeTypeUnknown should not happen in real programs
 	NodeTypeUnknown = iota
+	// NodeTypeFile indicates a regular file
 	NodeTypeFile
+	// NodeTypeDirectory indicates a directory
 	NodeTypeDirectory
+	// NodeTypeCommit indicates a commit
 	NodeTypeCommit
+	// NodeTypeGhost indicates a moved node
+	NodeTypeGhost
 )
 
 type NodeType uint8
@@ -26,6 +30,8 @@ func (nt NodeType) String() string {
 		return "directory"
 	case NodeTypeCommit:
 		return "commit"
+	case NodeTypeGhost:
+		return "ghost"
 	}
 
 	return "unknown"
@@ -109,65 +115,4 @@ type SettableNode interface {
 	SetModTime(modTime time.Time)
 	SetName(name string)
 	SetHash(hash *h.Hash)
-}
-
-//////////////// UTILITY FUNCTIONS ////////////////
-
-func prefixSlash(s string) string {
-	if !strings.HasPrefix(s, "/") {
-		return "/" + s
-	}
-
-	return s
-}
-
-// NodeDepth returns the depth of the node.
-// It does this by looking at the path separators.
-// The depth of "/" is defined as 0.
-func NodeDepth(nd Node) int {
-	path := nd.Path()
-	if path == "/" {
-		return 0
-	}
-
-	depth := 0
-	for _, rn := range path {
-		if rn == '/' {
-			depth++
-		}
-	}
-
-	return depth
-}
-
-func nodeRemove(nd Node) error {
-	parDir, err := nodeParentDir(nd)
-	if err != nil {
-		return err
-	}
-
-	// Cannot remove root:
-	if parDir == nil {
-		return nil
-	}
-
-	return parDir.RemoveChild(nd)
-}
-
-func nodeParentDir(nd Node) (*Directory, error) {
-	par, err := nd.Parent()
-	if err != nil {
-		return nil, err
-	}
-
-	if par == nil {
-		return nil, nil
-	}
-
-	parDir, ok := par.(*Directory)
-	if !ok {
-		return nil, ErrBadNode
-	}
-
-	return parDir, nil
 }

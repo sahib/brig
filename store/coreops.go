@@ -11,9 +11,10 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/interfaces"
 	"github.com/disorganizer/brig/store/compress"
 	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/ipfsutil"
+	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 // Mkdir creates a new, empty directory. It's a NOOP if the directory already exists.
@@ -105,12 +106,12 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo comp
 		return err
 	}
 
-	mhash, err := ipfsutil.Add(st.IPFS, stream)
+	hash, err := st.backend.Add(stream)
 	if err != nil {
 		return err
 	}
 
-	if err := st.IPFS.Pin(mhash); err != nil {
+	if err := st.backend.Pin(hash); err != nil {
 		return err
 	}
 
@@ -119,8 +120,7 @@ func (st *Store) StageFromReader(repoPath string, r io.Reader, compressAlgo comp
 		return err
 	}
 
-	if _, err := stageFile(st.fs, repoPath, &Hash{mhash}, sizeAcc.Size(), owner.ID(), key); err != nil {
-		fmt.Println("stageFile failed")
+	if _, err := stageFile(st.fs, repoPath, hash, sizeAcc.Size(), owner.ID(), key); err != nil {
 		return err
 	}
 
@@ -147,14 +147,14 @@ func (st *Store) pinOp(repoPath string, doUnpin bool) error {
 		return err
 	}
 
-	fn := st.IPFS.Pin
+	fn := st.backend.Pin
 	if doUnpin {
-		fn = st.IPFS.Unpin
+		fn = st.backend.Unpin
 	}
 
 	var errs util.Errors
 	for _, toPin := range pinMe {
-		if err := fn(toPin.Hash().Multihash); err != nil {
+		if err := fn(toPin.Hash()); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -182,7 +182,7 @@ func (st *Store) IsPinned(repoPath string) (bool, error) {
 		return false, err
 	}
 
-	return st.IPFS.IsPinned(node.Hash().Multihash)
+	return st.backend.IsPinned(node.Hash())
 }
 
 // Touch creates a new empty file.
@@ -191,7 +191,7 @@ func (st *Store) Touch(repoPath string) error {
 	return st.StageFromReader(prefixSlash(repoPath), bytes.NewReader([]byte{}), compress.AlgoNone)
 }
 
-func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *Hash, oldPath, newPath string) error {
+func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *h.Hash, oldPath, newPath string) error {
 	owner, err := st.Owner()
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (st *Store) makeCheckpointByOwner(ID uint64, oldHash, newHash *Hash, oldPat
 }
 
 // Stream returns the stream of the file at `path`.
-func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
+func (st *Store) Stream(path string) (interfaces.OutStream, error) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 
@@ -210,7 +210,7 @@ func (st *Store) Stream(path string) (ipfsutil.Reader, error) {
 		return nil, err
 	}
 
-	return file.Stream(st.IPFS)
+	return file.Stream(st.backend)
 }
 
 // Cat will write the contents of the brig file `path` into `w`.
@@ -288,7 +288,7 @@ func (st *Store) Remove(repoPath string, recursive bool) error {
 		}
 
 		if child.GetType() == NodeTypeFile {
-			if err := st.IPFS.Unpin(child.Hash().Multihash); err != nil {
+			if err := st.backend.Unpin(child.Hash()); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -462,7 +462,6 @@ func (st *Store) MakeCommit(msg string) error {
 }
 
 // TODO: respect from/to ranges
-// TODO: This should use a locked closure.
 func (st *Store) Log(visit func(*Commit) error) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()

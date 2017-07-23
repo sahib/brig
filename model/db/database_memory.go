@@ -1,0 +1,50 @@
+package db
+
+import (
+	"encoding/gob"
+	"io"
+)
+
+// MemoryDatabase is a purely in memory database.
+type MemoryDatabase struct {
+	data map[string][]byte
+}
+
+// NewMemoryDatabase allocates a new empty MemoryDatabase
+func NewMemoryDatabase() *MemoryDatabase {
+	return &MemoryDatabase{
+		data: make(map[string][]byte),
+	}
+}
+
+// Get returns `key` of `bucket`.
+func (mdb *MemoryDatabase) Get(bucket string, key string) ([]byte, error) {
+	data, ok := mdb.data[bucket+"."+key]
+	if !ok {
+		return nil, ErrNoSuchKey
+	}
+
+	return data, nil
+}
+
+// Set sets `key` in `bucket` to `data`.
+func (mdb *MemoryDatabase) Set(bucket string, key string, data []byte) error {
+	mdb.data[bucket+"."+key] = data
+	return nil
+}
+
+// Export encodes the internal memory map to a gob structure,
+// and writes it to `w`.
+func (mdb *MemoryDatabase) Export(w io.Writer) error {
+	return gob.NewEncoder(w).Encode(mdb.data)
+}
+
+// Import imports a previously exported dump and decodes the gob structure.
+func (mdb *MemoryDatabase) Import(r io.Reader) error {
+	return gob.NewDecoder(r).Decode(&mdb.data)
+}
+
+// Close the memory - a no op.
+func (mdb *MemoryDatabase) Close() error {
+	return nil
+}

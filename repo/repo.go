@@ -74,7 +74,8 @@ func (rp *Repository) Store(ID id.ID) (*store.Store, error) {
 		return nil, err
 	}
 
-	newStore, err := store.Open(rp.InternalFolder, remote, rp.IPFS)
+	backend := &ipfsutil.IpfsBackend{Node: rp.IPFS}
+	newStore, err := store.Open(rp.InternalFolder, remote, backend)
 	if err != nil {
 		return nil, err
 	}

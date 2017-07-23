@@ -12,7 +12,6 @@ import (
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
 var (
@@ -53,7 +52,7 @@ type conversationPool struct {
 	open map[id.ID]Conversation
 
 	// Map from hash id to last seen timestamp
-	heartbeat map[id.ID]*ipfsutil.Pinger
+	heartbeat map[id.ID]Pinger
 
 	// lock for `open`
 	mu sync.Mutex
@@ -74,7 +73,7 @@ type conversationPool struct {
 func newConversationPool(rp *repo.Repository, layer Layer) *conversationPool {
 	cp := &conversationPool{
 		open:         make(map[id.ID]Conversation),
-		heartbeat:    make(map[id.ID]*ipfsutil.Pinger),
+		heartbeat:    make(map[id.ID]Pinger),
 		rp:           rp,
 		layer:        layer,
 		changeCh:     make(chan *repo.RemoteChange, 10),
@@ -169,6 +168,7 @@ func (cp *conversationPool) UpdateConnections() {
 
 func (cp *conversationPool) WaitForUpdate() {
 	// UpdateConnections locks the mutex
+	// TODO: This is stupid.
 	cp.mu.Lock()
 	cp.mu.Unlock()
 }
@@ -270,20 +270,20 @@ func (cp *conversationPool) Close() error {
 
 	// Reset conversations maps:
 	cp.open = make(map[id.ID]Conversation)
-	cp.heartbeat = make(map[id.ID]*ipfsutil.Pinger)
+	cp.heartbeat = make(map[id.ID]Pinger)
 	return errs.ToErr()
 }
 
 // ipfsDialer uses ipfs to create a net.Conn to another node,
 // which is referenced by a it's peer hash.
 type ipfsDialer struct {
-	layer Layer
-	node  *ipfsutil.Node
+	layer   Layer
+	backend Backend
 }
 
 func (id *ipfsDialer) Dial(peer id.Peer) (net.Conn, error) {
 	log.Debugf("IPFS dialing to %v", peer.Hash())
-	return id.node.Dial(peer.Hash(), id.layer.ProtocolID())
+	return id.backend.Dial(peer.Hash(), id.layer.ProtocolID())
 }
 
 // listenerFilter only Accept()s connections that are listed
@@ -319,7 +319,7 @@ func (lf *listenerFilter) Accept() (net.Conn, error) {
 			break
 		}
 
-		streamConn, ok := conn.(*ipfsutil.StreamConn)
+		streamConn, ok := conn.(*StreamConn)
 		if !ok {
 			return nil, fmt.Errorf("Not used with ipfs listener?")
 		}

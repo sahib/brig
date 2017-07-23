@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/disorganizer/brig/store/wire"
+	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/gogo/protobuf/proto"
 	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/jbenet/go-multihash"
@@ -17,8 +18,8 @@ type Directory struct {
 	size     uint64
 	modTime  time.Time
 	parent   string
-	hash     *Hash
-	children map[string]*Hash
+	hash     *h.Hash
+	children map[string]*h.Hash
 	id       uint64
 
 	// This is not set by FromProto() and must be passed
@@ -51,9 +52,9 @@ func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, erro
 	newDir := &Directory{
 		fs:       fs,
 		id:       id,
-		hash:     &Hash{mh},
+		hash:     &h.Hash{mh},
 		name:     name,
-		children: make(map[string]*Hash),
+		children: make(map[string]*h.Hash),
 	}
 
 	if parent != nil {
@@ -117,9 +118,9 @@ func (d *Directory) FromProto(pnd *wire.Node) error {
 	d.modTime = modTime
 	d.parent = pbd.Parent
 	d.size = pnd.NodeSize
-	d.hash = &Hash{pnd.Hash}
+	d.hash = &h.Hash{pnd.Hash}
 	d.name = pnd.Name
-	d.children = make(map[string]*Hash)
+	d.children = make(map[string]*h.Hash)
 
 	// Be cautious, input might come from everywhere:
 	links := pbd.Links
@@ -129,7 +130,7 @@ func (d *Directory) FromProto(pnd *wire.Node) error {
 
 	// Find our place in the world:
 	for idx, name := range pbd.Names {
-		d.children[name] = &Hash{links[idx]}
+		d.children[name] = &h.Hash{links[idx]}
 	}
 
 	return nil
@@ -150,7 +151,7 @@ func (d *Directory) Name() string {
 	return d.name
 }
 
-func (d *Directory) Hash() *Hash {
+func (d *Directory) Hash() *h.Hash {
 	return d.hash
 }
 
@@ -273,7 +274,7 @@ func (d *Directory) IsRoot() bool {
 	return d.parent == ""
 }
 
-func (d *Directory) xorHash(hash *Hash) error {
+func (d *Directory) xorHash(hash *h.Hash) error {
 	oldHash := d.hash.Clone()
 	if err := d.hash.Xor(hash); err != nil {
 		return err
@@ -364,7 +365,7 @@ func (d *Directory) Lookup(repoPath string) (Node, error) {
 func (d *Directory) SetSize(size uint64)          { d.size = size }
 func (d *Directory) SetModTime(modTime time.Time) { d.modTime = modTime }
 func (d *Directory) SetName(name string)          { d.name = name }
-func (d *Directory) SetHash(hash *Hash)           { d.hash = hash }
+func (d *Directory) SetHash(hash *h.Hash)         { d.hash = hash }
 
 func (d *Directory) Add(nd Node) error {
 	if nd == d {

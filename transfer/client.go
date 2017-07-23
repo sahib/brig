@@ -7,7 +7,6 @@ import (
 	"github.com/disorganizer/brig/store"
 	"github.com/disorganizer/brig/transfer/wire"
 	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/ipfsutil"
 )
 
 // APIClient is a high-level client that talks to
@@ -15,16 +14,16 @@ import (
 // directly talk to the other side and convert the
 // response back to native go structures.
 type APIClient struct {
-	cnv   Conversation
-	node  *ipfsutil.Node
-	idcnt int64
+	cnv     Conversation
+	backend Backend
+	idcnt   int64
 }
 
 // newAPIClient returns a new APIClient on top of a conversation
-func newAPIClient(cnv Conversation, node *ipfsutil.Node) (*APIClient, error) {
+func newAPIClient(cnv Conversation, backend Backend) (*APIClient, error) {
 	return &APIClient{
-		cnv:  cnv,
-		node: node,
+		cnv:     cnv,
+		backend: backend,
 	}, nil
 }
 

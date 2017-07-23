@@ -28,11 +28,11 @@ type PeerInfo struct {
 	PubKey security.PubKey
 }
 
-// Locate finds the object pointed to by `hash`. It will wait
+// locate finds the object pointed to by `hash`. it will wait
 // for max `timeout` duration if it got less than `n` items in that time.
-// If `n` is less than 0, all reachable peers that have `hash` will be returned.
-// If `n` is 0, Locate will return immeditately.
-// This operation requires online-mode.
+// if `n` is less than 0, all reachable peers that have `hash` will be returned.
+// if `n` is 0, locate will return immeditately.
+// this operation requires online-mode.
 func Locate(node *Node, hash gmh.Multihash, n int, t time.Duration) ([]*PeerInfo, error) {
 	if n == 0 {
 		return []*PeerInfo{}, nil
