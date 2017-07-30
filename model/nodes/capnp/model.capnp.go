@@ -3,113 +3,558 @@
 package capnp
 
 import (
+	strconv "strconv"
 	capnp "zombiezen.com/go/capnproto2"
 	text "zombiezen.com/go/capnproto2/encoding/text"
 	schemas "zombiezen.com/go/capnproto2/schemas"
 )
 
-// Author is a person that changed something
-type Author struct{ capnp.Struct }
+// Person might be any brig user
+type Person struct{ capnp.Struct }
 
-// Author_TypeID is the unique identifier for the type Author.
-const Author_TypeID = 0x8e88e8f85e1b3764
+// Person_TypeID is the unique identifier for the type Person.
+const Person_TypeID = 0xf736dd278ea58545
 
-func NewAuthor(s *capnp.Segment) (Author, error) {
+func NewPerson(s *capnp.Segment) (Person, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Author{st}, err
+	return Person{st}, err
 }
 
-func NewRootAuthor(s *capnp.Segment) (Author, error) {
+func NewRootPerson(s *capnp.Segment) (Person, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Author{st}, err
+	return Person{st}, err
 }
 
-func ReadRootAuthor(msg *capnp.Message) (Author, error) {
+func ReadRootPerson(msg *capnp.Message) (Person, error) {
 	root, err := msg.RootPtr()
-	return Author{root.Struct()}, err
+	return Person{root.Struct()}, err
 }
 
-func (s Author) String() string {
-	str, _ := text.Marshal(0x8e88e8f85e1b3764, s.Struct)
+func (s Person) String() string {
+	str, _ := text.Marshal(0xf736dd278ea58545, s.Struct)
 	return str
 }
 
-func (s Author) Ident() (string, error) {
+func (s Person) Ident() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Author) HasIdent() bool {
+func (s Person) HasIdent() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Author) IdentBytes() ([]byte, error) {
+func (s Person) IdentBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Author) SetIdent(v string) error {
+func (s Person) SetIdent(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s Author) Hash() ([]byte, error) {
+func (s Person) Hash() ([]byte, error) {
 	p, err := s.Struct.Ptr(1)
 	return []byte(p.Data()), err
 }
 
-func (s Author) HasHash() bool {
+func (s Person) HasHash() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s Author) SetHash(v []byte) error {
+func (s Person) SetHash(v []byte) error {
 	return s.Struct.SetData(1, v)
 }
 
-// Author_List is a list of Author.
-type Author_List struct{ capnp.List }
+// Person_List is a list of Person.
+type Person_List struct{ capnp.List }
 
-// NewAuthor creates a new list of Author.
-func NewAuthor_List(s *capnp.Segment, sz int32) (Author_List, error) {
+// NewPerson creates a new list of Person.
+func NewPerson_List(s *capnp.Segment, sz int32) (Person_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
-	return Author_List{l}, err
+	return Person_List{l}, err
 }
 
-func (s Author_List) At(i int) Author { return Author{s.List.Struct(i)} }
+func (s Person_List) At(i int) Person { return Person{s.List.Struct(i)} }
 
-func (s Author_List) Set(i int, v Author) error { return s.List.SetStruct(i, v.Struct) }
+func (s Person_List) Set(i int, v Person) error { return s.List.SetStruct(i, v.Struct) }
 
-func (s Author_List) String() string {
-	str, _ := text.MarshalList(0x8e88e8f85e1b3764, s.List)
+func (s Person_List) String() string {
+	str, _ := text.MarshalList(0xf736dd278ea58545, s.List)
 	return str
 }
 
-// Author_Promise is a wrapper for a Author promised by a client call.
-type Author_Promise struct{ *capnp.Pipeline }
+// Person_Promise is a wrapper for a Person promised by a client call.
+type Person_Promise struct{ *capnp.Pipeline }
 
-func (p Author_Promise) Struct() (Author, error) {
+func (p Person_Promise) Struct() (Person, error) {
 	s, err := p.Pipeline.Struct()
-	return Author{s}, err
+	return Person{s}, err
 }
 
-const schema_9195d073cb5c5953 = "x\xda$\xca?K\xc3@\x1c\xc6\xf1\xe7\xf95\xb1\x0e" +
-	")z*(8\xf4\x86\x0e*\xf8'\"(N\xf6\x1d" +
-	"x:\x09R\x08M\xe8\x05l\x12z'\xfa\x12\xc4A" +
-	"\x10q\xf6\x958\xba\xe8\xe2\xe4kpus)'\xea" +
-	"\xf8\xfd\xf2\x99\xbf>\x924^\x16\xc0\xac\xc43!\xdf" +
-	"_\x1d|\x7f\xde\xdcA-0\x9c\x9e\x9d\xbf\xb9\xf7\xc7" +
-	"{\xc4\xd2\x06\xd4\xd7\xab\x9a\xb6\xd5\xb4\xbb\x98\xf2\x0a\x07" +
-	"a\x985U\xb3=\xae%/.\xb6\xfe\xe2\xb0\x7f\xe9" +
-	"m=\x01\x8eI\x13Q\xc2\xe0\xe1\xc9<\x7f\xdc\xbe\xc0" +
-	"D\xc2~\x8fL\x80\x94'\x0c\xffP\x97\x91\xd3\x99n" +
-	"\x8a\x89\xab+\xedm\xe6\xf5\xd0f\xd5\xa8\xc8\xb5\xab\xc7" +
-	"\x85\xb7e\xc5\x11`f[\x11\x10\x11P\xeb\xbb\x80\xe9" +
-	"\xb5hv\x84\x8a\\\xe2\xef\xdc\xdc\x00\xccZ\x8bfO" +
-	"\xd8-\xf3\xa2\xf2L L\xc09\x9b9\xcb\x0e\x84\x1d" +
-	"\xf0'\x00\x00\xff\xffb\xf4:\xdc"
+// Commit is a set of changes to nodes
+type Commit struct{ capnp.Struct }
+type Commit_merge Commit
+
+// Commit_TypeID is the unique identifier for the type Commit.
+const Commit_TypeID = 0x8da013c66e545daf
+
+func NewCommit(s *capnp.Segment) (Commit, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 5})
+	return Commit{st}, err
+}
+
+func NewRootCommit(s *capnp.Segment) (Commit, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 5})
+	return Commit{st}, err
+}
+
+func ReadRootCommit(msg *capnp.Message) (Commit, error) {
+	root, err := msg.RootPtr()
+	return Commit{root.Struct()}, err
+}
+
+func (s Commit) String() string {
+	str, _ := text.Marshal(0x8da013c66e545daf, s.Struct)
+	return str
+}
+
+func (s Commit) Message() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Commit) HasMessage() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Commit) MessageBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Commit) SetMessage(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Commit) Parent() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return []byte(p.Data()), err
+}
+
+func (s Commit) HasParent() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Commit) SetParent(v []byte) error {
+	return s.Struct.SetData(1, v)
+}
+
+func (s Commit) Root() ([]byte, error) {
+	p, err := s.Struct.Ptr(2)
+	return []byte(p.Data()), err
+}
+
+func (s Commit) HasRoot() bool {
+	p, err := s.Struct.Ptr(2)
+	return p.IsValid() || err != nil
+}
+
+func (s Commit) SetRoot(v []byte) error {
+	return s.Struct.SetData(2, v)
+}
+
+func (s Commit) Merge() Commit_merge { return Commit_merge(s) }
+
+func (s Commit_merge) IsMerge() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s Commit_merge) SetIsMerge(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+func (s Commit_merge) With() (Person, error) {
+	p, err := s.Struct.Ptr(3)
+	return Person{Struct: p.Struct()}, err
+}
+
+func (s Commit_merge) HasWith() bool {
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Commit_merge) SetWith(v Person) error {
+	return s.Struct.SetPtr(3, v.Struct.ToPtr())
+}
+
+// NewWith sets the with field to a newly
+// allocated Person struct, preferring placement in s's segment.
+func (s Commit_merge) NewWith() (Person, error) {
+	ss, err := NewPerson(s.Struct.Segment())
+	if err != nil {
+		return Person{}, err
+	}
+	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s Commit_merge) Hash() ([]byte, error) {
+	p, err := s.Struct.Ptr(4)
+	return []byte(p.Data()), err
+}
+
+func (s Commit_merge) HasHash() bool {
+	p, err := s.Struct.Ptr(4)
+	return p.IsValid() || err != nil
+}
+
+func (s Commit_merge) SetHash(v []byte) error {
+	return s.Struct.SetData(4, v)
+}
+
+// Commit_List is a list of Commit.
+type Commit_List struct{ capnp.List }
+
+// NewCommit creates a new list of Commit.
+func NewCommit_List(s *capnp.Segment, sz int32) (Commit_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 5}, sz)
+	return Commit_List{l}, err
+}
+
+func (s Commit_List) At(i int) Commit { return Commit{s.List.Struct(i)} }
+
+func (s Commit_List) Set(i int, v Commit) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Commit_List) String() string {
+	str, _ := text.MarshalList(0x8da013c66e545daf, s.List)
+	return str
+}
+
+// Commit_Promise is a wrapper for a Commit promised by a client call.
+type Commit_Promise struct{ *capnp.Pipeline }
+
+func (p Commit_Promise) Struct() (Commit, error) {
+	s, err := p.Pipeline.Struct()
+	return Commit{s}, err
+}
+
+func (p Commit_Promise) Merge() Commit_merge_Promise { return Commit_merge_Promise{p.Pipeline} }
+
+// Commit_merge_Promise is a wrapper for a Commit_merge promised by a client call.
+type Commit_merge_Promise struct{ *capnp.Pipeline }
+
+func (p Commit_merge_Promise) Struct() (Commit_merge, error) {
+	s, err := p.Pipeline.Struct()
+	return Commit_merge{s}, err
+}
+
+func (p Commit_merge_Promise) With() Person_Promise {
+	return Person_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
+}
+
+// Ghost indicates that a certain node was at this path once
+type Ghost struct{ capnp.Struct }
+
+// Ghost_TypeID is the unique identifier for the type Ghost.
+const Ghost_TypeID = 0x80c828d7e89c12ea
+
+func NewGhost(s *capnp.Segment) (Ghost, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Ghost{st}, err
+}
+
+func NewRootGhost(s *capnp.Segment) (Ghost, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Ghost{st}, err
+}
+
+func ReadRootGhost(msg *capnp.Message) (Ghost, error) {
+	root, err := msg.RootPtr()
+	return Ghost{root.Struct()}, err
+}
+
+func (s Ghost) String() string {
+	str, _ := text.Marshal(0x80c828d7e89c12ea, s.Struct)
+	return str
+}
+
+// Ghost_List is a list of Ghost.
+type Ghost_List struct{ capnp.List }
+
+// NewGhost creates a new list of Ghost.
+func NewGhost_List(s *capnp.Segment, sz int32) (Ghost_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Ghost_List{l}, err
+}
+
+func (s Ghost_List) At(i int) Ghost { return Ghost{s.List.Struct(i)} }
+
+func (s Ghost_List) Set(i int, v Ghost) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Ghost_List) String() string {
+	str, _ := text.MarshalList(0x80c828d7e89c12ea, s.List)
+	return str
+}
+
+// Ghost_Promise is a wrapper for a Ghost promised by a client call.
+type Ghost_Promise struct{ *capnp.Pipeline }
+
+func (p Ghost_Promise) Struct() (Ghost, error) {
+	s, err := p.Pipeline.Struct()
+	return Ghost{s}, err
+}
+
+// Node is a node in the merkle dag of brig
+type Node struct{ capnp.Struct }
+type Node_Which uint16
+
+const (
+	Node_Which_commit Node_Which = 0
+	Node_Which_ghost  Node_Which = 1
+)
+
+func (w Node_Which) String() string {
+	const s = "commitghost"
+	switch w {
+	case Node_Which_commit:
+		return s[0:6]
+	case Node_Which_ghost:
+		return s[6:11]
+
+	}
+	return "Node_Which(" + strconv.FormatUint(uint64(w), 10) + ")"
+}
+
+// Node_TypeID is the unique identifier for the type Node.
+const Node_TypeID = 0xa629eb7f7066fae3
+
+func NewNode(s *capnp.Segment) (Node, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
+	return Node{st}, err
+}
+
+func NewRootNode(s *capnp.Segment) (Node, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
+	return Node{st}, err
+}
+
+func ReadRootNode(msg *capnp.Message) (Node, error) {
+	root, err := msg.RootPtr()
+	return Node{root.Struct()}, err
+}
+
+func (s Node) String() string {
+	str, _ := text.Marshal(0xa629eb7f7066fae3, s.Struct)
+	return str
+}
+
+func (s Node) Which() Node_Which {
+	return Node_Which(s.Struct.Uint16(0))
+}
+func (s Node) Name() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Node) HasName() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) NameBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Node) SetName(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Node) Hash() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return []byte(p.Data()), err
+}
+
+func (s Node) HasHash() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) SetHash(v []byte) error {
+	return s.Struct.SetData(1, v)
+}
+
+func (s Node) ModTime() (string, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.Text(), err
+}
+
+func (s Node) HasModTime() bool {
+	p, err := s.Struct.Ptr(2)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) ModTimeBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.TextBytes(), err
+}
+
+func (s Node) SetModTime(v string) error {
+	return s.Struct.SetText(2, v)
+}
+
+func (s Node) Commit() (Commit, error) {
+	p, err := s.Struct.Ptr(3)
+	return Commit{Struct: p.Struct()}, err
+}
+
+func (s Node) HasCommit() bool {
+	if s.Struct.Uint16(0) != 0 {
+		return false
+	}
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) SetCommit(v Commit) error {
+	s.Struct.SetUint16(0, 0)
+	return s.Struct.SetPtr(3, v.Struct.ToPtr())
+}
+
+// NewCommit sets the commit field to a newly
+// allocated Commit struct, preferring placement in s's segment.
+func (s Node) NewCommit() (Commit, error) {
+	s.Struct.SetUint16(0, 0)
+	ss, err := NewCommit(s.Struct.Segment())
+	if err != nil {
+		return Commit{}, err
+	}
+	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s Node) Ghost() (Ghost, error) {
+	p, err := s.Struct.Ptr(3)
+	return Ghost{Struct: p.Struct()}, err
+}
+
+func (s Node) HasGhost() bool {
+	if s.Struct.Uint16(0) != 1 {
+		return false
+	}
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) SetGhost(v Ghost) error {
+	s.Struct.SetUint16(0, 1)
+	return s.Struct.SetPtr(3, v.Struct.ToPtr())
+}
+
+// NewGhost sets the ghost field to a newly
+// allocated Ghost struct, preferring placement in s's segment.
+func (s Node) NewGhost() (Ghost, error) {
+	s.Struct.SetUint16(0, 1)
+	ss, err := NewGhost(s.Struct.Segment())
+	if err != nil {
+		return Ghost{}, err
+	}
+	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Node_List is a list of Node.
+type Node_List struct{ capnp.List }
+
+// NewNode creates a new list of Node.
+func NewNode_List(s *capnp.Segment, sz int32) (Node_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4}, sz)
+	return Node_List{l}, err
+}
+
+func (s Node_List) At(i int) Node { return Node{s.List.Struct(i)} }
+
+func (s Node_List) Set(i int, v Node) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Node_List) String() string {
+	str, _ := text.MarshalList(0xa629eb7f7066fae3, s.List)
+	return str
+}
+
+// Node_Promise is a wrapper for a Node promised by a client call.
+type Node_Promise struct{ *capnp.Pipeline }
+
+func (p Node_Promise) Struct() (Node, error) {
+	s, err := p.Pipeline.Struct()
+	return Node{s}, err
+}
+
+func (p Node_Promise) Commit() Commit_Promise {
+	return Commit_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
+}
+
+func (p Node_Promise) Ghost() Ghost_Promise {
+	return Ghost_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
+}
+
+const schema_9195d073cb5c5953 = "x\xdat\x93Mh$E\x14\xc7\xdf\xbf\xaaz[a" +
+	"\x96\x99N\x8f\x07\xc1\xa5KY0\xbb\xe8\xba\xbb~ " +
+	"\xb9\xcc\xfa\x11\xfc\xc0\x95\x14\xe6\"\xacb\xedt\xedt" +
+	"c\xba{\xe8n\x19\x05ev!\x81(&\xf8y\x13" +
+	"\xd4\x83B\x0e!W\x15<D\x88H\xbc\x18\x0f\x8a\x07" +
+	"O\x1e\x14\xbd\x09\"\xe4`K\xcd$3\x93er\xac" +
+	"\xd7\x7f\xfa\xfd\x7f\xff\xf7\xde\xf9u\\b\x17\x9c\x1e'" +
+	"R\xb3\xce\x89\xea\xcf\x99\x8f\xfe\xf8y\xf6\xbb\xeb\xe4\xcd" +
+	"\xa0z\xee\xf9+\xdf\x17?|\xf8.\x09\x97\xc8\xff\x14" +
+	"\xdf\xf8\x1bp\xfd\x0d\x04\xc4\xaa\xad\x17\x16\xd3o\xfdO" +
+	"\xd6H\xcd`B\xe98V\xba\x83]\x7f\x0f\xae\xbf\x87" +
+	"\xc0\x07\xfb\x9dP\xfd\xb6\x7f\xad\xdb\xff\xeb\xcc\xe77\xc9" +
+	"\xe7\x85\xcb\x88\xfc/\xd9W\xfe6s\xfdm\x16\xdc\xff" +
+	"\x0f\x0b@\xa8n<xg\xfa^\xf3\xec\x17\xa4n\x07" +
+	"\xc6\xddns\\\x10\xf9\x8e\xd8'\xf8\xb7\x8a-B5" +
+	"\xbf\xf2\xd9\xfa\xdd\xbf>\xf4\xefQ\xcb\x0e\x1bx\x16\xbb" +
+	"\xfe\xa6p\xfdM\x11\xf8\xbf\x88\x1e=\\\xb5u7\xed" +
+	"\xde\x97d,4K\xe7\x06\x8f\xb9'\xa2\xac(i\x01" +
+	"P\x02\xacz\xf1\xfd\x8f\xd5\xd7?\xbd\xb5CJ0<" +
+	"r\x0fP#\xba\x80\x1fQ\x0dd2NO\x84q[" +
+	"\x97\xa6\x90e\xa4K\xa9e\xdb\xe4\xa5\x8eS\x99f\xa1" +
+	"\x91=]H]\xca2\x8a\x0b\xd9\xd5e$\xb3\xb4\x0d" +
+	"C4\xad\xefcY\x92\xc4%\x1d\xd3Y\x1et\xbe\x0b" +
+	"\xd5P(c^H-\x0bS\xca\xec\x9alG:\xed" +
+	"X\x13\x99L374\x05\x91jpA$@\xe4\xe9" +
+	"G\x89\xd4\x15\x0e\x151x@\x13\xb6h\xe6\x88\xd4K" +
+	"\x1cj\x89\xc1c\xac\x09F\xe4\xc5g\x89T\xc8\xa1\xba" +
+	"\x0c\xe0\x98\x08\xdeK.\x12\xeb'\xa6(t\xc7\xa0F" +
+	"\x0c5B\xab\xabs\x93\x968I\x0c'\x09\xf5<\xcb" +
+	"F\x8f 1y\xc7\x8cHqH\xda\xea\xce=\x9b\x85" +
+	"f:\xe6\xe9\x03\xcc\xa7QY\x91\x8c\x0b)\xf40\xcb" +
+	"8\x95eddb\xf2\x97\x97\x8c\x0cu\xc7r_\xcd" +
+	"\xe3\x0eA5G\xa8oX\x80W9\xd4\xf2\x04\xea\x0d" +
+	"[|\x9dC\xadN\xa0\xae\xd8P\xaes\xa8\xb7\x19N" +
+	"\xf1\xaa\xe2Mp\"\xefM\x1b\xcb2\x87z\x87\xe1\x94" +
+	"\xf8\xcf\x96\x05\x91\xb7v\x91H\xadr\xa8\x0f\x18\xea\xa9" +
+	"NF\x11\xd4#]D\x87\xcc\xfd$\x0b\x17\xe3\xf1\xc7" +
+	"V{0+4\xc6+K@\x83\x10t\xec\xfa\xa01" +
+	"\xbe\xb0a\xfd\xf8\xc5h\x9d\x1b\xe4\xa9j\x16uhu" +
+	"\xde\x12\\\xe2P\xcfX\xd6\x03\xa3OY\xd6\xc79\xd4" +
+	"\x82e\x15M8D\xdee[|\x92C-2\xf4\xe3" +
+	"\xe2\xb2\xfd\x13@\x0c \xd4{q\x19\xa11>\x9c\xa1" +
+	"\x93#\\\xd3l-\x98\xbc\xc8\xd2\xe3\xf6\xf5\x8e\xc1 " +
+	"=\xfc]\x0du2aq'*\xe5U#u\xfa\xda" +
+	"`n\x81|\xa509\x91\xbae4\xbd36\xe5\xd3" +
+	"\x1c\xea\xfc\xc4\xf4\xee\xb5\xe6g9\xd4\x03\x0cA\x1c\xda" +
+	"}\x9b\x96\xfd\xff\x01\x00\x00\xff\xffr\x805\x99"
 
 func init() {
 	schemas.Register(schema_9195d073cb5c5953,
-		0x8e88e8f85e1b3764)
+		0x80c828d7e89c12ea,
+		0x8da013c66e545daf,
+		0xa629eb7f7066fae3,
+		0xb82a14926e213581,
+		0xf736dd278ea58545)
 }

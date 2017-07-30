@@ -5,6 +5,7 @@ import (
 
 	"github.com/disorganizer/brig/interfaces"
 	h "github.com/disorganizer/brig/util/hashlib"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 const (
@@ -22,16 +23,16 @@ const (
 
 type NodeType uint8
 
-func (nt NodeType) String() string {
-	switch nt {
-	case NodeTypeFile:
-		return "file"
-	case NodeTypeDirectory:
-		return "directory"
-	case NodeTypeCommit:
-		return "commit"
-	case NodeTypeGhost:
-		return "ghost"
+var nodeTypeToString = map[NodeType]string{
+	NodeTypeCommit:    "commit",
+	NodeTypeGhost:     "ghost",
+	NodeTypeFile:      "file",
+	NodeTypeDirectory: "directory",
+}
+
+func (n NodeType) String() string {
+	if name, ok := nodeTypeToString[n]; ok {
+		return name
 	}
 
 	return "unknown"
@@ -47,7 +48,7 @@ type Metadatable interface {
 	//
 	// It is an error to modify the hash value.
 	// If you need to modify it, you have to make an own copy via .Clone().
-	Hash() *h.Hash
+	Hash() h.Hash
 
 	// Size returns the size of the node in bytes.
 	Size() uint64
@@ -57,32 +58,32 @@ type Metadatable interface {
 
 	// Path of this node.
 	Path() string
+
+	// GetType returns the type of the node.
+	Type() NodeType
 }
 
-// Serializable is a thing that can be converted to a wire.Node protobuf message.
+// Serializable is a thing that can be converted to a capnproto message.
 type Serializable interface {
-	ToProto() (*wire.Node, error)
-	FromProto(*wire.Node) error
+	ToCapnp() (*capnp.Message, error)
+	FromCapnp(*capnp.Message) error
 }
 
 // HierarchyEntry represents a thing that is placed in
 // a file hierarchy and may have other children beneath it.
 type HierarchyEntry interface {
 	// NChildren returns the total number of children to a node.
-	NChildren() int
+	NChildren(lkr Linker) int
 
 	// Child returns a named child.
-	Child(name string) (Node, error)
+	Child(lkr Linker, name string) (Node, error)
 
 	// Parent returns the parent node or nil if there is none.
-	Parent() (Node, error)
+	Parent(lkr Linker) (Node, error)
 
 	// SetParent sets the parent new.  Care must be taken to remove old
 	// references to the node to avoid loops.
-	SetParent(nd Node) error
-
-	// GetType returns the type of the node.
-	GetType() NodeType
+	SetParent(lkr Linker, nd Node) error
 }
 
 // Streamable represents a thing that can be streamed,
@@ -98,11 +99,6 @@ type Node interface {
 	Metadatable
 	Serializable
 	HierarchyEntry
-
-	// ID returns the numeric identifier of this node.
-	// It stays the same, even when the node was modified
-	// or the path was moved.
-	ID() uint64
 }
 
 // SettableNode is a node that supports modification of
@@ -114,5 +110,5 @@ type SettableNode interface {
 	SetSize(size uint64)
 	SetModTime(modTime time.Time)
 	SetName(name string)
-	SetHash(hash *h.Hash)
+	SetHash(hash h.Hash)
 }

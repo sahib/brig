@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	goipfsutil "github.com/ipfs/go-ipfs-util"
-	"github.com/jbenet/go-multihash"
+	"github.com/multiformats/go-multihash"
 )
 
 var (

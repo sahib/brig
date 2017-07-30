@@ -7,7 +7,7 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
-func TestAuthor(t *testing.T) {
+func TestPerson(t *testing.T) {
 	msg, err := AuthorOfStage().ToCapnp()
 	if err != nil {
 		t.Errorf("Failed to convert author to msg: %v", err)
@@ -26,7 +26,7 @@ func TestAuthor(t *testing.T) {
 		return
 	}
 
-	empty := &Author{}
+	empty := &Person{}
 	if err := empty.FromCapnp(newMsg); err != nil {
 		t.Errorf("From failed: %v", err)
 		return
