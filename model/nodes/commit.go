@@ -34,10 +34,11 @@ type Commit struct {
 
 // NewCommit creates a new commit after the commit referenced by `parent`.
 // `parent` might be nil for the very first commit.
-func NewCommit(parent h.Hash) (*Commit, error) {
+func NewCommit(lkr Linker, parent h.Hash) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
+			lkr.NextUID(),
 		},
 		modTime: time.Now(),
 		author:  AuthorOfStage(),

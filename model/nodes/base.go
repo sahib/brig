@@ -22,6 +22,9 @@ type Base struct {
 
 	// Type of this node
 	nodeType NodeType
+
+	// Unique identifier for this node
+	uid uint64
 }
 
 func (b *Base) Name() string {

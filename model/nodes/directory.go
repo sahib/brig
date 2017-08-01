@@ -13,9 +13,9 @@ import (
 type Directory struct {
 	Base
 
-	size     uint64
-	parent   string
-	children map[string]h.Hash
+	size       uint64
+	parentName string
+	children   map[string]h.Hash
 }
 
 //
@@ -60,6 +60,7 @@ type Directory struct {
 
 func (d *Directory) ToCapnp() (*capnp.Message, error) {
 	// TODO: Implement.
+
 	return nil, nil
 }
 
