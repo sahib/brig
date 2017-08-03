@@ -45,6 +45,13 @@ func (b *Base) ModTime() time.Time {
 
 /////// UTILS /////////
 
+func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
+	capnode.SetHash(b.hash)
+	capnode.SetName(b.name)
+	capnode.SetModTime(b.modTime.Format(time.RFC3339))
+	return nil
+}
+
 func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 	var err error
 	b.name, err = capnode.Name()

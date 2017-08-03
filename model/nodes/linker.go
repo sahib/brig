@@ -22,7 +22,7 @@ type Linker interface {
 	// MemSetRoot should be called when the current root directory changed.
 	MemSetRoot(root *Directory)
 
-	NextUID() (uint64, error)
+	NextUID() uint64
 }
 
 ////////////////////////////
@@ -32,6 +32,7 @@ type Linker interface {
 // MockLinker is supposed to be used for testing.
 type MockLinker struct {
 	id_count uint64
+	root     *Directory
 	paths    map[string]Node
 	hashes   map[string]Node
 }
@@ -41,6 +42,20 @@ func NewMockLinker() *MockLinker {
 		paths:  make(map[string]Node),
 		hashes: make(map[string]Node),
 	}
+}
+
+func (ml *MockLinker) Root() (*Directory, error) {
+	if ml.root != nil {
+		return ml.root, nil
+	}
+
+	root, err := NewEmptyDirectory(ml, nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	ml.root = root
+	return root, nil
 }
 
 func (ml *MockLinker) LookupNode(path string) (Node, error) {
@@ -59,9 +74,21 @@ func (ml *MockLinker) NodeByHash(hash h.Hash) (Node, error) {
 	return nil, fmt.Errorf("No such hash")
 }
 
-func (ml *MockLinker) NextID() uint64 {
-	return ml.id_count++
+func (ml *MockLinker) NextUID() uint64 {
+	ml.id_count++
+	return ml.id_count
 }
 
-func (ml *MockLinker) MemSetRoot(nd Node, oldHash h.Hash)   { /* No-Op */ }
-func (ml *MockLinker) MemIndexSwap(nd Node, oldHash h.Hash) { /* No-Op */ }
+func (ml *MockLinker) MemSetRoot(root *Directory) {
+	ml.root = root
+}
+
+func (ml *MockLinker) MemIndexSwap(nd Node, oldHash h.Hash) {
+	delete(ml.hashes, oldHash.B58String())
+	ml.AddNode(nd)
+}
+
+func (ml *MockLinker) AddNode(nd Node) {
+	ml.hashes[nd.Hash().B58String()] = nd
+	ml.paths[nd.Path()] = nd
+}

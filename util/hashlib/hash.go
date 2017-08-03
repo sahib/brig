@@ -158,3 +158,15 @@ func (h Hash) Xor(o Hash) error {
 	copy(h, mh)
 	return nil
 }
+
+func Sum(data []byte) Hash {
+	mh, err := multihash.Sum(
+		data, multihash.BLAKE2B_MAX, multihash.DefaultLengths[multihash.BLAKE2B_MAX],
+	)
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to calculate basic hash value. Something is wrong: %s", err))
+	}
+
+	return Hash(mh)
+}

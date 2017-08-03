@@ -264,12 +264,12 @@ type Ghost struct{ capnp.Struct }
 const Ghost_TypeID = 0x80c828d7e89c12ea
 
 func NewGhost(s *capnp.Segment) (Ghost, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
 	return Ghost{st}, err
 }
 
 func NewRootGhost(s *capnp.Segment) (Ghost, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
 	return Ghost{st}, err
 }
 
@@ -283,12 +283,20 @@ func (s Ghost) String() string {
 	return str
 }
 
+func (s Ghost) NodeType() uint8 {
+	return s.Struct.Uint8(0)
+}
+
+func (s Ghost) SetNodeType(v uint8) {
+	s.Struct.SetUint8(0, v)
+}
+
 // Ghost_List is a list of Ghost.
 type Ghost_List struct{ capnp.List }
 
 // NewGhost creates a new list of Ghost.
 func NewGhost_List(s *capnp.Segment, sz int32) (Ghost_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
 	return Ghost_List{l}, err
 }
 
@@ -309,22 +317,214 @@ func (p Ghost_Promise) Struct() (Ghost, error) {
 	return Ghost{s}, err
 }
 
+// A single directory entry
+type DirEntry struct{ capnp.Struct }
+
+// DirEntry_TypeID is the unique identifier for the type DirEntry.
+const DirEntry_TypeID = 0x8b15ee76774b1f9d
+
+func NewDirEntry(s *capnp.Segment) (DirEntry, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return DirEntry{st}, err
+}
+
+func NewRootDirEntry(s *capnp.Segment) (DirEntry, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return DirEntry{st}, err
+}
+
+func ReadRootDirEntry(msg *capnp.Message) (DirEntry, error) {
+	root, err := msg.RootPtr()
+	return DirEntry{root.Struct()}, err
+}
+
+func (s DirEntry) String() string {
+	str, _ := text.Marshal(0x8b15ee76774b1f9d, s.Struct)
+	return str
+}
+
+func (s DirEntry) Name() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s DirEntry) HasName() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s DirEntry) NameBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s DirEntry) SetName(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s DirEntry) Hash() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return []byte(p.Data()), err
+}
+
+func (s DirEntry) HasHash() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s DirEntry) SetHash(v []byte) error {
+	return s.Struct.SetData(1, v)
+}
+
+// DirEntry_List is a list of DirEntry.
+type DirEntry_List struct{ capnp.List }
+
+// NewDirEntry creates a new list of DirEntry.
+func NewDirEntry_List(s *capnp.Segment, sz int32) (DirEntry_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return DirEntry_List{l}, err
+}
+
+func (s DirEntry_List) At(i int) DirEntry { return DirEntry{s.List.Struct(i)} }
+
+func (s DirEntry_List) Set(i int, v DirEntry) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s DirEntry_List) String() string {
+	str, _ := text.MarshalList(0x8b15ee76774b1f9d, s.List)
+	return str
+}
+
+// DirEntry_Promise is a wrapper for a DirEntry promised by a client call.
+type DirEntry_Promise struct{ *capnp.Pipeline }
+
+func (p DirEntry_Promise) Struct() (DirEntry, error) {
+	s, err := p.Pipeline.Struct()
+	return DirEntry{s}, err
+}
+
+// Directory contains one or more directories or files
+type Directory struct{ capnp.Struct }
+
+// Directory_TypeID is the unique identifier for the type Directory.
+const Directory_TypeID = 0xe24c59306c829c01
+
+func NewDirectory(s *capnp.Segment) (Directory, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
+	return Directory{st}, err
+}
+
+func NewRootDirectory(s *capnp.Segment) (Directory, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
+	return Directory{st}, err
+}
+
+func ReadRootDirectory(msg *capnp.Message) (Directory, error) {
+	root, err := msg.RootPtr()
+	return Directory{root.Struct()}, err
+}
+
+func (s Directory) String() string {
+	str, _ := text.Marshal(0xe24c59306c829c01, s.Struct)
+	return str
+}
+
+func (s Directory) Size() uint64 {
+	return s.Struct.Uint64(0)
+}
+
+func (s Directory) SetSize(v uint64) {
+	s.Struct.SetUint64(0, v)
+}
+
+func (s Directory) Parent() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Directory) HasParent() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Directory) ParentBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Directory) SetParent(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Directory) Children() (DirEntry_List, error) {
+	p, err := s.Struct.Ptr(1)
+	return DirEntry_List{List: p.List()}, err
+}
+
+func (s Directory) HasChildren() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Directory) SetChildren(v DirEntry_List) error {
+	return s.Struct.SetPtr(1, v.List.ToPtr())
+}
+
+// NewChildren sets the children field to a newly
+// allocated DirEntry_List, preferring placement in s's segment.
+func (s Directory) NewChildren(n int32) (DirEntry_List, error) {
+	l, err := NewDirEntry_List(s.Struct.Segment(), n)
+	if err != nil {
+		return DirEntry_List{}, err
+	}
+	err = s.Struct.SetPtr(1, l.List.ToPtr())
+	return l, err
+}
+
+// Directory_List is a list of Directory.
+type Directory_List struct{ capnp.List }
+
+// NewDirectory creates a new list of Directory.
+func NewDirectory_List(s *capnp.Segment, sz int32) (Directory_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2}, sz)
+	return Directory_List{l}, err
+}
+
+func (s Directory_List) At(i int) Directory { return Directory{s.List.Struct(i)} }
+
+func (s Directory_List) Set(i int, v Directory) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Directory_List) String() string {
+	str, _ := text.MarshalList(0xe24c59306c829c01, s.List)
+	return str
+}
+
+// Directory_Promise is a wrapper for a Directory promised by a client call.
+type Directory_Promise struct{ *capnp.Pipeline }
+
+func (p Directory_Promise) Struct() (Directory, error) {
+	s, err := p.Pipeline.Struct()
+	return Directory{s}, err
+}
+
 // Node is a node in the merkle dag of brig
 type Node struct{ capnp.Struct }
 type Node_Which uint16
 
 const (
-	Node_Which_commit Node_Which = 0
-	Node_Which_ghost  Node_Which = 1
+	Node_Which_commit    Node_Which = 0
+	Node_Which_ghost     Node_Which = 1
+	Node_Which_directory Node_Which = 2
 )
 
 func (w Node_Which) String() string {
-	const s = "commitghost"
+	const s = "commitghostdirectory"
 	switch w {
 	case Node_Which_commit:
 		return s[0:6]
 	case Node_Which_ghost:
 		return s[6:11]
+	case Node_Which_directory:
+		return s[11:20]
 
 	}
 	return "Node_Which(" + strconv.FormatUint(uint64(w), 10) + ")"
@@ -468,6 +668,36 @@ func (s Node) NewGhost() (Ghost, error) {
 	return ss, err
 }
 
+func (s Node) Directory() (Directory, error) {
+	p, err := s.Struct.Ptr(3)
+	return Directory{Struct: p.Struct()}, err
+}
+
+func (s Node) HasDirectory() bool {
+	if s.Struct.Uint16(0) != 2 {
+		return false
+	}
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) SetDirectory(v Directory) error {
+	s.Struct.SetUint16(0, 2)
+	return s.Struct.SetPtr(3, v.Struct.ToPtr())
+}
+
+// NewDirectory sets the directory field to a newly
+// allocated Directory struct, preferring placement in s's segment.
+func (s Node) NewDirectory() (Directory, error) {
+	s.Struct.SetUint16(0, 2)
+	ss, err := NewDirectory(s.Struct.Segment())
+	if err != nil {
+		return Directory{}, err
+	}
+	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
+	return ss, err
+}
+
 // Node_List is a list of Node.
 type Node_List struct{ capnp.List }
 
@@ -502,59 +732,81 @@ func (p Node_Promise) Ghost() Ghost_Promise {
 	return Ghost_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
 }
 
-const schema_9195d073cb5c5953 = "x\xdat\x93Mh$E\x14\xc7\xdf\xbf\xaaz[a" +
-	"\x96\x99N\x8f\x07\xc1\xa5KY0\xbb\xe8\xba\xbb~ " +
-	"\xb9\xcc\xfa\x11\xfc\xc0\x95\x14\xe6\"\xacb\xedt\xedt" +
-	"c\xba{\xe8n\x19\x05ev!\x81(&\xf8y\x13" +
-	"\xd4\x83B\x0e!W\x15<D\x88H\xbc\x18\x0f\x8a\x07" +
-	"O\x1e\x14\xbd\x09\"\xe4`K\xcd$3\x93er\xac" +
-	"\xd7\x7f\xfa\xfd\x7f\xff\xf7\xde\xf9u\\b\x17\x9c\x1e'" +
-	"R\xb3\xce\x89\xea\xcf\x99\x8f\xfe\xf8y\xf6\xbb\xeb\xe4\xcd" +
-	"\xa0z\xee\xf9+\xdf\x17?|\xf8.\x09\x97\xc8\xff\x14" +
-	"\xdf\xf8\x1bp\xfd\x0d\x04\xc4\xaa\xad\x17\x16\xd3o\xfdO" +
-	"\xd6H\xcd`B\xe98V\xba\x83]\x7f\x0f\xae\xbf\x87" +
-	"\xc0\x07\xfb\x9dP\xfd\xb6\x7f\xad\xdb\xff\xeb\xcc\xe77\xc9" +
-	"\xe7\x85\xcb\x88\xfc/\xd9W\xfe6s\xfdm\x16\xdc\xff" +
-	"\x0f\x0b@\xa8n<xg\xfa^\xf3\xec\x17\xa4n\x07" +
-	"\xc6\xddns\\\x10\xf9\x8e\xd8'\xf8\xb7\x8a-B5" +
-	"\xbf\xf2\xd9\xfa\xdd\xbf>\xf4\xefQ\xcb\x0e\x1bx\x16\xbb" +
-	"\xfe\xa6p\xfdM\x11\xf8\xbf\x88\x1e=\\\xb5u7\xed" +
-	"\xde\x97d,4K\xe7\x06\x8f\xb9'\xa2\xac(i\x01" +
-	"P\x02\xacz\xf1\xfd\x8f\xd5\xd7?\xbd\xb5CJ0<" +
-	"r\x0fP#\xba\x80\x1fQ\x0dd2NO\x84q[" +
-	"\x97\xa6\x90e\xa4K\xa9e\xdb\xe4\xa5\x8eS\x99f\xa1" +
-	"\x91=]H]\xca2\x8a\x0b\xd9\xd5e$\xb3\xb4\x0d" +
-	"C4\xad\xefcY\x92\xc4%\x1d\xd3Y\x1et\xbe\x0b" +
-	"\xd5P(c^H-\x0bS\xca\xec\x9alG:\xed" +
-	"X\x13\x99L374\x05\x91jpA$@\xe4\xe9" +
-	"G\x89\xd4\x15\x0e\x151x@\x13\xb6h\xe6\x88\xd4K" +
-	"\x1cj\x89\xc1c\xac\x09F\xe4\xc5g\x89T\xc8\xa1\xba" +
-	"\x0c\xe0\x98\x08\xdeK.\x12\xeb'\xa6(t\xc7\xa0F" +
-	"\x0c5B\xab\xabs\x93\x968I\x0c'\x09\xf5<\xcb" +
-	"F\x8f 1y\xc7\x8cHqH\xda\xea\xce=\x9b\x85" +
-	"f:\xe6\xe9\x03\xcc\xa7QY\x91\x8c\x0b)\xf40\xcb" +
-	"8\x95eddb\xf2\x97\x97\x8c\x0cu\xc7r_\xcd" +
-	"\xe3\x0eA5G\xa8oX\x80W9\xd4\xf2\x04\xea\x0d" +
-	"[|\x9dC\xadN\xa0\xae\xd8P\xaes\xa8\xb7\x19N" +
-	"\xf1\xaa\xe2Mp\"\xefM\x1b\xcb2\x87z\x87\xe1\x94" +
-	"\xf8\xcf\x96\x05\x91\xb7v\x91H\xadr\xa8\x0f\x18\xea\xa9" +
-	"NF\x11\xd4#]D\x87\xcc\xfd$\x0b\x17\xe3\xf1\xc7" +
-	"V{0+4\xc6+K@\x83\x10t\xec\xfa\xa01" +
-	"\xbe\xb0a\xfd\xf8\xc5h\x9d\x1b\xe4\xa9j\x16uhu" +
-	"\xde\x12\\\xe2P\xcfX\xd6\x03\xa3OY\xd6\xc79\xd4" +
-	"\x82e\x15M8D\xdee[|\x92C-2\xf4\xe3" +
-	"\xe2\xb2\xfd\x13@\x0c \xd4{q\x19\xa11>\x9c\xa1" +
-	"\x93#\\\xd3l-\x98\xbc\xc8\xd2\xe3\xf6\xf5\x8e\xc1 " +
-	"=\xfc]\x0du2aq'*\xe5U#u\xfa\xda" +
-	"`n\x81|\xa509\x91\xbae4\xbd36\xe5\xd3" +
-	"\x1c\xea\xfc\xc4\xf4\xee\xb5\xe6g9\xd4\x03\x0cA\x1c\xda" +
-	"}\x9b\x96\xfd\xff\x01\x00\x00\xff\xffr\x805\x99"
+func (p Node_Promise) Directory() Directory_Promise {
+	return Directory_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
+}
+
+const schema_9195d073cb5c5953 = "x\xda\x84\x95]h\x1c\xd5\x1b\xc6\xdf\xe7\x9c\xd9\x9d\x7f" +
+	"a\xf3\xcfnO\x0a\x15\x0c{\x94J\xdb\xa05\x89\x1f" +
+	"hP\xd2j\x82\xb6&\x92\xa3\x11)Tq\xbas\xb2" +
+	"spgf\x99\x99\x1a\xd6\x9b\xa8\xe0\x8d\xa2\xe0\x17X" +
+	"H1J+\x0a\x95zY\x04o\x04E\xe2\x8dx\xa1" +
+	" xS/\xfc\x02\xa1\x82\x88\x05\x1d9\xbb\x9b\xdd5" +
+	"l\xec\xe5\xbc\xf3f\xf2\xfc\x9e\xf7y\xdf\x9d\xbc\x8b\x1d" +
+	"fS\x85\xfd\x0e\x91\x9a,\x14\xf3\x9fw\xaf\xff\xf8\xcd" +
+	"\x81\xcf\x9f!\xb5\x1b\xc8\x1f>~\xe2\x8b\xf4\xcb7^" +
+	"!\xc7%\x12\x7f\xe2\x13\x01\xe6\x0a\xb0\xaa\xb8\x9b\xcd\x12" +
+	"\xf23\xd5\x07V\x9f\xfau\xcf\x8bT\xd9=\xd0\\`" +
+	"\xb6\xdbc\xdf\x8a\x90\xb9\"dUq\x9a\xad\x12\xf2\x0b" +
+	"\x8f-G\x9f\x89\x8d\x97\xb6}\xbbP\xb0\xed\xbf\xb3M" +
+	"\x01\xee\x0a\xf0\xaa\x98\xe2?\x10\xf2\xef\xaf\xac4\xd7~" +
+	"9\xf8\xee\xb6\xf6y\xc7\xe5D\xe2'\xfe\x91\xb8\xcc]" +
+	"q\x99Wo\xb9\xc1y\x14\x84\xfc\xd9\xdb\xae\x8b^\x1d" +
+	"\x9b\xb8H\xea\x1a\x0c\xfc\xb7=\x05\x17D\xe2T\xe1\x0a" +
+	"A\xb4\x0a\x17\x089\xd6\x9fkL\x1e_\xb8\xb4]I" +
+	"[x\xa5xI\x8c\x17]1^\xac\x8aG\x8a\xb6}" +
+	"\xfe\xf9s/\xef\xff\xee\xf6?\x86a\xc2\xdd\x14#\xae" +
+	"+F\xdc\xaa\xb8\xd3]\xa5;\xf2\x9a\xd7\x8c\x9a7\x87" +
+	"1\xf3u\xe3P\xfba\xe6\xbe N3Z\x02\x94\x03" +
+	"\x96?\xfe\xda[\xea\xe3\xaf_\xf8\x94\x94\xc3p\xe4F" +
+	"\xa0D4\x85\xaf\x90\xb7\xdb\xa4\x89\x8a\xbe\xa9y\x99N" +
+	"e\x16x\x99\xf4dM'\x99g\"\x19\xc5\xbe\x96\xab" +
+	"^*\xbdLf\x81Ie\xd3\xcb\x02\x19G5h\"" +
+	"\xe5p\x87\xc8\x01Qe\xe4\x18\x91*q\xa8\xbd\x0c\xb9" +
+	"\xfd\xa3\xe5VS\x13\x11\x8a\xc4P$\x0c\x938g\x92" +
+	"\xf9(\xe3Ik\xb8\xcak\xdb*+\xd8\xcc\x8f\xc8\xd4" +
+	"D\xf5\x86f\xd27\x89\xaeeq\xd2\x92:\xca\x92\x16" +
+	"A\xfd\xaf'\xe1\xe0\x04\x91\xda\xc7\xa1&\x19*\xc0\x18" +
+	"l\xf1&[<\xc0\xa1ne\x18\x8d\xbcP\xa3D\x0c" +
+	"%\xc2h\xe0\xa5\x01F\x88ad\xb8\xba{\xe304" +
+	"\x19\xed`\xa1\xecZx=\xf2N\xa34<\x95\x9eL" +
+	"u&\xe3\x15Y\x0b\xbc\xa8n\xdd\x8ce\x14\xbb\xbeN" +
+	"\x89T\xb9\xa7\xd4\xbb\x87H\x9d\xe0P\xc1\x80R=C" +
+	"\xa4\x9e\xe0P\x0d\x86\x0acc`D\x15c\xe5\xfb\x1c" +
+	"\xaa\xc9\x00\x8e\x81\xc0U\xc2ibk\xa1NS\xaf\xde" +
+	"\x83\x9amz\x89\x8e\xb2-\xac\xd1$\x8e{\x0f\xd5P" +
+	"'u\xdd#\xc5\x16\xe9ls\xe6\xc1\xd8\xd7\xc31\xf7" +
+	"u1\x8f!\xb7M\xd2\xa4\xd2\xf1:\xa10\x91\xcc\x02" +
+	"-C\x9d<\xd9\xd0\xd2\xf7\xea\x96\xfbdb\xea\x04\xb5" +
+	"\xb7\x87z\xda\x02\xbc\xce\xa16\x06P\xcf\xd8\xe2\x9b\x1c" +
+	"\xea\xec\x00\xea\xdb\xd6\x94u\x0e\xf5\x1e\xc38\xcfs>" +
+	"\x06NT9gm\xd9\xe0P\xe7\x19\xc6\x9d\xbfm\xd9" +
+	"!\xaa\xbc?M\xa4\xcer\xa8\x0f\x19\xc6\x0b\x7f\xd9r" +
+	"\x81\xa8\xf2\xc1CD\xea<\x87\xba\xf8_\xe3^\x0bc" +
+	"\x7f\xd9\xf4_\xce\xd6\xda#D\xb9\xbf\xc1\x04\x94\x09\xd5" +
+	"\xba]\x0f\x94\xfb7\xaaS\xcf\xb7rHh\xa1\xdc\xdf" +
+	"\xed\xee\xdb\x1d\xd34{\xa8=\x04U\xb2\xfet\xf8\xe6" +
+	"-\xf6a\x0e\xb5`\x0d\xea\xd2\x1d\xb5\x06\xcdq\xa8%" +
+	"k\x90\xd3a[\xb4\xc5\xfb9\xd42\xc3\x9aI\x17\xed" +
+	"\x97\x00b\x00at\xd5d\x01\xca\xfd\xb3\xd1Qr\xd5" +
+	"\x90\xcf\xb59\xdcx\xa7\x1d<\xd0\x9d\xff;\xc8\xe7\xba" +
+	"\xc8\x85\x96\xac\xc5\x91=\x0e\xa9\x8c#-\xe3D\x86q" +
+	"\xa2{\xabitjk+\xc6m\xb4c_\xeaea" +
+	"~\xa2\x8f\xba\x15\x85\xa33\x83\xa4\xe8Da\xd1\x1e\x93" +
+	"\x85\xce~\x8c\xa6\xe6i\x8d]\xc4\xb0\xab\x9f\xef\xee\xdc" +
+	"\xf2Z`\x1a~\xa2#{h\xfeOX\xe2@\xb9\xff" +
+	"\x0bA\xb0\xc5a\xd8K:I\xe3h\xa7\xdd\xde:<" +
+	"\xbf\xe5\x9d>\x192S\x0f2yRK/j\xb53" +
+	"^\x95\xa7R\x9d\x10\x0d\x9e\x9f\xe9\xab\x9c\x9f\xaa\xf1\x07" +
+	"\xb4\xffk4\xff\x04\x00\x00\xff\xff\x959\xc2\xee"
 
 func init() {
 	schemas.Register(schema_9195d073cb5c5953,
 		0x80c828d7e89c12ea,
+		0x8b15ee76774b1f9d,
 		0x8da013c66e545daf,
 		0xa629eb7f7066fae3,
 		0xb82a14926e213581,
+		0xe24c59306c829c01,
 		0xf736dd278ea58545)
 }

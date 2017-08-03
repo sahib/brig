@@ -38,7 +38,7 @@ func NewCommit(lkr Linker, parent h.Hash) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
-			lkr.NextUID(),
+			uid:      lkr.NextUID(),
 		},
 		modTime: time.Now(),
 		author:  AuthorOfStage(),
@@ -57,10 +57,9 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	// TODO: Factor out to base.
-	node.SetHash(c.Base.hash)
-	node.SetName(c.Base.name)
-	node.SetModTime(c.Base.modTime.Format(time.RFC3339))
+	if err := c.setBaseAttrsToNode(node); err != nil {
+		return nil, err
+	}
 
 	capcmt, err := capnp_model.NewCommit(seg)
 	if err != nil {

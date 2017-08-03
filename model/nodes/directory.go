@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -18,54 +19,125 @@ type Directory struct {
 	children   map[string]h.Hash
 }
 
-//
-// // newEmptyDirectory creates a new empty directory that is not yet present
-// // in the store. It should not be used directtly.
-// func newEmptyDirectory(fs *FS, parent *Directory, name string) (*Directory, error) {
-// 	code := goipfsutil.DefaultIpfsHash
-// 	length := multihash.DefaultLengths[code]
-//
-// 	absPath := ""
-// 	if parent != nil {
-// 		absPath = path.Join(parent.Path(), name)
-// 	}
-//
-// 	mh, err := multihash.Sum([]byte(absPath), code, length)
-// 	if err != nil {
-// 		// The programmer has likely fucked up:
-// 		return nil, fmt.Errorf("Failed to calculate basic checksum of a string: %v", err)
-// 	}
-//
-// 	id, err := fs.NextID()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	newDir := &Directory{
-// 		fs:       fs,
-// 		id:       id,
-// 		hash:     &h.Hash{mh},
-// 		name:     name,
-// 		children: make(map[string]*h.Hash),
-// 	}
-//
-// 	if parent != nil {
-// 		if err := parent.Add(newDir); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-//
-// 	return newDir, nil
-// }
+// NewEmptyDirectory creates a new empty directory that does not exist yet.
+func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, error) {
+	absPath := ""
+	if parent != nil {
+		absPath = path.Join(parent.Path(), name)
+	}
+
+	newDir := &Directory{
+		Base: Base{
+			uid:      lkr.NextUID(),
+			hash:     h.Sum([]byte(absPath)),
+			name:     name,
+			nodeType: NodeTypeDirectory,
+			modTime:  time.Now(),
+		},
+		children: make(map[string]h.Hash),
+	}
+
+	if parent != nil {
+		// parentName is set by Add:
+		if err := parent.Add(lkr, newDir); err != nil {
+			return nil, err
+		}
+	}
+
+	return newDir, nil
+}
 
 func (d *Directory) ToCapnp() (*capnp.Message, error) {
-	// TODO: Implement.
+	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	node, err := capnp_model.NewRootNode(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := d.setBaseAttrsToNode(node); err != nil {
+		return nil, err
+	}
+
+	capdir, err := capnp_model.NewDirectory(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	children, err := capnp_model.NewDirEntry_List(seg, int32(len(d.children)))
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: This loop does not persist odering in the serialization format.
+	entryIdx := 0
+
+	for name, hash := range d.children {
+		entry, err := capnp_model.NewDirEntry(seg)
+		if err != nil {
+			// TODO: Accumulate errors?
+			return nil, err
+		}
+
+		entry.SetName(name)
+		entry.SetHash(hash)
+		children.Set(entryIdx, entry)
+		entryIdx++
+	}
+
+	capdir.SetChildren(children)
+	capdir.SetSize(d.size)
+	capdir.SetParent(d.parentName)
+	node.SetDirectory(capdir)
+
+	return msg, nil
 }
 
 func (d *Directory) FromCapnp(msg *capnp.Message) error {
-	// TODO: Implement.
+	capnode, err := capnp_model.ReadRootNode(msg)
+	if err != nil {
+		return err
+	}
+
+	if err := d.parseBaseAttrsFromNode(capnode); err != nil {
+		return err
+	}
+
+	capdir, err := capnode.Directory()
+	if err != nil {
+		return err
+	}
+
+	d.size = capdir.Size()
+	d.parentName, err = capdir.Parent()
+	if err != nil {
+		return err
+	}
+
+	childList, err := capdir.Children()
+	if err != nil {
+		return err
+	}
+
+	d.children = make(map[string]h.Hash)
+	for i := 0; i < childList.Len(); i++ {
+		entry := childList.At(i)
+		name, err := entry.Name()
+		if err != nil {
+			return err
+		}
+
+		hash, err := entry.Hash()
+		if err != nil {
+			return err
+		}
+
+		d.children[name] = hash
+	}
+
 	return nil
 }
 
@@ -80,7 +152,7 @@ func (d *Directory) Size() uint64 {
 }
 
 func (d *Directory) Path() string {
-	return prefixSlash(path.Join(d.parent, d.Base.name))
+	return prefixSlash(path.Join(d.parentName, d.Base.name))
 }
 
 func (d *Directory) NChildren(lkr Linker) int {
@@ -97,11 +169,11 @@ func (d *Directory) Child(lkr Linker, name string) (Node, error) {
 }
 
 func (d *Directory) Parent(lkr Linker) (Node, error) {
-	if d.parent == "" {
+	if d.parentName == "" {
 		return nil, nil
 	}
 
-	return lkr.LookupNode(d.parent)
+	return lkr.LookupNode(d.parentName)
 }
 
 func (d *Directory) SetParent(lkr Linker, nd Node) error {
@@ -110,9 +182,9 @@ func (d *Directory) SetParent(lkr Linker, nd Node) error {
 	}
 
 	if nd == nil {
-		d.parent = ""
+		d.parentName = ""
 	} else {
-		d.parent = nd.Path()
+		d.parentName = nd.Path()
 	}
 
 	return nil
@@ -185,7 +257,7 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 }
 
 func (d *Directory) IsRoot() bool {
-	return d.parent == ""
+	return d.parentName == ""
 }
 
 func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {

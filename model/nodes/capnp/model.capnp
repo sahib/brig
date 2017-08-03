@@ -27,13 +27,18 @@ struct Commit $Go.doc("Commit is a set of changes to nodes") {
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
-    nodeType @0 :Uint8;
+    nodeType @0 :UInt8;
+}
+
+struct DirEntry $Go.doc("A single directory entry") {
+    name @0 :Text;
+    hash @1 :Data;
 }
 
 struct Directory $Go.doc("Directory contains one or more directories or files") {
-    size     @0 :Uint64;
+    size     @0 :UInt64;
     parent   @1 :Text;
-    children @2 :List(Data);
+    children @2 :List(DirEntry);
 }
 
 struct Node $Go.doc("Node is a node in the merkle dag of brig") {
@@ -42,7 +47,8 @@ struct Node $Go.doc("Node is a node in the merkle dag of brig") {
     modTime @2 :Text;     # Time as ISO8601
 
     union {
-        commit @3 :Commit;
-        ghost  @4 :Ghost;
+        commit    @3 :Commit;
+        ghost     @4 :Ghost;
+        directory @5 :Directory;
     }
 }
