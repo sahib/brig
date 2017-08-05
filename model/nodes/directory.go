@@ -348,10 +348,10 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 
 //////////// STATE ALTERING METHODS //////////////
 
-func (d *Directory) SetSize(size uint64)          { d.size = size }
-func (d *Directory) SetName(name string)          { d.name = name }
-func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
-func (d *Directory) SetHash(hash h.Hash)          { d.Base.hash = hash.Clone() }
+func (d *Directory) SetSize(size uint64)           { d.size = size }
+func (d *Directory) SetName(name string)           { d.name = name }
+func (d *Directory) SetModTime(modTime time.Time)  { d.Base.modTime = modTime }
+func (d *Directory) SetHash(_ Linker, hash h.Hash) { d.Base.hash = hash.Clone() }
 
 func (d *Directory) Add(lkr Linker, nd Node) error {
 	if nd == d {

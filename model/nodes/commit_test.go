@@ -8,14 +8,15 @@ import (
 )
 
 func TestCommit(t *testing.T) {
-	cmt, err := NewCommit(nil, nil)
+	lkr := NewMockLinker()
+	cmt, err := NewCommit(lkr, nil)
 	if err != nil {
 		t.Fatalf("Failed to create commit: %v", err)
 	}
 
 	cmt.root = h.EmptyHash
 	cmt.parent = h.EmptyHash
-	cmt.Base.path = "some commit"
+	cmt.Base.name = "some commit"
 
 	if err := cmt.BoxCommit("Hello"); err != nil {
 		t.Fatalf("Failed to box commit: %v", err)

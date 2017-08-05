@@ -3,7 +3,6 @@ package nodes
 import (
 	"time"
 
-	"github.com/disorganizer/brig/interfaces"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -89,8 +88,8 @@ type HierarchyEntry interface {
 // Streamable represents a thing that can be streamed,
 // given a cryptographic key.
 type Streamable interface {
+	Hash() h.Hash
 	Key() []byte
-	Stream() (interfaces.OutStream, error)
 }
 
 // Node is a single node in brig's MDAG.
@@ -110,5 +109,5 @@ type SettableNode interface {
 	SetSize(size uint64)
 	SetModTime(modTime time.Time)
 	SetName(name string)
-	SetHash(hash h.Hash)
+	SetHash(lkr Linker, hash h.Hash)
 }
