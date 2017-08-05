@@ -44,7 +44,7 @@ struct File $Go.doc("") {
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
-    nodeType @0 :UInt8;
+    oldType @0 :UInt8;
 }
 
 

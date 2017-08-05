@@ -32,18 +32,6 @@ func TestCommit(t *testing.T) {
 		t.Fatalf("Failed to marshal message: %v", err)
 	}
 
-	// fmt.Println("file write")
-	// fd, err := os.OpenFile("/tmp/cmt.capnp", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	// if err != nil {
-	// 	t.Fatalf("Something is very wrong")
-	// }
-	// if _, err := fd.Write(data); err != nil {
-	// 	t.Fatalf("Something is very wrong")
-	// }
-	// if err := fd.Close(); err != nil {
-	// 	t.Fatalf("Something is very wrong")
-	// }
-
 	newMsg, err := capnp.Unmarshal(data)
 	if err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)

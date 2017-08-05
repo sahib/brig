@@ -60,6 +60,10 @@ type Metadatable interface {
 
 	// GetType returns the type of the node.
 	Type() NodeType
+
+	// INode shall return a unique identifier for this node that does
+	// not change, even when the content of the node changes.
+	Inode() uint64
 }
 
 // Serializable is a thing that can be converted to a capnproto message.

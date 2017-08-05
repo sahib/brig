@@ -43,6 +43,10 @@ func (b *Base) ModTime() time.Time {
 	return b.modTime
 }
 
+func (b *Base) Inode() uint64 {
+	return b.uid
+}
+
 /////// UTILS /////////
 
 func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {

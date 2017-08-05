@@ -12,7 +12,7 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
-// Commit groups a change set
+// Commit groups a set of changes
 type Commit struct {
 	Base
 
@@ -21,9 +21,6 @@ type Commit struct {
 
 	// Author is the id of the committer.
 	author *Person
-
-	// Time at this commit was conceived.
-	modTime time.Time
 
 	// TreeHash is the hash of the root node at this point in time
 	root h.Hash
@@ -39,10 +36,10 @@ func NewCommit(lkr Linker, parent h.Hash) (*Commit, error) {
 		Base: Base{
 			nodeType: NodeTypeCommit,
 			uid:      lkr.NextUID(),
+			modTime:  time.Now(),
 		},
-		modTime: time.Now(),
-		author:  AuthorOfStage(),
-		parent:  parent,
+		author: AuthorOfStage(),
+		parent: parent,
 	}, nil
 }
 
@@ -71,9 +68,7 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 	capcmt.SetRoot(c.root)
 	node.SetCommit(capcmt)
 
-	// TODO: Handle merges.
-	// commit.Merge().SetWith(nil)
-	// commit.Merge().SetHash(nil)
+	// TODO: Set person, without DRY.
 	return msg, nil
 }
 
@@ -169,7 +164,6 @@ func (c *Commit) BoxCommit(message string) error {
 
 	c.message = message
 	c.hash = h.Hash(mh)
-	c.modTime = time.Now()
 	return nil
 }
 
@@ -192,31 +186,31 @@ func (c *Commit) Path() string {
 	return prefixSlash(path.Join(".snapshots", c.Name()))
 }
 
-func (cm *Commit) Size() uint64 {
+func (c *Commit) Size() uint64 {
 	return 0
 }
 
 /////////////// HIERARCHY INTERFACE ///////////////
 
-func (cm *Commit) NChildren(lkr Linker) int {
+func (c *Commit) NChildren(lkr Linker) int {
 	return 1
 }
 
-func (cm *Commit) Child(lkr Linker, _ string) (Node, error) {
+func (c *Commit) Child(lkr Linker, _ string) (Node, error) {
 	// Return the root directory, no matter what name was passed.
-	return lkr.NodeByHash(cm.root)
+	return lkr.NodeByHash(c.root)
 }
 
-func (cm *Commit) Parent(lkr Linker) (Node, error) {
-	if cm.parent == nil {
+func (c *Commit) Parent(lkr Linker) (Node, error) {
+	if c.parent == nil {
 		return nil, nil
 	}
 
-	return lkr.NodeByHash(cm.parent)
+	return lkr.NodeByHash(c.parent)
 }
 
-func (cm *Commit) SetParent(lkr Linker, nd Node) error {
-	cm.parent = nd.Hash().Clone()
+func (c *Commit) SetParent(lkr Linker, nd Node) error {
+	c.parent = nd.Hash().Clone()
 	return nil
 }
 
