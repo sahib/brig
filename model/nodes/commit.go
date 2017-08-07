@@ -43,6 +43,7 @@ func NewCommit(lkr Linker, parent h.Hash) (*Commit, error) {
 	}, nil
 }
 
+// ToCapnp will convert all commit internals to a capnp message.
 func (c *Commit) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -68,15 +69,29 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capcmt.SetMessage(c.message)
-	capcmt.SetParent(c.parent)
-	capcmt.SetRoot(c.root)
-	capcmt.SetAuthor(*author)
-	node.SetCommit(capcmt)
+	if err := capcmt.SetMessage(c.message); err != nil {
+		return nil, err
+	}
+	if err := capcmt.SetRoot(c.root); err != nil {
+		return nil, err
+	}
+	if err := capcmt.SetAuthor(*author); err != nil {
+		return nil, err
+	}
+
+	if err := capcmt.SetParent(c.parent); err != nil {
+		return nil, err
+	}
+
+	if err := node.SetCommit(capcmt); err != nil {
+		return nil, err
+	}
 
 	return msg, nil
 }
 
+// FromCapnp will set the content of `msg` into the commit,
+// overwriting any previous state.
 func (c *Commit) FromCapnp(msg *capnp.Message) error {
 	capnode, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
@@ -120,6 +135,8 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 	return nil
 }
 
+// IsBoxed will return True if the ommit was already boxed
+// (i.e. is a finished commit and no staging commit)
 func (c *Commit) IsBoxed() bool {
 	return c.hash != nil
 }
@@ -161,7 +178,7 @@ func (c *Commit) BoxCommit(message string) error {
 	buf.Write(padHash(c.root))
 
 	// Write the author hash. Different author -> different content.
-	buf.Write(padHash(c.author.Hash))
+	buf.Write(padHash(c.author.Hash()))
 
 	// Write the message last, it may be arbitary length.
 	buf.Write([]byte(message))
@@ -181,9 +198,10 @@ func (c *Commit) BoxCommit(message string) error {
 	return nil
 }
 
+// String will return a nice representation of a commit.
 func (c *Commit) String() string {
 	return fmt.Sprintf(
-		"commit %s/%s <%s>",
+		"<commit %s/%s (%s)>",
 		c.hash.B58String(),
 		c.root.B58String(),
 		c.message,
@@ -192,29 +210,39 @@ func (c *Commit) String() string {
 
 // /////////////////// METADATA INTERFACE ///////////////////
 
+// Name will return the hash of the commit.
 func (c *Commit) Name() string {
 	return c.hash.B58String()
 }
 
+// Path will return the path of the commit, which will
 func (c *Commit) Path() string {
 	return prefixSlash(path.Join(".snapshots", c.Name()))
 }
 
+// Size will always return 0 since a commit has no defined size.
+// If you're interested in the size of the snapshot, check the size
+// of the root directory.
 func (c *Commit) Size() uint64 {
 	return 0
 }
 
 /////////////// HIERARCHY INTERFACE ///////////////
 
+// NChildren will always return 1, since a commit has always exactly one
+// root dir attached.
 func (c *Commit) NChildren(lkr Linker) int {
 	return 1
 }
 
+// Child will return the root directory, no matter what name is given.
 func (c *Commit) Child(lkr Linker, _ string) (Node, error) {
 	// Return the root directory, no matter what name was passed.
 	return lkr.NodeByHash(c.root)
 }
 
+// Parent will return the parent commit of this node or nil
+// if it is the first commit ever made.
 func (c *Commit) Parent(lkr Linker) (Node, error) {
 	if c.parent == nil {
 		return nil, nil
@@ -223,6 +251,7 @@ func (c *Commit) Parent(lkr Linker) (Node, error) {
 	return lkr.NodeByHash(c.parent)
 }
 
+// SetParent sets the parent of the commit to `nd`.
 func (c *Commit) SetParent(lkr Linker, nd Node) error {
 	c.parent = nd.Hash().Clone()
 	return nil

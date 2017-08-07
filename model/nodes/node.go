@@ -20,6 +20,7 @@ const (
 	NodeTypeGhost
 )
 
+// NodeType defines the type of a specific node.
 type NodeType uint8
 
 var nodeTypeToString = map[NodeType]string{

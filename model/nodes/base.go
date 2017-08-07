@@ -27,22 +27,29 @@ type Base struct {
 	uid uint64
 }
 
+// Name returns the name of this node (e.g. /a/b/c -> c)
+// The root directory will have the name empty string.
 func (b *Base) Name() string {
 	return b.name
 }
 
+// Hash returns the hash of this node.
 func (b *Base) Hash() h.Hash {
 	return b.hash
 }
 
+// Type returns the type of this node.
 func (b *Base) Type() NodeType {
 	return b.nodeType
 }
 
+// ModTime will return the last time this node's content
+// was modified. Metadata changes are not recorded.
 func (b *Base) ModTime() time.Time {
 	return b.modTime
 }
 
+// Inode will return a unique ID that is different for each node.
 func (b *Base) Inode() uint64 {
 	return b.uid
 }
@@ -55,10 +62,13 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 		return err
 	}
 
-	capnode.SetModTime(string(modTimeBin))
-	capnode.SetHash(b.hash)
-	capnode.SetName(b.name)
-	return nil
+	if err := capnode.SetModTime(string(modTimeBin)); err != nil {
+		return err
+	}
+	if err := capnode.SetHash(b.hash); err != nil {
+		return err
+	}
+	return capnode.SetName(b.name)
 }
 
 func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {

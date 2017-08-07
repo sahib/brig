@@ -7,6 +7,10 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+// Ghost is a special kind of Node that marks a moved node.
+// If a file was moved, a ghost will be created for the old place.
+// If another file is moved to the new place, the ghost will be "resurrected"
+// with the new content.
 type Ghost struct {
 	Node
 
@@ -23,10 +27,12 @@ func MakeGhost(nd Node) (*Ghost, error) {
 	}, nil
 }
 
+// Type always returns NodeTypeGhost
 func (g *Ghost) Type() NodeType {
 	return NodeTypeGhost
 }
 
+// ToCapnp serializes the underlying node
 func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	oldMsg, err := g.Node.ToCapnp()
 	if err != nil {
@@ -56,6 +62,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	return msg, nil
 }
 
+// FromCapnp reads all attributes from a previously marshaled ghost.
 func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 	capghost, err := capnp_model.ReadRootGhost(msg)
 	if err != nil {

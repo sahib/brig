@@ -8,52 +8,66 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+// Person is a link between a readable name and it's hash identifier.
+// It might for example be used as the commit author.
 type Person struct {
-	Ident string
-	Hash  h.Hash
+	ident string
+	hash  h.Hash
 }
 
+// ID returns the person's identifier.
 func (p *Person) ID() string {
-	return p.Ident
+	return p.ident
 }
 
-func (p *Person) GetHash() string {
-	return p.Hash.B58String()
+// Hash returns the hash identifier of this person.
+func (p *Person) Hash() h.Hash {
+	return p.hash
 }
 
 func (p *Person) String() string {
-	hash := "<empty hash>"
-	if p.Hash != nil {
-		hash = p.Hash.B58String()
+	hashStr := "<empty hash>"
+	if p.hash != nil {
+		hashStr = p.Hash().B58String()
 	}
 
-	return fmt.Sprintf("<Person: %s (%v)>", p.Ident, hash)
+	return fmt.Sprintf("<Person: %s (%v)>", p.ident, hashStr)
 }
 
 // AuthorOfStage is the Person that is displayed for the stage commit.
 // Currently this is just an empty hash Person that will be set later.
 func AuthorOfStage() *Person {
 	return &Person{
-		Ident: "unknown",
-		Hash:  h.EmptyHash.Clone(),
+		ident: "unknown",
+		hash:  h.EmptyHash.Clone(),
 	}
 }
 
+// Equal checks if both person structs are equal (same display name and identifier)
+// Neither Person may be nil.
 func (p *Person) Equal(o *Person) bool {
-	return p.Ident == o.Ident && o.Hash.Equal(p.Hash)
+	return p.ident == o.ident && o.hash.Equal(p.hash)
 }
 
+// ToCapnpPerson converts a person to a capnp-Person.
 func (p *Person) ToCapnpPerson(seg *capnp.Segment) (*capnp_model.Person, error) {
 	person, err := capnp_model.NewPerson(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	person.SetIdent(p.Ident)
-	person.SetHash(p.Hash)
+	if err := person.SetIdent(p.ident); err != nil {
+		return nil, err
+	}
+
+	if err := person.SetHash(p.hash); err != nil {
+		return nil, err
+	}
+
 	return &person, nil
 }
 
+// FromCapnpPerson converts a capnp-Person to a person.
 func (p *Person) FromCapnpPerson(capnpers capnp_model.Person) error {
 	ident, err := capnpers.Ident()
 	if err != nil {
@@ -65,7 +79,7 @@ func (p *Person) FromCapnpPerson(capnpers capnp_model.Person) error {
 		return err
 	}
 
-	p.Ident = ident
-	p.Hash = hash
+	p.ident = ident
+	p.hash = hash
 	return nil
 }

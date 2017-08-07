@@ -1,21 +1,19 @@
 package nodes
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
 
 var (
-	ErrExists        = errors.New("File exists")
-	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
-	ErrBadNode       = errors.New("Cannot convert to concrete type. Broken input data?")
-	ErrStageNotEmpty = errors.New("There are changes in the staging area")
+	// ErrExists is returned if a node already exists at a path, but should not.
+	ErrExists = errors.New("File exists")
+	// ErrBadNode is returned when a wrong node type was passed to a method.
+	ErrBadNode = errors.New("Cannot convert to concrete type. Broken input data?")
 )
 
 type errNoSuchFile struct {
 	path string
 }
 
+// Error will return an error description detailin what path is missing.
 func (e *errNoSuchFile) Error() string {
 	return "No such file or directory: " + e.path
 }
@@ -33,34 +31,34 @@ func IsNoSuchFileError(err error) bool {
 	return ok
 }
 
-//////////////
-
-type ErrBadNodeType int
-
-func (e ErrBadNodeType) Error() string {
-	return fmt.Sprintf("Bad node type in db: %d", int(e))
-}
-
-//////////////
-
-type ErrNoHashFound struct {
-	b58hash string
-	where   string
-}
-
-func (e ErrNoHashFound) Error() string {
-	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
-}
-
-//////////////
-
-type ErrNoSuchRef string
-
-func (e ErrNoSuchRef) Error() string {
-	return fmt.Sprintf("No ref found named `%s`", string(e))
-}
-
-func IsErrNoSuchRef(err error) bool {
-	_, ok := err.(ErrNoSuchRef)
-	return ok
-}
+// //////////////
+//
+// type ErrBadNodeType int
+//
+// func (e ErrBadNodeType) Error() string {
+// 	return fmt.Sprintf("Bad node type in db: %d", int(e))
+// }
+//
+// //////////////
+//
+// type ErrNoHashFound struct {
+// 	b58hash string
+// 	where   string
+// }
+//
+// func (e ErrNoHashFound) Error() string {
+// 	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
+// }
+//
+// //////////////
+//
+// type ErrNoSuchRef string
+//
+// func (e ErrNoSuchRef) Error() string {
+// 	return fmt.Sprintf("No ref found named `%s`", string(e))
+// }
+//
+// func IsErrNoSuchRef(err error) bool {
+// 	_, ok := err.(ErrNoSuchRef)
+// 	return ok
+// }

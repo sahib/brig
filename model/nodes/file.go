@@ -19,6 +19,7 @@ type File struct {
 	key    []byte
 }
 
+// NewEmptyFile returns a newly created file under `parent`, named `name`.
 func NewEmptyFile(lkr Linker, parent *Directory, name string) (*File, error) {
 	file := &File{
 		Base: Base{
@@ -33,6 +34,7 @@ func NewEmptyFile(lkr Linker, parent *Directory, name string) (*File, error) {
 	return file, nil
 }
 
+// ToCapnp converts a file to a capnp message.
 func (f *File) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -53,14 +55,21 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capfile.SetParent(f.parent)
-	capfile.SetKey(f.key)
-	capfile.SetSize(f.size)
-	node.SetFile(capfile)
+	if err := capfile.SetParent(f.parent); err != nil {
+		return nil, err
+	}
+	if err := capfile.SetKey(f.key); err != nil {
+		return nil, err
+	}
+	if err := node.SetFile(capfile); err != nil {
+		return nil, err
+	}
 
+	capfile.SetSize(f.size)
 	return msg, nil
 }
 
+// FromCapnp sets all state of `msg` into the file.
 func (f *File) FromCapnp(msg *capnp.Message) error {
 	capnode, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
@@ -92,19 +101,27 @@ func (f *File) FromCapnp(msg *capnp.Message) error {
 
 ////////////////// METADATA INTERFACE //////////////////
 
-// Name returns the basename of the file.
+// Size returns the number of bytes in the file's content.
 func (f *File) Size() uint64 { return f.size }
 
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
+// SetModTime udates the mod time of the file (i.e. "touch"es it)
 func (f *File) SetModTime(t time.Time) { f.modTime = t }
-func (f *File) SetName(n string)       { f.name = n }
-func (f *File) SetKey(k []byte)        { f.key = k }
+
+// SetName set the name of the file.
+func (f *File) SetName(n string) { f.name = n }
+
+// SetKey updates the key to a new value, taking ownership of the value.
+func (f *File) SetKey(k []byte) { f.key = k }
+
+// SetSize will update the size of the file and update it's mod time.
 func (f *File) SetSize(s uint64) {
 	f.size = s
 	f.SetModTime(time.Now())
 }
 
+// SetHash will update the hash of the file (and also the mod time)
 func (f *File) SetHash(lkr Linker, h h.Hash) {
 	oldHash := f.hash
 	f.hash = h
@@ -112,6 +129,7 @@ func (f *File) SetHash(lkr Linker, h h.Hash) {
 	f.SetModTime(time.Now())
 }
 
+// Path will return the absolute path of the file.
 func (f *File) Path() string {
 	return prefixSlash(path.Join(f.parent, f.name))
 }
@@ -123,6 +141,7 @@ func (f *File) NChildren(_ Linker) int {
 	return 0
 }
 
+// Child will return always nil, since files don't have children.
 func (f *File) Child(_ Linker, name string) (Node, error) {
 	// A file never has a child. Sad but true.
 	return nil, nil
@@ -134,6 +153,7 @@ func (f *File) Parent(lkr Linker) (Node, error) {
 	return lkr.LookupNode(f.parent)
 }
 
+// SetParent will set the parent of the file to `parent`.
 func (f *File) SetParent(_ Linker, parent Node) error {
 	if parent == nil {
 		return nil
@@ -143,6 +163,7 @@ func (f *File) SetParent(_ Linker, parent Node) error {
 	return nil
 }
 
+// Key returns the current key of the file.
 func (f *File) Key() []byte {
 	return f.key
 }

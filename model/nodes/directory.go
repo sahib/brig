@@ -11,6 +11,8 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+// Directory is a typical directory that may contain
+// several other directories or files.
 type Directory struct {
 	Base
 
@@ -47,6 +49,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, 
 	return newDir, nil
 }
 
+// ToCapnp converts the directory to an easily serializable capnp message.
 func (d *Directory) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -82,21 +85,34 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 			return nil, err
 		}
 
-		entry.SetName(name)
-		entry.SetHash(hash)
-		children.Set(entryIdx, entry)
+		if err := entry.SetName(name); err != nil {
+			return nil, err
+		}
+		if err := entry.SetHash(hash); err != nil {
+			return nil, err
+		}
+		if err := children.Set(entryIdx, entry); err != nil {
+			return nil, err
+		}
 		entryIdx++
 	}
 
-	capdir.SetChildren(children)
+	if err := capdir.SetChildren(children); err != nil {
+		return nil, err
+	}
+	if err := capdir.SetParent(d.parentName); err != nil {
+		return nil, err
+	}
 	capdir.SetSize(d.size)
-	capdir.SetParent(d.parentName)
 
-	node.SetDirectory(capdir)
+	if err := node.SetDirectory(capdir); err != nil {
+		return nil, err
+	}
 
 	return msg, nil
 }
 
+// FromCapnp will take the result of ToCapnp and set all of it's attributes.
 func (d *Directory) FromCapnp(msg *capnp.Message) error {
 	capnode, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
@@ -144,22 +160,28 @@ func (d *Directory) FromCapnp(msg *capnp.Message) error {
 
 ////////////// NODE INTERFACE /////////////////
 
+// Name returns the dirname of this directory.
 func (d *Directory) Name() string {
 	return d.name
 }
 
+// Size returns the accumulated size of the directory
+// (i.e. the sum of a files in it, excluding ghosts)
 func (d *Directory) Size() uint64 {
 	return d.size
 }
 
+// Path returns the full path of this node.
 func (d *Directory) Path() string {
 	return prefixSlash(path.Join(d.parentName, d.Base.name))
 }
 
+// NChildren returns the number of children the directory has.
 func (d *Directory) NChildren(lkr Linker) int {
 	return len(d.children)
 }
 
+// Child returns a specific child with `name` or nil, if it was not found.
 func (d *Directory) Child(lkr Linker, name string) (Node, error) {
 	childHash, ok := d.children[name]
 	if !ok {
@@ -169,6 +191,8 @@ func (d *Directory) Child(lkr Linker, name string) (Node, error) {
 	return lkr.NodeByHash(childHash)
 }
 
+// Parent will return the parent of this directory or nil,
+// if this directory is already the root directory.
 func (d *Directory) Parent(lkr Linker) (Node, error) {
 	if d.parentName == "" {
 		return nil, nil
@@ -177,6 +201,7 @@ func (d *Directory) Parent(lkr Linker) (Node, error) {
 	return lkr.LookupNode(d.parentName)
 }
 
+// SetParent will set the parent of this directory to `nd`.
 func (d *Directory) SetParent(lkr Linker, nd Node) error {
 	if d.Path() == "/" {
 		return nil
@@ -193,6 +218,7 @@ func (d *Directory) SetParent(lkr Linker, nd Node) error {
 
 // ////////////// TREE MOVEMENT /////////////////
 
+// VisitChildren will call `fn` for each of it's direct children.
 func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
 	for name, hash := range d.children {
 		child, err := lkr.NodeByHash(hash)
@@ -212,6 +238,8 @@ func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
 	return nil
 }
 
+// Up will call `visit` for each node onto the way top to the root node,
+// including this directory.
 func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 	root, err := lkr.Root()
 	if err != nil {
@@ -257,24 +285,15 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 	return nil
 }
 
+// IsRoot returns true if this directory is the root directory.
 func (d *Directory) IsRoot() bool {
 	return d.parentName == ""
 }
 
-func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {
-	oldHash := d.hash.Clone()
-	if err := d.hash.Xor(hash); err != nil {
-		return err
-	}
-
-	if d.IsRoot() {
-		lkr.MemSetRoot(d)
-	}
-
-	lkr.MemIndexSwap(d, oldHash)
-	return nil
-}
-
+// Walk calls `visit` for each node below `node`, including `node`.
+// If `dfs` is true, depth first search will be used.
+// If `dfs` is false, breadth first search will be used.
+// It is valid to pass a File to Walk(), then visit will be called exactly once.
 func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 	if node == nil {
 		return nil
@@ -319,6 +338,21 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 	return nil
 }
 
+func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {
+	oldHash := d.hash.Clone()
+	if err := d.hash.Xor(hash); err != nil {
+		return err
+	}
+
+	if d.IsRoot() {
+		lkr.MemSetRoot(d)
+	}
+
+	lkr.MemIndexSwap(d, oldHash)
+	return nil
+}
+
+// Lookup will lookup `repoPath` relative to this directory.
 func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 	repoPath = prefixSlash(path.Clean(repoPath))
 	elems := strings.Split(repoPath, "/")
@@ -349,11 +383,20 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 
 //////////// STATE ALTERING METHODS //////////////
 
-func (d *Directory) SetSize(size uint64)           { d.size = size }
-func (d *Directory) SetName(name string)           { d.name = name }
-func (d *Directory) SetModTime(modTime time.Time)  { d.Base.modTime = modTime }
+// SetSize sets the size of this directory.
+func (d *Directory) SetSize(size uint64) { d.size = size }
+
+// SetName will set the name of this directory.
+func (d *Directory) SetName(name string) { d.name = name }
+
+// SetModTime will set a new mod time to this directory (i.e. "touch" it)
+func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
+
+// SetHash will update the hash of this directory.
+// This should only be called by a Linker implementation.
 func (d *Directory) SetHash(_ Linker, hash h.Hash) { d.Base.hash = hash.Clone() }
 
+// Add adds `nd` to this directory.
 func (d *Directory) Add(lkr Linker, nd Node) error {
 	if nd == d {
 		return fmt.Errorf("ADD-BUG: attempting to add `%s` to itself", nd.Path())
@@ -377,7 +420,10 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	// Establish the link between parent and child:
 	// (must be done last, because d's hash changed)
-	nd.SetParent(lkr, d)
+	if err := nd.SetParent(lkr, d); err != nil {
+		return err
+	}
+
 	d.children[nd.Name()] = nodeHash
 	return nil
 }
