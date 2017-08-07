@@ -14,15 +14,15 @@ struct Person  $Go.doc("Person might be any brig user") {
 struct Commit $Go.doc("Commit is a set of changes to nodes") {
     # Following attributes will be part of the hash:
     message @0 :Text;
-    # author  @1 :Person;
-    parent  @1 :Data;     # Hash to parent.
-    root    @2 :Data;     # Hash to root directory.
+    author  @1 :Person;
+    parent  @2 :Data;     # Hash to parent.
+    root    @3 :Data;     # Hash to root directory.
 
     # Attributes not being part of the hash:
     merge :group {
-        isMerge @3 :Bool;
-        with    @4 :Person;
-        hash    @5 :Data;
+        isMerge @4 :Bool;
+        with    @5 :Person;
+        hash    @6 :Data;
     }
 }
 
@@ -43,11 +43,6 @@ struct File $Go.doc("") {
     key    @2 :Data;
 }
 
-struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
-    oldType @0 :UInt8;
-}
-
-
 struct Node $Go.doc("Node is a node in the merkle dag of brig") {
     name    @0 :Text;
     hash    @1 :Data;
@@ -55,8 +50,15 @@ struct Node $Go.doc("Node is a node in the merkle dag of brig") {
 
     union {
         commit    @3 :Commit;
-        ghost     @4 :Ghost;
-        directory @5 :Directory;
-        file      @6 :File;
+        directory @4 :Directory;
+        file      @5 :File;
     }
 }
+
+struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
+    # NOTE: Data-wise it would be probably more consistent to store a Node here,
+    #       but the go implementation makes this slightly harder (ToCapno only returns msg, not Node)
+    oldType @0 :UInt8;
+    oldNode @1 :Data;
+}
+

@@ -6,7 +6,6 @@ import (
 	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
-	pogs "zombiezen.com/go/capnproto2/pogs"
 )
 
 type Person struct {
@@ -40,33 +39,33 @@ func AuthorOfStage() *Person {
 	}
 }
 
-func (p *Person) ToCapnp() (*capnp.Message, error) {
-	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
-	if err != nil {
-		return nil, err
-	}
-
-	person, err := capnp_model.NewRootPerson(seg)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := pogs.Insert(capnp_model.Person_TypeID, person.Struct, p); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+func (p *Person) Equal(o *Person) bool {
+	return p.Ident == o.Ident && o.Hash.Equal(p.Hash)
 }
 
-func (p *Person) FromCapnp(msg *capnp.Message) error {
-	root, err := msg.RootPtr()
+func (p *Person) ToCapnpPerson(seg *capnp.Segment) (*capnp_model.Person, error) {
+	person, err := capnp_model.NewPerson(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	person.SetIdent(p.Ident)
+	person.SetHash(p.Hash)
+	return &person, nil
+}
+
+func (p *Person) FromCapnpPerson(capnpers capnp_model.Person) error {
+	ident, err := capnpers.Ident()
 	if err != nil {
 		return err
 	}
 
-	if err := pogs.Extract(p, capnp_model.Person_TypeID, root.Struct()); err != nil {
+	hash, err := capnpers.Hash()
+	if err != nil {
 		return err
 	}
 
+	p.Ident = ident
+	p.Hash = hash
 	return nil
 }

@@ -47,10 +47,14 @@ func TestCommit(t *testing.T) {
 	}
 
 	if !empty.root.Equal(h.EmptyHash) {
-		t.Fatalf("Bad root unmarshaled", empty.root)
+		t.Fatalf("Bad root unmarshaled: %v", empty.root)
 	}
 
 	if !empty.parent.Equal(h.EmptyHash) {
-		t.Fatalf("Bad parent unmarshaled", empty.root)
+		t.Fatalf("Bad parent unmarshaled: %v", empty.root)
+	}
+
+	if !empty.author.Equal(AuthorOfStage()) {
+		t.Fatalf("Bad author unmarshaled: %v", empty.root)
 	}
 }

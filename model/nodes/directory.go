@@ -91,6 +91,7 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 	capdir.SetChildren(children)
 	capdir.SetSize(d.size)
 	capdir.SetParent(d.parentName)
+
 	node.SetDirectory(capdir)
 
 	return msg, nil

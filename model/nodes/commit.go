@@ -63,12 +63,17 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
+	author, err := c.author.ToCapnpPerson(seg)
+	if err != nil {
+		return nil, err
+	}
+
 	capcmt.SetMessage(c.message)
 	capcmt.SetParent(c.parent)
 	capcmt.SetRoot(c.root)
+	capcmt.SetAuthor(*author)
 	node.SetCommit(capcmt)
 
-	// TODO: Set person, without DRY.
 	return msg, nil
 }
 
@@ -87,6 +92,16 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	capauthor, err := capcmt.Author()
+	if err != nil {
+		return err
+	}
+
+	c.author = &Person{}
+	if err := c.author.FromCapnpPerson(capauthor); err != nil {
+		return err
+	}
+
 	c.message, err = capcmt.Message()
 	if err != nil {
 		return err
@@ -102,7 +117,6 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	// TODO: Parse author...
 	return nil
 }
 

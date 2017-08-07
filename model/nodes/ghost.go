@@ -1,14 +1,15 @@
 package nodes
 
 import (
+	"fmt"
+
 	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Ghost struct {
-	Base
+	Node
 
-	// oldType is the type of the file when the ghost still was alive.
 	oldType NodeType
 }
 
@@ -17,65 +18,71 @@ type Ghost struct {
 // not show up.
 func MakeGhost(nd Node) (*Ghost, error) {
 	return &Ghost{
-		Base: Base{
-			name:     nd.Name(),
-			hash:     nd.Hash(),
-			modTime:  nd.ModTime(),
-			uid:      nd.Inode(),
-			nodeType: NodeTypeGhost,
-		},
+		Node:    nd,
 		oldType: nd.Type(),
 	}, nil
 }
 
-func (g *Ghost) OldType() NodeType {
-	return g.oldType
-}
-
-func (g *Ghost) GetOldNode(lkr Linker) (Node, error) {
-	return lkr.NodeByHash(g.hash)
+func (g *Ghost) Type() NodeType {
+	return NodeTypeGhost
 }
 
 func (g *Ghost) ToCapnp() (*capnp.Message, error) {
+	oldMsg, err := g.Node.ToCapnp()
+	if err != nil {
+		return nil, err
+	}
+
+	oldData, err := oldMsg.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
 		return nil, err
 	}
 
-	capnode, err := capnp_model.NewRootNode(seg)
+	capghost, err := capnp_model.NewRootGhost(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := g.setBaseAttrsToNode(capnode); err != nil {
-		return nil, err
-	}
-
-	capghost, err := capnp_model.NewGhost(seg)
-	if err != nil {
+	if err := capghost.SetOldNode(oldData); err != nil {
 		return nil, err
 	}
 
 	capghost.SetOldType(uint8(g.oldType))
-	capnode.SetGhost(capghost)
 	return msg, nil
 }
 
 func (g *Ghost) FromCapnp(msg *capnp.Message) error {
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capghost, err := capnp_model.ReadRootGhost(msg)
 	if err != nil {
 		return err
 	}
 
-	if err := g.parseBaseAttrsFromNode(capnode); err != nil {
-		return err
+	// Make sure g.Node is initialized with a correct struct.
+	switch typ := capghost.OldType(); typ {
+	case NodeTypeCommit:
+		g.Node = &Commit{}
+	case NodeTypeDirectory:
+		g.Node = &Directory{}
+	case NodeTypeFile:
+		g.Node = &File{}
+	default:
+		panic(fmt.Sprintf("Unsupported node type: %v", typ))
 	}
 
-	capghost, err := capnode.Ghost()
+	oldData, err := capghost.OldNode()
 	if err != nil {
 		return err
 	}
 
-	g.oldType = NodeType(capghost.OldType())
-	return nil
+	oldMsg, err := capnp.Unmarshal(oldData)
+	if err != nil {
+		return err
+	}
+
+	return g.Node.FromCapnp(oldMsg)
 }
