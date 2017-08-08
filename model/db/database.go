@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	ErrNoSuchKey = errors.New("This key does not exist in this bucket")
+	// ErrNoSuchKey is returned when Get() was passed a non-existant key
+	ErrNoSuchKey = errors.New("This key does not exist")
 )
 
 // Database is a key/value store that offers different buckets
@@ -14,10 +15,10 @@ var (
 type Database interface {
 	// Get retrievies the key `key` out of bucket.
 	// If no such key exists, it will return (nil, ErrNoSuchKey)
-	Get(bucket string, key string) ([]byte, error)
+	Get(key ...string) ([]byte, error)
 
 	// Set will set `val` to `key` in `bucket`.
-	Set(bucket string, key string, val []byte) error
+	Put(val []byte, key ...string) error
 
 	// Export backups all database content to `w` in
 	// an implemenation specific format that can be read by Import.

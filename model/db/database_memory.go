@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/gob"
 	"io"
+	"path"
 )
 
 // MemoryDatabase is a purely in memory database.
@@ -18,8 +19,8 @@ func NewMemoryDatabase() *MemoryDatabase {
 }
 
 // Get returns `key` of `bucket`.
-func (mdb *MemoryDatabase) Get(bucket string, key string) ([]byte, error) {
-	data, ok := mdb.data[bucket+"."+key]
+func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
+	data, ok := mdb.data[path.Join(key...)]
 	if !ok {
 		return nil, ErrNoSuchKey
 	}
@@ -27,9 +28,9 @@ func (mdb *MemoryDatabase) Get(bucket string, key string) ([]byte, error) {
 	return data, nil
 }
 
-// Set sets `key` in `bucket` to `data`.
-func (mdb *MemoryDatabase) Set(bucket string, key string, data []byte) error {
-	mdb.data[bucket+"."+key] = data
+// Put sets `key` in `bucket` to `data`.
+func (mdb *MemoryDatabase) Put(data []byte, key ...string) error {
+	mdb.data[path.Join(key...)] = data
 	return nil
 }
 

@@ -3,6 +3,7 @@ package db
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -27,6 +28,8 @@ func NewDiskvDatabase(basePath string) (*DiskvDatabase, error) {
 			diskv.Options{
 				BasePath: basePath,
 				Transform: func(s string) []string {
+					// We create the directory ourselves, since diskv
+					// insists on always appending the full key to the path.
 					return []string{}
 				},
 			},
@@ -35,8 +38,8 @@ func NewDiskvDatabase(basePath string) (*DiskvDatabase, error) {
 }
 
 // Get a single value from `bucket` by `key`.
-func (db *DiskvDatabase) Get(bucket string, key string) ([]byte, error) {
-	data, err := db.db.Read(path.Join(bucket, key))
+func (db *DiskvDatabase) Get(key ...string) ([]byte, error) {
+	data, err := db.db.Read(path.Join(key...))
 	if os.IsNotExist(err) {
 		return nil, ErrNoSuchKey
 	}
@@ -44,21 +47,28 @@ func (db *DiskvDatabase) Get(bucket string, key string) ([]byte, error) {
 	return data, err
 }
 
-// Set stores a new `val` under `key` at `bucket`.
+// Put stores a new `val` under `key` at `bucket`.
 // Implementation detail: `key` may contain slashes (/). If used, those keys
 // will result in a nested directory structure.
-func (db *DiskvDatabase) Set(bucket string, key string, val []byte) error {
-	if err := os.MkdirAll(filepath.Join(db.db.BasePath, bucket), 0700); err != nil {
+func (db *DiskvDatabase) Put(val []byte, key ...string) error {
+	dirkey := key
+	if len(dirkey) > 0 {
+		dirkey = dirkey[:len(dirkey)-1]
+	}
+
+	dirname := filepath.Join(db.db.BasePath, filepath.Join(dirkey...))
+	if err := os.MkdirAll(dirname, 0700); err != nil {
 		return err
 	}
-	return db.db.Write(path.Join(bucket, key), val)
+
+	return db.db.Write(path.Join(key...), val)
 }
 
 // Export writes all key/valeus into a gzipped .tar that is written to `w`.
 func (db *DiskvDatabase) Export(w io.Writer) error {
 	gzw := gzip.NewWriter(w)
-	gzw.Name = "brigmeta.gz"
-	gzw.Comment = "brig metadata db"
+	gzw.Name = fmt.Sprintf("brigmeta-%s.gz", time.Now().Format(time.RFC3339))
+	gzw.Comment = "compressed brig metadata database"
 	gzw.ModTime = time.Now()
 
 	tw := tar.NewWriter(gzw)

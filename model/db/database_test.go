@@ -77,7 +77,7 @@ func testDatabase(t *testing.T, db1, db2 Database) {
 	})
 
 	t.Run("export", func(t *testing.T) {
-		if err := db1.Set("some/stuff", "x", []byte{1, 2, 3}); err != nil {
+		if err := db1.Put([]byte{1, 2, 3}, "some/stuff", "x"); err != nil {
 			t.Errorf("Failed set key: %v", err)
 			return
 		}
