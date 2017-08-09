@@ -3,7 +3,7 @@ package nodes
 import (
 	"fmt"
 
-	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
+	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )

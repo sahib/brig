@@ -6,7 +6,7 @@ import (
 	"path"
 	"time"
 
-	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
+	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/multiformats/go-multihash"
 	capnp "zombiezen.com/go/capnproto2"
@@ -31,15 +31,14 @@ type Commit struct {
 
 // NewCommit creates a new commit after the commit referenced by `parent`.
 // `parent` might be nil for the very first commit.
-func NewCommit(lkr Linker, parent h.Hash) (*Commit, error) {
+func NewEmptyCommit(lkr Linker) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
-			uid:      lkr.NextUID(),
+			uid:      lkr.NextInode(),
 			modTime:  time.Now(),
 		},
 		author: AuthorOfStage(),
-		parent: parent,
 	}, nil
 }
 
@@ -132,6 +131,7 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	c.nodeType = NodeTypeCommit
 	return nil
 }
 
@@ -164,10 +164,12 @@ func (c *Commit) SetRoot(hash h.Hash) {
 // BoxCommit takes all currently filled data and calculates the final hash.
 // It also will update the modification time.
 // Only a boxed commit should be
-func (c *Commit) BoxCommit(message string) error {
+func (c *Commit) BoxCommit(author *Person, message string) error {
 	if c.root == nil {
 		return fmt.Errorf("Cannot box commit: root directory is empty")
 	}
+
+	c.author = author
 
 	buf := &bytes.Buffer{}
 
@@ -253,6 +255,11 @@ func (c *Commit) Parent(lkr Linker) (Node, error) {
 
 // SetParent sets the parent of the commit to `nd`.
 func (c *Commit) SetParent(lkr Linker, nd Node) error {
+	if nd == nil {
+		c.parent = nil
+		return nil
+	}
+
 	c.parent = nd.Hash().Clone()
 	return nil
 }

@@ -1,4 +1,4 @@
-package store
+package cafs
 
 import (
 	"errors"
@@ -6,34 +6,10 @@ import (
 )
 
 var (
-	ErrExists        = errors.New("File exists")
 	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
-	ErrBadNode       = errors.New("Cannot convert to concrete type. Broken input data?")
 	ErrStageNotEmpty = errors.New("There are changes in the staging area")
+	ErrNoChange      = errors.New("Nothing changed between the given versions")
 )
-
-type errNoSuchFile struct {
-	path string
-}
-
-func (e *errNoSuchFile) Error() string {
-	return "No such file or directory: " + e.path
-}
-
-//////////////
-
-// NoSuchFile creates a new error that reports `path` as missing
-func NoSuchFile(path string) error {
-	return &errNoSuchFile{path}
-}
-
-// IsNoSuchFileError asserts that `err` means that the file could not be found
-func IsNoSuchFileError(err error) bool {
-	_, ok := err.(*errNoSuchFile)
-	return ok
-}
-
-//////////////
 
 type ErrBadNodeType int
 

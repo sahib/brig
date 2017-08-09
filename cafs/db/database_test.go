@@ -11,7 +11,7 @@ func TestMemoryDatabase(t *testing.T) {
 	db1 := NewMemoryDatabase()
 	db2 := NewMemoryDatabase()
 
-	testDatabase(t, db1, db2)
+	testDatabaseWithDifferentKeys(t, db1, db2)
 
 	if err := db1.Close(); err != nil {
 		t.Errorf("Failed to close db1: %v", err)
@@ -48,7 +48,7 @@ func TestDiskvDatabase(t *testing.T) {
 		return
 	}
 
-	testDatabase(t, db1, db2)
+	testDatabaseWithDifferentKeys(t, db1, db2)
 
 	if err := db1.Close(); err != nil {
 		t.Errorf("Failed to close db1: %v", err)
@@ -61,7 +61,21 @@ func TestDiskvDatabase(t *testing.T) {
 	}
 }
 
-func testDatabase(t *testing.T, db1, db2 Database) {
+func testDatabaseWithDifferentKeys(t *testing.T, db1, db2 Database) {
+	testKeys := [][]string{
+		[]string{"some", "stuff", "x"},
+		[]string{"some", "stuff", "."},
+		[]string{"some", "stuff", "DIRMETA"},
+		[]string{"some", "stuff", "x"},
+	}
+
+	for _, testKey := range testKeys {
+		testDatabase(t, db1, db2, testKey)
+	}
+
+}
+
+func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 	// TODO: add more testcases
 	t.Run("access-invalid", func(t *testing.T) {
 		val, err := db1.Get("hello", "world")
@@ -77,12 +91,12 @@ func testDatabase(t *testing.T, db1, db2 Database) {
 	})
 
 	t.Run("export", func(t *testing.T) {
-		if err := db1.Put([]byte{1, 2, 3}, "some/stuff", "x"); err != nil {
+		if err := db1.Put([]byte{1, 2, 3}, testKey...); err != nil {
 			t.Errorf("Failed set key: %v", err)
 			return
 		}
 
-		data, err := db1.Get("some/stuff", "x")
+		data, err := db1.Get(testKey...)
 		if err != nil {
 			t.Errorf("Failed get key: %v", err)
 			return
@@ -104,7 +118,7 @@ func testDatabase(t *testing.T, db1, db2 Database) {
 			return
 		}
 
-		value, err := db2.Get("some/stuff", "x")
+		value, err := db2.Get(testKey...)
 		if err != nil {
 			t.Errorf("Failed to get value")
 			return

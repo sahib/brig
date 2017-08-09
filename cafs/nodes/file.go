@@ -4,7 +4,7 @@ import (
 	"path"
 	"time"
 
-	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
+	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -24,7 +24,7 @@ func NewEmptyFile(lkr Linker, parent *Directory, name string) (*File, error) {
 	file := &File{
 		Base: Base{
 			name:     name,
-			uid:      lkr.NextUID(),
+			uid:      lkr.NextInode(),
 			modTime:  time.Now(),
 			nodeType: NodeTypeFile,
 		},
@@ -90,6 +90,7 @@ func (f *File) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	f.nodeType = NodeTypeFile
 	f.size = capfile.Size()
 	f.key, err = capfile.Key()
 	if err != nil {

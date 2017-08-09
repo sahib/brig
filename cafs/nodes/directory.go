@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	capnp_model "github.com/disorganizer/brig/model/nodes/capnp"
+	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -30,7 +30,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, 
 
 	newDir := &Directory{
 		Base: Base{
-			uid:      lkr.NextUID(),
+			uid:      lkr.NextInode(),
 			hash:     h.Sum([]byte(absPath)),
 			name:     name,
 			nodeType: NodeTypeDirectory,
@@ -128,6 +128,7 @@ func (d *Directory) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	d.nodeType = NodeTypeDirectory
 	d.size = capdir.Size()
 	d.parentName, err = capdir.Parent()
 	if err != nil {

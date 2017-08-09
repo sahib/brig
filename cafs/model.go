@@ -1,9 +1,11 @@
-package model
+package cafs
 
 import (
 	"io"
 
+	"github.com/disorganizer/brig/cafs/db"
 	"github.com/disorganizer/brig/interfaces"
+	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 type StorageBackend interface {
@@ -16,13 +18,13 @@ type StorageBackend interface {
 
 type Model struct {
 	Storage  StorageBackend
-	Database Database
+	Database db.Database
 }
 
-func NewModel(path string, db Database, store StorageBackend) (*Model, error) {
+func NewModel(path string, kv db.Database, store StorageBackend) (*Model, error) {
 	return &Model{
 		Storage:  store,
-		Database: db,
+		Database: kv,
 	}, nil
 }
 

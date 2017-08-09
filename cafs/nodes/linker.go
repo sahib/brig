@@ -32,7 +32,7 @@ type Linker interface {
 	MemSetRoot(root *Directory)
 
 	// NextUID should return a new unique uid.
-	NextUID() uint64
+	NextInode() uint64
 }
 
 ////////////////////////////
@@ -90,8 +90,8 @@ func (ml *MockLinker) NodeByHash(hash h.Hash) (Node, error) {
 	return nil, fmt.Errorf("No such hash")
 }
 
-// NextUID will return a steadily increasing integer
-func (ml *MockLinker) NextUID() uint64 {
+// NextInode will return a steadily increasing integer
+func (ml *MockLinker) NextInode() uint64 {
 	ml.idCount++
 	return ml.idCount
 }

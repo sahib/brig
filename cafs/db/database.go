@@ -5,6 +5,10 @@ import (
 	"io"
 )
 
+// TODO: Implement an actual fast KV store based on moss, boltdb or badger
+//       if there is any performance problem later on.
+//       For now, the filesystem based kv should suffice fine though.
+
 var (
 	// ErrNoSuchKey is returned when Get() was passed a non-existant key
 	ErrNoSuchKey = errors.New("This key does not exist")
@@ -27,6 +31,9 @@ type Database interface {
 	// Import reads a previously exported db dump by Export from `r`.
 	// Existing keys might be overwritten if the dump also contains them.
 	Import(r io.Reader) error
+
+	// Clear all contents below and including `key`.
+	Clear(key ...string) error
 
 	// Close closes the database. Since I/O may happen, an error is returned.
 	Close() error

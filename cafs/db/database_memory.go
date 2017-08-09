@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"io"
 	"path"
+	"strings"
 )
 
 // MemoryDatabase is a purely in memory database.
@@ -31,6 +32,24 @@ func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
 // Put sets `key` in `bucket` to `data`.
 func (mdb *MemoryDatabase) Put(data []byte, key ...string) error {
 	mdb.data[path.Join(key...)] = data
+	return nil
+}
+
+// Clear removes all keys includin and below `key`.
+func (mdb *MemoryDatabase) Clear(key ...string) error {
+	deleteMe := []string{}
+	joinedKey := path.Join(key...)
+
+	for mapKey := range mdb.data {
+		if strings.HasPrefix(mapKey, joinedKey) {
+			deleteMe = append(deleteMe, mapKey)
+		}
+	}
+
+	for _, killKey := range deleteMe {
+		delete(mdb.data, killKey)
+	}
+
 	return nil
 }
 
