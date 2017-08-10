@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/disorganizer/brig/util"
@@ -41,19 +42,20 @@ func fixDirectoryKeys(key []string) string {
 		return ""
 	}
 
-	switch key[len(key)-1] {
-	case "DIRMETA":
-		return filepath.Join(key[:len(key)-1]...) + "/__DIRMETA"
-	case ".":
-		return filepath.Join(key[:len(key)-1]...) + "/DIRMETA"
+	switch lastPart := key[len(key)-1]; {
+	case lastPart == "DOT":
+		return filepath.Join(key[:len(key)-1]...) + "/__NO_DOT__"
+	case lastPart == "." || strings.HasSuffix(lastPart, "/."):
+		return filepath.Join(key[:len(key)-1]...) + "/DOT"
+	default:
+		return filepath.Join(key...)
 	}
-
-	return filepath.Join(key...)
 }
 
 // Get a single value from `bucket` by `key`.
 func (db *DiskvDatabase) Get(key ...string) ([]byte, error) {
 	data, err := db.db.Read(fixDirectoryKeys(key))
+	fmt.Println("GET", key, fixDirectoryKeys(key))
 	if os.IsNotExist(err) {
 		return nil, ErrNoSuchKey
 	}
@@ -75,6 +77,7 @@ func (db *DiskvDatabase) Put(val []byte, key ...string) error {
 		return err
 	}
 
+	fmt.Println("SET", key, fixDirectoryKeys(key))
 	return db.db.Write(fixDirectoryKeys(key), val)
 }
 

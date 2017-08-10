@@ -64,7 +64,7 @@ type Linker struct {
 
 // NewFilesystem returns a new lkr, ready to use. It assumes the key value store
 // is working and does no check on this.
-func NewFilesystem(kv db.Database) *Linker {
+func NewLinker(kv db.Database) *Linker {
 	lkr := &Linker{kv: kv}
 	lkr.MemIndexClear()
 	return lkr
@@ -115,7 +115,7 @@ func (lkr *Linker) MemIndexClear() {
 func (lkr *Linker) NextInode() uint64 {
 	// TODO: Transactions
 	nodeCount, err := lkr.kv.Get("stats", "node-count")
-	if err != nil {
+	if err != nil && err != db.ErrNoSuchKey {
 		return 0
 	}
 
@@ -150,7 +150,7 @@ func (lkr *Linker) loadNode(hash h.Hash) (n.Node, error) {
 
 	for _, bucketPath := range loadableBuckets {
 		data, err = lkr.kv.Get(bucketPath...)
-		if err != nil {
+		if err != nil && err != db.ErrNoSuchKey {
 			return nil, err
 		}
 
@@ -199,7 +199,7 @@ func appendDot(path string) string {
 
 // ResolveNode resolves a path to a hash and resolves the corresponding node by
 // calling NodeByHash(). If no node could be resolved, nil is returned.
-// It does not matter if the nodes was deleted in the meantime. If so,
+// It does not matter if the node was deleted in the meantime. If so,
 // a Ghost node is returned which stores the last known state.
 func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 	// Check if it's cached already:
@@ -208,20 +208,20 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 		return trieNode.Data.(n.Node), nil
 	}
 
-	var hash []byte
-
 	fullPaths := [][]string{
 		[]string{"stage", "tree", nodePath},
 		[]string{"tree", nodePath},
 	}
 
 	for _, fullPath := range fullPaths {
+		fmt.Println("PATH", fullPath)
 		bhash, err := lkr.kv.Get(fullPath...)
-		if err != nil {
+		if err != nil && err != db.ErrNoSuchKey {
 			return nil, err
 		}
 
-		if hash != nil {
+		fmt.Println("Survived", bhash)
+		if bhash != nil {
 			return lkr.NodeByHash(h.Hash(bhash))
 		}
 	}
@@ -242,7 +242,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	// Update the staging commit's root hash:
 	status, err := lkr.Status()
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to retrieve status: %v", err)
 	}
 
 	root, err := lkr.Root()
@@ -258,7 +258,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 // It will return nil if no corresponding node was found.
 func (lkr *Linker) NodeByUID(uid uint64) (n.Node, error) {
 	hash, err := lkr.kv.Get("uid", strconv.FormatUint(uid, 16))
-	if err != nil {
+	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
 
@@ -436,7 +436,7 @@ func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	refname = strings.ToLower(refname)
 	hash, err := lkr.kv.Get("refs", refname)
-	if err != nil {
+	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
 
@@ -551,7 +551,7 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 func (lkr *Linker) loadStatus() (*n.Commit, error) {
 	data, err := lkr.kv.Get("stage", "STATUS")
-	if err != nil {
+	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
 
@@ -580,8 +580,10 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) error {
 		return err
 	}
 
-	if err := cmt.SetParent(lkr, head); err != nil {
-		return err
+	if head != nil {
+		if err := cmt.SetParent(lkr, head); err != nil {
+			return err
+		}
 	}
 
 	if err := cmt.BoxCommit(n.AuthorOfStage(), ""); err != nil {
@@ -683,6 +685,7 @@ func (lkr *Linker) DirectoryByHash(hash h.Hash) (*n.Directory, error) {
 
 // ResolveDirectory calls ResolveNode and converts the result to a Directory.
 func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
+	fmt.Println("Look up path:", appendDot(path.Clean(dirpath)))
 	nd, err := lkr.ResolveNode(appendDot(path.Clean(dirpath)))
 	if err != nil {
 		return nil, err
