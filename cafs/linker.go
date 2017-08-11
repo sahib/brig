@@ -214,13 +214,16 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 	}
 
 	for _, fullPath := range fullPaths {
-		fmt.Println("PATH", fullPath)
-		bhash, err := lkr.kv.Get(fullPath...)
+		b58Hash, err := lkr.kv.Get(fullPath...)
 		if err != nil && err != db.ErrNoSuchKey {
 			return nil, err
 		}
 
-		fmt.Println("Survived", bhash)
+		bhash, err := h.FromB58String(string(b58Hash))
+		if err != nil {
+			return nil, err
+		}
+
 		if bhash != nil {
 			return lkr.NodeByHash(h.Hash(bhash))
 		}
@@ -257,7 +260,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 // NodeByUID resolves a node by it's unique ID.
 // It will return nil if no corresponding node was found.
 func (lkr *Linker) NodeByUID(uid uint64) (n.Node, error) {
-	hash, err := lkr.kv.Get("uid", strconv.FormatUint(uid, 16))
+	hash, err := lkr.kv.Get("inode", strconv.FormatUint(uid, 16))
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
@@ -282,7 +285,7 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 	}
 
 	uidKey := strconv.FormatUint(nd.Inode(), 16)
-	if err := lkr.kv.Put(nd.Hash().Bytes(), "uid", uidKey); err != nil {
+	if err := lkr.kv.Put([]byte(nd.Hash().B58String()), "inode", uidKey); err != nil {
 		return err
 	}
 
@@ -291,7 +294,7 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 		hashPath = append(hashPath, ".")
 	}
 
-	if err := lkr.kv.Put(nd.Hash().Bytes(), hashPath...); err != nil {
+	if err := lkr.kv.Put([]byte(b58Hash), hashPath...); err != nil {
 		return err
 	}
 
@@ -435,13 +438,18 @@ func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 // there are no technical restrictions on which node typ to use.
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	refname = strings.ToLower(refname)
-	hash, err := lkr.kv.Get("refs", refname)
+	b58Hash, err := lkr.kv.Get("refs", refname)
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
 
-	if len(hash) == 0 {
+	if len(b58Hash) == 0 {
 		return nil, ErrNoSuchRef(refname)
+	}
+
+	hash, err := h.FromB58String(string(b58Hash))
+	if err != nil {
+		return nil, err
 	}
 
 	return lkr.NodeByHash(h.Hash(hash))
@@ -452,7 +460,7 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 // resolvable.
 func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 	refname = strings.ToLower(refname)
-	return lkr.kv.Put(nd.Hash().Bytes(), "refs", refname)
+	return lkr.kv.Put([]byte(nd.Hash().B58String()), "refs", refname)
 }
 
 // Head is just a shortcut for ResolveRef("HEAD").
@@ -519,19 +527,23 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
-		// No root directory then. Create a shiny new one and stage it.
-		newRoot, err := n.NewEmptyDirectory(lkr, nil, "/")
-		if err != nil {
-			return nil, err
-		}
+		if root, err := lkr.ResolveDirectory("/"); err == nil {
+			rootHash = root.Hash()
+		} else {
+			// No root directory then. Create a shiny new one and stage it.
+			newRoot, err := n.NewEmptyDirectory(lkr, nil, "/")
+			if err != nil {
+				return nil, err
+			}
 
-		// Can't call StageNode(), since that would call Status(),
-		// causing and endless loop of grief and doom.
-		if err := lkr.stageNodeRecursive(newRoot); err != nil {
-			return nil, err
-		}
+			// Can't call StageNode(), since that would call Status(),
+			// causing and endless loop of grief and doom.
+			if err := lkr.stageNodeRecursive(newRoot); err != nil {
+				return nil, err
+			}
 
-		rootHash = newRoot.Hash()
+			rootHash = newRoot.Hash()
+		}
 	} else {
 		if err := cmt.SetParent(lkr, head); err != nil {
 			return nil, err
@@ -597,6 +609,12 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) error {
 
 	// TODO: Use transactions here.
 	if err := lkr.kv.Put(data, "stage", "STATUS"); err != nil {
+		return err
+	}
+
+	b58Hash := cmt.Hash().B58String()
+	inode := strconv.FormatUint(cmt.Inode(), 10)
+	if err := lkr.kv.Put([]byte(b58Hash), "inode", inode); err != nil {
 		return err
 	}
 
@@ -685,7 +703,6 @@ func (lkr *Linker) DirectoryByHash(hash h.Hash) (*n.Directory, error) {
 
 // ResolveDirectory calls ResolveNode and converts the result to a Directory.
 func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
-	fmt.Println("Look up path:", appendDot(path.Clean(dirpath)))
 	nd, err := lkr.ResolveNode(appendDot(path.Clean(dirpath)))
 	if err != nil {
 		return nil, err
