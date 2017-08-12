@@ -37,7 +37,7 @@ func withDummyKv(t *testing.T, fn func(kv db.Database)) {
 func TestLinkerInsertRoot(t *testing.T) {
 	withDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		root, err := n.NewEmptyDirectory(lkr, nil, "/")
+		root, err := n.NewEmptyDirectory(lkr, nil, "/", 2)
 		if err != nil {
 			t.Fatalf("Creating empty root dir failed: %v", err)
 		}
@@ -86,7 +86,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Failed to create root: %v", err)
 		}
 
-		newFile, err := n.NewEmptyFile(fs, root, "cat.png")
+		newFile, err := n.NewEmptyFile(root, "cat.png", 2)
 		if err != nil {
 			t.Fatalf("Failed to create empty file: %v", err)
 		}
@@ -111,7 +111,6 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Failed to retrieve status: %v", err)
 		}
 
-		fmt.Println("----> MAKE COMMIT")
 		if err := fs.MakeCommit(author, "First commit"); err != nil {
 			t.Fatalf("Making commit failed: %v", err)
 		}
@@ -145,7 +144,7 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			return
 		}
 
-		sub, err := n.NewEmptyDirectory(fs, root, "sub")
+		sub, err := n.NewEmptyDirectory(fs, root, "sub", 3)
 		if err != nil {
 			t.Fatalf("Creating empty sub dir failed: %v", err)
 			return
@@ -178,7 +177,7 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			t.Fatalf("Resolving /sub by ID (%d) failed: %v", sameSubDir.Inode(), err)
 		}
 
-		subpub, err := n.NewEmptyDirectory(fs, sameSubDir, "pub")
+		subpub, err := n.NewEmptyDirectory(fs, sameSubDir, "pub", 4)
 		if err != nil {
 			t.Fatalf("Creating of deep sub failed")
 		}

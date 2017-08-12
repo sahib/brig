@@ -414,7 +414,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 		}
 	}
 
-	newStatus, err := n.NewEmptyCommit(lkr)
+	newStatus, err := n.NewEmptyCommit(lkr.NextInode())
 	if err != nil {
 		return err
 	}
@@ -525,7 +525,7 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 	// Shoot, no commit exists yet.
 	// We need to create an initial one.
-	cmt, err = n.NewEmptyCommit(lkr)
+	cmt, err = n.NewEmptyCommit(lkr.NextInode())
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +544,8 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 			rootHash = root.Hash()
 		} else {
 			// No root directory then. Create a shiny new one and stage it.
-			newRoot, err := n.NewEmptyDirectory(lkr, nil, "/")
+			inode := lkr.NextInode()
+			newRoot, err := n.NewEmptyDirectory(lkr, nil, "/", inode)
 			if err != nil {
 				return nil, err
 			}

@@ -20,11 +20,11 @@ type File struct {
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
-func NewEmptyFile(lkr Linker, parent *Directory, name string) (*File, error) {
+func NewEmptyFile(parent *Directory, name string, inode uint64) (*File, error) {
 	file := &File{
 		Base: Base{
 			name:     name,
-			inode:    lkr.NextInode(),
+			inode:    inode,
 			modTime:  time.Now(),
 			nodeType: NodeTypeFile,
 		},

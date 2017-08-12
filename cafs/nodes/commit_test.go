@@ -8,8 +8,7 @@ import (
 )
 
 func TestCommit(t *testing.T) {
-	lkr := NewMockLinker()
-	cmt, err := NewEmptyCommit(lkr)
+	cmt, err := NewEmptyCommit(0)
 	if err != nil {
 		t.Fatalf("Failed to create commit: %v", err)
 	}

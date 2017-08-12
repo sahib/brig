@@ -9,7 +9,7 @@ import (
 
 func TestGhost(t *testing.T) {
 	lkr := NewMockLinker()
-	root, err := NewEmptyDirectory(lkr, nil, "")
+	root, err := NewEmptyDirectory(lkr, nil, "", 1)
 	if err != nil {
 		t.Fatalf("Failed to create root dir: %v", err)
 	}

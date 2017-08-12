@@ -22,7 +22,7 @@ type Directory struct {
 }
 
 // NewEmptyDirectory creates a new empty directory that does not exist yet.
-func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, error) {
+func NewEmptyDirectory(lkr Linker, parent *Directory, name string, inode uint64) (*Directory, error) {
 	absPath := ""
 	if parent != nil {
 		absPath = path.Join(parent.Path(), name)
@@ -30,7 +30,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, 
 
 	newDir := &Directory{
 		Base: Base{
-			inode:    lkr.NextInode(),
+			inode:    inode,
 			hash:     h.Sum([]byte(absPath)),
 			name:     name,
 			nodeType: NodeTypeDirectory,

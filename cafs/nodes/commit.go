@@ -31,11 +31,11 @@ type Commit struct {
 
 // NewCommit creates a new commit after the commit referenced by `parent`.
 // `parent` might be nil for the very first commit.
-func NewEmptyCommit(lkr Linker) (*Commit, error) {
+func NewEmptyCommit(inode uint64) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
-			inode:    lkr.NextInode(),
+			inode:    inode,
 			modTime:  time.Now(),
 		},
 		author: AuthorOfStage(),

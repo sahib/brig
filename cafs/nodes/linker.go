@@ -30,9 +30,6 @@ type Linker interface {
 
 	// MemSetRoot should be called when the current root directory changed.
 	MemSetRoot(root *Directory)
-
-	// NextUID should return a new unique uid.
-	NextInode() uint64
 }
 
 ////////////////////////////
@@ -42,10 +39,9 @@ type Linker interface {
 // MockLinker is supposed to be used for testing.
 // It simply holds all nodes in memory. New nodes should be added via AddNode.
 type MockLinker struct {
-	idCount uint64
-	root    *Directory
-	paths   map[string]Node
-	hashes  map[string]Node
+	root   *Directory
+	paths  map[string]Node
+	hashes map[string]Node
 }
 
 // NewMockLinker returns a Linker that can be easily used for testing.
@@ -63,7 +59,7 @@ func (ml *MockLinker) Root() (*Directory, error) {
 		return ml.root, nil
 	}
 
-	root, err := NewEmptyDirectory(ml, nil, "")
+	root, err := NewEmptyDirectory(ml, nil, "", 0)
 	if err != nil {
 		return nil, err
 	}
@@ -88,12 +84,6 @@ func (ml *MockLinker) NodeByHash(hash h.Hash) (Node, error) {
 	}
 
 	return nil, fmt.Errorf("No such hash")
-}
-
-// NextInode will return a steadily increasing integer
-func (ml *MockLinker) NextInode() uint64 {
-	ml.idCount++
-	return ml.idCount
 }
 
 // MemSetRoot sets the current root to be `root`.
