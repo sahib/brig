@@ -80,8 +80,8 @@ func TestLinkerInsertRoot(t *testing.T) {
 func TestLinkerRefs(t *testing.T) {
 	author := n.AuthorOfStage()
 	withDummyKv(t, func(kv db.Database) {
-		fs := NewLinker(kv)
-		root, err := fs.Root()
+		lkr := NewLinker(kv)
+		root, err := lkr.Root()
 		if err != nil {
 			t.Fatalf("Failed to create root: %v", err)
 		}
@@ -92,35 +92,37 @@ func TestLinkerRefs(t *testing.T) {
 		}
 
 		newFile.SetSize(10)
-		newFile.SetHash(fs, h.TestDummy(t, 1))
+		newFile.SetHash(lkr, h.TestDummy(t, 1))
 
-		if err := root.Add(fs, newFile); err != nil {
+		if err := root.Add(lkr, newFile); err != nil {
 			t.Fatalf("Adding empty file failed: %v", err)
 		}
 
-		if err := fs.StageNode(newFile); err != nil {
+		if err := lkr.StageNode(newFile); err != nil {
 			t.Fatalf("Staging new file failed: %v", err)
 		}
 
-		if _, err := fs.Head(); !IsErrNoSuchRef(err) {
+		if _, err := lkr.Head(); !IsErrNoSuchRef(err) {
 			t.Fatalf("There is a HEAD from start?!")
 		}
 
-		cmt, err := fs.Status()
+		cmt, err := lkr.Status()
 		if err != nil || cmt == nil {
 			t.Fatalf("Failed to retrieve status: %v", err)
 		}
 
-		if err := fs.MakeCommit(author, "First commit"); err != nil {
+		if err := lkr.MakeCommit(author, "First commit"); err != nil {
 			t.Fatalf("Making commit failed: %v", err)
 		}
 
-		head, err := fs.Head()
+		// TODO: Check that stage/{tree,objects} is empty.
+
+		head, err := lkr.Head()
 		if err != nil {
 			t.Fatalf("Obtaining HEAD failed: %v", err)
 		}
 
-		status, err := fs.Status()
+		status, err := lkr.Status()
 		if err != nil {
 			t.Fatalf("Failed to obtain the status: %v", err)
 		}
@@ -129,7 +131,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("HEAD and CURR are not equal after first commit.")
 		}
 
-		if err := fs.MakeCommit(author, "No."); err != ErrNoChange {
+		if err := lkr.MakeCommit(author, "No."); err != ErrNoChange {
 			t.Fatalf("Committing without change led to a new commit.")
 		}
 	})
@@ -137,20 +139,20 @@ func TestLinkerRefs(t *testing.T) {
 
 func TestFSInsertTwoLevelDir(t *testing.T) {
 	withDummyKv(t, func(kv db.Database) {
-		fs := NewLinker(kv)
-		root, err := fs.Root()
+		lkr := NewLinker(kv)
+		root, err := lkr.Root()
 		if err != nil {
 			t.Fatalf("Fetching initial root failed: %v", err)
 			return
 		}
 
-		sub, err := n.NewEmptyDirectory(fs, root, "sub", 3)
+		sub, err := n.NewEmptyDirectory(lkr, root, "sub", 3)
 		if err != nil {
 			t.Fatalf("Creating empty sub dir failed: %v", err)
 			return
 		}
 
-		par, err := sub.Parent(fs)
+		par, err := sub.Parent(lkr)
 		if err != nil {
 			t.Fatalf("Failed to get parent of /sub")
 		}
@@ -159,34 +161,34 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 			t.Fatalf("Parent path of /sub is not /")
 		}
 
-		if topPar, err := par.Parent(fs); topPar != nil || err != nil {
+		if topPar, err := par.Parent(lkr); topPar != nil || err != nil {
 			t.Fatalf("Parent of / is not nil: %v (%v)", topPar, err)
 		}
 
-		if err := fs.StageNode(sub); err != nil {
+		if err := lkr.StageNode(sub); err != nil {
 			t.Fatalf("Staging /sub failed: %v", err)
 		}
 
-		sameSubDir, err := fs.ResolveDirectory("/sub")
+		sameSubDir, err := lkr.ResolveDirectory("/sub")
 		if err != nil {
 			t.Fatalf("Resolving /sub failed: %v", err)
 		}
 
-		_, err = fs.NodeByInode(sameSubDir.Inode())
+		_, err = lkr.NodeByInode(sameSubDir.Inode())
 		if err != nil {
 			t.Fatalf("Resolving /sub by ID (%d) failed: %v", sameSubDir.Inode(), err)
 		}
 
-		subpub, err := n.NewEmptyDirectory(fs, sameSubDir, "pub", 4)
+		subpub, err := n.NewEmptyDirectory(lkr, sameSubDir, "pub", 4)
 		if err != nil {
 			t.Fatalf("Creating of deep sub failed")
 		}
 
-		if err := fs.StageNode(subpub); err != nil {
+		if err := lkr.StageNode(subpub); err != nil {
 			t.Fatalf("Staging /sub/pub failed: %v", err)
 		}
 
-		newRootDir, err := fs.ResolveDirectory("/")
+		newRootDir, err := lkr.ResolveDirectory("/")
 		if err != nil {
 			t.Fatalf("Failed to resolve new root dir")
 		}
@@ -196,7 +198,7 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 		}
 
 		count := 0
-		if err := n.Walk(fs, root, true, func(c n.Node) error { count++; return nil }); err != nil {
+		if err := n.Walk(lkr, root, true, func(c n.Node) error { count++; return nil }); err != nil {
 			t.Fatalf("Failed to walk the tree: %v", err)
 		}
 
@@ -205,85 +207,58 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 		}
 
 		// Index shall only contain the nodes with their most current hash values.
-		if len(fs.index) != 3 {
+		if len(lkr.index) != 3 {
 			t.Fatalf("Index does not contain the expected 3 elements.")
 		}
 	})
 }
 
-//
-// func withEmptyRoot(t *testing.T, f func(fs *FS, root *Directory)) {
-// 	withDummyKv(t, func(kv KV) {
-// 		fs := NewFilesystem(kv)
-// 		root, err := newEmptyDirectory(fs, nil, "/")
-// 		if err != nil {
-// 			t.Fatalf("Creating empty dir failed: %v", err)
-// 			return
-// 		}
-//
-// 		if err := fs.StageNode(root); err != nil {
-// 			t.Fatalf("Failed to stage root: %v", err)
-// 			return
-// 		}
-//
-// 		if err := fs.MakeCommit(StageAuthor(), "initial commit"); err != nil {
-// 			t.Fatalf("Failed to create initial commit")
-// 			return
-// 		}
-//
-// 		f(fs, root)
-// 	})
-// }
-//
-// func modFile(t *testing.T, fs *FS, file *File, seed int) {
-// 	root, err := fs.Root()
-// 	if err != nil {
-// 		t.Fatalf("Failed to get root: %v", err)
-// 		return
-// 	}
-//
-// 	if err := root.RemoveChild(file); err != nil && !IsNoSuchFileError(err) {
-// 		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
-// 		return
-// 	}
-//
-// 	file.SetSize(uint64(seed))
-// 	file.SetHash(dummyHash(t, byte(seed)))
-//
-// 	if err := root.Add(file); err != nil {
-// 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
-// 		return
-// 	}
-//
-// 	if err := fs.StageNode(file); err != nil {
-// 		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
-// 		return
-// 	}
-// }
+func modifyFile(t *testing.T, lkr *Linker, file *n.File, seed int) {
+	root, err := lkr.Root()
+	if err != nil {
+		t.Fatalf("Failed to get root: %v", err)
+	}
+
+	if err := root.RemoveChild(lkr, file); err != nil && !n.IsNoSuchFileError(err) {
+		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
+	}
+
+	file.SetSize(uint64(seed))
+	file.SetHash(lkr, h.TestDummy(t, byte(seed)))
+
+	if err := root.Add(lkr, file); err != nil {
+		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
+	}
+
+	if err := lkr.StageNode(file); err != nil {
+		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
+	}
+}
+
 //
 // func TestCheckoutFile(t *testing.T) {
-// 	withEmptyRoot(t, func(fs *FS, root *Directory) {
-// 		file, err := newEmptyFile(fs, root, "cat.png")
+// 	withEmptyRoot(t, func(lkr *lkr, root *Directory) {
+// 		file, err := newEmptyFile(lkr, root, "cat.png")
 // 		if err != nil {
 // 			t.Fatalf("Failed to create cat.png: %v", err)
 // 			return
 // 		}
 //
-// 		modFile(t, fs, file, 1)
+// 		modFile(t, lkr, file, 1)
 //
-// 		if err := fs.MakeCommit(StageAuthor(), "second commit"); err != nil {
+// 		if err := lkr.MakeCommit(StageAuthor(), "second commit"); err != nil {
 // 			t.Fatalf("Failed to make second commit: %v", err)
 // 			return
 // 		}
 //
-// 		modFile(t, fs, file, 2)
+// 		modFile(t, lkr, file, 2)
 //
-// 		if err := fs.MakeCommit(StageAuthor(), "third commit"); err != nil {
+// 		if err := lkr.MakeCommit(StageAuthor(), "third commit"); err != nil {
 // 			t.Fatalf("Failed to make third commit: %v", err)
 // 			return
 // 		}
 //
-// 		head, err := fs.Head()
+// 		head, err := lkr.Head()
 // 		if err != nil {
 // 			t.Fatalf("Failed to get HEAD: %v", err)
 // 			return
@@ -297,12 +272,12 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 //
 // 		lastCommit := lastCommitNd.(*Commit)
 //
-// 		if err := fs.CheckoutFile(lastCommit, file); err != nil {
+// 		if err := lkr.CheckoutFile(lastCommit, file); err != nil {
 // 			t.Fatalf("Failed to checkout file before commit: %v", err)
 // 			return
 // 		}
 //
-// 		lastVersion, err := fs.LookupFile("/cat.png")
+// 		lastVersion, err := lkr.LookupFile("/cat.png")
 // 		if err != nil {
 // 			t.Fatalf("Failed to lookup /cat.png post checkout")
 // 			return

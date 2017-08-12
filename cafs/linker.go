@@ -190,6 +190,7 @@ func (lkr *Linker) NodeByHash(hash h.Hash) (n.Node, error) {
 func appendDot(path string) string {
 	// path.Join() calls path.Clean() which in turn
 	// removes the '.' at the end when trying to join that.
+	// But since we use the dot to mark directories we shouldn't do that.
 	if strings.HasSuffix(path, "/") {
 		return path + "."
 	}
