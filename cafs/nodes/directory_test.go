@@ -57,6 +57,10 @@ func TestDirectoryBasics(t *testing.T) {
 		t.Fatalf("Root parentName as not loaded correctly: %v", err)
 	}
 
+	if empty.Inode() != 1 {
+		t.Fatalf("Inode was not loaded correctly: %v != 1", empty.Inode())
+	}
+
 	if subHash, ok := empty.children["sub"]; ok {
 		if !subHash.Equal(subDir.Hash()) {
 			t.Fatalf("Unmarshaled hash differs (!= sub): %v", subDir.Hash())

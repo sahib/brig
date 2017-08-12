@@ -55,7 +55,7 @@ func fixDirectoryKeys(key []string) string {
 // Get a single value from `bucket` by `key`.
 func (db *DiskvDatabase) Get(key ...string) ([]byte, error) {
 	data, err := db.db.Read(fixDirectoryKeys(key))
-	fmt.Println("GET", key, fixDirectoryKeys(key))
+	fmt.Println("GET", key)
 	if os.IsNotExist(err) {
 		return nil, ErrNoSuchKey
 	}
@@ -77,19 +77,22 @@ func (db *DiskvDatabase) Put(val []byte, key ...string) error {
 		return err
 	}
 
-	fmt.Println("SET", key, fixDirectoryKeys(key))
+	fmt.Println("SET", key)
 	return db.db.Write(fixDirectoryKeys(key), val)
 }
 
-// Clear removes all keys below and includeing `key`.
+// Clear removes all keys below and including `key`.
 func (db *DiskvDatabase) Clear(key ...string) error {
-	for diskKey := range db.db.KeysPrefix(fixDirectoryKeys(key), nil) {
-		if err := db.db.Erase(diskKey); err != nil {
-			return err
+	prefix := filepath.Join(db.db.BasePath, fixDirectoryKeys(key))
+	return filepath.Walk(db.db.BasePath, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && strings.HasPrefix(path, prefix) {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 // Export writes all key/valeus into a gzipped .tar that is written to `w`.

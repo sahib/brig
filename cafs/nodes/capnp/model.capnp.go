@@ -475,6 +475,7 @@ func (p Directory_Promise) Struct() (Directory, error) {
 	return Directory{s}, err
 }
 
+// A leaf node in the MDAG
 type File struct{ capnp.Struct }
 
 // File_TypeID is the unique identifier for the type File.
@@ -567,6 +568,184 @@ func (p File_Promise) Struct() (File, error) {
 	return File{s}, err
 }
 
+// Ghost indicates that a certain node was at this path once
+type Ghost struct{ capnp.Struct }
+type Ghost_Which uint16
+
+const (
+	Ghost_Which_commit    Ghost_Which = 0
+	Ghost_Which_directory Ghost_Which = 1
+	Ghost_Which_file      Ghost_Which = 2
+)
+
+func (w Ghost_Which) String() string {
+	const s = "commitdirectoryfile"
+	switch w {
+	case Ghost_Which_commit:
+		return s[0:6]
+	case Ghost_Which_directory:
+		return s[6:15]
+	case Ghost_Which_file:
+		return s[15:19]
+
+	}
+	return "Ghost_Which(" + strconv.FormatUint(uint64(w), 10) + ")"
+}
+
+// Ghost_TypeID is the unique identifier for the type Ghost.
+const Ghost_TypeID = 0x80c828d7e89c12ea
+
+func NewGhost(s *capnp.Segment) (Ghost, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return Ghost{st}, err
+}
+
+func NewRootGhost(s *capnp.Segment) (Ghost, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return Ghost{st}, err
+}
+
+func ReadRootGhost(msg *capnp.Message) (Ghost, error) {
+	root, err := msg.RootPtr()
+	return Ghost{root.Struct()}, err
+}
+
+func (s Ghost) String() string {
+	str, _ := text.Marshal(0x80c828d7e89c12ea, s.Struct)
+	return str
+}
+
+func (s Ghost) Which() Ghost_Which {
+	return Ghost_Which(s.Struct.Uint16(0))
+}
+func (s Ghost) Commit() (Commit, error) {
+	p, err := s.Struct.Ptr(0)
+	return Commit{Struct: p.Struct()}, err
+}
+
+func (s Ghost) HasCommit() bool {
+	if s.Struct.Uint16(0) != 0 {
+		return false
+	}
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Ghost) SetCommit(v Commit) error {
+	s.Struct.SetUint16(0, 0)
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewCommit sets the commit field to a newly
+// allocated Commit struct, preferring placement in s's segment.
+func (s Ghost) NewCommit() (Commit, error) {
+	s.Struct.SetUint16(0, 0)
+	ss, err := NewCommit(s.Struct.Segment())
+	if err != nil {
+		return Commit{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s Ghost) Directory() (Directory, error) {
+	p, err := s.Struct.Ptr(0)
+	return Directory{Struct: p.Struct()}, err
+}
+
+func (s Ghost) HasDirectory() bool {
+	if s.Struct.Uint16(0) != 1 {
+		return false
+	}
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Ghost) SetDirectory(v Directory) error {
+	s.Struct.SetUint16(0, 1)
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewDirectory sets the directory field to a newly
+// allocated Directory struct, preferring placement in s's segment.
+func (s Ghost) NewDirectory() (Directory, error) {
+	s.Struct.SetUint16(0, 1)
+	ss, err := NewDirectory(s.Struct.Segment())
+	if err != nil {
+		return Directory{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s Ghost) File() (File, error) {
+	p, err := s.Struct.Ptr(0)
+	return File{Struct: p.Struct()}, err
+}
+
+func (s Ghost) HasFile() bool {
+	if s.Struct.Uint16(0) != 2 {
+		return false
+	}
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Ghost) SetFile(v File) error {
+	s.Struct.SetUint16(0, 2)
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewFile sets the file field to a newly
+// allocated File struct, preferring placement in s's segment.
+func (s Ghost) NewFile() (File, error) {
+	s.Struct.SetUint16(0, 2)
+	ss, err := NewFile(s.Struct.Segment())
+	if err != nil {
+		return File{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Ghost_List is a list of Ghost.
+type Ghost_List struct{ capnp.List }
+
+// NewGhost creates a new list of Ghost.
+func NewGhost_List(s *capnp.Segment, sz int32) (Ghost_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1}, sz)
+	return Ghost_List{l}, err
+}
+
+func (s Ghost_List) At(i int) Ghost { return Ghost{s.List.Struct(i)} }
+
+func (s Ghost_List) Set(i int, v Ghost) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Ghost_List) String() string {
+	str, _ := text.MarshalList(0x80c828d7e89c12ea, s.List)
+	return str
+}
+
+// Ghost_Promise is a wrapper for a Ghost promised by a client call.
+type Ghost_Promise struct{ *capnp.Pipeline }
+
+func (p Ghost_Promise) Struct() (Ghost, error) {
+	s, err := p.Pipeline.Struct()
+	return Ghost{s}, err
+}
+
+func (p Ghost_Promise) Commit() Commit_Promise {
+	return Commit_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+func (p Ghost_Promise) Directory() Directory_Promise {
+	return Directory_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+func (p Ghost_Promise) File() File_Promise {
+	return File_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
 // Node is a node in the merkle dag of brig
 type Node struct{ capnp.Struct }
 type Node_Which uint16
@@ -575,10 +754,11 @@ const (
 	Node_Which_commit    Node_Which = 0
 	Node_Which_directory Node_Which = 1
 	Node_Which_file      Node_Which = 2
+	Node_Which_ghost     Node_Which = 3
 )
 
 func (w Node_Which) String() string {
-	const s = "commitdirectoryfile"
+	const s = "commitdirectoryfileghost"
 	switch w {
 	case Node_Which_commit:
 		return s[0:6]
@@ -586,6 +766,8 @@ func (w Node_Which) String() string {
 		return s[6:15]
 	case Node_Which_file:
 		return s[15:19]
+	case Node_Which_ghost:
+		return s[19:24]
 
 	}
 	return "Node_Which(" + strconv.FormatUint(uint64(w), 10) + ")"
@@ -595,12 +777,12 @@ func (w Node_Which) String() string {
 const Node_TypeID = 0xa629eb7f7066fae3
 
 func NewNode(s *capnp.Segment) (Node, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 16, PointerCount: 4})
 	return Node{st}, err
 }
 
 func NewRootNode(s *capnp.Segment) (Node, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 16, PointerCount: 4})
 	return Node{st}, err
 }
 
@@ -615,7 +797,7 @@ func (s Node) String() string {
 }
 
 func (s Node) Which() Node_Which {
-	return Node_Which(s.Struct.Uint16(0))
+	return Node_Which(s.Struct.Uint16(8))
 }
 func (s Node) Name() (string, error) {
 	p, err := s.Struct.Ptr(0)
@@ -669,13 +851,21 @@ func (s Node) SetModTime(v string) error {
 	return s.Struct.SetText(2, v)
 }
 
+func (s Node) Inode() uint64 {
+	return s.Struct.Uint64(0)
+}
+
+func (s Node) SetInode(v uint64) {
+	s.Struct.SetUint64(0, v)
+}
+
 func (s Node) Commit() (Commit, error) {
 	p, err := s.Struct.Ptr(3)
 	return Commit{Struct: p.Struct()}, err
 }
 
 func (s Node) HasCommit() bool {
-	if s.Struct.Uint16(0) != 0 {
+	if s.Struct.Uint16(8) != 0 {
 		return false
 	}
 	p, err := s.Struct.Ptr(3)
@@ -683,14 +873,14 @@ func (s Node) HasCommit() bool {
 }
 
 func (s Node) SetCommit(v Commit) error {
-	s.Struct.SetUint16(0, 0)
+	s.Struct.SetUint16(8, 0)
 	return s.Struct.SetPtr(3, v.Struct.ToPtr())
 }
 
 // NewCommit sets the commit field to a newly
 // allocated Commit struct, preferring placement in s's segment.
 func (s Node) NewCommit() (Commit, error) {
-	s.Struct.SetUint16(0, 0)
+	s.Struct.SetUint16(8, 0)
 	ss, err := NewCommit(s.Struct.Segment())
 	if err != nil {
 		return Commit{}, err
@@ -705,7 +895,7 @@ func (s Node) Directory() (Directory, error) {
 }
 
 func (s Node) HasDirectory() bool {
-	if s.Struct.Uint16(0) != 1 {
+	if s.Struct.Uint16(8) != 1 {
 		return false
 	}
 	p, err := s.Struct.Ptr(3)
@@ -713,14 +903,14 @@ func (s Node) HasDirectory() bool {
 }
 
 func (s Node) SetDirectory(v Directory) error {
-	s.Struct.SetUint16(0, 1)
+	s.Struct.SetUint16(8, 1)
 	return s.Struct.SetPtr(3, v.Struct.ToPtr())
 }
 
 // NewDirectory sets the directory field to a newly
 // allocated Directory struct, preferring placement in s's segment.
 func (s Node) NewDirectory() (Directory, error) {
-	s.Struct.SetUint16(0, 1)
+	s.Struct.SetUint16(8, 1)
 	ss, err := NewDirectory(s.Struct.Segment())
 	if err != nil {
 		return Directory{}, err
@@ -735,7 +925,7 @@ func (s Node) File() (File, error) {
 }
 
 func (s Node) HasFile() bool {
-	if s.Struct.Uint16(0) != 2 {
+	if s.Struct.Uint16(8) != 2 {
 		return false
 	}
 	p, err := s.Struct.Ptr(3)
@@ -743,17 +933,47 @@ func (s Node) HasFile() bool {
 }
 
 func (s Node) SetFile(v File) error {
-	s.Struct.SetUint16(0, 2)
+	s.Struct.SetUint16(8, 2)
 	return s.Struct.SetPtr(3, v.Struct.ToPtr())
 }
 
 // NewFile sets the file field to a newly
 // allocated File struct, preferring placement in s's segment.
 func (s Node) NewFile() (File, error) {
-	s.Struct.SetUint16(0, 2)
+	s.Struct.SetUint16(8, 2)
 	ss, err := NewFile(s.Struct.Segment())
 	if err != nil {
 		return File{}, err
+	}
+	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s Node) Ghost() (Ghost, error) {
+	p, err := s.Struct.Ptr(3)
+	return Ghost{Struct: p.Struct()}, err
+}
+
+func (s Node) HasGhost() bool {
+	if s.Struct.Uint16(8) != 3 {
+		return false
+	}
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Node) SetGhost(v Ghost) error {
+	s.Struct.SetUint16(8, 3)
+	return s.Struct.SetPtr(3, v.Struct.ToPtr())
+}
+
+// NewGhost sets the ghost field to a newly
+// allocated Ghost struct, preferring placement in s's segment.
+func (s Node) NewGhost() (Ghost, error) {
+	s.Struct.SetUint16(8, 3)
+	ss, err := NewGhost(s.Struct.Segment())
+	if err != nil {
+		return Ghost{}, err
 	}
 	err = s.Struct.SetPtr(3, ss.Struct.ToPtr())
 	return ss, err
@@ -764,7 +984,7 @@ type Node_List struct{ capnp.List }
 
 // NewNode creates a new list of Node.
 func NewNode_List(s *capnp.Segment, sz int32) (Node_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 16, PointerCount: 4}, sz)
 	return Node_List{l}, err
 }
 
@@ -797,149 +1017,84 @@ func (p Node_Promise) File() File_Promise {
 	return File_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
 }
 
-// Ghost indicates that a certain node was at this path once
-type Ghost struct{ capnp.Struct }
-
-// Ghost_TypeID is the unique identifier for the type Ghost.
-const Ghost_TypeID = 0x80c828d7e89c12ea
-
-func NewGhost(s *capnp.Segment) (Ghost, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
-	return Ghost{st}, err
+func (p Node_Promise) Ghost() Ghost_Promise {
+	return Ghost_Promise{Pipeline: p.Pipeline.GetPipeline(3)}
 }
 
-func NewRootGhost(s *capnp.Segment) (Ghost, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
-	return Ghost{st}, err
-}
-
-func ReadRootGhost(msg *capnp.Message) (Ghost, error) {
-	root, err := msg.RootPtr()
-	return Ghost{root.Struct()}, err
-}
-
-func (s Ghost) String() string {
-	str, _ := text.Marshal(0x80c828d7e89c12ea, s.Struct)
-	return str
-}
-
-func (s Ghost) OldType() uint8 {
-	return s.Struct.Uint8(0)
-}
-
-func (s Ghost) SetOldType(v uint8) {
-	s.Struct.SetUint8(0, v)
-}
-
-func (s Ghost) OldNode() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return []byte(p.Data()), err
-}
-
-func (s Ghost) HasOldNode() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Ghost) SetOldNode(v []byte) error {
-	return s.Struct.SetData(0, v)
-}
-
-// Ghost_List is a list of Ghost.
-type Ghost_List struct{ capnp.List }
-
-// NewGhost creates a new list of Ghost.
-func NewGhost_List(s *capnp.Segment, sz int32) (Ghost_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1}, sz)
-	return Ghost_List{l}, err
-}
-
-func (s Ghost_List) At(i int) Ghost { return Ghost{s.List.Struct(i)} }
-
-func (s Ghost_List) Set(i int, v Ghost) error { return s.List.SetStruct(i, v.Struct) }
-
-func (s Ghost_List) String() string {
-	str, _ := text.MarshalList(0x80c828d7e89c12ea, s.List)
-	return str
-}
-
-// Ghost_Promise is a wrapper for a Ghost promised by a client call.
-type Ghost_Promise struct{ *capnp.Pipeline }
-
-func (p Ghost_Promise) Struct() (Ghost, error) {
-	s, err := p.Pipeline.Struct()
-	return Ghost{s}, err
-}
-
-const schema_9195d073cb5c5953 = "x\xda\x9cU_h\x1c\xd5\x17>\xe7\xde\xd9\x9d\xf6G" +
-	"\xfa\xdb\x9d\xdc\x14,\x18\xe6R*\xa6\xc1\xd4\xa4-\xfe" +
-	"\x09\x94\xb45QSS\xc9\xd5\x88\x04\xac0\xdd\xbd\xd9" +
-	"\xb9twf\x99\x99\x1aW\x94\xad\xd2\x80Q[\x0cZ" +
-	"PHi\x14[\xab\x14B\xc1\x07)\xf8\"T$\xbe" +
-	"\x18A\x05\xc1\x87V\x1fD\xc1\x07_\x84@\x1c\xb9\xbb" +
-	"\x9b\x9dm\xba\x89\xe2\xe3=sr\xf2}\xdf\xf9\xce\xb7" +
-	"\xfd\x17\xc8A2\x90\xaa\x1a\x00b\x7f*\x1d\xff\xda9" +
-	"\xff\xcb\xf7=_\x9e\x02\xd1\x89\x18?9\xf9\xccW\xe1" +
-	"\xd7\xe7\xe6 \x85&\x00\xbb\x8b|\xce\xfa\x88\xc9\xfa\x88" +
-	"\xcd\x14\x99\x06\x8c\xcf\xdb\x8fM?\xf7\xfb\xf6\xd7\xc1\xea" +
-	"l\xed&\xba\xfb:\xf9\x81-\x13\x93-\x13\x9b\xad\xd6" +
-	"\xba\x17\x8fMx_\xb0\x853\xeb\x87\xa7u\xfb$]" +
-	"b\x92\x9aLR{\xdf9j#`\xfc\xd4\xc0\xec\xfd" +
-	"\x07\x1e\xfc\xf0\xec\xfa\xfe\xda\xf8Y\xe3\x1a\x9b3L6" +
-	"g\xd8\xec\xaa\xb1\x08\x18\xff\xb42U\xae\xfe\xb6\xfb\xd2" +
-	"\xba\xf6\x11\xc3\xa4\x00l4u\x8d\x89\x94\xc9D\xca\xde" +
-	"7\x93zZ\xcf\xc7\xf9W\x8a\xfd\x93c7\xdb\xce\xff" +
-	"6}\x93\xddH\x9b\xecF\xdaf;L=\x7fd\xe6" +
-	"\xe2\xd9\xbb\x7f\xbc\xef\xcf\xb6d\xcd%\xb6l\x9al\xd9" +
-	"\xb4\xd9\xaa\xa9\xc9.l\xfd\xf8\xd2\xcf\x07\x82\x15\x10;" +
-	"\xb0\x85\xfa\xf6\xb4\x89\x9a\xed\x96\x15@vl\xcb\"<" +
-	"\x10\xe7\x9c\xb2W\xbe\xb7\xe4\x93\xbc,\xee\xa9=\x06\x1f" +
-	"q\xfd0\x82qDa \x89\x9f}\xeb\x82\xf8\xec\xbb" +
-	"\xd7\xae\x830\x08\x1e\xba\x07\xb1\x03`\x00\xbf\xc1\xb8\xd6" +
-	"\xc6\x95\x97\xce\xab\x9c\x13\xc9\x90G\xae\x13q\x87\xe7d" +
-	"\x109\xca\xe3\x9e\x9f\x97|\xda\x09\xb9\x13\xf1\xc8U!" +
-	"/;\x91\xcb}/\x87\x12@l\xa1\x06\x80\x81\x00\xd6" +
-	"\xee\xc3\x00b\x17E\xd1O\x10\xb1\x0bu\xadO\xd7z" +
-	"(\x8a\xfd\x04\xab~1?Q)KL\x03\xc14\xd4" +
-	"\xde\x8f\xfby\x89\xdb\x80\xe06\xc0v\x14\x86U0\xe2" +
-	"E4\xa8\xb4gqg\x8d\x85\x85K\xf1!\x1e*\xaf" +
-	"P\x94\x84\xe7U s\x91\x1fT\xb8\xf4\xa2\xa0\x02\xd8" +
-	"\x0a\xb17\x81h51\xf6&\x183\x9eS\x92\xd8\x01" +
-	"\x04;\x003\xae\x13\xba\x9b\xa1{\xc8/\x95T\x04\x1b" +
-	"H\xcc\x1b\x12\xef\xc4\xb8\xde\xc8\x15\x0d\xb9\xc3C\x19q" +
-	"\x7f\x8a\xe7\\\xc7+h\xb5}\xee\xf9f^\x86\x00\xa2" +
-	"\xab\x89\xf4%-\xdc\xf3\x14\xc5\xe9\x16\xa4/\x0f\x02\x88" +
-	"\x17)\x8aW\x09Z\x84t!\x01\xb0ft\xf1\x14E" +
-	"\xf1\x06A\x8b\xd2.\xa4\x00\xd6\xac\xe6t\x9a\xa2x\x93" +
-	" \x1a\xd8b$\xeb\xcc^ \xd5\x92\x0cC\xa7\xd0d" +
-	":\xe4\x9c\x8c\\?\xc0lbO@\xcc\x02\x0e\x95\x9d" +
-	"@z\xd1\x9a\x08\x99\xc0\xf7\x9b\x0f\xbb$\x83\x82l\xea" +
-	"\x82k\xba\x0c\x95\x07\x1fVE\xd9^\x94lcc\xff" +
-	"\x03\x14\x1dM\xb6#\x1a\xeeA\x8ab,\xb1\xce\xa8\xe6" +
-	"5LQ\x8ck\xb2X'{t'\x80x\x94\xa2\x98" +
-	" \x98\x09\xd5\x0b\x12\xb7\x02\xc1\xad\x09\xd0\x06!\xf3\x84" +
-	"\xac\xdc\xb6\xb9V\x84\xdax\xed\x11\xeej\xac\xed\x08\xc6" +
-	"\xba\x89\xab\x90\x1bN\xfd\x08\x94\xc7#W\xf2\x92\x0cN" +
-	"\x14%\xcf;\x05\xbd\xc7\xe3\x81*\x00\x8a;\x9ad\xde" +
-	"\xd5d\xde\xa6(\x16ZVw^\x17\xdf\xa1(>h" +
-	"Y\xdd{z\xc9\xf3\x14\xc5e\x82\xdd4\x8e\x1b\xcb\xbb" +
-	"\xa8\x99/P\x14W\x08v\x1b\x7f\xe9\xb2\x01`}\xf4" +
-	"\x04\x80\xb8LQ|B\xb0;\xb5\xaa\xcb)\x00\xeb\xaa" +
-	"\x9e|\x85\xa2\xf8t3\xfbVK~~B%\x1f\x87" +
-	"r5Kb6\x09\x95\xfa\xc6\xe3\xb5\xfb\x01\xac`6" +
-	"I\xb7\xfa\xd7\xcc\x94*J\xcc&\xa1\xda\xf8\xa3\xf6\xa7" +
-	"+s\x91\xe9ot\xbb=\x0d\x9d\xdf\xc7x\xb8\xf1/" +
-	"S\x15\x9e\xf3=\x1d:!\xf7=\xc9\xfd\x80\x97\xfc@" +
-	"6OZ\xc9P\xd7\xa6\x94Y\xac\x9d\xcb\x7f1\xd0\x11" +
-	"\x001FQ\xb8\x9b\x1b(\xce\xb9\xaa\x98\x0f\xa4\x07\x00" +
-	"\xf8\x7f\xc0q\x8a\x98M~\xa9\x00u\xb1\x1d\xedq\x19" +
-	"\x84\xbe\xb7Q&\xac\x05\xd6\x1fq\xbd\x8f\x97\x88*\xb8" +
-	"\x11?.\xb9\xe3Uj^\xb2\xf9\xc9P\x06\xb7&\xeb" +
-	"\xde\x7f\x88-[\xe5[\xb0\xff\xcb\xdc\x1a\xdaS;\xe0" +
-	"\xba\x8au\x8b\x8d\x1cNd\xb4\xd0\xa8\x1bl\xb4\xb7U" +
-	"\xc7T\x17\xa6\xb5\x8e\xbd\xc9!VUxTOB\x04" +
-	"\x82\x08\x98\x99V\x91{{\x96\xdc\x02\xeb\xef\x00\x00\x00" +
-	"\xff\xff\xb4\x0a\x04\xec"
+const schema_9195d073cb5c5953 = "x\xda\xacUo\x88\x14\xe5\x1f\xff~\x9eg\xf6\xe6\x0e" +
+	"\xee~\xb7\xe3\x9c\xf0\x13:\xe6A\x8c\xf4H\xf3\x1f\xfd" +
+	"\x11\xe4<\xbb\xcb4O\xee)\x83\x84\x0a\xc6\xdd\xe7v" +
+	"\x06wg\x8e\x99\xb1k\xa38\x0b\x85\xac\x94\x8e\xf0\x85" +
+	"`\xa4\x81\x06\xbd\xf1\xbd\xe0\x1b\xa1\x7fV\xa4\x91\xa5\xa1" +
+	"Pf \xfd\xa3\"\xa8$\x9dxv\xf6v7\xdd\xb3" +
+	"\x88^\xeew\x9e\xfd\xce\xe7\xdf\xf3\x99\xa5\x1f\xb15l" +
+	"Yn\xca \x92+s\x1d\xe97s\x0e\\\xfel\xe1" +
+	"\xbb;H\xce\x01\xd2\x87\xb6<\xfa~|j\xdf4\x8d" +
+	"\xc0\xe4D\xf6\xad\xec\x84\xbd\x98\x99\xf6b\xe6\xd8>;" +
+	"JH_u\x1e\x98|\xe2\x87\xb9/\x925\xa7\xe5x" +
+	"\x8e\x99Dv\x8e\x7fn[\xdc\xb4-\xee\xd8\xab\xf9$" +
+	"!=\xfa\xd8\xe6\xe0m\xfb\xe0\x9e\xeb\xb6\xe7:\xf4\xf1" +
+	"\xfd\xfc\xa4}\x98\x9b\xf6a\xee\xac8\xc3\x1d\x10\xd2\x87" +
+	"\x97\xed\xbek\xf5=o\xec\xbd\xfe|m\xfd{\xc61" +
+	"\xfb\xb4a\xda\xa7\x0d\xc7\xfe\xdd\xd0`\xbe\xba2>1" +
+	"\xf5\xed\xa2#\xfa8k\x01o\x98\x06\x0c{:w\xcc" +
+	"\xde\x9f3\xed\xfd9g\xc5\x87\xb9w\xf4~\x1cx\xae" +
+	"\xbct\xcb\xc6\x8bm\xf7\xef3/\xda\x87L\xd3>d" +
+	":\xf69S\xef\x1f\xd9ux\xefm\x17\xee\xfc\xb5\x1d" +
+	"\xd9]\x9d'\xed\xe9N\xd3\x9e\xeet\xec\xe3\x9d\x9a\xec" +
+	"\xc1\xae7\x8f\\Z\x1d]!9\x0f-\xd4\xe7v\x98" +
+	" \xb2\xe7u]!\xd8\xfd]G\xe9\xee\xb4\xe0N\x04" +
+	"\x13wTBVT\xe5%\xb5\x1f\xab\xd6ya\x9c\xd0" +
+	"\x18 \x0d\xb0\xf4\xf1W^\x93\xc7?}\xe1-\x92\x06" +
+	"\xc3\xd0\xed@7\xd12|\x8c\xb4vL\xf8AG\xd1" +
+	"/\xb8\x89\x8aE\xe2\xb9\x89pEAE\x89\xeb\x07\"" +
+	"\x08\x8bJL\xba\xb1p\x13\x91x~,&\xdc\xc4\x13" +
+	"aP\x80\"\x92\xdd\xdc\xe8NS\x03D\xd6\xc8*\"" +
+	"\xb9\x86Cnd\xe8\xc1\xb5\xb4\x0fz\xba\xfeA\"y" +
+	"?\x87\xdc\xcc\xd0\xc3\xae\xa6}`D\x96\x1c \x92\x1b" +
+	"9\xe4#\x0c\x83\x85\xb0R\xf1\x13\xe4\x9b\x04\x09\xc8\x13" +
+	"\xd2\xa2\x1f\xa9B\x12F\x84*\xf2M\xa5\xb3\xa7\xbd\xe3" +
+	"~Y!\xdf4\xb8\xfe\xa76J\x0c\xfb\xd1H\x90\xf0" +
+	"\xa8\xda^\x8c[jbX8\x99\x0e\x89\xd8\x0fJe" +
+	"\xc5\xc4\xcc\xab\xabB\x05IT%\xc8Nn\x10\xd5\x88" +
+	".\xd2\xe0\x17p\xc8\xa5\x0c\x16\x90\xf1\\\xac\x87\x0b9" +
+	"\xe4J\x86\xde\xc0\xad(t\x13C7\xa1\xd7sc\x0f" +
+	"=\xc4\xd0\xd3\x1e\xdd\xbd5\xfa4\x8bS\xa2\xee\xd4|" +
+	"\xa4\xd9A\xe1\xf3X\xb8\"V\x89\x08\xc7E\xc1s\x83" +
+	"\x926-\x14Ah\x16UL$\xfb\x1aH\x9fYK" +
+	"$\x9f\xe4\x90;[\x90>\xab}z\x9aC>\xcf`" +
+	"1\x96\x19\xb2K\x0fwp\xc8\x97\x18,\xce\xfb\xc0\x89" +
+	"\xac\xdd\x9a\xd3N\x0e\xf92\x03\x0c\xb4\xe4\xd1\xda\xb3\x9c" +
+	"\xd8TE\xc5\xb1[j0\x1dt\xb7'^\x18!\xdf" +
+	"Ly\xe6\xc9\xe0\x84\x1b\xa9 \x99\x11\xa17\x0a\xc3\xc6" +
+	"\x0f\xa7\xa2\xa2\x92j\xe8\x82\x19]\x06'V\xdd\xe7\x97" +
+	"U{Q\xfe_w\xecD:$\xca\xca\x1d\x17\x01\xd3" +
+	")\xf5\x03\x91xJ\x8c\x0e\x0f\xad\xa3,\x9bu\x1dF" +
+	"\x06\x9a\xd1\x9c\x91a\xbdf<\xcc!\xc7\xb4\x0c\xc8d" +
+	"\x18\x9d\xdfLko\xec?\xa5\xd0E\x0c]M\x0au" +
+	"\xaa\xe66U\xbd\xc1\xd3V\xec\x9b\xc2\xe2,\xd8\x17\xd4" +
+	"\x0d\xdd\x80tS\x0dt,\x0c7\xbbeu\xfc\x15\x15" +
+	"m++QtK\xda\xe1\xad\x91_\"H\xd1 s" +
+	"Z\x93\xf9\x80C\x9em1\xf5\x8c\x1e\x9e\xe2\x90\xe7[" +
+	"L=\xa7\xed\xff\x84C~\xc1\x80\xba\xa7\x17\x96\x13\xc9" +
+	"\xb3\x1c\xf2\x12C\xbf\x91\xa6\xbc\x0f\x06\x91\xf5\xa5V\xe3" +
+	"<\x87\xbc\xcc\xd0\x9f\xbb\xa6\xc79\"\xebk}{/" +
+	"q\xc8\x1f\x19\xfa;\xae\xeaq\x07\x91\xf5\xbd~\xdbe" +
+	"\x0e\xf9\x0bC\xbf\xf9\x87\x1e\x9bD\xd6Oz\xf7w\x1c" +
+	"\xf2\xb7\x9b\xdd\x81\xa9JX\xdc\xec7\x1f:\xbe&\xdf" +
+	"\x10\xfa?m\x03\xa7\xa4\xdb\x0d\xf9\xe6G\xe9\xa6-\xa1" +
+	"\x0a\x89\x19\xceV\x13\x0b\xeb\xc6\xbd\x8et\xb8\x0e%W" +
+	"\x15\x850\xd05\x19\x8b0P\"\x8cD%\x8cT\xa3" +
+	"=|\x15\xeb\xd9\xb8o\x96k7\xf3\xdf$rC\xbd" +
+	")\xbd\x9b'2-x~\xb9\x18\xa9\x80\x88\xf0?\xc2" +
+	"\x18\x07\xf2\xcdo+A\x0f\xdb\xd1\x1eSQ\x1c\x06\xb3" +
+	"\xd5\xcfL7\xfe\x9cf\xe7D\x85\xf9%/\x11[\x95" +
+	"p\x83j-\x9c\x8e\xd8\x1e\xab\x88\xa8\xb5!\x97\xffM" +
+	"C:~\xb1\x05\xfb?\xac\xc8\xc1%\xb5\xae\xc8T\xcc" +
+	"b;\xb2\xb6)\xa3\x05#\x0b\xed\xfa\x81V\x1dsY" +
+	"dG\x07\x9a7{\xca\x8fG\xf5&\x80\x18@\xe8\x9d" +
+	"\xf4\x13\xef\xc6\xda\xfa\x0b\xac?\x03\x00\x00\xff\xff\xdcU" +
+	">\xba"
 
 func init() {
 	schemas.Register(schema_9195d073cb5c5953,

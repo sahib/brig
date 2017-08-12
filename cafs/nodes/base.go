@@ -26,7 +26,7 @@ type Base struct {
 	nodeType NodeType
 
 	// Unique identifier for this node
-	uid uint64
+	inode uint64
 }
 
 // Name returns the name of this node (e.g. /a/b/c -> c)
@@ -53,7 +53,7 @@ func (b *Base) ModTime() time.Time {
 
 // Inode will return a unique ID that is different for each node.
 func (b *Base) Inode() uint64 {
-	return b.uid
+	return b.inode
 }
 
 /////// UTILS /////////
@@ -70,7 +70,12 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 	if err := capnode.SetHash(b.hash); err != nil {
 		return err
 	}
-	return capnode.SetName(b.name)
+	if err := capnode.SetName(b.name); err != nil {
+		return err
+	}
+
+	capnode.SetInode(b.inode)
+	return nil
 }
 
 func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
@@ -94,6 +99,18 @@ func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 		return err
 	}
 
+	switch typ := capnode.Which(); typ {
+	case capnp_model.Node_Which_file:
+		b.nodeType = NodeTypeFile
+	case capnp_model.Node_Which_directory:
+		b.nodeType = NodeTypeDirectory
+	case capnp_model.Node_Which_commit:
+		b.nodeType = NodeTypeCommit
+	default:
+		return fmt.Errorf("Bad capnp node type `%d`", typ)
+	}
+
+	b.inode = capnode.Inode()
 	return nil
 }
 

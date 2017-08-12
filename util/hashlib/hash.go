@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"testing"
 
 	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/multiformats/go-multihash"
@@ -169,4 +170,19 @@ func Sum(data []byte) Hash {
 	}
 
 	return Hash(mh)
+}
+
+func TestDummy(t *testing.T, seed byte) Hash {
+	data := make([]byte, multihash.DefaultLengths[multihash.BLAKE2B_MAX])
+	for idx := range data {
+		data[idx] = seed
+	}
+
+	hash, err := multihash.Encode(data, multihash.BLAKE2B_MAX)
+	if err != nil {
+		t.Fatalf("Failed to create dummy hash: %v", err)
+		return nil
+	}
+
+	return Hash(hash)
 }

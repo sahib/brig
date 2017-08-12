@@ -30,7 +30,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string) (*Directory, 
 
 	newDir := &Directory{
 		Base: Base{
-			uid:      lkr.NextInode(),
+			inode:    lkr.NextInode(),
 			hash:     h.Sum([]byte(absPath)),
 			name:     name,
 			nodeType: NodeTypeDirectory,
@@ -56,15 +56,28 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	node, err := capnp_model.NewRootNode(seg)
+	capnode, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := d.setBaseAttrsToNode(node); err != nil {
+	if err := d.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
+	capdir, err := d.setDirectoryAttrs(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capnode.SetDirectory(*capdir); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Directory, error) {
 	capdir, err := capnp_model.NewDirectory(seg)
 	if err != nil {
 		return nil, err
@@ -75,9 +88,7 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	// NOTE: This loop does not persist odering in the serialization format.
 	entryIdx := 0
-
 	for name, hash := range d.children {
 		entry, err := capnp_model.NewDirEntry(seg)
 		if err != nil {
@@ -105,11 +116,7 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 	}
 	capdir.SetSize(d.size)
 
-	if err := node.SetDirectory(capdir); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+	return &capdir, nil
 }
 
 // FromCapnp will take the result of ToCapnp and set all of it's attributes.
@@ -128,7 +135,12 @@ func (d *Directory) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	d.nodeType = NodeTypeDirectory
+	return d.readDirectoryAttr(capdir)
+}
+
+func (d *Directory) readDirectoryAttr(capdir capnp_model.Directory) error {
+	var err error
+
 	d.size = capdir.Size()
 	d.parentName, err = capdir.Parent()
 	if err != nil {

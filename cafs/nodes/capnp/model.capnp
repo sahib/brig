@@ -37,28 +37,30 @@ struct Directory $Go.doc("Directory contains one or more directories or files") 
     children @2 :List(DirEntry);
 }
 
-struct File $Go.doc("") {
+struct File $Go.doc("A leaf node in the MDAG") {
     size   @0 :UInt64;
     parent @1 :Text;
     key    @2 :Data;
+}
+
+struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
+    union {
+        commit    @0 :Commit;
+        directory @1 :Directory;
+        file      @2 :File;
+    }
 }
 
 struct Node $Go.doc("Node is a node in the merkle dag of brig") {
     name    @0 :Text;
     hash    @1 :Data;
     modTime @2 :Text;     # Time as ISO8601
+    inode   @3 :UInt64;
 
     union {
-        commit    @3 :Commit;
-        directory @4 :Directory;
-        file      @5 :File;
+        commit    @4 :Commit;
+        directory @5 :Directory;
+        file      @6 :File;
+        ghost     @7 :Ghost;
     }
 }
-
-struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
-    # NOTE: Data-wise it would be probably more consistent to store a Node here,
-    #       but the go implementation makes this slightly harder (ToCapno only returns msg, not Node)
-    oldType @0 :UInt8;
-    oldNode @1 :Data;
-}
-

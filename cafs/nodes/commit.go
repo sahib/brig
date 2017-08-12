@@ -35,7 +35,7 @@ func NewEmptyCommit(lkr Linker) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
-			uid:      lkr.NextInode(),
+			inode:    lkr.NextInode(),
 			modTime:  time.Now(),
 		},
 		author: AuthorOfStage(),
@@ -49,15 +49,28 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	node, err := capnp_model.NewRootNode(seg)
+	capnode, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.setBaseAttrsToNode(node); err != nil {
+	if err := c.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
+	capcmt, err := c.setCommitAttrs(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capnode.SetCommit(*capcmt); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error) {
 	capcmt, err := capnp_model.NewCommit(seg)
 	if err != nil {
 		return nil, err
@@ -77,16 +90,11 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 	if err := capcmt.SetAuthor(*author); err != nil {
 		return nil, err
 	}
-
 	if err := capcmt.SetParent(c.parent); err != nil {
 		return nil, err
 	}
 
-	if err := node.SetCommit(capcmt); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+	return &capcmt, nil
 }
 
 // FromCapnp will set the content of `msg` into the commit,
@@ -101,10 +109,17 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	c.nodeType = NodeTypeCommit
 	capcmt, err := capnode.Commit()
 	if err != nil {
 		return err
 	}
+
+	return c.readCommitAttrs(capcmt)
+}
+
+func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
+	var err error
 
 	capauthor, err := capcmt.Author()
 	if err != nil {
@@ -131,7 +146,6 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	c.nodeType = NodeTypeCommit
 	return nil
 }
 
@@ -255,11 +269,7 @@ func (c *Commit) Parent(lkr Linker) (Node, error) {
 
 // SetParent sets the parent of the commit to `nd`.
 func (c *Commit) SetParent(lkr Linker, nd Node) error {
-	if nd == nil {
-		c.parent = nil
-		return nil
-	}
-
+	// TODO: This check does not work -> fucking typed nils.
 	c.parent = nd.Hash().Clone()
 	return nil
 }

@@ -241,6 +241,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	if err := lkr.stageNodeRecursive(nd); err != nil {
 		return err
 	}
+	fmt.Println("--- status ---")
 
 	// Update the staging commit's root hash:
 	status, err := lkr.Status()
@@ -248,18 +249,20 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 		return fmt.Errorf("Failed to retrieve status: %v", err)
 	}
 
+	fmt.Println("--- root ---")
 	root, err := lkr.Root()
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("--- save status ---", status.Inode())
 	status.SetRoot(root.Hash())
 	return lkr.saveStatus(status)
 }
 
-// NodeByUID resolves a node by it's unique ID.
+// NodeByInode resolves a node by it's unique ID.
 // It will return nil if no corresponding node was found.
-func (lkr *Linker) NodeByUID(uid uint64) (n.Node, error) {
+func (lkr *Linker) NodeByInode(uid uint64) (n.Node, error) {
 	hash, err := lkr.kv.Get("inode", strconv.FormatUint(uid, 16))
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
@@ -361,18 +364,26 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 			return err
 		}
 
-		return lkr.kv.Put([]byte(b58Hash), "tree", child.Path())
+		childPath := child.Path()
+		if child.Type() == n.NodeTypeDirectory {
+			childPath = appendDot(childPath)
+		}
+
+		return lkr.kv.Put([]byte(b58Hash), "tree", childPath)
 	})
 
 	if err != nil {
 		return err
 	}
 
-	if err := status.SetParent(lkr, head); err != nil {
-		return err
+	if head != nil {
+		if err := status.SetParent(lkr, head); err != nil {
+			return err
+		}
 	}
 
-	// NOTE: `head` may be nil, if it couldn't be resolved.
+	// NOTE: `head` may be nil, if it couldn't be resolved,
+	//        or (maybe more likely) if this is the first commit.
 	if err := status.BoxCommit(author, message); err != nil {
 		return err
 	}
@@ -512,6 +523,8 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 		return cmt, nil
 	}
 
+	// Shoot, no commit exists yet.
+	// We need to create an initial one.
 	cmt, err = n.NewEmptyCommit(lkr)
 	if err != nil {
 		return nil, err
@@ -554,6 +567,7 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 	cmt.SetRoot(rootHash)
 
+	fmt.Println("--- save inner ---")
 	if err := lkr.saveStatus(cmt); err != nil {
 		return nil, err
 	}

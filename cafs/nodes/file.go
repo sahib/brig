@@ -24,7 +24,7 @@ func NewEmptyFile(lkr Linker, parent *Directory, name string) (*File, error) {
 	file := &File{
 		Base: Base{
 			name:     name,
-			uid:      lkr.NextInode(),
+			inode:    lkr.NextInode(),
 			modTime:  time.Now(),
 			nodeType: NodeTypeFile,
 		},
@@ -41,15 +41,28 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	node, err := capnp_model.NewRootNode(seg)
+	capnode, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := f.setBaseAttrsToNode(node); err != nil {
+	if err := f.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
+	capfile, err := f.setFileAttrs(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capnode.SetFile(*capfile); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 	capfile, err := capnp_model.NewFile(seg)
 	if err != nil {
 		return nil, err
@@ -61,12 +74,9 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 	if err := capfile.SetKey(f.key); err != nil {
 		return nil, err
 	}
-	if err := node.SetFile(capfile); err != nil {
-		return nil, err
-	}
 
 	capfile.SetSize(f.size)
-	return msg, nil
+	return &capfile, nil
 }
 
 // FromCapnp sets all state of `msg` into the file.
@@ -84,6 +94,12 @@ func (f *File) FromCapnp(msg *capnp.Message) error {
 	if err != nil {
 		return err
 	}
+
+	return f.readFileAttrs(capfile)
+}
+
+func (f *File) readFileAttrs(capfile capnp_model.File) error {
+	var err error
 
 	f.parent, err = capfile.Parent()
 	if err != nil {
