@@ -242,7 +242,6 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	if err := lkr.stageNodeRecursive(nd); err != nil {
 		return err
 	}
-	fmt.Println("--- status ---")
 
 	// Update the staging commit's root hash:
 	status, err := lkr.Status()
@@ -250,13 +249,11 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 		return fmt.Errorf("Failed to retrieve status: %v", err)
 	}
 
-	fmt.Println("--- root ---")
 	root, err := lkr.Root()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("--- save status ---", status.Inode())
 	status.SetRoot(root.Hash())
 	return lkr.saveStatus(status)
 }
@@ -354,6 +351,8 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 	}
 
 	// Go over all files/directories and save them in tree & objects.
+	// Note that this will only move nodes that are reachable from the current
+	// commit root. Intermediate nodes will not be copied.
 	err = n.Walk(lkr, rootDir, true, func(child n.Node) error {
 		data, err := n.MarshalNode(child)
 		if err != nil {
@@ -569,7 +568,6 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 	cmt.SetRoot(rootHash)
 
-	fmt.Println("--- save inner ---")
 	if err := lkr.saveStatus(cmt); err != nil {
 		return nil, err
 	}

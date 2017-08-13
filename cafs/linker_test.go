@@ -137,7 +137,7 @@ func TestLinkerRefs(t *testing.T) {
 	})
 }
 
-func TestFSInsertTwoLevelDir(t *testing.T) {
+func TestLinkerNested(t *testing.T) {
 	withDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -209,6 +209,15 @@ func TestFSInsertTwoLevelDir(t *testing.T) {
 		// Index shall only contain the nodes with their most current hash values.
 		if len(lkr.index) != 3 {
 			t.Fatalf("Index does not contain the expected 3 elements.")
+		}
+
+		gc := NewGarbageCollector(lkr, kv, nil)
+		if err := gc.Run(true); err != nil {
+			t.Fatalf("Garbage collector failed to run: %v", err)
+		}
+
+		if err := lkr.MakeCommit(n.AuthorOfStage(), "first message"); err != nil {
+			t.Fatalf("Making first commit failed: %v", err)
 		}
 	})
 }

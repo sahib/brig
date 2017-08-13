@@ -35,6 +35,13 @@ type Database interface {
 	// Clear all contents below and including `key`.
 	Clear(key ...string) error
 
+	// Keys returns a channel that will yield all strings
+	// this database currently knows of.
+	Keys(prefix ...string) (<-chan []string, error)
+
+	// TODO: Overthink this interface. (-> transactions)
+	Erase(key ...string) error
+
 	// Close closes the database. Since I/O may happen, an error is returned.
 	Close() error
 }

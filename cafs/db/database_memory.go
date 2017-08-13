@@ -68,3 +68,29 @@ func (mdb *MemoryDatabase) Import(r io.Reader) error {
 func (mdb *MemoryDatabase) Close() error {
 	return nil
 }
+
+func (mdb *MemoryDatabase) Keys(prefix ...string) (<-chan []string, error) {
+	ch := make(chan []string)
+	prefixPath := path.Join(prefix...)
+
+	go func() {
+		for key := range mdb.data {
+			if strings.HasPrefix(key, prefixPath) {
+				ch <- strings.Split(key, "/")
+			}
+		}
+		close(ch)
+	}()
+
+	return ch, nil
+}
+
+func (mdb *MemoryDatabase) Erase(key ...string) error {
+	fullKey := path.Join(key...)
+	if _, ok := mdb.data[fullKey]; !ok {
+		return ErrNoSuchKey
+	}
+
+	delete(mdb.data, fullKey)
+	return nil
+}

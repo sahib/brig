@@ -5,36 +5,26 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/disorganizer/brig/util"
-	"github.com/peterbourgon/diskv"
 )
 
 // DiskvDatabase is a database that simply uses the filesystem as storage.
 // Each bucket is one directory. Leaf keys are simple files.
 // The exported form of the database is simply a gzipped .tar of the directory.
+// TODO: rename, doesn't use diskv anymore
 type DiskvDatabase struct {
-	db *diskv.Diskv
+	basePath string
 }
 
 // NewDiskvDatabase creates a new database at `basePath`.
 func NewDiskvDatabase(basePath string) (*DiskvDatabase, error) {
-	return &DiskvDatabase{
-		db: diskv.New(
-			diskv.Options{
-				BasePath: basePath,
-				Transform: func(s string) []string {
-					// We create the directory ourselves, since diskv
-					// insists on always appending the full key to the path.
-					return []string{}
-				},
-			},
-		),
-	}, nil
+	return &DiskvDatabase{basePath: basePath}, nil
 }
 
 func fixDirectoryKeys(key []string) string {
@@ -52,10 +42,23 @@ func fixDirectoryKeys(key []string) string {
 	}
 }
 
+func reverseDirectoryKeys(key string) []string {
+	parts := strings.Split(key, string(filepath.Separator))
+	switch parts[len(parts)-1] {
+	case "DOT":
+		parts[len(parts)-1] = "."
+	case "__NO_DOT__":
+		parts[len(parts)-1] = "DOT"
+	}
+
+	return parts
+}
+
 // Get a single value from `bucket` by `key`.
 func (db *DiskvDatabase) Get(key ...string) ([]byte, error) {
-	data, err := db.db.Read(fixDirectoryKeys(key))
-	fmt.Println("GET", key)
+	filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
+	data, err := ioutil.ReadFile(filePath)
+
 	if os.IsNotExist(err) {
 		return nil, ErrNoSuchKey
 	}
@@ -67,24 +70,19 @@ func (db *DiskvDatabase) Get(key ...string) ([]byte, error) {
 // Implementation detail: `key` may contain slashes (/). If used, those keys
 // will result in a nested directory structure.
 func (db *DiskvDatabase) Put(val []byte, key ...string) error {
-	dirkey := key
-	if len(dirkey) > 0 {
-		dirkey = dirkey[:len(dirkey)-1]
-	}
-
-	dirname := filepath.Join(db.db.BasePath, filepath.Join(dirkey...))
-	if err := os.MkdirAll(dirname, 0700); err != nil {
+	filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
+	if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
 		return err
 	}
 
 	fmt.Println("SET", key)
-	return db.db.Write(fixDirectoryKeys(key), val)
+	return ioutil.WriteFile(filePath, val, 0600)
 }
 
 // Clear removes all keys below and including `key`.
 func (db *DiskvDatabase) Clear(key ...string) error {
-	prefix := filepath.Join(db.db.BasePath, fixDirectoryKeys(key))
-	return filepath.Walk(db.db.BasePath, func(path string, info os.FileInfo, err error) error {
+	prefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
+	return filepath.Walk(db.basePath, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && strings.HasPrefix(path, prefix) {
 			if err := os.Remove(path); err != nil {
 				return err
@@ -109,7 +107,7 @@ func (db *DiskvDatabase) Export(w io.Writer) error {
 		}
 
 		hdr := &tar.Header{
-			Name: path[len(db.db.BasePath):],
+			Name: path[len(db.basePath):],
 			Mode: 0600,
 			Size: info.Size(),
 		}
@@ -132,7 +130,7 @@ func (db *DiskvDatabase) Export(w io.Writer) error {
 		return nil
 	}
 
-	if err := filepath.Walk(db.db.BasePath, walker); err != nil {
+	if err := filepath.Walk(db.basePath, walker); err != nil {
 		return err
 	}
 
@@ -161,7 +159,7 @@ func (db *DiskvDatabase) Import(r io.Reader) error {
 		}
 
 		// Create the necessary directory if necessary.
-		fullPath := filepath.Join(db.db.BasePath, hdr.Name)
+		fullPath := filepath.Join(db.basePath, hdr.Name)
 		if oerr := os.MkdirAll(filepath.Dir(fullPath), 0700); err != nil {
 			return oerr
 		}
@@ -182,6 +180,40 @@ func (db *DiskvDatabase) Import(r io.Reader) error {
 	}
 
 	return gzr.Close()
+}
+
+func (db *DiskvDatabase) Keys(prefix ...string) (<-chan []string, error) {
+	ch := make(chan []string)
+	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(prefix))
+
+	go func() {
+		filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !info.IsDir() {
+				// TODO: Fix DOT path at the end. Not so important right now.
+				ch <- reverseDirectoryKeys(path[len(db.basePath):])
+			}
+			return nil
+		})
+
+		close(ch)
+	}()
+
+	return ch, nil
+}
+
+func (db *DiskvDatabase) Erase(key ...string) error {
+	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(key))
+	err := os.Remove(fullPath)
+	fmt.Println("ERASE", fullPath)
+	if os.IsNotExist(err) {
+		return ErrNoSuchKey
+	}
+
+	return err
 }
 
 // Close the database
