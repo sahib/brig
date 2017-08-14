@@ -116,3 +116,7 @@ type SettableNode interface {
 	SetName(name string)
 	SetHash(lkr Linker, hash h.Hash)
 }
+
+type MovableNode interface {
+	GhostRef() (*Ghost, error)
+}

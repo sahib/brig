@@ -244,62 +244,62 @@ func modifyFile(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	}
 }
 
-//
-// func TestCheckoutFile(t *testing.T) {
-// 	withEmptyRoot(t, func(lkr *lkr, root *Directory) {
-// 		file, err := newEmptyFile(lkr, root, "cat.png")
-// 		if err != nil {
-// 			t.Fatalf("Failed to create cat.png: %v", err)
-// 			return
-// 		}
-//
-// 		modFile(t, lkr, file, 1)
-//
-// 		if err := lkr.MakeCommit(StageAuthor(), "second commit"); err != nil {
-// 			t.Fatalf("Failed to make second commit: %v", err)
-// 			return
-// 		}
-//
-// 		modFile(t, lkr, file, 2)
-//
-// 		if err := lkr.MakeCommit(StageAuthor(), "third commit"); err != nil {
-// 			t.Fatalf("Failed to make third commit: %v", err)
-// 			return
-// 		}
-//
-// 		head, err := lkr.Head()
-// 		if err != nil {
-// 			t.Fatalf("Failed to get HEAD: %v", err)
-// 			return
-// 		}
-//
-// 		lastCommitNd, err := head.Parent()
-// 		if err != nil {
-// 			t.Fatalf("Failed to get second commit: %v", err)
-// 			return
-// 		}
-//
-// 		lastCommit := lastCommitNd.(*Commit)
-//
-// 		if err := lkr.CheckoutFile(lastCommit, file); err != nil {
-// 			t.Fatalf("Failed to checkout file before commit: %v", err)
-// 			return
-// 		}
-//
-// 		lastVersion, err := lkr.LookupFile("/cat.png")
-// 		if err != nil {
-// 			t.Fatalf("Failed to lookup /cat.png post checkout")
-// 			return
-// 		}
-//
-// 		if !lastVersion.Hash().Equal(dummyHash(t, 1)) {
-// 			t.Fatalf("Hash of checkout'd file is not from second commit")
-// 			return
-// 		}
-//
-// 		if lastVersion.Size() != 1 {
-// 			t.Fatalf("Size of checkout'd file is not from second commit")
-// 			return
-// 		}
-// 	})
-// }
+func TestCheckoutFile(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+		if err := lkr.MakeCommit(n.AuthorOfStage(), "initial commit"); err != nil {
+			t.Fatalf("Initial commit failed: %v", err)
+		}
+
+		root, err := lkr.Root()
+		if err != nil {
+			t.Fatalf("Getting root failed: %v", err)
+		}
+
+		file, err := n.NewEmptyFile(root, "cat.png", 3)
+		if err != nil {
+			t.Fatalf("Failed to create cat.png: %v", err)
+		}
+
+		modifyFile(t, lkr, file, 1)
+
+		if err := lkr.MakeCommit(n.AuthorOfStage(), "second commit"); err != nil {
+			t.Fatalf("Failed to make second commit: %v", err)
+		}
+
+		modifyFile(t, lkr, file, 2)
+
+		if err := lkr.MakeCommit(n.AuthorOfStage(), "third commit"); err != nil {
+			t.Fatalf("Failed to make third commit: %v", err)
+		}
+
+		head, err := lkr.Head()
+		if err != nil {
+			t.Fatalf("Failed to get HEAD: %v", err)
+		}
+
+		lastCommitNd, err := head.Parent(lkr)
+		if err != nil {
+			t.Fatalf("Failed to get second commit: %v", err)
+		}
+
+		lastCommit := lastCommitNd.(*n.Commit)
+
+		if err := lkr.CheckoutFile(lastCommit, file); err != nil {
+			t.Fatalf("Failed to checkout file before commit: %v", err)
+		}
+
+		lastVersion, err := lkr.LookupFile("/cat.png")
+		if err != nil {
+			t.Fatalf("Failed to lookup /cat.png post checkout")
+		}
+
+		if !lastVersion.Hash().Equal(h.TestDummy(t, 1)) {
+			t.Fatalf("Hash of checkout'd file is not from second commit")
+		}
+
+		if lastVersion.Size() != 1 {
+			t.Fatalf("Size of checkout'd file is not from second commit")
+		}
+	})
+}

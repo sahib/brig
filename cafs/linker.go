@@ -27,6 +27,12 @@ package cafs
 // The following refs are defined by the system:
 // HEAD -> Points to the latest finished commit, or nil.
 // CURR -> Points to the staging commit.
+//
+// In git terminology, this file implements the following commands:
+// - git add:    StageNode(): Create and Update Nodes.
+// - git reset:  UnstageNode(): Reset to last known state.
+// - git status: Status()
+// - git commit: MakeCommit()
 
 import (
 	"encoding/binary"
@@ -59,7 +65,7 @@ type Linker struct {
 	index map[string]n.Node
 
 	// UID to node
-	uidIndex map[uint64]n.Node
+	inodeIndex map[uint64]n.Node
 }
 
 // NewFilesystem returns a new lkr, ready to use. It assumes the key value store
@@ -73,7 +79,7 @@ func NewLinker(kv db.Database) *Linker {
 //  MemIndexAdd adds `nd` to the in memory index.
 func (lkr *Linker) MemIndexAdd(nd n.Node) {
 	lkr.index[nd.Hash().B58String()] = nd
-	lkr.uidIndex[nd.Inode()] = nd
+	lkr.inodeIndex[nd.Inode()] = nd
 	lkr.ptrie.InsertWithData(nd.Path(), nd)
 }
 
@@ -88,13 +94,13 @@ func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash) {
 	}
 
 	lkr.index[nd.Hash().B58String()] = nd
-	lkr.uidIndex[nd.Inode()] = nd
+	lkr.inodeIndex[nd.Inode()] = nd
 	lkr.ptrie.InsertWithData(nd.Path(), nd)
 }
 
 // MemIndexPurge removes `nd` from the memory index.
 func (lkr *Linker) MemIndexPurge(nd n.Node) {
-	delete(lkr.uidIndex, nd.Inode())
+	delete(lkr.inodeIndex, nd.Inode())
 	delete(lkr.index, nd.Hash().B58String())
 	lkr.ptrie.Lookup(nd.Path()).Remove()
 }
@@ -103,7 +109,7 @@ func (lkr *Linker) MemIndexPurge(nd n.Node) {
 func (lkr *Linker) MemIndexClear() {
 	lkr.ptrie = trie.NewNode()
 	lkr.index = make(map[string]n.Node)
-	lkr.uidIndex = make(map[uint64]n.Node)
+	lkr.inodeIndex = make(map[uint64]n.Node)
 }
 
 //////////////////////////
@@ -899,18 +905,15 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) error {
 	}
 
 	if root == nil {
-		// TODO: Is this valid?
 		return fmt.Errorf("No root to reset to")
 	}
 
-	// TODO: Better resolve by UID here?
-	//       Would need to find the commit with the last modification though.
 	oldNode, err := root.Lookup(lkr, nd.Path())
 	if err != nil && !n.IsNoSuchFileError(err) {
 		return err
 	}
 
-	// Invalidate the respective index entry, so the instance gets reloaded:
+	// Invalidate the respective index entry, so the instances gets reloaded:
 	err = n.Walk(lkr, nd, true, func(child n.Node) error {
 		lkr.MemIndexPurge(child)
 		return nil
@@ -930,14 +933,14 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) error {
 		if err := par.RemoveChild(lkr, nd); err != nil {
 			return err
 		}
-	}
 
-	if err := lkr.StageNode(par); err != nil {
-		return err
-	}
+		if err := lkr.StageNode(par); err != nil {
+			return err
+		}
 
-	if err := par.Add(lkr, oldNode); err != nil {
-		return err
+		if err := par.Add(lkr, oldNode); err != nil {
+			return err
+		}
 	}
 
 	return lkr.StageNode(oldNode)
