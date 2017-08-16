@@ -812,6 +812,25 @@ func (lkr *Linker) LookupFile(repoPath string) (*n.File, error) {
 	return file, nil
 }
 
+// LookupGhost calls LookupNode and converts the result to a ghost.
+func (lkr *Linker) LookupGhost(repoPath string) (*n.Ghost, error) {
+	nd, err := lkr.LookupNode(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd == nil {
+		return nil, nil
+	}
+
+	ghost, ok := nd.(*n.Ghost)
+	if !ok {
+		return nil, n.ErrBadNode
+	}
+
+	return ghost, nil
+}
+
 // CommitByHash lookups a commit by it's hash.
 // If the commit could not be found, nil is returned.
 func (lkr *Linker) CommitByHash(hash h.Hash) (*n.Commit, error) {

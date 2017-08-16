@@ -36,6 +36,19 @@ func (g *Ghost) OldNode() Node {
 	return g.Node
 }
 
+func (g *Ghost) OldFile() (*File, error) {
+	file, ok := g.Node.(*File)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return file, nil
+}
+
+func (g *Ghost) String() string {
+	return fmt.Sprintf("<ghost: %v>", g.Node)
+}
+
 // ToCapnp serializes the underlying node
 func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))

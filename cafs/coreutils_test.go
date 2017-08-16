@@ -1,6 +1,7 @@
 package cafs
 
 import (
+	"fmt"
 	"path"
 	"testing"
 
@@ -27,26 +28,26 @@ func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 }
 
 func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) {
-	root, err := lkr.Root()
+	dirname := path.Dir(touchPath)
+	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil {
-		t.Fatalf("Failed to retrieve root: %v", err)
+		t.Fatalf("touch: Failed to lookup: %s", dirname)
 	}
 
-	file, err := n.NewEmptyFile(root, path.Base(touchPath), lkr.NextInode())
+	file, err := n.NewEmptyFile(parent, path.Base(touchPath), lkr.NextInode())
 	if err != nil {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
 	file.SetHash(lkr, h.TestDummy(t, seed))
 
-	if err := root.Add(lkr, file); err != nil {
+	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
 	}
 
 	if err := lkr.StageNode(file); err != nil {
 		t.Fatalf("touch: Staging %s failed: %v", touchPath, err)
 	}
-
 }
 
 func TestMkdir(t *testing.T) {
@@ -117,5 +118,80 @@ func TestMkdir(t *testing.T) {
 		if err == nil {
 			t.Fatal("Creating directory on file should have failed!")
 		}
+	})
+}
+
+func TestRemove(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+		dir, err := mkdir(lkr, "/some/nested/directory", true)
+		if err != nil {
+			t.Fatalf("Failed to mkdir a nested directory: %v", err)
+		}
+
+		assertDir(t, lkr, "/some/nested/directory", true)
+
+		path := "/some/nested/directory/cat.png"
+		touchFile(t, lkr, path, 1)
+
+		// Check file removal with ghost creation:
+
+		file, err := lkr.LookupFile(path)
+		if err != nil {
+			t.Fatalf("Failed to lookup nested file: %v", err)
+		}
+
+		parentDir, err := remove(lkr, file, true)
+		if err != nil {
+			t.Fatalf("Remove failed: %v", err)
+		}
+
+		if !parentDir.Hash().Equal(dir.Hash()) {
+			t.Fatalf("Hash differs on %s and %s", dir.Path(), parentDir.Hash())
+		}
+
+		// Check that a ghost was created for the removed file:
+
+		ghost, err := lkr.LookupGhost(path)
+		if err != nil {
+			t.Fatalf("Looking up ghost failed: %v", err)
+		}
+
+		oldFile, err := ghost.OldFile()
+		if err != nil {
+			t.Fatalf("Failed to retrieve old file from ghost: %v", err)
+		}
+
+		if !oldFile.Hash().Equal(file.Hash()) {
+			t.Fatal("Old file and original file hashes differ!")
+		}
+
+		// Check directory removal:
+
+		nestedDir, err := lkr.LookupDirectory("/some/nested")
+		if err != nil {
+			t.Fatalf("Lookup on /some/nested failed: %v", err)
+		}
+
+		nestedParentDir, err := nestedDir.Parent(lkr)
+		if err != nil {
+			t.Fatalf("Getting parent of /some/nested failed: %v", err)
+		}
+
+		parentDir, err = remove(lkr, nestedDir, true)
+		if err != nil {
+			t.Fatalf("Directory removal failed: %v", err)
+		}
+
+		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {
+			t.Fatalf("Hash differs on %s and %s", nestedParentDir.Path(), parentDir.Hash())
+		}
+
+		root, err := lkr.Root()
+		n.Walk(lkr, root, true, func(nd n.Node) error {
+			fmt.Println(nd.Path())
+			return nil
+		})
+
 	})
 }

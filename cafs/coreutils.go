@@ -110,6 +110,8 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (*n.Directory, erro
 }
 
 // remove removes a single node from a directory.
+// `nd` is the node that shall be removed and may not be root.
+// The parent directory is returned.
 func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
 	parent, err := nd.Parent(lkr)
 	if err != nil {
@@ -136,6 +138,7 @@ func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
 	}
 
 	if createGhost {
+		fmt.Println("create ghost")
 		ghost, err := n.MakeGhost(nd)
 		if err != nil {
 			return nil, err
@@ -145,10 +148,16 @@ func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if err := lkr.StageNode(ghost); err != nil {
+			return nil, err
+		}
 	}
 
 	return parentDir, nil
 }
+
+// func rename(lkr *Linker, nd n.Node, newPath string)
 
 func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 	oldRoot, err := lkr.DirectoryByHash(commit.Root())

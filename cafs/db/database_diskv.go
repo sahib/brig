@@ -76,6 +76,17 @@ func (db *DiskvDatabase) Put(val []byte, key ...string) error {
 	}
 
 	fmt.Println("SET", key)
+	info, err := os.Stat(filePath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if info != nil && info.IsDir() {
+		if err := os.RemoveAll(filePath); err != nil {
+			return err
+		}
+	}
+
 	return ioutil.WriteFile(filePath, val, 0600)
 }
 
@@ -193,7 +204,6 @@ func (db *DiskvDatabase) Keys(prefix ...string) (<-chan []string, error) {
 			}
 
 			if !info.IsDir() {
-				// TODO: Fix DOT path at the end. Not so important right now.
 				ch <- reverseDirectoryKeys(path[len(db.basePath):])
 			}
 			return nil
