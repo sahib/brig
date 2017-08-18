@@ -42,7 +42,12 @@ struct File $Go.doc("A leaf node in the MDAG") {
     size     @0 :UInt64;
     parent   @1 :Text;
     key      @2 :Data;
+
+    # TODO: figure out if we should make inode based refs here to save space.
     ghostRef @3 :Data;
+
+    # Hash to the content in ipfs.
+    content  @4 :Data;
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {

@@ -92,7 +92,7 @@ func TestLinkerRefs(t *testing.T) {
 		}
 
 		newFile.SetSize(10)
-		newFile.SetHash(lkr, h.TestDummy(t, 1))
+		newFile.SetContent(lkr, h.TestDummy(t, 1))
 
 		if err := root.Add(lkr, newFile); err != nil {
 			t.Fatalf("Adding empty file failed: %v", err)
@@ -233,7 +233,7 @@ func modifyFile(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	}
 
 	file.SetSize(uint64(seed))
-	file.SetHash(lkr, h.TestDummy(t, byte(seed)))
+	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
 
 	if err := root.Add(lkr, file); err != nil {
 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
@@ -262,6 +262,7 @@ func TestCheckoutFile(t *testing.T) {
 		}
 
 		modifyFile(t, lkr, file, 1)
+		oldFileHash := file.Hash().Clone()
 
 		if err := lkr.MakeCommit(n.AuthorOfStage(), "second commit"); err != nil {
 			t.Fatalf("Failed to make second commit: %v", err)
@@ -294,7 +295,7 @@ func TestCheckoutFile(t *testing.T) {
 			t.Fatalf("Failed to lookup /cat.png post checkout")
 		}
 
-		if !lastVersion.Hash().Equal(h.TestDummy(t, 1)) {
+		if !lastVersion.Hash().Equal(oldFileHash) {
 			t.Fatalf("Hash of checkout'd file is not from second commit")
 		}
 

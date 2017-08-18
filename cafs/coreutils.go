@@ -112,7 +112,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (*n.Directory, erro
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
+func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (*n.Directory, error) {
 	parent, err := nd.Parent(lkr)
 	if err != nil {
 		return nil, err
@@ -133,12 +133,13 @@ func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
 		return nil, err
 	}
 
+	lkr.MemIndexPurge(nd)
+
 	if err := lkr.StageNode(parent); err != nil {
 		return nil, err
 	}
 
 	if createGhost {
-		fmt.Println("create ghost")
 		ghost, err := n.MakeGhost(nd)
 		if err != nil {
 			return nil, err
@@ -157,7 +158,95 @@ func remove(lkr *Linker, nd n.Node, createGhost bool) (*n.Directory, error) {
 	return parentDir, nil
 }
 
-// func rename(lkr *Linker, nd n.Node, newPath string)
+func move(lkr *Linker, nd n.SettableNode, destPath string) error {
+	// Forbid moving a node inside of one of it's subdirectories.
+	if strings.HasPrefix(destPath, nd.Path()) {
+		return fmt.Errorf("Cannot move `%s` into it's own subdir `%s`", nd.Path(), destPath)
+	}
+
+	// Check if the destination already exists:
+	destNode, err := lkr.LookupSettableNode(destPath)
+	if err != nil && !n.IsNoSuchFileError(err) {
+		return err
+	}
+
+	var parentDir *n.Directory
+
+	if destNode != nil {
+		switch destNode.Type() {
+		case n.NodeTypeDirectory:
+			// Move inside of this directory.
+			// Check if there is already a file
+			destDir, ok := destNode.(*n.Directory)
+			if !ok {
+				return n.ErrBadNode
+			}
+
+			child, err := destDir.Child(lkr, nd.Name())
+			if err != nil {
+				return err
+			}
+
+			// Oh, something is in there?
+			if child != nil {
+				if nd.Type() == n.NodeTypeFile {
+					// TODO: more details
+					return fmt.Errorf("Cannot overwrite a directory with a file")
+				}
+
+				childDir, ok := child.(*n.Directory)
+				if !ok {
+					return n.ErrBadNode
+				}
+
+				if childDir.Size() > 0 {
+					return fmt.Errorf("Cannot move over: %s; directory is not empty!", child.Path())
+				}
+
+				// Okay, there is an empty directory. Let's remove it to
+				// replace it with our source node.
+				if _, err := remove(lkr, childDir, false); err != nil {
+					return err
+				}
+			}
+
+			parentDir = destDir
+		case n.NodeTypeFile:
+			// Move over this file, making it a Ghost.
+			parentDir, err = remove(lkr, destNode, true)
+			if err != nil {
+				return err
+			}
+		case n.NodeTypeGhost:
+			// It is already a ghost. Overwrite it.
+			parentDir, err = remove(lkr, destNode, false)
+			if err != nil {
+				return err
+			}
+		default:
+			return n.ErrBadNode
+		}
+	} else {
+		// No node at this place yet, attempt to look it up.
+		parentDir, err = lkr.LookupDirectory(path.Dir(destPath))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Remove the old node:
+	_, err = remove(lkr, nd, true)
+	if err != nil {
+		return err
+	}
+
+	// And add it to the right destination dir:
+	if err := parentDir.Add(lkr, nd); err != nil {
+		return err
+	}
+
+	return lkr.StageNode(nd)
+}
 
 func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 	oldRoot, err := lkr.DirectoryByHash(commit.Root())
@@ -169,7 +258,12 @@ func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 	oldNode, err := oldRoot.Lookup(lkr, repoPath)
 	if n.IsNoSuchFileError(err) {
 		// Node did not exist back then. Remove the current node.
-		_, err = remove(lkr, oldNode, false)
+		oldModNode, ok := oldNode.(n.SettableNode)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		_, err = remove(lkr, oldModNode, false)
 		return err
 	}
 
@@ -178,7 +272,6 @@ func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 		return err
 	}
 
-	fmt.Println(oldNode)
 	// _, err = stageNode(lkr, repoPath, oldNode.Hash(), oldNode.Size(), author)
 	return err
 }

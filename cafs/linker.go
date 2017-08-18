@@ -309,8 +309,9 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 	lkr.MemIndexAdd(nd)
 
 	// We need to save parent directories too, in case the hash changed:
-	// TODO: This creates many pointless roots in the stage. Maybe remember
-	// some in a kill-list & do a bit of garbage collect from time to time.
+	// Note that this will create many pointless directories in staging.
+	// That's okay since we garbage collect it every few seconds
+	// on a higher layer.
 	par, err := nd.Parent(lkr)
 	if err != nil {
 		return err
@@ -953,6 +954,7 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) error {
 			return err
 		}
 
+		lkr.MemIndexPurge(nd)
 		if err := lkr.StageNode(par); err != nil {
 			return err
 		}

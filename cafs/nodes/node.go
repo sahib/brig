@@ -93,7 +93,7 @@ type HierarchyEntry interface {
 // Streamable represents a thing that can be streamed,
 // given a cryptographic key.
 type Streamable interface {
-	Hash() h.Hash
+	Content() h.Hash
 	Key() []byte
 }
 
@@ -114,9 +114,7 @@ type SettableNode interface {
 	SetSize(size uint64)
 	SetModTime(modTime time.Time)
 	SetName(name string)
-	SetHash(lkr Linker, hash h.Hash)
-}
 
-type MovableNode interface {
-	GhostRef() (*Ghost, error)
+	// TODO: This shouldn't be part of this interface...
+	Copy() SettableNode
 }

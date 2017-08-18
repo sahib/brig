@@ -25,7 +25,7 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Ghost does not identify itself as ghost: %d", ghost.Type())
 	}
 
-	if !bytes.Equal(ghost.Hash(), root.Hash()) {
+	if !bytes.Equal(ghost.OldNode().Hash(), root.Hash()) {
 		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.Hash(), root.Hash())
 	}
 
@@ -49,7 +49,7 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Ghost FromCapnp failed: %v", err)
 	}
 
-	if !bytes.Equal(ghost.Hash(), root.Hash()) {
+	if !bytes.Equal(ghost.OldNode().Hash(), root.Hash()) {
 		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.Hash(), root.Hash())
 	}
 }

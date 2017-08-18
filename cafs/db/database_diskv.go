@@ -76,6 +76,9 @@ func (db *DiskvDatabase) Put(val []byte, key ...string) error {
 	}
 
 	fmt.Println("SET", key)
+	// It is allowed to set a key over an existing one.
+	// i.e. set "a/b" over "a/b/c". This requires us to potentially
+	// delete nested directories (c).
 	info, err := os.Stat(filePath)
 	if err != nil && !os.IsNotExist(err) {
 		return err

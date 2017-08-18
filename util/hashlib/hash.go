@@ -111,35 +111,16 @@ func (h Hash) Equal(other Hash) bool {
 	return bytes.Equal(h, other)
 }
 
-// MixIn hashes `data` and xors the resulting hash to `h`.
-// The hash algorithm and length depends on what kind
-// of hash `h` currently holds.
-func (h Hash) MixIn(data []byte) error {
-	dec, err := multihash.Decode(h)
-	if err != nil {
-		return err
-	}
-
-	dataMH, err := multihash.Sum(data, dec.Code, dec.Length)
-	if err != nil {
-		return err
-	}
-
-	for i := 2; i < len(dataMH); i++ {
-		h[i] ^= dataMH[i]
-	}
-
-	return nil
-}
-
 func (h Hash) Xor(o Hash) error {
 	decH, err := multihash.Decode(h)
 	if err != nil {
+		fmt.Println("Decode self failed")
 		return err
 	}
 
 	decO, err := multihash.Decode(o)
 	if err != nil {
+		fmt.Println("Decode other failed", o)
 		return err
 	}
 
@@ -153,6 +134,7 @@ func (h Hash) Xor(o Hash) error {
 
 	mh, err := multihash.Encode(decH.Digest, decH.Code)
 	if err != nil {
+		fmt.Println("encode failed")
 		return err
 	}
 

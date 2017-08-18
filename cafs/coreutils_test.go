@@ -27,7 +27,7 @@ func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	}
 }
 
-func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) {
+func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	dirname := path.Dir(touchPath)
 	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil {
@@ -39,7 +39,8 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
-	file.SetHash(lkr, h.TestDummy(t, seed))
+	file.SetContent(lkr, h.TestDummy(t, seed))
+	fmt.Println("HASH FILE:", file.Hash(), parent.Hash())
 
 	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
@@ -47,6 +48,14 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) {
 
 	if err := lkr.StageNode(file); err != nil {
 		t.Fatalf("touch: Staging %s failed: %v", touchPath, err)
+	}
+
+	return file
+}
+
+func mustMkdir(t *testing.T, lkr *Linker, repoPath string) {
+	if _, err := mkdir(lkr, repoPath, true); err != nil {
+		t.Fatalf("Failed to create directories %s: %v", repoPath, err)
 	}
 }
 
@@ -186,12 +195,94 @@ func TestRemove(t *testing.T) {
 		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {
 			t.Fatalf("Hash differs on %s and %s", nestedParentDir.Path(), parentDir.Hash())
 		}
+	})
+}
 
-		root, err := lkr.Root()
-		n.Walk(lkr, root, true, func(nd n.Node) error {
-			fmt.Println(nd.Path())
-			return nil
-		})
+func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
+	fmt.Println("validty", srcPath)
+	nd, err := lkr.LookupNode(srcPath)
+	fmt.Println("src done")
 
+	if err == nil || (nd != nil && nd.Type() != n.NodeTypeGhost) {
+		t.Fatalf("Source node still exists! (%v): %v", srcPath, nd.Type())
+	}
+
+	if !n.IsNoSuchFileError(err) {
+		t.Fatalf("Looking up source node failed: %v", err)
+	}
+
+	lkDestNode, err := lkr.LookupNode(dstPath)
+	if err != nil {
+		t.Fatalf("Looking up dest path failed: %v", err)
+	}
+
+	if lkDestNode.Path() != dstPath {
+		t.Fatalf("Dest nod and dest path differ: %v <-> %v", lkDestNode.Path(), dstPath)
+	}
+}
+
+func moveInvalidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
+	_, err := lkr.LookupNode(srcPath)
+	if err != nil {
+		t.Fatalf("Source node vanished during errorneous move: %v", err)
+	}
+}
+
+func TestMove(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+
+		// Cases to cover for move():
+		// 1.        Dest exists:
+		// 1.1.      Is a directory.
+		// 1.1.1  E  This directory contains basename(src) and it is a file.
+		// 1.1.2  E  This directory contains basename(src) and it is a non-empty dir.
+		// 1.1.3  V  This directory contains basename(src) and it is a empty dir.
+		// 2.        Dest does not exist.
+		// 2.1    V  dirname(dest) exists and is a directory.
+		// 2.2    E  dirname(dest) does not exists.
+		// 2.2    E  dirname(dest) exists and is not a directory.
+		// 3.     E  Overlap of src and dest paths (src in dest)
+
+		// Checks for valid cases (V):
+		// 1) src is gone.
+		// 2) dest is the same node as before.
+		// 3) dest has the correct path.
+
+		// Checks for invalid cases (E):
+		// 1) src is not gone.
+
+		var tcs = []struct {
+			name        string
+			isErrorCase bool
+			setup       func(t *testing.T, lkr *Linker) (n.SettableNode, string)
+		}{
+			{
+				name:        "basic",
+				isErrorCase: false,
+				setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+					mustMkdir(t, lkr, "/a/b/c")
+					return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/y"
+				},
+			},
+		}
+
+		for _, tc := range tcs {
+			t.Run(tc.name, func(t *testing.T) {
+				// Setup src and dest dir with a file in it named like src.
+				srcNd, dstPath := tc.setup(t, lkr)
+				srcPath := srcNd.Path()
+
+				if err := move(lkr, srcNd, dstPath); err != nil {
+					if tc.isErrorCase {
+						moveInvalidCheck(t, lkr, srcPath, dstPath)
+					} else {
+						t.Fatalf("Move failed unexpectly: %v", err)
+					}
+				} else {
+					moveValidCheck(t, lkr, srcPath, dstPath)
+				}
+			})
+		}
 	})
 }

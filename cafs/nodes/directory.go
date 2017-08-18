@@ -405,9 +405,19 @@ func (d *Directory) SetName(name string) { d.name = name }
 // SetModTime will set a new mod time to this directory (i.e. "touch" it)
 func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
 
-// SetHash will update the hash of this directory.
-// This should only be called by a Linker implementation.
-func (d *Directory) SetHash(_ Linker, hash h.Hash) { d.Base.hash = hash.Clone() }
+func (d *Directory) Copy() SettableNode {
+	children := make(map[string]h.Hash)
+	for name, hash := range d.children {
+		children[name] = hash.Clone()
+	}
+
+	return &Directory{
+		Base:       d.Base.copyBase(),
+		size:       d.size,
+		parentName: d.parentName,
+		children:   children,
+	}
+}
 
 // Add adds `nd` to this directory.
 func (d *Directory) Add(lkr Linker, nd Node) error {

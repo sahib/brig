@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"fmt"
 	"path"
 	"time"
 
@@ -14,9 +15,10 @@ import (
 type File struct {
 	Base
 
-	size   uint64
-	parent string
-	key    []byte
+	size    uint64
+	parent  string
+	key     []byte
+	content h.Hash
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
@@ -71,7 +73,12 @@ func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 	if err := capfile.SetParent(f.parent); err != nil {
 		return nil, err
 	}
+
 	if err := capfile.SetKey(f.key); err != nil {
+		return nil, err
+	}
+
+	if err := capfile.SetContent(f.content); err != nil {
 		return nil, err
 	}
 
@@ -102,6 +109,11 @@ func (f *File) readFileAttrs(capfile capnp_model.File) error {
 	var err error
 
 	f.parent, err = capfile.Parent()
+	if err != nil {
+		return err
+	}
+
+	f.content, err = capfile.Content()
 	if err != nil {
 		return err
 	}
@@ -138,12 +150,40 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-// SetHash will update the hash of the file (and also the mod time)
-func (f *File) SetHash(lkr Linker, h h.Hash) {
+func (f *File) Copy() SettableNode {
+	return &File{
+		Base:    f.Base.copyBase(),
+		size:    f.size,
+		parent:  f.parent,
+		key:     f.key,
+		content: f.content,
+	}
+}
+
+// updateHashFromContent will derive f.hash from f.content.
+// For files with same content, but different path we need
+// a different hash, so they will be stored as different objects.
+func (f *File) updateHashFromContent(lkr Linker) {
 	oldHash := f.hash
-	f.hash = h
+	if f.content != nil {
+		f.hash = f.content.Clone()
+	} else {
+		f.hash = h.EmptyHash.Clone()
+	}
+
+	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", f.Path(), f.Hash())))
 	lkr.MemIndexSwap(f, oldHash)
+}
+
+// SetContent will update the hash of the file (and also the mod time)
+func (f *File) SetContent(lkr Linker, h h.Hash) {
+	f.content = h.Clone()
 	f.SetModTime(time.Now())
+	f.updateHashFromContent(lkr)
+}
+
+func (f *File) Content() h.Hash {
+	return f.content
 }
 
 // Path will return the absolute path of the file.

@@ -29,6 +29,16 @@ type Base struct {
 	inode uint64
 }
 
+func (b *Base) copyBase() Base {
+	return Base{
+		name:     b.name,
+		hash:     b.hash.Clone(),
+		modTime:  b.modTime,
+		nodeType: b.nodeType,
+		inode:    b.inode,
+	}
+}
+
 // Name returns the name of this node (e.g. /a/b/c -> c)
 // The root directory will have the name empty string.
 func (b *Base) Name() string {
@@ -155,6 +165,8 @@ func UnmarshalNode(data []byte) (Node, error) {
 	var node Node
 
 	switch typ := capnode.Which(); typ {
+	case capnp_model.Node_Which_ghost:
+		node = &Ghost{}
 	case capnp_model.Node_Which_file:
 		node = &File{}
 	case capnp_model.Node_Which_directory:
