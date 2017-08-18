@@ -218,7 +218,7 @@ func move(lkr *Linker, nd n.SettableNode, destPath string) error {
 				return err
 			}
 		case n.NodeTypeGhost:
-			// It is already a ghost. Overwrite it.
+			// It is already a ghost. Overwrite it and do not create a new one.
 			parentDir, err = remove(lkr, destNode, false)
 			if err != nil {
 				return err
@@ -239,6 +239,8 @@ func move(lkr *Linker, nd n.SettableNode, destPath string) error {
 	if err != nil {
 		return err
 	}
+
+	nd.SetName(path.Base(destPath))
 
 	// And add it to the right destination dir:
 	if err := parentDir.Add(lkr, nd); err != nil {

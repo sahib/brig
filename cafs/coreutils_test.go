@@ -176,7 +176,6 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Check directory removal:
-
 		nestedDir, err := lkr.LookupDirectory("/some/nested")
 		if err != nil {
 			t.Fatalf("Lookup on /some/nested failed: %v", err)
@@ -199,15 +198,13 @@ func TestRemove(t *testing.T) {
 }
 
 func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
-	fmt.Println("validty", srcPath)
 	nd, err := lkr.LookupNode(srcPath)
-	fmt.Println("src done")
 
-	if err == nil || (nd != nil && nd.Type() != n.NodeTypeGhost) {
-		t.Fatalf("Source node still exists! (%v): %v", srcPath, nd.Type())
-	}
-
-	if !n.IsNoSuchFileError(err) {
+	if err == nil {
+		if nd.Type() != n.NodeTypeGhost {
+			t.Fatalf("Source node still exists! (%v): %v", srcPath, nd.Type())
+		}
+	} else if !n.IsNoSuchFileError(err) {
 		t.Fatalf("Looking up source node failed: %v", err)
 	}
 
@@ -229,46 +226,54 @@ func moveInvalidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 }
 
 func TestMove(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
+	// Cases to cover for move():
+	// 1.        Dest exists:
+	// 1.1.      Is a directory.
+	// 1.1.1  E  This directory contains basename(src) and it is a file.
+	// 1.1.2  E  This directory contains basename(src) and it is a non-empty dir.
+	// 1.1.3  V  This directory contains basename(src) and it is a empty dir.
+	// 2.        Dest does not exist.
+	// 2.1    V  dirname(dest) exists and is a directory.
+	// 2.2    E  dirname(dest) does not exists.
+	// 2.2    E  dirname(dest) exists and is not a directory.
+	// 3.     E  Overlap of src and dest paths (src in dest)
 
-		// Cases to cover for move():
-		// 1.        Dest exists:
-		// 1.1.      Is a directory.
-		// 1.1.1  E  This directory contains basename(src) and it is a file.
-		// 1.1.2  E  This directory contains basename(src) and it is a non-empty dir.
-		// 1.1.3  V  This directory contains basename(src) and it is a empty dir.
-		// 2.        Dest does not exist.
-		// 2.1    V  dirname(dest) exists and is a directory.
-		// 2.2    E  dirname(dest) does not exists.
-		// 2.2    E  dirname(dest) exists and is not a directory.
-		// 3.     E  Overlap of src and dest paths (src in dest)
+	// Checks for valid cases (V):
+	// 1) src is gone.
+	// 2) dest is the same node as before.
+	// 3) dest has the correct path.
 
-		// Checks for valid cases (V):
-		// 1) src is gone.
-		// 2) dest is the same node as before.
-		// 3) dest has the correct path.
+	// Checks for invalid cases (E):
+	// 1) src is not gone.
 
-		// Checks for invalid cases (E):
-		// 1) src is not gone.
-
-		var tcs = []struct {
-			name        string
-			isErrorCase bool
-			setup       func(t *testing.T, lkr *Linker) (n.SettableNode, string)
-		}{
-			{
-				name:        "basic",
-				isErrorCase: false,
-				setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
-					mustMkdir(t, lkr, "/a/b/c")
-					return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/y"
-				},
+	var tcs = []struct {
+		name        string
+		isErrorCase bool
+		setup       func(t *testing.T, lkr *Linker) (n.SettableNode, string)
+	}{
+		{
+			name:        "basic",
+			isErrorCase: false,
+			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+				mustMkdir(t, lkr, "/a/b/c")
+				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/y"
 			},
-		}
+		}, {
+			name:        "move-into-directory",
+			isErrorCase: false,
+			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+				mustMkdir(t, lkr, "/a/b/c")
+				mustMkdir(t, lkr, "/a/b/d")
+				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/d"
+			},
+		},
+	}
 
-		for _, tc := range tcs {
-			t.Run(tc.name, func(t *testing.T) {
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			withDummyKv(t, func(kv db.Database) {
+				lkr := NewLinker(kv)
+
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
 				srcPath := srcNd.Path()
@@ -283,6 +288,6 @@ func TestMove(t *testing.T) {
 					moveValidCheck(t, lkr, srcPath, dstPath)
 				}
 			})
-		}
-	})
+		})
+	}
 }
