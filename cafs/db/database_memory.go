@@ -19,6 +19,16 @@ func NewMemoryDatabase() *MemoryDatabase {
 	}
 }
 
+// Batch is a no-op for a memory database.
+func (mdb *MemoryDatabase) Batch() Batch {
+	return mdb
+}
+
+// Flush is a no-op for a memory database.
+func (mdb *MemoryDatabase) Flush() error {
+	return nil
+}
+
 // Get returns `key` of `bucket`.
 func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
 	data, ok := mdb.data[path.Join(key...)]
@@ -30,24 +40,34 @@ func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
 }
 
 // Put sets `key` in `bucket` to `data`.
-func (mdb *MemoryDatabase) Put(data []byte, key ...string) error {
+func (mdb *MemoryDatabase) Put(data []byte, key ...string) {
 	mdb.data[path.Join(key...)] = data
-	return nil
 }
 
 // Clear removes all keys includin and below `key`.
-func (mdb *MemoryDatabase) Clear(key ...string) error {
-	deleteMe := []string{}
+func (mdb *MemoryDatabase) Clear(key ...string) {
 	joinedKey := path.Join(key...)
-
 	for mapKey := range mdb.data {
 		if strings.HasPrefix(mapKey, joinedKey) {
-			deleteMe = append(deleteMe, mapKey)
+			delete(mdb.data, mapKey)
 		}
 	}
+}
 
-	for _, killKey := range deleteMe {
-		delete(mdb.data, killKey)
+func (mdb *MemoryDatabase) Erase(key ...string) {
+	fullKey := path.Join(key...)
+	delete(mdb.data, fullKey)
+}
+
+// Keys will return all keys currently stored in the memory map
+func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) error {
+	prefixPath := path.Join(prefix...)
+	for key := range mdb.data {
+		if strings.HasPrefix(key, prefixPath) {
+			if err := fn(strings.Split(key, "/")); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -66,31 +86,5 @@ func (mdb *MemoryDatabase) Import(r io.Reader) error {
 
 // Close the memory - a no op.
 func (mdb *MemoryDatabase) Close() error {
-	return nil
-}
-
-func (mdb *MemoryDatabase) Keys(prefix ...string) (<-chan []string, error) {
-	ch := make(chan []string)
-	prefixPath := path.Join(prefix...)
-
-	go func() {
-		for key := range mdb.data {
-			if strings.HasPrefix(key, prefixPath) {
-				ch <- strings.Split(key, "/")
-			}
-		}
-		close(ch)
-	}()
-
-	return ch, nil
-}
-
-func (mdb *MemoryDatabase) Erase(key ...string) error {
-	fullKey := path.Join(key...)
-	if _, ok := mdb.data[fullKey]; !ok {
-		return ErrNoSuchKey
-	}
-
-	delete(mdb.data, fullKey)
 	return nil
 }

@@ -24,7 +24,7 @@ func TestMemoryDatabase(t *testing.T) {
 	}
 }
 
-func TestDiskvDatabase(t *testing.T) {
+func TestDiskDatabase(t *testing.T) {
 	testDir1, _ := ioutil.TempDir("", "brig-")
 	testDir2, _ := ioutil.TempDir("", "brig-")
 
@@ -36,13 +36,13 @@ func TestDiskvDatabase(t *testing.T) {
 		}
 	}()
 
-	db1, err := NewDiskvDatabase(testDir1)
+	db1, err := NewDiskDatabase(testDir1)
 	if err != nil {
 		t.Errorf("Failed to create db1: %v", err)
 		return
 	}
 
-	db2, err := NewDiskvDatabase(testDir2)
+	db2, err := NewDiskDatabase(testDir2)
 	if err != nil {
 		t.Errorf("Failed to create db2: %v", err)
 		return
@@ -65,14 +65,14 @@ func testDatabaseWithDifferentKeys(t *testing.T, db1, db2 Database) {
 	testKeys := [][]string{
 		[]string{"some", "stuff", "x"},
 		[]string{"some", "stuff", "."},
-		[]string{"some", "stuff", "DIRMETA"},
+		[]string{"some", "stuff", "__NO_DOT__"},
+		[]string{"some", "stuff", "DOT"},
 		[]string{"some", "stuff", "x"},
 	}
 
 	for _, testKey := range testKeys {
 		testDatabase(t, db1, db2, testKey)
 	}
-
 }
 
 func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
@@ -91,8 +91,11 @@ func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 	})
 
 	t.Run("export", func(t *testing.T) {
-		if err := db1.Put([]byte{1, 2, 3}, testKey...); err != nil {
-			t.Errorf("Failed set key: %v", err)
+		batch := db1.Batch()
+		batch.Put([]byte{1, 2, 3}, testKey...)
+
+		if err := batch.Flush(); err != nil {
+			t.Errorf("Failed to flush key: %v", err)
 			return
 		}
 
