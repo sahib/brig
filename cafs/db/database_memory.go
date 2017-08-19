@@ -29,6 +29,9 @@ func (mdb *MemoryDatabase) Flush() error {
 	return nil
 }
 
+// Rollback is a no-op for a memory database
+func (mdb *MemoryDatabase) Rollback() {}
+
 // Get returns `key` of `bucket`.
 func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
 	data, ok := mdb.data[path.Join(key...)]

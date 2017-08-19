@@ -27,10 +27,14 @@ type Batch interface {
 	// Flush the batch to the database.
 	// Only now, all changes will be written to disk.
 	Flush() error
+
+	// Rollback will forget all changes without executing them.
+	Rollback()
 }
 
 // Database is a key/value store that offers different buckets
 // for storage. Keys are strings, values are arbitary untyped data.
+// TODO: Write down assumptions made (single user database e.g.)
 type Database interface {
 	// Get retrievies the key `key` out of bucket.
 	// If no such key exists, it will return (nil, ErrNoSuchKey)

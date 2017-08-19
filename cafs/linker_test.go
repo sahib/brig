@@ -19,7 +19,7 @@ func withDummyKv(t *testing.T, fn func(kv db.Database)) {
 
 	//defer os.RemoveAll(dbPath)
 
-	kv, err := db.NewDiskvDatabase(dbPath)
+	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
 		t.Fatalf("Could not create dummy kv for tests: %v", err)
 	}
@@ -131,8 +131,9 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("HEAD and CURR are not equal after first commit.")
 		}
 
+		fmt.Println("is it here?")
 		if err := lkr.MakeCommit(author, "No."); err != ErrNoChange {
-			t.Fatalf("Committing without change led to a new commit.")
+			t.Fatalf("Committing without change led to a new commit: %v", err)
 		}
 	})
 }

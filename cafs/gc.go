@@ -59,12 +59,8 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 }
 
 func (gc *GarbageCollector) sweep(key []string) error {
-	keyCh, err := gc.kv.Keys(key...)
-	if err != nil {
-		return err
-	}
-
-	for key := range keyCh {
+	batch := gc.kv.Batch()
+	sweeper := func(key []string) error {
 		b58Hash := key[len(key)-1]
 		if _, ok := gc.markMap[b58Hash]; !ok {
 			hash, err := h.FromB58String(b58Hash)
@@ -80,18 +76,22 @@ func (gc *GarbageCollector) sweep(key []string) error {
 			// Allow the gc caller to check if he really
 			// wants to delete this node.
 			if gc.notifier != nil && !gc.notifier(node) {
-				continue
+				return nil
 			}
 
 			// Actually get rid of the node:
 			gc.lkr.MemIndexPurge(node)
-			if err := gc.kv.Erase(key...); err != nil {
-				return err
-			}
+			batch.Erase(key...)
 		}
+
+		return nil
 	}
 
-	return nil
+	if err := gc.kv.Keys(sweeper, key...); err != nil {
+		return err
+	}
+
+	return batch.Flush()
 }
 
 func (gc *GarbageCollector) Run(allObjects bool) error {

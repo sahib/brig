@@ -10,7 +10,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/disorganizer/brig/util"
@@ -25,7 +24,6 @@ import (
 // could be probably made a lot faster if we ever need that.
 type DiskDatabase struct {
 	basePath string
-	lock     sync.RWMutex
 	cache    map[string][]byte
 	ops      []func() error
 	refs     int64
@@ -67,8 +65,14 @@ func reverseDirectoryKeys(key string) []string {
 }
 
 func (db *DiskDatabase) Flush() error {
-	db.lock.Lock()
-	defer db.lock.Unlock()
+	db.refs--
+	if db.refs < 0 {
+		db.refs = 0
+	}
+
+	if db.refs > 0 {
+		return nil
+	}
 
 	// Currently no revertible operations are implemented. If something goes
 	// wrong on the filesystem, chances are high that we're not able to revert
@@ -79,16 +83,19 @@ func (db *DiskDatabase) Flush() error {
 		}
 	}
 
-	db.refs--
 	db.cache = make(map[string][]byte)
 	return nil
 }
 
+func (db *DiskDatabase) Rollback() {
+	db.refs = 0
+	db.ops = nil
+	db.cache = make(map[string][]byte)
+}
+
 // Get a single value from `bucket` by `key`.
 func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
+	fmt.Println("GET", key)
 	data, ok := db.cache[path.Join()]
 	if ok {
 		return data, nil
@@ -106,9 +113,6 @@ func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
 }
 
 func (db *DiskDatabase) Batch() Batch {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	db.refs++
 	return db
 }
@@ -117,8 +121,7 @@ func (db *DiskDatabase) Batch() Batch {
 // Implementation detail: `key` may contain slashes (/). If used, those keys
 // will result in a nested directory structure.
 func (db *DiskDatabase) Put(val []byte, key ...string) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
+	fmt.Println("SET", key)
 
 	db.ops = append(db.ops, func() error {
 		filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
@@ -127,7 +130,6 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 			return err
 		}
 
-		fmt.Println("SET", key)
 		// It is allowed to set a key over an existing one.
 		// i.e. set "a/b" over "a/b/c". This requires us to potentially
 		// delete nested directories (c).
@@ -150,9 +152,6 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 
 // Clear removes all keys below and including `key`.
 func (db *DiskDatabase) Clear(key ...string) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	// Cache the real modification for later:
 	db.ops = append(db.ops, func() error {
 		prefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
@@ -177,9 +176,6 @@ func (db *DiskDatabase) Clear(key ...string) {
 }
 
 func (db *DiskDatabase) Erase(key ...string) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	db.ops = append(db.ops, func() error {
 		fullPath := filepath.Join(db.basePath, fixDirectoryKeys(key))
 		err := os.Remove(fullPath)
@@ -195,10 +191,11 @@ func (db *DiskDatabase) Erase(key ...string) {
 }
 
 func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) error {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(prefix))
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return nil
+	}
+
 	return filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -215,9 +212,6 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 
 // Export writes all key/valeus into a gzipped .tar that is written to `w`.
 func (db *DiskDatabase) Export(w io.Writer) error {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	gzw := gzip.NewWriter(w)
 	gzw.Name = fmt.Sprintf("brigmeta-%s.gz", time.Now().Format(time.RFC3339))
 	gzw.Comment = "compressed brig metadata database"
@@ -266,9 +260,6 @@ func (db *DiskDatabase) Export(w io.Writer) error {
 
 // Import a gzipped tar from `r` into the current database.
 func (db *DiskDatabase) Import(r io.Reader) error {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return err

@@ -119,7 +119,6 @@ func (lkr *Linker) MemIndexClear() {
 // NextInode() returns a unique identifier, used to identify a single node. You
 // should not need to call this function, except when implementing own nodes.
 func (lkr *Linker) NextInode() uint64 {
-	// TODO: Transactions
 	nodeCount, err := lkr.kv.Get("stats", "node-count")
 	if err != nil && err != db.ErrNoSuchKey {
 		return 0
@@ -133,7 +132,10 @@ func (lkr *Linker) NextInode() uint64 {
 
 	cntBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(cntBuf, cnt)
-	if err := lkr.kv.Put(cntBuf, "stats", "node-count"); err != nil {
+
+	batch := lkr.kv.Batch()
+	batch.Put(cntBuf, "stats", "node-count")
+	if err := batch.Flush(); err != nil {
 		return 0
 	}
 
@@ -244,8 +246,17 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 // modification is persistent and part of the staging commit. All parent
 // directories of the node in question will be staged automatically. If there
 // was no modification it will be a (quite expensive) NOOP.
-func (lkr *Linker) StageNode(nd n.Node) error {
-	if err := lkr.stageNodeRecursive(nd); err != nil {
+func (lkr *Linker) StageNode(nd n.Node) (err error) {
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
+	if err := lkr.stageNodeRecursive(batch, nd); err != nil {
 		return err
 	}
 
@@ -261,7 +272,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	}
 
 	status.SetRoot(root.Hash())
-	return lkr.saveStatus(status)
+	return lkr.saveStatus(batch, status)
 }
 
 // NodeByInode resolves a node by it's unique ID.
@@ -275,7 +286,7 @@ func (lkr *Linker) NodeByInode(uid uint64) (n.Node, error) {
 	return lkr.NodeByHash(h.Hash(hash))
 }
 
-func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
+func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 	if nd.Type() == n.NodeTypeCommit {
 		return fmt.Errorf("BUG: Commits cannot be staged; Use MakeCommit()")
 	}
@@ -285,25 +296,18 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 		return err
 	}
 
-	// TODO: Transactions?
 	b58Hash := nd.Hash().B58String()
-	if err := lkr.kv.Put(data, "stage", "objects", b58Hash); err != nil {
-		return err
-	}
+	batch.Put(data, "stage", "objects", b58Hash)
 
 	uidKey := strconv.FormatUint(nd.Inode(), 16)
-	if err := lkr.kv.Put([]byte(nd.Hash().B58String()), "inode", uidKey); err != nil {
-		return err
-	}
+	batch.Put([]byte(nd.Hash().B58String()), "inode", uidKey)
 
 	hashPath := []string{"stage", "tree", nd.Path()}
 	if nd.Type() == n.NodeTypeDirectory {
 		hashPath = append(hashPath, ".")
 	}
 
-	if err := lkr.kv.Put([]byte(b58Hash), hashPath...); err != nil {
-		return err
-	}
+	batch.Put([]byte(b58Hash), hashPath...)
 
 	// Remember/Update this node in the cache if it's not yet there:
 	lkr.MemIndexAdd(nd)
@@ -318,7 +322,7 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 	}
 
 	if par != nil {
-		if err := lkr.stageNodeRecursive(par); err != nil {
+		if err := lkr.stageNodeRecursive(batch, par); err != nil {
 			return err
 		}
 	}
@@ -334,7 +338,16 @@ func (lkr *Linker) stageNodeRecursive(nd n.Node) error {
 // The current staging commit is finalized with `author` and `message`
 // and gets saved. A new, identical staging commit is created pointing
 // to the root of the now new HEAD.
-func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
+func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
 	head, err := lkr.Head()
 	if err != nil && !IsErrNoSuchRef(err) {
 		return err
@@ -347,7 +360,10 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 
 	// Only compare with previous if we have a HEAD yet.
 	if head != nil {
+		fmt.Println("HEAD", head.Root())
+		fmt.Println("STAT", status.Root())
 		if status.Root().Equal(head.Root()) {
+			fmt.Println("no change...")
 			return ErrNoChange
 		}
 	}
@@ -367,16 +383,15 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 		}
 
 		b58Hash := child.Hash().B58String()
-		if err := lkr.kv.Put(data, "objects", b58Hash); err != nil {
-			return err
-		}
+		batch.Put(data, "objects", b58Hash)
 
 		childPath := child.Path()
 		if child.Type() == n.NodeTypeDirectory {
 			childPath = appendDot(childPath)
 		}
 
-		return lkr.kv.Put([]byte(b58Hash), "tree", childPath)
+		batch.Put([]byte(b58Hash), "tree", childPath)
+		return nil
 	})
 
 	if err != nil {
@@ -401,9 +416,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 	}
 
 	statusB58Hash := status.Hash().B58String()
-	if err := lkr.kv.Put(statusData, "objects", statusB58Hash); err != nil {
-		return err
-	}
+	batch.Put(statusData, "objects", statusB58Hash)
 
 	if err := lkr.SaveRef("HEAD", status); err != nil {
 		return err
@@ -416,9 +429,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 	}
 
 	for _, key := range toClear {
-		if err := lkr.kv.Clear(key...); err != nil {
-			return err
-		}
+		batch.Clear(key...)
 	}
 
 	newStatus, err := n.NewEmptyCommit(lkr.NextInode())
@@ -428,7 +439,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 
 	newStatus.SetParent(lkr, status)
 	newStatus.SetRoot(status.Root())
-	return lkr.saveStatus(newStatus)
+	return lkr.saveStatus(batch, newStatus)
 }
 
 ///////////////////////
@@ -438,7 +449,9 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) error {
 // MetadataPut remembers a value persisntenly identified by `key`.
 // It can be used as single-level key value store for user purposes.
 func (lkr *Linker) MetadataPut(key string, value []byte) error {
-	return lkr.kv.Put([]byte(value), "metadata", key)
+	batch := lkr.kv.Batch()
+	batch.Put([]byte(value), "metadata", key)
+	return batch.Flush()
 }
 
 // MetadataGet retriesves a previosuly put key value pair.
@@ -477,8 +490,10 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 // to ensure that the node is already in the blockstore, otherwise it won't be
 // resolvable.
 func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
+	batch := lkr.kv.Batch()
 	refname = strings.ToLower(refname)
-	return lkr.kv.Put([]byte(nd.Hash().B58String()), "refs", refname)
+	batch.Put([]byte(nd.Hash().B58String()), "refs", refname)
+	return batch.Flush()
 }
 
 // Head is just a shortcut for ResolveRef("HEAD").
@@ -520,8 +535,8 @@ func (lkr *Linker) Root() (*n.Directory, error) {
 
 // Status returns the current staging commit.
 // It is never nil, unless err is nil.
-func (lkr *Linker) Status() (*n.Commit, error) {
-	cmt, err := lkr.loadStatus()
+func (lkr *Linker) Status() (cmt *n.Commit, err error) {
+	cmt, err = lkr.loadStatus()
 	if err != nil {
 		return nil, err
 	}
@@ -529,6 +544,15 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 	if cmt != nil {
 		return cmt, nil
 	}
+
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
 
 	// Shoot, no commit exists yet.
 	// We need to create an initial one.
@@ -559,7 +583,7 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 			// Can't call StageNode(), since that would call Status(),
 			// causing and endless loop of grief and doom.
-			if err := lkr.stageNodeRecursive(newRoot); err != nil {
+			if err := lkr.stageNodeRecursive(batch, newRoot); err != nil {
 				return nil, err
 			}
 
@@ -575,7 +599,7 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 
 	cmt.SetRoot(rootHash)
 
-	if err := lkr.saveStatus(cmt); err != nil {
+	if err := lkr.saveStatus(batch, cmt); err != nil {
 		return nil, err
 	}
 
@@ -607,7 +631,7 @@ func (lkr *Linker) loadStatus() (*n.Commit, error) {
 }
 
 // saveStatus copies cmt to stage/STATUS.
-func (lkr *Linker) saveStatus(cmt *n.Commit) error {
+func (lkr *Linker) saveStatus(batch db.Batch, cmt *n.Commit) error {
 	head, err := lkr.Head()
 	if err != nil && !IsErrNoSuchRef(err) {
 		return err
@@ -628,25 +652,16 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) error {
 		return err
 	}
 
-	// TODO: Use transactions here.
-	if err := lkr.kv.Put(data, "stage", "STATUS"); err != nil {
-		return err
-	}
+	batch.Put(data, "stage", "STATUS")
 
 	b58Hash := cmt.Hash().B58String()
 	inode := strconv.FormatUint(cmt.Inode(), 10)
-	if err := lkr.kv.Put([]byte(b58Hash), "inode", inode); err != nil {
-		return err
-	}
+	batch.Put([]byte(b58Hash), "inode", inode)
 
 	if err := lkr.SaveRef("CURR", cmt); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (lkr *Linker) ValidateRefs() error {
 	return nil
 }
 
@@ -889,8 +904,17 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 // the staging area and return ErrStageNotEmpty if there are any. If force is
 // true, all changes will be overwritten.
 // TODO: write test for this.
-func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
+func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 	// Check if the staging area is empty if no force given:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
 	if !force {
 		haveStaged, err := lkr.HaveStagedChanges()
 		if err != nil {
@@ -912,13 +936,13 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
 	// Invalidate the cache, causing NodeByHash and ResolveNode to load the
 	// file from the boltdb again:
 	lkr.MemIndexClear()
-	return lkr.saveStatus(status)
+	return lkr.saveStatus(batch, status)
 }
 
 // CheckoutFile resets a certain file to the state it had in cmt. If the file
 // did not exist back then, it will be deleted. `nd` is usually retrieved by
 // calling ResolveNode() and sorts.
-func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) error {
+func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	root, err := lkr.DirectoryByHash(cmt.Root())
 	if err != nil {
 		return err
@@ -947,6 +971,16 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) error {
 	if err != nil {
 		return err
 	}
+
+	// Make sure the actual checkout will land as one batch on disk:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
 
 	// nd might be root itself, so par may be nil.
 	if par != nil {
