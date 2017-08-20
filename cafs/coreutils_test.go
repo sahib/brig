@@ -219,9 +219,14 @@ func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 }
 
 func moveInvalidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
-	_, err := lkr.LookupNode(srcPath)
+	node, err := lkr.LookupNode(srcPath)
+	fmt.Println("Source still there?", node)
 	if err != nil {
 		t.Fatalf("Source node vanished during errorneous move: %v", err)
+	}
+
+	if node.Type() == n.NodeTypeGhost {
+		t.Fatalf("Source node was converted to a ghost: %v", node.Path())
 	}
 }
 
@@ -266,6 +271,24 @@ func TestMove(t *testing.T) {
 				mustMkdir(t, lkr, "/a/b/d")
 				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/d"
 			},
+		}, {
+			name:        "error-move-to-directory-contains-file",
+			isErrorCase: true,
+			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+				mustMkdir(t, lkr, "/src")
+				mustMkdir(t, lkr, "/dst")
+				touchFile(t, lkr, "/dst/x", 1)
+				return touchFile(t, lkr, "/src/x", 1), "/dst"
+			},
+		}, {
+			name:        "error-move-file-over-existing",
+			isErrorCase: false,
+			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+				mustMkdir(t, lkr, "/src")
+				mustMkdir(t, lkr, "/dst")
+				touchFile(t, lkr, "/dst/x", 1)
+				return touchFile(t, lkr, "/src/x", 1), "/dst/x"
+			},
 		},
 	}
 
@@ -280,6 +303,7 @@ func TestMove(t *testing.T) {
 
 				if err := move(lkr, srcNd, dstPath); err != nil {
 					if tc.isErrorCase {
+						fmt.Println("ERROR", err)
 						moveInvalidCheck(t, lkr, srcPath, dstPath)
 					} else {
 						t.Fatalf("Move failed unexpectly: %v", err)

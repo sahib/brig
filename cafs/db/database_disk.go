@@ -15,6 +15,10 @@ import (
 	"github.com/disorganizer/brig/util"
 )
 
+const (
+	debug = false
+)
+
 // DiskDatabase is a database that simply uses the filesystem as storage.
 // Each bucket is one directory. Leaf keys are simple files.
 // The exported form of the database is simply a gzipped .tar of the directory.
@@ -95,7 +99,10 @@ func (db *DiskDatabase) Rollback() {
 
 // Get a single value from `bucket` by `key`.
 func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
-	fmt.Println("GET", key)
+	if debug {
+		fmt.Println("GET", key)
+	}
+
 	data, ok := db.cache[path.Join()]
 	if ok {
 		return data, nil
@@ -121,7 +128,9 @@ func (db *DiskDatabase) Batch() Batch {
 // Implementation detail: `key` may contain slashes (/). If used, those keys
 // will result in a nested directory structure.
 func (db *DiskDatabase) Put(val []byte, key ...string) {
-	fmt.Println("SET", key)
+	if debug {
+		fmt.Println("SET", key)
+	}
 
 	db.ops = append(db.ops, func() error {
 		filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
@@ -178,8 +187,11 @@ func (db *DiskDatabase) Clear(key ...string) {
 func (db *DiskDatabase) Erase(key ...string) {
 	db.ops = append(db.ops, func() error {
 		fullPath := filepath.Join(db.basePath, fixDirectoryKeys(key))
+		if debug {
+			fmt.Println("ERASE", fullPath)
+		}
+
 		err := os.Remove(fullPath)
-		fmt.Println("ERASE", fullPath)
 		if os.IsNotExist(err) {
 			return ErrNoSuchKey
 		}

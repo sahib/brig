@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	n "github.com/disorganizer/brig/cafs/nodes"
+	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 // mkdirParents takes the dirname of repoPath and makes sure all intermediate
@@ -54,7 +56,7 @@ func printTree(lkr *Linker) {
 // mkdir creates the directory at repoPath and any intermediate directories if
 // createParents is true. It will fail if there is already a file at `repoPath`
 // and it is not a directory.
-func mkdir(lkr *Linker, repoPath string, createParents bool) (*n.Directory, error) {
+func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, err error) {
 	dirname, basename := path.Split(repoPath)
 
 	// Take special care of the root node:
@@ -96,8 +98,18 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (*n.Directory, erro
 		return child.(*n.Directory), nil
 	}
 
+	// Make sure, NextInode() and StageNode is written in one batch.
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
 	// Create it then!
-	dir, err := n.NewEmptyDirectory(lkr, parent, basename, lkr.NextInode())
+	dir, err = n.NewEmptyDirectory(lkr, parent, basename, lkr.NextInode())
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +124,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (*n.Directory, erro
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (*n.Directory, error) {
+func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (parentDir *n.Directory, err error) {
 	parent, err := nd.Parent(lkr)
 	if err != nil {
 		return nil, err
@@ -134,6 +146,16 @@ func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (*n.Directory, err
 	}
 
 	lkr.MemIndexPurge(nd)
+
+	// Make sure both StageNode() will be written in one batch:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
 
 	if err := lkr.StageNode(parent); err != nil {
 		return nil, err
@@ -158,7 +180,7 @@ func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (*n.Directory, err
 	return parentDir, nil
 }
 
-func move(lkr *Linker, nd n.SettableNode, destPath string) error {
+func move(lkr *Linker, nd n.SettableNode, destPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if strings.HasPrefix(destPath, nd.Path()) {
 		return fmt.Errorf("Cannot move `%s` into it's own subdir `%s`", nd.Path(), destPath)
@@ -171,6 +193,16 @@ func move(lkr *Linker, nd n.SettableNode, destPath string) error {
 	}
 
 	var parentDir *n.Directory
+
+	// Make sure both StageNode() will be written in one batch:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
 
 	if destNode != nil {
 		switch destNode.Type() {
@@ -213,7 +245,7 @@ func move(lkr *Linker, nd n.SettableNode, destPath string) error {
 			parentDir = destDir
 		case n.NodeTypeFile:
 			// Move over this file, making it a Ghost.
-			parentDir, err = remove(lkr, destNode, true)
+			parentDir, err = remove(lkr, destNode, false)
 			if err != nil {
 				return err
 			}
@@ -258,13 +290,14 @@ func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 
 	repoPath := node.Path()
 	oldNode, err := oldRoot.Lookup(lkr, repoPath)
+
+	oldModNode, ok := oldNode.(n.SettableNode)
+	if !ok {
+		return n.ErrBadNode
+	}
+
 	if n.IsNoSuchFileError(err) {
 		// Node did not exist back then. Remove the current node.
-		oldModNode, ok := oldNode.(n.SettableNode)
-		if !ok {
-			return n.ErrBadNode
-		}
-
 		_, err = remove(lkr, oldModNode, false)
 		return err
 	}
@@ -274,102 +307,98 @@ func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 		return err
 	}
 
-	// _, err = stageNode(lkr, repoPath, oldNode.Hash(), oldNode.Size(), author)
-	return err
+	parent, err := node.Parent(lkr)
+	if err != nil {
+		return err
+	}
+
+	parentDir, ok := parent.(*n.Directory)
+	if !ok {
+		return n.ErrBadNode
+	}
+
+	if err := parentDir.RemoveChild(lkr, node); err != nil {
+		return err
+	}
+
+	newOldNode := oldModNode.Copy()
+	if err := parentDir.Add(lkr, newOldNode); err != nil {
+		return err
+	}
+
+	return lkr.StageNode(newOldNode)
 }
 
-// func stageFile(lkr *Linker, repoPath string, newHash *h.Hash, size uint64, author string, key []byte) (*n.File, error) {
-// 	node, err := stageNode(lkr, repoPath, newHash, size, author)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	if node.GetType() != NodeTypeFile {
-// 		return nil, ErrBadNode
-// 	}
-//
-// 	file, ok := node.(*File)
-// 	if !ok {
-// 		return nil, ErrBadNode
-// 	}
-//
-// 	log.Infof(
-// 		"store-add: %s (hash: %s, key: %x)",
-// 		repoPath,
-// 		newHash.B58String(),
-// 		util.OmitBytes(key, 10),
-// 	)
-//
-// 	file.SetKey(key)
-// 	return file, nil
-// }
-//
-// func stageNode(lkr *Linker, repoPath string, newHash *h.Hash, size uint64, author string) (Node, error) {
-// 	var oldHash *h.Hash
-//
-// 	node, err := lkr.ResolveSettableNode(repoPath)
-// 	if err != nil && !IsNoSuchFileError(err) {
-// 		return nil, err
-// 	}
-//
-// 	needRemove := false
-//
-// 	if node != nil {
-// 		// We know this file already.
-// 		log.WithFields(log.Fields{"node": repoPath}).Info("File exists; modifying.")
-// 		oldHash = node.Hash().Clone()
-// 		needRemove = true
-// 	} else {
-// 		par, err := mkdirParents(lkr, repoPath)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-//
-// 		// Create a new file at specified path:
-// 		node, err = newEmptyFile(lkr, par, path.Base(repoPath))
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-//
-// 	if node.Hash().Equal(newHash) {
-// 		log.Debugf("Hash was not modified. Refusing update.")
-// 		return nil, ErrNoChange
-// 	}
-//
-// 	parNode, err := node.Parent()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	if parNode == nil {
-// 		return nil, fmt.Errorf("%s has no parent yet (BUG)", repoPath)
-// 	}
-//
-// 	parDir, ok := parNode.(*Directory)
-// 	if !ok {
-// 		return nil, ErrBadNode
-// 	}
-//
-// 	if needRemove {
-// 		// Remove the child before changing the hash:
-// 		if err := parDir.RemoveChild(node); err != nil && !IsNoSuchFileError(err) {
-// 			return nil, err
-// 		}
-// 	}
-//
-// 	node.SetSize(size)
-// 	node.SetModTime(time.Now())
-// 	node.SetHash(newHash)
-//
-// 	// Add it again when the hash was changed.
-// 	if err := parDir.Add(node); err != nil {
-// 		return nil, err
-// 	}
-//
-// 	if err := lkr.StageNode(node); err != nil {
-// 		return nil, err
-// 	}
-//
-// 	return node, err
-// }
+type NodeUpdate struct {
+	Hash   h.Hash
+	Size   uint64
+	Author string
+	Key    []byte
+}
+
+func stage(lkr *Linker, repoPath string, info *NodeUpdate) (*n.File, error) {
+	file, err := lkr.LookupFile(repoPath)
+	if err != nil && !n.IsNoSuchFileError(err) {
+		return nil, err
+	}
+
+	needRemove := false
+	if file != nil {
+		// We know this file already.
+		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
+		needRemove = true
+
+		if file.Hash().Equal(info.Hash) {
+			log.Debugf("Hash was not modified. Refusing update.")
+			return nil, ErrNoChange
+		}
+	} else {
+		parent, err := mkdirParents(lkr, repoPath)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a new file at specified path:
+		file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.NextInode())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	parent, err := file.Parent(lkr)
+	if err != nil {
+		return nil, err
+	}
+
+	if parent == nil {
+		return nil, fmt.Errorf("%s has no parent yet (BUG)", repoPath)
+	}
+
+	parentDir, ok := parent.(*n.Directory)
+	if !ok {
+		return nil, n.ErrBadNode
+	}
+
+	if needRemove {
+		// Remove the child before changing the hash:
+		if err := parentDir.RemoveChild(lkr, file); err != nil {
+			return nil, err
+		}
+	}
+
+	file.SetSize(info.Size)
+	file.SetModTime(time.Now())
+	file.SetContent(lkr, info.Hash)
+	file.SetKey(info.Key)
+
+	// Add it again when the hash was changed.
+	if err := parentDir.Add(lkr, file); err != nil {
+		return nil, err
+	}
+
+	if err := lkr.StageNode(file); err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
