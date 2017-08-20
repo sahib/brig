@@ -3,6 +3,7 @@ package cafs
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 	"unsafe"
 
@@ -17,7 +18,7 @@ func withDummyKv(t *testing.T, fn func(kv db.Database)) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	//defer os.RemoveAll(dbPath)
+	defer os.RemoveAll(dbPath)
 
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
@@ -302,6 +303,148 @@ func TestCheckoutFile(t *testing.T) {
 
 		if lastVersion.Size() != 1 {
 			t.Fatalf("Size of checkout'd file is not from second commit")
+		}
+	})
+}
+
+// Test if Linker can load objects after closing/re-opening the kv.
+func TestLinkerPersistence(t *testing.T) {
+	dbPath, err := ioutil.TempDir("", "brig-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+
+	defer os.RemoveAll(dbPath)
+
+	kv, err := db.NewDiskDatabase(dbPath)
+	if err != nil {
+		t.Fatalf("Could not create dummy kv for tests: %v", err)
+	}
+
+	lkr := NewLinker(kv)
+	if err := lkr.MakeCommit(n.AuthorOfStage(), "initial commit"); err != nil {
+		t.Fatalf("Failed to create initial commit out of nothing: %v", err)
+	}
+
+	head, err := lkr.Head()
+	if err != nil {
+		t.Fatalf("Failed to retrieve Head after initial commit: %v", err)
+	}
+
+	oldHeadHash := head.Hash().Clone()
+
+	if err := kv.Close(); err != nil {
+		t.Fatalf("Closing the dummy kv failed: %v", err)
+	}
+
+	kv, err = db.NewDiskDatabase(dbPath)
+	if err != nil {
+		t.Fatalf("Could not create second dummy kv: %v", err)
+	}
+
+	lkr = NewLinker(kv)
+	head, err = lkr.Head()
+	if err != nil {
+		t.Fatalf("Failed to retrieve head after kv reload: %v", err)
+	}
+
+	if !oldHeadHash.Equal(head.Hash()) {
+		t.Fatalf("HEAD hash differs before and after reload: %v <-> %v", oldHeadHash, head.Hash())
+	}
+
+	if err := kv.Close(); err != nil {
+		t.Fatalf("Closing the second kv failed: %v", err)
+	}
+}
+
+func TestCollideSameObjectHash(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+		root, err := lkr.Root()
+		if err != nil {
+			t.Fatalf("Failed to retrieve root: %v", err)
+		}
+
+		sub, err := n.NewEmptyDirectory(lkr, root, "sub", 3)
+		if err != nil {
+			t.Fatalf("Creating empty sub dir failed: %v", err)
+			return
+		}
+
+		if err := lkr.StageNode(sub); err != nil {
+			t.Fatalf("Staging /sub failed: %v", err)
+		}
+
+		file1, err := n.NewEmptyFile(sub, "a.png", 4)
+		if err != nil {
+			t.Fatalf("Failed to create empty file1: %v", err)
+		}
+
+		file2, err := n.NewEmptyFile(root, "a.png", 5)
+		if err != nil {
+			t.Fatalf("Failed to create empty file2: %v", err)
+		}
+
+		file3, err := n.NewEmptyFile(root, "b.png", 6)
+		if err != nil {
+			t.Fatalf("Failed to create empty file3: %v", err)
+		}
+
+		file1.SetContent(lkr, h.TestDummy(t, 1))
+		file2.SetContent(lkr, h.TestDummy(t, 1))
+		file3.SetContent(lkr, h.TestDummy(t, 1))
+
+		// TODO: Shouldn't NewEmptyFile call this? It gets the parent...
+		if err := sub.Add(lkr, file1); err != nil {
+			t.Fatalf("Failed to add file1: %v", err)
+		}
+		if err := root.Add(lkr, file2); err != nil {
+			t.Fatalf("Failed to add file2: %v", err)
+		}
+		if err := root.Add(lkr, file3); err != nil {
+			t.Fatalf("Failed to add file3: %v", err)
+		}
+
+		if err := lkr.StageNode(file1); err != nil {
+			t.Fatalf("Failed to stage file1: %v", err)
+		}
+		if err := lkr.StageNode(file2); err != nil {
+			t.Fatalf("Failed to stage file2: %v", err)
+		}
+		if err := lkr.StageNode(file3); err != nil {
+			t.Fatalf("Failed to stage file3: %v", err)
+		}
+
+		fmt.Println(file1.Hash())
+		fmt.Println(file2.Hash())
+		fmt.Println(file3.Hash())
+		if file1.Hash().Equal(file2.Hash()) {
+			t.Fatalf("file1 and file2 hash is equal: %v", file1.Hash())
+		}
+		if file2.Hash().Equal(file3.Hash()) {
+			t.Fatalf("file2 and file3 hash is equal: %v", file2.Hash())
+		}
+
+		// Make sure we load the actual hases from disk:
+		lkr.MemIndexClear()
+		file1Reset, err := lkr.LookupFile("/sub/a.png")
+		if err != nil {
+			t.Fatalf("Re-Lookup of file1 failed: %v", err)
+		}
+		file2Reset, err := lkr.LookupFile("/a.png")
+		if err != nil {
+			t.Fatalf("Re-Lookup of file2 failed: %v", err)
+		}
+		file3Reset, err := lkr.LookupFile("/b.png")
+		if err != nil {
+			t.Fatalf("Re-Lookup of file3 failed: %v", err)
+		}
+
+		if file1Reset.Hash().Equal(file2Reset.Hash()) {
+			t.Fatalf("file1Reset and file2Reset hash is equal: %v", file1.Hash())
+		}
+		if file2Reset.Hash().Equal(file3Reset.Hash()) {
+			t.Fatalf("file2Reset and file3Reset hash is equal: %v", file2.Hash())
 		}
 	})
 }

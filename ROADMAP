@@ -9,8 +9,8 @@ PRIORITIES:
 
 All changes should be with fitting unittests.
 
-- [H] Implement a Garbage collector to ease the creation of intermediate nodes.
-- [L] Implement transaction (at least on the write site) based key/value storage.
+✓ [H] Implement a Garbage collector to ease the creation of intermediate nodes.
+✓ [L] Implement transaction (at least on the write site) based key/value storage.
 - [H] Implement Ghost creation and make Nodes have a ghost ref if they were moved.
 - [U] Implement coreutils on top of linker (touch, mkdir, cat, move, remove).
 - [H] Implement good locking strategy to allow giving nodes to fuse/outside.
