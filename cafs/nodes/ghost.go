@@ -13,7 +13,7 @@ import (
 // If another file is moved to the new place, the ghost will be "resurrected"
 // with the new content.
 type Ghost struct {
-	SettableNode
+	ModNode
 
 	oldType NodeType
 }
@@ -21,9 +21,9 @@ type Ghost struct {
 // MakeGhost takes an existing node and converts it to a ghost.
 // In the ghost form no metadata is lost, but the node should
 // not show up.
-func MakeGhost(nd SettableNode) (*Ghost, error) {
+func MakeGhost(nd ModNode) (*Ghost, error) {
 	return &Ghost{
-		SettableNode: nd.Copy(),
+		ModNode: nd.Copy(),
 		oldType:      nd.Type(),
 	}, nil
 }
@@ -34,11 +34,11 @@ func (g *Ghost) Type() NodeType {
 }
 
 func (g *Ghost) OldNode() Node {
-	return g.SettableNode
+	return g.ModNode
 }
 
 func (g *Ghost) OldFile() (*File, error) {
-	file, ok := g.SettableNode.(*File)
+	file, ok := g.ModNode.(*File)
 	if !ok {
 		return nil, ErrBadNode
 	}
@@ -47,11 +47,11 @@ func (g *Ghost) OldFile() (*File, error) {
 }
 
 func (g *Ghost) String() string {
-	return fmt.Sprintf("<ghost: %v>", g.SettableNode)
+	return fmt.Sprintf("<ghost: %v>", g.ModNode)
 }
 
 func (g *Ghost) Hash() h.Hash {
-	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.SettableNode.Hash())))
+	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.Hash())))
 }
 
 // ToCapnp serializes the underlying node
@@ -76,7 +76,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 
 	switch g.oldType {
 	case NodeTypeFile:
-		file, ok := g.SettableNode.(*File)
+		file, ok := g.ModNode.(*File)
 		if !ok {
 			return nil, ErrBadNode
 		}
@@ -89,7 +89,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 		base = &file.Base
 		err = capghost.SetFile(*capfile)
 	case NodeTypeDirectory:
-		dir, ok := g.SettableNode.(*Directory)
+		dir, ok := g.ModNode.(*Directory)
 		if !ok {
 			return nil, ErrBadNode
 		}
@@ -148,7 +148,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 			return err
 		}
 
-		g.SettableNode = dir
+		g.ModNode = dir
 	case capnp_model.Ghost_Which_file:
 		capfile, err := capghost.File()
 		if err != nil {
@@ -160,7 +160,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 			return err
 		}
 
-		g.SettableNode = file
+		g.ModNode = file
 	default:
 		return ErrBadNode
 	}

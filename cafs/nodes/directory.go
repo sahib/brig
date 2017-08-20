@@ -405,7 +405,7 @@ func (d *Directory) SetName(name string) { d.name = name }
 // SetModTime will set a new mod time to this directory (i.e. "touch" it)
 func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
 
-func (d *Directory) Copy() SettableNode {
+func (d *Directory) Copy() ModNode {
 	children := make(map[string]h.Hash)
 	for name, hash := range d.children {
 		children[name] = hash.Clone()
@@ -478,4 +478,4 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 }
 
 // Assert that Directory follows the Node interface:
-var _ SettableNode = &Directory{}
+var _ ModNode = &Directory{}

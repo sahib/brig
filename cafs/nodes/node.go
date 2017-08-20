@@ -105,10 +105,10 @@ type Node interface {
 	HierarchyEntry
 }
 
-// SettableNode is a node that supports modification of
+// ModNode is a node that supports modification of
 // it's core attributes. File and Directory are settable,
 // but a commit is not.
-type SettableNode interface {
+type ModNode interface {
 	Node
 
 	SetSize(size uint64)
@@ -116,5 +116,5 @@ type SettableNode interface {
 	SetName(name string)
 
 	// TODO: This shouldn't be part of this interface...
-	Copy() SettableNode
+	Copy() ModNode
 }

@@ -150,7 +150,7 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) Copy() SettableNode {
+func (f *File) Copy() ModNode {
 	return &File{
 		Base:    f.Base.copyBase(),
 		size:    f.size,
@@ -226,5 +226,5 @@ func (f *File) Key() []byte {
 }
 
 // Interface check for debugging:
-var _ SettableNode = &File{}
+var _ ModNode = &File{}
 var _ Streamable = &File{}

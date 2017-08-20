@@ -124,7 +124,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (parentDir *n.Directory, err error) {
+func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory, err error) {
 	parent, err := nd.Parent(lkr)
 	if err != nil {
 		return nil, err
@@ -180,14 +180,14 @@ func remove(lkr *Linker, nd n.SettableNode, createGhost bool) (parentDir *n.Dire
 	return parentDir, nil
 }
 
-func move(lkr *Linker, nd n.SettableNode, destPath string) (err error) {
+func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if strings.HasPrefix(destPath, nd.Path()) {
 		return fmt.Errorf("Cannot move `%s` into it's own subdir `%s`", nd.Path(), destPath)
 	}
 
 	// Check if the destination already exists:
-	destNode, err := lkr.LookupSettableNode(destPath)
+	destNode, err := lkr.LookupModNode(destPath)
 	if err != nil && !n.IsNoSuchFileError(err) {
 		return err
 	}
@@ -282,7 +282,7 @@ func move(lkr *Linker, nd n.SettableNode, destPath string) (err error) {
 	return lkr.StageNode(nd)
 }
 
-func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
+func resetNode(lkr *Linker, node n.ModNode, commit *n.Commit) (err error) {
 	oldRoot, err := lkr.DirectoryByHash(commit.Root())
 	if err != nil {
 		return err
@@ -291,14 +291,23 @@ func resetNode(lkr *Linker, node n.SettableNode, commit *n.Commit) error {
 	repoPath := node.Path()
 	oldNode, err := oldRoot.Lookup(lkr, repoPath)
 
-	oldModNode, ok := oldNode.(n.SettableNode)
+	oldModNode, ok := oldNode.(n.ModNode)
 	if !ok {
 		return n.ErrBadNode
 	}
 
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
 	if n.IsNoSuchFileError(err) {
 		// Node did not exist back then. Remove the current node.
-		_, err = remove(lkr, oldModNode, false)
+		_, err = remove(lkr, node, false)
 		return err
 	}
 
@@ -336,11 +345,20 @@ type NodeUpdate struct {
 	Key    []byte
 }
 
-func stage(lkr *Linker, repoPath string, info *NodeUpdate) (*n.File, error) {
-	file, err := lkr.LookupFile(repoPath)
+func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
+	file, err = lkr.LookupFile(repoPath)
 	if err != nil && !n.IsNoSuchFileError(err) {
 		return nil, err
 	}
+
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
 
 	needRemove := false
 	if file != nil {

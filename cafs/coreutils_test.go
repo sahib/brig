@@ -254,19 +254,19 @@ func TestMove(t *testing.T) {
 	var tcs = []struct {
 		name        string
 		isErrorCase bool
-		setup       func(t *testing.T, lkr *Linker) (n.SettableNode, string)
+		setup       func(t *testing.T, lkr *Linker) (n.ModNode, string)
 	}{
 		{
 			name:        "basic",
 			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/a/b/c")
 				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/y"
 			},
 		}, {
 			name:        "move-into-directory",
 			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/a/b/c")
 				mustMkdir(t, lkr, "/a/b/d")
 				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/d"
@@ -274,7 +274,7 @@ func TestMove(t *testing.T) {
 		}, {
 			name:        "error-move-to-directory-contains-file",
 			isErrorCase: true,
-			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
 				touchFile(t, lkr, "/dst/x", 1)
@@ -283,7 +283,7 @@ func TestMove(t *testing.T) {
 		}, {
 			name:        "error-move-file-over-existing",
 			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.SettableNode, string) {
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
 				touchFile(t, lkr, "/dst/x", 1)

@@ -681,7 +681,7 @@ func (lkr *Linker) LookupNode(repoPath string) (n.Node, error) {
 	return root.Lookup(lkr, repoPath)
 }
 
-func (lkr *Linker) LookupSettableNode(repoPath string) (n.SettableNode, error) {
+func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 	node, err := lkr.LookupNode(repoPath)
 	if err != nil {
 		return nil, err
@@ -691,7 +691,7 @@ func (lkr *Linker) LookupSettableNode(repoPath string) (n.SettableNode, error) {
 		return nil, nil
 	}
 
-	snode, ok := node.(n.SettableNode)
+	snode, ok := node.(n.ModNode)
 	if !ok {
 		return nil, n.ErrBadNode
 	}
@@ -699,7 +699,7 @@ func (lkr *Linker) LookupSettableNode(repoPath string) (n.SettableNode, error) {
 	return snode, nil
 }
 
-func (lkr *Linker) ResolveSettableNode(repoPath string) (n.SettableNode, error) {
+func (lkr *Linker) ResolveModNode(repoPath string) (n.ModNode, error) {
 	node, err := lkr.ResolveNode(repoPath)
 	if err != nil {
 		return nil, err
@@ -709,7 +709,7 @@ func (lkr *Linker) ResolveSettableNode(repoPath string) (n.SettableNode, error) 
 		return nil, nil
 	}
 
-	snode, ok := node.(n.SettableNode)
+	snode, ok := node.(n.ModNode)
 	if !ok {
 		return nil, n.ErrBadNode
 	}
