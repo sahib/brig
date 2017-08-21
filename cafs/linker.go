@@ -699,24 +699,6 @@ func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 	return snode, nil
 }
 
-func (lkr *Linker) ResolveModNode(repoPath string) (n.ModNode, error) {
-	node, err := lkr.ResolveNode(repoPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if node == nil {
-		return nil, nil
-	}
-
-	snode, ok := node.(n.ModNode)
-	if !ok {
-		return nil, n.ErrBadNode
-	}
-
-	return snode, nil
-}
-
 // DirectoryByHash calls NodeByHash and attempts to convert
 // it to a Directory as convinience.
 func (lkr *Linker) DirectoryByHash(hash h.Hash) (*n.Directory, error) {

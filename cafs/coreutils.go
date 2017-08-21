@@ -125,20 +125,15 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
 func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Directory, err error) {
-	parent, err := nd.Parent(lkr)
+	parentDir, err = n.ParentDirectory(lkr, nd)
 	if err != nil {
 		return nil, err
 	}
 
 	// We shouldn't delete the root directory
 	// (only directory with a parent)
-	if parent == nil {
+	if parentDir == nil {
 		return nil, fmt.Errorf("Refusing to delete /")
-	}
-
-	parentDir, ok := parent.(*n.Directory)
-	if !ok {
-		return nil, n.ErrBadNode
 	}
 
 	if err := parentDir.RemoveChild(lkr, nd); err != nil {
@@ -157,7 +152,7 @@ func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Director
 		}
 	}()
 
-	if err := lkr.StageNode(parent); err != nil {
+	if err := lkr.StageNode(parentDir); err != nil {
 		return nil, err
 	}
 
@@ -283,64 +278,6 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	return lkr.StageNode(nd)
 }
 
-// reset will reset the state of node to the state present in commit.
-// Resetting to HEAD is the same as unstaging.
-func reset(lkr *Linker, node n.ModNode, commit *n.Commit) (err error) {
-	oldRoot, err := lkr.DirectoryByHash(commit.Root())
-	if err != nil {
-		return err
-	}
-
-	repoPath := node.Path()
-	oldNode, err := oldRoot.Lookup(lkr, repoPath)
-
-	oldModNode, ok := oldNode.(n.ModNode)
-	if !ok {
-		return n.ErrBadNode
-	}
-
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
-	if n.IsNoSuchFileError(err) {
-		// Node did not exist back then. Remove the current node.
-		_, err = remove(lkr, node, nil)
-		return err
-	}
-
-	// Different error, abort.
-	if err != nil {
-		return err
-	}
-
-	parent, err := node.Parent(lkr)
-	if err != nil {
-		return err
-	}
-
-	parentDir, ok := parent.(*n.Directory)
-	if !ok {
-		return n.ErrBadNode
-	}
-
-	if err := parentDir.RemoveChild(lkr, node); err != nil {
-		return err
-	}
-
-	newOldNode := oldModNode.Copy()
-	if err := parentDir.Add(lkr, newOldNode); err != nil {
-		return err
-	}
-
-	return lkr.StageNode(newOldNode)
-}
-
 type NodeUpdate struct {
 	Hash   h.Hash
 	Size   uint64
@@ -386,18 +323,13 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		}
 	}
 
-	parent, err := file.Parent(lkr)
+	parentDir, err := n.ParentDirectory(lkr, file)
 	if err != nil {
 		return nil, err
 	}
 
-	if parent == nil {
+	if parentDir == nil {
 		return nil, fmt.Errorf("%s has no parent yet (BUG)", repoPath)
-	}
-
-	parentDir, ok := parent.(*n.Directory)
-	if !ok {
-		return nil, n.ErrBadNode
 	}
 
 	if needRemove {
