@@ -150,7 +150,8 @@ func TestRemove(t *testing.T) {
 			t.Fatalf("Failed to lookup nested file: %v", err)
 		}
 
-		parentDir, err := remove(lkr, file, true)
+		// Fill in a dummy file hash, so we get a ghost instance
+		parentDir, err := remove(lkr, file, file.Hash())
 		if err != nil {
 			t.Fatalf("Remove failed: %v", err)
 		}
@@ -186,7 +187,8 @@ func TestRemove(t *testing.T) {
 			t.Fatalf("Getting parent of /some/nested failed: %v", err)
 		}
 
-		parentDir, err = remove(lkr, nestedDir, true)
+		// Just fill in a dummy moved to ref, to get a ghost.
+		parentDir, err = remove(lkr, nestedDir, nestedDir.Hash())
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
 		}
@@ -314,4 +316,43 @@ func TestMove(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestStage(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+
+		update := &NodeUpdate{
+			Hash:   h.TestDummy(t, 1),
+			Size:   3,
+			Author: "me",
+			Key:    make([]byte, 32),
+		}
+
+		// Initial stage of the file:
+		file, err := stage(lkr, "/photos/moose.png", update)
+		if err != nil {
+			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
+		}
+
+		if !file.Content().Equal(h.TestDummy(t, 1)) {
+			t.Fatalf("File content after stage is not what's advertised: %v", file.Content())
+		}
+
+		update = &NodeUpdate{
+			Hash:   h.TestDummy(t, 2),
+			Size:   3,
+			Author: "me",
+			Key:    make([]byte, 32),
+		}
+
+		file, err = stage(lkr, "/photos/moose.png", update)
+		if err != nil {
+			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
+		}
+
+		if !file.Content().Equal(h.TestDummy(t, 2)) {
+			t.Fatalf("File content after update is not what's advertised: %v", file.Content())
+		}
+	})
 }

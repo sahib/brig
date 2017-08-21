@@ -900,7 +900,7 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 }
 
 // CheckoutCommit resets the current staging commit back to the commit
-// referenced by cmt. If force is false, it will check if there any stages in
+// referenced by cmt. If force is false, it will check if there any staged errors in
 // the staging area and return ErrStageNotEmpty if there are any. If force is
 // true, all changes will be overwritten.
 // TODO: write test for this.

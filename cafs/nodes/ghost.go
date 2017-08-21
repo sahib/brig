@@ -15,16 +15,18 @@ import (
 type Ghost struct {
 	ModNode
 
+	movedTo h.Hash
 	oldType NodeType
 }
 
 // MakeGhost takes an existing node and converts it to a ghost.
 // In the ghost form no metadata is lost, but the node should
 // not show up.
-func MakeGhost(nd ModNode) (*Ghost, error) {
+func MakeGhost(nd ModNode, movedTo h.Hash) (*Ghost, error) {
 	return &Ghost{
 		ModNode: nd.Copy(),
-		oldType:      nd.Type(),
+		oldType: nd.Type(),
+		movedTo: movedTo,
 	}, nil
 }
 
@@ -35,6 +37,10 @@ func (g *Ghost) Type() NodeType {
 
 func (g *Ghost) OldNode() Node {
 	return g.ModNode
+}
+
+func (g *Ghost) MovedTo(lkr Linker) (Node, error) {
+	return lkr.NodeByHash(g.movedTo)
 }
 
 func (g *Ghost) OldFile() (*File, error) {
@@ -71,6 +77,10 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 
 	capghost, err := capnode.NewGhost()
 	if err != nil {
+		return nil, err
+	}
+
+	if err := capghost.SetMovedTo(g.movedTo); err != nil {
 		return nil, err
 	}
 
@@ -136,6 +146,11 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
+	g.movedTo, err = capghost.MovedTo()
+	if err != nil {
+		return err
+	}
+
 	switch typ := capghost.Which(); typ {
 	case capnp_model.Ghost_Which_directory:
 		capdir, err := capghost.Directory()
@@ -149,6 +164,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		}
 
 		g.ModNode = dir
+		g.oldType = NodeTypeDirectory
 	case capnp_model.Ghost_Which_file:
 		capfile, err := capghost.File()
 		if err != nil {
@@ -161,6 +177,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		}
 
 		g.ModNode = file
+		g.oldType = NodeTypeFile
 	default:
 		return ErrBadNode
 	}

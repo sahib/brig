@@ -124,7 +124,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory, err error) {
+func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Directory, err error) {
 	parent, err := nd.Parent(lkr)
 	if err != nil {
 		return nil, err
@@ -161,8 +161,8 @@ func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory
 		return nil, err
 	}
 
-	if createGhost {
-		ghost, err := n.MakeGhost(nd)
+	if movedToRef != nil {
+		ghost, err := n.MakeGhost(nd, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -237,7 +237,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				// Okay, there is an empty directory. Let's remove it to
 				// replace it with our source node.
-				if _, err := remove(lkr, childDir, false); err != nil {
+				if _, err := remove(lkr, childDir, nil); err != nil {
 					return err
 				}
 			}
@@ -245,13 +245,13 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 			parentDir = destDir
 		case n.NodeTypeFile:
 			// Move over this file, making it a Ghost.
-			parentDir, err = remove(lkr, destNode, false)
+			parentDir, err = remove(lkr, destNode, nil)
 			if err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
 			// It is already a ghost. Overwrite it and do not create a new one.
-			parentDir, err = remove(lkr, destNode, false)
+			parentDir, err = remove(lkr, destNode, nil)
 			if err != nil {
 				return err
 			}
@@ -267,7 +267,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	}
 
 	// Remove the old node:
-	_, err = remove(lkr, nd, true)
+	_, err = remove(lkr, nd, nd.Hash())
 	if err != nil {
 		return err
 	}
@@ -279,10 +279,13 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
+	fmt.Println("--> GHOST AFTER: ", nd.Hash())
 	return lkr.StageNode(nd)
 }
 
-func resetNode(lkr *Linker, node n.ModNode, commit *n.Commit) (err error) {
+// reset will reset the state of node to the state present in commit.
+// Resetting to HEAD is the same as unstaging.
+func reset(lkr *Linker, node n.ModNode, commit *n.Commit) (err error) {
 	oldRoot, err := lkr.DirectoryByHash(commit.Root())
 	if err != nil {
 		return err
@@ -307,7 +310,7 @@ func resetNode(lkr *Linker, node n.ModNode, commit *n.Commit) (err error) {
 
 	if n.IsNoSuchFileError(err) {
 		// Node did not exist back then. Remove the current node.
-		_, err = remove(lkr, node, false)
+		_, err = remove(lkr, node, nil)
 		return err
 	}
 
@@ -420,3 +423,6 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 
 	return file, nil
 }
+
+// TODO: coreutil: Walk
+// TODO: ghost: moved-to ref.

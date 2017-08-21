@@ -16,7 +16,7 @@ func TestGhost(t *testing.T) {
 	lkr.AddNode(root)
 	lkr.MemSetRoot(root)
 
-	ghost, err := MakeGhost(root)
+	ghost, err := MakeGhost(root, nil)
 	if err != nil {
 		t.Fatalf("Failed to make root dir a ghost: %v", err)
 	}
