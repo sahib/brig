@@ -571,6 +571,7 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 
 	if IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
+		// TODO: Replace ResolveDirectory -> Resolve* can be removed.
 		if root, err := lkr.ResolveDirectory("/"); err == nil {
 			rootHash = root.Hash()
 		} else {

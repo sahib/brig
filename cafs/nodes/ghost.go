@@ -111,6 +111,8 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 
 		base = &dir.Base
 		err = capghost.SetDirectory(*capdir)
+	case NodeTypeGhost:
+		panic("Recursive ghosts are not possible")
 	default:
 		panic(fmt.Sprintf("Unknown node type: %d", g.oldType))
 	}

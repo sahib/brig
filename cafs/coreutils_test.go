@@ -199,6 +199,39 @@ func TestRemove(t *testing.T) {
 	})
 }
 
+func TestRemoveGhost(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+		file := touchFile(t, lkr, "/x", 1)
+		par, err := n.ParentDirectory(lkr, file)
+		if err != nil {
+			t.Fatalf("Failed to get get parent directory of /x: %v", err)
+		}
+
+		if err := par.RemoveChild(lkr, file); err != nil {
+			t.Fatalf("Removing child /x failed: %v", err)
+		}
+
+		ghost, err := n.MakeGhost(file, nil)
+		if err != nil {
+			t.Fatalf("Failed to summon ghost: %v", err)
+		}
+
+		if err := par.Add(lkr, ghost); err != nil {
+			t.Fatalf("Re-adding ghost failed: %v", err)
+		}
+
+		if err := lkr.StageNode(ghost); err != nil {
+			t.Fatalf("Staging ghost failed: %v", err)
+		}
+
+		// Try to remove a ghost:
+		if _, err := remove(lkr, ghost, ghost.Hash()); err != nil {
+			t.Fatalf("Removing ghost failed: %v", err)
+		}
+	})
+}
+
 func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 	nd, err := lkr.LookupNode(srcPath)
 

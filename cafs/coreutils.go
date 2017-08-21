@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	n "github.com/disorganizer/brig/cafs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/pkg/errors"
 )
 
 // mkdirParents takes the dirname of repoPath and makes sure all intermediate
@@ -40,19 +41,6 @@ func mkdirParents(lkr *Linker, repoPath string) (*n.Directory, error) {
 	return nil, fmt.Errorf("Empty path given")
 }
 
-func printTree(lkr *Linker) {
-	fmt.Println("=== PRINT ===")
-	root, err := lkr.Root()
-	if err != nil {
-		return
-	}
-
-	err = n.Walk(lkr, root, true, func(child n.Node) error {
-		fmt.Printf("%-47s %s\n", child.Hash().B58String(), child.Path())
-		return nil
-	})
-}
-
 // mkdir creates the directory at repoPath and any intermediate directories if
 // createParents is true. It will fail if there is already a file at `repoPath`
 // and it is not a directory.
@@ -67,7 +55,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	// Check if the parent exists:
 	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil && !n.IsNoSuchFileError(err) {
-		return nil, err
+		return nil, errors.Wrap(err, "dirname lookup failed")
 	}
 
 	log.Debugf("mkdir: %s", dirname)
@@ -125,6 +113,10 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
 func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Directory, err error) {
+	if nd.Type() == n.NodeTypeGhost {
+		return nil, fmt.Errorf("Refusing to remove a ghost: %v", nd.Path())
+	}
+
 	parentDir, err = n.ParentDirectory(lkr, nd)
 	if err != nil {
 		return nil, err
@@ -137,7 +129,7 @@ func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Director
 	}
 
 	if err := parentDir.RemoveChild(lkr, nd); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to remove child: %v", err)
 	}
 
 	lkr.MemIndexPurge(nd)
