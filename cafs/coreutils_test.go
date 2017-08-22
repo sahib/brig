@@ -1,7 +1,6 @@
 package cafs
 
 import (
-	"fmt"
 	"path"
 	"testing"
 
@@ -40,7 +39,6 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	}
 
 	file.SetContent(lkr, h.TestDummy(t, seed))
-	fmt.Println("HASH FILE:", file.Hash(), parent.Hash())
 
 	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
@@ -151,7 +149,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Fill in a dummy file hash, so we get a ghost instance
-		parentDir, err := remove(lkr, file, file.Hash())
+		parentDir, _, err := remove(lkr, file, true)
 		if err != nil {
 			t.Fatalf("Remove failed: %v", err)
 		}
@@ -188,9 +186,13 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Just fill in a dummy moved to ref, to get a ghost.
-		parentDir, err = remove(lkr, nestedDir, nestedDir.Hash())
+		parentDir, ghost, err = remove(lkr, nestedDir, true)
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
+		}
+
+		if ghost == nil || ghost.Type() != n.NodeTypeGhost {
+			t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
 		}
 
 		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {
@@ -226,8 +228,8 @@ func TestRemoveGhost(t *testing.T) {
 		}
 
 		// Try to remove a ghost:
-		if _, err := remove(lkr, ghost, ghost.Hash()); err != nil {
-			t.Fatalf("Removing ghost failed: %v", err)
+		if _, _, err := remove(lkr, ghost, true); err != ErrIsGhost {
+			t.Fatalf("Removing ghost failed or succeeded: %v", err)
 		}
 	})
 }
@@ -255,7 +257,6 @@ func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 
 func moveInvalidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 	node, err := lkr.LookupNode(srcPath)
-	fmt.Println("Source still there?", node)
 	if err != nil {
 		t.Fatalf("Source node vanished during errorneous move: %v", err)
 	}
@@ -338,7 +339,6 @@ func TestMove(t *testing.T) {
 
 				if err := move(lkr, srcNd, dstPath); err != nil {
 					if tc.isErrorCase {
-						fmt.Println("ERROR", err)
 						moveInvalidCheck(t, lkr, srcPath, dstPath)
 					} else {
 						t.Fatalf("Move failed unexpectly: %v", err)

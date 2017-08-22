@@ -1,6 +1,7 @@
 package cafs
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -9,7 +10,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 	n "github.com/disorganizer/brig/cafs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
-	"github.com/pkg/errors"
+	e "github.com/pkg/errors"
+)
+
+var (
+	ErrIsGhost = errors.New("Is a ghost")
 )
 
 // mkdirParents takes the dirname of repoPath and makes sure all intermediate
@@ -55,7 +60,7 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	// Check if the parent exists:
 	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil && !n.IsNoSuchFileError(err) {
-		return nil, errors.Wrap(err, "dirname lookup failed")
+		return nil, e.Wrap(err, "dirname lookup failed")
 	}
 
 	log.Debugf("mkdir: %s", dirname)
@@ -112,24 +117,24 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Directory, err error) {
+func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
 	if nd.Type() == n.NodeTypeGhost {
-		return nil, fmt.Errorf("Refusing to remove a ghost: %v", nd.Path())
+		return nil, nil, ErrIsGhost
 	}
 
 	parentDir, err = n.ParentDirectory(lkr, nd)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// We shouldn't delete the root directory
 	// (only directory with a parent)
 	if parentDir == nil {
-		return nil, fmt.Errorf("Refusing to delete /")
+		return nil, nil, fmt.Errorf("Refusing to delete /")
 	}
 
 	if err := parentDir.RemoveChild(lkr, nd); err != nil {
-		return nil, fmt.Errorf("Failed to remove child: %v", err)
+		return nil, nil, fmt.Errorf("Failed to remove child: %v", err)
 	}
 
 	lkr.MemIndexPurge(nd)
@@ -145,26 +150,28 @@ func remove(lkr *Linker, nd n.ModNode, movedToRef h.Hash) (parentDir *n.Director
 	}()
 
 	if err := lkr.StageNode(parentDir); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if movedToRef != nil {
+	if createGhost {
 		ghost, err := n.MakeGhost(nd, nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		parentDir.Add(lkr, ghost)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if err := lkr.StageNode(ghost); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
+		return parentDir, ghost, nil
 	}
 
-	return parentDir, nil
+	return parentDir, nil, nil
 }
 
 func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
@@ -224,7 +231,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				// Okay, there is an empty directory. Let's remove it to
 				// replace it with our source node.
-				if _, err := remove(lkr, childDir, nil); err != nil {
+				if _, _, err := remove(lkr, childDir, false); err != nil {
 					return err
 				}
 			}
@@ -232,13 +239,13 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 			parentDir = destDir
 		case n.NodeTypeFile:
 			// Move over this file, making it a Ghost.
-			parentDir, err = remove(lkr, destNode, nil)
+			parentDir, _, err = remove(lkr, destNode, false)
 			if err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
 			// It is already a ghost. Overwrite it and do not create a new one.
-			parentDir, err = remove(lkr, destNode, nil)
+			parentDir, _, err = remove(lkr, destNode, false)
 			if err != nil {
 				return err
 			}
@@ -254,7 +261,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	}
 
 	// Remove the old node:
-	_, err = remove(lkr, nd, nd.Hash())
+	_, ghost, err := remove(lkr, nd, true)
 	if err != nil {
 		return err
 	}
@@ -266,7 +273,10 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
-	fmt.Println("--> GHOST AFTER: ", nd.Hash())
+	if err := lkr.AddMoveMapping(nd, ghost); err != nil {
+		return err
+	}
+
 	return lkr.StageNode(nd)
 }
 

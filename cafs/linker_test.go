@@ -74,7 +74,9 @@ func TestLinkerInsertRoot(t *testing.T) {
 			t.Fatalf("Failed to retrieve status: %v", err)
 		}
 
-		fmt.Println(status.Hash())
+		if !status.Root().Equal(root.Hash()) {
+			t.Fatalf("status.root and root differ: %v <->", status.Root(), root.Hash())
+		}
 	})
 }
 
@@ -415,9 +417,6 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Failed to stage file3: %v", err)
 		}
 
-		fmt.Println(file1.Hash())
-		fmt.Println(file2.Hash())
-		fmt.Println(file3.Hash())
 		if file1.Hash().Equal(file2.Hash()) {
 			t.Fatalf("file1 and file2 hash is equal: %v", file1.Hash())
 		}

@@ -66,7 +66,6 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Converting to ghost..")
 
 	capnode, err := capnp_model.NewRootNode(seg)
 	if err != nil {

@@ -35,16 +35,12 @@ struct Directory $Go.doc("Directory contains one or more directories or files") 
     size     @0 :UInt64;
     parent   @1 :Text;
     children @2 :List(DirEntry);
-    ghostRef @3 :Data;
 }
 
 struct File $Go.doc("A leaf node in the MDAG") {
     size     @0 :UInt64;
     parent   @1 :Text;
     key      @2 :Data;
-
-    # TODO: figure out if we should make inode based refs here to save space.
-    ghostRef @3 :Data;
 
     # Hash to the content in ipfs.
     content  @4 :Data;

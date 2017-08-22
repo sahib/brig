@@ -4,8 +4,7 @@ package cafs
 //
 // objects/<NODE_HASH>                   => NODE_METADATA
 // tree/<FULL_NODE_PATH>                 => NODE_HASH
-// uid/<NODE_HASH>                       => NODE_HASH
-// checkpoints/<HEX_NODE_ID>/<IDX>       => CHECKPOINT_DATA
+// inode/<NODE_HASH>                     => NODE_HASH
 //
 // stage/objects/<NODE_HASH>             => NODE_METADATA
 // stage/tree/<FULL_NODE_PATH>           => NODE_HASH
@@ -360,10 +359,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 
 	// Only compare with previous if we have a HEAD yet.
 	if head != nil {
-		fmt.Println("HEAD", head.Root())
-		fmt.Println("STAT", status.Root())
 		if status.Root().Equal(head.Root()) {
-			fmt.Println("no change...")
 			return ErrNoChange
 		}
 	}
@@ -398,6 +394,12 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 		return err
 	}
 
+	// Also copy the mapping of moved files over from <F10>
+	err = db.CopyBucket(lkr.kv, []string{"stage", "moves"}, []string{"moves"})
+	if err != nil {
+		return err
+	}
+
 	if head != nil {
 		if err := status.SetParent(lkr, head); err != nil {
 			return err
@@ -426,6 +428,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 	toClear := [][]string{
 		[]string{"stage", "objects"},
 		[]string{"stage", "tree"},
+		[]string{"stage", "moves"},
 	}
 
 	for _, key := range toClear {
@@ -982,4 +985,79 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	}
 
 	return lkr.StageNode(oldNode)
+}
+
+func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
+	// Make sure the actual checkout will land as one batch on disk:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
+	fromB58 := from.Hash().B58String()
+	toB58 := to.Hash().B58String()
+
+	batch.Put([]byte(fmt.Sprintf("> %s", toB58)), "stage", "moves", fromB58)
+	batch.Put([]byte(fmt.Sprintf("> %s", fromB58)), "stage", "moves", toB58)
+	return nil
+}
+
+const (
+	MoveDirectionUnknown = iota
+	MoveDirectionForward
+	MoveDirectionBackward
+)
+
+type MoveDirection int
+
+func (lkr *Linker) MoveMapping(nd n.Node) (n.Node, MoveDirection, error) {
+	b58Hash := nd.Hash().B58String()
+	fullPaths := [][]string{
+		[]string{"stage", "moves", b58Hash},
+		[]string{"moves", b58Hash},
+	}
+
+	for _, fullPath := range fullPaths {
+		bMoveInfo, err := lkr.kv.Get(fullPath...)
+		if err != nil && err != db.ErrNoSuchKey {
+			return nil, MoveDirectionUnknown, err
+		}
+
+		if err == db.ErrNoSuchKey {
+			continue
+		}
+
+		if len(bMoveInfo) < 3 {
+			return nil, MoveDirectionUnknown, fmt.Errorf("Malformed move data: %v", bMoveInfo)
+		}
+
+		var moveDirection MoveDirection
+		moveInfo := string(bMoveInfo)
+		switch moveInfo[0] {
+		case '>':
+			moveDirection = MoveDirectionForward
+		case '<':
+			moveDirection = MoveDirectionBackward
+		default:
+			return nil, MoveDirectionUnknown, fmt.Errorf("Unknown move direction `%s`", moveInfo[0])
+		}
+
+		hash, err := h.FromB58String(moveInfo[2:])
+		if err != nil {
+			return nil, MoveDirectionUnknown, err
+		}
+
+		node, err := lkr.NodeByHash(hash)
+		if err != nil {
+			return nil, MoveDirectionUnknown, err
+		}
+
+		return node, moveDirection, nil
+	}
+
+	return nil, MoveDirectionUnknown, nil
 }
