@@ -231,6 +231,11 @@ func (c *Commit) Name() string {
 	return c.hash.B58String()
 }
 
+// Message will return the commit message of this commit
+func (c *Commit) Message() string {
+	return c.message
+}
+
 // Path will return the path of the commit, which will
 func (c *Commit) Path() string {
 	return prefixSlash(path.Join(".snapshots", c.Name()))

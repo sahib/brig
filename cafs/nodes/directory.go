@@ -405,14 +405,14 @@ func (d *Directory) SetName(name string) { d.name = name }
 // SetModTime will set a new mod time to this directory (i.e. "touch" it)
 func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
 
-func (d *Directory) Copy() ModNode {
+func (d *Directory) Copy(inode uint64) ModNode {
 	children := make(map[string]h.Hash)
 	for name, hash := range d.children {
 		children[name] = hash.Clone()
 	}
 
 	return &Directory{
-		Base:       d.Base.copyBase(),
+		Base:       d.Base.copyBase(inode),
 		size:       d.size,
 		parentName: d.parentName,
 		children:   children,
@@ -427,6 +427,12 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	if _, ok := d.children[nd.Name()]; ok {
 		return ErrExists
+	}
+
+	// The path might have changed, so we gonna possibly need to rehash the file.
+	// (Hash() includes the full path into it's calculation, but we set that later)
+	if file, ok := nd.(*File); ok {
+		file.Rehash(lkr, prefixSlash(path.Join(d.Path(), nd.Name())))
 	}
 
 	nodeSize := nd.Size()

@@ -115,6 +115,6 @@ type ModNode interface {
 	SetModTime(modTime time.Time)
 	SetName(name string)
 
-	// TODO: This shouldn't be part of this interface...
-	Copy() ModNode
+	// TODO: Should this be part of this interface?
+	Copy(inode uint64) ModNode
 }

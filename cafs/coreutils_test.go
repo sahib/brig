@@ -214,7 +214,7 @@ func TestRemoveGhost(t *testing.T) {
 			t.Fatalf("Removing child /x failed: %v", err)
 		}
 
-		ghost, err := n.MakeGhost(file, nil)
+		ghost, err := n.MakeGhost(file, nil, 42)
 		if err != nil {
 			t.Fatalf("Failed to summon ghost: %v", err)
 		}

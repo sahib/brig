@@ -6,6 +6,9 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
+// TODO: Make sure to not gc nodes that are present in MoveMapping.
+//       (at least not in staging)
+
 type GarbageCollector struct {
 	lkr      *Linker
 	kv       db.Database

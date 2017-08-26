@@ -18,7 +18,7 @@ func withDummyKv(t *testing.T, fn func(kv db.Database)) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	defer os.RemoveAll(dbPath)
+	// defer os.RemoveAll(dbPath)
 
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {

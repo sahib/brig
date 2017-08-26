@@ -150,9 +150,9 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) Copy() ModNode {
+func (f *File) Copy(inode uint64) ModNode {
 	return &File{
-		Base:    f.Base.copyBase(),
+		Base:    f.Base.copyBase(inode),
 		size:    f.size,
 		parent:  f.parent,
 		key:     f.key,
@@ -163,15 +163,16 @@ func (f *File) Copy() ModNode {
 // updateHashFromContent will derive f.hash from f.content.
 // For files with same content, but different path we need
 // a different hash, so they will be stored as different objects.
-func (f *File) updateHashFromContent(lkr Linker) {
-	oldHash := f.hash
+func (f *File) updateHashFromContent(lkr Linker, path string) {
+	oldHash := f.hash.Clone()
+	var contentHash h.Hash
 	if f.content != nil {
-		f.hash = f.content.Clone()
+		contentHash = f.content.Clone()
 	} else {
-		f.hash = h.EmptyHash.Clone()
+		contentHash = h.EmptyHash.Clone()
 	}
 
-	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", f.Path(), f.Hash())))
+	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", path, contentHash)))
 	lkr.MemIndexSwap(f, oldHash)
 }
 
@@ -179,7 +180,11 @@ func (f *File) updateHashFromContent(lkr Linker) {
 func (f *File) SetContent(lkr Linker, h h.Hash) {
 	f.content = h.Clone()
 	f.SetModTime(time.Now())
-	f.updateHashFromContent(lkr)
+	f.updateHashFromContent(lkr, f.Path())
+}
+
+func (f *File) Rehash(lkr Linker, path string) {
+	f.updateHashFromContent(lkr, path)
 }
 
 func (f *File) Content() h.Hash {

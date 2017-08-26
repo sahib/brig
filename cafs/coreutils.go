@@ -154,7 +154,7 @@ func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory
 	}
 
 	if createGhost {
-		ghost, err := n.MakeGhost(nd, nil)
+		ghost, err := n.MakeGhost(nd, nil, lkr.NextInode())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -357,6 +357,3 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 
 	return file, nil
 }
-
-// TODO: coreutil: Walk
-// TODO: ghost: moved-to ref.

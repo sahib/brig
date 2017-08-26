@@ -29,13 +29,15 @@ type Base struct {
 	inode uint64
 }
 
-func (b *Base) copyBase() Base {
+// copyBase will copy all attributes from the base, but will set
+// the inode to `inode` in order to assert that the previous node is still unique.
+func (b *Base) copyBase(inode uint64) Base {
 	return Base{
 		name:     b.name,
 		hash:     b.hash.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
-		inode:    b.inode,
+		inode:    inode,
 	}
 }
 

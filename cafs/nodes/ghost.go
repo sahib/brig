@@ -21,10 +21,11 @@ type Ghost struct {
 
 // MakeGhost takes an existing node and converts it to a ghost.
 // In the ghost form no metadata is lost, but the node should
-// not show up.
-func MakeGhost(nd ModNode, movedTo h.Hash) (*Ghost, error) {
+// not show up. `inode` will be the new inode of the ghost.
+// It should differ to the previous node.
+func MakeGhost(nd ModNode, movedTo h.Hash, inode uint64) (*Ghost, error) {
 	return &Ghost{
-		ModNode: nd.Copy(),
+		ModNode: nd.Copy(inode),
 		oldType: nd.Type(),
 		movedTo: movedTo,
 	}, nil

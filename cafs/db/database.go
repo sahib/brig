@@ -44,6 +44,7 @@ type Database interface {
 	Get(key ...string) ([]byte, error)
 
 	// Keys returns all keys
+	// TODO: Make this look more like a iterator interface?
 	Keys(fn func(key []string) error, prefix ...string) error
 
 	// Batch returns a new Batch object, that will allow modifications
@@ -62,30 +63,4 @@ type Database interface {
 
 	// Close closes the database. Since I/O may happen, an error is returned.
 	Close() error
-}
-
-func CopyBucket(db Database, from, to []string) error {
-	batch := db.Batch()
-
-	walker := func(key []string) error {
-		base := key[len(key)-1]
-
-		data, err := db.Get(key...)
-		if err != nil {
-			return err
-		}
-
-		newPath := make([]string, len(to)+1)
-		copy(newPath, to)
-		newPath[len(newPath)-1] = base
-		batch.Put(data, newPath...)
-		return nil
-	}
-
-	if err := db.Keys(walker, from...); err != nil {
-		batch.Rollback()
-		return err
-	}
-
-	return batch.Flush()
 }
