@@ -1000,6 +1000,8 @@ func moveMapHash(nd n.Node) string {
 	return v
 }
 
+// AddMoveMapping takes note that the the node `from` has been moved to `to`
+// in the staging commit.
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
 	batch := lkr.kv.Batch()
@@ -1179,8 +1181,12 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 
 	b58Hash := moveMapHash(nd)
 	fullPaths := [][]string{
-		[]string{"stage", "moves", cmt.Hash().B58String(), b58Hash},
-		[]string{"moves", cmt.Hash().B58String(), b58Hash},
+		[]string{"stage", "moves", b58Hash},
+	}
+
+	if cmt != nil {
+		fullPaths = append(
+			fullPaths, []string{"moves", cmt.Hash().B58String(), b58Hash})
 	}
 
 	for _, fullPath := range fullPaths {

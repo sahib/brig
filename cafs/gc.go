@@ -24,6 +24,25 @@ func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *
 	}
 }
 
+func (gc *GarbageCollector) markMoveMaps() error {
+	walker := func(key []string) error {
+		data, err := gc.kv.Get(key...)
+		if err != nil {
+			return err
+		}
+
+		_, _, origHash, err := gc.lkr.parseMoveMappingLine(string(data))
+		if err != nil {
+			return err
+		}
+
+		gc.markMap[origHash.B58String()] = struct{}{}
+		return nil
+	}
+
+	return gc.kv.Keys(walker, "stage", "moves")
+}
+
 func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 	if cmt == nil {
 		return nil
@@ -106,6 +125,13 @@ func (gc *GarbageCollector) Run(allObjects bool) error {
 
 	if err := gc.mark(head, allObjects); err != nil {
 		return err
+	}
+
+	// Staging might contain moved files that are not reachable anymore,
+	// but still are referenced by the move mapping.
+	// Keep them for now, they will die most likely on MakeCommit()
+	if err := gc.markMoveMaps(); err != nil {
+
 	}
 
 	if err := gc.sweep([]string{"stage", "objects"}); err != nil {
