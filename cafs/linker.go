@@ -384,7 +384,6 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 
 		b58Hash := child.Hash().B58String()
 		batch.Put(data, "objects", b58Hash)
-		fmt.Println("=== EXPORT ", b58Hash)
 		exported[b58Hash] = true
 
 		childPath := child.Path()
@@ -1006,7 +1005,6 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	fromB58 := from.Hash().B58String()
 	toB58 := to.Hash().B58String()
 
-	fmt.Println("Linking ", fromB58, "to", toB58)
 	batch.Put([]byte(fmt.Sprintf("> inode %d", to.Inode())), "stage", "moves", fromB58)
 	batch.Put([]byte(fmt.Sprintf("< inode %d", from.Inode())), "stage", "moves", toB58)
 	return nil
@@ -1059,12 +1057,10 @@ func (lkr *Linker) commitMoveMapping(exported map[string]bool) error {
 		oldHash := key[len(key)-1]
 
 		if _, ok := exported[oldHash]; !ok {
-			fmt.Println("IGNORING", key)
 			return nil
 		}
 
 		data, err := lkr.kv.Get(key...)
-		fmt.Println("MOVE DATA", key, string(data))
 		if err != nil {
 			return err
 		}

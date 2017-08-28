@@ -288,7 +288,7 @@ type NodeUpdate struct {
 }
 
 func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
-	file, err = lkr.LookupFile(repoPath)
+	node, err := lkr.LookupNode(repoPath)
 	if err != nil && !n.IsNoSuchFileError(err) {
 		return nil, err
 	}
@@ -302,7 +302,39 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		}
 	}()
 
+	if node != nil && node.Type() == n.NodeTypeGhost {
+		ghostParent, err := n.ParentDirectory(lkr, node)
+		if err != nil {
+			return nil, err
+		}
+
+		if ghostParent == nil {
+			// TODO: Think about this case. stage() should not be called on directories
+			//       anyways (only on files or files to ghosts)
+			return nil, fmt.Errorf("The ghost is root? TODO")
+		}
+
+		if err := ghostParent.RemoveChild(lkr, node); err != nil {
+			return nil, err
+		}
+
+		// Act like there was no previous node.
+		// New node will have a different Inode.
+		file = nil
+		fmt.Println("is a ghost")
+	} else if node != nil {
+		var ok bool
+		file, ok = node.(*n.File)
+		fmt.Println("file exists")
+		if !ok {
+			return nil, n.ErrBadNode
+		}
+	} else {
+		fmt.Println("nothing exists")
+	}
+
 	needRemove := false
+
 	if file != nil {
 		// We know this file already.
 		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")

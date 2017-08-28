@@ -1,7 +1,6 @@
 package cafs
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -118,7 +117,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Making commit failed: %v", err)
 		}
 
-		// TODO: Check that stage/{tree,objects} is empty.
+		// TODO: Check that stage/{tree,objects,moves} is empty.
 
 		head, err := lkr.Head()
 		if err != nil {
@@ -134,7 +133,6 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("HEAD and CURR are not equal after first commit.")
 		}
 
-		fmt.Println("is it here?")
 		if err := lkr.MakeCommit(author, "No."); err != ErrNoChange {
 			t.Fatalf("Committing without change led to a new commit: %v", err)
 		}
