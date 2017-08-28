@@ -302,3 +302,8 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 		t.Fatalf("walker failed at index (%d/%d): %v", idx, len(setup.commits), err)
 	}
 }
+
+// TODO:
+// - Test move in staging (i.e. inode based lookup)
+// - Test move and re-add something on old location.
+// - Test move node with same content back and forth.

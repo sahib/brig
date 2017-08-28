@@ -384,7 +384,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 
 		b58Hash := child.Hash().B58String()
 		batch.Put(data, "objects", b58Hash)
-		exported[mapHashFromNode(child)] = true
+		exported[moveMapHash(child)] = true
 
 		childPath := child.Path()
 		if child.Type() == n.NodeTypeDirectory {
@@ -396,11 +396,6 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 	})
 
 	if err != nil {
-		return err
-	}
-
-	// Fixate the moved paths in the stage:
-	if err := lkr.commitMoveMapping(exported); err != nil {
 		return err
 	}
 
@@ -425,6 +420,11 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 	batch.Put(statusData, "objects", statusB58Hash)
 
 	if err := lkr.SaveRef("HEAD", status); err != nil {
+		return err
+	}
+
+	// Fixate the moved paths in the stage:
+	if err := lkr.commitMoveMapping(statusB58Hash, exported); err != nil {
 		return err
 	}
 
@@ -991,11 +991,11 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	return lkr.StageNode(oldNode)
 }
 
-// mapHashFromNode calculats the hash that is used for storing a move mapping.
+// moveMapHash calculats the hash that is used for storing a move mapping.
 // The hash consists out of the content of the node and out of the path.
 // This is necessary, since one node might have multiple moves, but always
 // the same content (thus it has the same hash). In contrast, the path will change always.
-func mapHashFromNode(nd n.Node) string {
+func moveMapHash(nd n.Node) string {
 	v := h.Sum([]byte(fmt.Sprintf("%s|%s", nd.Hash(), nd.Path()))).B58String()
 	return v
 }
@@ -1011,11 +1011,17 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 		}
 	}()
 
-	fromB58 := mapHashFromNode(from)
-	toB58 := mapHashFromNode(to)
+	fromB58 := moveMapHash(from)
+	toB58 := moveMapHash(to)
 
-	batch.Put([]byte(fmt.Sprintf("> inode %d => %s", to.Inode(), from.Hash())), "stage", "moves", fromB58)
-	batch.Put([]byte(fmt.Sprintf("< inode %d <= %s", from.Inode(), to.Hash())), "stage", "moves", toB58)
+	batch.Put(
+		[]byte(fmt.Sprintf("> inode %d => %s", to.Inode(), from.Hash())),
+		"stage", "moves", fromB58,
+	)
+	batch.Put(
+		[]byte(fmt.Sprintf("< inode %d <= %s", from.Inode(), to.Hash())),
+		"stage", "moves", toB58,
+	)
 	return nil
 }
 
@@ -1065,7 +1071,7 @@ func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, h.Hash, e
 	}
 }
 
-func (lkr *Linker) commitMoveMapping(exported map[string]bool) error {
+func (lkr *Linker) commitMoveMapping(currHeadHash string, exported map[string]bool) error {
 	batch := lkr.kv.Batch()
 	walker := func(key []string) error {
 		oldHash := key[len(key)-1]
@@ -1094,14 +1100,14 @@ func (lkr *Linker) commitMoveMapping(exported map[string]bool) error {
 			finalNode.Hash().B58String(),
 			oldHash,
 		)
-		batch.Put([]byte(forwardLine), "moves", oldHash)
+		batch.Put([]byte(forwardLine), "moves", currHeadHash, oldHash)
 
 		reverseLine := fmt.Sprintf(
 			"%s hash %s * *",
 			moveDirection.Invert(),
 			origHash.B58String(),
 		)
-		batch.Put([]byte(reverseLine), "moves", mapHashFromNode(finalNode))
+		batch.Put([]byte(reverseLine), "moves", currHeadHash, moveMapHash(finalNode))
 		return nil
 	}
 
@@ -1162,7 +1168,7 @@ func moveDirFromString(spec string) MoveDir {
 // MoveMapping will lookup if the node pointed to by `nd` was part of a moving
 // operation and if so, to what node it was moved and if it was the source or
 // the dest node.
-func (lkr *Linker) MoveMapping(nd n.Node) (n.Node, MoveDir, error) {
+func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error) {
 	// Stage and committed space use a different format to store move mappings.
 	// This is because in staging nodes can still be modified, so the "dest"
 	// part of the mapping is a moving target. Therefore we store the destination
@@ -1171,10 +1177,10 @@ func (lkr *Linker) MoveMapping(nd n.Node) (n.Node, MoveDir, error) {
 	// When committing, the mappings will be "fixed" by converting the inode to
 	// a hash value, to make sure we link to a specific version.
 
-	b58Hash := mapHashFromNode(nd)
+	b58Hash := moveMapHash(nd)
 	fullPaths := [][]string{
-		[]string{"stage", "moves", b58Hash},
-		[]string{"moves", b58Hash},
+		[]string{"stage", "moves", cmt.Hash().B58String(), b58Hash},
+		[]string{"moves", cmt.Hash().B58String(), b58Hash},
 	}
 
 	for _, fullPath := range fullPaths {

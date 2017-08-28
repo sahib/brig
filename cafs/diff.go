@@ -163,7 +163,7 @@ func (hw *HistoryWalker) Next() bool {
 	}
 
 	// Check if this node participated in a move:
-	prev, direction, err := hw.lkr.MoveMapping(hw.curr)
+	prev, direction, err := hw.lkr.MoveMapping(hw.head, hw.curr)
 	if err != nil {
 		hw.err = err
 		return false
