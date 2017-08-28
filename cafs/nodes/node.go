@@ -93,7 +93,6 @@ type HierarchyEntry interface {
 // Streamable represents a thing that can be streamed,
 // given a cryptographic key.
 type Streamable interface {
-	Content() h.Hash
 	Key() []byte
 }
 

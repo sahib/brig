@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/cafs/db"
 	n "github.com/disorganizer/brig/cafs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
+
+func init() {
+	log.SetLevel(log.WarnLevel)
+}
 
 func mustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNode {
 	if err := move(lkr, nd, destPath); err != nil {
@@ -189,7 +194,7 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
 	mustRemove(t, lkr, file)
 	c3 := mustCommit(t, lkr, "after remove")
-	file, c4 := makeFileAndCommit(t, lkr, "/x.png", 3)
+	file, c4 := makeFileAndCommit(t, lkr, "/x.png", 2)
 
 	return &moveSetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
@@ -210,6 +215,32 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
 	}
 }
 
+func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	mustRemove(t, lkr, file)
+	c3 := mustCommit(t, lkr, "after remove")
+	file, c4 := makeFileAndCommit(t, lkr, "/x.png", 255)
+
+	return &moveSetup{
+		commits: []*n.Commit{c4, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/x.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeAdd | ChangeTypeModify,
+			ChangeTypeRemove,
+			ChangeTypeAdd,
+		},
+		head: c4,
+		node: file,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *Linker) *moveSetup
 
 // Registry bank for all testcases:
@@ -221,6 +252,7 @@ func TestHistoryWalker(t *testing.T) {
 		{name: "no-frills", setup: setupHistoryBasic},
 		{name: "remove-it", setup: setupHistoryRemoved},
 		{name: "remove-readd", setup: setupHistoryRemoveReadd},
+		{name: "remove-readd-modify", setup: setupHistoryRemoveReaddModify},
 		{name: "move-once", setup: setupHistoryMoved},
 		{name: "move-modify", setup: setupHistoryMoveAndModify},
 	}

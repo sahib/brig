@@ -108,26 +108,12 @@ func (hw *HistoryWalker) maskFromState() ChangeType {
 
 	currHash := hw.curr.Hash()
 	if isGhostCurr {
-		oldFile, err := ghostCurr.OldFile()
-		if err != nil {
-			return mask
-		}
-
-		currHash = oldFile.Content()
+		currHash = ghostCurr.OldNode().Hash()
 	}
 
 	nextHash := hw.next.Hash()
 	if isGhostNext {
-		oldFile, err := ghostNext.OldFile()
-		if err != nil {
-			return mask
-		}
-
-		nextHash = oldFile.Content()
-	}
-
-	if isGhostCurr && !isGhostNext {
-		mask |= ChangeTypeAdd
+		nextHash = ghostNext.OldNode().Hash()
 	}
 
 	// If the hash differs, there's likely a modification going on.
@@ -137,22 +123,11 @@ func (hw *HistoryWalker) maskFromState() ChangeType {
 
 	if hw.next.Path() != hw.curr.Path() {
 		mask |= ChangeTypeMove
-
-		// TODO: Clean this temp hack up here:
-		//       or make it at least legible
-		f1, ok1 := hw.next.(*n.File)
-		if !ok1 && hw.next.Type() == n.NodeTypeGhost {
-			f1, _ = hw.next.(*n.Ghost).OldFile()
-		}
-		f2, ok2 := hw.curr.(*n.File)
-		if !ok2 && hw.curr.Type() == n.NodeTypeGhost {
-			f2, _ = hw.curr.(*n.Ghost).OldFile()
-		}
-
-		if f1 != nil && f2 != nil {
-			if f1.Content().Equal(f2.Content()) {
-				mask &= ^ChangeTypeModify
-			}
+	} else {
+		// If paths did not move, but the current node is a ghost,
+		// then it means that the node was removed in this commit.
+		if isGhostCurr && !isGhostNext {
+			mask |= ChangeTypeAdd
 		}
 	}
 
@@ -161,7 +136,6 @@ func (hw *HistoryWalker) maskFromState() ChangeType {
 		// Be safe and check that it was not a move:
 		if hw.next.Path() == hw.curr.Path() {
 			mask |= ChangeTypeRemove
-			mask &= ^ChangeTypeModify
 		}
 	}
 	return mask
@@ -216,7 +190,7 @@ func (hw *HistoryWalker) Next() bool {
 
 	// Assumption here: The move mapping should only store one move per commit.
 	// i.e: for move(a, b); a and b should always be in different commits.
-	// TODO: This should be enforced by MakeCommit or AddMoveMapping
+	// This is enforced by the logic in MakeCommit()
 	if prev == nil || direction != MoveDirSrcToDst {
 		// No valid move mapping found, node was probably not moved.
 		// Assume that we can reach it directly via it's path.

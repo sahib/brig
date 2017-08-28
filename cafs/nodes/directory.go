@@ -429,12 +429,6 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 		return ErrExists
 	}
 
-	// The path might have changed, so we gonna possibly need to rehash the file.
-	// (Hash() includes the full path into it's calculation, but we set that later)
-	if file, ok := nd.(*File); ok {
-		file.Rehash(lkr, prefixSlash(path.Join(d.Path(), nd.Name())))
-	}
-
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
 

@@ -38,7 +38,7 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
-	file.SetContent(lkr, h.TestDummy(t, seed))
+	file.SetHash(lkr, h.TestDummy(t, seed))
 
 	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
@@ -368,8 +368,8 @@ func TestStage(t *testing.T) {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		if !file.Content().Equal(h.TestDummy(t, 1)) {
-			t.Fatalf("File content after stage is not what's advertised: %v", file.Content())
+		if !file.Hash().Equal(h.TestDummy(t, 1)) {
+			t.Fatalf("File content after stage is not what's advertised: %v", file.Hash())
 		}
 
 		update = &NodeUpdate{
@@ -384,8 +384,8 @@ func TestStage(t *testing.T) {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		if !file.Content().Equal(h.TestDummy(t, 2)) {
-			t.Fatalf("File content after update is not what's advertised: %v", file.Content())
+		if !file.Hash().Equal(h.TestDummy(t, 2)) {
+			t.Fatalf("File content after update is not what's advertised: %v", file.Hash())
 		}
 	})
 }

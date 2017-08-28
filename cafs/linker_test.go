@@ -94,7 +94,7 @@ func TestLinkerRefs(t *testing.T) {
 		}
 
 		newFile.SetSize(10)
-		newFile.SetContent(lkr, h.TestDummy(t, 1))
+		newFile.SetHash(lkr, h.TestDummy(t, 1))
 
 		if err := root.Add(lkr, newFile); err != nil {
 			t.Fatalf("Adding empty file failed: %v", err)
@@ -235,7 +235,7 @@ func modifyFile(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	}
 
 	file.SetSize(uint64(seed))
-	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
+	file.SetHash(lkr, h.TestDummy(t, byte(seed)))
 
 	if err := root.Add(lkr, file); err != nil {
 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
@@ -390,9 +390,9 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Failed to create empty file3: %v", err)
 		}
 
-		file1.SetContent(lkr, h.TestDummy(t, 1))
-		file2.SetContent(lkr, h.TestDummy(t, 1))
-		file3.SetContent(lkr, h.TestDummy(t, 1))
+		file1.SetHash(lkr, h.TestDummy(t, 1))
+		file2.SetHash(lkr, h.TestDummy(t, 1))
+		file3.SetHash(lkr, h.TestDummy(t, 1))
 
 		// TODO: Shouldn't NewEmptyFile call this? It gets the parent...
 		if err := sub.Add(lkr, file1); err != nil {
@@ -415,11 +415,11 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Failed to stage file3: %v", err)
 		}
 
-		if file1.Hash().Equal(file2.Hash()) {
-			t.Fatalf("file1 and file2 hash is equal: %v", file1.Hash())
+		if !file1.Hash().Equal(file2.Hash()) {
+			t.Fatalf("file1 and file2 hash is not equal: %v", file1.Hash())
 		}
-		if file2.Hash().Equal(file3.Hash()) {
-			t.Fatalf("file2 and file3 hash is equal: %v", file2.Hash())
+		if !file2.Hash().Equal(file3.Hash()) {
+			t.Fatalf("file2 and file3 hash is not equal: %v", file2.Hash())
 		}
 
 		// Make sure we load the actual hases from disk:
@@ -437,11 +437,11 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Re-Lookup of file3 failed: %v", err)
 		}
 
-		if file1Reset.Hash().Equal(file2Reset.Hash()) {
-			t.Fatalf("file1Reset and file2Reset hash is equal: %v", file1.Hash())
+		if !file1Reset.Hash().Equal(file2Reset.Hash()) {
+			t.Fatalf("file1Reset and file2Reset hash is not equal: %v", file1.Hash())
 		}
-		if file2Reset.Hash().Equal(file3Reset.Hash()) {
-			t.Fatalf("file2Reset and file3Reset hash is equal: %v", file2.Hash())
+		if !file2Reset.Hash().Equal(file3Reset.Hash()) {
+			t.Fatalf("file2Reset and file3Reset hash is not equal: %v", file2.Hash())
 		}
 	})
 }

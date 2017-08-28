@@ -321,16 +321,12 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		// Act like there was no previous node.
 		// New node will have a different Inode.
 		file = nil
-		fmt.Println("is a ghost")
 	} else if node != nil {
 		var ok bool
 		file, ok = node.(*n.File)
-		fmt.Println("file exists")
 		if !ok {
 			return nil, n.ErrBadNode
 		}
-	} else {
-		fmt.Println("nothing exists")
 	}
 
 	needRemove := false
@@ -375,7 +371,7 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 
 	file.SetSize(info.Size)
 	file.SetModTime(time.Now())
-	file.SetContent(lkr, info.Hash)
+	file.SetHash(lkr, info.Hash)
 	file.SetKey(info.Key)
 
 	// Add it again when the hash was changed.
