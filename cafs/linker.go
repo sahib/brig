@@ -384,7 +384,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 
 		b58Hash := child.Hash().B58String()
 		batch.Put(data, "objects", b58Hash)
-		exported[b58Hash] = true
+		exported[mapHashFromNode(child)] = true
 
 		childPath := child.Path()
 		if child.Type() == n.NodeTypeDirectory {
@@ -991,6 +991,15 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	return lkr.StageNode(oldNode)
 }
 
+// mapHashFromNode calculats the hash that is used for storing a move mapping.
+// The hash consists out of the content of the node and out of the path.
+// This is necessary, since one node might have multiple moves, but always
+// the same content (thus it has the same hash). In contrast, the path will change always.
+func mapHashFromNode(nd n.Node) string {
+	v := h.Sum([]byte(fmt.Sprintf("%s|%s", nd.Hash(), nd.Path()))).B58String()
+	return v
+}
+
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
 	batch := lkr.kv.Batch()
@@ -1002,52 +1011,57 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 		}
 	}()
 
-	fromB58 := from.Hash().B58String()
-	toB58 := to.Hash().B58String()
+	fromB58 := mapHashFromNode(from)
+	toB58 := mapHashFromNode(to)
 
-	batch.Put([]byte(fmt.Sprintf("> inode %d", to.Inode())), "stage", "moves", fromB58)
-	batch.Put([]byte(fmt.Sprintf("< inode %d", from.Inode())), "stage", "moves", toB58)
+	batch.Put([]byte(fmt.Sprintf("> inode %d => %s", to.Inode(), from.Hash())), "stage", "moves", fromB58)
+	batch.Put([]byte(fmt.Sprintf("< inode %d <= %s", from.Inode(), to.Hash())), "stage", "moves", toB58)
 	return nil
 }
 
-func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
-	splitLine := strings.SplitN(line, " ", 3)
-	if len(splitLine) < 3 {
-		return nil, 0, fmt.Errorf("Malformed stage move line: %s", line)
+func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, h.Hash, error) {
+	splitLine := strings.SplitN(line, " ", 5)
+	if len(splitLine) < 5 {
+		return nil, 0, nil, fmt.Errorf("Malformed stage move line: %s", line)
 	}
 
 	dir := moveDirFromString(splitLine[0])
 	if dir == MoveDirUnknown {
-		return nil, 0, fmt.Errorf("Unrecognized move direction `%s`", splitLine[0])
+		return nil, 0, nil, fmt.Errorf("Unrecognized move direction `%s`", splitLine[0])
 	}
 
 	switch splitLine[1] {
 	case "inode":
 		inode, err := strconv.ParseUint(splitLine[2], 10, 64)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
 
 		node, err := lkr.NodeByInode(inode)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
 
-		return node, dir, nil
+		origHash, err := h.FromB58String(splitLine[4])
+		if err != nil {
+			return nil, 0, nil, err
+		}
+
+		return node, dir, origHash, nil
 	case "hash":
 		hash, err := h.FromB58String(splitLine[2])
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
 
 		node, err := lkr.NodeByHash(hash)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
 
-		return node, dir, nil
+		return node, dir, nil, nil
 	default:
-		return nil, 0, fmt.Errorf("Unsupported move map type: %s", splitLine[1])
+		return nil, 0, nil, fmt.Errorf("Unsupported move map type: %s", splitLine[1])
 	}
 }
 
@@ -1065,7 +1079,7 @@ func (lkr *Linker) commitMoveMapping(exported map[string]bool) error {
 			return err
 		}
 
-		finalNode, moveDirection, err := lkr.parseMoveMappingLine(string(data))
+		finalNode, moveDirection, origHash, err := lkr.parseMoveMappingLine(string(data))
 		if err != nil {
 			return err
 		}
@@ -1074,12 +1088,20 @@ func (lkr *Linker) commitMoveMapping(exported map[string]bool) error {
 			return fmt.Errorf("Could not find final node: %v", string(data))
 		}
 
-		finalb58Hash := finalNode.Hash().B58String()
-		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, finalb58Hash)
+		forwardLine := fmt.Sprintf(
+			"%s hash %s * *",
+			moveDirection,
+			finalNode.Hash().B58String(),
+			oldHash,
+		)
 		batch.Put([]byte(forwardLine), "moves", oldHash)
 
-		reverseLine := fmt.Sprintf("%s hash %s", moveDirection.Invert(), oldHash)
-		batch.Put([]byte(reverseLine), "moves", finalb58Hash)
+		reverseLine := fmt.Sprintf(
+			"%s hash %s * *",
+			moveDirection.Invert(),
+			origHash.B58String(),
+		)
+		batch.Put([]byte(reverseLine), "moves", mapHashFromNode(finalNode))
 		return nil
 	}
 
@@ -1149,7 +1171,7 @@ func (lkr *Linker) MoveMapping(nd n.Node) (n.Node, MoveDir, error) {
 	// When committing, the mappings will be "fixed" by converting the inode to
 	// a hash value, to make sure we link to a specific version.
 
-	b58Hash := nd.Hash().B58String()
+	b58Hash := mapHashFromNode(nd)
 	fullPaths := [][]string{
 		[]string{"stage", "moves", b58Hash},
 		[]string{"moves", b58Hash},
@@ -1165,7 +1187,7 @@ func (lkr *Linker) MoveMapping(nd n.Node) (n.Node, MoveDir, error) {
 			continue
 		}
 
-		node, moveDir, err := lkr.parseMoveMappingLine(string(moveData))
+		node, moveDir, _, err := lkr.parseMoveMappingLine(string(moveData))
 		if err != nil {
 			return nil, MoveDirUnknown, err
 		}
