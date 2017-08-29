@@ -1,6 +1,7 @@
 package cafs
 
 import (
+	"fmt"
 	"strings"
 
 	n "github.com/disorganizer/brig/cafs/nodes"
@@ -164,9 +165,14 @@ func (hw *HistoryWalker) Next() bool {
 
 	// Check if this node participated in a move:
 	prev, direction, err := hw.lkr.MoveMapping(hw.head, hw.curr)
+	fmt.Println("HAS MOVED?", hw.head, hw.curr.Path())
 	if err != nil {
 		hw.err = err
 		return false
+	}
+
+	if prev != nil {
+		fmt.Println("IT HAS.", prev.Path())
 	}
 
 	// Advance to the previous commit:

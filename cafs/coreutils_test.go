@@ -229,7 +229,7 @@ func TestRemoveGhost(t *testing.T) {
 
 		// Try to remove a ghost:
 		if _, _, err := remove(lkr, ghost, true); err != ErrIsGhost {
-			t.Fatalf("Removing ghost failed or succeeded: %v", err)
+			t.Fatalf("Removing ghost failed: %v", err)
 		}
 	})
 }
@@ -323,6 +323,16 @@ func TestMove(t *testing.T) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
 				touchFile(t, lkr, "/dst/x", 1)
+				return touchFile(t, lkr, "/src/x", 1), "/dst/x"
+			},
+		}, {
+			name:        "error-move-file-over-ghost",
+			isErrorCase: false,
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+				mustMkdir(t, lkr, "/src")
+				mustMkdir(t, lkr, "/dst")
+				destFile := touchFile(t, lkr, "/dst/x", 1)
+				mustRemove(t, lkr, destFile)
 				return touchFile(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		},

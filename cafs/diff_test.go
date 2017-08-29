@@ -139,8 +139,6 @@ func setupHistoryRemoved(t *testing.T, lkr *Linker) *moveSetup {
 	}
 }
 
-// TODO: remove-readd
-
 func setupHistoryMoved(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
@@ -164,11 +162,38 @@ func setupHistoryMoved(t *testing.T, lkr *Linker) *moveSetup {
 	}
 }
 
+func setupHistoryMoveStaging(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	mustMove(t, lkr, file, "/y.png")
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	return &moveSetup{
+		commits: []*n.Commit{status, c2, c1},
+		paths: []string{
+			"/y.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeMove,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: file,
+	}
+}
+
 func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
-	newFile := mustMove(t, lkr, file, "/y.png")
 
+	newFile := mustMove(t, lkr, file, "/y.png")
 	modifyFile(t, lkr, newFile.(*n.File), 42)
 	c3 := mustCommit(t, lkr, "post-move-modify")
 
@@ -185,6 +210,35 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
 			ChangeTypeAdd,
 		},
 		head: c3,
+		node: file,
+	}
+}
+
+func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+
+	newFile := mustMove(t, lkr, file, "/y.png")
+	modifyFile(t, lkr, newFile.(*n.File), 42)
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	return &moveSetup{
+		commits: []*n.Commit{status, c2, c1},
+		paths: []string{
+			"/y.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeModify | ChangeTypeMove,
+			ChangeTypeAdd,
+		},
+		head: status,
 		node: file,
 	}
 }
@@ -241,6 +295,34 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
 	}
 }
 
+func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+
+	newFile := mustMove(t, lkr, file, "/y.png")
+	c3 := mustCommit(t, lkr, "move to y.png")
+	newOldFile := mustMove(t, lkr, newFile, "/x.png")
+	c4 := mustCommit(t, lkr, "move back to x.png")
+
+	return &moveSetup{
+		commits: []*n.Commit{c4, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/y.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeMove,
+			ChangeTypeMove,
+			ChangeTypeAdd,
+		},
+		head: c4,
+		node: newOldFile,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *Linker) *moveSetup
 
 // Registry bank for all testcases:
@@ -249,12 +331,34 @@ func TestHistoryWalker(t *testing.T) {
 		name  string
 		setup setupFunc
 	}{
-		{name: "no-frills", setup: setupHistoryBasic},
-		{name: "remove-it", setup: setupHistoryRemoved},
-		{name: "remove-readd", setup: setupHistoryRemoveReadd},
-		{name: "remove-readd-modify", setup: setupHistoryRemoveReaddModify},
-		{name: "move-once", setup: setupHistoryMoved},
-		{name: "move-modify", setup: setupHistoryMoveAndModify},
+		{
+			name:  "no-frills",
+			setup: setupHistoryBasic,
+		}, {
+			name:  "remove-it",
+			setup: setupHistoryRemoved,
+		}, {
+			name:  "remove-readd",
+			setup: setupHistoryRemoveReadd,
+		}, {
+			name:  "remove-readd-modify",
+			setup: setupHistoryRemoveReaddModify,
+		}, {
+			name:  "move-once",
+			setup: setupHistoryMoved,
+		}, {
+			name:  "move-once-stage",
+			setup: setupHistoryMoveStaging,
+		}, {
+			name:  "move-modify",
+			setup: setupHistoryMoveAndModify,
+		}, {
+			name:  "move-modify-stage",
+			setup: setupHistoryMoveAndModifyStage,
+		}, {
+			name:  "move-circle",
+			setup: setupHistoryMoveCircle,
+		},
 	}
 
 	for _, tc := range tcs {

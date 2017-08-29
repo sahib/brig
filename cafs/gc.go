@@ -25,22 +25,24 @@ func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *
 }
 
 func (gc *GarbageCollector) markMoveMaps() error {
-	walker := func(key []string) error {
-		data, err := gc.kv.Get(key...)
-		if err != nil {
-			return err
-		}
+	// TODO: Fix.
+	return nil
+	// walker := func(key []string) error {
+	// 	data, err := gc.kv.Get(key...)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		_, _, origHash, err := gc.lkr.parseMoveMappingLine(string(data))
-		if err != nil {
-			return err
-		}
+	// 	_, _, origHash, err := gc.lkr.parseMoveMappingLine(string(data))
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		gc.markMap[origHash.B58String()] = struct{}{}
-		return nil
-	}
+	// 	gc.markMap[origHash.B58String()] = struct{}{}
+	// 	return nil
+	// }
 
-	return gc.kv.Keys(walker, "stage", "moves")
+	// return gc.kv.Keys(walker, "stage", "moves")
 }
 
 func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
