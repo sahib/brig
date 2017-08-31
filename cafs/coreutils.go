@@ -118,8 +118,6 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
 func remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
-	// TODO: Move this check to a toplevel function.
-	//       move() is allowed to kill ghosts.
 	if !force && nd.Type() == n.NodeTypeGhost {
 		return nil, nil, ErrIsGhost
 	}

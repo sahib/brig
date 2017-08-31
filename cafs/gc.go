@@ -25,24 +25,25 @@ func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *
 }
 
 func (gc *GarbageCollector) markMoveMaps() error {
-	// TODO: Fix.
-	return nil
-	// walker := func(key []string) error {
-	// 	data, err := gc.kv.Get(key...)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	walker := func(key []string) error {
+		data, err := gc.kv.Get(key...)
+		if err != nil {
+			return err
+		}
 
-	// 	_, _, origHash, err := gc.lkr.parseMoveMappingLine(string(data))
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		node, _, err := gc.lkr.parseMoveMappingLine(string(data))
+		if err != nil {
+			return err
+		}
 
-	// 	gc.markMap[origHash.B58String()] = struct{}{}
-	// 	return nil
-	// }
+		if node != nil {
+			gc.markMap[node.Hash().B58String()] = struct{}{}
+		}
 
-	// return gc.kv.Keys(walker, "stage", "moves")
+		return nil
+	}
+
+	return gc.kv.Keys(walker, "stage", "moves")
 }
 
 func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
@@ -133,7 +134,7 @@ func (gc *GarbageCollector) Run(allObjects bool) error {
 	// but still are referenced by the move mapping.
 	// Keep them for now, they will die most likely on MakeCommit()
 	if err := gc.markMoveMaps(); err != nil {
-
+		return err
 	}
 
 	if err := gc.sweep([]string{"stage", "objects"}); err != nil {

@@ -1067,6 +1067,18 @@ func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
 }
 
 func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
+	// TODO: Verify that all ghosts will be copied out from staging.
+	// Consider this case:
+	// $ touch x
+	// $ commit
+	// $ move x y
+	// $ touch x
+	// $ commit
+	//
+	// -> In the last commit the ghost from the move (x) is overwritten by a new
+	//    file and thus will not be reachable anymore. In order to store the full
+	//    history of the file we need to also keep this ghost.
+
 	batch := lkr.kv.Batch()
 	walker := func(key []string) error {
 		inode, err := strconv.ParseUint(key[len(key)-1], 10, 64)

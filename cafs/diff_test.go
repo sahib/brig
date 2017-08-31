@@ -325,6 +325,63 @@ func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
 	}
 }
 
+func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+
+	newFile := mustMove(t, lkr, file, "/y.png")
+	c3 := mustCommit(t, lkr, "move to y.png")
+
+	_, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+
+	return &moveSetup{
+		commits: []*n.Commit{c4, c3, c2, c1},
+		paths: []string{
+			"/y.png",
+			"/y.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeNone,
+			ChangeTypeMove,
+			ChangeTypeAdd,
+		},
+		head: c4,
+		node: newFile,
+	}
+}
+
+func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *Linker) *moveSetup {
+	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+
+	mustMove(t, lkr, file, "/y.png")
+	c3 := mustCommit(t, lkr, "move to y.png")
+	readdedFile, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+
+	return &moveSetup{
+		commits: []*n.Commit{c4, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/x.png",
+			"/x.png",
+			"/x.png",
+		},
+		// TODO: Is this behaviour making sense?
+		//       Maybe it makes more sense to "end" the history before the add.
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeAdd | ChangeTypeModify,
+			ChangeTypeRemove,
+			ChangeTypeAdd,
+		},
+		head: c4,
+		node: readdedFile,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *Linker) *moveSetup
 
 // Registry bank for all testcases:
@@ -360,6 +417,12 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "move-circle",
 			setup: setupHistoryMoveCircle,
+		}, {
+			name:  "move-readd-from-moved-perspective",
+			setup: setupHistoryMoveAndReaddFromMoved,
+		}, {
+			name:  "move-readd-from-readded-perspective",
+			setup: setupHistoryMoveAndReaddFromAdded,
 		},
 	}
 
@@ -391,7 +454,8 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(
-				"Wrong type of state: %v (want: %s)",
+				"%d: Wrong type of state: %v (want: %s)",
+				idx,
 				state.Mask,
 				setup.changes[idx],
 			)
@@ -408,8 +472,3 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 		t.Fatalf("walker failed at index (%d/%d): %v", idx, len(setup.commits), err)
 	}
 }
-
-// TODO:
-// - Test move in staging (i.e. inode based lookup)
-// - Test move and re-add something on old location.
-// - Test move node with same content back and forth.
