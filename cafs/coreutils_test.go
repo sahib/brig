@@ -38,7 +38,7 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
-	file.SetHash(lkr, h.TestDummy(t, seed))
+	file.SetContent(lkr, h.TestDummy(t, seed))
 
 	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
@@ -149,7 +149,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Fill in a dummy file hash, so we get a ghost instance
-		parentDir, _, err := remove(lkr, file, true)
+		parentDir, _, err := remove(lkr, file, true, false)
 		if err != nil {
 			t.Fatalf("Remove failed: %v", err)
 		}
@@ -186,7 +186,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Just fill in a dummy moved to ref, to get a ghost.
-		parentDir, ghost, err = remove(lkr, nestedDir, true)
+		parentDir, ghost, err = remove(lkr, nestedDir, true, false)
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
 		}
@@ -214,7 +214,7 @@ func TestRemoveGhost(t *testing.T) {
 			t.Fatalf("Removing child /x failed: %v", err)
 		}
 
-		ghost, err := n.MakeGhost(file, nil, 42)
+		ghost, err := n.MakeGhost(file, 42)
 		if err != nil {
 			t.Fatalf("Failed to summon ghost: %v", err)
 		}
@@ -228,8 +228,8 @@ func TestRemoveGhost(t *testing.T) {
 		}
 
 		// Try to remove a ghost:
-		if _, _, err := remove(lkr, ghost, true); err != ErrIsGhost {
-			t.Fatalf("Removing ghost failed: %v", err)
+		if _, _, err := remove(lkr, ghost, true, false); err != ErrIsGhost {
+			t.Fatalf("Removing ghost failed other than expected: %v", err)
 		}
 	})
 }
@@ -378,10 +378,6 @@ func TestStage(t *testing.T) {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		if !file.Hash().Equal(h.TestDummy(t, 1)) {
-			t.Fatalf("File content after stage is not what's advertised: %v", file.Hash())
-		}
-
 		update = &NodeUpdate{
 			Hash:   h.TestDummy(t, 2),
 			Size:   3,
@@ -394,7 +390,7 @@ func TestStage(t *testing.T) {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		if !file.Hash().Equal(h.TestDummy(t, 2)) {
+		if !file.Content().Equal(h.TestDummy(t, 2)) {
 			t.Fatalf("File content after update is not what's advertised: %v", file.Hash())
 		}
 	})

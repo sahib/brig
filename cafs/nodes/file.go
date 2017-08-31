@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"fmt"
 	"path"
 	"time"
 
@@ -77,6 +78,10 @@ func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 		return nil, err
 	}
 
+	if err := capfile.SetContent(f.content); err != nil {
+		return nil, err
+	}
+
 	capfile.SetSize(f.size)
 	return &capfile, nil
 }
@@ -115,6 +120,11 @@ func (f *File) readFileAttrs(capfile capnp_model.File) error {
 		return err
 	}
 
+	f.content, err = capfile.Content()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -140,25 +150,46 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) Copy(inode uint64) ModNode {
+func (f *File) Copy() ModNode {
 	return &File{
-		Base:   f.Base.copyBase(inode),
-		size:   f.size,
-		parent: f.parent,
-		key:    f.key,
+		Base:    f.Base.copyBase(),
+		size:    f.size,
+		parent:  f.parent,
+		key:     f.key,
+		content: f.content,
 	}
 }
 
-// SetContent will update the hash of the file (and also the mod time)
-func (f *File) SetHash(lkr Linker, h h.Hash) {
-	if h.Equal(f.hash) {
-		return
+// updateHashFromContent will derive f.hash from f.content.
+// For files with same content, but different path we need
+// a different hash, so they will be stored as different objects.
+func (f *File) Rehash(lkr Linker, path string) {
+	oldHash := f.hash.Clone()
+	var contentHash h.Hash
+	if f.content != nil {
+		contentHash = f.content.Clone()
+	} else {
+		contentHash = h.EmptyHash.Clone()
 	}
 
-	oldHash := f.hash
-	f.hash = h.Clone()
+	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", path, contentHash)))
 	lkr.MemIndexSwap(f, oldHash)
+}
+
+// SetContent will update the hash of the file (and also the mod time)
+func (f *File) SetContent(lkr Linker, content h.Hash) {
+	f.content = content
+	f.Rehash(lkr, f.Path())
 	f.SetModTime(time.Now())
+}
+
+func (f *File) Content() h.Hash {
+	return f.content
+}
+
+func (f *File) String() string {
+	fmt.Println("String", f.content, f.Inode())
+	return fmt.Sprintf("<file %s:%s:%d>", f.Path(), f.Hash(), f.Inode())
 }
 
 // Path will return the absolute path of the file.

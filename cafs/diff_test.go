@@ -28,7 +28,7 @@ func mustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNod
 }
 
 func mustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
-	if _, _, err := remove(lkr, nd, true); err != nil {
+	if _, _, err := remove(lkr, nd, true, false); err != nil {
 		t.Fatalf("Failed to remove %s: %v", nd.Path(), err)
 	}
 
@@ -219,6 +219,7 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
+
 	modifyFile(t, lkr, newFile.(*n.File), 42)
 
 	status, err := lkr.Status()
@@ -301,6 +302,7 @@ func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
 
 	newFile := mustMove(t, lkr, file, "/y.png")
 	c3 := mustCommit(t, lkr, "move to y.png")
+
 	newOldFile := mustMove(t, lkr, newFile, "/x.png")
 	c4 := mustCommit(t, lkr, "move back to x.png")
 
@@ -388,7 +390,7 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 		}
 
 		if state.Mask != setup.changes[idx] {
-			t.Fatalf(
+			t.Errorf(
 				"Wrong type of state: %v (want: %s)",
 				state.Mask,
 				setup.changes[idx],

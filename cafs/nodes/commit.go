@@ -217,9 +217,8 @@ func (c *Commit) BoxCommit(author *Person, message string) error {
 // String will return a nice representation of a commit.
 func (c *Commit) String() string {
 	return fmt.Sprintf(
-		"<commit %s/%s (%s)>",
+		"<commit %s (%s)>",
 		c.hash.B58String(),
-		c.root.B58String(),
 		c.message,
 	)
 }

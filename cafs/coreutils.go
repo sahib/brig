@@ -117,12 +117,12 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
+func remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
 	// TODO: Move this check to a toplevel function.
 	//       move() is allowed to kill ghosts.
-	// if nd.Type() == n.NodeTypeGhost {
-	// 	return nil, nil, ErrIsGhost
-	// }
+	if !force && nd.Type() == n.NodeTypeGhost {
+		return nil, nil, ErrIsGhost
+	}
 
 	parentDir, err = n.ParentDirectory(lkr, nd)
 	if err != nil {
@@ -156,7 +156,7 @@ func remove(lkr *Linker, nd n.ModNode, createGhost bool) (parentDir *n.Directory
 	}
 
 	if createGhost {
-		ghost, err := n.MakeGhost(nd, nil, lkr.NextInode())
+		ghost, err := n.MakeGhost(nd, lkr.NextInode())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -233,20 +233,20 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				// Okay, there is an empty directory. Let's remove it to
 				// replace it with our source node.
-				if _, _, err := remove(lkr, childDir, false); err != nil {
+				if _, _, err := remove(lkr, childDir, false, false); err != nil {
 					return err
 				}
 			}
 
 			parentDir = destDir
 		case n.NodeTypeFile:
-			parentDir, _, err = remove(lkr, destNode, false)
+			parentDir, _, err = remove(lkr, destNode, false, false)
 			if err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
 			// It is already a ghost. Overwrite it and do not create a new one.
-			parentDir, _, err = remove(lkr, destNode, false)
+			parentDir, _, err = remove(lkr, destNode, false, true)
 			if err != nil {
 				return err
 			}
@@ -262,13 +262,12 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	}
 
 	// Remove the old node:
-	_, ghost, err := remove(lkr, nd, true)
+	_, ghost, err := remove(lkr, nd, true, true)
 	if err != nil {
 		return err
 	}
 
 	nd.SetName(path.Base(destPath))
-
 	// And add it to the right destination dir:
 	if err := parentDir.Add(lkr, nd); err != nil {
 		return err
@@ -278,7 +277,12 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
-	return lkr.StageNode(nd)
+	err = lkr.StageNode(nd)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 type NodeUpdate struct {
@@ -372,7 +376,7 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 
 	file.SetSize(info.Size)
 	file.SetModTime(time.Now())
-	file.SetHash(lkr, info.Hash)
+	file.SetContent(lkr, info.Hash)
 	file.SetKey(info.Key)
 
 	// Add it again when the hash was changed.

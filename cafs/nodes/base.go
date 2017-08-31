@@ -7,6 +7,7 @@ import (
 
 	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
+	e "github.com/pkg/errors"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -29,15 +30,14 @@ type Base struct {
 	inode uint64
 }
 
-// copyBase will copy all attributes from the base, but will set
-// the inode to `inode` in order to assert that the previous node is still unique.
-func (b *Base) copyBase(inode uint64) Base {
+// copyBase will copy all attributes from the base.
+func (b *Base) copyBase() Base {
 	return Base{
 		name:     b.name,
 		hash:     b.hash.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
-		inode:    inode,
+		inode:    b.inode,
 	}
 }
 
@@ -118,6 +118,9 @@ func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 		b.nodeType = NodeTypeDirectory
 	case capnp_model.Node_Which_commit:
 		b.nodeType = NodeTypeCommit
+	case capnp_model.Node_Which_ghost:
+		// Ghost set the nodeType themselves.
+		// Ignore them here.
 	default:
 		return fmt.Errorf("Bad capnp node type `%d`", typ)
 	}
@@ -239,4 +242,42 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 	}
 
 	return parDir, nil
+}
+
+func ContentHash(nd Node) (h.Hash, error) {
+	switch nd.Type() {
+	case NodeTypeDirectory, NodeTypeCommit:
+		return nd.Hash(), nil
+	case NodeTypeFile:
+		file, ok := nd.(*File)
+		if !ok {
+			return nil, e.Wrapf(ErrBadNode, "cannot convert to file")
+		}
+
+		return file.Content(), nil
+	case NodeTypeGhost:
+		ghost, ok := nd.(*Ghost)
+		if !ok {
+			return nil, e.Wrapf(ErrBadNode, "cannot convert to ghost")
+		}
+
+		switch ghost.OldNode().Type() {
+		case NodeTypeFile:
+			oldFile, err := ghost.OldFile()
+			if err != nil {
+				return nil, err
+			}
+
+			return oldFile.Content(), nil
+		case NodeTypeDirectory:
+			oldDirectory, err := ghost.OldDirectory()
+			if err != nil {
+				return nil, err
+			}
+
+			return oldDirectory.Hash(), nil
+		}
+	}
+
+	return nil, ErrBadNode
 }

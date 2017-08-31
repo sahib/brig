@@ -94,6 +94,10 @@ type HierarchyEntry interface {
 // given a cryptographic key.
 type Streamable interface {
 	Key() []byte
+
+	// Content will return the hash of the content of this file/
+	// It is valid to return nil if the file is empty.
+	Content() h.Hash
 }
 
 // Node is a single node in brig's MDAG.
@@ -115,5 +119,5 @@ type ModNode interface {
 	SetName(name string)
 
 	// TODO: Should this be part of this interface?
-	Copy(inode uint64) ModNode
+	Copy() ModNode
 }

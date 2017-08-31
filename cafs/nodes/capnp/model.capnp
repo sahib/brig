@@ -41,12 +41,11 @@ struct File $Go.doc("A leaf node in the MDAG") {
     size     @0 :UInt64;
     parent   @1 :Text;
     key      @2 :Data;
+    content  @3 :Data;
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
-    # Refernce to where the successor of this ghost lives now
-    # (In case of moved files, the ghost lives where the old file was)
-    movedTo @0 :Data;
+    ghostInode @0 :UInt64;
 
     union {
         commit    @1 :Commit;

@@ -1107,13 +1107,14 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
 		batch.Put([]byte(forwardLine), "moves", status.Hash().B58String(), moveMapHash(srcNode))
 
-		fmt.Println("FORWARD", (forwardLine), "moves", status.Hash().B58String(), moveMapHash(srcNode))
-
 		srcB58 := srcNode.Hash().B58String()
 		reverseLine := fmt.Sprintf("%s hash %s", moveDirection.Invert(), srcB58)
 		batch.Put([]byte(reverseLine), "moves", status.Hash().B58String(), moveMapHash(dstNode))
 
-		fmt.Println("BACKWARD", (reverseLine), "moves", status.Hash().B58String(), moveMapHash(dstNode))
+		// We already have a bidir mapping for this node, no need to mention them further.
+		delete(exported, srcNode.Inode())
+		delete(exported, dstNode.Inode())
+
 		return nil
 	}
 
@@ -1212,8 +1213,6 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 		return nil, MoveDirNone, nil
 	}
 
-	// TODO: figure out why this returns nil if the key was not found
-	// and not err=ErrNoSuchKey...
 	moveData, err := lkr.kv.Get("moves", cmt.Hash().B58String(), moveMapHash(nd))
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, MoveDirUnknown, err

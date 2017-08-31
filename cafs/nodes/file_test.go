@@ -27,7 +27,7 @@ func TestFile(t *testing.T) {
 	file.SetName("new_name")
 	file.SetKey([]byte{1, 2, 3})
 	file.SetSize(42)
-	file.SetHash(lkr, []byte{4, 5, 6})
+	file.SetContent(lkr, []byte{4, 5, 6})
 	hashBeforeUnmarshal := file.Hash().Clone()
 
 	now := time.Now()

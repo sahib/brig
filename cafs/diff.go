@@ -1,7 +1,6 @@
 package cafs
 
 import (
-	"fmt"
 	"strings"
 
 	n "github.com/disorganizer/brig/cafs/nodes"
@@ -104,17 +103,17 @@ func (hw *HistoryWalker) maskFromState() ChangeType {
 		return mask
 	}
 
-	ghostCurr, isGhostCurr := hw.curr.(*n.Ghost)
-	ghostNext, isGhostNext := hw.next.(*n.Ghost)
+	isGhostCurr := hw.curr.Type() == n.NodeTypeGhost
+	isGhostNext := hw.next.Type() == n.NodeTypeGhost
 
-	currHash := hw.curr.Hash()
-	if isGhostCurr {
-		currHash = ghostCurr.OldNode().Hash()
+	currHash, err := n.ContentHash(hw.curr)
+	if err != nil {
+		return ChangeTypeNone
 	}
 
-	nextHash := hw.next.Hash()
-	if isGhostNext {
-		nextHash = ghostNext.OldNode().Hash()
+	nextHash, err := n.ContentHash(hw.next)
+	if err != nil {
+		return ChangeTypeNone
 	}
 
 	// If the hash differs, there's likely a modification going on.
@@ -165,14 +164,19 @@ func (hw *HistoryWalker) Next() bool {
 
 	// Check if this node participated in a move:
 	prev, direction, err := hw.lkr.MoveMapping(hw.head, hw.curr)
-	fmt.Println("HAS MOVED?", hw.head, hw.curr.Path())
 	if err != nil {
 		hw.err = err
 		return false
 	}
 
-	if prev != nil {
-		fmt.Println("IT HAS.", prev.Path())
+	if prev != nil && prev.Type() == n.NodeTypeGhost {
+		prevGhost, ok := prev.(*n.Ghost)
+		if !ok {
+			hw.err = n.ErrBadNode
+			return false
+		}
+
+		prev = prevGhost.OldNode()
 	}
 
 	// Advance to the previous commit:

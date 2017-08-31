@@ -15,19 +15,19 @@ import (
 type Ghost struct {
 	ModNode
 
-	movedTo h.Hash
-	oldType NodeType
+	ghostInode uint64
+	oldType    NodeType
 }
 
 // MakeGhost takes an existing node and converts it to a ghost.
 // In the ghost form no metadata is lost, but the node should
 // not show up. `inode` will be the new inode of the ghost.
 // It should differ to the previous node.
-func MakeGhost(nd ModNode, movedTo h.Hash, inode uint64) (*Ghost, error) {
+func MakeGhost(nd ModNode, inode uint64) (*Ghost, error) {
 	return &Ghost{
-		ModNode: nd.Copy(inode),
-		oldType: nd.Type(),
-		movedTo: movedTo,
+		ModNode:    nd.Copy(),
+		oldType:    nd.Type(),
+		ghostInode: inode,
 	}, nil
 }
 
@@ -40,10 +40,6 @@ func (g *Ghost) OldNode() Node {
 	return g.ModNode
 }
 
-func (g *Ghost) MovedTo(lkr Linker) (Node, error) {
-	return lkr.NodeByHash(g.movedTo)
-}
-
 func (g *Ghost) OldFile() (*File, error) {
 	file, ok := g.ModNode.(*File)
 	if !ok {
@@ -53,12 +49,25 @@ func (g *Ghost) OldFile() (*File, error) {
 	return file, nil
 }
 
+func (g *Ghost) OldDirectory() (*Directory, error) {
+	directory, ok := g.ModNode.(*Directory)
+	if !ok {
+		return nil, ErrBadNode
+	}
+
+	return directory, nil
+}
+
 func (g *Ghost) String() string {
-	return fmt.Sprintf("<ghost: %v>", g.ModNode)
+	return fmt.Sprintf("<ghost: %s %v>", g.Hash(), g.ModNode)
 }
 
 func (g *Ghost) Hash() h.Hash {
 	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.Hash())))
+}
+
+func (g *Ghost) Inode() uint64 {
+	return g.ghostInode
 }
 
 // ToCapnp serializes the underlying node
@@ -80,9 +89,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	if err := capghost.SetMovedTo(g.movedTo); err != nil {
-		return nil, err
-	}
+	capghost.SetGhostInode(g.ghostInode)
 
 	switch g.oldType {
 	case NodeTypeFile:
@@ -148,10 +155,9 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	g.movedTo, err = capghost.MovedTo()
-	if err != nil {
-		return err
-	}
+	g.ghostInode = capghost.GhostInode()
+
+	var base *Base
 
 	switch typ := capghost.Which(); typ {
 	case capnp_model.Ghost_Which_directory:
@@ -167,6 +173,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 
 		g.ModNode = dir
 		g.oldType = NodeTypeDirectory
+		base = &dir.Base
 	case capnp_model.Ghost_Which_file:
 		capfile, err := capghost.File()
 		if err != nil {
@@ -180,8 +187,13 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 
 		g.ModNode = file
 		g.oldType = NodeTypeFile
+		base = &file.Base
 	default:
 		return ErrBadNode
+	}
+
+	if err := base.parseBaseAttrsFromNode(capnode); err != nil {
+		return err
 	}
 
 	return nil
