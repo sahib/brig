@@ -1,4 +1,4 @@
-package cafs
+package catfs
 
 // Layout of the key/value store:
 //

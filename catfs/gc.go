@@ -1,4 +1,4 @@
-package cafs
+package catfs
 
 import (
 	"github.com/disorganizer/brig/cafs/db"

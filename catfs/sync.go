@@ -1,4 +1,4 @@
-package cafs
+package catfs
 
 // The sync algorithm tries to handle the following special cases:
 // - Propagate moves (most of them, at least)

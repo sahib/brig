@@ -1,4 +1,4 @@
-package cafs
+package catfs
 
 import (
 	"testing"
