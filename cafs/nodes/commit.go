@@ -27,6 +27,15 @@ type Commit struct {
 
 	// Parent hash (only nil for initial commit)
 	parent h.Hash
+
+	merge struct {
+		// With indicates with which person we merged.
+		with *Person
+
+		// head is a reference to the commit we merged with on
+		// the remote side.
+		head h.Hash
+	}
 }
 
 // NewCommit creates a new commit after the commit referenced by `parent`.
@@ -94,6 +103,20 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 		return nil, err
 	}
 
+	// Store merge infos:
+	capmerge := capcmt.Merge()
+
+	with, err := c.merge.with.ToCapnpPerson(seg)
+	if err != nil {
+		return nil, err
+	}
+	if err := capmerge.SetWith(*with); err != nil {
+		return nil, err
+	}
+	if err := capmerge.SetHead(c.merge.head); err != nil {
+		return nil, err
+	}
+
 	return &capcmt, nil
 }
 
@@ -143,6 +166,22 @@ func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
 
 	c.parent, err = capcmt.Parent()
 	if err != nil {
+		return err
+	}
+
+	capmerge := capcmt.Merge()
+	c.merge.head, err = capmerge.Head()
+	if err != nil {
+		return err
+	}
+
+	capperson, err := capmerge.With()
+	if err != nil {
+		return err
+	}
+
+	c.merge.with = &Person{}
+	if err := c.merge.with.FromCapnpPerson(capperson); err != nil {
 		return err
 	}
 
@@ -221,6 +260,15 @@ func (c *Commit) String() string {
 		c.hash.B58String(),
 		c.message,
 	)
+}
+
+func (c *Commit) SetMergeMarker(with *Person, remoteHead h.Hash) {
+	c.merge.with = with
+	c.merge.head = remoteHead.Clone()
+}
+
+func (c *Commit) MergeMarker() (*Person, h.Hash) {
+	return c.merge.with, c.merge.head
 }
 
 // /////////////////// METADATA INTERFACE ///////////////////

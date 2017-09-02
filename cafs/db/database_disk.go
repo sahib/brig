@@ -78,16 +78,23 @@ func (db *DiskDatabase) Flush() error {
 		return nil
 	}
 
+	// Clear the cache first, if any of the next step fail,
+	// we have at least the current state.
+	db.cache = make(map[string][]byte)
+
+	// Make sure that db.ops is nil, even if Flush failed.
+	ops := db.ops
+	db.ops = nil
+
 	// Currently no revertible operations are implemented. If something goes
 	// wrong on the filesystem, chances are high that we're not able to revert
 	// previous ops anyways.
-	for _, op := range db.ops {
+	for _, op := range ops {
 		if err := op(); err != nil {
 			return err
 		}
 	}
 
-	db.cache = make(map[string][]byte)
 	return nil
 }
 

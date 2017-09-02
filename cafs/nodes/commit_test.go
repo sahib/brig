@@ -17,6 +17,8 @@ func TestCommit(t *testing.T) {
 	cmt.parent = h.EmptyHash
 	cmt.Base.name = "some commit"
 
+	cmt.SetMergeMarker(AuthorOfStage(), h.TestDummy(t, 42))
+
 	if err := cmt.BoxCommit(AuthorOfStage(), "Hello"); err != nil {
 		t.Fatalf("Failed to box commit: %v", err)
 	}
@@ -56,4 +58,14 @@ func TestCommit(t *testing.T) {
 	if !empty.author.Equal(AuthorOfStage()) {
 		t.Fatalf("Bad author unmarshaled: %v", empty.root)
 	}
+
+	person, remoteHead := empty.MergeMarker()
+	if !remoteHead.Equal(h.TestDummy(t, 42)) {
+		t.Fatal("Remote head was not loaded correctly: %v", remoteHead.Bytes())
+	}
+
+	if person == nil || !person.Equal(AuthorOfStage()) {
+		t.Fatalf("Person from unmarshaled commit does not equal staging author: %v", person)
+	}
+
 }

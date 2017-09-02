@@ -20,9 +20,8 @@ struct Commit $Go.doc("Commit is a set of changes to nodes") {
 
     # Attributes not being part of the hash:
     merge :group {
-        isMerge @4 :Bool;
-        with    @5 :Person;
-        hash    @6 :Data;
+        with    @4 :Person;
+        head    @5 :Data;
     }
 }
 

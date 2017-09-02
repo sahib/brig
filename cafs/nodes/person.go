@@ -67,6 +67,38 @@ func (p *Person) ToCapnpPerson(seg *capnp.Segment) (*capnp_model.Person, error) 
 	return &person, nil
 }
 
+func (p *Person) ToBytes() ([]byte, error) {
+	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := p.ToCapnpPerson(seg); err != nil {
+		return nil, err
+	}
+
+	return msg.Marshal()
+}
+
+func PersonFromBytes(data []byte) (*Person, error) {
+	msg, err := capnp.Unmarshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	capperson, err := capnp_model.ReadRootPerson(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	person := &Person{}
+	if err := person.FromCapnpPerson(capperson); err != nil {
+		return nil, err
+	}
+
+	return person, nil
+}
+
 // FromCapnpPerson converts a capnp-Person to a person.
 func (p *Person) FromCapnpPerson(capnpers capnp_model.Person) error {
 	ident, err := capnpers.Ident()

@@ -65,6 +65,9 @@ type Linker struct {
 
 	// UID to node
 	inodeIndex map[uint64]n.Node
+
+	// Cache for the linker owner.
+	owner *n.Person
 }
 
 // NewFilesystem returns a new lkr, ready to use. It assumes the key value store
@@ -336,6 +339,19 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 // COMMIT HANDLING //
 /////////////////////
 
+// SetMergeMarker sets the current status to be a merge commit.
+// Note that this function only will have a result when MakeCommit() is called afterwards.
+// Otherwise, the changes will not be written to disk.
+func (lkr *Linker) SetMergeMarker(with *n.Person, remoteHead h.Hash) error {
+	status, err := lkr.Status()
+	if err != nil {
+		return err
+	}
+
+	status.SetMergeMarker(with, remoteHead)
+	return nil
+}
+
 // MakeCommit creates a new full commit in the version history.
 // The current staging commit is finalized with `author` and `message`
 // and gets saved. A new, identical staging commit is created pointing
@@ -465,6 +481,42 @@ func (lkr *Linker) MetadataPut(key string, value []byte) error {
 // It will return nil if no such value could be retrieved.
 func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 	return lkr.kv.Get("metadata", key)
+}
+
+////////////////////////
+// OWNERSHIP HANDLING //
+////////////////////////
+
+func (lkr *Linker) Owner() (*n.Person, error) {
+	if lkr.owner == nil {
+		return lkr.owner, nil
+	}
+
+	data, err := lkr.MetadataGet("owner")
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := n.PersonFromBytes(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache owner, we don't want to reload it again and again.
+	// It will usually not change during runtime, except SetOwner
+	// is called (which is invalidating the cache anyways)
+	lkr.owner = owner
+	return owner, nil
+}
+
+func (lkr *Linker) SetOwner(owner *n.Person) error {
+	data, err := owner.ToBytes()
+	if err != nil {
+		return err
+	}
+
+	lkr.owner = nil
+	return lkr.MetadataPut("owner", data)
 }
 
 ////////////////////////
