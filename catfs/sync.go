@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	n "github.com/disorganizer/brig/cafs/nodes"
+	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
 

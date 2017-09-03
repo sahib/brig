@@ -3,7 +3,7 @@ package catfs
 import (
 	"testing"
 
-	"github.com/disorganizer/brig/cafs/db"
+	"github.com/disorganizer/brig/catfs/db"
 )
 
 func setupBasicFile(t *testing.T, lkrSrc, lkrDst *Linker) {

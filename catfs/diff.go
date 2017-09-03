@@ -1,9 +1,10 @@
 package catfs
 
 import (
+	"fmt"
 	"strings"
 
-	n "github.com/disorganizer/brig/cafs/nodes"
+	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
 
@@ -167,6 +168,11 @@ func (hw *HistoryWalker) Next() bool {
 	if err != nil {
 		hw.err = err
 		return false
+	}
+
+	fmt.Println("NEXT")
+	if prev != nil {
+		fmt.Println(hw.curr.Path(), "moved to", prev.Path(), prev.Type(), prev.Hash())
 	}
 
 	if prev != nil && prev.Type() == n.NodeTypeGhost {

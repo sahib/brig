@@ -40,8 +40,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/disorganizer/brig/cafs/db"
-	n "github.com/disorganizer/brig/cafs/nodes"
+	"github.com/disorganizer/brig/catfs/db"
+	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/disorganizer/brig/util/trie"
 	capnp "zombiezen.com/go/capnproto2"
@@ -691,6 +691,7 @@ func (lkr *Linker) loadStatus() (*n.Commit, error) {
 }
 
 // saveStatus copies cmt to stage/STATUS.
+// TODO: Why is getting saveStatus an own batch, not it's own?
 func (lkr *Linker) saveStatus(batch db.Batch, cmt *n.Commit) error {
 	head, err := lkr.Head()
 	if err != nil && !IsErrNoSuchRef(err) {
@@ -712,11 +713,9 @@ func (lkr *Linker) saveStatus(batch db.Batch, cmt *n.Commit) error {
 		return err
 	}
 
-	batch.Put(data, "stage", "STATUS")
-
-	b58Hash := cmt.Hash().B58String()
 	inode := strconv.FormatUint(cmt.Inode(), 10)
-	batch.Put([]byte(b58Hash), "inode", inode)
+	batch.Put(data, "stage", "STATUS")
+	batch.Put([]byte(cmt.Hash().B58String()), "inode", inode)
 
 	if err := lkr.SaveRef("CURR", cmt); err != nil {
 		return err
@@ -1119,18 +1118,6 @@ func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
 }
 
 func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
-	// TODO: Verify that all ghosts will be copied out from staging.
-	// Consider this case:
-	// $ touch x
-	// $ commit
-	// $ move x y
-	// $ touch x
-	// $ commit
-	//
-	// -> In the last commit the ghost from the move (x) is overwritten by a new
-	//    file and thus will not be reachable anymore. In order to store the full
-	//    history of the file we need to also keep this ghost.
-
 	batch := lkr.kv.Batch()
 	walker := func(key []string) error {
 		inode, err := strconv.ParseUint(key[len(key)-1], 10, 64)
@@ -1167,6 +1154,7 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 			return fmt.Errorf("Failed to find source node for commit map: %d", inode)
 		}
 
+		// Write a bidirectional mapping for this node:
 		dstB58 := dstNode.Hash().B58String()
 		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
 		batch.Put([]byte(forwardLine), "moves", status.Hash().B58String(), moveMapHash(srcNode))
@@ -1175,7 +1163,42 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		reverseLine := fmt.Sprintf("%s hash %s", moveDirection.Invert(), srcB58)
 		batch.Put([]byte(reverseLine), "moves", status.Hash().B58String(), moveMapHash(dstNode))
 
+		// We need to verify that all ghosts will be copied out from staging.
+		// In some special cases, not all used ghosts are reachable in MakeCommit.
+		//
+		// Consider for example this case:
+		//
+		// $ touch x
+		// $ commit
+		// $ move x y
+		// $ touch x
+		// $ commit
+		//
+		// => In the last commit the ghost from the move (x) is overwritten by a new
+		//    file and thus will not be reachable anymore. In order to store the full
+		//    history of the file we need to also keep this ghost.
+		for _, checkHash := range []string{dstB58, srcB58} {
+			srcKey := []string{"stage", "objects", checkHash}
+			dstKey := []string{"objects", checkHash}
+
+			_, err = lkr.kv.Get(dstKey...)
+			if err == db.ErrNoSuchKey {
+				err = nil
+
+				// This part of the move was not reachable, we need to copy it
+				// to the object store additionally.
+				if err := db.CopyKey(lkr.kv, srcKey, dstKey); err != nil {
+					return err
+				}
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
 		// We already have a bidir mapping for this node, no need to mention them further.
+		// (would not hurt, but would be duplicated work)
 		delete(exported, srcNode.Inode())
 		delete(exported, dstNode.Inode())
 

@@ -6,7 +6,7 @@ import (
 	"path"
 	"time"
 
-	capnp_model "github.com/disorganizer/brig/cafs/nodes/capnp"
+	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/multiformats/go-multihash"
 	capnp "zombiezen.com/go/capnproto2"
@@ -106,13 +106,16 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 	// Store merge infos:
 	capmerge := capcmt.Merge()
 
-	with, err := c.merge.with.ToCapnpPerson(seg)
-	if err != nil {
-		return nil, err
+	if c.merge.with != nil {
+		with, err := c.merge.with.ToCapnpPerson(seg)
+		if err != nil {
+			return nil, err
+		}
+		if err := capmerge.SetWith(*with); err != nil {
+			return nil, err
+		}
 	}
-	if err := capmerge.SetWith(*with); err != nil {
-		return nil, err
-	}
+
 	if err := capmerge.SetHead(c.merge.head); err != nil {
 		return nil, err
 	}

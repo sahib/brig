@@ -64,3 +64,14 @@ type Database interface {
 	// Close closes the database. Since I/O may happen, an error is returned.
 	Close() error
 }
+
+func CopyKey(db Database, src, dst []string) error {
+	data, err := db.Get(src...)
+	if err != nil {
+		return err
+	}
+
+	batch := db.Batch()
+	batch.Put(data, dst...)
+	return batch.Flush()
+}

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/cafs/db"
-	n "github.com/disorganizer/brig/cafs/nodes"
+	"github.com/disorganizer/brig/catfs/db"
+	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
@@ -329,22 +329,23 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
 
+	fmt.Println("----")
 	newFile := mustMove(t, lkr, file, "/y.png")
-	c3 := mustCommit(t, lkr, "move to y.png")
+	// c3 := mustCommit(t, lkr, "move to y.png")
 
 	_, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1},
+		commits: []*n.Commit{c4, c2, c1},
 		paths: []string{
 			"/y.png",
-			"/y.png",
+			// "/y.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
-			ChangeTypeNone,
+			// ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeAdd,
 		},

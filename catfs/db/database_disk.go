@@ -78,6 +78,10 @@ func (db *DiskDatabase) Flush() error {
 		return nil
 	}
 
+	if debug {
+		fmt.Println("FLUSH")
+	}
+
 	// Clear the cache first, if any of the next step fail,
 	// we have at least the current state.
 	db.cache = make(map[string][]byte)
@@ -99,6 +103,10 @@ func (db *DiskDatabase) Flush() error {
 }
 
 func (db *DiskDatabase) Rollback() {
+	if debug {
+		fmt.Println("ROLLBACK")
+	}
+
 	db.refs = 0
 	db.ops = nil
 	db.cache = make(map[string][]byte)
@@ -110,7 +118,7 @@ func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
 		fmt.Println("GET", key)
 	}
 
-	data, ok := db.cache[path.Join()]
+	data, ok := db.cache[path.Join(key...)]
 	if ok {
 		return data, nil
 	}
@@ -168,6 +176,10 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 
 // Clear removes all keys below and including `key`.
 func (db *DiskDatabase) Clear(key ...string) {
+	if debug {
+		fmt.Println("CLEAR", key)
+	}
+
 	// Cache the real modification for later:
 	db.ops = append(db.ops, func() error {
 		prefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
@@ -183,6 +195,7 @@ func (db *DiskDatabase) Clear(key ...string) {
 		return filepath.Walk(db.basePath, walker)
 	})
 
+	// Make sure we also modify the currently cached objects:
 	prefix := path.Join(key...)
 	for key := range db.cache {
 		if strings.HasPrefix(key, prefix) {
@@ -192,12 +205,12 @@ func (db *DiskDatabase) Clear(key ...string) {
 }
 
 func (db *DiskDatabase) Erase(key ...string) {
+	if debug {
+		fmt.Println("ERASE", key)
+	}
+
 	db.ops = append(db.ops, func() error {
 		fullPath := filepath.Join(db.basePath, fixDirectoryKeys(key))
-		if debug {
-			fmt.Println("ERASE", fullPath)
-		}
-
 		err := os.Remove(fullPath)
 		if os.IsNotExist(err) {
 			return ErrNoSuchKey

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/disorganizer/brig/cafs/db"
-	n "github.com/disorganizer/brig/cafs/nodes"
+	"github.com/disorganizer/brig/catfs/db"
+	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 

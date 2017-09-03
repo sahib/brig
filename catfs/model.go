@@ -3,7 +3,7 @@ package catfs
 import (
 	"io"
 
-	"github.com/disorganizer/brig/cafs/db"
+	"github.com/disorganizer/brig/catfs/db"
 	"github.com/disorganizer/brig/interfaces"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
