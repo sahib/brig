@@ -272,7 +272,7 @@ func (lkr *Linker) StageNode(nd n.Node) (err error) {
 	}
 
 	status.SetRoot(root.Hash())
-	return lkr.saveStatus(batch, status)
+	return lkr.saveStatus(status)
 }
 
 // NodeByInode resolves a node by it's unique ID.
@@ -462,7 +462,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 
 	newStatus.SetParent(lkr, status)
 	newStatus.SetRoot(status.Root())
-	return lkr.saveStatus(batch, newStatus)
+	return lkr.saveStatus(newStatus)
 }
 
 ///////////////////////
@@ -659,7 +659,7 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 
 	cmt.SetRoot(rootHash)
 
-	if err := lkr.saveStatus(batch, cmt); err != nil {
+	if err := lkr.saveStatus(cmt); err != nil {
 		return nil, err
 	}
 
@@ -691,8 +691,16 @@ func (lkr *Linker) loadStatus() (*n.Commit, error) {
 }
 
 // saveStatus copies cmt to stage/STATUS.
-// TODO: Why is getting saveStatus an own batch, not it's own?
-func (lkr *Linker) saveStatus(batch db.Batch, cmt *n.Commit) error {
+func (lkr *Linker) saveStatus(cmt *n.Commit) (err error) {
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
 	head, err := lkr.Head()
 	if err != nil && !IsErrNoSuchRef(err) {
 		return err
@@ -977,7 +985,7 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 	// Invalidate the cache, causing NodeByHash and ResolveNode to load the
 	// file from the boltdb again:
 	lkr.MemIndexClear()
-	return lkr.saveStatus(batch, status)
+	return lkr.saveStatus(status)
 }
 
 // CheckoutFile resets a certain file to the state it had in cmt. If the file
