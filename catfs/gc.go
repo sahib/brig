@@ -24,7 +24,7 @@ func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *
 	}
 }
 
-func (gc *GarbageCollector) markMoveMaps() error {
+func (gc *GarbageCollector) markMoveMap(key []string) error {
 	walker := func(key []string) error {
 		data, err := gc.kv.Get(key...)
 		if err != nil {
@@ -43,7 +43,7 @@ func (gc *GarbageCollector) markMoveMaps() error {
 		return nil
 	}
 
-	return gc.kv.Keys(walker, "stage", "moves")
+	return gc.kv.Keys(walker, key...)
 }
 
 func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
@@ -119,6 +119,36 @@ func (gc *GarbageCollector) sweep(key []string) error {
 	return batch.Flush()
 }
 
+// TODO: write test that covers this.
+//       we don't want to find hard bugs later because of gc going haywire.
+func (gc *GarbageCollector) findAllMoveLocations(head *n.Commit) ([][]string, error) {
+	locations := [][]string{
+		{"stage", "moves"},
+	}
+
+	for {
+		parent, err := head.Parent(gc.lkr)
+		if err != nil {
+			return nil, err
+		}
+
+		if parent == nil {
+			break
+		}
+
+		parentCmt, ok := parent.(*n.Commit)
+		if !ok {
+			return nil, n.ErrBadNode
+		}
+
+		head = parentCmt
+		location := []string{"moves", head.Hash().B58String()}
+		locations = append(locations, location)
+	}
+
+	return locations, nil
+}
+
 func (gc *GarbageCollector) Run(allObjects bool) error {
 	gc.markMap = make(map[string]struct{})
 	head, err := gc.lkr.Status()
@@ -133,8 +163,21 @@ func (gc *GarbageCollector) Run(allObjects bool) error {
 	// Staging might contain moved files that are not reachable anymore,
 	// but still are referenced by the move mapping.
 	// Keep them for now, they will die most likely on MakeCommit()
-	if err := gc.markMoveMaps(); err != nil {
-		return err
+	moveMapLocations := [][]string{
+		{"stage", "moves"},
+	}
+
+	if allObjects {
+		moveMapLocations, err = gc.findAllMoveLocations(head)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, location := range moveMapLocations {
+		if err := gc.markMoveMap(location); err != nil {
+			return err
+		}
 	}
 
 	if err := gc.sweep([]string{"stage", "objects"}); err != nil {
