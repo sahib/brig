@@ -49,7 +49,21 @@ func (ct ChangeType) String() string {
 	return strings.Join(v, "|")
 }
 
+func (ct ChangeType) IsCompatible(ot ChangeType) bool {
+	// TODO:a thing this through.
+	modifyMask := ChangeTypeAdd | ChangeTypeModify
+
+	if ct&modifyMask != 0 && ot&modifyMask != 0 {
+		return false
+	}
+
+	return true
+}
+
+///////////////////////////
+
 // NodeState represents a single change of a node between two commits.
+// TODO: Rename. NodeState is clumsy.
 type NodeState struct {
 	// Mask is a bitmask of changes that were made.
 	Mask ChangeType
@@ -170,11 +184,6 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
-	fmt.Println("NEXT")
-	if prev != nil {
-		fmt.Println(hw.curr.Path(), "moved to", prev.Path(), prev.Type(), prev.Hash())
-	}
-
 	if prev != nil && prev.Type() == n.NodeTypeGhost {
 		prevGhost, ok := prev.(*n.Ghost)
 		if !ok {
@@ -253,4 +262,292 @@ func (hw *HistoryWalker) State() *NodeState {
 // Err returns the last happened error or nil if none.
 func (hw *HistoryWalker) Err() error {
 	return hw.err
+}
+
+// History returns a list of `nd`'s states starting with the commit in `start`
+// and stopping at `stop`. `stop` can be nil; in this case all commits will be
+// iterated. The returned list has the most recent change upfront, and the
+// latest change as lsat element.
+func History(lkr *Linker, nd n.ModNode, start, stop *n.Commit) ([]*NodeState, error) {
+	states := make([]*NodeState, 0)
+	walker := NewHistoryWalker(lkr, start, nd)
+
+	for walker.Next() {
+		state := walker.State()
+		if stop != nil && state.Head.Hash().Equal(stop.Hash()) {
+			break
+		}
+
+		states = append(states, state)
+	}
+
+	if err := walker.Err(); err != nil {
+		return nil, err
+	}
+
+	return states, nil
+}
+
+////////////////////////////////////////
+
+type DiffPair struct {
+	Src        n.ModNode
+	Dst        n.ModNode
+	IsConflict bool
+}
+
+type Differ struct {
+	lkrSrc, lkrDst *Linker
+	srcRoot        n.Node
+	fn             func(pair DiffPair) error
+	visited        map[string]n.ModNode
+}
+
+func NewDiffer(lkrSrc, lkrDst *Linker, srcRoot n.Node, fn func(pair DiffPair) error) (*Differ, error) {
+	if srcRoot == nil {
+		srcRootDir, err := lkrSrc.Root()
+		if err != nil {
+			return nil, err
+		}
+
+		srcRoot = srcRootDir
+	}
+
+	return &Differ{
+		lkrSrc:  lkrSrc,
+		lkrDst:  lkrDst,
+		srcRoot: srcRoot,
+	}, nil
+}
+
+func (df *Differ) route(nd n.Node) error {
+	switch nd.Type() {
+	case n.NodeTypeDirectory:
+		dir, ok := nd.(*n.Directory)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		return df.diffDirectory(dir)
+	case n.NodeTypeFile:
+		file, ok := nd.(*n.File)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		return df.diffFile(file)
+	case n.NodeTypeGhost:
+		ghost, ok := nd.(*n.Ghost)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		return df.diffGhost(ghost)
+	default:
+		return e.Wrapf(n.ErrBadNode, "Unexpected type in route(): %v", nd)
+	}
+}
+
+func (df *Differ) report(pair DiffPair) error {
+	if _, ok := df.visited[pair.Src.Path()]; ok {
+		return nil
+	}
+
+	return df.fn(pair)
+}
+
+func (df *Differ) diffGhost(srcCurr *n.Ghost) error {
+	// We encountered a ghost on src's side. We need to figure out.
+	// if that means that the node there was removed or moved elsewhere.
+	var err error
+	var mapSrcNd n.Node = nil // XXX
+	if err != nil {
+		return err
+	}
+
+	if mapSrcNd == nil {
+		// It was a removal on src's side.
+		return nil
+	}
+
+	return df.route(mapSrcNd)
+}
+
+func (df *Differ) diffFile(srcCurr *n.File) error {
+	dstCurr, err := df.lkrDst.LookupNode(srcCurr.Path())
+	if err != nil && !n.IsNoSuchFileError(err) {
+		return err
+	}
+
+	if dstCurr == nil {
+		// We do not have this node yet, mark it for copying.
+		return df.report(DiffPair{
+			Src:        srcCurr,
+			Dst:        nil,
+			IsConflict: false,
+		})
+	}
+
+	if dstCurr.Hash().Equal(srcCurr.Hash()) {
+		fmt.Printf("File remote:%s - local:%s do not differ.", srcCurr.Path(), dstCurr.Path())
+		return nil
+	}
+
+	switch typ := dstCurr.Type(); typ {
+	case n.NodeTypeDirectory:
+		// Our node seems to be a directory and theirs a file.
+		// That's not something we can fix.
+		dstDir, ok := dstCurr.(*n.File)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		return df.report(DiffPair{
+			Src:        srcCurr,
+			Dst:        dstDir,
+			IsConflict: true,
+		})
+	case n.NodeTypeFile:
+		// We have two competing files. Let's figure out if the changes done to
+		// them are compatible.
+		dstFile, ok := dstCurr.(*n.File)
+		if !ok {
+			return n.ErrBadNode
+		}
+
+		return df.report(DiffPair{
+			Src:        srcCurr,
+			Dst:        dstFile,
+			IsConflict: false,
+		})
+	case n.NodeTypeGhost:
+		// Probably was moved or removed on our side.
+		// TODO: Check which case happened and try to resolve to
+		// mapDstNd, err := df.findMapNode(dstCurr)
+		var mapDstNd n.Node = nil
+		if err != nil {
+			return err
+		}
+
+		if mapDstNd == nil {
+			// Was removed on our side...
+			// Nothing to do really.
+			return nil
+		}
+
+		mapModNd, ok := mapDstNd.(n.ModNode)
+		if !ok {
+			return e.Wrap(n.ErrBadNode, "XXX: Hmm... still a bug?")
+		}
+
+		isConflict := !(mapModNd.Type() == n.NodeTypeFile)
+		return df.report(DiffPair{
+			Src:        srcCurr,
+			Dst:        mapModNd,
+			IsConflict: isConflict,
+		})
+	default:
+		return e.Wrapf(n.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
+	}
+
+	return nil
+}
+
+func (df *Differ) diffDirectory(srcCurr *n.Directory) error {
+	// Possible cases here:
+	// - lkrDst does not have this path (need to merge it)
+	// - lkrDst has this path, but it's a ghost (need to merge with moved file, if any)
+	// - lkrDst has this path, but it is not a directory (need to handle conflict?)
+	// - lkrDst has this path, and it's a directory (attempt conflict resolution)
+	//
+	// It is guaranteed that srcCurr is *always* a directory.
+	dstCurr, err := df.lkrDst.LookupDirectory(srcCurr.Path())
+	if err != nil && !n.IsNoSuchFileError(err) {
+		return err
+	}
+
+	if dstCurr == nil {
+		// We never heard of this directory apparently. Go sync it.
+		fmt.Printf("Marked remote directory `%s` for syncing.\n", srcCurr.Path())
+		return nil
+	}
+
+	// Check if we're lucky and the directory hash is equal:
+	if srcCurr.Hash().Equal(dstCurr.Hash()) {
+		fmt.Printf(
+			"src (%s) and dest (%s) are equal; no sync needed",
+			srcCurr.Path(),
+			dstCurr.Path(),
+		)
+		return nil
+	}
+
+	// Check if it's an empty directory.
+	// If so, we should check if we should adopt it.
+	if srcCurr.NChildren(df.lkrSrc) == 0 {
+		return df.report(DiffPair{
+			Src:        srcCurr,
+			Dst:        nil,
+			IsConflict: false,
+		})
+	}
+
+	// Both sides have this directory, but the content differs.
+	// We need to figure out recursively what exactly is different.
+	return srcCurr.VisitChildren(df.lkrSrc, func(srcNd n.Node) error {
+		switch srcNd.Type() {
+		case n.NodeTypeDirectory:
+			srcChildDir, ok := srcNd.(*n.Directory)
+			if !ok {
+				return n.ErrBadNode
+			}
+
+			return df.diffDirectory(srcChildDir)
+		case n.NodeTypeFile:
+			srcChildFile, ok := srcNd.(*n.File)
+			if !ok {
+				return n.ErrBadNode
+			}
+
+			return df.diffFile(srcChildFile)
+		case n.NodeTypeGhost:
+			// TODO: mapDstNo, err := some clever mapping.
+			var mapSrcNd n.Node = nil
+			if err != nil {
+				return err
+			}
+
+			if mapSrcNd == nil {
+				// Was removed on our side...
+				// Nothing to do really.
+				return nil
+			}
+
+			mapSrcModNd, ok := mapSrcNd.(n.ModNode)
+			if !ok {
+				return e.Wrap(n.ErrBadNode, "XXX2: Hmm... still a bug?")
+			}
+
+			df.visited[mapSrcModNd.Path()] = mapSrcModNd
+
+			if mapSrcDir, ok := mapSrcModNd.(*n.Directory); ok {
+				return df.diffDirectory(mapSrcDir)
+			}
+
+			// srcCurr is a directory and mapSrcNd or some reason a file.
+			// This cannot really work out.
+			return df.report(DiffPair{
+				Src:        srcCurr,
+				Dst:        mapSrcModNd,
+				IsConflict: true,
+			})
+		default:
+			return n.ErrBadNode
+		}
+
+	})
+}
+
+func (df *Differ) Diff() error {
+	return df.route(df.srcRoot)
 }

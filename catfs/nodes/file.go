@@ -188,7 +188,6 @@ func (f *File) Content() h.Hash {
 }
 
 func (f *File) String() string {
-	fmt.Println("String", f.content, f.Inode())
 	return fmt.Sprintf("<file %s:%s:%d>", f.Path(), f.Hash(), f.Inode())
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/disorganizer/brig/catfs/db"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -329,7 +330,6 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
 
-	fmt.Println("----")
 	newFile := mustMove(t, lkr, file, "/y.png")
 	// c3 := mustCommit(t, lkr, "move to y.png")
 
@@ -472,4 +472,94 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 	if err := walker.Err(); err != nil {
 		t.Fatalf("walker failed at index (%d/%d): %v", idx, len(setup.commits), err)
 	}
+}
+
+// Test the History() utility based on HistoryWalker.
+func TestHistoryUtil(t *testing.T) {
+	withDummyKv(t, func(kv db.Database) {
+		lkr := NewLinker(kv)
+		mustCommit(t, lkr, "init")
+		c1File, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
+		// makeFileAndCommit will modify c1File for some reason, so copy for expect.
+		// That's fine, since catfs is build to requery nodes freshly.
+		c1File = c1File.Copy().(*n.File)
+
+		c2File, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+
+		c3FileMoved := mustMove(t, lkr, c2File.Copy(), "/y.png")
+		c3 := mustCommit(t, lkr, "move to y.png")
+
+		_, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+
+		states, err := History(lkr, c3FileMoved, c4, nil)
+		if err != nil {
+			t.Fatalf("History without stop commit failed: %v", err)
+		}
+
+		expected := []*NodeState{
+			{
+				Head: c4,
+				Curr: c3FileMoved,
+				Mask: ChangeTypeNone,
+			}, {
+				Head: c3,
+				Curr: c3FileMoved,
+				Mask: ChangeTypeNone,
+			}, {
+				Head: c2,
+				Curr: c2File,
+				Mask: ChangeTypeMove,
+			}, {
+				Head: c1,
+				Curr: c1File,
+				Mask: ChangeTypeAdd,
+			},
+		}
+
+		for idx, state := range states {
+			expect := expected[idx]
+			require.Equal(t, state.Head, expect.Head, "Head differs")
+			require.Equal(t, state.Curr, expect.Curr, "Curr differs")
+			require.Equal(t, state.Mask, expect.Mask, "Mask differs")
+		}
+	})
+}
+
+// TODO: Test for multiple moves.
+
+////////////////////////////////////
+// TEST FOR DIFFER IMPLEMENTATION //
+////////////////////////////////////
+
+func TestDiffer(t *testing.T) {
+	withDummyKv(t, func(kvSrc db.Database) {
+		withDummyKv(t, func(kvDst db.Database) {
+			lkrSrc := NewLinker(kvSrc)
+			lkrDst := NewLinker(kvDst)
+
+			lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
+			lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
+
+			// Create init commits:
+			mustCommit(t, lkrSrc, "init-src")
+			mustCommit(t, lkrDst, "init-dst")
+
+			makeFileAndCommit(t, lkrSrc, "/x.png", 1)
+			makeFileAndCommit(t, lkrDst, "/x.png", 1)
+
+			diffFn := func(pair DiffPair) error {
+				fmt.Println(pair)
+				return nil
+			}
+
+			differ, err := NewDiffer(lkrSrc, lkrDst, nil, diffFn)
+			if err != nil {
+				t.Fatalf("Failed to create differ: %v", err)
+			}
+
+			if err := differ.Diff(); err != nil {
+				t.Fatalf("Diff failed: %v", err)
+			}
+		})
+	})
 }

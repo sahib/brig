@@ -15,6 +15,13 @@ type Person struct {
 	hash  h.Hash
 }
 
+func NewPerson(ident string, hash h.Hash) *Person {
+	return &Person{
+		ident: ident,
+		hash:  hash,
+	}
+}
+
 // ID returns the person's identifier.
 func (p *Person) ID() string {
 	return p.ident
@@ -73,10 +80,12 @@ func (p *Person) ToBytes() ([]byte, error) {
 		return nil, err
 	}
 
-	if _, err := p.ToCapnpPerson(seg); err != nil {
+	capperson, err := p.ToCapnpPerson(seg)
+	if err != nil {
 		return nil, err
 	}
 
+	msg.SetRoot(capperson)
 	return msg.Marshal()
 }
 
