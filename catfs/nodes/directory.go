@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -236,6 +237,8 @@ func (d *Directory) SetParent(lkr Linker, nd Node) error {
 // ////////////// TREE MOVEMENT /////////////////
 
 // VisitChildren will call `fn` for each of it's direct children.
+// Note that the order in which `fn` will be called for each node may
+// be in any random order.
 func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
 	for name, hash := range d.children {
 		child, err := lkr.NodeByHash(hash)
@@ -253,6 +256,29 @@ func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
 	}
 
 	return nil
+}
+
+// ChildrenSorted returns a list of children node objects,
+// sorted lexically by their path.
+// Use this whenever you want to have a defined order of nodes,
+// but do not really care what order.
+func (d *Directory) ChildrenSorted(lkr Linker) ([]Node, error) {
+	children := []Node{}
+
+	err := d.VisitChildren(lkr, func(nd Node) error {
+		children = append(children, nd)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].Path() < children[j].Path()
+	})
+
+	return children, nil
 }
 
 // Up will call `visit` for each node onto the way top to the root node,

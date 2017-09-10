@@ -51,10 +51,13 @@ func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	return file
 }
 
-func mustMkdir(t *testing.T, lkr *Linker, repoPath string) {
-	if _, err := mkdir(lkr, repoPath, true); err != nil {
+func mustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
+	dir, err := mkdir(lkr, repoPath, true)
+	if err != nil {
 		t.Fatalf("Failed to create directories %s: %v", repoPath, err)
 	}
+
+	return dir
 }
 
 func TestMkdir(t *testing.T) {

@@ -518,6 +518,8 @@ func TestHistoryUtil(t *testing.T) {
 
 		for idx, state := range states {
 			expect := expected[idx]
+			fmt.Println("========", idx)
+
 			require.Equal(t, state.Head, expect.Head, "Head differs")
 			require.Equal(t, state.Curr, expect.Curr, "Curr differs")
 			require.Equal(t, state.Mask, expect.Mask, "Mask differs")
@@ -525,41 +527,121 @@ func TestHistoryUtil(t *testing.T) {
 	})
 }
 
-// TODO: Test for multiple moves.
+// TODO: Test history for multiple moves in one commit and several commits.
 
 ////////////////////////////////////
 // TEST FOR DIFFER IMPLEMENTATION //
 ////////////////////////////////////
 
-func TestDiffer(t *testing.T) {
-	withDummyKv(t, func(kvSrc db.Database) {
-		withDummyKv(t, func(kvDst db.Database) {
-			lkrSrc := NewLinker(kvSrc)
-			lkrDst := NewLinker(kvDst)
+func mapperSetupBasicSame(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	makeFileAndCommit(t, lkrSrc, "/x.png", 23)
+	makeFileAndCommit(t, lkrDst, "/x.png", 23)
+	return []MapPair{}
+}
 
-			lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
-			lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
+func mapperSetupBasicDiff(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 23)
+	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x.png", 42)
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
 
-			// Create init commits:
-			mustCommit(t, lkrSrc, "init-src")
-			mustCommit(t, lkrDst, "init-dst")
+func mapperSetupBasicSrcTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcDir := mustMkdir(t, lkrSrc, "/x")
+	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x", 42)
 
-			makeFileAndCommit(t, lkrSrc, "/x.png", 1)
-			makeFileAndCommit(t, lkrDst, "/x.png", 1)
+	return []MapPair{
+		{
+			Src:          srcDir,
+			Dst:          dstFile,
+			TypeMismatch: true,
+		},
+	}
+}
 
-			diffFn := func(pair DiffPair) error {
-				fmt.Println(pair)
-				return nil
-			}
+func mapperSetupBasicDstTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x", 42)
+	dstDir := mustMkdir(t, lkrDst, "/x")
 
-			differ, err := NewDiffer(lkrSrc, lkrDst, nil, diffFn)
-			if err != nil {
-				t.Fatalf("Failed to create differ: %v", err)
-			}
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstDir,
+			TypeMismatch: true,
+		},
+	}
+}
 
-			if err := differ.Diff(); err != nil {
-				t.Fatalf("Diff failed: %v", err)
-			}
+func TestMapper(t *testing.T) {
+	tcs := []struct {
+		name  string
+		setup func(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair
+	}{
+		{
+			name:  "basic-same",
+			setup: mapperSetupBasicSame,
+		}, {
+			name:  "basic-diff",
+			setup: mapperSetupBasicDiff,
+		}, {
+			name:  "basic-src-type-mismatch",
+			setup: mapperSetupBasicSrcTypeMismatch,
+		}, {
+			name:  "basic-dst-type-mismatch",
+			setup: mapperSetupBasicDstTypeMismatch,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			withDummyKv(t, func(kvSrc db.Database) {
+				withDummyKv(t, func(kvDst db.Database) {
+					lkrSrc := NewLinker(kvSrc)
+					lkrDst := NewLinker(kvDst)
+
+					lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
+					lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
+
+					// Create init commits:
+					mustCommit(t, lkrSrc, "init-src")
+					mustCommit(t, lkrDst, "init-dst")
+
+					expect := tc.setup(t, lkrSrc, lkrDst)
+
+					srcRoot, err := lkrSrc.Root()
+					if err != nil {
+						t.Fatalf("Failed to retrieve root: %v", err)
+					}
+
+					got := []MapPair{}
+					diffFn := func(pair MapPair) error {
+						got = append(got, pair)
+						return nil
+					}
+
+					mapper := NewMapper(lkrSrc, lkrDst, srcRoot)
+					if err := mapper.Map(diffFn); err != nil {
+						t.Fatalf("mapping failed: %v", err)
+					}
+
+					if len(got) != len(expect) {
+						t.Fatalf(
+							"Got and expect length differ: %d vs %d",
+							len(got), len(expect),
+						)
+					}
+
+					for idx, gotPair := range got {
+						expectPair := got[idx]
+						require.Equal(t, expectPair, gotPair)
+					}
+				})
+			})
 		})
-	})
+	}
 }

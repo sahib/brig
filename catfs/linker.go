@@ -1051,28 +1051,11 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	return lkr.StageNode(oldNode)
 }
 
-// moveMapHash calculats the hash that is used for storing a move mapping.
-// The hash consists out of the content of the node and out of the path.
-// This is necessary, since one node might have multiple moves, but always
-// the same content (thus it has the same hash). In contrast, the path will change always.
-func moveMapHash(nd n.Node) string {
-	v := h.Sum([]byte(fmt.Sprintf("%s|%s", nd.Hash(), nd.Path()))).B58String()
-	return v
-}
-
 // AddMoveMapping takes note that the the node `from` has been moved to `to`
 // in the staging commit.
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
 	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
 	batch.Put(
 		[]byte(fmt.Sprintf("> inode %d", to.Inode())),
 		"stage", "moves", strconv.FormatUint(from.Inode(), 10),
@@ -1082,7 +1065,7 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 		"stage", "moves", strconv.FormatUint(to.Inode(), 10),
 	)
 
-	return nil
+	return batch.Flush()
 }
 
 func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
@@ -1165,12 +1148,29 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 
 		// Write a bidirectional mapping for this node:
 		dstB58 := dstNode.Hash().B58String()
-		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
-		batch.Put([]byte(forwardLine), "moves", status.Hash().B58String(), moveMapHash(srcNode))
-
 		srcB58 := srcNode.Hash().B58String()
+
+		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
+		batch.Put(
+			[]byte(forwardLine),
+			"moves", status.Hash().B58String(), srcB58,
+		)
+
+		batch.Put(
+			[]byte(forwardLine),
+			"moves", "overlay", srcB58,
+		)
+
 		reverseLine := fmt.Sprintf("%s hash %s", moveDirection.Invert(), srcB58)
-		batch.Put([]byte(reverseLine), "moves", status.Hash().B58String(), moveMapHash(dstNode))
+		batch.Put(
+			[]byte(reverseLine),
+			"moves", status.Hash().B58String(), dstB58,
+		)
+
+		batch.Put(
+			[]byte(forwardLine),
+			"moves", "overlay", dstB58,
+		)
 
 		// We need to verify that all ghosts will be copied out from staging.
 		// In some special cases, not all used ghosts are reachable in MakeCommit.
@@ -1268,6 +1268,30 @@ func moveDirFromString(spec string) MoveDir {
 	}
 }
 
+func (lkr *Linker) MoveEntryPoint(nd n.Node) (n.Node, MoveDir, error) {
+	moveData, err := lkr.kv.Get("moves", "overlay", nd.Hash().B58String())
+	if err != nil && err != db.ErrNoSuchKey {
+		return nil, MoveDirUnknown, err
+	}
+
+	if moveData == nil {
+		return nil, MoveDirNone, nil
+	}
+
+	node, moveDir, err := lkr.parseMoveMappingLine(string(moveData))
+	if err != nil {
+		return nil, MoveDirUnknown, err
+	}
+
+	if node == nil {
+		// No move mapping found for this node.
+		// Note that this not an error.
+		return nil, MoveDirNone, nil
+	}
+
+	return node, moveDir, err
+}
+
 // MoveMapping will lookup if the node pointed to by `nd` was part of a moving
 // operation and if so, to what node it was moved and if it was the source or
 // the dest node.
@@ -1288,7 +1312,8 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 	// The lookups in the stage level are on an inode base. This would
 	// cause jumping around in the history for older commits.
 	if cmt == nil || cmt.Hash().Equal(status.Hash()) {
-		moveData, err := lkr.kv.Get("stage", "moves", strconv.FormatUint(nd.Inode(), 10))
+		inodeKey := strconv.FormatUint(nd.Inode(), 10)
+		moveData, err := lkr.kv.Get("stage", "moves", inodeKey)
 		if err != nil && err != db.ErrNoSuchKey {
 			return nil, MoveDirUnknown, err
 		}
@@ -1309,7 +1334,7 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 		return nil, MoveDirNone, nil
 	}
 
-	moveData, err := lkr.kv.Get("moves", cmt.Hash().B58String(), moveMapHash(nd))
+	moveData, err := lkr.kv.Get("moves", cmt.Hash().B58String(), nd.Hash().B58String())
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, MoveDirUnknown, err
 	}
@@ -1323,11 +1348,11 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 		return nil, MoveDirUnknown, err
 	}
 
-	if node != nil {
-		return node, moveDir, err
+	if node == nil {
+		// No move mapping found for this node.
+		// Note that this not an error.
+		return nil, MoveDirNone, nil
 	}
 
-	// No move mapping found for this node.
-	// Note that this not an error.
-	return nil, MoveDirNone, nil
+	return node, moveDir, err
 }
