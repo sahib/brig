@@ -82,7 +82,7 @@ func TestResolve(t *testing.T) {
 ///////////////////////////
 
 func setupBasicFile(t *testing.T, lkrSrc, lkrDst *Linker) {
-	touchFile(t, lkrSrc, "/x.png", 1)
+	mustTouch(t, lkrSrc, "/x.png", 1)
 }
 
 func checkBasicFile(t *testing.T, lkrSrc, lkrDst *Linker) {

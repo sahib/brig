@@ -291,6 +291,15 @@ func History(lkr *Linker, nd n.ModNode, start, stop *n.Commit) ([]*NodeState, er
 
 ////////////////////////////////////////
 
+// MapPair is a pair of nodes (a file or a directory)
+// One of Src and Dst might be nil:
+// - If Src is nil, the node was removed on the remote side.
+// - If Dst is nil, the node was added on the remote side.
+//
+// Both shall never be nil at the same time.
+//
+// If TypeMismatch is true, nodes have a different type
+// and need conflict resolution.
 type MapPair struct {
 	Src          n.ModNode
 	Dst          n.ModNode
@@ -301,7 +310,7 @@ type Mapper struct {
 	lkrSrc, lkrDst *Linker
 	srcRoot        n.Node
 	fn             func(pair MapPair) error
-	visited        map[string]n.ModNode
+	visited        map[string]n.Node
 }
 
 func (ma *Mapper) diffFile(srcCurr *n.File, dstFilePath string) error {
@@ -362,7 +371,23 @@ func (ma *Mapper) diffFile(srcCurr *n.File, dstFilePath string) error {
 			TypeMismatch: false,
 		})
 	case n.NodeTypeGhost:
-		// TODO: Here we probably need to also check if local file has moved.
+		// It's still possible that the file was moved on our side.
+		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, dstCurr)
+		if err != nil {
+			return err
+		}
+
+		isTypeMismatch := false
+		if aliveDstCurr != nil && aliveDstCurr.Type() != n.NodeTypeFile {
+			isTypeMismatch = true
+		}
+
+		return ma.fn(MapPair{
+			Src:          srcCurr,
+			Dst:          aliveDstCurr,
+			TypeMismatch: isTypeMismatch,
+		})
+
 		return nil
 	default:
 		return e.Wrapf(n.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
@@ -370,14 +395,6 @@ func (ma *Mapper) diffFile(srcCurr *n.File, dstFilePath string) error {
 }
 
 func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
-	// Possible cases here:
-	// - lkrDst does not have this path (need to merge it)
-	// - lkrDst has this path, but it is not a directory (need to handle conflict?)
-	// - lkrDst has this path, and it's a directory (attempt conflict resolution)
-	//
-	// It is guaranteed that srcCurr is *always* a directory.
-	//
-	// Check if this node was already handled in some way.
 	if _, ok := ma.visited[srcCurr.Path()]; ok {
 		return nil
 	}
@@ -390,15 +407,54 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 
 	if dstCurrNd == nil {
 		// We never heard of this directory apparently. Go sync it.
-		fmt.Printf("Marked remote directory `%s` for syncing.\n", srcCurr.Path())
-		return nil
+		return ma.fn(MapPair{
+			Src:          srcCurr,
+			Dst:          nil,
+			TypeMismatch: false,
+		})
+	}
+
+	// Special case: The node might have been moved on dst's side.
+	// We might notice this, if dst type is a ghost.
+	if dstCurrNd.Type() == n.NodeTypeGhost {
+		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, dstCurrNd)
+		if err != nil {
+			return err
+		}
+
+		// No sibling found for this ghost.
+		if aliveDstCurr == nil {
+			return ma.fn(MapPair{
+				Src:          srcCurr,
+				Dst:          nil,
+				TypeMismatch: false,
+			})
+		}
+
+		localBackCheck, err := ma.lkrSrc.LookupNode(aliveDstCurr.Path())
+		if err != nil && !n.IsNoSuchFileError(err) {
+			return err
+		}
+
+		if localBackCheck == nil || localBackCheck.Type() == n.NodeTypeGhost {
+			// Delete the guard again, due to to recursive call.
+			// TODO: This feels a bit hacky.
+			delete(ma.visited, srcCurr.Path())
+			return ma.diffDirectory(srcCurr, aliveDstCurr.Path())
+		}
+
+		return ma.fn(MapPair{
+			Src:          srcCurr,
+			Dst:          nil,
+			TypeMismatch: false,
+		})
 	}
 
 	if dstCurrNd.Type() != n.NodeTypeDirectory {
 		return ma.fn(MapPair{
 			Src:          srcCurr,
 			Dst:          dstCurrNd,
-			TypeMismatch: false,
+			TypeMismatch: true,
 		})
 	}
 
@@ -409,11 +465,6 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 
 	// Check if we're lucky and the directory hash is equal:
 	if srcCurr.Hash().Equal(dstCurr.Hash()) {
-		fmt.Printf(
-			"src (%s) and dest (%s) are equal; no sync needed",
-			srcCurr.Path(),
-			dstCurr.Path(),
-		)
 		return nil
 	}
 
@@ -446,7 +497,7 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 				return err
 			}
 		case n.NodeTypeGhost:
-			// Ghosts are ignored, since they were handled beforehand.
+			// remote ghosts are ignored, since they were handled beforehand.
 		default:
 			return n.ErrBadNode
 		}
@@ -462,9 +513,14 @@ func (ma *Mapper) ghostToAlive(lkr *Linker, nd n.Node) (n.ModNode, error) {
 		return nil, err
 	}
 
+	// No move partner found.
+	if partnerNd == nil {
+		return nil, nil
+	}
+
 	// We want to go forward in history.
 	// In theory, the other direction should not happen.
-	if moveDir != MoveDirSrcToDst {
+	if moveDir != MoveDirDstToSrc {
 		return nil, nil
 	}
 
@@ -591,6 +647,10 @@ func (ma *Mapper) handleGhosts() error {
 
 		switch aliveSrcNd.Type() {
 		case n.NodeTypeFile:
+			// Mark those both ghosts and original node as visited.
+			ma.visited[aliveSrcNd.Path()] = aliveSrcNd
+			ma.visited[srcNd.Path()] = srcNd
+
 			if !aliveSrcNd.Hash().Equal(dstRefNd.Hash()) {
 				return ma.fn(MapPair{
 					Src:          aliveSrcNd,
@@ -601,6 +661,7 @@ func (ma *Mapper) handleGhosts() error {
 
 			return nil
 		case n.NodeTypeDirectory:
+			ma.visited[srcNd.Path()] = srcNd
 			if dstRefNd.Type() != n.NodeTypeDirectory {
 				return ma.fn(MapPair{
 					Src:          aliveSrcNd,
@@ -645,7 +706,7 @@ func NewMapper(lkrSrc, lkrDst *Linker, srcRoot n.Node) *Mapper {
 		lkrSrc:  lkrSrc,
 		lkrDst:  lkrDst,
 		srcRoot: srcRoot,
-		visited: make(map[string]n.ModNode),
+		visited: make(map[string]n.Node),
 	}
 }
 
@@ -687,7 +748,6 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	case n.NodeTypeDirectory:
 		dir, ok := ma.srcRoot.(*n.Directory)
 		if !ok {
-			fmt.Println("root fail")
 			return n.ErrBadNode
 		}
 
@@ -695,7 +755,6 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {
-			fmt.Println("root fail")
 			return n.ErrBadNode
 		}
 

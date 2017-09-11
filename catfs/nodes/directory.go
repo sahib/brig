@@ -430,7 +430,9 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 func (d *Directory) SetSize(size uint64) { d.size = size }
 
 // SetName will set the name of this directory.
-func (d *Directory) SetName(name string) { d.name = name }
+func (d *Directory) SetName(name string) {
+	d.name = name
+}
 
 // SetModTime will set a new mod time to this directory (i.e. "touch" it)
 func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
@@ -484,6 +486,17 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	d.children[nd.Name()] = nodeHash
+	return nil
+}
+
+func (d *Directory) Rehash(oldPath, newPath string) error {
+	if err := d.hash.Xor(h.Sum([]byte(oldPath))); err != nil {
+		return err
+	}
+	if err := d.hash.Xor(h.Sum([]byte(newPath))); err != nil {
+		return err
+	}
+
 	return nil
 }
 

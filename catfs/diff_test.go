@@ -553,6 +553,8 @@ func mapperSetupBasicDiff(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
 
 func mapperSetupBasicSrcTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
 	srcDir := mustMkdir(t, lkrSrc, "/x")
+	mustCommit(t, lkrSrc, "add dir")
+
 	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x", 42)
 
 	return []MapPair{
@@ -567,12 +569,263 @@ func mapperSetupBasicSrcTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []Map
 func mapperSetupBasicDstTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
 	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x", 42)
 	dstDir := mustMkdir(t, lkrDst, "/x")
+	mustCommit(t, lkrDst, "add dir")
 
 	return []MapPair{
 		{
 			Src:          srcFile,
 			Dst:          dstDir,
 			TypeMismatch: true,
+		},
+	}
+}
+
+func mapperSetupBasicSrcAddFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 42)
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          nil,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupBasicDstAddFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	makeFileAndCommit(t, lkrDst, "/x.png", 42)
+	return []MapPair{}
+}
+
+func mapperSetupBasicSrcAddDir(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcDir := mustMkdir(t, lkrSrc, "/x")
+	mustCommit(t, lkrSrc, "add dir")
+
+	return []MapPair{
+		{
+			Src:          srcDir,
+			Dst:          nil,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupBasicDstAddDir(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	mustMkdir(t, lkrDst, "/x")
+	return []MapPair{}
+}
+
+func mapperSetupSrcMoveFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x.png", 42)
+	srcFileOld, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 23)
+	srcFile := mustMove(t, lkrSrc, srcFileOld, "/y.png")
+	mustCommit(t, lkrSrc, "I like to move it")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupDstMoveFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 42)
+	dstFileOld, _ := makeFileAndCommit(t, lkrDst, "/x.png", 23)
+	dstFile := mustMove(t, lkrDst, dstFileOld, "/y.png")
+	mustCommit(t, lkrDst, "I like to move it, move it")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupDstMoveDirEmpty(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	mustMkdir(t, lkrSrc, "/x")
+	mustCommit(t, lkrSrc, "Create src dir")
+
+	dstDirOld := mustMkdir(t, lkrDst, "/x")
+	mustMove(t, lkrDst, dstDirOld, "/y")
+	mustCommit(t, lkrDst, "I like to move it, move it")
+
+	return []MapPair{}
+}
+
+func mapperSetupDstMoveDir(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	mustMkdir(t, lkrSrc, "/x")
+	srcFile := mustTouch(t, lkrSrc, "/x/a.png", 42)
+	mustCommit(t, lkrSrc, "Create src dir")
+
+	// TODO: There is a bug (likely in move()) when switching move and touch
+	dstDirOld := mustMkdir(t, lkrDst, "/x")
+	mustMove(t, lkrDst, dstDirOld, "/y")
+	dstFile := mustTouch(t, lkrDst, "/y/a.png", 23)
+	mustCommit(t, lkrDst, "I like to move it, move it")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupSrcMoveDir(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcDirOld := mustMkdir(t, lkrSrc, "/x")
+	mustMove(t, lkrSrc, srcDirOld, "/y")
+	srcFile := mustTouch(t, lkrSrc, "/y/a.png", 23)
+	mustCommit(t, lkrSrc, "I like to move it, move it")
+
+	mustMkdir(t, lkrDst, "/x")
+	dstFile := mustTouch(t, lkrDst, "/x/a.png", 42)
+	mustCommit(t, lkrDst, "Create dst dir")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcDirOld := mustMkdir(t, lkrSrc, "/x")
+	mustMove(t, lkrSrc, srcDirOld, "/y")
+	srcFile := mustTouch(t, lkrSrc, "/y/a.png", 23)
+	mustCommit(t, lkrSrc, "I like to move it, move it")
+
+	// Additionally create an existing file that lives in the place
+	// of the moved file. Mapper should favour existing files:
+	mustMkdir(t, lkrDst, "/x")
+	mustMkdir(t, lkrDst, "/y")
+	mustTouch(t, lkrDst, "/x/a.png", 42)
+	dstFile := mustTouch(t, lkrDst, "/y/a.png", 42)
+	mustCommit(t, lkrDst, "Create src dir")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupDstMoveWithExisting(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcDir := mustMkdir(t, lkrSrc, "/x")
+	mustMkdir(t, lkrSrc, "/y")
+	mustTouch(t, lkrSrc, "/x/a.png", 42)
+	srcFile := mustTouch(t, lkrSrc, "/y/a.png", 42)
+	mustCommit(t, lkrSrc, "Create src dir")
+
+	dstDirOld := mustMkdir(t, lkrDst, "/x")
+	mustMove(t, lkrDst, dstDirOld, "/y")
+	dstFile := mustTouch(t, lkrDst, "/y/a.png", 23)
+	mustCommit(t, lkrDst, "I like to move it, move it")
+
+	return []MapPair{
+		{
+			Src:          srcDir,
+			Dst:          nil,
+			TypeMismatch: false,
+		}, {
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcX, _ := makeFileAndCommit(t, lkrSrc, "/common/a/b/c/x", 42)
+	srcY, _ := makeFileAndCommit(t, lkrSrc, "/common/a/b/c/y", 23)
+	srcZ, _ := makeFileAndCommit(t, lkrSrc, "/src-only/z", 23)
+
+	dstX, _ := makeFileAndCommit(t, lkrDst, "/common/a/b/c/x", 43)
+	dstY, _ := makeFileAndCommit(t, lkrDst, "/common/a/b/c/y", 24)
+	makeFileAndCommit(t, lkrDst, "/dst-only/z", 23)
+
+	srcZParent, err := n.ParentDirectory(lkrSrc, srcZ)
+	if err != nil {
+		t.Fatalf("setup failed to get parent dir: %v", err)
+	}
+
+	return []MapPair{
+		{
+			Src:          srcX,
+			Dst:          dstX,
+			TypeMismatch: false,
+		}, {
+			Src:          srcY,
+			Dst:          dstY,
+			TypeMismatch: false,
+		}, {
+			Src:          srcZParent,
+			Dst:          nil,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupSrcRemove(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile := mustTouch(t, lkrSrc, "/x.png", 23)
+	mustCommit(t, lkrSrc, "src: Touched /x.png")
+	mustRemove(t, lkrSrc, srcFile)
+	mustCommit(t, lkrSrc, "src: Removed /x.png")
+
+	dstFile := mustTouch(t, lkrDst, "/x.png", 23)
+	mustCommit(t, lkrDst, "dst: Touched /x.png")
+
+	return []MapPair{
+		{
+			Src:          nil,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupDstRemove(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile := mustTouch(t, lkrSrc, "/x.png", 23)
+	mustCommit(t, lkrSrc, "dst: Touched /x.png")
+
+	dstFile := mustTouch(t, lkrDst, "/x.png", 23)
+	mustCommit(t, lkrDst, "src: Touched /x.png")
+	mustRemove(t, lkrDst, dstFile)
+	mustCommit(t, lkrDst, "src: Removed /x.png")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          nil,
+			TypeMismatch: false,
+		},
+	}
+}
+
+func mapperSetupMoveOnBothSides(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
+	srcFile := mustTouch(t, lkrSrc, "/x", 23)
+	mustCommit(t, lkrSrc, "src: touched /x")
+	srcFileMoved := mustMove(t, lkrSrc, srcFile, "/y")
+	mustCommit(t, lkrSrc, "src: /x moved to /y")
+
+	dstFile := mustTouch(t, lkrDst, "/x", 42)
+	mustCommit(t, lkrDst, "dst: touched /x")
+	dstFileMoved := mustMove(t, lkrDst, dstFile, "/z")
+	mustCommit(t, lkrDst, "dst: /x moved to /z")
+
+	return []MapPair{
+		{
+			Src:          srcFileMoved,
+			Dst:          dstFileMoved,
+			TypeMismatch: false,
 		},
 	}
 }
@@ -589,11 +842,56 @@ func TestMapper(t *testing.T) {
 			name:  "basic-diff",
 			setup: mapperSetupBasicDiff,
 		}, {
+			name:  "basic-src-add-file",
+			setup: mapperSetupBasicSrcAddFile,
+		}, {
+			name:  "basic-dst-add-file",
+			setup: mapperSetupBasicDstAddFile,
+		}, {
+			name:  "basic-src-add-dir",
+			setup: mapperSetupBasicSrcAddDir,
+		}, {
+			name:  "basic-dst-add-dir",
+			setup: mapperSetupBasicDstAddDir,
+		}, {
 			name:  "basic-src-type-mismatch",
 			setup: mapperSetupBasicSrcTypeMismatch,
 		}, {
 			name:  "basic-dst-type-mismatch",
 			setup: mapperSetupBasicDstTypeMismatch,
+		}, {
+			name:  "basic-nested",
+			setup: mapperSetupNested,
+		}, {
+			name:  "remove-src",
+			setup: mapperSetupSrcRemove,
+		}, {
+			name:  "remove-dst",
+			setup: mapperSetupDstRemove,
+		}, {
+			name:  "move-simple-src-file",
+			setup: mapperSetupSrcMoveFile,
+		}, {
+			name:  "move-simple-dst-file",
+			setup: mapperSetupDstMoveFile,
+		}, {
+			name:  "move-simple-dst-empty-dir",
+			setup: mapperSetupDstMoveDirEmpty,
+		}, {
+			name:  "move-simple-src-dir",
+			setup: mapperSetupSrcMoveDir,
+		}, {
+			name:  "move-simple-dst-dir",
+			setup: mapperSetupDstMoveDir,
+		}, {
+			name:  "move-simple-src-dir-with-existing",
+			setup: mapperSetupSrcMoveWithExisting,
+		}, {
+			name:  "move-simple-dst-dir-with-existing",
+			setup: mapperSetupDstMoveWithExisting,
+		}, {
+			name:  "move-on-both-sides",
+			setup: mapperSetupMoveOnBothSides,
 		},
 	}
 
@@ -621,6 +919,12 @@ func TestMapper(t *testing.T) {
 					got := []MapPair{}
 					diffFn := func(pair MapPair) error {
 						got = append(got, pair)
+						// if pair.Src != nil {
+						// 	fmt.Println(".. ", pair.Src.Path())
+						// }
+						// if pair.Dst != nil {
+						// 	fmt.Println("-> ", pair.Dst.Path())
+						// }
 						return nil
 					}
 
@@ -637,8 +941,9 @@ func TestMapper(t *testing.T) {
 					}
 
 					for idx, gotPair := range got {
-						expectPair := got[idx]
-						require.Equal(t, expectPair, gotPair)
+						expectPair := expect[idx]
+						failMsg := fmt.Sprintf("Failed pair %d", idx+1)
+						require.Equal(t, expectPair, gotPair, failMsg)
 					}
 				})
 			})

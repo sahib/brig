@@ -40,7 +40,7 @@ package catfs
 //
 // Everything except Stage 4 is read-only. If a user wants to only show the diff
 // between two linkers, he just prints what would be done instead of actually doing it.
-// This makes the diff and sync implemenation share most of it's code.
+// This makes the diff and sync implementation share most of it's code.
 
 import (
 	"errors"

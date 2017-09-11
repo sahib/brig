@@ -1168,7 +1168,7 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		)
 
 		batch.Put(
-			[]byte(forwardLine),
+			[]byte(reverseLine),
 			"moves", "overlay", dstB58,
 		)
 

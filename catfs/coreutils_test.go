@@ -26,7 +26,7 @@ func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	}
 }
 
-func touchFile(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
+func mustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	dirname := path.Dir(touchPath)
 	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil {
@@ -115,7 +115,7 @@ func TestMkdir(t *testing.T) {
 		}
 
 		// Try to mkdir over a regular file:
-		touchFile(t, lkr, "/cat.png", 1)
+		mustTouch(t, lkr, "/cat.png", 1)
 
 		// This should fail, since we cannot create it.
 		dir, err = mkdir(lkr, "/cat.png", false)
@@ -142,7 +142,7 @@ func TestRemove(t *testing.T) {
 		assertDir(t, lkr, "/some/nested/directory", true)
 
 		path := "/some/nested/directory/cat.png"
-		touchFile(t, lkr, path, 1)
+		mustTouch(t, lkr, path, 1)
 
 		// Check file removal with ghost creation:
 
@@ -207,7 +207,7 @@ func TestRemove(t *testing.T) {
 func TestRemoveGhost(t *testing.T) {
 	withDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		file := touchFile(t, lkr, "/x", 1)
+		file := mustTouch(t, lkr, "/x", 1)
 		par, err := n.ParentDirectory(lkr, file)
 		if err != nil {
 			t.Fatalf("Failed to get get parent directory of /x: %v", err)
@@ -300,7 +300,7 @@ func TestMove(t *testing.T) {
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/a/b/c")
-				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/y"
+				return mustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
 			},
 		}, {
 			name:        "move-into-directory",
@@ -308,7 +308,7 @@ func TestMove(t *testing.T) {
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/a/b/c")
 				mustMkdir(t, lkr, "/a/b/d")
-				return touchFile(t, lkr, "/a/b/c/x", 1), "/a/b/d"
+				return mustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
 			},
 		}, {
 			name:        "error-move-to-directory-contains-file",
@@ -316,8 +316,8 @@ func TestMove(t *testing.T) {
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
-				touchFile(t, lkr, "/dst/x", 1)
-				return touchFile(t, lkr, "/src/x", 1), "/dst"
+				mustTouch(t, lkr, "/dst/x", 1)
+				return mustTouch(t, lkr, "/src/x", 1), "/dst"
 			},
 		}, {
 			name:        "error-move-file-over-existing",
@@ -325,8 +325,8 @@ func TestMove(t *testing.T) {
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
-				touchFile(t, lkr, "/dst/x", 1)
-				return touchFile(t, lkr, "/src/x", 1), "/dst/x"
+				mustTouch(t, lkr, "/dst/x", 1)
+				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		}, {
 			name:        "error-move-file-over-ghost",
@@ -334,9 +334,9 @@ func TestMove(t *testing.T) {
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				mustMkdir(t, lkr, "/src")
 				mustMkdir(t, lkr, "/dst")
-				destFile := touchFile(t, lkr, "/dst/x", 1)
+				destFile := mustTouch(t, lkr, "/dst/x", 1)
 				mustRemove(t, lkr, destFile)
-				return touchFile(t, lkr, "/src/x", 1), "/dst/x"
+				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		},
 	}
