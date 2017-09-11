@@ -118,6 +118,9 @@ type ModNode interface {
 	SetModTime(modTime time.Time)
 	SetName(name string)
 
+	// Rehash the node after changing it's location.
+	Rehash(lkr Linker, oldPath, newPath string) error
+
 	// TODO: Should this be part of this interface?
 	Copy() ModNode
 }

@@ -465,9 +465,9 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	// The path might have changed, so we gonna possibly need to rehash the file.
 	// (Hash() includes the full path into it's calculation, but we set that later)
-	if file, ok := nd.(*File); ok {
-		file.Rehash(lkr, prefixSlash(path.Join(d.Path(), nd.Name())))
-	}
+	// if file, ok := nd.(*File); ok {
+	// 	file.Rehash(lkr, prefixSlash(path.Join(d.Path(), nd.Name())))
+	// }
 
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
@@ -491,14 +491,18 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	return nil
 }
 
-func (d *Directory) Rehash(oldPath, newPath string) error {
+func (d *Directory) Rehash(lkr Linker, oldPath, newPath string) error {
+	oldHash := d.hash.Clone()
+
 	if err := d.hash.Xor(h.Sum([]byte(oldPath))); err != nil {
 		return err
 	}
+
 	if err := d.hash.Xor(h.Sum([]byte(newPath))); err != nil {
 		return err
 	}
 
+	lkr.MemIndexSwap(d, oldHash)
 	return nil
 }
 

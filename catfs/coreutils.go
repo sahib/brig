@@ -268,19 +268,8 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	}
 
 	nd.SetName(path.Base(destPath))
-
-	// TODO: This is kinda hacky.
-	//       Either handle file and dir rehash the same,
-	//       or make SetName a MoveLocation() func.
-	if nd.Type() == n.NodeTypeDirectory {
-		dir, ok := nd.(*n.Directory)
-		if !ok {
-			return n.ErrBadNode
-		}
-
-		if err := dir.Rehash(oldPath, destPath); err != nil {
-			return err
-		}
+	if err := nd.Rehash(lkr, oldPath, destPath); err != nil {
+		return err
 	}
 
 	// And add it to the right destination dir:
