@@ -57,7 +57,7 @@ func TestFile(t *testing.T) {
 		t.Fatalf("Name differs after unmarshal: %v", empty.Name())
 	}
 
-	if empty.ModTime() != now {
+	if empty.ModTime() != now.Truncate(time.Microsecond) {
 		t.Fatalf("modtime differs after unmarshal: %v Want: %v", now, empty.ModTime())
 	}
 

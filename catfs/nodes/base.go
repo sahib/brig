@@ -71,7 +71,7 @@ func (b *Base) Inode() uint64 {
 /////// UTILS /////////
 
 func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
-	modTimeBin, err := b.modTime.MarshalText()
+	modTimeBin, err := b.modTime.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 		return err
 	}
 
-	if err := b.modTime.UnmarshalText([]byte(unparsedModTime)); err != nil {
+	if err := b.modTime.UnmarshalBinary([]byte(unparsedModTime)); err != nil {
 		return err
 	}
 

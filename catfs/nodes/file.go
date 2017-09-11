@@ -27,7 +27,7 @@ func NewEmptyFile(parent *Directory, name string, inode uint64) (*File, error) {
 		Base: Base{
 			name:     name,
 			inode:    inode,
-			modTime:  time.Now(),
+			modTime:  time.Now().Truncate(time.Microsecond),
 			nodeType: NodeTypeFile,
 		},
 		parent: parent.Path(),
@@ -136,7 +136,9 @@ func (f *File) Size() uint64 { return f.size }
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
 // SetModTime udates the mod time of the file (i.e. "touch"es it)
-func (f *File) SetModTime(t time.Time) { f.modTime = t }
+func (f *File) SetModTime(t time.Time) {
+	f.modTime = t.Truncate(time.Microsecond)
+}
 
 // SetName set the name of the file.
 func (f *File) SetName(n string) { f.name = n }

@@ -35,7 +35,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string, inode uint64)
 			hash:     h.Sum([]byte(absPath)),
 			name:     name,
 			nodeType: NodeTypeDirectory,
-			modTime:  time.Now(),
+			modTime:  time.Now().Truncate(time.Microsecond),
 		},
 		children: make(map[string]h.Hash),
 	}
@@ -435,7 +435,9 @@ func (d *Directory) SetName(name string) {
 }
 
 // SetModTime will set a new mod time to this directory (i.e. "touch" it)
-func (d *Directory) SetModTime(modTime time.Time) { d.Base.modTime = modTime }
+func (d *Directory) SetModTime(modTime time.Time) {
+	d.Base.modTime = modTime.Truncate(time.Microsecond)
+}
 
 func (d *Directory) Copy() ModNode {
 	children := make(map[string]h.Hash)

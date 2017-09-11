@@ -7,70 +7,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/catfs/db"
 	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 
 func init() {
 	log.SetLevel(log.WarnLevel)
-}
-
-func mustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNode {
-	if err := move(lkr, nd, destPath); err != nil {
-		t.Fatalf("move of %s to %s failed: %v", nd.Path(), destPath, err)
-	}
-
-	newNd, err := lkr.LookupModNode(destPath)
-	if err != nil {
-		t.Fatalf("Failed to lookup dest path `%s` of new node: %v", destPath, err)
-	}
-
-	return newNd
-}
-
-func mustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
-	if _, _, err := remove(lkr, nd, true, false); err != nil {
-		t.Fatalf("Failed to remove %s: %v", nd.Path(), err)
-	}
-
-	newNd, err := lkr.LookupModNode(nd.Path())
-	if err != nil {
-		t.Fatalf("Failed to lookup dest path `%s` of deleted node: %v", nd.Path(), err)
-	}
-
-	return newNd
-}
-
-func mustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
-	if err := lkr.MakeCommit(n.AuthorOfStage(), msg); err != nil {
-		t.Fatalf("Failed to make commit with msg %s: %v", msg, err)
-	}
-
-	head, err := lkr.Head()
-	if err != nil {
-		t.Fatalf("Failed to retrieve head after commit: %v", err)
-	}
-
-	return head
-}
-
-func makeFileAndCommit(
-	t *testing.T, lkr *Linker,
-	path string, seed byte) (*n.File, *n.Commit) {
-
-	info := &NodeUpdate{
-		Hash:   h.TestDummy(t, seed),
-		Size:   uint64(seed),
-		Author: "",
-		Key:    nil,
-	}
-
-	file, err := stage(lkr, path, info)
-	if err != nil {
-		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
-	}
-
-	return file, mustCommit(t, lkr, fmt.Sprintf("cmt %d", seed))
 }
 
 type moveSetup struct {
@@ -84,9 +25,9 @@ type moveSetup struct {
 /////////////// ACTUAL TESTCASES ///////////////
 
 func setupHistoryBasic(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
-	file, c3 := makeFileAndCommit(t, lkr, "/x.png", 3)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
+	file, c3 := mustTouchAndCommit(t, lkr, "/x.png", 3)
 
 	head, err := lkr.Head()
 	if err != nil {
@@ -111,8 +52,8 @@ func setupHistoryBasic(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryRemoved(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 	mustRemove(t, lkr, file)
 	c3 := mustCommit(t, lkr, "after remove")
 
@@ -141,8 +82,8 @@ func setupHistoryRemoved(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoved(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 	mustMove(t, lkr, file, "/y.png")
 	c3 := mustCommit(t, lkr, "post-move")
 
@@ -164,8 +105,8 @@ func setupHistoryMoved(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveStaging(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 	mustMove(t, lkr, file, "/y.png")
 
 	status, err := lkr.Status()
@@ -191,8 +132,8 @@ func setupHistoryMoveStaging(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
 	modifyFile(t, lkr, newFile.(*n.File), 42)
@@ -216,8 +157,8 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
 
@@ -246,11 +187,11 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 	mustRemove(t, lkr, file)
 	c3 := mustCommit(t, lkr, "after remove")
-	file, c4 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c4 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	return &moveSetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
@@ -272,11 +213,11 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 	mustRemove(t, lkr, file)
 	c3 := mustCommit(t, lkr, "after remove")
-	file, c4 := makeFileAndCommit(t, lkr, "/x.png", 255)
+	file, c4 := mustTouchAndCommit(t, lkr, "/x.png", 255)
 
 	return &moveSetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
@@ -298,8 +239,8 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
 	c3 := mustCommit(t, lkr, "move to y.png")
@@ -327,13 +268,13 @@ func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
 	// c3 := mustCommit(t, lkr, "move to y.png")
 
-	_, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+	_, c4 := mustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
 		commits: []*n.Commit{c4, c2, c1},
@@ -355,12 +296,12 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
 }
 
 func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *Linker) *moveSetup {
-	file, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	mustMove(t, lkr, file, "/y.png")
 	c3 := mustCommit(t, lkr, "move to y.png")
-	readdedFile, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+	readdedFile, c4 := mustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
@@ -476,20 +417,19 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 
 // Test the History() utility based on HistoryWalker.
 func TestHistoryUtil(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
-		mustCommit(t, lkr, "init")
-		c1File, c1 := makeFileAndCommit(t, lkr, "/x.png", 1)
-		// makeFileAndCommit will modify c1File for some reason, so copy for expect.
-		// That's fine, since catfs is build to requery nodes freshly.
+	withDummyLinker(t, func(lkr *Linker) {
+		c1File, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
+
+		// mustTouchAndCommit will modify c1File for some reason, so copy for
+		// expect. That's fine, since catfs is build to re-query nodes freshly.
 		c1File = c1File.Copy().(*n.File)
 
-		c2File, c2 := makeFileAndCommit(t, lkr, "/x.png", 2)
+		c2File, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 		c3FileMoved := mustMove(t, lkr, c2File.Copy(), "/y.png")
 		c3 := mustCommit(t, lkr, "move to y.png")
 
-		_, c4 := makeFileAndCommit(t, lkr, "/x.png", 23)
+		_, c4 := mustTouchAndCommit(t, lkr, "/x.png", 23)
 
 		states, err := History(lkr, c3FileMoved, c4, nil)
 		if err != nil {
@@ -518,8 +458,6 @@ func TestHistoryUtil(t *testing.T) {
 
 		for idx, state := range states {
 			expect := expected[idx]
-			fmt.Println("========", idx)
-
 			require.Equal(t, state.Head, expect.Head, "Head differs")
 			require.Equal(t, state.Curr, expect.Curr, "Curr differs")
 			require.Equal(t, state.Mask, expect.Mask, "Mask differs")
@@ -534,14 +472,14 @@ func TestHistoryUtil(t *testing.T) {
 ////////////////////////////////////
 
 func mapperSetupBasicSame(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	makeFileAndCommit(t, lkrSrc, "/x.png", 23)
-	makeFileAndCommit(t, lkrDst, "/x.png", 23)
+	mustTouchAndCommit(t, lkrSrc, "/x.png", 23)
+	mustTouchAndCommit(t, lkrDst, "/x.png", 23)
 	return []MapPair{}
 }
 
 func mapperSetupBasicDiff(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 23)
-	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x.png", 42)
+	srcFile, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 23)
+	dstFile, _ := mustTouchAndCommit(t, lkrDst, "/x.png", 42)
 	return []MapPair{
 		{
 			Src:          srcFile,
@@ -555,7 +493,7 @@ func mapperSetupBasicSrcTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []Map
 	srcDir := mustMkdir(t, lkrSrc, "/x")
 	mustCommit(t, lkrSrc, "add dir")
 
-	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x", 42)
+	dstFile, _ := mustTouchAndCommit(t, lkrDst, "/x", 42)
 
 	return []MapPair{
 		{
@@ -567,7 +505,7 @@ func mapperSetupBasicSrcTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []Map
 }
 
 func mapperSetupBasicDstTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x", 42)
+	srcFile, _ := mustTouchAndCommit(t, lkrSrc, "/x", 42)
 	dstDir := mustMkdir(t, lkrDst, "/x")
 	mustCommit(t, lkrDst, "add dir")
 
@@ -581,7 +519,7 @@ func mapperSetupBasicDstTypeMismatch(t *testing.T, lkrSrc, lkrDst *Linker) []Map
 }
 
 func mapperSetupBasicSrcAddFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 42)
+	srcFile, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 42)
 
 	return []MapPair{
 		{
@@ -593,7 +531,7 @@ func mapperSetupBasicSrcAddFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair 
 }
 
 func mapperSetupBasicDstAddFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	makeFileAndCommit(t, lkrDst, "/x.png", 42)
+	mustTouchAndCommit(t, lkrDst, "/x.png", 42)
 	return []MapPair{}
 }
 
@@ -616,8 +554,8 @@ func mapperSetupBasicDstAddDir(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
 }
 
 func mapperSetupSrcMoveFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	dstFile, _ := makeFileAndCommit(t, lkrDst, "/x.png", 42)
-	srcFileOld, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 23)
+	dstFile, _ := mustTouchAndCommit(t, lkrDst, "/x.png", 42)
+	srcFileOld, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 23)
 	srcFile := mustMove(t, lkrSrc, srcFileOld, "/y.png")
 	mustCommit(t, lkrSrc, "I like to move it")
 
@@ -631,8 +569,8 @@ func mapperSetupSrcMoveFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
 }
 
 func mapperSetupDstMoveFile(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	srcFile, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 42)
-	dstFileOld, _ := makeFileAndCommit(t, lkrDst, "/x.png", 23)
+	srcFile, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 42)
+	dstFileOld, _ := mustTouchAndCommit(t, lkrDst, "/x.png", 23)
 	dstFile := mustMove(t, lkrDst, dstFileOld, "/y.png")
 	mustCommit(t, lkrDst, "I like to move it, move it")
 
@@ -744,13 +682,13 @@ func mapperSetupDstMoveWithExisting(t *testing.T, lkrSrc, lkrDst *Linker) []MapP
 }
 
 func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *Linker) []MapPair {
-	srcX, _ := makeFileAndCommit(t, lkrSrc, "/common/a/b/c/x", 42)
-	srcY, _ := makeFileAndCommit(t, lkrSrc, "/common/a/b/c/y", 23)
-	srcZ, _ := makeFileAndCommit(t, lkrSrc, "/src-only/z", 23)
+	srcX, _ := mustTouchAndCommit(t, lkrSrc, "/common/a/b/c/x", 42)
+	srcY, _ := mustTouchAndCommit(t, lkrSrc, "/common/a/b/c/y", 23)
+	srcZ, _ := mustTouchAndCommit(t, lkrSrc, "/src-only/z", 23)
 
-	dstX, _ := makeFileAndCommit(t, lkrDst, "/common/a/b/c/x", 43)
-	dstY, _ := makeFileAndCommit(t, lkrDst, "/common/a/b/c/y", 24)
-	makeFileAndCommit(t, lkrDst, "/dst-only/z", 23)
+	dstX, _ := mustTouchAndCommit(t, lkrDst, "/common/a/b/c/x", 43)
+	dstY, _ := mustTouchAndCommit(t, lkrDst, "/common/a/b/c/y", 24)
+	mustTouchAndCommit(t, lkrDst, "/dst-only/z", 23)
 
 	srcZParent, err := n.ParentDirectory(lkrSrc, srcZ)
 	if err != nil {
@@ -897,55 +835,43 @@ func TestMapper(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withDummyKv(t, func(kvSrc db.Database) {
-				withDummyKv(t, func(kvDst db.Database) {
-					lkrSrc := NewLinker(kvSrc)
-					lkrDst := NewLinker(kvDst)
+			withLinkerPair(t, func(lkrSrc, lkrDst *Linker) {
+				expect := tc.setup(t, lkrSrc, lkrDst)
 
-					lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
-					lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
+				srcRoot, err := lkrSrc.Root()
+				if err != nil {
+					t.Fatalf("Failed to retrieve root: %v", err)
+				}
 
-					// Create init commits:
-					mustCommit(t, lkrSrc, "init-src")
-					mustCommit(t, lkrDst, "init-dst")
+				got := []MapPair{}
+				diffFn := func(pair MapPair) error {
+					got = append(got, pair)
+					// if pair.Src != nil {
+					// 	fmt.Println(".. ", pair.Src.Path())
+					// }
+					// if pair.Dst != nil {
+					// 	fmt.Println("-> ", pair.Dst.Path())
+					// }
+					return nil
+				}
 
-					expect := tc.setup(t, lkrSrc, lkrDst)
+				mapper := NewMapper(lkrSrc, lkrDst, srcRoot)
+				if err := mapper.Map(diffFn); err != nil {
+					t.Fatalf("mapping failed: %v", err)
+				}
 
-					srcRoot, err := lkrSrc.Root()
-					if err != nil {
-						t.Fatalf("Failed to retrieve root: %v", err)
-					}
+				if len(got) != len(expect) {
+					t.Fatalf(
+						"Got and expect length differ: %d vs %d",
+						len(got), len(expect),
+					)
+				}
 
-					got := []MapPair{}
-					diffFn := func(pair MapPair) error {
-						got = append(got, pair)
-						// if pair.Src != nil {
-						// 	fmt.Println(".. ", pair.Src.Path())
-						// }
-						// if pair.Dst != nil {
-						// 	fmt.Println("-> ", pair.Dst.Path())
-						// }
-						return nil
-					}
-
-					mapper := NewMapper(lkrSrc, lkrDst, srcRoot)
-					if err := mapper.Map(diffFn); err != nil {
-						t.Fatalf("mapping failed: %v", err)
-					}
-
-					if len(got) != len(expect) {
-						t.Fatalf(
-							"Got and expect length differ: %d vs %d",
-							len(got), len(expect),
-						)
-					}
-
-					for idx, gotPair := range got {
-						expectPair := expect[idx]
-						failMsg := fmt.Sprintf("Failed pair %d", idx+1)
-						require.Equal(t, expectPair, gotPair, failMsg)
-					}
-				})
+				for idx, gotPair := range got {
+					expectPair := expect[idx]
+					failMsg := fmt.Sprintf("Failed pair %d", idx+1)
+					require.Equal(t, expectPair, gotPair, failMsg)
+				}
 			})
 		})
 	}

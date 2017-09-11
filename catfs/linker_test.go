@@ -11,26 +11,6 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
-func withDummyKv(t *testing.T, fn func(kv db.Database)) {
-	dbPath, err := ioutil.TempDir("", "brig-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// defer os.RemoveAll(dbPath)
-
-	kv, err := db.NewDiskDatabase(dbPath)
-	if err != nil {
-		t.Fatalf("Could not create dummy kv for tests: %v", err)
-	}
-
-	fn(kv)
-
-	if err := kv.Close(); err != nil {
-		t.Fatalf("Closing the dummy kv failed: %v", err)
-	}
-}
-
 // Basic test to see if the root node can be inserted and stored.
 // A new staging commit should be also created in the background.
 // On the second run, the root node should be already cached.

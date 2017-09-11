@@ -501,7 +501,6 @@ func (lkr *Linker) Owner() (*n.Person, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("got owner", owner)
 
 	// Cache owner, we don't want to reload it again and again.
 	// It will usually not change during runtime, except SetOwner

@@ -3,9 +3,7 @@ package catfs
 import (
 	"testing"
 
-	"github.com/disorganizer/brig/catfs/db"
 	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,8 +18,8 @@ type expect struct {
 }
 
 func setupResolveBasicNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) *expect {
-	src, _ := makeFileAndCommit(t, lkrSrc, "/x.png", 1)
-	dst, _ := makeFileAndCommit(t, lkrDst, "/x.png", 2)
+	src, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 1)
+	dst, _ := mustTouchAndCommit(t, lkrDst, "/x.png", 2)
 
 	return &expect{
 		dstMergeCmt: nil,
@@ -45,33 +43,21 @@ func TestResolve(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withDummyKv(t, func(kvSrc db.Database) {
-				withDummyKv(t, func(kvDst db.Database) {
-					lkrSrc := NewLinker(kvSrc)
-					lkrDst := NewLinker(kvDst)
+			withLinkerPair(t, func(lkrSrc, lkrDst *Linker) {
+				expect := tc.setup(t, lkrSrc, lkrDst)
 
-					lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
-					lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
+				syncer := NewSyncer(lkrSrc, lkrDst, nil)
+				if err := syncer.cacheLastCommonMerge(); err != nil {
+					t.Fatalf("Failed to find last common merge.")
+				}
 
-					// Create init commits:
-					mustCommit(t, lkrSrc, "init-src")
-					mustCommit(t, lkrDst, "init-dst")
+				require.Equal(t, expect.dstMergeCmt, syncer.dstMergeCmt, "dst merge marker")
+				require.Equal(t, expect.srcMergeCmt, syncer.srcMergeCmt, "src merge marker")
 
-					expect := tc.setup(t, lkrSrc, lkrDst)
-
-					syncer := NewSyncer(lkrSrc, lkrDst, nil)
-					if err := syncer.cacheLastCommonMerge(); err != nil {
-						t.Fatalf("Failed to find last common merge.")
-					}
-
-					require.Equal(t, expect.dstMergeCmt, syncer.dstMergeCmt, "dst merge marker")
-					require.Equal(t, expect.srcMergeCmt, syncer.srcMergeCmt, "src merge marker")
-
-					err := syncer.resolve(expect.srcFile, expect.dstFile)
-					if expect.err != err {
-						t.Fatalf("Resolve failed with wrong error: %v (want %v)", err, expect.err)
-					}
-				})
+				err := syncer.resolve(expect.srcFile, expect.dstFile)
+				if expect.err != err {
+					t.Fatalf("Resolve failed with wrong error: %v (want %v)", err, expect.err)
+				}
 			})
 		})
 	}
@@ -104,24 +90,15 @@ func TestSync(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withDummyKv(t, func(kvSrc db.Database) {
-				withDummyKv(t, func(kvDst db.Database) {
-					lkrSrc := NewLinker(kvSrc)
-					lkrDst := NewLinker(kvDst)
+			withLinkerPair(t, func(lkrSrc, lkrDst *Linker) {
+				tc.setup(t, lkrSrc, lkrDst)
 
-					// Create init commits:
-					mustCommit(t, lkrSrc, "init-src")
-					mustCommit(t, lkrDst, "init-dst")
+				syncer := NewSyncer(lkrSrc, lkrDst, nil)
+				if err := syncer.Sync(); err != nil {
+					t.Fatalf("sync failed: %v", err)
+				}
 
-					tc.setup(t, lkrSrc, lkrDst)
-
-					syncer := NewSyncer(lkrSrc, lkrDst, nil)
-					if err := syncer.Sync(); err != nil {
-						t.Fatalf("sync failed: %v", err)
-					}
-
-					tc.check(t, lkrSrc, lkrDst)
-				})
+				tc.check(t, lkrSrc, lkrDst)
 			})
 		})
 	}

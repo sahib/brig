@@ -1,69 +1,14 @@
 package catfs
 
 import (
-	"path"
 	"testing"
 
-	"github.com/disorganizer/brig/catfs/db"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
-func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
-	dir, err := lkr.LookupDirectory(path)
-	if shouldExist {
-		if err != nil {
-			t.Fatalf("exist-check: Directory lookup failed for %s: %v", path, err)
-		}
-
-		if dir == nil || dir.Path() != path {
-			t.Fatalf("exist-check: directory does not exist:  %s -> %v", path, dir)
-		}
-	} else {
-		if dir != nil {
-			t.Fatalf("exist-check: Dir exists, but should not: %v", path)
-		}
-	}
-}
-
-func mustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
-	dirname := path.Dir(touchPath)
-	parent, err := lkr.LookupDirectory(dirname)
-	if err != nil {
-		t.Fatalf("touch: Failed to lookup: %s", dirname)
-	}
-
-	file, err := n.NewEmptyFile(parent, path.Base(touchPath), lkr.NextInode())
-	if err != nil {
-		t.Fatalf("touch: Creating dummy file failed: %v", err)
-	}
-
-	file.SetContent(lkr, h.TestDummy(t, seed))
-
-	if err := parent.Add(lkr, file); err != nil {
-		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)
-	}
-
-	if err := lkr.StageNode(file); err != nil {
-		t.Fatalf("touch: Staging %s failed: %v", touchPath, err)
-	}
-
-	return file
-}
-
-func mustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
-	dir, err := mkdir(lkr, repoPath, true)
-	if err != nil {
-		t.Fatalf("Failed to create directories %s: %v", repoPath, err)
-	}
-
-	return dir
-}
-
 func TestMkdir(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
-
+	withDummyLinker(t, func(lkr *Linker) {
 		// Test nested creation without -p like flag:
 		dir, err := mkdir(lkr, "/deep/nested", false)
 		if err == nil || dir != nil {
@@ -132,8 +77,7 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
+	withDummyLinker(t, func(lkr *Linker) {
 		dir, err := mkdir(lkr, "/some/nested/directory", true)
 		if err != nil {
 			t.Fatalf("Failed to mkdir a nested directory: %v", err)
@@ -205,8 +149,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveGhost(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
+	withDummyLinker(t, func(lkr *Linker) {
 		file := mustTouch(t, lkr, "/x", 1)
 		par, err := n.ParentDirectory(lkr, file)
 		if err != nil {
@@ -343,9 +286,7 @@ func TestMove(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withDummyKv(t, func(kv db.Database) {
-				lkr := NewLinker(kv)
-
+			withDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
 				srcPath := srcNd.Path()
@@ -365,9 +306,7 @@ func TestMove(t *testing.T) {
 }
 
 func TestStage(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
-		lkr := NewLinker(kv)
-
+	withDummyLinker(t, func(lkr *Linker) {
 		update := &NodeUpdate{
 			Hash:   h.TestDummy(t, 1),
 			Size:   3,
@@ -394,7 +333,10 @@ func TestStage(t *testing.T) {
 		}
 
 		if !file.Content().Equal(h.TestDummy(t, 2)) {
-			t.Fatalf("File content after update is not what's advertised: %v", file.Hash())
+			t.Fatalf(
+				"File content after update is not what's advertised: %v",
+				file.Hash(),
+			)
 		}
 	})
 }
