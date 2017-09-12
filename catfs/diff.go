@@ -443,6 +443,7 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 			return ma.diffDirectory(srcCurr, aliveDstCurr.Path())
 		}
 
+		// TODO: Make this to report() again to save a few lines.
 		return ma.fn(MapPair{
 			Src:          srcCurr,
 			Dst:          nil,

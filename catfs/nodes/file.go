@@ -162,10 +162,7 @@ func (f *File) Copy() ModNode {
 	}
 }
 
-// updateHashFromContent will derive f.hash from f.content.
-// For files with same content, but different path we need
-// a different hash, so they will be stored as different objects.
-func (f *File) Rehash(lkr Linker, oldPath, newPath string) error {
+func (f *File) rehash(lkr Linker, newPath string) {
 	oldHash := f.hash.Clone()
 	var contentHash h.Hash
 	if f.content != nil {
@@ -176,13 +173,20 @@ func (f *File) Rehash(lkr Linker, oldPath, newPath string) error {
 
 	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", newPath, contentHash)))
 	lkr.MemIndexSwap(f, oldHash)
+}
+
+func (f *File) NotifyMove(lkr Linker, oldPath, newPath string) error {
+	dirname, basename := path.Split(newPath)
+	f.SetName(basename)
+	f.parent = dirname
+	f.rehash(lkr, newPath)
 	return nil
 }
 
 // SetContent will update the hash of the file (and also the mod time)
 func (f *File) SetContent(lkr Linker, content h.Hash) {
 	f.content = content
-	f.Rehash(lkr, "", f.Path())
+	f.rehash(lkr, f.Path())
 	f.SetModTime(time.Now())
 }
 

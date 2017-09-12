@@ -267,13 +267,20 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
-	nd.SetName(path.Base(destPath))
-	if err := nd.Rehash(lkr, oldPath, destPath); err != nil {
+	if err := nd.NotifyMove(lkr, oldPath, destPath); err != nil {
 		return err
 	}
 
 	// And add it to the right destination dir:
 	if err := parentDir.Add(lkr, nd); err != nil {
+		return err
+	}
+
+	err = n.Walk(lkr, nd, true, func(child n.Node) error {
+		return lkr.StageNode(child)
+	})
+
+	if err != nil {
 		return err
 	}
 

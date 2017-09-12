@@ -15,6 +15,7 @@ import (
 type Ghost struct {
 	ModNode
 
+	ghostPath  string
 	ghostInode uint64
 	oldType    NodeType
 }
@@ -28,6 +29,7 @@ func MakeGhost(nd ModNode, inode uint64) (*Ghost, error) {
 		ModNode:    nd.Copy(),
 		oldType:    nd.Type(),
 		ghostInode: inode,
+		ghostPath:  nd.Path(),
 	}, nil
 }
 
@@ -62,12 +64,20 @@ func (g *Ghost) String() string {
 	return fmt.Sprintf("<ghost: %s %v>", g.Hash(), g.ModNode)
 }
 
+func (g *Ghost) Path() string {
+	return g.ghostPath
+}
+
 func (g *Ghost) Hash() h.Hash {
 	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.Hash())))
 }
 
 func (g *Ghost) Inode() uint64 {
 	return g.ghostInode
+}
+
+func (g *Ghost) SetGhostPath(newPath string) {
+	g.ghostPath = newPath
 }
 
 // ToCapnp serializes the underlying node
@@ -90,6 +100,9 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	}
 
 	capghost.SetGhostInode(g.ghostInode)
+	if err := capghost.SetGhostPath(g.ghostPath); err != nil {
+		return nil, err
+	}
 
 	switch g.oldType {
 	case NodeTypeFile:
@@ -156,6 +169,10 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 	}
 
 	g.ghostInode = capghost.GhostInode()
+	g.ghostPath, err = capghost.GhostPath()
+	if err != nil {
+		return err
+	}
 
 	var base *Base
 

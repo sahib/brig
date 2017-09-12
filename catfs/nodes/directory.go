@@ -463,12 +463,6 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 		return ErrExists
 	}
 
-	// The path might have changed, so we gonna possibly need to rehash the file.
-	// (Hash() includes the full path into it's calculation, but we set that later)
-	// if file, ok := nd.(*File); ok {
-	// 	file.Rehash(lkr, prefixSlash(path.Join(d.Path(), nd.Name())))
-	// }
-
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
 
@@ -491,7 +485,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	return nil
 }
 
-func (d *Directory) Rehash(lkr Linker, oldPath, newPath string) error {
+func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 	oldHash := d.hash.Clone()
 
 	if err := d.hash.Xor(h.Sum([]byte(oldPath))); err != nil {
@@ -503,6 +497,72 @@ func (d *Directory) Rehash(lkr Linker, oldPath, newPath string) error {
 	}
 
 	lkr.MemIndexSwap(d, oldHash)
+	return nil
+}
+
+// NotifyMove should be called whenever a node is being moved.
+func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
+	// fmt.Println("NEW PATH", newPath)
+
+	visited := map[string]Node{}
+
+	err := Walk(lkr, d, true, func(child Node) error {
+		oldChildPath := child.Path()
+		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
+		// fmt.Println("**", oldChildPath, newChildPath)
+		visited[newChildPath] = child
+
+		switch child.Type() {
+		case NodeTypeDirectory:
+			childDir, ok := child.(*Directory)
+			if !ok {
+				return ErrBadNode
+			}
+
+			if err := d.rehash(lkr, oldChildPath, newChildPath); err != nil {
+				return err
+			}
+
+			dirname, basename := path.Split(newChildPath)
+			childDir.parentName = dirname
+			childDir.SetName(basename)
+			return nil
+		case NodeTypeFile:
+			childFile, ok := child.(*File)
+			if !ok {
+				return ErrBadNode
+			}
+
+			if err := childFile.NotifyMove(lkr, oldChildPath, newChildPath); err != nil {
+				return err
+			}
+		case NodeTypeGhost:
+			childGhost, ok := child.(*Ghost)
+			if !ok {
+				return ErrBadNode
+			}
+
+			childGhost.SetGhostPath(newChildPath)
+		default:
+			return fmt.Errorf("Bad node type in NotifyMove(): %d", child.Type())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for nodePath, node := range visited {
+		// Check if the visited nodes also contain the parent directory
+		// of this node.
+		if parent, ok := visited[path.Dir(nodePath)]; ok {
+			parentDir := parent.(*Directory)
+			baseName := path.Base(nodePath)
+			parentDir.children[baseName] = node.Hash()
+		}
+	}
 	return nil
 }
 

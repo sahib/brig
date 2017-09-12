@@ -45,11 +45,12 @@ struct File $Go.doc("A leaf node in the MDAG") {
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
     ghostInode @0 :UInt64;
+    ghostPath  @1 :Text;
 
     union {
-        commit    @1 :Commit;
-        directory @2 :Directory;
-        file      @3 :File;
+        commit    @2 :Commit;
+        directory @3 :Directory;
+        file      @4 :File;
     }
 }
 

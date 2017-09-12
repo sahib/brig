@@ -1,10 +1,12 @@
 package catfs
 
 import (
+	"sort"
 	"testing"
 
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMkdir(t *testing.T) {
@@ -272,6 +274,15 @@ func TestMove(t *testing.T) {
 				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		}, {
+			name:        "error-move-file-over-existing",
+			isErrorCase: false,
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+				mustMkdir(t, lkr, "/src")
+				mustMkdir(t, lkr, "/dst")
+				mustTouch(t, lkr, "/dst/x", 1)
+				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
+			},
+		}, {
 			name:        "error-move-file-over-ghost",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
@@ -303,6 +314,86 @@ func TestMove(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestMoveDirectory(t *testing.T) {
+	withDummyLinker(t, func(lkr *Linker) {
+		srcDir := mustMkdir(t, lkr, "/src")
+		mustMkdir(t, lkr, "/src/sub")
+		mustTouch(t, lkr, "/src/sub/x", 23)
+		mustTouch(t, lkr, "/src/y", 23)
+
+		dstDir := mustMove(t, lkr, srcDir, "/dst")
+
+		expect := []string{
+			"/dst/sub/x",
+			"/dst/sub",
+			"/dst/y",
+			"/dst",
+		}
+
+		require.Nil(t, n.Walk(lkr, dstDir, true, func(child n.Node) error {
+			if child.Path() != expect[0] {
+				t.Fatalf(
+					"Moved node child `%s` does not match `%s`",
+					child.Path(), expect[0],
+				)
+			}
+
+			expect = expect[1:]
+			return nil
+		}))
+	})
+}
+
+func TestMoveDirectoryWithGhosts(t *testing.T) {
+	withDummyLinker(t, func(lkr *Linker) {
+		srcDir := mustMkdir(t, lkr, "/src")
+		mustMkdir(t, lkr, "/src/sub")
+		xFile := mustTouch(t, lkr, "/src/sub/x", 23)
+		mustTouch(t, lkr, "/src/y", 23)
+		mustMove(t, lkr, xFile, "/src/z")
+
+		dstDir := mustMove(t, lkr, srcDir, "/dst")
+
+		expect := []string{
+			"/dst",
+			"/dst/sub",
+			"/dst/sub/x",
+			"/dst/y",
+			"/dst/z",
+		}
+
+		// Be evil and clear the mem cache in order to check if all changes
+		// were checked into the staging area.
+		lkr.MemIndexClear()
+
+		got := []string{}
+		require.Nil(t, n.Walk(lkr, dstDir, true, func(child n.Node) error {
+			got = append(got, child.Path())
+			return nil
+		}))
+
+		// Check if the moved directory contains the right paths:
+		sort.Strings(got)
+		for idx, expectPath := range expect {
+			if expectPath != got[idx] {
+				t.Fatalf("%d: %s != %s", idx, expectPath, got[idx])
+			}
+		}
+
+		ghost, err := lkr.LookupNode(got[2])
+		require.Nil(t, err)
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+		require.Equal(t, "/src/sub/x", ghost.(*n.Ghost).OldNode().Path())
+
+		twin, _, err := lkr.MoveMapping(status, ghost)
+		require.Nil(t, err)
+
+		require.Equal(t, "/dst/z", twin.Path())
+	})
 }
 
 func TestStage(t *testing.T) {

@@ -31,6 +31,8 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Failed to make root dir a ghost: %v", err)
 	}
 
+	ghost.SetGhostPath("/other")
+
 	if ghost.Type() != NodeTypeGhost {
 		t.Fatalf("Ghost does not identify itself as ghost: %d", ghost.Type())
 	}
@@ -59,6 +61,10 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Ghost FromCapnp failed: %v", err)
 	}
 
+	if empty.Path() != "/other" {
+		t.Fatalf("Ghost path was not unmarshaled: %v", empty.Path())
+	}
+
 	if !bytes.Equal(ghost.OldNode().Hash(), file.Hash()) {
 		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.Hash(), root.Hash())
 	}
@@ -78,6 +84,10 @@ func TestGhost(t *testing.T) {
 
 	if unmarshaledFile.Inode() != file.Inode() {
 		t.Fatalf("Inodes differ after unmarshal: %d != %d", unmarshaledFile.Inode, file.Inode())
+	}
+
+	if unmarshaledFile.Path() != "/x.png" {
+		t.Fatalf("Path differs after unmarshal: %v", unmarshaledFile.Path())
 	}
 
 	if empty.Inode() != ghost.Inode() {
