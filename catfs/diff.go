@@ -51,7 +51,6 @@ func (ct ChangeType) String() string {
 }
 
 func (ct ChangeType) IsCompatible(ot ChangeType) bool {
-	// TODO:a thing this through.
 	modifyMask := ChangeTypeAdd | ChangeTypeModify
 
 	if ct&modifyMask != 0 && ot&modifyMask != 0 {
@@ -75,6 +74,10 @@ type NodeState struct {
 	Curr n.ModNode
 }
 
+func (ns *NodeState) String() string {
+	return fmt.Sprintf("<%s:%s>", ns.Curr.Path(), ns.Mask)
+}
+
 // HistoryWalker provides a way to iterate over all changes a single Node had.
 // It is capable of tracking a file even over multiple moves.
 //
@@ -91,12 +94,13 @@ type NodeState struct {
 // 		// Handle errors.
 // 	}
 type HistoryWalker struct {
-	lkr   *Linker
-	head  *n.Commit
-	curr  n.ModNode
-	next  n.ModNode
-	err   error
-	state *NodeState
+	lkr    *Linker
+	head   *n.Commit
+	curr   n.ModNode
+	next   n.ModNode
+	err    error
+	state  *NodeState
+	isLast bool
 }
 
 // NewHistoryWalker will return a new HistoryWalker that will yield changes of
@@ -171,6 +175,16 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
+	if hw.isLast {
+		hw.state = &NodeState{
+			Head: hw.head,
+			Mask: ChangeTypeAdd,
+			Curr: hw.curr,
+		}
+		hw.head = nil
+		return true
+	}
+
 	// Pack up the current state:
 	hw.state = &NodeState{
 		Head: hw.head,
@@ -230,8 +244,7 @@ func (hw *HistoryWalker) Next() bool {
 		if n.IsNoSuchFileError(err) {
 			// The file did not exist in the previous commit (no ghost!)
 			// It must have been added in this commit.
-			hw.state.Mask = ChangeTypeAdd
-			hw.head = nil
+			hw.isLast = true
 			return true
 		}
 
@@ -313,7 +326,7 @@ type Mapper struct {
 	visited        map[string]n.Node
 }
 
-func (ma *Mapper) diffFile(srcCurr *n.File, dstFilePath string) error {
+func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
 	if _, ok := ma.visited[srcCurr.Path()]; ok {
 		return nil
@@ -394,7 +407,7 @@ func (ma *Mapper) diffFile(srcCurr *n.File, dstFilePath string) error {
 	}
 }
 
-func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
+func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 	if _, ok := ma.visited[srcCurr.Path()]; ok {
 		return nil
 	}
@@ -440,7 +453,7 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 			// Delete the guard again, due to to recursive call.
 			// TODO: This feels a bit hacky.
 			delete(ma.visited, srcCurr.Path())
-			return ma.diffDirectory(srcCurr, aliveDstCurr.Path())
+			return ma.mapDirectory(srcCurr, aliveDstCurr.Path())
 		}
 
 		// TODO: Make this to report() again to save a few lines.
@@ -485,7 +498,7 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 				return n.ErrBadNode
 			}
 
-			if err := ma.diffDirectory(srcChildDir, childDstPath); err != nil {
+			if err := ma.mapDirectory(srcChildDir, childDstPath); err != nil {
 				return err
 			}
 		case n.NodeTypeFile:
@@ -494,7 +507,7 @@ func (ma *Mapper) diffDirectory(srcCurr *n.Directory, dstPath string) error {
 				return n.ErrBadNode
 			}
 
-			if err := ma.diffFile(srcChildFile, childDstPath); err != nil {
+			if err := ma.mapFile(srcChildFile, childDstPath); err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
@@ -692,9 +705,9 @@ func (ma *Mapper) handleGhosts() error {
 	}
 
 	// Handle moved paths after handling single files.
-	// (diffDirectory assumes that moved files in it were already handled).
+	// (mapDirectory assumes that moved files in it were already handled).
 	for _, movedSrcDir := range movedSrcDirs {
-		if err := ma.diffDirectory(movedSrcDir.srcDir, movedSrcDir.dstPath); err != nil {
+		if err := ma.mapDirectory(movedSrcDir.srcDir, movedSrcDir.dstPath); err != nil {
 			return err
 		}
 	}
@@ -752,14 +765,14 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 			return n.ErrBadNode
 		}
 
-		return ma.diffDirectory(dir, dir.Path())
+		return ma.mapDirectory(dir, dir.Path())
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {
 			return n.ErrBadNode
 		}
 
-		return ma.diffFile(file, file.Path())
+		return ma.mapFile(file, file.Path())
 	case n.NodeTypeGhost:
 		return nil
 	default:

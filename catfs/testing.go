@@ -142,6 +142,19 @@ func mustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	return head
 }
 
+func mustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
+	haveChanges, err := lkr.HaveStagedChanges()
+	if err != nil {
+		t.Fatalf("Failed to check for changes: %v", err)
+	}
+
+	if haveChanges {
+		return mustCommit(t, lkr, msg)
+	}
+
+	return nil
+}
+
 func mustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
 
 	info := &NodeUpdate{

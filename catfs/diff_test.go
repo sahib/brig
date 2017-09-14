@@ -35,14 +35,16 @@ func setupHistoryBasic(t *testing.T, lkr *Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1},
+		commits: []*n.Commit{c3, c2, c1, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
+			ChangeTypeModify,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
@@ -65,8 +67,9 @@ func setupHistoryRemoved(t *testing.T, lkr *Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1},
+		commits: []*n.Commit{c3, c2, c1, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
@@ -74,6 +77,7 @@ func setupHistoryRemoved(t *testing.T, lkr *Linker) *moveSetup {
 		changes: []ChangeType{
 			ChangeTypeNone,
 			ChangeTypeRemove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c3,
@@ -88,15 +92,17 @@ func setupHistoryMoved(t *testing.T, lkr *Linker) *moveSetup {
 	c3 := mustCommit(t, lkr, "post-move")
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1},
+		commits: []*n.Commit{c3, c2, c1, c1},
 		paths: []string{
 			"/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
 			ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c3,
@@ -115,15 +121,17 @@ func setupHistoryMoveStaging(t *testing.T, lkr *Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{status, c2, c1},
+		commits: []*n.Commit{status, c2, c1, c1},
 		paths: []string{
 			"/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
 			ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: status,
@@ -140,15 +148,17 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
 	c3 := mustCommit(t, lkr, "post-move-modify")
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1},
+		commits: []*n.Commit{c3, c2, c1, c1},
 		paths: []string{
 			"/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
 			ChangeTypeModify | ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c3,
@@ -159,9 +169,7 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *Linker) *moveSetup {
 func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
-
 	newFile := mustMove(t, lkr, file, "/y.png")
-
 	modifyFile(t, lkr, newFile.(*n.File), 42)
 
 	status, err := lkr.Status()
@@ -170,15 +178,17 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{status, c2, c1},
+		commits: []*n.Commit{status, c2, c1, c1},
 		paths: []string{
 			"/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
 			ChangeTypeModify | ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: status,
@@ -194,8 +204,9 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
 	file, c4 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1},
+		commits: []*n.Commit{c4, c3, c2, c1, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
@@ -205,6 +216,7 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *Linker) *moveSetup {
 			ChangeTypeNone,
 			ChangeTypeAdd,
 			ChangeTypeRemove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c4,
@@ -220,8 +232,9 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
 	file, c4 := mustTouchAndCommit(t, lkr, "/x.png", 255)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1},
+		commits: []*n.Commit{c4, c3, c2, c1, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
@@ -231,6 +244,7 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
 			ChangeTypeNone,
 			ChangeTypeAdd | ChangeTypeModify,
 			ChangeTypeRemove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c4,
@@ -241,18 +255,17 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *Linker) *moveSetup {
 func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
 	file, c1 := mustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
-
 	newFile := mustMove(t, lkr, file, "/y.png")
 	c3 := mustCommit(t, lkr, "move to y.png")
-
 	newOldFile := mustMove(t, lkr, newFile, "/x.png")
 	c4 := mustCommit(t, lkr, "move back to x.png")
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1},
+		commits: []*n.Commit{c4, c3, c2, c1, c1},
 		paths: []string{
 			"/x.png",
 			"/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
@@ -260,6 +273,7 @@ func setupHistoryMoveCircle(t *testing.T, lkr *Linker) *moveSetup {
 			ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c4,
@@ -272,22 +286,20 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *Linker) *moveSetup {
 	file, c2 := mustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := mustMove(t, lkr, file, "/y.png")
-	// c3 := mustCommit(t, lkr, "move to y.png")
-
 	_, c4 := mustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c2, c1},
+		commits: []*n.Commit{c4, c2, c1, c1},
 		paths: []string{
 			"/y.png",
-			// "/y.png",
+			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
-			// ChangeTypeNone,
 			ChangeTypeMove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c4,
@@ -304,8 +316,9 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *Linker) *moveSetup {
 	readdedFile, c4 := mustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1},
+		commits: []*n.Commit{c4, c3, c2, c1, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
@@ -317,6 +330,7 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *Linker) *moveSetup {
 			ChangeTypeNone,
 			ChangeTypeAdd | ChangeTypeModify,
 			ChangeTypeRemove,
+			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
 		head: c4,
@@ -387,6 +401,7 @@ func testHistoryRunner(t *testing.T, lkr *Linker, setup *moveSetup) {
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
 		state := walker.State()
+		fmt.Println("STATE", idx, state)
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(
 				"Wrong path at index `%d`: %s (want: %s)",
@@ -449,6 +464,10 @@ func TestHistoryUtil(t *testing.T) {
 				Head: c2,
 				Curr: c2File,
 				Mask: ChangeTypeMove,
+			}, {
+				Head: c1,
+				Curr: c1File,
+				Mask: ChangeTypeModify,
 			}, {
 				Head: c1,
 				Curr: c1File,
@@ -829,10 +848,9 @@ func TestMapper(t *testing.T) {
 		}, {
 			name:  "move-simple-src-dir-with-existing",
 			setup: mapperSetupSrcMoveWithExisting,
-			// TODO: re-enable.
-			//	}, {
-			//		name:  "move-simple-dst-dir-with-existing",
-			//		setup: mapperSetupDstMoveWithExisting,
+		}, {
+			name:  "move-simple-dst-dir-with-existing",
+			setup: mapperSetupDstMoveWithExisting,
 		}, {
 			name:  "move-on-both-sides",
 			setup: mapperSetupMoveOnBothSides,

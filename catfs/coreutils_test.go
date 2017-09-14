@@ -391,7 +391,6 @@ func TestMoveDirectoryWithGhosts(t *testing.T) {
 
 		twin, _, err := lkr.MoveMapping(status, ghost)
 		require.Nil(t, err)
-
 		require.Equal(t, "/dst/z", twin.Path())
 	})
 }

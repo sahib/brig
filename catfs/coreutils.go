@@ -296,6 +296,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	return err
 }
 
+// TODO: This interface sucks.
 type NodeUpdate struct {
 	Hash   h.Hash
 	Size   uint64

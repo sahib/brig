@@ -425,3 +425,35 @@ func TestCollideSameObjectHash(t *testing.T) {
 		}
 	})
 }
+
+func TestHaveStagedChanges(t *testing.T) {
+	withDummyLinker(t, func(lkr *Linker) {
+		hasChanges, err := lkr.HaveStagedChanges()
+		if err != nil {
+			t.Fatalf("have staged changes failed before touch: %v", err)
+		}
+		if hasChanges {
+			t.Fatalf("HaveStagedChanges has changes before something happened")
+		}
+
+		mustTouch(t, lkr, "/x.png", 1)
+
+		hasChanges, err = lkr.HaveStagedChanges()
+		if err != nil {
+			t.Fatalf("have staged changes failed after touch: %v", err)
+		}
+		if !hasChanges {
+			t.Fatalf("HaveStagedChanges has no changes after something happened")
+		}
+
+		mustCommit(t, lkr, "second")
+
+		hasChanges, err = lkr.HaveStagedChanges()
+		if err != nil {
+			t.Fatalf("have staged changes failed after commit: %v", err)
+		}
+		if hasChanges {
+			t.Fatalf("HaveStagedChanges has changes after commit")
+		}
+	})
+}

@@ -806,6 +806,9 @@ func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
 }
 
 // LookupDirectory calls LookupNode and converts the result to a Directory.
+// TODO: Now that we have ghosts - does it make sense to do what Resolve()
+//       does? i.e. just lookup the dir in the kv and use that.
+//       This woild be likely more efficient and would save some code.
 func (lkr *Linker) LookupDirectory(repoPath string) (*n.Directory, error) {
 	nd, err := lkr.LookupNode(repoPath)
 	if err != nil {
@@ -934,8 +937,9 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 		return false, err
 	}
 
-	if !IsErrNoSuchRef(err) {
+	if IsErrNoSuchRef(err) {
 		// There is no HEAD yet. Assume we have changes.
+		fmt.Println("no head")
 		return true, nil
 	}
 
