@@ -407,11 +407,26 @@ func (c *ChunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	return c.readOff, nil
 }
 
+// Close is a no-op only existing to fulfill io.Closer
+func (c *ChunkBuffer) Close() error {
+	return nil
+}
+
+func (c *ChunkBuffer) WriteTo(w io.Writer) (int64, error) {
+	n, err := w.Write(c.buf[c.readOff:])
+	if err != nil {
+		return 0, err
+	}
+
+	c.readOff += int64(n)
+	return int64(n), nil
+}
+
 // NewChunkBuffer returns a ChunkBuffer with the given data. if data is nil a
 // ChunkBuffer with 64k is returned.
-func NewChunkBuffer(data []byte) ChunkBuffer {
+func NewChunkBuffer(data []byte) *ChunkBuffer {
 	if data == nil {
 		data = make([]byte, maxChunkSize)
 	}
-	return ChunkBuffer{buf: data, size: int64(len(data))}
+	return &ChunkBuffer{buf: data, size: int64(len(data))}
 }
