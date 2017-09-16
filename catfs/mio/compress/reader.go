@@ -18,7 +18,7 @@ type reader struct {
 	index []record
 
 	// Buffer holds currently read data; maxChunkSize.
-	chunkBuf util.ChunkBuffer
+	chunkBuf *util.ChunkBuffer
 
 	// Structure with parsed trailer.
 	trailer *trailer
@@ -196,7 +196,7 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	written := int64(0)
-	n, cerr := io.Copy(w, &r.chunkBuf)
+	n, cerr := io.Copy(w, r.chunkBuf)
 	if cerr != nil {
 		return n, cerr
 	}

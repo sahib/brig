@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/disorganizer/brig/catfs/mio"
 	"github.com/disorganizer/brig/util"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
@@ -17,15 +18,8 @@ func (eh ErrNoSuchHash) Error() string {
 	return fmt.Sprintf("No such hash: %s", eh.what.B58String())
 }
 
-type OutStream interface {
-	io.Reader
-	io.Seeker
-	io.Closer
-	io.WriterTo
-}
-
 type FsBackend interface {
-	Cat(hash h.Hash) (OutStream, error)
+	Cat(hash h.Hash) (mio.Stream, error)
 	Add(r io.Reader) (h.Hash, error)
 
 	Pin(hash h.Hash) error
@@ -44,7 +38,7 @@ func NewMemFsBackend() *MemFsBackend {
 	}
 }
 
-func (mb *MemFsBackend) Cat(hash h.Hash) (OutStream, error) {
+func (mb *MemFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 	data, ok := mb.data[hash.B58String()]
 	if !ok {
 		return nil, ErrNoSuchHash{hash}
