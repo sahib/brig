@@ -1,4 +1,4 @@
-package catfs
+package core
 
 import (
 	"sort"
@@ -10,29 +10,29 @@ import (
 )
 
 func TestMkdir(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
+	WithDummyLinker(t, func(lkr *Linker) {
 		// Test nested creation without -p like flag:
-		dir, err := mkdir(lkr, "/deep/nested", false)
+		dir, err := Mkdir(lkr, "/deep/nested", false)
 		if err == nil || dir != nil {
 			t.Fatalf("Nested mkdir without -p should have failed: %v", err)
 		}
 
-		assertDir(t, lkr, "/", true)
-		assertDir(t, lkr, "/deep", false)
-		assertDir(t, lkr, "/deep/nested", false)
+		AssertDir(t, lkr, "/", true)
+		AssertDir(t, lkr, "/deep", false)
+		AssertDir(t, lkr, "/deep/nested", false)
 
 		// Test mkdir -p like creating of nested dirs:
-		dir, err = mkdir(lkr, "/deep/nested", true)
+		dir, err = Mkdir(lkr, "/deep/nested", true)
 		if err != nil {
 			t.Fatalf("mkdir -p failed: %v", err)
 		}
 
-		assertDir(t, lkr, "/", true)
-		assertDir(t, lkr, "/deep", true)
-		assertDir(t, lkr, "/deep/nested", true)
+		AssertDir(t, lkr, "/", true)
+		AssertDir(t, lkr, "/deep", true)
+		AssertDir(t, lkr, "/deep/nested", true)
 
 		// Attempt to mkdir the same directory once more:
-		dir, err = mkdir(lkr, "/deep/nested", true)
+		dir, err = Mkdir(lkr, "/deep/nested", true)
 		if err != nil {
 			t.Fatalf("second mkdir -p failed: %v", err)
 		}
@@ -40,14 +40,14 @@ func TestMkdir(t *testing.T) {
 		// Also without -p, it should just return the respective dir.
 		// (i.e. work like LookupDirectory)
 		// Note: This is a difference to the traditional mkdir.
-		dir, err = mkdir(lkr, "/deep/nested", false)
+		dir, err = Mkdir(lkr, "/deep/nested", false)
 		if err != nil {
 			t.Fatalf("second mkdir without -p failed: %v", err)
 		}
 
 		// See if an attempt at creating the root failed,
 		// should not and just work like lkr.LookupDirectory("/")
-		dir, err = mkdir(lkr, "/", false)
+		dir, err = Mkdir(lkr, "/", false)
 		if err != nil {
 			t.Fatalf("mkdir root failed (without -p): %v", err)
 		}
@@ -62,16 +62,16 @@ func TestMkdir(t *testing.T) {
 		}
 
 		// Try to mkdir over a regular file:
-		mustTouch(t, lkr, "/cat.png", 1)
+		MustTouch(t, lkr, "/cat.png", 1)
 
 		// This should fail, since we cannot create it.
-		dir, err = mkdir(lkr, "/cat.png", false)
+		dir, err = Mkdir(lkr, "/cat.png", false)
 		if err == nil {
 			t.Fatal("Creating directory on file should have failed!")
 		}
 
 		// Same even for -p
-		dir, err = mkdir(lkr, "/cat.png", true)
+		dir, err = Mkdir(lkr, "/cat.png", true)
 		if err == nil {
 			t.Fatal("Creating directory on file should have failed!")
 		}
@@ -79,16 +79,16 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
-		dir, err := mkdir(lkr, "/some/nested/directory", true)
+	WithDummyLinker(t, func(lkr *Linker) {
+		dir, err := Mkdir(lkr, "/some/nested/directory", true)
 		if err != nil {
 			t.Fatalf("Failed to mkdir a nested directory: %v", err)
 		}
 
-		assertDir(t, lkr, "/some/nested/directory", true)
+		AssertDir(t, lkr, "/some/nested/directory", true)
 
 		path := "/some/nested/directory/cat.png"
-		mustTouch(t, lkr, path, 1)
+		MustTouch(t, lkr, path, 1)
 
 		// Check file removal with ghost creation:
 
@@ -98,7 +98,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Fill in a dummy file hash, so we get a ghost instance
-		parentDir, _, err := remove(lkr, file, true, false)
+		parentDir, _, err := Remove(lkr, file, true, false)
 		if err != nil {
 			t.Fatalf("Remove failed: %v", err)
 		}
@@ -135,7 +135,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Just fill in a dummy moved to ref, to get a ghost.
-		parentDir, ghost, err = remove(lkr, nestedDir, true, false)
+		parentDir, ghost, err = Remove(lkr, nestedDir, true, false)
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
 		}
@@ -151,8 +151,8 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveGhost(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
-		file := mustTouch(t, lkr, "/x", 1)
+	WithDummyLinker(t, func(lkr *Linker) {
+		file := MustTouch(t, lkr, "/x", 1)
 		par, err := n.ParentDirectory(lkr, file)
 		if err != nil {
 			t.Fatalf("Failed to get get parent directory of /x: %v", err)
@@ -176,7 +176,7 @@ func TestRemoveGhost(t *testing.T) {
 		}
 
 		// Try to remove a ghost:
-		if _, _, err := remove(lkr, ghost, true, false); err != ErrIsGhost {
+		if _, _, err := Remove(lkr, ghost, true, false); err != ErrIsGhost {
 			t.Fatalf("Removing ghost failed other than expected: %v", err)
 		}
 	})
@@ -244,65 +244,65 @@ func TestMove(t *testing.T) {
 			name:        "basic",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/a/b/c")
-				return mustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
+				MustMkdir(t, lkr, "/a/b/c")
+				return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
 			},
 		}, {
 			name:        "move-into-directory",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/a/b/c")
-				mustMkdir(t, lkr, "/a/b/d")
-				return mustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
+				MustMkdir(t, lkr, "/a/b/c")
+				MustMkdir(t, lkr, "/a/b/d")
+				return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
 			},
 		}, {
 			name:        "error-move-to-directory-contains-file",
 			isErrorCase: true,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/src")
-				mustMkdir(t, lkr, "/dst")
-				mustTouch(t, lkr, "/dst/x", 1)
-				return mustTouch(t, lkr, "/src/x", 1), "/dst"
+				MustMkdir(t, lkr, "/src")
+				MustMkdir(t, lkr, "/dst")
+				MustTouch(t, lkr, "/dst/x", 1)
+				return MustTouch(t, lkr, "/src/x", 1), "/dst"
 			},
 		}, {
 			name:        "error-move-file-over-existing",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/src")
-				mustMkdir(t, lkr, "/dst")
-				mustTouch(t, lkr, "/dst/x", 1)
-				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
+				MustMkdir(t, lkr, "/src")
+				MustMkdir(t, lkr, "/dst")
+				MustTouch(t, lkr, "/dst/x", 1)
+				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		}, {
 			name:        "error-move-file-over-existing",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/src")
-				mustMkdir(t, lkr, "/dst")
-				mustTouch(t, lkr, "/dst/x", 1)
-				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
+				MustMkdir(t, lkr, "/src")
+				MustMkdir(t, lkr, "/dst")
+				MustTouch(t, lkr, "/dst/x", 1)
+				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		}, {
 			name:        "error-move-file-over-ghost",
 			isErrorCase: false,
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				mustMkdir(t, lkr, "/src")
-				mustMkdir(t, lkr, "/dst")
-				destFile := mustTouch(t, lkr, "/dst/x", 1)
-				mustRemove(t, lkr, destFile)
-				return mustTouch(t, lkr, "/src/x", 1), "/dst/x"
+				MustMkdir(t, lkr, "/src")
+				MustMkdir(t, lkr, "/dst")
+				destFile := MustTouch(t, lkr, "/dst/x", 1)
+				MustRemove(t, lkr, destFile)
+				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withDummyLinker(t, func(lkr *Linker) {
+			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
 				srcPath := srcNd.Path()
 
-				if err := move(lkr, srcNd, dstPath); err != nil {
+				if err := Move(lkr, srcNd, dstPath); err != nil {
 					if tc.isErrorCase {
 						moveInvalidCheck(t, lkr, srcPath, dstPath)
 					} else {
@@ -317,13 +317,13 @@ func TestMove(t *testing.T) {
 }
 
 func TestMoveDirectory(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
-		srcDir := mustMkdir(t, lkr, "/src")
-		mustMkdir(t, lkr, "/src/sub")
-		mustTouch(t, lkr, "/src/sub/x", 23)
-		mustTouch(t, lkr, "/src/y", 23)
+	WithDummyLinker(t, func(lkr *Linker) {
+		srcDir := MustMkdir(t, lkr, "/src")
+		MustMkdir(t, lkr, "/src/sub")
+		MustTouch(t, lkr, "/src/sub/x", 23)
+		MustTouch(t, lkr, "/src/y", 23)
 
-		dstDir := mustMove(t, lkr, srcDir, "/dst")
+		dstDir := MustMove(t, lkr, srcDir, "/dst")
 
 		expect := []string{
 			"/dst/sub/x",
@@ -347,14 +347,14 @@ func TestMoveDirectory(t *testing.T) {
 }
 
 func TestMoveDirectoryWithGhosts(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
-		srcDir := mustMkdir(t, lkr, "/src")
-		mustMkdir(t, lkr, "/src/sub")
-		xFile := mustTouch(t, lkr, "/src/sub/x", 23)
-		mustTouch(t, lkr, "/src/y", 23)
-		mustMove(t, lkr, xFile, "/src/z")
+	WithDummyLinker(t, func(lkr *Linker) {
+		srcDir := MustMkdir(t, lkr, "/src")
+		MustMkdir(t, lkr, "/src/sub")
+		xFile := MustTouch(t, lkr, "/src/sub/x", 23)
+		MustTouch(t, lkr, "/src/y", 23)
+		MustMove(t, lkr, xFile, "/src/z")
 
-		dstDir := mustMove(t, lkr, srcDir, "/dst")
+		dstDir := MustMove(t, lkr, srcDir, "/dst")
 
 		expect := []string{
 			"/dst",
@@ -396,7 +396,7 @@ func TestMoveDirectoryWithGhosts(t *testing.T) {
 }
 
 func TestStage(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
+	WithDummyLinker(t, func(lkr *Linker) {
 		update := &NodeUpdate{
 			Hash:   h.TestDummy(t, 1),
 			Size:   3,
@@ -405,7 +405,7 @@ func TestStage(t *testing.T) {
 		}
 
 		// Initial stage of the file:
-		file, err := stage(lkr, "/photos/moose.png", update)
+		file, err := Stage(lkr, "/photos/moose.png", update)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
@@ -417,7 +417,7 @@ func TestStage(t *testing.T) {
 			Key:    make([]byte, 32),
 		}
 
-		file, err = stage(lkr, "/photos/moose.png", update)
+		file, err = Stage(lkr, "/photos/moose.png", update)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}

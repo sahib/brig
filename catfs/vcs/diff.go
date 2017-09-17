@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 
+	c "github.com/disorganizer/brig/catfs/core"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
@@ -94,7 +95,7 @@ func (ns *NodeState) String() string {
 // 		// Handle errors.
 // 	}
 type HistoryWalker struct {
-	lkr    *Linker
+	lkr    *c.Linker
 	head   *n.Commit
 	curr   n.ModNode
 	next   n.ModNode
@@ -106,7 +107,7 @@ type HistoryWalker struct {
 // NewHistoryWalker will return a new HistoryWalker that will yield changes of
 // `node` starting from the state in `cmt` until the root commit if desired.
 // Note that it is not checked that `node` is actually part of `cmt`.
-func NewHistoryWalker(lkr *Linker, cmt *n.Commit, node n.ModNode) *HistoryWalker {
+func NewHistoryWalker(lkr *c.Linker, cmt *n.Commit, node n.ModNode) *HistoryWalker {
 	return &HistoryWalker{
 		lkr:  lkr,
 		head: cmt,
@@ -231,7 +232,7 @@ func (hw *HistoryWalker) Next() bool {
 	// Assumption here: The move mapping should only store one move per commit.
 	// i.e: for move(a, b); a and b should always be in different commits.
 	// This is enforced by the logic in MakeCommit()
-	if prev == nil || direction != MoveDirSrcToDst {
+	if prev == nil || direction != c.MoveDirSrcToDst {
 		// No valid move mapping found, node was probably not moved.
 		// Assume that we can reach it directly via it's path.
 		currRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
@@ -282,7 +283,7 @@ func (hw *HistoryWalker) Err() error {
 // and stopping at `stop`. `stop` can be nil; in this case all commits will be
 // iterated. The returned list has the most recent change upfront, and the
 // latest change as lsat element.
-func History(lkr *Linker, nd n.ModNode, start, stop *n.Commit) ([]*NodeState, error) {
+func History(lkr *c.Linker, nd n.ModNode, start, stop *n.Commit) ([]*NodeState, error) {
 	states := make([]*NodeState, 0)
 	walker := NewHistoryWalker(lkr, start, nd)
 
@@ -320,7 +321,7 @@ type MapPair struct {
 }
 
 type Mapper struct {
-	lkrSrc, lkrDst *Linker
+	lkrSrc, lkrDst *c.Linker
 	srcRoot        n.Node
 	fn             func(pair MapPair) error
 	visited        map[string]n.Node
@@ -521,7 +522,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 }
 
 // ghostToAlive receives a `nd` and tries to find
-func (ma *Mapper) ghostToAlive(lkr *Linker, nd n.Node) (n.ModNode, error) {
+func (ma *Mapper) ghostToAlive(lkr *c.Linker, nd n.Node) (n.ModNode, error) {
 	partnerNd, moveDir, err := lkr.MoveEntryPoint(nd)
 	if err != nil {
 		return nil, err
@@ -534,7 +535,7 @@ func (ma *Mapper) ghostToAlive(lkr *Linker, nd n.Node) (n.ModNode, error) {
 
 	// We want to go forward in history.
 	// In theory, the other direction should not happen.
-	if moveDir != MoveDirDstToSrc {
+	if moveDir != c.MoveDirDstToSrc {
 		return nil, nil
 	}
 
@@ -715,7 +716,7 @@ func (ma *Mapper) handleGhosts() error {
 	return nil
 }
 
-func NewMapper(lkrSrc, lkrDst *Linker, srcRoot n.Node) *Mapper {
+func NewMapper(lkrSrc, lkrDst *c.Linker, srcRoot n.Node) *Mapper {
 	return &Mapper{
 		lkrSrc:  lkrSrc,
 		lkrDst:  lkrDst,

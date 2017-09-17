@@ -196,6 +196,7 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	written := int64(0)
+
 	n, cerr := io.Copy(w, r.chunkBuf)
 	if cerr != nil {
 		return n, cerr
@@ -305,5 +306,6 @@ func NewReader(r io.ReadSeeker) *reader {
 	return &reader{
 		rawR:      r,
 		decodeBuf: &bytes.Buffer{},
+		chunkBuf:  util.NewChunkBuffer([]byte{}),
 	}
 }

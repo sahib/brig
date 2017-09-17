@@ -3,6 +3,7 @@ package catfs
 import (
 	"testing"
 
+	c "github.com/disorganizer/brig/catfs/core"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
@@ -19,9 +20,9 @@ type expect struct {
 	result bool
 }
 
-func setupResolveBasicNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) *expect {
-	src, _ := mustTouchAndCommit(t, lkrSrc, "/x.png", 1)
-	dst, _ := mustTouchAndCommit(t, lkrDst, "/x.png", 2)
+func setupResolveBasicNoConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) *expect {
+	src, _ := c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
+	dst, _ := c.MustTouchAndCommit(t, lkrDst, "/x.png", 2)
 
 	return &expect{
 		dstMergeCmt: nil,
@@ -36,7 +37,7 @@ func setupResolveBasicNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) *expect {
 func TestHasConflicts(t *testing.T) {
 	tcs := []struct {
 		name  string
-		setup func(t *testing.T, lkrSrc, lkrDst *Linker) *expect
+		setup func(t *testing.T, lkrSrc, lkrDst *c.Linker) *expect
 	}{
 		{
 			name:  "basic-no-conflict-file",
@@ -46,7 +47,7 @@ func TestHasConflicts(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withLinkerPair(t, func(lkrSrc, lkrDst *Linker) {
+			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 				expect := tc.setup(t, lkrSrc, lkrDst)
 
 				syncer := NewSyncer(lkrSrc, lkrDst, nil)
@@ -95,11 +96,11 @@ func TestHasConflicts(t *testing.T) {
 
 // Create a file in src and check
 // that it's being synced to the dst side.
-func setupBasicSrcFile(t *testing.T, lkrSrc, lkrDst *Linker) {
-	mustTouch(t, lkrSrc, "/x.png", 1)
+func setupBasicSrcFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	c.MustTouch(t, lkrSrc, "/x.png", 1)
 }
 
-func checkBasicSrcFile(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicSrcFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
@@ -110,11 +111,11 @@ func checkBasicSrcFile(t *testing.T, lkrSrc, lkrDst *Linker) {
 
 // Only have the file on dst.
 // Nothing should happen, since no pair can be found.
-func setupBasicDstFile(t *testing.T, lkrSrc, lkrDst *Linker) {
-	mustTouch(t, lkrDst, "/x.png", 1)
+func setupBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	c.MustTouch(t, lkrDst, "/x.png", 1)
 }
 
-func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
@@ -124,12 +125,12 @@ func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *Linker) {
 ////////
 
 // Create the same file on both sides with the same content.
-func setupBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
-	mustTouch(t, lkrSrc, "/x.png", 1)
-	mustTouch(t, lkrDst, "/x.png", 1)
+func setupBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	c.MustTouch(t, lkrSrc, "/x.png", 1)
+	c.MustTouch(t, lkrDst, "/x.png", 1)
 }
 
-func checkBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xSrcFile, err := lkrSrc.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xSrcFile.Path(), "/x.png")
@@ -145,12 +146,12 @@ func checkBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
 
 // Create the same file on both sides with different content.
 // This should result in a conflict, resulting in conflict file.
-func setupBasicBothConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
-	mustTouch(t, lkrSrc, "/x.png", 42)
-	mustTouch(t, lkrDst, "/x.png", 23)
+func setupBasicBothConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	c.MustTouch(t, lkrSrc, "/x.png", 42)
+	c.MustTouch(t, lkrDst, "/x.png", 23)
 }
 
-func checkBasicBothConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicBothConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xSrcFile, err := lkrSrc.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xSrcFile.Path(), "/x.png")
@@ -169,17 +170,17 @@ func checkBasicBothConflict(t *testing.T, lkrSrc, lkrDst *Linker) {
 
 ////////
 
-func setupBasicRemove(t *testing.T, lkrSrc, lkrDst *Linker) {
+func setupBasicRemove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	// Create x.png on src and remove it after one commit:
-	xFile := mustTouch(t, lkrSrc, "/x.png", 42)
-	mustCommit(t, lkrSrc, "who let the x out")
-	mustRemove(t, lkrSrc, xFile)
+	xFile := c.MustTouch(t, lkrSrc, "/x.png", 42)
+	c.MustCommit(t, lkrSrc, "who let the x out")
+	c.MustRemove(t, lkrSrc, xFile)
 
 	// Create the same file on dst:
-	mustTouch(t, lkrDst, "/x.png", 42)
+	c.MustTouch(t, lkrDst, "/x.png", 42)
 }
 
-func checkBasicRemove(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicRemove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xDstFile, err := lkrDst.LookupGhost("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xDstFile.Path(), "/x.png")
@@ -187,17 +188,17 @@ func checkBasicRemove(t *testing.T, lkrSrc, lkrDst *Linker) {
 
 ////////
 
-func setupBasicSrcMove(t *testing.T, lkrSrc, lkrDst *Linker) {
+func setupBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	// Create x.png on src and remove it after one commit:
-	xFile := mustTouch(t, lkrSrc, "/x.png", 42)
-	mustCommit(t, lkrSrc, "who let the x out")
-	mustMove(t, lkrSrc, xFile, "/y.png")
+	xFile := c.MustTouch(t, lkrSrc, "/x.png", 42)
+	c.MustCommit(t, lkrSrc, "who let the x out")
+	c.MustMove(t, lkrSrc, xFile, "/y.png")
 
 	// Create the same file on dst:
-	mustTouch(t, lkrDst, "/x.png", 42)
+	c.MustTouch(t, lkrDst, "/x.png", 42)
 }
 
-func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *Linker) {
+func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	// TODO: This test is recognized as conflict still.
 	//       This is due to the way srcMask and dstMask is defined
 	//       as conflict (added = conflict). Think about this more.
@@ -210,8 +211,8 @@ func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *Linker) {
 func TestSync(t *testing.T) {
 	tcs := []struct {
 		name  string
-		setup func(t *testing.T, lkrSrc, lkrDst *Linker)
-		check func(t *testing.T, lkrSrc, lkrDst *Linker)
+		setup func(t *testing.T, lkrSrc, lkrDst *c.Linker)
+		check func(t *testing.T, lkrSrc, lkrDst *c.Linker)
 	}{
 		{
 			name:  "basic-src-file",
@@ -242,11 +243,11 @@ func TestSync(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			withLinkerPair(t, func(lkrSrc, lkrDst *Linker) {
+			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 				tc.setup(t, lkrSrc, lkrDst)
 				// sync requires that all changes are committed.
-				mustCommitIfPossible(t, lkrDst, "setup dst")
-				mustCommitIfPossible(t, lkrSrc, "setup src")
+				c.MustCommitIfPossible(t, lkrDst, "setup dst")
+				c.MustCommitIfPossible(t, lkrSrc, "setup src")
 
 				syncer := NewSyncer(lkrSrc, lkrDst, nil)
 				if err := syncer.Sync(); err != nil {

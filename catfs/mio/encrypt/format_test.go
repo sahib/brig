@@ -14,6 +14,8 @@ import (
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 
+const ExtraDebug = false
+
 func openFiles(from, to string) (*os.File, *os.File, error) {
 	fdFrom, err := os.Open(from)
 	if err != nil {
@@ -114,7 +116,9 @@ func TestSimpleEncDec(t *testing.T) {
 	t.Parallel()
 
 	for _, size := range SizeTests {
-		t.Logf("Testing SimpleEncDec for size %d", size)
+		if ExtraDebug {
+			t.Logf("Testing SimpleEncDec for size %d", size)
+		}
 		testSimpleEncDec(t, size)
 	}
 }
@@ -182,7 +186,9 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 	source := bytes.NewBuffer(sourceData)
 	shared := &bytes.Buffer{}
 
-	t.Logf("Testing seek for size %d", N)
+	if ExtraDebug {
+		t.Logf("Testing seek for size %d", N)
+	}
 
 	enc, err := NewWriter(shared, TestKey)
 	if err != nil {
@@ -233,13 +239,15 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 			panic("Bad whence")
 		}
 
-		t.Logf(
-			" => Seek(%v, %v) -> %v (size: %v)",
-			realOffset,
-			whence,
-			exptOffset,
-			N,
-		)
+		if ExtraDebug {
+			t.Logf(
+				" => Seek(%v, %v) -> %v (size: %v)",
+				realOffset,
+				whence,
+				exptOffset,
+				N,
+			)
+		}
 
 		jumpedTo, err := decLayer.Seek(realOffset, test.Whence)
 		if err != test.Error {

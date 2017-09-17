@@ -1,4 +1,4 @@
-package catfs
+package core
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 	e "github.com/pkg/errors"
@@ -32,7 +33,7 @@ func mkdirParents(lkr *Linker, repoPath string) (*n.Directory, error) {
 			dirname = "/"
 		}
 
-		dir, err := mkdir(lkr, dirname, false)
+		dir, err := Mkdir(lkr, dirname, false)
 		if err != nil {
 			return nil, err
 		}
@@ -46,10 +47,10 @@ func mkdirParents(lkr *Linker, repoPath string) (*n.Directory, error) {
 	return nil, fmt.Errorf("Empty path given")
 }
 
-// mkdir creates the directory at repoPath and any intermediate directories if
+// Mkdir creates the directory at repoPath and any intermediate directories if
 // createParents is true. It will fail if there is already a file at `repoPath`
 // and it is not a directory.
-func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, err error) {
+func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, err error) {
 	dirname, basename := path.Split(repoPath)
 
 	// Take special care of the root node:
@@ -114,10 +115,10 @@ func mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	return dir, nil
 }
 
-// remove removes a single node from a directory.
+// Remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
+func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
 	if !force && nd.Type() == n.NodeTypeGhost {
 		return nil, nil, ErrIsGhost
 	}
@@ -174,7 +175,7 @@ func remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Di
 	return parentDir, nil, nil
 }
 
-func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
+func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if strings.HasPrefix(destPath, nd.Path()) {
 		return fmt.Errorf("Cannot move `%s` into it's own subdir `%s`", nd.Path(), destPath)
@@ -231,20 +232,20 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				// Okay, there is an empty directory. Let's remove it to
 				// replace it with our source node.
-				if _, _, err := remove(lkr, childDir, false, false); err != nil {
+				if _, _, err := Remove(lkr, childDir, false, false); err != nil {
 					return err
 				}
 			}
 
 			parentDir = destDir
 		case n.NodeTypeFile:
-			parentDir, _, err = remove(lkr, destNode, false, false)
+			parentDir, _, err = Remove(lkr, destNode, false, false)
 			if err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
 			// It is already a ghost. Overwrite it and do not create a new one.
-			parentDir, _, err = remove(lkr, destNode, false, true)
+			parentDir, _, err = Remove(lkr, destNode, false, true)
 			if err != nil {
 				return err
 			}
@@ -262,7 +263,7 @@ func move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	oldPath := nd.Path()
 
 	// Remove the old node:
-	_, ghost, err := remove(lkr, nd, true, true)
+	_, ghost, err := Remove(lkr, nd, true, true)
 	if err != nil {
 		return err
 	}
@@ -304,7 +305,7 @@ type NodeUpdate struct {
 	Key    []byte
 }
 
-func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
+func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
 	node, err := lkr.LookupNode(repoPath)
 	if err != nil && !n.IsNoSuchFileError(err) {
 		return nil, err
@@ -355,7 +356,7 @@ func stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 
 		if file.Hash().Equal(info.Hash) {
 			log.Debugf("Hash was not modified. Refusing update.")
-			return nil, ErrNoChange
+			return nil, ie.ErrNoChange
 		}
 	} else {
 		parent, err := mkdirParents(lkr, repoPath)

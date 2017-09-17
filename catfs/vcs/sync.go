@@ -46,6 +46,7 @@ import (
 	"fmt"
 	"path"
 
+	c "github.com/disorganizer/brig/catfs/core"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
@@ -75,15 +76,15 @@ var (
 
 type Syncer struct {
 	cfg    *SyncConfig
-	lkrSrc *Linker
-	lkrDst *Linker
+	lkrSrc *c.Linker
+	lkrDst *c.Linker
 
 	// cached attributes:
 	dstMergeCmt *n.Commit
 	srcMergeCmt *n.Commit
 }
 
-func NewSyncer(lkrSrc, lkrDst *Linker, cfg *SyncConfig) *Syncer {
+func NewSyncer(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) *Syncer {
 	if cfg == nil {
 		cfg = DefaultSyncConfig
 	}
@@ -224,7 +225,7 @@ func (sy *Syncer) handleRemove(dst n.ModNode) error {
 		return nil
 	}
 
-	_, _, err := remove(sy.lkrDst, dst, true, true)
+	_, _, err := c.Remove(sy.lkrDst, dst, true, true)
 	return err
 }
 
@@ -263,7 +264,7 @@ func (sy *Syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		if srcMask&ChangeTypeMove != 0 && dstMask&ChangeTypeMove == 0 {
 			// TODO: Sanity check that there's nothing that src.Path(),
 			//       but Mapper should already have checked that.
-			if err := move(sy.lkrDst, dst, src.Path()); err != nil {
+			if err := c.Move(sy.lkrDst, dst, src.Path()); err != nil {
 				return err
 			}
 		}

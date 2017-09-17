@@ -1,4 +1,4 @@
-package store
+package overlay
 
 import (
 	"bytes"
@@ -7,9 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/store/encrypt"
+	"github.com/disorganizer/brig/catfs/mio/encrypt"
 	"github.com/disorganizer/brig/util/testutil"
 )
+
+var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 
 func makeMod(off, size int64) *Modification {
 	s := make([]byte, size)
@@ -218,7 +220,6 @@ var SingleWrites = map[string]struct {
 func TestOverlaySimple(t *testing.T) {
 	for name, test := range SingleWrites {
 		buf := createLayer(t, test.modifier)
-		t.Log(buf.Bytes())
 
 		if !bytes.Equal(test.want, buf.Bytes()) {
 			t.Errorf("overlay-simple-write failed on `%s`.", name)

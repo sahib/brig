@@ -39,7 +39,7 @@ func NewOutStream(r Stream, key []byte) (Stream, error) {
 	}, nil
 }
 
-// newInStream creates a new stream that pipes data into brig.
+// NewInStream creates a new stream that pipes data into brig.
 // The data is read from `r`, enrypted with `key` and compressed
 // according to `compress`.
 func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reader, error) {
@@ -78,7 +78,9 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 			err = pwErr
 		}
 
-		fmt.Println("FAIL", err)
+		if err != nil {
+			fmt.Println("TODO: Internal write err", err)
+		}
 	}()
 
 	return pr, nil

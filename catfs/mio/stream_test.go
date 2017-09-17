@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/disorganizer/brig/store/compress"
+	"github.com/disorganizer/brig/catfs/mio/compress"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -26,7 +26,7 @@ func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType)
 		return
 	}
 
-	encStream, err := NewFileReader(TestKey, rawBuf, algoType)
+	encStream, err := NewInStream(rawBuf, TestKey, algoType)
 	if err != nil {
 		t.Errorf("Creating encryption stream failed: %v", err)
 		return
@@ -48,7 +48,7 @@ func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType)
 		Closer:   ioutil.NopCloser(nil),
 	}
 
-	decStream, err := NewIpfsReader(TestKey, r)
+	decStream, err := NewOutStream(r, TestKey)
 	if err != nil {
 		t.Errorf("Creating decryption stream failed: %v", err)
 		return

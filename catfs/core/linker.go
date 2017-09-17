@@ -1,4 +1,4 @@
-package catfs
+package core
 
 // Layout of the key/value store:
 //
@@ -41,6 +41,7 @@ import (
 	"strings"
 
 	"github.com/disorganizer/brig/catfs/db"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/disorganizer/brig/util/trie"
@@ -367,7 +368,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 	}()
 
 	head, err := lkr.Head()
-	if err != nil && !IsErrNoSuchRef(err) {
+	if err != nil && !ie.IsErrNoSuchRef(err) {
 		return err
 	}
 
@@ -379,7 +380,7 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 	// Only compare with previous if we have a HEAD yet.
 	if head != nil {
 		if status.Root().Equal(head.Root()) {
-			return ErrNoChange
+			return ie.ErrNoChange
 		}
 	}
 
@@ -534,7 +535,7 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	}
 
 	if len(b58Hash) == 0 {
-		return nil, ErrNoSuchRef(refname)
+		return nil, ie.ErrNoSuchRef(refname)
 	}
 
 	hash, err := h.FromB58String(string(b58Hash))
@@ -622,13 +623,13 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 
 	// Setup a new commit and set root from last HEAD or new one.
 	head, err := lkr.Head()
-	if err != nil && !IsErrNoSuchRef(err) {
+	if err != nil && !ie.IsErrNoSuchRef(err) {
 		return nil, err
 	}
 
 	var rootHash h.Hash
 
-	if IsErrNoSuchRef(err) {
+	if ie.IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
 		// TODO: Replace ResolveDirectory -> Resolve* can be removed.
 		if root, err := lkr.ResolveDirectory("/"); err == nil {
@@ -702,7 +703,7 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) (err error) {
 	}()
 
 	head, err := lkr.Head()
-	if err != nil && !IsErrNoSuchRef(err) {
+	if err != nil && !ie.IsErrNoSuchRef(err) {
 		return err
 	}
 
@@ -933,11 +934,11 @@ func (lkr *Linker) Unstage(nd n.Node) error {
 // If an error occurs, the first return value is undefined.
 func (lkr *Linker) HaveStagedChanges() (bool, error) {
 	head, err := lkr.Head()
-	if err != nil && !IsErrNoSuchRef(err) {
+	if err != nil && !ie.IsErrNoSuchRef(err) {
 		return false, err
 	}
 
-	if IsErrNoSuchRef(err) {
+	if ie.IsErrNoSuchRef(err) {
 		// There is no HEAD yet. Assume we have changes.
 		fmt.Println("no head")
 		return true, nil
@@ -975,7 +976,7 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 		}
 
 		if haveStaged {
-			return ErrStageNotEmpty
+			return ie.ErrStageNotEmpty
 		}
 	}
 

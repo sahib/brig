@@ -1,4 +1,4 @@
-package catfs
+package core
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
-func withDummyKv(t *testing.T, fn func(kv db.Database)) {
+func WithDummyKv(t *testing.T, fn func(kv db.Database)) {
 	dbPath, err := ioutil.TempDir("", "brig-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -32,18 +32,18 @@ func withDummyKv(t *testing.T, fn func(kv db.Database)) {
 	}
 }
 
-func withDummyLinker(t *testing.T, fn func(lkr *Linker)) {
-	withDummyKv(t, func(kv db.Database) {
+func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		mustCommit(t, lkr, "init")
+		MustCommit(t, lkr, "init")
 
 		fn(lkr)
 	})
 }
 
-func withLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
-	withDummyLinker(t, func(lkrSrc *Linker) {
-		withDummyLinker(t, func(lkrDst *Linker) {
+func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
+	WithDummyLinker(t, func(lkrSrc *Linker) {
+		WithDummyLinker(t, func(lkrDst *Linker) {
 			lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
 			lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
 
@@ -52,7 +52,7 @@ func withLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	})
 }
 
-func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
+func AssertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	dir, err := lkr.LookupDirectory(path)
 	if shouldExist {
 		if err != nil {
@@ -69,8 +69,8 @@ func assertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	}
 }
 
-func mustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
-	dir, err := mkdir(lkr, repoPath, true)
+func MustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
+	dir, err := Mkdir(lkr, repoPath, true)
 	if err != nil {
 		t.Fatalf("Failed to create directories %s: %v", repoPath, err)
 	}
@@ -78,7 +78,7 @@ func mustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
 	return dir
 }
 
-func mustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
+func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	dirname := path.Dir(touchPath)
 	parent, err := lkr.LookupDirectory(dirname)
 	if err != nil {
@@ -103,8 +103,8 @@ func mustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	return file
 }
 
-func mustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNode {
-	if err := move(lkr, nd, destPath); err != nil {
+func MustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNode {
+	if err := Move(lkr, nd, destPath); err != nil {
 		t.Fatalf("move of %s to %s failed: %v", nd.Path(), destPath, err)
 	}
 
@@ -116,8 +116,8 @@ func mustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNod
 	return newNd
 }
 
-func mustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
-	if _, _, err := remove(lkr, nd, true, false); err != nil {
+func MustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
+	if _, _, err := Remove(lkr, nd, true, false); err != nil {
 		t.Fatalf("Failed to remove %s: %v", nd.Path(), err)
 	}
 
@@ -129,7 +129,7 @@ func mustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
 	return newNd
 }
 
-func mustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
+func MustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	if err := lkr.MakeCommit(n.AuthorOfStage(), msg); err != nil {
 		t.Fatalf("Failed to make commit with msg %s: %v", msg, err)
 	}
@@ -142,20 +142,20 @@ func mustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	return head
 }
 
-func mustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
+func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	haveChanges, err := lkr.HaveStagedChanges()
 	if err != nil {
 		t.Fatalf("Failed to check for changes: %v", err)
 	}
 
 	if haveChanges {
-		return mustCommit(t, lkr, msg)
+		return MustCommit(t, lkr, msg)
 	}
 
 	return nil
 }
 
-func mustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
+func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
 
 	info := &NodeUpdate{
 		Hash:   h.TestDummy(t, seed),
@@ -164,10 +164,32 @@ func mustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.F
 		Key:    nil,
 	}
 
-	file, err := stage(lkr, path, info)
+	file, err := Stage(lkr, path, info)
 	if err != nil {
 		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
 	}
 
-	return file, mustCommit(t, lkr, fmt.Sprintf("cmt %d", seed))
+	return file, MustCommit(t, lkr, fmt.Sprintf("cmt %d", seed))
+}
+
+func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
+	root, err := lkr.Root()
+	if err != nil {
+		t.Fatalf("Failed to get root: %v", err)
+	}
+
+	if err := root.RemoveChild(lkr, file); err != nil && !n.IsNoSuchFileError(err) {
+		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
+	}
+
+	file.SetSize(uint64(seed))
+	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
+
+	if err := root.Add(lkr, file); err != nil {
+		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
+	}
+
+	if err := lkr.StageNode(file); err != nil {
+		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
+	}
 }

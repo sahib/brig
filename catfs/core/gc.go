@@ -1,4 +1,4 @@
-package catfs
+package core
 
 import (
 	"github.com/disorganizer/brig/catfs/db"

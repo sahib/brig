@@ -1,4 +1,4 @@
-package catfs
+package core
 
 import (
 	"io/ioutil"
@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/disorganizer/brig/catfs/db"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
@@ -15,7 +16,7 @@ import (
 // A new staging commit should be also created in the background.
 // On the second run, the root node should be already cached.
 func TestLinkerInsertRoot(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := n.NewEmptyDirectory(lkr, nil, "/", 2)
 		if err != nil {
@@ -61,7 +62,7 @@ func TestLinkerInsertRoot(t *testing.T) {
 
 func TestLinkerRefs(t *testing.T) {
 	author := n.AuthorOfStage()
-	withDummyKv(t, func(kv db.Database) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
 		if err != nil {
@@ -84,7 +85,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Staging new file failed: %v", err)
 		}
 
-		if _, err := lkr.Head(); !IsErrNoSuchRef(err) {
+		if _, err := lkr.Head(); !ie.IsErrNoSuchRef(err) {
 			t.Fatalf("There is a HEAD from start?!")
 		}
 
@@ -113,14 +114,14 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("HEAD and CURR are not equal after first commit.")
 		}
 
-		if err := lkr.MakeCommit(author, "No."); err != ErrNoChange {
+		if err := lkr.MakeCommit(author, "No."); err != ie.ErrNoChange {
 			t.Fatalf("Committing without change led to a new commit: %v", err)
 		}
 	})
 }
 
 func TestLinkerNested(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
 		if err != nil {
@@ -204,30 +205,8 @@ func TestLinkerNested(t *testing.T) {
 	})
 }
 
-func modifyFile(t *testing.T, lkr *Linker, file *n.File, seed int) {
-	root, err := lkr.Root()
-	if err != nil {
-		t.Fatalf("Failed to get root: %v", err)
-	}
-
-	if err := root.RemoveChild(lkr, file); err != nil && !n.IsNoSuchFileError(err) {
-		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
-	}
-
-	file.SetSize(uint64(seed))
-	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
-
-	if err := root.Add(lkr, file); err != nil {
-		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
-	}
-
-	if err := lkr.StageNode(file); err != nil {
-		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
-	}
-}
-
 func TestCheckoutFile(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		if err := lkr.MakeCommit(n.AuthorOfStage(), "initial commit"); err != nil {
 			t.Fatalf("Initial commit failed: %v", err)
@@ -243,14 +222,14 @@ func TestCheckoutFile(t *testing.T) {
 			t.Fatalf("Failed to create cat.png: %v", err)
 		}
 
-		modifyFile(t, lkr, file, 1)
+		MustModify(t, lkr, file, 1)
 		oldFileHash := file.Hash().Clone()
 
 		if err := lkr.MakeCommit(n.AuthorOfStage(), "second commit"); err != nil {
 			t.Fatalf("Failed to make second commit: %v", err)
 		}
 
-		modifyFile(t, lkr, file, 2)
+		MustModify(t, lkr, file, 2)
 
 		if err := lkr.MakeCommit(n.AuthorOfStage(), "third commit"); err != nil {
 			t.Fatalf("Failed to make third commit: %v", err)
@@ -338,7 +317,7 @@ func TestLinkerPersistence(t *testing.T) {
 }
 
 func TestCollideSameObjectHash(t *testing.T) {
-	withDummyKv(t, func(kv db.Database) {
+	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
 		if err != nil {
@@ -427,7 +406,7 @@ func TestCollideSameObjectHash(t *testing.T) {
 }
 
 func TestHaveStagedChanges(t *testing.T) {
-	withDummyLinker(t, func(lkr *Linker) {
+	WithDummyLinker(t, func(lkr *Linker) {
 		hasChanges, err := lkr.HaveStagedChanges()
 		if err != nil {
 			t.Fatalf("have staged changes failed before touch: %v", err)
@@ -436,7 +415,7 @@ func TestHaveStagedChanges(t *testing.T) {
 			t.Fatalf("HaveStagedChanges has changes before something happened")
 		}
 
-		mustTouch(t, lkr, "/x.png", 1)
+		MustTouch(t, lkr, "/x.png", 1)
 
 		hasChanges, err = lkr.HaveStagedChanges()
 		if err != nil {
@@ -446,7 +425,7 @@ func TestHaveStagedChanges(t *testing.T) {
 			t.Fatalf("HaveStagedChanges has no changes after something happened")
 		}
 
-		mustCommit(t, lkr, "second")
+		MustCommit(t, lkr, "second")
 
 		hasChanges, err = lkr.HaveStagedChanges()
 		if err != nil {

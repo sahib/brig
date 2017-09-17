@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	c "github.com/disorganizer/brig/catfs/core"
 	"github.com/disorganizer/brig/catfs/db"
 	"github.com/disorganizer/brig/catfs/mio"
 	"github.com/disorganizer/brig/catfs/mio/compress"
@@ -27,7 +28,7 @@ type FS struct {
 	mu sync.Mutex
 
 	kv  db.Database
-	lkr *Linker
+	lkr *c.Linker
 	bk  FsBackend
 }
 
@@ -159,14 +160,14 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	nu := NodeUpdate{
+	nu := c.NodeUpdate{
 		Hash:   hash,
 		Key:    key,
 		Author: owner.String(),
 		Size:   sizeAcc.Size(),
 	}
 
-	_, err = stage(fs.lkr, path, &nu)
+	_, err = c.Stage(fs.lkr, path, &nu)
 	return err
 }
 
