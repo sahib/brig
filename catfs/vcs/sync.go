@@ -1,4 +1,4 @@
-package catfs
+package vcs
 
 // This package implements brig's sync algorithm which I called, in a burst of
 // modesty, "bright". (Not because it's or I'm very bright, but because it
@@ -47,6 +47,7 @@ import (
 	"path"
 
 	c "github.com/disorganizer/brig/catfs/core"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
@@ -70,96 +71,32 @@ var (
 	DefaultSyncConfig = &SyncConfig{}
 )
 
-///////////////////////////
-// SYNCER IMPLEMENTATION //
-///////////////////////////
+type executor interface {
+	handleAdd(src n.ModNode) error
+	handleRemove(dst n.ModNode) error
+	handleConflict(src, dst n.ModNode) error
+	handleTypeConflict(src, dst n.ModNode) error
+	handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error
+}
+
+////////////////////////////////
+// DIFF METHOD IMPLEMENTATION //
+////////////////////////////////
+
+type Differ struct {
+}
+
+// TODO: Implement.
+
+//////////////////////////////////////
+// RESOLUTION METHOD IMPLEMENTATION //
+//////////////////////////////////////
 
 type Syncer struct {
 	cfg    *SyncConfig
 	lkrSrc *c.Linker
 	lkrDst *c.Linker
-
-	// cached attributes:
-	dstMergeCmt *n.Commit
-	srcMergeCmt *n.Commit
 }
-
-func NewSyncer(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) *Syncer {
-	if cfg == nil {
-		cfg = DefaultSyncConfig
-	}
-
-	return &Syncer{
-		cfg:    cfg,
-		lkrSrc: lkrSrc,
-		lkrDst: lkrDst,
-	}
-}
-
-func (sy *Syncer) Sync() error {
-	srcRoot, err := sy.lkrSrc.Root()
-	if err != nil {
-		return err
-	}
-
-	if err := sy.cacheLastCommonMerge(); err != nil {
-		return e.Wrapf(err, "Error while finding last common merge")
-	}
-
-	srcHead, err := sy.lkrSrc.Head()
-	if err != nil {
-		return err
-	}
-
-	srcOwner, err := sy.lkrSrc.Owner()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("-----")
-	mapper := NewMapper(sy.lkrSrc, sy.lkrDst, srcRoot)
-	mappings := []MapPair{}
-
-	err = mapper.Map(func(pair MapPair) error {
-		mappings = append(mappings, pair)
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	for _, pair := range mappings {
-		if err := sy.decide(pair); err != nil {
-			return err
-		}
-	}
-
-	wasModified, err := sy.lkrDst.HaveStagedChanges()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Sync modified something", wasModified)
-
-	// If something was changed, we should set the merge marker.
-	if wasModified {
-		// If something was changed, remember that we merged with src.
-		// This avoids merging conflicting files a second time in the next resolve().
-		if err := sy.lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
-			return err
-		}
-
-		message := fmt.Sprintf("Merge with %s", srcOwner.ID())
-		return sy.lkrDst.MakeCommit(srcOwner, message)
-	}
-
-	return nil
-}
-
-//////////////////////////////////////
-// RESOLUTION METHOD IMPLEMENTATION //
-//////////////////////////////////////
 
 func (sy *Syncer) add(src n.ModNode, srcParent, srcName string) error {
 	fmt.Println("ADD", src, srcParent, srcName)
@@ -244,7 +181,7 @@ func (sy *Syncer) handleConflict(src, dst n.ModNode) error {
 	for tries := 0; tries < 100; tries++ {
 		conflictName = fmt.Sprintf(conflictNameTmpl, tries)
 		dstNd, err := sy.lkrDst.LookupNode(conflictName)
-		if err != nil && !n.IsNoSuchFileError(err) {
+		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
 
@@ -288,12 +225,12 @@ func (sy *Syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 
 	dstFile, ok := dst.(*n.File)
 	if !ok {
-		return n.ErrBadNode
+		return ie.ErrBadNode
 	}
 
 	srcFile, ok := src.(*n.File)
 	if !ok {
-		return n.ErrBadNode
+		return ie.ErrBadNode
 	}
 
 	dstFile.SetContent(sy.lkrDst, srcFile.Content())
@@ -303,17 +240,99 @@ func (sy *Syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	return sy.lkrDst.StageNode(dstFile)
 }
 
+func (sy *Syncer) handleTypeConflict(src, dst n.ModNode) error {
+	// Simply do nothing.
+	return nil
+}
+
 //////////////////////////////////////////////
 // IMPLEMENTATION OF ACTUAL DECISION MAKING //
 //////////////////////////////////////////////
 
-func (sy *Syncer) cacheLastCommonMerge() error {
-	srcOwner, err := sy.lkrSrc.Owner()
+type Resolver struct {
+	lkrSrc *c.Linker
+	lkrDst *c.Linker
+
+	// cached attributes:
+	dstMergeCmt *n.Commit
+	srcMergeCmt *n.Commit
+
+	exec executor
+}
+
+func NewResolver(lkrSrc, lkrDst *c.Linker, exec executor) *Resolver {
+	return &Resolver{
+		lkrSrc: lkrSrc,
+		lkrDst: lkrDst,
+		exec:   exec,
+	}
+}
+
+func (rv *Resolver) Resolve() error {
+	srcRoot, err := rv.lkrSrc.Root()
 	if err != nil {
 		return err
 	}
 
-	dstHead, err := sy.lkrDst.Head()
+	if err := rv.cacheLastCommonMerge(); err != nil {
+		return e.Wrapf(err, "Error while finding last common merge")
+	}
+
+	srcHead, err := rv.lkrSrc.Head()
+	if err != nil {
+		return err
+	}
+
+	srcOwner, err := rv.lkrSrc.Owner()
+	if err != nil {
+		return err
+	}
+
+	mapper := NewMapper(rv.lkrSrc, rv.lkrDst, srcRoot)
+	mappings := []MapPair{}
+
+	err = mapper.Map(func(pair MapPair) error {
+		mappings = append(mappings, pair)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, pair := range mappings {
+		if err := rv.decide(pair); err != nil {
+			return err
+		}
+	}
+
+	wasModified, err := rv.lkrDst.HaveStagedChanges()
+	if err != nil {
+		return err
+	}
+
+	// If something was changed, we should set the merge marker.
+	if wasModified {
+		// If something was changed, remember that we merged with src.
+		// This avoids merging conflicting files a second time in the next resolve().
+		if err := rv.lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
+			return err
+		}
+
+		message := fmt.Sprintf("Merge with %s", srcOwner.ID())
+		return rv.lkrDst.MakeCommit(srcOwner, message)
+	}
+
+	return nil
+}
+
+func (rv *Resolver) cacheLastCommonMerge() error {
+	srcOwner, err := rv.lkrSrc.Owner()
+	if err != nil {
+		return err
+	}
+
+	dstHead, err := rv.lkrDst.Head()
 	if err != nil {
 		return err
 	}
@@ -321,16 +340,16 @@ func (sy *Syncer) cacheLastCommonMerge() error {
 	for {
 		with, srcRef := dstHead.MergeMarker()
 		if with != nil && with.Equal(srcOwner) {
-			srcHead, err := sy.lkrSrc.CommitByHash(srcRef)
+			srcHead, err := rv.lkrSrc.CommitByHash(srcRef)
 			if err != nil {
 				return err
 			}
 
-			sy.dstMergeCmt = dstHead
-			sy.srcMergeCmt = srcHead
+			rv.dstMergeCmt = dstHead
+			rv.srcMergeCmt = srcHead
 		}
 
-		prevHeadNode, err := dstHead.Parent(sy.lkrDst)
+		prevHeadNode, err := dstHead.Parent(rv.lkrDst)
 		if err != nil {
 			return err
 		}
@@ -341,7 +360,7 @@ func (sy *Syncer) cacheLastCommonMerge() error {
 
 		newDstHead, ok := prevHeadNode.(*n.Commit)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		dstHead = newDstHead
@@ -353,23 +372,23 @@ func (sy *Syncer) cacheLastCommonMerge() error {
 // hasConflicts is always called when two nodes on both sides and they do not
 // have the same hash.  In the best case, both have compatible changes and can
 // be merged, otherwise a user defined conflict strategy has to be applied.
-func (sy *Syncer) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
-	srcHead, err := sy.lkrSrc.Head()
+func (rv *Resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
+	srcHead, err := rv.lkrSrc.Head()
 	if err != nil {
 		return false, 0, 0, err
 	}
 
-	dstHead, err := sy.lkrDst.Head()
+	dstHead, err := rv.lkrDst.Head()
 	if err != nil {
 		return false, 0, 0, err
 	}
 
-	srcHist, err := History(sy.lkrSrc, src, srcHead, sy.srcMergeCmt)
+	srcHist, err := History(rv.lkrSrc, src, srcHead, rv.srcMergeCmt)
 	if err != nil {
 		return false, 0, 0, err
 	}
 
-	dstHist, err := History(sy.lkrDst, dst, dstHead, sy.dstMergeCmt)
+	dstHist, err := History(rv.lkrDst, dst, dstHead, rv.dstMergeCmt)
 	if err != nil {
 		return false, 0, 0, err
 	}
@@ -433,19 +452,19 @@ func (sy *Syncer) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType
 	return false, srcMask, dstMask, nil
 }
 
-func (sy *Syncer) decide(pair MapPair) error {
+func (rv *Resolver) decide(pair MapPair) error {
 	if pair.Src == nil && pair.Dst == nil {
 		return fmt.Errorf("Received completely empty mapping; ignoring")
 	}
 
 	if pair.Src == nil {
 		fmt.Println("Source was removed: ", pair.Dst.Path())
-		return sy.handleRemove(pair.Dst)
+		return rv.exec.handleRemove(pair.Dst)
 	}
 
 	if pair.Dst == nil {
 		fmt.Println("No such dest: ", pair.Src.Path())
-		return sy.handleAdd(pair.Src)
+		return rv.exec.handleAdd(pair.Src)
 	}
 
 	if pair.TypeMismatch {
@@ -454,19 +473,36 @@ func (sy *Syncer) decide(pair MapPair) error {
 			pair.Src.Path(), pair.Src.Type(),
 			pair.Dst.Path(), pair.Dst.Type(),
 		)
-		return nil
+		return rv.exec.handleTypeConflict(pair.Src, pair.Dst)
 	}
 
-	hasConflicts, srcMask, dstMask, err := sy.hasConflicts(pair.Src, pair.Dst)
+	hasConflicts, srcMask, dstMask, err := rv.hasConflicts(pair.Src, pair.Dst)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("HAS CONFLICT", hasConflicts, srcMask, dstMask)
 	if hasConflicts {
-		return sy.handleConflict(pair.Src, pair.Dst)
+		return rv.exec.handleConflict(pair.Src, pair.Dst)
 	}
 
 	// handleMerge needs the masks to decide what path / content to choose.
-	return sy.handleMerge(pair.Src, pair.Dst, srcMask, dstMask)
+	return rv.exec.handleMerge(pair.Src, pair.Dst, srcMask, dstMask)
+}
+
+//////
+
+func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
+	if cfg == nil {
+		cfg = DefaultSyncConfig
+	}
+
+	syncer := &Syncer{
+		cfg:    cfg,
+		lkrSrc: lkrSrc,
+		lkrDst: lkrDst,
+	}
+
+	rsv := NewResolver(lkrSrc, lkrDst, syncer)
+	return rsv.Resolve()
 }

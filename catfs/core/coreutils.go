@@ -60,7 +60,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 
 	// Check if the parent exists:
 	parent, err := lkr.LookupDirectory(dirname)
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return nil, e.Wrap(err, "dirname lookup failed")
 	}
 
@@ -69,7 +69,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	// If it's nil, we might need to create it:
 	if parent == nil {
 		if !createParents {
-			return nil, n.NoSuchFile(dirname)
+			return nil, ie.NoSuchFile(dirname)
 		}
 
 		parent, err = mkdirParents(lkr, repoPath)
@@ -183,7 +183,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 	// Check if the destination already exists:
 	destNode, err := lkr.LookupModNode(destPath)
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
 
@@ -206,7 +206,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 			// Check if there is already a file
 			destDir, ok := destNode.(*n.Directory)
 			if !ok {
-				return n.ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			child, err := destDir.Child(lkr, nd.Name())
@@ -223,7 +223,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				childDir, ok := child.(*n.Directory)
 				if !ok {
-					return n.ErrBadNode
+					return ie.ErrBadNode
 				}
 
 				if childDir.Size() > 0 {
@@ -250,7 +250,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 				return err
 			}
 		default:
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 	} else {
 		// No node at this place yet, attempt to look it up.
@@ -307,7 +307,7 @@ type NodeUpdate struct {
 
 func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
 	node, err := lkr.LookupNode(repoPath)
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return nil, err
 	}
 
@@ -343,7 +343,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		var ok bool
 		file, ok = node.(*n.File)
 		if !ok {
-			return nil, n.ErrBadNode
+			return nil, ie.ErrBadNode
 		}
 	}
 
@@ -402,4 +402,35 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 	}
 
 	return file, nil
+}
+
+func Log(lkr *Linker, fn func(cmt *n.Commit) error) error {
+	curr, err := lkr.Head()
+	if err != nil {
+		return err
+	}
+
+	for curr != nil {
+		if err := fn(curr); err != nil {
+			return err
+		}
+
+		parent, err := curr.Parent(lkr)
+		if err != nil {
+			return err
+		}
+
+		if parent == nil {
+			break
+		}
+
+		parentCmt, ok := parent.(*n.Commit)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		curr = parentCmt
+	}
+
+	return nil
 }

@@ -1,4 +1,4 @@
-package catfs
+package vcs
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	c "github.com/disorganizer/brig/catfs/core"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	e "github.com/pkg/errors"
 )
@@ -203,7 +204,7 @@ func (hw *HistoryWalker) Next() bool {
 	if prev != nil && prev.Type() == n.NodeTypeGhost {
 		prevGhost, ok := prev.(*n.Ghost)
 		if !ok {
-			hw.err = n.ErrBadNode
+			hw.err = ie.ErrBadNode
 			return false
 		}
 
@@ -225,7 +226,7 @@ func (hw *HistoryWalker) Next() bool {
 
 	prevHeadCommit, ok := prevHead.(*n.Commit)
 	if !ok {
-		hw.err = e.Wrap(n.ErrBadNode, "history: bad commit")
+		hw.err = e.Wrap(ie.ErrBadNode, "history: bad commit")
 		return false
 	}
 
@@ -242,7 +243,7 @@ func (hw *HistoryWalker) Next() bool {
 		}
 
 		prev, err = currRoot.Lookup(hw.lkr, hw.curr.Path())
-		if n.IsNoSuchFileError(err) {
+		if ie.IsNoSuchFileError(err) {
 			// The file did not exist in the previous commit (no ghost!)
 			// It must have been added in this commit.
 			hw.isLast = true
@@ -257,7 +258,7 @@ func (hw *HistoryWalker) Next() bool {
 
 	prevModNode, ok := prev.(n.ModNode)
 	if !ok {
-		hw.err = e.Wrap(n.ErrBadNode, "history: bad mod node")
+		hw.err = e.Wrap(ie.ErrBadNode, "history: bad mod node")
 		return false
 	}
 
@@ -337,7 +338,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	ma.visited[srcCurr.Path()] = srcCurr
 
 	dstCurr, err := ma.lkrDst.LookupNode(dstFilePath)
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
 
@@ -356,7 +357,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		// That's not something we can fix.
 		dstDir, ok := dstCurr.(*n.Directory)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		// File and Directory don't go well together.
@@ -370,7 +371,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		// them are compatible.
 		dstFile, ok := dstCurr.(*n.File)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		// We still have the slight chance that both files
@@ -404,7 +405,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 
 		return nil
 	default:
-		return e.Wrapf(n.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
+		return e.Wrapf(ie.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
 	}
 }
 
@@ -415,7 +416,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 
 	ma.visited[srcCurr.Path()] = srcCurr
 	dstCurrNd, err := ma.lkrDst.LookupModNode(dstPath)
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
 
@@ -446,7 +447,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 		}
 
 		localBackCheck, err := ma.lkrSrc.LookupNode(aliveDstCurr.Path())
-		if err != nil && !n.IsNoSuchFileError(err) {
+		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
 
@@ -475,7 +476,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 
 	dstCurr, ok := dstCurrNd.(*n.Directory)
 	if !ok {
-		return n.ErrBadNode
+		return ie.ErrBadNode
 	}
 
 	// Check if we're lucky and the directory hash is equal:
@@ -496,7 +497,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 		case n.NodeTypeDirectory:
 			srcChildDir, ok := srcChild.(*n.Directory)
 			if !ok {
-				return n.ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			if err := ma.mapDirectory(srcChildDir, childDstPath); err != nil {
@@ -505,7 +506,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 		case n.NodeTypeFile:
 			srcChildFile, ok := srcChild.(*n.File)
 			if !ok {
-				return n.ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			if err := ma.mapFile(srcChildFile, childDstPath); err != nil {
@@ -514,7 +515,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 		case n.NodeTypeGhost:
 			// remote ghosts are ignored, since they were handled beforehand.
 		default:
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 	}
 
@@ -570,7 +571,7 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, nd n.Node) (n.ModNode, error) {
 
 	reacheableModNd, ok := reacheable.(n.ModNode)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return reacheableModNd, nil
@@ -604,14 +605,14 @@ func (ma *Mapper) handleGhosts() error {
 			// Try to see if we have a node at this path, the next step
 			// of sync then needs to decide if the node needs to be removed.
 			dstNd, err := ma.lkrDst.LookupNode(srcNd.Path())
-			if err != nil && !n.IsNoSuchFileError(err) {
+			if err != nil && !ie.IsNoSuchFileError(err) {
 				return err
 			}
 
 			if dstNd != nil && dstNd.Type() != n.NodeTypeGhost {
 				dstModNd, ok := dstNd.(n.ModNode)
 				if !ok {
-					return n.ErrBadNode
+					return ie.ErrBadNode
 				}
 
 				return ma.fn(MapPair{
@@ -628,7 +629,7 @@ func (ma *Mapper) handleGhosts() error {
 		// At this point we know that the ghost related to a moved file.
 		// Check if we have a file at the same place.
 		dstNd, err := ma.lkrDst.LookupNode(aliveSrcNd.Path())
-		if err != nil && !n.IsNoSuchFileError(err) {
+		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
 
@@ -640,7 +641,7 @@ func (ma *Mapper) handleGhosts() error {
 		}
 
 		dstRefNd, err := ma.lkrDst.LookupNode(srcNd.Path())
-		if err != nil && !n.IsNoSuchFileError(err) {
+		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
 
@@ -657,7 +658,7 @@ func (ma *Mapper) handleGhosts() error {
 
 		dstRefModNd, ok := dstRefNd.(n.ModNode)
 		if !ok {
-			return e.Wrapf(n.ErrBadNode, "dstRefModNd is not a file or directory: %v", dstRefNd)
+			return e.Wrapf(ie.ErrBadNode, "dstRefModNd is not a file or directory: %v", dstRefNd)
 		}
 
 		switch aliveSrcNd.Type() {
@@ -687,7 +688,7 @@ func (ma *Mapper) handleGhosts() error {
 
 			aliveSrcDir, ok := aliveSrcNd.(*n.Directory)
 			if !ok {
-				return n.ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			movedSrcDirs = append(movedSrcDirs, ghostDir{
@@ -697,7 +698,7 @@ func (ma *Mapper) handleGhosts() error {
 
 			return nil
 		default:
-			return e.Wrapf(n.ErrBadNode, "Unexpected type in handle ghosts: %v", err)
+			return e.Wrapf(ie.ErrBadNode, "Unexpected type in handle ghosts: %v", err)
 		}
 	})
 
@@ -763,20 +764,20 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	case n.NodeTypeDirectory:
 		dir, ok := ma.srcRoot.(*n.Directory)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		return ma.mapDirectory(dir, dir.Path())
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		return ma.mapFile(file, file.Path())
 	case n.NodeTypeGhost:
 		return nil
 	default:
-		return e.Wrapf(n.ErrBadNode, "Unexpected type in route(): %v", ma.srcRoot)
+		return e.Wrapf(ie.ErrBadNode, "Unexpected type in route(): %v", ma.srcRoot)
 	}
 }

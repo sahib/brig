@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	e "github.com/pkg/errors"
@@ -238,7 +239,7 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 
 	parDir, ok := par.(*Directory)
 	if !ok {
-		return nil, ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return parDir, nil
@@ -251,14 +252,14 @@ func ContentHash(nd Node) (h.Hash, error) {
 	case NodeTypeFile:
 		file, ok := nd.(*File)
 		if !ok {
-			return nil, e.Wrapf(ErrBadNode, "cannot convert to file")
+			return nil, e.Wrapf(ie.ErrBadNode, "cannot convert to file")
 		}
 
 		return file.Content(), nil
 	case NodeTypeGhost:
 		ghost, ok := nd.(*Ghost)
 		if !ok {
-			return nil, e.Wrapf(ErrBadNode, "cannot convert to ghost")
+			return nil, e.Wrapf(ie.ErrBadNode, "cannot convert to ghost")
 		}
 
 		switch ghost.OldNode().Type() {
@@ -279,5 +280,5 @@ func ContentHash(nd Node) (h.Hash, error) {
 		}
 	}
 
-	return nil, ErrBadNode
+	return nil, ie.ErrBadNode
 }

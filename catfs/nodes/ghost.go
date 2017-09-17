@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
@@ -45,7 +46,7 @@ func (g *Ghost) OldNode() Node {
 func (g *Ghost) OldFile() (*File, error) {
 	file, ok := g.ModNode.(*File)
 	if !ok {
-		return nil, ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return file, nil
@@ -54,7 +55,7 @@ func (g *Ghost) OldFile() (*File, error) {
 func (g *Ghost) OldDirectory() (*Directory, error) {
 	directory, ok := g.ModNode.(*Directory)
 	if !ok {
-		return nil, ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return directory, nil
@@ -108,7 +109,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	case NodeTypeFile:
 		file, ok := g.ModNode.(*File)
 		if !ok {
-			return nil, ErrBadNode
+			return nil, ie.ErrBadNode
 		}
 
 		capfile, err := file.setFileAttrs(seg)
@@ -121,7 +122,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	case NodeTypeDirectory:
 		dir, ok := g.ModNode.(*Directory)
 		if !ok {
-			return nil, ErrBadNode
+			return nil, ie.ErrBadNode
 		}
 
 		capdir, err := dir.setDirectoryAttrs(seg)
@@ -206,7 +207,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		g.oldType = NodeTypeFile
 		base = &file.Base
 	default:
-		return ErrBadNode
+		return ie.ErrBadNode
 	}
 
 	if err := base.parseBaseAttrsFromNode(capnode); err != nil {

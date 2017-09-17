@@ -6,15 +6,25 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
+
+	log "github.com/Sirupsen/logrus"
 
 	c "github.com/disorganizer/brig/catfs/core"
 	"github.com/disorganizer/brig/catfs/db"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	"github.com/disorganizer/brig/catfs/mio"
 	"github.com/disorganizer/brig/catfs/mio/compress"
 	n "github.com/disorganizer/brig/catfs/nodes"
+	"github.com/disorganizer/brig/catfs/vcs"
 	"github.com/disorganizer/brig/util"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
+
+type Person struct {
+	Name string
+	Hash h.Hash
+}
 
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
@@ -27,24 +37,83 @@ import (
 type FS struct {
 	mu sync.Mutex
 
-	kv  db.Database
+	// underlying key/value store
+	kv db.Database
+
+	// linker (holds all nodes together)
 	lkr *c.Linker
-	bk  FsBackend
+
+	// garbage collector for dead metadata links
+	gc *c.GarbageCollector
+
+	// ticker that drives the gc background routine
+	gcTicker *time.Ticker
+
+	// Actual storage backend (e.g. ipfs or memory)
+	bk FsBackend
 }
 
-func NewFilesystem(dbPath, owner string) (*FS, error) {
-	return &FS{}, nil
+func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error) {
+	kv, err := db.NewDiskDatabase(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	lkr := c.NewLinker(kv)
+
+	if err := lkr.SetOwner(n.NewPerson(owner.Name, owner.Hash)); err != nil {
+		return nil, err
+	}
+
+	// Make sure the garbage collector is run in constant time intervals.
+
+	fs := &FS{
+		kv:       kv,
+		lkr:      lkr,
+		gc:       c.NewGarbageCollector(lkr, kv, nil),
+		gcTicker: time.NewTicker(5 * time.Second),
+		bk:       backend,
+	}
+
+	go func() {
+		for timestamp := range fs.gcTicker.C {
+			fs.mu.Lock()
+
+			log.Debugf("gc: running at %v", timestamp)
+			if err := fs.gc.Run(true); err != nil {
+				log.Warnf("failed to run GC: %v", err)
+			}
+
+			fs.mu.Unlock()
+		}
+	}()
+
+	return fs, nil
 }
 
 func (fs *FS) Close() error {
-	return nil
+	// Stop the GC loop
+	fs.gcTicker.Stop()
+	return fs.kv.Close()
 }
 
 func (fs *FS) Export(w io.Writer) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return fs.kv.Export(w)
 }
 
 func (fs *FS) Import(r io.Reader) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	if err := fs.kv.Import(r); err != nil {
+		return err
+	}
+
+	// disk (probably) changed, delete memcache:
+	fs.lkr.MemIndexClear()
 	return nil
 }
 
@@ -52,27 +121,83 @@ func (fs *FS) Import(r io.Reader) error {
 // CORE OPERATIONS //
 /////////////////////
 
+func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
+	nd, err := lkr.LookupNode(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd == nil || nd.Type() == n.NodeTypeGhost {
+		return nil, ie.NoSuchFile(path)
+	}
+
+	modNd, ok := nd.(n.ModNode)
+	if !ok {
+		return nil, ie.ErrBadNode
+	}
+
+	return modNd, nil
+}
+
 func (fs *FS) Move(src, dst string) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	srcNd, err := lookupFileOrDir(fs.lkr, src)
+	if err != nil {
+		return err
+	}
+
+	return c.Move(fs.lkr, srcNd, dst)
 }
 
 func (fs *FS) Mkdir(path string, createParents bool) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	_, err := c.Mkdir(fs.lkr, path, createParents)
+	return err
 }
 
 func (fs *FS) Remove(path string) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	nd, err := lookupFileOrDir(fs.lkr, path)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = c.Remove(fs.lkr, nd, true, true)
+	return err
 }
 
 type NodeInfo struct {
 	Path  string
-	Type  int
 	Size  uint64
 	Inode uint64
+	IsDir bool
 }
 
 func (fs *FS) Stat(path string) (*NodeInfo, error) {
-	return nil, nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	nd, err := fs.lkr.LookupNode(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd.Type() == n.NodeTypeGhost {
+		return nil, ie.NoSuchFile(path)
+	}
+
+	return &NodeInfo{
+		Path:  nd.Path(),
+		IsDir: nd.Type() == n.NodeTypeDirectory,
+		Inode: nd.Inode(),
+		Size:  nd.Size(),
+	}, nil
 }
 
 ////////////////////////
@@ -97,14 +222,23 @@ func (fs *FS) pin(path string, op func(hash h.Hash) error) error {
 }
 
 func (fs *FS) Pin(path string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return fs.pin(path, fs.bk.Pin)
 }
 
 func (fs *FS) Unpin(path string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return fs.pin(path, fs.bk.Unpin)
 }
 
 func (fs *FS) IsPinned(path string) (bool, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	// TODO: What happens for directories?
 	return false, nil
 }
@@ -114,6 +248,9 @@ func (fs *FS) IsPinned(path string) (bool, error) {
 ////////////////////////
 
 func (fs *FS) Touch(path string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
 }
 
@@ -126,7 +263,9 @@ func prefixSlash(s string) string {
 }
 
 func (fs *FS) Stage(path string, r io.Reader) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	path = prefixSlash(path)
 
 	fs.mu.Lock()
@@ -178,12 +317,18 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 // Cat will open a file read-only and expose it's underlying data as stream.
 // If no such path is known or it was deleted, nil is returned as stream.
 func (fs *FS) Cat(path string) (mio.Stream, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return nil, nil
 }
 
 // Open returns a file like object that can be used for modifying a file in memory.
 // If you want to have seekable read-only stream, use Cat(), it has less overhead.
 func (fs *FS) Open(path string) (*Handle, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return nil, nil
 }
 
@@ -195,19 +340,65 @@ func (fs *FS) Open(path string) (*Handle, error) {
 // If no changes were made since the last call to MakeCommit() ErrNoConflict
 // is returned (TODO: move to errors package)
 func (fs *FS) MakeCommit(msg string) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	owner, err := fs.lkr.Owner()
+	if err != nil {
+		return err
+	}
+
+	return fs.lkr.MakeCommit(owner, msg)
+}
+
+type HistEntry struct {
+	Path   string
+	Change string
+	Ref    string
 }
 
 // History returns all modifications of a node with one entry per commit.
-func (fs *FS) History(path string) error {
-	return nil
+func (fs *FS) History(path string) ([]HistEntry, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	nd, err := fs.lkr.LookupModNode(path)
+	if err != nil {
+		return nil, err
+	}
+
+	head, err := fs.lkr.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	hist, err := vcs.History(fs.lkr, nd, head, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := []HistEntry{}
+	for _, change := range hist {
+		entries = append(entries, HistEntry{
+			Path:   change.Curr.Path(),
+			Change: change.Mask.String(),
+			Ref:    change.Head.String(),
+		})
+	}
+
+	return entries, nil
 }
 
 // Sync will synchronize the state of two filesystems.
 // If one of filesystems have unstaged changes, they will be committted first.
 // If our filesystem was changed by Sync(), a new merge commit will also be created.
+//
+// TODO: Provide way to configure sync config.
 func (fs *FS) Sync(remote *FS) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return vcs.Sync(fs.lkr, remote.lkr, nil)
 }
 
 type Diff struct {
@@ -219,16 +410,76 @@ type Diff struct {
 }
 
 func (fs *FS) Diff(remote *FS) (*Diff, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return nil, nil
 }
 
 type LogEntry struct {
+	Ref  string
+	Msg  string
+	Date time.Time
 }
 
 func (fs *FS) Log() ([]LogEntry, error) {
-	return nil, nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	entries := []LogEntry{}
+	err := c.Log(fs.lkr, func(cmt *n.Commit) error {
+		entries = append(entries, LogEntry{
+			Ref:  cmt.Hash().B58String(),
+			Msg:  cmt.Message(),
+			Date: cmt.ModTime(),
+		})
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }
 
 func (fs *FS) Reset(path, rev string) error {
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	nd, err := fs.lkr.LookupNode(path)
+	if err != nil {
+		return err
+	}
+
+	cmt, err := parseRev(fs.lkr, rev)
+	if err != nil {
+		return err
+	}
+
+	return fs.lkr.CheckoutFile(cmt, nd)
+}
+
+func (fs *FS) Checkout(rev string, force bool) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	cmt, err := parseRev(fs.lkr, rev)
+	if err != nil {
+		return err
+	}
+
+	return fs.lkr.CheckoutCommit(cmt, force)
+}
+
+func (fs *FS) Tag(rev, name string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	cmt, err := parseRev(fs.lkr, rev)
+	if err != nil {
+		return err
+	}
+
+	return fs.lkr.SaveRef(rev, cmt)
 }

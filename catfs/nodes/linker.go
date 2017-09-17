@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
@@ -74,7 +75,7 @@ func (ml *MockLinker) LookupNode(path string) (Node, error) {
 		return node, nil
 	}
 
-	return nil, NoSuchFile(path)
+	return nil, ie.NoSuchFile(path)
 }
 
 // NodeByHash will return a previosuly added node (via AddNode) by it's hash.

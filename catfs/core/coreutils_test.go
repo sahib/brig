@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
@@ -189,7 +190,7 @@ func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 		if nd.Type() != n.NodeTypeGhost {
 			t.Fatalf("Source node still exists! (%v): %v", srcPath, nd.Type())
 		}
-	} else if !n.IsNoSuchFileError(err) {
+	} else if !ie.IsNoSuchFileError(err) {
 		t.Fatalf("Looking up source node failed: %v", err)
 	}
 

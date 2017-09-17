@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/disorganizer/brig/catfs/db"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
@@ -178,7 +179,7 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 		t.Fatalf("Failed to get root: %v", err)
 	}
 
-	if err := root.RemoveChild(lkr, file); err != nil && !n.IsNoSuchFileError(err) {
+	if err := root.RemoveChild(lkr, file); err != nil && !ie.IsNoSuchFileError(err) {
 		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
 	}
 

@@ -1,4 +1,4 @@
-package catfs
+package vcs
 
 import (
 	"fmt"

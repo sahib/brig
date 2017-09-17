@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/disorganizer/brig/catfs/db"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
@@ -74,7 +75,7 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 	if recursive && parent != nil {
 		parentCmt, ok := parent.(*n.Commit)
 		if !ok {
-			return n.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		return gc.mark(parentCmt, recursive)
@@ -138,7 +139,7 @@ func (gc *GarbageCollector) findAllMoveLocations(head *n.Commit) ([][]string, er
 
 		parentCmt, ok := parent.(*n.Commit)
 		if !ok {
-			return nil, n.ErrBadNode
+			return nil, ie.ErrBadNode
 		}
 
 		head = parentCmt

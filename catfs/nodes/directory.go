@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
@@ -348,7 +349,7 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	d, ok := node.(*Directory)
 	if !ok {
-		return ErrBadNode
+		return ie.ErrBadNode
 	}
 
 	if !dfs {
@@ -417,7 +418,7 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 		}
 
 		if curr == nil {
-			return nil, NoSuchFile(repoPath)
+			return nil, ie.NoSuchFile(repoPath)
 		}
 	}
 
@@ -460,7 +461,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	if _, ok := d.children[nd.Name()]; ok {
-		return ErrExists
+		return ie.ErrExists
 	}
 
 	nodeSize := nd.Size()
@@ -502,8 +503,6 @@ func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 
 // NotifyMove should be called whenever a node is being moved.
 func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
-	// fmt.Println("NEW PATH", newPath)
-
 	visited := map[string]Node{}
 
 	err := Walk(lkr, d, true, func(child Node) error {
@@ -516,7 +515,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 		case NodeTypeDirectory:
 			childDir, ok := child.(*Directory)
 			if !ok {
-				return ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			if err := d.rehash(lkr, oldChildPath, newChildPath); err != nil {
@@ -530,7 +529,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 		case NodeTypeFile:
 			childFile, ok := child.(*File)
 			if !ok {
-				return ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			if err := childFile.NotifyMove(lkr, oldChildPath, newChildPath); err != nil {
@@ -539,7 +538,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 		case NodeTypeGhost:
 			childGhost, ok := child.(*Ghost)
 			if !ok {
-				return ErrBadNode
+				return ie.ErrBadNode
 			}
 
 			childGhost.SetGhostPath(newChildPath)
@@ -573,7 +572,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 	name := nd.Name()
 	if _, ok := d.children[name]; !ok {
-		return NoSuchFile(name)
+		return ie.NoSuchFile(name)
 	}
 
 	// Unset parent from child:

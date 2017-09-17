@@ -3,6 +3,7 @@ package nodes
 import (
 	"testing"
 
+	ie "github.com/disorganizer/brig/catfs/errors"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -22,7 +23,7 @@ func TestDirectoryBasics(t *testing.T) {
 	}
 	lkr.AddNode(subDir)
 
-	if err := repoDir.Add(lkr, subDir); err != ErrExists {
+	if err := repoDir.Add(lkr, subDir); err != ie.ErrExists {
 		t.Fatalf("Adding sub/ to repo/ worked twice: %v", err)
 	}
 

@@ -761,7 +761,7 @@ func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 
 	snode, ok := node.(n.ModNode)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return snode, nil
@@ -781,7 +781,7 @@ func (lkr *Linker) DirectoryByHash(hash h.Hash) (*n.Directory, error) {
 
 	dir, ok := nd.(*n.Directory)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return dir, nil
@@ -800,7 +800,7 @@ func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
 
 	dir, ok := nd.(*n.Directory)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return dir, nil
@@ -822,7 +822,7 @@ func (lkr *Linker) LookupDirectory(repoPath string) (*n.Directory, error) {
 
 	dir, ok := nd.(*n.Directory)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return dir, nil
@@ -837,7 +837,7 @@ func (lkr *Linker) FileByHash(hash h.Hash) (*n.File, error) {
 
 	file, ok := nd.(*n.File)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return file, nil
@@ -856,7 +856,7 @@ func (lkr *Linker) ResolveFile(filepath string) (*n.File, error) {
 
 	file, ok := nd.(*n.File)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return file, nil
@@ -875,7 +875,7 @@ func (lkr *Linker) LookupFile(repoPath string) (*n.File, error) {
 
 	file, ok := nd.(*n.File)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return file, nil
@@ -894,7 +894,7 @@ func (lkr *Linker) LookupGhost(repoPath string) (*n.Ghost, error) {
 
 	ghost, ok := nd.(*n.Ghost)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return ghost, nil
@@ -914,20 +914,10 @@ func (lkr *Linker) CommitByHash(hash h.Hash) (*n.Commit, error) {
 
 	cmt, ok := nd.(*n.Commit)
 	if !ok {
-		return nil, n.ErrBadNode
+		return nil, ie.ErrBadNode
 	}
 
 	return cmt, nil
-}
-
-// Unstage resets the state of a node back to the last known commited state.
-func (lkr *Linker) Unstage(nd n.Node) error {
-	head, err := lkr.Head()
-	if err != nil {
-		return err
-	}
-
-	return lkr.CheckoutFile(head, nd)
 }
 
 // HaveStagedChanges returns true if there were changes in the staging area.
@@ -1007,7 +997,7 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 	}
 
 	oldNode, err := root.Lookup(lkr, nd.Path())
-	if err != nil && !n.IsNoSuchFileError(err) {
+	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
 
