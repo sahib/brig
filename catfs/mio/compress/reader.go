@@ -7,7 +7,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
 )
 
 type reader struct {
@@ -18,7 +18,7 @@ type reader struct {
 	index []record
 
 	// Buffer holds currently read data; maxChunkSize.
-	chunkBuf *util.ChunkBuffer
+	chunkBuf *chunkbuf.ChunkBuffer
 
 	// Structure with parsed trailer.
 	trailer *trailer
@@ -295,7 +295,7 @@ func (r *reader) readZipChunk() ([]byte, error) {
 		return nil, err
 	}
 
-	r.chunkBuf = util.NewChunkBuffer(decData)
+	r.chunkBuf = chunkbuf.NewChunkBuffer(decData)
 	return decData, nil
 }
 
@@ -306,6 +306,6 @@ func NewReader(r io.ReadSeeker) *reader {
 	return &reader{
 		rawR:      r,
 		decodeBuf: &bytes.Buffer{},
-		chunkBuf:  util.NewChunkBuffer([]byte{}),
+		chunkBuf:  chunkbuf.NewChunkBuffer([]byte{}),
 	}
 }

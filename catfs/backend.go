@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 
 	"github.com/disorganizer/brig/catfs/mio"
-	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
@@ -44,7 +44,7 @@ func (mb *MemFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 		return nil, ErrNoSuchHash{hash}
 	}
 
-	return util.NewChunkBuffer(data), nil
+	return chunkbuf.NewChunkBuffer(data), nil
 }
 
 func (mb *MemFsBackend) Add(r io.Reader) (h.Hash, error) {
