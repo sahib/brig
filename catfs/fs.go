@@ -21,6 +21,7 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
+// TODO: I hate to duplicate that struct here.
 type Person struct {
 	Name string
 	Hash h.Hash
@@ -53,6 +54,76 @@ type FS struct {
 	bk FsBackend
 }
 
+type StatInfo struct {
+	Path  string
+	Size  uint64
+	Inode uint64
+	IsDir bool
+}
+
+type HistEntry struct {
+	Path   string
+	Change string
+	Ref    string
+}
+
+type DiffPair struct {
+	Src StatInfo
+	Dst StatInfo
+}
+
+type Diff struct {
+	Added   []StatInfo
+	Removed []StatInfo
+	Ignored []StatInfo
+
+	Merged   []DiffPair
+	Conflict []DiffPair
+}
+
+// TODO: Decide on naming: rev(ision), refname and tag.
+type LogEntry struct {
+	Hash h.Hash
+	Msg  string
+	Name string
+	Date time.Time
+}
+
+/////////////////////
+// UTILITY HELPERS //
+/////////////////////
+
+func nodeToStat(nd n.Node) *StatInfo {
+	return &StatInfo{
+		Path:  nd.Path(),
+		IsDir: nd.Type() == n.NodeTypeDirectory,
+		Inode: nd.Inode(),
+		Size:  nd.Size(),
+	}
+}
+
+func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
+	nd, err := lkr.LookupNode(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if nd == nil || nd.Type() == n.NodeTypeGhost {
+		return nil, ie.NoSuchFile(path)
+	}
+
+	modNd, ok := nd.(n.ModNode)
+	if !ok {
+		return nil, ie.ErrBadNode
+	}
+
+	return modNd, nil
+}
+
+///////////////////////////////
+// ACTUAL API IMPLEMENTATION //
+///////////////////////////////
+
 func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error) {
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
@@ -60,7 +131,9 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error)
 	}
 
 	lkr := c.NewLinker(kv)
-	if err := lkr.SetOwner(n.NewPerson(owner.Name, owner.Hash)); err != nil {
+
+	person := n.NewPerson(owner.Name, owner.Hash)
+	if err := lkr.SetOwner(person); err != nil {
 		return nil, err
 	}
 
@@ -118,24 +191,6 @@ func (fs *FS) Import(r io.Reader) error {
 // CORE OPERATIONS //
 /////////////////////
 
-func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
-	nd, err := lkr.LookupNode(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if nd == nil || nd.Type() == n.NodeTypeGhost {
-		return nil, ie.NoSuchFile(path)
-	}
-
-	modNd, ok := nd.(n.ModNode)
-	if !ok {
-		return nil, ie.ErrBadNode
-	}
-
-	return modNd, nil
-}
-
 func (fs *FS) Move(src, dst string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -169,14 +224,7 @@ func (fs *FS) Remove(path string) error {
 	return err
 }
 
-type NodeInfo struct {
-	Path  string
-	Size  uint64
-	Inode uint64
-	IsDir bool
-}
-
-func (fs *FS) Stat(path string) (*NodeInfo, error) {
+func (fs *FS) Stat(path string) (*StatInfo, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -189,12 +237,7 @@ func (fs *FS) Stat(path string) (*NodeInfo, error) {
 		return nil, ie.NoSuchFile(path)
 	}
 
-	return &NodeInfo{
-		Path:  nd.Path(),
-		IsDir: nd.Type() == n.NodeTypeDirectory,
-		Inode: nd.Inode(),
-		Size:  nd.Size(),
-	}, nil
+	return nodeToStat(nd), nil
 }
 
 ////////////////////////
@@ -317,7 +360,17 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return nil, nil
+	file, err := fs.lkr.LookupFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	rawStream, err := fs.bk.Cat(file.Content())
+	if err != nil {
+		return nil, err
+	}
+
+	return mio.NewOutStream(rawStream, file.Key())
 }
 
 // Open returns a file like object that can be used for modifying a file in memory.
@@ -326,7 +379,12 @@ func (fs *FS) Open(path string) (*Handle, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return nil, nil
+	file, err := fs.lkr.LookupFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return newHandle(file), nil
 }
 
 ////////////////////
@@ -346,12 +404,6 @@ func (fs *FS) MakeCommit(msg string) error {
 	}
 
 	return fs.lkr.MakeCommit(owner, msg)
-}
-
-type HistEntry struct {
-	Path   string
-	Change string
-	Ref    string
 }
 
 // History returns all modifications of a node with one entry per commit.
@@ -398,48 +450,86 @@ func (fs *FS) Sync(remote *FS) error {
 	return vcs.Sync(fs.lkr, remote.lkr, nil)
 }
 
-type Diff struct {
-	Ignored  map[string]*NodeInfo
-	Removed  map[string]*NodeInfo
-	Added    map[string]*NodeInfo
-	Merged   map[string]*NodeInfo
-	Conflict map[string]*NodeInfo
-}
-
-func (fs *FS) Diff(remote *FS) (*Diff, error) {
+func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return nil, nil
-}
+	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, nil)
+	if err != nil {
+		return nil, err
+	}
 
-// TODO: Add refname to
-// TODO: Decide on naming: rev(ision), refname and tag.
-type LogEntry struct {
-	Ref  string
-	Msg  string
-	Date time.Time
+	// "fake" is the diff that we give to the outside.
+	// Internally we have a bit more knowledge.
+	fakeDiff := &Diff{}
+
+	// Convert the simple slice parts:
+	for _, nd := range realDiff.Added {
+		fakeDiff.Added = append(fakeDiff.Added, *nodeToStat(nd))
+	}
+
+	for _, nd := range realDiff.Ignored {
+		fakeDiff.Ignored = append(fakeDiff.Added, *nodeToStat(nd))
+	}
+
+	for _, nd := range realDiff.Removed {
+		fakeDiff.Removed = append(fakeDiff.Removed, *nodeToStat(nd))
+	}
+
+	for _, pair := range realDiff.Merged {
+		fakeDiff.Merged = append(fakeDiff.Merged, DiffPair{
+			Src: *nodeToStat(pair.Src),
+			Dst: *nodeToStat(pair.Dst),
+		})
+	}
+
+	for _, pair := range realDiff.Conflict {
+		fakeDiff.Conflict = append(fakeDiff.Conflict, DiffPair{
+			Src: *nodeToStat(pair.Src),
+			Dst: *nodeToStat(pair.Dst),
+		})
+	}
+
+	return nil, nil
 }
 
 func (fs *FS) Log() ([]LogEntry, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	entries := []LogEntry{}
-	err := c.Log(fs.lkr, func(cmt *n.Commit) error {
-		entries = append(entries, LogEntry{
-			Ref:  cmt.Hash().B58String(),
-			Msg:  cmt.Message(),
-			Date: cmt.ModTime(),
-		})
-		return nil
-	})
-
+	names, err := fs.lkr.ListRefs()
 	if err != nil {
 		return nil, err
 	}
 
-	return entries, nil
+	hashToRef := make(map[string]string)
+
+	for _, name := range names {
+		cmtNd, err := fs.lkr.ResolveRef(name)
+		if err != nil {
+			return nil, err
+		}
+
+		hashToRef[cmtNd.Hash().B58String()] = name
+	}
+
+	entries := []LogEntry{}
+	return entries, c.Log(fs.lkr, func(cmt *n.Commit) error {
+		// Figure out if this commit was tagged with a certain refname.
+		refname := ""
+		if name, ok := hashToRef[cmt.Hash().B58String()]; ok {
+			refname = name
+		}
+
+		entries = append(entries, LogEntry{
+			Hash: cmt.Hash().Clone(),
+			Msg:  cmt.Message(),
+			Name: refname,
+			Date: cmt.ModTime(),
+		})
+
+		return nil
+	})
 }
 
 func (fs *FS) Reset(path, rev string) error {

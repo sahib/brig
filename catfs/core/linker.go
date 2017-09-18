@@ -556,6 +556,25 @@ func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 	return batch.Flush()
 }
 
+// ListRefs lists all currently known refs.
+func (lkr *Linker) ListRefs() ([]string, error) {
+	refs := []string{}
+	walker := func(key []string) error {
+		if len(key) <= 1 {
+			return nil
+		}
+
+		refs = append(refs, key[1])
+		return nil
+	}
+
+	if err := lkr.kv.Keys(walker, "refs"); err != nil {
+		return nil, err
+	}
+
+	return refs, nil
+}
+
 // Head is just a shortcut for ResolveRef("HEAD").
 func (lkr *Linker) Head() (*n.Commit, error) {
 	nd, err := lkr.ResolveRef("HEAD")
