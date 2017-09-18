@@ -60,12 +60,9 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error)
 	}
 
 	lkr := c.NewLinker(kv)
-
 	if err := lkr.SetOwner(n.NewPerson(owner.Name, owner.Hash)); err != nil {
 		return nil, err
 	}
-
-	// Make sure the garbage collector is run in constant time intervals.
 
 	fs := &FS{
 		kv:       kv,
@@ -416,6 +413,8 @@ func (fs *FS) Diff(remote *FS) (*Diff, error) {
 	return nil, nil
 }
 
+// TODO: Add refname to
+// TODO: Decide on naming: rev(ision), refname and tag.
 type LogEntry struct {
 	Ref  string
 	Msg  string
