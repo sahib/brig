@@ -35,6 +35,7 @@ type MemFsBackend struct {
 func NewMemFsBackend() *MemFsBackend {
 	return &MemFsBackend{
 		data: make(map[string][]byte),
+		pins: make(map[string]bool),
 	}
 }
 

@@ -440,6 +440,19 @@ func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
 		return err
 	}
 
+	// Check if we have already tagged the initial commit.
+	if _, err := lkr.ResolveRef("INIT"); err != nil {
+		if !ie.IsErrNoSuchRef(err) {
+			// Some other error happened.
+			return err
+		}
+
+		// This is probably the first commit. Tag it.
+		if err := lkr.SaveRef("INIT", status); err != nil {
+			return err
+		}
+	}
+
 	// Fixate the moved paths in the stage:
 	if err := lkr.commitMoveMapping(status, exportedInodes); err != nil {
 		return err
@@ -529,11 +542,20 @@ func (lkr *Linker) SetOwner(owner *n.Person) error {
 // there are no technical restrictions on which node typ to use.
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	refname = strings.ToLower(refname)
+
+	// Special case: the status commit is not part of the normal object store.
+	// Still make it able to resolve it by it's refname "curr".
+	if refname == "curr" || refname == "status" {
+		return lkr.Status()
+	}
+
 	b58Hash, err := lkr.kv.Get("refs", refname)
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
 	}
 
+	// status, _ := lkr.Status()
+	// fmt.Println("HASH", string(b58Hash), status.Hash().B58String())
 	if len(b58Hash) == 0 {
 		return nil, ie.ErrNoSuchRef(refname)
 	}
@@ -560,11 +582,11 @@ func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 func (lkr *Linker) ListRefs() ([]string, error) {
 	refs := []string{}
 	walker := func(key []string) error {
-		if len(key) <= 1 {
+		if len(key) <= 2 {
 			return nil
 		}
 
-		refs = append(refs, key[1])
+		refs = append(refs, key[2])
 		return nil
 	}
 

@@ -405,7 +405,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 }
 
 func Log(lkr *Linker, fn func(cmt *n.Commit) error) error {
-	curr, err := lkr.Head()
+	curr, err := lkr.Status()
 	if err != nil {
 		return err
 	}

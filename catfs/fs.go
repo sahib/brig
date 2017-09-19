@@ -3,6 +3,7 @@ package catfs
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -56,6 +57,7 @@ type FS struct {
 
 type StatInfo struct {
 	Path  string
+	Hash  h.Hash
 	Size  uint64
 	Inode uint64
 	IsDir bool
@@ -64,7 +66,7 @@ type StatInfo struct {
 type HistEntry struct {
 	Path   string
 	Change string
-	Ref    string
+	Ref    h.Hash
 }
 
 type DiffPair struct {
@@ -85,7 +87,7 @@ type Diff struct {
 type LogEntry struct {
 	Hash h.Hash
 	Msg  string
-	Name string
+	Tags []string
 	Date time.Time
 }
 
@@ -96,6 +98,7 @@ type LogEntry struct {
 func nodeToStat(nd n.Node) *StatInfo {
 	return &StatInfo{
 		Path:  nd.Path(),
+		Hash:  nd.Hash().Clone(),
 		IsDir: nd.Type() == n.NodeTypeDirectory,
 		Inode: nd.Inode(),
 		Size:  nd.Size(),
@@ -146,15 +149,16 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error)
 	}
 
 	go func() {
-		for timestamp := range fs.gcTicker.C {
+		for range fs.gcTicker.C {
 			fs.mu.Lock()
 
-			log.Debugf("gc: running at %v", timestamp)
+			log.Debugf("gc: running")
 			if err := fs.gc.Run(true); err != nil {
 				log.Warnf("failed to run GC: %v", err)
 			}
 
 			fs.mu.Unlock()
+
 		}
 	}()
 
@@ -308,9 +312,6 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 
 	path = prefixSlash(path)
 
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
 	// Control how many bytes are written to the encryption layer:
 	sizeAcc := &util.SizeAccumulator{}
 	teeR := io.TeeReader(r, sizeAcc)
@@ -413,11 +414,13 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 
 	nd, err := fs.lkr.LookupModNode(path)
 	if err != nil {
+		fmt.Println("LOokup")
 		return nil, err
 	}
 
 	head, err := fs.lkr.Head()
 	if err != nil {
+		fmt.Println("head", err)
 		return nil, err
 	}
 
@@ -431,7 +434,7 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 		entries = append(entries, HistEntry{
 			Path:   change.Curr.Path(),
 			Change: change.Mask.String(),
-			Ref:    change.Head.String(),
+			Ref:    change.Head.Hash().Clone(),
 		})
 	}
 
@@ -502,29 +505,26 @@ func (fs *FS) Log() ([]LogEntry, error) {
 		return nil, err
 	}
 
-	hashToRef := make(map[string]string)
+	hashToRef := make(map[string][]string)
 
 	for _, name := range names {
-		cmtNd, err := fs.lkr.ResolveRef(name)
+		cmt, err := fs.lkr.ResolveRef(name)
 		if err != nil {
 			return nil, err
 		}
 
-		hashToRef[cmtNd.Hash().B58String()] = name
+		if cmt != nil {
+			key := cmt.Hash().B58String()
+			hashToRef[key] = append(hashToRef[key], name)
+		}
 	}
 
 	entries := []LogEntry{}
 	return entries, c.Log(fs.lkr, func(cmt *n.Commit) error {
-		// Figure out if this commit was tagged with a certain refname.
-		refname := ""
-		if name, ok := hashToRef[cmt.Hash().B58String()]; ok {
-			refname = name
-		}
-
 		entries = append(entries, LogEntry{
 			Hash: cmt.Hash().Clone(),
 			Msg:  cmt.Message(),
-			Name: refname,
+			Tags: hashToRef[cmt.Hash().B58String()],
 			Date: cmt.ModTime(),
 		})
 
@@ -561,6 +561,15 @@ func (fs *FS) Checkout(rev string, force bool) error {
 	return fs.lkr.CheckoutCommit(cmt, force)
 }
 
+// Tag saves a human readable name for the revision pointed to by `rev`.
+// There are three pre-defined tags available:
+//
+// - HEAD: The last full commit.
+// - CURR: The current commit (== staging commit)
+// - INIT: the initial commit.
+//
+// The tagname is case-insensitive.
+// See TODO for more details on what is allowed as `rev`.
 func (fs *FS) Tag(rev, name string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -570,5 +579,5 @@ func (fs *FS) Tag(rev, name string) error {
 		return err
 	}
 
-	return fs.lkr.SaveRef(rev, cmt)
+	return fs.lkr.SaveRef(name, cmt)
 }
