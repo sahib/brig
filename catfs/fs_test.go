@@ -403,4 +403,61 @@ func TestMakeDiff(t *testing.T) {
 	})
 }
 
-// TODO: Export/Import, Sync, Diff, Pinning, Open
+func TestPin(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/x"))
+		require.Nil(t, fs.Touch("/y"))
+
+		isPinned, err := fs.IsPinned("/x")
+		require.Nil(t, err)
+		require.False(t, isPinned)
+
+		require.Nil(t, fs.Pin("/x"))
+
+		isPinned, err = fs.IsPinned("/x")
+		require.Nil(t, err)
+		require.True(t, isPinned)
+
+		isPinned, err = fs.IsPinned("/")
+		require.Nil(t, err)
+		require.False(t, isPinned)
+
+		require.Nil(t, fs.Pin("/"))
+
+		isPinned, err = fs.IsPinned("/")
+		require.Nil(t, err)
+		require.True(t, isPinned)
+
+		require.Nil(t, fs.Unpin("/"))
+
+		isPinned, err = fs.IsPinned("/")
+		require.Nil(t, err)
+		require.False(t, isPinned)
+
+		isPinned, err = fs.IsPinned("/x")
+		require.Nil(t, err)
+		require.False(t, isPinned)
+	})
+}
+
+func TestMkdir(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		err := fs.Mkdir("/a/b/c/d", false)
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		err = fs.Mkdir("/a/b/c/d", true)
+		require.Nil(t, err)
+
+		// Check that it still works if the directory exists
+		err = fs.Mkdir("/a/b/c/d", false)
+		require.Nil(t, err)
+
+		err = fs.Mkdir("/a/b/c/d", true)
+		require.Nil(t, err)
+
+		err = fs.Mkdir("/a/b/c", false)
+		require.Nil(t, err)
+	})
+}
+
+// TODO: Open, Touch, Move

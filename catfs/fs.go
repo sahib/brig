@@ -3,6 +3,7 @@ package catfs
 import (
 	"bytes"
 	"crypto/rand"
+	"errors"
 	"io"
 	"strings"
 	"sync"
@@ -255,7 +256,7 @@ func (fs *FS) pin(path string, op func(hash h.Hash) error) error {
 
 	return n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
-			if err := op(nd.Hash()); err != nil {
+			if err := op(child.Hash()); err != nil {
 				return err
 			}
 		}
@@ -278,19 +279,68 @@ func (fs *FS) Unpin(path string) error {
 	return fs.pin(path, fs.bk.Unpin)
 }
 
+var errNotPinnedSentinel = errors.New("not pinned")
+
+// IsPinned returns true for files and directories that are pinned.
+// A directory only counts as pinned if all files and directories
+// in it are also pinned.
 func (fs *FS) IsPinned(path string) (bool, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	// TODO: What happens for directories?
-	return false, nil
+	nd, err := fs.lkr.LookupNode(path)
+	if err != nil {
+		return false, err
+	}
+
+	err = n.Walk(fs.lkr, nd, true, func(child n.Node) error {
+		if child.Type() == n.NodeTypeFile {
+			isPinned, err := fs.bk.IsPinned(child.Hash())
+			if err != nil {
+				return err
+			}
+
+			// Return a special error here to stop Walk() iterating.
+			// One file is enough to stop IsPinned() from being true.
+			if !isPinned {
+				return errNotPinnedSentinel
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil && err != errNotPinnedSentinel {
+		return false, err
+	}
+
+	return err != errNotPinnedSentinel, nil
 }
 
 ////////////////////////
 // STAGING OPERATIONS //
 ////////////////////////
 
+// Touch creates an empty file at `path` if it does not exist yet.
+// If it exists, it's mod time is being updated to the current time.
 func (fs *FS) Touch(path string) error {
+	nd, err := fs.lkr.LookupNode(path)
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
+	}
+
+	if nd != nil {
+		modNd, ok := nd.(n.ModNode)
+		if !ok {
+			// Probably a ghost node.
+			return nil
+		}
+
+		modNd.SetModTime(time.Now())
+		return nil
+	}
+
+	// Notthing there, stage an empty file.
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
 }
 
