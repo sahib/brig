@@ -17,8 +17,10 @@ type Diff struct {
 
 	// Nodes that were added from remote.
 	Added []n.ModNode
+
 	// Nodes that will be removed on remote side.
 	Removed []n.ModNode
+
 	// Nodes from remote that were ignored.
 	Ignored []n.ModNode
 
@@ -62,7 +64,7 @@ func (df *Diff) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) 
 }
 
 func (df *Diff) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
-	df.Conflict = append(df.Conflict, DiffPair{
+	df.Merged = append(df.Merged, DiffPair{
 		Src:     src,
 		Dst:     dst,
 		SrcMask: srcMask,
@@ -77,6 +79,10 @@ func (df *Diff) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) err
 // Internally it works like Sync() but does not modify anything and just
 // merely records what the algorithm decided to do.
 func MakeDiff(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) (*Diff, error) {
+	if cfg == nil {
+		cfg = DefaultSyncConfig
+	}
+
 	diff := &Diff{cfg: cfg}
 	rsv := newResolver(lkrSrc, lkrDst, diff)
 	if err := rsv.resolve(); err != nil {

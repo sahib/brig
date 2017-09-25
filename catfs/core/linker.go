@@ -554,8 +554,6 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 		return nil, err
 	}
 
-	// status, _ := lkr.Status()
-	// fmt.Println("HASH", string(b58Hash), status.Hash().B58String())
 	if len(b58Hash) == 0 {
 		return nil, ie.ErrNoSuchRef(refname)
 	}
@@ -971,7 +969,6 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 
 	if ie.IsErrNoSuchRef(err) {
 		// There is no HEAD yet. Assume we have changes.
-		fmt.Println("no head")
 		return true, nil
 	}
 
@@ -1078,12 +1075,18 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 			return err
 		}
 
-		if err := par.Add(lkr, oldNode); err != nil {
-			return err
+		// old Node might not have yet existed back then.
+		// If so, simply do not re-add it.
+		if oldNode != nil {
+			if err := par.Add(lkr, oldNode); err != nil {
+				return err
+			}
+
+			return lkr.StageNode(oldNode)
 		}
 	}
 
-	return lkr.StageNode(oldNode)
+	return nil
 }
 
 // AddMoveMapping takes note that the the node `from` has been moved to `to`

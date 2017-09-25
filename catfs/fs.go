@@ -3,7 +3,6 @@ package catfs
 import (
 	"bytes"
 	"crypto/rand"
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -292,9 +291,6 @@ func (fs *FS) IsPinned(path string) (bool, error) {
 ////////////////////////
 
 func (fs *FS) Touch(path string) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
 }
 
@@ -362,6 +358,10 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 	defer fs.mu.Unlock()
 
 	file, err := fs.lkr.LookupFile(path)
+	if err == ie.ErrBadNode {
+		return nil, ie.NoSuchFile(path)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -407,6 +407,18 @@ func (fs *FS) MakeCommit(msg string) error {
 	return fs.lkr.MakeCommit(owner, msg)
 }
 
+func (fs *FS) Head() (string, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	head, err := fs.lkr.Head()
+	if err != nil {
+		return "", err
+	}
+
+	return head.Hash().B58String(), nil
+}
+
 // History returns all modifications of a node with one entry per commit.
 func (fs *FS) History(path string) ([]HistEntry, error) {
 	fs.mu.Lock()
@@ -414,13 +426,11 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 
 	nd, err := fs.lkr.LookupModNode(path)
 	if err != nil {
-		fmt.Println("LOokup")
 		return nil, err
 	}
 
 	head, err := fs.lkr.Head()
 	if err != nil {
-		fmt.Println("head", err)
 		return nil, err
 	}
 
@@ -450,7 +460,7 @@ func (fs *FS) Sync(remote *FS) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return vcs.Sync(fs.lkr, remote.lkr, nil)
+	return vcs.Sync(remote.lkr, fs.lkr, nil)
 }
 
 func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
@@ -479,6 +489,7 @@ func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
 		fakeDiff.Removed = append(fakeDiff.Removed, *nodeToStat(nd))
 	}
 
+	// And also convert the slightly more complex pairs:
 	for _, pair := range realDiff.Merged {
 		fakeDiff.Merged = append(fakeDiff.Merged, DiffPair{
 			Src: *nodeToStat(pair.Src),
@@ -493,9 +504,11 @@ func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
 		})
 	}
 
-	return nil, nil
+	return fakeDiff, nil
 }
 
+// Log returns a list of commits starting with the staging commit until the
+// initial commit. For each commit, metadata is collected.
 func (fs *FS) Log() ([]LogEntry, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

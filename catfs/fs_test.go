@@ -179,6 +179,7 @@ func TestStage(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Equal(t, data, tc)
+				require.Nil(t, stream.Close())
 			})
 		})
 	}
@@ -186,14 +187,13 @@ func TestStage(t *testing.T) {
 
 func TestHistory(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
-		fs.MakeCommit("hello")
-
+		require.Nil(t, fs.MakeCommit("hello"))
 		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1})))
-		fs.MakeCommit("1")
+		require.Nil(t, fs.MakeCommit("1"))
 		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{2})))
-		fs.MakeCommit("2")
+		require.Nil(t, fs.MakeCommit("2"))
 		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{3})))
-		fs.MakeCommit("3")
+		require.Nil(t, fs.MakeCommit("3"))
 
 		hist, err := fs.History("/x")
 		require.Nil(t, err)
@@ -221,3 +221,186 @@ func TestHistory(t *testing.T) {
 		}
 	})
 }
+
+func mustReadPath(t *testing.T, fs *FS, path string) []byte {
+	stream, err := fs.Cat(path)
+	require.Nil(t, err)
+
+	data, err := ioutil.ReadAll(stream)
+	require.Nil(t, err)
+
+	return data
+}
+
+func TestReset(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.MakeCommit("hello"))
+
+		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1})))
+		require.Nil(t, fs.MakeCommit("1"))
+
+		// Modify on stage:
+		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{2})))
+		require.Nil(t, fs.Reset("/x", "HEAD"))
+
+		data := mustReadPath(t, fs, "/x")
+		require.Equal(t, data[0], byte(1))
+		if err := fs.MakeCommit("2"); err != ie.ErrNoChange {
+			t.Fatalf("Reset did not clearly reset stuff... (something changed)")
+		}
+
+		// Remove the file and then reset it (like git checkout -- file)
+		require.Nil(t, fs.Remove("/x"))
+		if _, err := fs.Cat("/x"); !ie.IsNoSuchFileError(err) {
+			t.Fatalf("Something wrong with removed node")
+		}
+
+		require.Nil(t, fs.Reset("/x", "HEAD"))
+		data = mustReadPath(t, fs, "/x")
+		require.Equal(t, data[0], byte(1))
+
+		// Reset to something non-existing -> error.
+		require.NotNil(t, fs.Reset("/x", "DEADBEEF"))
+
+		// Reset to the very first commit - node did not exist back then.
+		require.Nil(t, fs.Reset("/x", "INIT"))
+
+		// Should not exist anymore currently.
+		_, err := fs.Stat("/x")
+		require.True(t, ie.IsNoSuchFileError(err))
+	})
+}
+
+func TestCheckout(t *testing.T) {
+	// TODO: Skip
+	t.Skip("Test fails due to buggy lkr.CheckoutComit; fix later")
+
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.MakeCommit("hello"))
+
+		require.Nil(t, fs.Touch("/x"))
+		require.Nil(t, fs.Touch("/y"))
+		require.Nil(t, fs.Touch("/z"))
+
+		require.Nil(t, fs.Remove("/y"))
+		require.Nil(t, fs.Move("/z", "/a"))
+
+		require.Nil(t, fs.MakeCommit("world"))
+		world, err := fs.Head()
+		require.Nil(t, err)
+
+		require.Nil(t, fs.Touch("/new"))
+
+		err = fs.Checkout(world, false)
+		require.Equal(t, err, ie.ErrStageNotEmpty)
+
+		err = fs.Checkout(world, true)
+		require.Nil(t, err)
+
+		info, err := fs.Stat("/new")
+		fmt.Println(info, err)
+		require.True(t, ie.IsNoSuchFileError(err))
+	})
+}
+
+func TestExportImport(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.MakeCommit("hello world"))
+
+		// Add a single file:
+		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1, 2, 3})))
+		require.Nil(t, fs.MakeCommit("touchy touchy"))
+
+		// Stage something to see if this will also be exported
+		// (it most defintely should)
+		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{3, 2, 1})))
+
+		mem := &bytes.Buffer{}
+		require.Nil(t, fs.Export(mem))
+
+		fmt.Println(mem.Len())
+
+		// Check if we can import all this data:
+		withDummyFS(t, func(newFs *FS) {
+			require.Nil(t, fs.Import(mem))
+
+			stream, err := fs.Cat("/x")
+			require.Nil(t, err)
+
+			data, err := ioutil.ReadAll(stream)
+			require.Nil(t, err)
+			require.Equal(t, []byte{3, 2, 1}, data)
+		})
+	})
+}
+
+func TestSync(t *testing.T) {
+	// There are a lot more tests in vcs/*
+	// This is only a test to see if the high-level api is working.
+	withDummyFS(t, func(fsa *FS) {
+		require.Nil(t, fsa.MakeCommit("hello a"))
+		withDummyFS(t, func(fsb *FS) {
+			require.Nil(t, fsb.MakeCommit("hello b"))
+			require.Nil(t, fsa.Sync(fsb))
+
+			require.Nil(t, fsb.Touch("/x"))
+			require.Nil(t, fsb.Touch("/y"))
+			require.Nil(t, fsb.Touch("/z"))
+
+			// Actually sync the results:
+			require.Nil(t, fsa.Sync(fsb))
+
+			info, err := fsa.Stat("/x")
+			require.Nil(t, err)
+			require.Equal(t, info.Path, "/x")
+
+			info, err = fsa.Stat("/y")
+			require.Nil(t, err)
+			require.Equal(t, info.Path, "/y")
+
+			info, err = fsa.Stat("/z")
+			require.Nil(t, err)
+			require.Equal(t, info.Path, "/z")
+		})
+	})
+}
+
+func TestMakeDiff(t *testing.T) {
+	// There are a lot more tests in vcs/*
+	// This is only a test for the high-level api.
+	withDummyFS(t, func(fsa *FS) {
+		fsaX := c.MustTouch(t, fsa.lkr, "/x", 1)
+		fsaY := c.MustTouch(t, fsa.lkr, "/y", 2)
+		fsaZ := c.MustTouch(t, fsa.lkr, "/z", 3)
+
+		require.Nil(t, fsa.MakeCommit("hello a"))
+		withDummyFS(t, func(fsb *FS) {
+			require.Nil(t, fsb.MakeCommit("hello b"))
+			require.Nil(t, fsa.Sync(fsb))
+
+			fsbX := c.MustTouch(t, fsb.lkr, "/x", 4)
+			c.MustTouch(t, fsb.lkr, "/y", 5)
+			fsbZ := c.MustTouch(t, fsb.lkr, "/z", 6)
+			fsbA := c.MustTouch(t, fsb.lkr, "/a", 7)
+
+			require.Nil(t, fsb.MakeCommit("stuff"))
+			require.Nil(t, fsb.Remove("/y"))
+			require.Nil(t, fsb.MakeCommit("before diff"))
+
+			diff, err := fsa.MakeDiff(fsb)
+			require.Nil(t, err)
+
+			require.Equal(t, diff.Added, []StatInfo{*nodeToStat(fsbA)})
+			require.Equal(t, diff.Removed, []StatInfo{*nodeToStat(fsaY)})
+			require.Equal(t, diff.Merged, []DiffPair{{
+				Src: *nodeToStat(fsbX),
+				Dst: *nodeToStat(fsaX),
+			}, {
+				Src: *nodeToStat(fsbZ),
+				Dst: *nodeToStat(fsaZ),
+			}})
+		})
+	})
+}
+
+// TODO: Export/Import, Sync, Diff, Pinning, Open

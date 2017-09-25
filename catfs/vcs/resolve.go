@@ -48,6 +48,7 @@ import (
 	c "github.com/disorganizer/brig/catfs/core"
 	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
+	"github.com/disorganizer/brig/util"
 	e "github.com/pkg/errors"
 )
 
@@ -212,7 +213,7 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 
 	var srcMask, dstMask ChangeType
 	srcRoot := len(srcHist)
-	dstRoot := len(srcHist)
+	dstRoot := len(dstHist)
 
 	for srcIdx, srcChange := range srcHist {
 		for dstIdx, dstChange := range dstHist {
@@ -226,14 +227,16 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		}
 	}
 
-	srcChanges := srcHist[:srcRoot]
-	dstChanges := dstHist[:dstRoot]
+	// Make sure that enough commits are on both sides
+	// (or assume that
+	srcChanges := srcHist[:util.Clamp(srcRoot, 0, len(srcHist)-1)]
+	dstChanges := dstHist[:util.Clamp(dstRoot, 0, len(dstHist)-1)]
 
 	// Handle a few lucky cases:
 	if len(srcChanges) > 0 && len(dstChanges) == 0 {
 		// We can "fast forward" our node.
 		// There are only remote changes for this file.
-		fmt.Println("fast forward")
+		fmt.Println("fast forward", src.Path(), dst.Path())
 		return false, 0, 0, nil
 
 	}

@@ -16,7 +16,9 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 	if err != nil {
 		hash, err := h.FromB58String(rev)
 		if err != nil {
-			return nil, err
+			// If the file was not a valid refname
+			// and the hash conversion failed it's probably invalid.
+			return nil, ie.ErrNoSuchRef(rev)
 		}
 
 		cmt, err := lkr.CommitByHash(hash)
@@ -33,9 +35,4 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 	}
 
 	return cmt, nil
-}
-
-// validaRefname will return an error if `name` is an invalid refname.
-func validateRefname(name string) error {
-	return nil
 }
