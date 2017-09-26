@@ -84,7 +84,7 @@ func String(a AlgorithmType) string {
 	return algo
 }
 
-func FromString(s string) (AlgorithmType, error) {
+func AlgoFromString(s string) (AlgorithmType, error) {
 	algoType, ok := StringToAlgo[s]
 	if !ok {
 		return 0, errors.New("Invalid algorithm name")

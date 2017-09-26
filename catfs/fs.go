@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -15,7 +16,6 @@ import (
 	"github.com/disorganizer/brig/catfs/db"
 	ie "github.com/disorganizer/brig/catfs/errors"
 	"github.com/disorganizer/brig/catfs/mio"
-	"github.com/disorganizer/brig/catfs/mio/compress"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	"github.com/disorganizer/brig/catfs/vcs"
 	"github.com/disorganizer/brig/util"
@@ -53,14 +53,18 @@ type FS struct {
 
 	// Actual storage backend (e.g. ipfs or memory)
 	bk FsBackend
+
+	// internal config
+	cfg *config
 }
 
 type StatInfo struct {
-	Path  string
-	Hash  h.Hash
-	Size  uint64
-	Inode uint64
-	IsDir bool
+	Path    string
+	Hash    h.Hash
+	Size    uint64
+	Inode   uint64
+	IsDir   bool
+	ModTime time.Time
 }
 
 type HistEntry struct {
@@ -83,7 +87,7 @@ type Diff struct {
 	Conflict []DiffPair
 }
 
-// TODO: Decide on naming: rev(ision), refname and tag.
+// TODO: Decide on naming: rev(ision), refname or tag.
 type LogEntry struct {
 	Hash h.Hash
 	Msg  string
@@ -97,11 +101,12 @@ type LogEntry struct {
 
 func nodeToStat(nd n.Node) *StatInfo {
 	return &StatInfo{
-		Path:  nd.Path(),
-		Hash:  nd.Hash().Clone(),
-		IsDir: nd.Type() == n.NodeTypeDirectory,
-		Inode: nd.Inode(),
-		Size:  nd.Size(),
+		Path:    nd.Path(),
+		Hash:    nd.Hash().Clone(),
+		ModTime: nd.ModTime(),
+		IsDir:   nd.Type() == n.NodeTypeDirectory,
+		Inode:   nd.Inode(),
+		Size:    nd.Size(),
 	}
 }
 
@@ -127,7 +132,12 @@ func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
 // ACTUAL API IMPLEMENTATION //
 ///////////////////////////////
 
-func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error) {
+func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config) (*FS, error) {
+	vfg, err := cfg.parseConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse config: %v", err)
+	}
+
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
 		return nil, err
@@ -146,6 +156,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person) (*FS, error)
 		gc:       c.NewGarbageCollector(lkr, kv, nil),
 		gcTicker: time.NewTicker(5 * time.Second),
 		bk:       backend,
+		cfg:      vfg,
 	}
 
 	go func() {
@@ -367,7 +378,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	stream, err := mio.NewInStream(teeR, key, compress.AlgoSnappy)
+	stream, err := mio.NewInStream(teeR, key, fs.cfg.compressAlgo)
 	if err != nil {
 		return err
 	}
@@ -510,14 +521,14 @@ func (fs *FS) Sync(remote *FS) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return vcs.Sync(remote.lkr, fs.lkr, nil)
+	return vcs.Sync(remote.lkr, fs.lkr, &fs.cfg.sync)
 }
 
 func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, nil)
+	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, &fs.cfg.sync)
 	if err != nil {
 		return nil, err
 	}

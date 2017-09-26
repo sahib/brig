@@ -15,13 +15,35 @@ const (
 	ConflictStragetyUnknown
 )
 
-type ConflictStragey int
+type ConflictStrategy int
+
+func (cs ConflictStrategy) String() string {
+	switch cs {
+	case ConflictStragetyMarker:
+		return "marker"
+	case ConflictStragetyIgnore:
+		return "ignore"
+	default:
+		return "unknown"
+	}
+}
+
+func ConflictStrategyFromString(spec string) ConflictStrategy {
+	switch spec {
+	case "marker":
+		return ConflictStragetyMarker
+	case "ignore":
+		return ConflictStragetyIgnore
+	default:
+		return ConflictStragetyUnknown
+	}
+}
 
 // SyncConfig gives you the possibility to configure the sync algorithm.
 // The zero value of each option is the
 type SyncConfig struct {
-	ConflictStragey ConflictStragey
-	IgnoreDeletes   bool
+	ConflictStrategy ConflictStrategy
+	IgnoreDeletes    bool
 }
 
 var (
@@ -104,7 +126,7 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 
 func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
 	fmt.Println("CONFLICT", src, dst)
-	if sy.cfg.ConflictStragey == ConflictStragetyIgnore {
+	if sy.cfg.ConflictStrategy == ConflictStragetyIgnore {
 		return nil
 	}
 

@@ -37,7 +37,7 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 
 	defer os.RemoveAll(dbPath)
 
-	fs, err := NewFilesystem(backend, dbPath, owner)
+	fs, err := NewFilesystem(backend, dbPath, owner, nil)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
@@ -445,8 +445,15 @@ func TestMkdir(t *testing.T) {
 		err := fs.Mkdir("/a/b/c/d", false)
 		require.True(t, ie.IsNoSuchFileError(err))
 
+		_, err = fs.Stat("/a")
+		require.True(t, ie.IsNoSuchFileError(err))
+
 		err = fs.Mkdir("/a/b/c/d", true)
 		require.Nil(t, err)
+
+		info, err := fs.Stat("/a")
+		require.Nil(t, err)
+		require.True(t, info.IsDir)
 
 		// Check that it still works if the directory exists
 		err = fs.Mkdir("/a/b/c/d", false)
@@ -460,4 +467,44 @@ func TestMkdir(t *testing.T) {
 	})
 }
 
-// TODO: Open, Touch, Move
+func TestMove(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/x"))
+		require.Nil(t, fs.Move("/x", "/y"))
+
+		_, err := fs.Stat("/x")
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		info, err := fs.Stat("/y")
+		require.Nil(t, err)
+		require.Equal(t, info.Path, "/y")
+		require.False(t, info.IsDir)
+	})
+}
+
+func TestTouch(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/x"))
+		oldInfo, err := fs.Stat("/x")
+		require.Nil(t, err)
+
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
+
+		require.Nil(t, fs.Touch("/x"))
+		newInfo, err := fs.Stat("/x")
+		require.Nil(t, err)
+
+		// Check that the timestamp advanced only.
+		require.True(t, oldInfo.ModTime.Before(newInfo.ModTime))
+
+		// Also check that the content was not deleted:
+		stream, err := fs.Cat("/x")
+		require.Nil(t, err)
+
+		data, err := ioutil.ReadAll(stream)
+		require.Nil(t, err)
+		require.Equal(t, data, []byte{1, 2, 3})
+
+		require.Nil(t, stream.Close())
+	})
+}
