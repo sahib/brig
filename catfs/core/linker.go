@@ -1013,6 +1013,13 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 		return err
 	}
 
+	root, err := lkr.DirectoryByHash(cmt.Root())
+	if err != nil {
+		return err
+	}
+
+	// Set the current virtual in-memory cached root
+	lkr.MemSetRoot(root)
 	status.SetRoot(cmt.Root())
 
 	// Invalidate the cache, causing NodeByHash and ResolveNode to load the

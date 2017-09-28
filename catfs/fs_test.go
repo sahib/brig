@@ -272,15 +272,15 @@ func TestReset(t *testing.T) {
 }
 
 func TestCheckout(t *testing.T) {
-	// TODO: Skip
-	t.Skip("Test fails due to buggy lkr.CheckoutComit; fix later")
-
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
+		hello, err := fs.Head()
+		require.Nil(t, err)
 
 		require.Nil(t, fs.Touch("/x"))
 		require.Nil(t, fs.Touch("/y"))
 		require.Nil(t, fs.Touch("/z"))
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
 
 		require.Nil(t, fs.Remove("/y"))
 		require.Nil(t, fs.Move("/z", "/a"))
@@ -290,6 +290,7 @@ func TestCheckout(t *testing.T) {
 		require.Nil(t, err)
 
 		require.Nil(t, fs.Touch("/new"))
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{4, 5, 6})))
 
 		err = fs.Checkout(world, false)
 		require.Equal(t, err, ie.ErrStageNotEmpty)
@@ -297,8 +298,19 @@ func TestCheckout(t *testing.T) {
 		err = fs.Checkout(world, true)
 		require.Nil(t, err)
 
-		info, err := fs.Stat("/new")
-		fmt.Println(info, err)
+		_, err = fs.Stat("/new")
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		xStream, err := fs.Cat("/x")
+		require.Nil(t, err)
+		data, err := ioutil.ReadAll(xStream)
+		require.Nil(t, err)
+		require.Equal(t, data, []byte{1, 2, 3})
+
+		err = fs.Checkout(hello, true)
+		require.Nil(t, err)
+
+		_, err = fs.Stat("/x")
 		require.True(t, ie.IsNoSuchFileError(err))
 	})
 }
