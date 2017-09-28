@@ -446,7 +446,7 @@ func (fs *FS) Open(path string) (*Handle, error) {
 		return nil, err
 	}
 
-	return newHandle(file), nil
+	return newHandle(fs, file), nil
 }
 
 ////////////////////

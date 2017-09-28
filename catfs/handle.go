@@ -1,6 +1,7 @@
 package catfs
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,17 +12,24 @@ import (
 	n "github.com/disorganizer/brig/catfs/nodes"
 )
 
-// TODO: Implement, using the implemenation found in fuse.
+var (
+	ErrIsClosed = errors.New("File handle is closed")
+)
+
 type Handle struct {
-	fs     *FS
-	file   *n.File
-	lock   sync.Mutex
-	layer  *overlay.Layer
-	stream mio.Stream
+	fs       *FS
+	file     *n.File
+	lock     sync.Mutex
+	layer    *overlay.Layer
+	stream   mio.Stream
+	isClosed bool
 }
 
-func newHandle(file *n.File) *Handle {
-	return &Handle{file: file}
+func newHandle(fs *FS, file *n.File) *Handle {
+	return &Handle{
+		fs:   fs,
+		file: file,
+	}
 }
 
 func (hdl *Handle) initStreamIfNeeded() error {
@@ -29,17 +37,20 @@ func (hdl *Handle) initStreamIfNeeded() error {
 		return nil
 	}
 
-	// Initialize the stream lazily to avoid i/o on open()
+	// Initialize the stream lazily to avoid I/O on open()
 	rawStream, err := hdl.fs.bk.Cat(hdl.file.Content())
 	if err != nil {
 		return err
 	}
 
+	// Stack the mio stack on top:
 	hdl.stream, err = mio.NewOutStream(rawStream, hdl.file.Key())
 	if err != nil {
 		return err
 	}
 
+	hdl.layer = overlay.NewLayer(hdl.stream)
+	hdl.layer.Truncate(int64(hdl.file.Size()))
 	return nil
 }
 
@@ -49,13 +60,22 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
+	if hdl.isClosed {
+		return 0, ErrIsClosed
+	}
+
 	if err := hdl.initStreamIfNeeded(); err != nil {
 		return 0, err
 	}
 
-	n, err := io.ReadFull(hdl.stream, buf)
-	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+	n, err := io.ReadFull(hdl.layer, buf)
+	isEOF := err != io.ErrUnexpectedEOF || err != io.EOF
+	if err != nil && !isEOF {
 		return 0, err
+	}
+
+	if isEOF {
+		return n, io.EOF
 	}
 
 	return n, nil
@@ -65,16 +85,12 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
-	// TODO: Is this a race-condition?
-	size := hdl.file.Size()
+	if hdl.isClosed {
+		return 0, ErrIsClosed
+	}
 
-	if hdl.layer == nil {
-		if err := hdl.initStreamIfNeeded(); err != nil {
-			return 0, err
-		}
-
-		hdl.layer = overlay.NewLayer(hdl.stream)
-		hdl.layer.Truncate(int64(size))
+	if err := hdl.initStreamIfNeeded(); err != nil {
+		return 0, err
 	}
 
 	n, err := hdl.layer.Write(buf)
@@ -82,9 +98,16 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 		return n, err
 	}
 
+	// Advance the write pointer when writing things to the buffer.
+	if _, err := hdl.stream.Seek(int64(n), os.SEEK_CUR); err != nil && err != io.EOF {
+		return n, err
+	}
+
 	minSize := uint64(hdl.layer.MinSize())
-	if size < minSize {
+	if hdl.file.Size() < minSize {
+		hdl.fs.mu.Lock()
 		hdl.file.SetSize(minSize)
+		hdl.fs.mu.Unlock()
 	}
 
 	return n, nil
@@ -94,46 +117,57 @@ func (hdl *Handle) Seek(offset int64, whence int) (int64, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
-	n1, err := hdl.layer.Seek(offset, whence)
+	if hdl.isClosed {
+		return 0, ErrIsClosed
+	}
+
+	if err := hdl.initStreamIfNeeded(); err != nil {
+		return 0, err
+	}
+
+	n, err := hdl.layer.Seek(offset, whence)
 	if err != nil {
 		return 0, err
 	}
 
-	n2, err := hdl.stream.Seek(offset, whence)
-	if err != nil {
-		return 0, err
-	}
-
-	if n1 != n2 {
-		return 0, fmt.Errorf("memory and stream seek pos diverged")
-	}
-
-	return n1, nil
+	return n, nil
 }
 
+// Truncate truncates the file to a specific length.
 func (hdl *Handle) Truncate(size uint64) error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
-	// TODO: Race condition?
+	if hdl.isClosed {
+		return ErrIsClosed
+	}
+
+	if err := hdl.initStreamIfNeeded(); err != nil {
+		return err
+	}
+
+	hdl.fs.mu.Lock()
 	hdl.file.SetSize(size)
+	hdl.fs.mu.Unlock()
+
 	hdl.layer.Truncate(int64(size))
 	return nil
 }
 
-func (hdl *Handle) Flush() error {
-	hdl.lock.Lock()
-	defer hdl.lock.Unlock()
-
+// unlocked version of Flush()
+func (hdl *Handle) flush() error {
 	// flush unsets the layer, so we don't flush twice.
 	if hdl.layer == nil {
 		return nil
 	}
 
+	// Make sure that hdl.layer is unset in any case.
 	defer func() {
 		hdl.layer = nil
 	}()
 
+	// Jump back to the beginning of the file, since fs.Stage()
+	// should reall content starting from there.
 	n, err := hdl.layer.Seek(0, os.SEEK_SET)
 	if err != nil {
 		return err
@@ -151,6 +185,25 @@ func (hdl *Handle) Flush() error {
 	return hdl.layer.Close()
 }
 
+func (hdl *Handle) Flush() error {
+	hdl.lock.Lock()
+	defer hdl.lock.Unlock()
+
+	if hdl.isClosed {
+		return ErrIsClosed
+	}
+
+	return hdl.flush()
+}
+
 func (hdl *Handle) Close() error {
-	return hdl.Flush()
+	hdl.lock.Lock()
+	defer hdl.lock.Unlock()
+
+	if hdl.isClosed {
+		return ErrIsClosed
+	}
+
+	hdl.isClosed = true
+	return hdl.flush()
 }

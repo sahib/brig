@@ -508,3 +508,20 @@ func TestTouch(t *testing.T) {
 		require.Nil(t, stream.Close())
 	})
 }
+
+func TestHead(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		_, err := fs.Head()
+
+		require.True(t, ie.IsErrNoSuchRef(err))
+		require.Nil(t, fs.MakeCommit("init"))
+
+		ref, err := fs.Head()
+		require.Nil(t, err)
+
+		headCmt, err := fs.lkr.ResolveRef("HEAD")
+		require.Nil(t, err)
+
+		require.Equal(t, headCmt.Hash().B58String(), ref)
+	})
+}

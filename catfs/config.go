@@ -27,6 +27,7 @@ var DefaultConfig = &Config{}
 
 func init() {
 	DefaultConfig.IO.CompressAlgo = "snappy"
+	DefaultConfig.Sync.ConflictStrategy = "marker"
 }
 
 type config struct {
@@ -34,6 +35,8 @@ type config struct {
 	compressAlgo compress.AlgorithmType
 }
 
+// parseConfig takes a Config object and parses it into an easier to digest
+// version for internal usage (i.e. it converts strings to enums)
 func (cfg *Config) parseConfig() (*config, error) {
 	if cfg == nil {
 		cfg = DefaultConfig
@@ -41,7 +44,6 @@ func (cfg *Config) parseConfig() (*config, error) {
 
 	vfg := &config{}
 
-	// TODO: From String is a bad name.
 	algo, err := compress.AlgoFromString(cfg.IO.CompressAlgo)
 	if err != nil {
 		return nil, err
@@ -49,7 +51,7 @@ func (cfg *Config) parseConfig() (*config, error) {
 
 	cs := vcs.ConflictStrategyFromString(cfg.Sync.ConflictStrategy)
 	if cs == vcs.ConflictStragetyUnknown {
-		return nil, fmt.Errorf("Bad conflic strategy: %v", cfg.Sync.ConflictStrategy)
+		return nil, fmt.Errorf("Bad conflic strategy: `%v`", cfg.Sync.ConflictStrategy)
 	}
 
 	vfg.compressAlgo = algo
