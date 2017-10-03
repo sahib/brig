@@ -4,323 +4,177 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"sort"
-	"sync"
-	"time"
+	"strings"
 
-	"github.com/disorganizer/brig/id"
-	"gopkg.in/yaml.v2"
+	yml "gopkg.in/yaml.v2"
 )
 
-type ErrRemoteHashExists struct {
-	hash, id string
-}
-
-func (e ErrRemoteHashExists) Error() string {
-	return fmt.Sprintf("Hash with this id (%v) exists already: %v", e.id, e.hash)
-}
-
-// ErrNoSuchRemote is returned when an ID could not have been resolved to an ID
-type ErrNoSuchRemote id.ID
-
-func (e ErrNoSuchRemote) Error() string {
-	return fmt.Sprintf("No such remote `%s` found", string(e))
-}
-
-// Remote is the metadata of a single communication partner
-// It contains the id and authentication info for each partner.
-type Remote interface {
-	// ID returns the ID of the remote partner
-	ID() id.ID
-	// Hash returns the peer hash of the partner
-	Hash() string
-}
-
-// NewRemote returns a struct that fulfills the Remote interface
-// fille with the passed in parameters.
-func NewRemote(ID id.ID, hash string) Remote {
-	// Re-use the yaml remote here, but don't tell anyone.
-	return &yamlRemote{
-		Identity: ID,
-		yamlRemoteEntry: &yamlRemoteEntry{
-			PeerHash: hash,
-		},
-	}
-}
-
-func NewRemoteFromPeer(peer id.Peer) Remote {
-	return NewRemote(peer.ID(), peer.Hash())
-}
-
-// RemoteIsEqual returns true when two remotes have the same id and hash
-func RemoteIsEqual(a, b Remote) bool {
-	return a.ID() == b.ID() && a.Hash() == b.Hash()
-}
+type Perms uint32
 
 const (
-	// RemoteChangeInvalid should never happen.
-	RemoteChangeInvalid = iota
-	// RemoteChangeAdded means a new remote was added.
-	RemoteChangeAdded
-	// RemoteChangeRemoved means a remote was removed.
-	RemoteChangeRemoved
-	// RemoteChangeModified means a remote was modified
-	// (i.e. different hash)
-	RemoteChangeModified
+	PermNone = 0
+	PermRead = 1 << iota
+	PermWrite
 )
 
-// RemoteChange represents a single change in the remote store.
-type RemoteChange struct {
-	// ChangeType describes what happened to remote.
-	ChangeType int
+type RemotePerms int
 
-	// Remote is the new remote (or nil for RemoteChangeRemoved)
-	Remote Remote
+func (rp RemotePerms) FromStrings(perms []string) RemotePerms {
+	mask := RemotePerms(0)
 
-	// OldRemote is the old remote (or nil for RemoteChangeAdded)
-	OldRemote Remote
+	for _, perm := range perms {
+		switch perm {
+		case "read":
+			mask |= PermRead
+		case "write":
+			mask |= PermWrite
+		}
+	}
+
+	return mask
 }
 
-type RemoteChangeCallback func(rc *RemoteChange)
+func (rp RemotePerms) ToStrings() []string {
+	res := []string{}
+	if rp&PermRead > 0 {
+		res = append(res, "read")
+	}
 
-// RemoteStore is a store for several Remotes.
-type RemoteStore interface {
-	io.Closer
+	if rp&PermWrite > 0 {
+		res = append(res, "write")
+	}
 
-	// Insert stores `r` for the partner `ID`.
-	// If there is already a remote with this hash but with a
-	// different ID, ErrRemoteHashExists should be returned.
-	// If the ID exists already, it will be overwritten.
-	Insert(r Remote) error
-
-	// Get returns the Remote info for `ID`
-	Get(ID id.ID) (Remote, error)
-
-	// Remove purges the partner with `ID` from he store.
-	// ErrNoSuchRemote should be returnd when there is no such ID.
-	Remove(ID id.ID) error
-
-	// Iter returns a channel that yields every remote in the store.
-	// The elements should be sorted in the alphabetic order of the ID.
-	List() []Remote
-
-	// Register calls `f` whenever a change in the store happens.
-	Register(f RemoteChangeCallback)
+	return res
 }
 
-type yamlRemote struct {
-	Identity id.ID
-	*yamlRemoteEntry
+type Folder struct {
+	Folder string
+	Perm   RemotePerms
 }
 
-type yamlRemoteEntry struct {
-	PeerHash  string
-	Timestamp time.Time
+func (f Folder) Less(o Folder) bool {
+	return f.Folder < o.Folder
 }
 
-func (ye *yamlRemote) ID() id.ID {
-	return ye.Identity
+func insertSortedFolder(folders []Folder, f Folder) []Folder {
+	l := len(folders)
+	if l == 0 {
+		return []Folder{f}
+	}
+
+	i := sort.Search(l, func(i int) bool {
+		return folders[i].Less(f)
+	})
+
+	if i == l {
+		return append([]Folder{f}, folders...)
+	}
+
+	if i == l-1 {
+		return append(folders[0:l], f)
+	}
+
+	return append(folders[0:l], append([]Folder{f}, folders[l+1:]...)...)
 }
 
-func (ye *yamlRemote) Hash() string {
-	return ye.PeerHash
+type Remote struct {
+	Name    string
+	Folders []Folder
 }
 
-type yamlRemotes []*yamlRemote
-
-func (yl yamlRemotes) Len() int {
-	return len(yl)
+// RemoteList is a helper that parses the remote access yml file
+// and makes it easily accessible from the Go side.
+type RemoteList struct {
+	remotes map[string]*Remote
 }
 
-func (yl yamlRemotes) Less(i, j int) bool {
-	return yl[i].ID() < yl[j].ID()
-}
+func NewRemotes(r io.Reader) (*RemoteList, error) {
+	remotes := make(map[string]*Remote)
+	ymlRemotes := make(map[string][]string)
 
-func (yl yamlRemotes) Swap(i, j int) {
-	yl[i], yl[j] = yl[j], yl[i]
-}
-
-type yamlRemoteStore struct {
-	mu        sync.Mutex
-	path      string
-	parsed    map[id.ID]*yamlRemoteEntry
-	callbacks []RemoteChangeCallback
-}
-
-// NewYAMLRemotes returns a new remote store that stores
-// its data in the file pointed to by path.
-func NewYAMLRemotes(path string) (RemoteStore, error) {
-	remotes := &yamlRemoteStore{path: path}
-	if err := remotes.load(); err != nil {
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
 		return nil, err
 	}
 
-	return remotes, nil
+	if err := yml.Unmarshal(data, ymlRemotes); err != nil {
+		return nil, err
+	}
+
+	// Go over all remotes denoted in the .yml file.
+	for nameAndFolder, perms := range ymlRemotes {
+		splitName := strings.Split(nameAndFolder, " ")
+
+		folder := "/"
+		name := splitName[0]
+		if len(splitName) > 1 {
+			folder = splitName[1]
+		}
+
+		perms := RemotePerms(0).FromStrings(perms)
+
+		// Append to existing or create new remote.
+		if remote, ok := remotes[name]; ok {
+			remote.Folders = insertSortedFolder(remote.Folders, Folder{
+				Folder: folder,
+				Perm:   perms,
+			})
+		} else {
+			remotes[name] = &Remote{
+				Name: name,
+				Folders: []Folder{{
+					Folder: folder,
+					Perm:   perms,
+				}},
+			}
+		}
+	}
+
+	return &RemoteList{remotes: remotes}, nil
 }
 
-func (yr *yamlRemoteStore) load() error {
-	fd, err := os.OpenFile(yr.path, os.O_RDONLY|os.O_CREATE, 0644)
+func (rl *RemoteList) Export(w io.Writer) error {
+	ymlRemotes := make(map[string][]string)
+
+	for _, remote := range rl.remotes {
+		for _, folder := range remote.Folders {
+			nameAndFolder := strings.Join(
+				[]string{remote.Name, folder.Folder},
+				" ",
+			)
+
+			ymlRemotes[nameAndFolder] = folder.Perm.ToStrings()
+		}
+	}
+
+	data, err := yml.Marshal(ymlRemotes)
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
 
-	data, err := ioutil.ReadAll(fd)
-	if err != nil {
+	if _, err := w.Write(data); err != nil {
 		return err
 	}
 
-	parsed := make(map[id.ID]*yamlRemoteEntry)
-	if err := yaml.Unmarshal(data, parsed); err != nil {
-		return err
-	}
-
-	yr.parsed = parsed
 	return nil
 }
 
-func (yr *yamlRemoteStore) save() error {
-	fd, err := os.OpenFile(yr.path, os.O_TRUNC|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	data, err := yaml.Marshal(yr.parsed)
-	if err != nil {
-		return err
-	}
-
-	if _, err := fd.Write(data); err != nil {
-		return err
-	}
-
-	if err := fd.Sync(); err != nil {
-		return err
-	}
-
+func (rl *RemoteList) AddRemote(remote Remote) error {
+	rl.remotes[remote.Name] = &remote
 	return nil
 }
 
-func (yr *yamlRemoteStore) Insert(r Remote) error {
-	yr.mu.Lock()
-	defer yr.mu.Unlock()
-
-	// Sanity check:
-	hash := r.Hash()
-	for id, entry := range yr.parsed {
-		if id != r.ID() && entry.PeerHash == hash {
-			return ErrRemoteHashExists{string(id), hash}
-		}
-	}
-
-	change := &RemoteChange{
-		ChangeType: RemoteChangeAdded,
-		Remote:     r,
-	}
-
-	oldEntry := yr.parsed[r.ID()]
-	if oldEntry != nil {
-		change.ChangeType = RemoteChangeModified
-		change.OldRemote = &yamlRemote{
-			Identity:        r.ID(),
-			yamlRemoteEntry: oldEntry,
-		}
-
-		// If it equals the previous remote,
-		// we can safely abort here and not notify old remotes.
-		if RemoteIsEqual(change.OldRemote, r) {
-			return nil
-		}
-	}
-
-	yr.parsed[r.ID()] = &yamlRemoteEntry{
-		PeerHash:  r.Hash(),
-		Timestamp: time.Now(),
-	}
-
-	yr.notify(change)
-	return yr.save()
+func (rl *RemoteList) RmRemote(remote Remote) error {
+	delete(rl.remotes, remote.Name)
+	return nil
 }
 
-func (yr *yamlRemoteStore) Get(ID id.ID) (Remote, error) {
-	yr.mu.Lock()
-	defer yr.mu.Unlock()
-
-	ent, ok := yr.parsed[ID]
+func (rl *RemoteList) Remote(name string) (Remote, error) {
+	rm, ok := rl.remotes[name]
 	if !ok {
-		return nil, ErrNoSuchRemote(ID)
+		return Remote{}, fmt.Errorf("No such remote: %v", name)
 	}
 
-	return &yamlRemote{
-		Identity:        ID,
-		yamlRemoteEntry: ent,
-	}, nil
-}
-
-func (yr *yamlRemoteStore) Remove(ID id.ID) error {
-	yr.mu.Lock()
-	defer yr.mu.Unlock()
-
-	ent, ok := yr.parsed[ID]
-	if !ok {
-		return ErrNoSuchRemote(ID)
-	}
-
-	change := &RemoteChange{
-		ChangeType: RemoteChangeRemoved,
-		Remote:     nil,
-		OldRemote: &yamlRemote{
-			Identity:        ID,
-			yamlRemoteEntry: ent,
-		},
-	}
-
-	delete(yr.parsed, ID)
-	yr.notify(change)
-
-	return yr.save()
-}
-
-func (yr *yamlRemoteStore) List() (outRemotes []Remote) {
-	yr.mu.Lock()
-	defer yr.mu.Unlock()
-
-	var remotes yamlRemotes
-	for ident, entry := range yr.parsed {
-		remotes = append(remotes, &yamlRemote{
-			Identity:        ident,
-			yamlRemoteEntry: entry,
-		})
-	}
-
-	sort.Sort(remotes)
-
-	// sadly []*yamlRemote is not a []Remote,
-	// although *yamlRemote is a Remote.
-	// Curse you, go lang.
-	for _, rm := range remotes {
-		outRemotes = append(outRemotes, rm)
-	}
-
-	return outRemotes
-}
-
-func (yr *yamlRemoteStore) Close() error {
-	return nil
-}
-
-func (yr *yamlRemoteStore) Register(f RemoteChangeCallback) {
-	yr.mu.Lock()
-	defer yr.mu.Unlock()
-
-	yr.callbacks = append(yr.callbacks, f)
-}
-
-func (yr *yamlRemoteStore) notify(rmc *RemoteChange) {
-	for _, cb := range yr.callbacks {
-		// Don't wait on whatever the caller does:
-		go cb(rmc)
-	}
+	return *rm, nil
 }

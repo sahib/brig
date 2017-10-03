@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/disorganizer/brig/brigd/capnp"
@@ -15,8 +16,9 @@ type Client struct {
 	api capnp.API
 }
 
-func Connect(ctx context.Context) (*Client, error) {
-	conn, err := net.Dial("tcp", "localhost:6666")
+func Dial(ctx context.Context, port int) (*Client, error) {
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}

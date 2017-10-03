@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/disorganizer/brig/cmdline"
 	"os"
+
+	"github.com/disorganizer/brig/cmd"
 )
 
 func main() {
-	os.Exit(cmdline.RunCmdline(os.Args))
+	os.Exit(cmd.RunCmdline(os.Args))
 }

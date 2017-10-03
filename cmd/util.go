@@ -1,16 +1,18 @@
-package cmdline
+package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/VividCortex/godaemon"
 	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/brigd/client"
-	"github.com/disorganizer/brig/brigd/server"
-	"github.com/disorganizer/brig/daemon"
 )
 
 // ExitCode is an error that maps the error interface to a specific error
@@ -27,26 +29,12 @@ func (err ExitCode) Error() string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 func guessRepoFolder() string {
-	return ""
-	// folder := repo.GuessFolder()
-	// if folder == "" {
-	// 	log.Errorf("This does not look like a brig repository (missing .brig)")
-	// 	os.Exit(BadArgs)
-	// }
-
-	// return folder
+	return "."
 }
 
 func readPassword() (string, error) {
 	// TODO: Implement again.
 	return "klaus", nil
-	//	repoFolder := guessRepoFolder()
-	//	pwd, err := pwdutil.PromptPasswordMaxTries(4, func(pwd string) bool {
-	//		err := repo.CheckPassword(repoFolder, pwd)
-	//		return err == nil
-	//	})
-	//
-	return pwd, err
 }
 
 func prefixSlash(s string) string {
@@ -57,7 +45,40 @@ func prefixSlash(s string) string {
 	return s
 }
 
-type cmdHandlerWithClient func(ctx *cli.Context, client *daemon.Client) error
+type cmdHandlerWithClient func(ctx *cli.Context, ctl *client.Client) error
+
+func startDaemon(repoPath string, port int) (*client.Client, error) {
+	exePath, err := godaemon.GetExecutablePath()
+	if err != nil {
+		return nil, err
+	}
+
+	// Start a new daemon process:
+	log.Info("Starting daemon from: ", exePath)
+
+	// TODO: Fill in correct password.
+	proc := exec.Command(
+		exePath, "-l", "/tmp/brig.log", "-x", "klaus", "daemon", "launch",
+	)
+
+	if err := proc.Start(); err != nil {
+		log.Infof("Failed to start the daemon: %v", err)
+		return nil, err
+	}
+
+	for i := 0; i < 15; i++ {
+		ctl, err := client.Dial(context.Background(), port)
+		log.Infof("Waiting to bootup...")
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return ctl, nil
+	}
+
+	return nil, fmt.Errorf("Daemon could not be started or took to long")
+}
 
 func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) {
 	// If not, make sure we start a new one:
@@ -65,7 +86,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) 
 		port := guessPort()
 
 		// Check if the daemon is running:
-		ctl, err := client.Dial(context.Backround(), port)
+		ctl, err := client.Dial(context.Background(), port)
 		if err == nil {
 			return handler(ctx, ctl)
 		}
@@ -75,40 +96,12 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) 
 			return ExitCode{DaemonNotResponding, "Daemon not running"}
 		}
 
-		// // Check if the password was supplied via a commandline flag.
-		// pwd := ctx.String("password")
-		// if pwd == "" {
-		// 	// Prompt the user:
-		// 	var cmdPwd string
-		// 	cmdPwd, err = readPassword()
-		// 	if err != nil {
-		// 		return ExitCode{
-		// 			BadPassword,
-		// 			fmt.Sprintf("Could not read password: %v", pwd),
-		// 		}
-		// 	}
-
-		// 	pwd = cmdPwd
-		// }
-
 		// Start the server & pass the password:
-		daemon, err := server.BootServer(
-			guessRepoFolder(),
-			server.NewDummyBackend(),
-		)
-
+		ctl, err = startDaemon(guessRepoFolder(), port)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,
 				fmt.Sprintf("Unable to start daemon: %v", err),
-			}
-		}
-
-		ctl, err := client.Dial(context.Backround(), port)
-		if err != nil {
-			return ExitCode{
-				DaemonNotResponding,
-				fmt.Sprintf("Unable to reach newly started daemon: %v", err),
 			}
 		}
 

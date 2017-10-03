@@ -41,7 +41,7 @@ func SaveConfig(path string, cfg *config.Config) (int, error) {
 // CreateDefaultConfig creates a configfile with default values.
 func CreateDefaultConfig() *config.Config {
 	cfg := map[string]interface{}{
-		"repository": map[string]interface{}{
+		"repo": map[string]interface{}{
 			"id": "",
 		},
 		"daemon": map[string]interface{}{

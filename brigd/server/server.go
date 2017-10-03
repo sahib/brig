@@ -19,13 +19,14 @@ const (
 //////////////////////////////
 
 type Server struct {
-	lst net.Listener
-	ctx context.Context
+	lst  net.Listener
+	ctx  context.Context
+	base *base
 }
 
 func (sv *Server) handle(ctx context.Context, conn net.Conn) {
 	transport := rpc.StreamTransport(conn)
-	srv := capnp.API_ServerToClient(&apiHandler{})
+	srv := capnp.API_ServerToClient(&apiHandler{base: base})
 	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
 
 	if err := rpcConn.Wait(); err != nil {
@@ -100,7 +101,7 @@ func (sv *Server) Serve() error {
 	return nil
 }
 
-func BootServer() (*Server, error) {
+func BootServer(basePath string, backend Backend) (*Server, error) {
 	ctx := context.Background()
 
 	lst, err := net.Listen("tcp", "localhost:6666")
@@ -108,8 +109,14 @@ func BootServer() (*Server, error) {
 		return nil, err
 	}
 
+	base, err := newBase(basePath, backend)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
-		ctx: ctx,
-		lst: lst,
+		ctx:  ctx,
+		lst:  lst,
+		base: base,
 	}, nil
 }

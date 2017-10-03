@@ -1,85 +1,210 @@
 package repo
 
 import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/id"
-	"github.com/disorganizer/brig/repo/global"
-	"github.com/disorganizer/brig/store"
-	"github.com/disorganizer/brig/util/ipfsutil"
-	yamlConfig "github.com/olebedev/config"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"sync"
+
+	"github.com/disorganizer/brig/catfs"
+	e "github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
-// TODO: Make ipfs keypair export/import-able to enable rescue-mode.
-
-// Repository represents a handle to one physical brig repository.
-// It groups the APIs to all useful files in it.
+// Repository provides access to the file structure of a single repository.
+//
+// Informal: This file structure currently looks like this:
+// config.yml
+// remotes.yml
+// data/
+//    (backend specific)
+// metadata/
+//    <name_1>
+//        (backend specific)
+//    <name_2>
+//        (backend specific)
 type Repository struct {
-	// Repository is identified by a brig account
-	ID id.ID
+	mu sync.Mutex
 
-	// Folder of repository
-	Folder         string
-	InternalFolder string
+	// Map between owner and related filesystem.
+	fsMap map[string]*catfs.FS
 
-	// TODO: still required?
-	// User supplied password:
-	Password string
+	// Absolute path to the repository root
+	BaseFolder string
 
-	Config *yamlConfig.Config
+	// Name of the owner of this repository
+	Owner string
 
-	// Remotes stores the metadata of all communication partners
-	Remotes RemoteStore
+	// Config interface
+	Config *viper.Viper
 
-	allStores map[id.ID]*store.Store
+	// Remotes gives access to all known remotes
+	Remotes *RemoteList
 
-	// OwnStore is the store.Store used to save our own files in.
-	// This is guaranteed to be non-nil.
-	OwnStore *store.Store
-
-	// IPFS management layer.
-	IPFS *ipfsutil.Node
-
-	// globalRepo is a common file of all brig instances
-	// on a machine. It's purpose to make the brig repos
-	// easily findable and to avoid collisions on network ports.
-	globalRepo *global.Repository
+	FSBackend catfs.FsBackend
 }
 
-func (rp *Repository) Peer() id.Peer {
-	hash, err := rp.IPFS.Identity()
+func touch(path string) error {
+	fd, err := os.OpenFile(path, os.O_CREATE, 0644)
 	if err != nil {
-		log.Warningf("Cannot retrieve ipfs id: %v", err)
-		hash = ""
-	}
-	return id.NewPeer(rp.ID, hash)
-
-}
-
-func (rp *Repository) AddStore(ID id.ID, st *store.Store) {
-	rp.allStores[ID] = st
-}
-
-func (rp *Repository) RmStore(ID id.ID) {
-	delete(rp.allStores, ID)
-}
-
-func (rp *Repository) Store(ID id.ID) (*store.Store, error) {
-	// Check if we already have a store under that ID:
-	if store, ok := rp.allStores[ID]; ok {
-		return store, nil
+		return err
 	}
 
-	remote, err := rp.Remotes.Get(ID)
+	return fd.Close()
+}
+
+func isEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
+func Init(baseFolder, owner string, backend RepoBackend) error {
+	// The basefolder has to exist:
+	info, err := os.Stat(baseFolder)
+	if os.IsNotExist(err) {
+		return err
+	}
+
+	repoDirIsEmpty, err := isEmpty(baseFolder)
+	if err != nil {
+		return err
+	}
+
+	if !info.IsDir() || !repoDirIsEmpty {
+		return fmt.Errorf(
+			"`%s` is not a directory or it's not empty",
+			baseFolder,
+		)
+	}
+
+	// Create (empty) folders:
+	folders := []string{"metadata", "data"}
+	for _, folder := range folders {
+		absFolder := filepath.Join(baseFolder, folder)
+		if err := os.Mkdir(absFolder, 0700); err != nil {
+			return e.Wrapf(err, "Failed to create dir: %v", absFolder)
+		}
+	}
+
+	if err := touch(filepath.Join(baseFolder, "remotes.yml")); err != nil {
+		return e.Wrapf(err, "Failed touch remotes.yml")
+	}
+
+	if err := touch(filepath.Join(baseFolder, "config.yml")); err != nil {
+		return e.Wrapf(err, "Failed touch config.yml")
+	}
+
+	whoamiPath := filepath.Join(baseFolder, "whoami")
+	if err := ioutil.WriteFile(whoamiPath, []byte(owner), 0644); err != nil {
+		return err
+	}
+
+	dataFolder := filepath.Join(baseFolder, "data")
+	if err := backend.Init(dataFolder); err != nil {
+		return e.Wrap(err, "Failed to init data backend")
+	}
+
+	return nil
+}
+
+func Open(baseFolder string, backend catfs.FsBackend) (*Repository, error) {
+	// Make sure to load the config:
+	config := viper.New()
+	config.AddConfigPath(baseFolder)
+	setConfigDefaults(config)
+
+	if err := config.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	// Load the remote list:
+	remotePath := filepath.Join(baseFolder, "remotes.yml")
+	fd, err := os.Open(remotePath)
 	if err != nil {
 		return nil, err
 	}
 
-	backend := &ipfsutil.IpfsBackend{Node: rp.IPFS}
-	newStore, err := store.Open(rp.InternalFolder, remote, backend)
+	defer fd.Close()
+
+	remotes, err := NewRemotes(fd)
 	if err != nil {
 		return nil, err
 	}
 
-	rp.allStores[ID] = newStore
-	return newStore, nil
+	whoamiPath := filepath.Join(baseFolder, "whoami")
+	owner, err := ioutil.ReadFile(whoamiPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repository{
+		BaseFolder: baseFolder,
+		Config:     config,
+		Remotes:    remotes,
+		Owner:      string(owner),
+		FSBackend:  backend,
+		fsMap:      make(map[string]*catfs.FS),
+	}, nil
+}
+
+func (rp *Repository) Close() error {
+	// TODO: Close() currently does nothing, but it should encrypt config/remotes
+	//       so they can get decrypted again on startup.
+	return nil
+}
+
+// FS returns a filesystem for `owner`. If there is none yet,
+// it will create own associated to the respective owner.
+func (rp *Repository) FS(owner string) (*catfs.FS, error) {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	if fs, ok := rp.fsMap[owner]; ok {
+		return fs, nil
+	}
+
+	// Read the fs config from the main config:
+	fsCfg := &catfs.Config{}
+	fsCfg.IO.CompressAlgo = rp.Config.GetString(
+		"data.compress.algo",
+	)
+	fsCfg.Sync.ConflictStrategy = rp.Config.GetString(
+		"sync.conflict_strategy",
+	)
+	fsCfg.Sync.IgnoreRemoved = rp.Config.GetBool(
+		"sync.ignore_removed",
+	)
+
+	// TODO: Does it make really sense to store the hash in fs?
+	//       Maybe user management and repo management should be two things.
+	person := catfs.Person{
+		Name: owner,
+		Hash: nil,
+	}
+
+	fsDbPath := filepath.Join(rp.BaseFolder, "data", owner)
+	fs, err := catfs.NewFilesystem(rp.FSBackend, fsDbPath, &person, fsCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store for next call:
+	rp.fsMap[owner] = fs
+	return fs, nil
+}
+
+// OwnFS returns the filesystem for the owner.
+func (rp *Repository) OwnFS() (*catfs.FS, error) {
+	return rp.FS(rp.Owner)
 }

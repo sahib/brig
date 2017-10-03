@@ -8,12 +8,11 @@ import (
 )
 
 type metaHandler struct {
-	base
+	base *base
 }
 
 func (mh *metaHandler) Quit(call capnp.Meta_quit) error {
 	server.Ack(call.Options)
-
 	fmt.Println("QUIT CALLED")
 	return nil
 }
