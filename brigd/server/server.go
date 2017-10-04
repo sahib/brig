@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"zombiezen.com/go/capnproto2/rpc"
 )
@@ -26,15 +27,15 @@ type Server struct {
 
 func (sv *Server) handle(ctx context.Context, conn net.Conn) {
 	transport := rpc.StreamTransport(conn)
-	srv := capnp.API_ServerToClient(&apiHandler{base: base})
+	srv := capnp.API_ServerToClient(newApiHandler(sv.base))
 	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
 
 	if err := rpcConn.Wait(); err != nil {
-		fmt.Println("SERVER FAILED: ", err)
+		log.Warnf("Serving rpc failed: %v", err)
 	}
 
 	if err := rpcConn.Close(); err != nil {
-		fmt.Println("Failed to close rpc conn: ", err)
+		log.Warnf("Failed to close rpc conn: %v", err)
 	}
 }
 
@@ -85,13 +86,16 @@ func (sv *Server) Serve() error {
 	for {
 		select {
 		case sig := <-signalCh:
-			fmt.Println("Received", sig)
+			log.Warnf("Received %s signal", sig)
 			return nil
 		case <-rateCh:
 			// If this signal can receive something, we have a free connection.
 			if err := sv.Accept(rateCh); err != nil {
-				fmt.Println("Failed to accept connection: ", err)
+				log.Errorf("Failed to accept connection: %s", err)
 			}
+		case <-sv.base.QuitCh:
+			log.Infof("Will not accept new connections now")
+			return nil
 		default:
 			// No free connection available.
 			time.Sleep(250 * time.Millisecond)
@@ -101,15 +105,22 @@ func (sv *Server) Serve() error {
 	return nil
 }
 
-func BootServer(basePath string, backend Backend) (*Server, error) {
+func BootServer(basePath string) (*Server, error) {
 	ctx := context.Background()
 
-	lst, err := net.Listen("tcp", "localhost:6666")
+	// TODO: Read and instantiate correct backend from
+	//       marker in the repository.
+	backend := NewDummyBackend()
+	base, err := newBase(basePath, backend)
 	if err != nil {
 		return nil, err
 	}
 
-	base, err := newBase(basePath, backend)
+	port := base.Repo.Config.GetInt("daemon.port")
+	addr := fmt.Sprintf("localhost:%d", port)
+
+	log.Infof("Listening on %s", addr)
+	lst, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}

@@ -29,16 +29,23 @@ var (
 
 func init() {
 	var err error
-	if MajorInt, err = strconv.Atoi(Major); err != nil {
-		panic(fmt.Sprintf("Cannot parse major version: %v", err))
+
+	if len(Major) > 0 {
+		if MajorInt, err = strconv.Atoi(Major); err != nil {
+			panic(fmt.Sprintf("Cannot parse major version: %v", err))
+		}
 	}
 
-	if MinorInt, err = strconv.Atoi(Minor); err != nil {
-		panic(fmt.Sprintf("Cannot parse minor version: %v", err))
+	if len(Minor) > 0 {
+		if MinorInt, err = strconv.Atoi(Minor); err != nil {
+			panic(fmt.Sprintf("Cannot parse minor version: %v", err))
+		}
 	}
 
-	if PatchInt, err = strconv.Atoi(Patch); err != nil {
-		panic(fmt.Sprintf("Cannot parse patch version: %v", err))
+	if len(Patch) > 0 {
+		if PatchInt, err = strconv.Atoi(Patch); err != nil {
+			panic(fmt.Sprintf("Cannot parse patch version: %v", err))
+		}
 	}
 }
 

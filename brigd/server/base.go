@@ -26,16 +26,18 @@ func NewDummyBackend() *DummyBackend {
 type base struct {
 	Repo    *repo.Repository
 	Backend Backend
+	QuitCh  chan struct{}
 }
 
-func newBase(basePath string, backend Backend) error {
+func newBase(basePath string, backend Backend) (*base, error) {
 	repo, err := repo.Open(basePath, backend)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return &base{
 		Repo:    repo,
 		Backend: backend,
-	}
+		QuitCh:  make(chan struct{}, 1),
+	}, nil
 }

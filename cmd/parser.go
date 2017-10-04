@@ -386,7 +386,7 @@ func RunCmdline(args []string) int {
 					Category:    advnGroup,
 					Usage:       "Start the daemon process",
 					Description: "Start the brig daemon process, unlock the repository and go online",
-					Action:      withExit(handleDaemon),
+					Action:      withExit(handleDaemonLaunch),
 				},
 				cli.Command{
 					Name:        "quit",

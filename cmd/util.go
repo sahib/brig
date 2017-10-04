@@ -66,11 +66,14 @@ func startDaemon(repoPath string, port int) (*client.Client, error) {
 		return nil, err
 	}
 
+	// This will likely suffice for most cases:
+	time.Sleep(100 * time.Millisecond)
+
 	for i := 0; i < 15; i++ {
 		ctl, err := client.Dial(context.Background(), port)
-		log.Infof("Waiting to bootup...")
 		if err != nil {
-			time.Sleep(1 * time.Second)
+			log.Infof("Waiting to bootup...")
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 

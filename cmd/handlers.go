@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/brigd/client"
+	"github.com/disorganizer/brig/brigd/server"
+	"github.com/disorganizer/brig/util/colors"
 )
 
 const brigLogo = `
@@ -39,7 +42,6 @@ func handleVersion(ctx *cli.Context) error {
 }
 
 func handleOpen(ctx *cli.Context, ctl *client.Client) error {
-	log.Infof("Repository is open now.")
 	return nil
 }
 
@@ -48,6 +50,26 @@ func handleClose(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
+	for i := 0; i < 100; i++ {
+		before := time.Now()
+		symbol := colors.Colorize("✔", colors.Green)
+
+		if err := ctl.Ping(); err != nil {
+			symbol = colors.Colorize("✘", colors.Red)
+		}
+
+		delay := time.Since(before)
+		fmt.Printf("#%02d %s ➔ %s: %s (%v)\n",
+			i+1,
+			ctl.LocalAddr().String(),
+			ctl.RemoteAddr().String(),
+			symbol,
+			delay,
+		)
+
+		time.Sleep(1 * time.Second)
+	}
+
 	return nil
 }
 
@@ -56,10 +78,41 @@ func handleDaemonWait(ctx *cli.Context) error {
 }
 
 func handleDaemonQuit(ctx *cli.Context, ctl *client.Client) error {
+	if err := ctl.Quit(); err != nil {
+		return ExitCode{
+			DaemonNotResponding,
+			fmt.Sprintf("brigd not responding: %v", err),
+		}
+	}
+
 	return nil
 }
 
-func handleDaemon(ctx *cli.Context) error {
+func handleDaemonLaunch(ctx *cli.Context) error {
+	brigPath := os.Getenv("BRIG_PATH")
+	if brigPath == "" {
+		// TODO: Check parent directories to see if we're in some
+		//       brig repository.
+		brigPath = "."
+	}
+
+	server, err := server.BootServer(brigPath)
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to boot brigd: %v", err),
+		}
+	}
+
+	defer server.Close()
+
+	if err := server.Serve(); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to serve: %v", err),
+		}
+	}
+
 	return nil
 }
 
@@ -88,6 +141,7 @@ func handleConfigSet(ctx *cli.Context) error {
 }
 
 func handleInit(ctx *cli.Context) error {
+	fmt.Println(brigLogo)
 	return nil
 }
 
