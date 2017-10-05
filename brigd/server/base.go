@@ -1,43 +1,66 @@
 package server
 
 import (
-	"github.com/disorganizer/brig/catfs"
+	"sync"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/repo"
 )
 
-// Backend is a mix-in of all backend interfaces used in the http server.
-type Backend interface {
-	repo.RepoBackend
-	catfs.FsBackend
-}
-
-type DummyBackend struct {
-	repo.DummyBackend
-	*catfs.MemFsBackend
-}
-
-func NewDummyBackend() *DummyBackend {
-	return &DummyBackend{
-		MemFsBackend: catfs.NewMemFsBackend(),
-		DummyBackend: repo.DummyBackend{},
-	}
-}
-
 type base struct {
-	Repo    *repo.Repository
-	Backend Backend
-	QuitCh  chan struct{}
+	mu       sync.Mutex
+	basePath string
+
+	repo    *repo.Repository
+	backend backend.Backend
+
+	QuitCh chan struct{}
 }
 
-func newBase(basePath string, backend Backend) (*base, error) {
-	repo, err := repo.Open(basePath, backend)
+// Repo lazily-loads the repository on disk.
+// On the next call it will be returned directly.
+func (b *base) Repo() (*repo.Repository, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.repo != nil {
+		return b.repo, nil
+	}
+
+	rp, err := repo.Open(b.basePath)
+	if err != nil {
+		log.Warningf("Failed to load repository at `%s`: %v", b.basePath, err)
+		return nil, err
+	}
+
+	return rp, nil
+}
+
+func (b *base) Backend() (backend.Backend, error) {
+	rp, err := b.Repo()
 	if err != nil {
 		return nil, err
 	}
 
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.backend != nil {
+		return b.backend, nil
+	}
+
+	bk, err := rp.LoadBackend()
+	if err != nil {
+		return nil, err
+	}
+
+	return bk, nil
+}
+
+func newBase(basePath string) (*base, error) {
 	return &base{
-		Repo:    repo,
-		Backend: backend,
-		QuitCh:  make(chan struct{}, 1),
+		basePath: basePath,
+		QuitCh:   make(chan struct{}, 1),
 	}, nil
 }

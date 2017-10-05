@@ -9,6 +9,9 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
+// Client is a helper API that implements the rpc interface to brig and makes
+// all data easily accessible from Go.  Note that this layer is needed, so we
+// could later support other languages.
 type Client struct {
 	ctx     context.Context
 	conn    *rpc.Conn
@@ -17,6 +20,7 @@ type Client struct {
 	api capnp.API
 }
 
+// Dial will attempt to connect to brigd under the specified port
 func Dial(ctx context.Context, port int) (*Client, error) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	tcpConn, err := net.Dial("tcp", addr)
@@ -36,14 +40,17 @@ func Dial(ctx context.Context, port int) (*Client, error) {
 	}, nil
 }
 
+// Return info about the local addr
 func (cl *Client) LocalAddr() net.Addr {
 	return cl.tcpConn.LocalAddr()
 }
 
+// Return info about the remote addr
 func (cl *Client) RemoteAddr() net.Addr {
 	return cl.tcpConn.RemoteAddr()
 }
 
+// Close will close the connection from the client side
 func (cl *Client) Close() error {
 	return cl.conn.Close()
 }

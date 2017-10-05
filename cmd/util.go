@@ -29,7 +29,12 @@ func (err ExitCode) Error() string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 func guessRepoFolder() string {
-	return "."
+	path := os.Getenv("BRIG_PATH")
+	if path == "" {
+		return "."
+	}
+
+	return path
 }
 
 func readPassword() (string, error) {
@@ -171,6 +176,6 @@ func guessPort() int {
 	}
 
 	// Guess the default port.
-	log.Warning("BRIG_PORT not given, using :6666")
+	log.Warning("BRIG_PORT not given, assuming :6666")
 	return 6666
 }

@@ -8,9 +8,15 @@ import (
 	"path/filepath"
 	"sync"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/catfs"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
+)
+
+const (
+	repoConfigTemplate = "data:\n    backend: %s"
 )
 
 // Repository provides access to the file structure of a single repository.
@@ -19,7 +25,8 @@ import (
 // config.yml
 // remotes.yml
 // data/
-//    (backend specific)
+//    <backend_name>
+//        (backend specific)
 // metadata/
 //    <name_1>
 //        (backend specific)
@@ -42,8 +49,6 @@ type Repository struct {
 
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
-
-	FSBackend catfs.FsBackend
 }
 
 func touch(path string) error {
@@ -69,7 +74,7 @@ func isEmpty(name string) (bool, error) {
 	return false, err // Either not empty or error, suits both cases
 }
 
-func Init(baseFolder, owner string, backend RepoBackend) error {
+func Init(baseFolder, owner, backendName string) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
@@ -88,6 +93,11 @@ func Init(baseFolder, owner string, backend RepoBackend) error {
 		)
 	}
 
+	realBackend := backend.FromName(backendName)
+	if realBackend == nil {
+		return fmt.Errorf("No such backend `%s`", backendName)
+	}
+
 	// Create (empty) folders:
 	folders := []string{"metadata", "data"}
 	for _, folder := range folders {
@@ -101,8 +111,10 @@ func Init(baseFolder, owner string, backend RepoBackend) error {
 		return e.Wrapf(err, "Failed touch remotes.yml")
 	}
 
-	if err := touch(filepath.Join(baseFolder, "config.yml")); err != nil {
-		return e.Wrapf(err, "Failed touch config.yml")
+	configPath := filepath.Join(baseFolder, "config.yml")
+	initConfig := []byte(fmt.Sprintf(repoConfigTemplate, backendName))
+	if err := ioutil.WriteFile(configPath, initConfig, 0644); err != nil {
+		return err
 	}
 
 	whoamiPath := filepath.Join(baseFolder, "whoami")
@@ -111,14 +123,14 @@ func Init(baseFolder, owner string, backend RepoBackend) error {
 	}
 
 	dataFolder := filepath.Join(baseFolder, "data")
-	if err := backend.Init(dataFolder); err != nil {
+	if err := realBackend.Init(dataFolder); err != nil {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
 	return nil
 }
 
-func Open(baseFolder string, backend catfs.FsBackend) (*Repository, error) {
+func Open(baseFolder string) (*Repository, error) {
 	// Make sure to load the config:
 	config := viper.New()
 	config.AddConfigPath(baseFolder)
@@ -153,20 +165,34 @@ func Open(baseFolder string, backend catfs.FsBackend) (*Repository, error) {
 		Config:     config,
 		Remotes:    remotes,
 		Owner:      string(owner),
-		FSBackend:  backend,
 		fsMap:      make(map[string]*catfs.FS),
 	}, nil
 }
 
 func (rp *Repository) Close() error {
-	// TODO: Close() currently does nothing, but it should encrypt config/remotes
-	//       so they can get decrypted again on startup.
 	return nil
+}
+
+func (rp *Repository) LoadBackend() (backend.Backend, error) {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	backendName := rp.Config.GetString("data.backend")
+	log.Infof("Loading backend `%s`", backendName)
+
+	realBackend := backend.FromName(backendName)
+	if realBackend == nil {
+		msg := fmt.Sprintf("No such backend `%s`", backendName)
+		log.Error(msg)
+		return nil, fmt.Errorf("open failed: %s", msg)
+	}
+
+	return realBackend, nil
 }
 
 // FS returns a filesystem for `owner`. If there is none yet,
 // it will create own associated to the respective owner.
-func (rp *Repository) FS(owner string) (*catfs.FS, error) {
+func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 
@@ -194,7 +220,7 @@ func (rp *Repository) FS(owner string) (*catfs.FS, error) {
 	}
 
 	fsDbPath := filepath.Join(rp.BaseFolder, "data", owner)
-	fs, err := catfs.NewFilesystem(rp.FSBackend, fsDbPath, &person, fsCfg)
+	fs, err := catfs.NewFilesystem(bk, fsDbPath, &person, fsCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -205,6 +231,6 @@ func (rp *Repository) FS(owner string) (*catfs.FS, error) {
 }
 
 // OwnFS returns the filesystem for the owner.
-func (rp *Repository) OwnFS() (*catfs.FS, error) {
-	return rp.FS(rp.Owner)
+func (rp *Repository) OwnFS(bk catfs.FsBackend) (*catfs.FS, error) {
+	return rp.FS(rp.Owner, bk)
 }

@@ -105,20 +105,14 @@ func (sv *Server) Serve() error {
 	return nil
 }
 
-func BootServer(basePath string) (*Server, error) {
+func BootServer(basePath string, port int) (*Server, error) {
 	ctx := context.Background()
-
-	// TODO: Read and instantiate correct backend from
-	//       marker in the repository.
-	backend := NewDummyBackend()
-	base, err := newBase(basePath, backend)
+	base, err := newBase(basePath)
 	if err != nil {
 		return nil, err
 	}
 
-	port := base.Repo.Config.GetInt("daemon.port")
 	addr := fmt.Sprintf("localhost:%d", port)
-
 	log.Infof("Listening on %s", addr)
 	lst, err := net.Listen("tcp", addr)
 	if err != nil {

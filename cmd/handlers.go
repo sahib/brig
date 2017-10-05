@@ -96,7 +96,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		brigPath = "."
 	}
 
-	server, err := server.BootServer(brigPath)
+	server, err := server.BootServer(brigPath, guessPort())
 	if err != nil {
 		return ExitCode{
 			UnknownError,
@@ -128,6 +128,20 @@ func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
 	return doMount(ctx, ctl, false)
 }
 
+func handleInit(ctx *cli.Context, ctl *client.Client) error {
+	// Accumulate args:
+	owner := ctx.Args().First()
+	folder := guessRepoFolder()
+	backend := ctx.String("backend")
+
+	if err := ctl.Init(folder, owner, backend); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
+	}
+
+	fmt.Println(brigLogo)
+	return nil
+}
+
 func handleConfigList(cli *cli.Context) error {
 	return nil
 }
@@ -137,11 +151,6 @@ func handleConfigGet(ctx *cli.Context) error {
 }
 
 func handleConfigSet(ctx *cli.Context) error {
-	return nil
-}
-
-func handleInit(ctx *cli.Context) error {
-	fmt.Println(brigLogo)
 	return nil
 }
 

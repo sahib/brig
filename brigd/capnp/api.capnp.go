@@ -10,85 +10,6 @@ import (
 	server "zombiezen.com/go/capnproto2/server"
 )
 
-// Error representation
-type Error struct{ capnp.Struct }
-
-// Error_TypeID is the unique identifier for the type Error.
-const Error_TypeID = 0xe7d9ccd42858deae
-
-func NewError(s *capnp.Segment) (Error, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
-	return Error{st}, err
-}
-
-func NewRootError(s *capnp.Segment) (Error, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
-	return Error{st}, err
-}
-
-func ReadRootError(msg *capnp.Message) (Error, error) {
-	root, err := msg.RootPtr()
-	return Error{root.Struct()}, err
-}
-
-func (s Error) String() string {
-	str, _ := text.Marshal(0xe7d9ccd42858deae, s.Struct)
-	return str
-}
-
-func (s Error) Success() bool {
-	return s.Struct.Bit(0)
-}
-
-func (s Error) SetSuccess(v bool) {
-	s.Struct.SetBit(0, v)
-}
-
-func (s Error) What() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s Error) HasWhat() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Error) WhatBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s Error) SetWhat(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-// Error_List is a list of Error.
-type Error_List struct{ capnp.List }
-
-// NewError creates a new list of Error.
-func NewError_List(s *capnp.Segment, sz int32) (Error_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1}, sz)
-	return Error_List{l}, err
-}
-
-func (s Error_List) At(i int) Error { return Error{s.List.Struct(i)} }
-
-func (s Error_List) Set(i int, v Error) error { return s.List.SetStruct(i, v.Struct) }
-
-func (s Error_List) String() string {
-	str, _ := text.MarshalList(0xe7d9ccd42858deae, s.List)
-	return str
-}
-
-// Error_Promise is a wrapper for a Error promised by a client call.
-type Error_Promise struct{ *capnp.Pipeline }
-
-func (p Error_Promise) Struct() (Error, error) {
-	s, err := p.Pipeline.Struct()
-	return Error{s}, err
-}
-
 type FS struct{ Client capnp.Client }
 
 // FS_TypeID is the unique identifier for the type FS.
@@ -140,7 +61,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 			call := FS_stage{c, opts, FS_stage_Params{Struct: p}, FS_stage_Results{Struct: r}}
 			return s.Stage(call)
 		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
 	return methods
@@ -251,12 +172,12 @@ type FS_stage_Results struct{ capnp.Struct }
 const FS_stage_Results_TypeID = 0x884238694e8b8d88
 
 func NewFS_stage_Results(s *capnp.Segment) (FS_stage_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
 	return FS_stage_Results{st}, err
 }
 
 func NewRootFS_stage_Results(s *capnp.Segment) (FS_stage_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
 	return FS_stage_Results{st}, err
 }
 
@@ -270,37 +191,12 @@ func (s FS_stage_Results) String() string {
 	return str
 }
 
-func (s FS_stage_Results) Error() (Error, error) {
-	p, err := s.Struct.Ptr(0)
-	return Error{Struct: p.Struct()}, err
-}
-
-func (s FS_stage_Results) HasError() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s FS_stage_Results) SetError(v Error) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
-}
-
-// NewError sets the error field to a newly
-// allocated Error struct, preferring placement in s's segment.
-func (s FS_stage_Results) NewError() (Error, error) {
-	ss, err := NewError(s.Struct.Segment())
-	if err != nil {
-		return Error{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
-}
-
 // FS_stage_Results_List is a list of FS_stage_Results.
 type FS_stage_Results_List struct{ capnp.List }
 
 // NewFS_stage_Results creates a new list of FS_stage_Results.
 func NewFS_stage_Results_List(s *capnp.Segment, sz int32) (FS_stage_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
 	return FS_stage_Results_List{l}, err
 }
 
@@ -321,10 +217,6 @@ type FS_stage_Results_Promise struct{ *capnp.Pipeline }
 func (p FS_stage_Results_Promise) Struct() (FS_stage_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return FS_stage_Results{s}, err
-}
-
-func (p FS_stage_Results_Promise) Error() Error_Promise {
-	return Error_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
 }
 
 type VCS struct{ Client capnp.Client }
@@ -393,11 +285,33 @@ func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opt
 	}
 	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c Meta) Init(ctx context.Context, params func(Meta_init_Params) error, opts ...capnp.CallOption) Meta_init_Results_Promise {
+	if c.Client == nil {
+		return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      2,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "init",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_init_Params{Struct: s}) }
+	}
+	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type Meta_Server interface {
 	Quit(Meta_quit) error
 
 	Ping(Meta_ping) error
+
+	Init(Meta_init) error
 }
 
 func Meta_ServerToClient(s Meta_Server) Meta {
@@ -407,7 +321,7 @@ func Meta_ServerToClient(s Meta_Server) Meta {
 
 func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 2)
+		methods = make([]server.Method, 0, 3)
 	}
 
 	methods = append(methods, server.Method{
@@ -438,6 +352,20 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      2,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "init",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_init{c, opts, Meta_init_Params{Struct: p}, Meta_init_Results{Struct: r}}
+			return s.Init(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -455,6 +383,14 @@ type Meta_ping struct {
 	Options capnp.CallOptions
 	Params  Meta_ping_Params
 	Results Meta_ping_Results
+}
+
+// Meta_init holds the arguments for a server call to Meta.init.
+type Meta_init struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Meta_init_Params
+	Results Meta_init_Results
 }
 
 type Meta_quit_Params struct{ capnp.Struct }
@@ -692,6 +628,171 @@ func (p Meta_ping_Results_Promise) Struct() (Meta_ping_Results, error) {
 	return Meta_ping_Results{s}, err
 }
 
+type Meta_init_Params struct{ capnp.Struct }
+
+// Meta_init_Params_TypeID is the unique identifier for the type Meta_init_Params.
+const Meta_init_Params_TypeID = 0xed03ac5ef50453fb
+
+func NewMeta_init_Params(s *capnp.Segment) (Meta_init_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
+	return Meta_init_Params{st}, err
+}
+
+func NewRootMeta_init_Params(s *capnp.Segment) (Meta_init_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
+	return Meta_init_Params{st}, err
+}
+
+func ReadRootMeta_init_Params(msg *capnp.Message) (Meta_init_Params, error) {
+	root, err := msg.RootPtr()
+	return Meta_init_Params{root.Struct()}, err
+}
+
+func (s Meta_init_Params) String() string {
+	str, _ := text.Marshal(0xed03ac5ef50453fb, s.Struct)
+	return str
+}
+
+func (s Meta_init_Params) BasePath() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Meta_init_Params) HasBasePath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_init_Params) BasePathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Meta_init_Params) SetBasePath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Meta_init_Params) Owner() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s Meta_init_Params) HasOwner() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_init_Params) OwnerBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s Meta_init_Params) SetOwner(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+func (s Meta_init_Params) Backend() (string, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.Text(), err
+}
+
+func (s Meta_init_Params) HasBackend() bool {
+	p, err := s.Struct.Ptr(2)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_init_Params) BackendBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.TextBytes(), err
+}
+
+func (s Meta_init_Params) SetBackend(v string) error {
+	return s.Struct.SetText(2, v)
+}
+
+// Meta_init_Params_List is a list of Meta_init_Params.
+type Meta_init_Params_List struct{ capnp.List }
+
+// NewMeta_init_Params creates a new list of Meta_init_Params.
+func NewMeta_init_Params_List(s *capnp.Segment, sz int32) (Meta_init_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3}, sz)
+	return Meta_init_Params_List{l}, err
+}
+
+func (s Meta_init_Params_List) At(i int) Meta_init_Params { return Meta_init_Params{s.List.Struct(i)} }
+
+func (s Meta_init_Params_List) Set(i int, v Meta_init_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_init_Params_List) String() string {
+	str, _ := text.MarshalList(0xed03ac5ef50453fb, s.List)
+	return str
+}
+
+// Meta_init_Params_Promise is a wrapper for a Meta_init_Params promised by a client call.
+type Meta_init_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_init_Params_Promise) Struct() (Meta_init_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_init_Params{s}, err
+}
+
+type Meta_init_Results struct{ capnp.Struct }
+
+// Meta_init_Results_TypeID is the unique identifier for the type Meta_init_Results.
+const Meta_init_Results_TypeID = 0xe826e800c318a7c4
+
+func NewMeta_init_Results(s *capnp.Segment) (Meta_init_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_init_Results{st}, err
+}
+
+func NewRootMeta_init_Results(s *capnp.Segment) (Meta_init_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_init_Results{st}, err
+}
+
+func ReadRootMeta_init_Results(msg *capnp.Message) (Meta_init_Results, error) {
+	root, err := msg.RootPtr()
+	return Meta_init_Results{root.Struct()}, err
+}
+
+func (s Meta_init_Results) String() string {
+	str, _ := text.Marshal(0xe826e800c318a7c4, s.Struct)
+	return str
+}
+
+// Meta_init_Results_List is a list of Meta_init_Results.
+type Meta_init_Results_List struct{ capnp.List }
+
+// NewMeta_init_Results creates a new list of Meta_init_Results.
+func NewMeta_init_Results_List(s *capnp.Segment, sz int32) (Meta_init_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Meta_init_Results_List{l}, err
+}
+
+func (s Meta_init_Results_List) At(i int) Meta_init_Results {
+	return Meta_init_Results{s.List.Struct(i)}
+}
+
+func (s Meta_init_Results_List) Set(i int, v Meta_init_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_init_Results_List) String() string {
+	str, _ := text.MarshalList(0xe826e800c318a7c4, s.List)
+	return str
+}
+
+// Meta_init_Results_Promise is a wrapper for a Meta_init_Results promised by a client call.
+type Meta_init_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_init_Results_Promise) Struct() (Meta_init_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_init_Results{s}, err
+}
+
 type API struct{ Client capnp.Client }
 
 // API_TypeID is the unique identifier for the type API.
@@ -777,6 +878,26 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 	}
 	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) Init(ctx context.Context, params func(Meta_init_Params) error, opts ...capnp.CallOption) Meta_init_Results_Promise {
+	if c.Client == nil {
+		return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      2,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "init",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_init_Params{Struct: s}) }
+	}
+	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type API_Server interface {
 	Version(API_version) error
@@ -786,6 +907,8 @@ type API_Server interface {
 	Quit(Meta_quit) error
 
 	Ping(Meta_ping) error
+
+	Init(Meta_init) error
 }
 
 func API_ServerToClient(s API_Server) API {
@@ -795,7 +918,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 4)
+		methods = make([]server.Method, 0, 5)
 	}
 
 	methods = append(methods, server.Method{
@@ -823,7 +946,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			call := FS_stage{c, opts, FS_stage_Params{Struct: p}, FS_stage_Results{Struct: r}}
 			return s.Stage(call)
 		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
 	methods = append(methods, server.Method{
@@ -852,6 +975,20 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			return s.Ping(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      2,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "init",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_init{c, opts, Meta_init_Params{Struct: p}, Meta_init_Results{Struct: r}}
+			return s.Init(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
 	return methods
@@ -983,56 +1120,56 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda|T]H\x1cW\x14>g\xee]Gee" +
-	"\xf7z\x15\xed\x0fl[\x94\xaa\xd0u\xd5\x96Z\xa9u" +
-	"\xd5\xfa\xd7b\xbb\xa3X|i\xedT\x06]\xd0\xdd\xe9" +
-	"\xcc\xa8\x15Z,H[Q\xfa\xd2\xd2Jm\xa5 \xfd" +
-	"\x95\xb6`\xb5\x8f}\x08\xc4@H\x02\x81\x18\xd1\x87$" +
-	"$\x81\x04\x82\x89\xcf\x09\x81\x09\xf7\xae\xb3\xa3\xac\xfa0" +
-	"0\xcc\xf9\xe6;\xe7\xfb\xbesol\x03\xe3J]\xe0" +
-	"\xd5<\x00\xad;\x90\xe7\xb2\xdbS\xa9\xd8\x85;\xb3\xc0" +
-	"\xc2\xc4}f\xa7\xbb\xef\xb37\xe6\xee\x01 G\xb2\xca" +
-	"\x0b\x88\x0a\xc0\x03\xe4+> \xde\xdc\xb9\xaf\x17\xdeI" +
-	"6\xb6\xcd\x01\xe3\x08\x10@\x15\xa0\xa1\x99\x14\" \xef" +
-	" -\x80\xeeOJ\xe1b\xf9\x1f\xbf\xffx\x00P\x04" +
-	"\xc0 \x8a\x00$\xc9\x14\xa0\xdb\xfe\xcb\xc6\xdb\x0f\x8a\xbe" +
-	"9\x07\xac\x04\x01\xa8\xa8_\"O#Pwo\xa9\x0c" +
-	"\xe7\xdf\xfc\xeb<\xb0R\xaf\xf2\x9f\xa0\xa6.\x1f\xb8\xff" +
-	"l\xc1t\xd9\x0eh%\xe8\x95\x96\xc9\x0b\x82\xf4W\xd9" +
-	"u\xbd\xe1\xea\xe5\xd9h\xd3\x8dC\xbfnf~\xdd\x1e" +
-	"\xfa\xfe\x8b`\xed\xb5\x9b\x87*\x7f\x93bQy\xb8\xf5" +
-	"\xe9\xc6\xfb\x83\xeb\xb7rt\x7fG\x96\xf8\xb2\xd4\xfd\x03" +
-	"\xe9\xe2g\xa4\xee\x7f\xae\x0fVm]\xdc\xbd\x0bZ\x18" +
-	"\xd1GK\x03\xf8\x9f\xe4_\xbeFT\xbeF\"|W" +
-	"\x8a\xac\xe8<[\xbc\xff\xf9o\x8fr\xb8_\xa1+\xbc" +
-	"YL\xc1_\xa3\xaax\x00\xdc\xfd\xc5\x85\xfa\xf2O\xba" +
-	"\x1f\xe7\x80\x9f\xa7+\xbcZ\x82+i\x17\xef\xa5/\x02" +
-	"\xb8\x93_~\xb8W\xfa\xee\x157\xa3'\x13@\x07-" +
-	"\x16V\xf4\xd2\x16ht\x87u3e\xd6\xea&&\xa3" +
-	"\xf2\xb5)\xd4k8z\x02Q\xcb'\x01\x80\xacU\xe8" +
-	"9\xc3\xeaj@a\x95*b6\x01\xf4\xba\xb0\xa7D" +
-	"\xadH\x0d}<\x91t\xe2\x182\x93\xa9\x918&\x10" +
-	"\xb3m\x88\xd7\xa6\xb3?j;\xfa\x88Q\xd1g\xd8\x13" +
-	"c\x8e\x0d\xa0QB\x01(\x02\xb0\xa2z\x00-\x9f\xa0" +
-	"V\xa2`\xc4\xb0\xac\xb4\x85a\xdfS@\x0c\xc3i\x94" +
-	"\x09\xdd\xd2\xc7m\xc1\xe0\x11V\xbf\x05\xa0U\x11\xd4^" +
-	"V\x90!\xca\xb5`u}\x00Z\x8c\xa0\xf6\xba\x82\xae" +
-	"\xfe\x91=d\xea\xce(\x00`\x10\x14\x0c\x02\xba\x96a" +
-	"\xa6\xc5G\xc0\xd1\xec\xb7\x9c\xae\xad\x89\x9e\xe8\xa4a\xd9" +
-	"\xc9tJ6&\xe3v.Hx\x1a\x15nx\xb3\xc1" +
-	"\xe9D\xc2\x14u\xcc\xb1\x0f{\xd2\xe6{2s\x80C" +
-	"\x0a\x0a\xd2\xe3\xa6\x92\x0dE\x0a\xa74\xf41\x99\x0c\xd0" +
-	"\xce\xdd\x06\xd2\xd9/v\x81\xca]\xf0\x0e+z\xc7\x9a" +
-	"\xb1zPX@\x8dH\xdf\x8f&\x9d\xa5\x88t\x88\x00" +
-	"%\x0b*\xee\x07\xdf\xfe\xac\xfd\xbf=\xbf\x09\x1aU\xb0" +
-	"\xb5\x1c1\x08\xc0p\xd5\x95\xa0\xe7,\x03M\xcb\xb0\x8d" +
-	"\x94\xa3\x87\x9cd:\x05GB\x14\x0eT\x10\xd4b\x0a" +
-	"z\x19\xbeT\xe3\x07;cO\x0c\x0f\x1b\xb6\x8d\x08\x0a" +
-	"\"`hjTwr\x82\xcb\xce\xa5\xbe\xd7.\xb4%" +
-	"H\xe0\xd8\xb1\xd5\xd6D\x8f/\xdd\xbb\x86\xd0\xbb[\x18" +
-	"k\x93\xd2\xbd(\xe2\xa8\xe5#\xfa\xb7\x04\x80\x7fS\x9e" +
-	"h\xbe\xdc\x08\xcf\xfc\x93\xf6\xdf2\xcc\xb1iO\xc6\x93" +
-	"\x00\x00\x00\xff\xff\x8au\x83\xe4"
+const schema_ea883e7d5248d81b = "x\xda|T_HdU\x18\xff\xbes\xce\xf5\xa6\x8c" +
+	"L\xc7;\xa2\xf4\x071,*p\xd41\xb1\xa4r\xfc" +
+	"\xaf\x95u\x8fV\xf8Rv\xb5\x8b\x0e\xe98\xcd\x1d5" +
+	"!1\x11C\x12\x1f\x0aJ\xb0z\x91\xc8\x0a\xa3\x07\xed" +
+	"\xa9\xc7\xa4\x88^\x82v\x17_\x96ewa\x91E\xd7" +
+	"\xa7}\xd8?p\x97s\xc7s\xef,W}\x188s" +
+	"\xbf\xef|\xbf\xef\xf7\xfb}\xe7\xab\xff\x03\x93\xa4Ak" +
+	".\x02\x10\xbdZ\x91\xcb\xaf\xcf\xa6\xeb\xff\xbd\xb1\x04\xfc" +
+	"Q\xea>\xbe\xdf;0\xff\xea\xcaM\x004\x90\xfeb" +
+	"\x14S\x1d\xc0\xd0\xe8\xdf\xc6\xbc<\xb9+k\xabo\xa6" +
+	"^l_\x01n \x00\xd3\x01\x1amZ\x82\xc0\xdc\xef" +
+	"H\xc9z\xe5O[\xdf\xe6#\x1a\x91\xa1~J\x10\xd0" +
+	"\x10t\x16\xd0\xed\xf8a\xf7\xf5[\xa5_\xfd\x05<\xa6" +
+	"\xae\xfeN\x1f\x93W\x0f7*\xf0\x8b\xce\xed\x7f\x80\x97" +
+	"\xab\xc8\xf7\xf9\xa2\xc6;GO\x14\xcfU\xec\x83\x88\xa1" +
+	"\x0a-\xd3\xa7d\xd15\xda\x0a\xe8\xee4^\xfco)" +
+	"\xder\xa5\xe0\xea\xaf\xf9\xab\x97\x86\xbfY\x8e\xd4]\xbe" +
+	"Z\x10\xf9\x9a\x96\xc9\xc8\x9d\x0b\x9f\xee\xbe7\xb4s-" +
+	"Dx\x9en\x18\xcb\x1e\xe1E\xdac\xfc,O\xc7{" +
+	"[\x95\x7f\x1e<s\x10\x14\xf92_\xe4\xde \xbb\xfd" +
+	"\xfe6=\xca\x97\xd7dn\xe3\x9cDFc\x91\xfe\x06" +
+	"\xe8\xd6t\xef\x95\x1d\x7f\xf6\xe3\xdd\x10\xca\x93l\xd3x" +
+	"Z\x962\xaa\x99.\x7f\x00\xee\xf1\xfaj\xa2\xf2\x93\xde" +
+	"\xfb\xa1\xe4b\xb6ip/\xb9\x94\xf5\x18M\xac\x19\xc0" +
+	"\x9d\xf9\xfc\x83\xc3\xf2\xb7\xfewO\xa0QB7\xb12" +
+	"\x09\xfd\x0ak\x85Zw\xd4\xca\xa43uV\x06Sq" +
+	"\xef\xd8\x12\xed\xb7s\x96\x89(\"T\x03\xf0EC\xa5" +
+	"\x11\x17\xcf\x03\xe1]:\xa2\xef\x05*\x14\xfe\x92\x8c\xd5" +
+	"\xeaH|\xce(E\x01\xa9J\xb5\x8c\x95\xeb\xd1\x8f\xa7" +
+	"S\xb9$F3\xa9\xf4X\x12\xa3\xa9\xb4\xfcg\"\xfa" +
+	"\x9dP\xd5I\xf7`\xdc\xc9Ycv\xcd\x80\xedLO" +
+	"\xe4\x1c\x80srL+kM: \x1e\xa1\x0c\x80!" +
+	"\x00\x7f\xee5\x00\xf1,E\xf1\x02A\x8e\xe8\x0d\x05o" +
+	"\x18\x00\x10\xf5\x14\xc5\xcb\x04]k\xc4\x19\xceX\xb9q" +
+	"\x00\xc0\x08\x10\x8c\x00\xbaY;3%?\x02\x8e\xfb\xdf" +
+	"B\xa8mf_|\xc6\xce:\xa9\xa9\xb4\x07L'\x9d" +
+	"p\x92\xd41.Y\xaa\xde\xe0\xfcB\x92\xa5>\x91s" +
+	"\x04\xf3)\x94\xb6\x83d\x84\"Fp\xe1$\x0f\x19\x10" +
+	"d\xa7u\xe5\x01Ju\xcf\x01\x0cr\xf2\xa2\xa2\x13\x9e" +
+	"\x00\xda=(\xfdg\x9e\xff\xea\xa9\xa2z\xcd\x9c'\x80" +
+	"pM\xaf\xf2t?\xc3:\x0fFZ\x1b\x869%G" +
+	"\xb5+\">\xf3.i^'Ea\x16\x98\xd7\x9f\x90" +
+	"k\x88\xa2x\x9b '$\x86\x04\x80\x0b\xa9\xd1\x1b\x14" +
+	"\xc5\x10Aw\xc4rl\xf3aG\xab\xa6f\xd3vV" +
+	"\xfd[\x18\xb1F?\xb2\xd3\x1f\x86\xbc\xf5\xd9\xeb\xefv" +
+	"H\xfa&\xd5\x0a\x99\x05\xe16\xb3/PG\xed)T" +
+	"\xcb\x87\xf3vO\x1d\xe5V\x12E\x041X#\x00\xc1" +
+	"c\x07\x08\xf6\xe9\x99^y\x03\xa4D,\x1c\x8dD0" +
+	"\x1aUY;31\xa7(=\x08\x00\x00\xff\xffd\xcb" +
+	"\x8e\xec"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
@@ -1045,7 +1182,8 @@ func init() {
 		0xdf3a2e83d0d533b3,
 		0xe1dd2f0c85965fd6,
 		0xe2b3585db47cd4f9,
-		0xe7d9ccd42858deae,
+		0xe826e800c318a7c4,
+		0xed03ac5ef50453fb,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
 		0xffd34f15ec608676)

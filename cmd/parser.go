@@ -97,7 +97,14 @@ func RunCmdline(args []string) int {
 			Usage:       "Initialize an empty repository",
 			ArgsUsage:   "<brig-id>",
 			Description: "Creates a new brig repository folder and unlocks it.\n   The name of the folder is derivated from the given brig-id.\n   brig-id example: yourname@optionaldomain/ressource",
-			Action:      withArgCheck(needAtLeast(1), withExit(handleInit)),
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleInit, true)),
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "backend,b",
+					Value: "memory",
+					Usage: "What data backend to use for the new repo",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "open",

@@ -25,3 +25,20 @@ func (cl *Client) Quit() error {
 	_, err := call.Struct()
 	return err
 }
+
+func (cl *Client) Init(path, owner, backend string) error {
+	call := cl.api.Init(cl.ctx, func(p capnp.Meta_init_Params) error {
+		if err := p.SetOwner(owner); err != nil {
+			return err
+		}
+
+		if err := p.SetBasePath(path); err != nil {
+			return err
+		}
+
+		return p.SetBackend(backend)
+	})
+
+	_, err := call.Struct()
+	return err
+}
