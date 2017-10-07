@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -10,6 +12,7 @@ import (
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/brigd/server"
 	"github.com/disorganizer/brig/util/colors"
+	"github.com/dustin/go-humanize"
 )
 
 const brigLogo = `
@@ -155,14 +158,45 @@ func handleConfigSet(ctx *cli.Context) error {
 }
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
+	localPath := ctx.Args().Get(0)
 
-func handleRm(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := filepath.Base(localPath)
+	if len(ctx.Args()) > 1 {
+		repoPath = ctx.Args().Get(1)
+	}
+
+	if err := ctl.Stage(localPath, repoPath); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("stage: %v", err),
+		}
+	}
 	return nil
 }
 
 func handleCat(ctx *cli.Context, ctl *client.Client) error {
+	stream, err := ctl.Cat(ctx.Args().First())
+	if err != nil {
+		// TODO: Make those exit codes a wrapper function.
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("cat: %v", err),
+		}
+	}
+
+	defer stream.Close()
+
+	if _, err := io.Copy(os.Stdout, stream); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("cat-io: %v", err),
+		}
+	}
+
+	return nil
+}
+
+func handleRm(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
@@ -183,6 +217,34 @@ func handleOnline(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleList(ctx *cli.Context, ctl *client.Client) error {
+	maxDepth := ctx.Int("depth")
+	if ctx.Bool("recursive") {
+		maxDepth = -1
+	}
+
+	root := "/"
+	if ctx.Args().Present() {
+		root = ctx.Args().First()
+	}
+
+	entries, err := ctl.List(root, maxDepth)
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("ls: %v", err),
+		}
+	}
+
+	for _, entry := range entries {
+		fmt.Printf(
+			"%4s %4d %8s  %s\n",
+			humanize.Bytes(entry.Size),
+			entry.Inode,
+			entry.ModTime.Format(time.Stamp),
+			entry.Path,
+		)
+	}
+
 	return nil
 }
 

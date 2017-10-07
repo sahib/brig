@@ -154,6 +154,17 @@ func Sum(data []byte) Hash {
 	return Hash(mh)
 }
 
+func Cast(data []byte) (Hash, error) {
+	mh, err := multihash.Cast(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return Hash(mh), nil
+}
+
+// TestDummy returns a blake2b hash based on `seed`.
+// The same `seed` will always generate the same hash.
 func TestDummy(t *testing.T, seed byte) Hash {
 	data := make([]byte, multihash.DefaultLengths[multihash.BLAKE2B_MAX])
 	for idx := range data {

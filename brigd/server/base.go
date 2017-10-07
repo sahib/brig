@@ -34,6 +34,7 @@ func (b *base) Repo() (*repo.Repository, error) {
 		return nil, err
 	}
 
+	b.repo = rp
 	return rp, nil
 }
 
@@ -55,6 +56,7 @@ func (b *base) Backend() (backend.Backend, error) {
 		return nil, err
 	}
 
+	b.backend = bk
 	return bk, nil
 }
 

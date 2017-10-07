@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -64,6 +65,7 @@ type StatInfo struct {
 	Size    uint64
 	Inode   uint64
 	IsDir   bool
+	Depth   int
 	ModTime time.Time
 }
 
@@ -107,6 +109,7 @@ func nodeToStat(nd n.Node) *StatInfo {
 		IsDir:   nd.Type() == n.NodeTypeDirectory,
 		Inode:   nd.Inode(),
 		Size:    nd.Size(),
+		Depth:   n.Depth(nd),
 	}
 }
 
@@ -163,7 +166,12 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config)
 		for range fs.gcTicker.C {
 			fs.mu.Lock()
 
-			log.Debugf("gc: running")
+			owner, err := fs.lkr.Owner()
+			if err != nil {
+				log.Warningf("gc: failed to get owner: %v", err)
+			}
+
+			log.Debugf("gc (%s): running", owner.ID())
 			if err := fs.gc.Run(true); err != nil {
 				log.Warnf("failed to run GC: %v", err)
 			}
@@ -253,6 +261,55 @@ func (fs *FS) Stat(path string) (*StatInfo, error) {
 	}
 
 	return nodeToStat(nd), nil
+}
+
+// List returns stat info for each node below (and including) root.
+// Nodes deeper than maxDepth will not be shown. If maxDepth is a
+// negative number, all nodes will be shown.
+func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// NOTE: This method is highly inefficient:
+	//       - iterates over all nodes even if maxDepth is >= 0
+	//       - Sorting calculates depth again.
+	//
+	// Fix whenever it proves to be a problem.
+	rootNd, err := fs.lkr.LookupNode(root)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start counting max depth relative to the root:
+	if maxDepth >= 0 {
+		maxDepth += n.Depth(rootNd)
+	}
+
+	result := []*StatInfo{}
+	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
+		if maxDepth < 0 || n.Depth(child) <= maxDepth {
+			result = append(result, nodeToStat(child))
+		}
+
+		return nil
+	})
+
+	sort.Slice(result, func(i, j int) bool {
+		iDepth := result[i].Depth
+		jDepth := result[j].Depth
+
+		if iDepth == jDepth {
+			return result[i].Path < result[j].Path
+		}
+
+		return iDepth < jDepth
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 ////////////////////////

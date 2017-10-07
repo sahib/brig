@@ -314,10 +314,10 @@ func RunCmdline(args []string) int {
 				cli.IntFlag{
 					Name:  "depth, d",
 					Usage: "Max depth to traverse",
-					Value: -1,
+					Value: 1,
 				},
 				cli.BoolFlag{
-					Name:  "recursive,r",
+					Name:  "recursive,R",
 					Usage: "Allow recursive traverse",
 				},
 			},

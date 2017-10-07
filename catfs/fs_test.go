@@ -537,3 +537,28 @@ func TestHead(t *testing.T) {
 		require.Equal(t, headCmt.Hash().B58String(), ref)
 	})
 }
+
+func TestList(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/x"))
+		require.Nil(t, fs.Mkdir("/1/2/3/", true))
+		require.Nil(t, fs.Touch("/1/2/3/y"))
+
+		entries, err := fs.List("/1/2", -1)
+		require.Nil(t, err)
+
+		require.Equal(t, len(entries), 3)
+		require.Equal(t, entries[0].Path, "/1/2")
+		require.Equal(t, entries[1].Path, "/1/2/3")
+		require.Equal(t, entries[2].Path, "/1/2/3/y")
+
+		fmt.Println("---")
+		entries, err = fs.List("/", 1)
+		require.Nil(t, err)
+
+		require.Equal(t, 3, len(entries))
+		require.Equal(t, entries[0].Path, "/")
+		require.Equal(t, entries[1].Path, "/1")
+		require.Equal(t, entries[2].Path, "/x")
+	})
+}
