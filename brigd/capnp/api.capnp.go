@@ -399,46 +399,6 @@ func (c FS) Move(ctx context.Context, params func(FS_move_Params) error, opts ..
 	}
 	return FS_move_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c FS) Log(ctx context.Context, params func(FS_log_Params) error, opts ...capnp.CallOption) FS_log_Results_Promise {
-	if c.Client == nil {
-		return FS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      6,
-			InterfaceName: "capnp/api.capnp:FS",
-			MethodName:    "log",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_log_Params{Struct: s}) }
-	}
-	return FS_log_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c FS) Commit(ctx context.Context, params func(FS_commit_Params) error, opts ...capnp.CallOption) FS_commit_Results_Promise {
-	if c.Client == nil {
-		return FS_commit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      7,
-			InterfaceName: "capnp/api.capnp:FS",
-			MethodName:    "commit",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_commit_Params{Struct: s}) }
-	}
-	return FS_commit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
 
 type FS_Server interface {
 	Stage(FS_stage) error
@@ -452,10 +412,6 @@ type FS_Server interface {
 	Remove(FS_remove) error
 
 	Move(FS_move) error
-
-	Log(FS_log) error
-
-	Commit(FS_commit) error
 }
 
 func FS_ServerToClient(s FS_Server) FS {
@@ -465,7 +421,7 @@ func FS_ServerToClient(s FS_Server) FS {
 
 func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 8)
+		methods = make([]server.Method, 0, 6)
 	}
 
 	methods = append(methods, server.Method{
@@ -552,34 +508,6 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      6,
-			InterfaceName: "capnp/api.capnp:FS",
-			MethodName:    "log",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_log{c, opts, FS_log_Params{Struct: p}, FS_log_Results{Struct: r}}
-			return s.Log(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      7,
-			InterfaceName: "capnp/api.capnp:FS",
-			MethodName:    "commit",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_commit{c, opts, FS_commit_Params{Struct: p}, FS_commit_Results{Struct: r}}
-			return s.Commit(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
 	return methods
 }
 
@@ -629,22 +557,6 @@ type FS_move struct {
 	Options capnp.CallOptions
 	Params  FS_move_Params
 	Results FS_move_Results
-}
-
-// FS_log holds the arguments for a server call to FS.log.
-type FS_log struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  FS_log_Params
-	Results FS_log_Results
-}
-
-// FS_commit holds the arguments for a server call to FS.commit.
-type FS_commit struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  FS_commit_Params
-	Results FS_commit_Results
 }
 
 type FS_stage_Params struct{ capnp.Struct }
@@ -1489,266 +1401,56 @@ func (p FS_move_Results_Promise) Struct() (FS_move_Results, error) {
 	return FS_move_Results{s}, err
 }
 
-type FS_log_Params struct{ capnp.Struct }
-
-// FS_log_Params_TypeID is the unique identifier for the type FS_log_Params.
-const FS_log_Params_TypeID = 0xc0dd66dedad92ef8
-
-func NewFS_log_Params(s *capnp.Segment) (FS_log_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return FS_log_Params{st}, err
-}
-
-func NewRootFS_log_Params(s *capnp.Segment) (FS_log_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return FS_log_Params{st}, err
-}
-
-func ReadRootFS_log_Params(msg *capnp.Message) (FS_log_Params, error) {
-	root, err := msg.RootPtr()
-	return FS_log_Params{root.Struct()}, err
-}
-
-func (s FS_log_Params) String() string {
-	str, _ := text.Marshal(0xc0dd66dedad92ef8, s.Struct)
-	return str
-}
-
-// FS_log_Params_List is a list of FS_log_Params.
-type FS_log_Params_List struct{ capnp.List }
-
-// NewFS_log_Params creates a new list of FS_log_Params.
-func NewFS_log_Params_List(s *capnp.Segment, sz int32) (FS_log_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return FS_log_Params_List{l}, err
-}
-
-func (s FS_log_Params_List) At(i int) FS_log_Params { return FS_log_Params{s.List.Struct(i)} }
-
-func (s FS_log_Params_List) Set(i int, v FS_log_Params) error { return s.List.SetStruct(i, v.Struct) }
-
-func (s FS_log_Params_List) String() string {
-	str, _ := text.MarshalList(0xc0dd66dedad92ef8, s.List)
-	return str
-}
-
-// FS_log_Params_Promise is a wrapper for a FS_log_Params promised by a client call.
-type FS_log_Params_Promise struct{ *capnp.Pipeline }
-
-func (p FS_log_Params_Promise) Struct() (FS_log_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_log_Params{s}, err
-}
-
-type FS_log_Results struct{ capnp.Struct }
-
-// FS_log_Results_TypeID is the unique identifier for the type FS_log_Results.
-const FS_log_Results_TypeID = 0xccf4f28c8951edf6
-
-func NewFS_log_Results(s *capnp.Segment) (FS_log_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_log_Results{st}, err
-}
-
-func NewRootFS_log_Results(s *capnp.Segment) (FS_log_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_log_Results{st}, err
-}
-
-func ReadRootFS_log_Results(msg *capnp.Message) (FS_log_Results, error) {
-	root, err := msg.RootPtr()
-	return FS_log_Results{root.Struct()}, err
-}
-
-func (s FS_log_Results) String() string {
-	str, _ := text.Marshal(0xccf4f28c8951edf6, s.Struct)
-	return str
-}
-
-func (s FS_log_Results) Entries() (LogEntry_List, error) {
-	p, err := s.Struct.Ptr(0)
-	return LogEntry_List{List: p.List()}, err
-}
-
-func (s FS_log_Results) HasEntries() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s FS_log_Results) SetEntries(v LogEntry_List) error {
-	return s.Struct.SetPtr(0, v.List.ToPtr())
-}
-
-// NewEntries sets the entries field to a newly
-// allocated LogEntry_List, preferring placement in s's segment.
-func (s FS_log_Results) NewEntries(n int32) (LogEntry_List, error) {
-	l, err := NewLogEntry_List(s.Struct.Segment(), n)
-	if err != nil {
-		return LogEntry_List{}, err
-	}
-	err = s.Struct.SetPtr(0, l.List.ToPtr())
-	return l, err
-}
-
-// FS_log_Results_List is a list of FS_log_Results.
-type FS_log_Results_List struct{ capnp.List }
-
-// NewFS_log_Results creates a new list of FS_log_Results.
-func NewFS_log_Results_List(s *capnp.Segment, sz int32) (FS_log_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return FS_log_Results_List{l}, err
-}
-
-func (s FS_log_Results_List) At(i int) FS_log_Results { return FS_log_Results{s.List.Struct(i)} }
-
-func (s FS_log_Results_List) Set(i int, v FS_log_Results) error { return s.List.SetStruct(i, v.Struct) }
-
-func (s FS_log_Results_List) String() string {
-	str, _ := text.MarshalList(0xccf4f28c8951edf6, s.List)
-	return str
-}
-
-// FS_log_Results_Promise is a wrapper for a FS_log_Results promised by a client call.
-type FS_log_Results_Promise struct{ *capnp.Pipeline }
-
-func (p FS_log_Results_Promise) Struct() (FS_log_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_log_Results{s}, err
-}
-
-type FS_commit_Params struct{ capnp.Struct }
-
-// FS_commit_Params_TypeID is the unique identifier for the type FS_commit_Params.
-const FS_commit_Params_TypeID = 0x9efc974402f016f6
-
-func NewFS_commit_Params(s *capnp.Segment) (FS_commit_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_commit_Params{st}, err
-}
-
-func NewRootFS_commit_Params(s *capnp.Segment) (FS_commit_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_commit_Params{st}, err
-}
-
-func ReadRootFS_commit_Params(msg *capnp.Message) (FS_commit_Params, error) {
-	root, err := msg.RootPtr()
-	return FS_commit_Params{root.Struct()}, err
-}
-
-func (s FS_commit_Params) String() string {
-	str, _ := text.Marshal(0x9efc974402f016f6, s.Struct)
-	return str
-}
-
-func (s FS_commit_Params) Msg() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s FS_commit_Params) HasMsg() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s FS_commit_Params) MsgBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s FS_commit_Params) SetMsg(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-// FS_commit_Params_List is a list of FS_commit_Params.
-type FS_commit_Params_List struct{ capnp.List }
-
-// NewFS_commit_Params creates a new list of FS_commit_Params.
-func NewFS_commit_Params_List(s *capnp.Segment, sz int32) (FS_commit_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return FS_commit_Params_List{l}, err
-}
-
-func (s FS_commit_Params_List) At(i int) FS_commit_Params { return FS_commit_Params{s.List.Struct(i)} }
-
-func (s FS_commit_Params_List) Set(i int, v FS_commit_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s FS_commit_Params_List) String() string {
-	str, _ := text.MarshalList(0x9efc974402f016f6, s.List)
-	return str
-}
-
-// FS_commit_Params_Promise is a wrapper for a FS_commit_Params promised by a client call.
-type FS_commit_Params_Promise struct{ *capnp.Pipeline }
-
-func (p FS_commit_Params_Promise) Struct() (FS_commit_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_commit_Params{s}, err
-}
-
-type FS_commit_Results struct{ capnp.Struct }
-
-// FS_commit_Results_TypeID is the unique identifier for the type FS_commit_Results.
-const FS_commit_Results_TypeID = 0xdba8e30445acc3f4
-
-func NewFS_commit_Results(s *capnp.Segment) (FS_commit_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return FS_commit_Results{st}, err
-}
-
-func NewRootFS_commit_Results(s *capnp.Segment) (FS_commit_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return FS_commit_Results{st}, err
-}
-
-func ReadRootFS_commit_Results(msg *capnp.Message) (FS_commit_Results, error) {
-	root, err := msg.RootPtr()
-	return FS_commit_Results{root.Struct()}, err
-}
-
-func (s FS_commit_Results) String() string {
-	str, _ := text.Marshal(0xdba8e30445acc3f4, s.Struct)
-	return str
-}
-
-// FS_commit_Results_List is a list of FS_commit_Results.
-type FS_commit_Results_List struct{ capnp.List }
-
-// NewFS_commit_Results creates a new list of FS_commit_Results.
-func NewFS_commit_Results_List(s *capnp.Segment, sz int32) (FS_commit_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return FS_commit_Results_List{l}, err
-}
-
-func (s FS_commit_Results_List) At(i int) FS_commit_Results {
-	return FS_commit_Results{s.List.Struct(i)}
-}
-
-func (s FS_commit_Results_List) Set(i int, v FS_commit_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s FS_commit_Results_List) String() string {
-	str, _ := text.MarshalList(0xdba8e30445acc3f4, s.List)
-	return str
-}
-
-// FS_commit_Results_Promise is a wrapper for a FS_commit_Results promised by a client call.
-type FS_commit_Results_Promise struct{ *capnp.Pipeline }
-
-func (p FS_commit_Results_Promise) Struct() (FS_commit_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_commit_Results{s}, err
-}
-
 type VCS struct{ Client capnp.Client }
 
 // VCS_TypeID is the unique identifier for the type VCS.
 const VCS_TypeID = 0xfaa680ef12c44624
 
+func (c VCS) Log(ctx context.Context, params func(VCS_log_Params) error, opts ...capnp.CallOption) VCS_log_Results_Promise {
+	if c.Client == nil {
+		return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      0,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "log",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_log_Params{Struct: s}) }
+	}
+	return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c VCS) Commit(ctx context.Context, params func(VCS_commit_Params) error, opts ...capnp.CallOption) VCS_commit_Results_Promise {
+	if c.Client == nil {
+		return VCS_commit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      1,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "commit",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_commit_Params{Struct: s}) }
+	}
+	return VCS_commit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+
 type VCS_Server interface {
+	Log(VCS_log) error
+
+	Commit(VCS_commit) error
 }
 
 func VCS_ServerToClient(s VCS_Server) VCS {
@@ -1758,10 +1460,312 @@ func VCS_ServerToClient(s VCS_Server) VCS {
 
 func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 0)
+		methods = make([]server.Method, 0, 2)
 	}
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      0,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "log",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_log{c, opts, VCS_log_Params{Struct: p}, VCS_log_Results{Struct: r}}
+			return s.Log(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      1,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "commit",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_commit{c, opts, VCS_commit_Params{Struct: p}, VCS_commit_Results{Struct: r}}
+			return s.Commit(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
 	return methods
+}
+
+// VCS_log holds the arguments for a server call to VCS.log.
+type VCS_log struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  VCS_log_Params
+	Results VCS_log_Results
+}
+
+// VCS_commit holds the arguments for a server call to VCS.commit.
+type VCS_commit struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  VCS_commit_Params
+	Results VCS_commit_Results
+}
+
+type VCS_log_Params struct{ capnp.Struct }
+
+// VCS_log_Params_TypeID is the unique identifier for the type VCS_log_Params.
+const VCS_log_Params_TypeID = 0xa4efd353c57d2b85
+
+func NewVCS_log_Params(s *capnp.Segment) (VCS_log_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_log_Params{st}, err
+}
+
+func NewRootVCS_log_Params(s *capnp.Segment) (VCS_log_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_log_Params{st}, err
+}
+
+func ReadRootVCS_log_Params(msg *capnp.Message) (VCS_log_Params, error) {
+	root, err := msg.RootPtr()
+	return VCS_log_Params{root.Struct()}, err
+}
+
+func (s VCS_log_Params) String() string {
+	str, _ := text.Marshal(0xa4efd353c57d2b85, s.Struct)
+	return str
+}
+
+// VCS_log_Params_List is a list of VCS_log_Params.
+type VCS_log_Params_List struct{ capnp.List }
+
+// NewVCS_log_Params creates a new list of VCS_log_Params.
+func NewVCS_log_Params_List(s *capnp.Segment, sz int32) (VCS_log_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return VCS_log_Params_List{l}, err
+}
+
+func (s VCS_log_Params_List) At(i int) VCS_log_Params { return VCS_log_Params{s.List.Struct(i)} }
+
+func (s VCS_log_Params_List) Set(i int, v VCS_log_Params) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s VCS_log_Params_List) String() string {
+	str, _ := text.MarshalList(0xa4efd353c57d2b85, s.List)
+	return str
+}
+
+// VCS_log_Params_Promise is a wrapper for a VCS_log_Params promised by a client call.
+type VCS_log_Params_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_log_Params_Promise) Struct() (VCS_log_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_log_Params{s}, err
+}
+
+type VCS_log_Results struct{ capnp.Struct }
+
+// VCS_log_Results_TypeID is the unique identifier for the type VCS_log_Results.
+const VCS_log_Results_TypeID = 0xf7250939585a23f6
+
+func NewVCS_log_Results(s *capnp.Segment) (VCS_log_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_log_Results{st}, err
+}
+
+func NewRootVCS_log_Results(s *capnp.Segment) (VCS_log_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_log_Results{st}, err
+}
+
+func ReadRootVCS_log_Results(msg *capnp.Message) (VCS_log_Results, error) {
+	root, err := msg.RootPtr()
+	return VCS_log_Results{root.Struct()}, err
+}
+
+func (s VCS_log_Results) String() string {
+	str, _ := text.Marshal(0xf7250939585a23f6, s.Struct)
+	return str
+}
+
+func (s VCS_log_Results) Entries() (LogEntry_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return LogEntry_List{List: p.List()}, err
+}
+
+func (s VCS_log_Results) HasEntries() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_log_Results) SetEntries(v LogEntry_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewEntries sets the entries field to a newly
+// allocated LogEntry_List, preferring placement in s's segment.
+func (s VCS_log_Results) NewEntries(n int32) (LogEntry_List, error) {
+	l, err := NewLogEntry_List(s.Struct.Segment(), n)
+	if err != nil {
+		return LogEntry_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+// VCS_log_Results_List is a list of VCS_log_Results.
+type VCS_log_Results_List struct{ capnp.List }
+
+// NewVCS_log_Results creates a new list of VCS_log_Results.
+func NewVCS_log_Results_List(s *capnp.Segment, sz int32) (VCS_log_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return VCS_log_Results_List{l}, err
+}
+
+func (s VCS_log_Results_List) At(i int) VCS_log_Results { return VCS_log_Results{s.List.Struct(i)} }
+
+func (s VCS_log_Results_List) Set(i int, v VCS_log_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_log_Results_List) String() string {
+	str, _ := text.MarshalList(0xf7250939585a23f6, s.List)
+	return str
+}
+
+// VCS_log_Results_Promise is a wrapper for a VCS_log_Results promised by a client call.
+type VCS_log_Results_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_log_Results_Promise) Struct() (VCS_log_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_log_Results{s}, err
+}
+
+type VCS_commit_Params struct{ capnp.Struct }
+
+// VCS_commit_Params_TypeID is the unique identifier for the type VCS_commit_Params.
+const VCS_commit_Params_TypeID = 0xd9459f2361338d96
+
+func NewVCS_commit_Params(s *capnp.Segment) (VCS_commit_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_commit_Params{st}, err
+}
+
+func NewRootVCS_commit_Params(s *capnp.Segment) (VCS_commit_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_commit_Params{st}, err
+}
+
+func ReadRootVCS_commit_Params(msg *capnp.Message) (VCS_commit_Params, error) {
+	root, err := msg.RootPtr()
+	return VCS_commit_Params{root.Struct()}, err
+}
+
+func (s VCS_commit_Params) String() string {
+	str, _ := text.Marshal(0xd9459f2361338d96, s.Struct)
+	return str
+}
+
+func (s VCS_commit_Params) Msg() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s VCS_commit_Params) HasMsg() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_commit_Params) MsgBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s VCS_commit_Params) SetMsg(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// VCS_commit_Params_List is a list of VCS_commit_Params.
+type VCS_commit_Params_List struct{ capnp.List }
+
+// NewVCS_commit_Params creates a new list of VCS_commit_Params.
+func NewVCS_commit_Params_List(s *capnp.Segment, sz int32) (VCS_commit_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return VCS_commit_Params_List{l}, err
+}
+
+func (s VCS_commit_Params_List) At(i int) VCS_commit_Params {
+	return VCS_commit_Params{s.List.Struct(i)}
+}
+
+func (s VCS_commit_Params_List) Set(i int, v VCS_commit_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_commit_Params_List) String() string {
+	str, _ := text.MarshalList(0xd9459f2361338d96, s.List)
+	return str
+}
+
+// VCS_commit_Params_Promise is a wrapper for a VCS_commit_Params promised by a client call.
+type VCS_commit_Params_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_commit_Params_Promise) Struct() (VCS_commit_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_commit_Params{s}, err
+}
+
+type VCS_commit_Results struct{ capnp.Struct }
+
+// VCS_commit_Results_TypeID is the unique identifier for the type VCS_commit_Results.
+const VCS_commit_Results_TypeID = 0xb7d0dd6b467e7539
+
+func NewVCS_commit_Results(s *capnp.Segment) (VCS_commit_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_commit_Results{st}, err
+}
+
+func NewRootVCS_commit_Results(s *capnp.Segment) (VCS_commit_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_commit_Results{st}, err
+}
+
+func ReadRootVCS_commit_Results(msg *capnp.Message) (VCS_commit_Results, error) {
+	root, err := msg.RootPtr()
+	return VCS_commit_Results{root.Struct()}, err
+}
+
+func (s VCS_commit_Results) String() string {
+	str, _ := text.Marshal(0xb7d0dd6b467e7539, s.Struct)
+	return str
+}
+
+// VCS_commit_Results_List is a list of VCS_commit_Results.
+type VCS_commit_Results_List struct{ capnp.List }
+
+// NewVCS_commit_Results creates a new list of VCS_commit_Results.
+func NewVCS_commit_Results_List(s *capnp.Segment, sz int32) (VCS_commit_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return VCS_commit_Results_List{l}, err
+}
+
+func (s VCS_commit_Results_List) At(i int) VCS_commit_Results {
+	return VCS_commit_Results{s.List.Struct(i)}
+}
+
+func (s VCS_commit_Results_List) Set(i int, v VCS_commit_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_commit_Results_List) String() string {
+	str, _ := text.MarshalList(0xb7d0dd6b467e7539, s.List)
+	return str
+}
+
+// VCS_commit_Results_Promise is a wrapper for a VCS_commit_Results promised by a client call.
+type VCS_commit_Results_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_commit_Results_Promise) Struct() (VCS_commit_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_commit_Results{s}, err
 }
 
 type Meta struct{ Client capnp.Client }
@@ -2462,45 +2466,45 @@ func (c API) Move(ctx context.Context, params func(FS_move_Params) error, opts .
 	}
 	return FS_move_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Log(ctx context.Context, params func(FS_log_Params) error, opts ...capnp.CallOption) FS_log_Results_Promise {
+func (c API) Log(ctx context.Context, params func(VCS_log_Params) error, opts ...capnp.CallOption) VCS_log_Results_Promise {
 	if c.Client == nil {
-		return FS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      6,
-			InterfaceName: "capnp/api.capnp:FS",
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      0,
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_log_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_log_Params{Struct: s}) }
 	}
-	return FS_log_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Commit(ctx context.Context, params func(FS_commit_Params) error, opts ...capnp.CallOption) FS_commit_Results_Promise {
+func (c API) Commit(ctx context.Context, params func(VCS_commit_Params) error, opts ...capnp.CallOption) VCS_commit_Results_Promise {
 	if c.Client == nil {
-		return FS_commit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return VCS_commit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      7,
-			InterfaceName: "capnp/api.capnp:FS",
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      1,
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_commit_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_commit_Params{Struct: s}) }
 	}
-	return FS_commit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return VCS_commit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
 	if c.Client == nil {
@@ -2578,9 +2582,9 @@ type API_Server interface {
 
 	Move(FS_move) error
 
-	Log(FS_log) error
+	Log(VCS_log) error
 
-	Commit(FS_commit) error
+	Commit(VCS_commit) error
 
 	Quit(Meta_quit) error
 
@@ -2699,13 +2703,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      6,
-			InterfaceName: "capnp/api.capnp:FS",
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      0,
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_log{c, opts, FS_log_Params{Struct: p}, FS_log_Results{Struct: r}}
+			call := VCS_log{c, opts, VCS_log_Params{Struct: p}, VCS_log_Results{Struct: r}}
 			return s.Log(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -2713,13 +2717,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      7,
-			InterfaceName: "capnp/api.capnp:FS",
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      1,
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_commit{c, opts, FS_commit_Params{Struct: p}, FS_commit_Results{Struct: r}}
+			call := VCS_commit{c, opts, VCS_commit_Params{Struct: p}, VCS_commit_Results{Struct: r}}
 			return s.Commit(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -2896,142 +2900,141 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\x8cW{pTg\x15?\xe7\xfbv\xf7\xe6&" +
-	"\x176\x1fw\xb1\x19\xad\xee\xcad:-c\xb6y\xd0" +
-	")E1K\x9a \xa9D\xf7#-\x03j\x1f\x97\xec" +
-	"Mr\x87\xdd\xbd\xdb\xbd\x97G:2A\xdbt\xe8k" +
-	"\x9c\xd6\x07c\x1fvd\xd4\x82\xe2X\x06\x18\xedL3" +
-	"\x82\x85ZZp\xaa}\x08*:\xdai\xa5N#B" +
-	"iG+\xcc\xed|ws\xef~\xb0\x9b\x94?\x18\x92" +
-	"\xef\x9c{\xce\xef\x9c\xdfy\xa5\xfd\xa1H\x86tD\xe3" +
-	"\x1a\x00\x7f0\x1a\xf3\xd8\x1b\x9b\x8a\xed/\xbdu7\xb0" +
-	"f\xea}\xe2\xf8\x8aU[>\xbf\xed_\x00\xa8OE" +
-	"\x7f\xaa\xbf\x17U\x00\xf43\xd1\xdf\xeaVL\x01\xf0\xb6" +
-	"=\xf4\xc0\x97\xac\xc5=\xdb\x80\xe9\x08\x10Q\x00\xbax" +
-	"\xac\x11!\xe2=N\x1a\xb7\xb7\xec|\xea\xb1\x8a$J" +
-	"\x84\xe8\x86\x18A@}il\x13\xa0\xf7\xfe\xc7\xfeC" +
-	"z\xb7\x9f\xff\xc1\xb4\x02\x0a\x85\x1f\x8aoQ\xdf\x15\xeb" +
-	"\x06\xf4\x16\xdf\xf5\x9bG\x8e\xfd\xe1\xd4\x93\x92\x82~$" +
-	"\xf6\x01\xa0~\xcc\x97\xdf\xb3\xe8+;\xd2\xb7\xb7\xef\x00" +
-	"\xde\x8c\x12\xd2(\xf5!\xc6^\xd4/\xc4\x14\xfdB," +
-	"\xd9\xd5\xa1|\x0b\x01\xbdE\xab?\xe5\xad\xfc\xaa\xbaK" +
-	"\xb6\xf7L\xc3Y@}\xb2A\xd8\xa3\xf34\x96^\xf7" +
-	"\xb8,\xef:\xd9\xe0\x03z\xd3WXh\x9f}\xec\xfc" +
-	"\xf3\xf7\xfdL\x0a6\xaa\x12\x11\xac1\xf7\xb3/\xb5\x9c" +
-	"o\x7f\x1a\xb8\x8e\xe1\xb7o7\xf8\xd1N5\x88h\xcf" +
-	"\\8\xf7\x97\x83K\xed_J\xe9\xd0\x07T\x11\x0cW" +
-	"\x85\xfc\xbf\xe9\x13\x7f\xfa\xeb\xf0\xc9\x03U\xdb\xfa\xcf\xd5" +
-	"\xb3\x10\xf1n\xfc\xd1\xbe/\xfe{\xce#\xcf\x03K\x04" +
-	"N\x1fV?.\x9c\xbe\xf3\xe8\x15x\x7f\xef\xee#\xc0" +
-	"\xe6\x07\x921\xd5\xcf\xfd\x1f\x07G\xbb\xaf\xda\xb9\xf7\x88" +
-	"\x04\xd4P\xe7\x09\xc9\xfbS\xfc\xbe\x07\xcf\x9e;*\xe7" +
-	"\xa0\xdf\x871\xa0\x8a\x10\xf5[\xa6\xaeT\xc7\xae8\x0e" +
-	"<\x81\xc1\xa7[\xd4\x05\"\x8e\x09_a\xd7[\xc7\x07" +
-	"~\xe7\xber\x02X3J9\xf7\x01\xffX}Q\xdf" +
-	"\xa3*\xfa\x1e5\xa9\xff^\xfd'\xa0w\xee\xb9\xdd}" +
-	"\x917v\xfeY\x02\xb2\xbf\xd1\x07\xb2\xb7\xeb\xb5\x97\xef" +
-	"N/\xf9\x9b\x04\xfe\x89F\x1f\xfc\xeb\xb7\x7foB\xbb" +
-	"\xf6\xe4\xdf%\xc9D\xe5\x9b\xff\xbd\xfa\xf5}\xb7\xae\xd9" +
-	"\xfb\x8f\x9a\xca,4>\xaaoh\x14\x9aw6*D" +
-	"\xdf\xd3\xa4\x00\x9c>\xf4T\xcbs\xa7\xae:U\xb5\xf2" +
-	"\xfd&\xdf\xca\xea\xab\x8f\xa6~}\xdd5o\xcb4\x7f" +
-	"\xa3\xc9\xa7j\xa2I\x84\xf8\xff\xc1\xc8{\xb7\xed\xa6S" +
-	"\x15\x00~9u\xedo\xf2\xeb`\xb2\xe9\x17\x80\xde\xbb" +
-	"\xdf!kVw\xb6\xbe+E\xb5V\xf3\xb1\xb7.?" +
-	"4\xef\xf4\xd6\x9f|P\x83p\x99\xb6C\xef\xd7D\x92" +
-	"\xfa4E\xfc\x03\xf0No\x7f\xa0\xb3e\xf3\x8a\xf35" +
-	"\xcam\xda\x0e\xfd:_\xb9C\xfb\x82\xbeV\xbb\x1e\xc0" +
-	"\xbb\x9e|\xf7\xb5On\xba\xf7\x82\\a\xfaZM0" +
-	"w\xab&\x0ah\xe3\xbdw\xbc3\xff\xcb\xafx\xd3\xa8" +
-	"\xfd\xb0&\xb5y\x02\xf5a\xad\x1b\x16{CF\xa9X" +
-	"\xba\xd6(\xa1\x95\xf6\x7f\\\x12\x1f0]#\x8b\xc85" +
-	"\x1a\x05\x08\x19\xc1\x80\x00\xc6\x17\x02a}\x0abXj" +
-	"\x18xa7\x08Y\x9b\x82$L\x17\x8a\x84\x83\xc8\xf8" +
-	"\xa7\x85l\xbe\x12\xbfs\x83\xe5f0^\xb2\x8a#\x19" +
-	"\x8c[E\xf1[\x161DB\x03$\xcb\x07\xd3\x8ek" +
-	"\x8c\x98\xad\xabLgC\xdeu\x00f\xd1\xc9\x1ae\xa3" +
-	"\xe0\x00o\xa0\x11\x80\x08\x02\xb0kV\x01\xf0\xab)\xf2" +
-	"E\x04\x19\xa2_\xb9\xac\xe3&\x00\xdeN\x91\x7f\x8e\xa0" +
-	"\x97\xb7\x87\x8c|\xd6p\x01GQ\x03\x82\x1a\xa0W6" +
-	"Kv\xd6pG\x01 |\xab\xe7u\xc8.\x14,7" +
-	"p\x0b<\x12\xfa\x9d\xb3\x00\x04\x0c\xe4\x09\x82J\xc1\x19" +
-	"\xa91Cd3\x86\xdb\xba\xaa\xbb\x12\x9flC\xc0\xd4" +
-	"(\xf2\x16\x82\xde\xb05<#\xa4\xd0\xd6\xa0k\xb8\xfd" +
-	"\xc5a\x1b@p\x17A\xe2\xdd\xf6\xed'\xf9\xe4\xeb\xf7" +
-	"\x1f\x06\x1e!\xb8\xac\x15Q\x03\xe8\xc0o\xa2\x17\xa8F" +
-	"S\x96\x932R\x8ek\xb8myk\xbd\x99\xca\x99\xce" +
-	"P\xd9*\xb9\x96]L\xd9\xc3)\xa38\x96*\xda9" +
-	"\x13\x00\xf8\x95!\xb4\xfd\x0b\x01\xf8\xd3\x14\xf9\xb3RZ" +
-	"\x9f\x11\x8f\xfb(\xf2\x03\x04\x91$\x90\x00\xb0I\xf1\xf6" +
-	"+\x8a\xfc\x10AF1\x81\x14\x80\x1d\xec\x04\xe0\xcfR" +
-	"\xe4/\x10d\x91\xad\x09\x8c\x00\xb0\xc3\xe2\xf1\x00E~" +
-	"\x94 \x8bF\x13\x18\x05`G\xc4\xe3!\x8a\xfce\x82" +
-	",F\x12\x18\x03`\xc7z\x00\xf8\x0b\x14\xf9\xab\x04\xe3" +
-	"%\xc3\x0dy\x8b\x8f\x1a\xce(\xce\x01\x82s\x00\xe3\x8e" +
-	"u\x97\x89*\x10T\x01\x93\x96\x88\xa1\xfa\x9b\xd3k\x95" +
-	"\x11\x81 \x02&sf\xc9\x1d\xc5\x08\x10\x8c\x00\x8e\x17" +
-	"\xec\xdc\xcdV\xc1\xfcH\xc2\xb2I\x9fu\x99\xaf\x85U" +
-	"\xce/\xc2U\xb7v\xcaf\xc1\xdeh\xd6\xad\x9d\x8f\xb4" +
-	"\xa3Hv|+As\x04\x0a\xb2|}\xce*\xd7\xeb" +
-	"\x0c\xe1\xa5\x95\"o'\x180\xd8V\x06\xe0\x9f\xa1\xc8" +
-	"\x17\xd7x.\x9b\x86kf\x0dH\x96\xcd\xa2\xeb\x04\xb9" +
-	"\xab\x9b\x1d\x1fQw\xc5\xa3\xec\xb0\xa7\xea0\xac\x99\xb6" +
-	"\x9ej\x7f\x8e;\xe5\xa1\xac\xe4t<\xe7\xb8\xd9z\xe1" +
-	"\xcb\xce\xf2\xf6H@Em\x9a\x97e\xfb\xd3\x1b\xcd\xb2" +
-	"c\xd9E?\x03\xb4\x9e\x92\x18ui1\x88B.f" +
-	"\xe3\xab\x92itf\x04S\xaf\x91{\xa6\x09m%8" +
-	"n\x16\xdd\xb2e:8\x170K\x11\x9b\xabk\x13P" +
-	"<\xce\x1e\x85p\xaf\xcc`=Ap|Z/\xa8\xe6" +
-	"Z\x94+\xed\x91\xbe\xa2[\x1e\x9biD4\xfb#\x82" +
-	"a# o\x0e}\x18\xa2X\xbeF\x91\x8fJ\xdc\x99" +
-	"b\xc6\xddA\x91\xe7\x0922\xdd\xf0\x96\xd0\xccQ\xe4" +
-	"[E\xc3\xd3J\xc3o\x11\x8f\x9b)\xf2{\xc8\xc5M" +
-	"*\x8f\xc6\xb8k\x8c\x84i\x11os\x01\xe39\xc35" +
-	"/g\x04\xd7\xd0r1\xbdb\xdd\xccBoU\xa7\xc6" +
-	"N\xb8\x12\xe9\xf2A\x91\xb1\x94\xbf\x10\x83\x0b\x16\x83#" +
-	"\x97\x9d\xe9\x04\xc2\xde\x14\x0b1X\xc7\x18\\\x13\xec\x84" +
-	"Xz\xc7\xc4B\x0c\xeeL\x0c\x0eXvp\x01\x10\xb6" +
-	"_A\x1a\x1e\x8a\x18\xdc\x10l\x97\xb0\xf9\x84\x82\x91\xf0" +
-	"\xfe\xc4\xe0|c\x0f/\x01\xc2&\x14\x8c\x86\xe7#\x06" +
-	"7(\x1b\x13\xfe\x0a\x0a\xc6\xc2\xd3\x11\x83\xe3\x8e\x19\xc2" +
-	"\xdf-\x0a*\xe1\x91\x8d\xc1%\xc6\xfa\x85\xcd\xa5J\xd2" +
-	"_\xa6\x19\x8c\xe7-\xc7\xcd\xa02d\xb8\x19L\xfas" +
-	"$\x83\xdd\x95>\xc8`\xbc\xf2\x9f\x92\xb7G2\xd8]" +
-	"\xa1a\x86\x1d\xee\xa7W\xec\xf8Yh\x12\xddc9n" +
-	"8\xc9.\xbb}\xc2S\x7f\xa6\xf6\xa9z\x0fg\xad\x16" +
-	"\xda\xee\x13;\xb6\x97\"\xcfJ\x85= \xb6\xce\x0a\x8a" +
-	"\xfcf\xa9\xb0\xb9@\xb1\x92\"_C\xd0[g8\xe6" +
-	"%\xdb8io*\x9a\xe5pv\xad3\x86\xd6\x9b\xc5" +
-	"\xdc\xac\xb5[\x19\xcd\xb5\x87MXs\xca\xea\x1bE\xd1" +
-	"eiT\xcekU\xbc,\xdb\xefw\xb1_\x93\xc1_" +
-	"\x03\x18\x1c\xea\x8c\xf5\x00aQ%\x18\x0a\x19\xe4\x1ab" +
-	"\xf5T\x06\xa8\x1e\xa5\x00\xd5?\xee$$\xe4Rz\xea" +
-	"\x8c\xf5z{\xe4&i\x8f\x94m\xdb\x0d\xd3P06" +
-	"\xf7\x8au+\x12w\xe9\x8c\xaa3\x91\x83z\x91\xab\xa1" +
-	"\xb3:\xee\x92e\xb3\x94\x1f\x0b\x8c\x7f\x18\x00\x00\xff\xff" +
-	"\xbe\x9f\xdb\x7f"
+const schema_ea883e7d5248d81b = "x\xda\x94W}\x8cTW\x15?\xe7\xde\x99y\xf3f" +
+	"\xde2{yK\xbaju\xb6t\xdb\xb4\xe8N\xf7\x83" +
+	"\xa6,\x8a;,\xec\x0a\x15t.[7P\xa5\xedc" +
+	"\xe7\xb1\xfb\xc2\xcc\xbcq\xde[`\x1bq\xd1\x96\x16[" +
+	"\x89\xb1j\x9b~$\xa4\xa4\xd8\xa2M\xac\x01SMJ" +
+	",\x0a\xb5\xf4\xc3\x10\xe9V\x9a\xd8\x185\xa9h\x8a\x1b" +
+	"Z\xd1\x14!\xcf\xdc;\xfb\xde<vg\xa7\xe9_\xbb" +
+	"s\xcf\x99s\xce\xfd\xfd~\xf7\x9c3\x9d\xfb\"Y\xd2" +
+	"\x15Mi\x00\xfc\xbb\xd1\x98\xc7\xfe\xb6\xa3\xd4\xf9\xea;" +
+	"\xf7\x00k\xa6\xde'\xce\xac\xd9\xb0\xeb\xf3{\xff\x09\x80" +
+	"\xfa\xb9\xe8O\xf4\x0bQ\x05@?\x1f\xfd\x9dn\xc5\x14" +
+	"\x00o\xef\xbe\x07\xbfd-\xeb\xdf\x0bLG\x80\x88\x02" +
+	"\xd0\xc3c\x09\x84\x88\xf7\x04I<\xd2\xfa\xcc\xd3\x8fW" +
+	"-Q\"L\xbd1\x82\x80\xfa\x8a\xd8\x0e@o\xd9\xdd" +
+	"\xbfy\xe8\xf5?\x9c\xdd?\xe3\x80\"\xf0\x93\xb1\x8b\x80" +
+	"\xfa\xc1X\x1f\xa0w\xef\xd2\xdb\x0fd\xee\xec<\x00\xbc" +
+	"\x19C\x85D\xa9p<\x19{E\x9f\x8a)\xfaT," +
+	"\xdd\xa3*\xdfC@o\xcf\xa7w\x9d\x18:=\xfd\x14" +
+	"\xb0\x96\x99R\xf4\xef\xc7/B\xc4[:\xfc)o\xdd" +
+	"W\xd5C\xe1D\xe3\xf1\xf7\x00\xf5\x89\xb8HD\x17j" +
+	",\xb3\xe5\x89\xb0\xbd\xe7\xd1xBT\xfa\xa4tXb" +
+	"\xbf\xf7\xf8\xa5\x97\xbe\xf3\xd3\xd0%\x8f\xc5\x89\xb8\xa4\xb1" +
+	"\xe0\xb3\xaf\xb6^\xea|\x0e\xb8\x8e\xc1w\x0f\xc6\xe5-" +
+	"\x0f\xc5\xc5-\xcf_\xfe\xf7\x9f\x8e\xad\xb0\x9f\x0f\xc1\xa0" +
+	"\xab\xaa\xb8e\x93*\xec\xbd\xe3\xdf\x1c\xdc\xf6\xf6\xa9\xe7" +
+	"kU\xf7X\xea\xc7E\xecUO\x1d\xf9\xe2\xbf\x9a\x1e" +
+	"z)d\xe1U\xcb\xbb\x8f]\x85\x0f\xac~\xf6$\xb0" +
+	"E\xbe\xa5W\x95\xa0\xffqh\xac\xef\xfag\x0e\x9f\x0c" +
+	"Uz\x8d\xbaPX\xf4\xaf\x9c\xbbZ\x9d\xb8\xea\x0c\xf0" +
+	"\x16\xf4M\xaa\xbaX\x14\xcaTq\xc9\x87\xf7\xf5\x18\xd7" +
+	"\xee\x1fx\xab\x9a\xaez\x93.\xf1]\xd4{\xa5\xc3\xa1" +
+	"w\xce\xac\xff\xbd{\xfa-`\xcd\x18\xa2C\x02\xbdI" +
+	"}E7UE7\xd5\xb4\xbeG\xfd;\xa0w\xb8g" +
+	"\xea\xd4=\x99\xe5\x7f\x0e\xd5h%d\x8do\xde\xf9\xf0" +
+	"\x1e\xed\xa6\xb7\xff\x12\xb2\xf0\x84\xac\xf1\x837\xbeqd" +
+	"\xf3\xc6\xc3\x7f\x9d\xa3\xbc\xde\xc4c\xfa\xca\x84\xf0\\\x91" +
+	"\xb8\x1f\xf5\x8e\xa4\x020}\xfc\xe9\xd6\xdf\x9e\xbd\xfel" +
+	"-\xca\xa2\xa4\x8c2|\xc3km\xbf\xbe\xf9\xc6\x7f\x84" +
+	"\xe9\xbc\x9c\x90\x94`R\\\xe4\x7fC\x91\x0bw<K" +
+	"\xcfU\x0b\x90z\xea\xe9JJ\xbe{\x93?\x03\xf4\xde" +
+	"\xff!\xd98\xdc\xdd\xfe~\x08\xc5\xa9\xa4\xac\xfd?\xd7" +
+	"\xde\xbe\xb1W\xbd\xee\xbfa\x90\x8e&e\xecc2v" +
+	"\xfb\xe0\xf1\x85\xd3\xbb\x7f|q\xce\x15\xce'\x0f\xe8\x1f" +
+	"\x88\xba\xf5\x0b\xc9\xfb\xf5\x01M<\x9e\xe9G\x1e\xecn" +
+	"\xdd\xb9\xe6\xd2\x1c\xe7\x0e\xed\x80~\xb3p\xd1\xbb\xb4/" +
+	"\xe8\x9b\xb4[\x00\xbc[\xc8\x8f\xa6>\xb9\xe3\xbe\xcba" +
+	"\xa9\xe9\x9b4\xa1\xa4\xcd\x9aP\xd2\xf6\xfb\xeezw\xd1" +
+	"\x97O{3\xd7\xaa\xd6\xa6I\x02Oh}\xb0\xcc\x1b" +
+	"1\xca\xa5\xf2MF\x19\xad\x8c\xfcwyj\xbd\xe9\x1a" +
+	"9D\xae\xd1(@@\x19\xfa\x0c1\xbe\x04\x08\x1bP" +
+	"\x10\x03\xc9\xa1\x9f\x85\xf5\x0a[\x87\x82$\xc0\x13\x05#" +
+	" (\xb9F\xd8\x16)\xa9\xaf\x8f[n\x16Se\xab" +
+	"4\x9a\xc5\x94U\x12\x9fr\x88A%\xd4\xafdp(" +
+	"\xe3\xb8\xc6\xa8\xd9\xbe\xc1t\xc6\x0b\xae\x03\xd0\xc0'g" +
+	"T\x8c\xa2\x03<N#\x00\x11\x04`7n\x00\xe07" +
+	"P\xe4K\x092D\xa9p\xd6u+\x00\xef\xa4\xc8?" +
+	"G\xd0+\xd8#F!g\xb8\x80c\xa8\x01A\x0d\xd0" +
+	"\xab\x98e;g\xb8c\x00\x10\x9c\xf9YI(\xeb\x88" +
+	"\xe1\xb6o\xe8\xab\x16\xc6#A\xd2&\x11_\xa3\xc8[" +
+	"\x09z[\xad\xad\x1f\x1ek\xc85\xdc\xb5\xa5\xad6\x80" +
+	"\x00=\x82\xc4\xbb\xe3\x07\xfb\xf9\xd17\x1f8\x01<B" +
+	"pe;\xa2\x06\xd0\x85\xdfF\xcfw\x8d\xb6YN\x9b" +
+	"\xd1\xe6\xb8\x86\xdbQ\xb0\xb6\x99my\xd3\x19\xa9Xe" +
+	"\xd7\xb2Km\xf6\xd66\xa34\xd1V\xb2\xf3&\x00\xf0" +
+	"\xab\x83\xd2~\xb1\x04\x80?G\x91\xbf\x10\xc2\xe3W\xe2" +
+	"\xf0\x08E\xfe\"A$-H\x00\xd8Qq\xf6K\x8a" +
+	"\xfc8AF\xb1\x05)\x00;\xd6\x0d\xc0_\xa0\xc8_" +
+	"&\xc8\"\xbb[0\x02\xc0N\x88\xc3\x17)\xf2\xd7\x08" +
+	"\xb2h\xb4\x05\xa3\x00\xec\xa48<N\x91\x9f\"\xc8b" +
+	"\xa4\x05c\x00\xec\xf5~\x00\xfe2E\xfe\x06\xc1T\xd9" +
+	"p\x03\xc0Sc\x863\x86M@\xb0\x090\xe5Xw" +
+	"\x9b\xa8\x02A\x150m\x89;\xd4>9\xab\xad\x0a\"" +
+	"\x10D\xc0t\xde,\xbbc\x18\x01\x82\x11\xc0\xc9\xa2\x9d" +
+	"\xbf\xcd*\x9a\xf3\x83<\xbcj(S\xb0G\xdb\xfb\xaa" +
+	"2\x99\x97\xd1\\Z\xda\xc3\x84\x0a0\xe2\x14y\xcb\xac" +
+	"\xc2\xebj\xb1b\x16\xed\xed\x81\x18\xe1#\xc5QBq" +
+	"d\x14_\xf6\xbeC\xd8\xbe-oU\xeai^di" +
+	"\xa7\xc8;\x09\xfa\x14wT\x00\xf8g(\xf2es2" +
+	"WL\xc35s\x06\xa4+f\xc9u|p\xeb\xa2#" +
+	"+\x9a\x81/\x9c\xb0\xbf\x960\x10UG\x7f\xed\xe5M" +
+	":\x95\x91\\(\xe9d\xdeqs\x0da\x14\\\x8d\xd8" +
+	"\xc5\xa2\xe5V\x11\xa0\xae3\xd7ienmf\xbbY" +
+	"q,\xbb$a\xa0\xc5:N\xa2\x93eD\x9f\x09\x08" +
+	"iDZ\x15n\xfc\x90d\xc2K\x99\xf5\xe6\xfbk\xd4" +
+	"N\xce\xf8\xf9\xd2lx=Y\x15^\x11jq-\x94" +
+	"RtF\xe7W\xf4:{t\xa0\xe4V&\xe6k\x1b" +
+	"\xcd\xb2m0L\x00\xf2\xe6 \xbe!\xf4\xf15\x8a|" +
+	",D\x97)\x92\xdeE\x91\x17\x0822\xd3\x04,\xe1" +
+	"\x99\xa7\xc8w\x8b&@\xabM`\x978\xdcI\x91\xdf" +
+	"K\xae|\xb8\xe1ZS\xae1\xea\xe0\x02\xc0\x1cEy" +
+	"\xb6\x000\x957\\s~\xca%Qb.4 \xaa" +
+	"\xe63\x87\xa8`v\xd1\xc1!\x81F\xab\x9c\\\xfe\xae" +
+	"\x89\xfe:\xca~\xde\x0d\x84\x1d\x14\x93\xcb\x9f\x9b\xe8\xef" +
+	"\x05\xecQ1\x9d\xf6\x89\xc9\xe5o\x86\xe8\xef\xa2\xec[" +
+	"\x8b\x81\xb0q\x05i\xb0\xda\xa1\xbf\x0d0K\xc4\xdc\xac" +
+	"`$\xd8\x18\xd1\xdf\xb7\x18_^\x9d\x94\xd1`\xe1C" +
+	"\x7fk\xf4'eZN\xaf,\xa6\x0a\x96\xe3fQ\x19" +
+	"1\xdc,\xa6\xe5\xf3\xceb_U\x99YLU\xff\xd4" +
+	"\x9d\x92\x12\x171E\x1b\x08xp(#\xe2\x07\x1d\xa5" +
+	"\x9ex\xdb\x09N\x9a%\xb7b\x99\x01y\xcd\xb5u\x1b" +
+	"P\x1c6\xca\x1e\xf4<-\x88= \x86\xe1j\x8a<" +
+	"\x17R\xdbz1\x1e\xd6P\xe4\xb7\x85\xd4\xc6E\x15\xeb" +
+	"(\xf2\x8d\x04\xbd-\x86c\xce\x1a\x9bi{G\xc9\xac" +
+	"\x04=d\x8b1\xb2\xcd,\xe5\x1b\xb6\xe2j\x8bl\xb0" +
+	":\xf83\xe1#\x83\x12\xec\xbc\xb3@\x09d\xa8\x0c\xaf" +
+	"\x92:\x8cK\x1d\xfa?A\xd0\xdf\x13Y\x97\xd0\xd3u" +
+	"B\x87\xfe~\x8d\xfe\xc6\xcf>&4\xd3\xa4(\x05{" +
+	"4\x8b}\xd5Fq%\xf3\xb54+sk\xe5\xe3\x97" +
+	"i\xfc_\x06\xe8/\xf5\x8c\xf5\x03aQ\xc5oIY" +
+	"\xe4\x1abm\x9f\x06\xa8-\xa6\x00\xb5_x!\xac\xc8" +
+	"l\x01\xd5\x19\x00\xf5&\xce\xad\xa1\x89S\xb1m7 " +
+	"\xaah\xec\\-&\xb7\xa0v\xde\x0eYk\xdb\xbe\xa2" +
+	"\xc3\xd4t\xd7:d\xbab\x96\x0b\x13~\xf0\xff\x07\x00" +
+	"\x00\xff\xff6\x1e\xc7\xf2"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
 		0x83e6cb306e77e311,
 		0x884238694e8b8d88,
 		0x9ba7a818970a029c,
-		0x9efc974402f016f6,
 		0x9fe8d2cd92c27a38,
 		0xa2305f2ea25a3484,
+		0xa4efd353c57d2b85,
 		0xa9095b4cff1e5634,
 		0xa99c622e110c1203,
 		0xab89c6fc9bf26f2a,
 		0xb030fc18cb3b0e61,
 		0xb76f3dc1dcf4fdf1,
-		0xc0dd66dedad92ef8,
+		0xb7d0dd6b467e7539,
 		0xc6920dee4bb4a443,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
-		0xccf4f28c8951edf6,
 		0xd81779091ced5513,
+		0xd9459f2361338d96,
 		0xd9d374ce4dd8e6a9,
-		0xdba8e30445acc3f4,
 		0xdf3a2e83d0d533b3,
 		0xe1dd2f0c85965fd6,
 		0xe2b3585db47cd4f9,
@@ -3039,6 +3042,7 @@ func init() {
 		0xe92935bf20cc2856,
 		0xed03ac5ef50453fb,
 		0xf3243256580294f3,
+		0xf7250939585a23f6,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
 		0xfd86771dd5950237,

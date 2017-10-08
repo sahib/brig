@@ -8,7 +8,7 @@ import (
 )
 
 func (cl *Client) MakeCommit(msg string) error {
-	call := cl.api.Commit(cl.ctx, func(p capnp.FS_commit_Params) error {
+	call := cl.api.Commit(cl.ctx, func(p capnp.VCS_commit_Params) error {
 		return p.SetMsg(msg)
 	})
 
@@ -64,7 +64,7 @@ func convertCapLogEntry(capEntry *capnp.LogEntry) (*LogEntry, error) {
 }
 
 func (cl *Client) Log() ([]LogEntry, error) {
-	call := cl.api.Log(cl.ctx, func(p capnp.FS_log_Params) error {
+	call := cl.api.Log(cl.ctx, func(p capnp.VCS_log_Params) error {
 		return nil
 	})
 

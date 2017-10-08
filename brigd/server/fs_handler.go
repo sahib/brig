@@ -11,6 +11,7 @@ import (
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
+	"zombiezen.com/go/capnproto2/server"
 )
 
 type fsHandler struct {
@@ -52,6 +53,8 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 ////////////////////////////////////
 
 func (fh *fsHandler) List(call capnp.FS_list) error {
+	server.Ack(call.Options)
+
 	return fh.base.withOwnFs(func(fs *catfs.FS) error {
 		// Collect list params:
 		root, err := call.Params.Root()
@@ -92,6 +95,8 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 }
 
 func (fh *fsHandler) Stage(call capnp.FS_stage) error {
+	server.Ack(call.Options)
+
 	return fh.base.withOwnFs(func(fs *catfs.FS) error {
 		repoPath, err := call.Params.RepoPath()
 		if err != nil {
@@ -115,6 +120,8 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 }
 
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -172,6 +179,8 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 }
 
 func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -184,6 +193,8 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 }
 
 func (fh *fsHandler) Remove(call capnp.FS_remove) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -195,6 +206,8 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 }
 
 func (fh *fsHandler) Move(call capnp.FS_move) error {
+	server.Ack(call.Options)
+
 	srcPath, err := call.Params.SrcPath()
 	if err != nil {
 		return err

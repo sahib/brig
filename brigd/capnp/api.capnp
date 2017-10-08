@@ -28,11 +28,11 @@ interface FS {
     mkdir  @3 (path :Text, createParents :Bool);
     remove @4 (path :Text);
     move   @5 (srcPath :Text, dstPath :Text);
-    log    @6 () -> (entries :List(LogEntry));
-    commit @7 (msg :Text);
 }
 
 interface VCS {
+    log    @0 () -> (entries :List(LogEntry));
+    commit @1 (msg :Text);
 }
 
 interface Meta {

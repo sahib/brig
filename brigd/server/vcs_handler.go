@@ -5,13 +5,15 @@ import (
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
+	"zombiezen.com/go/capnproto2/server"
 )
 
 type vcsHandler struct {
 	base *base
 }
 
-func (vcs *vcsHandler) Log(call capnp.FS_log) error {
+func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
+	server.Ack(call.Options)
 	seg := call.Results.Segment()
 
 	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
@@ -72,7 +74,9 @@ func (vcs *vcsHandler) Log(call capnp.FS_log) error {
 	})
 }
 
-func (vcs *vcsHandler) Commit(call capnp.FS_commit) error {
+func (vcs *vcsHandler) Commit(call capnp.VCS_commit) error {
+	server.Ack(call.Options)
+
 	msg, err := call.Params.Msg()
 	if err != nil {
 		return err
