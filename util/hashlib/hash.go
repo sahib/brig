@@ -179,3 +179,12 @@ func TestDummy(t *testing.T, seed byte) Hash {
 
 	return Hash(hash)
 }
+
+func (h Hash) ShortB58() string {
+	full := h.B58String()
+	if len(full) > 10 {
+		return full[:10]
+	}
+
+	return full
+}

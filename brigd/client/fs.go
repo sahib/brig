@@ -127,3 +127,25 @@ func (cl *Client) Mkdir(path string, createParents bool) error {
 	_, err := call.Struct()
 	return err
 }
+
+func (cl *Client) Remove(path string) error {
+	call := cl.api.Remove(cl.ctx, func(p capnp.FS_remove_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) Move(srcPath, dstPath string) error {
+	call := cl.api.Move(cl.ctx, func(p capnp.FS_move_Params) error {
+		if err := p.SetSrcPath(srcPath); err != nil {
+			return err
+		}
+
+		return p.SetDstPath(dstPath)
+	})
+
+	_, err := call.Struct()
+	return err
+}

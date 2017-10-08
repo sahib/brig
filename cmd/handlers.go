@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -185,7 +186,7 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 	if _, err := io.Copy(os.Stdout, stream); err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("cat-io: %v", err),
+			fmt.Sprintf("cat: %v", err),
 		}
 	}
 
@@ -193,6 +194,29 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleRm(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+
+	if err := ctl.Remove(path); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("rm: %v", err),
+		}
+	}
+
+	return nil
+}
+
+func handleMv(ctx *cli.Context, ctl *client.Client) error {
+	srcPath := ctx.Args().Get(0)
+	dstPath := ctx.Args().Get(0)
+
+	if err := ctl.Move(srcPath, dstPath); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("mv: %v", err),
+		}
+	}
+
 	return nil
 }
 
@@ -255,10 +279,6 @@ func handleTree(ctx *cli.Context, ctl *client.Client) error {
 	return showTree(entries, -1)
 }
 
-func handleMv(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
 func handleMkdir(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 	createParents := ctx.Bool("parents")
@@ -275,10 +295,49 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleCommit(ctx *cli.Context, ctl *client.Client) error {
+	msg := ""
+	if ctx.Args().Present() {
+		msg = ctx.Args().First()
+	} else {
+		msg = fmt.Sprintf("Manual commit")
+	}
+
+	if err := ctl.MakeCommit(msg); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("commit: %v", err)}
+	}
+
 	return nil
 }
 
 func handleLog(ctx *cli.Context, ctl *client.Client) error {
+	entries, err := ctl.Log()
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("commit: %v", err)}
+	}
+
+	for idx, entry := range entries {
+		tags := ""
+		if len(entry.Tags) > 0 {
+			tags = fmt.Sprintf(" (%s)", strings.Join(entry.Tags, ", "))
+		}
+
+		msg := entry.Msg
+		if msg == "" {
+			msg = colors.Colorize("*", colors.Red)
+		}
+
+		entry.Hash.ShortB58()
+
+		fmt.Printf(
+			"%2d: %s %s %s%s\n",
+			idx,
+			colors.Colorize(entry.Hash.ShortB58(), colors.Green),
+			colors.Colorize(entry.Date.Format(time.Stamp), colors.Yellow),
+			msg,
+			colors.Colorize(tags, colors.Cyan),
+		)
+	}
+
 	return nil
 }
 

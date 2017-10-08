@@ -2,6 +2,7 @@ package server
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"syscall"
 
@@ -144,11 +145,17 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
-		fifoPath := "/tmp/brig.fifo"
-		// fifoPath, err := ioutil.TempFile("", "brig-fifo")
-		// if err != nil {
-		// 	return err
-		// }
+		// TODO: It's kinda pointless to open a file just to get it's name.
+		//       Think of a better naming strategy.
+		tempFile, err := ioutil.TempFile("", "brig-fifo")
+		if err != nil {
+			return err
+		}
+
+		fifoPath := tempFile.Name()
+		if err := tempFile.Close(); err != nil {
+			return err
+		}
 
 		flags := syscall.O_CREAT | syscall.O_NONBLOCK | syscall.O_WRONLY
 		fifoFd, err := fifo.OpenFifo(call.Ctx, fifoPath, flags, 0644)
@@ -192,5 +199,106 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 	createParents := call.Params.CreateParents()
 	return fh.withOwnFs(func(fs *catfs.FS) error {
 		return fs.Mkdir(path, createParents)
+	})
+}
+
+func (fh *fsHandler) Remove(call capnp.FS_remove) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Remove(path)
+	})
+}
+
+func (fh *fsHandler) Move(call capnp.FS_move) error {
+	srcPath, err := call.Params.SrcPath()
+	if err != nil {
+		return err
+	}
+
+	dstPath, err := call.Params.DstPath()
+	if err != nil {
+		return err
+	}
+
+	return fh.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Move(srcPath, dstPath)
+	})
+}
+
+// TODO: Move to vcs.
+
+func (fh *fsHandler) Log(call capnp.FS_log) error {
+	seg := call.Results.Segment()
+
+	return fh.withOwnFs(func(fs *catfs.FS) error {
+		entries, err := fs.Log()
+		if err != nil {
+			return err
+		}
+
+		lst, err := capnp.NewLogEntry_List(seg, int32(len(entries)))
+		if err != nil {
+			return err
+		}
+
+		for idx, entry := range entries {
+			capEntry, err := capnp.NewLogEntry(seg)
+			if err != nil {
+				return err
+			}
+
+			if err := capEntry.SetHash(entry.Hash); err != nil {
+				return err
+			}
+
+			modTime, err := entry.Date.MarshalText()
+			if err != nil {
+				return err
+			}
+
+			log.Errorf("ENTRY %v %s", entry, modTime)
+
+			if err := capEntry.SetDate(string(modTime)); err != nil {
+				return err
+			}
+
+			tagList, err := capnplib.NewTextList(seg, int32(len(entry.Tags)))
+			if err != nil {
+				return err
+			}
+
+			for idx, tag := range entry.Tags {
+				if err := tagList.Set(idx, tag); err != nil {
+					return err
+				}
+			}
+
+			if err := capEntry.SetTags(tagList); err != nil {
+				return err
+			}
+
+			if err := capEntry.SetMsg(entry.Msg); err != nil {
+				return err
+			}
+
+			lst.Set(idx, capEntry)
+		}
+
+		return call.Results.SetEntries(lst)
+	})
+}
+
+func (fh *fsHandler) Commit(call capnp.FS_commit) error {
+	msg, err := call.Params.Msg()
+	if err != nil {
+		return err
+	}
+
+	return fh.withOwnFs(func(fs *catfs.FS) error {
+		return fs.MakeCommit(msg)
 	})
 }

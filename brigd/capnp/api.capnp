@@ -14,11 +14,22 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     modTime @6 :Text;
 }
 
+struct LogEntry $Go.doc("") {
+    hash @0 :Data;
+    msg  @1 :Text;
+    tags @2 :List(Text);
+    date @3 :Text;
+}
+
 interface FS {
-    stage @0 (localPath :Text, repoPath :Text);
-    list  @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat   @2 (path :Text) -> (fifoPath :Text);
-    mkdir @3 (path :Text, createParents :Bool);
+    stage  @0 (localPath :Text, repoPath :Text);
+    list   @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat    @2 (path :Text) -> (fifoPath :Text);
+    mkdir  @3 (path :Text, createParents :Bool);
+    remove @4 (path :Text);
+    move   @5 (srcPath :Text, dstPath :Text);
+    log    @6 () -> (entries :List(LogEntry));
+    commit @7 (msg :Text);
 }
 
 interface VCS {
