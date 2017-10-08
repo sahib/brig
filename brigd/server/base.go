@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
+	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -65,4 +66,23 @@ func newBase(basePath string) (*base, error) {
 		basePath: basePath,
 		QuitCh:   make(chan struct{}, 1),
 	}, nil
+}
+
+func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	bk, err := b.Backend()
+	if err != nil {
+		return err
+	}
+
+	fs, err := rp.OwnFS(bk)
+	if err != nil {
+		return err
+	}
+
+	return fn(fs)
 }
