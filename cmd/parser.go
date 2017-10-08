@@ -409,13 +409,6 @@ func RunCmdline(args []string) int {
 					Description: "Checks if deamon is running and reports the response time",
 					Action:      withDaemon(handleDaemonPing, false),
 				},
-				cli.Command{
-					Name:        "wait",
-					Category:    advnGroup,
-					Usage:       "Block until the daemon is available",
-					Description: "Wait blocks until the daemon is available",
-					Action:      withExit(handleDaemonWait),
-				},
 			},
 		},
 		cli.Command{

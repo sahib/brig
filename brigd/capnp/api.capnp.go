@@ -211,6 +211,26 @@ func (c FS) Cat(ctx context.Context, params func(FS_cat_Params) error, opts ...c
 	}
 	return FS_cat_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c FS) Mkdir(ctx context.Context, params func(FS_mkdir_Params) error, opts ...capnp.CallOption) FS_mkdir_Results_Promise {
+	if c.Client == nil {
+		return FS_mkdir_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "mkdir",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_mkdir_Params{Struct: s}) }
+	}
+	return FS_mkdir_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type FS_Server interface {
 	Stage(FS_stage) error
@@ -218,6 +238,8 @@ type FS_Server interface {
 	List(FS_list) error
 
 	Cat(FS_cat) error
+
+	Mkdir(FS_mkdir) error
 }
 
 func FS_ServerToClient(s FS_Server) FS {
@@ -227,7 +249,7 @@ func FS_ServerToClient(s FS_Server) FS {
 
 func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 3)
+		methods = make([]server.Method, 0, 4)
 	}
 
 	methods = append(methods, server.Method{
@@ -272,6 +294,20 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "mkdir",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_mkdir{c, opts, FS_mkdir_Params{Struct: p}, FS_mkdir_Results{Struct: r}}
+			return s.Mkdir(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -297,6 +333,14 @@ type FS_cat struct {
 	Options capnp.CallOptions
 	Params  FS_cat_Params
 	Results FS_cat_Results
+}
+
+// FS_mkdir holds the arguments for a server call to FS.mkdir.
+type FS_mkdir struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  FS_mkdir_Params
+	Results FS_mkdir_Results
 }
 
 type FS_stage_Params struct{ capnp.Struct }
@@ -737,6 +781,139 @@ type FS_cat_Results_Promise struct{ *capnp.Pipeline }
 func (p FS_cat_Results_Promise) Struct() (FS_cat_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return FS_cat_Results{s}, err
+}
+
+type FS_mkdir_Params struct{ capnp.Struct }
+
+// FS_mkdir_Params_TypeID is the unique identifier for the type FS_mkdir_Params.
+const FS_mkdir_Params_TypeID = 0xb030fc18cb3b0e61
+
+func NewFS_mkdir_Params(s *capnp.Segment) (FS_mkdir_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return FS_mkdir_Params{st}, err
+}
+
+func NewRootFS_mkdir_Params(s *capnp.Segment) (FS_mkdir_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return FS_mkdir_Params{st}, err
+}
+
+func ReadRootFS_mkdir_Params(msg *capnp.Message) (FS_mkdir_Params, error) {
+	root, err := msg.RootPtr()
+	return FS_mkdir_Params{root.Struct()}, err
+}
+
+func (s FS_mkdir_Params) String() string {
+	str, _ := text.Marshal(0xb030fc18cb3b0e61, s.Struct)
+	return str
+}
+
+func (s FS_mkdir_Params) Path() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s FS_mkdir_Params) HasPath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s FS_mkdir_Params) PathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s FS_mkdir_Params) SetPath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s FS_mkdir_Params) CreateParents() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s FS_mkdir_Params) SetCreateParents(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+// FS_mkdir_Params_List is a list of FS_mkdir_Params.
+type FS_mkdir_Params_List struct{ capnp.List }
+
+// NewFS_mkdir_Params creates a new list of FS_mkdir_Params.
+func NewFS_mkdir_Params_List(s *capnp.Segment, sz int32) (FS_mkdir_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1}, sz)
+	return FS_mkdir_Params_List{l}, err
+}
+
+func (s FS_mkdir_Params_List) At(i int) FS_mkdir_Params { return FS_mkdir_Params{s.List.Struct(i)} }
+
+func (s FS_mkdir_Params_List) Set(i int, v FS_mkdir_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_mkdir_Params_List) String() string {
+	str, _ := text.MarshalList(0xb030fc18cb3b0e61, s.List)
+	return str
+}
+
+// FS_mkdir_Params_Promise is a wrapper for a FS_mkdir_Params promised by a client call.
+type FS_mkdir_Params_Promise struct{ *capnp.Pipeline }
+
+func (p FS_mkdir_Params_Promise) Struct() (FS_mkdir_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_mkdir_Params{s}, err
+}
+
+type FS_mkdir_Results struct{ capnp.Struct }
+
+// FS_mkdir_Results_TypeID is the unique identifier for the type FS_mkdir_Results.
+const FS_mkdir_Results_TypeID = 0xf3243256580294f3
+
+func NewFS_mkdir_Results(s *capnp.Segment) (FS_mkdir_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_mkdir_Results{st}, err
+}
+
+func NewRootFS_mkdir_Results(s *capnp.Segment) (FS_mkdir_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_mkdir_Results{st}, err
+}
+
+func ReadRootFS_mkdir_Results(msg *capnp.Message) (FS_mkdir_Results, error) {
+	root, err := msg.RootPtr()
+	return FS_mkdir_Results{root.Struct()}, err
+}
+
+func (s FS_mkdir_Results) String() string {
+	str, _ := text.Marshal(0xf3243256580294f3, s.Struct)
+	return str
+}
+
+// FS_mkdir_Results_List is a list of FS_mkdir_Results.
+type FS_mkdir_Results_List struct{ capnp.List }
+
+// NewFS_mkdir_Results creates a new list of FS_mkdir_Results.
+func NewFS_mkdir_Results_List(s *capnp.Segment, sz int32) (FS_mkdir_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return FS_mkdir_Results_List{l}, err
+}
+
+func (s FS_mkdir_Results_List) At(i int) FS_mkdir_Results { return FS_mkdir_Results{s.List.Struct(i)} }
+
+func (s FS_mkdir_Results_List) Set(i int, v FS_mkdir_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_mkdir_Results_List) String() string {
+	str, _ := text.MarshalList(0xf3243256580294f3, s.List)
+	return str
+}
+
+// FS_mkdir_Results_Promise is a wrapper for a FS_mkdir_Results promised by a client call.
+type FS_mkdir_Results_Promise struct{ *capnp.Pipeline }
+
+func (p FS_mkdir_Results_Promise) Struct() (FS_mkdir_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_mkdir_Results{s}, err
 }
 
 type VCS struct{ Client capnp.Client }
@@ -1398,6 +1575,26 @@ func (c API) Cat(ctx context.Context, params func(FS_cat_Params) error, opts ...
 	}
 	return FS_cat_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) Mkdir(ctx context.Context, params func(FS_mkdir_Params) error, opts ...capnp.CallOption) FS_mkdir_Results_Promise {
+	if c.Client == nil {
+		return FS_mkdir_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "mkdir",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_mkdir_Params{Struct: s}) }
+	}
+	return FS_mkdir_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
 	if c.Client == nil {
 		return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -1468,6 +1665,8 @@ type API_Server interface {
 
 	Cat(FS_cat) error
 
+	Mkdir(FS_mkdir) error
+
 	Quit(Meta_quit) error
 
 	Ping(Meta_ping) error
@@ -1482,7 +1681,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 7)
+		methods = make([]server.Method, 0, 8)
 	}
 
 	methods = append(methods, server.Method{
@@ -1539,6 +1738,20 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			return s.Cat(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "mkdir",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_mkdir{c, opts, FS_mkdir_Params{Struct: p}, FS_mkdir_Results{Struct: r}}
+			return s.Mkdir(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
 	methods = append(methods, server.Method{
@@ -1712,86 +1925,92 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\x84V\x7fl\x14U\x10\x9e\xef\xbd\xbd\xdb\x96\\" +
-	"=\x96\xbd\x86\xaa\xe8\x1d\xa4\x1a RJ\x8b\xa1\x10c" +
-	"\x7fP~)\xe8\xbd\x16\x08j\x04\x96vK7\xb4w" +
-	"\xe7\xedB\x81hJD\x08\x81\x18\x13\x8c\x12QCh" +
-	"\x8c\x88\x81(\x01\x13Ih\x04-\x02\x0a\x09*%\xf8" +
-	"\x871j0`@\x82\xc6?D\xc9\x9a\xb7\xd7\xbd\xdb" +
-	"\xf4\xa4\xfcq\xc9\xee\x9b\xd9\x99\xef}3\xdf\xccU\xff" +
-	"\xc9\x1a\xd8\xb4\xd0\xbc\x12\"\xb12\x14v\xb5_zR" +
-	"\xd5_\xff\xba\x99\xb4\xd1\xdc\xbd\xff\xd2\xfc\x96\x97\x1e\xdf" +
-	"\xf6\x1b\x11\xf4R\xe5C]ST\"\xbdL9\xa5o" +
-	"\x91O\xee\xb6Ww<e\xd55m#M\x07\x91<" +
-	"\xaa\xedVF\x81\x14\xf7\x1d6jW\xc5\x07\xfb\xde\xce" +
-	"YBL\x9a\x96(\x0c\x04\xfd\x19\xa5\x87\xe0\xd6m\xfc" +
-	"|\xe7\xb9o\xaf\xec\x19r\x80\x0c\xdc\xaf\xdc\"\xe8'" +
-	"\x94z\x82\xfb\xca\xf4g\xfb\xaaVT\xf7\x91\x18\x8d\x00" +
-	"\x90\x10\x97\x8e\x97\x95\xaf\xf4\x9b\x8a\xaa\xdfT\xe2\xb5\x0f" +
-	"\x85^\x03\xc1\x9d\xbe\xf4Aw\xe1s\xa5\xfb\x83\xf1\x0e" +
-	"\x86\xff \xe8\x87\xc22\xde\xec\xf7\x8e<\xf9{\xd9\xce" +
-	"/I\x8b\xf9P\xbf\x09\xdf'\xa1^\xdb=\x16\xdb\x9b" +
-	"\x0f\x9c!\xad\xdc\xb7\x1c\x0d{\x97\xd0\x97\\\x1fW\xba" +
-	"a\xec%\x121\xf8\xa6\xbd\xe1\x09\xf2\x12\xfb\xbd\xa0\x87" +
-	"k\x07\xcfo\xae\x9a\xf5c\xe0\xd33\xb9O/\xaex" +
-	"sKd\xea\x0f?\x05,\x87\xc2c\xa4\xe5\xef\x0b/" +
-	"\x1ey~\xd9\xe1\x9f\x8b\x08~+\xbc[\xdf\x1b\x96\xb8" +
-	"\xdf\x0d\x9f\xd2\xcbU\x95\xe8\xc6\xc0\xbe\x8a/\xae<|" +
-	"\xa5\x10\xe4v.\xc8\xd2\x89g\x13\x9f=:\xe9j\xe0" +
-	"\xb6\xb5\x97\xc3\x1e\xbdW=d\xff\xb4*\x7f-?\xc0" +
-	"\xaf\xe7\xf2{\xac\xd5\xde\xab\x8e\x92\x0e\xe3\xd5\x8f\x08n" +
-	"\xe5\xdc\x81176\xbd\x7f\xab\x08F\xbf\xda\xa7\x9f\x94" +
-	"\xc9\xf5\x13\xaa*\x7fD\xee\x8d];j*\xd6\xcf\xff" +
-	"\xb7\xc8y\xbf\xda\xa7\x1f\xf2\x9c\x0f\xaa\xf3\xf4Au\x06" +
-	"\x91;\x83\xbd1\xf8@\xcf\xd6\xdb$t\xe4K1\xa8" +
-	"\xca\xd2~\xaf\xca\xd2\xaf\xdb\xba\xf2Z\xf9\xd3\xdf\xb9C" +
-	"\xd8<\xf03K\xc6Hl\x8d%\xf5T\xe7\xb6\x19\x99" +
-	"Tf\xaa\x91\x81U\xe5=\xce\x8a.2\x1d#\x09\x88" +
-	"\x08\x0f\x11\xe5i\x87\xcf\xb2&&\x13\xd3\xe6\xa8@\xbe" +
-	"\x9a\xf0\xb3h3\xa5m\x8a\x0a\x96'\x05\x92V\x92\xbc" +
-	"\x8e\x97\xb6r5\xfa\xc2Z\xcbi@4c\xa5V7" +
-	" j\xa5\xe4[\x12\xc8#\xe1>\x92\xb9\xadU\xb6c" +
-	"\xac6+[L{m\x97c\x13\x8d\xe0\x934\xb2F" +
-	"\xb7M\xa2\x84+D\x0a\x88\xb4I-Db\"\x87\x98" +
-	"\xce\xa0\x01^[i\xd3\x9e \x12\xd5\x1c\xe21\x06\xb7" +
-	"+\xddft%\x0d\x87\xd0\x89\x081D\x08n\xd6\xcc" +
-	"\xa4\x93\x86\xd3ID\xf93?+\x0bdm3\x9c\xca" +
-	"\x96\xfa\x1c0\xa1\xe4\x93\x96\xc9\xf8\x11\x0eQ\xc1\xe0v" +
-	"X\x1dw\x8f\xd5\xea\x18\xce\x82TG\x9aH\x92\xae\x80" +
-	"\xb9\xcb_\xdf#\xfa/n?IBah\xac\x04\"" +
-	"D\xd3\xf02\\\xdf5\x94\xb0\xec\x84\x91\xb0\x1d\xc3\x99" +
-	"\xd2e\xad1\x13\xed\xa6\xdd\x96\xb52\x8e\x95N%\xd2" +
-	"\x1d\x09#\xb5!\x91J\xb7\x9bD$\xc6\xe5\xa1}2" +
-	"\x99H|\xcc!\x8e\x05\xf88*\x0f\x8fp\x88\xe3\x0c" +
-	"`10\"\xad_\x9e}\xca!\x06\x184\x8e\x188" +
-	"\x91v\xa2\x86H\x1c\xe3\x10\xa7\x194eS\x0c\x0a\x91" +
-	"vR\x1e\x1e\xe7\x10g\x19\xb4P(\x86\x10\x91vF" +
-	"\x1e\x0ep\x88\xf3\x0cZ\x98\xc5\x10&\xd2\xce5\x11\x89" +
-	"\xd3\x1c\xe2\x02C4c8y\xc2\xa3\x9d\x86\xdd\x892" +
-	"b(#Dmk\xa3\x89Rb(%\xc4-y\x87" +
-	"\xc2\x9b\xddle\x01b\x00!\xdenf\x9cN(\xc4" +
-	"\xa0\x10z\xbb\xd3\xed\x8b\xadn\xf3\xae\x05K\xc6\xbd." +
-	"\x09\xd6K\xde\xb5\x84C\xc4\x86\xe1*n\xb5\xc6\xe4\x82" +
-	"\xaauf\xd6\xb6\xd2)\xaf\xdbx\xb7]\xec$\xc5S" +
-	"%[\xdboH\x1a9\x90lmuX\x0b5\x15 " +
-	"\xf5\x0e\xf9\xf97\xbdCB)\xa9\x11\x12\x16|rJ" +
-	"\x82],{>\xb7\xb5 z\x7f\xa3\xc0_:\x9a\xa8" +
-	"\xf1E\xef\x8f\x1c\xf8s1 z\x7f1\xc0\xdf8\xda" +
-	"\xf8\x09\x9e\xe8\xe3\x9eH\x1b\x10\xed\xb2l\xa7\x01j\x9b" +
-	"q'\xd1{X\xe5P(\xc6\x1a\x14\xbd\x8c\x93\x9f\x0b" +
-	"\xffG^%C\xaf\x99r\xb2\x96i\xe3\x1eB\x92\x03" +
-	"\xa3\x0b\x8b\x8e \x0fG\xca\xee\xb3)\"\xf9\xd8s\xa4" +
-	"\xb6\x9b9D2 \xa0E\xb2\xdb\xe7s\x88\xc5\x0c\x1a" +
-	"\x1bR\x90\x90(\x16r\x88e\x0c\xee*\xc36\x87M" +
-	"\x81x\xba'ef\xfd\xb7\xdeUF\xdb\x1a3\xd5^" +
-	"\xd4z\xf9\xe2\xa8Kg\xcb\xea$y(\xc8Y\xc1\xdc" +
-	"\x98\\\xe0\x0d\x0f\xafx\xfe\xf6\x85\xbfR5\xad\x89\x98" +
-	"\x16R\xfdfj\x80\x88\x00\x85\xe5HT\xd8PD\x85" +
-	"\x7f%\x81Vb\xc3\xa9\xaf\xcf\xf1\x13\x1c\xb7RI\x95" +
-	"\x1c\xa2\x9a\xc1'g\x8ad\xec\x11\x0eQ\xc7\x10\xcd\xa6" +
-	"\xd3N\xfe\x8a\xdd\xc6\xfaf)aI\xca\xc8\xbd\xed\x89" +
-	"\xc9\xef\x85`\xa5k\x0a2\x89g\xcdL\xd7\x06?\xf8" +
-	"\x7f\x01\x00\x00\xff\xff\xc8]s_"
+const schema_ea883e7d5248d81b = "x\xda\x8cV\x7fl\x14\xd5\x16>\xe7\xde\x19fK\xb6" +
+	"l/\xb3\x0d}\xef\xc1\xdb\x95l\x0c%\xb6\x94\x16B" +
+	"E\xb4\xdbR\x90\"\xe8\xde\x16\x1a\xd0\x00\x0e\xed\x94N" +
+	"\xe8\xfe`gJ)\x91\x94\x88\x10\x84\x10#\xfe A" +
+	"\x13B\xa3\xa2\x06#\x06L4\x81\x88Z\x14\x04\x12\xa2" +
+	"@\xf8\x87\x1841h@\x12\x891 d\xcc\x9d\xed" +
+	"\xdd\x9dt\xa1\xf8\xc7&3\xf7\x9c=\xe7;\xdf9\xe7" +
+	"\xbbS3\x87\xc6\xc9t\xf5\xaf\x00\x00\xefV\xc7\xb8\xec" +
+	"\xe7\xbeT\xcd\xe9_\xb6\x00+\xa3\xee\xff.-h\xdd" +
+	"\xf4\xc4\xf6\xdf\x00P7\x94\x0fuK\xd1\x00tS\xf9" +
+	"V\xbf,\x9e\xdc\xed\xbbv>m\xd57m\x07\xa6#" +
+	"\x808\xaa;\xa1\x8cEP\xdc\xb7\xc9\xd8=\x15\xef\x1f" +
+	"x+gQ\x890}\xa4\x10\x04\xd4?Q\xfa\x00\xdd" +
+	"\xfa\x8d_\xed>\xfb\xfd\xd5}\xc3\x0e(\x02\x97\xab\xb7" +
+	"\x01\xf5\xff\xa8\x0d\x80\xeeK3\x9e\x1d\xac^U3\x08" +
+	"\xbc\x0c}@T*\x1c\x1fW\xbf\xd3[TMoQ" +
+	"#u\x9b\xd4W\x10\xd0\x9d\xd1\xfe\x7fw\xd1s%\x1f" +
+	"\xf8\xe3\xa9\xda\x1f\x80z\x89&\xe2\x19\xe3\x1e;]q" +
+	"\xa7\xe6\x10p\x1d\xa5C]\xa5\xe6!\xaa\xd2\x04\xa2\xb9" +
+	"\xef\x1cy\xea\xf7\xd2\xdd\xdf\x00\x0b\xcbbvi\xff\x15" +
+	"\xc5\\\xdb;\x01w4\x1f<\x05\xac\\Zz5\xaf" +
+	"L}\xe9\xf5\x89%\xfd\x13.\x01\x0f\xa34\xad\xd0&" +
+	"\x8b\xa0\xa6\x97\xf6p\xdd\x85s[\xaag\xff\xe8\xfb\xeb" +
+	"\xd6\xdc_/\xaezskp\xda\xe5+>KR\x1b" +
+	"/,\xb7\xce\xbfpd\xc5\xb2\xc3?\x15\xb5`\xa9\xb6" +
+	"W_\xa1\x09\xcf\xe5\x9a\x86\xfa-\xf1xc\xe8@\xc5" +
+	"\xd7W\x1f\xbeZ\x88r%\x17\xa5}\xca\x99\xe8\x173" +
+	"+\x7f\xf5\x11Rw*W\xefY\x0f\xda\xdfm\xca\x9f" +
+	"+\x0f\xd2\xeb9\x00\x1e\xb1uw\x056\xd4\xd5\xc0\xc7" +
+	"\x80\xee\xcd\xd7\xc9\xb2\xf6\xda\xd8M_w\xf7\x07<\xec" +
+	"\xb1\xf9C\xe3ol~\xefv\x11\xc2\x97\x03\x83\xfa\xab" +
+	"\x01\xc1\xfd\xae\x80&~\x00\xee\x8d=;k+6," +
+	"\xb8S\xe4\xdc\x1b\x18\xd47y\xce\xfd\x81'\xf5\xfd\x81" +
+	"Y\x00\xee,\xf2\xc6\x85I}\xdb\xee\xfa\xdb\xa4\xef\x0f" +
+	"\x88\xb9x7 \xba\xb4~\xdb\xf3\xd7\xca\x9f\xf9\xc1\x1d" +
+	"F\xed\x95\xa5\x96\x8c\x17\xa8KK\x1a\xa0\xde\xed02" +
+	"\xa9\xcc4#\x83V\xb5\xf78;\xb4\xd8t\x8c\x04\"" +
+	"\x0fR\x15 \xdf\x11\x94\x0d`|*\x106OC\xcc" +
+	"7\x1ae\x16\xf6\xa8\xb0UiH\xf2t\xa1 \x1c\x04" +
+	"\xe3\x0f\x09[\xb9\x16Z\xd7k9q\x0ce\xac\xd4\x9a" +
+	"8\x86\xac\x94xK \xe6\x91P\x89d~[\xb5\xed" +
+	"\x18k\xccX\xabi\xf7\xf686\xc0(>\x09#k" +
+	"$m\xe0\x01\xaa\x00(\x08\xc0*[\x01\xf8\x14\x8a|" +
+	"\x06A\x86\xe8M\x1c\x9b\xbe\x10\x80\xd7P\xe4s\x08\xba" +
+	"=\xe9\x0e\xa3'a8\x80\xdd\x18\x04\x82A@7k" +
+	"f\xd2\x09\xc3\xe9\x06\x80\xfc\x99\xccJ|Y;\x0c'" +
+	"\xd6\xda\x90\x03\xc6\x95|\xd2R\x11?H\x91W\x10t" +
+	"\xbb\xac\xae\x07\xc7js\x0c\xa7%\xd5\x95\x06\x10\xa4+" +
+	"H\xdc\x95\xaf\xed\xe3\xc7.\xee8\x01\\!\xd8\x18C" +
+	"\x0c\x02L\xc7\x17\xd1\x95\xaej\xd4\xb2\xa3F\xd4v\x0c" +
+	"\xa7\xaa\xc7ZkF;M\xbb#ke\x1c+\x9d\x8a" +
+	"\xa6\xbb\xa2F\xaa?\x9aJw\x9a\x00\xc0'\xe6\xa1}" +
+	":\x15\x80\x1f\xa2\xc8\x8f\xfa\xf8\xf8\\\x1c\x1e\xa1\xc8\x8f" +
+	"\x13D\x12F\x02\xc0\x8e\x89\xb3\xcf(\xf2!\x82\x8cb" +
+	"\x18)\x00\xfb\xb2\x16\x80\x1f\xa5\xc8O\x12d\xca\xe60" +
+	"*\x00\xec\x848<N\x91\x9f!\xc8T5\x8c*\x00" +
+	";%\x0e\x87(\xf2s\x04\xd9\x18\x12\xc61\x00\xecl" +
+	"\x13\x00?I\x91\x9f'\x18\xca\x18N\x9e\xf0P\xb7a" +
+	"wc)\x10,\x05\x0c\xd9\xd6F\x13K\x80`\x09`" +
+	"\xc4\x125\x14\xde\xecf+\x8b\x08\x04\x110\xd2if" +
+	"\x9cnT\x80\xa0\x028\x90Lw.\xb1\x92\xe6\x03\x1b" +
+	"\x96\x88xS\xe2\xef\x97\xa85@\x91\x87G\xe0\xba\xe7" +
+	"\xa8%\xd7vZ\xd9{\x8d\x9a\x88\x12\xa3\xc8k\x08J" +
+	"f\xab\xb2\x00\xfc\x11\x8a\xbc\xbe(r\xd64\x1c3a" +
+	"@$k\xa6\x1c[\xd6T\x9c\xb11\xd1R\xbd\xde\xcc" +
+	"\xdaV:\xe5%\xa5I\xbb\xd8I\xack\xb5X&\x89" +
+	"\x0bF\x0f$\x96I\x1b1\xb4M\x05\x12\x06\x86\xfd$" +
+	"\xb7\xf7I(\x96x\x94\x84\x05\x9f\xdc\xee\xa2],4" +
+	"t~\x9b\x98\xf82Of\xe4\x05\x88\xf2\x8ed\xebj" +
+	"\x810S\xc8\x8c\x149\x94\x1a\xcd\x96\x0b)Y,d" +
+	"F\xdec(/H\xd68\x19\x08\x9b\xa9!\xcd\xdfa" +
+	"(\x95\x99U\x8a\x98\x93\xb4\x88'\x19q\x0c\xf5X\xb6" +
+	"\x13G\xad\xc3p\xe2\x18\xf1\x9a{\x1f)\xf2\xea\x11R" +
+	"U\\\x8f\x7f>D\xbc\xbcZ\xdd\x8b\xe0\x18\xc1\x013" +
+	"\xe5d-\xd3\xc6q\x80\x09\x8aXV\xb8\xbb\x01\xc5\xe1" +
+	"h\xd9%\xe3<\x98\x8f=O(N3E\x9e\xf0\xad" +
+	"\xf5b\xb1\x83\x0b(\xf2%\x04\x19\x19\xdek.P," +
+	"\xa2\xc8\x97\x11tW\x1b\xb69B\x9b\"\xe9\xbe\x94\x99" +
+	"\x95o\x03\xab\x8d\x8e\xb5f\xaa\xf3_,D\xb1>\xe7" +
+	"\x9b\xac\xb5\xcf\x15]NP\xd5\xcfk\xc1\xdc\x98h\xf1" +
+	"d\xcf\x1b\x02\xf9I\x81\xf2;\x81\xb1& L\xd5\xe4" +
+	"P\xc6\x91\x07\x11\x0b7>@\xe1n\x05(|\x8c\xf9" +
+	"\x90\x90\x91\xedi\xc8q\xf8\xa0\xed]\xe8\xdb\xdel:" +
+	"\xed\xe4iH\x1a\x1b\x9a\x85\xf8\x08\xe2F\xdf\x11o)" +
+	"\xe5\xbc\xf8\xa7\xa1\xb6\xb0n\x91\xac\x99\xe9\xe9\x97\xc1\xff" +
+	"\x09\x00\x00\xff\xff\xc1\x81\xaa&"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
@@ -1801,6 +2020,7 @@ func init() {
 		0x9fe8d2cd92c27a38,
 		0xa2305f2ea25a3484,
 		0xa9095b4cff1e5634,
+		0xb030fc18cb3b0e61,
 		0xc6920dee4bb4a443,
 		0xc9ac448a01179aec,
 		0xd81779091ced5513,
@@ -1810,6 +2030,7 @@ func init() {
 		0xe826e800c318a7c4,
 		0xe92935bf20cc2856,
 		0xed03ac5ef50453fb,
+		0xf3243256580294f3,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
 		0xfd86771dd5950237,

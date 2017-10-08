@@ -182,3 +182,15 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return nil
 	})
 }
+
+func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	createParents := call.Params.CreateParents()
+	return fh.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Mkdir(path, createParents)
+	})
+}

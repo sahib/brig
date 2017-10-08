@@ -18,6 +18,7 @@ interface FS {
     stage @0 (localPath :Text, repoPath :Text);
     list  @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
     cat   @2 (path :Text) -> (fifoPath :Text);
+    mkdir @3 (path :Text, createParents :Bool);
 }
 
 interface VCS {

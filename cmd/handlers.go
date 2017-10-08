@@ -76,10 +76,6 @@ func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleDaemonWait(ctx *cli.Context) error {
-	return nil
-}
-
 func handleDaemonQuit(ctx *cli.Context, ctl *client.Client) error {
 	if err := ctl.Quit(); err != nil {
 		return ExitCode{
@@ -264,6 +260,13 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleMkdir(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	createParents := ctx.Bool("parents")
+
+	if err := ctl.Mkdir(path, createParents); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("mkdir: %v", err)}
+	}
+
 	return nil
 }
 

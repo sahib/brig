@@ -117,3 +117,13 @@ func (cl *Client) Cat(path string) (io.ReadCloser, error) {
 
 	return fd, nil
 }
+
+func (cl *Client) Mkdir(path string, createParents bool) error {
+	call := cl.api.Mkdir(cl.ctx, func(p capnp.FS_mkdir_Params) error {
+		p.SetCreateParents(createParents)
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
