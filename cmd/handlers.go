@@ -237,9 +237,8 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 
 	for _, entry := range entries {
 		fmt.Printf(
-			"%4s %4d %8s  %s\n",
+			"%6s %8s  %s\n",
 			humanize.Bytes(entry.Size),
-			entry.Inode,
 			entry.ModTime.Format(time.Stamp),
 			entry.Path,
 		)
@@ -249,7 +248,15 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleTree(ctx *cli.Context, ctl *client.Client) error {
-	return nil
+	entries, err := ctl.List("/", -1)
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("ls: %v", err),
+		}
+	}
+
+	return showTree(entries, -1)
 }
 
 func handleMv(ctx *cli.Context, ctl *client.Client) error {
