@@ -76,6 +76,31 @@ func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) e
 	return nil
 }
 
+func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
+	prefixKey := path.Join(prefix...)
+
+	var result [][]string
+
+	err := mdb.Keys(func(key []string) error {
+		fullKey := path.Join(key...)
+		if strings.HasPrefix(fullKey, prefixKey) {
+			// Filter "directories":
+			suffix := fullKey[len(prefixKey):]
+			if !strings.Contains(suffix, "/") {
+				result = append(result, strings.Split(fullKey, "/"))
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // Export encodes the internal memory map to a gob structure,
 // and writes it to `w`.
 func (mdb *MemoryDatabase) Export(w io.Writer) error {

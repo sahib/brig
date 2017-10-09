@@ -63,6 +63,9 @@ type Database interface {
 
 	// Close closes the database. Since I/O may happen, an error is returned.
 	Close() error
+
+	// Glob finds all existing keys in the store, starting with prefix.
+	Glob(prefix []string) ([][]string, error)
 }
 
 func CopyKey(db Database, src, dst []string) error {

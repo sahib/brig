@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMemoryDatabase(t *testing.T) {
@@ -131,5 +133,70 @@ func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 			t.Errorf("Wrong value after import")
 			return
 		}
+	})
+}
+
+func withDiskDatabase(t *testing.T, fn func(db *DiskDatabase)) {
+	testDir, _ := ioutil.TempDir("", "brig-")
+
+	defer os.RemoveAll(testDir)
+
+	db, err := NewDiskDatabase(testDir)
+	if err != nil {
+		t.Errorf("Failed to create db1: %v", err)
+		return
+	}
+
+	fn(db)
+
+	if err := db.Close(); err != nil {
+		t.Errorf("Failed to close db: %v", err)
+		return
+	}
+}
+
+func withMemDatabase(t *testing.T, fn func(db *MemoryDatabase)) {
+	mdb := NewMemoryDatabase()
+
+	fn(mdb)
+
+	if err := mdb.Close(); err != nil {
+		t.Errorf("Failed to close mdb: %v", err)
+		return
+	}
+}
+
+func TestGlob(t *testing.T) {
+	t.Run("disk", func(t *testing.T) {
+		withDiskDatabase(t, func(db *DiskDatabase) {
+			testGlob(t, db)
+		})
+	})
+
+	t.Run("memory", func(t *testing.T) {
+		withMemDatabase(t, func(db *MemoryDatabase) {
+			testGlob(t, db)
+		})
+	})
+}
+
+func testGlob(t *testing.T, db Database) {
+	batch := db.Batch()
+	batch.Put([]byte{1}, "a", "b", "pref_1")
+	batch.Put([]byte{2}, "a", "b", "pref_2")
+	batch.Put([]byte{3}, "a", "b", "prev_3")
+	batch.Put([]byte{3}, "a", "b", "pref_dir", "x")
+	if err := batch.Flush(); err != nil {
+		t.Fatalf("Failed to create testdata: %v", err)
+	}
+
+	matches, err := db.Glob([]string{"a", "b", "pref_"})
+	if err != nil {
+		t.Fatalf("Failed to find matches: %v", err)
+	}
+
+	require.Equal(t, matches, [][]string{
+		{"a", "b", "pref_1"},
+		{"a", "b", "pref_2"},
 	})
 }

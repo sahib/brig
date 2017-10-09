@@ -1401,3 +1401,34 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 
 	return node, moveDir, err
 }
+
+// ExpandAbbrev tries to find an object reference that stats with `abbrev`.
+// If so, it will return the respective hash for it.
+// If none is found, it is considered as an error.
+// If more than one was found ie.ErrAmbigious is returned.
+func (lkr *Linker) ExpandAbbrev(abbrev string) (h.Hash, error) {
+	prefixes := [][]string{
+		{"stage", "objects"},
+		{"objects"},
+	}
+
+	for _, prefix := range prefixes {
+		matches, err := lkr.kv.Glob(append(prefix, abbrev))
+		if err != nil {
+			return nil, err
+		}
+
+		if len(matches) > 1 {
+			return nil, ie.ErrAmbigiousRev
+		}
+
+		if len(matches) == 0 {
+			continue
+		}
+
+		match := matches[0]
+		return h.FromB58String(match[len(match)-1])
+	}
+
+	return nil, fmt.Errorf("No such abbrev: %v", abbrev)
+}

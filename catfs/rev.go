@@ -4,7 +4,6 @@ import (
 	c "github.com/disorganizer/brig/catfs/core"
 	ie "github.com/disorganizer/brig/catfs/errors"
 	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
 )
 
 // parseRev resolves a base58 to a commit or if it looks like a refname
@@ -14,7 +13,8 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 	cmtNd, err := lkr.ResolveRef(rev)
 
 	if err != nil {
-		hash, err := h.FromB58String(rev)
+		// Expand possible abbreviations:
+		hash, err := lkr.ExpandAbbrev(rev)
 		if err != nil {
 			// If the file was not a valid refname
 			// and the hash conversion failed it's probably invalid.

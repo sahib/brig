@@ -244,6 +244,29 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 	})
 }
 
+func (db *DiskDatabase) Glob(prefix []string) ([][]string, error) {
+	fullPrefix := filepath.Join(db.basePath, filepath.Join(prefix...))
+	matches, err := filepath.Glob(fullPrefix + "*")
+	if err != nil {
+		return nil, err
+	}
+
+	results := [][]string{}
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil {
+			return nil, err
+		}
+
+		if !info.IsDir() {
+			result := strings.Split(match[len(db.basePath)+1:], string(filepath.Separator))
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
 // Export writes all key/valeus into a gzipped .tar that is written to `w`.
 func (db *DiskDatabase) Export(w io.Writer) error {
 	gzw := gzip.NewWriter(w)
