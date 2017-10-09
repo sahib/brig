@@ -91,3 +91,16 @@ func (cl *Client) Log() ([]LogEntry, error) {
 
 	return results, nil
 }
+
+func (cl *Client) Tag(rev, name string) error {
+	call := cl.api.Tag(cl.ctx, func(p capnp.VCS_tag_Params) error {
+		if err := p.SetTagName(name); err != nil {
+			return err
+		}
+
+		return p.SetRev(rev)
+	})
+
+	_, err := call.Struct()
+	return err
+}

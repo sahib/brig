@@ -309,6 +309,20 @@ func handleCommit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleTag(ctx *cli.Context, ctl *client.Client) error {
+	rev := ctx.Args().Get(0)
+	name := ctx.Args().Get(1)
+
+	if err := ctl.Tag(rev, name); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("tag: %v", err),
+		}
+	}
+
+	return nil
+}
+
 func handleLog(ctx *cli.Context, ctl *client.Client) error {
 	entries, err := ctl.Log()
 	if err != nil {

@@ -86,3 +86,21 @@ func (vcs *vcsHandler) Commit(call capnp.VCS_commit) error {
 		return fs.MakeCommit(msg)
 	})
 }
+
+func (vcs *vcsHandler) Tag(call capnp.VCS_tag) error {
+	server.Ack(call.Options)
+
+	rev, err := call.Params.Rev()
+	if err != nil {
+		return err
+	}
+
+	tagName, err := call.Params.TagName()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Tag(rev, tagName)
+	})
+}

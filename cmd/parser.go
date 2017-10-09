@@ -214,6 +214,14 @@ func RunCmdline(args []string) int {
 			Action: withDaemon(handleDiff, true),
 		},
 		cli.Command{
+			Name:        "tag",
+			Category:    vcscGroup,
+			Usage:       "Tag a commit with a specific name",
+			ArgsUsage:   "<commit-rev> <name>",
+			Description: "Give a commit an easier to remember name",
+			Action:      withArgCheck(needAtLeast(2), withDaemon(handleTag, true)),
+		},
+		cli.Command{
 			Name:        "log",
 			Category:    vcscGroup,
 			Usage:       "Show all commits in a certain range",

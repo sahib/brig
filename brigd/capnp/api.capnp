@@ -33,6 +33,7 @@ interface FS {
 interface VCS {
     log    @0 () -> (entries :List(LogEntry));
     commit @1 (msg :Text);
+    tag    @2 (rev :Text, tagName :Text);
 }
 
 interface Meta {
