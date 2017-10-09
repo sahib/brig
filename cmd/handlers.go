@@ -310,13 +310,28 @@ func handleCommit(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleTag(ctx *cli.Context, ctl *client.Client) error {
-	rev := ctx.Args().Get(0)
-	name := ctx.Args().Get(1)
+	if ctx.Bool("delete") {
+		name := ctx.Args().Get(0)
 
-	if err := ctl.Tag(rev, name); err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("tag: %v", err),
+		if err := ctl.Untag(name); err != nil {
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("untag: %v", err),
+			}
+		}
+	} else {
+		if len(ctx.Args()) < 2 {
+			return ExitCode{BadArgs, "tag needs at least two arguments"}
+		}
+
+		rev := ctx.Args().Get(0)
+		name := ctx.Args().Get(1)
+
+		if err := ctl.Tag(rev, name); err != nil {
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("tag: %v", err),
+			}
 		}
 	}
 

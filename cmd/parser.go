@@ -219,7 +219,13 @@ func RunCmdline(args []string) int {
 			Usage:       "Tag a commit with a specific name",
 			ArgsUsage:   "<commit-rev> <name>",
 			Description: "Give a commit an easier to remember name",
-			Action:      withArgCheck(needAtLeast(2), withDaemon(handleTag, true)),
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "delete,d",
+					Usage: "Delete the tag instead of creating it",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "log",

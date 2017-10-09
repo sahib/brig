@@ -595,6 +595,12 @@ func (lkr *Linker) ListRefs() ([]string, error) {
 	return refs, nil
 }
 
+func (lkr *Linker) RemoveRef(refname string) error {
+	batch := lkr.kv.Batch()
+	batch.Erase("refs", refname)
+	return batch.Flush()
+}
+
 // Head is just a shortcut for ResolveRef("HEAD").
 func (lkr *Linker) Head() (*n.Commit, error) {
 	nd, err := lkr.ResolveRef("HEAD")

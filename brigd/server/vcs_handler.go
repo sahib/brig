@@ -104,3 +104,16 @@ func (vcs *vcsHandler) Tag(call capnp.VCS_tag) error {
 		return fs.Tag(rev, tagName)
 	})
 }
+
+func (vcs *vcsHandler) Untag(call capnp.VCS_untag) error {
+	server.Ack(call.Options)
+
+	tagName, err := call.Params.TagName()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.RemoveTag(tagName)
+	})
+}

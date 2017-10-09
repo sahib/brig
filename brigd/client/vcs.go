@@ -104,3 +104,12 @@ func (cl *Client) Tag(rev, name string) error {
 	_, err := call.Struct()
 	return err
 }
+
+func (cl *Client) Untag(name string) error {
+	call := cl.api.Untag(cl.ctx, func(p capnp.VCS_untag_Params) error {
+		return p.SetTagName(name)
+	})
+
+	_, err := call.Struct()
+	return err
+}

@@ -562,3 +562,24 @@ func TestList(t *testing.T) {
 		require.Equal(t, entries[2].Path, "/x")
 	})
 }
+
+func TestTag(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/x"))
+		require.Nil(t, fs.MakeCommit("init"))
+
+		head, err := fs.Head()
+		require.Nil(t, err)
+
+		// try with an abbreviated tag name.
+		require.Nil(t, fs.Tag(head[:10], "xxx"))
+		cmt, err := fs.lkr.ResolveRef("xxx")
+		require.Nil(t, err)
+		require.Equal(t, cmt.(*n.Commit).Message(), "init")
+
+		require.Nil(t, fs.RemoveTag("xxx"))
+		cmt, err = fs.lkr.ResolveRef("xxx")
+		require.Nil(t, cmt)
+		require.True(t, ie.IsErrNoSuchRef(err))
+	})
+}

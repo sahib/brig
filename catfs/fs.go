@@ -712,3 +712,11 @@ func (fs *FS) Tag(rev, name string) error {
 
 	return fs.lkr.SaveRef(name, cmt)
 }
+
+// RemoveTag removes a previously created tag.
+func (fs *FS) RemoveTag(name string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return fs.lkr.RemoveRef(name)
+}
