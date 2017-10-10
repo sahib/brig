@@ -149,3 +149,34 @@ func (cl *Client) Move(srcPath, dstPath string) error {
 	_, err := call.Struct()
 	return err
 }
+
+func (cl *Client) Pin(path string) error {
+	call := cl.api.Pin(cl.ctx, func(p capnp.FS_pin_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) Unpin(path string) error {
+	call := cl.api.Unpin(cl.ctx, func(p capnp.FS_unpin_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) IsPinned(path string) (bool, error) {
+	call := cl.api.IsPinned(cl.ctx, func(p capnp.FS_isPinned_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, err
+	}
+
+	return result.IsPinned(), nil
+}

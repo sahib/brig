@@ -222,3 +222,48 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 		return fs.Move(srcPath, dstPath)
 	})
 }
+
+func (fh *fsHandler) Pin(call capnp.FS_pin) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Pin(path)
+	})
+}
+
+func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Unpin(path)
+	})
+}
+
+func (fh *fsHandler) IsPinned(call capnp.FS_isPinned) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+		isPinned, err := fs.IsPinned(path)
+		if err != nil {
+			return err
+		}
+
+		call.Results.SetIsPinned(isPinned)
+		return nil
+	})
+}

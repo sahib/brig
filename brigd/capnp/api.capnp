@@ -22,12 +22,15 @@ struct LogEntry $Go.doc("") {
 }
 
 interface FS {
-    stage  @0 (localPath :Text, repoPath :Text);
-    list   @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat    @2 (path :Text) -> (fifoPath :Text);
-    mkdir  @3 (path :Text, createParents :Bool);
-    remove @4 (path :Text);
-    move   @5 (srcPath :Text, dstPath :Text);
+    stage    @0 (localPath :Text, repoPath :Text);
+    list     @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat      @2 (path :Text) -> (fifoPath :Text);
+    mkdir    @3 (path :Text, createParents :Bool);
+    remove   @4 (path :Text);
+    move     @5 (srcPath :Text, dstPath :Text);
+    pin      @6 (path :Text);
+    unpin    @7 (path :Text);
+    isPinned @8 (path :Text) -> (isPinned :Bool);
 }
 
 interface VCS {

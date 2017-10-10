@@ -399,6 +399,66 @@ func (c FS) Move(ctx context.Context, params func(FS_move_Params) error, opts ..
 	}
 	return FS_move_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c FS) Pin(ctx context.Context, params func(FS_pin_Params) error, opts ...capnp.CallOption) FS_pin_Results_Promise {
+	if c.Client == nil {
+		return FS_pin_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      6,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "pin",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_pin_Params{Struct: s}) }
+	}
+	return FS_pin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c FS) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts ...capnp.CallOption) FS_unpin_Results_Promise {
+	if c.Client == nil {
+		return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "unpin",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_unpin_Params{Struct: s}) }
+	}
+	return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c FS) IsPinned(ctx context.Context, params func(FS_isPinned_Params) error, opts ...capnp.CallOption) FS_isPinned_Results_Promise {
+	if c.Client == nil {
+		return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      8,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "isPinned",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_isPinned_Params{Struct: s}) }
+	}
+	return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type FS_Server interface {
 	Stage(FS_stage) error
@@ -412,6 +472,12 @@ type FS_Server interface {
 	Remove(FS_remove) error
 
 	Move(FS_move) error
+
+	Pin(FS_pin) error
+
+	Unpin(FS_unpin) error
+
+	IsPinned(FS_isPinned) error
 }
 
 func FS_ServerToClient(s FS_Server) FS {
@@ -421,7 +487,7 @@ func FS_ServerToClient(s FS_Server) FS {
 
 func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 6)
+		methods = make([]server.Method, 0, 9)
 	}
 
 	methods = append(methods, server.Method{
@@ -508,6 +574,48 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      6,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "pin",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_pin{c, opts, FS_pin_Params{Struct: p}, FS_pin_Results{Struct: r}}
+			return s.Pin(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "unpin",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_unpin{c, opts, FS_unpin_Params{Struct: p}, FS_unpin_Results{Struct: r}}
+			return s.Unpin(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      8,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "isPinned",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_isPinned{c, opts, FS_isPinned_Params{Struct: p}, FS_isPinned_Results{Struct: r}}
+			return s.IsPinned(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -557,6 +665,30 @@ type FS_move struct {
 	Options capnp.CallOptions
 	Params  FS_move_Params
 	Results FS_move_Results
+}
+
+// FS_pin holds the arguments for a server call to FS.pin.
+type FS_pin struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  FS_pin_Params
+	Results FS_pin_Results
+}
+
+// FS_unpin holds the arguments for a server call to FS.unpin.
+type FS_unpin struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  FS_unpin_Params
+	Results FS_unpin_Results
+}
+
+// FS_isPinned holds the arguments for a server call to FS.isPinned.
+type FS_isPinned struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  FS_isPinned_Params
+	Results FS_isPinned_Results
 }
 
 type FS_stage_Params struct{ capnp.Struct }
@@ -1399,6 +1531,389 @@ type FS_move_Results_Promise struct{ *capnp.Pipeline }
 func (p FS_move_Results_Promise) Struct() (FS_move_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return FS_move_Results{s}, err
+}
+
+type FS_pin_Params struct{ capnp.Struct }
+
+// FS_pin_Params_TypeID is the unique identifier for the type FS_pin_Params.
+const FS_pin_Params_TypeID = 0xc0dd66dedad92ef8
+
+func NewFS_pin_Params(s *capnp.Segment) (FS_pin_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_pin_Params{st}, err
+}
+
+func NewRootFS_pin_Params(s *capnp.Segment) (FS_pin_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_pin_Params{st}, err
+}
+
+func ReadRootFS_pin_Params(msg *capnp.Message) (FS_pin_Params, error) {
+	root, err := msg.RootPtr()
+	return FS_pin_Params{root.Struct()}, err
+}
+
+func (s FS_pin_Params) String() string {
+	str, _ := text.Marshal(0xc0dd66dedad92ef8, s.Struct)
+	return str
+}
+
+func (s FS_pin_Params) Path() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s FS_pin_Params) HasPath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s FS_pin_Params) PathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s FS_pin_Params) SetPath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// FS_pin_Params_List is a list of FS_pin_Params.
+type FS_pin_Params_List struct{ capnp.List }
+
+// NewFS_pin_Params creates a new list of FS_pin_Params.
+func NewFS_pin_Params_List(s *capnp.Segment, sz int32) (FS_pin_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return FS_pin_Params_List{l}, err
+}
+
+func (s FS_pin_Params_List) At(i int) FS_pin_Params { return FS_pin_Params{s.List.Struct(i)} }
+
+func (s FS_pin_Params_List) Set(i int, v FS_pin_Params) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s FS_pin_Params_List) String() string {
+	str, _ := text.MarshalList(0xc0dd66dedad92ef8, s.List)
+	return str
+}
+
+// FS_pin_Params_Promise is a wrapper for a FS_pin_Params promised by a client call.
+type FS_pin_Params_Promise struct{ *capnp.Pipeline }
+
+func (p FS_pin_Params_Promise) Struct() (FS_pin_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_pin_Params{s}, err
+}
+
+type FS_pin_Results struct{ capnp.Struct }
+
+// FS_pin_Results_TypeID is the unique identifier for the type FS_pin_Results.
+const FS_pin_Results_TypeID = 0xccf4f28c8951edf6
+
+func NewFS_pin_Results(s *capnp.Segment) (FS_pin_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_pin_Results{st}, err
+}
+
+func NewRootFS_pin_Results(s *capnp.Segment) (FS_pin_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_pin_Results{st}, err
+}
+
+func ReadRootFS_pin_Results(msg *capnp.Message) (FS_pin_Results, error) {
+	root, err := msg.RootPtr()
+	return FS_pin_Results{root.Struct()}, err
+}
+
+func (s FS_pin_Results) String() string {
+	str, _ := text.Marshal(0xccf4f28c8951edf6, s.Struct)
+	return str
+}
+
+// FS_pin_Results_List is a list of FS_pin_Results.
+type FS_pin_Results_List struct{ capnp.List }
+
+// NewFS_pin_Results creates a new list of FS_pin_Results.
+func NewFS_pin_Results_List(s *capnp.Segment, sz int32) (FS_pin_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return FS_pin_Results_List{l}, err
+}
+
+func (s FS_pin_Results_List) At(i int) FS_pin_Results { return FS_pin_Results{s.List.Struct(i)} }
+
+func (s FS_pin_Results_List) Set(i int, v FS_pin_Results) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s FS_pin_Results_List) String() string {
+	str, _ := text.MarshalList(0xccf4f28c8951edf6, s.List)
+	return str
+}
+
+// FS_pin_Results_Promise is a wrapper for a FS_pin_Results promised by a client call.
+type FS_pin_Results_Promise struct{ *capnp.Pipeline }
+
+func (p FS_pin_Results_Promise) Struct() (FS_pin_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_pin_Results{s}, err
+}
+
+type FS_unpin_Params struct{ capnp.Struct }
+
+// FS_unpin_Params_TypeID is the unique identifier for the type FS_unpin_Params.
+const FS_unpin_Params_TypeID = 0x9efc974402f016f6
+
+func NewFS_unpin_Params(s *capnp.Segment) (FS_unpin_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_unpin_Params{st}, err
+}
+
+func NewRootFS_unpin_Params(s *capnp.Segment) (FS_unpin_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_unpin_Params{st}, err
+}
+
+func ReadRootFS_unpin_Params(msg *capnp.Message) (FS_unpin_Params, error) {
+	root, err := msg.RootPtr()
+	return FS_unpin_Params{root.Struct()}, err
+}
+
+func (s FS_unpin_Params) String() string {
+	str, _ := text.Marshal(0x9efc974402f016f6, s.Struct)
+	return str
+}
+
+func (s FS_unpin_Params) Path() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s FS_unpin_Params) HasPath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s FS_unpin_Params) PathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s FS_unpin_Params) SetPath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// FS_unpin_Params_List is a list of FS_unpin_Params.
+type FS_unpin_Params_List struct{ capnp.List }
+
+// NewFS_unpin_Params creates a new list of FS_unpin_Params.
+func NewFS_unpin_Params_List(s *capnp.Segment, sz int32) (FS_unpin_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return FS_unpin_Params_List{l}, err
+}
+
+func (s FS_unpin_Params_List) At(i int) FS_unpin_Params { return FS_unpin_Params{s.List.Struct(i)} }
+
+func (s FS_unpin_Params_List) Set(i int, v FS_unpin_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_unpin_Params_List) String() string {
+	str, _ := text.MarshalList(0x9efc974402f016f6, s.List)
+	return str
+}
+
+// FS_unpin_Params_Promise is a wrapper for a FS_unpin_Params promised by a client call.
+type FS_unpin_Params_Promise struct{ *capnp.Pipeline }
+
+func (p FS_unpin_Params_Promise) Struct() (FS_unpin_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_unpin_Params{s}, err
+}
+
+type FS_unpin_Results struct{ capnp.Struct }
+
+// FS_unpin_Results_TypeID is the unique identifier for the type FS_unpin_Results.
+const FS_unpin_Results_TypeID = 0xdba8e30445acc3f4
+
+func NewFS_unpin_Results(s *capnp.Segment) (FS_unpin_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_unpin_Results{st}, err
+}
+
+func NewRootFS_unpin_Results(s *capnp.Segment) (FS_unpin_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return FS_unpin_Results{st}, err
+}
+
+func ReadRootFS_unpin_Results(msg *capnp.Message) (FS_unpin_Results, error) {
+	root, err := msg.RootPtr()
+	return FS_unpin_Results{root.Struct()}, err
+}
+
+func (s FS_unpin_Results) String() string {
+	str, _ := text.Marshal(0xdba8e30445acc3f4, s.Struct)
+	return str
+}
+
+// FS_unpin_Results_List is a list of FS_unpin_Results.
+type FS_unpin_Results_List struct{ capnp.List }
+
+// NewFS_unpin_Results creates a new list of FS_unpin_Results.
+func NewFS_unpin_Results_List(s *capnp.Segment, sz int32) (FS_unpin_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return FS_unpin_Results_List{l}, err
+}
+
+func (s FS_unpin_Results_List) At(i int) FS_unpin_Results { return FS_unpin_Results{s.List.Struct(i)} }
+
+func (s FS_unpin_Results_List) Set(i int, v FS_unpin_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_unpin_Results_List) String() string {
+	str, _ := text.MarshalList(0xdba8e30445acc3f4, s.List)
+	return str
+}
+
+// FS_unpin_Results_Promise is a wrapper for a FS_unpin_Results promised by a client call.
+type FS_unpin_Results_Promise struct{ *capnp.Pipeline }
+
+func (p FS_unpin_Results_Promise) Struct() (FS_unpin_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_unpin_Results{s}, err
+}
+
+type FS_isPinned_Params struct{ capnp.Struct }
+
+// FS_isPinned_Params_TypeID is the unique identifier for the type FS_isPinned_Params.
+const FS_isPinned_Params_TypeID = 0xc9558eac26b0f15e
+
+func NewFS_isPinned_Params(s *capnp.Segment) (FS_isPinned_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_isPinned_Params{st}, err
+}
+
+func NewRootFS_isPinned_Params(s *capnp.Segment) (FS_isPinned_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return FS_isPinned_Params{st}, err
+}
+
+func ReadRootFS_isPinned_Params(msg *capnp.Message) (FS_isPinned_Params, error) {
+	root, err := msg.RootPtr()
+	return FS_isPinned_Params{root.Struct()}, err
+}
+
+func (s FS_isPinned_Params) String() string {
+	str, _ := text.Marshal(0xc9558eac26b0f15e, s.Struct)
+	return str
+}
+
+func (s FS_isPinned_Params) Path() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s FS_isPinned_Params) HasPath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s FS_isPinned_Params) PathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s FS_isPinned_Params) SetPath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// FS_isPinned_Params_List is a list of FS_isPinned_Params.
+type FS_isPinned_Params_List struct{ capnp.List }
+
+// NewFS_isPinned_Params creates a new list of FS_isPinned_Params.
+func NewFS_isPinned_Params_List(s *capnp.Segment, sz int32) (FS_isPinned_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return FS_isPinned_Params_List{l}, err
+}
+
+func (s FS_isPinned_Params_List) At(i int) FS_isPinned_Params {
+	return FS_isPinned_Params{s.List.Struct(i)}
+}
+
+func (s FS_isPinned_Params_List) Set(i int, v FS_isPinned_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_isPinned_Params_List) String() string {
+	str, _ := text.MarshalList(0xc9558eac26b0f15e, s.List)
+	return str
+}
+
+// FS_isPinned_Params_Promise is a wrapper for a FS_isPinned_Params promised by a client call.
+type FS_isPinned_Params_Promise struct{ *capnp.Pipeline }
+
+func (p FS_isPinned_Params_Promise) Struct() (FS_isPinned_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_isPinned_Params{s}, err
+}
+
+type FS_isPinned_Results struct{ capnp.Struct }
+
+// FS_isPinned_Results_TypeID is the unique identifier for the type FS_isPinned_Results.
+const FS_isPinned_Results_TypeID = 0x87c49e302c6516f8
+
+func NewFS_isPinned_Results(s *capnp.Segment) (FS_isPinned_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return FS_isPinned_Results{st}, err
+}
+
+func NewRootFS_isPinned_Results(s *capnp.Segment) (FS_isPinned_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return FS_isPinned_Results{st}, err
+}
+
+func ReadRootFS_isPinned_Results(msg *capnp.Message) (FS_isPinned_Results, error) {
+	root, err := msg.RootPtr()
+	return FS_isPinned_Results{root.Struct()}, err
+}
+
+func (s FS_isPinned_Results) String() string {
+	str, _ := text.Marshal(0x87c49e302c6516f8, s.Struct)
+	return str
+}
+
+func (s FS_isPinned_Results) IsPinned() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s FS_isPinned_Results) SetIsPinned(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+// FS_isPinned_Results_List is a list of FS_isPinned_Results.
+type FS_isPinned_Results_List struct{ capnp.List }
+
+// NewFS_isPinned_Results creates a new list of FS_isPinned_Results.
+func NewFS_isPinned_Results_List(s *capnp.Segment, sz int32) (FS_isPinned_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return FS_isPinned_Results_List{l}, err
+}
+
+func (s FS_isPinned_Results_List) At(i int) FS_isPinned_Results {
+	return FS_isPinned_Results{s.List.Struct(i)}
+}
+
+func (s FS_isPinned_Results_List) Set(i int, v FS_isPinned_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s FS_isPinned_Results_List) String() string {
+	str, _ := text.MarshalList(0x87c49e302c6516f8, s.List)
+	return str
+}
+
+// FS_isPinned_Results_Promise is a wrapper for a FS_isPinned_Results promised by a client call.
+type FS_isPinned_Results_Promise struct{ *capnp.Pipeline }
+
+func (p FS_isPinned_Results_Promise) Struct() (FS_isPinned_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return FS_isPinned_Results{s}, err
 }
 
 type VCS struct{ Client capnp.Client }
@@ -3475,6 +3990,66 @@ func (c API) Move(ctx context.Context, params func(FS_move_Params) error, opts .
 	}
 	return FS_move_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) Pin(ctx context.Context, params func(FS_pin_Params) error, opts ...capnp.CallOption) FS_pin_Results_Promise {
+	if c.Client == nil {
+		return FS_pin_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      6,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "pin",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_pin_Params{Struct: s}) }
+	}
+	return FS_pin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts ...capnp.CallOption) FS_unpin_Results_Promise {
+	if c.Client == nil {
+		return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "unpin",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_unpin_Params{Struct: s}) }
+	}
+	return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) IsPinned(ctx context.Context, params func(FS_isPinned_Params) error, opts ...capnp.CallOption) FS_isPinned_Results_Promise {
+	if c.Client == nil {
+		return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      8,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "isPinned",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_isPinned_Params{Struct: s}) }
+	}
+	return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Log(ctx context.Context, params func(VCS_log_Params) error, opts ...capnp.CallOption) VCS_log_Results_Promise {
 	if c.Client == nil {
 		return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -3691,6 +4266,12 @@ type API_Server interface {
 
 	Move(FS_move) error
 
+	Pin(FS_pin) error
+
+	Unpin(FS_unpin) error
+
+	IsPinned(FS_isPinned) error
+
 	Log(VCS_log) error
 
 	Commit(VCS_commit) error
@@ -3719,7 +4300,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 17)
+		methods = make([]server.Method, 0, 20)
 	}
 
 	methods = append(methods, server.Method{
@@ -3818,6 +4399,48 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			return s.Move(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      6,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "pin",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_pin{c, opts, FS_pin_Params{Struct: p}, FS_pin_Results{Struct: r}}
+			return s.Pin(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "unpin",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_unpin{c, opts, FS_unpin_Params{Struct: p}, FS_unpin_Results{Struct: r}}
+			return s.Unpin(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xe2b3585db47cd4f9,
+			MethodID:      8,
+			InterfaceName: "capnp/api.capnp:FS",
+			MethodName:    "isPinned",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := FS_isPinned{c, opts, FS_isPinned_Params{Struct: p}, FS_isPinned_Results{Struct: r}}
+			return s.IsPinned(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
 	})
 
 	methods = append(methods, server.Method{
@@ -4089,155 +4712,171 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\x94X\x7fpT\xd5\xf5?\xe7\xbd]^\x96\xec" +
-	"\xaf\xe7\x0bc\xfc~\xa5\x1bB\xb4@K\x0c\x09T\x92" +
-	"V\xb3\x09$\x80\x10\xba\x97\x15\x06\xa1\xfex$\x8f\xcd" +
-	"\x1b6\xbbq\xf7%\x01\x07\x1a\xa8\xa0\xfc(Sk\x05" +
-	"\x8a\xda22Z\x8d\xa5\x05\x06\x18\xb5#S\xa9\xc0\x80" +
-	"?Z,\xa0\xd0)\xfdA[\xc5\x8e\xc8\xa0\xb4\x1d)" +
-	"\xcc\xeb\xdc\xbb\xb9\xef\xdd$\x9b\x04\xffJ\xf6\x9d\xf3\xce" +
-	"=\xe7s\xce\xf9\xdcs^\x85:\"*M\xf2~\x10" +
-	"\x02 \xafzG\xd8\xea\xdf\xbaR\x15o\x7f\xf8(\xa8" +
-	"a\xd9\xfe\xff33\xe7\xad\xba{\xfd?\x01P{O" +
-	"yY;\xab(\x00U\xa7\x95\xc7Q{\xaf@\x01\xb0" +
-	"\xd7o\xde4\xd7\x9cZ\xbf\x1eT\x0d\x01<T\xfaZ" +
-	"\xc1H\x04\x8f}\xf4\xc7w\xaf\x9d{l\xe3\xf7A\x1d" +
-	"\xc5%\xcf\x15TR\xc9\xb3\xd2\xc8m\xc5/\xbd\xf8L" +
-	"\xee\x1d\xafDE\x1b\x0a$\x04\xd46\x17t\x01\xda#" +
-	"~9\xdb>\xf3\xbb7\x7f\x9a{\xd5\x8bT\xe1rA" +
-	"\x0dU\xf8\xa2\xa0\x16\xd0\xde\xb6\xa8t\\\xfb\xca\x96\x1d" +
-	"\xa2\xc2-\xbeJ\xaa0\xc6G\x15\xa6>\xf2\x9b'\xdf" +
-	"\xfd\xfd\x85\x1d\xbdGP\x05\xad\xcew\x15Pk`\xf2" +
-	"\xb5\x93\x17\xed,\x7f\xb0b'\x900\x0aQze\xaa" +
-	"h\xfa\xde\xd2:|\x8a\xd6\xe1\x8bT\xf5\xf8~\x80\x80" +
-	"\xf6\xba\xaf\xad:\x12?y\xe9yP\x8bz\x83\xd1&" +
-	"\x15^\x05\x8f=y\xc1W\xec9\x8b}=\xe2A\xa3" +
-	"\x0a?\x03\xd4n)\xa4\x07\xb5\x9d\xfa(\xe5K\xac\xea" +
-	"\xc9\xbd\xc8b\xd5\xaa\x0b\xa9#w\x15\xd2P\xe5\x9b\xfc" +
-	"j\xf9\x92g\xc5\xf7\xab\xb6\x17\x8e\xa4\x91<\xc7\x0cL" +
-	"H\x7f\xf6\xcc\xb5\xa3\x1b~.\x00|\xa8P\xa20\xea" +
-	"\xc1o\xbe]|\xadb\x0f\x10\x0d\x9dw_(d8" +
-	"\xf60\xe3\x97\xaf_\xf9\xe3\xa1\xbb\xd2\xaf\x08@k>" +
-	"?=<\xe0\xa7\xf2\xea\x8e\xef6.;w\xe2\x157" +
-	"\xaa*\xd3\xff\x7f\xd4\xf6\xee\xaf\xce\x19\xfb\xc4\xdf\x03\xbf" +
-	"\x12$\xc4\x7f\x13\x95\xcc\xdeQ\xb4\xb2kV\xcfAA" +
-	"R\xedg\xfeL{~\xff\xecO\x03O\x1e\x15$\xa3" +
-	"s\xd6>y\xfaf\xdc8}\xd7q\xa1\x14\xbc~V" +
-	"$\x1f\xc4[ko\x7fi\xdfq!\xba\x8b\x85\xec\x9c" +
-	"\x86]\x8b\xd7=qt\xcf\x89\xde\x14\xb3\"9]\xc8" +
-	"R|\x8e\x05\xa7\xcd\xbfx\xabo\xc5\xcdg\x80\x14\xa1" +
-	"\xebI)U\xa8\xf3S\xe4\xb6n\xae\xd2\xc7\xeeh8" +
-	"\xdb\x0b=\x83G\xa7A\xa0f2\x85\x9e\x0f\xcf4\xfd" +
-	"\xd6:y\x16\xd40\x0a5\xc0\xb2\xbb\xc1\xff\x96\xb6\xc5" +
-	"\xafh[\xfc\x11\xed\x80\xff#@{_\xd5\xe9\x13\x8f" +
-	"\x96\xd7\xfcY\x08b{\x80\x05\xf1\xfe\x83[\xd7\xf9\xef" +
-	"8\xf7WA\xb2&\xc0\x82\xf8\xf4\xe5\x0d\xb3\x16O\xe9" +
-	"8/H\xcc@\x0d\x95|qj\xe5\xfe\xfb\x17\xee;" +
-	"?\xa0\xcbH\xe0i\xed\xbe\x00\xd5\x9c\x1fx\x1c\xb5\x86" +
-	" \xed\xb2\x8d\xd6\x9f\x9e\x1as\xbe\xe9\x1f\xfd<e\x09" +
-	"\x9d\x18\xfc\x83VM\xb5\xb4)\xc1.\xc0K\x87_," +
-	"~\xf3\xc2\xed\x17\xdc\x13\x7f\x18d\xbe,\x18\xf7N\xc9" +
-	"\xaf\xa7\x8c\xffX\xac\xb4\x15AV-\xab\x82\x14\x8e\xff" +
-	"\xc6=\xffz`\x97|\xb1\x17q\xda\x0aU\xbf\x08\xb2" +
-	"R<\x10\xdc\x0dh\x7f\xfe\x94\xb4pAe\xd9\xe7B" +
-	"\xb2H\x88!0\xbbf\xb7\xb6w\xe2\xa9+\"\xd4\xd5" +
-	"!\xf6j]\x88\xda\xfe\xf7\xd8E\x0b\xab}\xb7\xfd\xa7" +
-	"O.B\xecp\x83)\x945\x1e\xbe\xe9\xd2\xea\x9f]" +
-	"\x1d\x80\xc7\x96\xd0N\xed'!\x86vHA\xad:L" +
-	"\xf1\xb8\xb4mSe\xf1\xf2\x99\xd7\x06h\x8f\x09\xef\xd4" +
-	"\xc6S\x15\xed\xb6\xf0\x0c\xad)|'\x80\xbd\xa9s\xeb" +
-	"\x95\x19\x7f\xf9\xc6u\x91,\x9a\xc2\x8cM\xe6\x87\xe9\xd9" +
-	"wJ[N\x8f\xeez\xec\xba\xd8H\xda\xba0\xed\x93" +
-	"\x0daZj\x9d\x8f=\xf4\xc9\xa8o\x9f\xb4E\x0b\x1f" +
-	"\x87Y%]\x0e\xd7\xc2T\xbbYoO\xb5\xdf\xa1\xb7" +
-	"\xa3Y\xce\xfe\xad\x095\x19\x96\x1eC$\xc5\xb2\x17\xc0" +
-	"\xa9\x1d\xe4\xa5\xa2\xee\x9d\x00\x92\xfa\x82\x82\xe84\x07\xf2" +
-	"S\xd4\xedT\xb6YA\xc9I\x09\xd2\xa4\x02\xcd\xea\x1a" +
-	"*\xebPPv8\x109[\xaa\xe6<\x90T]A" +
-	"\xb7y\x90\x17\xa0:\x9f\xca\x9a\x14\xf4:\xbc\x8c\x1c\x17" +
-	"\xb5\x8e\xca\xaa\x95\xd0\xc3\x1d\xa6\x15\xc5P\xbb\x99JD" +
-	"1d\xa6\xe8/\xbb9\x9dZj&f\x18\x80\xee\xaf" +
-	"x\x9f_uI\xc0d\x14c\x88\x0e\x0e2\xc7\xa11" +
-	"^\x9e\xb5\xf4\x84Q6\xcf\xc8v$\xad,\xc0@\x1d" +
-	"\x0aU97\x95,\x8bE\xf4\x8c\xde\x96\x1d\xc2V\x8c" +
-	")\x00)\x90=\x00\x1e\x04P\xc7\xcf\x03 \xe3d$" +
-	"\x93%T\x11\x19!\xa8\x93\xee\x01 \x152\x92oI" +
-	"h'\xd3\xcdz2\xa6[\x80\xad\xe8\x07\x09\xfd\x80v" +
-	"\xc6hO\xc7t\xab\x15\x00\x9cgCy7\xc3\xb0\xca" +
-	"\xe6\xd5\xe6\x02!\x1e\xe7\xf0@%P_\x90\x14I\x18" +
-	"\xe9\xd4\x93\x1d\xc6\x0d[\xeb\x8dU4V\xea\x1aS\x96" +
-	"\x19+\x06\x98\x92\x048\x9a\xf5\xfc\x0e\xd1\xc0\xfd2\x92" +
-	"b\x09\xed\xa5\xe6\xd2A\x83tl\xc5-\xdd\x9a\x95Z" +
-	"\x9a\x06\xa05\xebA\xc9~\xe0G;\xc8\xc1\xf77\x1e" +
-	"\x01\xe2\x91\xb0\xae\x0c\xd1\x0f0\x09\xbf\x876W\xf5\x96" +
-	"\x98\xd9\x12\xbd$k\xe9\xd6\xc4\xa4\xb9\xcc(i1\xb2" +
-	"\xcd\x19\xb3\xdd2\xd3\xa9\x92\xf4\xd2\x12=\xb5\xa2$\x95" +
-	"n1\x00\x80\xdc\xea\xb8v`\x02\x00\xd9##y]" +
-	"H\xd4k\xf4\xe1~\x19\xc9\x1b\x12\xa2T\x84\x12\x80z" +
-	"\x90>{UFrXBU\xc6\"\x94\x01\xd4C\x14" +
-	"\xe9\xd7e$\xc7$T=\xab\x8b\xd0\x03\xa0\x1e\xa1\x0f" +
-	"\xdf\x90\x91\xbc#\xa1\xea\xf5\x16\xa1\x17@=N\x1f\x1e" +
-	"\x96\x91\x9c\x90P\x1d!\x15\xe1\x08\x00\xf5\xddz\x00r" +
-	"LFrJ\xc2P\xbbn9\x95\x10j\xd5\xb3\xad\x18" +
-	"\x00\x09\x03\x80\xa1\xac\xf9\x88\x81>\x90\xd0\x07\x181i" +
-	"\x0c\xee\xaf\xect3\x83\x08\x12\"`\xa4\xc5h\xb7Z" +
-	"\xd1\x03\x12z\x00\xbb\xdb\xd2-\xf7\x9am\xc6\xe0 /" +
-	"\x98\x16/O\xa6\x13e\xb5\xb1\xbe\x05\xde?\xa3y\x8a" +
-	"b\x82[\x14}\x1c\xcf\x7f\x88\xa5;\x87\x88=B+" +
-	"\xabLFR!@?\xb1\xdem\x1c%ctr\xc3" +
-	"\xdd\x96\x9e\x98\xab\xb7\x0dQ\xc9\x8d\xf1\xf2\x8c\xd1\x96\xee" +
-	"t\xda\x11\xbe\x94\xc3\x8a`\x87Y\xe1\x04\xc1\x15D\xf9" +
-	"\xb2\x163\x93\xaf\xeb'\xb8\x119\x01e\x00\xc8\xd7e" +
-	"$S\x07\x9c\x9c1t\xcb\x88\xe9\x10\xc9\x18)+\xcb" +
-	"\xb3\x987\x0d\xcc\xa3<\x10\xd6\x0f\x03aw6\xd3\x1c" +
-	"\x13\x0e\xedn\xc9Z\xb1|\xe1\xcbb\xbe\x9a\xd3mm" +
-	"\xa6\x95C@\xb6\xb2\xf9\x95:R4\xad9\x940;" +
-	"\x10G\x9e\xf8\xc1p\xac\x8b\xcd*\xef42Y3\x9d" +
-	"bP\xca\xf9(\x96\xd1\x13\xe5\x7f'\xa9C%~\x80" +
-	"3\xf9h..\xd0\xdcp\xc5X)\x14\xa3\xc0}\xc3" +
-	"\x91\xaa\x18\x1a\xf5I\xe9G\x87\xf5n1v\xf7\xea\xf1" +
-	"\xae\x1d2!\x0c\x03\x1c\x94\x9d\xdb\xb2\x89\xc1\xfbpN" +
-	":\xd1\x90\xb22+\x06c\xd40cT\x15G\x02\x92" +
-	"\xb0c_\xa7\x15\xfd\x1d\x19I\xab\x00\x8bA\x0f}H" +
-	"F\x92\x94P\x95z\xf9\xd1\xa4\x9a-2\x92\xd5\x94\x1f" +
-	"\xe5\x1c?\xae\xa2\x0f\x97\xcbH\xd6J}9M\xf45" +
-	"d\xe9\x89,\x06\x01c2\xb2gA\xc0P\x8bn\x0d" +
-	"wk\xd1\xe9`\x88\xb2pun\xb8,\xf8\xd55p" +
-	"|\x92\x1b\xe3\xee\xf0\xc4\xd7E\xe4\xbb\xa6\xba\xb7\x92\x0f" +
-	"O|tC>\xdd\x0a\xc3\x13_\xcd\x90/\x83\xea\x9a" +
-	"R><\xf1\xdd\x09\xf9L\xab\x9a\xd4\xe6\xfdtx\xe2" +
-	"+\x19\xf2\xe5D%5 \xa9\x0dtx\xe2\x1b\x15\xf2" +
-	"\xb5L\xad\xa6\xe7MT\"l4\x89b(if\xad" +
-	"(*\xcd\xba\x15\xc5\x08c\xae(\xd6\xe6\x1a&\x8a\xa1" +
-	"\xdc\x1fqTr*f\x1a\xc3%\xa6\xcbf\x86\xc6>" +
-	"\\\xaf\x94\xe6\xef\x15\xa5SO\x0e\x93H:\xd8\x0d\x91" +
-	"\xa4\xc6x9\x8d\xc1!\x92|\x9dT&a\xb7\x91\xb2" +
-	"2\xa6\xe1TR\xd8\xdd\xa9\x01\xe9\xc3\xa1Nw\xae\x0c" +
-	"\xbfc\xbb\x81\x0e-\xd3e$1!\xca&\xca\x083" +
-	"e$\xf7\x0a\xa5O\xa8\x17sd$\x0b%\xb4\x97\xe8" +
-	"Y\xa3\xdfx\x13Iw\xa5\x8c\x8cC\xc1K\xf4\xe6e" +
-	"F\xaae\xc8\x9b,w\xc3\x0c1\xa3\xba\x0c\x9c\xef\xb6" +
-	"\x13\x09f\xd8\x8b\x93\x8f\x01_\x1a_g]\xed\x87\xaf" +
-	"\xd35\xca\x82i\xacm\xc2\xacm\xf8'\x0b\xe4\xbb\x97" +
-	"\xfa0-\x7f\x83\xb6\x0d_\x8d\x91\x7f\x01P\xef\xab\xc9" +
-	"\xed\x07\x92\xf3\xc5\x02\xf9\xa6\xaf\xd6\xd1\xf7\xa6\xd0\xb6\xe1" +
-	"{\x1e\xf2\xef\x03\xeax\xda6\xa3\x15%\x99ND\xb1" +
-	"6G\x9cQT,=\x11\xc5\x08C\xaco\xb9\xbb\xce" +
-	"\xd6\xc5f1jd\xce\xf2o\x07\xc8\xb7zU\xad\x07" +
-	"I\xf5*\x9c\xb0\xa3H\xfc\x88\xee\xda\x0c\xe0\xae\x8c\x00" +
-	"\xeeG\xab\x1bX0\xf2M\xcc\xa5.\xf0\x8a\x9eL\xba" +
-	"\xa0;\x9bw?\xd0\xa5\xfe\xed\x92gZ\xc87\x9e\xdc" +
-	"#\x8c'\x99t\xdar\xea\xa4M_>\x9d\xce\x93\xb4" +
-	"\x90\x07\xbd\x9c\xdc\xfb\x99\xf7\xef`{H\xc6hO:" +
-	"\xa4\xf0\xbf\x00\x00\x00\xff\xff\x8a\x09%\xea"
+const schema_ea883e7d5248d81b = "x\xda\xa4X\x7fpT\xd5\xf5?\xe7\xbd\xdd<v\xbf" +
+	"\xfb\xeb\xee\x8b\x1a\xbf\x95&\xc6`\x95J\x0c\x89VH" +
+	"\xab\xd9\x04\x08F\x88\xddG\x84\xa1P\xd0G\xf2\x92\xbc" +
+	"a\xb3\xbb\xec\xbe$\xc4\x81\x06*(\x01i\xc5*\x14" +
+	"\xb50el%\x96)0\xd0\xb1\xed\xc8\x94\x94\x1fC" +
+	"\x14,S\xc0\x12[l\xc1V\xb0#R\x90Z\xa10" +
+	"\xdb\xb9w\xf3\xde\xbbI6\x1bl\xffJ\xf6\x9ds\xcf" +
+	"=\xf7s\xce\xf9\xdcsn\xc9;9!a\xbc\xf3," +
+	"\x01P\x8e:sR\xe4\x83\xf6h\xc9\xdb\x1f>\x05$" +
+	" \xa6\xbet\xf2\xe1\x19K\x1fZ\xf5w\x00\x94\xfbF" +
+	"\xbd.\x9f\x1e%\x01\x94\x9d\x1a\xf5\x0c\xca}.\x09 " +
+	"\xf5\xf9\xcd\xda=%\x9b\xf6?\x03\x8a\x8c\x08\xe0\xa0\xe2" +
+	"\x1eW!\x02\xca\xbd\xae\x0a\xc0\xd4\xaa\xb5k\x1e\xd5'" +
+	"T\xad\x02\"\x9b\xf2\xf3.7\x82#u\xf0\x87\x0f\xad" +
+	"x\xf4\xd0\xeag\x81\xdcdJN\xb8J\xa9\xe4\x15\xc1" +
+	"\xbd!o\xebk/\xa7\xd78\x05*\xda\xe3\x12\xa8\xd1" +
+	"\x1eW;`*\xe7\xe7\xd3R'\x7f\xb7oSz\xa9" +
+	"\x13\xa9\xc2\x18w9U\x18\xe7\xa6\xbb~v\xf3?\x84" +
+	"\xc9\x1b\xaem\xea\xb7\xc0\x14j\xdd\xcc\x82\xc2\x146\xcc" +
+	")\xbc+\xbe\xa4a3oa\x91\xbb\x94*t0\x85" +
+	"\x09O\xfe\xf6\xf9#\xbf?\xb7\x99\xb3 ot_\x05" +
+	"\x94\x7f\xc4\xe4+\xee\x9b\xb3\xa5\xf8\xf1\x92-\xa0\x04\x90" +
+	"\xc3\xc9)R\xc5\x1e\xf7[\xf2\x11\xb7$\x1fq\xe7\x97" +
+	"\xe1\xff}\x1f\x01S+\xbf\xba\xf4@\xdd\xb1\x0b\xaf\x02" +
+	"\xc9\xed?\xad\xdc\xe5\xb9\x0a\x8e\xd4}\xb3\xbe\x9c\x9a>" +
+	"\xd7\xd5\xcdo\xd4\xe2\xb9\x04(/\xf2\xd0\x8dZ\x8e\x9f" +
+	"\x8d\xba\x9a\x96v\xa7\x1720\xe4u\x1e\xea\xc8\x8b\x1e" +
+	"\x8a\x85\x18\xf4\x90\xe2\x05\xaf\xf0\xeb\xcb.z\xdc\xf4$" +
+	"W\x98\x81\xb1\xb1K/_;\xd8\xf53.\x02\xb7z" +
+	"\x05\x8a\xb3\xea\xfb\xfa\xdby\xd7Jv\xf4\x07/\xbd\xf6" +
+	"\xba\x87\xc1\x84^j\xfc\xe2\xf5\xcb\x7f\xeay0\xf6\x06" +
+	"\x17\x09Y\xf5\xd2\xcd5&\x9f\xd8\xfa\x9d\xea\x85\xa7\x8e" +
+	"\xbea\x9f\xaa\xac\xc7\xfb\xff\xd4\xf6\xf6\xafL\xbf\xe3\xb9" +
+	"\xbfz\x7f\xcdI\xba\xbdA*\x99\xb69wI{M" +
+	"\xf7\x1eN\xb2.\xed\xcf\xe7\xc5}\xef\xbd\xdfxj/" +
+	"\x0fE\xab\x97B\xd1\xe1\xa5'\x99\xf4\xea\xeei\x9fx" +
+	"\x9f?\xc8\xad\xdc\x98\xdem\xfe\xc5\x1dwn\xfb\xde\xcc" +
+	"^\x1e\x84\xe5T\x84r\x17[\xfa\xf1K\xb7\xe0\xea\xc9" +
+	"\xdbz\xb9d\xeb\xf6\xb24\xfcC]s\xc5\x9d[w" +
+	"\xf5r\xf0\xacK;\xfa\xd9y\xa5\xeb\xd9K\x97\x0f\xdb" +
+	"\x12\xb9\xc3KC6e\xdb\xdc\x95\xcf\x1d\xdcq\xb4?" +
+	"yX~\xce\xf3\xb2\xe4I\xc3\"\xcf<\x7f\x9b\xab\xe3" +
+	"\x96\x93\xa0\xe4\xdaU\xe1MW\x05sg\xfd\xda2\xf5" +
+	"\x8e\xcdS\xfa\xfa\x83\xca\xfc\xfd\x88\xee\x8a\xf2E\xa6\xd0" +
+	"\xfd\xe1\xc9\xdaw\x8cc}@\x02\xc8e\x17s\x82\xf8" +
+	"\xde\x92G\xfb$y\xb4/_~\xd0w\x160uy" +
+	"\xdf\xb6)\x8e\x0f\xb6\xfe\x91;\xc3\xed~v\xba]e" +
+	"'\x8e>U\\\xfeg\xee\xdc\xae\xb4\xe4\xdd\xc7\xd7\xaf" +
+	"\xf4\xdc{\xea4'\xb9\xe8c\xe7\xfe\xe4\xf5\xae\x9a\xb9" +
+	"\xf7\xb7\x9e\xe1$}\xber*\xb9r|\xc9\xeey\xb3" +
+	"w\x9d\x19\xc2\x0d=\xbe\x97\xe4^\x1f\xd5<\xe0\x9b*" +
+	"\xc8\xe3\x03\x94\x1bV\x1b\xef\xbfp\xfb\x99\xda\xbf\x0d:" +
+	"\x03K\xa2[\x03\xef\xc9c\xa8\x96|{\xa0\x1d\xf0\xc2" +
+	"\xfe\xd7\xf2\xf6\x9d\xbb\xf3\x9c\xbd\xe3\xd2\x00\xf3e\xd6]" +
+	"\x87\x0b~s\xff\xdd\x1f\xf1\x81\xd5\x02,C\xf5\x00\x05" +
+	"\xea\xdfu\x8e\x7f\xce\xdf&\x9e\xef\x8f\x85\xc8\x92\"\xc0" +
+	"\xd2\xff\xc7\x81\xed\x80\xa9O_\x10f\xcf*-\xfa\x94" +
+	"\xc3\xe6A\xc2\x10\x98V\xbe]\xde9\xee\xf8e>\x08" +
+	"c\x08[:\x8e0\x16\xb9c\xce\xec\x89\xae1\xff\xe2" +
+	"\x15jI\x9aE\x98BQ\xf5\xfe\xe0\x85e?\xbd:" +
+	"\x04\x8f\xe5d\x8b\xdcE\xa8\xfeJ\"\xa1<&H\xf1" +
+	"\xb8\xb0aMi\xde\xe2\x87\xaf\x0d\xd1\xf6\x06\xb7\xc87" +
+	"\x05Yh\x83S\xe5\x89\xc1\x07\x00Rk\xda\xd6_\x9e" +
+	"\xfa\x97\xaf]\xe7\x09jb\x90Q\\e\x90\xee\xfd\x80" +
+	"\xf0\xe2\x89\xd1\xedO_\xe7\x8bW^\x14\xa4\xb5\xd9\x1a" +
+	"\xa4I\xd8\xf6\xf4\x13\x1f\xdf\xf4\xcdc)\xde\xc2\x89 " +
+	"\xcb\xb1S\xc1\x0a\x98\x90\xaaW\xe3\xd1\xf8\xbdj\x1c\xf5" +
+	"b\xf6o\xb9\xbfV3\xd40\xa2\x92':\x01\xac\xdc" +
+	"A3U\xc8\xce\xb1 \x90\x9fHh\xd7\x13\x9a\xbb\x90" +
+	"\x8dT\xb6VB\xc1\x0a\x09\xd2\xa0\x02\x8d\xear*k" +
+	"\x95P\xb4x\x17M\x0a'\xfa\x0c\x10\x88*\xa1]V" +
+	"h& \x99Ie\xb5\x12:\xad\xcb\x02M\\H%" +
+	"\x95M\x94\xfc\x8bZu#\x84\xfe\xb8\x1em\x0a\xa1_" +
+	"\x8f\xd2_\xa9\xfaX\xb4Qo\x9a\xaa\x01\xda\xbf\xea\x06" +
+	"\xfc\xaa\x8c\x00FB\x18F\xb4p\x10M\x1c\xaa\xeb\x8a" +
+	"\xf5dX\x8fF\xb5\x86\xa2\x19Z\xb2U\x8a\x18I\xc5" +
+	"!:\x00\x1c\x08@\xbc\x8f\x00(\x1e\x11\x95<\x01S" +
+	"\xa6\"\x00 \x82\x80\x94\xeb3\x19L\x1aj\x93\xc6\xac" +
+	"E\x8c$\xc0P\x1d\x8a}\xb1\xe9[\xa4(\x9c\xaf&" +
+	"\xd4\x96d\x16[a\xa6\x00\xca(\xcb\xb1\xbbg\x00(" +
+	"w\x89\xa8\xdc' Ad\xdcC\xc6SoKDT" +
+	"\xbe!`*\x12\xabW#a\xd5\x00lF\x0f\x08\xe8" +
+	"\x01L%\xb4x,\xac\x1a\xcd\xf4\x04\xe6\xb7l\xdeM" +
+	"\xd5\x8c\xa2\x19\x15\xe9\x83\xf0\xa8\x94\x02\xf5\x05\x95\\\x01" +
+	"\xf3\xdb\xd4H\xab6\xbc\xb5\xea\xba\xe2\xd6h\\\x8fZ" +
+	"g\xe0\xcc\x8c\xb5\xcd\xf8\xe3\xaa\xd1|\xc3>\xf5#\xc6" +
+	"\xdb*\xb4mI\x0b\xb5\x8e!\xa6\x04\xce\xa1z5\xf3" +
+	"\xb1\xf8`7\xea\x8d\xc3Be\xd9\xaa3T\xa3&\xda" +
+	"\x18\x03\xa0\xa5\xe4@!5\xff\x07\x9b\x95=\xef\xae>" +
+	"\x00\x8aC\xc0\xca\"D\x0f\xc0x\xfc.\xa6LUg" +
+	"\x81\x9e,P\x0b\x92\x86j\x8c\x8b\xe8\x0b\xb5\x82\x06-" +
+	"Y\x9f\xd0\xe3\x86\x1e\x8b\x16\xc4\x1a\x0b\xd4hGA4" +
+	"\xd6\xa0\x01\x80r\x9b\xe5\xda/(T;DT\xde\xe4" +
+	"\xc2\xfd+\xfaq\xb7\x88\xca^\x01Q\xc8E\x01\x80\xec" +
+	"\xa1\xdf~)\xa2\xb2_@\"b.\x8a\x00\xa4\x87\xc6" +
+	"\xebM\x11\x95C\x02\x12\xc7\xb2\\t\x00\x90\x03\xf4\xe3" +
+	"^\x11\x95\xc3\x02\x12\xa73\x17\x9d\x00\xa4\x97~\xdc/" +
+	"\xa2rT@\x92#\xe4b\x0e\x009R\x05\xa0\x1c\x12" +
+	"Q9>(N\xfef5\xd9\x8c^\x10\xd0\x0b\xe8O" +
+	"\xeaOj\xe8\x02\x01]\x80\xf9:=\x83\xfd+9Y" +
+	"O\x985\x93\xdf\xa0\xc5\x8dft\x80\x80\x0e\xc0\xce\x96" +
+	"X\xc3cz\x8b6<\xc8\xb3&\xd5\x15GbME" +
+	"\x15\xe1\x81e28\xa2\x19\x92b\xc4\x04\x1b\xb0\x89\xa1" +
+	"Z\x9b\xf0\x95F3\xabHD\xa5\x84\x83~\\\x95]" +
+	"~RBk3\x0dw\x1aj\xd3\xa3jK\xf6zH" +
+	"h-\xb16\xab\xa8\xbfXEH\x9c\x1df\xc5\xa4\x19" +
+	"S\x81\x97/l\xd0\x13\x99\xb8c\xac}\"\xeb@\x09" +
+	"\x00\xe5\x1e\x11\x95\x09CvNh\xaa\xa1\x85U\xc8O" +
+	"hQ#9\x84\xf9\x84\xc1\x1ee\x80\xb0j\x04\x08;" +
+	"\x93\x89\xfa0\xb7igC\xd2\x08g%\x04\x1a\xaf\xfa" +
+	"XK\x8bn\xa4\x11\x10\x8ddf\xa5\xd6(\x0dk\x1a" +
+	"%\xb4ur\x06\x07>\x0b\x8e\x8c\xbd\xfe\x8b\xe4\xb2\xfc" +
+	"\xa8\x0c\xd7\x14\xb7i\x89\xa4\x1eK\xd3\xa08\x0c\xd9[" +
+	"7Q\xbf\xd2\xff\xc0\x95\xf4\x8e\xb42,[\x16\x0eA" +
+	"F\x18tr\x93(\xb3\x92r\x1dG\xca#\x95N)" +
+	"W:\x1cS\x8ft\x91\xf0 f\xba\xa9\xabl\x80:" +
+	"\xfb\xf5L\x8e\xc9\x9a>\x0c$\x1c\xf6.iI6\x0d" +
+	"\xcf\x1a\xd3cMS\xa2F\xa2c8\xfe\x0f0\xfe'" +
+	"\xe8\x06T\x02\x96}\x95\xc6\xf2\xdb\"*\xcd\x1c,\x1a" +
+	"\xdd\xf4\x09\x11\x95\x88\x80D\xe8gs\x9dj6\x88\xa8" +
+	",\xa3l.\xa6\xd9|)\xfd\xb8XDe\x850\x90" +
+	"\x81y_\xfd\x86\xda\x94D\x1f`XD\xf6\xcd\x07\xe8" +
+	"oP\x8d\x1b\xb9\xa9G\xea\\h\x1b\x96%\xb7l\x9d" +
+	"!\xb95\\\xea\x0c\xc91\xabO\x15\xab\xeb(\xb4E" +
+	"\xacK5\x1f\x0b\xd0|i\x90\x09\x96\x82 ;\x91\xf6" +
+	"\xa9f\x97\x8c\xe6 A\xae\xd0^\xf4<\xedS\xcd\xc9" +
+	"\x1b\xcdY\x9f\x9c.\x04\x81\x9c\xa0}\xaa9\x1a\xa39" +
+	">\xd0[P {h\x9fjN\xdch\x8e\x8edg" +
+	"y\xba/vZ\x033\x9aS\xb7\xd5\x17\xe7X\xe3-" +
+	"\x9a\x83%Y^\x98\xee\x8b%\xeb\xc1\x02\xcdQ\x8e\xe8" +
+	"t\xbfy\x12\x8e\xb2\x86[4\x1f[\x88\xf2\x08\x08\xa4" +
+	"F\xcag\x8d`\x08\xfd\x11=i\x84P\xaaW\x8d\x10" +
+	"\xe63\x86\x0faE\xba\x96C\xe8O\xff\x91\xe2z4" +
+	"\x84\xf9,\x9a\xa1\x01}\xeb\xc0.\xd8\xca\xe3I,\x12" +
+	"aU\xd4\x13\x14\xed\x91*\xb80s\x05Kmjd" +
+	"\x04Z\xa2={\x96\xb4\xa8\xae+\xa6\xe7\xb320S" +
+	"}\x17\x09\xd8\xa9E\x8d\x84\xaeY\xf9\x1d\xb0\x9fh\x00" +
+	"\xe9\xc7l\xbb[\xd7\xae\xc7\xb2=\x856~\x93ET" +
+	"\xc2\xdc)k)O=,\xa2\xf2\x18W\x90\x0a\xf5b" +
+	"\xba\x88\xcal\x01S\x0b\xd4\xa46\xa8E\xcc\x8f\xb5G" +
+	"\xb5\x84u\x8d-P\xeb\x17j\xd1\x86\xac5\x97\xbe\xa5" +
+	"\xb3\xd4\x9c}\x8be\xea\x18x\xda\x1b\xb1\xf90[\xa9" +
+	"/\x8c\xaf\xf5F1\x08_\xabN\xa5Y\x93X\xa1\x06" +
+	"X\xa1\x9a/`h\x8e\xd5d\x11M\x7f\x8d\x96\xa9\xf9" +
+	"\x1e\x82\xe6\x83\x12\xf9Vyz\xf4\x13\xac\x0704\x1f" +
+	"\x8eH%]w?-Ss\x84G\xf3\xb9\x89\xdcM" +
+	"\xcbf\xb4$EbM!\xacH\xd3y\x08%Cm" +
+	"b\xc9\xcf\xfe\xf2\xe9n;[\x19\xaea\x84\xcd\x9c5" +
+	"\x9f\x9a\xd0|\xca!\xa4\x0a\x04\xe2\x94\xcck$\x84\x8a" +
+	"\x07\xd1~\x11\x01\xb0_\x03\x00\xecW\xd4\x1b\x18\xf52" +
+	"M\x1d\x856\xf0\x92\x1a\x89\xd8\xa0[\x8f*\x83@\x17" +
+	"\x06\x97K\x86\x8e+S\x8b\xf7\x08\xd7\xe2%b1\xc3" +
+	"\xca\x93\x16u\xf1d\xda\x93\xd3D\x1e\xf6\xca\xb4\xdb\x0a" +
+	"\xb3~\x87\x9b\x08\x13Z<b\x91\xc2\x7f\x02\x00\x00\xff" +
+	"\xff\xd6\xd9\xe5'"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
 		0x83e6cb306e77e311,
+		0x87c49e302c6516f8,
 		0x884238694e8b8d88,
 		0x8c8ac84e843e98c6,
 		0x9ba7a818970a029c,
 		0x9ec3cfd8ff4bae06,
+		0x9efc974402f016f6,
 		0x9f647c7028225a97,
 		0x9fe8d2cd92c27a38,
 		0xa2305f2ea25a3484,
@@ -4251,13 +4890,17 @@ func init() {
 		0xb7d0dd6b467e7539,
 		0xba0de490234c27af,
 		0xbda949777c149f4b,
+		0xc0dd66dedad92ef8,
 		0xc6920dee4bb4a443,
+		0xc9558eac26b0f15e,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
+		0xccf4f28c8951edf6,
 		0xd0b0c690855bac45,
 		0xd81779091ced5513,
 		0xd9459f2361338d96,
 		0xd9d374ce4dd8e6a9,
+		0xdba8e30445acc3f4,
 		0xdf3a2e83d0d533b3,
 		0xe1dd2f0c85965fd6,
 		0xe275355b4989aaee,
