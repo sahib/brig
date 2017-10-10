@@ -174,12 +174,7 @@ func handleConfigGet(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("config get: %v", err)}
 	}
 
-	fmt.Printf(
-		"%s: %s\n",
-		colors.Colorize(key, colors.Green),
-		val,
-	)
-
+	fmt.Println(val)
 	return nil
 }
 
