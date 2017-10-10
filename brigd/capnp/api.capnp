@@ -37,10 +37,19 @@ interface VCS {
     untag  @3 (tagName :Text);
 }
 
+struct ConfigPair {
+    key @0 :Text;
+    val @1 :Text;
+}
+
 interface Meta {
     quit @0 ();
     ping @1 () -> (reply :Text);
     init @2 (basePath :Text, owner :Text, backend :Text);
+
+    configGet @3 (key :Text) -> (value :Text);
+    configSet @4 (key :Text, value :Text);
+    configAll @5 () -> (all :List(ConfigPair));
 }
 
 # Group all interfaces together in one API object,

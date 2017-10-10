@@ -2125,6 +2125,95 @@ func (p VCS_untag_Results_Promise) Struct() (VCS_untag_Results, error) {
 	return VCS_untag_Results{s}, err
 }
 
+type ConfigPair struct{ capnp.Struct }
+
+// ConfigPair_TypeID is the unique identifier for the type ConfigPair.
+const ConfigPair_TypeID = 0xe54de22194de748a
+
+func NewConfigPair(s *capnp.Segment) (ConfigPair, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return ConfigPair{st}, err
+}
+
+func NewRootConfigPair(s *capnp.Segment) (ConfigPair, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return ConfigPair{st}, err
+}
+
+func ReadRootConfigPair(msg *capnp.Message) (ConfigPair, error) {
+	root, err := msg.RootPtr()
+	return ConfigPair{root.Struct()}, err
+}
+
+func (s ConfigPair) String() string {
+	str, _ := text.Marshal(0xe54de22194de748a, s.Struct)
+	return str
+}
+
+func (s ConfigPair) Key() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s ConfigPair) HasKey() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s ConfigPair) KeyBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s ConfigPair) SetKey(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s ConfigPair) Val() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s ConfigPair) HasVal() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s ConfigPair) ValBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s ConfigPair) SetVal(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+// ConfigPair_List is a list of ConfigPair.
+type ConfigPair_List struct{ capnp.List }
+
+// NewConfigPair creates a new list of ConfigPair.
+func NewConfigPair_List(s *capnp.Segment, sz int32) (ConfigPair_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return ConfigPair_List{l}, err
+}
+
+func (s ConfigPair_List) At(i int) ConfigPair { return ConfigPair{s.List.Struct(i)} }
+
+func (s ConfigPair_List) Set(i int, v ConfigPair) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s ConfigPair_List) String() string {
+	str, _ := text.MarshalList(0xe54de22194de748a, s.List)
+	return str
+}
+
+// ConfigPair_Promise is a wrapper for a ConfigPair promised by a client call.
+type ConfigPair_Promise struct{ *capnp.Pipeline }
+
+func (p ConfigPair_Promise) Struct() (ConfigPair, error) {
+	s, err := p.Pipeline.Struct()
+	return ConfigPair{s}, err
+}
+
 type Meta struct{ Client capnp.Client }
 
 // Meta_TypeID is the unique identifier for the type Meta.
@@ -2190,6 +2279,66 @@ func (c Meta) Init(ctx context.Context, params func(Meta_init_Params) error, opt
 	}
 	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c Meta) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) error, opts ...capnp.CallOption) Meta_configGet_Results_Promise {
+	if c.Client == nil {
+		return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configGet",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configGet_Params{Struct: s}) }
+	}
+	return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Meta) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) error, opts ...capnp.CallOption) Meta_configSet_Results_Promise {
+	if c.Client == nil {
+		return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configSet",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configSet_Params{Struct: s}) }
+	}
+	return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Meta) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) error, opts ...capnp.CallOption) Meta_configAll_Results_Promise {
+	if c.Client == nil {
+		return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configAll",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configAll_Params{Struct: s}) }
+	}
+	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type Meta_Server interface {
 	Quit(Meta_quit) error
@@ -2197,6 +2346,12 @@ type Meta_Server interface {
 	Ping(Meta_ping) error
 
 	Init(Meta_init) error
+
+	ConfigGet(Meta_configGet) error
+
+	ConfigSet(Meta_configSet) error
+
+	ConfigAll(Meta_configAll) error
 }
 
 func Meta_ServerToClient(s Meta_Server) Meta {
@@ -2206,7 +2361,7 @@ func Meta_ServerToClient(s Meta_Server) Meta {
 
 func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 3)
+		methods = make([]server.Method, 0, 6)
 	}
 
 	methods = append(methods, server.Method{
@@ -2251,6 +2406,48 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configGet",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configGet{c, opts, Meta_configGet_Params{Struct: p}, Meta_configGet_Results{Struct: r}}
+			return s.ConfigGet(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configSet",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configSet{c, opts, Meta_configSet_Params{Struct: p}, Meta_configSet_Results{Struct: r}}
+			return s.ConfigSet(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configAll",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configAll{c, opts, Meta_configAll_Params{Struct: p}, Meta_configAll_Results{Struct: r}}
+			return s.ConfigAll(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
 	return methods
 }
 
@@ -2276,6 +2473,30 @@ type Meta_init struct {
 	Options capnp.CallOptions
 	Params  Meta_init_Params
 	Results Meta_init_Results
+}
+
+// Meta_configGet holds the arguments for a server call to Meta.configGet.
+type Meta_configGet struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Meta_configGet_Params
+	Results Meta_configGet_Results
+}
+
+// Meta_configSet holds the arguments for a server call to Meta.configSet.
+type Meta_configSet struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Meta_configSet_Params
+	Results Meta_configSet_Results
+}
+
+// Meta_configAll holds the arguments for a server call to Meta.configAll.
+type Meta_configAll struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Meta_configAll_Params
+	Results Meta_configAll_Results
 }
 
 type Meta_quit_Params struct{ capnp.Struct }
@@ -2678,6 +2899,437 @@ func (p Meta_init_Results_Promise) Struct() (Meta_init_Results, error) {
 	return Meta_init_Results{s}, err
 }
 
+type Meta_configGet_Params struct{ capnp.Struct }
+
+// Meta_configGet_Params_TypeID is the unique identifier for the type Meta_configGet_Params.
+const Meta_configGet_Params_TypeID = 0x9f647c7028225a97
+
+func NewMeta_configGet_Params(s *capnp.Segment) (Meta_configGet_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configGet_Params{st}, err
+}
+
+func NewRootMeta_configGet_Params(s *capnp.Segment) (Meta_configGet_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configGet_Params{st}, err
+}
+
+func ReadRootMeta_configGet_Params(msg *capnp.Message) (Meta_configGet_Params, error) {
+	root, err := msg.RootPtr()
+	return Meta_configGet_Params{root.Struct()}, err
+}
+
+func (s Meta_configGet_Params) String() string {
+	str, _ := text.Marshal(0x9f647c7028225a97, s.Struct)
+	return str
+}
+
+func (s Meta_configGet_Params) Key() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Meta_configGet_Params) HasKey() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configGet_Params) KeyBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Meta_configGet_Params) SetKey(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// Meta_configGet_Params_List is a list of Meta_configGet_Params.
+type Meta_configGet_Params_List struct{ capnp.List }
+
+// NewMeta_configGet_Params creates a new list of Meta_configGet_Params.
+func NewMeta_configGet_Params_List(s *capnp.Segment, sz int32) (Meta_configGet_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Meta_configGet_Params_List{l}, err
+}
+
+func (s Meta_configGet_Params_List) At(i int) Meta_configGet_Params {
+	return Meta_configGet_Params{s.List.Struct(i)}
+}
+
+func (s Meta_configGet_Params_List) Set(i int, v Meta_configGet_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configGet_Params_List) String() string {
+	str, _ := text.MarshalList(0x9f647c7028225a97, s.List)
+	return str
+}
+
+// Meta_configGet_Params_Promise is a wrapper for a Meta_configGet_Params promised by a client call.
+type Meta_configGet_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configGet_Params_Promise) Struct() (Meta_configGet_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configGet_Params{s}, err
+}
+
+type Meta_configGet_Results struct{ capnp.Struct }
+
+// Meta_configGet_Results_TypeID is the unique identifier for the type Meta_configGet_Results.
+const Meta_configGet_Results_TypeID = 0x9ec3cfd8ff4bae06
+
+func NewMeta_configGet_Results(s *capnp.Segment) (Meta_configGet_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configGet_Results{st}, err
+}
+
+func NewRootMeta_configGet_Results(s *capnp.Segment) (Meta_configGet_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configGet_Results{st}, err
+}
+
+func ReadRootMeta_configGet_Results(msg *capnp.Message) (Meta_configGet_Results, error) {
+	root, err := msg.RootPtr()
+	return Meta_configGet_Results{root.Struct()}, err
+}
+
+func (s Meta_configGet_Results) String() string {
+	str, _ := text.Marshal(0x9ec3cfd8ff4bae06, s.Struct)
+	return str
+}
+
+func (s Meta_configGet_Results) Value() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Meta_configGet_Results) HasValue() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configGet_Results) ValueBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Meta_configGet_Results) SetValue(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// Meta_configGet_Results_List is a list of Meta_configGet_Results.
+type Meta_configGet_Results_List struct{ capnp.List }
+
+// NewMeta_configGet_Results creates a new list of Meta_configGet_Results.
+func NewMeta_configGet_Results_List(s *capnp.Segment, sz int32) (Meta_configGet_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Meta_configGet_Results_List{l}, err
+}
+
+func (s Meta_configGet_Results_List) At(i int) Meta_configGet_Results {
+	return Meta_configGet_Results{s.List.Struct(i)}
+}
+
+func (s Meta_configGet_Results_List) Set(i int, v Meta_configGet_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configGet_Results_List) String() string {
+	str, _ := text.MarshalList(0x9ec3cfd8ff4bae06, s.List)
+	return str
+}
+
+// Meta_configGet_Results_Promise is a wrapper for a Meta_configGet_Results promised by a client call.
+type Meta_configGet_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configGet_Results_Promise) Struct() (Meta_configGet_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configGet_Results{s}, err
+}
+
+type Meta_configSet_Params struct{ capnp.Struct }
+
+// Meta_configSet_Params_TypeID is the unique identifier for the type Meta_configSet_Params.
+const Meta_configSet_Params_TypeID = 0xd0b0c690855bac45
+
+func NewMeta_configSet_Params(s *capnp.Segment) (Meta_configSet_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return Meta_configSet_Params{st}, err
+}
+
+func NewRootMeta_configSet_Params(s *capnp.Segment) (Meta_configSet_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return Meta_configSet_Params{st}, err
+}
+
+func ReadRootMeta_configSet_Params(msg *capnp.Message) (Meta_configSet_Params, error) {
+	root, err := msg.RootPtr()
+	return Meta_configSet_Params{root.Struct()}, err
+}
+
+func (s Meta_configSet_Params) String() string {
+	str, _ := text.Marshal(0xd0b0c690855bac45, s.Struct)
+	return str
+}
+
+func (s Meta_configSet_Params) Key() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Meta_configSet_Params) HasKey() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configSet_Params) KeyBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Meta_configSet_Params) SetKey(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Meta_configSet_Params) Value() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s Meta_configSet_Params) HasValue() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configSet_Params) ValueBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s Meta_configSet_Params) SetValue(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+// Meta_configSet_Params_List is a list of Meta_configSet_Params.
+type Meta_configSet_Params_List struct{ capnp.List }
+
+// NewMeta_configSet_Params creates a new list of Meta_configSet_Params.
+func NewMeta_configSet_Params_List(s *capnp.Segment, sz int32) (Meta_configSet_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return Meta_configSet_Params_List{l}, err
+}
+
+func (s Meta_configSet_Params_List) At(i int) Meta_configSet_Params {
+	return Meta_configSet_Params{s.List.Struct(i)}
+}
+
+func (s Meta_configSet_Params_List) Set(i int, v Meta_configSet_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configSet_Params_List) String() string {
+	str, _ := text.MarshalList(0xd0b0c690855bac45, s.List)
+	return str
+}
+
+// Meta_configSet_Params_Promise is a wrapper for a Meta_configSet_Params promised by a client call.
+type Meta_configSet_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configSet_Params_Promise) Struct() (Meta_configSet_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configSet_Params{s}, err
+}
+
+type Meta_configSet_Results struct{ capnp.Struct }
+
+// Meta_configSet_Results_TypeID is the unique identifier for the type Meta_configSet_Results.
+const Meta_configSet_Results_TypeID = 0xe275355b4989aaee
+
+func NewMeta_configSet_Results(s *capnp.Segment) (Meta_configSet_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_configSet_Results{st}, err
+}
+
+func NewRootMeta_configSet_Results(s *capnp.Segment) (Meta_configSet_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_configSet_Results{st}, err
+}
+
+func ReadRootMeta_configSet_Results(msg *capnp.Message) (Meta_configSet_Results, error) {
+	root, err := msg.RootPtr()
+	return Meta_configSet_Results{root.Struct()}, err
+}
+
+func (s Meta_configSet_Results) String() string {
+	str, _ := text.Marshal(0xe275355b4989aaee, s.Struct)
+	return str
+}
+
+// Meta_configSet_Results_List is a list of Meta_configSet_Results.
+type Meta_configSet_Results_List struct{ capnp.List }
+
+// NewMeta_configSet_Results creates a new list of Meta_configSet_Results.
+func NewMeta_configSet_Results_List(s *capnp.Segment, sz int32) (Meta_configSet_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Meta_configSet_Results_List{l}, err
+}
+
+func (s Meta_configSet_Results_List) At(i int) Meta_configSet_Results {
+	return Meta_configSet_Results{s.List.Struct(i)}
+}
+
+func (s Meta_configSet_Results_List) Set(i int, v Meta_configSet_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configSet_Results_List) String() string {
+	str, _ := text.MarshalList(0xe275355b4989aaee, s.List)
+	return str
+}
+
+// Meta_configSet_Results_Promise is a wrapper for a Meta_configSet_Results promised by a client call.
+type Meta_configSet_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configSet_Results_Promise) Struct() (Meta_configSet_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configSet_Results{s}, err
+}
+
+type Meta_configAll_Params struct{ capnp.Struct }
+
+// Meta_configAll_Params_TypeID is the unique identifier for the type Meta_configAll_Params.
+const Meta_configAll_Params_TypeID = 0x8c8ac84e843e98c6
+
+func NewMeta_configAll_Params(s *capnp.Segment) (Meta_configAll_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_configAll_Params{st}, err
+}
+
+func NewRootMeta_configAll_Params(s *capnp.Segment) (Meta_configAll_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Meta_configAll_Params{st}, err
+}
+
+func ReadRootMeta_configAll_Params(msg *capnp.Message) (Meta_configAll_Params, error) {
+	root, err := msg.RootPtr()
+	return Meta_configAll_Params{root.Struct()}, err
+}
+
+func (s Meta_configAll_Params) String() string {
+	str, _ := text.Marshal(0x8c8ac84e843e98c6, s.Struct)
+	return str
+}
+
+// Meta_configAll_Params_List is a list of Meta_configAll_Params.
+type Meta_configAll_Params_List struct{ capnp.List }
+
+// NewMeta_configAll_Params creates a new list of Meta_configAll_Params.
+func NewMeta_configAll_Params_List(s *capnp.Segment, sz int32) (Meta_configAll_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Meta_configAll_Params_List{l}, err
+}
+
+func (s Meta_configAll_Params_List) At(i int) Meta_configAll_Params {
+	return Meta_configAll_Params{s.List.Struct(i)}
+}
+
+func (s Meta_configAll_Params_List) Set(i int, v Meta_configAll_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configAll_Params_List) String() string {
+	str, _ := text.MarshalList(0x8c8ac84e843e98c6, s.List)
+	return str
+}
+
+// Meta_configAll_Params_Promise is a wrapper for a Meta_configAll_Params promised by a client call.
+type Meta_configAll_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configAll_Params_Promise) Struct() (Meta_configAll_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configAll_Params{s}, err
+}
+
+type Meta_configAll_Results struct{ capnp.Struct }
+
+// Meta_configAll_Results_TypeID is the unique identifier for the type Meta_configAll_Results.
+const Meta_configAll_Results_TypeID = 0xfd36e047f496768b
+
+func NewMeta_configAll_Results(s *capnp.Segment) (Meta_configAll_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configAll_Results{st}, err
+}
+
+func NewRootMeta_configAll_Results(s *capnp.Segment) (Meta_configAll_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configAll_Results{st}, err
+}
+
+func ReadRootMeta_configAll_Results(msg *capnp.Message) (Meta_configAll_Results, error) {
+	root, err := msg.RootPtr()
+	return Meta_configAll_Results{root.Struct()}, err
+}
+
+func (s Meta_configAll_Results) String() string {
+	str, _ := text.Marshal(0xfd36e047f496768b, s.Struct)
+	return str
+}
+
+func (s Meta_configAll_Results) All() (ConfigPair_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return ConfigPair_List{List: p.List()}, err
+}
+
+func (s Meta_configAll_Results) HasAll() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configAll_Results) SetAll(v ConfigPair_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewAll sets the all field to a newly
+// allocated ConfigPair_List, preferring placement in s's segment.
+func (s Meta_configAll_Results) NewAll(n int32) (ConfigPair_List, error) {
+	l, err := NewConfigPair_List(s.Struct.Segment(), n)
+	if err != nil {
+		return ConfigPair_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+// Meta_configAll_Results_List is a list of Meta_configAll_Results.
+type Meta_configAll_Results_List struct{ capnp.List }
+
+// NewMeta_configAll_Results creates a new list of Meta_configAll_Results.
+func NewMeta_configAll_Results_List(s *capnp.Segment, sz int32) (Meta_configAll_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Meta_configAll_Results_List{l}, err
+}
+
+func (s Meta_configAll_Results_List) At(i int) Meta_configAll_Results {
+	return Meta_configAll_Results{s.List.Struct(i)}
+}
+
+func (s Meta_configAll_Results_List) Set(i int, v Meta_configAll_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configAll_Results_List) String() string {
+	str, _ := text.MarshalList(0xfd36e047f496768b, s.List)
+	return str
+}
+
+// Meta_configAll_Results_Promise is a wrapper for a Meta_configAll_Results promised by a client call.
+type Meta_configAll_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configAll_Results_Promise) Struct() (Meta_configAll_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configAll_Results{s}, err
+}
+
 type API struct{ Client capnp.Client }
 
 // API_TypeID is the unique identifier for the type API.
@@ -2963,6 +3615,66 @@ func (c API) Init(ctx context.Context, params func(Meta_init_Params) error, opts
 	}
 	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) error, opts ...capnp.CallOption) Meta_configGet_Results_Promise {
+	if c.Client == nil {
+		return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configGet",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configGet_Params{Struct: s}) }
+	}
+	return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) error, opts ...capnp.CallOption) Meta_configSet_Results_Promise {
+	if c.Client == nil {
+		return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configSet",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configSet_Params{Struct: s}) }
+	}
+	return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) error, opts ...capnp.CallOption) Meta_configAll_Results_Promise {
+	if c.Client == nil {
+		return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configAll",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configAll_Params{Struct: s}) }
+	}
+	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type API_Server interface {
 	Version(API_version) error
@@ -2992,6 +3704,12 @@ type API_Server interface {
 	Ping(Meta_ping) error
 
 	Init(Meta_init) error
+
+	ConfigGet(Meta_configGet) error
+
+	ConfigSet(Meta_configSet) error
+
+	ConfigAll(Meta_configAll) error
 }
 
 func API_ServerToClient(s API_Server) API {
@@ -3001,7 +3719,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 14)
+		methods = make([]server.Method, 0, 17)
 	}
 
 	methods = append(methods, server.Method{
@@ -3200,6 +3918,48 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      3,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configGet",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configGet{c, opts, Meta_configGet_Params{Struct: p}, Meta_configGet_Results{Struct: r}}
+			return s.ConfigGet(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configSet",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configSet{c, opts, Meta_configSet_Params{Struct: p}, Meta_configSet_Results{Struct: r}}
+			return s.ConfigSet(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:Meta",
+			MethodName:    "configAll",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configAll{c, opts, Meta_configAll_Params{Struct: p}, Meta_configAll_Results{Struct: r}}
+			return s.ConfigAll(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
 	return methods
 }
 
@@ -3329,136 +4089,156 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\x94W\x7fpT\xd5\xf5?\xe7\xde\xdd<w\xb3" +
-	"\x9b\xcd\xe5%c\xf8~\xa5\x9bB\xb4B\x9b\x18\x12\x18" +
-	"\x81\xfe\xc8&\x90\x94\x08\xb1{\x89f\xa8\xad?\x1e\xc9" +
-	"c\xf3\x86\xec\xbe\xb8\xef\x85\x10G\x1a\xac\xc6\xa2\x0e\xd3" +
-	"\x8emuP:\x8c\x8cV\xd3\xea`\x06\x1cKG\xa6" +
-	"\xd2\x82\x15\x7fthA\x0b3e:\xfd\xa5\xd8\x912" +
-	"\xfejG\x0a\xf3:\xf7n\xee\xdbG\xb2\x09\xe3_\xc9" +
-	"\xde{\xde9\xe7~>\x9f{\xce\xb9\x8d\x15\xe1\x14Y" +
-	"\x1c\xb6\xe3\x00|W\xb8\xccc\x7f\x1b\xce5\xbe\xfe\xce" +
-	"\xbd\xc0*\xa9\xf7\xff'W\xaf\xdb\xfa\xb5\xed\xff\x04@" +
-	"\xfd'e?\xd3\x9f*\xd3\x00\xf4'\xca~\xab\xcf\xd5" +
-	"4\x00o\xfb\x8e\x87n\xb4\x96\xb5m\x07\xa6#@H" +
-	"\x03hF-\x8a\x10\xf2v\x91\xe8\xa35\xcf<\xfdx" +
-	"a'L\xc4\xd6{e\x04\x01\xf5\xb3e\xc3\x80\xde\xb2" +
-	"\xbb~\xfd\xf0\x9b\x7f8\xb3{\xd2\x00\x85c\xae\x9d\x07" +
-	"\xd4o\xd6Z\x00\xbd\xfb\x96\xdc\xb2\xa7\xe1\xf6\xc6=\xc0" +
-	"+1\x90H\x98\x0a\xc3\x11\xed5}L\xd3\xf41-" +
-	"\xd9|@\xfb>\x02zc_\xdcz\xa4\xfb\xf8\xb9'" +
-	"\x81UM\xa6\xa2\xb7F\xceC\xc8[\xd2\xf39o\xed" +
-	"\xb7\"\xe3\xc1@WG>\x04\xd4\x17FD\xa0\xec\x89" +
-	"ws\x91\xcc\xd6\xf1\xc2\x872S\xbd3\"\x12\xe9\x8a" +
-	"\x88D\xe9\x9c\x18k\xd8\xb0+\xf8}\xf3x$*N" +
-	"2!\x1d,\xb2?|\xfc\xc2+\x0f\xfc<\x00\xc2\xef" +
-	"#D\x80`T|\xf9\xf5\x9a\x0b\x8d\xcf\x03\xd7\xd1\xff" +
-	"\xf6\x85\x88D\xe1\x80t\xfe\xc1\xc5\x8f\xfft\xe8\xab\xf6" +
-	"\x8b\x01\x98\xf4\xb9Q\x11|^T\xec/\x1f\xfaN\xc7" +
-	"\xa6\xd3\xc7^,\x9e\xaay$\xfa\x7f\xc2\xf7\xde/\xac" +
-	"]\xf0\x83\xbf\xc7\x7f\x19\xd81\xa2s\xc4\xce\x9a\xddU" +
-	"w\x0fw\x8e\x1f\x0c\xectFe>+\x9f\xdc\xbf\xe6" +
-	"_\xf1\x87_\x09\xec\xd4\x17\xbc\xbd\xff\xd8\x95\xf8\xe0\xaa" +
-	"g\x8f\x02\xabV;\xd5QI\xe4\x1f\xbb\xfb[\xaey" +
-	"f\xdf\xd1\xc0\xe9.Fd\x1c\xfd\xe6\xb3WEF\xae" +
-	"<\x09\xbc\x0a\xd5\xd6?\"\xf3%\xc5\x12\x98Gv4" +
-	"\x1b\x0bv\xb7\x9f\x9aDV\x9e>.rD\xbd:*" +
-	"\x0c\xc6\xdf9\xd9\xf5;\xf7\xf8)`\x95\x18\xa0X\x92" +
-	"\xb74\xfa\x9a\xde\x1a\xd5\xf4\xd6hR7\xa2\xef\x02z" +
-	"\xfb\x9a\xdf:vo\xc3\x8a?\x07rl/\x979\xbe" +
-	"}\xfb#c\xb1\xebN\xff%\xb0S_.s\xfc\xf4" +
-	"\xc4\xdd\xfbo]\xbf\xef\xaf\xd3\xd4\\]\xfe\x98>\xaf" +
-	"\\X\xce-\xff\x1e\xea\x91\x98\x06p\xee\xf0\xd35\xbf" +
-	"9s\xcd\x99\xa2\x97\x0f\x0a^z\xae}\xa3\xf6WK" +
-	"\x17\xbe\x17\x94\xc0\xa9rI\xe3\xe9rq\x90\xffv\x87" +
-	">\xb9\xedYz\xb6\x90\x80\xd4hs<&5R\x1d" +
-	"\xdb\x0b\xe8}\xf4#\xb2\xbe\xa7\xa9\xee\xa3\x00\x8a\x131" +
-	"\x99\xfb\x9a\x15{\xf5\x89\xfa\x13\x1f\x07A\xdaY\xf8\xf4" +
-	"\x89\x98\xf0\xfd\xef\x05\xb7\xac_\x1e\xb9\xfa?A\x83C" +
-	"1\x19\xfc\x884\xa8\xeb8<\xe7\xdc\xb6\x9f\x9e\x9fv" +
-	"\xc6Ob{\xf4\x8b\xe2`\xcd\x9f\xc64\xd4w\xc6\xc5" +
-	"\x95=\xf7\xe8CM5[V_\x98f}O|\x8f" +
-	"\xfe\x800\xd1\xc7\xe2_\xd7\x9f\x8b_\x0f\xe0]O~" +
-	"\xfc\xd6\xbc\xe1\xfb/\x06\x05\xac?\x17\x17\xfa\x9c\x88\x0b" +
-	"}n\xbe\xff\x8e\xf7\xab\xbfq\xdc\x9b<\xb8L\x8eU" +
-	"H\x8a\xe7V\xb4\xc02\xaf\xd7\x18\xcc\x0d^g\x0c\xa2" +
-	"\xd5 \xff]\x91\xe82]#\x8d\xc8c4\x0c\xe0\x93" +
-	"\x8a\x8aC\xc6\x17\x01a\xed\x1a\xa2/JTQ\xd8r" +
-	"\xb1W\xaf!\xf1\x11G\xc1\x19\x08\xd2>/\xf6\xaa\xb5" +
-	"\xc4\x9dC\x96\x9b\xc2\xc4\xa0\x95\xcb\xa40a\xe5\xc4\xaf" +
-	"4\xa2\x9f\x09U\x99tt78\xae\x911\xeb\xd6\x99" +
-	"\xce\xd0\x80\xeb\x00\xccb\x936\xf2F\xd6\x01~\x05\x0d" +
-	"\x01\x84\x10\x80-\\\x07\xc0\xaf\xa5\xc8\x97\x10d\x88\xf2" +
-	"\x0e\xb0\xc57\x00\xf0F\x8a\xfc+\x04\xbd\x01\xbb\xd7\x18" +
-	"H\x1b.`?\xc6\x80`\x0c\xd0\xcb\x9b\x83v\xdap" +
-	"\xfb\x01\xc0_SQI j\xaf\xe1\xd6\xadk)$" +
-	"\xc6C~\xd0\xb8\xf0\x1f\xa3\xc8k\x08z\x1b\xad\x8d\x97" +
-	"\xf7\xd5\xed\x1angn\xa3\x0d @\x0f!\xf1n\xfb" +
-	"\xe1n~\xf0\xed\x07\x8f\x00\x0f\x11l\xadC\x8c\x01," +
-	"\xc6\xef\xa2\xa7L\xc3\xb5\x96Sk\xd4:\xae\xe1\xd6\x0f" +
-	"X\x9b\xcc\xda>\xd3\xe9\xcd[\x83\xaee\xe7j\xed\x8d" +
-	"\xb5Fn\xa46g\xf7\x99\x00\xc0\xaf\xf2S{a\x11" +
-	"\x00\x7f\x9e\"\x7f)\x80\xc7\x01\xb1\xb8\x9f\"\x7f\x99 " +
-	"\x92*$\x00\xec\xa0X\xfb\x05E~\x98 \xa3X\x85" +
-	"\x14\x80\x1dj\x02\xe0/Q\xe4\xaf\x12d\xa1mU\x18" +
-	"\x02`G\xc4\xe2\xcb\x14\xf9\x1b\x04Y8\\\x85a\x00" +
-	"vT,\x1e\xa6\xc8\x8f\x11de\xa4\x0a\xcb\x00\xd8\x9b" +
-	"m\x00\xfcU\x8a\xfc\x04\xc1\xc4\xa0\xe1\xfa\x80'\xfa\x0d" +
-	"\xa7\x1f\xe3@0\x0e\x98p\xac\xbbL\x8c\x00\xc1\x08`" +
-	"\xd2\x12g(\xferVYyD \x88\x80\xc9>s" +
-	"\xd0\xed\xc7\x10\x10\x0c\x01\x8ef\xed\xbe\x9b\xac\xac93" +
-	"\xc8=+\xbb\x1b\x06\xecL]KA&32\x9aN" +
-	"\xca\xfd \xa1\x02\x8c+(\xf2\xaa)\x89\x97\x0e\xe2\x1a" +
-	"~\x90\xa0\x14\xe7\x03\xf0:\x8a\xbc1\x00}}[Q" +
-	"\x9fZ\xde\xdc\xac\x1c\x8f\xbaF\xe6F\xa3\xc4i\x82\xa2" +
-	"\xcf\x9bY{\xb3\xafz\xf8L\x09k\x01?\xd2\x8b\xba" +
-	"_\xca \xb8\xbf\xa9\xcf\xca\x97\xba\\\x8b\x8a'\xf2\x0f" +
-	"\x94\x07\xe0_\xa2\xc8\x97M\x8b\x9c7\x0d\xd7L\x1b\x90" +
-	"\xcc\x9b9\xd7Q,\x96\xa4AfT\x02\xc2\xb6\xcb@" +
-	"8\xea\xe4{\xd3\x81\xa0\xa3}\x8e\x9b.u|\x1a\xe4" +
-	"\xab\xd7\xcef-\xb7\x80\x00u\x9d\xd2FC9Ak" +
-	"\x01%t\xa6\xe3\xa8\x88\x9f\x09\xc7\xd6tg\xc3f3" +
-	"\xefXvNBI\xb3%\x02\x89\xb2\xdb \x8a\xa2O" +
-	"\xeal\xc4OK\x86\x96\x0a&\xac\xb4)\x05\xaa\xad(" +
-	"\x8f\xd1I;u\x8ff\x85Hf\x85\x97\xb8\x9a_t" +
-	"\xa5e\x9d\xcc\xcc7c\xad\x9di\xcf\xb9\xf9\x91\x99j" +
-	"\\\xa5\xacq\x0c\xa3\x80\xbc\xd2\xf7o\x08\x8d}\x9b\"" +
-	"\xef\x0fPn\x8a\xa0wP\xe4\x03\x04\x19\x99\xacX\x96" +
-	"\xb0\xec\xa3\xc8\xb7\x89\x8aE\x0b\x15k\xabX\xdcB\x91" +
-	"\xdfG.\xad2\xc1\\\x13\xae\x91q\xb0\x020MQ" +
-	"\xaeU\x00&\xfa\x0cw\x96\xdb'\x89\x12Ml\x16\xa2" +
-	"\x8a6\xd3\x88\xf2\x1b-\xed\xe8\x16h\xd4\xc86\xab\xc6" +
-	"qT\x13;\x9bh\x02\xc2\x9e\x12mV5yTc" +
-	"\x0e\xdb)Z\xe9\x0e\xd1f\xd5\xf0\x8cj\\g\xf7\xcc" +
-	"\x07\xc2\x864\xa4\xfet\x8bj\xb8a\x96\xf0y\xab\x86" +
-	"!\x7fhF5>2\xbe\xa2\xd0\xd6\xc3\xfe\xcc\x8bj" +
-	"pVm=)[m\x0a\x13\x03\x96\xe3\xa6P\xeb5" +
-	"\xdc\x14&e\x89HaKA\x99)L\x14\xfe\x94l" +
-	"\xe9\x12\x17\xd1\xf2g\x11pGw\x83\xf0\xef\xdf\xa6R" +
-	"\xe2\xad#8j\xe6\xdc\xbce\xfa\xe4U\x16_$\x80" +
-	"bq\xb6\xe8~\xdd\x8c\xf9\xbe\xdbE\xe7^E\x91\xa7" +
-	"\x03j\xeb\x12\xbdl5E~S@m\\d\xb1\x96" +
-	"\"_O\xd0\xdb`8\xe6\x94\x1e\x9f\xb4\x87sf\xde" +
-	"\xafC\x1b\x8c\xdeMf\xaeo\xd6r^(\xb3\xb3\xcc" +
-	"9\xc52T\xaa\xe4\x07\xef\xf4e\xbb\x87\xea\x85\x9f\x19" +
-	"_\xff50\x05__\xd1Z\xcfJ)\xe9J)i" +
-	"\xf5\xe0C5 \xb3;\x854M!i\xf5\xf2@\xf5" +
-	"~b\xdf\x14\xf2\xeb\x12\x92V\xef=T\xef$\xd6*" +
-	"\xbe[*$\xad\x86qT\xaf+\xb6PHz\x9e\xa6" +
-	"\x0d\xd8\x99\x14\xb6\x14jU\x0a5\xd7\xc8\xa40)\x11" +
-	"\xbbT\x8a\xc5d[\xd3\x9d\xb2\x1a\xc9d\xd5\xcb\x0b\xd5" +
-	"\xa3\x89\xb16 ,\xac\xa9\x1a\x99B\x1eC,\xbeW" +
-	"\x00\x8as=@\xf1U\x1e \x8fLUt\x89\xaeV" +
-	"\xaa\x8d\xde\x10h\xa3y\xdbv}*\xb3\xc6\x96Ub" +
-	"\xee\x11Z\x9b\xb1d\x17\xfb\x88\xbabA\x82\x9b\x8aJ" +
-	"I\xe6\xcd\xc1\x81\x11\xe5\xfc\x7f\x01\x00\x00\xff\xffU\x96" +
-	"8\xba"
+const schema_ea883e7d5248d81b = "x\xda\x94X\x7fpT\xd5\xf5?\xe7\xbd]^\x96\xec" +
+	"\xaf\xe7\x0bc\xfc~\xa5\x1bB\xb4@K\x0c\x09T\x92" +
+	"V\xb3\x09$\x80\x10\xba\x97\x15\x06\xa1\xfex$\x8f\xcd" +
+	"\x1b6\xbbq\xf7%\x01\x07\x1a\xa8\xa0\xfc(Sk\x05" +
+	"\x8a\xda22Z\x8d\xa5\x05\x06\x18\xb5#S\xa9\xc0\x80" +
+	"?Z,\xa0\xd0)\xfdA[\xc5\x8e\xc8\xa0\xb4\x1d)" +
+	"\xcc\xeb\xdc\xbb\xb9\xef\xdd$\x9b\x04\xffJ\xf6\x9d\xf3\xce" +
+	"=\xe7s\xce\xf9\xdcs^\x85:\"*M\xf2~\x10" +
+	"\x02 \xafzG\xd8\xea\xdf\xbaR\x15o\x7f\xf8(\xa8" +
+	"a\xd9\xfe\xff33\xe7\xad\xba{\xfd?\x01P{O" +
+	"yY;\xab(\x00U\xa7\x95\xc7Q{\xaf@\x01\xb0" +
+	"\xd7o\xde4\xd7\x9cZ\xbf\x1eT\x0d\x01<T\xfaZ" +
+	"\xc1H\x04\x8f}\xf4\xc7w\xaf\x9d{l\xe3\xf7A\x1d" +
+	"\xc5%\xcf\x15TR\xc9\xb3\xd2\xc8m\xc5/\xbd\xf8L" +
+	"\xee\x1d\xafDE\x1b\x0a$\x04\xd46\x17t\x01\xda#" +
+	"~9\xdb>\xf3\xbb7\x7f\x9a{\xd5\x8bT\xe1rA" +
+	"\x0dU\xf8\xa2\xa0\x16\xd0\xde\xb6\xa8t\\\xfb\xca\x96\x1d" +
+	"\xa2\xc2-\xbeJ\xaa0\xc6G\x15\xa6>\xf2\x9b'\xdf" +
+	"\xfd\xfd\x85\x1d\xbdGP\x05\xad\xcew\x15Pk`\xf2" +
+	"\xb5\x93\x17\xed,\x7f\xb0b'\x900\x0aQze\xaa" +
+	"h\xfa\xde\xd2:|\x8a\xd6\xe1\x8bT\xf5\xf8~\x80\x80" +
+	"\xf6\xba\xaf\xad:\x12?y\xe9yP\x8bz\x83\xd1&" +
+	"\x15^\x05\x8f=y\xc1W\xec9\x8b}=\xe2A\xa3" +
+	"\x0a?\x03\xd4n)\xa4\x07\xb5\x9d\xfa(\xe5K\xac\xea" +
+	"\xc9\xbd\xc8b\xd5\xaa\x0b\xa9#w\x15\xd2P\xe5\x9b\xfc" +
+	"j\xf9\x92g\xc5\xf7\xab\xb6\x17\x8e\xa4\x91<\xc7\x0cL" +
+	"H\x7f\xf6\xcc\xb5\xa3\x1b~.\x00|\xa8P\xa20\xea" +
+	"\xc1o\xbe]|\xadb\x0f\x10\x0d\x9dw_(d8" +
+	"\xf60\xe3\x97\xaf_\xf9\xe3\xa1\xbb\xd2\xaf\x08@k>" +
+	"?=<\xe0\xa7\xf2\xea\x8e\xef6.;w\xe2\x157" +
+	"\xaa*\xd3\xff\x7f\xd4\xf6\xee\xaf\xce\x19\xfb\xc4\xdf\x03\xbf" +
+	"\x12$\xc4\x7f\x13\x95\xcc\xdeQ\xb4\xb2kV\xcfAA" +
+	"R\xedg\xfeL{~\xff\xecO\x03O\x1e\x15$\xa3" +
+	"s\xd6>y\xfaf\xdc8}\xd7q\xa1\x14\xbc~V" +
+	"$\x1f\xc4[ko\x7fi\xdfq!\xba\x8b\x85\xec\x9c" +
+	"\x86]\x8b\xd7=qt\xcf\x89\xde\x14\xb3\"9]\xc8" +
+	"R|\x8e\x05\xa7\xcd\xbfx\xabo\xc5\xcdg\x80\x14\xa1" +
+	"\xebI)U\xa8\xf3S\xe4\xb6n\xae\xd2\xc7\xeeh8" +
+	"\xdb\x0b=\x83G\xa7A\xa0f2\x85\x9e\x0f\xcf4\xfd" +
+	"\xd6:y\x16\xd40\x0a5\xc0\xb2\xbb\xc1\xff\x96\xb6\xc5" +
+	"\xafh[\xfc\x11\xed\x80\xff#@{_\xd5\xe9\x13\x8f" +
+	"\x96\xd7\xfcY\x08b{\x80\x05\xf1\xfe\x83[\xd7\xf9\xef" +
+	"8\xf7WA\xb2&\xc0\x82\xf8\xf4\xe5\x0d\xb3\x16O\xe9" +
+	"8/H\xcc@\x0d\x95|qj\xe5\xfe\xfb\x17\xee;" +
+	"?\xa0\xcbH\xe0i\xed\xbe\x00\xd5\x9c\x1fx\x1c\xb5\x86" +
+	" \xed\xb2\x8d\xd6\x9f\x9e\x1as\xbe\xe9\x1f\xfd<e\x09" +
+	"\x9d\x18\xfc\x83VM\xb5\xb4)\xc1.\xc0K\x87_," +
+	"~\xf3\xc2\xed\x17\xdc\x13\x7f\x18d\xbe,\x18\xf7N\xc9" +
+	"\xaf\xa7\x8c\xffX\xac\xb4\x15AV-\xab\x82\x14\x8e\xff" +
+	"\xc6=\xffz`\x97|\xb1\x17q\xda\x0aU\xbf\x08\xb2" +
+	"R<\x10\xdc\x0dh\x7f\xfe\x94\xb4pAe\xd9\xe7B" +
+	"\xb2H\x88!0\xbbf\xb7\xb6w\xe2\xa9+\"\xd4\xd5" +
+	"!\xf6j]\x88\xda\xfe\xf7\xd8E\x0b\xab}\xb7\xfd\xa7" +
+	"O.B\xecp\x83)\x945\x1e\xbe\xe9\xd2\xea\x9f]" +
+	"\x1d\x80\xc7\x96\xd0N\xed'!\x86vHA\xad:L" +
+	"\xf1\xb8\xb4mSe\xf1\xf2\x99\xd7\x06h\x8f\x09\xef\xd4" +
+	"\xc6S\x15\xed\xb6\xf0\x0c\xad)|'\x80\xbd\xa9s\xeb" +
+	"\x95\x19\x7f\xf9\xc6u\x91,\x9a\xc2\x8cM\xe6\x87\xe9\xd9" +
+	"wJ[N\x8f\xeez\xec\xba\xd8H\xda\xba0\xed\x93" +
+	"\x0daZj\x9d\x8f=\xf4\xc9\xa8o\x9f\xb4E\x0b\x1f" +
+	"\x87Y%]\x0e\xd7\xc2T\xbbYoO\xb5\xdf\xa1\xb7" +
+	"\xa3Y\xce\xfe\xad\x095\x19\x96\x1eC$\xc5\xb2\x17\xc0" +
+	"\xa9\x1d\xe4\xa5\xa2\xee\x9d\x00\x92\xfa\x82\x82\xe84\x07\xf2" +
+	"S\xd4\xedT\xb6YA\xc9I\x09\xd2\xa4\x02\xcd\xea\x1a" +
+	"*\xebPPv8\x109[\xaa\xe6<\x90T]A" +
+	"\xb7y\x90\x17\xa0:\x9f\xca\x9a\x14\xf4:\xbc\x8c\x1c\x17" +
+	"\xb5\x8e\xca\xaa\x95\xd0\xc3\x1d\xa6\x15\xc5P\xbb\x99JD" +
+	"1d\xa6\xe8/\xbb9\x9dZj&f\x18\x80\xee\xaf" +
+	"x\x9f_uI\xc0d\x14c\x88\x0e\x0e2\xc7\xa11" +
+	"^\x9e\xb5\xf4\x84Q6\xcf\xc8v$\xad,\xc0@\x1d" +
+	"\x0aU97\x95,\x8bE\xf4\x8c\xde\x96\x1d\xc2V\x8c" +
+	")\x00)\x90=\x00\x1e\x04P\xc7\xcf\x03 \xe3d$" +
+	"\x93%T\x11\x19!\xa8\x93\xee\x01 \x152\x92oI" +
+	"h'\xd3\xcdz2\xa6[\x80\xad\xe8\x07\x09\xfd\x80v" +
+	"\xc6hO\xc7t\xab\x15\x00\x9cgCy7\xc3\xb0\xca" +
+	"\xe6\xd5\xe6\x02!\x1e\xe7\xf0@%P_\x90\x14I\x18" +
+	"\xe9\xd4\x93\x1d\xc6\x0d[\xeb\x8dU4V\xea\x1aS\x96" +
+	"\x19+\x06\x98\x92\x048\x9a\xf5\xfc\x0e\xd1\xc0\xfd2\x92" +
+	"b\x09\xed\xa5\xe6\xd2A\x83tl\xc5-\xdd\x9a\x95Z" +
+	"\x9a\x06\xa05\xebA\xc9~\xe0G;\xc8\xc1\xf77\x1e" +
+	"\x01\xe2\x91\xb0\xae\x0c\xd1\x0f0\x09\xbf\x876W\xf5\x96" +
+	"\x98\xd9\x12\xbd$k\xe9\xd6\xc4\xa4\xb9\xcc(i1\xb2" +
+	"\xcd\x19\xb3\xdd2\xd3\xa9\x92\xf4\xd2\x12=\xb5\xa2$\x95" +
+	"n1\x00\x80\xdc\xea\xb8v`\x02\x00\xd9##y]" +
+	"H\xd4k\xf4\xe1~\x19\xc9\x1b\x12\xa2T\x84\x12\x80z" +
+	"\x90>{UFrXBU\xc6\"\x94\x01\xd4C\x14" +
+	"\xe9\xd7e$\xc7$T=\xab\x8b\xd0\x03\xa0\x1e\xa1\x0f" +
+	"\xdf\x90\x91\xbc#\xa1\xea\xf5\x16\xa1\x17@=N\x1f\x1e" +
+	"\x96\x91\x9c\x90P\x1d!\x15\xe1\x08\x00\xf5\xddz\x00r" +
+	"LFrJ\xc2P\xbbn9\x95\x10j\xd5\xb3\xad\x18" +
+	"\x00\x09\x03\x80\xa1\xac\xf9\x88\x81>\x90\xd0\x07\x181i" +
+	"\x0c\xee\xaf\xect3\x83\x08\x12\"`\xa4\xc5h\xb7Z" +
+	"\xd1\x03\x12z\x00\xbb\xdb\xd2-\xf7\x9am\xc6\xe0 /" +
+	"\x98\x16/O\xa6\x13e\xb5\xb1\xbe\x05\xde?\xa3y\x8a" +
+	"b\x82[\x14}\x1c\xcf\x7f\x88\xa5;\x87\x88=B+" +
+	"\xabLFR!@?\xb1\xdem\x1c%ctr\xc3" +
+	"\xdd\x96\x9e\x98\xab\xb7\x0dQ\xc9\x8d\xf1\xf2\x8c\xd1\x96\xee" +
+	"t\xda\x11\xbe\x94\xc3\x8a`\x87Y\xe1\x04\xc1\x15D\xf9" +
+	"\xb2\x163\x93\xaf\xeb'\xb8\x119\x01e\x00\xc8\xd7e" +
+	"$S\x07\x9c\x9c1t\xcb\x88\xe9\x10\xc9\x18)+\xcb" +
+	"\xb3\x987\x0d\xcc\xa3<\x10\xd6\x0f\x03aw6\xd3\x1c" +
+	"\x13\x0e\xedn\xc9Z\xb1|\xe1\xcbb\xbe\x9a\xd3mm" +
+	"\xa6\x95C@\xb6\xb2\xf9\x95:R4\xad9\x940;" +
+	"\x10G\x9e\xf8\xc1p\xac\x8b\xcd*\xef42Y3\x9d" +
+	"bP\xca\xf9(\x96\xd1\x13\xe5\x7f'\xa9C%~\x80" +
+	"3\xf9h..\xd0\xdcp\xc5X)\x14\xa3\xc0}\xc3" +
+	"\x91\xaa\x18\x1a\xf5I\xe9G\x87\xf5n1v\xf7\xea\xf1" +
+	"\xae\x1d2!\x0c\x03\x1c\x94\x9d\xdb\xb2\x89\xc1\xfbpN" +
+	":\xd1\x90\xb22+\x06c\xd40cT\x15G\x02\x92" +
+	"\xb0c_\xa7\x15\xfd\x1d\x19I\xab\x00\x8bA\x0f}H" +
+	"F\x92\x94P\x95z\xf9\xd1\xa4\x9a-2\x92\xd5\x94\x1f" +
+	"\xe5\x1c?\xae\xa2\x0f\x97\xcbH\xd6J}9M\xf45" +
+	"d\xe9\x89,\x06\x01c2\xb2gA\xc0P\x8bn\x0d" +
+	"wk\xd1\xe9`\x88\xb2pun\xb8,\xf8\xd55p" +
+	"|\x92\x1b\xe3\xee\xf0\xc4\xd7E\xe4\xbb\xa6\xba\xb7\x92\x0f" +
+	"O|tC>\xdd\x0a\xc3\x13_\xcd\x90/\x83\xea\x9a" +
+	"R><\xf1\xdd\x09\xf9L\xab\x9a\xd4\xe6\xfdtx\xe2" +
+	"+\x19\xf2\xe5D%5 \xa9\x0dtx\xe2\x1b\x15\xf2" +
+	"\xb5L\xad\xa6\xe7MT\"l4\x89b(if\xad" +
+	"(*\xcd\xba\x15\xc5\x08c\xae(\xd6\xe6\x1a&\x8a\xa1" +
+	"\xdc\x1fqTr*f\x1a\xc3%\xa6\xcbf\x86\xc6>" +
+	"\\\xaf\x94\xe6\xef\x15\xa5SO\x0e\x93H:\xd8\x0d\x91" +
+	"\xa4\xc6x9\x8d\xc1!\x92|\x9dT&a\xb7\x91\xb2" +
+	"2\xa6\xe1TR\xd8\xdd\xa9\x01\xe9\xc3\xa1Nw\xae\x0c" +
+	"\xbfc\xbb\x81\x0e-\xd3e$1!\xca&\xca\x083" +
+	"e$\xf7\x0a\xa5O\xa8\x17sd$\x0b%\xb4\x97\xe8" +
+	"Y\xa3\xdfx\x13Iw\xa5\x8c\x8cC\xc1K\xf4\xe6e" +
+	"F\xaae\xc8\x9b,w\xc3\x0c1\xa3\xba\x0c\x9c\xef\xb6" +
+	"\x13\x09f\xd8\x8b\x93\x8f\x01_\x1a_g]\xed\x87\xaf" +
+	"\xd35\xca\x82i\xacm\xc2\xacm\xf8'\x0b\xe4\xbb\x97" +
+	"\xfa0-\x7f\x83\xb6\x0d_\x8d\x91\x7f\x01P\xef\xab\xc9" +
+	"\xed\x07\x92\xf3\xc5\x02\xf9\xa6\xaf\xd6\xd1\xf7\xa6\xd0\xb6\xe1" +
+	"{\x1e\xf2\xef\x03\xeax\xda6\xa3\x15%\x99ND\xb1" +
+	"6G\x9cQT,=\x11\xc5\x08C\xaco\xb9\xbb\xce" +
+	"\xd6\xc5f1jd\xce\xf2o\x07\xc8\xb7zU\xad\x07" +
+	"I\xf5*\x9c\xb0\xa3H\xfc\x88\xee\xda\x0c\xe0\xae\x8c\x00" +
+	"\xeeG\xab\x1bX0\xf2M\xcc\xa5.\xf0\x8a\x9eL\xba" +
+	"\xa0;\x9bw?\xd0\xa5\xfe\xed\x92gZ\xc87\x9e\xdc" +
+	"#\x8c'\x99t\xdar\xea\xa4M_>\x9d\xce\x93\xb4" +
+	"\x90\x07\xbd\x9c\xdc\xfb\x99\xf7\xef`{H\xc6hO:" +
+	"\xa4\xf0\xbf\x00\x00\x00\xff\xff\x8a\x09%\xea"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
 		0x83e6cb306e77e311,
 		0x884238694e8b8d88,
+		0x8c8ac84e843e98c6,
 		0x9ba7a818970a029c,
+		0x9ec3cfd8ff4bae06,
+		0x9f647c7028225a97,
 		0x9fe8d2cd92c27a38,
 		0xa2305f2ea25a3484,
 		0xa4efd353c57d2b85,
@@ -3474,12 +4254,15 @@ func init() {
 		0xc6920dee4bb4a443,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
+		0xd0b0c690855bac45,
 		0xd81779091ced5513,
 		0xd9459f2361338d96,
 		0xd9d374ce4dd8e6a9,
 		0xdf3a2e83d0d533b3,
 		0xe1dd2f0c85965fd6,
+		0xe275355b4989aaee,
 		0xe2b3585db47cd4f9,
+		0xe54de22194de748a,
 		0xe826e800c318a7c4,
 		0xe92935bf20cc2856,
 		0xed03ac5ef50453fb,
@@ -3488,6 +4271,7 @@ func init() {
 		0xf7250939585a23f6,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
+		0xfd36e047f496768b,
 		0xfd86771dd5950237,
 		0xffd34f15ec608676)
 }

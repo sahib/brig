@@ -142,15 +142,45 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleConfigList(cli *cli.Context) error {
+func handleConfigList(cli *cli.Context, ctl *client.Client) error {
+	all, err := ctl.ConfigAll()
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config list: %v", err)}
+	}
+
+	for key, val := range all {
+		fmt.Printf(
+			"%s: %s\n",
+			colors.Colorize(key, colors.Green),
+			val,
+		)
+	}
 	return nil
 }
 
-func handleConfigGet(ctx *cli.Context) error {
+func handleConfigGet(ctx *cli.Context, ctl *client.Client) error {
+	key := ctx.Args().Get(0)
+	val, err := ctl.ConfigGet(key)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config get: %v", err)}
+	}
+
+	fmt.Printf(
+		"%s: %s\n",
+		colors.Colorize(key, colors.Green),
+		val,
+	)
+
 	return nil
 }
 
-func handleConfigSet(ctx *cli.Context) error {
+func handleConfigSet(ctx *cli.Context, ctl *client.Client) error {
+	key := ctx.Args().Get(0)
+	val := ctx.Args().Get(1)
+	if err := ctl.ConfigSet(key, val); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config set: %v", err)}
+	}
+
 	return nil
 }
 
@@ -379,14 +409,6 @@ func handlePin(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleUnpin(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
-func handleDebugExport(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
-func handleDebugImport(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
