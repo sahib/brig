@@ -404,10 +404,6 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleDiff(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
 func handlePin(ctx *cli.Context, ctl *client.Client) error {
 	if ctx.Bool("is-pinned") {
 		return handleIsPinned(ctx, ctl)
@@ -450,5 +446,9 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleReset(ctx *cli.Context, ctl *client.Client) error {
+	return nil
+}
+
+func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
