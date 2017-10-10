@@ -2001,6 +2001,46 @@ func (c VCS) Untag(ctx context.Context, params func(VCS_untag_Params) error, opt
 	}
 	return VCS_untag_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c VCS) Reset(ctx context.Context, params func(VCS_reset_Params) error, opts ...capnp.CallOption) VCS_reset_Results_Promise {
+	if c.Client == nil {
+		return VCS_reset_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "reset",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_reset_Params{Struct: s}) }
+	}
+	return VCS_reset_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c VCS) Checkout(ctx context.Context, params func(VCS_checkout_Params) error, opts ...capnp.CallOption) VCS_checkout_Results_Promise {
+	if c.Client == nil {
+		return VCS_checkout_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "checkout",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_checkout_Params{Struct: s}) }
+	}
+	return VCS_checkout_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type VCS_Server interface {
 	Log(VCS_log) error
@@ -2010,6 +2050,10 @@ type VCS_Server interface {
 	Tag(VCS_tag) error
 
 	Untag(VCS_untag) error
+
+	Reset(VCS_reset) error
+
+	Checkout(VCS_checkout) error
 }
 
 func VCS_ServerToClient(s VCS_Server) VCS {
@@ -2019,7 +2063,7 @@ func VCS_ServerToClient(s VCS_Server) VCS {
 
 func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 4)
+		methods = make([]server.Method, 0, 6)
 	}
 
 	methods = append(methods, server.Method{
@@ -2078,6 +2122,34 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "reset",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_reset{c, opts, VCS_reset_Params{Struct: p}, VCS_reset_Results{Struct: r}}
+			return s.Reset(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "checkout",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_checkout{c, opts, VCS_checkout_Params{Struct: p}, VCS_checkout_Results{Struct: r}}
+			return s.Checkout(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -2111,6 +2183,22 @@ type VCS_untag struct {
 	Options capnp.CallOptions
 	Params  VCS_untag_Params
 	Results VCS_untag_Results
+}
+
+// VCS_reset holds the arguments for a server call to VCS.reset.
+type VCS_reset struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  VCS_reset_Params
+	Results VCS_reset_Results
+}
+
+// VCS_checkout holds the arguments for a server call to VCS.checkout.
+type VCS_checkout struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  VCS_checkout_Params
+	Results VCS_checkout_Results
 }
 
 type VCS_log_Params struct{ capnp.Struct }
@@ -2638,6 +2726,289 @@ type VCS_untag_Results_Promise struct{ *capnp.Pipeline }
 func (p VCS_untag_Results_Promise) Struct() (VCS_untag_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return VCS_untag_Results{s}, err
+}
+
+type VCS_reset_Params struct{ capnp.Struct }
+
+// VCS_reset_Params_TypeID is the unique identifier for the type VCS_reset_Params.
+const VCS_reset_Params_TypeID = 0xe71560d8bc06c6fd
+
+func NewVCS_reset_Params(s *capnp.Segment) (VCS_reset_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return VCS_reset_Params{st}, err
+}
+
+func NewRootVCS_reset_Params(s *capnp.Segment) (VCS_reset_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return VCS_reset_Params{st}, err
+}
+
+func ReadRootVCS_reset_Params(msg *capnp.Message) (VCS_reset_Params, error) {
+	root, err := msg.RootPtr()
+	return VCS_reset_Params{root.Struct()}, err
+}
+
+func (s VCS_reset_Params) String() string {
+	str, _ := text.Marshal(0xe71560d8bc06c6fd, s.Struct)
+	return str
+}
+
+func (s VCS_reset_Params) Path() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s VCS_reset_Params) HasPath() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_reset_Params) PathBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s VCS_reset_Params) SetPath(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s VCS_reset_Params) Rev() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s VCS_reset_Params) HasRev() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_reset_Params) RevBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s VCS_reset_Params) SetRev(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+// VCS_reset_Params_List is a list of VCS_reset_Params.
+type VCS_reset_Params_List struct{ capnp.List }
+
+// NewVCS_reset_Params creates a new list of VCS_reset_Params.
+func NewVCS_reset_Params_List(s *capnp.Segment, sz int32) (VCS_reset_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return VCS_reset_Params_List{l}, err
+}
+
+func (s VCS_reset_Params_List) At(i int) VCS_reset_Params { return VCS_reset_Params{s.List.Struct(i)} }
+
+func (s VCS_reset_Params_List) Set(i int, v VCS_reset_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_reset_Params_List) String() string {
+	str, _ := text.MarshalList(0xe71560d8bc06c6fd, s.List)
+	return str
+}
+
+// VCS_reset_Params_Promise is a wrapper for a VCS_reset_Params promised by a client call.
+type VCS_reset_Params_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_reset_Params_Promise) Struct() (VCS_reset_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_reset_Params{s}, err
+}
+
+type VCS_reset_Results struct{ capnp.Struct }
+
+// VCS_reset_Results_TypeID is the unique identifier for the type VCS_reset_Results.
+const VCS_reset_Results_TypeID = 0xf9b772853fd93ea9
+
+func NewVCS_reset_Results(s *capnp.Segment) (VCS_reset_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_reset_Results{st}, err
+}
+
+func NewRootVCS_reset_Results(s *capnp.Segment) (VCS_reset_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_reset_Results{st}, err
+}
+
+func ReadRootVCS_reset_Results(msg *capnp.Message) (VCS_reset_Results, error) {
+	root, err := msg.RootPtr()
+	return VCS_reset_Results{root.Struct()}, err
+}
+
+func (s VCS_reset_Results) String() string {
+	str, _ := text.Marshal(0xf9b772853fd93ea9, s.Struct)
+	return str
+}
+
+// VCS_reset_Results_List is a list of VCS_reset_Results.
+type VCS_reset_Results_List struct{ capnp.List }
+
+// NewVCS_reset_Results creates a new list of VCS_reset_Results.
+func NewVCS_reset_Results_List(s *capnp.Segment, sz int32) (VCS_reset_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return VCS_reset_Results_List{l}, err
+}
+
+func (s VCS_reset_Results_List) At(i int) VCS_reset_Results {
+	return VCS_reset_Results{s.List.Struct(i)}
+}
+
+func (s VCS_reset_Results_List) Set(i int, v VCS_reset_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_reset_Results_List) String() string {
+	str, _ := text.MarshalList(0xf9b772853fd93ea9, s.List)
+	return str
+}
+
+// VCS_reset_Results_Promise is a wrapper for a VCS_reset_Results promised by a client call.
+type VCS_reset_Results_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_reset_Results_Promise) Struct() (VCS_reset_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_reset_Results{s}, err
+}
+
+type VCS_checkout_Params struct{ capnp.Struct }
+
+// VCS_checkout_Params_TypeID is the unique identifier for the type VCS_checkout_Params.
+const VCS_checkout_Params_TypeID = 0xe154e487144bf3c2
+
+func NewVCS_checkout_Params(s *capnp.Segment) (VCS_checkout_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return VCS_checkout_Params{st}, err
+}
+
+func NewRootVCS_checkout_Params(s *capnp.Segment) (VCS_checkout_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1})
+	return VCS_checkout_Params{st}, err
+}
+
+func ReadRootVCS_checkout_Params(msg *capnp.Message) (VCS_checkout_Params, error) {
+	root, err := msg.RootPtr()
+	return VCS_checkout_Params{root.Struct()}, err
+}
+
+func (s VCS_checkout_Params) String() string {
+	str, _ := text.Marshal(0xe154e487144bf3c2, s.Struct)
+	return str
+}
+
+func (s VCS_checkout_Params) Rev() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s VCS_checkout_Params) HasRev() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_checkout_Params) RevBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s VCS_checkout_Params) SetRev(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s VCS_checkout_Params) Force() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s VCS_checkout_Params) SetForce(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+// VCS_checkout_Params_List is a list of VCS_checkout_Params.
+type VCS_checkout_Params_List struct{ capnp.List }
+
+// NewVCS_checkout_Params creates a new list of VCS_checkout_Params.
+func NewVCS_checkout_Params_List(s *capnp.Segment, sz int32) (VCS_checkout_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 1}, sz)
+	return VCS_checkout_Params_List{l}, err
+}
+
+func (s VCS_checkout_Params_List) At(i int) VCS_checkout_Params {
+	return VCS_checkout_Params{s.List.Struct(i)}
+}
+
+func (s VCS_checkout_Params_List) Set(i int, v VCS_checkout_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_checkout_Params_List) String() string {
+	str, _ := text.MarshalList(0xe154e487144bf3c2, s.List)
+	return str
+}
+
+// VCS_checkout_Params_Promise is a wrapper for a VCS_checkout_Params promised by a client call.
+type VCS_checkout_Params_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_checkout_Params_Promise) Struct() (VCS_checkout_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_checkout_Params{s}, err
+}
+
+type VCS_checkout_Results struct{ capnp.Struct }
+
+// VCS_checkout_Results_TypeID is the unique identifier for the type VCS_checkout_Results.
+const VCS_checkout_Results_TypeID = 0xe0f49db8c42c72b2
+
+func NewVCS_checkout_Results(s *capnp.Segment) (VCS_checkout_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_checkout_Results{st}, err
+}
+
+func NewRootVCS_checkout_Results(s *capnp.Segment) (VCS_checkout_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return VCS_checkout_Results{st}, err
+}
+
+func ReadRootVCS_checkout_Results(msg *capnp.Message) (VCS_checkout_Results, error) {
+	root, err := msg.RootPtr()
+	return VCS_checkout_Results{root.Struct()}, err
+}
+
+func (s VCS_checkout_Results) String() string {
+	str, _ := text.Marshal(0xe0f49db8c42c72b2, s.Struct)
+	return str
+}
+
+// VCS_checkout_Results_List is a list of VCS_checkout_Results.
+type VCS_checkout_Results_List struct{ capnp.List }
+
+// NewVCS_checkout_Results creates a new list of VCS_checkout_Results.
+func NewVCS_checkout_Results_List(s *capnp.Segment, sz int32) (VCS_checkout_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return VCS_checkout_Results_List{l}, err
+}
+
+func (s VCS_checkout_Results_List) At(i int) VCS_checkout_Results {
+	return VCS_checkout_Results{s.List.Struct(i)}
+}
+
+func (s VCS_checkout_Results_List) Set(i int, v VCS_checkout_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_checkout_Results_List) String() string {
+	str, _ := text.MarshalList(0xe0f49db8c42c72b2, s.List)
+	return str
+}
+
+// VCS_checkout_Results_Promise is a wrapper for a VCS_checkout_Results promised by a client call.
+type VCS_checkout_Results_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_checkout_Results_Promise) Struct() (VCS_checkout_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_checkout_Results{s}, err
 }
 
 type ConfigPair struct{ capnp.Struct }
@@ -4130,6 +4501,46 @@ func (c API) Untag(ctx context.Context, params func(VCS_untag_Params) error, opt
 	}
 	return VCS_untag_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) Reset(ctx context.Context, params func(VCS_reset_Params) error, opts ...capnp.CallOption) VCS_reset_Results_Promise {
+	if c.Client == nil {
+		return VCS_reset_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "reset",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_reset_Params{Struct: s}) }
+	}
+	return VCS_reset_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Checkout(ctx context.Context, params func(VCS_checkout_Params) error, opts ...capnp.CallOption) VCS_checkout_Results_Promise {
+	if c.Client == nil {
+		return VCS_checkout_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "checkout",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_checkout_Params{Struct: s}) }
+	}
+	return VCS_checkout_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
 	if c.Client == nil {
 		return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -4280,6 +4691,10 @@ type API_Server interface {
 
 	Untag(VCS_untag) error
 
+	Reset(VCS_reset) error
+
+	Checkout(VCS_checkout) error
+
 	Quit(Meta_quit) error
 
 	Ping(Meta_ping) error
@@ -4300,7 +4715,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 20)
+		methods = make([]server.Method, 0, 22)
 	}
 
 	methods = append(methods, server.Method{
@@ -4495,6 +4910,34 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
 			call := VCS_untag{c, opts, VCS_untag_Params{Struct: p}, VCS_untag_Results{Struct: r}}
 			return s.Untag(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      4,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "reset",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_reset{c, opts, VCS_reset_Params{Struct: p}, VCS_reset_Results{Struct: r}}
+			return s.Reset(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      5,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "checkout",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_checkout{c, opts, VCS_checkout_Params{Struct: p}, VCS_checkout_Results{Struct: r}}
+			return s.Checkout(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
@@ -4712,161 +5155,170 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\xa4X\x7fpT\xd5\xf5?\xe7\xbd\xdd<v\xbf" +
-	"\xfb\xeb\xee\x8b\x1a\xbf\x95&\xc6`\x95J\x0c\x89VH" +
-	"\xab\xd9\x04\x08F\x88\xddG\x84\xa1P\xd0G\xf2\x92\xbc" +
-	"a\xb3\xbb\xec\xbe$\xc4\x81\x06*(\x01i\xc5*\x14" +
-	"\xb50el%\x96)0\xd0\xb1\xed\xc8\x94\x94\x1fC" +
-	"\x14,S\xc0\x12[l\xc1V\xb0#R\x90Z\xa10" +
-	"\xdb\xb9w\xf3\xde\xbbI6\x1bl\xffJ\xf6\x9ds\xcf" +
-	"=\xf7s\xce\xf9\xdcsn\xc9;9!a\xbc\xf3," +
-	"\x01P\x8e:sR\xe4\x83\xf6h\xc9\xdb\x1f>\x05$" +
-	" \xa6\xbet\xf2\xe1\x19K\x1fZ\xf5w\x00\x94\xfbF" +
-	"\xbd.\x9f\x1e%\x01\x94\x9d\x1a\xf5\x0c\xca}.\x09 " +
-	"\xf5\xf9\xcd\xda=%\x9b\xf6?\x03\x8a\x8c\x08\xe0\xa0\xe2" +
-	"\x1eW!\x02\xca\xbd\xae\x0a\xc0\xd4\xaa\xb5k\x1e\xd5'" +
-	"T\xad\x02\"\x9b\xf2\xf3.7\x82#u\xf0\x87\x0f\xad" +
-	"x\xf4\xd0\xeag\x81\xdcdJN\xb8J\xa9\xe4\x15\xc1" +
-	"\xbd!o\xebk/\xa7\xd78\x05*\xda\xe3\x12\xa8\xd1" +
-	"\x1eW;`*\xe7\xe7\xd3R'\x7f\xb7oSz\xa9" +
-	"\x13\xa9\xc2\x18w9U\x18\xe7\xa6\xbb~v\xf3?\x84" +
-	"\xc9\x1b\xaem\xea\xb7\xc0\x14j\xdd\xcc\x82\xc2\x146\xcc" +
-	")\xbc+\xbe\xa4a3oa\x91\xbb\x94*t0\x85" +
-	"\x09O\xfe\xf6\xf9#\xbf?\xb7\x99\xb3 ot_\x05" +
-	"\x94\x7f\xc4\xe4+\xee\x9b\xb3\xa5\xf8\xf1\x92-\xa0\x04\x90" +
-	"\xc3\xc9)R\xc5\x1e\xf7[\xf2\x11\xb7$\x1fq\xe7\x97" +
-	"\xe1\xff}\x1f\x01S+\xbf\xba\xf4@\xdd\xb1\x0b\xaf\x02" +
-	"\xc9\xed?\xad\xdc\xe5\xb9\x0a\x8e\xd4}\xb3\xbe\x9c\x9a>" +
-	"\xd7\xd5\xcdo\xd4\xe2\xb9\x04(/\xf2\xd0\x8dZ\x8e\x9f" +
-	"\x8d\xba\x9a\x96v\xa7\x1720\xe4u\x1e\xea\xc8\x8b\x1e" +
-	"\x8a\x85\x18\xf4\x90\xe2\x05\xaf\xf0\xeb\xcb.z\xdc\xf4$" +
-	"W\x98\x81\xb1\xb1K/_;\xd8\xf53.\x02\xb7z" +
-	"\x05\x8a\xb3\xea\xfb\xfa\xdby\xd7Jv\xf4\x07/\xbd\xf6" +
-	"\xba\x87\xc1\x84^j\xfc\xe2\xf5\xcb\x7f\xeay0\xf6\x06" +
-	"\x17\x09Y\xf5\xd2\xcd5&\x9f\xd8\xfa\x9d\xea\x85\xa7\x8e" +
-	"\xbea\x9f\xaa\xac\xc7\xfb\xff\xd4\xf6\xf6\xafL\xbf\xe3\xb9" +
-	"\xbfz\x7f\xcdI\xba\xbdA*\x99\xb69wI{M" +
-	"\xf7\x1eN\xb2.\xed\xcf\xe7\xc5}\xef\xbd\xdfxj/" +
-	"\x0fE\xab\x97B\xd1\xe1\xa5'\x99\xf4\xea\xeei\x9fx" +
-	"\x9f?\xc8\xad\xdc\x98\xdem\xfe\xc5\x1dwn\xfb\xde\xcc" +
-	"^\x1e\x84\xe5T\x84r\x17[\xfa\xf1K\xb7\xe0\xea\xc9" +
-	"\xdbz\xb9d\xeb\xf6\xb24\xfcC]s\xc5\x9d[w" +
-	"\xf5r\xf0\xacK;\xfa\xd9y\xa5\xeb\xd9K\x97\x0f\xdb" +
-	"\x12\xb9\xc3KC6e\xdb\xdc\x95\xcf\x1d\xdcq\xb4?" +
-	"yX~\xce\xf3\xb2\xe4I\xc3\"\xcf<\x7f\x9b\xab\xe3" +
-	"\x96\x93\xa0\xe4\xdaU\xe1MW\x05sg\xfd\xda2\xf5" +
-	"\x8e\xcdS\xfa\xfa\x83\xca\xfc\xfd\x88\xee\x8a\xf2E\xa6\xd0" +
-	"\xfd\xe1\xc9\xdaw\x8cc}@\x02\xc8e\x17s\x82\xf8" +
-	"\xde\x92G\xfb$y\xb4/_~\xd0w\x160uy" +
-	"\xdf\xb6)\x8e\x0f\xb6\xfe\x91;\xc3\xed~v\xba]e" +
-	"'\x8e>U\\\xfeg\xee\xdc\xae\xb4\xe4\xdd\xc7\xd7\xaf" +
-	"\xf4\xdc{\xea4'\xb9\xe8c\xe7\xfe\xe4\xf5\xae\x9a\xb9" +
-	"\xf7\xb7\x9e\xe1$}\xber*\xb9r|\xc9\xeey\xb3" +
-	"w\x9d\x19\xc2\x0d=\xbe\x97\xe4^\x1f\xd5<\xe0\x9b*" +
-	"\xc8\xe3\x03\x94\x1bV\x1b\xef\xbfp\xfb\x99\xda\xbf\x0d:" +
-	"\x03K\xa2[\x03\xef\xc9c\xa8\x96|{\xa0\x1d\xf0\xc2" +
-	"\xfe\xd7\xf2\xf6\x9d\xbb\xf3\x9c\xbd\xe3\xd2\x00\xf3e\xd6]" +
-	"\x87\x0b~s\xff\xdd\x1f\xf1\x81\xd5\x02,C\xf5\x00\x05" +
-	"\xea\xdfu\x8e\x7f\xce\xdf&\x9e\xef\x8f\x85\xc8\x92\"\xc0" +
-	"\xd2\xff\xc7\x81\xed\x80\xa9O_\x10f\xcf*-\xfa\x94" +
-	"\xc3\xe6A\xc2\x10\x98V\xbe]\xde9\xee\xf8e>\x08" +
-	"c\x08[:\x8e0\x16\xb9c\xce\xec\x89\xae1\xff\xe2" +
-	"\x15jI\x9aE\x98BQ\xf5\xfe\xe0\x85e?\xbd:" +
-	"\x04\x8f\xe5d\x8b\xdcE\xa8\xfeJ\"\xa1<&H\xf1" +
-	"\xb8\xb0aMi\xde\xe2\x87\xaf\x0d\xd1\xf6\x06\xb7\xc87" +
-	"\x05Yh\x83S\xe5\x89\xc1\x07\x00Rk\xda\xd6_\x9e" +
-	"\xfa\x97\xaf]\xe7\x09jb\x90Q\\e\x90\xee\xfd\x80" +
-	"\xf0\xe2\x89\xd1\xedO_\xe7\x8bW^\x14\xa4\xb5\xd9\x1a" +
-	"\xa4I\xd8\xf6\xf4\x13\x1f\xdf\xf4\xcdc)\xde\xc2\x89 " +
-	"\xcb\xb1S\xc1\x0a\x98\x90\xaaW\xe3\xd1\xf8\xbdj\x1c\xf5" +
-	"b\xf6o\xb9\xbfV3\xd40\xa2\x92':\x01\xac\xdc" +
-	"A3U\xc8\xce\xb1 \x90\x9fHh\xd7\x13\x9a\xbb\x90" +
-	"\x8dT\xb6VB\xc1\x0a\x09\xd2\xa0\x02\x8d\xear*k" +
-	"\x95P\xb4x\x17M\x0a'\xfa\x0c\x10\x88*\xa1]V" +
-	"h& \x99Ie\xb5\x12:\xad\xcb\x02M\\H%" +
-	"\x95M\x94\xfc\x8bZu#\x84\xfe\xb8\x1em\x0a\xa1_" +
-	"\x8f\xd2_\xa9\xfaX\xb4Qo\x9a\xaa\x01\xda\xbf\xea\x06" +
-	"\xfc\xaa\x8c\x00FB\x18F\xb4p\x10M\x1c\xaa\xeb\x8a" +
-	"\xf5dX\x8fF\xb5\x86\xa2\x19Z\xb2U\x8a\x18I\xc5" +
-	"!:\x00\x1c\x08@\xbc\x8f\x00(\x1e\x11\x95<\x01S" +
-	"\xa6\"\x00 \x82\x80\x94\xeb3\x19L\x1aj\x93\xc6\xac" +
-	"E\x8c$\xc0P\x1d\x8a}\xb1\xe9[\xa4(\x9c\xaf&" +
-	"\xd4\x96d\x16[a\xa6\x00\xca(\xcb\xb1\xbbg\x00(" +
-	"w\x89\xa8\xdc' Ad\xdcC\xc6SoKDT" +
-	"\xbe!`*\x12\xabW#a\xd5\x00lF\x0f\x08\xe8" +
-	"\x01L%\xb4x,\xac\x1a\xcd\xf4\x04\xe6\xb7l\xdeM" +
-	"\xd5\x8c\xa2\x19\x15\xe9\x83\xf0\xa8\x94\x02\xf5\x05\x95\\\x01" +
-	"\xf3\xdb\xd4H\xab6\xbc\xb5\xea\xba\xe2\xd6h\\\x8fZ" +
-	"g\xe0\xcc\x8c\xb5\xcd\xf8\xe3\xaa\xd1|\xc3>\xf5#\xc6" +
-	"\xdb*\xb4mI\x0b\xb5\x8e!\xa6\x04\xce\xa1z5\xf3" +
-	"\xb1\xf8`7\xea\x8d\xc3Be\xd9\xaa3T\xa3&\xda" +
-	"\x18\x03\xa0\xa5\xe4@!5\xff\x07\x9b\x95=\xef\xae>" +
-	"\x00\x8aC\xc0\xca\"D\x0f\xc0x\xfc.\xa6LUg" +
-	"\x81\x9e,P\x0b\x92\x86j\x8c\x8b\xe8\x0b\xb5\x82\x06-" +
-	"Y\x9f\xd0\xe3\x86\x1e\x8b\x16\xc4\x1a\x0b\xd4hGA4" +
-	"\xd6\xa0\x01\x80r\x9b\xe5\xda/(T;DT\xde\xe4" +
-	"\xc2\xfd+\xfaq\xb7\x88\xca^\x01Q\xc8E\x01\x80\xec" +
-	"\xa1\xdf~)\xa2\xb2_@\"b.\x8a\x00\xa4\x87\xc6" +
-	"\xebM\x11\x95C\x02\x12\xc7\xb2\\t\x00\x90\x03\xf4\xe3" +
-	"^\x11\x95\xc3\x02\x12\xa73\x17\x9d\x00\xa4\x97~\xdc/" +
-	"\xa2rT@\x92#\xe4b\x0e\x009R\x05\xa0\x1c\x12" +
-	"Q9>(N\xfef5\xd9\x8c^\x10\xd0\x0b\xe8O" +
-	"\xeaOj\xe8\x02\x01]\x80\xf9:=\x83\xfd+9Y" +
-	"O\x985\x93\xdf\xa0\xc5\x8dft\x80\x80\x0e\xc0\xce\x96" +
-	"X\xc3cz\x8b6<\xc8\xb3&\xd5\x15GbME" +
-	"\x15\xe1\x81e28\xa2\x19\x92b\xc4\x04\x1b\xb0\x89\xa1" +
-	"Z\x9b\xf0\x95F3\xabHD\xa5\x84\x83~\\\x95]" +
-	"~RBk3\x0dw\x1aj\xd3\xa3jK\xf6zH" +
-	"h-\xb16\xab\xa8\xbfXEH\x9c\x1df\xc5\xa4\x19" +
-	"S\x81\x97/l\xd0\x13\x99\xb8c\xac}\"\xeb@\x09" +
-	"\x00\xe5\x1e\x11\x95\x09CvNh\xaa\xa1\x85U\xc8O" +
-	"hQ#9\x84\xf9\x84\xc1\x1ee\x80\xb0j\x04\x08;" +
-	"\x93\x89\xfa0\xb7igC\xd2\x08g%\x04\x1a\xaf\xfa" +
-	"XK\x8bn\xa4\x11\x10\x8ddf\xa5\xd6(\x0dk\x1a" +
-	"%\xb4ur\x06\x07>\x0b\x8e\x8c\xbd\xfe\x8b\xe4\xb2\xfc" +
-	"\xa8\x0c\xd7\x14\xb7i\x89\xa4\x1eK\xd3\xa08\x0c\xd9[" +
-	"7Q\xbf\xd2\xff\xc0\x95\xf4\x8e\xb42,[\x16\x0eA" +
-	"F\x18tr\x93(\xb3\x92r\x1dG\xca#\x95N)" +
-	"W:\x1cS\x8ft\x91\xf0 f\xba\xa9\xabl\x80:" +
-	"\xfb\xf5L\x8e\xc9\x9a>\x0c$\x1c\xf6.iI6\x0d" +
-	"\xcf\x1a\xd3cMS\xa2F\xa2c8\xfe\x0f0\xfe'" +
-	"\xe8\x06T\x02\x96}\x95\xc6\xf2\xdb\"*\xcd\x1c,\x1a" +
-	"\xdd\xf4\x09\x11\x95\x88\x80D\xe8gs\x9dj6\x88\xa8" +
-	",\xa3l.\xa6\xd9|)\xfd\xb8XDe\x850\x90" +
-	"\x81y_\xfd\x86\xda\x94D\x1f`XD\xf6\xcd\x07\xe8" +
-	"oP\x8d\x1b\xb9\xa9G\xea\\h\x1b\x96%\xb7l\x9d" +
-	"!\xb95\\\xea\x0c\xc91\xabO\x15\xab\xeb(\xb4E" +
-	"\xacK5\x1f\x0b\xd0|i\x90\x09\x96\x82 ;\x91\xf6" +
-	"\xa9f\x97\x8c\xe6 A\xae\xd0^\xf4<\xedS\xcd\xc9" +
-	"\x1b\xcdY\x9f\x9c.\x04\x81\x9c\xa0}\xaa9\x1a\xa39" +
-	">\xd0[P {h\x9fjN\xdch\x8e\x8edg" +
-	"y\xba/vZ\x033\x9aS\xb7\xd5\x17\xe7X\xe3-" +
-	"\x9a\x83%Y^\x98\xee\x8b%\xeb\xc1\x02\xcdQ\x8e\xe8" +
-	"t\xbfy\x12\x8e\xb2\x86[4\x1f[\x88\xf2\x08\x08\xa4" +
-	"F\xcag\x8d`\x08\xfd\x11=i\x84P\xaaW\x8d\x10" +
-	"\xe63\x86\x0faE\xba\x96C\xe8O\xff\x91\xe2z4" +
-	"\x84\xf9,\x9a\xa1\x01}\xeb\xc0.\xd8\xca\xe3I,\x12" +
-	"aU\xd4\x13\x14\xed\x91*\xb80s\x05Kmjd" +
-	"\x04Z\xa2={\x96\xb4\xa8\xae+\xa6\xe7\xb320S" +
-	"}\x17\x09\xd8\xa9E\x8d\x84\xaeY\xf9\x1d\xb0\x9fh\x00" +
-	"\xe9\xc7l\xbb[\xd7\xae\xc7\xb2=\x856~\x93ET" +
-	"\xc2\xdc)k)O=,\xa2\xf2\x18W\x90\x0a\xf5b" +
-	"\xba\x88\xcal\x01S\x0b\xd4\xa46\xa8E\xcc\x8f\xb5G" +
-	"\xb5\x84u\x8d-P\xeb\x17j\xd1\x86\xac5\x97\xbe\xa5" +
-	"\xb3\xd4\x9c}\x8be\xea\x18x\xda\x1b\xb1\xf90[\xa9" +
-	"/\x8c\xaf\xf5F1\x08_\xabN\xa5Y\x93X\xa1\x06" +
-	"X\xa1\x9a/`h\x8e\xd5d\x11M\x7f\x8d\x96\xa9\xf9" +
-	"\x1e\x82\xe6\x83\x12\xf9Vyz\xf4\x13\xac\x0704\x1f" +
-	"\x8eH%]w?-Ss\x84G\xf3\xb9\x89\xdcM" +
-	"\xcbf\xb4$EbM!\xacH\xd3y\x08%Cm" +
-	"b\xc9\xcf\xfe\xf2\xe9n;[\x19\xaea\x84\xcd\x9c5" +
-	"\x9f\x9a\xd0|\xca!\xa4\x0a\x04\xe2\x94\xcck$\x84\x8a" +
-	"\x07\xd1~\x11\x01\xb0_\x03\x00\xecW\xd4\x1b\x18\xf52" +
-	"M\x1d\x856\xf0\x92\x1a\x89\xd8\xa0[\x8f*\x83@\x17" +
-	"\x06\x97K\x86\x8e+S\x8b\xf7\x08\xd7\xe2%b1\xc3" +
-	"\xca\x93\x16u\xf1d\xda\x93\xd3D\x1e\xf6\xca\xb4\xdb\x0a" +
-	"\xb3~\x87\x9b\x08\x13Z<b\x91\xc2\x7f\x02\x00\x00\xff" +
-	"\xff\xd6\xd9\xe5'"
+const schema_ea883e7d5248d81b = "x\xda\xa4X\x7ft\x14\xd5\xf5\xbfwf7c6\xd9" +
+	"]\xde\xce\xa2\x9c\xefW\xbb!F+TbH\xb4B" +
+	"\xda\x9a\x0d\x100\x02v\x87U\x0ej\xfd1&\x93d" +
+	"\x0e\x9b\xddew\x12\x8cG\x8aV\x11Ai\xd5Z\xa9" +
+	"?9rl5\x16+\xa9\xf6\xa8=r*\x0a\x1c\xa3" +
+	"\xd2b\x05\x0b\xb6XQ\xab\xb6\xc7H\xd5\xd4\x8a\x85\xb3" +
+	"=\xef\xcd\xbe\x99\x97\xec\x8f`\xfbW\xb2\xf3\xee\xbb\xef" +
+	"\xde\xcf\xbd\xf7\xf3\xee\xbb\x0d\xba\x12\x95fz\x17\xa8\x00" +
+	"\xda\xdb\xde\x8a\x1cywe\xb2\xe1\x95\xf7o\x042I" +
+	"\xce\xfd\xff\xfe\xf3\x97\xac:\xef\x96\xbf\x03\xa0\xba\xae\xf2" +
+	"1\xf5\x8eJ\x05\xa0iC\xe5ZT\xd7\xf9\x14\x80\xdc" +
+	"\x17'\x1ag6<\xb8c-h*\"\x80\x87.\xaf" +
+	"\xf0\xd5\"\xa0:\xe0k\x01\xcc\xdd\xb2\xe1\xd6\x0b\xcdY" +
+	"sn\x01\xa2\xf2\xf5\x07|>\x04On\xd7O\xcf\xbb" +
+	"\xe9\xc2\x97\xd6\xdf\x06d2_Y\xe3k\xa4+\xf7K" +
+	"\xbe\x8dS\x1e}\xe4>{\x8fW\xa2K\xbd>\x89*" +
+	"]\xe1[\x09\x98\xab\xf8\xe5\xc2\xdc\xfe\xdf\xbf\xf8\xa0\xbd" +
+	"\xd5\x8bT`\x9f\xaf\x99\x0a\x1cd\xa7~~\xe2?\xa4" +
+	"y\x1b\x8f>\x98\xd7\xc0\x04\x8e\xd9\x1a\xb0\x8a\x0al\xbc" +
+	"\xb4\xf6\x8c\xf4u\x9d\x9bD\x0dS\xab\x1a\xa9\xc04&" +
+	"0\xeb\xda\x17\xee\xdc\xfd\x87\x0f7\x09\x1a\xd4\xf6\xaa/" +
+	"\x01\xd5\xc5l\xfd\xa6\xb3/\xdd\\\x7fe\xc3f\xd0&" +
+	"\xa1\x80\x93W\xa6\x82+\xaa^VWU)\xea\xaa\xaa" +
+	"H\xd3P\xd5\x8f\x100\xb7\xe6\x1b\xabv\xc6_?\xfc" +
+	"0\x90p\xde[u\xb6\xffK\xf0\xe4\xce^\xfa\xb5\xdc" +
+	"\xa2\xcb*\x07\xc5\x83N\xf1\x7f\x0a\xa8N\xf5\xd3\x83z" +
+	"\xf7~\x90\xac\xec^5hod`\xa8\xad~jH" +
+	"\x9b\x9fb!\x87\xaaI\xfd\xd5\xf7\x8b\xfb\x9b\x1e\xf2\xfb" +
+	"\xa8'\x83L\xc1\xf4\xd4\xa7\xf7\x1d\xdd\xb5\xee\x17B\x04" +
+	"\x86\xfd\x12\xc5Y\x0f|\xeb\x95)G\x1b\xb6\xe6\x83g" +
+	"\xef}\xdc\xcf`\x1ab\xca?96\xfa\xe7\xed\xdfI" +
+	"=-DB%\x01z\xf8\xe4\x00]\x9f\xdd\xf7\xfd\xf9" +
+	"\xcb\x0f\xeey\xda\xf5\xaaiE\xe0\xff\xa8\xee'\xbe\xbe" +
+	"\xe8\xd4\xdb\xdf\xf3\xffFX\xb9$\x10\xa2+\x0b7\x85" +
+	"\xaf[\xd9>\xb8MXi\x0d0{\xbe\xa8?\xf0\xe6" +
+	"[]\x07\x9f\x17\xa18-@\xa1\x98\x16\xa0\x9e\xcc}" +
+	"\xf8\xa9\x85\x1f\xfb\xef\xdc%\xecl\xb7O\xbb\xe2\x93\xad" +
+	"\xa7o\xf9\xe1\xc5\xc3\"\x083\xe9\x12\xaa\xb3\xd9\xd6\x8f" +
+	"\xee=\x09\xd7\xcf\xdb2,$\xdb%\x01\x96\x86\x7f\x8c" +
+	"\xf7\xb4\x9c\xfe\xe8\x93\xc3\x02<\xad\xb6\xa1\x9f\x8fh\xeb" +
+	"n\xfbt\xf4UwE\x9d\x16\xa0!k\xdbr\xd9\x9a" +
+	"\xdbwm\xdd\x93O\x1e\x96\x9f\xfe\x00K\x1e\x1b\x16\xf5" +
+	"\xe2\x91\x93+\x07N\xda\x0fZ\xd8\xad\x8a\x80]\x15\xcc" +
+	"\x9c\xbb74\xe9\xa7nj;\x90\x0f*\xb3\xf7\x1ez" +
+	"*\xaa\x0f1\x81\xc1\xf7\xf7/\xfe\x9d\xf5\xfa\x01 \x93" +
+	"P\xc8.f\xc4\xf6\xc0\xcb\xea\xee\x80\xa2\xee\x0eD\xd4" +
+	"\x91\xc0\x07\x80\xb9\xd1\x17\xb7\xb4y\xde}\xf4O\x82\x0f" +
+	"\xaf\x05\x99wO6\xed\xdbsc}\xf3_\x04\xbf\x9f" +
+	"\xb5W~\x959s\xc73\x0f\x8c\xbe-\x80\xf9Pp" +
+	":]y\xe1\xb3\x85\xe1\xb5\xef]t(o\xbdm\xdd" +
+	"\xba 3\xff\x8e \xf5\xef\x8d+\xef^S}\xd6\xc1" +
+	"C\x82\xd6\x91 \xc3\xec\xe3\xc7\xd6\xb5_vN\xdf;" +
+	"\xc2\xca\xbe`3]9\xb2\xf7\xba\xa7._\xf6\xe4;" +
+	"\x05\xbc\xb2-x\xaf\xba3H%\xb7\x07\x17H\xea\x0c" +
+	"Bye\xbd\xf5\xd6]S\xdfY\xfc\xd7q\xfe\xb3\x04" +
+	"\x9cL\xdeT\xa7\x12V'\x84ZslW\xc5s\xfb" +
+	"\xaf\x9a\xfc\x81P!M\x03\x84U\xc0\x0dT\xe0\xf0\x8e" +
+	"G\xa6\xbc\xf8\xe1\xe9\x1f\xba&\x1d$\xcc\xd8\xa5g\xbc" +
+	"Z\xf3\xdbs\xa6\xfdM\xcc\x9a\x9d\x84\xa5\xff0\xa1Q" +
+	"\xf8w\xdc\xf3\xcf+\xb6\xc8#\xf9@\xd3\xdan:b" +
+	"k\xc6\xd0\x13\x80\xb9\xcf\xee\x92\x96-m\xac\xfbLd" +
+	"\xb7\x10\x83wa\xf3\x13\xea\xd0\x8c\xbd\xa3b\x84\xd7\x84" +
+	"\xd8\xd6\x0d!FQ\xa7^\xbalv\xe5i\xff\x12\x05" +
+	"\x1e\x0f\xd9\xb5\xc7\x04\x06\xcf;\xd0\xb2&\xf3\xf4\x11!" +
+	"@\x87B\xcc\xee\xba\xf9;B\x87\xaf\xff\xf9\x97\x05P" +
+	"\x0e\x876\xab\xaf\x85\xa8\xe4\xee\xd0ZT\xb7\xab\x14\xca" +
+	"\xc3\x1bom\x9cr\xcd\xf9G\x0b\xa4\x07\xd5\xcd\xea\x10" +
+	"\x15Q\x1fW\x17\xa8\xfb\xd4s\x01r\xb7\xf6\xdf=\xba" +
+	"\xe0\xedo\x1e\x1b\xc3\xac\xaa\xcd\xac*\xb5\xea\\\xe9'" +
+	"\xfbNYy\xf31\x913T\x7f\x98R\x02\x09\xd3h" +
+	"\xf4\xdf|\xd5G\x93\xbf\xfbzN\xd4\xb0\"\xccR{" +
+	" \xdc\x02\xb3r\x1dz:\x99>KO\xa3Y\xcf\xfe" +
+	"m\x0e.6,=\x86\xa8M\x91\xbd\x00N\xca\"\xcf" +
+	"224\x1d$\xf23\x05\xdd2F~\x0a\xb9\x87\xae" +
+	"mPPr\x82\x854\xdc@\xe3}\x03]\xebSP" +
+	"v\xe8\x1e\xf9\xcdA\xcc% \x11]A\xb7\x9a\x91\xe7" +
+	".\xb9\x98\xae-V\xd0\xeb\xdcQ\xc8q!\xadtm" +
+	"\xb6\x12\\\xd1gZQ\x0c\xa6\xcddw\x14\x83f\x92" +
+	"\xfe\xcau\xa4\x92]f\xf7\x02\x03\xd0\xfd\x15\x1f\xf3\xab" +
+	"5\x01\x98\x88b\x0c\xd1\xc1A\xe68\xcc\x8f\xd7\x9b\xd9" +
+	"\x98\x99L\x1a\x9duK\x8cl\x9f\x92\xb0\xb2\x9aG\xf6" +
+	"\x00x\x10\x80\xf8/\x00\xd0\xaae\xd4\xa6H\x98\xe3\x82" +
+	"\x00\x80\x08\x12\xd2+\xa6\x98\xc2\xac\xa5w\x1bL[\xc2" +
+	"\xca\x02\x14\xcaP\xec\xeb\xb9m\x89\xbaXD\xcf\xe8\xbd" +
+	"\xd92\xbabL\x00\xb4\x13\x1c\xc3\xa6-\x01\xd0\xce\x90" +
+	"Q;[B\x82\xc8H\x83\xcc\xa4\xd66\xc8\xa8}[" +
+	"\xc2\\\"\xd5\xa1'b\xba\x05\xd8\x83\xd5 a5`" +
+	".c\xa4S1\xdd\xea\xa1\x1e\xf0o\xe5\xac[`X" +
+	"uKZlGDT\x1a\x81\xda\x82ZX\xc2H\xbf" +
+	"\x9e\xe83Jk\x9b\x1f\xaf\xefK\xa6\xcd\xa4\xe3\x83\xa0" +
+	"f\xba\xab&\x98\xd6\xad\x9e\xe3\xb6)\x8f\x98\xa8\xab\xd6" +
+	"\xd5\xa5,7\x06\x0aTI\x82A\x1dzq\xb7\xc4`" +
+	"w\x99]%\xa1rt\xc5-\xddjOv\xa5\x00h" +
+	")yP\xca]\xf1\xe3M\xda\xb67\xd6\xef\x04\xcd#" +
+	"ak\x1db5\xc0L\xfc\x01\xe6\xb8\xa8\xb7\xc6\xcc\xd6" +
+	"\xe85YK\xb7f$\xcc\xe5FM\xa7\x91\xed\xc8\x98" +
+	"i\xcbL%kR]5zr\xa0&\x99\xea4\x00" +
+	"@;\xd91\xed\xd7\x14\xaa\xad2j\xcf\x09\xe1~\x96" +
+	"~|JF\xedy\x09Q\x0a\xa3\x04@\xb6\xd1o\xcf" +
+	"\xc8\xa8\xed\x90\x90\xc8\x18F\x19\x80l\xa7\xf1zNF" +
+	"\xed%\x09\x89\xe7\xfa0z\x00\xc8N\xfa\xf1y\x19\xb5" +
+	"W%$^o\x18\xbd\x00d\x98~\xdc!\xa3\xb6G" +
+	"BR!\x85\xb1\x02\x80\xec\x9e\x03\xa0\xbd$\xa3\xb6w" +
+	"\\\x9c\x82=z\xb6\x07\xfd \xa1\x1f0\x985\xaf5" +
+	"\xb0\x12$\xac\x04\x8c\x98\xd4\x07\xf7Wv\x9e\x99\xe15" +
+	"\x13\xe94\xd2V\x0fz@B\x0f\xe0\xea\xdeT\xe7E" +
+	"f\xafQ\x1a\xe4\xa5s\xe3\xf5\x89Tw]Kll" +
+	"\x99\x8c\x8fh\x91\xa4\x980\xc1\xc6\x1cb\xe9\xce!b" +
+	"\xa5\xd1\xcc\xaa\x93Qk\x10\xa0\x9f1\xc7-?%c" +
+	"\xf4s\xc5\xab-\xbd\xfbB\xbd\xb7|=d\x8c\xdeT" +
+	"\xbfS\xd4_\xad\"\x14A\x0f\xd3\xc2i\x86\x0b\x88\xeb" +
+	"\xcb;\xcdL1\xee\x98\xeez\xe48\x94\x01\xd0\xce\x94" +
+	"Q\x9bUpr\xc6\xd0-#\xa6C$c$\xadl" +
+	"\x01\xf3I\xe3-*\x02\xe1\x9c\x09 \\\x9d\xcdt\xc4" +
+	"\x84CWwf\xadXYB\xa0\xf1\xeaH\xf5\xf6\x9a" +
+	"\x96\x8d\x80le\x8b\x0b\xf5%iXm\x94\xd0\x95\xa9" +
+	"\x18\x1f\xf8282\xf6\xfa/\x92\xcb\xb1\xa35\xd6^" +
+	"\xdfod\xb2f\xca\xa6A\xb9\x04\xd9;7Q^\xe8" +
+	"\x7f\xe0JzG:\x19V.\x0b\x0b\x90\x91\xc6y\xce" +
+	"\x89\xb2,)\xc7\x05R\x9e\xa8t\x1a\x85\xd2\x11\x98z" +
+	"\xa2\x8bD\x04\xb1\xd8M=\xc7\x05hu^\x8esL" +
+	"\xd9\xf4a a\xc9\xbb\xa47\xdb]\x9a5\x16\xa5\xba" +
+	"\xdb\x92Vf\xa0\x14\xffOb\xfcO\xd0\x07\xa8Mr" +
+	"\xf4\xeb4\x96\xdf\x93Q\xeb\x11`1\xe8\xa1W\xc9\xa8" +
+	"%$$R\x9e\xcdM*\xd9)\xa3v=es\xd9" +
+	"f\xf3U\xf4\xe352j7Ic\x19X\xb45h" +
+	"\xe9\xddY\x0c\x00\xc6dd\xdf\x02\x80\xc1N\xdd:\x9e" +
+	"\x9bz\xa2\xce\x85\xb6aer\x8ba\xdbct,O" +
+	"\xf5\xb1\xe2\x0c\x16\xcf\x9e1b1=\xa3\x94\xce\x9d\xa2" +
+	"\xa9#\xb0n\xa4+\x95\xe90J\xf7d\xae\xd5\x05\xd9" +
+	"^*\x99\x0b\xb2\xde\xe9\x9c\xe5\xf9q\x1a\xec:\xd67" +
+	"\xf3\xa9\x09\xf2\x91\x8bJ\xb0\x11$\xd5\x8b\xb4s\xe6}" +
+	";\xf2G\x0f9B\xbb\xe3\x11\xda9\xf3\x11\x04\xf2\xa1" +
+	"\x079T\x0b\x12\xd9G;g>#@\xfe\xd4\xa1\xf7" +
+	"\xb2D\xb6\xd1\xce\x99\x8f\x1e\x90\xbf\xa1\xc9P\xb3\xdd\xa9" +
+	"{\x9d\xc9\x01\xf2\xf1\x83\xd3\xa9W8\xef|\xe4/l" +
+	"rC\xad\xdd\xa9+\xce\xe4\x06\xf9\x9b\x96\x98\xf4\xbc\xcb" +
+	"\x15<\xc1y\xe5#\x9f:\x11\xed\x02\x90H\xbb\x12a" +
+	"\xadi\x14\x83\x093kEQ\xe9\xd0\xad(F\xd8\x9d" +
+	"\x13\xc5\x16\x9b]\xa2\x18\xb4\xff(i3\x19\xc5\x08\xcb" +
+	"\xaf\xe8\x98Nzl_\xeeT\xd6\\\x16\x89\x98.\x9b" +
+	"\x19\x8a\xf6D\x9cR[\x9cS\x94~=Q\xfe\x0e\xc9" +
+	"\x18Y\xc3M\xe6\x12\x97d\xd1s\xc6\xb0\xb0\x98\x8d%" +
+	"r\x8b>W\xca\xe4\xdf\xfcx=\x05\xd2)\xbeb\xd4" +
+	"V'\xe1j#ieL\xc3)\xedI\xeeP\x0c\x90" +
+	"~,w\xba\xe3f\xb5\xa3\xbb\x8d\xf6\xbc\xf3d\xd4b" +
+	"\x82\x9b\x8bi\x9d\x9d/\xa3v\x91\xc0E\x1a\xb5b\x91" +
+	"\x8c\xda2\x09sW\xebYc\\w\x1cI\xadL\x1a" +
+	"\x19\xe7\x06\xbfZ\xefXn$;\xcb\xd2\x8d\xdd\xa0\x94" +
+	"\xa1\x1b\xf7\x02/\xd6,\x89\x8c?a\xdf\xc5\xbb\xc8\xaf" +
+	"\x8c\xaf3\x15*\x85\xaf\x9bF\x05\xd1uHCY:" +
+	"7\xee\xbe\xb6\xf9\\\x12\xf9<\x82\x0c\xd5\xf2\xd76\x9f" +
+	"R!\x1f\xf3\x91{\x9a\xf9k\x9b\x8f%\x91\x8f\xf3\x9c" +
+	"\x1a\x96\x9d\xd9\x07\xf2!\xa0S\xc3\x1egX\x83|\xbc" +
+	"A4\xba\xd6F9\x83\x0f\x9e\x90\xcf\xa6\xc8lZ\xdf" +
+	"3\x15%\x91\xea\x8eb\x8b}KFQ\xb1\xf4nV" +
+	"\xc1\xf6_\xe60}a\xe7\x19\xbc\xa0\x92]\xd7[c" +
+	"\xed\xecvd\xae\xf3q\"\xf2q\x1d!s@\"^" +
+	"\x85\xdf\xd9Q\xd4\xaa\x11\xdd\xc9\x15\x80;z\x01p'" +
+	"\xe5\xc7\xf1\xae.\xf6\xc4\xabuC\xad\xe8\x89\x84\x1bf" +
+	"g\xf85.\xcc\xd2\xf8\x02-\xd2\xde\x16\xeb\xa7/\x10" +
+	"\xfa\xe9L*e9\x99\xd9\xab_3\x8f>\x80h\xe9" +
+	"\x94\xecO\xdc\x1e\x8e\xe7T\xa9\xe7w\xc6H'\x1c\xbe" +
+	"\xfbO\x00\x00\x00\xff\xffL\xdfhr"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
@@ -4902,16 +5354,20 @@ func init() {
 		0xd9d374ce4dd8e6a9,
 		0xdba8e30445acc3f4,
 		0xdf3a2e83d0d533b3,
+		0xe0f49db8c42c72b2,
+		0xe154e487144bf3c2,
 		0xe1dd2f0c85965fd6,
 		0xe275355b4989aaee,
 		0xe2b3585db47cd4f9,
 		0xe54de22194de748a,
+		0xe71560d8bc06c6fd,
 		0xe826e800c318a7c4,
 		0xe92935bf20cc2856,
 		0xed03ac5ef50453fb,
 		0xf3243256580294f3,
 		0xf4d42db113af3a4b,
 		0xf7250939585a23f6,
+		0xf9b772853fd93ea9,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
 		0xfd36e047f496768b,

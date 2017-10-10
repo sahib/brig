@@ -117,3 +117,34 @@ func (vcs *vcsHandler) Untag(call capnp.VCS_untag) error {
 		return fs.RemoveTag(tagName)
 	})
 }
+
+func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	rev, err := call.Params.Rev()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Reset(path, rev)
+	})
+}
+
+func (vcs *vcsHandler) Checkout(call capnp.VCS_checkout) error {
+	server.Ack(call.Options)
+
+	rev, err := call.Params.Rev()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+		return fs.Checkout(rev, call.Params.Force())
+	})
+}

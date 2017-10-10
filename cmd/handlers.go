@@ -254,10 +254,6 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleHistory(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
 func handleOffline(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
@@ -446,9 +442,35 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleReset(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	rev := "HEAD"
+
+	if len(ctx.Args()) > 1 {
+		rev = ctx.Args().Get(1)
+	}
+	fmt.Println("PATH REV", path, rev)
+
+	if err := ctl.Reset(path, rev); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("unpin: %v", err)}
+	}
+
+	return nil
+}
+
+func handleCheckout(ctx *cli.Context, ctl *client.Client) error {
+	rev := ctx.Args().First()
+
+	if err := ctl.Checkout(rev, ctx.Bool("force")); err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("checkout: %v", err)}
+	}
+
 	return nil
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
+	return nil
+}
+
+func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }

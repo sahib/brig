@@ -34,10 +34,12 @@ interface FS {
 }
 
 interface VCS {
-    log    @0 () -> (entries :List(LogEntry));
-    commit @1 (msg :Text);
-    tag    @2 (rev :Text, tagName :Text);
-    untag  @3 (tagName :Text);
+    log      @0 () -> (entries :List(LogEntry));
+    commit   @1 (msg :Text);
+    tag      @2 (rev :Text, tagName :Text);
+    untag    @3 (tagName :Text);
+    reset    @4 (path :Text, rev :Text);
+    checkout @5 (rev :Text, force :Bool);
 }
 
 struct ConfigPair {

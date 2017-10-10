@@ -155,14 +155,6 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "unpin",
-			Category:    repoGroup,
-			Usage:       "Unpin a file from this machine's local storage",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),
-			ArgsUsage:   "<file>",
-			Description: "Shortcut for brig pin -u",
-		},
-		cli.Command{
 			Name:        "net",
 			Category:    repoGroup,
 			Usage:       "Query and modify network status",
@@ -362,10 +354,24 @@ func RunCmdline(args []string) int {
 		cli.Command{
 			Name:        "reset",
 			Category:    wdirGroup,
-			Usage:       "Reset a file to the last known state or to a certain commit",
+			Usage:       "Reset a file to a certain version",
 			ArgsUsage:   "<file> [<commit>]",
-			Description: "Stage a specific file into the brig repository",
+			Description: "Reset a file to the last known state or to a certain commit",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
+		},
+		cli.Command{
+			Name:        "checkout",
+			Category:    wdirGroup,
+			Usage:       "Revert to a specific commit",
+			ArgsUsage:   "<commit> [--force]",
+			Description: "Make the staging commit equal to an old state",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCheckout, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "force,f",
+					Usage: "Remove directories recursively",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "rm",
