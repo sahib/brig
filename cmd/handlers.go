@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -148,11 +149,19 @@ func handleConfigList(cli *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("config list: %v", err)}
 	}
 
-	for key, val := range all {
+	// Display the output nicely sorted:
+	keys := []string{}
+	for key := range all {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
 		fmt.Printf(
 			"%s: %s\n",
 			colors.Colorize(key, colors.Green),
-			val,
+			all[key],
 		)
 	}
 	return nil
