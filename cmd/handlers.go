@@ -472,5 +472,21 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleHistory(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+
+	history, err := ctl.History(path)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("history: %v", err)}
+	}
+
+	for _, entry := range history {
+		fmt.Printf(
+			"%s %-15s %s\n",
+			colors.Colorize(entry.Ref.B58String()[:10], colors.Red),
+			colors.Colorize(entry.Change, colors.Yellow),
+			colors.Colorize(entry.Path, colors.Green),
+		)
+	}
+
 	return nil
 }

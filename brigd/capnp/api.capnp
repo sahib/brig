@@ -14,11 +14,22 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     modTime @6 :Text;
 }
 
-struct LogEntry $Go.doc("") {
+struct LogEntry $Go.doc("Single log entry") {
     hash @0 :Data;
     msg  @1 :Text;
     tags @2 :List(Text);
     date @3 :Text;
+}
+
+struct ConfigPair $Go.doc("Key/Value pair in the config") {
+    key @0 :Text;
+    val @1 :Text;
+}
+
+struct HistoryEntry $Go.doc("One History entry for a file") {
+    path   @0 :Text;
+    change @1 :Text;
+    ref    @2 :Data;
 }
 
 interface FS {
@@ -40,11 +51,7 @@ interface VCS {
     untag    @3 (tagName :Text);
     reset    @4 (path :Text, rev :Text);
     checkout @5 (rev :Text, force :Bool);
-}
-
-struct ConfigPair {
-    key @0 :Text;
-    val @1 :Text;
+    history  @6 (path :Text) -> (history :List(HistoryEntry));
 }
 
 interface Meta {

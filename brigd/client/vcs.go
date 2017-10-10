@@ -127,12 +127,66 @@ func (cl *Client) Reset(path, rev string) error {
 	return err
 }
 
-func (cl *Client) Checkout(path string, force bool) error {
+func (cl *Client) Checkout(rev string, force bool) error {
 	call := cl.api.Checkout(cl.ctx, func(p capnp.VCS_checkout_Params) error {
 		p.SetForce(force)
-		return p.SetRev(path)
+		return p.SetRev(rev)
 	})
 
 	_, err := call.Struct()
 	return err
+}
+
+type HistoryEntry struct {
+	Path   string
+	Change string
+	Ref    h.Hash
+}
+
+func (cl *Client) History(path string) ([]*HistoryEntry, error) {
+	call := cl.api.History(cl.ctx, func(p capnp.VCS_history_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	histList, err := result.History()
+	if err != nil {
+		return nil, err
+	}
+
+	results := []*HistoryEntry{}
+	for idx := 0; idx < histList.Len(); idx++ {
+		entry := histList.At(idx)
+		path, err := entry.Path()
+		if err != nil {
+			return nil, err
+		}
+
+		change, err := entry.Change()
+		if err != nil {
+			return nil, err
+		}
+
+		refRaw, err := entry.Ref()
+		if err != nil {
+			return nil, err
+		}
+
+		ref, err := h.Cast(refRaw)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &HistoryEntry{
+			Path:   path,
+			Change: change,
+			Ref:    ref,
+		})
+	}
+
+	return results, nil
 }

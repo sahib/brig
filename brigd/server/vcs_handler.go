@@ -148,3 +148,51 @@ func (vcs *vcsHandler) Checkout(call capnp.VCS_checkout) error {
 		return fs.Checkout(rev, call.Params.Force())
 	})
 }
+
+func (vcs *vcsHandler) History(call capnp.VCS_history) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+
+	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+		history, err := fs.History(path)
+		if err != nil {
+			return err
+		}
+
+		lst, err := capnp.NewHistoryEntry_List(seg, int32(len(history)))
+		if err != nil {
+			return err
+		}
+
+		for idx := 0; idx < len(history); idx++ {
+			entry, err := capnp.NewHistoryEntry(seg)
+			if err != nil {
+				return err
+			}
+
+			if err := entry.SetPath(history[idx].Path); err != nil {
+				return err
+			}
+
+			if err := entry.SetChange(history[idx].Change); err != nil {
+				return err
+			}
+
+			if err := entry.SetRef(history[idx].Ref); err != nil {
+				return err
+			}
+
+			if err := lst.Set(idx, entry); err != nil {
+				return err
+			}
+		}
+
+		return call.Results.SetHistory(lst)
+	})
+}
