@@ -89,7 +89,6 @@ func RunCmdline(args []string) int {
 		},
 	}
 
-	// Commands.
 	app.Commands = []cli.Command{
 		{
 			Name:        "init",
