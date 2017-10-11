@@ -46,14 +46,6 @@ func handleVersion(ctx *cli.Context) error {
 	return nil
 }
 
-func handleOpen(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
-func handleClose(ctx *cli.Context, ctl *client.Client) error {
-	return handleDaemonQuit(ctx, ctl)
-}
-
 func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
 	for i := 0; i < 100; i++ {
 		before := time.Now()
@@ -437,10 +429,6 @@ func handleIsPinned(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleSync(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
 func handleReset(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 	rev := "HEAD"
@@ -467,10 +455,6 @@ func handleCheckout(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleDiff(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
-
 func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 
@@ -488,5 +472,13 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		)
 	}
 
+	return nil
+}
+
+func handleSync(ctx *cli.Context, ctl *client.Client) error {
+	return nil
+}
+
+func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }

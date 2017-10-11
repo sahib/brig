@@ -107,21 +107,6 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "open",
-			Category:    repoGroup,
-			Usage:       "Open an encrypted repository",
-			ArgsUsage:   "[--password|-x]",
-			Description: "Open a closed (encrypted) brig repository by providing a password",
-			Action:      withDaemon(handleOpen, true),
-		},
-		cli.Command{
-			Name:        "close",
-			Category:    repoGroup,
-			Usage:       "Close an encrypted repository",
-			Description: "Encrypt all metadata in the repository and go offline",
-			Action:      withDaemon(handleClose, false),
-		},
-		cli.Command{
 			Name:        "sync",
 			Category:    repoGroup,
 			Usage:       "Sync with any partner in your remote list",
