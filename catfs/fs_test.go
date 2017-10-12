@@ -12,6 +12,7 @@ import (
 	c "github.com/disorganizer/brig/catfs/core"
 	ie "github.com/disorganizer/brig/catfs/errors"
 	"github.com/disorganizer/brig/catfs/mio"
+	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
 	"github.com/disorganizer/brig/catfs/mio/compress"
 	n "github.com/disorganizer/brig/catfs/nodes"
 	h "github.com/disorganizer/brig/util/hashlib"
@@ -170,7 +171,8 @@ func TestStage(t *testing.T) {
 	for idx, tc := range tcs {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
-				require.Nil(t, fs.Stage("/x", bytes.NewBuffer(tc)))
+				buf := chunkbuf.NewChunkBuffer(tc)
+				require.Nil(t, fs.Stage("/x", buf))
 
 				stream, err := fs.Cat("/x")
 				require.Nil(t, err)
@@ -180,6 +182,28 @@ func TestStage(t *testing.T) {
 
 				require.Equal(t, data, tc)
 				require.Nil(t, stream.Close())
+
+				file, err := fs.lkr.LookupFile("/x")
+				require.Nil(t, err)
+
+				key := file.Key()
+				oldKey := make([]byte, len(key))
+				copy(oldKey, key)
+
+				// Also insert some more data to modify an existing file.
+				nextData := []byte{6, 6, 6, 6, 6, 6}
+				require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer((nextData))))
+				stream, err = fs.Cat("/x")
+				require.Nil(t, err)
+				data, err = ioutil.ReadAll(stream)
+				require.Nil(t, err)
+				require.Equal(t, data, nextData)
+				require.Nil(t, stream.Close())
+
+				// Check that the key did not change during modifying an existing file.
+				file, err = fs.lkr.LookupFile("/x")
+				require.Nil(t, err)
+				require.Equal(t, file.Key(), oldKey)
 			})
 		})
 	}
@@ -188,11 +212,11 @@ func TestStage(t *testing.T) {
 func TestHistory(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1})))
+		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{1})))
 		require.Nil(t, fs.MakeCommit("1"))
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{2})))
+		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{2})))
 		require.Nil(t, fs.MakeCommit("2"))
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{3})))
+		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{3})))
 		require.Nil(t, fs.MakeCommit("3"))
 
 		hist, err := fs.History("/x")
@@ -236,11 +260,11 @@ func TestReset(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
 
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1})))
+		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{1})))
 		require.Nil(t, fs.MakeCommit("1"))
 
 		// Modify on stage:
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{2})))
+		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{2})))
 		require.Nil(t, fs.Reset("/x", "HEAD"))
 
 		data := mustReadPath(t, fs, "/x")
@@ -320,12 +344,14 @@ func TestExportImport(t *testing.T) {
 		require.Nil(t, fs.MakeCommit("hello world"))
 
 		// Add a single file:
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{1, 2, 3})))
+		buf := chunkbuf.NewChunkBuffer([]byte{1, 2, 3})
+		require.Nil(t, fs.Stage("/x", buf))
 		require.Nil(t, fs.MakeCommit("touchy touchy"))
 
 		// Stage something to see if this will also be exported
 		// (it most defintely should)
-		require.Nil(t, fs.Stage("/x", bytes.NewBuffer([]byte{3, 2, 1})))
+		buf = chunkbuf.NewChunkBuffer([]byte{3, 2, 1})
+		require.Nil(t, fs.Stage("/x", buf))
 
 		mem := &bytes.Buffer{}
 		require.Nil(t, fs.Export(mem))

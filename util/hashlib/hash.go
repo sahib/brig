@@ -3,6 +3,7 @@ package hashlib
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strconv"
 	"testing"
 
@@ -187,4 +188,57 @@ func (h Hash) ShortB58() string {
 	}
 
 	return full
+}
+
+type HashWriter struct {
+	hash Hash
+}
+
+func NewHashWriter() *HashWriter {
+	size := multihash.DefaultLengths[multihash.BLAKE2B_MAX]
+	hash, err := multihash.Encode(make([]byte, size), multihash.BLAKE2B_MAX)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to encode empty hash: %v", err))
+	}
+
+	return &HashWriter{hash: hash}
+}
+
+func (hw *HashWriter) Hash() Hash {
+	return hw.hash
+}
+
+func (hw *HashWriter) Write(buf []byte) (int, error) {
+	fmt.Println("....")
+
+	if err := hw.hash.Xor(Sum(buf)); err != nil {
+		return 0, err
+	}
+
+	return len(buf), nil
+}
+
+func (hw *HashWriter) ReadFrom(r io.Reader) (int64, error) {
+	buf := make([]byte, 4*1024)
+	read := int64(0)
+
+	for {
+		n, err := r.Read(buf)
+		read += int64(n)
+		if err != nil && err != io.EOF {
+			return read, err
+		}
+
+		// TODO: This can be probably optimized.
+		if err := hw.hash.Xor(Sum(buf[:n])); err != nil {
+			fmt.Println("INCONSISTENT", err)
+			return read, err
+		}
+
+		if err == io.EOF {
+			return read, nil
+		}
+	}
+
+	return read, nil
 }

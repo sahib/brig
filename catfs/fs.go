@@ -2,10 +2,11 @@ package catfs
 
 import (
 	"bytes"
-	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	"github.com/disorganizer/brig/catfs/vcs"
 	"github.com/disorganizer/brig/util"
 	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/disorganizer/brig/util/security"
 )
 
 // TODO: I hate to duplicate that struct here.
@@ -420,25 +422,48 @@ func prefixSlash(s string) string {
 	return s
 }
 
-func (fs *FS) Stage(path string, r io.Reader) error {
+func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
 	path = prefixSlash(path)
 
-	// Control how many bytes are written to the encryption layer:
-	sizeAcc := &util.SizeAccumulator{}
-	teeR := io.TeeReader(r, sizeAcc)
+	// See if we already have such a file.
+	// If not we gonna need to generate new key for it
+	// based on the content hash.
+	var key []byte
 
-	key := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		return err
+	if file, err := fs.lkr.LookupFile(path); err != nil {
+		if !ie.IsNoSuchFileError(err) {
+			return err
+		}
+
+		hw := h.NewHashWriter()
+		size, err := hw.ReadFrom(r)
+		if err != nil {
+			return err
+		}
+
+		if _, err := r.Seek(0, os.SEEK_SET); err != nil {
+			return err
+		}
+
+		salt := make([]byte, 4)
+		binary.PutVarint(salt, size)
+		key = security.DeriveKey([]byte(hw.Hash()), salt, 32)
+	} else {
+		key = file.Key()
 	}
 
-	stream, err := mio.NewInStream(teeR, key, fs.cfg.compressAlgo)
+	stream, err := mio.NewInStream(r, key, fs.cfg.compressAlgo)
 	if err != nil {
 		return err
 	}
+
+	// Get the size directrly from the number of bytes written
+	// to the backend and do not rely on external sources.
+	sizeAcc := &util.SizeAccumulator{}
+	stream = io.TeeReader(stream, sizeAcc)
 
 	hash, err := fs.bk.Add(stream)
 	if err != nil {

@@ -118,8 +118,8 @@ func (tnl *ecdhTunnel) Exchange() error {
 	}
 
 	// Transform the secret to a usable 32 byte key:
-	key := Scrypt(secret, secret[:16], 32)
-	inv := Scrypt(secret, secret[16:], aes.BlockSize)
+	key := DeriveKey(secret, secret[:16], 32)
+	inv := DeriveKey(secret, secret[16:], aes.BlockSize)
 
 	rw, err := WrapReadWriter(inv, key, tnl.ReadWriter)
 	if err != nil {

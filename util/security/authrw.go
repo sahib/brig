@@ -158,8 +158,8 @@ func (ath *AuthReadWriter) runAuth() error {
 		keySource[i] = nonceFromBob[i] ^ rA[i]
 	}
 
-	key := Scrypt(keySource, keySource[:nonceSize/2], 32)
-	inv := Scrypt(keySource, keySource[nonceSize/2:], aes.BlockSize)
+	key := DeriveKey(keySource, keySource[:nonceSize/2], 32)
+	inv := DeriveKey(keySource, keySource[nonceSize/2:], aes.BlockSize)
 
 	rw, err := WrapReadWriter(inv, key, ath.rwc)
 	if err != nil {
