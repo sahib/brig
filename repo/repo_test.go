@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/catfs"
+	"github.com/disorganizer/brig/backend/memory"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,17 +13,18 @@ func TestRepoInit(t *testing.T) {
 	require.Nil(t, os.RemoveAll(testDir))
 
 	// Directory does not exist yet:
-	err := Init(testDir, "alice", DummyBackend{})
+	err := Init(testDir, "alice", "memory")
 	require.NotNil(t, err)
 
 	require.Nil(t, os.Mkdir(testDir, 0700))
-	err = Init(testDir, "alice", DummyBackend{})
+	err = Init(testDir, "alice", "memory")
 	require.Nil(t, err)
 
-	repo, err := Open(testDir, catfs.NewMemFsBackend())
+	repo, err := Open(testDir)
 	require.Nil(t, err)
 
-	fs, err := repo.OwnFS()
+	bk := memory.NewMemoryBackend()
+	fs, err := repo.OwnFS(bk)
 	require.Nil(t, err)
 
 	// TODO: Assert a bit more that fs is working.

@@ -1,8 +1,6 @@
 package db
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -267,93 +265,15 @@ func (db *DiskDatabase) Glob(prefix []string) ([][]string, error) {
 	return results, nil
 }
 
-// Export writes all key/valeus into a gzipped .tar that is written to `w`.
+// Export writes all key/values into a gzipped .tar that is written to `w`.
 func (db *DiskDatabase) Export(w io.Writer) error {
-	gzw := gzip.NewWriter(w)
-	gzw.Name = fmt.Sprintf("brigmeta-%s.gz", time.Now().Format(time.RFC3339))
-	gzw.Comment = "compressed brig metadata database"
-	gzw.ModTime = time.Now()
-
-	tw := tar.NewWriter(gzw)
-	walker := func(path string, info os.FileInfo, err error) error {
-		if !info.Mode().IsRegular() {
-			return nil
-		}
-
-		hdr := &tar.Header{
-			Name: path[len(db.basePath):],
-			Mode: 0600,
-			Size: info.Size(),
-		}
-
-		if werr := tw.WriteHeader(hdr); err != nil {
-			return werr
-		}
-
-		fd, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-
-		defer util.Closer(fd)
-
-		if _, err := io.Copy(tw, fd); err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	if err := filepath.Walk(db.basePath, walker); err != nil {
-		return err
-	}
-
-	if err := tw.Close(); err != nil {
-		return err
-	}
-
-	return gzw.Close()
+	archiveName := fmt.Sprintf("brigmeta-%s.gz", time.Now().Format(time.RFC3339))
+	return util.Tar(db.basePath, archiveName, w)
 }
 
 // Import a gzipped tar from `r` into the current database.
 func (db *DiskDatabase) Import(r io.Reader) error {
-	gzr, err := gzip.NewReader(r)
-	if err != nil {
-		return err
-	}
-
-	tr := tar.NewReader(gzr)
-	for {
-		hdr, err := tr.Next()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-
-		// Create the necessary directory if necessary.
-		fullPath := filepath.Join(db.basePath, hdr.Name)
-		if oerr := os.MkdirAll(filepath.Dir(fullPath), 0700); err != nil {
-			return oerr
-		}
-
-		// Overwrite the file in the target directory
-		fd, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-		if err != nil {
-			return err
-		}
-
-		if _, err := io.Copy(fd, tr); err != nil {
-			return fd.Close()
-		}
-
-		if err := fd.Close(); err != nil {
-			return err
-		}
-	}
-
-	return gzr.Close()
+	return util.Untar(r, db.basePath)
 }
 
 // Close the database

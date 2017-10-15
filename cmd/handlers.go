@@ -482,3 +482,7 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
+
+func handleLock(ctx *cli.Context, ctl *client.Client) error {
+	return nil
+}

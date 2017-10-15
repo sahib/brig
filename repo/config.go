@@ -1,6 +1,13 @@
 package repo
 
-import "github.com/spf13/viper"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/viper"
+
+	yml "gopkg.in/yaml.v2"
+)
 
 var Defaults = []struct {
 	Name  string
@@ -9,7 +16,6 @@ var Defaults = []struct {
 	{"daemon.port", 6666},
 	{"sync.ignore_removed", false},
 	{"sync.conflict_strategy", "marker"},
-	{"data.backend", "memory"},
 	{"data.ipfs.swarmport", 4001},
 	{"data.ipfs.path", ""},
 	{"data.compress.algo", "snappy"},
@@ -21,4 +27,53 @@ func setConfigDefaults(config *viper.Viper) error {
 	}
 
 	return nil
+}
+
+func recursiveSet(defaults map[string]interface{}, key []string, val interface{}) {
+	if len(key) > 1 {
+		sub, ok := defaults[key[0]]
+		if !ok {
+			sub = make(map[string]interface{})
+			defaults[key[0]] = sub
+		}
+
+		subMap, ok := sub.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		recursiveSet(subMap, key[1:], val)
+		return
+	}
+
+	defaults[key[0]] = val
+}
+
+func buildConfigDefault() []byte {
+	defaults := make(map[string]interface{})
+	for _, entry := range Defaults {
+		key := strings.Split(entry.Name, ".")
+		recursiveSet(defaults, key, entry.Value)
+	}
+
+	data, err := yml.Marshal(defaults)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to convert default config to yml: %v", err))
+	}
+
+	return data
+}
+
+func buildMetaDefault(backendName string) []byte {
+	data, err := yml.Marshal(map[string]interface{}{
+		"data": map[string]string{
+			"backend": backendName,
+		},
+	})
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to convert default meta to yml: %v", err))
+	}
+
+	return data
 }

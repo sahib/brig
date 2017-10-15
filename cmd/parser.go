@@ -113,6 +113,18 @@ func RunCmdline(args []string) int {
 			Action:      withDaemon(handleSync, true),
 		},
 		cli.Command{
+			Name:     "lock",
+			Category: repoGroup,
+			Usage:    "Lock or unlock the repository content (usually done implicitly)",
+			Action:   withDaemon(handleLock, true),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "unlock,u",
+					Usage: "Unlock a locked repository",
+				},
+			},
+		},
+		cli.Command{
 			Name:        "history",
 			Category:    repoGroup,
 			Usage:       "Show the history of the given brig file",

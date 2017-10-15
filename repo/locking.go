@@ -1,0 +1,201 @@
+package repo
+
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/catfs/mio/encrypt"
+	"github.com/disorganizer/brig/util"
+	"github.com/disorganizer/brig/util/security"
+)
+
+const (
+	LockPathSuffix = ".locked"
+)
+
+func lockFile(path string, key []byte) error {
+	lockedPath := path + LockPathSuffix
+	dstFd, err := os.OpenFile(lockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(dstFd)
+
+	srcFd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(srcFd)
+
+	encW, err := encrypt.NewWriter(dstFd, key)
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(encW, srcFd); err != nil {
+		return err
+	}
+
+	return encW.Close()
+}
+
+func lockDirectory(path string, key []byte) error {
+	lockedPath := path + LockPathSuffix
+	fd, err := os.OpenFile(lockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(fd)
+
+	encW, err := encrypt.NewWriter(fd, key)
+	if err != nil {
+		return err
+	}
+
+	archiveName := fmt.Sprintf("encrypted content of %s", lockedPath)
+	if err := util.Tar(path, archiveName, encW); err != nil {
+		return err
+	}
+
+	return encW.Close()
+}
+
+func Lock(root, user, password string, excludePatterns []string) error {
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return err
+	}
+
+	// user is not the perfect salt, but pretty much the only available one here.
+	key := security.DeriveKey([]byte(password), []byte(user), 32)
+
+	for _, info := range files {
+		path := filepath.Join(root, info.Name())
+		if strings.HasSuffix(path, LockPathSuffix) {
+			log.Warningf("%s already contains a locked file: %s; Ignoring", root, path)
+			continue
+		}
+
+		for _, pattern := range excludePatterns {
+			matched, err := filepath.Match(pattern, path)
+
+			// Should only happen for mal-formend patterns.
+			if err != nil {
+				return err
+			}
+
+			// Ignore the file if it matched:
+			if matched {
+				continue
+			}
+		}
+
+		switch {
+		case info.Mode().IsDir():
+			if err := lockDirectory(path, key); err != nil {
+				return err
+			}
+		case info.Mode().IsRegular():
+			if err := lockFile(path, key); err != nil {
+				return err
+			}
+		default:
+			log.Warningf("Ignoring non-file `%s`", path)
+			continue
+		}
+
+		// File was succesfully locked, remove the source.
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func unlockFile(path string, key []byte) error {
+	srcFd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(srcFd)
+
+	unlockedPath := path[:len(path)-len(LockPathSuffix)]
+	dstFd, err := os.OpenFile(unlockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(dstFd)
+
+	encR, err := encrypt.NewReader(srcFd, key)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(dstFd, encR)
+	return err
+}
+
+func unlockDirectory(path string, key []byte) error {
+	unlockedPath := path[:len(path)-len(LockPathSuffix)]
+	fd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(fd)
+
+	encR, err := encrypt.NewReader(fd, key)
+	if err != nil {
+		return err
+	}
+
+	return util.Untar(encR, unlockedPath)
+}
+
+func Unlock(root, user, password string) error {
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return err
+	}
+
+	key := security.DeriveKey([]byte(password), []byte(user), 32)
+
+	for _, info := range files {
+		path := filepath.Join(root, info.Name())
+		if !strings.HasSuffix(path, LockPathSuffix) {
+			log.Warningf("%s was not locked: %s; Ignoring", path)
+			return nil
+		}
+
+		switch {
+		case info.Mode().IsDir():
+			if err := unlockDirectory(path, key); err != nil {
+				return err
+			}
+		case info.Mode().IsRegular():
+			if err := unlockFile(path, key); err != nil {
+				return err
+			}
+		default:
+			log.Warningf("Ignoring non-file `%s`", path)
+			continue
+		}
+
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

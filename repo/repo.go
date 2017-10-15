@@ -11,12 +11,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/catfs"
+	"github.com/disorganizer/brig/util"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
-)
-
-const (
-	repoConfigTemplate = "data:\n    backend: %s"
 )
 
 // Repository provides access to the file structure of a single repository.
@@ -46,6 +43,7 @@ type Repository struct {
 
 	// Config interface
 	Config *viper.Viper
+	meta   *viper.Viper
 
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
@@ -111,9 +109,15 @@ func Init(baseFolder, owner, backendName string) error {
 		return e.Wrapf(err, "Failed touch remotes.yml")
 	}
 
-	configPath := filepath.Join(baseFolder, "config.yml")
-	initConfig := []byte(fmt.Sprintf(repoConfigTemplate, backendName))
-	if err := ioutil.WriteFile(configPath, initConfig, 0644); err != nil {
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	metaDefault := buildMetaDefault(backendName)
+	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
+		return err
+	}
+
+	cfgPath := filepath.Join(baseFolder, "config.yml")
+	cfgDefaults := buildConfigDefault()
+	if err := ioutil.WriteFile(cfgPath, cfgDefaults, 0644); err != nil {
 		return err
 	}
 
@@ -140,16 +144,29 @@ func Open(baseFolder string) (*Repository, error) {
 		return nil, err
 	}
 
-	// Load the remote list:
-	remotePath := filepath.Join(baseFolder, "remotes.yml")
-	fd, err := os.Open(remotePath)
+	meta := viper.New()
+
+	metaFd, err := os.Open(filepath.Join(baseFolder, "meta.yml"))
 	if err != nil {
 		return nil, err
 	}
 
-	defer fd.Close()
+	if err := meta.ReadConfig(metaFd); err != nil {
+		return nil, err
+	}
 
-	remotes, err := NewRemotes(fd)
+	defer util.Closer(metaFd)
+
+	// Load the remote list:
+	remotePath := filepath.Join(baseFolder, "remotes.yml")
+	remoteFd, err := os.Open(remotePath)
+	if err != nil {
+		return nil, err
+	}
+
+	defer remoteFd.Close()
+
+	remotes, err := NewRemotes(remoteFd)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +194,7 @@ func (rp *Repository) LoadBackend() (backend.Backend, error) {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 
-	backendName := rp.Config.GetString("data.backend")
+	backendName := rp.meta.GetString("data.backend")
 	log.Infof("Loading backend `%s`", backendName)
 
 	realBackend := backend.FromName(backendName)
@@ -200,6 +217,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return fs, nil
 	}
 
+	// No fs was created yet for this owner. Create it.
 	// Read the fs config from the main config:
 	fsCfg := &catfs.Config{}
 	fsCfg.IO.CompressAlgo = rp.Config.GetString(
