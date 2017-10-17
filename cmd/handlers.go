@@ -89,7 +89,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		brigPath = "."
 	}
 
-	server, err := server.BootServer(brigPath, guessPort())
+	server, err := server.BootServer(brigPath, "klaus", guessPort())
 	if err != nil {
 		return ExitCode{
 			UnknownError,

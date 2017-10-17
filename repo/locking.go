@@ -68,7 +68,26 @@ func lockDirectory(path string, key []byte) error {
 	return encW.Close()
 }
 
-func Lock(root, user, password string, excludePatterns []string) error {
+func isExcluded(path string, excludePatterns []string) bool {
+	for _, pattern := range excludePatterns {
+		matched, err := filepath.Match(pattern, filepath.Base(path))
+
+		// Should only happen for mal-formend patterns.
+		if err != nil {
+			log.Warningf("BUG: Failed to compile exclude pattern: %v: %v", pattern, err)
+			continue
+		}
+
+		// Ignore the file if it matched:
+		if matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+func LockRepo(root, user, password string, excludePatterns []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -84,18 +103,8 @@ func Lock(root, user, password string, excludePatterns []string) error {
 			continue
 		}
 
-		for _, pattern := range excludePatterns {
-			matched, err := filepath.Match(pattern, path)
-
-			// Should only happen for mal-formend patterns.
-			if err != nil {
-				return err
-			}
-
-			// Ignore the file if it matched:
-			if matched {
-				continue
-			}
+		if isExcluded(path, excludePatterns) {
+			continue
 		}
 
 		switch {
@@ -129,6 +138,11 @@ func unlockFile(path string, key []byte) error {
 
 	defer util.Closer(srcFd)
 
+	encR, err := encrypt.NewReader(srcFd, key)
+	if err != nil {
+		return err
+	}
+
 	unlockedPath := path[:len(path)-len(LockPathSuffix)]
 	dstFd, err := os.OpenFile(unlockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
@@ -137,13 +151,14 @@ func unlockFile(path string, key []byte) error {
 
 	defer util.Closer(dstFd)
 
-	encR, err := encrypt.NewReader(srcFd, key)
+	_, err = io.Copy(dstFd, encR)
 	if err != nil {
+		// Do not leave a half-finished file behind if copy failed.
+		os.Remove(unlockedPath)
 		return err
 	}
 
-	_, err = io.Copy(dstFd, encR)
-	return err
+	return nil
 }
 
 func unlockDirectory(path string, key []byte) error {
@@ -163,7 +178,7 @@ func unlockDirectory(path string, key []byte) error {
 	return util.Untar(encR, unlockedPath)
 }
 
-func Unlock(root, user, password string) error {
+func UnlockRepo(root, user, password string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -174,8 +189,8 @@ func Unlock(root, user, password string) error {
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
 		if !strings.HasSuffix(path, LockPathSuffix) {
-			log.Warningf("%s was not locked: %s; Ignoring", path)
-			return nil
+			log.Warningf("%s was not locked. Ignoring.", path)
+			continue
 		}
 
 		switch {

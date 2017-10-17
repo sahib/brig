@@ -15,7 +15,14 @@ func (mh *metaHandler) Quit(call capnp.Meta_quit) error {
 	server.Ack(call.Options)
 	log.Info("Shutting down brigd due to QUIT command")
 	mh.base.QuitCh <- struct{}{}
-	return nil
+
+	log.Infof("Trying to lock repository...")
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	return repo.Close(mh.base.password)
 }
 
 func (mh *metaHandler) Ping(call capnp.Meta_ping) error {

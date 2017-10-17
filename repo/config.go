@@ -64,10 +64,13 @@ func buildConfigDefault() []byte {
 	return data
 }
 
-func buildMetaDefault(backendName string) []byte {
+func buildMetaDefault(backendName, owner string) []byte {
 	data, err := yml.Marshal(map[string]interface{}{
 		"data": map[string]string{
 			"backend": backendName,
+		},
+		"repo": map[string]string{
+			"owner": owner,
 		},
 	})
 

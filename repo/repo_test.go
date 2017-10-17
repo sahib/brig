@@ -20,7 +20,7 @@ func TestRepoInit(t *testing.T) {
 	err = Init(testDir, "alice", "memory")
 	require.Nil(t, err)
 
-	repo, err := Open(testDir)
+	repo, err := Open(testDir, "klaus")
 	require.Nil(t, err)
 
 	bk := memory.NewMemoryBackend()
@@ -30,6 +30,6 @@ func TestRepoInit(t *testing.T) {
 	// TODO: Assert a bit more that fs is working.
 	require.NotNil(t, fs)
 
-	require.Nil(t, repo.Close())
+	require.Nil(t, repo.Close("klaus"))
 	require.Nil(t, fs.Close())
 }

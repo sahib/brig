@@ -11,7 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/catfs"
-	"github.com/disorganizer/brig/util"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -20,6 +19,7 @@ import (
 //
 // Informal: This file structure currently looks like this:
 // config.yml
+// meta.yml
 // remotes.yml
 // data/
 //    <backend_name>
@@ -110,7 +110,7 @@ func Init(baseFolder, owner, backendName string) error {
 	}
 
 	metaPath := filepath.Join(baseFolder, "meta.yml")
-	metaDefault := buildMetaDefault(backendName)
+	metaDefault := buildMetaDefault(backendName, owner)
 	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
 		return err
 	}
@@ -118,11 +118,6 @@ func Init(baseFolder, owner, backendName string) error {
 	cfgPath := filepath.Join(baseFolder, "config.yml")
 	cfgDefaults := buildConfigDefault()
 	if err := ioutil.WriteFile(cfgPath, cfgDefaults, 0644); err != nil {
-		return err
-	}
-
-	whoamiPath := filepath.Join(baseFolder, "whoami")
-	if err := ioutil.WriteFile(whoamiPath, []byte(owner), 0644); err != nil {
 		return err
 	}
 
@@ -134,7 +129,19 @@ func Init(baseFolder, owner, backendName string) error {
 	return nil
 }
 
-func Open(baseFolder string) (*Repository, error) {
+func Open(baseFolder, password string) (*Repository, error) {
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	meta := viper.New()
+	meta.SetConfigFile(metaPath)
+	if err := meta.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	owner := meta.GetString("repo.owner")
+	if err := UnlockRepo(baseFolder, owner, password); err != nil {
+		return nil, err
+	}
+
 	// Make sure to load the config:
 	config := viper.New()
 	config.AddConfigPath(baseFolder)
@@ -143,19 +150,6 @@ func Open(baseFolder string) (*Repository, error) {
 	if err := config.ReadInConfig(); err != nil {
 		return nil, err
 	}
-
-	meta := viper.New()
-
-	metaFd, err := os.Open(filepath.Join(baseFolder, "meta.yml"))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := meta.ReadConfig(metaFd); err != nil {
-		return nil, err
-	}
-
-	defer util.Closer(metaFd)
 
 	// Load the remote list:
 	remotePath := filepath.Join(baseFolder, "remotes.yml")
@@ -171,23 +165,20 @@ func Open(baseFolder string) (*Repository, error) {
 		return nil, err
 	}
 
-	whoamiPath := filepath.Join(baseFolder, "whoami")
-	owner, err := ioutil.ReadFile(whoamiPath)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Repository{
 		BaseFolder: baseFolder,
+		meta:       meta,
 		Config:     config,
 		Remotes:    remotes,
-		Owner:      string(owner),
+		Owner:      owner,
 		fsMap:      make(map[string]*catfs.FS),
 	}, nil
 }
 
-func (rp *Repository) Close() error {
-	return nil
+func (rp *Repository) Close(password string) error {
+	// Do not encrypt "data" (already contains encrypred streams) and
+	// also do not encrypt meta.yml (contains e.g. owner info)
+	return LockRepo(rp.BaseFolder, rp.Owner, password, []string{"data", "meta.yml"})
 }
 
 func (rp *Repository) LoadBackend() (backend.Backend, error) {

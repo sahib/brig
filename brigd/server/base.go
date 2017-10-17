@@ -13,6 +13,12 @@ type base struct {
 	mu       sync.Mutex
 	basePath string
 
+	// password used to lock/unlock the repo.
+	// This is currently stored until end of the daemon,
+	// which is not optimal. Measures needs to be taken
+	// to secure access to Password here.
+	password string
+
 	repo    *repo.Repository
 	backend backend.Backend
 
@@ -29,7 +35,7 @@ func (b *base) Repo() (*repo.Repository, error) {
 		return b.repo, nil
 	}
 
-	rp, err := repo.Open(b.basePath)
+	rp, err := repo.Open(b.basePath, b.password)
 	if err != nil {
 		log.Warningf("Failed to load repository at `%s`: %v", b.basePath, err)
 		return nil, err
@@ -61,9 +67,10 @@ func (b *base) Backend() (backend.Backend, error) {
 	return bk, nil
 }
 
-func newBase(basePath string) (*base, error) {
+func newBase(basePath string, password string) (*base, error) {
 	return &base{
 		basePath: basePath,
+		password: password,
 		QuitCh:   make(chan struct{}, 1),
 	}, nil
 }

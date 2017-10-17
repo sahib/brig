@@ -105,9 +105,9 @@ func (sv *Server) Serve() error {
 	return nil
 }
 
-func BootServer(basePath string, port int) (*Server, error) {
+func BootServer(basePath, password string, port int) (*Server, error) {
 	ctx := context.Background()
-	base, err := newBase(basePath)
+	base, err := newBase(basePath, password)
 	if err != nil {
 		return nil, err
 	}
