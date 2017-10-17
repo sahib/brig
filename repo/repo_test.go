@@ -23,13 +23,16 @@ func TestRepoInit(t *testing.T) {
 	repo, err := Open(testDir, "klaus")
 	require.Nil(t, err)
 
+	_, err = repo.LoadBackend()
+	require.Nil(t, err)
+
 	bk := memory.NewMemoryBackend()
 	fs, err := repo.OwnFS(bk)
 	require.Nil(t, err)
 
 	// TODO: Assert a bit more that fs is working.
 	require.NotNil(t, fs)
+	require.Nil(t, fs.Close())
 
 	require.Nil(t, repo.Close("klaus"))
-	require.Nil(t, fs.Close())
 }

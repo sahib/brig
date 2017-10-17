@@ -5,13 +5,19 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/disorganizer/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 func mustCreate(t *testing.T, path string, size int64) []byte {
+	if err := os.MkdirAll(filepath.Dir(path), 0744); err != nil {
+		t.Fatalf("Failed to create necessary directories for %v: %v", path, err)
+	}
+
 	fd, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		t.Fatalf("Failed to touch `%s`: %v", path, err)
@@ -128,5 +134,51 @@ func TestLockFile(t *testing.T) {
 			t.Fatalf("walk after unlock failed: %v", err)
 		}
 
+	})
+}
+
+func TestLockDirectory(t *testing.T) {
+	withTempDir(t, func(dir string) {
+		mustCreate(t, filepath.Join(dir, "a/b/x"), 1024)
+		mustCreate(t, filepath.Join(dir, "a/b/empty_file"), 0)
+		mustCreate(t, filepath.Join(dir, "a/x"), 1024)
+		mustCreate(t, filepath.Join(dir, "x"), 1024)
+
+		require.Nil(t, os.MkdirAll(filepath.Join(dir, "empty"), 0744))
+
+		key := make([]byte, 32)
+		require.Nil(t, lockDirectory(dir, key))
+		require.Nil(t, os.RemoveAll(dir))
+		require.Nil(t, unlockDirectory(dir+".tgz.locked", key))
+
+		paths := []string{}
+		walker := func(path string, child os.FileInfo, err error) error {
+			require.Nil(t, err)
+			path = path[len(dir):]
+			if len(path) > 0 {
+				paths = append(paths, path)
+			}
+
+			return nil
+		}
+
+		require.Nil(t, filepath.Walk(dir, walker))
+
+		sort.Strings(paths)
+
+		// Note that /empty vanished after untarring.
+		// For now we do not support tarring empty directories.
+		require.Equal(
+			t,
+			[]string{
+				"/a",
+				"/a/b",
+				"/a/b/empty_file",
+				"/a/b/x",
+				"/a/x",
+				"/x",
+			},
+			paths,
+		)
 	})
 }

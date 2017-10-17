@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	LockDirSuffix  = ".tgz"
 	LockPathSuffix = ".locked"
 )
 
@@ -47,7 +48,7 @@ func lockFile(path string, key []byte) error {
 }
 
 func lockDirectory(path string, key []byte) error {
-	lockedPath := path + LockPathSuffix
+	lockedPath := path + LockDirSuffix + LockPathSuffix
 	fd, err := os.OpenFile(lockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -162,7 +163,7 @@ func unlockFile(path string, key []byte) error {
 }
 
 func unlockDirectory(path string, key []byte) error {
-	unlockedPath := path[:len(path)-len(LockPathSuffix)]
+	unlockedPath := path[:len(path)-len(LockDirSuffix)-len(LockPathSuffix)]
 	fd, err := os.Open(path)
 	if err != nil {
 		return err
@@ -188,22 +189,18 @@ func UnlockRepo(root, user, password string) error {
 
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
-		if !strings.HasSuffix(path, LockPathSuffix) {
-			log.Warningf("%s was not locked. Ignoring.", path)
-			continue
-		}
 
 		switch {
-		case info.Mode().IsDir():
+		case strings.HasSuffix(path, LockDirSuffix+LockPathSuffix):
 			if err := unlockDirectory(path, key); err != nil {
 				return err
 			}
-		case info.Mode().IsRegular():
+		case strings.HasSuffix(path, LockPathSuffix):
 			if err := unlockFile(path, key); err != nil {
 				return err
 			}
 		default:
-			log.Warningf("Ignoring non-file `%s`", path)
+			log.Warningf("%s was not locked. Ignoring.", path)
 			continue
 		}
 

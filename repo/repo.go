@@ -23,12 +23,12 @@ import (
 // remotes.yml
 // data/
 //    <backend_name>
-//        (backend specific)
+//        (data-backend specific)
 // metadata/
 //    <name_1>
-//        (backend specific)
+//        (fs-backend specific)
 //    <name_2>
-//        (backend specific)
+//        (fs-backend specific)
 type Repository struct {
 	mu sync.Mutex
 
@@ -126,7 +126,12 @@ func Init(baseFolder, owner, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
-	return nil
+	return LockRepo(
+		baseFolder,
+		owner,
+		"klaus",
+		[]string{"data", "meta.yml"},
+	)
 }
 
 func Open(baseFolder, password string) (*Repository, error) {
@@ -228,7 +233,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		Hash: nil,
 	}
 
-	fsDbPath := filepath.Join(rp.BaseFolder, "data", owner)
+	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
 	fs, err := catfs.NewFilesystem(bk, fsDbPath, &person, fsCfg)
 	if err != nil {
 		return nil, err
