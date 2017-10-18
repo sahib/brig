@@ -15,6 +15,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	// Do not encrypt "data" (already contains encrypred streams) and
+	// also do not encrypt meta.yml (contains e.g. owner info for startup)
+	excludedFromLock = []string{"meta.yml", "data"}
+)
+
 // Repository provides access to the file structure of a single repository.
 //
 // Informal: This file structure currently looks like this:
@@ -126,12 +132,7 @@ func Init(baseFolder, owner, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
-	return LockRepo(
-		baseFolder,
-		owner,
-		"klaus",
-		[]string{"data", "meta.yml"},
-	)
+	return nil
 }
 
 func Open(baseFolder, password string) (*Repository, error) {
@@ -143,7 +144,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}
 
 	owner := meta.GetString("repo.owner")
-	if err := UnlockRepo(baseFolder, owner, password); err != nil {
+	if err := UnlockRepo(baseFolder, owner, password, excludedFromLock); err != nil {
 		return nil, err
 	}
 
@@ -181,9 +182,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 }
 
 func (rp *Repository) Close(password string) error {
-	// Do not encrypt "data" (already contains encrypred streams) and
-	// also do not encrypt meta.yml (contains e.g. owner info)
-	return LockRepo(rp.BaseFolder, rp.Owner, password, []string{"data", "meta.yml"})
+	return LockRepo(rp.BaseFolder, rp.Owner, password, excludedFromLock)
 }
 
 func (rp *Repository) LoadBackend() (backend.Backend, error) {

@@ -179,7 +179,7 @@ func unlockDirectory(path string, key []byte) error {
 	return util.Untar(encR, unlockedPath)
 }
 
-func UnlockRepo(root, user, password string) error {
+func UnlockRepo(root, user, password string, excludePatterns []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -200,7 +200,9 @@ func UnlockRepo(root, user, password string) error {
 				return err
 			}
 		default:
-			log.Warningf("%s was not locked. Ignoring.", path)
+			if !isExcluded(path, excludePatterns) {
+				log.Warningf("%s was not locked. Ignoring.", path)
+			}
 			continue
 		}
 

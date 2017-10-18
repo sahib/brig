@@ -66,7 +66,8 @@ func TestLockFile(t *testing.T) {
 		// Should be overwritten.
 		mustCreate(t, filepath.Join(dir, "z.locked"), 2)
 
-		if err := LockRepo(dir, "karl", "klaus", []string{"meta.yml"}); err != nil {
+		excludes := []string{"meta.yml"}
+		if err := LockRepo(dir, "karl", "klaus", excludes); err != nil {
 			t.Fatalf("Failed to lock directory: %v", err)
 		}
 
@@ -87,16 +88,16 @@ func TestLockFile(t *testing.T) {
 		}
 
 		// Try with a wrong password:
-		if err := UnlockRepo(dir, "karl", "klausi"); err == nil {
+		if err := UnlockRepo(dir, "karl", "klausi", excludes); err == nil {
 			t.Fatalf("unlock worked without correct password")
 		}
 
 		// Try with a wrong user:
-		if err := UnlockRepo(dir, "karol", "klaus"); err == nil {
+		if err := UnlockRepo(dir, "karol", "klaus", excludes); err == nil {
 			t.Fatalf("unlock worked without correct user")
 		}
 
-		if err := UnlockRepo(dir, "karl", "klaus"); err != nil {
+		if err := UnlockRepo(dir, "karl", "klaus", excludes); err != nil {
 			t.Fatalf("unlock failed: %v", err)
 		}
 
