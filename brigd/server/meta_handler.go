@@ -43,12 +43,17 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 		return err
 	}
 
+	password, err := call.Params.Password()
+	if err != nil {
+		return err
+	}
+
 	owner, err := call.Params.Owner()
 	if err != nil {
 		return err
 	}
 
-	return repo.Init(initFolder, owner, backendName)
+	return repo.Init(initFolder, owner, password, backendName)
 }
 
 func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {

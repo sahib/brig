@@ -78,7 +78,7 @@ func isEmpty(name string) (bool, error) {
 	return false, err // Either not empty or error, suits both cases
 }
 
-func Init(baseFolder, owner, backendName string) error {
+func Init(baseFolder, owner, password, backendName string) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
@@ -132,7 +132,7 @@ func Init(baseFolder, owner, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
-	return nil
+	return LockRepo(baseFolder, owner, password, excludedFromLock)
 }
 
 func Open(baseFolder, password string) (*Repository, error) {

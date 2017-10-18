@@ -57,7 +57,7 @@ interface VCS {
 interface Meta {
     quit @0 ();
     ping @1 () -> (reply :Text);
-    init @2 (basePath :Text, owner :Text, backend :Text);
+    init @2 (basePath :Text, owner :Text, backend :Text, password :Text);
 
     configGet @3 (key :Text) -> (value :Text);
     configSet @4 (key :Text, value :Text);

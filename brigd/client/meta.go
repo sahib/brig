@@ -26,9 +26,13 @@ func (cl *Client) Quit() error {
 	return err
 }
 
-func (cl *Client) Init(path, owner, backend string) error {
+func (cl *Client) Init(path, owner, password, backend string) error {
 	call := cl.api.Init(cl.ctx, func(p capnp.Meta_init_Params) error {
 		if err := p.SetOwner(owner); err != nil {
+			return err
+		}
+
+		if err := p.SetPassword(password); err != nil {
 			return err
 		}
 

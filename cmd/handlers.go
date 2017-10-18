@@ -13,6 +13,7 @@ import (
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/brigd/server"
+	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/disorganizer/brig/util/colors"
 	"github.com/dustin/go-humanize"
 )
@@ -89,7 +90,25 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		brigPath = "."
 	}
 
-	server, err := server.BootServer(brigPath, "klaus", guessPort())
+	useNoPass := ctx.Bool("no-pass")
+	password := ctx.String("password")
+	if password == "" && !useNoPass {
+		// TODO: This should be done in init.
+		var err error
+		password, err = pwd.PromptPassword()
+		if err != nil {
+			msg := fmt.Sprintf("Failed to read password: %v", err)
+			fmt.Println(msg)
+			return ExitCode{UnknownError, msg}
+		}
+	}
+
+	if useNoPass {
+		// Currently we simply set a default password in this case.
+		password = "nopassword"
+	}
+
+	server, err := server.BootServer(brigPath, password, guessPort())
 	if err != nil {
 		return ExitCode{
 			UnknownError,
@@ -127,7 +146,26 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	folder := guessRepoFolder()
 	backend := ctx.String("backend")
 
-	if err := ctl.Init(folder, owner, backend); err != nil {
+	password := ctx.String("password")
+	useNoPass := ctx.Bool("no-pass")
+
+	if password == "" && !useNoPass {
+		// TODO: This should be done in init.
+		pwdBytes, err := pwd.PromptNewPassword(25)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to read password: %v", err)
+			fmt.Println(msg)
+			return ExitCode{UnknownError, msg}
+		}
+
+		password = string(pwdBytes)
+	}
+
+	if useNoPass {
+		password = "nopassword"
+	}
+
+	if err := ctl.Init(folder, owner, password, backend); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
