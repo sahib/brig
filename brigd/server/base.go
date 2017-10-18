@@ -35,7 +35,7 @@ func repoIsInitialized(path string) error {
 		return err
 	}
 
-	if len(data) > 0 {
+	if len(data) == 0 {
 		return fmt.Errorf("meta.yml is empty")
 	}
 
