@@ -1,6 +1,10 @@
 package server
 
 import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -25,6 +29,19 @@ type base struct {
 	QuitCh chan struct{}
 }
 
+func repoIsInitialized(path string) error {
+	data, err := ioutil.ReadFile(filepath.Join(path, "meta.yml"))
+	if err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		return fmt.Errorf("meta.yml is empty")
+	}
+
+	return nil
+}
+
 // Repo lazily-loads the repository on disk.
 // On the next call it will be returned directly.
 func (b *base) Repo() (*repo.Repository, error) {
@@ -33,6 +50,17 @@ func (b *base) Repo() (*repo.Repository, error) {
 
 	if b.repo != nil {
 		return b.repo, nil
+	}
+
+	// Sanity check, so that we do not call a repo command without
+	// an initialized repo. Error early for a meaningful message here.
+	if err := repoIsInitialized(b.basePath); err != nil {
+		msg := fmt.Sprintf(
+			"Repo does not look it is initialized: %v (did you brig init?)",
+			err,
+		)
+		log.Warning(msg)
+		return nil, errors.New(msg)
 	}
 
 	rp, err := repo.Open(b.basePath, b.password)

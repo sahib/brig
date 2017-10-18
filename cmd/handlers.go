@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/brigd/client"
@@ -91,6 +92,20 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	}
 
 	useNoPass := ctx.Bool("no-pass")
+
+	// If the repository was not initialized yet,
+	// we should not ask for a password, since init
+	// will already ask for one. If we recognize the repo
+	// wrongly as uninitialized, then it won't unlock without
+	// a password though.
+	if !repoIsInitialized(brigPath) {
+		useNoPass = true
+		log.Infof(
+			"No repository found at %s. Use `brig init <user>` to create one",
+			brigPath,
+		)
+	}
+
 	password := ctx.String("password")
 	if password == "" && !useNoPass {
 		// TODO: This should be done in init.
@@ -103,8 +118,8 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		}
 	}
 
+	// Currently we simply set a default password if no password is used.
 	if useNoPass {
-		// Currently we simply set a default password in this case.
 		password = "nopassword"
 	}
 

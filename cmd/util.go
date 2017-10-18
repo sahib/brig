@@ -3,8 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -178,4 +180,13 @@ func guessPort() int {
 	// Guess the default port.
 	log.Warning("BRIG_PORT not given, assuming :6666")
 	return 6666
+}
+
+func repoIsInitialized(path string) bool {
+	data, err := ioutil.ReadFile(filepath.Join(path, "meta.yml"))
+	if err != nil {
+		return false
+	}
+
+	return len(data) > 0
 }
