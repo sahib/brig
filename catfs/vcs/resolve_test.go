@@ -49,7 +49,9 @@ func TestHasConflicts(t *testing.T) {
 			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 				expect := tc.setup(t, lkrSrc, lkrDst)
 
-				syncer := newResolver(lkrSrc, lkrDst, nil)
+				syncer, err := newResolver(lkrSrc, lkrDst, nil, nil, nil)
+				require.Nil(t, err)
+
 				if err := syncer.cacheLastCommonMerge(); err != nil {
 					t.Fatalf("Failed to find last common merge.")
 				}

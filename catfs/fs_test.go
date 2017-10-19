@@ -425,7 +425,7 @@ func TestMakeDiff(t *testing.T) {
 			require.Nil(t, fsb.Remove("/y"))
 			require.Nil(t, fsb.MakeCommit("before diff"))
 
-			diff, err := fsa.MakeDiff(fsb)
+			diff, err := fsa.MakeDiff(fsb, "curr", "curr")
 			require.Nil(t, err)
 
 			require.Equal(t, diff.Added, []StatInfo{*nodeToStat(fsbA)})

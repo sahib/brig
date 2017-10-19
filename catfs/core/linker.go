@@ -794,8 +794,40 @@ func (lkr *Linker) LookupNode(repoPath string) (n.Node, error) {
 	return root.Lookup(lkr, repoPath)
 }
 
+// TODO: Write tests for the At() variants.
+func (lkr *Linker) LookupNodeAt(cmt *n.Commit, repoPath string) (n.Node, error) {
+	root, err := lkr.DirectoryByHash(cmt.Root())
+	if err != nil {
+		return nil, err
+	}
+
+	if root == nil {
+		return nil, nil
+	}
+
+	return root.Lookup(lkr, repoPath)
+}
+
 func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 	node, err := lkr.LookupNode(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if node == nil {
+		return nil, nil
+	}
+
+	snode, ok := node.(n.ModNode)
+	if !ok {
+		return nil, ie.ErrBadNode
+	}
+
+	return snode, nil
+}
+
+func (lkr *Linker) LookupModNodeAt(cmt *n.Commit, repoPath string) (n.ModNode, error) {
+	node, err := lkr.LookupNodeAt(cmt, repoPath)
 	if err != nil {
 		return nil, err
 	}

@@ -78,13 +78,17 @@ func (df *Diff) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) err
 //
 // Internally it works like Sync() but does not modify anything and just
 // merely records what the algorithm decided to do.
-func MakeDiff(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) (*Diff, error) {
+func MakeDiff(lkrSrc, lkrDst *c.Linker, headSrc, headDst *n.Commit, cfg *SyncConfig) (*Diff, error) {
 	if cfg == nil {
 		cfg = DefaultSyncConfig
 	}
 
 	diff := &Diff{cfg: cfg}
-	rsv := newResolver(lkrSrc, lkrDst, diff)
+	rsv, err := newResolver(lkrSrc, lkrDst, headSrc, headDst, diff)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := rsv.resolve(); err != nil {
 		return nil, err
 	}

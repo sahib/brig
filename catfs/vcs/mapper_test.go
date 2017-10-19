@@ -398,7 +398,9 @@ func TestMapper(t *testing.T) {
 					return nil
 				}
 
-				mapper := NewMapper(lkrSrc, lkrDst, srcRoot)
+				mapper, err := NewMapper(lkrSrc, lkrDst, nil, nil, srcRoot)
+				require.Nil(t, err)
+
 				if err := mapper.Map(diffFn); err != nil {
 					t.Fatalf("mapping failed: %v", err)
 				}

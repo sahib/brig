@@ -70,6 +70,10 @@ type resolver struct {
 	lkrSrc *c.Linker
 	lkrDst *c.Linker
 
+	// What points should be resolved
+	dstHead *n.Commit
+	srcHead *n.Commit
+
 	// cached attributes:
 	dstMergeCmt *n.Commit
 	srcMergeCmt *n.Commit
@@ -78,12 +82,29 @@ type resolver struct {
 	exec executor
 }
 
-func newResolver(lkrSrc, lkrDst *c.Linker, exec executor) *resolver {
-	return &resolver{
-		lkrSrc: lkrSrc,
-		lkrDst: lkrDst,
-		exec:   exec,
+func newResolver(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, exec executor) (*resolver, error) {
+	var err error
+	if srcHead == nil {
+		srcHead, err = lkrSrc.Head()
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	if dstHead == nil {
+		dstHead, err = lkrDst.Head()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &resolver{
+		lkrSrc:  lkrSrc,
+		lkrDst:  lkrDst,
+		srcHead: srcHead,
+		dstHead: dstHead,
+		exec:    exec,
+	}, nil
 }
 
 func (rv *resolver) resolve() error {
@@ -96,17 +117,11 @@ func (rv *resolver) resolve() error {
 		return e.Wrapf(err, "Error while finding last common merge")
 	}
 
-	srcHead, err := rv.lkrSrc.Head()
+	mapper, err := NewMapper(rv.lkrSrc, rv.lkrDst, rv.srcHead, rv.dstHead, srcRoot)
 	if err != nil {
 		return err
 	}
 
-	srcOwner, err := rv.lkrSrc.Owner()
-	if err != nil {
-		return err
-	}
-
-	mapper := NewMapper(rv.lkrSrc, rv.lkrDst, srcRoot)
 	mappings := []MapPair{}
 
 	err = mapper.Map(func(pair MapPair) error {
@@ -124,23 +139,6 @@ func (rv *resolver) resolve() error {
 		}
 	}
 
-	wasModified, err := rv.lkrDst.HaveStagedChanges()
-	if err != nil {
-		return err
-	}
-
-	// If something was changed, we should set the merge marker.
-	if wasModified {
-		// If something was changed, remember that we merged with src.
-		// This avoids merging conflicting files a second time in the next resolve().
-		if err := rv.lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
-			return err
-		}
-
-		message := fmt.Sprintf("Merge with %s", srcOwner.ID())
-		return rv.lkrDst.MakeCommit(srcOwner, message)
-	}
-
 	return nil
 }
 
@@ -150,24 +148,21 @@ func (rv *resolver) cacheLastCommonMerge() error {
 		return err
 	}
 
-	dstHead, err := rv.lkrDst.Head()
-	if err != nil {
-		return err
-	}
+	currHead := rv.dstHead
 
-	for {
-		with, srcRef := dstHead.MergeMarker()
+	for currHead != nil {
+		with, srcRef := currHead.MergeMarker()
 		if with != nil && with.Equal(srcOwner) {
 			srcHead, err := rv.lkrSrc.CommitByHash(srcRef)
 			if err != nil {
 				return err
 			}
 
-			rv.dstMergeCmt = dstHead
+			rv.dstMergeCmt = currHead
 			rv.srcMergeCmt = srcHead
 		}
 
-		prevHeadNode, err := dstHead.Parent(rv.lkrDst)
+		prevHeadNode, err := currHead.Parent(rv.lkrDst)
 		if err != nil {
 			return err
 		}
@@ -181,7 +176,7 @@ func (rv *resolver) cacheLastCommonMerge() error {
 			return ie.ErrBadNode
 		}
 
-		dstHead = newDstHead
+		currHead = newDstHead
 	}
 
 	return nil
@@ -191,22 +186,12 @@ func (rv *resolver) cacheLastCommonMerge() error {
 // have the same hash.  In the best case, both have compatible changes and can
 // be merged, otherwise a user defined conflict strategy has to be applied.
 func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
-	srcHead, err := rv.lkrSrc.Head()
+	srcHist, err := History(rv.lkrSrc, src, rv.srcHead, rv.srcMergeCmt)
 	if err != nil {
 		return false, 0, 0, err
 	}
 
-	dstHead, err := rv.lkrDst.Head()
-	if err != nil {
-		return false, 0, 0, err
-	}
-
-	srcHist, err := History(rv.lkrSrc, src, srcHead, rv.srcMergeCmt)
-	if err != nil {
-		return false, 0, 0, err
-	}
-
-	dstHist, err := History(rv.lkrDst, dst, dstHead, rv.dstMergeCmt)
+	dstHist, err := History(rv.lkrDst, dst, rv.dstHead, rv.dstMergeCmt)
 	if err != nil {
 		return false, 0, 0, err
 	}

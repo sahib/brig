@@ -606,11 +606,21 @@ func (fs *FS) Sync(remote *FS) error {
 	return vcs.Sync(remote.lkr, fs.lkr, &fs.cfg.sync)
 }
 
-func (fs *FS) MakeDiff(remote *FS) (*Diff, error) {
+func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, &fs.cfg.sync)
+	srcHead, err := parseRev(remote.lkr, headRevRemote)
+	if err != nil {
+		return nil, err
+	}
+
+	dstHead, err := parseRev(fs.lkr, headRevOwn)
+	if err != nil {
+		return nil, err
+	}
+
+	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, srcHead, dstHead, &fs.cfg.sync)
 	if err != nil {
 		return nil, err
 	}

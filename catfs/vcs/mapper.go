@@ -28,6 +28,8 @@ type MapPair struct {
 type Mapper struct {
 	lkrSrc, lkrDst *c.Linker
 	srcRoot        n.Node
+	srcHead        *n.Commit
+	dstHead        *n.Commit
 	fn             func(pair MapPair) error
 	visited        map[string]n.Node
 }
@@ -41,7 +43,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Remember that we visited this node.
 	ma.visited[srcCurr.Path()] = srcCurr
 
-	dstCurr, err := ma.lkrDst.LookupNode(dstFilePath)
+	dstCurr, err := ma.lkrDst.LookupNodeAt(ma.dstHead, dstFilePath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
@@ -91,7 +93,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		})
 	case n.NodeTypeGhost:
 		// It's still possible that the file was moved on our side.
-		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, dstCurr)
+		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurr)
 		if err != nil {
 			return err
 		}
@@ -119,7 +121,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 	}
 
 	ma.visited[srcCurr.Path()] = srcCurr
-	dstCurrNd, err := ma.lkrDst.LookupModNode(dstPath)
+	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
@@ -136,7 +138,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 	// Special case: The node might have been moved on dst's side.
 	// We might notice this, if dst type is a ghost.
 	if dstCurrNd.Type() == n.NodeTypeGhost {
-		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, dstCurrNd)
+		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurrNd)
 		if err != nil {
 			return err
 		}
@@ -150,7 +152,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 			})
 		}
 
-		localBackCheck, err := ma.lkrSrc.LookupNode(aliveDstCurr.Path())
+		localBackCheck, err := ma.lkrSrc.LookupNodeAt(ma.srcHead, aliveDstCurr.Path())
 		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
@@ -227,7 +229,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 }
 
 // ghostToAlive receives a `nd` and tries to find
-func (ma *Mapper) ghostToAlive(lkr *c.Linker, nd n.Node) (n.ModNode, error) {
+func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModNode, error) {
 	partnerNd, moveDir, err := lkr.MoveEntryPoint(nd)
 	if err != nil {
 		return nil, err
@@ -262,7 +264,7 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, nd n.Node) (n.ModNode, error) {
 		return nil, nil
 	}
 
-	reacheable, err := lkr.LookupNode(mostRecent.Path())
+	reacheable, err := lkr.LookupNodeAt(head, mostRecent.Path())
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +300,7 @@ func (ma *Mapper) handleGhosts() error {
 			return nil
 		}
 
-		aliveSrcNd, err := ma.ghostToAlive(ma.lkrSrc, srcNd)
+		aliveSrcNd, err := ma.ghostToAlive(ma.lkrSrc, ma.srcHead, srcNd)
 		if err != nil {
 			return err
 		}
@@ -308,7 +310,7 @@ func (ma *Mapper) handleGhosts() error {
 			// This node *might* have been removed on the remote side.
 			// Try to see if we have a node at this path, the next step
 			// of sync then needs to decide if the node needs to be removed.
-			dstNd, err := ma.lkrDst.LookupNode(srcNd.Path())
+			dstNd, err := ma.lkrDst.LookupNodeAt(ma.dstHead, srcNd.Path())
 			if err != nil && !ie.IsNoSuchFileError(err) {
 				return err
 			}
@@ -332,7 +334,7 @@ func (ma *Mapper) handleGhosts() error {
 
 		// At this point we know that the ghost related to a moved file.
 		// Check if we have a file at the same place.
-		dstNd, err := ma.lkrDst.LookupNode(aliveSrcNd.Path())
+		dstNd, err := ma.lkrDst.LookupNodeAt(ma.dstHead, aliveSrcNd.Path())
 		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
@@ -344,14 +346,14 @@ func (ma *Mapper) handleGhosts() error {
 			return nil
 		}
 
-		dstRefNd, err := ma.lkrDst.LookupNode(srcNd.Path())
+		dstRefNd, err := ma.lkrDst.LookupNodeAt(ma.dstHead, srcNd.Path())
 		if err != nil && !ie.IsNoSuchFileError(err) {
 			return err
 		}
 
 		if dstRefNd != nil {
 			if dstRefNd.Type() == n.NodeTypeGhost {
-				aliveOrig, err := ma.ghostToAlive(ma.lkrDst, dstRefNd)
+				aliveOrig, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstRefNd)
 				if err != nil {
 					return err
 				}
@@ -421,13 +423,31 @@ func (ma *Mapper) handleGhosts() error {
 	return nil
 }
 
-func NewMapper(lkrSrc, lkrDst *c.Linker, srcRoot n.Node) *Mapper {
+func NewMapper(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, srcRoot n.Node) (*Mapper, error) {
+	var err error
+
+	if srcHead == nil {
+		srcHead, err = lkrSrc.Head()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if dstHead == nil {
+		dstHead, err = lkrDst.Head()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Mapper{
 		lkrSrc:  lkrSrc,
 		lkrDst:  lkrDst,
+		srcHead: srcHead,
+		dstHead: dstHead,
 		srcRoot: srcRoot,
 		visited: make(map[string]n.Node),
-	}
+	}, nil
 }
 
 // Diff calls `fn` for each pairing that was found. Equal files and

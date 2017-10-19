@@ -214,5 +214,42 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 		lkrDst: lkrDst,
 	}
 
-	return newResolver(lkrSrc, lkrDst, syncer).resolve()
+	resolver, err := newResolver(lkrSrc, lkrDst, nil, nil, syncer)
+	if err != nil {
+		return err
+	}
+
+	if err := resolver.resolve(); err != nil {
+		return err
+	}
+
+	wasModified, err := lkrDst.HaveStagedChanges()
+	if err != nil {
+		return err
+	}
+
+	// If something was changed, we should set the merge marker
+	// and also create a new commit.
+	if wasModified {
+		srcOwner, err := lkrSrc.Owner()
+		if err != nil {
+			return err
+		}
+
+		srcHead, err := lkrSrc.Head()
+		if err != nil {
+			return err
+		}
+
+		// If something was changed, remember that we merged with src.
+		// This avoids merging conflicting files a second time in the next resolve().
+		if err := lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
+			return err
+		}
+
+		message := fmt.Sprintf("Merge with %s", srcOwner.ID())
+		return lkrDst.MakeCommit(srcOwner, message)
+	}
+
+	return nil
 }
