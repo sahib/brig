@@ -121,3 +121,22 @@ func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
 
 	return fn(fs)
 }
+
+func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	bk, err := b.Backend()
+	if err != nil {
+		return err
+	}
+
+	fs, err := rp.FS(owner, bk)
+	if err != nil {
+		return err
+	}
+
+	return fn(fs)
+}

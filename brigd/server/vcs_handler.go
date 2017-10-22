@@ -4,7 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
-	capnplib "zombiezen.com/go/capnproto2"
+	cplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
 
@@ -48,7 +48,7 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 				return err
 			}
 
-			tagList, err := capnplib.NewTextList(seg, int32(len(entry.Tags)))
+			tagList, err := cplib.NewTextList(seg, int32(len(entry.Tags)))
 			if err != nil {
 				return err
 			}
@@ -194,5 +194,152 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 		}
 
 		return call.Results.SetHistory(lst)
+	})
+}
+
+func fillInfoLst(seg *cplib.Segment, infos []catfs.StatInfo) (*capnp.StatInfo_List, error) {
+	lst, err := capnp.NewStatInfo_List(seg, int32(len(infos)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, info := range infos {
+		capInfo, err := statToCapnp(&info, seg)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := lst.Set(idx, *capInfo); err != nil {
+			return nil, err
+		}
+	}
+
+	return &lst, nil
+}
+
+func fillDiffPairLst(seg *cplib.Segment, pairs []catfs.DiffPair) (*capnp.DiffPair_List, error) {
+	capLst, err := capnp.NewDiffPair_List(seg, int32(len(pairs)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, pair := range pairs {
+		capSrcInfo, err := statToCapnp(&pair.Src, seg)
+		if err != nil {
+			return nil, err
+		}
+
+		capDstInfo, err := statToCapnp(&pair.Dst, seg)
+		if err != nil {
+			return nil, err
+		}
+
+		capPair, err := capnp.NewDiffPair(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := capPair.SetSrc(*capSrcInfo); err != nil {
+			return nil, err
+		}
+
+		if err := capPair.SetDst(*capDstInfo); err != nil {
+			return nil, err
+		}
+
+		if err := capLst.Set(idx, capPair); err != nil {
+			return nil, err
+		}
+	}
+
+	return &capLst, nil
+}
+
+func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) {
+	capDiff, err := capnp.NewDiff(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	addedLst, err := fillInfoLst(seg, diff.Added)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetAdded(*addedLst); err != nil {
+		return nil, err
+	}
+
+	removedLst, err := fillInfoLst(seg, diff.Removed)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetRemoved(*removedLst); err != nil {
+		return nil, err
+	}
+
+	ignoredLst, err := fillInfoLst(seg, diff.Ignored)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetIgnored(*ignoredLst); err != nil {
+		return nil, err
+	}
+
+	mergedLst, err := fillDiffPairLst(seg, diff.Merged)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetMerged(*mergedLst); err != nil {
+		return nil, err
+	}
+
+	conflictLst, err := fillDiffPairLst(seg, diff.Conflict)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetConflict(*conflictLst); err != nil {
+		return nil, err
+	}
+
+	return &capDiff, nil
+}
+
+func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
+	server.Ack(call.Options)
+
+	remoteOwner, err := call.Params.RemoteOwner()
+	if err != nil {
+		return err
+	}
+
+	headRevOwn, err := call.Params.HeadRevOwn()
+	if err != nil {
+		return err
+	}
+
+	headRevRemote, err := call.Params.HeadRevRemote()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withOwnFs(func(ownFs *catfs.FS) error {
+		return vcs.base.withRemoteFs(remoteOwner, func(remoteFs *catfs.FS) error {
+			diff, err := ownFs.MakeDiff(remoteFs, headRevOwn, headRevRemote)
+			if err != nil {
+				return err
+			}
+
+			capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
+			if err != nil {
+				return err
+			}
+
+			return call.Results.SetDiff(*capDiff)
+		})
 	})
 }

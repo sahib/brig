@@ -469,6 +469,291 @@ func (p HistoryEntry_Promise) Struct() (HistoryEntry, error) {
 	return HistoryEntry{s}, err
 }
 
+type DiffPair struct{ capnp.Struct }
+
+// DiffPair_TypeID is the unique identifier for the type DiffPair.
+const DiffPair_TypeID = 0xf8551f83bb42e152
+
+func NewDiffPair(s *capnp.Segment) (DiffPair, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return DiffPair{st}, err
+}
+
+func NewRootDiffPair(s *capnp.Segment) (DiffPair, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	return DiffPair{st}, err
+}
+
+func ReadRootDiffPair(msg *capnp.Message) (DiffPair, error) {
+	root, err := msg.RootPtr()
+	return DiffPair{root.Struct()}, err
+}
+
+func (s DiffPair) String() string {
+	str, _ := text.Marshal(0xf8551f83bb42e152, s.Struct)
+	return str
+}
+
+func (s DiffPair) Src() (StatInfo, error) {
+	p, err := s.Struct.Ptr(0)
+	return StatInfo{Struct: p.Struct()}, err
+}
+
+func (s DiffPair) HasSrc() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s DiffPair) SetSrc(v StatInfo) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewSrc sets the src field to a newly
+// allocated StatInfo struct, preferring placement in s's segment.
+func (s DiffPair) NewSrc() (StatInfo, error) {
+	ss, err := NewStatInfo(s.Struct.Segment())
+	if err != nil {
+		return StatInfo{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+func (s DiffPair) Dst() (StatInfo, error) {
+	p, err := s.Struct.Ptr(1)
+	return StatInfo{Struct: p.Struct()}, err
+}
+
+func (s DiffPair) HasDst() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s DiffPair) SetDst(v StatInfo) error {
+	return s.Struct.SetPtr(1, v.Struct.ToPtr())
+}
+
+// NewDst sets the dst field to a newly
+// allocated StatInfo struct, preferring placement in s's segment.
+func (s DiffPair) NewDst() (StatInfo, error) {
+	ss, err := NewStatInfo(s.Struct.Segment())
+	if err != nil {
+		return StatInfo{}, err
+	}
+	err = s.Struct.SetPtr(1, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// DiffPair_List is a list of DiffPair.
+type DiffPair_List struct{ capnp.List }
+
+// NewDiffPair creates a new list of DiffPair.
+func NewDiffPair_List(s *capnp.Segment, sz int32) (DiffPair_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	return DiffPair_List{l}, err
+}
+
+func (s DiffPair_List) At(i int) DiffPair { return DiffPair{s.List.Struct(i)} }
+
+func (s DiffPair_List) Set(i int, v DiffPair) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s DiffPair_List) String() string {
+	str, _ := text.MarshalList(0xf8551f83bb42e152, s.List)
+	return str
+}
+
+// DiffPair_Promise is a wrapper for a DiffPair promised by a client call.
+type DiffPair_Promise struct{ *capnp.Pipeline }
+
+func (p DiffPair_Promise) Struct() (DiffPair, error) {
+	s, err := p.Pipeline.Struct()
+	return DiffPair{s}, err
+}
+
+func (p DiffPair_Promise) Src() StatInfo_Promise {
+	return StatInfo_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+func (p DiffPair_Promise) Dst() StatInfo_Promise {
+	return StatInfo_Promise{Pipeline: p.Pipeline.GetPipeline(1)}
+}
+
+type Diff struct{ capnp.Struct }
+
+// Diff_TypeID is the unique identifier for the type Diff.
+const Diff_TypeID = 0xc9601ec89a6aa066
+
+func NewDiff(s *capnp.Segment) (Diff, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5})
+	return Diff{st}, err
+}
+
+func NewRootDiff(s *capnp.Segment) (Diff, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5})
+	return Diff{st}, err
+}
+
+func ReadRootDiff(msg *capnp.Message) (Diff, error) {
+	root, err := msg.RootPtr()
+	return Diff{root.Struct()}, err
+}
+
+func (s Diff) String() string {
+	str, _ := text.Marshal(0xc9601ec89a6aa066, s.Struct)
+	return str
+}
+
+func (s Diff) Added() (StatInfo_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return StatInfo_List{List: p.List()}, err
+}
+
+func (s Diff) HasAdded() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Diff) SetAdded(v StatInfo_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewAdded sets the added field to a newly
+// allocated StatInfo_List, preferring placement in s's segment.
+func (s Diff) NewAdded(n int32) (StatInfo_List, error) {
+	l, err := NewStatInfo_List(s.Struct.Segment(), n)
+	if err != nil {
+		return StatInfo_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+func (s Diff) Removed() (StatInfo_List, error) {
+	p, err := s.Struct.Ptr(1)
+	return StatInfo_List{List: p.List()}, err
+}
+
+func (s Diff) HasRemoved() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Diff) SetRemoved(v StatInfo_List) error {
+	return s.Struct.SetPtr(1, v.List.ToPtr())
+}
+
+// NewRemoved sets the removed field to a newly
+// allocated StatInfo_List, preferring placement in s's segment.
+func (s Diff) NewRemoved(n int32) (StatInfo_List, error) {
+	l, err := NewStatInfo_List(s.Struct.Segment(), n)
+	if err != nil {
+		return StatInfo_List{}, err
+	}
+	err = s.Struct.SetPtr(1, l.List.ToPtr())
+	return l, err
+}
+
+func (s Diff) Ignored() (StatInfo_List, error) {
+	p, err := s.Struct.Ptr(2)
+	return StatInfo_List{List: p.List()}, err
+}
+
+func (s Diff) HasIgnored() bool {
+	p, err := s.Struct.Ptr(2)
+	return p.IsValid() || err != nil
+}
+
+func (s Diff) SetIgnored(v StatInfo_List) error {
+	return s.Struct.SetPtr(2, v.List.ToPtr())
+}
+
+// NewIgnored sets the ignored field to a newly
+// allocated StatInfo_List, preferring placement in s's segment.
+func (s Diff) NewIgnored(n int32) (StatInfo_List, error) {
+	l, err := NewStatInfo_List(s.Struct.Segment(), n)
+	if err != nil {
+		return StatInfo_List{}, err
+	}
+	err = s.Struct.SetPtr(2, l.List.ToPtr())
+	return l, err
+}
+
+func (s Diff) Merged() (DiffPair_List, error) {
+	p, err := s.Struct.Ptr(3)
+	return DiffPair_List{List: p.List()}, err
+}
+
+func (s Diff) HasMerged() bool {
+	p, err := s.Struct.Ptr(3)
+	return p.IsValid() || err != nil
+}
+
+func (s Diff) SetMerged(v DiffPair_List) error {
+	return s.Struct.SetPtr(3, v.List.ToPtr())
+}
+
+// NewMerged sets the merged field to a newly
+// allocated DiffPair_List, preferring placement in s's segment.
+func (s Diff) NewMerged(n int32) (DiffPair_List, error) {
+	l, err := NewDiffPair_List(s.Struct.Segment(), n)
+	if err != nil {
+		return DiffPair_List{}, err
+	}
+	err = s.Struct.SetPtr(3, l.List.ToPtr())
+	return l, err
+}
+
+func (s Diff) Conflict() (DiffPair_List, error) {
+	p, err := s.Struct.Ptr(4)
+	return DiffPair_List{List: p.List()}, err
+}
+
+func (s Diff) HasConflict() bool {
+	p, err := s.Struct.Ptr(4)
+	return p.IsValid() || err != nil
+}
+
+func (s Diff) SetConflict(v DiffPair_List) error {
+	return s.Struct.SetPtr(4, v.List.ToPtr())
+}
+
+// NewConflict sets the conflict field to a newly
+// allocated DiffPair_List, preferring placement in s's segment.
+func (s Diff) NewConflict(n int32) (DiffPair_List, error) {
+	l, err := NewDiffPair_List(s.Struct.Segment(), n)
+	if err != nil {
+		return DiffPair_List{}, err
+	}
+	err = s.Struct.SetPtr(4, l.List.ToPtr())
+	return l, err
+}
+
+// Diff_List is a list of Diff.
+type Diff_List struct{ capnp.List }
+
+// NewDiff creates a new list of Diff.
+func NewDiff_List(s *capnp.Segment, sz int32) (Diff_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5}, sz)
+	return Diff_List{l}, err
+}
+
+func (s Diff_List) At(i int) Diff { return Diff{s.List.Struct(i)} }
+
+func (s Diff_List) Set(i int, v Diff) error { return s.List.SetStruct(i, v.Struct) }
+
+func (s Diff_List) String() string {
+	str, _ := text.MarshalList(0xc9601ec89a6aa066, s.List)
+	return str
+}
+
+// Diff_Promise is a wrapper for a Diff promised by a client call.
+type Diff_Promise struct{ *capnp.Pipeline }
+
+func (p Diff_Promise) Struct() (Diff, error) {
+	s, err := p.Pipeline.Struct()
+	return Diff{s}, err
+}
+
 type FS struct{ Client capnp.Client }
 
 // FS_TypeID is the unique identifier for the type FS.
@@ -2256,6 +2541,26 @@ func (c VCS) History(ctx context.Context, params func(VCS_history_Params) error,
 	}
 	return VCS_history_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c VCS) MakeDiff(ctx context.Context, params func(VCS_makeDiff_Params) error, opts ...capnp.CallOption) VCS_makeDiff_Results_Promise {
+	if c.Client == nil {
+		return VCS_makeDiff_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "makeDiff",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_makeDiff_Params{Struct: s}) }
+	}
+	return VCS_makeDiff_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type VCS_Server interface {
 	Log(VCS_log) error
@@ -2271,6 +2576,8 @@ type VCS_Server interface {
 	Checkout(VCS_checkout) error
 
 	History(VCS_history) error
+
+	MakeDiff(VCS_makeDiff) error
 }
 
 func VCS_ServerToClient(s VCS_Server) VCS {
@@ -2280,7 +2587,7 @@ func VCS_ServerToClient(s VCS_Server) VCS {
 
 func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 7)
+		methods = make([]server.Method, 0, 8)
 	}
 
 	methods = append(methods, server.Method{
@@ -2381,6 +2688,20 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "makeDiff",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_makeDiff{c, opts, VCS_makeDiff_Params{Struct: p}, VCS_makeDiff_Results{Struct: r}}
+			return s.MakeDiff(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
 	return methods
 }
 
@@ -2438,6 +2759,14 @@ type VCS_history struct {
 	Options capnp.CallOptions
 	Params  VCS_history_Params
 	Results VCS_history_Results
+}
+
+// VCS_makeDiff holds the arguments for a server call to VCS.makeDiff.
+type VCS_makeDiff struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  VCS_makeDiff_Params
+	Results VCS_makeDiff_Results
 }
 
 type VCS_log_Params struct{ capnp.Struct }
@@ -3402,6 +3731,202 @@ type VCS_history_Results_Promise struct{ *capnp.Pipeline }
 func (p VCS_history_Results_Promise) Struct() (VCS_history_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return VCS_history_Results{s}, err
+}
+
+type VCS_makeDiff_Params struct{ capnp.Struct }
+
+// VCS_makeDiff_Params_TypeID is the unique identifier for the type VCS_makeDiff_Params.
+const VCS_makeDiff_Params_TypeID = 0xb05bd83a34de71b7
+
+func NewVCS_makeDiff_Params(s *capnp.Segment) (VCS_makeDiff_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
+	return VCS_makeDiff_Params{st}, err
+}
+
+func NewRootVCS_makeDiff_Params(s *capnp.Segment) (VCS_makeDiff_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
+	return VCS_makeDiff_Params{st}, err
+}
+
+func ReadRootVCS_makeDiff_Params(msg *capnp.Message) (VCS_makeDiff_Params, error) {
+	root, err := msg.RootPtr()
+	return VCS_makeDiff_Params{root.Struct()}, err
+}
+
+func (s VCS_makeDiff_Params) String() string {
+	str, _ := text.Marshal(0xb05bd83a34de71b7, s.Struct)
+	return str
+}
+
+func (s VCS_makeDiff_Params) RemoteOwner() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s VCS_makeDiff_Params) HasRemoteOwner() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_makeDiff_Params) RemoteOwnerBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s VCS_makeDiff_Params) SetRemoteOwner(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s VCS_makeDiff_Params) HeadRevOwn() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s VCS_makeDiff_Params) HasHeadRevOwn() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_makeDiff_Params) HeadRevOwnBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s VCS_makeDiff_Params) SetHeadRevOwn(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+func (s VCS_makeDiff_Params) HeadRevRemote() (string, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.Text(), err
+}
+
+func (s VCS_makeDiff_Params) HasHeadRevRemote() bool {
+	p, err := s.Struct.Ptr(2)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_makeDiff_Params) HeadRevRemoteBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(2)
+	return p.TextBytes(), err
+}
+
+func (s VCS_makeDiff_Params) SetHeadRevRemote(v string) error {
+	return s.Struct.SetText(2, v)
+}
+
+// VCS_makeDiff_Params_List is a list of VCS_makeDiff_Params.
+type VCS_makeDiff_Params_List struct{ capnp.List }
+
+// NewVCS_makeDiff_Params creates a new list of VCS_makeDiff_Params.
+func NewVCS_makeDiff_Params_List(s *capnp.Segment, sz int32) (VCS_makeDiff_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3}, sz)
+	return VCS_makeDiff_Params_List{l}, err
+}
+
+func (s VCS_makeDiff_Params_List) At(i int) VCS_makeDiff_Params {
+	return VCS_makeDiff_Params{s.List.Struct(i)}
+}
+
+func (s VCS_makeDiff_Params_List) Set(i int, v VCS_makeDiff_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_makeDiff_Params_List) String() string {
+	str, _ := text.MarshalList(0xb05bd83a34de71b7, s.List)
+	return str
+}
+
+// VCS_makeDiff_Params_Promise is a wrapper for a VCS_makeDiff_Params promised by a client call.
+type VCS_makeDiff_Params_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_makeDiff_Params_Promise) Struct() (VCS_makeDiff_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_makeDiff_Params{s}, err
+}
+
+type VCS_makeDiff_Results struct{ capnp.Struct }
+
+// VCS_makeDiff_Results_TypeID is the unique identifier for the type VCS_makeDiff_Results.
+const VCS_makeDiff_Results_TypeID = 0xfa04b4272d0ffcd9
+
+func NewVCS_makeDiff_Results(s *capnp.Segment) (VCS_makeDiff_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_makeDiff_Results{st}, err
+}
+
+func NewRootVCS_makeDiff_Results(s *capnp.Segment) (VCS_makeDiff_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return VCS_makeDiff_Results{st}, err
+}
+
+func ReadRootVCS_makeDiff_Results(msg *capnp.Message) (VCS_makeDiff_Results, error) {
+	root, err := msg.RootPtr()
+	return VCS_makeDiff_Results{root.Struct()}, err
+}
+
+func (s VCS_makeDiff_Results) String() string {
+	str, _ := text.Marshal(0xfa04b4272d0ffcd9, s.Struct)
+	return str
+}
+
+func (s VCS_makeDiff_Results) Diff() (Diff, error) {
+	p, err := s.Struct.Ptr(0)
+	return Diff{Struct: p.Struct()}, err
+}
+
+func (s VCS_makeDiff_Results) HasDiff() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s VCS_makeDiff_Results) SetDiff(v Diff) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewDiff sets the diff field to a newly
+// allocated Diff struct, preferring placement in s's segment.
+func (s VCS_makeDiff_Results) NewDiff() (Diff, error) {
+	ss, err := NewDiff(s.Struct.Segment())
+	if err != nil {
+		return Diff{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// VCS_makeDiff_Results_List is a list of VCS_makeDiff_Results.
+type VCS_makeDiff_Results_List struct{ capnp.List }
+
+// NewVCS_makeDiff_Results creates a new list of VCS_makeDiff_Results.
+func NewVCS_makeDiff_Results_List(s *capnp.Segment, sz int32) (VCS_makeDiff_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return VCS_makeDiff_Results_List{l}, err
+}
+
+func (s VCS_makeDiff_Results_List) At(i int) VCS_makeDiff_Results {
+	return VCS_makeDiff_Results{s.List.Struct(i)}
+}
+
+func (s VCS_makeDiff_Results_List) Set(i int, v VCS_makeDiff_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s VCS_makeDiff_Results_List) String() string {
+	str, _ := text.MarshalList(0xfa04b4272d0ffcd9, s.List)
+	return str
+}
+
+// VCS_makeDiff_Results_Promise is a wrapper for a VCS_makeDiff_Results promised by a client call.
+type VCS_makeDiff_Results_Promise struct{ *capnp.Pipeline }
+
+func (p VCS_makeDiff_Results_Promise) Struct() (VCS_makeDiff_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return VCS_makeDiff_Results{s}, err
+}
+
+func (p VCS_makeDiff_Results_Promise) Diff() Diff_Promise {
+	return Diff_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
 }
 
 type Meta struct{ Client capnp.Client }
@@ -4884,6 +5409,26 @@ func (c API) History(ctx context.Context, params func(VCS_history_Params) error,
 	}
 	return VCS_history_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) MakeDiff(ctx context.Context, params func(VCS_makeDiff_Params) error, opts ...capnp.CallOption) VCS_makeDiff_Results_Promise {
+	if c.Client == nil {
+		return VCS_makeDiff_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "makeDiff",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(VCS_makeDiff_Params{Struct: s}) }
+	}
+	return VCS_makeDiff_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
 	if c.Client == nil {
 		return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -5040,6 +5585,8 @@ type API_Server interface {
 
 	History(VCS_history) error
 
+	MakeDiff(VCS_makeDiff) error
+
 	Quit(Meta_quit) error
 
 	Ping(Meta_ping) error
@@ -5060,7 +5607,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 23)
+		methods = make([]server.Method, 0, 24)
 	}
 
 	methods = append(methods, server.Method{
@@ -5303,6 +5850,20 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
+			InterfaceID:   0xfaa680ef12c44624,
+			MethodID:      7,
+			InterfaceName: "capnp/api.capnp:VCS",
+			MethodName:    "makeDiff",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := VCS_makeDiff{c, opts, VCS_makeDiff_Params{Struct: p}, VCS_makeDiff_Results{Struct: r}}
+			return s.MakeDiff(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      0,
 			InterfaceName: "capnp/api.capnp:Meta",
@@ -5514,187 +6075,208 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\xa4Y{tT\xd5\xd5?\xfb\xde\x19\xaey\xcc" +
-	"LN\xee\x10\xb3>\xf1\x9b1\x06?\xe1\x93\x18\x12\xf9" +
-	"\xc4\xf8\xd5\x0c\x8f\x00\x01\x82s\x89\xb0D\xeb\xe3\x9a\xdc" +
-	"Ln\x99\xcc\x8cwn\x02qA\x91\x0a*\xa8\xad\xb5" +
-	"*\xf5QY\xb2\xb4\x1a\x0b\x15\xaa.\xb5KV}\x10" +
-	"jTZ\xac\xa8`\x1b\xab\x88\x8f\xbaD|\x80\x15K" +
-	"\xd6t\xed3s\xee\x9c$3\x13\xb5\x7f\x85\xb9{\x9f" +
-	"}\xf6\xf9\xed\xbd\x7f\xe7\xecM\xed\xc9'\x85\xa4\xa9\xee" +
-	"\x0b\xfd\x84h\x9f\xb8\xc7\xa5\xe8{+b\xb5/\x7fp" +
-	"\x1d\xa1er\xea\x94\xfd\xf3\x16\xaf\xbe\xe0\xc6\x8f\x09\x01" +
-	"\xd5S\xfc\x88:\xbeX!\xa4\x9e\x16\xdf\x00\xaa\xa7D" +
-	"!$\xf5u\x85qV\xed}\xbbn \x9a\x0a@\x88" +
-	"\x0b\xc5\xc7\x8a\xab\x80\x80:T\xdcH u\xe3-7" +
-	"-2\xa7\xcf\xbc\x91P\x95\xcbO+)\x06\xe2J\xed" +
-	"\xfe\xe5\x05\xeb\x16\xbd\xb8\xf1fB\xc7sIQI\x1d" +
-	"J\xee\x95\x8a7U>\xfc\xd0=\xe95n\x09E\x9f" +
-	"\x17Kh\xf4X\xf1\x0a\x02\xa9q\xbf]\x90\xda\xff\xe7" +
-	"\x17\xeeK/u\x03*,+i@\x05\xbd\x04w\xfd" +
-	"\xaa\xe23i\xf6\xa6\x13\xf7e,0\x85\xb5%\xcc\xc2" +
-	"z\xa6\xb0\xe9\x92\xaa3\x13\xab\xda7\x8b\x16\x1e\xc4\xdd" +
-	"A\xdd\xc6\x14\xa6_\xf3\xfcm{\xfe\xf2\xd1f\xc1\x82" +
-	"\xba\xa7\xe4\x1b\x02\xea\xabL\xbe\xee\x9cK\xb6\xd4\\Q" +
-	"\xbb\x85he \xe0\xe4\x96Q\xf1X\xc9K*\x94*" +
-	"*\x94\x06\xea\xa7\x95\xfe\x0c\x08\xa4\xd6\xff\xef\xea\xfe\xd6" +
-	"\xd7\x8e<@\xa8?sZu\xa7\xe7\x1b\xe2J\x9d\xb3" +
-	"\xf4\xbfS\x0b/-\xea\x137\xba\xdf\xf3\x05\x01\xf5A" +
-	"\x0fn\xd4\xb5\xef\xc3XQdu_z!\x03C\xed" +
-	"\xf7\xa0#\x03\x1e\xc4B./\xa55W\xdd+\xae\xaf" +
-	"\x9f\xe8-\xc6\x93L\xf1\xa2\x81\xc9\xf1/\xee9\xb1{" +
-	"\xc3o\x84\x08\xb4x%\xc4Y\xf7\x9e\xffr\xe5\x89\xda" +
-	"\xed\x99\xe0\xa5\xd7N\xf52\x98\xa6y\xd1\xf8\xe7CG" +
-	"\xff\xf6\xdc\x0f\xe2O\x0a\x91P\xef\xf0\xe2\xe6w1\xf9" +
-	"y\xdd?\x9e\xb3|p\xef\x93\xd9S\xd5\x1f\xf3\xfe\x17" +
-	"\xda~\xf4\x7f\x16\x9e~\xeb!\xcf\xef\x05\xc9\xa0\xb7\x1c" +
-	"%\x0b6\xfbW\xadh\xee\xdb)H\xfa\xd3\xfe|]" +
-	"s\xe0\xad\xb7;\x06\x9f\x15\xa1\xe8\xf3\"\x14\xdb\xd8I" +
-	"f=\xf0\xf8\x82O=\xb7\xed\x16V\xeeI\xefv\xf9" +
-	"\xe7\xdb\xcf\xd8\xfa\xd3%\x03\"\x08O\xa0\x08\xd4\x9dl" +
-	"\xe9'w\x9f\x0c\x1bgo\x1d\x10\x92m\xd0\xcb\xd2\xf0" +
-	"\xcd\xd6\xce\xc63\x1e~l@\x80\xa7?\xed\xe8W\x87" +
-	"\xb5\x0d7\x7fq\xf4\x95\xacD\xdd\xe6\xc5\x905m\xbd" +
-	"t\xfd\xad\xbb\xb7\xef\xcd$\x0f\xcb\xcf\x9f{Y\xf2\xa4" +
-	"a1>\xfbQ\xcf\xa2\x95\x87\xf6\x11Z\x06\xa3r\xc3" +
-	"\xfb\xb1\x0a>E\x05_@\x9d\xe2{\x94@\xca\xa3\xaf" +
-	";\xd45\xef\xc8\x9b\x99\x083\xe7\xfb}\xac\x86\xf6\xf8" +
-	"\xd0yu\xc9\xe1\x09E\xbd'\xef'\x9a\xdf)\xb2\xa1" +
-	"\xb4\x82\xbb\x0c\x15\xee\xbc\xa5^?}s\xd3\x01\xd1\xc2" +
-	"\xc4\xb2r\x96\x03L\xa1\xef\x83\xfd-\x7f\xb2_;0" +
-	"\xc2!v\xa6\x96\xb2\x97\xd4ee\x8a\xba\xac,\xa0\xae" +
-	"-\xfb\x90@\xea\xe8\x0b[\x9b\\\xef=\xfcW\x01\x12" +
-	"\x832\xb0\x1e\xab\x7f}\xefu5\x0d\x7f\x17`lI" +
-	"K~g\x9d\xb5\xeb\xa9_\x1d}G\x88\xcd4:\x19" +
-	"%\xcf\x7f\xb9\xc0\x7f\xc3\xa1\x8b\xde\xcdx\x9f\xf6\xeeT" +
-	"\xca\xdc\x9fH\x11\xae7\xae\xb8s}\xe9\xd9\x83\xef\x0a" +
-	"V\xd7R\x16\x82O\x1f\xd9\xd0|\xe9\xb4\xee\x83\x82\xc4" +
-	"\xa4\x0d(9\xbeo\xd5\xe3\x97]\xfc\xd8\xc1Q4\xa5" +
-	"\xd1\xbb\xd5e\x145\x97\xd0\xb9\x92\xfa\\9\xd2\xd4\xf9" +
-	"\xb3\x8e\xc8\xb3O\xf9\xfa\xa0\x08P_9\xcb\x8f\x1d\xe5" +
-	"\x08\xd0F\xfb\xed\xdbO;\xd8\xf2\xfe\x08\x80X\xc2\xbf" +
-	"Z\xfe\x96:X\xae\xa8\x83\xe5\x01\xb5HE\x87\x87v" +
-	"\x8f{f\xff\x95\xe3?\x14j\xb2\xdePY\xcdu\xa1" +
-	"\xc2\x91]\x0fU\xbe\xf0\xd1\x19\x1fe\xbd\x1eP\xd9y" +
-	"\x96\x9e\xf9J\xf0\x0f\xd3&\xfdC\xcc\xd3\x1d*+\xb8" +
-	"'T\xf4\xe3_\xad\xaec\x97o\x95\x0fgR\x8b\xad" +
-	"}?m\xf9\xb0\x8a\xb1\xf9\xf2v\xe9\xe2\xa5u\xd5_" +
-	"\x0a\xb1\x19\xf0\xb3\x08,hxT\xdd1e\xdfQ\xf1" +
-	"\x8c;\xfcl\xe9\xd3~F\x8a\xa7_r\xf1yE\x13" +
-	"\xff)*\x1c\xf0\xb3\xcd\x07\x99B\xdf\x05\x07\x1a\xd7[" +
-	"O\x1e\x17b\xe8\x19\xcf\xfc\xae\x9e\xb3\xab\xfc\xc8\xb5\xbf" +
-	"\xfef\x14\xda\xc7\xfc[\xd4!?j\x1e\xf7\xff\x11\xd4" +
-	"\xf1\x15\x88\xf6\x91M7\xd5U\xae\x9cwb\x94\xf6\xd0" +
-	"\xf8-\xaa\x1bUT\xa8\x98\xabN\xaa8\x97\x90\xd4M" +
-	"=w\x1e\x9d\xfb\xce\xff\x0d\x89L<\xa9\x82q\xf9\xd4" +
-	"\x0a\xf4\xea\\\xe9\x8e\xd7O]q\xfd\x90\xc8R\xaa^" +
-	"\x81$dT`4z\xae\xbf\xf2\x93\xf1\x17\xbe\x96\x12" +
-	"-\xf4W\xb0\xec\xdfS\xd1H\xa6\xa7\xda\xf4D,q" +
-	"\xb6\x9e\x00\xb3\x86\xfd\xb3\xc1\xd7b\xd8z\x18@\xab\x94" +
-	"\xdd\x848Y\x0d<\x11\xe9\x8e\xc9D\xa2\x0f*\x90%" +
-	"\x0e\xe0\xbb\xd0\xbbPv\x8b\x02\x92\x13,\xc0p\x13\x8c" +
-	"\xf7Z\x94u+ ;\x17\x0c\xf0\xbb\x8a\x9a\x8b\x89D" +
-	"u\x05\xb2\xfc\x01<\xbd\xe9\x12\x94\xb5(\xe0vnE" +
-	"\xe0\xb8\xd0\x19(;O\xf1]\xddm\xda!\xf0%\xcc" +
-	"X$\x04>3\x86\xbfRm\xf1X\x87\x19\x99k\x10" +
-	"\xc8\xfej\x1d\xf6kF\x94@4\x04a\x00\x07\x07\x99" +
-	"\xe30\xa7\xb5\xc6L\x86\xcdX\xcch\xaf^l$\xbb" +
-	"\x95\xa8\x9d\xd4\\\xb2\x8b\x10\x17\x10B=\xf3\x09\xd1J" +
-	"e\xd0*%HqEB\x08\x00\x91\x00/\xb5\\\x06" +
-	"\x93\xb6\x1e1\x98\xb5\xa8\x9d$d\xb4\x0eb_\xc3}" +
-	"\x8bV\x87\x03\xba\xa5w%\x0b\xd8\x0a3\x05\xa2\x9d\xe4" +
-	"86i1!\xda\x992h\xe7H@\x01\x18\xaf\xd0" +
-	"\xa9\xe8m\xad\x0c\xda\xffK\x90\x8a\xc6\xdb\xf4hX\xb7" +
-	"\x09tB)\x91\xa0\x94@\xca2\x12\xf1\xb0nw\xe2" +
-	"\x09\xf8\xb7B\xde\xcd5\xec\xea\xc5\x8d\xe9\x83\x88\xa8\xd4" +
-	"\x11\xf4\x054\xbf\x04\x81\x1e=\xdam\xe4\xb76\xa7\xb5" +
-	"\xa6;\x960c\xce\x19\x043\x93\xb3f|\x09\xdd\xee" +
-	"\xfc\xd6>e\x10\x13mUem)\xcb\x8d\xdeQ\xa6" +
-	"$\xc1\xa16=\xf7\xb1\xc4`w\x98\x1dy\xa1rl" +
-	"\xb5\xda\xba\xdd\x1c\xeb\x88\x13\x82\xa5\xe4\x02)u\xf9/" +
-	"6k;\xdf\xd8\xd8O4\x97\x043\xaa\x01J\x09\x99" +
-	"\x0a?\x81\x14Wu\x07\xcddP\x0f&m\xdd\x9e\x12" +
-	"5\x97\x1b\xc1v#\xd9f\x99\x09\xdb\x8c\xc7\x82\xf1\x8e" +
-	"\xa0\x1e\xeb\x0d\xc6\xe2\xed\x06!D\x9b\xe0\xb8\xf6\x04B" +
-	"\xb5]\x06\xed\x19!\xdcO\xe3\xc7\xc7e\xd0\x9e\x95\x00" +
-	"$?H\x84\xd0\x9d\xf8\xed)\x19\xb4]\x12P\x19\xfc" +
-	" \x13B\x9f\xc3x=#\x83\xf6\xa2\x04\xd4u\xad\x1f" +
-	"\\\x84\xd0~\xfc\xf8\xac\x0c\xda+\x12P\xb7\xdb\x0fn" +
-	"B\xe8\x00~\xdc%\x83\xb6W\x02:N\xf2\xc38B" +
-	"\xe8\x9e\x99\x84h/\xca\xa0\xed\x1b\x11'_\xa7\x9e\xec" +
-	"\x04\x0f\x91\xc0C\xc0\x974\xaf1\xa0\x88HPD " +
-	"`\xe2\x19\xb2\xbf\x92\xb3M\x8b\xd7L\xa0\xddH\xd8\x9d" +
-	"\xe0\"\x12\xb8\x08\xac\xe9\x8a\xb7_dv\x19\xf9A^" +
-	":\xab\xb5&\x1a\x8fT7\x86\x87\x97\xc9\xc8\x88\xe6H" +
-	"\x8a1\x13l\xd8&\xb6\xeel\"V\x1afV\xb5\x0c" +
-	"Z\xad\x00\xfd\x94\x99\xd9\xf2S,\xa3\x87\x1b^c\xeb" +
-	"\x91EzW\xe1z\xb0\x8c\xaex\x8fS\xd4\xdf\xad\"" +
-	"\x14\xc1\x0e\xb3\xc2i\x86+\x88\xf2\xe5\xed\xa6\x95\x8b;" +
-	"&gO\xe4\x1c\xc8\"D;K\x06m\xfa\xa8\x9d-" +
-	"C\xb7\x8d\xb0N\x02\x96\x11\xb3\x93\xa3\x98O\x1a\xe9Q" +
-	"\x0e\x08g\x8e\x01\xe1\x9a\xa4\xd5\x16\x166]\xd3\x9e\xb4" +
-	"\xc3\x05\x09\x01\xe3\xd5\x16\xef\xea2\xed4\x02\xb2\x9d\xcc" +
-	"\xad\xd4\x1d\xc3\xb0\xa6Q\x82\xac\xce\xb8\x91\x81/\x80#" +
-	"c\xaf\xef\x91\\\x8e\x1f3\xc2\xcd5=\x86\x954\xe3" +
-	"i\x1a\x94\xf3\x90\xbds\x13e\x94\xfe\x03\xae\xc4;\xd2" +
-	"\xc9\xb0BY8\x0a\x19i\xc4\xc99Q\x16$\xe5V" +
-	"\x81\x94\xc7*\x9d:\xa1t\x04\xa6\xces\x918\xee\xcc" +
-	"3\x93v\xdc\xeam\xf2\xc5l\xab77\xddN`t" +
-	"K\xe1\xe3\xd4\x851#\x88\x0b\xa4\xb8\xd5\x1b4pE" +
-	"\xb0#n\x05\xf5\xa0\xaf\xc3\x8c\x1a\x8c\xe6\xb9\x93M\x88" +
-	"lH\x06m\xa1\xe0ds\x03!\xdal\x19\xb4\xb0\x04" +
-	"T\xcapk\x0b\x1eg\x9e\x0c\xdaE#b\xd0\xd8\xd6" +
-	"\xa9\xc7\"\x8e\xef\x8aetpV\xcc\x9d\x94\x9d\xe9\xb3" +
-	"\xe4|q\xcc\xcc\x04\xbaZ\x825\x19=\xf0\x12\x08\xcb" +
-	"\x00e\xd9\xb6\x8a\x00~,\x9cj\x85\xac\xfb%X\x93" +
-	"\xd1\xe3L\\\xb0\xc8X*A\xde\x1b\xb7+\x19\xc9\x1f" +
-	"\xb9\x85\xf1H\x13\x86 \xdf-Y\x99\x09\xdb\xc6T\xab" +
-	"\x19\x8bD\x8d`\x14\xe2\x91t\xd4\x08he\xce\x8e:" +
-	"F\xea\x872h\x9dB\xa4\x0ct\xe3J\x19\xb4\xa8\x10" +
-	")\x135\xdbe\xd0\xae\xc5[PN\xdf\x82\xab\xf1\xe3" +
-	"J\x19\xb4u\xd2\xf0\x9bK\xf4\xdeg\xeb\x91$\xc7\x1b" +
-	"\xbfy\x09\xf8\xdau\xfb\xdb\xbcp\xc6z\xf1\xe1\xf3\xb5" +
-	"@M2\xb4;\x8d\xb6\xe5\xf1nFj\xbe\xdcU7" +
-	"L-\xac[J\xfe\x9a\xcbYr\xc2m\x15\xe8\x88[" +
-	"mF\xfe\xb7l\xd6\xebQ,\x91\x8f\x04F\xb1\x85\xd3" +
-	"q\xc8sZ1\xfc\xd5\xac\xdf\xe0\xf3-\xe0\xc31\x95" +
-	"B\x1d\x91T7`\xc7\xc1\xfb\x1d\xe0\xcd\"=\x8e]" +
-	"\xc5a\xec8\xf8\xb0\x08\xf8x\x8a\xbe[E$\xfa:" +
-	"v\x1c|\x9a\x03\xbcE\xc4\xf7\x8cDwb\xc7\xc1\x87" +
-	"D\xc0\xa7\x1dtGC\xba\xc3q;3\x1e\xe0\x83\"" +
-	"\xa7\xc3\x19\xe7Ld\x80\xcfB\xe8\xda\xaat\x87\xa38" +
-	"36\xe0\xe3\x02j\xe2~\x97)p\x923\x8f\x01>" +
-	"\x1f\xa4\xda|\"\xd1f%\xc0\x9e\xf4!\xf0E\xcd\xa4" +
-	"\x1d\x02\xa5M\xb7C\x10`wu\x08\x1a\xd3\xac\x1c\x02" +
-	"_\xfa\x8f\x920c!\x08\xb0\xfc\x0a\x0d\xeb@\xf2\xf4" +
-	"3\"\xbb|\x9f[\xc4)\xdaY,\xa4a]6\xad" +
-	"\xb1\xc8v\x81\xd1{\xf6R=\xda-\x19\xc1\x84nZ" +
-	"A3\x16\xb4;\x8d`[\xdc\x87&\x08\x19\xf3F\xa8" +
-	"\xca}#(=z\xb4\xf0\x0b\xc02\x92F\xb6\xa4\xf2" +
-	"<qr\xee3\xec\xf4bM\xe4\xc9pl6\x0bT" +
-	"\xc1\x9c\xd6\x1a\x0c\xa7C\x01\xf9\x08\x1dI\xcd4\x92Y" +
-	"Bw\x86\xa8\xf9\x08=\xbb\xbbsL\x81\x11\xe7\x0b\xe4" +
-	"\xc7\x8fi\xd6e\xc8/!0b\x17z\xd1)\x83f" +
-	"\x0b\x8cx5.O\xc8\xa0\xad\x92 u\x95\x9e4F" +
-	"4<\x81\xf8\x8a\x98a9\x8f\xb2\xab\xf4\xb6\xe5F\xac" +
-	"\xddA*\xa1'\x93+\xe2V{\xc1n\xd2y\x87\x16" +
-	"`\xc7\xec;-\xd7\x9bX\xbc\xb2\xc6|^\xf3f\xe1" +
-	";\x07\xc2\x99\x0f\xe6\x0bD6\xdfF\xa5\x81\xc3q\xca" +
-	"\xd2Y\x8c\xe4&0\x92\xe3\x03o\xe0c'\xfa*R" +
-	"G?R\x1c\x9fW\x02\x9f\x1f\xd3\xa7\x91\x8e\xb6!\xc5" +
-	"\xf1y7\xf091\xbd\x1f\xd7\xdd\x81\x14\xc7G\\\xc0" +
-	"\xa7\xcbt\x03R\xcej\xa48>\x93\x03>\xc5\xa2W" +
-	"\xa3\xcc@\x8a\xe3#H\xe0SJ\xba\x0c\xe9HC\x8a" +
-	"\xe3\xa3A\xe0cX\xda4\x93\x0d\\\x94h<\x12\x82" +
-	"\xc6\xf4\x13 \x04\x8a\xadG\x18\x19\xa5\xff20B\x90" +
-	"\xe2\x97\x11#%\xfed\x19NOY\x80f\x84\x9b\x19" +
-	"\x9d0\x80\xf84\x1b\xf8x\x97R\xdc\xd8\xad\xf0\xa7I" +
-	"\x08\xb4R\x80\xec\xa4\x93\x90\xec\x1c\x8e\x90\xec\x7f\xd4|" +
-	"\x8b!K\xae~\xbf*\x9b\x10\x8a\x1e\x8df\x93\xc1\x99" +
-	"\x85\x8eH\x06id\xbd\xe7\xe8ur5W\xf3\x85\xe6" +
-	"\xca\x8a\xc7m'\x7f\xbb\xf4\x95\xb3\xb1\x1b\xc6\x12\xca\xfb" +
-	"\x0c\xcb>\xe8y\xe6\xe5\x9b\xc5XF\"\xea\xd0\xe7\xbf" +
-	"\x03\x00\x00\xff\xff\x9f\xe1\x10?"
+const schema_ea883e7d5248d81b = "x\xda\x9cY{tTUw?\xfb\xde\x19\xae\x81!" +
+	"\x93\xcb\x9d\xbcT\x9c1\xc6\x07T\"$P!V3" +
+	"<\x02\x04\x08\xccM\x08\x8bBU.\x99\x9b\xc9\x95y" +
+	"1s\x93\x10\x174RA\x05\xa5\x15\xab\xd2\xfaBX" +
+	"R\xc1b\x81\x8a\x0bieU\x14X\xa0\xd0b\x05\x05" +
+	"[\xfc\x04A\xd1%\"\x8a~\xc0\x07k\xbe\xb5\xcf\xcc" +
+	"\xb9s\x92\xcc\x0c\xe2_\xc9\xdc\xb3\xcf>\xfb\xf9\xdbg" +
+	"\xef3\xb4,\xcf+\x0c\xb3o*$D\xbdl\xef\x93" +
+	"\x90\xbf\xea\x08\x0f\xfd\xe8\xebG\x89\\ &n82" +
+	"\xb1a\xd1}O|G\x08(;\xfa\xbe\xa1\xec\xee+" +
+	"\x11R\xb5\xb3\xef\xe3\xa0\xec\xe8'\x11\x92\xb8P\xa4\xdf" +
+	"9\xf4\x95]\x8f\x13U\x01 \xc4\x86\xcb\xeb\xfa\x95\x01" +
+	"\x01\xe5\xcd~5\x04\x12O\xacxr\xaa1r\xcc\x13" +
+	"DV\xd8\xfa\xc7\xfd\xfa\x02\xb1%\xf6\xfc\xd3}K\xa6" +
+	"\xee]\xfe\x14\x91\x0b\xd9\xca\xf6~\x95\xb8\xf2\x92\xd0w" +
+	"U\xc9\xfa\xd7_L\xee\xb1\x0b\xb8\xb4\xa6\x9f\x80L\xd7" +
+	"\xf5\xeb \x90\xe8\xf3o\x93\x13G\xfe\xe7\x83W\x92[" +
+	"\xed\x80\x04y\x8ej$\x90\x1dx\xea\xafE?\x0a\xe3" +
+	"V]~%\xc5\x81\x12\x0csP\x0e#(\xc1\xaaY" +
+	"ewD\x17\xfaW\xf3\x1c\x9a\x1c\x95Hp?%\x18" +
+	"\xf9\xf0\xfb\xcf\x1c\xf8\xdf\xd3\xab9\x0e\xca\"\xc7%\x02" +
+	"\xcab\xba\xbed\xf8\xac\xb5\x15\x0f\x0e]K\xd4\x02\xe0" +
+	"\xecd\x17\x91p\x9d\xe3Ce\x8bCR\xb68\xdcU" +
+	"\xa7\x1c\xff\x00\x04\x12K\xffb\xd1\xee\xc6O\xce\xbeF" +
+	"dWJ[%\x94\x7f\x89\xd8\x12\xc3g\xdc\x94\x982" +
+	";o\x03\x7f\x90\x9a\xff\x13\x01\xa5)\x1f\x0f\x0a\x1d\xfa" +
+	"&\x9c\x17X\xb4!\xb9\x91\x1aCi\xcbGA:\xf3" +
+	"\xd1\x16\xe2\x00\x87\\1\xf7%~\x7f\xd5\xe1\xfc\xbe\xa8" +
+	"\xc91\xca`p\xe4\xa7\x17/\xefY\xf6\xaf\x9c\x07\xae" +
+	"\xe4\x0bhg-\xff\x9e\x8fJ.\x0f\xdd\x9cr^r" +
+	"\xef\xf1|j\xa6S\x94\xf9\xb6\xf9_\x0c\xaf>2{" +
+	"s\xeapT\xae\xaa\xd6I\xdd[\xef\xdcD q\xee" +
+	"\xca\xf9\xff\xdfyod\x1b\xe7*\xe5\x9c\x13\xa5\xfb\xc5" +
+	"\x89\x0cF\xb5\xfd\xed\xf8y\xc7\x0enK\xab]\xa5\x16" +
+	"\\\x8f\x87o\xba}\xca-O\x9f\xec\xff\x1f\xdc\xca\xa8" +
+	"\x82\x01\xb82y\xb5kaG\xdd\x86\x1d\xdc\xca\xcd\x05" +
+	"T\xe0\x0b\x15G?\xff\xa2\xe5\xd8{\xbc\xad\xec\x05h" +
+	"\xab\xbc\x02Tu\xeck['\xff\xd0\xff\x99=\xdc\xce" +
+	"A\xc9\xd3\x1e8\xb7\xf9\xb6\x8d\x7f\xdf\xb4\x8f\xb7\x92\x8c" +
+	"K\xa0\x94\xd2\xad-\xaf>\xf4\xc2\xde\x9b\xe6\xec#r" +
+	"\x01p\xee\xb4\xe3\x11\xa3\x0a\xdePF\x17\xe0\x96{\x0b" +
+	"\xdc\xe8\xcc\xef_(\x86\xe5\xe36\xee\xe3Bw\x8dL" +
+	"\x83\xfa\xb3\xc6\xd6\x9a\xdb\xd6\xbf\xb5\x8f3\xf62\x99j" +
+	"\xf5\xeb\x19u\xd9S?\x9d\xdf\x9f^Q\xe6\xcb\x18\x00" +
+	"\xb5\x1bg/}z\xcf\xe6\x83\xa9P\xa4\xd1\xde$'" +
+	"CQF\x1b\xea?>\xd4>u\xc1\xc9C=D\xa3" +
+	"\x91\xb6]\xfeN\xd9-K\xcan\xd9\xad\x9c\x93\xd1#" +
+	"\xfd\xb5%'C\x13\xcf~\x96r\x19\xd5t\xd9\x00\xea" +
+	"\xb2\x95\x03PS\xa5\xe9\xcc\x8dy\x9d\xc5G\x88\xea\xb2" +
+	"Rvg\x92`\x1f%x~E\x95v\xcb\xea\xda\xa3" +
+	"<\x87o\x07\x0c@\x82s\x94`\xc3\xd7G\xea\xff\xdb" +
+	"\xfc\xe4h\x0f\x81\xa8N\xb2\xf2\xa12P\x91\x94\x81\x8a" +
+	"[\xa9U\xbe!\x908\xff\xc1\xc6Z\xdbW\xeb\xff\x8f" +
+	"3\xc9 \x175\xd6[U\x87\x0f>ZQ\xfd\x07\xce" +
+	"\x8crr\xe5\xdfcw\xeez\xe7\xe5\xf3_r\x8e\xbc" +
+	"\xa8\x0c\xc6\x95\xf7\x7f\x9e\xecz\xfc\xe4\xf4\xe3)\xe9S" +
+	"1\xabP\xf1\xbfU\xd0\\\x9f>\xf8\xfcR\xc7]\xc7" +
+	"\x8es\\k]\xd4\x05?\xbc\xb1\xacn\xf6\x88\xb6\x13" +
+	"\xdc\xca\x10W5\xae\\<\xb4p\xeb\xfd3\xdf:\xd1" +
+	"\x0b\xf4\x0a]/(\x03]HY\xea\x9a (K\x0b" +
+	"\x11\xf4\xee\x19{V\x1cw\xc3\x85\x13\xbc\x81B\x854" +
+	"\x98\xda\x0a\xd1@\xcb\xcd/\x9e\xbd\xf9D\xfd\xa9\x1e\x06" +
+	"\xa2\xd9\xf1\\\xe1\xe7\xca\x9aBIYS\xe8V\x0e\x14" +
+	"\xa2\xc0W\xf6\xf4y\xf7\xc8\x9c\xc2o\xb8\x0c\xaf\x1aT" +
+	"D3xXQ\x07\x81\xb3\xbb^/\xf9\xe0\xf4m\xa7" +
+	"\xd3R\xaf(\xa2\xfa\xcc\xb8c\xbf\xe7\xbfF\x0c\xfa\x96" +
+	"\x0f\xea\xb6\"\x9a\xbe\x9dE(\xc7\x9f\x1am\xbf<\xb0" +
+	"Q<\x93\x0a-\xbawC\x92\xf3\x96\"\xf4\xcd\xcf\xcf" +
+	"\x0a3gT\x96\xff\xcc\xf9fE1\xf5\xc0\xe4\xeaM" +
+	"\xca\x96!\x87\xce\xf3:\xb6\x15\xd3\xad\x8b\x8a)\xc4\xde" +
+	"2k\xe6\xa8\xbc[\xff\xc8\x13\xbc\\L\x0f_C\x09" +
+	"\x1a\x8e\x8f\xf9\xcfG\xddM\x172\x19\xe1\xe3\xe2\x0f\x95" +
+	"c\xc5\xf8\xdf\xd1b4\xc1\x86\xfb\x8e\xd6,\x8dm\xbb" +
+	"\xc8\xf9{D\x09\xd5\xf1\xe8e\xe7\x90\xdb\xb7\xda.\xf1" +
+	"\xc7\x0c,\x19\x8c\xc7\xdcZ\x82\xc7\x94\x8f\xdf5\xe0\xec" +
+	"#\xffr\xa9\x97\xebjK\xd6*\xf5%H_W\"" +
+	"\x09\xca\xcaRt\xdd\xd9UOV\x96,\x98x\xb9\x17" +
+	"ug\xe9Zeq)E\xf9\xd2\x09\xca\xba\xd2\xbb\x09" +
+	"I<\xd9\xfe\xfc\xf9\x09_\xfe\xe5\x15\xbeH\xac+\xa5" +
+	"e\xe6\xcdR<\xfbn\xe1\xb9\xc3\x03;\x1e\xbb\xc2\x03" +
+	"\xa8r\xac\x14\xe1\xefx)\xea\xd5\xfe\xd8\x9c\xef\x0b\xa7" +
+	"}\x92\xe09\x8c\xbe\x9e\xa6R\xdd\xf55dd\xa2Y" +
+	"\x8b\x86\xa3wiQ0*\xe8\xbf\xd5\xcez\xdd\xd4|" +
+	"\x00j\x89h'\xc4J\x11`Q-o\x19L\x04y" +
+	"\x9d\x04i\x14\x02v\x8a\xfc\xcf\xb8\xb6B\x02\xc1\xf2<" +
+	"`\xec\x10\x0c\x9e\xc5\xb8\xd6&\x81h\xd5>`eT" +
+	"6\x1a\x88 k\x12\xa4\xc1\x08X\xae\xc8M\xb8V/" +
+	"\x81\xdd*\xd8\xc0\xec\"\x8f\xc6\xb5Q\x92s~\x9ba" +
+	"z\xc1\x195\xc2\x01/8\x8d0\xfeJ4G\xc2-" +
+	"F`\x82N \xfd\xab\xb1\xdb\xaf\xd1A\x02A/\xf8" +
+	"\x00,;\x88\xcc\x0e\xe3\x1b+\x8c\xb8\xcf\x08\x87u\x7f" +
+	"y\x83\x1eo\x93\x82f\\\xb5\x896Bl@\x88\xdc" +
+	"\x7f\x12!\xaaC\x04\xb5D\x80\x04#$\x84\x00\x10\x01" +
+	"\x10\xa231\x8c\x9bZ@\xa7\xdc\x82f\x9c\x90\xde4" +
+	"h\xfb\x0a&[\xb0\xdc\xe7\xd6bZ(\x9e\x83\x97\x8f" +
+	"\x12\x10\xf5:K\xb0A\x0d\x84\xa8w\x88\xa0\x0e\x17@" +
+	"\x06\xa0 %\x0fCi\x87\x8a\xa0\xfe\x95\x00\x89`\xa4" +
+	"Y\x0b\xfa4\x93@+8\x88\x00\x0e\x02\x89\x98\x1e\x8d" +
+	"\xf84\xb3\x155`\xdfrI7A7\xcb\x1bj\x92" +
+	"\x8a\xf0V\xa9$(\x0b\xa8.\x01\xdc\xedZ\xb0M\xcf" +
+	"\xcem|cE[8j\x84-\x1d86\x83\xd3l" +
+	"\x9cQ\xcdl\xfd\xcd2\xa5,\xc6\xf3*K\xf3\x92\xe6" +
+	"\xe9\x9d\xbdX\x09\x9c@\xcdZf\xb5xg\xb7\x18-" +
+	"YMe\xf1j45\xb3.\xdc\x12!\x04S\xc9\x06" +
+	"B\xe2\x81\x7f\\\xad\xee\xf8t\xf9n\xa2\xda\x04\x18]" +
+	"\x0e\xe0 d\x18\xfc\x1d$\x18\xa9\xddc\xc4=\x9a'" +
+	"nj\xe6\x90\xa01O\xf7\xf8\xf5xs\xcc\x88\x9aF" +
+	"$\xec\x89\xb4x\xb4p\xa7'\x1c\xf1\xeb\x84\x10\xf5F" +
+	"K\xb4\xb7\xd1T\x9bEP\xdf\xe5\xdc\xbd\x1d?n\x15" +
+	"A}O\x00\x10\\ \x10\"\xef\xc0o\xef\x88\xa0\xee" +
+	"\x12@\x16\xc1\x05\"!\xf2N\xf4\xd7\xbb\"\xa8{\x05" +
+	"\x90m\x8f\xb8\xc0F\x88\xbc\x1b?\xbe'\x82\xba_\x00" +
+	"\xd9nw\x81\x9d\x10y\x1f~\xdc%\x82zP\x00\xb9" +
+	"\x8f\xe0\x82>\x84\xc8\x07\xc6\x10\xa2\xee\x15A=\xd4\xc3" +
+	"O\xceV-\xde\x0a\xfd\x89\x00\xfd\x098\xe3\xc6\xc3:" +
+	"\xe4\x11\x01\xf2\x08\xb8\x0d\xd4!\xfd+>\xce\x88\xb1\x9c" +
+	"q\xfb\xf5\xa8\xd9\x0a6\"\x80\x8d@W(\xe2\x9fn" +
+	"\x84\xf4\xecF\x9e1\xb6\xb1\"\x18\x09\x94\xd7\xf8\xba\xa7" +
+	"IO\x8ff\x08\x8a\xab\x06X\xb7CL\xcd:\x84\xcf" +
+	"4\x8c\xacr\x11\xd4\xa1\x9c\xe9\x87\x8cI\xa7\x9f\x14\xd3" +
+	"\xdb\x19\xe3.S\x0bL\xd5B\xb9\xf3!\xa6\x87\"\xed" +
+	"VR_[FH\x1c\x1f\xca\x85\xc1\x0c#\xe0\xd7\xe7" +
+	"\xf9\x8dX&\xec\x18\x9c\xd6\xc8R(F\x88z\xa7\x08" +
+	"\xea\xc8^'\xc7t\xcd\xd4}\x1aq\xc7\xf4\xb0\x19\xcf" +
+	"\x8e|h\xc2\x906O\x1fg\xb4\xb4\xe0\xa9\x12\xda\xd1" +
+	"a\x9dZ;\x97\x10u\x9c\x08\xaa\x8f\xb3c\xfd,B" +
+	"\xd4)\"\xa83\x05\x90\x85T\x0c7\xa1,\xd3EP" +
+	"\xe7\x08\x08Y\xa1\x88\xa9O\xeb RX\x8fYB\xb5" +
+	"\xea\x9a\xbfAo\x9fF\xc4\x8ep\xcf\x8f\x0d\xc4M\xf7" +
+	"\xe4\x84\x00j\xbb\x0c\xce\x1es\x15gw\xc5c\xcd>" +
+	"\xce<]\xfe\xb8\xe9\xcb\x09]h\x96\xe6H(d\x98" +
+	"I_\x89f<3Q[\x18\x030\xe9OH\xd3\xf4" +
+	"\xe9\x19\xa29<Nq\xf6w\xa4\x81%\xc7h_]" +
+	"E\xbb\x1e\x8b\x1b\x91$`\x8bY\xca\x92U3SD" +
+	"\xd7tZ\xfa\x12\x82\xa1\x82\xc8\xe9\xb2v/B\x00Z" +
+	" \x82\xfa,\xe7\x80\x95\xe8\x80\xa7DP\xd7sQ\xb2" +
+	"\x0e?\xbe\x9a\x82DQL\"\xdd\xf6\xea\x14$\"~" +
+	"\xd9lI\xa4;\x80\xb8\xbe_\x04\xf5\xb4\x00n\xcd\xef" +
+	"\xd7\xfd\x90O\xc0'\x02\x14\xa4\xfbk\x02\xf8\xb1+\x99" +
+	"\x9b9\x08\x8c@8\x12\xcbAP\x13\xd2c\x01~\xdd" +
+	"\xba\x9f&\xd7\xe9\x9d$h4\x9bXX\xb2\x13e," +
+	"\x80x\xf1\xb1`#\x17\xb4\xf4\x0a\"\xa1G\x90\xb0\xea" +
+	"\x97\xb3\xd26r\x95\xf6jxX\xc9\xe1!W~\xb3" +
+	"\xdc\x0e,q&\x1aq3\x12\xeb\xacu\x86\xcdXg" +
+	"\xe6\x1az#\xad\xa12|\x97\x98\x16\xd6=\xb8A\x88" +
+	"\xc4:=:\xee\xf0\xb4Db\x1e\xcd\xe3l1\x82:" +
+	"\xad\xdd\x16\xd8`\x10zEP\xa7pB\xd6Us\x08" +
+	"\xc4\xc2\xa8\x1e\xd5\x99(\x82:\xbdG\xb8\xd64\xb7j" +
+	"\xe1\x80%\xbb\x14\xd3[X\xa9\xcb\x9c\xbf\xadI]2" +
+	"^#\xc7\xa4r\xa2\\\x80\xae\x14]\xda\xf9V\xe3\x9d" +
+	"\xcd\xf9|V\xe6\xe2\xee\x12\xa0+E\xc7\xcakN<" +
+	"\xa2\xa1\x04Y\xafQ\xa1x \xbb\xe7\xa6D\x02\xb5\xe8" +
+	"\x82lW\x9f\x92\x94\xdb\x96'\x1a\x8dp \xa8{\x82" +
+	"\x10\x09$\xbdF@-\xb0N\xd4\xd0S\x7f#\x82\xda" +
+	"\xcayJG1\xe6\x88\xa0\x069O\x19H\xe9\x17A" +
+	"}\x84K\xf8E\x83Sx\xb1D\xe8~\x1d\xe1\xa5w" +
+	"\x9aZ \xce\xec\x8d\xdf\xf2\x098\xfd\x9a\xf9[\xae\xad" +
+	"W\xbb\xc6cO\x92#'\xa9\xb5[\xf5\xe6y\x916" +
+	"\x8a\xff\xce\xccY\xd7\x8d\x8c\xd5\xce\xcc9\x971\xe5\xb8" +
+	"+\x88\xbb%\x12k\xd6\xb3\x97\xe9\xb4\xd4\xbdP\"\x1b" +
+	"\x08\xf4B\x0b\x0b\xc1\xc5\xf1\x8d\xe8\xfer\xdaD\xb2y" +
+	"*\xb0a\xac\"C%\x11\x14;`\x1b\xc9\x9aX`" +
+	"\xe3\x04\xf9\"\xb6\x8ag\xb0\x8dd\xc3I`\xe3P\xf9" +
+	"x\x19\x11\xe4\xc3\xd8F\xb2\xe9!\xb0!\x02^R\x05" +
+	"y\x07\xb6\x91l(\x09l\x1e&o\xa9N\xb6\xadv" +
+	"kd\x08l0i\xb5\xad}\xac\x01\x1f\xb0i\x99\xbc" +
+	"\xb8,\xd9\xb6J\xd6L\x17\xd8@I6\xf0\xbc\xfb%" +
+	"\xb8\xce\x1a\xef\x01\x9bG\xcb\xea$\"\xc8u\x92\x9b\xf6" +
+	"i^p\x06\x8d\xb8\xe9\x05\xa9Y3\xbd\xe0\xa6\x170" +
+	"/\xd4$Q\xd9\x0b\xce\xe4\x1f)j\x84\xbd\xe0\xa6\xf1" +
+	"\xe5\xed\xd6VfiRyt\xf9=\x05\xd7J\xda\xb1" +
+	"\xd4\xa5>M4bW\x03\xdb\xc9z\xe7]3\xb4`" +
+	"\x9b\xa0{\xa2\x9a\x11\xf3\x18a\x8f\xd9\xaa{\x9a#N" +
+	"dA\xc8U+BY\xe6\x8a \xb5k\xc1\xdc\x97\xa5" +
+	"\x98\x1e\xd7\xd3)\x95\xe5\xde\x9a\xf1\x9cn\xda\xf39\x91" +
+	"%\xc2\x8dp\xce,\x18\xdfX\x81\xee\xb4  \x1b\xa0" +
+	"#\xa8\x19z<\xeb\x95 \xd7\xe9\x96\x9a\x1c\"N\xe2" +
+	"\xc0\x8f\xa9iT\xa6\xc0/\xca!b\x08\xa5h\x15A" +
+	"59D\x9c\x8f\xdb\xa3\"\xa8\x0b\x05H\xcc\xd5\xe2z" +
+	"\x8f.\xd6\x1d\xe9\xe0n\xd2]s\xb5\xe6yz\xd8o" +
+	"Y*\xaa\xc5\xe3\x1d\x91\x98?\xe7\x88\xc0j.r\xa0" +
+	"c\xfaJ\x9b\xa9\xd1\xe1K\xd6U{&\xd6\x01^\xb3" +
+	"#\xac\x09r\x0fGX\x09A/\xa0\x9a\x11KV\xb1" +
+	"k\x09\xe9x\xac\xb9\x87\xa7\x0b\x08H\xfe\xb8\xd9\xfbk" +
+	"\xae0\xcf\x1e}\xdd\xda)V9\xb2\xa5\xbd\xdfhi" +
+	"\x81\x82\xf4\xebB\x8f\x83-\xbc\x96f\x8c\xa5\x80\xed\xa1" +
+	"\x80\xcd\x1e\x8b\x80\x0dY\xe5s\x08\x83\xa7\x10\xae\xd9t" +
+	"\x1e\xd8\xd3\x8a|\x14\xa1\xf5\x00\xc25{+\x02\xf6\x84" +
+	"\"\xef\xc4}o#\\\xb3\x81.\xb0\x87\x17y\x03\xc2" +
+	"\xe7\xcb\x08\xd7l\x02\x0dl\x0e+\xaf\xc4\xb5\xa5\x08\xd7" +
+	"l\xe0\x0el&/w\"\xb4\xceG\xb8f\x83p`" +
+	"\x8f\x0e\xb2>\x86\x08\xf2_#\\\xb3\xa7#`\x13\\" +
+	"\xb9\x1e\xf7\xd5JR0\x12\xf0BM\xf2\xaa\xe3\x05\xc9" +
+	"\xd4\x02\x14t\x93\x7f\xa9\xf5\xbd\x90`E\x97\x82/\xbb" +
+	"\x9ay!\xc1,\xdf\x0b\x94\xd3\xa6\x1c\xed\xab\xa3 J" +
+	"M\xc9\x9e\x84\x80={\xc82\x8ah\x97\xd8\x85\xcc\x0b" +
+	"\xaa\x03 \xfd\x02@Hz\xa4LH\xfa9\xf47\xcc" +
+	"\x0b3\x8d\xae\xca\xd2i i\xc1`:\x05\xac7\x82" +
+	"l)\xc0P.C3\x9ciN0\x89\x9b\x13\xc4\"" +
+	"\x11\xd3\xca\xda\x90\xb6`\x9c\x1eMBM\xd6\xcbg\xba" +
+	"\x8da\x81\x9fm\xac\x18\xd3\xa3A\xabh\xfc9\x00\x00" +
+	"\xff\xff\x98\x0a\xdf\x00"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
@@ -5714,6 +6296,7 @@ func init() {
 		0xa99c622e110c1203,
 		0xab89c6fc9bf26f2a,
 		0xb030fc18cb3b0e61,
+		0xb05bd83a34de71b7,
 		0xb76f3dc1dcf4fdf1,
 		0xb7d0dd6b467e7539,
 		0xba0de490234c27af,
@@ -5721,6 +6304,7 @@ func init() {
 		0xc0dd66dedad92ef8,
 		0xc6920dee4bb4a443,
 		0xc9558eac26b0f15e,
+		0xc9601ec89a6aa066,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
 		0xccf4f28c8951edf6,
@@ -5746,7 +6330,9 @@ func init() {
 		0xf3243256580294f3,
 		0xf4d42db113af3a4b,
 		0xf7250939585a23f6,
+		0xf8551f83bb42e152,
 		0xf9b772853fd93ea9,
+		0xfa04b4272d0ffcd9,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
 		0xfd36e047f496768b,

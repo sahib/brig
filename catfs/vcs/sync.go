@@ -157,7 +157,7 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	if src.Path() != dst.Path() {
 		// Only move the file if it was only moved on the remote side.
 		if srcMask&ChangeTypeMove != 0 && dstMask&ChangeTypeMove == 0 {
-			// TODO: Sanity check that there's nothing that src.Path(),
+			// TODO: Sanity check that there's nothing at src.Path(),
 			//       but Mapper should already have checked that.
 			if err := c.Move(sy.lkrDst, dst, src.Path()); err != nil {
 				return err

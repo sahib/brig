@@ -32,6 +32,20 @@ struct HistoryEntry $Go.doc("One History entry for a file") {
     ref    @2 :Data;
 }
 
+struct DiffPair {
+    src @0 :StatInfo;
+    dst @1 :StatInfo;
+}
+
+struct Diff {
+    added   @0 :List(StatInfo);
+    removed @1 :List(StatInfo);
+    ignored @2 :List(StatInfo);
+
+    merged   @3 :List(DiffPair);
+    conflict @4 :List(DiffPair);
+}
+
 interface FS {
     stage    @0 (localPath :Text, repoPath :Text);
     list     @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -52,6 +66,7 @@ interface VCS {
     reset    @4 (path :Text, rev :Text);
     checkout @5 (rev :Text, force :Bool);
     history  @6 (path :Text) -> (history :List(HistoryEntry));
+    makeDiff @7 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
 }
 
 interface Meta {

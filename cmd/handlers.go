@@ -533,9 +533,40 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
-	return nil
-}
+	remoteRev := ctx.Args().Get(0)
+	if remoteRev == "" {
+		remoteRev = "HEAD"
+	}
 
-func handleLock(ctx *cli.Context, ctl *client.Client) error {
+	diff, err := ctl.MakeDiff("alice", "HEAD", remoteRev)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
+	}
+
+	fmt.Println("Added:")
+	for _, info := range diff.Added {
+		fmt.Println(info.Path)
+	}
+
+	fmt.Println("Removed:")
+	for _, info := range diff.Removed {
+		fmt.Println(info.Path)
+	}
+
+	fmt.Println("Ignored:")
+	for _, info := range diff.Ignored {
+		fmt.Println(info.Path)
+	}
+
+	fmt.Println("Resolveable Conflicts:")
+	for _, pair := range diff.Merged {
+		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
+	}
+
+	fmt.Println("You're fucked:")
+	for _, pair := range diff.Conflict {
+		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
+	}
+
 	return nil
 }

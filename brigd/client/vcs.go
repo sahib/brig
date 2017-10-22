@@ -190,3 +190,149 @@ func (cl *Client) History(path string) ([]*HistoryEntry, error) {
 
 	return results, nil
 }
+
+// Again: duplicated from catfs/fs.go
+type DiffPair struct {
+	Src StatInfo
+	Dst StatInfo
+}
+
+type Diff struct {
+	Added   []StatInfo
+	Removed []StatInfo
+	Ignored []StatInfo
+
+	Merged   []DiffPair
+	Conflict []DiffPair
+}
+
+func convertDiffList(lst capnp.StatInfo_List) ([]StatInfo, error) {
+	infos := []StatInfo{}
+
+	for idx := 0; idx < lst.Len(); idx++ {
+		capInfo := lst.At(idx)
+		info, err := convertCapStatInfo(&capInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		infos = append(infos, *info)
+	}
+
+	return infos, nil
+}
+
+func convertDiffPairList(lst capnp.DiffPair_List) ([]DiffPair, error) {
+	pairs := []DiffPair{}
+	for idx := 0; idx < lst.Len(); idx++ {
+		capPair := lst.At(idx)
+		capSrc, err := capPair.Src()
+		if err != nil {
+			return nil, err
+		}
+
+		capDst, err := capPair.Dst()
+		if err != nil {
+			return nil, err
+		}
+
+		srcInfo, err := convertCapStatInfo(&capSrc)
+		if err != nil {
+			return nil, err
+		}
+
+		dstInfo, err := convertCapStatInfo(&capDst)
+		if err != nil {
+			return nil, err
+		}
+
+		pairs = append(pairs, DiffPair{
+			Src: *srcInfo,
+			Dst: *dstInfo,
+		})
+	}
+
+	return pairs, nil
+}
+
+func convertCapDiffToDiff(capDiff capnp.Diff) (*Diff, error) {
+	diff := &Diff{}
+
+	lst, err := capDiff.Added()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Added, err = convertDiffList(lst)
+	if err != nil {
+		return nil, err
+	}
+
+	lst, err = capDiff.Removed()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Removed, err = convertDiffList(lst)
+	if err != nil {
+		return nil, err
+	}
+
+	lst, err = capDiff.Ignored()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Ignored, err = convertDiffList(lst)
+	if err != nil {
+		return nil, err
+	}
+
+	pairs, err := capDiff.Merged()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Merged, err = convertDiffPairList(pairs)
+	if err != nil {
+		return nil, err
+	}
+
+	pairs, err = capDiff.Conflict()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Conflict, err = convertDiffPairList(pairs)
+	if err != nil {
+		return nil, err
+	}
+
+	return diff, nil
+}
+
+func (cl *Client) MakeDiff(remote, headRevOwn, headRevRemote string) (*Diff, error) {
+	call := cl.api.MakeDiff(cl.ctx, func(p capnp.VCS_makeDiff_Params) error {
+		if err := p.SetRemoteOwner(remote); err != nil {
+			return err
+		}
+
+		if err := p.SetHeadRevOwn(headRevOwn); err != nil {
+			return err
+		}
+
+		return p.SetHeadRevRemote(headRevRemote)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capDiff, err := result.Diff()
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCapDiffToDiff(capDiff)
+}
