@@ -9,7 +9,6 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
-// TODO: Maybe move to a common place.
 type StatInfo struct {
 	Path    string
 	Hash    h.Hash

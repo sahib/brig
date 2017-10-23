@@ -13,11 +13,7 @@ import (
 
 func init() {
 	log.SetOutput(os.Stderr)
-
-	// Only log the warning severity or above.
 	log.SetLevel(log.DebugLevel)
-
-	// Log pretty text
 	log.SetFormatter(&colorlog.ColorfulLogFormatter{})
 }
 

@@ -11,12 +11,12 @@ All changes should be with fitting unittests.
 
 ✓ [H] Implement a Garbage collector to ease the creation of intermediate nodes.
 ✓ [L] Implement transaction (at least on the write site) based key/value storage.
-- [H] Implement Ghost creation and make Nodes have a ghost ref if they were moved.
-- [U] Implement coreutils on top of linker (touch, mkdir, cat, move, remove).
-- [H] Implement good locking strategy to allow giving nodes to fuse/outside.
+✓ [H] Implement Ghost creation and make Nodes have a ghost ref if they were moved.
+✓ [U] Implement coreutils on top of linker (touch, mkdir, cat, move, remove).
+✓ [H] Implement good locking strategy to allow giving nodes to fuse/outside.
 - [L] Implement a command line util to do basic tasks for each cafs.
-- [H] Implement sync & diff functionality (based on ghosts).
-- [L] Prefix the Inode directory with the store's owner name to avoid collissions.
+✓ [H] Implement sync & diff functionality (based on ghosts).
+✓ [L] Prefix the Inode directory with the store's owner name to avoid collissions.
 
 2. Re-integrate brig with newer version of ipfs.
 ================================================
@@ -28,8 +28,8 @@ All changes should be with fitting unittests.
 3. Bring back daemon/client mode.
 =================================
 
-- [U] Use capnproto to implement a rpc protocol between brigd and brigctl.
-- [H] Implement a brigctl client library, that does not rely on internals of
+✓ [U] Use capnproto to implement a rpc protocol between brigd and brigctl.
+✓ [H] Implement a brigctl client library, that does not rely on internals of
   brig. (i.e. stripped down version of Files, Directories etc.)
 
 4. Implement network interaction with other brigd clients

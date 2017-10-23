@@ -39,7 +39,7 @@ func (sv *Server) handle(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (sv *Server) Accept(rateCh chan struct{}) error {
+func (sv *Server) accept(rateCh chan struct{}) error {
 	deadline := time.Now().Add(500 * time.Millisecond)
 	err := sv.lst.(*net.TCPListener).SetDeadline(deadline)
 
@@ -90,7 +90,7 @@ func (sv *Server) Serve() error {
 			return nil
 		case <-rateCh:
 			// If this signal can receive something, we have a free connection.
-			if err := sv.Accept(rateCh); err != nil {
+			if err := sv.accept(rateCh); err != nil {
 				log.Errorf("Failed to accept connection: %s", err)
 			}
 		case <-sv.base.QuitCh:

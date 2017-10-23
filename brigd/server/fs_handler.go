@@ -1,6 +1,8 @@
 package server
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -155,7 +157,34 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
+		ready := make(chan error)
+
 		go func() {
+			readyMarker := [1]byte{}
+			if _, err := stream.Read(readyMarker[:]); err != nil {
+				if err == io.EOF {
+					// This is a special cases, that will probably
+					// only happen for empty files.
+					ready <- nil
+				}
+
+				msg := fmt.Sprintf("Failed to start stream of `%s`", path)
+				log.Warning(msg)
+				ready <- errors.New(msg)
+				return
+			}
+
+			// Do not forget to write back the start marker:
+			if _, err := fifoFd.Write(readyMarker[:]); err != nil {
+				msg := fmt.Sprintf("Write start marker failed: %v", err)
+				log.Warning(msg)
+				ready <- errors.New(msg)
+				return
+			}
+
+			// Assume that the rest of the file is still transfered o.k.
+			ready <- nil
+
 			if _, err := io.Copy(fifoFd, stream); err != nil {
 				log.Warningf(
 					"Failed to copy contents of `%s` to fifo (%s): %v",
@@ -174,7 +203,11 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			}
 		}()
 
-		return nil
+		// Wait with returning until the go func gets the first bytes.
+		// We do this to stop a race condition between client & server,
+		// where the client could read the stil-empty fifo first and
+		// exit too fast afterwards.
+		return <-ready
 	})
 }
 
