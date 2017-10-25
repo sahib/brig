@@ -41,7 +41,7 @@ func withDaemon(t *testing.T, fn func(ctl *Client)) {
 	<-waitForDeath
 }
 
-func TestStateAndCat(t *testing.T) {
+func TestStageAndCat(t *testing.T) {
 	withDaemon(t, func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()

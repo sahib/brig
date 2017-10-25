@@ -1,15 +1,8 @@
 package server
 
 import (
-	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
-	"syscall"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/containerd/fifo"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
@@ -130,84 +123,13 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	}
 
 	return fh.base.withOwnFs(func(fs *catfs.FS) error {
-		stream, err := fs.Cat(path)
+		port, err := bootTransferServer(fs, path)
 		if err != nil {
 			return err
 		}
 
-		// TODO: It's kinda pointless to open a file just to get it's name.
-		//       Think of a better naming strategy.
-		tempFile, err := ioutil.TempFile("", "brig-fifo")
-		if err != nil {
-			return err
-		}
-
-		fifoPath := tempFile.Name()
-		if err := tempFile.Close(); err != nil {
-			return err
-		}
-
-		flags := syscall.O_CREAT | syscall.O_NONBLOCK | syscall.O_WRONLY
-		fifoFd, err := fifo.OpenFifo(call.Ctx, fifoPath, flags, 0644)
-		if err != nil {
-			return err
-		}
-
-		if err := call.Results.SetFifoPath(fifoPath); err != nil {
-			return err
-		}
-
-		ready := make(chan error)
-
-		go func() {
-			readyMarker := [1]byte{}
-			if _, err := stream.Read(readyMarker[:]); err != nil {
-				if err == io.EOF {
-					// This is a special cases, that will probably
-					// only happen for empty files.
-					ready <- nil
-				}
-
-				msg := fmt.Sprintf("Failed to start stream of `%s`", path)
-				log.Warning(msg)
-				ready <- errors.New(msg)
-				return
-			}
-
-			// Do not forget to write back the start marker:
-			if _, err := fifoFd.Write(readyMarker[:]); err != nil {
-				msg := fmt.Sprintf("Write start marker failed: %v", err)
-				log.Warning(msg)
-				ready <- errors.New(msg)
-				return
-			}
-
-			// Assume that the rest of the file is still transfered o.k.
-			ready <- nil
-
-			if _, err := io.Copy(fifoFd, stream); err != nil {
-				log.Warningf(
-					"Failed to copy contents of `%s` to fifo (%s): %v",
-					path,
-					fifoPath,
-					err,
-				)
-			}
-
-			if err := stream.Close(); err != nil {
-				log.Warningf("Failed to close stream for `%s`: %v", path, err)
-			}
-
-			if err := fifoFd.Close(); err != nil {
-				log.Warningf("Failed to close fifo at %s for %s: %v", fifoPath, path, err)
-			}
-		}()
-
-		// Wait with returning until the go func gets the first bytes.
-		// We do this to stop a race condition between client & server,
-		// where the client could read the stil-empty fifo first and
-		// exit too fast afterwards.
-		return <-ready
+		call.Results.SetPort(int32(port))
+		return nil
 	})
 }
 

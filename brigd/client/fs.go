@@ -1,8 +1,9 @@
 package client
 
 import (
+	"fmt"
 	"io"
-	"os"
+	"net"
 	"time"
 
 	"github.com/disorganizer/brig/brigd/capnp"
@@ -104,17 +105,13 @@ func (cl *Client) Cat(path string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	fifoPath, err := result.FifoPath()
+	port := result.Port()
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		return nil, err
 	}
 
-	fd, err := os.Open(fifoPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return fd, nil
+	return conn, nil
 }
 
 func (cl *Client) Mkdir(path string, createParents bool) error {
