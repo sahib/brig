@@ -40,12 +40,34 @@ func guessRepoFolder() string {
 	return path
 }
 
-func readPassword(ctx *cli.Context) (string, error) {
-	password := ctx.String("password")
-	if password != "" {
+func readPasswordFromArgs(ctx *cli.Context) string {
+	for curr := ctx; curr != nil; {
+		if curr.Bool("no-pass") {
+			return "no-pass"
+		}
+
+		if password := curr.String("password"); password != "" {
+			return password
+		}
+
+		curr = curr.Parent()
+	}
+
+	return ""
+}
+
+func readPassword(ctx *cli.Context, repoPath string) (string, error) {
+	if !repoIsInitialized(repoPath) {
+		return "", nil
+	}
+
+	// Try to read the password from -x or fallback to the default
+	// password if requested by the --no-pass switch.
+	if password := readPasswordFromArgs(ctx); password != "" {
 		return password, nil
 	}
 
+	// Read the password from stdin:
 	password, err := pwd.PromptPassword()
 	if err != nil {
 		return "", err
@@ -70,7 +92,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		return nil, err
 	}
 
-	pwd, err := readPassword(ctx)
+	pwd, err := readPassword(ctx, repoPath)
 	if err != nil {
 		return nil, err
 	}

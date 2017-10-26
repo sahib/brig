@@ -2,7 +2,6 @@ package repo
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -64,37 +63,17 @@ func touch(path string) error {
 	return fd.Close()
 }
 
-func isEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-	if err == io.EOF {
-		return true, nil
-	}
-	return false, err // Either not empty or error, suits both cases
-}
-
 func Init(baseFolder, owner, password, backendName string) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
-		return err
-	}
-
-	repoDirIsEmpty, err := isEmpty(baseFolder)
-	if err != nil {
-		return err
-	}
-
-	if !info.IsDir() || !repoDirIsEmpty {
-		return fmt.Errorf(
-			"`%s` is not a directory or it's not empty",
-			baseFolder,
-		)
+		if err := os.MkdirAll(baseFolder, 0700); err != nil {
+			return err
+		}
+	} else if info.Mode().IsDir() {
+		log.Warningf("`%s` is a directory and exists")
+	} else {
+		return fmt.Errorf("`%s` is a file (should be a directory)")
 	}
 
 	realBackend := backend.FromName(backendName)

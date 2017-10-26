@@ -91,37 +91,23 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		brigPath = "."
 	}
 
-	useNoPass := ctx.Bool("no-pass")
-
 	// If the repository was not initialized yet,
 	// we should not ask for a password, since init
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
 	if !repoIsInitialized(brigPath) {
-		useNoPass = true
 		log.Infof(
 			"No repository found at %s. Use `brig init <user>` to create one",
 			brigPath,
 		)
 	}
 
-	password := ctx.String("password")
-	fmt.Println("LAUNCH PWD", password)
-	if password == "" && !useNoPass {
-		// TODO: This should be done in init.
-		var err error
-		password, err = pwd.PromptPassword()
-		if err != nil {
-			msg := fmt.Sprintf("Failed to read password: %v", err)
-			fmt.Println(msg)
-			return ExitCode{UnknownError, msg}
-		}
-	}
-
-	// Currently we simply set a default password if no password is used.
-	if useNoPass {
-		password = "nopassword"
+	password, err := readPassword(ctx, brigPath)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to read password: %v", err)
+		fmt.Println(msg)
+		return ExitCode{UnknownError, msg}
 	}
 
 	server, err := server.BootServer(brigPath, password, guessPort())
@@ -173,12 +159,9 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	owner := ctx.Args().First()
 	folder := guessRepoFolder()
 	backend := ctx.String("backend")
+	password := readPasswordFromArgs(ctx)
 
-	password := ctx.String("password")
-	useNoPass := ctx.Bool("no-pass")
-
-	if password == "" && !useNoPass {
-		// TODO: This should be done in init.
+	if password == "" {
 		pwdBytes, err := pwd.PromptNewPassword(25)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to read password: %v", err)
@@ -187,10 +170,6 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		}
 
 		password = string(pwdBytes)
-	}
-
-	if useNoPass {
-		password = "nopassword"
 	}
 
 	if err := ctl.Init(folder, owner, password, backend); err != nil {
@@ -548,6 +527,7 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
 
+	// TODO: Format this nicer.
 	fmt.Println("Added:")
 	for _, info := range diff.Added {
 		fmt.Println(info.Path)
