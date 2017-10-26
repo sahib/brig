@@ -99,11 +99,6 @@ func RunCmdline(args []string) int {
 					Value: "memory",
 					Usage: "What data backend to use for the new repo",
 				},
-				cli.StringFlag{
-					Name:  "password,p",
-					Value: "",
-					Usage: "Initial password for the new repository",
-				},
 				cli.BoolFlag{
 					Name:  "no-pass,x",
 					Usage: "Do not use a password (not recommended)",
@@ -404,10 +399,6 @@ func RunCmdline(args []string) int {
 					Description: "Start the brig daemon process, unlock the repository and go online",
 					Action:      withExit(handleDaemonLaunch),
 					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "password,p",
-							Usage: "Pass the unlock password to brigd",
-						},
 						cli.BoolFlag{
 							Name:  "no-pass,x",
 							Usage: "Do not use a password (not recommended)",

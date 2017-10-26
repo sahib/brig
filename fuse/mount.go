@@ -9,7 +9,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/util"
 )
 
@@ -21,9 +21,8 @@ import (
 // Mount represents a fuse endpoint on the filesystem.
 // It is used as top-level API to control a brigfs fuse mount.
 type Mount struct {
-	Dir   string
-	FS    *Filesystem
-	Store *store.Store
+	Dir string
+	FS  *Filesystem
 
 	closed bool
 	done   chan util.Empty
@@ -34,7 +33,7 @@ type Mount struct {
 }
 
 // NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
-func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
+func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 	conn, err := fuse.Mount(
 		mountpoint,
 		fuse.FSName("brigfs"),
@@ -46,14 +45,12 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		return nil, err
 	}
 
-	filesys := &Filesystem{Store: store}
-
+	filesys := &Filesystem{cfs: cfs}
 	mnt := &Mount{
 		Conn:   conn,
 		Server: fs.New(conn, nil),
 		FS:     filesys,
 		Dir:    mountpoint,
-		Store:  store,
 		done:   make(chan util.Empty),
 		errors: make(chan error),
 	}
@@ -90,11 +87,10 @@ func (m *Mount) Close() error {
 	}
 	m.closed = true
 
-	log.Info("Umount fuse layer...")
+	log.Info("Unmounting fuse layer...")
 
 	for tries := 0; tries < 20; tries++ {
 		if err := fuse.Unmount(m.Dir); err != nil {
-			// log.Printf("unmount error: %v", err)
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -117,6 +113,7 @@ func (m *Mount) Close() error {
 	if err := m.Conn.Close(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -125,15 +122,15 @@ func (m *Mount) Close() error {
 // All operations on the table are safe to call from several goroutines.
 type MountTable struct {
 	sync.Mutex
-	m     map[string]*Mount
-	Store *store.Store
+	m  map[string]*Mount
+	fs *catfs.FS
 }
 
 // NewMountTable returns an empty mount table.
-func NewMountTable(store *store.Store) *MountTable {
+func NewMountTable(fs *catfs.FS) *MountTable {
 	return &MountTable{
-		m:     make(map[string]*Mount),
-		Store: store,
+		m:  make(map[string]*Mount),
+		fs: fs,
 	}
 }
 
@@ -147,7 +144,7 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 		return m, nil
 	}
 
-	m, err := NewMount(t.Store, path)
+	m, err := NewMount(t.fs, path)
 	if err == nil {
 		t.m[path] = m
 	}

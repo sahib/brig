@@ -2,16 +2,16 @@ package fuse
 
 import (
 	"bazil.org/fuse/fs"
-	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/catfs"
 )
 
-// FS represents a Filesystem.
+// Filesystem is the entry point to the fuse filesystem
 type Filesystem struct {
-	Store *store.Store
+	cfs *catfs.FS
 }
 
 // Root returns the topmost directory node.
 // It will have the path "/".
-func (filesystem *Filesystem) Root() (fs.Node, error) {
-	return &Dir{path: "/", fsys: filesystem}, nil
+func (fs *Filesystem) Root() (fs.Node, error) {
+	return &Directory{path: "/", cfs: fs.cfs}, nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/brigd/client"
+	"github.com/disorganizer/brig/cmd/pwd"
 )
 
 // ExitCode is an error that maps the error interface to a specific error
@@ -39,9 +40,18 @@ func guessRepoFolder() string {
 	return path
 }
 
-func readPassword() (string, error) {
-	// TODO: Implement again.
-	return "klaus", nil
+func readPassword(ctx *cli.Context) (string, error) {
+	password := ctx.String("password")
+	if password != "" {
+		return password, nil
+	}
+
+	password, err := pwd.PromptPassword()
+	if err != nil {
+		return "", err
+	}
+
+	return password, nil
 }
 
 func prefixSlash(s string) string {
@@ -54,19 +64,28 @@ func prefixSlash(s string) string {
 
 type cmdHandlerWithClient func(ctx *cli.Context, ctl *client.Client) error
 
-func startDaemon(repoPath string, port int) (*client.Client, error) {
+func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, error) {
 	exePath, err := godaemon.GetExecutablePath()
 	if err != nil {
 		return nil, err
 	}
+
+	pwd, err := readPassword(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Make -x work for all subcommands.
+	fmt.Println("PASS", pwd)
 
 	// Start a new daemon process:
 	log.Info("Starting daemon from: ", exePath)
 
 	// TODO: Fill in correct password.
 	proc := exec.Command(
-		exePath, "-l", "/tmp/brig.log", "-x", "klaus", "daemon", "launch",
+		exePath, "-l", "/tmp/brig.log", "-x", pwd, "daemon", "launch",
 	)
+	pwd = ""
 
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
@@ -107,7 +126,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) 
 		}
 
 		// Start the server & pass the password:
-		ctl, err = startDaemon(guessRepoFolder(), port)
+		ctl, err = startDaemon(ctx, guessRepoFolder(), port)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,

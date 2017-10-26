@@ -108,6 +108,9 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 		hdl.fs.mu.Lock()
 		hdl.file.SetSize(minSize)
 		hdl.fs.mu.Unlock()
+
+		// Also auto-truncate on every write.
+		hdl.layer.Truncate(int64(minSize))
 	}
 
 	return n, nil
@@ -206,4 +209,11 @@ func (hdl *Handle) Close() error {
 
 	hdl.isClosed = true
 	return hdl.flush()
+}
+
+func (hdl *Handle) Path() string {
+	hdl.lock.Lock()
+	defer hdl.lock.Unlock()
+
+	return hdl.file.Path()
 }

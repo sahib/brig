@@ -159,7 +159,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config)
 		kv:       kv,
 		lkr:      lkr,
 		gc:       c.NewGarbageCollector(lkr, kv, nil),
-		gcTicker: time.NewTicker(5 * time.Second),
+		gcTicker: time.NewTicker(30 * time.Second),
 		bk:       backend,
 		cfg:      vfg,
 	}
@@ -187,7 +187,6 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config)
 }
 
 func (fs *FS) Close() error {
-	// Stop the GC loop
 	fs.gcTicker.Stop()
 	return fs.kv.Close()
 }
@@ -274,7 +273,6 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 
 	// NOTE: This method is highly inefficient:
 	//       - iterates over all nodes even if maxDepth is >= 0
-	//       - Sorting calculates depth again.
 	//
 	// Fix whenever it proves to be a problem.
 	rootNd, err := fs.lkr.LookupNode(root)
@@ -422,6 +420,17 @@ func prefixSlash(s string) string {
 	return s
 }
 
+func (fs *FS) Truncate(path string, size uint64) error {
+	nd, err := fs.lkr.LookupModNode(path)
+	if err != nil {
+		return err
+	}
+
+	// TODO: This changes the size only in memory...
+	nd.SetSize(size)
+	return nil
+}
+
 func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -469,6 +478,8 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO: Abort early if the new hash == old hash.
 
 	if err := fs.bk.Pin(hash); err != nil {
 		return err

@@ -53,6 +53,8 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 		return err
 	}
 
+	// Update the in-memory password.
+	mh.base.password = password
 	return repo.Init(initFolder, owner, password, backendName)
 }
 
