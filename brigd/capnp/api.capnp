@@ -70,13 +70,15 @@ interface VCS {
 }
 
 interface Meta {
-    quit @0 ();
-    ping @1 () -> (reply :Text);
-    init @2 (basePath :Text, owner :Text, backend :Text, password :Text);
+    quit    @0 ();
+    ping    @1 () -> (reply :Text);
+    init    @2 (basePath :Text, owner :Text, backend :Text, password :Text);
+    mount   @3 (mountPath :Text);
+    unmount @4 (mountPath :Text);
 
-    configGet @3 (key :Text) -> (value :Text);
-    configSet @4 (key :Text, value :Text);
-    configAll @5 () -> (all :List(ConfigPair));
+    configGet @5 (key :Text) -> (value :Text);
+    configSet @6 (key :Text, value :Text);
+    configAll @7 () -> (all :List(ConfigPair));
 }
 
 # Group all interfaces together in one API object,

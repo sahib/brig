@@ -22,7 +22,17 @@ func (mh *metaHandler) Quit(call capnp.Meta_quit) error {
 		return err
 	}
 
-	return repo.Close(mh.base.password)
+	if err := repo.Close(mh.base.password); err != nil {
+		return err
+	}
+
+	log.Infof("Trying to unmount any mounts...")
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	return mounts.Close()
 }
 
 func (mh *metaHandler) Ping(call capnp.Meta_ping) error {
@@ -56,6 +66,39 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 	// Update the in-memory password.
 	mh.base.password = password
 	return repo.Init(initFolder, owner, password, backendName)
+}
+
+func (mh *metaHandler) Mount(call capnp.Meta_mount) error {
+	server.Ack(call.Options)
+
+	mountPath, err := call.Params.MountPath()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	_, err = mounts.AddMount(mountPath)
+	return err
+}
+
+func (mh *metaHandler) Unmount(call capnp.Meta_unmount) error {
+	server.Ack(call.Options)
+
+	mountPath, err := call.Params.MountPath()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	return mounts.Unmount(mountPath)
 }
 
 func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {

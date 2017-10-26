@@ -2,6 +2,7 @@ package fuse
 
 import (
 	"os"
+	"sync"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -12,6 +13,7 @@ import (
 
 // Handle is an open Entry.
 type Handle struct {
+	mu  sync.Mutex
 	fd  *catfs.Handle
 	cfs *catfs.FS
 }
@@ -25,6 +27,9 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 // Read is called to read a block of data at a certain offset.
 func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	hd.mu.Lock()
+	defer hd.mu.Unlock()
+
 	log.WithFields(log.Fields{
 		"path":   hd.fd.Path(),
 		"offset": req.Offset,
@@ -51,6 +56,9 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 
 // Write is called to write a block of data at a certain offset.
 func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	hd.mu.Lock()
+	defer hd.mu.Unlock()
+
 	log.Debugf(
 		"fuse-write: %s (off: %d size: %d)",
 		hd.fd.Path(),

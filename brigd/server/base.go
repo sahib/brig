@@ -10,6 +10,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/catfs"
+	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -24,6 +25,7 @@ type base struct {
 	password string
 
 	repo    *repo.Repository
+	mounts  *fuse.MountTable
 	backend backend.Backend
 
 	QuitCh chan struct{}
@@ -93,6 +95,26 @@ func (b *base) Backend() (backend.Backend, error) {
 
 	b.backend = bk
 	return bk, nil
+}
+
+func (b *base) Mounts() (*fuse.MountTable, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.mounts != nil {
+		return b.mounts, nil
+	}
+
+	err := b.withOwnFs(func(fs *catfs.FS) error {
+		b.mounts = fuse.NewMountTable(fs)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return b.mounts, nil
 }
 
 func newBase(basePath string, password string) (*base, error) {

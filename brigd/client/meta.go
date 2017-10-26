@@ -47,6 +47,24 @@ func (cl *Client) Init(path, owner, password, backend string) error {
 	return err
 }
 
+func (cl *Client) Mount(mountPath string) error {
+	call := cl.api.Mount(cl.ctx, func(p capnp.Meta_mount_Params) error {
+		return p.SetMountPath(mountPath)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) Unmount(mountPath string) error {
+	call := cl.api.Unmount(cl.ctx, func(p capnp.Meta_unmount_Params) error {
+		return p.SetMountPath(mountPath)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 func (cl *Client) ConfigGet(key string) (string, error) {
 	call := cl.api.ConfigGet(cl.ctx, func(p capnp.Meta_configGet_Params) error {
 		return p.SetKey(key)

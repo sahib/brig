@@ -14,7 +14,7 @@ All changes should be with fitting unittests.
 ✓ [H] Implement Ghost creation and make Nodes have a ghost ref if they were moved.
 ✓ [U] Implement coreutils on top of linker (touch, mkdir, cat, move, remove).
 ✓ [H] Implement good locking strategy to allow giving nodes to fuse/outside.
-- [L] Implement a command line util to do basic tasks for each cafs.
+? [L] Implement a command line util to do basic tasks for each cafs.
 ✓ [H] Implement sync & diff functionality (based on ghosts).
 ✓ [L] Prefix the Inode directory with the store's owner name to avoid collissions.
 

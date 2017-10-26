@@ -22,14 +22,13 @@ import (
 // It is used as top-level API to control a brigfs fuse mount.
 type Mount struct {
 	Dir string
-	FS  *Filesystem
 
-	closed bool
-	done   chan util.Empty
-	errors chan error
-
-	Conn   *fuse.Conn
-	Server *fs.Server
+	filesys *Filesystem
+	closed  bool
+	done    chan util.Empty
+	errors  chan error
+	conn    *fuse.Conn
+	server  *fs.Server
 }
 
 // NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
@@ -47,25 +46,25 @@ func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 
 	filesys := &Filesystem{cfs: cfs}
 	mnt := &Mount{
-		Conn:   conn,
-		Server: fs.New(conn, nil),
-		FS:     filesys,
-		Dir:    mountpoint,
-		done:   make(chan util.Empty),
-		errors: make(chan error),
+		conn:    conn,
+		server:  fs.New(conn, nil),
+		filesys: filesys,
+		Dir:     mountpoint,
+		done:    make(chan util.Empty),
+		errors:  make(chan error),
 	}
 
 	go func() {
 		defer close(mnt.done)
 		log.Debugf("Serving FUSE at %v", mountpoint)
-		mnt.errors <- mnt.Server.Serve(filesys)
+		mnt.errors <- mnt.server.Serve(filesys)
 		mnt.done <- util.Empty{}
 		log.Debugf("Stopped serving FUSE at %v", mountpoint)
 	}()
 
 	select {
-	case <-mnt.Conn.Ready:
-		if err := mnt.Conn.MountError; err != nil {
+	case <-mnt.conn.Ready:
+		if err := mnt.conn.MountError; err != nil {
 			return nil, err
 		}
 	case err = <-mnt.errors:
@@ -110,7 +109,7 @@ func (m *Mount) Close() error {
 	// Be sure to pull the item from the channel:
 	<-m.done
 
-	if err := m.Conn.Close(); err != nil {
+	if err := m.conn.Close(); err != nil {
 		return err
 	}
 
@@ -121,7 +120,7 @@ func (m *Mount) Close() error {
 // `Mount` struct. It's given as convenient way to maintain several mounts.
 // All operations on the table are safe to call from several goroutines.
 type MountTable struct {
-	sync.Mutex
+	mu sync.Mutex
 	m  map[string]*Mount
 	fs *catfs.FS
 }
@@ -136,8 +135,8 @@ func NewMountTable(fs *catfs.FS) *MountTable {
 
 // AddMount calls NewMount and adds it to the table at `path`.
 func (t *MountTable) AddMount(path string) (*Mount, error) {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	m, ok := t.m[path]
 	if ok {
@@ -154,8 +153,8 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 
 // Unmount closes the mount at `path` and deletes it from the table.
 func (t *MountTable) Unmount(path string) error {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	m, ok := t.m[path]
 	if !ok {
@@ -168,8 +167,8 @@ func (t *MountTable) Unmount(path string) error {
 
 // Close unmounts all leftover mounts and clears the table.
 func (t *MountTable) Close() error {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	var err error
 

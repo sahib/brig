@@ -144,16 +144,28 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	return nil
 }
 
-func doMount(ctx *cli.Context, ctl *client.Client, mount bool) error {
+func handleMount(ctx *cli.Context, ctl *client.Client) error {
+	mountPath := ctx.Args().First()
+	if err := ctl.Mount(mountPath); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to mount: %v", err),
+		}
+	}
+
 	return nil
 }
 
-func handleMount(ctx *cli.Context, ctl *client.Client) error {
-	return doMount(ctx, ctl, !ctx.Bool("unmount"))
-}
-
 func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
-	return doMount(ctx, ctl, false)
+	mountPath := ctx.Args().First()
+	if err := ctl.Unmount(mountPath); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to unmount: %v", err),
+		}
+	}
+
+	return nil
 }
 
 func handleInit(ctx *cli.Context, ctl *client.Client) error {

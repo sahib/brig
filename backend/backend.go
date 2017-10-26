@@ -9,7 +9,7 @@ type RepoBackend interface {
 	Init(path string) error
 }
 
-// Backend is a amalgamation of all backend interfacecs require for brig to work.
+// Backend is a amalgamation of all backend interfaces required for brig to work.
 type Backend interface {
 	RepoBackend
 	catfs.FsBackend
