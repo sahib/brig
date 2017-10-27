@@ -28,7 +28,7 @@ type base struct {
 	mounts  *fuse.MountTable
 	backend backend.Backend
 
-	QuitCh chan struct{}
+	quitCh chan struct{}
 }
 
 func repoIsInitialized(path string) error {
@@ -98,9 +98,6 @@ func (b *base) Backend() (backend.Backend, error) {
 }
 
 func (b *base) Mounts() (*fuse.MountTable, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
 	if b.mounts != nil {
 		return b.mounts, nil
 	}
@@ -121,7 +118,7 @@ func newBase(basePath string, password string) (*base, error) {
 	return &base{
 		basePath: basePath,
 		password: password,
-		QuitCh:   make(chan struct{}, 1),
+		quitCh:   make(chan struct{}, 1),
 	}, nil
 }
 
@@ -161,4 +158,32 @@ func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
 	}
 
 	return fn(fs)
+}
+
+func (b *base) Quit() error {
+	log.Info("Shutting down brigd due to QUIT command")
+	b.quitCh <- struct{}{}
+
+	log.Infof("Trying to lock repository...")
+	repo, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	if err := repo.Close(b.password); err != nil {
+		return err
+	}
+
+	log.Infof("Trying to unmount any mounts...")
+	mounts, err := b.Mounts()
+	if err != nil {
+		return err
+	}
+
+	if err := mounts.Close(); err != nil {
+		return err
+	}
+
+	log.Infof("brigd is dead now")
+	return nil
 }

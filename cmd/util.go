@@ -118,6 +118,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	for i := 0; i < 15; i++ {
 		ctl, err := client.Dial(context.Background(), port)
 		if err != nil {
+			// Only print this warning once...
 			if !warningPrinted {
 				log.Warnf("Waiting for daemon to bootup... :/")
 				warningPrinted = true

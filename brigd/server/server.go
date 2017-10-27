@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -76,7 +77,7 @@ func (sv *Server) Close() error {
 
 func (sv *Server) Serve() error {
 	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, os.Kill)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Reserve a pool of connections:
 	rateCh := make(chan struct{}, MaxConnections)
@@ -87,14 +88,14 @@ func (sv *Server) Serve() error {
 	for {
 		select {
 		case sig := <-signalCh:
-			log.Warnf("Received %s signal", sig)
-			return nil
+			log.Warnf("Received %s signal, quitting.", sig)
+			return sv.base.Quit()
 		case <-rateCh:
 			// If this signal can receive something, we have a free connection.
 			if err := sv.accept(rateCh); err != nil {
 				log.Errorf("Failed to accept connection: %s", err)
 			}
-		case <-sv.base.QuitCh:
+		case <-sv.base.quitCh:
 			log.Infof("Will not accept new connections now")
 			return nil
 		default:

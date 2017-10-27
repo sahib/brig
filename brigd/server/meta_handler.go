@@ -1,7 +1,6 @@
 package server
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/repo"
 	"zombiezen.com/go/capnproto2/server"
@@ -12,27 +11,7 @@ type metaHandler struct {
 }
 
 func (mh *metaHandler) Quit(call capnp.Meta_quit) error {
-	server.Ack(call.Options)
-	log.Info("Shutting down brigd due to QUIT command")
-	mh.base.QuitCh <- struct{}{}
-
-	log.Infof("Trying to lock repository...")
-	repo, err := mh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	if err := repo.Close(mh.base.password); err != nil {
-		return err
-	}
-
-	log.Infof("Trying to unmount any mounts...")
-	mounts, err := mh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	return mounts.Close()
+	return mh.base.Quit()
 }
 
 func (mh *metaHandler) Ping(call capnp.Meta_ping) error {
