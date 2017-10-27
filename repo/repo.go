@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,6 +19,10 @@ var (
 	// Do not encrypt "data" (already contains encrypred streams) and
 	// also do not encrypt meta.yml (contains e.g. owner info for startup)
 	excludedFromLock = []string{"meta.yml", "data"}
+)
+
+var (
+	ErrBadPassword = errors.New("Failed to open repository. Probably wrong password")
 )
 
 // Repository provides access to the file structure of a single repository.
@@ -111,10 +116,47 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
+	passwdFile := filepath.Join(baseFolder, "passwd")
+	passwdData := fmt.Sprintf("%s", owner)
+	if err := ioutil.WriteFile(passwdFile, []byte(passwdData), 0644); err != nil {
+		return err
+	}
+
+	if err := lockFile(passwdFile, keyFromPassword(password)); err != nil {
+		return err
+	}
+
 	return LockRepo(baseFolder, owner, password, excludedFromLock)
 }
 
+func CheckPassword(baseFolder, password string) error {
+	passwdFile := filepath.Join(baseFolder, "passwd.locked")
+
+	// If the file does not exist yet, it probably means
+	// that the repo was not initialized yet.
+	// Act like the password is okay and wait for the init.
+	if _, err := os.Stat(passwdFile); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if err := checkUnlockability(passwdFile, keyFromPassword(password)); err != nil {
+		log.Warningf("Failed to unlock passwd file. Wrong password entered?")
+		return ErrBadPassword
+	}
+
+	return nil
+}
+
 func Open(baseFolder, password string) (*Repository, error) {
+	// This is only a sanity check here. If the wrong password
+	// was supplied, we won't be able to unlock the repo anyways.
+	// But try to bail out here with an meaningful error message.
+	if err := CheckPassword(baseFolder, password); err != nil {
+		return nil, err
+	}
+
 	metaPath := filepath.Join(baseFolder, "meta.yml")
 	meta := viper.New()
 	meta.SetConfigFile(metaPath)

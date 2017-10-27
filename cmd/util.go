@@ -97,9 +97,6 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		return nil, err
 	}
 
-	// TODO: Make -x work for all subcommands.
-	fmt.Println("PASS", pwd)
-
 	// Start a new daemon process:
 	log.Info("Starting daemon from: ", exePath)
 
@@ -117,18 +114,22 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	// This will likely suffice for most cases:
 	time.Sleep(100 * time.Millisecond)
 
+	warningPrinted := false
 	for i := 0; i < 15; i++ {
 		ctl, err := client.Dial(context.Background(), port)
 		if err != nil {
-			log.Infof("Waiting to bootup...")
-			time.Sleep(500 * time.Millisecond)
+			if !warningPrinted {
+				log.Warnf("Waiting for daemon to bootup... :/")
+				warningPrinted = true
+			}
+			time.Sleep(50 * time.Millisecond)
 			continue
 		}
 
 		return ctl, nil
 	}
 
-	return nil, fmt.Errorf("Daemon could not be started or took to long")
+	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
 func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) {

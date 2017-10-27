@@ -10,6 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/repo"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
@@ -106,6 +107,10 @@ func (sv *Server) Serve() error {
 }
 
 func BootServer(basePath, password string, port int) (*Server, error) {
+	if err := repo.CheckPassword(basePath, password); err != nil {
+		return nil, err
+	}
+
 	ctx := context.Background()
 	base, err := newBase(basePath, password)
 	if err != nil {

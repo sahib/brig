@@ -88,6 +88,11 @@ func isExcluded(path string, excludePatterns []string) bool {
 	return false
 }
 
+func keyFromPassword(password string) []byte {
+	// TODO: Use user again for salt? Then we can't really check the pwd on startup
+	return security.DeriveKey([]byte(password), nil, 32)
+}
+
 func LockRepo(root, user, password string, excludePatterns []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
@@ -95,7 +100,7 @@ func LockRepo(root, user, password string, excludePatterns []string) error {
 	}
 
 	// user is not the perfect salt, but pretty much the only available one here.
-	key := security.DeriveKey([]byte(password), []byte(user), 32)
+	key := keyFromPassword(password)
 
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
@@ -129,6 +134,23 @@ func LockRepo(root, user, password string, excludePatterns []string) error {
 	}
 
 	return nil
+}
+
+func checkUnlockability(path string, key []byte) error {
+	srcFd, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer util.Closer(srcFd)
+
+	encR, err := encrypt.NewReader(srcFd, key)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(ioutil.Discard, encR)
+	return err
 }
 
 func unlockFile(path string, key []byte) error {
@@ -185,7 +207,7 @@ func UnlockRepo(root, user, password string, excludePatterns []string) error {
 		return err
 	}
 
-	key := security.DeriveKey([]byte(password), []byte(user), 32)
+	key := keyFromPassword(password)
 
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
