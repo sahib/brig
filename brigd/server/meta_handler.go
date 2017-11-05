@@ -150,3 +150,53 @@ func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
 
 	return call.Results.SetAll(lst)
 }
+
+// TODO: Use later for remotes:
+// func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
+// 	remoteName, err := remote.Name()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	remoteFolders, err := remote.Folders()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	folders := []repo.Folder{}
+// 	for idx := 0; idx < remoteFolders.Len(); idx++ {
+// 		folder, err := remoteFolders.At(idx)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		// TODO: Read perms here once defined.
+// 		folders = append(folders, repo.Folder{
+// 			Folder: folder,
+// 		})
+// 	}
+//
+// 	return &repo.Remote{
+// 		Name:    remoteName,
+// 		Folders: folders,
+// 	}, nil
+// }
+//
+// func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
+// 	repo, err := mh.base.Repo()
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	capRemote, err := call.Params.Remote()
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	remote, err := capRemoteToRemote(capRemote)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	return repo.Remotes.AddRemote(*remote)
+// }

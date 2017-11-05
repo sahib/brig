@@ -1,4 +1,5 @@
-// Package peer implements the parsing of brig-peers
+// Package peer implements the basic data types needed to communicate
+// with other brig instances.
 //
 // user[@domain[/resource]
 package peer
@@ -15,35 +16,35 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-type ID string
+type Name string
 
-type ErrBadID struct {
+type ErrBadName struct {
 	reason string
 }
 
-func (e ErrBadID) Error() string {
+func (e ErrBadName) Error() string {
 	return e.reason
 }
 
-func valid(id string) error {
-	if utf8.RuneCountInString(id) == 0 {
-		return ErrBadID{"Empty ID is not allowed"}
+func valid(name string) error {
+	if utf8.RuneCountInString(name) == 0 {
+		return ErrBadName{"Empty name is not allowed"}
 	}
 
-	if !utf8.ValidString(id) {
-		return ErrBadID{fmt.Sprintf("Invalid utf-8: %v", id)}
+	if !utf8.ValidString(name) {
+		return ErrBadName{fmt.Sprintf("Invalid utf-8: %v", name)}
 	}
 
-	for idx, rn := range id {
+	for idx, rn := range name {
 		if unicode.IsSpace(rn) {
-			return ErrBadID{
-				fmt.Sprintf("Space not allowed: %s (at %d)", id, idx),
+			return ErrBadName{
+				fmt.Sprintf("Space not allowed: %s (at %d)", name, idx),
 			}
 		}
 
 		if !unicode.IsPrint(rn) {
-			return ErrBadID{
-				fmt.Sprintf("Only printable runes allowed: %s (at %d)", id, idx),
+			return ErrBadName{
+				fmt.Sprintf("Only printable runes allowed: %s (at %d)", name, idx),
 			}
 		}
 	}
@@ -51,50 +52,59 @@ func valid(id string) error {
 	return nil
 }
 
-// Cast checks `id` to be correct and returns
-// a wrapped ID.
-func Cast(id string) (ID, error) {
-	if err := valid(id); err != nil {
+// Cast checks `name` to be correct and returns
+// a wrapped name.
+func Cast(name string) (Name, error) {
+	if err := valid(name); err != nil {
 		return "", err
 	}
 
-	return ID(norm.NFKC.Bytes([]byte(id))), nil
+	return Name(norm.NFKC.Bytes([]byte(name))), nil
 }
 
-func IsValid(id string) bool {
-	return valid(id) == nil
+func IsValid(name string) bool {
+	return valid(name) == nil
 }
 
-func (id ID) Hash() h.Hash {
-	return h.Sum(id.AsBlockData())
+func (name Name) Hash() h.Hash {
+	return h.Sum(name.AsBlockData())
 }
 
-func (id ID) Domain() string {
-	a := strings.IndexRune(string(id), '@')
+func (name Name) Domain() string {
+	a := strings.IndexRune(string(name), '@')
 	if a < 0 {
 		return ""
 	}
 
-	b := strings.LastIndexByte(string(id), '/')
+	b := strings.LastIndexByte(string(name), '/')
 	if b < 0 {
-		return string(id)[a+1:]
+		return string(name)[a+1:]
 	}
 
-	return string(id)[a+1 : b]
+	return string(name)[a+1 : b]
 }
 
-func (id ID) Resource() string {
-	idx := strings.LastIndexByte(string(id), '/')
+func (name Name) Resource() string {
+	idx := strings.LastIndexByte(string(name), '/')
 	if idx < 0 {
 		return ""
 	}
 
-	return string(id)[idx+1:]
+	return string(name)[idx+1:]
 }
 
-func (id ID) AsPath() string {
-	path := id.User()
-	rsrc := id.Resource()
+func (name Name) WithoutResource() string {
+	domain := name.Domain()
+	if len(domain) > 0 {
+		return name.User() + "@" + name.Domain()
+	}
+
+	return name.User()
+}
+
+func (name Name) AsPath() string {
+	path := name.User()
+	rsrc := name.Resource()
 	if rsrc != "" {
 		path += "-" + rsrc
 	}
@@ -102,96 +112,21 @@ func (id ID) AsPath() string {
 	return strings.Replace(path, string(os.PathSeparator), "|", -1)
 }
 
-func (id ID) User() string {
-	idx := strings.Index(string(id), "@")
+func (name Name) User() string {
+	idx := strings.Index(string(name), "@")
 	if idx < 0 {
-		return string(id)
+		return string(name)
 	}
 
-	return string(id)[:idx]
+	return string(name)[:idx]
 }
 
-func (id ID) AsBlockData() []byte {
-	return []byte("brig:" + string(id))
+type Fingerprint string
+
+func (fp Fingerprint) String() string {
+	return ""
 }
 
-// var (
-// 	ErrAlreadyRegistered = errors.New("Username already registered")
-//  ErrNoAddrs = errors.New("No addrs found for id (online?)")
-// )
-//
-// // TODO: bad name? Does not really register; just publishes the block(s)
-// func (id ID) Register(backend Backend) error {
-// 	if err := register(backend, id); err != nil {
-// 		return err
-// 	}
-//
-// 	domain := id.Domain()
-// 	if domain == "" {
-// 		return nil
-// 	}
-//
-// 	if err := register(backend, ID(domain)); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
-//
-// func register(backend Backend, id ID) error {
-// 	hash := id.Hash()
-//
-// 	peers, err := backend.Locate(hash, 1, 5*time.Second)
-// 	if err != nil && err != util.ErrTimeout {
-// 		return err
-// 	}
-//
-// 	// Check if some id is our own:
-// 	if len(peers) > 0 {
-// 		self, err := backend.Identity()
-// 		if err != nil {
-// 			return err
-// 		}
-//
-// 		if _, wasSelf := peers[self]; wasSelf {
-// 			return ErrAlreadyRegistered
-// 		}
-// 	}
-//
-// 	// If it was an timeout, it's probably not yet registered.
-// 	otherHash, err := backend.AddBlock(id.asBlockData())
-// 	if otherHash.Equal(hash) {
-// 		log.Warningf("Hash differ during register; did the hash func changed?")
-// 	}
-//
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
-//
-// // TODO: Not sure if the next functions are actually useful...
-// // DelBlock just deletes the block *locally*
-// // Lookup returns the brig:$id value
-//
-// func (id ID) Unregister(backend Backend) error {
-// 	hash := id.Hash()
-//
-// 	if err := backend.DelBlock(hash); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
-//
-// func (id ID) Taken(backend Backend) (bool, error) {
-// 	data, err := backend.CatBlock(id.Hash(), 5*time.Second)
-// 	if err != nil {
-// 		return false, err
-// 	}
-//
-// 	// This is kinda paranoid...
-// 	// (Disclaimer: I doubt hash collisions, but bugs are everywhere)
-// 	return bytes.Equal(data, id.asBlockData()), nil
-// }
+type Info struct {
+	Addr string
+}
