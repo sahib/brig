@@ -11,8 +11,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	h "github.com/disorganizer/brig/util/hashlib"
-
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -64,10 +62,6 @@ func Cast(name string) (Name, error) {
 
 func IsValid(name string) bool {
 	return valid(name) == nil
-}
-
-func (name Name) Hash() h.Hash {
-	return h.Sum(name.AsBlockData())
 }
 
 func (name Name) Domain() string {
