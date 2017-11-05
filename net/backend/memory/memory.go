@@ -60,7 +60,7 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 	case "vincent":
 		return nil, fmt.Errorf("vincent is offline")
 	case "bob-addr", "charlie-addr-right":
-		// Those are the only addrs we may dial.
+		// Those are the only valid addrs we may dial.
 		break
 	case "charlie-addr-wrong":
 		return nil, fmt.Errorf("No such peer")

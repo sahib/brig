@@ -116,12 +116,19 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
+	if err := createKeyPair(owner, baseFolder, 4096); err != nil {
+		return e.Wrap(err, "Failed to setup pgp keys")
+	}
+
 	passwdFile := filepath.Join(baseFolder, "passwd")
 	passwdData := fmt.Sprintf("%s", owner)
 	if err := ioutil.WriteFile(passwdFile, []byte(passwdData), 0644); err != nil {
 		return err
 	}
 
+	// passwd is used to verify the user password,
+	// so it needs to be locked only once on init and
+	// kept out otherwise from the locking machinery.
 	if err := lockFile(passwdFile, keyFromPassword(password)); err != nil {
 		return err
 	}
@@ -267,4 +274,8 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 // OwnFS returns the filesystem for the owner.
 func (rp *Repository) OwnFS(bk catfs.FsBackend) (*catfs.FS, error) {
 	return rp.FS(rp.Owner, bk)
+}
+
+func (rp *Repository) KeyPair() *KeyPair {
+	return newKeyPairHandle(rp.BaseFolder)
 }
