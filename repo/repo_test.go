@@ -12,12 +12,7 @@ func TestRepoInit(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))
 
-	// Directory does not exist yet:
-	err := Init(testDir, "alice", "pass", "memory")
-	require.NotNil(t, err)
-
-	require.Nil(t, os.Mkdir(testDir, 0700))
-	err = Init(testDir, "alice", "pass", "memory")
+	err := Init(testDir, "alice", "klaus", "memory")
 	require.Nil(t, err)
 
 	repo, err := Open(testDir, "klaus")
