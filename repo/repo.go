@@ -129,7 +129,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	// passwd is used to verify the user password,
 	// so it needs to be locked only once on init and
 	// kept out otherwise from the locking machinery.
-	if err := lockFile(passwdFile, keyFromPassword(password)); err != nil {
+	if err := lockFile(passwdFile, keyFromPassword(owner, password)); err != nil {
 		return err
 	}
 
@@ -148,7 +148,18 @@ func CheckPassword(baseFolder, password string) error {
 		return err
 	}
 
-	if err := checkUnlockability(passwdFile, keyFromPassword(password)); err != nil {
+	// Try to get the owner of the repo.
+	// Needed for the key derivation function.
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	meta := viper.New()
+	meta.SetConfigFile(metaPath)
+	if err := meta.ReadInConfig(); err != nil {
+		return err
+	}
+
+	owner := meta.GetString("repo.owner")
+	key := keyFromPassword(owner, password)
+	if err := checkUnlockability(passwdFile, key); err != nil {
 		log.Warningf("Failed to unlock passwd file. Wrong password entered?")
 		return ErrBadPassword
 	}
@@ -253,15 +264,8 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		"sync.ignore_removed",
 	)
 
-	// TODO: Does it make really sense to store the hash in fs?
-	//       Maybe user management and repo management should be two things.
-	person := catfs.Person{
-		Name: owner,
-		Hash: nil,
-	}
-
 	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
-	fs, err := catfs.NewFilesystem(bk, fsDbPath, &person, fsCfg)
+	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, fsCfg)
 	if err != nil {
 		return nil, err
 	}

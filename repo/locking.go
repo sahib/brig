@@ -88,9 +88,8 @@ func isExcluded(path string, excludePatterns []string) bool {
 	return false
 }
 
-func keyFromPassword(password string) []byte {
-	// TODO: Use user again for salt? Then we can't really check the pwd on startup
-	return security.DeriveKey([]byte(password), nil, 32)
+func keyFromPassword(owner, password string) []byte {
+	return security.DeriveKey([]byte(password), []byte(owner), 32)
 }
 
 func LockRepo(root, user, password string, excludePatterns []string) error {
@@ -100,7 +99,7 @@ func LockRepo(root, user, password string, excludePatterns []string) error {
 	}
 
 	// user is not the perfect salt, but pretty much the only available one here.
-	key := keyFromPassword(password)
+	key := keyFromPassword(user, password)
 
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
@@ -207,7 +206,7 @@ func UnlockRepo(root, user, password string, excludePatterns []string) error {
 		return err
 	}
 
-	key := keyFromPassword(password)
+	key := keyFromPassword(user, password)
 
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
