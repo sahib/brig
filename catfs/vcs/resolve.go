@@ -152,7 +152,7 @@ func (rv *resolver) cacheLastCommonMerge() error {
 
 	for currHead != nil {
 		with, srcRef := currHead.MergeMarker()
-		if with != nil && with.Equal(srcOwner) {
+		if with == srcOwner {
 			srcHead, err := rv.lkrSrc.CommitByHash(srcRef)
 			if err != nil {
 				return err

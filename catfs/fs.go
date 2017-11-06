@@ -25,12 +25,6 @@ import (
 	"github.com/disorganizer/brig/util/security"
 )
 
-// TODO: I hate to duplicate that struct here.
-type Person struct {
-	Name string
-	Hash h.Hash
-}
-
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
 // actual underlying hashes and the associated metadata.
@@ -137,7 +131,7 @@ func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
 // ACTUAL API IMPLEMENTATION //
 ///////////////////////////////
 
-func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config) (*FS, error) {
+func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) (*FS, error) {
 	vfg, err := cfg.parseConfig()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse config: %v", err)
@@ -150,8 +144,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config)
 
 	lkr := c.NewLinker(kv)
 
-	person := n.NewPerson(owner.Name, owner.Hash)
-	if err := lkr.SetOwner(person); err != nil {
+	if err := lkr.SetOwner(owner); err != nil {
 		return nil, err
 	}
 
@@ -173,7 +166,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner *Person, cfg *Config)
 				log.Warningf("gc: failed to get owner: %v", err)
 			}
 
-			log.Debugf("gc (%s): running", owner.ID())
+			log.Debugf("gc (%s): running", owner)
 			if err := fs.gc.Run(true); err != nil {
 				log.Warnf("failed to run GC: %v", err)
 			}
@@ -493,7 +486,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	nu := c.NodeUpdate{
 		Hash:   hash,
 		Key:    key,
-		Author: owner.String(),
+		Author: owner,
 		Size:   sizeAcc.Size(),
 	}
 

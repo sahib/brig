@@ -85,7 +85,7 @@ func TestGC(t *testing.T) {
 		t.Fatalf("Second gc run failed: %v", err)
 	}
 
-	if err := lkr.MakeCommit(n.AuthorOfStage(), "some message"); err != nil {
+	if err := lkr.MakeCommit(n.AuthorOfStage, "some message"); err != nil {
 		t.Fatalf("MakeCommit() failed: %v", err)
 	}
 

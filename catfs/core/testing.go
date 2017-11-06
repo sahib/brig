@@ -45,9 +45,8 @@ func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	WithDummyLinker(t, func(lkrSrc *Linker) {
 		WithDummyLinker(t, func(lkrDst *Linker) {
-			lkrSrc.SetOwner(n.NewPerson("src", h.TestDummy(t, 23)))
-			lkrDst.SetOwner(n.NewPerson("dst", h.TestDummy(t, 42)))
-
+			lkrSrc.SetOwner("src")
+			lkrDst.SetOwner("dst")
 			fn(lkrSrc, lkrDst)
 		})
 	})
@@ -131,7 +130,7 @@ func MustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
 }
 
 func MustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
-	if err := lkr.MakeCommit(n.AuthorOfStage(), msg); err != nil {
+	if err := lkr.MakeCommit(n.AuthorOfStage, msg); err != nil {
 		t.Fatalf("Failed to make commit with msg %s: %v", msg, err)
 	}
 

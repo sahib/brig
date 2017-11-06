@@ -94,11 +94,6 @@ func decryptAsymetric(folder string, data []byte) ([]byte, error) {
 	return ioutil.ReadAll(md.UnverifiedBody)
 }
 
-func readPubKey(folder string) ([]byte, error) {
-	pubPath := filepath.Join(folder, "gpg.pub")
-	return ioutil.ReadFile(pubPath)
-}
-
 type KeyPair struct {
 	folder string
 }
@@ -116,5 +111,6 @@ func (kp *KeyPair) Decrypt(data []byte) ([]byte, error) {
 }
 
 func (kp *KeyPair) PubKeyBytes() ([]byte, error) {
-	return readPubKey(kp.folder)
+	pubPath := filepath.Join(kp.folder, "gpg.pub")
+	return ioutil.ReadFile(pubPath)
 }

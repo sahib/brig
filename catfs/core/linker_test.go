@@ -61,7 +61,7 @@ func TestLinkerInsertRoot(t *testing.T) {
 }
 
 func TestLinkerRefs(t *testing.T) {
-	author := n.AuthorOfStage()
+	author := n.AuthorOfStage
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -199,7 +199,7 @@ func TestLinkerNested(t *testing.T) {
 			t.Fatalf("Garbage collector failed to run: %v", err)
 		}
 
-		if err := lkr.MakeCommit(n.AuthorOfStage(), "first message"); err != nil {
+		if err := lkr.MakeCommit(n.AuthorOfStage, "first message"); err != nil {
 			t.Fatalf("Making first commit failed: %v", err)
 		}
 	})
@@ -208,7 +208,7 @@ func TestLinkerNested(t *testing.T) {
 func TestCheckoutFile(t *testing.T) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		if err := lkr.MakeCommit(n.AuthorOfStage(), "initial commit"); err != nil {
+		if err := lkr.MakeCommit(n.AuthorOfStage, "initial commit"); err != nil {
 			t.Fatalf("Initial commit failed: %v", err)
 		}
 
@@ -225,13 +225,13 @@ func TestCheckoutFile(t *testing.T) {
 		MustModify(t, lkr, file, 1)
 		oldFileHash := file.Hash().Clone()
 
-		if err := lkr.MakeCommit(n.AuthorOfStage(), "second commit"); err != nil {
+		if err := lkr.MakeCommit(n.AuthorOfStage, "second commit"); err != nil {
 			t.Fatalf("Failed to make second commit: %v", err)
 		}
 
 		MustModify(t, lkr, file, 2)
 
-		if err := lkr.MakeCommit(n.AuthorOfStage(), "third commit"); err != nil {
+		if err := lkr.MakeCommit(n.AuthorOfStage, "third commit"); err != nil {
 			t.Fatalf("Failed to make third commit: %v", err)
 		}
 
@@ -281,7 +281,7 @@ func TestLinkerPersistence(t *testing.T) {
 	}
 
 	lkr := NewLinker(kv)
-	if err := lkr.MakeCommit(n.AuthorOfStage(), "initial commit"); err != nil {
+	if err := lkr.MakeCommit(n.AuthorOfStage, "initial commit"); err != nil {
 		t.Fatalf("Failed to create initial commit out of nothing: %v", err)
 	}
 

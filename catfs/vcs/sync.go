@@ -247,7 +247,7 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 			return err
 		}
 
-		message := fmt.Sprintf("Merge with %s", srcOwner.ID())
+		message := fmt.Sprintf("Merge with %s", srcOwner)
 		return lkrDst.MakeCommit(srcOwner, message)
 	}
 

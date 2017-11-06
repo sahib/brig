@@ -12,6 +12,12 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+const (
+	// AuthorOfStage is the Person that is displayed for the stage commit.
+	// Currently this is just an empty hash Person that will be set later.
+	AuthorOfStage = "unknown"
+)
+
 // Commit groups a set of changes
 type Commit struct {
 	Base
@@ -20,7 +26,7 @@ type Commit struct {
 	message string
 
 	// Author is the id of the committer.
-	author *Person
+	author string
 
 	// TreeHash is the hash of the root node at this point in time
 	root h.Hash
@@ -30,7 +36,7 @@ type Commit struct {
 
 	merge struct {
 		// With indicates with which person we merged.
-		with *Person
+		with string
 
 		// head is a reference to the commit we merged with on
 		// the remote side.
@@ -47,7 +53,7 @@ func NewEmptyCommit(inode uint64) (*Commit, error) {
 			inode:    inode,
 			modTime:  time.Now(),
 		},
-		author: AuthorOfStage(),
+		author: AuthorOfStage,
 	}, nil
 }
 
@@ -85,18 +91,13 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 		return nil, err
 	}
 
-	author, err := c.author.ToCapnpPerson(seg)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := capcmt.SetMessage(c.message); err != nil {
 		return nil, err
 	}
 	if err := capcmt.SetRoot(c.root); err != nil {
 		return nil, err
 	}
-	if err := capcmt.SetAuthor(*author); err != nil {
+	if err := capcmt.SetAuthor(c.author); err != nil {
 		return nil, err
 	}
 	if err := capcmt.SetParent(c.parent); err != nil {
@@ -106,14 +107,8 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 	// Store merge infos:
 	capmerge := capcmt.Merge()
 
-	if c.merge.with != nil {
-		with, err := c.merge.with.ToCapnpPerson(seg)
-		if err != nil {
-			return nil, err
-		}
-		if err := capmerge.SetWith(*with); err != nil {
-			return nil, err
-		}
+	if err := capmerge.SetWith(c.merge.with); err != nil {
+		return nil, err
 	}
 
 	if err := capmerge.SetHead(c.merge.head); err != nil {
@@ -147,13 +142,8 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
 	var err error
 
-	capauthor, err := capcmt.Author()
+	c.author, err = capcmt.Author()
 	if err != nil {
-		return err
-	}
-
-	c.author = &Person{}
-	if err := c.author.FromCapnpPerson(capauthor); err != nil {
 		return err
 	}
 
@@ -178,13 +168,8 @@ func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
 		return err
 	}
 
-	capperson, err := capmerge.With()
+	c.merge.with, err = capmerge.With()
 	if err != nil {
-		return err
-	}
-
-	c.merge.with = &Person{}
-	if err := c.merge.with.FromCapnpPerson(capperson); err != nil {
 		return err
 	}
 
@@ -220,7 +205,7 @@ func (c *Commit) SetRoot(hash h.Hash) {
 // BoxCommit takes all currently filled data and calculates the final hash.
 // It also will update the modification time.
 // Only a boxed commit should be
-func (c *Commit) BoxCommit(author *Person, message string) error {
+func (c *Commit) BoxCommit(author string, message string) error {
 	if c.root == nil {
 		return fmt.Errorf("Cannot box commit: root directory is empty")
 	}
@@ -236,7 +221,7 @@ func (c *Commit) BoxCommit(author *Person, message string) error {
 	buf.Write(padHash(c.root))
 
 	// Write the author hash. Different author -> different content.
-	buf.Write(padHash(c.author.Hash()))
+	buf.Write(padHash(h.Sum([]byte(c.author))))
 
 	// Write the message last, it may be arbitary length.
 	buf.Write([]byte(message))
@@ -265,12 +250,12 @@ func (c *Commit) String() string {
 	)
 }
 
-func (c *Commit) SetMergeMarker(with *Person, remoteHead h.Hash) {
+func (c *Commit) SetMergeMarker(with string, remoteHead h.Hash) {
 	c.merge.with = with
 	c.merge.head = remoteHead.Clone()
 }
 
-func (c *Commit) MergeMarker() (*Person, h.Hash) {
+func (c *Commit) MergeMarker() (string, h.Hash) {
 	return c.merge.with, c.merge.head
 }
 

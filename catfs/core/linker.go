@@ -68,7 +68,7 @@ type Linker struct {
 	inodeIndex map[uint64]n.Node
 
 	// Cache for the linker owner.
-	owner *n.Person
+	owner string
 }
 
 // NewFilesystem returns a new lkr, ready to use. It assumes the key value store
@@ -343,7 +343,7 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 // SetMergeMarker sets the current status to be a merge commit.
 // Note that this function only will have a result when MakeCommit() is called afterwards.
 // Otherwise, the changes will not be written to disk.
-func (lkr *Linker) SetMergeMarker(with *n.Person, remoteHead h.Hash) error {
+func (lkr *Linker) SetMergeMarker(with string, remoteHead h.Hash) error {
 	status, err := lkr.Status()
 	if err != nil {
 		return err
@@ -357,7 +357,7 @@ func (lkr *Linker) SetMergeMarker(with *n.Person, remoteHead h.Hash) error {
 // The current staging commit is finalized with `author` and `message`
 // and gets saved. A new, identical staging commit is created pointing
 // to the root of the now new HEAD.
-func (lkr *Linker) MakeCommit(author *n.Person, message string) (err error) {
+func (lkr *Linker) MakeCommit(author string, message string) (err error) {
 	batch := lkr.kv.Batch()
 	defer func() {
 		if err != nil {
@@ -501,36 +501,26 @@ func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 // OWNERSHIP HANDLING //
 ////////////////////////
 
-func (lkr *Linker) Owner() (*n.Person, error) {
-	if lkr.owner != nil {
+func (lkr *Linker) Owner() (string, error) {
+	if lkr.owner != "" {
 		return lkr.owner, nil
 	}
 
 	data, err := lkr.MetadataGet("owner")
 	if err != nil {
-		return nil, err
-	}
-
-	owner, err := n.PersonFromBytes(data)
-	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Cache owner, we don't want to reload it again and again.
 	// It will usually not change during runtime, except SetOwner
 	// is called (which is invalidating the cache anyways)
-	lkr.owner = owner
-	return owner, nil
+	lkr.owner = string(data)
+	return lkr.owner, nil
 }
 
-func (lkr *Linker) SetOwner(owner *n.Person) error {
-	data, err := owner.ToBytes()
-	if err != nil {
-		return err
-	}
-
-	lkr.owner = nil
-	return lkr.MetadataPut("owner", data)
+func (lkr *Linker) SetOwner(owner string) error {
+	lkr.owner = owner
+	return lkr.MetadataPut("owner", []byte(owner))
 }
 
 ////////////////////////
@@ -758,7 +748,7 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) (err error) {
 		}
 	}
 
-	if err := cmt.BoxCommit(n.AuthorOfStage(), ""); err != nil {
+	if err := cmt.BoxCommit(n.AuthorOfStage, ""); err != nil {
 		return err
 	}
 

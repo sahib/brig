@@ -6,21 +6,16 @@ $Go.package("capnp");
 $Go.import("github.com/disorganizer/brig/model/nodes/capnp");
 
 
-struct Person  $Go.doc("Person might be any brig user") {
-    ident @0 :Text;
-    hash  @1 :Data;
-}
-
 struct Commit $Go.doc("Commit is a set of changes to nodes") {
     # Following attributes will be part of the hash:
     message @0 :Text;
-    author  @1 :Person;
+    author  @1 :Text;
     parent  @2 :Data;     # Hash to parent.
     root    @3 :Data;     # Hash to root directory.
 
     # Attributes not being part of the hash:
     merge :group {
-        with    @4 :Person;
+        with    @4 :Text;
         head    @5 :Data;
     }
 }

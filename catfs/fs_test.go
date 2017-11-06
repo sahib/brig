@@ -15,7 +15,6 @@ import (
 	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
 	"github.com/disorganizer/brig/catfs/mio/compress"
 	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/disorganizer/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -26,10 +25,7 @@ func init() {
 
 func withDummyFS(t *testing.T, fn func(fs *FS)) {
 	backend := NewMemFsBackend()
-	owner := &Person{
-		Name: "alice",
-		Hash: h.TestDummy(t, 1),
-	}
+	owner := "alice"
 
 	dbPath, err := ioutil.TempDir("", "brig-fs-test")
 	if err != nil {
