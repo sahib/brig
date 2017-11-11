@@ -1,14 +1,19 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"path/filepath"
 	"sync"
 
+	"zombiezen.com/go/capnproto2/rpc"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
+	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/fuse"
 	"github.com/disorganizer/brig/repo"
@@ -42,6 +47,20 @@ func repoIsInitialized(path string) error {
 	}
 
 	return nil
+}
+
+func (b *base) Handle(ctx context.Context, conn net.Conn) {
+	transport := rpc.StreamTransport(conn)
+	srv := capnp.API_ServerToClient(newApiHandler(b))
+	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
+
+	if err := rpcConn.Wait(); err != nil {
+		log.Warnf("Serving rpc failed: %v", err)
+	}
+
+	if err := rpcConn.Close(); err != nil {
+		log.Warnf("Failed to close rpc conn: %v", err)
+	}
 }
 
 // Repo lazily-loads the repository on disk.

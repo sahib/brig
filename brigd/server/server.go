@@ -2,17 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/repo"
-	"zombiezen.com/go/capnproto2/rpc"
+	"github.com/disorganizer/brig/util/server"
 )
 
 const (
@@ -22,89 +14,16 @@ const (
 //////////////////////////////
 
 type Server struct {
-	lst  net.Listener
-	ctx  context.Context
-	base *base
-}
-
-func (sv *Server) handle(ctx context.Context, conn net.Conn) {
-	transport := rpc.StreamTransport(conn)
-	srv := capnp.API_ServerToClient(newApiHandler(sv.base))
-	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
-
-	if err := rpcConn.Wait(); err != nil {
-		log.Warnf("Serving rpc failed: %v", err)
-	}
-
-	if err := rpcConn.Close(); err != nil {
-		log.Warnf("Failed to close rpc conn: %v", err)
-	}
-}
-
-func (sv *Server) accept(rateCh chan struct{}) error {
-	deadline := time.Now().Add(500 * time.Millisecond)
-	err := sv.lst.(*net.TCPListener).SetDeadline(deadline)
-
-	if err != nil {
-		rateCh <- struct{}{}
-		return err
-	}
-
-	conn, err := sv.lst.Accept()
-	if err != nil {
-		rateCh <- struct{}{}
-		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-			return nil
-		}
-
-		// Something else happened.
-		return err
-	}
-
-	handleCtx, cancel := context.WithTimeout(sv.ctx, 30*time.Second)
-	go func() {
-		sv.handle(handleCtx, conn)
-		cancel()
-		rateCh <- struct{}{}
-	}()
-
-	return nil
-}
-
-func (sv *Server) Close() error {
-	return sv.lst.Close()
+	baseServer *server.Server
+	base       *base
 }
 
 func (sv *Server) Serve() error {
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+	return sv.baseServer.Serve()
+}
 
-	// Reserve a pool of connections:
-	rateCh := make(chan struct{}, MaxConnections)
-	for i := 0; i < cap(rateCh); i++ {
-		rateCh <- struct{}{}
-	}
-
-	for {
-		select {
-		case sig := <-signalCh:
-			log.Warnf("Received %s signal, quitting.", sig)
-			return sv.base.Quit()
-		case <-rateCh:
-			// If this signal can receive something, we have a free connection.
-			if err := sv.accept(rateCh); err != nil {
-				log.Errorf("Failed to accept connection: %s", err)
-			}
-		case <-sv.base.quitCh:
-			log.Infof("Will not accept new connections now")
-			return nil
-		default:
-			// No free connection available.
-			time.Sleep(250 * time.Millisecond)
-		}
-	}
-
-	return nil
+func (sv *Server) Close() error {
+	return sv.baseServer.Close()
 }
 
 func BootServer(basePath, password string, port int) (*Server, error) {
@@ -113,21 +32,19 @@ func BootServer(basePath, password string, port int) (*Server, error) {
 	}
 
 	ctx := context.Background()
+
 	base, err := newBase(basePath, password)
 	if err != nil {
 		return nil, err
 	}
 
-	addr := fmt.Sprintf("localhost:%d", port)
-	log.Infof("Listening on %s", addr)
-	lst, err := net.Listen("tcp", addr)
+	baseServer, err := server.NewServer(port, base, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		ctx:  ctx,
-		lst:  lst,
-		base: base,
+		baseServer: baseServer,
+		base:       base,
 	}, nil
 }
