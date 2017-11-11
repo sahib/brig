@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -232,4 +233,54 @@ func repoIsInitialized(path string) bool {
 	}
 
 	return len(data) > 0
+}
+
+// edit opens up $EDITOR with `data` and returns the edited data.
+func edit(data []byte) ([]byte, error) {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		// It makes my heart bleed, but assume that vi is too hard.
+		editor = "nano"
+	}
+
+	fd, err := ioutil.TempFile("", "brig-cmd-buffer-")
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure it gets cleaned up.
+	defer func() {
+		if err := fd.Close(); err != nil {
+			fmt.Printf("Failed to close file: %v\n", err)
+		}
+		if err := os.Remove(fd.Name()); err != nil {
+			fmt.Printf("Failed to remove file: %v\n", err)
+		}
+	}()
+
+	if _, err := fd.Write(data); err != nil {
+		return nil, err
+	}
+
+	// Launch editor and hook it up with all necessary fds:
+	cmd := exec.Command(editor, fd.Name())
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("Running $EDITOR (%s) failed: %v", editor, err)
+	}
+
+	if _, err := fd.Seek(0, os.SEEK_SET); err != nil {
+		return nil, err
+	}
+
+	newData, err := ioutil.ReadAll(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Some editors (including vim) might add a trailing newline:
+	return bytes.TrimRight(newData, "\n"), nil
 }

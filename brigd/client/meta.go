@@ -1,6 +1,9 @@
 package client
 
-import "github.com/disorganizer/brig/brigd/capnp"
+import (
+	"github.com/disorganizer/brig/brigd/capnp"
+	capnplib "zombiezen.com/go/capnproto2"
+)
 
 func (cl *Client) Ping() error {
 	call := cl.api.Ping(cl.ctx, func(p capnp.Meta_ping_Params) error {
@@ -124,4 +127,222 @@ func (cl *Client) ConfigAll() (map[string]string, error) {
 	}
 
 	return configMap, nil
+}
+
+////////////////////////
+// REMOTE LIST ACCESS //
+////////////////////////
+
+type RemoteFolder struct {
+	Folder string
+	Perms  string
+}
+
+type Remote struct {
+	Name        string
+	Fingerprint string
+	Folders     []RemoteFolder
+}
+
+func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
+	remoteName, err := remote.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	remoteFolders, err := remote.Folders()
+	if err != nil {
+		return nil, err
+	}
+
+	folders := []RemoteFolder{}
+	for idx := 0; idx < remoteFolders.Len(); idx++ {
+		folder := remoteFolders.At(idx)
+		folderName, err := folder.Folder()
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: Read perms here once defined.
+		folders = append(folders, RemoteFolder{
+			Folder: folderName,
+		})
+	}
+
+	return &Remote{
+		Name:    remoteName,
+		Folders: folders,
+	}, nil
+}
+
+func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, error) {
+	capRemote, err := capnp.NewRemote(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capRemote.SetName(remote.Name); err != nil {
+		return nil, err
+	}
+
+	if err := capRemote.SetFingerprint(string(remote.Fingerprint)); err != nil {
+		return nil, err
+	}
+
+	capFolders, err := capnp.NewRemoteFolder_List(seg, int32(len(remote.Folders)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, folder := range remote.Folders {
+		capFolder, err := capnp.NewRemoteFolder(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetFolder(folder.Folder); err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetPerms(folder.Perms); err != nil {
+			return nil, err
+		}
+
+		if err := capFolders.Set(idx, capFolder); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := capRemote.SetFolders(capFolders); err != nil {
+		return nil, err
+	}
+
+	return &capRemote, nil
+}
+
+func (cl *Client) RemoteAdd(remote Remote) error {
+	call := cl.api.RemoteAdd(cl.ctx, func(p capnp.Meta_remoteAdd_Params) error {
+		capRemote, err := remoteToCapRemote(remote, p.Segment())
+		if err != nil {
+			return err
+		}
+
+		return p.SetRemote(*capRemote)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) RemoteRm(name string) error {
+	call := cl.api.RemoteRm(cl.ctx, func(p capnp.Meta_remoteRm_Params) error {
+		return p.SetName(name)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) RemoteLs() ([]Remote, error) {
+	call := cl.api.RemoteLs(cl.ctx, func(p capnp.Meta_remoteLs_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capRemotes, err := result.Remotes()
+	if err != nil {
+		return nil, err
+	}
+
+	remotes := []Remote{}
+	for idx := 0; idx < capRemotes.Len(); idx++ {
+		capRemote := capRemotes.At(idx)
+		remote, err := capRemoteToRemote(capRemote)
+		if err != nil {
+			return nil, err
+		}
+
+		remotes = append(remotes, *remote)
+	}
+
+	return remotes, nil
+}
+
+func (cl *Client) RemoteSave(remotes []Remote) error {
+	call := cl.api.RemoteSave(cl.ctx, func(p capnp.Meta_remoteSave_Params) error {
+		seg := p.Segment()
+		capRemotes, err := capnp.NewRemote_List(seg, int32(len(remotes)))
+		if err != nil {
+			return err
+		}
+
+		for idx, remote := range remotes {
+			capRemote, err := remoteToCapRemote(remote, seg)
+			if err != nil {
+				return err
+			}
+
+			if err := capRemotes.Set(idx, *capRemote); err != nil {
+				return err
+			}
+		}
+
+		return p.SetRemotes(capRemotes)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) RemoteLocate(who string) ([]Remote, error) {
+	call := cl.api.RemoteLocate(cl.ctx, func(p capnp.Meta_remoteLocate_Params) error {
+		return p.SetWho(who)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capRemotes, err := result.Candidates()
+	if err != nil {
+		return nil, err
+	}
+
+	remotes := []Remote{}
+	for idx := 0; idx < capRemotes.Len(); idx++ {
+		capRemote := capRemotes.At(idx)
+		remote, err := capRemoteToRemote(capRemote)
+		if err != nil {
+			return nil, err
+		}
+
+		remotes = append(remotes, *remote)
+	}
+
+	return remotes, nil
+
+	return nil, nil
+}
+
+func (cl *Client) RemoteSelf() (*Remote, error) {
+	call := cl.api.RemoteSelf(cl.ctx, func(p capnp.Meta_remoteSelf_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capRemote, err := result.Self()
+	if err != nil {
+		return nil, err
+	}
+
+	return capRemoteToRemote(capRemote)
 }

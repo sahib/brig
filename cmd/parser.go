@@ -247,14 +247,21 @@ func RunCmdline(args []string) int {
 				cli.Command{
 					Name:        "add",
 					Usage:       "Add a specific remote",
-					ArgsUsage:   "<brig-id> <ipfs-hash>",
-					Description: "Adds a specific user (brig-remote-id) with a specific identity (ipfs-hash) to remotes",
+					ArgsUsage:   "<name> <fingerprint>",
+					Description: "Adds a specific user with it's fingerprint to the remote list",
 					Action:      withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "folder,f",
+							Value: "",
+							Usage: "What folder the remote can access",
+						},
+					},
 				},
 				cli.Command{
 					Name:        "remove",
 					Usage:       "Remove a specifc remote",
-					ArgsUsage:   "<brig-remote-id>",
+					ArgsUsage:   "<name>",
 					Description: "Removes a specific remote from remotes.",
 					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
 				},
@@ -265,15 +272,28 @@ func RunCmdline(args []string) int {
 					Action:      withDaemon(handleRemoteList, true),
 				},
 				cli.Command{
+					Name:        "edit",
+					Usage:       "Edit the current remote list",
+					Description: "Edit the current remote list with $EDITOR",
+					Action:      withDaemon(handleRemoteEdit, true),
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "yml,y",
+							Value: "",
+							Usage: "Directly overwrite remote list with yml file",
+						},
+					},
+				},
+				cli.Command{
 					Name:        "locate",
 					Usage:       "Search a specific remote",
-					ArgsUsage:   "<brig-remote-id>",
+					ArgsUsage:   "<name>",
 					Description: "Locates all remotes with the given brig-remote-id ",
 					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteLocate, true)),
 				},
 				cli.Command{
 					Name:        "self",
-					Usage:       "Print identity",
+					Usage:       "Print self's identity",
 					Description: "Prints the users identity and online status",
 					Action:      withDaemon(handleRemoteSelf, true),
 				},

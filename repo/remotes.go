@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/disorganizer/brig/net/peer"
+
 	yml "gopkg.in/yaml.v2"
 )
 
@@ -48,9 +50,13 @@ func (rp RemotePerms) ToStrings() []string {
 	return res
 }
 
+func (rp RemotePerms) String() string {
+	return strings.Join(rp.ToStrings(), ",")
+}
+
 type Folder struct {
 	Folder string
-	Perm   RemotePerms
+	Perms  RemotePerms
 }
 
 func (f Folder) Less(o Folder) bool {
@@ -79,8 +85,9 @@ func insertSortedFolder(folders []Folder, f Folder) []Folder {
 }
 
 type Remote struct {
-	Name    string
-	Folders []Folder
+	Name        string
+	Folders     []Folder
+	Fingerprint peer.Fingerprint
 }
 
 // RemoteList is a helper that parses the remote access yml file
@@ -118,14 +125,14 @@ func NewRemotes(r io.Reader) (*RemoteList, error) {
 		if remote, ok := remotes[name]; ok {
 			remote.Folders = insertSortedFolder(remote.Folders, Folder{
 				Folder: folder,
-				Perm:   perms,
+				Perms:  perms,
 			})
 		} else {
 			remotes[name] = &Remote{
 				Name: name,
 				Folders: []Folder{{
 					Folder: folder,
-					Perm:   perms,
+					Perms:  perms,
 				}},
 			}
 		}
@@ -144,7 +151,7 @@ func (rl *RemoteList) Export(w io.Writer) error {
 				" ",
 			)
 
-			ymlRemotes[nameAndFolder] = folder.Perm.ToStrings()
+			ymlRemotes[nameAndFolder] = folder.Perms.ToStrings()
 		}
 	}
 
@@ -165,8 +172,8 @@ func (rl *RemoteList) AddRemote(remote Remote) error {
 	return nil
 }
 
-func (rl *RemoteList) RmRemote(remote Remote) error {
-	delete(rl.remotes, remote.Name)
+func (rl *RemoteList) RmRemote(name string) error {
+	delete(rl.remotes, name)
 	return nil
 }
 
@@ -177,4 +184,23 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	}
 
 	return *rm, nil
+}
+
+func (rl *RemoteList) ListRemotes() ([]Remote, error) {
+	remotes := []Remote{}
+	for _, remote := range rl.remotes {
+		remotes = append(remotes, *remote)
+	}
+
+	return remotes, nil
+}
+
+func (rl *RemoteList) SaveList(remotes []Remote) error {
+	rl.remotes = make(map[string]*Remote)
+	for _, remote := range remotes {
+		rl.remotes[remote.Name] = &remote
+	}
+
+	// TODO: Save file?
+	return nil
 }

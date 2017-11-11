@@ -1,8 +1,10 @@
 package server
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/repo"
+	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
 
@@ -151,52 +153,212 @@ func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
 	return call.Results.SetAll(lst)
 }
 
-// TODO: Use later for remotes:
-// func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
-// 	remoteName, err := remote.Name()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	remoteFolders, err := remote.Folders()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	folders := []repo.Folder{}
-// 	for idx := 0; idx < remoteFolders.Len(); idx++ {
-// 		folder, err := remoteFolders.At(idx)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-//
-// 		// TODO: Read perms here once defined.
-// 		folders = append(folders, repo.Folder{
-// 			Folder: folder,
-// 		})
-// 	}
-//
-// 	return &repo.Remote{
-// 		Name:    remoteName,
-// 		Folders: folders,
-// 	}, nil
-// }
-//
-// func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
-// 	repo, err := mh.base.Repo()
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	capRemote, err := call.Params.Remote()
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	remote, err := capRemoteToRemote(capRemote)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	return repo.Remotes.AddRemote(*remote)
-// }
+func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
+	remoteName, err := remote.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	remoteFolders, err := remote.Folders()
+	if err != nil {
+		return nil, err
+	}
+
+	folders := []repo.Folder{}
+	for idx := 0; idx < remoteFolders.Len(); idx++ {
+		folder := remoteFolders.At(idx)
+		folderName, err := folder.Folder()
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: Read perms here once defined.
+		folders = append(folders, repo.Folder{
+			Folder: folderName,
+		})
+	}
+
+	return &repo.Remote{
+		Name:    remoteName,
+		Folders: folders,
+	}, nil
+}
+
+func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote, error) {
+	capRemote, err := capnp.NewRemote(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capRemote.SetName(remote.Name); err != nil {
+		return nil, err
+	}
+
+	if err := capRemote.SetFingerprint(string(remote.Fingerprint)); err != nil {
+		return nil, err
+	}
+
+	capFolders, err := capnp.NewRemoteFolder_List(seg, int32(len(remote.Folders)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, folder := range remote.Folders {
+		capFolder, err := capnp.NewRemoteFolder(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetFolder(folder.Folder); err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetPerms(folder.Perms.String()); err != nil {
+			return nil, err
+		}
+
+		if err := capFolders.Set(idx, capFolder); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := capRemote.SetFolders(capFolders); err != nil {
+		return nil, err
+	}
+
+	return &capRemote, nil
+}
+
+func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	capRemote, err := call.Params.Remote()
+	if err != nil {
+		return err
+	}
+
+	remote, err := capRemoteToRemote(capRemote)
+	if err != nil {
+		return err
+	}
+
+	return repo.Remotes.AddRemote(*remote)
+}
+
+func (mh *metaHandler) RemoteRm(call capnp.Meta_remoteRm) error {
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	name, err := call.Params.Name()
+	if err != nil {
+		return err
+	}
+
+	return repo.Remotes.RmRemote(name)
+}
+
+func (mh *metaHandler) RemoteLs(call capnp.Meta_remoteLs) error {
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	remotes, err := repo.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+	capRemotes, err := capnp.NewRemote_List(seg, int32(len(remotes)))
+	if err != nil {
+		return err
+	}
+
+	for idx, remote := range remotes {
+		capRemote, err := remoteToCapRemote(remote, seg)
+		if err != nil {
+			return err
+		}
+
+		if err := capRemotes.Set(idx, *capRemote); err != nil {
+			return err
+		}
+	}
+
+	return call.Results.SetRemotes(capRemotes)
+}
+
+func (mh *metaHandler) RemoteSave(call capnp.Meta_remoteSave) error {
+	remotes := []repo.Remote{}
+	capRemotes, err := call.Params.Remotes()
+	if err != nil {
+		return err
+	}
+
+	for idx := 0; idx < capRemotes.Len(); idx++ {
+		capRemote := capRemotes.At(idx)
+		remote, err := capRemoteToRemote(capRemote)
+		if err != nil {
+			return err
+		}
+
+		remotes = append(remotes, *remote)
+	}
+
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	return repo.Remotes.SaveList(remotes)
+}
+
+func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
+	who, err := call.Params.Who()
+	if err != nil {
+		return err
+	}
+
+	// TODO: Figure out how to locate other users.
+	foundRemotes := []repo.Remote{}
+	log.Debugf("Trying to locate %v", who)
+
+	seg := call.Results.Segment()
+	capRemotes, err := capnp.NewRemote_List(seg, int32(len(foundRemotes)))
+	if err != nil {
+		return err
+	}
+
+	for idx, remote := range foundRemotes {
+		capRemote, err := remoteToCapRemote(remote, seg)
+		if err != nil {
+			return err
+		}
+
+		capRemotes.Set(idx, *capRemote)
+	}
+
+	return call.Results.SetCandidates(capRemotes)
+}
+
+func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
+	capRemote, err := capnp.NewRemote(call.Results.Segment())
+	if err != nil {
+		return err
+	}
+
+	if err := capRemote.SetName(""); err != nil {
+		return err
+	}
+
+	if err := capRemote.SetFingerprint(""); err != nil {
+		return err
+	}
+
+	return call.Results.SetSelf(capRemote)
+}

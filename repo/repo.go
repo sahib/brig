@@ -116,6 +116,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
+	// Create initial key pair.
 	if err := createKeyPair(owner, baseFolder, 2048); err != nil {
 		return e.Wrap(err, "Failed to setup pgp keys")
 	}

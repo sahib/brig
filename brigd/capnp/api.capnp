@@ -46,6 +46,17 @@ struct Diff {
     conflict @4 :List(DiffPair);
 }
 
+struct RemoteFolder {
+    folder @0 :Text;
+    perms  @1 :Text;
+}
+
+struct Remote {
+    name        @0 :Text;
+    fingerprint @1 :Text;
+    folders     @2 :List(RemoteFolder);
+}
+
 interface FS {
     stage    @0 (localPath :Text, repoPath :Text);
     list     @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -79,6 +90,13 @@ interface Meta {
     configGet @5 (key :Text) -> (value :Text);
     configSet @6 (key :Text, value :Text);
     configAll @7 () -> (all :List(ConfigPair));
+
+    remoteAdd    @8  (remote :Remote);
+    remoteRm     @9  (name :Text);
+    remoteLs     @10 () -> (remotes :List(Remote));
+    remoteSave   @11 (remotes :List(Remote));
+    remoteLocate @12 (who :Text) -> (candidates :List(Remote));
+    remoteSelf   @13 () -> (self :Remote);
 }
 
 # Group all interfaces together in one API object,
