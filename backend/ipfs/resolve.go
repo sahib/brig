@@ -7,6 +7,7 @@ import (
 	blocks "gx/ipfs/QmSn9Td7xgxm9EV7iEjTckpUWmWApggzPxu7eFGWkkpwin/go-block-format"
 
 	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
+	u "gx/ipfs/QmSU6eubNdhXjFBJBSksTp8kv8YRub8mGAPv8tVJHmL2EU/go-ipfs-util"
 
 	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/util"
@@ -59,27 +60,23 @@ func (nd *Node) PublishName(name peer.Name) error {
 	userName := "brig:" + string(name.WithoutResource())
 	domainId := "brig:" + string(name.Domain())
 
-	if err := nd.addBlock([]byte(fullName)); err != nil {
+	if _, err := nd.addBlock([]byte(fullName)); err != nil {
 		return err
 	}
 
 	if fullName != userName {
-		if err := nd.addBlock([]byte(userName)); err != nil {
+		if _, err := nd.addBlock([]byte(userName)); err != nil {
 			return err
 		}
 	}
 
 	if domainId != "" {
-		if err := nd.addBlock([]byte(name)); err != nil {
+		if _, err := nd.addBlock([]byte(name)); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (nd *Node) ResolveName(name peer.Name) ([]peer.Info, error) {
-	return nil, nil
 }
 
 // Identity returns the base58 encoded id of the own ipfs node.
@@ -93,38 +90,28 @@ func (nd *Node) Identity() (string, error) {
 // if `n` is 0, locate will return immeditately.
 // this operation requires online-mode.
 func (nd *Node) ResolveName(name peer.Name) ([]peer.Info, error) {
-	if n == 0 {
-		return []*PeerInfo{}, nil
-	}
-
-	// Note: Do not use Maxint32. That makes ipfs allocate
-	//       a whole lot of memory. Just assume that 100 is fine.
-	if n < 0 {
-		n = 100
-	}
-
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
 	}
 
+	hash := u.Hash([]byte(name.WithoutResource()))
+
 	ctx, cancel := context.WithTimeout(nd.ctx, 30*time.Second)
 	defer cancel()
 
-	cid.Decode()
+	k, err := cid.Decode(hash.B58String())
+	if err != nil {
+		return nil, err
+	}
 
-	k := key.B58KeyDecode(hash.B58String())
-	peers := nd.ipfsNode.Routing.FindProvidersAsync(ctx, k, 5)
-	infos := []*PeerInfo{}
+	peers := nd.ipfsNode.Routing.FindProvidersAsync(ctx, k, 10)
+	infos := []peer.Info{}
 
 	for info := range peers {
 		// Converting equal struct into each other is my favourite thing.
-		peerInfo := &PeerInfo{
-			ID:     info.ID.Pretty(),
-			PubKey: node.ipfsNode.Peerstore.PubKey(info.ID),
-		}
-
-		for _, addr := range info.Addrs {
-			peerInfo.Addrs = append(peerInfo.Addrs, ma.Cast(addr.Bytes()))
+		peerInfo := peer.Info{
+			Addr: info.ID.Pretty(),
+			Name: name,
 		}
 
 		infos = append(infos, peerInfo)

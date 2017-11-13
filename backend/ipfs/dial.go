@@ -50,11 +50,6 @@ func ipfsWithPort(port int) (*Node, string) {
 		fmt.Println("Failed to guess self", err)
 	}
 
-	fmt.Println("Going offline")
-	if err := nd.Offline(); err != nil {
-		fmt.Println("Failed to go offline again", err)
-	}
-
 	return nd, self
 }
 
