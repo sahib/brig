@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"net"
 
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/server"
@@ -32,13 +34,18 @@ func BootServer(basePath, password string, port int) (*Server, error) {
 	}
 
 	ctx := context.Background()
-
-	base, err := newBase(basePath, password)
+	base, err := newBase(basePath, password, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	baseServer, err := server.NewServer(port, base, ctx)
+	addr := fmt.Sprintf("localhost:%d", port)
+	lst, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	baseServer, err := server.NewServer(lst, base, ctx)
 	if err != nil {
 		return nil, err
 	}

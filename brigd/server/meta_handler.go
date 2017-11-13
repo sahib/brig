@@ -1,8 +1,13 @@
 package server
 
 import (
+	"context"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
+	peernet "github.com/disorganizer/brig/net"
+	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -324,17 +329,53 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 		return err
 	}
 
-	// TODO: Figure out how to locate other users.
-	foundRemotes := []repo.Remote{}
-	log.Debugf("Trying to locate %v", who)
-
-	seg := call.Results.Segment()
-	capRemotes, err := capnp.NewRemote_List(seg, int32(len(foundRemotes)))
+	psrv, err := mh.base.PeerServer()
 	if err != nil {
 		return err
 	}
 
-	for idx, remote := range foundRemotes {
+	log.Debugf("Trying to locate %v", who)
+	foundPeers, err := psrv.Locate(peer.Name(who))
+	if err != nil {
+		return err
+	}
+
+	bk, err := mh.base.Backend()
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+	capRemotes, err := capnp.NewRemote_List(seg, int32(len(foundPeers)))
+	if err != nil {
+		return err
+	}
+
+	// For the client side we do not differentiate between peers and remotes.
+	// Also, the pubkey/network addr is combined into a single "fingerprint".
+	for idx, foundPeer := range foundPeers {
+		fingerprint := peer.Fingerprint("")
+
+		// Query the remotes pubkey and use it to build the remotes' fingerprint.
+		// If not available we just send an empty string back to the client.
+		subCtx, cancel := context.WithTimeout(mh.base.ctx, 1*time.Minute)
+		defer cancel()
+
+		ctl, err := peernet.Dial(who, subCtx, bk)
+		if err != nil {
+			remotePubKey, err := ctl.PubKeyData()
+			if err != nil {
+				return err
+			}
+
+			fingerprint = peer.BuildFingerprint(foundPeer.Addr, remotePubKey)
+		}
+
+		remote := repo.Remote{
+			Name:        string(foundPeer.Name),
+			Fingerprint: fingerprint,
+		}
+
 		capRemote, err := remoteToCapRemote(remote, seg)
 		if err != nil {
 			return err
@@ -347,16 +388,38 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 }
 
 func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	self, err := psrv.Identity()
+	if err != nil {
+		return err
+	}
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	// Compute our own fingerprint:
+	ownPubKey, err := rp.KeyPair().PubKeyBytes()
+	if err != nil {
+		return err
+	}
+
+	finger := peer.BuildFingerprint(self.Addr, ownPubKey)
 	capRemote, err := capnp.NewRemote(call.Results.Segment())
 	if err != nil {
 		return err
 	}
 
-	if err := capRemote.SetName(""); err != nil {
+	if err := capRemote.SetName(string(self.Name)); err != nil {
 		return err
 	}
 
-	if err := capRemote.SetFingerprint(""); err != nil {
+	if err := capRemote.SetFingerprint(string(finger)); err != nil {
 		return err
 	}
 

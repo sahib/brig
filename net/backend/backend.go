@@ -1,16 +1,10 @@
-package id
+package backend
 
 import (
 	"net"
 
 	"github.com/disorganizer/brig/net/peer"
 )
-
-type PeerInfo struct {
-	// Addr tells a specific backend where to find a certain peer.
-	// In case of ipfs, this is the ipfs id.
-	Addr string
-}
 
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.

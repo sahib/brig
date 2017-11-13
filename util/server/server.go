@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -104,13 +103,7 @@ func (sv *Server) Quit() {
 	sv.quitCh <- true
 }
 
-func NewServer(port int, handler Handler, ctx context.Context) (*Server, error) {
-	addr := fmt.Sprintf("localhost:%d", port)
-	lst, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-
+func NewServer(lst net.Listener, handler Handler, ctx context.Context) (*Server, error) {
 	return &Server{
 		ctx:     ctx,
 		lst:     lst,

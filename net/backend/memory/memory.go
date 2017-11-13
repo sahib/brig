@@ -21,12 +21,12 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 	switch name {
 	case "bob":
 		return []peer.Info{
-			{Addr: "bob-addr"},
+			{Name: name, Addr: "bob-addr"},
 		}, nil
 	case "charlie":
 		return []peer.Info{
-			{Addr: "charlie-addr-right"},
-			{Addr: "charlie-addr-wrong"},
+			{Name: name, Addr: "charlie-addr-right"},
+			{Name: name, Addr: "charlie-addr-wrong"},
 		}, nil
 	case "vincent":
 		// Vincent is always offline.
@@ -36,13 +36,13 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 		// fictitiously. Any resemblance to actual events or locales or persons,
 		// living or dead, is entirely coincidental.
 		return []peer.Info{
-			{Addr: "vincent-addr"},
+			{Name: name, Addr: "vincent-addr"},
 		}, nil
 	case "mallory":
-		// Mallory is a faker
+		// Mallory is a faker:
 		return []peer.Info{
-			{Addr: "charlie-addr-right"},
-			{Addr: "bob-addr"},
+			{Name: name, Addr: "charlie-addr-right"},
+			{Name: name, Addr: "bob-addr"},
 		}, nil
 	default:
 		return nil, fmt.Errorf("No such peer: %v", name)
@@ -50,7 +50,10 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 }
 
 func (nb *NetBackend) Identity() (peer.Info, error) {
-	return peer.Info{Addr: "alice-addr"}, nil
+	return peer.Info{
+		Addr: "alice-addr",
+		Name: peer.Name("alice"),
+	}, nil
 }
 
 func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {

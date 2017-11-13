@@ -33,7 +33,7 @@ func Dial(ctx context.Context, port int) (*Client, error) {
 	api := capnp.API{Client: clientConn.Bootstrap(ctx)}
 
 	return &Client{
-		ctx:     context.Background(),
+		ctx:     ctx,
 		conn:    clientConn,
 		tcpConn: tcpConn,
 		api:     api,

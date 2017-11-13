@@ -5,12 +5,14 @@
 package peer
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
+	h "github.com/disorganizer/brig/util/hashlib"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -115,12 +117,21 @@ func (name Name) User() string {
 	return string(name)[:idx]
 }
 
+/////////////////////////
+// FINGERPRINT HELPERS //
+/////////////////////////
+
 type Fingerprint string
 
-func (fp Fingerprint) String() string {
-	return ""
+func BuildFingerprint(addr string, pubKeyData []byte) Fingerprint {
+	buf := &bytes.Buffer{}
+	buf.Write([]byte(addr))
+	buf.Write([]byte(":::"))
+	buf.Write(pubKeyData)
+	return Fingerprint(h.Sum(buf.Bytes()).B58String())
 }
 
 type Info struct {
+	Name Name
 	Addr string
 }

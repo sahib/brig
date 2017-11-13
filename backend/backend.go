@@ -3,6 +3,7 @@ package backend
 import (
 	"github.com/disorganizer/brig/backend/memory"
 	"github.com/disorganizer/brig/catfs"
+	netBackend "github.com/disorganizer/brig/net/backend"
 )
 
 type RepoBackend interface {
@@ -13,6 +14,7 @@ type RepoBackend interface {
 type Backend interface {
 	RepoBackend
 	catfs.FsBackend
+	netBackend.Backend
 }
 
 // FromName returns a suitable backend for a human readable name.

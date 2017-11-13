@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	log "github.com/Sirupsen/logrus"
 	"zombiezen.com/go/capnproto2/rpc"
 
 	"github.com/disorganizer/brig/net/capnp"

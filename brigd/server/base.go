@@ -16,6 +16,7 @@ import (
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/fuse"
+	peernet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -29,10 +30,17 @@ type base struct {
 	// to secure access to Password here.
 	password string
 
-	repo    *repo.Repository
-	mounts  *fuse.MountTable
+	ctx context.Context
+
+	repo       *repo.Repository
+	mounts     *fuse.MountTable
+	peerServer *peernet.Server
+
+	// This the general backend, not a specific submodule one:
 	backend backend.Backend
 
+	// This channel is triggered once the QUIT command was received
+	// (or if a deadly/terminating signal was received)
 	quitCh chan struct{}
 }
 
@@ -95,16 +103,16 @@ func (b *base) Repo() (*repo.Repository, error) {
 }
 
 func (b *base) Backend() (backend.Backend, error) {
-	rp, err := b.Repo()
-	if err != nil {
-		return nil, err
-	}
-
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	if b.backend != nil {
 		return b.backend, nil
+	}
+
+	rp, err := b.Repo()
+	if err != nil {
+		return nil, err
 	}
 
 	bk, err := rp.LoadBackend()
@@ -114,6 +122,29 @@ func (b *base) Backend() (backend.Backend, error) {
 
 	b.backend = bk
 	return bk, nil
+}
+
+func (b *base) PeerServer() (*peernet.Server, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.peerServer != nil {
+		return b.peerServer, nil
+	}
+
+	bk, err := b.Backend()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("Launching peer server...")
+	srv, err := peernet.NewServer(bk)
+	if err != nil {
+		return nil, err
+	}
+
+	b.peerServer = srv
+	return srv, nil
 }
 
 func (b *base) Mounts() (*fuse.MountTable, error) {
@@ -133,8 +164,9 @@ func (b *base) Mounts() (*fuse.MountTable, error) {
 	return b.mounts, nil
 }
 
-func newBase(basePath string, password string) (*base, error) {
+func newBase(basePath string, password string, ctx context.Context) (*base, error) {
 	return &base{
+		ctx:      ctx,
 		basePath: basePath,
 		password: password,
 		quitCh:   make(chan struct{}, 1),

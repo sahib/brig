@@ -2,6 +2,7 @@ package memory
 
 import (
 	"github.com/disorganizer/brig/catfs"
+	netMemory "github.com/disorganizer/brig/net/backend/memory"
 )
 
 type MemRepoBackend struct{}
@@ -18,11 +19,13 @@ func (db *MemRepoBackend) Init(path string) error {
 type MemoryBackend struct {
 	catfs.MemFsBackend
 	MemRepoBackend
+	*netMemory.NetBackend
 }
 
 func NewMemoryBackend() *MemoryBackend {
 	return &MemoryBackend{
 		MemFsBackend:   *catfs.NewMemFsBackend(),
 		MemRepoBackend: *NewMemRepoBackend(),
+		NetBackend:     netMemory.NewNetBackend(),
 	}
 }
