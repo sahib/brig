@@ -1,4 +1,4 @@
-package main
+package ipfs
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 
-// AddBlock creates a new block with `data`.
+// addBlock creates a new block with `data`.
 // The hash of the data is returned.
 // It is no error if the block already exists.
 func (nd *Node) addBlock(data []byte) (h.Hash, error) {
@@ -26,7 +26,7 @@ func (nd *Node) addBlock(data []byte) (h.Hash, error) {
 	return h.Hash(k.Hash()), nil
 }
 
-// CatBlock retuns the data stored in the block pointed to by `hash`.
+// catBlock retuns the data stored in the block pointed to by `hash`.
 // It will timeout with util.ErrTimeout if the operation takes too long,
 // this includes querying for an non-existing hash.
 //

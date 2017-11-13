@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/catfs"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -68,7 +67,7 @@ func touch(path string) error {
 	return fd.Close()
 }
 
-func Init(baseFolder, owner, password, backendName string) error {
+func Init(baseFolder, owner, password string, backend Backend) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
@@ -79,11 +78,6 @@ func Init(baseFolder, owner, password, backendName string) error {
 		log.Warningf("`%s` is a directory and exists")
 	} else {
 		return fmt.Errorf("`%s` is a file (should be a directory)")
-	}
-
-	realBackend := backend.FromName(backendName)
-	if realBackend == nil {
-		return fmt.Errorf("No such backend `%s`", backendName)
 	}
 
 	// Create (empty) folders:
@@ -100,7 +94,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	metaPath := filepath.Join(baseFolder, "meta.yml")
-	metaDefault := buildMetaDefault(backendName, owner)
+	metaDefault := buildMetaDefault(backend.Name(), owner)
 	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
 		return err
 	}
@@ -112,7 +106,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	dataFolder := filepath.Join(baseFolder, "data")
-	if err := realBackend.Init(dataFolder); err != nil {
+	if err := backend.Init(dataFolder); err != nil {
 		return e.Wrap(err, "Failed to init data backend")
 	}
 
@@ -225,21 +219,11 @@ func (rp *Repository) Close(password string) error {
 	return LockRepo(rp.BaseFolder, rp.Owner, password, excludedFromLock)
 }
 
-func (rp *Repository) LoadBackend() (backend.Backend, error) {
+func (rp *Repository) BackendName() string {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 
-	backendName := rp.meta.GetString("data.backend")
-	log.Infof("Loading backend `%s`", backendName)
-
-	realBackend := backend.FromName(backendName)
-	if realBackend == nil {
-		msg := fmt.Sprintf("No such backend `%s`", backendName)
-		log.Error(msg)
-		return nil, fmt.Errorf("open failed: %s", msg)
-	}
-
-	return realBackend, nil
+	return rp.meta.GetString("data.backend")
 }
 
 // FS returns a filesystem for `owner`. If there is none yet,

@@ -1,8 +1,13 @@
-package ipfsutil
+package ipfs
 
 import (
 	"errors"
 	"fmt"
+	p2pnet "gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
+	pstore "gx/ipfs/QmPgDWmTmuzvP7QE5zwo1TmjbJme9pmZHNujB2453jkCTr/go-libp2p-peerstore"
+	peer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	pro "gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	"net"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -17,17 +22,26 @@ var (
 	ErrIsOffline = errors.New("Node is offline")
 )
 
-func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, error) {
-	// `nd` only contains the prepopulated fields as in New().
-	rp, err := fsrepo.Open(nd.Path)
+// Node remembers the settings needed for accessing the ipfs daemon.
+type Node struct {
+	Path      string
+	SwarmPort int
+
+	ipfsNode *core.IpfsNode
+	ctx      context.Context
+	cancel   context.CancelFunc
+}
+
+func createNode(path string, swarmPort int, ctx context.Context) (*core.IpfsNode, error) {
+	rp, err := fsrepo.Open(path)
 	if err != nil {
-		log.Errorf("Unable to open repo `%s`: %v", nd.Path, err)
+		log.Errorf("Unable to open repo `%s`: %v", path, err)
 		return nil, err
 	}
 
 	swarmAddrs := []string{
-		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", nd.SwarmPort),
-		fmt.Sprintf("/ip6/::/tcp/%d", nd.SwarmPort),
+		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
+		fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
 	}
 
 	if err := rp.SetConfigKey("Addresses.Swarm", swarmAddrs); err != nil {
@@ -36,7 +50,7 @@ func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, err
 
 	cfg := &core.BuildCfg{
 		Repo:   rp,
-		Online: online,
+		Online: true,
 	}
 
 	ipfsNode, err := core.NewNode(ctx, cfg)
@@ -49,109 +63,130 @@ func createNode(nd *Node, online bool, ctx context.Context) (*core.IpfsNode, err
 
 // New creates a new ipfs node manager.
 // No daemon is started yet.
-func New(ipfsPath string) *Node {
+func New(ipfsPath string) (*Node, error) {
 	return NewWithPort(ipfsPath, 4001)
 }
 
-func NewWithPort(ipfsPath string, swarmPort int) *Node {
+func NewWithPort(ipfsPath string, swarmPort int) (*Node, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ipfsNode, err := createNode(ipfsPath, swarmPort, ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Node{
 		Path:      ipfsPath,
 		SwarmPort: swarmPort,
-		ipfsNode:  nil,
-		Context:   nil,
-		Cancel:    nil,
-	}
+		ipfsNode:  ipfsNode,
+		ctx:       ctx,
+		cancel:    cancel,
+	}, nil
 }
 
-func (n *Node) IsOnline() bool {
-	return n.ipfsNode != nil && n.ipfsNode.OnlineMode()
-}
-
-func (n *Node) Online() error {
-	if n.IsOnline() {
-		return nil
-	}
-
-	// close potential offline node:
-	if n.ipfsNode != nil {
-		if err := n.Close(); err != nil {
-			return err
-		}
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	nd, err := createNode(n, true, ctx)
-
-	if err != nil {
-		return err
-	}
-
-	n.ipfsNode = nd
-	n.Cancel = cancel
-	n.Context = ctx
-	return nil
-}
-
-func (n *Node) Offline() error {
-	if !n.IsOnline() {
-		return nil
-	}
-
-	if err := n.Close(); err != nil {
-		return err
-	}
-
-	// Offline daemon will be started on next proc() call.
-	n.ipfsNode = nil
-	n.Cancel = nil
-	n.Context = nil
-	return nil
-}
-
-func (n *Node) proc() (*core.IpfsNode, error) {
-	if n.IsOnline() {
-		return n.ipfsNode, nil
-	}
-
-	if n.ipfsNode == nil {
-		ctx, cancel := context.WithCancel(context.Background())
-		nd, err := createNode(n, false, ctx)
-
-		if err != nil {
-			return nil, err
-		}
-
-		n.ipfsNode = nd
-		n.Cancel = cancel
-		n.Context = ctx
-	}
-
-	return n.ipfsNode, nil
+func (nd *Node) IsOnline() bool {
+	return nd.ipfsNode.OnlineMode()
 }
 
 // Close shuts down the ipfs node.
 // It may not be used afterwards.
-func (n *Node) Close() error {
-	nd := n.ipfsNode
-	if nd != nil {
-		n.ipfsNode = nil
-		return nd.Close()
-	}
-
-	if n.Cancel != nil {
-		n.Cancel()
-		n.Cancel = nil
-	}
-	return nil
+func (nd *Node) Close() error {
+	nd.cancel()
+	return nd.ipfsNode.Close()
 }
 
-// Identity returns the base58 encoded id of the own ipfs node.
-func (n *Node) Identity() (string, error) {
-	nd, err := n.proc()
+type streamAddr struct {
+	protocol string
+	peer     string
+}
+
+func (sa *streamAddr) Network() string {
+	return sa.protocol
+}
+
+func (sa *streamAddr) String() string {
+	return sa.peer
+}
+
+type stdStream struct {
+	p2pnet.Stream
+}
+
+func (st *stdStream) LocalAddr() net.Addr {
+	return &streamAddr{
+		protocol: string(st.Protocol()),
+		peer:     st.Stream.Conn().LocalPeer().Pretty(),
+	}
+}
+
+func (st *stdStream) RemoteAddr() net.Addr {
+	return &streamAddr{
+		protocol: string(st.Protocol()),
+		peer:     st.Stream.Conn().RemotePeer().Pretty(),
+	}
+}
+
+func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
+	peerID, err := peer.IDB58Decode(peerHash)
 	if err != nil {
-		log.Warningf("ipfs identity: %v", err)
-		return "", err
+		return nil, err
 	}
 
-	return nd.Identity.Pretty(), nil
+	peerInfo := pstore.PeerInfo{ID: peerID}
+	fmt.Println("Connect")
+	if err := nd.ipfsNode.PeerHost.Connect(nd.ctx, peerInfo); err != nil {
+		return nil, err
+	}
+
+	protoId := pro.ID(protocol)
+	fmt.Println("New stream")
+	stream, err := nd.ipfsNode.PeerHost.NewStream(nd.ctx, peerID, protoId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &stdStream{Stream: stream}, nil
+}
+
+/////////////////////////////
+// LISTENER IMPLEMENTATION //
+/////////////////////////////
+
+type Listener struct {
+	conCh  chan p2pnet.Stream
+	ctx    context.Context
+	cancel func()
+}
+
+func (nd *Node) Listen(protocol string) (*Listener, error) {
+	ctx, cancel := context.WithCancel(nd.ctx)
+	lst := &Listener{
+		conCh:  make(chan p2pnet.Stream),
+		ctx:    ctx,
+		cancel: cancel,
+	}
+
+	protoId := pro.ID(protocol)
+	nd.ipfsNode.PeerHost.SetStreamHandler(protoId, func(stream p2pnet.Stream) {
+		select {
+		case lst.conCh <- stream:
+		case <-ctx.Done():
+			stream.Close()
+		}
+	})
+
+	return lst, nil
+}
+
+func (lst *Listener) Accept() (net.Conn, error) {
+	select {
+	case <-lst.ctx.Done():
+		return nil, nil
+	case stream := <-lst.conCh:
+		return &stdStream{Stream: stream}, nil
+	}
+}
+
+func (lst *Listener) Close() error {
+	lst.cancel()
+	return nil
 }

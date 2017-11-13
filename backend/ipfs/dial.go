@@ -1,4 +1,4 @@
-package main
+package ipfs
 
 import (
 	"fmt"
@@ -11,9 +11,9 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
-// InitRepo creates an initialized .ipfs directory in the directory `path`.
+// initRepo creates an initialized .ipfs directory in the directory `path`.
 // The generated RSA key will have `keySize` bits.
-func InitRepo(path string, keySize int) error {
+func initRepo(path string, keySize int) error {
 	if err := os.MkdirAll(path, 0744); err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func ipfsWithPort(port int) (*Node, string) {
 	os.RemoveAll(repoPath)
 
 	fmt.Println("Init repo", port)
-	if err := InitRepo(repoPath, 1024); err != nil {
+	if err := initRepo(repoPath, 1024); err != nil {
 		fmt.Println("init failed", err)
 	}
 
@@ -50,14 +50,15 @@ func ipfsWithPort(port int) (*Node, string) {
 		fmt.Println("Failed to guess self", err)
 	}
 
-	// fmt.Println("Going offline")
-	// if err := nd.Offline(); err != nil {
-	// 	fmt.Println("Failed to go offline again", err)
-	// }
+	fmt.Println("Going offline")
+	if err := nd.Offline(); err != nil {
+		fmt.Println("Failed to go offline again", err)
+	}
+
 	return nd, self
 }
 
-func main() {
+func Main() {
 	alice, aliceId := ipfsWithPort(9000)
 	bob, bobId := ipfsWithPort(9001)
 	// bobId := "QmSUu41eAf4TEDernpXR4S4Z33Hrae3LwoFh2v8vuPK2yy"

@@ -1,11 +1,13 @@
-package backend
+package net
 
 import (
-	"net"
+	stdnet "net"
 
 	"github.com/disorganizer/brig/net/peer"
 )
 
+// Backend defines all required methods needed from the underyling implementation
+// in order to talk with other nodes.
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.
 	// Each of these can be contacted to check their credentials.
@@ -19,9 +21,9 @@ type Backend interface {
 
 	// Dial builds up a connection to another peer.
 	// If only ever one protocol is used, just pass the same string always.
-	Dial(peerAddr, protocol string) (net.Conn, error)
+	Dial(peerAddr, protocol string) (stdnet.Conn, error)
 
 	// Listen returns a listener, that will yield incoming connections
 	// from other peers when calling Accept.
-	Listen(protocol string) (net.Listener, error)
+	Listen(protocol string) (stdnet.Listener, error)
 }

@@ -115,13 +115,18 @@ func (b *base) Backend() (backend.Backend, error) {
 		return nil, err
 	}
 
-	bk, err := rp.LoadBackend()
-	if err != nil {
-		return nil, err
+	backendName := rp.BackendName()
+	log.Infof("Loading backend `%s`", backendName)
+
+	realBackend := backend.FromName(backendName)
+	if realBackend == nil {
+		msg := fmt.Sprintf("No such backend `%s`", backendName)
+		log.Error(msg)
+		return nil, fmt.Errorf("open failed: %s", msg)
 	}
 
-	b.backend = bk
-	return bk, nil
+	b.backend = realBackend
+	return realBackend, nil
 }
 
 func (b *base) PeerServer() (*peernet.Server, error) {

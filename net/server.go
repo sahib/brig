@@ -3,13 +3,12 @@ package net
 import (
 	"context"
 
-	"github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/util/server"
 )
 
 type Server struct {
-	bk         backend.Backend
+	bk         Backend
 	baseServer *server.Server
 	hdl        *handler
 }
@@ -22,7 +21,7 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func NewServer(bk backend.Backend) (*Server, error) {
+func NewServer(bk Backend) (*Server, error) {
 	hdl := &handler{}
 	ctx := context.Background()
 
