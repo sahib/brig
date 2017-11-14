@@ -94,6 +94,7 @@ func (nd *Node) ResolveName(name peer.Name) ([]peer.Info, error) {
 		return nil, ErrIsOffline
 	}
 
+	// In theory, we could do this also for domains.
 	hash := u.Hash([]byte(name.WithoutResource()))
 
 	ctx, cancel := context.WithTimeout(nd.ctx, 30*time.Second)
