@@ -1,6 +1,9 @@
 package backend
 
 import (
+	"fmt"
+
+	"github.com/disorganizer/brig/backend/ipfs"
 	"github.com/disorganizer/brig/backend/mock"
 	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/net"
@@ -16,13 +19,13 @@ type Backend interface {
 
 // FromName returns a suitable backend for a human readable name.
 // If an invalid name is passed, nil is returned.
-func FromName(name string) Backend {
+func FromName(name, path string) (Backend, error) {
 	switch name {
 	case "ipfs":
-		return nil
+		return ipfs.New(path)
 	case "mock":
-		return mock.NewMockBackend()
+		return mock.NewMockBackend(), nil
 	}
 
-	return nil
+	return nil, fmt.Errorf("No such backend `%s`", name)
 }

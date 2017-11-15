@@ -21,7 +21,9 @@ import (
 )
 
 type base struct {
-	mu       sync.Mutex
+	mu sync.Mutex
+
+	// base path to the repository (i.e. BRIG_PATH)
 	basePath string
 
 	// password used to lock/unlock the repo.
@@ -118,11 +120,10 @@ func (b *base) Backend() (backend.Backend, error) {
 	backendName := rp.BackendName()
 	log.Infof("Loading backend `%s`", backendName)
 
-	realBackend := backend.FromName(backendName)
-	if realBackend == nil {
-		msg := fmt.Sprintf("No such backend `%s`", backendName)
-		log.Error(msg)
-		return nil, fmt.Errorf("open failed: %s", msg)
+	realBackend, err := backend.FromName(backendName, b.basePath)
+	if err != nil {
+		log.Errorf("Failed to load backend: %v", err)
+		return nil, err
 	}
 
 	b.backend = realBackend

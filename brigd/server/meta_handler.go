@@ -2,11 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/brigd/capnp"
 	peernet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/net/peer"
@@ -51,16 +49,9 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 		return err
 	}
 
-	realBackend := backend.FromName(backendName)
-	if realBackend == nil {
-		msg := fmt.Sprintf("init: No such backend `%s`", backendName)
-		log.Error(msg)
-		return fmt.Errorf("init failed: %s", msg)
-	}
-
 	// Update the in-memory password.
 	mh.base.password = password
-	return repo.Init(initFolder, owner, password, realBackend)
+	return repo.Init(initFolder, owner, password, backendName)
 }
 
 func (mh *metaHandler) Mount(call capnp.Meta_mount) error {

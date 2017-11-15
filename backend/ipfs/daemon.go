@@ -3,6 +3,7 @@ package ipfs
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -33,6 +34,14 @@ type Node struct {
 }
 
 func createNode(path string, swarmPort int, ctx context.Context, online bool) (*core.IpfsNode, error) {
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Infof("Creating new ipfs repo at %s since it does not exist yet.", path)
+		if err := Init(path, 2048); err != nil {
+			return nil, err
+		}
+	}
+
 	rp, err := fsrepo.Open(path)
 	if err != nil {
 		log.Errorf("Unable to open repo `%s`: %v", path, err)
@@ -134,4 +143,8 @@ func (nd *Node) Offline() error {
 func (nd *Node) Close() error {
 	nd.cancel()
 	return nd.ipfsNode.Close()
+}
+
+func (nd *Node) Name() string {
+	return "ipfs"
 }

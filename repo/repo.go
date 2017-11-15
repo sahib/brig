@@ -67,7 +67,7 @@ func touch(path string) error {
 	return fd.Close()
 }
 
-func Init(baseFolder, owner, password string, backend Backend) error {
+func Init(baseFolder, owner, password, backendName string) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
@@ -94,7 +94,7 @@ func Init(baseFolder, owner, password string, backend Backend) error {
 	}
 
 	metaPath := filepath.Join(baseFolder, "meta.yml")
-	metaDefault := buildMetaDefault(backend.Name(), owner)
+	metaDefault := buildMetaDefault(backendName, owner)
 	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
 		return err
 	}
@@ -105,9 +105,9 @@ func Init(baseFolder, owner, password string, backend Backend) error {
 		return err
 	}
 
-	dataFolder := filepath.Join(baseFolder, "data")
-	if err := backend.Init(dataFolder); err != nil {
-		return e.Wrap(err, "Failed to init data backend")
+	dataFolder := filepath.Join(baseFolder, "data", backendName)
+	if err := os.MkdirAll(dataFolder, 0700); err != nil {
+		return e.Wrap(err, "Failed to setup dirs for backend")
 	}
 
 	// Create initial key pair.

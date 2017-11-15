@@ -77,21 +77,26 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 /////////////////////////////
 
 type Listener struct {
+	self     string
+	protocol string
+
 	conCh  chan p2pnet.Stream
 	ctx    context.Context
 	cancel func()
 }
 
-func (nd *Node) Listen(protocol string) (*Listener, error) {
+func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
 	}
 
 	ctx, cancel := context.WithCancel(nd.ctx)
 	lst := &Listener{
-		conCh:  make(chan p2pnet.Stream),
-		ctx:    ctx,
-		cancel: cancel,
+		protocol: protocol,
+		self:     nd.ipfsNode.Identity.String(),
+		conCh:    make(chan p2pnet.Stream),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 
 	protoId := pro.ID(protocol)
@@ -112,6 +117,13 @@ func (lst *Listener) Accept() (net.Conn, error) {
 		return nil, nil
 	case stream := <-lst.conCh:
 		return &stdStream{Stream: stream}, nil
+	}
+}
+
+func (lst *Listener) Addr() net.Addr {
+	return &streamAddr{
+		protocol: lst.protocol,
+		peer:     lst.self,
 	}
 }
 

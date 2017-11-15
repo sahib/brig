@@ -101,14 +101,12 @@ func WithIpfsAtPathAndPort(t *testing.T, root string, port int, f func(*Node)) {
 }
 
 func WithIpfsRepo(t *testing.T, root string, f func(repoPath string)) {
-	nd := &Node{}
-	path, err := nd.Init(root, 1024)
-	if err != nil {
+	if err := Init(root, 1024); err != nil {
 		t.Errorf("Could not create ipfs repo: %v", err)
 		return
 	}
 
-	defer testutil.Remover(t, path)
+	defer testutil.Remover(t, root)
 
-	f(path)
+	f(root)
 }
