@@ -3,6 +3,8 @@ package ipfs
 import (
 	"bytes"
 	"testing"
+
+	"github.com/disorganizer/brig/net/peer"
 )
 
 var (
@@ -24,7 +26,8 @@ func TestNet(t *testing.T) {
 			return
 		}
 
-		bobId := ""
+		var bobId peer.Info
+
 		t.Logf("Alice is online (%v).", aliceID)
 		WithIpfsAtPort(t, 4003, func(bob *Node) {
 			if err := bob.Online(); err != nil {
@@ -81,7 +84,7 @@ func TestNet(t *testing.T) {
 			}()
 
 			// Alice sending data to bob:
-			conn, err := alice.Dial(bobId, TestProtocol)
+			conn, err := alice.Dial(bobId.Addr, TestProtocol)
 			if err != nil {
 				t.Errorf("Dial(self) did not work: %v", err)
 				return
