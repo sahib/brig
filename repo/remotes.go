@@ -65,31 +65,6 @@ type Folder struct {
 	Perms  RemotePerms
 }
 
-func (f Folder) Less(o Folder) bool {
-	return f.Folder < o.Folder
-}
-
-func insertSortedFolder(folders []Folder, f Folder) []Folder {
-	l := len(folders)
-	if l == 0 {
-		return []Folder{f}
-	}
-
-	i := sort.Search(l, func(i int) bool {
-		return folders[i].Less(f)
-	})
-
-	if i == l {
-		return append([]Folder{f}, folders...)
-	}
-
-	if i == l-1 {
-		return append(folders[0:l], f)
-	}
-
-	return append(folders[0:l], append([]Folder{f}, folders[l+1:]...)...)
-}
-
 type Remote struct {
 	Name        string
 	Folders     []Folder
@@ -112,6 +87,14 @@ func NewRemotes(path string) (*RemoteList, error) {
 	remotes := make(map[string]*Remote)
 	if err := yml.Unmarshal(data, remotes); err != nil {
 		return nil, err
+	}
+
+	// Go over the folders and make sure they are sorted:
+	// (This is only a nice to have for ListRemotes())
+	for _, remote := range remotes {
+		sort.Slice(remote.Folders, func(i, j int) bool {
+			return remote.Folders[i].Folder < remote.Folders[j].Folder
+		})
 	}
 
 	return &RemoteList{
@@ -171,6 +154,7 @@ func (rl *RemoteList) ListRemotes() ([]Remote, error) {
 		remotes = append(remotes, *remote)
 	}
 
+	// Make sure that the output is more or less determistic:
 	sort.Slice(remotes, func(i, j int) bool {
 		return remotes[i].Name < remotes[j].Name
 	})
