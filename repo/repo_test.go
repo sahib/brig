@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/backend/memory"
+	"github.com/disorganizer/brig/backend/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,16 +12,13 @@ func TestRepoInit(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))
 
-	err := Init(testDir, "alice", "klaus", "memory")
+	err := Init(testDir, "alice", "klaus", "mock")
 	require.Nil(t, err)
 
 	repo, err := Open(testDir, "klaus")
 	require.Nil(t, err)
 
-	_, err = repo.LoadBackend()
-	require.Nil(t, err)
-
-	bk := memory.NewMemoryBackend()
+	bk := mock.NewMockBackend()
 	fs, err := repo.OwnFS(bk)
 	require.Nil(t, err)
 

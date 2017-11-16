@@ -193,14 +193,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 
 	// Load the remote list:
 	remotePath := filepath.Join(baseFolder, "remotes.yml")
-	remoteFd, err := os.Open(remotePath)
-	if err != nil {
-		return nil, err
-	}
-
-	defer remoteFd.Close()
-
-	remotes, err := NewRemotes(remoteFd)
+	remotes, err := NewRemotes(remotePath)
 	if err != nil {
 		return nil, err
 	}

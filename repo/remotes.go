@@ -1,15 +1,21 @@
 package repo
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 
 	"github.com/disorganizer/brig/net/peer"
 
 	yml "gopkg.in/yaml.v2"
+)
+
+var (
+	ErrNoSuchRemote = errors.New("No such remote with this name")
 )
 
 type Perms uint32
@@ -94,68 +100,37 @@ type Remote struct {
 // and makes it easily accessible from the Go side.
 type RemoteList struct {
 	remotes map[string]*Remote
+	path    string
 }
 
-func NewRemotes(r io.Reader) (*RemoteList, error) {
+func NewRemotes(path string) (*RemoteList, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
 	remotes := make(map[string]*Remote)
-	ymlRemotes := make(map[string][]string)
-
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
+	if err := yml.Unmarshal(data, remotes); err != nil {
 		return nil, err
 	}
 
-	if err := yml.Unmarshal(data, ymlRemotes); err != nil {
-		return nil, err
+	return &RemoteList{
+		remotes: remotes,
+		path:    path,
+	}, nil
+}
+
+func (rl *RemoteList) save() error {
+	buf := &bytes.Buffer{}
+	if err := rl.Export(buf); err != nil {
+		return err
 	}
 
-	// Go over all remotes denoted in the .yml file.
-	for nameAndFolder, perms := range ymlRemotes {
-		splitName := strings.Split(nameAndFolder, " ")
-
-		folder := "/"
-		name := splitName[0]
-		if len(splitName) > 1 {
-			folder = splitName[1]
-		}
-
-		perms := RemotePerms(0).FromStrings(perms)
-
-		// Append to existing or create new remote.
-		if remote, ok := remotes[name]; ok {
-			remote.Folders = insertSortedFolder(remote.Folders, Folder{
-				Folder: folder,
-				Perms:  perms,
-			})
-		} else {
-			remotes[name] = &Remote{
-				Name: name,
-				Folders: []Folder{{
-					Folder: folder,
-					Perms:  perms,
-				}},
-			}
-		}
-	}
-
-	return &RemoteList{remotes: remotes}, nil
+	return ioutil.WriteFile(rl.path, buf.Bytes(), 0600)
 }
 
 func (rl *RemoteList) Export(w io.Writer) error {
-	ymlRemotes := make(map[string][]string)
-
-	for _, remote := range rl.remotes {
-		for _, folder := range remote.Folders {
-			nameAndFolder := strings.Join(
-				[]string{remote.Name, folder.Folder},
-				" ",
-			)
-
-			ymlRemotes[nameAndFolder] = folder.Perms.ToStrings()
-		}
-	}
-
-	data, err := yml.Marshal(ymlRemotes)
+	data, err := yml.Marshal(rl.remotes)
 	if err != nil {
 		return err
 	}
@@ -169,18 +144,22 @@ func (rl *RemoteList) Export(w io.Writer) error {
 
 func (rl *RemoteList) AddRemote(remote Remote) error {
 	rl.remotes[remote.Name] = &remote
-	return nil
+	return rl.save()
 }
 
 func (rl *RemoteList) RmRemote(name string) error {
+	if _, ok := rl.remotes[name]; !ok {
+		return ErrNoSuchRemote
+	}
+
 	delete(rl.remotes, name)
-	return nil
+	return rl.save()
 }
 
 func (rl *RemoteList) Remote(name string) (Remote, error) {
 	rm, ok := rl.remotes[name]
 	if !ok {
-		return Remote{}, fmt.Errorf("No such remote: %v", name)
+		return Remote{}, ErrNoSuchRemote
 	}
 
 	return *rm, nil
@@ -192,15 +171,19 @@ func (rl *RemoteList) ListRemotes() ([]Remote, error) {
 		remotes = append(remotes, *remote)
 	}
 
+	sort.Slice(remotes, func(i, j int) bool {
+		return remotes[i].Name < remotes[j].Name
+	})
+
 	return remotes, nil
 }
 
 func (rl *RemoteList) SaveList(remotes []Remote) error {
+	// Clear remotes and overwrite them.
 	rl.remotes = make(map[string]*Remote)
 	for _, remote := range remotes {
 		rl.remotes[remote.Name] = &remote
 	}
 
-	// TODO: Save file?
-	return nil
+	return rl.save()
 }
