@@ -258,6 +258,6 @@ func (rp *Repository) OwnFS(bk catfs.FsBackend) (*catfs.FS, error) {
 	return rp.FS(rp.Owner, bk)
 }
 
-func (rp *Repository) KeyPair() *KeyPair {
-	return newKeyPairHandle(rp.BaseFolder)
+func (rp *Repository) Keyring() *Keyring {
+	return newKeyringHandle(rp.BaseFolder)
 }

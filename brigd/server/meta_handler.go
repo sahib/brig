@@ -404,7 +404,7 @@ func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
 	}
 
 	// Compute our own fingerprint:
-	ownPubKey, err := rp.KeyPair().PubKeyBytes()
+	ownPubKey, err := rp.Keyring().OwnPubKey()
 	if err != nil {
 		return err
 	}
