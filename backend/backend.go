@@ -29,3 +29,12 @@ func FromName(name, path string) (Backend, error) {
 
 	return nil, fmt.Errorf("No such backend `%s`", name)
 }
+
+func IsValidName(name string) bool {
+	switch name {
+	case "ipfs", "mock":
+		return true
+	default:
+		return false
+	}
+}

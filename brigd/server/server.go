@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/server"
 )
@@ -21,6 +22,7 @@ type Server struct {
 }
 
 func (sv *Server) Serve() error {
+	log.Infof("Serving local requests from now on.")
 	return sv.baseServer.Serve()
 }
 
@@ -29,9 +31,13 @@ func (sv *Server) Close() error {
 }
 
 func BootServer(basePath, password string, port int) (*Server, error) {
+	log.Infof("Starting server from %s at port :%d", basePath, port)
+
 	if err := repo.CheckPassword(basePath, password); err != nil {
 		return nil, err
 	}
+
+	log.Infof("Password seems to be valid...")
 
 	ctx := context.Background()
 	base, err := newBase(basePath, password, ctx)

@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/brigd/capnp"
 	peernet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/net/peer"
@@ -47,6 +49,10 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 	owner, err := call.Params.Owner()
 	if err != nil {
 		return err
+	}
+
+	if !backend.IsValidName(backendName) {
+		return fmt.Errorf("Invalid backend name: %v", backendName)
 	}
 
 	// Update the in-memory password.

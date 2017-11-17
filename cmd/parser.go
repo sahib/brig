@@ -96,7 +96,7 @@ func RunCmdline(args []string) int {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "backend,b",
-					Value: "memory",
+					Value: "mock",
 					Usage: "What data backend to use for the new repo",
 				},
 				cli.BoolFlag{
@@ -133,7 +133,7 @@ func RunCmdline(args []string) int {
 					Usage: "Remove a pin again",
 				},
 				cli.BoolFlag{
-					Name:  "is-pinned, i",
+					Name:  "is-pinned,i",
 					Usage: "Check if <file> is pinned",
 				},
 			},
@@ -322,7 +322,7 @@ func RunCmdline(args []string) int {
 			Category:    wdirGroup,
 			Flags: []cli.Flag{
 				cli.IntFlag{
-					Name:  "depth, d",
+					Name:  "depth,d",
 					Usage: "Max depth to traverse",
 					Value: 1,
 				},

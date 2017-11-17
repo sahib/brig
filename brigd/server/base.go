@@ -59,6 +59,8 @@ func repoIsInitialized(path string) error {
 	return nil
 }
 
+// Handle is being called by the base server implementation
+// for every local request that is being served to the brig daemon.
 func (b *base) Handle(ctx context.Context, conn net.Conn) {
 	transport := rpc.StreamTransport(conn)
 	srv := capnp.API_ServerToClient(newApiHandler(b))
@@ -73,16 +75,26 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 	}
 }
 
+/////////
+
 // Repo lazily-loads the repository on disk.
 // On the next call it will be returned directly.
 func (b *base) Repo() (*repo.Repository, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	return b.repoUnlocked()
+}
+
+func (b *base) repoUnlocked() (*repo.Repository, error) {
 	if b.repo != nil {
 		return b.repo, nil
 	}
 
+	return b.loadRepo()
+}
+
+func (b *base) loadRepo() (*repo.Repository, error) {
 	// Sanity check, so that we do not call a repo command without
 	// an initialized repo. Error early for a meaningful message here.
 	if err := repoIsInitialized(b.basePath); err != nil {
@@ -104,14 +116,24 @@ func (b *base) Repo() (*repo.Repository, error) {
 	return rp, nil
 }
 
+/////////
+
 func (b *base) Backend() (backend.Backend, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	return b.backendUnlocked()
+}
+
+func (b *base) backendUnlocked() (backend.Backend, error) {
 	if b.backend != nil {
 		return b.backend, nil
 	}
 
+	return b.loadBackend()
+}
+
+func (b *base) loadBackend() (backend.Backend, error) {
 	rp, err := b.Repo()
 	if err != nil {
 		return nil, err
@@ -130,7 +152,24 @@ func (b *base) Backend() (backend.Backend, error) {
 	return realBackend, nil
 }
 
+/////////
+
 func (b *base) PeerServer() (*peernet.Server, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.peerServerUnlocked()
+}
+
+func (b *base) peerServerUnlocked() (*peernet.Server, error) {
+	if b.peerServer != nil {
+		return b.peerServer, nil
+	}
+
+	return b.loadPeerServer()
+}
+
+func (b *base) loadPeerServer() (*peernet.Server, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -138,7 +177,7 @@ func (b *base) PeerServer() (*peernet.Server, error) {
 		return b.peerServer, nil
 	}
 
-	bk, err := b.Backend()
+	bk, err := b.backendUnlocked()
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +192,24 @@ func (b *base) PeerServer() (*peernet.Server, error) {
 	return srv, nil
 }
 
+/////////
+
 func (b *base) Mounts() (*fuse.MountTable, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.mountsUnlocked()
+}
+
+func (b *base) mountsUnlocked() (*fuse.MountTable, error) {
 	if b.mounts != nil {
 		return b.mounts, nil
 	}
 
+	return b.loadMounts()
+}
+
+func (b *base) loadMounts() (*fuse.MountTable, error) {
 	err := b.withOwnFs(func(fs *catfs.FS) error {
 		b.mounts = fuse.NewMountTable(fs)
 		return nil
@@ -170,41 +222,35 @@ func (b *base) Mounts() (*fuse.MountTable, error) {
 	return b.mounts, nil
 }
 
-func newBase(basePath string, password string, ctx context.Context) (*base, error) {
-	return &base{
-		ctx:      ctx,
-		basePath: basePath,
-		password: password,
-		quitCh:   make(chan struct{}, 1),
-	}, nil
-}
-
 func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
-	rp, err := b.Repo()
+	rp, err := b.repoUnlocked()
 	if err != nil {
 		return err
 	}
+	log.Infof("got repo")
 
-	bk, err := b.Backend()
+	bk, err := b.backendUnlocked()
 	if err != nil {
 		return err
 	}
+	log.Infof("got backend")
 
 	fs, err := rp.OwnFS(bk)
 	if err != nil {
 		return err
 	}
+	log.Infof("got fs")
 
 	return fn(fs)
 }
 
 func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
-	rp, err := b.Repo()
+	rp, err := b.repoUnlocked()
 	if err != nil {
 		return err
 	}
 
-	bk, err := b.Backend()
+	bk, err := b.backendUnlocked()
 	if err != nil {
 		return err
 	}
@@ -243,4 +289,13 @@ func (b *base) Quit() error {
 
 	log.Infof("brigd is dead now")
 	return nil
+}
+
+func newBase(basePath string, password string, ctx context.Context) (*base, error) {
+	return &base{
+		ctx:      ctx,
+		basePath: basePath,
+		password: password,
+		quitCh:   make(chan struct{}, 1),
+	}, nil
 }
