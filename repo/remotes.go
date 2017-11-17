@@ -166,7 +166,17 @@ func (rl *RemoteList) SaveList(remotes []Remote) error {
 	// Clear remotes and overwrite them.
 	rl.remotes = make(map[string]*Remote)
 	for _, remote := range remotes {
-		rl.remotes[remote.Name] = &remote
+		rl.remotes[remote.Name] = &Remote{
+			Name:        remote.Name,
+			Fingerprint: remote.Fingerprint,
+			Folders:     remote.Folders,
+		}
+	}
+
+	for _, remote := range remotes {
+		sort.Slice(remote.Folders, func(i, j int) bool {
+			return remote.Folders[i].Folder < remote.Folders[j].Folder
+		})
 	}
 
 	return rl.save()

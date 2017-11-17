@@ -99,5 +99,6 @@ func TestRemoteOps(t *testing.T) {
 	// Check it's the same again after we saved it over:
 	remotes, err = rl.ListRemotes()
 	require.Nil(t, err)
-	require.Equal(t, remotes, []Remote{bobRemote, charlieRemote})
+	require.Equal(t, remotes[0], bobRemote)
+	require.Equal(t, remotes[1], charlieRemote)
 }

@@ -11,7 +11,7 @@ import (
 func TestKey(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "brig-repo-key-test")
 	require.Nil(t, os.MkdirAll(testDir, 0755))
-	require.Nil(t, createKeyPair("alice", testDir, 4096))
+	require.Nil(t, createKeyPair("alice", testDir, 1024))
 
 	testData := []byte("Hello World")
 
