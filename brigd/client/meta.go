@@ -139,9 +139,9 @@ type RemoteFolder struct {
 }
 
 type Remote struct {
-	Name        string
-	Fingerprint string
-	Folders     []RemoteFolder
+	Name        string         `yaml:"Name"`
+	Fingerprint string         `yaml:"Fingerprint"`
+	Folders     []RemoteFolder `yaml:"Folders,omitempty,flow"`
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {

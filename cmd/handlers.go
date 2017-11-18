@@ -10,13 +10,13 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/brigd/server"
 	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/disorganizer/brig/util/colors"
 	"github.com/dustin/go-humanize"
+	"github.com/urfave/cli"
 )
 
 const brigLogo = `
@@ -548,7 +548,7 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
 	}
 
-	fmt.Println("You're fucked:")
+	fmt.Println("You're fucked for these files:")
 	for _, pair := range diff.Conflict {
 		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
 	}
@@ -557,9 +557,11 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleSync(ctx *cli.Context, ctl *client.Client) error {
+	// TODO:
 	return nil
 }
 
 func handleStatus(ctx *cli.Context, ctl *client.Client) error {
+	// TODO:
 	return nil
 }

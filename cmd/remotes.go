@@ -3,9 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
-	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/brigd/client"
+	"github.com/pksunkara/pygments"
+	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
 )
 
@@ -16,7 +18,8 @@ func remoteListToYml(remotes []client.Remote) ([]byte, error) {
 
 func ymlToRemoteList(data []byte) ([]client.Remote, error) {
 	remotes := []client.Remote{}
-	if err := yml.Unmarshal(data, remotes); err != nil {
+
+	if err := yml.Unmarshal(data, &remotes); err != nil {
 		return nil, err
 	}
 
@@ -25,10 +28,12 @@ func ymlToRemoteList(data []byte) ([]client.Remote, error) {
 
 func handleRemoteAdd(ctx *cli.Context, ctl *client.Client) error {
 	remote := client.Remote{
-		Fingerprint: "",
-		Name:        "",
+		Name:        ctx.Args().Get(0),
+		Fingerprint: ctx.Args().Get(1),
 		Folders:     nil,
 	}
+
+	fmt.Println(remote)
 
 	if err := ctl.RemoteAdd(remote); err != nil {
 		return fmt.Errorf("remote add: %v", err)
@@ -57,7 +62,10 @@ func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to convert to yml: %v", err)
 	}
 
-	fmt.Println(data)
+	// That's more of a joke currently:
+	highlighted := pygments.Highlight(string(data), "YAML", "terminal256", "utf-8")
+	highlighted = strings.TrimSpace(highlighted)
+	fmt.Println(highlighted)
 	return nil
 }
 
@@ -72,7 +80,8 @@ func handleRemoteEdit(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to convert to yml: %v", err)
 	}
 
-	newData, err := edit(data)
+	// Launch an editor on the received data:
+	newData, err := edit(data, "yml")
 	if err != nil {
 		return fmt.Errorf("Failed to launch editor: %v", err)
 	}
@@ -110,6 +119,11 @@ func handleRemoteLocate(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleRemoteSelf(ctx *cli.Context, ctl *client.Client) error {
-	// TODO: Implement backend
+	self, err := ctl.RemoteSelf()
+	if err != nil {
+		return fmt.Errorf("Failed to get self: %v", err)
+	}
+
+	fmt.Printf("%s %s\n", self.Name, self.Fingerprint)
 	return nil
 }

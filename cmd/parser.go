@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig"
 	colorlog "github.com/disorganizer/brig/util/log"
+	"github.com/urfave/cli"
 )
 
 func init() {
@@ -260,6 +260,7 @@ func RunCmdline(args []string) int {
 				},
 				cli.Command{
 					Name:        "remove",
+					Aliases:     []string{"rm"},
 					Usage:       "Remove a specifc remote",
 					ArgsUsage:   "<name>",
 					Description: "Removes a specific remote from remotes.",
@@ -267,6 +268,7 @@ func RunCmdline(args []string) int {
 				},
 				cli.Command{
 					Name:        "list",
+					Aliases:     []string{"ls"},
 					Usage:       "List status of known remotes",
 					Description: "Lists all known remotes and their status",
 					Action:      withDaemon(handleRemoteList, true),

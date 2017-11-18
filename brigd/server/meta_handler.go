@@ -170,6 +170,11 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 		return nil, err
 	}
 
+	fingerprint, err := remote.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
 	remoteFolders, err := remote.Folders()
 	if err != nil {
 		return nil, err
@@ -183,15 +188,15 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 			return nil, err
 		}
 
-		// TODO: Read perms here once defined.
 		folders = append(folders, repo.Folder{
 			Folder: folderName,
 		})
 	}
 
 	return &repo.Remote{
-		Name:    remoteName,
-		Folders: folders,
+		Name:        remoteName,
+		Fingerprint: peer.Fingerprint(fingerprint),
+		Folders:     folders,
 	}, nil
 }
 

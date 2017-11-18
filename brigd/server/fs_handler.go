@@ -3,11 +3,11 @@ package server
 import (
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
-	log "github.com/Sirupsen/logrus"
 )
 
 type fsHandler struct {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,9 +15,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
-	"github.com/codegangsta/cli"
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/cmd/pwd"
+	"github.com/urfave/cli"
 )
 
 // ExitCode is an error that maps the error interface to a specific error
@@ -235,15 +236,38 @@ func repoIsInitialized(path string) bool {
 	return len(data) > 0
 }
 
+// tempFileWithSuffix works the same as ioutil.TempFile(),
+// but allows for the addition of a suffix to the filepath.
+// This has the nice side effect that some editors can recognize
+// the filetype based on the ending and provide you syntax highlighting.
+// (this is used in edit() below)
+func tempFileWithSuffix(dir, prefix, suffix string) (f *os.File, err error) {
+	if dir == "" {
+		dir = os.TempDir()
+	}
+
+	for i := 0; i < 10000; i++ {
+		mid := strconv.Itoa(rand.Int())
+		name := filepath.Join(dir, prefix+mid+suffix)
+		f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+		if os.IsExist(err) {
+			continue
+		}
+		break
+	}
+	return
+}
+
 // edit opens up $EDITOR with `data` and returns the edited data.
-func edit(data []byte) ([]byte, error) {
+func edit(data []byte, suffix string) ([]byte, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		// It makes my heart bleed, but assume that vi is too hard.
+		// It makes my heart bleed, but assume that vi is too hard
+		// for the majority I've met & that might use brig.
 		editor = "nano"
 	}
 
-	fd, err := ioutil.TempFile("", "brig-cmd-buffer-")
+	fd, err := tempFileWithSuffix("", "brig-cmd-buffer-", ".yml")
 	if err != nil {
 		return nil, err
 	}
