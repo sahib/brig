@@ -8,6 +8,7 @@ import (
 	"net"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"zombiezen.com/go/capnproto2/rpc"
 
@@ -134,7 +135,7 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 }
 
 func (b *base) loadBackend() (backend.Backend, error) {
-	rp, err := b.Repo()
+	rp, err := b.repoUnlocked()
 	if err != nil {
 		return nil, err
 	}
@@ -170,13 +171,6 @@ func (b *base) peerServerUnlocked() (*peernet.Server, error) {
 }
 
 func (b *base) loadPeerServer() (*peernet.Server, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if b.peerServer != nil {
-		return b.peerServer, nil
-	}
-
 	bk, err := b.backendUnlocked()
 	if err != nil {
 		return nil, err
@@ -188,7 +182,15 @@ func (b *base) loadPeerServer() (*peernet.Server, error) {
 		return nil, err
 	}
 
+	go func() {
+		if err := srv.Serve(); err != nil {
+			log.Warningf("PeerServer.Serve() returned with error: %v", err)
+		}
+	}()
+
 	b.peerServer = srv
+
+	time.Sleep(50 * time.Millisecond)
 	return srv, nil
 }
 
@@ -227,19 +229,16 @@ func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("got repo")
 
 	bk, err := b.backendUnlocked()
 	if err != nil {
 		return err
 	}
-	log.Infof("got backend")
 
 	fs, err := rp.OwnFS(bk)
 	if err != nil {
 		return err
 	}
-	log.Infof("got fs")
 
 	return fn(fs)
 }
@@ -263,22 +262,33 @@ func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
 	return fn(fs)
 }
 
-func (b *base) Quit() error {
+func (b *base) Quit() (err error) {
 	log.Info("Shutting down brigd due to QUIT command")
 	b.quitCh <- struct{}{}
 
-	log.Infof("Trying to lock repository...")
-	repo, err := b.Repo()
-	if err != nil {
-		return err
+	if b.peerServer != nil {
+		log.Infof("Closing peer server...")
+		if err = b.peerServer.Close(); err != nil {
+			log.Warningf("Failed to close peer server: %v", err)
+		}
 	}
 
-	if err := repo.Close(b.password); err != nil {
-		return err
+	log.Infof("Trying to lock repository...")
+
+	var rp *repo.Repository
+	rp, err = b.Repo()
+	if err != nil {
+		log.Warningf("Failed to access repository: %v", err)
+	}
+
+	if err = rp.Close(b.password); err != nil {
+		log.Warningf("Failed to lock repository: %v", err)
 	}
 
 	log.Infof("Trying to unmount any mounts...")
-	mounts, err := b.Mounts()
+
+	var mounts *fuse.MountTable
+	mounts, err = b.Mounts()
 	if err != nil {
 		return err
 	}
@@ -287,7 +297,7 @@ func (b *base) Quit() error {
 		return err
 	}
 
-	log.Infof("brigd is dead now")
+	log.Infof("brigd can be considered dead now!")
 	return nil
 }
 

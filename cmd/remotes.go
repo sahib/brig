@@ -62,7 +62,7 @@ func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to convert to yml: %v", err)
 	}
 
-	// That's more of a joke currently:
+	// Highlight the yml output (That's more of a joke currently):
 	highlighted := pygments.Highlight(string(data), "YAML", "terminal256", "utf-8")
 	highlighted = strings.TrimSpace(highlighted)
 	fmt.Println(highlighted)
@@ -112,7 +112,7 @@ func handleRemoteLocate(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	for _, candidate := range candidates {
-		fmt.Println(candidate.Fingerprint)
+		fmt.Println(candidate.Name, candidate.Fingerprint)
 	}
 
 	return nil

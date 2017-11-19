@@ -127,6 +127,11 @@ func (lst *Listener) Addr() net.Addr {
 	}
 }
 
+func (lst *Listener) SetDeadline(t time.Time) error {
+	// TODO: Implement, if we need a stoppable quit...
+	return nil
+}
+
 func (lst *Listener) Close() error {
 	lst.cancel()
 	return nil

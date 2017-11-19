@@ -31,13 +31,23 @@ type Server struct {
 	quitCh  chan bool
 }
 
+// for calling Accept(). This is used to check periodically for a quit signal.
+// DeadListener is a listener that allows to set a deadline
+type DeadlineListener interface {
+	net.Listener
+
+	SetDeadline(deadline time.Time) error
+}
+
 func (sv *Server) accept(rateCh chan struct{}) error {
 	deadline := time.Now().Add(500 * time.Millisecond)
-	err := sv.lst.(*net.TCPListener).SetDeadline(deadline)
 
-	if err != nil {
-		rateCh <- struct{}{}
-		return err
+	deadLst, ok := sv.lst.(DeadlineListener)
+	if ok {
+		if err := deadLst.SetDeadline(deadline); err != nil {
+			rateCh <- struct{}{}
+			return err
+		}
 	}
 
 	conn, err := sv.lst.Accept()

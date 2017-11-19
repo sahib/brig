@@ -150,6 +150,11 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 		return nil, err
 	}
 
+	remoteFp, err := remote.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
 	remoteFolders, err := remote.Folders()
 	if err != nil {
 		return nil, err
@@ -170,8 +175,9 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 	}
 
 	return &Remote{
-		Name:    remoteName,
-		Folders: folders,
+		Name:        remoteName,
+		Fingerprint: remoteFp,
+		Folders:     folders,
 	}, nil
 }
 
@@ -325,8 +331,6 @@ func (cl *Client) RemoteLocate(who string) ([]Remote, error) {
 	}
 
 	return remotes, nil
-
-	return nil, nil
 }
 
 func (cl *Client) RemoteSelf() (*Remote, error) {

@@ -20,7 +20,7 @@ type Client struct {
 }
 
 func Dial(who string, ctx context.Context, bk Backend) (*Client, error) {
-	rawConn, err := bk.Dial(who, "caprpc")
+	rawConn, err := bk.Dial(who, "brig/caprpc")
 	if err != nil {
 		return nil, err
 	}

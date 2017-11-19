@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/disorganizer/brig/net/peer"
 )
@@ -72,7 +73,7 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 	clConn, srvConn := net.Pipe()
 	ch, ok := nb.conns[protocol]
 	if !ok {
-		return nil, fmt.Errorf("No listener for this protocol: %v", protocol)
+		return nil, fmt.Errorf("No listener for this protocol (offline?): %v", protocol)
 	}
 
 	ch <- srvConn
@@ -95,15 +96,20 @@ func (ml *memListener) Accept() (net.Conn, error) {
 	ch, ok := ml.nb.conns[ml.protocol]
 	if !ok {
 		ch = make(chan net.Conn, 1)
+		ml.nb.conns[ml.protocol] = ch
 	}
 
 	return <-ch, nil
 }
 
+func (ml *memListener) SetDeadline(t time.Time) error {
+	return nil
+}
+
 type memAddr string
 
 func (ma memAddr) Network() string {
-	return "mem"
+	return "mock"
 }
 
 func (ma memAddr) String() string {

@@ -242,6 +242,7 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 		return nil, err
 	}
 
+	fmt.Println("->", capRemote)
 	return &capRemote, nil
 }
 
@@ -372,14 +373,19 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 		subCtx, cancel := context.WithTimeout(mh.base.ctx, 1*time.Minute)
 		defer cancel()
 
-		ctl, err := peernet.Dial(who, subCtx, bk)
-		if err != nil {
+		ctl, err := peernet.Dial(foundPeer.Addr, subCtx, bk)
+		if err == nil {
 			remotePubKey, err := ctl.PubKeyData()
 			if err != nil {
 				return err
 			}
 
 			fingerprint = peer.BuildFingerprint(foundPeer.Addr, remotePubKey)
+		} else {
+			log.Warningf(
+				"locate: failed to dial to `%s` (%s): %v",
+				who, foundPeer.Addr, err,
+			)
 		}
 
 		remote := repo.Remote{

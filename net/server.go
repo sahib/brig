@@ -25,7 +25,7 @@ func NewServer(bk Backend) (*Server, error) {
 	hdl := &handler{}
 	ctx := context.Background()
 
-	lst, err := bk.Listen("brig-caprpc")
+	lst, err := bk.Listen("brig/caprpc")
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +37,7 @@ func NewServer(bk Backend) (*Server, error) {
 
 	return &Server{
 		baseServer: baseServer,
+		bk:         bk,
 		hdl:        hdl,
 	}, nil
 }
