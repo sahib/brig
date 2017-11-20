@@ -6,7 +6,7 @@ import (
 	"github.com/disorganizer/brig/backend/ipfs"
 	"github.com/disorganizer/brig/backend/mock"
 	"github.com/disorganizer/brig/catfs"
-	"github.com/disorganizer/brig/net"
+	netBackend "github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -14,7 +14,7 @@ import (
 type Backend interface {
 	repo.Backend
 	catfs.FsBackend
-	net.Backend
+	netBackend.Backend
 }
 
 // FromName returns a suitable backend for a human readable name.

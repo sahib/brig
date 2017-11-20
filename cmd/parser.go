@@ -110,7 +110,7 @@ func RunCmdline(args []string) int {
 			Category:    repoGroup,
 			Usage:       "Sync with any partner in your remote list",
 			Description: "Attempt to synchronize your files with any partner",
-			Action:      withDaemon(handleSync, true),
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
 		},
 		cli.Command{
 			Name:        "history",

@@ -6,12 +6,13 @@ import (
 	"io"
 	"net"
 
+	netBackend "github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/net/capnp"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
 type Client struct {
-	bk Backend
+	bk netBackend.Backend
 
 	ctx     context.Context
 	conn    *rpc.Conn
@@ -19,8 +20,8 @@ type Client struct {
 	api     capnp.API
 }
 
-func Dial(who string, ctx context.Context, bk Backend) (*Client, error) {
-	rawConn, err := bk.Dial(who, "brig/caprpc")
+func Dial(addr string, ctx context.Context, bk netBackend.Backend) (*Client, error) {
+	rawConn, err := bk.Dial(addr, "brig/caprpc")
 	if err != nil {
 		return nil, err
 	}

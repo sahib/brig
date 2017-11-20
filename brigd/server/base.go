@@ -17,7 +17,7 @@ import (
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/fuse"
-	peernet "github.com/disorganizer/brig/net"
+	p2pnet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -37,7 +37,7 @@ type base struct {
 
 	repo       *repo.Repository
 	mounts     *fuse.MountTable
-	peerServer *peernet.Server
+	peerServer *p2pnet.Server
 
 	// This the general backend, not a specific submodule one:
 	backend backend.Backend
@@ -155,14 +155,14 @@ func (b *base) loadBackend() (backend.Backend, error) {
 
 /////////
 
-func (b *base) PeerServer() (*peernet.Server, error) {
+func (b *base) PeerServer() (*p2pnet.Server, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	return b.peerServerUnlocked()
 }
 
-func (b *base) peerServerUnlocked() (*peernet.Server, error) {
+func (b *base) peerServerUnlocked() (*p2pnet.Server, error) {
 	if b.peerServer != nil {
 		return b.peerServer, nil
 	}
@@ -170,14 +170,19 @@ func (b *base) peerServerUnlocked() (*peernet.Server, error) {
 	return b.loadPeerServer()
 }
 
-func (b *base) loadPeerServer() (*peernet.Server, error) {
+func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 	bk, err := b.backendUnlocked()
 	if err != nil {
 		return nil, err
 	}
 
+	rp, err := b.repoUnlocked()
+	if err != nil {
+		return nil, err
+	}
+
 	log.Infof("Launching peer server...")
-	srv, err := peernet.NewServer(bk)
+	srv, err := p2pnet.NewServer(rp, bk)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +195,8 @@ func (b *base) loadPeerServer() (*peernet.Server, error) {
 
 	b.peerServer = srv
 
+	// Give peer server a small bit of time to start up, so it can Accept()
+	// connections immediately after loadPeerServer. Nice for tests.
 	time.Sleep(50 * time.Millisecond)
 	return srv, nil
 }
@@ -260,6 +267,38 @@ func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
 	}
 
 	return fn(fs)
+}
+
+func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) error {
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	remote, err := rp.Remotes.Remote(who)
+	if err != nil {
+		return err
+	}
+
+	bk, err := b.Backend()
+	if err != nil {
+		return err
+	}
+
+	addr := remote.Fingerprint.Addr()
+	subCtx, cancel := context.WithCancel(b.ctx)
+	defer cancel()
+
+	ctl, err := p2pnet.Dial(addr, subCtx, bk)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(ctl); err != nil {
+		return err
+	}
+
+	return ctl.Close()
 }
 
 func (b *base) Quit() (err error) {

@@ -58,15 +58,15 @@ struct Remote {
 }
 
 interface FS {
-    stage    @0 (localPath :Text, repoPath :Text);
-    list     @1 (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat      @2 (path :Text) -> (port :Int32);
-    mkdir    @3 (path :Text, createParents :Bool);
-    remove   @4 (path :Text);
-    move     @5 (srcPath :Text, dstPath :Text);
-    pin      @6 (path :Text);
-    unpin    @7 (path :Text);
-    isPinned @8 (path :Text) -> (isPinned :Bool);
+    stage    @0  (localPath :Text, repoPath :Text);
+    list     @1  (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat      @2  (path :Text) -> (port :Int32);
+    mkdir    @3  (path :Text, createParents :Bool);
+    remove   @4  (path :Text);
+    move     @5  (srcPath :Text, dstPath :Text);
+    pin      @6  (path :Text);
+    unpin    @7  (path :Text);
+    isPinned @8  (path :Text) -> (isPinned :Bool);
 }
 
 interface VCS {
@@ -78,6 +78,7 @@ interface VCS {
     checkout @5 (rev :Text, force :Bool);
     history  @6 (path :Text) -> (history :List(HistoryEntry));
     makeDiff @7 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
+    sync     @8  (withWhom :Text);
 }
 
 interface Meta {

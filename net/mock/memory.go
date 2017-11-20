@@ -70,6 +70,8 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 		return nil, fmt.Errorf("No such peer")
 	}
 
+	// We basically call ourselves with the mock backend,
+	// just pretending to be a different peer.
 	clConn, srvConn := net.Pipe()
 	ch, ok := nb.conns[protocol]
 	if !ok {

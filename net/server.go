@@ -3,12 +3,14 @@ package net
 import (
 	"context"
 
+	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/net/peer"
+	"github.com/disorganizer/brig/repo"
 	"github.com/disorganizer/brig/util/server"
 )
 
 type Server struct {
-	bk         Backend
+	bk         backend.Backend
 	baseServer *server.Server
 	hdl        *handler
 }
@@ -21,15 +23,18 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func NewServer(bk Backend) (*Server, error) {
-	hdl := &handler{}
-	ctx := context.Background()
+func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
+	hdl := &handler{
+		rp: rp,
+		bk: bk,
+	}
 
 	lst, err := bk.Listen("brig/caprpc")
 	if err != nil {
 		return nil, err
 	}
 
+	ctx := context.Background()
 	baseServer, err := server.NewServer(lst, hdl, ctx)
 	if err != nil {
 		return nil, err

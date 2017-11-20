@@ -4,6 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
+	p2pnet "github.com/disorganizer/brig/net"
 	cplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -341,5 +342,47 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 
 			return call.Results.SetDiff(*capDiff)
 		})
+	})
+}
+
+func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
+	server.Ack(call.Options)
+	return nil
+
+	withWhom, err := call.Params.WithWhom()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withNetClient(withWhom, func(ctl *p2pnet.Client) error {
+		r, err := ctl.GetStore()
+		if err != nil {
+			return err
+		}
+
+		bk, err := vcs.base.Backend()
+		if err != nil {
+			return err
+		}
+
+		// TODO:
+		// Those should be somewhat locked, so not more than
+		// one sync request can be processed in parallel.
+
+		remoteFS, err := vcs.base.repo.FS(withWhom, bk)
+		if err != nil {
+			return err
+		}
+
+		if err := remoteFS.Import(r); err != nil {
+			return err
+		}
+
+		ownFS, err := vcs.base.repo.OwnFS(bk)
+		if err != nil {
+			return err
+		}
+
+		return ownFS.Sync(remoteFS)
 	})
 }

@@ -5,7 +5,6 @@
 package peer
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -52,9 +51,9 @@ func valid(name string) error {
 	return nil
 }
 
-// Cast checks `name` to be correct and returns
+// CastName checks `name` to be correct and returns
 // a wrapped name.
-func Cast(name string) (Name, error) {
+func CastName(name string) (Name, error) {
 	if err := valid(name); err != nil {
 		return "", err
 	}
@@ -121,15 +120,67 @@ func (name Name) User() string {
 // FINGERPRINT HELPERS //
 /////////////////////////
 
+// Fingerprint encodes the addr of a remote and an ID (i.e. hash)
+// of the remote's public key. It is later used to verify if a
+// remote's addr or pubkey has changed and is presented to the user
+// as initial identification token for another user.
 type Fingerprint string
 
-func BuildFingerprint(addr string, pubKeyData []byte) Fingerprint {
-	buf := &bytes.Buffer{}
-	buf.Write([]byte(addr))
-	buf.Write([]byte(":::"))
-	buf.Write(pubKeyData)
-	return Fingerprint(h.Sum(buf.Bytes()).B58String())
+func CastFingerprint(s string) (Fingerprint, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) != 2 {
+		return Fingerprint(""), fmt.Errorf(
+			"bad fingerprint: invalid num of colons: %d",
+			len(parts),
+		)
+	}
+
+	fp := Fingerprint(s)
+	if fp.Addr() == "" {
+		return Fingerprint(""), fmt.Errorf(
+			"bad fingerprint: addr could not be read",
+		)
+	}
+
+	if fp.PubKeyID() == "" {
+		return Fingerprint(""), fmt.Errorf(
+			"bad fingerprint: bad pub key id",
+		)
+	}
+
+	return fp, nil
 }
+
+func BuildFingerprint(addr string, pubKeyData []byte) Fingerprint {
+	s := fmt.Sprintf("%s:%s", addr, h.Sum(pubKeyData).B58String())
+	return Fingerprint(s)
+}
+
+func (fp Fingerprint) Addr() string {
+	// We assume that a fingerprint was always safely casted with Cast(),
+	// so errors should not happen. They can of course still happen if the API
+	// was not used correctly. Simply return the zero string in this case.
+	parts := strings.SplitN(string(fp), ":", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+
+	return parts[0]
+}
+
+func (fp Fingerprint) PubKeyID() string {
+	parts := strings.SplitN(string(fp), ":", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+
+	return parts[1]
+}
+
+///////////////////////
+
+// TODO: Make Info -> Addr one day?
+//       Having a separate name is not that useful to justify complexity.
 
 type Info struct {
 	Name Name

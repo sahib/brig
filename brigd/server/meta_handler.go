@@ -170,7 +170,13 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 		return nil, err
 	}
 
-	fingerprint, err := remote.Fingerprint()
+	capFingerprint, err := remote.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the fingerprint to be valid:
+	fingerprint, err := peer.CastFingerprint(capFingerprint)
 	if err != nil {
 		return nil, err
 	}
