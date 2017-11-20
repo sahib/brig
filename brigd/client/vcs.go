@@ -336,3 +336,12 @@ func (cl *Client) MakeDiff(remote, headRevOwn, headRevRemote string) (*Diff, err
 
 	return convertCapDiffToDiff(capDiff)
 }
+
+func (ctl *Client) Sync(remote string) error {
+	call := ctl.api.Sync(ctl.ctx, func(p capnp.VCS_sync_Params) error {
+		return p.SetWithWhom(remote)
+	})
+
+	_, err := call.Struct()
+	return err
+}

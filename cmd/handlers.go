@@ -522,7 +522,18 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		remoteRev = "HEAD"
 	}
 
-	diff, err := ctl.MakeDiff("alice", "HEAD", remoteRev)
+	localRev := ctx.String("rev")
+	remoteName := ctx.String("remote")
+	if remoteName == "" {
+		self, err := ctl.RemoteSelf()
+		if err != nil {
+			return err
+		}
+
+		remoteName = self.Name
+	}
+
+	diff, err := ctl.MakeDiff(remoteName, localRev, remoteRev)
 	if err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
@@ -557,11 +568,22 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleSync(ctx *cli.Context, ctl *client.Client) error {
-	// TODO:
-	return nil
+	who := ctx.Args().First()
+	return ctl.Sync(who)
 }
 
 func handleStatus(ctx *cli.Context, ctl *client.Client) error {
-	// TODO:
+	self, err := ctl.RemoteSelf()
+	if err != nil {
+		return err
+	}
+
+	diff, err := ctl.MakeDiff(self.Name, "HEAD", "CURR")
+	if err != nil {
+		return err
+	}
+
+	// TODO: Format this pretty (maybe share code with MakeDiff?)
+	fmt.Println("STATUS", diff)
 	return nil
 }
