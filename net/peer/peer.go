@@ -177,6 +177,16 @@ func (fp Fingerprint) PubKeyID() string {
 	return parts[1]
 }
 
+func (fp Fingerprint) PubKeyMatches(pubKeyData []byte) bool {
+	own := fp.PubKeyID()
+	if own == "" {
+		return false
+	}
+
+	remote := h.Sum(pubKeyData).B58String()
+	return own == remote
+}
+
 ///////////////////////
 
 // TODO: Make Info -> Addr one day?

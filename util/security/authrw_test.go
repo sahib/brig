@@ -2,20 +2,58 @@ package security
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+	"sync"
 	"testing"
+	"time"
 
+	"golang.org/x/crypto/openpgp"
+
+	"github.com/alokmenghrajani/gpgeez"
+	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
 const (
 	dummyAddr = "127.0.0.1:7782" // Just a random high port
 )
+
+// create a new gpg key pair with self-signed subkeys
+func createKeyPair(t *testing.T, bits int) ([]byte, []byte) {
+	// Setting expiry time to zero is good enough for now.
+	// (key wil never expire; not sure yet if expiring keys make sense for brig)
+	cfg := gpgeez.Config{
+		Expiry: 0 * time.Second,
+	}
+
+	cfg.RSABits = bits
+	comment := fmt.Sprintf("brig gpg key of %s", "alice")
+	key, err := gpgeez.CreateKey("alice", comment, "alice", &cfg)
+	if err != nil {
+		t.Fatalf("Failed to create gpg key pair: %v", err)
+	}
+
+	return key.Secring(&cfg), key.Keyring()
+}
+
+type DummyPrivKey []byte
+
+func (pk DummyPrivKey) Decrypt(data []byte) ([]byte, error) {
+	ents, err := openpgp.ReadKeyRing(bytes.NewReader(pk))
+	if err != nil {
+		return nil, err
+	}
+
+	md, err := openpgp.ReadMessage(bytes.NewReader(data), ents, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadAll(md.UnverifiedBody)
+}
 
 func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 	setup := make(chan bool)
@@ -60,52 +98,16 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 	f(clientSide, serverSide)
 }
 
-type KeyPair struct {
-	priv *rsa.PrivateKey
-}
-
-func (kp *KeyPair) Encrypt(data []byte) ([]byte, error) {
-	pub := &kp.priv.PublicKey
-	return rsa.EncryptOAEP(sha256.New(), rand.Reader, pub, data, nil)
-}
-
-func (kp *KeyPair) Decrypt(data []byte) ([]byte, error) {
-	opts := &rsa.OAEPOptions{
-		Hash:  crypto.SHA256,
-		Label: nil,
-	}
-
-	return kp.priv.Decrypt(rand.Reader, data, opts)
-}
-
-func genKeyPair(t *testing.T) (Decrypter, Encrypter, error) {
-	// Generate an dummy pub/priv keypair using ecdsa
-	// Note: We just use the same pair for one auther.
-	// In practice, this should be
-	priv, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		t.Fatalf("Unable to generate dummy RSA key: %v", err)
-		return nil, nil, err
-	}
-
-	kp := &KeyPair{priv: priv}
-	return kp, kp, nil
-}
-
 func testAuthProcess(t *testing.T, size int64) {
 	withLoopbackConnection(t, func(a, b net.Conn) {
-		aliPriv, aliPub, err := genKeyPair(t)
-		if err != nil {
-			return
-		}
+		privAli, pubAli := createKeyPair(t, 1024)
+		privBob, pubBob := createKeyPair(t, 1024)
 
-		bobPriv, bobPub, err := genKeyPair(t)
-		if err != nil {
-			return
-		}
+		fpAli := peer.BuildFingerprint("ali", pubAli)
+		fpBob := peer.BuildFingerprint("bob", pubBob)
 
-		autherA := NewAuthReadWriter(a, aliPriv, bobPub)
-		autherB := NewAuthReadWriter(b, bobPriv, aliPub)
+		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, fpBob)
+		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, fpAli)
 
 		expect := testutil.CreateDummyBuf(size)
 		answer := make([]byte, len(expect))
@@ -129,14 +131,19 @@ func testAuthProcess(t *testing.T, size int64) {
 
 		answer = make([]byte, len(expect))
 
+		wg := &sync.WaitGroup{}
+
 		go func() {
-			if _, err := autherA.Write(expect); err != nil {
+			wg.Add(1)
+			defer wg.Done()
+
+			if _, err := authAli.Write(expect); err != nil {
 				t.Errorf("Auth Write failed: %v", err)
 				return
 			}
 		}()
 
-		if _, err := autherB.Read(answer); err != nil {
+		if _, err := authBob.Read(answer); err != nil {
 			t.Errorf("Auth Read failed: %v", err)
 			return
 		}
@@ -145,6 +152,8 @@ func testAuthProcess(t *testing.T, size int64) {
 			t.Errorf("auth transmission failed; want `%s`, got `%s`", expect, answer)
 			return
 		}
+
+		wg.Wait()
 	})
 }
 

@@ -3,12 +3,16 @@ package security
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	"io"
 
+	"github.com/disorganizer/brig/net/peer"
+
+	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -21,26 +25,33 @@ const (
 // that adds authentication of the communication partners.
 // It does this by employing the following protocol:
 //
-//  Alice                        Bob
-//         ->  Pub_Bob(rA)   ->
-//         <-  Pub_Alice(rB) <-
-//         <---  sha3(rA)  <--
-//         --->  sha3(rB)  --->
+// 1) Upon opening the connection, the public keys of both partners
+//    are exchanged. The received public key is hashed and checked to
+//    be the same as the fingerprint we're storing from this person.
+//    (This should suffice as authentication of the remote user)
 //
-// Where rA and rB are randomly generated $nonceSize byte nonces.
-// By being able to decrypt the nonce, alice and bob
-// proved knowledge of the private key. The response to the challenge
-// is exchanged as sha3-hash (512 bit) of the original nonce.
-// This way an attacker is not able to read the nonces.
+// 2) A random nonce of 62 bytes is generated and encrypted with the
+//    remote's public key. The resulting ciphertext is then send to the
+//    remote. On their side they decrypt the ciphertext (proving that
+//    they posess the respective private key).
 //
-// If the protocol ran through succesfully, a symmetric session key is generated
-// by xoring both nonces.  Read() and Write() will then proceed to use
-// it to encrypt all messages written over it using CFB mode.
+// 3) The resulting nonce from the remote is then hashed with sha3
+//    and send back. Each sides check if the response matched the challenge.
+//    If so, the user is authenticated. The nonces are then used to
+//    generate a symmetric key (using scrypt) which is then used to encrypt
+//    further communication and to authenticate messages.
+//
+// 4) Further communication writes messages with a hmac, a 4 byte size header
+//    and the actual payload.
 type AuthReadWriter struct {
-	rwc        io.ReadWriteCloser
-	pubKey     Encrypter
-	privKey    Decrypter
-	crypted    io.ReadWriter
+	rwc          io.ReadWriteCloser
+	fingerprint  peer.Fingerprint
+	ownPubKey    []byte
+	remotePubKey []byte
+
+	privKey Decrypter
+
+	cryptedRW  io.ReadWriter
 	symkey     []byte
 	authorised bool
 	readBuf    *bytes.Buffer
@@ -48,18 +59,24 @@ type AuthReadWriter struct {
 
 // NewAuthReadWriter returns a new AuthReadWriter, authenticating rwc.
 // `own` is our own private key, while `partner` is the partner's public key.
-func NewAuthReadWriter(rwc io.ReadWriteCloser, own Decrypter, partner Encrypter) *AuthReadWriter {
+func NewAuthReadWriter(
+	rwc io.ReadWriteCloser,
+	privKey Decrypter,
+	ownPubKey []byte,
+	fingerprint peer.Fingerprint,
+) *AuthReadWriter {
 	return &AuthReadWriter{
-		rwc:     rwc,
-		privKey: own,
-		pubKey:  partner,
-		readBuf: &bytes.Buffer{},
+		rwc:         rwc,
+		privKey:     privKey,
+		ownPubKey:   ownPubKey,
+		fingerprint: fingerprint,
+		readBuf:     &bytes.Buffer{},
 	}
 }
 
 // Authorised will return true if the partner was succesfully authenticated.
 // It will return false if no call to Read() or Write() was made.
-func (ath *AuthReadWriter) Authorised() bool {
+func (ath *AuthReadWriter) IsAuthorised() bool {
 	return ath.authorised
 }
 
@@ -98,8 +115,79 @@ func readSizePack(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
+func encryptWithPubKey(data, pubKeyData []byte) ([]byte, error) {
+	// Load their pubkey from memory:
+	ents, err := openpgp.ReadKeyRing(bytes.NewReader(pubKeyData))
+	if err != nil {
+		return nil, err
+	}
+
+	encBuf := &bytes.Buffer{}
+	encW, err := openpgp.Encrypt(encBuf, ents, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := encW.Write(data); err != nil {
+		return nil, err
+	}
+
+	if err := encW.Close(); err != nil {
+		return nil, err
+	}
+
+	return encBuf.Bytes(), nil
+}
+
+func (ath *AuthReadWriter) RemotePubKey() ([]byte, error) {
+	if !ath.IsAuthorised() {
+		return nil, fmt.Errorf("Partner was not authorised yet")
+	}
+
+	return ath.remotePubKey, nil
+}
+
+func wrapEncryptedRW(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
+	blockCipher, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	streamW := &cipher.StreamWriter{
+		S: cipher.NewCFBEncrypter(blockCipher, iv),
+		W: rw,
+	}
+
+	streamR := &cipher.StreamReader{
+		S: cipher.NewCFBDecrypter(blockCipher, iv),
+		R: rw,
+	}
+
+	return rwCapsule{streamR, streamW}, nil
+}
+
 // runAuth runs the protocol pointed out above.
 func (ath *AuthReadWriter) runAuth() error {
+	// Write our own pubkey down the line:
+	if _, err := writeSizePack(ath.rwc, ath.ownPubKey); err != nil {
+		return err
+	}
+
+	// Read their pubkey:
+	remotePubKey, err := readSizePack(ath.rwc)
+	if err != nil {
+		return err
+	}
+
+	// Check if the hash of the remote pub key matches the fingerprint we have.
+	// This is the single most important assertion, because we will accept any
+	// valid keypair otherwise.
+	if !ath.fingerprint.PubKeyMatches(remotePubKey) {
+		return fmt.Errorf("remote pubkey does not match fingerprint")
+	}
+
+	ath.remotePubKey = remotePubKey
+
 	// Generate our own nonce:
 	rA := make([]byte, nonceSize)
 	if _, err := io.ReadFull(rand.Reader, rA); err != nil {
@@ -107,7 +195,7 @@ func (ath *AuthReadWriter) runAuth() error {
 	}
 
 	// Send our challenge encrypted with remote's public key.
-	chlForBob, err := ath.pubKey.Encrypt(rA)
+	chlForBob, err := encryptWithPubKey(rA, remotePubKey)
 	if err != nil {
 		return err
 	}
@@ -161,19 +249,19 @@ func (ath *AuthReadWriter) runAuth() error {
 	key := DeriveKey(keySource, keySource[:nonceSize/2], 32)
 	inv := DeriveKey(keySource, keySource[nonceSize/2:], aes.BlockSize)
 
-	rw, err := WrapReadWriter(inv, key, ath.rwc)
+	rw, err := wrapEncryptedRW(inv, key, ath.rwc)
 	if err != nil {
 		return err
 	}
 
 	ath.symkey = key
-	ath.crypted = rw
+	ath.cryptedRW = rw
 	ath.authorised = true
 	return nil
 }
 
 func (ath *AuthReadWriter) Trigger() error {
-	if !ath.Authorised() {
+	if !ath.IsAuthorised() {
 		if err := ath.runAuth(); err != nil {
 			ath.rwc.Close()
 			return err
@@ -197,7 +285,7 @@ func (ath *AuthReadWriter) readMessage() ([]byte, error) {
 
 	buf := make([]byte, size)
 
-	if _, err := io.ReadAtLeast(ath.crypted, buf, int(size)); err != nil {
+	if _, err := io.ReadAtLeast(ath.cryptedRW, buf, int(size)); err != nil {
 		return nil, err
 	}
 
@@ -278,7 +366,7 @@ func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 		)
 	}
 
-	// Note: this assumes that `crypted` does not pad the data.
+	// Note: this assumes that `cryptedRW` does not pad the data.
 	sizeBuf := make([]byte, 4)
 	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(buf)))
 
@@ -295,5 +383,5 @@ func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 		)
 	}
 
-	return ath.crypted.Write(buf)
+	return ath.cryptedRW.Write(buf)
 }
