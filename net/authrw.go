@@ -1,4 +1,4 @@
-package security
+package net
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"github.com/disorganizer/brig/net/peer"
+	"github.com/disorganizer/brig/util"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/sha3"
@@ -20,6 +21,10 @@ const (
 	nonceSize      = 62
 	MaxMessageSize = 16 * 1024 * 1024
 )
+
+type PrivDecrypter interface {
+	Decrypt(data []byte) ([]byte, error)
+}
 
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
 // that adds authentication of the communication partners.
@@ -49,7 +54,7 @@ type AuthReadWriter struct {
 	ownPubKey    []byte
 	remotePubKey []byte
 
-	privKey Decrypter
+	privKey PrivDecrypter
 
 	cryptedRW  io.ReadWriter
 	symkey     []byte
@@ -61,7 +66,7 @@ type AuthReadWriter struct {
 // `own` is our own private key, while `partner` is the partner's public key.
 func NewAuthReadWriter(
 	rwc io.ReadWriteCloser,
-	privKey Decrypter,
+	privKey PrivDecrypter,
 	ownPubKey []byte,
 	fingerprint peer.Fingerprint,
 ) *AuthReadWriter {
@@ -163,7 +168,13 @@ func wrapEncryptedRW(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
 		R: rw,
 	}
 
-	return rwCapsule{streamR, streamW}, nil
+	return struct {
+		io.Reader
+		io.Writer
+	}{
+		Reader: streamR,
+		Writer: streamW,
+	}, nil
 }
 
 // runAuth runs the protocol pointed out above.
@@ -246,8 +257,8 @@ func (ath *AuthReadWriter) runAuth() error {
 		keySource[i] = nonceFromBob[i] ^ rA[i]
 	}
 
-	key := DeriveKey(keySource, keySource[:nonceSize/2], 32)
-	inv := DeriveKey(keySource, keySource[nonceSize/2:], aes.BlockSize)
+	key := util.DeriveKey(keySource, keySource[:nonceSize/2], 32)
+	inv := util.DeriveKey(keySource, keySource[nonceSize/2:], aes.BlockSize)
 
 	rw, err := wrapEncryptedRW(inv, key, ath.rwc)
 	if err != nil {

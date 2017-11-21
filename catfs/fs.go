@@ -22,7 +22,6 @@ import (
 	"github.com/disorganizer/brig/catfs/vcs"
 	"github.com/disorganizer/brig/util"
 	h "github.com/disorganizer/brig/util/hashlib"
-	"github.com/disorganizer/brig/util/security"
 )
 
 // FS (short for Filesystem) is the central API entry for everything related to
@@ -452,7 +451,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 
 		salt := make([]byte, 4)
 		binary.PutVarint(salt, size)
-		key = security.DeriveKey([]byte(hw.Hash()), salt, 32)
+		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)
 	} else {
 		key = file.Key()
 	}

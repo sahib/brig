@@ -11,7 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/catfs/mio/encrypt"
 	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/security"
 )
 
 const (
@@ -89,7 +88,7 @@ func isExcluded(path string, excludePatterns []string) bool {
 }
 
 func keyFromPassword(owner, password string) []byte {
-	return security.DeriveKey([]byte(password), []byte(owner), 32)
+	return util.DeriveKey([]byte(password), []byte(owner), 32)
 }
 
 func LockRepo(root, user, password string, excludePatterns []string) error {

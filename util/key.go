@@ -1,8 +1,4 @@
-// Package security implements utility function for often used
-// security operations. At this very moment this includes:
-//
-// - Key derivation function using scrypt (DeriveAESKey)
-package security
+package util
 
 import (
 	"golang.org/x/crypto/scrypt"
