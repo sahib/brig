@@ -78,6 +78,7 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 
+	// Take the raw connection we get and add an authentication layer on top of it.
 	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, func(pubKey []byte) error {
 		remotes, err := hdl.rp.Remotes.ListRemotes()
 		if err != nil {
@@ -99,6 +100,8 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		return fmt.Errorf("Remote uses no public key known to us")
 	})
 
+	// Trigger the authentication.
+	// (would trigger with the first read/writer elsewhise)
 	if err := authConn.Trigger(); err != nil {
 		log.Warnf("Failed to authenticate connection: %v", err)
 		return

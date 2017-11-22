@@ -9,6 +9,7 @@ import (
 
 	netBackend "github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/net/capnp"
+	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"
 	"zombiezen.com/go/capnproto2/rpc"
 )
@@ -16,13 +17,13 @@ import (
 type Client struct {
 	bk netBackend.Backend
 
-	ctx     context.Context
-	conn    *rpc.Conn
-	rawConn net.Conn
-	api     capnp.API
+	ctx      context.Context
+	conn     *rpc.Conn
+	rawConn  net.Conn
+	authConn *AuthReadWriter
+	api      capnp.API
 }
 
-// func Dial(addr string, ctx context.Context, bk netBackend.Backend) (*Client, error) {
 func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.Context) (*Client, error) {
 	remote, err := rp.Remotes.Remote(name)
 	if err != nil {
@@ -30,8 +31,17 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	}
 
 	addr := remote.Fingerprint.Addr()
-	keyring := rp.Keyring()
-	ownPubKey, err := keyring.OwnPubKey()
+	return DialByAddr(addr, remote.Fingerprint, rp.Keyring(), bk, ctx)
+}
+
+func DialByAddr(
+	addr string,
+	fingerprint peer.Fingerprint,
+	kr *repo.Keyring,
+	bk netBackend.Backend,
+	ctx context.Context,
+) (*Client, error) {
+	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +52,13 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 		return nil, err
 	}
 
-	authConn := NewAuthReadWriter(rawConn, keyring, ownPubKey, func(pubKey []byte) error {
-		if !remote.Fingerprint.PubKeyMatches(pubKey) {
+	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
+		// Skip authentication if no fingerprint was supplied:
+		if string(fingerprint) == "" {
+			return nil
+		}
+
+		if !fingerprint.PubKeyMatches(pubKey) {
 			return fmt.Errorf("remote pubkey does not match fingerprint")
 		}
 
@@ -61,16 +76,21 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	api := capnp.API{Client: clientConn.Bootstrap(ctx)}
 
 	return &Client{
-		ctx:     ctx,
-		conn:    clientConn,
-		rawConn: rawConn,
-		api:     api,
+		ctx:      ctx,
+		authConn: authConn,
+		conn:     clientConn,
+		rawConn:  rawConn,
+		api:      api,
 	}, nil
 }
 
 // Close will close the connection from the client side
 func (cl *Client) Close() error {
 	return cl.conn.Close()
+}
+
+func (ctl *Client) RemotePubKey() ([]byte, error) {
+	return ctl.authConn.RemotePubKey()
 }
 
 /////////////////////

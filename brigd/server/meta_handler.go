@@ -363,6 +363,7 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 		return err
 	}
 
+	// TODO: Separate this logic more from capnp
 	seg := call.Results.Segment()
 	capRemotes, err := capnp.NewRemote_List(seg, int32(len(foundPeers)))
 	if err != nil {
@@ -379,9 +380,21 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 		subCtx, cancel := context.WithTimeout(mh.base.ctx, 1*time.Minute)
 		defer cancel()
 
-		ctl, err := peernet.Dial(foundPeer.Addr, subCtx, bk)
+		// Dial peer with out authentication:
+		ctl, err := peernet.DialByAddr(
+			foundPeer.Addr,
+			peer.Fingerprint(""),
+			mh.base.repo.Keyring(),
+			bk,
+			subCtx,
+		)
+
 		if err == nil {
-			remotePubKey, err := ctl.PubKeyData()
+			if err := ctl.Ping(); err != nil {
+				return err
+			}
+
+			remotePubKey, err := ctl.RemotePubKey()
 			if err != nil {
 				return err
 			}

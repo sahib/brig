@@ -275,21 +275,15 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 		return err
 	}
 
-	remote, err := rp.Remotes.Remote(who)
-	if err != nil {
-		return err
-	}
-
 	bk, err := b.Backend()
 	if err != nil {
 		return err
 	}
 
-	addr := remote.Fingerprint.Addr()
 	subCtx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
-	ctl, err := p2pnet.Dial(addr, subCtx, bk)
+	ctl, err := p2pnet.Dial(who, rp, bk, subCtx)
 	if err != nil {
 		return err
 	}
