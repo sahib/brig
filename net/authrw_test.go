@@ -106,8 +106,20 @@ func testAuthProcess(t *testing.T, size int64) {
 		fpAli := peer.BuildFingerprint("ali", pubAli)
 		fpBob := peer.BuildFingerprint("bob", pubBob)
 
-		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, fpBob)
-		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, fpAli)
+		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, func(pubKey []byte) error {
+			if !fpBob.PubKeyMatches(pubKey) {
+				return fmt.Errorf("bob has wrong public key")
+			}
+
+			return nil
+		})
+		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, func(pubKey []byte) error {
+			if !fpAli.PubKeyMatches(pubKey) {
+				return fmt.Errorf("alice has wrong public key")
+			}
+
+			return nil
+		})
 
 		expect := testutil.CreateDummyBuf(size)
 		answer := make([]byte, len(expect))

@@ -3,11 +3,13 @@ package net
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net"
 
 	netBackend "github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/net/capnp"
+	"github.com/disorganizer/brig/repo"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
@@ -20,9 +22,37 @@ type Client struct {
 	api     capnp.API
 }
 
-func Dial(addr string, ctx context.Context, bk netBackend.Backend) (*Client, error) {
+// func Dial(addr string, ctx context.Context, bk netBackend.Backend) (*Client, error) {
+func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.Context) (*Client, error) {
+	remote, err := rp.Remotes.Remote(name)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := remote.Fingerprint.Addr()
+	keyring := rp.Keyring()
+	ownPubKey, err := keyring.OwnPubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// Low level by addr, not by brig's remote name:
 	rawConn, err := bk.Dial(addr, "brig/caprpc")
 	if err != nil {
+		return nil, err
+	}
+
+	authConn := NewAuthReadWriter(rawConn, keyring, ownPubKey, func(pubKey []byte) error {
+		if !remote.Fingerprint.PubKeyMatches(pubKey) {
+			return fmt.Errorf("remote pubkey does not match fingerprint")
+		}
+
+		return nil
+	})
+
+	// Trigger the authentication:
+	// (otherwise it would be triggered on the first read/write)
+	if err := authConn.Trigger(); err != nil {
 		return nil, err
 	}
 

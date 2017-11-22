@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/util"
 
 	"golang.org/x/crypto/openpgp"
@@ -25,6 +24,8 @@ const (
 type PrivDecrypter interface {
 	Decrypt(data []byte) ([]byte, error)
 }
+
+type RemoteChecker func(remotePubKey []byte) error
 
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
 // that adds authentication of the communication partners.
@@ -50,11 +51,12 @@ type PrivDecrypter interface {
 //    and the actual payload.
 type AuthReadWriter struct {
 	rwc          io.ReadWriteCloser
-	fingerprint  peer.Fingerprint
 	ownPubKey    []byte
 	remotePubKey []byte
 
 	privKey PrivDecrypter
+
+	remoteChecker RemoteChecker
 
 	cryptedRW  io.ReadWriter
 	symkey     []byte
@@ -68,14 +70,14 @@ func NewAuthReadWriter(
 	rwc io.ReadWriteCloser,
 	privKey PrivDecrypter,
 	ownPubKey []byte,
-	fingerprint peer.Fingerprint,
+	remoteChecker RemoteChecker,
 ) *AuthReadWriter {
 	return &AuthReadWriter{
-		rwc:         rwc,
-		privKey:     privKey,
-		ownPubKey:   ownPubKey,
-		fingerprint: fingerprint,
-		readBuf:     &bytes.Buffer{},
+		rwc:           rwc,
+		privKey:       privKey,
+		ownPubKey:     ownPubKey,
+		readBuf:       &bytes.Buffer{},
+		remoteChecker: remoteChecker,
 	}
 }
 
@@ -152,6 +154,7 @@ func (ath *AuthReadWriter) RemotePubKey() ([]byte, error) {
 	return ath.remotePubKey, nil
 }
 
+// wrap a normal io.ReadWriter into an AES encrypted tunnel.
 func wrapEncryptedRW(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
 	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
@@ -193,8 +196,8 @@ func (ath *AuthReadWriter) runAuth() error {
 	// Check if the hash of the remote pub key matches the fingerprint we have.
 	// This is the single most important assertion, because we will accept any
 	// valid keypair otherwise.
-	if !ath.fingerprint.PubKeyMatches(remotePubKey) {
-		return fmt.Errorf("remote pubkey does not match fingerprint")
+	if err := ath.remoteChecker(remotePubKey); err != nil {
+		return err
 	}
 
 	ath.remotePubKey = remotePubKey

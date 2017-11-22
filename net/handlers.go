@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/net/capnp"
+	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"
 )
 
@@ -19,6 +21,39 @@ type handler struct {
 }
 
 func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
+	keyring := hdl.rp.Keyring()
+	ownPubKey, err := keyring.OwnPubKey()
+	if err != nil {
+		log.Warnf("Failed to retrieve own pubkey: %v", err)
+		return
+	}
+
+	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, func(pubKey []byte) error {
+		remotes, err := hdl.rp.Remotes.ListRemotes()
+		if err != nil {
+			return err
+		}
+
+		// Create a temporary fingerprint to get a hashed version of pubkey.
+		remoteFp := peer.BuildFingerprint("", pubKey)
+
+		// Linear scan over all remotes.
+		// If this proves to be a performance problem, we can fix it later.
+		for _, remote := range remotes {
+			if remote.Fingerprint.PubKeyID() == remoteFp.PubKeyID() {
+				log.Infof("Starting connection with %s", remote.Fingerprint.Addr())
+				return nil
+			}
+		}
+
+		return fmt.Errorf("Remote uses no public key known to us")
+	})
+
+	if err := authConn.Trigger(); err != nil {
+		log.Warnf("Failed to authenticate connection: %v", err)
+		return
+	}
+
 	transport := rpc.StreamTransport(conn)
 	srv := capnp.API_ServerToClient(hdl)
 	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
