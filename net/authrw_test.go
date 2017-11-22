@@ -98,15 +98,10 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 	f(clientSide, serverSide)
 }
 
-func testAuthProcess(t *testing.T, size int64) {
+func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob []byte) {
 	withLoopbackConnection(t, func(a, b net.Conn) {
-		privAli, pubAli := createKeyPair(t, 1024)
-		privBob, pubBob := createKeyPair(t, 1024)
-
-		fpAli := peer.BuildFingerprint("ali", pubAli)
-		fpBob := peer.BuildFingerprint("bob", pubBob)
-
 		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, func(pubKey []byte) error {
+			fpBob := peer.BuildFingerprint("bob", pubBob)
 			if !fpBob.PubKeyMatches(pubKey) {
 				return fmt.Errorf("bob has wrong public key")
 			}
@@ -114,6 +109,7 @@ func testAuthProcess(t *testing.T, size int64) {
 			return nil
 		})
 		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, func(pubKey []byte) error {
+			fpAli := peer.BuildFingerprint("ali", pubAli)
 			if !fpAli.PubKeyMatches(pubKey) {
 				return fmt.Errorf("alice has wrong public key")
 			}
@@ -175,9 +171,12 @@ func TestAuthProcess(t *testing.T) {
 		sizes = append(sizes, int64(1<<i))
 	}
 
+	privAli, pubAli := createKeyPair(t, 1024)
+	privBob, pubBob := createKeyPair(t, 1024)
+
 	for _, size := range sizes {
 		t.Logf("Testing size %d", size)
-		testAuthProcess(t, size)
+		testAuthProcess(t, size, privAli, privBob, pubAli, pubBob)
 
 		if t.Failed() {
 			break

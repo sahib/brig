@@ -10,7 +10,6 @@ interface Sync {
 
 interface Meta {
     ping    @0 () -> (reply :Text);
-    pubKey  @1 () -> (key :Data);
 }
 
 # Group all interfaces together in one API object,

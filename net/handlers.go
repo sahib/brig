@@ -90,15 +90,6 @@ func (hdl *handler) Ping(call capnp.Meta_ping) error {
 	return call.Results.SetReply("ALIVE")
 }
 
-func (hdl *handler) PubKey(call capnp.Meta_pubKey) error {
-	data, err := hdl.rp.Keyring().OwnPubKey()
-	if err != nil {
-		return err
-	}
-
-	return call.Results.SetKey(data)
-}
-
 func (hdl *handler) Version(call capnp.API_version) error {
 	call.Results.SetVersion(1)
 	return nil
