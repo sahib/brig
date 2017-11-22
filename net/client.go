@@ -86,19 +86,6 @@ func (cl *Client) Ping() error {
 	return err
 }
 
-func (cl *Client) PubKeyData() ([]byte, error) {
-	call := cl.api.PubKey(cl.ctx, func(p capnp.Meta_pubKey_Params) error {
-		return nil
-	})
-
-	result, err := call.Struct()
-	if err != nil {
-		return nil, err
-	}
-
-	return result.Key()
-}
-
 func (cl *Client) GetStore() (io.Reader, error) {
 	call := cl.api.GetStore(cl.ctx, func(p capnp.Sync_getStore_Params) error {
 		return nil

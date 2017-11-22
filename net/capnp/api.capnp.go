@@ -24,7 +24,7 @@ func (c Sync) GetStore(ctx context.Context, params func(Sync_getStore_Params) er
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Sync",
+			InterfaceName: "capnp/api.capnp:Sync",
 			MethodName:    "getStore",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -54,7 +54,7 @@ func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Sync",
+			InterfaceName: "capnp/api.capnp:Sync",
 			MethodName:    "getStore",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -213,7 +213,7 @@ func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -224,31 +224,9 @@ func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opt
 	}
 	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) PubKey(ctx context.Context, params func(Meta_pubKey_Params) error, opts ...capnp.CallOption) Meta_pubKey_Results_Promise {
-	if c.Client == nil {
-		return Meta_pubKey_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xb02d2ba0578cc7ff,
-			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
-			MethodName:    "pubKey",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_pubKey_Params{Struct: s}) }
-	}
-	return Meta_pubKey_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
 
 type Meta_Server interface {
 	Ping(Meta_ping) error
-
-	PubKey(Meta_pubKey) error
 }
 
 func Meta_ServerToClient(s Meta_Server) Meta {
@@ -258,33 +236,19 @@ func Meta_ServerToClient(s Meta_Server) Meta {
 
 func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 2)
+		methods = make([]server.Method, 0, 1)
 	}
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
 			call := Meta_ping{c, opts, Meta_ping_Params{Struct: p}, Meta_ping_Results{Struct: r}}
 			return s.Ping(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0xb02d2ba0578cc7ff,
-			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
-			MethodName:    "pubKey",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_pubKey{c, opts, Meta_pubKey_Params{Struct: p}, Meta_pubKey_Results{Struct: r}}
-			return s.PubKey(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
@@ -298,14 +262,6 @@ type Meta_ping struct {
 	Options capnp.CallOptions
 	Params  Meta_ping_Params
 	Results Meta_ping_Results
-}
-
-// Meta_pubKey holds the arguments for a server call to Meta.pubKey.
-type Meta_pubKey struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_pubKey_Params
-	Results Meta_pubKey_Results
 }
 
 type Meta_ping_Params struct{ capnp.Struct }
@@ -435,130 +391,6 @@ func (p Meta_ping_Results_Promise) Struct() (Meta_ping_Results, error) {
 	return Meta_ping_Results{s}, err
 }
 
-type Meta_pubKey_Params struct{ capnp.Struct }
-
-// Meta_pubKey_Params_TypeID is the unique identifier for the type Meta_pubKey_Params.
-const Meta_pubKey_Params_TypeID = 0xe0076d8cf038baab
-
-func NewMeta_pubKey_Params(s *capnp.Segment) (Meta_pubKey_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_pubKey_Params{st}, err
-}
-
-func NewRootMeta_pubKey_Params(s *capnp.Segment) (Meta_pubKey_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_pubKey_Params{st}, err
-}
-
-func ReadRootMeta_pubKey_Params(msg *capnp.Message) (Meta_pubKey_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_pubKey_Params{root.Struct()}, err
-}
-
-func (s Meta_pubKey_Params) String() string {
-	str, _ := text.Marshal(0xe0076d8cf038baab, s.Struct)
-	return str
-}
-
-// Meta_pubKey_Params_List is a list of Meta_pubKey_Params.
-type Meta_pubKey_Params_List struct{ capnp.List }
-
-// NewMeta_pubKey_Params creates a new list of Meta_pubKey_Params.
-func NewMeta_pubKey_Params_List(s *capnp.Segment, sz int32) (Meta_pubKey_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_pubKey_Params_List{l}, err
-}
-
-func (s Meta_pubKey_Params_List) At(i int) Meta_pubKey_Params {
-	return Meta_pubKey_Params{s.List.Struct(i)}
-}
-
-func (s Meta_pubKey_Params_List) Set(i int, v Meta_pubKey_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_pubKey_Params_List) String() string {
-	str, _ := text.MarshalList(0xe0076d8cf038baab, s.List)
-	return str
-}
-
-// Meta_pubKey_Params_Promise is a wrapper for a Meta_pubKey_Params promised by a client call.
-type Meta_pubKey_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_pubKey_Params_Promise) Struct() (Meta_pubKey_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_pubKey_Params{s}, err
-}
-
-type Meta_pubKey_Results struct{ capnp.Struct }
-
-// Meta_pubKey_Results_TypeID is the unique identifier for the type Meta_pubKey_Results.
-const Meta_pubKey_Results_TypeID = 0x9a5f4e41312da7d4
-
-func NewMeta_pubKey_Results(s *capnp.Segment) (Meta_pubKey_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_pubKey_Results{st}, err
-}
-
-func NewRootMeta_pubKey_Results(s *capnp.Segment) (Meta_pubKey_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_pubKey_Results{st}, err
-}
-
-func ReadRootMeta_pubKey_Results(msg *capnp.Message) (Meta_pubKey_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_pubKey_Results{root.Struct()}, err
-}
-
-func (s Meta_pubKey_Results) String() string {
-	str, _ := text.Marshal(0x9a5f4e41312da7d4, s.Struct)
-	return str
-}
-
-func (s Meta_pubKey_Results) Key() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return []byte(p.Data()), err
-}
-
-func (s Meta_pubKey_Results) HasKey() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_pubKey_Results) SetKey(v []byte) error {
-	return s.Struct.SetData(0, v)
-}
-
-// Meta_pubKey_Results_List is a list of Meta_pubKey_Results.
-type Meta_pubKey_Results_List struct{ capnp.List }
-
-// NewMeta_pubKey_Results creates a new list of Meta_pubKey_Results.
-func NewMeta_pubKey_Results_List(s *capnp.Segment, sz int32) (Meta_pubKey_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_pubKey_Results_List{l}, err
-}
-
-func (s Meta_pubKey_Results_List) At(i int) Meta_pubKey_Results {
-	return Meta_pubKey_Results{s.List.Struct(i)}
-}
-
-func (s Meta_pubKey_Results_List) Set(i int, v Meta_pubKey_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_pubKey_Results_List) String() string {
-	str, _ := text.MarshalList(0x9a5f4e41312da7d4, s.List)
-	return str
-}
-
-// Meta_pubKey_Results_Promise is a wrapper for a Meta_pubKey_Results promised by a client call.
-type Meta_pubKey_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_pubKey_Results_Promise) Struct() (Meta_pubKey_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_pubKey_Results{s}, err
-}
-
 type API struct{ Client capnp.Client }
 
 // API_TypeID is the unique identifier for the type API.
@@ -573,7 +405,7 @@ func (c API) Version(ctx context.Context, params func(API_version_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0xb74958502f92fefd,
 			MethodID:      0,
-			InterfaceName: "api.capnp:API",
+			InterfaceName: "capnp/api.capnp:API",
 			MethodName:    "version",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -593,7 +425,7 @@ func (c API) GetStore(ctx context.Context, params func(Sync_getStore_Params) err
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Sync",
+			InterfaceName: "capnp/api.capnp:Sync",
 			MethodName:    "getStore",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -613,7 +445,7 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -624,26 +456,6 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 	}
 	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) PubKey(ctx context.Context, params func(Meta_pubKey_Params) error, opts ...capnp.CallOption) Meta_pubKey_Results_Promise {
-	if c.Client == nil {
-		return Meta_pubKey_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xb02d2ba0578cc7ff,
-			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
-			MethodName:    "pubKey",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_pubKey_Params{Struct: s}) }
-	}
-	return Meta_pubKey_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
 
 type API_Server interface {
 	Version(API_version) error
@@ -651,8 +463,6 @@ type API_Server interface {
 	GetStore(Sync_getStore) error
 
 	Ping(Meta_ping) error
-
-	PubKey(Meta_pubKey) error
 }
 
 func API_ServerToClient(s API_Server) API {
@@ -662,14 +472,14 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 4)
+		methods = make([]server.Method, 0, 3)
 	}
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0xb74958502f92fefd,
 			MethodID:      0,
-			InterfaceName: "api.capnp:API",
+			InterfaceName: "capnp/api.capnp:API",
 			MethodName:    "version",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -683,7 +493,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Sync",
+			InterfaceName: "capnp/api.capnp:Sync",
 			MethodName:    "getStore",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -697,26 +507,12 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
 			call := Meta_ping{c, opts, Meta_ping_Params{Struct: p}, Meta_ping_Results{Struct: r}}
 			return s.Ping(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0xb02d2ba0578cc7ff,
-			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
-			MethodName:    "pubKey",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_pubKey{c, opts, Meta_pubKey_Params{Struct: p}, Meta_pubKey_Results{Struct: r}}
-			return s.PubKey(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
@@ -850,52 +646,45 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_9bcb07fb35756ee6 = "x\xdat\x92OH\x14a\x18\xc6\x9f\xf7\xfb\xbei\xac" +
-	"\\\x97\x8f\xaf\x0e\x1eB\x88\x15\xc1p\xd5\xfePH\xb0" +
-	"\xabP\xb2E2\xb3\x1e\xea\x16\x93\x0d\xb6\xa4\xeb63" +
-	"\x1b\xad\x10\xd1!\xba\x18Dt*\x89\"\"\xc2K\xb7" +
-	"\xa0\xbb\x84E\xd4\xa1S\x7f \x93\"\x0c\xa1\x82 \x92" +
-	"ibV\xc7\x19\xfft~\xbe\xefy\x9f\xe7\xf7\xbe]" +
-	"\x87(\xcf\xba\xb5N\x0d0\x0fj\x9b\x827\x0f;\xba" +
-	"{\x07N\xde\x82L\x13\xa0\x91\x0e\xa8\x8b\xec'H]" +
-	"f9P\xd06w\xa58\xeb__\xa5\xdfc\x9f@" +
-	"\xeaA]\x0f\x9eM\x1c\xbf\xbb\xab\xe31\xe4\x16\x1e|" +
-	")W\xf7-\xea/n\x03\xa4\xa6\xd9\xb8\x9aa\xe1\xf3" +
-	"ivUm\xe7:\x10\xf8\x7fot\x1a'\x0aO\xd6" +
-	"=\xf6\x99\xa3(|\xa2|\xd6\xafZy\x1b\x10\xc8\x9b" +
-	"\x85\xe1\x011\xf4~i\xb2\x08\xc5\x1d\xfc\x0fD0\xf5" +
-	"\xf4\xc0\xf7\x89Q\xfdcB >\x0f\x11Ld\x9e\x97" +
-	"\x0f\xfb\x8ff\x13\xc2g\xf6\x16\"\xd8\xba\xff\xfe\xbb\xb9" +
-	"\xe6\x0f\xdf`6Q\xa4\xcc\xd4K\xbe\xac\x97p.\xbc" +
-	"\x9a\xd6\xdbK\xbf\xd6\xe5Z`\xe3\xeaG\xbd\xc4\x02\xeb" +
-	"W\xcdaB\x7f\xf2k\xd7\x9d\xfc\xde\xdf1\x8f=\xc4" +
-	"\x19\x81\x94\xc6C/q\xe6\xdc\xebk\xc5\xa9E\xc8\xa6" +
-	"hT+\x9fGW`UJ\xd9!\xabRf\x95\x9e" +
-	"c\xb6ge+\xd5SG\xedZ\xa6h\xb7\xb8\xd5\x11" +
-	"\xcf5\x05\x17\x80 @\xa6v\x02f\x03's\x1b#" +
-	"\xfd\xac]\xa3\x14\x18\xa5@\xeb-J\xe5\xe1L\xd1v" +
-	"\xab\xfa\x1a\x83\xdd\xb1A\x8bcWFj\xd4\x08F\x8d" +
-	"\x09\x0b\xe4\x96<\x0c\"\xb3\x81k\xc0\x0a=\x8aV." +
-	"\xbb\xdb\xc1d\xabN\xb4\x82\x9c\xa2s\x91\xcd=`2" +
-	"\xa5\xa7\xc3\x08y\xca-\x95\xc9\x93A\x89\x11-\x95\x9e" +
-	"^\xa3\x10N\x10\xf5\x09\x11\x1a\x8a\xf6!e\x1f\x98\xd4" +
-	"\xf4K\xe7m\xc7-\x8d\x95\xf3d6Pb\x1d@|" +
-	"_@\xb2\xfe`\xad<\x94\x1d\xb6\xbdAo\xcc\xb13" +
-	"9\xc3r\xacQ\xf7\x7f\x88\x0d+\xbd\xb1\x1c\xe2\x0b\xbf" +
-	"\xf2\xd5b\xafQ\xc8.'\xdap=}1\xdd(9" +
-	"\x090\x12k\xf8\x86!\xe3\xf6\xd1=\xd3$\x96/H" +
-	"\x1e\x01\x93\x9b\xf5 \xea\x01`5A\xbe\xb6h\xb8\xeb" +
-	"\x11\xcfE2M{\x9c&}\xda\xf2\xac\x8d\xae%\xd9" +
-	"h\x99\xc6\xbf\x00\x00\x00\xff\xff\xc6\x9a'\x15"
+const schema_9bcb07fb35756ee6 = "x\xda|\x921h\x13Q\x18\xc7\xff\xdfw/^\xd5" +
+	"\x86\xf8\xbc(\xe8R\x90H!\xd24\xd6\x8a\xe0b\xda" +
+	"\xc1\x10\xa1r\x97Rtq8\xe2\x11\x03\xc95\xe6\xae" +
+	"b\x06)\x0e\xd9Z\x10\xd1E\xab\x88NV\x047'" +
+	"G\x11t\xd0]\x1dJA\x04gA(\xf1\xe4\x9d\xbd" +
+	"^B\xd2n\x0f\xde\xe3\xff\xfd\xfe\xbf\xef\xe5\x8fR\x81" +
+	"O'\x96\x05`M'\xf6\x05\xe3\x9b\x9d\xf2F\xf7\xde" +
+	"#\xc8#\x04$H\x07\xce\x9c\xe4\xc3\x042&\xf8\x02" +
+	"(\x08>\xac\\yvj\xe2\x0d\xe4!-\xf8\xe1." +
+	"\x9d\xdd\xd2?=\x06\xc8\x98\xe3uc\x81u\xc0\xb0\xb8" +
+	"h\xb4\xd5)\xe8\xfe\xbd?i^-\xbd\x1dxl\xf3" +
+	"s\xa3\x16>v\xb8h\xac\xf28\x10\xc8\x07\xa5\xeae" +
+	"Q\xf9\xf6\x7f\xb4P\x93;\x9c%\x88`%\xf3\xd1\xbd" +
+	"\xd8}\xb9\xd1s\xd3\xe0\x03\xea\xe6\xe0\xb9\x17_7\x8f" +
+	"}\xff\x05+M\xd1\xd5\x02\x9fP\xb8\xd7B\xdc\xd6\xed" +
+	"\xcf\xef\xf5l\xed\xf7\x00\xc1\x1d^7:!\xc1]." +
+	"\x1a\xaf\xd5\xa9\xbb\xf63\xff\xb40\xfd\xa7\xa7\xfaC\x9e" +
+	"RYO\xc2,q\xe3\xe6\x97\xd5\xf2\xab-\xc8t4" +
+	"\xeb\x1d\x1f'\xe4\x83\x8a\xddt\x9b\x93vS\xab\xe5\xc2" +
+	"\xe3\xf99\xc7\xb7s\xcd\x9a[\xcd\x94\x1do\xa9\xee\x93" +
+	"g\x09M\x00\x82\x00\x99\x9c\x02\xac\x11\x8d\xac4\xd3X" +
+	"\xcbi\xd6\xdb4\x0a\xa6Q\xd0N\x10EA)\x95d" +
+	"\x12YBK\x00;&(\xda\x93\x94Y\xb0L\xe8)" +
+	"5\xac@&\x0d\xc9\xd0g\xccR\x1c\x11\xb5\xa0\xc8\x9d" +
+	"\x94\xb3a\xc4\xf2-\xa7\xe5\xd5\x16\xdd\x02Y#\xd4c" +
+	"\x0e\x88\x97\x0e\x0cv\x9do\xbb\x95\\\xd5\xf1\xe7\xfd\xc5" +
+	"\x96\x931\xedT\xcbnx{)1m\xf5bX\xd4" +
+	"\x8cY\xcamS\x84\xe2\xf4\xba\xdf'n6\x16\x17\xd1" +
+	"\x92\x00\x93\x18\xaaN\x81\xc5\xbd\xa3\xefEk\xd8^\xb3" +
+	"\xbc\x04\x96\xfb\xf5 b\x07\xd0op\x97\x8aegL" +
+	"\xed\xb4\x8f,\x1b\x93\xa5\xae\xdb\xbeMI0%A{" +
+	"wT&\xb4\x86\xf7/\x00\x00\xff\xff\x83O\x01i"
 
 func init() {
 	schemas.Register(schema_9bcb07fb35756ee6,
-		0x9a5f4e41312da7d4,
 		0x9a90fde15285e327,
 		0xb02d2ba0578cc7ff,
 		0xb74958502f92fefd,
 		0xdc63044e67499411,
-		0xe0076d8cf038baab,
 		0xe1a9fd466eca248c,
 		0xebdd19e3dba3370b,
 		0xf5692a07c5cf7872,
