@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/disorganizer/brig/util/pwd"
-	"github.com/disorganizer/brig/util/security"
+	"github.com/disorganizer/brig/cmd/pwd"
+	"github.com/disorganizer/brig/util"
 )
 
 func main() {
@@ -21,6 +21,6 @@ func main() {
 		return
 	}
 
-	key := security.Scrypt([]byte(pwd), salt, 32)
+	key := util.DeriveKey([]byte(pwd), salt, 32)
 	fmt.Printf("Key:  %x\nSalt: %x\n", key, salt)
 }
