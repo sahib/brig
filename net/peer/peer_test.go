@@ -33,7 +33,7 @@ func TestValidity(t *testing.T) {
 			continue
 		}
 
-		id, err := Cast(test.id)
+		id, err := CastName(test.id)
 		if err != nil {
 			t.Errorf("Casting `%s` failed: %v", test.id, err)
 			continue
@@ -64,30 +64,3 @@ func TestValidity(t *testing.T) {
 		}
 	}
 }
-
-// func TestRegister(t *testing.T) {
-// 	testwith.WithIpfs(t, func(node *ipfsutil.Node) {
-// 		if err := node.Online(); err != nil {
-// 			t.Errorf("Could not go online: %v", err)
-// 			return
-// 		}
-//
-// 		alice, err := id.Cast("alice@wald.de/laptop")
-// 		if err != nil {
-// 			t.Errorf("Casting dummy id failed: %v", err)
-// 			return
-// 		}
-//
-// 		if err := alice.Register(node); err != nil {
-// 			t.Errorf("Could not register `%s`: %v", alice, err)
-// 			return
-// 		}
-//
-// 		time.Sleep(2 * time.Second)
-//
-// 		if err := alice.Register(node); err != id.ErrAlreadyRegistered {
-// 			t.Errorf("Could register `%s` twice? (%v)", alice, err)
-// 			return
-// 		}
-// 	})
-// }

@@ -11,7 +11,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/catfs"
-	h "github.com/disorganizer/brig/util/hashlib"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
@@ -22,10 +21,7 @@ func init() {
 
 func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
 	backend := catfs.NewMemFsBackend()
-	owner := &catfs.Person{
-		Name: "alice",
-		Hash: h.TestDummy(t, 1),
-	}
+	owner := "alice"
 
 	dbPath, err := ioutil.TempDir("", "brig-fs-test")
 	if err != nil {
@@ -124,7 +120,7 @@ func TestRead(t *testing.T) {
 			// Add a simple file:
 			name := fmt.Sprintf("hello_%d", size)
 			reader := bytes.NewReader(helloData)
-			if err := mount.FS.cfs.Stage("/"+name, reader); err != nil {
+			if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
 				t.Errorf("Adding simple file from reader failed: %v", err)
 				return
 			}
@@ -166,7 +162,7 @@ func TestTouchWrite(t *testing.T) {
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)
-			if err := mount.FS.cfs.Touch(name); err != nil {
+			if err := mount.filesys.cfs.Touch(name); err != nil {
 				t.Errorf("Could not touch an empty file: %v", err)
 				return
 			}
