@@ -66,10 +66,6 @@ func Tar(root, archiveName string, w io.Writer) error {
 
 // Untar reads .tar data (from Tar()) from `r` and writes all files packed in it to `root`.
 func Untar(r io.Reader, root string) error {
-	if _, err := os.Stat(root); !os.IsNotExist(err) {
-		return fmt.Errorf("untar: %s exists or is not readable: %v", root, err)
-	}
-
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return err

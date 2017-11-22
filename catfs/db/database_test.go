@@ -97,41 +97,34 @@ func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 		batch.Put([]byte{1, 2, 3}, testKey...)
 
 		if err := batch.Flush(); err != nil {
-			t.Errorf("Failed to flush key: %v", err)
-			return
+			t.Fatalf("Failed to flush key: %v", err)
 		}
 
 		data, err := db1.Get(testKey...)
 		if err != nil {
-			t.Errorf("Failed get key: %v", err)
-			return
+			t.Fatalf("Failed get key: %v", err)
 		}
 
 		if !bytes.Equal(data, []byte{1, 2, 3}) {
-			t.Errorf("Data not equal")
-			return
+			t.Fatalf("Data not equal")
 		}
 
 		buf := &bytes.Buffer{}
-		if eerr := db1.Export(buf); err != nil {
-			t.Errorf("Export failed: %v", eerr)
-			return
+		if eerr := db1.Export(buf); eerr != nil {
+			t.Fatalf("Export failed: %v", eerr)
 		}
 
-		if ierr := db2.Import(buf); err != nil {
-			t.Errorf("Import failed: %v", ierr)
-			return
+		if ierr := db2.Import(buf); ierr != nil {
+			t.Fatalf("Import failed: %v", ierr)
 		}
 
 		value, err := db2.Get(testKey...)
 		if err != nil {
-			t.Errorf("Failed to get value")
-			return
+			t.Fatalf("Failed to get value: %v", err)
 		}
 
 		if !bytes.Equal(value, []byte{1, 2, 3}) {
-			t.Errorf("Wrong value after import")
-			return
+			t.Fatalf("Wrong value after import")
 		}
 	})
 }
