@@ -209,8 +209,6 @@ func (hw *HashWriter) Hash() Hash {
 }
 
 func (hw *HashWriter) Write(buf []byte) (int, error) {
-	fmt.Println("....")
-
 	if err := hw.hash.Xor(Sum(buf)); err != nil {
 		return 0, err
 	}
@@ -239,6 +237,4 @@ func (hw *HashWriter) ReadFrom(r io.Reader) (int64, error) {
 			return read, nil
 		}
 	}
-
-	return read, nil
 }

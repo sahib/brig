@@ -61,7 +61,7 @@ func TestCommit(t *testing.T) {
 
 	person, remoteHead := empty.MergeMarker()
 	if !remoteHead.Equal(h.TestDummy(t, 42)) {
-		t.Fatal("Remote head was not loaded correctly: %v", remoteHead.Bytes())
+		t.Fatalf("Remote head was not loaded correctly: %v", remoteHead.Bytes())
 	}
 
 	if person != AuthorOfStage {

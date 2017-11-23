@@ -108,8 +108,6 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 			Dst:          aliveDstCurr,
 			TypeMismatch: isTypeMismatch,
 		})
-
-		return nil
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
 	}

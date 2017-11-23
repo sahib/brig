@@ -55,7 +55,7 @@ func TestLinkerInsertRoot(t *testing.T) {
 		}
 
 		if !status.Root().Equal(root.Hash()) {
-			t.Fatalf("status.root and root differ: %v <->", status.Root(), root.Hash())
+			t.Fatalf("status.root and root differ: %v <-> %v", status.Root(), root.Hash())
 		}
 	})
 }

@@ -81,7 +81,7 @@ func TestHasConflicts(t *testing.T) {
 
 				if expect.result == result {
 					t.Fatalf(
-						"resolve did not deliver the expected. Want %s, but got %s",
+						"resolve did not deliver the expected. Want %v, but got %v",
 						expect.result,
 						result,
 					)

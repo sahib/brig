@@ -67,6 +67,9 @@ func withClientFor(who string, t *testing.T, fn func(ctl *Client)) {
 		}
 	}()
 
+	// Allow a short time for the server go routine to fully boot up.
+	time.Sleep(50 * time.Millisecond)
+
 	ctx := context.Background()
 	ctl, err := Dial(who, rp, bk, ctx)
 	if err != nil {

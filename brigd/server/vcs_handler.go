@@ -347,7 +347,6 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 
 func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 	server.Ack(call.Options)
-	return nil
 
 	withWhom, err := call.Params.WithWhom()
 	if err != nil {

@@ -180,6 +180,7 @@ func (nd *Node) Ping(addr string) (*Pinger, error) {
 	pingCh, err := nd.ipfsNode.Ping.Ping(ctx, peerID)
 	if err != nil {
 		// If peer cannot be rached, we will bail out here.
+		cancel()
 		return nil, err
 	}
 
