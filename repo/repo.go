@@ -75,7 +75,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 			return err
 		}
 	} else if info.Mode().IsDir() {
-		log.Warningf("`%s` is a directory and exists")
+		log.Warningf("`%s` is a directory and exists", baseFolder)
 	} else {
 		return fmt.Errorf("`%s` is a file (should be a directory)")
 	}
