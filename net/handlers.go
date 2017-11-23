@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/disorganizer/brig/net/capnp"
 )
@@ -21,6 +22,7 @@ func (hdl *handler) GetStore(call capnp.Sync_getStore) error {
 }
 
 func (hdl *handler) Ping(call capnp.Meta_ping) error {
+	fmt.Println("PONG")
 	return call.Results.SetReply("ALIVE")
 }
 

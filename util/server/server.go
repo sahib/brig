@@ -39,11 +39,14 @@ type DeadlineListener interface {
 	SetDeadline(deadline time.Time) error
 }
 
-func (sv *Server) accept(rateCh chan struct{}) error {
-	deadline := time.Now().Add(500 * time.Millisecond)
+type timeoutErr interface {
+	Timeout() bool
+}
 
+func (sv *Server) accept(rateCh chan struct{}) error {
 	deadLst, ok := sv.lst.(DeadlineListener)
 	if ok {
+		deadline := time.Now().Add(500 * time.Millisecond)
 		if err := deadLst.SetDeadline(deadline); err != nil {
 			rateCh <- struct{}{}
 			return err
@@ -53,7 +56,7 @@ func (sv *Server) accept(rateCh chan struct{}) error {
 	conn, err := sv.lst.Accept()
 	if err != nil {
 		rateCh <- struct{}{}
-		if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+		if toutErr, ok := err.(timeoutErr); ok && toutErr.Timeout() {
 			return nil
 		}
 
@@ -95,7 +98,7 @@ func (sv *Server) Serve() error {
 		case <-rateCh:
 			// If this signal can receive something, we have a free connection.
 			if err := sv.accept(rateCh); err != nil {
-				log.Errorf("Failed to accept connection: %s", err)
+				log.Errorf("Failed to accept connection: %v", err)
 			}
 		case <-sv.quitCh:
 			log.Infof("Will not accept new connections now")

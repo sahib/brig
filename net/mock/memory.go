@@ -72,7 +72,11 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 
 	// We basically call ourselves with the mock backend,
 	// just pretending to be a different peer.
-	clConn, srvConn := net.Pipe()
+	clConn, srvConn, err := LoopPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	ch, ok := nb.conns[protocol]
 	if !ok {
 		return nil, fmt.Errorf("No listener for this protocol (offline?): %v", protocol)
@@ -90,8 +94,20 @@ func (nb *NetBackend) Listen(protocol string) (net.Listener, error) {
 }
 
 type memListener struct {
-	nb       *NetBackend
-	protocol string
+	nb          *NetBackend
+	hasDeadline bool
+	deadline    time.Time
+	protocol    string
+}
+
+type timeoutError struct{}
+
+func (te *timeoutError) Timeout() bool {
+	return true
+}
+
+func (te *timeoutError) Error() string {
+	return "timeout"
 }
 
 func (ml *memListener) Accept() (net.Conn, error) {
@@ -101,10 +117,22 @@ func (ml *memListener) Accept() (net.Conn, error) {
 		ml.nb.conns[ml.protocol] = ch
 	}
 
-	return <-ch, nil
+	timeoutCh := make(<-chan time.Time)
+	if ml.hasDeadline {
+		timeoutCh = time.After(ml.deadline.Sub(time.Now()))
+	}
+
+	select {
+	case <-timeoutCh:
+		return nil, &timeoutError{}
+	case conn := <-ch:
+		return conn, nil
+	}
 }
 
 func (ml *memListener) SetDeadline(t time.Time) error {
+	ml.deadline = t
+	ml.hasDeadline = true
 	return nil
 }
 

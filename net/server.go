@@ -29,6 +29,10 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
+func (sv *Server) Quit() {
+	sv.baseServer.Quit()
+}
+
 func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 	hdl := &handler{
 		rp: rp,
