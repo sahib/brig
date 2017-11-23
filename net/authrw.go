@@ -17,14 +17,24 @@ import (
 )
 
 const (
-	nonceSize      = 62
+	// nonceSize is the size in bytes of the challenge we send to the remote
+	nonceSize = 62
+	// MaxMessageSize is the max size of a messsage that can be send to us.
+	// The limit is arbitary and should avoid being spammed by huge messages.
+	// (Later on we could also implement a proper streaming protocol)
 	MaxMessageSize = 16 * 1024 * 1024
 )
 
+// PrivDecrypter is anything that can decrypt a message
+// that was previously encrypted with a public key.
 type PrivDecrypter interface {
 	Decrypt(data []byte) ([]byte, error)
 }
 
+// RemoteChecker is a function that is called once the public key
+// of the remote has been received. If an error is returned,
+// the authentication will fail. Use this to check the remote's public key
+// against the fingerprint we store of it.
 type RemoteChecker func(remotePubKey []byte) error
 
 // AuthReadWriter acts as a layer on top of a normal io.ReadWriteCloser
@@ -50,22 +60,39 @@ type RemoteChecker func(remotePubKey []byte) error
 // 4) Further communication writes messages with a hmac, a 4 byte size header
 //    and the actual payload.
 type AuthReadWriter struct {
-	rwc          io.ReadWriteCloser
-	ownPubKey    []byte
+	// Raw underlying network connection
+	rwc io.ReadWriteCloser
+
+	// The data of our public key
+	ownPubKey []byte
+
+	// The remote's public key, once received (nil before)
 	remotePubKey []byte
 
+	// privKey is capable of decrypting a message send to us.
 	privKey PrivDecrypter
 
+	// Checker callback to authenticate remote's public key
 	remoteChecker RemoteChecker
 
-	cryptedRW  io.ReadWriter
-	symkey     []byte
+	// encrypted read writer
+	cryptedRW io.ReadWriter
+
+	// Symmetric key used to encrypt/verify after authentication
+	symkey []byte
+
+	// Set to true after the remote was authenticated
 	authorised bool
-	readBuf    *bytes.Buffer
+
+	// buffer to implement io.Reader's streaming properties
+	readBuf *bytes.Buffer
 }
 
-// NewAuthReadWriter returns a new AuthReadWriter, authenticating rwc.
-// `own` is our own private key, while `partner` is the partner's public key.
+// NewAuthReadWriter returns a new AuthReadWriter, adding an auth layer on top
+// of `rwc`. `privKey` is used to decrypt the remote's challenge, while
+// `ownPubKey` is the pub key we send to them. `remoteChecker` is a callback
+// that is being used by the user to verify if the remote's public key
+// is the one we're expecting.
 func NewAuthReadWriter(
 	rwc io.ReadWriteCloser,
 	privKey PrivDecrypter,
@@ -122,6 +149,7 @@ func readSizePack(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
+// encryptWithPubKey encrypted `data` with the key serialized in `pubKeyData`.
 func encryptWithPubKey(data, pubKeyData []byte) ([]byte, error) {
 	// Load their pubkey from memory:
 	ents, err := openpgp.ReadKeyRing(bytes.NewReader(pubKeyData))
@@ -146,6 +174,8 @@ func encryptWithPubKey(data, pubKeyData []byte) ([]byte, error) {
 	return encBuf.Bytes(), nil
 }
 
+// RemotePubKey returns the partner's public key, if it was authorised already.
+// Otherwise an error will be returned.
 func (ath *AuthReadWriter) RemotePubKey() ([]byte, error) {
 	if !ath.IsAuthorised() {
 		return nil, fmt.Errorf("Partner was not authorised yet")
@@ -274,6 +304,7 @@ func (ath *AuthReadWriter) runAuth() error {
 	return nil
 }
 
+// Trigger the authentication machinery manually.
 func (ath *AuthReadWriter) Trigger() error {
 	if !ath.IsAuthorised() {
 		if err := ath.runAuth(); err != nil {
@@ -285,6 +316,7 @@ func (ath *AuthReadWriter) Trigger() error {
 	return nil
 }
 
+// readMessage reads a single message pack from the network.
 func (ath *AuthReadWriter) readMessage() ([]byte, error) {
 	header := make([]byte, 28+4)
 
@@ -316,6 +348,7 @@ func (ath *AuthReadWriter) readMessage() ([]byte, error) {
 	return buf, nil
 }
 
+// Read will try to fill `buf` with as many bytes as available.
 func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 	if err := ath.Trigger(); err != nil {
 		return 0, err
@@ -324,6 +357,7 @@ func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 	n := 0
 	bufLen := len(buf)
 
+	// Read messages as long `buf` is not full yet.
 	for {
 		if ath.readBuf.Len() > 0 {
 			bn, berr := ath.readBuf.Read(buf)
@@ -356,6 +390,7 @@ func (ath *AuthReadWriter) Read(buf []byte) (int, error) {
 	return n, nil
 }
 
+// Write conforming to the io.Writer interface
 func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 	if err := ath.Trigger(); err != nil {
 		return 0, err

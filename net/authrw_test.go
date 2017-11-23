@@ -23,11 +23,7 @@ const (
 
 // create a new gpg key pair with self-signed subkeys
 func createKeyPair(t *testing.T, bits int) ([]byte, []byte) {
-	// Setting expiry time to zero is good enough for now.
-	// (key wil never expire; not sure yet if expiring keys make sense for brig)
-	cfg := gpgeez.Config{
-		Expiry: 0 * time.Second,
-	}
+	cfg := gpgeez.Config{Expiry: 0 * time.Second}
 
 	cfg.RSABits = bits
 	comment := fmt.Sprintf("brig gpg key of %s", "alice")
@@ -39,6 +35,7 @@ func createKeyPair(t *testing.T, bits int) ([]byte, []byte) {
 	return key.Secring(&cfg), key.Keyring()
 }
 
+// Do not use repo.Keyring, simply re-implement for this test's purpose.
 type DummyPrivKey []byte
 
 func (pk DummyPrivKey) Decrypt(data []byte) ([]byte, error) {
