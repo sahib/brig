@@ -301,7 +301,7 @@ func RunCmdline(args []string) int {
 				},
 				cli.Command{
 					Name:        "ping",
-					Usage:       "Ping a remote",
+					Usage:       "ping <remote-name>",
 					Description: "Ping a remote and see if it responds",
 					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				},

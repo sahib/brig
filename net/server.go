@@ -120,7 +120,11 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 	}
 
 	if err := rpcConn.Close(); err != nil {
-		log.Warnf("Failed to close rpc conn: %v", err)
+		// Close seems to be complaining that the conn was
+		// already closed, but be safe and expect this.
+		if err != rpc.ErrConnClosed {
+			log.Warnf("Failed to close rpc conn: %v", err)
+		}
 	}
 }
 
