@@ -98,6 +98,7 @@ interface Meta {
     remoteSave   @11 (remotes :List(Remote));
     remoteLocate @12 (who :Text) -> (candidates :List(Remote));
     remoteSelf   @13 () -> (self :Remote);
+    remotePing   @14 (who :Text) -> (roundtrip :Float64);
 }
 
 # Group all interfaces together in one API object,

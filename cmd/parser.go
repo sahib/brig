@@ -241,7 +241,7 @@ func RunCmdline(args []string) int {
 			Name:        "remote",
 			Category:    repoGroup,
 			Usage:       "Remote management.",
-			ArgsUsage:   "[add|remove|list|locate|self]",
+			ArgsUsage:   "[add|remove|list|locate|self|ping]",
 			Description: "Add, remove, list, locate remotes and print own identity",
 			Subcommands: []cli.Command{
 				cli.Command{
@@ -298,6 +298,12 @@ func RunCmdline(args []string) int {
 					Usage:       "Print self's identity",
 					Description: "Prints the users identity and online status",
 					Action:      withDaemon(handleRemoteSelf, true),
+				},
+				cli.Command{
+					Name:        "ping",
+					Usage:       "Ping a remote",
+					Description: "Ping a remote and see if it responds",
+					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				},
 			},
 		},

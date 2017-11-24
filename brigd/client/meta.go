@@ -350,3 +350,16 @@ func (cl *Client) RemoteSelf() (*Remote, error) {
 
 	return capRemoteToRemote(capRemote)
 }
+
+func (cl *Client) RemotePing(who string) (float64, error) {
+	call := cl.api.RemotePing(cl.ctx, func(p capnp.Meta_remotePing_Params) error {
+		return p.SetWho(who)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return 0, err
+	}
+
+	return result.Roundtrip(), nil
+}

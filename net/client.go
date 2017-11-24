@@ -31,7 +31,23 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	}
 
 	addr := remote.Fingerprint.Addr()
-	return DialByAddr(addr, remote.Fingerprint, rp.Keyring(), bk, ctx)
+	ctl, err := DialByAddr(addr, remote.Fingerprint, rp.Keyring(), bk, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save the remote's public key for later.
+	// Might be used e.g. in locate()
+	remotePubKey, err := ctl.RemotePubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rp.Keyring().SavePubKey(name, remotePubKey); err != nil {
+		return nil, err
+	}
+
+	return ctl, nil
 }
 
 func DialByAddr(
@@ -71,6 +87,7 @@ func DialByAddr(
 		return nil, err
 	}
 
+	// Setup capnp-rpc:
 	transport := rpc.StreamTransport(rawConn)
 	clientConn := rpc.NewConn(transport)
 	api := capnp.API{Client: clientConn.Bootstrap(ctx)}

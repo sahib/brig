@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/disorganizer/brig/brigd/client"
+	"github.com/disorganizer/brig/util/colors"
 	"github.com/pksunkara/pygments"
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
@@ -32,8 +33,6 @@ func handleRemoteAdd(ctx *cli.Context, ctl *client.Client) error {
 		Fingerprint: ctx.Args().Get(1),
 		Folders:     nil,
 	}
-
-	fmt.Println(remote)
 
 	if err := ctl.RemoteAdd(remote); err != nil {
 		return fmt.Errorf("remote add: %v", err)
@@ -125,5 +124,22 @@ func handleRemoteSelf(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	fmt.Printf("%s %s\n", self.Name, self.Fingerprint)
+	return nil
+}
+
+func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
+	who := ctx.Args().First()
+
+	msg := fmt.Sprintf("ping to %s: ", colors.Colorize(who, colors.Magenta))
+	roundtrip, err := ctl.RemotePing(who)
+	if err != nil {
+		msg += colors.Colorize("✘", colors.Red)
+		msg += fmt.Sprintf(" (%v)", err)
+	} else {
+		msg += colors.Colorize("✔", colors.Green)
+		msg += fmt.Sprintf(" (%3.5f)", roundtrip)
+	}
+
+	fmt.Println(msg)
 	return nil
 }

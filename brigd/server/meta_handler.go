@@ -8,7 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
 	"github.com/disorganizer/brig/brigd/capnp"
-	peernet "github.com/disorganizer/brig/net"
+	p2pnet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"
 	capnplib "zombiezen.com/go/capnproto2"
@@ -381,7 +381,7 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 		defer cancel()
 
 		// Dial peer with out authentication:
-		ctl, err := peernet.DialByAddr(
+		ctl, err := p2pnet.DialByAddr(
 			foundPeer.Addr,
 			peer.Fingerprint(""),
 			mh.base.repo.Keyring(),
@@ -460,4 +460,44 @@ func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
 	}
 
 	return call.Results.SetSelf(capRemote)
+}
+
+func (mh *metaHandler) withNetClient(who string, fn func(ctl *p2pnet.Client) error) error {
+	bk, err := mh.base.Backend()
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ctl, err := p2pnet.Dial(who, mh.base.repo, bk, ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(ctl); err != nil {
+		ctl.Close()
+		return err
+	}
+
+	return ctl.Close()
+}
+
+func (mh *metaHandler) RemotePing(call capnp.Meta_remotePing) error {
+	who, err := call.Params.Who()
+	if err != nil {
+		return err
+	}
+
+	return mh.withNetClient(who, func(ctl *p2pnet.Client) error {
+		start := time.Now()
+		if err := ctl.Ping(); err != nil {
+			return err
+		}
+
+		roundtrip := time.Since(start).Seconds()
+		call.Results.SetRoundtrip(roundtrip)
+		return nil
+	})
 }
