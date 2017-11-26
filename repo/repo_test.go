@@ -15,16 +15,16 @@ func TestRepoInit(t *testing.T) {
 	err := Init(testDir, "alice", "klaus", "mock")
 	require.Nil(t, err)
 
-	repo, err := Open(testDir, "klaus")
+	rp, err := Open(testDir, "klaus")
 	require.Nil(t, err)
 
 	bk := mock.NewMockBackend()
-	fs, err := repo.OwnFS(bk)
+	fs, err := rp.FS(rp.CurrentUser(), bk)
 	require.Nil(t, err)
 
 	// TODO: Assert a bit more that fs is working.
 	require.NotNil(t, fs)
 	require.Nil(t, fs.Close())
 
-	require.Nil(t, repo.Close("klaus"))
+	require.Nil(t, rp.Close("klaus"))
 }

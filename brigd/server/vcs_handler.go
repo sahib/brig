@@ -1,9 +1,13 @@
 package server
 
 import (
+	"fmt"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
+	fserrs "github.com/disorganizer/brig/catfs/errors"
 	p2pnet "github.com/disorganizer/brig/net"
 	cplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -17,7 +21,7 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 	server.Ack(call.Options)
 	seg := call.Results.Segment()
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		entries, err := fs.Log()
 		if err != nil {
 			return err
@@ -83,7 +87,7 @@ func (vcs *vcsHandler) Commit(call capnp.VCS_commit) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.MakeCommit(msg)
 	})
 }
@@ -101,7 +105,7 @@ func (vcs *vcsHandler) Tag(call capnp.VCS_tag) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Tag(rev, tagName)
 	})
 }
@@ -114,7 +118,7 @@ func (vcs *vcsHandler) Untag(call capnp.VCS_untag) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.RemoveTag(tagName)
 	})
 }
@@ -132,7 +136,7 @@ func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Reset(path, rev)
 	})
 }
@@ -145,7 +149,7 @@ func (vcs *vcsHandler) Checkout(call capnp.VCS_checkout) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Checkout(rev, call.Params.Force())
 	})
 }
@@ -160,7 +164,7 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 
 	seg := call.Results.Segment()
 
-	return vcs.base.withOwnFs(func(fs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		history, err := fs.History(path)
 		if err != nil {
 			return err
@@ -328,7 +332,7 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 		return err
 	}
 
-	return vcs.base.withOwnFs(func(ownFs *catfs.FS) error {
+	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(remoteOwner, func(remoteFs *catfs.FS) error {
 			diff, err := ownFs.MakeDiff(remoteFs, headRevOwn, headRevRemote)
 			if err != nil {
@@ -353,8 +357,11 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		return err
 	}
 
+	// TODO: Optimize by implementing store diffs.
+	// This is currently implemented very stupidly by simply fetching
+	// all the store from remote, saving it and using it as sync base.
 	return vcs.base.withNetClient(withWhom, func(ctl *p2pnet.Client) error {
-		r, err := ctl.GetStore()
+		storeBuf, err := ctl.FetchStore()
 		if err != nil {
 			return err
 		}
@@ -373,12 +380,20 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 			return err
 		}
 
-		if err := remoteFS.Import(r); err != nil {
+		if err := remoteFS.Import(storeBuf); err != nil {
 			return err
 		}
 
-		ownFS, err := vcs.base.repo.OwnFS(bk)
+		user := vcs.base.repo.CurrentUser()
+		ownFS, err := vcs.base.repo.FS(user, bk)
 		if err != nil {
+			return err
+		}
+
+		// Automatically make a commit before merging with their state:
+		timeStamp := time.Now().UTC().Format(time.RFC3339)
+		commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
+		if err = ownFS.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
 			return err
 		}
 

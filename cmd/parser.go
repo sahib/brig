@@ -113,6 +113,20 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
 		},
 		cli.Command{
+			Name:        "become",
+			Category:    repoGroup,
+			Usage:       "Act as other user and view the data we synced with",
+			Description: "Act as other user and view the data we synced with",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleBecome, true)),
+		},
+		cli.Command{
+			Name:        "whoami", // TODO: Do we need another `remote self` here?
+			Category:    repoGroup,
+			Usage:       "Check at what user's data we're currently looking at",
+			Description: "Check at what user's data we're currently looking at",
+			Action:      withDaemon(handleWhoami, true),
+		},
+		cli.Command{
 			Name:        "history",
 			Category:    repoGroup,
 			Usage:       "Show the history of the given brig file",

@@ -83,7 +83,7 @@ interface VCS {
     checkout @5 (rev :Text, force :Bool);
     history  @6 (path :Text) -> (history :List(HistoryEntry));
     makeDiff @7 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
-    sync     @8  (withWhom :Text);
+    sync     @8 (withWhom :Text);
 }
 
 interface Meta {
@@ -104,6 +104,9 @@ interface Meta {
     remoteLocate @12 (who :Text) -> (candidates :List(Remote));
     remoteSelf   @13 () -> (self :Remote);
     remotePing   @14 (who :Text) -> (roundtrip :Float64);
+
+    become      @15 (who :Text);
+    currentUser @16 () -> (user :Text);
 }
 
 # Group all interfaces together in one API object,

@@ -7,7 +7,8 @@ import (
 )
 
 func (hdl *handler) FetchStore(call capnp.Sync_fetchStore) error {
-	fs, err := hdl.rp.OwnFS(hdl.bk)
+	user := hdl.rp.CurrentUser()
+	fs, err := hdl.rp.FS(user, hdl.bk)
 	if err != nil {
 		return err
 	}

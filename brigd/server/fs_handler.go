@@ -50,7 +50,7 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 func (fh *fsHandler) List(call capnp.FS_list) error {
 	server.Ack(call.Options)
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		// Collect list params:
 		root, err := call.Params.Root()
 		if err != nil {
@@ -92,7 +92,7 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	server.Ack(call.Options)
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		repoPath, err := call.Params.RepoPath()
 		if err != nil {
 			return err
@@ -122,7 +122,7 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		port, err := bootTransferServer(fs, path)
 		if err != nil {
 			return err
@@ -142,7 +142,7 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 	}
 
 	createParents := call.Params.CreateParents()
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Mkdir(path, createParents)
 	})
 }
@@ -155,7 +155,7 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Remove(path)
 	})
 }
@@ -173,7 +173,7 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Move(srcPath, dstPath)
 	})
 }
@@ -186,7 +186,7 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Pin(path)
 	})
 }
@@ -199,7 +199,7 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Unpin(path)
 	})
 }
@@ -212,7 +212,7 @@ func (fh *fsHandler) IsPinned(call capnp.FS_isPinned) error {
 		return err
 	}
 
-	return fh.base.withOwnFs(func(fs *catfs.FS) error {
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		isPinned, err := fs.IsPinned(path)
 		if err != nil {
 			return err

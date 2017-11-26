@@ -223,7 +223,7 @@ func (b *base) mountsUnlocked() (*fuse.MountTable, error) {
 }
 
 func (b *base) loadMounts() (*fuse.MountTable, error) {
-	err := b.withOwnFs(func(fs *catfs.FS) error {
+	err := b.withCurrFs(func(fs *catfs.FS) error {
 		b.mounts = fuse.NewMountTable(fs)
 		return nil
 	})
@@ -235,7 +235,7 @@ func (b *base) loadMounts() (*fuse.MountTable, error) {
 	return b.mounts, nil
 }
 
-func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
+func (b *base) withCurrFs(fn func(fs *catfs.FS) error) error {
 	rp, err := b.repoUnlocked()
 	if err != nil {
 		return err
@@ -246,7 +246,8 @@ func (b *base) withOwnFs(fn func(fs *catfs.FS) error) error {
 		return err
 	}
 
-	fs, err := rp.OwnFS(bk)
+	user := rp.CurrentUser()
+	fs, err := rp.FS(user, bk)
 	if err != nil {
 		return err
 	}

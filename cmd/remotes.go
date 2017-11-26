@@ -137,7 +137,7 @@ func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
 		msg += fmt.Sprintf(" (%v)", err)
 	} else {
 		msg += colors.Colorize("✔", colors.Green)
-		msg += fmt.Sprintf(" (%3.5f)", roundtrip)
+		msg += fmt.Sprintf(" (%3.5fms)", roundtrip)
 	}
 
 	fmt.Println(msg)

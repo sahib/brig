@@ -186,6 +186,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	config := viper.New()
 	config.AddConfigPath(baseFolder)
 	setConfigDefaults(config)
+	config.SetDefault("repo.current_user", owner)
 
 	if err := config.ReadInConfig(); err != nil {
 		return nil, err
@@ -248,14 +249,21 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return nil, err
 	}
 
+	if err := fs.MakeCommit("initial commit"); err != nil {
+		return nil, err
+	}
+
 	// Store for next call:
 	rp.fsMap[owner] = fs
 	return fs, nil
 }
 
-// OwnFS returns the filesystem for the owner.
-func (rp *Repository) OwnFS(bk catfs.FsBackend) (*catfs.FS, error) {
-	return rp.FS(rp.Owner, bk)
+func (rp *Repository) CurrentUser() string {
+	return rp.Config.GetString("repo.current_user")
+}
+
+func (rp *Repository) SetCurrentUser(user string) {
+	rp.Config.Set("repo.current_user", user)
 }
 
 func (rp *Repository) Keyring() *Keyring {

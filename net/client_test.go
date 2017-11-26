@@ -87,7 +87,7 @@ func withClientFor(who string, t *testing.T, fn func(u testUnit)) {
 		t.Fatalf("Dial to %v failed: %v", who, err)
 	}
 
-	fs, err := rp.OwnFS(bk)
+	fs, err := rp.FS(rp.CurrentUser(), bk)
 	if err != nil {
 		t.Fatalf("Failed to retrieve own fs: %v", err)
 	}

@@ -516,29 +516,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleDiff(ctx *cli.Context, ctl *client.Client) error {
-	remoteRev := ctx.Args().Get(0)
-	if remoteRev == "" {
-		remoteRev = "HEAD"
-	}
-
-	localRev := ctx.String("rev")
-	remoteName := ctx.String("remote")
-	if remoteName == "" {
-		self, err := ctl.RemoteSelf()
-		if err != nil {
-			return err
-		}
-
-		remoteName = self.Name
-	}
-
-	diff, err := ctl.MakeDiff(remoteName, localRev, remoteRev)
-	if err != nil {
-		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
-	}
-
-	// TODO: Format this nicer.
+func printDiff(diff *client.Diff) {
 	fmt.Println("Added:")
 	for _, info := range diff.Added {
 		fmt.Println(info.Path)
@@ -563,7 +541,31 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	for _, pair := range diff.Conflict {
 		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
 	}
+}
 
+func handleDiff(ctx *cli.Context, ctl *client.Client) error {
+	remoteRev := ctx.Args().Get(0)
+	if remoteRev == "" {
+		remoteRev = "HEAD"
+	}
+
+	localRev := ctx.String("rev")
+	remoteName := ctx.String("remote")
+	if remoteName == "" {
+		self, err := ctl.RemoteSelf()
+		if err != nil {
+			return err
+		}
+
+		remoteName = self.Name
+	}
+
+	diff, err := ctl.MakeDiff(remoteName, localRev, remoteRev)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
+	}
+
+	printDiff(diff)
 	return nil
 }
 
@@ -583,7 +585,29 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	// TODO: Format this pretty (maybe share code with MakeDiff?)
-	fmt.Println("STATUS", diff)
+	printDiff(diff)
+	return nil
+}
+
+func handleBecome(ctx *cli.Context, ctl *client.Client) error {
+	who := ctx.Args().First()
+	if err := ctl.Become(who); err != nil {
+		return err
+	}
+
+	fmt.Printf(
+		"You are viewing %s's data now. Changes will be local only.\n",
+		colors.Colorize(who, colors.Green),
+	)
+	return nil
+}
+
+func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
+	user, err := ctl.CurrentUser()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(user)
 	return nil
 }

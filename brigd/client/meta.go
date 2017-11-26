@@ -363,3 +363,25 @@ func (cl *Client) RemotePing(who string) (float64, error) {
 
 	return result.Roundtrip(), nil
 }
+
+func (cl *Client) Become(who string) error {
+	call := cl.api.Become(cl.ctx, func(p capnp.Meta_become_Params) error {
+		return p.SetWho(who)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) CurrentUser() (string, error) {
+	call := cl.api.CurrentUser(cl.ctx, func(p capnp.Meta_currentUser_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return "", err
+	}
+
+	return result.User()
+}

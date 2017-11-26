@@ -501,3 +501,37 @@ func (mh *metaHandler) RemotePing(call capnp.Meta_remotePing) error {
 		return nil
 	})
 }
+
+func (mh *metaHandler) Become(call capnp.Meta_become) error {
+	who, err := call.Params.Who()
+	if err != nil {
+		return err
+	}
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	// We can only be users that are present in the remote list (and owner)
+	// (This is not a technical limitation)
+	if who != rp.Owner {
+		_, err = rp.Remotes.Remote(who)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Infof("Becoming: %v", who)
+	rp.SetCurrentUser(who)
+	return nil
+}
+
+func (mh *metaHandler) CurrentUser(call capnp.Meta_currentUser) error {
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	return call.Results.SetUser(rp.CurrentUser())
+}
