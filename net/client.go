@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
 
 	netBackend "github.com/disorganizer/brig/net/backend"
@@ -123,8 +122,8 @@ func (cl *Client) Ping() error {
 	return err
 }
 
-func (cl *Client) GetStore() (io.Reader, error) {
-	call := cl.api.GetStore(cl.ctx, func(p capnp.Sync_getStore_Params) error {
+func (cl *Client) FetchStore() (*bytes.Buffer, error) {
+	call := cl.api.FetchStore(cl.ctx, func(p capnp.Sync_fetchStore_Params) error {
 		return nil
 	})
 
@@ -138,5 +137,5 @@ func (cl *Client) GetStore() (io.Reader, error) {
 		return nil, err
 	}
 
-	return bytes.NewReader(data), nil
+	return bytes.NewBuffer(data), nil
 }

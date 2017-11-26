@@ -5,7 +5,7 @@ $Go.package("capnp");
 $Go.import("github.com/disorganizer/brig/net/capnp");
 
 interface Sync {
-    getStore @0 () -> (data :Data);
+    fetchStore @0 () -> (data :Data);
 }
 
 interface Meta {

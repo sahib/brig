@@ -15,29 +15,29 @@ type Sync struct{ Client capnp.Client }
 // Sync_TypeID is the unique identifier for the type Sync.
 const Sync_TypeID = 0xf5692a07c5cf7872
 
-func (c Sync) GetStore(ctx context.Context, params func(Sync_getStore_Params) error, opts ...capnp.CallOption) Sync_getStore_Results_Promise {
+func (c Sync) FetchStore(ctx context.Context, params func(Sync_fetchStore_Params) error, opts ...capnp.CallOption) Sync_fetchStore_Results_Promise {
 	if c.Client == nil {
-		return Sync_getStore_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Sync",
-			MethodName:    "getStore",
+			InterfaceName: "api.capnp:Sync",
+			MethodName:    "fetchStore",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_getStore_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_fetchStore_Params{Struct: s}) }
 	}
-	return Sync_getStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 
 type Sync_Server interface {
-	GetStore(Sync_getStore) error
+	FetchStore(Sync_fetchStore) error
 }
 
 func Sync_ServerToClient(s Sync_Server) Sync {
@@ -54,12 +54,12 @@ func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Sync",
-			MethodName:    "getStore",
+			InterfaceName: "api.capnp:Sync",
+			MethodName:    "fetchStore",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Sync_getStore{c, opts, Sync_getStore_Params{Struct: p}, Sync_getStore_Results{Struct: r}}
-			return s.GetStore(call)
+			call := Sync_fetchStore{c, opts, Sync_fetchStore_Params{Struct: p}, Sync_fetchStore_Results{Struct: r}}
+			return s.FetchStore(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
@@ -67,136 +67,136 @@ func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 	return methods
 }
 
-// Sync_getStore holds the arguments for a server call to Sync.getStore.
-type Sync_getStore struct {
+// Sync_fetchStore holds the arguments for a server call to Sync.fetchStore.
+type Sync_fetchStore struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Sync_getStore_Params
-	Results Sync_getStore_Results
+	Params  Sync_fetchStore_Params
+	Results Sync_fetchStore_Results
 }
 
-type Sync_getStore_Params struct{ capnp.Struct }
+type Sync_fetchStore_Params struct{ capnp.Struct }
 
-// Sync_getStore_Params_TypeID is the unique identifier for the type Sync_getStore_Params.
-const Sync_getStore_Params_TypeID = 0xdc63044e67499411
+// Sync_fetchStore_Params_TypeID is the unique identifier for the type Sync_fetchStore_Params.
+const Sync_fetchStore_Params_TypeID = 0xdc63044e67499411
 
-func NewSync_getStore_Params(s *capnp.Segment) (Sync_getStore_Params, error) {
+func NewSync_fetchStore_Params(s *capnp.Segment) (Sync_fetchStore_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Sync_getStore_Params{st}, err
+	return Sync_fetchStore_Params{st}, err
 }
 
-func NewRootSync_getStore_Params(s *capnp.Segment) (Sync_getStore_Params, error) {
+func NewRootSync_fetchStore_Params(s *capnp.Segment) (Sync_fetchStore_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Sync_getStore_Params{st}, err
+	return Sync_fetchStore_Params{st}, err
 }
 
-func ReadRootSync_getStore_Params(msg *capnp.Message) (Sync_getStore_Params, error) {
+func ReadRootSync_fetchStore_Params(msg *capnp.Message) (Sync_fetchStore_Params, error) {
 	root, err := msg.RootPtr()
-	return Sync_getStore_Params{root.Struct()}, err
+	return Sync_fetchStore_Params{root.Struct()}, err
 }
 
-func (s Sync_getStore_Params) String() string {
+func (s Sync_fetchStore_Params) String() string {
 	str, _ := text.Marshal(0xdc63044e67499411, s.Struct)
 	return str
 }
 
-// Sync_getStore_Params_List is a list of Sync_getStore_Params.
-type Sync_getStore_Params_List struct{ capnp.List }
+// Sync_fetchStore_Params_List is a list of Sync_fetchStore_Params.
+type Sync_fetchStore_Params_List struct{ capnp.List }
 
-// NewSync_getStore_Params creates a new list of Sync_getStore_Params.
-func NewSync_getStore_Params_List(s *capnp.Segment, sz int32) (Sync_getStore_Params_List, error) {
+// NewSync_fetchStore_Params creates a new list of Sync_fetchStore_Params.
+func NewSync_fetchStore_Params_List(s *capnp.Segment, sz int32) (Sync_fetchStore_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Sync_getStore_Params_List{l}, err
+	return Sync_fetchStore_Params_List{l}, err
 }
 
-func (s Sync_getStore_Params_List) At(i int) Sync_getStore_Params {
-	return Sync_getStore_Params{s.List.Struct(i)}
+func (s Sync_fetchStore_Params_List) At(i int) Sync_fetchStore_Params {
+	return Sync_fetchStore_Params{s.List.Struct(i)}
 }
 
-func (s Sync_getStore_Params_List) Set(i int, v Sync_getStore_Params) error {
+func (s Sync_fetchStore_Params_List) Set(i int, v Sync_fetchStore_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Sync_getStore_Params_List) String() string {
+func (s Sync_fetchStore_Params_List) String() string {
 	str, _ := text.MarshalList(0xdc63044e67499411, s.List)
 	return str
 }
 
-// Sync_getStore_Params_Promise is a wrapper for a Sync_getStore_Params promised by a client call.
-type Sync_getStore_Params_Promise struct{ *capnp.Pipeline }
+// Sync_fetchStore_Params_Promise is a wrapper for a Sync_fetchStore_Params promised by a client call.
+type Sync_fetchStore_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Sync_getStore_Params_Promise) Struct() (Sync_getStore_Params, error) {
+func (p Sync_fetchStore_Params_Promise) Struct() (Sync_fetchStore_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Sync_getStore_Params{s}, err
+	return Sync_fetchStore_Params{s}, err
 }
 
-type Sync_getStore_Results struct{ capnp.Struct }
+type Sync_fetchStore_Results struct{ capnp.Struct }
 
-// Sync_getStore_Results_TypeID is the unique identifier for the type Sync_getStore_Results.
-const Sync_getStore_Results_TypeID = 0xf834409e30e8009c
+// Sync_fetchStore_Results_TypeID is the unique identifier for the type Sync_fetchStore_Results.
+const Sync_fetchStore_Results_TypeID = 0xf834409e30e8009c
 
-func NewSync_getStore_Results(s *capnp.Segment) (Sync_getStore_Results, error) {
+func NewSync_fetchStore_Results(s *capnp.Segment) (Sync_fetchStore_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Sync_getStore_Results{st}, err
+	return Sync_fetchStore_Results{st}, err
 }
 
-func NewRootSync_getStore_Results(s *capnp.Segment) (Sync_getStore_Results, error) {
+func NewRootSync_fetchStore_Results(s *capnp.Segment) (Sync_fetchStore_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Sync_getStore_Results{st}, err
+	return Sync_fetchStore_Results{st}, err
 }
 
-func ReadRootSync_getStore_Results(msg *capnp.Message) (Sync_getStore_Results, error) {
+func ReadRootSync_fetchStore_Results(msg *capnp.Message) (Sync_fetchStore_Results, error) {
 	root, err := msg.RootPtr()
-	return Sync_getStore_Results{root.Struct()}, err
+	return Sync_fetchStore_Results{root.Struct()}, err
 }
 
-func (s Sync_getStore_Results) String() string {
+func (s Sync_fetchStore_Results) String() string {
 	str, _ := text.Marshal(0xf834409e30e8009c, s.Struct)
 	return str
 }
 
-func (s Sync_getStore_Results) Data() ([]byte, error) {
+func (s Sync_fetchStore_Results) Data() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return []byte(p.Data()), err
 }
 
-func (s Sync_getStore_Results) HasData() bool {
+func (s Sync_fetchStore_Results) HasData() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Sync_getStore_Results) SetData(v []byte) error {
+func (s Sync_fetchStore_Results) SetData(v []byte) error {
 	return s.Struct.SetData(0, v)
 }
 
-// Sync_getStore_Results_List is a list of Sync_getStore_Results.
-type Sync_getStore_Results_List struct{ capnp.List }
+// Sync_fetchStore_Results_List is a list of Sync_fetchStore_Results.
+type Sync_fetchStore_Results_List struct{ capnp.List }
 
-// NewSync_getStore_Results creates a new list of Sync_getStore_Results.
-func NewSync_getStore_Results_List(s *capnp.Segment, sz int32) (Sync_getStore_Results_List, error) {
+// NewSync_fetchStore_Results creates a new list of Sync_fetchStore_Results.
+func NewSync_fetchStore_Results_List(s *capnp.Segment, sz int32) (Sync_fetchStore_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Sync_getStore_Results_List{l}, err
+	return Sync_fetchStore_Results_List{l}, err
 }
 
-func (s Sync_getStore_Results_List) At(i int) Sync_getStore_Results {
-	return Sync_getStore_Results{s.List.Struct(i)}
+func (s Sync_fetchStore_Results_List) At(i int) Sync_fetchStore_Results {
+	return Sync_fetchStore_Results{s.List.Struct(i)}
 }
 
-func (s Sync_getStore_Results_List) Set(i int, v Sync_getStore_Results) error {
+func (s Sync_fetchStore_Results_List) Set(i int, v Sync_fetchStore_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Sync_getStore_Results_List) String() string {
+func (s Sync_fetchStore_Results_List) String() string {
 	str, _ := text.MarshalList(0xf834409e30e8009c, s.List)
 	return str
 }
 
-// Sync_getStore_Results_Promise is a wrapper for a Sync_getStore_Results promised by a client call.
-type Sync_getStore_Results_Promise struct{ *capnp.Pipeline }
+// Sync_fetchStore_Results_Promise is a wrapper for a Sync_fetchStore_Results promised by a client call.
+type Sync_fetchStore_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Sync_getStore_Results_Promise) Struct() (Sync_getStore_Results, error) {
+func (p Sync_fetchStore_Results_Promise) Struct() (Sync_fetchStore_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Sync_getStore_Results{s}, err
+	return Sync_fetchStore_Results{s}, err
 }
 
 type Meta struct{ Client capnp.Client }
@@ -213,7 +213,7 @@ func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Meta",
+			InterfaceName: "api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -243,7 +243,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Meta",
+			InterfaceName: "api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -405,7 +405,7 @@ func (c API) Version(ctx context.Context, params func(API_version_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0xb74958502f92fefd,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:API",
+			InterfaceName: "api.capnp:API",
 			MethodName:    "version",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -416,25 +416,25 @@ func (c API) Version(ctx context.Context, params func(API_version_Params) error,
 	}
 	return API_version_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) GetStore(ctx context.Context, params func(Sync_getStore_Params) error, opts ...capnp.CallOption) Sync_getStore_Results_Promise {
+func (c API) FetchStore(ctx context.Context, params func(Sync_fetchStore_Params) error, opts ...capnp.CallOption) Sync_fetchStore_Results_Promise {
 	if c.Client == nil {
-		return Sync_getStore_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Sync",
-			MethodName:    "getStore",
+			InterfaceName: "api.capnp:Sync",
+			MethodName:    "fetchStore",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_getStore_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_fetchStore_Params{Struct: s}) }
 	}
-	return Sync_getStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts ...capnp.CallOption) Meta_ping_Results_Promise {
 	if c.Client == nil {
@@ -445,7 +445,7 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Meta",
+			InterfaceName: "api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -460,7 +460,7 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 type API_Server interface {
 	Version(API_version) error
 
-	GetStore(Sync_getStore) error
+	FetchStore(Sync_fetchStore) error
 
 	Ping(Meta_ping) error
 }
@@ -479,7 +479,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xb74958502f92fefd,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:API",
+			InterfaceName: "api.capnp:API",
 			MethodName:    "version",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -493,12 +493,12 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xf5692a07c5cf7872,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Sync",
-			MethodName:    "getStore",
+			InterfaceName: "api.capnp:Sync",
+			MethodName:    "fetchStore",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Sync_getStore{c, opts, Sync_getStore_Params{Struct: p}, Sync_getStore_Results{Struct: r}}
-			return s.GetStore(call)
+			call := Sync_fetchStore{c, opts, Sync_fetchStore_Params{Struct: p}, Sync_fetchStore_Results{Struct: r}}
+			return s.FetchStore(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
@@ -507,7 +507,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xb02d2ba0578cc7ff,
 			MethodID:      0,
-			InterfaceName: "capnp/api.capnp:Meta",
+			InterfaceName: "api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -646,38 +646,39 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_9bcb07fb35756ee6 = "x\xda|\x921h\x13Q\x18\xc7\xff\xdfw/^\xd5" +
-	"\x86\xf8\xbc(\xe8R\x90H!\xd24\xd6\x8a\xe0b\xda" +
-	"\xc1\x10\xa1r\x97Rtq8\xe2\x11\x03\xc95\xe6\xae" +
-	"b\x06)\x0e\xd9Z\x10\xd1E\xab\x88NV\x047'" +
-	"G\x11t\xd0]\x1dJA\x04gA(\xf1\xe4\x9d\xbd" +
-	"^B\xd2n\x0f\xde\xe3\xff\xfd\xfe\xbf\xef\xe5\x8fR\x81" +
-	"O'\x96\x05`M'\xf6\x05\xe3\x9b\x9d\xf2F\xf7\xde" +
-	"#\xc8#\x04$H\x07\xce\x9c\xe4\xc3\x042&\xf8\x02" +
-	"(\x08>\xac\\yvj\xe2\x0d\xe4!-\xf8\xe1." +
-	"\x9d\xdd\xd2?=\x06\xc8\x98\xe3uc\x81u\xc0\xb0\xb8" +
-	"h\xb4\xd5)\xe8\xfe\xbd?i^-\xbd\x1dxl\xf3" +
-	"s\xa3\x16>v\xb8h\xac\xf28\x10\xc8\x07\xa5\xeae" +
-	"Q\xf9\xf6\x7f\xb4P\x93;\x9c%\x88`%\xf3\xd1\xbd" +
-	"\xd8}\xb9\xd1s\xd3\xe0\x03\xea\xe6\xe0\xb9\x17_7\x8f" +
-	"}\xff\x05+M\xd1\xd5\x02\x9fP\xb8\xd7B\xdc\xd6\xed" +
-	"\xcf\xef\xf5l\xed\xf7\x00\xc1\x1d^7:!\xc1]." +
-	"\x1a\xaf\xd5\xa9\xbb\xf63\xff\xb40\xfd\xa7\xa7\xfaC\x9e" +
-	"RYO\xc2,q\xe3\xe6\x97\xd5\xf2\xab-\xc8t4" +
-	"\xeb\x1d\x1f'\xe4\x83\x8a\xddt\x9b\x93vS\xab\xe5\xc2" +
-	"\xe3\xf99\xc7\xb7s\xcd\x9a[\xcd\x94\x1do\xa9\xee\x93" +
-	"g\x09M\x00\x82\x00\x99\x9c\x02\xac\x11\x8d\xac4\xd3X" +
-	"\xcbi\xd6\xdb4\x0a\xa6Q\xd0N\x10EA)\x95d" +
-	"\x12YBK\x00;&(\xda\x93\x94Y\xb0L\xe8)" +
-	"5\xac@&\x0d\xc9\xd0g\xccR\x1c\x11\xb5\xa0\xc8\x9d" +
-	"\x94\xb3a\xc4\xf2-\xa7\xe5\xd5\x16\xdd\x02Y#\xd4c" +
-	"\x0e\x88\x97\x0e\x0cv\x9do\xbb\x95\\\xd5\xf1\xe7\xfd\xc5" +
-	"\x96\x931\xedT\xcbnx{)1m\xf5bX\xd4" +
-	"\x8cY\xcamS\x84\xe2\xf4\xba\xdf'n6\x16\x17\xd1" +
-	"\x92\x00\x93\x18\xaaN\x81\xc5\xbd\xa3\xefEk\xd8^\xb3" +
-	"\xbc\x04\x96\xfb\xf5 b\x07\xd0op\x97\x8aegL" +
-	"\xed\xb4\x8f,\x1b\x93\xa5\xae\xdb\xbeMI0%A{" +
-	"wT&\xb4\x86\xf7/\x00\x00\xff\xff\x83O\x01i"
+const schema_9bcb07fb35756ee6 = "x\xdal\x92\xbfk\x13a\x18\xc7\xbf\xcfso\xbcZ" +
+	"\xdb\x86\xd7sq\xea\x12)F\x8c\xd1V\x84,M\x0b" +
+	"\x1an\xa8\xdc\xa5\x83Vp8\xe2\xd9\x1e$\xd7\xeb\xdd" +
+	"ELA\x8aC\xb7\x0a\"\xbah\x11A\x1c\xc4\xc5\xcd" +
+	"\xbf@\x04\x1dt\xf6\xc7P\x0b\"\xba\x09\x82P\xe2\xc9" +
+	"\xa5\xbd\\\x92\xba\xbd\xf0\xfc\xf8~\xbe\xdf\xe7-f\xa9" +
+	"\xcc\xa73k\x020\xa72\x07\xa2\x89\xed\xf5\xeaV\xfb" +
+	"\xeeC\xc8,\x01\x19R\x01\xed\x18\x7f\x05i\xc7y\x1a" +
+	"\x14Eo6.=9q\xf2%\xe4\xb0\x12}s\x9b" +
+	"gw\xd4w\x8f\x00\xd2t^\xd5\xe68n\xd7\xb9\xa2" +
+	"\xad\xc4\xaf\xa8\xfd\xf7\xde)\xe3\xb2\xfej_\xf3\x02\xfb" +
+	"\xda\xd5N\xf3\x02W\xb4\xdb<\x01D\xf2\xbe\xbexQ" +
+	"\xd4>\xef*\x0b\x15\x98l\xf10AD\x1b\xb9\xb7\xee" +
+	"\x85\xf6\xf3\xad\xb4\xa2Y\xfc\x11\":t\xee\xe9\xa7\xed" +
+	"\xa3_~\xc2\x1c\xa3\xa4r\x9e\x7fuhbX\xff\xe6" +
+	"\xfb\xd7j\xde\xf9\xbdO\xdf\xe1U\xad\xd1\xd1w\xb8\xa2" +
+	"=\x88_\xed\xcd\xef\xc5\xc7\xe5\xa9?\xa9\xef\xc9[|" +
+	"\x98@\xdazg\x97XZ\xf9p\xa7\xfab\x07r," +
+	"\x91z\xc6?P\x8c,\xcf)\xd4,\xcfe\xaf4g" +
+	"\x87V\xc1s\xdc\xc5\\\xd5\x0e\x9aj=\x0cL\xa1\x08" +
+	"@\x10 G\xcf\x00\xe6\x90B\xe6\x11\xa6q\xdf\xf6\xea" +
+	"-\x1a\x01\xd3\x08\xa8\xbb\x02\xd3\xbb;\x0c\"S(\x19" +
+	"\xa0k\x9d\x92\xbbH\x99\x07\xcb\x8c\x9a\x8de\xcadP" +
+	"\xcf\xf4\xb8W\x9a1\xf4t8A\xa6$')g;" +
+	"\xc3k7l?p\x96\xdd2\x99C\xd4\x13\x13\x90\xde" +
+	"\x17\xe8.V\xbc\xd2|\xcb\xad\x15\xae\xdbami>" +
+	"\\\xf6\xed\x9ca\xf9V#\xe8\xe9\xe9s\x1fW\x95F" +
+	"\xd0[\x9c1\xf4\xc2\x9ej\xaej\x8f\x07\xcd\x81pf" +
+	"\xd3p\x12:\x12`\x12\x03\xf1\xc4 \xa9\xc3\xe4\xcf\xd0" +
+	"&\xf6\xae'\xaf\x80\xe5A5JX\xa1\xf8v\x7fL" +
+	"\xffq\x13_\xab\x1eR\x1fP>\x05\xca^\xb3B\x8b" +
+	"F\xc14\xdaC3`\xca\xb0\xb2q$\xff\x02\x00\x00" +
+	"\xff\xff\xbe\xb6\xf0v"
 
 func init() {
 	schemas.Register(schema_9bcb07fb35756ee6,

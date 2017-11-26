@@ -462,15 +462,15 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		key = file.Key()
 	}
 
-	stream, err := mio.NewInStream(r, key, fs.cfg.compressAlgo)
-	if err != nil {
-		return err
-	}
-
 	// Get the size directrly from the number of bytes written
 	// to the backend and do not rely on external sources.
 	sizeAcc := &util.SizeAccumulator{}
-	stream = io.TeeReader(stream, sizeAcc)
+	sizeR := io.TeeReader(r, sizeAcc)
+
+	stream, err := mio.NewInStream(sizeR, key, fs.cfg.compressAlgo)
+	if err != nil {
+		return err
+	}
 
 	hash, err := fs.bk.Add(stream)
 	if err != nil {

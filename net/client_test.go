@@ -1,6 +1,7 @@
 package net
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"os"
@@ -9,11 +10,21 @@ import (
 	"time"
 
 	"github.com/disorganizer/brig/backend"
+	"github.com/disorganizer/brig/catfs"
+	ie "github.com/disorganizer/brig/catfs/errors"
 	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"
+	"github.com/stretchr/testify/require"
 )
 
-func withClientFor(who string, t *testing.T, fn func(ctl *Client)) {
+type testUnit struct {
+	ctl *Client
+	fs  *catfs.FS
+	rp  *repo.Repository
+	bk  backend.Backend
+}
+
+func withClientFor(who string, t *testing.T, fn func(u testUnit)) {
 	tmpFolder, err := ioutil.TempDir("", "brig-net-test-")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -76,8 +87,18 @@ func withClientFor(who string, t *testing.T, fn func(ctl *Client)) {
 		t.Fatalf("Dial to %v failed: %v", who, err)
 	}
 
+	fs, err := rp.OwnFS(bk)
+	if err != nil {
+		t.Fatalf("Failed to retrieve own fs: %v", err)
+	}
+
 	// Actually execute the test...
-	fn(ctl)
+	fn(testUnit{
+		fs:  fs,
+		rp:  rp,
+		ctl: ctl,
+		bk:  bk,
+	})
 
 	if err := ctl.Close(); err != nil {
 		t.Fatalf("Failed to close conn")
@@ -93,13 +114,64 @@ func withClientFor(who string, t *testing.T, fn func(ctl *Client)) {
 }
 
 func TestClientPing(t *testing.T) {
-	withClientFor("bob", t, func(ctl *Client) {
-		now := time.Now()
-
+	withClientFor("bob", t, func(u testUnit) {
 		for i := 0; i < 100; i++ {
-			if err := ctl.Ping(); err != nil {
+			if err := u.ctl.Ping(); err != nil {
 				t.Fatalf("Ping to bob failed: %v", err)
 			}
 		}
+	})
+}
+
+func TestClientFetchStore(t *testing.T) {
+	withClientFor("bob", t, func(u testUnit) {
+		filePath := "/a/new/name/has/been/born"
+		fileData := []byte{1, 2, 3}
+		fileSrc := bytes.NewReader(fileData)
+
+		if err := u.fs.Stage(filePath, fileSrc); err != nil {
+			t.Fatalf("Failed to stage simple file: %v", err)
+		}
+
+		data, err := u.ctl.FetchStore()
+		if err != nil {
+			t.Fatalf("Failed to read store: %v", err)
+		}
+
+		bobFs, err := u.rp.FS("bob", u.bk)
+		if err != nil {
+			t.Fatalf("Failed to get empty bob fs: %v", err)
+		}
+
+		_, err = bobFs.Stat(filePath)
+		if !ie.IsNoSuchFileError(err) {
+			t.Fatalf("File has existed in bob's empty store (wtf?)")
+		}
+
+		if err := bobFs.Import(data); err != nil {
+			t.Fatalf("Failed to import data: %v", err)
+		}
+
+		info, err := bobFs.Stat(filePath)
+		if err != nil {
+			t.Fatalf("Failed to read file exported from alice: %v", err)
+		}
+
+		// Check superficially that store was imported right:
+		require.Equal(t, info.Path, filePath)
+		require.Equal(t, info.Size, 3)
+		require.Equal(t, info.IsDir, false)
+
+		r, err := bobFs.Cat(filePath)
+		if err != nil {
+			t.Fatalf("Failed to cat exported file: %v", err)
+		}
+
+		bobData, err := ioutil.ReadAll(r)
+		if err != nil {
+			t.Fatalf("Failed to read bob data: %v", err)
+		}
+
+		require.Equal(t, fileData, bobData)
 	})
 }
