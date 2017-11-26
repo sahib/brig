@@ -17,12 +17,13 @@ var (
 )
 
 type Handle struct {
-	fs       *FS
-	file     *n.File
-	lock     sync.Mutex
-	layer    *overlay.Layer
-	stream   mio.Stream
-	isClosed bool
+	fs          *FS
+	file        *n.File
+	lock        sync.Mutex
+	layer       *overlay.Layer
+	stream      mio.Stream
+	wasModified bool
+	isClosed    bool
 }
 
 func newHandle(fs *FS, file *n.File) *Handle {
@@ -92,6 +93,10 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	if err := hdl.initStreamIfNeeded(); err != nil {
 		return 0, err
 	}
+
+	// Currently, we do not check if the file was actually modified
+	// (i.e. data changed compared to before)
+	hdl.wasModified = true
 
 	n, err := hdl.layer.Write(buf)
 	if err != nil {
@@ -169,8 +174,13 @@ func (hdl *Handle) flush() error {
 		hdl.layer = nil
 	}()
 
+	// No need to flush anything if no write calles happened.
+	if !hdl.wasModified {
+		return nil
+	}
+
 	// Jump back to the beginning of the file, since fs.Stage()
-	// should reall content starting from there.
+	// should read all content starting from there.
 	n, err := hdl.layer.Seek(0, os.SEEK_SET)
 	if err != nil {
 		return err

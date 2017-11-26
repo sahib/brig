@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"io"
 	"os"
 	"sync"
 
@@ -16,11 +17,6 @@ type Handle struct {
 	mu  sync.Mutex
 	fd  *catfs.Handle
 	cfs *catfs.FS
-}
-
-// Release is called to close this handle.
-func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	return hd.flush()
 }
 
 // TODO: Honour ctx.Done() and return fuse.EINTR in that case...
@@ -46,7 +42,7 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	}
 
 	n, err := hd.fd.Read(resp.Data[:req.Size])
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return errorize("handle-read-io", err)
 	}
 
@@ -94,6 +90,11 @@ func (hd *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 func (hd *Handle) flush() error {
 	log.Debugf("fuse-flush: %v", hd.fd.Path())
 	return errorize("handle-flush", hd.fd.Flush())
+}
+
+// Release is called to close this handle.
+func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	return hd.flush()
 }
 
 // Compiler checks to see if we got all the interfaces right:

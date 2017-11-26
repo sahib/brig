@@ -57,6 +57,11 @@ struct Remote {
     folders     @2 :List(RemoteFolder);
 }
 
+struct MountOptions {
+    # For now empty, but there are some mount options
+    # in planning.
+}
+
 interface FS {
     stage    @0  (localPath :Text, repoPath :Text);
     list     @1  (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -85,7 +90,7 @@ interface Meta {
     quit    @0 ();
     ping    @1 () -> (reply :Text);
     init    @2 (basePath :Text, owner :Text, backend :Text, password :Text);
-    mount   @3 (mountPath :Text);
+    mount   @3 (mountPath :Text, options :MountOptions);
     unmount @4 (mountPath :Text);
 
     configGet @5 (key :Text) -> (value :Text);

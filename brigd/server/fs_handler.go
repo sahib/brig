@@ -3,7 +3,6 @@ package server
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
@@ -51,11 +50,7 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 func (fh *fsHandler) List(call capnp.FS_list) error {
 	server.Ack(call.Options)
 
-	log.Infof("Serving ls request now")
-
 	return fh.base.withOwnFs(func(fs *catfs.FS) error {
-
-		log.Infof("got own fs")
 		// Collect list params:
 		root, err := call.Params.Root()
 		if err != nil {

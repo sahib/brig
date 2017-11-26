@@ -18,6 +18,7 @@ type File struct {
 
 // Attr is called to get the stat(2) attributes of a file.
 func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
+	log.Debugf("exec file attr: %v", fi.path)
 	info, err := fi.cfs.Stat(fi.path)
 	if err != nil {
 		return err
@@ -26,6 +27,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Mode = 0755
 	attr.Size = info.Size
 	attr.Mtime = info.ModTime
+	attr.Inode = info.Inode
 	return nil
 }
 
@@ -47,6 +49,7 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	// This is called when any attribute of the file changes,
 	// most importantly the file size. For example it is called when truncating
 	// the file to zero bytes with a size change of `0`.
+	log.Debugf("exec file setattr")
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
 		log.Warningf("SIZE CHANGED OF %s: %d", fi.path, req.Size)
@@ -65,11 +68,13 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 // Fsync is called when any open buffers need to be written to disk.
 // Currently, fsync is completely ignored.
 func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	log.Debugf("exec file fsync")
 	return nil
 }
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	log.Debugf("exec file getxattr: %v", fi.path)
 	switch req.Name {
 	case "brig.hash":
 		info, err := fi.cfs.Stat(fi.path)
@@ -93,11 +98,13 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 
 // Listxattr is called to list all xattrs of this file.
 func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	log.Debugf("exec file listxattr")
 	resp.Append("brig.hash")
 	return nil
 }
 
 func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
+	log.Debugf("exec file rename")
 	newParent, ok := newDir.(*Directory)
 	if !ok {
 		return fuse.EIO

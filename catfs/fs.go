@@ -267,6 +267,7 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 	//       - iterates over all nodes even if maxDepth is >= 0
 	//
 	// Fix whenever it proves to be a problem.
+	// I don't want to engineer something now until I know what's needed.
 	rootNd, err := fs.lkr.LookupNode(root)
 	if err != nil {
 		return nil, err
@@ -280,6 +281,11 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 	result := []*StatInfo{}
 	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
 		if maxDepth < 0 || n.Depth(child) <= maxDepth {
+			// Ghost nodes should not be visible to the outside.
+			if child.Type() == n.NodeTypeGhost {
+				return nil
+			}
+
 			result = append(result, nodeToStat(child))
 		}
 
@@ -526,9 +532,14 @@ func (fs *FS) Open(path string) (*Handle, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	file, err := fs.lkr.LookupFile(path)
+	nd, err := fs.lkr.LookupNode(path)
 	if err != nil {
 		return nil, err
+	}
+
+	file, ok := nd.(*n.File)
+	if !ok {
+		return nil, fmt.Errorf("Can only open files: %v", path)
 	}
 
 	return newHandle(fs, file), nil

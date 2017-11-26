@@ -20,6 +20,7 @@ type Directory struct {
 
 // Attr is called to retrieve stat-metadata about the directory.
 func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
+	log.Debugf("Exec dir attr: %v", dir.path)
 	info, err := dir.cfs.Stat(dir.path)
 	if err != nil {
 		return errorize("dir-attr", err)
@@ -28,11 +29,13 @@ func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
 	attrs.Mode = os.ModeDir | 0755
 	attrs.Size = info.Size
 	attrs.Mtime = info.ModTime
+	attrs.Inode = info.Inode
 	return nil
 }
 
 // Lookup is called to lookup a direct child of the directory.
 func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	log.Debugf("Exec lookup: %v", name)
 	if name == "." {
 		return dir, nil
 	}
@@ -44,7 +47,8 @@ func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) 
 	var result fs.Node
 	childPath := path.Join(dir.path, name)
 
-	info, err := dir.cfs.Stat(dir.path)
+	log.Debugf("   doing stat: %v %v", dir.path, childPath)
+	info, err := dir.cfs.Stat(childPath)
 	if err != nil {
 		return nil, errorize("dir-lookup", err)
 	}
@@ -100,7 +104,7 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 	}
 
 	file := &File{
-		path: dir.path,
+		path: childPath,
 		cfs:  dir.cfs,
 	}
 
@@ -120,14 +124,18 @@ func (dir *Directory) Remove(ctx context.Context, req *fuse.RemoveRequest) error
 
 // ReadDirAll is called to get a directory listing of the receiver.
 func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	log.Debugf("Exec read dir all")
 	selfInfo, err := dir.cfs.Stat(dir.path)
 	if err != nil {
-		return nil, err
+		log.Debugf("Failed to stat: %v", dir.path)
+		return nil, errorize("fuse-dir-ls-stat", err)
 	}
 
-	parInfo, err := dir.cfs.Stat(path.Dir(dir.path))
+	parentDir := path.Dir(dir.path)
+	parInfo, err := dir.cfs.Stat(parentDir)
 	if err != nil {
-		return nil, err
+		log.Debugf("Failed to stat parent: %v", parentDir)
+		return nil, errorize("fuse-dir-ls-stat-par", err)
 	}
 
 	fuseEnts := []fuse.Dirent{
@@ -143,15 +151,22 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		},
 	}
 
-	entries, err := dir.cfs.List(dir.path, 0)
+	entries, err := dir.cfs.List(dir.path, 1)
 	if err != nil {
+		log.Debugf("Failed to list entries: %v", dir.path)
 		return nil, errorize("fuse-dir-readall", err)
 	}
 
 	for _, entry := range entries {
-		childType := fuse.DT_Dir
+		childType := fuse.DT_File
 		if entry.IsDir {
-			childType = fuse.DT_File
+			childType = fuse.DT_Dir
+		}
+
+		// If we return the same path (or just "/") to fuse
+		// it will return a EIO to userland. Weird.
+		if entry.Path == "/" || entry.Path == dir.path {
+			continue
 		}
 
 		fuseEnts = append(fuseEnts, fuse.Dirent{
