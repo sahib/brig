@@ -137,6 +137,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) {
 	// If not, make sure we start a new one:
+	// TODO: Make use of cli's error returning signatures.
 	return withExit(func(ctx *cli.Context) error {
 		port := guessPort()
 
