@@ -176,6 +176,7 @@ func RunCmdline(args []string) int {
 	app := cli.NewApp()
 	app.Name = "brig"
 	app.Usage = "Secure and dezentralized file synchronization"
+	app.EnableBashCompletion = true
 	app.Version = fmt.Sprintf(
 		"%s [buildtime: %s]",
 		brig.VersionString(),
@@ -249,7 +250,7 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleBecome, true)),
 		},
 		cli.Command{
-			Name:        "whoami", // TODO: Do we need another `remote self` here?
+			Name:        "whoami",
 			Category:    repoGroup,
 			Usage:       "Check at what user's data we're currently looking at",
 			Description: "Check at what user's data we're currently looking at",
@@ -384,7 +385,7 @@ func RunCmdline(args []string) int {
 			Name:        "remote",
 			Category:    repoGroup,
 			Usage:       "Remote management.",
-			ArgsUsage:   "[add|remove|list|locate|self|ping]",
+			ArgsUsage:   "[add|remove|list|locate|ping]",
 			Description: "Add, remove, list, locate remotes and print own identity",
 			Subcommands: []cli.Command{
 				cli.Command{
@@ -435,12 +436,6 @@ func RunCmdline(args []string) int {
 					ArgsUsage:   "<name>",
 					Description: "Locates all remotes with the given brig-remote-id ",
 					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteLocate, true)),
-				},
-				cli.Command{
-					Name:        "self",
-					Usage:       "Print self's identity",
-					Description: "Prints the users identity and online status",
-					Action:      withDaemon(handleRemoteSelf, true),
 				},
 				cli.Command{
 					Name:        "ping",

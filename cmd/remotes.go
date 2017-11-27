@@ -122,16 +122,6 @@ func handleRemoteLocate(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleRemoteSelf(ctx *cli.Context, ctl *client.Client) error {
-	self, err := ctl.RemoteSelf()
-	if err != nil {
-		return fmt.Errorf("Failed to get self: %v", err)
-	}
-
-	fmt.Printf("%s %s\n", self.Name, self.Fingerprint)
-	return nil
-}
-
 func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
 

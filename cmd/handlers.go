@@ -615,6 +615,18 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	fmt.Println(user)
+	self, err := ctl.RemoteSelf()
+	if err != nil {
+		return err
+	}
+
+	userName := colors.Colorize(user, colors.Yellow)
+	ownerName := colors.Colorize(self.Name, colors.Green)
+	fmt.Printf("%s", ownerName)
+	if user != self.Name {
+		fmt.Printf(" (viewing %s's data)", userName)
+	}
+
+	fmt.Printf(" - %s\n", self.Fingerprint)
 	return nil
 }
