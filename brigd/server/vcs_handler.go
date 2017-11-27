@@ -391,6 +391,8 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		}
 
 		// Automatically make a commit before merging with their state:
+		// TODO: Check if we can also merge with CURR as starting point
+		//       and only commit a merge commit if there were changes.
 		timeStamp := time.Now().UTC().Format(time.RFC3339)
 		commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
 		if err = ownFS.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {

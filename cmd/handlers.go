@@ -517,30 +517,37 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func printDiff(diff *client.Diff) {
-	fmt.Println("Added:")
-	for _, info := range diff.Added {
-		fmt.Println(info.Path)
+	simpleSection := func(heading string, infos []client.StatInfo) {
+		if len(infos) == 0 {
+			return
+		}
+
+		fmt.Println(heading)
+		for _, info := range diff.Added {
+			fmt.Printf("  %s\n", info.Path)
+		}
+
+		fmt.Println()
 	}
 
-	fmt.Println("Removed:")
-	for _, info := range diff.Removed {
-		fmt.Println(info.Path)
+	pairSection := func(heading string, infos []client.DiffPair) {
+		if len(infos) == 0 {
+			return
+		}
+
+		for _, pair := range diff.Merged {
+			fmt.Printf("  %s <-> %s\n", pair.Src.Path, pair.Dst.Path)
+		}
+
+		fmt.Println()
 	}
 
-	fmt.Println("Ignored:")
-	for _, info := range diff.Ignored {
-		fmt.Println(info.Path)
-	}
+	simpleSection(colors.Colorize("Added:", colors.Green), diff.Added)
+	simpleSection(colors.Colorize("Ignored:", colors.Yellow), diff.Ignored)
+	simpleSection(colors.Colorize("Removed:", colors.Red), diff.Removed)
 
-	fmt.Println("Resolveable Conflicts:")
-	for _, pair := range diff.Merged {
-		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
-	}
-
-	fmt.Println("You're fucked for these files:")
-	for _, pair := range diff.Conflict {
-		fmt.Println(pair.Src.Path, "<->", pair.Dst.Path)
-	}
+	pairSection(colors.Colorize("Resolveable Conflicts:", colors.Cyan), diff.Merged)
+	pairSection(colors.Colorize("Conflicts:", colors.Magenta), diff.Conflict)
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
