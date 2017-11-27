@@ -56,6 +56,11 @@ func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("remote ls: %v", err)
 	}
 
+	if len(remotes) == 0 {
+		fmt.Println("None yet. Use `brig remote add <user> <id>` to add some.")
+		return nil
+	}
+
 	data, err := remoteListToYml(remotes)
 	if err != nil {
 		return fmt.Errorf("Failed to convert to yml: %v", err)
