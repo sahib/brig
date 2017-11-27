@@ -610,23 +610,27 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
-	user, err := ctl.CurrentUser()
-	if err != nil {
-		return err
-	}
-
 	self, err := ctl.RemoteSelf()
 	if err != nil {
 		return err
 	}
 
-	userName := colors.Colorize(user, colors.Yellow)
-	ownerName := colors.Colorize(self.Name, colors.Green)
-	fmt.Printf("%s", ownerName)
-	if user != self.Name {
-		fmt.Printf(" (viewing %s's data)", userName)
+	if !ctx.Bool("fingerprint") {
+		user, err := ctl.CurrentUser()
+		if err != nil {
+			return err
+		}
+
+		userName := colors.Colorize(user, colors.Yellow)
+		ownerName := colors.Colorize(self.Name, colors.Green)
+		fmt.Printf("%s", ownerName)
+		if user != self.Name {
+			fmt.Printf(" (viewing %s's data)", userName)
+		}
+
+		fmt.Printf(" ")
 	}
 
-	fmt.Printf(" - %s\n", self.Fingerprint)
+	fmt.Printf("%s\n", self.Fingerprint)
 	return nil
 }

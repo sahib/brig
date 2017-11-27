@@ -255,6 +255,12 @@ func RunCmdline(args []string) int {
 			Usage:       "Check at what user's data we're currently looking at",
 			Description: "Check at what user's data we're currently looking at",
 			Action:      withDaemon(handleWhoami, true),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "fingerprint,f",
+					Usage: "Only print the own fingerprint",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "history",
