@@ -232,6 +232,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 				// Okay, there is an empty directory. Let's remove it to
 				// replace it with our source node.
+				log.Warningf("Remove child dir: %v", childDir)
 				if _, _, err := Remove(lkr, childDir, false, false); err != nil {
 					return err
 				}
@@ -239,12 +240,14 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 
 			parentDir = destDir
 		case n.NodeTypeFile:
+			log.Warningf("Remove file: %v", destNode.Path())
 			parentDir, _, err = Remove(lkr, destNode, false, false)
 			if err != nil {
 				return err
 			}
 		case n.NodeTypeGhost:
 			// It is already a ghost. Overwrite it and do not create a new one.
+			log.Warningf("Remove ghost: %v", destNode.Path())
 			parentDir, _, err = Remove(lkr, destNode, false, true)
 			if err != nil {
 				return err

@@ -279,7 +279,7 @@ func handleRm(ctx *cli.Context, ctl *client.Client) error {
 
 func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	srcPath := ctx.Args().Get(0)
-	dstPath := ctx.Args().Get(0)
+	dstPath := ctx.Args().Get(1)
 
 	if err := ctl.Move(srcPath, dstPath); err != nil {
 		return ExitCode{

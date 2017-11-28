@@ -2,12 +2,21 @@ package server
 
 import (
 	"os"
+	"strings"
 
 	"github.com/disorganizer/brig/brigd/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
+
+func prefixSlash(s string) string {
+	if !strings.HasPrefix(s, "/") {
+		return "/" + s
+	}
+
+	return s
+}
 
 type fsHandler struct {
 	base *base
@@ -57,6 +66,8 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 			return err
 		}
 
+		root = prefixSlash(root)
+
 		maxDepth := call.Params.MaxDepth()
 
 		// Call List()
@@ -98,6 +109,8 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 			return err
 		}
 
+		repoPath = prefixSlash(repoPath)
+
 		localPath, err := call.Params.LocalPath()
 		if err != nil {
 			return err
@@ -122,6 +135,7 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		port, err := bootTransferServer(fs, path)
 		if err != nil {
@@ -141,6 +155,7 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	createParents := call.Params.CreateParents()
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Mkdir(path, createParents)
@@ -155,6 +170,7 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Remove(path)
 	})
@@ -173,6 +189,8 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 		return err
 	}
 
+	srcPath = prefixSlash(srcPath)
+	dstPath = prefixSlash(dstPath)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Move(srcPath, dstPath)
 	})
@@ -186,6 +204,7 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Pin(path)
 	})
@@ -199,6 +218,7 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Unpin(path)
 	})
@@ -212,6 +232,7 @@ func (fh *fsHandler) IsPinned(call capnp.FS_isPinned) error {
 		return err
 	}
 
+	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		isPinned, err := fs.IsPinned(path)
 		if err != nil {
