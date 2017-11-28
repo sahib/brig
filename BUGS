@@ -1,0 +1,2 @@
+- brig mv is currently broken
+- restarting brigd on already open repo might cause problems.

@@ -101,12 +101,9 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 	// Start a new daemon process:
 	log.Info("Starting daemon from: ", exePath)
-
-	// TODO: Fill in correct password.
 	proc := exec.Command(
 		exePath, "-l", "/tmp/brig.log", "-x", pwd, "daemon", "launch",
 	)
-	pwd = ""
 
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
