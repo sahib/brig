@@ -135,7 +135,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
-func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) {
+func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	// If not, make sure we start a new one:
 	// TODO: Make use of cli's error returning signatures.
 	return withExit(func(ctx *cli.Context) error {
@@ -168,18 +168,18 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) func(*cli.Context) 
 
 type checkFunc func(ctx *cli.Context) int
 
-func withArgCheck(checker checkFunc, handler func(*cli.Context)) func(*cli.Context) {
-	return func(ctx *cli.Context) {
+func withArgCheck(checker checkFunc, handler cli.ActionFunc) cli.ActionFunc {
+	return func(ctx *cli.Context) error {
 		if checker(ctx) != Success {
 			os.Exit(BadArgs)
 		}
 
-		handler(ctx)
+		return handler(ctx)
 	}
 }
 
-func withExit(handler func(*cli.Context) error) func(*cli.Context) {
-	return func(ctx *cli.Context) {
+func withExit(handler cli.ActionFunc) cli.ActionFunc {
+	return func(ctx *cli.Context) error {
 		if err := handler(ctx); err != nil {
 			log.Error(err.Error())
 			cerr, ok := err.(ExitCode)
@@ -191,6 +191,7 @@ func withExit(handler func(*cli.Context) error) func(*cli.Context) {
 		}
 
 		os.Exit(Success)
+		return nil
 	}
 }
 
