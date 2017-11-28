@@ -10,6 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/catfs"
+	fserr "github.com/disorganizer/brig/catfs/errors"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -249,8 +250,11 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return nil, err
 	}
 
-	if err := fs.MakeCommit("initial commit"); err != nil {
-		return nil, err
+	// Create an initial commit if there was none yet:
+	if _, err := fs.Head(); fserr.IsErrNoSuchRef(err) {
+		if err := fs.MakeCommit("initial commit"); err != nil {
+			return nil, err
+		}
 	}
 
 	// Store for next call:
