@@ -20,7 +20,8 @@ type metaHandler struct {
 }
 
 func (mh *metaHandler) Quit(call capnp.Meta_quit) error {
-	return mh.base.Quit()
+	mh.base.quitCh <- struct{}{}
+	return nil
 }
 
 func (mh *metaHandler) Ping(call capnp.Meta_ping) error {

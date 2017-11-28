@@ -40,7 +40,8 @@ func BootServer(basePath, password string, port int) (*Server, error) {
 	log.Infof("Password seems to be valid...")
 
 	ctx := context.Background()
-	base, err := newBase(basePath, password, ctx)
+	quitCh := make(chan struct{})
+	base, err := newBase(basePath, password, ctx, quitCh)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +56,14 @@ func BootServer(basePath, password string, port int) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		<-quitCh
+		baseServer.Quit()
+		if err := baseServer.Close(); err != nil {
+			log.Warnf("Failed to close local server listener: %v", err)
+		}
+	}()
 
 	return &Server{
 		baseServer: baseServer,

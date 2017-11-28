@@ -41,10 +41,7 @@ type base struct {
 
 	// This the general backend, not a specific submodule one:
 	backend backend.Backend
-
-	// This channel is triggered once the QUIT command was received
-	// (or if a deadly/terminating signal was received)
-	quitCh chan struct{}
+	quitCh  chan struct{}
 }
 
 func repoIsInitialized(path string) error {
@@ -303,7 +300,6 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 
 func (b *base) Quit() (err error) {
 	log.Info("Shutting down brigd due to QUIT command")
-	b.quitCh <- struct{}{}
 
 	if b.peerServer != nil {
 		log.Infof("Closing peer server...")
@@ -340,11 +336,11 @@ func (b *base) Quit() (err error) {
 	return nil
 }
 
-func newBase(basePath string, password string, ctx context.Context) (*base, error) {
+func newBase(basePath string, password string, ctx context.Context, quitCh chan struct{}) (*base, error) {
 	return &base{
 		ctx:      ctx,
 		basePath: basePath,
 		password: password,
-		quitCh:   make(chan struct{}, 1),
+		quitCh:   quitCh,
 	}, nil
 }
