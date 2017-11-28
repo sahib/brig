@@ -294,6 +294,7 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 	}
 
 	if err := fn(ctl); err != nil {
+		ctl.Close()
 		return err
 	}
 
