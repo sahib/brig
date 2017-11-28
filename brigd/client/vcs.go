@@ -337,8 +337,18 @@ func (cl *Client) MakeDiff(remote, headRevOwn, headRevRemote string) (*Diff, err
 	return convertCapDiffToDiff(capDiff)
 }
 
-func (ctl *Client) Sync(remote string) error {
+func (ctl *Client) Fetch(remote string) error {
+	call := ctl.api.Fetch(ctl.ctx, func(p capnp.VCS_fetch_Params) error {
+		return p.SetWho(remote)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) Sync(remote string, needFetch bool) error {
 	call := ctl.api.Sync(ctl.ctx, func(p capnp.VCS_sync_Params) error {
+		p.SetNeedFetch(needFetch)
 		return p.SetWithWhom(remote)
 	})
 

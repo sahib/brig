@@ -83,7 +83,8 @@ interface VCS {
     checkout @5 (rev :Text, force :Bool);
     history  @6 (path :Text) -> (history :List(HistoryEntry));
     makeDiff @7 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
-    sync     @8 (withWhom :Text);
+    sync     @8 (withWhom :Text, needFetch :Bool);
+    fetch    @9 (who :Text);
 }
 
 interface Meta {

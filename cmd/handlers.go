@@ -576,9 +576,20 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleFetch(ctx *cli.Context, ctl *client.Client) error {
+	who := ctx.Args().First()
+	return ctl.Fetch(who)
+}
+
 func handleSync(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
-	return ctl.Sync(who)
+
+	needFetch := true
+	if ctx.Bool("no-fetch") {
+		needFetch = false
+	}
+
+	return ctl.Sync(who, needFetch)
 }
 
 func handleStatus(ctx *cli.Context, ctl *client.Client) error {

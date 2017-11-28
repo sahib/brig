@@ -139,12 +139,18 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 	}
 
 	// Special cases for the git inclined:
-	if cmdName == "add" {
-		// `git add` -> `brig stage`
-		similars = append(similars, suggestion{
-			name:  "stage",
-			score: 0.0,
-		})
+	staticSuggestions := map[string]string{
+		"add":  "stage",
+		"pull": "sync",
+	}
+
+	for gitName, brigName := range staticSuggestions {
+		if cmdName == gitName {
+			similars = append(similars, suggestion{
+				name:  brigName,
+				score: 0.0,
+			})
+		}
 	}
 
 	sort.Slice(similars, func(i, j int) bool {
@@ -186,7 +192,7 @@ func RunCmdline(args []string) int {
 
 	// Groups:
 	repoGroup := formatGroup("repository")
-	wdirGroup := formatGroup("working")
+	wdirGroup := formatGroup("working tree")
 	vcscGroup := formatGroup("version control")
 	advnGroup := formatGroup("advanced")
 	miscGroup := formatGroup("misc")
@@ -236,15 +242,8 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "sync",
-			Category:    repoGroup,
-			Usage:       "Sync with any partner in your remote list",
-			Description: "Attempt to synchronize your files with any partner",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
-		},
-		cli.Command{
 			Name:        "become",
-			Category:    repoGroup,
+			Category:    advnGroup,
 			Usage:       "Act as other user and view the data we synced with",
 			Description: "Act as other user and view the data we synced with",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleBecome, true)),
@@ -272,7 +271,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "pin",
-			Category:    repoGroup,
+			Category:    wdirGroup,
 			Usage:       "Pin a file locally to this machine",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			ArgsUsage:   "<file>",
@@ -374,6 +373,26 @@ func RunCmdline(args []string) int {
 			Action: withDaemon(handleLog, true),
 		},
 		cli.Command{
+			Name:        "fetch",
+			Category:    vcscGroup,
+			Usage:       "Fetch the metadata from a remote",
+			Description: "Fetch the metadata from a remote",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
+		},
+		cli.Command{
+			Name:        "sync",
+			Category:    vcscGroup,
+			Usage:       "Sync with any partner in your remote list",
+			Description: "Attempt to synchronize your files with any partner",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "no-fetch,n",
+					Usage: "Do not do a fetch before syncing",
+				},
+			},
+		},
+		cli.Command{
 			Name:        "commit",
 			Category:    vcscGroup,
 			Usage:       "Print which file are in the staging area",
@@ -386,6 +405,28 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleCommit, true),
+		},
+		cli.Command{
+			Name:        "reset",
+			Category:    vcscGroup,
+			Usage:       "Reset a file to a certain version",
+			ArgsUsage:   "<file> [<commit>]",
+			Description: "Reset a file to the last known state or to a certain commit",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
+		},
+		cli.Command{
+			Name:        "checkout",
+			Category:    vcscGroup,
+			Usage:       "Revert to a specific commit",
+			ArgsUsage:   "<commit> [--force]",
+			Description: "Make the staging commit equal to an old state",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCheckout, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "force,f",
+					Usage: "Remove directories recursively",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "remote",
@@ -506,28 +547,6 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "<file>",
 			Description: "Stage a specific file into the brig repository",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
-		},
-		cli.Command{
-			Name:        "reset",
-			Category:    wdirGroup,
-			Usage:       "Reset a file to a certain version",
-			ArgsUsage:   "<file> [<commit>]",
-			Description: "Reset a file to the last known state or to a certain commit",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
-		},
-		cli.Command{
-			Name:        "checkout",
-			Category:    wdirGroup,
-			Usage:       "Revert to a specific commit",
-			ArgsUsage:   "<commit> [--force]",
-			Description: "Make the staging commit equal to an old state",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCheckout, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force,f",
-					Usage: "Remove directories recursively",
-				},
-			},
 		},
 		cli.Command{
 			Name:        "rm",

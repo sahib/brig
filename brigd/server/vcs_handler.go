@@ -349,18 +349,11 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	})
 }
 
-func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
-	server.Ack(call.Options)
-
-	withWhom, err := call.Params.WithWhom()
-	if err != nil {
-		return err
-	}
-
+func (vcs *vcsHandler) doFetch(who string) error {
 	// TODO: Optimize by implementing store diffs.
 	// This is currently implemented very stupidly by simply fetching
 	// all the store from remote, saving it and using it as sync base.
-	return vcs.base.withNetClient(withWhom, func(ctl *p2pnet.Client) error {
+	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		storeBuf, err := ctl.FetchStore()
 		if err != nil {
 			return err
@@ -371,34 +364,52 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 			return err
 		}
 
-		// TODO:
-		// Those should be somewhat locked, so not more than
-		// one sync request can be processed in parallel.
-
-		remoteFS, err := vcs.base.repo.FS(withWhom, bk)
+		remoteFS, err := vcs.base.repo.FS(who, bk)
 		if err != nil {
 			return err
 		}
 
-		if err := remoteFS.Import(storeBuf); err != nil {
+		return remoteFS.Import(storeBuf)
+	})
+}
+
+func (vcs *vcsHandler) Fetch(call capnp.VCS_fetch) error {
+	server.Ack(call.Options)
+
+	who, err := call.Params.Who()
+	if err != nil {
+		return err
+	}
+
+	return vcs.doFetch(who)
+}
+
+func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
+	server.Ack(call.Options)
+
+	withWhom, err := call.Params.WithWhom()
+	if err != nil {
+		return err
+	}
+
+	if call.Params.NeedFetch() {
+		if err := vcs.doFetch(withWhom); err != nil {
 			return err
 		}
+	}
 
-		user := vcs.base.repo.CurrentUser()
-		ownFS, err := vcs.base.repo.FS(user, bk)
-		if err != nil {
-			return err
-		}
+	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
+		return vcs.base.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
+			// Automatically make a commit before merging with their state:
+			// TODO: Check if we can also merge with CURR as starting point
+			//       and only commit a merge commit if there were changes.
+			timeStamp := time.Now().UTC().Format(time.RFC3339)
+			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
+			if err = ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
+				return err
+			}
 
-		// Automatically make a commit before merging with their state:
-		// TODO: Check if we can also merge with CURR as starting point
-		//       and only commit a merge commit if there were changes.
-		timeStamp := time.Now().UTC().Format(time.RFC3339)
-		commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
-		if err = ownFS.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
-			return err
-		}
-
-		return ownFS.Sync(remoteFS)
+			return ownFs.Sync(remoteFs)
+		})
 	})
 }
