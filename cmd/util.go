@@ -44,7 +44,7 @@ func guessRepoFolder() string {
 
 func readPasswordFromArgs(ctx *cli.Context) string {
 	for curr := ctx; curr != nil; {
-		if curr.Bool("no-pass") {
+		if curr.Bool("no-password") {
 			return "no-pass"
 		}
 

@@ -200,10 +200,14 @@ func RunCmdline(args []string) int {
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "nodaemon,n",
-			Usage: "Don't run the daemon",
+			Usage: "Don't start the daemon automatically",
+		},
+		cli.BoolFlag{
+			Name:  "no-password,x",
+			Usage: "Use 'no-pass' as password",
 		},
 		cli.StringFlag{
-			Name:  "password,x",
+			Name:  "password,p",
 			Usage: "Supply user password",
 			Value: "",
 		},
@@ -234,10 +238,6 @@ func RunCmdline(args []string) int {
 					Name:  "backend,b",
 					Value: "mock",
 					Usage: "What data backend to use for the new repo",
-				},
-				cli.BoolFlag{
-					Name:  "no-pass,x",
-					Usage: "Do not use a password (not recommended)",
 				},
 			},
 		},
@@ -589,12 +589,6 @@ func RunCmdline(args []string) int {
 					Usage:       "Start the daemon process",
 					Description: "Start the brig daemon process, unlock the repository and go online",
 					Action:      withExit(handleDaemonLaunch),
-					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "no-pass,x",
-							Usage: "Do not use a password (not recommended)",
-						},
-					},
 				},
 				cli.Command{
 					Name:        "quit",
