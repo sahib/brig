@@ -177,8 +177,16 @@ func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Di
 
 func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
+	if nd.Path() == destPath {
+		return fmt.Errorf("Source and Dest are the same file: %v", destPath)
+	}
+
 	if strings.HasPrefix(destPath, nd.Path()) {
-		return fmt.Errorf("Cannot move `%s` into it's own subdir `%s`", nd.Path(), destPath)
+		return fmt.Errorf(
+			"Cannot move `%s` into it's own subdir `%s`",
+			nd.Path(),
+			destPath,
+		)
 	}
 
 	// Check if the destination already exists:

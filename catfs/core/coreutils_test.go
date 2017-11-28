@@ -293,6 +293,12 @@ func TestMove(t *testing.T) {
 				MustRemove(t, lkr, destFile)
 				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
 			},
+		}, {
+			name:        "error-move-src-equal-dst",
+			isErrorCase: true,
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+				return MustTouch(t, lkr, "/x", 1), "/x"
+			},
 		},
 	}
 
