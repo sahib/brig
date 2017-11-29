@@ -58,7 +58,18 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 
 	// Update the in-memory password.
 	mh.base.password = password
-	return repo.Init(initFolder, owner, password, backendName)
+	err = repo.Init(initFolder, owner, password, backendName)
+	if err != nil {
+		return err
+	}
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	backendPath := rp.BackendPath(backendName)
+	return backend.InitByName(backendName, backendPath)
 }
 
 func (mh *metaHandler) Mount(call capnp.Meta_mount) error {
@@ -452,7 +463,7 @@ func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
 		return err
 	}
 
-	if err := capRemote.SetName(string(self.Name)); err != nil {
+	if err := capRemote.SetName(rp.Owner); err != nil {
 		return err
 	}
 

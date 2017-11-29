@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/disorganizer/brig/backend/ipfs"
 	"github.com/disorganizer/brig/backend/mock"
@@ -10,11 +10,26 @@ import (
 	"github.com/disorganizer/brig/repo"
 )
 
+var (
+	ErrNoSuchBackend = errors.New("No such backend")
+)
+
 // Backend is a amalgamation of all backend interfaces required for brig to work.
 type Backend interface {
 	repo.Backend
 	catfs.FsBackend
 	netBackend.Backend
+}
+
+func InitByName(name, path string) error {
+	switch name {
+	case "ipfs":
+		return ipfs.Init(path, 2048)
+	case "mock":
+		return nil
+	}
+
+	return ErrNoSuchBackend
 }
 
 // FromName returns a suitable backend for a human readable name.
@@ -27,7 +42,7 @@ func FromName(name, path string) (Backend, error) {
 		return mock.NewMockBackend(), nil
 	}
 
-	return nil, fmt.Errorf("No such backend `%s`", name)
+	return nil, ErrNoSuchBackend
 }
 
 func IsValidName(name string) bool {

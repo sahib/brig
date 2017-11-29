@@ -79,7 +79,7 @@ func New(ipfsPath string) (*Node, error) {
 func NewWithPort(ipfsPath string, swarmPort int) (*Node, error) {
 	// Start offline by default:
 	ctx, cancel := context.WithCancel(context.Background())
-	ipfsNode, err := createNode(ipfsPath, swarmPort, ctx, false)
+	ipfsNode, err := createNode(ipfsPath, swarmPort, ctx, true)
 	if err != nil {
 		return nil, err
 	}

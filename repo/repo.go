@@ -273,3 +273,7 @@ func (rp *Repository) SetCurrentUser(user string) {
 func (rp *Repository) Keyring() *Keyring {
 	return newKeyringHandle(rp.BaseFolder)
 }
+
+func (rp *Repository) BackendPath(name string) string {
+	return filepath.Join(rp.BaseFolder, "data", name)
+}

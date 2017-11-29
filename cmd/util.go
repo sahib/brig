@@ -102,7 +102,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	// Start a new daemon process:
 	log.Info("Starting daemon from: ", exePath)
 	proc := exec.Command(
-		exePath, "-l", "/tmp/brig.log", "-x", pwd, "daemon", "launch",
+		exePath, "-l", "/tmp/brig.log", "-p", pwd, "daemon", "launch",
 	)
 
 	if err := proc.Start(); err != nil {
@@ -111,7 +111,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	// This will likely suffice for most cases:
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	warningPrinted := false
 	for i := 0; i < 15; i++ {

@@ -144,7 +144,8 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	backendName := rp.BackendName()
 	log.Infof("Loading backend `%s`", backendName)
 
-	realBackend, err := backend.FromName(backendName, b.basePath)
+	backendPath := rp.BackendPath(backendName)
+	realBackend, err := backend.FromName(backendName, backendPath)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
 		return nil, err
