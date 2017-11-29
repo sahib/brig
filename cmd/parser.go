@@ -550,6 +550,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "rm",
+			Aliases:     []string{"remove"},
 			Category:    wdirGroup,
 			Usage:       "Remove the file and optionally old versions of it",
 			ArgsUsage:   "<file> [--recursive|-r]",

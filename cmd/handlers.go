@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,8 +33,8 @@ const brigLogo = `
        \__\/         \__\/                     \__\/
 
 
-	 A new file README.md was automatically added.
-	 Use 'brig cat README.md' to view it & get started.
+     A new file README.md was automatically added.
+     Use 'brig cat README.md' to view it & get started.
 
 `
 
@@ -148,6 +149,46 @@ func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func createInitialReadme(ctl *client.Client) error {
+	text := `Welcome to brig!
+
+Here's what you can do next:
+
+    * Add a few remotes to sync with (See 'brig remote add -h')
+    * Mount your data somewhere convinient (See 'brig mount -h')
+    * Have a relaxing day exploring brig's features.
+
+Please remember that brig is software in it's very early stages,
+and will currently eat your data with near-certainity.
+
+If you're done with this README, you can easily remove it:
+
+    $ brig rm README.md
+
+`
+
+	fd, err := ioutil.TempFile("", ".brig-init-readme-")
+	if err != nil {
+		return err
+	}
+
+	if _, err := fd.WriteString(text); err != nil {
+		return err
+	}
+
+	readmePath := fd.Name()
+
+	if err := fd.Close(); err != nil {
+		return err
+	}
+
+	if err := ctl.Stage(readmePath, "/README.md"); err != nil {
+		return err
+	}
+
+	return ctl.MakeCommit("Added initial README.md")
+}
+
 func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
@@ -168,6 +209,10 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	if err := ctl.Init(folder, owner, password, backend); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
+	}
+
+	if err := createInitialReadme(ctl); err != nil {
+		return err
 	}
 
 	fmt.Println(brigLogo)
