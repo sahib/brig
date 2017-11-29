@@ -1,6 +1,6 @@
 # ``brig``: Ship your data around the world
 
-![a somewhat gay brig](https://raw.githubusercontent.com/disorganizer/blog/master/static/img/brig.png)
+![a brig](https://disorganizer.github.io/brig-thesis/brig/html/title.png)
 
 [![go reportcard](https://goreportcard.com/badge/github.com/disorganizer/brig)](https://goreportcard.com/report/github.com/disorganizer/brig)
 [![GoDoc](https://godoc.org/github.com/disorganizer/brig?status.svg)](https://godoc.org/github.com/disorganizer/brig)
