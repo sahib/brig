@@ -10,17 +10,40 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/store/compress"
+	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/util/testutil"
 )
 
-func withMount(t *testing.T, f func(mount *Mount)) {
-	mntPath := filepath.Join(os.TempDir(), "brig_fuse_mountdir")
-
+func init() {
 	// NOTE: This is useful for debugging.
 	log.SetLevel(log.WarnLevel)
-	// log.SetLevel(log.DebugLevel)
+}
+
+func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
+	backend := catfs.NewMemFsBackend()
+	owner := "alice"
+
+	dbPath, err := ioutil.TempDir("", "brig-fs-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+
+	defer os.RemoveAll(dbPath)
+
+	fs, err := catfs.NewFilesystem(backend, dbPath, owner, nil)
+	if err != nil {
+		t.Fatalf("Failed to create filesystem: %v", err)
+	}
+
+	fn(fs)
+
+	if err := fs.Close(); err != nil {
+		t.Fatalf("Failed to close filesystem: %v", err)
+	}
+}
+
+func withMount(t *testing.T, f func(mount *Mount)) {
+	mntPath := filepath.Join(os.TempDir(), "brig-fuse-mountdir")
 
 	if err := os.MkdirAll(mntPath, 0777); err != nil {
 		t.Errorf("Unable to create empty mount dir: %v", err)
@@ -29,8 +52,8 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 
 	defer testutil.Remover(t, mntPath)
 
-	repo.WithAliceRepo(t, func(rep *repo.Repository) {
-		mount, err := NewMount(rep.OwnStore, mntPath)
+	withDummyFS(t, func(fs *catfs.FS) {
+		mount, err := NewMount(fs, mntPath)
 		if err != nil {
 			t.Errorf("Cannot create mount: %v", err)
 			return
@@ -95,7 +118,7 @@ func TestRead(t *testing.T) {
 			// Add a simple file:
 			name := fmt.Sprintf("hello_%d", size)
 			reader := bytes.NewReader(helloData)
-			if err := mount.Store.StageFromReader("/"+name, reader, compress.AlgoNone); err != nil {
+			if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
 				t.Errorf("Adding simple file from reader failed: %v", err)
 				return
 			}
@@ -133,7 +156,7 @@ func TestTouchWrite(t *testing.T) {
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)
-			if err := mount.Store.Touch(name); err != nil {
+			if err := mount.filesys.cfs.Touch(name); err != nil {
 				t.Errorf("Could not touch an empty file: %v", err)
 				return
 			}

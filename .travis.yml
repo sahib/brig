@@ -5,7 +5,6 @@ go:
 notifications:
     email:
       - sahib@online.de
-      - christoph@nullcat.de
 install:
     - sudo apt-get install fuse
     - go get -v github.com/Masterminds/glide

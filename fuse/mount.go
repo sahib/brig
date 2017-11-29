@@ -9,7 +9,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/store"
+	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/util"
 )
 
@@ -21,20 +21,18 @@ import (
 // Mount represents a fuse endpoint on the filesystem.
 // It is used as top-level API to control a brigfs fuse mount.
 type Mount struct {
-	Dir   string
-	FS    *Filesystem
-	Store *store.Store
+	Dir string
 
-	closed bool
-	done   chan util.Empty
-	errors chan error
-
-	Conn   *fuse.Conn
-	Server *fs.Server
+	filesys *Filesystem
+	closed  bool
+	done    chan util.Empty
+	errors  chan error
+	conn    *fuse.Conn
+	server  *fs.Server
 }
 
 // NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
-func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
+func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 	conn, err := fuse.Mount(
 		mountpoint,
 		fuse.FSName("brigfs"),
@@ -46,29 +44,27 @@ func NewMount(store *store.Store, mountpoint string) (*Mount, error) {
 		return nil, err
 	}
 
-	filesys := &Filesystem{Store: store}
-
+	filesys := &Filesystem{cfs: cfs}
 	mnt := &Mount{
-		Conn:   conn,
-		Server: fs.New(conn, nil),
-		FS:     filesys,
-		Dir:    mountpoint,
-		Store:  store,
-		done:   make(chan util.Empty),
-		errors: make(chan error),
+		conn:    conn,
+		server:  fs.New(conn, nil),
+		filesys: filesys,
+		Dir:     mountpoint,
+		done:    make(chan util.Empty),
+		errors:  make(chan error),
 	}
 
 	go func() {
 		defer close(mnt.done)
 		log.Debugf("Serving FUSE at %v", mountpoint)
-		mnt.errors <- mnt.Server.Serve(filesys)
+		mnt.errors <- mnt.server.Serve(filesys)
 		mnt.done <- util.Empty{}
 		log.Debugf("Stopped serving FUSE at %v", mountpoint)
 	}()
 
 	select {
-	case <-mnt.Conn.Ready:
-		if err := mnt.Conn.MountError; err != nil {
+	case <-mnt.conn.Ready:
+		if err := mnt.conn.MountError; err != nil {
 			return nil, err
 		}
 	case err = <-mnt.errors:
@@ -90,11 +86,10 @@ func (m *Mount) Close() error {
 	}
 	m.closed = true
 
-	log.Info("Umount fuse layer...")
+	log.Info("Unmounting fuse layer...")
 
 	for tries := 0; tries < 20; tries++ {
 		if err := fuse.Unmount(m.Dir); err != nil {
-			// log.Printf("unmount error: %v", err)
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -114,9 +109,10 @@ func (m *Mount) Close() error {
 	// Be sure to pull the item from the channel:
 	<-m.done
 
-	if err := m.Conn.Close(); err != nil {
+	if err := m.conn.Close(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -124,30 +120,30 @@ func (m *Mount) Close() error {
 // `Mount` struct. It's given as convenient way to maintain several mounts.
 // All operations on the table are safe to call from several goroutines.
 type MountTable struct {
-	sync.Mutex
-	m     map[string]*Mount
-	Store *store.Store
+	mu sync.Mutex
+	m  map[string]*Mount
+	fs *catfs.FS
 }
 
 // NewMountTable returns an empty mount table.
-func NewMountTable(store *store.Store) *MountTable {
+func NewMountTable(fs *catfs.FS) *MountTable {
 	return &MountTable{
-		m:     make(map[string]*Mount),
-		Store: store,
+		m:  make(map[string]*Mount),
+		fs: fs,
 	}
 }
 
 // AddMount calls NewMount and adds it to the table at `path`.
 func (t *MountTable) AddMount(path string) (*Mount, error) {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	m, ok := t.m[path]
 	if ok {
 		return m, nil
 	}
 
-	m, err := NewMount(t.Store, path)
+	m, err := NewMount(t.fs, path)
 	if err == nil {
 		t.m[path] = m
 	}
@@ -157,8 +153,8 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 
 // Unmount closes the mount at `path` and deletes it from the table.
 func (t *MountTable) Unmount(path string) error {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	m, ok := t.m[path]
 	if !ok {
@@ -171,8 +167,8 @@ func (t *MountTable) Unmount(path string) error {
 
 // Close unmounts all leftover mounts and clears the table.
 func (t *MountTable) Close() error {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	var err error
 

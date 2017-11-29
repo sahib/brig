@@ -1,84 +1,279 @@
 package repo
 
 import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"sync"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/id"
-	"github.com/disorganizer/brig/repo/global"
-	"github.com/disorganizer/brig/store"
-	"github.com/disorganizer/brig/util/ipfsutil"
-	yamlConfig "github.com/olebedev/config"
+	"github.com/disorganizer/brig/catfs"
+	fserr "github.com/disorganizer/brig/catfs/errors"
+	e "github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
-// TODO: Make ipfs keypair export/import-able to enable rescue-mode.
+var (
+	// Do not encrypt "data" (already contains encrypred streams) and
+	// also do not encrypt meta.yml (contains e.g. owner info for startup)
+	excludedFromLock = []string{"meta.yml", "data"}
+)
 
-// Repository represents a handle to one physical brig repository.
-// It groups the APIs to all useful files in it.
+var (
+	ErrBadPassword = errors.New("Failed to open repository. Probably wrong password")
+)
+
+// Repository provides access to the file structure of a single repository.
+//
+// Informal: This file structure currently looks like this:
+// config.yml
+// meta.yml
+// remotes.yml
+// data/
+//    <backend_name>
+//        (data-backend specific)
+// metadata/
+//    <name_1>
+//        (fs-backend specific)
+//    <name_2>
+//        (fs-backend specific)
 type Repository struct {
-	// Repository is identified by a brig account
-	ID id.ID
+	mu sync.Mutex
 
-	// Folder of repository
-	Folder         string
-	InternalFolder string
+	// Map between owner and related filesystem.
+	fsMap map[string]*catfs.FS
 
-	// TODO: still required?
-	// User supplied password:
-	Password string
+	// Absolute path to the repository root
+	BaseFolder string
 
-	Config *yamlConfig.Config
+	// Name of the owner of this repository
+	Owner string
 
-	// Remotes stores the metadata of all communication partners
-	Remotes RemoteStore
+	// Config interface
+	Config *viper.Viper
+	meta   *viper.Viper
 
-	allStores map[id.ID]*store.Store
-
-	// OwnStore is the store.Store used to save our own files in.
-	// This is guaranteed to be non-nil.
-	OwnStore *store.Store
-
-	// IPFS management layer.
-	IPFS *ipfsutil.Node
-
-	// globalRepo is a common file of all brig instances
-	// on a machine. It's purpose to make the brig repos
-	// easily findable and to avoid collisions on network ports.
-	globalRepo *global.Repository
+	// Remotes gives access to all known remotes
+	Remotes *RemoteList
 }
 
-func (rp *Repository) Peer() id.Peer {
-	hash, err := rp.IPFS.Identity()
+func touch(path string) error {
+	fd, err := os.OpenFile(path, os.O_CREATE, 0644)
 	if err != nil {
-		log.Warningf("Cannot retrieve ipfs id: %v", err)
-		hash = ""
-	}
-	return id.NewPeer(rp.ID, hash)
-
-}
-
-func (rp *Repository) AddStore(ID id.ID, st *store.Store) {
-	rp.allStores[ID] = st
-}
-
-func (rp *Repository) RmStore(ID id.ID) {
-	delete(rp.allStores, ID)
-}
-
-func (rp *Repository) Store(ID id.ID) (*store.Store, error) {
-	// Check if we already have a store under that ID:
-	if store, ok := rp.allStores[ID]; ok {
-		return store, nil
+		return err
 	}
 
-	remote, err := rp.Remotes.Get(ID)
+	return fd.Close()
+}
+
+func Init(baseFolder, owner, password, backendName string) error {
+	// The basefolder has to exist:
+	info, err := os.Stat(baseFolder)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(baseFolder, 0700); err != nil {
+			return err
+		}
+	} else if info.Mode().IsDir() {
+		log.Warningf("`%s` is a directory and exists", baseFolder)
+	} else {
+		return fmt.Errorf("`%s` is a file (should be a directory)", baseFolder)
+	}
+
+	// Create (empty) folders:
+	folders := []string{"metadata", "data"}
+	for _, folder := range folders {
+		absFolder := filepath.Join(baseFolder, folder)
+		if err := os.Mkdir(absFolder, 0700); err != nil {
+			return e.Wrapf(err, "Failed to create dir: %v", absFolder)
+		}
+	}
+
+	if err := touch(filepath.Join(baseFolder, "remotes.yml")); err != nil {
+		return e.Wrapf(err, "Failed touch remotes.yml")
+	}
+
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	metaDefault := buildMetaDefault(backendName, owner)
+	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
+		return err
+	}
+
+	cfgPath := filepath.Join(baseFolder, "config.yml")
+	cfgDefaults := buildConfigDefault()
+	if err := ioutil.WriteFile(cfgPath, cfgDefaults, 0644); err != nil {
+		return err
+	}
+
+	dataFolder := filepath.Join(baseFolder, "data", backendName)
+	if err := os.MkdirAll(dataFolder, 0700); err != nil {
+		return e.Wrap(err, "Failed to setup dirs for backend")
+	}
+
+	// Create initial key pair.
+	if err := createKeyPair(owner, baseFolder, 2048); err != nil {
+		return e.Wrap(err, "Failed to setup pgp keys")
+	}
+
+	passwdFile := filepath.Join(baseFolder, "passwd")
+	passwdData := fmt.Sprintf("%s", owner)
+	if err := ioutil.WriteFile(passwdFile, []byte(passwdData), 0644); err != nil {
+		return err
+	}
+
+	// passwd is used to verify the user password,
+	// so it needs to be locked only once on init and
+	// kept out otherwise from the locking machinery.
+	if err := lockFile(passwdFile, keyFromPassword(owner, password)); err != nil {
+		return err
+	}
+
+	return LockRepo(baseFolder, owner, password, excludedFromLock)
+}
+
+func CheckPassword(baseFolder, password string) error {
+	passwdFile := filepath.Join(baseFolder, "passwd.locked")
+
+	// If the file does not exist yet, it probably means
+	// that the repo was not initialized yet.
+	// Act like the password is okay and wait for the init.
+	if _, err := os.Stat(passwdFile); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Try to get the owner of the repo.
+	// Needed for the key derivation function.
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	meta := viper.New()
+	meta.SetConfigFile(metaPath)
+	if err := meta.ReadInConfig(); err != nil {
+		return err
+	}
+
+	owner := meta.GetString("repo.owner")
+	key := keyFromPassword(owner, password)
+	if err := checkUnlockability(passwdFile, key); err != nil {
+		log.Warningf("Failed to unlock passwd file. Wrong password entered?")
+		return ErrBadPassword
+	}
+
+	return nil
+}
+
+func Open(baseFolder, password string) (*Repository, error) {
+	// This is only a sanity check here. If the wrong password
+	// was supplied, we won't be able to unlock the repo anyways.
+	// But try to bail out here with an meaningful error message.
+	if err := CheckPassword(baseFolder, password); err != nil {
+		return nil, err
+	}
+
+	metaPath := filepath.Join(baseFolder, "meta.yml")
+	meta := viper.New()
+	meta.SetConfigFile(metaPath)
+	if err := meta.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	owner := meta.GetString("repo.owner")
+	if err := UnlockRepo(baseFolder, owner, password, excludedFromLock); err != nil {
+		return nil, err
+	}
+
+	// Make sure to load the config:
+	config := viper.New()
+	config.AddConfigPath(baseFolder)
+	setConfigDefaults(config)
+	config.SetDefault("repo.current_user", owner)
+
+	if err := config.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	// Load the remote list:
+	remotePath := filepath.Join(baseFolder, "remotes.yml")
+	remotes, err := NewRemotes(remotePath)
 	if err != nil {
 		return nil, err
 	}
 
-	newStore, err := store.Open(rp.InternalFolder, remote, rp.IPFS)
+	return &Repository{
+		BaseFolder: baseFolder,
+		meta:       meta,
+		Config:     config,
+		Remotes:    remotes,
+		Owner:      owner,
+		fsMap:      make(map[string]*catfs.FS),
+	}, nil
+}
+
+func (rp *Repository) Close(password string) error {
+	return LockRepo(rp.BaseFolder, rp.Owner, password, excludedFromLock)
+}
+
+func (rp *Repository) BackendName() string {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	return rp.meta.GetString("data.backend")
+}
+
+// FS returns a filesystem for `owner`. If there is none yet,
+// it will create own associated to the respective owner.
+func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	if fs, ok := rp.fsMap[owner]; ok {
+		return fs, nil
+	}
+
+	// No fs was created yet for this owner. Create it.
+	// Read the fs config from the main config:
+	fsCfg := &catfs.Config{}
+	fsCfg.IO.CompressAlgo = rp.Config.GetString(
+		"data.compress.algo",
+	)
+	fsCfg.Sync.ConflictStrategy = rp.Config.GetString(
+		"sync.conflict_strategy",
+	)
+	fsCfg.Sync.IgnoreRemoved = rp.Config.GetBool(
+		"sync.ignore_removed",
+	)
+
+	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
+	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, fsCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	rp.allStores[ID] = newStore
-	return newStore, nil
+	// Create an initial commit if there was none yet:
+	if _, err := fs.Head(); fserr.IsErrNoSuchRef(err) {
+		if err := fs.MakeCommit("initial commit"); err != nil {
+			return nil, err
+		}
+	}
+
+	// Store for next call:
+	rp.fsMap[owner] = fs
+	return fs, nil
+}
+
+func (rp *Repository) CurrentUser() string {
+	return rp.Config.GetString("repo.current_user")
+}
+
+func (rp *Repository) SetCurrentUser(user string) {
+	rp.Config.Set("repo.current_user", user)
+}
+
+func (rp *Repository) Keyring() *Keyring {
+	return newKeyringHandle(rp.BaseFolder)
+}
+
+func (rp *Repository) BackendPath(name string) string {
+	return filepath.Join(rp.BaseFolder, "data", name)
 }

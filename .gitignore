@@ -1,1 +1,3 @@
 brig/brig
+*.coverprofile
+coverage.out

@@ -18,7 +18,7 @@ all:
 			-X $(IMPORT).BuildTime=$(BUILDTIME) \
 			-X $(IMPORT).GitRev=$(GITREV) \
 		" \
-		brig/brig.go
+		cmd/brig/brig.go
 
 test:
 	go test -v `glide novendor`
@@ -31,5 +31,6 @@ proto:
 	@make -C daemon/wire
 	@make -C transfer/wire
  
+
 
 
