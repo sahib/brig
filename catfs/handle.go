@@ -70,10 +70,12 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 	}
 
 	n, err := io.ReadFull(hdl.layer, buf)
-	isEOF := err != io.ErrUnexpectedEOF || err != io.EOF
+	isEOF := err == io.ErrUnexpectedEOF || err == io.EOF
 	if err != nil && !isEOF {
 		return 0, err
 	}
+
+	fmt.Println("read", n, err, isEOF)
 
 	if isEOF {
 		return n, io.EOF

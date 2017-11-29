@@ -398,10 +398,8 @@ func handleMkdir(ctx *cli.Context, ctl *client.Client) error {
 
 func handleCommit(ctx *cli.Context, ctl *client.Client) error {
 	msg := ""
-	if ctx.Args().Present() {
-		msg = ctx.Args().First()
-	} else {
-		msg = fmt.Sprintf("Manual commit")
+	if msg = ctx.String("message"); msg == "" {
+		msg = fmt.Sprintf("manual commit")
 	}
 
 	if err := ctl.MakeCommit(msg); err != nil {
@@ -516,7 +514,6 @@ func handleReset(ctx *cli.Context, ctl *client.Client) error {
 	if len(ctx.Args()) > 1 {
 		rev = ctx.Args().Get(1)
 	}
-	fmt.Println("PATH REV", path, rev)
 
 	if err := ctl.Reset(path, rev); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("unpin: %v", err)}

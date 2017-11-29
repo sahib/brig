@@ -111,8 +111,6 @@ var (
 )
 
 func TestRead(t *testing.T) {
-	t.Skip("fuse is broken currently")
-
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			helloData := testutil.CreateDummyBuf(size)
@@ -134,8 +132,6 @@ func TestRead(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	t.Skip("fuse is broken currently")
-
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			helloData := testutil.CreateDummyBuf(size)
@@ -157,8 +153,6 @@ func TestWrite(t *testing.T) {
 
 // Regression test for copying larger file to the mount.
 func TestTouchWrite(t *testing.T) {
-	t.Skip("fuse is broken currently")
-
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)

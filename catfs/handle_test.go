@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/disorganizer/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,5 +146,59 @@ func TestOpenExtend(t *testing.T) {
 		copy(expected, rawData)
 		copy(expected[10:], []byte{11, 12, 13})
 		require.Equal(t, expected, postData)
+	})
+}
+
+// Read data from the handle like fuse would:
+// Seek to an offset, read a chunk and then advance to next block.
+// block size and file size may var heavily here.
+func TestHandleFuseLikeRead(t *testing.T) {
+	tcs := []struct {
+		fileSize  int
+		blockSize int
+	}{
+		{2048, 400},
+	}
+
+	for _, tc := range tcs {
+
+		testHandleFuseLikeRead(t, tc.fileSize, tc.blockSize)
+	}
+}
+
+func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
+	withDummyFS(t, func(fs *FS) {
+		rawData := testutil.CreateDummyBuf(fileSize)
+		require.Nil(t, fs.Stage("/x", bytes.NewReader(rawData)))
+
+		fd, err := fs.Open("/x")
+		require.Nil(t, err)
+
+		left := len(rawData)
+		for left > 0 {
+			toRead := blockSize
+			if left < blockSize {
+				toRead = left
+			}
+
+			offset := len(rawData) - left
+			buf := make([]byte, toRead)
+			if _, err = fd.Seek(int64(offset), os.SEEK_SET); err != nil {
+				t.Fatalf("Seek to %d failed", offset)
+			}
+
+			n, err := fd.Read(buf)
+			if err != nil {
+				t.Fatalf("Read failed: %v", err)
+			}
+
+			if !bytes.Equal(buf, rawData[offset:offset+toRead]) {
+				t.Fatalf("Block [%d:%d] differs from raw data", offset, offset+toRead)
+			}
+
+			left -= blockSize
+		}
+
+		require.Nil(t, fd.Close())
 	})
 }

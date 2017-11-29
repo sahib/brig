@@ -1,6 +1,8 @@
 # ``brig``: Ship your data around the world
 
-![a somewhat gay brig](https://raw.githubusercontent.com/disorganizer/blog/master/static/img/brig.png)
+<center>  <!-- I know, that's not how you usually do it -->
+<img src="https://disorganizer.github.io/brig-thesis/brig/html/title.png" alt="a brig" width="50%">
+</center>
 
 [![go reportcard](https://goreportcard.com/badge/github.com/disorganizer/brig)](https://goreportcard.com/report/github.com/disorganizer/brig)
 [![GoDoc](https://godoc.org/github.com/disorganizer/brig?status.svg)](https://godoc.org/github.com/disorganizer/brig)
@@ -14,39 +16,61 @@
 
 ## About
 
-``brig`` is a distributed & secure file synchronization tool (and more!)
+``brig`` is a distributed & secure file synchronization tool with version control.
+It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
 
-This is a very early work in progress, so there are no details yet.
-More information will follow once a rough first prototype is ready.
-For now, you can [read this very chaotic blog](https://disorganizer.github.io/blog/).
+Key feature highlights:
+* Encryption of data in rest and transport + compression on the fly.
+* Simplified ``git`` version control (no real branches).
+* Sync algorithm that can handle moved files and empty directories and files.
+* Your data does not need to be stored on the device you are using.
+* FUSE filesystem that feels like a normal (sync) folder.
+* No central server at all. Still, central architectures can be build with ``brig``.
+* Simple user management with users that look like email addresses.
 
-Summarized in one paragraph, it is an ``syncthing``, ``git-annex`` or
-``Resilio``-alternative, that gives you a commandline interface, a fuse
-filesystem and a library that can encrypt and compress files which are in turn
-distributed through ``ipfs`` while the file metadata is transmitted separetely.
-It's a bit similar to the currently also unfinished [bazil](https://bazil.org) maybe.
+----
 
-Even shorter: It's supposed to be as flexible as ``git``, but for complete files.
+This project has started end of 2015 and has seen many conceptual changes in
+the meantime. It started out as research project of two computer science
+students (me and [qitta](https://github.com/qitta)). After writing our [master
+theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
+a few months until I ([sahib](https://github.com/sahib)) picked at up again and
+currently am trying to push it to a usable prototype.
 
-A master thesis on ``brig`` [has been written](https://github.com/disorganizer/brig-thesis), 
-which is only available in german though. That doesn't mean we're planning to
-discontinue it after that thesis - actually we'd love to get paid for
-developement! Care to throw money at us?
+### Donations
+
+In it's current status, it's a working proof of concept. I'd love to work on it
+more, but my day job (and the money that comes with it) forbids that.
+If you're interested in the development of ``brig`` and would think about
+supporting me financially, then please [contact me!](mailto:sahib@online.de)
+
+### Focus
+
+``brig`` tries to focus on being up conceptually simple, by hiding a lot of
+complicated details regarding storage and security. Therefore I hope the end
+result is easy and pleasant to use, while being to be secure by default.
+Since ``brig`` is a "general purpose" tool for file synchronization it of course
+cannot excel in all areas. This is especially true for efficiency, which is
+sometimes sacrificed to get the balance of usability and security right.
 
 ## Installation
 
 ```bash
-$ go get github.com/disorganizer/brig/brig
+$ go get github.com/disorganizer/brig/cmd/brig
 ```
 
-That should just work if you previously [setup
-Go](https://golang.org/doc/install). Afterwards you'll have a ``brig`` command
-on your computer, which will print it's help when invoked without any
+That should just work if you previously [setup Go](https://golang.org/doc/install).
+Afterwards you'll have a ``brig`` command on your computer, which will print it's help when invoked without any
 arguments.
 
-## Authors
+## Getting started
 
-| *Name*                                                 | *Active*   |
-|--------------------------------------------------------|------------|
-| Christopher <[sahib](https://github.com/sahib)> Pahl   | 2015-today |
-| Christoph <[qitta](https://github.com/qitta)> Piechula | 2015-today |
+TODO: Make this an asciinema.
+
+```bash
+$ mkdir sync
+$ cd sync
+$ brig init alice@wonderland.de
+$ brig cat README.md
+$ brig remote add bob@wonderland.de QM123...:Smxyz...
+```
