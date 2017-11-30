@@ -86,7 +86,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	for _, folder := range folders {
 		absFolder := filepath.Join(baseFolder, folder)
 		if err := os.Mkdir(absFolder, 0700); err != nil {
-			return e.Wrapf(err, "Failed to create dir: %v", absFolder)
+			return e.Wrapf(err, "Failed to create dir: %v (repo exists?)", absFolder)
 		}
 	}
 

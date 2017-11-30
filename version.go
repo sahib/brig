@@ -27,26 +27,23 @@ var (
 	PatchInt = -1
 )
 
+func parseVersionNum(v, what string) int {
+	if len(v) <= 0 {
+		return 0
+	}
+
+	num, err := strconv.Atoi(Major)
+	if err != nil {
+		panic(fmt.Sprintf("Cannot parse %s version: %v", what, err))
+	}
+
+	return num
+}
+
 func init() {
-	var err error
-
-	if len(Major) > 0 {
-		if MajorInt, err = strconv.Atoi(Major); err != nil {
-			panic(fmt.Sprintf("Cannot parse major version: %v", err))
-		}
-	}
-
-	if len(Minor) > 0 {
-		if MinorInt, err = strconv.Atoi(Minor); err != nil {
-			panic(fmt.Sprintf("Cannot parse minor version: %v", err))
-		}
-	}
-
-	if len(Patch) > 0 {
-		if PatchInt, err = strconv.Atoi(Patch); err != nil {
-			panic(fmt.Sprintf("Cannot parse patch version: %v", err))
-		}
-	}
+	MajorInt = parseVersionNum(Major, "major")
+	MinorInt = parseVersionNum(Minor, "minor")
+	PatchInt = parseVersionNum(Patch, "patch")
 }
 
 // Version returns a tuple of (major, minor, patch)

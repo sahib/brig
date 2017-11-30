@@ -1,2 +1,1 @@
 - Find cause of dial backoff when creating ipfs connections
-- Detect & prevent double init on repo (needs client & server changes) probably.

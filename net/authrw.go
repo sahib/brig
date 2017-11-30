@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/disorganizer/brig/catfs/mio/compress"
 	"github.com/disorganizer/brig/util"
 
 	"golang.org/x/crypto/openpgp"
@@ -345,7 +346,7 @@ func (ath *AuthReadWriter) readMessage() ([]byte, error) {
 		return nil, fmt.Errorf("Mac differs in received metadata message")
 	}
 
-	return buf, nil
+	return compress.Unpack(buf)
 }
 
 // Read will try to fill `buf` with as many bytes as available.
@@ -396,19 +397,24 @@ func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	macWriter := hmac.New(sha3.New224, ath.symkey)
-	if _, err := macWriter.Write(buf); err != nil {
+	zipBuf, err := compress.Pack(buf, compress.AlgoSnappy)
+	if err != nil {
 		return -1, err
+	}
+
+	macWriter := hmac.New(sha3.New224, ath.symkey)
+	if _, err := macWriter.Write(zipBuf); err != nil {
+		return -2, err
 	}
 
 	mac := macWriter.Sum(nil)
 	n, err := ath.rwc.Write(mac)
 	if err != nil {
-		return -2, err
+		return -3, err
 	}
 
 	if n != len(mac) {
-		return -3, fmt.Errorf(
+		return -4, fmt.Errorf(
 			"Unable to write full mac. Should be %d; was %d",
 			len(mac),
 			n,
@@ -417,20 +423,20 @@ func (ath *AuthReadWriter) Write(buf []byte) (int, error) {
 
 	// Note: this assumes that `cryptedRW` does not pad the data.
 	sizeBuf := make([]byte, 4)
-	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(buf)))
+	binary.LittleEndian.PutUint32(sizeBuf, uint32(len(zipBuf)))
 
 	n, err = ath.rwc.Write(sizeBuf)
 	if err != nil {
-		return -4, err
+		return -5, err
 	}
 
 	if n != len(sizeBuf) {
-		return -5, fmt.Errorf(
+		return -6, fmt.Errorf(
 			"Unable to write full size buf. Should be %d; was %d",
 			len(sizeBuf),
 			n,
 		)
 	}
 
-	return ath.cryptedRW.Write(buf)
+	return ath.cryptedRW.Write(zipBuf)
 }

@@ -7,6 +7,5 @@ import (
 )
 
 func main() {
-
 	os.Exit(cmd.RunCmdline(os.Args))
 }
