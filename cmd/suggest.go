@@ -9,6 +9,11 @@ import (
 	"github.com/urfave/cli"
 )
 
+type suggestion struct {
+	name  string
+	score float64
+}
+
 // ld compares two strings and returns the levenshtein distance between them.
 // TODO: Use a proper library for that.
 func levenshtein(s, t string) float64 {
@@ -83,11 +88,6 @@ func findLastGoodCommands(ctx *cli.Context) ([]string, []cli.Command) {
 	}
 
 	return validArgs, cmd.Subcommands
-}
-
-type suggestion struct {
-	name  string
-	score float64
 }
 
 func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {

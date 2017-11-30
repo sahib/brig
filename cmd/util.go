@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,12 @@ import (
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/urfave/cli"
+)
+
+var (
+	// backend delivers overly descriptive error messages including
+	// the stirng below. Simply filter this info:
+	rpcErrPattern = regexp.MustCompile(" api.capnp.* rpc exception:")
 )
 
 // ExitCode is an error that maps the error interface to a specific error
@@ -175,10 +182,14 @@ func withArgCheck(checker checkFunc, handler cli.ActionFunc) cli.ActionFunc {
 	}
 }
 
+func prettyPrintError(err error) string {
+	return rpcErrPattern.ReplaceAllString(err.Error(), "")
+}
+
 func withExit(handler cli.ActionFunc) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		if err := handler(ctx); err != nil {
-			log.Error(err.Error())
+			log.Error(prettyPrintError(err))
 			cerr, ok := err.(ExitCode)
 			if !ok {
 				os.Exit(UnknownError)
