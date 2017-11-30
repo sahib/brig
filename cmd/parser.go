@@ -84,21 +84,22 @@ func levenshtein(s, t string) float64 {
 	return float64(dist) / float64(total_len)
 }
 
-func findLastGoodCommands(ctx *cli.Context) []cli.Command {
+func findLastGoodCommands(ctx *cli.Context) ([]string, []cli.Command) {
 	for ctx.Parent() != nil {
 		ctx = ctx.Parent()
 	}
 
 	args := ctx.Args()
 	if len(args) == 0 || len(args) == 1 {
-		return ctx.App.Commands
+		return nil, ctx.App.Commands
 	}
 
 	cmd := ctx.App.Command(args[0])
 	if cmd == nil {
-		return ctx.App.Commands
+		return nil, ctx.App.Commands
 	}
 
+	validArgs := []string{args[0]}
 	args = args[1 : len(args)-1]
 
 	for len(args) != 0 && cmd != nil {
@@ -108,21 +109,22 @@ func findLastGoodCommands(ctx *cli.Context) []cli.Command {
 			}
 		}
 
+		validArgs = append(validArgs, args[0])
 		args = args[1:]
 	}
 
-	return cmd.Subcommands
+	return validArgs, cmd.Subcommands
 }
 
-func commandNotFound(ctx *cli.Context, cmdName string) {
-	// Try to find out what command the user wanted to actually type.
-	type suggestion struct {
-		name  string
-		score float64
-	}
+type suggestion struct {
+	name  string
+	score float64
+}
 
+func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 	similars := []suggestion{}
-	for _, cmd := range findLastGoodCommands(ctx) {
+
+	for _, cmd := range cmds {
 		candidates := []string{cmd.Name}
 		candidates = append(candidates, cmd.Aliases...)
 
@@ -153,11 +155,27 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 		}
 	}
 
+	// Let suggestions be sorted by their similarity:
 	sort.Slice(similars, func(i, j int) bool {
 		return similars[i].score < similars[j].score
 	})
 
-	fmt.Printf("`%s` is not a valid command. ", colors.Colorize(cmdName, colors.Red))
+	return similars
+}
+
+func commandNotFound(ctx *cli.Context, cmdName string) {
+	cmdPath, lastGoodCmds := findLastGoodCommands(ctx)
+	similars := findSimilarCommands(cmdName, lastGoodCmds)
+
+	badCmd := colors.Colorize(cmdName, colors.Red)
+	if cmdPath == nil {
+		// A toplevel command was wrong:
+		fmt.Printf("`%s` is not a valid command. ", badCmd)
+	} else {
+		// A command of a subcommand was wrong:
+		lastGoodSubCmd := colors.Colorize(strings.Join(cmdPath, " "), colors.Yellow)
+		fmt.Printf("`%s` is not a valid subcommand of `%s`. ", badCmd, lastGoodSubCmd)
+	}
 
 	switch len(similars) {
 	case 0:
