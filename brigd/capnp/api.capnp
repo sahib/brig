@@ -57,6 +57,13 @@ struct Remote {
     folders     @2 :List(RemoteFolder);
 }
 
+struct Identity {
+    currentUser @0 :Text;
+    owner       @1 :Text;
+    fingerprint @2 :Text;
+}
+
+
 struct MountOptions {
     # For now empty, but there are some mount options
     # in planning.
@@ -87,6 +94,7 @@ interface VCS {
     fetch    @9 (who :Text);
 }
 
+
 interface Meta {
     quit    @0 ();
     ping    @1 () -> (reply :Text);
@@ -103,11 +111,10 @@ interface Meta {
     remoteLs     @10 () -> (remotes :List(Remote));
     remoteSave   @11 (remotes :List(Remote));
     remoteLocate @12 (who :Text) -> (candidates :List(Remote));
-    remoteSelf   @13 () -> (self :Remote);
-    remotePing   @14 (who :Text) -> (roundtrip :Float64);
+    remotePing   @13 (who :Text) -> (roundtrip :Float64);
 
+    whoami      @14  () -> (whoami :Identity);
     become      @15 (who :Text);
-    currentUser @16 () -> (user :Text);
 }
 
 # Group all interfaces together in one API object,

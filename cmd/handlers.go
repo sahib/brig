@@ -595,12 +595,12 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	localRev := ctx.String("rev")
 	remoteName := ctx.String("remote")
 	if remoteName == "" {
-		self, err := ctl.RemoteSelf()
+		self, err := ctl.Whoami()
 		if err != nil {
 			return err
 		}
 
-		remoteName = self.Name
+		remoteName = self.Owner
 	}
 
 	diff, err := ctl.MakeDiff(remoteName, localRev, remoteRev)
@@ -629,12 +629,12 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleStatus(ctx *cli.Context, ctl *client.Client) error {
-	self, err := ctl.RemoteSelf()
+	self, err := ctl.Whoami()
 	if err != nil {
 		return err
 	}
 
-	diff, err := ctl.MakeDiff(self.Name, "HEAD", "CURR")
+	diff, err := ctl.MakeDiff(self.Owner, "HEAD", "CURR")
 	if err != nil {
 		return err
 	}
@@ -657,21 +657,16 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
-	self, err := ctl.RemoteSelf()
+	self, err := ctl.Whoami()
 	if err != nil {
 		return err
 	}
 
 	if !ctx.Bool("fingerprint") {
-		user, err := ctl.CurrentUser()
-		if err != nil {
-			return err
-		}
-
-		userName := colors.Colorize(user, colors.Yellow)
-		ownerName := colors.Colorize(self.Name, colors.Green)
+		userName := colors.Colorize(self.CurrentUser, colors.Yellow)
+		ownerName := colors.Colorize(self.Owner, colors.Green)
 		fmt.Printf("%s", ownerName)
-		if user != self.Name {
+		if self.CurrentUser != self.Owner {
 			fmt.Printf(" (viewing %s's data)", userName)
 		}
 

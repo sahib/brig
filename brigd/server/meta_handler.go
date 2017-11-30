@@ -435,45 +435,6 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 	return call.Results.SetCandidates(capRemotes)
 }
 
-func (mh *metaHandler) RemoteSelf(call capnp.Meta_remoteSelf) error {
-	psrv, err := mh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
-	self, err := psrv.Identity()
-	if err != nil {
-		return err
-	}
-
-	rp, err := mh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	// Compute our own fingerprint:
-	ownPubKey, err := rp.Keyring().OwnPubKey()
-	if err != nil {
-		return err
-	}
-
-	finger := peer.BuildFingerprint(self.Addr, ownPubKey)
-	capRemote, err := capnp.NewRemote(call.Results.Segment())
-	if err != nil {
-		return err
-	}
-
-	if err := capRemote.SetName(rp.Owner); err != nil {
-		return err
-	}
-
-	if err := capRemote.SetFingerprint(string(finger)); err != nil {
-		return err
-	}
-
-	return call.Results.SetSelf(capRemote)
-}
-
 func (mh *metaHandler) RemotePing(call capnp.Meta_remotePing) error {
 	who, err := call.Params.Who()
 	if err != nil {
@@ -517,11 +478,47 @@ func (mh *metaHandler) Become(call capnp.Meta_become) error {
 	return nil
 }
 
-func (mh *metaHandler) CurrentUser(call capnp.Meta_currentUser) error {
+func (mh *metaHandler) Whoami(call capnp.Meta_whoami) error {
+	capId, err := capnp.NewIdentity(call.Results.Segment())
+	if err != nil {
+		return err
+	}
+
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	self, err := psrv.Identity()
+	if err != nil {
+		return err
+	}
+
 	rp, err := mh.base.Repo()
 	if err != nil {
 		return err
 	}
 
-	return call.Results.SetUser(rp.CurrentUser())
+	// Compute our own fingerprint:
+	ownPubKey, err := rp.Keyring().OwnPubKey()
+	if err != nil {
+		return err
+	}
+
+	finger := peer.BuildFingerprint(self.Addr, ownPubKey)
+
+	if err := capId.SetOwner(rp.Owner); err != nil {
+		return err
+	}
+
+	if err := capId.SetFingerprint(string(finger)); err != nil {
+		return err
+	}
+
+	if err := capId.SetCurrentUser(rp.CurrentUser()); err != nil {
+		return err
+	}
+
+	return call.Results.SetWhoami(capId)
+
 }

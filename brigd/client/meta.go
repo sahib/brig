@@ -333,24 +333,6 @@ func (cl *Client) RemoteLocate(who string) ([]Remote, error) {
 	return remotes, nil
 }
 
-func (cl *Client) RemoteSelf() (*Remote, error) {
-	call := cl.api.RemoteSelf(cl.ctx, func(p capnp.Meta_remoteSelf_Params) error {
-		return nil
-	})
-
-	result, err := call.Struct()
-	if err != nil {
-		return nil, err
-	}
-
-	capRemote, err := result.Self()
-	if err != nil {
-		return nil, err
-	}
-
-	return capRemoteToRemote(capRemote)
-}
-
 func (cl *Client) RemotePing(who string) (float64, error) {
 	call := cl.api.RemotePing(cl.ctx, func(p capnp.Meta_remotePing_Params) error {
 		return p.SetWho(who)
@@ -373,15 +355,42 @@ func (cl *Client) Become(who string) error {
 	return err
 }
 
-func (cl *Client) CurrentUser() (string, error) {
-	call := cl.api.CurrentUser(cl.ctx, func(p capnp.Meta_currentUser_Params) error {
+type Whoami struct {
+	CurrentUser string
+	Owner       string
+	Fingerprint string
+}
+
+func (cl *Client) Whoami() (*Whoami, error) {
+	call := cl.api.Whoami(cl.ctx, func(p capnp.Meta_whoami_Params) error {
 		return nil
 	})
 
 	result, err := call.Struct()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return result.User()
+	capWhoami, err := result.Whoami()
+	if err != nil {
+		return nil, err
+	}
+
+	whoami := &Whoami{}
+	whoami.CurrentUser, err = capWhoami.CurrentUser()
+	if err != nil {
+		return nil, err
+	}
+
+	whoami.Fingerprint, err = capWhoami.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
+	whoami.Owner, err = capWhoami.Owner()
+	if err != nil {
+		return nil, err
+	}
+
+	return whoami, nil
 }
