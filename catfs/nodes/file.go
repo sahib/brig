@@ -148,7 +148,6 @@ func (f *File) SetKey(k []byte) { f.key = k }
 
 // SetSize will update the size of the file and update it's mod time.
 func (f *File) SetSize(s uint64) {
-	fmt.Println("SET SIZE", s)
 	f.size = s
 	f.SetModTime(time.Now())
 }

@@ -24,7 +24,7 @@ type Reader struct {
 	lastDecSeekPos int64
 
 	// lastEncSeekPos saves the current position of the underlying stream.
-	// it is used mostly for ensureing SEEK_END works.
+	// it is used mostly for ensuring SEEK_END works.
 	lastEncSeekPos int64
 
 	// Parsed header info

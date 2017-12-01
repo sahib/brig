@@ -35,7 +35,7 @@ import (
 	"fmt"
 	"io"
 
-	chacha "github.com/codahale/chacha20poly1305"
+	chacha "golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/sha3"
 )
 

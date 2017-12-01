@@ -523,7 +523,17 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 		return nil, err
 	}
 
-	return mio.NewOutStream(rawStream, file.Key())
+	// TODO: This cann still seek over boundaries?
+	//       Exchange with proper limitReadSeeker + WriterTo?
+	stream, err := mio.NewOutStream(rawStream, file.Key())
+	if err != nil {
+		return nil, err
+	}
+
+	// Truncate stream to file size. Data stream might be bigger
+	// for example when fuse decided to truncate the file, but
+	// did not flush it already.
+	return mio.LimitStream(stream, file.Size()), nil
 }
 
 // Open returns a file like object that can be used for modifying a file in memory.

@@ -105,7 +105,7 @@ func checkForCorrectFile(t *testing.T, path string, data []byte) bool {
 
 var (
 	DataSizes = []int64{
-		// 0, 1, 2, 4, 8, 16, 32, 64, 1024, 2048, 4095, 4096, 4097,
+		0, 1, 2, 4, 8, 16, 32, 64, 1024, 2048, 4095, 4096, 4097,
 		147611,
 	}
 )

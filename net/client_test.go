@@ -30,7 +30,7 @@ func withClientFor(who string, t *testing.T, fn func(u testUnit)) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	defer os.Remove(tmpFolder)
+	defer os.RemoveAll(tmpFolder)
 
 	if err := repo.Init(tmpFolder, "alice", "xxx", "mock"); err != nil {
 		t.Fatalf("Failed to init repo at: %v", err)
@@ -159,7 +159,7 @@ func TestClientFetchStore(t *testing.T) {
 
 		// Check superficially that store was imported right:
 		require.Equal(t, info.Path, filePath)
-		require.Equal(t, info.Size, 3)
+		require.Equal(t, info.Size, uint64(3))
 		require.Equal(t, info.IsDir, false)
 
 		r, err := bobFs.Cat(filePath)

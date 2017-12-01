@@ -66,7 +66,7 @@ func TestOpenTruncate(t *testing.T) {
 	rawData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	for idx := 0; idx < len(rawData)+5; idx++ {
-		t.Run(fmt.Sprintf("truncate(%d)", idx), func(t *testing.T) {
+		t.Run(fmt.Sprintf("truncate_%d", idx), func(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
 				require.Nil(t, fs.Stage("/x", bytes.NewReader(rawData)))
 
@@ -83,7 +83,8 @@ func TestOpenTruncate(t *testing.T) {
 				if idx >= len(rawData) {
 					rawIdx = len(rawData)
 				}
-				require.Equal(t, data, rawData[:rawIdx])
+
+				require.Equal(t, rawData[:rawIdx], data)
 				require.Nil(t, fd.Close())
 
 				// Check if the result was really written:
@@ -92,7 +93,7 @@ func TestOpenTruncate(t *testing.T) {
 
 				persistentData, err := ioutil.ReadAll(stream)
 				require.Nil(t, err)
-				require.Equal(t, persistentData, rawData[:rawIdx])
+				require.Equal(t, rawData[:rawIdx], persistentData)
 			})
 		})
 	}
@@ -168,7 +169,7 @@ func TestHandleFuseLikeRead(t *testing.T) {
 
 func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
 	withDummyFS(t, func(fs *FS) {
-		rawData := testutil.CreateDummyBuf(fileSize)
+		rawData := testutil.CreateDummyBuf(int64(fileSize))
 		require.Nil(t, fs.Stage("/x", bytes.NewReader(rawData)))
 
 		fd, err := fs.Open("/x")
@@ -190,6 +191,10 @@ func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
 			n, err := fd.Read(buf)
 			if err != nil {
 				t.Fatalf("Read failed: %v", err)
+			}
+
+			if n != toRead {
+				t.Fatalf("Handle read less than expected (wanted %d, got %d)", toRead, n)
 			}
 
 			if !bytes.Equal(buf, rawData[offset:offset+toRead]) {

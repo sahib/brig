@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 
 	"github.com/disorganizer/brig/catfs/mio/compress"
 	"github.com/disorganizer/brig/catfs/mio/encrypt"
@@ -84,4 +85,66 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 	}()
 
 	return pr, nil
+}
+
+type limitedStream struct {
+	stream Stream
+	pos    uint64
+	size   uint64
+}
+
+func (ls *limitedStream) Read(buf []byte) (int, error) {
+	isEOF := false
+	if ls.pos+uint64(len(buf)) >= ls.size {
+		buf = buf[:ls.size-ls.pos]
+		isEOF = true
+	}
+
+	n, err := ls.stream.Read(buf)
+	if err != nil {
+		return n, err
+	}
+
+	if isEOF {
+		err = io.EOF
+	}
+
+	return n, err
+}
+
+func (ls *limitedStream) Close() error {
+	return ls.stream.Close()
+}
+
+func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case os.SEEK_CUR:
+		return ls.Seek(int64(ls.pos)+offset, os.SEEK_SET)
+	case os.SEEK_END:
+		return ls.Seek(offset-int64(ls.size)), os.SEEK_SET)
+	}
+
+	if offset > int64(ls.size) {
+		return -1, io.EOF
+	}
+
+	ls.pos = uint64(offset)
+	return ls.Seek(offset, os.SEEK_SET)
+}
+
+func (ls *limitedStream) WriteTo(w io.Writer) (int64, error) {
+	// TODO: WriteTo does not limit the size really...
+	//       Using a buffer here would defeat the purpose
+	//       of WriterTo a bit...
+	return ls.stream.WriteTo(w)
+}
+
+// LimitStream is like io.LimitReader, but works for mio.Stream.
+// It will not allow reading/seeking after the specified size.
+func LimitStream(stream Stream, size uint64) Stream {
+	return &limitedStream{
+		stream: stream,
+		pos:    0,
+		size:   size,
+	}
 }

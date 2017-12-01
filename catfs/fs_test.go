@@ -352,8 +352,6 @@ func TestExportImport(t *testing.T) {
 		mem := &bytes.Buffer{}
 		require.Nil(t, fs.Export(mem))
 
-		fmt.Println(mem.Len())
-
 		// Check if we can import all this data:
 		withDummyFS(t, func(newFs *FS) {
 			require.Nil(t, fs.Import(mem))
@@ -574,7 +572,6 @@ func TestList(t *testing.T) {
 		require.Equal(t, entries[1].Path, "/1/2/3")
 		require.Equal(t, entries[2].Path, "/1/2/3/y")
 
-		fmt.Println("---")
 		entries, err = fs.List("/", 1)
 		require.Nil(t, err)
 

@@ -75,8 +75,6 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	fmt.Println("read", n, err, isEOF)
-
 	if isEOF {
 		return n, io.EOF
 	}
@@ -114,6 +112,13 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	if hdl.file.Size() < minSize {
 		hdl.fs.mu.Lock()
 		hdl.file.SetSize(minSize)
+
+		// Make sure to save the size change:
+		if err := hdl.fs.lkr.StageNode(hdl.file); err != nil {
+			hdl.fs.mu.Unlock()
+			return 0, err
+		}
+
 		hdl.fs.mu.Unlock()
 
 		// Also auto-truncate on every write.
