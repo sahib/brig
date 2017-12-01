@@ -121,7 +121,7 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	case os.SEEK_CUR:
 		return ls.Seek(int64(ls.pos)+offset, os.SEEK_SET)
 	case os.SEEK_END:
-		return ls.Seek(offset-int64(ls.size)), os.SEEK_SET)
+		return ls.Seek(offset-int64(ls.size), os.SEEK_SET)
 	}
 
 	if offset > int64(ls.size) {
