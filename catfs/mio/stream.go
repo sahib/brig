@@ -1,11 +1,12 @@
 package mio
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/catfs/mio/compress"
 	"github.com/disorganizer/brig/catfs/mio/encrypt"
 )
@@ -20,7 +21,7 @@ type Stream interface {
 // NewOutStream creates an OutStream piping data from brig to the outside.
 // `key` is used to decrypt the data. The compression algorithm is read
 // from the stream header.
-func NewOutStream(r Stream, key []byte) (Stream, error) {
+func NewOutStream(r io.ReadSeeker, key []byte) (Stream, error) {
 	rEnc, err := encrypt.NewReader(r, key)
 	if err != nil {
 		return nil, err
@@ -80,13 +81,17 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 		}
 
 		if err != nil {
-			fmt.Println("TODO: Internal write err", err)
+			// TODO: This need to be handled better.
+			log.Warningf("Internal write error: %v", err)
 		}
 	}()
 
 	return pr, nil
 }
 
+// limitedStream is a small wrapper around Stream,
+// which allows truncating the stream at a certain size.
+// It provides the same
 type limitedStream struct {
 	stream Stream
 	pos    uint64
@@ -112,10 +117,6 @@ func (ls *limitedStream) Read(buf []byte) (int, error) {
 	return n, err
 }
 
-func (ls *limitedStream) Close() error {
-	return ls.stream.Close()
-}
-
 func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case os.SEEK_CUR:
@@ -124,19 +125,77 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 		return ls.Seek(offset-int64(ls.size), os.SEEK_SET)
 	}
 
-	if offset > int64(ls.size) {
+	newPos := int64(ls.pos) + offset
+	if newPos < 0 {
 		return -1, io.EOF
 	}
 
-	ls.pos = uint64(offset)
-	return ls.Seek(offset, os.SEEK_SET)
+	if newPos > int64(ls.size) {
+		return -1, io.EOF
+	}
+
+	ls.pos = uint64(newPos)
+	return ls.stream.Seek(newPos, os.SEEK_SET)
+}
+
+type limitWriter struct {
+	w     io.Writer
+	curr  uint64
+	limit uint64
+}
+
+var (
+	errOverLimit = errors.New("welp TODO")
+)
+
+func (lw *limitWriter) Write(buf []byte) (int, error) {
+	isOverLimit := false
+	left := lw.limit - lw.curr
+	if left < uint64(len(buf)) {
+		buf = buf[:left]
+		isOverLimit = true
+	}
+
+	if len(buf) == 0 {
+		if isOverLimit {
+			return 0, errOverLimit
+		}
+
+		return 0, nil
+	}
+
+	n, err := lw.w.Write(buf)
+	if err != nil {
+		return n, err
+	}
+
+	if isOverLimit {
+		return n, errOverLimit
+	}
+
+	return n, nil
 }
 
 func (ls *limitedStream) WriteTo(w io.Writer) (int64, error) {
-	// TODO: WriteTo does not limit the size really...
-	//       Using a buffer here would defeat the purpose
-	//       of WriterTo a bit...
-	return ls.stream.WriteTo(w)
+	// We do not want to defeat the purpose of WriteTo here.
+	// That's why we do the limit check in the writer part.
+	lw := &limitWriter{
+		limit: ls.size - ls.pos,
+		curr:  ls.pos,
+		w:     w,
+	}
+
+	n, err := ls.stream.WriteTo(lw)
+	if err == errOverLimit {
+		// silence errOverLimit, since it's more or less internal.
+		return n, nil
+	}
+
+	return n, err
+}
+
+func (ls *limitedStream) Close() error {
+	return ls.stream.Close()
 }
 
 // LimitStream is like io.LimitReader, but works for mio.Stream.
