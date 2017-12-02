@@ -1,4 +1,4 @@
-package brig
+package version
 
 import (
 	"fmt"
@@ -47,12 +47,12 @@ func init() {
 }
 
 // Version returns a tuple of (major, minor, patch)
-func Version() (int, int, int) {
+func Numbers() (int, int, int) {
 	return MajorInt, MinorInt, PatchInt
 }
 
 // VersionString returns a Maj.Min.Patch string.
-func VersionString() string {
+func String() string {
 	base := fmt.Sprintf("v%s.%s.%s", Major, Minor, Patch)
 	if ReleaseType != "" {
 		base += "-" + ReleaseType

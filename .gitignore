@@ -1,3 +1,4 @@
-brig/brig
+brig
 *.coverprofile
 coverage.out
+_vendor*

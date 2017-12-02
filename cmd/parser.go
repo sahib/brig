@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig"
 	colorlog "github.com/disorganizer/brig/util/log"
+	"github.com/disorganizer/brig/version"
 	"github.com/urfave/cli"
 )
 
@@ -51,8 +51,8 @@ func RunCmdline(args []string) int {
 	app.EnableBashCompletion = true
 	app.Version = fmt.Sprintf(
 		"%s [buildtime: %s]",
-		brig.VersionString(),
-		brig.BuildTime,
+		version.String(),
+		version.BuildTime,
 	)
 	app.CommandNotFound = commandNotFound
 

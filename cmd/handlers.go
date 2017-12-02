@@ -11,11 +11,11 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig"
 	"github.com/disorganizer/brig/brigd/client"
 	"github.com/disorganizer/brig/brigd/server"
 	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/disorganizer/brig/util/colors"
+	"github.com/disorganizer/brig/version"
 	"github.com/dustin/go-humanize"
 	"github.com/urfave/cli"
 )
@@ -39,7 +39,7 @@ const brigLogo = `
 `
 
 func handleVersion(ctx *cli.Context) error {
-	fmt.Println(brig.VersionString())
+	fmt.Println(version.String())
 	return nil
 }
 

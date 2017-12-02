@@ -1,4 +1,4 @@
-IMPORT="github.com/disorganizer/brig"
+VERSION_IMPORT="github.com/disorganizer/brig/version"
 
 # Build metadata:
 VERSION_MAJOR=0
@@ -11,17 +11,18 @@ GITREV=`git rev-parse HEAD`
 all:
 	go install -ldflags \
 		" \
-			-X $(IMPORT).Major=$(VERSION_MAJOR) \
-			-X $(IMPORT).Minor=$(VERSION_MINOR) \
-			-X $(IMPORT).Patch=$(VERSION_PATCH) \
-			-X $(IMPORT).ReleaseType=$(RELEASETYPE) \
-			-X $(IMPORT).BuildTime=$(BUILDTIME) \
-			-X $(IMPORT).GitRev=$(GITREV) \
+			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
+			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
+			-X $(VERSION_IMPORT).Patch=$(VERSION_PATCH) \
+			-X $(VERSION_IMPORT).ReleaseType=$(RELEASETYPE) \
+			-X $(VERSION_IMPORT).BuildTime=$(BUILDTIME) \
+			-X $(VERSION_IMPORT).GitRev=$(GITREV) \
 		" \
-		cmd/brig/brig.go
+		brig.go
 
 test:
-	go test -v `glide novendor`
+	# New go test ignores vendor/
+	go test -v ./...
 
 lint:
 	gometalinter ./... --deadline 1m | grep -v '.*\.pb\..*'
@@ -30,7 +31,3 @@ proto:
 	@make -C store/wire
 	@make -C daemon/wire
 	@make -C transfer/wire
- 
-
-
-
