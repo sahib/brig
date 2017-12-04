@@ -1,6 +1,9 @@
 package client
 
 import (
+	"errors"
+	"time"
+
 	"github.com/disorganizer/brig/brigd/capnp"
 	capnplib "zombiezen.com/go/capnproto2"
 )
@@ -359,6 +362,7 @@ type Whoami struct {
 	CurrentUser string
 	Owner       string
 	Fingerprint string
+	IsOnline    bool
 }
 
 func (cl *Client) Whoami() (*Whoami, error) {
@@ -392,5 +396,96 @@ func (cl *Client) Whoami() (*Whoami, error) {
 		return nil, err
 	}
 
+	whoami.IsOnline = capWhoami.IsOnline()
 	return whoami, nil
+}
+
+func (cl *Client) SetOnlineStatus(online bool) error {
+	call := cl.api.SetOnlineStatus(cl.ctx, func(p capnp.Meta_setOnlineStatus_Params) error {
+		p.SetOnline(online)
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+type PeerStatus struct {
+	Name, Addr string
+	LastSeen   time.Time
+	Roundtrip  time.Duration
+	Err        error
+}
+
+func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) {
+	name, err := capStatus.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := capStatus.Addr()
+	if err != nil {
+		return nil, err
+	}
+
+	msg, err := capStatus.Error()
+	if err != nil {
+		return nil, err
+	}
+
+	lastSeenStamp, err := capStatus.LastSeen()
+	if err != nil {
+		return nil, err
+	}
+
+	lastSeen := time.Now()
+	if lastSeenStamp != "" {
+		lastSeen, err = time.Parse(time.RFC3339, lastSeenStamp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	pingErr := errors.New(msg)
+	if len(msg) == 0 {
+		pingErr = nil
+	}
+
+	roundtripMs := time.Duration(capStatus.RoundtripMs()) * time.Millisecond
+	return &PeerStatus{
+		Name:      name,
+		Addr:      addr,
+		LastSeen:  lastSeen,
+		Roundtrip: roundtripMs,
+		Err:       pingErr,
+	}, nil
+}
+
+func (cl *Client) OnlinePeers() ([]PeerStatus, error) {
+	call := cl.api.OnlinePeers(cl.ctx, func(p capnp.Meta_onlinePeers_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capStatuses, err := result.Infos()
+	if err != nil {
+		return nil, err
+	}
+
+	statuses := []PeerStatus{}
+	for idx := 0; idx < capStatuses.Len(); idx++ {
+		capStatus := capStatuses.At(idx)
+		status, err := capPeerStatusToPeerStatus(capStatus)
+		if err != nil {
+			return nil, err
+		}
+
+		statuses = append(statuses, *status)
+	}
+
+	return statuses, nil
 }

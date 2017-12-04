@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/disorganizer/brig/net/backend"
 	"github.com/disorganizer/brig/net/peer"
 )
 
@@ -61,7 +62,7 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 	switch peerAddr {
 	case "alice-addr":
 		return nil, fmt.Errorf("Cannot dial self")
-	case "vincent":
+	case "vincent-addr":
 		return nil, fmt.Errorf("vincent is offline")
 	case "bob-addr", "charlie-addr-right":
 		// Those are the only valid addrs we may dial.
@@ -84,6 +85,10 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 
 	ch <- srvConn
 	return clConn, nil
+}
+
+func (nb *NetBackend) Ping(addr string) (backend.Pinger, error) {
+	return pingerByName(addr)
 }
 
 func (nb *NetBackend) Listen(protocol string) (net.Listener, error) {

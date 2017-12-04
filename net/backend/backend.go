@@ -2,9 +2,25 @@ package backend
 
 import (
 	stdnet "net"
+	"time"
 
 	"github.com/disorganizer/brig/net/peer"
 )
+
+// Pinger
+type Pinger interface {
+	// LastSeen returns a timestamp of when this peer last responded.
+	LastSeen() time.Time
+
+	// Roundtrip returns the time needed to send a small package to a peer.
+	Roundtrip() time.Duration
+
+	// Err returns a non-nil value if the last try to contact this peer failed.
+	Err() error
+
+	// Close shuts down this pinger.
+	Close() error
+}
 
 // Backend defines all required methods needed from the underyling implementation
 // in order to talk with other nodes.
@@ -26,4 +42,8 @@ type Backend interface {
 	// Listen returns a listener, that will yield incoming connections
 	// from other peers when calling Accept.
 	Listen(protocol string) (stdnet.Listener, error)
+
+	// Ping returns a Pinger interface for the peer at `peerAddr`.
+	// It should not create a full
+	Ping(peerAddr string) (Pinger, error)
 }

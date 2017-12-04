@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -331,15 +332,68 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleOffline(ctx *cli.Context, ctl *client.Client) error {
-	return nil
+	return ctl.SetOnlineStatus(false)
 }
 
 func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
+	self, err := ctl.Whoami()
+	if err != nil {
+		return err
+	}
+
+	if self.IsOnline {
+		fmt.Println(colors.Colorize("online", colors.Green))
+	} else {
+		fmt.Println(colors.Colorize("offline", colors.Red))
+	}
+
 	return nil
 }
 
 func handleOnline(ctx *cli.Context, ctl *client.Client) error {
-	return nil
+	return ctl.SetOnlineStatus(true)
+}
+
+func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
+	infos, err := ctl.OnlinePeers()
+	if err != nil {
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	if len(infos) == 0 {
+		fmt.Println("Remote list is empty. Nobody there to ping.")
+		return nil
+	}
+
+	fmt.Fprintln(tabW, "NAME\tADDR\tROUNDTRIP\tLASTSEEN\t")
+
+	for _, info := range infos {
+		suffix := ""
+		if info.Err == nil {
+			suffix = fmt.Sprintf(
+				"%s\t%s",
+				info.Roundtrip,
+				colors.Colorize(
+					"✔ "+info.LastSeen.Format(time.Stamp),
+					colors.Green,
+				),
+			)
+		} else {
+			suffix = fmt.Sprintf(
+				" \t%s",
+				colors.Colorize("✘ "+info.Err.Error(), colors.Red),
+			)
+		}
+
+		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, info.Addr, suffix)
+	}
+
+	return tabW.Flush()
 }
 
 func handleList(ctx *cli.Context, ctl *client.Client) error {
@@ -452,7 +506,7 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 
 		msg := entry.Msg
 		if msg == "" {
-			msg = colors.Colorize("*", colors.Red)
+			msg = colors.Colorize("•", colors.Red)
 		}
 
 		entry.Hash.ShortB58()

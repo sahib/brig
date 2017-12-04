@@ -19,6 +19,7 @@ type Server struct {
 	bk         backend.Backend
 	baseServer *server.Server
 	hdl        *handler
+	pingMap    *PingMap
 }
 
 func (sv *Server) Serve() error {
@@ -54,6 +55,7 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 		baseServer: baseServer,
 		bk:         bk,
 		hdl:        hdl,
+		pingMap:    NewPingMap(bk),
 	}, nil
 }
 
@@ -63,6 +65,10 @@ func (sv *Server) Locate(who peer.Name) ([]peer.Info, error) {
 
 func (sv *Server) Identity() (peer.Info, error) {
 	return sv.bk.Identity()
+}
+
+func (sv *Server) PingMap() *PingMap {
+	return sv.pingMap
 }
 
 /////////////////////////////////////

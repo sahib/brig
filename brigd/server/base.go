@@ -197,6 +197,21 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 
 	b.peerServer = srv
 
+	// Initially sync the ping map:
+	addrs := []string{}
+	remotes, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, remote := range remotes {
+		addrs = append(addrs, remote.Fingerprint.Addr())
+	}
+
+	if err := srv.PingMap().Sync(addrs); err != nil {
+		return nil, err
+	}
+
 	// Give peer server a small bit of time to start up, so it can Accept()
 	// connections immediately after loadPeerServer. Nice for tests.
 	time.Sleep(50 * time.Millisecond)

@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	netBackend "github.com/disorganizer/brig/net/backend"
+
 	p2pnet "gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	ipfspeer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
 
@@ -158,6 +160,10 @@ func (p *Pinger) Roundtrip() time.Duration {
 	return p.roundtrip
 }
 
+func (p *Pinger) Err() error {
+	return nil
+}
+
 func (p *Pinger) Close() error {
 	p.cancel()
 	return nil
@@ -166,7 +172,7 @@ func (p *Pinger) Close() error {
 // Ping returns a new Pinger. It can be used to
 // query the time the remote was last seen. It will be
 // constantly updated until close is called on it.
-func (nd *Node) Ping(addr string) (*Pinger, error) {
+func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
 	}

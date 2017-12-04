@@ -175,6 +175,11 @@ func RunCmdline(args []string) int {
 					Usage:  "Check if the daemon is online",
 					Action: withDaemon(handleIsOnline, true),
 				},
+				cli.Command{
+					Name:   "list",
+					Usage:  "See what other peers are online",
+					Action: withDaemon(handleOnlinePeers, true),
+				},
 			},
 		},
 		cli.Command{

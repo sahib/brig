@@ -264,8 +264,32 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 	return &capRemote, nil
 }
 
+func (mh *metaHandler) syncPingMap() error {
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	addrs := []string{}
+	remotes, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	for _, remote := range remotes {
+		addrs = append(addrs, remote.Fingerprint.Addr())
+	}
+
+	return psrv.PingMap().Sync(addrs)
+}
+
 func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
-	repo, err := mh.base.Repo()
+	rp, err := mh.base.Repo()
 	if err != nil {
 		return err
 	}
@@ -280,7 +304,11 @@ func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
 		return err
 	}
 
-	return repo.Remotes.AddRemote(*remote)
+	if err := rp.Remotes.AddRemote(*remote); err != nil {
+		return err
+	}
+
+	return mh.syncPingMap()
 }
 
 func (mh *metaHandler) RemoteRm(call capnp.Meta_remoteRm) error {
@@ -294,7 +322,11 @@ func (mh *metaHandler) RemoteRm(call capnp.Meta_remoteRm) error {
 		return err
 	}
 
-	return repo.Remotes.RmRemote(name)
+	if err := repo.Remotes.RmRemote(name); err != nil {
+		return err
+	}
+
+	return mh.syncPingMap()
 }
 
 func (mh *metaHandler) RemoteLs(call capnp.Meta_remoteLs) error {
@@ -345,12 +377,16 @@ func (mh *metaHandler) RemoteSave(call capnp.Meta_remoteSave) error {
 		remotes = append(remotes, *remote)
 	}
 
-	repo, err := mh.base.Repo()
+	rp, err := mh.base.Repo()
 	if err != nil {
 		return err
 	}
 
-	return repo.Remotes.SaveList(remotes)
+	if err := rp.Remotes.SaveList(remotes); err != nil {
+		return err
+	}
+
+	return mh.syncPingMap()
 }
 
 func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
@@ -519,6 +555,87 @@ func (mh *metaHandler) Whoami(call capnp.Meta_whoami) error {
 		return err
 	}
 
-	return call.Results.SetWhoami(capId)
+	// TODO: Swap with actual online status of backend.
+	capId.SetIsOnline(true)
 
+	return call.Results.SetWhoami(capId)
+}
+
+func (mh *metaHandler) SetOnlineStatus(call capnp.Meta_setOnlineStatus) error {
+	goOnline := call.Params.Online()
+	if goOnline {
+		log.Infof("Backend going online...")
+	} else {
+		log.Infof("Backend going offline...")
+	}
+
+	// TODO: Actually implement.
+	return nil
+}
+
+func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	remotes, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+	statuses, err := capnp.NewPeerStatus_List(seg, int32(len(remotes)))
+	if err != nil {
+		return err
+	}
+
+	for idx, remote := range remotes {
+		status, err := capnp.NewPeerStatus(call.Results.Segment())
+		if err != nil {
+			return err
+		}
+
+		addr := remote.Fingerprint.Addr()
+		if err := status.SetAddr(addr); err != nil {
+			return err
+		}
+
+		if err := status.SetName(remote.Name); err != nil {
+			return err
+		}
+
+		pinger, err := psrv.PingMap().For(addr)
+		if err != nil {
+			status.SetError(err.Error())
+		}
+
+		if pinger != nil {
+			fmt.Println("ROUNDTRIP", pinger.Roundtrip())
+			fmt.Println("ROUNDTRIP 2", pinger.Roundtrip()/time.Millisecond)
+			roundtrip := int32(pinger.Roundtrip() / time.Millisecond)
+			status.SetRoundtripMs(roundtrip)
+
+			lastSeen := pinger.LastSeen().Format(time.RFC3339)
+			if err := status.SetLastSeen(lastSeen); err != nil {
+				return err
+			}
+		} else {
+			errMsg := fmt.Sprintf("cannot ping `%s` (yet)", addr)
+			if err := status.SetError(errMsg); err != nil {
+				return err
+			}
+		}
+
+		if err := statuses.Set(idx, status); err != nil {
+			return err
+		}
+	}
+
+	return call.Results.SetInfos(statuses)
 }

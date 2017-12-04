@@ -32,12 +32,12 @@ struct HistoryEntry $Go.doc("One History entry for a file") {
     ref    @2 :Data;
 }
 
-struct DiffPair {
+struct DiffPair $Go.doc("Represent two differing files") {
     src @0 :StatInfo;
     dst @1 :StatInfo;
 }
 
-struct Diff {
+struct Diff $Go.doc("Difference between two commits") {
     added   @0 :List(StatInfo);
     removed @1 :List(StatInfo);
     ignored @2 :List(StatInfo);
@@ -46,27 +46,35 @@ struct Diff {
     conflict @4 :List(DiffPair);
 }
 
-struct RemoteFolder {
+struct RemoteFolder $Go.doc("A folder that a remote is allowed to access") {
     folder @0 :Text;
     perms  @1 :Text;
 }
 
-struct Remote {
+struct Remote $Go.doc("Info a remote peer we might sync with") {
     name        @0 :Text;
     fingerprint @1 :Text;
     folders     @2 :List(RemoteFolder);
 }
 
-struct Identity {
+struct Identity $Go.doc("Info about our current user state") {
     currentUser @0 :Text;
     owner       @1 :Text;
     fingerprint @2 :Text;
+    isOnline   @3  :Bool;
 }
-
 
 struct MountOptions {
     # For now empty, but there are some mount options
     # in planning.
+}
+
+struct PeerStatus $Go.doc("net status of a peer") {
+    name        @0 :Text;
+    addr        @1 :Text;
+    lastSeen    @2 :Text;
+    roundtripMs @3 :Int32;
+    error       @4 :Text;
 }
 
 interface FS {
@@ -94,7 +102,6 @@ interface VCS {
     fetch    @9 (who :Text);
 }
 
-
 interface Meta {
     quit    @0 ();
     ping    @1 () -> (reply :Text);
@@ -113,8 +120,12 @@ interface Meta {
     remoteLocate @12 (who :Text) -> (candidates :List(Remote));
     remotePing   @13 (who :Text) -> (roundtrip :Float64);
 
+    # the combined command of both is "whathaveibecome":
     whoami      @14  () -> (whoami :Identity);
     become      @15 (who :Text);
+
+    setOnlineStatus @16 (online :Bool);
+    onlinePeers     @17 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,
