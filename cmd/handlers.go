@@ -385,12 +385,17 @@ func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
 			)
 		} else {
 			suffix = fmt.Sprintf(
-				" \t%s",
+				"∞\t%s",
 				colors.Colorize("✘ "+info.Err.Error(), colors.Red),
 			)
 		}
 
-		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, info.Addr, suffix)
+		shortAddr := info.Addr
+		if len(shortAddr) > 9 {
+			shortAddr = shortAddr[:9]
+		}
+
+		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, shortAddr, suffix)
 	}
 
 	return tabW.Flush()

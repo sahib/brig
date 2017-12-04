@@ -616,8 +616,6 @@ func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
 		}
 
 		if pinger != nil {
-			fmt.Println("ROUNDTRIP", pinger.Roundtrip())
-			fmt.Println("ROUNDTRIP 2", pinger.Roundtrip()/time.Millisecond)
 			roundtrip := int32(pinger.Roundtrip() / time.Millisecond)
 			status.SetRoundtripMs(roundtrip)
 
@@ -626,7 +624,7 @@ func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
 				return err
 			}
 		} else {
-			errMsg := fmt.Sprintf("cannot ping `%s` (yet)", addr)
+			errMsg := fmt.Sprintf("no route (yet)")
 			if err := status.SetError(errMsg); err != nil {
 				return err
 			}
