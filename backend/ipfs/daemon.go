@@ -3,6 +3,7 @@ package ipfs
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"sync"
 
@@ -13,6 +14,28 @@ import (
 
 	"golang.org/x/net/context"
 )
+
+// Find the next free tcp port near to `port` (possibly euqal to `port`).
+// Only `maxTries` number of trials will be made.
+// This method is (of course...) racy since the port might be already
+// taken again by another process until we startup our service on that port.
+func findFreePortNextTo(port int, maxTries int) int {
+	for idx := 0; idx < maxTries; idx++ {
+		addr := fmt.Sprintf("localhost:%d", port+idx)
+		lst, err := net.Listen("tcp", addr)
+		if err != nil {
+			continue
+		}
+
+		if err := lst.Close(); err != nil {
+			// Well?
+		}
+
+		return port + idx
+	}
+
+	return port
+}
 
 var (
 	// ErrIsOffline is returned when an online operation was done offline.
@@ -48,13 +71,30 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 		return nil, err
 	}
 
-	swarmAddrs := []string{
-		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
-		fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
+	swarmPort = findFreePortNextTo(4001, 100)
+
+	// Those two are probably not needed:
+	apiPort := findFreePortNextTo(5001, 100)
+	gatewayPort := findFreePortNextTo(8080, 100)
+
+	log.Debugf(
+		"ipfs node configured to run on swarm port %d (api: %d gateway: %d)",
+		swarmPort, apiPort, gatewayPort,
+	)
+
+	config := map[string]interface{}{
+		"Addresses.Swarm": []string{
+			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
+			fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
+		},
+		"Addresses.API":     fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", apiPort),
+		"Addresses.Gateway": fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", gatewayPort),
 	}
 
-	if err := rp.SetConfigKey("Addresses.Swarm", swarmAddrs); err != nil {
-		return nil, err
+	for key, value := range config {
+		if err := rp.SetConfigKey(key, value); err != nil {
+			return nil, err
+		}
 	}
 
 	cfg := &core.BuildCfg{
