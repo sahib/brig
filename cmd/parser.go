@@ -67,7 +67,7 @@ func RunCmdline(args []string) int {
 		cli.StringFlag{
 			Name:   "log-path,l",
 			Usage:  "Where to output the log. May be 'stderr' (default) or 'stdout'",
-			Value:  "stderr",
+			Value:  "",
 			EnvVar: "BRIG_LOG",
 		},
 	}

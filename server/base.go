@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -14,11 +15,11 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/server/capnp"
 	"github.com/disorganizer/brig/catfs"
 	"github.com/disorganizer/brig/fuse"
 	p2pnet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/repo"
+	"github.com/disorganizer/brig/server/capnp"
 )
 
 type base struct {
@@ -42,6 +43,8 @@ type base struct {
 	// This the general backend, not a specific submodule one:
 	backend backend.Backend
 	quitCh  chan struct{}
+
+	ipfsLogFd *os.File
 }
 
 func repoIsInitialized(path string) error {
@@ -151,6 +154,14 @@ func (b *base) loadBackend() (backend.Backend, error) {
 		return nil, err
 	}
 
+	ipfsLogPath := filepath.Join(rp.BaseFolder, "logs", "ipfs.log")
+	fd, err := os.Create(ipfsLogPath)
+	if err != nil {
+		log.Warningf("Failed to open ipfs log path (%s): %v", err)
+	}
+
+	b.ipfsLogFd = fd
+	realBackend.ForwardLog(fd)
 	b.backend = realBackend
 	return realBackend, nil
 }
@@ -326,14 +337,15 @@ func (b *base) Quit() (err error) {
 
 	log.Infof("Trying to lock repository...")
 
-	var rp *repo.Repository
-	rp, err = b.Repo()
+	rp, err := b.Repo()
 	if err != nil {
 		log.Warningf("Failed to access repository: %v", err)
 	}
 
-	if err = rp.Close(b.password); err != nil {
-		log.Warningf("Failed to lock repository: %v", err)
+	if rp != nil {
+		if err = rp.Close(b.password); err != nil {
+			log.Warningf("Failed to lock repository: %v", err)
+		}
 	}
 
 	log.Infof("Trying to unmount any mounts...")
@@ -346,6 +358,12 @@ func (b *base) Quit() (err error) {
 
 	if err := mounts.Close(); err != nil {
 		return err
+	}
+
+	if b.ipfsLogFd != nil {
+		if err := b.ipfsLogFd.Close(); err != nil {
+			return err
+		}
 	}
 
 	log.Infof("brigd can be considered dead now!")

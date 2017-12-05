@@ -14,8 +14,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/client"
-	"github.com/disorganizer/brig/server"
 	"github.com/disorganizer/brig/cmd/pwd"
+	"github.com/disorganizer/brig/server"
 	"github.com/disorganizer/brig/util/colors"
 	"github.com/disorganizer/brig/version"
 	"github.com/dustin/go-humanize"
@@ -179,9 +179,9 @@ func createInitialReadme(ctl *client.Client) error {
 
 Here's what you can do next:
 
-    * Add a few remotes to sync with (See 'brig remote add -h')
-    * Mount your data somewhere convinient (See 'brig mount -h')
-    * Have a relaxing day exploring brig's features.
+    • Add a few remotes to sync with (See 'brig remote add -h')
+    • Mount your data somewhere convinient (See 'brig mount -h')
+    • Have a relaxing day exploring brig's features.
 
 Please remember that brig is software in it's very early stages,
 and will currently eat your data with near-certainity.

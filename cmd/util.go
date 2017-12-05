@@ -109,7 +109,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	// Start a new daemon process:
 	log.Info("Starting daemon from: ", exePath)
 	proc := exec.Command(
-		exePath, "-l", "/tmp/brig.log", "-p", pwd, "daemon", "launch",
+		exePath, "-p", pwd, "daemon", "launch",
 	)
 
 	if err := proc.Start(); err != nil {

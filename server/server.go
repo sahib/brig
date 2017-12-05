@@ -53,10 +53,9 @@ func setLogPath(path string) error {
 func BootServer(basePath, password, logPath string, port int) (*Server, error) {
 	if logPath == "" {
 		logPath = filepath.Join(basePath, "logs", "main.log")
-	}
-
-	if err := os.MkdirAll(logPath, 0700); err != nil {
-		return nil, err
+		if err := os.MkdirAll(filepath.Dir(logPath), 0700); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := setLogPath(logPath); err != nil {
