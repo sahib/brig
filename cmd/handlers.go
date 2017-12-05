@@ -125,7 +125,12 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return ExitCode{UnknownError, msg}
 	}
 
-	server, err := server.BootServer(brigPath, password, guessPort())
+	logPath := ""
+	if extraLogPath := ctx.GlobalString("log-path"); len(extraLogPath) != 0 {
+		logPath = extraLogPath
+	}
+
+	server, err := server.BootServer(brigPath, password, logPath, guessPort())
 	if err != nil {
 		return ExitCode{
 			UnknownError,

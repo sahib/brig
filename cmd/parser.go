@@ -21,24 +21,6 @@ func formatGroup(category string) string {
 	return strings.ToUpper(category) + " COMMANDS"
 }
 
-func setLogPath(path string) error {
-	switch path {
-	case "stdout":
-		log.SetOutput(os.Stdout)
-	case "stderr":
-		log.SetOutput(os.Stderr)
-	default:
-		fd, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-
-		log.SetOutput(fd)
-	}
-
-	return nil
-}
-
 ////////////////////////////
 // Commandline definition //
 ////////////////////////////
@@ -530,10 +512,6 @@ func RunCmdline(args []string) int {
 			Description: "Unmounts a FUSE filesystem",
 			Action:      withDaemon(handleUnmount, true),
 		},
-	}
-
-	app.Before = func(ctx *cli.Context) error {
-		return setLogPath(ctx.String("log-path"))
 	}
 
 	app.Run(args)

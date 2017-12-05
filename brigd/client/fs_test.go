@@ -21,7 +21,7 @@ func withDaemon(t *testing.T, fn func(ctl *Client)) {
 	base, err := ioutil.TempDir("", "brig-ctl-test-")
 	require.Nil(t, err)
 
-	srv, err := server.BootServer(base, "klaus", 6667)
+	srv, err := server.BootServer(base, "klaus", "", 6667)
 	require.Nil(t, err)
 
 	waitForDeath := make(chan bool)

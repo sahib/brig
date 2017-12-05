@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/repo"
@@ -30,7 +32,37 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func BootServer(basePath, password string, port int) (*Server, error) {
+func setLogPath(path string) error {
+	switch path {
+	case "stdout":
+		log.SetOutput(os.Stdout)
+	case "stderr":
+		log.SetOutput(os.Stderr)
+	default:
+		fd, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+
+		log.SetOutput(fd)
+	}
+
+	return nil
+}
+
+func BootServer(basePath, password, logPath string, port int) (*Server, error) {
+	if logPath == "" {
+		logPath = filepath.Join(basePath, "logs", "main.log")
+	}
+
+	if err := os.MkdirAll(logPath, 0700); err != nil {
+		return nil, err
+	}
+
+	if err := setLogPath(logPath); err != nil {
+		return nil, err
+	}
+
 	log.Infof("Starting server from %s at port :%d", basePath, port)
 
 	if err := repo.CheckPassword(basePath, password); err != nil {
