@@ -5,7 +5,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/server/capnp"
 	"github.com/disorganizer/brig/catfs"
 	fserrs "github.com/disorganizer/brig/catfs/errors"
 	p2pnet "github.com/disorganizer/brig/net"

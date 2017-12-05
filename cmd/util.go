@@ -16,7 +16,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
-	"github.com/disorganizer/brig/brigd/client"
+	"github.com/disorganizer/brig/client"
 	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/urfave/cli"
 )

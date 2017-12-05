@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/server/capnp"
 	"github.com/disorganizer/brig/catfs"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"

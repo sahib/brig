@@ -1,6 +1,6 @@
 package server
 
-import "github.com/disorganizer/brig/brigd/capnp"
+import "github.com/disorganizer/brig/server/capnp"
 
 type apiHandler struct {
 	metaHandler

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/brigd/client"
-	"github.com/disorganizer/brig/brigd/server"
+	"github.com/disorganizer/brig/client"
+	"github.com/disorganizer/brig/server"
 	"github.com/disorganizer/brig/cmd/pwd"
 	"github.com/disorganizer/brig/util/colors"
 	"github.com/disorganizer/brig/version"

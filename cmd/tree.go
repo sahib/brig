@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/disorganizer/brig/brigd/client"
+	"github.com/disorganizer/brig/client"
 	"github.com/disorganizer/brig/util/colors"
 )
 

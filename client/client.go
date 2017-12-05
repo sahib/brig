@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/server/capnp"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 

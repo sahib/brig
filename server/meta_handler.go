@@ -7,7 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/server/capnp"
 	p2pnet "github.com/disorganizer/brig/net"
 	"github.com/disorganizer/brig/net/peer"
 	"github.com/disorganizer/brig/repo"

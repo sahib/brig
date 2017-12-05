@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 
-	"github.com/disorganizer/brig/brigd/capnp"
+	"github.com/disorganizer/brig/server/capnp"
 	h "github.com/disorganizer/brig/util/hashlib"
 )
 

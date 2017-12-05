@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/brigd/server"
+	"github.com/disorganizer/brig/server"
 	colorlog "github.com/disorganizer/brig/util/log"
 	"github.com/stretchr/testify/require"
 )
