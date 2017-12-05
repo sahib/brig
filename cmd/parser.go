@@ -224,9 +224,10 @@ func RunCmdline(args []string) int {
 					Action: withDaemon(handleIsOnline, true),
 				},
 				cli.Command{
-					Name:   "list",
-					Usage:  "See what other peers are online",
-					Action: withDaemon(handleOnlinePeers, true),
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Usage:   "See what other peers are online",
+					Action:  withDaemon(handleOnlinePeers, true),
 				},
 			},
 		},
