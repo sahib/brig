@@ -2,7 +2,6 @@ package ipfs
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -59,13 +58,11 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	}
 
 	peerInfo := pstore.PeerInfo{ID: peerID}
-	fmt.Println("Connect")
 	if err := nd.ipfsNode.PeerHost.Connect(nd.ctx, peerInfo); err != nil {
 		return nil, err
 	}
 
 	protoId := pro.ID(protocol)
-	fmt.Println("New stream")
 	stream, err := nd.ipfsNode.PeerHost.NewStream(nd.ctx, peerID, protoId)
 	if err != nil {
 		return nil, err

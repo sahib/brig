@@ -10,12 +10,14 @@ import (
 )
 
 type NetBackend struct {
-	conns map[string]chan net.Conn
+	isOnline bool
+	conns    map[string]chan net.Conn
 }
 
 func NewNetBackend() *NetBackend {
 	return &NetBackend{
-		conns: make(map[string]chan net.Conn),
+		isOnline: true,
+		conns:    make(map[string]chan net.Conn),
 	}
 }
 
@@ -49,6 +51,28 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 	default:
 		return nil, fmt.Errorf("No such peer: %v", name)
 	}
+}
+
+func (nb *NetBackend) Connect() error {
+	if nb.isOnline {
+		return fmt.Errorf("Already online")
+	}
+
+	nb.isOnline = true
+	return nil
+}
+
+func (nb *NetBackend) Disconnect() error {
+	if !nb.isOnline {
+		return fmt.Errorf("Already offline")
+	}
+
+	nb.isOnline = false
+	return nil
+}
+
+func (nb *NetBackend) IsOnline() bool {
+	return nb.isOnline
 }
 
 func (nb *NetBackend) Identity() (peer.Info, error) {

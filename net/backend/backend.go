@@ -46,4 +46,14 @@ type Backend interface {
 	// Ping returns a Pinger interface for the peer at `peerAddr`.
 	// It should not create a full
 	Ping(peerAddr string) (Pinger, error)
+
+	// Connect will connect to the common network
+	Connect() error
+
+	// Disconnect will reject incoming connections and disallow outgoing.
+	Disconnect() error
+
+	// IsOnline should return true if the node is currently able to contact
+	// or receive connections from other peers.
+	IsOnline() bool
 }

@@ -555,22 +555,29 @@ func (mh *metaHandler) Whoami(call capnp.Meta_whoami) error {
 		return err
 	}
 
-	// TODO: Swap with actual online status of backend.
-	capId.SetIsOnline(true)
-
+	// TODO: Asking for IsOnline() can cause an initial Connect() currently.
+	capId.SetIsOnline(psrv.IsOnline())
 	return call.Results.SetWhoami(capId)
 }
 
-func (mh *metaHandler) SetOnlineStatus(call capnp.Meta_setOnlineStatus) error {
-	goOnline := call.Params.Online()
-	if goOnline {
-		log.Infof("Backend going online...")
-	} else {
-		log.Infof("Backend going offline...")
+func (mh *metaHandler) Connect(call capnp.Meta_connect) error {
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
 	}
 
-	// TODO: Actually implement.
-	return nil
+	log.Infof("backend is going online...")
+	return psrv.Connect()
+}
+
+func (mh *metaHandler) Disconnect(call capnp.Meta_disconnect) error {
+	psrv, err := mh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("backend is going offline...")
+	return psrv.Disconnect()
 }
 
 func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {

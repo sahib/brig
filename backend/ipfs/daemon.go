@@ -19,7 +19,7 @@ import (
 // Only `maxTries` number of trials will be made.
 // This method is (of course...) racy since the port might be already
 // taken again by another process until we startup our service on that port.
-func findFreePortNextTo(port int, maxTries int) int {
+func findFreePortAfter(port int, maxTries int) int {
 	for idx := 0; idx < maxTries; idx++ {
 		addr := fmt.Sprintf("localhost:%d", port+idx)
 		lst, err := net.Listen("tcp", addr)
@@ -71,11 +71,11 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 		return nil, err
 	}
 
-	swarmPort = findFreePortNextTo(4001, 100)
+	swarmPort = findFreePortAfter(4001, 100)
 
 	// Those two are probably not needed:
-	apiPort := findFreePortNextTo(5001, 100)
-	gatewayPort := findFreePortNextTo(8080, 100)
+	apiPort := findFreePortAfter(5001, 100)
+	gatewayPort := findFreePortAfter(8080, 100)
 
 	log.Debugf(
 		"ipfs node configured to run on swarm port %d (api: %d gateway: %d)",
@@ -143,7 +143,7 @@ func (nd *Node) isOnline() bool {
 	return nd.ipfsNode.OnlineMode()
 }
 
-func (nd *Node) Online() error {
+func (nd *Node) Connect() error {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
@@ -160,7 +160,7 @@ func (nd *Node) Online() error {
 	return nil
 }
 
-func (nd *Node) Offline() error {
+func (nd *Node) Disconnect() error {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 

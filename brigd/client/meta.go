@@ -400,13 +400,17 @@ func (cl *Client) Whoami() (*Whoami, error) {
 	return whoami, nil
 }
 
-func (cl *Client) SetOnlineStatus(online bool) error {
-	call := cl.api.SetOnlineStatus(cl.ctx, func(p capnp.Meta_setOnlineStatus_Params) error {
-		p.SetOnline(online)
+func (cl *Client) Connect() error {
+	_, err := cl.api.Connect(cl.ctx, func(p capnp.Meta_connect_Params) error {
 		return nil
-	})
+	}).Struct()
+	return err
+}
 
-	_, err := call.Struct()
+func (cl *Client) Disconnect() error {
+	_, err := cl.api.Disconnect(cl.ctx, func(p capnp.Meta_disconnect_Params) error {
+		return nil
+	}).Struct()
 	return err
 }
 

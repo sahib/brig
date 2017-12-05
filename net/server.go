@@ -71,6 +71,18 @@ func (sv *Server) PingMap() *PingMap {
 	return sv.pingMap
 }
 
+func (sv *Server) IsOnline() bool {
+	return sv.bk.IsOnline()
+}
+
+func (sv *Server) Connect() error {
+	return sv.bk.Connect()
+}
+
+func (sv *Server) Disconnect() error {
+	return sv.bk.Disconnect()
+}
+
 /////////////////////////////////////
 // INTERNAL HANDLER IMPLEMENTATION //
 /////////////////////////////////////

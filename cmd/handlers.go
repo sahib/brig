@@ -332,7 +332,11 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleOffline(ctx *cli.Context, ctl *client.Client) error {
-	return ctl.SetOnlineStatus(false)
+	return ctl.Disconnect()
+}
+
+func handleOnline(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.Connect()
 }
 
 func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
@@ -348,10 +352,6 @@ func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return nil
-}
-
-func handleOnline(ctx *cli.Context, ctl *client.Client) error {
-	return ctl.SetOnlineStatus(true)
 }
 
 func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {

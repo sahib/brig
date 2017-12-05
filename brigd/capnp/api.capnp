@@ -124,8 +124,9 @@ interface Meta {
     whoami      @14  () -> (whoami :Identity);
     become      @15 (who :Text);
 
-    setOnlineStatus @16 (online :Bool);
-    onlinePeers     @17 () -> (infos :List(PeerStatus));
+    connect     @16 ();
+    disconnect  @17 ();
+    onlinePeers @18 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,
