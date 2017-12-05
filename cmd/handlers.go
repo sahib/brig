@@ -320,15 +320,7 @@ func handleRm(ctx *cli.Context, ctl *client.Client) error {
 func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	srcPath := ctx.Args().Get(0)
 	dstPath := ctx.Args().Get(1)
-
-	if err := ctl.Move(srcPath, dstPath); err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("mv: %v", err),
-		}
-	}
-
-	return nil
+	return ctl.Move(srcPath, dstPath)
 }
 
 func handleOffline(ctx *cli.Context, ctl *client.Client) error {
