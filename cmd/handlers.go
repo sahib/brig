@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime/trace"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -80,6 +81,24 @@ func handleDaemonQuit(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDaemonLaunch(ctx *cli.Context) error {
+	if ctx.Bool("trace") {
+		tracePath := fmt.Sprintf("/tmp/brig-%d.trace", os.Getpid())
+		log.Debugf("Writing trace output to %s", tracePath)
+		fd, err := os.Create(tracePath)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+
+		trace.Start(fd)
+		if err != nil {
+			return err
+		}
+
+		defer trace.Stop()
+	}
+
 	brigPath := os.Getenv("BRIG_PATH")
 	if brigPath == "" {
 		// TODO: Check parent directories to see if we're in some

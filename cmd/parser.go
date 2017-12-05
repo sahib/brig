@@ -460,6 +460,12 @@ func RunCmdline(args []string) int {
 					Usage:       "Start the daemon process",
 					Description: "Start the brig daemon process, unlock the repository and go online",
 					Action:      withExit(handleDaemonLaunch),
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "trace,t",
+							Usage: "Create tracing output suitable for `go tool trace`",
+						},
+					},
 				},
 				cli.Command{
 					Name:        "quit",
