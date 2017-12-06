@@ -4,7 +4,7 @@ import (
 	"os"
 	"path"
 
-	"context"
+	"golang.org/x/net/context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
