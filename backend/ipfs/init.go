@@ -33,7 +33,9 @@ func Init(path string, keySize int) error {
 	return nil
 }
 
+// ForwardLog routes all ipfs logs to a file provided by brig.
+// Only messages >= INFO are logged.
 func (nd *Node) ForwardLog(w io.Writer) {
 	log.Configure(log.Output(w))
-	log.SetAllLoggers(logging.NOTICE)
+	log.SetAllLoggers(logging.INFO)
 }

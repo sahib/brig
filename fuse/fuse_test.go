@@ -16,7 +16,7 @@ import (
 
 func init() {
 	// NOTE: This is useful for debugging.
-	log.SetLevel(log.WarnLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
@@ -46,8 +46,7 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 	mntPath := filepath.Join(os.TempDir(), "brig-fuse-mountdir")
 
 	if err := os.MkdirAll(mntPath, 0777); err != nil {
-		t.Errorf("Unable to create empty mount dir: %v", err)
-		return
+		t.Fatalf("Unable to create empty mount dir: %v", err)
 	}
 
 	defer testutil.Remover(t, mntPath)
@@ -55,58 +54,51 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 	withDummyFS(t, func(fs *catfs.FS) {
 		mount, err := NewMount(fs, mntPath)
 		if err != nil {
-			t.Errorf("Cannot create mount: %v", err)
-			return
+			t.Fatalf("Cannot create mount: %v", err)
 		}
 
 		f(mount)
 
 		if err := mount.Close(); err != nil {
-			t.Errorf("Closing mount failed: %v", err)
+			t.Fatalf("Closing mount failed: %v", err)
 		}
 	})
 }
 
-func checkForCorrectFile(t *testing.T, path string, data []byte) bool {
+func checkForCorrectFile(t *testing.T, path string, data []byte) {
 	// Try to read it over fuse:
 	helloBuffer := &bytes.Buffer{}
 	fd, err := os.Open(path)
 	if err != nil {
-		t.Errorf("Unable to open simple file over fuse: %v", err)
-		return false
+		t.Fatalf("Unable to open simple file over fuse: %v", err)
 	}
 
 	defer func() {
 		if err := fd.Close(); err != nil {
-			t.Errorf("Unable to close simple file over fuse: %v", err)
+			t.Fatalf("Unable to close simple file over fuse: %v", err)
 		}
 	}()
 
 	n, err := io.CopyBuffer(helloBuffer, fd, make([]byte, 128*1024))
 	if err != nil {
-		t.Errorf("Unable to read full simple file over fuse: %v", err)
-		return false
+		t.Fatalf("Unable to read full simple file over fuse: %v", err)
 	}
 
 	if n != int64(len(data)) {
-		t.Errorf("Data differs over fuse: got %d, should be %d bytes", n, len(data))
-		return false
+		t.Fatalf("Data differs over fuse: got %d, should be %d bytes", n, len(data))
 	}
 
 	if !bytes.Equal(helloBuffer.Bytes(), data) {
 		t.Errorf("Data from simple file does not match source. Len: %d", len(data))
 		t.Errorf("\tExpected: %v", data)
-		t.Errorf("\tGot:      %v", helloBuffer.Bytes())
-		return false
+		t.Fatalf("\tGot:      %v", helloBuffer.Bytes())
 	}
-
-	return true
 }
 
 var (
 	DataSizes = []int64{
-		0, 1, 2, 4, 8, 16, 32, 64, 1024, 2048, 4095, 4096, 4097,
-		147611,
+		0, 1, 2, 4, 8, 16, 32, 64, 1024,
+		2048, 4095, 4096, 4097, 147611,
 	}
 )
 
@@ -119,14 +111,11 @@ func TestRead(t *testing.T) {
 			name := fmt.Sprintf("hello_%d", size)
 			reader := bytes.NewReader(helloData)
 			if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
-				t.Errorf("Adding simple file from reader failed: %v", err)
-				return
+				t.Fatalf("Adding simple file from reader failed: %v", err)
 			}
 
 			path := filepath.Join(mount.Dir, name)
-			if !checkForCorrectFile(t, path, helloData) {
-				break
-			}
+			checkForCorrectFile(t, path, helloData)
 		}
 	})
 }
@@ -140,13 +129,10 @@ func TestWrite(t *testing.T) {
 			// Write a simple file via the fuse layer:
 			err := ioutil.WriteFile(path, helloData, 0644)
 			if err != nil {
-				t.Errorf("Could not write simple file via fuse layer: %v", err)
-				return
+				t.Fatalf("Could not write simple file via fuse layer: %v", err)
 			}
 
-			if !checkForCorrectFile(t, path, helloData) {
-				break
-			}
+			checkForCorrectFile(t, path, helloData)
 		}
 	})
 }
@@ -157,8 +143,7 @@ func TestTouchWrite(t *testing.T) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)
 			if err := mount.filesys.cfs.Touch(name); err != nil {
-				t.Errorf("Could not touch an empty file: %v", err)
-				return
+				t.Fatalf("Could not touch an empty file: %v", err)
 			}
 
 			path := filepath.Join(mount.Dir, name)
@@ -167,13 +152,10 @@ func TestTouchWrite(t *testing.T) {
 			helloData := testutil.CreateDummyBuf(size)
 			err := ioutil.WriteFile(path, helloData, 0644)
 			if err != nil {
-				t.Errorf("Could not write simple file via fuse layer: %v", err)
-				return
+				t.Fatalf("Could not write simple file via fuse layer: %v", err)
 			}
 
-			if !checkForCorrectFile(t, path, helloData) {
-				break
-			}
+			checkForCorrectFile(t, path, helloData)
 		}
 	})
 }
