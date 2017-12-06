@@ -172,6 +172,23 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			ArgsUsage:   "<file>",
 			Description: "Ensure that <file> is physically stored on this machine.",
+			Subcommands: []cli.Command{
+				cli.Command{
+					Name:   "add",
+					Usage:  "Add a pin for a specific file or directory",
+					Action: withDaemon(handlePin, true),
+				},
+				cli.Command{
+					Name:   "rm",
+					Usage:  "Remove a pin for a specific file or directory",
+					Action: withDaemon(handleUnpin, true),
+				},
+				cli.Command{
+					Name:   "is",
+					Usage:  "Check if a specific file or directory is pinned",
+					Action: withDaemon(handleIsPinned, true),
+				},
+			},
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "unpin,u",

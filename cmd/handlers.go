@@ -546,36 +546,20 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handlePin(ctx *cli.Context, ctl *client.Client) error {
-	if ctx.Bool("is-pinned") {
-		return handleIsPinned(ctx, ctl)
-	}
-
-	if ctx.Bool("unpin") {
-		return handleUnpin(ctx, ctl)
-	}
-
 	path := ctx.Args().First()
-	if err := ctl.Pin(path); err != nil {
-		return ExitCode{UnknownError, fmt.Sprintf("pin: %v", err)}
-	}
-
-	return nil
+	return ctl.Pin(path)
 }
 
 func handleUnpin(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
-	if err := ctl.Unpin(path); err != nil {
-		return ExitCode{UnknownError, fmt.Sprintf("unpin: %v", err)}
-	}
-
-	return nil
+	return ctl.Unpin(path)
 }
 
 func handleIsPinned(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 	isPinned, err := ctl.IsPinned(path)
 	if err != nil {
-		return ExitCode{UnknownError, fmt.Sprintf("unpin: %v", err)}
+		return err
 	}
 
 	fmt.Println(isPinned)

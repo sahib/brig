@@ -28,7 +28,6 @@ func (nd *Node) Pin(hash h.Hash) error {
 }
 
 func (nd *Node) Unpin(hash h.Hash) error {
-	// TODO: Check if this works.
 	path, err := ipfspath.ParsePath(hash.B58String())
 	if err != nil {
 		return err

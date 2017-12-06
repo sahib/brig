@@ -19,8 +19,6 @@ type Handle struct {
 	cfs *catfs.FS
 }
 
-// TODO: Honour ctx.Done() and return fuse.EINTR in that case...
-
 // Read is called to read a block of data at a certain offset.
 func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	hd.mu.Lock()

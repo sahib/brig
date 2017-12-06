@@ -322,7 +322,12 @@ func (fs *FS) pin(path string, op func(hash h.Hash) error) error {
 
 	return n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
-			if err := op(child.Hash()); err != nil {
+			file, ok := child.(*n.File)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			if err := op(file.Content()); err != nil {
 				return err
 			}
 		}

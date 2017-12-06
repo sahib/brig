@@ -61,7 +61,7 @@ func createStrengthPrompt(password []rune, prefix string) string {
 		entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
 		prompt += colors.Colorize(entropy, colors.Cyan)
 	} else {
-		prompt += colors.Colorize(" ENT", colors.Cyan)
+		prompt += colors.Colorize("   0", colors.Cyan)
 	}
 
 	prompt += colors.Colorize(" "+prefix+"passphrase: ", color)
@@ -84,7 +84,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
-		rl.SetPrompt(createStrengthPrompt(line, "   New "))
+		rl.SetPrompt(createStrengthPrompt(line, "New "))
 		rl.Refresh()
 		return nil, 0, false
 	})
