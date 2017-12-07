@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path"
 
-	c "github.com/disorganizer/brig/catfs/core"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	c "github.com/sahib/brig/catfs/core"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/disorganizer/brig/cmd/pwd"
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/cmd/pwd"
+	"github.com/sahib/brig/util"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-VERSION_IMPORT="github.com/disorganizer/brig/version"
+VERSION_IMPORT="github.com/sahib/brig/version"
 
 # Build metadata:
 VERSION_MAJOR=0

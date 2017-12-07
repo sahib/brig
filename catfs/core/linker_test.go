@@ -6,10 +6,10 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/disorganizer/brig/catfs/db"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/sahib/brig/catfs/db"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // Basic test to see if the root node can be inserted and stored.

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/net/peer"
+	"github.com/sahib/brig/net/peer"
 	"github.com/stretchr/testify/require"
 )
 

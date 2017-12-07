@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs"
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/util/testutil"
 )
 
 func init() {

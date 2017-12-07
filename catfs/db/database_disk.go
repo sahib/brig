@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/util"
 )
 
 const (

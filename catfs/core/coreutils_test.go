@@ -4,9 +4,9 @@ import (
 	"sort"
 	"testing"
 
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
+	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 

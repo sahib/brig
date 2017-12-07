@@ -13,8 +13,8 @@ import (
 	"golang.org/x/crypto/openpgp"
 
 	"github.com/alokmenghrajani/gpgeez"
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/util/testutil"
 )
 
 const (

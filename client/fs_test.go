@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/server"
-	colorlog "github.com/disorganizer/brig/util/log"
+	"github.com/sahib/brig/server"
+	colorlog "github.com/sahib/brig/util/log"
 	"github.com/stretchr/testify/require"
 )
 

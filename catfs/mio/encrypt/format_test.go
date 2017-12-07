@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/util"
+	"github.com/sahib/brig/util/testutil"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")

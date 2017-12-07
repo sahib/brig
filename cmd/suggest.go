@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/disorganizer/brig/util/colors"
+	"github.com/sahib/brig/util/colors"
 	"github.com/urfave/cli"
 )
 

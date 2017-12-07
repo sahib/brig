@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disorganizer/brig/net/mock"
+	"github.com/sahib/brig/net/mock"
 	"github.com/stretchr/testify/require"
 )
 

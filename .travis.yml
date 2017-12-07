@@ -7,7 +7,7 @@ notifications:
       - sahib@online.de
 install:
     - sudo apt-get install fuse
-    - go get -t -v github.com/disorganizer/brig
+    - go get -t -v github.com/sahib/brig
 script:
-    - cd $GOPATH/src/github.com/disorganizer/brig
+    - cd $GOPATH/src/github.com/sahib/brig
     - go test -v ./...

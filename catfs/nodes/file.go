@@ -5,8 +5,8 @@ import (
 	"path"
 	"time"
 
-	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
-	h "github.com/disorganizer/brig/util/hashlib"
+	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
+	h "github.com/sahib/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

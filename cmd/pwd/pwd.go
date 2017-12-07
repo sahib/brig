@@ -6,8 +6,8 @@ import (
 
 	"github.com/chzyer/readline"
 
-	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/colors"
+	"github.com/sahib/brig/util"
+	"github.com/sahib/brig/util/colors"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 )
 

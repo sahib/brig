@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	h "github.com/disorganizer/brig/util/hashlib"
+	h "github.com/sahib/brig/util/hashlib"
 	"golang.org/x/text/unicode/norm"
 )
 

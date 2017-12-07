@@ -120,7 +120,7 @@ Augsburg und momentan auch als Gegenstand unserer Masterarbeiten.
 Wir wollen die Software allerdings auch nach dem Studium weiterentwickeln.
 
 Die momentane Codebasis ist in der Programmiersprache Go verfasst und auf
-GitHub unter github.com/disorganizer/brig verfügbar. Die Lizenz ist AGPLv3.
+GitHub unter github.com/sahib/brig verfügbar. Die Lizenz ist AGPLv3.
 
 Der aktuelle Funktionsstand ist noch nicht der eines funktionierenden
 Prototypens, auch wenn viele Einzelfunktionalitäten wie Verschlüsselung,

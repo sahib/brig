@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net"
 
-	netBackend "github.com/disorganizer/brig/net/backend"
-	"github.com/disorganizer/brig/net/capnp"
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/repo"
+	netBackend "github.com/sahib/brig/net/backend"
+	"github.com/sahib/brig/net/capnp"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/repo"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 

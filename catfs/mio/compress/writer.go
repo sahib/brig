@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/util"
 )
 
 type writer struct {

@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/disorganizer/brig/server/capnp"
-	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/sahib/brig/server/capnp"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 type StatInfo struct {

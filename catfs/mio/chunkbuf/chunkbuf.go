@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/util"
 )
 
 // TODO: This has no tests yet (only indirect by compress)

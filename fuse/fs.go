@@ -2,7 +2,7 @@ package fuse
 
 import (
 	"bazil.org/fuse/fs"
-	"github.com/disorganizer/brig/catfs"
+	"github.com/sahib/brig/catfs"
 )
 
 // Filesystem is the entry point to the fuse filesystem

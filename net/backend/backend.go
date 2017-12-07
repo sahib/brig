@@ -4,7 +4,7 @@ import (
 	stdnet "net"
 	"time"
 
-	"github.com/disorganizer/brig/net/peer"
+	"github.com/sahib/brig/net/peer"
 )
 
 // Pinger

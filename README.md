@@ -1,12 +1,12 @@
 # ``brig``: Ship your data around the world
 
 <center>  <!-- I know, that's not how you usually do it -->
-<img src="https://disorganizer.github.io/brig-thesis/brig/html/title.png" alt="a brig" width="50%">
+<img src="https://sahib.github.io/brig-thesis/brig/html/title.png" alt="a brig" width="50%">
 </center>
 
-[![go reportcard](https://goreportcard.com/badge/github.com/disorganizer/brig)](https://goreportcard.com/report/github.com/disorganizer/brig)
-[![GoDoc](https://godoc.org/github.com/disorganizer/brig?status.svg)](https://godoc.org/github.com/disorganizer/brig)
-[![Build Status](https://travis-ci.org/disorganizer/brig.svg?branch=master)](https://travis-ci.org/disorganizer/brig)
+[![go reportcard](https://goreportcard.com/badge/github.com/sahib/brig)](https://goreportcard.com/report/github.com/sahib/brig)
+[![GoDoc](https://godoc.org/github.com/sahib/brig?status.svg)](https://godoc.org/github.com/sahib/brig)
+[![Build Status](https://travis-ci.org/sahib/brig.svg?branch=master)](https://travis-ci.org/sahib/brig)
 
 ## Table of Contents
 
@@ -35,7 +35,7 @@ Key feature highlights:
 This project has started end of 2015 and has seen many conceptual changes in
 the meantime. It started out as research project of two computer science
 students (me and [qitta](https://github.com/qitta)). After writing our [master
-theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
+theses](https://github.com/sahib/brig-thesis) on it, it was put down for
 a few months until I ([sahib](https://github.com/sahib)) picked at up again and
 currently am trying to push it to a usable prototype.
 
@@ -58,7 +58,7 @@ sometimes sacrificed to get the balance of usability and security right.
 ## Installation
 
 ```bash
-$ go get github.com/disorganizer/brig/cmd/brig
+$ go get github.com/sahib/brig/cmd/brig
 ```
 
 That should just work if you previously [setup Go](https://golang.org/doc/install).

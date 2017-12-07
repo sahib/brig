@@ -496,7 +496,7 @@ Werkzeuge, die mit der Sprache mitgeliefert werden. Die Installation von
 ``brig`` ist beispielsweise unter Unix nur ein einzelner Befehl:
 
 ```bash
-$ go get github.com/disorganizer/brig
+$ go get github.com/sahib/brig
 ```
 
 ## Technische Risiken 
@@ -681,7 +681,7 @@ auszutauschen.
 
 Die aktuelle Entwicklung ist öffentlich und kann auf GitHub verfolgt werden:
 
-* \url{https://github.com/disorganizer/brig}
+* \url{https://github.com/sahib/brig}
 
 ## Was ``brig`` *nicht* ist
 

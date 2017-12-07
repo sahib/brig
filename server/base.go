@@ -14,12 +14,12 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/catfs"
-	"github.com/disorganizer/brig/fuse"
-	p2pnet "github.com/disorganizer/brig/net"
-	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/server/capnp"
+	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/fuse"
+	p2pnet "github.com/sahib/brig/net"
+	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/server/capnp"
 )
 
 type base struct {

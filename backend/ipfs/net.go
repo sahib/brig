@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	netBackend "github.com/disorganizer/brig/net/backend"
+	netBackend "github.com/sahib/brig/net/backend"
 
 	p2pnet "gx/ipfs/QmNa31VPzC561NWwRsJLE7nGYZYuuD2QfpK2b1q9BK54J1/go-libp2p-net"
 	ipfspeer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"

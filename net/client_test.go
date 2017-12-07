@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/catfs"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/repo"
+	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/catfs"
+	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/repo"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,7 +3,7 @@ package fuse
 import (
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
-	ie "github.com/disorganizer/brig/catfs/errors"
+	ie "github.com/sahib/brig/catfs/errors"
 )
 
 func errorize(name string, err error) error {

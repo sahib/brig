@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/alokmenghrajani/gpgeez"
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/util"
 	"golang.org/x/crypto/openpgp"
 )
 

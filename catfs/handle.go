@@ -7,9 +7,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/disorganizer/brig/catfs/mio"
-	"github.com/disorganizer/brig/catfs/mio/overlay"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/catfs/mio/overlay"
+	n "github.com/sahib/brig/catfs/nodes"
 )
 
 var (

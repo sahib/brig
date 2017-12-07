@@ -3,8 +3,8 @@ package core
 import (
 	"testing"
 
-	"github.com/disorganizer/brig/catfs/db"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	"github.com/sahib/brig/catfs/db"
+	n "github.com/sahib/brig/catfs/nodes"
 )
 
 func assertNodeExists(t *testing.T, kv db.Database, nd n.Node) {

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/util/testutil"
 )
 
 // TODO: Make this a test.

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/util/colors"
+	"github.com/sahib/brig/util/colors"
 )
 
 // ColorfulLogFormatter is the default logger for brig.

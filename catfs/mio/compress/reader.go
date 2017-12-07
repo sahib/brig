@@ -7,7 +7,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
+	"github.com/sahib/brig/catfs/mio/chunkbuf"
 )
 
 type reader struct {

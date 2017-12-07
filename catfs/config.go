@@ -3,8 +3,8 @@ package catfs
 import (
 	"fmt"
 
-	"github.com/disorganizer/brig/catfs/mio/compress"
-	"github.com/disorganizer/brig/catfs/vcs"
+	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/catfs/vcs"
 )
 
 // Config can be used to control specific bevhaviours of the filesystem implementation.

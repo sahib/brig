@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs"
-	fserr "github.com/disorganizer/brig/catfs/errors"
+	"github.com/sahib/brig/catfs"
+	fserr "github.com/sahib/brig/catfs/errors"
 	e "github.com/pkg/errors"
 	"github.com/spf13/viper"
 )

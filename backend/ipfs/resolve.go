@@ -9,9 +9,9 @@ import (
 	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
 	u "gx/ipfs/QmSU6eubNdhXjFBJBSksTp8kv8YRub8mGAPv8tVJHmL2EU/go-ipfs-util"
 
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/util"
-	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/util"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // addBlock creates a new block with `data`.

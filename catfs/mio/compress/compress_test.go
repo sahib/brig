@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/disorganizer/brig/util"
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/util"
+	"github.com/sahib/brig/util/testutil"
 )
 
 var (

@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/catfs/mio/compress"
-	"github.com/disorganizer/brig/util/testutil"
+	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 

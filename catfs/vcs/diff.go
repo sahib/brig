@@ -1,8 +1,8 @@
 package vcs
 
 import (
-	c "github.com/disorganizer/brig/catfs/core"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	c "github.com/sahib/brig/catfs/core"
+	n "github.com/sahib/brig/catfs/nodes"
 )
 
 type DiffPair struct {

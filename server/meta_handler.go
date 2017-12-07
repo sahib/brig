@@ -6,11 +6,11 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/server/capnp"
-	p2pnet "github.com/disorganizer/brig/net"
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/repo"
+	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/server/capnp"
+	p2pnet "github.com/sahib/brig/net"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/repo"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )

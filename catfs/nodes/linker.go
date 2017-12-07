@@ -3,8 +3,8 @@ package nodes
 import (
 	"fmt"
 
-	ie "github.com/disorganizer/brig/catfs/errors"
-	h "github.com/disorganizer/brig/util/hashlib"
+	ie "github.com/sahib/brig/catfs/errors"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // Linker will tell a node how it relates to other nodes

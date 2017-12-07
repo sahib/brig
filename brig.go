@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/disorganizer/brig/cmd"
+	"github.com/sahib/brig/cmd"
 )
 
 func main() {

@@ -8,11 +8,11 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/backend"
-	"github.com/disorganizer/brig/net/capnp"
-	"github.com/disorganizer/brig/net/peer"
-	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/util/server"
+	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/net/capnp"
+	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/util/server"
 )
 
 type Server struct {

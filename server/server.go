@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/repo"
-	"github.com/disorganizer/brig/util/server"
+	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/util/server"
 )
 
 const (

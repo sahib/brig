@@ -3,7 +3,7 @@ package net
 import (
 	"bytes"
 
-	"github.com/disorganizer/brig/net/capnp"
+	"github.com/sahib/brig/net/capnp"
 )
 
 func (hdl *handler) FetchStore(call capnp.Sync_fetchStore) error {

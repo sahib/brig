@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	colorlog "github.com/disorganizer/brig/util/log"
-	"github.com/disorganizer/brig/version"
+	colorlog "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
 )
 

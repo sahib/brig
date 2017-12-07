@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/disorganizer/brig/client"
-	"github.com/disorganizer/brig/util/colors"
+	"github.com/sahib/brig/client"
+	"github.com/sahib/brig/util/colors"
 	"github.com/pksunkara/pygments"
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"

@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/disorganizer/brig/catfs/mio/compress"
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/util"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/sha3"

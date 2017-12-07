@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/disorganizer/brig/net/peer"
+	"github.com/sahib/brig/net/peer"
 )
 
 var (

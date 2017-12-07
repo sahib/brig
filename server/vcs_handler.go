@@ -5,10 +5,10 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/server/capnp"
-	"github.com/disorganizer/brig/catfs"
-	fserrs "github.com/disorganizer/brig/catfs/errors"
-	p2pnet "github.com/disorganizer/brig/net"
+	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/catfs"
+	fserrs "github.com/sahib/brig/catfs/errors"
+	p2pnet "github.com/sahib/brig/net"
 	cplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )

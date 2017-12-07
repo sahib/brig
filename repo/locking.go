@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs/mio/encrypt"
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/catfs/mio/encrypt"
+	"github.com/sahib/brig/util"
 )
 
 const (

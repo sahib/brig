@@ -3,11 +3,11 @@ package backend
 import (
 	"errors"
 
-	"github.com/disorganizer/brig/backend/ipfs"
-	"github.com/disorganizer/brig/backend/mock"
-	"github.com/disorganizer/brig/catfs"
-	netBackend "github.com/disorganizer/brig/net/backend"
-	"github.com/disorganizer/brig/repo"
+	"github.com/sahib/brig/backend/ipfs"
+	"github.com/sahib/brig/backend/mock"
+	"github.com/sahib/brig/catfs"
+	netBackend "github.com/sahib/brig/net/backend"
+	"github.com/sahib/brig/repo"
 )
 
 var (

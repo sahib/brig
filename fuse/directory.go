@@ -9,7 +9,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs"
+	"github.com/sahib/brig/catfs"
 )
 
 // Directory represents a directory node.

@@ -285,7 +285,7 @@ document exchange software.
 
 brig is currently hosted on GitHub and under heavy development:
 
-* https://github.com/disorganizer/brig
+* https://github.com/sahib/brig
 
 The public open source software of the two developers can be viewed here:
 

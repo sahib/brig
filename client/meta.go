@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/disorganizer/brig/server/capnp"
+	"github.com/sahib/brig/server/capnp"
 	capnplib "zombiezen.com/go/capnproto2"
 )
 

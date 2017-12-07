@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	c "github.com/disorganizer/brig/catfs/core"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	c "github.com/sahib/brig/catfs/core"
+	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/stretchr/testify/require"
 )
 

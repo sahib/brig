@@ -45,10 +45,10 @@ package vcs
 import (
 	"fmt"
 
-	c "github.com/disorganizer/brig/catfs/core"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	"github.com/disorganizer/brig/util"
+	c "github.com/sahib/brig/catfs/core"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
+	"github.com/sahib/brig/util"
 	e "github.com/pkg/errors"
 )
 

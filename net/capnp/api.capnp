@@ -2,7 +2,7 @@ using Go = import "/go.capnp";
 
 @0x9bcb07fb35756ee6;
 $Go.package("capnp");
-$Go.import("github.com/disorganizer/brig/net/capnp");
+$Go.import("github.com/sahib/brig/net/capnp");
 
 interface Sync {
     fetchStore @0 () -> (data :Data);

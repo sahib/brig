@@ -9,8 +9,8 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs"
-	"github.com/disorganizer/brig/util"
+	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/util"
 )
 
 // This is very similar (and indeed mostly copied) code from:

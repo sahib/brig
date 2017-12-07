@@ -3,8 +3,8 @@ package vcs
 import (
 	"testing"
 
-	c "github.com/disorganizer/brig/catfs/core"
-	h "github.com/disorganizer/brig/util/hashlib"
+	c "github.com/sahib/brig/catfs/core"
+	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 

@@ -4,8 +4,8 @@ import (
 	"io"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs/mio"
-	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/sahib/brig/catfs/mio"
+	h "github.com/sahib/brig/util/hashlib"
 	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
 )
 

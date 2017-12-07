@@ -14,14 +14,14 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	c "github.com/disorganizer/brig/catfs/core"
-	"github.com/disorganizer/brig/catfs/db"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	"github.com/disorganizer/brig/catfs/mio"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	"github.com/disorganizer/brig/catfs/vcs"
-	"github.com/disorganizer/brig/util"
-	h "github.com/disorganizer/brig/util/hashlib"
+	c "github.com/sahib/brig/catfs/core"
+	"github.com/sahib/brig/catfs/db"
+	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/catfs/mio"
+	n "github.com/sahib/brig/catfs/nodes"
+	"github.com/sahib/brig/catfs/vcs"
+	"github.com/sahib/brig/util"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // FS (short for Filesystem) is the central API entry for everything related to

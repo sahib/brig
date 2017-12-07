@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
-	c "github.com/disorganizer/brig/catfs/core"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	"github.com/disorganizer/brig/catfs/mio"
-	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
-	"github.com/disorganizer/brig/catfs/mio/compress"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	"github.com/disorganizer/brig/util/testutil"
+	c "github.com/sahib/brig/catfs/core"
+	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/catfs/mio/chunkbuf"
+	"github.com/sahib/brig/catfs/mio/compress"
+	n "github.com/sahib/brig/catfs/nodes"
+	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 

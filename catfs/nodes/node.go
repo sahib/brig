@@ -3,7 +3,7 @@ package nodes
 import (
 	"time"
 
-	h "github.com/disorganizer/brig/util/hashlib"
+	h "github.com/sahib/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

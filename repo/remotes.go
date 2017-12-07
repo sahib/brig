@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/disorganizer/brig/net/peer"
+	"github.com/sahib/brig/net/peer"
 
 	yml "gopkg.in/yaml.v2"
 )

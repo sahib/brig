@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disorganizer/brig/backend/mock"
+	"github.com/sahib/brig/backend/mock"
 	"github.com/stretchr/testify/require"
 )
 

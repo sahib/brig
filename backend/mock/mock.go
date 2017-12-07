@@ -1,9 +1,9 @@
 package mock
 
 import (
-	"github.com/disorganizer/brig/catfs"
-	netMock "github.com/disorganizer/brig/net/mock"
-	repoMock "github.com/disorganizer/brig/repo/mock"
+	"github.com/sahib/brig/catfs"
+	netMock "github.com/sahib/brig/net/mock"
+	repoMock "github.com/sahib/brig/repo/mock"
 )
 
 type mockBackend struct {

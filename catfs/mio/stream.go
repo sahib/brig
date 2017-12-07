@@ -7,8 +7,8 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs/mio/compress"
-	"github.com/disorganizer/brig/catfs/mio/encrypt"
+	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/catfs/mio/encrypt"
 )
 
 type Stream interface {

@@ -5,9 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/disorganizer/brig/catfs/mio"
-	"github.com/disorganizer/brig/catfs/mio/chunkbuf"
-	h "github.com/disorganizer/brig/util/hashlib"
+	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/catfs/mio/chunkbuf"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 type ErrNoSuchHash struct {

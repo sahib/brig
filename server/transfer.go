@@ -6,7 +6,7 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/disorganizer/brig/catfs"
+	"github.com/sahib/brig/catfs"
 )
 
 func getNextFreePort() (int, error) {

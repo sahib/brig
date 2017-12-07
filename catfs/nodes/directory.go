@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	ie "github.com/disorganizer/brig/catfs/errors"
-	capnp_model "github.com/disorganizer/brig/catfs/nodes/capnp"
-	h "github.com/disorganizer/brig/util/hashlib"
+	ie "github.com/sahib/brig/catfs/errors"
+	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
+	h "github.com/sahib/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

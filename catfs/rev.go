@@ -1,9 +1,9 @@
 package catfs
 
 import (
-	c "github.com/disorganizer/brig/catfs/core"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
+	c "github.com/sahib/brig/catfs/core"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
 )
 
 // parseRev resolves a base58 to a commit or if it looks like a refname

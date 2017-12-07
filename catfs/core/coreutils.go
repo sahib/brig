@@ -8,9 +8,9 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	ie "github.com/disorganizer/brig/catfs/errors"
-	n "github.com/disorganizer/brig/catfs/nodes"
-	h "github.com/disorganizer/brig/util/hashlib"
+	ie "github.com/sahib/brig/catfs/errors"
+	n "github.com/sahib/brig/catfs/nodes"
+	h "github.com/sahib/brig/util/hashlib"
 	e "github.com/pkg/errors"
 )
 

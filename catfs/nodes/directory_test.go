@@ -3,7 +3,7 @@ package nodes
 import (
 	"testing"
 
-	ie "github.com/disorganizer/brig/catfs/errors"
+	ie "github.com/sahib/brig/catfs/errors"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

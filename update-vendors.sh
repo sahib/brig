@@ -9,7 +9,7 @@ cd $GOPATH/src/github.com/ipfs/go-ipfs
 make install
 
 echo "3) Take updated ipfs and commit to vendor..."
-cd $GOPATH/github.com/disorganizer/brig/vendor
+cd $GOPATH/github.com/sahib/brig/vendor
 
 # This is an insanely hacky way to do this, but it kinda works out.
 # Also, this would not be necessary if ipfs' would get rid of gx
@@ -19,7 +19,7 @@ cp -r $GOPATH/src/github.com/ipfs/go-ipfs github.com/ipfs
 cp -r $GOPATH/src/gx github.com/ipfs .
 git add .
 git commit -am 'updated vendor repository'
-git remote add origin git@github.com:disorganizer/brig-vendor.git
+git remote add origin git@github.com:sahib/brig-vendor.git
 
 echo "4) Uploading vendor repository..."
 push --set-upstream origin master --force
