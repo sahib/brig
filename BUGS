@@ -1,4 +1,3 @@
 - High CPU consumption when pinging others. (Havoc'd go routine?)
 - Fix pinning when using ipfs (and think of proper pinning strategy)
 - Check backend to be safe to run from multiple go routines
-- Fix entropy display

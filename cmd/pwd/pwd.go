@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	msgLowEntropy  = "⚠ Please enter a password with at least %g bits entropy."
-	msgReEnter     = "✔ Well done! Please re-type your password now:"
-	msgBadPassword = "⚠ This did not seem to match. Please try again."
-	msgMaxTriesHit = "⚡ Maximum number of password tries exceeded: %d"
+	msgLowEntropy  = "\nPlease enter a password with at least %g bits entropy."
+	msgReEnter     = "\nWell done! Please re-type your password now:"
+	msgBadPassword = "\nThis did not seem to match. Please retype it again."
+	msgMaxTriesHit = "\nMaximum number of password tries exceeded: %d"
 )
 
 func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, error) {
