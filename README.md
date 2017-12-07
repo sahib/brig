@@ -1,7 +1,7 @@
 # ``brig``: Ship your data around the world
 
-<center>  <!-- I know, that's not how you usually do it -->
-<img src="https://sahib.github.io/brig-thesis/brig/html/title.png" alt="a brig" width="50%">
+<center>  <!-- I know, that's not how you usually do it :) -->
+<img src="https://raw.githubusercontent.com/sahib/brig/master/doc/logo.png" alt="a brig" width="50%">
 </center>
 
 [![go reportcard](https://goreportcard.com/badge/github.com/sahib/brig)](https://goreportcard.com/report/github.com/sahib/brig)
