@@ -437,8 +437,12 @@ func TestMakeDiff(t *testing.T) {
 
 func TestPin(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
-		require.Nil(t, fs.Touch("/x"))
-		require.Nil(t, fs.Touch("/y"))
+		// TODO: what happens if we have two files with the same content?
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
+		require.Nil(t, fs.Stage("/y", bytes.NewReader([]byte{2})))
+
+		fs.Unpin("/x")
+		fs.Unpin("/y")
 
 		isPinned, err := fs.IsPinned("/x")
 		require.Nil(t, err)

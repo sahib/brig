@@ -366,7 +366,12 @@ func (fs *FS) IsPinned(path string) (bool, error) {
 
 	err = n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
-			isPinned, err := fs.bk.IsPinned(child.Hash())
+			file, ok := child.(*n.File)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			isPinned, err := fs.bk.IsPinned(file.Content())
 			if err != nil {
 				return err
 			}
