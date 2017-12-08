@@ -7,10 +7,10 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/backend"
-	"github.com/sahib/brig/server/capnp"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/server/capnp"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )

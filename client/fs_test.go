@@ -26,18 +26,20 @@ func withDaemon(t *testing.T, fn func(ctl *Client)) {
 
 	waitForDeath := make(chan bool)
 	go func() {
+		defer func() {
+			waitForDeath <- true
+		}()
 		require.Nil(t, srv.Serve())
-		require.Nil(t, srv.Close())
-		waitForDeath <- true
 	}()
 
 	ctl, err := Dial(context.Background(), 6667)
 	require.Nil(t, err)
 
-	require.Nil(t, ctl.Init(base, "alice", "klaus", "memory"))
+	require.Nil(t, ctl.Init(base, "alice", "klaus", "mock"))
 	fn(ctl)
 
 	require.Nil(t, ctl.Quit())
+
 	<-waitForDeath
 }
 
