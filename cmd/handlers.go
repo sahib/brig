@@ -13,12 +13,12 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/dustin/go-humanize"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util/colors"
 	"github.com/sahib/brig/version"
-	"github.com/dustin/go-humanize"
 	"github.com/urfave/cli"
 )
 

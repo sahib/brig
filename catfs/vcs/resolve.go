@@ -45,11 +45,11 @@ package vcs
 import (
 	"fmt"
 
+	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/util"
-	e "github.com/pkg/errors"
 )
 
 // executor is the interface that executes the actual action

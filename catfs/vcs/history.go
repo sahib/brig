@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
-	e "github.com/pkg/errors"
 )
 
 const (

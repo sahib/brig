@@ -6,9 +6,9 @@ import (
 	"path"
 	"time"
 
+	"github.com/multiformats/go-multihash"
 	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	h "github.com/sahib/brig/util/hashlib"
-	"github.com/multiformats/go-multihash"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

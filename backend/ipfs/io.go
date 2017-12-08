@@ -4,9 +4,9 @@ import (
 	"io"
 
 	log "github.com/Sirupsen/logrus"
+	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
-	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
 )
 
 // Cat returns an io.Reader that reads from ipfs.

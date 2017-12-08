@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	e "github.com/pkg/errors"
 	ie "github.com/sahib/brig/catfs/errors"
 	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	h "github.com/sahib/brig/util/hashlib"
-	e "github.com/pkg/errors"
 	capnp "zombiezen.com/go/capnproto2"
 )
 

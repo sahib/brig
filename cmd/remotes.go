@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pksunkara/pygments"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/util/colors"
-	"github.com/pksunkara/pygments"
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
 )

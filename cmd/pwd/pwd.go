@@ -6,9 +6,9 @@ import (
 
 	"github.com/chzyer/readline"
 
+	zxcvbn "github.com/nbutton23/zxcvbn-go"
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/colors"
-	zxcvbn "github.com/nbutton23/zxcvbn-go"
 )
 
 const (
