@@ -132,7 +132,7 @@ func TestTimeoutWriter(t *testing.T) {
 	}
 }
 
-func ExampleAccumulateSize() {
+func ExampleSizeAccumulator() {
 	s := &SizeAccumulator{}
 	teeR := io.TeeReader(bytes.NewReader([]byte("Hello, ")), s)
 	io.Copy(os.Stdout, teeR)

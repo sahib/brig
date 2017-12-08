@@ -83,7 +83,7 @@ func TestGhost(t *testing.T) {
 	}
 
 	if unmarshaledFile.Inode() != file.Inode() {
-		t.Fatalf("Inodes differ after unmarshal: %d != %d", unmarshaledFile.Inode, file.Inode())
+		t.Fatalf("Inodes differ after unmarshal: %d != %d", unmarshaledFile.Inode(), file.Inode())
 	}
 
 	if unmarshaledFile.Path() != "/x.png" {
@@ -91,6 +91,6 @@ func TestGhost(t *testing.T) {
 	}
 
 	if empty.Inode() != ghost.Inode() {
-		t.Fatalf("Inodes differ after unmarshal: %d != %d", unmarshaledFile.Inode, file.Inode())
+		t.Fatalf("Inodes differ after unmarshal: %d != %d", unmarshaledFile.Inode(), file.Inode())
 	}
 }
