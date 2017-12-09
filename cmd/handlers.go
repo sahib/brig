@@ -437,11 +437,17 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	for _, entry := range entries {
+		pinState := ""
+		if entry.IsPinned {
+			pinState += " " + colors.Colorize("🖈", colors.Cyan)
+		}
+
 		fmt.Printf(
-			"%6s %8s  %s\n",
+			"%6s %8s  %s%s\n",
 			humanize.Bytes(entry.Size),
 			entry.ModTime.Format(time.Stamp),
 			entry.Path,
+			pinState,
 		)
 	}
 
@@ -555,17 +561,6 @@ func handleUnpin(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Unpin(path)
 }
 
-func handleIsPinned(ctx *cli.Context, ctl *client.Client) error {
-	path := ctx.Args().First()
-	isPinned, err := ctl.IsPinned(path)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(isPinned)
-	return nil
-}
-
 func handleReset(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 	rev := "HEAD"
@@ -641,8 +636,14 @@ func printDiff(diff *client.Diff) {
 	simpleSection(colors.Colorize("Ignored:", colors.Yellow), diff.Ignored)
 	simpleSection(colors.Colorize("Removed:", colors.Red), diff.Removed)
 
-	pairSection(colors.Colorize("Resolveable Conflicts:", colors.Cyan), diff.Merged)
-	pairSection(colors.Colorize("Conflicts:", colors.Magenta), diff.Conflict)
+	pairSection(
+		colors.Colorize("Resolveable Conflicts:", colors.Cyan),
+		diff.Merged,
+	)
+	pairSection(
+		colors.Colorize("Conflicts:", colors.Magenta),
+		diff.Conflict,
+	)
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {

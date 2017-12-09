@@ -183,21 +183,6 @@ func RunCmdline(args []string) int {
 					Usage:  "Remove a pin for a specific file or directory",
 					Action: withDaemon(handleUnpin, true),
 				},
-				cli.Command{
-					Name:   "is",
-					Usage:  "Check if a specific file or directory is pinned",
-					Action: withDaemon(handleIsPinned, true),
-				},
-			},
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "unpin,u",
-					Usage: "Remove a pin again",
-				},
-				cli.BoolFlag{
-					Name:  "is-pinned,i",
-					Usage: "Check if <file> is pinned",
-				},
 			},
 		},
 		cli.Command{

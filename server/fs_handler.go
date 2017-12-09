@@ -49,6 +49,7 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	capInfo.SetInode(info.Inode)
 	capInfo.SetIsDir(info.IsDir)
 	capInfo.SetDepth(int32(info.Depth))
+	capInfo.SetIsPinned(info.IsPinned)
 	return &capInfo, nil
 }
 
@@ -221,25 +222,5 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Unpin(path)
-	})
-}
-
-func (fh *fsHandler) IsPinned(call capnp.FS_isPinned) error {
-	server.Ack(call.Options)
-
-	path, err := call.Params.Path()
-	if err != nil {
-		return err
-	}
-
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		isPinned, err := fs.IsPinned(path)
-		if err != nil {
-			return err
-		}
-
-		call.Results.SetIsPinned(isPinned)
-		return nil
 	})
 }

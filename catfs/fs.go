@@ -55,13 +55,14 @@ type FS struct {
 }
 
 type StatInfo struct {
-	Path    string
-	Hash    h.Hash
-	Size    uint64
-	Inode   uint64
-	IsDir   bool
-	Depth   int
-	ModTime time.Time
+	Path     string
+	Hash     h.Hash
+	Size     uint64
+	Inode    uint64
+	IsDir    bool
+	Depth    int
+	ModTime  time.Time
+	IsPinned bool
 }
 
 type HistEntry struct {
@@ -96,15 +97,21 @@ type LogEntry struct {
 // UTILITY HELPERS //
 /////////////////////
 
-func nodeToStat(nd n.Node) *StatInfo {
+func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
+	isPinned, err := fs.isPinned(nd)
+	if err != nil {
+		log.Warningf("stat: failed to acquire pin state: %v", err)
+	}
+
 	return &StatInfo{
-		Path:    nd.Path(),
-		Hash:    nd.Hash().Clone(),
-		ModTime: nd.ModTime(),
-		IsDir:   nd.Type() == n.NodeTypeDirectory,
-		Inode:   nd.Inode(),
-		Size:    nd.Size(),
-		Depth:   n.Depth(nd),
+		Path:     nd.Path(),
+		Hash:     nd.Hash().Clone(),
+		ModTime:  nd.ModTime(),
+		IsDir:    nd.Type() == n.NodeTypeDirectory,
+		Inode:    nd.Inode(),
+		Size:     nd.Size(),
+		Depth:    n.Depth(nd),
+		IsPinned: isPinned,
 	}
 }
 
@@ -253,7 +260,7 @@ func (fs *FS) Stat(path string) (*StatInfo, error) {
 		return nil, ie.NoSuchFile(path)
 	}
 
-	return nodeToStat(nd), nil
+	return fs.nodeToStat(nd), nil
 }
 
 // List returns stat info for each node below (and including) root.
@@ -286,7 +293,7 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 				return nil
 			}
 
-			result = append(result, nodeToStat(child))
+			result = append(result, fs.nodeToStat(child))
 		}
 
 		return nil
@@ -364,7 +371,11 @@ func (fs *FS) IsPinned(path string) (bool, error) {
 		return false, err
 	}
 
-	err = n.Walk(fs.lkr, nd, true, func(child n.Node) error {
+	return fs.isPinned(nd)
+}
+
+func (fs *FS) isPinned(nd n.Node) (bool, error) {
+	err := n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
 			file, ok := child.(*n.File)
 			if !ok {
@@ -676,29 +687,29 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 
 	// Convert the simple slice parts:
 	for _, nd := range realDiff.Added {
-		fakeDiff.Added = append(fakeDiff.Added, *nodeToStat(nd))
+		fakeDiff.Added = append(fakeDiff.Added, *fs.nodeToStat(nd))
 	}
 
 	for _, nd := range realDiff.Ignored {
-		fakeDiff.Ignored = append(fakeDiff.Added, *nodeToStat(nd))
+		fakeDiff.Ignored = append(fakeDiff.Added, *fs.nodeToStat(nd))
 	}
 
 	for _, nd := range realDiff.Removed {
-		fakeDiff.Removed = append(fakeDiff.Removed, *nodeToStat(nd))
+		fakeDiff.Removed = append(fakeDiff.Removed, *fs.nodeToStat(nd))
 	}
 
 	// And also convert the slightly more complex pairs:
 	for _, pair := range realDiff.Merged {
 		fakeDiff.Merged = append(fakeDiff.Merged, DiffPair{
-			Src: *nodeToStat(pair.Src),
-			Dst: *nodeToStat(pair.Dst),
+			Src: *fs.nodeToStat(pair.Src),
+			Dst: *fs.nodeToStat(pair.Dst),
 		})
 	}
 
 	for _, pair := range realDiff.Conflict {
 		fakeDiff.Conflict = append(fakeDiff.Conflict, DiffPair{
-			Src: *nodeToStat(pair.Src),
-			Dst: *nodeToStat(pair.Dst),
+			Src: *fs.nodeToStat(pair.Src),
+			Dst: *fs.nodeToStat(pair.Dst),
 		})
 	}
 

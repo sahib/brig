@@ -112,12 +112,17 @@ func (n *treeNode) Print() {
 
 	switch {
 	case n.name == "/":
-		name, prefix = colors.Colorize(n.name, colors.Magenta), ""
+		name, prefix = colors.Colorize("•", colors.Magenta), ""
 	case n.entry.IsDir:
 		name = colors.Colorize(name, colors.Green)
 	}
 
-	fmt.Printf("%s%s\n", prefix, name)
+	pinState := ""
+	if n.entry.IsPinned {
+		pinState += " " + colors.Colorize("🖈", colors.Cyan)
+	}
+
+	fmt.Printf("%s%s%s\n", prefix, name, pinState)
 
 	for _, child := range n.order {
 		child.Print()

@@ -121,6 +121,14 @@ func (s StatInfo) SetModTime(v string) error {
 	return s.Struct.SetText(2, v)
 }
 
+func (s StatInfo) IsPinned() bool {
+	return s.Struct.Bit(129)
+}
+
+func (s StatInfo) SetIsPinned(v bool) {
+	s.Struct.SetBit(129, v)
+}
+
 // StatInfo_List is a list of StatInfo.
 type StatInfo_List struct{ capnp.List }
 
@@ -1280,7 +1288,7 @@ func (c FS) Stage(ctx context.Context, params func(FS_stage_Params) error, opts 
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      0,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "stage",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1300,7 +1308,7 @@ func (c FS) List(ctx context.Context, params func(FS_list_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      1,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "list",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1320,7 +1328,7 @@ func (c FS) Cat(ctx context.Context, params func(FS_cat_Params) error, opts ...c
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      2,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "cat",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1340,7 +1348,7 @@ func (c FS) Mkdir(ctx context.Context, params func(FS_mkdir_Params) error, opts 
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      3,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "mkdir",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1360,7 +1368,7 @@ func (c FS) Remove(ctx context.Context, params func(FS_remove_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      4,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "remove",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1380,7 +1388,7 @@ func (c FS) Move(ctx context.Context, params func(FS_move_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      5,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "move",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1400,7 +1408,7 @@ func (c FS) Pin(ctx context.Context, params func(FS_pin_Params) error, opts ...c
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      6,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "pin",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1420,7 +1428,7 @@ func (c FS) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts 
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      7,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "unpin",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -1430,26 +1438,6 @@ func (c FS) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts 
 		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_unpin_Params{Struct: s}) }
 	}
 	return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c FS) IsPinned(ctx context.Context, params func(FS_isPinned_Params) error, opts ...capnp.CallOption) FS_isPinned_Results_Promise {
-	if c.Client == nil {
-		return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      8,
-			InterfaceName: "api.capnp:FS",
-			MethodName:    "isPinned",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_isPinned_Params{Struct: s}) }
-	}
-	return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 
 type FS_Server interface {
@@ -1468,8 +1456,6 @@ type FS_Server interface {
 	Pin(FS_pin) error
 
 	Unpin(FS_unpin) error
-
-	IsPinned(FS_isPinned) error
 }
 
 func FS_ServerToClient(s FS_Server) FS {
@@ -1479,14 +1465,14 @@ func FS_ServerToClient(s FS_Server) FS {
 
 func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 9)
+		methods = make([]server.Method, 0, 8)
 	}
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      0,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "stage",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1500,7 +1486,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      1,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "list",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1514,7 +1500,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      2,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "cat",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1528,7 +1514,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      3,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "mkdir",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1542,7 +1528,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      4,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "remove",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1556,7 +1542,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      5,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "move",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1570,7 +1556,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      6,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "pin",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1584,7 +1570,7 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      7,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "unpin",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -1592,20 +1578,6 @@ func FS_Methods(methods []server.Method, s FS_Server) []server.Method {
 			return s.Unpin(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      8,
-			InterfaceName: "api.capnp:FS",
-			MethodName:    "isPinned",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_isPinned{c, opts, FS_isPinned_Params{Struct: p}, FS_isPinned_Results{Struct: r}}
-			return s.IsPinned(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
 	})
 
 	return methods
@@ -1673,14 +1645,6 @@ type FS_unpin struct {
 	Options capnp.CallOptions
 	Params  FS_unpin_Params
 	Results FS_unpin_Results
-}
-
-// FS_isPinned holds the arguments for a server call to FS.isPinned.
-type FS_isPinned struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  FS_isPinned_Params
-	Results FS_isPinned_Results
 }
 
 type FS_stage_Params struct{ capnp.Struct }
@@ -2760,143 +2724,6 @@ func (p FS_unpin_Results_Promise) Struct() (FS_unpin_Results, error) {
 	return FS_unpin_Results{s}, err
 }
 
-type FS_isPinned_Params struct{ capnp.Struct }
-
-// FS_isPinned_Params_TypeID is the unique identifier for the type FS_isPinned_Params.
-const FS_isPinned_Params_TypeID = 0xc9558eac26b0f15e
-
-func NewFS_isPinned_Params(s *capnp.Segment) (FS_isPinned_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_isPinned_Params{st}, err
-}
-
-func NewRootFS_isPinned_Params(s *capnp.Segment) (FS_isPinned_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return FS_isPinned_Params{st}, err
-}
-
-func ReadRootFS_isPinned_Params(msg *capnp.Message) (FS_isPinned_Params, error) {
-	root, err := msg.RootPtr()
-	return FS_isPinned_Params{root.Struct()}, err
-}
-
-func (s FS_isPinned_Params) String() string {
-	str, _ := text.Marshal(0xc9558eac26b0f15e, s.Struct)
-	return str
-}
-
-func (s FS_isPinned_Params) Path() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s FS_isPinned_Params) HasPath() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s FS_isPinned_Params) PathBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s FS_isPinned_Params) SetPath(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-// FS_isPinned_Params_List is a list of FS_isPinned_Params.
-type FS_isPinned_Params_List struct{ capnp.List }
-
-// NewFS_isPinned_Params creates a new list of FS_isPinned_Params.
-func NewFS_isPinned_Params_List(s *capnp.Segment, sz int32) (FS_isPinned_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return FS_isPinned_Params_List{l}, err
-}
-
-func (s FS_isPinned_Params_List) At(i int) FS_isPinned_Params {
-	return FS_isPinned_Params{s.List.Struct(i)}
-}
-
-func (s FS_isPinned_Params_List) Set(i int, v FS_isPinned_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s FS_isPinned_Params_List) String() string {
-	str, _ := text.MarshalList(0xc9558eac26b0f15e, s.List)
-	return str
-}
-
-// FS_isPinned_Params_Promise is a wrapper for a FS_isPinned_Params promised by a client call.
-type FS_isPinned_Params_Promise struct{ *capnp.Pipeline }
-
-func (p FS_isPinned_Params_Promise) Struct() (FS_isPinned_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_isPinned_Params{s}, err
-}
-
-type FS_isPinned_Results struct{ capnp.Struct }
-
-// FS_isPinned_Results_TypeID is the unique identifier for the type FS_isPinned_Results.
-const FS_isPinned_Results_TypeID = 0x87c49e302c6516f8
-
-func NewFS_isPinned_Results(s *capnp.Segment) (FS_isPinned_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return FS_isPinned_Results{st}, err
-}
-
-func NewRootFS_isPinned_Results(s *capnp.Segment) (FS_isPinned_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return FS_isPinned_Results{st}, err
-}
-
-func ReadRootFS_isPinned_Results(msg *capnp.Message) (FS_isPinned_Results, error) {
-	root, err := msg.RootPtr()
-	return FS_isPinned_Results{root.Struct()}, err
-}
-
-func (s FS_isPinned_Results) String() string {
-	str, _ := text.Marshal(0x87c49e302c6516f8, s.Struct)
-	return str
-}
-
-func (s FS_isPinned_Results) IsPinned() bool {
-	return s.Struct.Bit(0)
-}
-
-func (s FS_isPinned_Results) SetIsPinned(v bool) {
-	s.Struct.SetBit(0, v)
-}
-
-// FS_isPinned_Results_List is a list of FS_isPinned_Results.
-type FS_isPinned_Results_List struct{ capnp.List }
-
-// NewFS_isPinned_Results creates a new list of FS_isPinned_Results.
-func NewFS_isPinned_Results_List(s *capnp.Segment, sz int32) (FS_isPinned_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
-	return FS_isPinned_Results_List{l}, err
-}
-
-func (s FS_isPinned_Results_List) At(i int) FS_isPinned_Results {
-	return FS_isPinned_Results{s.List.Struct(i)}
-}
-
-func (s FS_isPinned_Results_List) Set(i int, v FS_isPinned_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s FS_isPinned_Results_List) String() string {
-	str, _ := text.MarshalList(0x87c49e302c6516f8, s.List)
-	return str
-}
-
-// FS_isPinned_Results_Promise is a wrapper for a FS_isPinned_Results promised by a client call.
-type FS_isPinned_Results_Promise struct{ *capnp.Pipeline }
-
-func (p FS_isPinned_Results_Promise) Struct() (FS_isPinned_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return FS_isPinned_Results{s}, err
-}
-
 type VCS struct{ Client capnp.Client }
 
 // VCS_TypeID is the unique identifier for the type VCS.
@@ -2911,7 +2738,7 @@ func (c VCS) Log(ctx context.Context, params func(VCS_log_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      0,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -2931,7 +2758,7 @@ func (c VCS) Commit(ctx context.Context, params func(VCS_commit_Params) error, o
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      1,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -2951,7 +2778,7 @@ func (c VCS) Tag(ctx context.Context, params func(VCS_tag_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      2,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "tag",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -2971,7 +2798,7 @@ func (c VCS) Untag(ctx context.Context, params func(VCS_untag_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      3,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "untag",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -2991,7 +2818,7 @@ func (c VCS) Reset(ctx context.Context, params func(VCS_reset_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      4,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "reset",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3011,7 +2838,7 @@ func (c VCS) Checkout(ctx context.Context, params func(VCS_checkout_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      5,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "checkout",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3031,7 +2858,7 @@ func (c VCS) History(ctx context.Context, params func(VCS_history_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      6,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "history",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3051,7 +2878,7 @@ func (c VCS) MakeDiff(ctx context.Context, params func(VCS_makeDiff_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      7,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "makeDiff",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3071,7 +2898,7 @@ func (c VCS) Sync(ctx context.Context, params func(VCS_sync_Params) error, opts 
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      8,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "sync",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3091,7 +2918,7 @@ func (c VCS) Fetch(ctx context.Context, params func(VCS_fetch_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      9,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "fetch",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -3139,7 +2966,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      0,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3153,7 +2980,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      1,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3167,7 +2994,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      2,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "tag",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3181,7 +3008,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      3,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "untag",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3195,7 +3022,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      4,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "reset",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3209,7 +3036,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      5,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "checkout",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3223,7 +3050,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      6,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "history",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3237,7 +3064,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      7,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "makeDiff",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3251,7 +3078,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      8,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "sync",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -3265,7 +3092,7 @@ func VCS_Methods(methods []server.Method, s VCS_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      9,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "fetch",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -4792,7 +4619,7 @@ func (c Meta) Quit(ctx context.Context, params func(Meta_quit_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "quit",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4812,7 +4639,7 @@ func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4832,7 +4659,7 @@ func (c Meta) Init(ctx context.Context, params func(Meta_init_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      2,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "init",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4852,7 +4679,7 @@ func (c Meta) Mount(ctx context.Context, params func(Meta_mount_Params) error, o
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      3,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "mount",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4872,7 +4699,7 @@ func (c Meta) Unmount(ctx context.Context, params func(Meta_unmount_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      4,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "unmount",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4892,7 +4719,7 @@ func (c Meta) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      5,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configGet",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4912,7 +4739,7 @@ func (c Meta) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      6,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configSet",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4932,7 +4759,7 @@ func (c Meta) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      7,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configAll",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4952,7 +4779,7 @@ func (c Meta) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4972,7 +4799,7 @@ func (c Meta) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) er
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      9,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -4992,7 +4819,7 @@ func (c Meta) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) er
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      10,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5012,7 +4839,7 @@ func (c Meta) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      11,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5032,7 +4859,7 @@ func (c Meta) RemoteLocate(ctx context.Context, params func(Meta_remoteLocate_Pa
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      12,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLocate",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5052,7 +4879,7 @@ func (c Meta) RemotePing(ctx context.Context, params func(Meta_remotePing_Params
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      13,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5072,7 +4899,7 @@ func (c Meta) Whoami(ctx context.Context, params func(Meta_whoami_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      14,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "whoami",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5092,7 +4919,7 @@ func (c Meta) Become(ctx context.Context, params func(Meta_become_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      15,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "become",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5112,7 +4939,7 @@ func (c Meta) Connect(ctx context.Context, params func(Meta_connect_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      16,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "connect",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5132,7 +4959,7 @@ func (c Meta) Disconnect(ctx context.Context, params func(Meta_disconnect_Params
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      17,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5152,7 +4979,7 @@ func (c Meta) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Para
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      18,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -5218,7 +5045,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "quit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5232,7 +5059,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5246,7 +5073,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      2,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "init",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5260,7 +5087,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      3,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "mount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5274,7 +5101,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      4,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "unmount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5288,7 +5115,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      5,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configGet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5302,7 +5129,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      6,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configSet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5316,7 +5143,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      7,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5330,7 +5157,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5344,7 +5171,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      9,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5358,7 +5185,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      10,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5372,7 +5199,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      11,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5386,7 +5213,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      12,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLocate",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5400,7 +5227,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      13,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5414,7 +5241,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      14,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "whoami",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5428,7 +5255,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      15,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "become",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5442,7 +5269,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      16,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "connect",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5456,7 +5283,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      17,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -5470,7 +5297,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      18,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -8238,7 +8065,7 @@ func (c API) Version(ctx context.Context, params func(API_version_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0xfc487818328b97ef,
 			MethodID:      0,
-			InterfaceName: "api.capnp:API",
+			InterfaceName: "capnp/api.capnp:API",
 			MethodName:    "version",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8258,7 +8085,7 @@ func (c API) Stage(ctx context.Context, params func(FS_stage_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      0,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "stage",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8278,7 +8105,7 @@ func (c API) List(ctx context.Context, params func(FS_list_Params) error, opts .
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      1,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "list",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8298,7 +8125,7 @@ func (c API) Cat(ctx context.Context, params func(FS_cat_Params) error, opts ...
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      2,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "cat",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8318,7 +8145,7 @@ func (c API) Mkdir(ctx context.Context, params func(FS_mkdir_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      3,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "mkdir",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8338,7 +8165,7 @@ func (c API) Remove(ctx context.Context, params func(FS_remove_Params) error, op
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      4,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "remove",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8358,7 +8185,7 @@ func (c API) Move(ctx context.Context, params func(FS_move_Params) error, opts .
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      5,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "move",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8378,7 +8205,7 @@ func (c API) Pin(ctx context.Context, params func(FS_pin_Params) error, opts ...
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      6,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "pin",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8398,7 +8225,7 @@ func (c API) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      7,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "unpin",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8409,26 +8236,6 @@ func (c API) Unpin(ctx context.Context, params func(FS_unpin_Params) error, opts
 	}
 	return FS_unpin_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) IsPinned(ctx context.Context, params func(FS_isPinned_Params) error, opts ...capnp.CallOption) FS_isPinned_Results_Promise {
-	if c.Client == nil {
-		return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      8,
-			InterfaceName: "api.capnp:FS",
-			MethodName:    "isPinned",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(FS_isPinned_Params{Struct: s}) }
-	}
-	return FS_isPinned_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
 func (c API) Log(ctx context.Context, params func(VCS_log_Params) error, opts ...capnp.CallOption) VCS_log_Results_Promise {
 	if c.Client == nil {
 		return VCS_log_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -8438,7 +8245,7 @@ func (c API) Log(ctx context.Context, params func(VCS_log_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      0,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8458,7 +8265,7 @@ func (c API) Commit(ctx context.Context, params func(VCS_commit_Params) error, o
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      1,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8478,7 +8285,7 @@ func (c API) Tag(ctx context.Context, params func(VCS_tag_Params) error, opts ..
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      2,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "tag",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8498,7 +8305,7 @@ func (c API) Untag(ctx context.Context, params func(VCS_untag_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      3,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "untag",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8518,7 +8325,7 @@ func (c API) Reset(ctx context.Context, params func(VCS_reset_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      4,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "reset",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8538,7 +8345,7 @@ func (c API) Checkout(ctx context.Context, params func(VCS_checkout_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      5,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "checkout",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8558,7 +8365,7 @@ func (c API) History(ctx context.Context, params func(VCS_history_Params) error,
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      6,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "history",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8578,7 +8385,7 @@ func (c API) MakeDiff(ctx context.Context, params func(VCS_makeDiff_Params) erro
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      7,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "makeDiff",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8598,7 +8405,7 @@ func (c API) Sync(ctx context.Context, params func(VCS_sync_Params) error, opts 
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      8,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "sync",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8618,7 +8425,7 @@ func (c API) Fetch(ctx context.Context, params func(VCS_fetch_Params) error, opt
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      9,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "fetch",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8638,7 +8445,7 @@ func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "quit",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8658,7 +8465,7 @@ func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8678,7 +8485,7 @@ func (c API) Init(ctx context.Context, params func(Meta_init_Params) error, opts
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      2,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "init",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8698,7 +8505,7 @@ func (c API) Mount(ctx context.Context, params func(Meta_mount_Params) error, op
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      3,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "mount",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8718,7 +8525,7 @@ func (c API) Unmount(ctx context.Context, params func(Meta_unmount_Params) error
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      4,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "unmount",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8738,7 +8545,7 @@ func (c API) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) e
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      5,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configGet",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8758,7 +8565,7 @@ func (c API) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) e
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      6,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configSet",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8778,7 +8585,7 @@ func (c API) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) e
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      7,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configAll",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8798,7 +8605,7 @@ func (c API) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) e
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8818,7 +8625,7 @@ func (c API) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) err
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      9,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8838,7 +8645,7 @@ func (c API) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) err
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      10,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8858,7 +8665,7 @@ func (c API) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params)
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      11,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8878,7 +8685,7 @@ func (c API) RemoteLocate(ctx context.Context, params func(Meta_remoteLocate_Par
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      12,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLocate",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8898,7 +8705,7 @@ func (c API) RemotePing(ctx context.Context, params func(Meta_remotePing_Params)
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      13,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8918,7 +8725,7 @@ func (c API) Whoami(ctx context.Context, params func(Meta_whoami_Params) error, 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      14,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "whoami",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8938,7 +8745,7 @@ func (c API) Become(ctx context.Context, params func(Meta_become_Params) error, 
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      15,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "become",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8958,7 +8765,7 @@ func (c API) Connect(ctx context.Context, params func(Meta_connect_Params) error
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      16,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "connect",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8978,7 +8785,7 @@ func (c API) Disconnect(ctx context.Context, params func(Meta_disconnect_Params)
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      17,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -8998,7 +8805,7 @@ func (c API) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Param
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      18,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
 		Options: capnp.NewCallOptions(opts),
@@ -9028,8 +8835,6 @@ type API_Server interface {
 	Pin(FS_pin) error
 
 	Unpin(FS_unpin) error
-
-	IsPinned(FS_isPinned) error
 
 	Log(VCS_log) error
 
@@ -9097,14 +8902,14 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 39)
+		methods = make([]server.Method, 0, 38)
 	}
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0xfc487818328b97ef,
 			MethodID:      0,
-			InterfaceName: "api.capnp:API",
+			InterfaceName: "capnp/api.capnp:API",
 			MethodName:    "version",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9118,7 +8923,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      0,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "stage",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9132,7 +8937,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      1,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "list",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9146,7 +8951,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      2,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "cat",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9160,7 +8965,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      3,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "mkdir",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9174,7 +8979,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      4,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "remove",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9188,7 +8993,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      5,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "move",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9202,7 +9007,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      6,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "pin",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9216,7 +9021,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xe2b3585db47cd4f9,
 			MethodID:      7,
-			InterfaceName: "api.capnp:FS",
+			InterfaceName: "capnp/api.capnp:FS",
 			MethodName:    "unpin",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9228,23 +9033,9 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0xe2b3585db47cd4f9,
-			MethodID:      8,
-			InterfaceName: "api.capnp:FS",
-			MethodName:    "isPinned",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := FS_isPinned{c, opts, FS_isPinned_Params{Struct: p}, FS_isPinned_Results{Struct: r}}
-			return s.IsPinned(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      0,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "log",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9258,7 +9049,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      1,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "commit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9272,7 +9063,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      2,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "tag",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9286,7 +9077,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      3,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "untag",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9300,7 +9091,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      4,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "reset",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9314,7 +9105,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      5,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "checkout",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9328,7 +9119,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      6,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "history",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9342,7 +9133,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      7,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "makeDiff",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9356,7 +9147,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      8,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "sync",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9370,7 +9161,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0xfaa680ef12c44624,
 			MethodID:      9,
-			InterfaceName: "api.capnp:VCS",
+			InterfaceName: "capnp/api.capnp:VCS",
 			MethodName:    "fetch",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9384,7 +9175,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      0,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "quit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9398,7 +9189,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      1,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9412,7 +9203,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      2,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "init",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9426,7 +9217,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      3,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "mount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9440,7 +9231,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      4,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "unmount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9454,7 +9245,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      5,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configGet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9468,7 +9259,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      6,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configSet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9482,7 +9273,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      7,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "configAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9496,7 +9287,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9510,7 +9301,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      9,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9524,7 +9315,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      10,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9538,7 +9329,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      11,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9552,7 +9343,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      12,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remoteLocate",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9566,7 +9357,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      13,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9580,7 +9371,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      14,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "whoami",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9594,7 +9385,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      15,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "become",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9608,7 +9399,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      16,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "connect",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9622,7 +9413,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      17,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9636,7 +9427,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      18,
-			InterfaceName: "api.capnp:Meta",
+			InterfaceName: "capnp/api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -9775,326 +9566,323 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_ea883e7d5248d81b = "x\xda\xa4Z\x7f|\x14E\x96\xaf\xd7=\xa1\x05\x09\x93" +
-	"N'\x84\xfcb\xda0!\xc2J$ \xbb&\x1e$" +
-	" \xa0\xe1\x87\xa4\x13A\x17Dif:I\xcbL\xf7" +
-	"\xd0\xdd\x93\x10W\x0e8A\x01\xc5\xd3=\x14\x97U\x91" +
-	"\xbde\xd7\xa8\x9c\xb0\xb2\x8b\xa0x\xa2\x80d\xd5;T" +
-	"Pp\x0f\x7f\xb0\xa2\xe0GD\x10\\@\xdc\xb9O\xd5" +
-	"L\xf7\xd4\xcct\x00w\xffJ\xa6\xab\xea\xd5\xab\xf7\xe3" +
-	"\xfb\xde\xabzC\xcfg\xd71UY\x9b\xaf@\xa8i" +
-	")d\xf5\x88\x95\xccPw\x9f\xff\xb2e\x11\x92z\x01" +
-	"\xc4\x8a\xf7\xdf\xd88\x7f\xd4\xd2/Q\x96\x87CH\xd8" +
-	"\x9e\xf3\x8c\xd0\x95\xc3\x09]9\xbe\xe1'r|\x80 " +
-	"\xb6\xa3\x02\xfe~\xd3\xc6?-B\xbc\x17\x10\xca\x02\x0e" +
-	"\xa1\xe1=s\x8b\x00\x81\xc0\xe7\xd6\"\x88\xf1\x7fm\xd7" +
-	"\x86\xbe\xf9\xf9=\x88\xef\xc5&\xe9!\x10\xaar\xef\x12" +
-	"F\xe4\xe2\xf9U\xb9ox\x84\xa9\xf9\x1cB\xb13}" +
-	"\x95\xab\x86>\xb9\xe3>$e\x03 Dv\x1d\x99\x7f" +
-	"\x12\x810:\x1fS[\xba\xe2\xfe\x9b\xd4k\xc7,E" +
-	"|\xb6=\xac\xe4\x7f\x88<\xb1]\x8f\x8dZ|\xd3\xee" +
-	"\xe5\x0f\xd0|\xd4\xe73\x98\x8f\xc9d\xe5\xf5\x9b\xc5!" +
-	"k\xf8\x8fS&\x84\xf3{\xe1\x09Q2A|c\xf5" +
-	"O\x8fJ{\x1eD|/\xfa\xe0\x0c\xdec]\xfeV" +
-	"a}>'\xac\xcf\xf7\x09\x9f\xe6\xb7#\x88}\xcd\x1e" +
-	"\x1e\xce\xfe\x82y(N\x0e32|d\xdf^\x80<" +
-	"\xb1\x17\xbfxv{\xf8\xf6Q+\xa9\x8d\x84\xf2\xbe_" +
-	"\"\x10\x06\xf5\xc5\xfb\xbcR\xd4o\xc6\xae\x07\xbe^\x99" +
-	"\xc2i_\xc2\x88D&\x8c\xbd/w\xd9\x9c\x8fC\x8f" +
-	"P\xa4\x17\xf5e0\xe9Qs\xfb<\xf5\xc6;GW" +
-	"%\x96b\xd6\x86+}\xc9!\xd5\xbe\x98\xab\xc7\x99^" +
-	"\xab\xfa=\xfd\xfb_\xc7\xc5\x13\xe7}g\xdfw\x11\x08" +
-	"]d\xfc\x96\xf7g\xccz\xe3\xf5\xf5O&I\x0bC" +
-	"\x0a\xce!O\xac\xc7\x7fM\x8c\xed\xff\xdf\xd7\xe9\x01\xbe" +
-	"\xe0K\xe4\x89}\xd7\xf7\x1bf\xec\xaa\xf3O&(\x92" +
-	"\xd3\x9c&\x14\xcf\x12fWM/\xbb2rwp\x0d" +
-	"\xc5\x92PXp\x08\x81PZ\x80w\xbc\xf6\xae\xd7~" +
-	"\xf9\xf6\xbbG\xd6\xd0\x0a\x9d_\xf0g\x04\xc2\xa2\x02\xbc" +
-	"\xbe\xe3\xd8\x83\x81g\x0fw\xaeE|\x1f{xm\xc1" +
-	"!\xe4\x89-\xbef\xfao*\xef\x18\xfa\x1bl\x88\x94" +
-	"\xe1d\xb1x\xca\x92\x82\xd5\xc2\x8a\x02NXQ\xe0\x1b" +
-	"\xbe\xbd\xe0\xdf\xb1!\x1e\x1bw\xefO\xf6\x14m\xfaO" +
-	"Jj\xf5\x85D!K~2\x7fg\xd3{\xc7\x7fK" +
-	"mQU\xf8g\xe4\x89m^\xb7\x11\x82\xb7\x0c\xfd]" +
-	"| ~\xb6\xfc\xc2\x0f\x11\x08\x85\x85\x98\xb7k\xa6\xf5" +
-	"\x8fM\x9a\xd1\xb3\x93>{u\xe1k\x08\x84j2\x1e" +
-	"\xde\xfb\x85\xd6\xb3e~gb=9\xfb\xcf\x0b\xf1\xd9" +
-	"f\x16\xe2\xb3\xb3\xb9\xbd\xf9\xca\xd9\x8f\xa7\xac\xdfB\xe8" +
-	"o#\xeb\x07\xeb'\x7f}~\xd7\xb2g)c>X" +
-	"\xf8.\xf2\xc4\xde\xfc\xa8`f\xf6\x07C\xd6S\xda\xd8" +
-	"^x\x12yb{\x9a\xfe\xfe\x97\x8f+\xbf{\x1eI" +
-	"}\xc0!\xb9\xae\x10\xab\xa3\x93l)\xf7\xb9\xee\xcd~" +
-	"\xe7\x87nH\x88;>!\xbb\x08O\xe0\x8b\xf0\x84\xcd" +
-	"s?\xba\xa6f\xff\x8c\x0d\x09\x9e\x894\xe7\x16a\x07" +
-	"\x8b\x16=\x8f \xd6Z\xbd\xf7\xc3\xbc3wl\xa0\xc4" +
-	"XX\x9c\x8b\xc5\xf8\xf8\xe4\x1b^{\xff\x93\xd9\x7f\xa0" +
-	"\xc4\x08\xc5\xd8\xf5\xaa\xfa\x9d\xdd\xf9\xec\xe2?m\xa2\x96" +
-	"\x1c.\"\xf6z\xe2\x87S\xff\xb7}\xa4\xbe\x996\xc7" +
-	"\xae\",\xa0\xb7\x093\xd5\xd1\x7f\x1d?\xe7\xe0\x9e\xcd" +
-	"\x14\xc9A\xc5\xd8\xea\x9e\xaf\x984\xe0\xa1\xcf\xb2\xb7R" +
-	"\x03\xd9\xc5\xd8*\x0a/[\xf8\xd5\xe6gC/Q\x92" +
-	"9Q\x84\x0d\xf8\xb1\x1d\xf3\xc7T\xdd6\xf9\xe5T\xef" +
-	"%\x13\xf6\x15m\x15\x0e\x16q\x88\x8dM\\\x93ww" +
-	"{}\xe76\x8a\xec\x96\",\xf0\xd5M{\xfb\xfc\xe2" +
-	"\xa5\xb9\xaf\xa4\xf9>\x91\xce\x13E\xcb\x85uE\x9c\xb0" +
-	"\xae\xc8'\xec#2\x9a\xb2J\xbez\xdc\x9bk_\xa1" +
-	"=xQ1\xf1\xe0e\xc5X\xb1g*\x0f|\xf8Q" +
-	"\xf3\xc1Wi\xc5w\x16c\xc3\xe9$\xe3\xb3Nt\xe9" +
-	"\xe7j\xb7\xbcN\x13\xe8*&~\xfc6\x99\xf0\x06_" +
-	"oM\xfd\xfc\xda\x9d4\x86\x1c+\xc6Z:A\xc6\x9f" +
-	"\xf9\xf0\xb5\x8f\x1e\xd6\xafK\x19\xe7K\xce!\x10\xf2K" +
-	"\x08\xd8\xfdv\xd3\xc4\xaf\xb3\x7f\xb9\x8b:\xe8\x88\x12," +
-	"X\xdf\xd1\x9cEs>\x11\xbbh\xf5\x96\x10/\xb9\xfd" +
-	"\xc4\x86\x81\xcf=8\xb5\x8b\xe6\x19J0le\x11\x92" +
-	"\xcdO\xdd\xb9zw\xffY]i\"\xca\"\xf0Vr" +
-	"\x970\xa8\x84\x13\x06\x95\xf8\x86O-!q\xe1\xab\xd5" +
-	"\x05\xb0|\xecs\xd4F\xc2\x96Rl-\x1f4\xb5\xd6" +
-	"\x0e|\xfa\x85.\xca\xe8\x9f(\xc5\xaa\xfd\xee\x98\xb4\xec" +
-	"\x81\x93\xa7\xde\xa2\x06\x16\x95b7\x1d\xf7\xdc\x8c%\x0f" +
-	"\xed\xda\xb0\x87>\xacR\x8a\x85\xa1\x96b\xce6\xcf\xcf" +
-	"\xb9g\x02\xbf\xec]j\xab\x15\xa5\xd8[\x9e\x1a\xb8\xf2" +
-	"\xbe7G\x8d\xd8K\x0d\xcc-\xc5R\x18s\xfd\xf4\xef" +
-	"#\xe5\xab\xf7\xa6\x079\xa2\xef\xa9\xa5\xab\x85\x99\xa5\x9c" +
-	"0\xb3\xd4'\xac(\xfd\x02AL\xf9\xe6\xce\xb6\x9b\xe6" +
-	"}\xb6\xd7\xcd:\xc2\xfd\xb7\x0a\xd1\xfe\x9c\x10\xed\xef\x13" +
-	"\xd6\xf6\xc7\xd6\x91-/\xfe,|\xe3\xf1\x0fhT\xa9" +
-	"\xf6avG\xfa0\xbb\xc2\xd4c%=;\x0a\xf6'" +
-	"|\x98\xb0\x15&\xe3s\xc9\xf8\xa3+\x86\xcb\x03\xd6\x8c" +
-	";@\xaf\x7f\xd8\x87\x11\xf5\x112\xde\xf9\xf9\xfe\xc9\xff" +
-	"c\xbdw \x8d\x1bB\xe7\x8f\xbe\xd5\xc26\x1f'l" +
-	"\xf3\xf9\x84\xc3>\xcc\xfb\xa9\xd7\x9f\x1b\xe7\xf9\xeb\xd3\x7f" +
-	"\xa1\xa4\xda%b=\xbc0|\xdf\x9e{*k>\xa6" +
-	"\x84\xb3\x9e\x0c\xfc\xc1\xb8j\xc7\x8bO\x9c\xfa\x84\xb2\x9d" +
-	"\x87E\xecb\xaf};1\xef\xbe\xcfn\xfe4\x05|" +
-	"\xa2\"\xe6\xbcC\xc4\xee\xfc\xfe\x1d\x8f.\xe9}\xf5\xc1" +
-	"O)\x92\xfbD\xac\xda\x1d\x7f\xbb\xed\xde\xc6\xba\xe2C" +
-	"\xb4\xbdo\x11\x89\xbdo\x13\xf1\x99\xbe~fY\xfd\x8c" +
-	"\x11\xd1C\xd4\xcacd\xcf\xb3{\xef\xde4\xf3\xd6\x17" +
-	"\x0eed\x0f\xef\x88w\x0a\xfbDL\xe8\x1d\xf1\x06F" +
-	"\x18Y\x86\xb3\x87\xeb\xae?\xce\x8e->s\x88\x16]" +
-	"y\x19\x09\xbdex\x9ba\xd6\x92\xc0\xf3\xbb\xe7}F" +
-	"\xc7\x882\x02n\xcb\xad\x8fV^qh\xf2a\xb7\xe0" +
-	"_U\xf6\x8cP]\xc6\x09\xd5e>A)\xc3\x07\xfd" +
-	"aW\x8f\x97\xf7\xcf\xca\xff\x82\x06\xfe\xede\x18\xd8w" +
-	"\xe2\xf1\xe3;~\xdf\xef\xf5#\x03\x8f$\x0fs\xc5\x00" +
-	",\x86iW\xbe%\xfe\xf7\x88AGi\x17\xcb\x1a\x80" +
-	"\xb1\xb9\xe7\x00\xcc\xde\xf7M\x9e\xd3\xb7?\xc7\x1eK\x88" +
-	"\x89\xac\xac\x1e\x80\xc9\x8e\x1c\x80u\xf9\xc9\x1d\xb7--" +
-	"\x0f\x9d\xf9\x06I^p\xbc\xd7\x9f\x8b\xc5x\x85\x1f\x13" +
-	"\xf0qk\xe7n;1\xe2\x04u\xbeq~r\xbeo" +
-	"W2\xb7N\x1b\xe6\xff\x962\x83!~\xac\xed\x895" +
-	"\xcf\x0b\x1b\x87\xec=E\x8b\x8c\xf7\xe3=\xf31\xc9\xef" +
-	"\xd7l\xfdj\xc5\xb4\x85\xa7)\xc5\x8d\xf0\x93\xecn$" +
-	"\xd9\xf1\xbb\x01\xd3o\xad\xeeY\xfe7zy\xd8\x8f\x8f" +
-	"4\x97\x8c7~:\xe6\xa5{|S\xcf\xb8\xc9u\xad" +
-	"\x7f\xb5\xd0\xe9\xe7\x84N\xbfO\xd8\xe7\xc7r\xbdlT" +
-	"\xc5\xc3\xe5'_8K\xdbIUy\x19\xde\xae\xba\x9c" +
-	"\xd8\xfe\xa8\x03\xb5K\x8c\xcdg)\xdb\x0c\x97c\xd1\x1e" +
-	"8\xef\x1dR\xb1\xc9s\x8e\xe6C*\xc7\x808\x95," +
-	"\xf4\x8f\xdf\x91{|\xe1\xef\xcee\xd8Q\xb4\xdc\x10:" +
-	"\xca\xf1F\xd1\xf2\xfb\x18!\xbb\x02\xdb\xd1\xf1U\xf7\x0f" +
-	"\xeb7\xef\xc6\xf3\x19\xb3O\x0f4\x84\xb3\x03I\x0e4" +
-	"\xf0\x06\xa1\xb4\xe2g\x08\xc5\xeeo{\xf4\xd4\x0d\x9f\xfc" +
-	"\xf4\x07\x9a\xe9\xd2\x0a\x12\x0d\xca+\xf0\xde?c\x1e\xd9" +
-	"W\xda~\xef\x0f)1y\\\x05\x0e\x83\xf5\x15\xf8\xd8" +
-	"m\xf7\xce\xfa*\x7f\xca{1\x1a\xe0:+\xb0\xc7\xaf" +
-	"\xaf\xa8E\xd7\xc6\xe4\x88Z\x19\x90#\x1aDj\x1a\x14" +
-	"\xc5h\xb2\xbc\xb2\x155\x1b\x00$\x0f0\xb1\xdb\xffc" +
-	"\x8d\xb4\xed\xfd\xe5;\x91\xe4a`t?\x80\xde\x08\xf1" +
-	"\xf0LLS,\xd1\xb4d\x0b\xa2\xa6\xa87\x8b\xb2\xe8" +
-	"\x8d(\x8a\x81\x90\x94\xc7z\x10\xf2\x00B\xfc\xfc\xc1\x08" +
-	"I\xf3X\x90\x163\xc0\x03\xe4a\xf6\xf8E\xf8\xe3\xdd" +
-	",HK\x19\xe0\x19&\x0f\x18\x84\xf8%\x13\x10\x92\x16" +
-	"\xb3 =\xc4\x00\xb0y\xc0\"\xc4\xaf\x98\x8d\x90\xf4\x00" +
-	"\x0b\xd2c\x0c\xf0\x1e6\x0f<\x08\xf1\x8f\x0cCHz" +
-	"\x88\x05\xe9q\x06\xbc\x9a\x1cV\xa07b\xa07\x02\xaf" +
-	"\x1c\x0c\x1a\xf6\x8fXH6\xad&E\xd1\x10B\xce7" +
-	"C\x8fjA\xcbP\x11\x17\x99l\x82\x071\xe0A\xe0" +
-	"S\x0cCO\xae\xb3E\xc1Fj&+\x96\\i(" +
-	"a\xddR&\xe9\x01\xd9R\xfc\x0d\xb2!\xb3aS\xf2" +
-	"8\x07\xcc.CH\xba\x8c\x05)\x8f\x01\xae\xbdU\xcf" +
-	"\xa0\x83j\xe3\x84\xb00'\xb1Y\x089\xb8\x086\x9a" +
-	"\x09\x123\x181\xc28\x86\x83dX\x03[gB5" +
-	"\x19\x1d\xc2p\xc08\x0e\x0c\x18\x00\xd0\x91\x81G\x84+" +
-	"\xc8h>\xc3\x01\xeb\xa4\xca`'\xdbBOf\x18b" +
-	"\x84\x1f\x80\x83d\x94\x03\x1b\x0b\x85\x130\x061\xc2a" +
-	"\xe0 \xcb)o\xc0\xb66\xe1\x004\"Fx\x078" +
-	"\xe8\xe1\xd4\x05`'\xc1\xc2N2\xba\x0d8\xe0\x9c\xfc" +
-	"\x0c\xec\x12H\xd8HF;\x81\x83\xcb\x9c\\\x04\xec\xd4" +
-	"@x\x82\x8c>\x02\x1c\xf4t\x12\x0d\xb0\x8b\x12a\x19" +
-	"L@\x8c\xb0\x088\xe8\xe5dc`\x03\xbc\x10%\xa3" +
-	"a\xe0\xe0r\xa7\xd0\x01;\xa7\x14d\x98\x8e\x18\xe1\xe7" +
-	"\xc0Ao\xa7p\x04\xdb\xe9\x85\xc9p'\x963p\x90" +
-	"\xed\xa4X`c\x9ePM\xd6V\x01\x07}\x9c\xc0\x0e" +
-	"v\x9e$\x94C\x0db\x84B\xe0\xc0\xeb\x14``\xa7" +
-	"\xd1B6\x19\x05\xe0 \xc7\xc9\x16\xc0\xae\x85\xf8\xd3c" +
-	"\x10\xc3\x1f\xe5\x80w\x8a:\xb0\x81\x94?8\x1d1\xfc" +
-	">\x0er\x9d\xd8\x01k\xb6\xa28$v\xcdF\x0c\xbf" +
-	"\x9d\xf3\xce\x8d\xaaV\x1dx#\xaa\xd6R\x07^U\xc3" +
-	"\xbf|a=\xaaYu\xb0 \xaa%\xfe\x8b\x05t\xad" +
-	"Ym\xb9AA\x90\xfc\xd5\x94\xf2kt\x08A\xa8\x0e" +
-	"bq\xa3\x1e\x1dD\x10t~5\x86\x11B\xce\xafI" +
-	"&\xfd\xabIFl\x9b\x92\x1c\xd4\x91\x17\xfb\x83\xf3\xa1" +
-	"AE,\xe6\xad\xb6\xbdU\x97\xc3j\x1d\xd4\xceV\x02" +
-	"zX\xa9\x83\x05\x01]\xd3\x94\x00f!\xa8\x9a\xe4\x07" +
-	"b\xc9O]\x0b\xa9\x9a\xd2\xa0 N1\xcc:h\x80" +
-	"\xa4\xcf0\x91\x9a\xf1M\x95\xaa\xd9\xa0j\x9a\x12\xf47" +
-	"*>3\x1a\xb2R\xdc\x0e\xa3Eo\x16\xa4~\x0c\xc4" +
-	"\xec\x89\xd8\xd5\x011\x00(\x9d\x94i\xc9-\x8a\xbfQ" +
-	"1\xa3!\xd623|\xdc\x16\x9cE\x1c<l\xa2\xee" +
-	"\x1c|\x8e\xd2\xd1-P\xd8\x12\x0e\xc5\xf7\xb1L\xe4J" +
-	"\xc6\xcf\x00'\x87B\xd0\x07A\x03\x0b\x90\x93L\x0c\x10" +
-	"\xe0\x8f4\x167\x12\xe1\xd6\x8e\xd7CA\xc5pGc" +
-	"?A\xe3*\x98\x0d\xb1\xd1b3\x99\xe8\x11\xadV\xd9" +
-	"\x12e1\xae\x1bQ5E9\x14\xd2\xdb\x95\xa0h\xe9" +
-	"\xa2\x1c\x08p\x8ai\x12nl\xe6\x06\xd5 $\xf9Y" +
-	"\x90\x86R(=\x04\xe3\xec\x95,H\xd70P\x1b\xa7" +
-	"l\x9f\xdd\x17Q\x8c\xb0\xd9\xad$lE\x07\x1cy\"" +
-	"Z\x1fdN\xdc>\xfc\x0d\xb2\x17O\xf81\x80\x9a\x0a" +
-	"\xccMr\x9b\xe2\xecB\x93\x19\x93\x94\xf7\x82\xf8T3" +
-	")s\xa7\x1aK\x939\x97B\xbb1\xec\xa8\xd2\x9e\x90" +
-	"\xa2\xeb&\xca`(a\x96]D\x98\xb4\x15\xf9\xda\xe4" +
-	"PT\xc98#m\xb5d\x070\xe9\x1d\x1a\x93\xc4\x9c" +
-	"\x1d\xaa\xb0G\x0ceA\xfa\x17\x06b!= \x87\x1a" +
-	"d\x0bAk2\xf8)\x11\xbdA\xb6Z\xe9\x80\x98\xae" +
-	"\x15[m\x8d\xb5\xf1sgL P\x83\xa5\xe2M\x1f" +
-	"\x1e\xdfT\x19\xd5\"\xaa\xe6\xf0K\xe9bpR\xa5\xde" +
-	"\x88l\xb5v\xbb\x7f\x9c|\x83lp\xd8(.vb" +
-	"\xac\xe2\xabX\x90\xaee FV\xa6\x9ex\x81\x1e\xb1" +
-	"T]3!'Y\xbb#\x80\x9c\x0c9\x07d\xcb\xdd" +
-	"gS\xf8\xd6\x0d\xcbN\x19\xe8\xf5\xd3\xaeo\xaalV" +
-	"\xac@+!\xc1\xd1R\x81HM\x93%[\xf5\x1a\xdb" +
-	"\xac_\xd8{\xff\x0db\xf1\x99\xcdz\x16\xf1W\x92W" +
-	"\x0d\x09\xa9s\x141\xa8\x98\x01C%G!Y\x96\xd6" +
-	"!jzPA\x08I%\x0e\xab\x7f\xc4\xacn`A" +
-	"z\x99\x12\xd0\x16\xfcq\x13\x0b\xd2\xab\x0c@\"\xcd\xda" +
-	"\x86\xbf\xbd\xc8\x82\xb4\x83\x01\x9e\x85x\x9e\xb5\x1d[\xe7" +
-	"\xcb,H\xbbq\x9e\xb50\x9eg\xed\xc4\x1f_eA" +
-	"z\x8b\x01>++\x0f\xb2\x10\xe2\xbb\xf0\xc7\x1d,H" +
-	"{\x18\xe0{0y\xd0\x03!\xfem\xac\x88\xdd,H" +
-	"{\xd3\xf4\xebm\x95\xcdV\xc8F\x0cd#\xf0\x9a\xea" +
-	"]\x0a\xf4D\x0c\xf4D\xe0S\xf1\x19\x92\xbf\xcc\xb1\xaa" +
-	"ac\xb7/\xa8D\xacV[\xd6\x0b\xc2z\xf0f5" +
-	"\xac\\\x04w\xb1/::L\xd7OHoqE\xa2" +
-	"\xa4\xee\xfe\x81\xc4.i;.A\xe3R,\x1e\xefn" +
-	"\xc9I\xce.\x8a!c(\x0c1\x946\xc7\xce-\xb9" +
-	"\xe5&9\xdc\x1d\x8a`,ksM]/\x85\xc9\xf1" +
-	"M\x95dy\\\xb6`v\x07\xe4v\x8cN?\xa0\xd9" +
-	"\xa1\x05\xdc lB\xf2,\x8e?7R\x08\xd6\xaeZ" +
-	"\xad\xb7\xb4\xeaa\x1a\xad4E\x09\x8eW\xac\x00\xf6q" +
-	"\xf78\x1f\x9e\x13T\x0d\xb7\xed\x06'\xe5\xe9\x88\xd3H" +
-	"\xc2G\xea\xf1\x03\x86\"[J\x83\x8c|\x86\xa2Y\xa6" +
-	"\xdb^\xf8hay\x8e2Vmn\xf67\xf8\x88\x06" +
-	"\xa5\xde\xce~\xe3p\xe12\x96\x05\xa9\x81\xd2\xdf\xe4\xe9" +
-	"\x08I\x93X\x90n\xa5\xca\x9e\xa9\x98\x8b\x9bY\x90f" +
-	"1v25\xa5\x1dqZ2\xd8\xc6Z\x159\xd8\xa8" +
-	"\xb4MAl\xbb\x96\xfe\xb1\x11\xf9\xc8\x9aK\x89\x92n" +
-	"*tT\x94\x91\x1b\xf5\xc8Hk\x12v\x9a\x0c\x85\xb6" +
-	"m\xb8\x19\xf0\x98\x8b\x18\xf0\x02\xd3\x084PB_\x10" +
-	"4\xad\x86\x0b8J@\x0f\x87U\xf7\xc8\x83\x87\xa3\x1a" +
-	"\xf6\xa4\x0c\x04fR\x8b8\xd3_\x1b\xe7\x95\x86\xe8\xc9" +
-	"8rL\xa9\x8d\xc7\x8a\xb4,\xd4v\xd1\x0c\xd19\xc9" +
-	"\x19B\xee\xc8.&\x90}\x18\xc40\xaa\xe3l\x8c\x8d" +
-	"\xa7c\xb8F\x16\xdb\x151\xac\xb6\xb4Z\"\x16\xbeO" +
-	"\xc4\xd6N\x12Z\xc7\x80\xb0\xc1\xd6\xb1 M\xa2\xe4W" +
-	"\x8f\xad\xeaF\x16\xa4\x9b)\x03\x92\xc6$\xac\xaa5\xad" +
-	"\x1c\x8e5\xabZ\x8bbD\x0c\xc4\xa9\x9a\xe5\xc89\x9e" +
-	"\xc9Q\xb9\x90\xf3*\x95\x96\x0b\xa5ZP\x83\xaa\xb5\xb8" +
-	"\xe6Y\x97\x06\x93Nb\xf0#a2\x95\x89\xd1\xc1\xa0" +
-	"\x1b\x95\x9a$\x95\xda\xf8\xc4\xb4\x14/\xc7%\xd5\x88W" +
-	"*\xae\xb5\x05M/>\x0dr\x927\xba\xdd\xd0sR" +
-	"\xc6\x84\x89uwL\xad\x1b\xa4\x1e\xddP_\xd9\xa6\x18" +
-	"\xa6\xaakvV|\x01)\xb8\x86:\xbafrI\xac" +
-	"/*lT\x1b\xa9\xc1\x80\xe6n\xd1%\x89{\x9fs" +
-	"1<G1\x14\x8d\x09(\xe2l\xc5jW\x14M\xb4" +
-	"\xdau1PK\x9c\xd4L\xbd\x01\x1a\x96\xb8\x01ZI" +
-	"Y\xf2\xc3c\x12\x17;OS\x96\xbc\x0e\x7f|*\x91" +
-	"\xc3\xb0\x89+\xa0-5\x89\x1c\x06'\x1c\x1eO<5" +
-	"y\x1bG\x8f\xb7X\x90\x8e0\xe0\x93\x83A%\x984" +
-	"g\xe7U/n\xce\x0b\xe2\xe1\xef\x02\x13\xd4\x16M7" +
-	".0\xa16\xac\x18-\xf4\xb8s\xe3\x98p\x18\x8c\x90" +
-	"!5`\xe1P\xd5\xed\xa4ts\x89\xd8\xfe\xc4\x86M" +
-	"\xf7\x80\xed\x06f\x09Or\xd5>!\x9b\xb8\x0cpB" +
-	"\x12\xa5\xfeF\xaabv\xc9\x96\xbb\xad\x05\x12\xa4\xbas" +
-	"\xa0t[\x85HM}P\xd1,\x95\xb5:.\x0c\x8d" +
-	"\xb964\xce\xd6\xd9\xa8%\xeaQC\x0cD\x0d\x1cr" +
-	"\xc5\xa8\xa9\x18\xf1\xabE\x05!)\xc79\x84\x8c\x11p" +
-	"\x16\x0bR\x882&\x15[X\x90\x05)B\x19S\x18" +
-	"\xcf\x0c\xb1 \xcdK^'F\xb1\xd9X,H\x0b\x19" +
-	"\x88%\xb6\x9a\x8a8\x93*l\xf5v:\xf2\xba\"h" +
-	"L5\xa7\x90\xab\x0b\xb7\xeb\x06\x88\xd4\xdc\xa8\x9a\x96n" +
-	"\xd4v\x8c\xd3,\xa3\xe3\xc2\xae\xf4el\x8a\xa6\x88x" +
-	"\x01\xa3\x1b\x1d\xa2\x82W\x88\xcd\xba!\xca\xa2\xb7Y\x0d" +
-	")\x97\x10\x12j\xa8D\xc3>\xfb\xe4\xb2d\x9cH\xf1" +
-	"\xf4\xda@\xab\xac\xb58\xf0\xc3\x19J\xb3\x9d\x9d\xa7G" +
-	"\xbdVr\x8a\x0eW|\xa4K\xeb\xc4\xbc\xa4\xe1;O" +
-	"Y\x99\x86OC\xdc\x85\xe8\xe61\xb0 1\xaf\xbb\x8a" +
-	"+\x91\x0e\xd8\x95b7\xf1(l\xb6d\x987Dj" +
-	"&\xe9-\xe34\x8b\xedN;\xf6\x05\xf7\xf2X\x93\xaa" +
-	"\xb5\x84\x141\x04zK\\9\x08hc\xc4\x0a\xb9-" +
-	"\x1ey\x1d\x85(e\x94\x85\xda\x0aQ\x07',t!" +
-	"\x85l\xf4\xd5xJ\xa1D\xb3\xed\xb5\xe4\x16'V\xe3" +
-	"o}\x10x\x83\xb2\xd5]\xb2\x1f/\xc13\x929\xdb" +
-	"g\xe7F\xe3BKG\x1d\"\xd2V%0G\x8f\xba" +
-	"\x17\xff)\x13lpq\xafW\\\xaf<\xa8r\xc5\xd7" +
-	"\xac\x1b\x01\xc5-\xa9N\xb2\x98\x81}lz\"gC" +
-	"\xe0?}\xe5\x93\x8e\x9c\x19\xa7G^,Yl*~" +
-	"r}ow\xc0\x80\xdd)$\xf00\x0c1B\x16p" +
-	"\x90|\x8a\x01\xfb)\x8e?;\x181\xfc1\x0e\x18\xa7" +
-	"\xdb\x03\xec\x96\x15\xfe\xd3\xb2\xf8\xe5/\xeb\xb4U\x80\xfd" +
-	"\x8e\x86Km\x86\xdf\xc6\x81\xc7\xe9\xf2\x00\xfbe\x9b\xdf" +
-	"X\x83\x18~\x1d\x07YN\x03\x04\xd8\xad\x1e\xfc\xaf\xf0" +
-	"~+8\xe8\xe14\x09\x80\xfd\xf0\xcd/\xc2\xfbE9" +
-	"\xe0\x9c\xae\x1b\xb0\x9fo1\x8c2\xfcL\x0e.s\x1e" +
-	"\xea\xc1\xee\x95\xe2\xa5\x09\x88\xe1\xeb9\x1f\xb9\x91\xaa\x03" +
-	"oH5\xad:\xe0\x022\xb9\x88\xc6EW]<\xf5" +
-	"j\xc3\xa3\xf1?\\D\xd5\xea\xc0G,\xb2.\xe5\x92" +
-	"6\xe3\xb2\x97\x06\x9c\x7f$q\xb1\xad\xc3\xbeRV\x0c" +
-	"\xd3.\x02i\xbf\xbf\x9e\x942\xde\x06Y5.\x86\xcb" +
-	"\x13\x95\x8e\xab\xa7\xc9\xa1(\xa3\x88\x11Y5DU\x13" +
-	"\xadVE\x0c\xe8^L\xe2\x12j\xf52\xf7\xfb>\xae" +
-	"M\x0euW\xe2\x18\x8a\xa98\xde\xd9M\xf1\xea\xbaA" +
-	"\x8aPhW\xcb0rUss\xae8t`\x9d:" +
-	"\x85Nwn\x85QP\xa5\xdd*-Yr\xdf\xd1>" +
-	"\x13\x85\x9d\x13.9\x90\xe3\xed[Y\x90,\x0a;\xe7" +
-	"\xe2\xe5\x11\x16\xa4\xbb\x19\x88\xcd\x96M%\xedb35" +
-	"\x8e/\x98-\x07\xe6(Z\xd0\x11KD6\xcdv\xdd" +
-	"\x08\xba]\x85\xba\x94=nB\xa1\xb3)\xe7Y\x11\"" +
-	"p9b\xe0\xf2\x0b\xdf\x89\xbb\xd5\xe1\xce\xdd\x85\x1bt" +
-	"'\x0b\\\x97K\x1c:hvw\x11\xe4\xe6\x1f\xf6F" +
-	"4\xadaIM\xfbT\xadY\xa7\xf4\xectmf\xea" +
-	"\xd9\xbea\xfb\xd1\xb6\xe3\xf4\x99d\xbe|\x902Df" +
-	"/\xe6\xa8'c\x8dJ\x04\xfb\x8d\xc6X\xa4\x04\x09\x92" +
-	"\xd2D\xd5ZD\x1fN\xa0\xcc\x1f\xe9\xa9\xa6\x11H\xb3" +
-	"\xe9\x1c\x04\\\xd0\xb42\xbf^\xf8\xa1\xd8\xf61Z\x16" +
-	"\xd3\x13&s%\xce>e-\xa8\x06e\x0b\xb1\x97\x18" +
-	"\xa3\x92\x00\xe1\xe6\xbe)\xd7Qv\x04\xeb\x0eB\xb1\x8c" +
-	" '\xd9n\x95v\x1e\xe4#\xf4\xb0\xe0\xaf$\x01\xcf" +
-	"\xeen\x04\xbb\x15C\xa8\x822\xc4\x08\xe5$\xe0\xd9\xcd" +
-	"D`\xb7\xda\x09\x85\xe4-4\x1bp\xc8\xb3\x1b\x18\xc1" +
-	"n\x8c\x13\x00\xaf\xe5O\xe3\x98gw\x86\x80\xdd\x8c\xc7" +
-	"\x1f\xc51\xe8 \x8eyv\x03\x0c\xd8\x0d\x19\xfc;x" +
-	"l'\x8eyv\x9b\x10\xd8\x8dD\xfc\x16\x1c\x9f6\xe2" +
-	"\x98g7\xe8\x80\xdd$\x85\xcbJ\x86\xff\x15\x8eyv" +
-	"g\"\xd8\xbd\x1c\xfc\x0a\xbcn\x09\x8eyv\xdf#\xd8" +
-	"M\x88|\x07\x8e\xa3a\x0ez:]\x9c`\xb7\x92\xf2" +
-	"2\xe6e*\xc7\x85\xf4\x96:\xa8\x8d'\xa3u\xc0Y" +
-	"r\x0b\x89x\xf1\xbfD]u\x10\xb3\xf3&\x12\xf9\xec" +
-	"\x84\xb9\x0eb\xb6\xc2\xc8w\xaf\xd9\xa1\x05\xea\xc0G\xae" +
-	"\xa3S\x03$V\xc8\xe8\x86z\xe2\x09D!v\xef\x1d" +
-	"\xd8\x8d^<\x8f\xcf\x98\xc5\xd9Ys\x1dH\xbd\x01\x92" +
-	"\xadM\x08%\xdbS\x10J6LS\x05d\xe6S\xa8" +
-	"\xeb\x8b\xc8\xb0\xa4\x1d]\xf0\xe9\x8a\x04\x13\xb7{A\xb7" +
-	"\x8b\xd8\x09\xd4E\xac\xa1\xeb\xc9J+,\xcf\x1b\xabD" +
-	"\xe2\xc8\xeeR\x08$\x0bi7w\xa3Y5\x94H\xc8" +
-	"\x89\xc1\xff\x1f\x00\x00\xff\xff\xeb\x81['"
+const schema_ea883e7d5248d81b = "x\xda\xac:{|\x14\xe5\xb5\xdf\x99\xd90\xc4\x126" +
+	"\xc3$@^\xec$$\x06i\x89\x90H+x%\x0f" +
+	"\x08\xcaK2\x89\xa0\x05\x1f\x0c\xbb\x93\xec\xc8\xee\xcc2" +
+	"3\x9b\x90V.p\x05\x15\x95\xfe\xb4WD\xa9\x16\xf5" +
+	"\x96V|\\\xa5b)*\xde\x8b\x12\x10\x95{\xa1\x82" +
+	"\x82\x15\x05\x0b\x0a\xfc@D\xc1\x02b\xf7\xfe\xbeow" +
+	"f\xbe$\xb3\x09\xf6w\xffJv\xbe3\xe7\x9c\xef\xbc" +
+	"\xcf\x993\x92\xed_\xc3\x8c\xca\xe0\x8a\x11jZ\x0c\x19" +
+	"}\x12\x85\xb3\xd5\xb7/\x1eoY\x82\xa4l\x80D\xc1" +
+	"\xbe\xeb\x1b\x17\x8e\xbb\xf78\xca\xf0q\x08\x09j\xf6G" +
+	"B<\x9b\x13\xe2\xd9\x81\xaa'\xb2\x03\x80 \xb1\xb5\x1c" +
+	"\xfeq\xc3\xfa?-A|. \x94\x01\x1cBU\xaf" +
+	"\xf0\x93\x01\x81\xb0\x85\xafF\x90\xe0\xff\xd6\xa6\x8d|\xf7" +
+	"\xf3\xbb\x10\x9f\xcd\xba\xf8\x10\x08\x87\xf8g\x85c<\x86" +
+	"?\xc2o\xf7\x09\x99\xb9\x1cB\x89{W\xdc\x7f\x83z" +
+	"u\xdd\xbd\x88\x17\x00!L\xb4\xeat\xcee\x80|\x89" +
+	"m\x8f\x8e[z\xc3\xdb\xf7=@\x13\xda\x9fS\x89\x09" +
+	"\x1d\xca\xc1\x84\xc6o\x14G\xac\xe1?\xed\x04\x00\xb9c" +
+	"1@f.\x06\x10\xb7\xaf\xfe\xe91i\xd7\xaf\x10\x9f" +
+	"M\xdf\x8c\xc17\x1b\x93{\\\xa8\xcf\xe5\x84\xfa\xdc\x80" +
+	"\xd0\x9e\xdb\x86 \xf1%{\xa4\x8a\xfd%\xf3`\x12\x1d" +
+	"\xe1d/\xc6\xe6K\xfc\xf9\x8b\xe7\xb6Do\x1b\xf70" +
+	"Mhsn>&\xd4A\x08\xbd\x91?x\xf6\xb6\x07" +
+	"\xbe\xec\x04p$\xc9\xc9I\x020\xe1\x9e\x01\xcb\xe7}" +
+	"\x1aYI\xe1.\x1aX\x89q\x8f\x9b\xdf\xff\xc9\xed\xbb" +
+	"\x8f\xadJ\xbd\x8ay\xab\xca\x18Hn\x995\x10\xb3\xf5" +
+	"8s\xd9\xaa\xc1\xcf\xfc\xe17I\x01%\x01\xd4\x81\x0c" +
+	"\x06\x88\x12\x80\x9b>\x98=g\xfb[/\xfc\x96\xc2\xbd" +
+	"{\xe0p\x8c\xbb\xcf\x7fNI\xec\xfb\xdf\xb7\xe8\x93M" +
+	"\x03\xf3\xf1\xc9\xb7\x03\xbfb&\xac\xba\xf8\xdb\x14R\xc2" +
+	"\xf0SI\xa4k\x07b\x86W\xcd*\x19\x16\xbb3\xb4" +
+	"\x86f\xabc\xe0\x00\x0c\xb0\x93P\xbd\xfa\x17o\xfez" +
+	"\xe7_\x8e\xaeA\x92\x00)\xe4\xc2\x88A\x17\x10\x08\xa3" +
+	"\x06a\x04\xed'\x7f\x15|\xee\xc8\xba\xa7\x10\x9fc\xd3" +
+	"\x96\x06\x0d\xc0\xb4\x97^5\xeb\xe9\x8a\xdbG>\x8d\x0d" +
+	"\x8e2\x90\x0c\x96\xa8e\xd0;B\xfd N\xa8\x1f\x14" +
+	"\xa8j\x1f\xb4\x1d\x1b\xdc\xc9\xfa\xbb\x7f\xbc+\x7f\xc3\x7f" +
+	"P\xb7\xa8\xcd#zY\xf6\xe3\x85\x1dM\xef\x9f\xfa\x9d" +
+	"KC\xb8\"\xef\x02\xf2%6\xae]\x0f\xa1\x9bF\xfe" +
+	">y\x90\xbc^V\xdee\x98\xfb\xdc<\xcc\xddU3" +
+	"\x87$\xa6\xce\xce\\G\xdd_\x18\x9d\xf75\x02a\x0c" +
+	"9\x8f\xee\xf9B\xcblY\xb8.\x85\x80X\xcc\xcf\xf3" +
+	"\xf0\xedn\xcd\xc3\xb7g\x07\xf4\xe3+\xe6>N\xbf_" +
+	"\xb5)I`\x0bA0\\\xff\xfa7\x17\xb7-\x7f\x8e" +
+	"2\xebCy\x0cf\xfa\xddO\x06\xdd\x9a\xf5\xe1\x88\x17" +
+	"\xa8\xebt\xe4\x95\xe0\x93]M\xff\xf8\xeb\xa7\x15\xdf\xbe" +
+	"\x88\xa4\x1cp\xb0\xbe\x90G\xb4\xb2\x9e\x90\x95\xfb_\xf3" +
+	"\xee\xe0\x8b#_J\x09=\x09\x91\x9bO \xf2\xf21" +
+	"\xc4\xc6\xf9\x9f\\5v\xdf\xec\x97R\x8cc\x99V\xb5" +
+	"\xe7\x97`\x80%\xf9/\"H\x84\xc7\xec\xf9(\xe7\xdc" +
+	"\xed/Q\xe4\xcb\x0a\xea0\xf9\xc7\xa7]\xf7\xe6\x07\x07" +
+	"\xe7\xfe\x91\xd2XV\x01\xf1\xc4Q\x83\xcfw<\xb7\xf4" +
+	"O\x1b\xa8w\xce\xe6\x13\xeb=\xfd\xfd\x99\x8f\xb7\\\xab" +
+	"o\xa4\x8cS8\x90\x8f\xe5t\x88\xb03&\xfe\xaf\x13" +
+	"\xe7\x1d\xd8\xb5\x91\xc2ym\x01\xb1\xc0\x17\xcb\xa7\x0e}" +
+	"\xf0p\xd6\xab\xd4IY\x01\xb1\x8f\xbc\xbe\x8bOl|" +
+	".\xf2\x1aE-\xab\x80\xd8\xf3\xa3[\x17\xd6\x8d\xbae" +
+	"\xda\xeb\x9d\xfd\x99\xe8\xfdl\xfeq\x01\x0a8\xc4&\xa6" +
+	"\xac\xc9\xb9\xb3m\xd2\xba\xcd\x14\xe2\x03\xf9D\xf2\xab\x9b" +
+	"\xf6\xf4\xff\xe5k\xf3\xdf\xe8\x12\x0e\x88\xddm\xc9\x7fU" +
+	"\xd8\x91\xcf\x09;\xf2\x03\xc2y\"\xa8\xe9\xab\xe4+\xeb" +
+	"\xdf}\xea\x0d\xda\xa7\xd7\x16\x10\x9f~\xa1\x00\xab\xf8\\" +
+	"\xc5\xfe\x8f>i>\xf0\xdf\xb4\x0d\xed,\xc06\xb4\x9b" +
+	"\x9c\xcf9\xbdC\xbfP\xbd\xe9-\x1a\xc1\xe9\x02\xe2\xd9" +
+	"\xe7\x09\xc0v~\x925\xe3\xf3\xab;h\x80\xbcB\xa2" +
+	"\xab\xe2B\x0c\xf0\xecGo~\xf2\x90~M'\x80\xda" +
+	"\xc2\xe1\x18`\x12\x01\x18\xff\xbb\x0dS\xbe\xcc\xfa\xf56" +
+	"\xea\xaej!\x11o\xe0X\xf6\x92y\x07\xc5\x1d\x94\x10" +
+	"\xa5B\xe24\xcdO\xde\xb1\xfa\xed!svt\x91B" +
+	"\x06\xf1\xbe\xc2g\x85\xdaBN\xa8-\x0cTE\x0bI" +
+	"\xb8?\xb1z\x10\xdc7\xe1y\x1a\xd1\xee\"b\x15\x1f" +
+	"6\x85\xab/\x7f\xe6\xe5\x1d\x94\x89o*\"\x1a\xfc\xf6" +
+	"\xa4\xb4\xfc\x81\xaf\xcf\xbc\xe7\x9e\x08O\x15a\xbf\xac\x7f" +
+	"~\xf6\xb2\x07\xb7\xbd\xb4\x8b\xbe\xd0\xb2\"r\xe3\x15E" +
+	"\xf8B\x1b\x17f\xdf5\x99_\xfe\x17\x8a\xda\xfa\"\xe2" +
+	"\x1cO^\xfe\xf0=\xef\x8e\x1b\xbd\x87:y\xac\x88\\" +
+	"\xb5n\xfc\xac\xefbe\xab\xf7tM`D\xafK\x8a" +
+	"\xde\x11V\x14q\xc2\x8a\xa2\x80\xb0\xb9\xe8\x0b\x04\x09\xe5" +
+	"\xab;ZoXpx\x8f\x97\x15<1\xe4\xb8\xb0n" +
+	"\x08'\xac\x1b\x12\x10\xf6\x0e\xc1V\x90%/=\x1c\xbd" +
+	"\xfe\xd4\x87t$\x89\x06\x08\xc7\xf1\x00\xe6X\x98q\xb2" +
+	"0\xb3}\xd0\xbe\x94\xd3\x12\xc6\xd6&\x01^ \x00\x8f" +
+	"\xac\xa8\x92\x87\xae\xa9\xdfOc\xd8\x19 \x91t/\x01" +
+	"X\xf7\xf9\xbei\xffc\xbd\xbf\xbf\x0bCI\xb3\x0e\xbc" +
+	"#\x80\xc8\x09 \x06\x84+D\xcc\xfe\x99\xb7\x9e\xaf\xf7" +
+	"\xfd\xed\x99\xbfRR\xcf*&\xfax\xb9j\xef\xae\xbb" +
+	"*\xc6~J{\xa9HN\xfeh\xfcd\xeb\x9f\x9f8" +
+	"s\x90v\x09\x91x\xd4\x9b\xdfL\xc9\xb9\xe7\xf0\x8d\x87" +
+	":\x85\x9c\x0e\x91\xb0\xbfS\xc4\x1e\xfc\xc1\xed\x8f,\xeb" +
+	"w\xe5\x81C\x14\xd6+\x8a\x89\x96\xb7\xfe\xfd\x96\xbb\x1b" +
+	"k\x0a>\xa3\x95\xc9\x17\x13\xfb\xce+\xc6\x17\xfb\xf2\xd9" +
+	"\xe5\x93f\x8f\x8e\x7fF\xbd:\xa9\x98\x90=\xbf\xe7\xce" +
+	"\x0d\xb7\xde\xfc\xf2g\xddJ\x84Q\xc5\xab\x851\xc5\x18" +
+	"rt1\xc7\x08\xf1\x12\\\"\\3\xfe\x14;\xa1\xe0" +
+	"\xdcg\xb4\x04o-!\xe9W)\xc1\x84*\xade\xc1" +
+	"\x17\xdf^p\x98\"\xb4\xac\x84\xc4\xb4\xfb\xacO\x1e." +
+	"\xfel\xda\x11\xaf\x0a Z\xf2\x91\xd0^\xc2\x09\xed%" +
+	"\x01am\x09\xbe\xeb\xf7\xdb\xfa\xbc\xbeoN\xee\x17T" +
+	"\xd4\xaf\x82\xa1$\xaag\x0emCpj\xeb\x1f\x06\xbf" +
+	"u\xf4\xf2\xa3.\x19e(\x11\xc5\xcca\xef\x89\xff5" +
+	"\xfa\x8act:\x986\x94\x84ei(\xe6\xf0\xbb&" +
+	"\xdf\xd9\xdb\x9egO\xa6dE\xde]\x92\xc4\xbc|(" +
+	"V\xeb\xc1\xdbo\xb9\xb7,r\xee+$\xe5:f\xa4" +
+	"\x94\xd6\x91,_\x8a1\x04\xb8\xa7\xe6o>=\xfa4" +
+	"u\xc7\x87J\xc9\x1d\xbfy\x98\xb9yfe\xe97\x94" +
+	"E\xb4\x97\x12\xbdO\x19\xfb\xa2\xb0~\xc4\x9e3\xb4\xe0" +
+	"\xe4RBU\xc5H\xbf[\xf3\xea\x89\x153\x17\x9f\xa5" +
+	"\x14\xb8\xbc\x94Tr+\x09\xcdo\x87\xce\xbayLf" +
+	"\xd9\xdf\xe9\xf7;J\xc9\xb5v\x10\x80\xc6Cu\xaf\xdd" +
+	"\x15\x98q\xceK\xbc\xe7K\xdf\x112\xca8!\xa3," +
+	" \x8c*\xc3\xe2\xed;\xae\xfc\xa1\xb2\xaf_>O\x1b" +
+	"\xcc\x8a\xb2F\x8c\xee\xb12\xe2\x09\xe3\xf6W/36" +
+	"\x9e\xa7\xectg\x19\x11\xf0\xfe\x8b\xfe\x11\xe5\x1b|\x17" +
+	"hN^)#\x91p3y\xb5t\xe2\xd6\x01\xa7\x16" +
+	"\xff\xfeB7\x8b:P\xf6\xb4p\xa4\x8c\xe4\xdf\xb2{" +
+	"\x18\xa1\xbd\x1c[\xd4\xa9U\xf7W\x0e^p\xfd\xc5n" +
+	"\xd0r\xf9\xd3\x82\x8aA\x04\xa5\xfc:aE\xf9\xcf\x10" +
+	"J\xdc\xdf\xfa\xc8\x99\xeb\x0e\xfe\xf4\xfbNl\x97\x93D" +
+	"\xb0\xb2\x1c\xd3\xfe\x19\xb3roQ\xdb\xdd\xdf\xd3YY" +
+	"x\xa5\x1cg\xc1M\xe5\xf8\xe2\xadw\xcf9\x91;\xfd" +
+	"\xfdD\xa7@?\x8c\x84\x80\xe2a\xd5\xe8\xeaDP\x8e" +
+	"i\xb1+\xe5\x18\xa3V\x90\x7f\xc76(\x8a\xd1d\xc9" +
+	"\x16\x1b7\x1b\x00$\x1f0\x89\xdb\xfe}\x8d\xb4\xf9\x83" +
+	"\xfb:\x90\xe4c\xa0v0@?\x84xx6\xa1)" +
+	"\x96hZ\xb2\x05qS\xd4\x9bEY\xf4\xc7\x14\xc5@" +
+	"H\xcaa}\x08\xf9\x00!~\xe1p\x84\xa4\x05,H" +
+	"K\x19\xe0\x01\x88\xab\xf3K\xf0\xc3;Y\x90\xeee\x80" +
+	"g\x98\x1c`\x10\xe2\x97MFHZ\xca\x82\xf4 \x03" +
+	"\xc0\xe6\x00\x8b\x10\xbfb.B\xd2\x03,H\x8f2\xc0" +
+	"\xfb\xd8\x1c\xf0!\xc4\xaf\xacDHz\x90\x05\xe9q\x06" +
+	"\xfc\x9a\x1cU\xa0\x1fb\xa0\x1f\x02\xbf\x1c\x0a\x19\xf6\x8f" +
+	"DD6\xad&E\xd1\x10B\xce3C\x8fk!\xcb" +
+	"P\x11\x17\x9bf\x82\x0f1\xe0C\x10P\x0cCw\xdf" +
+	"\xb3\x05\xe2\xb3\x052M\xb1\xe4\x0aC\x89\xea\x962U" +
+	"\x0f\xca\x96R\xda \x1br\xd4DH\xf29\xf7\xcc*" +
+	"AH\xea\xcb\x82\x94\xc3\x00\xd7\x16\xd6\xbb\xa1\x03\x1b\x9d" +
+	"\x1f\xe3\xc3\x92\x9d\xcaf \xe4\x84N\xb0\xa3\x9d 1" +
+	"\xc3\x11#\xd43\x1c\xb8)\x10l=\x0ac\xc8\xe9\x08" +
+	"\x86\x03\xc6qm\xc0\xc1\x01\x1d\xbd\xfc\xa8PLNs" +
+	"\x19\x0eX\xa7\x8e\x06\xbb\x16\x172\x99J\xc4\x08\xdf\x03" +
+	"\x07n>\x04;T\x0a\xa7\xa1\x0e1\xc2\x11\xe0 \xc3" +
+	"i\x80\xc0\xb6@a?4\"F\xd8\x0d\x1c\xf4q\x1a" +
+	"\x07\xb0\xebc\xa1\x83\x9cn\x06\x0e8\xa7d\x03\xbbI" +
+	"\x12\xd6\x93\xd3u\xc0A_\xa74\x01\xbbL\x10\x9e " +
+	"\xa7+\x81\x83L\xa7\xec\x00\xbbk\x11\x96\xc3d\xc4\x08" +
+	"K\x80\x83\xcb\x9c\xf2\x0c\xec\xf8/\xc4\xc9i\x148\xf8" +
+	"\x91\xd3\x09\x81]g\x0a2\xccB\x8c\xf0s\xe0\xa0\x9f" +
+	"\xd3;\x82\x1d\x0a\x84ip\x07\x963p\x90\xe5T\\" +
+	"`\x07Ca\x0cyw\x14p\xd0\xdf)\x00\xc0.\x9b" +
+	"\x842\x18\x8b\x18!\x0f8\xf0;-\x1a\xd8\xe5\xb5\x90" +
+	"EN\x018\xc8v\xca\x0a\xb0{%\xfel\x1db\xf8" +
+	"c\x1c\xf0N\xdb\x07v\x84\xe5\x0f\xccB\x0c\xbf\x97\x83" +
+	"\x01Nb\x815\xaf\xa2d\xa4\xdc1\x171\xfc\x16\xce" +
+	"??\xaeZ5\xe0\x8f\xa9ZK\x0d\xf8U\x0d\xff\x0a" +
+	"D\xf5\xb8f\xd5\xc0\xa2\xb8\x96\xfa/\x11\xd4\xb5f\xb5" +
+	"\xe5:\x05\x81\xfb\xab\xa9\xd3\xaf\xda\x08\x82H\x0d$\x92" +
+	"\xb6]\x1bB\x10r~5F\x11B\xce\xaf\xa9&\xfd" +
+	"\xabIFl\xab\xe2\x1e\xea\xc8\x8f\xdd\xc2y\xd0\xa0\"" +
+	"\x16\xf3V\xdd\x16\xd6\xe5\xa8Z\x03\xd5s\x95\xa0\x1eU" +
+	"j`QP\xd74%\x88Y\x08\xa9&\xf9\x81X\xf2" +
+	"S\xd7\"\xaa\xa64(\x88S\x0c\xb3\x06\x1a\xc0\xf5\x1c" +
+	"\xd6\xf6\x9c\x89M\x15\xa6%\xb7(\xa5\x8d\x8a\x19\x8fX" +
+	"&B\xdda\x88\xb3\xdaW\xb7J\x1b\x02\xc4U\xd39" +
+	"\xea<\xa5\xbd\x9b\xa3z\xa1\xaa\x8dDJ\x1b\xab\x93T" +
+	"\xbdp\x952\xc0\xc9\x91\x08\xf4G\xd0\xc0\x02d\xbb\xc9" +
+	"\x1f\x01~\xd8=\xca6\x12IM\xd4\xfd\x91\x90bx" +
+	"\xc7\xd9R\x12gG\xc1\\H\xd4\x8a\xcd:\x06\xf4\x89" +
+	"VX\xb6DYL\x0aZTMQ\x8eD\xf46%" +
+	"$Z\xba(\x07\x83\x9cb\x9a\x84'\x9b\xc5+\xc6\"" +
+	"$\x95\xb2 \x8d\xa4\xe2\xef\x08\x1cA\x87\xb1 ]\xc5" +
+	"@u\x12\xb3-\x86@L1\xa2f/B\xb1u\x17" +
+	"\xb4J\xab\x93\xb10\x0d`R\xef$^\xb2\xe9\xb5\xe0" +
+	"\x15.Y\x8f\xe8\xdb$\xb7*6A\x1aW\x9d\xab\x85" +
+	"EIH\xd3\xd5\x84\xd3yu\xd1\x84\x17\x81\xc6hi" +
+	"\xa3\x12 Z\xee\xd1\x1c\x9a(\xcb\xa2D]\xd2\x8b\xa8" +
+	"is\x0b\xb4\xca\x91\xb8\x92\xfe\xda\x8e\xad\xa7r\x0dM" +
+	"\xa7\xd1E\xe9\xd0\x19\x85\xb3\xe7H\x16\xa4\x7fa \x11" +
+	"\xd1\x83r\xa4A\xb6\x10\x84\xdd\xd4\xa7\xc4\xf4\x06\xd9\x0a" +
+	"\xd3\xe90\xed\x1d\x89j\x1b\x15\xd3\xdf\x83(H\x9cI" +
+	"\xba\"\xeb\x054\xb1\xa9\"\xae\xc5T\xcd\xb9\x01\xa5\xb1" +
+	"\xe1\xae\xf6\xfd1\xd9\x0a\xf7\xc2Q\x92\x14\xc1\x03f\xaf" +
+	"\x92\xc0\xe6\xf0\x13\x16\xa4\xab\x19H\x907;Kb\x91" +
+	"\x1e\xb3T]3!\xdbm\xea\x11@\xb6\x97\x97Nl" +
+	"\xaa\x08\xca\x96\xa7\xebw\xba\x82nXv5\xd1\xfd\x0a" +
+	"3\xc77U4+V0\x9c\x8a[`v'\x84\x0b" +
+	"\xaeIZ\xb3\x8eP\xcf\xb1\xe0\xdf a\x83f\x10\xef" +
+	"'\xf5\xd7\x88\x88:O\x11C\x8a\x194Tr9R" +
+	"\x8di\xed\xa2\xa6\x87\x14\x84\x90$:|\xef\xc6|\xbf" +
+	"\xc7\x82\xb4\x8f\x12\xd9^\xfcp\x17\x0b\xd2\xc7\x0c@\xaa" +
+	"\x1c\xdb\x8f\x9f\xedaA:\xc8\x00\xcfB\xb2\x1e;\x80" +
+	"\xady\x1f\x0b\xd2a\\\x8f-N\xd6c\x87\xf0\xc3\x8f" +
+	"Y\x90\x8e2\xc0gd\xe4@\x06B\xfc\x11\xfc\xf0 " +
+	"\x0b\xd2\x09\x06\xf8>L\x0e\xf4A\x88?\x86Us\x98" +
+	"\x05\xe9+\x06xnI\x0e\xaeF\xf9\x93\xd8rO\xb0" +
+	" \x9d\xebb\x0c\xfe\xb0l\x86!\x0b1\x90\x85\xc0o" +
+	"\xaa\xbfP \x131\x90\x89 \xa0\xe2\x8b\xb9\xbf\xcc\x09" +
+	"\xaa\x01\x80\x18\x00\x04\x81\x90\x12\xb3\xc2\xb66\x16E\xf5" +
+	"\xd0\x8d\xaa[\"&T\xb3A\xd54%\x84\xdd \xf5" +
+	"F\xaf\xaen\xab\xbf\xbb\xda\xb0j#zK\xfa(\xe8" +
+	"\xea\xfe\x9f\xa9\x19\xbb\xda\xa1G6\xeb\xd5\x93:\xf1j" +
+	"\xc9\x0e\xaf\xbd\x06\xae:*p\x19J\xab\xe3>\x96\xdc" +
+	"r\x03Ut{:>\x0e\xa7\xad\xdeur\xaf\x0cs" +
+	"\x14\x1e\x82\xc5\xce\xf66\x80W\x86\xc10\x9cg\xac\xc2" +
+	"\xd76\xdb\xb5\xa0W \x9d\xec^\xd1\x89\x1e\x8dT\x1c" +
+	"mS\xad\xf0Ma=J\xc7LMQB\x13\x15+" +
+	"\x88#JZ\x03\xc2\xac\xcf\x0b\xa9\x86\x17\xd1\xe1\xae\xb0" +
+	"\x1dY\x1bn\xc8\xea\"\x14C\x91-\xa5AF\x01C" +
+	"\xd1,3=E|\xcd\xa8<O\x99\xa067c\xaa" +
+	"\x1cVq?\x87j=n\xa4&\xb0 5P*\x9e" +
+	"6\x0b!i*\x0b\xd2\xcdT\x1b6\x03\xf3r#\x0b" +
+	"\xd2\x1c\xc6\xae\xe7\xa6\xb7!NsK\x84DX\x91C" +
+	"\x8dJ\xebt\xc4\xb6i]\x1f6\xa2\x00y\xa7\x9bZ" +
+	"\xfb\xa6K\xe8\xe9\xd4\xeb(\xee\xd2\xaa=\\\xa2\xa5\xfc" +
+	"\xc3\xd3\x7f\x88)y\xd8~]/\xb6\xbf\xc84\x82\x0d" +
+	"\x94J\x16\x85L\xab\xa1\xc7\x94\x85\x19\x0f\xea\xd1\xa8\xda" +
+	"Sv\xc4@q\x0d\xfbc\xb7\xa4\xe0U\x99L5K" +
+	"\x1bd\xbf\xf7\xe5\xa6\xe1\x1c7=f\xf9qV\xa3\x0b" +
+	"\xe7\x8c\xae\xae\x9fN\xd4\xd5\xc9j\xd4;\xf5\x88\xa9\xd4" +
+	"S\x09\x09\x9cvp\xf1\xc9&\xabO\xdc\xec\x8bm\x8a" +
+	"\x18U[\xc2\x96\x88u\x15\x10\xb1\xcb D[\x1e\xb6" +
+	"\xf7\x1a\x16\xa4\xa9\x94\x80'as\xbc\x9e\x05\xe9F\xca" +
+	"\xf2\xa4\xba\x949\x86\xbb\xf4\xf5\x89fUkQ\x8c\x98" +
+	"\x818U\xb3\x1cE$\x0bW\xaa\xd4s\xbe\xb9]B" +
+	"\xa9\xd7\xa0j-^\xb5\xe4\x0f\x09\xc9\xa4\xb8\xf9'B" +
+	"\xb2\x17?\xb5\xa1\x90\x17\xae\xb1.\xae\xea$`\x97\x92" +
+	"6;-\xded\xf3\xe5D\xc6tX\x93`\x90\xed\xce" +
+	"\xb2{\xc4\xea\x14\xca)sLwq\xad\xc7\x14Q\xdb" +
+	"0\xa9\xa2U1LU\xd7\xec\xe6\xa0W\xe9t\xcb\xc2" +
+	"\xeeD\x05\x07=o\xe3-L\xcd\xaa.$0\x8cb" +
+	"(\x1a\x13T\xc4\xb9\x8a\xd5\xa6(\x9ah\xb5\xe9b\xb0" +
+	"\x9a\xb8\xaa\xd9yjU\x99\x9aZ=L\x19\xedCu" +
+	"\xa9a\xd43\x94\xd1\xae\xc5\x0f\x9fdAz\x1d\x97I" +
+	"\xa9\xb1\xd5&,\xe0\x0d,H\xbbp\x99\xe4K\x96I" +
+	";'\xa7*\xaf\xa3\x0c\x04\xe4PH\x09\xb9\x96\xeb|" +
+	"\x97LZ\xee\xa2d\xfe\xec\x01@m\xd1t\xa3\x07\x80" +
+	"\xea\xa8b\xb4\xd0\xe7\xce\xb8\xd4\xf6\x0d]k\x8e\xa8A" +
+	"\x0b\xa7\xb6\xf4@\x9e*\x89a\xd7\xb1S{O\xe9?" +
+	"}\xb9\x9br\x9en*\xedL(5\xcbp\xd2\x19e" +
+	"j\x8d$\xc6\x804\xd8\xbb\xc6\xef\xa5\xb3I!\xec\xd9" +
+	"q\xba\xda\xa5\xc3\xfc\xa4\x90\xa2Y\xaa\xd5\x9e\xaeV\xb7" +
+	"\x03\xe6\x00;`\xce\xd5\xd9\xb8%\xeaqC\x0c\xc6\x0d" +
+	"\x9c\xc7\xc5\xb8\xa9\x18\xc9\xc9\xa9\x82\x90\x94\xed\xdcK\xc6" +
+	"qq\x0e\x0bR\x84\xb2;\x15\x1bc\x88\x05)F\xd9" +
+	"]\x14CFX\x90\x16\xb8\xd3\xd28\xb60\x8b\x05i" +
+	"1\x03\x89\x14\xa9\x19\x883\xa9\xee^o\xa3\x13\xb9g" +
+	"\\M\xa8\xe6t2\x8c\xf1*\x91\x1d!\\\xaf\x9a\x96" +
+	"n\xb4\xd7\xfb5\xcbh\xef\xd9\xf7\x8e'\xa6k\x8a\x88" +
+	"_`t\xa3]T\xf0\x1bb\xb3n\x88\xb2\xe8oV" +
+	"#\xca%\xa4\x8b\xb1T\xf5bK`Z\x89\x9bC:" +
+	"\xc5\xd9\xea`X\xd6Z\x9c\xe8\xc3\x19J\xb3\xddEx" +
+	"\xe7\xe1p\xf2.\x9e\xa1\x92\x9e-\xa4\xe0\\\x7fq\xbe" +
+	"\xe7\xa5\xf3\x17:\xce\xf5\x84=\x87\x81E)\xb8\x9e\xfb" +
+	"\xc8T]a\xb7\xc2i\x12W\xd4lI\x9f\xb8\xa6\xea" +
+	"-\xf5X\x05\xe9\xcc\xd7\x1e\xef\xdf\x97hR\xb5\x96\x88" +
+	"\"F@oIj\x0d\x01m\xabXS\xb7$\xd3\xb5" +
+	"\xa3)\xa5\x842`[S\xea\xf0\x94\x01/\xa6b$" +
+	"\xfda\xa0S\xa7Gs\xef\xb7\xe4\x16'\xc1\xe3g\xfd" +
+	"\x11\xf8C\xb2\xd5s\xf7\x91\x1c;\xf4V6\xce\x8f\xdb" +
+	"\x82\xf4\x84!\xd2\x0e+\xc1yz\xbc\xa7QH'0" +
+	";Py\xb7V\x9e#!\xaa\xb3\x0a4\xebFP\xe9" +
+	"\xa5+%\\_j\xc9h\x0f\xb3\xfe\x9f\x87ev\\" +
+	"\xee&\x15'#\xb3\x13\x9b\xb0q\x89\xe4\x0b\x87\xbdE" +
+	"\x04\xf6\xbe\x15\x7f\xba\x121\xfc\x11\x0e\xdc\xefW`\x7f" +
+	"\xc6\xe4\xf7\x0fG\x0c\xbf\x93\x03\xc6Y\x94\x01{\xdf\x87" +
+	"\xdfR\x82\x18\xfe\x15\x0eXg\x1b\x05\xec/\x90\xfc:" +
+	"\x8c\xf3\x09\x0e|\xce\x82\x0c\xd8[\x02\xfcCc\x11\xc3" +
+	"/\xe3 \xc3Y\x1a\x01{I\x86o\xc7\xf4\xa2\x1c\xf4" +
+	"q\x96*\xc0\xde!\xe0eLo\x06\x07\x9c\xb3\xb4\x04" +
+	"\xf67p~\x12\xa6w-\x17 S\xba\x1a\xf0GT" +
+	"\xd3\xaa\x01.(\x93i<n\xfej\x92%[+>" +
+	"M\xfe\xe1b\xaaV\x03\x01b\x9fif\xdct<\xf2" +
+	"\x18\x9b^z\xf7L4eO\xd5\x15\xc3\xb4M\xbdk" +
+	"\xed?\x9etO\x0d2\xab\x1a\xbd\x85\xf1)J\xfb\x95" +
+	"3\xe5H\x9cQ\xc4\x98\xac\x1a\xa2\xaa\x89VX\x11\x83" +
+	"\xba\x1f\xa3\xe8<v\xf6\x1c)\x94x\xcfB\xb9V9" +
+	"\xd2s;e(\xa6\xe2:k\x9an\xda\x93N')" +
+	"\xd1\xde\x96\xc6\xb6U\xadG\xff\x9a\xd8T\x81\x15\xed\x04" +
+	"\x97t\x9e\x85\xc3\xa5J{V\x97\xfa\xac'\xea\xce5" +
+	"\xa9X;\xf9\x92\xeb\x02\xccE\x98\x05\xc9\xa2b\xed|" +
+	"\xfcz\x8c\x05\xe9N\x06\x12seS\xe92\x08\xee\\" +
+	"\x16,\x9a+\x07\xe7)Z\xc8\x91TL6\xcd6\xdd" +
+	"\x08y\x8d\x8e}\xe9z+/\x09\xd1U\x9b\xf3)\x16" +
+	"b\xf0#\xc4\xc0\x8f\xd2\xce\x0a\xa8\xaf\x0d\xe9\x1aXg" +
+	"\xde\xd2C\xd0w;n\xaf\xb1\x14\x9d\x89\xd3M\xb8|" +
+	"i}\xcb!K\xa3\xact\xed!\xa0j\xcd:e\x0d" +
+	"\xce\xe2k:k\xb0\x07\x8b?\xd8\xce\x9c\x8d\x9et\x1f" +
+	"\x9eH\xaf$\xabF\xba\xf4o\xbb\xfb\xd7\x89F%\x86" +
+	"\xfdNc,\xd2(\x85H\x03\xa5j-b\x00Wm" +
+	"\xe6\x0f\xf4w\xd3\x08vq\x83l\x04\\\xc8\xb4\xba?" +
+	"\xbd\x94O\xf0\xb6\x8b\xd2\x82\x99\x952\xafa\xb8\xfc\x95" +
+	"\xb5\x90\x1a\x92-\xc4\xfe\xa0\xfc\xe6\x06\x9b\xf41\xa0\xd3" +
+	"\xa8\xcd\xce\x81\xe9\x824\x96\x1ad\xbb\x9bo]n\xe8" +
+	"dLn\xe6x\x922\x87\x91\x94io\x97\x82\xbd\x06" +
+	"#\x8c\x82\x12\xc4\x08e\x80\x93\xa6\xbd\xd6\x05\xf6\x8a\xa3" +
+	"\x90G>8g\x01N\x9b\xf6\xfe(\xd8\xdb\x88\x02\xe0" +
+	"w\xf9\xb38o\xdak9`\xef@\xf2\xc7p\x1e;" +
+	"\x80\xf3\xa6\xbd\x82\x04\xf6.\x0c\xbf\x1b\x9fu\xe0\xbci" +
+	"/k\x81\xbd\xcf\xc5o\x9a\x8c\x18~=\xce\x9b\xf6\x8e" +
+	"\x14\xd8\x0bk\xb8)f\xf8\xc7p\xde\xb4wB\xc1\xde" +
+	"\xa2\xe1WLN\xe6\xe2\xbe\xce\xce)\xd8\xdb\x9fN." +
+	"\xcet\xb6h\xc1\xde\xe5\xe5\xe5J\x92\x8b\xb9\x88\xdeR" +
+	"\x03\xd5\xc9:\xb8\x068Kn!\x195\xf9\x97\xa8\xae" +
+	"\x06\x12vEF\xbeZ\xdbu{\x0d$l\xb5\x91\xe7" +
+	"~\xb3]\x0b\xd6@\x80\xcc\xe7;\xa7cW-\xb5\x0d" +
+	"\x93\x88\x9f\x10\xb5\xd8;\x8f`o\xde\xf1<\xbei\x06" +
+	"g\x17\xef5 \xf5\x03pw\xcc\x10r\xb7\x83\x10r" +
+	"\xd7\xd3/\xe1\xcb\xb5\xd77\xa7J\xd7\xb0\xd2|?d" +
+	"\xba&*\x8f\x89\xa7\xd7\x00z25\x806t\xddm" +
+	"\x06\xa3\xf2\x82\x09J,\x99-\xd2v&\xeeX\xc0\xcb" +
+	"-i\xae\x0d%\x16q\xf2\xfe\xff\x05\x00\x00\xff\xff\x9c" +
+	"\xef\xe1\xd8"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
 		0x8167eafcc8695b1c,
 		0x81b6b14efe0127c4,
 		0x83e6cb306e77e311,
-		0x87c49e302c6516f8,
 		0x884238694e8b8d88,
 		0x8c8ac84e843e98c6,
 		0x8cdf119f2d20b743,
@@ -10140,7 +9928,6 @@ func init() {
 		0xc53b6f91dec2daaa,
 		0xc6920dee4bb4a443,
 		0xc920e06b8110e91f,
-		0xc9558eac26b0f15e,
 		0xc9601ec89a6aa066,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
