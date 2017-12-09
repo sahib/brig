@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"testing"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
@@ -604,5 +605,22 @@ func TestTag(t *testing.T) {
 		cmt, err = fs.lkr.ResolveRef("xxx")
 		require.Nil(t, cmt)
 		require.True(t, ie.IsErrNoSuchRef(err))
+	})
+}
+
+func TestStageUnmodified(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
+		infoOld, err := fs.Stat("/x")
+		require.Nil(t, err)
+
+		// Just to be sure:
+		time.Sleep(50 * time.Millisecond)
+
+		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
+		infoNew, err := fs.Stat("/x")
+		require.Nil(t, err)
+
+		require.Equal(t, infoOld.ModTime, infoNew.ModTime)
 	})
 }

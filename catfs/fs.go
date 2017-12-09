@@ -450,7 +450,8 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	// based on the content hash.
 	var key []byte
 
-	if file, err := fs.lkr.LookupFile(path); err != nil {
+	oldFile, err := fs.lkr.LookupFile(path)
+	if err != nil {
 		if !ie.IsNoSuchFileError(err) {
 			return err
 		}
@@ -469,7 +470,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		binary.PutVarint(salt, size)
 		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)
 	} else {
-		key = file.Key()
+		key = oldFile.Key()
 	}
 
 	// Get the size directrly from the number of bytes written
@@ -482,14 +483,24 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		return err
 	}
 
-	hash, err := fs.bk.Add(stream)
+	contentHash, err := fs.bk.Add(stream)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Abort early if the new hash == old hash.
+	if oldFile != nil {
+		if oldFile.Content().Equal(contentHash) {
+			// Nothing changed.
+			return nil
+		}
 
-	if err := fs.bk.Pin(hash); err != nil {
+		// Unpin old content.
+		if err := fs.bk.Unpin(oldFile.Content()); err != nil {
+			return err
+		}
+	}
+
+	if err := fs.bk.Pin(contentHash); err != nil {
 		return err
 	}
 
@@ -499,7 +510,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	}
 
 	nu := c.NodeUpdate{
-		Hash:   hash,
+		Hash:   contentHash,
 		Key:    key,
 		Author: owner,
 		Size:   sizeAcc.Size(),
@@ -746,7 +757,16 @@ func (fs *FS) Reset(path, rev string) error {
 		return err
 	}
 
-	return fs.lkr.CheckoutFile(cmt, nd)
+	// Unpin old version (but pin it again later on)
+	if err := fs.pin(path, fs.bk.Unpin); err != nil {
+		return err
+	}
+
+	if err := fs.lkr.CheckoutFile(cmt, nd); err != nil {
+		return err
+	}
+
+	return fs.pin(path, fs.bk.Pin)
 }
 
 func (fs *FS) Checkout(rev string, force bool) error {

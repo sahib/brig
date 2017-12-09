@@ -340,7 +340,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		if ghostParent == nil {
 			// TODO: Think about this case. stage() should not be called on directories
 			//       anyways (only on files or files to ghosts)
-			return nil, fmt.Errorf("The ghost is root? TODO")
+			return nil, fmt.Errorf("The ghost is a root? Something is wrong...")
 		}
 
 		if err := ghostParent.RemoveChild(lkr, node); err != nil {
@@ -365,9 +365,9 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
 		needRemove = true
 
-		if file.Hash().Equal(info.Hash) {
-			log.Debugf("Hash was not modified. Refusing update.")
-			return nil, ie.ErrNoChange
+		if file.Content().Equal(info.Hash) {
+			log.Debugf("Hash was not modified. Not doing any update.")
+			return file, nil
 		}
 	} else {
 		parent, err := mkdirParents(lkr, repoPath)
