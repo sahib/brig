@@ -653,13 +653,49 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 // Sync will synchronize the state of two filesystems.
 // If one of filesystems have unstaged changes, they will be committted first.
 // If our filesystem was changed by Sync(), a new merge commit will also be created.
-//
-// TODO: Provide way to configure sync config.
 func (fs *FS) Sync(remote *FS) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return vcs.Sync(remote.lkr, fs.lkr, &fs.cfg.sync)
+	doPinOrUnpin := func(doPin bool, nd n.ModNode) {
+		file, ok := nd.(*n.File)
+		if !ok {
+			// Non-files are simply ignored.
+			return
+		}
+
+		op, opName := fs.bk.Unpin, "unpin"
+		if doPin {
+			op, opName = fs.bk.Pin, "pin"
+		}
+
+		if err := op(file.Content()); err != nil {
+			log.Warningf("Failed to %s hash: %v", opName, file.Content())
+		}
+	}
+
+	// Make sure we pin/unpin files correctly after the sync:
+	syncCfg := &fs.cfg.sync
+	syncCfg.OnAdd = func(newNd n.ModNode) bool {
+		doPinOrUnpin(true, newNd)
+		return true
+	}
+	syncCfg.OnRemove = func(oldNd n.ModNode) bool {
+		doPinOrUnpin(false, oldNd)
+		return true
+	}
+	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
+		doPinOrUnpin(true, newNd)
+		doPinOrUnpin(false, oldNd)
+		return true
+	}
+	syncCfg.OnConflict = func(src, dst n.ModNode) bool {
+		// Don't need to do something,
+		// conflict file will not get a pin by default.
+		return true
+	}
+
+	return vcs.Sync(remote.lkr, fs.lkr, syncCfg)
 }
 
 func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, error) {

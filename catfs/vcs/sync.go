@@ -44,6 +44,11 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 type SyncConfig struct {
 	ConflictStrategy ConflictStrategy
 	IgnoreDeletes    bool
+
+	OnAdd      func(newNd n.ModNode) bool
+	OnRemove   func(oldNd n.ModNode) bool
+	OnMerge    func(src, dst n.ModNode) bool
+	OnConflict func(src, dst n.ModNode) bool
 }
 
 var (
@@ -57,7 +62,6 @@ type syncer struct {
 }
 
 func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
-	fmt.Println("ADD", src, srcParent, srcName)
 	var newDstNode n.ModNode
 	var err error
 
@@ -100,18 +104,24 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 
 		// TODO: This is inconsistent:
 		// NewEmptyDirectory calls Add(), NewEmptyFile does not
+		// Fix the API here a bit...
 		if err := parentDir.Add(sy.lkrDst, newDstFile); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("Unexpected node type in handleAdd")
 	}
-	fmt.Println("STAGE")
 
 	return sy.lkrDst.StageNode(newDstNode)
 }
 
 func (sy *syncer) handleAdd(src n.ModNode) error {
+	if sy.cfg.OnAdd != nil {
+		if !sy.cfg.OnAdd(src) {
+			return nil
+		}
+	}
+
 	return sy.add(src, path.Dir(src.Path()), src.Name())
 }
 
@@ -120,12 +130,18 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 		return nil
 	}
 
+	if sy.cfg.OnRemove != nil {
+		if !sy.cfg.OnRemove(dst) {
+			return nil
+		}
+	}
+
 	_, _, err := c.Remove(sy.lkrDst, dst, true, true)
+
 	return err
 }
 
 func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
-	fmt.Println("CONFLICT", src, dst)
 	if sy.cfg.ConflictStrategy == ConflictStragetyIgnore {
 		return nil
 	}
@@ -149,7 +165,13 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 	}
 
 	dstDirname := path.Dir(dst.Path())
-	fmt.Println("Writing conflict file to ", dstDirname, conflictName)
+
+	if sy.cfg.OnConflict != nil {
+		if !sy.cfg.OnConflict(src, dst) {
+			return nil
+		}
+	}
+
 	return sy.add(src, dstDirname, conflictName)
 }
 
@@ -194,6 +216,12 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	dstFile.SetContent(sy.lkrDst, srcFile.Content())
 	dstFile.SetSize(srcFile.Size())
 	dstFile.SetKey(srcFile.Key())
+
+	if sy.cfg.OnMerge != nil {
+		if !sy.cfg.OnMerge(src, dst) {
+			return nil
+		}
+	}
 
 	return sy.lkrDst.StageNode(dstFile)
 }
