@@ -438,8 +438,11 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
+	// TODO: golangs' tabwriter falls short when using colors in the middle.
+	//       Better use https://github.com/olekukonko/tablewriter on the
+	//       next occassion.
 	if len(entries) != 0 {
-		fmt.Fprintln(tabW, "SIZE\tMODTIME\tPIN\tPATH\t")
+		fmt.Fprintln(tabW, "SIZE\tMODTIME\tPATH\tPIN\t")
 	}
 
 	for _, entry := range entries {
@@ -453,8 +456,8 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			"%s\t%s\t%s\t%s\t\n",
 			humanize.Bytes(entry.Size),
 			entry.ModTime.Format(time.Stamp),
-			pinState,
 			entry.Path,
+			pinState,
 		)
 	}
 

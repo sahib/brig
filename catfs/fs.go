@@ -394,6 +394,8 @@ func (fs *FS) isPinned(nd n.Node) (bool, error) {
 			}
 
 			if isPinned {
+				// Make sure that we do not count empty directories
+				// as pinned nodes.
 				pinCount++
 			} else {
 				// Return a special error here to stop Walk() iterating.
