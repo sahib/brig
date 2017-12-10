@@ -46,6 +46,11 @@ more, but my day job (and the money that comes with it) forbids that.
 If you're interested in the development of ``brig`` and would think about
 supporting me financially, then please [contact me!](mailto:sahib@online.de)
 
+If you'd like to give me a small donation, you can use *liberapay*:
+
+<script src="https://liberapay.com/sahib/widgets/button.js"></script>
+<noscript><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
+
 ### Focus
 
 ``brig`` tries to focus on being up conceptually simple, by hiding a lot of
