@@ -288,6 +288,10 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 	result := []*StatInfo{}
 	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
 		if maxDepth < 0 || n.Depth(child) <= maxDepth {
+			if maxDepth >= 0 && child.Path() == root {
+				return nil
+			}
+
 			// Ghost nodes should not be visible to the outside.
 			if child.Type() == n.NodeTypeGhost {
 				return nil
@@ -375,6 +379,8 @@ func (fs *FS) IsPinned(path string) (bool, error) {
 }
 
 func (fs *FS) isPinned(nd n.Node) (bool, error) {
+	pinCount := 0
+
 	err := n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
 			file, ok := child.(*n.File)
@@ -387,9 +393,11 @@ func (fs *FS) isPinned(nd n.Node) (bool, error) {
 				return err
 			}
 
-			// Return a special error here to stop Walk() iterating.
-			// One file is enough to stop IsPinned() from being true.
-			if !isPinned {
+			if isPinned {
+				pinCount++
+			} else {
+				// Return a special error here to stop Walk() iterating.
+				// One file is enough to stop IsPinned() from being true.
 				return errNotPinnedSentinel
 			}
 		}
@@ -401,7 +409,11 @@ func (fs *FS) isPinned(nd n.Node) (bool, error) {
 		return false, err
 	}
 
-	return err != errNotPinnedSentinel, nil
+	if err == errNotPinnedSentinel {
+		return false, nil
+	}
+
+	return pinCount > 0, nil
 }
 
 ////////////////////////

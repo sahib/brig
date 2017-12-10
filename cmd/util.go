@@ -24,7 +24,7 @@ import (
 var (
 	// backend delivers overly descriptive error messages including
 	// the stirng below. Simply filter this info:
-	rpcErrPattern = regexp.MustCompile(" api.capnp.* rpc exception:")
+	rpcErrPattern = regexp.MustCompile(" capnp/api.capnp.* rpc exception:")
 )
 
 // ExitCode is an error that maps the error interface to a specific error

@@ -430,10 +430,16 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 
 	entries, err := ctl.List(root, maxDepth)
 	if err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("ls: %v", err),
-		}
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	if len(entries) != 0 {
+		fmt.Fprintln(tabW, "SIZE\tMODTIME\tPIN\tPATH\t")
 	}
 
 	for _, entry := range entries {
@@ -442,16 +448,17 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			pinState += " " + colors.Colorize("🖈", colors.Cyan)
 		}
 
-		fmt.Printf(
-			"%6s %8s  %s%s\n",
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t%s\t\n",
 			humanize.Bytes(entry.Size),
 			entry.ModTime.Format(time.Stamp),
-			entry.Path,
 			pinState,
+			entry.Path,
 		)
 	}
 
-	return nil
+	return tabW.Flush()
 }
 
 func handleTree(ctx *cli.Context, ctl *client.Client) error {

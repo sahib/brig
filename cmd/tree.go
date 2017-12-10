@@ -147,6 +147,10 @@ func showTree(entries []*client.StatInfo, maxDepth int) error {
 		}
 	}
 
+	if root.entry == nil {
+		return fmt.Errorf("No root in tree. Things are serious.")
+	}
+
 	root.Print()
 
 	fmt.Printf("\n%d directories, %d files\n", ndirs, nfiles)

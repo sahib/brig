@@ -2,3 +2,4 @@
 - Fix pinning when using ipfs (and think of proper pinning strategy)
 - Check backend to be safe to run from multiple go routines
 - Implement "brig gc command to trigger brig gc and ipfs gc"
+- `brig locate` is not working.
