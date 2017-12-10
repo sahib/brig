@@ -3,7 +3,10 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
+	"text/tabwriter"
+	"time"
 
 	"github.com/pksunkara/pygments"
 	"github.com/sahib/brig/client"
@@ -11,6 +14,76 @@ import (
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
 )
+
+func handleOffline(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.Disconnect()
+}
+
+func handleOnline(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.Connect()
+}
+
+func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
+	self, err := ctl.Whoami()
+	if err != nil {
+		return err
+	}
+
+	if self.IsOnline {
+		fmt.Println(colors.Colorize("online", colors.Green))
+	} else {
+		fmt.Println(colors.Colorize("offline", colors.Red))
+	}
+
+	return nil
+}
+
+func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
+	infos, err := ctl.OnlinePeers()
+	if err != nil {
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	if len(infos) == 0 {
+		fmt.Println("Remote list is empty. Nobody there to ping.")
+		return nil
+	}
+
+	fmt.Fprintln(tabW, "NAME\tADDR\tROUNDTRIP\tLASTSEEN\t")
+
+	for _, info := range infos {
+		suffix := ""
+		if info.Err == nil {
+			suffix = fmt.Sprintf(
+				"%s\t%s",
+				info.Roundtrip,
+				colors.Colorize(
+					"✔ "+info.LastSeen.Format(time.Stamp),
+					colors.Green,
+				),
+			)
+		} else {
+			suffix = fmt.Sprintf(
+				"∞\t%s",
+				colors.Colorize("✘ "+info.Err.Error(), colors.Red),
+			)
+		}
+
+		shortAddr := info.Addr
+		if len(shortAddr) > 9 {
+			shortAddr = shortAddr[:9]
+		}
+
+		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, shortAddr, suffix)
+	}
+
+	return tabW.Flush()
+}
 
 func remoteListToYml(remotes []client.Remote) ([]byte, error) {
 	// TODO: Provide a nicer representation here.
@@ -136,5 +209,36 @@ func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	fmt.Println(msg)
+	return nil
+}
+
+func handlePin(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	return ctl.Pin(path)
+}
+
+func handleUnpin(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	return ctl.Unpin(path)
+}
+
+func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
+	self, err := ctl.Whoami()
+	if err != nil {
+		return err
+	}
+
+	if !ctx.Bool("fingerprint") {
+		userName := colors.Colorize(self.CurrentUser, colors.Yellow)
+		ownerName := colors.Colorize(self.Owner, colors.Green)
+		fmt.Printf("%s", ownerName)
+		if self.CurrentUser != self.Owner {
+			fmt.Printf(" (viewing %s's data)", userName)
+		}
+
+		fmt.Printf(" ")
+	}
+
+	fmt.Printf("%s\n", self.Fingerprint)
 	return nil
 }
