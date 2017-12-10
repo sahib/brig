@@ -63,6 +63,7 @@ type StatInfo struct {
 	Depth    int
 	ModTime  time.Time
 	IsPinned bool
+	Content  h.Hash
 }
 
 type HistEntry struct {
@@ -103,6 +104,11 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
 
+	var content h.Hash
+	if file, ok := nd.(*n.File); ok {
+		content = file.Content()
+	}
+
 	return &StatInfo{
 		Path:     nd.Path(),
 		Hash:     nd.Hash().Clone(),
@@ -112,6 +118,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		Size:     nd.Size(),
 		Depth:    n.Depth(nd),
 		IsPinned: isPinned,
+		Content:  content,
 	}
 }
 

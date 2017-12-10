@@ -13,6 +13,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     depth    @5 :Int32;
     modTime  @6 :Text;
     isPinned @7 :Bool;
+    content  @8 :Data;
 }
 
 struct LogEntry $Go.doc("Single log entry") {
@@ -87,6 +88,7 @@ interface FS {
     move     @5  (srcPath :Text, dstPath :Text);
     pin      @6  (path :Text);
     unpin    @7  (path :Text);
+    stat     @8  (path :Text) -> (info :StatInfo);
 }
 
 interface VCS {

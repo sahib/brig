@@ -45,6 +45,10 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 		return nil, err
 	}
 
+	if err := capInfo.SetContent(info.Content.Bytes()); err != nil {
+		return nil, err
+	}
+
 	capInfo.SetSize(info.Size)
 	capInfo.SetInode(info.Inode)
 	capInfo.SetIsDir(info.IsDir)
@@ -222,5 +226,29 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 	path = prefixSlash(path)
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Unpin(path)
+	})
+}
+
+func (fh *fsHandler) Stat(call capnp.FS_stat) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	path = prefixSlash(path)
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		info, err := fs.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		capInfo, err := statToCapnp(info, call.Results.Segment())
+		if err != nil {
+			return err
+		}
+
+		return call.Results.SetInfo(*capInfo)
 	})
 }

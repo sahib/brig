@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO: Need to move ipfs out of brig first?
+
 echo "1) Updating non-ipfs deps..."
 dep ensure -v
 

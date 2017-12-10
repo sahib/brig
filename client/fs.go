@@ -19,6 +19,7 @@ type StatInfo struct {
 	Depth    int
 	ModTime  time.Time
 	IsPinned bool
+	Content  h.Hash
 }
 
 func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
@@ -39,6 +40,16 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
+	contentBytes, err := capInfo.Content()
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := h.Cast(contentBytes)
+	if err != nil {
+		return nil, err
+	}
+
 	modTimeData, err := capInfo.ModTime()
 	if err != nil {
 		return nil, err
@@ -55,6 +66,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.IsDir = capInfo.IsDir()
 	info.IsPinned = capInfo.IsPinned()
 	info.Depth = int(capInfo.Depth())
+	info.Content = content
 	return info, nil
 }
 
@@ -164,4 +176,22 @@ func (cl *Client) Unpin(path string) error {
 
 	_, err := call.Struct()
 	return err
+}
+
+func (cl *Client) Stat(path string) (*StatInfo, error) {
+	call := cl.api.Stat(cl.ctx, func(p capnp.FS_stat_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capInfo, err := result.Info()
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCapStatInfo(&capInfo)
 }

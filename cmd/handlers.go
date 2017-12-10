@@ -8,12 +8,14 @@ import (
 	"path/filepath"
 	"runtime/trace"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
+	tw "github.com/olekukonko/tablewriter"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
@@ -744,5 +746,52 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	fmt.Printf("%s\n", self.Fingerprint)
+	return nil
+}
+
+func handleInfo(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	info, err := ctl.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	pinState := colors.Colorize("yes", colors.Green)
+	if !info.IsPinned {
+		pinState += " " + colors.Colorize("no", colors.Red)
+	}
+
+	nodeType := "file"
+	if info.IsDir {
+		nodeType = "directory"
+	}
+
+	w := tw.NewWriter(os.Stdout)
+	w.SetBorder(false)
+	w.SetColumnSeparator("")
+	w.SetColumnAlignment([]int{
+		tw.ALIGN_RIGHT,
+		tw.ALIGN_LEFT,
+	})
+
+	// TODO: This still shows an empty header line.
+	w.SetHeader([]string{"", ""})
+	w.SetHeaderLine(false)
+
+	w.Append([]string{"Path", info.Path})
+	w.Append([]string{"Type", nodeType})
+	w.Append([]string{"Size", humanize.Bytes(info.Size)})
+	w.Append([]string{"Hash", info.Hash.B58String()})
+	w.Append([]string{"Inode", strconv.FormatUint(info.Inode, 10)})
+	w.Append([]string{"Pinned", pinState})
+	w.Append([]string{"ModTime", info.ModTime.Format(time.RFC3339)})
+	w.Append([]string{"Content", info.Content.B58String()})
+
+	w.SetColumnColor(
+		tw.Colors{tw.FgWhiteColor, tw.Bold},
+		tw.Colors{},
+	)
+
+	w.Render()
 	return nil
 }

@@ -364,6 +364,14 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
 		},
 		cli.Command{
+			Name:        "info",
+			Category:    wdirGroup,
+			Usage:       "Lookup extended attributes of a single filesystem node",
+			ArgsUsage:   "<file>",
+			Description: "Stage a specific file into the brig repository",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
+		},
+		cli.Command{
 			Name:        "rm",
 			Aliases:     []string{"remove"},
 			Category:    wdirGroup,
