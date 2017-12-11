@@ -18,7 +18,8 @@ import (
 var (
 	// Do not encrypt "data" (already contains encrypred streams) and
 	// also do not encrypt meta.yml (contains e.g. owner info for startup)
-	excludedFromLock = []string{"meta.yml", "data"}
+	excludedFromLock   = []string{"meta.yml", "data"}
+	excludedFromUnlock = []string{"passwd.locked"}
 )
 
 var (
@@ -129,7 +130,13 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return err
 	}
 
-	return LockRepo(baseFolder, owner, password, excludedFromLock)
+	return LockRepo(
+		baseFolder,
+		owner,
+		password,
+		excludedFromLock,
+		excludedFromUnlock,
+	)
 }
 
 func CheckPassword(baseFolder, password string) error {
@@ -179,7 +186,15 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}
 
 	owner := meta.GetString("repo.owner")
-	if err := UnlockRepo(baseFolder, owner, password, excludedFromLock); err != nil {
+	err := UnlockRepo(
+		baseFolder,
+		owner,
+		password,
+		excludedFromLock,
+		excludedFromUnlock,
+	)
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -211,7 +226,13 @@ func Open(baseFolder, password string) (*Repository, error) {
 }
 
 func (rp *Repository) Close(password string) error {
-	return LockRepo(rp.BaseFolder, rp.Owner, password, excludedFromLock)
+	return LockRepo(
+		rp.BaseFolder,
+		rp.Owner,
+		password,
+		excludedFromLock,
+		excludedFromUnlock,
+	)
 }
 
 func (rp *Repository) BackendName() string {

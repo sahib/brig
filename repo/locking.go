@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	LockDirSuffix  = ".tgz"
 	LockPathSuffix = ".locked"
+	LockDirSuffix  = ".tgz" + LockPathSuffix
 )
 
 func lockFile(path string, key []byte) error {
@@ -47,7 +47,7 @@ func lockFile(path string, key []byte) error {
 }
 
 func lockDirectory(path string, key []byte) error {
-	lockedPath := path + LockDirSuffix + LockPathSuffix
+	lockedPath := path + LockDirSuffix
 	fd, err := os.OpenFile(lockedPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func keyFromPassword(owner, password string) []byte {
 	return util.DeriveKey([]byte(password), []byte(owner), 32)
 }
 
-func LockRepo(root, user, password string, excludePatterns []string) error {
+func LockRepo(root, user, password string, lockExcludes, unlockExcludes []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -103,11 +103,17 @@ func LockRepo(root, user, password string, excludePatterns []string) error {
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
 		if strings.HasSuffix(path, LockPathSuffix) {
-			log.Warningf("%s already contains a locked file: %s; Ignoring", root, path)
+			if !isExcluded(path, unlockExcludes) {
+				log.Warningf(
+					"%s already contains a locked file: %s; Ignoring",
+					root,
+					path,
+				)
+			}
 			continue
 		}
 
-		if isExcluded(path, excludePatterns) {
+		if isExcluded(path, lockExcludes) {
 			continue
 		}
 
@@ -183,7 +189,7 @@ func unlockFile(path string, key []byte) error {
 }
 
 func unlockDirectory(path string, key []byte) error {
-	unlockedPath := path[:len(path)-len(LockDirSuffix)-len(LockPathSuffix)]
+	unlockedPath := path[:len(path)-len(LockDirSuffix)]
 	fd, err := os.Open(path)
 	if err != nil {
 		return err
@@ -199,7 +205,7 @@ func unlockDirectory(path string, key []byte) error {
 	return util.Untar(encR, unlockedPath)
 }
 
-func UnlockRepo(root, user, password string, excludePatterns []string) error {
+func UnlockRepo(root, user, password string, lockExcludes, unlockExcludes []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -210,8 +216,12 @@ func UnlockRepo(root, user, password string, excludePatterns []string) error {
 	for _, info := range files {
 		path := filepath.Join(root, info.Name())
 
+		if isExcluded(path, unlockExcludes) {
+			continue
+		}
+
 		switch {
-		case strings.HasSuffix(path, LockDirSuffix+LockPathSuffix):
+		case strings.HasSuffix(path, LockDirSuffix):
 			if err := unlockDirectory(path, key); err != nil {
 				return err
 			}
@@ -220,7 +230,7 @@ func UnlockRepo(root, user, password string, excludePatterns []string) error {
 				return err
 			}
 		default:
-			if !isExcluded(path, excludePatterns) {
+			if !isExcluded(path, lockExcludes) {
 				log.Warningf("%s was not locked. Ignoring.", path)
 			}
 			continue

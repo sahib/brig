@@ -157,7 +157,7 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	ipfsLogPath := filepath.Join(rp.BaseFolder, "logs", "ipfs.log")
 	fd, err := os.Create(ipfsLogPath)
 	if err != nil {
-		log.Warningf("Failed to open ipfs log path (%s): %v", err)
+		log.Warningf("Failed to open ipfs log path (%s): %v", ipfsLogPath, err)
 	}
 
 	b.ipfsLogFd = fd
