@@ -82,6 +82,12 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	backend := ctx.String("backend")
 	password := readPasswordFromArgs(ctx)
 
+	// Check if the folder exists... doing init twice
+	// can easily break things.
+	if _, err := os.Stat(folder); err == nil {
+		return fmt.Errorf("`%s` exists; refusing to do a init.", folder)
+	}
+
 	if password == "" {
 		pwdBytes, err := pwd.PromptNewPassword(25)
 		if err != nil {
