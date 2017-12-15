@@ -10,6 +10,7 @@ import (
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
+	"github.com/stretchr/testify/require"
 )
 
 // Basic test to see if the root node can be inserted and stored.
@@ -434,5 +435,21 @@ func TestHaveStagedChanges(t *testing.T) {
 		if hasChanges {
 			t.Fatalf("HaveStagedChanges has changes after commit")
 		}
+	})
+}
+
+func TestFilesByContent(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		file := MustTouch(t, lkr, "/x.png", 1)
+
+		contents := []h.Hash{file.Content()}
+		result, err := lkr.FilesByContents(contents)
+
+		require.Nil(t, err)
+
+		resultFile, ok := result[file.Content().B58String()]
+		require.True(t, ok)
+		require.Equal(t, file, resultFile)
+		require.Len(t, result, 1)
 	})
 }

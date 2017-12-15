@@ -195,3 +195,56 @@ func (cl *Client) Stat(path string) (*StatInfo, error) {
 
 	return convertCapStatInfo(&capInfo)
 }
+
+type GarbageItem struct {
+	Path    string
+	Owner   string
+	Content h.Hash
+}
+
+func (cl *Client) GarbageCollect() ([]*GarbageItem, error) {
+	call := cl.api.GarbageCollect(cl.ctx, func(p capnp.FS_garbageCollect_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	freed := []*GarbageItem{}
+
+	capFreed, err := result.Freed()
+	if err != nil {
+		return nil, err
+	}
+
+	for idx := 0; idx < capFreed.Len(); idx++ {
+		capGcItem := capFreed.At(idx)
+		gcItem := &GarbageItem{}
+
+		gcItem.Owner, err = capGcItem.Owner()
+		if err != nil {
+			return nil, err
+		}
+
+		gcItem.Path, err = capGcItem.Path()
+		if err != nil {
+			return nil, err
+		}
+
+		content, err := capGcItem.Content()
+		if err != nil {
+			return nil, err
+		}
+
+		gcItem.Content, err = h.Cast(content)
+		if err != nil {
+			return nil, err
+		}
+
+		freed = append(freed, gcItem)
+	}
+
+	return freed, nil
+}

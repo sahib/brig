@@ -153,7 +153,7 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 
 	pinState := colors.Colorize("yes", colors.Green)
 	if !info.IsPinned {
-		pinState += " " + colors.Colorize("no", colors.Red)
+		pinState = colors.Colorize("no", colors.Red)
 	}
 
 	nodeType := "file"

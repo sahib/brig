@@ -1,6 +1,10 @@
 package mock
 
-import "io"
+import (
+	"io"
+
+	h "github.com/sahib/brig/util/hashlib"
+)
 
 type MockRepoBackend struct{}
 
@@ -9,6 +13,10 @@ func (mrb *MockRepoBackend) Init(folder string) error {
 }
 
 func (mrb *MockRepoBackend) ForwardLog(w io.Writer) {
+}
+
+func (mrb *MockRepoBackend) GC() ([]h.Hash, error) {
+	return nil, nil
 }
 
 func (mrb *MockRepoBackend) Name() string {

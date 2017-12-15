@@ -9,6 +9,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	tw "github.com/olekukonko/tablewriter"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
@@ -287,5 +288,44 @@ func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
 
 func handleVersion(ctx *cli.Context) error {
 	fmt.Println(version.String())
+	return nil
+}
+
+func handleGc(ctx *cli.Context, ctl *client.Client) error {
+	freed, err := ctl.GarbageCollect()
+	if err != nil {
+		return err
+	}
+
+	if len(freed) == 0 {
+		fmt.Println("Nothing freed.")
+		return nil
+	}
+
+	w := tw.NewWriter(os.Stdout)
+	w.SetBorder(false)
+	w.SetColumnSeparator("")
+	w.SetColumnAlignment([]int{
+		tw.ALIGN_RIGHT,
+		tw.ALIGN_LEFT,
+	})
+
+	// TODO: This still shows an empty header line.
+	w.SetHeader([]string{"CONTENT", "HASH", "OWNER"})
+	w.SetHeaderLine(false)
+	w.SetAutoMergeCells(true)
+
+	for _, gcItem := range freed {
+		w.Append([]string{gcItem.Path, gcItem.Content.ShortB58(), gcItem.Owner})
+	}
+
+	w.SetColumnColor(
+		tw.Colors{tw.FgWhiteColor, tw.Bold},
+		tw.Colors{},
+		tw.Colors{},
+	)
+
+	w.Render()
+
 	return nil
 }

@@ -79,16 +79,23 @@ struct PeerStatus $Go.doc("net status of a peer") {
     error       @4 :Text;
 }
 
+struct GarbageItem $Go.doc("A single item that was killed by the gc") {
+    path    @0 :Text;
+    content @1 :Data;
+    owner   @2 :Text;
+}
+
 interface FS {
-    stage    @0  (localPath :Text, repoPath :Text);
-    list     @1  (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat      @2  (path :Text) -> (port :Int32);
-    mkdir    @3  (path :Text, createParents :Bool);
-    remove   @4  (path :Text);
-    move     @5  (srcPath :Text, dstPath :Text);
-    pin      @6  (path :Text);
-    unpin    @7  (path :Text);
-    stat     @8  (path :Text) -> (info :StatInfo);
+    stage          @0  (localPath :Text, repoPath :Text);
+    list           @1  (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat            @2  (path :Text) -> (port :Int32);
+    mkdir          @3  (path :Text, createParents :Bool);
+    remove         @4  (path :Text);
+    move           @5  (srcPath :Text, dstPath :Text);
+    pin            @6  (path :Text);
+    unpin          @7  (path :Text);
+    stat           @8  (path :Text) -> (info :StatInfo);
+    garbageCollect @9  () -> (freed :List(GarbageItem));
 }
 
 interface VCS {

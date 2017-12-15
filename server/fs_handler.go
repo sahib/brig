@@ -252,3 +252,64 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 		return call.Results.SetInfo(*capInfo)
 	})
 }
+
+func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
+	server.Ack(call.Options)
+
+	repo, err := fh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	bk, err := fh.base.Backend()
+	if err != nil {
+		return err
+	}
+
+	stats, err := repo.GC(bk)
+	if err != nil {
+		return err
+	}
+
+	gcItems := []capnp.GarbageItem{}
+
+	for owner, subStats := range stats {
+		for path, content := range subStats {
+			gcItem, err := capnp.NewGarbageItem(call.Results.Segment())
+			if err != nil {
+				return err
+			}
+
+			if err := gcItem.SetPath(path); err != nil {
+				return err
+			}
+
+			if err := gcItem.SetContent(content.Bytes()); err != nil {
+				return err
+			}
+
+			if err := gcItem.SetOwner(owner); err != nil {
+				return err
+			}
+
+			gcItems = append(gcItems, gcItem)
+		}
+	}
+
+	freed, err := capnp.NewGarbageItem_List(
+		call.Results.Segment(),
+		int32(len(gcItems)),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	for idx := 0; idx < len(gcItems); idx++ {
+		if err := freed.Set(idx, gcItems[idx]); err != nil {
+			return err
+		}
+	}
+
+	return call.Results.SetFreed(freed)
+}

@@ -140,6 +140,29 @@ func lookupFileOrDir(lkr *c.Linker, path string) (n.ModNode, error) {
 	return modNd, nil
 }
 
+func (fs *FS) handleGcEvent(nd n.Node) bool {
+	if nd.Type() != n.NodeTypeFile {
+		return true
+	}
+
+	file, ok := nd.(*n.File)
+	if !ok {
+		return true
+	}
+
+	content := file.Content()
+	log.Infof("unpinning gc'd node %v", content.B58String())
+
+	// This node will not be reachable anymore by brig.
+	// Make sure it is also unpinned to save space.
+	if err := fs.bk.Unpin(file.Content()); err != nil {
+		log.Warningf("unpinning attempy failed: %v", err)
+	}
+
+	// Still return true, no need to stop the GC
+	return true
+}
+
 ///////////////////////////////
 // ACTUAL API IMPLEMENTATION //
 ///////////////////////////////
@@ -164,11 +187,12 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 	fs := &FS{
 		kv:       kv,
 		lkr:      lkr,
-		gc:       c.NewGarbageCollector(lkr, kv, nil),
 		gcTicker: time.NewTicker(30 * time.Second),
 		bk:       backend,
 		cfg:      vfg,
 	}
+
+	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
 
 	go func() {
 		for range fs.gcTicker.C {
@@ -179,13 +203,12 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 				log.Warningf("gc: failed to get owner: %v", err)
 			}
 
-			log.Debugf("gc (%s): running", owner)
+			log.Debugf("filesystem GC (for %s): running", owner)
 			if err := fs.gc.Run(true); err != nil {
 				log.Warnf("failed to run GC: %v", err)
 			}
 
 			fs.mu.Unlock()
-
 		}
 	}()
 
@@ -614,7 +637,7 @@ func (fs *FS) Open(path string) (*Handle, error) {
 
 // MakeCommit bundles all staged changes into one commit described by `msg`.
 // If no changes were made since the last call to MakeCommit() ErrNoConflict
-// is returned (TODO: move to errors package)
+// is returned.
 func (fs *FS) MakeCommit(msg string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -876,4 +899,21 @@ func (fs *FS) RemoveTag(name string) error {
 	defer fs.mu.Unlock()
 
 	return fs.lkr.RemoveRef(name)
+}
+
+func (fs *FS) FilesByContent(contents []h.Hash) (map[string]StatInfo, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	files, err := fs.lkr.FilesByContents(contents)
+	if err != nil {
+		return nil, err
+	}
+
+	infos := make(map[string]StatInfo)
+	for content, file := range files {
+		infos[content] = *fs.nodeToStat(file)
+	}
+
+	return infos, nil
 }

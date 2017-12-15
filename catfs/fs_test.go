@@ -423,14 +423,14 @@ func TestMakeDiff(t *testing.T) {
 			diff, err := fsa.MakeDiff(fsb, "curr", "curr")
 			require.Nil(t, err)
 
-			require.Equal(t, diff.Added, []StatInfo{*nodeToStat(fsbA)})
-			require.Equal(t, diff.Removed, []StatInfo{*nodeToStat(fsaY)})
+			require.Equal(t, diff.Added, []StatInfo{*fsb.nodeToStat(fsbA)})
+			require.Equal(t, diff.Removed, []StatInfo{*fsa.nodeToStat(fsaY)})
 			require.Equal(t, diff.Merged, []DiffPair{{
-				Src: *nodeToStat(fsbX),
-				Dst: *nodeToStat(fsaX),
+				Src: *fsb.nodeToStat(fsbX),
+				Dst: *fsa.nodeToStat(fsaX),
 			}, {
-				Src: *nodeToStat(fsbZ),
-				Dst: *nodeToStat(fsaZ),
+				Src: *fsb.nodeToStat(fsbZ),
+				Dst: *fsa.nodeToStat(fsaZ),
 			}})
 		})
 	})

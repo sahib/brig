@@ -143,6 +143,52 @@ func (lkr *Linker) NextInode() uint64 {
 	return cnt
 }
 
+func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error) {
+	result := make(map[string]*n.File)
+
+	err := lkr.kv.Keys(func(key []string) error {
+		// Filter non-node storage:
+		fullKey := strings.Join(key, "/")
+		if !strings.HasPrefix(fullKey, "/objects") &&
+			!strings.HasPrefix(fullKey, "/stage/objects") {
+			return nil
+		}
+
+		data, err := lkr.kv.Get(key...)
+		if err != nil {
+			return err
+		}
+
+		nd, err := n.UnmarshalNode(data)
+		if err != nil {
+			return err
+		}
+
+		if nd.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		file, ok := nd.(*n.File)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		for _, content := range contents {
+			if content.Equal(file.Content()) {
+				result[content.B58String()] = file
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // loadNode loads an individual object by its hash from the object store. It
 // will return nil if the hash is not there.
 func (lkr *Linker) loadNode(hash h.Hash) (n.Node, error) {

@@ -522,6 +522,14 @@ func RunCmdline(args []string) int {
 			Description: "Unmounts a FUSE filesystem",
 			Action:      withDaemon(handleUnmount, true),
 		},
+		cli.Command{
+			Name:        "gc",
+			Category:    repoGroup,
+			Usage:       "Trigger the ipfs garbage collector",
+			ArgsUsage:   "",
+			Description: "Trigger the ipfs garbage collector and print kill count",
+			Action:      withDaemon(handleGc, true),
+		},
 	}
 
 	app.Run(args)
