@@ -18,6 +18,7 @@ import (
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
 	"github.com/sahib/brig/util"
@@ -531,16 +532,32 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 			return err
 		}
 
+		// Read a small portion of the file header and use it
+		// to determine what compression algorithm we can use.
+		headerBuf := &bytes.Buffer{}
+		tr := io.TeeReader(r, util.LimitWriter(headerBuf, 4*1024))
+
 		hw := h.NewHashWriter()
-		size, err := hw.ReadFrom(r)
+		size, err := hw.ReadFrom(tr)
 		if err != nil {
 			return err
 		}
+
+		algo, err := compress.ChooseCompressAlgo(path, headerBuf.Bytes())
+		if err != nil {
+			// Default to snappy.
+			algo = compress.AlgoSnappy
+			log.Warningf("Failed to guess suitable zip algo: %v", err)
+		}
+
+		log.Debugf("Using %s for file %s", algo, path)
 
 		if _, err := r.Seek(0, os.SEEK_SET); err != nil {
 			return err
 		}
 
+		// See: https://en.wikipedia.org/wiki/Convergent_encryption
+		// This might be changed however sooner or later.
 		salt := make([]byte, 4)
 		binary.PutVarint(salt, size)
 		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)

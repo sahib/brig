@@ -1,18 +1,15 @@
 package compress
 
 import (
-	"io"
 	"mime"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"bitbucket.org/taruti/mimemagic"
+	log "github.com/Sirupsen/logrus"
 )
 
 var (
-	// TODO Is it useful to make threshold dependend on mime type?
-	Threshold = int64(1024)
 	// Whitelist of all known uncompressed formats, that would be filtered out
 	// by the following blacklist
 	Compressable = []string{
@@ -66,28 +63,18 @@ func isCompressable(mimetype string) bool {
 	return true
 }
 
-func ChooseCompressAlgo(path string, rs io.ReadSeeker) (AlgorithmType, error) {
-	buf := make([]byte, Threshold)
-
-	bytesRead, err := rs.Read(buf)
-	if err != nil {
-		return AlgoNone, err
-	}
-
-	if _, errSeek := rs.Seek(0, os.SEEK_SET); err != nil {
-		return AlgoNone, errSeek
-	}
-
-	mime := guessMime(path, buf)
+func ChooseCompressAlgo(path string, header []byte) (AlgorithmType, error) {
+	mime := guessMime(path, header)
 	compressAble := isCompressable(mime)
 
-	if !compressAble || int64(bytesRead) != Threshold {
+	log.Debugf("Guessed `%s` mime for `%s`", mime, path)
+	if !compressAble {
 		return AlgoNone, nil
 	}
 
 	if strings.HasPrefix(mime, "text/") {
 		return AlgoLZ4, nil
-	} else {
-		return AlgoSnappy, nil
 	}
+
+	return AlgoSnappy, nil
 }

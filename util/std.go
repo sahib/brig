@@ -353,3 +353,32 @@ func OmitBytes(data []byte, lim int) string {
 		return fmt.Sprintf("%v", data[:lo])
 	}
 }
+
+type limitWriter struct {
+	wr  io.Writer
+	sz  int64
+	pos int64
+}
+
+func LimitWriter(w io.Writer, sz int64) io.Writer {
+	return &limitWriter{
+		wr: w,
+		sz: sz,
+	}
+}
+
+func (lw *limitWriter) Write(buf []byte) (int, error) {
+	if lw.pos >= lw.sz {
+		return len(buf), nil
+	}
+
+	n := Min64(lw.sz-lw.pos, int64(len(buf)))
+	lw.pos += n
+
+	_, err := lw.wr.Write(buf[:n])
+	if err != nil {
+		return -1, err
+	}
+
+	return len(buf), nil
+}

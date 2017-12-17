@@ -61,6 +61,15 @@ func (at AlgorithmType) IsValid() bool {
 	return false
 }
 
+func (at AlgorithmType) String() string {
+	name, ok := AlgoToString[at]
+	if !ok {
+		return "unknown"
+	}
+
+	return name
+}
+
 // record structure reprenents a offset mapping {uncompressed offset, compressedOffset}.
 // A chunk of maxChunkSize is defined by two records. The size of a specific
 // record can be determinated by a simple substitution of two record offsets.
