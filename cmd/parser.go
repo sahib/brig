@@ -528,7 +528,13 @@ func RunCmdline(args []string) int {
 			Usage:       "Trigger the ipfs garbage collector",
 			ArgsUsage:   "",
 			Description: "Trigger the ipfs garbage collector and print kill count",
-			Action:      withDaemon(handleGc, true),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "aggressive,a",
+					Usage: "Also run the garbage collector on all filesystems immediately",
+				},
+			},
+			Action: withDaemon(handleGc, true),
 		},
 	}
 

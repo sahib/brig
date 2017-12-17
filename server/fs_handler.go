@@ -266,7 +266,8 @@ func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
 		return err
 	}
 
-	stats, err := repo.GC(bk)
+	aggressive := call.Params.Aggressive()
+	stats, err := repo.GC(bk, aggressive)
 	if err != nil {
 		return err
 	}

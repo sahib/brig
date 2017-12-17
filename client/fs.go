@@ -202,8 +202,9 @@ type GarbageItem struct {
 	Content h.Hash
 }
 
-func (cl *Client) GarbageCollect() ([]*GarbageItem, error) {
+func (cl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
 	call := cl.api.GarbageCollect(cl.ctx, func(p capnp.FS_garbageCollect_Params) error {
+		p.SetAggressive(aggressive)
 		return nil
 	})
 

@@ -292,7 +292,8 @@ func handleVersion(ctx *cli.Context) error {
 }
 
 func handleGc(ctx *cli.Context, ctl *client.Client) error {
-	freed, err := ctl.GarbageCollect()
+	aggressive := ctx.Bool("aggressive")
+	freed, err := ctl.GarbageCollect(aggressive)
 	if err != nil {
 		return err
 	}

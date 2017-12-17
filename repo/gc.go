@@ -6,7 +6,7 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
-func (rp *Repository) GC(backend Backend) (map[string]map[string]h.Hash, error) {
+func (rp *Repository) GC(backend Backend, aggressive bool) (map[string]map[string]h.Hash, error) {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 
@@ -26,6 +26,12 @@ func (rp *Repository) GC(backend Backend) (map[string]map[string]h.Hash, error) 
 	}
 
 	for owner, fs := range rp.fsMap {
+		if aggressive {
+			// Make sure we also clean every bit
+			// of memory/space we can find.
+			fs.ScheduleGCRun()
+		}
+
 		nodeMap, err := fs.FilesByContent(killed)
 		if err != nil {
 			fmt.Println("get files by content")

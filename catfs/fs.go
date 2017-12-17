@@ -47,6 +47,8 @@ type FS struct {
 	// ticker that drives the gc background routine
 	gcTicker *time.Ticker
 
+	gcControl chan bool
+
 	// Actual storage backend (e.g. ipfs or memory)
 	bk FsBackend
 
@@ -167,6 +169,22 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 // ACTUAL API IMPLEMENTATION //
 ///////////////////////////////
 
+func (fs *FS) doGcRun() {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	owner, err := fs.lkr.Owner()
+	if err != nil {
+		log.Warningf("gc: failed to get owner: %v", err)
+		return
+	}
+
+	log.Debugf("filesystem GC (for %s): running", owner)
+	if err := fs.gc.Run(true); err != nil {
+		log.Warnf("failed to run GC: %v", err)
+	}
+}
+
 func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) (*FS, error) {
 	vfg, err := cfg.parseConfig()
 	if err != nil {
@@ -185,30 +203,28 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 	}
 
 	fs := &FS{
-		kv:       kv,
-		lkr:      lkr,
-		gcTicker: time.NewTicker(30 * time.Second),
-		bk:       backend,
-		cfg:      vfg,
+		kv:        kv,
+		lkr:       lkr,
+		bk:        backend,
+		cfg:       vfg,
+		gcControl: make(chan bool),
+		gcTicker:  time.NewTicker(120 * time.Second),
 	}
 
 	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
 
 	go func() {
-		for range fs.gcTicker.C {
-			fs.mu.Lock()
-
-			owner, err := fs.lkr.Owner()
-			if err != nil {
-				log.Warningf("gc: failed to get owner: %v", err)
+		select {
+		case state := <-fs.gcControl:
+			if state {
+				fs.doGcRun()
+			} else {
+				// Quit the gc loop:
+				log.Debugf("Quitting the GC loop")
+				return
 			}
-
-			log.Debugf("filesystem GC (for %s): running", owner)
-			if err := fs.gc.Run(true); err != nil {
-				log.Warnf("failed to run GC: %v", err)
-			}
-
-			fs.mu.Unlock()
+		case <-fs.gcTicker.C:
+			fs.doGcRun()
 		}
 	}()
 
@@ -216,6 +232,10 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 }
 
 func (fs *FS) Close() error {
+	go func() {
+		fs.gcControl <- false
+	}()
+
 	fs.gcTicker.Stop()
 	return fs.kv.Close()
 }
@@ -916,4 +936,12 @@ func (fs *FS) FilesByContent(contents []h.Hash) (map[string]StatInfo, error) {
 	}
 
 	return infos, nil
+}
+
+func (fs *FS) ScheduleGCRun() {
+	// Putting a value into gcControl might block,
+	// so better do it in the background.
+	go func() {
+		fs.gcControl <- true
+	}()
 }

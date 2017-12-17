@@ -95,7 +95,7 @@ interface FS {
     pin            @6  (path :Text);
     unpin          @7  (path :Text);
     stat           @8  (path :Text) -> (info :StatInfo);
-    garbageCollect @9  () -> (freed :List(GarbageItem));
+    garbageCollect @9  (aggressive :Bool) -> (freed :List(GarbageItem));
 }
 
 interface VCS {
