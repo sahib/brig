@@ -28,7 +28,7 @@ func findFreePortAfter(port int, maxTries int) int {
 		}
 
 		if err := lst.Close(); err != nil {
-			// Well?
+			// TODO: Well? Maybe do something?
 		}
 
 		return port + idx
@@ -71,7 +71,7 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 		return nil, err
 	}
 
-	swarmPort = findFreePortAfter(4001, 100)
+	swarmPort = findFreePortAfter(4002, 100)
 
 	// Those two are probably not needed:
 	apiPort := findFreePortAfter(5001, 100)
