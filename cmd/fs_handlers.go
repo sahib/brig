@@ -18,18 +18,60 @@ import (
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	localPath := ctx.Args().Get(0)
-
 	repoPath := filepath.Base(localPath)
 	if len(ctx.Args()) > 1 {
 		repoPath = ctx.Args().Get(1)
 	}
 
-	if err := ctl.Stage(localPath, repoPath); err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("stage: %v", err),
+	info, err := os.Stat(localPath)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return handleStageDirectory(ctx, ctl, localPath, repoPath)
+	}
+
+	return ctl.Stage(localPath, repoPath)
+}
+
+type stagePair struct {
+	local, repo string
+}
+
+func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
+	// First create all directories:
+	// (tbh: I'm not exactly sure what "lexical" order means in the docs of Walk,
+	//  i.e. breadth-first or depth first, so better be safe)
+	toBeStaged := []stagePair{}
+
+	root = filepath.Clean(root)
+	repoRoot = filepath.Clean(repoRoot)
+
+	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
+		repoPath := filepath.Join(repoRoot, childPath[len(root):])
+
+		if info.IsDir() {
+			if err := ctl.Mkdir(repoPath, true); err != nil {
+				return err
+			}
+		} else {
+			toBeStaged = append(toBeStaged, stagePair{childPath, repoPath})
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("Failed to create sub directories: %v", err)
+	}
+
+	for _, child := range toBeStaged {
+		if err := ctl.Stage(child.local, child.repo); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
