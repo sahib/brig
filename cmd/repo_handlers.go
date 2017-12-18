@@ -6,10 +6,10 @@ import (
 	"os"
 	"runtime/trace"
 	"sort"
+	"text/tabwriter"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	tw "github.com/olekukonko/tablewriter"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
@@ -303,30 +303,22 @@ func handleGc(ctx *cli.Context, ctl *client.Client) error {
 		return nil
 	}
 
-	w := tw.NewWriter(os.Stdout)
-	w.SetBorder(false)
-	w.SetColumnSeparator("")
-	w.SetColumnAlignment([]int{
-		tw.ALIGN_RIGHT,
-		tw.ALIGN_LEFT,
-	})
-
-	// TODO: This still shows an empty header line.
-	w.SetHeader([]string{"CONTENT", "HASH", "OWNER"})
-	w.SetHeaderLine(false)
-	w.SetAutoMergeCells(true)
-
-	for _, gcItem := range freed {
-		w.Append([]string{gcItem.Path, gcItem.Content.ShortB58(), gcItem.Owner})
-	}
-
-	w.SetColumnColor(
-		tw.Colors{tw.FgWhiteColor, tw.Bold},
-		tw.Colors{},
-		tw.Colors{},
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
 	)
 
-	w.Render()
+	fmt.Fprintln(tabW, "CONTENT\tHASH\tOWNER\t")
 
-	return nil
+	for _, gcItem := range freed {
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
+			colors.Colorize(gcItem.Path, colors.White),
+			colors.Colorize(gcItem.Content.ShortB58(), colors.Red),
+			colors.Colorize(gcItem.Owner, colors.Cyan),
+		)
+	}
+
+	return tabW.Flush()
 }

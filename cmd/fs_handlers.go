@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"text/tabwriter"
 	"time"
 
+	"github.com/sahib/brig/cmd/tabwriter"
+
 	"github.com/dustin/go-humanize"
-	tw "github.com/olekukonko/tablewriter"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/util/colors"
 	"github.com/urfave/cli"
@@ -137,9 +137,6 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	// TODO: golangs' tabwriter falls short when using colors in the middle.
-	//       Better use https://github.com/olekukonko/tablewriter on the
-	//       next occassion.
 	if len(entries) != 0 {
 		fmt.Fprintln(tabW, "SIZE\tMODTIME\tPATH\tPIN\t")
 	}
@@ -147,7 +144,15 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 	for _, entry := range entries {
 		pinState := ""
 		if entry.IsPinned {
-			pinState += " " + colors.Colorize("🖈", colors.Cyan)
+			// pinState += " " + colors.Colorize("🖈", colors.Cyan)
+			pinState += " " + colors.Colorize("P", colors.Cyan)
+		}
+
+		coloredPath := ""
+		if entry.IsDir {
+			coloredPath = colors.Colorize(entry.Path, colors.Green)
+		} else {
+			coloredPath = colors.Colorize(entry.Path, colors.White)
 		}
 
 		fmt.Fprintf(
@@ -155,7 +160,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			"%s\t%s\t%s\t%s\t\n",
 			humanize.Bytes(entry.Size),
 			entry.ModTime.Format(time.Stamp),
-			entry.Path,
+			coloredPath,
 			pinState,
 		)
 	}
@@ -203,32 +208,25 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 		nodeType = "directory"
 	}
 
-	w := tw.NewWriter(os.Stdout)
-	w.SetBorder(false)
-	w.SetColumnSeparator("")
-	w.SetColumnAlignment([]int{
-		tw.ALIGN_RIGHT,
-		tw.ALIGN_LEFT,
-	})
-
-	// TODO: This still shows an empty header line.
-	w.SetHeader([]string{"", ""})
-	w.SetHeaderLine(false)
-
-	w.Append([]string{"Path", info.Path})
-	w.Append([]string{"Type", nodeType})
-	w.Append([]string{"Size", humanize.Bytes(info.Size)})
-	w.Append([]string{"Hash", info.Hash.B58String()})
-	w.Append([]string{"Inode", strconv.FormatUint(info.Inode, 10)})
-	w.Append([]string{"Pinned", pinState})
-	w.Append([]string{"ModTime", info.ModTime.Format(time.RFC3339)})
-	w.Append([]string{"Content", info.Content.B58String()})
-
-	w.SetColumnColor(
-		tw.Colors{tw.FgWhiteColor, tw.Bold},
-		tw.Colors{},
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
 	)
 
-	w.Render()
-	return nil
+	fmt.Fprintln(tabW, "ATTR\tVALUE\t")
+
+	printPair := func(name string, val interface{}) {
+		fmt.Fprintf(tabW, "%s\t%v\t\n", colors.Colorize(name, colors.White), val)
+	}
+
+	printPair("Path", info.Path)
+	printPair("Type", nodeType)
+	printPair("Size", humanize.Bytes(info.Size))
+	printPair("Hash", info.Hash.B58String())
+	printPair("Inode", strconv.FormatUint(info.Inode, 10))
+	printPair("Pinned", pinState)
+	printPair("ModTime", info.ModTime.Format(time.RFC3339))
+	printPair("Content", info.Content.B58String())
+
+	return tabW.Flush()
 }

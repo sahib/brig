@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"time"
+
+	"github.com/sahib/brig/cmd/tabwriter"
 
 	"github.com/pksunkara/pygments"
 	"github.com/sahib/brig/client"

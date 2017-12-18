@@ -12,6 +12,8 @@ const (
 	Magenta = 35
 	// Red should be used for normal errors.
 	Red = 31
+	// White can be used for detailed differences
+	White = 37
 	// Yellow should be used for warnings.
 	Yellow = 33
 	// BackgroundRed should be used for panic.
