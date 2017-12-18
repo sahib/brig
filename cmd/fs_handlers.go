@@ -144,8 +144,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 	for _, entry := range entries {
 		pinState := ""
 		if entry.IsPinned {
-			// pinState += " " + colors.Colorize("🖈", colors.Cyan)
-			pinState += " " + colors.Colorize("P", colors.Cyan)
+			pinState += " " + colors.Colorize("🖈", colors.Cyan)
 		}
 
 		coloredPath := ""

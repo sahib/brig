@@ -48,7 +48,6 @@ supporting me financially, then please [contact me!](mailto:sahib@online.de)
 
 If you'd like to give me a small donation, you can use *liberapay*:
 
-<script src="https://liberapay.com/sahib/widgets/button.js"></script>
 <noscript><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
 
 ### Focus

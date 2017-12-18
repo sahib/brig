@@ -53,7 +53,7 @@ func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
 	buffer.WriteString(" [")
 
 	for key, value := range entry.Data {
-		// MAke the key colored:
+		// Make the key colored:
 		formatColored(buffer, key, entry.Level)
 		buffer.WriteByte('=')
 

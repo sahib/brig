@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	isatty "github.com/mattn/go-isatty"
 	"github.com/sahib/brig/util/colors"
-	colorlog "github.com/sahib/brig/util/log"
+	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
 )
@@ -16,10 +17,9 @@ func init() {
 	log.SetOutput(os.Stderr)
 	log.SetLevel(log.DebugLevel)
 
-	// TODO: Use isatty here.
-	isTerminal := false
-	if isTerminal {
-		log.SetFormatter(&colorlog.ColorfulLogFormatter{})
+	// Only use color if we're printing to a terminal:
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		log.SetFormatter(&formatter.ColorfulLogFormatter{})
 		colors.Enable()
 	} else {
 		colors.Disable()
