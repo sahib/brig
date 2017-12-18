@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/util/colors"
 	colorlog "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
@@ -14,7 +15,15 @@ import (
 func init() {
 	log.SetOutput(os.Stderr)
 	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&colorlog.ColorfulLogFormatter{})
+
+	// TODO: Use isatty here.
+	isTerminal := false
+	if isTerminal {
+		log.SetFormatter(&colorlog.ColorfulLogFormatter{})
+		colors.Enable()
+	} else {
+		colors.Disable()
+	}
 }
 
 func formatGroup(category string) string {

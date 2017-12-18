@@ -1,7 +1,15 @@
 // Package colors implement easy printing of terminal colors.
 package colors
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
+
+var (
+	enabled     = true
+	enabledLock sync.Mutex
+)
 
 const (
 	// Cyan should be used for debug messages.
@@ -20,6 +28,27 @@ const (
 	BackgroundRed = 41
 )
 
+func Enable() {
+	enabledLock.Lock()
+	defer enabledLock.Unlock()
+
+	enabled = true
+}
+
+func Disable() {
+	enabledLock.Lock()
+	defer enabledLock.Unlock()
+
+	enabled = false
+}
+
+func IsEnabled() bool {
+	enabledLock.Lock()
+	defer enabledLock.Unlock()
+
+	return enabled
+}
+
 // ColorResetEscape terminates all previous colors.
 var ColorResetEscape = "\033[0m"
 
@@ -30,5 +59,9 @@ func ColorEscape(color int) string {
 
 // Colorize the msg using ANSI color escapes
 func Colorize(msg string, color int) string {
+	if !IsEnabled() {
+		return msg
+	}
+
 	return ColorEscape(color) + msg + ColorResetEscape
 }
