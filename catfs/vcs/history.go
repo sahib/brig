@@ -51,6 +51,14 @@ func (ct ChangeType) String() string {
 	return strings.Join(v, "|")
 }
 
+// rule: do not loose content.
+//
+//   |  a  c  r  m
+// ---------------
+// a |  n  n  n  y
+// c |  n  n  n  y
+// r |  y  y  y  y
+// m |  y  y  y  y
 func (ct ChangeType) IsCompatible(ot ChangeType) bool {
 	modifyMask := ChangeTypeAdd | ChangeTypeModify
 

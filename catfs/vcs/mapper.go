@@ -34,6 +34,14 @@ type Mapper struct {
 	visited        map[string]n.Node
 }
 
+func (ma *Mapper) report(src, dst n.ModNode, typeMismatch bool) error {
+	return ma.fn(MapPair{
+		Src:          src,
+		Dst:          dst,
+		TypeMismatch: typeMismatch,
+	})
+}
+
 func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
 	if _, ok := ma.visited[srcCurr.Path()]; ok {
@@ -50,11 +58,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 
 	if dstCurr == nil {
 		// We do not have this node yet, mark it for copying.
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          nil,
-			TypeMismatch: false,
-		})
+		return ma.report(srcCurr, nil, false)
 	}
 
 	switch typ := dstCurr.Type(); typ {
@@ -67,11 +71,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		}
 
 		// File and Directory don't go well together.
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          dstDir,
-			TypeMismatch: true,
-		})
+		return ma.report(srcCurr, dstDir, true)
 	case n.NodeTypeFile:
 		// We have two competing files. Let's figure out if the changes done to
 		// them are compatible.
@@ -86,11 +86,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 			return nil
 		}
 
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          dstFile,
-			TypeMismatch: false,
-		})
+		return ma.report(srcCurr, dstFile, false)
 	case n.NodeTypeGhost:
 		// It's still possible that the file was moved on our side.
 		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurr)
@@ -103,19 +99,17 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 			isTypeMismatch = true
 		}
 
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          aliveDstCurr,
-			TypeMismatch: isTypeMismatch,
-		})
+		return ma.report(srcCurr, aliveDstCurr, isTypeMismatch)
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
 	}
 }
 
-func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
-	if _, ok := ma.visited[srcCurr.Path()]; ok {
-		return nil
+func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool) error {
+	if !force {
+		if _, ok := ma.visited[srcCurr.Path()]; ok {
+			return nil
+		}
 	}
 
 	ma.visited[srcCurr.Path()] = srcCurr
@@ -126,11 +120,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 
 	if dstCurrNd == nil {
 		// We never heard of this directory apparently. Go sync it.
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          nil,
-			TypeMismatch: false,
-		})
+		return ma.report(srcCurr, nil, false)
 	}
 
 	// Special case: The node might have been moved on dst's side.
@@ -143,11 +133,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 
 		// No sibling found for this ghost.
 		if aliveDstCurr == nil {
-			return ma.fn(MapPair{
-				Src:          srcCurr,
-				Dst:          nil,
-				TypeMismatch: false,
-			})
+			return ma.report(srcCurr, nil, false)
 		}
 
 		localBackCheck, err := ma.lkrSrc.LookupNodeAt(ma.srcHead, aliveDstCurr.Path())
@@ -156,26 +142,15 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 		}
 
 		if localBackCheck == nil || localBackCheck.Type() == n.NodeTypeGhost {
-			// Delete the guard again, due to to recursive call.
-			// TODO: This feels a bit hacky.
-			delete(ma.visited, srcCurr.Path())
-			return ma.mapDirectory(srcCurr, aliveDstCurr.Path())
+			// Delete the guard again, due to the recursive call.
+			return ma.mapDirectory(srcCurr, aliveDstCurr.Path(), true)
 		}
 
-		// TODO: Make this to report() again to save a few lines.
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          nil,
-			TypeMismatch: false,
-		})
+		return ma.report(srcCurr, nil, false)
 	}
 
 	if dstCurrNd.Type() != n.NodeTypeDirectory {
-		return ma.fn(MapPair{
-			Src:          srcCurr,
-			Dst:          dstCurrNd,
-			TypeMismatch: true,
-		})
+		return ma.report(srcCurr, dstCurrNd, true)
 	}
 
 	dstCurr, ok := dstCurrNd.(*n.Directory)
@@ -204,7 +179,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string) error {
 				return ie.ErrBadNode
 			}
 
-			if err := ma.mapDirectory(srcChildDir, childDstPath); err != nil {
+			if err := ma.mapDirectory(srcChildDir, childDstPath, false); err != nil {
 				return err
 			}
 		case n.NodeTypeFile:
@@ -319,11 +294,7 @@ func (ma *Mapper) handleGhosts() error {
 					return ie.ErrBadNode
 				}
 
-				return ma.fn(MapPair{
-					Src:          nil,
-					Dst:          dstModNd,
-					TypeMismatch: false,
-				})
+				return ma.report(nil, dstModNd, false)
 			}
 
 			// Not does not exist on both sides, nothing to report.
@@ -372,22 +343,15 @@ func (ma *Mapper) handleGhosts() error {
 			ma.visited[srcNd.Path()] = srcNd
 
 			if !aliveSrcNd.Hash().Equal(dstRefNd.Hash()) {
-				return ma.fn(MapPair{
-					Src:          aliveSrcNd,
-					Dst:          dstRefModNd,
-					TypeMismatch: (dstRefNd.Type() != aliveSrcNd.Type()),
-				})
+				mismatch := dstRefNd.Type() != aliveSrcNd.Type()
+				return ma.report(aliveSrcNd, dstRefModNd, mismatch)
 			}
 
 			return nil
 		case n.NodeTypeDirectory:
 			ma.visited[srcNd.Path()] = srcNd
 			if dstRefNd.Type() != n.NodeTypeDirectory {
-				return ma.fn(MapPair{
-					Src:          aliveSrcNd,
-					Dst:          dstRefModNd,
-					TypeMismatch: true,
-				})
+				return ma.report(aliveSrcNd, dstRefModNd, true)
 			}
 
 			aliveSrcDir, ok := aliveSrcNd.(*n.Directory)
@@ -413,7 +377,7 @@ func (ma *Mapper) handleGhosts() error {
 	// Handle moved paths after handling single files.
 	// (mapDirectory assumes that moved files in it were already handled).
 	for _, movedSrcDir := range movedSrcDirs {
-		if err := ma.mapDirectory(movedSrcDir.srcDir, movedSrcDir.dstPath); err != nil {
+		if err := ma.mapDirectory(movedSrcDir.srcDir, movedSrcDir.dstPath, false); err != nil {
 			return err
 		}
 	}
@@ -489,7 +453,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 			return ie.ErrBadNode
 		}
 
-		return ma.mapDirectory(dir, dir.Path())
+		return ma.mapDirectory(dir, dir.Path(), false)
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {

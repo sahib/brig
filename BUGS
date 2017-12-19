@@ -1,4 +1,4 @@
 - High CPU consumption when pinging others. (Havoc'd go routine?)
 - Check backend to be safe to run from multiple go routines
-- Implement "brig gc command to trigger brig gc and ipfs gc"
 - `brig locate` is not working.
+- `brig history` is not really well working (nor obvious)

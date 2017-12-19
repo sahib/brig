@@ -92,7 +92,7 @@ func RunCmdline(args []string) int {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "backend,b",
-					Value: "mock",
+					Value: "ipfs",
 					Usage: "What data backend to use for the new repo",
 				},
 			},
