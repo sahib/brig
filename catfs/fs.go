@@ -525,8 +525,29 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	// If not we gonna need to generate new key for it
 	// based on the content hash.
 	var key []byte
+	var oldFile *n.File
 
-	oldFile, err := fs.lkr.LookupFile(path)
+	oldNode, err := fs.lkr.LookupNode(path)
+
+	// Check that we're handling the right kind of node.
+	// We should be able to add on-top of ghosts, but directorie
+	// are pointless as input.
+	if err == nil {
+		switch oldNode.Type() {
+		case n.NodeTypeDirectory:
+			return fmt.Errorf("Cannot stage over directory: %v", path)
+		case n.NodeTypeGhost:
+			// Act like there was no such node:
+			err = ie.NoSuchFile(path)
+		case n.NodeTypeFile:
+			var ok bool
+			oldFile, ok = oldNode.(*n.File)
+			if !ok {
+				return ie.ErrBadNode
+			}
+		}
+	}
+
 	if err != nil {
 		if !ie.IsNoSuchFileError(err) {
 			return err
