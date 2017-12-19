@@ -86,8 +86,19 @@ func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
 	return tabW.Flush()
 }
 
+const (
+	RemoteHelpText = `# No remotes yet. Uncomment the next lines for an example:
+# - Name: alice@wonderland.com
+#   Fingerprint: QmVA5j2JHPkDTHgZ[...]:SEfXUDeJA1toVnP[...]
+`
+)
+
 func remoteListToYml(remotes []client.Remote) ([]byte, error) {
-	// TODO: Provide a nicer representation here.
+	if len(remotes) == 0 {
+		// Provide a helpful description, instead of an empty list.
+		return []byte(RemoteHelpText), nil
+	}
+
 	return yml.Marshal(remotes)
 }
 
