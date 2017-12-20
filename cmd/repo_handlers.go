@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime/trace"
 	"sort"
 	"text/tabwriter"
@@ -85,7 +86,8 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	// Check if the folder exists... doing init twice
 	// can easily break things.
-	if _, err := os.Stat(folder); err == nil {
+	metaPath := filepath.Join(folder, "meta.yml")
+	if _, err := os.Stat(metaPath); err == nil {
 		return fmt.Errorf("`%s` exists; refusing to do a init.", folder)
 	}
 

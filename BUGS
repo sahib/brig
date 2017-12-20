@@ -2,3 +2,9 @@
 - Check backend to be safe to run from multiple go routines
 - `brig locate` is not working.
 - `brig history` is not really well working (nor obvious)
+- brig config swarmport is not used?
+- gometalinting / cleaning up
+- sync algorithm is not fully fledged out
+- add more tests where appropiate (sync...)
+- design sh test suite / tui tests / situation preps.
+- see if we can disable ipfs gateway & api port.
