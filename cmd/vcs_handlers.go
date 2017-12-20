@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/sahib/brig/cmd/tabwriter"
 
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/util/colors"
@@ -43,16 +46,26 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("history: %v", err)}
 	}
 
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	if len(history) != 0 {
+		fmt.Fprintf(tabW, "CHANGE\tPATH\tREV\t\n")
+	}
+
 	for _, entry := range history {
-		fmt.Printf(
-			"%s %-15s %s\n",
-			colors.Colorize(entry.Ref.B58String()[:10], colors.Red),
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
 			colors.Colorize(entry.Change, colors.Yellow),
 			colors.Colorize(entry.Path, colors.Green),
+			colors.Colorize(entry.Ref.B58String()[:10], colors.Red),
 		)
 	}
 
-	return nil
+	return tabW.Flush()
 }
 
 func printDiff(diff *client.Diff) {
