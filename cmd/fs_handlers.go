@@ -116,6 +116,21 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Move(srcPath, dstPath)
 }
 
+func colorForSize(size uint64) int {
+	switch {
+	case size >= 1024 && size < 1024<<10:
+		return colors.Cyan
+	case size >= 1024<<10 && size < 1024<<20:
+		return colors.Yellow
+	case size >= 1024<<20 && size < 1024<<30:
+		return colors.Red
+	case size >= 1024<<30:
+		return colors.Magenta
+	default:
+		return colors.None
+	}
+}
+
 func handleList(ctx *cli.Context, ctl *client.Client) error {
 	maxDepth := ctx.Int("depth")
 	if ctx.Bool("recursive") {
@@ -157,7 +172,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s\t\n",
-			humanize.Bytes(entry.Size),
+			colors.Colorize(humanize.Bytes(entry.Size), colorForSize(entry.Size)),
 			entry.ModTime.Format(time.Stamp),
 			coloredPath,
 			pinState,

@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+// TODO: Use fatih/color or some other wrapper for portability.
+
 var (
 	enabled     = true
 	enabledLock sync.Mutex
@@ -26,6 +28,8 @@ const (
 	Yellow = 33
 	// BackgroundRed should be used for panic.
 	BackgroundRed = 41
+	// None is the same as reset
+	None = -1
 )
 
 func Enable() {
@@ -54,6 +58,10 @@ var ColorResetEscape = "\033[0m"
 
 // ColorEscape translates a ANSI color number to a color escape.
 func ColorEscape(color int) string {
+	if color < 0 {
+		return ColorResetEscape
+	}
+
 	return fmt.Sprintf("\033[0;%dm", color)
 }
 
