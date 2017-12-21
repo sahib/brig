@@ -452,6 +452,14 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
 		},
 		cli.Command{
+			Name:        "edit",
+			Category:    wdirGroup,
+			Usage:       "Edit a file in brig with $EDITOR",
+			ArgsUsage:   "<path>",
+			Description: "Edit a file in brig with $EDITOR",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
+		},
+		cli.Command{
 			Name:     "daemon",
 			Category: repoGroup,
 			Usage:    "Manually run the daemon process",

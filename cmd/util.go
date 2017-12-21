@@ -269,7 +269,7 @@ func tempFileWithSuffix(dir, prefix, suffix string) (f *os.File, err error) {
 }
 
 // edit opens up $EDITOR with `data` and returns the edited data.
-func edit(data []byte, suffix string) ([]byte, error) {
+func editToPath(data []byte, suffix string) (string, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		// It makes my heart bleed, but assume that vi is too hard
@@ -277,23 +277,28 @@ func edit(data []byte, suffix string) ([]byte, error) {
 		editor = "nano"
 	}
 
-	fd, err := tempFileWithSuffix("", "brig-cmd-buffer-", ".yml")
+	fd, err := tempFileWithSuffix("", "brig-cmd-buffer-", suffix)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+
+	doDelete := false
 
 	// Make sure it gets cleaned up.
 	defer func() {
+		if doDelete {
+			if err := os.Remove(fd.Name()); err != nil {
+				fmt.Printf("Failed to remove temp file: %v\n", err)
+			}
+		}
+
 		if err := fd.Close(); err != nil {
 			fmt.Printf("Failed to close file: %v\n", err)
-		}
-		if err := os.Remove(fd.Name()); err != nil {
-			fmt.Printf("Failed to remove file: %v\n", err)
 		}
 	}()
 
 	if _, err := fd.Write(data); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Launch editor and hook it up with all necessary fds:
@@ -303,18 +308,36 @@ func edit(data []byte, suffix string) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("Running $EDITOR (%s) failed: %v", editor, err)
+		doDelete = true
+		return "", fmt.Errorf("Running $EDITOR (%s) failed: %v", editor, err)
 	}
 
 	if _, err := fd.Seek(0, os.SEEK_SET); err != nil {
-		return nil, err
+		doDelete = true
+		return "", err
 	}
 
-	newData, err := ioutil.ReadAll(fd)
+	return fd.Name(), nil
+}
+
+// edit opens up $EDITOR with `data` and returns the edited data.
+func edit(data []byte, suffix string) ([]byte, error) {
+	tempPath, err := editToPath(data, suffix)
 	if err != nil {
 		return nil, err
 	}
 
-	// Some editors (including vim) might add a trailing newline:
+	defer func() {
+		if err := os.Remove(tempPath); err != nil {
+			fmt.Printf("Failed to remove temp file: %v\n", err)
+		}
+	}()
+
+	newData, err := ioutil.ReadFile(tempPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Some editors might add a trailing newline:
 	return bytes.TrimRight(newData, "\n"), nil
 }

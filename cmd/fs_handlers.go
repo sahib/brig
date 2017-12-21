@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sahib/brig/cmd/tabwriter"
@@ -243,4 +245,41 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	printPair("Content", info.Content.B58String())
 
 	return tabW.Flush()
+}
+
+func handleEdit(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := ctx.Args().First()
+
+	r, err := ctl.Cat(repoPath)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	// Guess the suffix of the file.
+	// This doesn't matter that much, but helps syntax highlighting.
+	suffix := repoPath
+	suffixIdx := strings.LastIndexByte(repoPath, '.')
+	if suffixIdx >= 0 {
+		suffix = repoPath[suffixIdx:]
+	}
+
+	tempPath, err := editToPath(data, suffix)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := os.Remove(tempPath); err != nil {
+			fmt.Printf("Failed to remove temp file: %v\n", err)
+		}
+	}()
+
+	return ctl.Stage(tempPath, repoPath)
 }
