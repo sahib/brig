@@ -268,7 +268,8 @@ func tempFileWithSuffix(dir, prefix, suffix string) (f *os.File, err error) {
 	return
 }
 
-// edit opens up $EDITOR with `data` and returns the edited data.
+// editToPath opens up $EDITOR with `data` and saves the edited data
+// to a temporary path that is then returned.
 func editToPath(data []byte, suffix string) (string, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {

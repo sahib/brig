@@ -350,6 +350,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "history",
+			Aliases:     []string{"hst"},
 			Category:    vcscGroup,
 			Usage:       "Show the history of the given brig file",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
