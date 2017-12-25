@@ -1,0 +1,17 @@
+name = "Hugo-scroll"
+license = "Creative Commons Attribution 4.0 International"
+licenselink = "https://creativecommons.org/licenses/by/4.0/"
+description = "A single page theme for hugo"
+homepage = "https://github.com/SenjinDarashiva/hugoscroll"
+tags = ["Responsive", "Awesome fonts", "single page"]
+features = ["landing page", ]
+min_version = 0.14
+
+[author]
+    name = "Fredrik Loch"
+    homepage = "http://fredrikloch.me"
+
+[original]
+    author =  "grmmph"
+    homepage = "http://ghostscroll.grmmph.com/"
+    repo = "https://github.com/grmmph/GhostScroll"

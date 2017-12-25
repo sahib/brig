@@ -1,0 +1,36 @@
+{{ partial "header.html" . }}
+<body class="home-template">
+
+    <!-- The big featured header on the homepage, with the site logo and description -->
+    <header id="site-head" {{ if .Site.Params.cover }}style="background-image: url({{ .Site.Params.cover }})"{{ end }}>
+        <div class="vertical">
+            <div id="site-head-content" class="inner">
+                {{ if .Site.Params.logo }} <a id="blog-logo" href="{{ .Site.BaseURL }}"><img src="{{ .Site.Params.logo }}" alt="Blog Logo" /></a>{{ end }}
+                <h1 class="blog-title">{{ .Site.Title}}</h1>
+                <h2 class="blog-description">Personal page of Chris Pahl and his<img src="/public/images/dove.svg" width="35px" alt="dove" title="libre"/>software.</h2>
+
+                <a class='btn first'>Resume</a>
+                <a class='btn last'>About me</a>
+                <i id='header-arrow' class="fa fa-angle-down"></i>
+            </div>
+        </div>
+
+    </header>
+
+    <main class="content" role="main">
+    <div class='fixed-nav'>
+    </div>
+        {{ range .Data.Pages.ByWeight }}
+                {{ if eq .Type  "post" }}
+                    {{ .Render "post"}}
+                {{ end }}
+        {{ end }}
+
+</main>
+    {{ partial "footer.html" .}}
+
+    {{ partial "script.html" .}}
+
+
+</body>
+</html>

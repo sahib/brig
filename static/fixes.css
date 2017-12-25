@@ -1,0 +1,206 @@
+h1 {
+	font-size: 200%;
+	color: #EEAAAA;
+	font-weight: 600;
+	text-align: center;
+}
+
+h2 {
+	font-size: 100%;
+	font-weight: 600;
+	font-style: underline;
+	text-align: center;
+}
+
+p, li {
+	font-size: 80%;
+}
+
+p {
+	hyphens: auto;
+	text-align: justify;
+}
+
+h1, h2, h3, p {
+    font-family: Vollkorn;
+}
+
+html {
+    font-family: Vollkorn;
+}
+
+#blog-logo img {
+	position: relative;
+	left: 19px;
+	top: 32px;
+}
+
+.circle img {
+	width: 35%;
+}
+
+.cloud {
+    display: inline;
+    list-style-type: none;
+    width: 400px;
+}
+.cloud li {
+    list-style: none;
+    display: inline;
+}
+
+.cloud li:nth-of-type(3n + 1) {
+    font-size: 1.25em;
+}
+.cloud li:nth-of-type(4n+3) {
+    font-size: 1.5em;
+}
+.cloud li:nth-of-type(5n - 3) {
+    font-size: 1em;
+}
+
+
+
+.project {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 3%;
+  font-size: 65%;
+  line-height: 110%;
+}
+
+.stamp:hover {
+  transition-delay: 100ms;
+  opacity: 1.0;
+  transition: opacity 500ms linear;
+}
+
+.project:hover {
+  color: #236AA8;
+  transition: color 500ms linear;
+}
+
+.project #title {
+  font-size: 130%;
+  position: absolute;
+  color: #333;
+  left: 2%;
+  top: 5%;
+  font-weight: 600;
+  z-index: 20;
+}
+
+.language-image {
+  position: absolute;
+  bottom: 0px;
+  width: 140px;
+  padding: 2%;
+}
+
+.project #desc {
+  position: absolute;
+  text-align: right;
+  padding: 2%;
+  right: 0px;
+  z-index: 10;
+}
+
+.project #role {
+  position: absolute;
+  text-align: right;
+  padding: 2%;
+  right: 0px;
+  bottom: 0px;
+  line-height: 130%;
+}
+
+#role #role-string {
+	font-style: italic;
+}
+
+.stamp {
+	margin: 10px;
+    width: 320px;
+    height: 200px;
+    display: inline-block;
+    padding: 10px;
+    background: white;
+    position: relative;
+    opacity: 0.75;
+    -webkit-filter: drop-shadow(10px 10px 5px rgba(40,20,0,0.5));
+
+    /*The stamp cutout will be created using crisp radial gradients*/
+    background: radial-gradient(
+        transparent 0px,
+        transparent 4px,
+        white 4px,
+        white
+    );
+
+    /*reducing the gradient size*/
+    background-size: 20px 20px;
+    /*Offset to move the holes to the edge*/
+    background-position: -10px -10px;
+}
+
+#project-list {
+	position: relative;
+	width: 90vw;
+	left: calc(-45vw + 50%);
+	margin:auto;
+	text-align: center;
+}
+
+#tagcloud{
+	text-align: center;
+	padding:10px 5px 10px 5px;
+	font-family: Vollkorn;
+	font-weight: 600;
+}
+
+.tag1{ font-size:1em; color:#bbb; line-height:1em; color: #aee; }
+.tag2{ font-size:1.2em; color:#ddd; line-height:1em; color: #eea; }
+.tag3{ font-size:1.5em; color:#fff; line-height:1em;  color: #aea; }
+
+#tagcloud a{
+	text-decoration:none;
+}
+
+#tagcloud a:hover {
+	text-decoration:underline; 
+}
+
+.blog-title {
+	text-shadow: 2px 2px #ff0000;
+}
+
+.blog-description {
+	text-shadow: 2px 2px 1px rgba(80, 60, 60, 10);
+}
+
+.italic {
+	font-style: italic;
+}
+
+#resume p, #resume li, #resume a {
+	text-shadow: 2px 2px 4px rgba(100, 100, 100, 0.33);
+}
+
+.oneOff {
+    background-color: #323761;
+}
+
+#resume h1 {
+	color: #aee;
+}
+
+.post-footer {
+	border-style: none;
+}
+
+#site-head-content a {
+	font-weight: 400;
+	background-color: #eaa;
+}

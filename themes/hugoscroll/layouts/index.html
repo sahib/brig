@@ -1,0 +1,39 @@
+{{ partial "header.html" . }}
+<body class="home-template">
+
+    <!-- The big featured header on the homepage, with the site logo and description -->
+    <header id="site-head" {{ if .Site.Params.cover }}style="background-image: url({{ .Site.Params.cover }})"{{ end }}>
+        <div class="vertical">
+            <div id="site-head-content" class="inner">
+
+                {{ if .Site.Params.logo }} <a id="blog-logo" href="{{ .Site.BaseURL }}"><img src="{{ .Site.Params.logo }}" alt="Blog Logo" /></a>{{ end }}
+                <h1 class="blog-title">{{ .Site.Title}}</h1>
+                {{ if .Site.Params.description }}<h2 class="blog-description">{{ .Site.Params.description }}</h2> {{ else  }}
+                <h2 class="blog-description">Power puff girls</h2>
+                {{ end }}
+
+                <a class='btn first'>Take a tour</a>
+                <a class='btn last'>Cut to the chase</a><br>
+                <i id='header-arrow' class="fa fa-angle-down"></i>
+            </div>
+        </div>
+
+    </header>
+
+    <main class="content" role="main">
+    <div class='fixed-nav'>
+    </div>
+        {{ range .Data.Pages.ByWeight }}
+                {{ if eq .Type  "post" }}
+                    {{ .Render "post"}}
+                {{ end }}
+        {{ end }}
+
+</main>
+    {{ partial "footer.html" .}}
+
+    {{ partial "script.html" .}}
+
+
+</body>
+</html>

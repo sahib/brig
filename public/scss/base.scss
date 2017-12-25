@@ -1,0 +1,17 @@
+@import 'bourbon/bourbon';
+@import 'font-awesome/font-awesome.scss';
+
+@import 'reset.scss';
+@import 'variables.scss';
+// ------------------------------
+// GLOBAL STYLES
+// ------------------------------
+
+@import 'icons.scss';
+@import 'global.scss';
+
+// ------------------------------
+// MEDIA QUERIES
+// ------------------------------
+
+@import 'media-queries.scss';

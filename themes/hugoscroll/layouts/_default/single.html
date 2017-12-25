@@ -1,0 +1,14 @@
+{{ partial "header.html" . }}
+    <body>
+        <div class="content-wrapper">
+            <div class="content-wrapper__inner">
+                <div class="post">
+                    <h1>{{ .Title }}</h1>
+                    <span class="post-date">{{ .Date.Format "Mon, Jan 2, 2006" }}</span>
+                    {{ .Content }}
+                </div>
+            </div>
+        </div>
+    </body>
+    {{ partial "script.html" .}}
+</html>

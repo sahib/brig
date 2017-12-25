@@ -1,0 +1,20 @@
+{{ partial "header.html" . }}
+    <body>
+        <div class="content-wrapper">
+            <div class="content-wrapper__inner">
+                {{ range .Data.Pages.GroupByDate "2006" }}
+                <h2>{{ .Key }}</h2>
+                <ul id="list">
+                    {{range .Pages }}
+                    <li>
+                        <a href="{{ .Permalink }}">{{ .Title }} {{ if .GetParam "draft"}}DRAFT{{end}}</a>
+                        <div class="meta">{{ .Date.Format "Mon, Jan 2, 2006" }}</div>
+                    </li>
+                    {{ end }}
+                </ul>
+                {{ end }}
+            </div>
+        </div>
+    </body>
+    {{ partial "script.html" .}}
+</html>

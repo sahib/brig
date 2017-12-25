@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Elchwald</title>
+    <link>https://sahib.github.io/public/</link>
+    <description>Recent content on Elchwald</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 30 Oct 2016 14:09:01 +0100</lastBuildDate>
+    <atom:link href="https://sahib.github.io/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>About me</title>
+      <link>https://sahib.github.io/public/post/intro/</link>
+      <pubDate>Sun, 30 Oct 2016 14:09:01 +0100</pubDate>
+      
+      <guid>https://sahib.github.io/public/post/intro/</guid>
+      <description>
+
+&lt;p&gt;Hey there, I&amp;rsquo;m a software developer from Bavaria, 25 years young. I just
+finished my master&amp;rsquo;s degree in computer science and now I&amp;rsquo;m diving into the
+world of some kind of professional software developement. In my spare time I&amp;rsquo;m
+an active developer of free (as in freedom and also as in free beer) software.
+See the bottom of this site for my projects. See the next page to find out what
+languages and techniques I&amp;rsquo;m into.&lt;/p&gt;
+
+&lt;h2 id=&#34;contact:34c4da6d4768d05e50db99357a299b5c&#34;&gt;Contact&lt;/h2&gt;
+
+&lt;p&gt;I care for privacy, therefore you won&amp;rsquo;t find me on social networks. If you want
+to contact me, email is the way to go: &lt;a
+href=&#34;mailto:sahib@online.de&#34;&gt;&lt;code&gt;sahib@online.de&lt;/code&gt;&lt;/a&gt;. Alternatively you can
+use my XMPP handle, which is named &lt;code&gt;sahib@jabber.nullcat.de&lt;/code&gt;. If you want to
+talk dirty to me, my PGP key ID is
+&lt;a href=&#34;https://pgp.mit.edu/pks/lookup?op=vindex&amp;amp;search=0x60464F5AAF3D5DAC&#34;&gt;&lt;code&gt;AF3D5DAC&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+
+
+&lt;figure class=&#34;circle&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/avatar.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+
+&lt;p&gt;&lt;span class=&#34;italic&#34;&gt;Other things I like (in no particular order):&lt;/span&gt;
+&lt;a href=&#34;https://studentkittens.github.io/recipes&#34;&gt;Cooking&lt;/a&gt;,
+&lt;a href=&#34;http://bttv.click-tt.de/cgi-bin/WebObjects/nuLigaTTDE.woa/wa/teamPortrait?teamtable=2331279&amp;amp;pageState=vorrunde&amp;amp;championship=K305+2016%2F17&amp;amp;group=277527&#34;&gt;Table tennis&lt;/a&gt; (as player and team leader), &lt;a href=&#34;https://www.komoot.de/user/311393048714&#34;&gt;Biking &amp;amp; Hiking&lt;/a&gt;, Metal, &lt;a href=&#34;http://frogoncoffee.deviantart.com/&#34;&gt;Badly executed Art&lt;/a&gt;, Nature, &lt;a href=&#34;https://imgur.com/a/gGvgW&#34;&gt;Cats&lt;/a&gt;, Bo Burnham, Typography, Tattoos and Terry Pratchett books.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Resume</title>
+      <link>https://sahib.github.io/public/post/resume/</link>
+      <pubDate>Sun, 30 Oct 2016 14:07:51 +0100</pubDate>
+      
+      <guid>https://sahib.github.io/public/post/resume/</guid>
+      <description>&lt;!--
+&lt;center&gt;
+&lt;a href=&#34;https://github.com/sahib/sahib.github.com/raw/master/cv.pdf&#34;&gt;[Download german resume as PDF]&lt;/a&gt;
+&lt;/center&gt;
+--&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h2&gt;Formal education:&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;span class=&#34;italic&#34;&gt;2014&amp;ndash;2016&lt;/span&gt;: Master of Science, University of Applied Sciences Augsburg (Ø1.4)&lt;/li&gt;
+&lt;li&gt;&lt;span class=&#34;italic&#34;&gt;2010&amp;ndash;2014&lt;/span&gt;: Bachelor of Science, University of Applied Sciences Hof (Ø1.8)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Languages I speak:&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;German &lt;span class=&#34;italic&#34;&gt;(native speaker)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;English &lt;span class=&#34;italic&#34;&gt;(proficient)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!--
+&lt;h2&gt;Papers:&lt;/h2&gt;
+
+* &lt;span class=&#34;italic&#34;&gt;Oct 2016&lt;/span&gt;: &lt;a href=&#34;https://disorganizer.github.io/brig-thesis/brig/thesis.pdf&#34;&gt;»brig«: Ein Werkzeug zur sicheren und verteilten Dateisynchronisation.&lt;/a&gt;
+* &lt;span class=&#34;italic&#34;&gt;May 2014&lt;/span&gt;: &lt;a href=&#34;https://sahib.github.io/libmunin-thesis/bachelor/html/rst/index.html&#34;&gt;Algorithmik und Evaluation des Musikempfehlungssystems libmunin.&lt;/a&gt;
+
+&lt;h2&gt;Experience:&lt;/h2&gt;
+
+Personally I think that I have learned the most through my FOSS
+projects. Thanks to them I experienced the process of creating
+software from scratch several times. This process includes designing,
+developing, packaging, documenting, automated testing, working with remote
+developers, reviewing code, porting to other platforms, working with the community, filing bugs
+and handling bug reports. While I technically have not worked (yet) in the
+»industry«, this might be a good preparation.
+
+I mostly specialize in doing system level programming. This means either
+embedded programming or far more often writing tools for Linux that tinker with
+the filesystem in one way or another. Besides that I have a interest in P2P
+networks, Datamining and generally Algorithms. Although there might be some
+missing points, below you&#39;ll find the »tools and techniques« I have experience
+with. Larger points mean more experience. Click on the link to see arbitrary
+chosen references.
+
+&lt;div id=&#34;tagcloud&#34;&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig/blob/fa9bb634b4b83aaabaa967ac523123ce67aa217d/store/wire/store.proto&#34; class=&#34;tag2&#34;&gt;Protobuf&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint/blob/master/po/de.po&#34; class=&#34;tag1&#34;&gt;Internationalization (gettext)&lt;/a&gt;
+&lt;a href=&#34;https://github.com/studentkittens/moosecat/blob/9a273458a89542d68ed7e03324924ac481b06fdc/lib/store/moose-store-private.c#L462&#34; class=&#34;tag2&#34;&gt;SQLite&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint/blob/f27498d62afb59924d876f8b2cec3a54de80f3a7/gui/shredder/tree.py&#34; class=&#34;tag3&#34;&gt;Python&lt;/a&gt;
+&lt;a href=&#34;https://studentkittens.github.io/eulenfunk/index.html#/step-17&#34; class=&#34;tag2&#34;&gt;Microservices&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig&#34; class=&#34;tag2&#34;&gt;Cryptography&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint&#34; class=&#34;tag3&#34;&gt;git&lt;/a&gt;
+&lt;a href=&#34;https://travis-ci.org/sahib/rmlint&#34; class=&#34;tag1&#34;&gt;Continuous integration&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint/tree/master/pkg/docker&#34; class=&#34;tag2&#34;&gt;Docker&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/dotfiles/tree/master/nvim&#34; class=&#34;tag3&#34;&gt;VIM&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig-thesis/blob/master/arch/plots/benchmark.sh&#34; class=&#34;tag2&#34;&gt;Bash&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig/blob/master/store/fs.go&#34; class=&#34;tag3&#34;&gt;Go&lt;/a&gt;
+&lt;a href=&#34;https://rmlint.readthedocs.io/en/latest/gui.html&#34; class=&#34;tag2&#34;&gt;UI Developement (GTK+)&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/glyr/blob/87634e30c1c6db263c8f2ac6fa21fe99c5ca1b06/spec/Ruby/photos_spec.rb&#34; class=&#34;tag1&#34;&gt;Ruby&lt;/a&gt;
+&lt;a href=&#34;https://github.com/studentkittens/moosecat/blob/naglfar/moosecat/core/client.pyx&#34; class=&#34;tag2&#34;&gt;Cython&lt;/a&gt;
+&lt;a href=&#34;https://www.yubico.com/products/yubikey-hardware/yubikey-neo&#34; class=&#34;tag1&#34;&gt;Yubikey&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig&#34; class=&#34;tag2&#34;&gt;ipfs&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint&#34; class=&#34;tag3&#34;&gt;Linux&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/sahib.github.com&#34; class=&#34;tag1&#34;&gt;HTML/CSS&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig/tree/master/fuse&#34; class=&#34;tag2&#34;&gt;Filesystems (FUSE)&lt;/a&gt;
+&lt;a href=&#34;https://github.com/studentkittens/snobaer/blob/master/snobaer/static/js/logic.coffee&#34; class=&#34;tag1&#34;&gt;CoffeeScript&lt;/a&gt;
+&lt;a href=&#34;https://github.com/disorganizer/brig/blob/master/store/kv.go&#34; class=&#34;tag2&#34;&gt;BoltDB&lt;/a&gt;
+&lt;a href=&#34;https://github.com/sahib/rmlint/blob/master/lib/treemerge.c&#34; class=&#34;tag3&#34;&gt;C&lt;/a&gt;
+&lt;/div&gt;
+
+&lt;br /&gt;
+
+&lt;h2&gt;What I expect from my work:&lt;/h2&gt;
+
+- &lt;span class=&#34;italic&#34;&gt;Coding:&lt;/span&gt; I want a job where I stay near real applications, where I actually write code, tests and documentation and see the application in action.
+- &lt;span class=&#34;italic&#34;&gt;Interesting work:&lt;/span&gt; I deliver the best results when really I&#39;m interested in something. I therefore like to be challenged from time to time with new problems.
+* &lt;span class=&#34;italic&#34;&gt;Good Atmosphere:&lt;/span&gt; Nice and professional colleagues that make the daily routine a fun and social experience.
+
+--&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Projects</title>
+      <link>https://sahib.github.io/public/post/projects/</link>
+      <pubDate>Sun, 30 Oct 2016 14:08:14 +0100</pubDate>
+      
+      <guid>https://sahib.github.io/public/post/projects/</guid>
+      <description>&lt;p&gt;Below you&amp;rsquo;ll find a selection of the open source projects I worked on. All of them
+are licensed either as
+&lt;a href=&#34;https://de.wikipedia.org/wiki/GNU_General_Public_License&#34;&gt;GPLv3&lt;/a&gt;,
+&lt;a href=&#34;https://de.wikipedia.org/wiki/GNU_Lesser_General_Public_License&#34;&gt;LGPL&lt;/a&gt; or
+&lt;a href=&#34;https://de.wikipedia.org/wiki/GNU_Affero_General_Public_License&#34;&gt;AGPLv3&lt;/a&gt;. The
+most widely used projects are currently »&lt;code&gt;rmlint&lt;/code&gt;« and »&lt;code&gt;glyr&lt;/code&gt;«, both being
+packaged for many linux distributions. The most important to me is »&lt;code&gt;brig&lt;/code&gt;«,
+which really could change how we exchange files with other people.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h2&gt;Active and well maintained:&lt;/h2&gt;
+
+&lt;div id=&#34;project-list&#34;&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/disorganizer/brig&#34;&gt;»&lt;u&gt;bri&lt;/u&gt;g«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/go.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        A tool for secure and distributed&lt;br /&gt;
+        file synchronization based on &lt;a&gt;ipfs&lt;/a&gt;.&lt;br /&gt;
+        Subject of my master thesis.
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 14 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; 2015&amp;ndash;2016
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Working prototype.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Lead developer.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://rmlint.readthedocs.io/en/latest/index.html&#34;&gt;»&lt;u&gt;rmlint&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/c-and-python.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        A very fast deduplication suite for&lt;br /&gt; Linux written in C with many&lt;br /&gt;
+        options. It also features a
+        &lt;a href=&#34;https://rmlint.readthedocs.io/en/latest/gui.html&#34;&gt;graphical  &lt;br /&gt;user interface&lt;/a&gt; written in Python.
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 20 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; 2010&amp;ndash;2016
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Used in production.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Creator and 1/2 Developer.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/studentkittens/eulenfunk&#34;&gt;»&lt;u&gt;eulenfunk&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/c-and-go.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        A home-made kitchen radio&lt;br /&gt;
+        based on the Raspberry Pi.&lt;br /&gt;
+        Watch a &lt;a href=&#34;https://vimeo.com/171646691&#34;&gt;video here.&lt;/a&gt;
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 7 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; June 2016
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Works fine in the kitchen.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Software Developer.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h2&gt;Currently on hold due to lack of time:&lt;/h2&gt;
+
+&lt;div id=&#34;project-list&#34;&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/studentkittens/moosecat&#34;&gt;»&lt;u&gt;moosecat&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/c-and-python.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        Unique/powerful &lt;a href=&#34;https://www.musicpd.org&#34;&gt;MPD client&lt;/a&gt;&lt;br /&gt;
+        with search completion, fast &lt;br /&gt;
+        playlist filtering, metadata retrieval&lt;br /&gt;
+        and smart playlist generation.&lt;br /&gt;
+        Currently discontinued due to lack of time.
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 15 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; 2012&amp;ndash;2015
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Various Prototypes.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Sole Author.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/sahib/glyr&#34;&gt;»&lt;u&gt;glyr&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/c.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        Library for music metadata retrieval&lt;br /&gt;
+        like coverart, lyrics, album reviews&lt;br /&gt;
+        or artist photos. More than 40 providers.&lt;br /&gt;
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 15 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; 2011&amp;ndash;2015
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Needs maintenance or rewrite.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Sole Author.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/studentkittens/snobaer&#34;&gt;»&lt;u&gt;Snøbær&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/python-coffee.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        Web frontend for moosecat.&lt;br /&gt;
+        Backend is in Python,&lt;br /&gt;
+        Frontend is written in Coffeescript.&lt;br /&gt;
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 3 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; June 2016
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Buggy Prototype.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Sole Author.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h2&gt;Dead or small projects:&lt;/h2&gt;
+
+&lt;div id=&#34;project-list&#34;&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://libmunin.readthedocs.io/en/latest/&#34;&gt;»&lt;u&gt;libmunin&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/python.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        Python library that generates&lt;br /&gt;
+        music recommendations based&lt;br /&gt;on datamining algorithms and tries&lt;br /&gt;
+        to learn from the user&#39;s behaviour.&lt;br /&gt;
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 4 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; Oct 2013&amp;ndash;May 2014
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Discontinued.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Software Developer
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/studentkittens/catlight&#34;&gt;»&lt;u&gt;catlight&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/c.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        USB driven multicolor LED,&lt;br /&gt;
+        which is controlled by a user-&lt;br /&gt;
+        space driver. Used for mail notifications&lt;br /&gt;
+        and &lt;a href=&#34;https://en.wikipedia.org/wiki/Moodbar&#34;&gt;moodbar&lt;/a&gt; based music visualisation.
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 1 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; 2012&amp;ndash;2016 
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Works well.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Driver and utility development.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&#34;stamp&#34;&gt;
+    &lt;div class=&#34;project&#34;&gt;
+        &lt;span id=&#34;title&#34;&gt;&lt;a href=&#34;https://github.com/serztle/nom&#34;&gt;»&lt;u&gt;nom&lt;/u&gt;«&lt;/a&gt;&lt;/span&gt;
+        
+&lt;figure class=&#34;language-image&#34;&gt;
+    
+        &lt;img src=&#34;https://sahib.github.io/public/public/images/go.png&#34; /&gt;
+    
+    
+&lt;/figure&gt;
+
+        &lt;span id=&#34;desc&#34;&gt;
+        Small tool to plan and manage&lt;br /&gt;
+        recipes. Also supports the&lt;br /&gt;
+        rendering of a web gallery.&lt;br /&gt;
+        &lt;/span&gt;
+        &lt;span id=&#34;role&#34;&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Size:&lt;/i&gt; 2 KLOC
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Timeframe:&lt;/i&gt; September 2016
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;State:&lt;/i&gt; Works and generates e.g. &lt;a href=&#34;https://studentkittens.github.io/recipes&#34;&gt;this&lt;/a&gt;.
+        &lt;br /&gt;
+        &lt;i id=&#34;role-string&#34;&gt;Role:&lt;/i&gt; Code review, Author is &lt;a href=&#34;https://github.com/serztle&#34;&gt;serztle&lt;/a&gt;.
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h2&gt;Donations:&lt;/h2&gt;
+
+&lt;p&gt;If you like my work, you might consider a donation, but nice emails or buying me a beer is okay too.
+If you have questions, just ask me. I&amp;rsquo;m not as shy as I look like. &lt;i class=&#34;fa fa-smile-o&#34; aria-hidden=&#34;true&#34;&gt;&lt;/i&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;center&gt;
+   &lt;form action=&#34;https://www.paypal.com/cgi-bin/webscr&#34; method=&#34;post&#34; style=&#34;display: inline-block;&#34;&gt;
+       &lt;input type=&#34;hidden&#34; name=&#34;cmd&#34; value=&#34;_s-xclick&#34;&gt;
+       &lt;input type=&#34;hidden&#34; name=&#34;hosted_button_id&#34; value=&#34;JXCXKRMS8EDVC&#34;&gt;
+       &lt;input type=&#34;image&#34; src=&#34;https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif&#34; border=&#34;0&#34; name=&#34;submit&#34; alt=&#34;PayPal - The safer, easier way to pay online!&#34;&gt;
+       &lt;img alt=&#34;&#34; border=&#34;0&#34; src=&#34;https://www.paypalobjects.com/de_DE/i/scr/pixel.gif&#34; width=&#34;1&#34; height=&#34;1&#34;&gt;
+   &lt;/form&gt;
+&lt;a href=&#34;https://flattr.com/thing/302682/libglyr&#34;&gt;&lt;img src=&#34;https://api.flattr.com/button/flattr-badge-large.png&#34; /&gt;&lt;/a&gt;
+&lt;/center&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

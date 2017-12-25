@@ -1,0 +1,27 @@
+    <footer class="site-footer">
+        <div>
+        {{ if .Site.Params.twitter }}
+        <a href="http://twitter.com/{{ .Site.Params.twitter }}" title="Twitter"><span class="fa fa-tt fa-2x"></span></a>
+        {{ end }}
+        {{ if .Site.Params.bitbucket }}
+        <a href="https://bitbucket.org/{{ .Site.Params.bitbucket }}" title="Bitbucket"><span class="fa fa-bitbucket fa-2x"></span></a>
+        {{ end }}
+        {{ if .Site.Params.github }}
+        <a href="https://github.com/{{ .Site.Params.github }}" title="GitHub"><span class="fa fa-github fa-2x"></span></a>
+        {{ end }}
+        {{ if .Site.Params.flickr }}
+        <a href="http://www.flickr.com/photos/{{ .Site.Params.flickr }}/" title="Flickr"><span class="fa fa-flickr fa-2x"></span></a>
+        {{ end }}
+
+        {{ if .Site.Params.linkedin }}
+       <a href="http://no.linkedin.com/in/{{ .Site.Params.linkedin }}/en" title="Linkedin"> <i class='fa fa-ll fa-2x'></i></a>
+        {{ end }}
+        {{ if .Site.Params.email }}
+        <a href="mailto:{{ .Site.Params.email }}" title="Email {{ .Site.Params.email }}"> <i class='fa fa-envelope-o fa-2x'></i></a>
+        {{ end }}
+        </div>
+        <div class="inner">
+             <section ><a href="http://ghostscroll.grmmph.com/">HugoScroll</a> theme by <a href="http://fredrikloch.me">Fredrik</a>.<br>
+              Proudly published with <a class="i-ghost" href="http://gohugo.io">Hugo</a></section>
+        </div>
+    </footer>
