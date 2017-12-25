@@ -54,29 +54,11 @@ func (nd *Node) catBlock(hash h.Hash, timeout time.Duration) ([]byte, error) {
 	return block.RawData(), nil
 }
 
-func (nd *Node) PublishName(name peer.Name) error {
+func (nd *Node) PublishName(name string) error {
 	// Build all names under we can find this node:
 	fullName := "brig:" + string(name)
-	userName := "brig:" + string(name.WithoutResource())
-	domainId := "brig:" + string(name.Domain())
-
-	if _, err := nd.addBlock([]byte(fullName)); err != nil {
-		return err
-	}
-
-	if fullName != userName {
-		if _, err := nd.addBlock([]byte(userName)); err != nil {
-			return err
-		}
-	}
-
-	if domainId != "" {
-		if _, err := nd.addBlock([]byte(name)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err := nd.addBlock([]byte(fullName))
+	return err
 }
 
 // Identity returns the base58 encoded id of the own ipfs node.
@@ -92,13 +74,13 @@ func (nd *Node) Identity() (peer.Info, error) {
 // if `n` is less than 0, all reachable peers that have `hash` will be returned.
 // if `n` is 0, locate will return immeditately.
 // this operation requires online-mode.
-func (nd *Node) ResolveName(name peer.Name) ([]peer.Info, error) {
+func (nd *Node) ResolveName(name string) ([]peer.Info, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
 	}
 
 	// In theory, we could do this also for domains.
-	hash := u.Hash([]byte(name.WithoutResource()))
+	hash := u.Hash([]byte(name))
 
 	ctx, cancel := context.WithTimeout(nd.ctx, 30*time.Second)
 	defer cancel()
@@ -115,7 +97,7 @@ func (nd *Node) ResolveName(name peer.Name) ([]peer.Info, error) {
 		// Converting equal struct into each other is my favourite thing.
 		peerInfo := peer.Info{
 			Addr: info.ID.Pretty(),
-			Name: name,
+			Name: peer.Name(name),
 		}
 
 		infos = append(infos, peerInfo)

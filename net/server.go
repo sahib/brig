@@ -34,6 +34,38 @@ func (sv *Server) Quit() {
 	sv.baseServer.Quit()
 }
 
+func publishSelf(bk backend.Backend, owner string) error {
+	// Example: alice@wonderland.org/resource
+	name := peer.Name(owner)
+
+	// Publish the full name.
+	if err := bk.PublishName(owner); err != nil {
+		return err
+	}
+
+	// Also publish alice@wonderland.org
+	if noRes := name.WithoutResource(); noRes != string(name) {
+		if err := bk.PublishName(noRes); err != nil {
+			return err
+		}
+	}
+
+	// Publish wonderland.org
+	if domain := name.Domain(); domain != "" {
+		if err := bk.PublishName(domain); err != nil {
+			return err
+		}
+	}
+
+	if user := name.User(); user != string(name) {
+		if err := bk.PublishName(user); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 	hdl := &handler{
 		rp: rp,
@@ -51,6 +83,11 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 		return nil, err
 	}
 
+	if err := publishSelf(bk, rp.Owner); err != nil {
+		log.Warningf("Failed to publish `%v` to the network: %v", rp.Owner, err)
+		log.Warningf("You will not be visible to other users.")
+	}
+
 	return &Server{
 		baseServer: baseServer,
 		bk:         bk,
@@ -60,7 +97,8 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 }
 
 func (sv *Server) Locate(who peer.Name) ([]peer.Info, error) {
-	return sv.bk.ResolveName(who)
+	// TODO: Provide more locate options here. (domain, user etc.)
+	return sv.bk.ResolveName(who.WithoutResource())
 }
 
 func (sv *Server) Identity() (peer.Info, error) {
