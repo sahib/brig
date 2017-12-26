@@ -1,10 +1,10 @@
 baseurl = "https://sahib.github.io/public"
 languageCode = "en-us"
-title = "Elchwald"
+title = "brig"
 
 [Params]
   github = "sahib"
   email = "sahib@online.de"
-  description = "Personal page of Chris Pahl and his ☮ software."
-  cover = "/public/images/sunset.jpg"
-  logo = "/public/images/geweih.svg"
+  description = "brig - a decentralized and secure file synchronizer"
+  cover = "/public/images/banner.png"
+  # logo = "/public/images/geweih.svg"

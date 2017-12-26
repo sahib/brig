@@ -39,28 +39,6 @@ html {
 	width: 35%;
 }
 
-.cloud {
-    display: inline;
-    list-style-type: none;
-    width: 400px;
-}
-.cloud li {
-    list-style: none;
-    display: inline;
-}
-
-.cloud li:nth-of-type(3n + 1) {
-    font-size: 1.25em;
-}
-.cloud li:nth-of-type(4n+3) {
-    font-size: 1.5em;
-}
-.cloud li:nth-of-type(5n - 3) {
-    font-size: 1em;
-}
-
-
-
 .project {
   position: relative;
   width: 100%;
@@ -184,6 +162,11 @@ html {
 	font-style: italic;
 }
 
+
+.post-holder {
+    background-color: #323761;
+}
+
 #resume p, #resume li, #resume a {
 	text-shadow: 2px 2px 4px rgba(100, 100, 100, 0.33);
 }
@@ -203,4 +186,9 @@ html {
 #site-head-content a {
 	font-weight: 400;
 	background-color: #eaa;
+}
+
+ol, ul {
+  list-style: circle inside;
+  background-color: red;
 }

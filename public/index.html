@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta name="generator" content="Hugo 0.31.1" />
     
     <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-    <title> Elchwald &middot; Elchwald </title>
+    <title> brig &middot; brig </title>
 
     <meta name="HandheldFriendly" content="True" />
     <meta name="MobileOptimized" content="320" />
@@ -22,15 +23,16 @@
 <body class="home-template">
 
     
-    <header id="site-head" style="background-image: url(/public/images/sunset.jpg)">
+    <header id="site-head" style="background-image: url(/public/images/banner.png)">
         <div class="vertical">
             <div id="site-head-content" class="inner">
-                 <a id="blog-logo" href="https://sahib.github.io/public"><img src="/public/images/geweih.svg" alt="Blog Logo" /></a>
-                <h1 class="blog-title">Elchwald</h1>
-                <h2 class="blog-description">Personal page of Chris Pahl and his<img src="/public/images/dove.svg" width="35px" alt="dove" title="libre"/>software.</h2>
+                
+                <h1 class="blog-title">brig</h1>
+                <h2 class="blog-description">A decentralized and secure file synchronizer</h2>
 
-                <a class='btn first'>Resume</a>
-                <a class='btn last'>About me</a>
+                <a class='btn first'>About</a>
+                <a class='btn last'>Features</a>
+                <a class='btn last'>Help out!</a>
                 <i id='header-arrow' class="fa fa-angle-down"></i>
             </div>
         </div>
@@ -52,39 +54,26 @@
 			
         </a>
     </header>
-    <h1 class="post-title">About me</h1>
+    <h1 class="post-title">What is it?</h1>
 
     <section class="post-content">
-    
+    <p>»brig« is a free, distributred and quite secure file synchronization program.
+It is based on the global peer-to-peer filesystem <a href="https://ipfs.io/">ipfs</a>.
+Think of it as »git« for big files focused on syn</p>
 
-<p>Hey there, I&rsquo;m a software developer from Bavaria, 25 years young. I just
-finished my master&rsquo;s degree in computer science and now I&rsquo;m diving into the
-world of some kind of professional software developement. In my spare time I&rsquo;m
-an active developer of free (as in freedom and also as in free beer) software.
-See the bottom of this site for my projects. See the next page to find out what
-languages and techniques I&rsquo;m into.</p>
+<p>It tries to focus on being up conceptually simple, by hiding a lot of
+complicated details regarding storage and security. Therefore I hope the end
+result is easy and pleasant to use, while being to be secure by default.</p>
 
-<h2 id="contact:34c4da6d4768d05e50db99357a299b5c">Contact</h2>
+<p>Since brig is a »general purpose« tool for file synchronization it of course
+cannot excel in all areas. This is especially true for efficiency, which is
+sometimes sacrificed to get the balance of usability and security right.</p>
 
-<p>I care for privacy, therefore you won&rsquo;t find me on social networks. If you want
-to contact me, email is the way to go: <a
-href="mailto:sahib@online.de"><code>sahib@online.de</code></a>. Alternatively you can
-use my XMPP handle, which is named <code>sahib@jabber.nullcat.de</code>. If you want to
-talk dirty to me, my PGP key ID is
-<a href="https://pgp.mit.edu/pks/lookup?op=vindex&amp;search=0x60464F5AAF3D5DAC"><code>AF3D5DAC</code></a>.</p>
+<p><a href="http://brig.readthedocs.io/en/latest/">Try it out now!</a></p>
 
-
-<figure class="circle">
-    
-        <img src="/public/images/avatar.png" />
-    
-    
-</figure>
-
-
-<p><span class="italic">Other things I like (in no particular order):</span>
-<a href="https://studentkittens.github.io/recipes">Cooking</a>,
-<a href="http://bttv.click-tt.de/cgi-bin/WebObjects/nuLigaTTDE.woa/wa/teamPortrait?teamtable=2331279&amp;pageState=vorrunde&amp;championship=K305+2016%2F17&amp;group=277527">Table tennis</a> (as player and team leader), <a href="https://www.komoot.de/user/311393048714">Biking &amp; Hiking</a>, Metal, <a href="http://frogoncoffee.deviantart.com/">Badly executed Art</a>, Nature, <a href="https://imgur.com/a/gGvgW">Cats</a>, Bo Burnham, Typography, Tattoos and Terry Pratchett books.</p>
+<p><strong>Note:</strong> »brig« is currently in a very early beta phase. Bug reports reports
+are appreciated and feature requests are welcome but experience report even
+more. Now we have still the chance to change things at will.</p>
 
     </section>
 
@@ -95,7 +84,6 @@ talk dirty to me, my PGP key ID is
     </footer>
 </article>
 </div>
-<div class='post-after'></div>
 
                 
         
@@ -110,90 +98,20 @@ talk dirty to me, my PGP key ID is
 			
         </a>
     </header>
-    <h1 class="post-title">Resume</h1>
+    <h1 class="post-title">Features</h1>
 
     <section class="post-content">
-    <!--
-<center>
-<a href="https://github.com/sahib/sahib.github.com/raw/master/cv.pdf">[Download german resume as PDF]</a>
-</center>
--->
-
-<p><br /></p>
-
-<h2>Formal education:</h2>
-
-<ul>
-<li><span class="italic">2014&ndash;2016</span>: Master of Science, University of Applied Sciences Augsburg (Ø1.4)</li>
-<li><span class="italic">2010&ndash;2014</span>: Bachelor of Science, University of Applied Sciences Hof (Ø1.8)</li>
+    <ul>
+<li>Encryption of data in rest and transport + compression on the fly.</li>
+<li>Simplified <code>git</code> version control (no real branches).</li>
+<li>Sync algorithm that can handle moved files and empty directories and files.</li>
+<li>Your data does not need to be stored on the device you are using.</li>
+<li>FUSE filesystem that feels like a normal (sync) folder.</li>
+<li>No central server at all. Still, central architectures can be build with <code>brig</code>.</li>
+<li>Simple user management with users that look like email addresses.</li>
+<li>Hash algorithm can be changed, unlike with <code>git</code>. ;-)</li>
+<li>Works even for nodes that are hidden behind a NAT.</li>
 </ul>
-
-<h2>Languages I speak:</h2>
-
-<ul>
-<li>German <span class="italic">(native speaker)</span></li>
-<li>English <span class="italic">(proficient)</span></li>
-</ul>
-
-<!--
-<h2>Papers:</h2>
-
-* <span class="italic">Oct 2016</span>: <a href="https://disorganizer.github.io/brig-thesis/brig/thesis.pdf">»brig«: Ein Werkzeug zur sicheren und verteilten Dateisynchronisation.</a>
-* <span class="italic">May 2014</span>: <a href="https://sahib.github.io/libmunin-thesis/bachelor/html/rst/index.html">Algorithmik und Evaluation des Musikempfehlungssystems libmunin.</a>
-
-<h2>Experience:</h2>
-
-Personally I think that I have learned the most through my FOSS
-projects. Thanks to them I experienced the process of creating
-software from scratch several times. This process includes designing,
-developing, packaging, documenting, automated testing, working with remote
-developers, reviewing code, porting to other platforms, working with the community, filing bugs
-and handling bug reports. While I technically have not worked (yet) in the
-»industry«, this might be a good preparation.
-
-I mostly specialize in doing system level programming. This means either
-embedded programming or far more often writing tools for Linux that tinker with
-the filesystem in one way or another. Besides that I have a interest in P2P
-networks, Datamining and generally Algorithms. Although there might be some
-missing points, below you'll find the »tools and techniques« I have experience
-with. Larger points mean more experience. Click on the link to see arbitrary
-chosen references.
-
-<div id="tagcloud">
-<a href="https://github.com/disorganizer/brig/blob/fa9bb634b4b83aaabaa967ac523123ce67aa217d/store/wire/store.proto" class="tag2">Protobuf</a>
-<a href="https://github.com/sahib/rmlint/blob/master/po/de.po" class="tag1">Internationalization (gettext)</a>
-<a href="https://github.com/studentkittens/moosecat/blob/9a273458a89542d68ed7e03324924ac481b06fdc/lib/store/moose-store-private.c#L462" class="tag2">SQLite</a>
-<a href="https://github.com/sahib/rmlint/blob/f27498d62afb59924d876f8b2cec3a54de80f3a7/gui/shredder/tree.py" class="tag3">Python</a>
-<a href="https://studentkittens.github.io/eulenfunk/index.html#/step-17" class="tag2">Microservices</a>
-<a href="https://github.com/disorganizer/brig" class="tag2">Cryptography</a>
-<a href="https://github.com/sahib/rmlint" class="tag3">git</a>
-<a href="https://travis-ci.org/sahib/rmlint" class="tag1">Continuous integration</a>
-<a href="https://github.com/sahib/rmlint/tree/master/pkg/docker" class="tag2">Docker</a>
-<a href="https://github.com/sahib/dotfiles/tree/master/nvim" class="tag3">VIM</a>
-<a href="https://github.com/disorganizer/brig-thesis/blob/master/arch/plots/benchmark.sh" class="tag2">Bash</a>
-<a href="https://github.com/disorganizer/brig/blob/master/store/fs.go" class="tag3">Go</a>
-<a href="https://rmlint.readthedocs.io/en/latest/gui.html" class="tag2">UI Developement (GTK+)</a>
-<a href="https://github.com/sahib/glyr/blob/87634e30c1c6db263c8f2ac6fa21fe99c5ca1b06/spec/Ruby/photos_spec.rb" class="tag1">Ruby</a>
-<a href="https://github.com/studentkittens/moosecat/blob/naglfar/moosecat/core/client.pyx" class="tag2">Cython</a>
-<a href="https://www.yubico.com/products/yubikey-hardware/yubikey-neo" class="tag1">Yubikey</a>
-<a href="https://github.com/disorganizer/brig" class="tag2">ipfs</a>
-<a href="https://github.com/sahib/rmlint" class="tag3">Linux</a>
-<a href="https://github.com/sahib/sahib.github.com" class="tag1">HTML/CSS</a>
-<a href="https://github.com/disorganizer/brig/tree/master/fuse" class="tag2">Filesystems (FUSE)</a>
-<a href="https://github.com/studentkittens/snobaer/blob/master/snobaer/static/js/logic.coffee" class="tag1">CoffeeScript</a>
-<a href="https://github.com/disorganizer/brig/blob/master/store/kv.go" class="tag2">BoltDB</a>
-<a href="https://github.com/sahib/rmlint/blob/master/lib/treemerge.c" class="tag3">C</a>
-</div>
-
-<br />
-
-<h2>What I expect from my work:</h2>
-
-- <span class="italic">Coding:</span> I want a job where I stay near real applications, where I actually write code, tests and documentation and see the application in action.
-- <span class="italic">Interesting work:</span> I deliver the best results when really I'm interested in something. I therefore like to be challenged from time to time with new problems.
-* <span class="italic">Good Atmosphere:</span> Nice and professional colleagues that make the daily routine a fun and social experience.
-
--->
 
     </section>
 
@@ -204,7 +122,6 @@ chosen references.
     </footer>
 </article>
 </div>
-<div class='post-after'></div>
 
                 
         
@@ -219,301 +136,36 @@ chosen references.
 			
         </a>
     </header>
-    <h1 class="post-title">Projects</h1>
+    <h1 class="post-title">Help out!</h1>
 
     <section class="post-content">
-    <p>Below you&rsquo;ll find a selection of the open source projects I worked on. All of them
-are licensed either as
-<a href="https://de.wikipedia.org/wiki/GNU_General_Public_License">GPLv3</a>,
-<a href="https://de.wikipedia.org/wiki/GNU_Lesser_General_Public_License">LGPL</a> or
-<a href="https://de.wikipedia.org/wiki/GNU_Affero_General_Public_License">AGPLv3</a>. The
-most widely used projects are currently »<code>rmlint</code>« and »<code>glyr</code>«, both being
-packaged for many linux distributions. The most important to me is »<code>brig</code>«,
-which really could change how we exchange files with other people.</p>
+    <p>»brig« is currently developed by <a href="https://github.com/sahib">a single guy</a> in
+his spare time. While he&rsquo;s pretty stubborn, you can probably guess that he
+could probably need some help. In it&rsquo;s current state, the software is still far
+away from being production ready. This is partly due to missing testing, partly
+due to many bugs that are present in the software. Also, the security related
+code needs review before serious use in the wild.</p>
 
-<p><br /></p>
+<h2>Developing:</h2>
 
-<h2>Active and well maintained:</h2>
+<p><span class="italic">There are at least three things you can do to help out:</span></p>
 
-<div id="project-list">
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/disorganizer/brig">»<u>bri</u>g«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/go.png" />
-    
-    
-</figure>
+<ul>
+<li>Report (even better: fix) bug reports.</li>
+<li>Write down your experience and how the software is currently lacking.</li>
+<li>Write and improve documentation.</li>
+</ul>
 
-        <span id="desc">
-        A tool for secure and distributed<br />
-        file synchronization based on <a>ipfs</a>.<br />
-        Subject of my master thesis.
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 14 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> 2015&ndash;2016
-        <br />
-        <i id="role-string">State:</i> Working prototype.
-        <br />
-        <i id="role-string">Role:</i> Lead developer.
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://rmlint.readthedocs.io/en/latest/index.html">»<u>rmlint</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/c-and-python.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        A very fast deduplication suite for<br /> Linux written in C with many<br />
-        options. It also features a
-        <a href="https://rmlint.readthedocs.io/en/latest/gui.html">graphical  <br />user interface</a> written in Python.
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 20 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> 2010&ndash;2016
-        <br />
-        <i id="role-string">State:</i> Used in production.
-        <br />
-        <i id="role-string">Role:</i> Creator and 1/2 Developer.
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/studentkittens/eulenfunk">»<u>eulenfunk</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/c-and-go.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        A home-made kitchen radio<br />
-        based on the Raspberry Pi.<br />
-        Watch a <a href="https://vimeo.com/171646691">video here.</a>
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 7 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> June 2016
-        <br />
-        <i id="role-string">State:</i> Works fine in the kitchen.
-        <br />
-        <i id="role-string">Role:</i> Software Developer.
-        </span>
-    </div>
-</div>
-</div>
-
-<p><br /></p>
-
-<h2>Currently on hold due to lack of time:</h2>
-
-<div id="project-list">
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/studentkittens/moosecat">»<u>moosecat</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/c-and-python.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        Unique/powerful <a href="https://www.musicpd.org">MPD client</a><br />
-        with search completion, fast <br />
-        playlist filtering, metadata retrieval<br />
-        and smart playlist generation.<br />
-        Currently discontinued due to lack of time.
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 15 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> 2012&ndash;2015
-        <br />
-        <i id="role-string">State:</i> Various Prototypes.
-        <br />
-        <i id="role-string">Role:</i> Sole Author.
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/sahib/glyr">»<u>glyr</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/c.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        Library for music metadata retrieval<br />
-        like coverart, lyrics, album reviews<br />
-        or artist photos. More than 40 providers.<br />
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 15 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> 2011&ndash;2015
-        <br />
-        <i id="role-string">State:</i> Needs maintenance or rewrite.
-        <br />
-        <i id="role-string">Role:</i> Sole Author.
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/studentkittens/snobaer">»<u>Snøbær</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/python-coffee.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        Web frontend for moosecat.<br />
-        Backend is in Python,<br />
-        Frontend is written in Coffeescript.<br />
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 3 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> June 2016
-        <br />
-        <i id="role-string">State:</i> Buggy Prototype.
-        <br />
-        <i id="role-string">Role:</i> Sole Author.
-        </span>
-    </div>
-</div>
-</div>
-
-<p><br /></p>
-
-<h2>Dead or small projects:</h2>
-
-<div id="project-list">
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://libmunin.readthedocs.io/en/latest/">»<u>libmunin</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/python.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        Python library that generates<br />
-        music recommendations based<br />on datamining algorithms and tries<br />
-        to learn from the user's behaviour.<br />
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 4 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> Oct 2013&ndash;May 2014
-        <br />
-        <i id="role-string">State:</i> Discontinued.
-        <br />
-        <i id="role-string">Role:</i> Software Developer
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/studentkittens/catlight">»<u>catlight</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/c.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        USB driven multicolor LED,<br />
-        which is controlled by a user-<br />
-        space driver. Used for mail notifications<br />
-        and <a href="https://en.wikipedia.org/wiki/Moodbar">moodbar</a> based music visualisation.
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 1 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> 2012&ndash;2016 
-        <br />
-        <i id="role-string">State:</i> Works well.
-        <br />
-        <i id="role-string">Role:</i> Driver and utility development.
-        </span>
-    </div>
-</div>
-<div class="stamp">
-    <div class="project">
-        <span id="title"><a href="https://github.com/serztle/nom">»<u>nom</u>«</a></span>
-        
-<figure class="language-image">
-    
-        <img src="/public/images/go.png" />
-    
-    
-</figure>
-
-        <span id="desc">
-        Small tool to plan and manage<br />
-        recipes. Also supports the<br />
-        rendering of a web gallery.<br />
-        </span>
-        <span id="role">
-        <i id="role-string">Size:</i> 2 KLOC
-        <br />
-        <i id="role-string">Timeframe:</i> September 2016
-        <br />
-        <i id="role-string">State:</i> Works and generates e.g. <a href="https://studentkittens.github.io/recipes">this</a>.
-        <br />
-        <i id="role-string">Role:</i> Code review, Author is <a href="https://github.com/serztle">serztle</a>.
-        </span>
-    </div>
-</div>
-</div>
-
-<p><br /></p>
+<p>Note that we currently will <span class="italic">not</span> accept feature
+request, since we first want to pin down the direction of development instead of introducing possible feature creep.</p>
 
 <h2>Donations:</h2>
 
-<p>If you like my work, you might consider a donation, but nice emails or buying me a beer is okay too.
-If you have questions, just ask me. I&rsquo;m not as shy as I look like. <i class="fa fa-smile-o" aria-hidden="true"></i></p>
+<p>Working on »brig« full time would be a dream of mine. So, if you&rsquo;d like to
+support me financially then you can use <em>liberapay</em> or you can <a href="mailto:sahib@online">contact
+me personally</a> for other kind of support:</p>
 
-<p><center>
-   <form action="https://www.paypal.com/cgi-bin/webscr" method="post" style="display: inline-block;">
-       <input type="hidden" name="cmd" value="_s-xclick">
-       <input type="hidden" name="hosted_button_id" value="JXCXKRMS8EDVC">
-       <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-       <img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1">
-   </form>
-<a href="https://flattr.com/thing/302682/libglyr"><img src="https://api.flattr.com/button/flattr-badge-large.png" /></a>
-</center></p>
+<p><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></p>
 
     </section>
 
@@ -524,7 +176,6 @@ If you have questions, just ask me. I&rsquo;m not as shy as I look like. <i clas
     </footer>
 </article>
 </div>
-<div class='post-after'></div>
 
                 
         
@@ -550,13 +201,6 @@ If you have questions, just ask me. I&rsquo;m not as shy as I look like. <i clas
 			Made with ❤, <a class="i-ghost" href="http://gohugo.io">Hugo</a> and <a href="http://ghostscroll.grmmph.com/">HugoScroll</a></section>
         </div>
     </footer>
-
-
-        
-    <script src="https://sahib.github.io/public/js/jquery.min.js"></script>
-    <script type="text/javascript" src="https://sahib.github.io/public/js/index.min.js"></script>
-
-
 
 </body>
 </html>

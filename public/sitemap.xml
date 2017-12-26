@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  
-  <url>
-    <loc>https://sahib.github.io/public/</loc>
-    <lastmod>2016-10-30T14:09:01+01:00</lastmod>
-    <priority>0</priority>
-  </url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
     <loc>https://sahib.github.io/public/post/intro/</loc>
@@ -20,6 +15,28 @@
   <url>
     <loc>https://sahib.github.io/public/post/projects/</loc>
     <lastmod>2016-10-30T14:08:14+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://sahib.github.io/public/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://sahib.github.io/public/post/</loc>
+    <lastmod>2016-10-30T14:09:01+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://sahib.github.io/public/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://sahib.github.io/public/</loc>
+    <lastmod>2016-10-30T14:09:01+01:00</lastmod>
+    <priority>0</priority>
   </url>
   
 </urlset>
