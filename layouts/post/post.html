@@ -1,4 +1,4 @@
-<div class='post-holder'>
+<div class='post-holder' id="{{ .Params.xxx }}">
 {{ if .Params.class }}
 <article class="{{ .Params.class }}">
 {{ else }}
@@ -23,14 +23,6 @@
     </section>
 
     <footer class="post-footer">
-
-    {{ if .Site.Author }}
-        <section class="author">
-            <h4>{{ .Site.Author.name}}</h4>
-            <p>{{ .Site.Author.bio }}</p>
-        </section>
-    {{ end }}
-
     </footer>
 </article>
 </div>

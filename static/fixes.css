@@ -1,6 +1,6 @@
 h1 {
 	font-size: 200%;
-	color: #EEAAAA;
+	color: #0B334A;
 	font-weight: 600;
 	text-align: center;
 }
@@ -151,7 +151,8 @@ html {
 }
 
 .blog-title {
-	text-shadow: 2px 2px #ff0000;
+    color: #E8EBF6;
+	text-shadow: 2px 2px #0000ff77;
 }
 
 .blog-description {
@@ -162,21 +163,22 @@ html {
 	font-style: italic;
 }
 
-
 .post-holder {
-    background-color: #323761;
+    background-color: #F2EFE8;
 }
 
-#resume p, #resume li, #resume a {
+#dark h1 {
+	color: #F2EFE8;
+}
+
+#dark {
 	text-shadow: 2px 2px 4px rgba(100, 100, 100, 0.33);
+    background-color: #0b334a;
+    color: white;
 }
 
 .oneOff {
     background-color: #323761;
-}
-
-#resume h1 {
-	color: #aee;
 }
 
 .post-footer {
@@ -185,10 +187,10 @@ html {
 
 #site-head-content a {
 	font-weight: 400;
-	background-color: #eaa;
+	background-color: #0b334a;
 }
 
 ol, ul {
   list-style: circle inside;
-  background-color: red;
+  list-style-type: initial;
 }
