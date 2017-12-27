@@ -51,6 +51,11 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 		return nil, err
 	}
 
+	if err := bk.PublishName(peer.Name(rp.Owner)); err != nil {
+		log.Warningf("Failed to announce own name (%s): %v", rp.Owner, err)
+		log.Warningf("You will not be able to be located by others.")
+	}
+
 	return &Server{
 		baseServer: baseServer,
 		bk:         bk,

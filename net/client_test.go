@@ -32,7 +32,7 @@ func withClientFor(who string, t *testing.T, fn func(u testUnit)) {
 
 	defer os.RemoveAll(tmpFolder)
 
-	if err := repo.Init(tmpFolder, "alice", "xxx", "mock"); err != nil {
+	if err := repo.Init(tmpFolder, who, "xxx", "mock"); err != nil {
 		t.Fatalf("Failed to init repo at: %v", err)
 	}
 

@@ -7,7 +7,8 @@ import (
 	"github.com/sahib/brig/net/peer"
 )
 
-// Pinger
+// Pinger is a watcher for a single peer that will actively ping
+// the peer until closed. Time between pings is chosen by the backend.
 type Pinger interface {
 	// LastSeen returns a timestamp of when this peer last responded.
 	LastSeen() time.Time
@@ -22,14 +23,19 @@ type Pinger interface {
 	Close() error
 }
 
-// Backend defines all required methods needed from the underyling implementation
-// in order to talk with other nodes.
+// Backend defines all required methods needed from the underyling
+// implementation in order to talk with other nodes.
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.
 	// Each of these can be contacted to check their credentials.
 	// If the backend support exact lookups, this method will only
 	// return one peer on success always.
 	ResolveName(name peer.Name) ([]peer.Info, error)
+
+	// PublishName announces to the network that this node is known as `name`.
+	// If possible also the group and domain name of the name should be
+	// announced.
+	PublishName(name peer.Name) error
 
 	// Identity resolves our own name to an addr that we could pass to Dial.
 	// It is used as part of the brig identifier for others.

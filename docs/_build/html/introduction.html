@@ -1,0 +1,303 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Getting started &#8212; brig 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quickstart" href="quickstart.html" />
+    <link rel="prev" title="Introduction" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>This guide will walk you through the steps of synchronizing your first files
+over <code class="docutils literal"><span class="pre">brig</span></code>. It’s hand’s on, so make sure to open a terminal. We’ll explain
+all import concepts along the way, so we recommend that you read this from
+start to finish.</p>
+<div class="section" id="creating-a-repository">
+<h2>Creating a repository<a class="headerlink" href="#creating-a-repository" title="Permalink to this headline">¶</a></h2>
+<p>You need a central place where your files are stored and <code class="docutils literal"><span class="pre">brig</span></code> calls this
+place the <em>repository</em>. Note that this is not directly comparable to what
+other tools calls the <em>Sync folder</em>. Rather think of it as the <code class="docutils literal"><span class="pre">.git</span></code> folder
+of a <code class="docutils literal"><span class="pre">git</span></code>-repository: A place where all internal state, data and metadata
+of <code class="docutils literal"><span class="pre">brig</span></code> is stored.</p>
+<p>By creating a new repository you also generate your identity, under which
+your buddies can later find <em>and</em> authenticate you.</p>
+<p>But enough of the grey theory, let’s get started:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mkdir ~/metadata <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/metadata
+$ brig init donald@whitehouse.gov/ovaloffice
+<span class="m">27</span>.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
+⚠  <span class="m">39</span> New passphrase:
+
+Well <span class="k">done</span>! Please re-type your password now:
+⚠  <span class="m">39</span> Retype passphrase:
+
+       _____         /  /<span class="se">\ </span>       ___          /  /<span class="se">\</span>
+      /  /::<span class="se">\ </span>      /  /::<span class="se">\ </span>     /  /<span class="se">\ </span>       /  /:/_
+     /  /:/<span class="se">\:\ </span>    /  /:/<span class="se">\:\ </span>   /  /:/       /  /:/ /<span class="se">\</span>
+    /  /:/~/::<span class="se">\ </span>  /  /:/~/:/   /__/::<span class="se">\ </span>     /  /:/_/::<span class="se">\</span>
+   /__/:/ /:/<span class="se">\:</span><span class="p">|</span> /__/:/ /:/___ <span class="se">\_</span>_<span class="se">\/\:\_</span>_  /__/:/__<span class="se">\/\:\</span>
+   <span class="se">\ </span> <span class="se">\:\/</span>:/~/:/ <span class="se">\ </span> <span class="se">\:\/</span>:::::/    <span class="se">\ </span> <span class="se">\:\/\ \ </span> <span class="se">\:\ </span>/~~/:/
+    <span class="se">\ </span> <span class="se">\:</span>:/ /:/   <span class="se">\ </span> <span class="se">\:</span>:/~~~~      <span class="se">\_</span>_<span class="se">\:</span>:/  <span class="se">\ </span> <span class="se">\:\ </span> /:/
+     <span class="se">\ </span> <span class="se">\:\/</span>:/     <span class="se">\ </span> <span class="se">\:\ </span>         /__/:/    <span class="se">\ </span> <span class="se">\:\/</span>:/
+      <span class="se">\ </span> <span class="se">\:</span>:/       <span class="se">\ </span> <span class="se">\:\ </span>        <span class="se">\_</span>_<span class="se">\/</span>      <span class="se">\ </span> <span class="se">\:</span>:/
+       <span class="se">\_</span>_<span class="se">\/</span>         <span class="se">\_</span>_<span class="se">\/</span>                     <span class="se">\_</span>_<span class="se">\/</span>
+
+
+     A new file README.md was automatically added.
+     Use <span class="s1">&#39;brig cat README.md&#39;</span> to view it <span class="p">&amp;</span> get started.
+$ ls
+config.yml  data  gpg.prv  gpg.pub  logs  metadata
+meta.yml  passwd.locked  remotes.yml
+</pre></div>
+</div>
+<p>The name you specified after the <code class="docutils literal"><span class="pre">init</span></code> is the name that will be shown
+to other users and by which you are searchable in the network.
+See <a class="reference internal" href="#about-names"><span class="std std-ref">About names</span></a> for more details on the subject.</p>
+<p>You will be asked to enter a new password. <em>»Why«</em> you ask? This password is
+used to store your data in an encrypted manner on your harddisk. This is
+especially important if you think about creating the repository on a portable
+media (e.g. usb sticks). If you still choose to disable this security feature
+you’re free to do so by passing <code class="docutils literal"><span class="pre">-x</span></code> directly before the <code class="docutils literal"><span class="pre">init</span></code> subcommand.</p>
+<p>Also note that a lot of files were created in the current directory.
+This is all part of the metadata that is being used by the daemon that runs
+in the background.</p>
+</div>
+<div class="section" id="adding-viewing-files">
+<h2>Adding &amp; Viewing files<a class="headerlink" href="#adding-viewing-files" title="Permalink to this headline">¶</a></h2>
+<p>Phew, that was a lot of text, but there was not any real action yet.
+Let’s change that by adding some files to <code class="docutils literal"><span class="pre">brig</span></code>:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">echo</span> <span class="s2">&quot;Hello World&quot;</span> &gt; /tmp/hello.world
+$ brig stage /tmp/hello.world
+$ brig cat hello.world
+Hello World
+$ brig ls
+SIZE   MODTIME          PATH          PIN
+<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  /README.md     🖈
+<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  /hello.world   🖈
+</pre></div>
+</div>
+<p>You might have noticed that the »hello.world« file was stored in <code class="docutils literal"><span class="pre">brig</span></code> without the
+full path (»/tmp/hello.world«). This is done on purpose, since you should imagine all
+added files live under an own root. You can however give the file a new name while adding it:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ brig stage /tmp/hello.world /hallo.welt
+</pre></div>
+</div>
+</div>
+<div class="section" id="mounting-repositories">
+<h2>Mounting repositories<a class="headerlink" href="#mounting-repositories" title="Permalink to this headline">¶</a></h2>
+<p>There are subcommands that act very similar to <code class="docutils literal"><span class="pre">mkdir</span></code>, <code class="docutils literal"><span class="pre">rm</span></code> and <code class="docutils literal"><span class="pre">mv</span></code>.
+While those surely are useful, it’s not a very native feel of handling files.
+That’s why you can mount all files kown to <code class="docutils literal"><span class="pre">brig</span></code> to a special folder:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mkdir ~/data <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/data
+$ brig mount ~/data
+$ cat hello-world
+Hello World
+</pre></div>
+</div>
+<p>You can use this directory (almost) exactly like a normal one.
+We recommend though, that you shouldn’t do any heavy editing inside of the folder
+and use it more like a »transfer box« for efficiency reasons.</p>
+</div>
+<div class="section" id="remotes">
+<h2>Remotes<a class="headerlink" href="#remotes" title="Permalink to this headline">¶</a></h2>
+<p>Until now, all files where only local. How do we even talk to other peers? This
+is done by adding them as »remote«. Every repository you are using has
+a user-chosen name (»<a class="reference external" href="mailto:donald&#37;&#52;&#48;whitehoure&#46;gov/ovaloffice">donald<span>&#64;</span>whitehoure<span>&#46;</span>gov/ovaloffice</a>«) and a unique
+fingerprint that was generated during <code class="docutils literal"><span class="pre">init</span></code>. Let’s see what our own fingerprint is:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="c1"># The hash will most likely look different for you:</span>
+$ brig whoami
+donald@whitehouse.gov/ovaloffice QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+</pre></div>
+</div>
+<p>The fingerprint consists of two hashes divided by a colon (:). The first part
+is the identity of your <code class="docutils literal"><span class="pre">ipfs</span></code> node, the second part is the fingerprint of a
+keypair that was generated by <code class="docutils literal"><span class="pre">brig</span></code> and will be used to authenticate other
+peers.</p>
+<p>Now let’s assume another user (let’s call him Vladimir) wants to synchronize files with Donald.
+Both sides now need to share the information printed by <code class="docutils literal"><span class="pre">brig</span> <span class="pre">whoami</span></code> over a secure side channel.
+This side channel could be one of the following:</p>
+<ul class="simple">
+<li>Encrpyted mail.</li>
+<li>A secure instant messenger of your choice.</li>
+<li>Any insecure channel, as long you call or meet the person later and you validate at least a few digits of his fingerprint.</li>
+</ul>
+<p>Once you have exchanged the fingerprints, both sides can add each other:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>brig remote add vladimir <span class="se">\</span>
+        QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
+        SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
+</pre></div>
+</div>
+<p>After doing so <code class="docutils literal"><span class="pre">brig</span></code> can figure out the rest (i.e. how to actually reach the node over the network itself).
+Remember that this mechanism might seem inconvinient at first, but it’s the only way for you to actually check
+if someone is truly the person he claims to be.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Later we might make this easier by interpreting the username as an email and/or encoding the fingerprint as QR-code.</p>
+</div>
+<p>If both sides are up &amp; running, we can check if we can reach the other side:</p>
+<blockquote>
+<div>$ brig net list
+TODO: output
+# Yep that works.
+$ brig remote ping vladimir
+TODO: output
+# Cool, we really can reach them.</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>About open ports:</p>
+<p class="last">While <code class="docutils literal"><span class="pre">ipfs</span></code> tries to do it’s best to avoid having the user to open ports in his firewall/router.
+This mechanism might not be perfect though (and maybe never is). If any of the following network
+operations might not work it might be necessary to open the ports 4001 - 4005 or to enable
+UPnP. This only is necessary if the computers you’re using <code class="docutils literal"><span class="pre">brig</span></code> on are not in the same network.</p>
+</div>
+<p>This all requires of course that both partners are online at the same time.
+Later versions might make it possible to have a third party instance that acts
+as intermediate cache. This would then resemble something like <code class="docutils literal"><span class="pre">ownCloud</span></code> does.</p>
+<div class="section" id="about-names">
+<span id="id2"></span><h3>About names<a class="headerlink" href="#about-names" title="Permalink to this headline">¶</a></h3>
+<p>What are those names actually for?</p>
+<p>TODO: write this section (mention jabber id)</p>
+<p>Since <code class="docutils literal"><span class="pre">brig</span></code> is built on-top of <code class="docutils literal"><span class="pre">ipfs</span></code>, all users can find each other
+and sync files among them. The name is used as a human readable token
+to (hopefully) uniquely identify a single user.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal"><span class="pre">brig</span></code> does not use the name to authenticate a user. This is done
+by the <em>fingerprint</em>, which is explained later. Think of the name
+as a »DNS«-name for fingerprints.</p>
+</div>
+<p>Names can be used to locate other users:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ brig locate alice@wonderland.org
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="syncing">
+<h2>Syncing<a class="headerlink" href="#syncing" title="Permalink to this headline">¶</a></h2>
+<p>Finally there. Let’s recap what we’ve done so far:</p>
+<ul class="simple">
+<li>Create a repository (<code class="docutils literal"><span class="pre">brig</span> <span class="pre">init</span> <span class="pre">&lt;name&gt;</span></code>) - needs to be done only once.</li>
+<li>Find &amp; add remotes (<code class="docutils literal"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">add</span></code>) - needs to be done once for each peer.</li>
+<li>Add some files (<code class="docutils literal"><span class="pre">brig</span> <span class="pre">stage</span> <span class="pre">&lt;path&gt;</span></code>) - needs to be done as much as you like to.</li>
+</ul>
+<p>Only thing left to do now is using <code class="docutils literal"><span class="pre">brig</span> <span class="pre">sync</span></code>:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ brig diff vladimir
+<span class="c1"># TODO: Provide output.</span>
+$ brig sync vladimir
+$ brig ls
+SIZE   MODTIME          PATH          PIN
+<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  /README.md     🖈
+<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  /hello.world   🖈
+    <span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  /election      🖈
+</pre></div>
+</div>
+<p>You might notice that the <code class="docutils literal"><span class="pre">sync</span></code> step was kind of fast for 32 GB. This is
+because <code class="docutils literal"><span class="pre">sync</span></code> <em>does not transfer actual data</em>. It only transferred the
+metadata, while the actual <code class="docutils literal"><span class="pre">data</span></code> will only be loaded when required. This
+also means that your data does not need to reside on the same device on which
+you are using <code class="docutils literal"><span class="pre">brig</span></code>. You could have one instance on your always online
+server, while you use only tiny parts of it on your small netbook.</p>
+<p>Where is the data then? Thanks to <code class="docutils literal"><span class="pre">ipfs</span></code> it can be transferred from anywhere,
+but usually nodes that already downloaded the file from the origin. This is
+another advantage of a distributed approach: The original node does not need to
+be online as long as some other node also has your file stored. Note that your
+node will not pro-actively gather data you won’t use. It simply might cache
+data longer than necessary.</p>
+<p>How are the files secure then if they essentially could be everywhere?
+Every file is encrypted by <code class="docutils literal"><span class="pre">brig</span></code> before giving it to <code class="docutils literal"><span class="pre">ipfs</span></code>. The key is part
+of the metadata and will be used to decrypt the file again on the receiver’s end.</p>
+<p>How do we control then what files are stored locally and what not? By <em>pinning</em>
+each file or directory you want to keep always. Files you add explicitly are
+pinned by default and also files that were synced to you. Only old versions of
+a file are by default unpinned. If you want to clean up data (i.e. files are not pinned)
+you can invoke <code class="docutils literal"><span class="pre">brig</span> <span class="pre">gc</span></code>.</p>
+</div>
+<div class="section" id="version-control">
+<h2>Version control<a class="headerlink" href="#version-control" title="Permalink to this headline">¶</a></h2>
+<p>TODO:</p>
+<p>brig history</p>
+<p>brig log</p>
+<p>brig commit</p>
+<p>brig checkout/reset</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Introduction</a></li>
+      <li>Next: <a href="quickstart.html" title="next chapter">Quickstart</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Chris Pahl.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/introduction.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

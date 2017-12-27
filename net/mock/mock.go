@@ -53,6 +53,10 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 	}
 }
 
+func (nb *NetBackend) PublishName(name peer.Name) error {
+	return nil
+}
+
 func (nb *NetBackend) Connect() error {
 	if nb.isOnline {
 		return fmt.Errorf("Already online")

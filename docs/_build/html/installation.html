@@ -1,0 +1,138 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Introduction &#8212; brig 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting started" href="introduction.html" />
+    <link rel="prev" title="brig - decentralized &amp; secure file synchronization based on ipfs" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>At the time of writing, there are no pre-compiled binaries.
+So you gonna have to opt-out and compile <code class="docutils literal"><span class="pre">brig</span></code> yourself,
+but don’t worry that is quite easy:</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal"><span class="pre">brig</span></code> currently was only tested on Linux with the most
+Go version (1.9.2 currently)</p>
+</div>
+<div class="section" id="step-0-installing-go">
+<h2>Step 0: Installing Go<a class="headerlink" href="#step-0-installing-go" title="Permalink to this headline">¶</a></h2>
+<p>This is only required if you don’t have <code class="docutils literal"><span class="pre">Go</span></code> installed.</p>
+<p>If you did not do that, you gonna need to install <code class="docutils literal"><span class="pre">Go</span></code>. <a class="reference external" href="https://golang.org/doc/install">Refere here</a> for possible ways of doing so. Remember to
+set the <code class="docutils literal"><span class="pre">GOPATH</span></code> to a place where you’d like to have your <code class="docutils literal"><span class="pre">.go</span></code> files being
+placed. For example you can put this in your <code class="docutils literal"><span class="pre">.bashrc</span></code>:</p>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Place the go sources in a &quot;go&quot; directory inside your home directory:</span>
+<span class="n">export</span> <span class="n">GOPATH</span><span class="o">=~/</span><span class="n">go</span>
+<span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin:$PATH&quot;</span>
+</pre></div>
+</div>
+<p>By choosing to have the <code class="docutils literal"><span class="pre">GOPATH</span></code> in your home directory you’re not required
+to have <code class="docutils literal"><span class="pre">sudo</span></code> permissions later on.</p>
+<p>You also need to have <code class="docutils literal"><span class="pre">git</span></code> and <code class="docutils literal"><span class="pre">hg</span></code> installed for the next step.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">describe how.</p>
+</div>
+</div>
+<div class="section" id="step-1-compile-install-brig">
+<h2>Step 1: Compile &amp; Install <code class="docutils literal"><span class="pre">brig</span></code><a class="headerlink" href="#step-1-compile-install-brig" title="Permalink to this headline">¶</a></h2>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span>$ go get -u github.com/sahib/brig
+</pre></div>
+</div>
+<p>This will download the complete source code of <code class="docutils literal"><span class="pre">brig</span></code> (and all of it’s dependencies) and compile them to a binary right on. Execution might take
+a few minutes.</p>
+</div>
+<div class="section" id="step-2-test-if-the-installation-is-working">
+<h2>Step 2: Test if the installation is working<a class="headerlink" href="#step-2-test-if-the-installation-is-working" title="Permalink to this headline">¶</a></h2>
+<div class="code bash highlight-default"><div class="highlight"><pre><span></span>$ brig help
+</pre></div>
+</div>
+<p>If above command prints out documentation on how to use the program’s
+commandline switches then the installation worked. Congratulations!</p>
+<hr class="docutils" />
+<p>Continue with <a class="reference internal" href="introduction.html#getting-started"><span class="std std-ref">Getting started</span></a> or directly go to <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a> if you
+do not want to hear the details.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">brig - decentralized &amp; secure file synchronization based on ipfs</a></li>
+      <li>Next: <a href="introduction.html" title="next chapter">Getting started</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Chris Pahl.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
