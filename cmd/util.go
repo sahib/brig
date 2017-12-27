@@ -233,7 +233,6 @@ func guessPort() int {
 	}
 
 	// Guess the default port.
-	log.Warning("BRIG_PORT not given, assuming :6666")
 	return 6666
 }
 
