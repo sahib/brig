@@ -4,9 +4,8 @@ Getting started
 ================
 
 This guide will walk you through the steps of synchronizing your first files
-over ``brig``. It's hand's on, so make sure to open a terminal. We'll explain
-all import concepts along the way, so we recommend that you read this from
-start to finish.
+over ``brig``. It's hand's on, so make sure to open a terminal.
+We'll explain all import concepts along the way.
 
 Creating a repository
 ---------------------
@@ -49,6 +48,14 @@ But enough of the grey theory, let's get started:
     $ ls
     config.yml  data  gpg.prv  gpg.pub  logs  metadata
     meta.yml  passwd.locked  remotes.yml
+
+your buddies can later find and authenticate you.
+
+Enough of the grey theory, let's get started:
+
+.. code-block:: bash
+
+    $ brig init donald@whitehouse.gov/ovaloffice
 
 The name you specified after the ``init`` is the name that will be shown
 to other users and by which you are searchable in the network.
@@ -107,6 +114,25 @@ That's why you can mount all files kown to ``brig`` to a special folder:
 You can use this directory (almost) exactly like a normal one.
 We recommend though, that you shouldn't do any heavy editing inside of the folder
 and use it more like a »transfer box« for efficiency reasons.
+=======
+TODO: Write about:
+
+- Sync folder in other tools.
+- You can have more than one.
+
+Adding files
+------------
+
+Phew, that was a lot of text, but there was not any action yet.
+Let's change that by adding some files to ``brig``:
+
+.. code-block:: bash
+
+    $ brig stage 
+
+TODO: Write about:
+
+- Two path namespaces (external/internal)
 
 Remotes
 -------
@@ -212,20 +238,6 @@ of ``brig`` on your machines. i.e. one username could be
     ``brig`` does therefore not use the name to authenticate a user. This is done
     by the *fingerprint*, which is explained later. Think of the name
     as a human readable »DNS«-name for fingerprints.
-
-Names can be used to locate other users:
-
-.. code-block:: bash
-
-    # Try to find the exact username:
-    $ brig locate alice@wonderland.org/rabbithole
-    TODO: output
-    # Try to find all resources starting with this name:
-    $ brig locate alice@wonderland.org
-    TODO: output
-    # List all users in this domain:
-    $ brig locate wonderland.org
-    TODO: output
 
 Syncing
 -------

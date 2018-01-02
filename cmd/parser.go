@@ -350,6 +350,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "history",
+			Aliases:     []string{"hst", "hist"},
 			Category:    vcscGroup,
 			Usage:       "Show the history of the given brig file",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
@@ -450,6 +451,14 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "<sourcefile> <destinationfile>",
 			Description: "Move a file from SOURCE to DEST",
 			Action:      withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
+		},
+		cli.Command{
+			Name:        "edit",
+			Category:    wdirGroup,
+			Usage:       "Edit a file in brig with $EDITOR",
+			ArgsUsage:   "<path>",
+			Description: "Edit a file in brig with $EDITOR",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
 		},
 		cli.Command{
 			Name:     "daemon",

@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sahib/brig/cmd/tabwriter"
@@ -116,6 +118,21 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Move(srcPath, dstPath)
 }
 
+func colorForSize(size uint64) int {
+	switch {
+	case size >= 1024 && size < 1024<<10:
+		return colors.Cyan
+	case size >= 1024<<10 && size < 1024<<20:
+		return colors.Yellow
+	case size >= 1024<<20 && size < 1024<<30:
+		return colors.Red
+	case size >= 1024<<30:
+		return colors.Magenta
+	default:
+		return colors.None
+	}
+}
+
 func handleList(ctx *cli.Context, ctl *client.Client) error {
 	maxDepth := ctx.Int("depth")
 	if ctx.Bool("recursive") {
@@ -157,7 +174,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s\t\n",
-			humanize.Bytes(entry.Size),
+			colors.Colorize(humanize.Bytes(entry.Size), colorForSize(entry.Size)),
 			entry.ModTime.Format(time.Stamp),
 			coloredPath,
 			pinState,
@@ -228,4 +245,41 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	printPair("Content", info.Content.B58String())
 
 	return tabW.Flush()
+}
+
+func handleEdit(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := ctx.Args().First()
+
+	r, err := ctl.Cat(repoPath)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	// Guess the suffix of the file.
+	// This doesn't matter that much, but helps syntax highlighting.
+	suffix := repoPath
+	suffixIdx := strings.LastIndexByte(repoPath, '.')
+	if suffixIdx >= 0 {
+		suffix = repoPath[suffixIdx:]
+	}
+
+	tempPath, err := editToPath(data, suffix)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := os.Remove(tempPath); err != nil {
+			fmt.Printf("Failed to remove temp file: %v\n", err)
+		}
+	}()
+
+	return ctl.Stage(tempPath, repoPath)
 }

@@ -37,12 +37,15 @@ All changes should be with fitting unittests.
 
 ✓ [U] Implement separate transport protocol with other brig clients.
 ✓ [H] Implement an operation over this protocol to exchange stores.
-...
-NOTE: Below there are some bonus points that are not strictly necessart for a
-prototype, but will be included in a 1.0 version of brig.
-...
 
-X. Implement Pub/Sub notifications to get real-time updates
+5. Implement a gateway for brig
+===============================
+
+- [H] Implement http server that can fetch files based on path.
+- [H] Implement login mechanism to allow password protected fetching.
+- [H] Implement mechanism to restrict to certain files only.
+
+6. Implement Pub/Sub notifications to get real-time updates
 ===========================================================
 
 - [H] Implement differential patches and application of them.

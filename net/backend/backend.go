@@ -26,11 +26,13 @@ type Pinger interface {
 // Backend defines all required methods needed from the underyling
 // implementation in order to talk with other nodes.
 type Backend interface {
+	PublishName(name string) error
+
 	// ResolveName resolves a human readable `name` to a list of peers.
-	// Each of these can be contacted to check their credentials.
+	// Each of these can be later contacted to check their credentials.
 	// If the backend support exact lookups, this method will only
 	// return one peer on success always.
-	ResolveName(name peer.Name) ([]peer.Info, error)
+	ResolveName(name string) ([]peer.Info, error)
 
 	// PublishName announces to the network that this node is known as `name`.
 	// If possible also the group and domain name of the name should be

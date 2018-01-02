@@ -1,12 +1,13 @@
 # ``brig``: Ship your data around the world
 
 <center>  <!-- I know, that's not how you usually do it :) -->
-<img src="https://raw.githubusercontent.com/sahib/brig/master/doc/logo.png" alt="a brig" width="50%">
+<img src="https://raw.githubusercontent.com/sahib/brig/master/docs/logo.png" alt="a brig" width="50%">
 </center>
 
 [![go reportcard](https://goreportcard.com/badge/github.com/sahib/brig)](https://goreportcard.com/report/github.com/sahib/brig)
 [![GoDoc](https://godoc.org/github.com/sahib/brig?status.svg)](https://godoc.org/github.com/sahib/brig)
 [![Build Status](https://travis-ci.org/sahib/brig.svg?branch=master)](https://travis-ci.org/sahib/brig)
+[![Documentation](https://readthedocs.org/projects/rmlint/badge/?version=latest)](http://brig.readthedocs.io/en/latest)
 
 ## Table of Contents
 

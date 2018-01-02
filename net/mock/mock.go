@@ -21,16 +21,20 @@ func NewNetBackend() *NetBackend {
 	}
 }
 
-func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
+func (nb *NetBackend) PublishName(name string) error {
+	return nil
+}
+
+func (nb *NetBackend) ResolveName(name string) ([]peer.Info, error) {
 	switch name {
 	case "bob":
 		return []peer.Info{
-			{Name: name, Addr: "bob-addr"},
+			{Name: peer.Name(name), Addr: "bob-addr"},
 		}, nil
 	case "charlie":
 		return []peer.Info{
-			{Name: name, Addr: "charlie-addr-right"},
-			{Name: name, Addr: "charlie-addr-wrong"},
+			{Name: peer.Name(name), Addr: "charlie-addr-right"},
+			{Name: peer.Name(name), Addr: "charlie-addr-wrong"},
 		}, nil
 	case "vincent":
 		// Vincent is always offline.
@@ -40,13 +44,13 @@ func (nb *NetBackend) ResolveName(name peer.Name) ([]peer.Info, error) {
 		// fictitiously. Any resemblance to actual events or locales or persons,
 		// living or dead, is entirely coincidental.
 		return []peer.Info{
-			{Name: name, Addr: "vincent-addr"},
+			{Name: peer.Name(name), Addr: "vincent-addr"},
 		}, nil
 	case "mallory":
 		// Mallory is a faker:
 		return []peer.Info{
-			{Name: name, Addr: "charlie-addr-right"},
-			{Name: name, Addr: "bob-addr"},
+			{Name: peer.Name(name), Addr: "charlie-addr-right"},
+			{Name: peer.Name(name), Addr: "bob-addr"},
 		}, nil
 	default:
 		return nil, fmt.Errorf("No such peer: %v", name)

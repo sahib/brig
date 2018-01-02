@@ -73,13 +73,9 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 
 	swarmPort = findFreePortAfter(4002, 100)
 
-	// Those two are probably not needed:
-	apiPort := findFreePortAfter(5001, 100)
-	gatewayPort := findFreePortAfter(8080, 100)
-
 	log.Debugf(
-		"ipfs node configured to run on swarm port %d (api: %d gateway: %d)",
-		swarmPort, apiPort, gatewayPort,
+		"ipfs node configured to run on swarm port %d",
+		swarmPort,
 	)
 
 	config := map[string]interface{}{
@@ -87,8 +83,8 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
 			fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
 		},
-		"Addresses.API":     fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", apiPort),
-		"Addresses.Gateway": fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", gatewayPort),
+		"Addresses.API":     "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", apiPort),
+		"Addresses.Gateway": "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", gatewayPort),
 	}
 
 	for key, value := range config {

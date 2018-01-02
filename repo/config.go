@@ -16,7 +16,6 @@ var Defaults = []struct {
 	{"daemon.port", 6666},
 	{"sync.ignore_removed", false},
 	{"sync.conflict_strategy", "marker"},
-	{"data.ipfs.swarmport", 4001},
 	{"data.ipfs.path", ""},
 	{"data.compress.algo", "snappy"},
 }

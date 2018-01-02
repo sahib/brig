@@ -1,6 +1,9 @@
 Introduction
 ============
 
+Installation
+------------
+
 At the time of writing, there are no pre-compiled binaries.
 So you gonna have to opt-out and compile ``brig`` yourself,
 but don't worry that is quite easy:
@@ -12,7 +15,7 @@ but don't worry that is quite easy:
 
 
 Step 0: Installing Go
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 This is only required if you don't have ``Go`` installed.
 
@@ -35,18 +38,19 @@ You also need to have ``git`` and ``hg`` installed for the next step.
 .. todo:: describe how.
 
 Step 1: Compile & Install ``brig``
-----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
     $ go get -u github.com/sahib/brig
 
 
-This will download the complete source code of ``brig`` (and all of it's dependencies) and compile them to a binary right on. Execution might take
-a few minutes.
+This will download the complete source code of ``brig`` (and all of it's
+dependencies) and compile them to a binary right on. Execution might take a few
+minutes.
 
 Step 2: Test if the installation is working
--------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
@@ -54,7 +58,6 @@ Step 2: Test if the installation is working
 
 If above command prints out documentation on how to use the program's
 commandline switches then the installation worked. Congratulations!
-
 
 -----
 
