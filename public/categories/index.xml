@@ -2,12 +2,12 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Categories on brig</title>
-    <link>https://sahib.github.io/public/categories/</link>
+    <link>https://sahib.github.io/brig/public/categories/</link>
     <description>Recent content in Categories on brig</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://sahib.github.io/public/categories/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://sahib.github.io/brig/public/categories/index.xml" rel="self" type="application/rss+xml" />
     
     
   </channel>
