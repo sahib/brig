@@ -17,8 +17,9 @@
       <pubDate>Sun, 30 Oct 2016 14:09:01 +0100</pubDate>
       
       <guid>https://sahib.github.io/brig/public/post/intro/</guid>
-      <description>»brig« is a free, distributred and quite secure file synchronization program. It is based on the global peer-to-peer filesystem ipfs. Think of it as »git« for big files focused on syn
-It tries to focus on being up conceptually simple, by hiding a lot of complicated details regarding storage and security. Therefore I hope the end result is easy and pleasant to use, while being to be secure by default.</description>
+      <description>»brig« is a free, distributed and quite secure file synchronization program. It is based on the global peer-to-peer file system ipfs. Think of it as »git« for big files targeted on syncing files.
+It tries to focus on being up conceptually simple, by hiding a lot of complicated details regarding storage and security. Therefore the end result is (hopefully) easy and pleasant to use, while being secure by default.
+Since brig is a »general purpose« tool for file synchronization it of course cannot excel in all areas.</description>
     </item>
     
     <item>
@@ -27,7 +28,7 @@ It tries to focus on being up conceptually simple, by hiding a lot of complicate
       <pubDate>Sun, 30 Oct 2016 14:07:51 +0100</pubDate>
       
       <guid>https://sahib.github.io/brig/public/post/resume/</guid>
-      <description>Encryption of data in rest and transport + compression on the fly. Simplified git version control (no real branches). Sync algorithm that can handle moved files and empty directories and files. Your data does not need to be stored on the device you are using. FUSE filesystem that feels like a normal (sync) folder. No central server at all. Still, central architectures can be build with brig. Simple user management with users that look like email addresses.</description>
+      <description>Encryption of data in rest and transport + compression on the fly. Simplified ``git`` version control (no real branches). Sync algorithm that can handle moved files and empty directories and files. Your data does not need to be stored on the device you are using. FUSE filesystem that feels like a normal (sync) folder. No central server at all. Still, central architectures can be build with ``brig``. Simple user management with users that look like email addresses.</description>
     </item>
     
     <item>
