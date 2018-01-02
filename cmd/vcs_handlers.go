@@ -213,7 +213,7 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("commit: %v", err)}
 	}
 
-	for idx, entry := range entries {
+	for _, entry := range entries {
 		tags := ""
 		if len(entry.Tags) > 0 {
 			tags = fmt.Sprintf(" (%s)", strings.Join(entry.Tags, ", "))
@@ -227,8 +227,7 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 		entry.Hash.ShortB58()
 
 		fmt.Printf(
-			"%2d: %s %s %s%s\n",
-			idx,
+			"%s %s %s%s\n",
 			colors.Colorize(entry.Hash.ShortB58(), colors.Green),
 			colors.Colorize(entry.Date.Format(time.Stamp), colors.Yellow),
 			msg,

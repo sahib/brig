@@ -177,25 +177,55 @@ as intermediate cache. This would then resemble something like ``ownCloud`` does
 About names
 ~~~~~~~~~~~
 
-What are those names actually for?
+You might already have wondered what those names that you pass on ``init`` are
+and what they are for. ``brig`` does not impose any strict format on the
+username. So any of these are valid usernames:
 
-TODO: write this section (mention jabber id)
+- ``donald``
+- ``donald@whitehouse.gov``
+- ``donald@whitehouse.gov/ovaloffice``
+- ``donald/ovaloffice``
 
-Since ``brig`` is built on-top of ``ipfs``, all users can find each other
-and sync files among them. The name is used as a human readable token
-to (hopefully) uniquely identify a single user.
+It's however recomended to choose a name that is formatted like
+a XMPP/Jabber-ID (TODO: Link). Those IDs can look like plain emails, but can
+optionally have a »resource« part as suffix (separated by a »/« like
+``ovaloffice``). The advantage of having a username in this form is
+locabillity: ``brig`` can find users with the same domain - which is useful for
+e.g. companies with many users.
 
-.. note::
+.. note:: Domain
 
-    ``brig`` does not use the name to authenticate a user. This is done
+    The domain part of the email does not need to be a valid domain.
+
+Having a resource part is optional, but can help if you have several instances
+of ``brig`` on your machines. i.e. one username could be
+``alice@wonderland.org/desktop`` and the other ``alice@wonderland.org/laptop``.
+
+.. note:: Unique names
+
+    The same name can be taken by more than one node. That's a result of the
+    distributed nature of ``brig`` since there is no central part that can
+    register all usernames persistently. This of course opens space for
+    attackers: A malicious person can take the same username as your friend
+    - but luckily he can't take over his fingerprint.
+
+    ``brig`` does therefore not use the name to authenticate a user. This is done
     by the *fingerprint*, which is explained later. Think of the name
-    as a »DNS«-name for fingerprints.
+    as a human readable »DNS«-name for fingerprints.
 
 Names can be used to locate other users:
 
 .. code-block:: bash
 
+    # Try to find the exact username:
+    $ brig locate alice@wonderland.org/rabbithole
+    TODO: output
+    # Try to find all resources starting with this name:
     $ brig locate alice@wonderland.org
+    TODO: output
+    # List all users in this domain:
+    $ brig locate wonderland.org
+    TODO: output
 
 Syncing
 -------
@@ -247,12 +277,59 @@ you can invoke ``brig gc``.
 Version control
 ---------------
 
-TODO:
+One key feature of ``brig`` over other synchronisation tools is the handy
+version control you can have. It will feel familiar to ``git`` users, but a few
+concepts are different.
 
-brig history
+Key concepts
+~~~~~~~~~~~~
 
-brig log
+This is written from the perspective of a ``git`` user:
 
-brig commit
+* You can »snapshot« your current repository by creating a commit (``brig commit``)
+* There are no detailed »diffs« between two files. Only a mix of the following state changes:
 
-brig checkout/reset
+   - *added:* The file was added in this commit.
+   - *moved:* The file was moved in this commit.
+   - *removed:* The file was removed in this commit.
+   - *modified:* The file's content was changed in this commit.
+
+* A change is only recorded between individual commits. Changes in-between are not recorded.
+* There are no branches. Every user has a linear list of commits.
+  The choice not to have branches is on purpose, since they tend to bring greate complexity to both implementation and user-interface.
+* Since there are no branches, there is no way to go back into history. You can however checkout previous files.
+* You can tag individual commits. There are three pre-defined tags:
+
+    - *STAGE*: The current, not yet finalized commit. Constantly changing.
+    - *HEAD*: The last finished commit.
+    - *INIT*: The first commit that was made.
+
+* When synchronizing files with somebody, a merge commit is automatically created.
+  It contains a special marker to indicate with whom, at what time and what state we merged with.
+  On the next sync, commits before this merge will automatically be ignored.
+
+Individual commands
+~~~~~~~~~~~~~~~~~~~
+
+* ``brig commit``: Create a new commit, possibly with a message that describes what happened in the commit.
+
+* ``brig log``: Show a list of all commits, starting from the newest one.
+
+  .. code-block:: bash
+
+      $ brig log
+      SEfXUBDu4J Dec 20 00:06:43 • (curr)
+      SEfXUEVczh Dec 20 00:06:43 Added initial README.md (head)
+      SEfXUEru1p Dec 20 00:06:43 initial commit (init)
+
+* ``brig tag``: Tag a commit with a user defined name. This is helpful for remembering special commits like »homework-finale«.
+* ``brig history``: Show the list of changes made to this file between commits.
+  TODO: Describe the possible state changes.
+  TODO: Include commits in output.
+
+* ``brig checkout``: Checkout the state of a specific commit. This works by simply setting the current commit (``STAGE``) to the contents
+   of the the specified commit. It's a rather cheap operation therefore.
+* ``brig reset``: Bring back a single file.  (TODO: Merge reset and checkout?)
+* ``brig diff / status``: Show the difference (i.e. what files were added/removed/moved/clashed)
+
+* ``brig become``: View the files of a person we synced with.
