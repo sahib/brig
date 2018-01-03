@@ -28,7 +28,7 @@ Since brig is a »general purpose« tool for file synchronization it of course c
       <pubDate>Sun, 30 Oct 2016 14:07:51 +0100</pubDate>
       
       <guid>https://sahib.github.io/brig/public/post/resume/</guid>
-      <description>Encryption of data in rest and transport + compression on the fly. Simplified ``git`` version control (no real branches). Sync algorithm that can handle moved files and empty directories and files. Your data does not need to be stored on the device you are using. FUSE filesystem that feels like a normal (sync) folder. No central server at all. Still, central architectures can be build with ``brig``. Simple user management with users that look like email addresses.</description>
+      <description>Strict division between data and metadata: Your data does not need to be on your device.  All data is encrypted &amp; compressed during rest and transfer.  Powerful version control with simplified ``git``-like interface.  FUSE filesystem that feels like a normal folder.  No central server at all, thus complete freedom for your usecase.  Synchronisation algorithm that can handle moved &amp; removed files and empty directories.   Simple user management and authentication with names that look like email addresses.</description>
     </item>
     
     <item>

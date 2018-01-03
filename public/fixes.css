@@ -21,7 +21,7 @@ p {
 	text-align: justify;
 }
 
-h1, h2, h3, p {
+h1, h2, h3, p, a, li {
     font-family: Vollkorn;
 }
 
@@ -190,7 +190,12 @@ html {
 	background-color: #0b334a;
 }
 
-ol, ul {
+#bullet-checkmark {
+  list-style: circle inside;
+  list-style-type: initial;
+}
+
+#bullet-normal {
   list-style: circle inside;
   list-style-type: initial;
 }
