@@ -18,9 +18,9 @@ code needs review before serious use in the wild.
 <span class="italic">There are at least three things you can do to help out:</span>
 
 <ul>
-<li>Report (even better: fix) bug reports.</li>
-<li>Write down your experience and how the software is currently lacking.</li>
-<li>Write and improve documentation.</li>
+<li class="bullet-normal">Report (even better: fix) bug reports.</li>
+<li class="bullet-normal">Write down your experience and how the software is currently lacking.</li>
+<li class="bullet-normal">Write and improve documentation.</li>
 </ul>
 
 Note that we currently will <span class="italic">not</span> accept feature
