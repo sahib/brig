@@ -8,7 +8,7 @@ xxx = "dark"
 +++
 
 
-<ul>
+<ul class="checkmark-list">
 <li class="bullet-checkmark">
 Strict division between data and metadata: Your data does not need to be on
 your device.

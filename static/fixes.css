@@ -185,17 +185,20 @@ html {
 	border-style: none;
 }
 
-#site-head-content a {
+.site-head-content a {
 	font-weight: 400;
 	background-color: #0b334a;
 }
 
-#bullet-checkmark {
-  list-style: circle inside;
-  list-style-type: initial;
+.bullet-checkmark {
+  list-style: none;
 }
 
-#bullet-normal {
+.checkmark-list li:before {
+    content: '✓';
+}
+
+.bullet-normal {
   list-style: circle inside;
   list-style-type: initial;
 }
