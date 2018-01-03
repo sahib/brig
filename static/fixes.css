@@ -198,6 +198,10 @@ html {
     content: '✓';
 }
 
+.checkmark-list {
+    font-size: 85%;
+}
+
 .bullet-normal {
   list-style: circle inside;
   list-style-type: initial;
