@@ -206,3 +206,11 @@ html {
   list-style: circle inside;
   list-style-type: initial;
 }
+
+a.btn:hover {
+    background-color: #1A6692;
+}
+
+a.btn {
+    background-color: #0AA5FF;
+}
