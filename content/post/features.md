@@ -3,7 +3,7 @@ date = "2016-10-30T14:07:51+01:00"
 draft = false
 title = "Features"
 weight = 1
-class = "post first"
+class = "post"
 xxx = "dark"
 +++
 

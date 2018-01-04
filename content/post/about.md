@@ -3,7 +3,7 @@ date = "2016-10-30T14:09:01+01:00"
 draft = false
 title = "What is it?"
 weight = 1
-class = "post last"
+class = "post first"
 +++
 
 »brig« is a free, distributed and quite secure file synchronization program.

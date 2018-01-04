@@ -13,10 +13,10 @@
     
     <item>
       <title>What is it?</title>
-      <link>https://sahib.github.io/brig/public/post/intro/</link>
+      <link>https://sahib.github.io/brig/public/post/about/</link>
       <pubDate>Sun, 30 Oct 2016 14:09:01 +0100</pubDate>
       
-      <guid>https://sahib.github.io/brig/public/post/intro/</guid>
+      <guid>https://sahib.github.io/brig/public/post/about/</guid>
       <description>»brig« is a free, distributed and quite secure file synchronization program. It is based on the global peer-to-peer file system ipfs. Think of it as »git« for big files targeted on syncing files.
 It tries to focus on being up conceptually simple, by hiding a lot of complicated details regarding storage and security. Therefore the end result is (hopefully) easy and pleasant to use, while being secure by default.
 Since brig is a »general purpose« tool for file synchronization it of course cannot excel in all areas.</description>
@@ -24,19 +24,19 @@ Since brig is a »general purpose« tool for file synchronization it of course c
     
     <item>
       <title>Features</title>
-      <link>https://sahib.github.io/brig/public/post/resume/</link>
+      <link>https://sahib.github.io/brig/public/post/features/</link>
       <pubDate>Sun, 30 Oct 2016 14:07:51 +0100</pubDate>
       
-      <guid>https://sahib.github.io/brig/public/post/resume/</guid>
+      <guid>https://sahib.github.io/brig/public/post/features/</guid>
       <description>Strict division between data and metadata: Your data does not need to be on your device.  All data is encrypted &amp; compressed during rest and transfer.  Powerful version control with simplified ``git``-like interface.  FUSE filesystem that feels like a normal folder.  No central server at all, thus complete freedom for your usecase.  Synchronisation algorithm that can handle moved &amp; removed files and empty directories.   Simple user management and authentication with names that look like email addresses.</description>
     </item>
     
     <item>
       <title>Help out!</title>
-      <link>https://sahib.github.io/brig/public/post/projects/</link>
+      <link>https://sahib.github.io/brig/public/post/help/</link>
       <pubDate>Sun, 30 Oct 2016 14:08:14 +0100</pubDate>
       
-      <guid>https://sahib.github.io/brig/public/post/projects/</guid>
+      <guid>https://sahib.github.io/brig/public/post/help/</guid>
       <description>»brig« is currently developed by a single guy in his spare time. While he&amp;rsquo;s pretty stubborn, you can probably guess that he could probably need some help. In it&amp;rsquo;s current state, the software is still far away from being production ready. This is partly due to missing testing, partly due to many bugs that are present in the software. Also, the security related code needs review before serious use in the wild.</description>
     </item>
     

@@ -3,7 +3,7 @@ date = "2016-10-30T14:08:14+01:00"
 draft = false
 title = "Help out!"
 weight = 50
-class = "post"
+class = "post last"
 +++
 
 »brig« is currently developed by [a single guy](https://github.com/sahib) in
