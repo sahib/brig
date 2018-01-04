@@ -334,14 +334,15 @@ Individual commands
       SEfXUEVczh Dec 20 00:06:43 Added initial README.md (head)
       SEfXUEru1p Dec 20 00:06:43 initial commit (init)
 
-* ``brig tag``: Tag a commit with a user defined name. This is helpful for remembering special commits like »homework-finale«.
+* ``brig tag``: Tag a commit with a user defined name. This is helpful for
+  remembering special commits like »homework-finale«.
 * ``brig history``: Show the list of changes made to this file between commits.
   TODO: Describe the possible state changes.
   TODO: Include commits in output.
-
-* ``brig checkout``: Checkout the state of a specific commit. This works by simply setting the current commit (``STAGE``) to the contents
-   of the the specified commit. It's a rather cheap operation therefore.
-* ``brig reset``: Bring back a single file.  (TODO: Merge reset and checkout?)
+* ``brig reset``: Checkout a whole commit or bring a single file or directory
+  to the state of an old commit. In contrast to ``git``, checking out an old
+  state works not by »jumpinp back«, but by setting the current commit
+  (``STAGE``) to the contents of the old commit. It's a rather cheap operation
+  therefore.
 * ``brig diff / status``: Show the difference (i.e. what files were added/removed/moved/clashed)
-
 * ``brig become``: View the files of a person we synced with.

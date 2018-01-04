@@ -103,12 +103,11 @@ interface VCS {
     commit   @1 (msg :Text);
     tag      @2 (rev :Text, tagName :Text);
     untag    @3 (tagName :Text);
-    reset    @4 (path :Text, rev :Text);
-    checkout @5 (rev :Text, force :Bool);
-    history  @6 (path :Text) -> (history :List(HistoryEntry));
-    makeDiff @7 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
-    sync     @8 (withWhom :Text, needFetch :Bool);
-    fetch    @9 (who :Text);
+    reset    @4 (path :Text, rev :Text, force :Bool);
+    history  @5 (path :Text) -> (history :List(HistoryEntry));
+    makeDiff @6 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
+    sync     @7 (withWhom :Text, needFetch :Bool);
+    fetch    @8 (who :Text);
 }
 
 interface Meta {

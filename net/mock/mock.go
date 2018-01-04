@@ -21,10 +21,6 @@ func NewNetBackend() *NetBackend {
 	}
 }
 
-func (nb *NetBackend) PublishName(name string) error {
-	return nil
-}
-
 func (nb *NetBackend) ResolveName(name string) ([]peer.Info, error) {
 	switch name {
 	case "bob":
@@ -57,7 +53,7 @@ func (nb *NetBackend) ResolveName(name string) ([]peer.Info, error) {
 	}
 }
 
-func (nb *NetBackend) PublishName(name peer.Name) error {
+func (nb *NetBackend) PublishName(name string) error {
 	return nil
 }
 

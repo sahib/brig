@@ -126,31 +126,27 @@ func (vcs *vcsHandler) Untag(call capnp.VCS_untag) error {
 func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 	server.Ack(call.Options)
 
+	rev, err := call.Params.Rev()
+	if err != nil {
+		return err
+	}
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
 	}
 
-	rev, err := call.Params.Rev()
-	if err != nil {
-		return err
+	// If there was no path, it means we should checkout
+	// the whole commit.
+	if path == "" {
+		return vcs.base.withCurrFs(func(fs *catfs.FS) error {
+			return fs.Checkout(rev, call.Params.Force())
+		})
 	}
 
+	// Reset a specific file or directory otherwise:
 	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
 		return fs.Reset(path, rev)
-	})
-}
-
-func (vcs *vcsHandler) Checkout(call capnp.VCS_checkout) error {
-	server.Ack(call.Options)
-
-	rev, err := call.Params.Rev()
-	if err != nil {
-		return err
-	}
-
-	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Checkout(rev, call.Params.Force())
 	})
 }
 

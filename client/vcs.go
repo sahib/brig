@@ -114,21 +114,12 @@ func (cl *Client) Untag(name string) error {
 	return err
 }
 
-func (cl *Client) Reset(path, rev string) error {
+func (cl *Client) Reset(path, rev string, force bool) error {
 	call := cl.api.Reset(cl.ctx, func(p capnp.VCS_reset_Params) error {
 		if err := p.SetPath(path); err != nil {
 			return err
 		}
 
-		return p.SetRev(rev)
-	})
-
-	_, err := call.Struct()
-	return err
-}
-
-func (cl *Client) Checkout(rev string, force bool) error {
-	call := cl.api.Checkout(cl.ctx, func(p capnp.VCS_checkout_Params) error {
 		p.SetForce(force)
 		return p.SetRev(rev)
 	})

@@ -322,10 +322,16 @@ func RunCmdline(args []string) int {
 		cli.Command{
 			Name:        "reset",
 			Category:    vcscGroup,
-			Usage:       "Reset a file to a certain version",
-			ArgsUsage:   "<file> [<commit>]",
-			Description: "Reset a file to the last known state or to a certain commit",
+			Usage:       "Reset commits, file or directories to an old state",
+			ArgsUsage:   "<commit> [<file>] [--force]",
+			Description: "",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "force,f",
+					Usage: "Reset even when there are changes in the staging area",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "become",
@@ -333,20 +339,6 @@ func RunCmdline(args []string) int {
 			Usage:       "Act as other user and view the data we synced with",
 			Description: "Act as other user and view the data we synced with",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleBecome, true)),
-		},
-		cli.Command{
-			Name:        "checkout",
-			Category:    vcscGroup,
-			Usage:       "Revert to a specific commit",
-			ArgsUsage:   "<commit> [--force]",
-			Description: "Make the staging commit equal to an old state",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleCheckout, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force,f",
-					Usage: "Remove directories recursively",
-				},
-			},
 		},
 		cli.Command{
 			Name:        "history",
