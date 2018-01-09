@@ -564,5 +564,3 @@ func TestHistoryUtil(t *testing.T) {
 		}
 	})
 }
-
-// TODO: Test history for multiple moves in one commit and several commit

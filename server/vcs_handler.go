@@ -16,8 +16,8 @@ type vcsHandler struct {
 	base *base
 }
 
-func logEntryToCap(entry *catfs.LogEntry, seg *cplib.Segment) (*capnp.LogEntry, error) {
-	capEntry, err := capnp.NewLogEntry(seg)
+func commitToCap(entry *catfs.Commit, seg *cplib.Segment) (*capnp.Commit, error) {
+	capEntry, err := capnp.NewCommit(seg)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +67,13 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 			return err
 		}
 
-		lst, err := capnp.NewLogEntry_List(seg, int32(len(entries)))
+		lst, err := capnp.NewCommit_List(seg, int32(len(entries)))
 		if err != nil {
 			return err
 		}
 
 		for idx, entry := range entries {
-			capEntry, err := logEntryToCap(&entry, seg)
+			capEntry, err := commitToCap(&entry, seg)
 			if err != nil {
 				return err
 			}
@@ -172,32 +172,41 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 			return err
 		}
 
-		lst, err := capnp.NewHistoryEntry_List(seg, int32(len(history)))
+		lst, err := capnp.NewChange_List(seg, int32(len(history)))
 		if err != nil {
 			return err
 		}
 
 		for idx := 0; idx < len(history); idx++ {
-			entry, err := capnp.NewHistoryEntry(seg)
+			entry, err := capnp.NewChange(seg)
 			if err != nil {
 				return err
 			}
 
-			histEntry := history[idx]
-			if err := entry.SetPath(histEntry.Path); err != nil {
+			change := history[idx]
+			if err := entry.SetPath(change.Path); err != nil {
 				return err
 			}
 
-			if err := entry.SetChange(histEntry.Change); err != nil {
+			if err := entry.SetChange(change.Change); err != nil {
 				return err
 			}
 
-			capLogEntry, err := logEntryToCap(&histEntry.Commit, seg)
+			capHead, err := commitToCap(change.Head, seg)
 			if err != nil {
 				return err
 			}
 
-			if err := entry.SetCommit(*capLogEntry); err != nil {
+			if err := entry.SetHead(*capHead); err != nil {
+				return err
+			}
+
+			capNext, err := commitToCap(change.Next, seg)
+			if err != nil {
+				return err
+			}
+
+			if err := entry.SetNext(*capNext); err != nil {
 				return err
 			}
 

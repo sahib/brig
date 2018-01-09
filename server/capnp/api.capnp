@@ -16,7 +16,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     content  @8 :Data;
 }
 
-struct LogEntry $Go.doc("Single log entry") {
+struct Commit $Go.doc("Single log entry") {
     hash @0 :Data;
     msg  @1 :Text;
     tags @2 :List(Text);
@@ -28,10 +28,11 @@ struct ConfigPair $Go.doc("Key/Value pair in the config") {
     val @1 :Text;
 }
 
-struct HistoryEntry $Go.doc("One History entry for a file") {
+struct Change $Go.doc("One History entry for a file") {
     path   @0 :Text;
     change @1 :Text;
-    commit @2 :LogEntry;
+    head   @2 :Commit;
+    next   @3 :Commit;
 }
 
 struct DiffPair $Go.doc("Represent two differing files") {
@@ -99,12 +100,12 @@ interface FS {
 }
 
 interface VCS {
-    log      @0 () -> (entries :List(LogEntry));
+    log      @0 () -> (entries :List(Commit));
     commit   @1 (msg :Text);
     tag      @2 (rev :Text, tagName :Text);
     untag    @3 (tagName :Text);
     reset    @4 (path :Text, rev :Text, force :Bool);
-    history  @5 (path :Text) -> (history :List(HistoryEntry));
+    history  @5 (path :Text) -> (history :List(Change));
     makeDiff @6 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
     sync     @7 (withWhom :Text, needFetch :Bool);
     fetch    @8 (who :Text);

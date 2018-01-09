@@ -84,17 +84,18 @@ type Diff struct {
 }
 
 // TODO: Decide on naming: rev(ision), refname or tag.
-type LogEntry struct {
+type Commit struct {
 	Hash h.Hash
 	Msg  string
 	Tags []string
 	Date time.Time
 }
 
-type HistEntry struct {
+type Change struct {
 	Path   string
 	Change string
-	Commit LogEntry
+	Head   *Commit
+	Next   *Commit
 }
 
 /////////////////////
@@ -721,7 +722,7 @@ func (fs *FS) Head() (string, error) {
 }
 
 // History returns all modifications of a node with one entry per commit.
-func (fs *FS) History(path string) ([]HistEntry, error) {
+func (fs *FS) History(path string) ([]Change, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -745,19 +746,30 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 		return nil, err
 	}
 
-	entries := []HistEntry{}
+	entries := []Change{}
 	for _, change := range hist {
-		commit := LogEntry{
+		head := &Commit{
 			Hash: change.Head.Hash().Clone(),
 			Msg:  change.Head.Message(),
 			Tags: hashToRef[change.Head.Hash().B58String()],
 			Date: change.Head.ModTime(),
 		}
 
-		entries = append(entries, HistEntry{
+		var next *Commit
+		if change.Next != nil {
+			next = &Commit{
+				Hash: change.Next.Hash().Clone(),
+				Msg:  change.Next.Message(),
+				Tags: hashToRef[change.Next.Hash().B58String()],
+				Date: change.Next.ModTime(),
+			}
+		}
+
+		entries = append(entries, Change{
 			Path:   change.Curr.Path(),
 			Change: change.Mask.String(),
-			Commit: commit,
+			Head:   head,
+			Next:   next,
 		})
 	}
 
@@ -890,7 +902,7 @@ func (fs *FS) buildCommitHashToRefTable() (map[string][]string, error) {
 
 // Log returns a list of commits starting with the staging commit until the
 // initial commit. For each commit, metadata is collected.
-func (fs *FS) Log() ([]LogEntry, error) {
+func (fs *FS) Log() ([]Commit, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -899,9 +911,9 @@ func (fs *FS) Log() ([]LogEntry, error) {
 		return nil, err
 	}
 
-	entries := []LogEntry{}
+	entries := []Commit{}
 	return entries, c.Log(fs.lkr, func(cmt *n.Commit) error {
-		entries = append(entries, LogEntry{
+		entries = append(entries, Commit{
 			Hash: cmt.Hash().Clone(),
 			Msg:  cmt.Message(),
 			Tags: hashToRef[cmt.Hash().B58String()],

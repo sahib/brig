@@ -348,6 +348,12 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
 			Description: "history lists all modifications of a given file",
 			ArgsUsage:   "<filename>",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "empty,e",
+					Usage: "Also show commits where nothing happens",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "stage",

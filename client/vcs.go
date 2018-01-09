@@ -1,6 +1,7 @@
 package client
 
 import (
+	"strings"
 	"time"
 
 	"github.com/sahib/brig/server/capnp"
@@ -16,15 +17,15 @@ func (cl *Client) MakeCommit(msg string) error {
 	return err
 }
 
-type LogEntry struct {
+type Commit struct {
 	Hash h.Hash
 	Msg  string
 	Tags []string
 	Date time.Time
 }
 
-func convertCapLogEntry(capEntry *capnp.LogEntry) (*LogEntry, error) {
-	result := LogEntry{}
+func convertCapCommit(capEntry *capnp.Commit) (*Commit, error) {
+	result := Commit{}
 	modTimeStr, err := capEntry.Date()
 	if err != nil {
 		return nil, err
@@ -63,12 +64,12 @@ func convertCapLogEntry(capEntry *capnp.LogEntry) (*LogEntry, error) {
 	return &result, nil
 }
 
-func (cl *Client) Log() ([]LogEntry, error) {
+func (cl *Client) Log() ([]Commit, error) {
 	call := cl.api.Log(cl.ctx, func(p capnp.VCS_log_Params) error {
 		return nil
 	})
 
-	results := []LogEntry{}
+	results := []Commit{}
 	result, err := call.Struct()
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func (cl *Client) Log() ([]LogEntry, error) {
 
 	for idx := 0; idx < entries.Len(); idx++ {
 		capEntry := entries.At(idx)
-		result, err := convertCapLogEntry(&capEntry)
+		result, err := convertCapCommit(&capEntry)
 		if err != nil {
 			return nil, err
 		}
@@ -128,13 +129,14 @@ func (cl *Client) Reset(path, rev string, force bool) error {
 	return err
 }
 
-type HistoryEntry struct {
-	Path   string
-	Change string
-	Commit LogEntry
+type Change struct {
+	Path string
+	Mask []string
+	Head *Commit
+	Next *Commit
 }
 
-func (cl *Client) History(path string) ([]*HistoryEntry, error) {
+func (cl *Client) History(path string) ([]*Change, error) {
 	call := cl.api.History(cl.ctx, func(p capnp.VCS_history_Params) error {
 		return p.SetPath(path)
 	})
@@ -149,7 +151,7 @@ func (cl *Client) History(path string) ([]*HistoryEntry, error) {
 		return nil, err
 	}
 
-	results := []*HistoryEntry{}
+	results := []*Change{}
 	for idx := 0; idx < histList.Len(); idx++ {
 		entry := histList.At(idx)
 		path, err := entry.Path()
@@ -162,20 +164,32 @@ func (cl *Client) History(path string) ([]*HistoryEntry, error) {
 			return nil, err
 		}
 
-		capLogEntry, err := entry.Commit()
+		capHeadCmt, err := entry.Head()
 		if err != nil {
 			return nil, err
 		}
 
-		logEntry, err := convertCapLogEntry(&capLogEntry)
+		head, err := convertCapCommit(&capHeadCmt)
 		if err != nil {
 			return nil, err
 		}
 
-		results = append(results, &HistoryEntry{
-			Path:   path,
-			Change: change,
-			Commit: *logEntry,
+		// Check for nil?
+		capNextCmt, err := entry.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		next, err := convertCapCommit(&capNextCmt)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &Change{
+			Path: path,
+			Mask: strings.Split(change, "|"),
+			Head: head,
+			Next: next,
 		})
 	}
 

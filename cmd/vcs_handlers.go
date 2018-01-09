@@ -43,16 +43,49 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	)
 
 	if len(history) != 0 {
-		fmt.Fprintf(tabW, "CHANGE\tPATH\tREV\t\n")
+		fmt.Fprintf(tabW, "CHANGE\tWHAT\tHOW\t\n")
 	}
 
-	for _, entry := range history {
+	for idx, entry := range history {
+		what := ""
+		printLine := true
+
+		for _, detail := range entry.Mask {
+			if detail == "moved" && idx+1 < len(history) {
+				what = fmt.Sprintf(
+					"%s → %s",
+					history[idx+1].Path,
+					entry.Path,
+				)
+			}
+
+			if detail == "none" && !ctx.Bool("empty") {
+				printLine = false
+			}
+		}
+
+		if !printLine {
+			continue
+		}
+
+		commitDesc := fmt.Sprintf(
+			"%s → %s",
+			colors.Colorize(
+				entry.Next.Hash.B58String()[:10],
+				colors.Cyan,
+			),
+			colors.Colorize(
+				entry.Head.Hash.B58String()[:10],
+				colors.Green,
+			),
+		)
+
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t\n",
-			colors.Colorize(entry.Change, colors.Yellow),
-			colors.Colorize(entry.Path, colors.Green),
-			colors.Colorize(entry.Commit.Hash.B58String()[:10], colors.Red),
+			colors.Colorize(strings.Join(entry.Mask, ", "), colors.Yellow),
+			commitDesc,
+			colors.Colorize(what, colors.Red),
 		)
 	}
 
