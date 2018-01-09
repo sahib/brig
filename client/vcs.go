@@ -131,7 +131,7 @@ func (cl *Client) Reset(path, rev string, force bool) error {
 type HistoryEntry struct {
 	Path   string
 	Change string
-	Ref    h.Hash
+	Commit LogEntry
 }
 
 func (cl *Client) History(path string) ([]*HistoryEntry, error) {
@@ -162,12 +162,12 @@ func (cl *Client) History(path string) ([]*HistoryEntry, error) {
 			return nil, err
 		}
 
-		refRaw, err := entry.Ref()
+		capLogEntry, err := entry.Commit()
 		if err != nil {
 			return nil, err
 		}
 
-		ref, err := h.Cast(refRaw)
+		logEntry, err := convertCapLogEntry(&capLogEntry)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func (cl *Client) History(path string) ([]*HistoryEntry, error) {
 		results = append(results, &HistoryEntry{
 			Path:   path,
 			Change: change,
-			Ref:    ref,
+			Commit: *logEntry,
 		})
 	}
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	fserrs "github.com/sahib/brig/catfs/errors"
 	p2pnet "github.com/sahib/brig/net"
@@ -15,6 +14,47 @@ import (
 
 type vcsHandler struct {
 	base *base
+}
+
+func logEntryToCap(entry *catfs.LogEntry, seg *cplib.Segment) (*capnp.LogEntry, error) {
+	capEntry, err := capnp.NewLogEntry(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capEntry.SetHash(entry.Hash); err != nil {
+		return nil, err
+	}
+
+	modTime, err := entry.Date.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capEntry.SetDate(string(modTime)); err != nil {
+		return nil, err
+	}
+
+	tagList, err := cplib.NewTextList(seg, int32(len(entry.Tags)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, tag := range entry.Tags {
+		if err := tagList.Set(idx, tag); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := capEntry.SetTags(tagList); err != nil {
+		return nil, err
+	}
+
+	if err := capEntry.SetMsg(entry.Msg); err != nil {
+		return nil, err
+	}
+
+	return &capEntry, nil
 }
 
 func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
@@ -33,46 +73,12 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 		}
 
 		for idx, entry := range entries {
-			capEntry, err := capnp.NewLogEntry(seg)
+			capEntry, err := logEntryToCap(&entry, seg)
 			if err != nil {
 				return err
 			}
 
-			if err := capEntry.SetHash(entry.Hash); err != nil {
-				return err
-			}
-
-			modTime, err := entry.Date.MarshalText()
-			if err != nil {
-				return err
-			}
-
-			log.Errorf("ENTRY %v %s", entry, modTime)
-
-			if err := capEntry.SetDate(string(modTime)); err != nil {
-				return err
-			}
-
-			tagList, err := cplib.NewTextList(seg, int32(len(entry.Tags)))
-			if err != nil {
-				return err
-			}
-
-			for idx, tag := range entry.Tags {
-				if err := tagList.Set(idx, tag); err != nil {
-					return err
-				}
-			}
-
-			if err := capEntry.SetTags(tagList); err != nil {
-				return err
-			}
-
-			if err := capEntry.SetMsg(entry.Msg); err != nil {
-				return err
-			}
-
-			lst.Set(idx, capEntry)
+			lst.Set(idx, *capEntry)
 		}
 
 		return call.Results.SetEntries(lst)
@@ -177,15 +183,21 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 				return err
 			}
 
-			if err := entry.SetPath(history[idx].Path); err != nil {
+			histEntry := history[idx]
+			if err := entry.SetPath(histEntry.Path); err != nil {
 				return err
 			}
 
-			if err := entry.SetChange(history[idx].Change); err != nil {
+			if err := entry.SetChange(histEntry.Change); err != nil {
 				return err
 			}
 
-			if err := entry.SetRef(history[idx].Ref); err != nil {
+			capLogEntry, err := logEntryToCap(&histEntry.Commit, seg)
+			if err != nil {
+				return err
+			}
+
+			if err := entry.SetCommit(*capLogEntry); err != nil {
 				return err
 			}
 

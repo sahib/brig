@@ -52,7 +52,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 			"%s\t%s\t%s\t\n",
 			colors.Colorize(entry.Change, colors.Yellow),
 			colors.Colorize(entry.Path, colors.Green),
-			colors.Colorize(entry.Ref.B58String()[:10], colors.Red),
+			colors.Colorize(entry.Commit.Hash.B58String()[:10], colors.Red),
 		)
 	}
 

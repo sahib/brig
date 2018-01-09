@@ -156,7 +156,6 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 }
 
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
-
 	info := &NodeUpdate{
 		Hash:   h.TestDummy(t, seed),
 		Size:   uint64(seed),

@@ -31,7 +31,7 @@ struct ConfigPair $Go.doc("Key/Value pair in the config") {
 struct HistoryEntry $Go.doc("One History entry for a file") {
     path   @0 :Text;
     change @1 :Text;
-    ref    @2 :Data;
+    commit @2 :LogEntry;
 }
 
 struct DiffPair $Go.doc("Represent two differing files") {

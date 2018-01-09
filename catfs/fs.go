@@ -69,12 +69,6 @@ type StatInfo struct {
 	Content  h.Hash
 }
 
-type HistEntry struct {
-	Path   string
-	Change string
-	Ref    h.Hash
-}
-
 type DiffPair struct {
 	Src StatInfo
 	Dst StatInfo
@@ -95,6 +89,12 @@ type LogEntry struct {
 	Msg  string
 	Tags []string
 	Date time.Time
+}
+
+type HistEntry struct {
+	Path   string
+	Change string
+	Commit LogEntry
 }
 
 /////////////////////
@@ -730,7 +730,7 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 		return nil, err
 	}
 
-	head, err := fs.lkr.Head()
+	head, err := fs.lkr.Status()
 	if err != nil {
 		return nil, err
 	}
@@ -740,12 +740,24 @@ func (fs *FS) History(path string) ([]HistEntry, error) {
 		return nil, err
 	}
 
+	hashToRef, err := fs.buildCommitHashToRefTable()
+	if err != nil {
+		return nil, err
+	}
+
 	entries := []HistEntry{}
 	for _, change := range hist {
+		commit := LogEntry{
+			Hash: change.Head.Hash().Clone(),
+			Msg:  change.Head.Message(),
+			Tags: hashToRef[change.Head.Hash().B58String()],
+			Date: change.Head.ModTime(),
+		}
+
 		entries = append(entries, HistEntry{
 			Path:   change.Curr.Path(),
 			Change: change.Mask.String(),
-			Ref:    change.Head.Hash().Clone(),
+			Commit: commit,
 		})
 	}
 
@@ -854,19 +866,13 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 	return fakeDiff, nil
 }
 
-// Log returns a list of commits starting with the staging commit until the
-// initial commit. For each commit, metadata is collected.
-func (fs *FS) Log() ([]LogEntry, error) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
+func (fs *FS) buildCommitHashToRefTable() (map[string][]string, error) {
 	names, err := fs.lkr.ListRefs()
 	if err != nil {
 		return nil, err
 	}
 
 	hashToRef := make(map[string][]string)
-
 	for _, name := range names {
 		cmt, err := fs.lkr.ResolveRef(name)
 		if err != nil {
@@ -877,6 +883,20 @@ func (fs *FS) Log() ([]LogEntry, error) {
 			key := cmt.Hash().B58String()
 			hashToRef[key] = append(hashToRef[key], name)
 		}
+	}
+
+	return hashToRef, nil
+}
+
+// Log returns a list of commits starting with the staging commit until the
+// initial commit. For each commit, metadata is collected.
+func (fs *FS) Log() ([]LogEntry, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	hashToRef, err := fs.buildCommitHashToRefTable()
+	if err != nil {
+		return nil, err
 	}
 
 	entries := []LogEntry{}

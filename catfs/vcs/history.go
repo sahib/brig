@@ -71,19 +71,25 @@ func (ct ChangeType) IsCompatible(ot ChangeType) bool {
 
 ///////////////////////////
 
-// NodeState represents a single change of a node between two commits.
-// TODO: Rename. NodeState is clumsy.
-type NodeState struct {
+// Change represents a single change of a node between two commits.
+type Change struct {
 	// Mask is a bitmask of changes that were made.
+	// It describes the change that was made between `Next` to `Head`
+	// and which is part of `Head`.
 	Mask ChangeType
+
 	// Head is the commit that was the current HEAD when this change happened.
 	// Note that this is NOT the commit that contains the change, but the commit before.
 	Head *n.Commit
+
+	// Next is the commit that comes before `Head`.
+	Next *n.Commit
+
 	// Curr is the node with the attributes at a specific state
 	Curr n.ModNode
 }
 
-func (ns *NodeState) String() string {
+func (ns *Change) String() string {
 	return fmt.Sprintf("<%s:%s>", ns.Curr.Path(), ns.Mask)
 }
 
@@ -103,13 +109,12 @@ func (ns *NodeState) String() string {
 // 		// Handle errors.
 // 	}
 type HistoryWalker struct {
-	lkr    *c.Linker
-	head   *n.Commit
-	curr   n.ModNode
-	next   n.ModNode
-	err    error
-	state  *NodeState
-	isLast bool
+	lkr   *c.Linker
+	head  *n.Commit
+	curr  n.ModNode
+	next  n.ModNode
+	err   error
+	state *Change
 }
 
 // NewHistoryWalker will return a new HistoryWalker that will yield changes of
@@ -124,23 +129,23 @@ func NewHistoryWalker(lkr *c.Linker, cmt *n.Commit, node n.ModNode) *HistoryWalk
 }
 
 // maskFromState figures out the change mask based on the current state
-func (hw *HistoryWalker) maskFromState() ChangeType {
+func (hw *HistoryWalker) maskFromState(curr, next n.ModNode) ChangeType {
 	mask := ChangeType(0)
 
 	// Initial state; no succesor known yet to compare too.
-	if hw.next == nil {
+	if next == nil {
 		return mask
 	}
 
-	isGhostCurr := hw.curr.Type() == n.NodeTypeGhost
-	isGhostNext := hw.next.Type() == n.NodeTypeGhost
+	isGhostCurr := curr.Type() == n.NodeTypeGhost
+	isGhostNext := next.Type() == n.NodeTypeGhost
 
-	currHash, err := n.ContentHash(hw.curr)
+	currHash, err := n.ContentHash(curr)
 	if err != nil {
 		return ChangeTypeNone
 	}
 
-	nextHash, err := n.ContentHash(hw.next)
+	nextHash, err := n.ContentHash(next)
 	if err != nil {
 		return ChangeTypeNone
 	}
@@ -150,23 +155,20 @@ func (hw *HistoryWalker) maskFromState() ChangeType {
 		mask |= ChangeTypeModify
 	}
 
-	if hw.next.Path() != hw.curr.Path() {
+	if next.Path() != curr.Path() {
 		mask |= ChangeTypeMove
 	} else {
 		// If paths did not move, but the current node is a ghost,
 		// then it means that the node was removed in this commit.
 		if isGhostCurr && !isGhostNext {
+			mask |= ChangeTypeRemove
+		}
+
+		if !isGhostCurr && isGhostNext {
 			mask |= ChangeTypeAdd
 		}
 	}
 
-	// If the next node is a ghost it was deleted after this HEAD.
-	if hw.next.Type() == n.NodeTypeGhost {
-		// Be safe and check that it was not a move:
-		if hw.next.Path() == hw.curr.Path() {
-			mask |= ChangeTypeRemove
-		}
-	}
 	return mask
 }
 
@@ -182,23 +184,6 @@ func (hw *HistoryWalker) Next() bool {
 
 	if hw.head == nil {
 		return false
-	}
-
-	if hw.isLast {
-		hw.state = &NodeState{
-			Head: hw.head,
-			Mask: ChangeTypeAdd,
-			Curr: hw.curr,
-		}
-		hw.head = nil
-		return true
-	}
-
-	// Pack up the current state:
-	hw.state = &NodeState{
-		Head: hw.head,
-		Mask: hw.maskFromState(),
-		Curr: hw.curr,
 	}
 
 	// Check if this node participated in a move:
@@ -227,6 +212,12 @@ func (hw *HistoryWalker) Next() bool {
 
 	// We ran out of commits to check.
 	if prevHead == nil {
+		hw.state = &Change{
+			Head: hw.head,
+			Mask: ChangeTypeAdd,
+			Curr: hw.curr,
+			Next: nil,
+		}
 		hw.head = nil
 		return true
 	}
@@ -253,7 +244,13 @@ func (hw *HistoryWalker) Next() bool {
 		if ie.IsNoSuchFileError(err) {
 			// The file did not exist in the previous commit (no ghost!)
 			// It must have been added in this commit.
-			hw.isLast = true
+			hw.state = &Change{
+				Head: hw.head,
+				Mask: ChangeTypeAdd,
+				Curr: hw.curr,
+				Next: prevHeadCommit,
+			}
+			hw.head = nil
 			return true
 		}
 
@@ -269,6 +266,14 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
+	// Pack up the current state:
+	hw.state = &Change{
+		Head: hw.head,
+		Mask: hw.maskFromState(hw.curr, prevModNode),
+		Curr: hw.curr,
+		Next: prevHeadCommit,
+	}
+
 	// Swap for the next call to Next():
 	hw.curr, hw.next = prevModNode, hw.curr
 	hw.head = prevHeadCommit
@@ -278,7 +283,7 @@ func (hw *HistoryWalker) Next() bool {
 // State returns the current change state.
 // Note that the change may have ChangeTypeNone as Mask if nothing changed.
 // If you only want states where it actually changed, just filter those.
-func (hw *HistoryWalker) State() *NodeState {
+func (hw *HistoryWalker) State() *Change {
 	return hw.state
 }
 
@@ -290,9 +295,9 @@ func (hw *HistoryWalker) Err() error {
 // History returns a list of `nd`'s states starting with the commit in `start`
 // and stopping at `stop`. `stop` can be nil; in this case all commits will be
 // iterated. The returned list has the most recent change upfront, and the
-// latest change as lsat element.
-func History(lkr *c.Linker, nd n.ModNode, start, stop *n.Commit) ([]*NodeState, error) {
-	states := make([]*NodeState, 0)
+// latest change as last element.
+func History(lkr *c.Linker, nd n.ModNode, start, stop *n.Commit) ([]*Change, error) {
+	states := make([]*Change, 0)
 	walker := NewHistoryWalker(lkr, start, nd)
 
 	for walker.Next() {

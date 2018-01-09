@@ -29,13 +29,13 @@ func setupHistoryBasic(t *testing.T, lkr *c.Linker) *moveSetup {
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	file, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 3)
 
-	head, err := lkr.Head()
+	status, err := lkr.Status()
 	if err != nil {
-		t.Fatalf("Failed to retrieve head: %v", err)
+		t.Fatalf("Failed to retrieve status: %v", err)
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1, c1},
+		commits: []*n.Commit{status, c3, c2, c1},
 		paths: []string{
 			"/x.png",
 			"/x.png",
@@ -48,7 +48,7 @@ func setupHistoryBasic(t *testing.T, lkr *c.Linker) *moveSetup {
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
-		head: head,
+		head: status,
 		node: file,
 	}
 }
@@ -72,10 +72,8 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *moveSetup {
 			"/x.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeRemove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
@@ -92,15 +90,13 @@ func setupHistoryMoved(t *testing.T, lkr *c.Linker) *moveSetup {
 	c3 := c.MustCommit(t, lkr, "post-move")
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1, c1},
+		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
@@ -121,15 +117,13 @@ func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{status, c2, c1, c1},
+		commits: []*n.Commit{status, c2, c1},
 		paths: []string{
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
@@ -148,15 +142,13 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *moveSetup {
 	c3 := c.MustCommit(t, lkr, "post-move-modify")
 
 	return &moveSetup{
-		commits: []*n.Commit{c3, c2, c1, c1},
+		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeModify | ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
@@ -178,15 +170,13 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 
 	return &moveSetup{
-		commits: []*n.Commit{status, c2, c1, c1},
+		commits: []*n.Commit{status, c2, c1},
 		paths: []string{
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeModify | ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
@@ -204,16 +194,14 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *moveSetup {
 	file, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1, c1},
+		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
-			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeAdd,
 			ChangeTypeRemove,
 			ChangeTypeModify,
@@ -232,16 +220,14 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *moveSetup {
 	file, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 255)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1, c1},
+		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
-			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeAdd | ChangeTypeModify,
 			ChangeTypeRemove,
 			ChangeTypeModify,
@@ -261,16 +247,14 @@ func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *moveSetup {
 	c4 := c.MustCommit(t, lkr, "move back to x.png")
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1, c1},
+		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeMove,
 			ChangeTypeModify,
@@ -286,23 +270,21 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *moveSetup {
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := c.MustMove(t, lkr, file, "/y.png")
-	_, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
+	_, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c2, c1, c1},
+		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
-		head: c4,
+		head: c3,
 		node: newFile,
 	}
 }
@@ -316,18 +298,17 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *moveSetup {
 	readdedFile, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
 
 	return &moveSetup{
-		commits: []*n.Commit{c4, c3, c2, c1, c1},
+		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
-			"/x.png",
 		},
+
 		// TODO: Is this behaviour making sense?
 		//       Maybe it makes more sense to "end" the history before the add.
 		changes: []ChangeType{
-			ChangeTypeNone,
 			ChangeTypeAdd | ChangeTypeModify,
 			ChangeTypeRemove,
 			ChangeTypeModify,
@@ -353,7 +334,7 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "remove-it",
 			setup: setupHistoryRemoved,
 		}, {
-			name:  "remove-readd",
+			name:  "remove-readd-simple",
 			setup: setupHistoryRemoveReadd,
 		}, {
 			name:  "remove-readd-modify",
@@ -398,13 +379,17 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *moveSetup) {
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
 		state := walker.State()
-		fmt.Println("STATE", idx, state)
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(
 				"Wrong path at index `%d`: %s (want: %s)",
 				idx, state.Curr.Path(), setup.paths[idx],
 			)
 		}
+
+		fmt.Println("TYPE", state.Mask)
+		fmt.Println("HEAD", state.Head)
+		fmt.Println("NEXT", state.Next)
+		fmt.Println("===")
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(
@@ -431,39 +416,35 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *moveSetup) {
 func TestHistoryUtil(t *testing.T) {
 	c.WithDummyLinker(t, func(lkr *c.Linker) {
 		c1File, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
-
-		// c.MustTouchAndCommit will modify c1File for some reason, so copy for
-		// expect. That's fine, since catfs is build to re-query nodes freshly.
 		c1File = c1File.Copy().(*n.File)
 
 		c2File, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+		c2File = c2File.Copy().(*n.File)
 
-		c3FileMoved := c.MustMove(t, lkr, c2File.Copy(), "/y.png")
+		c3File := c.MustMove(t, lkr, c2File.Copy(), "/y.png")
+		c3File = c3File.Copy().(*n.File)
 		c3 := c.MustCommit(t, lkr, "move to y.png")
 
-		_, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
+		c4File, c4 := c.MustTouchAndCommit(t, lkr, "/y.png", 23)
+		c4File = c4File.Copy().(*n.File)
 
-		states, err := History(lkr, c3FileMoved, c4, nil)
+		states, err := History(lkr, c4File, c4, nil)
 		if err != nil {
 			t.Fatalf("History without stop commit failed: %v", err)
 		}
 
-		expected := []*NodeState{
+		expected := []*Change{
 			{
 				Head: c4,
-				Curr: c3FileMoved,
-				Mask: ChangeTypeNone,
+				Curr: c4File,
+				Mask: ChangeTypeModify,
 			}, {
 				Head: c3,
-				Curr: c3FileMoved,
-				Mask: ChangeTypeNone,
+				Curr: c3File,
+				Mask: ChangeTypeMove,
 			}, {
 				Head: c2,
 				Curr: c2File,
-				Mask: ChangeTypeMove,
-			}, {
-				Head: c1,
-				Curr: c1File,
 				Mask: ChangeTypeModify,
 			}, {
 				Head: c1,
@@ -474,11 +455,13 @@ func TestHistoryUtil(t *testing.T) {
 
 		for idx, state := range states {
 			expect := expected[idx]
+			require.Equal(t, state.Mask, expect.Mask, "Mask differs")
 			require.Equal(t, state.Head, expect.Head, "Head differs")
 			require.Equal(t, state.Curr, expect.Curr, "Curr differs")
-			require.Equal(t, state.Mask, expect.Mask, "Mask differs")
 		}
 	})
 }
 
 // TODO: Test history for multiple moves in one commit and several commit
+// TODO: Test for holes in the histoy (change type: none)
+// TODO: Test for readd without modifiy. (add instead of add|modify)
