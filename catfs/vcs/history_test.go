@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
 	n "github.com/sahib/brig/catfs/nodes"
+	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func init() {
 	log.SetLevel(log.WarnLevel)
 }
 
-type moveSetup struct {
+type historySetup struct {
 	commits []*n.Commit
 	paths   []string
 	changes []ChangeType
@@ -24,7 +25,7 @@ type moveSetup struct {
 
 /////////////// ACTUAL TESTCASES ///////////////
 
-func setupHistoryBasic(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryBasic(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	file, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 3)
@@ -34,7 +35,7 @@ func setupHistoryBasic(t *testing.T, lkr *c.Linker) *moveSetup {
 		t.Fatalf("Failed to retrieve status: %v", err)
 	}
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{status, c3, c2, c1},
 		paths: []string{
 			"/x.png",
@@ -53,7 +54,39 @@ func setupHistoryBasic(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryBasicHole(t *testing.T, lkr *c.Linker) *historySetup {
+	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+
+	// Needed to have a commit that has changes:
+	c.MustTouch(t, lkr, "/other", 23)
+	file, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/x.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeNone,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: file,
+	}
+}
+
+func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
@@ -66,7 +99,7 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *moveSetup {
 		t.Fatalf("Failed to lookup ghost at %s: %v", file.Path(), err)
 	}
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c3, c2, c1, c1},
 		paths: []string{
 			"/x.png",
@@ -83,13 +116,13 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoved(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMoved(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustMove(t, lkr, file, "/y.png")
 	c3 := c.MustCommit(t, lkr, "post-move")
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
@@ -106,7 +139,7 @@ func setupHistoryMoved(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustMove(t, lkr, file, "/y.png")
@@ -116,7 +149,7 @@ func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *moveSetup {
 		t.Fatalf("Failed to retrieve status: %v", err)
 	}
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{status, c2, c1},
 		paths: []string{
 			"/y.png",
@@ -133,7 +166,7 @@ func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
@@ -141,7 +174,7 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *moveSetup {
 	c.MustModify(t, lkr, newFile.(*n.File), 42)
 	c3 := c.MustCommit(t, lkr, "post-move-modify")
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
@@ -158,7 +191,7 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	newFile := c.MustMove(t, lkr, file, "/y.png")
@@ -169,7 +202,7 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *moveSetup {
 		t.Fatalf("Failed to retrieve status: %v", err)
 	}
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{status, c2, c1},
 		paths: []string{
 			"/y.png",
@@ -186,14 +219,14 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
 	file, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
@@ -212,14 +245,14 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
 	file, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 255)
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
@@ -238,7 +271,33 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryRemoveReaddNoModify(t *testing.T, lkr *c.Linker) *historySetup {
+	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+	c.MustRemove(t, lkr, file)
+	c3 := c.MustCommit(t, lkr, "after remove")
+	file, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+
+	return &historySetup{
+		commits: []*n.Commit{c4, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/x.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeAdd,
+			ChangeTypeRemove,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: c4,
+		node: file,
+	}
+}
+
+func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	newFile := c.MustMove(t, lkr, file, "/y.png")
@@ -246,7 +305,7 @@ func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *moveSetup {
 	newOldFile := c.MustMove(t, lkr, newFile, "/x.png")
 	c4 := c.MustCommit(t, lkr, "move back to x.png")
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
@@ -265,14 +324,14 @@ func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := c.MustMove(t, lkr, file, "/y.png")
 	_, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c3, c2, c1},
 		paths: []string{
 			"/y.png",
@@ -289,7 +348,42 @@ func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *moveSetup {
+func setupHistoryMultipleMovesPerCommit(t *testing.T, lkr *c.Linker) *historySetup {
+	// Check if we can track multiple moves per commit:
+	fileX, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	fileY := c.MustMove(t, lkr, fileX, "/y.png")
+	c.MustMove(t, lkr, fileY, "/z.png")
+
+	// Also try modifying the file after moving to make it slightly
+	// harder for the logic:
+	info := &c.NodeUpdate{
+		Hash:   h.TestDummy(t, 2),
+		Size:   uint64(2),
+		Author: "",
+		Key:    nil,
+	}
+
+	fileZNew, err := c.Stage(lkr, "/z.png", info)
+	require.Nil(t, err)
+
+	c2 := c.MustCommit(t, lkr, "Moved around")
+
+	return &historySetup{
+		commits: []*n.Commit{c2, c1},
+		paths: []string{
+			"/z.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeMove | ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: c2,
+		node: fileZNew,
+	}
+}
+
+func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
@@ -297,7 +391,7 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *moveSetup {
 	c3 := c.MustCommit(t, lkr, "move to y.png")
 	readdedFile, c4 := c.MustTouchAndCommit(t, lkr, "/x.png", 23)
 
-	return &moveSetup{
+	return &historySetup{
 		commits: []*n.Commit{c4, c3, c2, c1},
 		paths: []string{
 			"/x.png",
@@ -319,7 +413,7 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *moveSetup {
 	}
 }
 
-type setupFunc func(t *testing.T, lkr *c.Linker) *moveSetup
+type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
 func TestHistoryWalker(t *testing.T) {
@@ -331,6 +425,9 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "no-frills",
 			setup: setupHistoryBasic,
 		}, {
+			name:  "holes",
+			setup: setupHistoryBasicHole,
+		}, {
 			name:  "remove-it",
 			setup: setupHistoryRemoved,
 		}, {
@@ -340,8 +437,14 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "remove-readd-modify",
 			setup: setupHistoryRemoveReaddModify,
 		}, {
+			name:  "remove-readd-no-modify",
+			setup: setupHistoryRemoveReaddNoModify,
+		}, {
 			name:  "move-once",
 			setup: setupHistoryMoved,
+		}, {
+			name:  "move-multiple-per-commit",
+			setup: setupHistoryMultipleMovesPerCommit,
 		}, {
 			name:  "move-once-stage",
 			setup: setupHistoryMoveStaging,
@@ -374,7 +477,7 @@ func TestHistoryWalker(t *testing.T) {
 }
 
 // Actual test runner:
-func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *moveSetup) {
+func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 	idx := 0
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
@@ -463,5 +566,3 @@ func TestHistoryUtil(t *testing.T) {
 }
 
 // TODO: Test history for multiple moves in one commit and several commit
-// TODO: Test for holes in the histoy (change type: none)
-// TODO: Test for readd without modifiy. (add instead of add|modify)
