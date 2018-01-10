@@ -29,6 +29,14 @@ func handleReset(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func commitName(cmt *client.Commit) string {
+	if len(cmt.Tags) > 0 {
+		return strings.ToUpper(cmt.Tags[0])
+	}
+
+	return cmt.Hash.ShortB58()
+}
+
 func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 
@@ -43,7 +51,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	)
 
 	if len(history) != 0 {
-		fmt.Fprintf(tabW, "CHANGE\tWHAT\tHOW\t\n")
+		fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\tHOW\tWHEN\t\n")
 	}
 
 	for idx, entry := range history {
@@ -51,41 +59,48 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		printLine := true
 
 		for _, detail := range entry.Mask {
+			// If it was moved, let's display what moved.
 			if detail == "moved" && idx+1 < len(history) {
 				what = fmt.Sprintf(
 					"%s → %s",
-					history[idx+1].Path,
-					entry.Path,
+					colors.Colorize(
+						history[idx+1].Path,
+						colors.Red,
+					),
+					colors.Colorize(
+						entry.Path,
+						colors.Red,
+					),
 				)
 			}
 
+			// Only display empty changes if nothing happened.
 			if detail == "none" && !ctx.Bool("empty") {
 				printLine = false
 			}
 		}
-
 		if !printLine {
 			continue
 		}
 
-		commitDesc := fmt.Sprintf(
-			"%s → %s",
-			colors.Colorize(
-				entry.Next.Hash.B58String()[:10],
-				colors.Cyan,
-			),
-			colors.Colorize(
-				entry.Head.Hash.B58String()[:10],
-				colors.Green,
-			),
+		changeDesc := colors.Colorize(
+			strings.Join(entry.Mask, ", "),
+			colors.Yellow,
+		)
+
+		when := colors.Colorize(
+			entry.Head.Date.Format(time.Stamp),
+			colors.Magenta,
 		)
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t\n",
-			colors.Colorize(strings.Join(entry.Mask, ", "), colors.Yellow),
-			commitDesc,
-			colors.Colorize(what, colors.Red),
+			"%s\t%s\t%s\t%s\t%s\t\n",
+			changeDesc,
+			colors.Colorize(commitName(entry.Next), colors.Cyan),
+			"→ "+colors.Colorize(commitName(entry.Head), colors.Green),
+			what,
+			when,
 		)
 	}
 
