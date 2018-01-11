@@ -98,7 +98,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 			"%s\t%s\t%s\t%s\t%s\t\n",
 			changeDesc,
 			colors.Colorize(commitName(entry.Next), colors.Cyan),
-			"→ "+colors.Colorize(commitName(entry.Head), colors.Green),
+			colors.Colorize(commitName(entry.Head), colors.Green),
 			what,
 			when,
 		)

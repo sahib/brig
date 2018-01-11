@@ -279,6 +279,8 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
+	// The node needs to be told that it's path changed,
+	// since it might need to change it's hash value now.
 	if err := nd.NotifyMove(lkr, oldPath, destPath); err != nil {
 		return err
 	}

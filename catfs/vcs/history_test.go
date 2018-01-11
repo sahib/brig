@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -383,6 +382,32 @@ func setupHistoryMultipleMovesPerCommit(t *testing.T, lkr *c.Linker) *historySet
 	}
 }
 
+func setupHistoryMultipleMovesInStage(t *testing.T, lkr *c.Linker) *historySetup {
+	// Check if we can track multiple moves per commit:
+	fileX, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	fileY := c.MustMove(t, lkr, fileX, "/y.png")
+	fileZ := c.MustMove(t, lkr, fileY, "/z.png")
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to acquire status: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c1},
+		paths: []string{
+			"/z.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeMove,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: fileZ,
+	}
+}
+
 func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
@@ -446,6 +471,9 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "move-multiple-per-commit",
 			setup: setupHistoryMultipleMovesPerCommit,
 		}, {
+			name:  "move-multiple-per-stage",
+			setup: setupHistoryMultipleMovesInStage,
+		}, {
 			name:  "move-once-stage",
 			setup: setupHistoryMoveStaging,
 		}, {
@@ -489,10 +517,10 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 			)
 		}
 
-		fmt.Println("TYPE", state.Mask)
-		fmt.Println("HEAD", state.Head)
-		fmt.Println("NEXT", state.Next)
-		fmt.Println("===")
+		// fmt.Println("TYPE", state.Mask)
+		// fmt.Println("HEAD", state.Head)
+		// fmt.Println("NEXT", state.Next)
+		// fmt.Println("===")
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(

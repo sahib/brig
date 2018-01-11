@@ -1174,15 +1174,31 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 // in the staging commit.
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
-	batch := lkr.kv.Batch()
-	batch.Put(
-		[]byte(fmt.Sprintf("> inode %d", to.Inode())),
+
+	srcToDstKey := []string{
 		"stage", "moves", strconv.FormatUint(from.Inode(), 10),
-	)
-	batch.Put(
-		[]byte(fmt.Sprintf("< inode %d", from.Inode())),
+	}
+
+	dstToSrcKey := []string{
 		"stage", "moves", strconv.FormatUint(to.Inode(), 10),
-	)
+	}
+
+	batch := lkr.kv.Batch()
+	if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
+		batch.Put(
+			[]byte(fmt.Sprintf("> inode %d", to.Inode())),
+			srcToDstKey...,
+		)
+	}
+
+	// Also remember the move in the other direction.
+	// This might come in handy for the 
+	if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
+		batch.Put(
+			[]byte(fmt.Sprintf("< inode %d", from.Inode())),
+			dstToSrcKey...,
+		)
+	}
 
 	return batch.Flush()
 }
@@ -1237,7 +1253,7 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		}
 
 		// Only export move mapping that relate to nodes that were actually
-		// exporeted from staging. We do not want to export intermediate moves.
+		// exported from staging. We do not want to export intermediate moves.
 		if _, ok := exported[inode]; !ok {
 			return nil
 		}
@@ -1250,6 +1266,10 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		dstNode, moveDirection, err := lkr.parseMoveMappingLine(string(data))
 		if err != nil {
 			return err
+		}
+
+		if moveDirection == MoveDirDstToSrc {
+			return nil
 		}
 
 		if dstNode == nil {
@@ -1280,7 +1300,12 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 			"moves", "overlay", srcB58,
 		)
 
-		reverseLine := fmt.Sprintf("%s hash %s", moveDirection.Invert(), srcB58)
+		reverseLine := fmt.Sprintf(
+			"%s hash %s",
+			moveDirection.Invert(),
+			srcB58,
+		)
+
 		batch.Put(
 			[]byte(reverseLine),
 			"moves", status.Hash().B58String(), dstB58,
@@ -1292,7 +1317,8 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		)
 
 		// We need to verify that all ghosts will be copied out from staging.
-		// In some special cases, not all used ghosts are reachable in MakeCommit.
+		// In some special cases, not all used ghosts are reachable in
+		// MakeCommit.
 		//
 		// Consider for example this case:
 		//
@@ -1302,9 +1328,9 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 		// $ touch x
 		// $ commit
 		//
-		// => In the last commit the ghost from the move (x) is overwritten by a new
-		//    file and thus will not be reachable anymore. In order to store the full
-		//    history of the file we need to also keep this ghost.
+		// => In the last commit the ghost from the move (x) is overwritten by
+		// a new file and thus will not be reachable anymore. In order to store
+		// the full history of the file we need to also keep this ghost.
 		for _, checkHash := range []string{dstB58, srcB58} {
 			srcKey := []string{"stage", "objects", checkHash}
 			dstKey := []string{"objects", checkHash}
@@ -1325,8 +1351,8 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 			}
 		}
 
-		// We already have a bidir mapping for this node, no need to mention them further.
-		// (would not hurt, but would be duplicated work)
+		// We already have a bidir mapping for this node, no need to mention
+		// them further.  (would not hurt, but would be duplicated work)
 		delete(exported, srcNode.Inode())
 		delete(exported, dstNode.Inode())
 
