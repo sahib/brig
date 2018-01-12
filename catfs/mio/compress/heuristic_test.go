@@ -1,43 +1,36 @@
 package compress
 
 import (
-	"bytes"
-	"io"
 	"testing"
 )
 
 type testCase struct {
 	path         string
-	reader       io.ReadSeeker
+	size         uint64
+	header       []byte
 	expectedAlgo AlgorithmType
 }
 
 var (
 	testCases = []testCase{
-		{"1.txt", CreateAndInitByteReader(128, []byte("Small text file")), AlgoNone},
-		{"2.txt", CreateAndInitByteReader(2048, []byte("Big text file")), AlgoLZ4},
-		{"3.opus", CreateAndInitByteReader(128, []uint8{0x4f, 0x67, 0x67, 0x53}), AlgoNone},
-		{"4.opus", CreateAndInitByteReader(2048, []uint8{0x4f, 0x67, 0x67, 0x53}), AlgoNone},
-		{"5.zip", CreateAndInitByteReader(128, []uint8{0x50, 0x4b, 0x3, 0x4}), AlgoNone},
-		{"6.zip", CreateAndInitByteReader(2048, []uint8{0x50, 0x4b, 0x3, 0x4}), AlgoNone},
+		{"1.txt", 128, []byte("Small text file"), AlgoNone},
+		{"2.txt", 2048, []byte("Big text file"), AlgoLZ4},
+		{"3.opus", 128, []byte{0x4f, 0x67, 0x67, 0x53}, AlgoNone},
+		{"4.opus", 2048, []byte{0x4f, 0x67, 0x67, 0x53}, AlgoNone},
+		{"5.zip", 128, []byte{0x50, 0x4b, 0x3, 0x4}, AlgoNone},
+		{"6.zip", 2048, []byte{0x50, 0x4b, 0x3, 0x4}, AlgoNone},
 	}
 )
 
-func CreateAndInitByteReader(len int, init []byte) io.ReadSeeker {
-	slice := make([]byte, len)
-	copy(slice, init)
-	return bytes.NewReader(slice)
-}
-
 func TestChooseCompressAlgo(t *testing.T) {
-	for _, testCase := range testCases {
-		if algo, err := ChooseCompressAlgo(testCase.path, testCase.reader); err != nil {
+	for _, tc := range testCases {
+		if algo, err := ChooseCompressAlgo(tc.path, tc.size, tc.header); err != nil {
 			t.Errorf("Error: %v", err)
-		} else if algo != testCase.expectedAlgo {
+		} else if algo != tc.expectedAlgo {
 			t.Errorf(
 				"For path '%s' expected '%s', got '%s'",
-				testCase.path,
-				AlgoToString[testCase.expectedAlgo],
+				tc.path,
+				AlgoToString[tc.expectedAlgo],
 				AlgoToString[algo],
 			)
 		}

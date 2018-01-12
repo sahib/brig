@@ -36,6 +36,12 @@ var (
 	}
 )
 
+const (
+	// SizeThreshold is the minimum number of bytes to compress the file.
+	// TODO: This number needs some data as prove behind...
+	SizeThreshold = 2 * 1024
+)
+
 func guessMime(path string, buf []byte) string {
 	s := mimemagic.Match("", buf)
 	if s == "" {
@@ -63,7 +69,11 @@ func isCompressable(mimetype string) bool {
 	return true
 }
 
-func ChooseCompressAlgo(path string, header []byte) (AlgorithmType, error) {
+func ChooseCompressAlgo(path string, size uint64, header []byte) (AlgorithmType, error) {
+	if size < SizeThreshold {
+		return AlgoNone, nil
+	}
+
 	mime := guessMime(path, header)
 	compressAble := isCompressable(mime)
 

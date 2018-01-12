@@ -234,11 +234,11 @@ func TestHistory(t *testing.T) {
 			}
 
 			require.Equal(t, entry.Change, change)
-
-			// Third index repeats commit "1" since /x was added in there.
-			if idx != 3 {
-				require.Equal(t, log[idx+1].Hash.B58String(), entry.Ref.B58String())
-			}
+			require.Equal(
+				t,
+				log[idx].Hash.B58String(),
+				entry.Head.Hash.B58String(),
+			)
 		}
 	})
 }
@@ -580,10 +580,9 @@ func TestList(t *testing.T) {
 		entries, err = fs.List("/", 1)
 		require.Nil(t, err)
 
-		require.Equal(t, 3, len(entries))
-		require.Equal(t, entries[0].Path, "/")
-		require.Equal(t, entries[1].Path, "/1")
-		require.Equal(t, entries[2].Path, "/x")
+		require.Equal(t, 2, len(entries))
+		require.Equal(t, entries[0].Path, "/1")
+		require.Equal(t, entries[1].Path, "/x")
 	})
 }
 

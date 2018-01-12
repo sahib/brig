@@ -549,6 +549,11 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		}
 	}
 
+	// Get the size directly from the number of bytes written
+	// to the backend and do not rely on external sources.
+	sizeAcc := &util.SizeAccumulator{}
+	var sizeR io.Reader
+
 	if err != nil {
 		if !ie.IsNoSuchFileError(err) {
 			return err
@@ -557,7 +562,9 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		// Read a small portion of the file header and use it
 		// to determine what compression algorithm we can use.
 		headerBuf := &bytes.Buffer{}
-		tr := io.TeeReader(r, util.LimitWriter(headerBuf, 4*1024))
+
+		sizeR = io.TeeReader(r, sizeAcc)
+		tr := io.TeeReader(sizeR, util.LimitWriter(headerBuf, 4*1024))
 
 		hw := h.NewHashWriter()
 		size, err := hw.ReadFrom(tr)
@@ -565,7 +572,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 			return err
 		}
 
-		algo, err := compress.ChooseCompressAlgo(path, headerBuf.Bytes())
+		algo, err := compress.ChooseCompressAlgo(path, sizeAcc.Size(), headerBuf.Bytes())
 		if err != nil {
 			// Default to snappy.
 			algo = compress.AlgoSnappy
@@ -585,12 +592,8 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)
 	} else {
 		key = oldFile.Key()
+		sizeR = io.TeeReader(r, sizeAcc)
 	}
-
-	// Get the size directrly from the number of bytes written
-	// to the backend and do not rely on external sources.
-	sizeAcc := &util.SizeAccumulator{}
-	sizeR := io.TeeReader(r, sizeAcc)
 
 	stream, err := mio.NewInStream(sizeR, key, fs.cfg.compressAlgo)
 	if err != nil {
@@ -938,12 +941,16 @@ func (fs *FS) Reset(path, rev string) error {
 		return err
 	}
 
-	// Unpin old version (but pin it again later on)
-	if err := fs.pin(path, fs.bk.Unpin); err != nil {
+	if err := fs.lkr.CheckoutFile(cmt, nd); err != nil {
 		return err
 	}
 
-	if err := fs.lkr.CheckoutFile(cmt, nd); err != nil {
+	// Cannot (un)pin non-existing file anymore.
+	if _, err := fs.lkr.LookupNode(path); ie.IsNoSuchFileError(err) {
+		return nil
+	}
+
+	if err := fs.pin(path, fs.bk.Unpin); err != nil {
 		return err
 	}
 
