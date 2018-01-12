@@ -138,15 +138,10 @@ func mapperSetupDstMoveDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	c.MustCommit(t, lkrSrc, "Create src dir")
 
 	// TODO: There is a bug (likely in move()) when switching move and touch
-	fmt.Println("DST MKDIR")
 	dstDirOld := c.MustMkdir(t, lkrDst, "/x")
-	fmt.Println("DST TOUCH")
 	dstFile := c.MustTouch(t, lkrDst, "/x/a.png", 23)
-	fmt.Println("DST MOVE")
 	c.MustMove(t, lkrDst, dstDirOld, "/y")
-	fmt.Println("DST COMMIT")
 	c.MustCommit(t, lkrDst, "I like to move it, move it")
-	fmt.Println("DST DONE")
 
 	return []MapPair{
 		{

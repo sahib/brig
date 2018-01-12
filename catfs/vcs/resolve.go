@@ -49,7 +49,6 @@ import (
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
-	"github.com/sahib/brig/util"
 )
 
 // executor is the interface that executes the actual action
@@ -183,9 +182,14 @@ func (rv *resolver) cacheLastCommonMerge() error {
 }
 
 // hasConflicts is always called when two nodes on both sides and they do not
-// have the same hash.  In the best case, both have compatible changes and can
+// have the same hash. In the best case, both have compatible changes and can
 // be merged, otherwise a user defined conflict strategy has to be applied.
 func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
+	// Nodes with same hashes are no conflicts...
+	if src.Hash().Equal(dst.Hash()) {
+		return false, 0, 0, nil
+	}
+
 	srcHist, err := History(rv.lkrSrc, src, rv.srcHead, rv.srcMergeCmt)
 	if err != nil {
 		return false, 0, 0, err
@@ -197,43 +201,36 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	}
 
 	var srcMask, dstMask ChangeType
-	srcRoot := len(srcHist)
-	dstRoot := len(dstHist)
+	for len(srcHist) > 0 && len(dstHist) > 0 {
+		srcChange, dstChange := srcHist[0], dstHist[0]
 
-	for srcIdx, srcChange := range srcHist {
-		for dstIdx, dstChange := range dstHist {
-			srcMask |= srcChange.Mask
-			dstMask |= dstChange.Mask
+		srcMask |= srcChange.Mask
+		dstMask |= dstChange.Mask
 
-			if srcChange.Curr.Hash().Equal(dstChange.Curr.Hash()) {
-				srcRoot = srcIdx + 1
-				dstRoot = dstIdx + 1
-			}
+		if !srcChange.Curr.Hash().Equal(dstChange.Curr.Hash()) {
+			break
 		}
+
+		// Advance history until we find a :
+		srcHist = srcHist[1:]
+		dstHist = dstHist[1:]
 	}
 
-	// Make sure that enough commits are on both sides
-	// (or assume that
-	srcChanges := srcHist[:util.Clamp(srcRoot, 0, len(srcHist)-1)]
-	dstChanges := dstHist[:util.Clamp(dstRoot, 0, len(dstHist)-1)]
+	if len(srcHist) == 0 && len(dstHist) == 0 {
+		fmt.Println("BUG: both sides have no changes, but hash differs...")
+		return false, 0, 0, nil
+	}
 
 	// Handle a few lucky cases:
-	if len(srcChanges) > 0 && len(dstChanges) == 0 {
+	if len(srcHist) > 0 && len(dstHist) == 0 {
 		// We can "fast forward" our node.
 		// There are only remote changes for this file.
-		fmt.Println("fast forward", src.Path(), dst.Path())
 		return false, 0, 0, nil
 
 	}
-	if len(srcChanges) == 0 && len(dstChanges) > 0 {
+
+	if len(srcHist) == 0 && len(dstHist) > 0 {
 		// Only our side has changes. We can consider this node as merged.
-		fmt.Println("fast ignore")
-		return false, 0, 0, nil
-	}
-	if len(srcChanges) == 0 && len(dstChanges) == 0 {
-		// This should not happen:
-		// Both sides have no changes and still the hash is different...
-		fmt.Println("BUG: both sides have no changes...")
 		return false, 0, 0, nil
 	}
 
@@ -244,15 +241,14 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	if !dstMask.IsCompatible(srcMask) {
 		// The changes are not compatible.
 		// We need to apply a conflict resolution strategy.
-		fmt.Println("Incompatible changes", srcChanges, dstChanges)
+		fmt.Println("Incompatible changes", srcHist, dstHist)
 		return true, srcMask, dstMask, nil
 	}
 
-	if srcMask&ChangeTypeMove != 0 && dst.Path() != src.Path() {
-		fmt.Println("NOTE: File has moved...")
-	}
+	// if srcMask&ChangeTypeMove != 0 && dst.Path() != src.Path() {
+	// 	fmt.Println("NOTE: File has moved...")
+	// }
 
-	fmt.Println("no conflicts", srcChanges, dstChanges)
 	// No conflict. We can merge src and dst.
 	return false, srcMask, dstMask, nil
 }
