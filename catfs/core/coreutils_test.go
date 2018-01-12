@@ -299,6 +299,15 @@ func TestMove(t *testing.T) {
 			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 				return MustTouch(t, lkr, "/x", 1), "/x"
 			},
+		}, {
+			name:        "error-move-into-own-subdir",
+			isErrorCase: true,
+			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+				// We should not be able to move "/dir" into itself.
+				dir := MustMkdir(t, lkr, "/dir")
+				MustTouch(t, lkr, "/dir/x", 1)
+				return dir, "/dir/own"
+			},
 		},
 	}
 

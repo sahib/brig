@@ -181,7 +181,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return fmt.Errorf("Source and Dest are the same file: %v", destPath)
 	}
 
-	if strings.HasPrefix(destPath, nd.Path()) {
+	if strings.HasPrefix(path.Dir(destPath), nd.Path()) {
 		return fmt.Errorf(
 			"Cannot move `%s` into it's own subdir `%s`",
 			nd.Path(),

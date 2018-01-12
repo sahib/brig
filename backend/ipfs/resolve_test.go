@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sahib/brig/net/peer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,11 +16,11 @@ func TestLocateUsers(t *testing.T) {
 			time.Sleep(60 * time.Second)
 
 			fmt.Println("Starting publish of alice...")
-			err := alice.PublishName(peer.Name("alice@wonderland.org/res"))
+			err := alice.PublishName("alice@wonderland.org/res")
 			require.Nil(t, err)
 
 			fmt.Println("Starting publish of bob...")
-			err = bob.PublishName(peer.Name("bob@wonderland.org/home"))
+			err = bob.PublishName("bob@wonderland.org/home")
 			require.Nil(t, err)
 
 			fmt.Println("Starting alice resolve of bob...")

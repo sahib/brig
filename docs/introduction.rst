@@ -49,14 +49,6 @@ But enough of the grey theory, let's get started:
     config.yml  data  gpg.prv  gpg.pub  logs  metadata
     meta.yml  passwd.locked  remotes.yml
 
-your buddies can later find and authenticate you.
-
-Enough of the grey theory, let's get started:
-
-.. code-block:: bash
-
-    $ brig init donald@whitehouse.gov/ovaloffice
-
 The name you specified after the ``init`` is the name that will be shown
 to other users and by which you are searchable in the network.
 See :ref:`about_names` for more details on the subject.
@@ -114,11 +106,6 @@ That's why you can mount all files kown to ``brig`` to a special folder:
 You can use this directory (almost) exactly like a normal one.
 We recommend though, that you shouldn't do any heavy editing inside of the folder
 and use it more like a »transfer box« for efficiency reasons.
-=======
-TODO: Write about:
-
-- Sync folder in other tools.
-- You can have more than one.
 
 Adding files
 ------------

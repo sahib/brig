@@ -56,10 +56,7 @@ func withServer(who string, t *testing.T, fn func(bk backend.Backend)) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Actually execute the test...
-	fn(testUnit{
-		rp: rp,
-		bk: bk,
-	})
+	fn(bk)
 
 	if err := rp.Close("xxx"); err != nil {
 		t.Fatalf("Failed to close repo: %v", err)
