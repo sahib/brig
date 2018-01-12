@@ -45,6 +45,14 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("history: %v", err)}
 	}
 
+	if _, err := ctl.Stat(path); err != nil {
+		fmt.Println(colors.Colorize("WARNING:", colors.Yellow))
+		fmt.Println("      This file is not part of this commit")
+		fmt.Println("      but we still have history for it.")
+		fmt.Println("      It probably was either moved or removed.")
+		fmt.Println("")
+	}
+
 	tabW := tabwriter.NewWriter(
 		os.Stdout, 0, 0, 2, ' ',
 		tabwriter.StripEscape,
