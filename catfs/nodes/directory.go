@@ -508,7 +508,6 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 	err := Walk(lkr, d, true, func(child Node) error {
 		oldChildPath := child.Path()
 		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
-		// fmt.Println("**", oldChildPath, newChildPath)
 		visited[newChildPath] = child
 
 		switch child.Type() {

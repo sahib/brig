@@ -997,6 +997,7 @@ func (lkr *Linker) LookupFile(repoPath string) (*n.File, error) {
 // LookupGhost calls LookupNode and converts the result to a ghost.
 func (lkr *Linker) LookupGhost(repoPath string) (*n.Ghost, error) {
 	nd, err := lkr.LookupNode(repoPath)
+	fmt.Println(repoPath, nd)
 	if err != nil {
 		return nil, err
 	}
@@ -1192,7 +1193,7 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	}
 
 	// Also remember the move in the other direction.
-	// This might come in handy for the 
+	// This might come in handy for the
 	if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
 		batch.Put(
 			[]byte(fmt.Sprintf("< inode %d", from.Inode())),

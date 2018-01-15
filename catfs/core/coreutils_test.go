@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -136,13 +137,15 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Just fill in a dummy moved to ref, to get a ghost.
-		parentDir, ghost, err = Remove(lkr, nestedDir, true, false)
+		parentDir, ghosts, err := Remove(lkr, nestedDir, true, false)
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
 		}
 
-		if ghost == nil || ghost.Type() != n.NodeTypeGhost {
-			t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
+		for _, ghost := range ghosts {
+			if ghost == nil || ghost.Type() != n.NodeTypeGhost {
+				t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
+			}
 		}
 
 		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {
@@ -330,6 +333,37 @@ func TestMove(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestMoveDirectoryWithChild(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		MustMkdir(t, lkr, "/src")
+		MustTouch(t, lkr, "/src/x", 1)
+		MustCommit(t, lkr, "before move")
+
+		dir, err := lkr.LookupDirectory("/src")
+		require.Nil(t, err)
+
+		MustMove(t, lkr, dir, "/dst")
+		MustCommit(t, lkr, "after move")
+
+		file, err := lkr.LookupFile("/dst/x")
+		fmt.Println("old", file.Hash())
+		require.Nil(t, err)
+		require.Equal(t, h.TestDummy(t, 1), file.Content())
+
+		dirGhost, err := lkr.LookupGhost("/src")
+		require.Nil(t, err)
+
+		fileGhost, err := lkr.LookupGhost("/src/x")
+
+		fmt.Println("====")
+		fmt.Println(lkr.LookupNode("/src/x"))
+		require.Nil(t, err)
+
+		fmt.Println(dirGhost)
+		fmt.Println(fileGhost)
+	})
 }
 
 func TestMoveDirectory(t *testing.T) {

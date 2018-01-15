@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -91,6 +92,11 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
 
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to acquire status: %v", err)
+	}
+
 	// removing will copy file and make that a ghost.
 	// i.e. we need to re-lookup it:
 	ghost, err := lkr.LookupGhost(file.Path())
@@ -99,18 +105,20 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 
 	return &historySetup{
-		commits: []*n.Commit{c3, c2, c1, c1},
+		commits: []*n.Commit{status, c3, c2, c1},
 		paths: []string{
+			"/x.png",
 			"/x.png",
 			"/x.png",
 			"/x.png",
 		},
 		changes: []ChangeType{
+			ChangeTypeNone,
 			ChangeTypeRemove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
-		head: c3,
+		head: status,
 		node: ghost,
 	}
 }
@@ -438,6 +446,38 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetu
 	}
 }
 
+func setupMoveDirectoryWithChild(t *testing.T, lkr *c.Linker) *historySetup {
+	dir := c.MustMkdir(t, lkr, "/sub")
+	file, c1 := c.MustTouchAndCommit(t, lkr, "/sub/x.png", 1)
+	file, c2 := c.MustTouchAndCommit(t, lkr, "/sub/x.png", 2)
+
+	c.MustMove(t, lkr, dir, "/moved-sub")
+	c3 := c.MustCommit(t, lkr, "moved")
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to get status: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c3, c2, c1},
+		paths: []string{
+			"/moved-sub/x.png",
+			"/moved-sub/x.png",
+			"/sub/x.png",
+			"/sub/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeMove,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: file,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
@@ -491,6 +531,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "move-readd-from-readded-perspective",
 			setup: setupHistoryMoveAndReaddFromAdded,
+		}, {
+			name:  "move-directory-with-child",
+			setup: setupMoveDirectoryWithChild,
 		},
 	}
 
@@ -517,10 +560,10 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 			)
 		}
 
-		// fmt.Println("TYPE", state.Mask)
-		// fmt.Println("HEAD", state.Head)
-		// fmt.Println("NEXT", state.Next)
-		// fmt.Println("===")
+		fmt.Println("TYPE", state.Mask)
+		fmt.Println("HEAD", state.Head)
+		fmt.Println("NEXT", state.Next)
+		fmt.Println("===")
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(

@@ -137,7 +137,6 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 	}
 
 	_, _, err := c.Remove(sy.lkrDst, dst, true, true)
-
 	return err
 }
 

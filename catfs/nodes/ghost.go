@@ -26,6 +26,10 @@ type Ghost struct {
 // not show up. `inode` will be the new inode of the ghost.
 // It should differ to the previous node.
 func MakeGhost(nd ModNode, inode uint64) (*Ghost, error) {
+	if nd.Type() == NodeTypeGhost {
+		panic("Cannot put a ghost in a ghost")
+	}
+
 	return &Ghost{
 		ModNode:    nd.Copy(),
 		oldType:    nd.Type(),

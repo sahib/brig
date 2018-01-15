@@ -734,12 +734,12 @@ func (fs *FS) History(path string) ([]Change, error) {
 		return nil, err
 	}
 
-	head, err := fs.lkr.Status()
+	status, err := fs.lkr.Status()
 	if err != nil {
 		return nil, err
 	}
 
-	hist, err := vcs.History(fs.lkr, nd, head, nil)
+	hist, err := vcs.History(fs.lkr, nd, status, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -51,7 +51,8 @@ func (ct ChangeType) String() string {
 	return strings.Join(v, "|")
 }
 
-// rule: do not loose content.
+// rule: do not loose content,
+//       but we may loose metadata.
 //
 //   |  a  c  r  m
 // ---------------
