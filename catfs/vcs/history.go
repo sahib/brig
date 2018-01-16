@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	e "github.com/pkg/errors"
@@ -173,6 +174,126 @@ func (hw *HistoryWalker) maskFromState(curr, next n.ModNode) ChangeType {
 	return mask
 }
 
+func ParentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Directory, error) {
+	nextDirPath := path.Dir(curr.Path())
+	if nextDirPath == "/" {
+		return nil, nil
+	}
+
+	root, err := lkr.DirectoryByHash(cmt.Root())
+	if err != nil {
+		return nil, err
+	}
+
+	nd, err := root.Lookup(lkr, nextDirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	dir, ok := nd.(*n.Directory)
+	if !ok {
+		return nil, ie.ErrBadNode
+	}
+
+	return dir, nil
+}
+
+// Check if a node was moved and if so, return the coressponding other half.
+// If it was not moved, this method will return nil, MoveDirNone, nil.
+//
+// This is also supposed to work with moved directories (keep in mind that moving directories
+// will only create a ghost for the moved directory itself, not the children of it):
+//
+// $ tree .
+// a/
+//  b/
+//   c  # a file.
+// $ mv a f
+//
+// For this case we need to go over the parent directories of c (b and f) to find the ghost dir "a".
+// From there we can resolve back to "c".
+func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.MoveDir, error) {
+	prev, direction, err := lkr.MoveMapping(head, curr)
+	if err != nil {
+		return nil, c.MoveDirNone, err
+	}
+
+	if prev != nil {
+		return prev, direction, nil
+	}
+
+	childPath := []string{curr.Name()}
+
+	for {
+		parentDir, err := ParentDirectoryForCommit(lkr, head, curr)
+		if err != nil {
+			return nil, c.MoveDirNone, e.Wrap(err, "bad parent dir")
+		}
+
+		if parentDir == nil {
+			return nil, c.MoveDirNone, nil
+		}
+
+		prevDirNd, direction, err := lkr.MoveMapping(head, parentDir)
+		if err != nil {
+			return nil, c.MoveDirNone, nil
+		}
+
+		// Advance for next round:
+		curr = parentDir
+
+		if prevDirNd == nil {
+			// This was not moved; remember step for final lookup:
+			childPath = append([]string{parentDir.Name()}, childPath...)
+			continue
+		}
+
+		// At this point we know that the dir `parentDir` was moved.
+		// Now we have to find the old version of the node.
+		// This for loop will end now anyways.
+
+		var prevDir *n.Directory
+
+		switch prevDirNd.Type() {
+		case n.NodeTypeDirectory:
+			// This case will probably not happen not very often.
+			// Most of the time the old node in a mapping is a ghost.
+			var ok bool
+			prevDir, ok = prevDirNd.(*n.Directory)
+			if !ok {
+				return nil, c.MoveDirNone, ie.ErrBadNode
+			}
+		case n.NodeTypeGhost:
+			// If it's a ghost we need to unpack it.
+			prevDirGhost, ok := prevDirNd.(*n.Ghost)
+			if !ok {
+				return nil, c.MoveDirNone, e.Wrap(
+					ie.ErrBadNode,
+					"bad previous dir",
+				)
+			}
+
+			prevDir, err = prevDirGhost.OldDirectory()
+			if err != nil {
+				return nil, c.MoveDirNone, e.Wrap(err, "bad old directory")
+			}
+		default:
+			return nil, c.MoveDirNone, fmt.Errorf("unexpected file node")
+		}
+
+		// By the current logic, the path is still reachable in
+		// the directory the same way before.
+		child, err := prevDir.Lookup(lkr, strings.Join(childPath, "/"))
+		if err != nil {
+			return nil, c.MoveDirNone, err
+		}
+
+		return child, direction, nil
+	}
+
+	return nil, c.MoveDirNone, fmt.Errorf("How did we end up here?")
+}
+
 // Next advances the walker to the next commit.
 // Call State() to get the current state after.
 // If there are no commits left or an error happended,
@@ -188,12 +309,13 @@ func (hw *HistoryWalker) Next() bool {
 	}
 
 	// Check if this node participated in a move:
-	prev, direction, err := hw.lkr.MoveMapping(hw.head, hw.curr)
+	prev, direction, err := findMovePartner(hw.lkr, hw.head, hw.curr)
 	if err != nil {
 		hw.err = err
 		return false
 	}
 
+	// Unpack the old ghost before doing anything with it:
 	if prev != nil && prev.Type() == n.NodeTypeGhost {
 		prevGhost, ok := prev.(*n.Ghost)
 		if !ok {

@@ -556,7 +556,7 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(
 				"Wrong path at index `%d`: %s (want: %s)",
-				idx, state.Curr.Path(), setup.paths[idx],
+				idx+1, state.Curr.Path(), setup.paths[idx],
 			)
 		}
 
@@ -582,7 +582,12 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 	}
 
 	if err := walker.Err(); err != nil {
-		t.Fatalf("walker failed at index (%d/%d): %v", idx, len(setup.commits), err)
+		t.Fatalf(
+			"walker failed at index (%d/%d): %v",
+			idx+1,
+			len(setup.commits),
+			err,
+		)
 	}
 }
 

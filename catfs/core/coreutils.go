@@ -118,7 +118,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // Remove removes a single node from a directory.
 // `nd` is the node that shall be removed and may not be root.
 // The parent directory is returned.
-func Remove(lkr *Linker, nd n.ModNode, createGhosts, force bool) (parentDir *n.Directory, ghosts []*n.Ghost, err error) {
+func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
 	if !force && nd.Type() == n.NodeTypeGhost {
 		return nil, nil, ErrIsGhost
 	}
@@ -154,62 +154,25 @@ func Remove(lkr *Linker, nd n.ModNode, createGhosts, force bool) (parentDir *n.D
 		return nil, nil, err
 	}
 
-	if createGhosts {
-		err = n.Walk(lkr, nd, true, func(childNd n.Node) error {
-			if childNd.Type() == n.NodeTypeGhost {
-				return nil
-			}
-
-			child, ok := childNd.(n.ModNode)
-			if !ok {
-				// Ignore other nodes.
-				return nil
-			}
-
-			childsParentDir := parentDir
-			if child != nd {
-				ndDir := nd.(*n.Directory)
-				subPath := path.Dir(child.Path()[len(nd.Path()):])
-				fmt.Println("SUB", subPath)
-
-				childsParentDirNd, err := ndDir.Lookup(lkr, subPath)
-				if err != nil {
-					panic(err)
-				}
-
-				childsParentDir = childsParentDirNd.(*n.Directory)
-				fmt.Println("Go lookup", path.Dir(child.Path()))
-				fmt.Println("No the same", child.Path())
-			}
-
-			// TODO: Think about this here.
-			// lkr.MemIndexPurge(child)
-
-			ghost, err := n.MakeGhost(child, lkr.NextInode())
-			fmt.Println("ghost", child.Name(), "->", ghost.Name())
-			if err != nil {
-				return err
-			}
-
-			if err := childsParentDir.Add(lkr, ghost); err != nil {
-				fmt.Println("aha")
-				return err
-			}
-
-			if err := lkr.StageNode(ghost); err != nil {
-				return err
-			}
-
-			ghosts = append(ghosts, ghost)
-			return nil
-		})
-
+	if createGhost {
+		ghost, err := n.MakeGhost(nd, lkr.NextInode())
 		if err != nil {
 			return nil, nil, err
 		}
+
+		parentDir.Add(lkr, ghost)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if err := lkr.StageNode(ghost); err != nil {
+			return nil, nil, err
+		}
+
+		return parentDir, ghost, nil
 	}
 
-	return parentDir, ghosts, nil
+	return parentDir, nil, nil
 }
 
 func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
@@ -311,14 +274,13 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	oldPath := nd.Path()
 
 	// Remove the old node:
-	_, ghosts, err := Remove(lkr, nd, true, true)
+	_, ghost, err := Remove(lkr, nd, true, true)
 	if err != nil {
-		return fmt.Errorf("removing old node: %v", err)
+		return err
 	}
 
 	// The node needs to be told that it's path changed,
 	// since it might need to change it's hash value now.
-	// It works recursively in case of directories.
 	if err := nd.NotifyMove(lkr, oldPath, destPath); err != nil {
 		return err
 	}
@@ -336,20 +298,16 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return err
 	}
 
+	if err := lkr.AddMoveMapping(nd, ghost); err != nil {
+		return err
+	}
+
 	err = lkr.StageNode(nd)
 	if err != nil {
 		return err
 	}
 
-	// Remember to put links between ghost and original files.
-	for _, ghost := range ghosts {
-		// TODO: That direction should be other way round.
-		if err := lkr.AddMoveMapping(nd, ghost); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return err
 }
 
 // TODO: This interface sucks.
