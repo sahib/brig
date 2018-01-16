@@ -171,6 +171,25 @@ func mapperSetupSrcMoveDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	}
 }
 
+func mapperSetupMoveDirWithChild(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
+	srcDirOld := c.MustMkdir(t, lkrSrc, "/x")
+	srcFile := c.MustTouch(t, lkrSrc, "/x/a.png", 23)
+	c.MustMove(t, lkrSrc, srcDirOld, "/y")
+	c.MustCommit(t, lkrSrc, "I like to move it, move it")
+
+	c.MustMkdir(t, lkrDst, "/x")
+	dstFile := c.MustTouch(t, lkrDst, "/x/a.png", 42)
+	c.MustCommit(t, lkrDst, "Create dst dir")
+
+	return []MapPair{
+		{
+			Src:          srcFile,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
+}
+
 func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	srcDirOld := c.MustMkdir(t, lkrSrc, "/x")
 	c.MustMove(t, lkrSrc, srcDirOld, "/y")
@@ -368,6 +387,9 @@ func TestMapper(t *testing.T) {
 		}, {
 			name:  "move-on-both-sides",
 			setup: mapperSetupMoveOnBothSides,
+		}, {
+			name:  "move-dir-with-child",
+			setup: mapperSetupMoveDirWithChild,
 		},
 	}
 
