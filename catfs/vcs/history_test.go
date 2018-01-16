@@ -478,6 +478,38 @@ func setupMoveDirectoryWithChild(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 }
 
+func setupDirectoryHistory(t *testing.T, lkr *c.Linker) *historySetup {
+	dir := c.MustMkdir(t, lkr, "/src")
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/src/x.png", 1)
+	_, c2 := c.MustTouchAndCommit(t, lkr, "/src/x.png", 2)
+
+	newDir := c.MustMove(t, lkr, dir, "/dst")
+	c3 := c.MustCommit(t, lkr, "move")
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to get status: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c3, c2, c1},
+		paths: []string{
+			"/dst",
+			"/dst",
+			"/src",
+			"/src",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeMove | ChangeTypeModify,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: newDir,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
@@ -534,6 +566,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "move-directory-with-child",
 			setup: setupMoveDirectoryWithChild,
+		}, {
+			name:  "directory-simple",
+			setup: setupDirectoryHistory,
 		},
 	}
 
