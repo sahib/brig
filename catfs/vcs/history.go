@@ -89,6 +89,10 @@ type Change struct {
 
 	// Curr is the node with the attributes at a specific state
 	Curr n.ModNode
+
+	// ReferToPath is only filled for ghosts that were the source
+	// of a move. It's the path of the node it was moved to.
+	ReferToPath string
 }
 
 func (ns *Change) String() string {
@@ -316,14 +320,19 @@ func (hw *HistoryWalker) Next() bool {
 	}
 
 	// Unpack the old ghost before doing anything with it:
-	if prev != nil && prev.Type() == n.NodeTypeGhost {
-		prevGhost, ok := prev.(*n.Ghost)
-		if !ok {
-			hw.err = ie.ErrBadNode
-			return false
-		}
+	referToPath := ""
+	if prev != nil {
+		referToPath = prev.Path()
 
-		prev = prevGhost.OldNode()
+		if prev.Type() == n.NodeTypeGhost {
+			prevGhost, ok := prev.(*n.Ghost)
+			if !ok {
+				hw.err = ie.ErrBadNode
+				return false
+			}
+
+			prev = prevGhost.OldNode()
+		}
 	}
 
 	// Advance to the previous commit:
@@ -395,6 +404,15 @@ func (hw *HistoryWalker) Next() bool {
 		Mask: hw.maskFromState(hw.curr, prevModNode),
 		Curr: hw.curr,
 		Next: prevHeadCommit,
+	}
+
+	// Special case: A ghost that still has a move partner.
+	// This means the node here was moved to `prev` in this commit.
+	if hw.curr.Type() == n.NodeTypeGhost && direction == c.MoveDirDstToSrc {
+		// Indicate that this node was indeed removed,
+		// but still lives somewhere else.
+		hw.state.Mask |= ChangeTypeMove
+		hw.state.ReferToPath = referToPath
 	}
 
 	// Swap for the next call to Next():

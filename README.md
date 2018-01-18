@@ -63,7 +63,7 @@ sometimes sacrificed to get the balance of usability and security right.
 ## Installation
 
 ```bash
-$ go get github.com/sahib/brig/cmd/brig
+$ go get github.com/sahib/brig
 ```
 
 That should just work if you previously [setup Go](https://golang.org/doc/install).

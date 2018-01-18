@@ -46,11 +46,10 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if _, err := ctl.Stat(path); err != nil {
-		fmt.Println(colors.Colorize("WARNING:", colors.Yellow))
-		fmt.Println("      This file is not part of this commit")
-		fmt.Println("      but we still have history for it.")
-		fmt.Println("      It probably was either moved or removed.")
-		fmt.Println("")
+		fmt.Printf("%s %s", colors.Colorize("WARNING:", colors.Yellow), `This file is not part of this commit, but there's still history for it.
+         Most likely this file was moved or removed in the past.
+
+`)
 	}
 
 	tabW := tabwriter.NewWriter(
@@ -69,16 +68,17 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		for _, detail := range entry.Mask {
 			// If it was moved, let's display what moved.
 			if detail == "moved" && idx+1 < len(history) {
+				src := history[idx+1].Path
+				dst := entry.Path
+
+				if entry.ReferTo != "" {
+					dst = entry.ReferTo
+				}
+
 				what = fmt.Sprintf(
 					"%s → %s",
-					colors.Colorize(
-						history[idx+1].Path,
-						colors.Red,
-					),
-					colors.Colorize(
-						entry.Path,
-						colors.Red,
-					),
+					colors.Colorize(src, colors.Red),
+					colors.Colorize(dst, colors.Red),
 				)
 			}
 

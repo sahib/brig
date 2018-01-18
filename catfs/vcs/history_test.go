@@ -433,11 +433,9 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetu
 			"/x.png",
 		},
 
-		// TODO: Is this behaviour making sense?
-		//       Maybe it makes more sense to "end" the history before the add.
 		changes: []ChangeType{
 			ChangeTypeAdd | ChangeTypeModify,
-			ChangeTypeRemove,
+			ChangeTypeMove | ChangeTypeRemove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
@@ -510,6 +508,39 @@ func setupDirectoryHistory(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 }
 
+func setupGhostHistory(t *testing.T, lkr *c.Linker) *historySetup {
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+	c.MustMove(t, lkr, file, "/y.png")
+	c3 := c.MustCommit(t, lkr, "move")
+
+	ghost, err := lkr.LookupGhost("/x.png")
+	require.Nil(t, err)
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to get status: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c3, c2, c1},
+		paths: []string{
+			"/x.png",
+			"/x.png",
+			"/x.png",
+			"/x.png",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeMove,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: ghost,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
@@ -569,6 +600,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "directory-simple",
 			setup: setupDirectoryHistory,
+		}, {
+			name:  "ghost-simple",
+			setup: setupGhostHistory,
 		},
 	}
 

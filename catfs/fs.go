@@ -92,10 +92,11 @@ type Commit struct {
 }
 
 type Change struct {
-	Path   string
-	Change string
-	Head   *Commit
-	Next   *Commit
+	Path    string
+	Change  string
+	ReferTo string
+	Head    *Commit
+	Next    *Commit
 }
 
 /////////////////////
@@ -769,10 +770,11 @@ func (fs *FS) History(path string) ([]Change, error) {
 		}
 
 		entries = append(entries, Change{
-			Path:   change.Curr.Path(),
-			Change: change.Mask.String(),
-			Head:   head,
-			Next:   next,
+			Path:    change.Curr.Path(),
+			Change:  change.Mask.String(),
+			Head:    head,
+			Next:    next,
+			ReferTo: change.ReferToPath,
 		})
 	}
 

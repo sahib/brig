@@ -130,10 +130,11 @@ func (cl *Client) Reset(path, rev string, force bool) error {
 }
 
 type Change struct {
-	Path string
-	Mask []string
-	Head *Commit
-	Next *Commit
+	Path    string
+	Mask    []string
+	ReferTo string
+	Head    *Commit
+	Next    *Commit
 }
 
 func (cl *Client) History(path string) ([]*Change, error) {
@@ -174,6 +175,11 @@ func (cl *Client) History(path string) ([]*Change, error) {
 			return nil, err
 		}
 
+		referTo, err := entry.ReferTo()
+		if err != nil {
+			return nil, err
+		}
+
 		// Check for nil?
 		capNextCmt, err := entry.Next()
 		if err != nil {
@@ -186,10 +192,11 @@ func (cl *Client) History(path string) ([]*Change, error) {
 		}
 
 		results = append(results, &Change{
-			Path: path,
-			Mask: strings.Split(change, "|"),
-			Head: head,
-			Next: next,
+			Path:    path,
+			Mask:    strings.Split(change, "|"),
+			Head:    head,
+			Next:    next,
+			ReferTo: referTo,
 		})
 	}
 

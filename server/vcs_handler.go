@@ -210,6 +210,10 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 				return err
 			}
 
+			if err := entry.SetReferTo(change.ReferTo); err != nil {
+				return err
+			}
+
 			if err := lst.Set(idx, entry); err != nil {
 				return err
 			}

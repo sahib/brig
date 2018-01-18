@@ -29,10 +29,11 @@ struct ConfigPair $Go.doc("Key/Value pair in the config") {
 }
 
 struct Change $Go.doc("One History entry for a file") {
-    path   @0 :Text;
-    change @1 :Text;
-    head   @2 :Commit;
-    next   @3 :Commit;
+    path    @0 :Text;
+    change  @1 :Text;
+    head    @2 :Commit;
+    next    @3 :Commit;
+    referTo @4 :Text;
 }
 
 struct DiffPair $Go.doc("Represent two differing files") {
