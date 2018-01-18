@@ -112,6 +112,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "remote",
+			Aliases:     []string{"rmt"},
 			Category:    netwGroup,
 			Usage:       "Manage what other peers can sync with us",
 			ArgsUsage:   "[add|remove|list|locate|ping]",
@@ -226,6 +227,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "status",
+			Aliases:     []string{"st"},
 			Category:    vcscGroup,
 			Usage:       "Print which file are in the staging area",
 			Description: "Show all changed files since the last commit and what a new commit would contain",
@@ -307,6 +309,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "commit",
+			Aliases:     []string{"cmt"},
 			Category:    vcscGroup,
 			Usage:       "Print which file are in the staging area",
 			Description: "Show all changed files since the last commit and what a new commit would contain",
@@ -321,6 +324,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "reset",
+			Aliases:     []string{"co"},
 			Category:    vcscGroup,
 			Usage:       "Reset commits, file or directories to an old state",
 			ArgsUsage:   "<commit> [<file>] [--force]",
