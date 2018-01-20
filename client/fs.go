@@ -70,7 +70,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	return info, nil
 }
 
-func (cl *Client) List(root string, maxDepth int) ([]*StatInfo, error) {
+func (cl *Client) List(root string, maxDepth int) ([]StatInfo, error) {
 	call := cl.api.List(cl.ctx, func(p capnp.FS_list_Params) error {
 		p.SetMaxDepth(int32(maxDepth))
 		return p.SetRoot(root)
@@ -81,7 +81,7 @@ func (cl *Client) List(root string, maxDepth int) ([]*StatInfo, error) {
 		return nil, err
 	}
 
-	results := []*StatInfo{}
+	results := []StatInfo{}
 	statList, err := result.Entries()
 	for idx := 0; idx < statList.Len(); idx++ {
 		capInfo := statList.At(idx)
@@ -90,7 +90,7 @@ func (cl *Client) List(root string, maxDepth int) ([]*StatInfo, error) {
 			return nil, err
 		}
 
-		results = append(results, info)
+		results = append(results, *info)
 	}
 
 	return results, err

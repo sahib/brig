@@ -193,7 +193,10 @@ func handleTree(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	return showTree(entries, -1)
+	showTree(entries, &treeCfg{
+		showPin: true,
+	})
+	return nil
 }
 
 func handleMkdir(ctx *cli.Context, ctl *client.Client) error {

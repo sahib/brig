@@ -23,12 +23,17 @@ type treeNode struct {
 	isLast   bool
 	parent   *treeNode
 	depth    int
-	entry    *client.StatInfo
+	entry    client.StatInfo
 }
 
-// This is a very stripped down version util.Trie.Insert()
+type treeCfg struct {
+	showPin bool
+	format  func(n *treeNode) string
+}
+
+// This is a very stripped down version of util.Trie.Insert()
 // but with support for ordering the elements.
-func (n *treeNode) Insert(entry *client.StatInfo) {
+func (n *treeNode) Insert(entry client.StatInfo) {
 	parts := strings.Split(entry.Path, "/")
 	if len(parts) > 0 && parts[0] == "" {
 		parts = parts[1:]
@@ -79,14 +84,15 @@ func (n *treeNode) Less(i, j int) bool {
 	return n.order[i].name < n.order[j].name
 }
 
-func (n *treeNode) Print() {
+func (n *treeNode) Print(cfg *treeCfg) {
 	parents := make([]*treeNode, n.depth)
 	curr := n
 
 	sort.Sort(n)
 
 	// You could do probably go upwards and print to
-	// a string buffer for performance, but this is "fun" code...
+	// a string buffer for performance, but this is probably
+	// not necessary/critical here.
 	for i := 0; i < n.depth; i++ {
 		parents[n.depth-i-1] = curr
 		curr = curr.parent
@@ -108,34 +114,47 @@ func (n *treeNode) Print() {
 		}
 	}
 
-	name, prefix := n.name, treeRuneBar
+	// Default to an auto-formatter:
+	format := cfg.format
+	if format == nil {
+		format = func(n *treeNode) string {
+			switch {
+			case n.name == "/":
+				return colors.Colorize("•", colors.Magenta)
+			case n.entry.IsDir:
+				return colors.Colorize(n.name, colors.Green)
+			}
 
-	switch {
-	case n.name == "/":
-		name, prefix = colors.Colorize("•", colors.Magenta), ""
-	case n.entry.IsDir:
-		name = colors.Colorize(name, colors.Green)
+			return " " + n.name
+		}
 	}
 
+	prefix := treeRuneBar
+	if n.name == "/" {
+		prefix = ""
+	}
+
+	formatted := format(n)
 	pinState := ""
-	if n.entry.IsPinned {
+	if cfg.showPin && n.entry.IsPinned {
 		pinState += " " + colors.Colorize("🖈", colors.Cyan)
 	}
 
-	fmt.Printf("%s%s%s\n", prefix, name, pinState)
-
+	fmt.Printf("%s%s%s\n", prefix, formatted, pinState)
 	for _, child := range n.order {
-		child.Print()
+		child.Print(cfg)
 	}
 }
 
-func showTree(entries []*client.StatInfo, maxDepth int) error {
+func showTree(entries []client.StatInfo, cfg *treeCfg) {
 	root := &treeNode{name: "/"}
 	nfiles, ndirs := 0, 0
 
+	hasRoot := false
 	for _, entry := range entries {
 		if entry.Path == "/" {
 			root.entry = entry
+			hasRoot = true
 		} else {
 			root.Insert(entry)
 		}
@@ -147,12 +166,24 @@ func showTree(entries []*client.StatInfo, maxDepth int) error {
 		}
 	}
 
-	if root.entry == nil {
-		return fmt.Errorf("No root in tree. Things are serious.")
+	if !hasRoot {
+		root.entry = client.StatInfo{
+			Path: "/",
+		}
 	}
 
-	root.Print()
+	root.Print(cfg)
 
-	fmt.Printf("\n%d directories, %d files\n", ndirs, nfiles)
-	return nil
+	// Speak understandable english:
+	dirLabel := "directories"
+	if ndirs == 1 {
+		dirLabel = "directory"
+	}
+
+	fileLabel := "files"
+	if nfiles == 1 {
+		fileLabel = "file"
+	}
+
+	fmt.Printf("\n%d %s, %d %s\n", ndirs, dirLabel, nfiles, fileLabel)
 }

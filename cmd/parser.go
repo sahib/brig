@@ -232,6 +232,12 @@ func RunCmdline(args []string) int {
 			Usage:       "Print which file are in the staging area",
 			Description: "Show all changed files since the last commit and what a new commit would contain",
 			Action:      withDaemon(handleStatus, true),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "tree,t",
+					Usage: "View the status as a tree listing",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "diff",
@@ -240,15 +246,9 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "[<REMOTE>] [<REMOTE_REV> [<OTHER_REMOTE> [<OTHER_REV>]]]]",
 			Description: "Show the difference between two points in the history",
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "remote,r",
-					Value: "",
-					Usage: "Who to compare with (by default: self)",
-				},
-				cli.StringFlag{
-					Name:  "rev,v",
-					Value: "HEAD",
-					Usage: "What commit to compare remote with (default: HEAD)",
+				cli.BoolFlag{
+					Name:  "list,l",
+					Usage: "Output the diff as simple list (like status)",
 				},
 			},
 			Action: withDaemon(handleDiff, true),

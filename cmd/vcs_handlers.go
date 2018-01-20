@@ -115,6 +115,100 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	return tabW.Flush()
 }
 
+func printDiffTree(diff *client.Diff) {
+	const (
+		diffTypeNone = iota
+		diffTypeAdded
+		diffTypeRemoved
+		diffTypeIgnored
+		diffTypeConflict
+		diffTypeMerged
+	)
+
+	type diffEntry struct {
+		typ  int
+		pair client.DiffPair
+	}
+
+	entries := []client.StatInfo{}
+	types := make(map[string]diffEntry)
+
+	// Singular types:
+	for _, info := range diff.Added {
+		types[info.Path] = diffEntry{typ: diffTypeAdded}
+		entries = append(entries, info)
+	}
+	for _, info := range diff.Removed {
+		types[info.Path] = diffEntry{typ: diffTypeRemoved}
+		entries = append(entries, info)
+	}
+	for _, info := range diff.Ignored {
+		types[info.Path] = diffEntry{typ: diffTypeIgnored}
+		entries = append(entries, info)
+	}
+
+	// Pair types:
+	for _, pair := range diff.Conflict {
+		types[pair.Dst.Path] = diffEntry{
+			typ:  diffTypeConflict,
+			pair: pair,
+		}
+		entries = append(entries, pair.Dst)
+	}
+	for _, pair := range diff.Merged {
+		types[pair.Dst.Path] = diffEntry{
+			typ:  diffTypeMerged,
+			pair: pair,
+		}
+		entries = append(entries, pair.Dst)
+	}
+
+	if len(entries) == 0 {
+		// Nothing to show:
+		return
+	}
+
+	// Called to format each name in the resulting tree:
+	formatter := func(n *treeNode) string {
+		if n.name == "/" {
+			return colors.Colorize("•", colors.Magenta)
+		}
+
+		if diffEntry, ok := types[n.entry.Path]; ok {
+			switch diffEntry.typ {
+			case diffTypeAdded:
+				return colors.Colorize(" + "+n.name, colors.Green)
+			case diffTypeRemoved:
+				return colors.Colorize(" - "+n.name, colors.Red)
+			case diffTypeIgnored:
+				return colors.Colorize(" * "+n.name, colors.Yellow)
+			case diffTypeMerged:
+				name := fmt.Sprintf(
+					" %s ⇄ %s",
+					diffEntry.pair.Src.Path,
+					diffEntry.pair.Dst.Path,
+				)
+				return colors.Colorize(name, colors.Cyan)
+			case diffTypeConflict:
+				name := fmt.Sprintf(
+					" %s ⚡ %s",
+					diffEntry.pair.Src.Path,
+					diffEntry.pair.Dst.Path,
+				)
+				return colors.Colorize(name, colors.Magenta)
+			}
+		}
+
+		return n.name
+	}
+
+	// Render the tree:
+	showTree(entries, &treeCfg{
+		format:  formatter,
+		showPin: false,
+	})
+}
+
 func printDiff(diff *client.Diff) {
 	simpleSection := func(heading string, infos []client.StatInfo) {
 		if len(infos) == 0 {
@@ -122,7 +216,7 @@ func printDiff(diff *client.Diff) {
 		}
 
 		fmt.Println(heading)
-		for _, info := range diff.Added {
+		for _, info := range infos {
 			fmt.Printf("  %s\n", info.Path)
 		}
 
@@ -185,14 +279,17 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		localRev = ctx.Args().Get(3)
 	}
 
-	fmt.Println(localName, remoteName, localRev, remoteRev)
-
 	diff, err := ctl.MakeDiff(localName, remoteName, localRev, remoteRev)
 	if err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
 
-	printDiff(diff)
+	if ctx.Bool("list") {
+		printDiff(diff)
+	} else {
+		printDiffTree(diff)
+	}
+
 	return nil
 }
 
@@ -224,7 +321,12 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	printDiff(diff)
+	if ctx.Bool("tree") {
+		printDiffTree(diff)
+	} else {
+		printDiff(diff)
+	}
+
 	return nil
 }
 
