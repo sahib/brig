@@ -338,24 +338,29 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	server.Ack(call.Options)
 
+	localOwner, err := call.Params.LocalOwner()
+	if err != nil {
+		return err
+	}
+
 	remoteOwner, err := call.Params.RemoteOwner()
 	if err != nil {
 		return err
 	}
 
-	headRevOwn, err := call.Params.HeadRevOwn()
+	localRev, err := call.Params.LocalRev()
 	if err != nil {
 		return err
 	}
 
-	headRevRemote, err := call.Params.HeadRevRemote()
+	remoteRev, err := call.Params.RemoteRev()
 	if err != nil {
 		return err
 	}
 
-	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
+	return vcs.base.withRemoteFs(localOwner, func(localFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(remoteOwner, func(remoteFs *catfs.FS) error {
-			diff, err := ownFs.MakeDiff(remoteFs, headRevOwn, headRevRemote)
+			diff, err := localFs.MakeDiff(remoteFs, localRev, remoteRev)
 			if err != nil {
 				return err
 			}

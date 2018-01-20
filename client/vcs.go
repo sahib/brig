@@ -323,17 +323,21 @@ func convertCapDiffToDiff(capDiff capnp.Diff) (*Diff, error) {
 	return diff, nil
 }
 
-func (cl *Client) MakeDiff(remote, headRevOwn, headRevRemote string) (*Diff, error) {
+func (cl *Client) MakeDiff(local, remote, localRev, remoteRev string) (*Diff, error) {
 	call := cl.api.MakeDiff(cl.ctx, func(p capnp.VCS_makeDiff_Params) error {
+		if err := p.SetLocalOwner(local); err != nil {
+			return err
+		}
+
 		if err := p.SetRemoteOwner(remote); err != nil {
 			return err
 		}
 
-		if err := p.SetHeadRevOwn(headRevOwn); err != nil {
+		if err := p.SetLocalRev(localRev); err != nil {
 			return err
 		}
 
-		return p.SetHeadRevRemote(headRevRemote)
+		return p.SetRemoteRev(remoteRev)
 	})
 
 	result, err := call.Struct()

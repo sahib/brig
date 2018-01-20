@@ -156,23 +156,38 @@ func printDiff(diff *client.Diff) {
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
-	remoteRev := ctx.Args().Get(0)
-	if remoteRev == "" {
-		remoteRev = "HEAD"
+	if ctx.NArg() > 4 {
+		fmt.Println("More than four arguments can't be handled.")
 	}
 
-	localRev := ctx.String("rev")
-	remoteName := ctx.String("remote")
-	if remoteName == "" {
-		self, err := ctl.Whoami()
-		if err != nil {
-			return err
-		}
-
-		remoteName = self.Owner
+	self, err := ctl.Whoami()
+	if err != nil {
+		return err
 	}
 
-	diff, err := ctl.MakeDiff(remoteName, localRev, remoteRev)
+	remoteName := self.CurrentUser
+	localName := self.CurrentUser
+
+	remoteRev := "HEAD"
+	localRev := "HEAD"
+
+	switch n := ctx.NArg(); {
+	case n >= 1:
+		remoteName = ctx.Args().Get(0)
+		fallthrough
+	case n >= 2:
+		localName = ctx.Args().Get(1)
+		fallthrough
+	case n >= 3:
+		remoteRev = ctx.Args().Get(2)
+		fallthrough
+	case n >= 4:
+		localRev = ctx.Args().Get(3)
+	}
+
+	fmt.Println(localName, remoteName, localRev, remoteRev)
+
+	diff, err := ctl.MakeDiff(localName, remoteName, localRev, remoteRev)
 	if err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
@@ -203,7 +218,8 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	diff, err := ctl.MakeDiff(self.Owner, "HEAD", "CURR")
+	curr := self.CurrentUser
+	diff, err := ctl.MakeDiff(curr, curr, "CURR", "HEAD")
 	if err != nil {
 		return err
 	}

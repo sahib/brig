@@ -107,7 +107,7 @@ interface VCS {
     untag    @3 (tagName :Text);
     reset    @4 (path :Text, rev :Text, force :Bool);
     history  @5 (path :Text) -> (history :List(Change));
-    makeDiff @6 (remoteOwner :Text, headRevOwn :Text, headRevRemote :Text) -> (diff :Diff);
+    makeDiff @6 (localOwner :Text, remoteOwner :Text, localRev :Text, remoteRev :Text) -> (diff :Diff);
     sync     @7 (withWhom :Text, needFetch :Bool);
     fetch    @8 (who :Text);
 }

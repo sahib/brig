@@ -237,7 +237,7 @@ func RunCmdline(args []string) int {
 			Name:        "diff",
 			Category:    vcscGroup,
 			Usage:       "Show what changed between two commits",
-			ArgsUsage:   "[-r <name> | -v <hash>] <REMOTE-REV>",
+			ArgsUsage:   "[<REMOTE>] [<REMOTE_REV> [<OTHER_REMOTE> [<OTHER_REV>]]]]",
 			Description: "Show the difference between two points in the history",
 			Flags: []cli.Flag{
 				cli.StringFlag{
@@ -361,6 +361,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "stage",
+			Aliases:     []string{"stg"},
 			Category:    wdirGroup,
 			Usage:       "Transer a file into brig's control or update an existing one",
 			ArgsUsage:   "<file>",
