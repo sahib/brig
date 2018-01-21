@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
+	"github.com/xrash/smetrics"
 )
 
 type suggestion struct {
@@ -14,48 +15,14 @@ type suggestion struct {
 	score float64
 }
 
-// ld compares two strings and returns the levenshtein distance between them.
-// TODO: Use a proper library for that.
-func levenshtein(s, t string) float64 {
-	s = strings.ToLower(s)
-	t = strings.ToLower(t)
-
-	d := make([][]int, len(s)+1)
-	for i := range d {
-		d[i] = make([]int, len(t)+1)
-	}
-	for i := range d {
-		d[i][0] = i
-	}
-	for j := range d[0] {
-		d[0][j] = j
-	}
-	for j := 1; j <= len(t); j++ {
-		for i := 1; i <= len(s); i++ {
-			if s[i-1] == t[j-1] {
-				d[i][j] = d[i-1][j-1]
-			} else {
-				min := d[i-1][j]
-				if d[i][j-1] < min {
-					min = d[i][j-1]
-				}
-				if d[i-1][j-1] < min {
-					min = d[i-1][j-1]
-				}
-				d[i][j] = min + 1
-			}
-		}
-
+func levenshteinRatio(s, t string) float64 {
+	lensum := float64(len(s) + len(t))
+	if lensum == 0 {
+		return 1.0
 	}
 
-	// Return the levenshtein ratio, rather than the absolute distance:
-	total_len := len(s)
-	if len(t) > total_len {
-		total_len = len(t)
-	}
-
-	dist := d[len(s)][len(t)]
-	return float64(dist) / float64(total_len)
+	dist := float64(smetrics.WagnerFischer(s, t, 1, 1, 2))
+	return (lensum - dist) / lensum
 }
 
 func findLastGoodCommands(ctx *cli.Context) ([]string, []cli.Command) {
@@ -98,8 +65,7 @@ func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 		candidates = append(candidates, cmd.Aliases...)
 
 		for _, candidate := range candidates {
-			score := levenshtein(cmdName, candidate)
-			if score <= 0.5 {
+			if score := levenshteinRatio(cmdName, candidate); score >= 0.5 {
 				similars = append(similars, suggestion{
 					name:  cmd.Name,
 					score: score,
