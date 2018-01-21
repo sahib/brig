@@ -1,3 +1,4 @@
+- writing logs does not seem to work currently.
 - High CPU consumption when pinging others. (Havoc'd go routine?)
 - Check backend to be safe to run from multiple go routines
 - `brig locate` is not working.
@@ -6,13 +7,3 @@
 - sync algorithm is not fully fledged out
 - add more tests where appropiate (sync...)
 - design sh test suite / tui tests / situation preps.
-- see if we can disable ipfs gateway & api port.
-
-
-=================
-
-brig history:
-
-- Multiple moves in staging do not go well.
-- Old deleted/moved files can be still reached (is that good or bad?)
-- Intermediate move ghost show weird/incorrect things.

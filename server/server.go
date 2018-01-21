@@ -96,6 +96,14 @@ func BootServer(basePath, password, logPath string, port int) (*Server, error) {
 		}
 	}()
 
+	// TODO: This does not work in case of init.
+	// // Instance the peer server once:
+	// if _, err := base.PeerServer(); err != nil {
+	// 	return err
+	// }
+
+	// log.Debugf("Started peer server, can receive outside connections now")
+
 	return &Server{
 		baseServer: baseServer,
 		base:       base,

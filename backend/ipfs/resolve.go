@@ -7,8 +7,8 @@ import (
 	blocks "gx/ipfs/QmSn9Td7xgxm9EV7iEjTckpUWmWApggzPxu7eFGWkkpwin/go-block-format"
 
 	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
-	u "gx/ipfs/QmSU6eubNdhXjFBJBSksTp8kv8YRub8mGAPv8tVJHmL2EU/go-ipfs-util"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/util"
 	h "github.com/sahib/brig/util/hashlib"
@@ -57,8 +57,13 @@ func (nd *Node) catBlock(hash h.Hash, timeout time.Duration) ([]byte, error) {
 func (nd *Node) PublishName(name string) error {
 	// Build all names under we can find this node:
 	fullName := "brig:" + string(name)
-	_, err := nd.addBlock([]byte(fullName))
-	return err
+	hash, err := nd.addBlock([]byte(fullName))
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Publishing name `%s` as `%s`", name, hash.B58String())
+	return nil
 }
 
 // Identity returns the base58 encoded id of the own ipfs node.
@@ -79,8 +84,11 @@ func (nd *Node) ResolveName(name string) ([]peer.Info, error) {
 		return nil, ErrIsOffline
 	}
 
+	name = "brig:" + name
+
 	// In theory, we could do this also for domains.
-	hash := u.Hash([]byte(name))
+	hash := h.Hash(blocks.NewBlock([]byte(name)).Multihash())
+	log.Debugf("Trying to locate %v (hash: %v)", name, hash.B58String())
 
 	ctx, cancel := context.WithTimeout(nd.ctx, 30*time.Second)
 	defer cancel()

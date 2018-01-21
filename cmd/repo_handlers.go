@@ -196,6 +196,7 @@ func handleDaemonQuit(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDaemonLaunch(ctx *cli.Context) error {
+	// Enable tracing (for profiling) if required.
 	if ctx.Bool("trace") {
 		tracePath := fmt.Sprintf("/tmp/brig-%d.trace", os.Getpid())
 		log.Debugf("Writing trace output to %s", tracePath)
