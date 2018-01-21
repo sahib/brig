@@ -211,7 +211,11 @@ func needAtLeast(min int) checkFunc {
 			} else {
 				log.Warningf("Need at least %d arguments.", min)
 			}
-			cli.ShowCommandHelp(ctx, ctx.Command.Name)
+
+			if err := cli.ShowCommandHelp(ctx, ctx.Command.Name); err != nil {
+				log.Warningf("Failed to display --help: %v", err)
+			}
+
 			return BadArgs
 		}
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sahib/brig/cmd/tabwriter"
+	"github.com/sahib/brig/util"
 
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
@@ -87,7 +88,7 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	defer stream.Close()
+	defer util.Closer(stream)
 
 	if _, err := io.Copy(os.Stdout, stream); err != nil {
 		return ExitCode{
@@ -265,7 +266,7 @@ func handleEdit(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	defer r.Close()
+	defer util.Closer(r)
 
 	data, err := ioutil.ReadAll(r)
 	if err != nil {

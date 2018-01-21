@@ -65,7 +65,7 @@ func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 		candidates = append(candidates, cmd.Aliases...)
 
 		for _, candidate := range candidates {
-			if score := levenshteinRatio(cmdName, candidate); score >= 0.5 {
+			if score := levenshteinRatio(cmdName, candidate); score >= 0.6 {
 				similars = append(similars, suggestion{
 					name:  cmd.Name,
 					score: score,
@@ -125,7 +125,7 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 		suggestion := color.GreenString(similars[0].name)
 		fmt.Printf("Did you maybe mean `%s`?\n", suggestion)
 	default:
-		fmt.Println("\n\nDid you mean one of those?")
+		fmt.Println("\n\nDid you maybe mean one of those?")
 		for _, similar := range similars {
 			fmt.Printf("  * %s\n", color.GreenString(similar.name))
 		}

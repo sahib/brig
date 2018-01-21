@@ -57,6 +57,8 @@ type FS struct {
 	cfg *config
 }
 
+// StatInfo describes the metadata of a single node.
+// The concept is comparable to the POSIX stat() call.
 type StatInfo struct {
 	Path     string
 	Hash     h.Hash
@@ -83,6 +85,7 @@ type Diff struct {
 	Conflict []DiffPair
 }
 
+// Commit gives information about a single commit.
 // TODO: Decide on naming: rev(ision), refname or tag.
 type Commit struct {
 	Hash h.Hash

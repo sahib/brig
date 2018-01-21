@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/sahib/brig/cmd/tabwriter"
 
-	"github.com/pksunkara/pygments"
 	"github.com/sahib/brig/client"
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
@@ -84,7 +82,7 @@ func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
 }
 
 const (
-	RemoteHelpText = `# No remotes yet. Uncomment the next lines for an example:
+	remoteHelpText = `# No remotes yet. Uncomment the next lines for an example:
 # - Name: alice@wonderland.com
 #   Fingerprint: QmVA5j2JHPkDTHgZ[...]:SEfXUDeJA1toVnP[...]
 `
@@ -93,7 +91,7 @@ const (
 func remoteListToYml(remotes []client.Remote) ([]byte, error) {
 	if len(remotes) == 0 {
 		// Provide a helpful description, instead of an empty list.
-		return []byte(RemoteHelpText), nil
+		return []byte(remoteHelpText), nil
 	}
 
 	return yml.Marshal(remotes)
@@ -148,10 +146,7 @@ func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to convert to yml: %v", err)
 	}
 
-	// Highlight the yml output (That's more of a joke currently):
-	highlighted := pygments.Highlight(string(data), "YAML", "terminal256", "utf-8")
-	highlighted = strings.TrimSpace(highlighted)
-	fmt.Println(highlighted)
+	fmt.Println(string(data))
 	return nil
 }
 

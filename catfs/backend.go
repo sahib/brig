@@ -10,6 +10,8 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// ErrNoSuchHash should be returned whenever the backend is unable
+// to find an object referenced to by this hash.
 type ErrNoSuchHash struct {
 	what h.Hash
 }
@@ -18,20 +20,36 @@ func (eh ErrNoSuchHash) Error() string {
 	return fmt.Sprintf("No such hash: %s", eh.what.B58String())
 }
 
+// FsBackend is the interface that needs to be implemented by the data
+// management layer.
 type FsBackend interface {
+	// Cat should find the object referenced to by `hash` and
+	// make its data available as mio.Stream.
 	Cat(hash h.Hash) (mio.Stream, error)
+
+	// Add should read all data in `r` and return the hash under
+	// which it can be accessed on later.
 	Add(r io.Reader) (h.Hash, error)
 
+	// Pin gives the object at `hash` a "pin"
+	// (i.e. it marks the file to be stored indefinitely in local storage)
 	Pin(hash h.Hash) error
+
+	// Unpin removes a previously added pin.
+	// If an object is already unpinned this is a no op.
 	Unpin(hash h.Hash) error
+
+	// IsPinned will return true if the object has a pin.
 	IsPinned(hash h.Hash) (bool, error)
 }
 
+// MemFsBackend is a mock structure that implements FsBackend.
 type MemFsBackend struct {
 	data map[string][]byte
 	pins map[string]bool
 }
 
+// NewMemFsBackend returns a MemFsBackend (useful for writing tests)
 func NewMemFsBackend() *MemFsBackend {
 	return &MemFsBackend{
 		data: make(map[string][]byte),
@@ -39,6 +57,7 @@ func NewMemFsBackend() *MemFsBackend {
 	}
 }
 
+// Cat implements FsBackend.Cat by querying memory.
 func (mb *MemFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 	data, ok := mb.data[hash.B58String()]
 	if !ok {
@@ -48,6 +67,7 @@ func (mb *MemFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 	return chunkbuf.NewChunkBuffer(data), nil
 }
 
+// Add implements FsBackend.Add by storing the data in memory.
 func (mb *MemFsBackend) Add(r io.Reader) (h.Hash, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -59,16 +79,19 @@ func (mb *MemFsBackend) Add(r io.Reader) (h.Hash, error) {
 	return hash, nil
 }
 
+// Pin implements FsBackend.Pin by storing a marker in memory.
 func (mb *MemFsBackend) Pin(hash h.Hash) error {
 	mb.pins[hash.B58String()] = true
 	return nil
 }
 
+// Unpin implements FsBackend.Unpin by removing a marker in memory.
 func (mb *MemFsBackend) Unpin(hash h.Hash) error {
 	mb.pins[hash.B58String()] = false
 	return nil
 }
 
+// IsPinned implements FsBackend.IsPinned by querying a marker in memory.
 func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, error) {
 	isPinned, ok := mb.pins[hash.B58String()]
 	return isPinned && ok, nil

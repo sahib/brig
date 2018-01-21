@@ -15,6 +15,7 @@ import (
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
 )
@@ -88,7 +89,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// can easily break things.
 	metaPath := filepath.Join(folder, "meta.yml")
 	if _, err := os.Stat(metaPath); err == nil {
-		return fmt.Errorf("`%s` exists; refusing to do a init.", folder)
+		return fmt.Errorf("`%s` exists; refusing to do a init", folder)
 	}
 
 	if password == "" {
@@ -203,10 +204,9 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 			return err
 		}
 
-		defer fd.Close()
+		defer util.Closer(fd)
 
-		trace.Start(fd)
-		if err != nil {
+		if err := trace.Start(fd); err != nil {
 			return err
 		}
 
@@ -252,7 +252,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		}
 	}
 
-	defer server.Close()
+	defer util.Closer(server)
 
 	if err := server.Serve(); err != nil {
 		return ExitCode{

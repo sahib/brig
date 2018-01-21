@@ -569,6 +569,8 @@ func RunCmdline(args []string) int {
 		},
 	}
 
-	app.Run(args)
+	if err := app.Run(args); err != nil {
+		return 1
+	}
 	return 0
 }

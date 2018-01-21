@@ -33,7 +33,11 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	defer os.RemoveAll(dbPath)
+	defer func() {
+		if err := os.RemoveAll(dbPath); err != nil {
+			t.Fatalf("Failed to clean up %s: %v", dbPath, err)
+		}
+	}()
 
 	fs, err := NewFilesystem(backend, dbPath, owner, nil)
 	if err != nil {
@@ -85,7 +89,12 @@ func TestLogAndTag(t *testing.T) {
 		cmts := []*n.Commit{}
 		for idx := 0; idx < 10; idx++ {
 			_, cmt := c.MustTouchAndCommit(t, fs.lkr, "/x", byte(idx))
-			fs.Tag(cmt.Hash().B58String(), fmt.Sprintf("tag%d", idx))
+
+			hash := cmt.Hash().B58String()
+			if err := fs.Tag(hash, fmt.Sprintf("tag%d", idx)); err != nil {
+				t.Fatalf("Failed to tag %v: %v", hash, err)
+			}
+
 			cmts = append(cmts, cmt)
 		}
 
@@ -442,8 +451,8 @@ func TestPin(t *testing.T) {
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
 		require.Nil(t, fs.Stage("/y", bytes.NewReader([]byte{2})))
 
-		fs.Unpin("/x")
-		fs.Unpin("/y")
+		require.Nil(t, fs.Unpin("/x"))
+		require.Nil(t, fs.Unpin("/y"))
 
 		isPinned, err := fs.IsPinned("/x")
 		require.Nil(t, err)
