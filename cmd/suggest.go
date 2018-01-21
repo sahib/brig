@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sahib/brig/util/colors"
+	"github.com/fatih/color"
 	"github.com/urfave/cli"
 )
 
@@ -139,13 +139,13 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 
 	// Figure out if it was a toplevel command or if some subcommand
 	// (like e.g. 'remote') was correct.
-	badCmd := colors.Colorize(cmdName, colors.Red)
+	badCmd := color.RedString(cmdName)
 	if cmdPath == nil {
 		// A toplevel command was wrong:
 		fmt.Printf("`%s` is not a valid command. ", badCmd)
 	} else {
 		// A command of a subcommand was wrong:
-		lastGoodSubCmd := colors.Colorize(strings.Join(cmdPath, " "), colors.Yellow)
+		lastGoodSubCmd := color.YellowString(strings.Join(cmdPath, " "))
 		fmt.Printf("`%s` is not a valid subcommand of `%s`. ", badCmd, lastGoodSubCmd)
 	}
 
@@ -156,12 +156,12 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 	case 0:
 		fmt.Printf("\n")
 	case 1:
-		suggestion := colors.Colorize(similars[0].name, colors.Green)
+		suggestion := color.GreenString(similars[0].name)
 		fmt.Printf("Did you maybe mean `%s`?\n", suggestion)
 	default:
 		fmt.Println("\n\nDid you mean one of those?")
 		for _, similar := range similars {
-			fmt.Printf("  * %s\n", colors.Colorize(similar.name, colors.Green))
+			fmt.Printf("  * %s\n", color.GreenString(similar.name))
 		}
 	}
 }

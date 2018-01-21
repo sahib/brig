@@ -4,11 +4,12 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/util/colors"
+	"github.com/fatih/color"
 )
 
 // ColorfulLogFormatter is the default logger for brig.
@@ -23,23 +24,29 @@ var symbolTable = map[logrus.Level]string{
 	logrus.PanicLevel: "☠",
 }
 
-var colorTable = map[logrus.Level]int{
-	logrus.DebugLevel: colors.Cyan,
-	logrus.InfoLevel:  colors.Green,
-	logrus.WarnLevel:  colors.Yellow,
-	logrus.ErrorLevel: colors.Red,
-	logrus.FatalLevel: colors.Magenta,
-	logrus.PanicLevel: colors.BackgroundRed,
+var colorTable = map[logrus.Level]color.Attribute{
+	logrus.DebugLevel: color.FgCyan,
+	logrus.InfoLevel:  color.FgGreen,
+	logrus.WarnLevel:  color.FgYellow,
+	logrus.ErrorLevel: color.FgRed,
+	logrus.FatalLevel: color.FgMagenta,
+	logrus.PanicLevel: color.BgRed,
 }
 
-func colorEscape(level logrus.Level) string {
-	return colors.ColorEscape(colorTable[level])
+func colorByLevel(level logrus.Level) *color.Color {
+	attr, ok := colorTable[level]
+	if !ok {
+		attr = color.Reset
+	}
+
+	return color.New(attr)
 }
 
 func formatColored(buffer *bytes.Buffer, msg string, level logrus.Level) {
-	buffer.WriteString(colorEscape(level))
+	color.Output = buffer
+	colorByLevel(level).Set()
 	buffer.WriteString(msg)
-	buffer.WriteString(colors.ColorResetEscape)
+	color.Unset()
 }
 
 func formatTimestamp(buffer *bytes.Buffer, t time.Time) {
@@ -78,16 +85,21 @@ func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
 
 // Format logs a single entry according to our formatting ideas.
 func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	buffer := bytes.Buffer{}
+	buffer := &bytes.Buffer{}
 
 	// Add the timestamp:
-	buffer.WriteString(colorEscape(entry.Level))
-	formatTimestamp(&buffer, entry.Time)
+	color.Output = buffer
+	defer func() {
+		color.Output = os.Stdout
+	}()
+
+	colorByLevel(entry.Level).Set()
+	formatTimestamp(buffer, entry.Time)
 	buffer.WriteByte(' ')
 
 	// Add the symbol:
 	buffer.WriteString(symbolTable[entry.Level])
-	buffer.WriteString(colors.ColorResetEscape)
+	color.Unset()
 
 	// Add the actual message:
 	buffer.WriteByte(' ')
@@ -95,7 +107,7 @@ func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	// Add the fields, if any:
 	if len(entry.Data) > 0 {
-		formatFields(&buffer, entry)
+		formatFields(buffer, entry)
 	}
 
 	buffer.WriteByte('\n')

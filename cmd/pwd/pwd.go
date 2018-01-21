@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/chzyer/readline"
+	"github.com/fatih/color"
 
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/brig/util/colors"
 )
 
 const (
@@ -38,33 +38,33 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 }
 
 func createStrengthPrompt(password []rune, prefix string) string {
-	symbol, color := "", colors.Red
+	symbol, colorFn := "", color.RedString
 	strength := zxcvbn.PasswordStrength(string(password), nil)
 
 	switch {
 	case strength.Score <= 1:
 		symbol = "✗"
-		color = colors.Red
+		colorFn = color.RedString
 	case strength.Score <= 2:
 		symbol = "⚡"
-		color = colors.Magenta
+		colorFn = color.MagentaString
 	case strength.Score <= 3:
 		symbol = "⚠"
-		color = colors.Yellow
+		colorFn = color.YellowString
 	case strength.Score <= 4:
 		symbol = "✔"
-		color = colors.Green
+		colorFn = color.GreenString
 	}
 
-	prompt := colors.Colorize(symbol, color)
+	prompt := colorFn(symbol)
 	if strength.Entropy > 0 {
 		entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
-		prompt += colors.Colorize(entropy, colors.Cyan)
+		prompt += color.CyanString(entropy)
 	} else {
-		prompt += colors.Colorize("   0", colors.Cyan)
+		prompt += color.CyanString("   0")
 	}
 
-	prompt += colors.Colorize(" "+prefix+"passphrase: ", color)
+	prompt += colorFn(" " + prefix + "passphrase: ")
 	return prompt
 }
 
@@ -102,7 +102,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 			break
 		}
 
-		fmt.Printf(colors.Colorize(msgLowEntropy, colors.Yellow)+"\n", minEntropy)
+		fmt.Printf(color.YellowString(msgLowEntropy)+"\n", minEntropy)
 	}
 
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
@@ -111,7 +111,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 		return nil, 0, false
 	})
 
-	fmt.Println(colors.Colorize(msgReEnter, colors.Green))
+	fmt.Println(color.GreenString(msgReEnter))
 
 	for {
 		newPwd, err := rl.ReadPasswordWithConfig(passwordCfg)
@@ -123,18 +123,13 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 			break
 		}
 
-		fmt.Println(colors.Colorize(msgBadPassword, colors.Yellow))
+		fmt.Println(color.YellowString(msgBadPassword))
 	}
 
 	return pwd, nil
 }
 
-func promptPasswordColored(color int) (string, error) {
-	prompt := "Password: "
-	if color > 0 {
-		prompt = colors.Colorize(prompt, color)
-	}
-
+func promptPassword(prompt string) (string, error) {
 	rl, err := readline.New(prompt)
 	if err != nil {
 		return "", err
@@ -148,7 +143,7 @@ func promptPasswordColored(color int) (string, error) {
 //
 // The password is not echo'd to stdout for safety reasons.
 func PromptPassword() (string, error) {
-	return promptPasswordColored(0)
+	return promptPassword("Password: ")
 }
 
 // ErrTooManyTries happens when the user failed the password check too often
@@ -160,11 +155,11 @@ func (e ErrTooManyTries) Error() string {
 	return fmt.Sprintf(msgMaxTriesHit, e.Tries)
 }
 
-var triesToColor = map[int]int{
-	0: colors.Green,
-	1: colors.Yellow,
-	2: colors.Magenta,
-	3: colors.Red,
+var triesToColor = map[int]func(string, ...interface{}) string{
+	0: color.GreenString,
+	1: color.YellowString,
+	2: color.MagentaString,
+	3: color.RedString,
 }
 
 // PromptPasswordMaxTries tries to read a password maxTries times.
@@ -175,8 +170,8 @@ var triesToColor = map[int]int{
 // with each failed try.
 func PromptPasswordMaxTries(maxTries int, passfn func(string) bool) (string, error) {
 	for i := 0; i < maxTries; i++ {
-		color := triesToColor[util.Min(i, len(triesToColor))]
-		pwd, err := promptPasswordColored(color)
+		colorFn := triesToColor[util.Min(i, len(triesToColor))]
+		pwd, err := promptPassword(colorFn("Password: "))
 		if err != nil {
 			return "", err
 		}

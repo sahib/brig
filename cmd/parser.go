@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/fatih/color"
 	isatty "github.com/mattn/go-isatty"
-	"github.com/sahib/brig/util/colors"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
@@ -17,12 +17,9 @@ func init() {
 	log.SetOutput(os.Stderr)
 	log.SetLevel(log.DebugLevel)
 
-	// Only use color if we're printing to a terminal:
+	// Only use fancy logging if we print to a terminal:
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		log.SetFormatter(&formatter.ColorfulLogFormatter{})
-		colors.Enable()
-	} else {
-		colors.Disable()
 	}
 }
 
@@ -47,6 +44,15 @@ func RunCmdline(args []string) int {
 	)
 	app.CommandNotFound = commandNotFound
 
+	// Set global options here:
+	app.Before = func(ctx *cli.Context) error {
+		if ctx.Bool("no-color") {
+			color.NoColor = true
+		}
+
+		return nil
+	}
+
 	// Groups:
 	repoGroup := formatGroup("repository")
 	wdirGroup := formatGroup("working tree")
@@ -60,6 +66,10 @@ func RunCmdline(args []string) int {
 		},
 		cli.BoolFlag{
 			Name:  "no-password,x",
+			Usage: "Use 'no-pass' as password",
+		},
+		cli.BoolFlag{
+			Name:  "no-color,",
 			Usage: "Use 'no-pass' as password",
 		},
 		cli.StringFlag{

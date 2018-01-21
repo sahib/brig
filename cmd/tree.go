@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
-	"github.com/sahib/brig/util/colors"
 )
 
 var (
@@ -120,9 +120,9 @@ func (n *treeNode) Print(cfg *treeCfg) {
 		format = func(n *treeNode) string {
 			switch {
 			case n.name == "/":
-				return colors.Colorize("•", colors.Magenta)
+				return color.MagentaString("•")
 			case n.entry.IsDir:
-				return colors.Colorize(n.name, colors.Green)
+				return color.GreenString(n.name)
 			}
 
 			return " " + n.name
@@ -137,7 +137,7 @@ func (n *treeNode) Print(cfg *treeCfg) {
 	formatted := format(n)
 	pinState := ""
 	if cfg.showPin && n.entry.IsPinned {
-		pinState += " " + colors.Colorize("🖈", colors.Cyan)
+		pinState += " " + color.CyanString("🖈")
 	}
 
 	fmt.Printf("%s%s%s\n", prefix, formatted, pinState)

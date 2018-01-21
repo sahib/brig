@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/sahib/brig/cmd/tabwriter"
 
 	"github.com/pksunkara/pygments"
 	"github.com/sahib/brig/client"
-	"github.com/sahib/brig/util/colors"
 	"github.com/urfave/cli"
 	yml "gopkg.in/yaml.v2"
 )
@@ -31,9 +31,9 @@ func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if self.IsOnline {
-		fmt.Println(colors.Colorize("online", colors.Green))
+		fmt.Println(color.GreenString("online"))
 	} else {
-		fmt.Println(colors.Colorize("offline", colors.Red))
+		fmt.Println(color.RedString("offline"))
 	}
 
 	return nil
@@ -63,15 +63,12 @@ func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
 			suffix = fmt.Sprintf(
 				"%s\t%s",
 				info.Roundtrip,
-				colors.Colorize(
-					"✔ "+info.LastSeen.Format(time.Stamp),
-					colors.Green,
-				),
+				color.GreenString("✔ "+info.LastSeen.Format(time.Stamp)),
 			)
 		} else {
 			suffix = fmt.Sprintf(
 				"∞\t%s",
-				colors.Colorize("✘ "+info.Err.Error(), colors.Red),
+				color.RedString("✘ "+info.Err.Error()),
 			)
 		}
 
@@ -210,13 +207,13 @@ func handleRemoteLocate(ctx *cli.Context, ctl *client.Client) error {
 func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
 
-	msg := fmt.Sprintf("ping to %s: ", colors.Colorize(who, colors.Magenta))
+	msg := fmt.Sprintf("ping to %s: ", color.MagentaString(who))
 	roundtrip, err := ctl.RemotePing(who)
 	if err != nil {
-		msg += colors.Colorize("✘", colors.Red)
+		msg += color.RedString("✘")
 		msg += fmt.Sprintf(" (%v)", err)
 	} else {
-		msg += colors.Colorize("✔", colors.Green)
+		msg += color.GreenString("✔")
 		msg += fmt.Sprintf(" (%3.5fms)", roundtrip)
 	}
 
@@ -241,8 +238,9 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if !ctx.Bool("fingerprint") {
-		userName := colors.Colorize(self.CurrentUser, colors.Yellow)
-		ownerName := colors.Colorize(self.Owner, colors.Green)
+		userName := color.YellowString(self.CurrentUser)
+		ownerName := color.GreenString(self.Owner)
+
 		fmt.Printf("%s", ownerName)
 		if self.CurrentUser != self.Owner {
 			fmt.Printf(" (viewing %s's data)", userName)

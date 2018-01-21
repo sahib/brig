@@ -8,8 +8,8 @@ import (
 
 	"github.com/sahib/brig/cmd/tabwriter"
 
+	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
-	"github.com/sahib/brig/util/colors"
 	"github.com/urfave/cli"
 )
 
@@ -46,7 +46,9 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if _, err := ctl.Stat(path); err != nil {
-		fmt.Printf("%s %s", colors.Colorize("WARNING:", colors.Yellow), `This file is not part of this commit, but there's still history for it.
+		fmt.Printf("%s %s",
+			color.YellowString("WARNING:"),
+			`This file is not part of this commit, but there's still history for it.
          Most likely this file was moved or removed in the past.
 
 `)
@@ -76,9 +78,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 				}
 
 				what = fmt.Sprintf(
-					"%s → %s",
-					colors.Colorize(src, colors.Red),
-					colors.Colorize(dst, colors.Red),
+					"%s → %s", color.RedString(src), color.RedString(dst),
 				)
 			}
 
@@ -91,22 +91,15 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 			continue
 		}
 
-		changeDesc := colors.Colorize(
-			strings.Join(entry.Mask, ", "),
-			colors.Yellow,
-		)
-
-		when := colors.Colorize(
-			entry.Head.Date.Format(time.Stamp),
-			colors.Magenta,
-		)
+		changeDesc := color.YellowString(strings.Join(entry.Mask, ", "))
+		when := color.MagentaString(entry.Head.Date.Format(time.Stamp))
 
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s\t%s\t\n",
 			changeDesc,
-			colors.Colorize(commitName(entry.Next), colors.Cyan),
-			colors.Colorize(commitName(entry.Head), colors.Green),
+			color.CyanString(commitName(entry.Next)),
+			color.GreenString(commitName(entry.Head)),
 			what,
 			when,
 		)
@@ -171,31 +164,31 @@ func printDiffTree(diff *client.Diff) {
 	// Called to format each name in the resulting tree:
 	formatter := func(n *treeNode) string {
 		if n.name == "/" {
-			return colors.Colorize("•", colors.Magenta)
+			return color.MagentaString("•")
 		}
 
 		if diffEntry, ok := types[n.entry.Path]; ok {
 			switch diffEntry.typ {
 			case diffTypeAdded:
-				return colors.Colorize(" + "+n.name, colors.Green)
+				return color.GreenString(" + " + n.name)
 			case diffTypeRemoved:
-				return colors.Colorize(" - "+n.name, colors.Red)
+				return color.RedString(" - " + n.name)
 			case diffTypeIgnored:
-				return colors.Colorize(" * "+n.name, colors.Yellow)
+				return color.YellowString(" * " + n.name)
 			case diffTypeMerged:
 				name := fmt.Sprintf(
 					" %s ⇄ %s",
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
 				)
-				return colors.Colorize(name, colors.Cyan)
+				return color.CyanString(name)
 			case diffTypeConflict:
 				name := fmt.Sprintf(
 					" %s ⚡ %s",
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
 				)
-				return colors.Colorize(name, colors.Magenta)
+				return color.MagentaString(name)
 			}
 		}
 
@@ -235,18 +228,12 @@ func printDiff(diff *client.Diff) {
 		fmt.Println()
 	}
 
-	simpleSection(colors.Colorize("Added:", colors.Green), diff.Added)
-	simpleSection(colors.Colorize("Ignored:", colors.Yellow), diff.Ignored)
-	simpleSection(colors.Colorize("Removed:", colors.Red), diff.Removed)
+	simpleSection(color.GreenString("Added:"), diff.Added)
+	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
+	simpleSection(color.RedString("Removed:"), diff.Removed)
 
-	pairSection(
-		colors.Colorize("Resolveable Conflicts:", colors.Cyan),
-		diff.Merged,
-	)
-	pairSection(
-		colors.Colorize("Conflicts:", colors.Magenta),
-		diff.Conflict,
-	)
+	pairSection(color.CyanString("Resolveable Conflicts:"), diff.Merged)
+	pairSection(color.MagentaString("Conflicts:"), diff.Conflict)
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
@@ -338,7 +325,7 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 
 	fmt.Printf(
 		"You are viewing %s's data now. Changes will be local only.\n",
-		colors.Colorize(who, colors.Green),
+		color.GreenString(who),
 	)
 	return nil
 }
@@ -399,17 +386,17 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 
 		msg := entry.Msg
 		if msg == "" {
-			msg = colors.Colorize("•", colors.Red)
+			msg = color.RedString("•")
 		}
 
 		entry.Hash.ShortB58()
 
 		fmt.Printf(
 			"%s %s %s%s\n",
-			colors.Colorize(entry.Hash.ShortB58(), colors.Green),
-			colors.Colorize(entry.Date.Format(time.Stamp), colors.Yellow),
+			color.GreenString(entry.Hash.ShortB58()),
+			color.YellowString(entry.Date.Format(time.Stamp)),
 			msg,
-			colors.Colorize(tags, colors.Cyan),
+			color.CyanString(tags),
 		)
 	}
 

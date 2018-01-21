@@ -13,8 +13,8 @@ import (
 	"github.com/sahib/brig/cmd/tabwriter"
 
 	"github.com/dustin/go-humanize"
+	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
-	"github.com/sahib/brig/util/colors"
 	"github.com/urfave/cli"
 )
 
@@ -118,18 +118,20 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Move(srcPath, dstPath)
 }
 
-func colorForSize(size uint64) int {
+func colorForSize(size uint64) func(f string, a ...interface{}) string {
 	switch {
 	case size >= 1024 && size < 1024<<10:
-		return colors.Cyan
+		return color.CyanString
 	case size >= 1024<<10 && size < 1024<<20:
-		return colors.Yellow
+		return color.YellowString
 	case size >= 1024<<20 && size < 1024<<30:
-		return colors.Red
+		return color.RedString
 	case size >= 1024<<30:
-		return colors.Magenta
+		return color.MagentaString
 	default:
-		return colors.None
+		return func(f string, a ...interface{}) string {
+			return f
+		}
 	}
 }
 
@@ -161,20 +163,20 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 	for _, entry := range entries {
 		pinState := ""
 		if entry.IsPinned {
-			pinState += " " + colors.Colorize("🖈", colors.Cyan)
+			pinState += " " + color.CyanString("🖈")
 		}
 
 		coloredPath := ""
 		if entry.IsDir {
-			coloredPath = colors.Colorize(entry.Path, colors.Green)
+			coloredPath = color.GreenString(entry.Path)
 		} else {
-			coloredPath = colors.Colorize(entry.Path, colors.White)
+			coloredPath = color.WhiteString(entry.Path)
 		}
 
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s\t\n",
-			colors.Colorize(humanize.Bytes(entry.Size), colorForSize(entry.Size)),
+			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			entry.ModTime.Format(time.Stamp),
 			coloredPath,
 			pinState,
@@ -217,9 +219,9 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	pinState := colors.Colorize("yes", colors.Green)
+	pinState := color.GreenString("yes")
 	if !info.IsPinned {
-		pinState = colors.Colorize("no", colors.Red)
+		pinState = color.RedString("no")
 	}
 
 	nodeType := "file"
@@ -235,7 +237,12 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	fmt.Fprintln(tabW, "ATTR\tVALUE\t")
 
 	printPair := func(name string, val interface{}) {
-		fmt.Fprintf(tabW, "%s\t%v\t\n", colors.Colorize(name, colors.White), val)
+		fmt.Fprintf(
+			tabW,
+			"%s\t%v\t\n",
+			color.WhiteString(name),
+			val,
+		)
 	}
 
 	printPair("Path", info.Path)

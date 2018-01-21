@@ -11,10 +11,10 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/server"
-	"github.com/sahib/brig/util/colors"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
 )
@@ -131,7 +131,7 @@ func handleConfigList(cli *cli.Context, ctl *client.Client) error {
 	for _, key := range keys {
 		fmt.Printf(
 			"%s: %s\n",
-			colors.Colorize(key, colors.Green),
+			color.GreenString(key),
 			all[key],
 		)
 	}
@@ -162,10 +162,10 @@ func handleConfigSet(ctx *cli.Context, ctl *client.Client) error {
 func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
 	for i := 0; i < 100; i++ {
 		before := time.Now()
-		symbol := colors.Colorize("✔", colors.Green)
+		symbol := color.GreenString("✔")
 
 		if err := ctl.Ping(); err != nil {
-			symbol = colors.Colorize("✘", colors.Red)
+			symbol = color.RedString("✘")
 		}
 
 		delay := time.Since(before)
@@ -316,9 +316,9 @@ func handleGc(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t\n",
-			colors.Colorize(gcItem.Path, colors.White),
-			colors.Colorize(gcItem.Content.ShortB58(), colors.Red),
-			colors.Colorize(gcItem.Owner, colors.Cyan),
+			color.WhiteString(gcItem.Path),
+			color.RedString(gcItem.Content.ShortB58()),
+			color.CyanString(gcItem.Owner),
 		)
 	}
 
