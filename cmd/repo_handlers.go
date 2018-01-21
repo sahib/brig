@@ -93,7 +93,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if password == "" {
-		pwdBytes, err := pwd.PromptNewPassword(25)
+		pwdBytes, err := pwd.PromptNewPassword(20)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to read password: %v", err)
 			fmt.Println(msg)

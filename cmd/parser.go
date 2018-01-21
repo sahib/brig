@@ -351,8 +351,14 @@ func RunCmdline(args []string) int {
 			Name:        "become",
 			Category:    vcscGroup,
 			Usage:       "Act as other user and view the data we synced with",
-			Description: "Act as other user and view the data we synced with",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleBecome, true)),
+			Description: "Act as other user and view the data we synced with.",
+			Action:      withDaemon(handleBecome, true),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "self,s",
+					Usage: "Become self (i.e. the owner of the repository)",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "history",

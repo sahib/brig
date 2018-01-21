@@ -318,14 +318,38 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleBecome(ctx *cli.Context, ctl *client.Client) error {
+	becomeSelf := ctx.Bool("self")
+	if !becomeSelf && ctx.NArg() < 1 {
+		return fmt.Errorf("become needs at least one argument without -s")
+	}
+
+	whoami, err := ctl.Whoami()
+	if err != nil {
+		return err
+	}
+
 	who := ctx.Args().First()
+	if becomeSelf {
+		who = whoami.Owner
+	}
+
+	if whoami.CurrentUser == who {
+		fmt.Printf("You are already %s.\n", color.GreenString(who))
+		return nil
+	}
+
 	if err := ctl.Become(who); err != nil {
 		return err
 	}
 
+	suffix := "Changes will be local only."
+	if who == whoami.Owner {
+		suffix = "Welcome back!"
+	}
+
 	fmt.Printf(
-		"You are viewing %s's data now. Changes will be local only.\n",
-		color.GreenString(who),
+		"You are viewing %s's data now. %s\n",
+		color.GreenString(who), suffix,
 	)
 	return nil
 }
