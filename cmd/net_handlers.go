@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -199,11 +200,22 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 		return nil
 	}
 
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "ADDR\tFINGERPRINT\tTYPE\t")
 	for _, candidate := range candidates {
-		fmt.Println(candidate.Addr, candidate.Fingerprint, candidate.Mask)
+		fmt.Printf(
+			"%s\t%s\t%s\t\n",
+			color.GreenString(candidate.Addr),
+			color.YellowString(candidate.Fingerprint),
+			strings.Join(candidate.Mask, "|"),
+		)
 	}
 
-	return nil
+	return tabW.Flush()
 }
 
 func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
