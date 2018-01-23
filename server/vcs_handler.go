@@ -348,6 +348,18 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 		return err
 	}
 
+	rp, err := vcs.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	// Check if the stores are valid:
+	for _, owner := range []string{localOwner, remoteOwner} {
+		if !rp.HaveFS(owner) {
+			return fmt.Errorf("We do not have data for `%s`", owner)
+		}
+	}
+
 	localRev, err := call.Params.LocalRev()
 	if err != nil {
 		return err
@@ -357,6 +369,11 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	if err != nil {
 		return err
 	}
+
+	// It's the same revision, no need to compare.
+	// if localRev == remoteRev {
+	// 	return nil
+	// }
 
 	return vcs.base.withRemoteFs(localOwner, func(localFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(remoteOwner, func(remoteFs *catfs.FS) error {

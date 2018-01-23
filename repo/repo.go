@@ -247,6 +247,19 @@ func (rp *Repository) BackendName() string {
 	return rp.meta.GetString("data.backend")
 }
 
+// HaveFS will return true if we have data for a certain owner.
+func (rp *Repository) HaveFS(owner string) bool {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
+	if _, err := os.Stat(fsDbPath); err != nil {
+		return false
+	}
+
+	return true
+}
+
 // FS returns a filesystem for `owner`. If there is none yet,
 // it will create own associated to the respective owner.
 func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
