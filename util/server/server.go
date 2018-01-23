@@ -64,6 +64,11 @@ func (sv *Server) accept(rateCh chan struct{}) error {
 		return err
 	}
 
+	// This might happen with broken listeners.
+	if conn == nil {
+		return nil
+	}
+
 	handleCtx, cancel := context.WithTimeout(sv.ctx, 30*time.Second)
 	go func() {
 		sv.handler.Handle(handleCtx, conn)
