@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/sahib/brig/server/capnp"
@@ -307,8 +308,38 @@ func (cl *Client) RemoteSave(remotes []Remote) error {
 	return err
 }
 
-func (cl *Client) RemoteLocate(who string) ([]Remote, error) {
-	call := cl.api.RemoteLocate(cl.ctx, func(p capnp.Meta_remoteLocate_Params) error {
+type LocateResult struct {
+	Addr        string
+	Mask        []string
+	Fingerprint string
+}
+
+func capLrToLr(capLr capnp.LocateResult) (*LocateResult, error) {
+	addr, err := capLr.Addr()
+	if err != nil {
+		return nil, err
+	}
+
+	mask, err := capLr.Mask()
+	if err != nil {
+		return nil, err
+	}
+
+	fingerprint, err := capLr.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
+	return &LocateResult{
+		Addr:        addr,
+		Mask:        strings.Split(mask, ","),
+		Fingerprint: fingerprint,
+	}, nil
+}
+
+func (cl *Client) NetLocate(who string, timeoutSec int) ([]LocateResult, error) {
+	call := cl.api.NetLocate(cl.ctx, func(p capnp.Meta_netLocate_Params) error {
+		p.SetTimeoutSec(int32(timeoutSec))
 		return p.SetWho(who)
 	})
 
@@ -317,23 +348,23 @@ func (cl *Client) RemoteLocate(who string) ([]Remote, error) {
 		return nil, err
 	}
 
-	capRemotes, err := result.Candidates()
+	capLrs, err := result.Candidates()
 	if err != nil {
 		return nil, err
 	}
 
-	remotes := []Remote{}
-	for idx := 0; idx < capRemotes.Len(); idx++ {
-		capRemote := capRemotes.At(idx)
-		remote, err := capRemoteToRemote(capRemote)
+	lrs := []LocateResult{}
+	for idx := 0; idx < capLrs.Len(); idx++ {
+		capLr := capLrs.At(idx)
+		lr, err := capLrToLr(capLr)
 		if err != nil {
 			return nil, err
 		}
 
-		remotes = append(remotes, *remote)
+		lrs = append(lrs, *lr)
 	}
 
-	return remotes, nil
+	return lrs, nil
 }
 
 func (cl *Client) RemotePing(who string) (float64, error) {

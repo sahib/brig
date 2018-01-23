@@ -28,9 +28,8 @@ type Pinger interface {
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.
 	// Each of these can be later contacted to check their credentials.
-	// If the backend support exact lookups, this method will only
-	// return one peer on success always.
-	ResolveName(name string) ([]peer.Info, error)
+	// The operation may take at max `timeoutSec`.
+	ResolveName(name string, timeoutSec int) ([]peer.Info, error)
 
 	// PublishName announces to the network that this node is known as `name`.
 	// If possible also the group and domain name of the name should be

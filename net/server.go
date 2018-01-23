@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
+	"sync"
+	"time"
 
 	"zombiezen.com/go/capnproto2/rpc"
 
@@ -96,9 +99,166 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 	}, nil
 }
 
-func (sv *Server) Locate(who peer.Name) ([]peer.Info, error) {
-	// TODO: Provide more locate options here. (domain, user etc.)
-	return sv.bk.ResolveName(who.WithoutResource())
+const (
+	LocateNone  = 0
+	LocateExact = 1 << iota
+	LocateDomain
+	LocateUser
+	LocateEmail
+	LocateAll = LocateExact | LocateDomain | LocateUser | LocateEmail
+)
+
+type LocateMask int
+
+func (lm LocateMask) String() string {
+	if lm == LocateNone {
+		return ""
+	}
+
+	parts := []string{}
+	if lm&LocateExact != 0 {
+		parts = append(parts, "exact")
+	}
+	if lm&LocateDomain != 0 {
+		parts = append(parts, "domain")
+	}
+	if lm&LocateUser != 0 {
+		parts = append(parts, "user")
+	}
+	if lm&LocateEmail != 0 {
+		parts = append(parts, "email")
+	}
+
+	return strings.Join(parts, ",")
+}
+
+func LocateMaskFromString(s string) (LocateMask, error) {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return LocateNone, nil
+	}
+
+	mask := LocateMask(LocateNone)
+	parts := strings.Split(s, ",")
+	for _, part := range parts {
+		switch part {
+		case "exact":
+			mask |= LocateExact
+		case "domain":
+			mask |= LocateDomain
+		case "user":
+			mask |= LocateUser
+		case "email":
+			mask |= LocateEmail
+		default:
+			return mask, fmt.Errorf("Invalid locate mask name `%s`", part)
+		}
+	}
+
+	return mask, nil
+}
+
+func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[LocateMask][]peer.Info, error) {
+	uniqueNames := make(map[string]LocateMask)
+
+	// Example: donald@whitehouse.gov/ovaloffice
+	uniqueNames[string(who)] = mask & LocateExact
+
+	// Example: whitehouse.gov
+	uniqueNames[who.Domain()] = mask & LocateDomain
+
+	// Example: donald
+	uniqueNames[who.User()] = mask & LocateUser
+
+	// Example: donald@whitehouse.gov
+	uniqueNames[who.WithoutResource()] = mask & LocateEmail
+
+	resultMu := &sync.Mutex{}
+	results := make(map[LocateMask][]peer.Info)
+	errors := make(map[LocateMask]error)
+
+	wg := &sync.WaitGroup{}
+	for name, mask := range uniqueNames {
+		// It's not enabled:
+		if mask != 0 {
+			continue
+		}
+
+		wg.Add(1)
+
+		go func(name string, mask LocateMask) {
+			defer wg.Done()
+
+			peers, err := sv.bk.ResolveName(name, timeoutSec)
+			if err != nil {
+				resultMu.Lock()
+				errors[mask] = err
+				resultMu.Unlock()
+				return
+			}
+
+			// Collect results:
+			resultMu.Lock()
+			for _, peer := range peers {
+				results[mask] = append(results[mask], peer)
+			}
+			resultMu.Unlock()
+		}(name, mask)
+	}
+
+	wg.Wait()
+
+	if len(results) == 0 && len(errors) == 0 {
+		// Nothing found.
+		return nil, nil
+	}
+
+	if len(results) != 0 && len(errors) == 0 {
+		// Found something.
+		return results, nil
+	}
+
+	if len(results) == 0 && len(errors) != 0 {
+		// Several errors happened.
+		return nil, fmt.Errorf("Several errors: %v", errors)
+	}
+
+	// Silence errors if we have results:
+	log.Debugf("locate had errors, but still got results. Errors: %v", errors)
+	return results, nil
+}
+
+// PeekFingerprint fetches the fingerprint of a peer without authenticating
+// ourselves or them.
+func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Fingerprint, error) {
+	// Query the remotes pubkey and use it to build the remotes' fingerprint.
+	// If not available we just send an empty string back to the client.
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	defer cancel()
+
+	// Dial peer without authentication:
+	emptyFp := peer.Fingerprint("")
+	ctl, err := DialByAddr(addr, emptyFp, sv.hdl.rp.Keyring(), sv.bk, ctx)
+	if err != nil {
+		log.Warningf(
+			"locate: failed to dial to `%s` (%s): %v",
+			addr, addr, err,
+		)
+		return peer.Fingerprint(""), nil
+	}
+
+	// Quickly check if the other side is online:
+	if err := ctl.Ping(); err != nil {
+		return peer.Fingerprint(""), err
+	}
+
+	// Fetch their remote pub key to build the fingerprint:
+	remotePubKey, err := ctl.RemotePubKey()
+	if err != nil {
+		return peer.Fingerprint(""), err
+	}
+
+	return peer.BuildFingerprint(addr, remotePubKey), nil
 }
 
 func (sv *Server) Identity() (peer.Info, error) {

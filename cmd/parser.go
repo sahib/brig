@@ -171,13 +171,6 @@ func RunCmdline(args []string) int {
 					},
 				},
 				cli.Command{
-					Name:        "locate",
-					Usage:       "Search a specific remote",
-					ArgsUsage:   "<name>",
-					Description: "Locates all remotes with the given brig-remote-id ",
-					Action:      withArgCheck(needAtLeast(1), withDaemon(handleRemoteLocate, true)),
-				},
-				cli.Command{
 					Name:        "ping",
 					Usage:       "ping <remote-name>",
 					Description: "Ping a remote and see if it responds",
@@ -232,6 +225,20 @@ func RunCmdline(args []string) int {
 					Aliases: []string{"ls"},
 					Usage:   "See what other peers are online",
 					Action:  withDaemon(handleOnlinePeers, true),
+				},
+				cli.Command{
+					Name:        "locate",
+					Usage:       "Search a specific remote",
+					ArgsUsage:   "<name>",
+					Description: "Locates all remotes with the given brig-remote-id ",
+					Action:      withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
+					Flags: []cli.Flag{
+						cli.IntFlag{
+							Name:  "t,timeout",
+							Value: 10,
+							Usage: "Wait at most <n> seconds before bailing out",
+						},
+					},
 				},
 			},
 		},

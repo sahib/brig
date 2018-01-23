@@ -21,7 +21,7 @@ func NewNetBackend() *NetBackend {
 	}
 }
 
-func (nb *NetBackend) ResolveName(name string) ([]peer.Info, error) {
+func (nb *NetBackend) ResolveName(name string, timeoutSec int) ([]peer.Info, error) {
 	switch name {
 	case "bob":
 		return []peer.Info{

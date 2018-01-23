@@ -185,15 +185,22 @@ func handleRemoteEdit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleRemoteLocate(ctx *cli.Context, ctl *client.Client) error {
+func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
-	candidates, err := ctl.RemoteLocate(who)
+	timeoutSec := ctx.Int("timeout")
+
+	candidates, err := ctl.NetLocate(who, timeoutSec)
 	if err != nil {
 		return fmt.Errorf("Failed to locate peers: %v", err)
 	}
 
+	if len(candidates) == 0 {
+		fmt.Println(color.YellowString("Nothing found."))
+		return nil
+	}
+
 	for _, candidate := range candidates {
-		fmt.Println(candidate.Name, candidate.Fingerprint)
+		fmt.Println(candidate.Addr, candidate.Fingerprint, candidate.Mask)
 	}
 
 	return nil

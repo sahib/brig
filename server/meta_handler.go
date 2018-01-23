@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -260,7 +259,6 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 		return nil, err
 	}
 
-	fmt.Println("->", capRemote)
 	return &capRemote, nil
 }
 
@@ -389,7 +387,8 @@ func (mh *metaHandler) RemoteSave(call capnp.Meta_remoteSave) error {
 	return mh.syncPingMap()
 }
 
-func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
+func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
+	timeoutSec := call.Params.TimeoutSec()
 	who, err := call.Params.Who()
 	if err != nil {
 		return err
@@ -401,74 +400,59 @@ func (mh *metaHandler) RemoteLocate(call capnp.Meta_remoteLocate) error {
 	}
 
 	log.Debugf("Trying to locate %v", who)
-	foundPeers, err := psrv.Locate(peer.Name(who))
+	foundPeers, err := psrv.Locate(
+		peer.Name(who),
+		int(timeoutSec),
+		p2pnet.LocateAll,
+	)
 	if err != nil {
 		return err
 	}
 
-	bk, err := mh.base.Backend()
-	if err != nil {
-		return err
-	}
-
-	// TODO: Separate this logic more from capnp
 	seg := call.Results.Segment()
-	capRemotes, err := capnp.NewRemote_List(seg, int32(len(foundPeers)))
+	capResults, err := capnp.NewLocateResult_List(seg, int32(len(foundPeers)))
 	if err != nil {
 		return err
 	}
+
+	resultIdx := 0
 
 	// For the client side we do not differentiate between peers and remotes.
 	// Also, the pubkey/network addr is combined into a single "fingerprint".
-	for idx, foundPeer := range foundPeers {
-		fingerprint := peer.Fingerprint("")
-
-		// Query the remotes pubkey and use it to build the remotes' fingerprint.
-		// If not available we just send an empty string back to the client.
-		subCtx, cancel := context.WithTimeout(mh.base.ctx, 1*time.Minute)
-		defer cancel()
-
-		// Dial peer with out authentication:
-		ctl, err := p2pnet.DialByAddr(
-			foundPeer.Addr,
-			peer.Fingerprint(""),
-			mh.base.repo.Keyring(),
-			bk,
-			subCtx,
-		)
-
-		if err == nil {
-			if err := ctl.Ping(); err != nil {
-				return err
+	for mask, peers := range foundPeers {
+		for _, peer := range peers {
+			// This can be probably optimized furhter in case of several peeks:
+			fingerprint, err := psrv.PeekFingerprint(mh.base.ctx, peer.Addr)
+			if err != nil {
+				log.Warningf("No fingerprint for %v (query: %s): %v", peer.Addr, who, err)
 			}
 
-			remotePubKey, err := ctl.RemotePubKey()
+			result, err := capnp.NewLocateResult(seg)
 			if err != nil {
 				return err
 			}
 
-			fingerprint = peer.BuildFingerprint(foundPeer.Addr, remotePubKey)
-		} else {
-			log.Warningf(
-				"locate: failed to dial to `%s` (%s): %v",
-				who, foundPeer.Addr, err,
-			)
-		}
+			if err := result.SetAddr(peer.Addr); err != nil {
+				return err
+			}
 
-		remote := repo.Remote{
-			Name:        string(foundPeer.Name),
-			Fingerprint: fingerprint,
-		}
+			if err := result.SetMask(mask.String()); err != nil {
+				return err
+			}
 
-		capRemote, err := remoteToCapRemote(remote, seg)
-		if err != nil {
-			return err
-		}
+			if err := result.SetFingerprint(string(fingerprint)); err != nil {
+				return err
+			}
 
-		capRemotes.Set(idx, *capRemote)
+			if err := capResults.Set(resultIdx, result); err != nil {
+				return err
+			}
+
+			resultIdx++
+		}
 	}
 
-	return call.Results.SetCandidates(capRemotes)
+	return call.Results.SetCandidates(capResults)
 }
 
 func (mh *metaHandler) RemotePing(call capnp.Meta_remotePing) error {

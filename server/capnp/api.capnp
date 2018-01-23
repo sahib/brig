@@ -61,6 +61,13 @@ struct Remote $Go.doc("Info a remote peer we might sync with") {
     folders     @2 :List(RemoteFolder);
 }
 
+# This is similar to a remote:
+struct LocateResult {
+    addr        @0 :Text;
+    mask        @1 :Text;
+    fingerprint @2 :Text;
+}
+
 struct Identity $Go.doc("Info about our current user state") {
     currentUser @0 :Text;
     owner       @1 :Text;
@@ -127,8 +134,9 @@ interface Meta {
     remoteRm     @9  (name :Text);
     remoteLs     @10 () -> (remotes :List(Remote));
     remoteSave   @11 (remotes :List(Remote));
-    remoteLocate @12 (who :Text) -> (candidates :List(Remote));
-    remotePing   @13 (who :Text) -> (roundtrip :Float64);
+    remotePing   @12 (who :Text) -> (roundtrip :Float64);
+
+    netLocate @13 (who :Text, timeoutSec :Int32) -> (candidates :List(LocateResult));
 
     # the combined command of both is "whathaveibecome":
     whoami      @14  () -> (whoami :Identity);

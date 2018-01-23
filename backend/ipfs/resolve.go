@@ -79,7 +79,7 @@ func (nd *Node) Identity() (peer.Info, error) {
 // if `n` is less than 0, all reachable peers that have `hash` will be returned.
 // if `n` is 0, locate will return immeditately.
 // this operation requires online-mode.
-func (nd *Node) ResolveName(name string) ([]peer.Info, error) {
+func (nd *Node) ResolveName(name string, timeoutSec int) ([]peer.Info, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
 	}
@@ -90,7 +90,7 @@ func (nd *Node) ResolveName(name string) ([]peer.Info, error) {
 	hash := h.Hash(blocks.NewBlock([]byte(name)).Multihash())
 	log.Debugf("Trying to locate %v (hash: %v)", name, hash.B58String())
 
-	ctx, cancel := context.WithTimeout(nd.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(nd.ctx, time.Duration(timeoutSec)*time.Second)
 	defer cancel()
 
 	k, err := cid.Decode(hash.B58String())
