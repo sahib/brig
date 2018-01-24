@@ -20,7 +20,11 @@ import (
 )
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
-	localPath := ctx.Args().Get(0)
+	localPath, err := filepath.Abs(ctx.Args().Get(0))
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve absolute path: %v", err)
+	}
+
 	repoPath := filepath.Base(localPath)
 	if len(ctx.Args()) > 1 {
 		repoPath = ctx.Args().Get(1)
