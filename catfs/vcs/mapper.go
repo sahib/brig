@@ -31,10 +31,15 @@ type Mapper struct {
 	srcHead        *n.Commit
 	dstHead        *n.Commit
 	fn             func(pair MapPair) error
-	visited        map[string]n.Node
+	srcVisited     map[string]n.Node
+	dstVisited     map[string]n.Node
 }
 
 func (ma *Mapper) report(src, dst n.ModNode, typeMismatch bool) error {
+	if dst != nil {
+		ma.dstVisited[dst.Path()] = dst
+	}
+
 	return ma.fn(MapPair{
 		Src:          src,
 		Dst:          dst,
@@ -44,12 +49,12 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch bool) error {
 
 func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
-	if _, ok := ma.visited[srcCurr.Path()]; ok {
+	if _, ok := ma.srcVisited[srcCurr.Path()]; ok {
 		return nil
 	}
 
 	// Remember that we visited this node.
-	ma.visited[srcCurr.Path()] = srcCurr
+	ma.srcVisited[srcCurr.Path()] = srcCurr
 
 	dstCurr, err := ma.lkrDst.LookupNodeAt(ma.dstHead, dstFilePath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
@@ -60,6 +65,8 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		// We do not have this node yet, mark it for copying.
 		return ma.report(srcCurr, nil, false)
 	}
+
+	ma.dstVisited[dstCurr.Path()] = dstCurr
 
 	switch typ := dstCurr.Type(); typ {
 	case n.NodeTypeDirectory:
@@ -107,12 +114,12 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 
 func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool) error {
 	if !force {
-		if _, ok := ma.visited[srcCurr.Path()]; ok {
+		if _, ok := ma.srcVisited[srcCurr.Path()]; ok {
 			return nil
 		}
 	}
 
-	ma.visited[srcCurr.Path()] = srcCurr
+	ma.srcVisited[srcCurr.Path()] = srcCurr
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
@@ -170,6 +177,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		return err
 	}
 
+	fmt.Println("src children", srcChildren)
 	for _, srcChild := range srcChildren {
 		childDstPath := path.Join(dstPath, srcChild.Name())
 		switch srcChild.Type() {
@@ -339,8 +347,8 @@ func (ma *Mapper) handleGhosts() error {
 		switch aliveSrcNd.Type() {
 		case n.NodeTypeFile:
 			// Mark those both ghosts and original node as visited.
-			ma.visited[aliveSrcNd.Path()] = aliveSrcNd
-			ma.visited[srcNd.Path()] = srcNd
+			ma.srcVisited[aliveSrcNd.Path()] = aliveSrcNd
+			ma.srcVisited[srcNd.Path()] = srcNd
 
 			if !aliveSrcNd.Hash().Equal(dstRefNd.Hash()) {
 				mismatch := dstRefNd.Type() != aliveSrcNd.Type()
@@ -349,7 +357,7 @@ func (ma *Mapper) handleGhosts() error {
 
 			return nil
 		case n.NodeTypeDirectory:
-			ma.visited[srcNd.Path()] = srcNd
+			ma.srcVisited[srcNd.Path()] = srcNd
 			if dstRefNd.Type() != n.NodeTypeDirectory {
 				return ma.report(aliveSrcNd, dstRefModNd, true)
 			}
@@ -403,17 +411,56 @@ func NewMapper(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, srcRoot n.N
 	}
 
 	return &Mapper{
-		lkrSrc:  lkrSrc,
-		lkrDst:  lkrDst,
-		srcHead: srcHead,
-		dstHead: dstHead,
-		srcRoot: srcRoot,
-		visited: make(map[string]n.Node),
+		lkrSrc:     lkrSrc,
+		lkrDst:     lkrDst,
+		srcHead:    srcHead,
+		dstHead:    dstHead,
+		srcRoot:    srcRoot,
+		srcVisited: make(map[string]n.Node),
+		dstVisited: make(map[string]n.Node),
 	}, nil
 }
 
+// extractDstLeftovers goes over all nodes in dst that were not covered
+// yet by previous measures. It will report any dst node without a match then.
+func (ma *Mapper) extractDstLeftovers() error {
+	dstRoot, err := ma.lkrDst.DirectoryByHash(ma.dstHead.Root())
+	if err != nil {
+		return err
+	}
+
+	return n.Walk(ma.lkrDst, dstRoot, true, func(dstChild n.Node) error {
+		switch dstChild.Type() {
+		case n.NodeTypeDirectory:
+			dir, ok := dstChild.(*n.Directory)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			fmt.Println("dir?", dir)
+		case n.NodeTypeFile:
+			if _, ok := ma.dstVisited[dstChild.Path()]; ok {
+				// Already reported.
+				return nil
+			}
+
+			dstFile, ok := dstChild.(*n.File)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			fmt.Println("dst reporting", dstFile.Path())
+			return ma.report(nil, dstFile, false)
+		case n.NodeTypeGhost:
+			// Those were already handled (or are not important)
+		}
+
+		return nil
+	})
+}
+
 // Diff calls `fn` for each pairing that was found. Equal files and
-// directories are not reported.  Most directories are also not reported, but
+// directories are not reported. Most directories are also not reported, but
 // if they are empty and not present on our side they will. No ghosts will be
 // reported.
 //
@@ -446,6 +493,8 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		return err
 	}
 
+	// TODO: Add step for extracting all non visited nodes from dst.
+
 	switch ma.srcRoot.Type() {
 	case n.NodeTypeDirectory:
 		dir, ok := ma.srcRoot.(*n.Directory)
@@ -453,7 +502,11 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 			return ie.ErrBadNode
 		}
 
-		return ma.mapDirectory(dir, dir.Path(), false)
+		if err := ma.mapDirectory(dir, dir.Path(), false); err != nil {
+			return err
+		}
+
+		return ma.extractDstLeftovers()
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {
@@ -466,4 +519,5 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected type in route(): %v", ma.srcRoot)
 	}
+
 }

@@ -35,9 +35,13 @@ func TestDiff(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
-				tc.setup(t, lkrSrc, lkrDst)
+				c.MustTouch(t, lkrSrc, "/README", 42)
+				c.MustTouch(t, lkrDst, "/README", 42)
+
 				c.MustCommitIfPossible(t, lkrDst, "setup dst")
 				c.MustCommitIfPossible(t, lkrSrc, "setup src")
+
+				tc.setup(t, lkrSrc, lkrDst)
 
 				srcStatus, err := lkrSrc.Status()
 				require.Nil(t, err)
@@ -45,10 +49,8 @@ func TestDiff(t *testing.T) {
 				srcHead, err := lkrSrc.Head()
 				require.Nil(t, err)
 
-				// dstStatus, err := lkrDst.Status()
-				// require.Nil(t, err)
-
-				diff, err := MakeDiff(lkrSrc, lkrSrc, srcStatus, srcHead, nil)
+				diff, err := MakeDiff(lkrSrc, lkrSrc, srcHead, srcStatus, nil)
+				// diff, err := MakeDiff(lkrSrc, lkrSrc, srcStatus, srcHead, nil)
 				if err != nil {
 					t.Fatalf("diff failed: %v", err)
 				}

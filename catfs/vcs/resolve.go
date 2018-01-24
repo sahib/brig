@@ -107,7 +107,7 @@ func newResolver(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, exec exec
 }
 
 func (rv *resolver) resolve() error {
-	srcRoot, err := rv.lkrSrc.Root()
+	srcRoot, err := rv.lkrSrc.DirectoryByHash(rv.srcHead.Root())
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,6 @@ func (rv *resolver) resolve() error {
 	}
 
 	mappings := []MapPair{}
-
 	err = mapper.Map(func(pair MapPair) error {
 		mappings = append(mappings, pair)
 		return nil

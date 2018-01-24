@@ -303,7 +303,7 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	curr := self.CurrentUser
-	diff, err := ctl.MakeDiff(curr, curr, "CURR", "HEAD")
+	diff, err := ctl.MakeDiff(curr, curr, "HEAD", "CURR")
 	if err != nil {
 		return err
 	}
