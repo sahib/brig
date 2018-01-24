@@ -246,24 +246,27 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	remoteName := self.CurrentUser
 	localName := self.CurrentUser
+	remoteName := self.CurrentUser
 
-	remoteRev := "HEAD"
 	localRev := "HEAD"
+	remoteRev := "HEAD"
 
-	switch n := ctx.NArg(); {
-	case n >= 1:
+	switch n := ctx.NArg(); n {
+	case 1:
+		remoteRev = ctx.Args().Get(0)
+	case 2:
+		localRev = ctx.Args().Get(0)
+		remoteRev = ctx.Args().Get(1)
+	case 3:
 		remoteName = ctx.Args().Get(0)
-		fallthrough
-	case n >= 2:
-		localName = ctx.Args().Get(1)
-		fallthrough
-	case n >= 3:
+		localRev = ctx.Args().Get(1)
 		remoteRev = ctx.Args().Get(2)
-		fallthrough
-	case n >= 4:
-		localRev = ctx.Args().Get(3)
+	case 4:
+		localName = ctx.Args().Get(0)
+		remoteName = ctx.Args().Get(1)
+		localRev = ctx.Args().Get(2)
+		remoteRev = ctx.Args().Get(3)
 	}
 
 	diff, err := ctl.MakeDiff(localName, remoteName, localRev, remoteRev)
