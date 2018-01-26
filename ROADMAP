@@ -50,3 +50,9 @@ All changes should be with fitting unittests.
 
 - [H] Implement differential patches and application of them.
 - [H] Figure out a (secure) (P2P) protocol
+
+7. Make it possible to replicate data over several nodes
+========================================================
+
+- [L] Implement a command to show what remotes currently save a file.
+- [H] Provide a "min-copy" (like in git-annex) feature to ensure availability.

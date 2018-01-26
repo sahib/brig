@@ -130,6 +130,8 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 		return nil
 	}
 
+	// We should check if dst really exists for us.
+
 	if sy.cfg.OnRemove != nil {
 		if !sy.cfg.OnRemove(dst) {
 			return nil

@@ -1,5 +1,10 @@
 package vcs
 
+// NOTE ON CODING STYLE:
+// If you modify something in here, make sure to always
+// incude "src" or "dst" in the symbol name to indicate
+// to which side of the sync/diff this symbol belongs!
+
 import (
 	"fmt"
 	"path"
@@ -167,6 +172,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 
 	// Check if we're lucky and the directory hash is equal:
 	if srcCurr.Hash().Equal(dstCurr.Hash()) {
+		// Remember that we visited this subtree.
+		ma.dstVisited[dstCurr.Path()] = dstCurr
 		return nil
 	}
 
@@ -177,7 +184,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		return err
 	}
 
-	fmt.Println("src children", srcChildren)
 	for _, srcChild := range srcChildren {
 		childDstPath := path.Join(dstPath, srcChild.Name())
 		switch srcChild.Type() {
@@ -423,40 +429,46 @@ func NewMapper(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, srcRoot n.N
 
 // extractDstLeftovers goes over all nodes in dst that were not covered
 // yet by previous measures. It will report any dst node without a match then.
-func (ma *Mapper) extractDstLeftovers() error {
-	dstRoot, err := ma.lkrDst.DirectoryByHash(ma.dstHead.Root())
+func (ma *Mapper) extractDstLeftovers(dstRoot *n.Directory) error {
+	if _, visited := ma.dstVisited[dstRoot.Path()]; visited {
+		return nil
+	}
+
+	children, err := dstRoot.ChildrenSorted(ma.lkrDst)
 	if err != nil {
 		return err
 	}
 
-	return n.Walk(ma.lkrDst, dstRoot, true, func(dstChild n.Node) error {
+	for _, dstChild := range children {
+		if _, visited := ma.dstVisited[dstChild.Path()]; visited {
+			continue
+		}
+
 		switch dstChild.Type() {
 		case n.NodeTypeDirectory:
-			dir, ok := dstChild.(*n.Directory)
+			dstDir, ok := dstChild.(*n.Directory)
 			if !ok {
 				return ie.ErrBadNode
 			}
 
-			fmt.Println("dir?", dir)
-		case n.NodeTypeFile:
-			if _, ok := ma.dstVisited[dstChild.Path()]; ok {
-				// Already reported.
-				return nil
+			if err := ma.extractDstLeftovers(dstDir); err != nil {
+				return err
 			}
-
+		case n.NodeTypeFile:
 			dstFile, ok := dstChild.(*n.File)
 			if !ok {
 				return ie.ErrBadNode
 			}
 
-			fmt.Println("dst reporting", dstFile.Path())
-			return ma.report(nil, dstFile, false)
+			if err := ma.report(nil, dstFile, false); err != nil {
+				return err
+			}
 		case n.NodeTypeGhost:
 			// Those were already handled (or are not important)
 		}
+	}
 
-		return nil
-	})
+	return nil
 }
 
 // Diff calls `fn` for each pairing that was found. Equal files and
@@ -506,7 +518,12 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 			return err
 		}
 
-		return ma.extractDstLeftovers()
+		dstRoot, err := ma.lkrDst.DirectoryByHash(ma.dstHead.Root())
+		if err != nil {
+			return err
+		}
+
+		return ma.extractDstLeftovers(dstRoot)
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
 		if !ok {
