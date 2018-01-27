@@ -47,6 +47,11 @@ func (df *Diff) handleRemove(dst n.ModNode) error {
 	return nil
 }
 
+func (df *Diff) handleMissing(dst n.ModNode) error {
+	// Handle missing files like "removed" for diff.
+	return df.handleRemove(dst)
+}
+
 func (df *Diff) handleTypeConflict(src, dst n.ModNode) error {
 	df.Ignored = append(df.Ignored, dst)
 	return nil

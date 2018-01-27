@@ -40,7 +40,6 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 }
 
 // SyncConfig gives you the possibility to configure the sync algorithm.
-// The zero value of each option is the
 type SyncConfig struct {
 	ConflictStrategy ConflictStrategy
 	IgnoreDeletes    bool
@@ -125,10 +124,17 @@ func (sy *syncer) handleAdd(src n.ModNode) error {
 	return sy.add(src, path.Dir(src.Path()), src.Name())
 }
 
+func (sy *syncer) handleMissing(dst n.ModNode) error {
+	// This is only called when a file in dst is missing on src.
+	// No sync action is required.
+	return nil
+}
+
 func (sy *syncer) handleRemove(dst n.ModNode) error {
 	if sy.cfg.IgnoreDeletes {
 		return nil
 	}
+	fmt.Println("GOT REMOVE", dst)
 
 	// We should check if dst really exists for us.
 

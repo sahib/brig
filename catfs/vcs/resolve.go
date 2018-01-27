@@ -56,6 +56,7 @@ import (
 type executor interface {
 	handleAdd(src n.ModNode) error
 	handleRemove(dst n.ModNode) error
+	handleMissing(dst n.ModNode) error
 	handleTypeConflict(src, dst n.ModNode) error
 	handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error
 	handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error
@@ -258,7 +259,11 @@ func (rv *resolver) decide(pair MapPair) error {
 	}
 
 	if pair.Src == nil {
-		return rv.exec.handleRemove(pair.Dst)
+		if pair.SrcWasRemoved {
+			return rv.exec.handleRemove(pair.Dst)
+		} else {
+			return rv.exec.handleMissing(pair.Dst)
+		}
 	}
 
 	if pair.Dst == nil {

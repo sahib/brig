@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -30,6 +31,7 @@ func setupBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 }
 
 func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	fmt.Println(lkrDst.LookupNode("/x.png"))
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
