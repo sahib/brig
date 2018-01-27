@@ -7,6 +7,7 @@ package vcs
 // The sync algorithm tries to handle the following special cases:
 // - Propagate moves (most of them, at least)
 // - Propagate deletes (configurable?)
+// - Also sync empty directories.
 //
 // Terminology:
 // - Destination (short "dst") is used to reference our own storage.
@@ -36,7 +37,10 @@ package vcs
 //   This the part where most configuration can be done.
 //
 // - Stage 4: "Handling"
-//   TODO: Define exactly.
+//   Only at this stage "sync" and "diff" differ.
+//   Sync will take the the files from Stage 3 and add/remove/merge files.
+//   Diff will create a report out of those files and also includes files that
+//   are simply missing on the source side (but do not need to be removed).
 //
 // Everything except Stage 4 is read-only. If a user wants to only show the diff
 // between two linkers, he just prints what would be done instead of actually doing it.

@@ -69,8 +69,14 @@ func mapperSetupBasicSrcAddFile(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPai
 }
 
 func mapperSetupBasicDstAddFile(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
-	c.MustTouchAndCommit(t, lkrDst, "/x.png", 42)
-	return []MapPair{}
+	dstFile, _ := c.MustTouchAndCommit(t, lkrDst, "/x.png", 42)
+	return []MapPair{
+		{
+			Src:          nil,
+			Dst:          dstFile,
+			TypeMismatch: false,
+		},
+	}
 }
 
 func mapperSetupBasicSrcAddDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
@@ -200,7 +206,7 @@ func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []Ma
 	// of the moved file. Mapper should favour existing files:
 	c.MustMkdir(t, lkrDst, "/x")
 	c.MustMkdir(t, lkrDst, "/y")
-	c.MustTouch(t, lkrDst, "/x/a.png", 42)
+	oldDstFile := c.MustTouch(t, lkrDst, "/x/a.png", 42)
 	dstFile := c.MustTouch(t, lkrDst, "/y/a.png", 42)
 	c.MustCommit(t, lkrDst, "Create src dir")
 
@@ -208,6 +214,10 @@ func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []Ma
 		{
 			Src:          srcFile,
 			Dst:          dstFile,
+			TypeMismatch: false,
+		}, {
+			Src:          nil,
+			Dst:          oldDstFile,
 			TypeMismatch: false,
 		},
 	}
@@ -245,7 +255,7 @@ func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 
 	dstX, _ := c.MustTouchAndCommit(t, lkrDst, "/common/a/b/c/x", 43)
 	dstY, _ := c.MustTouchAndCommit(t, lkrDst, "/common/a/b/c/y", 24)
-	c.MustTouchAndCommit(t, lkrDst, "/dst-only/z", 23)
+	dstZ, _ := c.MustTouchAndCommit(t, lkrDst, "/dst-only/z", 23)
 
 	srcZParent, err := n.ParentDirectory(lkrSrc, srcZ)
 	if err != nil {
@@ -265,6 +275,10 @@ func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 			Src:          srcZParent,
 			Dst:          nil,
 			TypeMismatch: false,
+		}, {
+			Src:          nil,
+			Dst:          dstZ,
+			TypeMismatch: false,
 		},
 	}
 }
@@ -280,9 +294,10 @@ func mapperSetupSrcRemove(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 
 	return []MapPair{
 		{
-			Src:          nil,
-			Dst:          dstFile,
-			TypeMismatch: false,
+			Src:           nil,
+			Dst:           dstFile,
+			TypeMismatch:  false,
+			SrcWasRemoved: true,
 		},
 	}
 }

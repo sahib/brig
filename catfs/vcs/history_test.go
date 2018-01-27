@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -532,7 +531,9 @@ func setupGhostHistory(t *testing.T, lkr *c.Linker) *historySetup {
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
-			ChangeTypeMove,
+			// The "ChangeTypeMove" here is a hint that
+			// this ghost was part of a move.
+			ChangeTypeMove | ChangeTypeRemove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},
@@ -629,10 +630,10 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 			)
 		}
 
-		fmt.Println("TYPE", state.Mask)
-		fmt.Println("HEAD", state.Head)
-		fmt.Println("NEXT", state.Next)
-		fmt.Println("===")
+		// fmt.Println("TYPE", state.Mask)
+		// fmt.Println("HEAD", state.Head)
+		// fmt.Println("NEXT", state.Next)
+		// fmt.Println("===")
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(
