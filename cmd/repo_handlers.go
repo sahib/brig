@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"runtime/trace"
 	"sort"
 	"text/tabwriter"
@@ -78,6 +77,33 @@ If you're done with this README, you can easily remove it:
 	return ctl.MakeCommit("Added initial README.md")
 }
 
+func dirIsInitReady(dir string) (bool, error) {
+	fd, err := os.Open(dir)
+	if err != nil {
+		return false, err
+	}
+
+	names, err := fd.Readdirnames(-1)
+	if err != nil {
+		return false, err
+	}
+
+	for _, name := range names {
+		switch name {
+		case "meta.yml":
+			return false, nil
+		case "logs":
+			// That's okay.
+		default:
+			// Anything else we do not know:
+			return false, nil
+		}
+	}
+
+	// base case for empty dir:
+	return true, nil
+}
+
 func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
@@ -87,9 +113,13 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	// Check if the folder exists... doing init twice
 	// can easily break things.
-	metaPath := filepath.Join(folder, "meta.yml")
-	if _, err := os.Stat(metaPath); err == nil {
-		return fmt.Errorf("`%s` exists; refusing to do a init", folder)
+	isReady, err := dirIsInitReady(folder)
+	if err != nil {
+		return err
+	}
+
+	if !isReady {
+		return fmt.Errorf("`%s` already exists and is not empty; refusing to do a init", folder)
 	}
 
 	if password == "" {

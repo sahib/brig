@@ -104,8 +104,8 @@ func (b *base) loadRepo() (*repo.Repository, error) {
 	// an initialized repo. Error early for a meaningful message here.
 	if err := repoIsInitialized(b.basePath); err != nil {
 		msg := fmt.Sprintf(
-			"Repo does not look it is initialized: %v (did you brig init?)",
-			err,
+			"Repo does not look it is initialized: %s (did you brig init?)",
+			b.basePath,
 		)
 		log.Warning(msg)
 		return nil, errors.New(msg)

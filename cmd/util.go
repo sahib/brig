@@ -66,7 +66,12 @@ func readPasswordFromArgs(ctx *cli.Context) string {
 }
 
 func readPassword(ctx *cli.Context, repoPath string) (string, error) {
-	if !repoIsInitialized(repoPath) {
+	isInitialized, err := repoIsInitialized(repoPath)
+	if err != nil {
+		return "", err
+	}
+
+	if !isInitialized {
 		return "", nil
 	}
 
@@ -107,7 +112,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	// Start a new daemon process:
-	log.Info("Starting daemon from: ", exePath)
+	log.Info("No Daemon running. Starting daemon from binary: ", exePath)
 	proc := exec.Command(
 		exePath, "-p", pwd, "daemon", "launch",
 	)
@@ -240,13 +245,31 @@ func guessPort() int {
 	return 6666
 }
 
-func repoIsInitialized(path string) bool {
-	data, err := ioutil.ReadFile(filepath.Join(path, "meta.yml"))
+func repoIsInitialized(dir string) (bool, error) {
+	fd, err := os.Open(dir)
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	return len(data) > 0
+	names, err := fd.Readdirnames(-1)
+	if err != nil {
+		return false, err
+	}
+
+	for _, name := range names {
+		switch name {
+		case "meta.yml":
+			return false, nil
+		case "logs":
+			// That's okay.
+		default:
+			// Anything else we do not know:
+			return false, nil
+		}
+	}
+
+	// base case for empty dir:
+	return true, nil
 }
 
 // tempFileWithSuffix works the same as ioutil.TempFile(),
