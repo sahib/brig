@@ -36,7 +36,7 @@ Key feature highlights:
 This project has started end of 2015 and has seen many conceptual changes in
 the meantime. It started out as research project of two computer science
 students (me and [qitta](https://github.com/qitta)). After writing our [master
-theses](https://github.com/sahib/brig-thesis) on it, it was put down for
+theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
 a few months until I ([sahib](https://github.com/sahib)) picked at up again and
 currently am trying to push it to a usable prototype.
 
