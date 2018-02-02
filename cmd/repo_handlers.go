@@ -256,7 +256,12 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
-	if !repoIsInitialized(brigPath) {
+	isInitialized, err := repoIsInitialized(brigPath)
+	if err != nil {
+		return err
+	}
+
+	if !isInitialized {
 		log.Infof(
 			"No repository found at %s. Use `brig init <user>` to create one",
 			brigPath,

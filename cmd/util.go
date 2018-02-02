@@ -248,28 +248,29 @@ func guessPort() int {
 func repoIsInitialized(dir string) (bool, error) {
 	fd, err := os.Open(dir)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 
 	names, err := fd.Readdirnames(-1)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 
 	for _, name := range names {
 		switch name {
 		case "meta.yml":
-			return false, nil
+			fmt.Println("Meta exi")
+			return true, nil
 		case "logs":
 			// That's okay.
 		default:
 			// Anything else we do not know:
-			return false, nil
+			return true, nil
 		}
 	}
 
 	// base case for empty dir:
-	return true, nil
+	return false, nil
 }
 
 // tempFileWithSuffix works the same as ioutil.TempFile(),

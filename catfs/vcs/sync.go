@@ -43,6 +43,7 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 type SyncConfig struct {
 	ConflictStrategy ConflictStrategy
 	IgnoreDeletes    bool
+	IgnoreMoves      bool
 
 	OnAdd      func(newNd n.ModNode) bool
 	OnRemove   func(oldNd n.ModNode) bool
@@ -124,6 +125,15 @@ func (sy *syncer) handleAdd(src n.ModNode) error {
 	return sy.add(src, path.Dir(src.Path()), src.Name())
 }
 
+func (sy *syncer) handleMove(src, dst n.ModNode) error {
+	if sy.cfg.IgnoreMoves {
+		return nil
+	}
+
+	// Move our node (dst) to the path determined by src.
+	return c.Move(sy.lkrDst, dst, src.Path())
+}
+
 func (sy *syncer) handleMissing(dst n.ModNode) error {
 	// This is only called when a file in dst is missing on src.
 	// No sync action is required.
@@ -134,10 +144,8 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 	if sy.cfg.IgnoreDeletes {
 		return nil
 	}
-	fmt.Println("GOT REMOVE", dst)
 
 	// We should check if dst really exists for us.
-
 	if sy.cfg.OnRemove != nil {
 		if !sy.cfg.OnRemove(dst) {
 			return nil

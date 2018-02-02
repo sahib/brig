@@ -82,7 +82,6 @@ func mapperSetupBasicDstAddFile(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPai
 func mapperSetupBasicSrcAddDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	srcDir := c.MustMkdir(t, lkrSrc, "/x")
 	c.MustCommit(t, lkrSrc, "add dir")
-
 	return []MapPair{
 		{
 			Src:          srcDir,
@@ -127,15 +126,44 @@ func mapperSetupDstMoveFile(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	}
 }
 
+func mapperMoveNestedDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
+	c.MustMkdir(t, lkrSrc, "/old/sub/")
+	c.MustMkdir(t, lkrDst, "/old/sub/")
+	c.MustTouchAndCommit(t, lkrSrc, "/old/sub/x", 1)
+	c.MustTouchAndCommit(t, lkrDst, "/old/sub/x", 2)
+
+	srcDir := c.MustLookupDirectory(t, lkrSrc, "/old")
+	dstDir := c.MustLookupDirectory(t, lkrDst, "/old")
+	newDstDir := c.MustMove(t, lkrDst, dstDir, "/new")
+	c.MustCommit(t, lkrDst, "moved")
+
+	// Test for a special case here:
+	// Directories that were moved, but still have identical files.
+	return []MapPair{
+		{
+			Src:           srcDir,
+			Dst:           newDstDir,
+			TypeMismatch:  false,
+			SrcWasRemoved: false,
+		},
+	}
+}
+
 func mapperSetupDstMoveDirEmpty(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
-	c.MustMkdir(t, lkrSrc, "/x")
+	srcDir := c.MustMkdir(t, lkrSrc, "/x")
 	c.MustCommit(t, lkrSrc, "Create src dir")
 
 	dstDirOld := c.MustMkdir(t, lkrDst, "/x")
-	c.MustMove(t, lkrDst, dstDirOld, "/y")
+	dstDir := c.MustMove(t, lkrDst, dstDirOld, "/y")
 	c.MustCommit(t, lkrDst, "I like to move it, move it")
 
-	return []MapPair{}
+	return []MapPair{
+		{
+			Src:         srcDir,
+			Dst:         dstDir,
+			SrcWasMoved: true,
+		},
+	}
 }
 
 func mapperSetupDstMoveDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
@@ -405,6 +433,9 @@ func TestMapper(t *testing.T) {
 		}, {
 			name:  "move-dir-with-child",
 			setup: mapperSetupMoveDirWithChild,
+			// }, {
+			// 	name:  "move-nested-dir",
+			// 	setup: mapperMoveNestedDir,
 		},
 	}
 
@@ -421,12 +452,12 @@ func TestMapper(t *testing.T) {
 				got := []MapPair{}
 				diffFn := func(pair MapPair) error {
 					got = append(got, pair)
-					// if pair.Src != nil {
-					// 	fmt.Println(".. ", pair.Src.Path())
-					// }
-					// if pair.Dst != nil {
-					// 	fmt.Println("-> ", pair.Dst.Path())
-					// }
+					if pair.Src != nil {
+						fmt.Println(".. ", pair.Src.Path())
+					}
+					if pair.Dst != nil {
+						fmt.Println("-> ", pair.Dst.Path())
+					}
 					return nil
 				}
 

@@ -1176,29 +1176,27 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
 
-	srcToDstKey := []string{
-		"stage", "moves", strconv.FormatUint(from.Inode(), 10),
-	}
+	srcInode := strconv.FormatUint(from.Inode(), 10)
+	srcToDstKey := []string{"stage", "moves", srcInode}
 
-	dstToSrcKey := []string{
-		"stage", "moves", strconv.FormatUint(to.Inode(), 10),
-	}
+	dstInode := strconv.FormatUint(to.Inode(), 10)
+	dstToSrcKey := []string{"stage", "moves", dstInode}
 
 	batch := lkr.kv.Batch()
 	if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
-		batch.Put(
-			[]byte(fmt.Sprintf("> inode %d", to.Inode())),
-			srcToDstKey...,
-		)
+		line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
+		batch.Put(line, srcToDstKey...)
+		batch.Put(line, "stage", "moves", "overlay", srcInode)
+		fmt.Println("SAVING", srcInode, string(line))
 	}
 
 	// Also remember the move in the other direction.
 	// This might come in handy for the
 	if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
-		batch.Put(
-			[]byte(fmt.Sprintf("< inode %d", from.Inode())),
-			dstToSrcKey...,
-		)
+		line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
+		batch.Put(line, dstToSrcKey...)
+		batch.Put(line, "stage", "moves", "overlay", dstInode)
+		fmt.Println("SAVING", dstInode, string(line))
 	}
 
 	return batch.Flush()
@@ -1415,13 +1413,24 @@ func moveDirFromString(spec string) MoveDir {
 }
 
 func (lkr *Linker) MoveEntryPoint(nd n.Node) (n.Node, MoveDir, error) {
-	moveData, err := lkr.kv.Get("moves", "overlay", nd.Hash().B58String())
+	moveData, err := lkr.kv.Get(
+		"stage", "moves", "overlay",
+		strconv.FormatUint(nd.Inode(), 10),
+	)
+
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, MoveDirUnknown, err
 	}
 
 	if moveData == nil {
-		return nil, MoveDirNone, nil
+		moveData, err = lkr.kv.Get("moves", "overlay", nd.Hash().B58String())
+		if err != nil && err != db.ErrNoSuchKey {
+			return nil, MoveDirUnknown, err
+		}
+
+		if moveData == nil {
+			return nil, MoveDirNone, nil
+		}
 	}
 
 	node, moveDir, err := lkr.parseMoveMappingLine(string(moveData))

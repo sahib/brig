@@ -33,6 +33,15 @@ func checkDiffBasicSrcFileBackward(t *testing.T, lkrSrc, lkrDst *c.Linker, diff 
 
 ///////////////
 
+func assertDiffIsEmpty(t *testing.T, diff *Diff) {
+	require.Empty(t, diff.Added)
+	require.Empty(t, diff.Removed)
+	require.Empty(t, diff.Conflict)
+	require.Empty(t, diff.Ignored)
+	require.Empty(t, diff.Merged)
+
+}
+
 func TestDiff(t *testing.T) {
 	tcs := []struct {
 		name          string
@@ -87,12 +96,70 @@ func TestDiff(t *testing.T) {
 					t.Fatalf("diff equal failed: %v", err)
 				}
 
-				require.Empty(t, diff.Added)
-				require.Empty(t, diff.Removed)
-				require.Empty(t, diff.Conflict)
-				require.Empty(t, diff.Ignored)
-				require.Empty(t, diff.Merged)
+				assertDiffIsEmpty(t, diff)
 			})
 		})
 	}
 }
+
+func TestDiffWithSameLinker(t *testing.T) {
+	c.WithDummyLinker(t, func(lkr *c.Linker) {
+		c.MustMkdir(t, lkr, "/old/sub/")
+		c.MustTouchAndCommit(t, lkr, "/old/sub/x", 1)
+
+		c.MustMove(t, lkr, c.MustLookupDirectory(t, lkr, "/old"), "/new")
+
+		// Fetch current head and status:
+		head, err := lkr.Head()
+		require.Nil(t, err)
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		diff, err := MakeDiff(lkr, lkr, head, status, nil)
+		if err != nil {
+			t.Fatalf("diff forward failed: %v", err)
+		}
+
+		require.Empty(t, diff.Added)
+		require.Empty(t, diff.Removed)
+		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Conflict)
+		require.Empty(t, diff.Merged)
+
+		require.Len(t, diff.Moved, 1)
+		require.Equal(t, diff.Moved[0].Src.Path(), "/old")
+		require.Equal(t, diff.Moved[0].Dst.Path(), "/new")
+
+		diff, err = MakeDiff(lkr, lkr, status, head, nil)
+		if err != nil {
+			t.Fatalf("diff backward  failed: %v", err)
+		}
+
+		require.Empty(t, diff.Added)
+		require.Empty(t, diff.Removed)
+		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Conflict)
+		require.Empty(t, diff.Merged)
+
+		require.Len(t, diff.Moved, 1)
+		require.Equal(t, diff.Moved[0].Dst.Path(), "/old")
+		require.Equal(t, diff.Moved[0].Src.Path(), "/new")
+
+		diff, err = MakeDiff(lkr, lkr, status, status, nil)
+		if err != nil {
+			t.Fatalf("diff equal head: %v", err)
+		}
+
+		assertDiffIsEmpty(t, diff)
+
+		diff, err = MakeDiff(lkr, lkr, status, status, nil)
+		if err != nil {
+			t.Fatalf("diff equal status: %v", err)
+		}
+
+		assertDiffIsEmpty(t, diff)
+	})
+}
+
+// TODO: Write test suite that executes all above tests with the same linker.

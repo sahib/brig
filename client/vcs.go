@@ -214,6 +214,7 @@ type Diff struct {
 	Removed []StatInfo
 	Ignored []StatInfo
 
+	Moved    []DiffPair
 	Merged   []DiffPair
 	Conflict []DiffPair
 }
@@ -300,7 +301,17 @@ func convertCapDiffToDiff(capDiff capnp.Diff) (*Diff, error) {
 		return nil, err
 	}
 
-	pairs, err := capDiff.Merged()
+	pairs, err := capDiff.Moved()
+	if err != nil {
+		return nil, err
+	}
+
+	diff.Moved, err = convertDiffPairList(pairs)
+	if err != nil {
+		return nil, err
+	}
+
+	pairs, err = capDiff.Merged()
 	if err != nil {
 		return nil, err
 	}

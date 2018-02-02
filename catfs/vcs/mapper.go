@@ -25,10 +25,20 @@ import (
 //
 // If TypeMismatch is true, nodes have a different type
 // and need conflict resolution.
+//
+// If SrcWasRemoved is true, the node was deleted on the
+// remote's side and we might need to propagate this remove.
+// Otherwise, if src is nil, dst can be considered as missing
+// file on src's side.
+//
+// If SrcWasMoved is true, the two nodes were purely moved,
+// but not modified otherwise.
 type MapPair struct {
-	Src           n.ModNode
-	Dst           n.ModNode
+	Src n.ModNode
+	Dst n.ModNode
+
 	SrcWasRemoved bool
+	SrcWasMoved   bool
 	TypeMismatch  bool
 }
 
@@ -39,11 +49,13 @@ type Mapper struct {
 	dstHead        *n.Commit
 	fn             func(pair MapPair) error
 	srcVisited     map[string]n.Node
-	srcHandled     map[string]u.Empty
-	dstHandled     map[string]u.Empty
+
+	// TODO: Convert those into one trie
+	srcHandled map[string]u.Empty
+	dstHandled map[string]u.Empty
 }
 
-func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove bool) error {
+func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool) error {
 	if src != nil {
 		ma.srcHandled[src.Path()] = u.Empty{}
 	}
@@ -52,11 +64,19 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove bool) error 
 		ma.dstHandled[dst.Path()] = u.Empty{}
 	}
 
+	fmt.Println("PAIR", MapPair{
+		Src:           src,
+		Dst:           dst,
+		TypeMismatch:  typeMismatch,
+		SrcWasRemoved: isRemove,
+		SrcWasMoved:   isMove,
+	})
 	return ma.fn(MapPair{
 		Src:           src,
 		Dst:           dst,
 		TypeMismatch:  typeMismatch,
 		SrcWasRemoved: isRemove,
+		SrcWasMoved:   isMove,
 	})
 }
 
@@ -76,7 +96,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 
 	if dstCurr == nil {
 		// We do not have this node yet, mark it for copying.
-		return ma.report(srcCurr, nil, false, false)
+		return ma.report(srcCurr, nil, false, false, false)
 	}
 
 	// ma.dstVisited[dstCurr.Path()] = dstCurr
@@ -91,7 +111,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		}
 
 		// File and Directory don't go well together.
-		return ma.report(srcCurr, dstDir, true, false)
+		return ma.report(srcCurr, dstDir, true, false, false)
 	case n.NodeTypeFile:
 		// We have two competing files. Let's figure out if the changes done to
 		// them are compatible.
@@ -105,10 +125,17 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		if dstFile.Content().Equal(srcCurr.Content()) {
 			ma.srcHandled[srcCurr.Path()] = u.Empty{}
 			ma.dstHandled[dstFile.Path()] = u.Empty{}
+
+			// If the files are equal, but the location changed,
+			// the file were moved.
+			if srcCurr.Path() != dstFile.Path() {
+				return ma.report(srcCurr, dstFile, false, false, true)
+			}
+
 			return nil
 		}
 
-		return ma.report(srcCurr, dstFile, false, false)
+		return ma.report(srcCurr, dstFile, false, false, false)
 	case n.NodeTypeGhost:
 		// It's still possible that the file was moved on our side.
 		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurr)
@@ -121,7 +148,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 			isTypeMismatch = true
 		}
 
-		return ma.report(srcCurr, aliveDstCurr, isTypeMismatch, false)
+		return ma.report(srcCurr, aliveDstCurr, isTypeMismatch, false, false)
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
 	}
@@ -133,6 +160,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 			return nil
 		}
 	}
+	fmt.Println("map dir", srcCurr.Path(), dstPath)
 
 	ma.srcVisited[srcCurr.Path()] = srcCurr
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
@@ -140,9 +168,10 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		return err
 	}
 
+	fmt.Println("-> dst", dstCurrNd)
 	if dstCurrNd == nil {
 		// We never heard of this directory apparently. Go sync it.
-		return ma.report(srcCurr, nil, false, false)
+		return ma.report(srcCurr, nil, false, false, false)
 	}
 
 	// Special case: The node might have been moved on dst's side.
@@ -155,7 +184,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 
 		// No sibling found for this ghost.
 		if aliveDstCurr == nil {
-			return ma.report(srcCurr, nil, false, false)
+			return ma.report(srcCurr, nil, false, false, false)
 		}
 
 		localBackCheck, err := ma.lkrSrc.LookupNodeAt(ma.srcHead, aliveDstCurr.Path())
@@ -168,11 +197,11 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 			return ma.mapDirectory(srcCurr, aliveDstCurr.Path(), true)
 		}
 
-		return ma.report(srcCurr, nil, false, false)
+		return ma.report(srcCurr, nil, false, false, false)
 	}
 
 	if dstCurrNd.Type() != n.NodeTypeDirectory {
-		return ma.report(srcCurr, dstCurrNd, true, false)
+		return ma.report(srcCurr, dstCurrNd, true, false, false)
 	}
 
 	dstCurr, ok := dstCurrNd.(*n.Directory)
@@ -181,10 +210,17 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 	}
 
 	// Check if we're lucky and the directory hash is equal:
-	if srcCurr.Hash().Equal(dstCurr.Hash()) {
+	// TODO: This fails for empty directories (-> same hash)
+	if srcCurr.Content().Equal(dstCurr.Content()) {
+		fmt.Println("Equal?")
 		// Remember that we visited this subtree.
 		ma.srcHandled[srcCurr.Path()] = u.Empty{}
 		ma.dstHandled[dstCurr.Path()] = u.Empty{}
+
+		if srcCurr.Path() != dstCurr.Path() {
+			return ma.report(srcCurr, dstCurr, false, false, true)
+		}
+
 		return nil
 	}
 
@@ -230,7 +266,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModNode, error) {
 	partnerNd, moveDir, err := lkr.MoveEntryPoint(nd)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrap(err, "move entry point")
 	}
 
 	// No move partner found.
@@ -239,7 +275,8 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 	}
 
 	// We want to go forward in history.
-	// In theory, the other direction should not happen.
+	// In theory, the other direction should not happen,
+	// since we're always operating on ghosts here.
 	if moveDir != c.MoveDirDstToSrc {
 		return nil, nil
 	}
@@ -253,7 +290,7 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 	}
 
 	if mostRecent == nil {
-		err = fmt.Errorf("sync: No such node with inode %d", partnerNd.Inode())
+		err = fmt.Errorf("mapper: No such node with inode %d", partnerNd.Inode())
 		return nil, err
 	}
 
@@ -303,6 +340,8 @@ func (ma *Mapper) handleGhosts() error {
 			return err
 		}
 
+		fmt.Println("alive", aliveSrcNd)
+
 		if aliveSrcNd == nil {
 			// It's a ghost, but it has no living counterpart.
 			// This node *might* have been removed on the remote side.
@@ -313,6 +352,7 @@ func (ma *Mapper) handleGhosts() error {
 				return err
 			}
 
+			// Check if we maybe already removed or moved the node:
 			if dstNd != nil && dstNd.Type() != n.NodeTypeGhost {
 				dstModNd, ok := dstNd.(n.ModNode)
 				if !ok {
@@ -320,7 +360,7 @@ func (ma *Mapper) handleGhosts() error {
 				}
 
 				// Report that the file is missing on src's side.
-				return ma.report(nil, dstModNd, false, true)
+				return ma.report(nil, dstModNd, false, true, false)
 			}
 
 			// Not does not exist on both sides, nothing to report.
@@ -347,6 +387,7 @@ func (ma *Mapper) handleGhosts() error {
 		}
 
 		if dstRefNd != nil {
+			// Node maybe also moved. If so, try to resolve it to the full node:
 			if dstRefNd.Type() == n.NodeTypeGhost {
 				aliveOrig, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstRefNd)
 				if err != nil {
@@ -355,6 +396,12 @@ func (ma *Mapper) handleGhosts() error {
 
 				dstRefNd = aliveOrig
 			}
+		}
+
+		// The node was removed on dst:
+		if dstRefNd == nil {
+			fmt.Println("Should I be marked as removed?")
+			return nil
 		}
 
 		dstRefModNd, ok := dstRefNd.(n.ModNode)
@@ -368,16 +415,19 @@ func (ma *Mapper) handleGhosts() error {
 			ma.srcVisited[aliveSrcNd.Path()] = aliveSrcNd
 			ma.srcVisited[srcNd.Path()] = srcNd
 
+			// TODO: Does the check here make sense?
+			mismatch := dstRefNd.Type() != aliveSrcNd.Type()
 			if !aliveSrcNd.Hash().Equal(dstRefNd.Hash()) {
-				mismatch := dstRefNd.Type() != aliveSrcNd.Type()
-				return ma.report(aliveSrcNd, dstRefModNd, mismatch, false)
+				return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, false)
+			} else {
+				return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, true)
 			}
 
 			return nil
 		case n.NodeTypeDirectory:
 			ma.srcVisited[srcNd.Path()] = srcNd
 			if dstRefNd.Type() != n.NodeTypeDirectory {
-				return ma.report(aliveSrcNd, dstRefModNd, true, false)
+				return ma.report(aliveSrcNd, dstRefModNd, true, false, false)
 			}
 
 			aliveSrcDir, ok := aliveSrcNd.(*n.Directory)
@@ -454,12 +504,12 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, handled map
 	}
 
 	for _, child := range children {
-		if _, isHandled := handled[child.Path()]; isHandled {
-			continue
-		}
-
 		switch child.Type() {
 		case n.NodeTypeDirectory:
+			if _, isHandled := handled[child.Path()]; isHandled {
+				continue
+			}
+
 			dir, ok := child.(*n.Directory)
 			if !ok {
 				return ie.ErrBadNode
@@ -480,9 +530,9 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, handled map
 
 			// Report the leftover:
 			if srcToDst {
-				err = ma.report(file, nil, false, false)
+				err = ma.report(file, nil, false, false, false)
 			} else {
-				err = ma.report(nil, file, false, false)
+				err = ma.report(nil, file, false, false, false)
 			}
 
 			if err != nil {
@@ -556,11 +606,13 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		// Extract things in "src" that were not mapped yet.
 		// These are files that can be added to our inventory,
 		// since we have notthing that mapped to them.
+		fmt.Println("extract src")
 		if err := ma.extractLeftovers(ma.lkrSrc, srcRoot, ma.srcHandled, true); err != nil {
 			return err
 		}
 
 		// Check for files for which we
+		fmt.Println("extract dst")
 		return ma.extractLeftovers(ma.lkrDst, dstRoot, ma.dstHandled, false)
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)

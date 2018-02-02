@@ -31,10 +31,11 @@ package vcs
 //   and can be one of the following.
 //
 //   - The file was added on the remote, we should add it to -> Add them.
+//   - The file was removed on the remote, we might want to also delete it.
+//   - The file was only moved on the remote node, we might want to moev it also.
 //   - The file has compatible changes on the both sides. -> Merge them.
 //   - The file was incompatible changes on both sides -> Do conflict resolution.
-//
-//   This the part where most configuration can be done.
+//   - The nodes have differing types (directory vs files). Report them.
 //
 // - Stage 4: "Handling"
 //   Only at this stage "sync" and "diff" differ.
@@ -61,6 +62,7 @@ type executor interface {
 	handleAdd(src n.ModNode) error
 	handleRemove(dst n.ModNode) error
 	handleMissing(dst n.ModNode) error
+	handleMove(src, dst n.ModNode) error
 	handleTypeConflict(src, dst n.ModNode) error
 	handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error
 	handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error
@@ -148,6 +150,7 @@ func (rv *resolver) resolve() error {
 func (rv *resolver) cacheLastCommonMerge() error {
 	srcOwner, err := rv.lkrSrc.Owner()
 	if err != nil {
+		fmt.Println("Bad owner")
 		return err
 	}
 
@@ -260,6 +263,10 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 func (rv *resolver) decide(pair MapPair) error {
 	if pair.Src == nil && pair.Dst == nil {
 		return fmt.Errorf("Received completely empty mapping; ignoring")
+	}
+
+	if pair.SrcWasMoved {
+		return rv.exec.handleMove(pair.Src, pair.Dst)
 	}
 
 	if pair.Src == nil {

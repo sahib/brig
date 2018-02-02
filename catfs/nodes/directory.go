@@ -34,6 +34,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string, inode uint64)
 		Base: Base{
 			inode:    inode,
 			hash:     h.Sum([]byte(absPath)),
+			content:  h.EmptyContent.Clone(),
 			name:     name,
 			nodeType: NodeTypeDirectory,
 			modTime:  time.Now().Truncate(time.Microsecond),
@@ -454,6 +455,10 @@ func (d *Directory) Copy() ModNode {
 	}
 }
 
+func dirContentHash(content h.Hash, nchildren int) h.Hash {
+	return h.Sum([]byte(fmt.Sprintf("%d:%s", nchildren, content.B58String())))
+}
+
 // Add adds `nd` to this directory.
 func (d *Directory) Add(lkr Linker, nd Node) error {
 	if nd == d {
@@ -466,9 +471,14 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
+	nodeContent := dirContentHash(nd.Content(), len(d.children)+1)
 
 	err := d.Up(lkr, func(parent *Directory) error {
 		parent.size += nodeSize
+		if err := parent.content.Xor(nodeContent); err != nil {
+			return err
+		}
+
 		return parent.xorHash(lkr, nodeHash)
 	})
 
@@ -498,6 +508,8 @@ func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 	}
 
 	lkr.MemIndexSwap(d, oldHash)
+
+	// content hash is not affected.
 	return nil
 }
 
@@ -561,6 +573,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 			parentDir.children[baseName] = node.Hash()
 		}
 	}
+
 	return nil
 }
 
@@ -583,9 +596,14 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 
 	nodeSize := nd.Size()
 	nodeHash := nd.Hash()
+	nodeContent := dirContentHash(nd.Content(), len(d.children))
 
 	return d.Up(lkr, func(parent *Directory) error {
 		parent.size -= nodeSize
+		if err := parent.content.Xor(nodeContent); err != nil {
+			return err
+		}
+
 		return parent.xorHash(lkr, nodeHash)
 	})
 }

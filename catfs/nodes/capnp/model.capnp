@@ -35,7 +35,6 @@ struct File $Go.doc("A leaf node in the MDAG") {
     size     @0 :UInt64;
     parent   @1 :Text;
     key      @2 :Data;
-    content  @3 :Data;
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
@@ -54,11 +53,12 @@ struct Node $Go.doc("Node is a node in the merkle dag of brig") {
     hash    @1 :Data;
     modTime @2 :Text;     # Time as ISO8601
     inode   @3 :UInt64;
+    content @4 :Data;
 
     union {
-        commit    @4 :Commit;
-        directory @5 :Directory;
-        file      @6 :File;
-        ghost     @7 :Ghost;
+        commit    @5 :Commit;
+        directory @6 :Directory;
+        file      @7 :File;
+        ghost     @8 :Ghost;
     }
 }

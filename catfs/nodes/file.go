@@ -15,10 +15,9 @@ import (
 type File struct {
 	Base
 
-	size    uint64
-	parent  string
-	key     []byte
-	content h.Hash
+	size   uint64
+	parent string
+	key    []byte
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
@@ -78,10 +77,6 @@ func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 		return nil, err
 	}
 
-	if err := capfile.SetContent(f.content); err != nil {
-		return nil, err
-	}
-
 	capfile.SetSize(f.size)
 	return &capfile, nil
 }
@@ -120,11 +115,6 @@ func (f *File) readFileAttrs(capfile capnp_model.File) error {
 		return err
 	}
 
-	f.content, err = capfile.Content()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -154,19 +144,18 @@ func (f *File) SetSize(s uint64) {
 
 func (f *File) Copy() ModNode {
 	return &File{
-		Base:    f.Base.copyBase(),
-		size:    f.size,
-		parent:  f.parent,
-		key:     f.key,
-		content: f.content,
+		Base:   f.Base.copyBase(),
+		size:   f.size,
+		parent: f.parent,
+		key:    f.key,
 	}
 }
 
 func (f *File) rehash(lkr Linker, newPath string) {
 	oldHash := f.hash.Clone()
 	var contentHash h.Hash
-	if f.content != nil {
-		contentHash = f.content.Clone()
+	if f.Base.content != nil {
+		contentHash = f.Base.content.Clone()
 	} else {
 		contentHash = h.EmptyHash.Clone()
 	}
@@ -185,13 +174,9 @@ func (f *File) NotifyMove(lkr Linker, oldPath, newPath string) error {
 
 // SetContent will update the hash of the file (and also the mod time)
 func (f *File) SetContent(lkr Linker, content h.Hash) {
-	f.content = content
+	f.Base.content = content
 	f.rehash(lkr, f.Path())
 	f.SetModTime(time.Now())
-}
-
-func (f *File) Content() h.Hash {
-	return f.content
 }
 
 func (f *File) String() string {

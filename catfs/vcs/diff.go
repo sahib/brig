@@ -24,6 +24,9 @@ type Diff struct {
 	// Nodes from remote that were ignored.
 	Ignored []n.ModNode
 
+	// Nodes that were only moved (but nothing else)
+	Moved []DiffPair
+
 	// Merged contains nodes where sync is able to combine changes
 	// on both sides (i.e. one side moved, another modified)
 	Merged []DiffPair
@@ -54,6 +57,17 @@ func (df *Diff) handleMissing(dst n.ModNode) error {
 
 func (df *Diff) handleTypeConflict(src, dst n.ModNode) error {
 	df.Ignored = append(df.Ignored, dst)
+	return nil
+}
+
+func (df *Diff) handleMove(src, dst n.ModNode) error {
+	df.Moved = append(df.Moved, DiffPair{
+		Src:     src,
+		Dst:     dst,
+		SrcMask: ChangeType(0),
+		DstMask: ChangeType(0),
+	})
+
 	return nil
 }
 

@@ -113,6 +113,7 @@ func printDiffTree(diff *client.Diff) {
 		diffTypeNone = iota
 		diffTypeAdded
 		diffTypeRemoved
+		diffTypeMoved
 		diffTypeIgnored
 		diffTypeConflict
 		diffTypeMerged
@@ -141,6 +142,13 @@ func printDiffTree(diff *client.Diff) {
 	}
 
 	// Pair types:
+	for _, pair := range diff.Moved {
+		types[pair.Dst.Path] = diffEntry{
+			typ:  diffTypeMoved,
+			pair: pair,
+		}
+		entries = append(entries, pair.Dst)
+	}
 	for _, pair := range diff.Conflict {
 		types[pair.Dst.Path] = diffEntry{
 			typ:  diffTypeConflict,
@@ -175,6 +183,13 @@ func printDiffTree(diff *client.Diff) {
 				return color.RedString(" - " + n.name)
 			case diffTypeIgnored:
 				return color.YellowString(" * " + n.name)
+			case diffTypeMoved:
+				name := fmt.Sprintf(
+					" %s -> %s",
+					diffEntry.pair.Src.Path,
+					diffEntry.pair.Dst.Path,
+				)
+				return color.BlueString(name)
 			case diffTypeMerged:
 				name := fmt.Sprintf(
 					" %s ⇄ %s",
@@ -232,6 +247,7 @@ func printDiff(diff *client.Diff) {
 	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
 	simpleSection(color.RedString("Removed:"), diff.Removed)
 
+	pairSection(color.BlueString("Moved:"), diff.Moved)
 	pairSection(color.CyanString("Resolveable Conflicts:"), diff.Merged)
 	pairSection(color.MagentaString("Conflicts:"), diff.Conflict)
 }

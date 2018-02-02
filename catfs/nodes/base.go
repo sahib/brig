@@ -21,6 +21,9 @@ type Base struct {
 	// Hash of this node (might be empty)
 	hash h.Hash
 
+	// Content hash of this node (might be empty)
+	content h.Hash
+
 	// Last modification time of this node.
 	modTime time.Time
 
@@ -36,6 +39,7 @@ func (b *Base) copyBase() Base {
 	return Base{
 		name:     b.name,
 		hash:     b.hash.Clone(),
+		content:  b.content.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
 		inode:    b.inode,
@@ -51,6 +55,11 @@ func (b *Base) Name() string {
 // Hash returns the hash of this node.
 func (b *Base) Hash() h.Hash {
 	return b.hash
+}
+
+// Content returns the content hash of this node.
+func (b *Base) Content() h.Hash {
+	return b.content
 }
 
 // Type returns the type of this node.
@@ -83,6 +92,9 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 	if err := capnode.SetHash(b.hash); err != nil {
 		return err
 	}
+	if err := capnode.SetContent(b.content); err != nil {
+		return err
+	}
 	if err := capnode.SetName(b.name); err != nil {
 		return err
 	}
@@ -99,6 +111,11 @@ func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 	}
 
 	b.hash, err = capnode.Hash()
+	if err != nil {
+		return err
+	}
+
+	b.content, err = capnode.Content()
 	if err != nil {
 		return err
 	}

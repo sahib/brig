@@ -65,6 +65,10 @@ type Metadatable interface {
 	// INode shall return a unique identifier for this node that does
 	// not change, even when the content of the node changes.
 	Inode() uint64
+
+	// Content will return the hash of the content of this file/
+	// It is valid to return nil if the file is empty.
+	Content() h.Hash
 }
 
 // Serializable is a thing that can be converted to a capnproto message.
@@ -94,10 +98,6 @@ type HierarchyEntry interface {
 // given a cryptographic key.
 type Streamable interface {
 	Key() []byte
-
-	// Content will return the hash of the content of this file/
-	// It is valid to return nil if the file is empty.
-	Content() h.Hash
 }
 
 // Node is a single node in brig's MDAG.

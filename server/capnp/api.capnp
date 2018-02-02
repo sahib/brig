@@ -46,8 +46,9 @@ struct Diff $Go.doc("Difference between two commits") {
     removed @1 :List(StatInfo);
     ignored @2 :List(StatInfo);
 
-    merged   @3 :List(DiffPair);
-    conflict @4 :List(DiffPair);
+    moved    @3 :List(DiffPair);
+    merged   @4 :List(DiffPair);
+    conflict @5 :List(DiffPair);
 }
 
 struct RemoteFolder $Go.doc("A folder that a remote is allowed to access") {

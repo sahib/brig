@@ -36,6 +36,7 @@ func WithDummyKv(t *testing.T, fn func(kv db.Database)) {
 func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
+		lkr.SetOwner("alice")
 		MustCommit(t, lkr, "init")
 
 		fn(lkr)
@@ -191,4 +192,13 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	if err := lkr.StageNode(file); err != nil {
 		t.Fatalf("Failed to stage %s for second: %v", file.Path(), err)
 	}
+}
+
+func MustLookupDirectory(t *testing.T, lkr *Linker, path string) *n.Directory {
+	dir, err := lkr.LookupDirectory(path)
+	if err != nil {
+		t.Fatalf("Failed to lookup directory %v: %v", path, err)
+	}
+
+	return dir
 }

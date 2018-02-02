@@ -81,6 +81,7 @@ type Diff struct {
 	Removed []StatInfo
 	Ignored []StatInfo
 
+	Moved    []DiffPair
 	Merged   []DiffPair
 	Conflict []DiffPair
 }
@@ -869,6 +870,13 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 	}
 
 	// And also convert the slightly more complex pairs:
+	for _, pair := range realDiff.Moved {
+		fakeDiff.Moved = append(fakeDiff.Moved, DiffPair{
+			Src: *fs.nodeToStat(pair.Src),
+			Dst: *fs.nodeToStat(pair.Dst),
+		})
+	}
+
 	for _, pair := range realDiff.Merged {
 		fakeDiff.Merged = append(fakeDiff.Merged, DiffPair{
 			Src: *fs.nodeToStat(pair.Src),

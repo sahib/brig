@@ -11,21 +11,34 @@ import (
 	"github.com/multiformats/go-multihash"
 )
 
+const (
+	ContentHash = multihash.BLAKE2B_MAX
+)
+
 var (
 	// EmptyHash is the hash of empty data, hashed with the default hash of ipfs.
 	EmptyHash Hash
+
+	// EmptyContent is like EmptyHash, but uses an zero blake2b hash.
+	EmptyContent Hash
 )
 
 func init() {
 	data := make([]byte, multihash.DefaultLengths[goipfsutil.DefaultIpfsHash])
 	hash, err := multihash.Encode(data, goipfsutil.DefaultIpfsHash)
-
-	// No point in living elsewhise...
 	if err != nil {
 		panic(fmt.Sprintf("Unable to create empty hash: %v", err))
 	}
 
 	EmptyHash = Hash(hash)
+
+	data = make([]byte, multihash.DefaultLengths[ContentHash])
+	hash, err = multihash.Encode(data, ContentHash)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to create empty content hash: %v", err))
+	}
+
+	EmptyContent = Hash(hash)
 }
 
 // Hash is like multihash.Multihash but also supports serializing to json.
@@ -229,7 +242,6 @@ func (hw *HashWriter) ReadFrom(r io.Reader) (int64, error) {
 
 		// TODO: This can be probably optimized.
 		if err := hw.hash.Xor(Sum(buf[:n])); err != nil {
-			fmt.Println("INCONSISTENT", err)
 			return read, err
 		}
 
