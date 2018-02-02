@@ -192,11 +192,16 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleTree(ctx *cli.Context, ctl *client.Client) error {
-	entries, err := ctl.List("/", -1)
+	root := "/"
+	if ctx.NArg() > 0 {
+		root = ctx.Args().First()
+	}
+
+	entries, err := ctl.List(root, -1)
 	if err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("ls: %v", err),
+			fmt.Sprintf("tree: %v", err),
 		}
 	}
 

@@ -9,4 +9,4 @@
 - design sh test suite / tui tests / situation preps.
 
 
-- Version history is not persisted during daemon reboots? oO
+- Version history (at least moves) are not properly persisted during daemon reboots.
