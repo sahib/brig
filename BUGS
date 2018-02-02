@@ -10,3 +10,4 @@
 
 
 - Version history (at least moves) are not properly persisted during daemon reboots.
+- Moves are not recorded for the right commit?

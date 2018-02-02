@@ -498,7 +498,7 @@ func setupDirectoryHistory(t *testing.T, lkr *c.Linker) *historySetup {
 		},
 		changes: []ChangeType{
 			ChangeTypeNone,
-			ChangeTypeMove | ChangeTypeModify,
+			ChangeTypeMove,
 			ChangeTypeModify,
 			ChangeTypeAdd,
 		},

@@ -997,7 +997,6 @@ func (lkr *Linker) LookupFile(repoPath string) (*n.File, error) {
 // LookupGhost calls LookupNode and converts the result to a ghost.
 func (lkr *Linker) LookupGhost(repoPath string) (*n.Ghost, error) {
 	nd, err := lkr.LookupNode(repoPath)
-	fmt.Println(repoPath, nd)
 	if err != nil {
 		return nil, err
 	}
@@ -1187,7 +1186,6 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 		line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
 		batch.Put(line, srcToDstKey...)
 		batch.Put(line, "stage", "moves", "overlay", srcInode)
-		fmt.Println("SAVING", srcInode, string(line))
 	}
 
 	// Also remember the move in the other direction.
@@ -1196,7 +1194,6 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 		line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
 		batch.Put(line, dstToSrcKey...)
 		batch.Put(line, "stage", "moves", "overlay", dstInode)
-		fmt.Println("SAVING", dstInode, string(line))
 	}
 
 	return batch.Flush()
