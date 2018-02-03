@@ -146,6 +146,7 @@ func setupHistoryMoved(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *historySetup {
+	file := c.MustTouch(t, lkr, "/x.png", 1)
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustMove(t, lkr, file, "/y.png")
@@ -165,6 +166,30 @@ func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *historySetup {
 		changes: []ChangeType{
 			ChangeTypeMove,
 			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: file,
+	}
+}
+
+func setupMoveInitial(t *testing.T, lkr *c.Linker) *historySetup {
+	file := c.MustTouch(t, lkr, "/x.png", 1)
+	c.MustMove(t, lkr, file, "/y.png")
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	// Should act like the node was added as "y.png",
+	// even though it was moved.
+	return &historySetup{
+		commits: []*n.Commit{status},
+		paths: []string{
+			"/y.png",
+		},
+		changes: []ChangeType{
 			ChangeTypeAdd,
 		},
 		head: status,
@@ -581,6 +606,9 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "move-once-stage",
 			setup: setupHistoryMoveStaging,
 		}, {
+			name:  "move-initial",
+			setup: setupMoveInitial,
+		}, {
 			name:  "move-modify",
 			setup: setupHistoryMoveAndModify,
 		}, {
@@ -623,17 +651,17 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
 		state := walker.State()
+		// fmt.Println("TYPE", state.Mask)
+		// fmt.Println("HEAD", state.Head)
+		// fmt.Println("NEXT", state.Next)
+		// fmt.Println("===")
+
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(
 				"Wrong path at index `%d`: %s (want: %s)",
 				idx+1, state.Curr.Path(), setup.paths[idx],
 			)
 		}
-
-		// fmt.Println("TYPE", state.Mask)
-		// fmt.Println("HEAD", state.Head)
-		// fmt.Println("NEXT", state.Next)
-		// fmt.Println("===")
 
 		if state.Mask != setup.changes[idx] {
 			t.Errorf(

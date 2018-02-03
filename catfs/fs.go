@@ -165,7 +165,7 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 	// This node will not be reachable anymore by brig.
 	// Make sure it is also unpinned to save space.
 	if err := fs.bk.Unpin(file.Content()); err != nil {
-		log.Warningf("unpinning attempy failed: %v", err)
+		log.Warningf("unpinning attempt failed: %v", err)
 	}
 
 	// Still return true, no need to stop the GC

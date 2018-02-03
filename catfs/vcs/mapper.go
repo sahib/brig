@@ -82,6 +82,7 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 
 func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
+	fmt.Println("map file", srcCurr.Path(), dstFilePath)
 	if _, ok := ma.srcVisited[srcCurr.Path()]; ok {
 		return nil
 	}
@@ -515,6 +516,7 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, handled map
 				return ie.ErrBadNode
 			}
 
+			// TODO: Implement logic to see if whole subtree can be reported.
 			if err := ma.extractLeftovers(lkr, dir, handled, srcToDst); err != nil {
 				return err
 			}
