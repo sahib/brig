@@ -232,9 +232,9 @@ func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []Ma
 
 	// Additionally create an existing file that lives in the place
 	// of the moved file. Mapper should favour existing files:
-	c.MustMkdir(t, lkrDst, "/x")
+	dstDir := c.MustMkdir(t, lkrDst, "/x")
 	c.MustMkdir(t, lkrDst, "/y")
-	oldDstFile := c.MustTouch(t, lkrDst, "/x/a.png", 42)
+	c.MustTouch(t, lkrDst, "/x/a.png", 42)
 	dstFile := c.MustTouch(t, lkrDst, "/y/a.png", 42)
 	c.MustCommit(t, lkrDst, "Create src dir")
 
@@ -245,7 +245,7 @@ func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []Ma
 			TypeMismatch: false,
 		}, {
 			Src:          nil,
-			Dst:          oldDstFile,
+			Dst:          dstDir,
 			TypeMismatch: false,
 		},
 	}
@@ -290,6 +290,11 @@ func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 		t.Fatalf("setup failed to get parent dir: %v", err)
 	}
 
+	dstZParent, err := n.ParentDirectory(lkrDst, dstZ)
+	if err != nil {
+		t.Fatalf("setup failed to get parent dir: %v", err)
+	}
+
 	return []MapPair{
 		{
 			Src:          srcX,
@@ -305,7 +310,7 @@ func mapperSetupNested(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 			TypeMismatch: false,
 		}, {
 			Src:          nil,
-			Dst:          dstZ,
+			Dst:          dstZParent,
 			TypeMismatch: false,
 		},
 	}
@@ -467,6 +472,11 @@ func TestMapper(t *testing.T) {
 				if err := mapper.Map(diffFn); err != nil {
 					t.Fatalf("mapping failed: %v", err)
 				}
+
+				// DEBUG.
+				// for _, pair := range got {
+				// 	fmt.Println("-", pair.Src, pair.Dst)
+				// }
 
 				if len(got) != len(expect) {
 					t.Fatalf(
