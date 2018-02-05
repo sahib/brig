@@ -137,13 +137,6 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 		ma.setDstHandled(dst)
 	}
 
-	fmt.Println("PAIR", MapPair{
-		Src:           src,
-		Dst:           dst,
-		TypeMismatch:  typeMismatch,
-		SrcWasRemoved: isRemove,
-		SrcWasMoved:   isMove,
-	})
 	return ma.fn(MapPair{
 		Src:           src,
 		Dst:           dst,
@@ -155,7 +148,6 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 
 func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
-	fmt.Println("map file", srcCurr.Path(), dstFilePath)
 	if ma.isSrcVisited(srcCurr) {
 		return nil
 	}
@@ -234,7 +226,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 			return nil
 		}
 	}
-	fmt.Println("map dir", srcCurr.Path(), dstPath)
 
 	ma.setSrcVisited(srcCurr)
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
@@ -242,7 +233,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		return err
 	}
 
-	fmt.Println("-> dst", dstCurrNd)
 	if dstCurrNd == nil {
 		// We never heard of this directory apparently. Go sync it.
 		return ma.report(srcCurr, nil, false, false, false)
@@ -285,7 +275,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 
 	// Check if we're lucky and the directory hash is equal:
 	if srcCurr.Content().Equal(dstCurr.Content()) {
-		fmt.Println("Equal?")
 		// Remember that we visited this subtree.
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
@@ -373,8 +362,12 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 	}
 
 	reacheable, err := lkr.LookupNodeAt(head, mostRecent.Path())
-	if err != nil {
-		return nil, err
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return nil, e.Wrapf(err, "ghost2alive: lookupAt")
+	}
+
+	if reachable == nil {
+		return nil, nil
 	}
 
 	if reacheable.Inode() != mostRecent.Inode() {
@@ -471,7 +464,8 @@ func (ma *Mapper) handleGhosts() error {
 
 		// The node was removed on dst:
 		if dstRefNd == nil {
-			fmt.Println("Should I be marked as removed?")
+			// TODO: Should this be marked as removed?
+			//       Probably not since it will be detected later.
 			return nil
 		}
 
@@ -748,13 +742,11 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		// Extract things in "src" that were not mapped yet.
 		// These are files that can be added to our inventory,
 		// since we have notthing that mapped to them.
-		fmt.Println("extract src")
 		if err := ma.extractLeftovers(ma.lkrSrc, srcRoot, true); err != nil {
 			return err
 		}
 
 		// Check for files for which we
-		fmt.Println("extract dst")
 		return ma.extractLeftovers(ma.lkrDst, dstRoot, false)
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)
