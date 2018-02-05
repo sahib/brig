@@ -385,9 +385,9 @@ func TestSync(t *testing.T) {
 			require.Nil(t, fsb.MakeCommit("hello b"))
 			require.Nil(t, fsa.Sync(fsb))
 
-			require.Nil(t, fsb.Touch("/x"))
-			require.Nil(t, fsb.Touch("/y"))
-			require.Nil(t, fsb.Touch("/z"))
+			require.Nil(t, fsb.Stage("/x", bytes.NewReader([]byte{1})))
+			require.Nil(t, fsb.Stage("/y", bytes.NewReader([]byte{2})))
+			require.Nil(t, fsb.Stage("/z", bytes.NewReader([]byte{3})))
 
 			// Actually sync the results:
 			require.Nil(t, fsa.Sync(fsb))
@@ -429,6 +429,7 @@ func TestMakeDiff(t *testing.T) {
 			require.Nil(t, fsb.Remove("/y"))
 			require.Nil(t, fsb.MakeCommit("before diff"))
 
+			fmt.Println("---")
 			diff, err := fsa.MakeDiff(fsb, "curr", "curr")
 			require.Nil(t, err)
 

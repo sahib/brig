@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
+	"github.com/sahib/brig/catfs/db"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
@@ -736,5 +737,19 @@ func TestHistoryUtil(t *testing.T) {
 			require.Equal(t, state.Head, expect.Head, "Head differs")
 			require.Equal(t, state.Curr, expect.Curr, "Curr differs")
 		}
+	})
+}
+
+func TestHistoryWithNoParent(t *testing.T) {
+	c.WithDummyKv(t, func(kv db.Database) {
+		lkr := c.NewLinker(kv)
+		lkr.SetOwner("alice")
+
+		file, head := c.MustTouchAndCommit(t, lkr, "/x", 1)
+
+		hist, err := History(lkr, file, head, nil)
+		require.Nil(t, err)
+		require.Len(t, hist, 1)
+		require.Equal(t, hist[0].Mask, ChangeTypeAdd)
 	})
 }

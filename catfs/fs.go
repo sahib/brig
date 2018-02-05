@@ -14,6 +14,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -584,7 +585,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 			log.Warningf("Failed to guess suitable zip algo: %v", err)
 		}
 
-		log.Debugf("Using %s for file %s", algo, path)
+		log.Debugf("Using '%s' compression for file %s", algo, path)
 
 		if _, err := r.Seek(0, os.SEEK_SET); err != nil {
 			return err
@@ -839,17 +840,17 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 
 	srcHead, err := parseRev(remote.lkr, headRevRemote)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "parse remote ref")
 	}
 
 	dstHead, err := parseRev(fs.lkr, headRevOwn)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "parse own ref")
 	}
 
 	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, srcHead, dstHead, &fs.cfg.sync)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "make diff")
 	}
 
 	// "fake" is the diff that we give to the outside.
@@ -990,7 +991,6 @@ func (fs *FS) Checkout(rev string, force bool) error {
 // - INIT: the initial commit.
 //
 // The tagname is case-insensitive.
-// See TODO for more details on what is allowed as `rev`.
 func (fs *FS) Tag(rev, name string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

@@ -137,6 +137,7 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 		ma.setDstHandled(dst)
 	}
 
+	fmt.Println("MAP", src, dst)
 	return ma.fn(MapPair{
 		Src:           src,
 		Dst:           dst,
@@ -227,6 +228,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		}
 	}
 
+	fmt.Println("map dir", srcCurr.Path(), dstPath)
+
 	ma.setSrcVisited(srcCurr)
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
@@ -278,6 +281,9 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		// Remember that we visited this subtree.
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
+
+		fmt.Println("Looks equal")
+		fmt.Println(dstCurr.ChildrenSorted(ma.lkrDst))
 
 		if srcCurr.Path() != dstCurr.Path() {
 			return ma.report(srcCurr, dstCurr, false, false, true)

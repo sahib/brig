@@ -326,6 +326,18 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
+	// We ran out of commits to check.
+	if prevHead == nil {
+		hw.state = &Change{
+			Head: hw.head,
+			Mask: ChangeTypeAdd,
+			Curr: hw.curr,
+			Next: nil,
+		}
+		hw.head = nil
+		return true
+	}
+
 	prevHeadCommit, ok := prevHead.(*n.Commit)
 	if !ok {
 		hw.err = e.Wrap(ie.ErrBadNode, "history: bad commit")
@@ -362,18 +374,6 @@ func (hw *HistoryWalker) Next() bool {
 				referToPath = ""
 			}
 		}
-	}
-
-	// We ran out of commits to check.
-	if prevHead == nil {
-		hw.state = &Change{
-			Head: hw.head,
-			Mask: ChangeTypeAdd,
-			Curr: hw.curr,
-			Next: nil,
-		}
-		hw.head = nil
-		return true
 	}
 
 	// Assumption here: The move mapping should only store one move per commit.

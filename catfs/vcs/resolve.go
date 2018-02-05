@@ -91,14 +91,14 @@ type resolver struct {
 func newResolver(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, exec executor) (*resolver, error) {
 	var err error
 	if srcHead == nil {
-		srcHead, err = lkrSrc.Head()
+		srcHead, err = lkrSrc.Status()
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if dstHead == nil {
-		dstHead, err = lkrDst.Head()
+		dstHead, err = lkrDst.Status()
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +150,6 @@ func (rv *resolver) resolve() error {
 func (rv *resolver) cacheLastCommonMerge() error {
 	srcOwner, err := rv.lkrSrc.Owner()
 	if err != nil {
-		fmt.Println("Bad owner")
 		return err
 	}
 
@@ -199,12 +198,12 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 
 	srcHist, err := History(rv.lkrSrc, src, rv.srcHead, rv.srcMergeCmt)
 	if err != nil {
-		return false, 0, 0, err
+		return false, 0, 0, e.Wrapf(err, "history src")
 	}
 
 	dstHist, err := History(rv.lkrDst, dst, rv.dstHead, rv.dstMergeCmt)
 	if err != nil {
-		return false, 0, 0, err
+		return false, 0, 0, e.Wrapf(err, "history dst")
 	}
 
 	var srcMask, dstMask ChangeType
@@ -224,7 +223,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	}
 
 	if len(srcHist) == 0 && len(dstHist) == 0 {
-		fmt.Println("BUG: both sides have no changes, but hash differs...")
 		return false, 0, 0, nil
 	}
 
@@ -248,7 +246,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	if !dstMask.IsCompatible(srcMask) {
 		// The changes are not compatible.
 		// We need to apply a conflict resolution strategy.
-		fmt.Println("Incompatible changes", srcHist, dstHist)
 		return true, srcMask, dstMask, nil
 	}
 
