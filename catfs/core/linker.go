@@ -579,6 +579,18 @@ func (lkr *Linker) SetOwner(owner string) error {
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	refname = strings.ToLower(refname)
 
+	nUps := 0
+	for idx := len(refname) - 1; idx >= 0; idx-- {
+		if refname[idx] == '^' {
+			nUps++
+		} else {
+			break
+		}
+	}
+
+	// Strip the ^s:
+	refname = refname[:len(refname)-nUps]
+
 	// Special case: the status commit is not part of the normal object store.
 	// Still make it able to resolve it by it's refname "curr".
 	if refname == "curr" || refname == "status" {
@@ -599,7 +611,38 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 		return nil, err
 	}
 
-	return lkr.NodeByHash(h.Hash(hash))
+	nd, err := lkr.NodeByHash(h.Hash(hash))
+	if err != nil {
+		return nil, err
+	}
+
+	// Possibly advance a few commits until we hit the one
+	// the user required.
+	cmt, ok := nd.(*n.Commit)
+	if ok {
+		for i := 0; i < nUps; i++ {
+			parentNd, err := cmt.Parent(lkr)
+			if err != nil {
+				return nil, err
+			}
+
+			if parentNd == nil {
+				// TODO: log a warning here?
+				break
+			}
+
+			parentCmt, ok := parentNd.(*n.Commit)
+			if !ok {
+				break
+			}
+
+			cmt = parentCmt
+		}
+
+		nd = cmt
+	}
+
+	return nd, nil
 }
 
 // SaveRef stores a reference to `nd` persistently. The caller is responsbiel

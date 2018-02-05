@@ -137,15 +137,13 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Just fill in a dummy moved to ref, to get a ghost.
-		parentDir, ghosts, err := Remove(lkr, nestedDir, true, false)
+		parentDir, ghost, err = Remove(lkr, nestedDir, true, false)
 		if err != nil {
 			t.Fatalf("Directory removal failed: %v", err)
 		}
 
-		for _, ghost := range ghosts {
-			if ghost == nil || ghost.Type() != n.NodeTypeGhost {
-				t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
-			}
+		if ghost == nil || ghost.Type() != n.NodeTypeGhost {
+			t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
 		}
 
 		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {

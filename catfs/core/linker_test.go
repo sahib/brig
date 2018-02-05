@@ -453,3 +453,40 @@ func TestFilesByContent(t *testing.T) {
 		require.Len(t, result, 1)
 	})
 }
+
+func TestResolveRef(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		initCmt, err := lkr.Head()
+		require.Nil(t, err)
+
+		cmts := []*n.Commit{initCmt}
+		for idx := 0; idx < 10; idx++ {
+			_, cmt := MustTouchAndCommit(t, lkr, "/x", byte(idx))
+			cmts = append([]*n.Commit{cmt}, cmts...)
+		}
+
+		// Insert the init cmt a few times as fodder:
+		cmts = append(cmts, initCmt)
+		cmts = append(cmts, initCmt)
+		cmts = append(cmts, initCmt)
+
+		for nUp := 0; nUp < len(cmts)+3; nUp++ {
+			refname := "HEAD"
+			for idx := 0; idx < nUp; idx++ {
+				refname += "^"
+			}
+
+			expect := initCmt
+			if nUp < len(cmts) {
+				expect = cmts[nUp]
+			}
+
+			ref, err := lkr.ResolveRef(refname)
+			require.Nil(t, err)
+			require.Equal(t, expect, ref)
+		}
+
+		_, err = lkr.ResolveRef("HE^^AD")
+		require.Equal(t, err, ie.ErrNoSuchRef("he^^ad"))
+	})
+}
