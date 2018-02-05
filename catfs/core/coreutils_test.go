@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
@@ -336,7 +335,9 @@ func TestMove(t *testing.T) {
 func TestMoveDirectoryWithChild(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
 		MustMkdir(t, lkr, "/src")
-		MustTouch(t, lkr, "/src/x", 1)
+		oldFile := MustTouch(t, lkr, "/src/x", 1)
+		oldFile = oldFile.Copy().(*n.File)
+
 		MustCommit(t, lkr, "before move")
 
 		dir, err := lkr.LookupDirectory("/src")
@@ -346,21 +347,16 @@ func TestMoveDirectoryWithChild(t *testing.T) {
 		MustCommit(t, lkr, "after move")
 
 		file, err := lkr.LookupFile("/dst/x")
-		fmt.Println("old", file.Hash())
 		require.Nil(t, err)
 		require.Equal(t, h.TestDummy(t, 1), file.Content())
 
-		dirGhost, err := lkr.LookupGhost("/src")
+		_, err = lkr.LookupGhost("/src")
 		require.Nil(t, err)
 
-		fileGhost, err := lkr.LookupGhost("/src/x")
-
-		fmt.Println("====")
-		fmt.Println(lkr.LookupNode("/src/x"))
+		// This will resolve to the old file:
+		oldFileReResolved, err := lkr.LookupFile("/src/x")
 		require.Nil(t, err)
-
-		fmt.Println(dirGhost)
-		fmt.Println(fileGhost)
+		require.Equal(t, oldFileReResolved, oldFile)
 	})
 }
 

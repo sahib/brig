@@ -366,7 +366,7 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 		return nil, e.Wrapf(err, "ghost2alive: lookupAt")
 	}
 
-	if reachable == nil {
+	if reacheable == nil {
 		return nil, nil
 	}
 

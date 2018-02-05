@@ -418,6 +418,8 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 			return nil, err
 		}
 
+		// TODO: This currently allows to resolve children of ghost dirs.
+		//       I'm still not sure if we want this.
 		if curr == nil {
 			return nil, ie.NoSuchFile(repoPath)
 		}

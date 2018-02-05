@@ -276,22 +276,22 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	// Remove the old node:
 	_, ghost, err := Remove(lkr, nd, true, true)
 	if err != nil {
-		return err
+		return e.Wrapf(err, "remove old")
 	}
 
 	// The node needs to be told that it's path changed,
 	// since it might need to change it's hash value now.
 	if err := nd.NotifyMove(lkr, oldPath, destPath); err != nil {
-		return err
+		return e.Wrapf(err, "notify move")
 	}
 
 	// And add it to the right destination dir:
 	if err := parentDir.Add(lkr, nd); err != nil {
-		return err
+		return e.Wrapf(err, "parent add")
 	}
 
 	err = n.Walk(lkr, nd, true, func(child n.Node) error {
-		return lkr.StageNode(child)
+		return e.Wrapf(lkr.StageNode(child), "stage node")
 	})
 
 	if err != nil {
@@ -299,7 +299,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	}
 
 	if err := lkr.AddMoveMapping(nd, ghost); err != nil {
-		return err
+		return e.Wrapf(err, "add move mapping")
 	}
 
 	err = lkr.StageNode(nd)

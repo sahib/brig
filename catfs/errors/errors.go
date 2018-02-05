@@ -42,6 +42,15 @@ func IsErrNoSuchRef(err error) bool {
 	return ok
 }
 
+type ErrInvalidRefSpec struct {
+	input string
+	cause string
+}
+
+func (e ErrInvalidRefSpec) Error() string {
+	return fmt.Sprintf("Invalid ref `%s`: %s", e.input, e.cause)
+}
+
 /////////////////
 
 var (
