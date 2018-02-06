@@ -429,19 +429,18 @@ func TestMakeDiff(t *testing.T) {
 			require.Nil(t, fsb.Remove("/y"))
 			require.Nil(t, fsb.MakeCommit("before diff"))
 
-			fmt.Println("---")
-			diff, err := fsa.MakeDiff(fsb, "curr", "curr")
+			diff, err := fsa.MakeDiff(fsb, "head^^^", "curr")
 			require.Nil(t, err)
 
-			require.Equal(t, diff.Added, []StatInfo{*fsb.nodeToStat(fsbA)})
-			require.Equal(t, diff.Removed, []StatInfo{*fsa.nodeToStat(fsaY)})
-			require.Equal(t, diff.Merged, []DiffPair{{
+			require.Equal(t, []StatInfo{*fsb.nodeToStat(fsbA)}, diff.Added)
+			require.Equal(t, []StatInfo{*fsa.nodeToStat(fsaY)}, diff.Removed)
+			require.Equal(t, []DiffPair{{
 				Src: *fsb.nodeToStat(fsbX),
 				Dst: *fsa.nodeToStat(fsaX),
 			}, {
 				Src: *fsb.nodeToStat(fsbZ),
 				Dst: *fsa.nodeToStat(fsaZ),
-			}})
+			}}, diff.Conflict)
 		})
 	})
 }

@@ -208,7 +208,7 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 
 	// This loop can be optimized if the need arises:
 	commonRootFound := false
-	srcRoot, dstRoot := 0, 0
+	srcRoot, dstRoot := len(srcHist), len(dstHist)
 
 	for srcIdx := 0; srcIdx < len(srcHist) && !commonRootFound; srcIdx++ {
 		for dstIdx := 0; dstIdx < len(dstHist) && !commonRootFound; dstIdx++ {
@@ -233,8 +233,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		dstMask |= change.Mask
 	}
 
-	//fmt.Println("HIST", srcMask, dstMask, srcHist, dstHist)
-
 	if len(srcHist) == 0 && len(dstHist) == 0 {
 		return false, 0, 0, nil
 	}
@@ -255,7 +253,7 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	// Both sides have changes. Now we need to figure out if they are compatible.
 	// We do this simply by OR-ing all changes on both side to an individual mask
 	// and check if those can be applied on top of dst's current state.
-	// TODO: Define this really.
+	// TODO: Define this clearly.
 	if !dstMask.IsCompatible(srcMask) {
 		// The changes are not compatible.
 		// We need to apply a conflict resolution strategy.
