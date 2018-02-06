@@ -210,9 +210,17 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	for len(srcHist) > 0 && len(dstHist) > 0 {
 		srcChange, dstChange := srcHist[0], dstHist[0]
 
+		if srcChange.Mask == ChangeTypeNone && dstChange.Mask == ChangeTypeNone {
+			srcHist = srcHist[1:]
+			dstHist = dstHist[1:]
+			continue
+		}
+
 		srcMask |= srcChange.Mask
 		dstMask |= dstChange.Mask
 
+		// NOTE: We check Hash() here, since it also captures
+		//       the path in it's hash.
 		if !srcChange.Curr.Hash().Equal(dstChange.Curr.Hash()) {
 			break
 		}

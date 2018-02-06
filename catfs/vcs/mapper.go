@@ -137,7 +137,7 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 		ma.setDstHandled(dst)
 	}
 
-	fmt.Println("MAP", src, dst)
+	fmt.Println("REPORT", src, dst)
 	return ma.fn(MapPair{
 		Src:           src,
 		Dst:           dst,
