@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -169,6 +170,10 @@ func printDiffTree(diff *client.Diff) {
 		return
 	}
 
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Path < entries[j].Path
+	})
+
 	// Called to format each name in the resulting tree:
 	formatter := func(n *treeNode) string {
 		if n.name == "/" {
@@ -185,7 +190,7 @@ func printDiffTree(diff *client.Diff) {
 				return color.YellowString(" * " + n.name)
 			case diffTypeMoved:
 				name := fmt.Sprintf(
-					" %s -> %s",
+					" %s → %s",
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
 				)
@@ -236,7 +241,8 @@ func printDiff(diff *client.Diff) {
 			return
 		}
 
-		for _, pair := range diff.Merged {
+		fmt.Println(heading)
+		for _, pair := range infos {
 			fmt.Printf("  %s <-> %s\n", pair.Src.Path, pair.Dst.Path)
 		}
 
@@ -265,7 +271,7 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	localName := self.CurrentUser
 	remoteName := self.CurrentUser
 
-	localRev := "HEAD"
+	localRev := "CURR"
 	remoteRev := "HEAD"
 
 	switch n := ctx.NArg(); n {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
@@ -81,7 +82,27 @@ func (n *treeNode) Swap(i, j int) {
 }
 
 func (n *treeNode) Less(i, j int) bool {
-	return n.order[i].name < n.order[j].name
+	// Sort case insensitive.
+	iRunes := []rune(n.order[i].name)
+	jRunes := []rune(n.order[j].name)
+
+	for idx := 0; idx < len(iRunes) && idx < len(jRunes); idx++ {
+		ir := iRunes[idx]
+		jr := jRunes[idx]
+
+		lir := unicode.ToLower(ir)
+		ljr := unicode.ToLower(jr)
+
+		if lir != ljr {
+			return lir < ljr
+		}
+
+		if ir != jr {
+			return ir < jr
+		}
+	}
+
+	return false
 }
 
 func (n *treeNode) Print(cfg *treeCfg) {

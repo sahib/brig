@@ -323,6 +323,15 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
+	movedLst, err := fillDiffPairLst(seg, diff.Moved)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetMoved(*movedLst); err != nil {
+		return nil, err
+	}
+
 	conflictLst, err := fillDiffPairLst(seg, diff.Conflict)
 	if err != nil {
 		return nil, err
@@ -369,11 +378,6 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	if err != nil {
 		return err
 	}
-
-	// It's the same revision, no need to compare.
-	// if localRev == remoteRev {
-	// 	return nil
-	// }
 
 	return vcs.base.withRemoteFs(localOwner, func(localFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(remoteOwner, func(remoteFs *catfs.FS) error {

@@ -206,29 +206,34 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		return false, 0, 0, e.Wrapf(err, "history dst")
 	}
 
-	var srcMask, dstMask ChangeType
-	for len(srcHist) > 0 && len(dstHist) > 0 {
-		srcChange, dstChange := srcHist[0], dstHist[0]
+	// This loop can be optimized if the need arises:
+	commonRootFound := false
+	srcRoot, dstRoot := 0, 0
 
-		if srcChange.Mask == ChangeTypeNone && dstChange.Mask == ChangeTypeNone {
-			srcHist = srcHist[1:]
-			dstHist = dstHist[1:]
-			continue
+	for srcIdx := 0; srcIdx < len(srcHist) && !commonRootFound; srcIdx++ {
+		for dstIdx := 0; dstIdx < len(dstHist) && !commonRootFound; dstIdx++ {
+			srcChange, dstChange := srcHist[srcIdx], dstHist[dstIdx]
+
+			if srcChange.Curr.Content().Equal(dstChange.Curr.Content()) {
+				srcRoot, dstRoot = srcIdx, dstIdx
+				commonRootFound = true
+			}
 		}
-
-		srcMask |= srcChange.Mask
-		dstMask |= dstChange.Mask
-
-		// NOTE: We check Hash() here, since it also captures
-		//       the path in it's hash.
-		if !srcChange.Curr.Hash().Equal(dstChange.Curr.Hash()) {
-			break
-		}
-
-		// Advance history until we find a :
-		srcHist = srcHist[1:]
-		dstHist = dstHist[1:]
 	}
+
+	srcHist = srcHist[:srcRoot]
+	dstHist = dstHist[:dstRoot]
+
+	// Compute the combination of all changes:
+	var srcMask, dstMask ChangeType
+	for _, change := range srcHist {
+		srcMask |= change.Mask
+	}
+	for _, change := range dstHist {
+		dstMask |= change.Mask
+	}
+
+	//fmt.Println("HIST", srcMask, dstMask, srcHist, dstHist)
 
 	if len(srcHist) == 0 && len(dstHist) == 0 {
 		return false, 0, 0, nil
@@ -271,6 +276,7 @@ func (rv *resolver) decide(pair MapPair) error {
 	}
 
 	if pair.SrcWasMoved {
+		fmt.Println("Handle move")
 		return rv.exec.handleMove(pair.Src, pair.Dst)
 	}
 

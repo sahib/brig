@@ -26,7 +26,7 @@ func NewPingMap(netBk backend.Backend) *PingMap {
 	pm := &PingMap{
 		peers: make(map[string]backend.Pinger),
 		netBk: netBk,
-		tickr: time.NewTicker(5 * time.Second),
+		tickr: time.NewTicker(30 * time.Second),
 	}
 
 	go pm.updateLoop()

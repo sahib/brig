@@ -147,11 +147,38 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 	})
 }
 
+func (ma *Mapper) reportByType(src, dst n.ModNode) error {
+	isTypeMismatch := false
+	if src == nil || dst == nil {
+		return ma.report(src, dst, false, false, false)
+	}
+
+	isTypeMismatch = src.Type() != dst.Type()
+
+	if src.Content().Equal(dst.Content()) {
+		// If the files are equal, but the location changed,
+		// the file were moved.
+		if src.Path() != dst.Path() {
+			return ma.report(src, dst, isTypeMismatch, false, true)
+		}
+
+		// The files appear to be equal.
+		// We need to remember to not output them again.
+		ma.setSrcHandled(src)
+		ma.setDstHandled(dst)
+		return nil
+	}
+
+	return ma.report(src, dst, isTypeMismatch, false, false)
+}
+
 func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	// Check if we already visited this file.
 	if ma.isSrcVisited(srcCurr) {
 		return nil
 	}
+
+	fmt.Println("map file", srcCurr.Path(), dstFilePath)
 
 	// Remember that we visited this node.
 	ma.setSrcVisited(srcCurr)
@@ -166,8 +193,6 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		return ma.report(srcCurr, nil, false, false, false)
 	}
 
-	// ma.dstVisited[dstCurr.Path()] = dstCurr
-
 	switch typ := dstCurr.Type(); typ {
 	case n.NodeTypeDirectory:
 		// Our node seems to be a directory and theirs a file.
@@ -180,29 +205,13 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		// File and Directory don't go well together.
 		return ma.report(srcCurr, dstDir, true, false, false)
 	case n.NodeTypeFile:
-		// We have two competing files. Let's figure out if the changes done to
-		// them are compatible.
+		// We have two competing files.
 		dstFile, ok := dstCurr.(*n.File)
 		if !ok {
 			return ie.ErrBadNode
 		}
 
-		// We still have the slight chance that both files
-		// are equal and thus we do not need to do any resolving.
-		if dstFile.Content().Equal(srcCurr.Content()) {
-			ma.setSrcHandled(srcCurr)
-			ma.setDstHandled(dstFile)
-
-			// If the files are equal, but the location changed,
-			// the file were moved.
-			if srcCurr.Path() != dstFile.Path() {
-				return ma.report(srcCurr, dstFile, false, false, true)
-			}
-
-			return nil
-		}
-
-		return ma.report(srcCurr, dstFile, false, false, false)
+		return ma.reportByType(srcCurr, dstFile)
 	case n.NodeTypeGhost:
 		// It's still possible that the file was moved on our side.
 		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurr)
@@ -210,12 +219,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 			return err
 		}
 
-		isTypeMismatch := false
-		if aliveDstCurr != nil && aliveDstCurr.Type() != n.NodeTypeFile {
-			isTypeMismatch = true
-		}
-
-		return ma.report(srcCurr, aliveDstCurr, isTypeMismatch, false, false)
+		return ma.reportByType(srcCurr, aliveDstCurr)
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected node type in syncFile: %v", typ)
 	}
@@ -483,18 +487,16 @@ func (ma *Mapper) handleGhosts() error {
 		switch aliveSrcNd.Type() {
 		case n.NodeTypeFile:
 			// Mark those both ghosts and original node as visited.
-			ma.setSrcVisited(aliveSrcNd)
-			ma.setSrcVisited(srcNd)
 
 			// TODO: Does the check here make sense?
-			mismatch := dstRefNd.Type() != aliveSrcNd.Type()
-			if !aliveSrcNd.Hash().Equal(dstRefNd.Hash()) {
-				return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, false)
-			} else {
-				return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, true)
-			}
-
-			return nil
+			// mismatch := dstRefNd.Type() != aliveSrcNd.Type()
+			// isMove := aliveSrcNd.Path() != dstRefNd.Path()
+			// log.Debugf("Ghost: %v", isMove)
+			// return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, isMove)
+			err = ma.mapFile(aliveSrcNd.(*n.File), dstRefModNd.Path())
+			ma.setSrcVisited(aliveSrcNd)
+			ma.setSrcVisited(srcNd)
+			return err
 		case n.NodeTypeDirectory:
 			ma.setSrcVisited(srcNd)
 			if dstRefNd.Type() != n.NodeTypeDirectory {
@@ -744,6 +746,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err != nil {
 			return err
 		}
+		fmt.Println("Extract leftover src")
 
 		// Extract things in "src" that were not mapped yet.
 		// These are files that can be added to our inventory,
@@ -751,6 +754,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err := ma.extractLeftovers(ma.lkrSrc, srcRoot, true); err != nil {
 			return err
 		}
+		fmt.Println("Extract leftover dst")
 
 		// Check for files for which we
 		return ma.extractLeftovers(ma.lkrDst, dstRoot, false)
