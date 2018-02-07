@@ -429,6 +429,7 @@ func TestMakeDiff(t *testing.T) {
 			require.Nil(t, fsb.Remove("/y"))
 			require.Nil(t, fsb.MakeCommit("before diff"))
 
+			// Use the upwards notation:
 			diff, err := fsa.MakeDiff(fsb, "head^^^", "curr")
 			require.Nil(t, err)
 

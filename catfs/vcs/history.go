@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -148,11 +149,13 @@ func (hw *HistoryWalker) maskFromState(curr, next n.ModNode) ChangeType {
 
 	currHash, err := n.ContentHash(curr)
 	if err != nil {
+		log.Warningf("history: misisng content hash for %s (curr)", curr.Path())
 		return ChangeTypeNone
 	}
 
 	nextHash, err := n.ContentHash(next)
 	if err != nil {
+		log.Warningf("history: misisng content hash for %s (next)", next.Path())
 		return ChangeTypeNone
 	}
 

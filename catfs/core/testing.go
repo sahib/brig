@@ -43,6 +43,19 @@ func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 	})
 }
 
+func WithReloadingLinker(t *testing.T, fn1 func(lkr *Linker), fn2 func(lkr *Linker)) {
+	WithDummyKv(t, func(kv db.Database) {
+		lkr1 := NewLinker(kv)
+		lkr1.SetOwner("alice")
+		MustCommit(t, lkr1, "init")
+
+		fn1(lkr1)
+
+		lkr2 := NewLinker(kv)
+		fn2(lkr2)
+	})
+}
+
 func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	WithDummyLinker(t, func(lkrSrc *Linker) {
 		WithDummyLinker(t, func(lkrDst *Linker) {

@@ -753,3 +753,39 @@ func TestHistoryWithNoParent(t *testing.T) {
 		require.Equal(t, hist[0].Mask, ChangeTypeAdd)
 	})
 }
+
+// Regression test:
+// Directories loose move history operation
+// when restarting the daemon in between.
+func TestHistoryMovedDirsWithReloadedLinker(t *testing.T) {
+	validateHist := func(hist []*Change) {
+		require.Len(t, hist, 2)
+		require.Equal(t, hist[0].Mask, ChangeTypeMove)
+		require.Equal(t, hist[1].Mask, ChangeTypeAdd)
+	}
+
+	c.WithReloadingLinker(t, func(lkr *c.Linker) {
+		childDir := c.MustMkdir(t, lkr, "/child")
+		c.MustCommit(t, lkr, "created")
+		movedDir := c.MustMove(t, lkr, childDir, "/moved_child")
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		hist, err := History(lkr, movedDir, status, nil)
+		require.Nil(t, err)
+
+		validateHist(hist)
+	}, func(lkr *c.Linker) {
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		childDir, err := lkr.LookupDirectory("/moved_child")
+		require.Nil(t, err)
+
+		hist, err := History(lkr, childDir, status, nil)
+		require.Nil(t, err)
+
+		validateHist(hist)
+	})
+}

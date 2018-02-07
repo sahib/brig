@@ -264,15 +264,8 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 
 func ContentHash(nd Node) (h.Hash, error) {
 	switch nd.Type() {
-	case NodeTypeDirectory, NodeTypeCommit:
+	case NodeTypeDirectory, NodeTypeCommit, NodeTypeFile:
 		return nd.Content(), nil
-	case NodeTypeFile:
-		file, ok := nd.(*File)
-		if !ok {
-			return nil, e.Wrapf(ie.ErrBadNode, "cannot convert to file")
-		}
-
-		return file.Content(), nil
 	case NodeTypeGhost:
 		ghost, ok := nd.(*Ghost)
 		if !ok {

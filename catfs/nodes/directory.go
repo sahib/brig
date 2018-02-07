@@ -175,6 +175,7 @@ func (d *Directory) readDirectoryAttr(capdir capnp_model.Directory) error {
 		d.children[name] = hash
 	}
 
+	d.nodeType = NodeTypeDirectory
 	return nil
 }
 
