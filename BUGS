@@ -1,15 +1,9 @@
 - writing logs does not seem to work currently.
 - High CPU consumption when pinging others. (Havoc'd go routine?)
 - Check backend to be safe to run from multiple go routines
-- `brig locate` is not working.
 - brig config swarmport is not used?
 - gometalinting / cleaning up
-- sync algorithm is not fully fledged out
 - add more tests where appropiate (sync...)
 - design sh test suite / tui tests / situation preps.
-
-
-- Version history (at least moves) are not properly persisted during daemon reboots.
-- Moves are not recorded for the right commit?
 
 - Creating directories over ghosts is not possible (brig stage mio; brig rm mio; brig stage mio)

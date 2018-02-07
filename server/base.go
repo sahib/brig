@@ -14,6 +14,7 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/fuse"
@@ -314,7 +315,7 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 
 	ctl, err := p2pnet.Dial(who, rp, bk, subCtx)
 	if err != nil {
-		return err
+		return e.Wrapf(err, "dial")
 	}
 
 	if err := fn(ctl); err != nil {

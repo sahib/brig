@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 
+	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/net/peer"
@@ -32,14 +34,14 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	addr := remote.Fingerprint.Addr()
 	ctl, err := DialByAddr(addr, remote.Fingerprint, rp.Keyring(), bk, ctx)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "by-addr")
 	}
 
 	// Save the remote's public key for later.
 	// Might be used e.g. in locate()
 	remotePubKey, err := ctl.RemotePubKey()
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "remote-pub-key")
 	}
 
 	if err := rp.Keyring().SavePubKey(name, remotePubKey); err != nil {
@@ -62,9 +64,10 @@ func DialByAddr(
 	}
 
 	// Low level by addr, not by brig's remote name:
+	log.Debugf("Raw dial to %s", addr)
 	rawConn, err := bk.Dial(addr, "brig/caprpc")
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "raw")
 	}
 
 	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
@@ -83,7 +86,7 @@ func DialByAddr(
 	// Trigger the authentication:
 	// (otherwise it would be triggered on the first read/write)
 	if err := authConn.Trigger(); err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "auth")
 	}
 
 	// Setup capnp-rpc:

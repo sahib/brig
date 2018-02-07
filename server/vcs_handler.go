@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	fserrs "github.com/sahib/brig/catfs/errors"
 	p2pnet "github.com/sahib/brig/net"
@@ -403,7 +404,7 @@ func (vcs *vcsHandler) doFetch(who string) error {
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		storeBuf, err := ctl.FetchStore()
 		if err != nil {
-			return err
+			return e.Wrapf(err, "fetch-store")
 		}
 
 		bk, err := vcs.base.Backend()
@@ -416,7 +417,7 @@ func (vcs *vcsHandler) doFetch(who string) error {
 			return err
 		}
 
-		return remoteFS.Import(storeBuf)
+		return e.Wrapf(remoteFS.Import(storeBuf), "import")
 	})
 }
 
@@ -441,7 +442,7 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 
 	if call.Params.NeedFetch() {
 		if err := vcs.doFetch(withWhom); err != nil {
-			return err
+			return e.Wrapf(err, "fetch")
 		}
 	}
 
@@ -453,7 +454,7 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 			timeStamp := time.Now().UTC().Format(time.RFC3339)
 			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
 			if err = ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
-				return err
+				return e.Wrapf(err, "merge-commit")
 			}
 
 			return ownFs.Sync(remoteFs)
