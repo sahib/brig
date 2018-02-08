@@ -474,3 +474,18 @@ func TestStage(t *testing.T) {
 		}
 	})
 }
+
+func TestStageDirOverGhost(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		empty := MustMkdir(t, lkr, "/empty")
+		MustMove(t, lkr, empty, "/moved_empty")
+		MustMkdir(t, lkr, "/empty")
+		dir, err := lkr.LookupDirectory("/empty")
+		require.Nil(t, err)
+
+		require.Equal(t, dir.Path(), "/empty")
+		if dir.Type() != n.NodeTypeDirectory {
+			t.Fatalf("/empty is not a directory")
+		}
+	})
+}

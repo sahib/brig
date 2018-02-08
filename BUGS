@@ -5,5 +5,3 @@
 - gometalinting / cleaning up
 - add more tests where appropiate (sync...)
 - design sh test suite / tui tests / situation preps.
-
-- Creating directories over ghosts is not possible (brig stage mio; brig rm mio; brig stage mio)

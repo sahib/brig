@@ -84,12 +84,20 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	}
 
 	if child != nil {
-		if child.Type() != n.NodeTypeDirectory {
-			return nil, fmt.Errorf("`%s` exists and is not a directory", repoPath)
+		switch child.Type() {
+		case n.NodeTypeDirectory:
+			// Nothing to do really. Return the old child.
+			return child.(*n.Directory), nil
+		case n.NodeTypeFile:
+			return nil, fmt.Errorf("`%s` exists and is a file", repoPath)
+		case n.NodeTypeGhost:
+			// Remove the ghost and continue with adding:
+			if err := parent.RemoveChild(lkr, child); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, ie.ErrBadNode
 		}
-
-		// Nothing to do really. Return the old child.
-		return child.(*n.Directory), nil
 	}
 
 	// Make sure, NextInode() and StageNode is written in one batch.
@@ -109,7 +117,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	}
 
 	if err := lkr.StageNode(dir); err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "stage dir")
 	}
 
 	return dir, nil

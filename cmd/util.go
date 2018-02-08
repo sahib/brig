@@ -24,7 +24,7 @@ import (
 var (
 	// backend delivers overly descriptive error messages including
 	// the stirng below. Simply filter this info:
-	rpcErrPattern = regexp.MustCompile(" server/capnp/api.capnp.* rpc exception:")
+	rpcErrPattern = regexp.MustCompile(`\s*server/capnp/api.capnp.*rpc exception:\s*`)
 )
 
 // ExitCode is an error that maps the error interface to a specific error
@@ -259,7 +259,6 @@ func repoIsInitialized(dir string) (bool, error) {
 	for _, name := range names {
 		switch name {
 		case "meta.yml":
-			fmt.Println("Meta exi")
 			return true, nil
 		case "logs":
 			// That's okay.

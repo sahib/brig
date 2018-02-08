@@ -137,6 +137,23 @@ func (db *DiskDatabase) Batch() Batch {
 	return db
 }
 
+func removeNonDirs(path string) error {
+	if path == "/" || path == "" {
+		return nil
+	}
+
+	info, err := os.Stat(path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if info != nil && !info.IsDir() {
+		return os.Remove(path)
+	}
+
+	return removeNonDirs(filepath.Dir(path))
+}
+
 // Put stores a new `val` under `key` at `bucket`.
 // Implementation detail: `key` may contain slashes (/). If used, those keys
 // will result in a nested directory structure.
@@ -148,7 +165,15 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 	db.ops = append(db.ops, func() error {
 		filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
 
-		if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
+		// If any of the parent are non-directories,
+		// we need to remove them, since more nesting is requested.
+		// (e.g. set /a/b/c/d over /a/b/c, where c is a file)
+		parentDir := filepath.Dir(filePath)
+		if err := removeNonDirs(parentDir); err != nil {
+			return err
+		}
+
+		if err := os.MkdirAll(parentDir, 0700); err != nil {
 			return err
 		}
 
