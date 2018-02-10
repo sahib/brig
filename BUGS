@@ -5,3 +5,6 @@
 - gometalinting / cleaning up
 - add more tests where appropiate (sync...)
 - design sh test suite / tui tests / situation preps.
+
+
+- Pinning looks somewhat broken when e.g. moving directories.
