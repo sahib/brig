@@ -1,0 +1,201 @@
+@import url(http://fonts.googleapis.com/css?family=Vollkorn);
+
+body {
+    background-image: url(images/noise.png);
+    background-color: #0094d0;
+    color: #eee;
+}
+
+a {
+    color: #aaaaee;
+}
+
+ul {
+	font-family: Vollkorn;
+	font-size: 45px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 400;
+
+    display: block;
+    margin: auto;
+    margin-bottom: 10px;
+    width: fit-content;
+}
+
+h1, h2, h3 {
+    display: block;
+    margin: auto;
+    margin-bottom: 30px;
+    width: fit-content;
+
+    padding-left: 5px;
+    padding-right: 10px;
+    padding-top: 10px;
+
+    background-color: white;
+    color: #124255;
+
+	font-family: Vollkorn;
+	font-size: 60px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 700;
+
+}
+
+h2 {
+	font-size: 40px;
+}
+
+img {
+    display: block;
+    margin: auto;
+}
+
+p {
+	font-family: Vollkorn;
+	font-size: 44px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 400;
+	line-height: 50px;
+
+    display: block;
+    margin: auto;
+    margin-top: 3vh;
+    margin-bottom: 3vh;
+    width: fit-content;
+}
+
+blockquote {
+	font-family: Vollkorn;
+	font-size: 40px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 400;
+	line-height: 30px;
+}
+
+pre {
+	font-family: Fira Code;
+	font-size: 25px;
+	font-style:normal;
+	font-weight: 400;
+	line-height: 40px;
+
+    padding: 20px;
+
+    /*
+    background-color: #000;
+    border-color: #000;
+    */
+
+    border-style: solid;
+    border-radius: 10px;
+
+    display: block;
+    margin-right: 30vw;
+    min-width: 40vw;
+
+    color: #0094d0;
+    background-color: #fff;
+    border-color: #fff;
+}
+
+/* Special roles */
+
+.slide-number {
+	;font-family: Vollkorn;
+	font-style: italic;
+	font-size: 100px;
+	font-weight: 700;
+    opacity: 0.3;
+}
+
+.title-logo {
+	font-size: 100px;
+	font-weight: 700;
+    display: block;
+    text-align: center;
+}
+
+.donald {
+    font-variant: small-caps;
+	font-weight: 700;
+    font-size: 40px;
+
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 5px;
+
+    border-width: 12px;
+    border-style: solid;
+    border-color: white;
+}
+
+.white-bg {
+    background-color: white;
+    color: #124255;
+	font-size: 40px;
+	font-weight: 700;
+
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 5px;
+
+    display: block;
+    margin: auto;
+    margin-bottom: 10px;
+    width: fit-content;
+}
+
+.strike {
+  text-decoration: line-through;
+}
+
+.github:before {
+    background-image: url(images/github.png);
+    background-size: 1em 1em;
+    background-repeat: no-repeat;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    position: relative;
+    top: 0.2em;
+    padding-right: 0.3em;
+    content: " ";
+}
+
+.binocs {
+    position: fixed;
+    bottom: 12vh;
+    right: -12vw;
+}
+
+.img-tux {
+    position: fixed;
+    bottom: 10vh;
+    right: -12vw;
+}
+
+.img-gopher {
+    position: fixed;
+    top: 10vh;
+    left: -12vw;
+}
+
+.small-list > ul {
+    font-size: 40px;
+}
+
+.small {
+    font-size: 32px;
+    font-style: italic;
+}
+
+.underline {
+    text-decoration: underline;
+    font-style: italic;
+}

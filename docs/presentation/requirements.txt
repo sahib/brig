@@ -1,0 +1,9 @@
+argh==0.26.2
+docutils==0.14
+hovercraft==2.5
+lxml==4.1.1
+pathtools==0.1.2
+Pygments==2.2.0
+PyYAML==3.12
+svg.path==2.2
+watchdog==0.8.3
