@@ -41,18 +41,30 @@ func (n *treeNode) Insert(entry client.StatInfo) {
 	}
 
 	curr := n
+	currParts := []string{""}
 
 	for depth, name := range parts {
 		if curr.children == nil {
 			curr.children = make(map[string]*treeNode)
 		}
 
+		currParts = append(currParts, name)
+		currPath := strings.Join(currParts, "/")
+
 		child, ok := curr.children[name]
 		if !ok {
+			childEntry := entry
+			if currPath != entry.Path {
+				childEntry = client.StatInfo{
+					IsPinned: false,
+					Path:     currPath,
+				}
+			}
+
 			child = &treeNode{
 				name:  name,
 				depth: depth + 1,
-				entry: entry,
+				entry: childEntry,
 			}
 
 			child.isLast = true

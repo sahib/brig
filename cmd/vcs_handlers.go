@@ -189,6 +189,7 @@ func printDiffTree(diff *client.Diff) {
 			case diffTypeIgnored:
 				return color.YellowString(" * " + n.name)
 			case diffTypeMoved:
+				// TODO: Print base(src) and relTo(src, dst)
 				name := fmt.Sprintf(
 					" %s → %s",
 					diffEntry.pair.Src.Path,
