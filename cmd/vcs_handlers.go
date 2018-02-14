@@ -60,8 +60,26 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
+	containsMoves := false
+	for _, entry := range history {
+		for _, detail := range entry.Mask {
+			if detail == "moved" {
+				containsMoves = true
+				break
+			}
+		}
+
+		if containsMoves {
+			break
+		}
+	}
+
 	if len(history) != 0 {
-		fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\tHOW\tWHEN\t\n")
+		if containsMoves {
+			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\tHOW\tWHEN\t\n")
+		} else {
+			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\t\tWHEN\t\n")
+		}
 	}
 
 	for idx, entry := range history {
