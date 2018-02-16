@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -127,6 +129,25 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 	return tabW.Flush()
 }
 
+// makePathAbbrev tries to abbreviate the `dst` path if
+// both are in the same directory.
+func makePathAbbrev(src, dst string) string {
+	if path.Dir(src) == path.Dir(dst) {
+		return path.Base(dst)
+	}
+
+	relPath, err := filepath.Rel(path.Dir(src), dst)
+	if err != nil {
+		fmt.Println("Failed to get relatie path: ", err)
+		return dst
+	}
+
+	// We could also possibly check here if relPath is longer than dst
+	// and only display the relative version then. But being consistent
+	// is more valueable here I think.
+	return relPath
+}
+
 func printDiffTree(diff *client.Diff) {
 	const (
 		diffTypeNone = iota
@@ -208,24 +229,36 @@ func printDiffTree(diff *client.Diff) {
 				return color.YellowString(" * " + n.name)
 			case diffTypeMoved:
 				// TODO: Print base(src) and relTo(src, dst)
-				name := fmt.Sprintf(
-					" %s → %s",
+				dstPath := makePathAbbrev(
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
+				)
+				name := fmt.Sprintf(
+					" %s → %s",
+					path.Base(diffEntry.pair.Src.Path),
+					dstPath,
 				)
 				return color.BlueString(name)
 			case diffTypeMerged:
-				name := fmt.Sprintf(
-					" %s ⇄ %s",
+				dstPath := makePathAbbrev(
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
 				)
+				name := fmt.Sprintf(
+					" %s ⇄ %s",
+					path.Base(diffEntry.pair.Src.Path),
+					dstPath,
+				)
 				return color.CyanString(name)
 			case diffTypeConflict:
-				name := fmt.Sprintf(
-					" %s ⚡ %s",
+				dstPath := makePathAbbrev(
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
+				)
+				name := fmt.Sprintf(
+					" %s ⚡ %s",
+					path.Base(diffEntry.pair.Src.Path),
+					dstPath,
 				)
 				return color.MagentaString(name)
 			}
