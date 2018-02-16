@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -276,21 +277,29 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 func handleEdit(ctx *cli.Context, ctl *client.Client) error {
 	repoPath := ctx.Args().First()
 
-	r, err := ctl.Cat(repoPath)
+	exists, err := ctl.Exists(repoPath)
 	if err != nil {
 		return err
 	}
 
-	defer util.Closer(r)
+	data := []byte{}
+	if exists {
+		r, err := ctl.Cat(repoPath)
+		if err != nil {
+			return err
+		}
 
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
+		defer util.Closer(r)
+
+		data, err = ioutil.ReadAll(r)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Guess the suffix of the file.
 	// This doesn't matter that much, but helps syntax highlighting.
-	suffix := repoPath
+	suffix := path.Base(repoPath)
 	suffixIdx := strings.LastIndexByte(repoPath, '.')
 	if suffixIdx >= 0 {
 		suffix = repoPath[suffixIdx:]
@@ -308,4 +317,9 @@ func handleEdit(ctx *cli.Context, ctl *client.Client) error {
 	}()
 
 	return ctl.Stage(tempPath, repoPath)
+}
+
+func handleTouch(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := ctx.Args().First()
+	return ctl.Touch(repoPath)
 }

@@ -262,3 +262,25 @@ func (cl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
 
 	return freed, nil
 }
+
+func (cl *Client) Touch(path string) error {
+	call := cl.api.Touch(cl.ctx, func(p capnp.FS_touch_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (cl *Client) Exists(path string) (bool, error) {
+	call := cl.api.Exists(cl.ctx, func(p capnp.FS_exists_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, err
+	}
+
+	return result.Exists(), nil
+}

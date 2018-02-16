@@ -392,6 +392,15 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
 		},
 		cli.Command{
+			Name:        "touch",
+			Aliases:     []string{"t"},
+			Category:    wdirGroup,
+			Usage:       "Create an empty file or update the timestamp of an existing",
+			ArgsUsage:   "<file>",
+			Description: "Create an empty file or update the timestamp of an existing",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleTouch, true)),
+		},
+		cli.Command{
 			Name:        "cat",
 			Category:    wdirGroup,
 			Usage:       "Output content of any file to stdout",

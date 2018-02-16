@@ -107,6 +107,8 @@ interface FS {
     unpin          @8   (path :Text);
     stat           @9   (path :Text) -> (info :StatInfo);
     garbageCollect @10  (aggressive :Bool) -> (freed :List(GarbageItem));
+    touch          @11  (path :Text);
+    exists         @12  (path :Text) -> (exists :Bool);
 }
 
 interface VCS {

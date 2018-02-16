@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/sahib/brig/catfs"
+	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -333,4 +334,38 @@ func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
 	}
 
 	return call.Results.SetFreed(freed)
+}
+
+func (fh *fsHandler) Touch(call capnp.FS_touch) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		return fs.Touch(path)
+	})
+}
+
+func (fh *fsHandler) Exists(call capnp.FS_exists) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		_, err := fs.Stat(path)
+
+		exists := true
+		if err != nil {
+			if ie.IsNoSuchFileError(err) {
+				exists = false
+			} else {
+				return err
+			}
+		}
+
+		call.Results.SetExists(exists)
+		return nil
+	})
 }
