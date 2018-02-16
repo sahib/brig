@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sahib/brig/cmd/tabwriter"
@@ -297,15 +296,7 @@ func handleEdit(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	// Guess the suffix of the file.
-	// This doesn't matter that much, but helps syntax highlighting.
-	suffix := path.Base(repoPath)
-	suffixIdx := strings.LastIndexByte(repoPath, '.')
-	if suffixIdx >= 0 {
-		suffix = repoPath[suffixIdx:]
-	}
-
-	tempPath, err := editToPath(data, suffix)
+	tempPath, err := editToPath(data, path.Ext(repoPath))
 	if err != nil {
 		return err
 	}
