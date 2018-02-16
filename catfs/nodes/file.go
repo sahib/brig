@@ -142,9 +142,9 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
-func (f *File) Copy() ModNode {
+func (f *File) Copy(inode uint64) ModNode {
 	return &File{
-		Base:   f.Base.copyBase(),
+		Base:   f.Base.copyBase(inode),
 		size:   f.size,
 		parent: f.parent,
 		key:    f.key,

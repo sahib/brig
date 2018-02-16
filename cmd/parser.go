@@ -474,9 +474,17 @@ func RunCmdline(args []string) int {
 			Name:        "mv",
 			Category:    wdirGroup,
 			Usage:       "Move a specific file",
-			ArgsUsage:   "<sourcefile> <destinationfile>",
+			ArgsUsage:   "<source> <destination>",
 			Description: "Move a file from SOURCE to DEST",
 			Action:      withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
+		},
+		cli.Command{
+			Name:        "cp",
+			Category:    wdirGroup,
+			Usage:       "Copy a file or directory elsewhere (reflink)",
+			ArgsUsage:   "<source> <dest>",
+			Description: "Copy a file from SOURCE to DEST",
+			Action:      withArgCheck(needAtLeast(2), withDaemon(handleCp, true)),
 		},
 		cli.Command{
 			Name:        "edit",

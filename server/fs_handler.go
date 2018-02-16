@@ -201,6 +201,26 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 	})
 }
 
+func (fh *fsHandler) Copy(call capnp.FS_copy) error {
+	server.Ack(call.Options)
+
+	srcPath, err := call.Params.SrcPath()
+	if err != nil {
+		return err
+	}
+
+	dstPath, err := call.Params.DstPath()
+	if err != nil {
+		return err
+	}
+
+	srcPath = prefixSlash(srcPath)
+	dstPath = prefixSlash(dstPath)
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		return fs.Copy(srcPath, dstPath)
+	})
+}
+
 func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 	server.Ack(call.Options)
 

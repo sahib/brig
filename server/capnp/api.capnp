@@ -96,16 +96,17 @@ struct GarbageItem $Go.doc("A single item that was killed by the gc") {
 }
 
 interface FS {
-    stage          @0  (localPath :Text, repoPath :Text);
-    list           @1  (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat            @2  (path :Text) -> (port :Int32);
-    mkdir          @3  (path :Text, createParents :Bool);
-    remove         @4  (path :Text);
-    move           @5  (srcPath :Text, dstPath :Text);
-    pin            @6  (path :Text);
-    unpin          @7  (path :Text);
-    stat           @8  (path :Text) -> (info :StatInfo);
-    garbageCollect @9  (aggressive :Bool) -> (freed :List(GarbageItem));
+    stage          @0   (localPath :Text, repoPath :Text);
+    list           @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat            @2   (path :Text) -> (port :Int32);
+    mkdir          @3   (path :Text, createParents :Bool);
+    remove         @4   (path :Text);
+    move           @5   (srcPath :Text, dstPath :Text);
+    copy           @6   (srcPath :Text, dstPath :Text);
+    pin            @7   (path :Text);
+    unpin          @8   (path :Text);
+    stat           @9   (path :Text) -> (info :StatInfo);
+    garbageCollect @10  (aggressive :Bool) -> (freed :List(GarbageItem));
 }
 
 interface VCS {

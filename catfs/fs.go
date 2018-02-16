@@ -284,6 +284,19 @@ func (fs *FS) Move(src, dst string) error {
 	return c.Move(fs.lkr, srcNd, dst)
 }
 
+func (fs *FS) Copy(src, dst string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	srcNd, err := lookupFileOrDir(fs.lkr, src)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Copy(fs.lkr, srcNd, dst)
+	return err
+}
+
 func (fs *FS) Mkdir(path string, createParents bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

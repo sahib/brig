@@ -31,7 +31,7 @@ func MakeGhost(nd ModNode, inode uint64) (*Ghost, error) {
 	}
 
 	return &Ghost{
-		ModNode:    nd.Copy(),
+		ModNode:    nd.Copy(nd.Inode()),
 		oldType:    nd.Type(),
 		ghostInode: inode,
 		ghostPath:  nd.Path(),

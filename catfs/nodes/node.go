@@ -122,5 +122,5 @@ type ModNode interface {
 	NotifyMove(lkr Linker, oldPath, newPath string) error
 
 	// TODO: Should this be part of this interface?
-	Copy() ModNode
+	Copy(inode uint64) ModNode
 }

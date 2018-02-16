@@ -123,6 +123,12 @@ func handleMv(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Move(srcPath, dstPath)
 }
 
+func handleCp(ctx *cli.Context, ctl *client.Client) error {
+	srcPath := ctx.Args().Get(0)
+	dstPath := ctx.Args().Get(1)
+	return ctl.Copy(srcPath, dstPath)
+}
+
 func colorForSize(size uint64) func(f string, a ...interface{}) string {
 	switch {
 	case size >= 1024 && size < 1024<<10:

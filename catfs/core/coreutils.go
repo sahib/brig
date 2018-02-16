@@ -183,6 +183,122 @@ func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Di
 	return parentDir, nil, nil
 }
 
+// prepareParent tries to figure out the correct parent directory when attempting
+// to move `nd` to `destPath`. It also removes any nodes that are "in the way" if possible.
+func prepareParent(lkr *Linker, nd n.ModNode, destPath string) (*n.Directory, error) {
+	// Check if the destination already exists:
+	destNode, err := lkr.LookupModNode(destPath)
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return nil, err
+	}
+
+	if destNode == nil {
+		// No node at this place yet, attempt to look it up.
+		return lkr.LookupDirectory(path.Dir(destPath))
+	}
+
+	switch destNode.Type() {
+	case n.NodeTypeDirectory:
+		// Move inside of this directory.
+		// Check if there is already a file
+		destDir, ok := destNode.(*n.Directory)
+		if !ok {
+			return nil, ie.ErrBadNode
+		}
+
+		child, err := destDir.Child(lkr, nd.Name())
+		if err != nil {
+			return nil, err
+		}
+
+		// Oh, something is in there?
+		if child != nil {
+			if nd.Type() == n.NodeTypeFile {
+				// TODO: more details
+				return nil, fmt.Errorf("Cannot overwrite a directory with a file")
+			}
+
+			childDir, ok := child.(*n.Directory)
+			if !ok {
+				return nil, ie.ErrBadNode
+			}
+
+			if childDir.Size() > 0 {
+				return nil, fmt.Errorf("Cannot move over: %s; directory is not empty!", child.Path())
+			}
+
+			// Okay, there is an empty directory. Let's remove it to
+			// replace it with our source node.
+			log.Warningf("Remove child dir: %v", childDir)
+			if _, _, err := Remove(lkr, childDir, false, false); err != nil {
+				return nil, err
+			}
+		}
+
+		return destDir, nil
+	case n.NodeTypeFile:
+		log.Warningf("Remove file: %v", destNode.Path())
+		parentDir, _, err := Remove(lkr, destNode, false, false)
+		return parentDir, err
+	case n.NodeTypeGhost:
+		// It is already a ghost. Overwrite it and do not create a new one.
+		log.Warningf("Remove ghost: %v", destNode.Path())
+		parentDir, _, err := Remove(lkr, destNode, false, true)
+		return parentDir, err
+	default:
+		return nil, ie.ErrBadNode
+	}
+}
+
+func Copy(lkr *Linker, nd n.ModNode, destPath string) (newNode n.ModNode, err error) {
+	// Forbid moving a node inside of one of it's subdirectories.
+	if nd.Path() == destPath {
+		return nil, fmt.Errorf("Source and Dest are the same file: %v", destPath)
+	}
+
+	if strings.HasPrefix(path.Dir(destPath), nd.Path()) {
+		return nil, fmt.Errorf(
+			"Cannot move `%s` into it's own subdir `%s`",
+			nd.Path(),
+			destPath,
+		)
+	}
+
+	// Make sure both StageNode() will be written in one batch:
+	batch := lkr.kv.Batch()
+	defer func() {
+		if err != nil {
+			batch.Rollback()
+		} else {
+			err = batch.Flush()
+		}
+	}()
+
+	parentDir, err := prepareParent(lkr, nd, destPath)
+	if err != nil {
+		return nil, e.Wrapf(err, "handle parent")
+	}
+
+	// And add it to the right destination dir:
+	newNode = nd.Copy(lkr.NextInode())
+	newNode.SetName(path.Base(destPath))
+	newNode.NotifyMove(lkr, nd.Path(), newNode.Path())
+
+	if err := parentDir.Add(lkr, newNode); err != nil {
+		return nil, e.Wrapf(err, "parent add")
+	}
+
+	fmt.Println(parentDir.ChildrenSorted(lkr))
+
+	if err := lkr.StageNode(newNode); err != nil {
+		return nil, err
+	}
+
+	fmt.Println(parentDir.ChildrenSorted(lkr))
+
+	return newNode, nil
+}
+
 func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if nd.Path() == destPath {
@@ -197,14 +313,6 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		)
 	}
 
-	// Check if the destination already exists:
-	destNode, err := lkr.LookupModNode(destPath)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return err
-	}
-
-	var parentDir *n.Directory
-
 	// Make sure both StageNode() will be written in one batch:
 	batch := lkr.kv.Batch()
 	defer func() {
@@ -215,73 +323,13 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		}
 	}()
 
-	if destNode != nil {
-		switch destNode.Type() {
-		case n.NodeTypeDirectory:
-			// Move inside of this directory.
-			// Check if there is already a file
-			destDir, ok := destNode.(*n.Directory)
-			if !ok {
-				return ie.ErrBadNode
-			}
-
-			child, err := destDir.Child(lkr, nd.Name())
-			if err != nil {
-				return err
-			}
-
-			// Oh, something is in there?
-			if child != nil {
-				if nd.Type() == n.NodeTypeFile {
-					// TODO: more details
-					return fmt.Errorf("Cannot overwrite a directory with a file")
-				}
-
-				childDir, ok := child.(*n.Directory)
-				if !ok {
-					return ie.ErrBadNode
-				}
-
-				if childDir.Size() > 0 {
-					return fmt.Errorf("Cannot move over: %s; directory is not empty!", child.Path())
-				}
-
-				// Okay, there is an empty directory. Let's remove it to
-				// replace it with our source node.
-				log.Warningf("Remove child dir: %v", childDir)
-				if _, _, err := Remove(lkr, childDir, false, false); err != nil {
-					return err
-				}
-			}
-
-			parentDir = destDir
-		case n.NodeTypeFile:
-			log.Warningf("Remove file: %v", destNode.Path())
-			parentDir, _, err = Remove(lkr, destNode, false, false)
-			if err != nil {
-				return err
-			}
-		case n.NodeTypeGhost:
-			// It is already a ghost. Overwrite it and do not create a new one.
-			log.Warningf("Remove ghost: %v", destNode.Path())
-			parentDir, _, err = Remove(lkr, destNode, false, true)
-			if err != nil {
-				return err
-			}
-		default:
-			return ie.ErrBadNode
-		}
-	} else {
-		// No node at this place yet, attempt to look it up.
-		parentDir, err = lkr.LookupDirectory(path.Dir(destPath))
-		if err != nil {
-			return err
-		}
+	parentDir, err := prepareParent(lkr, nd, destPath)
+	if err != nil {
+		return err
 	}
 
-	oldPath := nd.Path()
-
 	// Remove the old node:
+	oldPath := nd.Path()
 	_, ghost, err := Remove(lkr, nd, true, true)
 	if err != nil {
 		return e.Wrapf(err, "remove old")
@@ -310,15 +358,10 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return e.Wrapf(err, "add move mapping")
 	}
 
-	err = lkr.StageNode(nd)
-	if err != nil {
-		return err
-	}
-
 	return err
 }
 
-// TODO: This interface sucks.
+// TODO: This struct sucks.
 type NodeUpdate struct {
 	Hash   h.Hash
 	Size   uint64

@@ -16,7 +16,6 @@ type Linker interface {
 	Root() (*Directory, error)
 
 	// LookupNode should resolve `path` starting from the root directory.
-	// TODO: Is LookupNode("/") the same as Root()?
 	// If the path does not exist an error is returned and can be checked
 	// with IsNoSuchFileError()
 	LookupNode(path string) (Node, error)

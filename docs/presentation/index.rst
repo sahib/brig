@@ -306,12 +306,13 @@ Einen hab ich noch!
     ``brig`` macht an sich nichts neues.
     Aber wie beim Kochen macht die Kombi das Gericht:
 
+    Komplette Seperation von Daten und Metadaten.
+
 |
 |
 
 .. image:: images/pin.png
     :width: 40%
-
 
 ----
 
@@ -352,6 +353,8 @@ Disclaimer: Sicherheit?
 
 Featurelücken
 =============
+
+TODO: Bild von einer Zahnlücke.
 
 - Stabilisierung.
 - Partielle Synchronisation.

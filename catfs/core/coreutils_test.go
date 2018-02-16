@@ -1,6 +1,7 @@
 package core
 
 import (
+	"path"
 	"sort"
 	"testing"
 
@@ -215,6 +216,87 @@ func moveInvalidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 	}
 }
 
+var moveAndCopyTestCases = []struct {
+	name        string
+	isErrorCase bool
+	setup       func(t *testing.T, lkr *Linker) (n.ModNode, string)
+}{
+	{
+		name:        "basic",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/a/b/c")
+			return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
+		},
+	}, {
+		name:        "basic-same-level",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			return MustTouch(t, lkr, "/a", 1), "/b"
+		},
+	}, {
+		name:        "into-directory",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/a/b/c")
+			MustMkdir(t, lkr, "/a/b/d")
+			return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
+		},
+	}, {
+		name:        "error-to-directory-contains-file",
+		isErrorCase: true,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/src")
+			MustMkdir(t, lkr, "/dst")
+			MustTouch(t, lkr, "/dst/x", 1)
+			return MustTouch(t, lkr, "/src/x", 1), "/dst"
+		},
+	}, {
+		name:        "error-file-over-existing",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/src")
+			MustMkdir(t, lkr, "/dst")
+			MustTouch(t, lkr, "/dst/x", 1)
+			return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
+		},
+	}, {
+		name:        "error-file-over-existing",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/src")
+			MustMkdir(t, lkr, "/dst")
+			MustTouch(t, lkr, "/dst/x", 1)
+			return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
+		},
+	}, {
+		name:        "error-file-over-ghost",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/src")
+			MustMkdir(t, lkr, "/dst")
+			destFile := MustTouch(t, lkr, "/dst/x", 1)
+			MustRemove(t, lkr, destFile)
+			return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
+		},
+	}, {
+		name:        "error-src-equal-dst",
+		isErrorCase: true,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			return MustTouch(t, lkr, "/x", 1), "/x"
+		},
+	}, {
+		name:        "error-into-own-subdir",
+		isErrorCase: true,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			// We should not be able to move "/dir" into itself.
+			dir := MustMkdir(t, lkr, "/dir")
+			MustTouch(t, lkr, "/dir/x", 1)
+			return dir, "/dir/own"
+		},
+	},
+}
+
 func TestMove(t *testing.T) {
 	// Cases to cover for move():
 	// 1.        Dest exists:
@@ -236,82 +318,7 @@ func TestMove(t *testing.T) {
 	// Checks for invalid cases (E):
 	// 1) src is not gone.
 
-	var tcs = []struct {
-		name        string
-		isErrorCase bool
-		setup       func(t *testing.T, lkr *Linker) (n.ModNode, string)
-	}{
-		{
-			name:        "basic",
-			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/a/b/c")
-				return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
-			},
-		}, {
-			name:        "move-into-directory",
-			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/a/b/c")
-				MustMkdir(t, lkr, "/a/b/d")
-				return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
-			},
-		}, {
-			name:        "error-move-to-directory-contains-file",
-			isErrorCase: true,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/src")
-				MustMkdir(t, lkr, "/dst")
-				MustTouch(t, lkr, "/dst/x", 1)
-				return MustTouch(t, lkr, "/src/x", 1), "/dst"
-			},
-		}, {
-			name:        "error-move-file-over-existing",
-			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/src")
-				MustMkdir(t, lkr, "/dst")
-				MustTouch(t, lkr, "/dst/x", 1)
-				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
-			},
-		}, {
-			name:        "error-move-file-over-existing",
-			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/src")
-				MustMkdir(t, lkr, "/dst")
-				MustTouch(t, lkr, "/dst/x", 1)
-				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
-			},
-		}, {
-			name:        "error-move-file-over-ghost",
-			isErrorCase: false,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				MustMkdir(t, lkr, "/src")
-				MustMkdir(t, lkr, "/dst")
-				destFile := MustTouch(t, lkr, "/dst/x", 1)
-				MustRemove(t, lkr, destFile)
-				return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
-			},
-		}, {
-			name:        "error-move-src-equal-dst",
-			isErrorCase: true,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				return MustTouch(t, lkr, "/x", 1), "/x"
-			},
-		}, {
-			name:        "error-move-into-own-subdir",
-			isErrorCase: true,
-			setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-				// We should not be able to move "/dir" into itself.
-				dir := MustMkdir(t, lkr, "/dir")
-				MustTouch(t, lkr, "/dir/x", 1)
-				return dir, "/dir/own"
-			},
-		},
-	}
-
-	for _, tc := range tcs {
+	for _, tc := range moveAndCopyTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
@@ -336,7 +343,7 @@ func TestMoveDirectoryWithChild(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
 		MustMkdir(t, lkr, "/src")
 		oldFile := MustTouch(t, lkr, "/src/x", 1)
-		oldFile = oldFile.Copy().(*n.File)
+		oldFile = oldFile.Copy(oldFile.Inode()).(*n.File)
 
 		MustCommit(t, lkr, "before move")
 
@@ -488,4 +495,65 @@ func TestStageDirOverGhost(t *testing.T) {
 			t.Fatalf("/empty is not a directory")
 		}
 	})
+}
+
+func TestCopy(t *testing.T) {
+	for _, tc := range moveAndCopyTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			WithDummyLinker(t, func(lkr *Linker) {
+				// Setup src and dest dir with a file in it named like src.
+				srcNd, dstPath := tc.setup(t, lkr)
+				srcPath := srcNd.Path()
+
+				newNd, err := Copy(lkr, srcNd, dstPath)
+
+				if newNd != nil {
+					// Make sure the new copy is reachable from parent:
+					par, err := lkr.LookupDirectory(path.Dir(newNd.Path()))
+					if err != nil {
+						t.Fatalf("Failed to lookup parent: %v", err)
+					}
+
+					newChildNd, err := par.Child(lkr, newNd.Name())
+					if err != nil {
+						t.Fatalf("Failed to get base path: %v", err)
+					}
+
+					newNd = newChildNd.(n.ModNode)
+				}
+
+				if err != nil {
+					if tc.isErrorCase {
+						node, err := lkr.LookupNode(srcPath)
+						if err != nil {
+							t.Fatalf("Source node vanished during errorneous copy: %v", err)
+						}
+
+						if node.Type() == n.NodeTypeGhost {
+							t.Fatalf("Source node was converted to a ghost: %v", node.Path())
+						}
+					} else {
+						t.Fatalf("Copy failed unexpectly: %v", err)
+					}
+
+					return
+				}
+
+				if newNd == nil {
+					t.Fatalf("Dest node does not exist after copy: %v", err)
+				}
+
+				if !newNd.Content().Equal(srcNd.Content()) {
+					t.Logf("Content of src and dst differ after copy")
+					t.Logf("WANT: %v", srcNd.Content())
+					t.Logf("GOT : %v", newNd.Content())
+					t.Fatalf("Check Copy()")
+				}
+
+				if newNd.Inode() < srcNd.Inode() {
+					t.Fatalf("New inode has <= inode of src")
+				}
+			})
+		})
+	}
 }

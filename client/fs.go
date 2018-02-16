@@ -160,6 +160,19 @@ func (cl *Client) Move(srcPath, dstPath string) error {
 	return err
 }
 
+func (cl *Client) Copy(srcPath, dstPath string) error {
+	call := cl.api.Copy(cl.ctx, func(p capnp.FS_copy_Params) error {
+		if err := p.SetSrcPath(srcPath); err != nil {
+			return err
+		}
+
+		return p.SetDstPath(dstPath)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 func (cl *Client) Pin(path string) error {
 	call := cl.api.Pin(cl.ctx, func(p capnp.FS_pin_Params) error {
 		return p.SetPath(path)

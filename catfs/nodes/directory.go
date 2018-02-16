@@ -444,14 +444,14 @@ func (d *Directory) SetModTime(modTime time.Time) {
 	d.Base.modTime = modTime.Truncate(time.Microsecond)
 }
 
-func (d *Directory) Copy() ModNode {
+func (d *Directory) Copy(inode uint64) ModNode {
 	children := make(map[string]h.Hash)
 	for name, hash := range d.children {
 		children[name] = hash.Clone()
 	}
 
 	return &Directory{
-		Base:       d.Base.copyBase(),
+		Base:       d.Base.copyBase(inode),
 		size:       d.size,
 		parentName: d.parentName,
 		children:   children,

@@ -35,14 +35,14 @@ type Base struct {
 }
 
 // copyBase will copy all attributes from the base.
-func (b *Base) copyBase() Base {
+func (b *Base) copyBase(inode uint64) Base {
 	return Base{
 		name:     b.name,
 		hash:     b.hash.Clone(),
 		content:  b.content.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
-		inode:    b.inode,
+		inode:    inode,
 	}
 }
 
