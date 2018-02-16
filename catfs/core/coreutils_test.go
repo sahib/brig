@@ -243,6 +243,15 @@ var moveAndCopyTestCases = []struct {
 			return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
 		},
 	}, {
+		name:        "into-nonempty-directory",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/a/b/c")
+			MustMkdir(t, lkr, "/a/b/d")
+			MustTouch(t, lkr, "/a/b/d/y", 1)
+			return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/d"
+		},
+	}, {
 		name:        "error-to-directory-contains-file",
 		isErrorCase: true,
 		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {

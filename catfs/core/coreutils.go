@@ -184,17 +184,17 @@ func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Di
 }
 
 // prepareParent tries to figure out the correct parent directory when attempting
-// to move `nd` to `destPath`. It also removes any nodes that are "in the way" if possible.
-func prepareParent(lkr *Linker, nd n.ModNode, destPath string) (*n.Directory, error) {
+// to move `nd` to `dstPath`. It also removes any nodes that are "in the way" if possible.
+func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, error) {
 	// Check if the destination already exists:
-	destNode, err := lkr.LookupModNode(destPath)
+	destNode, err := lkr.LookupModNode(dstPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return nil, err
 	}
 
 	if destNode == nil {
 		// No node at this place yet, attempt to look it up.
-		return lkr.LookupDirectory(path.Dir(destPath))
+		return lkr.LookupDirectory(path.Dir(dstPath))
 	}
 
 	switch destNode.Type() {
@@ -250,17 +250,17 @@ func prepareParent(lkr *Linker, nd n.ModNode, destPath string) (*n.Directory, er
 	}
 }
 
-func Copy(lkr *Linker, nd n.ModNode, destPath string) (newNode n.ModNode, err error) {
+func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
-	if nd.Path() == destPath {
-		return nil, fmt.Errorf("Source and Dest are the same file: %v", destPath)
+	if nd.Path() == dstPath {
+		return nil, fmt.Errorf("Source and Dest are the same file: %v", dstPath)
 	}
 
-	if strings.HasPrefix(path.Dir(destPath), nd.Path()) {
+	if strings.HasPrefix(path.Dir(dstPath), nd.Path()) {
 		return nil, fmt.Errorf(
 			"Cannot move `%s` into it's own subdir `%s`",
 			nd.Path(),
-			destPath,
+			dstPath,
 		)
 	}
 
@@ -274,42 +274,38 @@ func Copy(lkr *Linker, nd n.ModNode, destPath string) (newNode n.ModNode, err er
 		}
 	}()
 
-	parentDir, err := prepareParent(lkr, nd, destPath)
+	parentDir, err := prepareParent(lkr, nd, dstPath)
 	if err != nil {
 		return nil, e.Wrapf(err, "handle parent")
 	}
 
 	// And add it to the right destination dir:
 	newNode = nd.Copy(lkr.NextInode())
-	newNode.SetName(path.Base(destPath))
+	newNode.SetName(path.Base(dstPath))
 	newNode.NotifyMove(lkr, nd.Path(), newNode.Path())
 
 	if err := parentDir.Add(lkr, newNode); err != nil {
 		return nil, e.Wrapf(err, "parent add")
 	}
 
-	fmt.Println(parentDir.ChildrenSorted(lkr))
-
 	if err := lkr.StageNode(newNode); err != nil {
 		return nil, err
 	}
 
-	fmt.Println(parentDir.ChildrenSorted(lkr))
-
 	return newNode, nil
 }
 
-func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
+func Move(lkr *Linker, nd n.ModNode, dstPath string) (err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
-	if nd.Path() == destPath {
-		return fmt.Errorf("Source and Dest are the same file: %v", destPath)
+	if nd.Path() == dstPath {
+		return fmt.Errorf("Source and Dest are the same file: %v", dstPath)
 	}
 
-	if strings.HasPrefix(path.Dir(destPath), nd.Path()) {
+	if strings.HasPrefix(path.Dir(dstPath), nd.Path()) {
 		return fmt.Errorf(
 			"Cannot move `%s` into it's own subdir `%s`",
 			nd.Path(),
-			destPath,
+			dstPath,
 		)
 	}
 
@@ -323,7 +319,7 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		}
 	}()
 
-	parentDir, err := prepareParent(lkr, nd, destPath)
+	parentDir, err := prepareParent(lkr, nd, dstPath)
 	if err != nil {
 		return err
 	}
@@ -335,9 +331,13 @@ func Move(lkr *Linker, nd n.ModNode, destPath string) (err error) {
 		return e.Wrapf(err, "remove old")
 	}
 
+	if parentDir.Path() == dstPath {
+		dstPath = path.Join(parentDir.Path(), path.Base(oldPath))
+	}
+
 	// The node needs to be told that it's path changed,
 	// since it might need to change it's hash value now.
-	if err := nd.NotifyMove(lkr, oldPath, destPath); err != nil {
+	if err := nd.NotifyMove(lkr, oldPath, dstPath); err != nil {
 		return e.Wrapf(err, "notify move")
 	}
 
