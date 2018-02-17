@@ -7,5 +7,4 @@
 - design sh test suite / tui tests / situation preps.
 
 - Pinning looks somewhat broken when e.g. moving directories.
-- "brig mv music.mp3 sub/" does not work: music.mp3 is moved to a file called "sub"
-- "brig cp" copies directories wrong.
+- "Too many open files" after letting daemon run for some time.

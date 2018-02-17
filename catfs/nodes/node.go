@@ -119,7 +119,7 @@ type ModNode interface {
 	SetName(name string)
 
 	// TODO: write some assumptions about this.
-	NotifyMove(lkr Linker, oldPath, newPath string) error
+	NotifyMove(lkr Linker, newPath string) error
 
 	// TODO: Should this be part of this interface?
 	Copy(inode uint64) ModNode

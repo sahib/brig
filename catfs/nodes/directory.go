@@ -517,12 +517,13 @@ func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 }
 
 // NotifyMove should be called whenever a node is being moved.
-func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
+func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 	visited := map[string]Node{}
 
+	oldRootPath := d.Path()
 	err := Walk(lkr, d, true, func(child Node) error {
-		oldChildPath := child.Path()
-		newChildPath := path.Join(newPath, oldChildPath[len(oldPath):])
+		oldChildPath := child.Path() // /another_empty_huhgg
+		newChildPath := path.Join(newPath, oldChildPath[len(oldRootPath):])
 		visited[newChildPath] = child
 
 		switch child.Type() {
@@ -546,7 +547,7 @@ func (d *Directory) NotifyMove(lkr Linker, oldPath, newPath string) error {
 				return ie.ErrBadNode
 			}
 
-			if err := childFile.NotifyMove(lkr, oldChildPath, newChildPath); err != nil {
+			if err := childFile.NotifyMove(lkr, newChildPath); err != nil {
 				return err
 			}
 		case NodeTypeGhost:

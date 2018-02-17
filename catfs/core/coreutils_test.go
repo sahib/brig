@@ -3,6 +3,7 @@ package core
 import (
 	"path"
 	"sort"
+	"strings"
 	"testing"
 
 	ie "github.com/sahib/brig/catfs/errors"
@@ -227,6 +228,12 @@ var moveAndCopyTestCases = []struct {
 		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
 			MustMkdir(t, lkr, "/a/b/c")
 			return MustTouch(t, lkr, "/a/b/c/x", 1), "/a/b/y"
+		},
+	}, {
+		name:        "basic-directory",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			return MustMkdir(t, lkr, "/a/b/short"), "/a/b/looooong"
 		},
 	}, {
 		name:        "basic-same-level",
@@ -515,8 +522,15 @@ func TestCopy(t *testing.T) {
 				srcPath := srcNd.Path()
 
 				newNd, err := Copy(lkr, srcNd, dstPath)
-
 				if newNd != nil {
+					if !strings.HasPrefix(newNd.Path(), dstPath) {
+						t.Fatalf(
+							"Node was copied to wrong path: %v (want %v)",
+							newNd.Path(),
+							dstPath,
+						)
+					}
+
 					// Make sure the new copy is reachable from parent:
 					par, err := lkr.LookupDirectory(path.Dir(newNd.Path()))
 					if err != nil {

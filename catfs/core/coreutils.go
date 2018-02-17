@@ -282,7 +282,7 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 	// And add it to the right destination dir:
 	newNode = nd.Copy(lkr.NextInode())
 	newNode.SetName(path.Base(dstPath))
-	newNode.NotifyMove(lkr, nd.Path(), newNode.Path())
+	newNode.NotifyMove(lkr, newNode.Path())
 
 	if err := parentDir.Add(lkr, newNode); err != nil {
 		return nil, e.Wrapf(err, "parent add")
@@ -337,7 +337,7 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) (err error) {
 
 	// The node needs to be told that it's path changed,
 	// since it might need to change it's hash value now.
-	if err := nd.NotifyMove(lkr, oldPath, dstPath); err != nil {
+	if err := nd.NotifyMove(lkr, dstPath); err != nil {
 		return e.Wrapf(err, "notify move")
 	}
 

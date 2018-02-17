@@ -43,29 +43,20 @@ func createStrengthPrompt(password []rune, prefix string) string {
 
 	switch {
 	case strength.Score <= 1:
-		symbol = "✗"
+		symbol = "⊠"
 		colorFn = color.RedString
 	case strength.Score <= 2:
-		symbol = "⚡"
+		symbol = "⊟"
 		colorFn = color.MagentaString
 	case strength.Score <= 3:
-		symbol = "⚠"
+		symbol = "⊞"
 		colorFn = color.YellowString
 	case strength.Score <= 4:
-		symbol = "✔"
+		symbol = "⚿"
 		colorFn = color.GreenString
 	}
 
-	prompt := colorFn(symbol)
-	if strength.Entropy > 0 {
-		entropy := fmt.Sprintf(" %3.0f", strength.Entropy)
-		prompt += color.CyanString(entropy)
-	} else {
-		prompt += color.CyanString("   0")
-	}
-
-	prompt += colorFn(" " + prefix + "passphrase: ")
-	return prompt
+	return colorFn(symbol + "  " + prefix + "passphrase: ")
 }
 
 // PromptNewPassword asks the user to input a password.

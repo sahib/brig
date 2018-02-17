@@ -164,7 +164,7 @@ func (f *File) rehash(lkr Linker, newPath string) {
 	lkr.MemIndexSwap(f, oldHash)
 }
 
-func (f *File) NotifyMove(lkr Linker, oldPath, newPath string) error {
+func (f *File) NotifyMove(lkr Linker, newPath string) error {
 	dirname, basename := path.Split(newPath)
 	f.SetName(basename)
 	f.parent = dirname
