@@ -25,5 +25,3 @@ encrypted (and possibly compressed) in blobs on your harddisks.
 .. raw:: html
 
     <script src="https://asciinema.org/a/j5yCj6H6fPUldbJDQz9nDhUc4.js" id="asciicast-j5yCj6H6fPUldbJDQz9nDhUc4" async></script>
-
-

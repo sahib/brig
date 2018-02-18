@@ -8,30 +8,43 @@
 [![GoDoc](https://godoc.org/github.com/sahib/brig?status.svg)](https://godoc.org/github.com/sahib/brig)
 [![Build Status](https://travis-ci.org/sahib/brig.svg?branch=master)](https://travis-ci.org/sahib/brig)
 [![Documentation](https://readthedocs.org/projects/rmlint/badge/?version=latest)](http://brig.readthedocs.io/en/latest)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 ## Table of Contents
 
 - [About](#about)
-- [Installation](#installation)
-- [Authors](#authors)
+- [Getting Started](#getting_started)
+- [Status](#status)
+- [Documentation](#documentation)
+- [Donations](#donations)
 
 ## About
 
 ``brig`` is a distributed & secure file synchronization tool with version control.
 It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
 
-Key feature highlights:
-* Works even for nodes that are hidden behind a NAT.
+**Key feature highlights:**
+
 * Encryption of data in rest and transport + compression on the fly.
-* Simplified ``git`` version control (no real branches).
+* Simplified ``git`` version control.
 * Sync algorithm that can handle moved files and empty directories and files.
-* Your data does not need to be stored on the device you are using.
+* Your data does not need to be stored on the device you are currently using.
 * FUSE filesystem that feels like a normal (sync) folder.
 * No central server at all. Still, central architectures can be build with ``brig``.
-* Simple user management with users that look like email addresses.
-* Hash algorithm can be changed, unlike with ``git``. ;-)
+* Simple user identification and discovery with users that look like email addresses.
 
-----
+## Getting started
+
+[![asciicast](https://asciinema.org/a/163713.png)](https://asciinema.org/a/163713)
+
+...If you want to know, what to do after you can read the
+[Quickstart](http://brig.readthedocs.io/en/latest/quickstart.html).
+
+## Status
+
+At the moment it is somewhere in the big void between proof of concept and beta release.
+**If you try it out right now, it will inevitably eat your data and possibly harm your kids.**
+You have been warned. I still encourage you to try 
 
 This project has started end of 2015 and has seen many conceptual changes in
 the meantime. It started out as research project of two computer science
@@ -40,44 +53,30 @@ theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
 a few months until I ([sahib](https://github.com/sahib)) picked at up again and
 currently am trying to push it to a usable prototype.
 
+## Documentation
+
+All documentation can be found on ReadTheDocs.org:
+
+	http://brig.readthedocs.io/en/latest/index.html
+
 ### Donations
 
-In it's current status, it's a working proof of concept. I'd love to work on it
-more, but my day job (and the money that comes with it) forbids that.
-If you're interested in the development of ``brig`` and would think about
-supporting me financially, then please [contact me!](mailto:sahib@online.de)
+I really would like to work more on ``brig``, but my day job (and the money
+that comes with it) forbids that. If you're interested in the development
+and would think about supporting me financially, then please [contact
+me!](mailto:sahib@online.de)
 
-If you'd like to give me a small donation, you can use *liberapay*:
+If you'd like to give me a small & steady donation, you can always use *Liberapay*:
 
 <noscript><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
+
+Thank you!
 
 ### Focus
 
 ``brig`` tries to focus on being up conceptually simple, by hiding a lot of
 complicated details regarding storage and security. Therefore I hope the end
-result is easy and pleasant to use, while being to be secure by default.
+result is easy and pleasant to use, while being secure by default.
 Since ``brig`` is a "general purpose" tool for file synchronization it of course
 cannot excel in all areas. This is especially true for efficiency, which is
 sometimes sacrificed to get the balance of usability and security right.
-
-## Installation
-
-```bash
-$ go get github.com/sahib/brig
-```
-
-That should just work if you previously [setup Go](https://golang.org/doc/install).
-Afterwards you'll have a ``brig`` command on your computer, which will print it's help when invoked without any
-arguments.
-
-## Getting started
-
-TODO: Make this an asciinema.
-
-```bash
-$ mkdir sync
-$ cd sync
-$ brig init alice@wonderland.de
-$ brig cat README.md
-$ brig remote add bob@wonderland.de QM123...:Smxyz...
-```
