@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	msgLowEntropy  = "\nPlease enter a password with at least %g bits entropy."
-	msgReEnter     = "\nWell done! Please re-type your password now:"
-	msgBadPassword = "\nThis did not seem to match. Please retype it again."
-	msgMaxTriesHit = "\nMaximum number of password tries exceeded: %d"
+	msgLowEntropy  = "Please enter a password with at least %g bits entropy."
+	msgReEnter     = "Well done! Please re-type your password now for safety:"
+	msgBadPassword = "This did not seem to match. Please retype it again."
+	msgMaxTriesHit = "Maximum number of password tries exceeded: %d"
 )
 
 func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, error) {
@@ -42,18 +42,18 @@ func createStrengthPrompt(password []rune, prefix string) string {
 	strength := zxcvbn.PasswordStrength(string(password), nil)
 
 	switch {
-	case strength.Score <= 1:
-		symbol = "⊠"
-		colorFn = color.RedString
-	case strength.Score <= 2:
-		symbol = "⊟"
-		colorFn = color.MagentaString
-	case strength.Score <= 3:
-		symbol = "⊞"
-		colorFn = color.YellowString
-	case strength.Score <= 4:
+	case strength.Entropy >= 25:
 		symbol = "⚿"
 		colorFn = color.GreenString
+	case strength.Entropy >= 20:
+		symbol = "⊞"
+		colorFn = color.YellowString
+	case strength.Entropy >= 15:
+		symbol = "⊟"
+		colorFn = color.MagentaString
+	default:
+		symbol = "⊠"
+		colorFn = color.RedString
 	}
 
 	return colorFn(symbol + "  " + prefix + "passphrase: ")
@@ -102,7 +102,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 		return nil, 0, false
 	})
 
-	fmt.Println(color.GreenString(msgReEnter))
+	fmt.Println(msgReEnter)
 
 	for {
 		newPwd, err := rl.ReadPasswordWithConfig(passwordCfg)
@@ -116,6 +116,12 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 
 		fmt.Println(color.YellowString(msgBadPassword))
 	}
+
+	strength := zxcvbn.PasswordStrength(string(pwd), nil)
+	fmt.Printf(
+		"Estimated time needed to crack password: %s\n",
+		color.BlueString(strength.CrackTimeDisplay),
+	)
 
 	return pwd, nil
 }

@@ -109,8 +109,6 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	owner := ctx.Args().First()
 	folder := guessRepoFolder()
 	backend := ctx.String("backend")
-
-	fmt.Println("REPO FOLDER", folder)
 	password := readPasswordFromArgs(ctx)
 
 	// Check if the folder exists... doing init twice
