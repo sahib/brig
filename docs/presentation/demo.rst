@@ -67,4 +67,3 @@ Explain reflinks.
 .. code-block:: bash
 
     $ brig history README.md
-

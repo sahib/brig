@@ -42,9 +42,10 @@ It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
 
 ## Status
 
-At the moment it is somewhere in the big void between proof of concept and beta release.
-**If you try it out right now, it will inevitably eat your data and possibly harm your kids.**
-You have been warned. I still encourage you to try 
+At the moment it is somewhere in the big void between proof of concept and beta
+release. **If you try it out right now, it will inevitably eat the data you
+give it and possibly harm your kids.** You have been warned. I still encourage
+you to try it.
 
 This project has started end of 2015 and has seen many conceptual changes in
 the meantime. It started out as research project of two computer science
