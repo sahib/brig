@@ -8,3 +8,5 @@
 
 - Pinning looks somewhat broken when e.g. moving directories.
 - "Too many open files" after letting daemon run for some time.
+- brig mv leaves dead-ghost traces when moving between directories.
+- brig reset: says "not pinned" when checking out old commits (well...)

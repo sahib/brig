@@ -109,6 +109,8 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	owner := ctx.Args().First()
 	folder := guessRepoFolder()
 	backend := ctx.String("backend")
+
+	fmt.Println("REPO FOLDER", folder)
 	password := readPasswordFromArgs(ctx)
 
 	// Check if the folder exists... doing init twice
@@ -244,18 +246,12 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		defer trace.Stop()
 	}
 
-	brigPath := os.Getenv("BRIG_PATH")
-	if brigPath == "" {
-		// TODO: Check parent directories to see if we're in some
-		//       brig repository.
-		brigPath = "."
-	}
-
 	// If the repository was not initialized yet,
 	// we should not ask for a password, since init
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
+	brigPath := guessRepoFolder()
 	isInitialized, err := repoIsInitialized(brigPath)
 	if err != nil {
 		return err

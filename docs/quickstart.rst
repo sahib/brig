@@ -4,3 +4,8 @@ Quickstart
 ==========
 
 .. todo:: write this (with lots of asciinema)
+
+1. Init
+-------
+
+

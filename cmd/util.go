@@ -23,7 +23,7 @@ import (
 
 var (
 	// backend delivers overly descriptive error messages including
-	// the stirng below. Simply filter this info:
+	// the string below. Simply filter this info:
 	rpcErrPattern = regexp.MustCompile(`\s*server/capnp/api.capnp.*rpc exception:\s*`)
 )
 
@@ -40,13 +40,26 @@ func (err ExitCode) Error() string {
 
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
+// This helper may call exit when it fails to get the path.
 func guessRepoFolder() string {
 	path := os.Getenv("BRIG_PATH")
 	if path == "" {
-		return "."
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Printf("Failed to get current working dir: %v; aborting.", err)
+			os.Exit(1)
+		}
+
+		return cwd
 	}
 
-	return path
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		fmt.Printf("Failed to get absolute repo path: %v", err)
+		os.Exit(1)
+	}
+
+	return absPath
 }
 
 func readPasswordFromArgs(ctx *cli.Context) string {
