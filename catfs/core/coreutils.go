@@ -279,8 +279,16 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 		return nil, e.Wrapf(err, "handle parent")
 	}
 
+	// We might copy something into a directory.
+	// In this case, dstPath specifies the directory we move into,
+	// not the file we moved to (which we need here)
+	if parentDir.Path() == dstPath {
+		dstPath = path.Join(parentDir.Path(), path.Base(nd.Path()))
+	}
+
 	// And add it to the right destination dir:
 	newNode = nd.Copy(lkr.NextInode())
+
 	newNode.SetName(path.Base(dstPath))
 	newNode.NotifyMove(lkr, newNode.Path())
 
