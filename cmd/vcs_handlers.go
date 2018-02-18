@@ -323,8 +323,8 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	localName := self.CurrentUser
 	remoteName := self.CurrentUser
 
-	localRev := "CURR"
-	remoteRev := "HEAD"
+	localRev := "HEAD"
+	remoteRev := "CURR"
 
 	switch n := ctx.NArg(); n {
 	case 1:

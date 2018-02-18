@@ -85,7 +85,6 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 func handleCat(ctx *cli.Context, ctl *client.Client) error {
 	stream, err := ctl.Cat(ctx.Args().First())
 	if err != nil {
-		// TODO: Make those exit codes a wrapper function.
 		return ExitCode{
 			UnknownError,
 			fmt.Sprintf("cat: %v", err),
