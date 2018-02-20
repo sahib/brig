@@ -49,7 +49,17 @@ Explain reflinks.
     $ brig edit README.md
     $ brig info README.md
 
-4. Commits
+4. Mounting
+===========
+
+.. code-block:: bash
+
+    $ brig ls
+    $ mkdir /tmp/mount
+    $ brig mount /tmp/mount
+    $ ls /tmp/mount
+
+5. Commits
 ==========
 
 .. code-block:: bash
@@ -61,9 +71,37 @@ Explain reflinks.
     $ brig mv sub/music.mp3 sub/else.mp3
     $ brig diff   # Should print mergeable and moved file.
 
-5. History
+6. History
 ==========
 
 .. code-block:: bash
 
+    # Little different than git.
     $ brig history README.md
+
+7. Remotes
+==========
+
+.. code-block:: bash
+
+    # Asking existential questions.
+    $ brig whoami
+    # Explain the remote list.
+    $ brig remote edit
+    # Where to get the remote names of others?
+    $ brig net locate
+    # Add vladimir (which was started in the background at some time)
+    $ brig remote add
+    $ brig remote ls
+    $ brig net list
+
+
+8 Sync & Diff
+=============
+
+.. code-block:: bash
+
+    $ brig diff vladi
+    $ brig sync vladi
+    $ brig log
+    $ brig ls

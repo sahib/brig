@@ -251,18 +251,34 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	if !ctx.Bool("fingerprint") {
-		userName := color.YellowString(self.CurrentUser)
-		ownerName := color.GreenString(self.Owner)
+	printFingerprint := ctx.Bool("fingerprint")
+	printName := ctx.Bool("name")
 
-		fmt.Printf("%s", ownerName)
+	userName := color.YellowString(self.CurrentUser)
+	ownerName := color.GreenString(self.Owner)
+
+	if !printFingerprint && !printName {
 		if self.CurrentUser != self.Owner {
-			fmt.Printf(" (viewing %s's data)", userName)
+			fmt.Printf("# viewing %s's data currently", userName)
 		}
 
-		fmt.Printf(" ")
+		fmt.Printf("- Name: %s\n", userName)
+		fmt.Printf("  Fingerprint: %s\n", self.Fingerprint)
+
+		return nil
 	}
 
-	fmt.Printf("%s\n", self.Fingerprint)
+	if printName {
+		fmt.Printf("%s", ownerName)
+	}
+
+	if printFingerprint {
+		if printName {
+			fmt.Printf(" ")
+		}
+		fmt.Printf("%s", self.Fingerprint)
+	}
+
+	fmt.Printf("\n")
 	return nil
 }

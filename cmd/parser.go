@@ -118,6 +118,10 @@ func RunCmdline(args []string) int {
 					Name:  "fingerprint,f",
 					Usage: "Only print the own fingerprint",
 				},
+				cli.BoolFlag{
+					Name:  "name,n",
+					Usage: "Only print the own name",
+				},
 			},
 		},
 		cli.Command{
