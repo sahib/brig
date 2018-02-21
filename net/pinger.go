@@ -59,6 +59,7 @@ func (pm *PingMap) doUpdate() {
 		// Maybe the pinger errored in between?
 		if err := pinger.Err(); err != nil {
 			log.Warningf("Pinger %s failed: %v", addr, err)
+			pinger.Close()
 			pm.peers[addr] = nil
 		}
 	}
@@ -68,6 +69,7 @@ func (pm *PingMap) doUpdateSingle(addr string) {
 	pinger, err := pm.netBk.Ping(addr)
 	if err != nil {
 		log.Infof("Pinger %s still not reachable: %v", addr, err)
+		pinger.Close()
 		return
 	}
 
