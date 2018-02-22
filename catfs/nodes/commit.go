@@ -309,7 +309,6 @@ func (c *Commit) Parent(lkr Linker) (Node, error) {
 
 // SetParent sets the parent of the commit to `nd`.
 func (c *Commit) SetParent(lkr Linker, nd Node) error {
-	// TODO: This check does not work -> fucking typed nils.
 	c.parent = nd.Hash().Clone()
 	return nil
 }

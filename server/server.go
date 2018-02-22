@@ -50,7 +50,7 @@ func setLogPath(path string) error {
 	return nil
 }
 
-func BootServer(basePath, password, logPath string, port int) (*Server, error) {
+func BootServer(basePath, password, logPath string, bindHost string, port int) (*Server, error) {
 	if logPath == "" {
 		logPath = filepath.Join(basePath, "logs", "main.log")
 		if err := os.MkdirAll(filepath.Dir(logPath), 0700); err != nil {
@@ -62,7 +62,8 @@ func BootServer(basePath, password, logPath string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	log.Infof("Starting server from %s at port :%d", basePath, port)
+	addr := fmt.Sprintf("%s:%d", bindHost, port)
+	log.Infof("Starting daemon from %s on port %s", basePath, addr)
 
 	if err := repo.CheckPassword(basePath, password); err != nil {
 		return nil, err
@@ -77,7 +78,6 @@ func BootServer(basePath, password, logPath string, port int) (*Server, error) {
 		return nil, err
 	}
 
-	addr := fmt.Sprintf("localhost:%d", port)
 	lst, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,6 @@ func BootServer(basePath, password, logPath string, port int) (*Server, error) {
 	// if _, err := base.PeerServer(); err != nil {
 	// 	return err
 	// }
-
 	// log.Debugf("Started peer server, can receive outside connections now")
 
 	return &Server{

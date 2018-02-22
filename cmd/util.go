@@ -161,7 +161,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	// If not, make sure we start a new one:
 	// TODO: Make use of cli's error returning signatures.
 	return withExit(func(ctx *cli.Context) error {
-		port := guessPort()
+		port := ctx.GlobalInt("port")
 
 		// Check if the daemon is running:
 		ctl, err := client.Dial(context.Background(), port)
@@ -239,23 +239,6 @@ func needAtLeast(min int) checkFunc {
 
 		return Success
 	}
-}
-
-func guessPort() int {
-	envPort := os.Getenv("BRIG_PORT")
-	if envPort != "" {
-		// Somebody tried to set BRIG_PORT.
-		// Try to parse and spit errors if wrong.
-		port, err := strconv.Atoi(envPort)
-		if err != nil {
-			log.Fatalf("Could not parse $BRIG_PORT: %v", err)
-		}
-
-		return port
-	}
-
-	// Guess the default port.
-	return 6666
 }
 
 func repoIsInitialized(dir string) (bool, error) {
