@@ -410,12 +410,7 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	}
 
 	seg := call.Results.Segment()
-	capResults, err := capnp.NewLocateResult_List(seg, int32(len(foundPeers)))
-	if err != nil {
-		return err
-	}
-
-	resultIdx := 0
+	results := []capnp.LocateResult{}
 
 	// For the client side we do not differentiate between peers and remotes.
 	// Also, the pubkey/network addr is combined into a single "fingerprint".
@@ -444,11 +439,18 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 				return err
 			}
 
-			if err := capResults.Set(resultIdx, result); err != nil {
-				return err
-			}
+			results = append(results, result)
+		}
+	}
 
-			resultIdx++
+	capResults, err := capnp.NewLocateResult_List(seg, int32(len(results)))
+	if err != nil {
+		return err
+	}
+
+	for resultIdx, result := range results {
+		if err := capResults.Set(resultIdx, result); err != nil {
+			return err
 		}
 	}
 

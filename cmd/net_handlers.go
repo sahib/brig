@@ -190,10 +190,29 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
 	timeoutSec := ctx.Int("timeout")
 
+	// Show a progress ticker, since the query might take quite long:
+	progressTicker := time.NewTicker(500 * time.Millisecond)
+	go func() {
+		nDots := 0
+		nSecsLeft := float64(timeoutSec)
+		for range progressTicker.C {
+			fmt.Printf(
+				"Scanning [%.1fs/%ds]%-5s\r",
+				nSecsLeft,
+				timeoutSec,
+				strings.Repeat(".", nDots+1),
+			)
+			nDots = (nDots + 1) % 5
+			nSecsLeft -= 0.5
+		}
+	}()
+
 	candidates, err := ctl.NetLocate(who, timeoutSec)
 	if err != nil {
 		return fmt.Errorf("Failed to locate peers: %v", err)
 	}
+
+	progressTicker.Stop()
 
 	if len(candidates) == 0 {
 		fmt.Println(color.YellowString("Nothing found."))
@@ -205,9 +224,11 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "ADDR\tFINGERPRINT\tTYPE\t")
+	fmt.Fprintln(tabW, "REMOTE ADDR\tFINGERPRINT\tTYPE\t")
+
 	for _, candidate := range candidates {
-		fmt.Printf(
+		fmt.Fprintf(
+			tabW,
 			"%s\t%s\t%s\t\n",
 			color.GreenString(candidate.Addr),
 			color.YellowString(candidate.Fingerprint),

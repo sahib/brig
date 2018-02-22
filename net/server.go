@@ -180,7 +180,7 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[Lo
 	wg := &sync.WaitGroup{}
 	for name, mask := range uniqueNames {
 		// It's not enabled:
-		if mask != 0 {
+		if mask == 0 {
 			continue
 		}
 
@@ -223,7 +223,7 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[Lo
 		return nil, fmt.Errorf("Several errors: %v", errors)
 	}
 
-	// Silence errors if we have results:
+	// Silence errors if we have some results:
 	log.Debugf("locate had errors, but still got results. Errors: %v", errors)
 	return results, nil
 }
