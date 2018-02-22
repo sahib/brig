@@ -75,7 +75,7 @@ func RunCmdline(args []string) int {
 			EnvVar: "BRIG_BIND",
 		},
 		cli.IntFlag{
-			Name:   "port",
+			Name:   "port,p",
 			Usage:  "On what port the daemon listens on (default: 6666)",
 			EnvVar: "BRIG_PORT",
 			Value:  6666,
@@ -85,7 +85,7 @@ func RunCmdline(args []string) int {
 			Usage: "Use 'no-pass' as password",
 		},
 		cli.StringFlag{
-			Name:  "password,p",
+			Name:  "password,P",
 			Usage: "Supply user password",
 			Value: "",
 		},

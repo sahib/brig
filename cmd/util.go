@@ -124,10 +124,22 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		return nil, err
 	}
 
+	bindHost := ctx.GlobalString("bind")
+
 	// Start a new daemon process:
-	log.Info("No Daemon running. Starting daemon from binary: ", exePath)
+	log.Infof(
+		"No Daemon running at %s:%d. Starting daemon from binary: %s",
+		bindHost,
+		port,
+		exePath,
+	)
+
 	proc := exec.Command(
-		exePath, "-p", pwd, "daemon", "launch",
+		exePath,
+		"--password", pwd,
+		"--port", strconv.FormatInt(int64(port), 10),
+		"--bind", bindHost,
+		"daemon", "launch",
 	)
 
 	if err := proc.Start(); err != nil {
