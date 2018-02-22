@@ -236,9 +236,8 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
-	// Dial peer without authentication:
-	emptyFp := peer.Fingerprint("")
-	ctl, err := DialByAddr(addr, emptyFp, sv.hdl.rp.Keyring(), sv.bk, ctx)
+	pubKey, err := PeekRemotePubkey(addr, sv.hdl.rp.Keyring(, sv.bk, ctx))
+	// ctl, err := DialByAddr(addr, emptyFp, sv.hdl.rp.Keyring(), sv.bk, ctx)
 	if err != nil {
 		log.Warningf(
 			"locate: failed to dial to `%s` (%s): %v",
@@ -248,17 +247,17 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 	}
 
 	// Quickly check if the other side is online:
-	if err := ctl.Ping(); err != nil {
-		return peer.Fingerprint(""), err
-	}
+	// if err := ctl.Ping(); err != nil {
+	// 	return peer.Fingerprint(""), err
+	// }
 
 	// Fetch their remote pub key to build the fingerprint:
-	remotePubKey, err := ctl.RemotePubKey()
-	if err != nil {
-		return peer.Fingerprint(""), err
-	}
+	// remotePubKey, err := ctl.RemotePubKey()
+	// if err != nil {
+	// 	return peer.Fingerprint(""), err
+	// }
 
-	return peer.BuildFingerprint(addr, remotePubKey), nil
+	return peer.BuildFingerprint(addr, pubKey), nil
 }
 
 func (sv *Server) Identity() (peer.Info, error) {
@@ -317,7 +316,7 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 			}
 		}
 
-		return fmt.Errorf("Remote uses no public key known to us")
+		return fmt.Errorf("remote uses no public key known to us")
 	})
 
 	// Trigger the authentication.

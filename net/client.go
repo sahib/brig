@@ -72,6 +72,7 @@ func DialByAddr(
 
 	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
 		// Skip authentication if no fingerprint was supplied:
+		// TODO: Remove?
 		if string(fingerprint) == "" {
 			return nil
 		}
@@ -101,6 +102,29 @@ func DialByAddr(
 		rawConn:  rawConn,
 		api:      api,
 	}, nil
+}
+
+func PeekRemotePubkey(
+	addr string,
+	kr *repo.Keyring,
+	bk netBackend.Backend,
+	ctx context.Context,
+) ([]byte, error) {
+	ownPubKey, err := kr.OwnPubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
+		log.Debugf("peek: verify")
+		return nil
+	})
+
+	if err := authConn.Trigger(); err != nil {
+		log.Errorf("peek: %v", err)
+	}
+
+	return authConn.RemotePubKey()
 }
 
 // Close will close the connection from the client side
