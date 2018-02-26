@@ -158,7 +158,15 @@ func LocateMaskFromString(s string) (LocateMask, error) {
 	return mask, nil
 }
 
-func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[LocateMask][]peer.Info, error) {
+// LocateResult is one result returned by Locate's result channel.
+type LocateResult struct {
+	Peers []peer.Info
+	Mask  LocateMask
+	Name  string
+	Err   error
+}
+
+func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) chan LocateResult {
 	uniqueNames := make(map[string]LocateMask)
 
 	// Example: donald@whitehouse.gov/ovaloffice
@@ -173,12 +181,14 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[Lo
 	// Example: donald@whitehouse.gov
 	uniqueNames[who.WithoutResource()] = mask & LocateEmail
 
-	resultMu := &sync.Mutex{}
-	results := make(map[LocateMask][]peer.Info)
-	errors := make(map[LocateMask]error)
+	resultCh := make(chan LocateResult)
 
 	wg := &sync.WaitGroup{}
 	for name, mask := range uniqueNames {
+		if name == "" {
+			continue
+		}
+
 		// It's not enabled:
 		if mask == 0 {
 			continue
@@ -190,42 +200,21 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) (map[Lo
 			defer wg.Done()
 
 			peers, err := sv.bk.ResolveName(name, timeoutSec)
-			if err != nil {
-				resultMu.Lock()
-				errors[mask] = err
-				resultMu.Unlock()
-				return
+			resultCh <- LocateResult{
+				Peers: peers,
+				Err:   err,
+				Name:  name,
+				Mask:  mask,
 			}
-
-			// Collect results:
-			resultMu.Lock()
-			for _, peer := range peers {
-				results[mask] = append(results[mask], peer)
-			}
-			resultMu.Unlock()
 		}(name, mask)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
 
-	if len(results) == 0 && len(errors) == 0 {
-		// Nothing found.
-		return nil, nil
-	}
-
-	if len(results) != 0 && len(errors) == 0 {
-		// Found something.
-		return results, nil
-	}
-
-	if len(results) == 0 && len(errors) != 0 {
-		// Several errors happened.
-		return nil, fmt.Errorf("Several errors: %v", errors)
-	}
-
-	// Silence errors if we have some results:
-	log.Debugf("locate had errors, but still got results. Errors: %v", errors)
-	return results, nil
+	return resultCh
 }
 
 // PeekFingerprint fetches the fingerprint of a peer without authenticating
@@ -236,7 +225,7 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
-	pubKey, err := PeekRemotePubkey(addr, sv.hdl.rp.Keyring(, sv.bk, ctx))
+	pubKey, err := PeekRemotePubkey(addr, sv.hdl.rp.Keyring(), sv.bk, ctx)
 	// ctl, err := DialByAddr(addr, emptyFp, sv.hdl.rp.Keyring(), sv.bk, ctx)
 	if err != nil {
 		log.Warningf(
@@ -245,17 +234,6 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 		)
 		return peer.Fingerprint(""), nil
 	}
-
-	// Quickly check if the other side is online:
-	// if err := ctl.Ping(); err != nil {
-	// 	return peer.Fingerprint(""), err
-	// }
-
-	// Fetch their remote pub key to build the fingerprint:
-	// remotePubKey, err := ctl.RemotePubKey()
-	// if err != nil {
-	// 	return peer.Fingerprint(""), err
-	// }
 
 	return peer.BuildFingerprint(addr, pubKey), nil
 }

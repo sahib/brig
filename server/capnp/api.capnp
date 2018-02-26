@@ -64,9 +64,10 @@ struct Remote $Go.doc("Info a remote peer we might sync with") {
 
 # This is similar to a remote:
 struct LocateResult {
-    addr        @0 :Text;
-    mask        @1 :Text;
-    fingerprint @2 :Text;
+    name        @0 :Text;
+    addr        @1 :Text;
+    mask        @2 :Text;
+    fingerprint @3 :Text;
 }
 
 struct Identity $Go.doc("Info about our current user state") {
@@ -140,15 +141,16 @@ interface Meta {
     remoteSave   @11 (remotes :List(Remote));
     remotePing   @12 (who :Text) -> (roundtrip :Float64);
 
-    netLocate @13 (who :Text, timeoutSec :Int32) -> (candidates :List(LocateResult));
+    netLocate     @13 (who :Text, timeoutSec :Int32) -> (ticket :UInt64);
+    netLocateNext @14 (ticket :UInt64) -> (result :LocateResult);
 
     # the combined command of both is "whathaveibecome":
-    whoami      @14  () -> (whoami :Identity);
-    become      @15 (who :Text);
+    whoami      @15  () -> (whoami :Identity);
+    become      @16 (who :Text);
 
-    connect     @16 ();
-    disconnect  @17 ();
-    onlinePeers @18 () -> (infos :List(PeerStatus));
+    connect     @17 ();
+    disconnect  @18 ();
+    onlinePeers @19 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,

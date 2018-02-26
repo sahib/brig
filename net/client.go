@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -64,7 +65,7 @@ func DialByAddr(
 	}
 
 	// Low level by addr, not by brig's remote name:
-	log.Debugf("Raw dial to %s", addr)
+	log.Debugf("raw dial to %s", addr)
 	rawConn, err := bk.Dial(addr, "brig/caprpc")
 	if err != nil {
 		return nil, e.Wrapf(err, "raw")
@@ -115,13 +116,20 @@ func PeekRemotePubkey(
 		return nil, err
 	}
 
-	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
-		log.Debugf("peek: verify")
+	log.Debugf("peek to %s", addr)
+	rawConn, err := bk.Dial(addr, "brig/caprpc")
+	if err != nil {
+		return nil, e.Wrapf(err, "raw")
+	}
+
+	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(_ []byte) error {
 		return nil
 	})
 
-	if err := authConn.Trigger(); err != nil {
-		log.Errorf("peek: %v", err)
+	// io.EOF is expected, since other side will close not auth'd connection
+	// after it failed to check our public key.
+	if err := authConn.Trigger(); err != nil && err != io.EOF {
+		log.Warningf("peek: %v", err)
 	}
 
 	return authConn.RemotePubKey()

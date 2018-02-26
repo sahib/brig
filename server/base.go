@@ -21,6 +21,7 @@ import (
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/util/conductor"
 )
 
 type base struct {
@@ -46,6 +47,7 @@ type base struct {
 	quitCh  chan struct{}
 
 	ipfsLogFd *os.File
+	conductor *conductor.Conductor
 }
 
 func repoIsInitialized(path string) error {
@@ -373,9 +375,10 @@ func (b *base) Quit() (err error) {
 
 func newBase(basePath string, password string, ctx context.Context, quitCh chan struct{}) (*base, error) {
 	return &base{
-		ctx:      ctx,
-		basePath: basePath,
-		password: password,
-		quitCh:   quitCh,
+		ctx:       ctx,
+		basePath:  basePath,
+		password:  password,
+		quitCh:    quitCh,
+		conductor: conductor.New(5*time.Minute, 100),
 	}, nil
 }

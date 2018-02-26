@@ -178,10 +178,9 @@ func encryptWithPubKey(data, pubKeyData []byte) ([]byte, error) {
 // RemotePubKey returns the partner's public key, if it was authorised already.
 // Otherwise an error will be returned.
 func (ath *AuthReadWriter) RemotePubKey() ([]byte, error) {
-	if !ath.IsAuthorised() {
-		return nil, fmt.Errorf("Partner was not authorised yet")
-	}
-
+	// if !ath.IsAuthorised() {
+	// 	return nil, fmt.Errorf("Partner was not authorised yet")
+	// }
 	return ath.remotePubKey, nil
 }
 

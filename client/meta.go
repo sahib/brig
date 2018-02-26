@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -309,12 +310,18 @@ func (cl *Client) RemoteSave(remotes []Remote) error {
 }
 
 type LocateResult struct {
+	Name        string
 	Addr        string
 	Mask        []string
 	Fingerprint string
 }
 
 func capLrToLr(capLr capnp.LocateResult) (*LocateResult, error) {
+	name, err := capLr.Name()
+	if err != nil {
+		return nil, err
+	}
+
 	addr, err := capLr.Addr()
 	if err != nil {
 		return nil, err
@@ -332,12 +339,13 @@ func capLrToLr(capLr capnp.LocateResult) (*LocateResult, error) {
 
 	return &LocateResult{
 		Addr:        addr,
+		Name:        name,
 		Mask:        strings.Split(mask, ","),
 		Fingerprint: fingerprint,
 	}, nil
 }
 
-func (cl *Client) NetLocate(who string, timeoutSec int) ([]LocateResult, error) {
+func (cl *Client) NetLocate(who string, timeoutSec int) (chan *LocateResult, error) {
 	call := cl.api.NetLocate(cl.ctx, func(p capnp.Meta_netLocate_Params) error {
 		p.SetTimeoutSec(int32(timeoutSec))
 		return p.SetWho(who)
@@ -348,23 +356,46 @@ func (cl *Client) NetLocate(who string, timeoutSec int) ([]LocateResult, error) 
 		return nil, err
 	}
 
-	capLrs, err := result.Candidates()
-	if err != nil {
-		return nil, err
-	}
+	ticket := result.Ticket()
+	resultCh := make(chan *LocateResult)
 
-	lrs := []LocateResult{}
-	for idx := 0; idx < capLrs.Len(); idx++ {
-		capLr := capLrs.At(idx)
-		lr, err := capLrToLr(capLr)
-		if err != nil {
-			return nil, err
+	go func() {
+		defer close(resultCh)
+
+		for {
+			nextCall := cl.api.NetLocateNext(cl.ctx, func(p capnp.Meta_netLocateNext_Params) error {
+				p.SetTicket(ticket)
+				return nil
+			})
+
+			// TODO: Remove those weird printlns
+			result, err := nextCall.Struct()
+			if err != nil {
+				fmt.Println("Failed to get result")
+				continue
+			}
+
+			if !result.HasResult() {
+				break
+			}
+
+			capLr, err := result.Result()
+			if err != nil {
+				fmt.Println("Failed to get result's result")
+				continue
+			}
+
+			lr, err := capLrToLr(capLr)
+			if err != nil {
+				fmt.Println("FAILED TO CONVERT result", err)
+				continue
+			}
+
+			resultCh <- lr
 		}
+	}()
 
-		lrs = append(lrs, *lr)
-	}
-
-	return lrs, nil
+	return resultCh, nil
 }
 
 func (cl *Client) RemotePing(who string) (float64, error) {

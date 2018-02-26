@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -10,6 +12,7 @@ import (
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/util/conductor"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -387,6 +390,13 @@ func (mh *metaHandler) RemoteSave(call capnp.Meta_remoteSave) error {
 	return mh.syncPingMap()
 }
 
+type LocateResult struct {
+	Name        string
+	Mask        string
+	Addr        string
+	Fingerprint string
+}
+
 func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	timeoutSec := call.Params.TimeoutSec()
 	who, err := call.Params.Who()
@@ -399,62 +409,115 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 		return err
 	}
 
-	log.Debugf("Trying to locate %v", who)
-	foundPeers, err := psrv.Locate(
-		peer.Name(who),
-		int(timeoutSec),
-		p2pnet.LocateAll,
-	)
+	ident, err := psrv.Identity()
 	if err != nil {
 		return err
 	}
 
-	seg := call.Results.Segment()
-	results := []capnp.LocateResult{}
+	addrCache := sync.Map{}
+	addrCache.Store(ident.Addr, true)
 
-	// For the client side we do not differentiate between peers and remotes.
-	// Also, the pubkey/network addr is combined into a single "fingerprint".
-	for mask, peers := range foundPeers {
-		for _, peer := range peers {
-			// This can be probably optimized furhter in case of several peeks:
-			fingerprint, err := psrv.PeekFingerprint(mh.base.ctx, peer.Addr)
-			if err != nil {
-				log.Warningf("No fingerprint for %v (query: %s): %v", peer.Addr, who, err)
+	ticket := mh.base.conductor.Exec(func(ticket uint64) error {
+		log.Debugf("Locating %v", who)
+		locateCh := psrv.Locate(
+			peer.Name(who),
+			int(timeoutSec),
+			p2pnet.LocateAll,
+		)
+
+		wg := sync.WaitGroup{}
+		for located := range locateCh {
+			if located.Err != nil {
+				log.Debugf("Locate failed for %s: %v", located.Name, located.Err)
+				continue
 			}
 
-			result, err := capnp.NewLocateResult(seg)
-			if err != nil {
-				return err
-			}
+			for _, locatedPeer := range located.Peers {
+				if _, ok := addrCache.Load(locatedPeer.Addr); ok {
+					continue
+				}
 
-			if err := result.SetAddr(peer.Addr); err != nil {
-				return err
-			}
+				log.Debugf("Fetching fingerprint for %v", locatedPeer.Addr)
 
-			if err := result.SetMask(mask.String()); err != nil {
-				return err
-			}
+				wg.Add(1)
+				go func(peer peer.Info) {
+					defer wg.Done()
 
-			if err := result.SetFingerprint(string(fingerprint)); err != nil {
-				return err
-			}
+					peekCtx, cancel := context.WithTimeout(mh.base.ctx, 2*time.Second)
+					defer cancel()
 
-			results = append(results, result)
+					fingerprint, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
+					if err != nil {
+						log.Warningf("No fingerprint for %v (query: %s): %v", peer.Addr, who, err)
+						fingerprint = ""
+					}
+
+					// Remember that we already resolved this addr.
+					addrCache.Store(peer.Addr, true)
+
+					result := &LocateResult{
+						Name:        string(peer.Name),
+						Addr:        string(peer.Addr),
+						Mask:        located.Mask.String(),
+						Fingerprint: string(fingerprint),
+					}
+
+					log.Debugf("Pushing partial result: %v", result)
+					if err := mh.base.conductor.Push(ticket, result); err != nil {
+						log.Debugf("Failed to push result: %v", err)
+					}
+				}(locatedPeer)
+			}
 		}
+
+		// Let background worker run until all go routines are finished.
+		// Otherwise the result-killing timeout would set in too early.
+		wg.Wait()
+		return nil
+	})
+
+	call.Results.SetTicket(ticket)
+	return nil
+}
+
+func (mh *metaHandler) NetLocateNext(call capnp.Meta_netLocateNext) error {
+	ticket := call.Params.Ticket()
+	data, err := mh.base.conductor.Pop(ticket)
+	if err != nil && !conductor.IsNoDataLeft(err) {
+		return err
 	}
 
-	capResults, err := capnp.NewLocateResult_List(seg, int32(len(results)))
+	if conductor.IsNoDataLeft(err) {
+		return nil
+	}
+
+	result, ok := data.(*LocateResult)
+	if !ok {
+		return fmt.Errorf("internal error: wrong type for LocateResult")
+	}
+
+	capResult, err := capnp.NewLocateResult(call.Results.Segment())
 	if err != nil {
 		return err
 	}
 
-	for resultIdx, result := range results {
-		if err := capResults.Set(resultIdx, result); err != nil {
-			return err
-		}
+	if err := capResult.SetName(result.Name); err != nil {
+		return err
 	}
 
-	return call.Results.SetCandidates(capResults)
+	if err := capResult.SetAddr(result.Addr); err != nil {
+		return err
+	}
+
+	if err := capResult.SetMask(result.Mask); err != nil {
+		return err
+	}
+
+	if err := capResult.SetFingerprint(result.Fingerprint); err != nil {
+		return err
+	}
+
+	return call.Results.SetResult(capResult)
 }
 
 func (mh *metaHandler) RemotePing(call capnp.Meta_remotePing) error {

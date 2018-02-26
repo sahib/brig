@@ -194,49 +194,49 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	progressTicker := time.NewTicker(500 * time.Millisecond)
 	go func() {
 		nDots := 0
-		nSecsLeft := float64(timeoutSec)
 		for range progressTicker.C {
-			fmt.Printf(
-				"Scanning [%.1fs/%ds]%-5s\r",
-				nSecsLeft,
-				timeoutSec,
-				strings.Repeat(".", nDots+1),
-			)
+			fmt.Printf("Scanning%-5s\r", strings.Repeat(".", nDots+1))
 			nDots = (nDots + 1) % 5
-			nSecsLeft -= 0.5
 		}
 	}()
 
-	candidates, err := ctl.NetLocate(who, timeoutSec)
+	candidateCh, err := ctl.NetLocate(who, timeoutSec)
 	if err != nil {
 		return fmt.Errorf("Failed to locate peers: %v", err)
 	}
 
-	progressTicker.Stop()
+	somethingFound := false
 
-	if len(candidates) == 0 {
-		fmt.Println(color.YellowString("Nothing found."))
-		return nil
-	}
+	for candidate := range candidateCh {
+		if !somethingFound {
+			progressTicker.Stop()
+			somethingFound = true
 
-	tabW := tabwriter.NewWriter(
-		os.Stdout, 0, 0, 2, ' ',
-		tabwriter.StripEscape,
-	)
+			// We can't use tabwriter here, sine it needs to update in realtime.
+			// So we just fake it (badly) with printf-like formatting.
+			fmt.Printf("%-30s %-10s %s\n", "NAME", "TYPE", "FINGERPRINT")
+		}
 
-	fmt.Fprintln(tabW, "REMOTE ADDR\tFINGERPRINT\tTYPE\t")
+		fingerprint := candidate.Fingerprint
+		if fingerprint == "" {
+			fingerprint = candidate.Addr + color.RedString(" (offline)")
+		} else {
+			fingerprint = color.GreenString(fingerprint)
+		}
 
-	for _, candidate := range candidates {
-		fmt.Fprintf(
-			tabW,
-			"%s\t%s\t%s\t\n",
-			color.GreenString(candidate.Addr),
-			color.YellowString(candidate.Fingerprint),
+		fmt.Printf(
+			"%-30s %-10s %s\n",
+			candidate.Name,
 			strings.Join(candidate.Mask, "|"),
+			fingerprint,
 		)
 	}
 
-	return tabW.Flush()
+	if !somethingFound {
+		fmt.Println("No results. Maybe nobodoy is online?")
+	}
+
+	return nil
 }
 
 func handleRemotePing(ctx *cli.Context, ctl *client.Client) error {
