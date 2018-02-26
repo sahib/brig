@@ -131,6 +131,10 @@ func handleRemoteRemove(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleRemoteClear(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.RemoteClear()
+}
+
 func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 	remotes, err := ctl.RemoteLs()
 	if err != nil {

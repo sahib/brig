@@ -174,6 +174,12 @@ func RunCmdline(args []string) int {
 					Action:      withDaemon(handleRemoteList, true),
 				},
 				cli.Command{
+					Name:        "clear",
+					Usage:       "Clear all remotes from the list",
+					Description: "Clear all remotes from the list (useful for scripts)",
+					Action:      withDaemon(handleRemoteClear, true),
+				},
+				cli.Command{
 					Name:        "edit",
 					Usage:       "Edit the current remote list",
 					Description: "Edit the current remote list with $EDITOR",

@@ -312,6 +312,15 @@ func (mh *metaHandler) RemoteAdd(call capnp.Meta_remoteAdd) error {
 	return mh.syncPingMap()
 }
 
+func (mh *metaHandler) RemoteClear(call capnp.Meta_remoteClear) error {
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	return rp.Remotes.Clear()
+}
+
 func (mh *metaHandler) RemoteRm(call capnp.Meta_remoteRm) error {
 	repo, err := mh.base.Repo()
 	if err != nil {

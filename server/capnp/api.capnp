@@ -140,17 +140,18 @@ interface Meta {
     remoteLs     @10 () -> (remotes :List(Remote));
     remoteSave   @11 (remotes :List(Remote));
     remotePing   @12 (who :Text) -> (roundtrip :Float64);
+    remoteClear  @13 ();
 
-    netLocate     @13 (who :Text, timeoutSec :Int32) -> (ticket :UInt64);
-    netLocateNext @14 (ticket :UInt64) -> (result :LocateResult);
+    netLocate     @14 (who :Text, timeoutSec :Int32) -> (ticket :UInt64);
+    netLocateNext @15 (ticket :UInt64) -> (result :LocateResult);
 
     # the combined command of both is "whathaveibecome":
-    whoami      @15  () -> (whoami :Identity);
-    become      @16 (who :Text);
+    whoami      @16  () -> (whoami :Identity);
+    become      @17 (who :Text);
 
-    connect     @17 ();
-    disconnect  @18 ();
-    onlinePeers @19 () -> (infos :List(PeerStatus));
+    connect     @18 ();
+    disconnect  @19 ();
+    onlinePeers @20 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,

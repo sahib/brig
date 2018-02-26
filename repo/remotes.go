@@ -148,6 +148,11 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	return *rm, nil
 }
 
+func (rl *RemoteList) Clear() error {
+	rl.remotes = make(map[string]*Remote)
+	return rl.save()
+}
+
 func (rl *RemoteList) ListRemotes() ([]Remote, error) {
 	remotes := []Remote{}
 	for _, remote := range rl.remotes {

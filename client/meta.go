@@ -254,6 +254,15 @@ func (cl *Client) RemoteRm(name string) error {
 	return err
 }
 
+func (cl *Client) RemoteClear() error {
+	call := cl.api.RemoteClear(cl.ctx, func(p capnp.Meta_remoteClear_Params) error {
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 func (cl *Client) RemoteLs() ([]Remote, error) {
 	call := cl.api.RemoteLs(cl.ctx, func(p capnp.Meta_remoteLs_Params) error {
 		return nil
