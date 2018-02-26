@@ -69,7 +69,9 @@ func (pm *PingMap) doUpdateSingle(addr string) {
 	pinger, err := pm.netBk.Ping(addr)
 	if err != nil {
 		log.Infof("Pinger %s still not reachable: %v", addr, err)
-		pinger.Close()
+		if pinger != nil {
+			pinger.Close()
+		}
 		return
 	}
 

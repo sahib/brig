@@ -71,6 +71,10 @@ func BootServer(basePath, password, logPath string, bindHost string, port int) (
 
 	log.Infof("Password seems to be valid...")
 
+	if err := increaseMaxOpenFds(); err != nil {
+		log.Warningf("Failed to incrase number of open fds")
+	}
+
 	ctx := context.Background()
 	quitCh := make(chan struct{})
 	base, err := newBase(basePath, password, ctx, quitCh)
