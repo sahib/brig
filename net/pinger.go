@@ -96,6 +96,8 @@ func (pm *PingMap) Sync(addrs []string) error {
 		return ErrPingMapClosed
 	}
 
+	log.Infof("Syncing ping entries... %d", len(addrs), len(pm.peers))
+
 	// Remember to schedule an update right after sync.
 	// This will only run after Sync() due the common lock.
 	go pm.doUpdate()
@@ -119,11 +121,13 @@ func (pm *PingMap) Sync(addrs []string) error {
 		}
 
 		// This addr does not exist anymore.
+		log.Debugf("Closing pinger for %v %v", addr, pinger)
 		if err := pinger.Close(); err != nil {
 			return err
 		}
 	}
 
+	log.Infof("Finished syncing pinger entries...")
 	return nil
 }
 

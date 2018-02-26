@@ -141,6 +141,7 @@ type Pinger struct {
 	roundtrip time.Duration
 	cancel    func()
 	mu        sync.Mutex
+	isClosed  bool
 }
 
 func (p *Pinger) LastSeen() time.Time {
@@ -163,6 +164,11 @@ func (p *Pinger) Err() error {
 
 func (p *Pinger) Close() error {
 	p.cancel()
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.isClosed = true
 	return nil
 }
 
@@ -192,12 +198,22 @@ func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
 		cancel:   cancel,
 	}
 
+	// pingCh will also be closed by ipfs's Ping().
+	// This will happen once cancel() is called.
 	go func() {
 		for roundtrip := range pingCh {
 			pinger.mu.Lock()
 			pinger.roundtrip = roundtrip
 			pinger.lastSeen = time.Now()
+
+			isClosed := pinger.isClosed
 			pinger.mu.Unlock()
+
+			if isClosed {
+				break
+			}
+
+			time.Sleep(5 * time.Second)
 		}
 	}()
 

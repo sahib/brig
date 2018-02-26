@@ -1,5 +1,4 @@
 // +build linux
-
 package server
 
 import (
