@@ -115,6 +115,10 @@ func (pm *PingMap) Sync(addrs []string) error {
 	// Do the opposite check and see if any addrs in pm.peers
 	// are not in `addrs`. If so, remove them out.
 	for addr, pinger := range pm.peers {
+		if pinger == nil {
+			continue
+		}
+
 		idx := sort.SearchStrings(addrs, addr)
 		if idx < len(addrs) && addrs[idx] == addr {
 			continue
