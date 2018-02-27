@@ -1,5 +1,4 @@
 - writing logs does not seem to work currently.
-- High CPU consumption when pinging others. (Havoc'd go routine?)
 - Check backend to be safe to run from multiple go routines
 - brig config swarmport is not used?
 - gometalinting / cleaning up
@@ -7,7 +6,5 @@
 - design sh test suite / tui tests / situation preps.
 
 - Pinning looks somewhat broken when e.g. moving directories.
-- "Too many open files" after letting daemon run for some time.
 - brig mv leaves dead-ghost traces when moving between directories. (unconfirmed)
 - brig reset: says "not pinned" when checking out old commits (well...)
-- debug "remote" commands to properly work.

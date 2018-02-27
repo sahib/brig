@@ -78,13 +78,17 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 		swarmPort,
 	)
 
+	// Resource on the config keys can be found here:
+	// https://github.com/ipfs/go-ipfs/blob/master/docs/config.md
 	config := map[string]interface{}{
 		"Addresses.Swarm": []string{
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
 			fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
 		},
-		"Addresses.API":     "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", apiPort),
-		"Addresses.Gateway": "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", gatewayPort),
+		"Addresses.API":        "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", apiPort),
+		"Addresses.Gateway":    "", // fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", gatewayPort),
+		"Reprovider.Interval":  "2h",
+		"Swarm.EnableRelayHop": true,
 	}
 
 	for key, value := range config {
