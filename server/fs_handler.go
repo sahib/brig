@@ -1,8 +1,8 @@
 package server
 
 import (
+	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -10,14 +10,6 @@ import (
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
-
-func prefixSlash(s string) string {
-	if !strings.HasPrefix(s, "/") {
-		return "/" + s
-	}
-
-	return s
-}
 
 type fsHandler struct {
 	base *base
@@ -65,19 +57,16 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 func (fh *fsHandler) List(call capnp.FS_list) error {
 	server.Ack(call.Options)
 
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		// Collect list params:
-		root, err := call.Params.Root()
-		if err != nil {
-			return err
-		}
+	// Collect list params:
+	root, err := call.Params.Root()
+	if err != nil {
+		return err
+	}
 
-		root = prefixSlash(root)
+	maxDepth := call.Params.MaxDepth()
 
-		maxDepth := call.Params.MaxDepth()
-
-		// Call List()
-		entries, err := fs.List(root, int(maxDepth))
+	return fh.base.withFsFromPath(root, func(url *Url, fs *catfs.FS) error {
+		entries, err := fs.List(url.Path, int(maxDepth))
 		if err != nil {
 			return err
 		}
@@ -109,14 +98,12 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	server.Ack(call.Options)
 
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		repoPath, err := call.Params.RepoPath()
-		if err != nil {
-			return err
-		}
+	repoPath, err := call.Params.RepoPath()
+	if err != nil {
+		return err
+	}
 
-		repoPath = prefixSlash(repoPath)
-
+	return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
 		localPath, err := call.Params.LocalPath()
 		if err != nil {
 			return err
@@ -129,7 +116,7 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 
 		defer fd.Close()
 
-		return fs.Stage(repoPath, fd)
+		return fs.Stage(url.Path, fd)
 	})
 }
 
@@ -141,9 +128,8 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return err
 	}
 
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		port, err := bootTransferServer(fs, path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		port, err := bootTransferServer(fs, url.Path)
 		if err != nil {
 			return err
 		}
@@ -161,10 +147,9 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 		return err
 	}
 
-	path = prefixSlash(path)
 	createParents := call.Params.CreateParents()
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Mkdir(path, createParents)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		return fs.Mkdir(url.Path, createParents)
 	})
 }
 
@@ -176,9 +161,8 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 		return err
 	}
 
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Remove(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		return fs.Remove(url.Path)
 	})
 }
 
@@ -195,10 +179,17 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 		return err
 	}
 
-	srcPath = prefixSlash(srcPath)
-	dstPath = prefixSlash(dstPath)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Move(srcPath, dstPath)
+	dstUrl, err := parsePath(dstPath)
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(srcPath, func(srcUrl *Url, fs *catfs.FS) error {
+		if srcUrl.User != dstUrl.User {
+			return fmt.Errorf("cannot move between users: %s <-> %s", srcUrl.User, dstUrl.User)
+		}
+
+		return fs.Move(srcUrl.Path, dstUrl.Path)
 	})
 }
 
@@ -215,10 +206,17 @@ func (fh *fsHandler) Copy(call capnp.FS_copy) error {
 		return err
 	}
 
-	srcPath = prefixSlash(srcPath)
-	dstPath = prefixSlash(dstPath)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Copy(srcPath, dstPath)
+	dstUrl, err := parsePath(dstPath)
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(srcPath, func(srcUrl *Url, fs *catfs.FS) error {
+		if srcUrl.User != dstUrl.User {
+			return fmt.Errorf("cannot copy between users: %s <-> %s", srcUrl.User, dstUrl.User)
+		}
+
+		return fs.Copy(srcUrl.Path, dstUrl.Path)
 	})
 }
 
@@ -230,9 +228,8 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 		return err
 	}
 
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Pin(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		return fs.Pin(url.Path)
 	})
 }
 
@@ -244,9 +241,8 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 		return err
 	}
 
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Unpin(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		return fs.Unpin(url.Path)
 	})
 }
 
@@ -258,9 +254,8 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 		return err
 	}
 
-	path = prefixSlash(path)
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		info, err := fs.Stat(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		info, err := fs.Stat(url.Path)
 		if err != nil {
 			return err
 		}
@@ -342,8 +337,8 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 		return err
 	}
 
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		return fs.Touch(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		return fs.Touch(url.Path)
 	})
 }
 
@@ -353,8 +348,8 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 		return err
 	}
 
-	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		_, err := fs.Stat(path)
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		_, err := fs.Stat(url.Path)
 
 		exists := true
 		if err != nil {

@@ -301,6 +301,23 @@ func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
 	return fn(fs)
 }
 
+func (b *base) withFsFromPath(path string, fn func(url *Url, fs *catfs.FS) error) error {
+	url, err := parsePath(path)
+	if err != nil {
+		return err
+	}
+
+	if url.User == "" {
+		return b.withCurrFs(func(fs *catfs.FS) error {
+			return fn(url, fs)
+		})
+	}
+
+	return b.withRemoteFs(url.User, func(fs *catfs.FS) error {
+		return fn(url, fs)
+	})
+}
+
 func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) error {
 	rp, err := b.Repo()
 	if err != nil {
