@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/util"
 
@@ -67,6 +68,12 @@ type AuthReadWriter struct {
 	// The data of our public key
 	ownPubKey []byte
 
+	// The name we advertise to the remote
+	ownName string
+
+	// The name remote advertised to us
+	remoteName string
+
 	// The remote's public key, once received (nil before)
 	remotePubKey []byte
 
@@ -98,12 +105,14 @@ func NewAuthReadWriter(
 	rwc io.ReadWriteCloser,
 	privKey PrivDecrypter,
 	ownPubKey []byte,
+	ownName string,
 	remoteChecker RemoteChecker,
 ) *AuthReadWriter {
 	return &AuthReadWriter{
 		rwc:           rwc,
 		privKey:       privKey,
 		ownPubKey:     ownPubKey,
+		ownName:       ownName,
 		readBuf:       &bytes.Buffer{},
 		remoteChecker: remoteChecker,
 	}
@@ -177,11 +186,15 @@ func encryptWithPubKey(data, pubKeyData []byte) ([]byte, error) {
 
 // RemotePubKey returns the partner's public key, if it was authorised already.
 // Otherwise an error will be returned.
-func (ath *AuthReadWriter) RemotePubKey() ([]byte, error) {
-	// if !ath.IsAuthorised() {
-	// 	return nil, fmt.Errorf("Partner was not authorised yet")
-	// }
-	return ath.remotePubKey, nil
+func (ath *AuthReadWriter) RemotePubKey() []byte {
+	return ath.remotePubKey
+}
+
+// Return the remote's screen name.
+// Note that this name only serves as indication for display
+// and should not be relied on since it can be easily faked.
+func (ath *AuthReadWriter) RemoteName() string {
+	return ath.remoteName
 }
 
 // wrap a normal io.ReadWriter into an AES encrypted tunnel.
@@ -212,10 +225,28 @@ func wrapEncryptedRW(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
 
 // runAuth runs the protocol pointed out above.
 func (ath *AuthReadWriter) runAuth() error {
+	// TODO: Sign name? That only helps in transition changes though...
+	if _, err := writeSizePack(ath.rwc, []byte(ath.ownName)); err != nil {
+		return err
+	}
+
+	log.Debugf("write name: %v", ath.ownName)
+
 	// Write our own pubkey down the line:
 	if _, err := writeSizePack(ath.rwc, ath.ownPubKey); err != nil {
 		return err
 	}
+
+	// Read the advertised remote name.
+	// (malicious partners could fake whatever name here,
+	//  but we do not rely on the name)
+	remoteName, err := readSizePack(ath.rwc)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("read name: %v %d", string(remoteName), len(remoteName))
+	ath.remoteName = string(remoteName)
 
 	// Read their pubkey:
 	remotePubKey, err := readSizePack(ath.rwc)

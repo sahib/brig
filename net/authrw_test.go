@@ -15,6 +15,7 @@ import (
 	"github.com/alokmenghrajani/gpgeez"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -97,7 +98,7 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 
 func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob []byte) {
 	withLoopbackConnection(t, func(a, b net.Conn) {
-		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, func(pubKey []byte) error {
+		authAli := NewAuthReadWriter(a, DummyPrivKey(privAli), pubAli, "ali", func(pubKey []byte) error {
 			fpBob := peer.BuildFingerprint("bob", pubBob)
 			if !fpBob.PubKeyMatches(pubKey) {
 				return fmt.Errorf("bob has wrong public key")
@@ -105,7 +106,7 @@ func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob 
 
 			return nil
 		})
-		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, func(pubKey []byte) error {
+		authBob := NewAuthReadWriter(b, DummyPrivKey(privBob), pubBob, "bob", func(pubKey []byte) error {
 			fpAli := peer.BuildFingerprint("ali", pubAli)
 			if !fpAli.PubKeyMatches(pubKey) {
 				return fmt.Errorf("alice has wrong public key")
@@ -152,6 +153,9 @@ func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob 
 			t.Errorf("Auth Read failed: %v", err)
 			return
 		}
+
+		require.Equal(t, authBob.RemoteName(), "ali")
+		require.Equal(t, authAli.RemoteName(), "bob")
 
 		if !bytes.Equal(expect, answer) {
 			t.Errorf("auth transmission failed; want `%s`, got `%s`", expect, answer)

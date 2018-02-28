@@ -328,10 +328,10 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 
 	switch n := ctx.NArg(); n {
 	case 1:
-		remoteRev = ctx.Args().Get(0)
+		remoteName = ctx.Args().Get(0)
 	case 2:
-		localRev = ctx.Args().Get(0)
-		remoteRev = ctx.Args().Get(1)
+		localName = ctx.Args().Get(0)
+		remoteName = ctx.Args().Get(1)
 	case 3:
 		remoteName = ctx.Args().Get(0)
 		localRev = ctx.Args().Get(1)

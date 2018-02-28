@@ -57,7 +57,9 @@ Explain reflinks.
     $ brig ls
     $ mkdir /tmp/mount
     $ brig mount /tmp/mount
-    $ ls /tmp/mount
+    $ ls /tmp/mount  # Empty.
+    $ vi /tmp/mount/new-file
+    $ brig ls
 
 5. Commits
 ==========
@@ -77,31 +79,36 @@ Explain reflinks.
 .. code-block:: bash
 
     # Little different than git.
-    $ brig history README.md
+    $ brig history new-file
+    $ brig edit new-file
+    $ brig commit -m 'edited new-file'
+    $ brig reset HEAD^ new-file
+    $ brig cat new-file
 
-7. Remotes
-==========
+7. Discovery & Remotes
+======================
 
 .. code-block:: bash
 
-    # Asking existential questions.
     $ brig whoami
-    # Explain the remote list.
-    $ brig remote edit
-    # Where to get the remote names of others?
-    $ brig net locate
-    # Add vladimir (which was started in the background at some time)
-    $ brig remote add
+    $ brig net locate alice
+    $ brig remote add <name> <hash>
     $ brig remote ls
+    $ brig remote edit
     $ brig net list
-
 
 8 Sync & Diff
 =============
 
 .. code-block:: bash
 
-    $ brig diff vladi
-    $ brig sync vladi
+    $ brig net list
+    $ brig diff alice
+    $ brig sync alice
     $ brig log
     $ brig ls
+
+9 Pinning
+=========
+
+?

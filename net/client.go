@@ -33,20 +33,9 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	}
 
 	addr := remote.Fingerprint.Addr()
-	ctl, err := DialByAddr(addr, remote.Fingerprint, rp.Keyring(), bk, ctx)
+	ctl, err := DialByAddr(addr, remote.Fingerprint, rp, bk, ctx)
 	if err != nil {
 		return nil, e.Wrapf(err, "by-addr")
-	}
-
-	// Save the remote's public key for later.
-	// Might be used e.g. in locate()
-	remotePubKey, err := ctl.RemotePubKey()
-	if err != nil {
-		return nil, e.Wrapf(err, "remote-pub-key")
-	}
-
-	if err := rp.Keyring().SavePubKey(name, remotePubKey); err != nil {
-		return nil, err
 	}
 
 	return ctl, nil
@@ -55,10 +44,11 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 func DialByAddr(
 	addr string,
 	fingerprint peer.Fingerprint,
-	kr *repo.Keyring,
+	rp *repo.Repository,
 	bk netBackend.Backend,
 	ctx context.Context,
 ) (*Client, error) {
+	kr := rp.Keyring()
 	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return nil, err
@@ -71,13 +61,12 @@ func DialByAddr(
 		return nil, e.Wrapf(err, "raw")
 	}
 
-	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(pubKey []byte) error {
-		// Skip authentication if no fingerprint was supplied:
-		// TODO: Remove?
-		if string(fingerprint) == "" {
-			return nil
-		}
+	ownName := rp.Owner
+	if fingerprint == "" {
+		return nil, fmt.Errorf("Rejecting own, empty fingerprint... bug?")
+	}
 
+	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, ownName, func(pubKey []byte) error {
 		if !fingerprint.PubKeyMatches(pubKey) {
 			return fmt.Errorf("remote pubkey does not match fingerprint")
 		}
@@ -107,22 +96,24 @@ func DialByAddr(
 
 func PeekRemotePubkey(
 	addr string,
-	kr *repo.Keyring,
+	rp *repo.Repository,
 	bk netBackend.Backend,
 	ctx context.Context,
-) ([]byte, error) {
+) ([]byte, string, error) {
+	kr := rp.Keyring()
 	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	log.Debugf("peek to %s", addr)
 	rawConn, err := bk.Dial(addr, "brig/caprpc")
 	if err != nil {
-		return nil, e.Wrapf(err, "raw")
+		return nil, "", e.Wrapf(err, "raw")
 	}
 
-	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, func(_ []byte) error {
+	owner := rp.Owner
+	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, owner, func(_ []byte) error {
 		return nil
 	})
 
@@ -132,16 +123,12 @@ func PeekRemotePubkey(
 		log.Warningf("peek: %v", err)
 	}
 
-	return authConn.RemotePubKey()
+	return authConn.RemotePubKey(), authConn.RemoteName(), nil
 }
 
 // Close will close the connection from the client side
 func (cl *Client) Close() error {
 	return cl.conn.Close()
-}
-
-func (ctl *Client) RemotePubKey() ([]byte, error) {
-	return ctl.authConn.RemotePubKey()
 }
 
 /////////////////////

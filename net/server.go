@@ -6,7 +6,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"time"
 
 	"zombiezen.com/go/capnproto2/rpc"
 
@@ -219,23 +218,20 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) chan Lo
 
 // PeekFingerprint fetches the fingerprint of a peer without authenticating
 // ourselves or them.
-func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Fingerprint, error) {
+func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Fingerprint, string, error) {
 	// Query the remotes pubkey and use it to build the remotes' fingerprint.
 	// If not available we just send an empty string back to the client.
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
-	defer cancel()
-
-	pubKey, err := PeekRemotePubkey(addr, sv.hdl.rp.Keyring(), sv.bk, ctx)
-	// ctl, err := DialByAddr(addr, emptyFp, sv.hdl.rp.Keyring(), sv.bk, ctx)
+	pubKey, remoteName, err := PeekRemotePubkey(addr, sv.hdl.rp, sv.bk, ctx)
 	if err != nil {
 		log.Warningf(
 			"locate: failed to dial to `%s` (%s): %v",
 			addr, addr, err,
 		)
-		return peer.Fingerprint(""), nil
+		return peer.Fingerprint(""), "", nil
 	}
 
-	return peer.BuildFingerprint(addr, pubKey), nil
+	log.Debugf("remote name: %v", remoteName)
+	return peer.BuildFingerprint(addr, pubKey), remoteName, nil
 }
 
 func (sv *Server) Identity() (peer.Info, error) {
@@ -275,8 +271,10 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 
+	owner := hdl.rp.Owner
+
 	// Take the raw connection we get and add an authentication layer on top of it.
-	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, func(pubKey []byte) error {
+	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, owner, func(pubKey []byte) error {
 		remotes, err := hdl.rp.Remotes.ListRemotes()
 		if err != nil {
 			return err

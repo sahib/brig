@@ -455,17 +455,26 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 					peekCtx, cancel := context.WithTimeout(mh.base.ctx, 2*time.Second)
 					defer cancel()
 
-					fingerprint, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
-					if err != nil {
-						log.Warningf("No fingerprint for %v (query: %s): %v", peer.Addr, who, err)
-						fingerprint = ""
-					}
-
 					// Remember that we already resolved this addr.
 					addrCache.Store(peer.Addr, true)
 
+					fingerprint, remoteName, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
+					if err != nil {
+						log.Warningf(
+							"No fingerprint for %v (query: %s): %v",
+							peer.Addr,
+							who,
+							err,
+						)
+						return
+					}
+
+					if string(fingerprint) == "" {
+						return
+					}
+
 					result := &LocateResult{
-						Name:        string(peer.Name),
+						Name:        string(remoteName),
 						Addr:        string(peer.Addr),
 						Mask:        located.Mask.String(),
 						Fingerprint: string(fingerprint),
