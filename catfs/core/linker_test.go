@@ -213,6 +213,11 @@ func TestCheckoutFile(t *testing.T) {
 			t.Fatalf("Initial commit failed: %v", err)
 		}
 
+		initCmt, err := lkr.Head()
+		if err != nil {
+			t.Fatalf("Failed to get initial head")
+		}
+
 		root, err := lkr.Root()
 		if err != nil {
 			t.Fatalf("Getting root failed: %v", err)
@@ -231,6 +236,7 @@ func TestCheckoutFile(t *testing.T) {
 		}
 
 		MustModify(t, lkr, file, 2)
+		headFileHash := file.Hash().Clone()
 
 		if err := lkr.MakeCommit(n.AuthorOfStage, "third commit"); err != nil {
 			t.Fatalf("Failed to make third commit: %v", err)
@@ -248,7 +254,7 @@ func TestCheckoutFile(t *testing.T) {
 
 		lastCommit := lastCommitNd.(*n.Commit)
 
-		if err := lkr.CheckoutFile(lastCommit, file.Path()); err != nil {
+		if err := lkr.CheckoutFile(lastCommit, "/cat.png"); err != nil {
 			t.Fatalf("Failed to checkout file before commit: %v", err)
 		}
 
@@ -263,6 +269,32 @@ func TestCheckoutFile(t *testing.T) {
 
 		if lastVersion.Size() != 1 {
 			t.Fatalf("Size of checkout'd file is not from second commit")
+		}
+
+		if err := lkr.CheckoutFile(initCmt, "/cat.png"); err != nil {
+			t.Fatalf("Failed to checkout file at init: %v", err)
+		}
+
+		_, err = lkr.LookupFile("/cat.png")
+		if !ie.IsNoSuchFileError(err) {
+			t.Fatalf("Different error: %v", err)
+		}
+
+		if err := lkr.CheckoutFile(head, "/cat.png"); err != nil {
+			t.Fatalf("Failed to checkout file at head: %v", err)
+		}
+
+		headVersion, err := lkr.LookupFile("/cat.png")
+		if err != nil {
+			t.Fatalf("Failed to lookup /cat.png post checkout")
+		}
+
+		if !headVersion.Hash().Equal(headFileHash) {
+			t.Fatalf(
+				"Hash differs between new and head reset: %v != %v",
+				headVersion.Hash(),
+				headFileHash,
+			)
 		}
 	})
 }
