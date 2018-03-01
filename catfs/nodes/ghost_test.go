@@ -10,14 +10,14 @@ import (
 
 func TestGhost(t *testing.T) {
 	lkr := NewMockLinker()
-	root, err := NewEmptyDirectory(lkr, nil, "", 1)
+	root, err := NewEmptyDirectory(lkr, nil, "", "a", 1)
 	if err != nil {
 		t.Fatalf("Failed to create root dir: %v", err)
 	}
 	lkr.AddNode(root)
 	lkr.MemSetRoot(root)
 
-	file, err := NewEmptyFile(root, "x.png", 42)
+	file, err := NewEmptyFile(root, "x.png", "a", 42)
 	file.content = h.TestDummy(t, 2)
 	file.hash = h.TestDummy(t, 3)
 	file.size = 13

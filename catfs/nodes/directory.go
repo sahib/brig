@@ -24,7 +24,9 @@ type Directory struct {
 }
 
 // NewEmptyDirectory creates a new empty directory that does not exist yet.
-func NewEmptyDirectory(lkr Linker, parent *Directory, name string, inode uint64) (*Directory, error) {
+func NewEmptyDirectory(
+	lkr Linker, parent *Directory, name string, user string, inode uint64,
+) (*Directory, error) {
 	absPath := ""
 	if parent != nil {
 		absPath = path.Join(parent.Path(), name)
@@ -33,6 +35,7 @@ func NewEmptyDirectory(lkr Linker, parent *Directory, name string, inode uint64)
 	newDir := &Directory{
 		Base: Base{
 			inode:    inode,
+			user:     user,
 			hash:     h.Sum([]byte(absPath)),
 			content:  h.EmptyContent.Clone(),
 			name:     name,
@@ -610,6 +613,10 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 
 		return parent.xorHash(lkr, nodeHash)
 	})
+}
+
+func (d *Directory) SetUser(user string) {
+	d.Base.user = user
 }
 
 // Assert that Directory follows the Node interface:

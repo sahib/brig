@@ -10,14 +10,14 @@ import (
 
 func TestFile(t *testing.T) {
 	lkr := NewMockLinker()
-	root, err := NewEmptyDirectory(lkr, nil, "", 2)
+	root, err := NewEmptyDirectory(lkr, nil, "", "a", 2)
 	if err != nil {
 		t.Fatalf("Failed to create root dir: %v", err)
 	}
 	lkr.AddNode(root)
 	lkr.MemSetRoot(root)
 
-	file, err := NewEmptyFile(root, "some file", 3)
+	file, err := NewEmptyFile(root, "some file", "a", 3)
 	lkr.AddNode(file)
 
 	if err != nil {

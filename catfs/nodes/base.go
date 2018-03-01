@@ -18,6 +18,9 @@ type Base struct {
 	// Basename of this node
 	name string
 
+	// name of the user that last modified this node
+	user string
+
 	// Hash of this node (might be empty)
 	hash h.Hash
 
@@ -38,12 +41,17 @@ type Base struct {
 func (b *Base) copyBase(inode uint64) Base {
 	return Base{
 		name:     b.name,
+		user:     b.user,
 		hash:     b.hash.Clone(),
 		content:  b.content.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
 		inode:    inode,
 	}
+}
+
+func (b *Base) User() string {
+	return b.user
 }
 
 // Name returns the name of this node (e.g. /a/b/c -> c)
@@ -98,6 +106,9 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 	if err := capnode.SetName(b.name); err != nil {
 		return err
 	}
+	if err := capnode.SetUser(b.user); err != nil {
+		return err
+	}
 
 	capnode.SetInode(b.inode)
 	return nil
@@ -106,6 +117,11 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 	var err error
 	b.name, err = capnode.Name()
+	if err != nil {
+		return err
+	}
+
+	b.user, err = capnode.User()
 	if err != nil {
 		return err
 	}

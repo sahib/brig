@@ -14,6 +14,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     modTime  @6 :Text;
     isPinned @7 :Bool;
     content  @8 :Data;
+    user     @9 :Text;
 }
 
 struct Commit $Go.doc("Single log entry") {

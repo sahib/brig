@@ -19,7 +19,7 @@ import (
 func TestLinkerInsertRoot(t *testing.T) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		root, err := n.NewEmptyDirectory(lkr, nil, "/", 2)
+		root, err := n.NewEmptyDirectory(lkr, nil, "/", "u", 2)
 		if err != nil {
 			t.Fatalf("Creating empty root dir failed: %v", err)
 		}
@@ -70,7 +70,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Failed to create root: %v", err)
 		}
 
-		newFile, err := n.NewEmptyFile(root, "cat.png", 2)
+		newFile, err := n.NewEmptyFile(root, "cat.png", "u", 2)
 		if err != nil {
 			t.Fatalf("Failed to create empty file: %v", err)
 		}
@@ -130,7 +130,7 @@ func TestLinkerNested(t *testing.T) {
 			return
 		}
 
-		sub, err := n.NewEmptyDirectory(lkr, root, "sub", 3)
+		sub, err := n.NewEmptyDirectory(lkr, root, "sub", "u", 3)
 		if err != nil {
 			t.Fatalf("Creating empty sub dir failed: %v", err)
 			return
@@ -163,7 +163,7 @@ func TestLinkerNested(t *testing.T) {
 			t.Fatalf("Resolving /sub by ID (%d) failed: %v", sameSubDir.Inode(), err)
 		}
 
-		subpub, err := n.NewEmptyDirectory(lkr, sameSubDir, "pub", 4)
+		subpub, err := n.NewEmptyDirectory(lkr, sameSubDir, "pub", "u", 4)
 		if err != nil {
 			t.Fatalf("Creating of deep sub failed")
 		}
@@ -223,7 +223,7 @@ func TestCheckoutFile(t *testing.T) {
 			t.Fatalf("Getting root failed: %v", err)
 		}
 
-		file, err := n.NewEmptyFile(root, "cat.png", 3)
+		file, err := n.NewEmptyFile(root, "cat.png", "u", 3)
 		if err != nil {
 			t.Fatalf("Failed to create cat.png: %v", err)
 		}
@@ -357,7 +357,7 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Failed to retrieve root: %v", err)
 		}
 
-		sub, err := n.NewEmptyDirectory(lkr, root, "sub", 3)
+		sub, err := n.NewEmptyDirectory(lkr, root, "sub", "u", 3)
 		if err != nil {
 			t.Fatalf("Creating empty sub dir failed: %v", err)
 			return
@@ -367,17 +367,17 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Staging /sub failed: %v", err)
 		}
 
-		file1, err := n.NewEmptyFile(sub, "a.png", 4)
+		file1, err := n.NewEmptyFile(sub, "a.png", "u", 4)
 		if err != nil {
 			t.Fatalf("Failed to create empty file1: %v", err)
 		}
 
-		file2, err := n.NewEmptyFile(root, "a.png", 5)
+		file2, err := n.NewEmptyFile(root, "a.png", "u", 5)
 		if err != nil {
 			t.Fatalf("Failed to create empty file2: %v", err)
 		}
 
-		file3, err := n.NewEmptyFile(root, "b.png", 6)
+		file3, err := n.NewEmptyFile(root, "b.png", "u", 6)
 		if err != nil {
 			t.Fatalf("Failed to create empty file3: %v", err)
 		}

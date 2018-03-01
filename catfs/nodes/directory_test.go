@@ -9,7 +9,7 @@ import (
 
 func TestDirectoryBasics(t *testing.T) {
 	lkr := NewMockLinker()
-	repoDir, err := NewEmptyDirectory(lkr, nil, "", 1)
+	repoDir, err := NewEmptyDirectory(lkr, nil, "", "a", 1)
 	lkr.MemSetRoot(repoDir)
 	lkr.AddNode(repoDir)
 
@@ -17,7 +17,7 @@ func TestDirectoryBasics(t *testing.T) {
 		t.Fatalf("Failed to create empty dir: %v", err)
 	}
 
-	subDir, err := NewEmptyDirectory(lkr, repoDir, "sub", 2)
+	subDir, err := NewEmptyDirectory(lkr, repoDir, "sub", "b", 2)
 	if err != nil {
 		t.Fatalf("Failed to create empty sub dir: %v", err)
 	}

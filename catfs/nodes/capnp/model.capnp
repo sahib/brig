@@ -54,11 +54,13 @@ struct Node $Go.doc("Node is a node in the merkle dag of brig") {
     modTime @2 :Text;     # Time as ISO8601
     inode   @3 :UInt64;
     content @4 :Data;
+    user    @5 :Text;
 
     union {
-        commit    @5 :Commit;
-        directory @6 :Directory;
-        file      @7 :File;
-        ghost     @8 :Ghost;
+        commit    @6 :Commit;
+        directory @7 :Directory;
+        file      @8 :File;
+        ghost     @9 :Ghost;
     }
+
 }

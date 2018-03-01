@@ -44,6 +44,10 @@ type Metadatable interface {
 	// which is also commonly called 'basename' in unix filesystems.
 	Name() string
 
+	// User returns the id of the user that last modified this file.
+	// (There is no real ownership)
+	User() string
+
 	// Hash returns the hash value of the node.
 	//
 	// It is an error to modify the hash value.
@@ -117,6 +121,7 @@ type ModNode interface {
 	SetSize(size uint64)
 	SetModTime(modTime time.Time)
 	SetName(name string)
+	SetUser(user string)
 
 	// TODO: write some assumptions about this.
 	NotifyMove(lkr Linker, newPath string) error

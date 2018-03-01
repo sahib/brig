@@ -99,7 +99,7 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 		t.Fatalf("touch: Failed to lookup: %s", dirname)
 	}
 
-	file, err := n.NewEmptyFile(parent, path.Base(touchPath), lkr.NextInode())
+	file, err := n.NewEmptyFile(parent, path.Base(touchPath), lkr.owner, lkr.NextInode())
 	if err != nil {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}

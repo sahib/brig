@@ -25,6 +25,10 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 		return nil, err
 	}
 
+	if err := capInfo.SetUser(info.User); err != nil {
+		return nil, err
+	}
+
 	if err := capInfo.SetHash(info.Hash.Bytes()); err != nil {
 		return nil, err
 	}

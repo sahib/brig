@@ -12,6 +12,7 @@ import (
 
 type StatInfo struct {
 	Path     string
+	User     string
 	Hash     h.Hash
 	Size     uint64
 	Inode    uint64
@@ -26,6 +27,11 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info := &StatInfo{}
 
 	path, err := capInfo.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := capInfo.User()
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +66,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	}
 
 	info.Path = path
+	info.User = user
 	info.Hash = hash
 	info.Size = capInfo.Size()
 	info.Inode = capInfo.Inode()

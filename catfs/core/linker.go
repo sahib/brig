@@ -67,6 +67,9 @@ type Linker struct {
 	// UID to node
 	inodeIndex map[uint64]n.Node
 
+	// user name to user id (cached)
+	userIndex map[string]int32
+
 	// Cache for the linker owner.
 	owner string
 }
@@ -761,7 +764,7 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 		} else {
 			// No root directory then. Create a shiny new one and stage it.
 			inode := lkr.NextInode()
-			newRoot, err := n.NewEmptyDirectory(lkr, nil, "/", inode)
+			newRoot, err := n.NewEmptyDirectory(lkr, nil, "/", lkr.owner, inode)
 			if err != nil {
 				return nil, err
 			}

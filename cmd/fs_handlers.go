@@ -261,6 +261,7 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	printPair("Path", info.Path)
+	printPair("User", info.User)
 	printPair("Type", nodeType)
 	printPair("Size", humanize.Bytes(info.Size))
 	printPair("Hash", info.Hash.B58String())

@@ -76,6 +76,7 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 			sy.lkrDst,
 			parentDir,
 			srcName,
+			src.User(),
 			sy.lkrDst.NextInode(),
 		)
 
@@ -86,6 +87,7 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 		newDstFile, err := n.NewEmptyFile(
 			parentDir,
 			srcName,
+			src.User(),
 			sy.lkrDst.NextInode(),
 		)
 

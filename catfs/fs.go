@@ -63,6 +63,7 @@ type FS struct {
 type StatInfo struct {
 	Path     string
 	Hash     h.Hash
+	User     string
 	Size     uint64
 	Inode    uint64
 	IsDir    bool
@@ -122,6 +123,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 	return &StatInfo{
 		Path:     nd.Path(),
 		Hash:     nd.Hash().Clone(),
+		User:     nd.User(),
 		ModTime:  nd.ModTime(),
 		IsDir:    nd.Type() == n.NodeTypeDirectory,
 		Inode:    nd.Inode(),

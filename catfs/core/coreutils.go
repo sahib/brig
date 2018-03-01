@@ -111,7 +111,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	}()
 
 	// Create it then!
-	dir, err = n.NewEmptyDirectory(lkr, parent, basename, lkr.NextInode())
+	dir, err = n.NewEmptyDirectory(lkr, parent, basename, lkr.owner, lkr.NextInode())
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +437,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		}
 
 		// Create a new file at specified path:
-		file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.NextInode())
+		file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.owner, lkr.NextInode())
 		if err != nil {
 			return nil, err
 		}

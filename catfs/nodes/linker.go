@@ -59,7 +59,7 @@ func (ml *MockLinker) Root() (*Directory, error) {
 		return ml.root, nil
 	}
 
-	root, err := NewEmptyDirectory(ml, nil, "", 0)
+	root, err := NewEmptyDirectory(ml, nil, "", "", 0)
 	if err != nil {
 		return nil, err
 	}

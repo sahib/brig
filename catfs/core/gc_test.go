@@ -32,7 +32,7 @@ func TestGC(t *testing.T) {
 
 	killExpected[root.Hash().B58String()] = true
 
-	sub1, err := n.NewEmptyDirectory(lkr, root, "a", 2)
+	sub1, err := n.NewEmptyDirectory(lkr, root, "a", "u", 2)
 	if err != nil {
 		t.Fatalf("Creating sub2 failed: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestGC(t *testing.T) {
 	killExpected[root.Hash().B58String()] = true
 	killExpected[sub1.Hash().B58String()] = true
 
-	sub2, err := n.NewEmptyDirectory(lkr, sub1, "b", 3)
+	sub2, err := n.NewEmptyDirectory(lkr, sub1, "b", "u", 3)
 	if err != nil {
 		t.Fatalf("Creating sub2 failed: %v", err)
 	}

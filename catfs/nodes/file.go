@@ -21,10 +21,11 @@ type File struct {
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
-func NewEmptyFile(parent *Directory, name string, inode uint64) (*File, error) {
+func NewEmptyFile(parent *Directory, name string, user string, inode uint64) (*File, error) {
 	file := &File{
 		Base: Base{
 			name:     name,
+			user:     user,
 			inode:    inode,
 			modTime:  time.Now().Truncate(time.Microsecond),
 			nodeType: NodeTypeFile,
@@ -220,6 +221,10 @@ func (f *File) SetParent(_ Linker, parent Node) error {
 // Key returns the current key of the file.
 func (f *File) Key() []byte {
 	return f.key
+}
+
+func (f *File) SetUser(user string) {
+	f.Base.user = user
 }
 
 // Interface check for debugging:
