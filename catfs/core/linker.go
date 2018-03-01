@@ -1148,34 +1148,55 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 // CheckoutFile resets a certain file to the state it had in cmt. If the file
 // did not exist back then, it will be deleted. `nd` is usually retrieved by
 // calling ResolveNode() and sorts.
-func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
+func (lkr *Linker) CheckoutFile(cmt *n.Commit, ndPath string) (err error) {
 	root, err := lkr.DirectoryByHash(cmt.Root())
 	if err != nil {
 		return err
 	}
 
 	if root == nil {
-		return fmt.Errorf("No root to reset to")
+		return fmt.Errorf("no root to reset to")
 	}
 
-	oldNode, err := root.Lookup(lkr, nd.Path())
+	currNode, err := lkr.LookupModNode(ndPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
 	}
 
+	oldNode, err := root.Lookup(lkr, ndPath)
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
+	}
+
+	// Shortcut: both are equal already:
+	if oldNode != nil && currNode != nil {
+		if oldNode.Content().Equal(currNode.Content()) {
+			return nil
+		}
+	}
+
 	// Invalidate the respective index entry, so the instances gets reloaded:
-	err = n.Walk(lkr, nd, true, func(child n.Node) error {
-		lkr.MemIndexPurge(child)
-		return nil
-	})
+	if currNode != nil {
+		err = n.Walk(lkr, currNode, true, func(child n.Node) error {
+			lkr.MemIndexPurge(child)
+			return nil
+		})
+	}
 
 	if err != nil {
 		return err
 	}
 
-	par, err := n.ParentDirectory(lkr, nd)
-	if err != nil {
-		return err
+	var par *n.Directory
+	if ndPath != "/" {
+		par, err = lkr.LookupDirectory(path.Dir(ndPath))
+		if err != nil {
+			return err
+		}
+	}
+
+	if par == nil {
+		return fmt.Errorf("checkout by commit if you want to checkout previous roots")
 	}
 
 	// Make sure the actual checkout will land as one batch on disk:
@@ -1188,26 +1209,27 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, nd n.Node) (err error) {
 		}
 	}()
 
-	// nd might be root itself, so par may be nil.
-	if par != nil {
-		if err := par.RemoveChild(lkr, nd); err != nil {
+	// Remove old node, if needed.
+	if currNode != nil {
+		if err := par.RemoveChild(lkr, currNode); err != nil {
 			return err
 		}
 
-		lkr.MemIndexPurge(nd)
+		lkr.MemIndexPurge(currNode)
+
 		if err := lkr.StageNode(par); err != nil {
 			return err
 		}
+	}
 
-		// old Node might not have yet existed back then.
-		// If so, simply do not re-add it.
-		if oldNode != nil {
-			if err := par.Add(lkr, oldNode); err != nil {
-				return err
-			}
-
-			return lkr.StageNode(oldNode)
+	// old Node might not have yet existed back then.
+	// If so, simply do not re-add it.
+	if oldNode != nil {
+		if err := par.Add(lkr, oldNode); err != nil {
+			return err
 		}
+
+		return lkr.StageNode(oldNode)
 	}
 
 	return nil

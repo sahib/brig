@@ -958,9 +958,8 @@ func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	nd, err := fs.lkr.LookupNode(path)
-	if err != nil {
-		return err
+	if path == "/" {
+		return fs.Checkout(rev, false)
 	}
 
 	cmt, err := parseRev(fs.lkr, rev)
@@ -968,7 +967,7 @@ func (fs *FS) Reset(path, rev string) error {
 		return err
 	}
 
-	if err := fs.lkr.CheckoutFile(cmt, nd); err != nil {
+	if err := fs.lkr.CheckoutFile(cmt, path); err != nil {
 		return err
 	}
 

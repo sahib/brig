@@ -248,7 +248,7 @@ func TestCheckoutFile(t *testing.T) {
 
 		lastCommit := lastCommitNd.(*n.Commit)
 
-		if err := lkr.CheckoutFile(lastCommit, file); err != nil {
+		if err := lkr.CheckoutFile(lastCommit, file.Path()); err != nil {
 			t.Fatalf("Failed to checkout file before commit: %v", err)
 		}
 
