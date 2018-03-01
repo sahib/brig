@@ -396,7 +396,7 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 // PINNING OPERATIONS //
 ////////////////////////
 
-func (fs *FS) pin(path string, op func(hash h.Hash) error) error {
+func (fs *FS) pinOp(path string, op func(hash h.Hash) error) error {
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil {
 		return err
@@ -422,14 +422,14 @@ func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pin(path, fs.bk.Pin)
+	return fs.pinOp(path, fs.bk.Pin)
 }
 
 func (fs *FS) Unpin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pin(path, fs.bk.Unpin)
+	return fs.pinOp(path, fs.bk.Unpin)
 }
 
 var errNotPinnedSentinel = errors.New("not pinned")
@@ -977,11 +977,11 @@ func (fs *FS) Reset(path, rev string) error {
 		return nil
 	}
 
-	if err := fs.pin(path, fs.bk.Unpin); err != nil {
+	if err := fs.pinOp(path, fs.bk.Unpin); err != nil {
 		return err
 	}
 
-	return fs.pin(path, fs.bk.Pin)
+	return fs.pinOp(path, fs.bk.Pin)
 }
 
 func (fs *FS) Checkout(rev string, force bool) error {

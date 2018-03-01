@@ -18,15 +18,15 @@ import (
 
 func handleReset(ctx *cli.Context, ctl *client.Client) error {
 	force := ctx.Bool("force")
-	path := ctx.Args().First()
-	rev := "HEAD"
+	rev := ctx.Args().First()
+	path := ""
 
 	if len(ctx.Args()) > 1 {
-		rev = ctx.Args().Get(1)
+		path = ctx.Args().Get(1)
 	}
 
 	if err := ctl.Reset(path, rev, force); err != nil {
-		return ExitCode{UnknownError, fmt.Sprintf("unpin: %v", err)}
+		return ExitCode{UnknownError, fmt.Sprintf("reset: %v", err)}
 	}
 
 	return nil

@@ -9,6 +9,7 @@ import (
 	ipfspath "github.com/ipfs/go-ipfs/path"
 
 	"github.com/ipfs/go-ipfs/core/corerepo"
+	"github.com/ipfs/go-ipfs/pin"
 )
 
 func (nd *Node) Pin(hash h.Hash) error {
@@ -35,7 +36,11 @@ func (nd *Node) Unpin(hash h.Hash) error {
 
 	paths := []string{path.String()}
 	if _, err := corerepo.Unpin(nd.ipfsNode, nd.ctx, paths, true); err != nil {
-		return err
+		if err != pin.ErrNotPinned {
+			return err
+		}
+
+		return nil
 	}
 
 	return nil
