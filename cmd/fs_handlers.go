@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sahib/brig/cmd/tabwriter"
@@ -145,6 +146,40 @@ func colorForSize(size uint64) func(f string, a ...interface{}) string {
 	}
 }
 
+func userPrefixMap(users []string) map[string]string {
+	m := make(map[string]string)
+
+	for _, user := range users {
+		m[user] = user
+	}
+
+	tryAbbrev := func(abbrev string) bool {
+		for _, short := range m {
+			if short == abbrev {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	for name := range m {
+		atIdx := strings.Index(name, "@")
+		if atIdx != -1 && tryAbbrev(name[:atIdx]) {
+			m[name] = name[:atIdx]
+			continue
+		}
+
+		slashIdx := strings.Index(name, "/")
+		if slashIdx != -1 && tryAbbrev(name[:slashIdx]) {
+			m[name] = name[:slashIdx]
+			continue
+		}
+	}
+
+	return m
+}
+
 func handleList(ctx *cli.Context, ctl *client.Client) error {
 	maxDepth := ctx.Int("depth")
 	if ctx.Bool("recursive") {
@@ -166,8 +201,20 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
+	users := []string{}
+	for _, entry := range entries {
+		users = append(users, entry.User)
+	}
+
+	userMap := userPrefixMap(users)
+
 	if len(entries) != 0 {
-		fmt.Fprintln(tabW, "SIZE\tMODTIME\tPATH\tPIN\t")
+		userColumn := ""
+		if len(userMap) > 1 {
+			userColumn = "USER\t"
+		}
+
+		fmt.Fprintf(tabW, "SIZE\tMODTIME\t%sPATH\tPIN\t\n", userColumn)
 	}
 
 	for _, entry := range entries {
@@ -183,11 +230,17 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			coloredPath = color.WhiteString(entry.Path)
 		}
 
+		userEntry := ""
+		if len(userMap) > 1 {
+			userEntry = color.GreenString(userMap[entry.User]) + "\t"
+		}
+
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t\n",
+			"%s\t%s\t%s%s\t%s\t\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			entry.ModTime.Format(time.Stamp),
+			userEntry,
 			coloredPath,
 			pinState,
 		)
