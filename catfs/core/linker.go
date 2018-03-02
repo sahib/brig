@@ -1171,13 +1171,6 @@ func (lkr *Linker) CheckoutFile(cmt *n.Commit, ndPath string) (err error) {
 		return err
 	}
 
-	// Shortcut: both are equal already:
-	if oldNode != nil && currNode != nil {
-		if oldNode.Content().Equal(currNode.Content()) {
-			return nil
-		}
-	}
-
 	// Invalidate the respective index entry, so the instances gets reloaded:
 	if currNode != nil {
 		err = n.Walk(lkr, currNode, true, func(child n.Node) error {

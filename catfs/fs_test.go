@@ -276,7 +276,7 @@ func TestReset(t *testing.T) {
 		data := mustReadPath(t, fs, "/x")
 		require.Equal(t, data[0], byte(1))
 		if err := fs.MakeCommit("2"); err != ie.ErrNoChange {
-			t.Fatalf("Reset did not clearly reset stuff... (something changed)")
+			t.Fatalf("Reset did clearly not reset stuff... (something changed)")
 		}
 
 		// Remove the file and then reset it (like git checkout -- file)
@@ -285,6 +285,7 @@ func TestReset(t *testing.T) {
 			t.Fatalf("Something wrong with removed node")
 		}
 
+		// Check if we can recover the delete:
 		require.Nil(t, fs.Reset("/x", "HEAD"))
 		data = mustReadPath(t, fs, "/x")
 		require.Equal(t, data[0], byte(1))
