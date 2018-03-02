@@ -694,17 +694,17 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 func TestHistoryUtil(t *testing.T) {
 	c.WithDummyLinker(t, func(lkr *c.Linker) {
 		c1File, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
-		c1File = c1File.Copy().(*n.File)
+		c1File = c1File.Copy(c1File.Inode()).(*n.File)
 
 		c2File, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
-		c2File = c2File.Copy().(*n.File)
+		c2File = c2File.Copy(c2File.Inode()).(*n.File)
 
-		c3File := c.MustMove(t, lkr, c2File.Copy(), "/y.png")
-		c3File = c3File.Copy().(*n.File)
+		c3File := c.MustMove(t, lkr, c2File.Copy(c2File.Inode()), "/y.png")
+		c3File = c3File.Copy(c3File.Inode()).(*n.File)
 		c3 := c.MustCommit(t, lkr, "move to y.png")
 
 		c4File, c4 := c.MustTouchAndCommit(t, lkr, "/y.png", 23)
-		c4File = c4File.Copy().(*n.File)
+		c4File = c4File.Copy(c4File.Inode()).(*n.File)
 
 		states, err := History(lkr, c4File, c4, nil)
 		if err != nil {
