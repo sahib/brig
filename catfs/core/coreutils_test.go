@@ -399,17 +399,25 @@ func TestMoveDirectory(t *testing.T) {
 			"/dst",
 		}
 
+		got := []string{}
 		require.Nil(t, n.Walk(lkr, dstDir, true, func(child n.Node) error {
-			if child.Path() != expect[0] {
-				t.Fatalf(
-					"Moved node child `%s` does not match `%s`",
-					child.Path(), expect[0],
-				)
-			}
-
-			expect = expect[1:]
+			got = append(got, child.Path())
 			return nil
 		}))
+
+		sort.Strings(expect)
+		sort.Strings(got)
+
+		require.Equal(t, len(expect), len(got))
+		for idx := range expect {
+			if got[idx] != expect[idx] {
+				t.Errorf(
+					"Moved node child `%s` does not match `%s`",
+					got[idx],
+					expect[idx],
+				)
+			}
+		}
 	})
 }
 
