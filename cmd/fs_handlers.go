@@ -148,7 +148,6 @@ func colorForSize(size uint64) func(f string, a ...interface{}) string {
 
 func userPrefixMap(users []string) map[string]string {
 	m := make(map[string]string)
-
 	for _, user := range users {
 		m[user] = user
 	}

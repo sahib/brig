@@ -463,6 +463,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 	file.SetModTime(time.Now())
 	file.SetContent(lkr, info.Hash)
 	file.SetKey(info.Key)
+	file.SetUser(lkr.owner)
 
 	// Add it again when the hash was changed.
 	if err := parentDir.Add(lkr, file); err != nil {
