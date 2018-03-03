@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	stdnet "net"
 	"time"
 
@@ -28,8 +29,7 @@ type Pinger interface {
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.
 	// Each of these can be later contacted to check their credentials.
-	// The operation may take at max `timeoutSec`.
-	ResolveName(name string, timeoutSec int) ([]peer.Info, error)
+	ResolveName(ctx context.Context, name string) ([]peer.Info, error)
 
 	// PublishName announces to the network that this node is known as `name`.
 	// If possible also the group and domain name of the name should be

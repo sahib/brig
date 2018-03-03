@@ -611,6 +611,8 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		salt := make([]byte, 4)
 		binary.PutVarint(salt, size)
 		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)
+
+		sizeAcc.Reset()
 	} else {
 		key = oldFile.Key()
 		sizeR = io.TeeReader(r, sizeAcc)

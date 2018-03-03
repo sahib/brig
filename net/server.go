@@ -165,7 +165,7 @@ type LocateResult struct {
 	Err   error
 }
 
-func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) chan LocateResult {
+func (sv *Server) Locate(ctx context.Context, who peer.Name, mask LocateMask) chan LocateResult {
 	uniqueNames := make(map[string]LocateMask)
 
 	// Example: donald@whitehouse.gov/ovaloffice
@@ -198,7 +198,7 @@ func (sv *Server) Locate(who peer.Name, timeoutSec int, mask LocateMask) chan Lo
 		go func(name string, mask LocateMask) {
 			defer wg.Done()
 
-			peers, err := sv.bk.ResolveName(name, timeoutSec)
+			peers, err := sv.bk.ResolveName(ctx, name)
 			resultCh <- LocateResult{
 				Peers: peers,
 				Err:   err,

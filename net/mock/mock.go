@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"time"
@@ -21,7 +22,7 @@ func NewNetBackend() *NetBackend {
 	}
 }
 
-func (nb *NetBackend) ResolveName(name string, timeoutSec int) ([]peer.Info, error) {
+func (nb *NetBackend) ResolveName(ctx context.Context, name string) ([]peer.Info, error) {
 	switch name {
 	case "bob":
 		return []peer.Info{

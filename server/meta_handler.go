@@ -426,13 +426,12 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	addrCache := sync.Map{}
 	addrCache.Store(ident.Addr, true)
 
+	ctx, cancel := context.WithTimeout(mh.base.ctx, time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
 	ticket := mh.base.conductor.Exec(func(ticket uint64) error {
 		log.Debugf("Locating %v", who)
-		locateCh := psrv.Locate(
-			peer.Name(who),
-			int(timeoutSec),
-			p2pnet.LocateAll,
-		)
+		locateCh := psrv.Locate(ctx, peer.Name(who), p2pnet.LocateAll)
 
 		wg := sync.WaitGroup{}
 		for located := range locateCh {

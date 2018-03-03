@@ -138,31 +138,32 @@ func TestClientFetchStore(t *testing.T) {
 			t.Fatalf("Failed to read store: %v", err)
 		}
 
-		bobFs, err := u.rp.FS("bob", u.bk)
+		aliceFs, err := u.rp.FS("alice", u.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
 
-		_, err = bobFs.Stat(filePath)
+		_, err = aliceFs.Stat(filePath)
 		if !ie.IsNoSuchFileError(err) {
-			t.Fatalf("File has existed in bob's empty store (wtf?)")
+			t.Fatalf("File has existed in bob's empty store (wtf?): %v", err)
 		}
 
-		if err := bobFs.Import(data); err != nil {
+		if err := aliceFs.Import(data); err != nil {
 			t.Fatalf("Failed to import data: %v", err)
 		}
 
-		info, err := bobFs.Stat(filePath)
+		info, err := aliceFs.Stat(filePath)
 		if err != nil {
 			t.Fatalf("Failed to read file exported from alice: %v", err)
 		}
 
 		// Check superficially that store was imported right:
 		require.Equal(t, info.Path, filePath)
+		require.Equal(t, info.User, "bob")
 		require.Equal(t, info.Size, uint64(3))
 		require.Equal(t, info.IsDir, false)
 
-		r, err := bobFs.Cat(filePath)
+		r, err := aliceFs.Cat(filePath)
 		if err != nil {
 			t.Fatalf("Failed to cat exported file: %v", err)
 		}
