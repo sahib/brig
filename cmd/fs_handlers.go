@@ -21,26 +21,35 @@ import (
 )
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
-	localPath, err := filepath.Abs(ctx.Args().Get(0))
+	localPath := ctx.Args().Get(0)
+	readFromStdin := ctx.Bool("stdin")
+	repoPath := filepath.Base(localPath)
+	if len(ctx.Args()) > 1 {
+		repoPath = ctx.Args().Get(1)
+		if localPath == "-" {
+			readFromStdin = true
+		}
+	}
+
+	if readFromStdin {
+		return ctl.StageFromData(repoPath, os.Stdin)
+	}
+
+	absLocalPath, err := filepath.Abs(ctx.Args().Get(0))
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve absolute path: %v", err)
 	}
 
-	repoPath := filepath.Base(localPath)
-	if len(ctx.Args()) > 1 {
-		repoPath = ctx.Args().Get(1)
-	}
-
-	info, err := os.Stat(localPath)
+	info, err := os.Stat(absLocalPath)
 	if err != nil {
 		return err
 	}
 
 	if info.IsDir() {
-		return handleStageDirectory(ctx, ctl, localPath, repoPath)
+		return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 	}
 
-	return ctl.Stage(localPath, repoPath)
+	return ctl.Stage(absLocalPath, repoPath)
 }
 
 type stagePair struct {
@@ -315,7 +324,7 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	printPair("Path", info.Path)
 	printPair("User", info.User)
 	printPair("Type", nodeType)
-	printPair("Size", humanize.Bytes(info.Size))
+	printPair("Size", fmt.Sprintf("%d bytes", info.Size))
 	printPair("Hash", info.Hash.B58String())
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)

@@ -77,7 +77,7 @@ func BootServer(basePath, password, logPath string, bindHost string, port int) (
 
 	ctx := context.Background()
 	quitCh := make(chan struct{})
-	base, err := newBase(basePath, password, ctx, quitCh)
+	base, err := newBase(basePath, password, bindHost, ctx, quitCh)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +99,6 @@ func BootServer(basePath, password, logPath string, bindHost string, port int) (
 			log.Warnf("Failed to close local server listener: %v", err)
 		}
 	}()
-
-	// TODO: This does not work in case of init.
-	// // Instance the peer server once:
-	// if _, err := base.PeerServer(); err != nil {
-	// 	return err
-	// }
-	// log.Debugf("Started peer server, can receive outside connections now")
 
 	return &Server{
 		baseServer: baseServer,

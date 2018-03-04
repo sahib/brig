@@ -111,6 +111,7 @@ interface FS {
     garbageCollect @10  (aggressive :Bool) -> (freed :List(GarbageItem));
     touch          @11  (path :Text);
     exists         @12  (path :Text) -> (exists :Bool);
+    stageFromData  @13  (repoPath :Text) -> (port :Int32);
 }
 
 interface VCS {

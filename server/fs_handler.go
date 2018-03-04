@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/sahib/brig/catfs"
@@ -107,12 +109,12 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
-		localPath, err := call.Params.LocalPath()
-		if err != nil {
-			return err
-		}
+	localPath, err := call.Params.LocalPath()
+	if err != nil {
+		return err
+	}
 
+	return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
 		fd, err := os.Open(localPath)
 		if err != nil {
 			return err
@@ -124,6 +126,33 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	})
 }
 
+func (fh *fsHandler) StageFromData(call capnp.FS_stageFromData) error {
+	server.Ack(call.Options)
+
+	repoPath, err := call.Params.RepoPath()
+	if err != nil {
+		return err
+	}
+
+	port, err := bootReceiveServer(fh.base.bindHost, func(conn net.Conn) error {
+		return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
+			b := &bytes.Buffer{}
+			if _, err := b.ReadFrom(conn); err != nil {
+				return err
+			}
+
+			return fs.Stage(url.Path, bytes.NewReader(b.Bytes()))
+		})
+	})
+
+	if err != nil {
+		return err
+	}
+
+	call.Results.SetPort(int32(port))
+	return nil
+}
+
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	server.Ack(call.Options)
 
@@ -133,7 +162,7 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
-		port, err := bootTransferServer(fs, url.Path)
+		port, err := bootTransferServer(fs, fh.base.bindHost, url.Path)
 		if err != nil {
 			return err
 		}

@@ -36,6 +36,12 @@ type base struct {
 	// to secure access to Password here.
 	password string
 
+	// On what host the server is running on
+	// (e.g. localhost or 0.0.0.0;
+	//  running on 0.0.0.0 is discouraged, but can be
+	//  useful for running it in docker)
+	bindHost string
+
 	ctx context.Context
 
 	repo       *repo.Repository
@@ -390,11 +396,18 @@ func (b *base) Quit() (err error) {
 	return nil
 }
 
-func newBase(basePath string, password string, ctx context.Context, quitCh chan struct{}) (*base, error) {
+func newBase(
+	basePath string,
+	password string,
+	bindHost string,
+	ctx context.Context,
+	quitCh chan struct{},
+) (*base, error) {
 	return &base{
 		ctx:       ctx,
 		basePath:  basePath,
 		password:  password,
+		bindHost:  bindHost,
 		quitCh:    quitCh,
 		conductor: conductor.New(5*time.Minute, 100),
 	}, nil

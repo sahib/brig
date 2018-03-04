@@ -412,6 +412,12 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "<file>",
 			Description: "Stage a specific file into the brig repository",
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "stdin,i",
+					Usage: "Read data from stdin",
+				},
+			},
 		},
 		cli.Command{
 			Name:        "touch",
