@@ -10,6 +10,7 @@ brig - decentralized & secure file synchronization based on ipfs
    quickstart.rst
    faq.rst
    comparison.rst
+   roadmap.rst
 
 .. image:: _static/logo.png
 
