@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	blocks "gx/ipfs/QmSn9Td7xgxm9EV7iEjTckpUWmWApggzPxu7eFGWkkpwin/go-block-format"
+	blocks "gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
 
-	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
+	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/net/peer"
@@ -19,12 +19,11 @@ import (
 // It is no error if the block already exists.
 func (nd *Node) addBlock(data []byte) (h.Hash, error) {
 	block := blocks.NewBlock(data)
-	k, err := nd.ipfsNode.Blocks.AddBlock(block)
-	if err != nil {
+	if err := nd.ipfsNode.Blocks.AddBlock(block); err != nil {
 		return nil, err
 	}
 
-	return h.Hash(k.Hash()), nil
+	return h.Hash(block.Cid().Hash()), nil
 }
 
 // catBlock retuns the data stored in the block pointed to by `hash`.

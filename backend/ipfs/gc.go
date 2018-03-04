@@ -1,7 +1,7 @@
 package ipfs
 
 import (
-	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
+	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
 
 	corerepo "github.com/ipfs/go-ipfs/core/corerepo"
 	h "github.com/sahib/brig/util/hashlib"
