@@ -14,6 +14,12 @@ var (
 	ErrNoSuchBackend = errors.New("No such backend")
 )
 
+type VersionInfo interface {
+	SemVer() string
+	Name() string
+	Rev() string
+}
+
 // Backend is a amalgamation of all backend interfaces required for brig to work.
 type Backend interface {
 	repo.Backend
@@ -51,5 +57,16 @@ func IsValidName(name string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func Version(name string) VersionInfo {
+	switch name {
+	case "ipfs":
+		return ipfs.Version()
+	case "mock":
+		return mock.Version()
+	default:
+		return nil
 	}
 }

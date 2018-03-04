@@ -564,3 +564,49 @@ func (cl *Client) OnlinePeers() ([]PeerStatus, error) {
 
 	return statuses, nil
 }
+
+type VersionInfo struct {
+	ServerSemVer  string
+	ServerRev     string
+	BackendSemVer string
+	BackendRev    string
+}
+
+func (cl *Client) Version() (*VersionInfo, error) {
+	call := cl.api.Version(cl.ctx, func(p capnp.Meta_version_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capVersion, err := result.Version()
+	if err != nil {
+		return nil, err
+	}
+
+	version := &VersionInfo{}
+	version.ServerSemVer, err = capVersion.ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	version.ServerRev, err = capVersion.ServerRev()
+	if err != nil {
+		return nil, err
+	}
+
+	version.BackendSemVer, err = capVersion.BackendVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	version.BackendRev, err = capVersion.BackendRev()
+	if err != nil {
+		return nil, err
+	}
+
+	return version, nil
+}

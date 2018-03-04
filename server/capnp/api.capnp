@@ -97,6 +97,13 @@ struct GarbageItem $Go.doc("A single item that was killed by the gc") {
     owner   @2 :Text;
 }
 
+struct Version {
+    serverVersion  @0 :Text;
+    serverRev      @1 :Text;
+    backendVersion @2 :Text;
+    backendRev     @3 :Text;
+}
+
 interface FS {
     stage          @0   (localPath :Text, repoPath :Text);
     list           @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -154,11 +161,11 @@ interface Meta {
     connect     @18 ();
     disconnect  @19 ();
     onlinePeers @20 () -> (infos :List(PeerStatus));
+    version     @21 () -> (version :Version);
 }
 
 # Group all interfaces together in one API object,
 # because apparently we have this limitation what one interface
 # more or less equals one connection.
 interface API extends(FS, VCS, Meta) {
-    version @0 () -> (version :Int32);
 }

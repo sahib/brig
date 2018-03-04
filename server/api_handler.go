@@ -1,7 +1,5 @@
 package server
 
-import "github.com/sahib/brig/server/capnp"
-
 type apiHandler struct {
 	metaHandler
 	fsHandler
@@ -16,9 +14,4 @@ func newApiHandler(base *base) *apiHandler {
 	ah.fsHandler.base = base
 	ah.vcsHandler.base = base
 	return ah
-}
-
-func (ah *apiHandler) Version(call capnp.API_version) error {
-	call.Results.SetVersion(1)
-	return nil
 }

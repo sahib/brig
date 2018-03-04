@@ -21,3 +21,19 @@ func NewMockBackend() *mockBackend {
 		NetBackend:      netMock.NewNetBackend(),
 	}
 }
+
+type version struct {
+	semVer, name, rev string
+}
+
+func (v *version) SemVer() string { return v.semVer }
+func (v *version) Name() string   { return v.name }
+func (v *version) Rev() string    { return v.rev }
+
+func Version() *version {
+	return &version{
+		semVer: "0.0.1",
+		name:   "mock",
+		rev:    "HEAD",
+	}
+}

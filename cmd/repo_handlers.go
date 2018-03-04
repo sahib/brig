@@ -320,9 +320,29 @@ func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleVersion(ctx *cli.Context) error {
-	fmt.Println(version.String())
-	return nil
+func handleVersion(ctx *cli.Context, ctl *client.Client) error {
+	vInfo, err := ctl.Version()
+	if err != nil {
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintf(tabW, "Client Version:\t%s\n", version.String())
+	fmt.Fprintf(tabW, "Client Rev:\t%s\n", version.GitRev)
+
+	fmt.Fprintf(tabW, "Server Version:\t%s\n", vInfo.ServerSemVer)
+	fmt.Fprintf(tabW, "Server Rev:\t%s\n", vInfo.ServerRev)
+
+	fmt.Fprintf(tabW, "Backend (ipfs) Version:\t%s\n", vInfo.BackendSemVer)
+	fmt.Fprintf(tabW, "Backend (ipfs) Rev:\t%s\n", vInfo.BackendRev)
+
+	fmt.Fprintf(tabW, "Build time:\t%s\n", version.BuildTime)
+
+	return tabW.Flush()
 }
 
 func handleGc(ctx *cli.Context, ctl *client.Client) error {

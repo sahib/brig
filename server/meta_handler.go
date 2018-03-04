@@ -13,6 +13,7 @@ import (
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
+	"github.com/sahib/brig/version"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -709,4 +710,40 @@ func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
 	}
 
 	return call.Results.SetInfos(statuses)
+}
+
+func (mh *metaHandler) Version(call capnp.Meta_version) error {
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	name := rp.BackendName()
+	bkVersion := backend.Version(name)
+	if bkVersion == nil {
+		return fmt.Errorf("bug: invalid backend name: %v", name)
+	}
+
+	capVersion, err := capnp.NewVersion(call.Results.Segment())
+	if err != nil {
+		return err
+	}
+
+	if err := capVersion.SetServerVersion(version.String()); err != nil {
+		return err
+	}
+
+	if err := capVersion.SetServerRev(version.GitRev); err != nil {
+		return err
+	}
+
+	if err := capVersion.SetBackendVersion(bkVersion.SemVer()); err != nil {
+		return err
+	}
+
+	if err := capVersion.SetBackendRev(bkVersion.Rev()); err != nil {
+		return err
+	}
+
+	return call.Results.SetVersion(capVersion)
 }

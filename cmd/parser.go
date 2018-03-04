@@ -38,7 +38,7 @@ func RunCmdline(args []string) int {
 	app.Usage = "Secure and dezentralized file synchronization"
 	app.EnableBashCompletion = true
 	app.Version = fmt.Sprintf(
-		"%s [buildtime: %s]",
+		"%s [buildtime: %s] (client version)",
 		version.String(),
 		version.BuildTime,
 	)
@@ -610,6 +610,12 @@ func RunCmdline(args []string) int {
 			ArgsUsage:   "<mountpath>",
 			Description: "Unmounts a FUSE filesystem",
 			Action:      withDaemon(handleUnmount, true),
+		},
+		cli.Command{
+			Name:     "version",
+			Category: repoGroup,
+			Usage:    "Show brig and backend (ipfs) version info",
+			Action:   withDaemon(handleVersion, false),
 		},
 		cli.Command{
 			Name:        "gc",
