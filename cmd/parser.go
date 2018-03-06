@@ -406,7 +406,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.Command{
 			Name:        "stage",
-			Aliases:     []string{"stg"},
+			Aliases:     []string{"stg", "add"},
 			Category:    wdirGroup,
 			Usage:       "Transer a file into brig's control or update an existing one",
 			ArgsUsage:   "<file>",

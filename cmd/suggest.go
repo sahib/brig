@@ -77,8 +77,8 @@ func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 
 	// Special cases for the git inclined:
 	staticSuggestions := map[string]string{
-		"add":  "stage",
-		"pull": "sync",
+		"insert": "stage",
+		"pull":   "sync",
 	}
 
 	for gitName, brigName := range staticSuggestions {
