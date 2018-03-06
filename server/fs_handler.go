@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -136,12 +135,7 @@ func (fh *fsHandler) StageFromData(call capnp.FS_stageFromData) error {
 
 	port, err := bootReceiveServer(fh.base.bindHost, func(conn net.Conn) error {
 		return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
-			b := &bytes.Buffer{}
-			if _, err := b.ReadFrom(conn); err != nil {
-				return err
-			}
-
-			return fs.Stage(url.Path, bytes.NewReader(b.Bytes()))
+			return fs.Stage(url.Path, conn)
 		})
 	})
 
