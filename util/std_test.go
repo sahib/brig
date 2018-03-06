@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClamp(t *testing.T) {
@@ -182,5 +184,60 @@ func TestLimitWriterSimple(t *testing.T) {
 				t.Fatalf("Data differs")
 			}
 		})
+	}
+}
+
+func TestPrefixReader(t *testing.T) {
+	a := []byte{1, 2, 3}
+	b := []byte{4, 5, 6}
+
+	r := PrefixReader(a, bytes.NewReader(b))
+	data, err := ioutil.ReadAll(r)
+	require.Nil(t, err)
+	require.Equal(t, data, []byte{1, 2, 3, 4, 5, 6})
+}
+
+func TestPrefixReaderEmptyReader(t *testing.T) {
+	a := []byte{1, 2, 3}
+	b := []byte{}
+
+	r := PrefixReader(a, bytes.NewReader(b))
+	data, err := ioutil.ReadAll(r)
+	require.Nil(t, err)
+	require.Equal(t, data, []byte{1, 2, 3})
+}
+
+func TestPrefixReaderEmptyBuffer(t *testing.T) {
+	a := []byte{}
+	b := []byte{4, 5, 6}
+
+	r := PrefixReader(a, bytes.NewReader(b))
+	data, err := ioutil.ReadAll(r)
+	require.Nil(t, err)
+	require.Equal(t, data, []byte{4, 5, 6})
+}
+
+func TestPrefixReaderBothEmpty(t *testing.T) {
+	a := []byte{}
+	b := []byte{}
+
+	r := PrefixReader(a, bytes.NewReader(b))
+	data, err := ioutil.ReadAll(r)
+	require.Nil(t, err)
+	require.Equal(t, data, []byte{})
+}
+
+func TestPrefixReaderPartial(t *testing.T) {
+	a := []byte{1, 2, 3}
+	b := []byte{4, 5, 6}
+
+	r := PrefixReader(a, bytes.NewReader(b))
+
+	buf := make([]byte, 6)
+	for i := 0; i < 6; i++ {
+		n, err := r.Read(buf[i : i+1])
+		require.Nil(t, err)
+		require.Equal(t, n, 1)
+		require.Equal(t, buf[:i+1], []byte{1, 2, 3, 4, 5, 6}[:i+1])
 	}
 }

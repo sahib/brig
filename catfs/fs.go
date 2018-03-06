@@ -2,11 +2,10 @@ package catfs
 
 import (
 	"bytes"
-	"encoding/binary"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -547,7 +546,19 @@ func (fs *FS) Truncate(path string, size uint64) error {
 	return fs.lkr.StageNode(nd)
 }
 
-func (fs *FS) Stage(path string, r io.ReadSeeker) error {
+func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
+	headerBuf := make([]byte, 4*1024)
+	n, err := r.Read(headerBuf)
+	if err != nil && err != io.EOF {
+		return nil, nil, err
+	}
+
+	headerBuf = headerBuf[:n]
+	return headerBuf, util.PrefixReader(headerBuf, r), nil
+}
+
+// TODO: Fix clients not to use Seeker methods.
+func (fs *FS) Stage(path string, r io.Reader) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -556,7 +567,6 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	// See if we already have such a file.
 	// If not we gonna need to generate new key for it
 	// based on the content hash.
-	var key []byte
 	var oldFile *n.File
 
 	oldNode, err := fs.lkr.LookupNode(path)
@@ -580,55 +590,42 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		}
 	}
 
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
+	}
+
 	// Get the size directly from the number of bytes written
 	// to the backend and do not rely on external sources.
 	sizeAcc := &util.SizeAccumulator{}
-	var sizeR io.Reader
+	sizeR := io.TeeReader(r, sizeAcc)
 
-	if err != nil {
-		if !ie.IsNoSuchFileError(err) {
+	var key []byte
+	if oldFile == nil {
+		// Generate a new key, we do not know this file yet.
+		key = make([]byte, 32)
+		if _, err := io.ReadFull(rand.Reader, key); err != nil {
 			return err
 		}
-
-		// Read a small portion of the file header and use it
-		// to determine what compression algorithm we can use.
-		headerBuf := &bytes.Buffer{}
-
-		sizeR = io.TeeReader(r, sizeAcc)
-		tr := io.TeeReader(sizeR, util.LimitWriter(headerBuf, 4*1024))
-
-		hw := h.NewHashWriter()
-		size, err := hw.ReadFrom(tr)
-		if err != nil {
-			return err
-		}
-
-		algo, err := compress.ChooseCompressAlgo(path, sizeAcc.Size(), headerBuf.Bytes())
-		if err != nil {
-			// Default to snappy.
-			algo = compress.AlgoSnappy
-			log.Warningf("Failed to guess suitable zip algo: %v", err)
-		}
-
-		log.Debugf("Using '%s' compression for file %s", algo, path)
-
-		if _, err := r.Seek(0, os.SEEK_SET); err != nil {
-			return err
-		}
-
-		// See: https://en.wikipedia.org/wiki/Convergent_encryption
-		// This might be changed however sooner or later.
-		salt := make([]byte, 4)
-		binary.PutVarint(salt, size)
-		key = util.DeriveKey([]byte(hw.Hash()), salt, 32)
-
-		sizeAcc.Reset()
 	} else {
 		key = oldFile.Key()
-		sizeR = io.TeeReader(r, sizeAcc)
 	}
 
-	stream, err := mio.NewInStream(sizeR, key, fs.cfg.compressAlgo)
+	// Read a small portion of the file header and use it
+	// to determine what compression algorithm we can use.
+	headerBuf, prefixR, err := peekHeader(sizeR)
+	if err != nil {
+		return err
+	}
+
+	algo, err := compress.ChooseCompressAlgo(path, headerBuf)
+	if err != nil {
+		algo = fs.cfg.compressAlgo
+		log.Warningf("Failed to guess suitable zip algo: %v", err)
+	}
+
+	log.Debugf("Using '%s' compression for file %s", algo, path)
+
+	stream, err := mio.NewInStream(prefixR, key, algo)
 	if err != nil {
 		return err
 	}
@@ -694,7 +691,7 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 		return nil, err
 	}
 
-	// TODO: This cann still seek over boundaries?
+	// TODO: This can still seek over boundaries?
 	//       Exchange with proper limitReadSeeker + WriterTo?
 	stream, err := mio.NewOutStream(rawStream, file.Key())
 	if err != nil {

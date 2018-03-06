@@ -382,3 +382,31 @@ func (lw *limitWriter) Write(buf []byte) (int, error) {
 
 	return len(buf), nil
 }
+
+type prefixReader struct {
+	data []byte
+	curs int
+	r    io.Reader
+}
+
+func (pr *prefixReader) Read(buf []byte) (n int, err error) {
+	nread := 0
+	if pr.curs < len(pr.data) {
+		n := copy(buf, pr.data[pr.curs:])
+		buf = buf[n:]
+		pr.curs += n
+		nread += n
+	}
+
+	if len(buf) == 0 {
+		return nread, nil
+	}
+
+	n, err = pr.r.Read(buf)
+	nread += n
+	return nread, err
+}
+
+func PrefixReader(data []byte, r io.Reader) io.Reader {
+	return &prefixReader{data: data, r: r}
+}

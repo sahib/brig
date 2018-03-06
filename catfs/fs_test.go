@@ -641,20 +641,21 @@ func TestTruncate(t *testing.T) {
 		require.Nil(t, fs.Stage("/x", bytes.NewReader(data)))
 
 		for _, size := range []int{1025, 512, 1, 0, 1024} {
-			require.Nil(t, fs.Truncate("/x", uint64(size)))
+			t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
+				require.Nil(t, fs.Truncate("/x", uint64(size)))
+				// clamp to 1024 for assertion:
+				readSize := size
+				if size > 1024 {
+					readSize = 1024
+				}
 
-			// clamp to 1024 for assertion:
-			readSize := size
-			if size > 1024 {
-				readSize = 1024
-			}
-
-			stream, err := fs.Cat("/x")
-			require.Nil(t, err)
-			readData, err := ioutil.ReadAll(stream)
-			require.Nil(t, err)
-			require.Equal(t, len(readData), readSize)
-			require.Equal(t, readData, data[:readSize])
+				stream, err := fs.Cat("/x")
+				require.Nil(t, err)
+				readData, err := ioutil.ReadAll(stream)
+				require.Nil(t, err)
+				require.Equal(t, len(readData), readSize)
+				require.Equal(t, readData, data[:readSize])
+			})
 		}
 
 		require.NotNil(t, fs.Truncate("/", 0))
