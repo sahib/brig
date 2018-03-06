@@ -326,23 +326,19 @@ func handleVersion(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	tabW := tabwriter.NewWriter(
-		os.Stdout, 0, 0, 2, ' ',
-		tabwriter.StripEscape,
-	)
+	row := func(name, value string) {
+		fmt.Printf("%25s: %s\n", name, value)
+	}
 
-	fmt.Fprintf(tabW, "Client Version:\t%s\n", version.String())
-	fmt.Fprintf(tabW, "Client Rev:\t%s\n", version.GitRev)
+	row("Client Version", version.String())
+	row("Client Rev", version.GitRev)
+	row("Server Version", vInfo.ServerSemVer)
+	row("Server Rev", vInfo.ServerRev)
+	row("Backend (ipfs) Version", vInfo.BackendSemVer)
+	row("Backend (ipfs) Rev", vInfo.BackendRev)
+	row("Build time", version.BuildTime)
 
-	fmt.Fprintf(tabW, "Server Version:\t%s\n", vInfo.ServerSemVer)
-	fmt.Fprintf(tabW, "Server Rev:\t%s\n", vInfo.ServerRev)
-
-	fmt.Fprintf(tabW, "Backend (ipfs) Version:\t%s\n", vInfo.BackendSemVer)
-	fmt.Fprintf(tabW, "Backend (ipfs) Rev:\t%s\n", vInfo.BackendRev)
-
-	fmt.Fprintf(tabW, "Build time:\t%s\n", version.BuildTime)
-
-	return tabW.Flush()
+	return nil
 }
 
 func handleGc(ctx *cli.Context, ctl *client.Client) error {
