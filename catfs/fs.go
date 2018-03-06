@@ -526,15 +526,25 @@ func prefixSlash(s string) string {
 	return s
 }
 
+// Truncate cuts of the output of the file at `path` to `size`.
+// `size` should be between 0 and the size of the file,
+// all other values will be ignored.
+//
+// Note that this is not implemented as an actual IO operation.
+// It is possible to go back to a bigger size until the actual
+// content was changed via Stage().
 func (fs *FS) Truncate(path string, size uint64) error {
 	nd, err := fs.lkr.LookupModNode(path)
 	if err != nil {
 		return err
 	}
 
-	// TODO: This changes the size only in memory...
+	if nd.Type() != n.NodeTypeFile {
+		return fmt.Errorf("`%s` is not a file", path)
+	}
+
 	nd.SetSize(size)
-	return nil
+	return fs.lkr.StageNode(nd)
 }
 
 func (fs *FS) Stage(path string, r io.ReadSeeker) error {
