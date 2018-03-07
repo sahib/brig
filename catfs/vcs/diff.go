@@ -18,8 +18,11 @@ type Diff struct {
 	// Nodes that were added from remote.
 	Added []n.ModNode
 
-	// Nodes that will be removed on remote side.
+	// Nodes that were removed on remote side.
 	Removed []n.ModNode
+
+	// Nodes (of us) that are missing on the remote side.
+	Missing []n.ModNode
 
 	// Nodes from remote that were ignored.
 	Ignored []n.ModNode
@@ -52,7 +55,8 @@ func (df *Diff) handleRemove(dst n.ModNode) error {
 
 func (df *Diff) handleMissing(dst n.ModNode) error {
 	// Handle missing files like "removed" for diff.
-	return df.handleRemove(dst)
+	df.Missing = append(df.Missing, dst)
+	return nil
 }
 
 func (df *Diff) handleTypeConflict(src, dst n.ModNode) error {

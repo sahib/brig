@@ -283,6 +283,22 @@ Ne, jetzt ernsthaft…
 
 ----
 
+
+Workflow
+========
+
+.. note::
+
+    Synchronisieren kleines Ein mal Eins
+
+1) Initialer Setup
+2) Remotes finden & hinzufügen
+3) Diff anzeigen
+4) Synchronisieren
+5) Konflikte beheben
+
+----
+
 Demo
 ----
 
@@ -313,6 +329,17 @@ Einen hab ich noch!
 
 .. image:: images/pin.png
     :width: 40%
+
+----
+
+Dezentralität
+=============
+
+TODO: Bild von Weltkarte.
+
+Problem: Beide müssen zur selben Zeit online sein.
+
+.. - online/offline Diskussion (Vor/Nachteil dezentral) / Weltkarte.
 
 ----
 

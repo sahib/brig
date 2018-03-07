@@ -306,6 +306,15 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
+	missingLst, err := fillInfoLst(seg, diff.Missing)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capDiff.SetMissing(*missingLst); err != nil {
+		return nil, err
+	}
+
 	ignoredLst, err := fillInfoLst(seg, diff.Ignored)
 	if err != nil {
 		return nil, err

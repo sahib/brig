@@ -213,7 +213,7 @@ func withArgCheck(checker checkFunc, handler cli.ActionFunc) cli.ActionFunc {
 }
 
 func prettyPrintError(err error) string {
-	return rpcErrPattern.ReplaceAllString(err.Error(), "")
+	return rpcErrPattern.ReplaceAllString(err.Error(), " ")
 }
 
 func withExit(handler cli.ActionFunc) cli.ActionFunc {
