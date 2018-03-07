@@ -1,16 +1,22 @@
 Roadmap
 =======
 
-This document is currently more a collection of notes to me, i.e. what features
-to implement and when. It could however be useful or interesting for others to
-see what's on my todo list (and thus, what the current state is). This does not
-include bug fixes or minor features, only the big picture ideas.
+This document lists the improvements that can be done to ``brig`` and (if
+possible) when. All features below are not guaranteed to be implemented and,
+can be seen more as possible improvements that might change during
+implementation. Also it should be noted that each future is only an idea and
+not a fleshed ou implementation plan.
+
+Bug fixes and minor changes in handling are not included since this document is
+only for »big picture« ideas. Also excluded are stability/performance
+improvements, documentation and testing work, since this is part of the
+»normal« development.
 
 First Release
 -------------
 
-The first real relaese (i.e. show it to people) is planned for end of April 2018.
-Until then, the software should provide the following:
+The first real release (0.1.0, »Protoype«) is planned for end of April 2018.
+Until then, the software should provide the following features:
 
 - Stable cli interface.
 - Git-like version control
@@ -19,16 +25,25 @@ Until then, the software should provide the following:
 - Fuse filesystem
 
 Most of the above features are currently already implemented and somewhat work.
-Focus is on stabilizing the features and making it somewhat release ready.
-All those features combined do already provide some usefulness, but
-for being a day-to-day useful tool, it takes a bit more...
+Focus is on stabilizing the features and making it somewhat release ready. All
+those features combined do already provide some usefulness, but for being
+a day-to-day useful tool, it takes a few more features (especially being to
+sync with offline peers).
 
 Future
 ------
 
+Those features should be considered to be implemented after releasing the first
+prototype. A certain amount of first user input should be collected to see if
+the direction we're going is valid.
+
 *Partial diffs:* Currently the whole store is being sent on every fetch.
 Clients should be able to only request (and provide) the diff between
 two commits.
+
+*Public and private files:* It should be easy to define which peer
+is allowed to view which files and directories. This should be done
+via the remote list.
 
 *Gateway:* Provide a built-in (and optional) http server, that can »bridge«
 between the internal ipfs network and people that use a regular browser.
@@ -64,6 +79,9 @@ could easily snap a picture with a phone camera.
 Far Future
 ----------
 
+Those features are also important, but require some more in-depth research or
+more work and are not the highest priority currently.
+
 *Port to other platforms:* Especially Windows and eventually Android. This
 relies on external help, since I'm neither capable of porting it, nor really
 a fan of both operating systems.
@@ -76,3 +94,9 @@ could also go on by implementing a WebDAV server, which can also be mounted.
 *Implement a portable GUI:* Many user will rely on a GUI to configure brig and
 hit the »sync button«. We should optionally provide this in a portable fashion
 (browser based app? I kinda hate myself for proposing this though...)
+
+*Ensure N-Copies:* It should be possible to define a minimum amount of copies
+a file has to have on differen peers. This could be maybe incorporated into the
+pinning concept. If a user wants to remove a file, brig should warn him if he
+would violate the min-copies rule. (This idea is shamelessly stolen from
+git-annex)

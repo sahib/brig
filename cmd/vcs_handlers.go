@@ -235,7 +235,6 @@ func printDiffTree(diff *client.Diff) {
 			case diffTypeIgnored:
 				return color.YellowString(" * " + n.name)
 			case diffTypeMoved:
-				// TODO: Print base(src) and relTo(src, dst)
 				dstPath := makePathAbbrev(
 					diffEntry.pair.Src.Path,
 					diffEntry.pair.Dst.Path,
