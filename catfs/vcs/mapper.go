@@ -137,7 +137,7 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 		ma.setDstHandled(dst)
 	}
 
-	fmt.Println("REPORT", src, dst)
+	debug("=> report", src, dst)
 	return ma.fn(MapPair{
 		Src:           src,
 		Dst:           dst,
@@ -178,7 +178,7 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 		return nil
 	}
 
-	fmt.Println("map file", srcCurr.Path(), dstFilePath)
+	debug("map file", srcCurr.Path(), dstFilePath)
 
 	// Remember that we visited this node.
 	ma.setSrcVisited(srcCurr)
@@ -232,7 +232,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		}
 	}
 
-	fmt.Println("map dir", srcCurr.Path(), dstPath)
+	debug("map dir", srcCurr.Path(), dstPath)
 
 	ma.setSrcVisited(srcCurr)
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
@@ -286,8 +286,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
 
-		fmt.Println("Looks equal")
-		fmt.Println(dstCurr.ChildrenSorted(ma.lkrDst))
+		debug("Looks equal", srcCurr.Path(), dstCurr.Path())
+		debug(dstCurr.ChildrenSorted(ma.lkrDst))
 
 		if srcCurr.Path() != dstCurr.Path() {
 			return ma.report(srcCurr, dstCurr, false, false, true)
@@ -746,7 +746,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("Extract leftover src")
+		debug("extract leftover src")
 
 		// Extract things in "src" that were not mapped yet.
 		// These are files that can be added to our inventory,
@@ -754,7 +754,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err := ma.extractLeftovers(ma.lkrSrc, srcRoot, true); err != nil {
 			return err
 		}
-		fmt.Println("Extract leftover dst")
+		debug("Extract leftover dst")
 
 		// Check for files for which we
 		return ma.extractLeftovers(ma.lkrDst, dstRoot, false)

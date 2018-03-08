@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -31,7 +30,6 @@ func setupBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 }
 
 func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
-	fmt.Println(lkrDst.LookupNode("/x.png"))
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
@@ -115,13 +113,31 @@ func setupBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 }
 
 func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
-	// TODO: This test is recognized as conflict still.
-	//       This is due to the way srcMask and dstMask is defined
-	//       as conflict (added = conflict). Think about this more.
-	// xDstFile, err := lkrDst.LookupFile("/x.png")
-	// require.Nil(t, err)
-	// require.Equal(t, xDstFile.Path(), "/x.png")
-	// require.Equal(t, xDstFile.Content(), h.TestDummy(t, 23))
+	xDstGhost, err := lkrDst.LookupGhost("/x.png")
+	require.Nil(t, err)
+
+	require.Equal(t, xDstGhost.Path(), "/x.png")
+	require.Equal(t, xDstGhost.Content(), h.TestDummy(t, 42))
+
+	yDstFile, err := lkrDst.LookupFile("/y.png")
+	require.Nil(t, err)
+
+	require.Equal(t, yDstFile.Path(), "/y.png")
+	require.Equal(t, yDstFile.Content(), h.TestDummy(t, 42))
+}
+
+////////
+
+func setupEdgeEmptyDir(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	// Syncing recursive empty dirs require detecting and adding them recursive.
+	// This was buggy before, so prevent it from happening again.
+	c.MustMkdir(t, lkrSrc, "/empty/sub/blub")
+}
+
+func checkEdgeEmptyDir(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	dir, err := lkrDst.LookupDirectory("/empty/sub/blub")
+	require.Nil(t, err)
+	require.Equal(t, dir.Path(), "/empty/sub/blub")
 }
 
 func TestSync(t *testing.T) {
@@ -154,6 +170,10 @@ func TestSync(t *testing.T) {
 			name:  "basic-src-move",
 			setup: setupBasicSrcMove,
 			check: checkBasicSrcMove,
+		}, {
+			name:  "edge-empty-dir",
+			setup: setupEdgeEmptyDir,
+			check: checkEdgeEmptyDir,
 		},
 	}
 
@@ -174,3 +194,93 @@ func TestSync(t *testing.T) {
 		})
 	}
 }
+
+func TestSyncMergeMarker(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
+		c.MustTouchAndCommit(t, lkrDst, "/y.png", 2)
+
+		if err := Sync(lkrSrc, lkrDst, nil); err != nil {
+			t.Fatalf("sync failed: %v", err)
+		}
+
+		dstHead, err := lkrDst.Head()
+		require.Nil(t, err)
+
+		srcHead, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		mergeUser, mergeHash := dstHead.MergeMarker()
+		require.Equal(t, mergeUser, "src")
+		require.Equal(t, mergeHash, srcHead.Hash())
+
+		c.MustTouch(t, lkrSrc, "/a.png", 3)
+		c.MustTouch(t, lkrDst, "/b.png", 4)
+
+		diff, err := MakeDiff(lkrSrc, lkrDst, nil, nil, nil)
+		require.Nil(t, err)
+
+		require.Empty(t, diff.Conflict)
+		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Merged)
+		require.Empty(t, diff.Removed)
+
+		require.Len(t, diff.Added, 1)
+		require.Len(t, diff.Missing, 2)
+
+		require.Equal(t, diff.Added[0].Path(), "/a.png")
+		require.Equal(t, diff.Missing[0].Path(), "/b.png")
+		require.Equal(t, diff.Missing[1].Path(), "/y.png")
+	})
+}
+
+func TestSyncConflictMergeMarker(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
+		c.MustTouchAndCommit(t, lkrDst, "/x.png", 2)
+
+		if err := Sync(lkrSrc, lkrDst, nil); err != nil {
+			t.Fatalf("sync failed: %v", err)
+		}
+
+		dstHead, err := lkrDst.Head()
+		require.Nil(t, err)
+
+		srcHead, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		mergeUser, mergeHash := dstHead.MergeMarker()
+		require.Equal(t, mergeUser, "src")
+		require.Equal(t, mergeHash, srcHead.Hash())
+
+		c.MustTouch(t, lkrSrc, "/a.png", 3)
+		c.MustTouch(t, lkrDst, "/a.png", 4)
+
+		diff, err := MakeDiff(lkrSrc, lkrDst, nil, nil, nil)
+		require.Nil(t, err)
+
+		require.Empty(t, diff.Moved)
+		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Added)
+		require.Empty(t, diff.Removed)
+
+		require.Len(t, diff.Merged, 1)
+		require.Len(t, diff.Missing, 1)
+		require.Len(t, diff.Conflict, 1)
+
+		// /x.png should NOT count as conflict, even though
+		// both STILL have a different content (1 vs 2)
+		// This is because we handled this conflict already.
+		require.Equal(t, diff.Merged[0].Dst.Path(), "/x.png")
+		require.Equal(t, diff.Merged[0].Src.Path(), "/x.png")
+
+		// a.png is new and will conflict therefore.
+		require.Equal(t, diff.Conflict[0].Dst.Path(), "/a.png")
+		require.Equal(t, diff.Conflict[0].Src.Path(), "/a.png")
+
+		// The previously created conflict file should count as missing.
+		require.Equal(t, diff.Missing[0].Path(), "/x.png.conflict.0")
+	})
+}
+
+// TODO: Test sync empty directories?

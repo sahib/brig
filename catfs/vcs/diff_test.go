@@ -16,6 +16,7 @@ func checkDiffBasicSrcFileForward(t *testing.T, lkrSrc, lkrDst *c.Linker, diff *
 	require.Empty(t, diff.Conflict)
 	require.Empty(t, diff.Ignored)
 	require.Empty(t, diff.Merged)
+	require.Empty(t, diff.Missing)
 
 	require.Len(t, diff.Added, 1)
 	require.Equal(t, "/x.png", diff.Added[0].Path())
@@ -26,9 +27,10 @@ func checkDiffBasicSrcFileBackward(t *testing.T, lkrSrc, lkrDst *c.Linker, diff 
 	require.Empty(t, diff.Conflict)
 	require.Empty(t, diff.Ignored)
 	require.Empty(t, diff.Merged)
+	require.Empty(t, diff.Removed)
 
-	require.Len(t, diff.Removed, 1)
-	require.Equal(t, "/x.png", diff.Removed[0].Path())
+	require.Len(t, diff.Missing, 1)
+	require.Equal(t, "/x.png", diff.Missing[0].Path())
 }
 
 ///////////////
@@ -39,6 +41,7 @@ func assertDiffIsEmpty(t *testing.T, diff *Diff) {
 	require.Empty(t, diff.Conflict)
 	require.Empty(t, diff.Ignored)
 	require.Empty(t, diff.Merged)
+	require.Empty(t, diff.Missing)
 
 }
 
@@ -126,6 +129,7 @@ func TestDiffWithSameLinker(t *testing.T) {
 		require.Empty(t, diff.Ignored)
 		require.Empty(t, diff.Conflict)
 		require.Empty(t, diff.Merged)
+		require.Empty(t, diff.Missing)
 
 		require.Len(t, diff.Moved, 1)
 		require.Equal(t, diff.Moved[0].Src.Path(), "/old")
@@ -141,6 +145,7 @@ func TestDiffWithSameLinker(t *testing.T) {
 		require.Empty(t, diff.Ignored)
 		require.Empty(t, diff.Conflict)
 		require.Empty(t, diff.Merged)
+		require.Empty(t, diff.Missing)
 
 		require.Len(t, diff.Moved, 1)
 		require.Equal(t, diff.Moved[0].Dst.Path(), "/old")

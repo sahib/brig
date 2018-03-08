@@ -120,7 +120,7 @@ func (rv *resolver) resolve() error {
 	}
 
 	if err := rv.cacheLastCommonMerge(); err != nil {
-		return e.Wrapf(err, "Error while finding last common merge")
+		return e.Wrapf(err, "failed to find last common merge")
 	}
 
 	mapper, err := NewMapper(rv.lkrSrc, rv.lkrDst, rv.srcHead, rv.dstHead, srcRoot)
@@ -163,6 +163,7 @@ func (rv *resolver) cacheLastCommonMerge() error {
 				return err
 			}
 
+			debugf("last merge found: %v = %s", with, srcRef)
 			rv.dstMergeCmt = currHead
 			rv.srcMergeCmt = srcHead
 		}
@@ -260,10 +261,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		return true, srcMask, dstMask, nil
 	}
 
-	// if srcMask&ChangeTypeMove != 0 && dst.Path() != src.Path() {
-	// 	fmt.Println("NOTE: File has moved...")
-	// }
-
 	// No conflict. We can merge src and dst.
 	return false, srcMask, dstMask, nil
 }
@@ -274,7 +271,7 @@ func (rv *resolver) decide(pair MapPair) error {
 	}
 
 	if pair.SrcWasMoved {
-		fmt.Println("Handle move")
+		debug("resolve: handle move")
 		return rv.exec.handleMove(pair.Src, pair.Dst)
 	}
 
@@ -291,7 +288,7 @@ func (rv *resolver) decide(pair MapPair) error {
 	}
 
 	if pair.TypeMismatch {
-		fmt.Printf(
+		debugf(
 			"%s is a %s and %s a %s; ignoring",
 			pair.Src.Path(), pair.Src.Type(),
 			pair.Dst.Path(), pair.Dst.Type(),

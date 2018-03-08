@@ -399,7 +399,7 @@ func (lkr *Linker) SetMergeMarker(with string, remoteHead h.Hash) error {
 	}
 
 	status.SetMergeMarker(with, remoteHead)
-	return nil
+	return lkr.saveStatus(status)
 }
 
 // MakeCommit creates a new full commit in the version history.

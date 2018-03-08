@@ -130,7 +130,7 @@ func mapperMoveNestedDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	c.MustMkdir(t, lkrSrc, "/old/sub/")
 	c.MustMkdir(t, lkrDst, "/old/sub/")
 	c.MustTouchAndCommit(t, lkrSrc, "/old/sub/x", 1)
-	c.MustTouchAndCommit(t, lkrDst, "/old/sub/x", 2)
+	c.MustTouchAndCommit(t, lkrDst, "/old/sub/x", 1)
 
 	srcDir := c.MustLookupDirectory(t, lkrSrc, "/old")
 	dstDir := c.MustLookupDirectory(t, lkrDst, "/old")
@@ -143,6 +143,7 @@ func mapperMoveNestedDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 		{
 			Src:           srcDir,
 			Dst:           newDstDir,
+			SrcWasMoved:   true,
 			TypeMismatch:  false,
 			SrcWasRemoved: false,
 		},
@@ -438,9 +439,9 @@ func TestMapper(t *testing.T) {
 		}, {
 			name:  "move-dir-with-child",
 			setup: mapperSetupMoveDirWithChild,
-			// }, {
-			// 	name:  "move-nested-dir",
-			// 	setup: mapperMoveNestedDir,
+		}, {
+			name:  "move-nested-dir",
+			setup: mapperMoveNestedDir,
 		},
 	}
 
@@ -457,12 +458,12 @@ func TestMapper(t *testing.T) {
 				got := []MapPair{}
 				diffFn := func(pair MapPair) error {
 					got = append(got, pair)
-					if pair.Src != nil {
-						fmt.Println(".. ", pair.Src.Path())
-					}
-					if pair.Dst != nil {
-						fmt.Println("-> ", pair.Dst.Path())
-					}
+					// if pair.Src != nil {
+					// 	fmt.Println(".. ", pair.Src.Path())
+					// }
+					// if pair.Dst != nil {
+					// 	fmt.Println("-> ", pair.Dst.Path())
+					// }
 					return nil
 				}
 

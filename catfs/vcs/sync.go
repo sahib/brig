@@ -83,6 +83,31 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 		if err != nil {
 			return err
 		}
+
+		if err := sy.lkrDst.StageNode(newDstNode); err != nil {
+			return err
+		}
+
+		srcDir, ok := src.(*n.Directory)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		children, err := srcDir.ChildrenSorted(sy.lkrSrc)
+		if err != nil {
+			return err
+		}
+
+		for _, child := range children {
+			childModNode, ok := child.(n.ModNode)
+			if !ok {
+				continue
+			}
+
+			if err := sy.add(childModNode, srcDir.Path(), child.Name()); err != nil {
+				return err
+			}
+		}
 	case n.NodeTypeFile:
 		newDstFile, err := n.NewEmptyFile(
 			parentDir,
@@ -110,11 +135,13 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 		if err := parentDir.Add(sy.lkrDst, newDstFile); err != nil {
 			return err
 		}
+
+		return sy.lkrDst.StageNode(newDstNode)
 	default:
 		return fmt.Errorf("Unexpected node type in handleAdd")
 	}
 
-	return sy.lkrDst.StageNode(newDstNode)
+	return nil
 }
 
 func (sy *syncer) handleAdd(src n.ModNode) error {
@@ -292,7 +319,7 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 			return err
 		}
 
-		message := fmt.Sprintf("Merge with %s", srcOwner)
+		message := fmt.Sprintf("merge with %s", srcOwner)
 		return lkrDst.MakeCommit(srcOwner, message)
 	}
 
