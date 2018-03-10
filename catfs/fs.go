@@ -353,6 +353,10 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 		return nil, err
 	}
 
+	if rootNd.Type() == n.NodeTypeGhost {
+		return nil, ie.NoSuchFile(root)
+	}
+
 	// Start counting max depth relative to the root:
 	if maxDepth >= 0 {
 		maxDepth += n.Depth(rootNd)
