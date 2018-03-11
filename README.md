@@ -33,6 +33,8 @@ It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
 * No central server at all. Still, central architectures can be build with ``brig``.
 * Simple user identification and discovery with users that look like email addresses.
 
+Also take a look [at the website draft](http://sahib.github.io/brig/public/) for a polished list of features.
+
 ## Getting started
 
 [![asciicast](https://asciinema.org/a/163713.png)](https://asciinema.org/a/163713)

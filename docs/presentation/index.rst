@@ -20,17 +20,18 @@
 :white-bg:`Ein Werkzeug zur sicheren und verteilten`
 :white-bg:`Dateisynchronisation`
 
-
 .. note::
 
-    Stil: Dummer Slapstick Humor ala Nackte Kanone zur Aufmerksamkeitssteigerung.
+    - Viel Terminal, wenig Bling-Bling.
+    - Es kommen aber viele Comics und Bilder!
+    - Demo nimmt ca. 50% Zeit ein, wird also nicht so trocken.
 
 ----
 
 Um was geht's?
 ==============
 
-.. Dauer: 40min
+.. Dauer: 45min
 ..
 .. Pro Folie: ~4 min -> Max. 10 Folien (+ kurze Folien)
 .. Praktischer Teil: ca. 15-20 Minuten
@@ -43,8 +44,8 @@ Um was geht's?
 * Das Problem
 * Lösungsansatz
 * Demo
-* :strike:`Applaus!` Fragen?
 * Hilfe!
+* :strike:`Applaus!` Fragen?
 
 .. note::
 
@@ -59,15 +60,12 @@ Wer ist'n das?
 
 .. note::
 
-    Open Source Entwickler. Aus dieser Hochschule.
-    Vollzeit München.
-
-    rmlint
-
-    Wer ich bin, ist ja eigentlich unwichtig…
-    Darum geht's in dem Vortrag auch nicht.
-
-    Ich bin der Entwickler.
+    - Open Source Entwickler (rmlint)
+    - Aus dieser Hochschule.
+    - Vollzeit München.
+    - Wer ich bin, ist ja eigentlich unwichtig…
+      Darum geht's in dem Vortrag auch nicht.
+    - Wer mehr über mich wissen will, darf gern nachher fragen.
 
 |
 
@@ -89,9 +87,10 @@ Es war einmal…
 
 .. note::
 
-    Umfrage: Wer benutzt welche Tools zum Synchronisieren/Austauschen?
-
-    Unterscheidung: Synchronisieren / Austauschen
+    - Dann mal rein ins Thema...
+    - Titel wird erklärt: sicher, dezentral, synchronisation
+    - Unterscheidung: Synchronisieren / Austauschen
+    - Umfrage: Wer benutzt welche Tools zum Synchronisieren/Austauschen?
 
 .. image:: images/dropbox.png
 
@@ -102,15 +101,17 @@ Das Problem
 
 .. note::
 
-    Dateiaustausch ist eine Art Babel.
+    - Ihr erwartet jetzt sicherlich, dass ich euch sage was schlecht dran ist.
+    - Dateiaustausch ist eine Art Babel: Jeder benutzt was anderes.
+    - Am längsten dauert der Handshake bis man sich auf's Tool geeinigt hat.
 
 .. image:: images/xkcd-file-transfer.png
     :width: 75%
 
 ----
 
-Was lernen wir daraus?
-======================
+Was könnte man anders machen?
+=============================
 
 Dinge die Dateiaustausch sein :underline:`sollte`:
 
@@ -118,28 +119,49 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
 
 * Einfach.
 * Sicher.
-* Versioniert.
 * Schnell.
+* Versioniert.
 * Dezentral.
 * Frei.
 
 .. note::
 
-    Einfach: User Discovery, FUSE Filesystem, ist kompatibel, nervt nicht.
-    Sicher: Daten sind stets verschlüsselt.
-    Versioniert: Zusammenarbeit wird möglich.
-    Schnell: Eigentlich optional, aber Video Streaming ist nett.
-    Dezentral: Datenhoheit.
+    Viele Buzzwords. Und viele davon widersprechen sich auch noch.
 
-.. einbindung zu sowas wie keybase/existierende login systeme?
+    * Einfach: User Discovery, FUSE Filesystem, ist kompatibel, nervt nicht.
+    * Sicher: Daten sind stets verschlüsselt.
+    * Versioniert: Zusammenarbeit wird möglich, keine revisions filenames mehr.
+    * Schnell: Eigentlich optional, aber Video Streaming ist nett.
+    * Dezentral: Datenhoheit. Dropbox hinterlässt ein schlechten Nachgeschmack.
 
 ----
 
 Das Babel der Dateien
 =====================
 
+
+.. note::
+
+    - Ja, die lösung ist also ganz einfach... man schreibt einfach ein Tool
+      das alles richtig macht, jeder nutzt das und gut ist.
+    - Randall Munroe, der xkcd Autor sagt nein.
+
 .. image:: images/xkcd-standards.png
    :width: 110%
+
+----
+
+Dezentralität
+=============
+
+.. note::
+
+    - Was heißt jetzt eigentlich dezentral?
+    - ähnlich ausgelegt wie git. (git kennt jeder?)
+    - Problem: Beide müssen zur selben Zeit online sein.
+
+.. image:: images/map.png
+    :width: 120%
 
 ----
 
@@ -157,15 +179,14 @@ Aber, aber…
 * Andere Features
 * Gleiches Ziel.
 
-
 :small:`(Siehe: https://brig.readtheodocs.org/comparison.html)`
 
 .. note::
 
 
-    So Vergleichdiskussion sind müßig und können den ganzen
-    Tag dauern, ohne dass am Ende was dabei rauskommt.
-    ...
+    - So Vergleichdiskussion sind müßig und können den ganzen
+      Tag dauern, ohne dass am Ende was dabei rauskommt...
+    - nextCloud kann man hier in gewissen Sinne auch nennen ("dezentral")
 
     Jetzt machen wir hier gedanklich mal einen Cut.
 
@@ -180,12 +201,16 @@ IPFS
 
 .. note::
 
-    Interplanetary Filesystem. Das ist wörtlich zu verstehen.
+    - Milchmädchen: Ein Entwickler -> viele Buzzwords -> Nö.
+    - Ist wie beim Trinken: Man braucht eine gute Basis.
+    - Interplanetary Filesystem. Das ist wörtlich zu verstehen.
+    - Hat schon mal jemand davon gehört?
+    - Das ganze soll eine Art für das heutige Internet werden.
 
 ----
 
-Und was kann das so?
-====================
+Was kann das so?
+================
 
 |
 
@@ -204,9 +229,7 @@ Und was kann das so?
 
 .. note::
 
-    Ganz ohne zentralen Server.
-
-    TODO: (Look ma, no central server!)
+    Vorteil: Ganz ohne zentralen Server.
 
     Nachteil: Kann bereits zum filesharing benutzt werden,
     aber nur sehr rudiemntär.
@@ -218,7 +241,10 @@ Und was kann das so?
 
 .. note::
 
-    Name erklären?
+    - Zurück zum Thema.
+    - Name erklären:
+        - Zweimaster, wendig, leichtgewichtig, verteilt Datenströme.
+        - ähnlich wie git, ist kurz.
 
 .. image:: images/tux.png
     :class: img-tux
@@ -237,14 +263,14 @@ Und was kann das so?
 Entwicklungsgeschichte:
 -----------------------
 
-* Ende 2015: Masterprojekt.
-* Ende 2016: Pausiert.
-* Ende 2017: Hobbyprojekt.
+* Ende 2015: *Masterprojekt.*
+* Ende 2016: *Pausiert.*
+* Ende 2017: *Hobbyprojekt.*
 
 ----
 
-Was ist jetzt der Fokus?
-========================
+Was ist das Ziel?
+=================
 
 |
 
@@ -259,7 +285,7 @@ Was ist jetzt der Fokus?
 .. note::
 
     We will build a wall around the cloud.
-    It will be tremendous.
+    It will be tremendous. Great stuff.
 
 ----
 
@@ -277,25 +303,43 @@ Ne, jetzt ernsthaft…
     Natürlich kann kein Tool gleichzeitig einfach zu benutzen, sicher und
     effizient sein. Es soll eine Balance zwischen Benutzbarkeit und Sicherheit
     geben - die Effizienz (hat zumindest momentan) eher drunter gelitten.
-    Siehe Demo.
 
-    Später evtl. sogar Interaktion mit Keybase.
+    brig macht an sich nichts neues.
+    Aber wie beim Kochen macht die Kombi das Gericht.
+
+    Siehe Demo.
 
 ----
 
+:class: small-list
 
 Workflow
 ========
 
 .. note::
 
-    Synchronisieren kleines Ein mal Eins
+    - Synchronisieren kleines Ein mal Eins
+    - Ein Tag aus dem Leben einer Datei.
 
-1) Initialer Setup
-2) Remotes finden & hinzufügen
-3) Diff anzeigen
-4) Synchronisieren
-5) Konflikte beheben
+* Initialer Setup (nur einmal)
+* Remotes finden & hinzufügen (nur einmal)
+* Diff anzeigen
+* Synchronisieren
+* Konflikte beheben
+
+----
+
+Versionierung
+-------------
+
+.. image:: images/mona.png
+   :width: 100%
+
+.. note::
+
+   - brig = git - diff
+   - versionierung hilft im Alltag, aber git ist normal nicht tauglich.
+   - Man braucht keine diffs. Ein Tool sollte das möglichst "einfach so" machen.
 
 ----
 
@@ -314,15 +358,13 @@ Demo
 
 ----
 
-Einen hab ich noch!
-===================
+Pinning
+=======
 
 .. note::
 
-    ``brig`` macht an sich nichts neues.
-    Aber wie beim Kochen macht die Kombi das Gericht:
-
-    Komplette Seperation von Daten und Metadaten.
+    - Nachbereitung.
+    - Komplette Separation von Daten und Metadaten.
 
 |
 |
@@ -332,21 +374,14 @@ Einen hab ich noch!
 
 ----
 
-Dezentralität
-=============
-
-TODO: Bild von Weltkarte.
-
-Problem: Beide müssen zur selben Zeit online sein.
-
-.. - online/offline Diskussion (Vor/Nachteil dezentral) / Weltkarte.
-
-----
-
 :class: small-list
 
 Anatomie eines Nutzers
 ======================
+
+.. note::
+
+    - Email bzw. Jabber ID ähnlich.
 
 .. code-block::
 
@@ -368,8 +403,11 @@ Disclaimer: Sicherheit?
 
 .. note::
 
-    Wenn ich sagen würde, dass »brig« sicher ist, dann hieße das nur
-    das man die Software sicher benutzen kann.
+    Wenn ich sagen würde, dass »brig« sicher ist, dann heißt das eigentlich
+    nur dass ich beim Schreiben der Software die Absicht hatte, sichere Software zu schreiben.
+
+    Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
+    aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
 
 |
 
@@ -378,30 +416,8 @@ Disclaimer: Sicherheit?
 
 ----
 
-Featurelücken
-=============
-
-TODO: Bild von einer Zahnlücke.
-
-- Stabilisierung.
-- Partielle Synchronisation.
-- Synchronisation von Offline-Peers.
-- NAT Traversal.
-- Live Updates.
-
-|
-|
-
-**Hauptproblem:** Nur ein Entwickler.
-
-.. note::
-
-    ... und der arbeitet nen Vollzeitjob.
-
-----
-
-Ausguck
-=======
+Hilfe? Erwünscht.
+=================
 
 .. note::
 
@@ -440,8 +456,42 @@ Roadmap
 
 ----
 
+
+Featurelücken
+=============
+
+- Stabilisierung.
+- Partielle Synchronisation.
+- Synchronisation von Offline-Peers.
+- NAT Traversal.
+- Live Updates.
+
+|
+
+.. image:: images/future.png
+   :width: 40%
+
+|
+
+**Hauptproblem:** Nur ein Entwickler.
+
+
+.. note::
+
+    ... und der arbeitet nen Vollzeitjob.
+
+----
+
 Installation
 ============
+
+
+.. note::
+
+    - Wie kann man es ausprobieren?
+    - Go vorher installieren.
+    - Das ist das erste "beta" release (0.1)
+    - Mit sehr viel Vorsicht benutzen.
 
 |
 
@@ -459,6 +509,8 @@ Letzte Worte
 =============
 
 :github:`github.com/sahib/brig`
+
+:small:`(Website: http://sahib.github.io/brig/public)`
 
 |
 
