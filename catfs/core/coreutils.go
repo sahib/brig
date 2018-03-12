@@ -237,12 +237,12 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 
 		return destDir, nil
 	case n.NodeTypeFile:
-		log.Warningf("Remove file: %v", destNode.Path())
+		log.Infof("Remove file: %v", destNode.Path())
 		parentDir, _, err := Remove(lkr, destNode, false, false)
 		return parentDir, err
 	case n.NodeTypeGhost:
 		// It is already a ghost. Overwrite it and do not create a new one.
-		log.Warningf("Remove ghost: %v", destNode.Path())
+		log.Infof("Remove ghost: %v", destNode.Path())
 		parentDir, _, err := Remove(lkr, destNode, false, true)
 		return parentDir, err
 	default:

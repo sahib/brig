@@ -46,6 +46,8 @@ func assertDiffIsEmpty(t *testing.T, diff *Diff) {
 }
 
 func TestDiff(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		name          string
 		setup         func(t *testing.T, lkrSrc, lkrDst *c.Linker)
@@ -62,6 +64,8 @@ func TestDiff(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 				c.MustTouch(t, lkrSrc, "/README", 42)
 				c.MustTouch(t, lkrDst, "/README", 42)

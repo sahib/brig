@@ -572,6 +572,8 @@ type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
 func TestHistoryWalker(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		name  string
 		setup setupFunc
@@ -638,6 +640,8 @@ func TestHistoryWalker(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			c.WithDummyLinker(t, func(lkr *c.Linker) {
 				setup := tc.setup(t, lkr)
 				testHistoryRunner(t, lkr, setup)
