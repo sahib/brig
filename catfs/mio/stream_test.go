@@ -2,6 +2,7 @@ package mio
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -71,6 +72,8 @@ func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType)
 }
 
 func TestWriteAndRead(t *testing.T) {
+	t.Parallel()
+
 	s64k := int64(64 * 1024)
 	sizes := []int64{
 		0, 1, 10, s64k, s64k - 1, s64k + 1,
@@ -78,18 +81,26 @@ func TestWriteAndRead(t *testing.T) {
 	}
 
 	for _, size := range sizes {
-		t.Logf("Testing stream at size %d", size)
 		regularData := testutil.CreateDummyBuf(size)
 		randomData := testutil.CreateRandomDummyBuf(size, 42)
 
-		for algoType, _ := range compress.AlgoMap {
-			testWriteAndRead(t, regularData, algoType)
-			testWriteAndRead(t, randomData, algoType)
+		for algo, _ := range compress.AlgoMap {
+			prefix := fmt.Sprintf("%s-size%d-", algo, size)
+			t.Run(prefix+"regular", func(t *testing.T) {
+				t.Parallel()
+				testWriteAndRead(t, regularData, algo)
+			})
+			t.Run(prefix+"random", func(t *testing.T) {
+				t.Parallel()
+				testWriteAndRead(t, randomData, algo)
+			})
 		}
 	}
 }
 
 func TestLimitedStream(t *testing.T) {
+	t.Parallel()
+
 	testData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	r := bytes.NewReader(testData)
