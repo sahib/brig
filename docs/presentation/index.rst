@@ -2,6 +2,7 @@
 :author: Chris Pahl
 :css: style.css
 :data-transition-duration: 350
+:data-perspective: 5000
 
 .. role:: white-bg
 .. role:: title-logo
@@ -184,6 +185,7 @@ Aber, aber…
 
 ----
 
+:data-rotate: 90
 
 Dezentralität
 =============
@@ -201,6 +203,8 @@ Dezentralität
 ----
 
 :class: small-list
+
+:data-rotate: 180
 
 Nutzermanagement
 ================
@@ -226,6 +230,8 @@ Nutzen:
 
 ----
 
+:data-rotate: 270
+
 Versionierung
 -------------
 
@@ -240,6 +246,8 @@ Versionierung
 
 
 ----
+
+:data-rotate: 360
 
 Pinning
 =======
@@ -256,8 +264,6 @@ Pinning
     :width: 40%
 
 ----
-
-
 
 IPFS
 ====
@@ -399,6 +405,8 @@ Workflow
    :class: workflow
 
 ----
+
+:data-scale: 0.5
 
 Demo
 ----
