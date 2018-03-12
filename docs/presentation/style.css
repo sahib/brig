@@ -168,9 +168,41 @@ pre {
     content: " ";
 }
 
+.www:before {
+    background-image: url(images/www.png);
+    background-size: 1em 1em;
+    background-repeat: no-repeat;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    position: relative;
+    top: 0.2em;
+    padding-right: 0.3em;
+    content: " ";
+}
+
+.rtd:before {
+    background-image: url(images/rtd.png);
+    background-size: 1em 1em;
+    background-repeat: no-repeat;
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    position: relative;
+    top: 0.2em;
+    padding-right: 0.3em;
+    content: " ";
+}
+
+.workflow {
+    position: fixed;
+    bottom: -15vh;
+    right: 0vw;
+}
+
 .binocs {
     position: fixed;
-    bottom: 12vh;
+    bottom: 10vh;
     right: -12vw;
 }
 

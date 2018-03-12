@@ -8,6 +8,8 @@
 .. role:: strike
 .. role:: donald
 .. role:: github
+.. role:: www
+.. role:: rtd
 .. role:: underline
 .. role:: small
 
@@ -69,14 +71,14 @@ Wer ist'n das?
 
 |
 
-**Chris Pahl**
+**Chris Pahl.**
 
 |
 |
 
-Wer mehr über mich wissen will:
+:small:`Wer mehr über mich wissen will:`
 
-    https://sahib.github.io
+:small:`https://sahib.github.io`
 
 ----
 
@@ -104,14 +106,15 @@ Das Problem
     - Ihr erwartet jetzt sicherlich, dass ich euch sage was schlecht dran ist.
     - Dateiaustausch ist eine Art Babel: Jeder benutzt was anderes.
     - Am längsten dauert der Handshake bis man sich auf's Tool geeinigt hat.
+    - Hyperlinks sind möglich, aber machen halt abhängig von einem Hersteller.
 
 .. image:: images/xkcd-file-transfer.png
     :width: 75%
 
 ----
 
-Was könnte man anders machen?
-=============================
+Geht es anders?
+===============
 
 Dinge die Dateiaustausch sein :underline:`sollte`:
 
@@ -125,6 +128,9 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
 * Frei.
 
 .. note::
+
+
+    ...und außerdem: Spiel, Spaß, Spannung und Schokolade sollte drin sein.
 
     Viele Buzzwords. Und viele davon widersprechen sich auch noch.
 
@@ -151,24 +157,10 @@ Das Babel der Dateien
 
 ----
 
-Dezentralität
-=============
-
-.. note::
-
-    - Was heißt jetzt eigentlich dezentral?
-    - ähnlich ausgelegt wie git. (git kennt jeder?)
-    - Problem: Beide müssen zur selben Zeit online sein.
-
-.. image:: images/map.png
-    :width: 120%
-
-----
-
 Aber, aber…
 ===========
 
-…Ja, es gibt schon einige dezentrale Tools.
+**Ja**, es gibt schon einige dezentrale Tools.
 
 .. image:: images/other-tools.png
    :width: 120%
@@ -191,6 +183,81 @@ Aber, aber…
     Jetzt machen wir hier gedanklich mal einen Cut.
 
 ----
+
+
+Dezentralität
+=============
+
+.. note::
+
+    - Unterschied zu anderen Tools in 3-4 Folien.
+    - Was heißt jetzt eigentlich dezentral?
+    - ähnlich ausgelegt wie git. (git kennt jeder?)
+    - Problem: Beide müssen zur selben Zeit online sein.
+
+.. image:: images/map.png
+    :width: 120%
+
+----
+
+:class: small-list
+
+Nutzermanagement
+================
+
+.. note::
+
+    - Email bzw. Jabber ID ähnlich.
+
+
+|
+
+.. image:: images/id.png
+   :width: 100%
+
+|
+|
+
+Nutzen:
+-------
+
+- Später :small:`(optionale)` E-Mail Authentifizierung.
+- Resourcen und Domains zur Discovery.
+
+----
+
+Versionierung
+-------------
+
+.. image:: images/mona.png
+   :width: 100%
+
+.. note::
+
+   - brig = git - diff
+   - versionierung hilft im Alltag, aber git ist normal nicht tauglich.
+   - Man braucht keine diffs. Ein Tool sollte das möglichst "einfach so" machen.
+
+
+----
+
+Pinning
+=======
+
+.. note::
+
+    - Nachbereitung.
+    - Komplette Separation von Daten und Metadaten.
+
+|
+|
+
+.. image:: images/pin.png
+    :width: 40%
+
+----
+
+
 
 IPFS
 ====
@@ -296,7 +363,7 @@ Ne, jetzt ernsthaft…
 
 - Balance zwischen Sicherheit und Usability.
 - Effizienz ist nett, aber kein primäter Fokus.
-- Kompatibilität zu anderen Tools.
+- Kompatibilität zu gewohnten Konzepten.
 
 .. note::
 
@@ -321,25 +388,15 @@ Workflow
     - Synchronisieren kleines Ein mal Eins
     - Ein Tag aus dem Leben einer Datei.
 
-* Initialer Setup (nur einmal)
-* Remotes finden & hinzufügen (nur einmal)
-* Diff anzeigen
+* Initialer Setup :small:`(nur einmal)`
+* Remotes finden & hinzufügen :small:`(nur einmal)`
+* Diff anzeigen :small:`(optional)`
 * Synchronisieren
 * Konflikte beheben
 
-----
-
-Versionierung
--------------
-
-.. image:: images/mona.png
-   :width: 100%
-
-.. note::
-
-   - brig = git - diff
-   - versionierung hilft im Alltag, aber git ist normal nicht tauglich.
-   - Man braucht keine diffs. Ein Tool sollte das möglichst "einfach so" machen.
+.. image:: images/workflow.png
+   :width: 50%
+   :class: workflow
 
 ----
 
@@ -355,46 +412,6 @@ Demo
 
     $ brig mv raiders twix
     # sonst ändert sich aber nix.
-
-----
-
-Pinning
-=======
-
-.. note::
-
-    - Nachbereitung.
-    - Komplette Separation von Daten und Metadaten.
-
-|
-|
-
-.. image:: images/pin.png
-    :width: 40%
-
-----
-
-:class: small-list
-
-Anatomie eines Nutzers
-======================
-
-.. note::
-
-    - Email bzw. Jabber ID ähnlich.
-
-.. code-block::
-
-    donald@whitehouse.gov/ovaloffice
-    vladimir@kreml.ru/sauna
-
-|
-
-Nutzen:
--------
-
-- Später Optionale E-Mail Authentifizierung.
-- Resourcen und Domains zur Discovery.
 
 ----
 
@@ -421,7 +438,7 @@ Hilfe? Erwünscht.
 
 .. note::
 
-    Problem: Man machht ein Release und kriegt 20 Feature Requests,
+    Problem: Man macht ein Release und kriegt 20 Feature Requests,
     mit teils total widersprüchlichen Anforderungen.
     Das artet in Feature-itis aus.
 
@@ -434,41 +451,34 @@ Mithilfe via **Experience Reports.**
     :class: binocs
     :width: 50%
 
+
 |
+
+Und wie?
+--------
+
+- Bug reports.
+- Pull requests.
+- **Keine** Feature Requests!
+
+
+----
 
 Roadmap
 =======
 
-- Stabiliserung
-- Dokumentation
-- Portierung auf andere Plattformen
+:class: small-list
 
-.. note::
-
-    Features die noch kommen sollen:
-
-    - Gateway zur Außenwelt.
-    - Realtime Synchronisation.
-    - Knoten, die automatisch synchroniseren (als »blessed repo« wie bei git)
-    - Fingerprints als QR Code
-    - Mobile Version mit simplen Dateibrowser.
-    - Verbessertes User-Management.
-
-----
-
-
-Featurelücken
-=============
-
-- Stabilisierung.
-- Partielle Synchronisation.
-- Synchronisation von Offline-Peers.
-- NAT Traversal.
-- Live Updates.
+- Selektives Sharing.
+- Gateway für Hyperlinks.
+- Shelf Instances.
+- :small:`(optional)` Autosync.
+- Performance, Dokumentation...
 
 |
 
 .. image:: images/future.png
+   :class: future
    :width: 40%
 
 |
@@ -479,6 +489,15 @@ Featurelücken
 .. note::
 
     ... und der arbeitet nen Vollzeitjob.
+
+    Features die noch kommen sollen:
+
+    - Gateway zur Außenwelt.
+    - Realtime Synchronisation.
+    - Knoten, die automatisch synchroniseren (als »blessed repo« wie bei git)
+    - Fingerprints als QR Code
+    - Mobile Version mit simplen Dateibrowser.
+    - Verbessertes User-Management.
 
 ----
 
@@ -493,24 +512,35 @@ Installation
     - Das ist das erste "beta" release (0.1)
     - Mit sehr viel Vorsicht benutzen.
 
+
 |
 
 .. code-block:: bash
 
-    $ go get -u github.com/sahib/brig
+    # Falls nötig, Go installieren:
+    $ sudo pacman -S go
+    $ export GOPATH=~/go
 
 |
 
-:small:`(Mehr Doku hier: https://brig.rtfd.org)`
+.. code-block:: bash
+
+    # brig kompilieren:
+    $ go get -u github.com/sahib/brig
+    $ brig --version
 
 ----
 
 Letzte Worte
 =============
 
+|
+
+:rtd:`http://brig.rtfd.org`
+
 :github:`github.com/sahib/brig`
 
-:small:`(Website: http://sahib.github.io/brig/public)`
+:www:`http://sahib.github.io/brig/public`
 
 |
 
