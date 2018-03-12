@@ -21,7 +21,7 @@ import (
 )
 
 func init() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.WarnLevel)
 }
 
 func withDummyFS(t *testing.T, fn func(fs *FS)) {
@@ -52,6 +52,8 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 }
 
 func TestStat(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		_, err := fs.Stat("/sub/x")
 		require.True(t, ie.IsNoSuchFileError(err))
@@ -85,6 +87,8 @@ func TestStat(t *testing.T) {
 }
 
 func TestLogAndTag(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		cmts := []*n.Commit{}
 		for idx := 0; idx < 10; idx++ {
@@ -135,6 +139,8 @@ func TestLogAndTag(t *testing.T) {
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
 
 func TestCat(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		raw := []byte{1, 2, 3}
 		rinRaw := bytes.NewBuffer(raw)
@@ -167,6 +173,8 @@ func TestCat(t *testing.T) {
 }
 
 func TestStage(t *testing.T) {
+	t.Parallel()
+
 	tcs := [][]byte{
 		{},
 		{1},
@@ -216,6 +224,8 @@ func TestStage(t *testing.T) {
 }
 
 func TestHistory(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
 		require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer([]byte{1})))
@@ -263,6 +273,8 @@ func mustReadPath(t *testing.T, fs *FS, path string) []byte {
 }
 
 func TestReset(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
 
@@ -303,6 +315,8 @@ func TestReset(t *testing.T) {
 }
 
 func TestCheckout(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello"))
 		hello, err := fs.Head()
@@ -347,6 +361,8 @@ func TestCheckout(t *testing.T) {
 }
 
 func TestExportImport(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.MakeCommit("hello world"))
 
@@ -378,6 +394,8 @@ func TestExportImport(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
+	t.Parallel()
+
 	// There are a lot more tests in vcs/*
 	// This is only a test to see if the high-level api is working.
 	withDummyFS(t, func(fsa *FS) {
@@ -409,6 +427,8 @@ func TestSync(t *testing.T) {
 }
 
 func TestMakeDiff(t *testing.T) {
+	t.Parallel()
+
 	// There are a lot more tests in vcs/*
 	// This is only a test for the high-level api.
 	withDummyFS(t, func(fsa *FS) {
@@ -448,6 +468,8 @@ func TestMakeDiff(t *testing.T) {
 }
 
 func TestPin(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		// TODO: what happens if we have two files with the same content?
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
@@ -489,6 +511,8 @@ func TestPin(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		err := fs.Mkdir("/a/b/c/d", false)
 		require.True(t, ie.IsNoSuchFileError(err))
@@ -516,6 +540,8 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Touch("/x"))
 		require.Nil(t, fs.Move("/x", "/y"))
@@ -531,6 +557,8 @@ func TestMove(t *testing.T) {
 }
 
 func TestTouch(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Touch("/x"))
 		oldInfo, err := fs.Stat("/x")
@@ -558,6 +586,8 @@ func TestTouch(t *testing.T) {
 }
 
 func TestHead(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		_, err := fs.Head()
 
@@ -575,6 +605,8 @@ func TestHead(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Touch("/x"))
 		require.Nil(t, fs.Mkdir("/1/2/3/", true))
@@ -608,6 +640,8 @@ func TestList(t *testing.T) {
 }
 
 func TestTag(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Touch("/x"))
 		require.Nil(t, fs.MakeCommit("init"))
@@ -629,6 +663,8 @@ func TestTag(t *testing.T) {
 }
 
 func TestStageUnmodified(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
 		infoOld, err := fs.Stat("/x")
@@ -646,6 +682,8 @@ func TestStageUnmodified(t *testing.T) {
 }
 
 func TestTruncate(t *testing.T) {
+	t.Parallel()
+
 	withDummyFS(t, func(fs *FS) {
 		data := testutil.CreateDummyBuf(1024)
 		require.Nil(t, fs.Stage("/x", bytes.NewReader(data)))
