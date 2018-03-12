@@ -71,7 +71,7 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	if err := d.setBaseAttrsToNode(capnode); err != nil {
+	if err = d.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +136,7 @@ func (d *Directory) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	if err := d.parseBaseAttrsFromNode(capnode); err != nil {
+	if err = d.parseBaseAttrsFromNode(capnode); err != nil {
 		return err
 	}
 
@@ -370,7 +370,7 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 		}
 
 		if child == nil {
-			return fmt.Errorf("Walk: could not resolve %s (%s)", name, link.B58String())
+			return fmt.Errorf("walk: could not resolve %s (%s)", name, link.B58String())
 		}
 
 		if err := Walk(lkr, child, dfs, visit); err != nil {
@@ -447,6 +447,7 @@ func (d *Directory) SetModTime(modTime time.Time) {
 	d.Base.modTime = modTime.Truncate(time.Microsecond)
 }
 
+// Copy returns a copy of the directory with `inode` changed.
 func (d *Directory) Copy(inode uint64) ModNode {
 	children := make(map[string]h.Hash)
 	for name, hash := range d.children {
@@ -615,6 +616,7 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 	})
 }
 
+// SetUser sets the user that last modified the directory.
 func (d *Directory) SetUser(user string) {
 	d.Base.user = user
 }

@@ -370,6 +370,7 @@ Ne, jetzt ernsthaft…
 - Balance zwischen Sicherheit und Usability.
 - Effizienz ist nett, aber kein primäter Fokus.
 - Kompatibilität zu gewohnten Konzepten.
+- Komplexität hinter einem einfachen Interface.
 
 .. note::
 

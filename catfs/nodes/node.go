@@ -118,14 +118,23 @@ type Node interface {
 type ModNode interface {
 	Node
 
+	// SetSize sets the size of the node in bytes
 	SetSize(size uint64)
+
+	// SetModTime updates the modtime timestamp
 	SetModTime(modTime time.Time)
+
+	// SetName sets the user that last modified the file
 	SetName(name string)
+
+	// SetUser sets the user that last modified the file
 	SetUser(user string)
 
-	// TODO: write some assumptions about this.
+	// NotifyMove tells the node that it was moved.
+	// It should be called whenever the path of the node changed.
+	// (i.e. not only the name, but parts of the parent path)
 	NotifyMove(lkr Linker, newPath string) error
 
-	// TODO: Should this be part of this interface?
+	// Copy creates a copy of this node with the inode `inode`.
 	Copy(inode uint64) ModNode
 }

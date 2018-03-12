@@ -50,6 +50,7 @@ func (b *Base) copyBase(inode uint64) Base {
 	}
 }
 
+// User returns the user that last modified this node.
 func (b *Base) User() string {
 	return b.user
 }
@@ -227,7 +228,7 @@ func UnmarshalNode(data []byte) (Node, error) {
 // GENERAL NODE HELPERS //
 //////////////////////////
 
-// NodeDepth returns the depth of the node.
+// Depth returns the depth of the node.
 // It does this by looking at the path separators.
 // The depth of "/" is defined as 0.
 func Depth(nd Node) int {
@@ -246,6 +247,8 @@ func Depth(nd Node) int {
 	return depth
 }
 
+// RemoveNode removes `nd` from it's parent directory using `lkr`.
+// Removing the root is a no-op.
 func RemoveNode(lkr Linker, nd Node) error {
 	parDir, err := ParentDirectory(lkr, nd)
 	if err != nil {
@@ -260,6 +263,8 @@ func RemoveNode(lkr Linker, nd Node) error {
 	return parDir.RemoveChild(lkr, nd)
 }
 
+// ParentDirectory returns the parent directory of `nd`.
+// For the root it will return nil.
 func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 	par, err := nd.Parent(lkr)
 	if err != nil {
@@ -278,6 +283,9 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 	return parDir, nil
 }
 
+// ContentHash returns the correct content hash for `nd`.
+// This also works for ghosts where the content hash is taken from the
+// underlying node (ghosts themselve have no content).
 func ContentHash(nd Node) (h.Hash, error) {
 	switch nd.Type() {
 	case NodeTypeDirectory, NodeTypeCommit, NodeTypeFile:

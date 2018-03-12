@@ -44,7 +44,7 @@ type Commit struct {
 	}
 }
 
-// NewCommit creates a new commit after the commit referenced by `parent`.
+// NewEmptyCommit creates a new commit after the commit referenced by `parent`.
 // `parent` might be nil for the very first commit.
 func NewEmptyCommit(inode uint64) (*Commit, error) {
 	return &Commit{
@@ -69,7 +69,7 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	if err := c.setBaseAttrsToNode(capnode); err != nil {
+	if err = c.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	if err := c.parseBaseAttrsFromNode(capnode); err != nil {
+	if err = c.parseBaseAttrsFromNode(capnode); err != nil {
 		return err
 	}
 
@@ -169,11 +169,7 @@ func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
 	}
 
 	c.merge.with, err = capmerge.With()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // IsBoxed will return True if the ommit was already boxed
@@ -250,11 +246,14 @@ func (c *Commit) String() string {
 	)
 }
 
+// SetMergeMarker remembers that we merged with the user `with`
+// at this commit at `remoteHead`.
 func (c *Commit) SetMergeMarker(with string, remoteHead h.Hash) {
 	c.merge.with = with
 	c.merge.head = remoteHead.Clone()
 }
 
+// MergeMarker returns the merge info for this commit, if any.
 func (c *Commit) MergeMarker() (string, h.Hash) {
 	return c.merge.with, c.merge.head
 }

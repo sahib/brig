@@ -43,10 +43,13 @@ func (g *Ghost) Type() NodeType {
 	return NodeTypeGhost
 }
 
+// OldNode returns the node the ghost was when it still was alive.
 func (g *Ghost) OldNode() Node {
 	return g.ModNode
 }
 
+// OldFile returns the file the ghost was when it still was alive.
+// Returns ErrBadNode when it wasn't a file.
 func (g *Ghost) OldFile() (*File, error) {
 	file, ok := g.ModNode.(*File)
 	if !ok {
@@ -56,6 +59,8 @@ func (g *Ghost) OldFile() (*File, error) {
 	return file, nil
 }
 
+// OldDirectory returns the old directory that the node was in lifetime
+// If the ghost was not a directory, ErrBadNode is returned.
 func (g *Ghost) OldDirectory() (*Directory, error) {
 	directory, ok := g.ModNode.(*Directory)
 	if !ok {
@@ -69,18 +74,22 @@ func (g *Ghost) String() string {
 	return fmt.Sprintf("<ghost: %s %v>", g.Hash(), g.ModNode)
 }
 
+// Path returns the path of the node.
 func (g *Ghost) Path() string {
 	return g.ghostPath
 }
 
+// Hash returns the hash of the node.
 func (g *Ghost) Hash() h.Hash {
 	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.Hash())))
 }
 
+// Inode returns the inode
 func (g *Ghost) Inode() uint64 {
 	return g.ghostInode
 }
 
+// SetGhostPath sets the path of the ghost.
 func (g *Ghost) SetGhostPath(newPath string) {
 	g.ghostPath = newPath
 }
@@ -105,7 +114,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	}
 
 	capghost.SetGhostInode(g.ghostInode)
-	if err := capghost.SetGhostPath(g.ghostPath); err != nil {
+	if err = capghost.SetGhostPath(g.ghostPath); err != nil {
 		return nil, err
 	}
 
@@ -122,7 +131,9 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 		}
 
 		base = &file.Base
-		err = capghost.SetFile(*capfile)
+		if err = capghost.SetFile(*capfile); err != nil {
+			return nil, err
+		}
 	case NodeTypeDirectory:
 		dir, ok := g.ModNode.(*Directory)
 		if !ok {
@@ -135,7 +146,9 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 		}
 
 		base = &dir.Base
-		err = capghost.SetDirectory(*capdir)
+		if err = capghost.SetDirectory(*capdir); err != nil {
+			return nil, err
+		}
 	case NodeTypeGhost:
 		panic("Recursive ghosts are not possible")
 	default:
@@ -214,9 +227,5 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		return ie.ErrBadNode
 	}
 
-	if err := base.parseBaseAttrsFromNode(capnode); err != nil {
-		return err
-	}
-
-	return nil
+	return base.parseBaseAttrsFromNode(capnode)
 }

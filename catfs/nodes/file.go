@@ -48,7 +48,7 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	if err := f.setBaseAttrsToNode(capnode); err != nil {
+	if err = f.setBaseAttrsToNode(capnode); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (f *File) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	if err := f.parseBaseAttrsFromNode(capnode); err != nil {
+	if err = f.parseBaseAttrsFromNode(capnode); err != nil {
 		return err
 	}
 
@@ -112,11 +112,7 @@ func (f *File) readFileAttrs(capfile capnp_model.File) error {
 	f.nodeType = NodeTypeFile
 	f.size = capfile.Size()
 	f.key, err = capfile.Key()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 ////////////////// METADATA INTERFACE //////////////////
@@ -143,6 +139,7 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
+// Copy copies the contents of the file, except `inode`.
 func (f *File) Copy(inode uint64) ModNode {
 	return &File{
 		Base:   f.Base.copyBase(inode),
@@ -165,6 +162,7 @@ func (f *File) rehash(lkr Linker, newPath string) {
 	lkr.MemIndexSwap(f, oldHash)
 }
 
+// NotifyMove should be called when the node moved parents.
 func (f *File) NotifyMove(lkr Linker, newPath string) error {
 	dirname, basename := path.Split(newPath)
 	f.SetName(basename)
@@ -223,6 +221,7 @@ func (f *File) Key() []byte {
 	return f.key
 }
 
+// SetUser sets the user that last modified the file.
 func (f *File) SetUser(user string) {
 	f.Base.user = user
 }
