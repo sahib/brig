@@ -54,6 +54,10 @@ func (pk DummyPrivKey) Decrypt(data []byte) ([]byte, error) {
 }
 
 func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
+	// Test with a real connection and not use a simple net.Pipe().
+	// net.Pipe() does not provide any buffering like real world connection do.
+	// authrw relies on this...
+
 	setup := make(chan bool)
 	conCh := make(chan net.Conn)
 
@@ -167,6 +171,8 @@ func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob 
 }
 
 func TestAuthProcess(t *testing.T) {
+	t.Parallel()
+
 	sizes := []int64{0, 255}
 	for i := uint(0); i < 18; i++ {
 		sizes = append(sizes, int64(1<<i))
@@ -176,11 +182,8 @@ func TestAuthProcess(t *testing.T) {
 	privBob, pubBob := createKeyPair(t, 1024)
 
 	for _, size := range sizes {
-		t.Logf("Testing size %d", size)
-		testAuthProcess(t, size, privAli, privBob, pubAli, pubBob)
-
-		if t.Failed() {
-			break
-		}
+		t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
+			testAuthProcess(t, size, privAli, privBob, pubAli, pubBob)
+		})
 	}
 }
