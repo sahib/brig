@@ -2,24 +2,25 @@ package compress
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 var (
-	ZipFilePath      = filepath.Join(os.TempDir(), "compressed.zip")
 	TestOffsets      = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 	TestSizes        = []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 	CompressionAlgos = []AlgorithmType{AlgoLZ4}
 )
 
 func openDest(t *testing.T, dest string) *os.File {
-	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+	if _, err := os.Stat(dest); !os.IsNotExist(err) && err != nil {
 		t.Fatalf("Opening destination %v failed: %v\n", dest, err)
 	}
 	fd, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
@@ -37,21 +38,36 @@ func openSrc(t *testing.T, src string) *os.File {
 	return fd
 }
 
+func createTempFile(t *testing.T) string {
+	fd, err := ioutil.TempFile("", "brig-mio-compress")
+	path := fd.Name()
+	require.Nil(t, err)
+	require.Nil(t, fd.Close())
+	return path
+}
+
 const (
 	C64K = 64 * 1024
 	C32K = 32 * 1024
 )
 
 func TestCompressDecompress(t *testing.T) {
+	t.Parallel()
+
 	sizes := TestSizes
 	algos := CompressionAlgos
 
 	for _, algo := range algos {
 		for _, size := range sizes {
-			testCompressDecompress(t, size, algo, true, true)
-			testCompressDecompress(t, size, algo, false, false)
-			testCompressDecompress(t, size, algo, true, false)
-			testCompressDecompress(t, size, algo, false, true)
+			name := fmt.Sprintf("%s-size%d", algo, size)
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+
+				testCompressDecompress(t, size, algo, true, true)
+				testCompressDecompress(t, size, algo, false, false)
+				testCompressDecompress(t, size, algo, true, false)
+				testCompressDecompress(t, size, algo, false, true)
+			})
 		}
 	}
 }
@@ -59,11 +75,11 @@ func TestCompressDecompress(t *testing.T) {
 func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useReadFrom, useWriteTo bool) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
-	testutil.Remover(t, ZipFilePath)
-	data := testutil.CreateDummyBuf(size)
-	zipFileDest := openDest(t, ZipFilePath)
+	zipPath := createTempFile(t)
+	defer testutil.Remover(t, zipPath)
 
-	defer testutil.Remover(t, ZipFilePath)
+	data := testutil.CreateDummyBuf(size)
+	zipFileDest := openDest(t, zipPath)
 
 	// Compress.
 	w, err := NewWriter(zipFileDest, algo)
@@ -90,7 +106,7 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 
 	// Read compressed file into buffer.
 	dataUncomp := bytes.NewBuffer(nil)
-	dataFromZip := openSrc(t, ZipFilePath)
+	dataFromZip := openSrc(t, zipPath)
 
 	// Uncompress.
 	r := NewReader(dataFromZip)
@@ -114,16 +130,23 @@ func testCompressDecompress(t *testing.T, size int64, algo AlgorithmType, useRea
 }
 
 func TestSeek(t *testing.T) {
+	t.Parallel()
+
 	sizes := TestSizes
 	offsets := TestOffsets
 	algos := CompressionAlgos
 	for _, algo := range algos {
 		for _, size := range sizes {
 			for _, off := range offsets {
-				testSeek(t, size, off, algo, false, false)
-				testSeek(t, size, off, algo, true, true)
-				testSeek(t, size, off, algo, false, true)
-				testSeek(t, size, off, algo, true, false)
+				name := fmt.Sprintf("%s-size%d-off%d", algo, size, off)
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
+
+					testSeek(t, size, off, algo, false, false)
+					testSeek(t, size, off, algo, true, true)
+					testSeek(t, size, off, algo, false, true)
+					testSeek(t, size, off, algo, true, false)
+				})
 			}
 		}
 	}
@@ -132,9 +155,11 @@ func TestSeek(t *testing.T) {
 func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom, useWriteTo bool) {
 	// Fake data file is written to disk,
 	// as compression reader has to be a ReadSeeker.
-	testutil.Remover(t, ZipFilePath)
+	zipPath := createTempFile(t)
+	defer testutil.Remover(t, zipPath)
+
 	data := testutil.CreateDummyBuf(size)
-	zipFileDest := openDest(t, ZipFilePath)
+	zipFileDest := openDest(t, zipPath)
 
 	// Compress.
 	w, err := NewWriter(zipFileDest, algo)
@@ -146,7 +171,7 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 		t.Errorf("Compress failed %v", err)
 		return
 	}
-	defer testutil.Remover(t, ZipFilePath)
+	defer testutil.Remover(t, zipPath)
 
 	if err := w.Close(); err != nil {
 		t.Errorf("Compression writer close failed: %v", err)
@@ -160,7 +185,7 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 
 	// Read compressed file into buffer.
 	dataUncomp := bytes.NewBuffer(nil)
-	dataFromZip := openSrc(t, ZipFilePath)
+	dataFromZip := openSrc(t, zipPath)
 	zr := NewReader(dataFromZip)
 
 	// Set specific offset before read.
