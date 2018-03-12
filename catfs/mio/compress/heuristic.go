@@ -36,6 +36,11 @@ var (
 	}
 )
 
+const (
+	// HeaderSizeThreshold is the number of bytes needed to enable compression at all.
+	HeaderSizeThreshold = 2048
+)
+
 func guessMime(path string, buf []byte) string {
 	s := mimemagic.Match("", buf)
 	if s == "" {
@@ -63,7 +68,11 @@ func isCompressable(mimetype string) bool {
 	return true
 }
 
-func ChooseCompressAlgo(path string, header []byte) (AlgorithmType, error) {
+func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
+	if len(header) < HeaderSizeThreshold {
+		return AlgoNone, nil
+	}
+
 	mime := guessMime(path, header)
 	compressAble := isCompressable(mime)
 

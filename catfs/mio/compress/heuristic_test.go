@@ -2,37 +2,59 @@ package compress
 
 import (
 	"testing"
+
+	"github.com/sahib/brig/util/testutil"
 )
 
 type testCase struct {
 	path         string
-	size         uint64
 	header       []byte
 	expectedAlgo AlgorithmType
 }
 
 var (
 	testCases = []testCase{
-		{"1.txt", 128, []byte("Small text file"), AlgoNone},
-		{"2.txt", 2048, []byte("Big text file"), AlgoLZ4},
-		{"3.opus", 128, []byte{0x4f, 0x67, 0x67, 0x53}, AlgoNone},
-		{"4.opus", 2048, []byte{0x4f, 0x67, 0x67, 0x53}, AlgoNone},
-		{"5.zip", 128, []byte{0x50, 0x4b, 0x3, 0x4}, AlgoNone},
-		{"6.zip", 2048, []byte{0x50, 0x4b, 0x3, 0x4}, AlgoNone},
+		{
+			"1.txt",
+			testutil.CreateDummyBuf(HeaderSizeThreshold - 1),
+			AlgoNone,
+		}, {
+			"2.txt",
+			testutil.CreateDummyBuf(HeaderSizeThreshold),
+			AlgoLZ4,
+		}, {
+			"3.opus",
+			append(
+				[]byte{0x4f, 0x67, 0x67, 0x53},
+				testutil.CreateDummyBuf(HeaderSizeThreshold)...,
+			),
+			AlgoNone,
+		}, {
+			"4.zip",
+			append(
+				[]byte{0x50, 0x4b, 0x3, 0x4},
+				testutil.CreateDummyBuf(HeaderSizeThreshold)...,
+			),
+			AlgoNone,
+		},
 	}
 )
 
 func TestChooseCompressAlgo(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range testCases {
-		if algo, err := ChooseCompressAlgo(tc.path, tc.size, tc.header); err != nil {
-			t.Errorf("Error: %v", err)
-		} else if algo != tc.expectedAlgo {
-			t.Errorf(
-				"For path '%s' expected '%s', got '%s'",
-				tc.path,
-				AlgoToString[tc.expectedAlgo],
-				AlgoToString[algo],
-			)
-		}
+		t.Run(tc.path, func(t *testing.T) {
+			if algo, err := GuessAlgorithm(tc.path, tc.header); err != nil {
+				t.Errorf("Error: %v", err)
+			} else if algo != tc.expectedAlgo {
+				t.Errorf(
+					"For path '%s' expected '%s', got '%s'",
+					tc.path,
+					AlgoToString[tc.expectedAlgo],
+					AlgoToString[algo],
+				)
+			}
+		})
 	}
 }

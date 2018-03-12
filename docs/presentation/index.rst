@@ -221,8 +221,8 @@ Nutzermanagement
 Nutzen:
 -------
 
-- Später :small:`(optionale)` E-Mail Authentifizierung.
 - Resourcen und Domains zur Discovery.
+- Später :small:`(optionale)` E-Mail Authentifizierung.
 
 ----
 

@@ -622,7 +622,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	algo, err := compress.ChooseCompressAlgo(path, headerBuf)
+	algo, err := compress.GuessAlgorithm(path, headerBuf)
 	if err != nil {
 		algo = fs.cfg.compressAlgo
 		log.Warningf("Failed to guess suitable zip algo: %v", err)
