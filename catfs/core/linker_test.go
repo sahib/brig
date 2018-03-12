@@ -17,6 +17,8 @@ import (
 // A new staging commit should be also created in the background.
 // On the second run, the root node should be already cached.
 func TestLinkerInsertRoot(t *testing.T) {
+	t.Parallel()
+
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := n.NewEmptyDirectory(lkr, nil, "/", "u", 2)
@@ -62,6 +64,8 @@ func TestLinkerInsertRoot(t *testing.T) {
 }
 
 func TestLinkerRefs(t *testing.T) {
+	t.Parallel()
+
 	author := n.AuthorOfStage
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
@@ -122,6 +126,8 @@ func TestLinkerRefs(t *testing.T) {
 }
 
 func TestLinkerNested(t *testing.T) {
+	t.Parallel()
+
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -207,6 +213,8 @@ func TestLinkerNested(t *testing.T) {
 }
 
 func TestCheckoutFile(t *testing.T) {
+	t.Parallel()
+
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		if err := lkr.MakeCommit(n.AuthorOfStage, "initial commit"); err != nil {
@@ -301,6 +309,8 @@ func TestCheckoutFile(t *testing.T) {
 
 // Test if Linker can load objects after closing/re-opening the kv.
 func TestLinkerPersistence(t *testing.T) {
+	t.Parallel()
+
 	dbPath, err := ioutil.TempDir("", "brig-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -350,6 +360,8 @@ func TestLinkerPersistence(t *testing.T) {
 }
 
 func TestCollideSameObjectHash(t *testing.T) {
+	t.Parallel()
+
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -439,6 +451,8 @@ func TestCollideSameObjectHash(t *testing.T) {
 }
 
 func TestHaveStagedChanges(t *testing.T) {
+	t.Parallel()
+
 	WithDummyLinker(t, func(lkr *Linker) {
 		hasChanges, err := lkr.HaveStagedChanges()
 		if err != nil {
@@ -471,6 +485,8 @@ func TestHaveStagedChanges(t *testing.T) {
 }
 
 func TestFilesByContent(t *testing.T) {
+	t.Parallel()
+
 	WithDummyLinker(t, func(lkr *Linker) {
 		file := MustTouch(t, lkr, "/x.png", 1)
 
@@ -487,6 +503,8 @@ func TestFilesByContent(t *testing.T) {
 }
 
 func TestResolveRef(t *testing.T) {
+	t.Parallel()
+
 	WithDummyLinker(t, func(lkr *Linker) {
 		initCmt, err := lkr.Head()
 		require.Nil(t, err)

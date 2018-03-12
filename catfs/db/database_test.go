@@ -80,6 +80,8 @@ func testDatabaseWithDifferentKeys(t *testing.T, db1, db2 Database) {
 func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 	// TODO: add more testcases
 	t.Run("access-invalid", func(t *testing.T) {
+		t.Parallel()
+
 		val, err := db1.Get("hello", "world")
 		if err != ErrNoSuchKey {
 			t.Errorf("Not existant key yieled no ErrNoSuchKey: %v", err)

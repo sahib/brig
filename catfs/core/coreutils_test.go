@@ -334,8 +334,12 @@ func TestMove(t *testing.T) {
 	// Checks for invalid cases (E):
 	// 1) src is not gone.
 
+	t.Parallel()
+
 	for _, tc := range moveAndCopyTestCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
@@ -522,8 +526,12 @@ func TestStageDirOverGhost(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range moveAndCopyTestCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
