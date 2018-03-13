@@ -40,6 +40,7 @@ import (
 	"strconv"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
@@ -66,9 +67,6 @@ type Linker struct {
 
 	// UID to node
 	inodeIndex map[uint64]n.Node
-
-	// user name to user id (cached)
-	userIndex map[string]int32
 
 	// Cache for the linker owner.
 	owner string
@@ -630,7 +628,7 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 			}
 
 			if parentNd == nil {
-				// TODO: log a warning here?
+				log.Warningf("ref `%s` is too far back; stopping at `init`", refname)
 				break
 			}
 
@@ -758,7 +756,6 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 
 	if ie.IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
-		// TODO: Replace ResolveDirectory -> Resolve* can be removed.
 		if root, err := lkr.ResolveDirectory("/"); err == nil {
 			rootHash = root.Hash()
 		} else {
@@ -852,12 +849,7 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) (err error) {
 	inode := strconv.FormatUint(cmt.Inode(), 10)
 	batch.Put(data, "stage", "STATUS")
 	batch.Put([]byte(cmt.Hash().B58String()), "inode", inode)
-
-	if err := lkr.SaveRef("CURR", cmt); err != nil {
-		return err
-	}
-
-	return nil
+	return lkr.SaveRef("CURR", cmt)
 }
 
 /////////////////////////////////
@@ -947,6 +939,8 @@ func (lkr *Linker) DirectoryByHash(hash h.Hash) (*n.Directory, error) {
 }
 
 // ResolveDirectory calls ResolveNode and converts the result to a Directory.
+// This only accesses nodes from the filesystem and does not differentiate
+// between ghosts and living nodes.
 func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
 	nd, err := lkr.ResolveNode(appendDot(path.Clean(dirpath)))
 	if err != nil {
@@ -966,9 +960,6 @@ func (lkr *Linker) ResolveDirectory(dirpath string) (*n.Directory, error) {
 }
 
 // LookupDirectory calls LookupNode and converts the result to a Directory.
-// TODO: Now that we have ghosts - does it make sense to do what Resolve()
-//       does? i.e. just lookup the dir in the kv and use that.
-//       This woild be likely more efficient and would save some code.
 func (lkr *Linker) LookupDirectory(repoPath string) (*n.Directory, error) {
 	nd, err := lkr.LookupNode(repoPath)
 	if err != nil {
@@ -992,25 +983,6 @@ func (lkr *Linker) FileByHash(hash h.Hash) (*n.File, error) {
 	nd, err := lkr.NodeByHash(hash)
 	if err != nil {
 		return nil, err
-	}
-
-	file, ok := nd.(*n.File)
-	if !ok {
-		return nil, ie.ErrBadNode
-	}
-
-	return file, nil
-}
-
-// ResolveFile calls ResolveNode and converts the result to a file.
-func (lkr *Linker) ResolveFile(filepath string) (*n.File, error) {
-	nd, err := lkr.ResolveNode(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	if nd == nil {
-		return nil, nil
 	}
 
 	file, ok := nd.(*n.File)

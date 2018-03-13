@@ -61,28 +61,24 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 	// Suck the reader empty and move it to `wZip`.
 	// Every write to wZip will be available as read in `pr`.
 	go func() {
-		// TODO: The error reporting is weird here.
-		//       Can we get rid of the go()?
-		var err error
-		if _, copyErr := io.Copy(wZip, r); copyErr != nil {
-			err = copyErr
-		}
-
-		if zipCloseErr := wZip.Close(); zipCloseErr != nil {
-			err = zipCloseErr
-		}
-
-		if encCloseErr := wEnc.Close(); encCloseErr != nil {
-			err = encCloseErr
-		}
-
-		if pwErr := pw.Close(); pwErr != nil {
-			err = pwErr
-		}
-
-		if err != nil {
-			// TODO: This need to be handled better.
+		if _, err := io.Copy(wZip, r); err != nil {
+			// Continue closing the fds; no return.
 			log.Warningf("internal write error: %v", err)
+		}
+
+		if err := wZip.Close(); err != nil {
+			// Continue closing the others:
+			log.Warningf("internal close zip error: %v", err)
+		}
+
+		if err := wEnc.Close(); err != nil {
+			// Continue closing the others:
+			log.Warningf("internal close enclayer error: %v", err)
+		}
+
+		if err := pw.Close(); err != nil {
+			// Continue closing the others:
+			log.Warningf("internal close pipe error: %v", err)
 		}
 	}()
 

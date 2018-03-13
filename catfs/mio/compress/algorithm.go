@@ -18,9 +18,9 @@ type Algorithm interface {
 	Decode([]byte) ([]byte, error)
 }
 
-type noneAlgo struct{ name string }
-type snappyAlgo struct{ name string }
-type lz4Algo struct{ name string }
+type noneAlgo struct{}
+type snappyAlgo struct{}
+type lz4Algo struct{}
 
 // AlgoMap maps the algorithm type to the respective Algorithm interface
 var AlgoMap = map[AlgorithmType]Algorithm{

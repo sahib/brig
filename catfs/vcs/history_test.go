@@ -386,16 +386,7 @@ func setupHistoryMultipleMovesPerCommit(t *testing.T, lkr *c.Linker) *historySet
 	fileY := c.MustMove(t, lkr, fileX, "/y.png")
 	c.MustMove(t, lkr, fileY, "/z.png")
 
-	// Also try modifying the file after moving to make it slightly
-	// harder for the logic:
-	info := &c.NodeUpdate{
-		Hash:   h.TestDummy(t, 2),
-		Size:   uint64(2),
-		Author: "",
-		Key:    nil,
-	}
-
-	fileZNew, err := c.Stage(lkr, "/z.png", info)
+	fileZNew, err := c.Stage(lkr, "/z.png", h.TestDummy(t, 2), uint64(2), nil)
 	require.Nil(t, err)
 
 	c2 := c.MustCommit(t, lkr, "Moved around")

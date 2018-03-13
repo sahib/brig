@@ -36,9 +36,6 @@ type Reader struct {
 	// Buffer for decrypted data (MaxBlockSize big)
 	decBuf []byte
 
-	// Currently block we're operating on.
-	blockCount uint64
-
 	// true as long readBlock was not succesful
 	isInitialRead bool
 
