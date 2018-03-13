@@ -214,8 +214,11 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 		// Oh, something is in there?
 		if child != nil {
 			if nd.Type() == n.NodeTypeFile {
-				// TODO: more details
-				return nil, fmt.Errorf("Cannot overwrite a directory with a file")
+				return nil, fmt.Errorf(
+					"cannot overwrite a directory (%s) with a file (%s)",
+					destNode.Path(),
+					child.Path(),
+				)
 			}
 
 			childDir, ok := child.(*n.Directory)
@@ -369,15 +372,7 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) (err error) {
 	return err
 }
 
-// TODO: This struct sucks.
-type NodeUpdate struct {
-	Hash   h.Hash
-	Size   uint64
-	Author string
-	Key    []byte
-}
-
-func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err error) {
+func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte) (file *n.File, err error) {
 	node, err := lkr.LookupNode(repoPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return nil, err
@@ -426,7 +421,7 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
 		needRemove = true
 
-		if file.Content().Equal(info.Hash) {
+		if file.Content().Equal(content) {
 			log.Debugf("Hash was not modified. Not doing any update.")
 			return file, nil
 		}
@@ -459,10 +454,10 @@ func Stage(lkr *Linker, repoPath string, info *NodeUpdate) (file *n.File, err er
 		}
 	}
 
-	file.SetSize(info.Size)
+	file.SetSize(size)
 	file.SetModTime(time.Now())
-	file.SetContent(lkr, info.Hash)
-	file.SetKey(info.Key)
+	file.SetContent(lkr, content)
+	file.SetKey(key)
 	file.SetUser(lkr.owner)
 
 	// Add it again when the hash was changed.

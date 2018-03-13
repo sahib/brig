@@ -170,14 +170,7 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 }
 
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
-	info := &NodeUpdate{
-		Hash:   h.TestDummy(t, seed),
-		Size:   uint64(seed),
-		Author: "",
-		Key:    nil,
-	}
-
-	file, err := Stage(lkr, path, info)
+	file, err := Stage(lkr, path, h.TestDummy(t, seed), uint64(seed), nil)
 	if err != nil {
 		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
 	}

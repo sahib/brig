@@ -656,19 +656,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	owner, err := fs.lkr.Owner()
-	if err != nil {
-		return err
-	}
-
-	nu := c.NodeUpdate{
-		Hash:   contentHash,
-		Key:    key,
-		Author: owner,
-		Size:   sizeAcc.Size(),
-	}
-
-	_, err = c.Stage(fs.lkr, path, &nu)
+	_, err = c.Stage(fs.lkr, path, contentHash, sizeAcc.Size(), key)
 	return err
 }
 

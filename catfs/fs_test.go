@@ -152,12 +152,7 @@ func TestCat(t *testing.T) {
 		require.Nil(t, err)
 
 		// Stage the file manually (without fs.Stage)
-		_, err = c.Stage(fs.lkr, "/x", &c.NodeUpdate{
-			Author: "me",
-			Hash:   hash,
-			Key:    TestKey,
-			Size:   uint64(len(raw)),
-		})
+		_, err = c.Stage(fs.lkr, "/x", hash, uint64(len(raw)), TestKey)
 		require.Nil(t, err)
 
 		// Cat the file again:

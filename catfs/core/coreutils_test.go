@@ -476,27 +476,14 @@ func TestMoveDirectoryWithGhosts(t *testing.T) {
 
 func TestStage(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
-		update := &NodeUpdate{
-			Hash:   h.TestDummy(t, 1),
-			Size:   3,
-			Author: "me",
-			Key:    make([]byte, 32),
-		}
-
 		// Initial stage of the file:
-		file, err := Stage(lkr, "/photos/moose.png", update)
+		key := make([]byte, 32)
+		file, err := Stage(lkr, "/photos/moose.png", h.TestDummy(t, 1), 3, key)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		update = &NodeUpdate{
-			Hash:   h.TestDummy(t, 2),
-			Size:   3,
-			Author: "me",
-			Key:    make([]byte, 32),
-		}
-
-		file, err = Stage(lkr, "/photos/moose.png", update)
+		file, err = Stage(lkr, "/photos/moose.png", h.TestDummy(t, 2), 3, key)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}

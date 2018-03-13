@@ -4,6 +4,7 @@
 :data-transition-duration: 350
 :data-perspective: 5000
 
+
 .. role:: white-bg
 .. role:: title-logo
 .. role:: strike
@@ -493,7 +494,6 @@ Roadmap
 |
 
 **Hauptproblem:** Nur ein Entwickler.
-
 
 .. note::
 
