@@ -150,12 +150,13 @@ func TestLimitedStream(t *testing.T) {
 
 	_, err = stream.Seek(0, os.SEEK_SET)
 	require.Nil(t, err)
+
 	limitStream = LimitStream(stream, 5)
 
 	buf := &bytes.Buffer{}
 	n, err := limitStream.WriteTo(buf)
 	require.Nil(t, err)
-	require.Equal(t, n, int64(5))
+	require.Equal(t, n, int64(10))
 	require.Equal(t, buf.Bytes(), testData[:5])
 
 	buf.Reset()

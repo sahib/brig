@@ -1,7 +1,6 @@
 package mio
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -9,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
+	"github.com/sahib/brig/util"
 )
 
 type Stream interface {
@@ -82,7 +82,7 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 
 		if err != nil {
 			// TODO: This need to be handled better.
-			log.Warningf("Internal write error: %v", err)
+			log.Warningf("internal write error: %v", err)
 		}
 	}()
 
@@ -138,60 +138,10 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	return ls.stream.Seek(newPos, os.SEEK_SET)
 }
 
-type limitWriter struct {
-	w     io.Writer
-	curr  uint64
-	limit uint64
-}
-
-var (
-	errOverLimit = errors.New("welp TODO")
-)
-
-func (lw *limitWriter) Write(buf []byte) (int, error) {
-	isOverLimit := false
-	left := lw.limit - lw.curr
-	if left < uint64(len(buf)) {
-		buf = buf[:left]
-		isOverLimit = true
-	}
-
-	if len(buf) == 0 {
-		if isOverLimit {
-			return 0, errOverLimit
-		}
-
-		return 0, nil
-	}
-
-	n, err := lw.w.Write(buf)
-	if err != nil {
-		return n, err
-	}
-
-	if isOverLimit {
-		return n, errOverLimit
-	}
-
-	return n, nil
-}
-
 func (ls *limitedStream) WriteTo(w io.Writer) (int64, error) {
 	// We do not want to defeat the purpose of WriteTo here.
 	// That's why we do the limit check in the writer part.
-	lw := &limitWriter{
-		limit: ls.size - ls.pos,
-		curr:  ls.pos,
-		w:     w,
-	}
-
-	n, err := ls.stream.WriteTo(lw)
-	if err == errOverLimit {
-		// silence errOverLimit, since it's more or less internal.
-		return n, nil
-	}
-
-	return n, err
+	return ls.stream.WriteTo(util.LimitWriter(w, int64(ls.size-ls.pos)))
 }
 
 func (ls *limitedStream) Close() error {

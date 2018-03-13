@@ -380,6 +380,9 @@ func (lw *limitWriter) Write(buf []byte) (int, error) {
 		return -1, err
 	}
 
+	// many go std functions require that all of `buf` was written,
+	// or else they return with errShortWrite. Let's act like we
+	// used all of it.
 	return len(buf), nil
 }
 
