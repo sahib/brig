@@ -3,8 +3,8 @@ package catfs
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/sahib/brig/util/testutil"

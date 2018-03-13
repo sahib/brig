@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/sahib/brig/util/testutil"

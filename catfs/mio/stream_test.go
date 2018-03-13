@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/sahib/brig/catfs/mio/compress"

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/sahib/brig/catfs/mio/encrypt"
