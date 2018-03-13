@@ -286,5 +286,3 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 		require.Equal(t, diff.Missing[0].Path(), "/x.png.conflict.0")
 	})
 }
-
-// TODO: Test sync empty directories?

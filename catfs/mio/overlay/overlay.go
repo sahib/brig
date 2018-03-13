@@ -222,6 +222,21 @@ func (l *Layer) Write(buf []byte) (int, error) {
 	return len(buf), nil
 }
 
+// hasGaps checks if overlays occludes all bytes between `start` and `end`
+func hasGaps(overlays []Interval, start, end int64) bool {
+	diff := end - start
+
+	for _, chunk := range overlays {
+		lo, hi := chunk.Range()
+		diff -= min(hi, end) - max(lo, start)
+		if diff <= 0 {
+			return false
+		}
+	}
+
+	return diff > 0
+}
+
 // Read will read from the underlying stream and overlay with the relevant
 // write chunks on it's way, possibly extending the underlying stream.
 func (l *Layer) Read(buf []byte) (int, error) {
@@ -240,30 +255,33 @@ func (l *Layer) Read(buf []byte) (int, error) {
 		}
 	}
 
-	// TODO: Optimisation: Check if our write data fully occludes underlying stream.
-	//       If that's the case, do not read from underyling stream.
-	//       Alternatively, read only the un-occluded parts.
+	// See what writes are overlaying with our current position.
 	overlays := l.index.Overlays(l.pos, l.pos+int64(len(buf)))
-	// for _, chunk := range overlays {
-	// 	lo, hi := chunk.Range()
-	// }
 
-	n, err := l.r.Read(buf)
-	if err == io.EOF && l.pos < l.index.Max {
-		// There's only extending writes left.
-		// Empty `buf` so caller get's defined results.
-		// This should not happen in practice, but helps identifying bugs.
-		for i := n; i < len(buf); i++ {
-			buf[i] = byte(0)
+	// Only read from source if our writes do not fully occlude the underlying stream.
+	// We could also read only the not occluded parts, but that is more complex logic,
+	// and we kinda rely on the caller to have small buf sizes anyways.
+	n := len(buf)
+	var err error
+
+	if hasGaps(overlays, l.pos, l.pos+int64(len(buf))) {
+		n, err = l.r.Read(buf)
+		if err == io.EOF && l.pos < l.index.Max {
+			// There's only extending writes left.
+			// Empty `buf` so caller get's defined results.
+			// This should not happen in practice, but helps identifying bugs.
+			for i := n; i < len(buf); i++ {
+				buf[i] = byte(0)
+			}
+
+			// Forget about EOF for a short moment.
+			err = nil
 		}
 
-		// Forget about EOF for a short moment.
-		err = nil
-	}
-
-	// Check for other errors:
-	if err != nil {
-		return n, err
+		// Check for other errors:
+		if err != nil {
+			return n, err
+		}
 	}
 
 	// Check which write chunks are overlaying this buf:

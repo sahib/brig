@@ -387,30 +387,33 @@ func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte
 		}
 	}()
 
-	if node != nil && node.Type() == n.NodeTypeGhost {
-		ghostParent, err := n.ParentDirectory(lkr, node)
-		if err != nil {
-			return nil, err
-		}
+	if node != nil {
+		if node.Type() == n.NodeTypeGhost {
+			ghostParent, err := n.ParentDirectory(lkr, node)
+			if err != nil {
+				return nil, err
+			}
 
-		if ghostParent == nil {
-			// TODO: Think about this case. stage() should not be called on directories
-			//       anyways (only on files or files to ghosts)
-			return nil, fmt.Errorf("The ghost is a root? Something is wrong...")
-		}
+			if ghostParent == nil {
+				return nil, fmt.Errorf(
+					"bug: %s has no parent. Is root a ghost?",
+					node.Path(),
+				)
+			}
 
-		if err := ghostParent.RemoveChild(lkr, node); err != nil {
-			return nil, err
-		}
+			if err := ghostParent.RemoveChild(lkr, node); err != nil {
+				return nil, err
+			}
 
-		// Act like there was no previous node.
-		// New node will have a different Inode.
-		file = nil
-	} else if node != nil {
-		var ok bool
-		file, ok = node.(*n.File)
-		if !ok {
-			return nil, ie.ErrBadNode
+			// Act like there was no previous node.
+			// New node will have a different Inode.
+			file = nil
+		} else {
+			var ok bool
+			file, ok = node.(*n.File)
+			if !ok {
+				return nil, ie.ErrBadNode
+			}
 		}
 	}
 

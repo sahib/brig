@@ -9,6 +9,7 @@ import (
 
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
@@ -284,4 +285,73 @@ func TestBigFile(t *testing.T) {
 		t.Errorf("Source and destination buffers differ.")
 		return
 	}
+}
+
+func TestHasGaps(t *testing.T) {
+	// gap inbetween:
+	require.True(t, hasGaps(
+		[]Interval{
+			&Modification{20, make([]byte, 20)},
+			&Modification{41, make([]byte, 20)},
+		},
+		20,
+		61,
+	))
+
+	// overlay *after* actual range:
+	require.True(t, hasGaps(
+		[]Interval{
+			&Modification{20, make([]byte, 20)},
+		},
+		40,
+		60,
+	))
+
+	// overlay *before* actual range:
+	require.True(t, hasGaps(
+		[]Interval{
+			&Modification{20, make([]byte, 20)},
+		},
+		0,
+		20,
+	))
+
+	// Fully occluded by single:
+	require.False(t, hasGaps(
+		[]Interval{
+			&Modification{20, make([]byte, 20)},
+		},
+		20,
+		40,
+	))
+
+	// Fully occluded by two:
+	require.False(t, hasGaps(
+		[]Interval{
+			&Modification{20, make([]byte, 10)},
+			&Modification{30, make([]byte, 10)},
+		},
+		20,
+		40,
+	))
+
+	// Overlap at the beginning:
+	require.False(t, hasGaps(
+		[]Interval{
+			&Modification{10, make([]byte, 20)},
+			&Modification{30, make([]byte, 20)},
+		},
+		20,
+		40,
+	))
+
+	// Small gap with overlaps before & after:
+	require.True(t, hasGaps(
+		[]Interval{
+			&Modification{10, make([]byte, 15)},
+			&Modification{35, make([]byte, 20)},
+		},
+		20,
+		40,
+	))
 }
