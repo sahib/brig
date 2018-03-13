@@ -2,7 +2,6 @@ package fuse
 
 import (
 	"io"
-	"os"
 	"sync"
 
 	"bazil.org/fuse"
@@ -30,7 +29,7 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		"size":   req.Size,
 	}).Debugf("fuse: handle: read")
 
-	newOff, err := hd.fd.Seek(req.Offset, os.SEEK_SET)
+	newOff, err := hd.fd.Seek(req.Offset, io.SeekStart)
 	if err != nil {
 		return errorize("handle-read-seek", err)
 	}
@@ -60,7 +59,7 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 		len(req.Data),
 	)
 
-	newOff, err := hd.fd.Seek(req.Offset, os.SEEK_SET)
+	newOff, err := hd.fd.Seek(req.Offset, io.SeekStart)
 	if err != nil {
 		return errorize("handle-write-seek", err)
 	}

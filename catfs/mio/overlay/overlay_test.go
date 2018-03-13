@@ -83,7 +83,7 @@ func createLayer(t *testing.T, modifier func(l *Layer) error) *bytes.Buffer {
 			}
 		}
 
-		if n, err := l.Seek(0, os.SEEK_SET); err != nil || n != 0 {
+		if n, err := l.Seek(0, io.SeekStart); err != nil || n != 0 {
 			t.Errorf("overlay-seek failed: %v (offset %v)", err, n)
 			t.FailNow()
 		}
@@ -158,7 +158,7 @@ var SingleWrites = map[string]struct {
 				return err
 			}
 
-			if _, err := l.Seek(10, os.SEEK_SET); err != nil {
+			if _, err := l.Seek(10, io.SeekStart); err != nil {
 				return err
 			}
 
@@ -184,7 +184,7 @@ var SingleWrites = map[string]struct {
 		[]byte("0123498765"),
 		func(l *Layer) error {
 			l.Truncate(0)
-			if n, err := l.Seek(5, os.SEEK_SET); err != nil || n != 5 {
+			if n, err := l.Seek(5, io.SeekStart); err != nil || n != 5 {
 				return fmt.Errorf("Seek() did not work after Truncate(): %v (off: %v)", err, n)
 			}
 
@@ -199,7 +199,7 @@ var SingleWrites = map[string]struct {
 		[]byte("01234"),
 		func(l *Layer) error {
 			l.Truncate(5)
-			n, err := l.Seek(5, os.SEEK_SET)
+			n, err := l.Seek(5, io.SeekStart)
 			if err != nil {
 				return fmt.Errorf("Seek to end failed: %v", err)
 			}
@@ -265,7 +265,7 @@ func TestBigFile(t *testing.T) {
 
 	lay.Truncate(int64(len(src)))
 
-	if _, err := lay.Seek(0, os.SEEK_SET); err != nil {
+	if _, err := lay.Seek(0, io.SeekStart); err != nil {
 		t.Errorf("Seeking to 0 in big file failed: %v", err)
 		return
 	}

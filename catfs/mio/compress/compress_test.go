@@ -189,7 +189,7 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 	zr := NewReader(dataFromZip)
 
 	// Set specific offset before read.
-	_, err = zr.Seek(offset, os.SEEK_SET)
+	_, err = zr.Seek(offset, io.SeekStart)
 	if err == io.EOF && offset < size && offset > -1 {
 		t.Errorf("Seek failed even with EOF: %d <= %d", offset, size)
 		return

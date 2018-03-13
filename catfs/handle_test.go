@@ -41,7 +41,7 @@ func TestOpenWrite(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, n, 3)
 
-		pos, err := fd.Seek(0, os.SEEK_CUR)
+		pos, err := fd.Seek(0, io.SeekCurrent)
 		require.Nil(t, err)
 		require.Equal(t, pos, int64(3))
 
@@ -51,7 +51,7 @@ func TestOpenWrite(t *testing.T) {
 
 		// Check that we can also seek back to start after reading to the end.
 		// (and also check if the write overlay actually did work)
-		pos, err = fd.Seek(0, os.SEEK_SET)
+		pos, err = fd.Seek(0, io.SeekStart)
 		require.Nil(t, err)
 		require.Equal(t, pos, int64(0))
 
@@ -127,7 +127,7 @@ func TestOpenExtend(t *testing.T) {
 		fd, err := fs.Open("/x")
 		require.Nil(t, err)
 
-		pos, err := fd.Seek(10, os.SEEK_SET)
+		pos, err := fd.Seek(10, io.SeekStart)
 		require.Nil(t, err)
 		require.Equal(t, pos, int64(10))
 
@@ -184,7 +184,7 @@ func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
 
 			offset := len(rawData) - left
 			buf := make([]byte, toRead)
-			if _, err = fd.Seek(int64(offset), os.SEEK_SET); err != nil {
+			if _, err = fd.Seek(int64(offset), io.SeekStart); err != nil {
 				t.Fatalf("Seek to %d failed", offset)
 			}
 

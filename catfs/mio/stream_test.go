@@ -120,7 +120,7 @@ func TestLimitedStream(t *testing.T) {
 
 	for idx := 0; idx <= 10; idx++ {
 		// Seek back to beginning:
-		_, err := stream.Seek(0, os.SEEK_SET)
+		_, err := stream.Seek(0, io.SeekStart)
 		require.Nil(t, err)
 
 		smallStream := LimitStream(stream, uint64(idx))
@@ -131,24 +131,24 @@ func TestLimitedStream(t *testing.T) {
 
 	var err error
 
-	_, err = stream.Seek(0, os.SEEK_SET)
+	_, err = stream.Seek(0, io.SeekStart)
 	require.Nil(t, err)
 
 	limitStream := LimitStream(stream, 5)
 
-	_, err = limitStream.Seek(5, os.SEEK_SET)
+	_, err = limitStream.Seek(5, io.SeekStart)
 	require.Nil(t, err)
 
-	_, err = limitStream.Seek(6, os.SEEK_SET)
+	_, err = limitStream.Seek(6, io.SeekStart)
 	require.Equal(t, err, io.EOF)
 
-	_, err = limitStream.Seek(5, os.SEEK_END)
+	_, err = limitStream.Seek(5, io.SeekEnd)
 	require.Nil(t, err)
 
-	_, err = limitStream.Seek(6, os.SEEK_END)
+	_, err = limitStream.Seek(6, io.SeekEnd)
 	require.Equal(t, err, io.EOF)
 
-	_, err = stream.Seek(0, os.SEEK_SET)
+	_, err = stream.Seek(0, io.SeekStart)
 	require.Nil(t, err)
 
 	limitStream = LimitStream(stream, 5)
@@ -160,7 +160,7 @@ func TestLimitedStream(t *testing.T) {
 	require.Equal(t, buf.Bytes(), testData[:5])
 
 	buf.Reset()
-	_, err = stream.Seek(0, os.SEEK_SET)
+	_, err = stream.Seek(0, io.SeekStart)
 	require.Nil(t, err)
 	limitStream = LimitStream(stream, 11)
 

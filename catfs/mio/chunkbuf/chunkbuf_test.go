@@ -55,7 +55,7 @@ func TestChunkBufSeek(t *testing.T) {
 	require.Equal(t, n, 128)
 	require.Equal(t, cache[:n], data[:n])
 
-	jumpedTo, err := buf.Seek(256, os.SEEK_SET)
+	jumpedTo, err := buf.Seek(256, io.SeekStart)
 	require.Nil(t, err)
 	require.Equal(t, int64(jumpedTo), int64(256))
 
@@ -66,7 +66,7 @@ func TestChunkBufSeek(t *testing.T) {
 	require.Equal(t, cache[:n], data[256:n+256])
 
 	// read advanced by 128, add 128 to go to 512
-	jumpedTo, err = buf.Seek(128, os.SEEK_CUR)
+	jumpedTo, err = buf.Seek(128, io.SeekCurrent)
 	require.Nil(t, err)
 	require.Equal(t, int64(jumpedTo), int64(512))
 
@@ -77,7 +77,7 @@ func TestChunkBufSeek(t *testing.T) {
 	require.Equal(t, cache[:n], data[512:n+512])
 
 	// read advanced by 128, add 128 to go to 512
-	jumpedTo, err = buf.Seek(-128, os.SEEK_END)
+	jumpedTo, err = buf.Seek(-128, io.SeekEnd)
 	require.Nil(t, err)
 	require.Equal(t, int64(jumpedTo), int64(896))
 
@@ -101,7 +101,7 @@ func TestChunkBufWrite(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, n, 3)
 
-	jumpedTo, err := buf.Seek(-1, os.SEEK_END)
+	jumpedTo, err := buf.Seek(-1, io.SeekEnd)
 	require.Nil(t, err)
 	require.Equal(t, int64(jumpedTo), int64(1023))
 
@@ -111,7 +111,7 @@ func TestChunkBufWrite(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, n, 1)
 
-	jumpedTo, err = buf.Seek(0, os.SEEK_SET)
+	jumpedTo, err = buf.Seek(0, io.SeekStart)
 	require.Nil(t, err)
 	require.Equal(t, int64(jumpedTo), int64(0))
 

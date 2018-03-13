@@ -145,21 +145,21 @@ var SeekTests = []struct {
 	Error  error
 }{
 	// Jump to the mid:
-	{os.SEEK_SET, 0.5, nil},
+	{io.SeekStart, 0.5, nil},
 	// Should stay the same:
-	{os.SEEK_CUR, 0, nil},
+	{io.SeekCurrent, 0, nil},
 	// Jump a quarter forth:
-	{os.SEEK_CUR, 0.25, nil},
+	{io.SeekCurrent, 0.25, nil},
 	// Jump a half back:
-	{os.SEEK_CUR, -0.5, nil},
+	{io.SeekCurrent, -0.5, nil},
 	// Jump back to the half:
-	{os.SEEK_CUR, 0.25, nil},
+	{io.SeekCurrent, 0.25, nil},
 	// See if SEEK_END works:
-	{os.SEEK_END, -0.5, nil},
+	{io.SeekEnd, -0.5, nil},
 	// This triggered a crash earlier:
-	{os.SEEK_END, -2, io.EOF},
+	{io.SeekEnd, -2, io.EOF},
 	// Im guessing now:
-	{os.SEEK_END, -1.0 / 4096, nil},
+	{io.SeekEnd, -1.0 / 4096, nil},
 }
 
 func BenchmarkEncDec(b *testing.B) {
@@ -229,11 +229,11 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 
 		exptOffset := int64(0)
 		switch test.Whence {
-		case os.SEEK_SET:
+		case io.SeekStart:
 			exptOffset = realOffset
-		case os.SEEK_CUR:
+		case io.SeekCurrent:
 			exptOffset = lastJump + realOffset
-		case os.SEEK_END:
+		case io.SeekEnd:
 			exptOffset = N + realOffset
 		default:
 			panic("Bad whence")
@@ -303,7 +303,7 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 		}
 
 		// Jump back, so the other tests continue to work:
-		jumpedAgain, err := decLayer.Seek(jumpedTo, os.SEEK_SET)
+		jumpedAgain, err := decLayer.Seek(jumpedTo, io.SeekStart)
 		if err != nil {
 			t.Errorf("Seeking not possible after reading: %v", err)
 			return
@@ -347,7 +347,7 @@ func TestEmptyFile(t *testing.T) {
 		return
 	}
 
-	if _, err = dec.Seek(10, os.SEEK_SET); err != io.EOF {
+	if _, err = dec.Seek(10, io.SeekStart); err != io.EOF {
 		t.Errorf("Seek failed: %v", err)
 		return
 	}

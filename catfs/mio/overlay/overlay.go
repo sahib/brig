@@ -3,7 +3,6 @@ package overlay
 import (
 	"fmt"
 	"io"
-	"os"
 	"sort"
 )
 
@@ -319,11 +318,11 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 	newPos := l.pos
 
 	switch whence {
-	case os.SEEK_CUR:
+	case io.SeekCurrent:
 		newPos += offset
-	case os.SEEK_SET:
+	case io.SeekStart:
 		newPos = offset
-	case os.SEEK_END:
+	case io.SeekEnd:
 		return 0, fmt.Errorf("layer: SEEK_END not supported")
 	}
 

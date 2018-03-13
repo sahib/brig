@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"os"
 )
 
 // Reader decrypts and encrypted datastream from Reader.
@@ -194,11 +193,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	// Convert possibly relative offset to absolute offset:
 	switch whence {
-	case os.SEEK_CUR:
+	case io.SeekCurrent:
 		absOffsetDec = r.lastDecSeekPos + offset
-	case os.SEEK_SET:
+	case io.SeekStart:
 		absOffsetDec = offset
-	case os.SEEK_END:
+	case io.SeekEnd:
 		// Try to figure out the end of the stream.
 		// This might be inefficient for some underlying readers,
 		// but is probably okay for ipfs.
@@ -207,7 +206,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		//       as a workaround for a bug in ipfs.
 		//       See: https://github.com/ipfs/go-ipfs/issues/2567
 		if r.endOffsetEnc < 0 {
-			endOffsetEnc, err := seeker.Seek(0, os.SEEK_END)
+			endOffsetEnc, err := seeker.Seek(0, io.SeekEnd)
 			if err != nil && err != io.EOF {
 				return 0, err
 			}
@@ -237,7 +236,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		// is necessary further down this function.
 		defer func() {
 			if !wasMoved {
-				seeker.Seek(r.lastEncSeekPos, os.SEEK_SET)
+				seeker.Seek(r.lastEncSeekPos, io.SeekStart)
 			}
 		}()
 	}
@@ -260,12 +259,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	r.lastDecSeekPos = absOffsetDec
 
-	if lastBlockNum != blockNum || r.isInitialRead || whence == os.SEEK_END {
+	if lastBlockNum != blockNum || r.isInitialRead || whence == io.SeekEnd {
 		r.lastEncSeekPos = absOffsetEnc
 
 		// Seek to the beginning of the encrypted block:
 		wasMoved = true
-		if _, err := seeker.Seek(absOffsetEnc, os.SEEK_SET); err != nil {
+		if _, err := seeker.Seek(absOffsetEnc, io.SeekStart); err != nil {
 			return 0, err
 		}
 
@@ -276,7 +275,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Reslice the backlog, so Read() does not return skipped data.
-	if _, err := r.backlog.Seek(absOffsetDec%int64(r.info.Blocklen), os.SEEK_SET); err != nil {
+	if _, err := r.backlog.Seek(absOffsetDec%int64(r.info.Blocklen), io.SeekStart); err != nil {
 		return 0, err
 	}
 

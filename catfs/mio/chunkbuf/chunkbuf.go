@@ -2,7 +2,6 @@ package chunkbuf
 
 import (
 	"io"
-	"os"
 
 	"github.com/sahib/brig/util"
 )
@@ -48,11 +47,11 @@ func (c *ChunkBuffer) Read(p []byte) (int, error) {
 
 func (c *ChunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
-	case os.SEEK_CUR:
+	case io.SeekCurrent:
 		c.readOff += offset
-	case os.SEEK_END:
+	case io.SeekEnd:
 		c.readOff = c.size + offset
-	case os.SEEK_SET:
+	case io.SeekStart:
 		c.readOff = offset
 	}
 	c.readOff = util.Min64(c.readOff, c.size)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -347,7 +348,7 @@ func editToPath(data []byte, suffix string) (string, error) {
 		return "", fmt.Errorf("Running $EDITOR (%s) failed: %v", editor, err)
 	}
 
-	if _, err := fd.Seek(0, os.SEEK_SET); err != nil {
+	if _, err := fd.Seek(0, io.SeekStart); err != nil {
 		doDelete = true
 		return "", err
 	}

@@ -3,7 +3,6 @@ package mio
 import (
 	"io"
 	"io/ioutil"
-	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/compress"
@@ -115,10 +114,10 @@ func (ls *limitedStream) Read(buf []byte) (int, error) {
 
 func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
-	case os.SEEK_CUR:
-		return ls.Seek(int64(ls.pos)+offset, os.SEEK_SET)
-	case os.SEEK_END:
-		return ls.Seek(offset-int64(ls.size), os.SEEK_SET)
+	case io.SeekCurrent:
+		return ls.Seek(int64(ls.pos)+offset, io.SeekStart)
+	case io.SeekEnd:
+		return ls.Seek(offset-int64(ls.size), io.SeekStart)
 	}
 
 	newPos := int64(ls.pos) + offset
@@ -131,7 +130,7 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	ls.pos = uint64(newPos)
-	return ls.stream.Seek(newPos, os.SEEK_SET)
+	return ls.stream.Seek(newPos, io.SeekStart)
 }
 
 func (ls *limitedStream) WriteTo(w io.Writer) (int64, error) {

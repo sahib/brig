@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
@@ -39,15 +38,15 @@ type reader struct {
 }
 
 func (r *reader) Seek(destOff int64, whence int) (int64, error) {
-	if whence == os.SEEK_END {
+	if whence == io.SeekEnd {
 		if destOff > 0 {
 			return 0, io.EOF
 		}
-		return r.Seek(r.index[len(r.index)-1].rawOff+destOff, os.SEEK_SET)
+		return r.Seek(r.index[len(r.index)-1].rawOff+destOff, io.SeekStart)
 	}
 
-	if whence == os.SEEK_CUR {
-		return r.Seek(r.zipSeekOffset+destOff, os.SEEK_SET)
+	if whence == io.SeekCurrent {
+		return r.Seek(r.zipSeekOffset+destOff, io.SeekStart)
 	}
 
 	if err := r.parseTrailerIfNeeded(); err != nil {
@@ -80,7 +79,7 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 	}
 
 	toRead := destOff - destRecord.rawOff
-	if _, err := r.chunkBuf.Seek(toRead, os.SEEK_SET); err != nil {
+	if _, err := r.chunkBuf.Seek(toRead, io.SeekStart); err != nil {
 		return 0, err
 	}
 	return destOff, nil
@@ -128,7 +127,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 	}
 
 	// Goto end of file and read trailer buffer.
-	if _, err := r.rawR.Seek(-trailerSize, os.SEEK_END); err != nil {
+	if _, err := r.rawR.Seek(-trailerSize, io.SeekEnd); err != nil {
 		return err
 	}
 
@@ -153,7 +152,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + trailerSize)
-	if _, err := r.rawR.Seek(seekIdx, os.SEEK_END); err != nil {
+	if _, err := r.rawR.Seek(seekIdx, io.SeekEnd); err != nil {
 		return err
 	}
 
@@ -181,7 +180,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 	}
 
 	// Set reader to beginning of file
-	if _, err := r.rawR.Seek(headerSize, os.SEEK_SET); err != nil {
+	if _, err := r.rawR.Seek(headerSize, io.SeekStart); err != nil {
 		return err
 	}
 
@@ -266,7 +265,7 @@ func (r *reader) fixZipChunk() (int64, error) {
 	}
 
 	// Set reader to compressed offset.
-	if _, err := r.rawR.Seek(prevRecord.zipOff, os.SEEK_SET); err != nil {
+	if _, err := r.rawR.Seek(prevRecord.zipOff, io.SeekStart); err != nil {
 		return 0, err
 	}
 

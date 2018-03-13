@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/sahib/brig/catfs/mio"
@@ -104,7 +103,7 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	}
 
 	// Advance the write pointer when writing things to the buffer.
-	if _, err := hdl.stream.Seek(int64(n), os.SEEK_CUR); err != nil && err != io.EOF {
+	if _, err := hdl.stream.Seek(int64(n), io.SeekCurrent); err != nil && err != io.EOF {
 		return n, err
 	}
 
@@ -188,7 +187,7 @@ func (hdl *Handle) flush() error {
 
 	// Jump back to the beginning of the file, since fs.Stage()
 	// should read all content starting from there.
-	n, err := hdl.layer.Seek(0, os.SEEK_SET)
+	n, err := hdl.layer.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
