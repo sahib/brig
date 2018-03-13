@@ -7,8 +7,6 @@ import (
 	"github.com/sahib/brig/util"
 )
 
-// TODO: This has no tests yet (only indirect by compress)
-
 // ChunkBuffer represents a custom buffer struct with Read/Write and Seek support.
 type ChunkBuffer struct {
 	buf      []byte
@@ -22,7 +20,7 @@ const (
 )
 
 func (c *ChunkBuffer) Write(p []byte) (int, error) {
-	n := copy(c.buf[c.writeOff:maxChunkSize], p)
+	n := copy(c.buf[c.writeOff:c.size], p)
 	c.writeOff += int64(n)
 	c.size = util.Max64(c.size, c.writeOff)
 	return n, nil
@@ -41,9 +39,10 @@ func (c *ChunkBuffer) Len() int {
 func (c *ChunkBuffer) Read(p []byte) (int, error) {
 	n := copy(p, c.buf[c.readOff:c.size])
 	c.readOff += int64(n)
-	if n == 0 {
+	if n < len(p) {
 		return n, io.EOF
 	}
+
 	return n, nil
 }
 
@@ -78,6 +77,7 @@ func (c *ChunkBuffer) WriteTo(w io.Writer) (int64, error) {
 
 // NewChunkBuffer returns a ChunkBuffer with the given data. if data is nil a
 // ChunkBuffer with 64k is returned.
+// Note that chunkbuf will take over ownership over the buf.
 func NewChunkBuffer(data []byte) *ChunkBuffer {
 	if data == nil {
 		data = make([]byte, maxChunkSize)

@@ -9,7 +9,7 @@ import (
 )
 
 // CreateDummyBuf creates a byte slice that is `size` big.
-// It's filled with the repeating numbers [0...255].
+// It's filled with the repeating numbers [0...254].
 func CreateDummyBuf(size int64) []byte {
 	buf := make([]byte, size)
 
