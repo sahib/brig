@@ -8,7 +8,7 @@ import (
 
 func errorize(name string, err error) error {
 	if ie.IsNoSuchFileError(err) {
-		log.Infof("errorize: No such file: %v", err)
+		log.Infof("errorize: %s: No such file: %v", name, err)
 		return fuse.ENOENT
 	}
 

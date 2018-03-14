@@ -82,14 +82,14 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 	var err error
 	log.Debugf("fuse-create: %v", req.Name)
 
+	childPath := path.Join(dir.path, req.Name)
 	switch {
 	case req.Mode&os.ModeDir != 0:
-		err = dir.cfs.Mkdir(req.Name, false)
+		err = dir.cfs.Mkdir(childPath, false)
 	default:
-		err = dir.cfs.Touch(req.Name)
+		err = dir.cfs.Touch(childPath)
 	}
 
-	childPath := path.Join(dir.path, req.Name)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"path":  childPath,

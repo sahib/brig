@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -157,5 +158,21 @@ func TestTouchWrite(t *testing.T) {
 
 			checkForCorrectFile(t, path, helloData)
 		}
+	})
+}
+
+// Regression test for copying larger file to the mount.
+func TestTouchWriteSubdir(t *testing.T) {
+	withMount(t, func(mount *Mount) {
+		subDirPath := filepath.Join(mount.Dir, "sub")
+		require.Nil(t, os.Mkdir(subDirPath, 0644))
+
+		expected := []byte{1, 2, 3}
+		filePath := filepath.Join(subDirPath, "donald.png")
+		require.Nil(t, ioutil.WriteFile(filePath, expected, 0644))
+
+		got, err := ioutil.ReadFile(filePath)
+		require.Nil(t, err)
+		require.Equal(t, expected, got)
 	})
 }

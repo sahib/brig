@@ -128,6 +128,17 @@ func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 
 ////////
 
+func setupEdgeMoveDirAndModifyChild(t *testing.T, lkrSrc, lkrDst *c.Linker) {
+	// Syncing recursive empty dirs require detecting and adding them recursive.
+	// This was buggy before, so prevent it from happening again.
+	c.MustMkdir(t, lkrSrc, "/a")
+	c.MustMkdir(t, lkrDst, "/a")
+	c.MustCommit(t, lkrSrc, "added dirs src")
+	c.MustCommit(t, lkrDst, "added dirs dst")
+}
+
+////////
+
 func setupEdgeEmptyDir(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	// Syncing recursive empty dirs require detecting and adding them recursive.
 	// This was buggy before, so prevent it from happening again.
