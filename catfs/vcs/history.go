@@ -64,12 +64,7 @@ func (ct ChangeType) String() string {
 // m |  y  y  y  y
 func (ct ChangeType) IsCompatible(ot ChangeType) bool {
 	modifyMask := ChangeTypeAdd | ChangeTypeModify
-
-	if ct&modifyMask != 0 && ot&modifyMask != 0 {
-		return false
-	}
-
-	return true
+	return ct&modifyMask == 0 || ot&modifyMask == 0
 }
 
 ///////////////////////////

@@ -264,6 +264,27 @@ Pinning
 .. image:: images/pin.png
     :width: 40%
 
+
+----
+
+:data-rotate: 0
+
+Disclaimer: Sicherheit?
+=======================
+
+.. note::
+
+    Wenn ich sagen würde, dass »brig« sicher ist, dann heißt das eigentlich
+    nur dass ich beim Schreiben der Software die Absicht hatte, sichere Software zu schreiben.
+
+    Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
+    aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
+
+|
+
+.. image:: images/xkcd-security.png
+    :width: 110%
+
 ----
 
 IPFS
@@ -422,24 +443,6 @@ Demo
 
     $ brig mv raiders twix
     # sonst ändert sich aber nix.
-
-----
-
-Disclaimer: Sicherheit?
-=======================
-
-.. note::
-
-    Wenn ich sagen würde, dass »brig« sicher ist, dann heißt das eigentlich
-    nur dass ich beim Schreiben der Software die Absicht hatte, sichere Software zu schreiben.
-
-    Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
-    aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
-
-|
-
-.. image:: images/xkcd-security.png
-    :width: 110%
 
 ----
 

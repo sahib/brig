@@ -473,9 +473,8 @@ func (ma *Mapper) handleGhosts() error {
 		}
 
 		// The node was removed on dst:
+		// We will detect the removal later.
 		if dstRefNd == nil {
-			// TODO: Should this be marked as removed?
-			//       Probably not since it will be detected later.
 			return nil
 		}
 
@@ -487,12 +486,6 @@ func (ma *Mapper) handleGhosts() error {
 		switch aliveSrcNd.Type() {
 		case n.NodeTypeFile:
 			// Mark those both ghosts and original node as visited.
-
-			// TODO: Does the check here make sense?
-			// mismatch := dstRefNd.Type() != aliveSrcNd.Type()
-			// isMove := aliveSrcNd.Path() != dstRefNd.Path()
-			// log.Debugf("Ghost: %v", isMove)
-			// return ma.report(aliveSrcNd, dstRefModNd, mismatch, false, isMove)
 			err = ma.mapFile(aliveSrcNd.(*n.File), dstRefModNd.Path())
 			ma.setSrcVisited(aliveSrcNd)
 			ma.setSrcVisited(srcNd)
@@ -717,7 +710,6 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 // already on the other side. In this case the already existing files wins.
 //
 // Some examples of the described behaviours can be found in the tests of Mapper.
-// TODO: write down some examples from notebook.
 func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	ma.fn = fn
 	if err := ma.handleGhosts(); err != nil {
