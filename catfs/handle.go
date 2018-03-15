@@ -69,7 +69,7 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 	}
 
 	n, err := io.ReadFull(hdl.layer, buf)
-	isEOF := err == io.ErrUnexpectedEOF || err == io.EOF
+	isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
 	if err != nil && !isEOF {
 		return 0, err
 	}
@@ -175,15 +175,17 @@ func (hdl *Handle) flush() error {
 		return nil
 	}
 
-	// Make sure that hdl.layer is unset in any case.
-	defer func() {
-		hdl.layer = nil
-	}()
-
-	// No need to flush anything if no write calles happened.
+	// No need to flush anything if no write calls happened.
 	if !hdl.wasModified {
 		return nil
 	}
+
+	// Make sure that hdl.layer is unset in any case.
+	// but only do that in case of real writes.
+	defer func() {
+		hdl.layer = nil
+		hdl.stream = nil
+	}()
 
 	// Jump back to the beginning of the file, since fs.Stage()
 	// should read all content starting from there.

@@ -168,6 +168,8 @@ func TestHandleFuseLikeRead(t *testing.T) {
 }
 
 func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
+	// fuse reads data always with a prior seek.
+	// try to emulate this behaviour here.
 	withDummyFS(t, func(fs *FS) {
 		rawData := testutil.CreateDummyBuf(int64(fileSize))
 		require.Nil(t, fs.Stage("/x", bytes.NewReader(rawData)))

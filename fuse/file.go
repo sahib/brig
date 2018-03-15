@@ -18,21 +18,35 @@ type File struct {
 
 // Attr is called to get the stat(2) attributes of a file.
 func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
-	log.Debugf("exec file attr: %v", fi.path)
+	defer logPanic("file: attr")
+
 	info, err := fi.cfs.Stat(fi.path)
 	if err != nil {
 		return err
 	}
+	log.Debugf("exec file attr: %v", fi.path)
 
 	attr.Mode = 0755
 	attr.Size = info.Size
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
+
+	// tools like `du` rely on this for size calculation
+	// (assuming every fs block takes actual storage, but we only emulate this
+	// here for compatibility; see man 2 stat for the why for "512")
+	attr.BlockSize = 4096
+	attr.Blocks = info.Size / 512
+	if info.Size%uint64(512) > 0 {
+		attr.Blocks += 1
+	}
+
 	return nil
 }
 
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+	defer logPanic("file: open")
+
 	log.Debugf("fuse-open: %s", fi.path)
 	fd, err := fi.cfs.Open(fi.path)
 	if err != nil {
@@ -46,6 +60,8 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 // Most importantly, size changes are reported here, e.g. after truncating a
 // file, the size change is noticed here before Open() is called.
 func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
+	defer logPanic("file: setattr")
+
 	// This is called when any attribute of the file changes,
 	// most importantly the file size. For example it is called when truncating
 	// the file to zero bytes with a size change of `0`.
@@ -68,12 +84,16 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 // Fsync is called when any open buffers need to be written to disk.
 // Currently, fsync is completely ignored.
 func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	defer logPanic("file: fsync")
+
 	log.Debugf("exec file fsync")
 	return nil
 }
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	defer logPanic("file: getxattr")
+
 	log.Debugf("exec file getxattr: %v", fi.path)
 	switch req.Name {
 	case "brig.hash":
@@ -98,12 +118,16 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 
 // Listxattr is called to list all xattrs of this file.
 func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	defer logPanic("file: listxattr")
+
 	log.Debugf("exec file listxattr")
 	resp.Append("brig.hash")
 	return nil
 }
 
 func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
+	defer logPanic("file: rename")
+
 	log.Debugf("exec file rename")
 	newParent, ok := newDir.(*Directory)
 	if !ok {

@@ -20,6 +20,8 @@ type Directory struct {
 
 // Attr is called to retrieve stat-metadata about the directory.
 func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
+	defer logPanic("dir: attr")
+
 	log.Debugf("Exec dir attr: %v", dir.path)
 	info, err := dir.cfs.Stat(dir.path)
 	if err != nil {
@@ -35,6 +37,8 @@ func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
 
 // Lookup is called to lookup a direct child of the directory.
 func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	defer logPanic("dir: lookup")
+
 	log.Debugf("Exec lookup: %v", name)
 	if name == "." {
 		return dir, nil
@@ -64,6 +68,8 @@ func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) 
 
 // Mkdir is called to create a new directory node inside the receiver.
 func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
+	defer logPanic("dir: mkdir")
+
 	childPath := path.Join(dir.path, req.Name)
 	if err := dir.cfs.Mkdir(childPath, false); err != nil {
 		log.WithFields(log.Fields{
@@ -79,6 +85,8 @@ func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Nod
 
 // Create is called to create an opened file or directory  as child of the receiver.
 func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
+	defer logPanic("dir: create")
+
 	var err error
 	log.Debugf("fuse-create: %v", req.Name)
 
@@ -113,6 +121,8 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 
 // Remove is called when a direct child in the directory needs to be removed.
 func (dir *Directory) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+	defer logPanic("dir: remove")
+
 	path := path.Join(dir.path, req.Name)
 	if err := dir.cfs.Remove(path); err != nil {
 		log.Errorf("fuse: dir-remove: `%s` failed: %v", path, err)
@@ -124,6 +134,8 @@ func (dir *Directory) Remove(ctx context.Context, req *fuse.RemoveRequest) error
 
 // ReadDirAll is called to get a directory listing of the receiver.
 func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	defer logPanic("dir: readdirall")
+
 	log.Debugf("Exec read dir all")
 	selfInfo, err := dir.cfs.Stat(dir.path)
 	if err != nil {

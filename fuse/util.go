@@ -19,3 +19,11 @@ func errorize(name string, err error) error {
 
 	return nil
 }
+
+// logPanic logs any panics by being called in a defer.
+// A rather inconvinient beahviour of fuse is to not report panics.
+func logPanic(name string) {
+	if err := recover(); err != nil {
+		log.Errorf("bug: %s panicked: %v", name, err)
+	}
+}

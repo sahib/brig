@@ -22,6 +22,7 @@ type Handle struct {
 func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
+	defer logPanic("handle: read")
 
 	log.WithFields(log.Fields{
 		"path":   hd.fd.Path(),
@@ -35,7 +36,7 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	}
 
 	if newOff != req.Offset {
-		log.Warningf("read seek offset differs (want %d, got %d)", req.Offset, newOff)
+		log.Warningf("read/seek offset differs (want %d, got %d)", req.Offset, newOff)
 	}
 
 	n, err := hd.fd.Read(resp.Data[:req.Size])
@@ -51,6 +52,7 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
+	defer logPanic("handle: write")
 
 	log.Debugf(
 		"fuse-write: %s (off: %d size: %d)",
@@ -80,6 +82,7 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 
 // Flush is called to make sure all written contents get synced to disk.
 func (hd *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
+	defer logPanic("handle: flush")
 	return hd.flush()
 }
 
@@ -91,6 +94,7 @@ func (hd *Handle) flush() error {
 
 // Release is called to close this handle.
 func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	defer logPanic("handle: release")
 	return hd.flush()
 }
 
