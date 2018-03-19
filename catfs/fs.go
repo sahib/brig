@@ -562,7 +562,8 @@ func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
 	return headerBuf, util.PrefixReader(headerBuf, r), nil
 }
 
-// TODO: Fix clients not to use Seeker methods.
+// Stage reads all data from `r` and stores as content of the node at `path`.
+// If `path` already exists, it will be updated.
 func (fs *FS) Stage(path string, r io.Reader) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -625,10 +626,10 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	algo, err := compress.GuessAlgorithm(path, headerBuf)
 	if err != nil {
 		algo = fs.cfg.compressAlgo
-		log.Warningf("Failed to guess suitable zip algo: %v", err)
+		log.Warningf("failed to guess suitable zip algo: %v", err)
 	}
 
-	log.Debugf("Using '%s' compression for file %s", algo, path)
+	log.Debugf("using '%s' compression for file %s", algo, path)
 
 	stream, err := mio.NewInStream(prefixR, key, algo)
 	if err != nil {

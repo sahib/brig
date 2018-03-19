@@ -381,9 +381,13 @@ func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte
 	batch := lkr.kv.Batch()
 	defer func() {
 		if err != nil {
+			log.Warningf("rolling back failed transaction: %v", err)
 			batch.Rollback()
 		} else {
 			err = batch.Flush()
+			if err != nil {
+				log.Warningf("failed to flush transaction: %v", err)
+			}
 		}
 	}()
 
@@ -464,14 +468,20 @@ func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte
 	file.SetUser(lkr.owner)
 
 	// Add it again when the hash was changed.
+	log.Debugf(
+		"Adding %s (%v) to %s (%v)",
+		file.Path(), file.Content(), parentDir.Path(), parentDir.Content(),
+	)
 	if err := parentDir.Add(lkr, file); err != nil {
 		return nil, err
 	}
+	log.Debugf("Done adding. Now staging")
 
 	if err := lkr.StageNode(file); err != nil {
 		return nil, err
 	}
 
+	log.Debugf("Done staging")
 	return file, nil
 }
 

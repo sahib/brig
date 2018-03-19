@@ -125,28 +125,42 @@ func (cd *Conductor) Push(ticket uint64, data interface{}) error {
 	return nil
 }
 
-// Pop gets the first (FIFO) partial result associated with `ticket`.
-// It will return ErrNoDataLeft if there won't be any more values.
-// It will return ErrNoSuchTicket if you passed an invalid ticket.
-func (cd *Conductor) Pop(ticket uint64) (interface{}, error) {
+// This is it's own function to make use of defer possible.
+func (cd *Conductor) fetchTicketCh(ticket uint64) (chan interface{}, error) {
 	cd.mu.Lock()
+	defer cd.mu.Unlock()
 
 	if err, ok := cd.errors[ticket]; ok && err != nil {
-		cd.mu.Unlock()
 		return nil, err
 	}
 
 	ticketCh, ok := cd.tickets[ticket]
 	if !ok {
-		cd.mu.Unlock()
 		return nil, ErrNoSuchTicket{ticket}
 	}
-	cd.mu.Unlock()
 
-	data, ok := <-ticketCh
-	if !ok {
-		return nil, ErrNoDataLeft{ticket}
+	return ticketCh, nil
+}
+
+// Pop gets the first (FIFO) partial result associated with `ticket`.
+// It will return ErrNoDataLeft if there won't be any more values.
+// It will return ErrNoSuchTicket if you passed an invalid ticket.
+func (cd *Conductor) Pop(ticket uint64) (interface{}, error) {
+	ticketCh, err := cd.fetchTicketCh(ticket)
+	if err != nil {
+		return nil, err
 	}
 
-	return data, nil
+	// Wait until we get results:
+	timer := time.NewTimer(cd.timeout)
+	select {
+	case data, ok := <-ticketCh:
+		if !ok {
+			return nil, ErrNoDataLeft{ticket}
+		}
+
+		return data, nil
+	case <-timer.C:
+		return nil, fmt.Errorf("pop took too long (%v)", cd.timeout)
+	}
 }

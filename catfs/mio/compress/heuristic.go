@@ -76,7 +76,7 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	mime := guessMime(path, header)
 	compressAble := isCompressable(mime)
 
-	log.Debugf("Guessed `%s` mime for `%s`", mime, path)
+	log.Debugf("guessed `%s` mime for `%s`", mime, path)
 	if !compressAble {
 		return AlgoNone, nil
 	}

@@ -40,9 +40,8 @@ func NewOutStream(r io.ReadSeeker, key []byte) (Stream, error) {
 	}, nil
 }
 
-// NewInStream creates a new stream that pipes data into brig.
-// The data is read from `r`, enrypted with `key` and compressed
-// according to `compress`.
+// NewInStream creates a new stream that pipes data into ipfs.
+// The data is read from `r`, encrypted with `key` and compressed with `algo`.
 func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reader, error) {
 	pr, pw := io.Pipe()
 

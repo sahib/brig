@@ -307,7 +307,7 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 		childHash, ok := curr.children[elem]
 		if !ok {
 			// This usually means that some link is missing.
-			return fmt.Errorf("BUG: Cannot reach self from root in Up()")
+			return fmt.Errorf("bug: cannot reach self from root in Up()")
 		}
 
 		childNode, err := lkr.NodeByHash(childHash)
@@ -317,7 +317,7 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 
 		child, ok := childNode.(*Directory)
 		if !ok {
-			return fmt.Errorf("BUG: Non-directory in Up(): %v", childHash)
+			return fmt.Errorf("bug: non-directory in Up(): %v", childHash)
 		}
 
 		dirs = append(dirs, child)
@@ -466,10 +466,10 @@ func dirContentHash(content h.Hash, nchildren int) h.Hash {
 	return h.Sum([]byte(fmt.Sprintf("%d:%s", nchildren, content.B58String())))
 }
 
-// Add adds `nd` to this directory.
+// Add `nd` to this directory using `lkr`.
 func (d *Directory) Add(lkr Linker, nd Node) error {
 	if nd == d {
-		return fmt.Errorf("ADD-BUG: attempting to add `%s` to itself", nd.Path())
+		return fmt.Errorf("bug: attempting to add `%s` to itself", nd.Path())
 	}
 
 	if _, ok := d.children[nd.Name()]; ok {
@@ -494,7 +494,6 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	// Establish the link between parent and child:
-	// (must be done last, because d's hash changed)
 	if err := nd.SetParent(lkr, d); err != nil {
 		return err
 	}
@@ -504,8 +503,11 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 }
 
 func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
-	oldHash := d.hash.Clone()
+	if oldPath == newPath {
+		return nil
+	}
 
+	oldHash := d.hash.Clone()
 	if err := d.hash.Xor(h.Sum([]byte(oldPath))); err != nil {
 		return err
 	}

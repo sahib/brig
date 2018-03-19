@@ -185,6 +185,7 @@ func (hdl *Handle) flush() error {
 	defer func() {
 		hdl.layer = nil
 		hdl.stream = nil
+		hdl.wasModified = false
 	}()
 
 	// Jump back to the beginning of the file, since fs.Stage()

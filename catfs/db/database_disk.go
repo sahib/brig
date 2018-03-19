@@ -47,8 +47,10 @@ func fixDirectoryKeys(key []string) string {
 	switch lastPart := key[len(key)-1]; {
 	case lastPart == "DOT":
 		return filepath.Join(key[:len(key)-1]...) + "/__NO_DOT__"
-	case lastPart == "." || strings.HasSuffix(lastPart, "/."):
+	case lastPart == ".":
 		return filepath.Join(key[:len(key)-1]...) + "/DOT"
+	case strings.HasSuffix(lastPart, "/."):
+		return filepath.Join(key[:len(key)-1]...) + strings.TrimRight(lastPart, ".") + "/DOT"
 	default:
 		return filepath.Join(key...)
 	}

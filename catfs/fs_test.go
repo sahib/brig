@@ -704,3 +704,26 @@ func TestTruncate(t *testing.T) {
 		require.NotNil(t, fs.Truncate("/", 0))
 	})
 }
+
+func TestChangingCompressAlgos(t *testing.T) {
+	t.Parallel()
+
+	withDummyFS(t, func(fs *FS) {
+		// Create a file which will not be compressed.
+		oldData := testutil.CreateDummyBuf(compress.HeaderSizeThreshold - 1)
+		require.Nil(t, fs.Stage("/a-text-file.go", bytes.NewReader(oldData)))
+
+		// Second run will use another compress algorithm, since we're
+		// over the header size limit in the compression guesser.
+		newData := testutil.CreateDummyBuf(compress.HeaderSizeThreshold + 1)
+		require.Nil(t, fs.Stage("/a-text-file.go", bytes.NewReader(newData)))
+
+		stream, err := fs.Cat("/a-text-file.go")
+		require.Nil(t, err)
+
+		gotData, err := ioutil.ReadAll(stream)
+		require.Nil(t, err)
+
+		require.Equal(t, newData, gotData)
+	})
+}

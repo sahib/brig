@@ -41,6 +41,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
@@ -58,7 +59,6 @@ type Linker struct {
 
 	// root of the filesystem
 	root *n.Directory
-
 	// Path lookup trie
 	ptrie *trie.Node
 
@@ -84,7 +84,12 @@ func NewLinker(kv db.Database) *Linker {
 func (lkr *Linker) MemIndexAdd(nd n.Node) {
 	lkr.index[nd.Hash().B58String()] = nd
 	lkr.inodeIndex[nd.Inode()] = nd
-	lkr.ptrie.InsertWithData(nd.Path(), nd)
+
+	path := nd.Path()
+	if nd.Type() == n.NodeTypeDirectory {
+		path = appendDot(path)
+	}
+	lkr.ptrie.InsertWithData(path, nd)
 }
 
 // MemIndexSwap updates an entry of the in memory index, by deleting
@@ -100,6 +105,19 @@ func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash) {
 	lkr.MemIndexAdd(nd)
 }
 
+// MemSetRoot sets the current root, but does not store it yet. It's supposed
+// to be called after in-memory modifications. Only implementors of new Nodes
+// might need to call this function.
+func (lkr *Linker) MemSetRoot(root *n.Directory) {
+	if lkr.root != nil {
+		lkr.MemIndexSwap(root, lkr.root.Hash())
+	} else {
+		lkr.MemIndexAdd(root)
+	}
+
+	lkr.root = root
+}
+
 // MemIndexPurge removes `nd` from the memory index.
 func (lkr *Linker) MemIndexPurge(nd n.Node) {
 	delete(lkr.inodeIndex, nd.Inode())
@@ -108,10 +126,13 @@ func (lkr *Linker) MemIndexPurge(nd n.Node) {
 }
 
 // MemIndexClear resets the memory index to zero.
+// This should not be called mid-flight in operations,
+// but should be okay to call between atomic operations.
 func (lkr *Linker) MemIndexClear() {
 	lkr.ptrie = trie.NewNode()
 	lkr.index = make(map[string]n.Node)
 	lkr.inodeIndex = make(map[uint64]n.Node)
+	lkr.root = nil
 }
 
 //////////////////////////
@@ -235,7 +256,6 @@ func (lkr *Linker) NodeByHash(hash h.Hash) (n.Node, error) {
 	}
 
 	if nd == nil {
-		// log.Warningf("Could not load hash `%s`", hash.B58String())
 		return nil, nil
 	}
 
@@ -273,7 +293,11 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 	for _, fullPath := range fullPaths {
 		b58Hash, err := lkr.kv.Get(fullPath...)
 		if err != nil && err != db.ErrNoSuchKey {
-			return nil, err
+			return nil, e.Wrapf(err, "db-lookup")
+		}
+
+		if err == db.ErrNoSuchKey {
+			continue
 		}
 
 		bhash, err := h.FromB58String(string(b58Hash))
@@ -305,7 +329,7 @@ func (lkr *Linker) StageNode(nd n.Node) (err error) {
 	}()
 
 	if err := lkr.stageNodeRecursive(batch, nd); err != nil {
-		return err
+		return e.Wrapf(err, "recursive stage")
 	}
 
 	// Update the staging commit's root hash:
@@ -320,6 +344,7 @@ func (lkr *Linker) StageNode(nd n.Node) (err error) {
 	}
 
 	status.SetRoot(root.Hash())
+	lkr.MemSetRoot(root)
 	return lkr.saveStatus(status)
 }
 
@@ -341,12 +366,12 @@ func (lkr *Linker) NodeByInode(uid uint64) (n.Node, error) {
 
 func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 	if nd.Type() == n.NodeTypeCommit {
-		return fmt.Errorf("BUG: Commits cannot be staged; Use MakeCommit()")
+		return fmt.Errorf("bug: commits cannot be staged; use MakeCommit()")
 	}
 
 	data, err := n.MarshalNode(nd)
 	if err != nil {
-		return err
+		return e.Wrapf(err, "marshal")
 	}
 
 	b58Hash := nd.Hash().B58String()
@@ -369,9 +394,19 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 	// Note that this will create many pointless directories in staging.
 	// That's okay since we garbage collect it every few seconds
 	// on a higher layer.
-	par, err := nd.Parent(lkr)
+	if nd.Path() == "/" {
+		root, ok := nd.(*n.Directory)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		lkr.MemSetRoot(root)
+		return nil
+	}
+
+	par, err := lkr.ResolveDirectory(path.Dir(nd.Path()))
 	if err != nil {
-		return err
+		return e.Wrapf(err, "resolve")
 	}
 
 	if par != nil {
@@ -696,13 +731,6 @@ func (lkr *Linker) Head() (*n.Commit, error) {
 	return cmt, nil
 }
 
-// MemSetRoot sets the current root, but does not store it yet. It's supposed
-// to be called after in-memory modifications. Only implementors of new Nodes
-// might need to call this function.
-func (lkr *Linker) MemSetRoot(root *n.Directory) {
-	lkr.root = root
-}
-
 // Root returns the current root directory of CURR.
 // It is never nil when err is nil.
 func (lkr *Linker) Root() (*n.Directory, error) {
@@ -715,7 +743,13 @@ func (lkr *Linker) Root() (*n.Directory, error) {
 		return nil, err
 	}
 
-	return lkr.DirectoryByHash(status.Root())
+	rootNd, err := lkr.DirectoryByHash(status.Root())
+	if err != nil {
+		return nil, err
+	}
+
+	lkr.MemSetRoot(rootNd)
+	return rootNd, nil
 }
 
 // Status returns the current staging commit.
@@ -756,7 +790,7 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 
 	if ie.IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
-		if root, err := lkr.ResolveDirectory("/"); err == nil {
+		if root, err := lkr.ResolveDirectory("/"); err == nil && root != nil {
 			rootHash = root.Hash()
 		} else {
 			// No root directory then. Create a shiny new one and stage it.
@@ -1077,7 +1111,6 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 // referenced by cmt. If force is false, it will check if there any staged errors in
 // the staging area and return ErrStageNotEmpty if there are any. If force is
 // true, all changes will be overwritten.
-// TODO: write test for this.
 func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 	// Check if the staging area is empty if no force given:
 	batch := lkr.kv.Batch()

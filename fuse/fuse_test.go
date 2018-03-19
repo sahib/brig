@@ -161,7 +161,7 @@ func TestTouchWrite(t *testing.T) {
 	})
 }
 
-// Regression test for copying larger file to the mount.
+// Regression test for copying a file to a subdirectory.
 func TestTouchWriteSubdir(t *testing.T) {
 	withMount(t, func(mount *Mount) {
 		subDirPath := filepath.Join(mount.Dir, "sub")

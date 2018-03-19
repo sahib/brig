@@ -7,11 +7,12 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: write tests for the handle interface.
+// TODO: write more tests for the handle interface.
 
 func TestOpenRead(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
@@ -207,5 +208,45 @@ func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
 		}
 
 		require.Nil(t, fd.Close())
+	})
+}
+
+func TestHandleChangeCompression(t *testing.T) {
+	t.Parallel()
+
+	withDummyFS(t, func(fs *FS) {
+		// Create a file which will not be compressed.
+		size := int64(compress.HeaderSizeThreshold + 1)
+		oldData := testutil.CreateDummyBuf(size)
+		require.Nil(t, fs.Mkdir("/sub", false))
+		require.Nil(t, fs.Stage("/sub/a-text-file.go", bytes.NewReader(oldData)))
+
+		// Second run will use another compress algorithm, since we're
+		// over the header size limit in the compression guesser.
+		fd, err := fs.Open("/sub/a-text-file.go")
+		require.Nil(t, err)
+
+		// "echo" does a flush after open (for whatever reason)
+		require.Nil(t, fd.Flush())
+
+		offset, err := fd.Seek(size, io.SeekStart)
+		require.Nil(t, err)
+		require.Equal(t, offset, size)
+
+		expectedData := []byte("xxxxx")
+		n, err := fd.Write(expectedData)
+		require.Nil(t, err)
+		require.Equal(t, n, len(expectedData))
+		require.Nil(t, fd.Flush())
+		require.Nil(t, fd.Close())
+
+		stream, err := fs.Cat("/sub/a-text-file.go")
+		require.Nil(t, err)
+
+		gotData, err := ioutil.ReadAll(stream)
+		require.Nil(t, err)
+
+		expectData := append(oldData, expectedData...)
+		require.Equal(t, expectData, gotData)
 	})
 }

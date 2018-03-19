@@ -184,7 +184,7 @@ func TestLinkerNested(t *testing.T) {
 		}
 
 		if !newRootDir.Hash().Equal(root.Hash()) {
-			t.Fatalf("New / and old / have different hashes, despite being same instance")
+			t.Fatalf("New / and old / have different hashes, despite being same instance %p %p", newRootDir, root)
 		}
 
 		count := 0
@@ -426,7 +426,7 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("file2 and file3 hash is equal: %v", file2.Hash())
 		}
 
-		// Make sure we load the actual hases from disk:
+		// Make sure we load the actual hashes from disk:
 		lkr.MemIndexClear()
 		file1Reset, err := lkr.LookupFile("/sub/a.png")
 		if err != nil {
