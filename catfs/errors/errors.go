@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
-	ErrStageNotEmpty = errors.New("There are changes in the staging area")
+	ErrStageNotEmpty = errors.New("There are changes in the staging area. Use the --force")
 	ErrNoChange      = errors.New("Nothing changed between the given versions")
 	ErrAmbigiousRev  = errors.New("There is more than one rev with this prefix")
 )

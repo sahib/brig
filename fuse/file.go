@@ -141,7 +141,7 @@ func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.N
 
 	newPath := path.Join(newParent.path, req.NewName)
 	if err := fi.cfs.Move(fi.path, newPath); err != nil {
-		log.Warningf("fuse: File: mv: %v", err)
+		log.Warningf("fuse: file: mv: %v", err)
 		return err
 	}
 
