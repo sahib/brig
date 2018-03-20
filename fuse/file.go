@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"os"
 	"path"
 
 	"bazil.org/fuse"
@@ -30,6 +31,10 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Size = info.Size
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
+
+	// Act like the file is owned by the user of the brig process.
+	attr.Uid = uint32(os.Getuid())
+	attr.Gid = uint32(os.Getgid())
 
 	// tools like `du` rely on this for size calculation
 	// (assuming every fs block takes actual storage, but we only emulate this

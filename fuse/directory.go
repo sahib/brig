@@ -19,7 +19,7 @@ type Directory struct {
 }
 
 // Attr is called to retrieve stat-metadata about the directory.
-func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
+func (dir *Directory) Attr(ctx context.Context, attr *fuse.Attr) error {
 	defer logPanic("dir: attr")
 
 	log.Debugf("Exec dir attr: %v", dir.path)
@@ -28,10 +28,14 @@ func (dir *Directory) Attr(ctx context.Context, attrs *fuse.Attr) error {
 		return errorize("dir-attr", err)
 	}
 
-	attrs.Mode = os.ModeDir | 0755
-	attrs.Size = info.Size
-	attrs.Mtime = info.ModTime
-	attrs.Inode = info.Inode
+	// Act like the file is owned by the user of the brig process.
+	attr.Uid = uint32(os.Getuid())
+	attr.Gid = uint32(os.Getgid())
+
+	attr.Mode = os.ModeDir | 0755
+	attr.Size = info.Size
+	attr.Mtime = info.ModTime
+	attr.Inode = info.Inode
 	return nil
 }
 

@@ -395,6 +395,7 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 	// That's okay since we garbage collect it every few seconds
 	// on a higher layer.
 	if nd.Path() == "/" {
+		// Can' go any higher. Save this dir as new virtual root.
 		root, ok := nd.(*n.Directory)
 		if !ok {
 			return ie.ErrBadNode
