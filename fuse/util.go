@@ -3,6 +3,7 @@ package fuse
 import (
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 )
 
@@ -26,4 +27,48 @@ func logPanic(name string) {
 	if err := recover(); err != nil {
 		log.Errorf("bug: %s panicked: %v", name, err)
 	}
+}
+
+func listXattr(size uint32) []byte {
+	resp := []byte{}
+	resp = append(resp, "user.brig.hash\x00"...)
+	resp = append(resp, "user.brig.content\x00"...)
+	resp = append(resp, "user.brig.pinned\x00"...)
+
+	if uint32(len(resp)) > size {
+		resp = resp[:size]
+	}
+
+	return resp
+}
+
+func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
+	info, err := cfs.Stat(path)
+	if err != nil {
+		return nil, errorize("getxattr", err)
+	}
+
+	resp := []byte{}
+
+	switch name {
+	case "user.brig.hash":
+		resp = []byte(info.Hash.B58String())
+	case "user.brig.content":
+		resp = []byte(info.Content.B58String())
+	case "user.brig.pinned":
+		if info.IsPinned {
+			resp = []byte("yes")
+		} else {
+			resp = []byte("no")
+		}
+	default:
+		return nil, fuse.ErrNoXattr
+	}
+
+	// Truncate if less bytes were requested for some reason:
+	if uint32(len(resp)) > size {
+		resp = resp[:size]
+	}
+
+	return resp, nil
 }

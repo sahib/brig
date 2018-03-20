@@ -99,25 +99,13 @@ func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	defer logPanic("file: getxattr")
 
-	log.Debugf("exec file getxattr: %v", fi.path)
-	switch req.Name {
-	case "brig.hash":
-		info, err := fi.cfs.Stat(fi.path)
-		if err != nil {
-			return errorize("file-getxattr", err)
-		}
-
-		// Truncate if less bytes were requested for some reason:
-		hash := info.Hash.B58String()
-		if uint32(len(hash)) > req.Size {
-			hash = hash[:req.Size]
-		}
-
-		resp.Xattr = []byte(hash)
-	default:
-		return fuse.ErrNoXattr
+	log.Debugf("exec file getxattr: %v: %v", fi.path, req.Name)
+	xattrs, err := getXattr(fi.cfs, req.Name, fi.path, req.Size)
+	if err != nil {
+		return err
 	}
 
+	resp.Xattr = xattrs
 	return nil
 }
 
@@ -126,7 +114,7 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 	defer logPanic("file: listxattr")
 
 	log.Debugf("exec file listxattr")
-	resp.Append("brig.hash")
+	resp.Xattr = listXattr(req.Size)
 	return nil
 }
 

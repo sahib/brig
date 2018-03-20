@@ -194,3 +194,26 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	return fuseEnts, nil
 }
+
+// Getxattr is called to get a single xattr (extended attribute) of a file.
+func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	defer logPanic("dir: getxattr")
+
+	log.Debugf("exec dir getxattr: %v: %v", dir.path, req.Name)
+	xattrs, err := getXattr(dir.cfs, req.Name, dir.path, req.Size)
+	if err != nil {
+		return err
+	}
+
+	resp.Xattr = xattrs
+	return nil
+}
+
+// Listxattr is called to list all xattrs of this file.
+func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	defer logPanic("dir: listxattr")
+
+	log.Debugf("exec dir listxattr")
+	resp.Xattr = listXattr(req.Size)
+	return nil
+}
