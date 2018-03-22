@@ -33,6 +33,10 @@ func handleReset(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func commitName(cmt *client.Commit) string {
+	if cmt == nil {
+		return ""
+	}
+
 	if len(cmt.Tags) > 0 {
 		return strings.ToUpper(cmt.Tags[0])
 	}

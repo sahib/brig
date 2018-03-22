@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -559,6 +560,47 @@ func setupGhostHistory(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 }
 
+func setupEdgeRoot(t *testing.T, lkr *c.Linker) *historySetup {
+	init, err := lkr.Head()
+	if err != nil {
+		t.Fatalf("could not get head: %v", err)
+	}
+
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+	_, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 3)
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("failed to get status: %v", err)
+	}
+
+	root, err := lkr.Root()
+	if err != nil {
+		t.Fatalf("failed to retrieve root: %v", err)
+	}
+
+	return &historySetup{
+		commits: []*n.Commit{status, c3, c2, c1, init},
+		paths: []string{
+			"/",
+			"/",
+			"/",
+			"/",
+			"/",
+		},
+		changes: []ChangeType{
+			ChangeTypeNone,
+			ChangeTypeModify,
+			ChangeTypeModify,
+			ChangeTypeModify,
+			ChangeTypeAdd,
+		},
+		head: status,
+		node: root,
+	}
+}
+
 type setupFunc func(t *testing.T, lkr *c.Linker) *historySetup
 
 // Registry bank for all testcases:
@@ -626,6 +668,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "ghost-simple",
 			setup: setupGhostHistory,
+		}, {
+			name:  "edge-root",
+			setup: setupEdgeRoot,
 		},
 	}
 
@@ -647,10 +692,10 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
 		state := walker.State()
-		// fmt.Println("TYPE", state.Mask)
-		// fmt.Println("HEAD", state.Head)
-		// fmt.Println("NEXT", state.Next)
-		// fmt.Println("===")
+		fmt.Println("TYPE", state.Mask)
+		fmt.Println("HEAD", state.Head)
+		fmt.Println("NEXT", state.Next)
+		fmt.Println("===")
 
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(

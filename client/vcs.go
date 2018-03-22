@@ -180,15 +180,17 @@ func (cl *Client) History(path string) ([]*Change, error) {
 			return nil, err
 		}
 
-		// Check for nil?
-		capNextCmt, err := entry.Next()
-		if err != nil {
-			return nil, err
-		}
+		var next *Commit
+		if entry.HasNext() {
+			capNextCmt, err := entry.Next()
+			if err != nil {
+				return nil, err
+			}
 
-		next, err := convertCapCommit(&capNextCmt)
-		if err != nil {
-			return nil, err
+			next, err = convertCapCommit(&capNextCmt)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		results = append(results, &Change{
