@@ -98,6 +98,42 @@ func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 	return similars
 }
 
+func findCurrentCommand(ctx *cli.Context) *cli.Command {
+	for {
+		par := ctx.Parent()
+		if par == nil {
+			break
+		}
+
+		ctx = par
+	}
+
+	var command *cli.Command
+	for args := ctx.Args(); len(args) > 0; {
+		subCommand := ctx.App.Command(args[0])
+		args = args[1:]
+		if subCommand != nil {
+			command = subCommand
+		}
+	}
+
+	return command
+}
+
+func completeArgsUsage(ctx *cli.Context) {
+	if command := findCurrentCommand(ctx); command != nil {
+		fmt.Println(command.ArgsUsage)
+	}
+}
+
+func completeSubcommands(ctx *cli.Context) {
+	if command := findCurrentCommand(ctx); command != nil {
+		for _, subCmd := range command.Subcommands {
+			fmt.Println(subCmd.Name)
+		}
+	}
+}
+
 func commandNotFound(ctx *cli.Context, cmdName string) {
 	// Try to find the commands we need to look at for a suggestion/
 	// We only want to show the user the relevant subcommands.

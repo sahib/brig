@@ -59,6 +59,13 @@ func RunCmdline(args []string) int {
 	vcscGroup := formatGroup("version control")
 	netwGroup := formatGroup("network")
 
+	// autocomplete all commands, but not their aliases.
+	app.BashComplete = func(ctx *cli.Context) {
+		for _, cmd := range app.Commands {
+			fmt.Println(cmd.Name)
+		}
+	}
+
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "nodaemon,n",
@@ -137,12 +144,13 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "remote",
-			Aliases:     []string{"rmt"},
-			Category:    netwGroup,
-			Usage:       "Manage what other peers can sync with us",
-			ArgsUsage:   "[add|remove|list|locate|ping]",
-			Description: "Add, remove, list, locate remotes and print own identity",
+			Name:         "remote",
+			Aliases:      []string{"rmt"},
+			Category:     netwGroup,
+			Usage:        "Manage what other peers can sync with us",
+			ArgsUsage:    "[add|remove|list|locate|ping]",
+			Description:  "Add, remove, list, locate remotes and print own identity",
+			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:        "add",
@@ -201,12 +209,13 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "pin",
-			Category:    netwGroup,
-			Usage:       "Pin a file to local storage",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
-			ArgsUsage:   "<file>",
-			Description: "Ensure that <file> is physically stored on this machine.",
+			Name:         "pin",
+			Category:     netwGroup,
+			Usage:        "Pin a file to local storage",
+			Action:       withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
+			ArgsUsage:    "<file>",
+			Description:  "Ensure that <file> is physically stored on this machine.",
+			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:   "add",
@@ -221,11 +230,12 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "net",
-			Category:    netwGroup,
-			Usage:       "Query and modify network status",
-			ArgsUsage:   "[offline|online|status]",
-			Description: "Query and modify the connection state to the ipfs network",
+			Name:         "net",
+			Category:     netwGroup,
+			Usage:        "Query and modify network status",
+			ArgsUsage:    "[offline|online|status]",
+			Description:  "Query and modify the connection state to the ipfs network",
+			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:   "offline",
@@ -460,11 +470,12 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:        "ls",
-			Usage:       "List files similar to ls(1)",
-			ArgsUsage:   "[/brig-path] [--depth|-d] [--recursive|-r]",
-			Description: "Lists all files of a specific brig path in a ls-like manner",
-			Category:    wdirGroup,
+			Name:         "ls",
+			Usage:        "List files similar to ls(1)",
+			ArgsUsage:    "/path",
+			Description:  "Lists all files of a specific brig path in a ls-like manner",
+			Category:     wdirGroup,
+			BashComplete: completeArgsUsage,
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "depth,d",
@@ -532,9 +543,10 @@ func RunCmdline(args []string) int {
 			Action:      withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
 		},
 		cli.Command{
-			Name:     "daemon",
-			Category: repoGroup,
-			Usage:    "Manually run the daemon process",
+			Name:         "daemon",
+			Category:     repoGroup,
+			Usage:        "Manually run the daemon process",
+			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:        "launch",
@@ -563,9 +575,10 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:     "config",
-			Category: repoGroup,
-			Usage:    "Access, list and modify configuration values",
+			Name:         "config",
+			Category:     repoGroup,
+			Usage:        "Access, list and modify configuration values",
+			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:        "list",
