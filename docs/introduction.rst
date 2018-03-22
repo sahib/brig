@@ -107,20 +107,6 @@ You can use this directory (almost) exactly like a normal one.
 We recommend though, that you shouldn't do any heavy editing inside of the folder
 and use it more like a »transfer box« for efficiency reasons.
 
-Adding files
-------------
-
-Phew, that was a lot of text, but there was not any action yet.
-Let's change that by adding some files to ``brig``:
-
-.. code-block:: bash
-
-    $ brig stage 
-
-TODO: Write about:
-
-- Two path namespaces (external/internal)
-
 Remotes
 -------
 
@@ -235,12 +221,39 @@ Finally there. Let's recap what we've done so far:
 - Find & add remotes (``brig remote add``) - needs to be done once for each peer.
 - Add some files (``brig stage <path>``) - needs to be done as much as you like to.
 
-Only thing left to do now is using ``brig sync``:
+Only thing left to do now is using ``brig diff`` and ``brig sync``.
+First, let's check what changes ``vladimir`` has and how it will change our files:
 
 .. code-block:: bash
 
-    $ brig diff vladimir
-    # TODO: Provide output.
+    $ brig diff --show-missing vladimir
+    •
+    ├── _ hello.world
+    ├── + election
+    └── README.md ⇄ README.md
+
+``brig`` does not support showing what changed *in* a file, but it supports
+how the file itself changed. For this we record the following type of changes:
+
+====== ====================================================================
+Symbol Description
+====== ====================================================================
+``+``  The file was added on the remote side.
+``-``  The file was removed on the remote side.
+``_``  The file is missing on the remote side (e.g. we added it)
+``→``  The file was moved to a new location.
+``*``  This file was ignored because we chose to due to our settings.
+``⇄``  Both sides have changes, but they can be merged.
+``⚡``  Both sides have changes, but they conflict.
+====== ====================================================================
+
+So in the above output we can tell that *Vladimir* added the directory
+``/election``, but does not posess the ``/hello.world`` file. He also
+apparently modified ``README.md``, but since we did not, it's safe for us to
+take his changes. If we sync now we will get this directory from him:
+
+.. code-block:: bash
+
     $ brig sync vladimir
     $ brig ls
     SIZE   MODTIME          PATH          PIN

@@ -1,96 +1,318 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Quickstart &#8212; brig 0.1.0 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.1.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
-    <link rel="prev" title="Getting started" href="introduction.html" />
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Quickstart &mdash; brig 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="brig 0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Frequently Asked Questions" href="faq.html"/>
+        <link rel="prev" title="Getting started" href="introduction.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
    
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  <div class="wy-grid-for-nav">
 
-  </head>
-  <body>
-  
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+          
+            <a href="index.html" class="icon icon-home"> brig
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#init">1. Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-files">2. Adding files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coreutils">3. Coreutils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mounting">4. Mounting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commits">5. Commits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#history">6. History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#discovery-remotes">7. Discovery &amp; Remotes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sync-diff">8. Sync &amp; Diff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pinning">9. Pinning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison.html">Comparison with other tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">brig</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Quickstart</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="quickstart">
 <span id="id1"></span><h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
-<div class="admonition-todo admonition" id="index-0">
-<p class="first admonition-title">Todo</p>
-<p class="last">write this (with lots of asciinema)</p>
+<p>This does not really explain the philosophy behind <code class="docutils literal notranslate"><span class="pre">brig</span></code>, but gives a good
+idea what the tool is and how it’s supposed to be used.</p>
+<div class="section" id="init">
+<h2>1. Init<a class="headerlink" href="#init" title="Permalink to this headline">¶</a></h2>
+<p>Before you can do anything with <code class="docutils literal notranslate"><span class="pre">brig</span></code> you need to create a repository.
+During this step, also your online identity will be created. So make sure
+to use a sane username (<code class="docutils literal notranslate"><span class="pre">sahib&#64;wald.de</span></code>) and resource (<code class="docutils literal notranslate"><span class="pre">laptop</span></code>).</p>
+<script src="https://asciinema.org/a/163713.js" id="asciicast-163713" async></script></div>
+<div class="section" id="adding-files">
+<h2>2. Adding files<a class="headerlink" href="#adding-files" title="Permalink to this headline">¶</a></h2>
+<p>Before synchronizing them, you need to <em>stage</em> them. The files will be stored
+encrypted (and possibly compressed) in blobs on your harddisks.</p>
+<script src="https://asciinema.org/a/j5yCj6H6fPUldbJDQz9nDhUc4.js" id="asciicast-j5yCj6H6fPUldbJDQz9nDhUc4" async></script></div>
+<div class="section" id="coreutils">
+<h2>3. Coreutils<a class="headerlink" href="#coreutils" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> provides implementations of most file related coreutils like <code class="docutils literal notranslate"><span class="pre">mv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cp</span></code>, <code class="docutils literal notranslate"><span class="pre">rm</span></code>, <code class="docutils literal notranslate"><span class="pre">mkdir</span></code> or <code class="docutils literal notranslate"><span class="pre">cat</span></code>. Handling of files should thus feel
+familar for users that know the command line.</p>
+<script src="https://asciinema.org/a/swIw29Qkml0A44H1MgKQvOQ8L.js" id="asciicast-swIw29Qkml0A44H1MgKQvOQ8L" async></script></div>
+<div class="section" id="mounting">
+<h2>4. Mounting<a class="headerlink" href="#mounting" title="Permalink to this headline">¶</a></h2>
+<p>For daily use and for use with other tools you might prefer a folder that contains the file
+you gave to <code class="docutils literal notranslate"><span class="pre">brig</span></code>. This can be done via the builtin FUSE layer.</p>
+<script src="https://asciinema.org/a/166178.js" id="asciicast-166178" async></script><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Some built-in commands provided by brig are faster.
+<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cp</span></code> for example only copies metadata, while the real <code class="docutils literal notranslate"><span class="pre">cp</span></code> will copy the whole file.</p>
+</div>
+</div>
+<div class="section" id="commits">
+<h2>5. Commits<a class="headerlink" href="#commits" title="Permalink to this headline">¶</a></h2>
+<p>In it’s heart, <code class="docutils literal notranslate"><span class="pre">brig</span></code> is very similar to <code class="docutils literal notranslate"><span class="pre">git</span></code> and also supports versioning
+via commits. In contrast to <code class="docutils literal notranslate"><span class="pre">git</span></code> however, there are no branches and you
+can’t go back in history – you can only bring the history back up front.</p>
+<script src="https://asciinema.org/a/166180.js" id="asciicast-166180" async></script></div>
+<div class="section" id="history">
+<h2>6. History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<p>Each file (and directory) maintains a history of the operations that were done
+to this file.</p>
+<script src="https://asciinema.org/a/166181.js" id="asciicast-166181" async></script></div>
+<div class="section" id="discovery-remotes">
+<h2>7. Discovery &amp; Remotes<a class="headerlink" href="#discovery-remotes" title="Permalink to this headline">¶</a></h2>
+<p>In order to sync with your buddies, you need to add their <em>fingerprint</em> as remotes.
+How do you get their fingerprint? In the best case by using a separate side channel
+like telephone, encrypted email or elsewhise. But <code class="docutils literal notranslate"><span class="pre">brig</span></code> can assist finding remotes
+via the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code> command.</p>
+<script src="https://asciinema.org/a/166182.js" id="asciicast-166182" async></script><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You should <strong>always</strong> verify the fingerprint is really the one of your buddy.
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> cannot do this for you.</p>
+</div>
+</div>
+<div class="section" id="sync-diff">
+<h2>8. Sync &amp; Diff<a class="headerlink" href="#sync-diff" title="Permalink to this headline">¶</a></h2>
+<p>Once both parties have setup each other as remotes, we can easily view and sync
+with their data.</p>
+<script src="https://asciinema.org/a/166183.js" id="asciicast-166183" async></script></div>
+<div class="section" id="pinning">
+<h2>9. Pinning<a class="headerlink" href="#pinning" title="Permalink to this headline">¶</a></h2>
+<p>By default <code class="docutils literal notranslate"><span class="pre">brig</span></code> will only keep the most recent files. All other files will
+be marked to deletions after a certain timeframe. This is done via <em>Pins</em>. If
+a file is pinned, it won’t get deleted. If you don’t need a file in local
+storage, you can also unpin it. On the next access <code class="docutils literal notranslate"><span class="pre">brig</span></code> will try to load it
+again from a peer that provides it (if possible).</p>
+<p>TODO: Make demo.</p>
 </div>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="introduction.html" class="btn btn-neutral" title="Getting started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Chris Pahl.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="introduction.html" title="previous chapter">Getting started</a></li>
-      <li>Next: <a href="faq.html" title="next chapter">Frequently Asked Questions</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &copy;2017, Chris Pahl.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/quickstart.rst.txt"
-          rel="nofollow">Page source</a>
-    </div>
 
-    
+    </section>
 
-    
-  </body>
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

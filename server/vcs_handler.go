@@ -202,13 +202,15 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 				return err
 			}
 
-			capNext, err := commitToCap(change.Next, seg)
-			if err != nil {
-				return err
-			}
+			if change.Next != nil {
+				capNext, err := commitToCap(change.Next, seg)
+				if err != nil {
+					return err
+				}
 
-			if err := entry.SetNext(*capNext); err != nil {
-				return err
+				if err := entry.SetNext(*capNext); err != nil {
+					return err
+				}
 			}
 
 			if err := entry.SetReferTo(change.ReferTo); err != nil {

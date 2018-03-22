@@ -1,6 +1,3 @@
-Introduction
-============
-
 Installation
 ------------
 
@@ -35,7 +32,7 @@ to have ``sudo`` permissions later on.
 
 You also need to have ``git`` and ``hg`` installed for the next step.
 
-.. todo:: describe how.
+.. todo:: describe how for different distributions.
 
 Step 1: Compile & Install ``brig``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
