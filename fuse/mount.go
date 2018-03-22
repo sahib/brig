@@ -1,8 +1,10 @@
 package fuse
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -56,10 +58,10 @@ func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 
 	go func() {
 		defer close(mnt.done)
-		log.Debugf("Serving FUSE at %v", mountpoint)
+		log.Debugf("serving fuse mount at %v", mountpoint)
 		mnt.errors <- mnt.server.Serve(filesys)
 		mnt.done <- util.Empty{}
-		log.Debugf("Stopped serving FUSE at %v", mountpoint)
+		log.Debugf("stopped serving fuse at %v", mountpoint)
 	}()
 
 	select {
@@ -78,6 +80,20 @@ func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 	return mnt, nil
 }
 
+func lazyUnmount(dir string) error {
+	cmd := exec.Command("fusermount", "-u", "-z", dir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if len(output) > 0 {
+			output = bytes.TrimRight(output, "\n")
+			msg := err.Error() + ": " + string(output)
+			err = errors.New(msg)
+		}
+		return err
+	}
+	return nil
+}
+
 // Close will wait until all I/O operations are done and unmount the fuse
 // mount again.
 func (m *Mount) Close() error {
@@ -86,31 +102,59 @@ func (m *Mount) Close() error {
 	}
 	m.closed = true
 
-	log.Info("Unmounting fuse layer...")
+	log.Infof("unmounting fuse mount at %v (this might take a bit)", m.Dir)
 
-	for tries := 0; tries < 20; tries++ {
+	couldUnmount := false
+	waitTimeout := 1 * time.Second
+
+	// Attempt unmounting several times:
+	for tries := 0; tries < 10; tries++ {
 		if err := fuse.Unmount(m.Dir); err != nil {
-			time.Sleep(100 * time.Millisecond)
+			log.Debugf("failed to graceful unmount: %v", err)
+			time.Sleep(250 * time.Millisecond)
 			continue
 		}
 
+		couldUnmount = true
+		waitTimeout = 5 * time.Second
 		break
+	}
+
+	if !couldUnmount {
+		log.Warn("cant properly unmount; are there still procesess using the mount?")
+		log.Warn("attempting lazy umount (you might leak resources!)")
+		if err := lazyUnmount(m.Dir); err != nil {
+			log.Debugf("lazy unmount failed: %v", err)
+		}
 	}
 
 	// Be sure to drain the error channel:
 	select {
 	case err := <-m.errors:
-		// Serve() had some error after some time:
 		if err != nil {
 			log.Warningf("fuse returned an error: %v", err)
 		}
+	case <-time.NewTimer(waitTimeout).C:
+		// blocking due to fuse freeze.
 	}
 
 	// Be sure to pull the item from the channel:
-	<-m.done
+	select {
+	case <-m.done:
+		log.Debugf("gracefully shutting down")
+	case <-time.NewTimer(waitTimeout).C:
+		// success or blocking due to fuse freeze.
+	}
 
-	if err := m.conn.Close(); err != nil {
-		return err
+	// If we could not unmount, schedule closing in the background.
+	// This might be leaky, since Close might not ever return.
+	// But usually we unmount on program exit anyways...
+	if couldUnmount {
+		if err := m.conn.Close(); err != nil {
+			return err
+		}
+	} else {
+		go m.conn.Close()
 	}
 
 	return nil
