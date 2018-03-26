@@ -122,6 +122,16 @@ func findCurrentCommand(ctx *cli.Context) *cli.Command {
 
 func completeArgsUsage(ctx *cli.Context) {
 	if command := findCurrentCommand(ctx); command != nil {
+		if len(command.Flags) == 0 {
+			return
+		}
+
+		for _, flag := range command.Flags {
+			split := strings.SplitN(flag.GetName(), ",", 2)
+			longName := split[0]
+			fmt.Printf("--%s\n", longName)
+		}
+
 		fmt.Println(command.ArgsUsage)
 	}
 }
