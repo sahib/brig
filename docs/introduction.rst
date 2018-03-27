@@ -7,6 +7,52 @@ This guide will walk you through the steps of synchronizing your first files
 over ``brig``. It's hand's on, so make sure to open a terminal.
 We'll explain all import concepts along the way.
 
+Precursor: The help system
+--------------------------
+
+In order to make your live easier, there's a built-in help system:
+
+.. code-block:: bash
+
+    # opens the documentation in a webbrowser
+    $ brig help!
+    # Every command offers detailled built-in help.
+    $ brig help remote
+    NAME:
+       brig stage - Add a local file to the storage
+
+    USAGE:
+       brig stage [command options] (<local-path> [<path>]|--stdin <path>)
+
+    CATEGORY:
+       WORKING TREE COMMANDS
+
+    DESCRIPTION:
+       Read a local file (given by »local-path«) and try to read
+       it. This is the conceptual equivalent of »git add«. [...]
+
+    EXAMPLES:
+
+       $ brig stage file.png                   # gets added as /file.png
+       $ brig stage file.png /photos/me.png    # gets added as /photos/me.png
+       $ cat file.png | brig --stdin /file.png # gets added as /file.png
+
+    OPTIONS:
+       --stdin, -i  Read data from stdin
+    # There's builtin autocompletion if you source
+    # autocomplete/bash_autocomplete
+    $ brig remote <tab>
+    add     clear   edit    list    ping    remove
+    # If you mistype a command, you get suggestion on what you meant:
+    $ brig remot
+    `remot` is not a valid command.
+
+    Did you maybe mean one of those?
+      * reset
+      * mount
+      * rm
+      * remote
+
 Creating a repository
 ---------------------
 

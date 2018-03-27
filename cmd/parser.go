@@ -114,23 +114,21 @@ func RunCmdline(args []string) int {
 	// TODO: Implement 'brig help online' (or similar) to open online docs in a browser.
 	app.Commands = TranslateHelp([]cli.Command{
 		{
-			Name:         "init",
-			Category:     repoGroup,
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleInit, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "init",
+			Category: repoGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleInit, true)),
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "backend,b",
 					Value: "ipfs",
-					//Usage: "What data backend to use for the new repo",
+					Usage: "What data backend to use for the new repo",
 				},
 			},
 		},
 		cli.Command{
-			Name:         "whoami",
-			Category:     netwGroup,
-			Action:       withDaemon(handleWhoami, true),
-			BashComplete: completeArgsUsage,
+			Name:     "whoami",
+			Category: netwGroup,
+			Action:   withDaemon(handleWhoami, true),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "fingerprint,f",
@@ -143,10 +141,9 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "remote",
-			Aliases:      []string{"rmt"},
-			Category:     netwGroup,
-			BashComplete: completeSubcommands,
+			Name:     "remote",
+			Aliases:  []string{"rmt"},
+			Category: netwGroup,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:   "add",
@@ -159,21 +156,18 @@ func RunCmdline(args []string) int {
 					},
 				},
 				cli.Command{
-					Name:         "remove",
-					Aliases:      []string{"rm"},
-					Action:       withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
-					BashComplete: completeArgsUsage,
+					Name:    "remove",
+					Aliases: []string{"rm"},
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
 				},
 				cli.Command{
-					Name:         "list",
-					Aliases:      []string{"ls"},
-					Action:       withDaemon(handleRemoteList, true),
-					BashComplete: completeArgsUsage,
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(handleRemoteList, true),
 				},
 				cli.Command{
-					Name:         "clear",
-					Action:       withDaemon(handleRemoteClear, true),
-					BashComplete: completeArgsUsage,
+					Name:   "clear",
+					Action: withDaemon(handleRemoteClear, true),
 				},
 				cli.Command{
 					Name:   "edit",
@@ -185,64 +179,53 @@ func RunCmdline(args []string) int {
 							Usage: "Directly overwrite remote list with yml file",
 						},
 					},
-					BashComplete: completeArgsUsage,
 				},
 				cli.Command{
-					Name:         "ping",
-					Action:       withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
-					BashComplete: completeArgsUsage,
+					Name:   "ping",
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				},
 			},
 		},
 		cli.Command{
-			Name:         "pin",
-			Category:     netwGroup,
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
-			BashComplete: completeSubcommands,
+			Name:     "pin",
+			Category: netwGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			Subcommands: []cli.Command{
 				cli.Command{
-					Name:         "add",
-					Action:       withDaemon(handlePin, true),
-					BashComplete: completeArgsUsage,
+					Name:   "add",
+					Action: withDaemon(handlePin, true),
 				},
 				cli.Command{
-					Name:         "rm",
-					Action:       withDaemon(handleUnpin, true),
-					BashComplete: completeArgsUsage,
+					Name:   "rm",
+					Action: withDaemon(handleUnpin, true),
 				},
 			},
 		},
 		cli.Command{
-			Name:         "net",
-			Category:     netwGroup,
-			BashComplete: completeSubcommands,
+			Name:     "net",
+			Category: netwGroup,
 			Subcommands: []cli.Command{
 				cli.Command{
-					Name:         "offline",
-					Action:       withDaemon(handleOffline, true),
-					BashComplete: completeArgsUsage,
+					Name:   "offline",
+					Action: withDaemon(handleOffline, true),
 				},
 				cli.Command{
-					Name:         "online",
-					Action:       withDaemon(handleOnline, true),
-					BashComplete: completeArgsUsage,
+					Name:   "online",
+					Action: withDaemon(handleOnline, true),
 				},
 				cli.Command{
-					Name:         "status",
-					Action:       withDaemon(handleIsOnline, true),
-					BashComplete: completeArgsUsage,
+					Name:   "status",
+					Action: withDaemon(handleIsOnline, true),
 				},
 				// TODO: Should this go to remotes?
 				cli.Command{
-					Name:         "list",
-					Aliases:      []string{"ls"},
-					Action:       withDaemon(handleOnlinePeers, true),
-					BashComplete: completeArgsUsage,
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(handleOnlinePeers, true),
 				},
 				cli.Command{
-					Name:         "locate",
-					Action:       withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
-					BashComplete: completeArgsUsage,
+					Name:   "locate",
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
 					// TODO: Provide flag to indicate what part of the name to search.
 					// TODO: Make timeout a "time duration" (i.e. 5s)
 					// TODO: think of way to upload fingerprint of node more
@@ -257,11 +240,10 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "status",
-			Aliases:      []string{"st"},
-			Category:     vcscGroup,
-			Action:       withDaemon(handleStatus, true),
-			BashComplete: completeArgsUsage,
+			Name:     "status",
+			Aliases:  []string{"st"},
+			Category: vcscGroup,
+			Action:   withDaemon(handleStatus, true),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "tree,t",
@@ -270,9 +252,9 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "diff",
-			Category:     vcscGroup,
-			BashComplete: completeArgsUsage,
+			// TODO: Do automated fetch by default.
+			Name:     "diff",
+			Category: vcscGroup,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "list,l",
@@ -282,10 +264,9 @@ func RunCmdline(args []string) int {
 			Action: withDaemon(handleDiff, true),
 		},
 		cli.Command{
-			Name:         "tag",
-			Category:     vcscGroup,
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "tag",
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "delete,d",
@@ -294,9 +275,8 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "log",
-			Category:     vcscGroup,
-			BashComplete: completeArgsUsage,
+			Name:     "log",
+			Category: vcscGroup,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "from,f",
@@ -312,20 +292,15 @@ func RunCmdline(args []string) int {
 			Action: withDaemon(handleLog, true),
 		},
 		cli.Command{
-			Name:         "fetch",
-			Category:     vcscGroup,
-			Usage:        "Fetch the metadata from a remote",
-			Description:  "Fetch the metadata from a remote",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "fetch",
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
 		},
 		cli.Command{
-			Name:         "sync",
-			Category:     vcscGroup,
-			Usage:        "Sync with any partner in your remote list",
-			Description:  "Attempt to synchronize your files with any partner",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
-			BashComplete: completeArgsUsage,
+			// TODO: option to auto-download (parts of?) the synced result.
+			Name:     "sync",
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "no-fetch,n",
@@ -334,12 +309,13 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "commit",
-			Aliases:      []string{"cmt"},
-			Category:     vcscGroup,
-			Usage:        "Print which file are in the staging area",
-			Description:  "Show all changed files since the last commit and what a new commit would contain",
-			BashComplete: completeArgsUsage,
+			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
+			// TODO: Have the notion of explicit pins to save them from indirect/automatic unpins?
+			//       (is this what ipfs has?)
+			Name:     "commit",
+			Aliases:  []string{"cmt"},
+			Category: vcscGroup,
+			// TODO: move bash completion also to help.
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "message,m",
@@ -350,14 +326,11 @@ func RunCmdline(args []string) int {
 			Action: withDaemon(handleCommit, true),
 		},
 		cli.Command{
-			Name:         "reset",
-			Aliases:      []string{"co"},
-			Category:     vcscGroup,
-			Usage:        "Reset commits, file or directories to an old state",
-			ArgsUsage:    "<commit> [<file>] [--force]",
-			Description:  "",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
-			BashComplete: completeArgsUsage,
+			// TODO: Figure out/test exact way of pinning and write docs for it.
+			Name:     "reset",
+			Aliases:  []string{"co"},
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "force,f",
@@ -366,12 +339,9 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "become",
-			Category:     vcscGroup,
-			Usage:        "Act as other user and view the data we synced with",
-			Description:  "Act as other user and view the data we synced with.",
-			Action:       withDaemon(handleBecome, true),
-			BashComplete: completeArgsUsage,
+			Name:     "become",
+			Category: vcscGroup,
+			Action:   withDaemon(handleBecome, true),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "self,s",
@@ -380,14 +350,10 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "history",
-			Aliases:      []string{"hst", "hist"},
-			Category:     vcscGroup,
-			Usage:        "Show the history of the given brig file",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
-			Description:  "history lists all modifications of a given file",
-			ArgsUsage:    "<path>",
-			BashComplete: completeArgsUsage,
+			Name:     "history",
+			Aliases:  []string{"hst", "hist"},
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "empty,e",
@@ -396,14 +362,10 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "stage",
-			Aliases:      []string{"stg", "add"},
-			Category:     wdirGroup,
-			Usage:        "Transer a file into brig's control or update an existing one",
-			ArgsUsage:    "<file>",
-			Description:  "Stage a specific file into the brig repository",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "stage",
+			Aliases:  []string{"stg", "add", "a"},
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "stdin,i",
@@ -412,42 +374,32 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "touch",
-			Aliases:      []string{"t"},
-			Category:     wdirGroup,
-			Usage:        "Create an empty file or update the timestamp of an existing",
-			ArgsUsage:    "<file>",
-			Description:  "Create an empty file or update the timestamp of an existing",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleTouch, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "touch",
+			Aliases:  []string{"t"},
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTouch, true)),
 		},
 		cli.Command{
-			Name:         "cat",
-			Category:     wdirGroup,
-			Usage:        "Output content of any file to stdout",
-			ArgsUsage:    "<file>",
-			Description:  "Concatenates files and print them on stdout",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
-			BashComplete: completeArgsUsage,
+			Name:     "cat",
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
 		},
 		cli.Command{
-			Name:         "info",
-			Category:     wdirGroup,
-			Usage:        "Lookup extended attributes of a single filesystem node",
-			ArgsUsage:    "<file>",
-			Description:  "Stage a specific file into the brig repository",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
-			BashComplete: completeArgsUsage,
+			Name:        "info",
+			Category:    wdirGroup,
+			Usage:       "Lookup extended attributes of a single filesystem node",
+			ArgsUsage:   "<file>",
+			Description: "Stage a specific file into the brig repository",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
 		},
 		cli.Command{
-			Name:         "rm",
-			Aliases:      []string{"remove"},
-			Category:     wdirGroup,
-			Usage:        "Remove the file and optionally old versions of it",
-			ArgsUsage:    "<file>",
-			Description:  "Remove a spcific file or directory",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
-			BashComplete: completeArgsUsage,
+			Name:        "rm",
+			Aliases:     []string{"remove"},
+			Category:    wdirGroup,
+			Usage:       "Remove the file and optionally old versions of it",
+			ArgsUsage:   "<file>",
+			Description: "Remove a spcific file or directory",
+			Action:      withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "recursive,r",
@@ -456,12 +408,11 @@ func RunCmdline(args []string) int {
 			},
 		},
 		cli.Command{
-			Name:         "ls",
-			Usage:        "List files similar to ls(1)",
-			ArgsUsage:    "/path",
-			Description:  "Lists all files of a specific brig path in a ls-like manner",
-			Category:     wdirGroup,
-			BashComplete: completeArgsUsage,
+			Name:        "ls",
+			Usage:       "List files similar to ls(1)",
+			ArgsUsage:   "/path",
+			Description: "Lists all files of a specific brig path in a ls-like manner",
+			Category:    wdirGroup,
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "depth,d",
@@ -481,7 +432,6 @@ func RunCmdline(args []string) int {
 			ArgsUsage:    "[/brig-path] [--depth|-d]",
 			Description:  "Lists all files of a specific brig path in a tree like-manner",
 			Category:     wdirGroup,
-			BashComplete: completeArgsUsage,
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "depth, d",
@@ -497,7 +447,6 @@ func RunCmdline(args []string) int {
 			Usage:        "Create an empty directory",
 			ArgsUsage:    "<dirname>",
 			Description:  "Create a empty directory",
-			BashComplete: completeArgsUsage,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "parents, p",
@@ -513,7 +462,6 @@ func RunCmdline(args []string) int {
 			ArgsUsage:    "<source> <destination>",
 			Description:  "Move a file from SOURCE to DEST",
 			Action:       withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
-			BashComplete: completeArgsUsage,
 		},
 		cli.Command{
 			Name:         "cp",
@@ -522,7 +470,6 @@ func RunCmdline(args []string) int {
 			ArgsUsage:    "<source> <dest>",
 			Description:  "Copy a file from SOURCE to DEST",
 			Action:       withArgCheck(needAtLeast(2), withDaemon(handleCp, true)),
-			BashComplete: completeArgsUsage,
 		},
 		cli.Command{
 			Name:         "edit",
@@ -531,13 +478,11 @@ func RunCmdline(args []string) int {
 			ArgsUsage:    "<path>",
 			Description:  "Edit a file in brig with $EDITOR",
 			Action:       withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
-			BashComplete: completeArgsUsage,
 		},
 		cli.Command{
 			Name:         "daemon",
 			Category:     repoGroup,
 			Usage:        "Manually run the daemon process",
-			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:        "launch",
@@ -556,14 +501,12 @@ func RunCmdline(args []string) int {
 					Usage:        "Manually kill the daemon process",
 					Description:  "Disconnect from ipfs network, shutdown the daemon and lock the repository",
 					Action:       withDaemon(handleDaemonQuit, false),
-					BashComplete: completeArgsUsage,
 				},
 				cli.Command{
 					Name:         "ping",
 					Usage:        "See if the daemon responds in a timely fashion",
 					Description:  "Checks if deamon is running and reports the response time",
 					Action:       withDaemon(handleDaemonPing, false),
-					BashComplete: completeArgsUsage,
 				},
 			},
 		},
@@ -571,14 +514,12 @@ func RunCmdline(args []string) int {
 			Name:         "config",
 			Category:     repoGroup,
 			Usage:        "Access, list and modify configuration values",
-			BashComplete: completeSubcommands,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:         "list",
 					Usage:        "Show current config values",
 					Description:  "Show the current brig configuration",
 					Action:       withDaemon(handleConfigList, true),
-					BashComplete: completeArgsUsage,
 				},
 				cli.Command{
 					Name:         "get",
@@ -586,7 +527,6 @@ func RunCmdline(args []string) int {
 					Description:  "Get a specific config value and print it to stdout",
 					ArgsUsage:    "<configkey>",
 					Action:       withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),
-					BashComplete: completeArgsUsage,
 				},
 				cli.Command{
 					Name:         "set",
@@ -594,7 +534,6 @@ func RunCmdline(args []string) int {
 					Description:  "Set a given config option to the given value",
 					ArgsUsage:    "<configkey> <value>",
 					Action:       withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true)),
-					BashComplete: completeArgsUsage,
 				},
 			},
 		},
@@ -611,7 +550,6 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action:       withDaemon(handleMount, true),
-			BashComplete: completeArgsUsage,
 		},
 		cli.Command{
 			Name:         "unmount",
@@ -620,7 +558,6 @@ func RunCmdline(args []string) int {
 			ArgsUsage:    "<mount>",
 			Description:  "Unmounts a FUSE filesystem",
 			Action:       withDaemon(handleUnmount, true),
-			BashComplete: completeArgsUsage,
 		},
 		cli.Command{
 			Name:     "version",
@@ -641,7 +578,6 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action:       withDaemon(handleGc, true),
-			BashComplete: completeArgsUsage,
 		},
 	})
 

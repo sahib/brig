@@ -79,6 +79,7 @@ func findSimilarCommands(cmdName string, cmds []cli.Command) []suggestion {
 	staticSuggestions := map[string]string{
 		"insert": "stage",
 		"pull":   "sync",
+		"merge":  "sync",
 	}
 
 	for gitName, brigName := range staticSuggestions {
@@ -145,7 +146,7 @@ func completeSubcommands(ctx *cli.Context) {
 }
 
 func commandNotFound(ctx *cli.Context, cmdName string) {
-	// Try to find the commands we need to look at for a suggestion/
+	// Try to find the commands we need to look at for a suggestion.
 	// We only want to show the user the relevant subcommands.
 	cmdPath, lastGoodCmds := findLastGoodCommands(ctx)
 
@@ -154,11 +155,11 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 	badCmd := color.RedString(cmdName)
 	if cmdPath == nil {
 		// A toplevel command was wrong:
-		fmt.Printf("`%s` is not a valid command. ", badCmd)
+		fmt.Printf("»%s« is not a valid command. ", badCmd)
 	} else {
 		// A command of a subcommand was wrong:
 		lastGoodSubCmd := color.YellowString(strings.Join(cmdPath, " "))
-		fmt.Printf("`%s` is not a valid subcommand of `%s`. ", badCmd, lastGoodSubCmd)
+		fmt.Printf("»%s« is not a valid subcommand of »%s«. ", badCmd, lastGoodSubCmd)
 	}
 
 	// Get a list of similar commands:
@@ -169,7 +170,7 @@ func commandNotFound(ctx *cli.Context, cmdName string) {
 		fmt.Printf("\n")
 	case 1:
 		suggestion := color.GreenString(similars[0].name)
-		fmt.Printf("Did you maybe mean `%s`?\n", suggestion)
+		fmt.Printf("Did you maybe mean »%s«?\n", suggestion)
 	default:
 		fmt.Println("\n\nDid you maybe mean one of those?")
 		for _, similar := range similars {

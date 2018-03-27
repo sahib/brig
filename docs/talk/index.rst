@@ -361,6 +361,7 @@ Entwicklungsgeschichte:
 * Ende 2015: *Masterprojekt.*
 * Ende 2016: *Pausiert.*
 * Ende 2017: *Hobbyprojekt.*
+* Aktueller Stand?
 
 ----
 
