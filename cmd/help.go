@@ -16,7 +16,8 @@ type Help struct {
 }
 
 func die(msg string) {
-	//panic(msg)
+	// be really pedantic when help is missing.
+	panic(msg)
 }
 
 var HelpTexts = map[string]Help{
@@ -402,23 +403,231 @@ outputting a .tar archive of the directory contents).
 		Complete:  completeArgsUsage,
 		Description: `Show all metadata attributes known for a file or directory.
 
-   Path:    Absolute path of the file inside of the storage.
-   User:    User which modified the file last.
-   Type:    »file« or »directory«.
-   Size:    Exact content size in bytes.
-   Hash:    Hash of the node.
-   Inode:   Internal inode. Also shown as inode in FUSE.
-   Pinned:  »yes« if the file is pinned, »no« else.
+      Path: Absolute path of the file inside of the storage.
+      User: User which modified the file last.
+      Type: »file« or »directory«.
+      Size: Exact content size in bytes.
+      Hash: Hash of the node.
+     Inode: Internal inode. Also shown as inode in FUSE.
+    Pinned: »yes« if the file is pinned, »no« else.
    ModTime: Timestamp of last modification.
    Content: Content hash of the file in ipfs.
+`,
+	},
+	"rm": {
+		Usage:     "Remove a file or directory",
+		ArgsUsage: "<path>",
+		Complete:  completeArgsUsage,
+		Description: `Remove a file or directory.
+   In contrast to the rm(1) there is no --recursive switch.
+   Directories are deleted recursively by default.
+   Note that you can still access the history of a accessed file.
+`,
+	},
+	"ls": {
+		Usage:     "List files and directories",
+		ArgsUsage: "<path>",
+		Complete:  completeArgsUsage,
+		Description: `List files an directories starting with »path«.
+   If no »<path>« is given, the root directory is assumed. Every line of »ls«
+   shows a human readable size of each entry, the last modified timestmap, the
+   user that last modified the entry (if there's more than one) and if the
+   entry if pinned.
+`,
+	},
+	"tree": {
+		Usage:     "List files and directories in a tree",
+		ArgsUsage: "<path>",
+		Complete:  completeArgsUsage,
+		Description: `Show entries in a tree(1)-like fashion.
+   This command is identical to »brig ls« otherwise.
+`,
+	},
+	"mkdir": {
+		Usage:     "Create an empty directory",
+		ArgsUsage: "<path>",
+		Complete:  completeArgsUsage,
+		Description: `Create an empty directory at the specified »path«.
+   By default, parent directories are not created. You can use »--parents« to
+   enable this behaviour.
+`,
+	},
+	"mv": {
+		Usage:     "Move a file or directory from »src« to »dst«",
+		ArgsUsage: "<src> <dst>",
+		Complete:  completeArgsUsage,
+		Description: `Move a file or directory from »src« to »dst.«
+
+   If »dst« already exists and is a file, it gets overwritten with »src«.
+   If »dst« already exists and is a directory, »basename(src)« is created inside,
+   (if the file inside does not exist yet)
+
+   It's not allowed to move a directory into itself.
+   This includes moving the root directory.
+`,
+	},
+	"cp": {
+		Usage:     "Copy a file or directory from »src« to »dst«",
+		ArgsUsage: "<src> <dst>",
+		Complete:  completeArgsUsage,
+		Description: `Copy a file or directory from »src« to »dst«.
+
+   The semantics are the same as for »brig mv«, except that »cp« does not remove »src«.
+`,
+	},
+	"edit": {
+		Usage:     "Edit a file inplae with $EDITOR",
+		ArgsUsage: "<path>",
+		Complete:  completeArgsUsage,
+		Description: `Convinience command to read the file at »path« and display it in $EDITOR.
+
+   Once $EDITOR quits, the file is saved back.
+
+   If $EDITOR is not set, nano is assumed (I cried a little).
+   If nano is not installed this command will fail and you neet to set $EDITOR>
+
+`,
+	},
+	"daemon": {
+		Usage:    "Daemon management commands",
+		Complete: completeSubcommands,
+		Description: `Commands to manually start or stop the daemon.
+
+   The daemon process is normally started whenever you issue the first command
+   (like »brig init« or later on a »brig ls«). Once you entered your password,
+   it will be started for you in the background. Therefore is seldomely useful
+   to use any of those commands - unless you know what you're doing.
+`,
+	},
+	"daemon.launch": {
+		Usage:    "Start the daemon process in the foreground",
+		Complete: completeArgsUsage,
+		Description: `Start the dameon process in the foreground.
+
+   Note that the log will still be written to $BRIG_PATH/logs/main.log.
+   You can change this behaviour by being explicit with --log-path:
+
+   $ brig -l stdout daemon launch
+`,
+	},
+	"daemon.quit": {
+		Usage:    "Quit a running daemon process",
+		Complete: completeArgsUsage,
+		Description: `Quit a running daemon process.
+
+   If no daemon process is running, it will tell you.
+`,
+	},
+	"daemon.ping": {
+		Usage:    "Check if the daemon is running and reachable",
+		Complete: completeArgsUsage,
+		Description: `Send up to 100 ping packages to the daemon
+   and also print the roundtrip time for each.
+`,
+	},
+	"config": {
+		Usage:    "View and modify config options",
+		Complete: completeSubcommands,
+		Description: `Commands for getting, setting and listing configuration values.
+
+   Each config key is a dotted path, associated with one key.
+   These configuration values can help you to finetune the behaviour of brig.
+
+   TODO: List of config keys that are currently settable.
+         (and also cleanup)
+`,
+	},
+	"config.get": {
+		Usage:       "Get a specific config key",
+		Complete:    completeArgsUsage,
+		ArgsUsage:   "<key>",
+		Description: `Show the current value of a key`,
+	},
+	"config.set": {
+		Usage:     "Set a specific config key to a new value",
+		Complete:  completeArgsUsage,
+		ArgsUsage: "<key> <value>",
+		Description: `Set the value at »key« to »value«.
+
+   Keep in mind that it might be required to restart the daemon so the new
+   values take effect.
+`,
+	},
+	"config.list": {
+		Usage:       "List all existing config keys",
+		Complete:    completeArgsUsage,
+		Description: `List all existing config keys. The output is valid YAML.`,
+	},
+	"mount": {
+		Usage:     "Mount the contents of brig as FUSE filesystem",
+		ArgsUsage: "<mount_path>",
+		Complete:  completeArgsUsage,
+		Description: `Show the all files and directories inside a normal
+   directory. This directory is powered by a userspace filesystem which
+   allows you to read and edit data like you are use to from from normal
+   files. It is compatible to existing tools and allows brig to interact
+   with filebrowsers, video players and other desktop tools.
+
+   It is possible to have more than one mount. They will show the same content.
+
+CAVEATS
+
+   Editing large files will currenly eat huge amounts of memory.
+   We advise you to use normal commands like »brig cat« and »brig stage«
+   until this is fixed.`,
+	},
+	"unmount": {
+		Usage:     "Unmount a previously mounted directory",
+		ArgsUsage: "<mount_path>",
+		Complete:  completeArgsUsage,
+		Description: `Unmount a previously mounted directory.
+
+   All mounts get automatically unmounted once the daemon shuts down.
+   In case the daemon crashed or failed to unmount, you can manually
+   use this command to reclaim the mountpoint:
+
+   $ fusermount -u -z /path/to/mount
+`,
+	},
+	"version": {
+		Usage:    "Show the version of brig and ipfs",
+		Complete: completeArgsUsage,
+		Description: `Show the version of brig and ipfs.
+
+   This includes the client and server version of brig.
+   These two values should be ideally exactly the same to avoid problems.
+
+   Apart from that, the version of ipfs is shown here.
+
+   If available, also the git rev is included. This is useful to get the exact
+   state of the software in case of problems.
+
+   Additionally the build time of the binary is shown.
+   Please include this information when reporting a bug.
+`,
+	},
+	"gc": {
+		Usage:    "Trigger the garbage collector",
+		Complete: completeArgsUsage,
+		Description: `Manually trigger the garbage gollector.
+
+   Strictly speaking there are two garbage collectors in the system.  The
+   garbage collector of ipfs cleans up all unpinned files from local storage.
+   This still means that the objects referenced there can be retrieved from
+   other network nodes, but not locally anymore. This might save alot of space.
+
+   The other garbage collector is not very important to the user and cleans up
+   unused references inside of the metadata store. It is only run if you pass
+   »--aggressive«.
+
 `,
 	},
 }
 
 func injectHelp(cmd *cli.Command, path string) {
-	help, ok := HelpTexts[cmd.Name]
+	help, ok := HelpTexts[path]
 	if !ok {
-		die(fmt.Sprintf("bug: no such help entry: %v", cmd.Name))
+		die(fmt.Sprintf("bug: no such help entry: %v", path))
 	}
 
 	cmd.Usage = help.Usage
@@ -426,23 +635,12 @@ func injectHelp(cmd *cli.Command, path string) {
 	cmd.Description = help.Description
 	cmd.BashComplete = help.Complete
 
-	// for _, flag := range cmd.Flags {
-	// 	// flagNames := strings.Split(flag.GetName(), ",")
-	// 	// flagUsage, ok := help.Flags[flagNames[0]]
-	// 	// if !ok {
-	// 	// 	panic(fmt.Sprintf("no documentation for flag %s (of %s)", flagNames[0], path))
-	// 	// }
-	// }
-
-	// Be really pedantic to catch any deprecated flags early.
-	if len(cmd.Flags) != len(help.Flags) {
-		die(fmt.Sprintf("flag help catalogue of %s contains too many items", path))
-	}
+	// TODO: Also try to move the flags, once cli's api allows that.
 }
 
 func translateHelp(cmds []cli.Command, prefix []string) {
 	for idx := range cmds {
-		path := append([]string{cmds[idx].Name}, prefix...)
+		path := append(append([]string{}, prefix...), cmds[idx].Name)
 		injectHelp(&cmds[idx], strings.Join(path, "."))
 		translateHelp(cmds[idx].Subcommands, path)
 	}

@@ -94,7 +94,7 @@ func RunCmdline(args []string) int {
 		},
 		cli.StringFlag{
 			Name:  "password,P",
-			Usage: "Supply user password",
+			Usage: "Supply user password. Usage is not recommended.",
 			Value: "",
 		},
 		cli.StringFlag{
@@ -111,7 +111,6 @@ func RunCmdline(args []string) int {
 		},
 	}
 
-	// TODO: Implement 'brig help online' (or similar) to open online docs in a browser.
 	app.Commands = TranslateHelp([]cli.Command{
 		{
 			Name:     "init",
@@ -124,8 +123,7 @@ func RunCmdline(args []string) int {
 					Usage: "What data backend to use for the new repo",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "whoami",
 			Category: netwGroup,
 			Action:   withDaemon(handleWhoami, true),
@@ -139,13 +137,12 @@ func RunCmdline(args []string) int {
 					Usage: "Only print the own name",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "remote",
 			Aliases:  []string{"rmt"},
 			Category: netwGroup,
 			Subcommands: []cli.Command{
-				cli.Command{
+				{
 					Name:   "add",
 					Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
 					Flags: []cli.Flag{
@@ -154,22 +151,18 @@ func RunCmdline(args []string) int {
 							Usage: "What folder the remote can access",
 						},
 					},
-				},
-				cli.Command{
+				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
-				},
-				cli.Command{
+				}, {
 					Name:    "list",
 					Aliases: []string{"ls"},
 					Action:  withDaemon(handleRemoteList, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "clear",
 					Action: withDaemon(handleRemoteClear, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "edit",
 					Action: withDaemon(handleRemoteEdit, true),
 					Flags: []cli.Flag{
@@ -179,51 +172,43 @@ func RunCmdline(args []string) int {
 							Usage: "Directly overwrite remote list with yml file",
 						},
 					},
-				},
-				cli.Command{
+				}, {
 					Name:   "ping",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "pin",
 			Category: netwGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			Subcommands: []cli.Command{
-				cli.Command{
+				{
 					Name:   "add",
 					Action: withDaemon(handlePin, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "rm",
 					Action: withDaemon(handleUnpin, true),
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "net",
 			Category: netwGroup,
 			Subcommands: []cli.Command{
-				cli.Command{
+				{
 					Name:   "offline",
 					Action: withDaemon(handleOffline, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "online",
 					Action: withDaemon(handleOnline, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "status",
 					Action: withDaemon(handleIsOnline, true),
-				},
-				// TODO: Should this go to remotes?
-				cli.Command{
+				}, {
+					// TODO: Should this go to remotes?
 					Name:    "list",
 					Aliases: []string{"ls"},
 					Action:  withDaemon(handleOnlinePeers, true),
-				},
-				cli.Command{
+				}, {
 					Name:   "locate",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
 					// TODO: Provide flag to indicate what part of the name to search.
@@ -238,8 +223,7 @@ func RunCmdline(args []string) int {
 					},
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "status",
 			Aliases:  []string{"st"},
 			Category: vcscGroup,
@@ -250,8 +234,7 @@ func RunCmdline(args []string) int {
 					Usage: "View the status as a tree listing",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			// TODO: Do automated fetch by default.
 			Name:     "diff",
 			Category: vcscGroup,
@@ -262,8 +245,7 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleDiff, true),
-		},
-		cli.Command{
+		}, {
 			Name:     "tag",
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
@@ -273,8 +255,7 @@ func RunCmdline(args []string) int {
 					Usage: "Delete the tag instead of creating it",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "log",
 			Category: vcscGroup,
 			Flags: []cli.Flag{
@@ -290,13 +271,11 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleLog, true),
-		},
-		cli.Command{
+		}, {
 			Name:     "fetch",
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
-		},
-		cli.Command{
+		}, {
 			// TODO: option to auto-download (parts of?) the synced result.
 			Name:     "sync",
 			Category: vcscGroup,
@@ -307,8 +286,7 @@ func RunCmdline(args []string) int {
 					Usage: "Do not do a fetch before syncing",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
 			// TODO: Have the notion of explicit pins to save them from indirect/automatic unpins?
 			//       (is this what ipfs has?)
@@ -324,8 +302,7 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleCommit, true),
-		},
-		cli.Command{
+		}, {
 			// TODO: Figure out/test exact way of pinning and write docs for it.
 			Name:     "reset",
 			Aliases:  []string{"co"},
@@ -337,8 +314,7 @@ func RunCmdline(args []string) int {
 					Usage: "Reset even when there are changes in the staging area",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "become",
 			Category: vcscGroup,
 			Action:   withDaemon(handleBecome, true),
@@ -348,8 +324,7 @@ func RunCmdline(args []string) int {
 					Usage: "Become self (i.e. the owner of the repository)",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "history",
 			Aliases:  []string{"hst", "hist"},
 			Category: vcscGroup,
@@ -360,8 +335,7 @@ func RunCmdline(args []string) int {
 					Usage: "Also show commits where nothing happens",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "stage",
 			Aliases:  []string{"stg", "add", "a"},
 			Category: wdirGroup,
@@ -372,47 +346,27 @@ func RunCmdline(args []string) int {
 					Usage: "Read data from stdin",
 				},
 			},
-		},
-		cli.Command{
+		}, {
 			Name:     "touch",
 			Aliases:  []string{"t"},
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTouch, true)),
-		},
-		cli.Command{
+		}, {
 			Name:     "cat",
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
-		},
-		cli.Command{
-			Name:        "info",
-			Category:    wdirGroup,
-			Usage:       "Lookup extended attributes of a single filesystem node",
-			ArgsUsage:   "<file>",
-			Description: "Stage a specific file into the brig repository",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
-		},
-		cli.Command{
-			Name:        "rm",
-			Aliases:     []string{"remove"},
-			Category:    wdirGroup,
-			Usage:       "Remove the file and optionally old versions of it",
-			ArgsUsage:   "<file>",
-			Description: "Remove a spcific file or directory",
-			Action:      withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "recursive,r",
-					Usage: "Remove directories recursively",
-				},
-			},
-		},
-		cli.Command{
-			Name:        "ls",
-			Usage:       "List files similar to ls(1)",
-			ArgsUsage:   "/path",
-			Description: "Lists all files of a specific brig path in a ls-like manner",
-			Category:    wdirGroup,
+		}, {
+			Name:     "info",
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
+		}, {
+			Name:     "rm",
+			Aliases:  []string{"remove"},
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
+		}, {
+			Name:     "ls",
+			Category: wdirGroup,
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "depth,d",
@@ -425,13 +379,9 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleList, true),
-		},
-		cli.Command{
-			Name:         "tree",
-			Usage:        "List files similar to tree(1)",
-			ArgsUsage:    "[/brig-path] [--depth|-d]",
-			Description:  "Lists all files of a specific brig path in a tree like-manner",
-			Category:     wdirGroup,
+		}, {
+			Name:     "tree",
+			Category: wdirGroup,
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "depth, d",
@@ -440,13 +390,9 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleTree, true),
-		},
-		cli.Command{
-			Name:         "mkdir",
-			Category:     wdirGroup,
-			Usage:        "Create an empty directory",
-			ArgsUsage:    "<dirname>",
-			Description:  "Create a empty directory",
+		}, {
+			Name:     "mkdir",
+			Category: wdirGroup,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "parents, p",
@@ -454,130 +400,83 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
-		},
-		cli.Command{
-			Name:         "mv",
-			Category:     wdirGroup,
-			Usage:        "Move a specific file",
-			ArgsUsage:    "<source> <destination>",
-			Description:  "Move a file from SOURCE to DEST",
-			Action:       withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
-		},
-		cli.Command{
-			Name:         "cp",
-			Category:     wdirGroup,
-			Usage:        "Copy a file or directory elsewhere (reflink)",
-			ArgsUsage:    "<source> <dest>",
-			Description:  "Copy a file from SOURCE to DEST",
-			Action:       withArgCheck(needAtLeast(2), withDaemon(handleCp, true)),
-		},
-		cli.Command{
-			Name:         "edit",
-			Category:     wdirGroup,
-			Usage:        "Edit a file in brig with $EDITOR",
-			ArgsUsage:    "<path>",
-			Description:  "Edit a file in brig with $EDITOR",
-			Action:       withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
-		},
-		cli.Command{
-			Name:         "daemon",
-			Category:     repoGroup,
-			Usage:        "Manually run the daemon process",
+		}, {
+			Name:     "mv",
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
+		}, {
+			Name:     "cp",
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(2), withDaemon(handleCp, true)),
+		}, {
+			Name:     "edit",
+			Category: wdirGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
+		}, {
+			// TODO: subcommand brig bug -> collect bug report info
+			Name:     "daemon",
+			Category: repoGroup,
 			Subcommands: []cli.Command{
-				cli.Command{
-					Name:        "launch",
-					Usage:       "Start the daemon process",
-					Description: "Start the brig daemon process, unlock the repository and go online",
-					Action:      withExit(handleDaemonLaunch),
+				{
+					Name:   "launch",
+					Action: withExit(handleDaemonLaunch),
 					Flags: []cli.Flag{
 						cli.BoolFlag{
 							Name:  "trace,t",
 							Usage: "Create tracing output suitable for `go tool trace`",
 						},
 					},
-				},
-				cli.Command{
-					Name:         "quit",
-					Usage:        "Manually kill the daemon process",
-					Description:  "Disconnect from ipfs network, shutdown the daemon and lock the repository",
-					Action:       withDaemon(handleDaemonQuit, false),
-				},
-				cli.Command{
-					Name:         "ping",
-					Usage:        "See if the daemon responds in a timely fashion",
-					Description:  "Checks if deamon is running and reports the response time",
-					Action:       withDaemon(handleDaemonPing, false),
+				}, {
+					Name:   "quit",
+					Action: withDaemon(handleDaemonQuit, false),
+				}, {
+					Name:   "ping",
+					Action: withDaemon(handleDaemonPing, false),
 				},
 			},
-		},
-		cli.Command{
-			Name:         "config",
-			Category:     repoGroup,
-			Usage:        "Access, list and modify configuration values",
+		}, {
+			Name:     "config",
+			Category: repoGroup,
 			Subcommands: []cli.Command{
-				cli.Command{
-					Name:         "list",
-					Usage:        "Show current config values",
-					Description:  "Show the current brig configuration",
-					Action:       withDaemon(handleConfigList, true),
-				},
-				cli.Command{
-					Name:         "get",
-					Usage:        "Get a specific config value",
-					Description:  "Get a specific config value and print it to stdout",
-					ArgsUsage:    "<configkey>",
-					Action:       withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),
-				},
-				cli.Command{
-					Name:         "set",
-					Usage:        "Set a specific config value",
-					Description:  "Set a given config option to the given value",
-					ArgsUsage:    "<configkey> <value>",
-					Action:       withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true)),
+				{
+					Name:   "list",
+					Action: withDaemon(handleConfigList, true),
+				}, {
+					Name:   "get",
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),
+				}, {
+					Name:   "set",
+					Action: withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true)),
 				},
 			},
-		},
-		cli.Command{
-			Name:        "mount",
-			Category:    repoGroup,
-			Usage:       "Mount a brig repository",
-			ArgsUsage:   "<mount>",
-			Description: "Mount a brig repository as FUSE filesystem",
+		}, {
+			Name:     "mount",
+			Category: repoGroup,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "umount,u",
 					Usage: "Unmount the specified directory",
 				},
 			},
-			Action:       withDaemon(handleMount, true),
-		},
-		cli.Command{
-			Name:         "unmount",
-			Category:     repoGroup,
-			Usage:        "Unmount a previosuly mounted directory",
-			ArgsUsage:    "<mount>",
-			Description:  "Unmounts a FUSE filesystem",
-			Action:       withDaemon(handleUnmount, true),
-		},
-		cli.Command{
+			Action: withDaemon(handleMount, true),
+		}, {
+			Name:     "unmount",
+			Category: repoGroup,
+			Action:   withDaemon(handleUnmount, true),
+		}, {
 			Name:     "version",
 			Category: repoGroup,
-			Usage:    "Show brig and backend (ipfs) version info",
 			Action:   withDaemon(handleVersion, false),
-		},
-		cli.Command{
-			Name:        "gc",
-			Category:    repoGroup,
-			Usage:       "Trigger the ipfs garbage collector",
-			ArgsUsage:   "",
-			Description: "Trigger the ipfs garbage collector and print kill count",
+		}, {
+			Name:     "gc",
+			Category: repoGroup,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "aggressive,a",
 					Usage: "Also run the garbage collector on all filesystems immediately",
 				},
 			},
-			Action:       withDaemon(handleGc, true),
+			Action: withDaemon(handleGc, true),
 		},
 	})
 
