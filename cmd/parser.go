@@ -60,7 +60,7 @@ func RunCmdline(args []string) int {
 	vcscGroup := formatGroup("version control")
 	netwGroup := formatGroup("network")
 
-	// autocomplete all commands, but not their aliases.
+	// Autocomplete all commands, but not their aliases.
 	app.BashComplete = func(ctx *cli.Context) {
 		for _, cmd := range app.Commands {
 			fmt.Println(cmd.Name)
@@ -145,12 +145,6 @@ func RunCmdline(args []string) int {
 				{
 					Name:   "add",
 					Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
-					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "folder,f",
-							Usage: "What folder the remote can access",
-						},
-					},
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
@@ -477,6 +471,10 @@ func RunCmdline(args []string) int {
 				},
 			},
 			Action: withDaemon(handleGc, true),
+		}, {
+			Name:   "help!",
+			Action: handleOpenHelp,
+			Hidden: true,
 		},
 	})
 

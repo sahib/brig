@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/toqueteos/webbrowser"
 	"github.com/urfave/cli"
 )
 
@@ -622,6 +623,9 @@ CAVEATS
 
 `,
 	},
+	"help!": {
+		Usage: "Open the online documentation in webbrowser",
+	},
 }
 
 func injectHelp(cmd *cli.Command, path string) {
@@ -646,7 +650,21 @@ func translateHelp(cmds []cli.Command, prefix []string) {
 	}
 }
 
+// TranslateHelp fills in the usage and description for each command.
+// This is separated from the command definition to make things more readable,
+// and separate logic from the (lengthy) documentation.
 func TranslateHelp(cmds []cli.Command) []cli.Command {
 	translateHelp(cmds, nil)
 	return cmds
+}
+
+// handleOpenHelp opens the online documentation a webbrowser.
+func handleOpenHelp(ctx *cli.Context) error {
+	url := "https://brig.readthedocs.org"
+	if err := webbrowser.Open(url); err != nil {
+		fmt.Printf("could not open browser for you: %v\n", err)
+		fmt.Printf("Please open this link yourself:\n\n\t%s\n", url)
+	}
+
+	return nil
 }
