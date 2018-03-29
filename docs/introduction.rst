@@ -199,7 +199,7 @@ if someone is truly the person he claims to be.
 
 If both sides are up & running, we can check if we can reach the other side:
 
-	$ brig net list
+	$ brig remote list
 	TODO: output
 	# Yep that works.
 	$ brig remote ping vladimir

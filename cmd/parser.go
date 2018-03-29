@@ -153,6 +153,12 @@ func RunCmdline(args []string) int {
 					Name:    "list",
 					Aliases: []string{"ls"},
 					Action:  withDaemon(handleRemoteList, true),
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  "offline,o",
+							Usage: "Do not query the online status",
+						},
+					},
 				}, {
 					Name:   "clear",
 					Action: withDaemon(handleRemoteClear, true),
@@ -197,11 +203,6 @@ func RunCmdline(args []string) int {
 				}, {
 					Name:   "status",
 					Action: withDaemon(handleIsOnline, true),
-				}, {
-					// TODO: Should this go to remotes?
-					Name:    "list",
-					Aliases: []string{"ls"},
-					Action:  withDaemon(handleOnlinePeers, true),
 				}, {
 					Name:   "locate",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),

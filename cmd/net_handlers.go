@@ -38,7 +38,40 @@ func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
+func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
+	if ctx.Bool("offline") {
+		return handleRemoteListOffline(ctx, ctl)
+	}
+
+	return handleRemoteListOnline(ctx, ctl)
+}
+
+func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
+	remotes, err := ctl.RemoteLs()
+	if err != nil {
+		return fmt.Errorf("remote ls: %v", err)
+	}
+
+	if len(remotes) == 0 {
+		fmt.Println("No remotes yet. Use `brig remote add »user« »fingerprint«` to add some.")
+		return nil
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\t")
+
+	for _, remote := range remotes {
+		fmt.Fprintf(tabW, "%s\t%s\t\n", remote.Name, remote.Fingerprint)
+	}
+
+	return tabW.Flush()
+}
+
+func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 	infos, err := ctl.OnlinePeers()
 	if err != nil {
 		return err
@@ -54,7 +87,7 @@ func handleOnlinePeers(ctx *cli.Context, ctl *client.Client) error {
 		return nil
 	}
 
-	fmt.Fprintln(tabW, "NAME\tADDR\tROUNDTRIP\tLASTSEEN\t")
+	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tLASTSEEN\t")
 
 	for _, info := range infos {
 		suffix := ""
@@ -133,26 +166,6 @@ func handleRemoteRemove(ctx *cli.Context, ctl *client.Client) error {
 
 func handleRemoteClear(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.RemoteClear()
-}
-
-func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
-	remotes, err := ctl.RemoteLs()
-	if err != nil {
-		return fmt.Errorf("remote ls: %v", err)
-	}
-
-	if len(remotes) == 0 {
-		fmt.Println("None yet. Use `brig remote add <user> <id>` to add some.")
-		return nil
-	}
-
-	data, err := remoteListToYml(remotes)
-	if err != nil {
-		return fmt.Errorf("Failed to convert to yml: %v", err)
-	}
-
-	fmt.Println(string(data))
-	return nil
 }
 
 func handleRemoteEdit(ctx *cli.Context, ctl *client.Client) error {

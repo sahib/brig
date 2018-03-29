@@ -12,7 +12,6 @@ type Help struct {
 	Usage       string
 	ArgsUsage   string
 	Description string
-	Flags       map[string]string
 	Complete    cli.BashCompleteFunc
 }
 
@@ -76,9 +75,11 @@ var HelpTexts = map[string]Help{
 		Description: "Remove a remote by name",
 	},
 	"remote.list": {
-		Usage:       "List all remotes",
-		Complete:    completeArgsUsage,
-		Description: "Show a list of each remote's name and corresponding fingerprints.",
+		Usage:    "List all remotes and their online status",
+		Complete: completeArgsUsage,
+		Description: `This goes over every entry in your remote list and prins
+   his name, network address, rountrip and when we was last seen this
+   remote.`,
 	},
 	"remote.clear": {
 		Usage:       "Clear the complete remote list",
@@ -96,7 +97,7 @@ var HelpTexts = map[string]Help{
 		Complete: completeArgsUsage,
 		Description: `Ping a remote and check if we can reach them.
 
-   There is a small difference to the »net list« command. »ping« will only work
+   There is a small difference to the »remote list« command. »ping« will only work
    if both sides authenticated each other and can thus be used as a test for this.
    Additonally, it shows the roundtrip time, the ping request took to travel.
 `,
@@ -161,13 +162,6 @@ var HelpTexts = map[string]Help{
 		Usage:       "Check if you're connected to the global network",
 		Complete:    completeArgsUsage,
 		Description: `This will either print the string »online« or »offline«`,
-	},
-	"net.list": {
-		Usage:    "Check which remotes are currently online",
-		Complete: completeArgsUsage,
-		Description: `This goes over every entry in your remote list and prins
-   his name, network address, rountrip and when we was last seen this
-   remote.`,
 	},
 	"net.locate": {
 		Usage:     "Try to locate a remote by their name or by a part of it",

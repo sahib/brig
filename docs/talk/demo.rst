@@ -95,14 +95,13 @@ Explain reflinks.
     $ brig remote add <name> <hash>
     $ brig remote ls
     $ brig remote edit
-    $ brig net list
 
 8 Sync & Diff
 =============
 
 .. code-block:: bash
 
-    $ brig net list
+    $ brig remote ls
     $ brig diff alice
     $ brig sync alice
     $ brig log
@@ -111,4 +110,8 @@ Explain reflinks.
 9 Pinning
 =========
 
-?
+.. code-block:: bash
+
+   $ brig pin -u <path>
+   $ brig gc
+   $ brig cat <path>
