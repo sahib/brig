@@ -354,7 +354,8 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		remoteRev = ctx.Args().Get(3)
 	}
 
-	diff, err := ctl.MakeDiff(localName, remoteName, localRev, remoteRev)
+	needFetch := !ctx.Bool("offline")
+	diff, err := ctl.MakeDiff(localName, remoteName, localRev, remoteRev, needFetch)
 	if err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
@@ -391,7 +392,7 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	curr := self.CurrentUser
-	diff, err := ctl.MakeDiff(curr, curr, "HEAD", "CURR")
+	diff, err := ctl.MakeDiff(curr, curr, "HEAD", "CURR", false)
 	if err != nil {
 		return err
 	}

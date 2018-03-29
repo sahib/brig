@@ -116,27 +116,10 @@ func RunCmdline(args []string) int {
 			Name:     "init",
 			Category: repoGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleInit, true)),
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "backend,b",
-					Value: "ipfs",
-					Usage: "What data backend to use for the new repo",
-				},
-			},
 		}, {
 			Name:     "whoami",
 			Category: netwGroup,
 			Action:   withDaemon(handleWhoami, true),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "fingerprint,f",
-					Usage: "Only print the own fingerprint",
-				},
-				cli.BoolFlag{
-					Name:  "name,n",
-					Usage: "Only print the own name",
-				},
-			},
 		}, {
 			Name:     "remote",
 			Aliases:  []string{"rmt"},
@@ -153,25 +136,12 @@ func RunCmdline(args []string) int {
 					Name:    "list",
 					Aliases: []string{"ls"},
 					Action:  withDaemon(handleRemoteList, true),
-					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "offline,o",
-							Usage: "Do not query the online status",
-						},
-					},
 				}, {
 					Name:   "clear",
 					Action: withDaemon(handleRemoteClear, true),
 				}, {
 					Name:   "edit",
 					Action: withDaemon(handleRemoteEdit, true),
-					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "yml,y",
-							Value: "",
-							Usage: "Directly overwrite remote list with yml file",
-						},
-					},
 				}, {
 					Name:   "ping",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
@@ -206,16 +176,6 @@ func RunCmdline(args []string) int {
 				}, {
 					Name:   "locate",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
-					// TODO: Provide flag to indicate what part of the name to search.
-					// TODO: Make timeout a "time duration" (i.e. 5s)
-					// TODO: think of way to upload fingerprint of node more
-					Flags: []cli.Flag{
-						cli.IntFlag{
-							Name:  "t,timeout",
-							Value: 10,
-							Usage: "Wait at most <n> seconds before bailing out",
-						},
-					},
 				},
 			},
 		}, {
@@ -223,49 +183,18 @@ func RunCmdline(args []string) int {
 			Aliases:  []string{"st"},
 			Category: vcscGroup,
 			Action:   withDaemon(handleStatus, true),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "tree,t",
-					Usage: "View the status as a tree listing",
-				},
-			},
 		}, {
-			// TODO: Do automated fetch by default.
 			Name:     "diff",
 			Category: vcscGroup,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "list,l",
-					Usage: "Output the diff as simple list (like status)",
-				},
-			},
-			Action: withDaemon(handleDiff, true),
+			Action:   withDaemon(handleDiff, true),
 		}, {
 			Name:     "tag",
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "delete,d",
-					Usage: "Delete the tag instead of creating it",
-				},
-			},
 		}, {
 			Name:     "log",
 			Category: vcscGroup,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "from,f",
-					Value: "",
-					Usage: "Lower range limit; initial commit if omitted",
-				},
-				cli.StringFlag{
-					Name:  "to,t",
-					Value: "",
-					Usage: "Upper range limit; HEAD if omitted",
-				},
-			},
-			Action: withDaemon(handleLog, true),
+			Action:   withDaemon(handleLog, true),
 		}, {
 			Name:     "fetch",
 			Category: vcscGroup,
@@ -275,12 +204,6 @@ func RunCmdline(args []string) int {
 			Name:     "sync",
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "no-fetch,n",
-					Usage: "Do not do a fetch before syncing",
-				},
-			},
 		}, {
 			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
 			// TODO: Have the notion of explicit pins to save them from indirect/automatic unpins?
@@ -288,59 +211,27 @@ func RunCmdline(args []string) int {
 			Name:     "commit",
 			Aliases:  []string{"cmt"},
 			Category: vcscGroup,
-			// TODO: move bash completion also to help.
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "message,m",
-					Value: "",
-					Usage: "Provide a meaningful commit message",
-				},
-			},
-			Action: withDaemon(handleCommit, true),
+			Action:   withDaemon(handleCommit, true),
 		}, {
 			// TODO: Figure out/test exact way of pinning and write docs for it.
 			Name:     "reset",
 			Aliases:  []string{"co"},
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force,f",
-					Usage: "Reset even when there are changes in the staging area",
-				},
-			},
 		}, {
 			Name:     "become",
 			Category: vcscGroup,
 			Action:   withDaemon(handleBecome, true),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "self,s",
-					Usage: "Become self (i.e. the owner of the repository)",
-				},
-			},
 		}, {
 			Name:     "history",
 			Aliases:  []string{"hst", "hist"},
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "empty,e",
-					Usage: "Also show commits where nothing happens",
-				},
-			},
 		}, {
 			Name:     "stage",
 			Aliases:  []string{"stg", "add", "a"},
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "stdin,i",
-					Usage: "Read data from stdin",
-				},
-			},
 		}, {
 			Name:     "touch",
 			Aliases:  []string{"t"},
@@ -362,39 +253,15 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "ls",
 			Category: wdirGroup,
-			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "depth,d",
-					Usage: "Max depth to traverse",
-					Value: 1,
-				},
-				cli.BoolFlag{
-					Name:  "recursive,R",
-					Usage: "Allow recursive traverse",
-				},
-			},
-			Action: withDaemon(handleList, true),
+			Action:   withDaemon(handleList, true),
 		}, {
 			Name:     "tree",
 			Category: wdirGroup,
-			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "depth, d",
-					Usage: "Max depth to traverse",
-					Value: -1,
-				},
-			},
-			Action: withDaemon(handleTree, true),
+			Action:   withDaemon(handleTree, true),
 		}, {
 			Name:     "mkdir",
 			Category: wdirGroup,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "parents, p",
-					Usage: "Create parent directories as needed",
-				},
-			},
-			Action: withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
 		}, {
 			Name:     "mv",
 			Category: wdirGroup,
@@ -415,12 +282,6 @@ func RunCmdline(args []string) int {
 				{
 					Name:   "launch",
 					Action: withExit(handleDaemonLaunch),
-					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "trace,t",
-							Usage: "Create tracing output suitable for `go tool trace`",
-						},
-					},
 				}, {
 					Name:   "quit",
 					Action: withDaemon(handleDaemonQuit, false),
@@ -447,13 +308,7 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "mount",
 			Category: repoGroup,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "umount,u",
-					Usage: "Unmount the specified directory",
-				},
-			},
-			Action: withDaemon(handleMount, true),
+			Action:   withDaemon(handleMount, true),
 		}, {
 			Name:     "unmount",
 			Category: repoGroup,
@@ -465,13 +320,7 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "gc",
 			Category: repoGroup,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "aggressive,a",
-					Usage: "Also run the garbage collector on all filesystems immediately",
-				},
-			},
-			Action: withDaemon(handleGc, true),
+			Action:   withDaemon(handleGc, true),
 		}, {
 			Name:   "help!",
 			Action: handleOpenHelp,

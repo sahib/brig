@@ -13,6 +13,7 @@ type Help struct {
 	ArgsUsage   string
 	Description string
 	Complete    cli.BashCompleteFunc
+	Flags       []cli.Flag
 }
 
 func die(msg string) {
@@ -25,6 +26,13 @@ var HelpTexts = map[string]Help{
 		Usage:     "Initialize a new repository",
 		ArgsUsage: "<username>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "backend,b",
+				Value: "ipfs",
+				Usage: "What data backend to use for the new repo",
+			},
+		},
 		Description: `Initialize a new repository with a certain backend.
 
    If BRIG_PATH is set, the new repository will be created at this place.  If not,
@@ -37,13 +45,20 @@ var HelpTexts = map[string]Help{
    computers and specifying a domain makes it possible to indicate groups.  This
    is especially important for commands like »brig net locate«.
 `,
-		Flags: map[string]string{
-			"backend": "Choose what backend to use",
-		},
 	},
 	"whoami": {
 		Usage:    "Print the own remote identity",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "fingerprint,f",
+				Usage: "Only print the own fingerprint",
+			},
+			cli.BoolFlag{
+				Name:  "name,n",
+				Usage: "Only print the own name",
+			},
+		},
 		Description: `This command prints your name, fingerprint and what store
    you are looking at. When you initialized your repository, you chose
    the name and a fingerprint (a long hash value) was created for you.
@@ -77,6 +92,12 @@ var HelpTexts = map[string]Help{
 	"remote.list": {
 		Usage:    "List all remotes and their online status",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "offline,o",
+				Usage: "Do not query the online status",
+			},
+		},
 		Description: `This goes over every entry in your remote list and prins
    his name, network address, rountrip and when we was last seen this
    remote.`,
@@ -89,6 +110,13 @@ var HelpTexts = map[string]Help{
 	"remote.edit": {
 		Usage:    "Edit the current list",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "yml,y",
+				Value: "",
+				Usage: "Directly overwrite remote list with yml file",
+			},
+		},
 		Description: `Edit the current list using $EDITOR as YAML file.
    It will be updated upon saving`,
 	},
@@ -167,6 +195,16 @@ var HelpTexts = map[string]Help{
 		Usage:     "Try to locate a remote by their name or by a part of it",
 		ArgsUsage: "<name-or-part-of-it>",
 		Complete:  completeArgsUsage,
+		// TODO: Provide flag to indicate what part of the name to search.
+		// TODO: Make timeout a "time duration" (i.e. 5s)
+		// TODO: think of way to upload fingerprint of node more
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "t,timeout",
+				Value: 10,
+				Usage: "Wait at most <n> seconds before bailing out",
+			},
+		},
 		Description: `brig is able to find the fingerprint of other users (that
    are online) by a part of their name. See the help of »brig init« to see
    out of what components the name is built of.
@@ -187,6 +225,12 @@ var HelpTexts = map[string]Help{
 	},
 	"status": {
 		Usage: "Show what has changed in the current commit",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "tree,t",
+				Usage: "View the status as a tree listing",
+			},
+		},
 		Description: `This a shortcut for »brig diff HEAD CURR«.
 See the »diff« command for more information.`,
 	},
@@ -194,6 +238,16 @@ See the »diff« command for more information.`,
 		Usage:     "Show what changed between two commits",
 		ArgsUsage: "[<REMOTE>] [<REMOTE_REV> [<OTHER_REMOTE> [<OTHER_REV>]]]]",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "list,l",
+				Usage: "Output the diff as simple list (like status)",
+			},
+			cli.BoolFlag{
+				Name:  "offline,o",
+				Usage: "Do no fetch before computing the diff",
+			},
+		},
 		Description: `View what sync would do when being called on the specified points in history.
 
    Diff does not show what changed inside of the files, but shows how the files themselves
@@ -206,6 +260,9 @@ See the »diff« command for more information.`,
    - Ignored (*): This file was ignored because we chose to due to our settings.
    - Mergeable (⇄): Both sides have changes, but they can be merged.
    - Conflict (⚡): Both sides have changes but they conflict.
+
+   Before computing the diff, it will try to fetch the metadata from the peer,
+   if necessary. If you do not want this behaviour, use the »--offline« flag.
 
    See »brig commit« for a general explanation of commits.
 
@@ -221,6 +278,12 @@ EXAMPLES:
 		Usage:     "Tag a commit with a specific name",
 		Complete:  completeArgsUsage,
 		ArgsUsage: "<commit> <name>",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "delete,d",
+				Usage: "Delete the tag instead of creating it",
+			},
+		},
 		Description: `Give a name to a commit, which is easier to remember than the hash.
    You can use the name you gave in all places where brig requires you to specify a commit.
 
@@ -241,6 +304,18 @@ EXAMPLES:
 	"log": {
 		Usage:    "Show all commits in a certain range",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "from,f",
+				Value: "",
+				Usage: "Lower range limit; initial commit if omitted",
+			},
+			cli.StringFlag{
+				Name:  "to,t",
+				Value: "",
+				Usage: "Upper range limit; HEAD if omitted",
+			},
+		},
 		Description: `Show a list of commits from a start (--from) up to and end (--to).
    If omitted »--from INIT --to HEAD« will be assumed.
 
@@ -263,6 +338,12 @@ EXAMPLES:
 		Usage:     "Sync with another peer",
 		ArgsUsage: "<remote>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "no-fetch,n",
+				Usage: "Do not do a fetch before syncing",
+			},
+		},
 		Description: `Sync and merge all metadata of another peer with our metadata.
    After this operation you might see new files in your folder.
    Those files were not downloaded yet and will be only on the first access.
@@ -275,6 +356,13 @@ EXAMPLES:
 	"commit": {
 		Usage:    "Create a new commit",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "message,m",
+				Value: "",
+				Usage: "Provide a meaningful commit message",
+			},
+		},
 		Description: `Create a new commit.
 
    The message (»--message«) is optional. If you do not pass it, a message will
@@ -295,6 +383,12 @@ EXAMPLES:
 		Usage:     "Reset a file or the whole commit to an old state",
 		ArgsUsage: "<remote>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "force,f",
+				Usage: "Reset even when there are changes in the staging area",
+			},
+		},
 		Description: `Reset a file to an old state by specifying the commit it
    should be reverted to. If you do not pass »<file>« the whole commit will be
    filled with the contents of the old commit.
@@ -314,6 +408,12 @@ EXAMPLES:
 		Usage:     "View the data of another user",
 		ArgsUsage: "<remote>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "self,s",
+				Usage: "Become self (i.e. the owner of the repository)",
+			},
+		},
 		Description: `View the data of another user.
 
    You can temporarily explore the metadata of another user, by »becoming«
@@ -331,6 +431,12 @@ EXAMPLES:
 		Usage:     "Show the history of a file or directory",
 		ArgsUsage: "<path>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "empty,e",
+				Usage: "Also show commits where nothing happens",
+			},
+		},
 		Description: `Show a list of all changes that were made to this path.
 
    Not every change you ever made is recorded, but the change between each commit.
@@ -355,6 +461,12 @@ EXAMPLES:
 		Usage:     "Add a local file to the storage",
 		ArgsUsage: "(<local-path> [<path>]|--stdin <path>)",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "stdin,i",
+				Usage: "Read data from stdin",
+			},
+		},
 		Description: `Read a local file (given by »local-path«) and try to read
    it. This is the conceptual equivalent of »git add«. The stream will be encrypted
    and possibly compressed before saving it to ipfs.
@@ -423,6 +535,17 @@ outputting a .tar archive of the directory contents).
 		Usage:     "List files and directories",
 		ArgsUsage: "<path>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "depth,d",
+				Usage: "Max depth to traverse",
+				Value: 1,
+			},
+			cli.BoolFlag{
+				Name:  "recursive,R",
+				Usage: "Allow recursive traverse",
+			},
+		},
 		Description: `List files an directories starting with »path«.
    If no »<path>« is given, the root directory is assumed. Every line of »ls«
    shows a human readable size of each entry, the last modified timestmap, the
@@ -434,6 +557,13 @@ outputting a .tar archive of the directory contents).
 		Usage:     "List files and directories in a tree",
 		ArgsUsage: "<path>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "depth, d",
+				Usage: "Max depth to traverse",
+				Value: -1,
+			},
+		},
 		Description: `Show entries in a tree(1)-like fashion.
    This command is identical to »brig ls« otherwise.
 `,
@@ -442,6 +572,12 @@ outputting a .tar archive of the directory contents).
 		Usage:     "Create an empty directory",
 		ArgsUsage: "<path>",
 		Complete:  completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "parents, p",
+				Usage: "Create parent directories as needed",
+			},
+		},
 		Description: `Create an empty directory at the specified »path«.
    By default, parent directories are not created. You can use »--parents« to
    enable this behaviour.
@@ -497,6 +633,12 @@ outputting a .tar archive of the directory contents).
 	"daemon.launch": {
 		Usage:    "Start the daemon process in the foreground",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "trace,t",
+				Usage: "Create tracing output suitable for `go tool trace`",
+			},
+		},
 		Description: `Start the dameon process in the foreground.
 
    Note that the log will still be written to $BRIG_PATH/logs/main.log.
@@ -604,6 +746,12 @@ CAVEATS
 	"gc": {
 		Usage:    "Trigger the garbage collector",
 		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "aggressive,a",
+				Usage: "Also run the garbage collector on all filesystems immediately",
+			},
+		},
 		Description: `Manually trigger the garbage gollector.
 
    Strictly speaking there are two garbage collectors in the system.  The
@@ -632,8 +780,7 @@ func injectHelp(cmd *cli.Command, path string) {
 	cmd.ArgsUsage = help.ArgsUsage
 	cmd.Description = help.Description
 	cmd.BashComplete = help.Complete
-
-	// TODO: Also try to move the flags, once cli's api allows that.
+	cmd.Flags = help.Flags
 }
 
 func translateHelp(cmds []cli.Command, prefix []string) {

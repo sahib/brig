@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	fserrs "github.com/sahib/brig/catfs/errors"
@@ -374,6 +375,16 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 		return err
 	}
 
+	if call.Params.NeedFetch() {
+		if err := vcs.doFetch(remoteOwner); err != nil {
+			return e.Wrapf(err, "fetch-remote")
+		}
+
+		if err := vcs.doFetch(localOwner); err != nil {
+			return e.Wrapf(err, "fetch-local")
+		}
+	}
+
 	// Check if the stores are valid:
 	for _, owner := range []string{localOwner, remoteOwner} {
 		if !rp.HaveFS(owner) {
@@ -412,6 +423,16 @@ func (vcs *vcsHandler) doFetch(who string) error {
 	// TODO: Optimize by implementing store diffs.
 	// This is currently implemented very stupidly by simply fetching
 	// all the store from remote, saving it and using it as sync base.
+	rp, err := vcs.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	if who == rp.Owner {
+		log.Infof("skipping fetch for own meadata")
+		return nil
+	}
+
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		storeBuf, err := ctl.FetchStore()
 		if err != nil {
