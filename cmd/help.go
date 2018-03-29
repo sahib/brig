@@ -195,13 +195,17 @@ var HelpTexts = map[string]Help{
 		Usage:     "Try to locate a remote by their name or by a part of it",
 		ArgsUsage: "<name-or-part-of-it>",
 		Complete:  completeArgsUsage,
-		// TODO: Provide flag to indicate what part of the name to search.
 		// TODO: think of way to upload fingerprint of node more
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "t,timeout",
-				Value: "10",
+				Value: "10s",
 				Usage: "Wait at most <n> seconds before bailing out",
+			},
+			cli.StringFlag{
+				Name:  "m,mask",
+				Value: "exact,domain,user,email",
+				Usage: "Indicate what part of the id you want to query for",
 			},
 		},
 		Description: `brig is able to find the fingerprint of other users (that

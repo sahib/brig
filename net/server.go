@@ -40,25 +40,26 @@ func publishSelf(bk backend.Backend, owner string) error {
 	// Example: alice@wonderland.org/resource
 	name := peer.Name(owner)
 
-	// Publish the full name.
+	// Publish the full name »alice@wonderland.org/resource«
 	if err := bk.PublishName(owner); err != nil {
 		return err
 	}
 
-	// Also publish alice@wonderland.org
+	// Also publish »alice@wonderland.org«
 	if noRes := name.WithoutResource(); noRes != string(name) {
 		if err := bk.PublishName(noRes); err != nil {
 			return err
 		}
 	}
 
-	// Publish wonderland.org
+	// Publish »wonderland.org«
 	if domain := name.Domain(); domain != "" {
 		if err := bk.PublishName(domain); err != nil {
 			return err
 		}
 	}
 
+	// Publish »alice«
 	if user := name.User(); user != string(name) {
 		if err := bk.PublishName(user); err != nil {
 			return err
@@ -149,6 +150,8 @@ func LocateMaskFromString(s string) (LocateMask, error) {
 			mask |= LocateUser
 		case "email":
 			mask |= LocateEmail
+		case "all":
+			mask |= LocateAll
 		default:
 			return mask, fmt.Errorf("Invalid locate mask name `%s`", part)
 		}

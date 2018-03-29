@@ -220,7 +220,7 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}()
 
-	candidateCh, err := ctl.NetLocate(who, int(timeoutSec))
+	candidateCh, err := ctl.NetLocate(who, ctx.String("mask"), timeoutSec)
 	if err != nil {
 		return fmt.Errorf("Failed to locate peers: %v", err)
 	}

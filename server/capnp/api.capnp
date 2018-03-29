@@ -152,7 +152,7 @@ interface Meta {
     remotePing   @12 (who :Text) -> (roundtrip :Float64);
     remoteClear  @13 ();
 
-    netLocate     @14 (who :Text, timeoutSec :Int32) -> (ticket :UInt64);
+    netLocate     @14 (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
     netLocateNext @15 (ticket :UInt64) -> (result :LocateResult);
 
     # the combined command of both is "whathaveibecome":

@@ -407,11 +407,27 @@ type LocateResult struct {
 	Fingerprint string
 }
 
+// TODO: This method is too complex, clean it up a bit
+//       and move parts of it to net.Server
 func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	timeoutSec := call.Params.TimeoutSec()
+
 	who, err := call.Params.Who()
 	if err != nil {
 		return err
+	}
+
+	locateMaskSpec, err := call.Params.LocateMask()
+	if err != nil {
+		return err
+	}
+
+	locateMask := p2pnet.LocateMask(p2pnet.LocateAll)
+	if locateMaskSpec != "" {
+		locateMask, err = p2pnet.LocateMaskFromString(locateMaskSpec)
+		if err != nil {
+			return err
+		}
 	}
 
 	psrv, err := mh.base.PeerServer()
@@ -427,12 +443,13 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	addrCache := sync.Map{}
 	addrCache.Store(ident.Addr, true)
 
-	ctx, cancel := context.WithTimeout(mh.base.ctx, time.Duration(timeoutSec)*time.Second)
+	timeoutDur := time.Duration(timeoutSec * float64(time.Second))
+	ctx, cancel := context.WithTimeout(mh.base.ctx, timeoutDur)
 	defer cancel()
 
 	ticket := mh.base.conductor.Exec(func(ticket uint64) error {
 		log.Debugf("Locating %v", who)
-		locateCh := psrv.Locate(ctx, peer.Name(who), p2pnet.LocateAll)
+		locateCh := psrv.Locate(ctx, peer.Name(who), locateMask)
 
 		wg := sync.WaitGroup{}
 		for located := range locateCh {

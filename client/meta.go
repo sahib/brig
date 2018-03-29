@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -354,9 +353,14 @@ func capLrToLr(capLr capnp.LocateResult) (*LocateResult, error) {
 	}, nil
 }
 
-func (cl *Client) NetLocate(who string, timeoutSec int) (chan *LocateResult, error) {
+func (cl *Client) NetLocate(who, mask string, timeoutSec float64) (chan *LocateResult, error) {
 	call := cl.api.NetLocate(cl.ctx, func(p capnp.Meta_netLocate_Params) error {
-		p.SetTimeoutSec(int32(timeoutSec))
+		p.SetTimeoutSec(float64(timeoutSec))
+
+		if err := p.SetLocateMask(mask); err != nil {
+			return err
+		}
+
 		return p.SetWho(who)
 	})
 
@@ -377,10 +381,8 @@ func (cl *Client) NetLocate(who string, timeoutSec int) (chan *LocateResult, err
 				return nil
 			})
 
-			// TODO: Remove those weird printlns
 			result, err := nextCall.Struct()
 			if err != nil {
-				fmt.Println("Failed to get result")
 				continue
 			}
 
@@ -390,13 +392,11 @@ func (cl *Client) NetLocate(who string, timeoutSec int) (chan *LocateResult, err
 
 			capLr, err := result.Result()
 			if err != nil {
-				fmt.Println("Failed to get result's result")
 				continue
 			}
 
 			lr, err := capLrToLr(capLr)
 			if err != nil {
-				fmt.Println("FAILED TO CONVERT result", err)
 				continue
 			}
 
