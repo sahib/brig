@@ -377,3 +377,21 @@ func edit(data []byte, suffix string) ([]byte, error) {
 	// Some editors might add a trailing newline:
 	return bytes.TrimRight(newData, "\n"), nil
 }
+
+// parseDuration tries to convert the string `s` to
+// a duration in seconds (+ fractions).
+// It uses time.ParseDuration() internally, but allows
+// whole numbers which are counted as seconds.
+func parseDuration(s string) (float64, error) {
+	sec, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		return sec, nil
+	}
+
+	dur, err := time.ParseDuration(s)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return float64(dur) / float64(time.Second), nil
+}

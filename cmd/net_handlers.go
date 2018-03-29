@@ -205,7 +205,10 @@ func handleRemoteEdit(ctx *cli.Context, ctl *client.Client) error {
 
 func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
-	timeoutSec := ctx.Int("timeout")
+	timeoutSec, err := parseDuration(ctx.String("timeout"))
+	if err != nil {
+		return err
+	}
 
 	// Show a progress ticker, since the query might take quite long:
 	progressTicker := time.NewTicker(500 * time.Millisecond)
@@ -217,7 +220,7 @@ func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}()
 
-	candidateCh, err := ctl.NetLocate(who, timeoutSec)
+	candidateCh, err := ctl.NetLocate(who, int(timeoutSec))
 	if err != nil {
 		return fmt.Errorf("Failed to locate peers: %v", err)
 	}

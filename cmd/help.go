@@ -196,12 +196,11 @@ var HelpTexts = map[string]Help{
 		ArgsUsage: "<name-or-part-of-it>",
 		Complete:  completeArgsUsage,
 		// TODO: Provide flag to indicate what part of the name to search.
-		// TODO: Make timeout a "time duration" (i.e. 5s)
 		// TODO: think of way to upload fingerprint of node more
 		Flags: []cli.Flag{
-			cli.IntFlag{
+			cli.StringFlag{
 				Name:  "t,timeout",
-				Value: 10,
+				Value: "10",
 				Usage: "Wait at most <n> seconds before bailing out",
 			},
 		},
