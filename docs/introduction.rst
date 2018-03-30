@@ -15,7 +15,7 @@ In order to make your live easier, there's a built-in help system:
 .. code-block:: bash
 
     # opens the documentation in a webbrowser
-    $ brig help!
+    $ brig docs
     # Every command offers detailled built-in help.
     $ brig help remote
     NAME:
@@ -52,6 +52,11 @@ In order to make your live easier, there's a built-in help system:
       * mount
       * rm
       * remote
+
+    # Open a bug report in your browser with
+    # some useful information pre-filled in for you:
+    $ brig bug
+
 
 Creating a repository
 ---------------------

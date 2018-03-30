@@ -56,6 +56,8 @@ theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
 a few months until I ([sahib](https://github.com/sahib)) picked at up again and
 currently am trying to push it to a usable prototype.
 
+If you want to open a bug report, just type ``brig bug`` to get a readily filled template for you.
+
 ## Documentation
 
 All documentation can be found on ReadTheDocs.org:

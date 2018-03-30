@@ -768,8 +768,17 @@ CAVEATS
 
 `,
 	},
-	"help!": {
+	"docs": {
 		Usage: "Open the online documentation in webbrowser",
+	},
+	"bug": {
+		Usage: "Print a template for bug reports",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "stdout,s",
+				Usage: "Always print the report to stdout; do not open a browser",
+			},
+		},
 	},
 }
 

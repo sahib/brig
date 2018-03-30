@@ -215,7 +215,7 @@ func RunCmdline(args []string) int {
 		}, {
 			// TODO: Figure out/test exact way of pinning and write docs for it.
 			Name:     "reset",
-			Aliases:  []string{"co"},
+			Aliases:  []string{"re"},
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
 		}, {
@@ -275,7 +275,6 @@ func RunCmdline(args []string) int {
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
 		}, {
-			// TODO: subcommand brig bug -> collect bug report info
 			Name:     "daemon",
 			Category: repoGroup,
 			Subcommands: []cli.Command{
@@ -325,6 +324,9 @@ func RunCmdline(args []string) int {
 			Name:   "help!",
 			Action: handleOpenHelp,
 			Hidden: true,
+		}, {
+			Name:   "bug",
+			Action: handleBugReport,
 		},
 	})
 
