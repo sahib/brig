@@ -156,8 +156,15 @@ func RunCmdline(args []string) int {
 					Name:   "add",
 					Action: withDaemon(handlePin, true),
 				}, {
-					Name:   "rm",
-					Action: withDaemon(handleUnpin, true),
+					Name:    "remove",
+					Aliases: []string{"rm"},
+					Action:  withDaemon(handleUnpin, true),
+				}, {
+					// TODO: PIN: Implement. Make it possibly to
+					//            have --from / --to ranges.
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(nil, true),
 				},
 			},
 		}, {
@@ -206,8 +213,6 @@ func RunCmdline(args []string) int {
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
 		}, {
 			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
-			// TODO: Have the notion of explicit pins to save them from indirect/automatic unpins?
-			//       (is this what ipfs has?)
 			Name:     "commit",
 			Aliases:  []string{"cmt"},
 			Category: vcscGroup,
@@ -321,7 +326,7 @@ func RunCmdline(args []string) int {
 			Category: repoGroup,
 			Action:   withDaemon(handleGc, true),
 		}, {
-			Name:   "help!",
+			Name:   "docs",
 			Action: handleOpenHelp,
 			Hidden: true,
 		}, {

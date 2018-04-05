@@ -228,7 +228,12 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 	for _, entry := range entries {
 		pinState := ""
 		if entry.IsPinned {
-			pinState += " " + color.CyanString("🖈")
+			colorFn := color.CyanString
+			if entry.IsExplicit {
+				colorFn = color.MagentaString
+			}
+
+			pinState += " " + colorFn("🖈")
 		}
 
 		coloredPath := ""
@@ -300,6 +305,11 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 		pinState = color.RedString("no")
 	}
 
+	explicitState := color.GreenString("yes")
+	if !info.IsExplicit {
+		explicitState = color.RedString("no")
+	}
+
 	nodeType := "file"
 	if info.IsDir {
 		nodeType = "directory"
@@ -328,6 +338,7 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	printPair("Hash", info.Hash.B58String())
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
+	printPair("Explicit", explicitState)
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
 	printPair("Content", info.Content.B58String())
 

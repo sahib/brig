@@ -158,7 +158,12 @@ var HelpTexts = map[string]Help{
 		Description: `A node that is pinned to local storage will not be
    deleted by the garbage collector.`,
 	},
-	"pin.rm": {
+	"pin.list": {
+		Usage:       "List all directly pinned files in a certain commit range",
+		Complete:    completeArgsUsage,
+		Description: `TODO.`,
+	},
+	"pin.remove": {
 		Usage:     "Remove a pin",
 		ArgsUsage: "<file>",
 		Complete:  completeArgsUsage,

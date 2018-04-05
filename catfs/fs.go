@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"sync"
@@ -48,6 +49,7 @@ type FS struct {
 	// ticker that drives the gc background routine
 	gcTicker *time.Ticker
 
+	// channel to schedule gc runs and quit the gc
 	gcControl chan bool
 
 	// Actual storage backend (e.g. ipfs or memory)
@@ -60,16 +62,17 @@ type FS struct {
 // StatInfo describes the metadata of a single node.
 // The concept is comparable to the POSIX stat() call.
 type StatInfo struct {
-	Path     string
-	Hash     h.Hash
-	User     string
-	Size     uint64
-	Inode    uint64
-	IsDir    bool
-	Depth    int
-	ModTime  time.Time
-	IsPinned bool
-	Content  h.Hash
+	Path       string
+	Hash       h.Hash
+	User       string
+	Size       uint64
+	Inode      uint64
+	IsDir      bool
+	Depth      int
+	ModTime    time.Time
+	IsPinned   bool
+	IsExplicit bool
+	Content    h.Hash
 }
 
 type DiffPair struct {
@@ -110,7 +113,7 @@ type Change struct {
 /////////////////////
 
 func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
-	isPinned, err := fs.isPinned(nd)
+	isPinned, isExplicit, err := fs.isPinned(nd)
 	if err != nil {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
@@ -121,16 +124,17 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 	}
 
 	return &StatInfo{
-		Path:     nd.Path(),
-		Hash:     nd.Hash().Clone(),
-		User:     nd.User(),
-		ModTime:  nd.ModTime(),
-		IsDir:    nd.Type() == n.NodeTypeDirectory,
-		Inode:    nd.Inode(),
-		Size:     nd.Size(),
-		Depth:    n.Depth(nd),
-		IsPinned: isPinned,
-		Content:  content,
+		Path:       nd.Path(),
+		Hash:       nd.Hash().Clone(),
+		User:       nd.User(),
+		ModTime:    nd.ModTime(),
+		IsDir:      nd.Type() == n.NodeTypeDirectory,
+		Inode:      nd.Inode(),
+		Size:       nd.Size(),
+		Depth:      n.Depth(nd),
+		IsPinned:   isPinned,
+		IsExplicit: isExplicit,
+		Content:    content,
 	}
 }
 
@@ -167,7 +171,7 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 
 	// This node will not be reachable anymore by brig.
 	// Make sure it is also unpinned to save space.
-	if err := fs.bk.Unpin(file.Content()); err != nil {
+	if err := fs.bk.Unpin(file.Content(), true); err != nil {
 		log.Warningf("unpinning attempt failed: %v", err)
 	}
 
@@ -402,7 +406,7 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 // PINNING OPERATIONS //
 ////////////////////////
 
-func (fs *FS) pinOp(path string, op func(hash h.Hash) error) error {
+func (fs *FS) pinOp(path string, explicit bool, op func(h.Hash, bool) error) error {
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil {
 		return err
@@ -415,7 +419,7 @@ func (fs *FS) pinOp(path string, op func(hash h.Hash) error) error {
 				return ie.ErrBadNode
 			}
 
-			if err := op(file.Content()); err != nil {
+			if err := op(file.Content(), explicit); err != nil {
 				return err
 			}
 		}
@@ -424,39 +428,94 @@ func (fs *FS) pinOp(path string, op func(hash h.Hash) error) error {
 	})
 }
 
+// preCache makes the backend fetch the data already from the network,
+// even though it might not be needed yet.
+func (fs *FS) preCache(path string) error {
+	stream, err := fs.Cat(path)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(ioutil.Discard, stream)
+	return err
+}
+
+func (fs *FS) preCacheInBackground(path string) {
+	go func() {
+		if err := fs.preCache(path); err != nil {
+			log.Debugf("failed to pre-cache `%s`: %v", path, err)
+		}
+	}()
+}
+
+// TODO: PIN: Make pre fetch configurable.
 func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pinOp(path, fs.bk.Pin)
+	if err := fs.pinOp(path, true, fs.bk.Pin); err != nil {
+		return err
+	}
+
+	// Make sure the data is available:
+	// (this is some sort of `cat path > /dev/null`)
+	fs.preCacheInBackground(path)
+	return nil
 }
 
 func (fs *FS) Unpin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pinOp(path, fs.bk.Unpin)
+	return fs.pinOp(path, true, fs.bk.Unpin)
 }
 
+type PinResult struct {
+	Path   string
+	Commit *Commit
+}
+
+func (fs *FS) ListPins() ([]PinResult, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	// TODO: Do a proper implementation of this.
+	//       Iterate over the complete, reachable MDAG and see
+	//       what nodes are pinned.
+	return nil, nil
+}
+
+// errNotPinnedSentinel is returned to signal an early exit in Walk()
 var errNotPinnedSentinel = errors.New("not pinned")
 
 // IsPinned returns true for files and directories that are pinned.
 // A directory only counts as pinned if all files and directories
 // in it are also pinned.
-func (fs *FS) IsPinned(path string) (bool, error) {
+func (fs *FS) IsPinned(path string) (bool, bool, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 
 	return fs.isPinned(nd)
 }
 
-func (fs *FS) isPinned(nd n.Node) (bool, error) {
+// isPinned checks if `nd` is pinned.
+// In case of directories, this returns true, if all files inside are pinned.
+//
+// TODO: This can be slow, since it relies on the backend.
+//       Especially when backend has to check heavily recursive pins,
+//       this gets slow. In this case we should maintain a cache of pins,
+//       to avoid the costly re-calculation of deep directories.
+//       This should alleviate the performance issues with big hierarchies,
+//       and all code that uses e.g. Stat() (== pretty much everything)
+func (fs *FS) isPinned(nd n.Node) (bool, bool, error) {
 	pinCount := 0
+	explicitCount := 0
+	totalCount := 0
 
 	err := n.Walk(fs.lkr, nd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeFile {
@@ -465,9 +524,15 @@ func (fs *FS) isPinned(nd n.Node) (bool, error) {
 				return ie.ErrBadNode
 			}
 
-			isPinned, err := fs.bk.IsPinned(file.Content())
+			totalCount++
+
+			isPinned, isExplicit, err := fs.bk.IsPinned(file.Content())
 			if err != nil {
 				return err
+			}
+
+			if isExplicit {
+				explicitCount++
 			}
 
 			if isPinned {
@@ -485,19 +550,27 @@ func (fs *FS) isPinned(nd n.Node) (bool, error) {
 	})
 
 	if err != nil && err != errNotPinnedSentinel {
-		return false, err
+		return false, false, err
 	}
 
 	if err == errNotPinnedSentinel {
-		return false, nil
+		return false, false, nil
 	}
 
-	return pinCount > 0, nil
+	return pinCount > 0, explicitCount == totalCount, nil
 }
 
 ////////////////////////
 // STAGING OPERATIONS //
 ////////////////////////
+
+func prefixSlash(s string) string {
+	if !strings.HasPrefix(s, "/") {
+		return "/" + s
+	}
+
+	return s
+}
 
 // Touch creates an empty file at `path` if it does not exist yet.
 // If it exists, it's mod time is being updated to the current time.
@@ -520,14 +593,6 @@ func (fs *FS) Touch(path string) error {
 
 	// Notthing there, stage an empty file.
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
-}
-
-func prefixSlash(s string) string {
-	if !strings.HasPrefix(s, "/") {
-		return "/" + s
-	}
-
-	return s
 }
 
 // Truncate cuts of the output of the file at `path` to `size`.
@@ -641,19 +706,30 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
+	pinExplicit := false
+
 	if oldFile != nil {
 		if oldFile.Content().Equal(contentHash) {
 			// Nothing changed.
 			return nil
 		}
 
-		// Unpin old content.
-		if err := fs.bk.Unpin(oldFile.Content()); err != nil {
+		_, isExplicit, err := fs.bk.IsPinned(oldFile.Content())
+		if err != nil {
+			return err
+		}
+
+		// If the old file was pinned explicitly, we should also pin
+		// the new file explicitly to carry over that info.
+		pinExplicit = isExplicit
+
+		// Unpin old content by force.
+		if err := fs.bk.Unpin(oldFile.Content(), true); err != nil {
 			return err
 		}
 	}
 
-	if err := fs.bk.Pin(contentHash); err != nil {
+	if err := fs.bk.Pin(contentHash, pinExplicit); err != nil {
 		return err
 	}
 
@@ -811,7 +887,7 @@ func (fs *FS) Sync(remote *FS) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	doPinOrUnpin := func(doPin bool, nd n.ModNode) {
+	doPinOrUnpin := func(doPin, explicit bool, nd n.ModNode) {
 		file, ok := nd.(*n.File)
 		if !ok {
 			// Non-files are simply ignored.
@@ -823,7 +899,7 @@ func (fs *FS) Sync(remote *FS) error {
 			op, opName = fs.bk.Pin, "pin"
 		}
 
-		if err := op(file.Content()); err != nil {
+		if err := op(file.Content(), explicit); err != nil {
 			log.Warningf("Failed to %s hash: %v", opName, file.Content())
 		}
 	}
@@ -831,21 +907,32 @@ func (fs *FS) Sync(remote *FS) error {
 	// Make sure we pin/unpin files correctly after the sync:
 	syncCfg := &fs.cfg.sync
 	syncCfg.OnAdd = func(newNd n.ModNode) bool {
-		doPinOrUnpin(true, newNd)
+		doPinOrUnpin(true, false, newNd)
 		return true
 	}
 	syncCfg.OnRemove = func(oldNd n.ModNode) bool {
-		doPinOrUnpin(false, oldNd)
+		doPinOrUnpin(false, true, oldNd)
 		return true
 	}
 	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
-		doPinOrUnpin(true, newNd)
-		doPinOrUnpin(false, oldNd)
+		_, isExplicit, err := fs.bk.IsPinned(oldNd.Content())
+		if err != nil {
+			log.Warnf(
+				"failed to check pin status of old node `%s` (%v)",
+				oldNd.Path(),
+				oldNd.Content(),
+			)
+		}
+
+		// Pin new node with old pin state:
+		doPinOrUnpin(true, isExplicit, newNd)
+		doPinOrUnpin(false, true, oldNd)
 		return true
 	}
 	syncCfg.OnConflict = func(src, dst n.ModNode) bool {
 		// Don't need to do something,
 		// conflict file will not get a pin by default.
+		// TODO: Does this make sense?
 		return true
 	}
 
@@ -985,11 +1072,11 @@ func (fs *FS) Reset(path, rev string) error {
 		return nil
 	}
 
-	if err := fs.pinOp(path, fs.bk.Unpin); err != nil {
+	if err := fs.pinOp(path, false, fs.bk.Unpin); err != nil {
 		return err
 	}
 
-	return fs.pinOp(path, fs.bk.Pin)
+	return fs.pinOp(path, false, fs.bk.Pin)
 }
 
 func (fs *FS) Checkout(rev string, force bool) error {

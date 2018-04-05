@@ -61,6 +61,12 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 		} else {
 			resp = []byte("no")
 		}
+	case "user.brig.explicit":
+		if info.IsExplicit {
+			resp = []byte("yes")
+		} else {
+			resp = []byte("no")
+		}
 	default:
 		return nil, fuse.ErrNoXattr
 	}

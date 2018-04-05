@@ -11,16 +11,17 @@ import (
 )
 
 type StatInfo struct {
-	Path     string
-	User     string
-	Hash     h.Hash
-	Size     uint64
-	Inode    uint64
-	IsDir    bool
-	Depth    int
-	ModTime  time.Time
-	IsPinned bool
-	Content  h.Hash
+	Path       string
+	User       string
+	Hash       h.Hash
+	Size       uint64
+	Inode      uint64
+	IsDir      bool
+	Depth      int
+	ModTime    time.Time
+	IsPinned   bool
+	IsExplicit bool
+	Content    h.Hash
 }
 
 func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
@@ -72,6 +73,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.Inode = capInfo.Inode()
 	info.IsDir = capInfo.IsDir()
 	info.IsPinned = capInfo.IsPinned()
+	info.IsExplicit = capInfo.IsExplicit()
 	info.Depth = int(capInfo.Depth())
 	info.Content = content
 	return info, nil

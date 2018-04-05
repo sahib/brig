@@ -31,29 +31,36 @@ type FsBackend interface {
 	// which it can be accessed on later.
 	Add(r io.Reader) (h.Hash, error)
 
-	// Pin gives the object at `hash` a "pin"
+	// Pin gives the object at `hash` a "pin".
 	// (i.e. it marks the file to be stored indefinitely in local storage)
-	Pin(hash h.Hash) error
+	// When pinning an explicit pin with an implicit pin, the explicit pin
+	// will stay. Upgrading from implicit to explicit is possible though.
+	Pin(hash h.Hash, explicit bool) error
 
 	// Unpin removes a previously added pin.
 	// If an object is already unpinned this is a no op.
-	Unpin(hash h.Hash) error
+	Unpin(hash h.Hash, explicit bool) error
 
-	// IsPinned will return true if the object has a pin.
-	IsPinned(hash h.Hash) (bool, error)
+	// IsPinned return two boolean values:
+	// - If the first value is true, the file is pinned.
+	// - If the second value is true, it was explicitly pinned by the user.
+	IsPinned(hash h.Hash) (bool, bool, error)
+
+	// ExplicitPins returns all hashes that were explicitly pinned
+	ExplicitPins() ([]h.Hash, error)
 }
 
 // MemFsBackend is a mock structure that implements FsBackend.
 type MemFsBackend struct {
 	data map[string][]byte
-	pins map[string]bool
+	pins map[string]*memPinInfo
 }
 
 // NewMemFsBackend returns a MemFsBackend (useful for writing tests)
 func NewMemFsBackend() *MemFsBackend {
 	return &MemFsBackend{
 		data: make(map[string][]byte),
-		pins: make(map[string]bool),
+		pins: make(map[string]*memPinInfo),
 	}
 }
 
@@ -79,22 +86,71 @@ func (mb *MemFsBackend) Add(r io.Reader) (h.Hash, error) {
 	return hash, nil
 }
 
+type memPinInfo struct {
+	isPinned, isExplicit bool
+}
+
 // Pin implements FsBackend.Pin by storing a marker in memory.
-func (mb *MemFsBackend) Pin(hash h.Hash) error {
-	mb.pins[hash.B58String()] = true
+func (mb *MemFsBackend) Pin(hash h.Hash, explicit bool) error {
+	_, isExplicit, err := mb.IsPinned(hash)
+	if err != nil {
+		return err
+	}
+
+	if !explicit && isExplicit {
+		// should not overwrite.
+		return nil
+	}
+
+	mb.pins[hash.B58String()] = &memPinInfo{true, explicit}
 	return nil
 }
 
 // Unpin implements FsBackend.Unpin by removing a marker in memory.
-func (mb *MemFsBackend) Unpin(hash h.Hash) error {
-	mb.pins[hash.B58String()] = false
+func (mb *MemFsBackend) Unpin(hash h.Hash, explicit bool) error {
+	isPinned, isExplicit, err := mb.IsPinned(hash)
+	if err != nil {
+		return err
+	}
+
+	if !isPinned {
+		return nil
+	}
+
+	if !explicit && isExplicit {
+		return nil
+	}
+
+	mb.pins[hash.B58String()] = &memPinInfo{false, false}
 	return nil
 }
 
 // IsPinned implements FsBackend.IsPinned by querying a marker in memory.
-func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, error) {
-	isPinned, ok := mb.pins[hash.B58String()]
-	return isPinned && ok, nil
+func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, bool, error) {
+	info, ok := mb.pins[hash.B58String()]
+	if !ok {
+		return false, false, nil
+	}
+
+	return info.isPinned, info.isExplicit, nil
+}
+
+func (mb *MemFsBackend) ExplicitPins() ([]h.Hash, error) {
+	result := []h.Hash{}
+	for b58Hash, info := range mb.pins {
+		if !info.isExplicit {
+			continue
+		}
+
+		hash, err := h.FromB58String(b58Hash)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, hash)
+	}
+
+	return result, nil
 }
 
 var _ FsBackend = &MemFsBackend{}
