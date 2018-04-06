@@ -392,3 +392,49 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 		return nil
 	})
 }
+
+func (fh *fsHandler) ListExplicitPins(call capnp.FS_listExplicitPins) error {
+	from, err := call.Params.From()
+	if err != nil {
+		return err
+	}
+
+	to, err := call.Params.To()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		pins, err := fs.ListExplicitPins(from, to)
+		if err != nil {
+			return err
+		}
+
+		seg := call.Results.Segment()
+		capPins, err := capnp.NewPinResult_List(seg, int32(len(pins)))
+		if err != nil {
+			return err
+		}
+
+		for idx, pin := range pins {
+			capPin, err := capnp.NewPinResult(seg)
+			if err != nil {
+				return err
+			}
+
+			if err := capPin.SetPath(pin.Path); err != nil {
+				return err
+			}
+
+			if err := capPin.SetCommit(pin.Commit); err != nil {
+				return err
+			}
+
+			if err := capPins.Set(idx, capPin); err != nil {
+				return err
+			}
+		}
+
+		return call.Results.SetPins(capPins)
+	})
+}

@@ -318,3 +318,49 @@ func (cl *Client) StageFromData(path string, r io.Reader) error {
 
 	return nil
 }
+
+type PinResult struct {
+	Path   string
+	Commit string
+}
+
+func (cl *Client) ListExplicitPins(from, to string) ([]PinResult, error) {
+	call := cl.api.ListExplicitPins(cl.ctx, func(p capnp.FS_listExplicitPins_Params) error {
+		if err := p.SetFrom(from); err != nil {
+			return err
+		}
+
+		return p.SetTo(to)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capPins, err := result.Pins()
+	if err != nil {
+		return nil, err
+	}
+
+	pins := []PinResult{}
+	for idx := 0; idx < capPins.Len(); idx++ {
+		capPin := capPins.At(idx)
+		path, err := capPin.Path()
+		if err != nil {
+			return nil, err
+		}
+
+		commit, err := capPin.Commit()
+		if err != nil {
+			return nil, err
+		}
+
+		pins = append(pins, PinResult{
+			Path:   path,
+			Commit: commit,
+		})
+	}
+
+	return pins, nil
+}

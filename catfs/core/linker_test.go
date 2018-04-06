@@ -3,6 +3,7 @@ package core
 import (
 	"io/ioutil"
 	"os"
+	"sort"
 	"testing"
 	"unsafe"
 
@@ -538,5 +539,57 @@ func TestResolveRef(t *testing.T) {
 
 		_, err = lkr.ResolveRef("HE^^AD")
 		require.Equal(t, err, ie.ErrNoSuchRef("he^^ad"))
+	})
+}
+
+type iterResult struct {
+	path, commit string
+}
+
+func TestIterAll(t *testing.T) {
+	t.Parallel()
+
+	WithDummyLinker(t, func(lkr *Linker) {
+		init, err := lkr.Head()
+		require.Nil(t, err)
+		c0 := init.Hash().B58String()
+
+		x := MustTouch(t, lkr, "/x", 1)
+		MustTouch(t, lkr, "/y", 1)
+		c1 := MustCommit(t, lkr, "first").Hash().B58String()
+		MustModify(t, lkr, x, 2)
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+		c2 := status.Hash().B58String()
+
+		results := []iterResult{}
+		require.Nil(t, lkr.IterAll(nil, nil, func(nd n.ModNode, cmt *n.Commit) error {
+			results = append(results, iterResult{nd.Path(), cmt.Hash().B58String()})
+			return nil
+		}))
+
+		expected := []iterResult{
+			{"/", c2},
+			{"/x", c2},
+			{"/y", c2},
+			{"/", c1},
+			{"/x", c1},
+			{"/", c0},
+		}
+
+		sort.Slice(results, func(i, j int) bool {
+			// Do not change orderings between commits:
+			if results[i].commit != results[j].commit {
+				return false
+			}
+
+			return results[i].path < results[j].path
+		})
+
+		for idx, result := range results {
+			require.Equal(t, result.path, expected[idx].path)
+			require.Equal(t, result.commit, expected[idx].commit)
+		}
 	})
 }

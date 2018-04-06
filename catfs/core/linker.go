@@ -1606,3 +1606,72 @@ func (lkr *Linker) ExpandAbbrev(abbrev string) (h.Hash, error) {
 
 	return nil, fmt.Errorf("No such abbrev: %v", abbrev)
 }
+
+// IterAll goes over all nodes in the commit range `from` until (including) `to`.
+// Already visited nodes will not be visited again if they did not change.
+// If `from` is nil, HEAD is assumed.
+// If `to` is nil, INIT is assumed.
+func (lkr *Linker) IterAll(from, to *n.Commit, fn func(n.ModNode, *n.Commit) error) error {
+	visited := make(map[string]struct{})
+	return lkr.iterAll(from, to, visited, fn)
+}
+
+func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn func(n.ModNode, *n.Commit) error) error {
+	if from == nil {
+		head, err := lkr.Status()
+		if err != nil {
+			return err
+		}
+
+		from = head
+	}
+
+	root, err := lkr.DirectoryByHash(from.Root())
+	if err != nil {
+		return err
+	}
+
+	walker := func(child n.Node) error {
+		if _, ok := visited[child.Hash().B58String()]; ok {
+			return n.SkipChild
+		}
+
+		modChild, ok := child.(n.ModNode)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		visited[child.Hash().B58String()] = struct{}{}
+		if err := fn(modChild, from); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := n.Walk(lkr, root, false, walker); err != nil {
+		return e.Wrapf(err, "iter-all: walk")
+	}
+
+	// Check if we're already at the lowest commit:
+	if to != nil && from.Hash().Equal(to.Hash()) {
+		return nil
+	}
+
+	prev, err := from.Parent(lkr)
+	if err != nil {
+		return err
+	}
+
+	if prev == nil {
+		// Definite end of line.
+		return nil
+	}
+
+	prevCmt, ok := prev.(*n.Commit)
+	if !ok {
+		return ie.ErrBadNode
+	}
+
+	return lkr.iterAll(prevCmt, to, visited, fn)
+}

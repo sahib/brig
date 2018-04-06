@@ -164,7 +164,7 @@ func RunCmdline(args []string) int {
 					//            have --from / --to ranges.
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withDaemon(nil, true),
+					Action:  withDaemon(handlePinList, true),
 				},
 			},
 		}, {

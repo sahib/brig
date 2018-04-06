@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -339,17 +340,28 @@ func (d *Directory) IsRoot() bool {
 	return d.parentName == ""
 }
 
+var SkipChild = errors.New("skip sub directory")
+
 // Walk calls `visit` for each node below `node`, including `node`.
 // If `dfs` is true, depth first search will be used.
 // If `dfs` is false, breadth first search will be used.
 // It is valid to pass a File to Walk(), then visit will be called exactly once.
+//
+// It is possible to return the special error value SkipChild in the callback.
+// In this case, the children of this node are skipped.
+// For this to work, `dfs` has to be false.
 func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 	if node == nil {
 		return nil
 	}
 
 	if node.Type() != NodeTypeDirectory {
-		return visit(node)
+		err := visit(node)
+		if err == SkipChild {
+			return nil
+		}
+
+		return err
 	}
 
 	d, ok := node.(*Directory)
@@ -359,6 +371,10 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	if !dfs {
 		if err := visit(node); err != nil {
+			if err == SkipChild {
+				return nil
+			}
+
 			return err
 		}
 	}
@@ -380,6 +396,10 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	if dfs {
 		if err := visit(node); err != nil {
+			if err == SkipChild {
+				panic("bug: you cannot use dfs=true and SkipChild together")
+			}
+
 			return err
 		}
 	}

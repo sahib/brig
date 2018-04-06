@@ -472,17 +472,57 @@ func (fs *FS) Unpin(path string) error {
 
 type PinResult struct {
 	Path   string
-	Commit *Commit
+	Commit string
 }
 
-func (fs *FS) ListPins() ([]PinResult, error) {
+func (fs *FS) ListExplicitPins(fromRef, toRef string) ([]PinResult, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	// TODO: Do a proper implementation of this.
-	//       Iterate over the complete, reachable MDAG and see
-	//       what nodes are pinned.
-	return nil, nil
+	var from, to *n.Commit
+	var err error
+
+	if fromRef != "" {
+		from, err = parseRev(fs.lkr, fromRef)
+		if err != nil {
+			return nil, e.Wrapf(err, "parse from ref")
+		}
+	}
+
+	if toRef != "" {
+		to, err = parseRev(fs.lkr, toRef)
+		if err != nil {
+			return nil, e.Wrapf(err, "parse to ref")
+		}
+	}
+
+	results := []PinResult{}
+	err = fs.lkr.IterAll(from, to, func(nd n.ModNode, cmt *n.Commit) error {
+		if nd.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		_, isExplicit, err := fs.bk.IsPinned(nd.Content())
+		if err != nil {
+			return err
+		}
+
+		// isExplicit implies isPinned.
+		if isExplicit {
+			results = append(results, PinResult{
+				Path:   nd.Path(),
+				Commit: cmt.Hash().B58String(),
+			})
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 // errNotPinnedSentinel is returned to signal an early exit in Walk()

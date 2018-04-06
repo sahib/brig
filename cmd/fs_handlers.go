@@ -386,3 +386,19 @@ func handleTouch(ctx *cli.Context, ctl *client.Client) error {
 	repoPath := ctx.Args().First()
 	return ctl.Touch(repoPath)
 }
+
+func handlePinList(ctx *cli.Context, ctl *client.Client) error {
+	from := ctx.String("from")
+	to := ctx.String("to")
+
+	pins, err := ctl.ListExplicitPins(from, to)
+	if err != nil {
+		return err
+	}
+
+	for _, pin := range pins {
+		fmt.Printf("%15s %s\n", pin.Commit[:15], color.MagentaString(pin.Path))
+	}
+
+	return nil
+}

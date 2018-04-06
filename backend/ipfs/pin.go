@@ -84,8 +84,6 @@ func (nd *Node) IsPinned(hash h.Hash) (bool, bool, error) {
 		return false, false, err
 	}
 
-	fmt.Println("IS PINNED", hash, "IS", mode)
-
 	switch mode {
 	case "direct", "internal":
 		return true, true, nil
