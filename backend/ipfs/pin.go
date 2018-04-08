@@ -93,12 +93,3 @@ func (nd *Node) IsPinned(hash h.Hash) (bool, bool, error) {
 		return false, false, nil
 	}
 }
-
-func (nd *Node) ExplicitPins() ([]h.Hash, error) {
-	hashes := []h.Hash{}
-	for _, cid := range nd.ipfsNode.Pinning.DirectKeys() {
-		hashes = append(hashes, h.Hash(cid.Hash()))
-	}
-
-	return hashes, nil
-}

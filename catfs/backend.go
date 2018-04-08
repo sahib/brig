@@ -45,9 +45,6 @@ type FsBackend interface {
 	// - If the first value is true, the file is pinned.
 	// - If the second value is true, it was explicitly pinned by the user.
 	IsPinned(hash h.Hash) (bool, bool, error)
-
-	// ExplicitPins returns all hashes that were explicitly pinned
-	ExplicitPins() ([]h.Hash, error)
 }
 
 // MemFsBackend is a mock structure that implements FsBackend.
@@ -134,23 +131,3 @@ func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, bool, error) {
 
 	return info.isPinned, info.isExplicit, nil
 }
-
-func (mb *MemFsBackend) ExplicitPins() ([]h.Hash, error) {
-	result := []h.Hash{}
-	for b58Hash, info := range mb.pins {
-		if !info.isExplicit {
-			continue
-		}
-
-		hash, err := h.FromB58String(b58Hash)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, hash)
-	}
-
-	return result, nil
-}
-
-var _ FsBackend = &MemFsBackend{}
