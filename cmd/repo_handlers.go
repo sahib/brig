@@ -271,7 +271,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	if err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("Failed to read password: %v", err)
+			fmt.Sprintf("Failed to read password: %v", err),
 		}
 	}
 
