@@ -9,7 +9,7 @@ BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
 GITREV=`git rev-parse HEAD`
 
 all:
-	go install -ldflags \
+	go build -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
@@ -31,3 +31,6 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo server/capnp/api.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/nodes/capnp/model.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo net/capnp/api.capnp
+
+install:
+	cp brig /usr/local/bin

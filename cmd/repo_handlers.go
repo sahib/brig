@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime/trace"
 	"sort"
 	"time"
@@ -298,7 +299,12 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 
 func handleMount(ctx *cli.Context, ctl *client.Client) error {
 	mountPath := ctx.Args().First()
-	if err := ctl.Mount(mountPath); err != nil {
+	absMountPath, err := filepath.Abs(mountPath)
+	if err != nil {
+		return err
+	}
+
+	if err := ctl.Mount(absMountPath); err != nil {
 		return ExitCode{
 			UnknownError,
 			fmt.Sprintf("Failed to mount: %v", err),
@@ -310,7 +316,12 @@ func handleMount(ctx *cli.Context, ctl *client.Client) error {
 
 func handleUnmount(ctx *cli.Context, ctl *client.Client) error {
 	mountPath := ctx.Args().First()
-	if err := ctl.Unmount(mountPath); err != nil {
+	absMountPath, err := filepath.Abs(mountPath)
+	if err != nil {
+		return err
+	}
+
+	if err := ctl.Unmount(absMountPath); err != nil {
 		return ExitCode{
 			UnknownError,
 			fmt.Sprintf("Failed to unmount: %v", err),

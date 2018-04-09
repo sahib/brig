@@ -267,6 +267,13 @@ Entwicklungsgeschichte:
 * Ende 2017: *Hobbyprojekt.*
 * Aktueller Stand?
 
+.. note::
+
+    - Betonung auf Hash Nanny.
+    - Sicher durch Verschlüsselung und Public-Key Kryptografie.
+    - Das ist das erste "beta" release (0.1)
+    - Mit sehr viel Vorsicht benutzen.
+
 ----
 
 :class: small-list
@@ -515,13 +522,10 @@ Probem gelöst?
 Installation
 ============
 
-
 .. note::
 
     - Wie kann man es ausprobieren?
     - Go vorher installieren.
-    - Das ist das erste "beta" release (0.1)
-    - Mit sehr viel Vorsicht benutzen.
 
 
 |

@@ -10,13 +10,29 @@ We'll explain all import concepts along the way.
 Precursor: The help system
 --------------------------
 
-In order to make your live easier, there's a built-in help system:
+``brig`` has some built-in commands to help you.
+Before you dive into the actual commands, you should take a look at them:
+
+
+Open the online documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This opens a new browser window with this site.
+URLs are hard to remember, so we got you covered:
 
 .. code-block:: bash
 
-    # opens the documentation in a webbrowser
     $ brig docs
-    # Every command offers detailled built-in help.
+
+Built-in documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+Every command offers detailled built-in help,
+which you can view using the ``brig help`` command:
+
+.. code-block:: bash
+
+
     $ brig help remote
     NAME:
        brig stage - Add a local file to the storage
@@ -39,11 +55,42 @@ In order to make your live easier, there's a built-in help system:
 
     OPTIONS:
        --stdin, -i  Read data from stdin
+
+Shell autocompletion
+~~~~~~~~~~~~~~~~~~~~
+
+If you don't like to remember the exact name of each command, you can use
+the provided autocompletion. For this to work you have to insert this
+at the end of your ``.bashrc``:
+
+.. code-block:: bash
+
+  source <path-to-brig-src>/autocomplete/bash_autocomplete
+
+Or if you happen to use ``zsh``, append this to your ``.zshrc``:
+
+
+.. code-block:: bash
+
+  source <path-to-brig-src>/autocomplete/zsh_autocomplete
+
+After starting a new shell you should be able to do this:
+
+.. code-block:: bash
+
     # There's builtin autocompletion if you source
     # autocomplete/bash_autocomplete
     $ brig remote <tab>
     add     clear   edit    list    ping    remove
-    # If you mistype a command, you get suggestion on what you meant:
+
+Typo suggestion
+~~~~~~~~~~~~~~~
+
+This is a rather silly, little feature but if you mistype a command, you get
+suggestion on what you likely meant to type:
+
+.. code-block:: bash
+
     $ brig remot
     `remot` is not a valid command.
 
@@ -53,19 +100,27 @@ In order to make your live easier, there's a built-in help system:
       * rm
       * remote
 
-    # Open a bug report in your browser with
-    # some useful information pre-filled in for you:
-    $ brig bug
+Reporting bugs
+~~~~~~~~~~~~~~~
 
+If you need to report a bug you can use a built-in utility to do that. It will
+gather all relevant information, create a report and open a tab with the
+*GitHub* issue tracker in a browser for you. Only thing left for you is to fill
+out some questions in the report (and possibly create a *GitHub* account
+first):
+
+.. code-block:: bash
+
+    $ brig bug
 
 Creating a repository
 ---------------------
 
 You need a central place where your files are stored and ``brig`` calls this
-place the *repository*. Note that this is not directly comparable to what
-other tools calls the *Sync folder*. Rather think of it as the ``.git`` folder
-of a ``git``-repository: A place where all internal state, data and metadata
-of ``brig`` is stored.
+place the *repository*. Note that this is not directly comparable to what other
+tools calls the *Sync folder*. Rather think of it as the ``.git`` folder of
+a ``git``-repository: A place where all internal state, data and metadata of
+``brig`` is stored.
 
 By creating a new repository you also generate your identity, under which
 your buddies can later find *and* authenticate you.
@@ -75,7 +130,7 @@ But enough of the grey theory, let's get started:
 .. code-block:: bash
 
     $ mkdir ~/metadata && cd ~/metadata
-    $ brig init donald@whitehouse.gov/ovaloffice
+    $ brig init alice@wonderland.lit/rabbithole
     27.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
     ⚠  39 New passphrase:
 
@@ -109,6 +164,9 @@ used to store your data in an encrypted manner on your harddisk. This is
 especially important if you think about creating the repository on a portable
 media (e.g. usb sticks). If you still choose to disable this security feature
 you're free to do so by passing ``-x`` directly before the ``init`` subcommand.
+When typing the password, you will notice that the prompt changes color. The
+more secure (measured by Dropbox's ``zxcvbn`` library) the password is, the
+closer to green the prompt gets.
 
 Also note that a lot of files were created in the current directory.
 This is all part of the metadata that is being used by the daemon that runs
@@ -129,7 +187,7 @@ Let's change that by adding some files to ``brig``:
     $ brig ls
     SIZE   MODTIME          PATH          PIN
     443 B  Dec 27 14:44:44  /README.md     🖈
-    12 B   Dec 27 15:14:16  /hello.world   🖈 
+    12 B   Dec 27 15:14:16  /hello.world   🖈
 
 You might have noticed that the »hello.world« file was stored in ``brig`` without the
 full path (»/tmp/hello.world«). This is done on purpose, since you should imagine all
@@ -163,7 +221,7 @@ Remotes
 
 Until now, all files where only local. How do we even talk to other peers? This
 is done by adding them as »remote«. Every repository you are using has
-a user-chosen name (»donald@whitehoure.gov/ovaloffice«) and a unique
+a user-chosen name (»alice@wonderland.lit/rabbithole«) and a unique
 fingerprint that was generated during ``init``. Let's see what our own fingerprint is:
 
 
@@ -171,32 +229,44 @@ fingerprint that was generated during ``init``. Let's see what our own fingerpri
 
     # The hash will most likely look different for you:
     $ brig whoami
-    donald@whitehouse.gov/ovaloffice QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+    alice@wonderland.lit/rabbithole QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
 The fingerprint consists of two hashes divided by a colon (:). The first part
-is the identity of your ``ipfs`` node, the second part is the fingerprint of a
-keypair that was generated by ``brig`` and will be used to authenticate other
+is the identity of your ``ipfs`` node, the second part is the fingerprint of
+a keypair that was generated by ``brig`` and will be used to authenticate other
 peers.
 
-Now let's assume another user (let's call him Vladimir) wants to synchronize files with Donald.
-Both sides now need to share the information printed by ``brig whoami`` over a secure side channel.
-This side channel could be one of the following:
+Now let's assume another user (let's call him Bob) wants to synchronize files
+with Alice. Both sides now need to share the information printed by ``brig
+whoami`` over a secure side channel. This side channel could be one of the
+following:
 
 - Encrpyted mail.
 - A secure instant messenger of your choice.
-- Any insecure channel, as long you call or meet the person later and you validate at least a few digits of his fingerprint.
+- Any *insecure* channel, as long you call or meet the person later and you
+  validate at least a few digits of his fingerprint.
 
-Once you have exchanged the fingerprints, both sides can add each other:
+Once you have exchanged the fingerprints, *Alice* can add *Bob*:
 
 .. code-block:: bash
 
-	brig remote add vladimir \
+	$ brig remote add bob \
 		QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
 		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 
-After doing so ``brig`` can figure out the rest (i.e. how to actually reach the node over the network itself).
-Remember that this mechanism might seem inconvinient at first, but it's the only way for you to actually check
-if someone is truly the person he claims to be.
+
+*Bob* can do the same on his side:
+
+.. code-block:: bash
+
+	$ brig remote add alice \
+        QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
+        SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+
+After doing so ``brig`` can figure out the rest (i.e. how to actually reach the
+node over the network itself). Remember that this mechanism might seem
+inconvinient at first, but it's the only way for you to actually check if
+someone is truly the person he claims to be.
 
 .. note::
 
@@ -207,7 +277,7 @@ If both sides are up & running, we can check if we can reach the other side:
 	$ brig remote list
 	TODO: output
 	# Yep that works.
-	$ brig remote ping vladimir
+	$ brig remote ping bob
 	TODO: output
 	# Cool, we really can reach them.
 
@@ -231,10 +301,10 @@ You might already have wondered what those names that you pass on ``init`` are
 and what they are for. ``brig`` does not impose any strict format on the
 username. So any of these are valid usernames:
 
-- ``donald``
-- ``donald@whitehouse.gov``
-- ``donald@whitehouse.gov/ovaloffice``
-- ``donald/ovaloffice``
+- ``alice``
+- ``alice@wonderland.lit``
+- ``alice@wonderland.lit/rabbithole``
+- ``alice/rabbithole``
 
 It's however recomended to choose a name that is formatted like
 a XMPP/Jabber-ID (TODO: Link). Those IDs can look like plain emails, but can
@@ -273,11 +343,11 @@ Finally there. Let's recap what we've done so far:
 - Add some files (``brig stage <path>``) - needs to be done as much as you like to.
 
 Only thing left to do now is using ``brig diff`` and ``brig sync``.
-First, let's check what changes ``vladimir`` has and how it will change our files:
+First, let's check what changes ``bob`` has and how it will change our files:
 
 .. code-block:: bash
 
-    $ brig diff --show-missing vladimir
+    $ brig diff bob
     •
     ├── _ hello.world
     ├── + election
@@ -298,14 +368,14 @@ Symbol Description
 ``⚡``  Both sides have changes, but they conflict.
 ====== ====================================================================
 
-So in the above output we can tell that *Vladimir* added the directory
+So in the above output we can tell that *Bob* added the directory
 ``/election``, but does not posess the ``/hello.world`` file. He also
 apparently modified ``README.md``, but since we did not, it's safe for us to
 take his changes. If we sync now we will get this directory from him:
 
 .. code-block:: bash
 
-    $ brig sync vladimir
+    $ brig sync bob
     $ brig ls
     SIZE   MODTIME          PATH          PIN
     443 B  Dec 27 14:44:44  /README.md     🖈
@@ -357,10 +427,13 @@ This is written from the perspective of a ``git`` user:
    - *removed:* The file was removed in this commit.
    - *modified:* The file's content was changed in this commit.
 
-* A change is only recorded between individual commits. Changes in-between are not recorded.
-* There are no branches. Every user has a linear list of commits.
-  The choice not to have branches is on purpose, since they tend to bring greate complexity to both implementation and user-interface.
-* Since there are no branches, there is no way to go back into history. You can however checkout previous files.
+* A change is only recorded between individual commits. Changes in-between are
+  not recorded.
+* There are no branches. Every user has a linear list of commits. The choice
+  not to have branches is on purpose, since they tend to bring greate
+  complexity to both implementation and user-interface.
+* Since there are no branches, there is no way to go back into history. You can
+  however checkout previous files.
 * You can tag individual commits. There are three pre-defined tags:
 
     - *STAGE*: The current, not yet finalized commit. Constantly changing.

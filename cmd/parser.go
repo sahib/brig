@@ -43,7 +43,7 @@ func RunCmdline(args []string) int {
 		version.BuildTime,
 	)
 	app.CommandNotFound = commandNotFound
-	app.Description = "brig can be used to easily store, version and synchronize files between many peers."
+	app.Description = "brig can be used to securely store, version and synchronize files between many peers."
 
 	// Set global options here:
 	app.Before = func(ctx *cli.Context) error {
