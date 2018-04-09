@@ -68,6 +68,8 @@ func withServer(who string, t *testing.T, fn func(bk backend.Backend)) {
 }
 
 func TestResolve(t *testing.T) {
+	t.Skip("Not yet written")
+
 	withServer("alice", t, func(bk backend.Backend) {
 		// TODO: actually write..
 	})
