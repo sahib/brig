@@ -8,6 +8,7 @@ notifications:
 install:
     - sudo apt-get install fuse
     - go get -t -v github.com/sahib/brig
+
 script:
     - cd $GOPATH/src/github.com/sahib/brig
     - go test -v ./...
