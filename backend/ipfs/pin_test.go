@@ -60,11 +60,6 @@ func TestPinUpgrade(t *testing.T) {
 		require.True(t, isPinned)
 		require.True(t, isExplicit)
 
-		pins, err := alice.ExplicitPins()
-		require.Nil(t, err)
-		require.Len(t, pins, 1)
-		require.True(t, h.Equal(pins[0]))
-
 		// Implicit unpin should not hurt the file:
 		require.Nil(t, alice.Unpin(h, false))
 		isPinned, isExplicit, err = alice.IsPinned(h)
@@ -78,9 +73,5 @@ func TestPinUpgrade(t *testing.T) {
 		require.Nil(t, err)
 		require.False(t, isPinned)
 		require.False(t, isExplicit)
-
-		pins, err = alice.ExplicitPins()
-		require.Nil(t, err)
-		require.Len(t, pins, 0)
 	})
 }

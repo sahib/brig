@@ -1,7 +1,6 @@
 package ipfs
 
 import (
-	"fmt"
 	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
 	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
 
@@ -28,8 +27,6 @@ func (nd *Node) Pin(hash h.Hash, explicit bool) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("PINNING", hash, "with", pinMode, "was", mode)
 
 	switch mode {
 	case "direct", "internal":
