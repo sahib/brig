@@ -255,8 +255,12 @@ func needAtLeast(min int) checkFunc {
 
 func repoIsInitialized(dir string) (bool, error) {
 	fd, err := os.Open(dir)
+	if err != nil && os.IsNotExist(err) {
+		return false, nil
+	}
+
 	if err != nil {
-		return true, err
+		return false, err
 	}
 
 	names, err := fd.Readdirnames(-1)

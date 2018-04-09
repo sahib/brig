@@ -80,6 +80,10 @@ If you're done with this README, you can easily remove it:
 
 func dirIsInitReady(dir string) (bool, error) {
 	fd, err := os.Open(dir)
+	if err != nil && os.IsNotExist(err) {
+		return true, nil
+	}
+
 	if err != nil {
 		return false, err
 	}
@@ -265,9 +269,10 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 
 	password, err := readPassword(ctx, brigPath)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to read password: %v", err)
-		fmt.Println(msg)
-		return ExitCode{UnknownError, msg}
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("Failed to read password: %v", err)
+		}
 	}
 
 	logPath := ""
