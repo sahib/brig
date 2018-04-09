@@ -473,35 +473,41 @@ func TestPin(t *testing.T) {
 		require.Nil(t, fs.Unpin("/x"))
 		require.Nil(t, fs.Unpin("/y"))
 
-		isPinned, err := fs.IsPinned("/x")
+		isPinned, isExplicit, err := fs.IsPinned("/x")
 		require.Nil(t, err)
 		require.False(t, isPinned)
+		require.False(t, isExplicit)
 
 		require.Nil(t, fs.Pin("/x"))
 
-		isPinned, err = fs.IsPinned("/x")
+		isPinned, isExplicit, err = fs.IsPinned("/x")
 		require.Nil(t, err)
 		require.True(t, isPinned)
+		require.True(t, isExplicit)
 
-		isPinned, err = fs.IsPinned("/")
+		isPinned, isExplicit, err = fs.IsPinned("/")
 		require.Nil(t, err)
 		require.False(t, isPinned)
+		require.False(t, isExplicit)
 
 		require.Nil(t, fs.Pin("/"))
 
-		isPinned, err = fs.IsPinned("/")
+		isPinned, isExplicit, err = fs.IsPinned("/")
 		require.Nil(t, err)
 		require.True(t, isPinned)
+		require.True(t, isExplicit)
 
 		require.Nil(t, fs.Unpin("/"))
 
-		isPinned, err = fs.IsPinned("/")
+		isPinned, isExplicit, err = fs.IsPinned("/")
 		require.Nil(t, err)
 		require.False(t, isPinned)
+		require.False(t, isExplicit)
 
-		isPinned, err = fs.IsPinned("/x")
+		isPinned, isExplicit, err = fs.IsPinned("/x")
 		require.Nil(t, err)
 		require.False(t, isPinned)
+		require.False(t, isExplicit)
 	})
 }
 
