@@ -61,6 +61,8 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 
 	// Update the in-memory password.
 	mh.base.password = password
+	mh.base.basePath = initFolder
+
 	err = repo.Init(initFolder, owner, password, backendName)
 	if err != nil {
 		return err

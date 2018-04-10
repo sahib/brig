@@ -112,9 +112,13 @@ func dirIsInitReady(dir string) (bool, error) {
 func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
-	folder := guessRepoFolder()
 	backend := ctx.String("backend")
 	password := readPasswordFromArgs(ctx)
+
+	folder := ctx.String("path")
+	if folder == "" {
+		folder = guessRepoFolder()
+	}
 
 	// Check if the folder exists... doing init twice
 	// can easily break things.

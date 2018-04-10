@@ -32,6 +32,11 @@ var HelpTexts = map[string]Help{
 				Value: "ipfs",
 				Usage: "What data backend to use for the new repo",
 			},
+			cli.StringFlag{
+				Name:  "p,path",
+				Value: "",
+				Usage: "Where to create the new repository (overwrites BRIG_PATH)",
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 

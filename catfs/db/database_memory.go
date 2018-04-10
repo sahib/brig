@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"io"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -97,6 +98,10 @@ func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return path.Join(result[i]...) < path.Join(result[j]...)
+	})
 
 	return result, nil
 }

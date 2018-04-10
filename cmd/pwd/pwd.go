@@ -119,7 +119,7 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 
 	strength := zxcvbn.PasswordStrength(string(pwd), nil)
 	fmt.Printf(
-		"Estimated time needed to crack password: %s\n",
+		"estimated time needed to crack password (according to zxcvbn): %s\n",
 		color.BlueString(strength.CrackTimeDisplay),
 	)
 
