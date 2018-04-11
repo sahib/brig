@@ -106,27 +106,29 @@ struct Version {
     backendRev     @3 :Text;
 }
 
-struct PinResult {
+struct ExplicitPin {
     path   @0 :Text;
     commit @1 :Text;
 }
 
 interface FS {
-    stage            @0   (localPath :Text, repoPath :Text);
-    list             @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat              @2   (path :Text) -> (port :Int32);
-    mkdir            @3   (path :Text, createParents :Bool);
-    remove           @4   (path :Text);
-    move             @5   (srcPath :Text, dstPath :Text);
-    copy             @6   (srcPath :Text, dstPath :Text);
-    pin              @7   (path :Text);
-    unpin            @8   (path :Text);
-    stat             @9   (path :Text) -> (info :StatInfo);
-    garbageCollect   @10  (aggressive :Bool) -> (freed :List(GarbageItem));
-    touch            @11  (path :Text);
-    exists           @12  (path :Text) -> (exists :Bool);
-    stageFromData    @13  (repoPath :Text) -> (port :Int32);
-    listExplicitPins @14  (from :Text, to :Text) -> (pins :List(PinResult));
+    stage             @0   (localPath :Text, repoPath :Text);
+    list              @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
+    cat               @2   (path :Text) -> (port :Int32);
+    mkdir             @3   (path :Text, createParents :Bool);
+    remove            @4   (path :Text);
+    move              @5   (srcPath :Text, dstPath :Text);
+    copy              @6   (srcPath :Text, dstPath :Text);
+    pin               @7   (path :Text);
+    unpin             @8   (path :Text);
+    stat              @9   (path :Text) -> (info :StatInfo);
+    garbageCollect    @10  (aggressive :Bool) -> (freed :List(GarbageItem));
+    touch             @11  (path :Text);
+    exists            @12  (path :Text) -> (exists :Bool);
+    stageFromData     @13  (repoPath :Text) -> (port :Int32);
+    listExplicitPins  @14  (prefix :Text, from :Text, to :Text) -> (pins :List(ExplicitPin));
+    clearExplicitPins @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
+    setExplicitPins   @16  (prefix :Text, from :Text, to :Text) -> (count :Int32);
 }
 
 interface VCS {

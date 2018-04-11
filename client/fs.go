@@ -319,13 +319,17 @@ func (cl *Client) StageFromData(path string, r io.Reader) error {
 	return nil
 }
 
-type PinResult struct {
+type ExplicitPin struct {
 	Path   string
 	Commit string
 }
 
-func (cl *Client) ListExplicitPins(from, to string) ([]PinResult, error) {
+func (cl *Client) ListExplicitPins(prefix, from, to string) ([]ExplicitPin, error) {
 	call := cl.api.ListExplicitPins(cl.ctx, func(p capnp.FS_listExplicitPins_Params) error {
+		if err := p.SetPrefix(prefix); err != nil {
+			return err
+		}
+
 		if err := p.SetFrom(from); err != nil {
 			return err
 		}
@@ -343,7 +347,7 @@ func (cl *Client) ListExplicitPins(from, to string) ([]PinResult, error) {
 		return nil, err
 	}
 
-	pins := []PinResult{}
+	pins := []ExplicitPin{}
 	for idx := 0; idx < capPins.Len(); idx++ {
 		capPin := capPins.At(idx)
 		path, err := capPin.Path()
@@ -356,11 +360,53 @@ func (cl *Client) ListExplicitPins(from, to string) ([]PinResult, error) {
 			return nil, err
 		}
 
-		pins = append(pins, PinResult{
+		pins = append(pins, ExplicitPin{
 			Path:   path,
 			Commit: commit,
 		})
 	}
 
 	return pins, nil
+}
+
+func (cl *Client) ClearExplicitPins(prefix, from, to string) (int, error) {
+	call := cl.api.ClearExplicitPins(cl.ctx, func(p capnp.FS_clearExplicitPins_Params) error {
+		if err := p.SetPrefix(prefix); err != nil {
+			return err
+		}
+
+		if err := p.SetFrom(from); err != nil {
+			return err
+		}
+
+		return p.SetTo(to)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(result.Count()), nil
+}
+
+func (cl *Client) SetExplicitPins(prefix, from, to string) (int, error) {
+	call := cl.api.SetExplicitPins(cl.ctx, func(p capnp.FS_setExplicitPins_Params) error {
+		if err := p.SetPrefix(prefix); err != nil {
+			return err
+		}
+
+		if err := p.SetFrom(from); err != nil {
+			return err
+		}
+
+		return p.SetTo(to)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(result.Count()), nil
 }

@@ -470,12 +470,12 @@ func (fs *FS) Unpin(path string) error {
 	return fs.pinOp(path, true, fs.bk.Unpin)
 }
 
-type PinResult struct {
+type ExplicitPin struct {
 	Path   string
 	Commit string
 }
 
-func (fs *FS) ListExplicitPins(fromRef, toRef string) ([]PinResult, error) {
+func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -496,9 +496,13 @@ func (fs *FS) ListExplicitPins(fromRef, toRef string) ([]PinResult, error) {
 		}
 	}
 
-	results := []PinResult{}
+	results := []ExplicitPin{}
 	err = fs.lkr.IterAll(from, to, func(nd n.ModNode, cmt *n.Commit) error {
 		if nd.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		if !strings.HasPrefix(nd.Path(), prefix) {
 			return nil
 		}
 
@@ -509,7 +513,7 @@ func (fs *FS) ListExplicitPins(fromRef, toRef string) ([]PinResult, error) {
 
 		// isExplicit implies isPinned.
 		if isExplicit {
-			results = append(results, PinResult{
+			results = append(results, ExplicitPin{
 				Path:   nd.Path(),
 				Commit: cmt.Hash().B58String(),
 			})
@@ -523,6 +527,63 @@ func (fs *FS) ListExplicitPins(fromRef, toRef string) ([]PinResult, error) {
 	}
 
 	return results, nil
+}
+
+func (fs *FS) ClearExplicitPins(prefix, fromRef, toRef string) (int, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return fs.setExplicitPins(false, prefix, fromRef, toRef)
+}
+
+func (fs *FS) SetExplicitPin(prefix, fromRef, toRef string) (int, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return fs.setExplicitPins(true, prefix, fromRef, toRef)
+}
+
+func (fs *FS) setExplicitPins(doPin bool, prefix, fromRef, toRef string) (int, error) {
+	var err error
+	var from, to *n.Commit
+
+	if fromRef != "" {
+		from, err = parseRev(fs.lkr, fromRef)
+		if err != nil {
+			return 0, e.Wrapf(err, "parse from ref")
+		}
+	}
+
+	if toRef != "" {
+		to, err = parseRev(fs.lkr, toRef)
+		if err != nil {
+			return 0, e.Wrapf(err, "parse to ref")
+		}
+	}
+
+	processed := 0
+
+	return processed, fs.lkr.IterAll(from, to, func(nd n.ModNode, cmt *n.Commit) error {
+		if nd.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		if !strings.HasPrefix(nd.Path(), prefix) {
+			return nil
+		}
+
+		pinOp := fs.bk.Unpin
+		if doPin {
+			pinOp = fs.bk.Pin
+		}
+
+		if err := pinOp(nd.Content(), true); err != nil {
+			return err
+		}
+
+		processed++
+		return nil
+	})
 }
 
 // errNotPinnedSentinel is returned to signal an early exit in Walk()

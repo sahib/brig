@@ -4,7 +4,6 @@
 :data-transition-duration: 350
 :data-perspective: 5000
 
-
 .. role:: white-bg
 .. role:: title-logo
 .. role:: strike
@@ -273,13 +272,14 @@ Entwicklungsgeschichte:
     - Sicher durch Verschlüsselung und Public-Key Kryptografie.
     - Das ist das erste "beta" release (0.1)
     - Mit sehr viel Vorsicht benutzen.
+    - Alles kann sich auserdem noch ändern.
 
 ----
 
 :class: small-list
 
-Kurzgesagt: Fokus
-=================
+Kurz gesagt: Fokus
+==================
 
 - Balance zwischen Sicherheit und Usability.
 - Effizienz ist nett, aber kein primäter Fokus.
@@ -526,7 +526,6 @@ Installation
 
     - Wie kann man es ausprobieren?
     - Go vorher installieren.
-
 
 |
 

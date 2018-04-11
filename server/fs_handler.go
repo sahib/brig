@@ -394,6 +394,11 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 }
 
 func (fh *fsHandler) ListExplicitPins(call capnp.FS_listExplicitPins) error {
+	prefix, err := call.Params.Prefix()
+	if err != nil {
+		return err
+	}
+
 	from, err := call.Params.From()
 	if err != nil {
 		return err
@@ -405,19 +410,19 @@ func (fh *fsHandler) ListExplicitPins(call capnp.FS_listExplicitPins) error {
 	}
 
 	return fh.base.withCurrFs(func(fs *catfs.FS) error {
-		pins, err := fs.ListExplicitPins(from, to)
+		pins, err := fs.ListExplicitPins(prefix, from, to)
 		if err != nil {
 			return err
 		}
 
 		seg := call.Results.Segment()
-		capPins, err := capnp.NewPinResult_List(seg, int32(len(pins)))
+		capPins, err := capnp.NewExplicitPin_List(seg, int32(len(pins)))
 		if err != nil {
 			return err
 		}
 
 		for idx, pin := range pins {
-			capPin, err := capnp.NewPinResult(seg)
+			capPin, err := capnp.NewExplicitPin(seg)
 			if err != nil {
 				return err
 			}
@@ -436,5 +441,59 @@ func (fh *fsHandler) ListExplicitPins(call capnp.FS_listExplicitPins) error {
 		}
 
 		return call.Results.SetPins(capPins)
+	})
+}
+
+func (fh *fsHandler) ClearExplicitPins(call capnp.FS_clearExplicitPins) error {
+	prefix, err := call.Params.Prefix()
+	if err != nil {
+		return err
+	}
+
+	from, err := call.Params.From()
+	if err != nil {
+		return err
+	}
+
+	to, err := call.Params.To()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		count, err := fs.ClearExplicitPins(prefix, from, to)
+		if err != nil {
+			return err
+		}
+
+		call.Results.SetCount(int32(count))
+		return nil
+	})
+}
+
+func (fh *fsHandler) SetExplicitPins(call capnp.FS_setExplicitPins) error {
+	prefix, err := call.Params.Prefix()
+	if err != nil {
+		return err
+	}
+
+	from, err := call.Params.From()
+	if err != nil {
+		return err
+	}
+
+	to, err := call.Params.To()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		count, err := fs.SetExplicitPin(prefix, from, to)
+		if err != nil {
+			return err
+		}
+
+		call.Results.SetCount(int32(count))
+		return nil
 	})
 }

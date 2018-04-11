@@ -388,17 +388,69 @@ func handleTouch(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handlePinList(ctx *cli.Context, ctl *client.Client) error {
+	prefix := ctx.String("prefix")
 	from := ctx.String("from")
 	to := ctx.String("to")
 
-	pins, err := ctl.ListExplicitPins(from, to)
+	pins, err := ctl.ListExplicitPins(prefix, from, to)
 	if err != nil {
 		return err
 	}
 
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintf(tabW, "COMMIT\tPATH\t\n")
 	for _, pin := range pins {
-		fmt.Printf("%15s %s\n", pin.Commit[:15], color.MagentaString(pin.Path))
+		fmt.Fprintf(tabW, "%s\t%s\t\n", pin.Commit[:15], color.MagentaString(pin.Path))
 	}
 
+	return tabW.Flush()
+}
+
+func handlePinClear(ctx *cli.Context, ctl *client.Client) error {
+	from := ctx.String("from")
+	to := ctx.String("to")
+
+	prefix := ctx.Args().First()
+	if prefix == "" {
+		prefix = "/"
+	}
+
+	count, err := ctl.ClearExplicitPins(prefix, from, to)
+	if err != nil {
+		return err
+	}
+
+	what := "pins"
+	if count == 1 {
+		what = "pin"
+	}
+
+	fmt.Printf("Cleared %d %s.\n", count, what)
+	return nil
+}
+
+func handlePinSet(ctx *cli.Context, ctl *client.Client) error {
+	from := ctx.String("from")
+	to := ctx.String("to")
+	prefix := ctx.Args().First()
+	if prefix == "" {
+		prefix = "/"
+	}
+
+	count, err := ctl.SetExplicitPins(prefix, from, to)
+	if err != nil {
+		return err
+	}
+
+	what := "files"
+	if count == 1 {
+		what = "file"
+	}
+
+	fmt.Printf("Pinned %d %s.\n", count, what)
 	return nil
 }

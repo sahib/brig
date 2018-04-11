@@ -21,6 +21,19 @@ func die(msg string) {
 	panic(msg)
 }
 
+var ExplicitPinFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "from,f",
+		Value: "HEAD",
+		Usage: "Specify the commit to start from",
+	},
+	cli.StringFlag{
+		Name:  "to,t",
+		Value: "INIT",
+		Usage: "Specify the maximum commit to iterate to",
+	},
+}
+
 var HelpTexts = map[string]Help{
 	"init": {
 		Usage:     "Initialize a new repository",
@@ -164,9 +177,42 @@ var HelpTexts = map[string]Help{
    deleted by the garbage collector.`,
 	},
 	"pin.list": {
-		Usage:       "List all directly pinned files in a certain commit range",
-		Complete:    completeArgsUsage,
-		Description: `TODO.`,
+		Usage:    "List all explicitly pinned files in a certain commit range",
+		Complete: completeArgsUsage,
+		Description: `List all explicitly pinned files in a certain commit range.
+
+   This only shows the files (along with the latest commit it appears in) that
+   were explicitly pinned by the user. Files that were pinned by brig itself
+   (i.e. implictly when receiving it from somebody else) are not sown by this
+   command.
+
+   You can specify a certain PREFIX to list only the files in a certain directory.
+   If no PREFIX is given, all paths are shown.
+`,
+		ArgsUsage: "[<PREFIX>]",
+		Flags:     ExplicitPinFlags,
+	},
+	"pin.clear": {
+		Usage:     "A more powerful version of `brig pin rm`",
+		ArgsUsage: "[<PREFIX>]",
+		Complete:  completeArgsUsage,
+		Description: `Clear all explicit pins in a certain commit range
+   where path starts with PREFIX. This command is useful to get rid of old
+   pins that you likely do not need anymore. Also it's useful to unpin
+   everything and pin only certain parts with running »brig gc« afterwards.
+
+   You should be however careful not to unpin CURR or HEAD, since this might
+   lead to dataloss if »brig gc« at some point.
+`,
+		Flags: ExplicitPinFlags,
+	},
+	"pin.set": {
+		Usage:     "A more powerful version of `brig pin set`",
+		ArgsUsage: "[<PREFIX>]",
+		Complete:  completeArgsUsage,
+		Description: `Explicitly pin all files in the range between --from and --to
+   that start with PREFIX.`,
+		Flags: ExplicitPinFlags,
 	},
 	"pin.remove": {
 		Usage:     "Remove a pin",

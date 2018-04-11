@@ -154,14 +154,18 @@ func RunCmdline(args []string) int {
 			Subcommands: []cli.Command{
 				{
 					Name:   "add",
-					Action: withDaemon(handlePin, true),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
-					Action:  withDaemon(handleUnpin, true),
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),
 				}, {
-					// TODO: PIN: Implement. Make it possibly to
-					//            have --from / --to ranges.
+					Name:   "set",
+					Action: withDaemon(handlePinSet, true),
+				}, {
+					Name:   "clear",
+					Action: withDaemon(handlePinClear, true),
+				}, {
 					Name:    "list",
 					Aliases: []string{"ls"},
 					Action:  withDaemon(handlePinList, true),
