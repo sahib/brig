@@ -268,14 +268,11 @@ node over the network itself). Remember that this mechanism might seem
 inconvinient at first, but it's the only way for you to actually check if
 someone is truly the person he claims to be.
 
-.. note::
-
-	Later we might make this easier by interpreting the username as an email and/or encoding the fingerprint as QR-code.
-
 If both sides are up & running, we can check if we can reach the other side:
 
 	$ brig remote list
-	TODO: output
+    NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
+    alice  QmUDSXt27    ∞          ✘ no route (yet)
 	# Yep that works.
 	$ brig remote ping bob
 	TODO: output
@@ -283,10 +280,13 @@ If both sides are up & running, we can check if we can reach the other side:
 
 .. note:: About open ports:
 
-   While ``ipfs`` tries to do it's best to avoid having the user to open ports in his firewall/router.
-   This mechanism might not be perfect though (and maybe never is). If any of the following network
-   operations might not work it might be necessary to open the ports 4001 - 4005 or to enable
-   UPnP. This only is necessary if the computers you're using ``brig`` on are not in the same network.
+   While ``ipfs`` tries to do it's best to avoid having the user to open ports
+   in his firewall/router. This mechanism might not be perfect though (and
+   maybe never is). If any of the following network operations might not work
+   it might be necessary to open the ports 4001 - 4005 or enable UPnP. For
+   security reasons we recommend to only open the required ports explicitly and
+   not to use UPnP. This only is necessary if the computers you're using
+   ``brig`` on are not in the same network anyways.
 
 This all requires of course that both partners are online at the same time.
 Later versions might make it possible to have a third party instance that acts

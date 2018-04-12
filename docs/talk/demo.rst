@@ -19,6 +19,10 @@ Usage is very close to ``git``.
     # Test if it works:
     $ brig cat README.md
 
+Explain:
+
+- Files created in init.
+
 2. Adding files
 ===============
 
@@ -26,12 +30,14 @@ Explain why it's "stage" not "add"
 
 .. code-block:: bash
 
-    $ brig stage music.mp3
+    $ brig stage ~/music.mp3
     $ brig ls
     $ brig tree
     $ brig cat music.mp3 | mpv -
 
-Explain: Path names.
+Explain:
+
+- Path names.
 
 3. Coreutils
 ============
@@ -41,7 +47,7 @@ Explain reflinks.
 .. code-block:: bash
 
     $ brig mkdir sub
-    $ brig cp music.mp3 sub
+    $ brig mv music.mp3 sub
     $ brig tree
 
     $ brig info README.md

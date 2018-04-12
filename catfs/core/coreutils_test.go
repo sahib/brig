@@ -242,6 +242,13 @@ var moveAndCopyTestCases = []struct {
 			return MustTouch(t, lkr, "/a", 1), "/b"
 		},
 	}, {
+		name:        "basic-root-to-sub",
+		isErrorCase: false,
+		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustMkdir(t, lkr, "/sub")
+			return MustTouch(t, lkr, "/xxxxxx", 1), "/sub"
+		},
+	}, {
 		name:        "into-directory",
 		isErrorCase: false,
 		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
@@ -266,15 +273,6 @@ var moveAndCopyTestCases = []struct {
 			MustMkdir(t, lkr, "/dst")
 			MustTouch(t, lkr, "/dst/x", 1)
 			return MustTouch(t, lkr, "/src/x", 1), "/dst"
-		},
-	}, {
-		name:        "error-file-over-existing",
-		isErrorCase: false,
-		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
-			MustMkdir(t, lkr, "/src")
-			MustMkdir(t, lkr, "/dst")
-			MustTouch(t, lkr, "/dst/x", 1)
-			return MustTouch(t, lkr, "/src/x", 1), "/dst/x"
 		},
 	}, {
 		name:        "error-file-over-existing",
@@ -548,6 +546,10 @@ func TestCopy(t *testing.T) {
 					newNd = newChildNd.(n.ModNode)
 				}
 
+				if oldNd, lookErr := lkr.LookupNode(srcPath); oldNd == nil || lookErr != nil {
+					t.Fatalf("source node does not exist or is not accesible: %v %v", err, tc.isErrorCase)
+				}
+
 				if err != nil {
 					if tc.isErrorCase {
 						node, err := lkr.LookupNode(srcPath)
@@ -562,7 +564,12 @@ func TestCopy(t *testing.T) {
 						t.Fatalf("Copy failed unexpectly: %v", err)
 					}
 
+					// No need to test more.
 					return
+				} else {
+					if tc.isErrorCase {
+						t.Fatalf("test should have failed")
+					}
 				}
 
 				if newNd == nil {
@@ -579,6 +586,12 @@ func TestCopy(t *testing.T) {
 				if newNd.Inode() < srcNd.Inode() {
 					t.Fatalf("New inode has <= inode of src")
 				}
+
+				// Sanity check: do not rely on Copy() to return a valid, staged node.
+				// Check if we can look it up after the Copy too.
+				nd, err := lkr.LookupNode(newNd.Path())
+				require.Nil(t, err)
+				require.NotNil(t, nd)
 			})
 		})
 	}
