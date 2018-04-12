@@ -271,7 +271,6 @@ func (rv *resolver) decide(pair MapPair) error {
 	}
 
 	if pair.SrcWasMoved {
-		debug("resolve: handle move")
 		return rv.exec.handleMove(pair.Src, pair.Dst)
 	}
 

@@ -55,6 +55,13 @@ Explain reflinks.
     $ brig edit README.md
     $ brig info README.md
 
+    ? ipfs cat <hash>
+
+Explain:
+
+- Most coreutils are available.
+- Hash changed after editing.
+
 4. Mounting
 ===========
 
@@ -62,10 +69,15 @@ Explain reflinks.
 
     $ brig ls
     $ mkdir /tmp/mount
-    $ brig mount /tmp/mount
     $ ls /tmp/mount  # Empty.
+    $ brig mount /tmp/mount
+    $ nautilus /tmp/mount
     $ vi /tmp/mount/new-file
     $ brig ls
+    $ cp ~/bbb.mkv /tmp/mount
+    $ mpv /tmp/mount/bbb.mkv
+
+Problem: Performance? Pinning again?
 
 5. Commits
 ==========
@@ -78,6 +90,8 @@ Explain reflinks.
     $ brig edit README.md
     $ brig mv sub/music.mp3 sub/else.mp3
     $ brig diff   # Should print mergeable and moved file.
+
+Problem: Diff shows mv order wrong way?
 
 6. History
 ==========

@@ -295,7 +295,7 @@ See the »diff« command for more information.`,
 	},
 	"diff": {
 		Usage:     "Show what changed between two commits",
-		ArgsUsage: "[<REMOTE>] [<REMOTE_REV> [<OTHER_REMOTE> [<OTHER_REV>]]]]",
+		ArgsUsage: "[<REMOTE>] [<OTHER_REMOTE> [<REMOTE_REV> [<OTHER_REMOTE_REV>]]]]",
 		Complete:  completeArgsUsage,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
@@ -327,10 +327,11 @@ See the »diff« command for more information.`,
 
 EXAMPLES:
 
-   $ brig diff                      # Show diff from our CURR to our HEAD
-   $ brig diff alice                # Show diff from our CURR to alice's last state
-   $ brig diff alice some_tag       # Show diff from our CURR to 'some_tag' of alice
-   $ brig diff alice HEAD bob HEAD  # Show diff between alice and bob's HEAD
+   $ brig diff                       # Show diff from our CURR to our HEAD
+   $ brig diff alice                 # Show diff from our CURR to alice's last state
+   $ brig diff alice some_tag        # Show diff from our CURR to 'some_tag' of alice
+   $ brig diff alice bob HEAD HEAD   # Show diff between alice and bob's HEAD
+   $ brig diff alice alice HEAD CURR # Show diff between alice and bob's HEAD
 `,
 	},
 	"tag": {
@@ -440,7 +441,7 @@ EXAMPLES:
 	},
 	"reset": {
 		Usage:     "Reset a file or the whole commit to an old state",
-		ArgsUsage: "<remote>",
+		ArgsUsage: "<commit> [<file>]",
 		Complete:  completeArgsUsage,
 		Flags: []cli.Flag{
 			cli.BoolFlag{

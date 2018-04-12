@@ -245,8 +245,8 @@ func printDiffTree(diff *client.Diff) {
 				)
 				name := fmt.Sprintf(
 					" %s → %s",
-					path.Base(diffEntry.pair.Src.Path),
 					dstPath,
+					path.Base(diffEntry.pair.Src.Path),
 				)
 				return color.BlueString(name)
 			case diffTypeMerged:
@@ -337,21 +337,18 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	localRev := "HEAD"
 	remoteRev := "CURR"
 
-	switch n := ctx.NArg(); n {
-	case 1:
-		remoteName = ctx.Args().Get(0)
-	case 2:
-		localName = ctx.Args().Get(0)
-		remoteName = ctx.Args().Get(1)
-	case 3:
-		remoteName = ctx.Args().Get(0)
-		localRev = ctx.Args().Get(1)
+	switch n := ctx.NArg(); {
+	case n >= 4:
+		localRev = ctx.Args().Get(3)
+		fallthrough
+	case n >= 3:
 		remoteRev = ctx.Args().Get(2)
-	case 4:
-		localName = ctx.Args().Get(0)
-		remoteName = ctx.Args().Get(1)
-		localRev = ctx.Args().Get(2)
-		remoteRev = ctx.Args().Get(3)
+		fallthrough
+	case n >= 2:
+		localName = ctx.Args().Get(1)
+		fallthrough
+	case n >= 1:
+		remoteName = ctx.Args().Get(0)
 	}
 
 	needFetch := !ctx.Bool("offline")
