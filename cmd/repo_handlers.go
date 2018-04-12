@@ -36,6 +36,11 @@ const brigLogo = `
      A new file README.md was automatically added.
      Use 'brig cat README.md' to view it & get started.
 
+     It's probably a good idea to add the following to your shell config:
+
+       $ export BRIG_PATH=%s
+
+
 `
 
 func createInitialReadme(ctl *client.Client) error {
@@ -150,7 +155,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	fmt.Println(brigLogo)
+	fmt.Printf(brigLogo, folder)
 	return nil
 }
 
