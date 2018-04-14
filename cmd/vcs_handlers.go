@@ -334,8 +334,14 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	localName := self.CurrentUser
 	remoteName := self.CurrentUser
 
-	localRev := "HEAD"
 	remoteRev := "CURR"
+	localRev := "CURR"
+
+	if ctx.NArg() == 0 {
+		// Special case: When typing brig diff we want to show
+		// the diff from our CURR to HEAD only.
+		localRev = "HEAD"
+	}
 
 	switch n := ctx.NArg(); {
 	case n >= 4:
@@ -348,9 +354,6 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		localName = ctx.Args().Get(1)
 		fallthrough
 	case n >= 1:
-		// When comparing with others,
-		// we should always compare with their latest state.
-		localRev = "CURR"
 		remoteName = ctx.Args().Get(0)
 	}
 
