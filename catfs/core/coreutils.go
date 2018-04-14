@@ -291,8 +291,8 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 
 	// And add it to the right destination dir:
 	newNode = nd.Copy(lkr.NextInode())
-
 	newNode.SetName(path.Base(dstPath))
+	newNode.SetParent(lkr, parentDir)
 	newNode.NotifyMove(lkr, newNode.Path())
 
 	if err := parentDir.Add(lkr, newNode); err != nil {

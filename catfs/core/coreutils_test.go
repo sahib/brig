@@ -94,7 +94,6 @@ func TestRemove(t *testing.T) {
 		MustTouch(t, lkr, path, 1)
 
 		// Check file removal with ghost creation:
-
 		file, err := lkr.LookupFile(path)
 		if err != nil {
 			t.Fatalf("Failed to lookup nested file: %v", err)
@@ -245,8 +244,9 @@ var moveAndCopyTestCases = []struct {
 		name:        "basic-root-to-sub",
 		isErrorCase: false,
 		setup: func(t *testing.T, lkr *Linker) (n.ModNode, string) {
+			MustTouch(t, lkr, "/README.md", 1)
 			MustMkdir(t, lkr, "/sub")
-			return MustTouch(t, lkr, "/xxxxxx", 1), "/sub"
+			return MustTouch(t, lkr, "/x", 1), "/sub"
 		},
 	}, {
 		name:        "into-directory",
@@ -332,12 +332,8 @@ func TestMove(t *testing.T) {
 	// Checks for invalid cases (E):
 	// 1) src is not gone.
 
-	t.Parallel()
-
 	for _, tc := range moveAndCopyTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.
 				srcNd, dstPath := tc.setup(t, lkr)
@@ -511,11 +507,8 @@ func TestStageDirOverGhost(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range moveAndCopyTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			WithDummyLinker(t, func(lkr *Linker) {
 				// Setup src and dest dir with a file in it named like src.

@@ -141,11 +141,14 @@ func (f *File) SetSize(s uint64) {
 
 // Copy copies the contents of the file, except `inode`.
 func (f *File) Copy(inode uint64) ModNode {
+	copyKey := make([]byte, len(f.key))
+	copy(copyKey, f.key)
+
 	return &File{
 		Base:   f.Base.copyBase(inode),
 		size:   f.size,
 		parent: f.parent,
-		key:    f.key,
+		key:    copyKey,
 	}
 }
 
