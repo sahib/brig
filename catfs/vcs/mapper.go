@@ -630,7 +630,9 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 	}
 
 	for _, child := range children {
+		debug(fmt.Sprintf("extract: %v", child.Path()))
 		if ma.nodeIsHandled(child, srcToDst) {
+			debug(fmt.Sprintf("node is handled: %v", child.Path()))
 			continue
 		}
 
@@ -648,6 +650,7 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 				complete = ma.isDstComplete(dir)
 			}
 
+			debug(fmt.Sprintf("is complete: %v %v", child.Path(), complete))
 			if complete {
 				if srcToDst {
 					err = ma.report(dir, nil, false, false, false)
@@ -738,7 +741,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err != nil {
 			return err
 		}
-		debug("extract leftover src")
+		debug("-- Extract leftover src")
 
 		// Extract things in "src" that were not mapped yet.
 		// These are files that can be added to our inventory,
@@ -746,9 +749,10 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 		if err := ma.extractLeftovers(ma.lkrSrc, srcRoot, true); err != nil {
 			return err
 		}
-		debug("Extract leftover dst")
+		debug("-- Extract leftover dst")
 
-		// Check for files for which we
+		// Check for files that we have, but dst does not.
+		// We call those files "missing".
 		return ma.extractLeftovers(ma.lkrDst, dstRoot, false)
 	case n.NodeTypeFile:
 		file, ok := ma.srcRoot.(*n.File)

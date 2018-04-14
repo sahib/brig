@@ -348,6 +348,9 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		localName = ctx.Args().Get(1)
 		fallthrough
 	case n >= 1:
+		// When comparing with others,
+		// we should always compare with their latest state.
+		localRev = "CURR"
 		remoteName = ctx.Args().Get(0)
 	}
 

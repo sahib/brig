@@ -1,7 +1,7 @@
 FROM golang
 MAINTAINER sahib@online.de
 
-ENV BRIG_USER alice@wonderland.lit/container
+ENV BRIG_USER bob@wonderland.lit/container
 ENV BRIG_PATH /var/repo
 RUN mkdir -p $BRIG_PATH
 
