@@ -36,14 +36,9 @@ const brigLogo = `
      A new file README.md was automatically added.
      Use 'brig cat README.md' to view it & get started.
 
-     It's probably a good idea to add the following to your shell config:
-
-       $ export BRIG_PATH=%s
-
-
 `
 
-func createInitialReadme(ctl *client.Client) error {
+func createInitialReadme(ctl *client.Client, folder string) error {
 	text := `Welcome to brig!
 
 Here's what you can do next:
@@ -55,17 +50,22 @@ Here's what you can do next:
 Please remember that brig is software in it's very early stages,
 and will currently eat your data with near-certainity.
 
+It's probably a good idea to add the following to your shell config,
+so you can easily restart brig after your computer restarted:
+
+   $ export BRIG_PATH=%s  # brig needs to know where the repo is.
+
 If you're done with this README, you can easily remove it:
 
     $ brig rm README.md
 
 `
-
 	fd, err := ioutil.TempFile("", ".brig-init-readme-")
 	if err != nil {
 		return err
 	}
 
+	text = fmt.Sprintf(text, folder)
 	if _, err := fd.WriteString(text); err != nil {
 		return err
 	}
@@ -151,11 +151,11 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
-	if err := createInitialReadme(ctl); err != nil {
+	if err := createInitialReadme(ctl, folder); err != nil {
 		return err
 	}
 
-	fmt.Printf(brigLogo, folder)
+	fmt.Println(brigLogo)
 	return nil
 }
 

@@ -450,7 +450,12 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	defer cancel()
 
 	ticket := mh.base.conductor.Exec(func(ticket uint64) error {
-		log.Debugf("Locating %v", who)
+		log.WithFields(log.Fields{
+			"who":     who,
+			"timeout": timeoutSec,
+			"mask":    locateMask,
+		}).Debug("Starting locate...")
+
 		locateCh := psrv.Locate(ctx, peer.Name(who), locateMask)
 
 		wg := sync.WaitGroup{}

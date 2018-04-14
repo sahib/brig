@@ -202,6 +202,7 @@ func (sv *Server) Locate(ctx context.Context, who peer.Name, mask LocateMask) ch
 			defer wg.Done()
 
 			peers, err := sv.bk.ResolveName(ctx, name)
+			log.Debugf("Found peers: %v", peers)
 			resultCh <- LocateResult{
 				Peers: peers,
 				Err:   err,

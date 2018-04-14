@@ -132,6 +132,8 @@ Problem: Diff shows mv order wrong way?
 
 .. code-block:: bash
 
-   $ brig pin -u <path>
+   $ brig pin rm <path-of-bob>
    $ brig gc
+   $ <close bob docker>
    $ brig cat <path>
+   ...blocks...

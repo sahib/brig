@@ -846,25 +846,33 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 // If no such path is known or it was deleted, nil is returned as stream.
 func (fs *FS) Cat(path string) (mio.Stream, error) {
 	fs.mu.Lock()
-	defer fs.mu.Unlock()
 
 	file, err := fs.lkr.LookupFile(path)
 	if err == ie.ErrBadNode {
+		fs.mu.Unlock()
 		return nil, ie.NoSuchFile(path)
 	}
 
 	if err != nil {
+		fs.mu.Unlock()
 		return nil, err
 	}
 
-	rawStream, err := fs.bk.Cat(file.Content())
+	// Copy all attributes, since accessing them beyond the lock might be racy.
+	size := file.Size()
+	content := file.Content().Clone()
+	key := make([]byte, len(file.Key()))
+	copy(key, file.Key())
+
+	fs.mu.Unlock()
+
+	// NOTE: This part of the code is not locked by fs.mu!
+	rawStream, err := fs.bk.Cat(content)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: This can still seek over boundaries?
-	//       Exchange with proper limitReadSeeker + WriterTo?
-	stream, err := mio.NewOutStream(rawStream, file.Key())
+	stream, err := mio.NewOutStream(rawStream, key)
 	if err != nil {
 		return nil, err
 	}
@@ -872,7 +880,7 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 	// Truncate stream to file size. Data stream might be bigger
 	// for example when fuse decided to truncate the file, but
 	// did not flush it already.
-	return mio.LimitStream(stream, file.Size()), nil
+	return mio.LimitStream(stream, size), nil
 }
 
 // Open returns a file like object that can be used for modifying a file in memory.
