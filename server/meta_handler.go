@@ -445,11 +445,11 @@ func (mh *metaHandler) NetLocate(call capnp.Meta_netLocate) error {
 	addrCache := sync.Map{}
 	addrCache.Store(ident.Addr, true)
 
-	timeoutDur := time.Duration(timeoutSec * float64(time.Second))
-	ctx, cancel := context.WithTimeout(mh.base.ctx, timeoutDur)
-	defer cancel()
-
 	ticket := mh.base.conductor.Exec(func(ticket uint64) error {
+		timeoutDur := time.Duration(timeoutSec * float64(time.Second))
+		ctx, cancel := context.WithTimeout(mh.base.ctx, timeoutDur)
+		defer cancel()
+
 		log.WithFields(log.Fields{
 			"who":     who,
 			"timeout": timeoutSec,

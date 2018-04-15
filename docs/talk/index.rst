@@ -25,6 +25,8 @@
 
 .. note::
 
+    - Dies ist eine Projektvorstellung.
+
     - "Unverständlichste Folie"
     - Begriffserklärung des Titels.
         - Unterscheidung: Synchronisieren / Austauschen
@@ -58,6 +60,7 @@ Um was geht's?
     gestellt werden. Sowas wie "Darf ich mal auf's Klo?".
 
     - Viel Stoff für 45 minuten, muss schnell reden, ihr werdet am Ende abgefragt.
+    - Wird in der Mitte auch recht technisch.
 
 ----
 
@@ -95,7 +98,13 @@ Es war einmal…
 
     - Dann mal rein ins Thema...
     - Titel wird erklärt: sicher, dezentral, synchronisation
-    - Umfrage: Wer benutzt welche Tools zum Synchronisieren/Austauschen?
+    - Umfrage: Wer benutzt...
+
+        * Dropbox oder andere Cloud Storage Anbieter (OneDrive, Google Drive)
+        * ownCloud oder nextCloud
+        * Syncthing, git-annex, resilio
+        * Was selbst gebasteltetes?
+        * git
 
 .. image:: images/dropbox.png
 
@@ -510,6 +519,8 @@ Roadmap
 .. note::
 
     ... und der arbeitet nen Vollzeitjob.
+
+    Keine gute Basis für eine stabile Weiterentwicklung.
 
     Features die noch kommen sollen:
 
