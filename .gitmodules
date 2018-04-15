@@ -1,4 +1,0 @@
-[submodule "vendor"]
-    path = vendor
-    url = https://github.com/sahib/brig-vendor.git
-    branch = master
