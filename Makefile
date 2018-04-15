@@ -8,7 +8,9 @@ RELEASETYPE=alpha
 BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
 GITREV=`git rev-parse HEAD`
 
-all:
+all: build
+
+build:
 	go build -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
@@ -32,5 +34,5 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/nodes/capnp/model.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo net/capnp/api.capnp
 
-install:
+install: build
 	cp brig /usr/local/bin
