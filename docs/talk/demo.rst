@@ -1,10 +1,3 @@
-0. Install
-===========
-
-.. code-block:: bash
-
-    $ go get github.com/sahib/brig
-
 1. Init
 =======
 
@@ -47,7 +40,7 @@ Explain reflinks.
 .. code-block:: bash
 
     $ brig mkdir sub
-    $ brig mv music.mp3 sub
+    $ brig cp music.mp3 sub
     $ brig tree
 
     $ brig info README.md
@@ -55,7 +48,8 @@ Explain reflinks.
     $ brig edit README.md
     $ brig info README.md
 
-    ? ipfs cat <hash>
+    $ ipfs cat <hash>
+    -> garbled bullshit.
 
 Explain:
 
@@ -105,16 +99,21 @@ Problem: Diff shows mv order wrong way?
     $ brig reset HEAD^ new-file
     $ brig cat new-file
 
+BUG: brig reset is doing bullshit.
+
 7. Discovery & Remotes
 ======================
 
 .. code-block:: bash
 
+    $ bob-brig ls
     $ brig whoami
     $ brig net locate alice
     $ brig remote add <name> <hash>
     $ brig remote ls
     $ brig remote edit
+
+Docker bereits laufen lassen?
 
 8 Sync & Diff
 =============
@@ -132,8 +131,16 @@ Problem: Diff shows mv order wrong way?
 
 .. code-block:: bash
 
-   $ brig pin rm <path-of-bob>
-   $ brig gc
-   $ <close bob docker>
-   $ brig cat <path>
-   ...blocks...
+    $ brig pin rm <path-of-bob>
+    $ brig gc
+    $ <close bob docker>
+    $ brig cat <path>
+    ...blocks...
+
+10 Misc
+=======
+
+.. code-block:: bash
+
+    $ brig bug
+    $ brig docs

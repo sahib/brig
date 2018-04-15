@@ -23,6 +23,19 @@ ul {
     width: fit-content;
 }
 
+ol {
+	font-family: Vollkorn;
+	font-size: 30px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 400;
+
+    display: block;
+    margin: auto;
+    margin-bottom: 10px;
+    width: fit-content;
+}
+
 h1, h2, h3 {
     display: block;
     margin: auto;
@@ -200,9 +213,9 @@ pre {
     right: 0vw;
 }
 
-.binocs {
+.wollmilchsau {
     position: fixed;
-    bottom: 10vh;
+    bottom: -5vh;
     right: -12vw;
 }
 
@@ -220,6 +233,10 @@ pre {
 
 .small-list > ul {
     font-size: 40px;
+}
+
+.help {
+    font-size: 12px;
 }
 
 .small {

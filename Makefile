@@ -36,7 +36,7 @@ capnp:
 
 install:
 ifneq ("$(wildcard brig)","")
-	echo "binary found, installing to /usr/local/bin"
+	@echo "binary found, installing to /usr/local/bin"
 else
 	@echo "'brig' binary does not exist; please run 'make build' before 'make install'"
 	@exit 1

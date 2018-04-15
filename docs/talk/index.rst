@@ -234,7 +234,7 @@ Was kann das so?
     aber nur sehr rudiemntär.
 
 
-.. note::
+.. code-block:: bash
 
     $ ipfs id -f '<id>\n'
     QmeLNNcryy9Ky1dXnfnEPaDQ2KuJ6yafaSRZssjQ83ie84
@@ -344,8 +344,12 @@ Disclaimer: Sicherheit?
     Wenn ich sagen würde, dass »brig« sicher ist, dann heißt das eigentlich
     nur dass ich beim Schreiben der Software die Absicht hatte, sichere Software zu schreiben.
 
+    Es kommt auf die Angriffsvektoren an.
     Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
     aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
+
+    Philosophie ist allgemein: Ein Schloss, dass man nur unter Mühe öffnen
+    kann, benutzt kaum einer.
 
 |
 
@@ -381,8 +385,11 @@ Nutzermanagement
 
 .. note::
 
+    - Ist nicht wirklich vorhanden.
+    - Es gibt keine registrierten Nutzer.
+    - Zwei Nutzer können den selben Displaynamen haben!
+    - Aber nicht den selben Fingerprint.
     - Email bzw. Jabber ID ähnlich.
-
 
 |
 
@@ -436,6 +443,8 @@ Pinning
 
 ----
 
+:id: help-slide
+
 Hilfe? Erwünscht.
 =================
 
@@ -443,25 +452,35 @@ Hilfe? Erwünscht.
 
     Problem: Man macht ein Release und kriegt 20 Feature Requests,
     mit teils total widersprüchlichen Anforderungen.
-    Das artet in Feature-itis aus.
+    Das artet in Feature-itis aus (-> Wollmilchsau)
 
     Am Ende steht man mit eine Software da, die Kaffee kochen kann,
     dafür aber nur so mittel und dessen Name mit "j" beginnt.
     (Müsst ihr mal drauf aufpassen... jDownloader, jQuery, java)
 
+    Experience Reports:
+
+    - Fokus auf Problemen, nicht auf Lösungen.
+    - Was ihr tun wolltet
+    - Was ihr eigentlich gemacht/erwartet habt
+    - Warum das nicht so ganz funktioniert hat
+
 Mithilfe via **Experience Reports.**
 
-.. image:: images/binocs.png
-    :class: binocs
-    :width: 50%
+1. Was habt ihr gemacht?
+2. Was habt ihr erwartet?
+3. Warum hat das nicht funktioniert?
 
+.. image:: images/wollmilchsau.png
+    :class: wollmilchsau
+    :width: 40%
 
 |
 
-Und wie?
---------
+Und sonst?
+----------
 
-- Bug reports.
+- Bug reports. (``brig bug``)
 - Pull requests.
 - **Keine** Feature Requests!
 
@@ -480,7 +499,7 @@ Roadmap
 
 |
 
-.. image:: images/future.png
+.. image:: images/binocs.png
    :class: future
    :width: 40%
 
@@ -515,32 +534,6 @@ Probem gelöst?
 
 .. image:: images/xkcd-standards.png
    :width: 110%
-
-----
-
-Installation
-============
-
-.. note::
-
-    - Wie kann man es ausprobieren?
-    - Go vorher installieren.
-
-|
-
-.. code-block:: bash
-
-    # Falls nötig, Go installieren:
-    $ sudo pacman -S go
-    $ export GOPATH=~/go
-
-|
-
-.. code-block:: bash
-
-    # brig kompilieren:
-    $ go get -u github.com/sahib/brig
-    $ brig --version
 
 ----
 
