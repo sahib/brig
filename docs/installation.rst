@@ -33,29 +33,31 @@ to have ``sudo`` permissions later on.
 
 You also need to have ``git`` installed for the next step.
 
-.. todo:: describe how for different distributions.
+.. todo:: Describe *how* for different distributions.
 
 Step 1: Compile & Install ``brig``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This step requires that you have set ``GOPATH``, as discussed
+in the previous section.
+
 .. code:: bash
 
-    $ git clone --recursive https://github.com/sahib/brig
-    $ cd brig && make
-    $ sudo make install
+    $ go get -d -v -u github.com/sahib/brig  # Download the sources.
+    $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
+    $ make                                   # Build the software.
+    $ sudo make install                      # Install it system-wide (optional)
 
-This will download the complete source code of ``brig`` (and all of it's
-dependencies). The second step compiles the binary. Execution might take a few
-minutes though. The third step will install the binary to ``/usr/local/bin/brig`` -
-you can of course copy it to another path.
-
+All dependencies of brig are downloaded for you during the first step.
+Execution might take a few minutes though.
 
 .. note::
 
-    In theory it's also possible to install ``brig`` via ``go get``, but there
-    is currently a misbehaviour in ``go get`` that prevents proper downloading
-    of submodules. Also, the resulting binary lacks the git revision in the
-    help output, which is why we discourage this method.
+    For the curious: Why the Makefile?
+
+    In theory it's also possible to install ``brig`` via ``go get`` only, but
+    there is no way to straight-forward way to set the git revision in the binary.
+    Thus the Makefile.
 
 Step 2: Test if the installation is working
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

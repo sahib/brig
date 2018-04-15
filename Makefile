@@ -34,5 +34,12 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/nodes/capnp/model.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo net/capnp/api.capnp
 
-install: build
-	cp brig /usr/local/bin
+install:
+ifneq ("$(wildcard brig)","")
+	echo "binary found, installing to /usr/local/bin"
+else
+	@echo "'brig' binary does not exist; please run 'make build' before 'make install'"
+	@exit 1
+endif
+
+	@sudo cp brig /usr/local/bin
