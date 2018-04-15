@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.6
+
+script:
+  - go test
+  - perl gpgeez_test.pl
+  - perl gpgeez_test_keyring.pl
+

@@ -1,0 +1,24 @@
+{
+  "author": "whyrusleeping",
+  "bugs": {
+    "url": "https://github.com/whyrusleeping/failstore"
+  },
+  "gx": {
+    "dvcsimport": "github.com/whyrusleeping/failstore"
+  },
+  "gxDependencies": [
+    {
+      "author": "jbenet",
+      "hash": "QmPpegoMqhAEqjncrzArm7KVWAkCm78rqL2DPuNjhPrshg",
+      "name": "go-datastore",
+      "version": "1.4.1"
+    }
+  ],
+  "gxVersion": "0.8.0",
+  "language": "go",
+  "license": "",
+  "name": "failstore",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "1.0.6"
+}
+
