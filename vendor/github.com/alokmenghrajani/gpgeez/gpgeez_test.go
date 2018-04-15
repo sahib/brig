@@ -1,0 +1,47 @@
+package gpgeez
+
+import (
+	"math/rand"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/openpgp/packet"
+)
+
+type FakeRand struct {
+	r *rand.Rand
+}
+
+func NewFakeRand() *FakeRand {
+	fakeRand := new(FakeRand)
+	fakeRand.r = rand.New(rand.NewSource(4))
+	return fakeRand
+}
+
+func (rand FakeRand) Read(p []byte) (n int, err error) {
+	return rand.r.Read(p)
+}
+
+func FakeTime() time.Time {
+	return time.Unix(1474483116, 0)
+}
+
+func TestCreateKey(t *testing.T) {
+	c := packet.Config{Rand: NewFakeRand(), Time: FakeTime}
+	config := Config{Config: c, Expiry: 365 * 24 * time.Hour}
+	key, err := CreateKey("Joe", "test key", "joe@example.com", &config)
+	assert.Nil(t, err, "CreateKey errored")
+
+	publicKey, err := key.Armor()
+	assert.Nil(t, err, "key.Armor() errored")
+
+	expectedPublicKey := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxsBNBFfi06wBCADRvTDSCHNi8ylT7H0zr7YrNN6n+4R/AGA8QJeC4rFUzcj2/ovx\nrp0lt1EIayJ9WBD9blScDykQuOiA9Y9LabJZs0bpMSnqKs6xMxKgdzyldos/rDhi\nHkhqo230jJyTf+CcXu+1QxdkAQRtv+mahdNVKsEIC0Aynq/fQho1E3V2ef/daMPK\nX/Pxaut1ndQgv0/XbiTPU8WfCvUGtvnMqJHuCCrBbIf74XqcNQRapcSBNl0ROIBj\naLf2QdrpjabzTdLuLXCiV55Ys9OhZTgFq/VBXZZexzVGRw6FZcCXWZPIenmaqD6A\n/5eLD65gllO3MxwsnwegJBusQDpvOBedDWMNABEBAAHNIEpvZSAodGVzdCBrZXkp\nIDxqb2VAZXhhbXBsZS5jb20+wsB6BBMBCAAuBQJX4tOsCRDwOjjYTA8PGAIbAwUJ\nAeEzgAIZAQYLCQgHAwIGFQgCCQoLAxYCAQAA0ToIAKiqDPpxodcw3ECwvZAf1szQ\nSOmEjNn0TSy/aAOmLHiZMnpVw/AF67M8amLC0zCi0tgSUG7tlBNz38igeZnxDkL7\nDRod66BKAaFY1tTRYluGIokcE2rfD3pCYpPqWRXS3IlAsUNXnRzrnnvaovqJmKYu\n891liSQTYFezPqthhYAIK1Yf6qneMxGcWKW27NlBhbzMfL2yuhnR1jZI81TtAjTU\nVqOY8btP9rMU4Xx90D65Yt3vAParJ2eHyWuq4sChWbfJVXblNu/aQ8u5l5GiOGW5\nCX3wbQ0UiucS7QBPQ1yhSKss9OzMI0EyOiBKDudiI1xxk7/V0zb9M/ed90QfT8XO\nwE0EV+LTrAEIAPKAIOmMbDpvVO4iIa/1PqPCGISqGwenNIsyrZDrE1iZw4AVmVgO\nfBD+uFfi5JKnrIWuZtsQoPARYJGxMLuhgLOTZnQ0kUaVh/HRlxxy+0ds9wlDBBW4\nCY5mBZWy+y5Q4bMw7ulrcksXyCnsPKOf5K5zSd0a8Ksy2gAZZ3u7pwL1gvo+wzHU\neqx6LP34z5EsjWTTHyQlbNrNvbC4UIcjv+jePzJE7loylcD2KpbNfPowIexxf1H/\naIenMA8Al1ZvUBZ6XV+pkrb0M60BDN1HZg538NWlXETdRLaOnUJKlXwYgOV9EA3A\nxJArl8cuxeeRe933HVKjiPf84/T/fEKdF48AEQEAAcLAZQQYAQgAGQUCV+LTrAkQ\n8Do42EwPDxgCGwwFCQHhM4AAAC5cCACuvKwc+9dQhvfdwmZjGN3gtn6DQJqtKEdz\n9cUnxKkksIVw+xtz1EHqXhCzE7Bn/w3n38GG18TSVMnIU9aYuqGfn65KT1oFOIK0\nCjFy7p6ItljLo4dlaTquWAQUGSnE+7GVv+GwX6D4NeJdPmSERsY5Gkl+yHygdOEn\nEdzusurWJw6Z7gOmbGXr0aOSEItEgDJ3BkjJwBIMxzK2UhdJTp0O75fR6dTCsgz2\nneJbded0RTk1TOUNVXnvEqNSIFNu56KqlWcInqu8edPAjSWjXB13trrQfCow083g\n9gbzrbZCJpj8LLz9GtsPsKvCSClREQkzySTXhd8Y0RvmOEdJMmXF\n=2puG\n-----END PGP PUBLIC KEY BLOCK-----"
+	assert.Equal(t, expectedPublicKey, publicKey)
+
+	privateKey, err := key.ArmorPrivate(&config)
+	assert.Nil(t, err, "key.ArmorPrivate() errored")
+
+	expectedPrivateKey := "-----BEGIN PGP PRIVATE KEY BLOCK-----\n\n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\n=ntZs\n-----END PGP PRIVATE KEY BLOCK-----"
+	assert.Equal(t, expectedPrivateKey, privateKey)
+}
