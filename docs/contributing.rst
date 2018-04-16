@@ -35,11 +35,7 @@ Please use the ``brig bug`` command to get a template with all the info we need.
 
 **Are very small feature requests okay?** If it's only about changing or
 extending an existing feature, it's probably fine. Feel free to create an issue
-on GitHub to check back on this before you do any actual changes.
-
-.. todo::
-
-    Find a good featuritis symbol picture.
+on GitHub to check back on this before you do any actual change.
 
 What to improve
 ---------------
@@ -54,7 +50,10 @@ The following improvements are greatly appreciated:
 Workflow
 --------
 
-Please adhere to the general GitHub workflow (TODO: Link)
+Please adhere to the general `GitHub workflow_`, i.e. fork the repository,
+make your changes and open a pull request that can be discussed.
+
+.. _`Github workflow`: https://help.github.com/articles/about-pull-requests
 
 If you contribute code, make sure:
 

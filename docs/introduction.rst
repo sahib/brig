@@ -274,11 +274,15 @@ If both sides are up & running, we can check if we can reach the other side:
 
 	$ brig remote list
     NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
-    alice  QmUDSXt27    ∞          ✘ no route (yet)
+    bob    QmUDSXt27    ∞          ✔ Apr 16 17:31:01
 	# Yep that works.
 	$ brig remote ping bob
-	TODO: output
-	# Cool, we really can reach them.
+    ping to bob: ✔ (0.00250ms)
+
+Cool, we are ready to reach them. Note that ``brig remote list`` only shows if
+a another node is really online. ``brig remote ping <name>`` sends an actual
+message to them which will only be replied back if they mutually authenticated
+us!
 
 .. note:: About open ports:
 
@@ -309,11 +313,13 @@ username. So any of these are valid usernames:
 - ``alice/rabbithole``
 
 It's however recomended to choose a name that is formatted like
-a XMPP/Jabber-ID (TODO: Link). Those IDs can look like plain emails, but can
+a `XMPP/Jabber-ID`_. Those IDs can look like plain emails, but can
 optionally have a »resource« part as suffix (separated by a »/« like
 ``ovaloffice``). The advantage of having a username in this form is
 locabillity: ``brig`` can find users with the same domain - which is useful for
 e.g. companies with many users.
+
+.. _`XMPP/Jabber-ID`: https://de.wikipedia.org/wiki/Jabber_Identifier
 
 .. note::
 
@@ -488,8 +494,6 @@ Individual commands
 * ``brig tag``: Tag a commit with a user defined name. This is helpful for
   remembering special commits like »homework-finale«.
 * ``brig history``: Show the list of changes made to this file between commits.
-  TODO: Describe the possible state changes.
-  TODO: Include commits in output.
 * ``brig reset``: Checkout a whole commit or bring a single file or directory
   to the state of an old commit. In contrast to ``git``, checking out an old
   state works not by »jumpinp back«, but by setting the current commit
