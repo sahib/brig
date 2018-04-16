@@ -36,7 +36,6 @@ func bootTransferServer(fs *catfs.FS, bindHost, path string) (int, error) {
 	}
 
 	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindHost, port))
-	fmt.Println("LIST ADDR", fmt.Sprintf("%s:%d", bindHost, port))
 
 	if err != nil {
 		stream.Close()
@@ -74,7 +73,6 @@ func bootReceiveServer(bindHost string, fn func(conn net.Conn) error) (int, erro
 	}
 
 	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindHost, port))
-	fmt.Println("LIST ADDR", fmt.Sprintf("%s:%d", bindHost, port))
 	if err != nil {
 		return -1, err
 	}

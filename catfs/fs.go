@@ -1177,12 +1177,20 @@ func (fs *FS) Reset(path, rev string) error {
 	}
 
 	// Cannot (un)pin non-existing file anymore.
-	if _, err := fs.lkr.LookupNode(path); ie.IsNoSuchFileError(err) {
+	nd, err := fs.lkr.LookupNode(path)
+	if ie.IsNoSuchFileError(err) {
 		return nil
 	}
 
-	if err := fs.pinOp(path, false, fs.bk.Unpin); err != nil {
+	isPinned, _, err := fs.isPinned(nd)
+	if err != nil {
 		return err
+	}
+
+	if isPinned {
+		if err := fs.pinOp(path, false, fs.bk.Unpin); err != nil {
+			return err
+		}
 	}
 
 	return fs.pinOp(path, false, fs.bk.Pin)

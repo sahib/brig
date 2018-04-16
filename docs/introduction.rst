@@ -412,10 +412,16 @@ each file or directory you want to keep always. Files you add explicitly are
 pinned by default and also files that were synced to you. Only old versions of
 a file are by default unpinned.
 
-``brig`` knows of two types of pins: **Explicit** and **implicit**.
-When a file or directory is being pinned by ``brig pin``, we call this an explicit pin,
-since the user decided he wants to keep that file. When you update a file locally,
-``brig`` will unpin the old version and pin the new content *implicitly*.
+``brig`` knows of two types of pins: **Explicit** and **implicit**. When a file
+or directory is being pinned by ``brig pin``, we call this an explicit pin,
+since the user decided he wants to keep that file. When you update a file
+locally, ``brig`` will unpin the old version and pin the new content
+*implicitly*. In the command line output, explicit pins are always shows
+magenta, while implicit pins are shown as implicit.
+
+.. todo::
+
+    Explain the implications of pinning when syncing files and other operations like reset.
 
 If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin

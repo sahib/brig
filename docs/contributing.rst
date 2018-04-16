@@ -3,7 +3,7 @@ How to contribute
 
 .. note::
 
-    Pure feature requests will crrently **NOT BE** considered.
+    Pure feature requests will currently **NOT BE** considered.
     Read on for the reasoning and details.
 
 This software is still in very early stages and still needs to find the
