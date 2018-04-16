@@ -112,4 +112,6 @@ a file is pinned, it won't get deleted. If you don't need a file in local
 storage, you can also unpin it. On the next access ``brig`` will try to load it
 again from a peer that provides it (if possible).
 
-TODO: Make demo.
+.. raw:: html
+
+    <script src="https://asciinema.org/a/176590.js" id="asciicast-176590" async></script>
