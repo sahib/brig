@@ -65,14 +65,14 @@ at the end of your ``.bashrc``:
 
 .. code-block:: bash
 
-  source <path-to-brig-src>/autocomplete/bash_autocomplete
+  source $GOPATH/src/github.com/sahib/brig/autocomplete/bash_autocomplete
 
 Or if you happen to use ``zsh``, append this to your ``.zshrc``:
 
 
 .. code-block:: bash
 
-  source <path-to-brig-src>/autocomplete/zsh_autocomplete
+  source $GOPATH/src/github.com/sahib/brig/autocomplete/zsh_autocomplete
 
 After starting a new shell you should be able to do this:
 
@@ -270,6 +270,8 @@ someone is truly the person he claims to be.
 
 If both sides are up & running, we can check if we can reach the other side:
 
+.. code-block:: bash
+
 	$ brig remote list
     NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
     alice  QmUDSXt27    ∞          ✘ no route (yet)
@@ -313,15 +315,17 @@ optionally have a »resource« part as suffix (separated by a »/« like
 locabillity: ``brig`` can find users with the same domain - which is useful for
 e.g. companies with many users.
 
-.. note:: Domain
+.. note::
 
-    The domain part of the email does not need to be a valid domain.
+    The domain part of the email does not need to be a valid domain,
+    but later releases might add email based authentication schemes
+    which will require a valid domain in the username.
 
 Having a resource part is optional, but can help if you have several instances
 of ``brig`` on your machines. i.e. one username could be
 ``alice@wonderland.org/desktop`` and the other ``alice@wonderland.org/laptop``.
 
-.. note:: Unique names
+.. note::
 
     The same name can be taken by more than one node. That's a result of the
     distributed nature of ``brig`` since there is no central part that can
@@ -331,7 +335,7 @@ of ``brig`` on your machines. i.e. one username could be
 
     ``brig`` does therefore not use the name to authenticate a user. This is done
     by the *fingerprint*, which is explained later. Think of the name
-    as a human readable »DNS«-name for fingerprints.
+    as a human readable »DNS«-name for fingerprints for now.
 
 Syncing
 -------
@@ -380,7 +384,7 @@ take his changes. If we sync now we will get this directory from him:
     SIZE   MODTIME          PATH          PIN
     443 B  Dec 27 14:44:44  /README.md     🖈
     12 B   Dec 27 15:14:16  /hello.world   🖈
-	32 GB  Dec 27 15:14:16  /election      🖈
+    32 GB  Dec 27 15:14:16  /election      🖈
 
 You might notice that the ``sync`` step was kind of fast for 32 GB. This is
 because ``sync`` *does not transfer actual data*. It only transferred the
@@ -400,12 +404,29 @@ How are the files secure then if they essentially could be everywhere?
 Every file is encrypted by ``brig`` before giving it to ``ipfs``. The key is part
 of the metadata and will be used to decrypt the file again on the receiver's end.
 
+Pinning
+-------
+
 How do we control then what files are stored locally and what not? By *pinning*
 each file or directory you want to keep always. Files you add explicitly are
 pinned by default and also files that were synced to you. Only old versions of
-a file are by default unpinned. If you want to clean up data (i.e. files are not pinned)
-you can invoke ``brig gc``.
+a file are by default unpinned.
 
+``brig`` knows of two types of pins: **Explicit** and **implicit**.
+When a file or directory is being pinned by ``brig pin``, we call this an explicit pin,
+since the user decided he wants to keep that file. When you update a file locally,
+``brig`` will unpin the old version and pin the new content *implicitly*.
+
+If you never pin something explicitly, only the newest version of all files
+will be stored locally. If you decide that you need older versions, you can pin
+them explictly, so brig cannot unpin them implicily. For this you should also
+look into the ``brig pin set`` and ``brig pin clear`` commands, which are
+similar to ``brig pin add`` and ``brig pin rm`` but can operate on whole commit
+ranges.
+
+Once ``brig gc`` is being run, all files that are not pinned (explicit or
+implcit) are being deleted from local storage. However, those files can be
+still retrieved by other nodes that store the respective content.
 
 Version control
 ---------------

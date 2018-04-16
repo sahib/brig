@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>brig - decentralized &amp; secure file synchronization &mdash; brig 0.1.0 documentation</title>
+  <title>brig - decentralized &amp; secure file synchronization &mdash; brig v0.1.0-beta documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="brig 0.1.0 documentation" href="#"/>
+    <link rel="top" title="brig v0.1.0-beta documentation" href="#"/>
         <link rel="next" title="Installation" href="installation.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.1.0
+                v0.1.0-beta
               </div>
             
           
@@ -186,6 +186,11 @@ Since <code class="docutils literal notranslate"><span class="pre">brig</span></
 cannot excel in all areas. This is especially true for efficiency, which is
 sometimes sacrificed to get the balance of usability and security right.</p>
 <p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only available for Linux</strong>. Porting efforts are welcome though.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> is currently in an open beta phase. It implements all features that are descibed in the documentation
+but contains too many bugs to be considered production ready. Do <strong>NOT</strong> use if for any sensible data yet!</p>
+</div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">User documentation:</span></p>
 <ul>
@@ -196,11 +201,13 @@ sometimes sacrificed to get the balance of usability and security right.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#precursor-the-help-system">Precursor: The help system</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#creating-a-repository">Creating a repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#adding-viewing-files">Adding &amp; Viewing files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#mounting-repositories">Mounting repositories</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#remotes">Remotes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#syncing">Syncing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#pinning">Pinning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#version-control">Version control</a></li>
 </ul>
 </li>
@@ -262,7 +269,7 @@ sometimes sacrificed to get the balance of usability and security right.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Chris Pahl.
+        &copy; Copyright 2018, Chris Pahl.
 
     </p>
   </div>
@@ -284,7 +291,7 @@ sometimes sacrificed to get the balance of usability and security right.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'v0.1.0-beta',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

@@ -11,7 +11,9 @@ Yes, there is other software in this world. But this is always a matter of
 tradeoffs the author of each individual package has chosen. One application
 might not run on your platform, the next might not be secure enough for your
 needs, the other one decides to steal your data or are propietary/too
-complicated to setup or maintain.
+complicated to setup or maintain. This comparison does not aim to blame any
+tool (well, except if it's stealing data) but tries to give a (subjective) view
+on where the focus of each tool differs.
 
 .. todo::
 

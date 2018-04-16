@@ -28,3 +28,7 @@ Although this documentation speaks of »we«, the only developer is currently
 
 Technical questions
 -------------------
+
+.. todo::
+
+    Fill this with questions. Contributors welcome!

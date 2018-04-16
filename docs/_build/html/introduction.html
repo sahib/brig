@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Getting started &mdash; brig 0.1.0 documentation</title>
+  <title>Getting started &mdash; brig v0.1.0-beta documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="brig 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="brig v0.1.0-beta documentation" href="index.html"/>
         <link rel="next" title="Quickstart" href="quickstart.html"/>
         <link rel="prev" title="Installation" href="installation.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.1.0
+                v0.1.0-beta
               </div>
             
           
@@ -94,6 +94,14 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#precursor-the-help-system">Precursor: The help system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#open-the-online-documentation">Open the online documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#built-in-documentation">Built-in documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shell-autocompletion">Shell autocompletion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#typo-suggestion">Typo suggestion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reporting-bugs">Reporting bugs</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#creating-a-repository">Creating a repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#adding-viewing-files">Adding &amp; Viewing files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#mounting-repositories">Mounting repositories</a></li>
@@ -102,6 +110,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#syncing">Syncing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pinning">Pinning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-control">Version control</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#key-concepts">Key concepts</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#individual-commands">Individual commands</a></li>
@@ -185,18 +194,106 @@
 <p>This guide will walk you through the steps of synchronizing your first files
 over <code class="docutils literal notranslate"><span class="pre">brig</span></code>. It’s hand’s on, so make sure to open a terminal.
 We’ll explain all import concepts along the way.</p>
+<div class="section" id="precursor-the-help-system">
+<h2>Precursor: The help system<a class="headerlink" href="#precursor-the-help-system" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> has some built-in commands to help you.
+Before you dive into the actual commands, you should take a look at them:</p>
+<div class="section" id="open-the-online-documentation">
+<h3>Open the online documentation<a class="headerlink" href="#open-the-online-documentation" title="Permalink to this headline">¶</a></h3>
+<p>This opens a new browser window with this site.
+URLs are hard to remember, so we got you covered:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig docs
+</pre></div>
+</div>
+</div>
+<div class="section" id="built-in-documentation">
+<h3>Built-in documentation<a class="headerlink" href="#built-in-documentation" title="Permalink to this headline">¶</a></h3>
+<p>Every command offers detailled built-in help,
+which you can view using the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span></code> command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig <span class="nb">help</span> remote
+NAME:
+   brig stage - Add a <span class="nb">local</span> file to the storage
+
+USAGE:
+   brig stage <span class="o">[</span><span class="nb">command</span> options<span class="o">]</span> <span class="o">(</span>&lt;local-path&gt; <span class="o">[</span>&lt;path&gt;<span class="o">]</span><span class="p">|</span>--stdin &lt;path&gt;<span class="o">)</span>
+
+CATEGORY:
+   WORKING TREE COMMANDS
+
+DESCRIPTION:
+   Read a <span class="nb">local</span> file <span class="o">(</span>given by »local-path«<span class="o">)</span> and try to <span class="nb">read</span>
+   it. This is the conceptual equivalent of »git add«. <span class="o">[</span>...<span class="o">]</span>
+
+EXAMPLES:
+
+   $ brig stage file.png                   <span class="c1"># gets added as /file.png</span>
+   $ brig stage file.png /photos/me.png    <span class="c1"># gets added as /photos/me.png</span>
+   $ cat file.png <span class="p">|</span> brig --stdin /file.png <span class="c1"># gets added as /file.png</span>
+
+OPTIONS:
+   --stdin, -i  Read data from stdin
+</pre></div>
+</div>
+</div>
+<div class="section" id="shell-autocompletion">
+<h3>Shell autocompletion<a class="headerlink" href="#shell-autocompletion" title="Permalink to this headline">¶</a></h3>
+<p>If you don’t like to remember the exact name of each command, you can use
+the provided autocompletion. For this to work you have to insert this
+at the end of your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> <span class="nv">$GOPATH</span>/src/github.com/sahib/brig/autocomplete/bash_autocomplete
+</pre></div>
+</div>
+<p>Or if you happen to use <code class="docutils literal notranslate"><span class="pre">zsh</span></code>, append this to your <code class="docutils literal notranslate"><span class="pre">.zshrc</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> <span class="nv">$GOPATH</span>/src/github.com/sahib/brig/autocomplete/zsh_autocomplete
+</pre></div>
+</div>
+<p>After starting a new shell you should be able to do this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># There&#39;s builtin autocompletion if you source</span>
+<span class="c1"># autocomplete/bash_autocomplete</span>
+$ brig remote &lt;tab&gt;
+add     clear   edit    list    ping    remove
+</pre></div>
+</div>
+</div>
+<div class="section" id="typo-suggestion">
+<h3>Typo suggestion<a class="headerlink" href="#typo-suggestion" title="Permalink to this headline">¶</a></h3>
+<p>This is a rather silly, little feature but if you mistype a command, you get
+suggestion on what you likely meant to type:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remot
+<span class="sb">`</span>remot<span class="sb">`</span> is not a valid command.
+
+Did you maybe mean one of those?
+  * reset
+  * mount
+  * rm
+  * remote
+</pre></div>
+</div>
+</div>
+<div class="section" id="reporting-bugs">
+<h3>Reporting bugs<a class="headerlink" href="#reporting-bugs" title="Permalink to this headline">¶</a></h3>
+<p>If you need to report a bug you can use a built-in utility to do that. It will
+gather all relevant information, create a report and open a tab with the
+<em>GitHub</em> issue tracker in a browser for you. Only thing left for you is to fill
+out some questions in the report (and possibly create a <em>GitHub</em> account
+first):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig bug
+</pre></div>
+</div>
+</div>
+</div>
 <div class="section" id="creating-a-repository">
 <h2>Creating a repository<a class="headerlink" href="#creating-a-repository" title="Permalink to this headline">¶</a></h2>
 <p>You need a central place where your files are stored and <code class="docutils literal notranslate"><span class="pre">brig</span></code> calls this
-place the <em>repository</em>. Note that this is not directly comparable to what
-other tools calls the <em>Sync folder</em>. Rather think of it as the <code class="docutils literal notranslate"><span class="pre">.git</span></code> folder
-of a <code class="docutils literal notranslate"><span class="pre">git</span></code>-repository: A place where all internal state, data and metadata
-of <code class="docutils literal notranslate"><span class="pre">brig</span></code> is stored.</p>
+place the <em>repository</em>. Note that this is not directly comparable to what other
+tools calls the <em>Sync folder</em>. Rather think of it as the <code class="docutils literal notranslate"><span class="pre">.git</span></code> folder of
+a <code class="docutils literal notranslate"><span class="pre">git</span></code>-repository: A place where all internal state, data and metadata of
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> is stored.</p>
 <p>By creating a new repository you also generate your identity, under which
 your buddies can later find <em>and</em> authenticate you.</p>
 <p>But enough of the grey theory, let’s get started:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir ~/metadata <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/metadata
-$ brig init donald@whitehouse.gov/ovaloffice
+$ brig init alice@wonderland.lit/rabbithole
 <span class="m">27</span>.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
 ⚠  <span class="m">39</span> New passphrase:
 
@@ -229,7 +326,10 @@ See <a class="reference internal" href="#about-names"><span class="std std-ref">
 used to store your data in an encrypted manner on your harddisk. This is
 especially important if you think about creating the repository on a portable
 media (e.g. usb sticks). If you still choose to disable this security feature
-you’re free to do so by passing <code class="docutils literal notranslate"><span class="pre">-x</span></code> directly before the <code class="docutils literal notranslate"><span class="pre">init</span></code> subcommand.</p>
+you’re free to do so by passing <code class="docutils literal notranslate"><span class="pre">-x</span></code> directly before the <code class="docutils literal notranslate"><span class="pre">init</span></code> subcommand.
+When typing the password, you will notice that the prompt changes color. The
+more secure (measured by Dropbox’s <code class="docutils literal notranslate"><span class="pre">zxcvbn</span></code> library) the password is, the
+closer to green the prompt gets.</p>
 <p>Also note that a lot of files were created in the current directory.
 This is all part of the metadata that is being used by the daemon that runs
 in the background.</p>
@@ -274,53 +374,63 @@ and use it more like a »transfer box« for efficiency reasons.</p>
 <h2>Remotes<a class="headerlink" href="#remotes" title="Permalink to this headline">¶</a></h2>
 <p>Until now, all files where only local. How do we even talk to other peers? This
 is done by adding them as »remote«. Every repository you are using has
-a user-chosen name (»<a class="reference external" href="mailto:donald&#37;&#52;&#48;whitehoure&#46;gov/ovaloffice">donald<span>&#64;</span>whitehoure<span>&#46;</span>gov/ovaloffice</a>«) and a unique
+a user-chosen name (»<a class="reference external" href="mailto:alice&#37;&#52;&#48;wonderland&#46;lit/rabbithole">alice<span>&#64;</span>wonderland<span>&#46;</span>lit/rabbithole</a>«) and a unique
 fingerprint that was generated during <code class="docutils literal notranslate"><span class="pre">init</span></code>. Let’s see what our own fingerprint is:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The hash will most likely look different for you:</span>
 $ brig whoami
-donald@whitehouse.gov/ovaloffice QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+alice@wonderland.lit/rabbithole QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 </pre></div>
 </div>
 <p>The fingerprint consists of two hashes divided by a colon (:). The first part
-is the identity of your <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> node, the second part is the fingerprint of a
-keypair that was generated by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and will be used to authenticate other
+is the identity of your <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> node, the second part is the fingerprint of
+a keypair that was generated by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and will be used to authenticate other
 peers.</p>
-<p>Now let’s assume another user (let’s call him Vladimir) wants to synchronize files with Donald.
-Both sides now need to share the information printed by <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> over a secure side channel.
-This side channel could be one of the following:</p>
+<p>Now let’s assume another user (let’s call him Bob) wants to synchronize files
+with Alice. Both sides now need to share the information printed by <code class="docutils literal notranslate"><span class="pre">brig</span>
+<span class="pre">whoami</span></code> over a secure side channel. This side channel could be one of the
+following:</p>
 <ul class="simple">
 <li>Encrpyted mail.</li>
 <li>A secure instant messenger of your choice.</li>
-<li>Any insecure channel, as long you call or meet the person later and you validate at least a few digits of his fingerprint.</li>
+<li>Any <em>insecure</em> channel, as long you call or meet the person later and you
+validate at least a few digits of his fingerprint.</li>
 </ul>
-<p>Once you have exchanged the fingerprints, both sides can add each other:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brig remote add vladimir <span class="se">\</span>
+<p>Once you have exchanged the fingerprints, <em>Alice</em> can add <em>Bob</em>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob <span class="se">\</span>
         QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
         SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 </pre></div>
 </div>
-<p>After doing so <code class="docutils literal notranslate"><span class="pre">brig</span></code> can figure out the rest (i.e. how to actually reach the node over the network itself).
-Remember that this mechanism might seem inconvinient at first, but it’s the only way for you to actually check
-if someone is truly the person he claims to be.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Later we might make this easier by interpreting the username as an email and/or encoding the fingerprint as QR-code.</p>
+<p><em>Bob</em> can do the same on his side:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add alice <span class="se">\</span>
+QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
+SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+</pre></div>
 </div>
+<p>After doing so <code class="docutils literal notranslate"><span class="pre">brig</span></code> can figure out the rest (i.e. how to actually reach the
+node over the network itself). Remember that this mechanism might seem
+inconvinient at first, but it’s the only way for you to actually check if
+someone is truly the person he claims to be.</p>
 <p>If both sides are up &amp; running, we can check if we can reach the other side:</p>
-<blockquote>
-<div>$ brig net list
-TODO: output
-# Yep that works.
-$ brig remote ping vladimir
-TODO: output
-# Cool, we really can reach them.</div></blockquote>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>    $ brig remote list
+NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
+alice  QmUDSXt27    ∞          ✘ no route <span class="o">(</span>yet<span class="o">)</span>
+    <span class="c1"># Yep that works.</span>
+    $ brig remote ping bob
+    TODO: output
+    <span class="c1"># Cool, we really can reach them.</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>About open ports:</p>
-<p class="last">While <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> tries to do it’s best to avoid having the user to open ports in his firewall/router.
-This mechanism might not be perfect though (and maybe never is). If any of the following network
-operations might not work it might be necessary to open the ports 4001 - 4005 or to enable
-UPnP. This only is necessary if the computers you’re using <code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same network.</p>
+<p class="last">While <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> tries to do it’s best to avoid having the user to open ports
+in his firewall/router. This mechanism might not be perfect though (and
+maybe never is). If any of the following network operations might not work
+it might be necessary to open the ports 4001 - 4005 or enable UPnP. For
+security reasons we recommend to only open the required ports explicitly and
+not to use UPnP. This only is necessary if the computers you’re using
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same network anyways.</p>
 </div>
 <p>This all requires of course that both partners are online at the same time.
 Later versions might make it possible to have a third party instance that acts
@@ -331,10 +441,10 @@ as intermediate cache. This would then resemble something like <code class="docu
 and what they are for. <code class="docutils literal notranslate"><span class="pre">brig</span></code> does not impose any strict format on the
 username. So any of these are valid usernames:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">donald</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">donald&#64;whitehouse.gov</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">donald&#64;whitehouse.gov/ovaloffice</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">donald/ovaloffice</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">alice</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">alice&#64;wonderland.lit</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">alice&#64;wonderland.lit/rabbithole</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">alice/rabbithole</span></code></li>
 </ul>
 <p>It’s however recomended to choose a name that is formatted like
 a XMPP/Jabber-ID (TODO: Link). Those IDs can look like plain emails, but can
@@ -344,15 +454,15 @@ locabillity: <code class="docutils literal notranslate"><span class="pre">brig</
 e.g. companies with many users.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>Domain</p>
-<p class="last">The domain part of the email does not need to be a valid domain.</p>
+<p class="last">The domain part of the email does not need to be a valid domain,
+but later releases might add email based authentication schemes
+which will require a valid domain in the username.</p>
 </div>
 <p>Having a resource part is optional, but can help if you have several instances
 of <code class="docutils literal notranslate"><span class="pre">brig</span></code> on your machines. i.e. one username could be
 <code class="docutils literal notranslate"><span class="pre">alice&#64;wonderland.org/desktop</span></code> and the other <code class="docutils literal notranslate"><span class="pre">alice&#64;wonderland.org/laptop</span></code>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>Unique names</p>
 <p>The same name can be taken by more than one node. That’s a result of the
 distributed nature of <code class="docutils literal notranslate"><span class="pre">brig</span></code> since there is no central part that can
 register all usernames persistently. This of course opens space for
@@ -360,7 +470,7 @@ attackers: A malicious person can take the same username as your friend
 - but luckily he can’t take over his fingerprint.</p>
 <p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> does therefore not use the name to authenticate a user. This is done
 by the <em>fingerprint</em>, which is explained later. Think of the name
-as a human readable »DNS«-name for fingerprints.</p>
+as a human readable »DNS«-name for fingerprints for now.</p>
 </div>
 </div>
 </div>
@@ -373,8 +483,8 @@ as a human readable »DNS«-name for fingerprints.</p>
 <li>Add some files (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">stage</span> <span class="pre">&lt;path&gt;</span></code>) - needs to be done as much as you like to.</li>
 </ul>
 <p>Only thing left to do now is using <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">sync</span></code>.
-First, let’s check what changes <code class="docutils literal notranslate"><span class="pre">vladimir</span></code> has and how it will change our files:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig diff --show-missing vladimir
+First, let’s check what changes <code class="docutils literal notranslate"><span class="pre">bob</span></code> has and how it will change our files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig diff bob
 •
 ├── _ hello.world
 ├── + election
@@ -403,7 +513,7 @@ how the file itself changed. For this we record the following type of changes:</
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">_</span></code></td>
 <td>The file is missing on the remote side (e.g. we added it)</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-&gt;</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">→</span></code></td>
 <td>The file was moved to a new location.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">*</span></code></td>
@@ -417,16 +527,16 @@ how the file itself changed. For this we record the following type of changes:</
 </tr>
 </tbody>
 </table>
-<p>So in the above output we can tell that <em>Vladimir</em> added the directory
+<p>So in the above output we can tell that <em>Bob</em> added the directory
 <code class="docutils literal notranslate"><span class="pre">/election</span></code>, but does not posess the <code class="docutils literal notranslate"><span class="pre">/hello.world</span></code> file. He also
 apparently modified <code class="docutils literal notranslate"><span class="pre">README.md</span></code>, but since we did not, it’s safe for us to
 take his changes. If we sync now we will get this directory from him:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig sync vladimir
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig sync bob
 $ brig ls
 SIZE   MODTIME          PATH          PIN
 <span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  /README.md     🖈
 <span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  /hello.world   🖈
-    <span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  /election      🖈
+<span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  /election      🖈
 </pre></div>
 </div>
 <p>You might notice that the <code class="docutils literal notranslate"><span class="pre">sync</span></code> step was kind of fast for 32 GB. This is
@@ -444,11 +554,26 @@ data longer than necessary.</p>
 <p>How are the files secure then if they essentially could be everywhere?
 Every file is encrypted by <code class="docutils literal notranslate"><span class="pre">brig</span></code> before giving it to <code class="docutils literal notranslate"><span class="pre">ipfs</span></code>. The key is part
 of the metadata and will be used to decrypt the file again on the receiver’s end.</p>
+</div>
+<div class="section" id="pinning">
+<h2>Pinning<a class="headerlink" href="#pinning" title="Permalink to this headline">¶</a></h2>
 <p>How do we control then what files are stored locally and what not? By <em>pinning</em>
 each file or directory you want to keep always. Files you add explicitly are
 pinned by default and also files that were synced to you. Only old versions of
-a file are by default unpinned. If you want to clean up data (i.e. files are not pinned)
-you can invoke <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gc</span></code>.</p>
+a file are by default unpinned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> knows of two types of pins: <strong>Explicit</strong> and <strong>implicit</strong>.
+When a file or directory is being pinned by <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span></code>, we call this an explicit pin,
+since the user decided he wants to keep that file. When you update a file locally,
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> will unpin the old version and pin the new content <em>implicitly</em>.</p>
+<p>If you never pin something explicitly, only the newest version of all files
+will be stored locally. If you decide that you need older versions, you can pin
+them explictly, so brig cannot unpin them implicily. For this you should also
+look into the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">clear</span></code> commands, which are
+similar to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">add</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">rm</span></code> but can operate on whole commit
+ranges.</p>
+<p>Once <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gc</span></code> is being run, all files that are not pinned (explicit or
+implcit) are being deleted from local storage. However, those files can be
+still retrieved by other nodes that store the respective content.</p>
 </div>
 <div class="section" id="version-control">
 <h2>Version control<a class="headerlink" href="#version-control" title="Permalink to this headline">¶</a></h2>
@@ -471,12 +596,15 @@ concepts are different.</p>
 </ul>
 </div></blockquote>
 </li>
-<li><p class="first">A change is only recorded between individual commits. Changes in-between are not recorded.</p>
+<li><p class="first">A change is only recorded between individual commits. Changes in-between are
+not recorded.</p>
 </li>
-<li><p class="first">There are no branches. Every user has a linear list of commits.
-The choice not to have branches is on purpose, since they tend to bring greate complexity to both implementation and user-interface.</p>
+<li><p class="first">There are no branches. Every user has a linear list of commits. The choice
+not to have branches is on purpose, since they tend to bring greate
+complexity to both implementation and user-interface.</p>
 </li>
-<li><p class="first">Since there are no branches, there is no way to go back into history. You can however checkout previous files.</p>
+<li><p class="first">Since there are no branches, there is no way to go back into history. You can
+however checkout previous files.</p>
 </li>
 <li><p class="first">You can tag individual commits. There are three pre-defined tags:</p>
 <blockquote>
@@ -550,7 +678,7 @@ therefore.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Chris Pahl.
+        &copy; Copyright 2018, Chris Pahl.
 
     </p>
   </div>
@@ -572,7 +700,7 @@ therefore.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'v0.1.0-beta',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

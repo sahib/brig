@@ -125,15 +125,15 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		folder = guessRepoFolder()
 	}
 
-	// Check if the folder exists... doing init twice
-	// can easily break things.
+	// Check if the folder exists...
+	// doing init twice can easily break things.
 	isReady, err := dirIsInitReady(folder)
 	if err != nil {
 		return err
 	}
 
 	if !isReady {
-		return fmt.Errorf("`%s` already exists and is not empty; refusing to do a init", folder)
+		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
 	}
 
 	if password == "" {

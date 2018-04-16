@@ -167,7 +167,7 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
     Viele Buzzwords. Und viele davon widersprechen sich auch noch.
 
     * Einfach: User Discovery, FUSE Filesystem, ist kompatibel, nervt nicht.
-    * Sicher: Daten sind stets verschlüsselt.
+    * Sicher: Daten sind by default stets verschlüsselt.
     * Versioniert: Zusammenarbeit wird möglich, keine revisions filenames mehr.
     * Schnell: Eigentlich optional, aber Video Streaming ist nett.
     * Dezentral: Datenhoheit. Dropbox hinterlässt ein schlechten Nachgeschmack.
@@ -192,10 +192,10 @@ Aber, aber…
 
 .. note::
 
-
     - So Vergleichdiskussion sind müßig und können den ganzen
       Tag dauern, ohne dass am Ende was dabei rauskommt...
     - nextCloud kann man hier in gewissen Sinne auch nennen ("dezentral")
+    - Mein Tool macht aber auch einige Dinge anders, die nicht direkt vergleichbar sind.
 
     Jetzt machen wir hier gedanklich mal einen Cut.
 
@@ -279,7 +279,7 @@ Entwicklungsgeschichte:
 
     - Betonung auf Hash Nanny.
     - Sicher durch Verschlüsselung und Public-Key Kryptografie.
-    - Das ist das erste "beta" release (0.1)
+    - Das ist das erste "beta" release (0.1.0-beta)
     - Mit sehr viel Vorsicht benutzen.
     - Alles kann sich auserdem noch ändern.
 
@@ -365,7 +365,6 @@ Disclaimer: Sicherheit?
 .. image:: images/xkcd-security.png
     :width: 110%
 
-
 ----
 
 :data-rotate: 90
@@ -375,9 +374,7 @@ Dezentralität
 
 .. note::
 
-    - Unterschied zu anderen Tools in 3-4 Folien.
     - Was heißt jetzt eigentlich dezentral?
-    - ähnlich ausgelegt wie git. (git kennt jeder?)
     - Problem: Beide müssen zur selben Zeit online sein.
 
 .. image:: images/map.png
@@ -534,14 +531,14 @@ Roadmap
 Probem gelöst?
 ==============
 
-
 .. note::
 
     Sagt ihr es mir...
 
-    - Ja, die lösung ist also ganz einfach... man schreibt einfach ein Tool
+    - Ja, die Lösung ist also ganz einfach... man schreibt einfach ein Tool
       das alles richtig macht, jeder nutzt das und gut ist.
     - Randall Munroe, der xkcd Autor sagt nein.
+    - Abe ja, sagt ihr es mir: Waere so ein Tool hilfreich fuer manche von euch?
 
 .. image:: images/xkcd-standards.png
    :width: 110%

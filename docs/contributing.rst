@@ -3,7 +3,7 @@ How to contribute
 
 .. note::
 
-    Feature request will **NOT BE** considered.
+    Pure feature requests will crrently **NOT BE** considered.
     Read on for the reasoning and details.
 
 This software is still in very early stages and still needs to find the
@@ -31,6 +31,7 @@ out what users wants from a developers standpoint. So this will hopefully give
 us some more insights.
 
 **Are bug reports okay?** Sure. If you already fix the bug it's even better.
+Please use the ``brig bug`` command to get a template with all the info we need.
 
 **Are very small feature requests okay?** If it's only about changing or
 extending an existing feature, it's probably fine. Feel free to create an issue
@@ -45,7 +46,7 @@ What to improve
 
 The following improvements are greatly appreciated:
 
-- Bug reports/Bug fixes.
+- Bug reports & fixes.
 - Documentation improvements.
 - Porting to other platforms.
 - Writing tests.
@@ -59,3 +60,4 @@ If you contribute code, make sure:
 
 - Tests are still running and you wrote test for your new code.
 - You ran ``gofmt`` over your code.
+- Your pull requests is opended against the ``develop`` branch.

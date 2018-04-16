@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; brig 0.1.0 documentation</title>
+  <title>Installation &mdash; brig v0.1.0-beta documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="brig 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="brig v0.1.0-beta documentation" href="index.html"/>
         <link rel="next" title="Getting started" href="introduction.html"/>
         <link rel="prev" title="brig - decentralized &amp; secure file synchronization" href="index.html"/> 
 
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.1.0
+                v0.1.0-beta
               </div>
             
           
@@ -172,17 +172,17 @@
             
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>At the time of writing, there are no pre-compiled binaries.
-So you gonna have to opt-out and compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself,
-but don’t worry that is quite easy:</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> currently was only tested on Linux with the most
-Go version (1.9.2 currently)</p>
-</div>
+<p>At the time of writing, there are no pre-compiled binaries. So you gonna have
+to compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself - but don’t worry that is quite easy:</p>
 <div class="section" id="step-0-installing-go">
 <h2>Step 0: Installing Go<a class="headerlink" href="#step-0-installing-go" title="Permalink to this headline">¶</a></h2>
 <p>This is only required if you don’t have <code class="docutils literal notranslate"><span class="pre">Go</span></code> installed.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> only works with a newer version of Go (&gt;= 1.9).
+The version in your package manager might be too outdated,
+if you’re on e.g. Debian. Make sure it’s up to date!</p>
+</div>
 <p>If you did not do that, you gonna need to install <code class="docutils literal notranslate"><span class="pre">Go</span></code>. <a class="reference external" href="https://golang.org/doc/install">Refere here</a> for possible ways of doing so. Remember to
 set the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> to a place where you’d like to have your <code class="docutils literal notranslate"><span class="pre">.go</span></code> files being
 placed. For example you can put this in your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
@@ -193,20 +193,31 @@ placed. For example you can put this in your <code class="docutils literal notra
 </div>
 <p>By choosing to have the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> in your home directory you’re not required
 to have <code class="docutils literal notranslate"><span class="pre">sudo</span></code> permissions later on.</p>
-<p>You also need to have <code class="docutils literal notranslate"><span class="pre">git</span></code> and <code class="docutils literal notranslate"><span class="pre">hg</span></code> installed for the next step.</p>
+<p>You also need to have <code class="docutils literal notranslate"><span class="pre">git</span></code> installed for the next step.</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
-<p class="last">describe how for different distributions.</p>
+<p class="last">Describe <em>how</em> for different distributions.</p>
 </div>
 </div>
 <div class="section" id="step-1-compile-install-brig">
 <h2>Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code><a class="headerlink" href="#step-1-compile-install-brig" title="Permalink to this headline">¶</a></h2>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span>$ go get -u github.com/sahib/brig
+<p>This step requires that you have set <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code>, as discussed
+in the previous section.</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span>$ go get -d -v -u github.com/sahib/brig  # Download the sources.
+$ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
+$ make                                   # Build the software.
+$ sudo make install                      # Install it system-wide (optional)
 </pre></div>
 </div>
-<p>This will download the complete source code of <code class="docutils literal notranslate"><span class="pre">brig</span></code> (and all of it’s
-dependencies) and compile them to a binary right on. Execution might take a few
-minutes.</p>
+<p>All dependencies of brig are downloaded for you during the first step.
+Execution might take a few minutes though.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>For the curious: Why the Makefile?</p>
+<p class="last">In theory it’s also possible to install <code class="docutils literal notranslate"><span class="pre">brig</span></code> via <code class="docutils literal notranslate"><span class="pre">go</span> <span class="pre">get</span></code> only, but
+there is no way to straight-forward way to set the git revision in the binary.
+Thus the Makefile.</p>
+</div>
 </div>
 <div class="section" id="step-2-test-if-the-installation-is-working">
 <h2>Step 2: Test if the installation is working<a class="headerlink" href="#step-2-test-if-the-installation-is-working" title="Permalink to this headline">¶</a></h2>
@@ -243,7 +254,7 @@ do not want to hear the details.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Chris Pahl.
+        &copy; Copyright 2018, Chris Pahl.
 
     </p>
   </div>
@@ -265,7 +276,7 @@ do not want to hear the details.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'v0.1.0-beta',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
