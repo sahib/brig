@@ -1,3 +1,15 @@
+0. Preparation
+==============
+
+- Windows: Chrome (empty, private), Monitor, Terminal (docker, hovercraft), Terminal (empty)
+
+-----
+
+- Check that docker is running.
+- Check that no other brig instance is up.
+- Check: /tmp/{repo,mount} is empty.
+- Do a "bob-brig ls and bob-brig rmt ls" to do some pre-caching.
+
 1. Init
 =======
 
@@ -7,35 +19,27 @@ Usage is very close to ``git``.
 
     $ mkdir repo && cd repo
     # Create a new repository in here:
+    # Command started einen daemon im Hintergrund!
     $ brig init sahib@wald.de/laptop
+    # Anschaut was brig so angestellt hat:
     $ ls
-    # Test if it works:
+    # Dann schauen wir mal ob man die Datei ausgeben kann:
     $ brig cat README.md
-
-Explain:
-
-- Files created in init.
 
 2. Adding files
 ===============
-
-Explain why it's "stage" not "add"
 
 .. code-block:: bash
 
     $ brig stage ~/music.mp3
     $ brig ls
+    # Pfadnamen, virtueller root.
     $ brig tree
     $ brig cat music.mp3 | mpv -
 
-Explain:
-
-- Path names.
 
 3. Coreutils
 ============
-
-Explain reflinks.
 
 .. code-block:: bash
 
@@ -43,35 +47,33 @@ Explain reflinks.
     $ brig cp music.mp3 sub
     $ brig tree
 
+    # ähnlich zu `stat` unter linux:
     $ brig info README.md
     $ brig edti README.md
     $ brig edit README.md
+    # Hash hat sich nach Edit-Vorgang geändert:
     $ brig info README.md
 
+    # Man kann sich ansehen was für daten ipfs dann speichert:
     $ ipfs cat <hash>
     -> garbled bullshit.
-
-Explain:
-
-- Most coreutils are available.
-- Hash changed after editing.
 
 4. Mounting
 ===========
 
 .. code-block:: bash
 
-    $ brig ls
     $ mkdir /tmp/mount
     $ ls /tmp/mount  # Empty.
     $ brig mount /tmp/mount
+    # Ta-da, alle dateien die man sonst so hat sind auch hier vorhanden:
     $ nautilus /tmp/mount
+    # Man kann ganz normal dateien editieren:
     $ vi /tmp/mount/new-file
     $ brig ls
-    $ cp ~/bbb.mkv /tmp/mount
-    $ mpv /tmp/mount/bbb.mkv
-
-Problem: Performance? Pinning again?
+    # Noch nicht sehr performant, aber sowas geht schon:
+    $ cp ~/rrd.mkv /tmp/mount
+    $ mpv /tmp/mount/rrd.mkv
 
 5. Commits
 ==========
@@ -79,41 +81,42 @@ Problem: Performance? Pinning again?
 .. code-block:: bash
 
     $ brig log
+    $ brig diff
     $ brig commit -m 'Added darth vader'
     $ brig log
     $ brig edit README.md
     $ brig mv sub/music.mp3 sub/else.mp3
     $ brig diff   # Should print mergeable and moved file.
 
-Problem: Diff shows mv order wrong way?
-
 6. History
 ==========
 
+(optional)
+
 .. code-block:: bash
 
-    # Little different than git.
+    # Etwas anders als git: kein diff an sich:
     $ brig history new-file
     $ brig edit new-file
     $ brig commit -m 'edited new-file'
     $ brig reset HEAD^ new-file
     $ brig cat new-file
 
-BUG: brig reset is doing bullshit.
-
 7. Discovery & Remotes
 ======================
+
+Vorher docker starten!
 
 .. code-block:: bash
 
     $ bob-brig ls
     $ brig whoami
+    # Erst ausführen, dauert etwas:
     $ brig net locate alice
-    $ brig remote add <name> <hash>
+    $ brig remote add $(bob-brig whoami -f)
+    $ bob-brig remote add $(brig whoami -f)
     $ brig remote ls
     $ brig remote edit
-
-Docker bereits laufen lassen?
 
 8 Sync & Diff
 =============
@@ -131,9 +134,11 @@ Docker bereits laufen lassen?
 
 .. code-block:: bash
 
-    $ brig pin rm <path-of-bob>
+    $ brig pin rm <path-of-bob> # geht.
     $ brig gc
+    $ brig cat <path>           # geht.
     $ <close bob docker>
+    $ brig gc
     $ brig cat <path>
     ...blocks...
 

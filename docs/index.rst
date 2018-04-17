@@ -29,8 +29,9 @@ At this moment ``brig`` is **only available for Linux**. Porting efforts are wel
 
 .. warning:: 
 
-    ``brig`` is currently in an open beta phase. It implements all features that are descibed in the documentation
-    but contains too many bugs to be considered production ready. Do **NOT** use if for any sensible data yet!
+    ``brig`` is currently in an open beta phase. It implements all features
+    that are descibed in the documentation but contains too many bugs to be
+    considered production ready. Do **NOT** use it for any sensible data yet!
 
 .. toctree::
    :maxdepth: 2

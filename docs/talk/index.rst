@@ -122,6 +122,7 @@ Das Problem
     - Dateiaustausch ist eine Art Babel: Jeder benutzt was anderes.
     - Am längsten dauert der Handshake bis man sich auf's Tool geeinigt hat.
     - Hyperlinks sind möglich, aber machen halt abhängig von einem Hersteller.
+    - Zusammenarbeit über Dropbox (zB an Quelltext) funktioniert nicht wirklich.
 
 .. image:: images/xkcd-file-transfer.png
     :width: 75%
@@ -168,8 +169,8 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
 
     * Einfach: User Discovery, FUSE Filesystem, ist kompatibel, nervt nicht.
     * Sicher: Daten sind by default stets verschlüsselt.
-    * Versioniert: Zusammenarbeit wird möglich, keine revisions filenames mehr.
     * Schnell: Eigentlich optional, aber Video Streaming ist nett.
+    * Versioniert: git junkie, Zusammenarbeit wird möglich, keine revisions filenames mehr.
     * Dezentral: Datenhoheit. Dropbox hinterlässt ein schlechten Nachgeschmack.
 
 ----
@@ -228,7 +229,6 @@ Was kann das so?
     added QmbLr7bEQkC85EEGEmQk42dLz25VBy2L6iHyZQu
 
 |
-|
 
 .. code-block:: bash
 
@@ -242,6 +242,7 @@ Was kann das so?
     Nachteil: Kann bereits zum filesharing benutzt werden,
     aber nur sehr rudiemntär.
 
+|
 
 .. code-block:: bash
 
@@ -279,9 +280,10 @@ Entwicklungsgeschichte:
 
     - Betonung auf Hash Nanny.
     - Sicher durch Verschlüsselung und Public-Key Kryptografie.
-    - Das ist das erste "beta" release (0.1.0-beta)
+    - Das ist das erste "beta" release (0.1.0-beta) - WELTPREMIERE!
     - Mit sehr viel Vorsicht benutzen.
     - Alles kann sich auserdem noch ändern.
+    - Release early, release often.
 
 ----
 
@@ -449,6 +451,42 @@ Pinning
 
 ----
 
+Roadmap
+=======
+
+:class: small-list
+
+- Selektives Sharing.
+- Gateway für Hyperlinks.
+- Archive Instances.
+- :small:`(optional)` Autosync.
+- Performance, mehr Dokumentation...
+
+|
+
+.. image:: images/binocs.png
+   :class: future
+   :width: 40%
+
+|
+
+**Hauptproblem:** Nur ein Entwickler.
+
+.. note::
+
+    ... und der arbeitet nen Vollzeitjob.
+
+    Keine gute Basis für eine stabile Weiterentwicklung.
+
+    Features die noch kommen sollen:
+
+    - Knoten, die automatisch synchroniseren (als »blessed repo« wie bei git)
+    - Fingerprints als QR Code
+    - Mobile Version mit simplen Dateibrowser.
+    - Verbessertes User-Management.
+
+----
+
 :id: help-slide
 
 Hilfe? Erwünscht.
@@ -489,42 +527,6 @@ Und sonst?
 - Bug reports. (``brig bug``)
 - Pull requests.
 - **Keine** Feature Requests!
-
-----
-
-Roadmap
-=======
-
-:class: small-list
-
-- Selektives Sharing.
-- Gateway für Hyperlinks.
-- Shelf Instances.
-- :small:`(optional)` Autosync.
-- Performance, mehr Dokumentation...
-
-|
-
-.. image:: images/binocs.png
-   :class: future
-   :width: 40%
-
-|
-
-**Hauptproblem:** Nur ein Entwickler.
-
-.. note::
-
-    ... und der arbeitet nen Vollzeitjob.
-
-    Keine gute Basis für eine stabile Weiterentwicklung.
-
-    Features die noch kommen sollen:
-
-    - Knoten, die automatisch synchroniseren (als »blessed repo« wie bei git)
-    - Fingerprints als QR Code
-    - Mobile Version mit simplen Dateibrowser.
-    - Verbessertes User-Management.
 
 ----
 
