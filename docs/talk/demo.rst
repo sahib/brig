@@ -9,6 +9,7 @@
 - Check that no other brig instance is up.
 - Check: /tmp/{repo,mount} is empty.
 - Do a "bob-brig ls and bob-brig rmt ls" to do some pre-caching.
+- Source autocompletion.
 
 1. Init
 =======

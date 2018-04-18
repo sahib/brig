@@ -25,6 +25,7 @@
 
 .. note::
 
+    - Meine schwer versehrten Damen und Herren
     - Dies ist eine Projektvorstellung.
 
     - "Unverständlichste Folie"
@@ -34,10 +35,7 @@
         - "dezentral" heißt ohne zentralen Server (wie git)
         - Werkzeug wie ``git``
         - Name: Zweimaster, wendig, leichtgewichtig, verteilt Datenströme.
-    - Viel Terminal, wenig Bling-Bling.
     - Ihr werdet heute zu Versuchskaninchen ausgebildet.
-    - Es kommen aber viele Comics und Bilder!
-    - Demo nimmt ca. 50% Zeit ein, wird also nicht so trocken.
 
 ----
 
@@ -55,12 +53,15 @@ Um was geht's?
 
 .. note::
 
+    - Demo nimmt ca. 50% Zeit ein, wird also nicht so trocken.
+    - Viel Stoff für 45 minuten, muss schnell reden, ihr werdet am Ende abgefragt.
+    - Viel Terminal, wenig Bling-Bling.
+    - Es kommen aber viele Comics und Bilder!
+
     Fragen bitte erst gegen Schluss stellen, weil der Vortrag so aufgebaut ist,
     dass er erst mal viele Fragen stellt. Dringende Fragen dürfen aber gleich
     gestellt werden. Sowas wie "Darf ich mal auf's Klo?".
 
-    - Viel Stoff für 45 minuten, muss schnell reden, ihr werdet am Ende abgefragt.
-    - Wird in der Mitte auch recht technisch.
 
 ----
 
@@ -97,7 +98,6 @@ Es war einmal…
 .. note::
 
     - Dann mal rein ins Thema...
-    - Titel wird erklärt: sicher, dezentral, synchronisation
     - Umfrage: Wer benutzt...
 
         * Dropbox oder andere Cloud Storage Anbieter (OneDrive, Google Drive)
@@ -105,6 +105,8 @@ Es war einmal…
         * Syncthing, git-annex, resilio
         * Was selbst gebasteltetes?
         * git
+
+    Ihr seht schon: Es gib so einige Tools die man benutzen kann.
 
 .. image:: images/dropbox.png
 
@@ -115,14 +117,14 @@ Das Problem
 
 .. note::
 
-    - Ihr erwartet jetzt sicherlich, dass ich euch sage was schlecht dran ist.
-    - Single point of failure, us unternehmen, unsicher by default, proprietär.
-    - Man bräuchte sowas wie git: Man entscheidet selbst wie man es einsetzt.
+    - Ihr erwartet jetzt sicherlich, dass ich euch sage was schlecht an Dropbox ist.
+    - Single point of failure, unsicher by default, us unternehmen, proprietär.
+    - Zusammenarbeit über Dropbox (zB an Quelltext) funktioniert nicht wirklich.
+    - (Man bräuchte sowas wie git: Man entscheidet selbst wie man es einsetzt und wie sicher es ist.)
 
     - Dateiaustausch ist eine Art Babel: Jeder benutzt was anderes.
     - Am längsten dauert der Handshake bis man sich auf's Tool geeinigt hat.
-    - Hyperlinks sind möglich, aber machen halt abhängig von einem Hersteller.
-    - Zusammenarbeit über Dropbox (zB an Quelltext) funktioniert nicht wirklich.
+    - (Hyperlinks sind möglich, aber machen halt abhängig von einem Hersteller.)
 
 .. image:: images/xkcd-file-transfer.png
     :width: 75%
@@ -144,7 +146,7 @@ Was ist das Ziel?
 
 .. note::
 
-    We will build a wall around the cloud.
+    Und das machen wir indem wir eine Mauer um die Cloud bauen. :)
     It will be tremendous. Great stuff.
 
 ----
@@ -166,6 +168,8 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
 .. note::
 
     Viele Buzzwords. Und viele davon widersprechen sich auch noch.
+    Aber wir reden ja von einer idealen Lösung.
+    Spruch: "Ein Tool das alles kann, kann nichts richtig gut"
 
     * Einfach: User Discovery, FUSE Filesystem, ist kompatibel, nervt nicht.
     * Sicher: Daten sind by default stets verschlüsselt.
@@ -213,8 +217,8 @@ IPFS
 
     - Ist wie beim Trinken: Man braucht eine gute Basis.
     - Interplanetary Filesystem. Das ist wörtlich zu verstehen.
-    - Hat schon mal jemand davon gehört?
-    - Das ganze soll eine Art für das heutige Internet werden.
+    - Das ganze soll eine Art dezentrale, sichere versionierte Alternative zum
+      heutigen Internet werden. Jeder Nutzer ist Server und Client zugleich.
 
 ----
 
@@ -358,6 +362,8 @@ Disclaimer: Sicherheit?
     Es kommt auf die Angriffsvektoren an.
     Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
     aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
+    Vertragung und Speicherung ist sicher gemacht, aber man könnte zb derzeit
+    trotzdem mit wenig Mühe herausfinden wer mit wem kommuniziert.
 
     Philosophie ist allgemein: Ein Schloss, dass man nur unter Mühe öffnen
     kann, benutzt kaum einer.
@@ -378,6 +384,9 @@ Dezentralität
 
     - Was heißt jetzt eigentlich dezentral?
     - Problem: Beide müssen zur selben Zeit online sein.
+    - Auch abhaengig vom Usecase:
+        - Austausch von Folien und Notizen zwischen Studenten und Professoren: gut.
+        - Einseitiges Herunterladen von Formularen bei einer Behoerde: schlecht.
 
 .. image:: images/map.png
     :width: 120%

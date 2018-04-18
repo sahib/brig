@@ -291,7 +291,7 @@ us!
    maybe never is). If any of the following network operations might not work
    it might be necessary to open the ports 4001 - 4005 or enable UPnP. For
    security reasons we recommend to only open the required ports explicitly and
-   not to use UPnP. This only is necessary if the computers you're using
+   not to use UPnP. This is only necessary if the computers you're using
    ``brig`` on are not in the same network anyways.
 
 This all requires of course that both partners are online at the same time.
@@ -387,10 +387,11 @@ take his changes. If we sync now we will get this directory from him:
 
     $ brig sync bob
     $ brig ls
-    SIZE   MODTIME          PATH          PIN
-    443 B  Dec 27 14:44:44  /README.md     🖈
-    12 B   Dec 27 15:14:16  /hello.world   🖈
-    32 GB  Dec 27 15:14:16  /election      🖈
+    SIZE   MODTIME          OWNER    PATH                      PIN
+    443 B  Dec 27 14:44:44  sahib    /README.md                🖈
+    443 B  Dec 27 14:44:44  bob      /README.md.conflict.0
+    12 B   Dec 27 15:14:16  sahib    /hello.world              🖈
+    32 GB  Dec 27 15:14:16  bob      /election                 🖈
 
 You might notice that the ``sync`` step was kind of fast for 32 GB. This is
 because ``sync`` *does not transfer actual data*. It only transferred the
@@ -463,7 +464,7 @@ This is written from the perspective of a ``git`` user:
 * A change is only recorded between individual commits. Changes in-between are
   not recorded.
 * There are no branches. Every user has a linear list of commits. The choice
-  not to have branches is on purpose, since they tend to bring greate
+  not to have branches is on purpose, since they tend to bring great
   complexity to both implementation and user-interface.
 * Since there are no branches, there is no way to go back into history. You can
   however checkout previous files.

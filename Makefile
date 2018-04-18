@@ -43,3 +43,7 @@ else
 endif
 
 	@sudo cp brig /usr/local/bin
+
+smaller-binary:
+	go build -ldflags="-s -w" brig.go
+	upx brig
