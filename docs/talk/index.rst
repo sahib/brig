@@ -559,6 +559,11 @@ Probem gelöst?
 Letzte Worte
 =============
 
+.. note::
+
+    Wenn es noch Fragen gibt, ich bin dann noch ein bisschen da.
+    Sprecht mich ruhig an.
+
 |
 
 :rtd:`http://brig.rtfd.org`

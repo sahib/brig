@@ -1163,7 +1163,8 @@ func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if path == "/" {
+	// If no path is 
+	if path == "/" || path == "" {
 		return fs.Checkout(rev, false)
 	}
 
@@ -1172,7 +1173,7 @@ func (fs *FS) Reset(path, rev string) error {
 		return err
 	}
 
-	if err := fs.lkr.CheckoutFile(cmt, path); err != nil {
+	if err := vcs.ResetFile(fs.lkr, cmt, path); err != nil {
 		return err
 	}
 

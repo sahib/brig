@@ -29,7 +29,6 @@ package core
 //
 // In git terminology, this file implements the following commands:
 // - git add:    StageNode(): Create and Update Nodes.
-// - git reset:  UnstageNode(): Reset to last known state.
 // - git status: Status()
 // - git commit: MakeCommit()
 
@@ -1154,89 +1153,6 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 	return lkr.saveStatus(status)
 }
 
-// CheckoutFile resets a certain file to the state it had in cmt. If the file
-// did not exist back then, it will be deleted. `nd` is usually retrieved by
-// calling ResolveNode() and sorts.
-func (lkr *Linker) CheckoutFile(cmt *n.Commit, ndPath string) (err error) {
-	root, err := lkr.DirectoryByHash(cmt.Root())
-	if err != nil {
-		return err
-	}
-
-	if root == nil {
-		return fmt.Errorf("no root to reset to")
-	}
-
-	currNode, err := lkr.LookupModNode(ndPath)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return err
-	}
-
-	oldNode, err := root.Lookup(lkr, ndPath)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return err
-	}
-
-	// Invalidate the respective index entry, so the instances gets reloaded:
-	if currNode != nil {
-		err = n.Walk(lkr, currNode, true, func(child n.Node) error {
-			lkr.MemIndexPurge(child)
-			return nil
-		})
-	}
-
-	if err != nil {
-		return err
-	}
-
-	var par *n.Directory
-	if ndPath != "/" {
-		par, err = lkr.LookupDirectory(path.Dir(ndPath))
-		if err != nil {
-			return err
-		}
-	}
-
-	if par == nil {
-		return fmt.Errorf("checkout by commit if you want to checkout previous roots")
-	}
-
-	// Make sure the actual checkout will land as one batch on disk:
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
-	// Remove old node, if needed.
-	if currNode != nil {
-		if err := par.RemoveChild(lkr, currNode); err != nil {
-			return err
-		}
-
-		lkr.MemIndexPurge(currNode)
-
-		if err := lkr.StageNode(par); err != nil {
-			return err
-		}
-	}
-
-	// old Node might not have yet existed back then.
-	// If so, simply do not re-add it.
-	if oldNode != nil {
-		if err := par.Add(lkr, oldNode); err != nil {
-			return err
-		}
-
-		return lkr.StageNode(oldNode)
-	}
-
-	return nil
-}
-
 // AddMoveMapping takes note that the the node `from` has been moved to `to`
 // in the staging commit.
 func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
@@ -1674,4 +1590,13 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 	}
 
 	return lkr.iterAll(prevCmt, to, visited, fn)
+}
+
+func (lkr *Linker) Atomic(fn func() error) (err error) {
+	batch := lkr.kv.Batch()
+	if err := fn(); err != nil {
+		batch.Rollback()
+	}
+
+	return batch.Flush()
 }
