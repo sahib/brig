@@ -34,6 +34,7 @@ ol {
     margin: auto;
     margin-bottom: 10px;
     width: fit-content;
+    min-width: 25vw;
 }
 
 h1, h2, h3 {

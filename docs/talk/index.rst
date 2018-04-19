@@ -14,6 +14,7 @@
 .. role:: underline
 .. role:: small
 
+
 ----
 
 .. image:: images/logo.png
@@ -27,15 +28,14 @@
 
     - Meine schwer versehrten Damen und Herren
     - Dies ist eine Projektvorstellung.
+    - Ihr werdet heute zu Versuchskaninchen ausgebildet.
 
     - "Unverständlichste Folie"
     - Begriffserklärung des Titels.
         - Unterscheidung: Synchronisieren / Austauschen
         - "sicher" ist schwammig
         - "dezentral" heißt ohne zentralen Server (wie git)
-        - Werkzeug wie ``git``
         - Name: Zweimaster, wendig, leichtgewichtig, verteilt Datenströme.
-    - Ihr werdet heute zu Versuchskaninchen ausgebildet.
 
 ----
 
@@ -54,14 +54,11 @@ Um was geht's?
 .. note::
 
     - Demo nimmt ca. 50% Zeit ein, wird also nicht so trocken.
+    - Viel Terminal, wenig Bling-Bling. Also sehr technisch orientiert.
     - Viel Stoff für 45 minuten, muss schnell reden, ihr werdet am Ende abgefragt.
-    - Viel Terminal, wenig Bling-Bling.
-    - Es kommen aber viele Comics und Bilder!
 
-    Fragen bitte erst gegen Schluss stellen, weil der Vortrag so aufgebaut ist,
-    dass er erst mal viele Fragen stellt. Dringende Fragen dürfen aber gleich
-    gestellt werden. Sowas wie "Darf ich mal auf's Klo?".
-
+    Fragen bitte erst gegen Schluss stellen, bei der Demo könnt ihr aber gern
+    was fragen wenn ihr was nicht versteht oder seht.
 
 ----
 
@@ -106,7 +103,10 @@ Es war einmal…
         * Was selbst gebasteltetes?
         * git
 
-    Ihr seht schon: Es gib so einige Tools die man benutzen kann.
+    Ihr seht schon: Es gib so einige Tools die man benutzen kann
+    und alle haben unterschiedliche Stärken.
+
+    Dropbox ist wohl eins der am meisten genutzten Tools.
 
 .. image:: images/dropbox.png
 
@@ -118,13 +118,12 @@ Das Problem
 .. note::
 
     - Ihr erwartet jetzt sicherlich, dass ich euch sage was schlecht an Dropbox ist.
-    - Single point of failure, unsicher by default, us unternehmen, proprietär.
+    - Erstmal nicht so viel, es ist sehr einfach benutzbar und meist verfügbar -> verbreitet.
+    - zentral, unsicher by default (Zusatzsoftware Boxcryptor), us unternehmen, proprietär.
     - Zusammenarbeit über Dropbox (zB an Quelltext) funktioniert nicht wirklich.
-    - (Man bräuchte sowas wie git: Man entscheidet selbst wie man es einsetzt und wie sicher es ist.)
-
     - Dateiaustausch ist eine Art Babel: Jeder benutzt was anderes.
     - Am längsten dauert der Handshake bis man sich auf's Tool geeinigt hat.
-    - (Hyperlinks sind möglich, aber machen halt abhängig von einem Hersteller.)
+    - Siehe comic.
 
 .. image:: images/xkcd-file-transfer.png
     :width: 75%
@@ -146,7 +145,7 @@ Was ist das Ziel?
 
 .. note::
 
-    Und das machen wir indem wir eine Mauer um die Cloud bauen. :)
+    Und das machen wir ganz offensichtlich indem wir eine Mauer um die Cloud bauen. :)
     It will be tremendous. Great stuff.
 
 ----
@@ -176,6 +175,7 @@ Dinge die Dateiaustausch sein :underline:`sollte`:
     * Schnell: Eigentlich optional, aber Video Streaming ist nett.
     * Versioniert: git junkie, Zusammenarbeit wird möglich, keine revisions filenames mehr.
     * Dezentral: Datenhoheit. Dropbox hinterlässt ein schlechten Nachgeschmack.
+    * Frei: Im Sinne von GPL. Sichere Software muss frei sein - andere Gründe zählen natürlich auch.
 
 ----
 
@@ -188,9 +188,9 @@ Aber, aber…
    :width: 120%
    :class: inline
 
-* Anderer Fokus
-* Andere Basis
-* Andere Features
+* Anderer Fokus.
+* Andere Basis.
+* Andere Features.
 * Gleiches Ziel.
 
 :small:`(Siehe: https://brig.readtheodocs.org/comparison.html)`
@@ -199,7 +199,8 @@ Aber, aber…
 
     - So Vergleichdiskussion sind müßig und können den ganzen
       Tag dauern, ohne dass am Ende was dabei rauskommt...
-    - nextCloud kann man hier in gewissen Sinne auch nennen ("dezentral")
+    - Resilio ist proprietär, Syncthing fokusiert sich weniger auf Versionierung mehr auf Usability,
+      git-annex genau andersrum.
     - Mein Tool macht aber auch einige Dinge anders, die nicht direkt vergleichbar sind.
 
     Jetzt machen wir hier gedanklich mal einen Cut.
@@ -218,7 +219,8 @@ IPFS
     - Ist wie beim Trinken: Man braucht eine gute Basis.
     - Interplanetary Filesystem. Das ist wörtlich zu verstehen.
     - Das ganze soll eine Art dezentrale, sichere versionierte Alternative zum
-      heutigen Internet werden. Jeder Nutzer ist Server und Client zugleich.
+      heutigen Internet werden. Jeder Nutzer ist Server und Client zugleich
+      und hat eine eindeutige ID.
 
 ----
 
@@ -243,8 +245,8 @@ Was kann das so?
 
     Vorteil: Ganz ohne zentralen Server.
 
-    Nachteil: Kann bereits zum filesharing benutzt werden,
-    aber nur sehr rudiemntär.
+    Nachteil: Kann bereits zum filesharing benutzt werden, aber nur sehr
+    rudiemntär.
 
 |
 
@@ -278,12 +280,11 @@ Entwicklungsgeschichte:
 * Ende 2015: *Masterprojekt.*
 * Ende 2016: *Pausiert.*
 * Ende 2017: *Hobbyprojekt.*
-* Erster Beta Release heute!
+* **Erster Beta Release heute!**
 
 .. note::
 
     - Betonung auf Hash Nanny.
-    - Sicher durch Verschlüsselung und Public-Key Kryptografie.
     - Das ist das erste "beta" release (0.1.0-beta) - WELTPREMIERE!
     - Mit sehr viel Vorsicht benutzen.
     - Alles kann sich auserdem noch ändern.
@@ -314,11 +315,6 @@ Kurz gesagt: Fokus
 Demo
 ----
 
-.. note::
-
-     - Imperial March Musik
-     - Big buck bunny
-
 .. code-block:: bash
 
     $ brig mv raiders twix
@@ -334,13 +330,12 @@ Workflow
 .. note::
 
     - Synchronisieren kleines Ein mal Eins
-    - Ein Tag aus dem Leben einer Datei.
 
 * Initialer Setup :small:`(nur einmal)`
 * Remotes finden & hinzufügen :small:`(nur einmal)`
 * Diff anzeigen :small:`(optional)`
 * Synchronisieren
-* Konflikte beheben
+* Konflikte beheben :small:`(eventuell)`
 
 .. image:: images/workflow.png
    :width: 50%
@@ -362,7 +357,8 @@ Disclaimer: Sicherheit?
     Es kommt auf die Angriffsvektoren an.
     Und selbst wenn ich das geschafft hätte, dann kann man das Tool sicher benutzen,
     aber jemand könnte immer noch an deinen ungelockten PC gehen... (uvm)
-    Vertragung und Speicherung ist sicher gemacht, aber man könnte zb derzeit
+
+    Übertragung und Speicherung ist sicher gemacht, aber man könnte zb derzeit
     trotzdem mit wenig Mühe herausfinden wer mit wem kommuniziert.
 
     Philosophie ist allgemein: Ein Schloss, dass man nur unter Mühe öffnen
@@ -384,7 +380,8 @@ Dezentralität
 
     - Was heißt jetzt eigentlich dezentral?
     - Problem: Beide müssen zur selben Zeit online sein.
-    - Auch abhaengig vom Usecase:
+    - Braucht evtl. archiv instanz.
+    - funktioniert besser oder schlechter abhaengig vom Usecase:
         - Austausch von Folien und Notizen zwischen Studenten und Professoren: gut.
         - Einseitiges Herunterladen von Formularen bei einer Behoerde: schlecht.
 
@@ -400,9 +397,13 @@ Dezentralität
 Nutzermanagement
 ================
 
+…existiert nicht.
+
+|
+
 .. note::
 
-    - Ist nicht wirklich vorhanden.
+    - ...Ist nicht wirklich vorhanden.
     - Es gibt keine registrierten Nutzer.
     - Zwei Nutzer können den selben Displaynamen haben!
     - Aber nicht den selben Fingerprint.
@@ -412,15 +413,6 @@ Nutzermanagement
 
 .. image:: images/id.png
    :width: 100%
-
-|
-|
-
-Nutzen:
--------
-
-- Resourcen und Domains zur Discovery.
-- Später :small:`(optionale)` E-Mail Authentifizierung.
 
 ----
 
@@ -435,9 +427,7 @@ Versionierung
 .. note::
 
    - brig = git - diff
-   - versionierung hilft im Alltag, aber git ist normal nicht tauglich.
-   - Man braucht keine diffs. Ein Tool sollte das möglichst "einfach so" machen.
-
+   - versionierung hilft im Alltag, aber git ist normal nicht tauglich dafür.
 
 ----
 
@@ -448,7 +438,8 @@ Pinning
 
 .. note::
 
-    - Nachbereitung.
+    - Pinning Beispiel: Musik ordner auf Handy und Server.
+    - Mechanismus um Sachen wie "Speichere alle Dateiversionen der 30 letzten Tage" zu implementieren.
     - Komplette Separation von Daten und Metadaten.
 
 |
@@ -468,7 +459,7 @@ Roadmap
 - Selektives Sharing.
 - Gateway für Hyperlinks.
 - Archive Instances.
-- :small:`(optional)` Autosync.
+- Autosync und vieles mehr...
 - Performance, mehr Dokumentation...
 
 |
@@ -520,21 +511,21 @@ Hilfe? Erwünscht.
 
 Mithilfe via **Experience Reports.**
 
-1. Was habt ihr gemacht?
-2. Was habt ihr erwartet?
-3. Warum hat das nicht funktioniert?
+1. Was wolltet ihr machen?
+2. Was habt ihr versucht?
+3. Warum ging es nicht?
 
 .. image:: images/wollmilchsau.png
     :class: wollmilchsau
-    :width: 40%
+    :width: 45%
 
 |
 
 Und sonst?
 ----------
 
-- Bug reports. (``brig bug``)
-- Pull requests.
+- Bug reports. :small:`(brig bug)`
+- Pull requests mit Fixes.
 - **Keine** Feature Requests!
 
 ----
@@ -548,8 +539,10 @@ Probem gelöst?
 
     - Ja, die Lösung ist also ganz einfach... man schreibt einfach ein Tool
       das alles richtig macht, jeder nutzt das und gut ist.
-    - Randall Munroe, der xkcd Autor sagt nein.
     - Abe ja, sagt ihr es mir: Waere so ein Tool hilfreich fuer manche von euch?
+    - Zugegeben: Es ist noch nicht so einfach benutzbar dank Terminal, aber das kann
+      ja noch werden. Geht ja erstmal um die technische Basis.
+    - Die Zeit wird es zeigen.
 
 .. image:: images/xkcd-standards.png
    :width: 110%
@@ -563,6 +556,8 @@ Letzte Worte
 
     Wenn es noch Fragen gibt, ich bin dann noch ein bisschen da.
     Sprecht mich ruhig an.
+
+    Slides sind online auf der online schedule.
 
 |
 
