@@ -120,6 +120,10 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	backend := ctx.String("backend")
 	password := readPasswordFromArgs(ctx)
 
+	if ctx.NArg() > 1 {
+		return fmt.Errorf("Too many arguments, only user is needed.")
+	}
+
 	folder := ctx.String("path")
 	if folder == "" {
 		folder = guessRepoFolder()
