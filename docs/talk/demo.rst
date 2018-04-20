@@ -113,7 +113,7 @@ Vorher docker starten!
     $ bob-brig ls
     $ brig whoami
     # Erst ausführen, dauert etwas:
-    $ brig net locate alice
+    $ brig net locate bob
     $ brig remote add $(bob-brig whoami -f)
     $ bob-brig remote add $(brig whoami -f)
     $ brig remote ls
@@ -125,8 +125,8 @@ Vorher docker starten!
 .. code-block:: bash
 
     $ brig remote ls
-    $ brig diff alice
-    $ brig sync alice
+    $ brig diff bob
+    $ brig sync bob
     $ brig log
     $ brig ls
 
@@ -148,5 +148,7 @@ Vorher docker starten!
 
 .. code-block:: bash
 
-    $ brig bug
+    $ brig <tab>
+    $ brig help stage
     $ brig docs
+    $ brig bug
