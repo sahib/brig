@@ -676,6 +676,9 @@ func prefixSlash(s string) string {
 // Touch creates an empty file at `path` if it does not exist yet.
 // If it exists, it's mod time is being updated to the current time.
 func (fs *FS) Touch(path string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		return err
@@ -704,6 +707,9 @@ func (fs *FS) Touch(path string) error {
 // It is possible to go back to a bigger size until the actual
 // content was changed via Stage().
 func (fs *FS) Truncate(path string, size uint64) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	nd, err := fs.lkr.LookupModNode(path)
 	if err != nil {
 		return err
@@ -797,6 +803,10 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 
 	log.Debugf("using '%s' compression for file %s", algo, path)
 
+	// Unlock the fs lock while adding the stream to the backend.
+	// This is not required for the data integrity of the fs.
+	fs.mu.Unlock()
+
 	stream, err := mio.NewInStream(prefixR, key, algo)
 	if err != nil {
 		return err
@@ -807,8 +817,10 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	pinExplicit := false
+	// Lock it again for the rest of the adding:
+	fs.mu.Lock()
 
+	pinExplicit := false
 	if oldFile != nil {
 		if oldFile.Content().Equal(contentHash) {
 			// Nothing changed.
@@ -1163,7 +1175,6 @@ func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	// If no path is 
 	if path == "/" || path == "" {
 		return fs.Checkout(rev, false)
 	}
