@@ -57,6 +57,9 @@ type FS struct {
 
 	// internal config
 	cfg *config
+
+	// cache for the isPinned operation
+	pinCache *PinCache
 }
 
 // StatInfo describes the metadata of a single node.
@@ -174,6 +177,7 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 	if err := fs.bk.Unpin(file.Content(), true); err != nil {
 		log.Warningf("unpinning attempt failed: %v", err)
 	}
+	fs.pinCache.Remember(file.Content(), false, true)
 
 	// Still return true, no need to stop the GC
 	return true
@@ -223,6 +227,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 		cfg:       vfg,
 		gcControl: make(chan bool),
 		gcTicker:  time.NewTicker(120 * time.Second),
+		pinCache:  NewPinCache(),
 	}
 
 	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
@@ -406,10 +411,15 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 // PINNING OPERATIONS //
 ////////////////////////
 
-func (fs *FS) pinOp(path string, explicit bool, op func(h.Hash, bool) error) error {
+func (fs *FS) pinOp(path string, isPinned, isExplicit bool) error {
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil {
 		return err
+	}
+
+	op := fs.bk.Unpin
+	if isPinned {
+		op = fs.bk.Pin
 	}
 
 	return n.Walk(fs.lkr, nd, true, func(child n.Node) error {
@@ -419,9 +429,11 @@ func (fs *FS) pinOp(path string, explicit bool, op func(h.Hash, bool) error) err
 				return ie.ErrBadNode
 			}
 
-			if err := op(file.Content(), explicit); err != nil {
+			if err := op(file.Content(), isExplicit); err != nil {
 				return err
 			}
+
+			fs.pinCache.Remember(child.Content(), isPinned, isExplicit)
 		}
 
 		return nil
@@ -453,7 +465,7 @@ func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if err := fs.pinOp(path, true, fs.bk.Pin); err != nil {
+	if err := fs.pinOp(path, true, true); err != nil {
 		return err
 	}
 
@@ -467,7 +479,7 @@ func (fs *FS) Unpin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pinOp(path, true, fs.bk.Unpin)
+	return fs.pinOp(path, false, true)
 }
 
 type ExplicitPin struct {
@@ -506,7 +518,7 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 			return nil
 		}
 
-		_, isExplicit, err := fs.bk.IsPinned(nd.Content())
+		_, isExplicit, err := fs.isPinned(nd)
 		if err != nil {
 			return err
 		}
@@ -572,12 +584,7 @@ func (fs *FS) setExplicitPins(doPin bool, prefix, fromRef, toRef string) (int, e
 			return nil
 		}
 
-		pinOp := fs.bk.Unpin
-		if doPin {
-			pinOp = fs.bk.Pin
-		}
-
-		if err := pinOp(nd.Content(), true); err != nil {
+		if err := fs.pinOp(nd.Path(), true, true); err != nil {
 			return err
 		}
 
@@ -619,32 +626,40 @@ func (fs *FS) isPinned(nd n.Node) (bool, bool, error) {
 	totalCount := 0
 
 	err := n.Walk(fs.lkr, nd, true, func(child n.Node) error {
-		if child.Type() == n.NodeTypeFile {
-			file, ok := child.(*n.File)
-			if !ok {
-				return ie.ErrBadNode
-			}
+		if child.Type() != n.NodeTypeFile {
+			return nil
+		}
 
-			totalCount++
+		file, ok := child.(*n.File)
+		if !ok {
+			return ie.ErrBadNode
+		}
 
-			isPinned, isExplicit, err := fs.bk.IsPinned(file.Content())
+		totalCount++
+
+		isCached, isPinned, isExplicit := fs.pinCache.Is(file.Content())
+		if !isCached {
+			var err error
+			isPinned, isExplicit, err = fs.bk.IsPinned(file.Content())
 			if err != nil {
 				return err
 			}
 
-			if isExplicit {
-				explicitCount++
-			}
+			fs.pinCache.Remember(file.Content(), isPinned, isExplicit)
+		}
 
-			if isPinned {
-				// Make sure that we do not count empty directories
-				// as pinned nodes.
-				pinCount++
-			} else {
-				// Return a special error here to stop Walk() iterating.
-				// One file is enough to stop IsPinned() from being true.
-				return errNotPinnedSentinel
-			}
+		if isExplicit {
+			explicitCount++
+		}
+
+		if isPinned {
+			// Make sure that we do not count empty directories
+			// as pinned nodes.
+			pinCount++
+		} else {
+			// Return a special error here to stop Walk() iterating.
+			// One file is enough to stop IsPinned() from being true.
+			return errNotPinnedSentinel
 		}
 
 		return nil
@@ -827,7 +842,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 			return nil
 		}
 
-		_, isExplicit, err := fs.bk.IsPinned(oldFile.Content())
+		_, isExplicit, err := fs.isPinned(oldFile)
 		if err != nil {
 			return err
 		}
@@ -840,11 +855,13 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		if err := fs.bk.Unpin(oldFile.Content(), true); err != nil {
 			return err
 		}
+		fs.pinCache.Remember(oldFile.Content(), false, false)
 	}
 
 	if err := fs.bk.Pin(contentHash, pinExplicit); err != nil {
 		return err
 	}
+	fs.pinCache.Remember(contentHash, true, pinExplicit)
 
 	_, err = c.Stage(fs.lkr, path, contentHash, sizeAcc.Size(), key)
 	return err
@@ -1014,14 +1031,14 @@ func (fs *FS) Sync(remote *FS) error {
 			// Non-files are simply ignored.
 			return
 		}
-
-		op, opName := fs.bk.Unpin, "unpin"
+		opName := "unpin"
 		if doPin {
-			op, opName = fs.bk.Pin, "pin"
+			opName = "pin"
 		}
 
-		if err := op(file.Content(), explicit); err != nil {
-			log.Warningf("Failed to %s hash: %v", opName, file.Content())
+		if err := fs.pinOp(file.Path(), doPin, explicit); err != nil {
+			log.Warningf("Failed to %s (hash: %v)", opName, file.Content())
+
 		}
 	}
 
@@ -1036,7 +1053,7 @@ func (fs *FS) Sync(remote *FS) error {
 		return true
 	}
 	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
-		_, isExplicit, err := fs.bk.IsPinned(oldNd.Content())
+		_, isExplicit, err := fs.isPinned(oldNd)
 		if err != nil {
 			log.Warnf(
 				"failed to check pin status of old node `%s` (%v)",
@@ -1200,12 +1217,12 @@ func (fs *FS) Reset(path, rev string) error {
 	}
 
 	if isPinned {
-		if err := fs.pinOp(path, false, fs.bk.Unpin); err != nil {
+		if err := fs.pinOp(path, false, false); err != nil {
 			return err
 		}
 	}
 
-	return fs.pinOp(path, false, fs.bk.Pin)
+	return fs.pinOp(path, true, false)
 }
 
 func (fs *FS) Checkout(rev string, force bool) error {
