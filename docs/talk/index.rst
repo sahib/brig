@@ -298,9 +298,9 @@ Kurz gesagt: Fokus
 ==================
 
 - Balance zwischen Sicherheit und Usability.
-- Effizienz ist nett, aber kein primäter Fokus.
+- Effizienz ist nett, aber kein primärer Fokus.
 - Kompatibilität zu gewohnten Konzepten.
-- Komplexität hinter einem einfachen Interface.
+- Komplexität hinter einfachen Interface.
 
 .. note::
 
