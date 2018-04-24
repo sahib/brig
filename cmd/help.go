@@ -520,7 +520,7 @@ EXAMPLES:
 	"stage": {
 		Usage:     "Add a local file to the storage",
 		ArgsUsage: "(<local-path> [<path>]|--stdin <path>)",
-		Complete:  completeArgsUsage,
+		Complete:  completeLocalFile,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "stdin,i",

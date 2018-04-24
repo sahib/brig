@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 
@@ -134,6 +136,41 @@ func completeArgsUsage(ctx *cli.Context) {
 		}
 
 		fmt.Println(command.ArgsUsage)
+	}
+}
+
+func completeLocalFile(ctx *cli.Context) {
+	if len(os.Args) >= 2 {
+		lastArg := os.Args[len(os.Args)-2]
+		cmd := findCurrentCommand(ctx)
+		if lastArg != cmd.FullName() {
+			return
+		}
+	}
+
+	// CAVEAT: We currently do not get partial words from bash/zsh.
+	// e.g. "brig stage /us" will pass the following os.Args:
+	// ["brig", "stage", "--generate-bash-completion"]
+	//
+	// Because of that we do no prefix completion right now.
+	// We can probably tweak autcomplete/{z,ba}sh_autcomplete to
+	// somehow do this, but after 30mins of googling I give up for now.
+	//
+	// If you read this, I challenge you to do it better.
+	dir, err := os.Getwd()
+	if err != nil {
+		// silent error.
+		return
+	}
+
+	children, err := ioutil.ReadDir(dir)
+	if err != nil {
+		// silent error.
+		return
+	}
+
+	for _, child := range children {
+		fmt.Println(child.Name())
 	}
 }
 
