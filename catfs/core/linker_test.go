@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -18,8 +19,6 @@ import (
 // A new staging commit should be also created in the background.
 // On the second run, the root node should be already cached.
 func TestLinkerInsertRoot(t *testing.T) {
-	t.Parallel()
-
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := n.NewEmptyDirectory(lkr, nil, "/", "u", 2)
@@ -65,8 +64,6 @@ func TestLinkerInsertRoot(t *testing.T) {
 }
 
 func TestLinkerRefs(t *testing.T) {
-	t.Parallel()
-
 	author := n.AuthorOfStage
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
@@ -127,8 +124,6 @@ func TestLinkerRefs(t *testing.T) {
 }
 
 func TestLinkerNested(t *testing.T) {
-	t.Parallel()
-
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -215,8 +210,6 @@ func TestLinkerNested(t *testing.T) {
 
 // Test if Linker can load objects after closing/re-opening the kv.
 func TestLinkerPersistence(t *testing.T) {
-	t.Parallel()
-
 	dbPath, err := ioutil.TempDir("", "brig-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -266,8 +259,6 @@ func TestLinkerPersistence(t *testing.T) {
 }
 
 func TestCollideSameObjectHash(t *testing.T) {
-	t.Parallel()
-
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
 		root, err := lkr.Root()
@@ -357,8 +348,6 @@ func TestCollideSameObjectHash(t *testing.T) {
 }
 
 func TestHaveStagedChanges(t *testing.T) {
-	t.Parallel()
-
 	WithDummyLinker(t, func(lkr *Linker) {
 		hasChanges, err := lkr.HaveStagedChanges()
 		if err != nil {
@@ -391,8 +380,6 @@ func TestHaveStagedChanges(t *testing.T) {
 }
 
 func TestFilesByContent(t *testing.T) {
-	t.Parallel()
-
 	WithDummyLinker(t, func(lkr *Linker) {
 		file := MustTouch(t, lkr, "/x.png", 1)
 
@@ -409,8 +396,6 @@ func TestFilesByContent(t *testing.T) {
 }
 
 func TestResolveRef(t *testing.T) {
-	t.Parallel()
-
 	WithDummyLinker(t, func(lkr *Linker) {
 		initCmt, err := lkr.Head()
 		require.Nil(t, err)
@@ -452,8 +437,6 @@ type iterResult struct {
 }
 
 func TestIterAll(t *testing.T) {
-	t.Parallel()
-
 	WithDummyLinker(t, func(lkr *Linker) {
 		init, err := lkr.Head()
 		require.Nil(t, err)
@@ -497,4 +480,43 @@ func TestIterAll(t *testing.T) {
 			require.Equal(t, result.commit, expected[idx].commit)
 		}
 	})
+}
+
+func TestAtomic(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		err := lkr.Atomic(func() error {
+			MustTouch(t, lkr, "/x", 1)
+			return nil
+		})
+
+		require.Nil(t, err)
+
+		err = lkr.Atomic(func() error {
+			MustTouch(t, lkr, "/y", 1)
+			return errors.New("artificial error")
+		})
+
+		require.NotNil(t, err)
+
+		err = lkr.Atomic(func() error {
+			MustTouch(t, lkr, "/z", 1)
+			panic("woah")
+			return nil
+		})
+
+		require.NotNil(t, err)
+
+		x, err := lkr.LookupFile("/x")
+		require.Nil(t, err)
+		require.Equal(t, x.Path(), "/x")
+
+		_, err = lkr.LookupFile("/y")
+		require.NotNil(t, err)
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		_, err = lkr.LookupFile("/z")
+		require.NotNil(t, err)
+		require.True(t, ie.IsNoSuchFileError(err))
+	})
+
 }

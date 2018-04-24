@@ -291,37 +291,41 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 		return err
 	}
 
-	if err := resolver.resolve(); err != nil {
-		return err
-	}
+	// Make sure the complete sync goes through in one disk transaction.
+	return lkrDst.Atomic(func() error {
+		// This calls all the handleXXX() callbacks above.
+		if err := resolver.resolve(); err != nil {
+			return err
+		}
 
-	wasModified, err := lkrDst.HaveStagedChanges()
-	if err != nil {
-		return err
-	}
-
-	// If something was changed, we should set the merge marker
-	// and also create a new commit.
-	if wasModified {
-		srcOwner, err := lkrSrc.Owner()
+		wasModified, err := lkrDst.HaveStagedChanges()
 		if err != nil {
 			return err
 		}
 
-		srcHead, err := lkrSrc.Head()
-		if err != nil {
-			return err
+		// If something was changed, we should set the merge marker
+		// and also create a new commit.
+		if wasModified {
+			srcOwner, err := lkrSrc.Owner()
+			if err != nil {
+				return err
+			}
+
+			srcHead, err := lkrSrc.Head()
+			if err != nil {
+				return err
+			}
+
+			// If something was changed, remember that we merged with src.
+			// This avoids merging conflicting files a second time in the next resolve().
+			if err := lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
+				return err
+			}
+
+			message := fmt.Sprintf("merge with %s", srcOwner)
+			return lkrDst.MakeCommit(srcOwner, message)
 		}
 
-		// If something was changed, remember that we merged with src.
-		// This avoids merging conflicting files a second time in the next resolve().
-		if err := lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
-			return err
-		}
-
-		message := fmt.Sprintf("merge with %s", srcOwner)
-		return lkrDst.MakeCommit(srcOwner, message)
-	}
-
-	return nil
+		return nil
+	})
 }

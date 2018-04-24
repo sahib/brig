@@ -59,68 +59,64 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 	}
 
 	// Check if the parent exists:
-	parent, err := lkr.LookupDirectory(dirname)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return nil, e.Wrap(err, "dirname lookup failed")
+	parent, lerr := lkr.LookupDirectory(dirname)
+	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
+		err = e.Wrap(lerr, "dirname lookup failed")
+		return
 	}
 
 	log.Debugf("mkdir: %s", dirname)
 
-	// If it's nil, we might need to create it:
-	if parent == nil {
-		if !createParents {
-			return nil, ie.NoSuchFile(dirname)
-		}
-
-		parent, err = mkdirParents(lkr, repoPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	child, err := parent.Child(lkr, basename)
-	if err != nil {
-		return nil, err
-	}
-
-	if child != nil {
-		switch child.Type() {
-		case n.NodeTypeDirectory:
-			// Nothing to do really. Return the old child.
-			return child.(*n.Directory), nil
-		case n.NodeTypeFile:
-			return nil, fmt.Errorf("`%s` exists and is a file", repoPath)
-		case n.NodeTypeGhost:
-			// Remove the ghost and continue with adding:
-			if err := parent.RemoveChild(lkr, child); err != nil {
-				return nil, err
+	err = lkr.Atomic(func() error {
+		// If it's nil, we might need to create it:
+		if parent == nil {
+			if !createParents {
+				return ie.NoSuchFile(dirname)
 			}
-		default:
-			return nil, ie.ErrBadNode
-		}
-	}
 
-	// Make sure, NextInode() and StageNode is written in one batch.
-	batch := lkr.kv.Batch()
-	defer func() {
+			parent, err = mkdirParents(lkr, repoPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		child, err := parent.Child(lkr, basename)
 		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
+			return err
 		}
-	}()
 
-	// Create it then!
-	dir, err = n.NewEmptyDirectory(lkr, parent, basename, lkr.owner, lkr.NextInode())
-	if err != nil {
-		return nil, err
-	}
+		if child != nil {
+			switch child.Type() {
+			case n.NodeTypeDirectory:
+				// Nothing to do really. Return the old child.
+				dir = child.(*n.Directory)
+				return nil
+			case n.NodeTypeFile:
+				return fmt.Errorf("`%s` exists and is a file", repoPath)
+			case n.NodeTypeGhost:
+				// Remove the ghost and continue with adding:
+				if err := parent.RemoveChild(lkr, child); err != nil {
+					return err
+				}
+			default:
+				return ie.ErrBadNode
+			}
+		}
 
-	if err := lkr.StageNode(dir); err != nil {
-		return nil, e.Wrapf(err, "stage dir")
-	}
+		// Create it then!
+		dir, err = n.NewEmptyDirectory(lkr, parent, basename, lkr.owner, lkr.NextInode())
+		if err != nil {
+			return err
+		}
 
-	return dir, nil
+		if err := lkr.StageNode(dir); err != nil {
+			return e.Wrapf(err, "stage dir")
+		}
+
+		return nil
+	})
+
+	return
 }
 
 // Remove removes a single node from a directory.
@@ -128,59 +124,56 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 // The parent directory is returned.
 func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Directory, ghost *n.Ghost, err error) {
 	if !force && nd.Type() == n.NodeTypeGhost {
-		return nil, nil, ErrIsGhost
+		err = ErrIsGhost
+		return
 	}
 
 	parentDir, err = n.ParentDirectory(lkr, nd)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	// We shouldn't delete the root directory
 	// (only directory with a parent)
 	if parentDir == nil {
-		return nil, nil, fmt.Errorf("Refusing to delete /")
+		err = fmt.Errorf("refusing to delete root")
+		return
 	}
 
-	if err := parentDir.RemoveChild(lkr, nd); err != nil {
-		return nil, nil, fmt.Errorf("Failed to remove child: %v", err)
-	}
-
-	lkr.MemIndexPurge(nd)
-
-	// Make sure both StageNode() will be written in one batch:
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
-	if err := lkr.StageNode(parentDir); err != nil {
-		return nil, nil, err
-	}
-
-	if createGhost {
-		ghost, err := n.MakeGhost(nd, lkr.NextInode())
-		if err != nil {
-			return nil, nil, err
+	err = lkr.Atomic(func() error {
+		if err := parentDir.RemoveChild(lkr, nd); err != nil {
+			return fmt.Errorf("failed to remove child: %v", err)
 		}
 
-		parentDir.Add(lkr, ghost)
-		if err != nil {
-			return nil, nil, err
+		lkr.MemIndexPurge(nd)
+
+		if err := lkr.StageNode(parentDir); err != nil {
+			return err
 		}
 
-		if err := lkr.StageNode(ghost); err != nil {
-			return nil, nil, err
+		if createGhost {
+			newGhost, err := n.MakeGhost(nd, lkr.NextInode())
+			if err != nil {
+				return err
+			}
+
+			parentDir.Add(lkr, newGhost)
+			if err != nil {
+				return err
+			}
+
+			if err := lkr.StageNode(newGhost); err != nil {
+				return err
+			}
+
+			ghost = newGhost
+			return nil
 		}
 
-		return parentDir, ghost, nil
-	}
+		return nil
+	})
 
-	return parentDir, nil, nil
+	return
 }
 
 // prepareParent tries to figure out the correct parent directory when attempting
@@ -256,57 +249,48 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if nd.Path() == dstPath {
-		return nil, fmt.Errorf("Source and Dest are the same file: %v", dstPath)
+		err = fmt.Errorf("source and dest are the same file: %v", dstPath)
+		return
 	}
 
 	if strings.HasPrefix(path.Dir(dstPath), nd.Path()) {
-		return nil, fmt.Errorf(
-			"Cannot move `%s` into it's own subdir `%s`",
+		err = fmt.Errorf(
+			"cannot copy `%s` into it's own subdir `%s`",
 			nd.Path(),
 			dstPath,
 		)
+		return
 	}
 
-	// Make sure both StageNode() will be written in one batch:
-	batch := lkr.kv.Batch()
-	defer func() {
+	err = lkr.Atomic(func() error {
+		parentDir, err := prepareParent(lkr, nd, dstPath)
 		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
+			return e.Wrapf(err, "handle parent")
 		}
-	}()
 
-	parentDir, err := prepareParent(lkr, nd, dstPath)
-	if err != nil {
-		return nil, e.Wrapf(err, "handle parent")
-	}
+		// We might copy something into a directory.
+		// In this case, dstPath specifies the directory we move into,
+		// not the file we moved to (which we need here)
+		if parentDir.Path() == dstPath {
+			dstPath = path.Join(parentDir.Path(), path.Base(nd.Path()))
+		}
 
-	// We might copy something into a directory.
-	// In this case, dstPath specifies the directory we move into,
-	// not the file we moved to (which we need here)
-	if parentDir.Path() == dstPath {
-		dstPath = path.Join(parentDir.Path(), path.Base(nd.Path()))
-	}
+		// And add it to the right destination dir:
+		newNode = nd.Copy(lkr.NextInode())
+		newNode.SetName(path.Base(dstPath))
+		newNode.SetParent(lkr, parentDir)
+		newNode.NotifyMove(lkr, newNode.Path())
 
-	// And add it to the right destination dir:
-	newNode = nd.Copy(lkr.NextInode())
-	newNode.SetName(path.Base(dstPath))
-	newNode.SetParent(lkr, parentDir)
-	newNode.NotifyMove(lkr, newNode.Path())
+		if err := parentDir.Add(lkr, newNode); err != nil {
+			return e.Wrapf(err, "parent add")
+		}
 
-	if err := parentDir.Add(lkr, newNode); err != nil {
-		return nil, e.Wrapf(err, "parent add")
-	}
-
-	if err := lkr.StageNode(newNode); err != nil {
-		return nil, err
-	}
-
-	return newNode, nil
+		return lkr.StageNode(newNode)
+	})
+	return
 }
 
-func Move(lkr *Linker, nd n.ModNode, dstPath string) (err error) {
+func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if nd.Path() == dstPath {
 		return fmt.Errorf("Source and Dest are the same file: %v", dstPath)
@@ -320,169 +304,153 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) (err error) {
 		)
 	}
 
-	// Make sure both StageNode() will be written in one batch:
-	batch := lkr.kv.Batch()
-	defer func() {
+	return lkr.Atomic(func() error {
+		parentDir, err := prepareParent(lkr, nd, dstPath)
 		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
+			return err
 		}
-	}()
 
-	parentDir, err := prepareParent(lkr, nd, dstPath)
-	if err != nil {
+		// Remove the old node:
+		oldPath := nd.Path()
+		_, ghost, err := Remove(lkr, nd, true, true)
+		if err != nil {
+			return e.Wrapf(err, "remove old")
+		}
+
+		if parentDir.Path() == dstPath {
+			dstPath = path.Join(parentDir.Path(), path.Base(oldPath))
+		}
+
+		// The node needs to be told that it's path changed,
+		// since it might need to change it's hash value now.
+		if err := nd.NotifyMove(lkr, dstPath); err != nil {
+			return e.Wrapf(err, "notify move")
+		}
+
+		// And add it to the right destination dir:
+		if err := parentDir.Add(lkr, nd); err != nil {
+			return e.Wrapf(err, "parent add")
+		}
+
+		err = n.Walk(lkr, nd, true, func(child n.Node) error {
+			return e.Wrapf(lkr.StageNode(child), "stage node")
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if err := lkr.AddMoveMapping(nd, ghost); err != nil {
+			return e.Wrapf(err, "add move mapping")
+		}
+
 		return err
-	}
-
-	// Remove the old node:
-	oldPath := nd.Path()
-	_, ghost, err := Remove(lkr, nd, true, true)
-	if err != nil {
-		return e.Wrapf(err, "remove old")
-	}
-
-	if parentDir.Path() == dstPath {
-		dstPath = path.Join(parentDir.Path(), path.Base(oldPath))
-	}
-
-	// The node needs to be told that it's path changed,
-	// since it might need to change it's hash value now.
-	if err := nd.NotifyMove(lkr, dstPath); err != nil {
-		return e.Wrapf(err, "notify move")
-	}
-
-	// And add it to the right destination dir:
-	if err := parentDir.Add(lkr, nd); err != nil {
-		return e.Wrapf(err, "parent add")
-	}
-
-	err = n.Walk(lkr, nd, true, func(child n.Node) error {
-		return e.Wrapf(lkr.StageNode(child), "stage node")
 	})
-
-	if err != nil {
-		return err
-	}
-
-	if err := lkr.AddMoveMapping(nd, ghost); err != nil {
-		return e.Wrapf(err, "add move mapping")
-	}
-
-	return err
 }
 
 func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte) (file *n.File, err error) {
-	node, err := lkr.LookupNode(repoPath)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return nil, err
+	node, lerr := lkr.LookupNode(repoPath)
+	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
+		err = lerr
+		return
 	}
 
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			log.Warningf("rolling back failed transaction: %v", err)
-			batch.Rollback()
+	err = lkr.Atomic(func() error {
+		if node != nil {
+			if node.Type() == n.NodeTypeGhost {
+				ghostParent, err := n.ParentDirectory(lkr, node)
+				if err != nil {
+					return err
+				}
+
+				if ghostParent == nil {
+					return fmt.Errorf(
+						"bug: %s has no parent. Is root a ghost?",
+						node.Path(),
+					)
+				}
+
+				if err := ghostParent.RemoveChild(lkr, node); err != nil {
+					return err
+				}
+
+				// Act like there was no previous node.
+				// New node will have a different Inode.
+				file = nil
+			} else {
+				var ok bool
+				file, ok = node.(*n.File)
+				if !ok {
+					return ie.ErrBadNode
+				}
+			}
+		}
+
+		needRemove := false
+
+		if file != nil {
+			// We know this file already.
+			log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
+			needRemove = true
+
+			if file.Content().Equal(content) {
+				log.Debugf("Hash was not modified. Not doing any update.")
+				return nil
+			}
 		} else {
-			err = batch.Flush()
+			parent, err := mkdirParents(lkr, repoPath)
 			if err != nil {
-				log.Warningf("failed to flush transaction: %v", err)
+				return err
 			}
-		}
-	}()
 
-	if node != nil {
-		if node.Type() == n.NodeTypeGhost {
-			ghostParent, err := n.ParentDirectory(lkr, node)
+			// Create a new file at specified path:
+			file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.owner, lkr.NextInode())
 			if err != nil {
-				return nil, err
-			}
-
-			if ghostParent == nil {
-				return nil, fmt.Errorf(
-					"bug: %s has no parent. Is root a ghost?",
-					node.Path(),
-				)
-			}
-
-			if err := ghostParent.RemoveChild(lkr, node); err != nil {
-				return nil, err
-			}
-
-			// Act like there was no previous node.
-			// New node will have a different Inode.
-			file = nil
-		} else {
-			var ok bool
-			file, ok = node.(*n.File)
-			if !ok {
-				return nil, ie.ErrBadNode
+				return err
 			}
 		}
-	}
 
-	needRemove := false
-
-	if file != nil {
-		// We know this file already.
-		log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
-		needRemove = true
-
-		if file.Content().Equal(content) {
-			log.Debugf("Hash was not modified. Not doing any update.")
-			return file, nil
-		}
-	} else {
-		parent, err := mkdirParents(lkr, repoPath)
+		parentDir, err := n.ParentDirectory(lkr, file)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		// Create a new file at specified path:
-		file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.owner, lkr.NextInode())
-		if err != nil {
-			return nil, err
+		if parentDir == nil {
+			return fmt.Errorf("%s has no parent yet (BUG)", repoPath)
 		}
-	}
 
-	parentDir, err := n.ParentDirectory(lkr, file)
-	if err != nil {
-		return nil, err
-	}
-
-	if parentDir == nil {
-		return nil, fmt.Errorf("%s has no parent yet (BUG)", repoPath)
-	}
-
-	if needRemove {
-		// Remove the child before changing the hash:
-		if err := parentDir.RemoveChild(lkr, file); err != nil {
-			return nil, err
+		if needRemove {
+			// Remove the child before changing the hash:
+			if err := parentDir.RemoveChild(lkr, file); err != nil {
+				return err
+			}
 		}
-	}
 
-	file.SetSize(size)
-	file.SetModTime(time.Now())
-	file.SetContent(lkr, content)
-	file.SetKey(key)
-	file.SetUser(lkr.owner)
+		file.SetSize(size)
+		file.SetModTime(time.Now())
+		file.SetContent(lkr, content)
+		file.SetKey(key)
+		file.SetUser(lkr.owner)
 
-	// Add it again when the hash was changed.
-	log.Debugf(
-		"Adding %s (%v) to %s (%v)",
-		file.Path(), file.Content(), parentDir.Path(), parentDir.Content(),
-	)
-	if err := parentDir.Add(lkr, file); err != nil {
-		return nil, err
-	}
-	log.Debugf("Done adding. Now staging")
+		// Add it again when the hash was changed.
+		log.Debugf(
+			"Adding %s (%v) to %s (%v)",
+			file.Path(), file.Content(), parentDir.Path(), parentDir.Content(),
+		)
+		if err := parentDir.Add(lkr, file); err != nil {
+			return err
+		}
 
-	if err := lkr.StageNode(file); err != nil {
-		return nil, err
-	}
+		log.Debugf("done adding. now staging")
+		if err := lkr.StageNode(file); err != nil {
+			return err
+		}
 
-	log.Debugf("Done staging")
-	return file, nil
+		log.Debugf("done staging")
+		return nil
+	})
+
+	return
 }
 
 func Log(lkr *Linker, fn func(cmt *n.Commit) error) error {

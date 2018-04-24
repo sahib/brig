@@ -58,6 +58,7 @@ type Linker struct {
 
 	// root of the filesystem
 	root *n.Directory
+
 	// Path lookup trie
 	ptrie *trie.Node
 
@@ -155,9 +156,12 @@ func (lkr *Linker) NextInode() uint64 {
 	cntBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(cntBuf, cnt)
 
-	batch := lkr.kv.Batch()
-	batch.Put(cntBuf, "stats", "node-count")
-	if err := batch.Flush(); err != nil {
+	err = lkr.AtomicWithBatch(func(batch db.Batch) error {
+		batch.Put(cntBuf, "stats", "node-count")
+		return nil
+	})
+
+	if err != nil {
 		return 0
 	}
 
@@ -317,34 +321,27 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 // modification is persistent and part of the staging commit. All parent
 // directories of the node in question will be staged automatically. If there
 // was no modification it will be a (quite expensive) NOOP.
-func (lkr *Linker) StageNode(nd n.Node) (err error) {
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
+func (lkr *Linker) StageNode(nd n.Node) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		if err := lkr.stageNodeRecursive(batch, nd); err != nil {
+			return e.Wrapf(err, "recursive stage")
 		}
-	}()
 
-	if err := lkr.stageNodeRecursive(batch, nd); err != nil {
-		return e.Wrapf(err, "recursive stage")
-	}
+		// Update the staging commit's root hash:
+		status, err := lkr.Status()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve status: %v", err)
+		}
 
-	// Update the staging commit's root hash:
-	status, err := lkr.Status()
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve status: %v", err)
-	}
+		root, err := lkr.Root()
+		if err != nil {
+			return err
+		}
 
-	root, err := lkr.Root()
-	if err != nil {
-		return err
-	}
-
-	status.SetRoot(root.Hash())
-	lkr.MemSetRoot(root)
-	return lkr.saveStatus(status)
+		status.SetRoot(root.Hash())
+		lkr.MemSetRoot(root)
+		return lkr.saveStatus(status)
+	})
 }
 
 // NodeByInode resolves a node by it's unique ID.
@@ -439,16 +436,13 @@ func (lkr *Linker) SetMergeMarker(with string, remoteHead h.Hash) error {
 // The current staging commit is finalized with `author` and `message`
 // and gets saved. A new, identical staging commit is created pointing
 // to the root of the now new HEAD.
-func (lkr *Linker) MakeCommit(author string, message string) (err error) {
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
+func (lkr *Linker) MakeCommit(author string, message string) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		return lkr.makeCommit(batch, author, message)
+	})
+}
 
+func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) error {
 	head, err := lkr.Head()
 	if err != nil && !ie.IsErrNoSuchRef(err) {
 		return err
@@ -568,9 +562,10 @@ func (lkr *Linker) MakeCommit(author string, message string) (err error) {
 // MetadataPut remembers a value persisntenly identified by `key`.
 // It can be used as single-level key value store for user purposes.
 func (lkr *Linker) MetadataPut(key string, value []byte) error {
-	batch := lkr.kv.Batch()
-	batch.Put([]byte(value), "metadata", key)
-	return batch.Flush()
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		batch.Put([]byte(value), "metadata", key)
+		return nil
+	})
 }
 
 // MetadataGet retriesves a previosuly put key value pair.
@@ -685,10 +680,11 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 // to ensure that the node is already in the blockstore, otherwise it won't be
 // resolvable.
 func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
-	batch := lkr.kv.Batch()
 	refname = strings.ToLower(refname)
-	batch.Put([]byte(nd.Hash().B58String()), "refs", refname)
-	return batch.Flush()
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		batch.Put([]byte(nd.Hash().B58String()), "refs", refname)
+		return nil
+	})
 }
 
 // ListRefs lists all currently known refs.
@@ -711,9 +707,10 @@ func (lkr *Linker) ListRefs() ([]string, error) {
 }
 
 func (lkr *Linker) RemoveRef(refname string) error {
-	batch := lkr.kv.Batch()
-	batch.Erase("refs", refname)
-	return batch.Flush()
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		batch.Erase("refs", refname)
+		return nil
+	})
 }
 
 // Head is just a shortcut for ResolveRef("HEAD").
@@ -850,40 +847,33 @@ func (lkr *Linker) loadStatus() (*n.Commit, error) {
 }
 
 // saveStatus copies cmt to stage/STATUS.
-func (lkr *Linker) saveStatus(cmt *n.Commit) (err error) {
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
-	head, err := lkr.Head()
-	if err != nil && !ie.IsErrNoSuchRef(err) {
-		return err
-	}
-
-	if head != nil {
-		if err := cmt.SetParent(lkr, head); err != nil {
+func (lkr *Linker) saveStatus(cmt *n.Commit) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		head, err := lkr.Head()
+		if err != nil && !ie.IsErrNoSuchRef(err) {
 			return err
 		}
-	}
 
-	if err := cmt.BoxCommit(n.AuthorOfStage, ""); err != nil {
-		return err
-	}
+		if head != nil {
+			if err := cmt.SetParent(lkr, head); err != nil {
+				return err
+			}
+		}
 
-	data, err := n.MarshalNode(cmt)
-	if err != nil {
-		return err
-	}
+		if err := cmt.BoxCommit(n.AuthorOfStage, ""); err != nil {
+			return err
+		}
 
-	inode := strconv.FormatUint(cmt.Inode(), 10)
-	batch.Put(data, "stage", "STATUS")
-	batch.Put([]byte(cmt.Hash().B58String()), "inode", inode)
-	return lkr.SaveRef("CURR", cmt)
+		data, err := n.MarshalNode(cmt)
+		if err != nil {
+			return err
+		}
+
+		inode := strconv.FormatUint(cmt.Inode(), 10)
+		batch.Put(data, "stage", "STATUS")
+		batch.Put([]byte(cmt.Hash().B58String()), "inode", inode)
+		return lkr.SaveRef("CURR", cmt)
+	})
 }
 
 /////////////////////////////////
@@ -1164,22 +1154,23 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	dstInode := strconv.FormatUint(to.Inode(), 10)
 	dstToSrcKey := []string{"stage", "moves", dstInode}
 
-	batch := lkr.kv.Batch()
-	if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
-		line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
-		batch.Put(line, srcToDstKey...)
-		batch.Put(line, "stage", "moves", "overlay", srcInode)
-	}
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
+			line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
+			batch.Put(line, srcToDstKey...)
+			batch.Put(line, "stage", "moves", "overlay", srcInode)
+		}
 
-	// Also remember the move in the other direction.
-	// This might come in handy for the
-	if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
-		line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
-		batch.Put(line, dstToSrcKey...)
-		batch.Put(line, "stage", "moves", "overlay", dstInode)
-	}
+		// Also remember the move in the other direction.
+		// This might come in handy for the
+		if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
+			line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
+			batch.Put(line, dstToSrcKey...)
+			batch.Put(line, "stage", "moves", "overlay", dstInode)
+		}
 
-	return batch.Flush()
+		return nil
+	})
 }
 
 func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
@@ -1593,10 +1584,46 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 }
 
 func (lkr *Linker) Atomic(fn func() error) (err error) {
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		return fn()
+	})
+}
+
+// Atomic will execute `fn` in one transaction.
+// If anything goes wrong (i.e. `fn` returns an error)
+func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 	batch := lkr.kv.Batch()
-	if err := fn(); err != nil {
+
+	// A panicking program should not leave the linker inconsistent.
+	// This is really a last defence against all odds.
+	defer func() {
+		if r := recover(); r != nil {
+			batch.Rollback()
+			lkr.MemIndexClear()
+			err = fmt.Errorf("panic rollback: %v", r)
+		}
+	}()
+
+	if err = fn(batch); err != nil {
 		batch.Rollback()
+
+		// clearing the mem index will cause it to be read freshly from disk
+		// with the old state. This costs a little performance but saves me
+		// from writing special in-memory rollback logic for now.
+		lkr.MemIndexClear()
+
+		log.Warningf("rolled back due to error: %v", err)
+		return err
 	}
 
-	return batch.Flush()
+	// Attempt to write it to disk.
+	// If that fails we're better off deleting our internal cache.
+	// so memory and disk is in sync.
+	if err := batch.Flush(); err != nil {
+		lkr.MemIndexClear()
+		log.Warningf("flush to db failed, resetting mem index: %v", err)
+		return err
+	}
+
+	return nil
 }
