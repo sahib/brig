@@ -751,7 +751,16 @@ func (lkr *Linker) Root() (*n.Directory, error) {
 
 // Status returns the current staging commit.
 // It is never nil, unless err is nil.
-func (lkr *Linker) Status() (cmt *n.Commit, err error) {
+func (lkr *Linker) Status() (*n.Commit, error) {
+	var cmt *n.Commit
+	var err error
+
+	return cmt, lkr.AtomicWithBatch(func(batch db.Batch) error {
+		cmt, err = lkr.status(batch)
+		return err
+	})
+}
+func (lkr *Linker) status(batch db.Batch) (cmt *n.Commit, err error) {
 	cmt, err = lkr.loadStatus()
 	if err != nil {
 		return nil, err
@@ -760,15 +769,6 @@ func (lkr *Linker) Status() (cmt *n.Commit, err error) {
 	if cmt != nil {
 		return cmt, nil
 	}
-
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
 
 	// Shoot, no commit exists yet.
 	// We need to create an initial one.
@@ -1101,17 +1101,8 @@ func (lkr *Linker) HaveStagedChanges() (bool, error) {
 // referenced by cmt. If force is false, it will check if there any staged errors in
 // the staging area and return ErrStageNotEmpty if there are any. If force is
 // true, all changes will be overwritten.
-func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
+func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
 	// Check if the staging area is empty if no force given:
-	batch := lkr.kv.Batch()
-	defer func() {
-		if err != nil {
-			batch.Rollback()
-		} else {
-			err = batch.Flush()
-		}
-	}()
-
 	if !force {
 		haveStaged, err := lkr.HaveStagedChanges()
 		if err != nil {
@@ -1133,14 +1124,16 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) (err error) {
 		return err
 	}
 
-	// Set the current virtual in-memory cached root
-	lkr.MemSetRoot(root)
-	status.SetRoot(cmt.Root())
+	return lkr.Atomic(func() error {
+		// Set the current virtual in-memory cached root
+		lkr.MemSetRoot(root)
+		status.SetRoot(cmt.Root())
 
-	// Invalidate the cache, causing NodeByHash and ResolveNode to load the
-	// file from the boltdb again:
-	lkr.MemIndexClear()
-	return lkr.saveStatus(status)
+		// Invalidate the cache, causing NodeByHash and ResolveNode to load the
+		// file from the boltdb again:
+		lkr.MemIndexClear()
+		return lkr.saveStatus(status)
+	})
 }
 
 // AddMoveMapping takes note that the the node `from` has been moved to `to`
@@ -1214,127 +1207,132 @@ func (lkr *Linker) parseMoveMappingLine(line string) (n.Node, MoveDir, error) {
 	}
 }
 
-func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
-	batch := lkr.kv.Batch()
-	walker := func(key []string) error {
-		inode, err := strconv.ParseUint(key[len(key)-1], 10, 64)
-		if err != nil {
-			return err
-		}
+// Process a sinlge key of the move mapping:
+func (lkr *Linker) commitMoveMappingKey(
+	batch db.Batch,
+	status *n.Commit,
+	exported map[uint64]bool,
+	key []string,
+) error {
+	inode, err := strconv.ParseUint(key[len(key)-1], 10, 64)
+	if err != nil {
+		return err
+	}
 
-		// Only export move mapping that relate to nodes that were actually
-		// exported from staging. We do not want to export intermediate moves.
-		if _, ok := exported[inode]; !ok {
-			return nil
-		}
+	// Only export move mapping that relate to nodes that were actually
+	// exported from staging. We do not want to export intermediate moves.
+	if _, ok := exported[inode]; !ok {
+		return nil
+	}
 
-		data, err := lkr.kv.Get(key...)
-		if err != nil {
-			return err
-		}
+	data, err := lkr.kv.Get(key...)
+	if err != nil {
+		return err
+	}
 
-		dstNode, moveDirection, err := lkr.parseMoveMappingLine(string(data))
-		if err != nil {
-			return err
-		}
+	dstNode, moveDirection, err := lkr.parseMoveMappingLine(string(data))
+	if err != nil {
+		return err
+	}
 
-		if moveDirection == MoveDirDstToSrc {
-			return nil
-		}
+	if moveDirection == MoveDirDstToSrc {
+		return nil
+	}
 
-		if dstNode == nil {
-			return fmt.Errorf("Failed to find dest node for commit map: %v", string(data))
-		}
+	if dstNode == nil {
+		return fmt.Errorf("Failed to find dest node for commit map: %v", string(data))
+	}
 
-		srcNode, err := lkr.NodeByInode(inode)
-		if err != nil {
-			return err
-		}
+	srcNode, err := lkr.NodeByInode(inode)
+	if err != nil {
+		return err
+	}
 
-		if srcNode == nil {
-			return fmt.Errorf("Failed to find source node for commit map: %d", inode)
-		}
+	if srcNode == nil {
+		return fmt.Errorf("Failed to find source node for commit map: %d", inode)
+	}
 
-		// Write a bidirectional mapping for this node:
-		dstB58 := dstNode.Hash().B58String()
-		srcB58 := srcNode.Hash().B58String()
+	// Write a bidirectional mapping for this node:
+	dstB58 := dstNode.Hash().B58String()
+	srcB58 := srcNode.Hash().B58String()
 
-		forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
-		batch.Put(
-			[]byte(forwardLine),
-			"moves", status.Hash().B58String(), srcB58,
-		)
+	forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
+	batch.Put(
+		[]byte(forwardLine),
+		"moves", status.Hash().B58String(), srcB58,
+	)
 
-		batch.Put(
-			[]byte(forwardLine),
-			"moves", "overlay", srcB58,
-		)
+	batch.Put(
+		[]byte(forwardLine),
+		"moves", "overlay", srcB58,
+	)
 
-		reverseLine := fmt.Sprintf(
-			"%s hash %s",
-			moveDirection.Invert(),
-			srcB58,
-		)
+	reverseLine := fmt.Sprintf(
+		"%s hash %s",
+		moveDirection.Invert(),
+		srcB58,
+	)
 
-		batch.Put(
-			[]byte(reverseLine),
-			"moves", status.Hash().B58String(), dstB58,
-		)
+	batch.Put(
+		[]byte(reverseLine),
+		"moves", status.Hash().B58String(), dstB58,
+	)
 
-		batch.Put(
-			[]byte(reverseLine),
-			"moves", "overlay", dstB58,
-		)
+	batch.Put(
+		[]byte(reverseLine),
+		"moves", "overlay", dstB58,
+	)
 
-		// We need to verify that all ghosts will be copied out from staging.
-		// In some special cases, not all used ghosts are reachable in
-		// MakeCommit.
-		//
-		// Consider for example this case:
-		//
-		// $ touch x
-		// $ commit
-		// $ move x y
-		// $ touch x
-		// $ commit
-		//
-		// => In the last commit the ghost from the move (x) is overwritten by
-		// a new file and thus will not be reachable anymore. In order to store
-		// the full history of the file we need to also keep this ghost.
-		for _, checkHash := range []string{dstB58, srcB58} {
-			srcKey := []string{"stage", "objects", checkHash}
-			dstKey := []string{"objects", checkHash}
+	// We need to verify that all ghosts will be copied out from staging.
+	// In some special cases, not all used ghosts are reachable in
+	// MakeCommit.
+	//
+	// Consider for example this case:
+	//
+	// $ touch x
+	// $ commit
+	// $ move x y
+	// $ touch x
+	// $ commit
+	//
+	// => In the last commit the ghost from the move (x) is overwritten by
+	// a new file and thus will not be reachable anymore. In order to store
+	// the full history of the file we need to also keep this ghost.
+	for _, checkHash := range []string{dstB58, srcB58} {
+		srcKey := []string{"stage", "objects", checkHash}
+		dstKey := []string{"objects", checkHash}
 
-			_, err = lkr.kv.Get(dstKey...)
-			if err == db.ErrNoSuchKey {
-				err = nil
+		_, err = lkr.kv.Get(dstKey...)
+		if err == db.ErrNoSuchKey {
+			err = nil
 
-				// This part of the move was not reachable, we need to copy it
-				// to the object store additionally.
-				if err := db.CopyKey(lkr.kv, srcKey, dstKey); err != nil {
-					return err
-				}
-			}
-
-			if err != nil {
+			// This part of the move was not reachable, we need to copy it
+			// to the object store additionally.
+			if err := db.CopyKey(lkr.kv, srcKey, dstKey); err != nil {
 				return err
 			}
 		}
 
-		// We already have a bidir mapping for this node, no need to mention
-		// them further.  (would not hurt, but would be duplicated work)
-		delete(exported, srcNode.Inode())
-		delete(exported, dstNode.Inode())
-
-		return nil
+		if err != nil {
+			return err
+		}
 	}
 
-	if err := lkr.kv.Keys(walker, "stage", "moves"); err != nil {
-		batch.Rollback()
-		return err
-	}
+	// We already have a bidir mapping for this node, no need to mention
+	// them further.  (would not hurt, but would be duplicated work)
+	delete(exported, srcNode.Inode())
+	delete(exported, dstNode.Inode())
+	return nil
+}
 
-	return batch.Flush()
+func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+		walker := func(key []string) error {
+			return lkr.commitMoveMappingKey(batch, status, exported, key)
+		}
+
+		return lkr.kv.Keys(walker, "stage", "moves")
+	})
 }
 
 const (

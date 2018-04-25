@@ -1,3 +1,6 @@
+# TODO: Convert this to a go file.
+#       make might not be available on all platforms.
+#       https://github.com/perkeep/perkeep/blob/master/make.go
 VERSION_IMPORT="github.com/sahib/brig/version"
 
 # Build metadata:
