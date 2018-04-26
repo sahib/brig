@@ -1,10 +1,12 @@
 0. Preparation
 ==============
 
-- Windows: Chrome (empty, private), Monitor, Terminal (docker, hovercraft), Terminal (empty)
+- Windows: Chrome Incognito (slides, presenter console), Monitor Settings, Terminal (docker, ipfs, hovercraft), Terminal (empty)
 
 -----
 
+- setxkbmap us && xmodmap ~/.xmodmaprc
+- check sound.
 - Check that docker is running.
 - Check that no other brig instance is up.
 - Check: /tmp/{repo,mount} is empty.
@@ -21,7 +23,7 @@ Usage is very close to ``git``.
     $ mkdir repo && cd repo
     # Create a new repository in here:
     # Command started einen daemon im Hintergrund!
-    $ brig init sahib@wald.de/laptop
+    $ brig init alice@wonderland.de/laptop
     # Anschaut was brig so angestellt hat:
     $ ls
     # Dann schauen wir mal ob man die Datei ausgeben kann:
@@ -106,14 +108,13 @@ Usage is very close to ``git``.
 7. Discovery & Remotes
 ======================
 
-Vorher docker starten!
-
 .. code-block:: bash
 
+    # bob läuft in einem container auf dem gleichen computer:
     $ bob-brig ls
     $ brig whoami
     # Erst ausführen, dauert etwas:
-    $ brig net locate alice
+    $ brig net locate bob
     $ brig remote add $(bob-brig whoami -f)
     $ bob-brig remote add $(brig whoami -f)
     $ brig remote ls
@@ -125,8 +126,8 @@ Vorher docker starten!
 .. code-block:: bash
 
     $ brig remote ls
-    $ brig diff alice
-    $ brig sync alice
+    $ brig diff bob
+    $ brig sync bob
     $ brig log
     $ brig ls
 
@@ -148,5 +149,7 @@ Vorher docker starten!
 
 .. code-block:: bash
 
-    $ brig bug
+    $ brig <tab>
+    $ brig help stage
     $ brig docs
+    $ brig bug

@@ -35,7 +35,7 @@
         - Unterscheidung: Synchronisieren / Austauschen
         - "sicher" ist schwammig
         - "dezentral" heißt ohne zentralen Server (wie git)
-        - Name: Zweimaster, wendig, leichtgewichtig, verteilt Datenströme.
+    - Name: Zweimaster, wendig, leichtgewichtig, verteilt Datenströme.
 
 ----
 
@@ -298,9 +298,9 @@ Kurz gesagt: Fokus
 ==================
 
 - Balance zwischen Sicherheit und Usability.
-- Effizienz ist nett, aber kein primäter Fokus.
+- Effizienz ist nett, aber kein primärer Fokus.
 - Kompatibilität zu gewohnten Konzepten.
-- Komplexität hinter einem einfachen Interface.
+- Komplexität hinter einfachen Interface.
 
 .. note::
 
@@ -508,6 +508,7 @@ Hilfe? Erwünscht.
     - Was ihr tun wolltet
     - Was ihr eigentlich gemacht/erwartet habt
     - Warum das nicht so ganz funktioniert hat
+    - Bitte dafür ein issue report auf github aufmachen.
 
 Mithilfe via **Experience Reports.**
 
@@ -554,8 +555,8 @@ Letzte Worte
 
 .. note::
 
-    Wenn es noch Fragen gibt, ich bin dann noch ein bisschen da.
-    Sprecht mich ruhig an.
+    Wer Fragen oder Anmerkungen jetzt abgeben will, der möges dies nun tun oder für immer schweigen.
+    Ansonsten könnt ihr mich natürlich auch einfach auf dem Gang ansprechen.
 
     Slides sind online auf der online schedule.
 
