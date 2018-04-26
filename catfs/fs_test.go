@@ -16,6 +16,7 @@ import (
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
+	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -148,11 +149,13 @@ func TestCat(t *testing.T) {
 		rin, err := mio.NewInStream(rinRaw, TestKey, compress.AlgoSnappy)
 		require.Nil(t, err)
 
-		hash, err := fs.bk.Add(rin)
+		backendHash, err := fs.bk.Add(rin)
 		require.Nil(t, err)
 
+		contentHash := h.TestDummy(t, 23)
+
 		// Stage the file manually (without fs.Stage)
-		_, err = c.Stage(fs.lkr, "/x", hash, uint64(len(raw)), TestKey)
+		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, uint64(len(raw)), TestKey)
 		require.Nil(t, err)
 
 		// Cat the file again:

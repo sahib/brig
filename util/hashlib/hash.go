@@ -3,12 +3,13 @@ package hashlib
 import (
 	"bytes"
 	"fmt"
-	"io"
+	"hash"
 	"strconv"
 	"testing"
 
 	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/multiformats/go-multihash"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -204,49 +205,30 @@ func (h Hash) ShortB58() string {
 }
 
 type HashWriter struct {
-	hash Hash
+	hash hash.Hash
 }
 
 func NewHashWriter() *HashWriter {
-	size := multihash.DefaultLengths[multihash.BLAKE2B_MAX]
-	hash, err := multihash.Encode(make([]byte, size), multihash.BLAKE2B_MAX)
+	digest, err := blake2b.New512(nil)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to encode empty hash: %v", err))
+		// New512 can only fail when passing a non-nil key.
+		panic(fmt.Sprintf("failed to create blake2b hash: %v", err))
 	}
 
-	return &HashWriter{hash: hash}
+	return &HashWriter{hash: digest}
 }
 
-func (hw *HashWriter) Hash() Hash {
-	return hw.hash
+func (hw *HashWriter) Finalize() Hash {
+	sum := hw.hash.Sum(nil)
+	hash, err := multihash.Encode(sum, multihash.BLAKE2B_MAX)
+	if err != nil {
+		// If this does not work, there's something serious wrong.
+		panic(fmt.Sprintf("failed to encode final hash: %v", err))
+	}
+
+	return hash
 }
 
 func (hw *HashWriter) Write(buf []byte) (int, error) {
-	if err := hw.hash.Xor(Sum(buf)); err != nil {
-		return 0, err
-	}
-
-	return len(buf), nil
-}
-
-func (hw *HashWriter) ReadFrom(r io.Reader) (int64, error) {
-	buf := make([]byte, 4*1024)
-	read := int64(0)
-
-	for {
-		n, err := r.Read(buf)
-		read += int64(n)
-		if err != nil && err != io.EOF {
-			return read, err
-		}
-
-		// TODO: This can be probably optimized.
-		if err := hw.hash.Xor(Sum(buf[:n])); err != nil {
-			return read, err
-		}
-
-		if err == io.EOF {
-			return read, nil
-		}
-	}
+	return hw.hash.Write(buf)
 }

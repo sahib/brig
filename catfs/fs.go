@@ -692,10 +692,9 @@ func prefixSlash(s string) string {
 // If it exists, it's mod time is being updated to the current time.
 func (fs *FS) Touch(path string) error {
 	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil && !ie.IsNoSuchFileError(err) {
+		fs.mu.Unlock()
 		return err
 	}
 
@@ -703,12 +702,17 @@ func (fs *FS) Touch(path string) error {
 		modNd, ok := nd.(n.ModNode)
 		if !ok {
 			// Probably a ghost node.
+			fs.mu.Unlock()
 			return nil
 		}
 
 		modNd.SetModTime(time.Now())
+		fs.mu.Unlock()
 		return nil
 	}
+
+	// We may not call Stage() with a lock.
+	fs.mu.Unlock()
 
 	// Notthing there, stage an empty file.
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
@@ -753,15 +757,12 @@ func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
 // If `path` already exists, it will be updated.
 func (fs *FS) Stage(path string, r io.Reader) error {
 	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
 	path = prefixSlash(path)
 
 	// See if we already have such a file.
 	// If not we gonna need to generate new key for it
 	// based on the content hash.
 	var oldFile *n.File
-
 	oldNode, err := fs.lkr.LookupNode(path)
 
 	// Check that we're handling the right kind of node.
@@ -770,6 +771,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	if err == nil {
 		switch oldNode.Type() {
 		case n.NodeTypeDirectory:
+			fs.mu.Unlock()
 			return fmt.Errorf("Cannot stage over directory: %v", path)
 		case n.NodeTypeGhost:
 			// Act like there was no such node:
@@ -778,12 +780,14 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 			var ok bool
 			oldFile, ok = oldNode.(*n.File)
 			if !ok {
+				fs.mu.Unlock()
 				return ie.ErrBadNode
 			}
 		}
 	}
 
 	if err != nil && !ie.IsNoSuchFileError(err) {
+		fs.mu.Unlock()
 		return err
 	}
 
@@ -797,11 +801,16 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		// Generate a new key, we do not know this file yet.
 		key = make([]byte, 32)
 		if _, err := io.ReadFull(rand.Reader, key); err != nil {
+			fs.mu.Unlock()
 			return err
 		}
 	} else {
 		key = oldFile.Key()
 	}
+
+	// Unlock the fs lock while adding the stream to the backend.
+	// This is not required for the data integrity of the fs.
+	fs.mu.Unlock()
 
 	// Read a small portion of the file header and use it
 	// to determine what compression algorithm we can use.
@@ -818,10 +827,6 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 
 	log.Debugf("using '%s' compression for file %s", algo, path)
 
-	// Unlock the fs lock while adding the stream to the backend.
-	// This is not required for the data integrity of the fs.
-	fs.mu.Unlock()
-
 	hashWriter := h.NewHashWriter()
 	hashReader := io.TeeReader(prefixR, hashWriter)
 	stream, err := mio.NewInStream(hashReader, key, algo)
@@ -835,8 +840,11 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	}
 
 	// The actual content hash is computed from the plaintext stream.
-	contentHash := hashWriter.Hash()
-	fmt.Println("Computed hash", contentHash.B58String())
+	contentHash := hashWriter.Finalize()
+
+	// Lock it again for the metadata staging:
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
 
 	pinExplicit := false
 	if oldFile != nil {
