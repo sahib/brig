@@ -158,8 +158,8 @@ func (f *File) Copy(inode uint64) ModNode {
 func (f *File) rehash(lkr Linker, newPath string) {
 	oldHash := f.tree.Clone()
 	var contentHash h.Hash
-	if f.Base.backend != nil {
-		contentHash = f.Base.backend.Clone()
+	if f.Base.content != nil {
+		contentHash = f.Base.content.Clone()
 	} else {
 		contentHash = h.EmptyHash.Clone()
 	}

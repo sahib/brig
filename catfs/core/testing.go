@@ -190,8 +190,8 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	}
 
 	file.SetSize(uint64(seed))
-	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
 	file.SetBackend(lkr, h.TestDummy(t, byte(seed)))
+	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
 
 	if err := root.Add(lkr, file); err != nil {
 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)

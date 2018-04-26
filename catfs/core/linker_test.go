@@ -2,7 +2,6 @@ package core
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -445,7 +444,8 @@ func TestIterAll(t *testing.T) {
 
 		x := MustTouch(t, lkr, "/x", 1)
 		MustTouch(t, lkr, "/y", 1)
-		c1 := MustCommit(t, lkr, "first").TreeHash().B58String()
+		first := MustCommit(t, lkr, "first")
+		c1 := first.TreeHash().B58String()
 		MustModify(t, lkr, x, 2)
 
 		status, err := lkr.Status()
@@ -458,10 +458,6 @@ func TestIterAll(t *testing.T) {
 			return nil
 		}))
 
-		fmt.Println("c2", c2)
-		fmt.Println("c1", c1)
-		fmt.Println("c0", c0)
-
 		sort.Slice(results, func(i, j int) bool {
 			// Do not change orderings between commits:
 			if results[i].commit != results[j].commit {
@@ -471,20 +467,19 @@ func TestIterAll(t *testing.T) {
 			return results[i].path < results[j].path
 		})
 
-		// 		expected := []iterResult{
-		// 			{"/", c2},
-		// 			{"/x", c2},
-		// 			{"/y", c2},
-		// 			{"/", c1},
-		// 			{"/x", c1},
-		// 			{"/", c0},
-		// 		}
-		//
-		// for idx, result := range results {
-		// 	fmt.Println(idx, result, expected[idx])
-		// 	// require.Equal(t, result.path, expected[idx].path)
-		// 	// require.Equal(t, result.commit, expected[idx].commit)
-		// }
+		expected := []iterResult{
+			{"/", c2},
+			{"/x", c2},
+			{"/y", c2},
+			{"/", c1},
+			{"/x", c1},
+			{"/", c0},
+		}
+
+		for idx, result := range results {
+			require.Equal(t, result.path, expected[idx].path)
+			require.Equal(t, result.commit, expected[idx].commit)
+		}
 	})
 }
 

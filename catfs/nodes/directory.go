@@ -378,7 +378,6 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 			return err
 		}
 	}
-	fmt.Println("CHILDREN", d.children)
 
 	for name, link := range d.children {
 		child, err := lkr.NodeByHash(link)
