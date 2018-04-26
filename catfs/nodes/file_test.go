@@ -28,7 +28,8 @@ func TestFile(t *testing.T) {
 	file.SetKey([]byte{1, 2, 3})
 	file.SetSize(42)
 	file.SetContent(lkr, []byte{4, 5, 6})
-	hashBeforeUnmarshal := file.Hash().Clone()
+	file.SetBackend(lkr, []byte{7, 8, 9})
+	hashBeforeUnmarshal := file.TreeHash().Clone()
 
 	now := time.Now()
 	file.SetModTime(now)
@@ -69,7 +70,15 @@ func TestFile(t *testing.T) {
 		t.Fatalf("key differs after unmarshal: %v", empty.Key())
 	}
 
-	if !bytes.Equal(empty.Hash(), hashBeforeUnmarshal) {
-		t.Fatalf("hash differs after unmarshal: %v", empty.Hash())
+	if !bytes.Equal(empty.TreeHash(), hashBeforeUnmarshal) {
+		t.Fatalf("tree hash differs after unmarshal: %v", empty.TreeHash())
+	}
+
+	if !bytes.Equal(empty.BackendHash(), []byte{7, 8, 9}) {
+		t.Fatalf("backend hash differs after unmarshal: %v", empty.BackendHash())
+	}
+
+	if !bytes.Equal(empty.ContentHash(), []byte{4, 5, 6}) {
+		t.Fatalf("content hash differs after unmarshal: %v", empty.ContentHash())
 	}
 }

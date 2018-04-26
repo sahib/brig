@@ -22,9 +22,12 @@ type Base struct {
 	user string
 
 	// Hash of this node (might be empty)
-	hash h.Hash
+	tree h.Hash
 
-	// Content hash of this node (might be empty)
+	// Pointer hash to the content in the backend
+	backend h.Hash
+
+	// Content hash of this node
 	content h.Hash
 
 	// Last modification time of this node.
@@ -42,8 +45,9 @@ func (b *Base) copyBase(inode uint64) Base {
 	return Base{
 		name:     b.name,
 		user:     b.user,
-		hash:     b.hash.Clone(),
+		tree:     b.tree.Clone(),
 		content:  b.content.Clone(),
+		backend:  b.backend.Clone(),
 		modTime:  b.modTime,
 		nodeType: b.nodeType,
 		inode:    inode,
@@ -61,14 +65,19 @@ func (b *Base) Name() string {
 	return b.name
 }
 
-// Hash returns the hash of this node.
-func (b *Base) Hash() h.Hash {
-	return b.hash
+// TreeHash returns the hash of this node.
+func (b *Base) TreeHash() h.Hash {
+	return b.tree
 }
 
-// Content returns the content hash of this node.
-func (b *Base) Content() h.Hash {
+// ContentHash returns the content hash of this node.
+func (b *Base) ContentHash() h.Hash {
 	return b.content
+}
+
+// BackendHash returns the backend hash of this node.
+func (b *Base) BackendHash() h.Hash {
+	return b.backend
 }
 
 // Type returns the type of this node.
@@ -98,10 +107,13 @@ func (b *Base) setBaseAttrsToNode(capnode capnp_model.Node) error {
 	if err := capnode.SetModTime(string(modTimeBin)); err != nil {
 		return err
 	}
-	if err := capnode.SetHash(b.hash); err != nil {
+	if err := capnode.SetTreeHash(b.tree); err != nil {
 		return err
 	}
-	if err := capnode.SetContent(b.content); err != nil {
+	if err := capnode.SetContentHash(b.content); err != nil {
+		return err
+	}
+	if err := capnode.SetBackendHash(b.backend); err != nil {
 		return err
 	}
 	if err := capnode.SetName(b.name); err != nil {
@@ -127,12 +139,17 @@ func (b *Base) parseBaseAttrsFromNode(capnode capnp_model.Node) error {
 		return err
 	}
 
-	b.hash, err = capnode.Hash()
+	b.tree, err = capnode.TreeHash()
 	if err != nil {
 		return err
 	}
 
-	b.content, err = capnode.Content()
+	b.content, err = capnode.ContentHash()
+	if err != nil {
+		return err
+	}
+
+	b.backend, err = capnode.BackendHash()
 	if err != nil {
 		return err
 	}
@@ -289,7 +306,7 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 func ContentHash(nd Node) (h.Hash, error) {
 	switch nd.Type() {
 	case NodeTypeDirectory, NodeTypeCommit, NodeTypeFile:
-		return nd.Content(), nil
+		return nd.BackendHash(), nil
 	case NodeTypeGhost:
 		ghost, ok := nd.(*Ghost)
 		if !ok {
@@ -303,14 +320,14 @@ func ContentHash(nd Node) (h.Hash, error) {
 				return nil, err
 			}
 
-			return oldFile.Content(), nil
+			return oldFile.BackendHash(), nil
 		case NodeTypeDirectory:
 			oldDirectory, err := ghost.OldDirectory()
 			if err != nil {
 				return nil, err
 			}
 
-			return oldDirectory.Content(), nil
+			return oldDirectory.BackendHash(), nil
 		}
 	}
 

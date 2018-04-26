@@ -5,7 +5,6 @@ using Go = import "/go.capnp";
 $Go.package("capnp");
 $Go.import("github.com/sahib/brig/model/nodes/capnp");
 
-
 struct Commit $Go.doc("Commit is a set of changes to nodes") {
     # Following attributes will be part of the hash:
     message @0 :Text;
@@ -49,12 +48,12 @@ struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once"
 }
 
 struct Node $Go.doc("Node is a node in the merkle dag of brig") {
-    name    @0 :Text;
-    hash    @1 :Data;
-    modTime @2 :Text;     # Time as ISO8601
-    inode   @3 :UInt64;
-    content @4 :Data;
-    user    @5 :Text;
+    name        @0 :Text;
+    treeHash    @1 :Data;
+    modTime     @2 :Text;     # Time as ISO8601
+    inode       @3 :UInt64;
+    contentHash @4 :Data;
+    user        @5 :Text;
 
     union {
         commit    @6 :Commit;
@@ -63,4 +62,5 @@ struct Node $Go.doc("Node is a node in the merkle dag of brig") {
         ghost     @9 :Ghost;
     }
 
+    backendHash @10 :Data;
 }

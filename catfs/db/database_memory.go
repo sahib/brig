@@ -77,6 +77,10 @@ func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) e
 	return nil
 }
 
+func (mdb *MemoryDatabase) HaveWrites() bool {
+	return true
+}
+
 func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
 	prefixKey := path.Join(prefix...)
 

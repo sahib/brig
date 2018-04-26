@@ -63,8 +63,8 @@ func TestDirectoryBasics(t *testing.T) {
 	}
 
 	if subHash, ok := empty.children["sub"]; ok {
-		if !subHash.Equal(subDir.Hash()) {
-			t.Fatalf("Unmarshaled hash differs (!= sub): %v", subDir.Hash())
+		if !subHash.Equal(subDir.TreeHash()) {
+			t.Fatalf("Unmarshaled hash differs (!= sub): %v", subDir.TreeHash())
 		}
 	} else {
 		t.Fatalf("Root children do not contain sub")

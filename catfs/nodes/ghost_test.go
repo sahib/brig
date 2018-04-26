@@ -18,8 +18,8 @@ func TestGhost(t *testing.T) {
 	lkr.MemSetRoot(root)
 
 	file, err := NewEmptyFile(root, "x.png", "a", 42)
-	file.content = h.TestDummy(t, 2)
-	file.hash = h.TestDummy(t, 3)
+	file.backend = h.TestDummy(t, 2)
+	file.tree = h.TestDummy(t, 3)
 	file.size = 13
 
 	if err != nil {
@@ -37,8 +37,8 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Ghost does not identify itself as ghost: %d", ghost.Type())
 	}
 
-	if !bytes.Equal(ghost.OldNode().Hash(), file.Hash()) {
-		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.Hash(), root.Hash())
+	if !bytes.Equal(ghost.OldNode().TreeHash(), file.TreeHash()) {
+		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.TreeHash(), root.TreeHash())
 	}
 
 	msg, err := ghost.ToCapnp()
@@ -65,8 +65,8 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Ghost path was not unmarshaled: %v", empty.Path())
 	}
 
-	if !bytes.Equal(ghost.OldNode().Hash(), file.Hash()) {
-		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.Hash(), root.Hash())
+	if !bytes.Equal(ghost.OldNode().TreeHash(), file.TreeHash()) {
+		t.Fatalf("Ghost and real hash differ (%v - %v)", ghost.TreeHash(), root.TreeHash())
 	}
 
 	unmarshaledFile, err := ghost.OldFile()
@@ -74,12 +74,12 @@ func TestGhost(t *testing.T) {
 		t.Fatalf("Failed to cast ghost to old file: %v", err)
 	}
 
-	if !unmarshaledFile.Content().Equal(file.Content()) {
-		t.Fatalf("Hash content differs after unmarshal: %v", unmarshaledFile.Content())
+	if !unmarshaledFile.BackendHash().Equal(file.BackendHash()) {
+		t.Fatalf("Hash content differs after unmarshal: %v", unmarshaledFile.BackendHash())
 	}
 
-	if !unmarshaledFile.Hash().Equal(file.Hash()) {
-		t.Fatalf("Hash itself differs after unmarshal: %v", unmarshaledFile.Hash())
+	if !unmarshaledFile.TreeHash().Equal(file.TreeHash()) {
+		t.Fatalf("Hash itself differs after unmarshal: %v", unmarshaledFile.TreeHash())
 	}
 
 	if unmarshaledFile.Inode() != file.Inode() {

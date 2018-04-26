@@ -18,7 +18,7 @@ func checkBasicSrcFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
-	require.Equal(t, xFile.Content(), h.TestDummy(t, 1))
+	require.Equal(t, xFile.BackendHash(), h.TestDummy(t, 1))
 }
 
 ////////
@@ -33,7 +33,7 @@ func checkBasicDstFile(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xFile.Path(), "/x.png")
-	require.Equal(t, xFile.Content(), h.TestDummy(t, 1))
+	require.Equal(t, xFile.BackendHash(), h.TestDummy(t, 1))
 }
 
 ////////
@@ -48,12 +48,12 @@ func checkBasicBothNoConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xSrcFile, err := lkrSrc.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xSrcFile.Path(), "/x.png")
-	require.Equal(t, xSrcFile.Content(), h.TestDummy(t, 1))
+	require.Equal(t, xSrcFile.BackendHash(), h.TestDummy(t, 1))
 
 	xDstFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xDstFile.Path(), "/x.png")
-	require.Equal(t, xDstFile.Content(), h.TestDummy(t, 1))
+	require.Equal(t, xDstFile.BackendHash(), h.TestDummy(t, 1))
 }
 
 ////////
@@ -69,17 +69,17 @@ func checkBasicBothConflict(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	xSrcFile, err := lkrSrc.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xSrcFile.Path(), "/x.png")
-	require.Equal(t, xSrcFile.Content(), h.TestDummy(t, 42))
+	require.Equal(t, xSrcFile.BackendHash(), h.TestDummy(t, 42))
 
 	xDstFile, err := lkrDst.LookupFile("/x.png")
 	require.Nil(t, err)
 	require.Equal(t, xDstFile.Path(), "/x.png")
-	require.Equal(t, xDstFile.Content(), h.TestDummy(t, 23))
+	require.Equal(t, xDstFile.BackendHash(), h.TestDummy(t, 23))
 
 	xConflictFile, err := lkrDst.LookupFile("/x.png.conflict.0")
 	require.Nil(t, err)
 	require.Equal(t, xConflictFile.Path(), "/x.png.conflict.0")
-	require.Equal(t, xConflictFile.Content(), h.TestDummy(t, 42))
+	require.Equal(t, xConflictFile.BackendHash(), h.TestDummy(t, 42))
 }
 
 ////////
@@ -117,13 +117,13 @@ func checkBasicSrcMove(t *testing.T, lkrSrc, lkrDst *c.Linker) {
 	require.Nil(t, err)
 
 	require.Equal(t, xDstGhost.Path(), "/x.png")
-	require.Equal(t, xDstGhost.Content(), h.TestDummy(t, 42))
+	require.Equal(t, xDstGhost.BackendHash(), h.TestDummy(t, 42))
 
 	yDstFile, err := lkrDst.LookupFile("/y.png")
 	require.Nil(t, err)
 
 	require.Equal(t, yDstFile.Path(), "/y.png")
-	require.Equal(t, yDstFile.Content(), h.TestDummy(t, 42))
+	require.Equal(t, yDstFile.BackendHash(), h.TestDummy(t, 42))
 }
 
 ////////
@@ -227,7 +227,7 @@ func TestSyncMergeMarker(t *testing.T) {
 
 		mergeUser, mergeHash := dstHead.MergeMarker()
 		require.Equal(t, mergeUser, "src")
-		require.Equal(t, mergeHash, srcHead.Hash())
+		require.Equal(t, mergeHash, srcHead.TreeHash())
 
 		c.MustTouch(t, lkrSrc, "/a.png", 3)
 		c.MustTouch(t, lkrDst, "/b.png", 4)
@@ -266,7 +266,7 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 
 		mergeUser, mergeHash := dstHead.MergeMarker()
 		require.Equal(t, mergeUser, "src")
-		require.Equal(t, mergeHash, srcHead.Hash())
+		require.Equal(t, mergeHash, srcHead.TreeHash())
 
 		c.MustTouch(t, lkrSrc, "/a.png", 3)
 		c.MustTouch(t, lkrDst, "/a.png", 4)

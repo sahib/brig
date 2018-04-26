@@ -71,7 +71,7 @@ func (g *Ghost) OldDirectory() (*Directory, error) {
 }
 
 func (g *Ghost) String() string {
-	return fmt.Sprintf("<ghost: %s %v>", g.Hash(), g.ModNode)
+	return fmt.Sprintf("<ghost: %s %v>", g.TreeHash(), g.ModNode)
 }
 
 // Path returns the path of the node.
@@ -79,9 +79,9 @@ func (g *Ghost) Path() string {
 	return g.ghostPath
 }
 
-// Hash returns the hash of the node.
-func (g *Ghost) Hash() h.Hash {
-	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.Hash())))
+// TreeHash returns the hash of the node.
+func (g *Ghost) TreeHash() h.Hash {
+	return h.Sum([]byte(fmt.Sprintf("ghost:%s", g.ModNode.TreeHash())))
 }
 
 // Inode returns the inode

@@ -38,7 +38,7 @@ func (hdl *Handle) initStreamIfNeeded() error {
 	}
 
 	// Initialize the stream lazily to avoid I/O on open()
-	rawStream, err := hdl.fs.bk.Cat(hdl.file.Content())
+	rawStream, err := hdl.fs.bk.Cat(hdl.file.BackendHash())
 	if err != nil {
 		return err
 	}

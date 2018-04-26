@@ -8,7 +8,7 @@ import (
 )
 
 func assertNodeExists(t *testing.T, kv db.Database, nd n.Node) {
-	if _, err := kv.Get("stage", "objects", nd.Hash().B58String()); err != nil {
+	if _, err := kv.Get("stage", "objects", nd.TreeHash().B58String()); err != nil {
 		t.Fatalf("Stage object %v does not exist: %v", nd, err)
 	}
 }
@@ -21,7 +21,7 @@ func TestGC(t *testing.T) {
 	killActual := make(map[string]bool)
 
 	gc := NewGarbageCollector(lkr, mdb, func(nd n.Node) bool {
-		killActual[nd.Hash().B58String()] = true
+		killActual[nd.TreeHash().B58String()] = true
 		return true
 	})
 
@@ -30,7 +30,7 @@ func TestGC(t *testing.T) {
 		t.Fatalf("Failed to retrieve the root: %v", root)
 	}
 
-	killExpected[root.Hash().B58String()] = true
+	killExpected[root.TreeHash().B58String()] = true
 
 	sub1, err := n.NewEmptyDirectory(lkr, root, "a", "u", 2)
 	if err != nil {
@@ -41,8 +41,8 @@ func TestGC(t *testing.T) {
 		t.Fatalf("Staging root failed: %v", err)
 	}
 
-	killExpected[root.Hash().B58String()] = true
-	killExpected[sub1.Hash().B58String()] = true
+	killExpected[root.TreeHash().B58String()] = true
+	killExpected[sub1.TreeHash().B58String()] = true
 
 	sub2, err := n.NewEmptyDirectory(lkr, sub1, "b", "u", 3)
 	if err != nil {

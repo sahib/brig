@@ -31,6 +31,9 @@ package core
 // - git add:    StageNode(): Create and Update Nodes.
 // - git status: Status()
 // - git commit: MakeCommit()
+//
+// All write operations are written in one batch or are rolled back
+// on errors.
 
 import (
 	"encoding/binary"
@@ -82,7 +85,7 @@ func NewLinker(kv db.Database) *Linker {
 
 //  MemIndexAdd adds `nd` to the in memory index.
 func (lkr *Linker) MemIndexAdd(nd n.Node) {
-	lkr.index[nd.Hash().B58String()] = nd
+	lkr.index[nd.TreeHash().B58String()] = nd
 	lkr.inodeIndex[nd.Inode()] = nd
 
 	path := nd.Path()
@@ -110,7 +113,7 @@ func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash) {
 // might need to call this function.
 func (lkr *Linker) MemSetRoot(root *n.Directory) {
 	if lkr.root != nil {
-		lkr.MemIndexSwap(root, lkr.root.Hash())
+		lkr.MemIndexSwap(root, lkr.root.TreeHash())
 	} else {
 		lkr.MemIndexAdd(root)
 	}
@@ -121,7 +124,7 @@ func (lkr *Linker) MemSetRoot(root *n.Directory) {
 // MemIndexPurge removes `nd` from the memory index.
 func (lkr *Linker) MemIndexPurge(nd n.Node) {
 	delete(lkr.inodeIndex, nd.Inode())
-	delete(lkr.index, nd.Hash().B58String())
+	delete(lkr.index, nd.TreeHash().B58String())
 	lkr.ptrie.Lookup(nd.Path()).Remove()
 }
 
@@ -199,7 +202,7 @@ func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error
 		}
 
 		for _, content := range contents {
-			if content.Equal(file.Content()) {
+			if content.Equal(file.BackendHash()) {
 				result[content.B58String()] = file
 			}
 		}
@@ -338,7 +341,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 			return err
 		}
 
-		status.SetRoot(root.Hash())
+		status.SetRoot(root.TreeHash())
 		lkr.MemSetRoot(root)
 		return lkr.saveStatus(status)
 	})
@@ -370,11 +373,11 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 		return e.Wrapf(err, "marshal")
 	}
 
-	b58Hash := nd.Hash().B58String()
+	b58Hash := nd.TreeHash().B58String()
 	batch.Put(data, "stage", "objects", b58Hash)
 
 	uidKey := strconv.FormatUint(nd.Inode(), 10)
-	batch.Put([]byte(nd.Hash().B58String()), "inode", uidKey)
+	batch.Put([]byte(nd.TreeHash().B58String()), "inode", uidKey)
 
 	hashPath := []string{"stage", "tree", nd.Path()}
 	if nd.Type() == n.NodeTypeDirectory {
@@ -475,7 +478,7 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 			return err
 		}
 
-		b58Hash := child.Hash().B58String()
+		b58Hash := child.TreeHash().B58String()
 		batch.Put(data, "objects", b58Hash)
 		exportedInodes[child.Inode()] = true
 
@@ -509,7 +512,7 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 		return err
 	}
 
-	statusB58Hash := status.Hash().B58String()
+	statusB58Hash := status.TreeHash().B58String()
 	batch.Put(statusData, "objects", statusB58Hash)
 
 	if err := lkr.SaveRef("HEAD", status); err != nil {
@@ -682,7 +685,7 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 	refname = strings.ToLower(refname)
 	return lkr.AtomicWithBatch(func(batch db.Batch) error {
-		batch.Put([]byte(nd.Hash().B58String()), "refs", refname)
+		batch.Put([]byte(nd.TreeHash().B58String()), "refs", refname)
 		return nil
 	})
 }
@@ -788,7 +791,7 @@ func (lkr *Linker) status(batch db.Batch) (cmt *n.Commit, err error) {
 	if ie.IsErrNoSuchRef(err) {
 		// There probably wasn't a HEAD yet.
 		if root, err := lkr.ResolveDirectory("/"); err == nil && root != nil {
-			rootHash = root.Hash()
+			rootHash = root.TreeHash()
 		} else {
 			// No root directory then. Create a shiny new one and stage it.
 			inode := lkr.NextInode()
@@ -803,7 +806,7 @@ func (lkr *Linker) status(batch db.Batch) (cmt *n.Commit, err error) {
 				return nil, err
 			}
 
-			rootHash = newRoot.Hash()
+			rootHash = newRoot.TreeHash()
 		}
 	} else {
 		if err := cmt.SetParent(lkr, head); err != nil {
@@ -871,7 +874,7 @@ func (lkr *Linker) saveStatus(cmt *n.Commit) error {
 
 		inode := strconv.FormatUint(cmt.Inode(), 10)
 		batch.Put(data, "stage", "STATUS")
-		batch.Put([]byte(cmt.Hash().B58String()), "inode", inode)
+		batch.Put([]byte(cmt.TreeHash().B58String()), "inode", inode)
 		return lkr.SaveRef("CURR", cmt)
 	})
 }
@@ -1253,13 +1256,13 @@ func (lkr *Linker) commitMoveMappingKey(
 	}
 
 	// Write a bidirectional mapping for this node:
-	dstB58 := dstNode.Hash().B58String()
-	srcB58 := srcNode.Hash().B58String()
+	dstB58 := dstNode.TreeHash().B58String()
+	srcB58 := srcNode.TreeHash().B58String()
 
 	forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
 	batch.Put(
 		[]byte(forwardLine),
-		"moves", status.Hash().B58String(), srcB58,
+		"moves", status.TreeHash().B58String(), srcB58,
 	)
 
 	batch.Put(
@@ -1275,7 +1278,7 @@ func (lkr *Linker) commitMoveMappingKey(
 
 	batch.Put(
 		[]byte(reverseLine),
-		"moves", status.Hash().B58String(), dstB58,
+		"moves", status.TreeHash().B58String(), dstB58,
 	)
 
 	batch.Put(
@@ -1392,7 +1395,7 @@ func (lkr *Linker) MoveEntryPoint(nd n.Node) (n.Node, MoveDir, error) {
 	}
 
 	if moveData == nil {
-		moveData, err = lkr.kv.Get("moves", "overlay", nd.Hash().B58String())
+		moveData, err = lkr.kv.Get("moves", "overlay", nd.TreeHash().B58String())
 		if err != nil && err != db.ErrNoSuchKey {
 			return nil, MoveDirUnknown, err
 		}
@@ -1435,7 +1438,7 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 	// Only look into staging if we are actually in the STATUS commit.
 	// The lookups in the stage level are on an inode base. This would
 	// cause jumping around in the history for older commits.
-	if cmt == nil || cmt.Hash().Equal(status.Hash()) {
+	if cmt == nil || cmt.TreeHash().Equal(status.TreeHash()) {
 		inodeKey := strconv.FormatUint(nd.Inode(), 10)
 		moveData, err := lkr.kv.Get("stage", "moves", inodeKey)
 		if err != nil && err != db.ErrNoSuchKey {
@@ -1458,7 +1461,7 @@ func (lkr *Linker) MoveMapping(cmt *n.Commit, nd n.Node) (n.Node, MoveDir, error
 		return nil, MoveDirNone, nil
 	}
 
-	moveData, err := lkr.kv.Get("moves", cmt.Hash().B58String(), nd.Hash().B58String())
+	moveData, err := lkr.kv.Get("moves", cmt.TreeHash().B58String(), nd.TreeHash().B58String())
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, MoveDirUnknown, err
 	}
@@ -1537,7 +1540,7 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 	}
 
 	walker := func(child n.Node) error {
-		if _, ok := visited[child.Hash().B58String()]; ok {
+		if _, ok := visited[child.TreeHash().B58String()]; ok {
 			return n.SkipChild
 		}
 
@@ -1546,7 +1549,7 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 			return ie.ErrBadNode
 		}
 
-		visited[child.Hash().B58String()] = struct{}{}
+		visited[child.TreeHash().B58String()] = struct{}{}
 		if err := fn(modChild, from); err != nil {
 			return err
 		}
@@ -1559,7 +1562,7 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 	}
 
 	// Check if we're already at the lowest commit:
-	if to != nil && from.Hash().Equal(to.Hash()) {
+	if to != nil && from.TreeHash().Equal(to.TreeHash()) {
 		return nil
 	}
 
@@ -1603,14 +1606,19 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 	}()
 
 	if err = fn(batch); err != nil {
+		hadWrites := batch.HaveWrites()
 		batch.Rollback()
 
-		// clearing the mem index will cause it to be read freshly from disk
-		// with the old state. This costs a little performance but saves me
-		// from writing special in-memory rollback logic for now.
-		lkr.MemIndexClear()
+		// Only clear the whole index if something was written.
+		// Also, this prevents the slightly misleading log message below.
+		if hadWrites {
+			// clearing the mem index will cause it to be read freshly from disk
+			// with the old state. This costs a little performance but saves me
+			// from writing special in-memory rollback logic for now.
+			lkr.MemIndexClear()
 
-		log.Warningf("rolled back due to error: %v", err)
+			log.Warningf("rolled back due to error: %v", err)
+		}
 		return err
 	}
 

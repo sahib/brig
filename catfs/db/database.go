@@ -30,6 +30,10 @@ type Batch interface {
 
 	// Rollback will forget all changes without executing them.
 	Rollback()
+
+	// HaveWrites returns true when the batch contains something
+	// we can write to the disk on Flush().
+	HaveWrites() bool
 }
 
 // Database is a key/value store that offers different buckets

@@ -193,7 +193,7 @@ func (rv *resolver) cacheLastCommonMerge() error {
 // be merged, otherwise a user defined conflict strategy has to be applied.
 func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
 	// Nodes with same hashes are no conflicts...
-	if src.Hash().Equal(dst.Hash()) {
+	if src.TreeHash().Equal(dst.TreeHash()) {
 		return false, 0, 0, nil
 	}
 
@@ -215,7 +215,7 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		for dstIdx := 0; dstIdx < len(dstHist) && !commonRootFound; dstIdx++ {
 			srcChange, dstChange := srcHist[srcIdx], dstHist[dstIdx]
 
-			if srcChange.Curr.Content().Equal(dstChange.Curr.Content()) {
+			if srcChange.Curr.ContentHash().Equal(dstChange.Curr.ContentHash()) {
 				srcRoot, dstRoot = srcIdx, dstIdx
 				commonRootFound = true
 			}

@@ -457,7 +457,7 @@ func History(lkr *c.Linker, nd n.ModNode, start, stop *n.Commit) ([]*Change, err
 
 	for walker.Next() {
 		state := walker.State()
-		if stop != nil && state.Head.Hash().Equal(stop.Hash()) {
+		if stop != nil && state.Head.TreeHash().Equal(stop.TreeHash()) {
 			break
 		}
 

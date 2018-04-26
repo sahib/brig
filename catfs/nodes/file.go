@@ -156,15 +156,15 @@ func (f *File) Copy(inode uint64) ModNode {
 }
 
 func (f *File) rehash(lkr Linker, newPath string) {
-	oldHash := f.hash.Clone()
+	oldHash := f.tree.Clone()
 	var contentHash h.Hash
-	if f.Base.content != nil {
-		contentHash = f.Base.content.Clone()
+	if f.Base.backend != nil {
+		contentHash = f.Base.backend.Clone()
 	} else {
 		contentHash = h.EmptyHash.Clone()
 	}
 
-	f.hash = h.Sum([]byte(fmt.Sprintf("%s|%s", newPath, contentHash)))
+	f.tree = h.Sum([]byte(fmt.Sprintf("%s|%s", newPath, contentHash)))
 	lkr.MemIndexSwap(f, oldHash)
 }
 
@@ -184,8 +184,14 @@ func (f *File) SetContent(lkr Linker, content h.Hash) {
 	f.SetModTime(time.Now())
 }
 
+// SetBackend will update the hash of the file (and also the mod time)
+func (f *File) SetBackend(lkr Linker, backend h.Hash) {
+	f.Base.backend = backend
+	f.SetModTime(time.Now())
+}
+
 func (f *File) String() string {
-	return fmt.Sprintf("<file %s:%s:%d>", f.Path(), f.Hash(), f.Inode())
+	return fmt.Sprintf("<file %s:%s:%d>", f.Path(), f.TreeHash(), f.Inode())
 }
 
 // Path will return the absolute path of the file.

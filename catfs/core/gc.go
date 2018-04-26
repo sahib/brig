@@ -38,7 +38,7 @@ func (gc *GarbageCollector) markMoveMap(key []string) error {
 		}
 
 		if node != nil {
-			gc.markMap[node.Hash().B58String()] = struct{}{}
+			gc.markMap[node.TreeHash().B58String()] = struct{}{}
 		}
 
 		return nil
@@ -57,9 +57,9 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 		return err
 	}
 
-	gc.markMap[cmt.Hash().B58String()] = struct{}{}
+	gc.markMap[cmt.TreeHash().B58String()] = struct{}{}
 	err = n.Walk(gc.lkr, root, true, func(child n.Node) error {
-		gc.markMap[child.Hash().B58String()] = struct{}{}
+		gc.markMap[child.TreeHash().B58String()] = struct{}{}
 		return nil
 	})
 
@@ -143,7 +143,7 @@ func (gc *GarbageCollector) findAllMoveLocations(head *n.Commit) ([][]string, er
 		}
 
 		head = parentCmt
-		location := []string{"moves", head.Hash().B58String()}
+		location := []string{"moves", head.TreeHash().B58String()}
 		locations = append(locations, location)
 	}
 

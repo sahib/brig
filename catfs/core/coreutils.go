@@ -348,7 +348,7 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	})
 }
 
-func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte) (file *n.File, err error) {
+func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
 		err = lerr
@@ -393,7 +393,7 @@ func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte
 			log.WithFields(log.Fields{"file": repoPath}).Info("File exists; modifying.")
 			needRemove = true
 
-			if file.Content().Equal(content) {
+			if file.BackendHash().Equal(backendHash) {
 				log.Debugf("Hash was not modified. Not doing any update.")
 				return nil
 			}
@@ -428,14 +428,15 @@ func Stage(lkr *Linker, repoPath string, content h.Hash, size uint64, key []byte
 
 		file.SetSize(size)
 		file.SetModTime(time.Now())
-		file.SetContent(lkr, content)
+		file.SetContent(lkr, contentHash)
+		file.SetBackend(lkr, backendHash)
 		file.SetKey(key)
 		file.SetUser(lkr.owner)
 
 		// Add it again when the hash was changed.
 		log.Debugf(
 			"Adding %s (%v) to %s (%v)",
-			file.Path(), file.Content(), parentDir.Path(), parentDir.Content(),
+			file.Path(), file.BackendHash(), parentDir.Path(), parentDir.BackendHash(),
 		)
 		if err := parentDir.Add(lkr, file); err != nil {
 			return err

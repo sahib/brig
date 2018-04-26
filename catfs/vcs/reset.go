@@ -31,7 +31,7 @@ func findPathAt(lkr *c.Linker, cmt *n.Commit, path string) (string, error) {
 	walker := NewHistoryWalker(lkr, status, nd)
 	for walker.Next() {
 		state := walker.State()
-		if state.Head.Hash().Equal(cmt.Hash()) {
+		if state.Head.TreeHash().Equal(cmt.TreeHash()) {
 			return state.Curr.Path(), nil
 		}
 	}

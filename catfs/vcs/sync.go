@@ -124,7 +124,8 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 
 		srcFile, ok := src.(*n.File)
 		if ok {
-			newDstFile.SetContent(sy.lkrDst, srcFile.Content())
+			newDstFile.SetContent(sy.lkrDst, srcFile.ContentHash())
+			newDstFile.SetBackend(sy.lkrDst, srcFile.BackendHash())
 			newDstFile.SetSize(srcFile.Size())
 			newDstFile.SetKey(srcFile.Key())
 		}
@@ -257,7 +258,8 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		return ie.ErrBadNode
 	}
 
-	dstFile.SetContent(sy.lkrDst, srcFile.Content())
+	dstFile.SetContent(sy.lkrDst, srcFile.ContentHash())
+	dstFile.SetBackend(sy.lkrDst, srcFile.BackendHash())
 	dstFile.SetSize(srcFile.Size())
 	dstFile.SetKey(srcFile.Key())
 
@@ -318,7 +320,7 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 
 			// If something was changed, remember that we merged with src.
 			// This avoids merging conflicting files a second time in the next resolve().
-			if err := lkrDst.SetMergeMarker(srcOwner, srcHead.Hash()); err != nil {
+			if err := lkrDst.SetMergeMarker(srcOwner, srcHead.TreeHash()); err != nil {
 				return err
 			}
 

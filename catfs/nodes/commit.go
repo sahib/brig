@@ -28,7 +28,7 @@ type Commit struct {
 	// Author is the id of the committer.
 	author string
 
-	// TreeHash is the hash of the root node at this point in time
+	// root is the tree hash of the root directory
 	root h.Hash
 
 	// Parent hash (only nil for initial commit)
@@ -175,7 +175,7 @@ func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
 // IsBoxed will return True if the ommit was already boxed
 // (i.e. is a finished commit and no staging commit)
 func (c *Commit) IsBoxed() bool {
-	return c.hash != nil
+	return c.tree != nil
 }
 
 // padHash will take a Hash and pad it's representation to 2048 bytes.
@@ -233,7 +233,7 @@ func (c *Commit) BoxCommit(author string, message string) error {
 	}
 
 	c.message = message
-	c.hash = h.Hash(mh)
+	c.tree = h.Hash(mh)
 	return nil
 }
 
@@ -241,7 +241,7 @@ func (c *Commit) BoxCommit(author string, message string) error {
 func (c *Commit) String() string {
 	return fmt.Sprintf(
 		"<commit %s (%s)>",
-		c.hash.B58String(),
+		c.tree.B58String(),
 		c.message,
 	)
 }
@@ -262,7 +262,7 @@ func (c *Commit) MergeMarker() (string, h.Hash) {
 
 // Name will return the hash of the commit.
 func (c *Commit) Name() string {
-	return c.hash.B58String()
+	return c.tree.B58String()
 }
 
 // Message will return the commit message of this commit
@@ -308,7 +308,7 @@ func (c *Commit) Parent(lkr Linker) (Node, error) {
 
 // SetParent sets the parent of the commit to `nd`.
 func (c *Commit) SetParent(lkr Linker, nd Node) error {
-	c.parent = nd.Hash().Clone()
+	c.parent = nd.TreeHash().Clone()
 	return nil
 }
 

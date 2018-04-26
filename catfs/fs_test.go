@@ -67,7 +67,7 @@ func TestStat(t *testing.T) {
 		require.Equal(t, info.IsDir, false)
 		require.Equal(t, info.Size, uint64(0))
 		require.Equal(t, info.Inode, file.Inode())
-		require.Equal(t, info.Hash, file.Hash())
+		require.Equal(t, info.Hash, file.TreeHash())
 
 		file.SetSize(42)
 		require.Nil(t, fs.lkr.StageNode(file))
@@ -75,7 +75,7 @@ func TestStat(t *testing.T) {
 		info, err = fs.Stat("/sub/x")
 		require.Nil(t, err)
 		require.Equal(t, info.Size, uint64(42))
-		require.Equal(t, info.Hash, file.Hash())
+		require.Equal(t, info.Hash, file.TreeHash())
 
 		info, err = fs.Stat("/sub")
 		require.Nil(t, err)
@@ -94,7 +94,7 @@ func TestLogAndTag(t *testing.T) {
 		for idx := 0; idx < 10; idx++ {
 			_, cmt := c.MustTouchAndCommit(t, fs.lkr, "/x", byte(idx))
 
-			hash := cmt.Hash().B58String()
+			hash := cmt.TreeHash().B58String()
 			if err := fs.Tag(hash, fmt.Sprintf("tag%d", idx)); err != nil {
 				t.Fatalf("Failed to tag %v: %v", hash, err)
 			}
@@ -113,7 +113,7 @@ func TestLogAndTag(t *testing.T) {
 		for idx, entry := range log {
 			ridx := len(cmts) - idx - 1
 			cmt := cmts[ridx]
-			require.Equal(t, entry.Hash, cmt.Hash())
+			require.Equal(t, entry.Hash, cmt.TreeHash())
 
 			msg := fmt.Sprintf("cmt %d", ridx)
 			tags := []string{fmt.Sprintf("tag%d", ridx)}
@@ -601,7 +601,7 @@ func TestHead(t *testing.T) {
 		headCmt, err := fs.lkr.ResolveRef("HEAD")
 		require.Nil(t, err)
 
-		require.Equal(t, headCmt.Hash().B58String(), ref)
+		require.Equal(t, headCmt.TreeHash().B58String(), ref)
 	})
 }
 

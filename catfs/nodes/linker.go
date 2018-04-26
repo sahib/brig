@@ -101,6 +101,6 @@ func (ml *MockLinker) MemIndexSwap(nd Node, oldHash h.Hash) {
 // AddNode will add a node to the memory index.
 // This is not part of the linker interface.
 func (ml *MockLinker) AddNode(nd Node) {
-	ml.hashes[nd.Hash().B58String()] = nd
+	ml.hashes[nd.TreeHash().B58String()] = nd
 	ml.paths[nd.Path()] = nd
 }

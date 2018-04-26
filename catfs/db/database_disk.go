@@ -247,6 +247,10 @@ func (db *DiskDatabase) Erase(key ...string) {
 	delete(db.cache, path.Join(key...))
 }
 
+func (db *DiskDatabase) HaveWrites() bool {
+	return len(db.ops) > 0
+}
+
 func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) error {
 	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(prefix))
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {

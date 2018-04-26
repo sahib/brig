@@ -48,12 +48,6 @@ type Metadatable interface {
 	// (There is no real ownership)
 	User() string
 
-	// Hash returns the hash value of the node.
-	//
-	// It is an error to modify the hash value.
-	// If you need to modify it, you have to make an own copy via .Clone().
-	Hash() h.Hash
-
 	// Size returns the size of the node in bytes.
 	Size() uint64
 
@@ -70,9 +64,20 @@ type Metadatable interface {
 	// not change, even when the content of the node changes.
 	Inode() uint64
 
-	// Content will return the hash of the content of this file/
+	// TreeHash returns the hash value of the node.
+	//
+	// It is an error to modify the hash value.
+	// If you need to modify it, you have to make an own copy via .Clone().
+	TreeHash() h.Hash
+
+	// ContentHash is the actual plain text hash of the node.
+	// This is used for comparing file and directory equality.
+	ContentHash() h.Hash
+
+	// BackendHash returns the hash under which the stored content
+	// can be read from the backend.
 	// It is valid to return nil if the file is empty.
-	Content() h.Hash
+	BackendHash() h.Hash
 }
 
 // Serializable is a thing that can be converted to a capnproto message.

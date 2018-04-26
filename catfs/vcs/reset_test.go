@@ -35,14 +35,14 @@ func TestResetFile(t *testing.T) {
 		}
 
 		c.MustModify(t, lkr, file, 1)
-		oldFileHash := file.Hash().Clone()
+		oldFileHash := file.TreeHash().Clone()
 
 		if err := lkr.MakeCommit(n.AuthorOfStage, "second commit"); err != nil {
 			t.Fatalf("Failed to make second commit: %v", err)
 		}
 
 		c.MustModify(t, lkr, file, 2)
-		headFileHash := file.Hash().Clone()
+		headFileHash := file.TreeHash().Clone()
 
 		if err := lkr.MakeCommit(n.AuthorOfStage, "third commit"); err != nil {
 			t.Fatalf("Failed to make third commit: %v", err)
@@ -69,7 +69,7 @@ func TestResetFile(t *testing.T) {
 			t.Fatalf("Failed to lookup /cat.png post checkout")
 		}
 
-		if !lastVersion.Hash().Equal(oldFileHash) {
+		if !lastVersion.TreeHash().Equal(oldFileHash) {
 			t.Fatalf("Hash of checkout'd file is not from second commit")
 		}
 
@@ -95,10 +95,10 @@ func TestResetFile(t *testing.T) {
 			t.Fatalf("Failed to lookup /cat.png post checkout")
 		}
 
-		if !headVersion.Hash().Equal(headFileHash) {
+		if !headVersion.TreeHash().Equal(headFileHash) {
 			t.Fatalf(
 				"Hash differs between new and head reset: %v != %v",
-				headVersion.Hash(),
+				headVersion.TreeHash(),
 				headFileHash,
 			)
 		}
@@ -143,7 +143,7 @@ func TestResetMovedFile(t *testing.T) {
 
 		require.Equal(t, children[1].Type(), n.NodeType(n.NodeTypeFile))
 		require.Equal(t, children[1].Path(), "/y")
-		require.Equal(t, children[1].Content(), h.TestDummy(t, 1))
+		require.Equal(t, children[1].BackendHash(), h.TestDummy(t, 1))
 
 		subChildren, err := sub.ChildrenSorted(lkr)
 		require.Nil(t, err)

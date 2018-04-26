@@ -713,7 +713,7 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 			)
 		}
 
-		if !setup.commits[idx].Hash().Equal(state.Head.Hash()) {
+		if !setup.commits[idx].TreeHash().Equal(state.Head.TreeHash()) {
 			t.Fatalf("Hash in commit differs")
 		}
 

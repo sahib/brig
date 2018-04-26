@@ -155,7 +155,7 @@ func (ma *Mapper) reportByType(src, dst n.ModNode) error {
 
 	isTypeMismatch = src.Type() != dst.Type()
 
-	if src.Content().Equal(dst.Content()) {
+	if src.ContentHash().Equal(dst.ContentHash()) {
 		// If the files are equal, but the location changed,
 		// the file were moved.
 		if src.Path() != dst.Path() {
@@ -281,7 +281,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 	}
 
 	// Check if we're lucky and the directory hash is equal:
-	if srcCurr.Content().Equal(dstCurr.Content()) {
+	if srcCurr.BackendHash().Equal(dstCurr.BackendHash()) {
 		// Remember that we visited this subtree.
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)

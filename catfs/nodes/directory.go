@@ -37,8 +37,8 @@ func NewEmptyDirectory(
 		Base: Base{
 			inode:    inode,
 			user:     user,
-			hash:     h.Sum([]byte(absPath)),
-			content:  h.EmptyContent.Clone(),
+			tree:     h.Sum([]byte(absPath)),
+			backend:  h.EmptyContent.Clone(),
 			name:     name,
 			nodeType: NodeTypeDirectory,
 			modTime:  time.Now().Truncate(time.Microsecond),
@@ -57,7 +57,7 @@ func NewEmptyDirectory(
 }
 
 func (d *Directory) String() string {
-	return fmt.Sprintf("<dir %s:%s:%d>", d.Path(), d.Hash(), d.Inode())
+	return fmt.Sprintf("<dir %s:%s:%d>", d.Path(), d.TreeHash(), d.Inode())
 }
 
 // ToCapnp converts the directory to an easily serializable capnp message.
@@ -378,6 +378,7 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 			return err
 		}
 	}
+	fmt.Println("CHILDREN", d.children)
 
 	for name, link := range d.children {
 		child, err := lkr.NodeByHash(link)
@@ -408,8 +409,8 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 }
 
 func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {
-	oldHash := d.hash.Clone()
-	if err := d.hash.Xor(hash); err != nil {
+	oldHash := d.tree.Clone()
+	if err := d.tree.Xor(hash); err != nil {
 		return err
 	}
 
@@ -497,12 +498,12 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	nodeSize := nd.Size()
-	nodeHash := nd.Hash()
-	nodeContent := dirContentHash(nd.Content(), len(d.children)+1)
+	nodeHash := nd.TreeHash()
+	nodeContent := dirContentHash(nd.ContentHash(), len(d.children)+1)
 
 	err := d.Up(lkr, func(parent *Directory) error {
 		parent.size += nodeSize
-		if err := parent.content.Xor(nodeContent); err != nil {
+		if err := parent.backend.Xor(nodeContent); err != nil {
 			return err
 		}
 
@@ -527,12 +528,12 @@ func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 		return nil
 	}
 
-	oldHash := d.hash.Clone()
-	if err := d.hash.Xor(h.Sum([]byte(oldPath))); err != nil {
+	oldHash := d.tree.Clone()
+	if err := d.tree.Xor(h.Sum([]byte(oldPath))); err != nil {
 		return err
 	}
 
-	if err := d.hash.Xor(h.Sum([]byte(newPath))); err != nil {
+	if err := d.tree.Xor(h.Sum([]byte(newPath))); err != nil {
 		return err
 	}
 
@@ -600,7 +601,7 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 		if parent, ok := visited[path.Dir(nodePath)]; ok {
 			parentDir := parent.(*Directory)
 			baseName := path.Base(nodePath)
-			parentDir.children[baseName] = node.Hash()
+			parentDir.children[baseName] = node.TreeHash()
 		}
 	}
 
@@ -625,12 +626,12 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 	delete(d.children, name)
 
 	nodeSize := nd.Size()
-	nodeHash := nd.Hash()
-	nodeContent := dirContentHash(nd.Content(), len(d.children))
+	nodeHash := nd.TreeHash()
+	nodeContent := dirContentHash(nd.ContentHash(), len(d.children))
 
 	return d.Up(lkr, func(parent *Directory) error {
 		parent.size -= nodeSize
-		if err := parent.content.Xor(nodeContent); err != nil {
+		if err := parent.backend.Xor(nodeContent); err != nil {
 			return err
 		}
 

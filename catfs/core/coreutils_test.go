@@ -60,7 +60,7 @@ func TestMkdir(t *testing.T) {
 			t.Fatalf("Failed to retrieve root: %v", err)
 		}
 
-		if !dir.Hash().Equal(root.Hash()) {
+		if !dir.TreeHash().Equal(root.TreeHash()) {
 			t.Fatal("Root and mkdir('/') differ!")
 		}
 
@@ -105,8 +105,8 @@ func TestRemove(t *testing.T) {
 			t.Fatalf("Remove failed: %v", err)
 		}
 
-		if !parentDir.Hash().Equal(dir.Hash()) {
-			t.Fatalf("Hash differs on %s and %s", dir.Path(), parentDir.Hash())
+		if !parentDir.TreeHash().Equal(dir.TreeHash()) {
+			t.Fatalf("Hash differs on %s and %s", dir.Path(), parentDir.TreeHash())
 		}
 
 		// Check that a ghost was created for the removed file:
@@ -121,7 +121,7 @@ func TestRemove(t *testing.T) {
 			t.Fatalf("Failed to retrieve old file from ghost: %v", err)
 		}
 
-		if !oldFile.Hash().Equal(file.Hash()) {
+		if !oldFile.TreeHash().Equal(file.TreeHash()) {
 			t.Fatal("Old file and original file hashes differ!")
 		}
 
@@ -146,8 +146,8 @@ func TestRemove(t *testing.T) {
 			t.Fatalf("Ghost node does not look like a ghost: %v", ghost)
 		}
 
-		if !parentDir.Hash().Equal(nestedParentDir.Hash()) {
-			t.Fatalf("Hash differs on %s and %s", nestedParentDir.Path(), parentDir.Hash())
+		if !parentDir.TreeHash().Equal(nestedParentDir.TreeHash()) {
+			t.Fatalf("Hash differs on %s and %s", nestedParentDir.Path(), parentDir.TreeHash())
 		}
 	})
 }
@@ -369,7 +369,7 @@ func TestMoveDirectoryWithChild(t *testing.T) {
 
 		file, err := lkr.LookupFile("/dst/x")
 		require.Nil(t, err)
-		require.Equal(t, h.TestDummy(t, 1), file.Content())
+		require.Equal(t, h.TestDummy(t, 1), file.BackendHash())
 
 		_, err = lkr.LookupGhost("/src")
 		require.Nil(t, err)
@@ -472,20 +472,25 @@ func TestStage(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
 		// Initial stage of the file:
 		key := make([]byte, 32)
-		file, err := Stage(lkr, "/photos/moose.png", h.TestDummy(t, 1), 3, key)
+
+		contentHash1 := h.TestDummy(t, 1)
+		backendHash1 := h.TestDummy(t, 1)
+		file, err := Stage(lkr, "/photos/moose.png", contentHash1, backendHash1, 2, key)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		file, err = Stage(lkr, "/photos/moose.png", h.TestDummy(t, 2), 3, key)
+		contentHash2 := h.TestDummy(t, 2)
+		backendHash2 := h.TestDummy(t, 2)
+		file, err = Stage(lkr, "/photos/moose.png", contentHash2, backendHash2, 3, key)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
-		if !file.Content().Equal(h.TestDummy(t, 2)) {
+		if !file.BackendHash().Equal(h.TestDummy(t, 2)) {
 			t.Fatalf(
 				"File content after update is not what's advertised: %v",
-				file.Hash(),
+				file.TreeHash(),
 			)
 		}
 	})
@@ -569,10 +574,10 @@ func TestCopy(t *testing.T) {
 					t.Fatalf("Dest node does not exist after copy: %v", err)
 				}
 
-				if !newNd.Content().Equal(srcNd.Content()) {
+				if !newNd.BackendHash().Equal(srcNd.BackendHash()) {
 					t.Logf("Content of src and dst differ after copy")
-					t.Logf("WANT: %v", srcNd.Content())
-					t.Logf("GOT : %v", newNd.Content())
+					t.Logf("WANT: %v", srcNd.BackendHash())
+					t.Logf("GOT : %v", newNd.BackendHash())
 					t.Fatalf("Check Copy()")
 				}
 

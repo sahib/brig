@@ -120,12 +120,12 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 
 	var content h.Hash
 	if file, ok := nd.(*n.File); ok {
-		content = file.Content()
+		content = file.ContentHash()
 	}
 
 	return &StatInfo{
 		Path:       nd.Path(),
-		Hash:       nd.Hash().Clone(),
+		Hash:       nd.TreeHash().Clone(),
 		User:       nd.User(),
 		ModTime:    nd.ModTime(),
 		IsDir:      nd.Type() == n.NodeTypeDirectory,
@@ -166,12 +166,12 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 		return true
 	}
 
-	content := file.Content()
+	content := file.BackendHash()
 	log.Infof("unpinning gc'd node %v", content.B58String())
 
 	// This node will not be reachable anymore by brig.
 	// Make sure it is also unpinned to save space.
-	if err := fs.bk.Unpin(file.Content(), true); err != nil {
+	if err := fs.bk.Unpin(file.BackendHash(), true); err != nil {
 		log.Warningf("unpinning attempt failed: %v", err)
 	}
 
@@ -419,7 +419,7 @@ func (fs *FS) pinOp(path string, explicit bool, op func(h.Hash, bool) error) err
 				return ie.ErrBadNode
 			}
 
-			if err := op(file.Content(), explicit); err != nil {
+			if err := op(file.BackendHash(), explicit); err != nil {
 				return err
 			}
 		}
@@ -506,7 +506,7 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 			return nil
 		}
 
-		_, isExplicit, err := fs.bk.IsPinned(nd.Content())
+		_, isExplicit, err := fs.bk.IsPinned(nd.BackendHash())
 		if err != nil {
 			return err
 		}
@@ -515,7 +515,7 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 		if isExplicit {
 			results = append(results, ExplicitPin{
 				Path:   nd.Path(),
-				Commit: cmt.Hash().B58String(),
+				Commit: cmt.TreeHash().B58String(),
 			})
 		}
 
@@ -577,7 +577,7 @@ func (fs *FS) setExplicitPins(doPin bool, prefix, fromRef, toRef string) (int, e
 			pinOp = fs.bk.Pin
 		}
 
-		if err := pinOp(nd.Content(), true); err != nil {
+		if err := pinOp(nd.BackendHash(), true); err != nil {
 			return err
 		}
 
@@ -627,7 +627,7 @@ func (fs *FS) isPinned(nd n.Node) (bool, bool, error) {
 
 			totalCount++
 
-			isPinned, isExplicit, err := fs.bk.IsPinned(file.Content())
+			isPinned, isExplicit, err := fs.bk.IsPinned(file.BackendHash())
 			if err != nil {
 				return err
 			}
@@ -797,25 +797,31 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 
 	log.Debugf("using '%s' compression for file %s", algo, path)
 
-	stream, err := mio.NewInStream(prefixR, key, algo)
+	hashWriter := h.NewHashWriter()
+	hashReader := io.TeeReader(prefixR, hashWriter)
+	stream, err := mio.NewInStream(hashReader, key, algo)
 	if err != nil {
 		return err
 	}
 
-	contentHash, err := fs.bk.Add(stream)
+	backendHash, err := fs.bk.Add(stream)
 	if err != nil {
 		return err
 	}
+
+	// The actual content hash is computed from the plaintext stream.
+	contentHash := hashWriter.Hash()
+	fmt.Println("Computed hash", contentHash.B58String())
 
 	pinExplicit := false
 
 	if oldFile != nil {
-		if oldFile.Content().Equal(contentHash) {
+		if oldFile.BackendHash().Equal(backendHash) {
 			// Nothing changed.
 			return nil
 		}
 
-		_, isExplicit, err := fs.bk.IsPinned(oldFile.Content())
+		_, isExplicit, err := fs.bk.IsPinned(oldFile.BackendHash())
 		if err != nil {
 			return err
 		}
@@ -825,16 +831,16 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		pinExplicit = isExplicit
 
 		// Unpin old content by force.
-		if err := fs.bk.Unpin(oldFile.Content(), true); err != nil {
+		if err := fs.bk.Unpin(oldFile.BackendHash(), true); err != nil {
 			return err
 		}
 	}
 
-	if err := fs.bk.Pin(contentHash, pinExplicit); err != nil {
+	if err := fs.bk.Pin(backendHash, pinExplicit); err != nil {
 		return err
 	}
 
-	_, err = c.Stage(fs.lkr, path, contentHash, sizeAcc.Size(), key)
+	_, err = c.Stage(fs.lkr, path, contentHash, backendHash, sizeAcc.Size(), key)
 	return err
 }
 
@@ -860,14 +866,14 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 
 	// Copy all attributes, since accessing them beyond the lock might be racy.
 	size := file.Size()
-	content := file.Content().Clone()
+	backendHash := file.BackendHash().Clone()
 	key := make([]byte, len(file.Key()))
 	copy(key, file.Key())
 
 	fs.mu.Unlock()
 
 	// NOTE: This part of the code is not locked by fs.mu!
-	rawStream, err := fs.bk.Cat(content)
+	rawStream, err := fs.bk.Cat(backendHash)
 	if err != nil {
 		return nil, err
 	}
@@ -930,7 +936,7 @@ func (fs *FS) Head() (string, error) {
 		return "", err
 	}
 
-	return head.Hash().B58String(), nil
+	return head.TreeHash().B58String(), nil
 }
 
 // History returns all modifications of a node with one entry per commit.
@@ -961,18 +967,18 @@ func (fs *FS) History(path string) ([]Change, error) {
 	entries := []Change{}
 	for _, change := range hist {
 		head := &Commit{
-			Hash: change.Head.Hash().Clone(),
+			Hash: change.Head.TreeHash().Clone(),
 			Msg:  change.Head.Message(),
-			Tags: hashToRef[change.Head.Hash().B58String()],
+			Tags: hashToRef[change.Head.TreeHash().B58String()],
 			Date: change.Head.ModTime(),
 		}
 
 		var next *Commit
 		if change.Next != nil {
 			next = &Commit{
-				Hash: change.Next.Hash().Clone(),
+				Hash: change.Next.TreeHash().Clone(),
 				Msg:  change.Next.Message(),
-				Tags: hashToRef[change.Next.Hash().B58String()],
+				Tags: hashToRef[change.Next.TreeHash().B58String()],
 				Date: change.Next.ModTime(),
 			}
 		}
@@ -1008,8 +1014,8 @@ func (fs *FS) Sync(remote *FS) error {
 			op, opName = fs.bk.Pin, "pin"
 		}
 
-		if err := op(file.Content(), explicit); err != nil {
-			log.Warningf("Failed to %s hash: %v", opName, file.Content())
+		if err := op(file.BackendHash(), explicit); err != nil {
+			log.Warningf("Failed to %s hash: %v", opName, file.BackendHash())
 		}
 	}
 
@@ -1024,12 +1030,12 @@ func (fs *FS) Sync(remote *FS) error {
 		return true
 	}
 	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
-		_, isExplicit, err := fs.bk.IsPinned(oldNd.Content())
+		_, isExplicit, err := fs.bk.IsPinned(oldNd.BackendHash())
 		if err != nil {
 			log.Warnf(
 				"failed to check pin status of old node `%s` (%v)",
 				oldNd.Path(),
-				oldNd.Content(),
+				oldNd.BackendHash(),
 			)
 		}
 
@@ -1127,7 +1133,7 @@ func (fs *FS) buildCommitHashToRefTable() (map[string][]string, error) {
 		}
 
 		if cmt != nil {
-			key := cmt.Hash().B58String()
+			key := cmt.TreeHash().B58String()
 			hashToRef[key] = append(hashToRef[key], name)
 		}
 	}
@@ -1149,9 +1155,9 @@ func (fs *FS) Log() ([]Commit, error) {
 	entries := []Commit{}
 	return entries, c.Log(fs.lkr, func(cmt *n.Commit) error {
 		entries = append(entries, Commit{
-			Hash: cmt.Hash().Clone(),
+			Hash: cmt.TreeHash().Clone(),
 			Msg:  cmt.Message(),
-			Tags: hashToRef[cmt.Hash().B58String()],
+			Tags: hashToRef[cmt.TreeHash().B58String()],
 			Date: cmt.ModTime(),
 		})
 
@@ -1163,7 +1169,7 @@ func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	// If no path is 
+	// If no path is
 	if path == "/" || path == "" {
 		return fs.Checkout(rev, false)
 	}

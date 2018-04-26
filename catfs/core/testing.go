@@ -104,6 +104,7 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
+	file.SetBackend(lkr, h.TestDummy(t, seed))
 	file.SetContent(lkr, h.TestDummy(t, seed))
 
 	if err := parent.Add(lkr, file); err != nil {
@@ -170,7 +171,7 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 }
 
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
-	file, err := Stage(lkr, path, h.TestDummy(t, seed), uint64(seed), nil)
+	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), uint64(seed), nil)
 	if err != nil {
 		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
 	}
@@ -190,6 +191,7 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 
 	file.SetSize(uint64(seed))
 	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
+	file.SetBackend(lkr, h.TestDummy(t, byte(seed)))
 
 	if err := root.Add(lkr, file); err != nil {
 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
