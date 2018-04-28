@@ -10,6 +10,7 @@ import (
 
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
@@ -394,4 +395,52 @@ func TestEncryptedTheSame(t *testing.T) {
 		t.Errorf("\tTwo: %v", encTwo.Bytes())
 		return
 	}
+}
+
+// Test if swapping small parts of the output
+func TestEncryptedByteSwaps(t *testing.T) {
+	data1 := testutil.CreateDummyBuf(2 * defaultMaxBlockSize)
+	data2 := testutil.CreateDummyBuf(2 * defaultMaxBlockSize)
+	data3 := testutil.CreateDummyBuf(2 * defaultMaxBlockSize)
+
+	// Do a small modification in the beginning.
+	data2[0] += 1
+
+	// Do a small modification in the end.
+	data3[2*defaultMaxBlockSize-1] += 1
+
+	// Encrypt all data samples:
+	encBuf1 := &bytes.Buffer{}
+	encBuf2 := &bytes.Buffer{}
+	encBuf3 := &bytes.Buffer{}
+
+	var err error
+	_, err = Encrypt(TestKey, bytes.NewReader(data1), encBuf1)
+	require.Nil(t, err)
+
+	_, err = Encrypt(TestKey, bytes.NewReader(data2), encBuf2)
+	require.Nil(t, err)
+
+	_, err = Encrypt(TestKey, bytes.NewReader(data3), encBuf3)
+	require.Nil(t, err)
+
+	encData1 := encBuf1.Bytes()
+	encData2 := encBuf2.Bytes()
+	encData3 := encBuf3.Bytes()
+
+	// It should be all the same with a one-byte change.
+	require.Equal(t, len(encData1), len(encData2))
+	require.Equal(t, len(encData2), len(encData3))
+
+	// s = full size; m = start of second block
+	s := len(encData1)
+	m := len(encData1)/2 + headerSize
+
+	// Require that only the first block was tainted, other block should be same.
+	require.False(t, bytes.Equal(encData1[0:m], encData2[0:m]))
+	require.True(t, bytes.Equal(encData1[m:s], encData2[m:s]))
+
+	// Require that the last block was tainted, first block should be same
+	require.True(t, bytes.Equal(encData1[0:m], encData3[0:m]))
+	require.False(t, bytes.Equal(encData1[m:s], encData3[m:s]))
 }
