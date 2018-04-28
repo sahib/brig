@@ -52,9 +52,9 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 
 	switch name {
 	case "user.brig.hash":
-		resp = []byte(info.Hash.B58String())
+		resp = []byte(info.TreeHash.B58String())
 	case "user.brig.content":
-		resp = []byte(info.Content.B58String())
+		resp = []byte(info.ContentHash.B58String())
 	case "user.brig.pinned":
 		if info.IsPinned {
 			resp = []byte("yes")

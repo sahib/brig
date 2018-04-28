@@ -65,17 +65,18 @@ type FS struct {
 // StatInfo describes the metadata of a single node.
 // The concept is comparable to the POSIX stat() call.
 type StatInfo struct {
-	Path       string
-	Hash       h.Hash
-	User       string
-	Size       uint64
-	Inode      uint64
-	IsDir      bool
-	Depth      int
-	ModTime    time.Time
-	IsPinned   bool
-	IsExplicit bool
-	Content    h.Hash
+	Path        string
+	TreeHash    h.Hash
+	User        string
+	Size        uint64
+	Inode       uint64
+	IsDir       bool
+	Depth       int
+	ModTime     time.Time
+	IsPinned    bool
+	IsExplicit  bool
+	ContentHash h.Hash
+	BackendHash h.Hash
 }
 
 type DiffPair struct {
@@ -127,17 +128,18 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 	}
 
 	return &StatInfo{
-		Path:       nd.Path(),
-		Hash:       nd.TreeHash().Clone(),
-		User:       nd.User(),
-		ModTime:    nd.ModTime(),
-		IsDir:      nd.Type() == n.NodeTypeDirectory,
-		Inode:      nd.Inode(),
-		Size:       nd.Size(),
-		Depth:      n.Depth(nd),
-		IsPinned:   isPinned,
-		IsExplicit: isExplicit,
-		Content:    content,
+		Path:        nd.Path(),
+		TreeHash:    nd.TreeHash().Clone(),
+		User:        nd.User(),
+		ModTime:     nd.ModTime(),
+		IsDir:       nd.Type() == n.NodeTypeDirectory,
+		Inode:       nd.Inode(),
+		Size:        nd.Size(),
+		Depth:       n.Depth(nd),
+		IsPinned:    isPinned,
+		IsExplicit:  isExplicit,
+		ContentHash: content,
+		BackendHash: nd.BackendHash().Clone(),
 	}
 }
 

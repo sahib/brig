@@ -5,17 +5,18 @@ $Go.package("capnp");
 $Go.import("github.com/sahib/brig/brigd/capnp");
 
 struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
-    path       @0  :Text;
-    hash       @1  :Data;
-    size       @2  :UInt64;
-    inode      @3  :UInt64;
-    isDir      @4  :Bool;
-    depth      @5  :Int32;
-    modTime    @6  :Text;
-    isPinned   @7  :Bool;
-    isExplicit @8  :Bool;
-    content    @9  :Data;
-    user       @10 :Text;
+    path        @0  :Text;
+    treeHash    @1  :Data;
+    size        @2  :UInt64;
+    inode       @3  :UInt64;
+    isDir       @4  :Bool;
+    depth       @5  :Int32;
+    modTime     @6  :Text;
+    isPinned    @7  :Bool;
+    isExplicit  @8  :Bool;
+    contentHash @9  :Data;
+    user        @10 :Text;
+    backendHash @11 :Data;
 }
 
 struct Commit $Go.doc("Single log entry") {

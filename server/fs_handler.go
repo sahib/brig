@@ -30,7 +30,15 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 		return nil, err
 	}
 
-	if err := capInfo.SetHash(info.Hash.Bytes()); err != nil {
+	if err := capInfo.SetTreeHash(info.TreeHash.Bytes()); err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetContentHash(info.ContentHash.Bytes()); err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetBackendHash(info.BackendHash.Bytes()); err != nil {
 		return nil, err
 	}
 
@@ -40,10 +48,6 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	}
 
 	if err := capInfo.SetModTime(string(modTime)); err != nil {
-		return nil, err
-	}
-
-	if err := capInfo.SetContent(info.Content.Bytes()); err != nil {
 		return nil, err
 	}
 

@@ -68,7 +68,7 @@ func TestStat(t *testing.T) {
 		require.Equal(t, info.IsDir, false)
 		require.Equal(t, info.Size, uint64(0))
 		require.Equal(t, info.Inode, file.Inode())
-		require.Equal(t, info.Hash, file.TreeHash())
+		require.Equal(t, info.TreeHash, file.TreeHash())
 
 		file.SetSize(42)
 		require.Nil(t, fs.lkr.StageNode(file))
@@ -76,7 +76,7 @@ func TestStat(t *testing.T) {
 		info, err = fs.Stat("/sub/x")
 		require.Nil(t, err)
 		require.Equal(t, info.Size, uint64(42))
-		require.Equal(t, info.Hash, file.TreeHash())
+		require.Equal(t, info.TreeHash, file.TreeHash())
 
 		info, err = fs.Stat("/sub")
 		require.Nil(t, err)

@@ -11,17 +11,26 @@ import (
 )
 
 type StatInfo struct {
-	Path       string
-	User       string
-	Hash       h.Hash
-	Size       uint64
-	Inode      uint64
-	IsDir      bool
-	Depth      int
-	ModTime    time.Time
-	IsPinned   bool
-	IsExplicit bool
-	Content    h.Hash
+	Path        string
+	User        string
+	Size        uint64
+	Inode       uint64
+	IsDir       bool
+	Depth       int
+	ModTime     time.Time
+	IsPinned    bool
+	IsExplicit  bool
+	TreeHash    h.Hash
+	ContentHash h.Hash
+	BackendHash h.Hash
+}
+
+func convertHash(hashBytes []byte, err error) (h.Hash, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Cast(hashBytes)
 }
 
 func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
@@ -37,22 +46,17 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
-	hashBytes, err := capInfo.Hash()
+	treeHash, err := convertHash(capInfo.TreeHash())
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := h.Cast(hashBytes)
+	contentHash, err := convertHash(capInfo.ContentHash())
 	if err != nil {
 		return nil, err
 	}
 
-	contentBytes, err := capInfo.Content()
-	if err != nil {
-		return nil, err
-	}
-
-	content, err := h.Cast(contentBytes)
+	backendHash, err := convertHash(capInfo.BackendHash())
 	if err != nil {
 		return nil, err
 	}
@@ -68,14 +72,16 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 
 	info.Path = path
 	info.User = user
-	info.Hash = hash
 	info.Size = capInfo.Size()
 	info.Inode = capInfo.Inode()
 	info.IsDir = capInfo.IsDir()
 	info.IsPinned = capInfo.IsPinned()
 	info.IsExplicit = capInfo.IsExplicit()
 	info.Depth = int(capInfo.Depth())
-	info.Content = content
+
+	info.TreeHash = treeHash
+	info.ContentHash = contentHash
+	info.BackendHash = backendHash
 	return info, nil
 }
 

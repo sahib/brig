@@ -40,7 +40,7 @@ func (rp *Repository) GC(backend Backend, aggressive bool) (map[string]map[strin
 
 		subResult := make(map[string]h.Hash)
 		for content, info := range nodeMap {
-			subResult[content] = info.Content
+			subResult[content] = info.ContentHash
 		}
 
 		result[owner] = subResult

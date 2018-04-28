@@ -335,12 +335,13 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	printPair("User", info.User)
 	printPair("Type", nodeType)
 	printPair("Size", fmt.Sprintf("%d bytes", info.Size))
-	printPair("Hash", info.Hash.B58String())
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
-	printPair("Content", info.Content.B58String())
+	printPair("Tree Hash", info.TreeHash.B58String())
+	printPair("Content Hash", info.ContentHash.B58String())
+	printPair("Backend Hash", info.BackendHash.B58String())
 
 	return tabW.Flush()
 }
