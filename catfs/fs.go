@@ -874,8 +874,10 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	if err := fs.bk.Pin(backendHash, pinExplicit); err != nil {
 		return err
 	}
+
 	fs.pinCache.Remember(contentHash, true, pinExplicit)
 
+	// Upsert the node into the metadata index:
 	_, err = c.Stage(fs.lkr, path, contentHash, backendHash, sizeAcc.Size(), key)
 	return err
 }

@@ -75,7 +75,6 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 		}
 
 		if err := pw.Close(); err != nil {
-			// Continue closing the others:
 			log.Warningf("internal close pipe error: %v", err)
 		}
 	}()
