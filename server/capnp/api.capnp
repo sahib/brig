@@ -126,10 +126,9 @@ interface FS {
     garbageCollect    @10  (aggressive :Bool) -> (freed :List(GarbageItem));
     touch             @11  (path :Text);
     exists            @12  (path :Text) -> (exists :Bool);
-    stageFromData     @13  (repoPath :Text) -> (port :Int32);
-    listExplicitPins  @14  (prefix :Text, from :Text, to :Text) -> (pins :List(ExplicitPin));
-    clearExplicitPins @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
-    setExplicitPins   @16  (prefix :Text, from :Text, to :Text) -> (count :Int32);
+    listExplicitPins  @13  (prefix :Text, from :Text, to :Text) -> (pins :List(ExplicitPin));
+    clearExplicitPins @14  (prefix :Text, from :Text, to :Text) -> (count :Int32);
+    setExplicitPins   @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
 }
 
 interface VCS {

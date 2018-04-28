@@ -757,7 +757,7 @@ func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
 
 // Stage reads all data from `r` and stores as content of the node at `path`.
 // If `path` already exists, it will be updated.
-func (fs *FS) Stage(path string, r io.Reader) error {
+func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 	path = prefixSlash(path)
 

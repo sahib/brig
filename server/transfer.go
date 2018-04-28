@@ -65,33 +65,3 @@ func bootTransferServer(fs *catfs.FS, bindHost, path string) (int, error) {
 
 	return port, nil
 }
-
-func bootReceiveServer(bindHost string, fn func(conn net.Conn) error) (int, error) {
-	port, err := getNextFreePort()
-	if err != nil {
-		return -1, err
-	}
-
-	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindHost, port))
-	if err != nil {
-		return -1, err
-	}
-
-	go func() {
-		defer lst.Close()
-
-		conn, err := lst.Accept()
-		if err != nil {
-			log.Warningf("Failed to accept connection on %d: %v", port, err)
-			return
-		}
-
-		defer conn.Close()
-
-		if err := fn(conn); err != nil {
-			log.Debugf("handling of data at port %d failed: %v", port, err)
-		}
-	}()
-
-	return port, nil
-}

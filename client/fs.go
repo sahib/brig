@@ -300,31 +300,6 @@ func (cl *Client) Exists(path string) (bool, error) {
 	return result.Exists(), nil
 }
 
-func (cl *Client) StageFromData(path string, r io.Reader) error {
-	call := cl.api.StageFromData(cl.ctx, func(p capnp.FS_stageFromData_Params) error {
-		return p.SetRepoPath(path)
-	})
-
-	result, err := call.Struct()
-	if err != nil {
-		return err
-	}
-
-	port := result.Port()
-	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
-	if err != nil {
-		return err
-	}
-
-	defer conn.Close()
-
-	if _, err := io.Copy(conn, r); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type ExplicitPin struct {
 	Path   string
 	Commit string

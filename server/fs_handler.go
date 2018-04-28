@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/sahib/brig/catfs"
@@ -128,28 +127,6 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 
 		return fs.Stage(url.Path, fd)
 	})
-}
-
-func (fh *fsHandler) StageFromData(call capnp.FS_stageFromData) error {
-	server.Ack(call.Options)
-
-	repoPath, err := call.Params.RepoPath()
-	if err != nil {
-		return err
-	}
-
-	port, err := bootReceiveServer(fh.base.bindHost, func(conn net.Conn) error {
-		return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
-			return fs.Stage(url.Path, conn)
-		})
-	})
-
-	if err != nil {
-		return err
-	}
-
-	call.Results.SetPort(int32(port))
-	return nil
 }
 
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {

@@ -32,10 +32,25 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if readFromStdin {
-		return ctl.StageFromData(repoPath, os.Stdin)
+		tmpFd, err := ioutil.TempFile("", "-brig.stdin.buffer")
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(tmpFd, os.Stdin); err != nil {
+			tmpFd.Close()
+			return err
+		}
+
+		if err := tmpFd.Close(); err != nil {
+			return err
+		}
+
+		repoPath = ctx.Args().Get(0)
+		localPath = tmpFd.Name()
 	}
 
-	absLocalPath, err := filepath.Abs(ctx.Args().Get(0))
+	absLocalPath, err := filepath.Abs(localPath)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve absolute path: %v", err)
 	}
