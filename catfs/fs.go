@@ -2,7 +2,7 @@ package catfs
 
 import (
 	"bytes"
-	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -755,6 +755,84 @@ func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
 	return headerBuf, util.PrefixReader(headerBuf, r), nil
 }
 
+func (fs *FS) computePreconditions(path string, rs io.ReadSeeker) (h.Hash, uint64, compress.AlgorithmType, error) {
+	// Save a little header of the things we read,
+	// but avoid reading it twice.
+	headerBuf, pr, err := peekHeader(rs)
+	if err != nil {
+		return nil, 0, compress.AlgoNone, err
+	}
+
+	hashWriter := h.NewHashWriter()
+	hashReader := io.TeeReader(pr, hashWriter)
+
+	sizeAcc := &util.SizeAccumulator{}
+	sizeReader := io.TeeReader(hashReader, sizeAcc)
+
+	if _, err := io.Copy(ioutil.Discard, sizeReader); err != nil {
+		return nil, 0, compress.AlgoNone, err
+	}
+
+	// Go back to the beginning of the file:
+	if _, err := rs.Seek(0, io.SeekStart); err != nil {
+		return nil, 0, compress.AlgoNone, err
+	}
+
+	algo, err := compress.GuessAlgorithm(path, headerBuf)
+	if err != nil {
+		algo = fs.cfg.compressAlgo
+		log.Warningf("failed to guess suitable zip algo: %v", err)
+	}
+
+	log.Debugf("using '%s' compression for file %s", algo, path)
+
+	contentHash := hashWriter.Finalize()
+	size := sizeAcc.Size()
+	return contentHash, size, algo, nil
+}
+
+func deriveKeyFromContent(content h.Hash, size uint64) []byte {
+	salt := make([]byte, 8)
+	binary.LittleEndian.PutUint64(salt, size)
+	return util.DeriveKey(content, salt, 32)
+}
+
+func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
+	pinExplicit := false
+	oldBackendHash := oldFile.BackendHash()
+
+	if oldFile != nil {
+		if oldBackendHash.Equal(backendHash) {
+			// Nothing changed, nothing to do...
+			return nil
+		}
+
+		_, isExplicit, err := fs.isPinned(oldFile)
+		if err != nil {
+			return err
+		}
+
+		// If the old file was pinned explicitly, we should also pin
+		// the new file explicitly to carry over that info.
+		pinExplicit = isExplicit
+
+		if !isExplicit {
+			if err := fs.bk.Unpin(oldBackendHash, true); err != nil {
+				return err
+			}
+
+			fs.pinCache.Remember(oldBackendHash, false, false)
+		}
+	}
+
+	if err := fs.bk.Pin(backendHash, pinExplicit); err != nil {
+		return err
+	}
+
+	fs.pinCache.Remember(backendHash, true, pinExplicit)
+	return nil
+}
+
 // Stage reads all data from `r` and stores as content of the node at `path`.
 // If `path` already exists, it will be updated.
 func (fs *FS) Stage(path string, r io.ReadSeeker) error {
@@ -793,45 +871,34 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		return err
 	}
 
-	// Get the size directly from the number of bytes written
-	// to the backend and do not rely on external sources.
-	sizeAcc := &util.SizeAccumulator{}
-	sizeR := io.TeeReader(r, sizeAcc)
-
-	var key []byte
-	if oldFile == nil {
-		// Generate a new key, we do not know this file yet.
-		key = make([]byte, 32)
-		if _, err := io.ReadFull(rand.Reader, key); err != nil {
-			fs.mu.Unlock()
-			return err
-		}
-	} else {
-		key = oldFile.Key()
-	}
+	// Copy self, so we do not need to fear race conditions below.
+	oldFileCopy := oldFile.Copy(oldFile.Inode()).(*n.File)
 
 	// Unlock the fs lock while adding the stream to the backend.
 	// This is not required for the data integrity of the fs.
 	fs.mu.Unlock()
 
-	// Read a small portion of the file header and use it
-	// to determine what compression algorithm we can use.
-	headerBuf, prefixR, err := peekHeader(sizeR)
+	contentHash, size, compressAlgo, err := fs.computePreconditions(path, r)
 	if err != nil {
 		return err
 	}
 
-	algo, err := compress.GuessAlgorithm(path, headerBuf)
-	if err != nil {
-		algo = fs.cfg.compressAlgo
-		log.Warningf("failed to guess suitable zip algo: %v", err)
+	var key []byte
+	if oldFileCopy == nil {
+		// only create a new key for new files.
+		// The key depends on the content hash and the size.
+		key = deriveKeyFromContent(contentHash, size)
+	} else {
+		if contentHash.Equal(oldFileCopy.ContentHash()) {
+			log.Infof("content of %s did not change; not modifying", path)
+			return nil
+		}
+
+		// Next generations of the same file get the same key.
+		key = oldFileCopy.Key()
 	}
 
-	log.Debugf("using '%s' compression for file %s", algo, path)
-
-	hashWriter := h.NewHashWriter()
-	hashReader := io.TeeReader(prefixR, hashWriter)
-	stream, err := mio.NewInStream(hashReader, key, algo)
+	stream, err := mio.NewInStream(r, key, compressAlgo)
 	if err != nil {
 		return err
 	}
@@ -841,44 +908,16 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		return err
 	}
 
-	// The actual content hash is computed from the plaintext stream.
-	contentHash := hashWriter.Finalize()
-
 	// Lock it again for the metadata staging:
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	pinExplicit := false
-	if oldFile != nil {
-		if oldFile.BackendHash().Equal(backendHash) {
-			// Nothing changed.
-			return nil
-		}
-
-		_, isExplicit, err := fs.isPinned(oldFile)
-		if err != nil {
-			return err
-		}
-
-		// If the old file was pinned explicitly, we should also pin
-		// the new file explicitly to carry over that info.
-		pinExplicit = isExplicit
-
-		// Unpin old content by force.
-		if err := fs.bk.Unpin(oldFile.BackendHash(), true); err != nil {
-			return err
-		}
-		fs.pinCache.Remember(oldFile.BackendHash(), false, false)
-	}
-
-	if err := fs.bk.Pin(backendHash, pinExplicit); err != nil {
+	if err := fs.renewPins(oldFileCopy, backendHash); err != nil {
 		return err
 	}
 
-	fs.pinCache.Remember(contentHash, true, pinExplicit)
-
 	// Upsert the node into the metadata index:
-	_, err = c.Stage(fs.lkr, path, contentHash, backendHash, sizeAcc.Size(), key)
+	_, err = c.Stage(fs.lkr, path, contentHash, backendHash, size, key)
 	return err
 }
 
