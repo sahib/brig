@@ -799,9 +799,9 @@ func deriveKeyFromContent(content h.Hash, size uint64) []byte {
 
 func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
 	pinExplicit := false
-	oldBackendHash := oldFile.BackendHash()
 
 	if oldFile != nil {
+		oldBackendHash := oldFile.BackendHash()
 		if oldBackendHash.Equal(backendHash) {
 			// Nothing changed, nothing to do...
 			return nil
@@ -872,7 +872,10 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	}
 
 	// Copy self, so we do not need to fear race conditions below.
-	oldFileCopy := oldFile.Copy(oldFile.Inode()).(*n.File)
+	var oldFileCopy *n.File
+	if oldFile != nil {
+		oldFileCopy = oldFile.Copy(oldFileCopy.Inode()).(*n.File)
+	}
 
 	// Unlock the fs lock while adding the stream to the backend.
 	// This is not required for the data integrity of the fs.
