@@ -15,7 +15,7 @@ import (
 
 var (
 	TestOffsets      = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
-	TestSizes        = []int64{0, 1, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
+	TestSizes        = []int64{0, 1, 4096, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 	CompressionAlgos = []AlgorithmType{AlgoLZ4}
 )
 
@@ -249,6 +249,50 @@ func TestReadItAllTwice(t *testing.T) {
 			require.Nil(t, err)
 
 			require.Equal(t, readData1, readData2)
+		})
+	}
+}
+
+// fuse will use Seek() to jump to each position.
+// when reading a complete file it will call seek before each read.
+func TestReadFuseLike(t *testing.T) {
+	algo := AlgorithmType(AlgoNone)
+
+	for _, size := range TestSizes {
+		t.Run(fmt.Sprintf("%v", size), func(t *testing.T) {
+			data := testutil.CreateDummyBuf(size)
+			compressedData, err := Pack(data, algo)
+			require.Nil(t, err)
+
+			r := NewReader(bytes.NewReader(compressedData))
+			bufSize := 4096
+			buf := make([]byte, bufSize)
+
+			offset := int64(0)
+
+			for {
+				seekOffset, err := r.Seek(offset, io.SeekStart)
+				if err != io.EOF {
+					require.Nil(t, err)
+					require.Equal(t, offset, seekOffset)
+				}
+
+				n, err := r.Read(buf)
+				if err != io.EOF {
+					require.Nil(t, err)
+				}
+
+				// check that n returns something that makes sense:
+				require.Equal(t, n, util.Min(bufSize, len(data)-int(offset)))
+				require.Equal(t, data[offset:offset+int64(n)], buf[:n])
+
+				offset += int64(n)
+
+				// If this test goes into an endless loop: that's why.
+				if err == io.EOF {
+					break
+				}
+			}
 		})
 	}
 }

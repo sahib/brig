@@ -61,7 +61,7 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 		"guessed `%s` mime for `%s` (compressible: %v)",
 		mime,
 		path,
-		isCompressible,
+		compressible,
 	)
 
 	if !compressible {

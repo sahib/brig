@@ -90,9 +90,13 @@ func checkForCorrectFile(t *testing.T, path string, data []byte) {
 	}
 
 	if !bytes.Equal(helloBuffer.Bytes(), data) {
-		t.Errorf("Data from simple file does not match source. Len: %d", len(data))
-		t.Errorf("\tExpected: %v", data)
-		t.Fatalf("\tGot:      %v", helloBuffer.Bytes())
+		t.Errorf(
+			"Data from simple file does not match source. Len: %d %d",
+			len(data),
+			helloBuffer.Len(),
+		)
+
+		require.Equal(t, data, helloBuffer.Bytes())
 	}
 }
 
@@ -106,17 +110,19 @@ var (
 func TestRead(t *testing.T) {
 	withMount(t, func(mount *Mount) {
 		for _, size := range DataSizes {
-			helloData := testutil.CreateDummyBuf(size)
+			t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
+				helloData := testutil.CreateDummyBuf(size)
 
-			// Add a simple file:
-			name := fmt.Sprintf("hello_%d", size)
-			reader := bytes.NewReader(helloData)
-			if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
-				t.Fatalf("Adding simple file from reader failed: %v", err)
-			}
+				// Add a simple file:
+				name := fmt.Sprintf("hello_%d", size)
+				reader := bytes.NewReader(helloData)
+				if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
+					t.Fatalf("Adding simple file from reader failed: %v", err)
+				}
 
-			path := filepath.Join(mount.Dir, name)
-			checkForCorrectFile(t, path, helloData)
+				path := filepath.Join(mount.Dir, name)
+				checkForCorrectFile(t, path, helloData)
+			})
 		}
 	})
 }
