@@ -38,7 +38,8 @@ func NewEmptyDirectory(
 			inode:    inode,
 			user:     user,
 			tree:     h.Sum([]byte(absPath)),
-			backend:  h.EmptyContent.Clone(),
+			content:  h.EmptyBackendHash.Clone(),
+			backend:  h.EmptyHash.Clone(),
 			name:     name,
 			nodeType: NodeTypeDirectory,
 			modTime:  time.Now().Truncate(time.Microsecond),
@@ -502,7 +503,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	err := d.Up(lkr, func(parent *Directory) error {
 		parent.size += nodeSize
-		if err := parent.backend.Xor(nodeContent); err != nil {
+		if err := parent.content.Xor(nodeContent); err != nil {
 			return err
 		}
 
@@ -630,7 +631,7 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 
 	return d.Up(lkr, func(parent *Directory) error {
 		parent.size -= nodeSize
-		if err := parent.backend.Xor(nodeContent); err != nil {
+		if err := parent.content.Xor(nodeContent); err != nil {
 			return err
 		}
 

@@ -57,17 +57,19 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		return 0, io.EOF
 	}
 
-	// Skip the header for seeking:
-	// destOff += headerSize
+	destRecord, _ := r.chunkLookup(destOff, true)
+	toRead := destOff - destRecord.rawOff
 
-	// Check if given raw offset equals current offset.
+	// Optimization: save one lookup if the offset are already the same:
 	if r.zipSeekOffset == destOff {
+		if _, err := r.chunkBuf.Seek(toRead, io.SeekStart); err != nil {
+			return 0, err
+		}
+
 		return destOff, nil
 	}
 
-	destRecord, _ := r.chunkLookup(destOff, true)
 	currRecord, _ := r.chunkLookup(r.zipSeekOffset, true)
-
 	r.rawSeekOffset = destRecord.zipOff
 	r.zipSeekOffset = destOff
 
@@ -78,10 +80,10 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		}
 	}
 
-	toRead := destOff - destRecord.rawOff
 	if _, err := r.chunkBuf.Seek(toRead, io.SeekStart); err != nil {
 		return 0, err
 	}
+
 	return destOff, nil
 }
 
@@ -234,6 +236,7 @@ func (r *reader) Read(p []byte) (int, error) {
 			if err != nil {
 				return n, err
 			}
+
 			r.zipSeekOffset += int64(n)
 			read += n
 			p = p[n:]

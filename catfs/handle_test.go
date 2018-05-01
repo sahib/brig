@@ -42,17 +42,13 @@ func TestOpenWrite(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, n, 3)
 
-		pos, err := fd.Seek(0, io.SeekCurrent)
-		require.Nil(t, err)
-		require.Equal(t, pos, int64(3))
-
 		data, err := ioutil.ReadAll(fd)
 		require.Nil(t, err)
-		require.Equal(t, data, rawData[3:])
+		require.Equal(t, rawData[3:], data)
 
 		// Check that we can also seek back to start after reading to the end.
 		// (and also check if the write overlay actually did work)
-		pos, err = fd.Seek(0, io.SeekStart)
+		pos, err := fd.Seek(0, io.SeekStart)
 		require.Nil(t, err)
 		require.Equal(t, pos, int64(0))
 
@@ -212,11 +208,9 @@ func testHandleFuseLikeRead(t *testing.T, fileSize, blockSize int) {
 }
 
 func TestHandleChangeCompression(t *testing.T) {
-	t.Parallel()
-
 	withDummyFS(t, func(fs *FS) {
 		// Create a file which will not be compressed.
-		size := int64(compress.HeaderSizeThreshold + 1)
+		size := int64(compress.HeaderSizeThreshold - 1)
 		oldData := testutil.CreateDummyBuf(size)
 		require.Nil(t, fs.Mkdir("/sub", false))
 		require.Nil(t, fs.Stage("/sub/a-text-file.go", bytes.NewReader(oldData)))
@@ -226,7 +220,7 @@ func TestHandleChangeCompression(t *testing.T) {
 		fd, err := fs.Open("/sub/a-text-file.go")
 		require.Nil(t, err)
 
-		// "echo" does a flush after open (for whatever reason)
+		// "echo(1)" does a flush after open (for whatever reason)
 		require.Nil(t, fd.Flush())
 
 		offset, err := fd.Seek(size, io.SeekStart)

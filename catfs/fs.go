@@ -874,7 +874,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	// Copy self, so we do not need to fear race conditions below.
 	var oldFileCopy *n.File
 	if oldFile != nil {
-		oldFileCopy = oldFile.Copy(oldFileCopy.Inode()).(*n.File)
+		oldFileCopy = oldFile.Copy(oldFile.Inode()).(*n.File)
 	}
 
 	// Unlock the fs lock while adding the stream to the backend.

@@ -227,3 +227,28 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 		return
 	}
 }
+
+func TestReadItAllTwice(t *testing.T) {
+	for algo := range []AlgorithmType{AlgoNone, AlgoLZ4, AlgoSnappy} {
+		t.Run(fmt.Sprintf("%v", algo), func(t *testing.T) {
+			data := testutil.CreateDummyBuf(2 * 4096)
+			zipData, err := Pack(data, AlgoNone)
+			require.Nil(t, err)
+
+			r := bytes.NewReader(zipData)
+			zr := NewReader(r)
+
+			readData1, err := ioutil.ReadAll(zr)
+			require.Nil(t, err)
+
+			n, err := zr.Seek(0, io.SeekStart)
+			require.Nil(t, err)
+			require.Equal(t, n, int64(0))
+
+			readData2, err := ioutil.ReadAll(zr)
+			require.Nil(t, err)
+
+			require.Equal(t, readData1, readData2)
+		})
+	}
+}

@@ -16,16 +16,6 @@ var (
 		"image/bmp",
 		"audio/x-wav",
 	}
-	// Blacklist
-	NotCompressable = []string{
-		"application/ogg",
-		"video",
-		"audio",
-		"image",
-		"zip",
-		"rar",
-		"7z",
-	}
 	// Textfile extensions not covered by mime.TypeByExtension
 	TextFileExtensions = []string{
 		".go",
@@ -60,12 +50,8 @@ func isCompressable(mimetype string) bool {
 			return true
 		}
 	}
-	for _, substr := range NotCompressable {
-		if strings.Contains(mimetype, substr) {
-			return false
-		}
-	}
-	return true
+
+	return false
 }
 
 func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {

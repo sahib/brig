@@ -17,11 +17,11 @@ const (
 )
 
 var (
-	// EmptyHash is the hash of empty data, hashed with the default hash of ipfs.
+	// EmptyHash is a completely zero hash with 512 bits (blake2b compatible)
 	EmptyHash Hash
 
-	// EmptyContent is like EmptyHash, but uses an zero blake2b hash.
-	EmptyContent Hash
+	// EmptyBackendHash is a zero hash with 256 bits (ipfs compatible)
+	EmptyBackendHash Hash
 )
 
 func init() {
@@ -39,7 +39,7 @@ func init() {
 		panic(fmt.Sprintf("Unable to create empty content hash: %v", err))
 	}
 
-	EmptyContent = Hash(hash)
+	EmptyBackendHash = Hash(hash)
 }
 
 // Hash is like multihash.Multihash but also supports serializing to json.
@@ -158,10 +158,15 @@ func (h Hash) Xor(o Hash) error {
 }
 
 func Sum(data []byte) Hash {
-	mh, err := multihash.Sum(
-		data, multihash.BLAKE2B_MAX, multihash.DefaultLengths[multihash.BLAKE2B_MAX],
-	)
+	return sum(data, multihash.BLAKE2B_MAX, multihash.DefaultLengths[multihash.BLAKE2B_MAX])
+}
 
+func SumSHA256(data []byte) Hash {
+	return sum(data, multihash.SHA2_256, multihash.DefaultLengths[multihash.SHA2_256])
+}
+
+func sum(data []byte, code uint64, length int) Hash {
+	mh, err := multihash.Sum(data, code, length)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to calculate basic hash value. Something is wrong: %s", err))
 	}

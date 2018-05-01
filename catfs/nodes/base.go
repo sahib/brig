@@ -306,7 +306,7 @@ func ParentDirectory(lkr Linker, nd Node) (*Directory, error) {
 func ContentHash(nd Node) (h.Hash, error) {
 	switch nd.Type() {
 	case NodeTypeDirectory, NodeTypeCommit, NodeTypeFile:
-		return nd.BackendHash(), nil
+		return nd.ContentHash(), nil
 	case NodeTypeGhost:
 		ghost, ok := nd.(*Ghost)
 		if !ok {
@@ -320,14 +320,14 @@ func ContentHash(nd Node) (h.Hash, error) {
 				return nil, err
 			}
 
-			return oldFile.BackendHash(), nil
+			return oldFile.ContentHash(), nil
 		case NodeTypeDirectory:
 			oldDirectory, err := ghost.OldDirectory()
 			if err != nil {
 				return nil, err
 			}
 
-			return oldDirectory.BackendHash(), nil
+			return oldDirectory.ContentHash(), nil
 		}
 	}
 

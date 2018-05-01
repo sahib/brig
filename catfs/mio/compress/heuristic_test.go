@@ -21,7 +21,7 @@ var (
 		}, {
 			"2.txt",
 			testutil.CreateDummyBuf(HeaderSizeThreshold),
-			AlgoLZ4,
+			AlgoNone,
 		}, {
 			"3.opus",
 			append(

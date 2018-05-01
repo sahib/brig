@@ -146,7 +146,7 @@ func (f *File) Copy(inode uint64) ModNode {
 	}
 
 	var copyKey []byte
-	if copyKey != nil {
+	if f.key != nil {
 		copyKey = make([]byte, len(f.key))
 		copy(copyKey, f.key)
 	}

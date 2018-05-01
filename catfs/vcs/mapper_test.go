@@ -374,8 +374,6 @@ func mapperSetupMoveOnBothSides(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPai
 }
 
 func TestMapper(t *testing.T) {
-	t.Parallel()
-
 	tcs := []struct {
 		name  string
 		setup func(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair
@@ -448,8 +446,6 @@ func TestMapper(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 				expect := tc.setup(t, lkrSrc, lkrDst)
 

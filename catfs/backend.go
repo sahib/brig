@@ -78,7 +78,7 @@ func (mb *MemFsBackend) Add(r io.Reader) (h.Hash, error) {
 		return nil, err
 	}
 
-	hash := h.Sum(data)
+	hash := h.SumSHA256(data)
 	mb.data[hash.B58String()] = data
 	return hash, nil
 }

@@ -281,7 +281,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 	}
 
 	// Check if we're lucky and the directory hash is equal:
-	if srcCurr.BackendHash().Equal(dstCurr.BackendHash()) {
+	if srcCurr.ContentHash().Equal(dstCurr.ContentHash()) {
 		// Remember that we visited this subtree.
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
