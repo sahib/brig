@@ -10,19 +10,13 @@ import (
 )
 
 var (
-	// Whitelist of all known uncompressed formats, that would be filtered out
-	// by the following blacklist
-	Compressable = []string{
-		"image/bmp",
-		"audio/x-wav",
-	}
 	// Textfile extensions not covered by mime.TypeByExtension
-	TextFileExtensions = []string{
-		".go",
-		".json",
-		".yaml",
-		".xml",
-		".txt",
+	TextFileExtensions = map[string]bool{
+		".go":   true,
+		".json": true,
+		".yaml": true,
+		".xml":  true,
+		".txt":  true,
 	}
 )
 
@@ -32,26 +26,27 @@ const (
 )
 
 func guessMime(path string, buf []byte) string {
-	s := mimemagic.Match("", buf)
-	if s == "" {
-		s = mime.TypeByExtension(filepath.Ext(path))
+	// try to guess it from the buffer we pass:
+	match := mimemagic.Match("", buf)
+	if match == "" {
+		// try to guess it from the file path:
+		match = mime.TypeByExtension(filepath.Ext(path))
 	}
-	for _, extension := range TextFileExtensions {
-		if extension == filepath.Ext(path) {
-			return "text/generic"
-		}
+
+	// handle a few edge cases:
+	if TextFileExtensions[filepath.Ext(path)] {
+		return "text/plain"
 	}
-	return s
+
+	return match
 }
 
-func isCompressable(mimetype string) bool {
-	for _, substr := range Compressable {
-		if strings.Contains(mimetype, substr) {
-			return true
-		}
+func isCompressible(mimetype string) bool {
+	if strings.HasPrefix(mimetype, "text/") {
+		return true
 	}
 
-	return false
+	return CompressibleMapping[mimetype]
 }
 
 func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
@@ -60,16 +55,24 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	}
 
 	mime := guessMime(path, header)
-	compressAble := isCompressable(mime)
+	compressible := isCompressible(mime)
 
-	log.Debugf("guessed `%s` mime for `%s`", mime, path)
-	if !compressAble {
+	log.Debugf(
+		"guessed `%s` mime for `%s` (compressible: %v)",
+		mime,
+		path,
+		isCompressible,
+	)
+
+	if !compressible {
 		return AlgoNone, nil
 	}
 
+	// text like files probably deserve some thorough compression:
 	if strings.HasPrefix(mime, "text/") {
 		return AlgoLZ4, nil
 	}
 
+	// fallback to snappy for generic files:
 	return AlgoSnappy, nil
 }
