@@ -274,14 +274,14 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 		diff, err := MakeDiff(lkrSrc, lkrDst, nil, nil, nil)
 		require.Nil(t, err)
 
+		require.Len(t, diff.Merged, 1)
+		require.Len(t, diff.Ignored, 1)
+		require.Len(t, diff.Conflict, 1)
+
 		require.Empty(t, diff.Moved)
-		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Missing)
 		require.Empty(t, diff.Added)
 		require.Empty(t, diff.Removed)
-
-		require.Len(t, diff.Merged, 1)
-		require.Len(t, diff.Missing, 1)
-		require.Len(t, diff.Conflict, 1)
 
 		// /x.png should NOT count as conflict, even though
 		// both STILL have a different content (1 vs 2)
@@ -294,6 +294,6 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 		require.Equal(t, diff.Conflict[0].Src.Path(), "/a.png")
 
 		// The previously created conflict file should count as missing.
-		require.Equal(t, diff.Missing[0].Path(), "/x.png.conflict.0")
+		require.Equal(t, diff.Ignored[0].Path(), "/x.png.conflict.0")
 	})
 }
