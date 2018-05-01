@@ -1163,7 +1163,7 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 	}
 
 	for _, nd := range realDiff.Ignored {
-		fakeDiff.Ignored = append(fakeDiff.Added, *fs.nodeToStat(nd))
+		fakeDiff.Ignored = append(fakeDiff.Ignored, *fs.nodeToStat(nd))
 	}
 
 	for _, nd := range realDiff.Removed {

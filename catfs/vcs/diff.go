@@ -64,6 +64,11 @@ func (df *Diff) handleTypeConflict(src, dst n.ModNode) error {
 	return nil
 }
 
+func (df *Diff) handleConflictNode(nd n.ModNode) error {
+	df.Ignored = append(df.Ignored, nd)
+	return nil
+}
+
 func (df *Diff) handleMove(src, dst n.ModNode) error {
 	df.Moved = append(df.Moved, DiffPair{
 		Src:     src,

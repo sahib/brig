@@ -49,6 +49,7 @@ package vcs
 
 import (
 	"fmt"
+	"regexp"
 
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
@@ -56,13 +57,18 @@ import (
 	n "github.com/sahib/brig/catfs/nodes"
 )
 
+var (
+	conflictNodePattern = regexp.MustCompile(`/.*\.conflict\.\d+`)
+)
+
 // executor is the interface that executes the actual action
-// needed to perform the sync (see "phase 4" on top of this file)
+// needed to perform the sync (see "phase 4" in the package doc)
 type executor interface {
 	handleAdd(src n.ModNode) error
 	handleRemove(dst n.ModNode) error
 	handleMissing(dst n.ModNode) error
 	handleMove(src, dst n.ModNode) error
+	handleConflictNode(src n.ModNode) error
 	handleTypeConflict(src, dst n.ModNode) error
 	handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error
 	handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error
@@ -266,9 +272,23 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	return false, srcMask, dstMask, nil
 }
 
+// isConflictNode will return true if the file or directory was created
+// as conflict file in case of merge conflicts.
+func isConflictNode(nd n.Node) bool {
+	return conflictNodePattern.MatchString(nd.Path())
+}
+
 func (rv *resolver) decide(pair MapPair) error {
 	if pair.Src == nil && pair.Dst == nil {
 		return fmt.Errorf("Received completely empty mapping; ignoring")
+	}
+
+	if pair.Src != nil && isConflictNode(pair.Src) {
+		return rv.exec.handleConflictNode(pair.Src)
+	}
+
+	if pair.Dst != nil && isConflictNode(pair.Dst) {
+		return rv.exec.handleConflictNode(pair.Dst)
 	}
 
 	if pair.SrcWasMoved {

@@ -277,6 +277,11 @@ func (sy *syncer) handleTypeConflict(src, dst n.ModNode) error {
 	return nil
 }
 
+func (sy *syncer) handleConflictNode(src n.ModNode) error {
+	// We don't care for files on the other side named "README.conflict.0" e.g.
+	return nil
+}
+
 func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
 	if cfg == nil {
 		cfg = DefaultSyncConfig
