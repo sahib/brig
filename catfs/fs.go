@@ -3,10 +3,10 @@ package catfs
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -59,7 +59,7 @@ type FS struct {
 	cfg *config
 
 	// cache for the isPinned operation
-	pinCache *PinCache
+	pinner *Pinner
 }
 
 // StatInfo describes the metadata of a single node.
@@ -117,7 +117,7 @@ type Change struct {
 /////////////////////
 
 func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
-	isPinned, isExplicit, err := fs.isPinned(nd)
+	isPinned, isExplicit, err := fs.pinner.IsNodePinned(nd)
 	if err != nil {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
@@ -176,10 +176,9 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 
 	// This node will not be reachable anymore by brig.
 	// Make sure it is also unpinned to save space.
-	if err := fs.bk.Unpin(file.BackendHash(), true); err != nil {
+	if err := fs.pinner.Unpin(file.BackendHash(), true); err != nil {
 		log.Warningf("unpinning attempt failed: %v", err)
 	}
-	fs.pinCache.Remember(file.BackendHash(), false, true)
 
 	// Still return true, no need to stop the GC
 	return true
@@ -222,6 +221,12 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 		return nil, err
 	}
 
+	pinCachePath := filepath.Join(dbPath, "pins")
+	pinCache, err := NewPinner(pinCachePath, lkr, backend)
+	if err != nil {
+		return nil, err
+	}
+
 	fs := &FS{
 		kv:        kv,
 		lkr:       lkr,
@@ -229,7 +234,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 		cfg:       vfg,
 		gcControl: make(chan bool),
 		gcTicker:  time.NewTicker(120 * time.Second),
-		pinCache:  NewPinCache(),
+		pinner:    pinCache,
 	}
 
 	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
@@ -258,6 +263,10 @@ func (fs *FS) Close() error {
 	}()
 
 	fs.gcTicker.Stop()
+	if err := fs.pinner.Close(); err != nil {
+		log.Warnf("Failed to close pin cache: %v", err)
+	}
+
 	return fs.kv.Close()
 }
 
@@ -413,35 +422,6 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 // PINNING OPERATIONS //
 ////////////////////////
 
-func (fs *FS) pinOp(path string, isPinned, isExplicit bool) error {
-	nd, err := fs.lkr.LookupNode(path)
-	if err != nil {
-		return err
-	}
-
-	op := fs.bk.Unpin
-	if isPinned {
-		op = fs.bk.Pin
-	}
-
-	return n.Walk(fs.lkr, nd, true, func(child n.Node) error {
-		if child.Type() == n.NodeTypeFile {
-			file, ok := child.(*n.File)
-			if !ok {
-				return ie.ErrBadNode
-			}
-
-			if err := op(file.BackendHash(), isExplicit); err != nil {
-				return err
-			}
-
-			fs.pinCache.Remember(child.BackendHash(), isPinned, isExplicit)
-		}
-
-		return nil
-	})
-}
-
 // preCache makes the backend fetch the data already from the network,
 // even though it might not be needed yet.
 func (fs *FS) preCache(path string) error {
@@ -467,7 +447,12 @@ func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if err := fs.pinOp(path, true, true); err != nil {
+	nd, err := lookupFileOrDir(fs.lkr, path)
+	if err != nil {
+		return err
+	}
+
+	if err := fs.pinner.PinNode(nd, true); err != nil {
 		return err
 	}
 
@@ -481,7 +466,12 @@ func (fs *FS) Unpin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.pinOp(path, false, true)
+	nd, err := lookupFileOrDir(fs.lkr, path)
+	if err != nil {
+		return err
+	}
+
+	return fs.pinner.UnpinNode(nd, true)
 }
 
 type ExplicitPin struct {
@@ -520,7 +510,7 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 			return nil
 		}
 
-		_, isExplicit, err := fs.isPinned(nd)
+		_, isExplicit, err := fs.pinner.IsPinned(nd.BackendHash())
 		if err != nil {
 			return err
 		}
@@ -586,7 +576,13 @@ func (fs *FS) setExplicitPins(doPin bool, prefix, fromRef, toRef string) (int, e
 			return nil
 		}
 
-		if err := fs.pinOp(nd.Path(), true, true); err != nil {
+		if doPin {
+			err = fs.pinner.PinNode(nd, true)
+		} else {
+			err = fs.pinner.UnpinNode(nd, true)
+		}
+
+		if err != nil {
 			return err
 		}
 
@@ -595,9 +591,6 @@ func (fs *FS) setExplicitPins(doPin bool, prefix, fromRef, toRef string) (int, e
 	})
 }
 
-// errNotPinnedSentinel is returned to signal an early exit in Walk()
-var errNotPinnedSentinel = errors.New("not pinned")
-
 // IsPinned returns true for files and directories that are pinned.
 // A directory only counts as pinned if all files and directories
 // in it are also pinned.
@@ -605,77 +598,12 @@ func (fs *FS) IsPinned(path string) (bool, bool, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	nd, err := fs.lkr.LookupNode(path)
+	nd, err := lookupFileOrDir(fs.lkr, path)
 	if err != nil {
 		return false, false, err
 	}
 
-	return fs.isPinned(nd)
-}
-
-// isPinned checks if `nd` is pinned.
-// In case of directories, this returns true, if all files inside are pinned.
-//
-// TODO: This can be slow, since it relies on the backend.
-//       Especially when backend has to check heavily recursive pins,
-//       this gets slow. In this case we should maintain a cache of pins,
-//       to avoid the costly re-calculation of deep directories.
-//       This should alleviate the performance issues with big hierarchies,
-//       and all code that uses e.g. Stat() (== pretty much everything)
-func (fs *FS) isPinned(nd n.Node) (bool, bool, error) {
-	pinCount := 0
-	explicitCount := 0
-	totalCount := 0
-
-	err := n.Walk(fs.lkr, nd, true, func(child n.Node) error {
-		if child.Type() != n.NodeTypeFile {
-			return nil
-		}
-
-		file, ok := child.(*n.File)
-		if !ok {
-			return ie.ErrBadNode
-		}
-
-		totalCount++
-
-		isCached, isPinned, isExplicit := fs.pinCache.Is(file.BackendHash())
-		if !isCached {
-			var err error
-			isPinned, isExplicit, err = fs.bk.IsPinned(file.BackendHash())
-			if err != nil {
-				return err
-			}
-
-			fs.pinCache.Remember(file.BackendHash(), isPinned, isExplicit)
-		}
-
-		if isExplicit {
-			explicitCount++
-		}
-
-		if isPinned {
-			// Make sure that we do not count empty directories
-			// as pinned nodes.
-			pinCount++
-		} else {
-			// Return a special error here to stop Walk() iterating.
-			// One file is enough to stop IsPinned() from being true.
-			return errNotPinnedSentinel
-		}
-
-		return nil
-	})
-
-	if err != nil && err != errNotPinnedSentinel {
-		return false, false, err
-	}
-
-	if err == errNotPinnedSentinel {
-		return false, false, nil
-	}
-
-	return pinCount > 0, explicitCount == totalCount, nil
+	return fs.pinner.IsNodePinned(nd)
 }
 
 ////////////////////////
@@ -807,7 +735,7 @@ func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
 			return nil
 		}
 
-		_, isExplicit, err := fs.isPinned(oldFile)
+		_, isExplicit, err := fs.pinner.IsNodePinned(oldFile)
 		if err != nil {
 			return err
 		}
@@ -817,20 +745,13 @@ func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
 		pinExplicit = isExplicit
 
 		if !isExplicit {
-			if err := fs.bk.Unpin(oldBackendHash, true); err != nil {
+			if err := fs.pinner.Unpin(backendHash, pinExplicit); err != nil {
 				return err
 			}
-
-			fs.pinCache.Remember(oldBackendHash, false, false)
 		}
 	}
 
-	if err := fs.bk.Pin(backendHash, pinExplicit); err != nil {
-		return err
-	}
-
-	fs.pinCache.Remember(backendHash, true, pinExplicit)
-	return nil
+	return fs.pinner.Pin(backendHash, pinExplicit)
 }
 
 // Stage reads all data from `r` and stores as content of the node at `path`.
@@ -1088,14 +1009,16 @@ func (fs *FS) Sync(remote *FS) error {
 			// Non-files are simply ignored.
 			return
 		}
+
+		op := fs.pinner.UnpinNode
 		opName := "unpin"
 		if doPin {
+			op = fs.pinner.PinNode
 			opName = "pin"
 		}
 
-		if err := fs.pinOp(file.Path(), doPin, explicit); err != nil {
+		if err := op(file, explicit); err != nil {
 			log.Warningf("Failed to %s (hash: %v)", opName, file.BackendHash())
-
 		}
 	}
 
@@ -1110,7 +1033,7 @@ func (fs *FS) Sync(remote *FS) error {
 		return true
 	}
 	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
-		_, isExplicit, err := fs.isPinned(oldNd)
+		_, isExplicit, err := fs.pinner.IsNodePinned(oldNd)
 		if err != nil {
 			log.Warnf(
 				"failed to check pin status of old node `%s` (%v)",
@@ -1258,28 +1181,29 @@ func (fs *FS) Reset(path, rev string) error {
 		return err
 	}
 
-	if err := vcs.ResetFile(fs.lkr, cmt, path); err != nil {
-		return err
-	}
-
-	// Cannot (un)pin non-existing file anymore.
-	nd, err := fs.lkr.LookupNode(path)
-	if ie.IsNoSuchFileError(err) {
-		return nil
-	}
-
-	isPinned, _, err := fs.isPinned(nd)
+	oldNode, err := vcs.ResetNode(fs.lkr, cmt, path)
 	if err != nil {
 		return err
 	}
 
-	if isPinned {
-		if err := fs.pinOp(path, false, false); err != nil {
+	// The old node does not necessarily exist:
+	if oldNode != nil {
+		if err := fs.pinner.UnpinNode(oldNode, false); err != nil {
 			return err
 		}
 	}
 
-	return fs.pinOp(path, true, false)
+	// Cannot (un)pin non-existing file anymore.
+	newNode, err := fs.lkr.LookupNode(path)
+	if ie.IsNoSuchFileError(err) {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return fs.pinner.PinNode(newNode, false)
 }
 
 func (fs *FS) Checkout(rev string, force bool) error {

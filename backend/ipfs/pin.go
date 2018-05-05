@@ -1,72 +1,49 @@
 package ipfs
 
 import (
+	"fmt"
 	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
 	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
 
+	core "github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/go-ipfs/path"
+	"github.com/ipfs/go-ipfs/path/resolver"
+	uio "github.com/ipfs/go-ipfs/unixfs/io"
 	h "github.com/sahib/brig/util/hashlib"
-
-	"github.com/ipfs/go-ipfs/pin"
 )
 
-func (nd *Node) Pin(hash h.Hash, explicit bool) error {
+func (nd *Node) Pin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()
 
-	// This is a hack. In order to store implicit pins we use
-	// "recursive" as type, while we use "Direct" for explicit pins.
-	// Since we always use single files and blocks as hashes, there
-	// (should?) is no difference between them.
-	pinMode := pin.Recursive
-	if explicit {
-		pinMode = pin.Direct
+	rslv := &resolver.Resolver{
+		DAG:         nd.ipfsNode.DAG,
+		ResolveOnce: uio.ResolveUnixfsOnce,
 	}
 
-	cid := cid.NewCidV0(mh.Multihash(hash))
-	mode, _, err := nd.ipfsNode.Pinning.IsPinned(cid)
+	p, err := path.ParsePath(hash.B58String())
 	if err != nil {
 		return err
 	}
 
-	switch mode {
-	case "direct", "internal":
-		// It's already explicit.
-		return nil
-	case "indirect", "recursive":
-		if !explicit {
-			// I's pinned implicitly already.
-			return nil
-		}
-
-		// Explicit pin requested, unpin previous implicit.
-		if err := nd.ipfsNode.Pinning.Unpin(nd.ctx, cid, true); err != nil {
-			return err
-		}
+	dagnode, err := core.Resolve(nd.ctx, nd.ipfsNode.Namesys, rslv, p)
+	if err != nil {
+		return fmt.Errorf("pin: %s", err)
 	}
 
-	nd.ipfsNode.Pinning.PinWithMode(cid, pinMode)
+	err = nd.ipfsNode.Pinning.Pin(nd.ctx, dagnode, true)
+	if err != nil {
+		return fmt.Errorf("pin: %s", err)
+	}
+
 	return nd.ipfsNode.Pinning.Flush()
 }
 
-func (nd *Node) Unpin(hash h.Hash, explicit bool) error {
+func (nd *Node) Unpin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()
 
 	cid := cid.NewCidV0(mh.Multihash(hash))
-	mode, _, err := nd.ipfsNode.Pinning.IsPinned(cid)
-	if err != nil {
-		return err
-	}
-
-	switch mode {
-	case "direct", "internal":
-		if !explicit {
-			// Pinned explicit, but no explicit unpin. Keep it.
-			return nil
-		}
-	}
-
-	// Explicit pin requested, unpin previous implicit.
 	if err := nd.ipfsNode.Pinning.Unpin(nd.ctx, cid, true); err != nil {
 		return err
 	}
@@ -74,19 +51,19 @@ func (nd *Node) Unpin(hash h.Hash, explicit bool) error {
 	return nd.ipfsNode.Pinning.Flush()
 }
 
-func (nd *Node) IsPinned(hash h.Hash) (bool, bool, error) {
+func (nd *Node) IsPinned(hash h.Hash) (bool, error) {
 	cid := cid.NewCidV0(mh.Multihash(hash))
 	mode, _, err := nd.ipfsNode.Pinning.IsPinned(cid)
 	if err != nil {
-		return false, false, err
+		return false, err
 	}
 
 	switch mode {
 	case "direct", "internal":
-		return true, true, nil
+		return true, nil
 	case "indirect", "recursive":
-		return true, false, nil
+		return true, nil
 	default:
-		return false, false, nil
+		return false, nil
 	}
 }

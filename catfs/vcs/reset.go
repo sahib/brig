@@ -87,7 +87,7 @@ func clearPath(lkr *c.Linker, ndPath string) (*n.Directory, error) {
 	return par, lkr.StageNode(par)
 }
 
-// ResetFile resets a certain file to the state it had in cmt. If the file
+// ResetNode resets a certain file to the state it had in cmt. If the file
 // did not exist back then, it will be deleted. `nd` is usually retrieved by
 // calling ResolveNode() and sorts.
 //
@@ -98,30 +98,31 @@ func clearPath(lkr *c.Linker, ndPath string) (*n.Directory, error) {
 //
 //    $ brig reset HEAD^ i-was-somewhere-else-before   # name does not change.
 //
-func ResetFile(lkr *c.Linker, cmt *n.Commit, currPath string) error {
+// This method returns the old node (or nil if none) and any possible error.
+func ResetNode(lkr *c.Linker, cmt *n.Commit, currPath string) (n.Node, error) {
 	root, err := lkr.DirectoryByHash(cmt.Root())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if root == nil {
-		return errors.New("no root to reset to")
+		return nil, errors.New("no root to reset to")
 	}
 
 	// Find out the old path of `currPath` at `cmt`.
 	// It might have changed due to moves.
 	oldPath, err := findPathAt(lkr, cmt, currPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	oldNode, err := root.Lookup(lkr, oldPath)
 	if err != nil && !ie.IsNoSuchFileError(err) {
-		return err
+		return nil, err
 	}
 
 	// Make sure that all write related action happen in one go:
-	return lkr.Atomic(func() error {
+	return oldNode, lkr.Atomic(func() error {
 		// Remove the node that is present at the current path:
 		par, err := clearPath(lkr, currPath)
 		if err != nil {
