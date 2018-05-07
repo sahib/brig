@@ -2,7 +2,6 @@ package ipfs
 
 import (
 	"context"
-	"time"
 
 	blocks "gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
 
@@ -10,7 +9,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/net/peer"
-	"github.com/sahib/brig/util"
 	h "github.com/sahib/brig/util/hashlib"
 )
 
@@ -24,33 +22,6 @@ func (nd *Node) addBlock(data []byte) (h.Hash, error) {
 	}
 
 	return h.Hash(block.Cid().Hash()), nil
-}
-
-// catBlock retuns the data stored in the block pointed to by `hash`.
-// It will timeout with util.ErrTimeout if the operation takes too long,
-// this includes querying for an non-existing hash.
-//
-// This operation works offline and online, but if the block is stored
-// elsewhere on the net, node must be online to find the block.
-func (nd *Node) catBlock(hash h.Hash, timeout time.Duration) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(nd.ctx, timeout)
-	defer cancel()
-
-	k, err := cid.Decode(hash.B58String())
-	if err != nil {
-		return nil, err
-	}
-
-	block, err := nd.ipfsNode.Blocks.GetBlock(ctx, k)
-	if err == context.DeadlineExceeded {
-		return nil, util.ErrTimeout
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return block.RawData(), nil
 }
 
 func (nd *Node) PublishName(name string) error {
