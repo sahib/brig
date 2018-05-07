@@ -60,7 +60,7 @@ func TestResetFile(t *testing.T) {
 
 		lastCommit := lastCommitNd.(*n.Commit)
 
-		if err := ResetNode(lkr, lastCommit, "/cat.png"); err != nil {
+		if _, err := ResetNode(lkr, lastCommit, "/cat.png"); err != nil {
 			t.Fatalf("Failed to checkout file before commit: %v", err)
 		}
 
@@ -77,7 +77,7 @@ func TestResetFile(t *testing.T) {
 			t.Fatalf("Size of checkout'd file is not from second commit")
 		}
 
-		if err := ResetNode(lkr, initCmt, "/cat.png"); err != nil {
+		if _, err := ResetNode(lkr, initCmt, "/cat.png"); err != nil {
 			t.Fatalf("Failed to checkout file at init: %v", err)
 		}
 
@@ -86,7 +86,7 @@ func TestResetFile(t *testing.T) {
 			t.Fatalf("Different error: %v", err)
 		}
 
-		if err := ResetNode(lkr, head, "/cat.png"); err != nil {
+		if _, err := ResetNode(lkr, head, "/cat.png"); err != nil {
 			t.Fatalf("Failed to checkout file at head: %v", err)
 		}
 
@@ -129,7 +129,7 @@ func TestResetMovedFile(t *testing.T) {
 		c.MustCommit(t, lkr, "2")
 
 		// This should reset /y to content=1.
-		err := ResetNode(lkr, c1, "/y")
+		_, err := ResetNode(lkr, c1, "/y")
 		require.Nil(t, err)
 
 		root, err := lkr.Root()
