@@ -1,4 +1,4 @@
-This is a goLang port of python-zxcvbn and zxcvbn, which are python and JavaScript password strength
+This is a goLang port of python-zxcvbn and [zxcvbn](https://github.com/dropbox/zxcvbn), which are python and JavaScript password strength
 generators. zxcvbn attempts to give sound password advice through pattern
 matching and conservative entropy calculations. It finds 10k common passwords,
 common American names and surnames, common English words, and common patterns

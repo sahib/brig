@@ -1,10 +1,9 @@
 package matching
 
 import (
-	"strings"
-
 	"github.com/nbutton23/zxcvbn-go/entropy"
 	"github.com/nbutton23/zxcvbn-go/match"
+	"strings"
 )
 
 func buildDictMatcher(dictName string, rankedDict map[string]int) func(password string) []match.Match {
@@ -19,26 +18,27 @@ func buildDictMatcher(dictName string, rankedDict map[string]int) func(password 
 }
 
 func dictionaryMatch(password string, dictionaryName string, rankedDict map[string]int) []match.Match {
-	// length := len(password)
+	length := len(password)
 	var results []match.Match
 	pwLower := strings.ToLower(password)
 
-	// for i := 0; i < 0; i++ {
-	// 	for j := i; j < length; j++ {
-	// word := pwLower
-	if val, ok := rankedDict[pwLower]; ok {
-		matchDic := match.Match{Pattern: "dictionary",
-			DictionaryName: dictionaryName,
-			I:              0,
-			J:              len(pwLower),
-			Token:          pwLower,
-		}
-		matchDic.Entropy = entropy.DictionaryEntropy(matchDic, float64(val))
+	for i := 0; i < length; i++ {
+		for j := i; j < length; j++ {
+			word := pwLower[i : j+1]
+			if val, ok := rankedDict[word]; ok {
+				matchDic := match.Match{Pattern: "dictionary",
+					DictionaryName: dictionaryName,
+					I:              i,
+					J:              j,
+					Token:          password[i : j+1],
+				}
+				matchDic.Entropy = entropy.DictionaryEntropy(matchDic, float64(val))
 
-		results = append(results, matchDic)
+				results = append(results, matchDic)
+			}
+		}
 	}
-	//	}
-	// }
+
 	return results
 }
 

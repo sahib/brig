@@ -1,12 +1,26 @@
 package matching
 
 import (
-	"github.com/nbutton23/zxcvbn-go/entropy"
-	"github.com/nbutton23/zxcvbn-go/match"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/nbutton23/zxcvbn-go/entropy"
+	"github.com/nbutton23/zxcvbn-go/match"
 )
+
+const (
+	DATESEP_MATCHER_NAME        = "DATESEP"
+	DATEWITHOUTSEP_MATCHER_NAME = "DATEWITHOUT"
+)
+
+func FilterDateSepMatcher(m match.Matcher) bool {
+	return m.ID == DATESEP_MATCHER_NAME
+}
+
+func FilterDateWithoutSepMatcher(m match.Matcher) bool {
+	return m.ID == DATEWITHOUTSEP_MATCHER_NAME
+}
 
 func checkDate(day, month, year int64) (bool, int64, int64, int64) {
 	if (12 <= month && month <= 31) && day <= 12 {
@@ -23,6 +37,7 @@ func checkDate(day, month, year int64) (bool, int64, int64, int64) {
 
 	return true, day, month, year
 }
+
 func dateSepMatcher(password string) []match.Match {
 	dateMatches := dateSepMatchHelper(password)
 

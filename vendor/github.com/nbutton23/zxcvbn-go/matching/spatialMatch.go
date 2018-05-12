@@ -1,11 +1,18 @@
 package matching
 
 import (
+	"strings"
+
 	"github.com/nbutton23/zxcvbn-go/adjacency"
 	"github.com/nbutton23/zxcvbn-go/entropy"
 	"github.com/nbutton23/zxcvbn-go/match"
-	"strings"
 )
+
+const SPATIAL_MATCHER_NAME = "SPATIAL"
+
+func FilterSpatialMatcher(m match.Matcher) bool {
+	return m.ID == SPATIAL_MATCHER_NAME
+}
 
 func spatialMatch(password string) (matches []match.Match) {
 	for _, graph := range ADJACENCY_GRAPHS {

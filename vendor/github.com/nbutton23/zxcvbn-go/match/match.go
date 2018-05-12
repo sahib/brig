@@ -33,3 +33,8 @@ type DateMatch struct {
 	Separator        string
 	Day, Month, Year int64
 }
+
+type Matcher struct {
+	MatchingFunc func(password string) []Match
+	ID           string
+}

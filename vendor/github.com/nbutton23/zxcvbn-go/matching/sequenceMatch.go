@@ -1,10 +1,17 @@
 package matching
 
 import (
+	"strings"
+
 	"github.com/nbutton23/zxcvbn-go/entropy"
 	"github.com/nbutton23/zxcvbn-go/match"
-	"strings"
 )
+
+const SEQUENCE_MATCHER_NAME = "SEQ"
+
+func FilterSequenceMatcher(m match.Matcher) bool {
+	return m.ID == SEQUENCE_MATCHER_NAME
+}
 
 func sequenceMatch(password string) []match.Match {
 	var matches []match.Match
