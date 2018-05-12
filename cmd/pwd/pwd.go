@@ -3,7 +3,6 @@ package pwd
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"github.com/chzyer/readline"
 	"github.com/fatih/color"
@@ -41,9 +40,7 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 func createStrengthPrompt(password []rune, prefix string) string {
 	symbol, colorFn := "", color.RedString
 
-	start := time.Now()
 	strength := zxcvbn.PasswordStrength(string(password), nil)
-	fmt.Println("Took", time.Since(start))
 
 	switch {
 	case strength.Entropy >= 25:

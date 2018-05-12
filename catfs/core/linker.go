@@ -4,11 +4,15 @@ package core
 //
 // objects/<NODE_HASH>                   => NODE_METADATA
 // tree/<FULL_NODE_PATH>                 => NODE_HASH
-// inode/<NODE_HASH>                     => NODE_HASH
+// inode/<INODE>                         => NODE_HASH
+// moves/<INODE>                         => MOVE_INFO
+// moves/overlay/<INODE>                 => MOVE_INFO
 //
 // stage/objects/<NODE_HASH>             => NODE_METADATA
 // stage/tree/<FULL_NODE_PATH>           => NODE_HASH
 // stage/STATUS                          => COMMIT_METADATA
+// stage/moves/<INODE>                   => MOVE_INFO
+// stage/moves/overlay/<INODE>           => MOVE_INFO
 //
 // stats/node-count/<COUNT>              => UINT64
 // refs/<REFNAME>                        => NODE_HASH
