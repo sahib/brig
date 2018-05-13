@@ -2,7 +2,7 @@ using Go = import "/go.capnp";
 
 @0xea883e7d5248d81b;
 $Go.package("capnp");
-$Go.import("github.com/sahib/brig/brigd/capnp");
+$Go.import("github.com/sahib/brig/server/capnp");
 
 struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     path        @0  :Text;

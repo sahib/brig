@@ -13,6 +13,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	capnp "zombiezen.com/go/capnproto2"
 
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
@@ -1269,4 +1270,50 @@ func (fs *FS) ScheduleGCRun() {
 	go func() {
 		fs.gcControl <- true
 	}()
+}
+
+// MakePatch creates a binary patch with all file changes starting with
+// `fromRev`. Note that commit information is not exported, only individual
+// file and directory changes.
+//
+// The byte structured returned by this method may change at any point
+// and may not be relied upon.
+func (fs *FS) MakePatch(fromRev string) ([]byte, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	from, err := parseRev(fs.lkr, fromRev)
+	if err != nil {
+		return nil, err
+	}
+
+	patch, err := vcs.MakePatch(fs.lkr, from)
+	if err != nil {
+		return nil, err
+	}
+
+	msg, err := patch.ToCapnp()
+	if err != nil {
+		return nil, err
+	}
+
+	return msg.Marshal()
+}
+
+// ApplyPatch reads the binary patch coming from MakePatch and tries to apply it.
+func (fs *FS) ApplyPatch(data []byte) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	msg, err := capnp.Unmarshal(data)
+	if err != nil {
+		return err
+	}
+
+	patch := &vcs.Patch{}
+	if err := patch.FromCapnp(msg); err != nil {
+		return err
+	}
+
+	return vcs.ApplyPatch(fs.lkr, patch)
 }

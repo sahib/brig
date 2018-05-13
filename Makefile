@@ -33,9 +33,10 @@ lint:
 	gometalinter ./... --deadline 1m | grep -v '.*\.pb\..*'
 
 capnp:
-	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo server/capnp/api.capnp
-	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/nodes/capnp/model.capnp
+	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo server/capnp/local_api.capnp
+	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/nodes/capnp/nodes.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo net/capnp/api.capnp
+	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/vcs/capnp/patch.capnp
 
 install:
 ifneq ("$(wildcard brig)","")

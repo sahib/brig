@@ -14,11 +14,12 @@ package core
 // stage/moves/<INODE>                   => MOVE_INFO
 // stage/moves/overlay/<INODE>           => MOVE_INFO
 //
-// stats/node-count/<COUNT>              => UINT64
+// stats/max-inode                       => UINT64
 // refs/<REFNAME>                        => NODE_HASH
-// metadata/                             => BYTES (Caller defined data)
 //
 // Defined by caller:
+//
+// metadata/                             => BYTES (Caller defined data)
 // metadata/id      => USER_ID
 // metadata/hash    => USER_HASH
 // metadata/version => DB_FORMAT_VERSION_NUMBER
@@ -32,6 +33,7 @@ package core
 // CURR -> Points to the staging commit.
 //
 // In git terminology, this file implements the following commands:
+//
 // - git add:    StageNode(): Create and Update Nodes.
 // - git status: Status()
 // - git commit: MakeCommit()
@@ -149,7 +151,7 @@ func (lkr *Linker) MemIndexClear() {
 // NextInode() returns a unique identifier, used to identify a single node. You
 // should not need to call this function, except when implementing own nodes.
 func (lkr *Linker) NextInode() uint64 {
-	nodeCount, err := lkr.kv.Get("stats", "node-count")
+	nodeCount, err := lkr.kv.Get("stats", "max-inode")
 	if err != nil && err != db.ErrNoSuchKey {
 		return 0
 	}
@@ -164,7 +166,7 @@ func (lkr *Linker) NextInode() uint64 {
 	binary.BigEndian.PutUint64(cntBuf, cnt)
 
 	err = lkr.AtomicWithBatch(func(batch db.Batch) error {
-		batch.Put(cntBuf, "stats", "node-count")
+		batch.Put(cntBuf, "stats", "max-inode")
 		return nil
 	})
 

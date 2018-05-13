@@ -3,7 +3,7 @@ using Go = import "/go.capnp";
 @0x9195d073cb5c5953;
 
 $Go.package("capnp");
-$Go.import("github.com/sahib/brig/model/nodes/capnp");
+$Go.import("github.com/sahib/brig/catfs/nodes/capnp");
 
 struct Commit $Go.doc("Commit is a set of changes to nodes") {
     # Following attributes will be part of the hash:
