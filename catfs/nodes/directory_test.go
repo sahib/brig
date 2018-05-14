@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/stretchr/testify/require"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -69,4 +70,7 @@ func TestDirectoryBasics(t *testing.T) {
 	} else {
 		t.Fatalf("Root children do not contain sub")
 	}
+
+	empty.modTime = repoDir.modTime
+	require.Equal(t, empty, repoDir)
 }

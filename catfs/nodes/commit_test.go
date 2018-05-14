@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	h "github.com/sahib/brig/util/hashlib"
+	"github.com/stretchr/testify/require"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -67,4 +68,7 @@ func TestCommit(t *testing.T) {
 	if person != AuthorOfStage {
 		t.Fatalf("Person from unmarshaled commit does not equal staging author: %v", person)
 	}
+
+	empty.modTime = cmt.modTime
+	require.Equal(t, empty, cmt)
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -81,4 +82,7 @@ func TestFile(t *testing.T) {
 	if !bytes.Equal(empty.ContentHash(), []byte{4, 5, 6}) {
 		t.Fatalf("content hash differs after unmarshal: %v", empty.ContentHash())
 	}
+
+	empty.modTime = file.modTime
+	require.Equal(t, empty, file)
 }

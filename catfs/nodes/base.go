@@ -211,8 +211,6 @@ func UnmarshalNode(data []byte) (Node, error) {
 		return nil, err
 	}
 
-	// TODO: We're calling ReadRootNode twice here
-	//       (Second time in FromCapnp down)
 	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return nil, err
