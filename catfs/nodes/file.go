@@ -43,75 +43,79 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capnode, err := capnp_model.NewRootNode(seg)
+	capNd, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = f.setBaseAttrsToNode(capnode); err != nil {
-		return nil, err
+	return msg, f.ToCapnpNode(seg, capNd)
+}
+
+func (f *File) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
+	if err := f.setBaseAttrsToNode(capNd); err != nil {
+		return err
 	}
 
-	capfile, err := f.setFileAttrs(seg)
+	capFile, err := f.setFileAttrs(seg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := capnode.SetFile(*capfile); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+	return capNd.SetFile(*capFile)
 }
 
 func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
-	capfile, err := capnp_model.NewFile(seg)
+	capFile, err := capnp_model.NewFile(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := capfile.SetParent(f.parent); err != nil {
+	if err := capFile.SetParent(f.parent); err != nil {
 		return nil, err
 	}
 
-	if err := capfile.SetKey(f.key); err != nil {
+	if err := capFile.SetKey(f.key); err != nil {
 		return nil, err
 	}
 
-	capfile.SetSize(f.size)
-	return &capfile, nil
+	capFile.SetSize(f.size)
+	return &capFile, nil
 }
 
 // FromCapnp sets all state of `msg` into the file.
 func (f *File) FromCapnp(msg *capnp.Message) error {
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return err
 	}
 
-	if err = f.parseBaseAttrsFromNode(capnode); err != nil {
-		return err
-	}
-
-	capfile, err := capnode.File()
-	if err != nil {
-		return err
-	}
-
-	return f.readFileAttrs(capfile)
+	return f.FromCapnpNode(capNd)
 }
 
-func (f *File) readFileAttrs(capfile capnp_model.File) error {
+func (f *File) FromCapnpNode(capNd capnp_model.Node) error {
+	if err := f.parseBaseAttrsFromNode(capNd); err != nil {
+		return err
+	}
+
+	capFile, err := capNd.File()
+	if err != nil {
+		return err
+	}
+
+	return f.readFileAttrs(capFile)
+}
+
+func (f *File) readFileAttrs(capFile capnp_model.File) error {
 	var err error
 
-	f.parent, err = capfile.Parent()
+	f.parent, err = capFile.Parent()
 	if err != nil {
 		return err
 	}
 
 	f.nodeType = NodeTypeFile
-	f.size = capfile.Size()
-	f.key, err = capfile.Key()
+	f.size = capFile.Size()
+	f.key, err = capFile.Key()
 	return err
 }
 

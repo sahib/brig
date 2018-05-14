@@ -3,6 +3,7 @@ package nodes
 import (
 	"time"
 
+	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	h "github.com/sahib/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -84,6 +85,9 @@ type Metadatable interface {
 type Serializable interface {
 	ToCapnp() (*capnp.Message, error)
 	FromCapnp(*capnp.Message) error
+
+	ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error
+	FromCapnpNode(capNd capnp_model.Node) error
 }
 
 // HierarchyEntry represents a thing that is placed in

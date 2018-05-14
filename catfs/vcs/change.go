@@ -8,6 +8,7 @@ import (
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
+	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	capnp_patch "github.com/sahib/brig/catfs/vcs/capnp"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -108,31 +109,43 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 	return nil
 }
 
-func (ch *Change) toCapnpChange(capCh *capnp_patch.Change) error {
-	currData, err := n.MarshalNode(ch.Curr)
+func (ch *Change) toCapnpChange(seg *capnp.Segment, capCh *capnp_patch.Change) error {
+	capCurrNd, err := capnp_model.NewNode(seg)
 	if err != nil {
 		return err
 	}
 
-	headData, err := n.MarshalNode(ch.Head)
+	if err := ch.Curr.ToCapnpNode(seg, capCurrNd); err != nil {
+		return err
+	}
+
+	capHeadNd, err := capnp_model.NewNode(seg)
 	if err != nil {
 		return err
 	}
 
-	nextData, err := n.MarshalNode(ch.Next)
+	if err := ch.Head.ToCapnpNode(seg, capHeadNd); err != nil {
+		return err
+	}
+
+	capNextNd, err := capnp_model.NewNode(seg)
 	if err != nil {
 		return err
 	}
 
-	if err := capCh.SetCurr(currData); err != nil {
+	if err := ch.Next.ToCapnpNode(seg, capNextNd); err != nil {
 		return err
 	}
 
-	if err := capCh.SetHead(headData); err != nil {
+	if err := capCh.SetCurr(capCurrNd); err != nil {
 		return err
 	}
 
-	if err := capCh.SetNext(nextData); err != nil {
+	if err := capCh.SetHead(capHeadNd); err != nil {
+		return err
+	}
+
+	if err := capCh.SetNext(capNextNd); err != nil {
 		return err
 	}
 
@@ -156,7 +169,7 @@ func (ch *Change) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	if err := ch.toCapnpChange(&capCh); err != nil {
+	if err := ch.toCapnpChange(seg, &capCh); err != nil {
 		return nil, err
 	}
 
@@ -164,55 +177,46 @@ func (ch *Change) ToCapnp() (*capnp.Message, error) {
 }
 
 func (ch *Change) fromCapnpChange(capCh capnp_patch.Change) error {
-	currData, err := capCh.Curr()
+	capHeadNd, err := capCh.Head()
 	if err != nil {
 		return err
 	}
 
-	headData, err := capCh.Head()
+	ch.Head = &n.Commit{}
+	if err := ch.Head.FromCapnpNode(capHeadNd); err != nil {
+		return err
+	}
+
+	capNextNd, err := capCh.Next()
 	if err != nil {
 		return err
 	}
 
-	nextData, err := capCh.Next()
+	ch.Next = &n.Commit{}
+	if err := ch.Next.FromCapnpNode(capNextNd); err != nil {
+		return err
+	}
+
+	capCurrNd, err := capCh.Curr()
 	if err != nil {
 		return err
 	}
 
-	curr, err := n.UnmarshalNode(currData)
+	currNd, err := n.CapNodeToNode(capCurrNd)
 	if err != nil {
 		return err
 	}
 
-	head, err := n.UnmarshalNode(headData)
-	if err != nil {
-		return err
+	currModNd, ok := currNd.(n.ModNode)
+	if !ok {
+		return e.Wrapf(ie.ErrBadNode, "unmarshalled node is no mod node")
 	}
 
-	next, err := n.UnmarshalNode(nextData)
-	if err != nil {
-		return err
-	}
+	ch.Curr = currModNd
 
 	referToPath, err := capCh.ReferToPath()
 	if err != nil {
 		return err
-	}
-
-	var ok bool
-	ch.Curr, ok = curr.(n.ModNode)
-	if !ok {
-		return e.Wrapf(ie.ErrBadNode, "change: from-capnp: curr")
-	}
-
-	ch.Head, ok = head.(*n.Commit)
-	if !ok {
-		return e.Wrapf(ie.ErrBadNode, "change: from-capnp: head")
-	}
-
-	ch.Next, ok = next.(*n.Commit)
-	if !ok {
-		return e.Wrapf(ie.ErrBadNode, "change: from-capnp: next")
 	}
 
 	ch.ReferToPath = referToPath

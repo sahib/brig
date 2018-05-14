@@ -5,6 +5,7 @@ import (
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
+	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	capnp_patch "github.com/sahib/brig/catfs/vcs/capnp"
 	capnp "zombiezen.com/go/capnproto2"
 )
@@ -25,12 +26,16 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	fromData, err := n.MarshalNode(p.From)
+	capFromNd, err := capnp_model.NewNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := capPatch.SetFrom(fromData); err != nil {
+	if err := p.From.ToCapnpNode(seg, capFromNd); err != nil {
+		return nil, err
+	}
+
+	if err := capPatch.SetFrom(capFromNd); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +54,7 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 			return nil, err
 		}
 
-		if err := change.toCapnpChange(&capCh); err != nil {
+		if err := change.toCapnpChange(seg, &capCh); err != nil {
 			return nil, err
 		}
 
@@ -67,20 +72,14 @@ func (p *Patch) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	fromData, err := capPatch.From()
+	capFromNd, err := capPatch.From()
 	if err != nil {
 		return err
 	}
 
-	from, err := n.UnmarshalNode(fromData)
-	if err != nil {
+	p.From = &n.Commit{}
+	if err := p.From.FromCapnpNode(capFromNd); err != nil {
 		return err
-	}
-
-	var ok bool
-	p.From, ok = from.(*n.Commit)
-	if !ok {
-		return e.Wrapf(ie.ErrBadNode, "patch: from-capnp: commit")
 	}
 
 	capChs, err := capPatch.Changes()

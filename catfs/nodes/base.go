@@ -213,15 +213,19 @@ func UnmarshalNode(data []byte) (Node, error) {
 
 	// TODO: We're calling ReadRootNode twice here
 	//       (Second time in FromCapnp down)
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return nil, err
 	}
 
+	return CapNodeToNode(capNd)
+}
+
+func CapNodeToNode(capNd capnp_model.Node) (Node, error) {
 	// Find out the correct node struct to initialize.
 	var node Node
 
-	switch typ := capnode.Which(); typ {
+	switch typ := capNd.Which(); typ {
 	case capnp_model.Node_Which_ghost:
 		node = &Ghost{}
 	case capnp_model.Node_Which_file:
@@ -234,7 +238,7 @@ func UnmarshalNode(data []byte) (Node, error) {
 		return nil, fmt.Errorf("Bad capnp node type `%d`", typ)
 	}
 
-	if err := node.FromCapnp(msg); err != nil {
+	if err := node.FromCapnpNode(capNd); err != nil {
 		return nil, err
 	}
 

@@ -101,53 +101,56 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capnode, err := capnp_model.NewRootNode(seg)
+	capNd, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	var base *Base
+	return msg, g.ToCapnpNode(seg, capNd)
+}
 
-	capghost, err := capnode.NewGhost()
+func (g *Ghost) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
+	var base *Base
+	capghost, err := capNd.NewGhost()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	capghost.SetGhostInode(g.ghostInode)
 	if err = capghost.SetGhostPath(g.ghostPath); err != nil {
-		return nil, err
+		return err
 	}
 
 	switch g.oldType {
 	case NodeTypeFile:
 		file, ok := g.ModNode.(*File)
 		if !ok {
-			return nil, ie.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		capfile, err := file.setFileAttrs(seg)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		base = &file.Base
 		if err = capghost.SetFile(*capfile); err != nil {
-			return nil, err
+			return err
 		}
 	case NodeTypeDirectory:
 		dir, ok := g.ModNode.(*Directory)
 		if !ok {
-			return nil, ie.ErrBadNode
+			return ie.ErrBadNode
 		}
 
 		capdir, err := dir.setDirectoryAttrs(seg)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		base = &dir.Base
 		if err = capghost.SetDirectory(*capdir); err != nil {
-			return nil, err
+			return err
 		}
 	case NodeTypeGhost:
 		panic("Recursive ghosts are not possible")
@@ -156,32 +159,36 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := base.setBaseAttrsToNode(capnode); err != nil {
-		return nil, err
+	if err := base.setBaseAttrsToNode(capNd); err != nil {
+		return err
 	}
 
-	if err := capnode.SetGhost(capghost); err != nil {
-		return nil, err
+	if err := capNd.SetGhost(capghost); err != nil {
+		return err
 	}
 
-	return msg, nil
+	return nil
 }
 
 // FromCapnp reads all attributes from a previously marshaled ghost.
 func (g *Ghost) FromCapnp(msg *capnp.Message) error {
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return err
 	}
 
-	if typ := capnode.Which(); typ != capnp_model.Node_Which_ghost {
+	return g.FromCapnpNode(capNd)
+}
+
+func (g *Ghost) FromCapnpNode(capNd capnp_model.Node) error {
+	if typ := capNd.Which(); typ != capnp_model.Node_Which_ghost {
 		return fmt.Errorf("BUG: ghost unmarshal with non ghost type: %d", typ)
 	}
 
-	capghost, err := capnode.Ghost()
+	capghost, err := capNd.Ghost()
 	if err != nil {
 		return err
 	}
@@ -227,5 +234,5 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 		return ie.ErrBadNode
 	}
 
-	return base.parseBaseAttrsFromNode(capnode)
+	return base.parseBaseAttrsFromNode(capNd)
 }

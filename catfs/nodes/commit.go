@@ -64,48 +64,48 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capnode, err := capnp_model.NewRootNode(seg)
+	capNd, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = c.setBaseAttrsToNode(capnode); err != nil {
-		return nil, err
+	return msg, c.ToCapnpNode(seg, capNd)
+}
+
+func (c *Commit) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
+	if err := c.setBaseAttrsToNode(capNd); err != nil {
+		return err
 	}
 
-	capcmt, err := c.setCommitAttrs(seg)
+	capCmt, err := c.setCommitAttrs(seg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := capnode.SetCommit(*capcmt); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+	return capNd.SetCommit(*capCmt)
 }
 
 func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error) {
-	capcmt, err := capnp_model.NewCommit(seg)
+	capCmt, err := capnp_model.NewCommit(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := capcmt.SetMessage(c.message); err != nil {
+	if err := capCmt.SetMessage(c.message); err != nil {
 		return nil, err
 	}
-	if err := capcmt.SetRoot(c.root); err != nil {
+	if err := capCmt.SetRoot(c.root); err != nil {
 		return nil, err
 	}
-	if err := capcmt.SetAuthor(c.author); err != nil {
+	if err := capCmt.SetAuthor(c.author); err != nil {
 		return nil, err
 	}
-	if err := capcmt.SetParent(c.parent); err != nil {
+	if err := capCmt.SetParent(c.parent); err != nil {
 		return nil, err
 	}
 
 	// Store merge infos:
-	capmerge := capcmt.Merge()
+	capmerge := capCmt.Merge()
 
 	if err := capmerge.SetWith(c.merge.with); err != nil {
 		return nil, err
@@ -115,54 +115,58 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 		return nil, err
 	}
 
-	return &capcmt, nil
+	return &capCmt, nil
 }
 
 // FromCapnp will set the content of `msg` into the commit,
 // overwriting any previous state.
 func (c *Commit) FromCapnp(msg *capnp.Message) error {
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return err
 	}
 
-	if err = c.parseBaseAttrsFromNode(capnode); err != nil {
+	return c.FromCapnpNode(capNd)
+}
+
+func (c *Commit) FromCapnpNode(capNd capnp_model.Node) error {
+	if err := c.parseBaseAttrsFromNode(capNd); err != nil {
 		return err
 	}
 
 	c.nodeType = NodeTypeCommit
-	capcmt, err := capnode.Commit()
+	capCmt, err := capNd.Commit()
 	if err != nil {
 		return err
 	}
 
-	return c.readCommitAttrs(capcmt)
+	return c.readCommitAttrs(capCmt)
 }
 
-func (c *Commit) readCommitAttrs(capcmt capnp_model.Commit) error {
+func (c *Commit) readCommitAttrs(capCmt capnp_model.Commit) error {
 	var err error
 
-	c.author, err = capcmt.Author()
+	c.author, err = capCmt.Author()
 	if err != nil {
 		return err
 	}
 
-	c.message, err = capcmt.Message()
+	c.message, err = capCmt.Message()
 	if err != nil {
 		return err
 	}
 
-	c.root, err = capcmt.Root()
+	c.root, err = capCmt.Root()
 	if err != nil {
 		return err
 	}
 
-	c.parent, err = capcmt.Parent()
+	c.parent, err = capCmt.Parent()
 	if err != nil {
 		return err
 	}
 
-	capmerge := capcmt.Merge()
+	capmerge := capCmt.Merge()
 	c.merge.head, err = capmerge.Head()
 	if err != nil {
 		return err

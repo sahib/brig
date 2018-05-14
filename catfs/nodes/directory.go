@@ -68,29 +68,29 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capnode, err := capnp_model.NewRootNode(seg)
+	capNd, err := capnp_model.NewRootNode(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = d.setBaseAttrsToNode(capnode); err != nil {
-		return nil, err
+	return msg, d.ToCapnpNode(seg, capNd)
+}
+
+func (d *Directory) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
+	if err := d.setBaseAttrsToNode(capNd); err != nil {
+		return err
 	}
 
-	capdir, err := d.setDirectoryAttrs(seg)
+	capDir, err := d.setDirectoryAttrs(seg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := capnode.SetDirectory(*capdir); err != nil {
-		return nil, err
-	}
-
-	return msg, nil
+	return capNd.SetDirectory(*capDir)
 }
 
 func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Directory, error) {
-	capdir, err := capnp_model.NewDirectory(seg)
+	capDir, err := capnp_model.NewDirectory(seg)
 	if err != nil {
 		return nil, err
 	}
@@ -120,46 +120,52 @@ func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Director
 		entryIdx++
 	}
 
-	if err := capdir.SetChildren(children); err != nil {
+	if err := capDir.SetChildren(children); err != nil {
 		return nil, err
 	}
-	if err := capdir.SetParent(d.parentName); err != nil {
-		return nil, err
-	}
-	capdir.SetSize(d.size)
 
-	return &capdir, nil
+	if err := capDir.SetParent(d.parentName); err != nil {
+		return nil, err
+	}
+
+	capDir.SetSize(d.size)
+
+	return &capDir, nil
 }
 
 // FromCapnp will take the result of ToCapnp and set all of it's attributes.
 func (d *Directory) FromCapnp(msg *capnp.Message) error {
-	capnode, err := capnp_model.ReadRootNode(msg)
+	capNd, err := capnp_model.ReadRootNode(msg)
 	if err != nil {
 		return err
 	}
 
-	if err = d.parseBaseAttrsFromNode(capnode); err != nil {
-		return err
-	}
-
-	capdir, err := capnode.Directory()
-	if err != nil {
-		return err
-	}
-
-	return d.readDirectoryAttr(capdir)
+	return d.FromCapnpNode(capNd)
 }
 
-func (d *Directory) readDirectoryAttr(capdir capnp_model.Directory) error {
-	var err error
+func (d *Directory) FromCapnpNode(capNd capnp_model.Node) error {
+	if err := d.parseBaseAttrsFromNode(capNd); err != nil {
+		return err
+	}
 
-	d.size = capdir.Size()
-	d.parentName, err = capdir.Parent()
+	capDir, err := capNd.Directory()
 	if err != nil {
 		return err
 	}
 
-	childList, err := capdir.Children()
+	return d.readDirectoryAttr(capDir)
+}
+
+func (d *Directory) readDirectoryAttr(capDir capnp_model.Directory) error {
+	var err error
+
+	d.size = capDir.Size()
+	d.parentName, err = capDir.Parent()
+	if err != nil {
+		return err
+	}
+
+	childList, err := capDir.Children()
 	if err != nil {
 		return err
 	}
