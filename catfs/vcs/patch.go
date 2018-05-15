@@ -7,6 +7,7 @@ import (
 	n "github.com/sahib/brig/catfs/nodes"
 	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	capnp_patch "github.com/sahib/brig/catfs/vcs/capnp"
+	"github.com/sahib/brig/util/trie"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -99,7 +100,36 @@ func (p *Patch) FromCapnp(msg *capnp.Message) error {
 	return nil
 }
 
-func MakePatch(lkr *c.Linker, from *n.Commit) (*Patch, error) {
+// buildPrefixTrie builds a trie of prefixes that can be passed
+func buildPrefixTrie(prefixes []string) *trie.Node {
+	root := trie.NewNode()
+	for _, prefix := range prefixes {
+		root.Insert(prefix).Data = true
+	}
+
+	return root
+}
+
+func hasValidPrefix(root *trie.Node, path string) bool {
+	curr := root
+	for _, elem := range trie.SplitPath(path) {
+		curr = curr.Lookup(elem)
+
+		// No such children, not an allowed prefix.
+		if curr == nil {
+			return false
+		}
+
+		// If it's a prefix node it's over.
+		if curr.Data != nil && curr.Data.(bool) == true {
+			return true
+		}
+	}
+
+	return false
+}
+
+func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
 	root, err := lkr.Root()
 	if err != nil {
 		return nil, err
@@ -120,9 +150,12 @@ func MakePatch(lkr *c.Linker, from *n.Commit) (*Patch, error) {
 		return patch, nil
 	}
 
+	// Build a prefix trie to quickly check invalid paths.
+	// This is not necessarily much faster, but runs in constant time.
+	prefixTrie := buildPrefixTrie(prefixes)
+
 	err = n.Walk(lkr, root, true, func(child n.Node) error {
-		// The respective ghosts on the other side
-		if child.Type() == n.NodeTypeGhost {
+		if len(prefixes) != 0 && hasValidPrefix(prefixTrie, child.Path()) {
 			return nil
 		}
 

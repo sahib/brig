@@ -263,7 +263,6 @@ func (hw *HistoryWalker) Next() bool {
 	referToPath := ""
 	if prev != nil {
 		referToPath = prev.Path()
-
 		if prev.Type() == n.NodeTypeGhost {
 			prevGhost, ok := prev.(*n.Ghost)
 			if !ok {

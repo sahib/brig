@@ -233,19 +233,27 @@ func (ch *Change) FromCapnp(msg *capnp.Message) error {
 	return ch.fromCapnpChange(capCh)
 }
 
+// CombineChanges compresses a list of changes (in a lossy way) to one Change.
+// The one change should be enough to re-create the changes that were made.
 func CombineChanges(changes []*Change) *Change {
 	if len(changes) == 0 {
 		return nil
 	}
 
+	// Only take the latest changes:
 	ch := &Change{
-		Mask:        ChangeType(0),
-		Head:        changes[0].Head,
-		Next:        changes[0].Next,
-		Curr:        changes[0].Curr,
-		ReferToPath: changes[0].ReferToPath,
+		Mask: ChangeType(0),
+		Head: changes[0].Head,
+		Next: changes[0].Next,
+		Curr: changes[0].Curr,
 	}
 
+	// If the node moved, save it in ReferToPath:
+	if changes[0].Curr.Path() != changes[len(changes)-1].Curr.Path() {
+		ch.ReferToPath = changes[len(changes)-1].Curr.Path()
+	}
+
+	// Combine the mask:
 	for _, change := range changes {
 		ch.Mask |= change.Mask
 	}

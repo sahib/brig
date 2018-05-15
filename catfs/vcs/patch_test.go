@@ -48,3 +48,22 @@ func TestPatchMarshalling(t *testing.T) {
 		require.Equal(t, patch, newPatch)
 	})
 }
+
+func TestPrefixTrie(t *testing.T) {
+	prefixes := []string{
+		"/a",
+		"/b",
+		"/c/d",
+	}
+
+	root := buildPrefixTrie(prefixes)
+	require.True(t, hasValidPrefix(root, "/a"))
+	require.True(t, hasValidPrefix(root, "/a/x/y/z"))
+	require.True(t, hasValidPrefix(root, "/b/c"))
+	require.True(t, hasValidPrefix(root, "/c/d/e"))
+
+	require.False(t, hasValidPrefix(root, "/c/e/d"))
+	require.False(t, hasValidPrefix(root, "/c/a/b"))
+	require.False(t, hasValidPrefix(root, "/"))
+	require.False(t, hasValidPrefix(root, "/d"))
+}
