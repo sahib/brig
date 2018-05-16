@@ -87,6 +87,31 @@ func setupHistoryBasicHole(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 }
 
+func setupHistoryRemoveImmediately(t *testing.T, lkr *c.Linker) *historySetup {
+	x := c.MustTouch(t, lkr, "/x", 1)
+	c.MustRemove(t, lkr, x)
+
+	status, err := lkr.Status()
+	if err != nil {
+		t.Fatalf("Failed to retrieve status: %v", err)
+	}
+
+	ghostX, err := lkr.LookupGhost("/x")
+	require.Nil(t, err)
+
+	return &historySetup{
+		commits: []*n.Commit{status},
+		paths: []string{
+			"/x",
+		},
+		changes: []ChangeType{
+			ChangeTypeRemove | ChangeTypeAdd,
+		},
+		head: status,
+		node: ghostX,
+	}
+}
+
 func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
@@ -621,6 +646,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "remove-readd-simple",
 			setup: setupHistoryRemoveReadd,
+		}, {
+			name:  "remove-immedidately",
+			setup: setupHistoryRemoveImmediately,
 		}, {
 			name:  "remove-readd-modify",
 			setup: setupHistoryRemoveReaddModify,

@@ -348,6 +348,10 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	})
 }
 
+func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
+	return Stage(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.Key())
+}
+
 func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {

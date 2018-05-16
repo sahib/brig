@@ -96,17 +96,63 @@ func (ch *Change) String() string {
 	return fmt.Sprintf("<%s:%s>", ch.Curr.Path(), ch.Mask)
 }
 
+// Replay applies the change `ch` onto `lkr` by redoing the same operations:
+// move, remove, modify, add. Commits are not replayed, everything happens in
+// lkr.Status() without creating a new commit.
 func (ch *Change) Replay(lkr *c.Linker) error {
-	// TODO: Implement.
-	// 	if ch.Mask&ChangeTypeMove != 0 {
-	// 		c.Move(lkr, ch.Curr, ch.ReferToPath)
-	// 	}
-	//
-	// 	if ch.Mask&ChangeTypeAdd != 0 || ch.Mask&ChangeTypeModify {
-	// 		return lkr.StageNode(ch.Curr)
-	// 	}
-	//
-	return nil
+	return lkr.Atomic(func() error {
+		if ch.Mask&ChangeTypeMove != 0 {
+			// We need to move something. Check if we have the old node
+			// the change is referring to. We might not have it, since the
+			// mask might be e.g. added|moved, i.e. we did not see it yet.
+			oldNd, err := lkr.LookupModNode(ch.ReferToPath)
+			if err != nil && !ie.IsNoSuchFileError(err) {
+				return err
+			}
+
+			// If we have it, let's move it to produce a ghost that helps
+			// tracking the move during the actual synchronization later.
+			if !ie.IsNoSuchFileError(err) {
+				if err := c.Move(lkr, oldNd, ch.Curr.Path()); err != nil {
+					return err
+				}
+			}
+		}
+
+		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
+			// Something needs to be done based on the type.
+			// Either create/update a new file or create a directory.
+			switch ch.Curr.(type) {
+			case *n.File:
+				if _, err := c.StageFromFileNode(lkr, ch.Curr.(*n.File)); err != nil {
+					return err
+				}
+			case *n.Directory:
+				if _, err := c.Mkdir(lkr, ch.Curr.Path(), true); err != nil {
+					return err
+				}
+			case *n.Ghost:
+				// TODO: What do to do here?
+			default:
+				return e.Wrapf(ie.ErrBadNode, "replay: modify")
+			}
+		}
+
+		// We should only remove a node if we're getting a ghost in ch.Curr.
+		// Otherwise the node might have been removed and added again.
+		if ch.Mask&ChangeTypeRemove != 0 && ch.Curr.Type() == n.NodeTypeGhost {
+			currNd, err := lkr.LookupModNode(ch.Curr.Path())
+			if err != nil {
+				return e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
+			}
+
+			if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (ch *Change) toCapnpChange(seg *capnp.Segment, capCh *capnp_patch.Change) error {
@@ -248,7 +294,7 @@ func CombineChanges(changes []*Change) *Change {
 		Curr: changes[0].Curr,
 	}
 
-	// If the node moved, save it in ReferToPath:
+	// If the node moved, save the original path in ReferToPath:
 	if changes[0].Curr.Path() != changes[len(changes)-1].Curr.Path() {
 		ch.ReferToPath = changes[len(changes)-1].Curr.Path()
 	}

@@ -249,6 +249,11 @@ func (hw *HistoryWalker) Next() bool {
 			Curr: hw.curr,
 			Next: nil,
 		}
+
+		if hw.curr.Type() == n.NodeTypeGhost {
+			hw.state.Mask |= ChangeTypeRemove
+		}
+
 		hw.head = nil
 		return true
 	}
@@ -263,6 +268,7 @@ func (hw *HistoryWalker) Next() bool {
 	referToPath := ""
 	if prev != nil {
 		referToPath = prev.Path()
+
 		if prev.Type() == n.NodeTypeGhost {
 			prevGhost, ok := prev.(*n.Ghost)
 			if !ok {
@@ -312,6 +318,13 @@ func (hw *HistoryWalker) Next() bool {
 				Curr: hw.curr,
 				Next: prevHeadCommit,
 			}
+
+			// If curr is a ghost we have a rare case:
+			// The node was added and removed in the same commit.
+			if hw.curr.Type() == n.NodeTypeGhost {
+				hw.state.Mask |= ChangeTypeRemove
+			}
+
 			hw.head = nil
 			return true
 		}
