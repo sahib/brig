@@ -44,7 +44,7 @@ func (g *Ghost) Type() NodeType {
 }
 
 // OldNode returns the node the ghost was when it still was alive.
-func (g *Ghost) OldNode() Node {
+func (g *Ghost) OldNode() ModNode {
 	return g.ModNode
 }
 

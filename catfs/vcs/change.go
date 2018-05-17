@@ -120,19 +120,40 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 		}
 
 		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
+			currNd := ch.Curr
+			if ch.Curr.Type() == n.NodeTypeGhost {
+				currGhost, ok := ch.Curr.(*n.Ghost)
+				if !ok {
+					return ie.ErrBadNode
+				}
+
+				currNd = currGhost.OldNode()
+			}
+
+			// Check the type of the old node:
+			oldNd, err := lkr.LookupModNode(currNd.Path())
+			if err != nil && !ie.IsNoSuchFileError(err) {
+				return err
+			}
+
+			if oldNd != nil && oldNd.Type() != currNd.Type() {
+				_, _, err := c.Remove(lkr, oldNd, false, true)
+				if err != nil {
+					return e.Wrapf(err, "replay: type-conflict-remove")
+				}
+			}
+
 			// Something needs to be done based on the type.
 			// Either create/update a new file or create a directory.
-			switch ch.Curr.(type) {
+			switch currNd.(type) {
 			case *n.File:
-				if _, err := c.StageFromFileNode(lkr, ch.Curr.(*n.File)); err != nil {
-					return err
+				if _, err := c.StageFromFileNode(lkr, currNd.(*n.File)); err != nil {
+					return e.Wrapf(err, "replay: stage")
 				}
 			case *n.Directory:
-				if _, err := c.Mkdir(lkr, ch.Curr.Path(), true); err != nil {
-					return err
+				if _, err := c.Mkdir(lkr, currNd.Path(), true); err != nil {
+					return e.Wrapf(err, "replay: mkdir")
 				}
-			case *n.Ghost:
-				// TODO: What do to do here?
 			default:
 				return e.Wrapf(ie.ErrBadNode, "replay: modify")
 			}

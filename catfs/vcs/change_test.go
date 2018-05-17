@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -132,13 +131,92 @@ func TestChangeReplay(t *testing.T) {
 			},
 			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
 				// it's enough to assert that it's a ghost now:
-				fmt.Println(lkrDst.LookupModNode("/x"))
 				_, err := lkrDst.LookupGhost("/x")
 				require.Nil(t, err)
 
-				dstY, err := lkrDst.LookupFile("/y")
+				_, err = lkrDst.LookupFile("/y")
 				require.Nil(t, err)
-				fmt.Println("dst y", dstY)
+			},
+		}, {
+			name: "basic-all",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				c.MustTouch(t, lkrDst, "/x", 1)
+				srcX := c.MustTouch(t, lkrSrc, "/x", 1)
+				c.MustCommit(t, lkrSrc, "touch")
+				srcX = c.MustMove(t, lkrSrc, srcX, "/y").(*n.File)
+				c.MustCommit(t, lkrSrc, "move")
+				return c.MustRemove(t, lkrSrc, srcX)
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				// it's enough to assert that it's a ghost now:
+				_, err := lkrDst.LookupGhost("/x")
+				require.Nil(t, err)
+
+				_, err = lkrDst.LookupGhost("/y")
+				require.Nil(t, err)
+			},
+		}, {
+			name: "basic-mkdir",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				return c.MustMkdir(t, lkrSrc, "/sub")
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				dir, err := lkrDst.LookupDirectory("/sub")
+				require.Nil(t, err)
+				require.Equal(t, dir.Path(), "/sub")
+			},
+		}, {
+			name: "edge-conflicting-types",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				// Directory and file:
+				c.MustMkdir(t, lkrDst, "/sub")
+				return c.MustTouch(t, lkrSrc, "/sub", 1)
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				// The directory was purged and the file should appear:
+				// The policy here is "trust the remote, it's his metadata"
+				_, err := lkrDst.LookupFile("/sub")
+				require.Nil(t, err)
+			},
+		}, {
+			name: "edge-modified-ghost",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				srcX := c.MustTouch(t, lkrSrc, "/x", 1)
+				c.MustCommit(t, lkrSrc, "1")
+				c.MustModify(t, lkrSrc, srcX, 2)
+				c.MustCommit(t, lkrSrc, "2")
+				return c.MustRemove(t, lkrSrc, srcX)
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				_, err := lkrDst.LookupGhost("/x")
+				require.Nil(t, err)
+			},
+		}, {
+			name: "edge-mkdir-existing",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				c.MustMkdir(t, lkrDst, "/sub")
+				return c.MustMkdir(t, lkrSrc, "/sub")
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				dir, err := lkrDst.LookupDirectory("/sub")
+				require.Nil(t, err)
+				require.Equal(t, dir.Path(), "/sub")
+			},
+		}, {
+			name: "edge-mkdir-existing-non-empty",
+			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
+				c.MustMkdir(t, lkrDst, "/sub")
+				c.MustTouch(t, lkrDst, "/sub/x", 1)
+				return c.MustMkdir(t, lkrSrc, "/sub")
+			},
+			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
+				dir, err := lkrDst.LookupDirectory("/sub")
+				require.Nil(t, err)
+				require.Equal(t, dir.Path(), "/sub")
+
+				dstX, err := lkrDst.LookupFile("/sub/x")
+				require.Nil(t, err)
+				require.Equal(t, dstX.Path(), "/sub/x")
 			},
 		},
 	}
@@ -151,8 +229,6 @@ func TestChangeReplay(t *testing.T) {
 
 				srcChanges, err := History(lkrSrc, srcNd, srcHead, nil)
 				require.Nil(t, err)
-
-				fmt.Println("Hist", srcChanges)
 
 				ch := CombineChanges(srcChanges)
 				require.Nil(t, ch.Replay(lkrDst))

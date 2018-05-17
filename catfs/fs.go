@@ -1287,7 +1287,8 @@ func (fs *FS) MakePatch(fromRev string) ([]byte, error) {
 		return nil, err
 	}
 
-	patch, err := vcs.MakePatch(fs.lkr, from)
+	// TODO: Pass prefixes
+	patch, err := vcs.MakePatch(fs.lkr, from, nil)
 	if err != nil {
 		return nil, err
 	}
