@@ -1,6 +1,8 @@
 package vcs
 
 import (
+	"path"
+
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -104,13 +106,21 @@ func (p *Patch) FromCapnp(msg *capnp.Message) error {
 func buildPrefixTrie(prefixes []string) *trie.Node {
 	root := trie.NewNode()
 	for _, prefix := range prefixes {
-		root.Insert(prefix).Data = true
+		if prefix == "/" {
+			root.Data = true
+		} else {
+			root.Insert(prefix).Data = true
+		}
 	}
 
 	return root
 }
 
 func hasValidPrefix(root *trie.Node, path string) bool {
+	if root.Data != nil && root.Data.(bool) == true {
+		return true
+	}
+
 	curr := root
 	for _, elem := range trie.SplitPath(path) {
 		curr = curr.Lookup(elem)
@@ -127,6 +137,26 @@ func hasValidPrefix(root *trie.Node, path string) bool {
 	}
 
 	return false
+}
+
+func filerInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixTrie *trie.Node) (bool, error) {
+	if child.Type() != n.NodeTypeGhost || combCh.Mask&ChangeTypeMove == 0 {
+		return true, nil
+	}
+
+	moveNd, _, err := lkr.MoveEntryPoint(child)
+	if err != nil {
+		return false, err
+	}
+
+	if moveNd != nil && !hasValidPrefix(prefixTrie, moveNd.Path()) {
+		// The node was moved to the outside. Count it as removed.
+		combCh.Mask &= ^ChangeTypeMove
+		combCh.Mask |= ChangeTypeRemove
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
@@ -152,10 +182,14 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 
 	// Build a prefix trie to quickly check invalid paths.
 	// This is not necessarily much faster, but runs in constant time.
+	if prefixes == nil {
+		prefixes = []string{"/"}
+	}
 	prefixTrie := buildPrefixTrie(prefixes)
 
 	err = n.Walk(lkr, root, true, func(child n.Node) error {
-		if len(prefixes) != 0 && hasValidPrefix(prefixTrie, child.Path()) {
+		childParentPath := path.Dir(child.Path())
+		if len(prefixes) != 0 && !hasValidPrefix(prefixTrie, childParentPath) {
 			return nil
 		}
 
@@ -190,8 +224,18 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return nil
 		}
 
-		if len(changes) > 0 {
-			patch.Changes = append(patch.Changes, CombineChanges(changes))
+		combCh := CombineChanges(changes)
+
+		// Some special filtering needs to be done here.
+		// If it'a "move" ghost we don't want to export it unless
+		// the move goes outside our prefixes (which would count as "remove").
+		isValid, err := filerInvalidMoveGhost(lkr, child, combCh, prefixTrie)
+		if err != nil {
+			return err
+		}
+
+		if isValid {
+			patch.Changes = append(patch.Changes, combCh)
 		}
 
 		return nil

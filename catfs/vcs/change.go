@@ -57,12 +57,12 @@ func (ct ChangeType) String() string {
 // rule: do not loose content,
 //       but we may loose metadata.
 //
-//   |  a  c  r  m
+//   |  a  m  r  mv
 // ---------------
 // a |  n  n  n  y
 // c |  n  n  n  y
 // r |  y  y  y  y
-// m |  y  y  y  y
+// mv|  y  y  y  y
 func (ct ChangeType) IsCompatible(ot ChangeType) bool {
 	modifyMask := ChangeTypeAdd | ChangeTypeModify
 	return ct&modifyMask == 0 || ot&modifyMask == 0
@@ -112,15 +112,17 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 
 			// If we have it, let's move it to produce a ghost that helps
 			// tracking the move during the actual synchronization later.
-			if !ie.IsNoSuchFileError(err) {
+			if !ie.IsNoSuchFileError(err) && oldNd.Path() != ch.Curr.Path() {
 				if err := c.Move(lkr, oldNd, ch.Curr.Path()); err != nil {
-					return err
+					return e.Wrapf(err, "replay: move")
 				}
 			}
 		}
 
 		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
 			currNd := ch.Curr
+
+			// If it's an ghost, unpack it first:
 			if ch.Curr.Type() == n.NodeTypeGhost {
 				currGhost, ok := ch.Curr.(*n.Ghost)
 				if !ok {
@@ -136,6 +138,7 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 				return err
 			}
 
+			// If the types are conflicting we have to remove the existing node.
 			if oldNd != nil && oldNd.Type() != currNd.Type() {
 				_, _, err := c.Remove(lkr, oldNd, false, true)
 				if err != nil {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
+	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,4 +67,64 @@ func TestPrefixTrie(t *testing.T) {
 	require.False(t, hasValidPrefix(root, "/c/a/b"))
 	require.False(t, hasValidPrefix(root, "/"))
 	require.False(t, hasValidPrefix(root, "/d"))
+}
+
+func TestMakePatch(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		init, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		srcX := c.MustTouch(t, lkrSrc, "/x", 1)
+		srcY := c.MustTouch(t, lkrSrc, "/y", 2)
+		c.MustMkdir(t, lkrSrc, "/sub")
+		c.MustMkdir(t, lkrSrc, "/empty")
+		srcZ := c.MustTouch(t, lkrSrc, "/sub/z", 3)
+		c.MustCommit(t, lkrSrc, "3 files")
+
+		patch, err := MakePatch(lkrSrc, init, []string{"/"})
+		require.Nil(t, err)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch))
+		dstX, err := lkrDst.LookupFile("/x")
+		require.Nil(t, err)
+		require.Equal(t, dstX.ContentHash(), h.TestDummy(t, 1))
+
+		dstY, err := lkrDst.LookupFile("/y")
+		require.Nil(t, err)
+		require.Equal(t, dstY.ContentHash(), h.TestDummy(t, 2))
+
+		dstZ, err := lkrDst.LookupFile("/sub/z")
+		require.Nil(t, err)
+		require.Equal(t, dstZ.ContentHash(), h.TestDummy(t, 3))
+
+		_, err = lkrDst.LookupDirectory("/empty")
+		require.Nil(t, err)
+
+		///////////////////
+
+		c.MustModify(t, lkrSrc, srcX, 4)
+		c.MustMove(t, lkrSrc, srcY, "/y_moved")
+		c.MustRemove(t, lkrSrc, srcZ)
+		c.MustTouch(t, lkrSrc, "/empty/not_empty_anymore", 42)
+
+		patch, err = MakePatch(lkrSrc, init, []string{"/"})
+		require.Nil(t, err)
+		require.Nil(t, ApplyPatch(lkrDst, patch))
+
+		dstYMoved, err := lkrDst.LookupFile("/y_moved")
+		require.Nil(t, err)
+		require.Equal(t, dstYMoved.Path(), "/y_moved")
+
+		dstYGhost, err := lkrDst.LookupGhost("/y")
+		require.Nil(t, err)
+		require.Equal(t, dstYGhost.Path(), "/y")
+
+		dstZGhost, err := lkrDst.LookupGhost("/sub/z")
+		require.Nil(t, err)
+		require.Equal(t, dstZGhost.Path(), "/sub/z")
+
+		dstNotEmptyFile, err := lkrDst.LookupFile("/empty/not_empty_anymore")
+		require.Nil(t, err)
+		require.Equal(t, dstNotEmptyFile.Path(), "/empty/not_empty_anymore")
+	})
 }
