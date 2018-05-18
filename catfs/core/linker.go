@@ -4,6 +4,7 @@ package core
 //
 // objects/<NODE_HASH>                   => NODE_METADATA
 // tree/<FULL_NODE_PATH>                 => NODE_HASH
+// index/<CMT_INDEX>                     => COMMIT_HASH
 // inode/<INODE>                         => NODE_HASH
 // moves/<INODE>                         => MOVE_INFO
 // moves/overlay/<INODE>                 => MOVE_INFO
@@ -353,6 +354,35 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	})
 }
 
+func (lkr *Linker) CommitByIndex(index int64) (*n.Commit, error) {
+	b58Hash, err := lkr.kv.Get("index", strconv.FormatInt(index, 10))
+	if err != nil && err != db.ErrNoSuchKey {
+		return nil, err
+	}
+
+	// Special case: status is not in the index bucket.
+	// Do a separate check for it.
+	if err == db.ErrNoSuchKey {
+		status, err := lkr.Status()
+		if err != nil {
+			return nil, err
+		}
+
+		if status.Index() == index {
+			return status, nil
+		}
+
+		return nil, nil
+	}
+
+	hash, err := h.FromB58String(string(b58Hash))
+	if err != nil {
+		return nil, err
+	}
+
+	return lkr.CommitByHash(hash)
+}
+
 // NodeByInode resolves a node by it's unique ID.
 // It will return nil if no corresponding node was found.
 func (lkr *Linker) NodeByInode(uid uint64) (n.Node, error) {
@@ -521,6 +551,9 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 	statusB58Hash := status.TreeHash().B58String()
 	batch.Put(statusData, "objects", statusB58Hash)
 
+	// Remember this commit under his index:
+	batch.Put([]byte(statusB58Hash), "index", strconv.FormatInt(status.Index(), 10))
+
 	if err := lkr.SaveRef("HEAD", status); err != nil {
 		return err
 	}
@@ -554,7 +587,7 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 		batch.Clear(key...)
 	}
 
-	newStatus, err := n.NewEmptyCommit(lkr.NextInode())
+	newStatus, err := n.NewEmptyCommit(lkr.NextInode(), status.Index()+1)
 	if err != nil {
 		return err
 	}
@@ -781,7 +814,7 @@ func (lkr *Linker) status(batch db.Batch) (cmt *n.Commit, err error) {
 
 	// Shoot, no commit exists yet.
 	// We need to create an initial one.
-	cmt, err = n.NewEmptyCommit(lkr.NextInode())
+	cmt, err = n.NewEmptyCommit(lkr.NextInode(), 0)
 	if err != nil {
 		return nil, err
 	}

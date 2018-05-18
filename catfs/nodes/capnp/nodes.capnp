@@ -11,11 +11,12 @@ struct Commit $Go.doc("Commit is a set of changes to nodes") {
     author  @1 :Text;
     parent  @2 :Data;     # Hash to parent.
     root    @3 :Data;     # Hash to root directory.
+    index   @4 :Int64;    # Total number of commits.
 
     # Attributes not being part of the hash:
     merge :group {
-        with    @4 :Text;
-        head    @5 :Data;
+        with    @5 :Text;
+        head    @6 :Data;
     }
 }
 

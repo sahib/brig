@@ -7,6 +7,7 @@ import (
 )
 
 func (hdl *handler) FetchStore(call capnp.Sync_fetchStore) error {
+	// TODO: PSUB: Check if remote has acess to all folders.
 	user := hdl.rp.CurrentUser()
 	fs, err := hdl.rp.FS(user, hdl.bk)
 	if err != nil {

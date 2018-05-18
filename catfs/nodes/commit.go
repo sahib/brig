@@ -34,6 +34,9 @@ type Commit struct {
 	// Parent hash (only nil for initial commit)
 	parent h.Hash
 
+	// Index of the commit (first is 0, second 1 and so on)
+	index int64
+
 	merge struct {
 		// With indicates with which person we merged.
 		with string
@@ -46,13 +49,14 @@ type Commit struct {
 
 // NewEmptyCommit creates a new commit after the commit referenced by `parent`.
 // `parent` might be nil for the very first commit.
-func NewEmptyCommit(inode uint64) (*Commit, error) {
+func NewEmptyCommit(inode uint64, index int64) (*Commit, error) {
 	return &Commit{
 		Base: Base{
 			nodeType: NodeTypeCommit,
 			inode:    inode,
 			modTime:  time.Now(),
 		},
+		index:  index,
 		author: AuthorOfStage,
 	}, nil
 }
@@ -103,6 +107,8 @@ func (c *Commit) setCommitAttrs(seg *capnp.Segment) (*capnp_model.Commit, error)
 	if err := capCmt.SetParent(c.parent); err != nil {
 		return nil, err
 	}
+
+	capCmt.SetIndex(c.index)
 
 	// Store merge infos:
 	capmerge := capCmt.Merge()
@@ -166,13 +172,15 @@ func (c *Commit) readCommitAttrs(capCmt capnp_model.Commit) error {
 		return err
 	}
 
-	capmerge := capCmt.Merge()
-	c.merge.head, err = capmerge.Head()
+	c.index = capCmt.Index()
+
+	capMerge := capCmt.Merge()
+	c.merge.head, err = capMerge.Head()
 	if err != nil {
 		return err
 	}
 
-	c.merge.with, err = capmerge.With()
+	c.merge.with, err = capMerge.With()
 	return err
 }
 
@@ -284,6 +292,12 @@ func (c *Commit) Path() string {
 // of the root directory.
 func (c *Commit) Size() uint64 {
 	return 0
+}
+
+// Index of the commit. First commit has the index 0,
+// next commit has the index 1 and so on.
+func (c *Commit) Index() int64 {
+	return c.index
 }
 
 /////////////// HIERARCHY INTERFACE ///////////////

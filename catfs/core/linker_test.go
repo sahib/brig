@@ -521,3 +521,51 @@ func TestAtomic(t *testing.T) {
 	})
 
 }
+
+func TestCommitByIndex(t *testing.T) {
+	// Note: WithReloadingLinker creates an init commit.
+	WithDummyLinker(t, func(lkr *Linker) {
+		head, err := lkr.Head()
+		require.Nil(t, err)
+		require.Equal(t, head.Index(), int64(0))
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+		require.Equal(t, int64(1), status.Index())
+
+		// Must modify something to commit:
+		MustTouch(t, lkr, "/x", 1)
+
+		require.Nil(t, lkr.MakeCommit("me", "is mario"))
+		newHead, err := lkr.Head()
+		require.Nil(t, err)
+		require.Equal(t, int64(1), newHead.Index())
+
+		status, err = lkr.Status()
+		require.Nil(t, err)
+		require.Equal(t, int64(2), status.Index())
+
+		// Lookup the just created commits:
+
+		// Pre-existing init commit:
+		c1, err := lkr.CommitByIndex(0)
+		require.Nil(t, err)
+		require.Equal(t, "init", c1.Message())
+
+		// Our commit:
+		c2, err := lkr.CommitByIndex(1)
+		require.Nil(t, err)
+		require.Equal(t, "is mario", c2.Message())
+
+		// Same as the status commit:
+		c3, err := lkr.CommitByIndex(2)
+		require.Nil(t, err)
+		require.NotNil(t, c3)
+		require.Equal(t, status.TreeHash(), c3.TreeHash())
+
+		// Not existing:
+		c4, err := lkr.CommitByIndex(3)
+		require.Nil(t, err)
+		require.Nil(t, c4)
+	})
+}

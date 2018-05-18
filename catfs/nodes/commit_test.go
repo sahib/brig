@@ -9,7 +9,7 @@ import (
 )
 
 func TestCommit(t *testing.T) {
-	cmt, err := NewEmptyCommit(0)
+	cmt, err := NewEmptyCommit(0, 42)
 	if err != nil {
 		t.Fatalf("Failed to create commit: %v", err)
 	}
@@ -58,6 +58,10 @@ func TestCommit(t *testing.T) {
 
 	if empty.author != AuthorOfStage {
 		t.Fatalf("Bad author unmarshaled: %v", empty.root)
+	}
+
+	if empty.index != 42 {
+		t.Fatalf("Index did not match in umarshalled: %v", empty.index)
 	}
 
 	person, remoteHead := empty.MergeMarker()
