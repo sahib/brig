@@ -15,6 +15,7 @@ struct Change $Go.doc("Change describes a single change") {
 }
 
 struct Patch $Go.doc("Patch contains a single change") {
-    from    @0 :Nodes.Node;
-    changes @1 :List(Change);
+    fromIndex @0 :Int64;
+    currIndex @1 :Int64;
+    changes   @2 :List(Change);
 }

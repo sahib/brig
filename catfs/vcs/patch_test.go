@@ -36,8 +36,8 @@ func TestPatchMarshalling(t *testing.T) {
 		}
 
 		patch := &Patch{
-			From:    head,
-			Changes: []*Change{change2, change1},
+			FromIndex: head.Index(),
+			Changes:   []*Change{change2, change1},
 		}
 
 		msg, err := patch.ToCapnp()

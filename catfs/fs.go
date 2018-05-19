@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1278,7 +1279,7 @@ func (fs *FS) ScheduleGCRun() {
 //
 // The byte structured returned by this method may change at any point
 // and may not be relied upon.
-func (fs *FS) MakePatch(fromRev string) ([]byte, error) {
+func (fs *FS) MakePatch(fromRev string, folders []string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -1287,8 +1288,7 @@ func (fs *FS) MakePatch(fromRev string) ([]byte, error) {
 		return nil, err
 	}
 
-	// TODO: Pass prefixes
-	patch, err := vcs.MakePatch(fs.lkr, from, nil)
+	patch, err := vcs.MakePatch(fs.lkr, from, folders)
 	if err != nil {
 		return nil, err
 	}
@@ -1316,5 +1316,24 @@ func (fs *FS) ApplyPatch(data []byte) error {
 		return err
 	}
 
-	return vcs.ApplyPatch(fs.lkr, patch)
+	if err := vcs.ApplyPatch(fs.lkr, patch); err != nil {
+		return err
+	}
+
+	fromIndexData := []byte(strconv.FormatInt(patch.CurrIndex, 10))
+	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
+}
+
+func (fs *FS) LastPatchIndex() (int64, error) {
+	fromIndexData, err := fs.lkr.MetadataGet("fs.last-merge-index")
+	if err != nil && err != db.ErrNoSuchKey {
+		return -1, err
+	}
+
+	// If we did not merge yet with anyone we have to
+	if err == db.ErrNoSuchKey {
+		return 0, nil
+	}
+
+	return strconv.ParseInt(string(fromIndexData), 10, 64)
 }

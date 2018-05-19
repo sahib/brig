@@ -182,12 +182,12 @@ type Patch struct{ capnp.Struct }
 const Patch_TypeID = 0x927c7336e3054805
 
 func NewPatch(s *capnp.Segment) (Patch, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 16, PointerCount: 1})
 	return Patch{st}, err
 }
 
 func NewRootPatch(s *capnp.Segment) (Patch, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 16, PointerCount: 1})
 	return Patch{st}, err
 }
 
@@ -201,43 +201,34 @@ func (s Patch) String() string {
 	return str
 }
 
-func (s Patch) From() (capnp2.Node, error) {
-	p, err := s.Struct.Ptr(0)
-	return capnp2.Node{Struct: p.Struct()}, err
+func (s Patch) FromIndex() int64 {
+	return int64(s.Struct.Uint64(0))
 }
 
-func (s Patch) HasFrom() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
+func (s Patch) SetFromIndex(v int64) {
+	s.Struct.SetUint64(0, uint64(v))
 }
 
-func (s Patch) SetFrom(v capnp2.Node) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+func (s Patch) CurrIndex() int64 {
+	return int64(s.Struct.Uint64(8))
 }
 
-// NewFrom sets the from field to a newly
-// allocated capnp2.Node struct, preferring placement in s's segment.
-func (s Patch) NewFrom() (capnp2.Node, error) {
-	ss, err := capnp2.NewNode(s.Struct.Segment())
-	if err != nil {
-		return capnp2.Node{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
+func (s Patch) SetCurrIndex(v int64) {
+	s.Struct.SetUint64(8, uint64(v))
 }
 
 func (s Patch) Changes() (Change_List, error) {
-	p, err := s.Struct.Ptr(1)
+	p, err := s.Struct.Ptr(0)
 	return Change_List{List: p.List()}, err
 }
 
 func (s Patch) HasChanges() bool {
-	p, err := s.Struct.Ptr(1)
+	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
 func (s Patch) SetChanges(v Change_List) error {
-	return s.Struct.SetPtr(1, v.List.ToPtr())
+	return s.Struct.SetPtr(0, v.List.ToPtr())
 }
 
 // NewChanges sets the changes field to a newly
@@ -247,7 +238,7 @@ func (s Patch) NewChanges(n int32) (Change_List, error) {
 	if err != nil {
 		return Change_List{}, err
 	}
-	err = s.Struct.SetPtr(1, l.List.ToPtr())
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
 	return l, err
 }
 
@@ -256,7 +247,7 @@ type Patch_List struct{ capnp.List }
 
 // NewPatch creates a new list of Patch.
 func NewPatch_List(s *capnp.Segment, sz int32) (Patch_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 16, PointerCount: 1}, sz)
 	return Patch_List{l}, err
 }
 
@@ -277,38 +268,35 @@ func (p Patch_Promise) Struct() (Patch, error) {
 	return Patch{s}, err
 }
 
-func (p Patch_Promise) From() capnp2.Node_Promise {
-	return capnp2.Node_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
-}
-
-const schema_b943b54bf1683782 = "x\xda|\xd0\xbfk\x14O\x1c\xc6\xf1\xe7\xf9\xcc\xee\xf7" +
-	"\xbe\x91\xd3\xbb\xf1\xb6\x92\x83\xdbB\xc1\x08z\x17B\x14" +
-	"D\xfcu\x16\x82\xcd\x0dX\x0b\x93\xcd\xdc\xed\xa1\xd9;" +
-	"vWM\x91\x10\x95\x88Fr\x10\"\x82\x9d\x9d\xad\x95" +
-	"E\x0aK\xff\x05\xff\x81\x94V\x82U\x9a\x95=\x7f\x05" +
-	"\x12\xec\x867\x0f3\xbc\xa6s\x95\xd7e\xceo\xfb\x80" +
-	"\xb9\xe2\xffW\xf8\xb7\xfd\xbd\x8b\xd9\xea\x0et\x93\xc5\xb3" +
-	"K\xf1\xb7;\x1f\xbb\xbb\xf0\xa5\x02\xcc\xaf\xc9I6&" +
-	"RiL\xa4\xd5\xd8\x95\xc7`\xf1a\xf3\xc5\xf7\xe3\x9d" +
-	"\x9d70M\x1e\xdc{\xe5\xfe\x8c:\xc5\xc6\x82\xaa4" +
-	"\x16Tk\xde\xa9\x16\xb1]D6\xefg\xedG\x91\xca" +
-	"\xda\x91\x1d'\xe3\xf6\xd8\xe6Q|az\xbe\xdc\xb3y" +
-	"\xc4\xb8G\x1a\x8fR\xdc{\xfd\xce|\xfa\xf2\xea3\x8c" +
-	"'\xbc\xd1$\xab\x80\xe6~Q\xae\xe20\x1aI\x92\xdb" +
-	"a\x92\x856\xcc\x86\xc9\xe0\x81\x0b\xafE\xb1M\x06\x0e" +
-	"0\xff+\x0f\xf0\x08\xe8\xd9s\x809\xadh:BM" +
-	"\x06,\xe3\xf9\x9b\x809\xabhn\x09k\xfdt\xb4\xcc" +
-	"z\xb1\xb7\xdf\x1f\xaf\x7f\x9d}\x0f\x90up\xfd\xe7]" +
-	"\x19O\x80=E\xd6\xffR\xc12\xfe[\xd2\x8dm\xa2" +
-	"\x06\xeehJ8\xa5\xcc\xf1\x18\x8b\xee\xf4\x95pI\xb9" +
-	",J\x87\x8b\xee\x80\xe6\x17\x86&\xf8\x83Y+1+" +
-	"\x8afC\xf8\xdb\xf2\xb4l\xab\x8a\xe6\xa5P\x0b\x03\x0a" +
-	"\xa0\x9f\x97\xf1\x89\xa2\xd9\x12j%\x01\x15\xa07\xcb\xb8" +
-	"\xa1h\xb6\x85\xdaS\x01=@O\x16\x01\xb3\xa5h\xde" +
-	"\x0ak\xcb6\xbb\xcf\x19\x08g\xc0Z\xec\xec\xd2\xe1\x7f" +
-	"\xa9%n%?\"G\x0f\xd3\xf4p.R\xd7w\xe9" +
-	"\xddQ\x0f\x15\x9b\xc7\xacBX\x05\x7f\x04\x00\x00\xff\xff" +
-	"+5\xa05"
+const schema_b943b54bf1683782 = "x\xda|\xd0=k\x14]\x18\xc6\xf1\xeb\xba\xcf\xcc\xb3" +
+	"\xe4a5\x19w+\x09\xec\xb4Z\xb8\x09\x01\x05\x11|" +
+	"Y\x05E\xc59\xa2`%\x9c\xcc\xce\xee,&\xb3\xcb" +
+	"\xcc(\x1bH\x88JD#Y\x08\x11\xc1\xceN\xb0J" +
+	"e\x91\xc2\xd2\xaf\xe0\x17Hi%X\xa59r6\xbe" +
+	"\x04\x0dv\x87?\x17\x1c~\xf7\xcc-^\x90Y\xbf\xe9" +
+	"\x03\xfa\x9c\xff\x9f\xf5\xaf\xfa\xbb\xa7\x8b\xe5-\xe8i\x8a" +
+	"}z&\xfdz\xfdCk\x07>+\xc0\xdc\x8a\x1cc" +
+	"m$\x95\xdaH\x1a\xb5\x1d\xd9\x06\xed\xf6\xfa\xf3oG" +
+	"f\xb6^\xbb=\x0f\xec=\xb7\xef\xa9\xe3\xac-\xa9J" +
+	"mI5\xe6\xde\xab\x06\xb1icSv\x8a\xe6\xa3X" +
+	"\x15\xcd\xd8\x0c\xb2As`\xca8=5~\x9f\x8dL" +
+	"\x193\x8dH\xedQ\xec\xfdWo\xf5\xc7\xcf/?A" +
+	"{\xc2\x8b\xd3d\x15\x08\xb8g\xdd*\x0d\xe3\xbed\xa5" +
+	"\xe9eEh\xc2\xa2\x97u\x17\x92\xf0|\x9c\x9a\xac\x9b" +
+	"\x00\xba\xaa<\xc0#\x10\\\xb9\x0d\xe8\xcb\x8a:\x12\x06" +
+	"d\x9d.\xdet\xf1\x86\xa2\xbe'\xa4\xd4)@p\xf7" +
+	"\x12\xa0#E\xbd \xb4\x9d\xbc\xbfx-k'\xe0\x90" +
+	">\x84>h\xe3\x87y\xfeG[\xdd\xff\xb0\xe0Q0" +
+	"R\xe4\xd4\xef{\x80.\xfe\x9b\xdbJM\xa6\xba\xc9\xe1" +
+	"\xdep\xec\x9d\xe5\xff\xb4\xad\xf1/a[%E\x9c\xf7" +
+	"\xe6\x93\x03\xe4\x1fb\xea\xfa/\xf1\xcaI@\x0f\x15\xf5" +
+	"\x9a\xf0'\xf8\x89k\xcb\x8a\xfa\x850\x10\xee\x8b\x9f\xb9" +
+	"\xf8XQo\x08\x03%u* XwqMQo" +
+	"\x0a\x03O\xd5\xe9\x01\xc1h\x1e\xd0\x1b\x8a\xfa\x8dpr" +
+	"\xd1\x14\x0f8\x01\xe1\x048\x99&\xa6\xcd)\xbb\xbb\xd7" +
+	"\x19\xac~9\xf1\xce\xb1\xa7\xc0\xc9,\x19\x96\x87dw" +
+	"\xc2\xbf\xb3\xcd\x93N\x92\xdf\xe9G\xa8\x982e\x15\xc2" +
+	"*\xf8=\x00\x00\xff\xff\xf5$\xa6\x92"
 
 func init() {
 	schemas.Register(schema_b943b54bf1683782,

@@ -736,3 +736,44 @@ func TestChangingCompressAlgos(t *testing.T) {
 		require.Equal(t, newData, gotData)
 	})
 }
+
+func TestPatch(t *testing.T) {
+	withDummyFS(t, func(srcFs *FS) {
+		withDummyFS(t, func(dstFs *FS) {
+			require.Nil(t, srcFs.MakeCommit("init"))
+			require.Nil(t, srcFs.Touch("/x"))
+			require.Nil(t, srcFs.MakeCommit("added x"))
+
+			srcIndex, err := srcFs.LastPatchIndex()
+			require.Nil(t, err)
+			require.Equal(t, int64(0), srcIndex)
+
+			dstIndex, err := dstFs.LastPatchIndex()
+			require.Nil(t, err)
+			require.Equal(t, int64(0), dstIndex)
+
+			patch, err := srcFs.MakePatch("commit[0]", nil)
+			require.Nil(t, err)
+
+			require.Nil(t, dstFs.ApplyPatch(patch))
+			srcX, err := srcFs.Stat("/x")
+			require.Nil(t, err)
+
+			srcIndex, err = srcFs.LastPatchIndex()
+			require.Nil(t, err)
+			require.Equal(t, int64(0), srcIndex)
+
+			dstX, err := dstFs.Stat("/x")
+			require.Nil(t, err)
+
+			require.Equal(t, srcX.Path, dstX.Path)
+			require.Equal(t, srcX.Size, dstX.Size)
+			require.Equal(t, srcX.ContentHash, dstX.ContentHash)
+			require.Equal(t, srcX.BackendHash, dstX.BackendHash)
+
+			dstIndex, err = dstFs.LastPatchIndex()
+			require.Nil(t, err)
+			require.Equal(t, int64(2), dstIndex)
+		})
+	})
+}

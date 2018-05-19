@@ -7,15 +7,15 @@ import (
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
-	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	capnp_patch "github.com/sahib/brig/catfs/vcs/capnp"
 	"github.com/sahib/brig/util/trie"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Patch struct {
-	From    *n.Commit
-	Changes []*Change
+	FromIndex int64
+	CurrIndex int64
+	Changes   []*Change
 }
 
 func (p *Patch) ToCapnp() (*capnp.Message, error) {
@@ -29,18 +29,8 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capFromNd, err := capnp_model.NewNode(seg)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := p.From.ToCapnpNode(seg, capFromNd); err != nil {
-		return nil, err
-	}
-
-	if err := capPatch.SetFrom(capFromNd); err != nil {
-		return nil, err
-	}
+	capPatch.SetFromIndex(p.FromIndex)
+	capPatch.SetCurrIndex(p.CurrIndex)
 
 	capChangeLst, err := capnp_patch.NewChange_List(seg, int32(len(p.Changes)))
 	if err != nil {
@@ -75,15 +65,8 @@ func (p *Patch) FromCapnp(msg *capnp.Message) error {
 		return err
 	}
 
-	capFromNd, err := capPatch.From()
-	if err != nil {
-		return err
-	}
-
-	p.From = &n.Commit{}
-	if err := p.From.FromCapnpNode(capFromNd); err != nil {
-		return err
-	}
+	p.FromIndex = capPatch.FromIndex()
+	p.CurrIndex = capPatch.CurrIndex()
 
 	capChs, err := capPatch.Changes()
 	if err != nil {
@@ -171,7 +154,8 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	}
 
 	patch := &Patch{
-		From: from,
+		FromIndex: from.Index(),
+		CurrIndex: status.Index(),
 	}
 
 	// Shortcut: The patch CURR..CURR would be empty.
@@ -234,7 +218,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return err
 		}
 
-		if isValid {
+		if isValid && combCh.Mask != 0 {
 			patch.Changes = append(patch.Changes, combCh)
 		}
 
