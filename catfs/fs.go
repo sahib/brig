@@ -1320,6 +1320,9 @@ func (fs *FS) ApplyPatch(data []byte) error {
 		return err
 	}
 
+	// Remember what patch index we merged last.
+	// This info can be read via LastPatchIndex() to determine
+	// the next version to get from the remote.
 	fromIndexData := []byte(strconv.FormatInt(patch.CurrIndex, 10))
 	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
 }

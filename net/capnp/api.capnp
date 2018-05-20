@@ -6,6 +6,8 @@ $Go.import("github.com/sahib/brig/net/capnp");
 
 interface Sync {
     fetchStore @0 () -> (data :Data);
+    fetchPatch @1 (fromIndex :Int64) -> (data :Data);
+    isCompleteFetchAllowed @2 () -> (isAllowed :Bool);
 }
 
 interface Meta {

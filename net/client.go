@@ -161,3 +161,35 @@ func (cl *Client) FetchStore() (*bytes.Buffer, error) {
 
 	return bytes.NewBuffer(data), nil
 }
+
+func (cl *Client) FetchPatch(fromIndex int64) ([]byte, error) {
+	call := cl.api.FetchPatch(cl.ctx, func(p capnp.Sync_fetchPatch_Params) error {
+		p.SetFromIndex(fromIndex)
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := result.Data()
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (cl *Client) IsCompleteFetchAllowed() (bool, error) {
+	call := cl.api.IsCompleteFetchAllowed(cl.ctx, func(p capnp.Sync_isCompleteFetchAllowed_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, err
+	}
+
+	return result.IsAllowed(), nil
+}

@@ -35,9 +35,53 @@ func (c Sync) FetchStore(ctx context.Context, params func(Sync_fetchStore_Params
 	}
 	return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c Sync) FetchPatch(ctx context.Context, params func(Sync_fetchPatch_Params) error, opts ...capnp.CallOption) Sync_fetchPatch_Results_Promise {
+	if c.Client == nil {
+		return Sync_fetchPatch_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      1,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "fetchPatch",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_fetchPatch_Params{Struct: s}) }
+	}
+	return Sync_fetchPatch_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Sync) IsCompleteFetchAllowed(ctx context.Context, params func(Sync_isCompleteFetchAllowed_Params) error, opts ...capnp.CallOption) Sync_isCompleteFetchAllowed_Results_Promise {
+	if c.Client == nil {
+		return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      2,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isCompleteFetchAllowed",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_isCompleteFetchAllowed_Params{Struct: s}) }
+	}
+	return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type Sync_Server interface {
 	FetchStore(Sync_fetchStore) error
+
+	FetchPatch(Sync_fetchPatch) error
+
+	IsCompleteFetchAllowed(Sync_isCompleteFetchAllowed) error
 }
 
 func Sync_ServerToClient(s Sync_Server) Sync {
@@ -47,7 +91,7 @@ func Sync_ServerToClient(s Sync_Server) Sync {
 
 func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 1)
+		methods = make([]server.Method, 0, 3)
 	}
 
 	methods = append(methods, server.Method{
@@ -64,6 +108,34 @@ func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      1,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "fetchPatch",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_fetchPatch{c, opts, Sync_fetchPatch_Params{Struct: p}, Sync_fetchPatch_Results{Struct: r}}
+			return s.FetchPatch(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      2,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isCompleteFetchAllowed",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_isCompleteFetchAllowed{c, opts, Sync_isCompleteFetchAllowed_Params{Struct: p}, Sync_isCompleteFetchAllowed_Results{Struct: r}}
+			return s.IsCompleteFetchAllowed(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -73,6 +145,22 @@ type Sync_fetchStore struct {
 	Options capnp.CallOptions
 	Params  Sync_fetchStore_Params
 	Results Sync_fetchStore_Results
+}
+
+// Sync_fetchPatch holds the arguments for a server call to Sync.fetchPatch.
+type Sync_fetchPatch struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Sync_fetchPatch_Params
+	Results Sync_fetchPatch_Results
+}
+
+// Sync_isCompleteFetchAllowed holds the arguments for a server call to Sync.isCompleteFetchAllowed.
+type Sync_isCompleteFetchAllowed struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Sync_isCompleteFetchAllowed_Params
+	Results Sync_isCompleteFetchAllowed_Results
 }
 
 type Sync_fetchStore_Params struct{ capnp.Struct }
@@ -197,6 +285,256 @@ type Sync_fetchStore_Results_Promise struct{ *capnp.Pipeline }
 func (p Sync_fetchStore_Results_Promise) Struct() (Sync_fetchStore_Results, error) {
 	s, err := p.Pipeline.Struct()
 	return Sync_fetchStore_Results{s}, err
+}
+
+type Sync_fetchPatch_Params struct{ capnp.Struct }
+
+// Sync_fetchPatch_Params_TypeID is the unique identifier for the type Sync_fetchPatch_Params.
+const Sync_fetchPatch_Params_TypeID = 0xb20f728e8e60c3f5
+
+func NewSync_fetchPatch_Params(s *capnp.Segment) (Sync_fetchPatch_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_fetchPatch_Params{st}, err
+}
+
+func NewRootSync_fetchPatch_Params(s *capnp.Segment) (Sync_fetchPatch_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_fetchPatch_Params{st}, err
+}
+
+func ReadRootSync_fetchPatch_Params(msg *capnp.Message) (Sync_fetchPatch_Params, error) {
+	root, err := msg.RootPtr()
+	return Sync_fetchPatch_Params{root.Struct()}, err
+}
+
+func (s Sync_fetchPatch_Params) String() string {
+	str, _ := text.Marshal(0xb20f728e8e60c3f5, s.Struct)
+	return str
+}
+
+func (s Sync_fetchPatch_Params) FromIndex() int64 {
+	return int64(s.Struct.Uint64(0))
+}
+
+func (s Sync_fetchPatch_Params) SetFromIndex(v int64) {
+	s.Struct.SetUint64(0, uint64(v))
+}
+
+// Sync_fetchPatch_Params_List is a list of Sync_fetchPatch_Params.
+type Sync_fetchPatch_Params_List struct{ capnp.List }
+
+// NewSync_fetchPatch_Params creates a new list of Sync_fetchPatch_Params.
+func NewSync_fetchPatch_Params_List(s *capnp.Segment, sz int32) (Sync_fetchPatch_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Sync_fetchPatch_Params_List{l}, err
+}
+
+func (s Sync_fetchPatch_Params_List) At(i int) Sync_fetchPatch_Params {
+	return Sync_fetchPatch_Params{s.List.Struct(i)}
+}
+
+func (s Sync_fetchPatch_Params_List) Set(i int, v Sync_fetchPatch_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_fetchPatch_Params_List) String() string {
+	str, _ := text.MarshalList(0xb20f728e8e60c3f5, s.List)
+	return str
+}
+
+// Sync_fetchPatch_Params_Promise is a wrapper for a Sync_fetchPatch_Params promised by a client call.
+type Sync_fetchPatch_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_fetchPatch_Params_Promise) Struct() (Sync_fetchPatch_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_fetchPatch_Params{s}, err
+}
+
+type Sync_fetchPatch_Results struct{ capnp.Struct }
+
+// Sync_fetchPatch_Results_TypeID is the unique identifier for the type Sync_fetchPatch_Results.
+const Sync_fetchPatch_Results_TypeID = 0xc788029a0ef52479
+
+func NewSync_fetchPatch_Results(s *capnp.Segment) (Sync_fetchPatch_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Sync_fetchPatch_Results{st}, err
+}
+
+func NewRootSync_fetchPatch_Results(s *capnp.Segment) (Sync_fetchPatch_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Sync_fetchPatch_Results{st}, err
+}
+
+func ReadRootSync_fetchPatch_Results(msg *capnp.Message) (Sync_fetchPatch_Results, error) {
+	root, err := msg.RootPtr()
+	return Sync_fetchPatch_Results{root.Struct()}, err
+}
+
+func (s Sync_fetchPatch_Results) String() string {
+	str, _ := text.Marshal(0xc788029a0ef52479, s.Struct)
+	return str
+}
+
+func (s Sync_fetchPatch_Results) Data() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return []byte(p.Data()), err
+}
+
+func (s Sync_fetchPatch_Results) HasData() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Sync_fetchPatch_Results) SetData(v []byte) error {
+	return s.Struct.SetData(0, v)
+}
+
+// Sync_fetchPatch_Results_List is a list of Sync_fetchPatch_Results.
+type Sync_fetchPatch_Results_List struct{ capnp.List }
+
+// NewSync_fetchPatch_Results creates a new list of Sync_fetchPatch_Results.
+func NewSync_fetchPatch_Results_List(s *capnp.Segment, sz int32) (Sync_fetchPatch_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Sync_fetchPatch_Results_List{l}, err
+}
+
+func (s Sync_fetchPatch_Results_List) At(i int) Sync_fetchPatch_Results {
+	return Sync_fetchPatch_Results{s.List.Struct(i)}
+}
+
+func (s Sync_fetchPatch_Results_List) Set(i int, v Sync_fetchPatch_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_fetchPatch_Results_List) String() string {
+	str, _ := text.MarshalList(0xc788029a0ef52479, s.List)
+	return str
+}
+
+// Sync_fetchPatch_Results_Promise is a wrapper for a Sync_fetchPatch_Results promised by a client call.
+type Sync_fetchPatch_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_fetchPatch_Results_Promise) Struct() (Sync_fetchPatch_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_fetchPatch_Results{s}, err
+}
+
+type Sync_isCompleteFetchAllowed_Params struct{ capnp.Struct }
+
+// Sync_isCompleteFetchAllowed_Params_TypeID is the unique identifier for the type Sync_isCompleteFetchAllowed_Params.
+const Sync_isCompleteFetchAllowed_Params_TypeID = 0xa29b8ab519fba593
+
+func NewSync_isCompleteFetchAllowed_Params(s *capnp.Segment) (Sync_isCompleteFetchAllowed_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_isCompleteFetchAllowed_Params{st}, err
+}
+
+func NewRootSync_isCompleteFetchAllowed_Params(s *capnp.Segment) (Sync_isCompleteFetchAllowed_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_isCompleteFetchAllowed_Params{st}, err
+}
+
+func ReadRootSync_isCompleteFetchAllowed_Params(msg *capnp.Message) (Sync_isCompleteFetchAllowed_Params, error) {
+	root, err := msg.RootPtr()
+	return Sync_isCompleteFetchAllowed_Params{root.Struct()}, err
+}
+
+func (s Sync_isCompleteFetchAllowed_Params) String() string {
+	str, _ := text.Marshal(0xa29b8ab519fba593, s.Struct)
+	return str
+}
+
+// Sync_isCompleteFetchAllowed_Params_List is a list of Sync_isCompleteFetchAllowed_Params.
+type Sync_isCompleteFetchAllowed_Params_List struct{ capnp.List }
+
+// NewSync_isCompleteFetchAllowed_Params creates a new list of Sync_isCompleteFetchAllowed_Params.
+func NewSync_isCompleteFetchAllowed_Params_List(s *capnp.Segment, sz int32) (Sync_isCompleteFetchAllowed_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Sync_isCompleteFetchAllowed_Params_List{l}, err
+}
+
+func (s Sync_isCompleteFetchAllowed_Params_List) At(i int) Sync_isCompleteFetchAllowed_Params {
+	return Sync_isCompleteFetchAllowed_Params{s.List.Struct(i)}
+}
+
+func (s Sync_isCompleteFetchAllowed_Params_List) Set(i int, v Sync_isCompleteFetchAllowed_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_isCompleteFetchAllowed_Params_List) String() string {
+	str, _ := text.MarshalList(0xa29b8ab519fba593, s.List)
+	return str
+}
+
+// Sync_isCompleteFetchAllowed_Params_Promise is a wrapper for a Sync_isCompleteFetchAllowed_Params promised by a client call.
+type Sync_isCompleteFetchAllowed_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_isCompleteFetchAllowed_Params_Promise) Struct() (Sync_isCompleteFetchAllowed_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_isCompleteFetchAllowed_Params{s}, err
+}
+
+type Sync_isCompleteFetchAllowed_Results struct{ capnp.Struct }
+
+// Sync_isCompleteFetchAllowed_Results_TypeID is the unique identifier for the type Sync_isCompleteFetchAllowed_Results.
+const Sync_isCompleteFetchAllowed_Results_TypeID = 0xe7a1e07d1144113e
+
+func NewSync_isCompleteFetchAllowed_Results(s *capnp.Segment) (Sync_isCompleteFetchAllowed_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_isCompleteFetchAllowed_Results{st}, err
+}
+
+func NewRootSync_isCompleteFetchAllowed_Results(s *capnp.Segment) (Sync_isCompleteFetchAllowed_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_isCompleteFetchAllowed_Results{st}, err
+}
+
+func ReadRootSync_isCompleteFetchAllowed_Results(msg *capnp.Message) (Sync_isCompleteFetchAllowed_Results, error) {
+	root, err := msg.RootPtr()
+	return Sync_isCompleteFetchAllowed_Results{root.Struct()}, err
+}
+
+func (s Sync_isCompleteFetchAllowed_Results) String() string {
+	str, _ := text.Marshal(0xe7a1e07d1144113e, s.Struct)
+	return str
+}
+
+func (s Sync_isCompleteFetchAllowed_Results) IsAllowed() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s Sync_isCompleteFetchAllowed_Results) SetIsAllowed(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+// Sync_isCompleteFetchAllowed_Results_List is a list of Sync_isCompleteFetchAllowed_Results.
+type Sync_isCompleteFetchAllowed_Results_List struct{ capnp.List }
+
+// NewSync_isCompleteFetchAllowed_Results creates a new list of Sync_isCompleteFetchAllowed_Results.
+func NewSync_isCompleteFetchAllowed_Results_List(s *capnp.Segment, sz int32) (Sync_isCompleteFetchAllowed_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Sync_isCompleteFetchAllowed_Results_List{l}, err
+}
+
+func (s Sync_isCompleteFetchAllowed_Results_List) At(i int) Sync_isCompleteFetchAllowed_Results {
+	return Sync_isCompleteFetchAllowed_Results{s.List.Struct(i)}
+}
+
+func (s Sync_isCompleteFetchAllowed_Results_List) Set(i int, v Sync_isCompleteFetchAllowed_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_isCompleteFetchAllowed_Results_List) String() string {
+	str, _ := text.MarshalList(0xe7a1e07d1144113e, s.List)
+	return str
+}
+
+// Sync_isCompleteFetchAllowed_Results_Promise is a wrapper for a Sync_isCompleteFetchAllowed_Results promised by a client call.
+type Sync_isCompleteFetchAllowed_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_isCompleteFetchAllowed_Results_Promise) Struct() (Sync_isCompleteFetchAllowed_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_isCompleteFetchAllowed_Results{s}, err
 }
 
 type Meta struct{ Client capnp.Client }
@@ -436,6 +774,46 @@ func (c API) FetchStore(ctx context.Context, params func(Sync_fetchStore_Params)
 	}
 	return Sync_fetchStore_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) FetchPatch(ctx context.Context, params func(Sync_fetchPatch_Params) error, opts ...capnp.CallOption) Sync_fetchPatch_Results_Promise {
+	if c.Client == nil {
+		return Sync_fetchPatch_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      1,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "fetchPatch",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_fetchPatch_Params{Struct: s}) }
+	}
+	return Sync_fetchPatch_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) IsCompleteFetchAllowed(ctx context.Context, params func(Sync_isCompleteFetchAllowed_Params) error, opts ...capnp.CallOption) Sync_isCompleteFetchAllowed_Results_Promise {
+	if c.Client == nil {
+		return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      2,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isCompleteFetchAllowed",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_isCompleteFetchAllowed_Params{Struct: s}) }
+	}
+	return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts ...capnp.CallOption) Meta_ping_Results_Promise {
 	if c.Client == nil {
 		return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -462,6 +840,10 @@ type API_Server interface {
 
 	FetchStore(Sync_fetchStore) error
 
+	FetchPatch(Sync_fetchPatch) error
+
+	IsCompleteFetchAllowed(Sync_isCompleteFetchAllowed) error
+
 	Ping(Meta_ping) error
 }
 
@@ -472,7 +854,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 3)
+		methods = make([]server.Method, 0, 5)
 	}
 
 	methods = append(methods, server.Method{
@@ -501,6 +883,34 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			return s.FetchStore(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      1,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "fetchPatch",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_fetchPatch{c, opts, Sync_fetchPatch_Params{Struct: p}, Sync_fetchPatch_Results{Struct: r}}
+			return s.FetchPatch(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      2,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isCompleteFetchAllowed",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_isCompleteFetchAllowed{c, opts, Sync_isCompleteFetchAllowed_Params{Struct: p}, Sync_isCompleteFetchAllowed_Results{Struct: r}}
+			return s.IsCompleteFetchAllowed(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
 	})
 
 	methods = append(methods, server.Method{
@@ -646,47 +1056,64 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_9bcb07fb35756ee6 = "x\xda\x84\x92?h\x13a\x18\xc6\x9f\xf7\xbd/^\xc5" +
-	"\x96\xf2q\x1dZ\x97.\x91B\xa4I\xac\x15\xa1Kc" +
-	"\x06C\x86\xca]\x8a\xa8\x05\x873\x9em\xa0\xb9\x9e\x97" +
-	"\x8b\xd8A:u\x10Z\xb0\xe2\xa4E\x14'\x11\xc1M" +
-	"\\\x05\x11\"\xa2\xbb:\x94\x82\x08\xce\x82P\xe2\xc9w" +
-	"\xf6\x923%\xba}\xf0\xbe<\x7f~\xdf\x9b?J\x05" +
-	">\x91Z\x13\x805\x9d:\x14N\xec\xaeWv\xdaw" +
-	"\xeeC\x8e\x11\x90\"\x1d8y\x8c\xa7\x08dL\xf2," +
-	"(\x0c\xdfn\\xt|\xf2\x05\xe4\x88\x16~u\x9b" +
-	"\xa7\xf6\xf4w\x0f\x002\xe6\xb8e\\b\x1d0\xces" +
-	"\xc9\xb8\xa5^a\xfb\xd7\xdd\x9cy\xb1\xfc\xf2\xc0\xb2\xc3" +
-	"\xaf\x8dz\xb4\\\xe3\x92\xb1\xc5\x13@(\xef\x95\x17\xcf" +
-	"\x89\xea\xe7?\xd6B9\xdf\xe6\x05\x82\x087\xd2-\xf7" +
-	"l\xfb\xe9Nb\xd2\xe4\x8c\x9a\x1c9\xfd\xe4\xd3\xee\xd8" +
-	"\x97\xef\xb0F)\x1e]\xe6\"E\x16*\xae\x7f\xf3\xc3" +
-	"\x1b=S\xfbq \xc1:\xb7\x8c\xad(\xc1&\x97\x8c" +
-	"W\xea\xd5\xde\xfe\x96\x7fX\x98\xfe\x99\xa8\xfe\x98\xaf(" +
-	"\xad\xe7\x91\x96X\xba\xfeq\xb3\xf2l\x0fr4\xf6z" +
-	"\xcf3\x84|\xe8:A\xaej{\xae\xe6\xe5l\xaf\x96" +
-	"UOof\xce\x09\xec\xacWs\x17\xd3\x15g\xbc\xd1" +
-	"\\\x0e\x1a\x96\xd0\x04 \x08\x90CS\x805\xa0\x915" +
-	"\xc24\xee;\xde\xf2*\x0d\x82i\x10\xd4\x11\xe3^1" +
-	"\xc0$\xb2\x84\x96\x02:H(\xfe0)3`\x99\xd2" +
-	"\x87\x95c\x81L\xea#t\xc6,'d\xe2J\x14\x83" +
-	"\x94\xb2\x18\xc9\xac\xddp\xfcFm\xc5-\x905@\x09" +
-	"\x8c@\xf7\x02\x80\x8e\x85HZ\xcc\xaf\xba\xd5\xec5'" +
-	"\xa8.\xcd\x07+\xbe\x936m\xdf\xd6\xea\x8d\xffQ2" +
-	"\xeda\xdfN\xac\x89\x9e\xd8\xd9\xfdH\xe9\x8a\x13\xd1D" +
-	"\x12g\xb1\x8b3\x8eN\x02L\xa2\x1fP\x152\x094" +
-	"\xbe>\xda\xc6\xfe\x15\xc8\x05\xb0<\xac\x87q\x13h\xbe" +
-	"\xf37\xd8\x7f\xb6V)\xf5\x9eO\xcftS\x0e_\xb5" +
-	"\x03\x9b\x86\xc04\x94\x88\xa8\xf5\xeb<\xab \xd6\x1b\xbf" +
-	"\x03\x00\x00\xff\xff\xd6u\x13\x17"
+const schema_9bcb07fb35756ee6 = "x\xda\x9c\x94OH\x14o\x18\xc7\x9f\xe7}g\x1c\xe1" +
+	"\xb7\xfe\x96\x97\xf1\xe0\x1e\xc2\xcb\x86\xb4\xe1j\x96\x84\x82" +
+	"\xb9\x9a){(f\xd6C\xe9\xa9iwt\x17vg" +
+	"\xd7\x99\xb1\xf4\x10\x9d\x84\x08\x95\xe8\xcfE%\xfaC\x07" +
+	"\xe9\x12\x81\x04B\x87\x8c\x10\xecP\x97N%%B\x05" +
+	"\xd1q\xa1\x90m\xe2\xdduvGmQ\xba\x0d\xbc\xcf" +
+	"|\x9f\xcf\xf3\xfd>\xef\xdb\xba\x88\x11rL\xfc$\x02" +
+	"\xa8}b\x8d\xd3\xb49\x15\xdb(\xdc\x9c\x03\x16@\x00" +
+	"\x11%\x80\xe3\xefI\x1b\x02\xca\xeb\xa4\x1b\xd0\xb9\xfdx" +
+	"+\xb0tc\xfea\xa9@\xe0\xe7\x05\xb2\x8c 8\xce" +
+	"\xea\xf4\xf9\xfbG\x9b\x9f\x02\xab\xa7\xce\x17c\xbc}K" +
+	"z3\x0f\x80\xf2\x0f\xb2&\xff\"\x12\x80\x9c'\x03\xf2" +
+	"!*\x018\xf9W\x17ggM\xff3P\x03\xe8\xea" +
+	"\x88t\x98\xf7a\x94\xf7)\xfc\xbe\xd5\xa2\\\x88>\xdf" +
+	"\xa3\xd6NW\xe4.\xae!w\xd0\x01Y\xa3M\x00\xce" +
+	"d0\xff\xff\x1c\xb9\xbe\xea\xa5\x1e\xa2\x97\xb8\x9a^T" +
+	"cw\xa2\xa3\xe7\x84\xf8G\x0f\xf5\x14\xef&8\xd3\xc1" +
+	"5\xa3\xbf\xb0\xb8\xe19\x19\xa3!~r\x8a\xf5\xb1\xab" +
+	"\x9f\x1f|\xf5\"\x0e\xd1\x15.\x9a*\x8a\xfew\xf2\xd1" +
+	"\x87\xcd\xc0\xfawP\x1b\xca\x053\xb4\x97\x17\xdc-\x16" +
+	"\x98\x13o_K\xa1T~\xcf\x0cKtM~Y\x9c" +
+	"\xe1\x05]\x95\xcf\xf0?\x0b\x0b\xdfZ\xefEN\xfc\xf4" +
+	"L\xd0,\x14'\xe8\x10\xb8\x96\x90\x1c{7\x13{\xb2" +
+	"\x05\xac\xa1\x0c#t\"\xb4:\x86n\xb7\xc4\xb5\x9cA" +
+	"s-Z.\x15\xe6\x9f\xb9\xce\xb3\xba\xad\x85s)c" +
+	"4\x18\xd3\x1b\xad\xf1\xb4m\xa9\x02\x15\x00\x04\x04`u" +
+	"m\x00j-E\xb5\x9e`\xa3\xa9\xe7\xd2\x93\xe8\x03\x82" +
+	">\xc0\xb2\x98\xe8\x15\x1b\x9c4\xe2\xe1\x94u:\x9b\xc9" +
+	"\xa5u[\xef\xd7\xedx\xb2'\x9d\xce^\xd1\x13\xc1n" +
+	"E3\xb5\x8cU\xfe\x91\xec\xa6\x00P\x10U\x81\x8a\x00" +
+	"e\xb3\xd1]3\xc6B@\x98(\xf99j\x04\x15\xac" +
+	"\x10\x08{\x08Fx_E\xb3\xe3\xc9 oJ3;" +
+	"f\x8a\x01\xa8>\x8aj\x03Ag\xc4\xccf\xa2FB" +
+	"\x07\x9c@\x11\x08\x8a\x9e\xc9v\x00\xf6(Q\x0f\x9e\xeb" +
+	"1\xba\xc92\xd6[\xc4\xbbvY7\xadT\xd6\x88\xa0" +
+	"Z\x8b\x9e\\\x01*[\x0fp0\xf4\x98n\x8dK\xbb" +
+	"\xf2\x08U\xf2\xf0'4[\xc3: X\x07\xfb\x9a1" +
+	"hgM\xdd5c\xbfEP4\xff\x8e\xa4j\x0e\x1a" +
+	"1'N\xdb\x16Ts;e\x95*\x01\x13\x88@\x10" +
+	"\xab\x81\xf7(\xd1\xf0\xb6\x93\x7f\x15\xed\xad\xd8\xe0:\x8e" +
+	"\x02\x10\x14\xaa\xc5\xc7\xa9K\xfb\xe5+\x06\xe8^s\\" +
+	"\x80\xed\xdb\xa4\x0e\x03aQ\x09\xb1\xfc\xe2\xa0\xfbX\xb0" +
+	".~\xd6.!)?j\xe8\xdeyvd\x19\x08;" +
+	",9\xae\xcd@M=\x82\x8e\x9b#\xd0x2\xc2'" +
+	"/\x19\x86\xaec\xdd%\xcb\x0e\xb4\xc9\xa5\xf0\xfei\x1d" +
+	"h5W\xb7o\xe3\x9f\x00\x00\x00\xff\xffbg\xb4q"
 
 func init() {
 	schemas.Register(schema_9bcb07fb35756ee6,
 		0x9a90fde15285e327,
+		0xa29b8ab519fba593,
 		0xb02d2ba0578cc7ff,
+		0xb20f728e8e60c3f5,
 		0xb74958502f92fefd,
+		0xc788029a0ef52479,
 		0xdc63044e67499411,
 		0xe1a9fd466eca248c,
+		0xe7a1e07d1144113e,
 		0xebdd19e3dba3370b,
 		0xf5692a07c5cf7872,
 		0xf834409e30e8009c,

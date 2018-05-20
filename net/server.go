@@ -263,11 +263,25 @@ func (sv *Server) Disconnect() error {
 /////////////////////////////////////
 
 type handler struct {
-	bk backend.Backend
-	rp *repo.Repository
+	sync.Mutex
+
+	bk         backend.Backend
+	rp         *repo.Repository
+	currRemote *repo.Remote
 }
 
 func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
+	// We are currently not relying more than one parallel connection.
+	// This is not a design problem, but more due to the fact that it makes
+	// it easier to pass the current remote to the active handler.
+	hdl.Lock()
+	defer hdl.Unlock()
+
+	// Make sure to set the current remote:
+	defer func() {
+		hdl.currRemote = nil
+	}()
+
 	keyring := hdl.rp.Keyring()
 	ownPubKey, err := keyring.OwnPubKey()
 	if err != nil {
@@ -275,9 +289,8 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 
-	owner := hdl.rp.Owner
-
 	// Take the raw connection we get and add an authentication layer on top of it.
+	owner := hdl.rp.Owner
 	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, owner, func(pubKey []byte) error {
 		remotes, err := hdl.rp.Remotes.ListRemotes()
 		if err != nil {
@@ -292,6 +305,7 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		for _, remote := range remotes {
 			if remote.Fingerprint.PubKeyID() == remoteFp.PubKeyID() {
 				log.Infof("Starting connection with %s", remote.Fingerprint.Addr())
+				hdl.currRemote = &remote
 				return nil
 			}
 		}

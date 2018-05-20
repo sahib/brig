@@ -420,9 +420,6 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 }
 
 func (vcs *vcsHandler) doFetch(who string) error {
-	// TODO: Optimize by implementing store diffs.
-	// This is currently implemented very stupidly by simply fetching
-	// all the store from remote, saving it and using it as sync base.
 	rp, err := vcs.base.Repo()
 	if err != nil {
 		return err
@@ -434,22 +431,28 @@ func (vcs *vcsHandler) doFetch(who string) error {
 	}
 
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
-		storeBuf, err := ctl.FetchStore()
-		if err != nil {
-			return e.Wrapf(err, "fetch-store")
-		}
+		return vcs.base.withRemoteFs(who, func(remoteFs *catfs.FS) error {
+			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+				storeBuf, err := ctl.FetchStore()
+				if err != nil {
+					return e.Wrapf(err, "fetch-store")
+				}
 
-		bk, err := vcs.base.Backend()
-		if err != nil {
-			return err
-		}
+				return e.Wrapf(remoteFs.Import(storeBuf), "import")
+			}
 
-		remoteFS, err := vcs.base.repo.FS(who, bk)
-		if err != nil {
-			return err
-		}
+			fromIndex, err := remoteFs.LastPatchIndex()
+			if err != nil {
+				return err
+			}
 
-		return e.Wrapf(remoteFS.Import(storeBuf), "import")
+			patch, err := ctl.FetchPatch(fromIndex)
+			if err != nil {
+				return err
+			}
+
+			return remoteFs.ApplyPatch(patch)
+		})
 	})
 }
 
