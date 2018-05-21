@@ -100,6 +100,9 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 	cfg := &core.BuildCfg{
 		Repo:   rp,
 		Online: online,
+		ExtraOpts: map[string]bool{
+			"pubsub": true,
+		},
 	}
 
 	ipfsNode, err := core.NewNode(ctx, cfg)
