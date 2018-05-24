@@ -77,8 +77,10 @@ func TestAddChangeSignal(t *testing.T) {
 	require.Equal(t, 0, callCount)
 	cfg.SetString("data.ipfs.path", "new-value")
 	require.Equal(t, 1, callCount)
+	cfg.SetString("data.ipfs.path", "new-value")
+	require.Equal(t, 1, callCount)
 
-	cfg.RemoveChangedKeyEvent("data.ipfs.path", cbID)
+	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
 	cfg.SetString("data.ipfs.path", "newer-value")
 	require.Equal(t, 1, callCount)
 }
@@ -98,7 +100,7 @@ func TestAddChangeSignalAll(t *testing.T) {
 	cfg.SetString("data.ipfs.path", "new-value")
 	require.Equal(t, 2, callCount)
 
-	cfg.RemoveChangedKeyEvent("", cbID)
+	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
 	cfg.SetString("data.ipfs.path", "newer-value")
 	require.Equal(t, 2, callCount)
 }
@@ -139,4 +141,57 @@ func TestAddExtraKeys(t *testing.T) {
 	// There is no default for "a: 1" -> fail.
 	_, err := Open(bytes.NewReader([]byte(`a: 1`)), Defaults)
 	require.NotNil(t, err)
+}
+
+func TestSection(t *testing.T) {
+	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
+	require.Nil(t, err)
+
+	dataSec := cfg.Section("data")
+	require.Equal(t, "snappy", dataSec.String("compress.default_algo"))
+	require.Equal(t, "snappy", cfg.String("data.compress.default_algo"))
+
+	dataSec.SetString("compress.default_algo", "lz4")
+	require.Equal(t, "lz4", dataSec.String("compress.default_algo"))
+	require.Equal(t, "lz4", cfg.String("data.compress.default_algo"))
+
+	cfg.SetString("data.compress.default_algo", "none")
+	require.Equal(t, "none", dataSec.String("compress.default_algo"))
+	require.Equal(t, "none", cfg.String("data.compress.default_algo"))
+
+	childKeys, err := dataSec.Keys()
+	require.Nil(t, err)
+	require.Equal(t, []string{
+		"data.compress.default_algo",
+		"data.ipfs.path",
+	}, childKeys)
+}
+
+func TestSectionSignals(t *testing.T) {
+	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
+	require.Nil(t, err)
+
+	parentCallCount := 0
+	parentID := cfg.AddChangedKeyEvent("data.compress.default_algo", func(key string) {
+		require.Equal(t, "data.compress.default_algo", key)
+		parentCallCount++
+	})
+
+	dataSec := cfg.Section("data")
+
+	childCallCount := 0
+	childID := dataSec.AddChangedKeyEvent("compress.default_algo", func(key string) {
+		require.Equal(t, "compress.default_algo", key)
+		childCallCount++
+	})
+
+	cfg.SetString("data.compress.default_algo", "none")
+	dataSec.SetString("compress.default_algo", "lz4")
+
+	require.Equal(t, 2, parentCallCount)
+	require.Equal(t, 1, childCallCount)
+
+	require.Nil(t, dataSec.RemoveChangedKeyEvent(childID))
+	require.Nil(t, cfg.RemoveChangedKeyEvent(parentID))
+
 }

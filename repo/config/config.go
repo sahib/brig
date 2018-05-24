@@ -224,16 +224,30 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 
 ////////////
 
+type callback struct {
+	fn  func(key string)
+	key string
+}
+
 // Config s a helper that built is around a YAML file.
 // It supports typed gets and sets, change notifications and
 // basic validation with defaults.
 type Config struct {
-	mu sync.Mutex
+	mu *sync.Mutex
 
+	section         string
 	defaults        DefaultMapping
 	memory          map[interface{}]interface{}
 	callbackCount   int
-	onChangeSignals map[string]map[int]func(string)
+	changeCallbacks map[string]map[int]callback
+}
+
+func prefixKey(section, key string) string {
+	if section == "" {
+		return key
+	}
+
+	return strings.Trim(section, ".") + "." + strings.Trim(key, ".")
 }
 
 // Open creates a new config from the data in `r`.
@@ -259,9 +273,10 @@ func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
 	}
 
 	return &Config{
+		mu:              &sync.Mutex{},
 		defaults:        defaults,
 		memory:          memory,
-		onChangeSignals: make(map[string]map[int]func(string)),
+		changeCallbacks: make(map[string]map[int]callback),
 	}, nil
 }
 
@@ -318,6 +333,7 @@ func (cfg *Config) get(key string) interface{} {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
+	key = prefixKey(cfg.section, key)
 	parent, base := cfg.splitKey(key)
 	if parent == nil {
 		panic(fmt.Sprintf("bug: invalid config key: %v", key))
@@ -330,11 +346,12 @@ func (cfg *Config) get(key string) interface{} {
 func (cfg *Config) set(key string, val interface{}) {
 	cfg.mu.Lock()
 
-	fns := []func(string){}
+	key = prefixKey(cfg.section, key)
+	callbacks := []callback{}
 	defer func() {
 		// Call the callbacks without the lock:
-		for _, fn := range fns {
-			fn(key)
+		for _, callback := range callbacks {
+			callback.fn(callback.key)
 		}
 	}()
 
@@ -350,7 +367,6 @@ func (cfg *Config) set(key string, val interface{}) {
 	valType := getTypeOf(val)
 
 	if !isCompatibleType(defType, valType) {
-		cfg.mu.Unlock()
 		panic(
 			fmt.Sprintf(
 				"bug: wrong type in set for key `%v`: want: %v but got %v",
@@ -359,13 +375,20 @@ func (cfg *Config) set(key string, val interface{}) {
 		)
 	}
 
+	if parent[base] == val {
+		// Nothing changed. No need to execute the callbacks.
+		return
+	}
+
 	parent[base] = val
 
 	// Gather callbacks while still holding the lock:
 	for _, ckey := range []string{key, ""} {
-		if callbacks, ok := cfg.onChangeSignals[ckey]; ok {
-			for _, callback := range callbacks {
-				fns = append(fns, callback)
+		if ckey == "" || strings.HasPrefix(ckey, cfg.section) {
+			if bucket, ok := cfg.changeCallbacks[ckey]; ok {
+				for _, callback := range bucket {
+					callbacks = append(callbacks, callback)
+				}
 			}
 		}
 	}
@@ -383,21 +406,28 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
+	event := callback{
+		fn:  fn,
+		key: key,
+	}
+
 	if key != "" {
+		key = prefixKey(cfg.section, key)
 		defaultEntry := getDefaultByKey(key, cfg.defaults)
 		if defaultEntry == nil {
 			panic(fmt.Sprintf("bug: invalid config key: %v", key))
 		}
 	}
 
-	callbacks, ok := cfg.onChangeSignals[key]
+	callbacks, ok := cfg.changeCallbacks[key]
 	if !ok {
-		callbacks = make(map[int]func(string))
-		cfg.onChangeSignals[key] = callbacks
+		callbacks = make(map[int]callback)
+		cfg.changeCallbacks[key] = callbacks
 	}
 
 	oldCount := cfg.callbackCount
-	callbacks[oldCount] = fn
+	callbacks[oldCount] = event
+
 	cfg.callbackCount++
 
 	return oldCount
@@ -405,26 +435,23 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 
 // RemoveChangedKeyEvent removes a previously registered callback.
 // Note: This function will panic when using an invalid key.
-func (cfg *Config) RemoveChangedKeyEvent(key string, id int) {
+func (cfg *Config) RemoveChangedKeyEvent(id int) error {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	if key != "" {
-		defaultEntry := getDefaultByKey(key, cfg.defaults)
-		if defaultEntry == nil {
-			panic(fmt.Sprintf("bug: invalid config key: %v", key))
+	toDelete := []string{}
+	for key, bucket := range cfg.changeCallbacks {
+		delete(bucket, id)
+		if len(bucket) == 0 {
+			toDelete = append(toDelete, key)
 		}
 	}
 
-	callbacks, ok := cfg.onChangeSignals[key]
-	if !ok {
-		return
+	for _, key := range toDelete {
+		delete(cfg.changeCallbacks, key)
 	}
 
-	delete(callbacks, id)
-	if len(callbacks) == 0 {
-		delete(cfg.onChangeSignals, key)
-	}
+	return nil
 }
 
 ////////////
@@ -497,6 +524,7 @@ func (cfg *Config) GetDefault(key string) DefaultEntry {
 
 	// The lock here is probably not necessary,
 	// since we wont't modify defaults.
+	key = prefixKey(cfg.section, key)
 	entry := getDefaultByKey(key, cfg.defaults)
 	if entry == nil {
 		panic(fmt.Sprintf("bug: invalid config key: %v", key))
@@ -512,7 +540,10 @@ func (cfg *Config) Keys() ([]string, error) {
 
 	allKeys := []string{}
 	err := keys(cfg.memory, nil, func(section map[interface{}]interface{}, key []string) error {
-		allKeys = append(allKeys, strings.Join(key, "."))
+		fullKey := strings.Join(key, ".")
+		if strings.HasPrefix(fullKey, cfg.section) {
+			allKeys = append(allKeys, strings.Join(key, "."))
+		}
 		return nil
 	})
 
@@ -522,4 +553,34 @@ func (cfg *Config) Keys() ([]string, error) {
 
 	sort.Strings(allKeys)
 	return allKeys, nil
+}
+
+func (cfg *Config) Section(section string) *Config {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	childCallbackCount := cfg.callbackCount
+	childChangeCallbacks := make(map[string]map[int]callback)
+
+	for key, bucket := range cfg.changeCallbacks {
+		childBucket := make(map[int]callback)
+		childChangeCallbacks[key] = childBucket
+		for _, callback := range bucket {
+			childBucket[childCallbackCount] = callback
+			childCallbackCount++
+		}
+	}
+
+	return &Config{
+		// mutex is shared with parent, since they protect the same memory.
+		mu:            cfg.mu,
+		section:       section,
+		callbackCount: childCallbackCount,
+		// The data is shared, any set to a section will cause a set in the parent.
+		defaults: cfg.defaults,
+		memory:   cfg.memory,
+		// Sections may have own callbacks.
+		// The parent callbacks are still called though.
+		changeCallbacks: childChangeCallbacks,
+	}
 }
