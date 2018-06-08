@@ -270,7 +270,7 @@ func repoIsInitialized(dir string) (bool, error) {
 
 	for _, name := range names {
 		switch name {
-		case "meta.yml":
+		case "OWNER", "BACKEND":
 			return true, nil
 		case "logs":
 			// That's okay.

@@ -57,13 +57,13 @@ type base struct {
 }
 
 func repoIsInitialized(path string) error {
-	data, err := ioutil.ReadFile(filepath.Join(path, "meta.yml"))
+	data, err := ioutil.ReadFile(filepath.Join(path, "OWNER"))
 	if err != nil {
 		return err
 	}
 
 	if len(data) == 0 {
-		return fmt.Errorf("meta.yml is empty")
+		return fmt.Errorf("OWNER is empty")
 	}
 
 	return nil

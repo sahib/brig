@@ -14,13 +14,11 @@ import (
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/config"
-	"github.com/spf13/viper"
 )
 
 var (
 	// Do not encrypt "data" (already contains encrypted streams) and
-	// also do not encrypt meta.yml (contains e.g. owner info for startup)
-	excludedFromLock   = []string{"meta.yml", "data"}
+	excludedFromLock   = []string{"data", "OWNER", "BACKEND"}
 	excludedFromUnlock = []string{"passwd.locked"}
 )
 
@@ -32,7 +30,8 @@ var (
 //
 // Informal: This file structure currently looks like this:
 // config.yml
-// meta.yml
+// OWNER
+// BACKEND
 // remotes.yml
 // data/
 //    <backend_name>
@@ -48,6 +47,9 @@ type Repository struct {
 	// Map between owner and related filesystem.
 	fsMap map[string]*catfs.FS
 
+	// Name of the backend in use
+	backendName string
+
 	// Absolute path to the repository root
 	BaseFolder string
 
@@ -56,7 +58,6 @@ type Repository struct {
 
 	// Config interface
 	Config *config.Config
-	meta   *viper.Viper
 
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
@@ -97,9 +98,13 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrapf(err, "Failed touch remotes.yml")
 	}
 
-	metaPath := filepath.Join(baseFolder, "meta.yml")
-	metaDefault := buildMetaDefault(backendName, owner)
-	if err := ioutil.WriteFile(metaPath, metaDefault, 0644); err != nil {
+	ownerPath := filepath.Join(baseFolder, "OWNER")
+	if err := ioutil.WriteFile(ownerPath, []byte(owner), 0644); err != nil {
+		return err
+	}
+
+	backendNamePath := filepath.Join(baseFolder, "BACKEND")
+	if err := ioutil.WriteFile(backendNamePath, []byte(backendName), 0644); err != nil {
 		return err
 	}
 
@@ -165,15 +170,13 @@ func CheckPassword(baseFolder, password string) error {
 
 	// Try to get the owner of the repo.
 	// Needed for the key derivation function.
-	metaPath := filepath.Join(baseFolder, "meta.yml")
-	meta := viper.New()
-	meta.SetConfigFile(metaPath)
-	if err := meta.ReadInConfig(); err != nil {
-		return err
+	ownerPath := filepath.Join(baseFolder, "OWNER")
+	owner, err := ioutil.ReadFile(ownerPath)
+	if err != nil {
+		return e.Wrap(err, "failed to read OWNER")
 	}
 
-	owner := meta.GetString("repo.owner")
-	key := keyFromPassword(owner, password)
+	key := keyFromPassword(string(owner), password)
 	if err := checkUnlockability(passwdFile, key); err != nil {
 		log.Warningf("Failed to unlock passwd file. Wrong password entered?")
 		return ErrBadPassword
@@ -190,17 +193,15 @@ func Open(baseFolder, password string) (*Repository, error) {
 		return nil, err
 	}
 
-	metaPath := filepath.Join(baseFolder, "meta.yml")
-	meta := viper.New()
-	meta.SetConfigFile(metaPath)
-	if err := meta.ReadInConfig(); err != nil {
-		return nil, err
+	ownerPath := filepath.Join(baseFolder, "OWNER")
+	owner, err := ioutil.ReadFile(ownerPath)
+	if err != nil {
+		return nil, e.Wrap(err, "failed to read OWNER")
 	}
 
-	owner := meta.GetString("repo.owner")
-	err := UnlockRepo(
+	err = UnlockRepo(
 		baseFolder,
-		owner,
+		string(owner),
 		password,
 		excludedFromLock,
 		excludedFromUnlock,
@@ -223,8 +224,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 		return nil, err
 	}
 
-	cfg.SetString("repo.current_user", owner)
-	fmt.Println("OPEN", cfg.Keys())
+	cfg.SetString("repo.current_user", string(owner))
 
 	// Load the remote list:
 	remotePath := filepath.Join(baseFolder, "remotes.yml")
@@ -233,13 +233,16 @@ func Open(baseFolder, password string) (*Repository, error) {
 		return nil, err
 	}
 
+	backendNamePath := filepath.Join(baseFolder, "BACKEND")
+	backendName, err := ioutil.ReadFile(backendNamePath)
+
 	return &Repository{
-		BaseFolder: baseFolder,
-		meta:       meta,
-		Config:     cfg,
-		Remotes:    remotes,
-		Owner:      owner,
-		fsMap:      make(map[string]*catfs.FS),
+		BaseFolder:  baseFolder,
+		backendName: string(backendName),
+		Config:      cfg,
+		Remotes:     remotes,
+		Owner:       string(owner),
+		fsMap:       make(map[string]*catfs.FS),
 	}, nil
 }
 
@@ -257,7 +260,7 @@ func (rp *Repository) BackendName() string {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 
-	return rp.meta.GetString("data.backend")
+	return rp.backendName
 }
 
 // HaveFS will return true if we have data for a certain owner.
@@ -282,8 +285,6 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 	if fs, ok := rp.fsMap[owner]; ok {
 		return fs, nil
 	}
-
-	fmt.Println("FS", rp.Config.Keys(), rp)
 
 	// No fs was created yet for this owner. Create it.
 	// Read the fs config from the main config:

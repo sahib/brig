@@ -82,6 +82,7 @@ If you're done with this README, you can easily remove it:
 	return ctl.MakeCommit("Added initial README.md")
 }
 
+// TODO: There are two functions doing the same.
 func dirIsInitReady(dir string) (bool, error) {
 	fd, err := os.Open(dir)
 	if err != nil && os.IsNotExist(err) {
@@ -99,7 +100,7 @@ func dirIsInitReady(dir string) (bool, error) {
 
 	for _, name := range names {
 		switch name {
-		case "meta.yml":
+		case "OWNER", "BACKEND":
 			return false, nil
 		case "logs":
 			// That's okay.
