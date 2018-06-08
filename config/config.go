@@ -14,9 +14,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -456,6 +458,13 @@ func (cfg *Config) RemoveChangedKeyEvent(id int) error {
 
 ////////////
 
+// Get returns the raw value at `key`.
+// Do not use this method when possible, use the typeed convinience methods.
+// Note: This function will panic if the key does not exist.
+func (cfg *Config) Get(key string) interface{} {
+	return cfg.get(key)
+}
+
 // Bool returns the boolean value (or default) at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Bool(key string) bool {
@@ -534,7 +543,7 @@ func (cfg *Config) GetDefault(key string) DefaultEntry {
 }
 
 // Keys returns all keys that are currently set (including the default keys)
-func (cfg *Config) Keys() ([]string, error) {
+func (cfg *Config) Keys() []string {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
@@ -544,15 +553,19 @@ func (cfg *Config) Keys() ([]string, error) {
 		if strings.HasPrefix(fullKey, cfg.section) {
 			allKeys = append(allKeys, strings.Join(key, "."))
 		}
+
 		return nil
 	})
 
 	if err != nil {
-		return nil, err
+		// keys() should only return an error if the function passed to it
+		// error in some way. Since we don't do that it should not produce
+		// any non-nil error return.
+		panic(fmt.Sprintf("Keys() failed internally: %v", err))
 	}
 
 	sort.Strings(allKeys)
-	return allKeys, nil
+	return allKeys
 }
 
 func (cfg *Config) Section(section string) *Config {
@@ -583,4 +596,67 @@ func (cfg *Config) Section(section string) *Config {
 		// The parent callbacks are still called though.
 		changeCallbacks: childChangeCallbacks,
 	}
+}
+
+// IsValidKey can be checked to see if untrusted keys actually are valid.
+// It should not be used to check keys from string literals.
+func (cfg *Config) IsValidKey(key string) bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	key = prefixKey(cfg.section, key)
+	return getDefaultByKey(key, cfg.defaults) != nil
+}
+
+// Cast takes `val` and reads the type of `key`.
+// It then tries to convert it to one of the supported types
+// (and possibly fails due to that)
+//
+// This cast assumes that `val` is always a string,
+// which is useful for data coming fom the client.
+// Note: This function will panic if the key does not exist.
+func (cfg *Config) Cast(key, val string) (interface{}, error) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	key = prefixKey(cfg.section, key)
+	entry := getDefaultByKey(key, cfg.defaults)
+	if entry == nil {
+		panic(fmt.Sprintf("bug: invalid config key: %v", key))
+	}
+
+	switch entry.Default.(type) {
+	case int, int16, int32, int64, uint, uint16, uint32, uint64:
+		return strconv.ParseInt(val, 10, 64)
+	case float32, float64:
+		return strconv.ParseFloat(val, 64)
+	case bool:
+		return strconv.ParseBool(val)
+	case string:
+		return val, nil
+	}
+
+	return nil, nil
+}
+
+// FromFile creates a new config from the YAML file located at `path`
+func FromFile(path string, defaults DefaultMapping) (*Config, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer fd.Close()
+	return Open(fd, defaults)
+}
+
+// ToFile saves `cfg` as YAML at a file located at `path`.
+func ToFile(path string, cfg *Config) error {
+	fd, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+	return cfg.Save(fd)
 }

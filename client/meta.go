@@ -98,7 +98,15 @@ func (cl *Client) ConfigSet(key, value string) error {
 	return err
 }
 
-func (cl *Client) ConfigAll() (map[string]string, error) {
+type ConfigEntry struct {
+	Key          string
+	Val          string
+	Doc          string
+	Default      string
+	NeedsRestart bool
+}
+
+func (cl *Client) ConfigAll() ([]ConfigEntry, error) {
 	call := cl.api.ConfigAll(cl.ctx, func(p capnp.Meta_configAll_Params) error {
 		return nil
 	})
@@ -108,29 +116,44 @@ func (cl *Client) ConfigAll() (map[string]string, error) {
 		return nil, err
 	}
 
-	pairs, err := result.All()
+	capPairs, err := result.All()
 	if err != nil {
 		return nil, err
 	}
 
-	configMap := make(map[string]string)
-
-	for idx := 0; idx < pairs.Len(); idx++ {
-		pair := pairs.At(idx)
-		key, err := pair.Key()
+	entries := []ConfigEntry{}
+	for idx := 0; idx < capPairs.Len(); idx++ {
+		capPair := capPairs.At(idx)
+		key, err := capPair.Key()
 		if err != nil {
 			return nil, err
 		}
 
-		val, err := pair.Val()
+		val, err := capPair.Val()
 		if err != nil {
 			return nil, err
 		}
 
-		configMap[key] = val
+		doc, err := capPair.Doc()
+		if err != nil {
+			return nil, err
+		}
+
+		def, err := capPair.Default()
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, ConfigEntry{
+			Default:      def,
+			Key:          key,
+			Val:          val,
+			Doc:          doc,
+			NeedsRestart: capPair.NeedsRestart(),
+		})
 	}
 
-	return configMap, nil
+	return entries, nil
 }
 
 ////////////////////////

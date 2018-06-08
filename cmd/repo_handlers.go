@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
-	"sort"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -169,20 +168,16 @@ func handleConfigList(cli *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("config list: %v", err)}
 	}
 
-	// Display the output nicely sorted:
-	keys := []string{}
-	for key := range all {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	for _, key := range keys {
+	for _, entry := range all {
 		fmt.Printf(
-			"%s: %s\n",
-			color.GreenString(key),
-			all[key],
+			"%s: %v\n",
+			color.GreenString(entry.Key),
+			entry.Val,
 		)
+
+		fmt.Printf("  Default:       %v\n", color.YellowString(entry.Default))
+		fmt.Printf("  Documentation: %v\n", color.BlueString(entry.Doc))
+		fmt.Printf("  Needs restart: %v\n", color.MagentaString(fmt.Sprintf("%t", entry.NeedsRestart)))
 	}
 	return nil
 }
@@ -273,18 +268,20 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return err
 	}
 
+	var password string
 	if !isInitialized {
 		log.Infof(
-			"No repository found at %s. Use `brig init <user>` to create one",
+			"No repository found at '%s'. Use `brig init <user>` to create one",
 			brigPath,
 		)
-	}
 
-	password, err := readPassword(ctx, brigPath)
-	if err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("Failed to read password: %v", err),
+		password, err = readPassword(ctx, brigPath)
+		if err != nil {
+			fmt.Println("fail passw")
+			return ExitCode{
+				UnknownError,
+				fmt.Sprintf("Failed to read password: %v", err),
+			}
 		}
 	}
 

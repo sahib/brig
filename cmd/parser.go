@@ -303,8 +303,9 @@ func RunCmdline(args []string) int {
 			Category: repoGroup,
 			Subcommands: []cli.Command{
 				{
-					Name:   "list",
-					Action: withDaemon(handleConfigList, true),
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(handleConfigList, true),
 				}, {
 					Name:   "get",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),

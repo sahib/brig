@@ -10,7 +10,7 @@ var Defaults = DefaultMapping{
 		},
 	},
 	"sync": DefaultMapping{
-		"ignored_removed": DefaultEntry{
+		"ignore_removed": DefaultEntry{
 			Default:      false,
 			NeedsRestart: false,
 			Docs:         "Do not remove wha the remote removed",
@@ -18,6 +18,13 @@ var Defaults = DefaultMapping{
 		"conflict_strategy": DefaultEntry{
 			Default:      "marker",
 			NeedsRestart: false,
+		},
+	},
+	"repo": DefaultMapping{
+		"current_user": DefaultEntry{
+			Default:      "",
+			NeedsRestart: true,
+			Docs:         "The repository owner that is published to the outside",
 		},
 	},
 	"data": DefaultMapping{

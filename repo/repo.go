@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,11 +13,12 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/config"
 	"github.com/spf13/viper"
 )
 
 var (
-	// Do not encrypt "data" (already contains encrypred streams) and
+	// Do not encrypt "data" (already contains encrypted streams) and
 	// also do not encrypt meta.yml (contains e.g. owner info for startup)
 	excludedFromLock   = []string{"meta.yml", "data"}
 	excludedFromUnlock = []string{"passwd.locked"}
@@ -53,7 +55,7 @@ type Repository struct {
 	Owner string
 
 	// Config interface
-	Config *viper.Viper
+	Config *config.Config
 	meta   *viper.Viper
 
 	// Remotes gives access to all known remotes
@@ -101,10 +103,15 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return err
 	}
 
-	cfgPath := filepath.Join(baseFolder, "config.yml")
-	cfgDefaults := buildConfigDefault()
-	if err := ioutil.WriteFile(cfgPath, cfgDefaults, 0644); err != nil {
+	// Create a default config, only with the default keys applied:
+	cfg, err := config.Open(bytes.NewReader(nil), config.Defaults)
+	if err != nil {
 		return err
+	}
+
+	configPath := filepath.Join(baseFolder, "config.yml")
+	if err := config.ToFile(configPath, cfg); err != nil {
+		return e.Wrap(err, "Failed to setup default config")
 	}
 
 	dataFolder := filepath.Join(baseFolder, "data", backendName)
@@ -112,9 +119,9 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrap(err, "Failed to setup dirs for backend")
 	}
 
-	// Create initial key pair.
+	// Create initial key pair:
 	if err := createKeyPair(owner, baseFolder, 2048); err != nil {
-		return e.Wrap(err, "Failed to setup pgp keys")
+		return e.Wrap(err, "Failed to setup gpg keys")
 	}
 
 	passwdFile := filepath.Join(baseFolder, "passwd")
@@ -203,15 +210,21 @@ func Open(baseFolder, password string) (*Repository, error) {
 		return nil, err
 	}
 
-	// Make sure to load the config:
-	config := viper.New()
-	config.AddConfigPath(baseFolder)
-	setConfigDefaults(config)
-	config.SetDefault("repo.current_user", owner)
+	cfgPath := filepath.Join(baseFolder, "config.yml")
+	cfgFd, err := os.Open(cfgPath)
+	if err != nil {
+		return nil, e.Wrap(err, "failed to open config")
+	}
 
-	if err := config.ReadInConfig(); err != nil {
+	defer cfgFd.Close()
+
+	cfg, err := config.Open(cfgFd, config.Defaults)
+	if err != nil {
 		return nil, err
 	}
+
+	cfg.SetString("repo.current_user", owner)
+	fmt.Println("OPEN", cfg.Keys())
 
 	// Load the remote list:
 	remotePath := filepath.Join(baseFolder, "remotes.yml")
@@ -223,7 +236,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	return &Repository{
 		BaseFolder: baseFolder,
 		meta:       meta,
-		Config:     config,
+		Config:     cfg,
 		Remotes:    remotes,
 		Owner:      owner,
 		fsMap:      make(map[string]*catfs.FS),
@@ -270,16 +283,18 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return fs, nil
 	}
 
+	fmt.Println("FS", rp.Config.Keys(), rp)
+
 	// No fs was created yet for this owner. Create it.
 	// Read the fs config from the main config:
 	fsCfg := &catfs.Config{}
-	fsCfg.IO.CompressAlgo = rp.Config.GetString(
-		"data.compress.algo",
+	fsCfg.IO.CompressAlgo = rp.Config.String(
+		"data.compress.default_algo",
 	)
-	fsCfg.Sync.ConflictStrategy = rp.Config.GetString(
+	fsCfg.Sync.ConflictStrategy = rp.Config.String(
 		"sync.conflict_strategy",
 	)
-	fsCfg.Sync.IgnoreRemoved = rp.Config.GetBool(
+	fsCfg.Sync.IgnoreRemoved = rp.Config.Bool(
 		"sync.ignore_removed",
 	)
 
@@ -302,7 +317,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 }
 
 func (rp *Repository) CurrentUser() string {
-	return rp.Config.GetString("repo.current_user")
+	return rp.Config.String("repo.current_user")
 }
 
 func (rp *Repository) SetCurrentUser(user string) {

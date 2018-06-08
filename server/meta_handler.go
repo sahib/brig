@@ -121,7 +121,11 @@ func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {
 		return err
 	}
 
-	value := repo.Config.GetString(key)
+	if !repo.Config.IsValidKey(key) {
+		return fmt.Errorf("invalid key: %v", key)
+	}
+
+	value := repo.Config.String(key)
 	return call.Results.SetValue(value)
 }
 
@@ -136,7 +140,16 @@ func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 		return err
 	}
 
-	val, err := call.Params.Value()
+	if !repo.Config.IsValidKey(key) {
+		return fmt.Errorf("invalid key: %v", key)
+	}
+
+	rawVal, err := call.Params.Value()
+	if err != nil {
+		return err
+	}
+
+	val, err := repo.Config.Cast(key, rawVal)
 	if err != nil {
 		return err
 	}
@@ -151,7 +164,7 @@ func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
 		return err
 	}
 
-	all := repo.Config.AllKeys()
+	all := repo.Config.Keys()
 	seg := call.Results.Segment()
 
 	lst, err := capnp.NewConfigPair_List(seg, int32(len(all)))
@@ -169,9 +182,22 @@ func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
 			return err
 		}
 
-		if err := pair.SetVal(repo.Config.GetString(key)); err != nil {
+		clientVal := fmt.Sprintf("%v", repo.Config.Get(key))
+		if err := pair.SetVal(clientVal); err != nil {
 			return err
 		}
+
+		defEntry := repo.Config.GetDefault(key)
+		if err := pair.SetDoc(defEntry.Docs); err != nil {
+			return err
+		}
+
+		defVal := fmt.Sprintf("%v", defEntry.Default)
+		if err := pair.SetDefault(defVal); err != nil {
+			return err
+		}
+
+		pair.SetNeedsRestart(defEntry.NeedsRestart)
 
 		if err := lst.Set(idx, pair); err != nil {
 			return err

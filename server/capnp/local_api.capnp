@@ -26,9 +26,12 @@ struct Commit $Go.doc("Single log entry") {
     date @3 :Text;
 }
 
-struct ConfigPair $Go.doc("Key/Value pair in the config") {
-    key @0 :Text;
-    val @1 :Text;
+struct ConfigEntry $Go.doc("A config entry (including meta info)") {
+    key          @0 :Text;
+    val          @1 :Text;
+    doc          @2 :Text;
+    default      @3 :Text;
+    needsRestart @4 :Bool;
 }
 
 struct Change $Go.doc("One History entry for a file") {

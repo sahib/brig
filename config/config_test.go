@@ -132,6 +132,7 @@ func TestKeys(t *testing.T) {
 		"daemon.port",
 		"data.compress.default_algo",
 		"data.ipfs.path",
+		"repo.current_user",
 		"sync.conflict_strategy",
 		"sync.ignored_removed",
 	}, keys)
@@ -194,4 +195,33 @@ func TestSectionSignals(t *testing.T) {
 	require.Nil(t, dataSec.RemoveChangedKeyEvent(childID))
 	require.Nil(t, cfg.RemoveChangedKeyEvent(parentID))
 
+}
+
+func TestIsValidKey(t *testing.T) {
+	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
+	require.Nil(t, err)
+
+	require.True(t, cfg.IsValidKey("daemon.port"))
+	require.False(t, cfg.IsValidKey("data.port"))
+}
+
+func TestCast(t *testing.T) {
+	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
+	require.Nil(t, err)
+
+	pathCast, err := cfg.Cast("data.ipfs.path", "test")
+	require.Nil(t, err)
+	require.Equal(t, "test", pathCast)
+
+	portCast, err := cfg.Cast("daemon.port", "123")
+	require.Nil(t, err)
+	require.Equal(t, int64(123), portCast)
+
+	// Wrong cast type:
+	_, err = cfg.Cast("daemon.port", "im a string")
+	require.NotNil(t, err)
+
+	// Also float should not cast right:
+	_, err = cfg.Cast("daemon.port", "2.0")
+	require.NotNil(t, err)
 }
