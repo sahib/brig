@@ -26,6 +26,23 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func EnumValidator(options []string) func(val interface{}) error {
+	return func(val interface{}) error {
+		s, ok := val.(string)
+		if !ok {
+			return fmt.Errorf("enum value is not a string: %v", val)
+		}
+
+		for _, option := range options {
+			if option == s {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("not a valid enum value: %v (allowed: %v)", s, options)
+	}
+}
+
 // DefaultEntry represents the metadata for a default value in the config.
 // Every possible key has to have a DefaultEntry.
 type DefaultEntry struct {
@@ -39,6 +56,9 @@ type DefaultEntry struct {
 
 	// Docs describes the meaning of the configuration value.
 	Docs string
+
+	// Function that can be used to check
+	Validator func(val interface{}) error
 }
 
 // DefaultMapping is a container to hold all required DefaultEntries.
@@ -102,15 +122,6 @@ func isCompatibleType(typeA, typeB string) bool {
 	}
 
 	return typeA == typeB
-}
-
-func getTypeOfDefaultKey(key string, defaults DefaultMapping) string {
-	defauttEntry := getDefaultByKey(key, defaults)
-	if defauttEntry == nil {
-		return ""
-	}
-
-	return getTypeOf(defauttEntry.Default)
 }
 
 func keys(root map[interface{}]interface{}, prefix []string, fn func(section map[interface{}]interface{}, key []string) error) error {
@@ -179,7 +190,12 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 		child := section[lastKey]
 
 		fullKey := strings.Join(key, ".")
-		defType := getTypeOfDefaultKey(fullKey, defaults)
+		defaultEntry := getDefaultByKey(fullKey, defaults)
+		if defaultEntry == nil {
+			return fmt.Errorf("no default for key: %v", fullKey)
+		}
+
+		defType := getTypeOf(defaultEntry.Default)
 		if defType == "" {
 			return fmt.Errorf("no default found for key `%v`", fullKey)
 		}
@@ -213,6 +229,13 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 			section[lastKey] = reflect.ValueOf(child).Convert(destType).Float()
 		}
 
+		// Do user defined validation:
+		if defaultEntry.Validator != nil {
+			if err := defaultEntry.Validator(section[lastKey]); err != nil {
+				return err
+			}
+		}
+
 		// Valid key.
 		return nil
 	})
@@ -221,6 +244,7 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 		return err
 	}
 
+	// Fill in keys that are not present in the passed config:
 	return mergeDefaults(root, defaults)
 }
 
@@ -345,7 +369,7 @@ func (cfg *Config) get(key string) interface{} {
 }
 
 // set is worker behind the Set*() methods.
-func (cfg *Config) set(key string, val interface{}) {
+func (cfg *Config) set(key string, val interface{}) error {
 	cfg.mu.Lock()
 
 	key = prefixKey(cfg.section, key)
@@ -357,7 +381,7 @@ func (cfg *Config) set(key string, val interface{}) {
 		}
 	}()
 
-	// Note that the unlock is called before the other defer.
+	// NOTE: the unlock is called before the other defer!
 	defer cfg.mu.Unlock()
 
 	parent, base := cfg.splitKey(key)
@@ -379,7 +403,15 @@ func (cfg *Config) set(key string, val interface{}) {
 
 	if parent[base] == val {
 		// Nothing changed. No need to execute the callbacks.
-		return
+		return nil
+	}
+
+	// If there is an validator defined, we should check now.
+	defEntry := getDefaultByKey(key, cfg.defaults)
+	if defEntry.Validator != nil {
+		if err := defEntry.Validator(val); err != nil {
+			return err
+		}
 	}
 
 	parent[base] = val
@@ -394,6 +426,8 @@ func (cfg *Config) set(key string, val interface{}) {
 			}
 		}
 	}
+
+	return nil
 }
 
 ////////////
@@ -493,34 +527,34 @@ func (cfg *Config) Float(key string) float64 {
 
 // SetBool creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
-func (cfg *Config) SetBool(key string, val bool) {
-	cfg.set(key, val)
+func (cfg *Config) SetBool(key string, val bool) error {
+	return cfg.set(key, val)
 }
 
 // SetString creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
-func (cfg *Config) SetString(key string, val string) {
-	cfg.set(key, val)
+func (cfg *Config) SetString(key string, val string) error {
+	return cfg.set(key, val)
 }
 
 // SetInt creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
-func (cfg *Config) SetInt(key string, val int64) {
-	cfg.set(key, val)
+func (cfg *Config) SetInt(key string, val int64) error {
+	return cfg.set(key, val)
 }
 
 // SetFloat creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
-func (cfg *Config) SetFloat(key string, val float64) {
-	cfg.set(key, val)
+func (cfg *Config) SetFloat(key string, val float64) error {
+	return cfg.set(key, val)
 }
 
 // Set creates or sets the `val` at `key`.
 // Please only use this function only if you have an interface{}
 // that you do not want to cast yourself.
 // Note: This function will panic if the key does not exist.
-func (cfg *Config) Set(key string, val interface{}) {
-	cfg.set(key, val)
+func (cfg *Config) Set(key string, val interface{}) error {
+	return cfg.set(key, val)
 }
 
 ////////////

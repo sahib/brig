@@ -39,8 +39,8 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 	}
 }
 
-// SyncConfig gives you the possibility to configure the sync algorithm.
-type SyncConfig struct {
+// SyncOptions gives you the possibility to configure the sync algorithm.
+type SyncOptions struct {
 	ConflictStrategy ConflictStrategy
 	IgnoreDeletes    bool
 	IgnoreMoves      bool
@@ -52,11 +52,11 @@ type SyncConfig struct {
 }
 
 var (
-	DefaultSyncConfig = &SyncConfig{}
+	DefaultSyncConfig = &SyncOptions{}
 )
 
 type syncer struct {
-	cfg    *SyncConfig
+	cfg    *SyncOptions
 	lkrSrc *c.Linker
 	lkrDst *c.Linker
 }
@@ -282,7 +282,7 @@ func (sy *syncer) handleConflictNode(src n.ModNode) error {
 	return nil
 }
 
-func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncConfig) error {
+func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 	if cfg == nil {
 		cfg = DefaultSyncConfig
 	}

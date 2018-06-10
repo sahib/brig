@@ -14,6 +14,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/config"
 	capnp "zombiezen.com/go/capnproto2"
 
 	e "github.com/pkg/errors"
@@ -58,7 +59,7 @@ type FS struct {
 	bk FsBackend
 
 	// internal config
-	cfg *config
+	cfg *config.Config
 
 	// cache for the isPinned operation
 	pinner *Pinner
@@ -206,12 +207,7 @@ func (fs *FS) doGcRun() {
 	}
 }
 
-func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) (*FS, error) {
-	vfg, err := cfg.parseConfig()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse config: %v", err)
-	}
-
+func NewFilesystem(backend FsBackend, dbPath string, owner string, fsCfg *config.Config) (*FS, error) {
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
 		return nil, err
@@ -229,11 +225,15 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, cfg *Config) 
 		return nil, err
 	}
 
+	// NOTE: We do not need to validate fsCfg here.
+	// This is already done on the side of our config module.
+	// (we just need to convert a few keys to the vcs.SyncOptions later).
+
 	fs := &FS{
 		kv:        kv,
 		lkr:       lkr,
 		bk:        backend,
-		cfg:       vfg,
+		cfg:       fsCfg,
 		gcControl: make(chan bool),
 		gcTicker:  time.NewTicker(120 * time.Second),
 		pinner:    pinCache,
@@ -710,12 +710,16 @@ func (fs *FS) computePreconditions(path string, rs io.ReadSeeker) (h.Hash, uint6
 
 	algo, err := compress.GuessAlgorithm(path, headerBuf)
 	if err != nil {
-		algo = fs.cfg.compressAlgo
+		// Use the default algorithm set in the config:
+		algo, err = compress.AlgoFromString(fs.cfg.String("compress.default_algo"))
+		if err != nil {
+			return nil, 0, compress.AlgoNone, err
+		}
+
 		log.Warningf("failed to guess suitable zip algo: %v", err)
 	}
 
 	log.Debugf("using '%s' compression for file %s", algo, path)
-
 	contentHash := hashWriter.Finalize()
 	size := sizeAcc.Size()
 	return contentHash, size, algo, nil
@@ -998,13 +1002,8 @@ func (fs *FS) History(path string) ([]Change, error) {
 	return entries, nil
 }
 
-// Sync will synchronize the state of two filesystems.
-// If one of filesystems have unstaged changes, they will be committted first.
-// If our filesystem was changed by Sync(), a new merge commit will also be created.
-func (fs *FS) Sync(remote *FS) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
+func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
+	// Helper method to easily pin depending on a condition variable
 	doPinOrUnpin := func(doPin, explicit bool, nd n.ModNode) {
 		file, ok := nd.(*n.File)
 		if !ok {
@@ -1024,36 +1023,60 @@ func (fs *FS) Sync(remote *FS) error {
 		}
 	}
 
-	// Make sure we pin/unpin files correctly after the sync:
-	syncCfg := &fs.cfg.sync
-	syncCfg.OnAdd = func(newNd n.ModNode) bool {
-		doPinOrUnpin(true, false, newNd)
-		return true
-	}
-	syncCfg.OnRemove = func(oldNd n.ModNode) bool {
-		doPinOrUnpin(false, true, oldNd)
-		return true
-	}
-	syncCfg.OnMerge = func(newNd, oldNd n.ModNode) bool {
-		_, isExplicit, err := fs.pinner.IsNodePinned(oldNd)
-		if err != nil {
-			log.Warnf(
-				"failed to check pin status of old node `%s` (%v)",
-				oldNd.Path(),
-				oldNd.BackendHash(),
-			)
-		}
+	conflictStrategy := vcs.ConflictStrategyFromString(
+		fs.cfg.String("sync.conflict_strategy"),
+	)
 
-		// Pin new node with old pin state:
-		doPinOrUnpin(true, isExplicit, newNd)
-		doPinOrUnpin(false, true, oldNd)
-		return true
+	if conflictStrategy == vcs.ConflictStragetyUnknown {
+		return nil, fmt.Errorf("unknown conflict strategy: %v", conflictStrategy)
 	}
-	syncCfg.OnConflict = func(src, dst n.ModNode) bool {
-		// Don't need to do something,
-		// conflict file will not get a pin by default.
-		// TODO: Does this make sense?
-		return true
+
+	return &vcs.SyncOptions{
+		ConflictStrategy: conflictStrategy,
+		IgnoreDeletes:    fs.cfg.Bool("sync.ignore_removed"),
+		IgnoreMoves:      fs.cfg.Bool("sync.ignore_moved"),
+		OnAdd: func(newNd n.ModNode) bool {
+			doPinOrUnpin(true, false, newNd)
+			return true
+		},
+		OnRemove: func(oldNd n.ModNode) bool {
+			doPinOrUnpin(false, true, oldNd)
+			return true
+		},
+		OnMerge: func(newNd, oldNd n.ModNode) bool {
+			_, isExplicit, err := fs.pinner.IsNodePinned(oldNd)
+			if err != nil {
+				log.Warnf(
+					"failed to check pin status of old node `%s` (%v)",
+					oldNd.Path(),
+					oldNd.BackendHash(),
+				)
+			}
+
+			// Pin new node with old pin state:
+			doPinOrUnpin(true, isExplicit, newNd)
+			doPinOrUnpin(false, true, oldNd)
+			return true
+		},
+		OnConflict: func(src, dst n.ModNode) bool {
+			// Don't need to do something,
+			// conflict file will not get a pin by default.
+			// TODO: Does this make sense?
+			return true
+		},
+	}, nil
+}
+
+// Sync will synchronize the state of two filesystems.
+// If one of filesystems have unstaged changes, they will be committted first.
+// If our filesystem was changed by Sync(), a new merge commit will also be created.
+func (fs *FS) Sync(remote *FS) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	syncCfg, err := fs.buildSyncCfg()
+	if err != nil {
+		return err
 	}
 
 	return vcs.Sync(remote.lkr, fs.lkr, syncCfg)
@@ -1073,7 +1096,12 @@ func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, err
 		return nil, e.Wrapf(err, "parse own ref")
 	}
 
-	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, srcHead, dstHead, &fs.cfg.sync)
+	syncCfg, err := fs.buildSyncCfg()
+	if err != nil {
+		return nil, err
+	}
+
+	realDiff, err := vcs.MakeDiff(remote.lkr, fs.lkr, srcHead, dstHead, syncCfg)
 	if err != nil {
 		return nil, e.Wrapf(err, "make diff")
 	}

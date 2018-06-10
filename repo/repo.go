@@ -286,19 +286,9 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return fs, nil
 	}
 
-	// No fs was created yet for this owner. Create it.
-	// Read the fs config from the main config:
-	fsCfg := &catfs.Config{}
-	fsCfg.IO.CompressAlgo = rp.Config.String(
-		"data.compress.default_algo",
-	)
-	fsCfg.Sync.ConflictStrategy = rp.Config.String(
-		"sync.conflict_strategy",
-	)
-	fsCfg.Sync.IgnoreRemoved = rp.Config.Bool(
-		"sync.ignore_removed",
-	)
-
+	// No fs was created yet for this owner.
+	// Create it & give it a part of the main config.
+	fsCfg := rp.Config.Section("fs")
 	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
 	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, fsCfg)
 	if err != nil {

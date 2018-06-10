@@ -9,15 +9,35 @@ var Defaults = DefaultMapping{
 			Docs:         "Port of the daemon",
 		},
 	},
-	"sync": DefaultMapping{
-		"ignore_removed": DefaultEntry{
-			Default:      false,
-			NeedsRestart: false,
-			Docs:         "Do not remove wha the remote removed",
+	"fs": DefaultMapping{
+		"sync": DefaultMapping{
+			"ignore_removed": DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         "Do not remove what the remote removed",
+			},
+			"ignore_moved": DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         "Do not move wha the remote moved",
+			},
+			"conflict_strategy": DefaultEntry{
+				Default:      "marker",
+				NeedsRestart: false,
+				Validator: EnumValidator([]string{
+					"marker", "ignore",
+				}),
+			},
 		},
-		"conflict_strategy": DefaultEntry{
-			Default:      "marker",
-			NeedsRestart: false,
+		"compress": DefaultMapping{
+			"default_algo": DefaultEntry{
+				Default:      "snappy",
+				NeedsRestart: false,
+				Docs:         "What compression algorithm to use by default",
+				Validator: EnumValidator([]string{
+					"snappy", "lz4", "none",
+				}),
+			},
 		},
 	},
 	"repo": DefaultMapping{
@@ -33,13 +53,6 @@ var Defaults = DefaultMapping{
 				Default:      "",
 				NeedsRestart: true,
 				Docs:         "Root directory of the ipfs repository",
-			},
-		},
-		"compress": DefaultMapping{
-			"default_algo": DefaultEntry{
-				Default:      "snappy",
-				NeedsRestart: false,
-				Docs:         "What compression algorithm to use by default",
 			},
 		},
 	},

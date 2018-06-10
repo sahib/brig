@@ -7,6 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func getTypeOfDefaultKey(key string, defaults DefaultMapping) string {
+	defaultEntry := getDefaultByKey(key, defaults)
+	if defaultEntry == nil {
+		return ""
+	}
+
+	return getTypeOf(defaultEntry.Default)
+}
+
 func TestDefaults(t *testing.T) {
 	require.Equal(t, getDefaultByKey("daemon.port", Defaults).Default, 6666)
 	require.Nil(t, getDefaultByKey("daemon.port.sub", Defaults))
@@ -41,14 +50,14 @@ func TestGetNonExisting(t *testing.T) {
 	require.Nil(t, err)
 
 	// should panic.
-	cfg.SetFloat("not.existing", 23)
+	require.Nil(t, cfg.SetFloat("not.existing", 23))
 }
 
 func TestSet(t *testing.T) {
 	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
 	require.Nil(t, err)
 
-	cfg.SetInt("daemon.port", 6666)
+	require.Nil(t, cfg.SetInt("daemon.port", 6666))
 	require.Equal(t, int64(6666), cfg.Int("daemon.port"))
 }
 
@@ -59,7 +68,7 @@ func TestSetBucketKey(t *testing.T) {
 	require.Nil(t, err)
 
 	// should panic.
-	cfg.SetString("daemon", "oh oh")
+	require.Nil(t, cfg.SetString("daemon", "oh oh"))
 }
 
 func TestAddChangeSignal(t *testing.T) {
@@ -73,15 +82,15 @@ func TestAddChangeSignal(t *testing.T) {
 	})
 
 	require.Equal(t, 0, callCount)
-	cfg.SetInt("daemon.port", 42)
+	require.Nil(t, cfg.SetInt("daemon.port", 42))
 	require.Equal(t, 0, callCount)
-	cfg.SetString("data.ipfs.path", "new-value")
+	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
-	cfg.SetString("data.ipfs.path", "new-value")
+	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
 
 	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
-	cfg.SetString("data.ipfs.path", "newer-value")
+	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 1, callCount)
 }
 
@@ -95,13 +104,13 @@ func TestAddChangeSignalAll(t *testing.T) {
 	})
 
 	require.Equal(t, 0, callCount)
-	cfg.SetInt("daemon.port", 42)
+	require.Nil(t, cfg.SetInt("daemon.port", 42))
 	require.Equal(t, 1, callCount)
-	cfg.SetString("data.ipfs.path", "new-value")
+	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 2, callCount)
 
 	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
-	cfg.SetString("data.ipfs.path", "newer-value")
+	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 2, callCount)
 }
 
@@ -109,8 +118,8 @@ func TestOpenSave(t *testing.T) {
 	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
 	require.Nil(t, err)
 
-	cfg.SetInt("daemon.port", 6666)
-	cfg.SetString("data.ipfs.path", "y")
+	require.Nil(t, cfg.SetInt("daemon.port", 6666))
+	require.Nil(t, cfg.SetString("data.ipfs.path", "y"))
 
 	buf := &bytes.Buffer{}
 	require.Nil(t, cfg.Save(buf))
@@ -126,15 +135,15 @@ func TestKeys(t *testing.T) {
 	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
 	require.Nil(t, err)
 
-	keys, err := cfg.Keys()
-	require.Nil(t, err)
+	keys := cfg.Keys()
 	require.Equal(t, []string{
 		"daemon.port",
-		"data.compress.default_algo",
 		"data.ipfs.path",
+		"fs.compress.default_algo",
+		"fs.sync.conflict_strategy",
+		"fs.sync.ignore_moved",
+		"fs.sync.ignore_removed",
 		"repo.current_user",
-		"sync.conflict_strategy",
-		"sync.ignored_removed",
 	}, keys)
 }
 
@@ -148,23 +157,24 @@ func TestSection(t *testing.T) {
 	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
 	require.Nil(t, err)
 
-	dataSec := cfg.Section("data")
-	require.Equal(t, "snappy", dataSec.String("compress.default_algo"))
-	require.Equal(t, "snappy", cfg.String("data.compress.default_algo"))
+	fsSec := cfg.Section("fs")
+	require.Equal(t, "snappy", fsSec.String("compress.default_algo"))
+	require.Equal(t, "snappy", cfg.String("fs.compress.default_algo"))
 
-	dataSec.SetString("compress.default_algo", "lz4")
-	require.Equal(t, "lz4", dataSec.String("compress.default_algo"))
-	require.Equal(t, "lz4", cfg.String("data.compress.default_algo"))
+	require.Nil(t, fsSec.SetString("compress.default_algo", "lz4"))
+	require.Equal(t, "lz4", fsSec.String("compress.default_algo"))
+	require.Equal(t, "lz4", cfg.String("fs.compress.default_algo"))
 
-	cfg.SetString("data.compress.default_algo", "none")
-	require.Equal(t, "none", dataSec.String("compress.default_algo"))
-	require.Equal(t, "none", cfg.String("data.compress.default_algo"))
+	require.Nil(t, cfg.SetString("fs.compress.default_algo", "none"))
+	require.Equal(t, "none", fsSec.String("compress.default_algo"))
+	require.Equal(t, "none", cfg.String("fs.compress.default_algo"))
 
-	childKeys, err := dataSec.Keys()
-	require.Nil(t, err)
+	childKeys := fsSec.Keys()
 	require.Equal(t, []string{
-		"data.compress.default_algo",
-		"data.ipfs.path",
+		"fs.compress.default_algo",
+		"fs.sync.conflict_strategy",
+		"fs.sync.ignore_moved",
+		"fs.sync.ignore_removed",
 	}, childKeys)
 }
 
@@ -173,26 +183,26 @@ func TestSectionSignals(t *testing.T) {
 	require.Nil(t, err)
 
 	parentCallCount := 0
-	parentID := cfg.AddChangedKeyEvent("data.compress.default_algo", func(key string) {
-		require.Equal(t, "data.compress.default_algo", key)
+	parentID := cfg.AddChangedKeyEvent("fs.compress.default_algo", func(key string) {
+		require.Equal(t, "fs.compress.default_algo", key)
 		parentCallCount++
 	})
 
-	dataSec := cfg.Section("data")
+	fsSec := cfg.Section("fs")
 
 	childCallCount := 0
-	childID := dataSec.AddChangedKeyEvent("compress.default_algo", func(key string) {
+	childID := fsSec.AddChangedKeyEvent("compress.default_algo", func(key string) {
 		require.Equal(t, "compress.default_algo", key)
 		childCallCount++
 	})
 
-	cfg.SetString("data.compress.default_algo", "none")
-	dataSec.SetString("compress.default_algo", "lz4")
+	require.Nil(t, cfg.SetString("fs.compress.default_algo", "none"))
+	require.Nil(t, fsSec.SetString("compress.default_algo", "lz4"))
 
 	require.Equal(t, 2, parentCallCount)
 	require.Equal(t, 1, childCallCount)
 
-	require.Nil(t, dataSec.RemoveChangedKeyEvent(childID))
+	require.Nil(t, fsSec.RemoveChangedKeyEvent(childID))
 	require.Nil(t, cfg.RemoveChangedKeyEvent(parentID))
 
 }
@@ -224,4 +234,29 @@ func TestCast(t *testing.T) {
 	// Also float should not cast right:
 	_, err = cfg.Cast("daemon.port", "2.0")
 	require.NotNil(t, err)
+}
+
+func TestValidation(t *testing.T) {
+	defaults := DefaultMapping{
+		"enum-val": DefaultEntry{
+			Default:      "a",
+			NeedsRestart: false,
+			Validator: EnumValidator([]string{
+				"a", "b", "c",
+			}),
+		},
+	}
+
+	// Check initial validation:
+	_, err := Open(bytes.NewReader([]byte("enum-val: d")), defaults)
+	require.NotNil(t, err)
+
+	cfg, err := Open(bytes.NewReader([]byte("enum-val: c")), defaults)
+	require.Nil(t, err)
+	require.Equal(t, cfg.String("enum-val"), "c")
+
+	// Set an invalid enum value:
+	require.NotNil(t, cfg.SetString("enum-val", "C"))
+	require.Nil(t, cfg.SetString("enum-val", "a"))
+	require.Equal(t, cfg.String("enum-val"), "a")
 }

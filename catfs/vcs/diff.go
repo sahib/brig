@@ -13,7 +13,7 @@ type DiffPair struct {
 }
 
 type Diff struct {
-	cfg *SyncConfig
+	cfg *SyncOptions
 
 	// Nodes that were added from remote.
 	Added []n.ModNode
@@ -106,7 +106,7 @@ func (df *Diff) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) err
 //
 // Internally it works like Sync() but does not modify anything and just
 // merely records what the algorithm decided to do.
-func MakeDiff(lkrSrc, lkrDst *c.Linker, headSrc, headDst *n.Commit, cfg *SyncConfig) (*Diff, error) {
+func MakeDiff(lkrSrc, lkrDst *c.Linker, headSrc, headDst *n.Commit, cfg *SyncOptions) (*Diff, error) {
 	if cfg == nil {
 		cfg = DefaultSyncConfig
 	}
