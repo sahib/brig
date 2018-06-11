@@ -1,6 +1,7 @@
 package core
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
@@ -84,7 +85,9 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 	return nil
 }
 
-func (gc *GarbageCollector) sweep(key []string) error {
+func (gc *GarbageCollector) sweep(key []string) (int, error) {
+	removed := 0
+
 	batch := gc.kv.Batch()
 	sweeper := func(key []string) error {
 		b58Hash := key[len(key)-1]
@@ -108,16 +111,17 @@ func (gc *GarbageCollector) sweep(key []string) error {
 			// Actually get rid of the node:
 			gc.lkr.MemIndexPurge(node)
 			batch.Erase(key...)
+			removed++
 		}
 
 		return nil
 	}
 
 	if err := gc.kv.Keys(sweeper, key...); err != nil {
-		return err
+		return removed, err
 	}
 
-	return batch.Flush()
+	return removed, batch.Flush()
 }
 
 // TODO: write test that covers this.
@@ -181,13 +185,21 @@ func (gc *GarbageCollector) Run(allObjects bool) error {
 		}
 	}
 
-	if err := gc.sweep([]string{"stage", "objects"}); err != nil {
-		return err
+	removed, err := gc.sweep([]string{"stage", "objects"})
+	if err != nil {
+		log.Debugf("removed %d unreachable staging objects.", removed)
 	}
 
 	if allObjects {
-		if err := gc.sweep([]string{"objects"}); err != nil {
+		removed, err = gc.sweep([]string{"objects"})
+		if err != nil {
 			return err
+		}
+
+		log.Warningf("removed %d unreachable permanent objects.", removed)
+
+		if removed > 0 {
+			log.Warningf("this might indiciate a bug in catfs somewhere.")
 		}
 	}
 

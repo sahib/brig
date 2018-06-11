@@ -239,6 +239,9 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, fsCfg *config
 		pinner:    pinCache,
 	}
 
+	// Start the garbage collection background task.
+	// It will run locked every few seconds and removes unreachable
+	// objects from the staging area.
 	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
 
 	go func() {
