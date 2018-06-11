@@ -196,9 +196,8 @@ func (gc *GarbageCollector) Run(allObjects bool) error {
 			return err
 		}
 
-		log.Warningf("removed %d unreachable permanent objects.", removed)
-
 		if removed > 0 {
+			log.Warningf("removed %d unreachable permanent objects.", removed)
 			log.Warningf("this might indiciate a bug in catfs somewhere.")
 		}
 	}

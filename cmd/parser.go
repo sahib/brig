@@ -300,6 +300,7 @@ func RunCmdline(args []string) int {
 			},
 		}, {
 			Name:     "config",
+			Aliases:  []string{"cfg"},
 			Category: repoGroup,
 			Subcommands: []cli.Command{
 				{

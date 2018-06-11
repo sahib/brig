@@ -275,10 +275,9 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 			"No repository found at '%s'. Use `brig init <user>` to create one",
 			brigPath,
 		)
-
+	} else {
 		password, err = readPassword(ctx, brigPath)
 		if err != nil {
-			fmt.Println("fail passw")
 			return ExitCode{
 				UnknownError,
 				fmt.Sprintf("Failed to read password: %v", err),

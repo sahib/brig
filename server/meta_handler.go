@@ -154,6 +154,7 @@ func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 		return err
 	}
 
+	log.Debugf("config: set `%s` to `%v`", key, val)
 	repo.Config.Set(key, val)
 	return nil
 }
