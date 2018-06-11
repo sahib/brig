@@ -446,12 +446,10 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 			return err
 		}
 
-		log.Debugf("done adding. now staging")
 		if err := lkr.StageNode(file); err != nil {
 			return err
 		}
 
-		log.Debugf("done staging")
 		return nil
 	})
 
