@@ -163,6 +163,28 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func printConfigDocEntry(entry client.ConfigEntry) {
+	fmt.Printf(
+		"%s: %v\n",
+		color.GreenString(entry.Key),
+		entry.Val,
+	)
+
+	needsRestart := "no"
+	if entry.NeedsRestart == true {
+		needsRestart = color.RedString("yes")
+	}
+
+	defaultVal := entry.Default
+	if entry.Default == "" {
+		defaultVal = color.YellowString("(empty)")
+	}
+
+	fmt.Printf("  Default:       %v\n", defaultVal)
+	fmt.Printf("  Documentation: %v\n", entry.Doc)
+	fmt.Printf("  Needs restart: %v\n", needsRestart)
+}
+
 func handleConfigList(cli *cli.Context, ctl *client.Client) error {
 	all, err := ctl.ConfigAll()
 	if err != nil {
@@ -170,16 +192,9 @@ func handleConfigList(cli *cli.Context, ctl *client.Client) error {
 	}
 
 	for _, entry := range all {
-		fmt.Printf(
-			"%s: %v\n",
-			color.GreenString(entry.Key),
-			entry.Val,
-		)
-
-		fmt.Printf("  Default:       %v\n", color.YellowString(entry.Default))
-		fmt.Printf("  Documentation: %v\n", color.BlueString(entry.Doc))
-		fmt.Printf("  Needs restart: %v\n", color.MagentaString(fmt.Sprintf("%t", entry.NeedsRestart)))
+		printConfigDocEntry(entry)
 	}
+
 	return nil
 }
 
@@ -201,6 +216,26 @@ func handleConfigSet(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("config set: %v", err)}
 	}
 
+	entry, err := ctl.ConfigDoc(key)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config doc: %v", err)}
+	}
+
+	if entry.NeedsRestart {
+		fmt.Println("NOTE: You need to restart brig for this option to take effect.")
+	}
+
+	return nil
+}
+
+func handleConfigDoc(ctx *cli.Context, ctl *client.Client) error {
+	key := ctx.Args().Get(0)
+	entry, err := ctl.ConfigDoc(key)
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config get: %v", err)}
+	}
+
+	printConfigDocEntry(entry)
 	return nil
 }
 

@@ -730,8 +730,8 @@ outputting a .tar archive of the directory contents).
    Each config key is a dotted path, associated with one key.
    These configuration values can help you to finetune the behaviour of brig.
 
-   TODO: List of config keys that are currently settable.
-         (and also cleanup)
+   For more details on each config value, type 'brig config ls'.
+
 `,
 	},
 	"config.get": {
@@ -739,6 +739,17 @@ outputting a .tar archive of the directory contents).
 		Complete:    completeArgsUsage,
 		ArgsUsage:   "<key>",
 		Description: `Show the current value of a key`,
+	},
+	"config.doc": {
+		Usage:     "Show the docs for this config key",
+		Complete:  completeArgsUsage,
+		ArgsUsage: "<key>",
+		Description: `For each config key a few metadata entries are assigned.
+
+This includes a string describing the usage, the default value and an indicator
+if the service needs a restart when setting the value.
+
+`,
 	},
 	"config.set": {
 		Usage:     "Set a specific config key to a new value",

@@ -155,26 +155,27 @@ interface Meta {
 
     configGet @5 (key :Text) -> (value :Text);
     configSet @6 (key :Text, value :Text);
-    configAll @7 () -> (all :List(ConfigPair));
+    configAll @7 () -> (all :List(ConfigEntry));
+    configDoc @8 (key :Text) -> (desc :ConfigEntry);
 
-    remoteAdd    @8  (remote :Remote);
-    remoteRm     @9  (name :Text);
-    remoteLs     @10 () -> (remotes :List(Remote));
-    remoteSave   @11 (remotes :List(Remote));
-    remotePing   @12 (who :Text) -> (roundtrip :Float64);
-    remoteClear  @13 ();
+    remoteAdd    @9  (remote :Remote);
+    remoteRm     @10  (name :Text);
+    remoteLs     @11 () -> (remotes :List(Remote));
+    remoteSave   @12 (remotes :List(Remote));
+    remotePing   @13 (who :Text) -> (roundtrip :Float64);
+    remoteClear  @14 ();
 
-    netLocate     @14 (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
-    netLocateNext @15 (ticket :UInt64) -> (result :LocateResult);
+    netLocate     @15 (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
+    netLocateNext @16 (ticket :UInt64) -> (result :LocateResult);
 
     # the combined command of both is "whathaveibecome":
-    whoami      @16  () -> (whoami :Identity);
-    become      @17 (who :Text);
+    whoami      @17  () -> (whoami :Identity);
+    become      @18 (who :Text);
 
-    connect     @18 ();
-    disconnect  @19 ();
-    onlinePeers @20 () -> (infos :List(PeerStatus));
-    version     @21 () -> (version :Version);
+    connect     @19 ();
+    disconnect  @20 ();
+    onlinePeers @21 () -> (infos :List(PeerStatus));
+    version     @22 () -> (version :Version);
 }
 
 # Group all interfaces together in one API object,

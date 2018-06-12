@@ -106,6 +106,36 @@ type ConfigEntry struct {
 	NeedsRestart bool
 }
 
+func configEntryFromCapnp(capEntry capnp.ConfigEntry) (*ConfigEntry, error) {
+	key, err := capEntry.Key()
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := capEntry.Val()
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := capEntry.Doc()
+	if err != nil {
+		return nil, err
+	}
+
+	def, err := capEntry.Default()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ConfigEntry{
+		Default:      def,
+		Key:          key,
+		Val:          val,
+		Doc:          doc,
+		NeedsRestart: capEntry.NeedsRestart(),
+	}, nil
+}
+
 func (cl *Client) ConfigAll() ([]ConfigEntry, error) {
 	call := cl.api.ConfigAll(cl.ctx, func(p capnp.Meta_configAll_Params) error {
 		return nil
@@ -123,37 +153,39 @@ func (cl *Client) ConfigAll() ([]ConfigEntry, error) {
 
 	entries := []ConfigEntry{}
 	for idx := 0; idx < capPairs.Len(); idx++ {
-		capPair := capPairs.At(idx)
-		key, err := capPair.Key()
+		capEntry := capPairs.At(idx)
+		entry, err := configEntryFromCapnp(capEntry)
 		if err != nil {
 			return nil, err
 		}
 
-		val, err := capPair.Val()
-		if err != nil {
-			return nil, err
-		}
-
-		doc, err := capPair.Doc()
-		if err != nil {
-			return nil, err
-		}
-
-		def, err := capPair.Default()
-		if err != nil {
-			return nil, err
-		}
-
-		entries = append(entries, ConfigEntry{
-			Default:      def,
-			Key:          key,
-			Val:          val,
-			Doc:          doc,
-			NeedsRestart: capPair.NeedsRestart(),
-		})
+		entries = append(entries, *entry)
 	}
 
 	return entries, nil
+}
+
+func (cl *Client) ConfigDoc(key string) (ConfigEntry, error) {
+	call := cl.api.ConfigDoc(cl.ctx, func(p capnp.Meta_configDoc_Params) error {
+		return p.SetKey(key)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return ConfigEntry{}, err
+	}
+
+	capEntry, err := result.Desc()
+	if err != nil {
+		return ConfigEntry{}, err
+	}
+
+	entry, err := configEntryFromCapnp(capEntry)
+	if err != nil {
+		return ConfigEntry{}, err
+	}
+
+	return *entry, nil
 }
 
 ////////////////////////

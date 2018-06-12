@@ -311,6 +311,9 @@ func RunCmdline(args []string) int {
 					Name:   "get",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),
 				}, {
+					Name:   "doc",
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigDoc, true)),
+				}, {
 					Name:   "set",
 					Action: withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true)),
 				},

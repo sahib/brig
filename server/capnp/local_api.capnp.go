@@ -339,140 +339,140 @@ func (p Commit_Promise) Struct() (Commit, error) {
 	return Commit{s}, err
 }
 
-// Key/Value pair in the config
-type ConfigPair struct{ capnp.Struct }
+// A config entry (including meta info)
+type ConfigEntry struct{ capnp.Struct }
 
-// ConfigPair_TypeID is the unique identifier for the type ConfigPair.
-const ConfigPair_TypeID = 0xe54de22194de748a
+// ConfigEntry_TypeID is the unique identifier for the type ConfigEntry.
+const ConfigEntry_TypeID = 0x974c11f8cfed4247
 
-func NewConfigPair(s *capnp.Segment) (ConfigPair, error) {
+func NewConfigEntry(s *capnp.Segment) (ConfigEntry, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
-	return ConfigPair{st}, err
+	return ConfigEntry{st}, err
 }
 
-func NewRootConfigPair(s *capnp.Segment) (ConfigPair, error) {
+func NewRootConfigEntry(s *capnp.Segment) (ConfigEntry, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4})
-	return ConfigPair{st}, err
+	return ConfigEntry{st}, err
 }
 
-func ReadRootConfigPair(msg *capnp.Message) (ConfigPair, error) {
+func ReadRootConfigEntry(msg *capnp.Message) (ConfigEntry, error) {
 	root, err := msg.RootPtr()
-	return ConfigPair{root.Struct()}, err
+	return ConfigEntry{root.Struct()}, err
 }
 
-func (s ConfigPair) String() string {
-	str, _ := text.Marshal(0xe54de22194de748a, s.Struct)
+func (s ConfigEntry) String() string {
+	str, _ := text.Marshal(0x974c11f8cfed4247, s.Struct)
 	return str
 }
 
-func (s ConfigPair) Key() (string, error) {
+func (s ConfigEntry) Key() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s ConfigPair) HasKey() bool {
+func (s ConfigEntry) HasKey() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s ConfigPair) KeyBytes() ([]byte, error) {
+func (s ConfigEntry) KeyBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s ConfigPair) SetKey(v string) error {
+func (s ConfigEntry) SetKey(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s ConfigPair) Val() (string, error) {
+func (s ConfigEntry) Val() (string, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.Text(), err
 }
 
-func (s ConfigPair) HasVal() bool {
+func (s ConfigEntry) HasVal() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s ConfigPair) ValBytes() ([]byte, error) {
+func (s ConfigEntry) ValBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.TextBytes(), err
 }
 
-func (s ConfigPair) SetVal(v string) error {
+func (s ConfigEntry) SetVal(v string) error {
 	return s.Struct.SetText(1, v)
 }
 
-func (s ConfigPair) Doc() (string, error) {
+func (s ConfigEntry) Doc() (string, error) {
 	p, err := s.Struct.Ptr(2)
 	return p.Text(), err
 }
 
-func (s ConfigPair) HasDoc() bool {
+func (s ConfigEntry) HasDoc() bool {
 	p, err := s.Struct.Ptr(2)
 	return p.IsValid() || err != nil
 }
 
-func (s ConfigPair) DocBytes() ([]byte, error) {
+func (s ConfigEntry) DocBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(2)
 	return p.TextBytes(), err
 }
 
-func (s ConfigPair) SetDoc(v string) error {
+func (s ConfigEntry) SetDoc(v string) error {
 	return s.Struct.SetText(2, v)
 }
 
-func (s ConfigPair) Default() (string, error) {
+func (s ConfigEntry) Default() (string, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.Text(), err
 }
 
-func (s ConfigPair) HasDefault() bool {
+func (s ConfigEntry) HasDefault() bool {
 	p, err := s.Struct.Ptr(3)
 	return p.IsValid() || err != nil
 }
 
-func (s ConfigPair) DefaultBytes() ([]byte, error) {
+func (s ConfigEntry) DefaultBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.TextBytes(), err
 }
 
-func (s ConfigPair) SetDefault(v string) error {
+func (s ConfigEntry) SetDefault(v string) error {
 	return s.Struct.SetText(3, v)
 }
 
-func (s ConfigPair) NeedsRestart() bool {
+func (s ConfigEntry) NeedsRestart() bool {
 	return s.Struct.Bit(0)
 }
 
-func (s ConfigPair) SetNeedsRestart(v bool) {
+func (s ConfigEntry) SetNeedsRestart(v bool) {
 	s.Struct.SetBit(0, v)
 }
 
-// ConfigPair_List is a list of ConfigPair.
-type ConfigPair_List struct{ capnp.List }
+// ConfigEntry_List is a list of ConfigEntry.
+type ConfigEntry_List struct{ capnp.List }
 
-// NewConfigPair creates a new list of ConfigPair.
-func NewConfigPair_List(s *capnp.Segment, sz int32) (ConfigPair_List, error) {
+// NewConfigEntry creates a new list of ConfigEntry.
+func NewConfigEntry_List(s *capnp.Segment, sz int32) (ConfigEntry_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 4}, sz)
-	return ConfigPair_List{l}, err
+	return ConfigEntry_List{l}, err
 }
 
-func (s ConfigPair_List) At(i int) ConfigPair { return ConfigPair{s.List.Struct(i)} }
+func (s ConfigEntry_List) At(i int) ConfigEntry { return ConfigEntry{s.List.Struct(i)} }
 
-func (s ConfigPair_List) Set(i int, v ConfigPair) error { return s.List.SetStruct(i, v.Struct) }
+func (s ConfigEntry_List) Set(i int, v ConfigEntry) error { return s.List.SetStruct(i, v.Struct) }
 
-func (s ConfigPair_List) String() string {
-	str, _ := text.MarshalList(0xe54de22194de748a, s.List)
+func (s ConfigEntry_List) String() string {
+	str, _ := text.MarshalList(0x974c11f8cfed4247, s.List)
 	return str
 }
 
-// ConfigPair_Promise is a wrapper for a ConfigPair promised by a client call.
-type ConfigPair_Promise struct{ *capnp.Pipeline }
+// ConfigEntry_Promise is a wrapper for a ConfigEntry promised by a client call.
+type ConfigEntry_Promise struct{ *capnp.Pipeline }
 
-func (p ConfigPair_Promise) Struct() (ConfigPair, error) {
+func (p ConfigEntry_Promise) Struct() (ConfigEntry, error) {
 	s, err := p.Pipeline.Struct()
-	return ConfigPair{s}, err
+	return ConfigEntry{s}, err
 }
 
 // One History entry for a file
@@ -6876,6 +6876,26 @@ func (c Meta) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) 
 	}
 	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c Meta) ConfigDoc(ctx context.Context, params func(Meta_configDoc_Params) error, opts ...capnp.CallOption) Meta_configDoc_Results_Promise {
+	if c.Client == nil {
+		return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			MethodName:    "configDoc",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configDoc_Params{Struct: s}) }
+	}
+	return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c Meta) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) error, opts ...capnp.CallOption) Meta_remoteAdd_Results_Promise {
 	if c.Client == nil {
 		return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -6884,7 +6904,7 @@ func (c Meta) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) 
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      8,
+			MethodID:      9,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
@@ -6904,7 +6924,7 @@ func (c Meta) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) er
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      9,
+			MethodID:      10,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
@@ -6924,7 +6944,7 @@ func (c Meta) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) er
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
+			MethodID:      11,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
@@ -6944,7 +6964,7 @@ func (c Meta) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
+			MethodID:      12,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
@@ -6964,7 +6984,7 @@ func (c Meta) RemotePing(ctx context.Context, params func(Meta_remotePing_Params
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
+			MethodID:      13,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
@@ -6984,7 +7004,7 @@ func (c Meta) RemoteClear(ctx context.Context, params func(Meta_remoteClear_Para
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
+			MethodID:      14,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteClear",
 		},
@@ -7004,7 +7024,7 @@ func (c Meta) NetLocate(ctx context.Context, params func(Meta_netLocate_Params) 
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
+			MethodID:      15,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocate",
 		},
@@ -7024,7 +7044,7 @@ func (c Meta) NetLocateNext(ctx context.Context, params func(Meta_netLocateNext_
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
+			MethodID:      16,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocateNext",
 		},
@@ -7044,7 +7064,7 @@ func (c Meta) Whoami(ctx context.Context, params func(Meta_whoami_Params) error,
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
+			MethodID:      17,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "whoami",
 		},
@@ -7064,7 +7084,7 @@ func (c Meta) Become(ctx context.Context, params func(Meta_become_Params) error,
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
+			MethodID:      18,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "become",
 		},
@@ -7084,7 +7104,7 @@ func (c Meta) Connect(ctx context.Context, params func(Meta_connect_Params) erro
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
+			MethodID:      19,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "connect",
 		},
@@ -7104,7 +7124,7 @@ func (c Meta) Disconnect(ctx context.Context, params func(Meta_disconnect_Params
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
+			MethodID:      20,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
@@ -7124,7 +7144,7 @@ func (c Meta) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Para
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
+			MethodID:      21,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
@@ -7144,7 +7164,7 @@ func (c Meta) Version(ctx context.Context, params func(Meta_version_Params) erro
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
+			MethodID:      22,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "version",
 		},
@@ -7173,6 +7193,8 @@ type Meta_Server interface {
 	ConfigSet(Meta_configSet) error
 
 	ConfigAll(Meta_configAll) error
+
+	ConfigDoc(Meta_configDoc) error
 
 	RemoteAdd(Meta_remoteAdd) error
 
@@ -7210,7 +7232,7 @@ func Meta_ServerToClient(s Meta_Server) Meta {
 
 func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 22)
+		methods = make([]server.Method, 0, 23)
 	}
 
 	methods = append(methods, server.Method{
@@ -7330,6 +7352,20 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			MethodName:    "configDoc",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configDoc{c, opts, Meta_configDoc_Params{Struct: p}, Meta_configDoc_Results{Struct: r}}
+			return s.ConfigDoc(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -7342,7 +7378,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      9,
+			MethodID:      10,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
@@ -7356,7 +7392,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
+			MethodID:      11,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
@@ -7370,7 +7406,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
+			MethodID:      12,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
@@ -7384,7 +7420,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
+			MethodID:      13,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
@@ -7398,7 +7434,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
+			MethodID:      14,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteClear",
 		},
@@ -7412,7 +7448,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
+			MethodID:      15,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocate",
 		},
@@ -7426,7 +7462,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
+			MethodID:      16,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocateNext",
 		},
@@ -7440,7 +7476,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
+			MethodID:      17,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "whoami",
 		},
@@ -7454,7 +7490,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
+			MethodID:      18,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "become",
 		},
@@ -7468,7 +7504,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
+			MethodID:      19,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "connect",
 		},
@@ -7482,7 +7518,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
+			MethodID:      20,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
@@ -7496,7 +7532,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
+			MethodID:      21,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
@@ -7510,7 +7546,7 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
+			MethodID:      22,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "version",
 		},
@@ -7586,6 +7622,14 @@ type Meta_configAll struct {
 	Options capnp.CallOptions
 	Params  Meta_configAll_Params
 	Results Meta_configAll_Results
+}
+
+// Meta_configDoc holds the arguments for a server call to Meta.configDoc.
+type Meta_configDoc struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Meta_configDoc_Params
+	Results Meta_configDoc_Results
 }
 
 // Meta_remoteAdd holds the arguments for a server call to Meta.remoteAdd.
@@ -8782,9 +8826,9 @@ func (s Meta_configAll_Results) String() string {
 	return str
 }
 
-func (s Meta_configAll_Results) All() (ConfigPair_List, error) {
+func (s Meta_configAll_Results) All() (ConfigEntry_List, error) {
 	p, err := s.Struct.Ptr(0)
-	return ConfigPair_List{List: p.List()}, err
+	return ConfigEntry_List{List: p.List()}, err
 }
 
 func (s Meta_configAll_Results) HasAll() bool {
@@ -8792,16 +8836,16 @@ func (s Meta_configAll_Results) HasAll() bool {
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configAll_Results) SetAll(v ConfigPair_List) error {
+func (s Meta_configAll_Results) SetAll(v ConfigEntry_List) error {
 	return s.Struct.SetPtr(0, v.List.ToPtr())
 }
 
 // NewAll sets the all field to a newly
-// allocated ConfigPair_List, preferring placement in s's segment.
-func (s Meta_configAll_Results) NewAll(n int32) (ConfigPair_List, error) {
-	l, err := NewConfigPair_List(s.Struct.Segment(), n)
+// allocated ConfigEntry_List, preferring placement in s's segment.
+func (s Meta_configAll_Results) NewAll(n int32) (ConfigEntry_List, error) {
+	l, err := NewConfigEntry_List(s.Struct.Segment(), n)
 	if err != nil {
-		return ConfigPair_List{}, err
+		return ConfigEntry_List{}, err
 	}
 	err = s.Struct.SetPtr(0, l.List.ToPtr())
 	return l, err
@@ -8837,10 +8881,168 @@ func (p Meta_configAll_Results_Promise) Struct() (Meta_configAll_Results, error)
 	return Meta_configAll_Results{s}, err
 }
 
+type Meta_configDoc_Params struct{ capnp.Struct }
+
+// Meta_configDoc_Params_TypeID is the unique identifier for the type Meta_configDoc_Params.
+const Meta_configDoc_Params_TypeID = 0xc3b93ffa6fc9f160
+
+func NewMeta_configDoc_Params(s *capnp.Segment) (Meta_configDoc_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configDoc_Params{st}, err
+}
+
+func NewRootMeta_configDoc_Params(s *capnp.Segment) (Meta_configDoc_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configDoc_Params{st}, err
+}
+
+func ReadRootMeta_configDoc_Params(msg *capnp.Message) (Meta_configDoc_Params, error) {
+	root, err := msg.RootPtr()
+	return Meta_configDoc_Params{root.Struct()}, err
+}
+
+func (s Meta_configDoc_Params) String() string {
+	str, _ := text.Marshal(0xc3b93ffa6fc9f160, s.Struct)
+	return str
+}
+
+func (s Meta_configDoc_Params) Key() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Meta_configDoc_Params) HasKey() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configDoc_Params) KeyBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Meta_configDoc_Params) SetKey(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// Meta_configDoc_Params_List is a list of Meta_configDoc_Params.
+type Meta_configDoc_Params_List struct{ capnp.List }
+
+// NewMeta_configDoc_Params creates a new list of Meta_configDoc_Params.
+func NewMeta_configDoc_Params_List(s *capnp.Segment, sz int32) (Meta_configDoc_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Meta_configDoc_Params_List{l}, err
+}
+
+func (s Meta_configDoc_Params_List) At(i int) Meta_configDoc_Params {
+	return Meta_configDoc_Params{s.List.Struct(i)}
+}
+
+func (s Meta_configDoc_Params_List) Set(i int, v Meta_configDoc_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configDoc_Params_List) String() string {
+	str, _ := text.MarshalList(0xc3b93ffa6fc9f160, s.List)
+	return str
+}
+
+// Meta_configDoc_Params_Promise is a wrapper for a Meta_configDoc_Params promised by a client call.
+type Meta_configDoc_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configDoc_Params_Promise) Struct() (Meta_configDoc_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configDoc_Params{s}, err
+}
+
+type Meta_configDoc_Results struct{ capnp.Struct }
+
+// Meta_configDoc_Results_TypeID is the unique identifier for the type Meta_configDoc_Results.
+const Meta_configDoc_Results_TypeID = 0xc920e06b8110e91f
+
+func NewMeta_configDoc_Results(s *capnp.Segment) (Meta_configDoc_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configDoc_Results{st}, err
+}
+
+func NewRootMeta_configDoc_Results(s *capnp.Segment) (Meta_configDoc_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Meta_configDoc_Results{st}, err
+}
+
+func ReadRootMeta_configDoc_Results(msg *capnp.Message) (Meta_configDoc_Results, error) {
+	root, err := msg.RootPtr()
+	return Meta_configDoc_Results{root.Struct()}, err
+}
+
+func (s Meta_configDoc_Results) String() string {
+	str, _ := text.Marshal(0xc920e06b8110e91f, s.Struct)
+	return str
+}
+
+func (s Meta_configDoc_Results) Desc() (ConfigEntry, error) {
+	p, err := s.Struct.Ptr(0)
+	return ConfigEntry{Struct: p.Struct()}, err
+}
+
+func (s Meta_configDoc_Results) HasDesc() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Meta_configDoc_Results) SetDesc(v ConfigEntry) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewDesc sets the desc field to a newly
+// allocated ConfigEntry struct, preferring placement in s's segment.
+func (s Meta_configDoc_Results) NewDesc() (ConfigEntry, error) {
+	ss, err := NewConfigEntry(s.Struct.Segment())
+	if err != nil {
+		return ConfigEntry{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Meta_configDoc_Results_List is a list of Meta_configDoc_Results.
+type Meta_configDoc_Results_List struct{ capnp.List }
+
+// NewMeta_configDoc_Results creates a new list of Meta_configDoc_Results.
+func NewMeta_configDoc_Results_List(s *capnp.Segment, sz int32) (Meta_configDoc_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Meta_configDoc_Results_List{l}, err
+}
+
+func (s Meta_configDoc_Results_List) At(i int) Meta_configDoc_Results {
+	return Meta_configDoc_Results{s.List.Struct(i)}
+}
+
+func (s Meta_configDoc_Results_List) Set(i int, v Meta_configDoc_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Meta_configDoc_Results_List) String() string {
+	str, _ := text.MarshalList(0xc920e06b8110e91f, s.List)
+	return str
+}
+
+// Meta_configDoc_Results_Promise is a wrapper for a Meta_configDoc_Results promised by a client call.
+type Meta_configDoc_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Meta_configDoc_Results_Promise) Struct() (Meta_configDoc_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Meta_configDoc_Results{s}, err
+}
+
+func (p Meta_configDoc_Results_Promise) Desc() ConfigEntry_Promise {
+	return ConfigEntry_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
 type Meta_remoteAdd_Params struct{ capnp.Struct }
 
 // Meta_remoteAdd_Params_TypeID is the unique identifier for the type Meta_remoteAdd_Params.
-const Meta_remoteAdd_Params_TypeID = 0xc3b93ffa6fc9f160
+const Meta_remoteAdd_Params_TypeID = 0xc53b6f91dec2daaa
 
 func NewMeta_remoteAdd_Params(s *capnp.Segment) (Meta_remoteAdd_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -8858,7 +9060,7 @@ func ReadRootMeta_remoteAdd_Params(msg *capnp.Message) (Meta_remoteAdd_Params, e
 }
 
 func (s Meta_remoteAdd_Params) String() string {
-	str, _ := text.Marshal(0xc3b93ffa6fc9f160, s.Struct)
+	str, _ := text.Marshal(0xc53b6f91dec2daaa, s.Struct)
 	return str
 }
 
@@ -8905,7 +9107,7 @@ func (s Meta_remoteAdd_Params_List) Set(i int, v Meta_remoteAdd_Params) error {
 }
 
 func (s Meta_remoteAdd_Params_List) String() string {
-	str, _ := text.MarshalList(0xc3b93ffa6fc9f160, s.List)
+	str, _ := text.MarshalList(0xc53b6f91dec2daaa, s.List)
 	return str
 }
 
@@ -8924,7 +9126,7 @@ func (p Meta_remoteAdd_Params_Promise) Remote() Remote_Promise {
 type Meta_remoteAdd_Results struct{ capnp.Struct }
 
 // Meta_remoteAdd_Results_TypeID is the unique identifier for the type Meta_remoteAdd_Results.
-const Meta_remoteAdd_Results_TypeID = 0xc920e06b8110e91f
+const Meta_remoteAdd_Results_TypeID = 0x956cdf6b89128744
 
 func NewMeta_remoteAdd_Results(s *capnp.Segment) (Meta_remoteAdd_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -8942,7 +9144,7 @@ func ReadRootMeta_remoteAdd_Results(msg *capnp.Message) (Meta_remoteAdd_Results,
 }
 
 func (s Meta_remoteAdd_Results) String() string {
-	str, _ := text.Marshal(0xc920e06b8110e91f, s.Struct)
+	str, _ := text.Marshal(0x956cdf6b89128744, s.Struct)
 	return str
 }
 
@@ -8964,7 +9166,7 @@ func (s Meta_remoteAdd_Results_List) Set(i int, v Meta_remoteAdd_Results) error 
 }
 
 func (s Meta_remoteAdd_Results_List) String() string {
-	str, _ := text.MarshalList(0xc920e06b8110e91f, s.List)
+	str, _ := text.MarshalList(0x956cdf6b89128744, s.List)
 	return str
 }
 
@@ -8979,7 +9181,7 @@ func (p Meta_remoteAdd_Results_Promise) Struct() (Meta_remoteAdd_Results, error)
 type Meta_remoteRm_Params struct{ capnp.Struct }
 
 // Meta_remoteRm_Params_TypeID is the unique identifier for the type Meta_remoteRm_Params.
-const Meta_remoteRm_Params_TypeID = 0xc53b6f91dec2daaa
+const Meta_remoteRm_Params_TypeID = 0xbb6cabb7ec800819
 
 func NewMeta_remoteRm_Params(s *capnp.Segment) (Meta_remoteRm_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -8997,7 +9199,7 @@ func ReadRootMeta_remoteRm_Params(msg *capnp.Message) (Meta_remoteRm_Params, err
 }
 
 func (s Meta_remoteRm_Params) String() string {
-	str, _ := text.Marshal(0xc53b6f91dec2daaa, s.Struct)
+	str, _ := text.Marshal(0xbb6cabb7ec800819, s.Struct)
 	return str
 }
 
@@ -9038,7 +9240,7 @@ func (s Meta_remoteRm_Params_List) Set(i int, v Meta_remoteRm_Params) error {
 }
 
 func (s Meta_remoteRm_Params_List) String() string {
-	str, _ := text.MarshalList(0xc53b6f91dec2daaa, s.List)
+	str, _ := text.MarshalList(0xbb6cabb7ec800819, s.List)
 	return str
 }
 
@@ -9053,7 +9255,7 @@ func (p Meta_remoteRm_Params_Promise) Struct() (Meta_remoteRm_Params, error) {
 type Meta_remoteRm_Results struct{ capnp.Struct }
 
 // Meta_remoteRm_Results_TypeID is the unique identifier for the type Meta_remoteRm_Results.
-const Meta_remoteRm_Results_TypeID = 0x956cdf6b89128744
+const Meta_remoteRm_Results_TypeID = 0xe21b4052865cf7c4
 
 func NewMeta_remoteRm_Results(s *capnp.Segment) (Meta_remoteRm_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9071,7 +9273,7 @@ func ReadRootMeta_remoteRm_Results(msg *capnp.Message) (Meta_remoteRm_Results, e
 }
 
 func (s Meta_remoteRm_Results) String() string {
-	str, _ := text.Marshal(0x956cdf6b89128744, s.Struct)
+	str, _ := text.Marshal(0xe21b4052865cf7c4, s.Struct)
 	return str
 }
 
@@ -9093,7 +9295,7 @@ func (s Meta_remoteRm_Results_List) Set(i int, v Meta_remoteRm_Results) error {
 }
 
 func (s Meta_remoteRm_Results_List) String() string {
-	str, _ := text.MarshalList(0x956cdf6b89128744, s.List)
+	str, _ := text.MarshalList(0xe21b4052865cf7c4, s.List)
 	return str
 }
 
@@ -9108,7 +9310,7 @@ func (p Meta_remoteRm_Results_Promise) Struct() (Meta_remoteRm_Results, error) {
 type Meta_remoteLs_Params struct{ capnp.Struct }
 
 // Meta_remoteLs_Params_TypeID is the unique identifier for the type Meta_remoteLs_Params.
-const Meta_remoteLs_Params_TypeID = 0xbb6cabb7ec800819
+const Meta_remoteLs_Params_TypeID = 0x94ee8cc65b181abe
 
 func NewMeta_remoteLs_Params(s *capnp.Segment) (Meta_remoteLs_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9126,7 +9328,7 @@ func ReadRootMeta_remoteLs_Params(msg *capnp.Message) (Meta_remoteLs_Params, err
 }
 
 func (s Meta_remoteLs_Params) String() string {
-	str, _ := text.Marshal(0xbb6cabb7ec800819, s.Struct)
+	str, _ := text.Marshal(0x94ee8cc65b181abe, s.Struct)
 	return str
 }
 
@@ -9148,7 +9350,7 @@ func (s Meta_remoteLs_Params_List) Set(i int, v Meta_remoteLs_Params) error {
 }
 
 func (s Meta_remoteLs_Params_List) String() string {
-	str, _ := text.MarshalList(0xbb6cabb7ec800819, s.List)
+	str, _ := text.MarshalList(0x94ee8cc65b181abe, s.List)
 	return str
 }
 
@@ -9163,7 +9365,7 @@ func (p Meta_remoteLs_Params_Promise) Struct() (Meta_remoteLs_Params, error) {
 type Meta_remoteLs_Results struct{ capnp.Struct }
 
 // Meta_remoteLs_Results_TypeID is the unique identifier for the type Meta_remoteLs_Results.
-const Meta_remoteLs_Results_TypeID = 0xe21b4052865cf7c4
+const Meta_remoteLs_Results_TypeID = 0xb05ff814dad43968
 
 func NewMeta_remoteLs_Results(s *capnp.Segment) (Meta_remoteLs_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -9181,7 +9383,7 @@ func ReadRootMeta_remoteLs_Results(msg *capnp.Message) (Meta_remoteLs_Results, e
 }
 
 func (s Meta_remoteLs_Results) String() string {
-	str, _ := text.Marshal(0xe21b4052865cf7c4, s.Struct)
+	str, _ := text.Marshal(0xb05ff814dad43968, s.Struct)
 	return str
 }
 
@@ -9228,7 +9430,7 @@ func (s Meta_remoteLs_Results_List) Set(i int, v Meta_remoteLs_Results) error {
 }
 
 func (s Meta_remoteLs_Results_List) String() string {
-	str, _ := text.MarshalList(0xe21b4052865cf7c4, s.List)
+	str, _ := text.MarshalList(0xb05ff814dad43968, s.List)
 	return str
 }
 
@@ -9243,7 +9445,7 @@ func (p Meta_remoteLs_Results_Promise) Struct() (Meta_remoteLs_Results, error) {
 type Meta_remoteSave_Params struct{ capnp.Struct }
 
 // Meta_remoteSave_Params_TypeID is the unique identifier for the type Meta_remoteSave_Params.
-const Meta_remoteSave_Params_TypeID = 0x94ee8cc65b181abe
+const Meta_remoteSave_Params_TypeID = 0x81b6b14efe0127c4
 
 func NewMeta_remoteSave_Params(s *capnp.Segment) (Meta_remoteSave_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -9261,7 +9463,7 @@ func ReadRootMeta_remoteSave_Params(msg *capnp.Message) (Meta_remoteSave_Params,
 }
 
 func (s Meta_remoteSave_Params) String() string {
-	str, _ := text.Marshal(0x94ee8cc65b181abe, s.Struct)
+	str, _ := text.Marshal(0x81b6b14efe0127c4, s.Struct)
 	return str
 }
 
@@ -9308,7 +9510,7 @@ func (s Meta_remoteSave_Params_List) Set(i int, v Meta_remoteSave_Params) error 
 }
 
 func (s Meta_remoteSave_Params_List) String() string {
-	str, _ := text.MarshalList(0x94ee8cc65b181abe, s.List)
+	str, _ := text.MarshalList(0x81b6b14efe0127c4, s.List)
 	return str
 }
 
@@ -9323,7 +9525,7 @@ func (p Meta_remoteSave_Params_Promise) Struct() (Meta_remoteSave_Params, error)
 type Meta_remoteSave_Results struct{ capnp.Struct }
 
 // Meta_remoteSave_Results_TypeID is the unique identifier for the type Meta_remoteSave_Results.
-const Meta_remoteSave_Results_TypeID = 0xb05ff814dad43968
+const Meta_remoteSave_Results_TypeID = 0xf9b3f22591273e08
 
 func NewMeta_remoteSave_Results(s *capnp.Segment) (Meta_remoteSave_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9341,7 +9543,7 @@ func ReadRootMeta_remoteSave_Results(msg *capnp.Message) (Meta_remoteSave_Result
 }
 
 func (s Meta_remoteSave_Results) String() string {
-	str, _ := text.Marshal(0xb05ff814dad43968, s.Struct)
+	str, _ := text.Marshal(0xf9b3f22591273e08, s.Struct)
 	return str
 }
 
@@ -9363,7 +9565,7 @@ func (s Meta_remoteSave_Results_List) Set(i int, v Meta_remoteSave_Results) erro
 }
 
 func (s Meta_remoteSave_Results_List) String() string {
-	str, _ := text.MarshalList(0xb05ff814dad43968, s.List)
+	str, _ := text.MarshalList(0xf9b3f22591273e08, s.List)
 	return str
 }
 
@@ -9378,7 +9580,7 @@ func (p Meta_remoteSave_Results_Promise) Struct() (Meta_remoteSave_Results, erro
 type Meta_remotePing_Params struct{ capnp.Struct }
 
 // Meta_remotePing_Params_TypeID is the unique identifier for the type Meta_remotePing_Params.
-const Meta_remotePing_Params_TypeID = 0x81b6b14efe0127c4
+const Meta_remotePing_Params_TypeID = 0xbea1cb452f61974f
 
 func NewMeta_remotePing_Params(s *capnp.Segment) (Meta_remotePing_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -9396,7 +9598,7 @@ func ReadRootMeta_remotePing_Params(msg *capnp.Message) (Meta_remotePing_Params,
 }
 
 func (s Meta_remotePing_Params) String() string {
-	str, _ := text.Marshal(0x81b6b14efe0127c4, s.Struct)
+	str, _ := text.Marshal(0xbea1cb452f61974f, s.Struct)
 	return str
 }
 
@@ -9437,7 +9639,7 @@ func (s Meta_remotePing_Params_List) Set(i int, v Meta_remotePing_Params) error 
 }
 
 func (s Meta_remotePing_Params_List) String() string {
-	str, _ := text.MarshalList(0x81b6b14efe0127c4, s.List)
+	str, _ := text.MarshalList(0xbea1cb452f61974f, s.List)
 	return str
 }
 
@@ -9452,7 +9654,7 @@ func (p Meta_remotePing_Params_Promise) Struct() (Meta_remotePing_Params, error)
 type Meta_remotePing_Results struct{ capnp.Struct }
 
 // Meta_remotePing_Results_TypeID is the unique identifier for the type Meta_remotePing_Results.
-const Meta_remotePing_Results_TypeID = 0xf9b3f22591273e08
+const Meta_remotePing_Results_TypeID = 0xf0f86c25885c5fe0
 
 func NewMeta_remotePing_Results(s *capnp.Segment) (Meta_remotePing_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
@@ -9470,7 +9672,7 @@ func ReadRootMeta_remotePing_Results(msg *capnp.Message) (Meta_remotePing_Result
 }
 
 func (s Meta_remotePing_Results) String() string {
-	str, _ := text.Marshal(0xf9b3f22591273e08, s.Struct)
+	str, _ := text.Marshal(0xf0f86c25885c5fe0, s.Struct)
 	return str
 }
 
@@ -9500,7 +9702,7 @@ func (s Meta_remotePing_Results_List) Set(i int, v Meta_remotePing_Results) erro
 }
 
 func (s Meta_remotePing_Results_List) String() string {
-	str, _ := text.MarshalList(0xf9b3f22591273e08, s.List)
+	str, _ := text.MarshalList(0xf0f86c25885c5fe0, s.List)
 	return str
 }
 
@@ -9515,7 +9717,7 @@ func (p Meta_remotePing_Results_Promise) Struct() (Meta_remotePing_Results, erro
 type Meta_remoteClear_Params struct{ capnp.Struct }
 
 // Meta_remoteClear_Params_TypeID is the unique identifier for the type Meta_remoteClear_Params.
-const Meta_remoteClear_Params_TypeID = 0xbea1cb452f61974f
+const Meta_remoteClear_Params_TypeID = 0xd4353ecb879426a0
 
 func NewMeta_remoteClear_Params(s *capnp.Segment) (Meta_remoteClear_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9533,7 +9735,7 @@ func ReadRootMeta_remoteClear_Params(msg *capnp.Message) (Meta_remoteClear_Param
 }
 
 func (s Meta_remoteClear_Params) String() string {
-	str, _ := text.Marshal(0xbea1cb452f61974f, s.Struct)
+	str, _ := text.Marshal(0xd4353ecb879426a0, s.Struct)
 	return str
 }
 
@@ -9555,7 +9757,7 @@ func (s Meta_remoteClear_Params_List) Set(i int, v Meta_remoteClear_Params) erro
 }
 
 func (s Meta_remoteClear_Params_List) String() string {
-	str, _ := text.MarshalList(0xbea1cb452f61974f, s.List)
+	str, _ := text.MarshalList(0xd4353ecb879426a0, s.List)
 	return str
 }
 
@@ -9570,7 +9772,7 @@ func (p Meta_remoteClear_Params_Promise) Struct() (Meta_remoteClear_Params, erro
 type Meta_remoteClear_Results struct{ capnp.Struct }
 
 // Meta_remoteClear_Results_TypeID is the unique identifier for the type Meta_remoteClear_Results.
-const Meta_remoteClear_Results_TypeID = 0xf0f86c25885c5fe0
+const Meta_remoteClear_Results_TypeID = 0xc538e655744911c7
 
 func NewMeta_remoteClear_Results(s *capnp.Segment) (Meta_remoteClear_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9588,7 +9790,7 @@ func ReadRootMeta_remoteClear_Results(msg *capnp.Message) (Meta_remoteClear_Resu
 }
 
 func (s Meta_remoteClear_Results) String() string {
-	str, _ := text.Marshal(0xf0f86c25885c5fe0, s.Struct)
+	str, _ := text.Marshal(0xc538e655744911c7, s.Struct)
 	return str
 }
 
@@ -9610,7 +9812,7 @@ func (s Meta_remoteClear_Results_List) Set(i int, v Meta_remoteClear_Results) er
 }
 
 func (s Meta_remoteClear_Results_List) String() string {
-	str, _ := text.MarshalList(0xf0f86c25885c5fe0, s.List)
+	str, _ := text.MarshalList(0xc538e655744911c7, s.List)
 	return str
 }
 
@@ -9625,7 +9827,7 @@ func (p Meta_remoteClear_Results_Promise) Struct() (Meta_remoteClear_Results, er
 type Meta_netLocate_Params struct{ capnp.Struct }
 
 // Meta_netLocate_Params_TypeID is the unique identifier for the type Meta_netLocate_Params.
-const Meta_netLocate_Params_TypeID = 0xd4353ecb879426a0
+const Meta_netLocate_Params_TypeID = 0x943e5e6dc1abe7b8
 
 func NewMeta_netLocate_Params(s *capnp.Segment) (Meta_netLocate_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
@@ -9643,7 +9845,7 @@ func ReadRootMeta_netLocate_Params(msg *capnp.Message) (Meta_netLocate_Params, e
 }
 
 func (s Meta_netLocate_Params) String() string {
-	str, _ := text.Marshal(0xd4353ecb879426a0, s.Struct)
+	str, _ := text.Marshal(0x943e5e6dc1abe7b8, s.Struct)
 	return str
 }
 
@@ -9711,7 +9913,7 @@ func (s Meta_netLocate_Params_List) Set(i int, v Meta_netLocate_Params) error {
 }
 
 func (s Meta_netLocate_Params_List) String() string {
-	str, _ := text.MarshalList(0xd4353ecb879426a0, s.List)
+	str, _ := text.MarshalList(0x943e5e6dc1abe7b8, s.List)
 	return str
 }
 
@@ -9726,7 +9928,7 @@ func (p Meta_netLocate_Params_Promise) Struct() (Meta_netLocate_Params, error) {
 type Meta_netLocate_Results struct{ capnp.Struct }
 
 // Meta_netLocate_Results_TypeID is the unique identifier for the type Meta_netLocate_Results.
-const Meta_netLocate_Results_TypeID = 0xc538e655744911c7
+const Meta_netLocate_Results_TypeID = 0xad2dd70d5d17decb
 
 func NewMeta_netLocate_Results(s *capnp.Segment) (Meta_netLocate_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
@@ -9744,7 +9946,7 @@ func ReadRootMeta_netLocate_Results(msg *capnp.Message) (Meta_netLocate_Results,
 }
 
 func (s Meta_netLocate_Results) String() string {
-	str, _ := text.Marshal(0xc538e655744911c7, s.Struct)
+	str, _ := text.Marshal(0xad2dd70d5d17decb, s.Struct)
 	return str
 }
 
@@ -9774,7 +9976,7 @@ func (s Meta_netLocate_Results_List) Set(i int, v Meta_netLocate_Results) error 
 }
 
 func (s Meta_netLocate_Results_List) String() string {
-	str, _ := text.MarshalList(0xc538e655744911c7, s.List)
+	str, _ := text.MarshalList(0xad2dd70d5d17decb, s.List)
 	return str
 }
 
@@ -9789,7 +9991,7 @@ func (p Meta_netLocate_Results_Promise) Struct() (Meta_netLocate_Results, error)
 type Meta_netLocateNext_Params struct{ capnp.Struct }
 
 // Meta_netLocateNext_Params_TypeID is the unique identifier for the type Meta_netLocateNext_Params.
-const Meta_netLocateNext_Params_TypeID = 0x943e5e6dc1abe7b8
+const Meta_netLocateNext_Params_TypeID = 0xd289114a83107db7
 
 func NewMeta_netLocateNext_Params(s *capnp.Segment) (Meta_netLocateNext_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
@@ -9807,7 +10009,7 @@ func ReadRootMeta_netLocateNext_Params(msg *capnp.Message) (Meta_netLocateNext_P
 }
 
 func (s Meta_netLocateNext_Params) String() string {
-	str, _ := text.Marshal(0x943e5e6dc1abe7b8, s.Struct)
+	str, _ := text.Marshal(0xd289114a83107db7, s.Struct)
 	return str
 }
 
@@ -9837,7 +10039,7 @@ func (s Meta_netLocateNext_Params_List) Set(i int, v Meta_netLocateNext_Params) 
 }
 
 func (s Meta_netLocateNext_Params_List) String() string {
-	str, _ := text.MarshalList(0x943e5e6dc1abe7b8, s.List)
+	str, _ := text.MarshalList(0xd289114a83107db7, s.List)
 	return str
 }
 
@@ -9852,7 +10054,7 @@ func (p Meta_netLocateNext_Params_Promise) Struct() (Meta_netLocateNext_Params, 
 type Meta_netLocateNext_Results struct{ capnp.Struct }
 
 // Meta_netLocateNext_Results_TypeID is the unique identifier for the type Meta_netLocateNext_Results.
-const Meta_netLocateNext_Results_TypeID = 0xad2dd70d5d17decb
+const Meta_netLocateNext_Results_TypeID = 0x9eadc3c7605bd657
 
 func NewMeta_netLocateNext_Results(s *capnp.Segment) (Meta_netLocateNext_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -9870,7 +10072,7 @@ func ReadRootMeta_netLocateNext_Results(msg *capnp.Message) (Meta_netLocateNext_
 }
 
 func (s Meta_netLocateNext_Results) String() string {
-	str, _ := text.Marshal(0xad2dd70d5d17decb, s.Struct)
+	str, _ := text.Marshal(0x9eadc3c7605bd657, s.Struct)
 	return str
 }
 
@@ -9917,7 +10119,7 @@ func (s Meta_netLocateNext_Results_List) Set(i int, v Meta_netLocateNext_Results
 }
 
 func (s Meta_netLocateNext_Results_List) String() string {
-	str, _ := text.MarshalList(0xad2dd70d5d17decb, s.List)
+	str, _ := text.MarshalList(0x9eadc3c7605bd657, s.List)
 	return str
 }
 
@@ -9936,7 +10138,7 @@ func (p Meta_netLocateNext_Results_Promise) Result() LocateResult_Promise {
 type Meta_whoami_Params struct{ capnp.Struct }
 
 // Meta_whoami_Params_TypeID is the unique identifier for the type Meta_whoami_Params.
-const Meta_whoami_Params_TypeID = 0xd289114a83107db7
+const Meta_whoami_Params_TypeID = 0x90027b0333e503ee
 
 func NewMeta_whoami_Params(s *capnp.Segment) (Meta_whoami_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -9954,7 +10156,7 @@ func ReadRootMeta_whoami_Params(msg *capnp.Message) (Meta_whoami_Params, error) 
 }
 
 func (s Meta_whoami_Params) String() string {
-	str, _ := text.Marshal(0xd289114a83107db7, s.Struct)
+	str, _ := text.Marshal(0x90027b0333e503ee, s.Struct)
 	return str
 }
 
@@ -9976,7 +10178,7 @@ func (s Meta_whoami_Params_List) Set(i int, v Meta_whoami_Params) error {
 }
 
 func (s Meta_whoami_Params_List) String() string {
-	str, _ := text.MarshalList(0xd289114a83107db7, s.List)
+	str, _ := text.MarshalList(0x90027b0333e503ee, s.List)
 	return str
 }
 
@@ -9991,7 +10193,7 @@ func (p Meta_whoami_Params_Promise) Struct() (Meta_whoami_Params, error) {
 type Meta_whoami_Results struct{ capnp.Struct }
 
 // Meta_whoami_Results_TypeID is the unique identifier for the type Meta_whoami_Results.
-const Meta_whoami_Results_TypeID = 0x9eadc3c7605bd657
+const Meta_whoami_Results_TypeID = 0xf135f1bd71a1071f
 
 func NewMeta_whoami_Results(s *capnp.Segment) (Meta_whoami_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -10009,7 +10211,7 @@ func ReadRootMeta_whoami_Results(msg *capnp.Message) (Meta_whoami_Results, error
 }
 
 func (s Meta_whoami_Results) String() string {
-	str, _ := text.Marshal(0x9eadc3c7605bd657, s.Struct)
+	str, _ := text.Marshal(0xf135f1bd71a1071f, s.Struct)
 	return str
 }
 
@@ -10056,7 +10258,7 @@ func (s Meta_whoami_Results_List) Set(i int, v Meta_whoami_Results) error {
 }
 
 func (s Meta_whoami_Results_List) String() string {
-	str, _ := text.MarshalList(0x9eadc3c7605bd657, s.List)
+	str, _ := text.MarshalList(0xf135f1bd71a1071f, s.List)
 	return str
 }
 
@@ -10075,7 +10277,7 @@ func (p Meta_whoami_Results_Promise) Whoami() Identity_Promise {
 type Meta_become_Params struct{ capnp.Struct }
 
 // Meta_become_Params_TypeID is the unique identifier for the type Meta_become_Params.
-const Meta_become_Params_TypeID = 0x90027b0333e503ee
+const Meta_become_Params_TypeID = 0xe478c8af63857432
 
 func NewMeta_become_Params(s *capnp.Segment) (Meta_become_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -10093,7 +10295,7 @@ func ReadRootMeta_become_Params(msg *capnp.Message) (Meta_become_Params, error) 
 }
 
 func (s Meta_become_Params) String() string {
-	str, _ := text.Marshal(0x90027b0333e503ee, s.Struct)
+	str, _ := text.Marshal(0xe478c8af63857432, s.Struct)
 	return str
 }
 
@@ -10134,7 +10336,7 @@ func (s Meta_become_Params_List) Set(i int, v Meta_become_Params) error {
 }
 
 func (s Meta_become_Params_List) String() string {
-	str, _ := text.MarshalList(0x90027b0333e503ee, s.List)
+	str, _ := text.MarshalList(0xe478c8af63857432, s.List)
 	return str
 }
 
@@ -10149,7 +10351,7 @@ func (p Meta_become_Params_Promise) Struct() (Meta_become_Params, error) {
 type Meta_become_Results struct{ capnp.Struct }
 
 // Meta_become_Results_TypeID is the unique identifier for the type Meta_become_Results.
-const Meta_become_Results_TypeID = 0xf135f1bd71a1071f
+const Meta_become_Results_TypeID = 0xf580568dec00ba9f
 
 func NewMeta_become_Results(s *capnp.Segment) (Meta_become_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10167,7 +10369,7 @@ func ReadRootMeta_become_Results(msg *capnp.Message) (Meta_become_Results, error
 }
 
 func (s Meta_become_Results) String() string {
-	str, _ := text.Marshal(0xf135f1bd71a1071f, s.Struct)
+	str, _ := text.Marshal(0xf580568dec00ba9f, s.Struct)
 	return str
 }
 
@@ -10189,7 +10391,7 @@ func (s Meta_become_Results_List) Set(i int, v Meta_become_Results) error {
 }
 
 func (s Meta_become_Results_List) String() string {
-	str, _ := text.MarshalList(0xf135f1bd71a1071f, s.List)
+	str, _ := text.MarshalList(0xf580568dec00ba9f, s.List)
 	return str
 }
 
@@ -10204,7 +10406,7 @@ func (p Meta_become_Results_Promise) Struct() (Meta_become_Results, error) {
 type Meta_connect_Params struct{ capnp.Struct }
 
 // Meta_connect_Params_TypeID is the unique identifier for the type Meta_connect_Params.
-const Meta_connect_Params_TypeID = 0xe478c8af63857432
+const Meta_connect_Params_TypeID = 0xb81842457ebf1a07
 
 func NewMeta_connect_Params(s *capnp.Segment) (Meta_connect_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10222,7 +10424,7 @@ func ReadRootMeta_connect_Params(msg *capnp.Message) (Meta_connect_Params, error
 }
 
 func (s Meta_connect_Params) String() string {
-	str, _ := text.Marshal(0xe478c8af63857432, s.Struct)
+	str, _ := text.Marshal(0xb81842457ebf1a07, s.Struct)
 	return str
 }
 
@@ -10244,7 +10446,7 @@ func (s Meta_connect_Params_List) Set(i int, v Meta_connect_Params) error {
 }
 
 func (s Meta_connect_Params_List) String() string {
-	str, _ := text.MarshalList(0xe478c8af63857432, s.List)
+	str, _ := text.MarshalList(0xb81842457ebf1a07, s.List)
 	return str
 }
 
@@ -10259,7 +10461,7 @@ func (p Meta_connect_Params_Promise) Struct() (Meta_connect_Params, error) {
 type Meta_connect_Results struct{ capnp.Struct }
 
 // Meta_connect_Results_TypeID is the unique identifier for the type Meta_connect_Results.
-const Meta_connect_Results_TypeID = 0xf580568dec00ba9f
+const Meta_connect_Results_TypeID = 0xd5616267acef42a7
 
 func NewMeta_connect_Results(s *capnp.Segment) (Meta_connect_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10277,7 +10479,7 @@ func ReadRootMeta_connect_Results(msg *capnp.Message) (Meta_connect_Results, err
 }
 
 func (s Meta_connect_Results) String() string {
-	str, _ := text.Marshal(0xf580568dec00ba9f, s.Struct)
+	str, _ := text.Marshal(0xd5616267acef42a7, s.Struct)
 	return str
 }
 
@@ -10299,7 +10501,7 @@ func (s Meta_connect_Results_List) Set(i int, v Meta_connect_Results) error {
 }
 
 func (s Meta_connect_Results_List) String() string {
-	str, _ := text.MarshalList(0xf580568dec00ba9f, s.List)
+	str, _ := text.MarshalList(0xd5616267acef42a7, s.List)
 	return str
 }
 
@@ -10314,7 +10516,7 @@ func (p Meta_connect_Results_Promise) Struct() (Meta_connect_Results, error) {
 type Meta_disconnect_Params struct{ capnp.Struct }
 
 // Meta_disconnect_Params_TypeID is the unique identifier for the type Meta_disconnect_Params.
-const Meta_disconnect_Params_TypeID = 0xb81842457ebf1a07
+const Meta_disconnect_Params_TypeID = 0xa596c7cd35022b4b
 
 func NewMeta_disconnect_Params(s *capnp.Segment) (Meta_disconnect_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10332,7 +10534,7 @@ func ReadRootMeta_disconnect_Params(msg *capnp.Message) (Meta_disconnect_Params,
 }
 
 func (s Meta_disconnect_Params) String() string {
-	str, _ := text.Marshal(0xb81842457ebf1a07, s.Struct)
+	str, _ := text.Marshal(0xa596c7cd35022b4b, s.Struct)
 	return str
 }
 
@@ -10354,7 +10556,7 @@ func (s Meta_disconnect_Params_List) Set(i int, v Meta_disconnect_Params) error 
 }
 
 func (s Meta_disconnect_Params_List) String() string {
-	str, _ := text.MarshalList(0xb81842457ebf1a07, s.List)
+	str, _ := text.MarshalList(0xa596c7cd35022b4b, s.List)
 	return str
 }
 
@@ -10369,7 +10571,7 @@ func (p Meta_disconnect_Params_Promise) Struct() (Meta_disconnect_Params, error)
 type Meta_disconnect_Results struct{ capnp.Struct }
 
 // Meta_disconnect_Results_TypeID is the unique identifier for the type Meta_disconnect_Results.
-const Meta_disconnect_Results_TypeID = 0xd5616267acef42a7
+const Meta_disconnect_Results_TypeID = 0xf9be86640a05f28e
 
 func NewMeta_disconnect_Results(s *capnp.Segment) (Meta_disconnect_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10387,7 +10589,7 @@ func ReadRootMeta_disconnect_Results(msg *capnp.Message) (Meta_disconnect_Result
 }
 
 func (s Meta_disconnect_Results) String() string {
-	str, _ := text.Marshal(0xd5616267acef42a7, s.Struct)
+	str, _ := text.Marshal(0xf9be86640a05f28e, s.Struct)
 	return str
 }
 
@@ -10409,7 +10611,7 @@ func (s Meta_disconnect_Results_List) Set(i int, v Meta_disconnect_Results) erro
 }
 
 func (s Meta_disconnect_Results_List) String() string {
-	str, _ := text.MarshalList(0xd5616267acef42a7, s.List)
+	str, _ := text.MarshalList(0xf9be86640a05f28e, s.List)
 	return str
 }
 
@@ -10424,7 +10626,7 @@ func (p Meta_disconnect_Results_Promise) Struct() (Meta_disconnect_Results, erro
 type Meta_onlinePeers_Params struct{ capnp.Struct }
 
 // Meta_onlinePeers_Params_TypeID is the unique identifier for the type Meta_onlinePeers_Params.
-const Meta_onlinePeers_Params_TypeID = 0xa596c7cd35022b4b
+const Meta_onlinePeers_Params_TypeID = 0xb6e947604cd03fdd
 
 func NewMeta_onlinePeers_Params(s *capnp.Segment) (Meta_onlinePeers_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10442,7 +10644,7 @@ func ReadRootMeta_onlinePeers_Params(msg *capnp.Message) (Meta_onlinePeers_Param
 }
 
 func (s Meta_onlinePeers_Params) String() string {
-	str, _ := text.Marshal(0xa596c7cd35022b4b, s.Struct)
+	str, _ := text.Marshal(0xb6e947604cd03fdd, s.Struct)
 	return str
 }
 
@@ -10464,7 +10666,7 @@ func (s Meta_onlinePeers_Params_List) Set(i int, v Meta_onlinePeers_Params) erro
 }
 
 func (s Meta_onlinePeers_Params_List) String() string {
-	str, _ := text.MarshalList(0xa596c7cd35022b4b, s.List)
+	str, _ := text.MarshalList(0xb6e947604cd03fdd, s.List)
 	return str
 }
 
@@ -10479,7 +10681,7 @@ func (p Meta_onlinePeers_Params_Promise) Struct() (Meta_onlinePeers_Params, erro
 type Meta_onlinePeers_Results struct{ capnp.Struct }
 
 // Meta_onlinePeers_Results_TypeID is the unique identifier for the type Meta_onlinePeers_Results.
-const Meta_onlinePeers_Results_TypeID = 0xf9be86640a05f28e
+const Meta_onlinePeers_Results_TypeID = 0xa40fb26fec6a8554
 
 func NewMeta_onlinePeers_Results(s *capnp.Segment) (Meta_onlinePeers_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -10497,7 +10699,7 @@ func ReadRootMeta_onlinePeers_Results(msg *capnp.Message) (Meta_onlinePeers_Resu
 }
 
 func (s Meta_onlinePeers_Results) String() string {
-	str, _ := text.Marshal(0xf9be86640a05f28e, s.Struct)
+	str, _ := text.Marshal(0xa40fb26fec6a8554, s.Struct)
 	return str
 }
 
@@ -10544,7 +10746,7 @@ func (s Meta_onlinePeers_Results_List) Set(i int, v Meta_onlinePeers_Results) er
 }
 
 func (s Meta_onlinePeers_Results_List) String() string {
-	str, _ := text.MarshalList(0xf9be86640a05f28e, s.List)
+	str, _ := text.MarshalList(0xa40fb26fec6a8554, s.List)
 	return str
 }
 
@@ -10559,7 +10761,7 @@ func (p Meta_onlinePeers_Results_Promise) Struct() (Meta_onlinePeers_Results, er
 type Meta_version_Params struct{ capnp.Struct }
 
 // Meta_version_Params_TypeID is the unique identifier for the type Meta_version_Params.
-const Meta_version_Params_TypeID = 0xb6e947604cd03fdd
+const Meta_version_Params_TypeID = 0x995f6a1f026506d7
 
 func NewMeta_version_Params(s *capnp.Segment) (Meta_version_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
@@ -10577,7 +10779,7 @@ func ReadRootMeta_version_Params(msg *capnp.Message) (Meta_version_Params, error
 }
 
 func (s Meta_version_Params) String() string {
-	str, _ := text.Marshal(0xb6e947604cd03fdd, s.Struct)
+	str, _ := text.Marshal(0x995f6a1f026506d7, s.Struct)
 	return str
 }
 
@@ -10599,7 +10801,7 @@ func (s Meta_version_Params_List) Set(i int, v Meta_version_Params) error {
 }
 
 func (s Meta_version_Params_List) String() string {
-	str, _ := text.MarshalList(0xb6e947604cd03fdd, s.List)
+	str, _ := text.MarshalList(0x995f6a1f026506d7, s.List)
 	return str
 }
 
@@ -10614,7 +10816,7 @@ func (p Meta_version_Params_Promise) Struct() (Meta_version_Params, error) {
 type Meta_version_Results struct{ capnp.Struct }
 
 // Meta_version_Results_TypeID is the unique identifier for the type Meta_version_Results.
-const Meta_version_Results_TypeID = 0xa40fb26fec6a8554
+const Meta_version_Results_TypeID = 0xca65371f4071f39b
 
 func NewMeta_version_Results(s *capnp.Segment) (Meta_version_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
@@ -10632,7 +10834,7 @@ func ReadRootMeta_version_Results(msg *capnp.Message) (Meta_version_Results, err
 }
 
 func (s Meta_version_Results) String() string {
-	str, _ := text.Marshal(0xa40fb26fec6a8554, s.Struct)
+	str, _ := text.Marshal(0xca65371f4071f39b, s.Struct)
 	return str
 }
 
@@ -10679,7 +10881,7 @@ func (s Meta_version_Results_List) Set(i int, v Meta_version_Results) error {
 }
 
 func (s Meta_version_Results_List) String() string {
-	str, _ := text.MarshalList(0xa40fb26fec6a8554, s.List)
+	str, _ := text.MarshalList(0xca65371f4071f39b, s.List)
 	return str
 }
 
@@ -11360,6 +11562,26 @@ func (c API) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) e
 	}
 	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) ConfigDoc(ctx context.Context, params func(Meta_configDoc_Params) error, opts ...capnp.CallOption) Meta_configDoc_Results_Promise {
+	if c.Client == nil {
+		return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			MethodName:    "configDoc",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configDoc_Params{Struct: s}) }
+	}
+	return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) error, opts ...capnp.CallOption) Meta_remoteAdd_Results_Promise {
 	if c.Client == nil {
 		return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -11368,7 +11590,7 @@ func (c API) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) e
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      8,
+			MethodID:      9,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
@@ -11388,7 +11610,7 @@ func (c API) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) err
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      9,
+			MethodID:      10,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
@@ -11408,7 +11630,7 @@ func (c API) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) err
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
+			MethodID:      11,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
@@ -11428,7 +11650,7 @@ func (c API) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params)
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
+			MethodID:      12,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
@@ -11448,7 +11670,7 @@ func (c API) RemotePing(ctx context.Context, params func(Meta_remotePing_Params)
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
+			MethodID:      13,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
@@ -11468,7 +11690,7 @@ func (c API) RemoteClear(ctx context.Context, params func(Meta_remoteClear_Param
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
+			MethodID:      14,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteClear",
 		},
@@ -11488,7 +11710,7 @@ func (c API) NetLocate(ctx context.Context, params func(Meta_netLocate_Params) e
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
+			MethodID:      15,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocate",
 		},
@@ -11508,7 +11730,7 @@ func (c API) NetLocateNext(ctx context.Context, params func(Meta_netLocateNext_P
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
+			MethodID:      16,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocateNext",
 		},
@@ -11528,7 +11750,7 @@ func (c API) Whoami(ctx context.Context, params func(Meta_whoami_Params) error, 
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
+			MethodID:      17,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "whoami",
 		},
@@ -11548,7 +11770,7 @@ func (c API) Become(ctx context.Context, params func(Meta_become_Params) error, 
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
+			MethodID:      18,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "become",
 		},
@@ -11568,7 +11790,7 @@ func (c API) Connect(ctx context.Context, params func(Meta_connect_Params) error
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
+			MethodID:      19,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "connect",
 		},
@@ -11588,7 +11810,7 @@ func (c API) Disconnect(ctx context.Context, params func(Meta_disconnect_Params)
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
+			MethodID:      20,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
@@ -11608,7 +11830,7 @@ func (c API) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Param
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
+			MethodID:      21,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
@@ -11628,7 +11850,7 @@ func (c API) Version(ctx context.Context, params func(Meta_version_Params) error
 		Ctx: ctx,
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
+			MethodID:      22,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "version",
 		},
@@ -11708,6 +11930,8 @@ type API_Server interface {
 
 	ConfigAll(Meta_configAll) error
 
+	ConfigDoc(Meta_configDoc) error
+
 	RemoteAdd(Meta_remoteAdd) error
 
 	RemoteRm(Meta_remoteRm) error
@@ -11744,7 +11968,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 47)
+		methods = make([]server.Method, 0, 48)
 	}
 
 	methods = append(methods, server.Method{
@@ -12214,6 +12438,20 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			InterfaceID:   0x83e6cb306e77e311,
 			MethodID:      8,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			MethodName:    "configDoc",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Meta_configDoc{c, opts, Meta_configDoc_Params{Struct: p}, Meta_configDoc_Results{Struct: r}}
+			return s.ConfigDoc(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0x83e6cb306e77e311,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
@@ -12226,7 +12464,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      9,
+			MethodID:      10,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteRm",
 		},
@@ -12240,7 +12478,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
+			MethodID:      11,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteLs",
 		},
@@ -12254,7 +12492,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
+			MethodID:      12,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteSave",
 		},
@@ -12268,7 +12506,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
+			MethodID:      13,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remotePing",
 		},
@@ -12282,7 +12520,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
+			MethodID:      14,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "remoteClear",
 		},
@@ -12296,7 +12534,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
+			MethodID:      15,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocate",
 		},
@@ -12310,7 +12548,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
+			MethodID:      16,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "netLocateNext",
 		},
@@ -12324,7 +12562,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
+			MethodID:      17,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "whoami",
 		},
@@ -12338,7 +12576,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
+			MethodID:      18,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "become",
 		},
@@ -12352,7 +12590,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
+			MethodID:      19,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "connect",
 		},
@@ -12366,7 +12604,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
+			MethodID:      20,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "disconnect",
 		},
@@ -12380,7 +12618,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
+			MethodID:      21,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "onlinePeers",
 		},
@@ -12394,7 +12632,7 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
 			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
+			MethodID:      22,
 			InterfaceName: "server/capnp/local_api.capnp:Meta",
 			MethodName:    "version",
 		},
@@ -12408,408 +12646,415 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	return methods
 }
 
-const schema_ea883e7d5248d81b = "x\xda\xbc|}|\x14\xd5\xf5\xf7=3\x09\x03\x08\x84" +
-	"e\x82\x12 \xee\x1a\x12\"/\x09!1\x02\xb1\x9a%" +
-	"\x10\x04\xe4%\x9b\x05J\xf1\x8d\xc9\xeeM2\xb2;\xb3" +
-	"\xcc\xcc\x12b\xa1\x80\x1a\x11*>\xea\x03R\xa9\x88\xfa" +
-	"\x94**\x0f\xa2\"U\x8b}PP\xa9\xf5\xf3\xa0\x15" +
-	"\x15[T\xacT\xf1\x03Z|\xabot\x7f\x9f{w" +
-	"\xef\xccM2\xc9n\xfc\xb4\xfd\x0b\xf6\xce\xb9\xf7\x9e{" +
-	"\xee\xb9\xe7|\xcf\xb9\xe7\xa6\xec7\xb2_\x18\x9f\xbd\xf9" +
-	"B\x84\x82oCv\xaf\x84\xe7\xe7y\x7f5\xe7l]" +
-	"\x8d<>@(\x1b$\x84*\xc6\xe7\xfe\x11\x10\xc8\xb5" +
-	"\xb9\xd5\x08\x12\xc3\xafT_\xfe\xe1\x93\xa65(\x90\x0f" +
-	"\x90\x18\xf6\xf6\xf4\xfa\x95\x97\xdd\xf2\x09\xca\xce\"\x94\xf1" +
-	"\xdc\x1a\x90\xdbr%\xb9-\xd7[\xb13\xd7\x0b\x08\x12" +
-	"\x07\x8a\xe1_sv?\xb5\x06y\x0a\xec\x11\x0f\x0e~" +
-	"\x80\x8cxd0\x19\xd1\xf3\xb7\x16\xad\xec\x95\xbf\xdf\x88" +
-	"<\xf9\xa23 \x82\x8a\xaf\x06\x0f\x029\xfb\\\xd2\x01" +
-	"\xce]\x9b-o\xcf\x93\x10J|s.\x1e[v\xef" +
-	"\x81\xb5I\x0e\xe9\xb4\x1b\xf2\x0c@Y\x89[6\xfcr" +
-	"\x8e:\xb1\xe6\x16\xeeKk\xf2\xcb\x8b\xbf\xba\xec\xa69" +
-	"/\xaf\xbf\x95\xe7\x01\xe7m!<\xc4\xf3\x08\x0fS\xf6" +
-	"\xfaJ\xb6y\xdekG\xb0)\x8f2\xb9\x9d\x12\xf8^" +
-	"\xdar\xf1\xc9\xc0\xe1\xdb\x90'\x9f_\xb5@\x08\x8f\xe4" +
-	"\xd5\x83|2O\x92O\xe6y\xe5\xfc\xa1-\x08\x12\x9f" +
-	"\x8a'*\xc4\x9f\x0b\xb7\xf3\xe3\xb5\x0e\xbd\x81\x8c\xd76" +
-	"\x94\x8c\xf7\xbb\x8f\x1e\xd9\x1f\xbd\xe6\xb2\x8d(P\x00\x8c" +
-	"\xd9\xedC\x9f!\x04{(\xc1\xe1\x85\xd3\x1bw\x85\xd4" +
-	"\x8d\xa9\x8d\x10\xe9DI\x82\x13Cw!H<7t" +
-	"\xc8\x95/\xde\xfa\xe9F~\x8a\x95\xc3(\xcb\x1b\x86\x91" +
-	"\x11\xa6\xae\x1d\xb4n\xc9{\x91MI\x02:\xc3\xbea" +
-	"[\x888\x9e\xbdu\xce\xa5O\xfc\xf6\xb6M\xfc\xd8;" +
-	"\x87=O\xba\xee\x1bF\xc66Fn<\xfd\xda\xde\x87" +
-	"6\xa1\x80\xcf\xe6n\xfepJ\x80\x87\x93\xb1/[:" +
-	"\xe0\xbe\x97^;\xb9959\x15C\xdbp*\xd0M" +
-	"\xc3\x89\x00\xee\x11\xfan\x1e\xf2\xd0\x83\xbfNMA\x09" +
-	"\xce\x0c\xbf\x8e\x10\x9c\xa5\x04\xe7\x05\xe6\xbe;\xc0\xfb\xc4" +
-	"=\xfc\x14J\xfe\xe3\x84`i>\x99\xe2\xa7o^\xb9" +
-	"\xf8\xa5\x17v\xde\xdbnK\xf2\xd7\xd3-\xa1\x04\xbd\xfe" +
-	"\xef\x15\x89\xb7\xff\xff\x0b\xf7r\xeb;\x98\x7f\x03Y\xdf" +
-	"\xd7\xe7\xfeC\x98\xba\xf9\x87{y%\xde\x9d\xbf\x88\xae" +
-	"\x8fv\xdd\xbc\xa8\xe0\xc2\xd8\x8a\xf06\x9e\xfdc\xf9\xd7" +
-	"\x13\x82\x93\xf9\x84\xbb\x89\xd7?\x7f\xe7\xab\xaf\x7f\xbc\x8d" +
-	"\xe7n\xc6\xf9\x0d\x84`\xfe\xf9d\x84\x97\xe7\x9c\xf7\xbc" +
-	"/\xb2\xf2~^\x84\xf1\xf3\xe99Yw>\x11\xe1M" +
-	"\x17-z\xa0\xf4\xda\xb2\x07\xc89\xe1\xd4:\xbb\x17\xa1" +
-	"\xbc\xc0[\x0e\xf2x\xaf$\x8f\xf7z+\xb0\xf7A\x01" +
-	"A\xe2t\xed\xcdc\x0e\x0f}\xf2\xffp\xcb))x" +
-	"\x80,g^\xdbu\xa7\xf4\xc7s~\xc3K\"\xbf\xe0" +
-	"N2WI\x01a\xa6m\xcc\xca\x83\xc1?\x7f\xf6\x1b" +
-	"\xe4\xb9\x80u\x9d]\xd0@\xba>\xf3\xfa\xa0?^x" +
-	"i|;\xbf\x8eI\x05t\xa1\xb5\xb4\xeb\x15c\x84\xca" +
-	"W_\xbak;7+.x\x98t-Xv\xc3\xae" +
-	"\xd7\xa7\xad{\xb0\x9d\x0e\x14\xbcN\xba\xaa\xb4\xebE\x0b" +
-	"\xceO\xcc\xba\xb2\xcf\x0e^\xca\xeb\x0a\xa8\x947Q\x82" +
-	"\xe8\x1b\x1fi}\x9aV\xeeH\xb2\x95\x94\xf2\x9e\x02*" +
-	"\xc4\xfd\x05D\xca\xe2\xa0~\x9e\xd2\x86{\xda\x8d\x90?" +
-	"\xc2 \x04\xa3F\x90\x11v\xa9\xb3n;1\xfd\xfcG" +
-	"x\x82\x19#\xa8\x16\xcd\xa7\x04\xa3\xf5\xcf\x7f\xfd\xc3\x8b" +
-	"\xeb\x1e\xe1\x8e|\x9c|\xcfJ\xbc\xf2\xeeyW\xf7\x7f" +
-	"\xabd'/4e\x04U\xe1\xa5\xb4\xeb\xe1\xe0\xbf\xfe" +
-	"\xf2^\xe9\xd7\xbbR\xdcQ\x82;\x92\x93o\xa5\x04\xca" +
-	"\x80K^\x19\xf2C\xd9c)\x01$)\xf6%g?" +
-	"4\x82\xf0\xbfw\xe9\xbb\x17U\xbd}\xe5c(p\x81" +
-	"C1\xaa\x90RT\x16\x12\x8a\xe6Io\xbc\x93\xfb\xcd" +
-	"\xb5\x8fq\xe2\xbd\xbb\x90\x8a\xf7\x9e\xd9\x97?\xff\xe6\xfb" +
-	"\x0d\x8fs{\xb6\xae\xf0z\xf2e\xfe\xd6\x0bG<\xbc" +
-	"p\xc5\x93\x1dLMrq\x85\x05 \xb7\x15Jr[" +
-	"\xa1W\xdeY\xf8\x11\x82\xc4\xf8!\xdf\x1e|\xe4\xa6\xa7" +
-	"\x9e\xe4\xa6\xb8\xa3\x88\x1e\xf3c\xd5\x87g-\xbe\xfc\xe4" +
-	"S\xdc\x975E\xeb\xc9\x973g\xbf\xfc\xeb\xfeK\xf5" +
-	"\xbd\xfc\xe9\\ZDwfe\x11\xe1{R\xfc\x17\xd3" +
-	"\x96\x1c;\xbc\x97\xe3\xeeh\x11=[\xd2\xd0?\xfc\xa2" +
-	"\xb6f\xc8\xef\xf8SWD\xd5tW\xf1\xac\x11\xb7\x7f" +
-	"\xd8\xff\x19\xae\xcf\x9e\"\xba\xa2'\xde9{\xe9};" +
-	"\xaey\x96\xdf\xc6\xfb\x8b\xa8-\xdb]DD\x9d\xd7{" +
-	"\xf5\xa9\xbd\x8fD\x9e\xe5\x06=^t'\xe9\xfa\xab\x03" +
-	"+k\xc6_5\xfb\xf7\xed\x85A)^+\xaa\x07\xf9" +
-	"D\x91\x84\xc4\xc4\x15\xdbrW\xb4\xcc\xd8\xb1\x8f\x9bz" +
-	"\x7f\x11U\x83\xe0%ew\x9dj}j\x1f?\xf5\xce" +
-	"\"\xbaCO\xd3\xa9\xb7\x04\xdf\x18\xf0\xf3g\x97>\xd7" +
-	"A\xdabr\xc9\x05 \x9f,\x92\xe4\x93E^9o" +
-	"$9\xd6s7+\xe3j_\xb9\xff9~\xf9#\xe9" +
-	"\x86^~r\xde\xdf\xdf\xfcb\xf8\x1f8U\xdc3\x92" +
-	"z\x9foJ\x8f\xbe\xf3n\xe3\xb1\xff\xc7K\xfb\xfe\x91" +
-	"T\xda;G\x12i/>sH\xff\xae\xfa\xe9\x17x" +
-	"]\xedSL\xadi^1a\xf2%\xcf\x0ck\xfe\xdf" +
-	"'\x1e\xe4\xbd\xc5\xa4bj\xebgP\x82\x87\xdfy\xfe" +
-	"\xdd;\xf4K\x0e\xf2#\xa8\xc5\xd4D\xb4R\x02\xef\xc9" +
-	"\x81k\x96\xbc\xef;\xc4+b1\xdd\xb6k\xce<6" +
-	"\xf2\xd1\xdb\xe6\x1fjw\x8c\x8b\xa9\x846\xd1\xae\x8d\xf7" +
-	"]\xb7\xe5\xe5\xf3\x17\x1f\xea !\x89\xae\xb0x\x10\xc8" +
-	"\x07\x8b%\xf9`\xb1\xb7\xe2L\xf1\xff\"\x0e\xff\xd4\x96" +
-	"\xf3`\xfd\xd4G\xf9\xa9N\x8f\xa2\x82x+\xd8\\=" +
-	"\xf2\xa1'\x0eq\"::\x8aj\xc8\xd7\xa7\x03\xebn" +
-	"\xfd\xfc\xcb?q_\x0e\x8e\xa2\x1bx\xdd\xa7k?\xf9" +
-	"\x97|\xee\xe1\x0e\xb3gS\x9b>\xaa\x00\xe4\xfd\xa3$" +
-	"y\xff(o\xc5\xe9Q\x14n\xd4>ze\xdb\xed/" +
-	">v\x98\x97\xc4\xd9\xd1\xd4m\xf4\x1fC\x96\xb3w\xe5" +
-	"\xc0\x1bgz\xd6\xbd\xce\xb17~\x0cU\xed\xfbFn" +
-	"\\\xfb\xcae\x95o\xa4\xa4\x9c\xdc\xa8\xfc1t\x1fJ" +
-	"\xc6\x90\xdd\xaf\x99\xb2\xe8\xfbX\xd1\x967:\x82\x1f\xaa" +
-	"-\xaf\x8e)\x07\xf9\xd8\x18I>6\xc6+\xf7\x1fK" +
-	"\xce\xe6\x835\x9f=\xda\xd4\xa0\x1c\xe1E1\x96j\xcb" +
-	"\xc1\x83G\xbe\xff\xbap\xed[\xbc\xd4\x8f\x8d\xa5:q" +
-	"r,a\xb3\xbfr\xd3\x87\xd1\xe9\x9f\xbd\xc5\x9b\xa7>" +
-	"%tG\xf3J\x08\xc1]\x1b*\x94\x11\xdbj\x8f\xf2" +
-	"\x04\x93J\x92\xa6\x9d\x12\xa8[\x1e\xfa\xe6ks\xdeQ" +
-	"7;\x82K\xeaAn-\x91\x10\x92\xe3%\x84\xd3\x7f" +
-	"\xbc\xbez\xfb\x94\x0f\x8a\xff\xc2\xf33\xbb\x94Z\xc3\x9f" +
-	"\x95\x92\xd1\xbe|\xe1\xd1\xda\xac\xbf=\xf4\x17\x1e\\\x95" +
-	"R\x1fs\xe2\xa5_o\xde\xdc\xb8\xf6\xafn\xd0\x08\x97" +
-	"\xce\x04\xb9\xb5\x94\xceSJT\xfd\x89\x8a#\x87o," +
-	"\xadz\x8f\x93\xc8k\xa5T9\x1e7\xc6\x1e\xf8\xdd\xd6" +
-	"/\xdf\xe7\xd7\xb3\xaf\x94n\xdc\xab\x94\x83\xe7\xbf\xb8\"" +
-	"w\xed\x87\xf3\x8e\xf3\x04gK)\xa6\xea3\x8e\x10\xec" +
-	"\x94\x0e\xac*,\xd8s\xdcm\xc1\xa3\xc6\x8d\x06y\xd2" +
-	"8\xc2H\xe58\xb2\xe07\xaf\xbd\xab\xad\xdf\xb8c\xc7" +
-	"9F\xf2\xca\xa8.\x1e\xf8\xe7U7\xd7\xfb\x87}\xc0" +
-	"kPv\x19\xd5\x82\xc1ed\x9eO\x1f^7\xe3\xca" +
-	"\xca\xf8\x07\\\xd7\xda2j\xad\xbe}c\xc5\x93W/" +
-	"|\xe2\x83NP\xb6\xb2L\x00yr\x19!\xbd\xb4L" +
-	"\xca\x92\x8f\x94\x13({\xc9\x94\xcf\xc4\xa9\xc3\xbe\xf9\x80" +
-	"\xf9\x8f$F+'k\xaex\xb5\x9c\xaas\xb9\xd5\x16" +
-	"\xda\xf5\xf2\xf2\x0f\xb9\xb9\xceTP\x1b\xbe\xdezw\xe3" +
-	"\x05\x1f\xcc>\xe1\x0a\xc4\x8fW\xd4\x80|\xa6B\x92\xcf" +
-	"Tx+\xf2/\xa2C\x9d}\xb1\xd7\xef\xdf^<\xf8" +
-	"#6\x1b\xdd\xa0\xf1\x95t\x8f/\xad\xdc\x85\xe0\xb3\x03" +
-	"\x0f\x0ey\xe1\xe3\x91\x1f;S\x1d\xa9\xa4\x12Yp\xe1" +
-	"\x9f|\x7f\xa8\x1cu\x92W\x8e\xfd\x95\xd4D\xbcZI" +
-	"$r\xf0\xcd\xf7\xbf_\x9b\xb3\xfb\x94\x9b\x11=[9" +
-	"\x13d\xcf\xc5\x92\xec\xb9\xd8+O\xbe\x98\x1c\xa3\xef\x83" +
-	"Y_]\xf3\xa8x:%\xe1\xa4!\xb8\x982r\xe2" +
-	"b\xb29\xef_{\xd5-E\x91o\xfe\xc1\xadz\xff" +
-	"\x84\xc7\x09+^\xe9\xfe\xa5\xfb\xceT\x9e\xe1\xbe\xec\x9e" +
-	"@\xe5\xf1\xc5Fa\xe1\x82\xf2\xc2/8\x05\xbd\x7f\x02" +
-	"\xd5\xac+\xaav\xc9\xbbK\xde\xf8\x92W\x9c\x0d\x13\xe8" +
-	"twO\xa8F\xf0\xfd\xb6gNmX\xb0\xfa+g" +
-	"\xc8\xa7'\xd0\xed\xfcz\xc4\xa2\x85\x93\xfa\x14\xfd\x93\xef" +
-	"\xb8c\x02]\xf7\x1e\xd21Q\x7f\xbc\xe6\xd9\x1b\xbd\xf3" +
-	"\xbfqS\xfd\x13\x13\xcaA\xfej\x82$\x7f5\xc1+" +
-	"_0\x91(\x7f\xef\xcb\x8a\xef(\xfa\xfc\x89oy3" +
-	"\xber\xe2\xc3\x14\xb2O$\xe3\xed\xb8\xechu\x9b\xb1" +
-	"\xf7[\xce\x8f\xed\x9eH\xb7\xe0\xb6\xcf\xb3\xfb\x86o~" +
-	"\xee[^)\xb7N\xa4py'\xedz\xf4\x87\x9c\x92" +
-	"\xe2'\xb3\xbe\xe3\xba\x1e\x9bH\x97_8\xed\xc0\xa0\xcf" +
-	"V\xff\xf6\xbbNJyhb_\x90\x8fN\xa4\x1b=" +
-	"\xf1rA\x9e\\E\x94\xf2\xb3\xcd\xbf,\x1f\xb2|\xfa" +
-	"\x0f\x9d\xc8GU\xf5\x05yR\x15=BU\x92\\Y" +
-	"5\x01\xa1\xc4/\x97\xdd\xf5\xe5\xe5\xef_|\x96\xe7\xab" +
-	"\xb2\x8az\xa6\xda*\xc2\xd7\x04a\xd3\x91\xfc\x96\x9b\xcf" +
-	"\xb6CQ\xb8\x8aZ\xba\xa5UD*\xcbn^|j" +
-	"\xf0\xdc?'\xf8!^\xab\xa2\x86\xecXU5\x9a\x98" +
-	"0\xb1\xb1\x0c\x1b\xe3B\xbd\x94\x98\x16\x1b\x17\xd1CJ" +
-	"\xe4Z%\xa6\x96\x86\xc8\xef\xaai\xc1\xd2\x88jZ\xb5" +
-	"\xcbc\x115\xa4Zu\xaaf\x16\xd6c3\x1e\xb1L" +
-	"\x84\x02Yb\x16BY\x80\x90\xa7\xffh\x84\x02\xbdE" +
-	"\x08\x14\x0a\x90\x13S5\x13\x06 \xa8\x13\x01\x06:\x16" +
-	"\x0c\x01i\xb4'\xccr\x9d\xb0\x0ec#h)V\xdc" +
-	"Du\x00\x81,\x10\x12\xd7\xfc\xefm\x81}o\xae?" +
-	"\x88\x02Y\x02L\x1e\x02\xd0\x0f!\x0f<\x9c\xd0\xb0\xe5" +
-	"3-\xc5\x82\xb8\xe9\xd3\x1b}\x8a/'\x86\xb1\x81P" +
-	" \xd7fk%ak\xb9\x08\x81\x9b\x04\xf0\x00\xe4\x12" +
-	"!y\xd6\x90\xc6\x15\"\x04n\x11\xc0#\x08\xb9  " +
-	"\xe4i\x9b\x89P\xe0&\x11\x02\xb7\x0b\x00b.\x88\x08" +
-	"y64 \x14\xb8U\x84\xc0\xaf\x04\xf0d\x89\xb9\x90" +
-	"\x85\x90gS9B\x81\xdbE\x08\xdc#@\x8e\xa6D" +
-	"1\xf4C\x02\xf4C\x90\xa3\x84\xc3\x06\xfb\x91\x88(\xa6" +
-	"\x15\xc4XC\x08\xd9m\x86\x1e\xd7\xc2\x96\xa1\")6" +
-	"\xdb\x84,$@\x16\x02/6\x0c\xdd\xe9\xc7\xa4\x93\xed" +
-	"*\x9d\xd9\xd8RJ\x0d\x1c\xd5-\\\xa7jM\x85u" +
-	"\x8a!)Q\x93\xdf\x88\x82\xd4F\xe4\x0a \xb54\xeb" +
-	"\x9d\x06\x16\xbb\x1a\x18\x14\"\xf0\x85b6B\xb6#\x01" +
-	"f\xc8\xe5\xdd\xc2h$\xc8\xdb\x05\x09\x1c\x0c\x02L\xb9" +
-	"\xe4\xbb\xe9\xd7\x0d\x82\x04\x82m\x7f\x80\x18<\xf4\xf1\xc8" +
-	"\x8f\xe55\xf4k\\\x90@\xb4\x83C`\x01\xa6\xac\x0a" +
-	"\xe5H\x90\xaf\x16$\xc8\xb2\xf1\x050/ \x07\x84\x1a" +
-	"$\xc8\xb5\x82\x04\xd9v\xa2\x01\xd8\xb9\x90'\x09\xf5H" +
-	"\x90\xc7\x0b\x12\xf4\xb2\xa3f`\xb1\x9e\\D\xbf\xe6\x0b" +
-	"\x12H6\x90\x07\x96\x8c\x90=\xf4k\x1fA\x82\xde6" +
-	"F\x04\x86\xe4\xe4\xb3@\xbe~\x05\x12\xf4\xb1\xf1\x1f\xb0" +
-	"\xa0_>\x093\x91 \x1f\x07\x09\xfa\xda\xf0\x1a\x98k" +
-	"\x93\x8f\xd0\xaf\xaf\x82\x04\xe7\xd8\x89\x04`\xc1\x8a\xbc\x1f" +
-	"\x16!A~\x1a$\xe8g\xa7o\x80\x19/y'\xfd" +
-	"\xba\x1d$\xe8o\xc3a`\x16[\xbe\x1b\x1a\x90 \xdf" +
-	"\x01\x12\x0c\xb0\x01\x150\xfc*\xb7Q\x9eW\x82\x049" +
-	"v\x0a\x04X\xa8&/\x05\x03\x09\xb2\x0a\x12\x0c\xb4a" +
-	"\x1a\xb0<\x80|5T!A\x0e\x80\x04\x1e;\xbf\x02" +
-	"\xcc\x1f\xc8\xb5\xf4\xeb$\x90`\x90\xed4a\xdb3\x88" +
-	"Zv\xb9\x04\xc8\x1e]\x00\x12\xc8v\x04\x03\x0c\x9d\xc9" +
-	"\x83\xe9\x8a\xfa\x83\x04\xb9v@\x0c\xcc\xe2\xca@V\xe4" +
-	"\xf9V\x82\xc1vD\x05,$\xf7\x9c\xaeA\x82\xe7\xb8" +
-	"\x94\xb34\xaeZ~jW\x9a\xfc\x90\xa3j\xe4\x977" +
-	"\xaa\xc75\xcb\x0f\xab\xe2Z\xea\x7f\x89\x90\xae5\xaaM" +
-	"\x97c\x04\xce\xaf`\xbb_\x93#\x08\"~H$\x8f" +
-	"\xd0\xe40\x82\xb0\xfd\xab>\x8a\x10\xb2\x7f\xcd2\xf9_" +
-	"A\x05\x89\xcb\xb0\xfd\xb3NE\"a%\xf5sJ\x04" +
-	"IX1\xfc@L\xd2,=\xa4X\x080\xff\xcb\x8b" +
-	"\xe7\xe0\xe5\x96\x1f\xaa[\x9au%\xaa\xfa\xa1\xba\x01\x87" +
-	"\xf4(\xf6\xc3\xaa\x90\xaei8D8\x0c\xab&\xfd\x81" +
-	"D\xfaS\xd7\"\xaa\x86\xeb0\x92\xb0a\xfaa\xd52" +
-	"l\x98\xaa\xae\xf9\xa1\x0e\xd2\xd9\xd0i\xc1\xd2\xb8\x16S" +
-	"\xb5\xc2z\xec\xa5\xa6:=\xbdi)M\xb83}7" +
-	"V\x88\x09\xdb\"FH\x11\xbb6BKpkO\xac" +
-	"\x1b\xdb\xa8\x08\xf53R\xc4r\x1d\xb8P\x00I\x89D" +
-	"\x1c/c\x03\xb6\x8c\xbcL=\xdd\xb7iz$\x8c\xc1" +
-	"p\xf73\x85\xd4\xcf\x8c\x87\x06HL\xf65\x12J#" +
-	"\xcbg5+\x96O\xf1%\xb7\xdd\xa7\x9a>%\x12\xd1" +
-	"[p\xd8g\xe9>%\x14\x92\xb0iR\x06\x19\xbf\xa3" +
-	"\xaa\x10\x0a\x14\x8a\x10(\xe3\xfcO\x09\xf1 \x17\x8a\x10" +
-	"\xb8H\x80\xea\xe4\xc8L@\xde\x186\xa2fO\xc4\x95" +
-	"T$\xba\x07Q\x13\xf5\xc4\x11t3(S\\\xaa\xb6" +
-	"\x85\xd5\xc9\xc1\xf9\xb1\xab\x9c\xb1\xab-5\xb4\x04[\xd0" +
-	"\x07\x09\xd0'\xed\xf0D\xd5p{8\xc1\x86\xefg\x0f" +
-	"_K\x86\xf7\x8b\x10\x98\xc5Im\x06\xf1\xdaSE\x08" +
-	"\xd4q^{\xf6P\x84\x02\xd3E\x08\xcc\x13\xa0:f" +
-	"\xe0Fu\xb9\xed\x8e\x1b\x0d=\xca~\x88\x96\xdes\x0f" +
-	"\x1bT\x96a7\x0f[\xe3\xe8\xe0\xaa$%\x87v\xec" +
-	"\x8cG\x07=L;[}4\x09\xacD\xee\xf8e\x8e" +
-	"\xc9\xd8\xfe\xff\xb7\x85\xd8+\xd3]f\xa0\x91\x17d\xb9" +
-	"\xa3E\xde\x10\xb1\xe1\x0c\x13en'\x82\x9c\xfd\xe1\x8e" +
-	"]A\x9ac\xc7\x1b%\xef2%\x12\xc7\x9dV\x96\xc6" +
-	"T\xd6)9Tk\xb9I\xeb\x9d\xf1\xedI\xc7\x13X" +
-	"Y&B\xe0'\x02$\xe8`u\xc4;4;\x98\x10" +
-	"\xc7\xf4:\xc5j\xe6qb\xda#\xd4\xa4\x18\x0dJ\x13" +
-	"\x9e\xa2G\"8d\x15\xd6y;\x1d\xd0E\x88\xe8\x02" +
-	"\x04\x86\x08\x90P\x9a\x9a\x0cl\x9a*qa\x00H\x00" +
-	"\xc8L\xc2Ig\xe5\x0e\xf7y\x03\x90\xa4\x83\x81N\x02" +
-	"\x07\x01\x0c\xe4\xe6\xe8\xdb\xf5\x1c\xd4u\xdbS\xb0\x0e]" +
-	"\xad\x9b\xf84\x17o3\xdaa&'\xa6X\xcd\x19\xee" +
-	"%\xc7\x00\xb3A\xe9v\x93\x1c\xfd\xb1\"\x04&\x0a\x90" +
-	"\xa0=\xdb\xef\xe6*=f\xa9\xbaf\xc2@'\xb5\xda" +
-	"A\x16]\xaaUH\xb1\\=^\xbb\xc5\xe9F\xe73" +
-	"\xd2\xe5\x11\x0cE\xb0b\xb8Y\x89\xff\xbe\x99p\x0f:" +
-	"\x82\x96\xe2\xb5fh\x8dz\xf7\x1e\xf8\x06H\x90\x88\x90" +
-	"\x10fS\x9fK\xa3\xbe\x92\x88\xba\x04\xfb\xc2\xd8\x0c\x19" +
-	"*\x95:\x8d\x01\xb5V\x9f\xa6\x871\xa2\xa7.\xb5F" +
-	"y2\x8cF(\xf8\x13\x10!8\x1d\x9ce\xca\xb50" +
-	"\x13\xa1\xe0T\xd2^\x07\x02@r\xa1\xf2lJ>\x9d" +
-	"4\xcf#\xe4\"\xd0pP\x0e@9B\xc1Y\xa4}" +
-	"!i\xcfZM#By>m\xaf#\xedW\x91\xf6" +
-	"\xec\xec\\\xc8FH\xfe\x19m\x9fG\xda\x17\x93\xf6^" +
-	"B.\xf4BH\xbe\x1aj\x10\x0a.$\xeda\xd2." +
-	"\xad\xc9%a\xb9\xacPv\x16\x93\xf6\x08i\xef}C" +
-	".\xf4FHVa\x11B\xc1f\xd2n\x91\xf6>b" +
-	".\xf4AH^\x0a\x0d\x08\x05c\xa4}\x05i\xef\x9b" +
-	"\x95\x0b}\x11\x92[)\xff\x16i_M\xda\xcf\xc9\xce" +
-	"\x85s\x10\x92WR\xfa\x15\xa4\xfd\x16\xe8xT,\x03" +
-	"\xe3\xe9\x8aI\xedP\x7f$@\x7f\x049\xa6z=f" +
-	"~\xdd\xab\x12\xb9:\xbf\xcc\xa9\xaa\xc1\x8c\x897\x8cc" +
-	"V3S\xccUQ=<Ou\xe2\xe2\x84j\xd6\xa9" +
-	"\x9a\x86\xc3dhf~T3\xa9\x98HT-\xbb1" +
-	"\xa4k\x16\xd6\xac\xe9HR\xccf\x9b\x8b\xb8\xe9\xe0\xa3" +
-	"D\x83\x12Z\x82\xb5p{\x92\x9e\xb9\x0bv\xc82\xe9" +
-	"\x95\x02\xdd)\x03\x05\xae0 W\xb0\xc19\x0ct\xd2" +
-	"\xa4\x19\x9d\xfb\x05S\x82\xa5\x11\xdd\x8e\xe3\xd3[\x09\xbc" +
-	"\\5-\xb3\xb0\xbe:i1\xbb2\xc9I\xb2\x9e\x18" +
-	"{\x16n`\xc3d\xbe\xed\xc7X\x187A\xa5w\xf3" +
-	"\xdd\x1a\xc5\x7f\x9f\xc1'\xd2\xb6\x14'k\x92\x0e0\xd4" +
-	"p\x80\xc1\xc0\xcbl+o)Ms\xb8\xc4O\xfae" +
-	"\x10\x84G\xb0dg?\xfd#W2-Xj\xe9\xf1" +
-	"P\xb3\x0dC\xfe-CR&\xeb\xb1\x99\xd3.\x06\xec" +
-	"\x95i\x9c\xe0\x06\xf1x\xa54\x92\xba1\xd0\xb9;\xc9" +
-	"\xf8\x8c4b\x8b,\xb6\xb3\xfc\xd2\x059]\xafuI" +
-	"X5\xdcP\xdchG\x13lE0\x1c\xb7\xdf^\xa4" +
-	"!\x03+\x16\xaeS\x90\xd7\xc0\x9a\xcb\x81\xebzEf" +
-	"\xab\x16r\x9b~\xa6\xa3s6\xea\xa8\xe70d\x8bj" +
-	"5\xff\xb4Y\x8f\xf2xQ\xc38<\x0d[!\x82D" +
-	"zp\xe4\xb9(\xa7\xd3\xa6\xa7\xdb\x0af\x80\xd2x\xf8" +
-	")zT\x8a\xaaV\xf7\x99\xdc\xf5\x89\xa0\xaa5E\xb0" +
-	"/\x02z\x93\x0fk\x96\xd1\x8a 0\xd0\x96\x89B\xb6" +
-	"\xe4*\x11\x02\xcd\xdc\xe1\xc4d\xe7\x17\x8b\x10\x88p\x10" +
-	"E%\x94a\x11\x02\xab\x89\xdbNeq\xf9\x1cpN" +
-	"3\xe76\xa4\xa8\xd9d#\x18Ki\xb2\xa38\xd26" +
-	"\x00ANX\xb1\xf0\x8fK]\xa4lVO\\\x0c\xc3" +
-	"f\x19\x1eS\x17\x1bV\x93\xc6\x86\xad2\x8dP\x1d\xa7" +
-	"\xbd\xab\xc2\xa6U\xe7f \xce\xe9r\xf3Cz4\xaa" +
-	"f\x88\xd7\xe9\xeaXR+de\xe8\xe3\xc8,q\x8d" +
-	"X\xe9N*\x96i8\xe4\xe6\x1c\xcb\x9d\x98\xdd\xdbh" +
-	"`\x1cv\"v\xfbz\xad\xa7\x11\xfb\xac\x14\xa0\x86t" +
-	"k\x9aM\x9c\xde\\\x0aR\xc1L\x9f\xbecn*\xc3" +
-	"C\x99\x0cI-\x9b\xbc+_\xa0j\x8d:\x0ctJ" +
-	"\xa7:\x18_\xb1\xabD\x99\xa4[\xd8\xfd\x00\xfbR\x00" +
-	"\xbd\x1c\x12\x04\x9c\xfb\x14\x9f!&3c1\x8c\x0d_" +
-	"\x0b\xf6E\xd5\xa6f\xcbGl\x9d\xd7G,W\xfb\xd0" +
-	"c\xb4[\xe8\xd1\xe0D\x19\xf6\xb9\x0e\x10-\x9e\x95\xb4" +
-	"\x00\xed\xee\\\x12\x8d\xaa\xd6\x84\x8d\x98\x81$U\xb3l" +
-	"\xc5N&\xd5\xb8\xac\x8c]`\xd8\xd3=\x9eB\x10N" +
-	"'@\x94\xc6)g\x9ev\x0d\xe9\xb1\xd6\xff\xe8QN" +
-	"\xbb\xc0\xc9\xe1\xb0\x1b\xc2j\xef\xb7\x09a\x87\xdc\xd6\xc0" +
-	"\x1ef\x12]c\xdb\x1f\x9dFl\x9f7K\x9d\xc2\xae" +
-	"\x14_s\xc3j\x19\x09\xa6S\xa8\x90&\xdf\xfec\xd0" +
-	"\x98\xfb\xb9\x9b\xaa6B\xa3\xfb\xa9\x1b\x9er\x9b\xdf%" +
-	"\xa6\xaa\x8d\x8d\xd8\xc0\x9a\x10\xc2\xbe\x06l\xb5`\xac\xf9" +
-	"\xac\x16\xdd\x17\xaa\xa6f\x9a\x04\xfa\xc3mN\xf6\x10\x13" +
-	"\xf8\x98\x08\x81?q:u\x88\xe8\xd4\x01\x11\x02\xefs" +
-	"\xa7\xed\x18i|[\x84\xc0\x97\x9c\x17=C\x1aO\x89" +
-	"\x10\xecMC\xdf\xacd\xe8\x9bMB\xdcz\x12Q\x0e" +
-	"\xe7#\xdf<\xa8B(\x98K\xda\xcbh\xe4\xdb+\x19" +
-	"\xf9\x96\xd0\x08w,\x0b\xc4\xbdJ8\xcc[b\xde4" +
-	"\x0d@\xc9\xe4\xea\xb2\xee\x08\xd4&M7\xba#\x88\xaa" +
-	"\xa6\xa9jM]\x12x;L`\x97\x1c$?WG" +
-	"\xb1\xd1\xd4\xcdwz\xab\x14QC\x16Ac]\x12e" +
-	"\x90\x85\x8a\xd1\xcb\xdc$\xbc\xcd8\x9c\xe8\xe4 \xbb7" +
-	"3\x9d\xdcI\x17\x90\xadY\x91\xb4&\xdc\xbd\xee}\x92" +
-	"\x98\xaba\xdft\xd5\xb4\x04\xddhMb6_\xa3n" +
-	"\xf8\x14_N\xa3\x1a\xc1\x19\\\xc2W\xb9]\xc2\x13\xca" +
-	"\xd5\"\x04n\xe54o\xddh\xe7f\x9e)\x9eg\x03" +
-	"Q\xc7[D\x08l\xecp\xae\xaaC\xcd\x8a\xd6\xe4\\" +
-	"\xca7c%\x0c\x03\x9d\xb2\xcf\xa4\xe9\xca\xd1\xf0r\xab" +
-	"s\xf3*\x037bc^\x8f\xee\x0aR\xd7\x8fNn" +
-	"\x8d;\xfc\xf5\\\x16\xd6%]\x98\x06p\xf1I\xd8\xd4" +
-	"\xe8\xe9\x01\x97cp\x99U\xe7\x1cn\x81\xe3pm\x7f" +
-	"\xbb\x88\xf7\xb7\x90\xf2\xb7\xa4\xb1N\x84\xc0U\x1d\xc2*" +
-	"K\x8db=n\x05\x91\x88Cp\x0e\x12\xe0\x1c\x94L" +
-	"k[x\xb6\x82DsI\x86\xe6mF\x18{5K" +
-	"\xb5Z\xbb\x07\x16\x83\x18\xb0h\xd0\xc5\xb8\xe5\xd3\xe3\x86" +
-	"/\x147H\xa8\xe5\x8b\x9b\xd8HV\x7f\x10e\xe3\x82" +
-	"\x85\x06..`\x8bT\xcbSqA\x8cS\xb6(\xa1" +
-	"\x8c\x88\x10X\xeeT|\xc4I\xf8e%\x03\x88Dj" +
-	"\xaa\xf9H\xe22P^\xbdE\xe3\xf2Q\xae\xf8#\xa1" +
-	"\x9asi:\x85\xcfxe\xa0J\x1cX\xee!\xf6s" +
-	"\xb9\xa5J\xebx\xb2\xbb\x04\x9fQe\x09&\xbe\xc55" +
-	"\x9b\xc3\x8f\x1bV\x1b\x1ba\xa0S\xc3\x9aq<\x9f\x8a" +
-	"#\\n\x16\xf9\x80\x9e\x8b\xcf\xd2\x8c\x99Ty\xca." +
-	"\xd0h3]\xf48\xba\xbb\xe81\xc6Y\x1f^K\xba" +
-	".\xf7\xc9\x89*\x9c\xee\xbb+E\xa6\xb9\xbd\x7fk\x96" +
-	"(Y\x05\x90\x11\x8a\xe1\xf2x\x88\xd6^\xb9'E\x1c" +
-	"<Z\xe5\xe0\xd1\x0e&\x98\xeenOna\x96\xc6U" +
-	"\xab\x93\xff\xebZA\x9bU\xd3\xd2\x8dV\xf7\xab)\xfe" +
-	"z6E\xe8\xf8f\xbb\xe09\xa3@\x80\x9f\xcb\xe5\x86" +
-	"\xfdGb\xbb\x05\xd8\xc8!!\x7f\x07=5\xdc\x0c\x17" +
-	"\xf1 \xcd\"\x04,NO\x97^\x8fP &B`" +
-	"\x05\xa7\xa7\xad\x8b\x1c'\x9b\x9a\x7f\x01F\xdedZ\xba" +
-	"=_\xf5\x18\xc1\xb2\x8e\x19\xf5\x05\xa8\x1a\xb7'N}" +
-	"\xa8G\xa2\x93\xfa\xccx/3\x0c\xde\xdbG\xd3\xec\xfe" +
-	"\xfb?y\xd9\xce\xdc53mi\xf6jZ\x90\x1e\x05" +
-	"?\xad\x8ac\xcf\xae\x80\xbd\x85\x93\xcf@9\x12\xe4\x13" +
-	" \x81S\x8b\x09\xac\xa0W>\x0a\xa3Su`\x82\xfd" +
-	"\x9e\x07\xd8\xe3'y?\x14 A\xde\x03\x12\x88\xf6k" +
-	"\x18`u\xb6\xf2\x0e:\xf2V\x90 \xcb~\xc9\x03\xac" +
-	"\xc4_\xbe\x83\xd6c\xb5\x81\x04\xd9\xf6s\x13`\xcfu" +
-	"\xe8\x05\x90 GA\x82^\xf6\xf3\x08`\x8f\x00d\x85" +
-	"~\x9d\x0f\x12H\xf6[.`\x05\xe8\xf2\x0c\xca\xd5\xa5" +
-	" Ao\xfb\xf1\x02\xb0W\x81\xf2x\xcaU\x11\xad\x8a" +
-	"cE\xf6\xc0^\x81\xc8yt\xe4\xfe\xb4*\x8e\xbd@" +
-	"\x03\xf6<E\x06\xb8>Y\xe9u\x8e\xfd\xf2\x08\xd8\xb3" +
-	"\x0e\xcf\xe9rZ\xe9\x05\xfd\xecZy`\xaf\xab<G" +
-	"\xaa\x90\xe09$A\x7f\xfbi\x1d\xb0\x87\x94\x9e}\xeb" +
-	"\x91\xe0yZ\x82\x01\xf6\x9b1`O\xab<;\xefD" +
-	"\x82g\x87\x049\xf6s?`O\xef<[o@\x82" +
-	"g\x93\xe4\xa5\x97\xf9~\xc8\x89\xa8\xa6\xe5\x07)\xa4\xd0" +
-	"\xca\xb2%a\xd5\xf0'\x03\xdfe\xe4k\xea\x1f\x02\xa3" +
-	"\xfd \xc5T\xcd\x0f^\x1a\xf1\xf9!\x87\xf8_?$" +
-	"X\x0e\x0aU'\xb3P~\xf0\xd2d\x80\x9f]\xc6\xf8" +
-	"!\xc1\xaa6\x80]\x97\xd0\x0a3v\x89\x02\xcc\xfa\x02" +
-	"\xa1e\xf5\x13\xc0H\xdb\x17~e\xe0\xbcm@\xca!" +
-	"\xf1E\x1c\xe8f6\xa6\xad\x81\xc3\xd7\xcc\xc6l\x98\xc9" +
-	"\x95\xbe2\x1b\xb3\x89X\xa3\x8d\"\x04\xee\x13\x00R@" +
-	"|+i\xbbG\x84\xc0C\xac\xc0an\x8b\x86D\x0e" +
-	"\"%O\xed\xdc\x16$\xf1\xc0\x89\x92\xd6\xe3e\xed\xea" +
-	"c\x93\x01};\xf3\xf4#s\xdb\\\xd21\x93\xac\xea" +
-	"\x14\x9a\xb9\xadST\x03\xa5\x0b|\xae\xc0\xad\xe3\x16(" +
-	"\x91\xb8\x80}1E5|\xaa\xe6\xb3\x9a\xb1/\xa4\xe7" +
-	"\x90!\xda\x8b\xbb\xc0-\xf0)p\x0b|\x0a\xdc\x02\x9f" +
-	"\x1a\xae$\x99\xc5=\xd79\xfb\xc2\x17\xb1H\xcb\x94\x88" +
-	"\xfd\xff\xb0\x1er\x12C\xb8Q!\x86\x8e\x97\xa7Y\x8f" +
-	"M\x94c)\x86\xd5\x83\x0b\x0b\x03\x9b\xd8)5I\x97" +
-	"\xc5+p\x0a\x08\x80\xd5\x0f\x94;\x91F;w\xc9\xdf" +
-	"\xady\x1bu#\x843d\x8b\xee\xb4\xaa\xb9\xb9\x9b\xac" +
-	"\xee*\xa7\\S\xa5\xbc\xa3!\xf1\xac\xca;\x9a\x0ei" +
-	"\x834\xd3\\\x9e\xb4\x053,\x1cE\xa8\xfb\x08\xa7\x06" +
-	"\x12\x93}&\xbd\xfe\xc8\xf2\xa9\x16\x8e&K\x0c[\x14" +
-	"\xd3\xb7D\x8dDp\xd8\xd7\xd0J\xf5\xab)\x842H" +
-	"\x9e\xd6\xb8\xd5mt%\xf7U\xa9\xfbvv\x1f\xd2!" +
-	"\xb4\xc9T\xf6L%8(33\xe3\x18\xac\x86\xc37" +
-	"L\xef\x97\xcet\xf0M\xa2A1q\x87\xfa\xa8\xf6|" +
-	"\xaeJ\xe1\x14\x9b\xef\x98b\x9a-\xba\x11\xce\xbc\xa2\xaa" +
-	"S\xbe\xb7'u\xb0\xa9\x02L\x1b\x8afz\xf5\x98a" +
-	"\x92\xd8\xb9\x0fq\x89\x0b\xf8\x12\x84\xae.\xa530\x92" +
-	"\x9d\xb0P\xf7\xc5\x0a=>=|\x96e@&\xa9O" +
-	"o#1\xc5\xdd[\xe2\xcf\x13\xf58F\x8c\x92&X" +
-	"4\xeb\x19\xa6\xd9PUk\xf2y\x1b\xd5\x08\xeeP\x88" +
-	"\xebz\xc1_\xc0]\xf0\x9bF\xa8\xf3\xed\x88\x146\xad" +
-	"n\xeeL2{\xa4\xe1&/>3d?\x0b\x81\x98" +
-	"\x9dS\xc9\xd4\x1e\xf7\x04g\xf3%\x1eL\xfb\xba\xba#" +
-	"S\xb5F\x9d\xdbA\xfb\xefRdd\xff\xec\xfb\xedN" +
-	":.vE\x9f\xb4\x93\x85\x14f\xb3\x07\xf7\xc0^\x88" +
-	"\xc9\x1e\x0aJ\xb3)\xccf/3\x81\xbd\xa2\xf6|K" +
-	"\xf0\xe1i\x02\xb2\xd9\x9bx`O\x96=\xc7\x0b\x90\xe0" +
-	"9B 6{\xa7\x06\xec%\xb5\xe7\x10\xc1\x9c\xfb\x08" +
-	"\xc0f\x8f\xf7\x80=\x11\xf3\xec&\xdf\xb6\x13x\xcd\x1e" +
-	"F\x02{B\xe9\xb9\xbb\x06\x09\x9e\x0d\x04\\\xb3'\x86" +
-	"\xc0\xde\x93z\xd6\xccD\x82\xa7\x95@k\xf6|\x1d\xd8" +
-	"\xdb1Ot4\x12<\x0a\x01\xd6\xecu<\xb0w\xea" +
-	"\x9e\xf9d\xbe\x19\x92\x14\xd1\x9b\xfc,\x80\xf6\x83d)" +
-	"M\x14j&\xff\xa5[\xee\xb7\xa3Z?$\x18\xd8\xa3" +
-	"o\x15r\x88\xcc\xfd\xe0\xa57\xf4\xed\xe1\xa2\xbb\xdc'" +
-	"\xd7\xcd\xa0r\xaf\x13\xb3\x03\xfd\x00\x9c\x07\x96\x089\xef" +
-	"\xda\x10r\xfe\x86\x08g\xdd2z\x19\xe0v\xe7\xc3W" +
-	"\x03\xf5\xb0\xf2\x96\xfan\x97\xdb2\xb7\x92\x8d\x99\\\xc9" +
-	"\x86\xa1\xeb\x0e\x00\x8a*\xcb\xa7\xe2X\xd2\xa1dV\x87" +
-	"\xe4d\xe8\xbb\xbbY&\xeb1p,bC\xb2\xff\x09" +
-	"\x00\x00\xff\xff\x8e\xfe.\x9d"
+const schema_ea883e7d5248d81b = "x\xda\xbc|{x\x14E\xd6w\x9d\xee\x84\xe6\x16\xc2" +
+	"\xd0\x01\x01\x893\xc4\x10\x92,\x09IP \xf0b\x86" +
+	"@\xb8\xc9%\x9d\x01^\x17otf*\x93\x96\x99\xee" +
+	"Iw'!.\xbc\xe0\x05\x11W\xfc\xd4\x0fdE\x11" +
+	"\xf5{]\xc5\xcb\x87xc\xd5\xc5\xfdTPY\x97g" +
+	"\xd1\x15\x15wQpu\x15\x1f\xd0\xc5\xdb\x82\xca\xce\xf7" +
+	"T\xf5tw%\xe9$\x13\xd7w\xff\x82\xa9>Uu" +
+	"\xea\x9cS\xe7\xfc\xce\xa9\xaa\x94}#\x06\xb9\xf2\xcc\xd9" +
+	"E\x08\x85\x8eBf\x9f\xa4\xef\x17#\xfeb,\xdc\xb6" +
+	"\x16\xf9\x02\x80P&\x08\x08M\xd8\x90\xf3{@ n" +
+	"\xcb\xa9B\x90\x1cu\xa9\xf2\xda\x0f\x9fE\xafAR." +
+	"@\xf2\xdcw\xe7\xd4\xad\xbe\xe8\xc6\xcfPf\x06\xa1<" +
+	"\x90S\x0d\xe2\x91\x1cA<\x92\xe3\x9f\x909\xd4\x0f\x08" +
+	"\x92{\xc7\xc2?\x17\xeez\xe6\x1a\xe4\xcbsF\xcc\x1d" +
+	"v?\x19\xb1d\x18\x19\xd1\xf7\xd7V\xb5\xec\xf5\xbf]" +
+	"\x87|\xb9\xbc; \x82\x09\x97\x0f\x1b\x02b|\x18\xe9" +
+	"\xa0\x0c{5S\xac\x1c) \x94<=\x0c\x8f+\xbb" +
+	"g\xefz\x8bC:\xed\xe8\x91:\xa0\x8c\xe4\x8d\x1b\x7f" +
+	"\xb9P\x99\\}#\xf3%\xcb\xfa\xf2\xca\xaf.\xba~" +
+	"\xe1k7\xdd\xcc\xf2pf\xc4V\xc2C\xbf\x91\x84\x87" +
+	"\x19\xbb\x03%\xdb}\x1f\xb4#(\x1aI\x99\xac\xa4\x04" +
+	"\x81W\xb7N<.\x1d\xbc\x05\xf9r\xd9Us\x94\xb9" +
+	"\x91u \xae\x1e)\x88\xabG\xfa\xc5]#[\x11$" +
+	"?\xe7?\x9e\xc0\xff\x82\xbb\xd5\x1a\xcfb\xe5\xdck\x09" +
+	"+\xbf\xf9\xe4\x91\x17\xe3W\\\xb4\x09Iy@\xa6\xa2" +
+	"#\x9c\x19i\xf1r\xeeN\x04\xc9\x83\x97\xcci\xd8\x19" +
+	"V6\xa5T\xc0\x13\x82\x1d\xe7>G\x08\x9e\xa5\x04/" +
+	"\x8c\x1c~\xe9+7\x7f\xbe\x89\x19\\\x1au;\x19|" +
+	"\xe6\xfa!\x1bV|\x10\xdb\xcc|\x99>\xea~\xf2\xe5" +
+	"\xf9\x9b\x17N{\xf2\xd7\xb7lf\x07-\x1f\xf5\x12\x19" +
+	"t\xfa(2\xa8^\xb0\xe9\xe4\x1b\xbb\x1f\xda\x8c\xa4\x00" +
+	"\xd8}\x0f[\x04\xc7G\x11\x09\xcc\xae>\xf9\xc7\xd3\xbe" +
+	"\xf9[<\x15\xdf/w\x1e\x88\xb9\xb9\x82\x98\x9b\xeb\x9f" +
+	"\xb0 \x97*\xfe\xa2\xa6A\xf7\xbe\xfa\xc6\xf1-)\x99" +
+	"\xd2\x85\xca\xe7\xd1\x856\x9dG\x84\xf4N\x1f\xcc\xf9\xaf" +
+	"\xba\xf2N\x86\xdb\x03\xe7\xddD\xb8\xbd\x9b\xeb\xbfe\xf8" +
+	"C\x0f\xde\x95\xe2\x96v\xdds\xdeU\xa4\xeb~\xda\xf5" +
+	"\x1ci\xd1\xfb\x83\xfcO\xde\xcdr[\xe2\x7f\x82\x10L" +
+	"\xf3\x13n\xff\xf3\xedK\x97\xbf\xfa\xf2c\xf7\xb0\x0a\x95" +
+	"\xfdt9M\x94\xa0\xcf\xff\xbd8\xf9\xee\x1f_\xbe\x87" +
+	"\x99\xfc6?\xd5\xd0\xb7\xc3\xfe\xce\xcd\xdc\xf2\xc3=\xec" +
+	"\x16X\xed_F\xban\xa0]\xb7,\xcb+L\xac\x8a" +
+	"lg\x17\xb6\xc3\x7f5!x\xdaO\xb8\x9b|\xf5K" +
+	"\xb7\x1fx\xf3\xd3\xed,wC\x03\xf5\x84`t\x80\x8c" +
+	"\xf0\xda\xc2s^\x0a\xc4V\xdf\xc7jcz\x80\xee\xb2" +
+	"%\x01\xa2\x8d\xeb/Xv\x7f\xe9\x95e\xf7\x13a3" +
+	"\x9b\"\xb3\x0f\xa1<\x19\xa8\x00\xf1l@\x10\xcf\x06\xfc" +
+	"\x13\xcaG?\xc8!H\x9e\xac\xb9\xe1g\x07G>\xf5" +
+	"\x7f\x98\xe5\x9c9\x9fj~\xf1\xba\xabNhOd\xff" +
+	"7+\x89\xe3\xe7SQ\x9d9\x9f0\xb3\xeeg\xab\xf7" +
+	"\x85\xfe\xf4\xc5\x7f#\xdfh\xbbkQ~=\xe9\xfa\xdc" +
+	"\x9bC~_8\xad\xf9\x81v\xeb\xc8\xa7\x0b\x1d\x9dO" +
+	"\xba^\xfc3\xee\xc2\x03\xaf\xde\xf1\x00ko\xf9t\xd6" +
+	"\xbc\x96kw\xbe9k\xc3\x83l\xd7\xf2\xfc7I\xd7" +
+	"\x1a\xda\xf5\x82\xa5\xe7%\xe7_\xdao\x07+e\x9cO" +
+	"\xa5\xdcD\x09\xe2o}\xa2\xf6\x8b\xae\xdea\xb1eI" +
+	"\xf9\xb6|*\xc4m\xf9D\xca\xfc\x90\x81\xbe\xd2\xfa\xbb" +
+	"\xdb\x8dp&_'\x04\x99c\xc8\x08;\x95\xf9\xb7|" +
+	"<\xe7\xbcGX\x821c\xa8\x15\x95S\x82b\xed\xcb" +
+	"\xbb~xe\xc3#\x8c\xc3\x90\xc8\xf7\x8c\xe4\xeb\xef\x9f" +
+	"sy\xd6;%\x8f\xa5v)\xfd4m\x0c\xf5\x07\x0b" +
+	"h\xd7\x83\xa1\x7f\xfe\xf9\x83\xd2ow\xa6\xb8\xa3c\xc7" +
+	"\xc7\xd0\xc9\xdb(\x81<h\xea\xeb\xc3\x7f({<%" +
+	"\x00\x8b\xe2Nk\xf6\x07\xc6\x10\xfew7\xbd\x7f\xc1\x94" +
+	"w/}\x1cI\xa3]\x8a\xcc\x02J\xe1+ \x14\x8d" +
+	"\x95o\xbd\x97s\xfa\xca\xc7Y\xd55\x17\xd0\x1d\xb4\xae" +
+	"\x80Lr\xf7\x82\xd9/\xbd}\xb4\xfe\x09FuO\x17" +
+	"\\M\x16\xb0d[\xe1\xf9\x0f_\xb2\xea\xa9\x0e\xfe\x8a" +
+	"\x92\xdcW\x90\x07\xe2\xae\x02A\xdcU\xe0\x17\x0f\x17|" +
+	"\x82 Y>\xfc\xcc\xbeG\xae\x7f\xe6)F\x91{\xc6" +
+	"n%\x03\x1d\xa9:8\x7f\xf9\xec\xe3\xcf0_\x1e\x1b" +
+	"\xfb0\xf9r\xea\xec\xd7\x7fyq\x9a\xb6\x9b\xdd\xa4\xdb" +
+	"\xc6R\x05\xed\x18K\xd8\xafl\xfe\xafY+\x8e\x1c\xdc" +
+	"\xcdp\x97YH\xb7\x980\xf2w\xffUS=\xfc7" +
+	"\xcc\xa0\xa7\xc6\xd2\x9d\xbfs\xec\xfc\xf3o\xfd(\xeb9" +
+	"\xa6\xcf\xb1\xb1tEO\xbewv\xda\xbd;\xaex\x9e" +
+	"\xd5\xe6\x81\xb1\xd4-\x1e\x19K\x841\xa2\xef\xda\x13\xbb" +
+	"\x1f\x89=\xcfJ+\xab\xf0vB\x90[H\x08~\xb5" +
+	"wuu\xf9e\x0b~\xdb^&\x96n\x0b\xeb@\x94" +
+	"\x0a\x05\xc4'/\xde\x9e\xb3\xaau\xee\x8e=\x0c\x07%" +
+	"\x85\xd4(BS\xcb\xee8\xd1\xf6\xcc\x1e\x96\x83\x11\x85" +
+	"T_c\xe8\x04[Co\x0d\xfa\xc5\xf3M/t\x10" +
+	":\xdd\xde5\x85y .)\x14\xc4%\x85~q]" +
+	"!\xd9\xe4\x8b\xb6\xc8\xe3k^\xbf\xef\x05\x96\xe1\xf2\"" +
+	"jd\xd3\x8b\xa8\xcb=\xbe\xf8oo\x7f5\xeaw\x8c" +
+	"}\xcaE4\xa0\x9d.=\xfc\xde\xfb\x0dG\xfe\x1f+" +
+	"\xfb\x05ET\xf6?/\"\xb2_~j\xbf\xf6]\xd5" +
+	"\xb3/\xb3c?]DMg\x1f\x1d\xfbU\xdf\\s" +
+	"\xc9\xdf&\xefcT\xf0q\xd1\x13d\xec\x87\xdf{\xe9" +
+	"\xfd\xdb\xb4\xa9\xfb\xd8\xae\x87\xac\xae\x1f\xd3\xae\xfe\xe3\x83" +
+	"\xafYq4\xb0\x9f%\xc8,\xa6|\x0f-&\x04W" +
+	"\x9cz\xbc\xe0\xd1[\x96\xecg\x05ua1\x15\xd4t" +
+	"J\xd0p\xefU[_;o\xf9\xfe\x0e\x82\x12\xe8\x0a" +
+	"\x8b\x87\x80\xd8T,\x88M\xc5\xfe\x09\xdb\x8a\xff\x17\x09" +
+	"%'\xb6\x9e\x037\xcd|t?\xc3\xec\x9d\xe3\xa8 " +
+	"\xde\x095V\x15<\xf4\xe4~FD\xeb\xc6Q{\xb9" +
+	"\xeb\xab\xa6\xa0\x7f\x12\xfe=\xcbe\xd38j\x0e\xd7\x8c" +
+	"#L|{R\xdap\xf3\x97_\xff\x81\xe9z\xdf8" +
+	"\xaa\xe8\xab>_\xff\xd9?\xc5a\x07;\xb0\x97IH" +
+	"6\x8e\xcb\x03q\xdb8A\xdc6\xce?a\xff8\x1a" +
+	"\xe9j\x1e\xbdt\xdd\xad\xaf<~\x90\x9d\xeap\xc9M" +
+	"4v\x96\x90\xa9v\xaf\x1e|\xdd<\xdf\x867Yw" +
+	"\x92UJm7\xb7\x94\x10\xdc[\xb0i\xfd\xeb\x17]" +
+	"\xf8\x16\xb3\xc0i\xa5t\x97U\xcfX\xf6}b\xcc\xd6" +
+	"\xb7:\x86]jT%\xa5\x15 N+\x15\xc4i\xa5" +
+	"~1^Jv\xf2\x83\xd5_<\x1a\xad\x97\x0f1#" +
+	"-\x18O\xc1\xc1\xbe}\x87\xbe\xff6\x7f\xfd;\xacV" +
+	"\xa6\x8d\xa763w<a\"K\xbe\xfe\xa3\xf8\x9c/" +
+	"\xdea}\x9a2\x9eJ\xac\x8d\x12\xdc\xb1q\x82|\xfe" +
+	"\xf6\x9a\xc3,\xc1\x9d\xe3i<x\x80\x12([\x1f:" +
+	"\xfd\xad\xb1\xf8\xb0\x97\xd7\xd97\xbe\x0e\xc4\xc3\xe3\x05\x84" +
+	"\xc4C\xe3\x09\xa7\x7f\x7fs\xed\x033>\x1c\xfbg\x96" +
+	"\x9f\xc7\xca\xa8\x0b}\xb6\x8c\x8c\xf6\xf5\xcb\x8f\xd6d\xfc" +
+	"\xf5\xa1?3\x0a:\\F\x03\xd3\xc7\xaf\xde\xb5eK" +
+	"\xc3\xfa\xbfx\xa1\xb1}e\xf3@<\\F\xe7)#" +
+	"[\xe1\xc9\x09\x87\x0e^W:\xe5\x03F\"\xe5\xe5\xd4" +
+	"x\x9e\xd0\xc7\xed\xfd\xcd\xb6\xaf\x8f\xb2\xeb\xc9-\xa7z" +
+	"+)'\x1c\xbc\xf4\xd5\xc59\xeb?Z|\x8c%\xb8" +
+	"\xbc\xfcZB\xa0P\x82\xc7\x84\xbdk\xf2\xf3\x9e>\xe6" +
+	"\xb5\xe0\x0d\xe5\xc5 \xdeYN\x18\xd9\\N\x16\xfc\xf6" +
+	"\x95w\xac\x1b8\xfe\xc81\x86\x91\xb6\x0aj\xab{\xff" +
+	"q\xd9\x0du\xc1s?d\xbe\xe0\x0a\xea~?\x7fx" +
+	"\xc3\xdcK/lf\xbf,\xa9\xa0\xea<\xf3\xd6\xaa\xa7" +
+	".\xbf\xe4\xc9\x0f;\xc1\xe6\x9a\x0a\x0eD\xa9\x82j\xbe" +
+	"B\xc8\x10?\xbe\x80\xc0\xe6\xa93\xbe\xe0g\x9e{\xfa" +
+	"C;\xdaXp\xeb\x02\xb2\xd8\x09G.\xa0f\\a" +
+	"\xae\x0b\xef|m\xe5G\xac\x19\xc3D\xba\xda\xac\x89d" +
+	"\xb5g_\xe9\xf3\xdbw\x97\x0f\xfd\xc4\x1e\x83\xca\xbbd" +
+	"\"UY\xe5\xc4\x9d\x08\xbe\xd8\xfb\xe0\xf0\x97?-\xf8" +
+	"\xd4e\xf6\x8d\x89t\x81K\x0b\xff\x10\xf8\xdd\x85E\xc7" +
+	"Y]\xef\x99h\x01::\xf4\xbe\xb7\x8f~\xbf>{" +
+	"\xd7\x09/\xd7yf\xe2<\x10\xb3&\x09b\xd6$\xbf" +
+	"8m\x12q\x9d\xdf\x872\xbe\xb9\xe2Q\xfed\x8aU" +
+	":\xd5\xa1I\x94\x91c\x93\x88\xac\x8f^y\xd9\x8dc" +
+	"b\xa7\xff\xce\xee\xb8=\x93\x1f&\x04\x07&S'&" +
+	"\xdc\xd7\xb4\xe7\xd4\x85\xa7\xd8\xc5\x9e\x9aLu\x0f\x95\x84" +
+	"\xe0\xabM\xdc%K+\xf2\xbfb\xf3\x8cJj6\x17" +
+	"O\xd9)\xee*y\xebk\xd6*\xb2*\xe9\xe4#H" +
+	"\xd7\xef\xb7?wb\xe3\xd2\xb5\xdf\xb8R\xa8\xac\xa4\xc1" +
+	"\xed\xdb\xf3\x97]R\xd9o\xcc?\xd8\x8eE\x95T\x0a" +
+	"\x17\xd29\xeb\x8eU?\x7f\x9d\x7f\xc9i/\xbb\xc6\x95" +
+	"\x15 6W\x0abs\xa5_\xbc\xaf\x92Xv\xdf\x8b" +
+	"\xc6\xde6\xe6\xcb'\xcf0\xc6q\xb6\x92z\x8d\x1d\x17" +
+	"\x1d\xaeZ\xa7\xef>\xc3\x04\xb1\x93\x95T\x13\xb7|\x99" +
+	"\xd9?r\xc3\x0bl\x9f\xc3V\x9f\xc3?d\x97\x8c}" +
+	"*\xe3;\xa6\xcf~k\xc1\xf9\xb3\xf6\x0e\xf9b\xed\xaf" +
+	"\xbf\xebdjOW\xf6\x07q_%!}\xb1r6" +
+	"'\x96L%\xa6\xf6\xc5\x96_V\x0c_9\xe7\x87N" +
+	"\xe4C\xa7\xf6\x07q\x0c\xa1\x11GO\x15\xc4\xd1S'" +
+	"!\x94\xfce\xcb\x1d_\xcf>:\xf1,\xab\x88\xd1S" +
+	"i4)\x9fJ\x842\x89\xdb|(\xb7\xf5\x86\xb3\xed" +
+	"\x90\x944\x95:\xae\xcb\xa7\x129\xb4\xdc\xb0\xfc\xc4\xd0" +
+	"E\x7fJ\xb2C\xec\x99J\xfd\xd2\xfe\xa9Uhr\xd2" +
+	"\xc0z\x0b\xd6\xc7\x87\xfb\xc8\x0951>\xa6\x85\xe5\xd8" +
+	"\x95rB)\x0d\x93\xdfSf\x85Jc\x8aa\xd6\xac" +
+	"L\xc4\x94\xb0b\xd6*\xaa\x91_\x87\x8d\xe6\x98i " +
+	"$e\xf0\x19\x08e\x00B\xbe\xacb\x84\xa4\xbe<H" +
+	"\xf9\x1cd'\x14\xd5\x80A\x08jy\x80\xc1\xaeCB" +
+	"@\x1a\x9d\x093<'\xac\xc5X\x0f\x99\xb2\xd9l\xa0" +
+	"Z\x00)\x03\xb8\xe4\x15\xff{\xbb\xb4\xe7\xed\x9b\xf6!" +
+	")\x83\x83\xe9\xc3\x01\x06\"\xe4\x83\x87\x93*6\x03\x86" +
+	")\x9b\xd0l\x04\xb4\x86\x80\x1c\xc8N`\xac#$\xe5" +
+	"8l\xad&l\xad\xe4A\xba\x9e\x03\x1f@\x0e\x11\x92" +
+	"\xef\x1a\xd2\xb8\x8a\x07\xe9F\x0e|\x1c\x97\x03\x1cB\xbe" +
+	"u\xf3\x10\x92\xae\xe7A\xba\x95\x03\xe0s\x80G\xc8\xb7" +
+	"\xb1\x1e!\xe9f\x1e\xa4_q\xe0\xcb\xe0s \x03!" +
+	"\xdf\xe6\x0a\x84\xa4[y\x90\xee\xe6 [\x95\xe3\x18\x06" +
+	"\"\x0e\x06\"\xc8\x96#\x11\xdd\xfe\x91\x8c\xc9\x86\x19\xc2" +
+	"XE\x089m\xba\xd6\xacFL]ABb\x81\x01" +
+	"\x19\x88\x83\x0c\x04~\xac\xeb\x9a\xdb\xcf\x96N\xa6\xa7t" +
+	"\x16`S.\xd5q\\3qHn\xc1\xf9\xb5\xb2." +
+	"\xc8q\x83UD\xb5\xab\x885\x16%\xa3\x0b\x07\x85u" +
+	"\xd0\x05\xdf\xd5l \x13-\\\xc6g\"\xe4\x04\x0b\xb0" +
+	"\x9d\xb5\xf8\x06W\x8c8q\x1f'\x80\x8bC\xc0\xb68" +
+	"\xf1Y\xfa\xf51N\x00\xceqJ@\xbc \xfa\xb4\xe0" +
+	"S\xf1>\xfau3'\x00\xefd\x8d`g\x9e\xe2\x06" +
+	"\xae\x02q\xe2jN\x80\x0c\x07B\x80\xed\xf0\xc5&\xae" +
+	"\x1aq\"\xe6\x04\xc8t\xea\x17`o\x16\xf1\xe7\\\x1d" +
+	"\xe2D\x89\x13\xa0\x8f\x93h\x83\x9d\x04\x8a5\xf4\xeb4" +
+	"N\x00\xc1\x81\xf6`\xd78\xc4r\xfa\xb5\x88\x13\xa0\xaf" +
+	"\x83\x13\xc1\x06ub.\xfd:\x94\x13\xa0\x9f\x03\x05\xc1" +
+	".,\x88\xfd\xe8W\xe0\x04\xe8\xef\x00n\xb0\xc3\x97\xf8" +
+	"\x0d\xccC\x9cx\x12\x04\x18\xe0T)\xc0\xceb\xc4c" +
+	"\xf4\xeba\x10`\xa0S\x15\x02\xdb\x87\x89\x07`\x19\x91" +
+	"3\x08\x90\xe5 c\xb0\xdd\xb8\xf8,\xfd\xba\x0b\x04\x18" +
+	"\xe4\x80%\xb01\xac\xf8\x00\xd4#N\xdc\x06\x02d;" +
+	"\x05\x16\xb0s8\xf16 <o\x00\x01\x06;H\x0c" +
+	"\xec\x02\x81\xb8\x1at\xc4\x89\xcd \x80\xcf)\xdb\x80\x1d" +
+	"\x1dD\x05\xa6 N\xbc\x1c\x04\x18\xe2\xc4G\xd8\xfe\x1c" +
+	"\xa2\x0e^\x94\xe8\xd7\x1a\x10@tr\x1a\xb0\x11\x98X" +
+	"\x09D\x83% @\x8e\x93)\x83\xed\x7f\xc5\xd1tE" +
+	"#@\x80\xa1N\x92\x05v\xb2.f\xd1\x15e\x82\x00" +
+	"\xc3\x9c:\x09\xd8\x90\xd6w\xa6\x1aq\xbe\x93BvS" +
+	"\xb3b\x06\xa9/\x8a\x06![Q\xc9/\x7f\\kV" +
+	"\xcd \xaciVS\xffK\x865\xb5A\x89\xce\xc6\x08" +
+	"\xdc_\xa1v\xbf\xa6\xc7\x10\xc4\x9c_35\x04\xe1 " +
+	"$\xad\xad5=\x82 \xe2\xfc\xaa\x8b#\x84\x9c_\xf3" +
+	"\x0d\xf6WHF|\x0bv~\xd6*\x88'\x8c\xa5~" +
+	"\xce\x88!\x01\xcbz\x10\x88S\x9b\xaf\x85e\x13\x01f" +
+	"\x7f\xf9\xf1B\xbc\xd2\x0cBUk\xa3&\xc7\x95 T" +
+	"\xd5\xe3\xb0\x16\xc7AX\x13\xd6T\x15\x87\x09\xbf\x11\xc5" +
+	"\xa0?\x10O\x7fjjLQq-F\x02\xd6\x8d " +
+	"\xaci\xc1\xba\xa1hj\x10j\xa1'/<+T\xda" +
+	"\xac&\x145\xbf\x0e\xfb\xa9\xb3\xef\x99\xde0\xe5(\xee" +
+	"L\xdf\x8d\x1f\xb3Eo\x127&\xf3\xed\xddX^\xca" +
+	"\x8d\xe5p \xac\xc0m\xbd\xf1\x8f\xb6\xdab4R\x09" +
+	"1\xd3s\xe0|\x0e\x049\x16s}\xa3S\xc4K+" +
+	"N\xd5Q\xbd\xcd\xd2b\x11\x0c\xbaw\xa4\xca\xa7\x91\xaa" +
+	"\x1c\xea!9=\xd0@(\xf5\x8c\x80\xd9(\x9b\x019" +
+	"`\xa9=\xa0\x18\x019\x16\xd3Zq$`j\x019" +
+	"\x1c\x16\xb0aP\x06m~\x8b\xa6 $\xe5\xf3 \x95" +
+	"1\x11\xac\x84\xc4\xa0B\x1e\xa4\x0b8\xa8\xb2F\xb6\x05" +
+	"\xe4O`=nt\x12\xd7\x80\xae\xc5eY\x14\xd5A" +
+	"\xdc@v\x87\xae\xe9m\x9b\xc4\x8e\xda\x06:\xdc\xd6\x10" +
+	"\xe9\x06y\x90\xe6s`3;w\x19B\xd2\x1c\x1e\xa4" +
+	"\xc5$\xdc\x82\x15n%\xd2X\xcb\x83t\x19\x07Bk" +
+	"\xa3\xe60l*q\xac5\x9b!\xc4\xe30\x0c@\x1c" +
+	"\x0c \xc1\x94\xce\xb7@F\xbc\xb1\"MK \x16\x89" +
+	"\xdb\xe3\x96*k\x89,\xbbS\\v\x1d\xe1\xce%\xf0" +
+	"`&\x0fR-\x03\x0f\x16\x8ct\x17Q\x95\xd0q\x83" +
+	"\xb2\xd2\x89\xfb\x0d\xba\x16\xb7\x7f\xf0\xa6\xd6\xfbP>\xdf" +
+	"\xb0\xa4\x0fF\xfa}\xa6G\"\x8ey\xff\x08\x0c\x97\xd2" +
+	"\xf6\xbf]\x16}\xd2U\x96\x0d2\xd9\xad[\xe1\xfa\x04" +
+	"\x7f\x98\xf8o\x1bC\xf5\xb0WgP\x87P\xa3\x9az" +
+	"\x1b\xea\x02U\x06R{\xb5\x98\xecU\xcb\x81\xf0\x01L" +
+	"z\x04\x0a\x155\x1ck\x8e(j4\x10\xc7\xa6\x1cP" +
+	"\xb2\xd5\x06\xad\xa8=\xcc\xcc\xf3\x82\x99y^0\x934" +
+	"\xae\xe5A\xba\x99\x03\x1f\x9f\xc2\x99\x1b\xaa\x19\xec\x99a" +
+	"\xc1\xcc\x8dW\xb9\xd8\x93u\x80B\x8b\x1cs\xfe\x1f\xd1" +
+	"\xc2\xf6\xff\xd7Dp\x83\xdc\x1c3\x1d\x89\xab\x18G\x8c" +
+	":l\xa0lS\xd6M\x00\xc4\x01\xf4\xc6\x7f\x86\x18\xbf" +
+	"\xcc\xb8\xa3\xbc\x1e\xdc\x11\xcb\xab\xbfE\x8e5\xe3\xde\xec" +
+	"\x87T\x88\xb2\xcd\x13\xa5\x1bvj\xe5l\xba\xb5\x19F" +
+	"\xeb\\\x9e\x1cF\xcb\x09\xc8/\xe3A\xfa\x0f\xcer*" +
+	"\xb1Z\x12i\x1b]\x84\x8e\x13Z\xadl6\xb2\xa8\xbd" +
+	"G?\x13\x95\xf5z9\x8agh\xb1\x18\x0e\x9b\xf9\xb5" +
+	"~\xcb\xcd0\x86K\x9c\xdd@\x1e\xa4\xe1\x1c$\xe5h" +
+	"T\xc7\x86\xa1\x108\xd0I+}\xd2p\xbb\x04\x08x" +
+	"n\x8f)\xee\xf6\xa8\xd2\xe9w\x18\xec\x96\x9d\x10\xc0`" +
+	"f\xa6\xfe]\xcfD\xa1\x913C\xb7\x01aV\xa8\x94" +
+	"\xa0\x04\x8f\xf8]\xec2\x93\x9d\x90\xcd\xc6N\xe2\xcc\xe8" +
+	"\x89\x01\xdb]\xf7\xa4S\xb2y\xc6\xf1 M\xe6 I" +
+	"{\xb6\xd7\xe9\x1a-a*\x9aj\xc0`\xb7\xc8\xddA" +
+	"\x16]\x1aWX6=1D\xbb\xc5izg?\xd4" +
+	"\xa5\x9b\x0b\xc7\xb0\xac{y\xe2\x7f\xbf+\xf6\xce\xf9B" +
+	"\xa6\xec7\xe7\xaa\x0dZ\xf7\x98\xe6ZH\x92,\x9d\x10" +
+	"fR\x14C3\xf1\x92\x98\xb2\x02\x07\"\xd8\x08\xeb\x0a" +
+	"\x95:\xcd\xcb\xd5\xb6\x80\xaaE0\xa2{/\xb5Fq" +
+	":\x14#\x14\xfa\x0f\xe0!4\x07\xdce\x8a50\x0f" +
+	"\xa1\xd0L\xd2^\x0b\x1c\x80\xb5Pq\x01%\x9fC\x9a" +
+	"\x17\x13r\x1e\xa8\xeb\x14%\xa8@(4\x9f\xb4_B" +
+	"\xda3\xd6R\xf7).\xa1\xed\xb5\xa4\xfd2\xd2\x9e\x99" +
+	"\x99\x03\x99\x08\x89?\xa7\xed\x8bI\xfbr\xd2\xde\x87\xcb" +
+	"\x81>\x08\x89\x97C5B\xa1KH{\x84\xb4\x0b\xd7" +
+	"\xe4\x80\x80\x90(Sv\x96\x93\xf6\x18i\xef{m\x0e" +
+	"\xf4EHT`\x19B\xa1F\xd2n\x92\xf6~|\x0e" +
+	"\xf4CHl\x82z\x84B\x09\xd2\xbe\x8a\xb4\xf7\xcf\xc8" +
+	"\x81\xfe\x08\x89m\x94\x7f\x93\xb4\xaf%\xed\x032s`" +
+	"\x00B\xe2jJ\xbf\x8a\xb4\xdf\x08\x1d\xb7\x8a\xa9c<" +
+	"G6\xa87\xcaB\x1cd!\xc86\x94\xab1\xf4C" +
+	"\x1c\xf4C\xe0W\x88\\\xdd_\xc6LE\xb7]\x8a?" +
+	"\x82\x13f\xa3m\x98k\xe2Zd\xb1\xe2\xd6*\x92\x8a" +
+	"Q\xab\xa8*\x8e\x90\xa1m'\xa4\x18\x96a\"^q" +
+	"\xe3EXSM\xac\x9as\x90 \x1b\x8d\x0e\x17\xcd\x86" +
+	"\x8b8\x93\xf5rx\x05V#\xedIz\x17h:!" +
+	"\x99nz\xd9i\x0d\xd6\x0d'\xdd\xf0B\x09\xf9\x1c\x11" +
+	"P\x83\xc6\x94?\x9c\x0b\x1aiA\xfc\xa53B\xa51" +
+	"-j\x17Yzv\x17x\xa5b\x98F~]\x15\xee" +
+	"\xc4\x14\xeb\x9b-\xb2\xdeDd;\xb1\x0b\x9b\x9d\x98\xe9" +
+	"\x85\xa7\xb1<:\x18?\x05\xa4J9\xc7\x9f\xce\xf1\x13" +
+	"a\x9b\xb2#\xec\x1e!G5\x039t\xdc\xe2x{" +
+	"S\x8e.d\x8ar=/\x83\xc0\xe9\x16\xec\x15\xb5\x7f" +
+	"\xe4Jf\x85JM\xad9\xdc\xe8\x80\x92\x9fdH\xca" +
+	"d\x1d6\xb2\xd3\xcd\xae\xdd4\xcd+\x82\xb1\xf6h*" +
+	"\xe1\x15\xd8\xb4\xddH\x1azj\xc0&Y^g\x89\xb1" +
+	"I;\x9b\xd4\xf5\xbc\xba\x15\x11E\xf7Bq\xc5\xae\xee" +
+	"\x1d\xd5\xebn\xc0o/\xc4\xb0\x8ee\x13\xd7\xca\xc8\xaf" +
+	"c\xd5c\x87u\xbd\"\xa3M\x0d{M?\xcf\xb52" +
+	"\x07o\xd41\x18\xb2U1\x1b\xff\xb3Q\x8b\xb3x\x91" +
+	"\x00\xefY\xd8\x0c\x13\x0c\xd2\x8b=\xee\xa4\x82t\x9b\xf2" +
+	"\xe6\xbf^\xd4\xedI\x81\xb6\x9f\xea\x01\x11\xcc\xd0\xe2B" +
+	"\\1\xbb\xaf\xc6\xdf\x94\x0c)j4\x86\x031\xd0\xa2" +
+	"V\xe2\x84@\x1a\xec\xac@&\x8a\xbc\x8c\x07\xa9\x91\xd9" +
+	"\xc4\x98\xd8\xcbr\x1e\xa4\x18\x03i\x14B\x19\xe1AZ" +
+	"\xcbdHl\x1d?\xbb\x91\x093B\xdc\x88:\x88\xc7" +
+	"\x94\xa3\x8eXH\xdb \x04\xd9\x11\xd9\xc4?\xaex\x94" +
+	"\xf2m\xbd\x0dI)+JsG{\xb8\xbb\xea\x1e\xdc" +
+	"\xdd\x1aC\x0f\xd72f\xbf&b\x98\xb5^\xbed@" +
+	"\x97\xfa\x0fk\xf1\xb8\x92&\xc4\xb7\xa5bG\x9ft\xf2" +
+	"22G\xb3J\xdcy'\x1bK7\x8b\xf2\x0a\xa2l" +
+	"do\xd01\x8e\xb8{\xc09#\xed\xb0\x07z\xdcp" +
+	"uq\xbb\xf6\xd2\x95\x9fV\xd3\x0f'\x0bH\x04]D" +
+	"\x91/\x18=WY\xed\x98\xd7\xc9\xadw\x97\xed\x9a\x0e" +
+	"yW\x0c\x13\xd0\x03\x83\xdd{r\x1d\xb2\x1d\xbe\xabz" +
+	"\xa6\xa0\x99\xb8\xfb\xeaH\x05$\x09\xe2\x0f\xc8\x01\x9d\xb7" +
+	"\x0a\x98\x09\x8c\xf5@+\x0e\xc4\x95h\xa3\x19 n\xd4" +
+	"\x1f N\xb1}>S\xec\x95\xcf\xd4\xb3e\xc1\xd4\xe6" +
+	"\x97\x88\x9d\xcf\xb7\xdcD{\xc17(j\x14\xeb\x09\x1d" +
+	"\x09\x8a\xea\x149\xd6X\xb5O\xc6\x17:wQ{k" +
+	"\x07\xb5\x8a\x1a\xf5:N\xfb\xd1!\xcd\xc2\x00\xe9\xd7\xcf" +
+	"\xc3Z\xa2\xed\x7f\xd4\x1d\xf4\xe8\xf4fj\xe1\x9f\xb8\x12" +
+	"o\x1fn`Y\xef\xd5\xc9\x80[\xe2\xf4\xe0\xa7}\x99" +
+	"\x83\x10v\x88\x81\x83{\xbb\xe8\x9eR|\x92\xd0v8" +
+	" H\xab|`\x1d\xa1\xfc\x18\x18\xe8\xbdGg*\x0d" +
+	"\xd0\xe0\xbdCG\xa5\xe2\xf0w\xc9\x99JC\x03\xd6\xb1" +
+	"\xca\x85q\xa0\x1e\x9b\xad\x18\xab\x01\xb3U\x0b\x84\xab\xa8" +
+	"\xd37\x10\x92F9\x9c<M\\\xea\xe3<H\x7f`" +
+	"\xack?\xb1\xae\xbd<HG\x99\x9dy\x844\xbe\xcb" +
+	"\x83\xf45\x13\x96O\x91\xc6\x13<\x84\xfa\xd2\xdc\xdb*" +
+	"]\x8a\x99$\xc7\xae#)\xed(6\xf5\x1e\x01S\x10" +
+	"\x0a\xe5\x90\xf62\x9az\xf7\xb1R\xef\x12\x9ab\x8f\xb3" +
+	"+\x01~9\x12a=;\xeb\xc6\x06!\x0b\xfe\xb4t" +
+	"G\xa0DUM\xef\x8e \xae\x18\x86\xa2F\xbb$\xf0" +
+	"w\x98\xc0\xb9yb}\xae\x8ac=\xda\xcdwzP" +
+	"\x18S\xc2&\x01\x85]\x12\xa5Q\x06KP\x97d\xa1" +
+	"\xec\xb4\xf3\x984\x03n\xbbj\xabWbX\xed\x9a\xa8" +
+	"}p\x08\x83\xdd;]iW\xd0\x88W\xeb\x14\xdf\xba" +
+	"\x00\x9a\x8d\xb2\xa0Fq\xf7\x06\xfeYr\x91\x8a\x03s" +
+	"\x14\xc3\xe44\xbd-U\xa2o\xd0\xf4\x80\x1c\xc8nP" +
+	"b8\x8d\xeb\x1fS\xbc\xea\xf2\xc5^u\xf9b\xb7." +
+	"o[\xb7o#\x91\xcc\x8d<H\x9b:l\xde\xaap" +
+	"\xa3\xacF\xdd\xeb \x8dX\x8e\xc0`\xf7\xb6\xb1%\xb2" +
+	"l\x15\xaf4;7\xaf\xd1q\x03\xd6\x17\xf7\xea\xf0(" +
+	"u\x88\xedV\x10\x19\xf5\xd51\x15g\x8f\xa2h\xaf\x12" +
+	"HZp\xb6\xab\xb1\xbd\xcb!\xd3\x8c\x0d\x1d1\xb3\xb7" +
+	"}\xcc\x8d`\xbfj*f[\xf7 e\x88\x0dR\xea" +
+	"5\xbe\xd9\x0ch\xcdz \xdc\xac\x93\x8c0\xd0l`" +
+	"\xdd\xba2D\xec\x84\xc9N\xea\x99D\xc4\xb6\x13\xa5\"" +
+	"\x95\x88$\x18;\x89\x13\xca\x18\x0f\xd2J\xf7\x9aP3" +
+	"\xc9\x12M+cI\xa6\xa6Z\x82\x04\xa6D\xe6\xd7Z" +
+	"U\xa6`\xe6\x89e\x92\x8a\xb1\x88\xa6\x11lI.\xbd" +
+	"0F\xa1\xb9\xbd\x89\xd3\x04\x91\x1eP\xa7\xc7\xa8\x94\xd9" +
+	"%\x8a\x8d\xcb+0\x09<\x9e\xae\xa4](U\x1a\x1a" +
+	"`\xb0{\xc99-?\xc2\xa4,\x1ef\xc8\xe2\x13&" +
+	"\x1b\xecaL\xcb\xb4)\xbb@s\xdb\x9er\xd5\xe2\xee" +
+	"r\xd5\x04\xe35X\x13\xe9\xfa\x82Xv\\f\xce\xb2" +
+	"\xbd-\"\xdd\x82\xe3OZ\xbb\xb2n}t(\xc7z" +
+	"S3\xd5E\xeb\\\xd5\xbbp\xe3\xc2\xd6).l\xed" +
+	"\xe0:\xa9v{sF\xd4\xd4\xac\x98\x9d\x82c\xd7\x06" +
+	"\xda\xa8\x18\xa6\xa6\xb7y\xdf]d\xab+)B7p" +
+	";\x17\xde\xd3\xca(\xd8\xb9\xec3\xf6\x7f\x1d\xf8-\xc5" +
+	"z6\x89\xc0\x1d\xecT\xf7\xf2Z\xc4\xf37\xf2 \x99" +
+	"\x8c\x9d6]\x8d\x90\x94\xe0AZ\xc5\xd8i\xdb27" +
+	"8\xa6\xe6_\x8a\x91\xdf\x0a\xf5\xed\xf9\xaa\xc3\x08Z:" +
+	"\xd6\xfb\x97\xa2*\xdc\x9e8\xf5\xa1\x0e\xf1nA6m" +
+	"]\xf6\x06\xb88\xa9\xbb]+\xebM\xb8\xec\xe4(\xf9" +
+	".\xb6\x025\xe9 \xbd\xfah?\xba\x03\xfb\x1d\xa5x" +
+	"\x0a*\x10'~\x0c\x02\xb8\xb7p\xc1\xbe\xca-\x1e\x86" +
+	"b\xc4\x89\x07@\x00\xcey\xcd\x05\xf6\xd37\xf1E\xc8" +
+	"C\x9c\xf84\x08\xc0;o\xa1\xc0\xbeS-\xee\xa0#" +
+	"o\x03\x012\x9cw\\`\xbf\xe5\x10o\xa3\xd7\xea\xd6" +
+	"\x81\x00\x99\xce+#\xb0\x1fk\xd1c&N\x8c\x83\x00" +
+	"}\x9cw0`?\xe6\x10e\xfau\x09\x08 8/" +
+	"\xf9\xc0~I \xce\xa5\\M\x03\x01\xfa:\xafT\xc0" +
+	"~Q*\x96S\xae\xc6\x80\x00\xfd\x9c\xd7\x12`\xbf\xfa" +
+	"\x11G\xd0\x91\xb3@\x80\xfe\xce\xfbC\xb0_%\x89\x00" +
+	"W#\xcewF\x80\x01\xce\xbb3\xb0\xdf\xef\xf8NV" +
+	" \xcewL\x80\x81\xce\xa3\x07\xb0\xdf\xd6\xf9\x0eMA" +
+	"\x9co\xbf\x00Y\xce\x1bM\xb0\x1f\xe1\xfa\xf6\xdc\x848" +
+	"\xdf\xb3\x02\x0cr^\x0c\x82\xfd\xb0\xce\xf7\xd8\xed\x88\xf3" +
+	"\xed\x10 \xdby0\x0a\xf6\x1bN\xdf\xb6k\x11\xe7\xdb" +
+	",\xf8\xe9\xc5\x81 d\xc7\x14\xc3\x0c\x82\x10\x96\xe9\xfd" +
+	"\xc0\x15\x11E\x0fZye\x0b\xf9\x9a\xfa\x87\xc0\xd8 " +
+	"\x08\x09E\x0d\x82\x9f\xa6uA\xc8&q4\x08I\xbb" +
+	"p\x85\xaa\xac\xd2U\x10\xfc4\xf7\x0f\xda'=AH" +
+	"\xda\xf7o\xc0>\x8c\xa17\x03\xed#\x1a\xb0\xbd(\x10" +
+	"Z\xfb&\x0c\xd8\xa4\xed/\xec\xa5\x11\x84\x1d@\xc8 " +
+	"\xe1e\x0c\xe8\xb5}\xc5\xbaz\x06\xdf\xda\xbeb\xe3<" +
+	"\xe6\xd2\xb3\xed+6\x13\xaf\xb2\x89\x07\xe9^\xf7\x86\xca" +
+	"6\xd2v7\x0f\xd2C\xf6e\x8aE\xad*\xe2\x19\x9c" +
+	"cm\xd3E\xadH`\xd1\x0f%\xad\xc3-\xednF" +
+	"[\x1b\xba\x9d\x9b\xf9\x91ut\xeb^\xa4\x97\xf3\xfdq" +
+	"\xa5\x1c\"Y\x1d\x1b\xd8\xbd\xd8\xd1Sa+\xcf=\xa8" +
+	"\x07\xfb\x9c\xbe\xc2-v\xb5s\xfc\xec\xd9\x95\xbfA\xd3" +
+	"\xc38\xcdS\x0b\xbaVE\xf5r\x9c\x19\xdd\xdd\x02\xf3" +
+	"\xac\x1e\xb2\x01\x90dT\x0a{\xbc\xd0!;\xeea\x9a" +
+	"\xd9\xd6n\x98k\xe2xOw\xad\xaa!9=`\xd0" +
+	"c\x83\x8c\x80b\xe2\xb8u9\xb2U6\x02+\x94X" +
+	"\x0cG\x02\xf5m\x01\xb3\x11\x07\xa2a\x94F=\xb1\xda" +
+	"\xeb~DWr_\x93:\xd7\xb6\xcf\x11: \xf4t" +
+	"eo\x9b\x04\x13\x94\xe7\xa5\x9dJT3\x91\xda\xdeh" +
+	"M\xf3\xdcH\x9d\xac\x97\x0d\xdc\xe16R{>\xd7\xa4" +
+	"\"\xae\xc3wB6\x8cVM\x8f\xa4\x7f\x7f\xa9c\x09" +
+	"\xd4\xcb<\xd8d\xd2y\xc3\x00\x09\xe7zf\x1a3\xa4" +
+	".\x99z\xc2/6\x8f\xb4\xe8`\xb0\xfb\xb6/\xddJ" +
+	"\x83u\x84\x98f\xbd\xd5=\xa0\xf0\xc0\xcel\xe9\xa3\xab" +
+	"\xe3\xe4\x9e\x1d\x90\xb3\xd44o\x19\xf4z_\xb2\x15\x84" +
+	"A\xe9\xd4\x0e\xfd\x0d\xb5\xb2\xa2w_^\xf92Y\x87" +
+	"\x13\xc4\xdd\xa9\x9cI\xcb\x86\x11ZNT\xd4h\xc0\xdf" +
+	"\xa0\xc4p\x87\xcb\xc9\x9eG\xf3y\xcc\xd1\xbc\xa1\x87;" +
+	"\x1fE\x08\x11\xc3\xec\xe6\x80\"\xbd\xa7/i\x1e\x9a\xb8" +
+	"\xee\xbb7\x00\x93\xb9p\xd1\x8by\xe8)r'\x0b\xe4" +
+	"\xbb\xa2\xb7\xfcc>\x05\x98\xf6\x1f\x1a\x00\xfb\x1d\x9c\xe8" +
+	"\xa3p,\x93\x02L\xfbq)\xd8\xcf\xc6}g\xa6\xd0" +
+	"W\x0e\xc09\x7f\x0b\x00\xec\xc7\xd9\xbecy\x88\xf3\x1d" +
+	"\"\xe0\xd2~\x8d\x07\xf6\xd3q\xdf~\x82\xb6\xf6\x10h" +
+	"i?X\x04\xfb=\x9co\x17\xf9\xf6\x00\x01\x96\xf6\xdb" +
+	"N\xb0_\x81\xfa\xee\xacF\x9co#\x81\x95\xf6cI" +
+	"\xb0\x9f\xc4\xfa\xae\x99\x878_\x1b\x01\x95\xf6\xb3}\xb0" +
+	"\xdf\xcb\xf9\xe2\xc5\x88\xf3\xc9\x04R\xda\x7f\x15\x00\xec\x87" +
+	"\xf9\xbe%d\xbe\xb9\x82\x10\xd3\xa2A;\x05\x0c\x82`" +
+	"\xcaQ\x0a\xb2\xac\x7f\xa9\xee\x82N^\x16\x84\xa4\x0ds" +
+	"\xe8\xeb\x8al\"\xf3 \xf8\xe9\x89v{\xa0\xe4-\xf7" +
+	"\xe9\xb5s\xa9\xdck\xf9Li \x80\xfbT\x14!\xf7" +
+	"-\x1fB\xee_^a6pZo\x19\xbc\x0e\x13\xd8" +
+	"[6\xdewb\xbb\x8f\xd9\x1e\xc7B^\x17#\xe61" +
+	"\x17#tMs\xf3\xe9\xb8\xbcr&NX\x81$\xbd" +
+	"\xfb=n\x01\xba\xbb\x83X\xb2\x1e\x1d'b\xce\xa1\xd0" +
+	"\xff\x0f\x00\x00\xff\xff0\x96oc"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
@@ -12829,7 +13074,9 @@ func init() {
 		0x956cdf6b89128744,
 		0x958ea6b33d4e8cbb,
 		0x95a8b7d1ed942672,
+		0x974c11f8cfed4247,
 		0x97e9d1c7a00e713e,
+		0x995f6a1f026506d7,
 		0x9ba7a818970a029c,
 		0x9cb31f0ede4f5117,
 		0x9eadc3c7605bd657,
@@ -12880,6 +13127,7 @@ func init() {
 		0xc9601ec89a6aa066,
 		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
+		0xca65371f4071f39b,
 		0xccf4f28c8951edf6,
 		0xd01613feea87ee6a,
 		0xd0b0c690855bac45,
@@ -12904,7 +13152,6 @@ func init() {
 		0xe2b3585db47cd4f9,
 		0xe2f81b4403ef433b,
 		0xe478c8af63857432,
-		0xe54de22194de748a,
 		0xe71560d8bc06c6fd,
 		0xe826e800c318a7c4,
 		0xe92935bf20cc2856,

@@ -6,7 +6,8 @@ var Defaults = DefaultMapping{
 		"port": DefaultEntry{
 			Default:      6666,
 			NeedsRestart: true,
-			Docs:         "Port of the daemon",
+			Docs:         "Port of the daemon process",
+			Validator:    IntRangeValidator(1, 655356),
 		},
 	},
 	"fs": DefaultMapping{

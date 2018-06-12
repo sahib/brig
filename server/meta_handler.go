@@ -129,6 +129,30 @@ func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {
 	return call.Results.SetValue(value)
 }
 
+func (mh *metaHandler) ConfigDoc(call capnp.Meta_configDoc) error {
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	key, err := call.Params.Key()
+	if err != nil {
+		return err
+	}
+
+	if !repo.Config.IsValidKey(key) {
+		return fmt.Errorf("invalid key: %v", key)
+	}
+
+	seg := call.Results.Segment()
+	capPair, err := mh.configDefaultEntryToCapnp(seg, key)
+	if err != nil {
+		return err
+	}
+
+	return call.Results.SetDesc(*capPair)
+}
+
 func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 	repo, err := mh.base.Repo()
 	if err != nil {
@@ -155,8 +179,41 @@ func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 	}
 
 	log.Debugf("config: set `%s` to `%v`", key, val)
-	repo.Config.Set(key, val)
-	return nil
+	return repo.Config.Set(key, val)
+}
+
+func (mh *metaHandler) configDefaultEntryToCapnp(seg *capnplib.Segment, key string) (*capnp.ConfigEntry, error) {
+	pair, err := capnp.NewConfigEntry(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pair.SetKey(key); err != nil {
+		return nil, err
+	}
+
+	repo, err := mh.base.Repo()
+	if err != nil {
+		return nil, err
+	}
+
+	clientVal := fmt.Sprintf("%v", repo.Config.Get(key))
+	if err := pair.SetVal(clientVal); err != nil {
+		return nil, err
+	}
+
+	entry := repo.Config.GetDefault(key)
+	if err := pair.SetDoc(entry.Docs); err != nil {
+		return nil, err
+	}
+
+	defVal := fmt.Sprintf("%v", entry.Default)
+	if err := pair.SetDefault(defVal); err != nil {
+		return nil, err
+	}
+
+	pair.SetNeedsRestart(entry.NeedsRestart)
+	return &pair, nil
 }
 
 func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
@@ -168,44 +225,23 @@ func (mh *metaHandler) ConfigAll(call capnp.Meta_configAll) error {
 	all := repo.Config.Keys()
 	seg := call.Results.Segment()
 
-	lst, err := capnp.NewConfigPair_List(seg, int32(len(all)))
+	capLst, err := capnp.NewConfigEntry_List(seg, int32(len(all)))
 	if err != nil {
 		return err
 	}
 
 	for idx, key := range all {
-		pair, err := capnp.NewConfigPair(seg)
+		capPair, err := mh.configDefaultEntryToCapnp(seg, key)
 		if err != nil {
 			return err
 		}
 
-		if err := pair.SetKey(key); err != nil {
-			return err
-		}
-
-		clientVal := fmt.Sprintf("%v", repo.Config.Get(key))
-		if err := pair.SetVal(clientVal); err != nil {
-			return err
-		}
-
-		defEntry := repo.Config.GetDefault(key)
-		if err := pair.SetDoc(defEntry.Docs); err != nil {
-			return err
-		}
-
-		defVal := fmt.Sprintf("%v", defEntry.Default)
-		if err := pair.SetDefault(defVal); err != nil {
-			return err
-		}
-
-		pair.SetNeedsRestart(defEntry.NeedsRestart)
-
-		if err := lst.Set(idx, pair); err != nil {
+		if err := capLst.Set(idx, *capPair); err != nil {
 			return err
 		}
 	}
 
-	return call.Results.SetAll(lst)
+	return call.Results.SetAll(capLst)
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
