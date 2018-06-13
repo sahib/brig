@@ -8,6 +8,16 @@
 // Using a wrong config key is seen as a bug and should be corrected immediately.
 // This allows this package to skip error handling on Get() and Set() entirely.
 // Also note that I'm not particularly proud of some parts of this code.
+//
+// In short: This config  does a few things different than the ones I saw for Go.
+// Instead of providing numerous possible sources and formats to save your config
+// it simply relies on YAML. The focus is not on ultimate convinience but on:
+//
+// - Providing meaningful validation and default values.
+// - Providing built-in documentation for all config values.
+// - Making it able to react on changed config values.
+// - Being usable from several go routines.
+// - In future: Provide an easy way to migrate configs.
 package config
 
 import (
