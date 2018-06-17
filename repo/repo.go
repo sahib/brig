@@ -14,6 +14,7 @@ import (
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/config"
+	"github.com/sahib/brig/defaults"
 )
 
 var (
@@ -109,7 +110,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	// Create a default config, only with the default keys applied:
-	cfg, err := config.Open(bytes.NewReader(nil), config.Defaults)
+	cfg, err := config.Open(bytes.NewReader(nil), defaults.Defaults)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 
 	defer cfgFd.Close()
 
-	cfg, err := config.Open(cfgFd, config.Defaults)
+	cfg, err := config.Open(cfgFd, defaults.Defaults)
 	if err != nil {
 		return nil, err
 	}
