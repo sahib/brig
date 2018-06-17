@@ -269,9 +269,7 @@ func TestValidation(t *testing.T) {
 		"enum-val": DefaultEntry{
 			Default:      "a",
 			NeedsRestart: false,
-			Validator: EnumValidator([]string{
-				"a", "b", "c",
-			}),
+			Validator:    EnumValidator("a", "b", "c"),
 		},
 	}
 
@@ -352,11 +350,4 @@ func TestOpenMalformed(t *testing.T) {
 	// Later one might want to add something like a fuzzer for this.
 	_, err := Open(bytes.NewReader(malformed), Defaults)
 	require.NotNil(t, err)
-}
-
-func ExampleConfig(t *testing.T) {
-	// Change notifications.
-	// Migration.
-	// Set (panic)
-	// TODO: write.
 }

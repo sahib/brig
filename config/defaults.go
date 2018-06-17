@@ -25,9 +25,9 @@ var Defaults = DefaultMapping{
 			"conflict_strategy": DefaultEntry{
 				Default:      "marker",
 				NeedsRestart: false,
-				Validator: EnumValidator([]string{
+				Validator: EnumValidator(
 					"marker", "ignore",
-				}),
+				),
 			},
 		},
 		"compress": DefaultMapping{
@@ -35,9 +35,9 @@ var Defaults = DefaultMapping{
 				Default:      "snappy",
 				NeedsRestart: false,
 				Docs:         "What compression algorithm to use by default",
-				Validator: EnumValidator([]string{
+				Validator: EnumValidator(
 					"snappy", "lz4", "none",
-				}),
+				),
 			},
 		},
 	},

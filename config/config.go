@@ -37,7 +37,7 @@ import (
 )
 
 // EnumValidator checks if the supplied string value is in the `options` list.
-func EnumValidator(options []string) func(val interface{}) error {
+func EnumValidator(options ...string) func(val interface{}) error {
 	return func(val interface{}) error {
 		s, ok := val.(string)
 		if !ok {
