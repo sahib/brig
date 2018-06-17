@@ -2,8 +2,10 @@ package config
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
+	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -216,23 +218,49 @@ func TestIsValidKey(t *testing.T) {
 }
 
 func TestCast(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), Defaults)
+	defaults := DefaultMapping{
+		"string": DefaultEntry{
+			Default: "a",
+		},
+		"int": DefaultEntry{
+			Default: 2,
+		},
+		"float": DefaultEntry{
+			Default: 3.0,
+		},
+		"bool": DefaultEntry{
+			Default: false,
+		},
+	}
+
+	cfg, err := Open(bytes.NewReader(nil), defaults)
 	require.Nil(t, err)
 
-	pathCast, err := cfg.Cast("data.ipfs.path", "test")
+	// Same string cast:
+	strCast, err := cfg.Cast("string", "test")
 	require.Nil(t, err)
-	require.Equal(t, "test", pathCast)
+	require.Equal(t, "test", strCast)
 
-	portCast, err := cfg.Cast("daemon.port", "123")
+	// Int cast:
+	intCast, err := cfg.Cast("int", "123")
 	require.Nil(t, err)
-	require.Equal(t, int64(123), portCast)
+	require.Equal(t, int64(123), intCast)
 
-	// Wrong cast type:
-	_, err = cfg.Cast("daemon.port", "im a string")
+	// Float cast:
+	floatCast, err := cfg.Cast("float", "5.0")
+	require.Nil(t, err)
+	require.Equal(t, float64(5.0), floatCast)
+
+	// Bool cast:
+	boolCast, err := cfg.Cast("bool", "true")
+	require.Nil(t, err)
+	require.Equal(t, true, boolCast)
+
+	// Wrong cast types:
+	_, err = cfg.Cast("int", "im a string")
 	require.NotNil(t, err)
 
-	// Also float should not cast right:
-	_, err = cfg.Cast("daemon.port", "2.0")
+	_, err = cfg.Cast("int", "2.0")
 	require.NotNil(t, err)
 }
 
@@ -259,4 +287,76 @@ func TestValidation(t *testing.T) {
 	require.NotNil(t, cfg.SetString("enum-val", "C"))
 	require.Nil(t, cfg.SetString("enum-val", "a"))
 	require.Equal(t, cfg.String("enum-val"), "a")
+}
+
+func TestIntvalidator(t *testing.T) {
+	vdt := IntRangeValidator(10, 100)
+	require.Contains(t, vdt("x").Error(), "is not an integer")
+	require.Contains(t, vdt(int64(9)).Error(), "may not be less than 10")
+	require.Contains(t, vdt(int64(101)).Error(), "may not be more than 100")
+
+	require.Nil(t, vdt(int64(10)))
+	require.Nil(t, vdt(int64(100)))
+	require.Nil(t, vdt(int64(50)))
+}
+
+func configMustEquals(t *testing.T, aCfg, bCfg *Config) {
+	require.Equal(t, aCfg.Keys(), bCfg.Keys())
+	for _, key := range aCfg.Keys() {
+		require.Equal(t, aCfg.Get(key), bCfg.Get(key), key)
+	}
+}
+
+func TestToFileFromFile(t *testing.T) {
+	cfg, err := Open(bytes.NewReader(nil), Defaults)
+	require.Nil(t, err)
+
+	path := "/tmp/brig-test-config.yml"
+	require.Nil(t, ToFile(path, cfg))
+
+	defer os.Remove(path)
+
+	loadCfg, err := FromFile(path, Defaults)
+	require.Nil(t, err)
+
+	configMustEquals(t, cfg, loadCfg)
+}
+
+func TestSetIncompatibleType(t *testing.T) {
+	cfg, err := Open(bytes.NewReader(nil), Defaults)
+	require.Nil(t, err)
+
+	require.NotNil(t, cfg.SetString("daemon.port", "xxx"))
+}
+
+func TestVersionPersisting(t *testing.T) {
+	cfg, err := Open(bytes.NewReader(nil), Defaults)
+	require.Nil(t, err)
+
+	require.Equal(t, Version(0), cfg.Version())
+	cfg.version = Version(1)
+
+	buf := &bytes.Buffer{}
+	require.Nil(t, cfg.Save(buf))
+
+	cfg, err = Open(bytes.NewReader(buf.Bytes()), Defaults)
+	require.Nil(t, err)
+
+	require.Equal(t, Version(1), cfg.Version())
+}
+
+func TestOpenMalformed(t *testing.T) {
+	malformed := testutil.CreateDummyBuf(1024)
+
+	// Not panicking here is okay for now as test.
+	// Later one might want to add something like a fuzzer for this.
+	_, err := Open(bytes.NewReader(malformed), Defaults)
+	require.NotNil(t, err)
+}
+
+func ExampleConfig(t *testing.T) {
+	// Change notifications.
+	// Migration.
+	// Set (panic)
+	// TODO: write.
 }

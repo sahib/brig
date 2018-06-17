@@ -100,6 +100,7 @@ type DefaultMapping map[interface{}]interface{}
 var (
 	typeIntPattern   = regexp.MustCompile(`u{0,1}int(64|32|16|8|)`)
 	typeFloatPattern = regexp.MustCompile(`float(32|64|)`)
+	versionTag       = regexp.MustCompile(`^# version:\s*(\d+).*`)
 )
 
 func getDefaultByKeys(keys []string, defaults DefaultMapping) *DefaultEntry {
@@ -187,6 +188,29 @@ func keys(root map[interface{}]interface{}, prefix []string, fn func(section map
 	return nil
 }
 
+func generalizeType(val interface{}) interface{} {
+	// Handle a few special cases here that come from go's type system.
+	// Doing something like this will lead to a panic:
+	//
+	//     interface{}(int(42)).(int64)
+	//
+	// Since this is a config we do not care very much for extremely
+	// big numbers and can therefore convert all numbers to int64.
+	// The code below does that + something similar for float{32,64}.
+
+	if typeIntPattern.MatchString(getTypeOf(val)) {
+		destType := reflect.TypeOf(int64(0))
+		val = reflect.ValueOf(val).Convert(destType).Int()
+	}
+
+	if typeFloatPattern.MatchString(getTypeOf(val)) {
+		destType := reflect.TypeOf(float64(0))
+		val = reflect.ValueOf(val).Convert(destType).Float()
+	}
+
+	return val
+}
+
 func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) error {
 	for keyVal := range overlay {
 		key, ok := keyVal.(string)
@@ -207,7 +231,7 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) err
 			}
 		case DefaultEntry:
 			if _, ok := base[key]; !ok {
-				base[key] = overlayChild.Default
+				base[key] = generalizeType(overlayChild.Default)
 			}
 		}
 	}
@@ -242,33 +266,17 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 			)
 		}
 
-		// Handle a few special cases here that come from go's type system.
-		// Doing something like this will lead to a panic:
-		//
-		//     interface{}(int(42)).(int64)
-		//
-		// Since this is a config we do not care very much for extremely
-		// big numbers and can therefore convert all numbers to int64.
-		// The code below does that + something similar for float{32,64}.
-
-		if typeIntPattern.MatchString(valType) {
-			destType := reflect.TypeOf(int64(0))
-			section[lastKey] = reflect.ValueOf(child).Convert(destType).Int()
-		}
-
-		if typeFloatPattern.MatchString(valType) {
-			destType := reflect.TypeOf(float64(0))
-			section[lastKey] = reflect.ValueOf(child).Convert(destType).Float()
-		}
+		child = generalizeType(child)
 
 		// Do user defined validation:
 		if defaultEntry.Validator != nil {
-			if err := defaultEntry.Validator(section[lastKey]); err != nil {
+			if err := defaultEntry.Validator(child); err != nil {
 				return err
 			}
 		}
 
-		// Valid key.
+		// Valid key. Set the value:
+		section[lastKey] = child
 		return nil
 	})
 
@@ -298,6 +306,7 @@ type Config struct {
 	memory          map[interface{}]interface{}
 	callbackCount   int
 	changeCallbacks map[string]map[int]callback
+	version         Version
 }
 
 func prefixKey(section, key string) string {
@@ -306,6 +315,24 @@ func prefixKey(section, key string) string {
 	}
 
 	return strings.Trim(section, ".") + "." + strings.Trim(key, ".")
+}
+
+func readVersionFromData(data []byte) (Version, error) {
+	match := versionTag.FindSubmatch(data)
+	if match == nil {
+		return 0, ErrNotVersioned
+	}
+
+	if len(match) < 2 {
+		return 0, ErrNotVersioned
+	}
+
+	version, err := strconv.ParseInt(string(match[1]), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return Version(version), nil
 }
 
 // Open creates a new config from the data in `r`.
@@ -318,6 +345,11 @@ func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
 
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
+		return nil, err
+	}
+
+	version, err := readVersionFromData(data)
+	if err != nil && err != ErrNotVersioned {
 		return nil, err
 	}
 
@@ -334,6 +366,7 @@ func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
 		mu:              &sync.Mutex{},
 		defaults:        defaults,
 		memory:          memory,
+		version:         version,
 		changeCallbacks: make(map[string]map[int]callback),
 	}, nil
 }
@@ -348,11 +381,14 @@ func (cfg *Config) Save(w io.Writer) error {
 		return err
 	}
 
-	if _, err := w.Write(data); err != nil {
-		return err
-	}
+	// Build the version header:
+	header := []byte(fmt.Sprintf(
+		"# version: %d (DO NOT MODIFY THIS LINE)\n",
+		cfg.version,
+	))
 
-	return nil
+	_, err = w.Write(append(header, data...))
+	return err
 }
 
 ////////////
@@ -425,11 +461,9 @@ func (cfg *Config) set(key string, val interface{}) error {
 	valType := getTypeOf(val)
 
 	if !isCompatibleType(defType, valType) {
-		panic(
-			fmt.Sprintf(
-				"bug: wrong type in set for key `%v`: want: %v but got %v",
-				key, defType, valType,
-			),
+		return fmt.Errorf(
+			"wrong type in set for key `%v`: want: %v but got %v",
+			key, defType, valType,
 		)
 	}
 
@@ -634,6 +668,7 @@ func (cfg *Config) Keys() []string {
 	return allKeys
 }
 
+// Section returns a new config that
 func (cfg *Config) Section(section string) *Config {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -703,6 +738,16 @@ func (cfg *Config) Cast(key, val string) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+// Version returns the version of the config
+// The initial version is always 0.
+// It will be only updated by migrating to newer versions.
+func (cfg *Config) Version() Version {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	return cfg.version
 }
 
 // FromFile creates a new config from the YAML file located at `path`

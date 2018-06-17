@@ -20,7 +20,7 @@ var Defaults = DefaultMapping{
 			"ignore_moved": DefaultEntry{
 				Default:      false,
 				NeedsRestart: false,
-				Docs:         "Do not move wha the remote moved",
+				Docs:         "Do not move what the remote moved",
 			},
 			"conflict_strategy": DefaultEntry{
 				Default:      "marker",
