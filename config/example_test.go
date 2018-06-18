@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"testing"
 )
 
 /////////////////////////
@@ -48,7 +47,7 @@ var ExampleDefaultsV0 = DefaultMapping{
 	},
 }
 
-func ExampleConfig(t *testing.T) {
+func ExampleConfig() {
 	// You either open it via existing yaml data - or in case of the initial
 	// write, you just let it take over the defaults. This is also the step
 	// where the first validation happens.
@@ -70,7 +69,7 @@ func ExampleConfig(t *testing.T) {
 	// you can just get a list of all default entries:
 	for _, key := range cfg.Keys() {
 		entry := cfg.GetDefault(key)
-		fmt.Printf("%s: %s (restart: %t)", key, entry.Docs, entry.NeedsRestart)
+		fmt.Printf("%s: %s (restart: %t)\n", key, entry.Docs, entry.NeedsRestart)
 	}
 
 	// If you have only a string (e.g. from a cmdline config set),
@@ -108,7 +107,18 @@ func ExampleConfig(t *testing.T) {
 		log.Fatalf("Failed to save config: %v", err)
 	}
 
-	fmt.Println(string(buf.Bytes()))
+	fmt.Println(buf.String())
+
+	// Output: backend.name: Choose what backend you want to use. (restart: true)
+	// backend.workers: How many workers to start. (restart: false)
+	// ui.show_tooltips: Show tooltips when you least expect them (restart: false)
+	// # version: 0 (DO NOT MODIFY THIS LINE)
+	// backend:
+	//   name: the_good_one
+	//   workers: 15
+	// ui:
+	//   show_tooltips: true
+	//
 }
 
 /////////////////////////////
@@ -147,7 +157,7 @@ var ExampleDefaultsV1 = DefaultMapping{
 	},
 }
 
-func ExampleMigration(t *testing.T) {
+func ExampleMigration() {
 	// This config package optionally supports versioned configs.
 	// Whenever you decide to change the layout of the config,
 	// you can bump the version and register a new migration func
@@ -167,7 +177,7 @@ func ExampleMigration(t *testing.T) {
 				// Do something based on the old config key:
 				return newCfg.SetFloat(
 					"backend.accuracy",
-					float64(oldCfg.Int("backend.name"))+0.5,
+					float64(oldCfg.Int("backend.workers"))+0.5,
 				)
 			default:
 				return fmt.Errorf("Incomplete migration for key: %v", key)
@@ -198,5 +208,12 @@ backend:
 	// If you print it, you will notice a changed version tag:
 	buf := &bytes.Buffer{}
 	cfg.Save(buf)
-	fmt.Println(buf.Bytes())
+	fmt.Println(buf.String())
+
+	// Output: # version: 1 (DO NOT MODIFY THIS LINE)
+	// backend:
+	//   accuracy: 10.5
+	//   name: the_good_one
+	// ui:
+	//   show_tooltips: true
 }

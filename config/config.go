@@ -14,9 +14,13 @@
 // it simply relies on YAML. The focus is not on ultimate convinience but on:
 //
 // - Providing meaningful validation and default values.
+//
 // - Providing built-in documentation for all config values.
+//
 // - Making it able to react on changed config values.
+//
 // - Being usable from several go routines.
+//
 // - In future: Provide an easy way to migrate configs.
 package config
 
@@ -24,7 +28,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -59,11 +62,15 @@ type DefaultEntry struct {
 type DefaultMapping map[interface{}]interface{}
 
 var (
-	typeIntPattern   = regexp.MustCompile(`u{0,1}int(64|32|16|8|)`)
+	// all types that we will cast into int64
+	typeIntPattern = regexp.MustCompile(`u{0,1}int(64|32|16|8|)`)
+	// all types that we will cast into float64
 	typeFloatPattern = regexp.MustCompile(`float(32|64|)`)
-	versionTag       = regexp.MustCompile(`^# version:\s*(\d+).*`)
+	// pattern for the version tag
+	versionTag = regexp.MustCompile(`^# version:\s*(\d+).*`)
 )
 
+// recursive implementation of getDefaultByKey
 func getDefaultByKeys(keys []string, defaults DefaultMapping) *DefaultEntry {
 	if len(keys) == 0 {
 		return nil
@@ -76,6 +83,7 @@ func getDefaultByKeys(keys []string, defaults DefaultMapping) *DefaultEntry {
 
 	defaultEntry, ok := child.(DefaultEntry)
 	if ok {
+		// did we really consume all keys?
 		if len(keys) > 1 {
 			return nil
 		}
@@ -172,6 +180,7 @@ func generalizeType(val interface{}) interface{} {
 	return val
 }
 
+// fill up any not explictly set key with default values
 func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) error {
 	for keyVal := range overlay {
 		key, ok := keyVal.(string)
@@ -200,6 +209,7 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) err
 	return nil
 }
 
+// validationChecker validates the incoming config
 func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping, prefix []string) error {
 	err := keys(root, nil, func(section map[interface{}]interface{}, key []string) error {
 		// It's a scalar key. Let's run some diagnostics.
@@ -251,12 +261,13 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 
 ////////////
 
-type callback struct {
+// keyChangedEvent is a single entry added by AddChangedKeyEvent
+type keyChangedEvent struct {
 	fn  func(key string)
 	key string
 }
 
-// Config s a helper that built is around a YAML file.
+// Config s a helper that is built around a YAML file.
 // It supports typed gets and sets, change notifications and
 // basic validation with defaults.
 type Config struct {
@@ -266,7 +277,7 @@ type Config struct {
 	defaults        DefaultMapping
 	memory          map[interface{}]interface{}
 	callbackCount   int
-	changeCallbacks map[string]map[int]callback
+	changeCallbacks map[string]map[int]keyChangedEvent
 	version         Version
 }
 
@@ -328,7 +339,7 @@ func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
 		defaults:        defaults,
 		memory:          memory,
 		version:         version,
-		changeCallbacks: make(map[string]map[int]callback),
+		changeCallbacks: make(map[string]map[int]keyChangedEvent),
 	}, nil
 }
 
@@ -402,7 +413,7 @@ func (cfg *Config) set(key string, val interface{}) error {
 	cfg.mu.Lock()
 
 	key = prefixKey(cfg.section, key)
-	callbacks := []callback{}
+	callbacks := []keyChangedEvent{}
 	defer func() {
 		// Call the callbacks without the lock:
 		for _, callback := range callbacks {
@@ -469,7 +480,7 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	event := callback{
+	event := keyChangedEvent{
 		fn:  fn,
 		key: key,
 	}
@@ -484,7 +495,7 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 
 	callbacks, ok := cfg.changeCallbacks[key]
 	if !ok {
-		callbacks = make(map[int]callback)
+		callbacks = make(map[int]keyChangedEvent)
 		cfg.changeCallbacks[key] = callbacks
 	}
 
@@ -635,10 +646,10 @@ func (cfg *Config) Section(section string) *Config {
 	defer cfg.mu.Unlock()
 
 	childCallbackCount := cfg.callbackCount
-	childChangeCallbacks := make(map[string]map[int]callback)
+	childChangeCallbacks := make(map[string]map[int]keyChangedEvent)
 
 	for key, bucket := range cfg.changeCallbacks {
-		childBucket := make(map[int]callback)
+		childBucket := make(map[int]keyChangedEvent)
 		childChangeCallbacks[key] = childBucket
 		for _, callback := range bucket {
 			childBucket[childCallbackCount] = callback
@@ -709,26 +720,4 @@ func (cfg *Config) Version() Version {
 	defer cfg.mu.Unlock()
 
 	return cfg.version
-}
-
-// FromFile creates a new config from the YAML file located at `path`
-func FromFile(path string, defaults DefaultMapping) (*Config, error) {
-	fd, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer fd.Close()
-	return Open(fd, defaults)
-}
-
-// ToFile saves `cfg` as YAML at a file located at `path`.
-func ToFile(path string, cfg *Config) error {
-	fd, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
-	return cfg.Save(fd)
 }
