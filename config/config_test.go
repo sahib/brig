@@ -322,40 +322,6 @@ func TestCast(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestValidation(t *testing.T) {
-	defaults := DefaultMapping{
-		"enum-val": DefaultEntry{
-			Default:      "a",
-			NeedsRestart: false,
-			Validator:    EnumValidator("a", "b", "c"),
-		},
-	}
-
-	// Check initial validation:
-	_, err := Open(bytes.NewReader([]byte("enum-val: d")), defaults)
-	require.NotNil(t, err)
-
-	cfg, err := Open(bytes.NewReader([]byte("enum-val: c")), defaults)
-	require.Nil(t, err)
-	require.Equal(t, cfg.String("enum-val"), "c")
-
-	// Set an invalid enum value:
-	require.NotNil(t, cfg.SetString("enum-val", "C"))
-	require.Nil(t, cfg.SetString("enum-val", "a"))
-	require.Equal(t, cfg.String("enum-val"), "a")
-}
-
-func TestIntvalidator(t *testing.T) {
-	vdt := IntRangeValidator(10, 100)
-	require.Contains(t, vdt("x").Error(), "is not an integer")
-	require.Contains(t, vdt(int64(9)).Error(), "may not be less than 10")
-	require.Contains(t, vdt(int64(101)).Error(), "may not be more than 100")
-
-	require.Nil(t, vdt(int64(10)))
-	require.Nil(t, vdt(int64(100)))
-	require.Nil(t, vdt(int64(50)))
-}
-
 func configMustEquals(t *testing.T, aCfg, bCfg *Config) {
 	require.Equal(t, aCfg.Keys(), bCfg.Keys())
 	for _, key := range aCfg.Keys() {
