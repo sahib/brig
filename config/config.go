@@ -326,6 +326,51 @@ func open(version Version, memory map[interface{}]interface{}, defaults DefaultM
 	}, nil
 }
 
+// Reload re-sets all values in the config to the data in `dec`.
+// If `dec` is nil, all default values will be returned.
+// All callbacks for registered keys that do not exist anymore
+// are removed and will not be called.
+//
+// Note that you cannot pass different defaults on Reload,
+// since this might alter the structure of the config,
+// potentially causing incompatibillies.
+func (cfg *Config) Reload(dec Decoder) error {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	var memory map[interface{}]interface{}
+	var version Version
+	var err error
+
+	if dec != nil {
+		version, memory, err = dec.Decode()
+		if err != nil {
+			return err
+		}
+	} else {
+		memory = make(map[interface{}]interface{})
+		version = Version(0)
+	}
+
+	if err := validationChecker(memory, cfg.defaults); err != nil {
+		return e.Wrapf(err, "validate")
+	}
+
+	cfg.memory = memory
+	cfg.version = version
+
+	// Only allow callbacks for keys that are actually still valid:
+	newChangeCallbacks := make(map[string]map[int]keyChangedEvent)
+	for key := range cfg.changeCallbacks {
+		if cfg.IsValidKey(key) {
+			newChangeCallbacks[key] = cfg.changeCallbacks[key]
+		}
+	}
+
+	cfg.changeCallbacks = newChangeCallbacks
+	return nil
+}
+
 // Save will write a YAML representation of the current config to `w`.
 func (cfg *Config) Save(enc Encoder) error {
 	cfg.mu.Lock()
@@ -446,13 +491,13 @@ func (cfg *Config) set(key string, val interface{}) error {
 
 ////////////
 
-// AddChangedKeyEvent registers a callback to be called when `key` is changed.
+// AddEvent registers a callback to be called when `key` is changed.
 // Special case: if key is the empy string, the registered callback will get
 // called for every change (with the respective key)
 // This function supports registering several callbacks for the same `key`.
-// The returned id can be used to unregister a callback with RemoveChangedKeyEvent()
+// The returned id can be used to unregister a callback with RemoveEvent()
 // Note: This function will panic when using an invalid key.
-func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
+func (cfg *Config) AddEvent(key string, fn func(key string)) int {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
@@ -483,8 +528,8 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 	return oldCount
 }
 
-// RemoveChangedKeyEvent removes a previously registered callback.
-func (cfg *Config) RemoveChangedKeyEvent(id int) {
+// RemoveEvent removes a previously registered callback.
+func (cfg *Config) RemoveEvent(id int) {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
@@ -499,6 +544,14 @@ func (cfg *Config) RemoveChangedKeyEvent(id int) {
 	for _, key := range toDelete {
 		delete(cfg.changeCallbacks, key)
 	}
+}
+
+// ClearEvents removes all registered events.
+func (cfg *Config) ClearEvents() {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	cfg.changeCallbacks = make(map[string]map[int]keyChangedEvent)
 }
 
 ////////////

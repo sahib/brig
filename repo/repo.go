@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -110,13 +109,13 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	// Create a default config, only with the default keys applied:
-	cfg, err := config.Open(bytes.NewReader(nil), defaults.Defaults)
+	cfg, err := config.Open(nil, defaults.Defaults)
 	if err != nil {
 		return err
 	}
 
 	configPath := filepath.Join(baseFolder, "config.yml")
-	if err := config.ToFile(configPath, cfg); err != nil {
+	if err := config.ToYamlFile(configPath, cfg); err != nil {
 		return e.Wrap(err, "Failed to setup default config")
 	}
 
@@ -220,7 +219,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 
 	defer cfgFd.Close()
 
-	cfg, err := config.Open(cfgFd, defaults.Defaults)
+	cfg, err := config.Open(config.NewYamlDecoder(cfgFd), defaults.Defaults)
 	if err != nil {
 		return nil, err
 	}

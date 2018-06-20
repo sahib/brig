@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/sahib/brig/util/testutil"
@@ -144,7 +145,7 @@ func TestAddChangeSignal(t *testing.T) {
 	require.Nil(t, err)
 
 	callCount := 0
-	cbID := cfg.AddChangedKeyEvent("data.ipfs.path", func(key string) {
+	cbID := cfg.AddEvent("data.ipfs.path", func(key string) {
 		require.Equal(t, "new-value", cfg.String("data.ipfs.path"))
 		callCount++
 	})
@@ -157,7 +158,7 @@ func TestAddChangeSignal(t *testing.T) {
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
 
-	cfg.RemoveChangedKeyEvent(cbID)
+	cfg.RemoveEvent(cbID)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 1, callCount)
 }
@@ -167,7 +168,7 @@ func TestAddChangeSignalAll(t *testing.T) {
 	require.Nil(t, err)
 
 	callCount := 0
-	cbID := cfg.AddChangedKeyEvent("", func(key string) {
+	cbID := cfg.AddEvent("", func(key string) {
 		callCount++
 	})
 
@@ -177,7 +178,7 @@ func TestAddChangeSignalAll(t *testing.T) {
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 2, callCount)
 
-	cfg.RemoveChangedKeyEvent(cbID)
+	cfg.RemoveEvent(cbID)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 2, callCount)
 }
@@ -251,7 +252,7 @@ func TestSectionSignals(t *testing.T) {
 	require.Nil(t, err)
 
 	parentCallCount := 0
-	parentID := cfg.AddChangedKeyEvent("fs.compress.default_algo", func(key string) {
+	parentID := cfg.AddEvent("fs.compress.default_algo", func(key string) {
 		require.Equal(t, "fs.compress.default_algo", key)
 		parentCallCount++
 	})
@@ -259,7 +260,7 @@ func TestSectionSignals(t *testing.T) {
 	fsSec := cfg.Section("fs")
 
 	childCallCount := 0
-	childID := fsSec.AddChangedKeyEvent("compress.default_algo", func(key string) {
+	childID := fsSec.AddEvent("compress.default_algo", func(key string) {
 		require.Equal(t, "compress.default_algo", key)
 		childCallCount++
 	})
@@ -270,8 +271,8 @@ func TestSectionSignals(t *testing.T) {
 	require.Equal(t, 2, parentCallCount)
 	require.Equal(t, 1, childCallCount)
 
-	fsSec.RemoveChangedKeyEvent(childID)
-	cfg.RemoveChangedKeyEvent(parentID)
+	fsSec.RemoveEvent(childID)
+	cfg.RemoveEvent(parentID)
 }
 
 func TestIsValidKey(t *testing.T) {
@@ -381,4 +382,21 @@ func TestOpenMalformed(t *testing.T) {
 	// Later one might want to add something like a fuzzer for this.
 	_, err := openFromData(malformed, TestDefaults)
 	require.NotNil(t, err)
+}
+
+func TestReload(t *testing.T) {
+	cfg, err := Open(nil, TestDefaultsV0)
+	require.Nil(t, err)
+
+	text := `# version: 666
+a:
+  b: 70
+  child:
+    c: "world"
+`
+
+	require.Nil(t, cfg.Reload(NewYamlDecoder(strings.NewReader(text))))
+	require.Equal(t, int64(70), cfg.Int("a.b"))
+	require.Equal(t, "world", cfg.String("a.child.c"))
+	require.Equal(t, Version(666), cfg.Version())
 }

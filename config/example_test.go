@@ -89,12 +89,12 @@ func ExampleOpen() {
 	// Want to know if something changed?
 	// Just register a callback for it. If you pass an empty string,
 	// you'll get callbacks for every set.
-	cid := cfg.AddChangedKeyEvent("backend.workers", func(key string) {
+	cid := cfg.AddEvent("backend.workers", func(key string) {
 		fmt.Println("Key was changed:", key)
 	})
 
 	// You can get rid of callbacks too of course:
-	cfg.RemoveChangedKeyEvent(cid)
+	cfg.RemoveEvent(cid)
 
 	// One nifty feature is to pass only a sub section of the config
 	// to specific parts of the program - Which saves you from typing
