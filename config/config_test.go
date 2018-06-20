@@ -157,7 +157,7 @@ func TestAddChangeSignal(t *testing.T) {
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
 
-	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
+	cfg.RemoveChangedKeyEvent(cbID)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 1, callCount)
 }
@@ -177,7 +177,7 @@ func TestAddChangeSignalAll(t *testing.T) {
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 2, callCount)
 
-	require.Nil(t, cfg.RemoveChangedKeyEvent(cbID))
+	cfg.RemoveChangedKeyEvent(cbID)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "newer-value"))
 	require.Equal(t, 2, callCount)
 }
@@ -270,9 +270,8 @@ func TestSectionSignals(t *testing.T) {
 	require.Equal(t, 2, parentCallCount)
 	require.Equal(t, 1, childCallCount)
 
-	require.Nil(t, fsSec.RemoveChangedKeyEvent(childID))
-	require.Nil(t, cfg.RemoveChangedKeyEvent(parentID))
-
+	fsSec.RemoveChangedKeyEvent(childID)
+	cfg.RemoveChangedKeyEvent(parentID)
 }
 
 func TestIsValidKey(t *testing.T) {

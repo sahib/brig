@@ -36,7 +36,8 @@ import (
 )
 
 // DefaultEntry represents the metadata for a default value in the config.
-// Every possible key has to have a DefaultEntry.
+// Every possible key has to have a DefaultEntry, otherwise Get() and Set()
+// will panic at you since this is considered a programmer error.
 type DefaultEntry struct {
 	// Default is the fallback value for this config key.
 	// The confg type will be inferred from its literal type.
@@ -162,7 +163,6 @@ func generalizeType(val interface{}) interface{} {
 	// Since this is a config we do not care very much for extremely
 	// big numbers and can therefore convert all numbers to int64.
 	// The code below does that + something similar for float{32,64}.
-
 	if typeIntPattern.MatchString(getTypeOf(val)) {
 		destType := reflect.TypeOf(int64(0))
 		val = reflect.ValueOf(val).Convert(destType).Int()
@@ -263,7 +263,7 @@ type keyChangedEvent struct {
 	key string
 }
 
-// Config s a helper that is built around a YAML file.
+// Config is a helper that is built around a YAML file.
 // It supports typed gets and sets, change notifications and
 // basic validation with defaults.
 type Config struct {
@@ -285,9 +285,10 @@ func prefixKey(section, key string) string {
 	return strings.Trim(section, ".") + "." + strings.Trim(key, ".")
 }
 
-// Open creates a new config from the data in `r`.
-// The mapping in `defaults ` tells the config which keys to expect
-// and what type each of it should have.
+// Open creates a new config from the data in `r`. The mapping in `defaults `
+// tells the config which keys to expect and what type each of it should have.
+// It is allowed to pass `nil` as decoder. In this case a config purely with
+// default values will be created.
 func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
 	if defaults == nil {
 		return nil, fmt.Errorf("need a default mapping")
@@ -310,6 +311,7 @@ func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
 	return open(version, memory, defaults)
 }
 
+// open does the actual struct creation. It is also used by the migrater.
 func open(version Version, memory map[interface{}]interface{}, defaults DefaultMapping) (*Config, error) {
 	if err := validationChecker(memory, defaults); err != nil {
 		return nil, e.Wrapf(err, "validate")
@@ -482,8 +484,7 @@ func (cfg *Config) AddChangedKeyEvent(key string, fn func(key string)) int {
 }
 
 // RemoveChangedKeyEvent removes a previously registered callback.
-// Note: This function will panic when using an invalid key.
-func (cfg *Config) RemoveChangedKeyEvent(id int) error {
+func (cfg *Config) RemoveChangedKeyEvent(id int) {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
@@ -498,8 +499,6 @@ func (cfg *Config) RemoveChangedKeyEvent(id int) error {
 	for _, key := range toDelete {
 		delete(cfg.changeCallbacks, key)
 	}
-
-	return nil
 }
 
 ////////////
@@ -655,13 +654,12 @@ func (cfg *Config) IsValidKey(key string) bool {
 	return getDefaultByKey(key, cfg.defaults) != nil
 }
 
-// Cast takes `val` and reads the type of `key`.
-// It then tries to convert it to one of the supported types
-// (and possibly fails due to that)
+// Cast takes `val` and reads the type of `key`.  It then tries to convert it
+// to one of the supported types (and possibly fails due to that)
 //
-// This cast assumes that `val` is always a string,
-// which is useful for data coming fom the client.
-// Note: This function will panic if the key does not exist.
+// This cast assumes that `val` is always a string, which is useful for data
+// coming fom the client.  Note: This function will panic if the key does not
+// exist.
 func (cfg *Config) Cast(key, val string) (interface{}, error) {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -686,8 +684,7 @@ func (cfg *Config) Cast(key, val string) (interface{}, error) {
 	return nil, nil
 }
 
-// Version returns the version of the config
-// The initial version is always 0.
+// Version returns the version of the config The initial version is always 0.
 // It will be only updated by migrating to newer versions.
 func (cfg *Config) Version() Version {
 	cfg.mu.Lock()

@@ -47,7 +47,8 @@ var ExampleDefaultsV0 = DefaultMapping{
 	},
 }
 
-func ExampleConfig() {
+// Basic usage example:
+func ExampleOpen() {
 	// You either open it via existing yaml data - or in case of the initial
 	// write, you just let it take over the defaults. This is also the step
 	// where the first validation happens.
@@ -157,7 +158,7 @@ var ExampleDefaultsV1 = DefaultMapping{
 	},
 }
 
-func ExampleMigration() {
+func ExampleMigrate() {
 	// This config package optionally supports versioned configs.
 	// Whenever you decide to change the layout of the config,
 	// you can bump the version and register a new migration func

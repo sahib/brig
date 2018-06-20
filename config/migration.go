@@ -11,11 +11,11 @@ import (
 var (
 	// ErrNotVersioned is returned by Migrate() when it can't find the version tag.
 	// If that happens you can still try to Open() the config normally.
-	ErrNotVersioned = errors.New("Passed in config has no valid version tag")
+	ErrNotVersioned = errors.New("config has no valid version tag")
 )
 
 // Version specifies the version of the config.  The exact number does not
-// matter; the migration only cares about less or more.  It's recommended to
+// matter; the migration only cares about less or more. It's recommended to
 // use successive numbers though. The first version is 0.
 type Version int
 
@@ -143,8 +143,8 @@ func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
 // It can be seen as an migration capable version of config.Open().  Instead of
 // directly passing the defaults you register a number of migrations (each with
 // their own migration func, defaults and version).  The actual work is done by
-// the migration functions which are written by the caller of this API - with
-// some utility methods.
+// the migration functions which are written by the caller of this API.
+// The caller defined migration method will likely call MigrateKeys() though.
 //
 // Call Migrate() on the migrater will read the current version and
 // try to migrate to the most recent one.
@@ -154,11 +154,12 @@ func NewMigrater(currentVersion Version) *Migrater {
 	}
 }
 
-// MigrateKeys is a helper function to write migrations easily.  It takes the
+// MigrateKeys is a helper function to write migrations easily. It takes the
 // old and new config and copies all keys that are compatible (i.e. same key,
 // same type). If calls fn() on any key that exists in the new config and not
-// in the old config. If any error occurs (e.g. wrong type) fn is also called.
-// If fn returns a non-nil error this method stops and returns the error.
+// in the old config (i.e. new keys). If any error occurs during set (e.g.
+// wrong type) fn is also called.  If fn returns a non-nil error this method
+// stops and returns the error.
 func MigrateKeys(oldCfg, newCfg *Config, fn func(key string, err error) error) error {
 	for _, newKey := range newCfg.Keys() {
 		var fnErr error
