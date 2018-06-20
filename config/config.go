@@ -7,7 +7,6 @@
 // Note that passing invalid keys to a few methods will cause a panic - on purpose.
 // Using a wrong config key is seen as a bug and should be corrected immediately.
 // This allows this package to skip error handling on Get() and Set() entirely.
-// Also note that I'm not particularly proud of some parts of this code.
 //
 // In short: This config  does a few things different than the ones I saw for Go.
 // Instead of providing numerous possible sources and formats to save your config
@@ -26,8 +25,6 @@ package config
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"reflect"
 	"regexp"
 	"sort"
@@ -36,7 +33,6 @@ import (
 	"sync"
 
 	e "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 // DefaultEntry represents the metadata for a default value in the config.
@@ -180,7 +176,7 @@ func generalizeType(val interface{}) interface{} {
 	return val
 }
 
-// fill up any not explictly set key with default values
+// fill up any not explicitly set key with default values
 func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) error {
 	for keyVal := range overlay {
 		key, ok := keyVal.(string)
@@ -210,7 +206,7 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) err
 }
 
 // validationChecker validates the incoming config
-func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping, prefix []string) error {
+func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping) error {
 	err := keys(root, nil, func(section map[interface{}]interface{}, key []string) error {
 		// It's a scalar key. Let's run some diagnostics.
 		lastKey := key[len(key)-1]
@@ -289,48 +285,33 @@ func prefixKey(section, key string) string {
 	return strings.Trim(section, ".") + "." + strings.Trim(key, ".")
 }
 
-func readVersionFromData(data []byte) (Version, error) {
-	match := versionTag.FindSubmatch(data)
-	if match == nil {
-		return 0, ErrNotVersioned
-	}
-
-	if len(match) < 2 {
-		return 0, ErrNotVersioned
-	}
-
-	version, err := strconv.ParseInt(string(match[1]), 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return Version(version), nil
-}
-
 // Open creates a new config from the data in `r`.
 // The mapping in `defaults ` tells the config which keys to expect
 // and what type each of it should have.
-func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
+func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
 	if defaults == nil {
 		return nil, fmt.Errorf("need a default mapping")
 	}
 
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
+	var memory map[interface{}]interface{}
+	var version Version
+	var err error
+
+	if dec != nil {
+		version, memory, err = dec.Decode()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		memory = make(map[interface{}]interface{})
+		version = Version(0)
 	}
 
-	version, err := readVersionFromData(data)
-	if err != nil && err != ErrNotVersioned {
-		return nil, err
-	}
+	return open(version, memory, defaults)
+}
 
-	memory := make(map[interface{}]interface{})
-	if err := yaml.Unmarshal(data, memory); err != nil {
-		return nil, err
-	}
-
-	if err := validationChecker(memory, defaults, []string{}); err != nil {
+func open(version Version, memory map[interface{}]interface{}, defaults DefaultMapping) (*Config, error) {
+	if err := validationChecker(memory, defaults); err != nil {
 		return nil, e.Wrapf(err, "validate")
 	}
 
@@ -344,23 +325,11 @@ func Open(r io.Reader, defaults DefaultMapping) (*Config, error) {
 }
 
 // Save will write a YAML representation of the current config to `w`.
-func (cfg *Config) Save(w io.Writer) error {
+func (cfg *Config) Save(enc Encoder) error {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	data, err := yaml.Marshal(cfg.memory)
-	if err != nil {
-		return err
-	}
-
-	// Build the version header:
-	header := []byte(fmt.Sprintf(
-		"# version: %d (DO NOT MODIFY THIS LINE)\n",
-		cfg.version,
-	))
-
-	_, err = w.Write(append(header, data...))
-	return err
+	return enc.Encode(cfg.version, cfg.memory)
 }
 
 ////////////
@@ -408,6 +377,22 @@ func (cfg *Config) get(key string) interface{} {
 	return parent[base]
 }
 
+// call this with cfg.mu locked!
+func (cfg *Config) gatherCallbacks(key string) []keyChangedEvent {
+	callbacks := []keyChangedEvent{}
+	for _, ckey := range []string{key, ""} {
+		if ckey == "" || strings.HasPrefix(ckey, cfg.section) {
+			if bucket, ok := cfg.changeCallbacks[ckey]; ok {
+				for _, callback := range bucket {
+					callbacks = append(callbacks, callback)
+				}
+			}
+		}
+	}
+
+	return callbacks
+}
+
 // set is worker behind the Set*() methods.
 func (cfg *Config) set(key string, val interface{}) error {
 	cfg.mu.Lock()
@@ -453,18 +438,7 @@ func (cfg *Config) set(key string, val interface{}) error {
 	}
 
 	parent[base] = val
-
-	// Gather callbacks while still holding the lock:
-	for _, ckey := range []string{key, ""} {
-		if ckey == "" || strings.HasPrefix(ckey, cfg.section) {
-			if bucket, ok := cfg.changeCallbacks[ckey]; ok {
-				for _, callback := range bucket {
-					callbacks = append(callbacks, callback)
-				}
-			}
-		}
-	}
-
+	callbacks = cfg.gatherCallbacks(key)
 	return nil
 }
 

@@ -1,11 +1,8 @@
 package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"sort"
 
 	e "github.com/pkg/errors"
@@ -24,7 +21,7 @@ type Version int
 
 // Migration is a function that is executed to replicate the changes between to
 // versions. It should modify `newCfg` in a way so all keys from `oldCfg` that
-// were portable are transfered.
+// were portable are transferred.
 type Migration func(oldCfg, newConfig *Config) error
 
 type migrationEntry struct {
@@ -97,16 +94,8 @@ func (mm *Migrater) biggerThan(version Version) []migrationEntry {
 
 // Migrate somehow? detects the version of the config read from `r`
 // tries to find the correct
-func (mm *Migrater) Migrate(r io.Reader) (*Config, error) {
-	// Current implementation doesn't do any partial parsing.
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Try to get the version tag from the stream.
-	// It's a comment before the actual yaml starts.
-	currVersion, err := readVersionFromData(data)
+func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
+	currVersion, memory, err := dec.Decode()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +107,7 @@ func (mm *Migrater) Migrate(r io.Reader) (*Config, error) {
 		return nil, fmt.Errorf("There are no defaults for `%d`", currVersion)
 	}
 
-	cfg, err := Open(bytes.NewReader(data), currMig.defaults)
+	cfg, err := open(currVersion, memory, currMig.defaults)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +120,7 @@ func (mm *Migrater) Migrate(r io.Reader) (*Config, error) {
 		}
 
 		// Create an empty default config:
-		newCfg, err := Open(bytes.NewReader(nil), migration.defaults)
+		newCfg, err := Open(nil, migration.defaults)
 		if err != nil {
 			return nil, e.Wrapf(err, "failed creating default config for v%d", migration.version)
 		}

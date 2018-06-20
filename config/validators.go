@@ -50,12 +50,12 @@ func FloatRangeValidator(min, max float64) func(val interface{}) error {
 			return fmt.Errorf("value is not a float64: %v", val)
 		}
 
-		if i < min {
-			return fmt.Errorf("value may not be less than %f", min)
-		}
-
 		if i > max {
 			return fmt.Errorf("value may not be more than %f", max)
+		}
+
+		if i < min {
+			return fmt.Errorf("value may not be less than %f", min)
 		}
 
 		return nil

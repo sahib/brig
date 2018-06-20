@@ -2,8 +2,8 @@ package config
 
 import "os"
 
-// FromFile creates a new config from the YAML file located at `path`
-func FromFile(path string, defaults DefaultMapping) (cfg *Config, err error) {
+// FromYamlFile creates a new config from the YAML file located at `path`
+func FromYamlFile(path string, defaults DefaultMapping) (cfg *Config, err error) {
 	fd, fErr := os.Open(path)
 	if fErr != nil {
 		return nil, fErr
@@ -15,12 +15,12 @@ func FromFile(path string, defaults DefaultMapping) (cfg *Config, err error) {
 		}
 	}()
 
-	cfg, err = Open(fd, defaults)
-	return
+	cfg, err = Open(NewYamlDecoder(fd), defaults)
+	return cfg, err
 }
 
-// ToFile saves `cfg` as YAML at a file located at `path`.
-func ToFile(path string, cfg *Config) (err error) {
+// ToYamlFile saves `cfg` as YAML at a file located at `path`.
+func ToYamlFile(path string, cfg *Config) (err error) {
 	fd, fErr := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if fErr != nil {
 		return fErr
@@ -32,6 +32,5 @@ func ToFile(path string, cfg *Config) (err error) {
 		}
 	}()
 
-	err = cfg.Save(fd)
-	return
+	return cfg.Save(NewYamlEncoder(fd))
 }

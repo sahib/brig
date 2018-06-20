@@ -53,12 +53,12 @@ func migrateToV1(oldCfg, newCfg *Config) error {
 }
 
 func createInitialConfigData(t *testing.T) []byte {
-	cfg, err := Open(bytes.NewReader(nil), TestDefaultsV0)
+	cfg, err := Open(nil, TestDefaultsV0)
 	require.Nil(t, err)
 	require.Equal(t, Version(0), cfg.Version())
 
 	buf := &bytes.Buffer{}
-	require.Nil(t, cfg.Save(buf))
+	require.Nil(t, cfg.Save(NewYamlEncoder(buf)))
 	return buf.Bytes()
 }
 
@@ -99,11 +99,11 @@ func TestBasicMigration(t *testing.T) {
 	mgr := NewMigrater(1)
 	mgr.Add(0, nil, TestDefaultsV0)
 	mgr.Add(1, migrateToV1, TestDefaultsV1)
-	cfg, err := mgr.Migrate(bytes.NewReader(initialData))
+	cfg, err := mgr.Migrate(NewYamlDecoder(bytes.NewReader(initialData)))
 	require.Nil(t, err)
 
 	buf := &bytes.Buffer{}
-	require.Nil(t, cfg.Save(buf))
+	require.Nil(t, cfg.Save(NewYamlEncoder(buf)))
 	require.Equal(t, Version(1), cfg.Version())
 
 	// This should be taken from the old config (old default is 10)

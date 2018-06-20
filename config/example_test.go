@@ -51,7 +51,7 @@ func ExampleConfig() {
 	// You either open it via existing yaml data - or in case of the initial
 	// write, you just let it take over the defaults. This is also the step
 	// where the first validation happens.
-	cfg, err := Open(bytes.NewReader(nil), ExampleDefaultsV0)
+	cfg, err := Open(nil, ExampleDefaultsV0)
 	if err != nil {
 		log.Fatalf("Failed to open config: %v", err)
 	}
@@ -103,7 +103,7 @@ func ExampleConfig() {
 
 	// When you're done you can always serialize the config:
 	buf := &bytes.Buffer{}
-	if err := cfg.Save(buf); err != nil {
+	if err := cfg.Save(NewYamlEncoder(buf)); err != nil {
 		log.Fatalf("Failed to save config: %v", err)
 	}
 
@@ -198,7 +198,7 @@ backend:
 
 	// The Migrate call works like a factory method.
 	// It creates the config in a versioned way:
-	cfg, err := mgr.Migrate(strings.NewReader(rawConfig))
+	cfg, err := mgr.Migrate(NewYamlDecoder(strings.NewReader(rawConfig)))
 	if err != nil {
 		// Handle errors...
 	}
@@ -207,7 +207,7 @@ backend:
 
 	// If you print it, you will notice a changed version tag:
 	buf := &bytes.Buffer{}
-	cfg.Save(buf)
+	cfg.Save(NewYamlEncoder(buf))
 	fmt.Println(buf.String())
 
 	// Output: # version: 1 (DO NOT MODIFY THIS LINE)

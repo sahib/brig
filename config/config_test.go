@@ -9,6 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func openFromData(data []byte, defaults DefaultMapping) (*Config, error) {
+	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults)
+}
+
+func openFromString(data string, defaults DefaultMapping) (*Config, error) {
+	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults)
+}
+
 var TestDefaults = DefaultMapping{
 	"daemon": DefaultMapping{
 		"port": DefaultEntry{
@@ -97,7 +105,7 @@ data:
 `
 
 func TestGetDefault(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	require.Equal(t, int64(6667), cfg.Int("daemon.port"))
@@ -106,7 +114,7 @@ func TestGetDefault(t *testing.T) {
 func TestGetNonExisting(t *testing.T) {
 	defer func() { require.NotNil(t, recover()) }()
 
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	// should panic.
@@ -114,7 +122,7 @@ func TestGetNonExisting(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	require.Nil(t, cfg.SetInt("daemon.port", 6666))
@@ -124,7 +132,7 @@ func TestSet(t *testing.T) {
 func TestSetBucketKey(t *testing.T) {
 	defer func() { require.NotNil(t, recover()) }()
 
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	// should panic.
@@ -132,7 +140,7 @@ func TestSetBucketKey(t *testing.T) {
 }
 
 func TestAddChangeSignal(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	callCount := 0
@@ -155,7 +163,7 @@ func TestAddChangeSignal(t *testing.T) {
 }
 
 func TestAddChangeSignalAll(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	callCount := 0
@@ -175,16 +183,16 @@ func TestAddChangeSignalAll(t *testing.T) {
 }
 
 func TestOpenSave(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	require.Nil(t, cfg.SetInt("daemon.port", 6666))
 	require.Nil(t, cfg.SetString("data.ipfs.path", "y"))
 
 	buf := &bytes.Buffer{}
-	require.Nil(t, cfg.Save(buf))
+	require.Nil(t, cfg.Save(NewYamlEncoder(buf)))
 
-	newCfg, err := Open(buf, TestDefaults)
+	newCfg, err := Open(NewYamlDecoder(buf), TestDefaults)
 	require.Nil(t, err)
 
 	require.Equal(t, int64(6666), newCfg.Int("daemon.port"))
@@ -192,7 +200,7 @@ func TestOpenSave(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	keys := cfg.Keys()
@@ -209,12 +217,12 @@ func TestKeys(t *testing.T) {
 
 func TestAddExtraKeys(t *testing.T) {
 	// There is no default for "a: 1" -> fail.
-	_, err := Open(bytes.NewReader([]byte(`a: 1`)), TestDefaults)
+	_, err := openFromString("a: 1", TestDefaults)
 	require.NotNil(t, err)
 }
 
 func TestSection(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	fsSec := cfg.Section("fs")
@@ -239,7 +247,7 @@ func TestSection(t *testing.T) {
 }
 
 func TestSectionSignals(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	parentCallCount := 0
@@ -268,7 +276,7 @@ func TestSectionSignals(t *testing.T) {
 }
 
 func TestIsValidKey(t *testing.T) {
-	cfg, err := Open(bytes.NewReader([]byte(testConfig)), TestDefaults)
+	cfg, err := openFromString(testConfig, TestDefaults)
 	require.Nil(t, err)
 
 	require.True(t, cfg.IsValidKey("daemon.port"))
@@ -291,7 +299,7 @@ func TestCast(t *testing.T) {
 		},
 	}
 
-	cfg, err := Open(bytes.NewReader(nil), defaults)
+	cfg, err := Open(nil, defaults)
 	require.Nil(t, err)
 
 	// Same string cast:
@@ -329,39 +337,39 @@ func configMustEquals(t *testing.T, aCfg, bCfg *Config) {
 	}
 }
 
-func TestToFileFromFile(t *testing.T) {
-	cfg, err := Open(bytes.NewReader(nil), TestDefaults)
+func TestToFileFromYamlFile(t *testing.T) {
+	cfg, err := Open(nil, TestDefaults)
 	require.Nil(t, err)
 
 	path := "/tmp/brig-test-config.yml"
-	require.Nil(t, ToFile(path, cfg))
+	require.Nil(t, ToYamlFile(path, cfg))
 
 	defer os.Remove(path)
 
-	loadCfg, err := FromFile(path, TestDefaults)
+	loadCfg, err := FromYamlFile(path, TestDefaults)
 	require.Nil(t, err)
 
 	configMustEquals(t, cfg, loadCfg)
 }
 
 func TestSetIncompatibleType(t *testing.T) {
-	cfg, err := Open(bytes.NewReader(nil), TestDefaults)
+	cfg, err := Open(nil, TestDefaults)
 	require.Nil(t, err)
 
 	require.NotNil(t, cfg.SetString("daemon.port", "xxx"))
 }
 
 func TestVersionPersisting(t *testing.T) {
-	cfg, err := Open(bytes.NewReader(nil), TestDefaults)
+	cfg, err := Open(nil, TestDefaults)
 	require.Nil(t, err)
 
 	require.Equal(t, Version(0), cfg.Version())
 	cfg.version = Version(1)
 
 	buf := &bytes.Buffer{}
-	require.Nil(t, cfg.Save(buf))
+	require.Nil(t, cfg.Save(NewYamlEncoder(buf)))
 
-	cfg, err = Open(bytes.NewReader(buf.Bytes()), TestDefaults)
+	cfg, err = openFromData(buf.Bytes(), TestDefaults)
 	require.Nil(t, err)
 
 	require.Equal(t, Version(1), cfg.Version())
@@ -372,6 +380,6 @@ func TestOpenMalformed(t *testing.T) {
 
 	// Not panicking here is okay for now as test.
 	// Later one might want to add something like a fuzzer for this.
-	_, err := Open(bytes.NewReader(malformed), TestDefaults)
+	_, err := openFromData(malformed, TestDefaults)
 	require.NotNil(t, err)
 }

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,10 +16,10 @@ func TestEnumValidator(t *testing.T) {
 	}
 
 	// Check initial validation:
-	_, err := Open(bytes.NewReader([]byte("enum-val: d")), defaults)
+	_, err := openFromString("enum-val: d", defaults)
 	require.NotNil(t, err)
 
-	cfg, err := Open(bytes.NewReader([]byte("enum-val: c")), defaults)
+	cfg, err := openFromString("enum-val: c", defaults)
 	require.Nil(t, err)
 	require.Equal(t, cfg.String("enum-val"), "c")
 
