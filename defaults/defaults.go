@@ -28,5 +28,10 @@ func OpenMigratedConfig(path string) (*config.Config, error) {
 	mgr := config.NewMigrater(CurrentVersion)
 	mgr.Add(0, nil, DefaultsV0)
 
-	return mgr.Migrate(config.NewYamlDecoder(fd))
+	cfg, err := mgr.Migrate(config.NewYamlDecoder(fd))
+	if err != nil {
+		return nil, e.Wrap(err, "failed to migrate")
+	}
+
+	return cfg, nil
 }

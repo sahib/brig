@@ -50,8 +50,7 @@ Please include anything else you think is helpful. Thanks!
 
 ### Did you check if a similar bug report was already opened?
 
-### System details:
-`)
+### System details:`)
 
 	fmt.Fprintf(buf, "go version:     ``%s``\n", cmdOutput("go", "version"))
 	fmt.Fprintf(buf, "uname -s -v -m: ``%s``\n", cmdOutput("uname", "-s", "-v", "-m"))
