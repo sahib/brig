@@ -1265,7 +1265,7 @@ func (fs *FS) Tag(rev, name string) error {
 
 	cmt, err := parseRev(fs.lkr, rev)
 	if err != nil {
-		return err
+		return e.Wrap(err, "parse ref")
 	}
 
 	return fs.lkr.SaveRef(name, cmt)

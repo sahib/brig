@@ -57,8 +57,8 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 		return nil, e.Wrapf(err, "validate")
 	}
 
-	rev = strings.ToLower(rev)
-	matches := indexCommitPattern.FindSubmatch([]byte(rev))
+	lowerRev := strings.ToLower(rev)
+	matches := indexCommitPattern.FindSubmatch([]byte(lowerRev))
 	if len(matches) >= 2 {
 		index, err := strconv.ParseInt(string(matches[1]), 10, 64)
 		if err != nil {
@@ -69,7 +69,7 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 	}
 
 	var cmt *n.Commit
-	cmtNd, err := lkr.ResolveRef(rev)
+	cmtNd, err := lkr.ResolveRef(lowerRev)
 
 	if err != nil {
 		// Expand possible abbreviations:

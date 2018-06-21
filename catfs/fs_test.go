@@ -16,6 +16,8 @@ import (
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
+	"github.com/sahib/brig/config"
+	"github.com/sahib/brig/defaults"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
@@ -40,7 +42,12 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 		}
 	}()
 
-	fs, err := NewFilesystem(backend, dbPath, owner, nil)
+	cfg, err := config.Open(nil, defaults.Defaults)
+	require.Nil(t, err)
+
+	fsCfg := cfg.Section("fs")
+
+	fs, err := NewFilesystem(backend, dbPath, owner, fsCfg)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
