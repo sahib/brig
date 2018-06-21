@@ -212,14 +212,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}
 
 	cfgPath := filepath.Join(baseFolder, "config.yml")
-	cfgFd, err := os.Open(cfgPath)
-	if err != nil {
-		return nil, e.Wrap(err, "failed to open config")
-	}
-
-	defer cfgFd.Close()
-
-	cfg, err := config.Open(config.NewYamlDecoder(cfgFd), defaults.Defaults)
+	cfg, err := defaults.OpenMigratedConfig(cfgPath)
 	if err != nil {
 		return nil, err
 	}
