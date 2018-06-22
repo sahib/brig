@@ -412,9 +412,6 @@ func splitKeyRecursive(keys []string, root map[interface{}]interface{}) (map[int
 
 // get is the worker for the higher level typed accessors
 func (cfg *Config) get(key string) interface{} {
-	cfg.mu.Lock()
-	defer cfg.mu.Unlock()
-
 	key = prefixKey(cfg.section, key)
 	parent, base := cfg.splitKey(key)
 	if parent == nil {
@@ -484,8 +481,12 @@ func (cfg *Config) set(key string, val interface{}) error {
 		}
 	}
 
+	oldVal := parent[base]
 	parent[base] = val
-	callbacks = cfg.gatherCallbacks(key)
+
+	if !reflect.DeepEqual(val, oldVal) {
+		callbacks = cfg.gatherCallbacks(key)
+	}
 	return nil
 }
 
@@ -560,30 +561,45 @@ func (cfg *Config) ClearEvents() {
 // Do not use this method when possible, use the typeed convinience methods.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Get(key string) interface{} {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
 	return cfg.get(key)
 }
 
 // Bool returns the boolean value (or default) at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Bool(key string) bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
 	return cfg.get(key).(bool)
 }
 
 // String returns the string value (or default) at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) String(key string) string {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
 	return cfg.get(key).(string)
 }
 
 // Int returns the int value (or default) at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Int(key string) int64 {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
 	return cfg.get(key).(int64)
 }
 
 // Float returns the float value (or default) at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Float(key string) float64 {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
 	return cfg.get(key).(float64)
 }
 

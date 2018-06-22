@@ -155,6 +155,9 @@ func TestAddChangeSignal(t *testing.T) {
 	require.Equal(t, 0, callCount)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
+
+	// Setting it twice should not trigger the callbacks.
+	// The value did not change after all.
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
 	require.Equal(t, 1, callCount)
 
@@ -176,6 +179,8 @@ func TestAddChangeSignalAll(t *testing.T) {
 	require.Nil(t, cfg.SetInt("daemon.port", 42))
 	require.Equal(t, 1, callCount)
 	require.Nil(t, cfg.SetString("data.ipfs.path", "new-value"))
+	require.Equal(t, 2, callCount)
+	require.Nil(t, cfg.SetInt("daemon.port", 42))
 	require.Equal(t, 2, callCount)
 
 	cfg.RemoveEvent(cbID)
