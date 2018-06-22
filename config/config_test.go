@@ -405,3 +405,30 @@ a:
 	require.Equal(t, "world", cfg.String("a.child.c"))
 	require.Equal(t, Version(666), cfg.Version())
 }
+
+func TestReloadSignal(t *testing.T) {
+	cfg, err := Open(nil, TestDefaultsV0)
+	require.Nil(t, err)
+
+	text := `# version: 666
+a:
+  b: 70
+  child:
+    c: "hello"
+`
+	globalCallCount := 0
+	localCallCount := 0
+
+	cfg.AddEvent("", func(key string) {
+		globalCallCount++
+	})
+
+	cfg.AddEvent("a.b", func(key string) {
+		localCallCount++
+	})
+
+	require.Nil(t, cfg.Reload(NewYamlDecoder(strings.NewReader(text))))
+
+	require.Equal(t, 1, globalCallCount)
+	require.Equal(t, 1, localCallCount)
+}

@@ -328,12 +328,12 @@ func open(version Version, memory map[interface{}]interface{}, defaults DefaultM
 
 // Reload re-sets all values in the config to the data in `dec`.
 // If `dec` is nil, all default values will be returned.
-// All callbacks for registered keys that do not exist anymore
-// are removed and will not be called.
+// All keys that changed will trigger a signal, if registered.
 //
 // Note that you cannot pass different defaults on Reload,
 // since this might alter the structure of the config,
-// potentially causing incompatibillies.
+// potentially causing incompatibillies. Use the migration
+// interface if you really need to change the layout.
 func (cfg *Config) Reload(dec Decoder) error {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -352,6 +352,15 @@ func (cfg *Config) Reload(dec Decoder) error {
 		version = Version(0)
 	}
 
+	// old config used to check for old values:
+	oldCfg := &Config{
+		memory:        cfg.memory,
+		version:       cfg.version,
+		defaults:      cfg.defaults,
+		callbackCount: cfg.callbackCount,
+		section:       cfg.section,
+	}
+
 	if err := validationChecker(memory, cfg.defaults); err != nil {
 		return e.Wrapf(err, "validate")
 	}
@@ -359,15 +368,18 @@ func (cfg *Config) Reload(dec Decoder) error {
 	cfg.memory = memory
 	cfg.version = version
 
-	// Only allow callbacks for keys that are actually still valid:
-	newChangeCallbacks := make(map[string]map[int]keyChangedEvent)
-	for key := range cfg.changeCallbacks {
-		if cfg.IsValidKey(key) {
-			newChangeCallbacks[key] = cfg.changeCallbacks[key]
+	// Keys did not change, since it's the same defaults/:
+	callbacks := []keyChangedEvent{}
+	for _, key := range cfg.keys() {
+		if !reflect.DeepEqual(oldCfg.get(key), cfg.get(key)) {
+			callbacks = append(callbacks, cfg.gatherCallbacks(key)...)
 		}
 	}
 
-	cfg.changeCallbacks = newChangeCallbacks
+	for _, callback := range callbacks {
+		callback.fn(callback.key)
+	}
+
 	return nil
 }
 
@@ -437,8 +449,8 @@ func (cfg *Config) gatherCallbacks(key string) []keyChangedEvent {
 	return callbacks
 }
 
-// set is worker behind the Set*() methods.
-func (cfg *Config) set(key string, val interface{}) error {
+// setLocked is worker behind the Set*() methods.
+func (cfg *Config) setLocked(key string, val interface{}) error {
 	cfg.mu.Lock()
 
 	key = prefixKey(cfg.section, key)
@@ -608,25 +620,25 @@ func (cfg *Config) Float(key string) float64 {
 // SetBool creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) SetBool(key string, val bool) error {
-	return cfg.set(key, val)
+	return cfg.setLocked(key, val)
 }
 
 // SetString creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) SetString(key string, val string) error {
-	return cfg.set(key, val)
+	return cfg.setLocked(key, val)
 }
 
 // SetInt creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) SetInt(key string, val int64) error {
-	return cfg.set(key, val)
+	return cfg.setLocked(key, val)
 }
 
 // SetFloat creates or sets the `val` at `key`.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) SetFloat(key string, val float64) error {
-	return cfg.set(key, val)
+	return cfg.setLocked(key, val)
 }
 
 // Set creates or sets the `val` at `key`.
@@ -634,7 +646,7 @@ func (cfg *Config) SetFloat(key string, val float64) error {
 // that you do not want to cast yourself.
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) Set(key string, val interface{}) error {
-	return cfg.set(key, val)
+	return cfg.setLocked(key, val)
 }
 
 ////////////
@@ -661,6 +673,10 @@ func (cfg *Config) Keys() []string {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
+	return cfg.keys()
+}
+
+func (cfg *Config) keys() []string {
 	allKeys := []string{}
 	err := keys(cfg.memory, nil, func(section map[interface{}]interface{}, key []string) error {
 		fullKey := strings.Join(key, ".")
