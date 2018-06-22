@@ -1310,6 +1310,7 @@ func (fs *FS) ScheduleGCRun() {
 //
 // The byte structured returned by this method may change at any point
 // and may not be relied upon.
+// TODO: Should MakePatch bump the own version?
 func (fs *FS) MakePatch(fromRev string, folders []string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1358,6 +1359,8 @@ func (fs *FS) ApplyPatch(data []byte) error {
 	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
 }
 
+// LastPatchIndex will return the current version of this filesystem
+// regarding patch state.
 func (fs *FS) LastPatchIndex() (int64, error) {
 	fromIndexData, err := fs.lkr.MetadataGet("fs.last-merge-index")
 	if err != nil && err != db.ErrNoSuchKey {
@@ -1365,6 +1368,7 @@ func (fs *FS) LastPatchIndex() (int64, error) {
 	}
 
 	// If we did not merge yet with anyone we have to
+	// ask for a full fetch.
 	if err == db.ErrNoSuchKey {
 		return 0, nil
 	}

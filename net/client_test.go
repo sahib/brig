@@ -176,3 +176,51 @@ func TestClientFetchStore(t *testing.T) {
 		require.Equal(t, fileData, bobData)
 	})
 }
+
+// Alice starts with 0.
+func TestClientFetchPatch(t *testing.T) {
+	withClientFor("bob", t, func(u testUnit) {
+		require.Nil(t, u.fs.Stage("/new_file", bytes.NewReader([]byte{1, 2, 3})))
+
+		patchData, err := u.ctl.FetchPatch(0)
+		require.Nil(t, err)
+		require.NotNil(t, patchData)
+
+		aliceFs, err := u.rp.FS("alice", u.bk)
+		if err != nil {
+			t.Fatalf("Failed to get empty bob fs: %v", err)
+		}
+
+		lastPatchIdx, err := aliceFs.LastPatchIndex()
+		require.Nil(t, err)
+		require.Equal(t, int64(0), lastPatchIdx)
+
+		require.Nil(t, aliceFs.ApplyPatch(patchData))
+		newFileInfo, err := aliceFs.Stat("/new_file")
+		require.Nil(t, err)
+		require.Equal(t, "/new_file", newFileInfo.Path)
+		require.Equal(t, uint64(3), newFileInfo.Size)
+
+		lastPatchIdx, err = aliceFs.LastPatchIndex()
+		require.Nil(t, err)
+		require.Equal(t, int64(1), lastPatchIdx)
+
+		patchData, err = u.ctl.FetchPatch(1)
+		require.Nil(t, err)
+		require.NotNil(t, patchData)
+		require.Nil(t, aliceFs.ApplyPatch(patchData))
+
+		// Last patch was empty, so should not bump the version.
+		lastPatchIdx, err = aliceFs.LastPatchIndex()
+		require.Nil(t, err)
+		require.Equal(t, int64(1), lastPatchIdx)
+
+		// TODO: bob's version should be also 1 for consistency.
+		// but that's harder to achieve.
+		// lastBobPatchIdx, err := u.fs.LastPatchIndex()
+		// require.Nil(t, err)
+		// require.Equal(t, int64(1), lastBobPatchIdx)
+	})
+}
+
+// TODO: Test IsCompleteFetchAllowed.
