@@ -1320,6 +1320,29 @@ func (fs *FS) MakePatch(fromRev string, folders []string) ([]byte, error) {
 		return nil, err
 	}
 
+	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit changes if there are any.
+	// This is a little unfortunate implication on how the current
+	// way of sending getting patches work. Creating a patch itself
+	// works with a staging commit, but the versioning does not work
+	// aynmore then, since the same version might have a different
+	// set of changes.
+	if haveStagedChanges {
+		owner, err := fs.lkr.Owner()
+		if err != nil {
+			return nil, err
+		}
+
+		msg := fmt.Sprintf("auto commit for patch")
+		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
+			return nil, err
+		}
+	}
+
 	patch, err := vcs.MakePatch(fs.lkr, from, folders)
 	if err != nil {
 		return nil, err

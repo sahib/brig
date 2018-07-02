@@ -14,7 +14,7 @@ func CreateDummyBuf(size int64) []byte {
 	buf := make([]byte, size)
 
 	for i := int64(0); i < size; i++ {
-		// Be evil and stripe the data:
+		// Be evil and stripe the data, %255 is not an mistake:
 		buf[i] = byte(i % 255)
 	}
 

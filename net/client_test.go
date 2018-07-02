@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -203,9 +204,9 @@ func TestClientFetchPatch(t *testing.T) {
 
 		lastPatchIdx, err = aliceFs.LastPatchIndex()
 		require.Nil(t, err)
-		require.Equal(t, int64(1), lastPatchIdx)
+		require.Equal(t, int64(2), lastPatchIdx)
 
-		patchData, err = u.ctl.FetchPatch(1)
+		patchData, err = u.ctl.FetchPatch(2)
 		require.Nil(t, err)
 		require.NotNil(t, patchData)
 		require.Nil(t, aliceFs.ApplyPatch(patchData))
@@ -213,11 +214,12 @@ func TestClientFetchPatch(t *testing.T) {
 		// Last patch was empty, so should not bump the version.
 		lastPatchIdx, err = aliceFs.LastPatchIndex()
 		require.Nil(t, err)
-		require.Equal(t, int64(1), lastPatchIdx)
+		require.Equal(t, int64(2), lastPatchIdx)
 
 		// TODO: bob's version should be also 1 for consistency.
 		// but that's harder to achieve.
-		// lastBobPatchIdx, err := u.fs.LastPatchIndex()
+		lastBobPatchIdx, err := u.fs.LastPatchIndex()
+		fmt.Println(lastBobPatchIdx, err)
 		// require.Nil(t, err)
 		// require.Equal(t, int64(1), lastBobPatchIdx)
 	})
