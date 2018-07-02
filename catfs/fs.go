@@ -14,7 +14,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/config"
+	"github.com/sahib/config"
 	capnp "zombiezen.com/go/capnproto2"
 
 	e "github.com/pkg/errors"

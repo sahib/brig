@@ -16,7 +16,7 @@ import (
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
-	"github.com/sahib/brig/config"
+	"github.com/sahib/config"
 	"github.com/sahib/brig/defaults"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"

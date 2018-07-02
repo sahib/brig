@@ -4,7 +4,7 @@ import (
 	"os"
 
 	e "github.com/pkg/errors"
-	"github.com/sahib/brig/config"
+	"github.com/sahib/config"
 )
 
 // CurrentVersion is the current version of brig's config

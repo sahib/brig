@@ -1,7 +1,7 @@
 package defaults
 
 import (
-	"github.com/sahib/brig/config"
+	"github.com/sahib/config"
 )
 
 // Defaults is the default validation for brig
