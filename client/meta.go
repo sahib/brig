@@ -194,7 +194,6 @@ func (cl *Client) ConfigDoc(key string) (ConfigEntry, error) {
 
 type RemoteFolder struct {
 	Folder string
-	Perms  string
 }
 
 type Remote struct {
@@ -266,10 +265,6 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 		}
 
 		if err := capFolder.SetFolder(folder.Folder); err != nil {
-			return nil, err
-		}
-
-		if err := capFolder.SetPerms(folder.Perms); err != nil {
 			return nil, err
 		}
 

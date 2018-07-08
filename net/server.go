@@ -20,7 +20,7 @@ import (
 type Server struct {
 	bk         backend.Backend
 	baseServer *server.Server
-	hdl        *handler
+	hdl        *connHandler
 	pingMap    *PingMap
 }
 
@@ -70,7 +70,7 @@ func publishSelf(bk backend.Backend, owner string) error {
 }
 
 func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
-	hdl := &handler{
+	hdl := &connHandler{
 		rp: rp,
 		bk: bk,
 	}
@@ -262,26 +262,17 @@ func (sv *Server) Disconnect() error {
 // INTERNAL HANDLER IMPLEMENTATION //
 /////////////////////////////////////
 
-type handler struct {
-	sync.Mutex
-
-	bk         backend.Backend
-	rp         *repo.Repository
-	currRemote *repo.Remote
+type connHandler struct {
+	bk backend.Backend
+	rp *repo.Repository
 }
 
-func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
-	// We are currently not relying more than one parallel connection.
-	// This is not a design problem, but more due to the fact that it makes
+// Handle is called whenever we receive a new connection from another brig peer.
+func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
+	// We are currently not allowing more than one parallel connection.
+	// This is not a technical problem, but more due to the fact that it makes
 	// it easier to pass the current remote to the active handler.
-	hdl.Lock()
-	defer hdl.Unlock()
-
-	// Make sure to set the current remote:
-	defer func() {
-		hdl.currRemote = nil
-	}()
-
+	// Make sure to reset the current remote:
 	keyring := hdl.rp.Keyring()
 	ownPubKey, err := keyring.OwnPubKey()
 	if err != nil {
@@ -289,9 +280,19 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 
-	// Take the raw connection we get and add an authentication layer on top of it.
-	owner := hdl.rp.Owner
-	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, owner, func(pubKey []byte) error {
+	// The respective handler should get its own context it can listen to.
+	reqCtx, reqCancel := context.WithCancel(ctx)
+	reqHdl := &requestHandler{
+		bk:  hdl.bk,
+		rp:  hdl.rp,
+		ctx: reqCtx,
+	}
+
+	// This func will be called during the authentication process.
+	// It checks if the pub key the other side send us can be
+	// related to one of the allowed remotes. If not, the connection
+	// will be dropped.
+	authChecker := func(pubKey []byte) error {
 		remotes, err := hdl.rp.Remotes.ListRemotes()
 		if err != nil {
 			return err
@@ -304,40 +305,52 @@ func (hdl *handler) Handle(ctx context.Context, conn net.Conn) {
 		// If this proves to be a performance problem, we can fix it later.
 		for _, remote := range remotes {
 			if remote.Fingerprint.PubKeyID() == remoteFp.PubKeyID() {
-				log.Infof("Starting connection with %s", remote.Fingerprint.Addr())
-				hdl.currRemote = &remote
+				log.Infof("starting connection with addr `%s`", remote.Fingerprint.Addr())
+				reqHdl.currRemoteName = remote.Name
 				return nil
 			}
 		}
 
 		return fmt.Errorf("remote uses no public key known to us")
-	})
+	}
 
-	// Trigger the authentication.
-	// (would trigger with the first read/writer elsewhise)
+	// Take the raw connection we get and add an authentication layer on top of it.
+	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, hdl.rp.Owner, authChecker)
+
+	// Trigger the authentication. This is not strictly necessary and would
+	// happen anyways on the first read/write on the connection. But doing it
+	// here catches errors early.
 	if err := authConn.Trigger(); err != nil {
-		log.Warnf("Failed to authenticate connection: %v", err)
+		log.Warnf("failed to authenticate connection: %v", err)
 		return
 	}
 
+	// The connection is considered authenticated at this point.
+	// Initialize the capnp rpc protocol over it.
 	transport := rpc.StreamTransport(conn)
-	srv := capnp.API_ServerToClient(hdl)
+	srv := capnp.API_ServerToClient(reqHdl)
 	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
 
-	if err := rpcConn.Wait(); err != nil {
-		log.Warnf("Serving rpc failed: %v", err)
-	}
+	// Wait until either side quits the connection in the background.
+	// The number of open connections is limited by the base server.
+	go func() {
+		defer reqCancel()
 
-	if err := rpcConn.Close(); err != nil {
-		// Close seems to be complaining that the conn was
-		// already closed, but be safe and expect this.
-		if err != rpc.ErrConnClosed {
-			log.Warnf("Failed to close rpc conn: %v", err)
+		if err := rpcConn.Wait(); err != nil {
+			log.Warnf("serving rpc failed: %v", err)
 		}
-	}
+
+		if err := rpcConn.Close(); err != nil {
+			// Close seems to be complaining that the conn was
+			// already closed, but be safe and expect this.
+			if err != rpc.ErrConnClosed {
+				log.Warnf("failed to close rpc conn: %v", err)
+			}
+		}
+	}()
 }
 
 // Quit is being called by the base server implementation
-func (hdl *handler) Quit() error {
+func (hdl *connHandler) Quit() error {
 	return nil
 }

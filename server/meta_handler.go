@@ -315,10 +315,6 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 			return nil, err
 		}
 
-		if err := capFolder.SetPerms(folder.Perms.String()); err != nil {
-			return nil, err
-		}
-
 		if err := capFolders.Set(idx, capFolder); err != nil {
 			return nil, err
 		}

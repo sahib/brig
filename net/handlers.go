@@ -2,13 +2,22 @@ package net
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/repo"
 )
+
+type requestHandler struct {
+	bk             backend.Backend
+	rp             *repo.Repository
+	ctx            context.Context
+	currRemoteName string
+}
 
 func completeExportAllowed(folders []repo.Folder) bool {
 	if len(folders) == 0 {
@@ -24,16 +33,20 @@ func completeExportAllowed(folders []repo.Folder) bool {
 	return false
 }
 
-func (hdl *handler) FetchStore(call capnp.Sync_fetchStore) error {
+func (hdl *requestHandler) FetchStore(call capnp.Sync_fetchStore) error {
 	// We should only export our complete metadata, when the root directory
 	// was enabled or no folders were configured.
-	if !completeExportAllowed(hdl.currRemote.Folders) {
-		log.Warningf("Attempt to read complete store from `%v`", hdl.currRemote.Name)
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	if !completeExportAllowed(currRemote.Folders) {
+		log.Warningf("Attempt to read complete store from `%v`", hdl.currRemoteName)
 		return errors.New("refusing export")
 	}
 
-	user := hdl.rp.CurrentUser()
-	fs, err := hdl.rp.FS(user, hdl.bk)
+	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
 	if err != nil {
 		return err
 	}
@@ -46,23 +59,26 @@ func (hdl *handler) FetchStore(call capnp.Sync_fetchStore) error {
 	return call.Results.SetData(buf.Bytes())
 }
 
-func (hdl *handler) FetchPatch(call capnp.Sync_fetchPatch) error {
-	user := hdl.rp.CurrentUser()
-	fs, err := hdl.rp.FS(user, hdl.bk)
+func (hdl *requestHandler) FetchPatch(call capnp.Sync_fetchPatch) error {
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
 	if err != nil {
 		return err
 	}
 
 	// Apply the respective folder filter for this remote.
 	prefixes := []string{}
-	for _, folder := range hdl.currRemote.Folders {
+	for _, folder := range currRemote.Folders {
 		prefixes = append(prefixes, folder.Folder)
 	}
 
 	fromIndex := call.Params.FromIndex()
 	fromRev := fmt.Sprintf("commit[%d]", fromIndex)
-
-	patchData, err := fs.MakePatch(fromRev, prefixes)
+	patchData, err := fs.MakePatch(fromRev, prefixes, currRemote.Name)
 	if err != nil {
 		return err
 	}
@@ -71,17 +87,22 @@ func (hdl *handler) FetchPatch(call capnp.Sync_fetchPatch) error {
 	return nil
 }
 
-func (hdl *handler) IsCompleteFetchAllowed(call capnp.Sync_isCompleteFetchAllowed) error {
-	isAllowed := completeExportAllowed(hdl.currRemote.Folders)
+func (hdl *requestHandler) IsCompleteFetchAllowed(call capnp.Sync_isCompleteFetchAllowed) error {
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	isAllowed := completeExportAllowed(currRemote.Folders)
 	call.Results.SetIsAllowed(isAllowed)
 	return nil
 }
 
-func (hdl *handler) Ping(call capnp.Meta_ping) error {
+func (hdl *requestHandler) Ping(call capnp.Meta_ping) error {
 	return call.Results.SetReply("ALIVE")
 }
 
-func (hdl *handler) Version(call capnp.API_version) error {
+func (hdl *requestHandler) Version(call capnp.API_version) error {
 	call.Results.SetVersion(1)
 	return nil
 }

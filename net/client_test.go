@@ -3,7 +3,6 @@ package net
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -178,34 +177,41 @@ func TestClientFetchStore(t *testing.T) {
 	})
 }
 
-// Alice starts with 0.
 func TestClientFetchPatch(t *testing.T) {
 	withClientFor("bob", t, func(u testUnit) {
+		// Create a new file in bob's fs.
 		require.Nil(t, u.fs.Stage("/new_file", bytes.NewReader([]byte{1, 2, 3})))
 
+		// Get a patch from Bob's FS.
 		patchData, err := u.ctl.FetchPatch(0)
 		require.Nil(t, err)
 		require.NotNil(t, patchData)
 
+		// Create a new empty FS for alice.
 		aliceFs, err := u.rp.FS("alice", u.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
 
+		// It should have the initial patch version of 0.
 		lastPatchIdx, err := aliceFs.LastPatchIndex()
 		require.Nil(t, err)
 		require.Equal(t, int64(0), lastPatchIdx)
 
+		// After applying the patch, we should have bob's data.
 		require.Nil(t, aliceFs.ApplyPatch(patchData))
 		newFileInfo, err := aliceFs.Stat("/new_file")
 		require.Nil(t, err)
 		require.Equal(t, "/new_file", newFileInfo.Path)
 		require.Equal(t, uint64(3), newFileInfo.Size)
 
+		// Check that the new patch version is 2 (i.e. bob has two commits)
 		lastPatchIdx, err = aliceFs.LastPatchIndex()
 		require.Nil(t, err)
 		require.Equal(t, int64(2), lastPatchIdx)
 
+		// If we fetch the same patch again, it will be empty.
+		// (data will be not len=0, but no real contents)
 		patchData, err = u.ctl.FetchPatch(2)
 		require.Nil(t, err)
 		require.NotNil(t, patchData)
@@ -216,13 +222,59 @@ func TestClientFetchPatch(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, int64(2), lastPatchIdx)
 
-		// TODO: bob's version should be also 1 for consistency.
-		// but that's harder to achieve.
+		// Bob's patch index should not have changed.
+		// For bob, the patch index does not make really sense,
+		// since he's the owner of the fs and always has the latest version.
 		lastBobPatchIdx, err := u.fs.LastPatchIndex()
-		fmt.Println(lastBobPatchIdx, err)
-		// require.Nil(t, err)
-		// require.Equal(t, int64(1), lastBobPatchIdx)
+		require.Nil(t, err)
+		require.Equal(t, int64(0), lastBobPatchIdx)
 	})
 }
 
-// TODO: Test IsCompleteFetchAllowed.
+func TestClientCompleteFetchAllowed(t *testing.T) {
+	withClientFor("bob", t, func(u testUnit) {
+		isAllowed, err := u.ctl.IsCompleteFetchAllowed()
+		require.Nil(t, err)
+
+		rmt, err := u.rp.Remotes.Remote("bob")
+		require.Nil(t, err)
+		require.True(t, isAllowed)
+
+		// Make the remote have only access to a specific sub folder:
+		err = u.rp.Remotes.SetRemote("bob", repo.Remote{
+			Fingerprint: rmt.Fingerprint,
+			Name:        rmt.Name,
+			Folders: []repo.Folder{
+				{
+					Folder: "/photos",
+				},
+			},
+		})
+		require.Nil(t, err)
+
+		isAllowed, err = u.ctl.IsCompleteFetchAllowed()
+		require.Nil(t, err)
+		require.False(t, isAllowed)
+
+		// Try again with the root folder enabled:
+		err = u.rp.Remotes.SetRemote("bob", repo.Remote{
+			Fingerprint: rmt.Fingerprint,
+			Name:        rmt.Name,
+			Folders: []repo.Folder{
+				{
+					Folder: "/",
+				},
+				{
+					Folder: "/photos",
+				},
+			},
+		})
+		require.Nil(t, err)
+
+		// This also tests that we are able to change remote config
+		// without needing to reconnect.
+		isAllowed, err = u.ctl.IsCompleteFetchAllowed()
+		require.Nil(t, err)
+		require.True(t, isAllowed)
+	})
+}

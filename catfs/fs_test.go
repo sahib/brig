@@ -16,10 +16,10 @@ import (
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
-	"github.com/sahib/config"
 	"github.com/sahib/brig/defaults"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -759,7 +759,7 @@ func TestPatch(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, int64(0), dstIndex)
 
-			patch, err := srcFs.MakePatch("commit[0]", nil)
+			patch, err := srcFs.MakePatch("commit[0]", nil, "")
 			require.Nil(t, err)
 
 			require.Nil(t, dstFs.ApplyPatch(patch))

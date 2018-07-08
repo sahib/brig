@@ -16,10 +16,8 @@ var (
 		Folders: []Folder{
 			{
 				Folder: "/Public",
-				Perms:  PermRead | PermWrite,
 			}, {
 				Folder: "/ShowOff",
-				Perms:  PermRead,
 			},
 		},
 	}
@@ -28,8 +26,8 @@ var (
 		Fingerprint: peer.Fingerprint("charliesfp"),
 		Folders: []Folder{
 			{
+				// Ts, ts, charlie...
 				Folder: "/Porns",
-				Perms:  PermRead,
 			},
 		},
 	}

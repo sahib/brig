@@ -934,7 +934,16 @@ func (fs *FS) MakeCommit(msg string) error {
 		return err
 	}
 
-	return fs.lkr.MakeCommit(owner, msg)
+	if err := fs.lkr.MakeCommit(owner, msg); err != nil {
+		return err
+	}
+
+	head, err := fs.lkr.Head()
+	if err != nil {
+		return err
+	}
+
+	return fs.writeLastPatchIndex(head.Index())
 }
 
 func (fs *FS) Head() (string, error) {
@@ -1304,14 +1313,21 @@ func (fs *FS) ScheduleGCRun() {
 	}()
 }
 
+func (fs *FS) writeLastPatchIndex(index int64) error {
+	fromIndexData := []byte(strconv.FormatInt(index, 10))
+	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
+}
+
 // MakePatch creates a binary patch with all file changes starting with
 // `fromRev`. Note that commit information is not exported, only individual
 // file and directory changes.
 //
 // The byte structured returned by this method may change at any point
 // and may not be relied upon.
-// TODO: Should MakePatch bump the own version?
-func (fs *FS) MakePatch(fromRev string, folders []string) ([]byte, error) {
+//
+// The `remoteName` is the name of the remote we're creating the patch for.
+// It's only used for display purpose in the commit message.
+func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -1337,7 +1353,7 @@ func (fs *FS) MakePatch(fromRev string, folders []string) ([]byte, error) {
 			return nil, err
 		}
 
-		msg := fmt.Sprintf("auto commit for patch")
+		msg := fmt.Sprintf("»%s« merged with you", remoteName)
 		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
 			return nil, err
 		}

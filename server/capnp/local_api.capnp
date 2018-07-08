@@ -60,7 +60,6 @@ struct Diff $Go.doc("Difference between two commits") {
 
 struct RemoteFolder $Go.doc("A folder that a remote is allowed to access") {
     folder @0 :Text;
-    perms  @1 :Text;
 }
 
 struct Remote $Go.doc("Info a remote peer we might sync with") {

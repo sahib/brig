@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/sahib/brig/net/peer"
 
@@ -18,51 +17,8 @@ var (
 	ErrNoSuchRemote = errors.New("No such remote with this name")
 )
 
-type Perms uint32
-
-const (
-	PermNone = 0
-	PermRead = 1 << iota
-	PermWrite
-)
-
-type RemotePerms int
-
-func (rp RemotePerms) FromStrings(perms []string) RemotePerms {
-	mask := RemotePerms(0)
-
-	for _, perm := range perms {
-		switch perm {
-		case "read":
-			mask |= PermRead
-		case "write":
-			mask |= PermWrite
-		}
-	}
-
-	return mask
-}
-
-func (rp RemotePerms) ToStrings() []string {
-	res := []string{}
-	if rp&PermRead > 0 {
-		res = append(res, "read")
-	}
-
-	if rp&PermWrite > 0 {
-		res = append(res, "write")
-	}
-
-	return res
-}
-
-func (rp RemotePerms) String() string {
-	return strings.Join(rp.ToStrings(), ",")
-}
-
 type Folder struct {
 	Folder string
-	Perms  RemotePerms
 }
 
 type Remote struct {
@@ -146,6 +102,16 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	}
 
 	return *rm, nil
+}
+
+func (rl *RemoteList) SetRemote(name string, newRm Remote) error {
+	rm, ok := rl.remotes[name]
+	if !ok {
+		return ErrNoSuchRemote
+	}
+
+	*rm = newRm
+	return nil
 }
 
 func (rl *RemoteList) Clear() error {
