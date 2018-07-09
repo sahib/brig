@@ -3,64 +3,88 @@ package mock
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
-	"time"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/peer"
+
+	e "github.com/pkg/errors"
 )
+
+const NetMockRoot = "/tmp/local-mock-ipfs"
 
 type NetBackend struct {
 	isOnline bool
 	conns    map[string]chan net.Conn
+	name     string
+	port     int
 }
 
-func NewNetBackend() *NetBackend {
+func NewNetBackend(name string, port int) (*NetBackend, error) {
+	dnsName := filepath.Join(NetMockRoot, "dns", name)
+	if err := os.MkdirAll(filepath.Dir(dnsName), 0744); err != nil {
+		return nil, err
+	}
+
+	dnsTag := fmt.Sprintf("%s@%d", name, port)
+
+	if err := ioutil.WriteFile(dnsName, []byte(dnsTag), 0644); err != nil {
+		return nil, e.Wrap(err, "failed to write dns tag")
+	}
+
 	return &NetBackend{
 		isOnline: true,
 		conns:    make(map[string]chan net.Conn),
-	}
+		name:     name,
+		port:     port,
+	}, nil
 }
 
-func (nb *NetBackend) ResolveName(ctx context.Context, name string) ([]peer.Info, error) {
-	switch name {
-	case "bob":
-		return []peer.Info{
-			{Name: peer.Name(name), Addr: "bob-addr"},
-		}, nil
-	case "charlie":
-		return []peer.Info{
-			{Name: peer.Name(name), Addr: "charlie-addr-right"},
-			{Name: peer.Name(name), Addr: "charlie-addr-wrong"},
-		}, nil
-	case "vincent":
-		// Vincent is always offline.
-		//
-		// This is a work of fiction. Names, characters, places and incidents
-		// either are products of the author’s imagination or are used
-		// fictitiously. Any resemblance to actual events or locales or persons,
-		// living or dead, is entirely coincidental.
-		return []peer.Info{
-			{Name: peer.Name(name), Addr: "vincent-addr"},
-		}, nil
-	case "mallory":
-		// Mallory is a faker:
-		return []peer.Info{
-			{Name: peer.Name(name), Addr: "charlie-addr-right"},
-			{Name: peer.Name(name), Addr: "bob-addr"},
-		}, nil
-	default:
-		return nil, fmt.Errorf("No such peer: %v", name)
+func (nb *NetBackend) PublishName(partialName string) error {
+	discoveryName := filepath.Join(NetMockRoot, "discovery", partialName, nb.name)
+	if err := os.MkdirAll(filepath.Dir(discoveryName), 0744); err != nil {
+		return err
 	}
+
+	return ioutil.WriteFile(discoveryName, nil, 0644)
 }
 
-func (nb *NetBackend) PublishName(name string) error {
-	return nil
+func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]peer.Info, error) {
+	discoDir := filepath.Join(NetMockRoot, "discovery", partialName)
+	names, err := ioutil.ReadDir(discoDir)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(names) == 0 {
+		return nil, fmt.Errorf("no such peer: %v", partialName)
+	}
+
+	infos := []peer.Info{}
+	for _, name := range names {
+		dnsName := filepath.Join(NetMockRoot, "dns", filepath.Base(name.Name()))
+		data, err := ioutil.ReadFile(dnsName)
+		if err != nil {
+			return nil, fmt.Errorf("no such peer: %v", name)
+		}
+
+		infos = append(infos, peer.Info{
+			Addr: string(data),
+			Name: peer.Name(name.Name()),
+		})
+	}
+
+	return infos, nil
 }
 
 func (nb *NetBackend) Connect() error {
 	if nb.isOnline {
-		return fmt.Errorf("Already online")
+		return fmt.Errorf("already online")
 	}
 
 	nb.isOnline = true
@@ -69,7 +93,7 @@ func (nb *NetBackend) Connect() error {
 
 func (nb *NetBackend) Disconnect() error {
 	if !nb.isOnline {
-		return fmt.Errorf("Already offline")
+		return fmt.Errorf("already offline")
 	}
 
 	nb.isOnline = false
@@ -81,39 +105,34 @@ func (nb *NetBackend) IsOnline() bool {
 }
 
 func (nb *NetBackend) Identity() (peer.Info, error) {
+	dnsTag := fmt.Sprintf("%s@%d", nb.name, nb.port)
 	return peer.Info{
-		Addr: "alice-addr",
-		Name: peer.Name("alice"),
+		Addr: dnsTag,
+		Name: peer.Name(nb.name),
 	}, nil
 }
 
-func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
-	switch peerAddr {
-	case "alice-addr":
-		return nil, fmt.Errorf("Cannot dial self")
-	case "vincent-addr":
-		return nil, fmt.Errorf("vincent is offline")
-	case "bob-addr", "charlie-addr-right":
-		// Those are the only valid addrs we may dial.
-		break
-	case "charlie-addr-wrong":
-		return nil, fmt.Errorf("No such peer")
+func getPortFromAddr(peerAddr string) (int, error) {
+	split := strings.SplitN(peerAddr, "@", 2)
+	if len(split) < 2 {
+		return 0, fmt.Errorf("invalid mock addr: %s", peerAddr)
 	}
 
-	// We basically call ourselves with the mock backend,
-	// just pretending to be a different peer.
-	clConn, srvConn, err := LoopPipe()
+	port, err := strconv.Atoi(split[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid mock addr port: %s %v", peerAddr, err)
+	}
+
+	return port, nil
+}
+
+func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
+	port, err := getPortFromAddr(peerAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	ch, ok := nb.conns[protocol]
-	if !ok {
-		return nil, fmt.Errorf("No listener for this protocol (offline?): %v", protocol)
-	}
-
-	ch <- srvConn
-	return clConn, nil
+	return net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 }
 
 func (nb *NetBackend) Ping(addr string) (backend.Pinger, error) {
@@ -121,70 +140,5 @@ func (nb *NetBackend) Ping(addr string) (backend.Pinger, error) {
 }
 
 func (nb *NetBackend) Listen(protocol string) (net.Listener, error) {
-	return &memListener{
-		nb:       nb,
-		protocol: protocol,
-	}, nil
-}
-
-type memListener struct {
-	nb          *NetBackend
-	hasDeadline bool
-	deadline    time.Time
-	protocol    string
-}
-
-type timeoutError struct{}
-
-func (te *timeoutError) Timeout() bool {
-	return true
-}
-
-func (te *timeoutError) Error() string {
-	return "timeout"
-}
-
-func (ml *memListener) Accept() (net.Conn, error) {
-	ch, ok := ml.nb.conns[ml.protocol]
-	if !ok {
-		ch = make(chan net.Conn, 1)
-		ml.nb.conns[ml.protocol] = ch
-	}
-
-	timeoutCh := make(<-chan time.Time)
-	if ml.hasDeadline {
-		timeoutCh = time.After(ml.deadline.Sub(time.Now()))
-	}
-
-	select {
-	case <-timeoutCh:
-		return nil, &timeoutError{}
-	case conn := <-ch:
-		return conn, nil
-	}
-}
-
-func (ml *memListener) SetDeadline(t time.Time) error {
-	ml.deadline = t
-	ml.hasDeadline = true
-	return nil
-}
-
-type memAddr string
-
-func (ma memAddr) Network() string {
-	return "mock"
-}
-
-func (ma memAddr) String() string {
-	return string(ma)
-}
-
-func (ml *memListener) Addr() net.Addr {
-	return memAddr(ml.protocol)
-}
-
-func (ml *memListener) Close() error {
-	delete(ml.nb.conns, ml.protocol)
-	return nil
+	return net.Listen("tcp", fmt.Sprintf("localhost:%d", nb.port))
 }

@@ -63,7 +63,7 @@ func DialByAddr(
 
 	ownName := rp.Owner
 	if fingerprint == "" {
-		return nil, fmt.Errorf("Rejecting own, empty fingerprint... bug?")
+		return nil, fmt.Errorf("rejecting own, empty fingerprint... bug?")
 	}
 
 	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, ownName, func(pubKey []byte) error {

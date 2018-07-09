@@ -2,6 +2,9 @@ package backend
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
+	"strconv"
 
 	"github.com/sahib/brig/backend/ipfs"
 	"github.com/sahib/brig/backend/mock"
@@ -45,7 +48,28 @@ func FromName(name, path string) (Backend, error) {
 	case "ipfs":
 		return ipfs.New(path)
 	case "mock":
-		return mock.NewMockBackend(), nil
+		// This is silly, but it's only for testing.
+		// Read the name and the port from the backend path.
+		// Side effect: user cannot contain slashes currently.
+		patt := regexp.MustCompile(`.*user=(.*)-port=(\d+).*`)
+		match := patt.FindStringSubmatch(path)
+		if match == nil {
+			return nil, fmt.Errorf(
+				"test error: please encode the user name and port in the path"
+			)
+		}
+
+		user := match[1]
+		port, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil, fmt.Errorf(
+				"invalid mock addr port: %s %v",
+				path,
+				err,
+			)
+		}
+
+		return mock.NewMockBackend(user, port)
 	}
 
 	return nil, ErrNoSuchBackend

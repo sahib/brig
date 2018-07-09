@@ -50,7 +50,7 @@ func setLogPath(path string) error {
 	return nil
 }
 
-func BootServer(basePath, password, logPath string, bindHost string, port int) (*Server, error) {
+func BootServer(basePath, password, logPath, bindHost string, port int) (*Server, error) {
 	if logPath == "" {
 		logPath = filepath.Join(basePath, "logs", "main.log")
 		if err := os.MkdirAll(filepath.Dir(logPath), 0700); err != nil {

@@ -2,12 +2,15 @@ package mock
 
 import (
 	"fmt"
+	"math/rand"
+	"net"
 	"time"
 )
 
 type dummyPinger struct {
 	lastSeen  time.Time
 	roundtrip time.Duration
+	quitCh    chan bool
 	err       error
 }
 
@@ -24,37 +27,49 @@ func (dp *dummyPinger) Err() error {
 }
 
 func (dp *dummyPinger) Close() error {
+	dp.quitCh <- true
 	return nil
 }
 
-func pingerByName(addr string) (*dummyPinger, error) {
-	switch addr {
-	case "alice-addr":
-		return &dummyPinger{
-			roundtrip: time.Duration(0),
-			lastSeen:  time.Now(),
-			err:       nil,
-		}, nil
-	case "vincent-addr":
-		return nil, fmt.Errorf("vincent is offline")
-	case "bob-addr":
-		return &dummyPinger{
-			roundtrip: 42 * time.Millisecond,
-			lastSeen:  time.Now().Add(-1 * time.Minute),
-		}, nil
-	case "charlie-addr-right":
-		return &dummyPinger{
-			roundtrip: time.Duration(23),
-			lastSeen:  time.Now().Add(-5 * time.Minute),
-		}, nil
-	case "charlie-addr-wrong":
-		time.Sleep(5 * time.Second)
-		return &dummyPinger{
-			roundtrip: time.Duration(23),
-			lastSeen:  time.Now().Add(-15 * time.Minute),
-			err:       fmt.Errorf("Connection lost"),
-		}, nil
-	default:
-		return nil, fmt.Errorf("Unknown mock peer addr: %v", addr)
+func (dp *dummyPinger) ping(port int) {
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		dp.err = fmt.Errorf("no route: %v", err)
+		return
 	}
+
+	conn.Close()
+
+	// Simulate a succesful ping:
+	jitter := time.Duration(rand.Intn(5000)) * time.Nanosecond
+	dp.roundtrip = 20*time.Millisecond + jitter
+	dp.lastSeen = time.Now()
+	return
+}
+
+func pingerByName(addr string) (*dummyPinger, error) {
+	port, err := getPortFromAddr(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	dp := &dummyPinger{
+		quitCh: make(chan bool),
+	}
+
+	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				dp.ping(port)
+			case <-dp.quitCh:
+				return
+			}
+		}
+	}()
+
+	return dp, nil
 }

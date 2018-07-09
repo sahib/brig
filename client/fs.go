@@ -3,7 +3,9 @@ package client
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/sahib/brig/server/capnp"
@@ -122,6 +124,21 @@ func (cl *Client) Stage(localPath, repoPath string) error {
 
 	_, err := call.Struct()
 	return err
+}
+
+func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
+	fd, err := ioutil.TempFile("", "brig-stage-temp")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(fd.Name())
+
+	if _, err := io.Copy(fd, r); err != nil {
+		return err
+	}
+
+	return cl.Stage(fd.Name(), repoPath)
 }
 
 func (cl *Client) Cat(path string) (io.ReadCloser, error) {

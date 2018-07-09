@@ -104,6 +104,8 @@ func (sv *Server) Serve() error {
 			// If this signal can receive something, we have a free connection.
 			if err := sv.accept(rateCh); err != nil {
 				log.Errorf("Failed to accept connection: %v", err)
+				// prevent spamming log messages in case of repeating errors.
+				time.Sleep(100 * time.Millisecond)
 			}
 		case <-sv.quitCh:
 			log.Infof("Will not accept new connections now")
