@@ -18,6 +18,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
 	"github.com/urfave/cli"
+
+	e "github.com/pkg/errors"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
+	terminal "github.com/wayneashleyberry/terminal-dimensions"
 )
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
@@ -64,6 +69,10 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 		return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 	}
 
+	if !info.Mode().IsRegular() {
+		fmt.Printf("Not adding non-regular file: %s\n", absLocalPath)
+	}
+
 	return ctl.Stage(absLocalPath, repoPath)
 }
 
@@ -82,12 +91,13 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join(repoRoot, childPath[len(root):])
-
 		if info.IsDir() {
 			if err := ctl.Mkdir(repoPath, true); err != nil {
-				return err
+				return e.Wrapf(err, "mkdir")
 			}
-		} else {
+		}
+
+		if info.Mode().IsRegular() {
 			toBeStaged = append(toBeStaged, stagePair{childPath, repoPath})
 		}
 
@@ -98,12 +108,61 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		return fmt.Errorf("Failed to create sub directories: %v", err)
 	}
 
-	for _, child := range toBeStaged {
-		if err := ctl.Stage(child.local, child.repo); err != nil {
-			return err
-		}
+	jobs := make(chan stagePair, 20)
+
+	width, err := terminal.Width()
+	if err != nil {
+		fmt.Printf("warning: failed to get terminal size: %s\n", err)
+		width = 80
 	}
 
+	pbars := mpb.New(
+		// override default (80) width
+		mpb.WithWidth(int(width)),
+		// override default 120ms refresh rate
+		mpb.WithRefreshRate(50*time.Millisecond),
+	)
+
+	name := "ETA"
+	bar := pbars.AddBar(
+		int64(len(toBeStaged)),
+		mpb.PrependDecorators(
+			// display our name with one space on the right
+			decor.Name(name, decor.WC{W: len(name) + 1, C: decor.DidentRight}),
+			// replace ETA decorator with "done" message, OnComplete event
+			decor.OnComplete(
+				// ETA decorator with ewma age of 60, and width reservation of 4
+				decor.EwmaETA(decor.ET_STYLE_GO, 60, decor.WC{W: 4}), "done",
+			),
+		),
+		mpb.AppendDecorators(decor.Percentage()),
+	)
+
+	for idx := 0; idx < 20; idx++ {
+		go func() {
+			for {
+				pair, ok := <-jobs
+				if !ok {
+					return
+				}
+
+				start := time.Now()
+				if err := ctl.Stage(pair.local, pair.repo); err != nil {
+					fmt.Printf("failed to stage %s: %v", pair.local, err)
+				}
+
+				// bar.Increment()
+				bar.IncrBy(1, time.Since(start))
+			}
+		}()
+	}
+
+	for _, child := range toBeStaged {
+		jobs <- child
+	}
+
+	close(jobs)
+	pbars.Wait()
 	return nil
 }
 

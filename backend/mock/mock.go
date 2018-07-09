@@ -12,6 +12,8 @@ type mockBackend struct {
 	*netMock.NetBackend
 }
 
+// TODO: Cleanup for net backend etc.
+
 // NewMockBackend returns a backend.Backend that operates only in memory
 // and does not use any resources outliving the own process, except the net
 // part which stores connection info on disk.
