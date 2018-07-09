@@ -255,5 +255,4 @@ func TestSyncPartial(t *testing.T) {
 			},
 			bobPaths,
 		)
-	})
 }

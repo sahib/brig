@@ -55,7 +55,7 @@ func FromName(name, path string) (Backend, error) {
 		match := patt.FindStringSubmatch(path)
 		if match == nil {
 			return nil, fmt.Errorf(
-				"test error: please encode the user name and port in the path"
+				"test error: please encode the user name and port in the path",
 			)
 		}
 
