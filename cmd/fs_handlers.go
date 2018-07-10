@@ -108,8 +108,6 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		return fmt.Errorf("Failed to create sub directories: %v", err)
 	}
 
-	jobs := make(chan stagePair, 20)
-
 	width, err := terminal.Width()
 	if err != nil {
 		fmt.Printf("warning: failed to get terminal size: %s\n", err)
@@ -120,7 +118,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		// override default (80) width
 		mpb.WithWidth(int(width)),
 		// override default 120ms refresh rate
-		mpb.WithRefreshRate(50*time.Millisecond),
+		mpb.WithRefreshRate(250*time.Millisecond),
 	)
 
 	name := "ETA"
@@ -138,7 +136,12 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		mpb.AppendDecorators(decor.Percentage()),
 	)
 
-	for idx := 0; idx < 20; idx++ {
+	nWorkers := 20
+	start := time.Now()
+	jobs := make(chan stagePair, nWorkers)
+
+	// Start a bunch of workers that will do the actual adding:
+	for idx := 0; idx < nWorkers; idx++ {
 		go func() {
 			for {
 				pair, ok := <-jobs
@@ -146,17 +149,25 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 					return
 				}
 
-				start := time.Now()
 				if err := ctl.Stage(pair.local, pair.repo); err != nil {
 					fmt.Printf("failed to stage %s: %v", pair.local, err)
 				}
 
-				// bar.Increment()
+				// Notify the bar. The op time is used for the ETA.
+				// The time is measured by "start" is NOT the time used to
+				// stage a single file.  This would only work in a non-parallel
+				// environment, because the ETA would assume that one file took
+				// 2s, so 1000 files must take 2000s.  Instead it measures the
+				// time between two time recordings, which are in the ideal
+				// case around 1/n_workers * time_to_stage but it measures the
+				// actual amount of parallelism that we achieve.
 				bar.IncrBy(1, time.Since(start))
+				start = time.Now()
 			}
 		}()
 	}
 
+	// Send the jobs onward:
 	for _, child := range toBeStaged {
 		jobs <- child
 	}
