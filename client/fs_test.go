@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
@@ -19,13 +20,22 @@ func init() {
 	log.SetFormatter(&colorlog.ColorfulLogFormatter{})
 }
 
-func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *Client)) {
+func withDaemon(t *testing.T, name string, port, backendPort int, basePath string, fn func(ctl *Client)) {
 	// This is a hacky way to tell the mock backend what port it should use:
-	prefix := fmt.Sprintf("brig-ctl-test-user=%s-port=%d-", name, backendPort)
-	base, err := ioutil.TempDir("", prefix)
-	require.Nil(t, err)
+	if basePath == "" {
+		var err error
+		basePath, err = ioutil.TempDir("", "brig-ctl-test")
+		require.Nil(t, err)
 
-	srv, err := server.BootServer(base, "password", "", "localhost", port)
+		defer func() {
+			os.RemoveAll(basePath)
+		}()
+	}
+
+	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
+	require.Nil(t, os.MkdirAll(fullPath, 0700))
+
+	srv, err := server.BootServer(fullPath, "password", "", "localhost", port)
 	require.Nil(t, err)
 
 	waitForDeath := make(chan bool)
@@ -39,7 +49,8 @@ func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *C
 	ctl, err := Dial(context.Background(), port)
 	require.Nil(t, err)
 
-	require.Nil(t, ctl.Init(base, name, "password", "mock"))
+	err = ctl.Init(fullPath, name, "password", "mock")
+	require.Nil(t, err)
 
 	// Run the actual test function:
 	fn(ctl)
@@ -52,7 +63,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *C
 }
 
 func TestStageAndCat(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "alice", 6667, 9999, "", func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
@@ -74,7 +85,7 @@ func TestStageAndCat(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "alice", 6667, 9999, "", func(ctl *Client) {
 		// Create something nested with -p...
 		require.Nil(t, ctl.Mkdir("/a/b/c", true))
 
@@ -111,8 +122,16 @@ func TestMkdir(t *testing.T) {
 }
 
 func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
-	withDaemon(t, "alice", 6668, 9998, func(aliCtl *Client) {
-		withDaemon(t, "bob", 6669, 9999, func(bobCtl *Client) {
+	// Use a shared directory for our shared data:
+	basePath, err := ioutil.TempDir("", "brig-test-sync-pair-test")
+	require.Nil(t, err)
+
+	defer func() {
+		os.RemoveAll(basePath)
+	}()
+
+	withDaemon(t, "alice", 6668, 9998, basePath, func(aliCtl *Client) {
+		withDaemon(t, "bob", 6669, 9999, basePath, func(bobCtl *Client) {
 			aliWhoami, err := aliCtl.Whoami()
 			require.Nil(t, err)
 
@@ -255,4 +274,5 @@ func TestSyncPartial(t *testing.T) {
 			},
 			bobPaths,
 		)
+	})
 }

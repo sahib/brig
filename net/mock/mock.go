@@ -10,43 +10,31 @@ import (
 	"strconv"
 	"strings"
 
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/peer"
-
-	e "github.com/pkg/errors"
 )
-
-const NetMockRoot = "/tmp/local-mock-ipfs"
 
 type NetBackend struct {
 	isOnline bool
 	conns    map[string]chan net.Conn
+	path     string
 	name     string
 	port     int
 }
 
-func NewNetBackend(name string, port int) (*NetBackend, error) {
-	dnsName := filepath.Join(NetMockRoot, "dns", name)
-	if err := os.MkdirAll(filepath.Dir(dnsName), 0744); err != nil {
-		return nil, err
-	}
-
-	dnsTag := fmt.Sprintf("%s@%d", name, port)
-
-	if err := ioutil.WriteFile(dnsName, []byte(dnsTag), 0644); err != nil {
-		return nil, e.Wrap(err, "failed to write dns tag")
-	}
-
+func NewNetBackend(path, name string, port int) *NetBackend {
 	return &NetBackend{
 		isOnline: true,
 		conns:    make(map[string]chan net.Conn),
 		name:     name,
 		port:     port,
-	}, nil
+		path:     path,
+	}
 }
 
 func (nb *NetBackend) PublishName(partialName string) error {
-	discoveryName := filepath.Join(NetMockRoot, "discovery", partialName, nb.name)
+	discoveryName := filepath.Join(nb.path, "discovery", partialName, nb.name)
 	if err := os.MkdirAll(filepath.Dir(discoveryName), 0744); err != nil {
 		return err
 	}
@@ -55,7 +43,7 @@ func (nb *NetBackend) PublishName(partialName string) error {
 }
 
 func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]peer.Info, error) {
-	discoDir := filepath.Join(NetMockRoot, "discovery", partialName)
+	discoDir := filepath.Join(nb.path, "discovery", partialName)
 	names, err := ioutil.ReadDir(discoDir)
 	if err != nil {
 		return nil, err
@@ -67,7 +55,7 @@ func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]pe
 
 	infos := []peer.Info{}
 	for _, name := range names {
-		dnsName := filepath.Join(NetMockRoot, "dns", filepath.Base(name.Name()))
+		dnsName := filepath.Join(nb.path, "dns", filepath.Base(name.Name()))
 		data, err := ioutil.ReadFile(dnsName)
 		if err != nil {
 			return nil, fmt.Errorf("no such peer: %v", name)
@@ -85,6 +73,17 @@ func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]pe
 func (nb *NetBackend) Connect() error {
 	if nb.isOnline {
 		return fmt.Errorf("already online")
+	}
+
+	dnsName := filepath.Join(nb.path, "dns", nb.name)
+	if err := os.MkdirAll(filepath.Dir(dnsName), 0744); err != nil {
+		return err
+	}
+
+	dnsTag := fmt.Sprintf("%s@%d", nb.name, nb.port)
+
+	if err := ioutil.WriteFile(dnsName, []byte(dnsTag), 0644); err != nil {
+		return e.Wrap(err, "failed to write dns tag")
 	}
 
 	nb.isOnline = true

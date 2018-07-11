@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/sahib/brig/backend/ipfs"
 	"github.com/sahib/brig/backend/mock"
@@ -51,7 +52,7 @@ func FromName(name, path string) (Backend, error) {
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
 		// Side effect: user cannot contain slashes currently.
-		patt := regexp.MustCompile(`.*user=(.*)-port=(\d+).*`)
+		patt := regexp.MustCompile(`/user=(.*)-port=(\d+)/`)
 		match := patt.FindStringSubmatch(path)
 		if match == nil {
 			return nil, fmt.Errorf(
@@ -69,7 +70,8 @@ func FromName(name, path string) (Backend, error) {
 			)
 		}
 
-		return mock.NewMockBackend(user, port)
+		path = strings.Replace(path, match[0], "/", 1)
+		return mock.NewMockBackend(path, user, port), nil
 	}
 
 	return nil, ErrNoSuchBackend

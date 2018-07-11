@@ -12,22 +12,15 @@ type mockBackend struct {
 	*netMock.NetBackend
 }
 
-// TODO: Cleanup for net backend etc.
-
 // NewMockBackend returns a backend.Backend that operates only in memory
 // and does not use any resources outliving the own process, except the net
 // part which stores connection info on disk.
-func NewMockBackend(owner string, port int) (*mockBackend, error) {
-	nb, err := netMock.NewNetBackend(owner, port)
-	if err != nil {
-		return nil, err
-	}
-
+func NewMockBackend(path, owner string, port int) *mockBackend {
 	return &mockBackend{
 		MemFsBackend:    catfs.NewMemFsBackend(),
 		MockRepoBackend: repoMock.NewMockRepoBackend(),
-		NetBackend:      nb,
-	}, nil
+		NetBackend:      netMock.NewNetBackend(path, owner, port),
+	}
 }
 
 type version struct {
