@@ -12,8 +12,8 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
-	"github.com/sahib/config"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/config"
 )
 
 var (

@@ -54,6 +54,10 @@ type base struct {
 
 	ipfsLogFd *os.File
 	conductor *conductor.Conductor
+
+	// backendLoaded is set to true once the backend is
+	// loaded/accessed the first time.
+	backendLoaded bool
 }
 
 func repoIsInitialized(path string) error {
@@ -290,6 +294,7 @@ func (b *base) withCurrFs(fn func(fs *catfs.FS) error) error {
 		return err
 	}
 
+	b.backendLoaded = true
 	return fn(fs)
 }
 
@@ -382,13 +387,19 @@ func (b *base) Quit() (err error) {
 	log.Infof("Trying to unmount any mounts...")
 
 	var mounts *fuse.MountTable
-	mounts, err = b.Mounts()
-	if err != nil {
-		return err
-	}
 
-	if err := mounts.Close(); err != nil {
-		return err
+	// Only unmount things when we used the backend.
+	// Otherwise we might load the backend implicitly
+	// when doing unmounting which slows the shutdown process down.
+	if b.backendLoaded {
+		mounts, err = b.Mounts()
+		if err != nil {
+			return err
+		}
+
+		if err := mounts.Close(); err != nil {
+			return err
+		}
 	}
 
 	if b.ipfsLogFd != nil {
