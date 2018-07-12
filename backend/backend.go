@@ -52,7 +52,7 @@ func FromName(name, path string) (Backend, error) {
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
 		// Side effect: user cannot contain slashes currently.
-		patt := regexp.MustCompile(`/user=(.*)-port=(\d+)/`)
+		patt := regexp.MustCompile(`/user=(.*)-port=(\d+)`)
 		match := patt.FindStringSubmatch(path)
 		if match == nil {
 			return nil, fmt.Errorf(

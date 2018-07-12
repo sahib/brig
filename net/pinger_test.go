@@ -1,40 +1,37 @@
 package net
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/sahib/brig/net/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPinger(t *testing.T) {
-	nbk := mock.NewNetBackend()
-	pmap := NewPingMap(nbk)
+	withNetPair(t, func(a, b testUnit) {
+		apmap := a.srv.PingMap()
+		apmap.Sync([]string{"bob@9999"})
 
-	require.Nil(t, pmap.Sync([]string{
-		"alice-addr",
-		"bob-addr",
-		"vincent-addr",
-		"charlie-addr-wrong",
-		"something-not-there-addr",
-	}))
+		bpmap := a.srv.PingMap()
+		bpmap.Sync([]string{"alice@9998"})
 
-	// Give it a bit of time to send the first pings.
-	time.Sleep(50 * time.Millisecond)
+		// Give it a bit of time to send the first pings.
+		time.Sleep(100 * time.Millisecond)
 
-	for _, addr := range []string{"alice-addr", "bob-addr"} {
-		pinger, err := pmap.For(addr)
+		aliPinger, err := apmap.For("alice@9998")
 		require.Nil(t, err)
-		require.Nil(t, pinger.Err())
+		require.Nil(t, aliPinger.Err())
 
-		// TODO: Actually assert that some correct values are here:
-		fmt.Println(pinger.LastSeen())
-		fmt.Println(pinger.Roundtrip())
-	}
+		require.True(t, aliPinger.Roundtrip() < 1*time.Millisecond)
 
-	pinger, err := pmap.For("charlie-addr-wrong")
-	require.Nil(t, err)
-	require.Nil(t, pinger)
+		bobPinger, err := bpmap.For("bob@9999")
+		require.Nil(t, err)
+		require.Nil(t, bobPinger.Err())
+
+		require.True(t, bobPinger.Roundtrip() < 1*time.Millisecond)
+
+		charliePinger, err := bpmap.For("charlie@9999")
+		require.Nil(t, charliePinger)
+		require.NotNil(t, err)
+	})
 }

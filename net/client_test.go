@@ -3,9 +3,9 @@ package net
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -19,126 +19,140 @@ import (
 
 type testUnit struct {
 	ctl *Client
+	srv *Server
 	fs  *catfs.FS
 	rp  *repo.Repository
 	bk  backend.Backend
 }
 
-func withClientFor(who string, t *testing.T, fn func(u testUnit)) {
-	tmpFolder, err := ioutil.TempDir("", "brig-net-test-")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+func withNetServer(t *testing.T, name string, backendPort int, basePath string, fn func(u testUnit)) {
+	if basePath == "" {
+		var err error
+		basePath, err = ioutil.TempDir("", "brig-ctl-test")
+		require.Nil(t, err)
+
+		defer func() {
+			require.Nil(t, os.RemoveAll(basePath))
+		}()
 	}
 
-	defer os.RemoveAll(tmpFolder)
+	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
+	require.Nil(t, os.MkdirAll(fullPath, 0700))
 
-	if err := repo.Init(tmpFolder, who, "xxx", "mock"); err != nil {
-		t.Fatalf("Failed to init repo at: %v", err)
-	}
+	bk, err := backend.FromName("mock", fullPath)
+	require.Nil(t, err)
 
-	rp, err := repo.Open(tmpFolder, "xxx")
-	if err != nil {
-		t.Fatalf("Failed to open repository: %v", err)
-	}
+	err = repo.Init(fullPath, name, "password", "mock")
+	require.Nil(t, err)
 
-	ownPubKey, err := rp.Keyring().OwnPubKey()
-	if err != nil {
-		t.Fatalf("Failed to get own pub key: %v", err)
-	}
-
-	rm := repo.Remote{
-		Name:        who,
-		Fingerprint: peer.BuildFingerprint("addr", ownPubKey),
-	}
-	if err := rp.Remotes.AddRemote(rm); err != nil {
-		t.Fatalf("Failed to add remote: %v", err)
-	}
-
-	bk, err := backend.FromName("mock", "")
-	if err != nil {
-		t.Fatalf("Failed to get mock backend (wtf?): %v", err)
-	}
+	rp, err := repo.Open(fullPath, "password")
+	require.Nil(t, err)
 
 	srv, err := NewServer(rp, bk)
-	if err != nil {
-		t.Fatalf("Failed to start server: %v", err)
-	}
+	require.Nil(t, err)
 
-	wg := &sync.WaitGroup{}
+	fs, err := rp.FS(name, bk)
+	require.Nil(t, err)
+
+	waitForDeath := make(chan bool)
 	go func() {
-		wg.Add(1)
-		defer wg.Done()
-
-		if err := srv.Serve(); err != nil {
-			t.Fatalf("Failed to start serving process: %v", err)
-		}
-
-		if err := srv.Close(); err != nil {
-			t.Fatalf("Failed to close server properly: %v", err)
-		}
+		defer func() {
+			waitForDeath <- true
+		}()
+		require.Nil(t, srv.Serve())
+		require.Nil(t, srv.Close())
 	}()
 
 	// Allow a short time for the server go routine to fully boot up.
 	time.Sleep(50 * time.Millisecond)
 
-	ctx := context.Background()
-	ctl, err := Dial(who, rp, bk, ctx)
-	if err != nil {
-		t.Fatalf("Dial to %v failed: %v", who, err)
-	}
-
-	fs, err := rp.FS(rp.CurrentUser(), bk)
-	if err != nil {
-		t.Fatalf("Failed to retrieve own fs: %v", err)
-	}
-
-	// Actually execute the test...
+	// Run the actual test function:
 	fn(testUnit{
-		fs:  fs,
 		rp:  rp,
-		ctl: ctl,
 		bk:  bk,
+		fs:  fs,
+		srv: srv,
 	})
 
-	if err := ctl.Close(); err != nil {
-		t.Fatalf("Failed to close conn")
-	}
-
-	if err := rp.Close("xxx"); err != nil {
-		t.Fatalf("Failed to close repo: %v", err)
-	}
-
-	// Quit the server.
+	// wait until serve was done.
 	srv.Quit()
-	wg.Wait()
+	<-waitForDeath
+}
+
+func buildFingerprint(t *testing.T, u testUnit) peer.Fingerprint {
+	ownPubKey, err := u.rp.Keyring().OwnPubKey()
+	require.Nil(t, err)
+
+	self, err := u.srv.Identity()
+	require.Nil(t, err)
+
+	return peer.BuildFingerprint(self.Addr, ownPubKey)
+}
+
+func withNetPair(t *testing.T, fn func(a, b testUnit)) {
+	basePath, err := ioutil.TempDir("", "brig-net-test")
+	require.Nil(t, err)
+
+	defer func() {
+		require.Nil(t, os.RemoveAll(basePath))
+	}()
+
+	withNetServer(t, "alice", 9998, basePath, func(a testUnit) {
+		withNetServer(t, "bob", 9999, basePath, func(b testUnit) {
+			// Add each other's fingerprints:
+			require.Nil(t, a.rp.Remotes.AddRemote(repo.Remote{
+				Name:        "bob",
+				Fingerprint: buildFingerprint(t, b),
+			}))
+			require.Nil(t, b.rp.Remotes.AddRemote(repo.Remote{
+				Name:        "alice",
+				Fingerprint: buildFingerprint(t, a),
+			}))
+
+			aliCtl, err := Dial("alice", b.rp, b.bk, context.Background())
+			require.Nil(t, err)
+
+			bobCtl, err := Dial("bob", a.rp, a.bk, context.Background())
+			require.Nil(t, err)
+
+			a.ctl = bobCtl
+			b.ctl = aliCtl
+
+			fn(a, b)
+		})
+	})
 }
 
 func TestClientPing(t *testing.T) {
-	withClientFor("bob", t, func(u testUnit) {
+	withNetPair(t, func(a, b testUnit) {
 		for i := 0; i < 100; i++ {
-			if err := u.ctl.Ping(); err != nil {
-				t.Fatalf("Ping to bob failed: %v", err)
+			if err := a.ctl.Ping(); err != nil {
+				t.Fatalf("ping to bob failed: %v", err)
+			}
+
+			if err := b.ctl.Ping(); err != nil {
+				t.Fatalf("ping to alice failed: %v", err)
 			}
 		}
 	})
 }
 
 func TestClientFetchStore(t *testing.T) {
-	withClientFor("bob", t, func(u testUnit) {
+	withNetPair(t, func(a, b testUnit) {
 		filePath := "/a/new/name/has/been/born"
 		fileData := []byte{1, 2, 3}
 		fileSrc := bytes.NewReader(fileData)
 
-		if err := u.fs.Stage(filePath, fileSrc); err != nil {
-			t.Fatalf("Failed to stage simple file: %v", err)
+		if err := a.fs.Stage(filePath, fileSrc); err != nil {
+			t.Fatalf("failed to stage simple file: %v", err)
 		}
 
-		data, err := u.ctl.FetchStore()
+		data, err := b.ctl.FetchStore()
 		if err != nil {
-			t.Fatalf("Failed to read store: %v", err)
+			t.Fatalf("failed to read store: %v", err)
 		}
 
-		aliceFs, err := u.rp.FS("alice", u.bk)
+		aliceFs, err := b.rp.FS("alice", b.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
@@ -159,36 +173,24 @@ func TestClientFetchStore(t *testing.T) {
 
 		// Check superficially that store was imported right:
 		require.Equal(t, info.Path, filePath)
-		require.Equal(t, info.User, "bob")
+		require.Equal(t, info.User, "alice")
 		require.Equal(t, info.Size, uint64(3))
 		require.Equal(t, info.IsDir, false)
-
-		r, err := aliceFs.Cat(filePath)
-		if err != nil {
-			t.Fatalf("Failed to cat exported file: %v", err)
-		}
-
-		bobData, err := ioutil.ReadAll(r)
-		if err != nil {
-			t.Fatalf("Failed to read bob data: %v", err)
-		}
-
-		require.Equal(t, fileData, bobData)
 	})
 }
 
 func TestClientFetchPatch(t *testing.T) {
-	withClientFor("bob", t, func(u testUnit) {
-		// Create a new file in bob's fs.
-		require.Nil(t, u.fs.Stage("/new_file", bytes.NewReader([]byte{1, 2, 3})))
+	withNetPair(t, func(a, b testUnit) {
+		// Create a new file in alice's fs.
+		require.Nil(t, a.fs.Stage("/new_file", bytes.NewReader([]byte{1, 2, 3})))
 
-		// Get a patch from Bob's FS.
-		patchData, err := u.ctl.FetchPatch(0)
+		// Get a patch from alice:
+		patchData, err := b.ctl.FetchPatch(0)
 		require.Nil(t, err)
 		require.NotNil(t, patchData)
 
 		// Create a new empty FS for alice.
-		aliceFs, err := u.rp.FS("alice", u.bk)
+		aliceFs, err := b.rp.FS("alice", b.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
@@ -212,7 +214,7 @@ func TestClientFetchPatch(t *testing.T) {
 
 		// If we fetch the same patch again, it will be empty.
 		// (data will be not len=0, but no real contents)
-		patchData, err = u.ctl.FetchPatch(2)
+		patchData, err = b.ctl.FetchPatch(2)
 		require.Nil(t, err)
 		require.NotNil(t, patchData)
 		require.Nil(t, aliceFs.ApplyPatch(patchData))
@@ -225,23 +227,23 @@ func TestClientFetchPatch(t *testing.T) {
 		// Bob's patch index should not have changed.
 		// For bob, the patch index does not make really sense,
 		// since he's the owner of the fs and always has the latest version.
-		lastBobPatchIdx, err := u.fs.LastPatchIndex()
+		lastBobPatchIdx, err := b.fs.LastPatchIndex()
 		require.Nil(t, err)
 		require.Equal(t, int64(0), lastBobPatchIdx)
 	})
 }
 
 func TestClientCompleteFetchAllowed(t *testing.T) {
-	withClientFor("bob", t, func(u testUnit) {
-		isAllowed, err := u.ctl.IsCompleteFetchAllowed()
-		require.Nil(t, err)
-
-		rmt, err := u.rp.Remotes.Remote("bob")
+	withNetPair(t, func(a, b testUnit) {
+		isAllowed, err := b.ctl.IsCompleteFetchAllowed()
 		require.Nil(t, err)
 		require.True(t, isAllowed)
 
 		// Make the remote have only access to a specific sub folder:
-		err = u.rp.Remotes.SetRemote("bob", repo.Remote{
+		rmt, err := a.rp.Remotes.Remote("bob")
+		require.Nil(t, err)
+
+		err = a.rp.Remotes.SetRemote("bob", repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{
@@ -252,12 +254,12 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 		})
 		require.Nil(t, err)
 
-		isAllowed, err = u.ctl.IsCompleteFetchAllowed()
+		isAllowed, err = b.ctl.IsCompleteFetchAllowed()
 		require.Nil(t, err)
 		require.False(t, isAllowed)
 
 		// Try again with the root folder enabled:
-		err = u.rp.Remotes.SetRemote("bob", repo.Remote{
+		err = a.rp.Remotes.SetRemote("bob", repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{
@@ -273,7 +275,7 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 
 		// This also tests that we are able to change remote config
 		// without needing to reconnect.
-		isAllowed, err = u.ctl.IsCompleteFetchAllowed()
+		isAllowed, err = b.ctl.IsCompleteFetchAllowed()
 		require.Nil(t, err)
 		require.True(t, isAllowed)
 	})

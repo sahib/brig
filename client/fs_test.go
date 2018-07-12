@@ -21,7 +21,6 @@ func init() {
 }
 
 func withDaemon(t *testing.T, name string, port, backendPort int, basePath string, fn func(ctl *Client)) {
-	// This is a hacky way to tell the mock backend what port it should use:
 	if basePath == "" {
 		var err error
 		basePath, err = ioutil.TempDir("", "brig-ctl-test")
@@ -32,6 +31,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, basePath strin
 		}()
 	}
 
+	// This is a hacky way to tell the mock backend what port it should use:
 	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
 	require.Nil(t, os.MkdirAll(fullPath, 0700))
 

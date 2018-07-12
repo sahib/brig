@@ -938,12 +938,7 @@ func (fs *FS) MakeCommit(msg string) error {
 		return err
 	}
 
-	head, err := fs.lkr.Head()
-	if err != nil {
-		return err
-	}
-
-	return fs.writeLastPatchIndex(head.Index())
+	return nil
 }
 
 func (fs *FS) Head() (string, error) {
