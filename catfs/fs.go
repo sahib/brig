@@ -3,6 +3,7 @@ package catfs
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -63,7 +64,13 @@ type FS struct {
 
 	// cache for the isPinned operation
 	pinner *Pinner
+
+	// wether this fs is read only and cannot be changed.
+	// It can be change by applying patches though.
+	readOnly bool
 }
+
+var ErrReadOnly = errors.New("fs is read only")
 
 // StatInfo describes the metadata of a single node.
 // The concept is comparable to the POSIX stat() call.
@@ -207,7 +214,7 @@ func (fs *FS) doGcRun() {
 	}
 }
 
-func NewFilesystem(backend FsBackend, dbPath string, owner string, fsCfg *config.Config) (*FS, error) {
+func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool, fsCfg *config.Config) (*FS, error) {
 	kv, err := db.NewDiskDatabase(dbPath)
 	if err != nil {
 		return nil, err
@@ -234,6 +241,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, fsCfg *config
 		lkr:       lkr,
 		bk:        backend,
 		cfg:       fsCfg,
+		readOnly:  readOnly,
 		gcControl: make(chan bool),
 		gcTicker:  time.NewTicker(120 * time.Second),
 		pinner:    pinCache,
@@ -303,6 +311,10 @@ func (fs *FS) Move(src, dst string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	if fs.readOnly {
+		return ErrReadOnly
+	}
+
 	srcNd, err := lookupFileOrDir(fs.lkr, src)
 	if err != nil {
 		return err
@@ -314,6 +326,10 @@ func (fs *FS) Move(src, dst string) error {
 func (fs *FS) Copy(src, dst string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
+
+	if fs.readOnly {
+		return ErrReadOnly
+	}
 
 	srcNd, err := lookupFileOrDir(fs.lkr, src)
 	if err != nil {
@@ -328,6 +344,10 @@ func (fs *FS) Mkdir(path string, createParents bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	if fs.readOnly {
+		return ErrReadOnly
+	}
+
 	_, err := c.Mkdir(fs.lkr, path, createParents)
 	return err
 }
@@ -335,6 +355,10 @@ func (fs *FS) Mkdir(path string, createParents bool) error {
 func (fs *FS) Remove(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
+
+	if fs.readOnly {
+		return ErrReadOnly
+	}
 
 	nd, err := lookupFileOrDir(fs.lkr, path)
 	if err != nil {
@@ -627,6 +651,12 @@ func prefixSlash(s string) string {
 // If it exists, it's mod time is being updated to the current time.
 func (fs *FS) Touch(path string) error {
 	fs.mu.Lock()
+
+	if fs.readOnly {
+		fs.mu.Unlock()
+		return ErrReadOnly
+	}
+
 	nd, err := fs.lkr.LookupNode(path)
 	if err != nil && !ie.IsNoSuchFileError(err) {
 		fs.mu.Unlock()
@@ -663,6 +693,10 @@ func (fs *FS) Touch(path string) error {
 func (fs *FS) Truncate(path string, size uint64) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
+
+	if fs.readOnly {
+		return ErrReadOnly
+	}
 
 	nd, err := fs.lkr.LookupModNode(path)
 	if err != nil {
@@ -767,6 +801,11 @@ func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
 // If `path` already exists, it will be updated.
 func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
+
+	if fs.readOnly {
+		return ErrReadOnly
+	}
+
 	path = prefixSlash(path)
 
 	// See if we already have such a file.
@@ -915,7 +954,7 @@ func (fs *FS) Open(path string) (*Handle, error) {
 		return nil, fmt.Errorf("Can only open files: %v", path)
 	}
 
-	return newHandle(fs, file), nil
+	return newHandle(fs, file, fs.readOnly), nil
 }
 
 ////////////////////
@@ -1081,6 +1120,10 @@ func (fs *FS) Sync(remote *FS) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	if fs.readOnly {
+		return ErrReadOnly
+	}
+
 	syncCfg, err := fs.buildSyncCfg()
 	if err != nil {
 		return err
@@ -1208,6 +1251,10 @@ func (fs *FS) Log() ([]Commit, error) {
 func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
+
+	if fs.readOnly {
+		return ErrReadOnly
+	}
 
 	if path == "/" || path == "" {
 		return fs.Checkout(rev, false)

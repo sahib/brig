@@ -279,11 +279,13 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return fs, nil
 	}
 
+	isReadOnly := rp.Owner != owner
+
 	// No fs was created yet for this owner.
 	// Create it & give it a part of the main config.
 	fsCfg := rp.Config.Section("fs")
 	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
-	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, fsCfg)
+	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, isReadOnly, fsCfg)
 	if err != nil {
 		return nil, err
 	}

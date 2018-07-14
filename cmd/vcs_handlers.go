@@ -434,7 +434,7 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	suffix := "Changes will be local only."
+	suffix := "Everything is read only."
 	if who == whoami.Owner {
 		suffix = "Welcome back!"
 	}

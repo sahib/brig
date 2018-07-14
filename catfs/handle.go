@@ -23,12 +23,14 @@ type Handle struct {
 	stream      mio.Stream
 	wasModified bool
 	isClosed    bool
+	readOnly    bool
 }
 
-func newHandle(fs *FS, file *n.File) *Handle {
+func newHandle(fs *FS, file *n.File, readOnly bool) *Handle {
 	return &Handle{
-		fs:   fs,
-		file: file,
+		fs:       fs,
+		file:     file,
+		readOnly: readOnly,
 	}
 }
 
@@ -84,6 +86,10 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 func (hdl *Handle) Write(buf []byte) (int, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
+
+	if hdl.readOnly {
+		return 0, ErrReadOnly
+	}
 
 	if hdl.isClosed {
 		return 0, ErrIsClosed
@@ -152,6 +158,10 @@ func (hdl *Handle) Truncate(size uint64) error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
+	if hdl.readOnly {
+		return ErrReadOnly
+	}
+
 	if hdl.isClosed {
 		return ErrIsClosed
 	}
@@ -210,6 +220,10 @@ func (hdl *Handle) flush() error {
 func (hdl *Handle) Flush() error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
+
+	if hdl.readOnly {
+		return ErrReadOnly
+	}
 
 	if hdl.isClosed {
 		return ErrIsClosed

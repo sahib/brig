@@ -31,7 +31,7 @@ func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
 
 	defer os.RemoveAll(dbPath)
 
-	fs, err := catfs.NewFilesystem(backend, dbPath, owner, nil)
+	fs, err := catfs.NewFilesystem(backend, dbPath, owner, false, nil)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}

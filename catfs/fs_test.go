@@ -27,7 +27,7 @@ func init() {
 	log.SetLevel(log.WarnLevel)
 }
 
-func withDummyFS(t *testing.T, fn func(fs *FS)) {
+func withDummyFSReadOnly(t *testing.T, readOnly bool, fn func(fs *FS)) {
 	backend := NewMemFsBackend()
 	owner := "alice"
 
@@ -47,7 +47,7 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 
 	fsCfg := cfg.Section("fs")
 
-	fs, err := NewFilesystem(backend, dbPath, owner, fsCfg)
+	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
@@ -57,6 +57,10 @@ func withDummyFS(t *testing.T, fn func(fs *FS)) {
 	if err := fs.Close(); err != nil {
 		t.Fatalf("Failed to close filesystem: %v", err)
 	}
+}
+
+func withDummyFS(t *testing.T, fn func(fs *FS)) {
+	withDummyFSReadOnly(t, false, fn)
 }
 
 func TestStat(t *testing.T) {
@@ -782,5 +786,12 @@ func TestPatch(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, int64(2), dstIndex)
 		})
+	})
+}
+
+func TestReadOnly(t *testing.T) {
+	withDummyFSReadOnly(t, true, func(fs *FS) {
+		err := fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3}))
+		require.Equal(t, ErrReadOnly, err)
 	})
 }
