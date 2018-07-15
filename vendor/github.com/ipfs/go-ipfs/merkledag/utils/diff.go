@@ -7,8 +7,8 @@ import (
 
 	dag "github.com/ipfs/go-ipfs/merkledag"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // These constants define the changes that can be applied to a DAG.
@@ -95,7 +95,12 @@ func ApplyChange(ctx context.Context, ds ipld.DAGService, nd *dag.ProtoNode, cs 
 
 // Diff returns a set of changes that transform node 'a' into node 'b'
 func Diff(ctx context.Context, ds ipld.DAGService, a, b ipld.Node) ([]*Change, error) {
+	// Base case where both nodes are leaves, just compare
+	// their CIDs.
 	if len(a.Links()) == 0 && len(b.Links()) == 0 {
+		if a.Cid().Equals(b.Cid()) {
+			return []*Change{}, nil
+		}
 		return []*Change{
 			&Change{
 				Type:   Mod,

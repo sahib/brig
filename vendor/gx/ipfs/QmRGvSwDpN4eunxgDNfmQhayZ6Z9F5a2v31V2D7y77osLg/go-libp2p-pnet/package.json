@@ -1,0 +1,43 @@
+{
+  "author": "libp2p",
+  "bugs": {
+    "URL": "https://github.com/libp2p/go-libp2p-pnet/issues",
+    "url": "https://github.com/libp2p/go-libp2p-pnet/issues"
+  },
+  "gx": {
+    "dvcsimport": "github.com/libp2p/go-libp2p-pnet"
+  },
+  "gxDependencies": [
+    {
+      "author": "libp2p",
+      "hash": "QmW7Ump7YyBMr712Ta3iEVh3ZYcfVvJaPryfbCnyE826b4",
+      "name": "go-libp2p-interface-pnet",
+      "version": "3.0.0"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmWBug6eBS7AxRdCDVuSY5CnSit7cS2XnPFYJWqWDumhCG",
+      "name": "go-msgio",
+      "version": "0.0.3"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmRDePEiL4Yupq5EkcK3L3ko3iMgYaqUdLu7xc1kqs7dnV",
+      "name": "go-multicodec",
+      "version": "0.1.5"
+    },
+    {
+      "author": "davidlazar",
+      "hash": "QmNi5J1mEQKAKWbPRBEMKKYVNok9EN4MsGM4YUqPvraPEX",
+      "name": "go-crypto-dav",
+      "version": "0.2.2"
+    }
+  ],
+  "gxVersion": "0.9.1",
+  "language": "go",
+  "license": "MIT",
+  "name": "go-libp2p-pnet",
+  "releaseCmd": "git commit -a -m \"gx release $VERSION\"",
+  "version": "3.0.1"
+}
+

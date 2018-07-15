@@ -9,8 +9,8 @@ import (
 	format "github.com/ipfs/go-ipfs/unixfs"
 	hamt "github.com/ipfs/go-ipfs/unixfs/hamt"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // ShardSplitThreshold specifies how large of an unsharded directory
@@ -103,7 +103,7 @@ func (d *Directory) AddChild(ctx context.Context, name string, nd ipld.Node) err
 	if d.shard == nil {
 		if !UseHAMTSharding {
 			_ = d.dirnode.RemoveNodeLink(name)
-			return d.dirnode.AddNodeLinkClean(name, nd)
+			return d.dirnode.AddNodeLink(name, nd)
 		}
 
 		err := d.switchToSharding(ctx)

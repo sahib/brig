@@ -14,9 +14,9 @@ import (
 	mdtest "github.com/ipfs/go-ipfs/merkledag/test"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	u "gx/ipfs/QmNiJuT8Ja3hMVpBHXv3Q6dwmperaQ6JjLtpMQgMCD7xvx/go-ipfs-util"
-	chunker "gx/ipfs/QmWo8jYc19ppG7YoTsrr2kEtLRbARTJho5oNXFTR6B7Peq/go-ipfs-chunker"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	chunker "gx/ipfs/QmXnzH7wowyLZy8XJxxaQCVTgLMcDXdMBznmsrmQWCyiQV/go-ipfs-chunker"
 )
 
 // TODO: extract these tests and more as a generic layout test suite
@@ -103,11 +103,11 @@ func TestTwoChunks(t *testing.T) {
 
 func arrComp(a, b []byte) error {
 	if len(a) != len(b) {
-		return fmt.Errorf("Arrays differ in length. %d != %d", len(a), len(b))
+		return fmt.Errorf("arrays differ in length. %d != %d", len(a), len(b))
 	}
 	for i, v := range a {
 		if v != b[i] {
-			return fmt.Errorf("Arrays differ at index: %d", i)
+			return fmt.Errorf("arrays differ at index: %d", i)
 		}
 	}
 	return nil

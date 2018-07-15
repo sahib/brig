@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 var (
@@ -62,7 +62,7 @@ func (p Path) String() string {
 // IsJustAKey returns true if the path is of the form <key> or /ipfs/<key>.
 func (p Path) IsJustAKey() bool {
 	parts := p.Segments()
-	return (len(parts) == 2 && parts[0] == "ipfs")
+	return len(parts) == 2 && parts[0] == "ipfs"
 }
 
 // PopLastSegment returns a new Path without its final segment, and the final

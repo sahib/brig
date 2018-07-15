@@ -9,8 +9,8 @@ import (
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	mod "github.com/ipfs/go-ipfs/unixfs/mod"
 
-	chunker "gx/ipfs/QmWo8jYc19ppG7YoTsrr2kEtLRbARTJho5oNXFTR6B7Peq/go-ipfs-chunker"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	chunker "gx/ipfs/QmXnzH7wowyLZy8XJxxaQCVTgLMcDXdMBznmsrmQWCyiQV/go-ipfs-chunker"
 )
 
 type File struct {
@@ -60,7 +60,7 @@ func (fi *File) Open(flags int, sync bool) (FileDescriptor, error) {
 			return nil, err
 		}
 
-		switch fsn.Type {
+		switch fsn.GetType() {
 		default:
 			return nil, fmt.Errorf("unsupported fsnode type for 'file'")
 		case ft.TSymlink:

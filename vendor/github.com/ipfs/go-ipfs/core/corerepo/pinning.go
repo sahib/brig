@@ -4,7 +4,7 @@ IPFS block services.
 
 IPFS nodes will keep local copies of any object that have either been
 added or requested locally.  Not all of these objects are worth
-preserving forever though, so the node adminstrator can pin objects
+preserving forever though, so the node administrator can pin objects
 they want to keep and unpin objects that they don't care about.
 
 Garbage collection sweeps iterate through the local block store
@@ -22,7 +22,7 @@ import (
 	resolver "github.com/ipfs/go-ipfs/path/resolver"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 func Pin(n *core.IpfsNode, ctx context.Context, paths []string, recursive bool) ([]*cid.Cid, error) {

@@ -11,8 +11,8 @@ import (
 	wantlist "github.com/ipfs/go-ipfs/exchange/bitswap/wantlist"
 
 	metrics "gx/ipfs/QmRg1gKTHzc3CZXSKzem8aR4E3TubFhbgXwfVuWnSK5CC5/go-metrics-interface"
-	peer "gx/ipfs/QmZoWKhxUmZ2seW4BzX6fJkNR8hh9PsGModr7q171yq2SS/go-libp2p-peer"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
+	peer "gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 type WantManager struct {
@@ -326,7 +326,7 @@ func (pm *WantManager) Run() {
 				for _, t := range ws.targets {
 					p, ok := pm.peers[t]
 					if !ok {
-						log.Warning("tried sending wantlist change to non-partner peer")
+						log.Infof("tried sending wantlist change to non-partner peer: %s", t)
 						continue
 					}
 					p.addMessage(ws.entries, ws.from)

@@ -8,10 +8,10 @@ import (
 
 	bserv "github.com/ipfs/go-ipfs/blockservice"
 
-	ipldcbor "gx/ipfs/QmNRz7BDWfdFNVLt7AVvmRefkrURD25EeoipcXqo6yoXU1/go-ipld-cbor"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
-	blocks "gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
+	ipldcbor "gx/ipfs/QmSF1Ksgn5d7JCTBt4e1yp4wzs6tpYyweCZ4PcDYp3tNeK/go-ipld-cbor"
+	blocks "gx/ipfs/QmTRCUvZLiir12Qr6MV3HKfKMHX8Nf1Vddn6t2g5nsQSb9/go-block-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // TODO: We should move these registrations elsewhere. Really, most of the IPLD
@@ -74,7 +74,7 @@ func (n *dagService) Get(ctx context.Context, c *cid.Cid) (ipld.Node, error) {
 		if err == bserv.ErrNotFound {
 			return nil, ipld.ErrNotFound
 		}
-		return nil, fmt.Errorf("Failed to get block for %s: %v", c, err)
+		return nil, fmt.Errorf("failed to get block for %s: %v", c, err)
 	}
 
 	return ipld.Decode(b)
@@ -180,18 +180,6 @@ func FetchGraph(ctx context.Context, root *cid.Cid, serv ipld.DAGService) error 
 	return EnumerateChildrenAsync(ctx, GetLinksDirect(ng), root, visit)
 }
 
-// FindLinks searches this nodes links for the given key,
-// returns the indexes of any links pointing to it
-func FindLinks(links []*cid.Cid, c *cid.Cid, start int) []int {
-	var out []int
-	for i, lnkC := range links[start:] {
-		if c.Equals(lnkC) {
-			out = append(out, i+start)
-		}
-	}
-	return out
-}
-
 // GetMany gets many nodes from the DAG at once.
 //
 // This method may not return all requested nodes (and may or may not return an
@@ -201,7 +189,20 @@ func (n *dagService) GetMany(ctx context.Context, keys []*cid.Cid) <-chan *ipld.
 	return getNodesFromBG(ctx, n.Blocks, keys)
 }
 
+func dedupKeys(keys []*cid.Cid) []*cid.Cid {
+	set := cid.NewSet()
+	for _, c := range keys {
+		set.Add(c)
+	}
+	if set.Len() == len(keys) {
+		return keys
+	}
+	return set.Keys()
+}
+
 func getNodesFromBG(ctx context.Context, bs bserv.BlockGetter, keys []*cid.Cid) <-chan *ipld.NodeOption {
+	keys = dedupKeys(keys)
+
 	out := make(chan *ipld.NodeOption, len(keys))
 	blocks := bs.GetBlocks(ctx, keys)
 	var count int
@@ -319,17 +320,17 @@ func EnumerateChildrenAsync(ctx context.Context, getLinks GetLinks, c *cid.Cid, 
 	for i := 0; i < FetchGraphConcurrency; i++ {
 		go func() {
 			for ic := range feed {
-				links, err := getLinks(ctx, ic)
-				if err != nil {
-					errChan <- err
-					return
-				}
-
 				setlk.Lock()
-				unseen := visit(ic)
+				shouldVisit := visit(ic)
 				setlk.Unlock()
 
-				if unseen {
+				if shouldVisit {
+					links, err := getLinks(ctx, ic)
+					if err != nil {
+						errChan <- err
+						return
+					}
+
 					select {
 					case out <- links:
 					case <-fetchersCtx.Done():

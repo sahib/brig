@@ -7,10 +7,10 @@ import (
 
 	dag "github.com/ipfs/go-ipfs/merkledag"
 	ft "github.com/ipfs/go-ipfs/unixfs"
-	pi "gx/ipfs/Qmb3jLEFAQrqdVgWUajqEyuuDoavkSq1XQXz6tWdFWF995/go-ipfs-posinfo"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	pi "gx/ipfs/QmUWsXLvYYDAaoAt9TPZpFX4ffHHMg46AHrz1ZLTN5ABbe/go-ipfs-posinfo"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // BlockSizeLimit specifies the maximum size an imported block can have.
@@ -32,7 +32,7 @@ var roughLinkSize = 34 + 8 + 5   // sha256 multihash + size + no name + protobuf
 //   var DefaultLinksPerBlock = (roughLinkBlockSize / roughLinkSize)
 //
 // See calc_test.go
-var DefaultLinksPerBlock = (roughLinkBlockSize / roughLinkSize)
+var DefaultLinksPerBlock = roughLinkBlockSize / roughLinkSize
 
 // ErrSizeLimitExceeded signals that a block is larger than BlockSizeLimit.
 var ErrSizeLimitExceeded = fmt.Errorf("object size limit exceeded")
@@ -77,7 +77,7 @@ func (n *UnixfsNode) Set(other *UnixfsNode) {
 	n.raw = other.raw
 	n.rawnode = other.rawnode
 	if other.ufmt != nil {
-		n.ufmt.Data = other.ufmt.Data
+		n.ufmt.SetData(other.ufmt.GetData())
 	}
 }
 
@@ -109,7 +109,7 @@ func (n *UnixfsNode) AddChild(child *UnixfsNode, db *DagBuilderHelper) error {
 
 	// Add a link to this node without storing a reference to the memory
 	// This way, we avoid nodes building up and consuming all of our RAM
-	err = n.node.AddNodeLinkClean("", childnode)
+	err = n.node.AddNodeLink("", childnode)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (n *UnixfsNode) RemoveChild(index int, dbh *DagBuilderHelper) {
 
 // SetData stores data in this node.
 func (n *UnixfsNode) SetData(data []byte) {
-	n.ufmt.Data = data
+	n.ufmt.SetData(data)
 }
 
 // FileSize returns the total file size of this tree (including children)

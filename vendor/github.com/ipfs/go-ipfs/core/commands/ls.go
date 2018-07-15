@@ -10,7 +10,6 @@ import (
 	cmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
-	offline "github.com/ipfs/go-ipfs/exchange/offline"
 	merkledag "github.com/ipfs/go-ipfs/merkledag"
 	path "github.com/ipfs/go-ipfs/path"
 	resolver "github.com/ipfs/go-ipfs/path/resolver"
@@ -18,8 +17,10 @@ import (
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 	unixfspb "github.com/ipfs/go-ipfs/unixfs/pb"
 
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	offline "gx/ipfs/QmRCgkkCmf1nMrW2BLZZtjP3Xyw3GfZVYRLix9wrnW4NoR/go-ipfs-exchange-offline"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 type LsLink struct {
@@ -134,23 +135,28 @@ The JSON output contains type information.
 			for j, link := range links {
 				t := unixfspb.Data_DataType(-1)
 
-				linkNode, err := link.GetNode(req.Context(), dserv)
-				if err == ipld.ErrNotFound && !resolve {
-					// not an error
-					linkNode = nil
-				} else if err != nil {
-					res.SetError(err, cmdkit.ErrNormal)
-					return
-				}
-
-				if pn, ok := linkNode.(*merkledag.ProtoNode); ok {
-					d, err := unixfs.FromBytes(pn.Data())
-					if err != nil {
+				switch link.Cid.Type() {
+				case cid.Raw:
+					// No need to check with raw leaves
+					t = unixfspb.Data_File
+				case cid.DagProtobuf:
+					linkNode, err := link.GetNode(req.Context(), dserv)
+					if err == ipld.ErrNotFound && !resolve {
+						// not an error
+						linkNode = nil
+					} else if err != nil {
 						res.SetError(err, cmdkit.ErrNormal)
 						return
 					}
 
-					t = d.GetType()
+					if pn, ok := linkNode.(*merkledag.ProtoNode); ok {
+						d, err := unixfs.FromBytes(pn.Data())
+						if err != nil {
+							res.SetError(err, cmdkit.ErrNormal)
+							return
+						}
+						t = d.GetType()
+					}
 				}
 				output[i].Links[j] = LsLink{
 					Name: link.Name,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,13 +15,15 @@ import (
 	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
 	dag "github.com/ipfs/go-ipfs/merkledag"
 	namesys "github.com/ipfs/go-ipfs/namesys"
+	nsopts "github.com/ipfs/go-ipfs/namesys/opts"
 	path "github.com/ipfs/go-ipfs/path"
 	repo "github.com/ipfs/go-ipfs/repo"
 	config "github.com/ipfs/go-ipfs/repo/config"
-	ds2 "github.com/ipfs/go-ipfs/thirdparty/datastore2"
 
-	id "gx/ipfs/QmNh1kGFFdsPu79KNSaL4NUKUPb4Eiz4KHdMtFY6664RDp/go-libp2p/p2p/protocol/identify"
-	ci "gx/ipfs/QmaPbCnUMBohSGo3KnxEa2bHqyJVVeEEcwtqJAYxerieBo/go-libp2p-crypto"
+	id "gx/ipfs/QmZ86eLPtXkQ1Dfa992Q8NpXArUoWWh3y728JDcWvzRrvC/go-libp2p/p2p/protocol/identify"
+	ci "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
+	datastore "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore"
+	syncds "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore/sync"
 )
 
 // `ipfs object new unixfs-dir`
@@ -28,16 +31,29 @@ var emptyDir = "/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"
 
 type mockNamesys map[string]path.Path
 
-func (m mockNamesys) Resolve(ctx context.Context, name string) (value path.Path, err error) {
-	return m.ResolveN(ctx, name, namesys.DefaultDepthLimit)
-}
-
-func (m mockNamesys) ResolveN(ctx context.Context, name string, depth int) (value path.Path, err error) {
-	p, ok := m[name]
-	if !ok {
-		return "", namesys.ErrResolveFailed
+func (m mockNamesys) Resolve(ctx context.Context, name string, opts ...nsopts.ResolveOpt) (value path.Path, err error) {
+	cfg := nsopts.DefaultResolveOpts()
+	for _, o := range opts {
+		o(cfg)
 	}
-	return p, nil
+	depth := cfg.Depth
+	if depth == nsopts.UnlimitedDepth {
+		depth = math.MaxUint64
+	}
+	for strings.HasPrefix(name, "/ipns/") {
+		if depth <= 0 {
+			return value, namesys.ErrResolveRecursion
+		}
+		depth--
+
+		var ok bool
+		value, ok = m[name]
+		if !ok {
+			return "", namesys.ErrResolveFailed
+		}
+		name = value.String()
+	}
+	return value, nil
 }
 
 func (m mockNamesys) Publish(ctx context.Context, name ci.PrivKey, value path.Path) error {
@@ -60,7 +76,7 @@ func newNodeWithMockNamesys(ns mockNamesys) (*core.IpfsNode, error) {
 	}
 	r := &repo.Mock{
 		C: c,
-		D: ds2.ThreadSafeCloserMapDatastore(),
+		D: syncds.MutexWrap(datastore.NewMapDatastore()),
 	}
 	n, err := core.NewNode(context.Background(), &core.BuildCfg{Repo: r})
 	if err != nil {
@@ -132,6 +148,10 @@ func TestGatewayGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	ns["/ipns/example.com"] = path.FromString("/ipfs/" + k)
+	ns["/ipns/working.example.com"] = path.FromString("/ipfs/" + k)
+	ns["/ipns/double.example.com"] = path.FromString("/ipns/working.example.com")
+	ns["/ipns/triple.example.com"] = path.FromString("/ipns/double.example.com")
+	ns["/ipns/broken.example.com"] = path.FromString("/ipns/" + k)
 
 	t.Log(ts.URL)
 	for _, test := range []struct {
@@ -147,6 +167,13 @@ func TestGatewayGet(t *testing.T) {
 		{"localhost:5001", "/ipns/%0D%0A%0D%0Ahello", http.StatusNotFound, "ipfs resolve -r /ipns/%0D%0A%0D%0Ahello: " + namesys.ErrResolveFailed.Error() + "\n"},
 		{"localhost:5001", "/ipns/example.com", http.StatusOK, "fnord"},
 		{"example.com", "/", http.StatusOK, "fnord"},
+
+		{"working.example.com", "/", http.StatusOK, "fnord"},
+		{"double.example.com", "/", http.StatusOK, "fnord"},
+		{"triple.example.com", "/", http.StatusOK, "fnord"},
+		{"working.example.com", "/ipfs/" + k, http.StatusNotFound, "ipfs resolve -r /ipns/working.example.com/ipfs/" + k + ": no link named \"ipfs\" under " + k + "\n"},
+		{"broken.example.com", "/", http.StatusNotFound, "ipfs resolve -r /ipns/broken.example.com/: " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"broken.example.com", "/ipfs/" + k, http.StatusNotFound, "ipfs resolve -r /ipns/broken.example.com/ipfs/" + k + ": " + namesys.ErrResolveFailed.Error() + "\n"},
 	} {
 		var c http.Client
 		r, err := http.NewRequest("GET", ts.URL+test.path, nil)

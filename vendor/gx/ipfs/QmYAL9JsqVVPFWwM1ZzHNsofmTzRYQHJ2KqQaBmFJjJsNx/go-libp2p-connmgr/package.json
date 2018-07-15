@@ -1,0 +1,53 @@
+{
+  "author": "whyrusleeping",
+  "bugs": {
+    "url": "https://github.com/libp2p/go-libp2p-connmgr"
+  },
+  "gx": {
+    "dvcsimport": "github.com/libp2p/go-libp2p-connmgr"
+  },
+  "gxDependencies": [
+    {
+      "hash": "QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb",
+      "name": "go-log",
+      "version": "1.5.3"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh",
+      "name": "go-libp2p-net",
+      "version": "3.0.5"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
+      "name": "go-multiaddr",
+      "version": "1.3.0"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmcW4FGAt24fdK1jBgWQn3yP4R9ZLyWQqjozv9QK7epRhL",
+      "name": "go-testutil",
+      "version": "1.2.5"
+    },
+    {
+      "author": "why",
+      "hash": "QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN",
+      "name": "go-libp2p-interface-connmgr",
+      "version": "0.0.11"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN",
+      "name": "go-libp2p-peer",
+      "version": "2.3.5"
+    }
+  ],
+  "gxVersion": "0.11.0",
+  "language": "go",
+  "license": "MIT",
+  "name": "go-libp2p-connmgr",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "0.3.14"
+}
+

@@ -10,9 +10,9 @@ import (
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	ftpb "github.com/ipfs/go-ipfs/unixfs/pb"
 
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // PBDagReader provides a way to easily read the data contained in a dag.
@@ -112,7 +112,7 @@ func (dr *PBDagReader) precalcNextBuf(ctx context.Context) error {
 		}
 
 		switch pb.GetType() {
-		case ftpb.Data_Directory:
+		case ftpb.Data_Directory, ftpb.Data_HAMTShard:
 			// A directory should not exist within a file
 			return ft.ErrInvalidDirLocation
 		case ftpb.Data_File:
@@ -166,22 +166,20 @@ func (dr *PBDagReader) CtxReadFull(ctx context.Context, b []byte) (int, error) {
 	total := 0
 	for {
 		// Attempt to fill bytes from cached buffer
-		n, err := dr.buf.Read(b[total:])
+		n, err := io.ReadFull(dr.buf, b[total:])
 		total += n
 		dr.offset += int64(n)
-		if err != nil {
-			// EOF is expected
-			if err != io.EOF {
-				return total, err
-			}
-		}
-
-		// If weve read enough bytes, return
-		if total == len(b) {
+		switch err {
+		// io.EOF will happen is dr.buf had noting more to read (n == 0)
+		case io.EOF, io.ErrUnexpectedEOF:
+			// do nothing
+		case nil:
 			return total, nil
+		default:
+			return total, err
 		}
 
-		// Otherwise, load up the next block
+		// if we are not done with the output buffer load next block
 		err = dr.precalcNextBuf(ctx)
 		if err != nil {
 			return total, err
@@ -240,7 +238,7 @@ func (dr *PBDagReader) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
 		if offset < 0 {
-			return -1, errors.New("Invalid offset")
+			return -1, errors.New("invalid offset")
 		}
 		if offset == dr.offset {
 			return offset, nil

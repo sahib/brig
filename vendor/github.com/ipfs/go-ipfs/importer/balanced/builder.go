@@ -20,7 +20,7 @@ import (
 
 	h "github.com/ipfs/go-ipfs/importer/helpers"
 
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
 )
 
 // Layout builds a balanced DAG. Data is stored at the leaves
@@ -51,7 +51,12 @@ func Layout(db *h.DagBuilderHelper) (ipld.Node, error) {
 
 	}
 	if root == nil {
-		root = db.NewUnixfsNode()
+		// this should only happen with an empty node, so return a leaf
+		var err error
+		root, err = db.NewLeaf(nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	out, err := db.Add(root)

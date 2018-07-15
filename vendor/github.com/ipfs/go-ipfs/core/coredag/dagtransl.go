@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
 )
 
 // DagParser is function used for parsing stream into Node
@@ -59,11 +59,11 @@ func ParseInputs(ienc, format string, r io.Reader, mhType uint64, mhLen int) ([]
 }
 
 // AddParser adds DagParser under give input encoding and format
-func (iep InputEncParsers) AddParser(ienv, format string, f DagParser) {
-	m, ok := iep[ienv]
+func (iep InputEncParsers) AddParser(ienc, format string, f DagParser) {
+	m, ok := iep[ienc]
 	if !ok {
 		m = make(FormatParsers)
-		iep[ienv] = m
+		iep[ienc] = m
 	}
 
 	m[format] = f

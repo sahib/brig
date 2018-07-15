@@ -7,7 +7,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	cmdkit "gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
+	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 
 	cmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
@@ -137,6 +137,10 @@ possible, please use 'ipfs ls' instead.
 			switch t {
 			case unixfspb.Data_File:
 				break
+			case unixfspb.Data_HAMTShard:
+				// We need a streaming ls API for this.
+				res.SetError(fmt.Errorf("cannot list large directories yet"), cmdkit.ErrNormal)
+				return
 			case unixfspb.Data_Directory:
 				links := make([]LsLink, len(merkleNode.Links()))
 				output.Objects[hash].Links = links

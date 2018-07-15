@@ -14,10 +14,10 @@ import (
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	chunker "gx/ipfs/QmWo8jYc19ppG7YoTsrr2kEtLRbARTJho5oNXFTR6B7Peq/go-ipfs-chunker"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	chunker "gx/ipfs/QmXnzH7wowyLZy8XJxxaQCVTgLMcDXdMBznmsrmQWCyiQV/go-ipfs-chunker"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // Common errors
@@ -52,7 +52,7 @@ type DagModifier struct {
 }
 
 // NewDagModifier returns a new DagModifier, the Cid prefix for newly
-// created nodes will be inherted from the passed in node.  If the Cid
+// created nodes will be inhered from the passed in node.  If the Cid
 // version if not 0 raw leaves will also be enabled.  The Prefix and
 // RawLeaves options can be overridden by changing them after the call.
 func NewDagModifier(ctx context.Context, from ipld.Node, serv ipld.DAGService, spl chunker.SplitterGen) (*DagModifier, error) {
@@ -82,7 +82,7 @@ func NewDagModifier(ctx context.Context, from ipld.Node, serv ipld.DAGService, s
 
 // WriteAt will modify a dag file in place
 func (dm *DagModifier) WriteAt(b []byte, offset int64) (int, error) {
-	// TODO: this is currently VERY inneficient
+	// TODO: this is currently VERY inefficient
 	// each write that happens at an offset other than the current one causes a
 	// flush to disk, and dag rewrite
 	if offset == int64(dm.writeStart) && dm.wrBuf != nil {
@@ -202,7 +202,7 @@ func (dm *DagModifier) Sync() error {
 	buflen := dm.wrBuf.Len()
 
 	// overwrite existing dag nodes
-	thisc, done, err := dm.modifyDag(dm.curNode, dm.writeStart, dm.wrBuf)
+	thisc, err := dm.modifyDag(dm.curNode, dm.writeStart)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (dm *DagModifier) Sync() error {
 	}
 
 	// need to write past end of current dag
-	if !done {
+	if dm.wrBuf.Len() > 0 {
 		dm.curNode, err = dm.appendData(dm.curNode, dm.splitter(dm.wrBuf))
 		if err != nil {
 			return err
@@ -231,28 +231,27 @@ func (dm *DagModifier) Sync() error {
 	return nil
 }
 
-// modifyDag writes the data in 'data' over the data in 'node' starting at 'offset'
-// returns the new key of the passed in node and whether or not all the data in the reader
-// has been consumed.
-func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*cid.Cid, bool, error) {
+// modifyDag writes the data in 'dm.wrBuf' over the data in 'node' starting at 'offset'
+// returns the new key of the passed in node.
+func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64) (*cid.Cid, error) {
 	// If we've reached a leaf node.
 	if len(n.Links()) == 0 {
 		switch nd0 := n.(type) {
 		case *mdag.ProtoNode:
 			f, err := ft.FromBytes(nd0.Data())
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
-			n, err := data.Read(f.Data[offset:])
+			_, err = dm.wrBuf.Read(f.Data[offset:])
 			if err != nil && err != io.EOF {
-				return nil, false, err
+				return nil, err
 			}
 
 			// Update newly written node..
 			b, err := proto.Marshal(f)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
 			nd := new(mdag.ProtoNode)
@@ -260,16 +259,10 @@ func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*c
 			nd.SetPrefix(&nd0.Prefix)
 			err = dm.dagserv.Add(dm.ctx, nd)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
-			// Hey look! we're done!
-			var done bool
-			if n < len(f.Data[offset:]) {
-				done = true
-			}
-
-			return nd.Cid(), done, nil
+			return nd.Cid(), nil
 		case *mdag.RawNode:
 			origData := nd0.RawData()
 			bytes := make([]byte, len(origData))
@@ -278,9 +271,9 @@ func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*c
 			copy(bytes, origData[:offset])
 
 			// copy in new data
-			n, err := data.Read(bytes[offset:])
+			n, err := dm.wrBuf.Read(bytes[offset:])
 			if err != nil && err != io.EOF {
-				return nil, false, err
+				return nil, err
 			}
 
 			// copy remaining data
@@ -291,46 +284,39 @@ func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*c
 
 			nd, err := mdag.NewRawNodeWPrefix(bytes, nd0.Cid().Prefix())
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 			err = dm.dagserv.Add(dm.ctx, nd)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
-			// Hey look! we're done!
-			var done bool
-			if n < len(bytes[offset:]) {
-				done = true
-			}
-
-			return nd.Cid(), done, nil
+			return nd.Cid(), nil
 		}
 	}
 
 	node, ok := n.(*mdag.ProtoNode)
 	if !ok {
-		return nil, false, ErrNotUnixfs
+		return nil, ErrNotUnixfs
 	}
 
 	f, err := ft.FromBytes(node.Data())
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	var cur uint64
-	var done bool
 	for i, bs := range f.GetBlocksizes() {
 		// We found the correct child to write into
 		if cur+bs > offset {
 			child, err := node.Links()[i].GetNode(dm.ctx, dm.dagserv)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
-			k, sdone, err := dm.modifyDag(child, offset-cur, data)
+			k, err := dm.modifyDag(child, offset-cur)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
 			node.Links()[i].Cid = k
@@ -338,12 +324,11 @@ func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*c
 			// Recache serialized node
 			_, err = node.EncodeProtobuf(true)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 
-			if sdone {
+			if dm.wrBuf.Len() == 0 {
 				// No more bytes to write!
-				done = true
 				break
 			}
 			offset = cur + bs
@@ -352,7 +337,7 @@ func (dm *DagModifier) modifyDag(n ipld.Node, offset uint64, data io.Reader) (*c
 	}
 
 	err = dm.dagserv.Add(dm.ctx, node)
-	return node.Cid(), done, err
+	return node.Cid(), err
 }
 
 // appendData appends the blocks from the given chan to the end of this dag
@@ -541,7 +526,7 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	var cur uint64
 	end := 0
 	var modified ipld.Node
-	ndata := new(ft.FSNode)
+	ndata := ft.NewFSNode(ft.TRaw)
 	for i, lnk := range nd.Links() {
 		child, err := lnk.GetNode(ctx, ds)
 		if err != nil {
@@ -576,7 +561,7 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	}
 
 	nd.SetLinks(nd.Links()[:end])
-	err = nd.AddNodeLinkClean("", modified)
+	err = nd.AddNodeLink("", modified)
 	if err != nil {
 		return nil, err
 	}

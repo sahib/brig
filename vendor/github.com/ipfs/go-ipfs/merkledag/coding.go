@@ -5,12 +5,12 @@ import (
 	"sort"
 	"strings"
 
-	"gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
+	"gx/ipfs/QmTRCUvZLiir12Qr6MV3HKfKMHX8Nf1Vddn6t2g5nsQSb9/go-block-format"
 
 	pb "github.com/ipfs/go-ipfs/merkledag/pb"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // for now, we use a PBNode intermediate thing.
@@ -21,7 +21,7 @@ import (
 func (n *ProtoNode) unmarshal(encoded []byte) error {
 	var pbn pb.PBNode
 	if err := pbn.Unmarshal(encoded); err != nil {
-		return fmt.Errorf("Unmarshal failed. %v", err)
+		return fmt.Errorf("unmarshal failed. %v", err)
 	}
 
 	pbnl := pbn.GetLinks()
@@ -30,7 +30,7 @@ func (n *ProtoNode) unmarshal(encoded []byte) error {
 		n.links[i] = &ipld.Link{Name: l.GetName(), Size: l.GetTsize()}
 		c, err := cid.Cast(l.GetHash())
 		if err != nil {
-			return fmt.Errorf("Link hash #%d is not valid multihash. %v", i, err)
+			return fmt.Errorf("link hash #%d is not valid multihash. %v", i, err)
 		}
 		n.links[i].Cid = c
 	}
@@ -47,7 +47,7 @@ func (n *ProtoNode) Marshal() ([]byte, error) {
 	pbn := n.getPBNode()
 	data, err := pbn.Marshal()
 	if err != nil {
-		return data, fmt.Errorf("Marshal failed. %v", err)
+		return data, fmt.Errorf("marshal failed. %v", err)
 	}
 	return data, nil
 }
@@ -123,9 +123,9 @@ func DecodeProtobufBlock(b blocks.Block) (ipld.Node, error) {
 	decnd, err := DecodeProtobuf(b.RawData())
 	if err != nil {
 		if strings.Contains(err.Error(), "Unmarshal failed") {
-			return nil, fmt.Errorf("The block referred to by '%s' was not a valid merkledag node", c)
+			return nil, fmt.Errorf("the block referred to by '%s' was not a valid merkledag node", c)
 		}
-		return nil, fmt.Errorf("Failed to decode Protocol Buffers: %v", err)
+		return nil, fmt.Errorf("failed to decode Protocol Buffers: %v", err)
 	}
 
 	decnd.cached = c

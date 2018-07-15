@@ -1,7 +1,7 @@
 package options
 
 import (
-	"gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
+	"gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
 )
 
 type BlockPutSettings struct {
@@ -47,16 +47,23 @@ func BlockRmOptions(opts ...BlockRmOption) (*BlockRmSettings, error) {
 	return options, nil
 }
 
-type BlockOptions struct{}
+type blockOpts struct{}
 
-func (api *BlockOptions) WithFormat(codec string) BlockPutOption {
+var Block blockOpts
+
+// Format is an option for Block.Put which specifies the multicodec to use to
+// serialize the object. Default is "v0"
+func (blockOpts) Format(codec string) BlockPutOption {
 	return func(settings *BlockPutSettings) error {
 		settings.Codec = codec
 		return nil
 	}
 }
 
-func (api *BlockOptions) WithHash(mhType uint64, mhLen int) BlockPutOption {
+// Hash is an option for Block.Put which specifies the multihash settings to use
+// when hashing the object. Default is mh.SHA2_256 (0x12).
+// If mhLen is set to -1, default length for the hash will be used
+func (blockOpts) Hash(mhType uint64, mhLen int) BlockPutOption {
 	return func(settings *BlockPutSettings) error {
 		settings.MhType = mhType
 		settings.MhLength = mhLen
@@ -64,7 +71,9 @@ func (api *BlockOptions) WithHash(mhType uint64, mhLen int) BlockPutOption {
 	}
 }
 
-func (api *BlockOptions) WithForce(force bool) BlockRmOption {
+// Force is an option for Block.Rm which, when set to true, will ignore
+// non-existing blocks
+func (blockOpts) Force(force bool) BlockRmOption {
 	return func(settings *BlockRmSettings) error {
 		settings.Force = force
 		return nil

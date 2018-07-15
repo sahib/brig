@@ -17,16 +17,13 @@ import (
 	dagutils "github.com/ipfs/go-ipfs/merkledag/utils"
 	ft "github.com/ipfs/go-ipfs/unixfs"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 const inputLimit = 2 << 20
 
-type ObjectAPI struct {
-	*CoreAPI
-	*caopts.ObjectOptions
-}
+type ObjectAPI CoreAPI
 
 type Link struct {
 	Name, Hash string
@@ -38,7 +35,7 @@ type Node struct {
 	Data  string
 }
 
-func (api *ObjectAPI) New(ctx context.Context, opts ...caopts.ObjectNewOption) (coreiface.Node, error) {
+func (api *ObjectAPI) New(ctx context.Context, opts ...caopts.ObjectNewOption) (ipld.Node, error) {
 	options, err := caopts.ObjectNewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +124,7 @@ func (api *ObjectAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.Obj
 	return ParseCid(dagnode.Cid()), nil
 }
 
-func (api *ObjectAPI) Get(ctx context.Context, path coreiface.Path) (coreiface.Node, error) {
+func (api *ObjectAPI) Get(ctx context.Context, path coreiface.Path) (ipld.Node, error) {
 	return api.core().ResolveNode(ctx, path)
 }
 
@@ -145,16 +142,16 @@ func (api *ObjectAPI) Data(ctx context.Context, path coreiface.Path) (io.Reader,
 	return bytes.NewReader(pbnd.Data()), nil
 }
 
-func (api *ObjectAPI) Links(ctx context.Context, path coreiface.Path) ([]*coreiface.Link, error) {
+func (api *ObjectAPI) Links(ctx context.Context, path coreiface.Path) ([]*ipld.Link, error) {
 	nd, err := api.core().ResolveNode(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
 	links := nd.Links()
-	out := make([]*coreiface.Link, len(links))
+	out := make([]*ipld.Link, len(links))
 	for n, l := range links {
-		out[n] = (*coreiface.Link)(l)
+		out[n] = (*ipld.Link)(l)
 	}
 
 	return out, nil
@@ -288,7 +285,7 @@ func (api *ObjectAPI) patchData(ctx context.Context, path coreiface.Path, r io.R
 }
 
 func (api *ObjectAPI) core() coreiface.CoreAPI {
-	return api.CoreAPI
+	return (*CoreAPI)(api)
 }
 
 func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error) {
@@ -303,7 +300,7 @@ func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error)
 		}
 		dagnode.SetData(data)
 	default:
-		return nil, fmt.Errorf("Unkown data field encoding")
+		return nil, fmt.Errorf("unkown data field encoding")
 	}
 
 	links := make([]*ipld.Link, len(nd.Links))

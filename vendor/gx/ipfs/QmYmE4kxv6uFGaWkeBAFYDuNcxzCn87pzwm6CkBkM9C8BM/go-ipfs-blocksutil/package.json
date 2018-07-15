@@ -1,0 +1,24 @@
+{
+  "author": "hsanjuan",
+  "bugs": {
+    "url": "https://github.com/ipfs/go-ipfs-blocksutil"
+  },
+  "gx": {
+    "dvcsimport": "github.com/ipfs/go-ipfs-blocksutil"
+  },
+  "gxDependencies": [
+    {
+      "author": "stebalien",
+      "hash": "QmTRCUvZLiir12Qr6MV3HKfKMHX8Nf1Vddn6t2g5nsQSb9",
+      "name": "go-block-format",
+      "version": "0.1.7"
+    }
+  ],
+  "gxVersion": "0.12.1",
+  "language": "go",
+  "license": "MIT",
+  "name": "go-ipfs-blocksutil",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "0.0.2"
+}
+

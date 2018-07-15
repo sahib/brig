@@ -11,13 +11,11 @@ import (
 	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
 	coredag "github.com/ipfs/go-ipfs/core/coredag"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
-type DagAPI struct {
-	*CoreAPI
-	*caopts.DagOptions
-}
+type DagAPI CoreAPI
 
 // Put inserts data using specified format and input encoding. Unless used with
 // `WithCodes` or `WithHash`, the defaults "dag-cbor" and "sha256" are used.
@@ -50,7 +48,7 @@ func (api *DagAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.DagPut
 }
 
 // Get resolves `path` using Unixfs resolver, returns the resolved Node.
-func (api *DagAPI) Get(ctx context.Context, path coreiface.Path) (coreiface.Node, error) {
+func (api *DagAPI) Get(ctx context.Context, path coreiface.Path) (ipld.Node, error) {
 	return api.core().ResolveNode(ctx, path)
 }
 
@@ -78,5 +76,5 @@ func (api *DagAPI) Tree(ctx context.Context, p coreiface.Path, opts ...caopts.Da
 }
 
 func (api *DagAPI) core() coreiface.CoreAPI {
-	return api.CoreAPI
+	return (*CoreAPI)(api)
 }

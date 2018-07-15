@@ -8,8 +8,8 @@ import (
 	coreunix "github.com/ipfs/go-ipfs/core/coreunix"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 type UnixfsAPI CoreAPI
@@ -48,7 +48,7 @@ func (api *UnixfsAPI) Cat(ctx context.Context, p coreiface.Path) (coreiface.Read
 
 // Ls returns the contents of an IPFS or IPNS object(s) at path p, with the format:
 // `<link base58 hash> <link size in bytes> <link name>`
-func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*coreiface.Link, error) {
+func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*ipld.Link, error) {
 	dagnode, err := api.core().ResolveNode(ctx, p)
 	if err != nil {
 		return nil, err
@@ -69,9 +69,9 @@ func (api *UnixfsAPI) Ls(ctx context.Context, p coreiface.Path) ([]*coreiface.Li
 		return nil, err
 	}
 
-	links := make([]*coreiface.Link, len(ndlinks))
+	links := make([]*ipld.Link, len(ndlinks))
 	for i, l := range ndlinks {
-		links[i] = &coreiface.Link{Name: l.Name, Size: l.Size, Cid: l.Cid}
+		links[i] = &ipld.Link{Name: l.Name, Size: l.Size, Cid: l.Cid}
 	}
 	return links, nil
 }

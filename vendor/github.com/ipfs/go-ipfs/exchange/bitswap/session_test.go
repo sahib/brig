@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	blocksutil "github.com/ipfs/go-ipfs/blocks/blocksutil"
-
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	blocks "gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
+	blocks "gx/ipfs/QmTRCUvZLiir12Qr6MV3HKfKMHX8Nf1Vddn6t2g5nsQSb9/go-block-format"
+	blocksutil "gx/ipfs/QmYmE4kxv6uFGaWkeBAFYDuNcxzCn87pzwm6CkBkM9C8BM/go-ipfs-blocksutil"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
+	tu "gx/ipfs/QmcW4FGAt24fdK1jBgWQn3yP4R9ZLyWQqjozv9QK7epRhL/go-testutil"
 )
 
 func TestBasicSessions(t *testing.T) {
@@ -287,7 +287,7 @@ func TestMultipleSessions(t *testing.T) {
 }
 
 func TestWantlistClearsOnCancel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	vnet := getVirtualNetwork()
@@ -314,7 +314,12 @@ func TestWantlistClearsOnCancel(t *testing.T) {
 	}
 	cancel1()
 
-	if len(a.Exchange.GetWantlist()) > 0 {
-		t.Fatal("expected empty wantlist")
+	if err := tu.WaitFor(ctx, func() error {
+		if len(a.Exchange.GetWantlist()) > 0 {
+			return fmt.Errorf("expected empty wantlist")
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 }

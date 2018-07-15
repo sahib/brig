@@ -4,10 +4,10 @@
 // as additional links.
 //
 // Each layer is a trickle sub-tree and is limited by an increasing
-// maxinum depth. Thus, the nodes first layer
+// maximum depth. Thus, the nodes first layer
 // can only hold leaves (depth 1) but subsequent layers can grow deeper.
 // By default, this module places 4 nodes per layer (that is, 4 subtrees
-// of the same maxinum depth before increasing it).
+// of the same maximum depth before increasing it).
 //
 // Trickle DAGs are very good for sequentially reading data, as the
 // first data leaves are directly reachable from the root and those
@@ -24,8 +24,8 @@ import (
 	dag "github.com/ipfs/go-ipfs/merkledag"
 	ft "github.com/ipfs/go-ipfs/unixfs"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 // layerRepeat specifies how many times to append a child tree of a
@@ -38,19 +38,8 @@ const layerRepeat = 4
 // explanation.
 func Layout(db *h.DagBuilderHelper) (ipld.Node, error) {
 	root := db.NewUnixfsNode()
-	if err := db.FillNodeLayer(root); err != nil {
+	if err := fillTrickleRec(db, root, -1); err != nil {
 		return nil, err
-	}
-	for level := 1; !db.Done(); level++ {
-		for i := 0; i < layerRepeat && !db.Done(); i++ {
-			next := db.NewUnixfsNode()
-			if err := fillTrickleRec(db, next, level); err != nil {
-				return nil, err
-			}
-			if err := root.AddChild(next, db); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	out, err := db.Add(root)
@@ -65,25 +54,35 @@ func Layout(db *h.DagBuilderHelper) (ipld.Node, error) {
 	return out, nil
 }
 
-func fillTrickleRec(db *h.DagBuilderHelper, node *h.UnixfsNode, depth int) error {
+// fillTrickleRec creates a trickle (sub-)tree with an optional maximum specified depth
+// in the case maxDepth is greater than zero, or with unlimited depth otherwise
+// (where the DAG builder will signal the end of data to end the function).
+func fillTrickleRec(db *h.DagBuilderHelper, node *h.UnixfsNode, maxDepth int) error {
 	// Always do this, even in the base case
 	if err := db.FillNodeLayer(node); err != nil {
 		return err
 	}
 
-	for i := 1; i < depth && !db.Done(); i++ {
-		for j := 0; j < layerRepeat && !db.Done(); j++ {
-			next := db.NewUnixfsNode()
-			if err := fillTrickleRec(db, next, i); err != nil {
+	for depth := 1; ; depth++ {
+		// Apply depth limit only if the parameter is set (> 0).
+		if maxDepth > 0 && depth == maxDepth {
+			return nil
+		}
+		for layer := 0; layer < layerRepeat; layer++ {
+			if db.Done() {
+				return nil
+			}
+
+			nextChild := db.NewUnixfsNode()
+			if err := fillTrickleRec(db, nextChild, depth); err != nil {
 				return err
 			}
 
-			if err := node.AddChild(next, db); err != nil {
+			if err := node.AddChild(nextChild, db); err != nil {
 				return err
 			}
 		}
 	}
-	return nil
 }
 
 // Append appends the data in `db` to the dag, using the Trickledag format
@@ -284,7 +283,7 @@ func verifyTDagRec(n ipld.Node, depth int, p VerifyParams) error {
 			}
 
 			if pbn.GetType() != ft.TRaw {
-				return errors.New("Expected raw block")
+				return errors.New("expected raw block")
 			}
 
 			if p.RawLeaves {

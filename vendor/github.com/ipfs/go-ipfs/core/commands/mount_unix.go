@@ -1,5 +1,4 @@
-// +build linux darwin freebsd netbsd openbsd
-// +build !nofuse
+// +build !windows,!nofuse
 
 package commands
 
@@ -13,7 +12,7 @@ import (
 	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
 	config "github.com/ipfs/go-ipfs/repo/config"
 
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 var MountCmd = &cmds.Command{
@@ -27,7 +26,7 @@ root will not be listable, as it is virtual. Access known paths directly.
 You may have to create /ipfs and /ipns before using 'ipfs mount':
 
 > sudo mkdir /ipfs /ipns
-> sudo chown ` + "`" + `whoami` + "`" + ` /ipfs /ipns
+> sudo chown $(whoami) /ipfs /ipns
 > ipfs daemon &
 > ipfs mount
 `,
@@ -40,7 +39,7 @@ root will not be listable, as it is virtual. Access known paths directly.
 You may have to create /ipfs and /ipns before using 'ipfs mount':
 
 > sudo mkdir /ipfs /ipns
-> sudo chown ` + "`" + `whoami` + "`" + ` /ipfs /ipns
+> sudo chown $(whoami) /ipfs /ipns
 > ipfs daemon &
 > ipfs mount
 

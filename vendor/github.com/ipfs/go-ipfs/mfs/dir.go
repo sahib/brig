@@ -15,8 +15,8 @@ import (
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 	ufspb "github.com/ipfs/go-ipfs/unixfs/pb"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 )
 
 var ErrNotYetImplemented = errors.New("not yet implemented")
@@ -404,8 +404,15 @@ func (d *Directory) Path() string {
 	cur := d
 	var out string
 	for cur != nil {
-		out = path.Join(cur.name, out)
-		cur = cur.parent.(*Directory)
+		switch parent := cur.parent.(type) {
+		case *Directory:
+			out = path.Join(cur.name, out)
+			cur = parent
+		case *Root:
+			return "/" + out
+		default:
+			panic("directory parent neither a directory nor a root")
+		}
 	}
 	return out
 }

@@ -9,9 +9,9 @@ import (
 	path "github.com/ipfs/go-ipfs/path"
 	resolver "github.com/ipfs/go-ipfs/path/resolver"
 
-	logging "gx/ipfs/QmRb5jh8z2E8hMGN2tkvs1yHynUanqnZ3UeKwgN1i9P1F8/go-log"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
+	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
+	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 )
 
 // ErrNoNamesys is an explicit error for when an IPFS node doesn't
@@ -28,7 +28,7 @@ func Resolve(ctx context.Context, nsys namesys.NameSystem, r *resolver.Resolver,
 		defer evt.Done()
 		// resolve ipns paths
 
-		// TODO(cryptix): we sould be able to query the local cache for the path
+		// TODO(cryptix): we should be able to query the local cache for the path
 		if nsys == nil {
 			evt.Append(logging.LoggableMap{"error": ErrNoNamesys.Error()})
 			return nil, ErrNoNamesys

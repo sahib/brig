@@ -7,9 +7,9 @@ import (
 	"os"
 	"reflect"
 
-	"gx/ipfs/QmabLouZTZwhfALuBcssPvkzhbYGMb4394huT7HY4LQ6d3/go-ipfs-cmds"
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit/files"
+	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
 
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 )
@@ -147,32 +147,6 @@ func (r *requestWrapper) Values() map[string]interface{} {
 	return nil
 }
 
-func (r *requestWrapper) VarArgs(f func(string) error) error {
-	if len(r.req.Arguments) >= len(r.req.Command.Arguments) {
-		for _, arg := range r.req.Arguments {
-			err := f(arg)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	s, err := r.req.BodyArgs()
-	if err != nil {
-		return err
-	}
-
-	for s.Scan() {
-		err = f(s.Text())
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // copied from go-ipfs-cmds/request.go
 func convertOptions(req *cmds.Request) error {
 	optDefSlice := req.Command.Options
@@ -199,20 +173,20 @@ func convertOptions(req *cmds.Request) error {
 					if len(str) == 0 {
 						value = "empty value"
 					}
-					return fmt.Errorf("Could not convert %q to type %q (for option %q)",
+					return fmt.Errorf("could not convert %q to type %q (for option %q)",
 						value, opt.Type().String(), "-"+k)
 				}
 				req.Options[k] = val
 
 			} else {
-				return fmt.Errorf("Option %q should be type %q, but got type %q",
+				return fmt.Errorf("option %q should be type %q, but got type %q",
 					k, opt.Type().String(), kind.String())
 			}
 		}
 
 		for _, name := range opt.Names() {
 			if _, ok := req.Options[name]; name != k && ok {
-				return fmt.Errorf("Duplicate command options were provided (%q and %q)",
+				return fmt.Errorf("duplicate command options were provided (%q and %q)",
 					k, name)
 			}
 		}
