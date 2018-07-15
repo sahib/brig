@@ -11,7 +11,7 @@ import (
 	// (i.e. when using the correct import github.com/dgraph-io/badger)
 	//
 	// So gx forces us to use their badger version for no good reason.
-	"gx/ipfs/QmdKhi5wUQyV9i3GcTyfUmpfTntWjXu8DcyT9HyNbznYrn/badger"
+	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
 
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"

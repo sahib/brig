@@ -6,7 +6,8 @@ import (
 	"os"
 
 	"gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
-	"gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
+	"gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
+	logWriter "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log/writer"
 
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
@@ -36,6 +37,6 @@ func Init(path string, keySize int) error {
 // ForwardLog routes all ipfs logs to a file provided by brig.
 // Only messages >= INFO are logged.
 func (nd *Node) ForwardLog(w io.Writer) {
-	log.Configure(log.Output(w))
+	logWriter.Configure(logWriter.Output(w))
 	log.SetAllLoggers(logging.INFO)
 }
