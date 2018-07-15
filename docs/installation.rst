@@ -56,7 +56,7 @@ Execution might take a few minutes though.
     For the curious: Why the Makefile?
 
     In theory it's also possible to install ``brig`` via ``go get`` only, but
-    there is no way to straight-forward way to set the git revision in the binary.
+    there is to straight-forward way to set the git revision in the binary.
     Thus the Makefile.
 
 Step 2: Test if the installation is working
