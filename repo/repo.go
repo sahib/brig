@@ -108,6 +108,12 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return err
 	}
 
+	// For future use: If we ever need to migrate the repo.
+	versionPath := filepath.Join(baseFolder, "VERSION")
+	if err := ioutil.WriteFile(versionPath, []byte{1}, 0644); err != nil {
+		return err
+	}
+
 	// Create a default config, only with the default keys applied:
 	cfg, err := config.Open(nil, defaults.Defaults)
 	if err != nil {

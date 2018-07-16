@@ -8,9 +8,11 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 
 	core "github.com/ipfs/go-ipfs/core"
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
 	"golang.org/x/net/context"
 )
@@ -66,6 +68,14 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 	}
 
 	rp, err := fsrepo.Open(path)
+	if err == fsrepo.ErrNeedMigration {
+		log.Infof("the ipfs repo version changed. We need to run a migration now.")
+		if err := migrate.RunMigration(fsrepo.RepoVersion); err != nil {
+			log.Errorf("migration failed: %v", err)
+			return nil, e.Wrapf(err, "migration failed")
+		}
+	}
+
 	if err != nil {
 		log.Errorf("Unable to open repo `%s`: %v", path, err)
 		return nil, err
