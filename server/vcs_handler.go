@@ -483,16 +483,38 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 
 	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
+			cmtBefore, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
 			// Automatically make a commit before merging with their state:
-			// TODO: Check if we can also merge with CURR as starting point
-			//       and only commit a merge commit if there were changes.
 			timeStamp := time.Now().UTC().Format(time.RFC3339)
 			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
 			if err = ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
 				return e.Wrapf(err, "merge-commit")
 			}
 
-			return ownFs.Sync(remoteFs)
+			if err := ownFs.Sync(remoteFs); err != nil {
+				return err
+			}
+
+			cmtAfter, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
+			diff, err := ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
+			if err != nil {
+				return err
+			}
+
+			capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
+			if err != nil {
+				return err
+			}
+
+			return call.Results.SetDiff(*capDiff)
 		})
 	})
 }

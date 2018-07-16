@@ -403,6 +403,10 @@ EXAMPLES:
 				Name:  "no-fetch,n",
 				Usage: "Do not do a fetch before syncing",
 			},
+			cli.BoolFlag{
+				Name:  "quiet,q",
+				Usage: "Do not print what changed",
+			},
 		},
 		Description: `Sync and merge all metadata of another peer with our metadata.
    After this operation you might see new files in your folder.

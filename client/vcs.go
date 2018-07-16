@@ -387,12 +387,21 @@ func (ctl *Client) Fetch(remote string) error {
 	return err
 }
 
-func (ctl *Client) Sync(remote string, needFetch bool) error {
+func (ctl *Client) Sync(remote string, needFetch bool) (*Diff, error) {
 	call := ctl.api.Sync(ctl.ctx, func(p capnp.VCS_sync_Params) error {
 		p.SetNeedFetch(needFetch)
 		return p.SetWithWhom(remote)
 	})
 
-	_, err := call.Struct()
-	return err
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capDiff, err := result.Diff()
+	if err != nil {
+		return nil, err
+	}
+
+	return convertCapDiffToDiff(capDiff)
 }

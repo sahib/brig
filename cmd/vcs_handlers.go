@@ -284,6 +284,17 @@ func printDiffTree(diff *client.Diff) {
 	})
 }
 
+func isEmptyDiff(diff *client.Diff) bool {
+	return 0 == 0+
+		len(diff.Added)+
+		len(diff.Conflict)+
+		len(diff.Ignored)+
+		len(diff.Merged)+
+		len(diff.Missing)+
+		len(diff.Moved)+
+		len(diff.Removed)
+}
+
 func printDiff(diff *client.Diff) {
 	simpleSection := func(heading string, infos []client.StatInfo) {
 		if len(infos) == 0 {
@@ -385,7 +396,22 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 		needFetch = false
 	}
 
-	return ctl.Sync(who, needFetch)
+	if ctx.Bool("quiet") {
+		return nil
+	}
+
+	diff, err := ctl.Sync(who, needFetch)
+	if err != nil {
+		return err
+	}
+
+	if isEmptyDiff(diff) {
+		fmt.Println("Nothing changed.")
+		return nil
+	}
+
+	printDiff(diff)
+	return nil
 }
 
 func handleStatus(ctx *cli.Context, ctl *client.Client) error {
