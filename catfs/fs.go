@@ -75,51 +75,102 @@ var ErrReadOnly = errors.New("fs is read only")
 // StatInfo describes the metadata of a single node.
 // The concept is comparable to the POSIX stat() call.
 type StatInfo struct {
-	Path        string
-	TreeHash    h.Hash
-	User        string
-	Size        uint64
-	Inode       uint64
-	IsDir       bool
-	Depth       int
-	ModTime     time.Time
-	IsPinned    bool
-	IsExplicit  bool
+	// Path is the full path to the file
+	Path string
+
+	// TreeHash is the hash of the node in the DAG
+	TreeHash h.Hash
+	// ContentHash is the actual hash of the content
+	// (used to test for content equality)
 	ContentHash h.Hash
+	// BackendHash is the hash under which the file is reachable
+	// in the backend.
 	BackendHash h.Hash
+
+	// User is the name of the user that modified this node last.
+	User string
+	// Size in bytes
+	Size uint64
+	// Inode is a unique number specific to this node
+	Inode uint64
+	// Depth is the hierarchy level inside of this node (root has 0)
+	Depth int
+	// ModTime is the last modification timestamp
+	ModTime time.Time
+
+	// IsDir tells you if this node is a dir
+	IsDir bool
+	// IsPinned tells you if this node is pinned (either implicit or explicit)
+	IsPinned bool
+	// IsExplicit is true when the user pinned this node on purpose
+	IsExplicit bool
 }
 
+// DiffPair is a pair of nodes.
+// It is returned by MakeDiff(), where the source
+// is a node on the remote side and the dst node is
+// a node on our side.
 type DiffPair struct {
 	Src StatInfo
 	Dst StatInfo
 }
 
+// Diff is a list of things that changed between to commits
 type Diff struct {
-	Added   []StatInfo
+	// Added is a list of nodes that were added newly
+	Added []StatInfo
+
+	// Removed is a list of nodes that were removed
 	Removed []StatInfo
+
+	// Ignored is a list of nodes that were not considered
 	Ignored []StatInfo
+
+	// Missing is a list of nodes that the remoe side is missing
 	Missing []StatInfo
 
-	Moved    []DiffPair
-	Merged   []DiffPair
+	// Moved is a list of nodes that changed path
+	Moved []DiffPair
+
+	// Merged is a list of nodes that can be merged automatically
+	Merged []DiffPair
+
+	// Conflict is a list of nodes that cannot be merged automatically
 	Conflict []DiffPair
 }
 
 // Commit gives information about a single commit.
-// TODO: Decide on naming: rev(ision), refname or tag.
 type Commit struct {
+	// Hash is the id of this commit
 	Hash h.Hash
-	Msg  string
+	// Msg describes the committed contents
+	Msg string
+	// Tags is a user defined list of tags
+	// (tags like HEAD, CURR and INIT are assigned dynamically as exception)
 	Tags []string
+	// Date is the time when the commit was made
 	Date time.Time
 }
 
+// Change describes a single change to a node between to version
 type Change struct {
-	Path    string
-	Change  string
+	// Path is the node that was changed
+	Path string
+	// Change describes what was changed
+	Change string
+	// ReferTo is the path of a file the node was previously at
+	// (if moved)
 	ReferTo string
-	Head    *Commit
-	Next    *Commit
+	// Head is the commit after the change
+	Head *Commit
+	// Next is the commit before the change
+	Next *Commit
+}
+
+// ExplicitPin is a pair of path and commit id.
+type ExplicitPin struct {
+	Path   string
+	Commit string
 }
 
 /////////////////////
@@ -501,11 +552,6 @@ func (fs *FS) Unpin(path string) error {
 	}
 
 	return fs.pinner.UnpinNode(nd, true)
-}
-
-type ExplicitPin struct {
-	Path   string
-	Commit string
 }
 
 func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, error) {
