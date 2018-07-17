@@ -50,11 +50,11 @@ type FS struct {
 	// garbage collector for dead metadata links
 	gc *c.GarbageCollector
 
-	// ticker that drives the gc background routine
-	gcTicker *time.Ticker
-
-	// channel to schedule gc runs and quit the gc
+	// channel to schedule gc runs and quit the gc loop
 	gcControl chan bool
+
+	// channel to schedule auto commits and quit the loop
+	autoCommitControl chan bool
 
 	// Actual storage backend (e.g. ipfs or memory)
 	bk FsBackend
@@ -288,14 +288,14 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 	// (we just need to convert a few keys to the vcs.SyncOptions later).
 
 	fs := &FS{
-		kv:        kv,
-		lkr:       lkr,
-		bk:        backend,
-		cfg:       fsCfg,
-		readOnly:  readOnly,
-		gcControl: make(chan bool),
-		gcTicker:  time.NewTicker(120 * time.Second),
-		pinner:    pinCache,
+		kv:                kv,
+		lkr:               lkr,
+		bk:                backend,
+		cfg:               fsCfg,
+		readOnly:          readOnly,
+		gcControl:         make(chan bool),
+		autoCommitControl: make(chan bool),
+		pinner:            pinCache,
 	}
 
 	// Start the garbage collection background task.
@@ -303,7 +303,16 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 	// objects from the staging area.
 	fs.gc = c.NewGarbageCollector(lkr, kv, fs.handleGcEvent)
 
-	go func() {
+	go fs.gcLoop()
+	go fs.autoCommitLoop()
+
+	return fs, nil
+}
+
+func (fs *FS) gcLoop() {
+	gcTicker := time.NewTicker(120 * time.Second)
+	defer gcTicker.Stop()
+	for {
 		select {
 		case state := <-fs.gcControl:
 			if state {
@@ -313,12 +322,37 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 				log.Debugf("Quitting the GC loop")
 				return
 			}
-		case <-fs.gcTicker.C:
+		case <-gcTicker.C:
 			fs.doGcRun()
 		}
-	}()
+	}
+}
 
-	return fs, nil
+func (fs *FS) autoCommitLoop() {
+	lastCheck := time.Now()
+	checkTicker := time.NewTicker(1 * time.Second)
+	defer checkTicker.Stop()
+
+	for {
+		select {
+		case <-fs.autoCommitControl:
+			log.Debugf("quitting the auto commit loop")
+			return
+		case <-checkTicker.C:
+			isEnabled := fs.cfg.Bool("autocommit.enabled")
+			if !isEnabled {
+				continue
+			}
+
+			if time.Since(lastCheck) >= fs.cfg.Duration("autocommit.interval") {
+				lastCheck = time.Now()
+				msg := fmt.Sprintf("auto commit at %s", time.Now())
+				if err := fs.MakeCommit(msg); err != nil {
+					log.Warningf("failed to create auto commit: %v", err)
+				}
+			}
+		}
+	}
 }
 
 func (fs *FS) Close() error {
@@ -326,7 +360,10 @@ func (fs *FS) Close() error {
 		fs.gcControl <- false
 	}()
 
-	fs.gcTicker.Stop()
+	go func() {
+		fs.autoCommitControl <- false
+	}()
+
 	if err := fs.pinner.Close(); err != nil {
 		log.Warnf("Failed to close pin cache: %v", err)
 	}

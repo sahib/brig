@@ -44,6 +44,19 @@ var DefaultsV0 = config.DefaultMapping{
 				),
 			},
 		},
+		"autocommit": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: false,
+				Docs:         "Enable the autocommit logic",
+			},
+			"interval": config.DefaultEntry{
+				Default:      "5m",
+				NeedsRestart: false,
+				Docs:         "In what interval to make automatic commits",
+				Validator: config.DurationValidator(),
+			},
+		},
 	},
 	"repo": config.DefaultMapping{
 		"current_user": config.DefaultEntry{
