@@ -154,7 +154,7 @@ func (mh *metaHandler) ConfigDoc(call capnp.Meta_configDoc) error {
 }
 
 func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
-	repo, err := mh.base.Repo()
+	rp, err := mh.base.Repo()
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 		return err
 	}
 
-	if !repo.Config.IsValidKey(key) {
+	if !rp.Config.IsValidKey(key) {
 		return fmt.Errorf("invalid key: %v", key)
 	}
 
@@ -173,13 +173,17 @@ func (mh *metaHandler) ConfigSet(call capnp.Meta_configSet) error {
 		return err
 	}
 
-	val, err := repo.Config.Cast(key, rawVal)
+	val, err := rp.Config.Cast(key, rawVal)
 	if err != nil {
 		return err
 	}
 
 	log.Debugf("config: set `%s` to `%v`", key, val)
-	return repo.Config.Set(key, val)
+	if err := rp.Config.Set(key, val); err != nil {
+		return err
+	}
+
+	return rp.SaveConfig()
 }
 
 func (mh *metaHandler) configDefaultEntryToCapnp(seg *capnplib.Segment, key string) (*capnp.ConfigEntry, error) {

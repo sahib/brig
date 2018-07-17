@@ -110,7 +110,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 
 	// For future use: If we ever need to migrate the repo.
 	versionPath := filepath.Join(baseFolder, "VERSION")
-	if err := ioutil.WriteFile(versionPath, []byte{1}, 0644); err != nil {
+	if err := ioutil.WriteFile(versionPath, []byte("1"), 0644); err != nil {
 		return err
 	}
 
@@ -322,4 +322,9 @@ func (rp *Repository) Keyring() *Keyring {
 
 func (rp *Repository) BackendPath(name string) string {
 	return filepath.Join(rp.BaseFolder, "data", name)
+}
+
+func (rp *Repository) SaveConfig() error {
+	configPath := filepath.Join(rp.BaseFolder, "config.yml")
+	return config.ToYamlFile(configPath, rp.Config)
 }

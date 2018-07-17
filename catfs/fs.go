@@ -346,8 +346,8 @@ func (fs *FS) autoCommitLoop() {
 
 			if time.Since(lastCheck) >= fs.cfg.Duration("autocommit.interval") {
 				lastCheck = time.Now()
-				msg := fmt.Sprintf("auto commit at %s", time.Now())
-				if err := fs.MakeCommit(msg); err != nil {
+				msg := fmt.Sprintf("auto commit at »%s«", time.Now().Format(time.RFC822))
+				if err := fs.MakeCommit(msg); err != nil && err != ie.ErrNoChange {
 					log.Warningf("failed to create auto commit: %v", err)
 				}
 			}
