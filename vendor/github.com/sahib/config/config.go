@@ -8,9 +8,10 @@
 // Using a wrong config key is seen as a bug and should be corrected immediately.
 // This allows this package to skip error handling on Get() and Set() entirely.
 //
-// In short: This config  does a few things different than the ones I saw for Go.
-// Instead of providing numerous possible sources and formats to save your config
-// it simply relies on YAML. The focus is not on ultimate convinience but on:
+// In short: This config  does a few things different than the ones I saw for
+// Go.  Instead of providing numerous possible sources and formats to save your
+// config it simply relies on YAML out of the box. The focus is not on ultimate
+// convinience but on:
 //
 // - Providing meaningful validation and default values.
 //
@@ -31,6 +32,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	e "github.com/pkg/errors"
 )
@@ -177,7 +179,7 @@ func generalizeType(val interface{}) interface{} {
 }
 
 // fill up any not explicitly set key with default values
-func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) error {
+func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping, defaultKeys map[string]struct{}, prefix string) error {
 	for keyVal := range overlay {
 		key, ok := keyVal.(string)
 		if !ok {
@@ -192,12 +194,14 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) err
 				base[key] = baseSection
 			}
 
-			if err := mergeDefaults(baseSection, overlayChild); err != nil {
+			newPrefix := prefixKey(prefix, key)
+			if err := mergeDefaults(baseSection, overlayChild, defaultKeys, newPrefix); err != nil {
 				return err
 			}
 		case DefaultEntry:
 			if _, ok := base[key]; !ok {
 				base[key] = generalizeType(overlayChild.Default)
+				defaultKeys[prefixKey(prefix, key)] = struct{}{}
 			}
 		}
 	}
@@ -206,7 +210,7 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping) err
 }
 
 // validationChecker validates the incoming config
-func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping) error {
+func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping, defaultKeys map[string]struct{}) error {
 	err := keys(root, nil, func(section map[interface{}]interface{}, key []string) error {
 		// It's a scalar key. Let's run some diagnostics.
 		lastKey := key[len(key)-1]
@@ -252,7 +256,7 @@ func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping
 	}
 
 	// Fill in keys that are not present in the passed config:
-	return mergeDefaults(root, defaults)
+	return mergeDefaults(root, defaults, defaultKeys, "")
 }
 
 ////////////
@@ -263,7 +267,7 @@ type keyChangedEvent struct {
 	key string
 }
 
-// Config is a helper that is built around a YAML file.
+// Config is a helper that is built around a representation defined by a Encoder/Decoder.
 // It supports typed gets and sets, change notifications and
 // basic validation with defaults.
 type Config struct {
@@ -274,6 +278,7 @@ type Config struct {
 	memory          map[interface{}]interface{}
 	callbackCount   int
 	changeCallbacks map[string]map[int]keyChangedEvent
+	defaultKeys     map[string]struct{}
 	version         Version
 }
 
@@ -313,7 +318,8 @@ func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
 
 // open does the actual struct creation. It is also used by the migrater.
 func open(version Version, memory map[interface{}]interface{}, defaults DefaultMapping) (*Config, error) {
-	if err := validationChecker(memory, defaults); err != nil {
+	defaultKeys := make(map[string]struct{})
+	if err := validationChecker(memory, defaults, defaultKeys); err != nil {
 		return nil, e.Wrapf(err, "validate")
 	}
 
@@ -323,6 +329,7 @@ func open(version Version, memory map[interface{}]interface{}, defaults DefaultM
 		memory:          memory,
 		version:         version,
 		changeCallbacks: make(map[string]map[int]keyChangedEvent),
+		defaultKeys:     defaultKeys,
 	}, nil
 }
 
@@ -358,17 +365,18 @@ func (cfg *Config) Reload(dec Decoder) error {
 		version:       cfg.version,
 		defaults:      cfg.defaults,
 		callbackCount: cfg.callbackCount,
+		defaultKeys:   cfg.defaultKeys,
 		section:       cfg.section,
 	}
 
-	if err := validationChecker(memory, cfg.defaults); err != nil {
+	if err := validationChecker(memory, cfg.defaults, cfg.defaultKeys); err != nil {
 		return e.Wrapf(err, "validate")
 	}
 
 	cfg.memory = memory
 	cfg.version = version
 
-	// Keys did not change, since it's the same defaults/:
+	// Keys did not change, since it's the same defaults:
 	callbacks := []keyChangedEvent{}
 	for _, key := range cfg.keys() {
 		if !reflect.DeepEqual(oldCfg.get(key), cfg.get(key)) {
@@ -383,7 +391,7 @@ func (cfg *Config) Reload(dec Decoder) error {
 	return nil
 }
 
-// Save will write a YAML representation of the current config to `w`.
+// Save will write a representation defined by `enc` of the current config to `w`.
 func (cfg *Config) Save(enc Encoder) error {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -480,8 +488,10 @@ func (cfg *Config) setLocked(key string, val interface{}) error {
 		)
 	}
 
-	if parent[base] == val {
-		// Nothing changed. No need to execute the callbacks.
+	// Remember that we've overwritten this key:
+	delete(cfg.defaultKeys, key)
+
+	if reflect.DeepEqual(val, parent[base]) {
 		return nil
 	}
 
@@ -493,12 +503,9 @@ func (cfg *Config) setLocked(key string, val interface{}) error {
 		}
 	}
 
-	oldVal := parent[base]
 	parent[base] = val
+	callbacks = cfg.gatherCallbacks(key)
 
-	if !reflect.DeepEqual(val, oldVal) {
-		callbacks = cfg.gatherCallbacks(key)
-	}
 	return nil
 }
 
@@ -615,6 +622,77 @@ func (cfg *Config) Float(key string) float64 {
 	return cfg.get(key).(float64)
 }
 
+// Duration returns the duration value (or default) at `key`.
+// Note: This function will panic if the key does not exist.
+func (cfg *Config) Duration(key string) time.Duration {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	s := cfg.get(key).(string)
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		panic(fmt.Sprintf("invalid duration: %v; use the duration validator!", s))
+	}
+
+	return d
+}
+
+////////////
+
+// IsDefault will return true if this key was not explicitly set,
+// but taken over from the defaults.
+// Note: This function will panic if the key does not exist.
+func (cfg *Config) IsDefault(key string) bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	_, ok := cfg.defaultKeys[key]
+	return ok
+}
+
+// Merge takes all values from `other` that were set explicitly
+// and sets them in `cfg`. If any key changes, the respective
+// event callback will be called.
+func (cfg *Config) Merge(other *Config) error {
+	cfg.mu.Lock()
+
+	callbacks := []keyChangedEvent{}
+	defer func() {
+		// Call the callbacks without the lock:
+		for _, callback := range callbacks {
+			callback.fn(callback.key)
+		}
+	}()
+
+	if !reflect.DeepEqual(cfg.defaults, other.defaults) {
+		return fmt.Errorf("refusing to merge configs with different defaults")
+	}
+
+	// NOTE: the unlock is called before the other defer!
+	defer cfg.mu.Unlock()
+
+	for _, key := range cfg.keys() {
+		if _, ok := other.defaultKeys[key]; ok {
+			// It is a default key on the other side.
+			// No need to set it, since we might have
+			// overwritten this key.
+			continue
+		}
+
+		oldVal := cfg.get(key)
+		newVal := other.get(key)
+
+		// Only use callbacks if the key really changed:
+		if !reflect.DeepEqual(newVal, oldVal) {
+			callbacks = append(callbacks, cfg.gatherCallbacks(key)...)
+			parent, base := cfg.splitKey(key)
+			parent[base] = newVal
+		}
+	}
+
+	return nil
+}
+
 ////////////
 
 // SetBool creates or sets the `val` at `key`.
@@ -639,6 +717,12 @@ func (cfg *Config) SetInt(key string, val int64) error {
 // Note: This function will panic if the key does not exist.
 func (cfg *Config) SetFloat(key string, val float64) error {
 	return cfg.setLocked(key, val)
+}
+
+// SetDuration creates or sets the `val` at `key`.
+// Note: This function will panic if the key does not exist.
+func (cfg *Config) SetDuration(key string, val time.Duration) error {
+	return cfg.setLocked(key, val.String())
 }
 
 // Set creates or sets the `val` at `key`.
@@ -668,7 +752,7 @@ func (cfg *Config) GetDefault(key string) DefaultEntry {
 	return *entry
 }
 
-// Keys returns all keys that are currently set (including the default keys)
+// Keys returns all possible keys (including the default keys)
 func (cfg *Config) Keys() []string {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()

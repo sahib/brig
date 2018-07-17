@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -433,4 +434,85 @@ a:
 
 	require.Equal(t, 1, globalCallCount)
 	require.Equal(t, 1, localCallCount)
+}
+
+func TestMerge(t *testing.T) {
+	baseYml := `# version: 666
+a:
+  b: 70
+`
+
+	overYml := `# version: 666
+a:
+  child:
+    c: "world"
+`
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0)
+	require.Nil(t, err)
+
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV0)
+	require.Nil(t, err)
+
+	require.Equal(t, int64(70), baseCfg.Get("a.b"))
+	require.Equal(t, "hello", baseCfg.Get("a.child.c"))
+
+	require.Equal(t, int64(15), overCfg.Get("a.b"))
+	require.Equal(t, "world", overCfg.Get("a.child.c"))
+
+	err = baseCfg.Merge(overCfg)
+	require.Nil(t, err)
+
+	// We shouldn't take over the default value of overCfg.
+	require.Equal(t, int64(70), baseCfg.Get("a.b"))
+	require.Equal(t, "world", baseCfg.Get("a.child.c"))
+
+	// Check that the old values were not touched:
+	require.Equal(t, int64(15), overCfg.Get("a.b"))
+	require.Equal(t, "world", overCfg.Get("a.child.c"))
+}
+
+func TestMergeDifferentDefaults(t *testing.T) {
+	baseYml := `# version: 666
+a:
+  b: 70
+`
+
+	overYml := `# version: 666
+a:
+  child:
+    c: "x"
+`
+
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0)
+	require.Nil(t, err)
+
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV1)
+	require.Nil(t, err)
+
+	err = baseCfg.Merge(overCfg)
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "refusing")
+}
+
+func TestDuration(t *testing.T) {
+	baseYml := `# version: 666
+duration: 5m20s
+`
+
+	defaults := DefaultMapping{
+		"duration": DefaultEntry{
+			Default:   "10m",
+			Validator: DurationValidator(),
+		},
+	}
+
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	require.Nil(t, err)
+
+	require.Equal(t, 5*time.Minute+20*time.Second, cfg.Duration("duration"))
+	cfg.SetDuration("duration", 20*time.Minute)
+	require.Equal(t, 20*time.Minute, cfg.Duration("duration"))
+
+	cfg.SetDuration("duration", time.Duration(0))
+	require.Equal(t, 0*time.Minute, cfg.Duration("duration"))
 }

@@ -1,6 +1,7 @@
 package config
 
 import "fmt"
+import "time"
 
 // EnumValidator checks if the supplied string value is in the `options` list.
 func EnumValidator(options ...string) func(val interface{}) error {
@@ -59,5 +60,19 @@ func FloatRangeValidator(min, max float64) func(val interface{}) error {
 		}
 
 		return nil
+	}
+}
+
+// DurationValidator asserts that the config value is a valid duration
+// that can be parsed by time.ParseDuration.
+func DurationValidator() func(val interface{}) error {
+	return func(val interface{}) error {
+		s, ok := val.(string)
+		if !ok {
+			return fmt.Errorf("value is not a duration string: %v", val)
+		}
+
+		_, err := time.ParseDuration(s)
+		return err
 	}
 }

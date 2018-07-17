@@ -49,9 +49,10 @@ var ExampleDefaultsV0 = DefaultMapping{
 
 // Basic usage example:
 func ExampleOpen() {
-	// You either open it via existing yaml data - or in case of the initial
-	// write, you just let it take over the defaults. This is also the step
-	// where the first validation happens.
+	// You either open it via existing data - or in case of the initial write,
+	// you just let it take over the defaults by passing nil as decoder. Open()
+	// is also the step where the initial validation happens.  If this
+	// validation fails, an error is returned.
 	cfg, err := Open(nil, ExampleDefaultsV0)
 	if err != nil {
 		log.Fatalf("Failed to open config: %v", err)
@@ -62,8 +63,11 @@ func ExampleOpen() {
 	cfg.Int("backend.workers")   // -> 10
 	cfg.Bool("ui.show_tooltips") // -> true
 
-	// You can set also set keys:
-	// This one will return an error though because
+	// You can set also set keys: This one will return an error though because,
+	// "the_great_one" is no valid enum value (see defaults) Note that using a
+	// bad key is considered a programming error and will cause a panic. This
+	// is on purpose and might seem radical, but should help you to catch
+	// errors early in the development.
 	cfg.SetString("backend.name", "the_great_one")
 
 	// If you'd like to print an overview over all config keys,
@@ -75,6 +79,7 @@ func ExampleOpen() {
 
 	// If you have only a string (e.g. from a cmdline config set),
 	// you can ask the config to convert it to the right type:
+	// Note that you need to check if it's an valid key, otherwise cfg.Set() might panic.
 	alienKey, alienVal := "backend.workers", "15"
 	if cfg.IsValidKey(alienKey) {
 		safeVal, err := cfg.Cast(alienKey, alienVal)
@@ -88,7 +93,8 @@ func ExampleOpen() {
 
 	// Want to know if something changed?
 	// Just register a callback for it. If you pass an empty string,
-	// you'll get callbacks for every set.
+	// you'll get callbacks for every set. The respective key is then
+	// passed to the callback.
 	cid := cfg.AddEvent("backend.workers", func(key string) {
 		fmt.Println("Key was changed:", key)
 	})
@@ -102,7 +108,8 @@ func ExampleOpen() {
 	backendCfg := cfg.Section("backend")
 	backendCfg.Get("name") // -> the_good_one
 
-	// When you're done you can always serialize the config:
+	// When you're done, you can always serialize the config
+	// and save it wherever you like.
 	buf := &bytes.Buffer{}
 	if err := cfg.Save(NewYamlEncoder(buf)); err != nil {
 		log.Fatalf("Failed to save config: %v", err)
@@ -158,7 +165,7 @@ var ExampleDefaultsV1 = DefaultMapping{
 	},
 }
 
-func ExampleMigrate() {
+func ExampleMigrater() {
 	// This config package optionally supports versioned configs.
 	// Whenever you decide to change the layout of the config,
 	// you can bump the version and register a new migration func
@@ -217,4 +224,38 @@ backend:
 	//   name: the_good_one
 	// ui:
 	//   show_tooltips: true
+}
+
+func ExampleMerge() {
+	baseYml := `# version: 0
+backend:
+  name: "the_good_one"
+`
+
+	overYml := `# version: 0
+backend:
+  workers: 50
+`
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), ExampleDefaultsV0)
+	if err != nil {
+		log.Fatalf("Failed to create base config: %v", err)
+	}
+
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), ExampleDefaultsV0)
+	if err != nil {
+		log.Fatalf("Failed to create overlay config: %v", err)
+	}
+
+	if err := baseCfg.Merge(overCfg); err != nil {
+		log.Fatalf("Failed to merge base with overlay: %v", err)
+	}
+
+	// From base:
+	fmt.Println(baseCfg.Get("backend.name"))
+
+	// From overlay:
+	fmt.Println(baseCfg.Get("backend.workers"))
+
+	// Output: the_good_one
+	// 50
 }

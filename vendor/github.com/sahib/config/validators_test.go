@@ -51,3 +51,12 @@ func TestFloatValidator(t *testing.T) {
 	require.Nil(t, vdt(float64(1.50)))
 	require.Nil(t, vdt(float64(0.75)))
 }
+
+func TestDurationValidator(t *testing.T) {
+	vdt := DurationValidator()
+	require.Contains(t, vdt(2).Error(), "is not a duration string")
+	require.Contains(t, vdt("xxx").Error(), "invalid duration")
+
+	require.Nil(t, vdt("5m"))
+	require.Nil(t, vdt("5m20s"))
+}

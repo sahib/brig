@@ -56,7 +56,6 @@ func (mm *Migrater) Add(version Version, migration Migration, defaults DefaultMa
 	}
 
 	// Insert somewhere in the middle:
-	// - migrate.Add (sorting)
 	left := append(mm.migrations[:biggerIdx], entry)
 	mm.migrations = append(left, mm.migrations[biggerIdx:]...)
 }
@@ -92,8 +91,7 @@ func (mm *Migrater) biggerThan(version Version) []migrationEntry {
 	return mm.migrations[biggerIdx:]
 }
 
-// Migrate somehow? detects the version of the config read from `r`
-// tries to find the correct
+// Migrate reads the config from `dec` and converts it to the newest version if required.
 func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
 	currVersion, memory, err := dec.Decode()
 	if err != nil {
