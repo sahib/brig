@@ -74,6 +74,12 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 			log.Errorf("migration failed: %v", err)
 			return nil, e.Wrapf(err, "migration failed")
 		}
+
+		// Try re-opening it:
+		rp, err := fsrepo.Open(path)
+		if err != nil {
+			return nil, e.Wrapf(err, "failed to open repo after migration")
+		}
 	}
 
 	if err != nil {
