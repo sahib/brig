@@ -762,8 +762,8 @@ func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
 			return err
 		}
 
-		addr := remote.Fingerprint.Addr()
-		if err := status.SetAddr(addr); err != nil {
+		fp := string(remote.Fingerprint)
+		if err := status.SetFingerprint(fp); err != nil {
 			return err
 		}
 
@@ -771,7 +771,7 @@ func (mh *metaHandler) OnlinePeers(call capnp.Meta_onlinePeers) error {
 			return err
 		}
 
-		pinger, err := psrv.PingMap().For(addr)
+		pinger, err := psrv.PingMap().For(remote.Fingerprint.Addr())
 		if err != nil {
 			status.SetError(err.Error())
 		}

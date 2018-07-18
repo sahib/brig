@@ -76,7 +76,7 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool) (*
 		}
 
 		// Try re-opening it:
-		rp, err := fsrepo.Open(path)
+		rp, err = fsrepo.Open(path)
 		if err != nil {
 			return nil, e.Wrapf(err, "failed to open repo after migration")
 		}

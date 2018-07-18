@@ -104,12 +104,29 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			)
 		}
 
-		shortAddr := info.Addr
-		if len(shortAddr) > 9 {
-			shortAddr = shortAddr[:9]
+		shortFp := ""
+		splitFp := strings.SplitN(info.Fingerprint, ":", 2)
+
+		if len(splitFp) > 0 {
+			shortAddr := splitFp[0]
+			if len(shortAddr) > 12 {
+				shortAddr = shortAddr[:12]
+			}
+
+			shortFp += shortAddr
 		}
 
-		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, shortAddr, suffix)
+		if len(splitFp) > 1 {
+			shortPubKeyID := splitFp[1]
+			if len(shortPubKeyID) > 12 {
+				shortPubKeyID = shortPubKeyID[:12]
+			}
+
+			shortFp += ":"
+			shortFp += shortPubKeyID
+		}
+
+		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, shortFp, suffix)
 	}
 
 	return tabW.Flush()

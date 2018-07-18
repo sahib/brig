@@ -90,7 +90,7 @@ struct MountOptions {
 
 struct PeerStatus $Go.doc("net status of a peer") {
     name        @0 :Text;
-    addr        @1 :Text;
+    fingerprint @1 :Text;
     lastSeen    @2 :Text;
     roundtripMs @3 :Int32;
     error       @4 :Text;
