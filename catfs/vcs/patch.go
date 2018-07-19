@@ -233,14 +233,24 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		return nil
 	})
 
-	// Make sure to apply the modifications *first* that are older.
-	sort.Slice(patch.Changes, func(i, j int) bool {
-		return patch.Changes[i].Curr.ModTime().Before(patch.Changes[j].Curr.ModTime())
-	})
-
 	if err != nil {
 		return nil, err
 	}
+
+	// Make sure to apply the modifications *first* that are older.
+	sort.Slice(patch.Changes, func(i, j int) bool {
+		na, nb := patch.Changes[i].Curr, patch.Changes[j].Curr
+
+		// Ghosts should sort after normal nodes.
+		naIsGhost := na.Type() == n.NodeTypeGhost
+		nbIsGhost := nb.Type() == n.NodeTypeGhost
+		if naIsGhost != nbIsGhost {
+			// sort non ghosts to the beginning
+			return nbIsGhost
+		}
+
+		return na.ModTime().Before(nb.ModTime())
+	})
 
 	return patch, nil
 }
