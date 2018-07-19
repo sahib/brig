@@ -96,6 +96,7 @@ func (vcs *vcsHandler) Commit(call capnp.VCS_commit) error {
 	}
 
 	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
+		msg = "user: " + msg
 		return fs.MakeCommit(msg)
 	})
 }

@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	log "github.com/Sirupsen/logrus"
@@ -382,6 +381,87 @@ func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *historySetup {
 	}
 }
 
+func setupHistoryMoveSamePlaceLeft(t *testing.T, lkr *c.Linker) *historySetup {
+	x := c.MustTouch(t, lkr, "/x", 1)
+	y := c.MustTouch(t, lkr, "/y", 1)
+	c1 := c.MustCommit(t, lkr, "pre-move")
+
+	c.MustMove(t, lkr, x, "/z")
+	c.MustMove(t, lkr, y, "/z")
+	c2 := c.MustCommit(t, lkr, "post-move")
+
+	xGhost, err := lkr.LookupGhost("/x")
+	require.Nil(t, err)
+
+	return &historySetup{
+		commits: []*n.Commit{c2, c1},
+		paths: []string{
+			"/x",
+			"/x",
+		},
+		changes: []ChangeType{
+			// This file was removed, since the destination "z"
+			// was overwritten by "y" and thus we may not count it
+			// as moved.
+			ChangeTypeRemove,
+			ChangeTypeAdd,
+		},
+		head: c2,
+		node: xGhost,
+	}
+}
+
+func setupHistoryTypeChange(t *testing.T, lkr *c.Linker) *historySetup {
+	x := c.MustTouch(t, lkr, "/x", 1)
+	c.MustCommit(t, lkr, "added")
+	c.MustRemove(t, lkr, x)
+	c.MustCommit(t, lkr, "removed")
+	dir := c.MustMkdir(t, lkr, "/x")
+	c3 := c.MustCommit(t, lkr, "mkdir")
+
+	return &historySetup{
+		commits: []*n.Commit{c3},
+		paths: []string{
+			"/x",
+		},
+		changes: []ChangeType{
+			// This file was removed, since the destination "z"
+			// was overwritten by "y" and thus we may not count it
+			// as moved.
+			ChangeTypeAdd,
+		},
+		head: c3,
+		node: dir,
+	}
+}
+
+func setupHistoryMoveSamePlaceRight(t *testing.T, lkr *c.Linker) *historySetup {
+	x := c.MustTouch(t, lkr, "/x", 1)
+	y := c.MustTouch(t, lkr, "/y", 1)
+	c1 := c.MustCommit(t, lkr, "pre-move")
+
+	c.MustMove(t, lkr, x, "/z")
+	c.MustMove(t, lkr, y, "/z")
+	c2 := c.MustCommit(t, lkr, "post-move")
+
+	yGhost, err := lkr.LookupGhost("/y")
+	require.Nil(t, err)
+
+	return &historySetup{
+		commits: []*n.Commit{c2, c1},
+		paths: []string{
+			"/y",
+			"/y",
+		},
+		changes: []ChangeType{
+			ChangeTypeMove | ChangeTypeRemove,
+			ChangeTypeAdd,
+		},
+		head: c2,
+		node: yGhost,
+	}
+}
+
 func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *historySetup {
 	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
@@ -674,6 +754,12 @@ func TestHistoryWalker(t *testing.T) {
 			name:  "move-modify",
 			setup: setupHistoryMoveAndModify,
 		}, {
+			name:  "move-to-same-place-left",
+			setup: setupHistoryMoveSamePlaceLeft,
+		}, {
+			name:  "move-to-same-place-right",
+			setup: setupHistoryMoveSamePlaceRight,
+		}, {
 			name:  "move-modify-stage",
 			setup: setupHistoryMoveAndModifyStage,
 		}, {
@@ -697,6 +783,9 @@ func TestHistoryWalker(t *testing.T) {
 		}, {
 			name:  "edge-root",
 			setup: setupEdgeRoot,
+		}, {
+			name:  "edge-type-change",
+			setup: setupHistoryTypeChange,
 		},
 	}
 
@@ -716,10 +805,14 @@ func testHistoryRunner(t *testing.T, lkr *c.Linker, setup *historySetup) {
 	walker := NewHistoryWalker(lkr, setup.head, setup.node)
 	for walker.Next() {
 		state := walker.State()
-		fmt.Println("TYPE", state.Mask)
-		fmt.Println("HEAD", state.Head)
-		fmt.Println("NEXT", state.Next)
-		fmt.Println("===")
+		// fmt.Println("TYPE", state.Mask)
+		// fmt.Println("HEAD", state.Head)
+		// fmt.Println("NEXT", state.Next)
+		// fmt.Println("===")
+
+		if idx >= len(setup.paths) {
+			t.Fatalf("more history entries than expected")
+		}
 
 		if setup.paths[idx] != state.Curr.Path() {
 			t.Fatalf(

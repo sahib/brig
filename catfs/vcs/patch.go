@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"path"
+	"sort"
 
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
@@ -122,7 +123,7 @@ func hasValidPrefix(root *trie.Node, path string) bool {
 	return false
 }
 
-func filerInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixTrie *trie.Node) (bool, error) {
+func filterInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixTrie *trie.Node) (bool, error) {
 	if child.Type() != n.NodeTypeGhost || combCh.Mask&ChangeTypeMove == 0 {
 		return true, nil
 	}
@@ -132,14 +133,18 @@ func filerInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixTr
 		return false, err
 	}
 
-	if moveNd != nil && !hasValidPrefix(prefixTrie, moveNd.Path()) {
+	if moveNd == nil {
+		return false, nil
+	}
+
+	if !hasValidPrefix(prefixTrie, moveNd.Path()) {
 		// The node was moved to the outside. Count it as removed.
 		combCh.Mask &= ^ChangeTypeMove
 		combCh.Mask |= ChangeTypeRemove
 		return true, nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
@@ -181,6 +186,9 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		// i.e. empty directories. Directories in between will be shaped
 		// by the changes done to them and we do/can not recreate the
 		// changes for intermediate directories easily.
+		//
+		// TODO: What if we move all children of a dir?
+		//       We should remove the old "hull" directory.
 		if child.Type() == n.NodeTypeDirectory {
 			dir, ok := child.(*n.Directory)
 			if !ok {
@@ -213,7 +221,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		// Some special filtering needs to be done here.
 		// If it'a "move" ghost we don't want to export it unless
 		// the move goes outside our prefixes (which would count as "remove").
-		isValid, err := filerInvalidMoveGhost(lkr, child, combCh, prefixTrie)
+		isValid, err := filterInvalidMoveGhost(lkr, child, combCh, prefixTrie)
 		if err != nil {
 			return err
 		}
@@ -223,6 +231,11 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		}
 
 		return nil
+	})
+
+	// Make sure to apply the modifications *first* that are older.
+	sort.Slice(patch.Changes, func(i, j int) bool {
+		return patch.Changes[i].Curr.ModTime().Before(patch.Changes[j].Curr.ModTime())
 	})
 
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
+	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/stretchr/testify/require"
 )
@@ -126,5 +127,40 @@ func TestMakePatch(t *testing.T) {
 		dstNotEmptyFile, err := lkrDst.LookupFile("/empty/not_empty_anymore")
 		require.Nil(t, err)
 		require.Equal(t, dstNotEmptyFile.Path(), "/empty/not_empty_anymore")
+	})
+}
+
+func TestMakePatchWithOrderConflict(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		init, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		srcX := c.MustTouch(t, lkrSrc, "/x", 1)
+		srcY := c.MustTouch(t, lkrSrc, "/y", 2)
+		c.MustCommit(t, lkrSrc, "pre-move")
+
+		// x added|removed
+		c.MustMove(t, lkrSrc, srcX, "/z")
+		// y added|removed|moved
+		c.MustMove(t, lkrSrc, srcY, "/z")
+		c.MustCommit(t, lkrSrc, "post-move")
+
+		patch, err := MakePatch(lkrSrc, init, []string{"/"})
+		require.Nil(t, err)
+
+		// All files should be mentioned in the patch.
+		// x and y are ghosts, z is the only real file.
+		// Since y was moved last it has a move marker, x not.
+		require.Equal(t, "/x", patch.Changes[0].Curr.Path())
+		require.Equal(t, "/y", patch.Changes[1].Curr.Path())
+		require.Equal(t, "/z", patch.Changes[2].Curr.Path())
+
+		require.Equal(t, n.NodeTypeGhost, patch.Changes[0].Curr.Type())
+		require.Equal(t, n.NodeTypeGhost, patch.Changes[1].Curr.Type())
+		require.Equal(t, n.NodeTypeFile, patch.Changes[2].Curr.Type())
+
+		require.Equal(t, ChangeTypeAdd|ChangeTypeRemove, patch.Changes[0].Mask)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeMove|ChangeTypeRemove, patch.Changes[1].Mask)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeMove, patch.Changes[2].Mask)
 	})
 }

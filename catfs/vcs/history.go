@@ -85,6 +85,8 @@ func (hw *HistoryWalker) maskFromState(curr, next n.ModNode) ChangeType {
 			mask |= ChangeTypeRemove
 		}
 
+		// ...otherwise the node was re-added in this commit,
+		// but removed previously.
 		if !isGhostCurr && isGhostNext {
 			mask |= ChangeTypeAdd
 		}
@@ -120,8 +122,9 @@ func ParentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Dir
 // Check if a node was moved and if so, return the coressponding other half.
 // If it was not moved, this method will return nil, MoveDirNone, nil.
 //
-// This is also supposed to work with moved directories (keep in mind that moving directories
-// will only create a ghost for the moved directory itself, not the children of it):
+// This is also supposed to work with moved directories (keep in mind that
+// moving directories will only create a ghost for the moved directory itself,
+// not the children of it):
 //
 // $ tree .
 // a/
@@ -129,8 +132,8 @@ func ParentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Dir
 //   c  # a file.
 // $ mv a f
 //
-// For this case we need to go over the parent directories of c (b and f) to find the ghost dir "a".
-// From there we can resolve back to "c".
+// For this case we need to go over the parent directories of c (b and f) to
+// find the ghost dir "a".  From there we can resolve back to "c".
 func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.MoveDir, error) {
 	prev, direction, err := lkr.MoveMapping(head, curr)
 	if err != nil {
@@ -213,6 +216,14 @@ func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.Move
 	return nil, c.MoveDirNone, fmt.Errorf("How did we end up here?")
 }
 
+func getRealType(nd n.Node) n.NodeType {
+	if nd.Type() == n.NodeTypeGhost {
+		return nd.(*n.Ghost).OldNode().Type()
+	}
+
+	return nd.Type()
+}
+
 // Next advances the walker to the next commit.
 // Call State() to get the current state after.
 // If there are no commits left or an error happended,
@@ -264,11 +275,11 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
-	// Unpack the old ghost before doing anything with it:
 	referToPath := ""
 	if prev != nil {
 		referToPath = prev.Path()
 
+		// Unpack the old ghost before doing anything with it:
 		if prev.Type() == n.NodeTypeGhost {
 			prevGhost, ok := prev.(*n.Ghost)
 			if !ok {
@@ -347,6 +358,14 @@ func (hw *HistoryWalker) Next() bool {
 		Mask: hw.maskFromState(hw.curr, prevModNode),
 		Curr: hw.curr,
 		Next: prevHeadCommit,
+	}
+
+	if getRealType(prev) != getRealType(hw.curr) {
+		// Edge case: The node change its types.  This can happen when we
+		// remove a file and create a directory in its place.
+		hw.state.Mask = ChangeTypeAdd
+		hw.state.Next = nil
+		return false
 	}
 
 	// Special case: A ghost that still has a move partner.

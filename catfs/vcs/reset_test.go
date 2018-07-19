@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -114,7 +113,7 @@ func TestFindPathAt(t *testing.T) {
 
 		oldPath, err := findPathAt(lkr, c1, "/y")
 		require.Nil(t, err)
-		fmt.Println("OLD PATH", oldPath)
+		require.Equal(t, "/x", oldPath)
 	})
 }
 

@@ -319,13 +319,28 @@ func CombineChanges(changes []*Change) *Change {
 	}
 
 	// If the node moved, save the original path in ReferToPath:
+	pathChanged := false
 	if changes[0].Curr.Path() != changes[len(changes)-1].Curr.Path() {
 		ch.ReferToPath = changes[len(changes)-1].Curr.Path()
+		pathChanged = true
 	}
 
 	// Combine the mask:
 	for _, change := range changes {
 		ch.Mask |= change.Mask
+	}
+
+	// If the path did not really change, we do not want
+	// to have ChangeTypeMove in the mask. If it's a ghost
+	// we should still include it though (for ReferPath)
+	isGhost := changes[0].Curr.Type() == n.NodeTypeGhost
+	if !pathChanged && !isGhost {
+		ch.Mask &= ^ChangeTypeMove
+	}
+
+	// If the last change was not a remove, we do not need to
+	if changes[0].Mask&ChangeTypeRemove == 0 && !isGhost {
+		ch.Mask &= ^ChangeTypeRemove
 	}
 
 	return ch

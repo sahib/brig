@@ -8,9 +8,12 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+// NodeType defines the type of a specific node.
+type NodeType uint8
+
 const (
 	// NodeTypeUnknown should not happen in real programs
-	NodeTypeUnknown = iota
+	NodeTypeUnknown = NodeType(iota)
 	// NodeTypeFile indicates a regular file
 	NodeTypeFile
 	// NodeTypeDirectory indicates a directory
@@ -20,9 +23,6 @@ const (
 	// NodeTypeGhost indicates a moved node
 	NodeTypeGhost
 )
-
-// NodeType defines the type of a specific node.
-type NodeType uint8
 
 var nodeTypeToString = map[NodeType]string{
 	NodeTypeCommit:    "commit",

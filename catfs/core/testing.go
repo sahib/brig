@@ -99,13 +99,25 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 		t.Fatalf("touch: Failed to lookup: %s", dirname)
 	}
 
-	file, err := n.NewEmptyFile(parent, path.Base(touchPath), lkr.owner, lkr.NextInode())
+	basePath := path.Base(touchPath)
+	file, err := n.NewEmptyFile(parent, basePath, lkr.owner, lkr.NextInode())
 	if err != nil {
 		t.Fatalf("touch: Creating dummy file failed: %v", err)
 	}
 
 	file.SetBackend(lkr, h.TestDummy(t, seed))
 	file.SetContent(lkr, h.TestDummy(t, seed))
+
+	child, err := parent.Child(lkr, basePath)
+	if err != nil {
+		t.Fatalf("touch: Failed to lookup child: %v %v", touchPath, err)
+	}
+
+	if child != nil {
+		if err := parent.RemoveChild(lkr, child); err != nil {
+			t.Fatalf("touch: failed to remove previous node: %v", err)
+		}
+	}
 
 	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("touch: Adding %s to root failed: %v", touchPath, err)

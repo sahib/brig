@@ -165,10 +165,10 @@ func TestSync(t *testing.T) {
 		err = bobCtl.StageFromReader("/bob_file", bytes.NewReader([]byte{23}))
 		require.Nil(t, err)
 
-		err = aliCtl.Sync("bob", true)
+		_, err = aliCtl.Sync("bob", true)
 		require.Nil(t, err)
 
-		err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("alice", true)
 		require.Nil(t, err)
 
 		// We cannot query the file contents, since the mock backend
@@ -180,6 +180,113 @@ func TestSync(t *testing.T) {
 		aliFileStat, err := bobCtl.Stat("/ali_file")
 		require.Nil(t, err)
 		require.Equal(t, "/ali_file", aliFileStat.Path)
+	})
+}
+
+func pathsFromListing(l []StatInfo) []string {
+	result := []string{}
+	for _, entry := range l {
+		result = append(result, entry.Path)
+	}
+
+	return result
+}
+
+func TestSyncConflict(t *testing.T) {
+	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+		// Create two files with the same content on both sides:
+		err := aliCtl.StageFromReader("/README", bytes.NewReader([]byte{42}))
+		require.Nil(t, err)
+
+		err = bobCtl.StageFromReader("/README", bytes.NewReader([]byte{42}))
+		require.Nil(t, err)
+
+		// Sync and check if the files are still equal:
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		aliFileStat, err := aliCtl.Stat("/README")
+		require.Nil(t, err)
+		bobFileStat, err := bobCtl.Stat("/README")
+		require.Nil(t, err)
+		require.Equal(t, aliFileStat.ContentHash, bobFileStat.ContentHash)
+
+		// Modify bob's side only. A sync should have no effect.
+		err = bobCtl.StageFromReader("/README", bytes.NewReader([]byte{43}))
+		require.Nil(t, err)
+
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		bobFileStat, err = bobCtl.Stat("/README")
+		require.Nil(t, err)
+
+		require.NotEqual(t, aliFileStat.ContentHash, bobFileStat.ContentHash)
+
+		// Modify alice's side additionally. Now we should get a conflicting file.
+		err = aliCtl.StageFromReader("/README", bytes.NewReader([]byte{41}))
+		require.Nil(t, err)
+
+		dirs, err := bobCtl.List("/", -1)
+		require.Nil(t, err)
+		require.Equal(t, []string{"/", "/README"}, pathsFromListing(dirs))
+
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		dirs, err = bobCtl.List("/", -1)
+		require.Nil(t, err)
+		require.Equal(
+			t,
+			[]string{"/", "/README", "/README.conflict.0"},
+			pathsFromListing(dirs),
+		)
+	})
+}
+
+func TestSyncSeveralTimes(t *testing.T) {
+	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+		err := aliCtl.StageFromReader("/ali_file_1", bytes.NewReader([]byte{1}))
+		require.Nil(t, err)
+
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		dirs, err := bobCtl.List("/", -1)
+		require.Nil(t, err)
+		require.Equal(
+			t,
+			[]string{"/", "/ali_file_1"},
+			pathsFromListing(dirs),
+		)
+
+		err = aliCtl.StageFromReader("/ali_file_2", bytes.NewReader([]byte{2}))
+		require.Nil(t, err)
+
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		dirs, err = bobCtl.List("/", -1)
+		require.Nil(t, err)
+		require.Equal(
+			t,
+			[]string{"/", "/ali_file_1", "/ali_file_2"},
+			pathsFromListing(dirs),
+		)
+
+		err = aliCtl.StageFromReader("/ali_file_3", bytes.NewReader([]byte{3}))
+		require.Nil(t, err)
+
+		_, err = bobCtl.Sync("alice", true)
+		require.Nil(t, err)
+
+		dirs, err = bobCtl.List("/", -1)
+		require.Nil(t, err)
+		require.Equal(
+			t,
+			[]string{"/", "/ali_file_1", "/ali_file_2", "/ali_file_3"},
+			pathsFromListing(dirs),
+		)
 	})
 }
 
@@ -225,10 +332,10 @@ func TestSyncPartial(t *testing.T) {
 		err = bobCtl.StageFromReader("/photos/bob.png", bytes.NewReader([]byte{23}))
 		require.Nil(t, err)
 
-		err = aliCtl.Sync("bob", true)
+		_, err = aliCtl.Sync("bob", true)
 		require.Nil(t, err)
 
-		err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("alice", true)
 		require.Nil(t, err)
 
 		// We cannot query the file contents, since the mock backend

@@ -74,6 +74,60 @@ func TestChangeCombine(t *testing.T) {
 	})
 }
 
+// TODO: Change of type?
+
+func TestChangeCombineMoveBackAndForth(t *testing.T) {
+	c.WithDummyLinker(t, func(lkr *c.Linker) {
+		x := c.MustTouch(t, lkr, "/x", 1)
+		c.MustCommit(t, lkr, "1")
+		y := c.MustMove(t, lkr, x, "/y")
+		c.MustCommit(t, lkr, "2")
+		xx := c.MustMove(t, lkr, y, "/x")
+		c.MustCommit(t, lkr, "3")
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		changes, err := History(lkr, xx, status, nil)
+		require.Nil(t, err)
+		require.Len(t, changes, 4)
+		require.Equal(t, changes[0].Mask, ChangeTypeNone)
+		require.Equal(t, changes[1].Mask, ChangeTypeMove)
+		require.Equal(t, changes[2].Mask, ChangeTypeMove)
+		require.Equal(t, changes[3].Mask, ChangeTypeAdd)
+
+		change := CombineChanges(changes)
+		require.Equal(t, "", change.ReferToPath)
+		require.Equal(t, ChangeTypeAdd, change.Mask)
+	})
+}
+
+func TestChangeRemoveAndReadd(t *testing.T) {
+	c.WithDummyLinker(t, func(lkr *c.Linker) {
+		x := c.MustTouch(t, lkr, "/x", 1)
+		c.MustCommit(t, lkr, "1")
+		c.MustRemove(t, lkr, x)
+		c.MustCommit(t, lkr, "2")
+		xx := c.MustTouch(t, lkr, "/x", 2)
+		c.MustCommit(t, lkr, "3")
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		changes, err := History(lkr, xx, status, nil)
+		require.Nil(t, err)
+		require.Len(t, changes, 4)
+		require.Equal(t, changes[0].Mask, ChangeTypeNone)
+		require.Equal(t, changes[1].Mask, ChangeTypeAdd|ChangeTypeModify)
+		require.Equal(t, changes[2].Mask, ChangeTypeRemove)
+		require.Equal(t, changes[3].Mask, ChangeTypeAdd)
+
+		change := CombineChanges(changes)
+		require.Equal(t, "", change.ReferToPath)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeModify, change.Mask)
+	})
+}
+
 func TestChangeReplay(t *testing.T) {
 	tcs := []struct {
 		name  string
