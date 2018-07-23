@@ -249,6 +249,18 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return naIsGhost
 		}
 
+		naIsRemove := patch.Changes[i].Mask&ChangeTypeRemove != 0
+		nbIsRemove := patch.Changes[j].Mask&ChangeTypeRemove != 0
+		if naIsRemove != nbIsRemove {
+			return naIsRemove
+		}
+
+		naIsMove := patch.Changes[i].Mask&ChangeTypeMove != 0
+		nbIsMove := patch.Changes[j].Mask&ChangeTypeMove != 0
+		if naIsMove != nbIsMove {
+			return naIsMove
+		}
+
 		return na.ModTime().Before(nb.ModTime())
 	})
 
