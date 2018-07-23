@@ -215,7 +215,11 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 				}
 			}
 
-			if err := entry.SetReferTo(change.ReferTo); err != nil {
+			if err := entry.SetMovedTo(change.MovedTo); err != nil {
+				return err
+			}
+
+			if err := entry.SetWasPreviouslyAt(change.WasPreviouslyAt); err != nil {
 				return err
 			}
 

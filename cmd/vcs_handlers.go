@@ -98,8 +98,8 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 				src := history[idx+1].Path
 				dst := entry.Path
 
-				if entry.ReferTo != "" {
-					dst = entry.ReferTo
+				if entry.MovedTo != "" {
+					dst = entry.MovedTo
 				}
 
 				what = fmt.Sprintf(
@@ -112,6 +112,11 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 				printLine = false
 			}
 		}
+
+		if entry.WasPreviouslyAt != "" {
+			what = fmt.Sprintf("%s (was %s)", what, entry.WasPreviouslyAt)
+		}
+
 		if !printLine {
 			continue
 		}

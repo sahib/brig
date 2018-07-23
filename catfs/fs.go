@@ -156,13 +156,21 @@ type Commit struct {
 type Change struct {
 	// Path is the node that was changed
 	Path string
+
 	// Change describes what was changed
 	Change string
-	// ReferTo is the path of a file the node was previously at
-	// (if moved)
-	ReferTo string
+
+	// MovedTo indicates that the node at this Path was moved to
+	// another location and that there is no node at this location now.
+	MovedTo string
+
+	// WasPreviouslyAt is filled when the node was moved
+	// and was previously at another location.
+	WasPreviouslyAt string
+
 	// Head is the commit after the change
 	Head *Commit
+
 	// Next is the commit before the change
 	Next *Commit
 }
@@ -1120,11 +1128,12 @@ func (fs *FS) History(path string) ([]Change, error) {
 		}
 
 		entries = append(entries, Change{
-			Path:    change.Curr.Path(),
-			Change:  change.Mask.String(),
-			Head:    head,
-			Next:    next,
-			ReferTo: change.MovedTo,
+			Path:            change.Curr.Path(),
+			Change:          change.Mask.String(),
+			Head:            head,
+			Next:            next,
+			MovedTo:         change.MovedTo,
+			WasPreviouslyAt: change.WasPreviouslyAt,
 		})
 	}
 

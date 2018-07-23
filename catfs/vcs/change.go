@@ -264,6 +264,10 @@ func (ch *Change) toCapnpChange(seg *capnp.Segment, capCh *capnp_patch.Change) e
 		return err
 	}
 
+	if err := capCh.SetWasPreviouslyAt(ch.WasPreviouslyAt); err != nil {
+		return err
+	}
+
 	capCh.SetMask(uint64(ch.Mask))
 	return nil
 
@@ -325,12 +329,18 @@ func (ch *Change) fromCapnpChange(capCh capnp_patch.Change) error {
 
 	ch.Curr = currModNd
 
-	referToPath, err := capCh.MovedTo()
+	movedTo, err := capCh.MovedTo()
 	if err != nil {
 		return err
 	}
 
-	ch.MovedTo = referToPath
+	wasPreviouslyAt, err := capCh.WasPreviouslyAt()
+	if err != nil {
+		return err
+	}
+
+	ch.MovedTo = movedTo
+	ch.WasPreviouslyAt = wasPreviouslyAt
 	ch.Mask = ChangeType(capCh.Mask())
 	return nil
 }
