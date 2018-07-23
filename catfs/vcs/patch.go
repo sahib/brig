@@ -246,7 +246,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		nbIsGhost := nb.Type() == n.NodeTypeGhost
 		if naIsGhost != nbIsGhost {
 			// sort non ghosts to the beginning
-			return nbIsGhost
+			return naIsGhost
 		}
 
 		return na.ModTime().Before(nb.ModTime())

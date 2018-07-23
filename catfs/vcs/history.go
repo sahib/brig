@@ -295,7 +295,7 @@ func (hw *HistoryWalker) Next() bool {
 			// We should count this node as added therefore, not moved.
 			prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
 			if err != nil {
-				hw.err = e.Wrap(err, "Cannot find previous root directory")
+				hw.err = e.Wrap(err, "cannot find previous root directory")
 				return false
 			}
 
@@ -315,7 +315,7 @@ func (hw *HistoryWalker) Next() bool {
 		// Assume that we can reach it directly via it's path.
 		prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
 		if err != nil {
-			hw.err = e.Wrap(err, "Cannot find previous root directory")
+			hw.err = e.Wrap(err, "cannot find previous root directory")
 			return false
 		}
 
@@ -361,20 +361,26 @@ func (hw *HistoryWalker) Next() bool {
 	}
 
 	if getRealType(prev) != getRealType(hw.curr) {
-		// Edge case: The node change its types.  This can happen when we
+		// Edge case: The node changed its types.  This can happen when we
 		// remove a file and create a directory in its place.
 		hw.state.Mask = ChangeTypeAdd
 		hw.state.Next = nil
 		return false
 	}
 
-	// Special case: A ghost that still has a move partner.
+	// Special case #1: A ghost that still has a move partner.
 	// This means the node here was moved to `prev` in this commit.
 	if hw.curr.Type() == n.NodeTypeGhost && direction == c.MoveDirDstToSrc {
 		// Indicate that this node was indeed removed,
 		// but still lives somewhere else.
 		hw.state.Mask |= ChangeTypeMove
-		hw.state.ReferToPath = referToPath
+		hw.state.MovedTo = referToPath
+	}
+
+	// Special case #2: A non-ghost that was moved from somewhere.
+	if hw.curr.Type() != n.NodeTypeGhost && direction == c.MoveDirSrcToDst {
+		hw.state.Mask |= ChangeTypeMove
+		hw.state.WasPreviouslyAt = referToPath
 	}
 
 	// Swap for the next call to Next():

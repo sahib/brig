@@ -184,6 +184,20 @@ func TestRemoveGhost(t *testing.T) {
 	})
 }
 
+func TestRemoveExistingGhost(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		nd := MustTouch(t, lkr, "/x", 1)
+		_, ghost, err := Remove(lkr, nd, true, true)
+		require.Nil(t, err)
+
+		_, _, err = Remove(lkr, ghost, false, true)
+		require.Nil(t, err)
+
+		_, _, err = Remove(lkr, ghost, true, true)
+		require.NotNil(t, err)
+	})
+}
+
 func moveValidCheck(t *testing.T, lkr *Linker, srcPath, dstPath string) {
 	nd, err := lkr.LookupNode(srcPath)
 

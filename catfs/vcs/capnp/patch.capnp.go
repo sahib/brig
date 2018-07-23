@@ -118,22 +118,22 @@ func (s Change) NewCurr() (capnp2.Node, error) {
 	return ss, err
 }
 
-func (s Change) ReferToPath() (string, error) {
+func (s Change) MovedTo() (string, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.Text(), err
 }
 
-func (s Change) HasReferToPath() bool {
+func (s Change) HasMovedTo() bool {
 	p, err := s.Struct.Ptr(3)
 	return p.IsValid() || err != nil
 }
 
-func (s Change) ReferToPathBytes() ([]byte, error) {
+func (s Change) MovedToBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.TextBytes(), err
 }
 
-func (s Change) SetReferToPath(v string) error {
+func (s Change) SetMovedTo(v string) error {
 	return s.Struct.SetText(3, v)
 }
 

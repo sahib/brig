@@ -1124,7 +1124,7 @@ func (fs *FS) History(path string) ([]Change, error) {
 			Change:  change.Mask.String(),
 			Head:    head,
 			Next:    next,
-			ReferTo: change.ReferToPath,
+			ReferTo: change.MovedTo,
 		})
 	}
 

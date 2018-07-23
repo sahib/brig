@@ -18,22 +18,22 @@ func TestPatchMarshalling(t *testing.T) {
 		next := c.MustCommit(t, lkr, "hello")
 
 		change1 := &Change{
-			Mask:        ChangeTypeMove | ChangeTypeRemove,
-			Head:        head,
-			Next:        next,
-			Curr:        curr,
-			ReferToPath: "/something1",
+			Mask:    ChangeTypeMove | ChangeTypeRemove,
+			Head:    head,
+			Next:    next,
+			Curr:    curr,
+			MovedTo: "/something1",
 		}
 
 		c.MustModify(t, lkr, curr, 2)
 		nextNext := c.MustCommit(t, lkr, "hello")
 
 		change2 := &Change{
-			Mask:        ChangeTypeAdd | ChangeTypeModify,
-			Head:        next,
-			Next:        nextNext,
-			Curr:        curr,
-			ReferToPath: "/something2",
+			Mask:    ChangeTypeAdd | ChangeTypeModify,
+			Head:    next,
+			Next:    nextNext,
+			Curr:    curr,
+			MovedTo: "/something2",
 		}
 
 		patch := &Patch{
@@ -140,9 +140,7 @@ func TestMakePatchWithOrderConflict(t *testing.T) {
 		srcY := c.MustTouch(t, lkrSrc, "/y", 2)
 		c.MustCommit(t, lkrSrc, "pre-move")
 
-		// x added|removed
 		c.MustMove(t, lkrSrc, srcX, "/z")
-		// y added|removed|moved
 		c.MustMove(t, lkrSrc, srcY, "/z")
 		c.MustCommit(t, lkrSrc, "post-move")
 
@@ -152,16 +150,34 @@ func TestMakePatchWithOrderConflict(t *testing.T) {
 		// All files should be mentioned in the patch.
 		// x and y are ghosts, z is the only real file.
 		// Since y was moved last it has a move marker, x not.
-		require.Equal(t, "/z", patch.Changes[0].Curr.Path())
-		require.Equal(t, "/x", patch.Changes[1].Curr.Path())
-		require.Equal(t, "/y", patch.Changes[2].Curr.Path())
+		require.Equal(t, "/x", patch.Changes[0].Curr.Path())
+		require.Equal(t, "", patch.Changes[0].MovedTo)
+		require.Equal(t, "", patch.Changes[0].WasPreviouslyAt)
+		require.Equal(t, "/y", patch.Changes[1].Curr.Path())
+		require.Equal(t, "/z", patch.Changes[1].MovedTo)
+		require.Equal(t, "/z", patch.Changes[2].Curr.Path())
+		require.Equal(t, "", patch.Changes[2].MovedTo)
+		require.Equal(t, "/y", patch.Changes[2].WasPreviouslyAt)
 
-		require.Equal(t, n.NodeTypeFile, patch.Changes[0].Curr.Type())
+		require.Equal(t, n.NodeTypeGhost, patch.Changes[0].Curr.Type())
 		require.Equal(t, n.NodeTypeGhost, patch.Changes[1].Curr.Type())
-		require.Equal(t, n.NodeTypeGhost, patch.Changes[2].Curr.Type())
+		require.Equal(t, n.NodeTypeFile, patch.Changes[2].Curr.Type())
 
-		require.Equal(t, ChangeTypeAdd|ChangeTypeMove, patch.Changes[0].Mask)
-		require.Equal(t, ChangeTypeAdd|ChangeTypeRemove, patch.Changes[1].Mask)
-		require.Equal(t, ChangeTypeAdd|ChangeTypeMove|ChangeTypeRemove, patch.Changes[2].Mask)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeRemove, patch.Changes[0].Mask)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeMove|ChangeTypeRemove, patch.Changes[1].Mask)
+		require.Equal(t, ChangeTypeAdd|ChangeTypeMove, patch.Changes[2].Mask)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch))
+		dstZ, err := lkrDst.LookupFile("/z")
+		require.Nil(t, err)
+		require.Equal(t, dstZ.ContentHash(), h.TestDummy(t, 2))
+
+		dstX, err := lkrDst.LookupGhost("/x")
+		require.Nil(t, err)
+		require.Equal(t, n.NodeTypeGhost, dstX.Type())
+
+		dstY, err := lkrDst.LookupGhost("/y")
+		require.Nil(t, err)
+		require.Equal(t, n.NodeTypeGhost, dstY.Type())
 	})
 }

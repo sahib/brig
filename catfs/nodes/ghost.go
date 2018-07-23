@@ -27,7 +27,7 @@ type Ghost struct {
 // It should differ to the previous node.
 func MakeGhost(nd ModNode, inode uint64) (*Ghost, error) {
 	if nd.Type() == NodeTypeGhost {
-		panic("Cannot put a ghost in a ghost")
+		panic("cannot put a ghost in a ghost")
 	}
 
 	return &Ghost{

@@ -292,6 +292,10 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 
 func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	// Forbid moving a node inside of one of it's subdirectories.
+	if nd.Type() == n.NodeTypeGhost {
+		return errors.New("cannot move ghosts")
+	}
+
 	if nd.Path() == dstPath {
 		return fmt.Errorf("Source and Dest are the same file: %v", dstPath)
 	}

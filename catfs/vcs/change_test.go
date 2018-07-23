@@ -17,11 +17,11 @@ func TestChangeMarshalling(t *testing.T) {
 		next := c.MustCommit(t, lkr, "hello")
 
 		change := &Change{
-			Mask:        ChangeTypeMove | ChangeTypeRemove,
-			Head:        head,
-			Next:        next,
-			Curr:        curr,
-			ReferToPath: "/something",
+			Mask:    ChangeTypeMove | ChangeTypeRemove,
+			Head:    head,
+			Next:    next,
+			Curr:    curr,
+			MovedTo: "/something",
 		}
 
 		msg, err := change.ToCapnp()
@@ -30,7 +30,7 @@ func TestChangeMarshalling(t *testing.T) {
 		newChange := &Change{}
 		require.Nil(t, newChange.FromCapnp(msg))
 
-		require.Equal(t, newChange.ReferToPath, "/something")
+		require.Equal(t, newChange.MovedTo, "/something")
 		require.Equal(t, newChange.Mask, ChangeTypeMove|ChangeTypeRemove)
 		require.Equal(t, newChange.Curr, curr)
 		require.Equal(t, newChange.Head, head)
@@ -65,7 +65,8 @@ func TestChangeCombine(t *testing.T) {
 		require.Equal(t, changes[3].Mask, ChangeTypeAdd)
 
 		change := CombineChanges(changes)
-		require.Equal(t, change.ReferToPath, "/x")
+		require.Equal(t, change.MovedTo, "")
+		require.Equal(t, change.WasPreviouslyAt, "/x")
 		require.Equal(
 			t,
 			change.Mask,
@@ -73,8 +74,6 @@ func TestChangeCombine(t *testing.T) {
 		)
 	})
 }
-
-// TODO: Change of type?
 
 func TestChangeCombineMoveBackAndForth(t *testing.T) {
 	c.WithDummyLinker(t, func(lkr *c.Linker) {
@@ -97,7 +96,8 @@ func TestChangeCombineMoveBackAndForth(t *testing.T) {
 		require.Equal(t, changes[3].Mask, ChangeTypeAdd)
 
 		change := CombineChanges(changes)
-		require.Equal(t, "", change.ReferToPath)
+		require.Equal(t, "/x", change.WasPreviouslyAt)
+		require.Equal(t, "", change.MovedTo)
 		require.Equal(t, ChangeTypeAdd, change.Mask)
 	})
 }
@@ -123,7 +123,7 @@ func TestChangeRemoveAndReadd(t *testing.T) {
 		require.Equal(t, changes[3].Mask, ChangeTypeAdd)
 
 		change := CombineChanges(changes)
-		require.Equal(t, "", change.ReferToPath)
+		require.Equal(t, "", change.MovedTo)
 		require.Equal(t, ChangeTypeAdd|ChangeTypeModify, change.Mask)
 	})
 }
@@ -195,11 +195,12 @@ func TestChangeReplay(t *testing.T) {
 			name: "basic-all",
 			setup: func(t *testing.T, lkrSrc, lkrDst *c.Linker) n.ModNode {
 				c.MustTouch(t, lkrDst, "/x", 1)
+
 				srcX := c.MustTouch(t, lkrSrc, "/x", 1)
 				c.MustCommit(t, lkrSrc, "touch")
-				srcX = c.MustMove(t, lkrSrc, srcX, "/y").(*n.File)
+				srcY := c.MustMove(t, lkrSrc, srcX, "/y").(*n.File)
 				c.MustCommit(t, lkrSrc, "move")
-				return c.MustRemove(t, lkrSrc, srcX)
+				return c.MustRemove(t, lkrSrc, srcY)
 			},
 			check: func(t *testing.T, lkrSrc, lkrDst *c.Linker, srcNd n.ModNode) {
 				// it's enough to assert that it's a ghost now:

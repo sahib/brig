@@ -87,13 +87,27 @@ type Change struct {
 	// Curr is the node with the attributes at a specific state
 	Curr n.ModNode
 
-	// ReferToPath is only filled for ghosts that were the source
+	// MovedTo is only filled for ghosts that were the source
 	// of a move. It's the path of the node it was moved to.
-	ReferToPath string
+	MovedTo string
+
+	// WasPreviouslyAt points to the place `Curr` was at
+	// before a move. On changes without a move this is empty.
+	WasPreviouslyAt string
 }
 
 func (ch *Change) String() string {
-	return fmt.Sprintf("<%s:%s>", ch.Curr.Path(), ch.Mask)
+	movedTo := ""
+	if len(ch.MovedTo) != 0 {
+		movedTo = fmt.Sprintf(" (now %s)", ch.MovedTo)
+	}
+
+	prevAt := ""
+	if len(ch.WasPreviouslyAt) != 0 {
+		prevAt = fmt.Sprintf(" (was %s)", ch.WasPreviouslyAt)
+	}
+
+	return fmt.Sprintf("<%s:%s%s%s>", ch.Curr.Path(), ch.Mask, prevAt, movedTo)
 }
 
 // Replay applies the change `ch` onto `lkr` by redoing the same operations:
@@ -101,28 +115,12 @@ func (ch *Change) String() string {
 // lkr.Status() without creating a new commit.
 func (ch *Change) Replay(lkr *c.Linker) error {
 	return lkr.Atomic(func() error {
-		if ch.Mask&ChangeTypeMove != 0 {
-			// We need to move something. Check if we have the old node
-			// the change is referring to. We might not have it, since the
-			// mask might be e.g. added|moved, i.e. we did not see it yet.
-			oldNd, err := lkr.LookupModNode(ch.ReferToPath)
-			if err != nil && !ie.IsNoSuchFileError(err) {
-				return err
-			}
-
-			// If we have it, let's move it to produce a ghost that helps
-			// tracking the move during the actual synchronization later.
-			if !ie.IsNoSuchFileError(err) && oldNd.Path() != ch.Curr.Path() {
-				if err := c.Move(lkr, oldNd, ch.Curr.Path()); err != nil {
-					return e.Wrapf(err, "replay: move")
-				}
-			}
-		}
-
 		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
 			currNd := ch.Curr
 
-			// If it's an ghost, unpack it first:
+			// If it's an ghost, unpack it first: It will be added as if it was
+			// never a ghost, but since the change mask has the
+			// ChangeTypeRemove flag set, it will removed directly after.
 			if ch.Curr.Type() == n.NodeTypeGhost {
 				currGhost, ok := ch.Curr.(*n.Ghost)
 				if !ok {
@@ -162,6 +160,47 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			}
 		}
 
+		if ch.Mask&ChangeTypeMove != 0 {
+			if ch.WasPreviouslyAt != "" {
+				oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
+				if err != nil && !ie.IsNoSuchFileError(err) {
+					return err
+				}
+
+				if oldNd.Type() != n.NodeTypeGhost {
+					if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
+						return e.Wrap(err, "replay: move: remove old")
+					}
+				}
+			}
+
+			if ch.MovedTo != "" {
+				oldNd, err := lkr.LookupModNode(ch.Curr.Path())
+				if err != nil && !ie.IsNoSuchFileError(err) {
+					return err
+				}
+
+				if oldNd != nil {
+					if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
+						return e.Wrapf(err, "replay: move")
+					}
+				}
+			}
+		}
+
+		if ch.Mask&ChangeTypeMove != 0 && ch.Curr.Type() != n.NodeTypeGhost {
+			oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
+			if err != nil && !ie.IsNoSuchFileError(err) {
+				return err
+			}
+
+			if oldNd.Type() != n.NodeTypeGhost {
+				if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
+					return err
+				}
+			}
+		}
+
 		// We should only remove a node if we're getting a ghost in ch.Curr.
 		// Otherwise the node might have been removed and added again.
 		if ch.Mask&ChangeTypeRemove != 0 && ch.Curr.Type() == n.NodeTypeGhost {
@@ -170,8 +209,10 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 				return e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
 			}
 
-			if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
-				return err
+			if currNd.Type() != n.NodeTypeGhost {
+				if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -219,7 +260,7 @@ func (ch *Change) toCapnpChange(seg *capnp.Segment, capCh *capnp_patch.Change) e
 		return err
 	}
 
-	if err := capCh.SetReferToPath(ch.ReferToPath); err != nil {
+	if err := capCh.SetMovedTo(ch.MovedTo); err != nil {
 		return err
 	}
 
@@ -284,12 +325,12 @@ func (ch *Change) fromCapnpChange(capCh capnp_patch.Change) error {
 
 	ch.Curr = currModNd
 
-	referToPath, err := capCh.ReferToPath()
+	referToPath, err := capCh.MovedTo()
 	if err != nil {
 		return err
 	}
 
-	ch.ReferToPath = referToPath
+	ch.MovedTo = referToPath
 	ch.Mask = ChangeType(capCh.Mask())
 	return nil
 }
@@ -318,22 +359,33 @@ func CombineChanges(changes []*Change) *Change {
 		Curr: changes[0].Curr,
 	}
 
-	// If the node moved, save the original path in ReferToPath:
-	pathChanged := false
-	if changes[0].Curr.Path() != changes[len(changes)-1].Curr.Path() {
-		ch.ReferToPath = changes[len(changes)-1].Curr.Path()
-		pathChanged = true
-	}
+	// If the node moved, save the original path in MovedTo:
+	pathChanged := changes[0].Curr.Path() != changes[len(changes)-1].Curr.Path()
+	isGhost := changes[0].Curr.Type() == n.NodeTypeGhost
 
 	// Combine the mask:
 	for _, change := range changes {
 		ch.Mask |= change.Mask
 	}
 
+	if ch.Mask&ChangeTypeMove != 0 {
+		for idx := len(changes) - 1; idx >= 0; idx-- {
+			if refPath := changes[idx].MovedTo; refPath != "" {
+				ch.MovedTo = refPath
+				break
+			}
+		}
+		for idx := len(changes) - 1; idx >= 0; idx-- {
+			if refPath := changes[idx].WasPreviouslyAt; refPath != "" {
+				ch.WasPreviouslyAt = refPath
+				break
+			}
+		}
+	}
+
 	// If the path did not really change, we do not want
 	// to have ChangeTypeMove in the mask. If it's a ghost
-	// we should still include it though (for ReferPath)
-	isGhost := changes[0].Curr.Type() == n.NodeTypeGhost
+	// we should still include it though (for WasPreviouslyAt)
 	if !pathChanged && !isGhost {
 		ch.Mask &= ^ChangeTypeMove
 	}
