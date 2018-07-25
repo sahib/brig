@@ -210,7 +210,7 @@ func (f *File) Path() string {
 ////////////////// HIERARCHY INTERFACE //////////////////
 
 // NChildren returns the number of children this file node has.
-func (f *File) NChildren(_ Linker) int {
+func (f *File) NChildren() int {
 	return 0
 }
 

@@ -94,7 +94,7 @@ type Serializable interface {
 // a file hierarchy and may have other children beneath it.
 type HierarchyEntry interface {
 	// NChildren returns the total number of children to a node.
-	NChildren(lkr Linker) int
+	NChildren() int
 
 	// Child returns a named child.
 	Child(lkr Linker, name string) (Node, error)
@@ -102,7 +102,7 @@ type HierarchyEntry interface {
 	// Parent returns the parent node or nil if there is none.
 	Parent(lkr Linker) (Node, error)
 
-	// SetParent sets the parent new.  Care must be taken to remove old
+	// SetParent sets the parent new. Care must be taken to remove old
 	// references to the node to avoid loops.
 	SetParent(lkr Linker, nd Node) error
 }

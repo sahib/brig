@@ -304,7 +304,7 @@ func (c *Commit) Index() int64 {
 
 // NChildren will always return 1, since a commit has always exactly one
 // root dir attached.
-func (c *Commit) NChildren(lkr Linker) int {
+func (c *Commit) NChildren() int {
 	return 1
 }
 

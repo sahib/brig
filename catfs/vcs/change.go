@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	e "github.com/pkg/errors"
@@ -148,6 +149,10 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			// Either create/update a new file or create a directory.
 			switch currNd.(type) {
 			case *n.File:
+				if _, err := c.Mkdir(lkr, path.Dir(currNd.Path()), true); err != nil {
+					return e.Wrapf(err, "replay: mkdir")
+				}
+
 				if _, err := c.StageFromFileNode(lkr, currNd.(*n.File)); err != nil {
 					return e.Wrapf(err, "replay: stage")
 				}
@@ -180,23 +185,14 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 					return err
 				}
 
+				if _, err := c.Mkdir(lkr, path.Dir(ch.MovedTo), true); err != nil {
+					return e.Wrapf(err, "replay: mkdir")
+				}
+
 				if oldNd != nil {
 					if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
 						return e.Wrapf(err, "replay: move")
 					}
-				}
-			}
-		}
-
-		if ch.Mask&ChangeTypeMove != 0 && ch.Curr.Type() != n.NodeTypeGhost {
-			oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
-			if err != nil && !ie.IsNoSuchFileError(err) {
-				return err
-			}
-
-			if oldNd.Type() != n.NodeTypeGhost {
-				if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
-					return err
 				}
 			}
 		}

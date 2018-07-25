@@ -389,9 +389,8 @@ func TestMoveDirectoryWithChild(t *testing.T) {
 		require.Nil(t, err)
 
 		// This will resolve to the old file:
-		oldFileReResolved, err := lkr.LookupFile("/src/x")
-		require.Nil(t, err)
-		require.Equal(t, oldFileReResolved, oldFile)
+		_, err = lkr.LookupFile("/src/x")
+		require.NotNil(t, err)
 	})
 }
 

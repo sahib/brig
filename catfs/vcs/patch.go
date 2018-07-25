@@ -186,16 +186,13 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		// i.e. empty directories. Directories in between will be shaped
 		// by the changes done to them and we do/can not recreate the
 		// changes for intermediate directories easily.
-		//
-		// TODO: What if we move all children of a dir?
-		//       We should remove the old "hull" directory.
 		if child.Type() == n.NodeTypeDirectory {
 			dir, ok := child.(*n.Directory)
 			if !ok {
 				return e.Wrapf(ie.ErrBadNode, "make-patch: dir")
 			}
 
-			if dir.NChildren(lkr) > 0 {
+			if dir.NChildren() > 0 {
 				return nil
 			}
 		}

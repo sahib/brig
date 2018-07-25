@@ -178,3 +178,93 @@ func TestMakePatchWithOrderConflict(t *testing.T) {
 		require.Equal(t, n.NodeTypeGhost, dstY.Type())
 	})
 }
+
+func TestMakePatchDirMoveAllChildren(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		init, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		c.MustMkdir(t, lkrSrc, "/src")
+		subX := c.MustTouch(t, lkrSrc, "/src/x", 1)
+		subY := c.MustTouch(t, lkrSrc, "/src/y", 2)
+		preMove := c.MustCommit(t, lkrSrc, "base")
+
+		patch1, err := MakePatch(lkrSrc, init, []string{"/"})
+		require.Nil(t, err)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch1))
+		srcDir, err := lkrDst.LookupDirectory("/src")
+		require.Nil(t, err)
+		require.Equal(t, 2, srcDir.NChildren())
+
+		///////////
+
+		c.MustMkdir(t, lkrSrc, "/dst")
+		c.MustMove(t, lkrSrc, subX, "/dst/x")
+		c.MustMove(t, lkrSrc, subY, "/dst/y")
+		c.MustCommit(t, lkrSrc, "post-move")
+
+		patch2, err := MakePatch(lkrSrc, preMove, []string{"/"})
+		require.Nil(t, err)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch2))
+
+		srcDir, err = lkrDst.LookupDirectory("/src")
+		require.Nil(t, err)
+		require.Equal(t, 2, srcDir.NChildren())
+
+		_, err = lkrDst.LookupGhost("/src/x")
+		require.Nil(t, err)
+		_, err = lkrDst.LookupGhost("/src/x")
+		require.Nil(t, err)
+
+		_, err = lkrDst.LookupFile("/dst/x")
+		require.Nil(t, err)
+		_, err = lkrDst.LookupFile("/dst/x")
+		require.Nil(t, err)
+	})
+}
+
+func TestMakePatchDirMoveCompletely(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		init, err := lkrSrc.Head()
+		require.Nil(t, err)
+
+		realSrcDir := c.MustMkdir(t, lkrSrc, "/src")
+		c.MustTouch(t, lkrSrc, "/src/x", 1)
+		c.MustTouch(t, lkrSrc, "/src/y", 2)
+		preMove := c.MustCommit(t, lkrSrc, "base")
+
+		patch1, err := MakePatch(lkrSrc, init, []string{"/"})
+		require.Nil(t, err)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch1))
+		srcDir, err := lkrDst.LookupDirectory("/src")
+		require.Nil(t, err)
+		require.Equal(t, 2, srcDir.NChildren())
+
+		///////////
+
+		c.MustMove(t, lkrSrc, realSrcDir, "/dst")
+		c.MustCommit(t, lkrSrc, "post-move")
+
+		patch2, err := MakePatch(lkrSrc, preMove, []string{"/"})
+		require.Nil(t, err)
+
+		require.Nil(t, ApplyPatch(lkrDst, patch2))
+
+		srcDirGhost, err := lkrDst.LookupGhost("/src")
+		require.Nil(t, err)
+		require.Equal(t, 2, srcDirGhost.NChildren())
+
+		_, err = lkrDst.LookupNode("/src/x")
+		require.NotNil(t, err)
+		_, err = lkrDst.LookupNode("/src/x")
+		require.NotNil(t, err)
+
+		_, err = lkrDst.LookupFile("/dst/x")
+		require.Nil(t, err)
+		_, err = lkrDst.LookupFile("/dst/x")
+		require.Nil(t, err)
+	})
+}
