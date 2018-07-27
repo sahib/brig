@@ -109,16 +109,12 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 			}
 		}
 	case n.NodeTypeFile:
-		newDstFile, err := n.NewEmptyFile(
+		newDstFile := n.NewEmptyFile(
 			parentDir,
 			srcName,
 			src.User(),
 			sy.lkrDst.NextInode(),
 		)
-
-		if err != nil {
-			return err
-		}
 
 		newDstNode = newDstFile
 
@@ -130,9 +126,6 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 			newDstFile.SetKey(srcFile.Key())
 		}
 
-		// TODO: This is inconsistent:
-		// NewEmptyDirectory calls Add(), NewEmptyFile does not
-		// Fix the API here a bit...
 		if err := parentDir.Add(sy.lkrDst, newDstFile); err != nil {
 			return err
 		}

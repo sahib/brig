@@ -72,7 +72,7 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Failed to create root: %v", err)
 		}
 
-		newFile, err := n.NewEmptyFile(root, "cat.png", "u", 2)
+		newFile := n.NewEmptyFile(root, "cat.png", "u", 2)
 		if err != nil {
 			t.Fatalf("Failed to create empty file: %v", err)
 		}
@@ -276,17 +276,17 @@ func TestCollideSameObjectHash(t *testing.T) {
 			t.Fatalf("Staging /sub failed: %v", err)
 		}
 
-		file1, err := n.NewEmptyFile(sub, "a.png", "u", 4)
+		file1 := n.NewEmptyFile(sub, "a.png", "u", 4)
 		if err != nil {
 			t.Fatalf("Failed to create empty file1: %v", err)
 		}
 
-		file2, err := n.NewEmptyFile(root, "a.png", "u", 5)
+		file2 := n.NewEmptyFile(root, "a.png", "u", 5)
 		if err != nil {
 			t.Fatalf("Failed to create empty file2: %v", err)
 		}
 
-		file3, err := n.NewEmptyFile(root, "b.png", "u", 6)
+		file3 := n.NewEmptyFile(root, "b.png", "u", 6)
 		if err != nil {
 			t.Fatalf("Failed to create empty file3: %v", err)
 		}
@@ -295,7 +295,6 @@ func TestCollideSameObjectHash(t *testing.T) {
 		file2.SetContent(lkr, h.TestDummy(t, 1))
 		file3.SetContent(lkr, h.TestDummy(t, 1))
 
-		// TODO: Shouldn't NewEmptyFile call this? It gets the parent...
 		if err := sub.Add(lkr, file1); err != nil {
 			t.Fatalf("Failed to add file1: %v", err)
 		}

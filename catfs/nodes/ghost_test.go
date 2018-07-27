@@ -17,7 +17,7 @@ func TestGhost(t *testing.T) {
 	lkr.AddNode(root)
 	lkr.MemSetRoot(root)
 
-	file, err := NewEmptyFile(root, "x.png", "a", 42)
+	file := NewEmptyFile(root, "x.png", "a", 42)
 	file.backend = h.TestDummy(t, 2)
 	file.tree = h.TestDummy(t, 3)
 	file.size = 13

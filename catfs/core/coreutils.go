@@ -412,10 +412,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 			}
 
 			// Create a new file at specified path:
-			file, err = n.NewEmptyFile(parent, path.Base(repoPath), lkr.owner, lkr.NextInode())
-			if err != nil {
-				return err
-			}
+			file = n.NewEmptyFile(parent, path.Base(repoPath), lkr.owner, lkr.NextInode())
 		}
 
 		parentDir, err := n.ParentDirectory(lkr, file)

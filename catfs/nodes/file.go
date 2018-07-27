@@ -21,8 +21,8 @@ type File struct {
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
-func NewEmptyFile(parent *Directory, name string, user string, inode uint64) (*File, error) {
-	file := &File{
+func NewEmptyFile(parent *Directory, name string, user string, inode uint64) *File {
+	return &File{
 		Base: Base{
 			name:     name,
 			user:     user,
@@ -32,8 +32,6 @@ func NewEmptyFile(parent *Directory, name string, user string, inode uint64) (*F
 		},
 		parent: parent.Path(),
 	}
-
-	return file, nil
 }
 
 // ToCapnp converts a file to a capnp message.

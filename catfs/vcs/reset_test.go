@@ -28,10 +28,7 @@ func TestResetFile(t *testing.T) {
 			t.Fatalf("Getting root failed: %v", err)
 		}
 
-		file, err := n.NewEmptyFile(root, "cat.png", "u", 3)
-		if err != nil {
-			t.Fatalf("Failed to create cat.png: %v", err)
-		}
+		file := n.NewEmptyFile(root, "cat.png", "u", 3)
 
 		c.MustModify(t, lkr, file, 1)
 		oldFileHash := file.TreeHash().Clone()

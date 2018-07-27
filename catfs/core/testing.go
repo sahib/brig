@@ -100,10 +100,7 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	}
 
 	basePath := path.Base(touchPath)
-	file, err := n.NewEmptyFile(parent, basePath, lkr.owner, lkr.NextInode())
-	if err != nil {
-		t.Fatalf("touch: Creating dummy file failed: %v", err)
-	}
+	file := n.NewEmptyFile(parent, basePath, lkr.owner, lkr.NextInode())
 
 	file.SetBackend(lkr, h.TestDummy(t, seed))
 	file.SetContent(lkr, h.TestDummy(t, seed))

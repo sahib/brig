@@ -18,11 +18,11 @@ func TestFile(t *testing.T) {
 	lkr.AddNode(root)
 	lkr.MemSetRoot(root)
 
-	file, err := NewEmptyFile(root, "some file", "a", 3)
+	file := NewEmptyFile(root, "some file", "a", 3)
 	lkr.AddNode(file)
 
 	if err != nil {
-		t.Fatalf("Failed to create empty dir: %v", err)
+		t.Fatalf("Failed to create empty file: %v", err)
 	}
 
 	file.SetName("new_name")

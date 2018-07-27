@@ -108,7 +108,6 @@ func TestMakePatch(t *testing.T) {
 		c.MustRemove(t, lkrSrc, srcZ)
 		c.MustTouch(t, lkrSrc, "/empty/not_empty_anymore", 42)
 
-		// TODO: Also fix ordering in Replay/ApplyPatch?
 		patch, err = MakePatch(lkrSrc, init, []string{"/"})
 		require.Nil(t, err)
 		require.Nil(t, ApplyPatch(lkrDst, patch))
@@ -179,6 +178,7 @@ func TestMakePatchWithOrderConflict(t *testing.T) {
 	})
 }
 
+// Move all children of a directory to another location.
 func TestMakePatchDirMoveAllChildren(t *testing.T) {
 	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 		init, err := lkrSrc.Head()
@@ -225,6 +225,7 @@ func TestMakePatchDirMoveAllChildren(t *testing.T) {
 	})
 }
 
+// Move a directory completely, not just its contents.
 func TestMakePatchDirMoveCompletely(t *testing.T) {
 	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
 		init, err := lkrSrc.Head()
