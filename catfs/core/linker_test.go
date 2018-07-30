@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 	"testing"
 	"unsafe"
 
@@ -101,7 +102,15 @@ func TestLinkerRefs(t *testing.T) {
 			t.Fatalf("Making commit failed: %v", err)
 		}
 
-		// TODO: Check that stage/{tree,objects,moves} is empty.
+		// Assert that staging is empy (except the "/stage/STATUS" part)
+		foundKeys := []string{}
+		keyIter := func(key []string) error {
+			foundKeys = append(foundKeys, strings.Join(key, "/"))
+			return nil
+		}
+
+		require.Nil(t, kv.Keys(keyIter, "stage"))
+		require.Equal(t, []string{"/stage/STATUS"}, foundKeys)
 
 		head, err := lkr.Head()
 		if err != nil {
@@ -566,5 +575,45 @@ func TestCommitByIndex(t *testing.T) {
 		c4, err := lkr.CommitByIndex(3)
 		require.Nil(t, err)
 		require.Nil(t, c4)
+	})
+}
+
+func TestLookupNodeAt(t *testing.T) {
+	WithDummyLinker(t, func(lkr *Linker) {
+		for idx := byte(0); idx < 10; idx++ {
+			MustTouchAndCommit(t, lkr, "/x", idx)
+		}
+
+		for idx := 0; idx < 10; idx++ {
+			// commit index of 0 is init, so + 1
+			cmt, err := lkr.CommitByIndex(int64(idx + 1))
+			require.Nil(t, err)
+
+			nd, err := lkr.LookupNodeAt(cmt, "/x")
+			require.Nil(t, err)
+			require.Equal(t, nd.ContentHash(), h.TestDummy(t, byte(idx)))
+		}
+
+		// Init should not exist:
+		init, err := lkr.CommitByIndex(0)
+		require.Nil(t, err)
+
+		nd, err := lkr.LookupNodeAt(init, "/x")
+		require.Nil(t, nd)
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		// Stage should have the last change:
+		stage, err := lkr.CommitByIndex(11)
+		require.Nil(t, err)
+
+		stageNd, err := lkr.LookupNodeAt(stage, "/x")
+		require.Nil(t, err)
+		require.Equal(t, stageNd.ContentHash(), h.TestDummy(t, 9))
+
+		// quick check to see if the next commit is really empty
+		// (tests only the test setup)
+		last, err := lkr.CommitByIndex(12)
+		require.Nil(t, err)
+		require.Nil(t, last)
 	})
 }

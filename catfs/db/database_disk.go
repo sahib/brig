@@ -257,16 +257,13 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 		return nil
 	}
 
-	// TODO: error reporting is correct here?
 	return filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() {
-			if err := fn(reverseDirectoryKeys(path[len(db.basePath):])); err != nil {
-				return err
-			}
+			return fn(reverseDirectoryKeys(path[len(db.basePath):]))
 		}
 
 		return nil

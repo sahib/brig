@@ -104,7 +104,6 @@ func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Director
 	for name, hash := range d.children {
 		entry, err := capnp_model.NewDirEntry(seg)
 		if err != nil {
-			// TODO: Accumulate errors?
 			return nil, err
 		}
 

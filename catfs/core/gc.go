@@ -8,9 +8,6 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
-// TODO: Make sure to not gc nodes that are present in MoveMapping.
-//       (at least not in staging)
-
 type GarbageCollector struct {
 	lkr      *Linker
 	kv       db.Database
@@ -88,44 +85,39 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 func (gc *GarbageCollector) sweep(key []string) (int, error) {
 	removed := 0
 
-	batch := gc.kv.Batch()
-	sweeper := func(key []string) error {
-		b58Hash := key[len(key)-1]
-		if _, ok := gc.markMap[b58Hash]; !ok {
-			hash, err := h.FromB58String(b58Hash)
-			if err != nil {
-				return err
+	return removed, gc.lkr.AtomicWithBatch(func(batch db.Batch) error {
+		sweeper := func(key []string) error {
+			b58Hash := key[len(key)-1]
+			if _, ok := gc.markMap[b58Hash]; !ok {
+				hash, err := h.FromB58String(b58Hash)
+				if err != nil {
+					return err
+				}
+
+				node, err := gc.lkr.NodeByHash(hash)
+				if err != nil {
+					return err
+				}
+
+				// Allow the gc caller to check if he really
+				// wants to delete this node.
+				if gc.notifier != nil && !gc.notifier(node) {
+					return nil
+				}
+
+				// Actually get rid of the node:
+				gc.lkr.MemIndexPurge(node)
+				batch.Erase(key...)
+				removed++
 			}
 
-			node, err := gc.lkr.NodeByHash(hash)
-			if err != nil {
-				return err
-			}
-
-			// Allow the gc caller to check if he really
-			// wants to delete this node.
-			if gc.notifier != nil && !gc.notifier(node) {
-				return nil
-			}
-
-			// Actually get rid of the node:
-			gc.lkr.MemIndexPurge(node)
-			batch.Erase(key...)
-			removed++
+			return nil
 		}
 
-		return nil
-	}
-
-	if err := gc.kv.Keys(sweeper, key...); err != nil {
-		return removed, err
-	}
-
-	return removed, batch.Flush()
+		return gc.kv.Keys(sweeper, key...)
+	})
 }
 
-// TODO: write test that covers this.
-//       we don't want to find hard bugs later because of gc going haywire.
 func (gc *GarbageCollector) findAllMoveLocations(head *n.Commit) ([][]string, error) {
 	locations := [][]string{
 		{"stage", "moves"},
