@@ -104,6 +104,7 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 
 	file.SetBackend(lkr, h.TestDummy(t, seed))
 	file.SetContent(lkr, h.TestDummy(t, seed))
+	file.SetKey(make([]byte, 32))
 
 	child, err := parent.Child(lkr, basePath)
 	if err != nil {

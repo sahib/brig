@@ -81,20 +81,19 @@ func TestStat(t *testing.T) {
 		require.Equal(t, info.Inode, file.Inode())
 		require.Equal(t, info.TreeHash, file.TreeHash())
 
-		file.SetSize(42)
-		require.Nil(t, fs.lkr.StageNode(file))
+		data := make([]byte, 42)
+		require.Nil(t, fs.Stage("/sub/x", bytes.NewReader(data)))
 
 		info, err = fs.Stat("/sub/x")
 		require.Nil(t, err)
-		require.Equal(t, info.Size, uint64(42))
+		require.Equal(t, info.Size, uint64(len(data)))
 		require.Equal(t, info.TreeHash, file.TreeHash())
 
 		info, err = fs.Stat("/sub")
 		require.Nil(t, err)
 		require.Equal(t, info.Path, "/sub")
 		require.Equal(t, info.IsDir, true)
-		// TODO:
-		// require.Equal(t, info.Size, uint64(42))
+		require.Equal(t, uint64(len(data)), info.Size)
 	})
 }
 
@@ -480,9 +479,9 @@ func TestPin(t *testing.T) {
 	t.Parallel()
 
 	withDummyFS(t, func(fs *FS) {
-		// TODO: what happens if we have two files with the same content?
+		// NOTE: Both files have the same content.
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
-		require.Nil(t, fs.Stage("/y", bytes.NewReader([]byte{2})))
+		require.Nil(t, fs.Stage("/y", bytes.NewReader([]byte{1})))
 
 		require.Nil(t, fs.Unpin("/x"))
 		require.Nil(t, fs.Unpin("/y"))

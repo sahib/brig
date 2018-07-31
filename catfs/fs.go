@@ -245,7 +245,7 @@ func (fs *FS) handleGcEvent(nd n.Node) bool {
 
 	// This node will not be reachable anymore by brig.
 	// Make sure it is also unpinned to save space.
-	if err := fs.pinner.Unpin(file.BackendHash(), true); err != nil {
+	if err := fs.pinner.Unpin(file.Inode(), file.BackendHash(), true); err != nil {
 		log.Warningf("unpinning attempt failed: %v", err)
 	}
 
@@ -630,7 +630,7 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 			return nil
 		}
 
-		_, isExplicit, err := fs.pinner.IsPinned(nd.BackendHash())
+		_, isExplicit, err := fs.pinner.IsPinned(nd.Inode(), nd.BackendHash())
 		if err != nil {
 			return err
 		}
@@ -859,12 +859,12 @@ func deriveKeyFromContent(content h.Hash, size uint64) []byte {
 	return util.DeriveKey(content, salt, 32)
 }
 
-func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
+func (fs *FS) renewPins(oldFile, newFile *n.File) error {
 	pinExplicit := false
 
 	if oldFile != nil {
 		oldBackendHash := oldFile.BackendHash()
-		if oldBackendHash.Equal(backendHash) {
+		if oldBackendHash.Equal(newFile.BackendHash()) {
 			// Nothing changed, nothing to do...
 			return nil
 		}
@@ -879,13 +879,13 @@ func (fs *FS) renewPins(oldFile *n.File, backendHash h.Hash) error {
 		pinExplicit = isExplicit
 
 		if !isExplicit {
-			if err := fs.pinner.Unpin(backendHash, pinExplicit); err != nil {
+			if err := fs.pinner.UnpinNode(oldFile, pinExplicit); err != nil {
 				return err
 			}
 		}
 	}
 
-	return fs.pinner.Pin(backendHash, pinExplicit)
+	return fs.pinner.PinNode(newFile, pinExplicit)
 }
 
 // Stage reads all data from `r` and stores as content of the node at `path`.
@@ -975,13 +975,12 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if err := fs.renewPins(oldFileCopy, backendHash); err != nil {
+	newFile, err := c.Stage(fs.lkr, path, contentHash, backendHash, size, key)
+	if err != nil {
 		return err
 	}
 
-	// Upsert the node into the metadata index:
-	_, err = c.Stage(fs.lkr, path, contentHash, backendHash, size, key)
-	return err
+	return fs.renewPins(oldFileCopy, newFile)
 }
 
 ////////////////////

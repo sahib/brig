@@ -32,19 +32,56 @@ func TestPinMemCache(t *testing.T) {
 			require.Nil(t, err)
 
 			content := h.TestDummy(t, 1)
-			require.Nil(t, pinner.remember(content, true, false))
-			isPinned, isExplicit, err := pinner.IsPinned(content)
+			require.Nil(t, pinner.remember(1, content, true, false))
+			isPinned, isExplicit, err := pinner.IsPinned(1, content)
 			require.Nil(t, err)
 
 			require.True(t, isPinned)
 			require.False(t, isExplicit)
 
-			require.Nil(t, pinner.remember(content, true, true))
-			isPinned, isExplicit, err = pinner.IsPinned(content)
+			require.Nil(t, pinner.remember(1, content, true, true))
+			isPinned, isExplicit, err = pinner.IsPinned(1, content)
 			require.Nil(t, err)
 
 			require.True(t, isPinned)
 			require.True(t, isExplicit)
+
+			require.Nil(t, pinner.Close())
+		})
+	})
+}
+
+func TestPinRememberHashTwice(t *testing.T) {
+	c.WithDummyLinker(t, func(lkr *c.Linker) {
+		withTempDirectory(t, func(dir string) {
+			backend := NewMemFsBackend()
+			pinner, err := NewPinner(dir, lkr, backend)
+			require.Nil(t, err)
+
+			content := h.TestDummy(t, 1)
+			require.Nil(t, pinner.remember(1, content, true, false))
+			isPinned, isExplicit, err := pinner.IsPinned(1, content)
+			require.Nil(t, err)
+			require.True(t, isPinned)
+			require.False(t, isExplicit)
+
+			require.Nil(t, pinner.remember(2, content, true, true))
+			isPinned, isExplicit, err = pinner.IsPinned(2, content)
+			require.Nil(t, err)
+			require.True(t, isPinned)
+			require.True(t, isExplicit)
+
+			require.Nil(t, pinner.remember(2, content, false, true))
+			isPinned, isExplicit, err = pinner.IsPinned(2, content)
+			require.Nil(t, err)
+			require.False(t, isPinned)
+			require.False(t, isExplicit)
+
+			// old inode is still counted as pinned.
+			isPinned, isExplicit, err = pinner.IsPinned(1, content)
+			require.Nil(t, err)
+			require.True(t, isPinned)
+			require.False(t, isExplicit)
 
 			require.Nil(t, pinner.Close())
 		})

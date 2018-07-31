@@ -6,11 +6,11 @@ import (
 	"errors"
 
 	// Because ipfs' package manager sucks a lot (sorry, but it does)
-	// it imports badger with import url below. This calls a few init()s,
+	// it imports badger with the import url below. This calls a few init()s,
 	// which will panic when being called twice due to expvar defines e.g.
-	// (i.e. when using the correct import github.com/dgraph-io/badger)
+	// (i.e. when using the "correct" import github.com/dgraph-io/badger)
 	//
-	// So gx forces us to use their badger version for no good reason.
+	// So gx forces us to use their badger version for no good reason at all.
 	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -24,17 +24,12 @@ var errNotPinnedSentinel = errors.New("not pinned")
 
 // pinCacheEntry is one entry in the pin cache.
 type pinCacheEntry struct {
-	// IsPinned denotes that a certain backend hash is pinned.
-	// This information is also hold by the backend,
-	// but we cache it here for performance reasons.
-	IsPinned bool
-
-	// IsExplicit denotes that the pin was set by the user.
-	IsExplicit bool
+	Inodes map[uint64]bool
 }
 
 // Pinner remembers which hashes are pinned and if they are pinned explicitly.
-// It offers also safe API to change this state easily.
+// Its API can be used to safely change the pinning state. It assumes that it
+// is the only entitiy the pins & unpins nodes.
 type Pinner struct {
 	db  *badger.DB
 	bk  FsBackend
@@ -61,17 +56,54 @@ func (pc *Pinner) Close() error {
 	return pc.db.Close()
 }
 
+func getEntry(txn *badger.Txn, hash h.Hash) (*pinCacheEntry, error) {
+	item, err := txn.Get(hash)
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+
+	dec := gob.NewDecoder(bytes.NewReader(value))
+	entry := pinCacheEntry{}
+	return &entry, dec.Decode(&entry)
+}
+
 // remember the pin state of a certain hash.
 // This does change anything in the backend but only changes the caching structure.
 // Use with care to avoid data inconsistencies.
-func (pc *Pinner) remember(hash h.Hash, isPinned, isExplicit bool) error {
+func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool) error {
 	return pc.db.Update(func(txn *badger.Txn) error {
 		buf := &bytes.Buffer{}
 		enc := gob.NewEncoder(buf)
 
+		oldEntry, err := getEntry(txn, hash)
+		if err != nil {
+			return err
+		}
+
+		var inodes map[uint64]bool
+		if oldEntry != nil {
+			inodes = oldEntry.Inodes
+		} else {
+			inodes = make(map[uint64]bool)
+		}
+
+		if !isPinned {
+			delete(inodes, inode)
+		} else {
+			inodes[inode] = isExplicit
+		}
+
 		entry := pinCacheEntry{
-			IsPinned:   isPinned,
-			IsExplicit: isExplicit,
+			Inodes: inodes,
 		}
 
 		if err := enc.Encode(entry); err != nil {
@@ -82,11 +114,9 @@ func (pc *Pinner) remember(hash h.Hash, isPinned, isExplicit bool) error {
 	})
 }
 
-func (pc *Pinner) IsPinned(hash h.Hash) (isPinned bool, isExplicit bool, err error) {
-	isCached := false
+func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
 	entry := pinCacheEntry{}
-
-	err = pc.db.View(func(txn *badger.Txn) error {
+	err := pc.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(hash)
 		if err != nil {
 			return err
@@ -97,35 +127,41 @@ func (pc *Pinner) IsPinned(hash h.Hash) (isPinned bool, isExplicit bool, err err
 			return err
 		}
 
-		isCached = true
 		dec := gob.NewDecoder(bytes.NewReader(value))
 		return dec.Decode(&entry)
 	})
 
-	if err != badger.ErrKeyNotFound {
-		isPinned = entry.IsPinned
-		isExplicit = entry.IsExplicit
+	if err != nil && err != badger.ErrKeyNotFound {
+		return false, false, err
 	}
 
-	if isCached {
-		return
+	if err != badger.ErrKeyNotFound {
+		// cache hit
+		isExplicit, ok := entry.Inodes[inode]
+		return ok, isExplicit, nil
 	}
+
+	// We do not have this information yet.
+	// Create a new entry based on the backend information.
 
 	// silence a key error, ok will be false then.
-	isPinned, err = pc.bk.IsPinned(hash)
+	isPinned, err := pc.bk.IsPinned(hash)
 	if err != nil {
-		return
+		return false, false, err
 	}
 
-	isExplicit = false
-	pc.remember(hash, isPinned, isExplicit)
-	return
+	// remember the file to be pinned non-explicitly:
+	if err := pc.remember(inode, hash, isPinned, false); err != nil {
+		return false, false, err
+	}
+
+	return true, false, nil
 }
 
 ////////////////////////////
 
-func (pc *Pinner) Pin(hash h.Hash, explicit bool) error {
-	isPinned, isExplicit, err := pc.IsPinned(hash)
+func (pc *Pinner) Pin(inode uint64, hash h.Hash, explicit bool) error {
+	isPinned, isExplicit, err := pc.IsPinned(inode, hash)
 	if err != nil {
 		return err
 	}
@@ -135,21 +171,17 @@ func (pc *Pinner) Pin(hash h.Hash, explicit bool) error {
 			// will not "downgrade" an existing pin.
 			return nil
 		}
-	}
-
-	if !isPinned {
+	} else {
 		if err := pc.bk.Pin(hash); err != nil {
 			return err
 		}
-
-		isPinned = true
 	}
 
-	return pc.remember(hash, isPinned, explicit)
+	return pc.remember(inode, hash, true, explicit)
 }
 
-func (pc *Pinner) Unpin(hash h.Hash, explicit bool) error {
-	isPinned, isExplicit, err := pc.IsPinned(hash)
+func (pc *Pinner) Unpin(inode uint64, hash h.Hash, explicit bool) error {
+	isPinned, isExplicit, err := pc.IsPinned(inode, hash)
 	if err != nil {
 		return err
 	}
@@ -162,16 +194,15 @@ func (pc *Pinner) Unpin(hash h.Hash, explicit bool) error {
 		if err := pc.bk.Unpin(hash); err != nil {
 			return err
 		}
-
-		isPinned = false
 	}
 
-	return pc.remember(hash, isPinned, explicit)
+	return pc.remember(inode, hash, false, explicit)
 }
 
 ////////////////////////////
 
-func (pc *Pinner) doPinOp(op func(h.Hash, bool) error, nd n.Node, explicit bool) error {
+// doPinOp recursively walks over all children of a node and pins or unpins them.
+func (pc *Pinner) doPinOp(op func(uint64, h.Hash, bool) error, nd n.Node, explicit bool) error {
 	return n.Walk(pc.lkr, nd, true, func(child n.Node) error {
 		if child.Type() != n.NodeTypeFile {
 			return nil
@@ -182,7 +213,7 @@ func (pc *Pinner) doPinOp(op func(h.Hash, bool) error, nd n.Node, explicit bool)
 			return ie.ErrBadNode
 		}
 
-		return op(file.BackendHash(), explicit)
+		return op(file.Inode(), file.BackendHash(), explicit)
 	})
 }
 
@@ -222,7 +253,7 @@ func (pc *Pinner) IsNodePinned(nd n.Node) (bool, bool, error) {
 
 		totalCount++
 
-		isPinned, isExplicit, err := pc.IsPinned(file.BackendHash())
+		isPinned, isExplicit, err := pc.IsPinned(file.Inode(), file.BackendHash())
 		if err != nil {
 			return err
 		}
