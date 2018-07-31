@@ -560,6 +560,10 @@ func (fs *FS) preCache(path string) error {
 }
 
 func (fs *FS) preCacheInBackground(path string) {
+	if !fs.cfg.Bool("pre_cache") {
+		return
+	}
+
 	go func() {
 		if err := fs.preCache(path); err != nil {
 			log.Debugf("failed to pre-cache `%s`: %v", path, err)
@@ -567,7 +571,6 @@ func (fs *FS) preCacheInBackground(path string) {
 	}()
 }
 
-// TODO: PIN: Make pre fetch configurable.
 func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

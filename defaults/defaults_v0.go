@@ -44,6 +44,11 @@ var DefaultsV0 = config.DefaultMapping{
 				),
 			},
 		},
+		"pre_cache": config.DefaultEntry{
+			Default:      true,
+			NeedsRestart: false,
+			Docs:         "pre-cache pinned files",
+		},
 		"autocommit": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,
@@ -54,7 +59,7 @@ var DefaultsV0 = config.DefaultMapping{
 				Default:      "5m",
 				NeedsRestart: false,
 				Docs:         "In what interval to make automatic commits",
-				Validator: config.DurationValidator(),
+				Validator:    config.DurationValidator(),
 			},
 		},
 	},
