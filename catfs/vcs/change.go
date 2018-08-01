@@ -55,15 +55,11 @@ func (ct ChangeType) String() string {
 	return strings.Join(v, "|")
 }
 
-// rule: do not loose content,
-//       but we may loose metadata.
-//
-//   |  a  m  r  mv
-// ---------------
-// a |  n  n  n  y
-// c |  n  n  n  y
-// r |  y  y  y  y
-// mv|  y  y  y  y
+// IsCompatible checks if two change masks are compatible.
+// Changes are compatible when they can be both applied
+// without loosing any content. We may loose metadata though,
+// e.g. when one side was moved, but the other removed:
+// Here the remove would win and no move is counted.
 func (ct ChangeType) IsCompatible(ot ChangeType) bool {
 	modifyMask := ChangeTypeAdd | ChangeTypeModify
 	return ct&modifyMask == 0 || ot&modifyMask == 0

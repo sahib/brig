@@ -560,7 +560,7 @@ func (fs *FS) preCache(path string) error {
 }
 
 func (fs *FS) preCacheInBackground(path string) {
-	if !fs.cfg.Bool("pre_cache") {
+	if !fs.cfg.Bool("pre_cache.enabled") {
 		return
 	}
 
@@ -1200,8 +1200,7 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 		},
 		OnConflict: func(src, dst n.ModNode) bool {
 			// Don't need to do something,
-			// conflict file will not get a pin by default.
-			// TODO: Does this make sense?
+			// conflict files will not get a pin by default.
 			return true
 		},
 	}, nil

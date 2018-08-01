@@ -261,7 +261,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	// Both sides have changes. Now we need to figure out if they are compatible.
 	// We do this simply by OR-ing all changes on both side to an individual mask
 	// and check if those can be applied on top of dst's current state.
-	// TODO: Define this clearly.
 	if !dstMask.IsCompatible(srcMask) {
 		// The changes are not compatible.
 		// We need to apply a conflict resolution strategy.

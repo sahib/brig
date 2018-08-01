@@ -44,10 +44,12 @@ var DefaultsV0 = config.DefaultMapping{
 				),
 			},
 		},
-		"pre_cache": config.DefaultEntry{
-			Default:      true,
-			NeedsRestart: false,
-			Docs:         "pre-cache pinned files",
+		"pre_cache": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: false,
+				Docs:         "pre-cache pinned files",
+			},
 		},
 		"autocommit": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
