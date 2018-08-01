@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -12,6 +13,36 @@ import (
 func TestMemoryDatabase(t *testing.T) {
 	db1 := NewMemoryDatabase()
 	db2 := NewMemoryDatabase()
+
+	testDatabaseWithDifferentKeys(t, db1, db2)
+
+	if err := db1.Close(); err != nil {
+		t.Errorf("Failed to close db1: %v", err)
+		return
+	}
+
+	if err := db2.Close(); err != nil {
+		t.Errorf("Failed to close db2: %v", err)
+		return
+	}
+}
+
+func TestBadgerDatabase(t *testing.T) {
+	testDir1, _ := ioutil.TempDir("", "brig-")
+	testDir2, _ := ioutil.TempDir("", "brig-")
+
+	defer func() {
+		for _, dir := range []string{testDir1, testDir2} {
+			if err := os.RemoveAll(dir); err != nil {
+				t.Errorf("Failed to remove test dir %s: %s", dir, err)
+			}
+		}
+	}()
+
+	db1, err := NewBadgerDatabase(testDir1)
+	require.Nil(t, err)
+	db2, err := NewBadgerDatabase(testDir2)
+	require.Nil(t, err)
 
 	testDatabaseWithDifferentKeys(t, db1, db2)
 
@@ -133,10 +164,27 @@ func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
 
 func withDiskDatabase(t *testing.T, fn func(db *DiskDatabase)) {
 	testDir, _ := ioutil.TempDir("", "brig-")
-
 	defer os.RemoveAll(testDir)
 
 	db, err := NewDiskDatabase(testDir)
+	if err != nil {
+		t.Errorf("Failed to create db1: %v", err)
+		return
+	}
+
+	fn(db)
+
+	if err := db.Close(); err != nil {
+		t.Errorf("Failed to close db: %v", err)
+		return
+	}
+}
+
+func withBadgerDatabase(t *testing.T, fn func(db *BadgerDatabase)) {
+	testDir, _ := ioutil.TempDir("", "brig-")
+	defer os.RemoveAll(testDir)
+
+	db, err := NewBadgerDatabase(testDir)
 	if err != nil {
 		t.Errorf("Failed to create db1: %v", err)
 		return
@@ -173,6 +221,12 @@ func TestGlob(t *testing.T) {
 			testGlob(t, db)
 		})
 	})
+
+	t.Run("badger", func(t *testing.T) {
+		withBadgerDatabase(t, func(db *BadgerDatabase) {
+			testGlob(t, db)
+		})
+	})
 }
 
 func testGlob(t *testing.T, db Database) {
@@ -189,6 +243,8 @@ func testGlob(t *testing.T, db Database) {
 	if err != nil {
 		t.Fatalf("Failed to find matches: %v", err)
 	}
+
+	fmt.Println("MATCHES", matches)
 
 	require.Equal(t, matches, [][]string{
 		{"a", "b", "pref_1"},

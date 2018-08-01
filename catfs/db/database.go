@@ -5,10 +5,6 @@ import (
 	"io"
 )
 
-// TODO: Implement an actual fast KV store based on moss, boltdb or badger
-//       if there is any performance problem later on.
-//       For now, the filesystem based kv should suffice fine though.
-
 var (
 	// ErrNoSuchKey is returned when Get() was passed a non-existant key
 	ErrNoSuchKey = errors.New("This key does not exist")
@@ -38,7 +34,6 @@ type Batch interface {
 
 // Database is a key/value store that offers different buckets
 // for storage. Keys are strings, values are arbitary untyped data.
-// TODO: Write down assumptions made (single user database e.g.)
 type Database interface {
 	// Get retrievies the key `key` out of bucket.
 	// If no such key exists, it will return (nil, ErrNoSuchKey)
@@ -47,8 +42,8 @@ type Database interface {
 	// to `key`.
 	Get(key ...string) ([]byte, error)
 
-	// Keys returns all keys
-	// TODO: Make this look more like a iterator interface?
+	// Keys iterates over all keys in the database If the error is returned by
+	// `fn` the iteration stops and the error value is returned.
 	Keys(fn func(key []string) error, prefix ...string) error
 
 	// Batch returns a new Batch object, that will allow modifications
