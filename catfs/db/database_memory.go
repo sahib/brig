@@ -10,7 +10,9 @@ import (
 
 // MemoryDatabase is a purely in memory database.
 type MemoryDatabase struct {
-	data map[string][]byte
+	data       map[string][]byte
+	haveWrites bool
+	refCount   int
 }
 
 // NewMemoryDatabase allocates a new empty MemoryDatabase
@@ -22,11 +24,17 @@ func NewMemoryDatabase() *MemoryDatabase {
 
 // Batch is a no-op for a memory database.
 func (mdb *MemoryDatabase) Batch() Batch {
+	mdb.refCount++
 	return mdb
 }
 
 // Flush is a no-op for a memory database.
 func (mdb *MemoryDatabase) Flush() error {
+	mdb.refCount--
+
+	if mdb.refCount == 0 {
+		mdb.haveWrites = false
+	}
 	return nil
 }
 
@@ -45,11 +53,13 @@ func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
 
 // Put sets `key` in `bucket` to `data`.
 func (mdb *MemoryDatabase) Put(data []byte, key ...string) {
+	mdb.haveWrites = true
 	mdb.data[path.Join(key...)] = data
 }
 
 // Clear removes all keys includin and below `key`.
 func (mdb *MemoryDatabase) Clear(key ...string) {
+	mdb.haveWrites = true
 	joinedKey := path.Join(key...)
 	for mapKey := range mdb.data {
 		if strings.HasPrefix(mapKey, joinedKey) {
@@ -60,6 +70,7 @@ func (mdb *MemoryDatabase) Clear(key ...string) {
 
 func (mdb *MemoryDatabase) Erase(key ...string) {
 	fullKey := path.Join(key...)
+	mdb.haveWrites = true
 	delete(mdb.data, fullKey)
 }
 
@@ -78,7 +89,7 @@ func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) e
 }
 
 func (mdb *MemoryDatabase) HaveWrites() bool {
-	return true
+	return mdb.haveWrites
 }
 
 func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {

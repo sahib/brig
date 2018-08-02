@@ -16,11 +16,14 @@ type BadgerDatabase struct {
 	mu         sync.Mutex
 	db         *badger.DB
 	txn        *badger.Txn
+	refCount   int
 	haveWrites bool
 }
 
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
+	// TODO: Take a deeper look at badger options
 	opts := badger.DefaultOptions
+
 	opts.Dir = path
 	opts.ValueDir = path
 
@@ -34,14 +37,28 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	}, nil
 }
 
+func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
+	// If we have an open transaction, retrieve the values from there.
+	// Otherwise we would not be able to retrieve in-memory values.
+	if db.txn != nil {
+		return fn(db.txn)
+	}
+
+	// If no transaction is running (no Batch()-call), use a fresh view txn.
+	return db.db.View(fn)
+}
+
 func (db *BadgerDatabase) Get(key ...string) ([]byte, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	data := []byte{}
-	err := db.db.View(func(txn *badger.Txn) error {
+	err := db.view(func(txn *badger.Txn) error {
+		if db.txn != nil {
+			txn = db.txn
+		}
+
 		keyPath := strings.Join(key, ".")
-		fmt.Println("PATH", keyPath)
 		item, err := txn.Get([]byte(keyPath))
 		if err == badger.ErrKeyNotFound {
 			return ErrNoSuchKey
@@ -66,19 +83,17 @@ func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) er
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return db.db.View(func(txn *badger.Txn) error {
+	return db.view(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.IteratorOptions{})
 		defer iter.Close()
 
-		for iter.Valid() {
+		for iter.Rewind(); iter.Valid(); iter.Next() {
 			item := iter.Item()
 
 			fullKey := string(item.Key())
 			if err := fn(strings.Split(fullKey, ".")); err != nil {
 				return err
 			}
-
-			iter.Next()
 		}
 
 		return nil
@@ -99,23 +114,23 @@ func (db *BadgerDatabase) Glob(prefix []string) ([][]string, error) {
 	defer db.mu.Unlock()
 
 	results := [][]string{}
-	err := db.db.View(func(txn *badger.Txn) error {
+	err := db.view(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.IteratorOptions{})
 		defer iter.Close()
 
 		fullPrefix := strings.Join(prefix, ".")
-		fmt.Println("go key", fullPrefix)
 
-		for iter.Valid() {
+		for iter.Rewind(); iter.Valid(); iter.Next() {
 			item := iter.Item()
 
 			fullKey := string(item.Key())
-			fmt.Println("key", fullKey)
 			if strings.HasPrefix(fullKey, fullPrefix) {
-				results = append(results, strings.Split(fullKey, "."))
+				// Don't do recursive globbing:
+				leftOver := fullKey[len(fullPrefix):]
+				if !strings.Contains(leftOver, ".") {
+					results = append(results, strings.Split(fullKey, "."))
+				}
 			}
-
-			iter.Next()
 		}
 
 		return nil
@@ -132,6 +147,7 @@ func (db *BadgerDatabase) Batch() Batch {
 		db.txn = db.db.NewTransaction(true)
 	}
 
+	db.refCount++
 	return db
 }
 
@@ -157,10 +173,9 @@ func (db *BadgerDatabase) Clear(key ...string) {
 	defer iter.Close()
 
 	keys := [][]byte{}
-	for iter.Valid() {
+	for iter.Rewind(); iter.Valid(); iter.Next() {
 		item := iter.Item()
 		keys = append(keys, item.Key())
-		iter.Next()
 	}
 
 	for _, key := range keys {
@@ -184,6 +199,11 @@ func (db *BadgerDatabase) Erase(key ...string) {
 func (db *BadgerDatabase) Flush() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	db.refCount--
+	if db.refCount > 0 {
+		return nil
+	}
 
 	if err := db.txn.Commit(nil); err != nil {
 		return err

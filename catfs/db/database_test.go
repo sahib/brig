@@ -2,165 +2,13 @@ package db
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestMemoryDatabase(t *testing.T) {
-	db1 := NewMemoryDatabase()
-	db2 := NewMemoryDatabase()
-
-	testDatabaseWithDifferentKeys(t, db1, db2)
-
-	if err := db1.Close(); err != nil {
-		t.Errorf("Failed to close db1: %v", err)
-		return
-	}
-
-	if err := db2.Close(); err != nil {
-		t.Errorf("Failed to close db2: %v", err)
-		return
-	}
-}
-
-func TestBadgerDatabase(t *testing.T) {
-	testDir1, _ := ioutil.TempDir("", "brig-")
-	testDir2, _ := ioutil.TempDir("", "brig-")
-
-	defer func() {
-		for _, dir := range []string{testDir1, testDir2} {
-			if err := os.RemoveAll(dir); err != nil {
-				t.Errorf("Failed to remove test dir %s: %s", dir, err)
-			}
-		}
-	}()
-
-	db1, err := NewBadgerDatabase(testDir1)
-	require.Nil(t, err)
-	db2, err := NewBadgerDatabase(testDir2)
-	require.Nil(t, err)
-
-	testDatabaseWithDifferentKeys(t, db1, db2)
-
-	if err := db1.Close(); err != nil {
-		t.Errorf("Failed to close db1: %v", err)
-		return
-	}
-
-	if err := db2.Close(); err != nil {
-		t.Errorf("Failed to close db2: %v", err)
-		return
-	}
-}
-
-func TestDiskDatabase(t *testing.T) {
-	testDir1, _ := ioutil.TempDir("", "brig-")
-	testDir2, _ := ioutil.TempDir("", "brig-")
-
-	defer func() {
-		for _, dir := range []string{testDir1, testDir2} {
-			if err := os.RemoveAll(dir); err != nil {
-				t.Errorf("Failed to remove test dir %s: %s", dir, err)
-			}
-		}
-	}()
-
-	db1, err := NewDiskDatabase(testDir1)
-	if err != nil {
-		t.Errorf("Failed to create db1: %v", err)
-		return
-	}
-
-	db2, err := NewDiskDatabase(testDir2)
-	if err != nil {
-		t.Errorf("Failed to create db2: %v", err)
-		return
-	}
-
-	testDatabaseWithDifferentKeys(t, db1, db2)
-
-	if err := db1.Close(); err != nil {
-		t.Errorf("Failed to close db1: %v", err)
-		return
-	}
-
-	if err := db2.Close(); err != nil {
-		t.Errorf("Failed to close db2: %v", err)
-		return
-	}
-}
-
-func testDatabaseWithDifferentKeys(t *testing.T, db1, db2 Database) {
-	testKeys := [][]string{
-		[]string{"some", "stuff", "x"},
-		[]string{"some", "stuff", "."},
-		[]string{"some", "stuff", "__NO_DOT__"},
-		[]string{"some", "stuff", "DOT"},
-		[]string{"some", "stuff", "x"},
-	}
-
-	for _, testKey := range testKeys {
-		testDatabase(t, db1, db2, testKey)
-	}
-}
-
-func testDatabase(t *testing.T, db1, db2 Database, testKey []string) {
-	// TODO: add more testcases
-	t.Run("access-invalid", func(t *testing.T) {
-		t.Parallel()
-
-		val, err := db1.Get("hello", "world")
-		if err != ErrNoSuchKey {
-			t.Errorf("Not existant key yieled no ErrNoSuchKey: %v", err)
-			return
-		}
-
-		if val != nil {
-			t.Errorf("Not existing key still returned data")
-			return
-		}
-	})
-
-	t.Run("export", func(t *testing.T) {
-		batch := db1.Batch()
-		batch.Put([]byte{1, 2, 3}, testKey...)
-
-		if err := batch.Flush(); err != nil {
-			t.Fatalf("Failed to flush key: %v", err)
-		}
-
-		data, err := db1.Get(testKey...)
-		if err != nil {
-			t.Fatalf("Failed get key: %v", err)
-		}
-
-		if !bytes.Equal(data, []byte{1, 2, 3}) {
-			t.Fatalf("Data not equal")
-		}
-
-		buf := &bytes.Buffer{}
-		if eerr := db1.Export(buf); eerr != nil {
-			t.Fatalf("Export failed: %v", eerr)
-		}
-
-		if ierr := db2.Import(buf); ierr != nil {
-			t.Fatalf("Import failed: %v", ierr)
-		}
-
-		value, err := db2.Get(testKey...)
-		if err != nil {
-			t.Fatalf("Failed to get value: %v", err)
-		}
-
-		if !bytes.Equal(value, []byte{1, 2, 3}) {
-			t.Fatalf("Wrong value after import")
-		}
-	})
-}
 
 func withDiskDatabase(t *testing.T, fn func(db *DiskDatabase)) {
 	testDir, _ := ioutil.TempDir("", "brig-")
@@ -209,24 +57,158 @@ func withMemDatabase(t *testing.T, fn func(db *MemoryDatabase)) {
 	}
 }
 
-func TestGlob(t *testing.T) {
-	t.Run("disk", func(t *testing.T) {
-		withDiskDatabase(t, func(db *DiskDatabase) {
-			testGlob(t, db)
-		})
-	})
-
-	t.Run("memory", func(t *testing.T) {
+func withDbByName(t *testing.T, name string, fn func(db Database)) {
+	switch name {
+	case "memory":
 		withMemDatabase(t, func(db *MemoryDatabase) {
-			testGlob(t, db)
+			fn(db)
 		})
-	})
-
-	t.Run("badger", func(t *testing.T) {
+	case "disk":
+		withDiskDatabase(t, func(db *DiskDatabase) {
+			fn(db)
+		})
+	case "badger":
 		withBadgerDatabase(t, func(db *BadgerDatabase) {
-			testGlob(t, db)
+			fn(db)
+		})
+	default:
+		panic("bad db name: " + name)
+	}
+}
+
+func withDbsByName(t *testing.T, name string, fn func(db1, db2 Database)) {
+	withDbByName(t, name, func(db1 Database) {
+		withDbByName(t, name, func(db2 Database) {
+			fn(db1, db2)
 		})
 	})
+}
+
+//////////
+
+func TestDatabase(t *testing.T) {
+	t.Run("memory", func(t *testing.T) {
+		testDatabaseOneDb(t, "memory")
+		testDatabaseTwoDbs(t, "memory")
+	})
+	t.Run("disk", func(t *testing.T) {
+		testDatabaseOneDb(t, "disk")
+		testDatabaseTwoDbs(t, "disk")
+	})
+	t.Run("badger", func(t *testing.T) {
+		testDatabaseOneDb(t, "badger")
+		testDatabaseTwoDbs(t, "badger")
+	})
+}
+
+//////////
+
+func testDatabaseTwoDbs(t *testing.T, name string) {
+	tcs := []struct {
+		name string
+		test func(t *testing.T, db1, db2 Database)
+	}{
+		{
+			name: "export-import",
+			test: testExportImport,
+		},
+	}
+
+	t.Run("double", func(t *testing.T) {
+		for _, tc := range tcs {
+			t.Run(tc.name, func(t *testing.T) {
+				withDbsByName(t, name, func(db1, db2 Database) {
+					tc.test(t, db1, db2)
+				})
+			})
+		}
+	})
+}
+
+func testDatabaseOneDb(t *testing.T, name string) {
+	tcs := []struct {
+		name string
+		test func(t *testing.T, db Database)
+	}{
+		{
+			name: "put-and-get",
+			test: testPutAndGet,
+		}, {
+			name: "glob",
+			test: testGlob,
+		}, {
+			name: "invalid-access",
+			test: testInvalidAccess,
+		}, {
+			name: "recursive-batch",
+			test: testRecursiveBatch,
+		},
+	}
+
+	t.Run("single", func(t *testing.T) {
+		for _, tc := range tcs {
+			t.Run(tc.name, func(t *testing.T) {
+				withDbByName(t, name, func(db Database) {
+					tc.test(t, db)
+				})
+			})
+		}
+	})
+}
+
+///////////
+
+// TODO: Test with recursive transactions.
+//       Only the most outer transaction should commit on Flush()!
+//       Test: dots in the key.
+
+func testRecursiveBatch(t *testing.T, db Database) {
+	batch1 := db.Batch()
+	batch2 := db.Batch()
+
+	batch2.Put([]byte{1}, "batch2_key")
+	val, err := db.Get("batch2_key")
+
+	require.Nil(t, err)
+	require.Equal(t, []byte{1}, val)
+
+	require.True(t, batch1.HaveWrites())
+	require.True(t, batch2.HaveWrites())
+	require.Nil(t, batch2.Flush())
+
+	require.True(t, batch1.HaveWrites())
+	require.True(t, batch2.HaveWrites())
+
+	require.Nil(t, batch1.Flush())
+	require.False(t, batch1.HaveWrites())
+	require.False(t, batch2.HaveWrites())
+}
+
+func testPutAndGet(t *testing.T, db Database) {
+	testKeys := [][]string{
+		[]string{"some", "stuff", "x"},
+		[]string{"some", "stuff", "."},
+		[]string{"some", "stuff", "__NO_DOT__"},
+		[]string{"some", "stuff", "DOT"},
+	}
+
+	for _, key := range testKeys {
+		t.Run(strings.Join(key, "."), func(t *testing.T) {
+			batch := db.Batch()
+			batch.Put([]byte("hello"), key...)
+			require.Nil(t, batch.Flush())
+
+			data, err := db.Get(key...)
+			require.Nil(t, err)
+			require.Equal(t, []byte("hello"), data)
+		})
+	}
+}
+
+func testInvalidAccess(t *testing.T, db Database) {
+	val, err := db.Get("hello", "world")
+	require.Equal(t, ErrNoSuchKey, err)
+	require.Nil(t, val)
 }
 
 func testGlob(t *testing.T, db Database) {
@@ -234,20 +216,48 @@ func testGlob(t *testing.T, db Database) {
 	batch.Put([]byte{1}, "a", "b", "pref_1")
 	batch.Put([]byte{2}, "a", "b", "pref_2")
 	batch.Put([]byte{3}, "a", "b", "prev_3")
-	batch.Put([]byte{3}, "a", "b", "pref_dir", "x")
-	if err := batch.Flush(); err != nil {
-		t.Fatalf("Failed to create testdata: %v", err)
-	}
+	batch.Put([]byte{4}, "a", "b", "pref_dir", "x")
+
+	err := batch.Flush()
+	require.Nil(t, err)
 
 	matches, err := db.Glob([]string{"a", "b", "pref_"})
-	if err != nil {
-		t.Fatalf("Failed to find matches: %v", err)
-	}
+	require.Nil(t, err)
 
-	fmt.Println("MATCHES", matches)
-
-	require.Equal(t, matches, [][]string{
+	require.Equal(t, [][]string{
 		{"a", "b", "pref_1"},
 		{"a", "b", "pref_2"},
-	})
+	}, matches)
+}
+
+func testExportImport(t *testing.T, db1, db2 Database) {
+	testKeys := [][]string{
+		[]string{"some", "stuff", "x"},
+		[]string{"some", "stuff", "."},
+		[]string{"some", "stuff", "__NO_DOT__"},
+		[]string{"some", "stuff", "DOT"},
+	}
+
+	batch := db1.Batch()
+	for _, key := range testKeys {
+		batch.Put([]byte{1, 2, 3}, key...)
+	}
+
+	require.Nil(t, batch.Flush())
+
+	for _, key := range testKeys {
+		data, err := db1.Get(key...)
+		require.Nil(t, err)
+		require.Equal(t, []byte{1, 2, 3}, data)
+	}
+
+	buf := &bytes.Buffer{}
+	require.Nil(t, db1.Export(buf))
+	require.Nil(t, db2.Import(buf))
+
+	for _, key := range testKeys {
+		data, err := db2.Get(key...)
+		require.Nil(t, err)
+		require.Equal(t, []byte{1, 2, 3}, data)
+	}
 }
