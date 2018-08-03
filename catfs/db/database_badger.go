@@ -172,13 +172,21 @@ func (db *BadgerDatabase) Clear(key ...string) {
 	iter := db.txn.NewIterator(badger.IteratorOptions{})
 	defer iter.Close()
 
+	prefix := strings.Join(key, ".")
+
 	keys := [][]byte{}
 	for iter.Rewind(); iter.Valid(); iter.Next() {
 		item := iter.Item()
-		keys = append(keys, item.Key())
+
+		key := []byte{}
+		keys = append(keys, item.KeyCopy(key))
 	}
 
 	for _, key := range keys {
+		if !strings.HasPrefix(string(key), prefix) {
+			continue
+		}
+
 		if err := db.txn.Delete(key); err != nil {
 			fmt.Println("TODO: delete failed", err)
 			// TODO: handle error?

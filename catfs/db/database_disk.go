@@ -29,6 +29,7 @@ type DiskDatabase struct {
 	cache    map[string][]byte
 	ops      []func() error
 	refs     int64
+	deletes  map[string]struct{}
 }
 
 // NewDiskDatabase creates a new database at `basePath`.
@@ -36,6 +37,7 @@ func NewDiskDatabase(basePath string) (*DiskDatabase, error) {
 	return &DiskDatabase{
 		basePath: basePath,
 		cache:    make(map[string][]byte),
+		deletes:  make(map[string]struct{}),
 	}, nil
 }
 
@@ -85,6 +87,7 @@ func (db *DiskDatabase) Flush() error {
 	// Clear the cache first, if any of the next step fail,
 	// we have at least the current state.
 	db.cache = make(map[string][]byte)
+	db.deletes = make(map[string]struct{})
 
 	// Make sure that db.ops is nil, even if Flush failed.
 	ops := db.ops
@@ -118,7 +121,15 @@ func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
 		fmt.Println("GET", key)
 	}
 
-	data, ok := db.cache[path.Join(key...)]
+	fullKey := path.Join(key...)
+
+	// if it's a key that was already deleted in a transaction,
+	// we should acknowledge it as deleted.
+	if _, ok := db.deletes[fullKey]; ok {
+		return nil, ErrNoSuchKey
+	}
+
+	data, ok := db.cache[fullKey]
 	if ok {
 		return data, nil
 	}
@@ -196,7 +207,9 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 		return ioutil.WriteFile(filePath, val, 0600)
 	})
 
-	db.cache[path.Join(key...)] = val
+	fullKey := path.Join(key...)
+	db.cache[fullKey] = val
+	delete(db.deletes, fullKey)
 }
 
 // Clear removes all keys below and including `key`.
@@ -207,17 +220,15 @@ func (db *DiskDatabase) Clear(key ...string) {
 
 	// Cache the real modification for later:
 	db.ops = append(db.ops, func() error {
-		prefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
+		filePrefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
 		walker := func(path string, info os.FileInfo, err error) error {
-			if !info.IsDir() && strings.HasPrefix(path, prefix) {
-				if err := os.Remove(path); err != nil {
-					return err
-				}
+			if !info.IsDir() {
+				return os.Remove(path)
 			}
 
 			return nil
 		}
-		return filepath.Walk(db.basePath, walker)
+		return filepath.Walk(filePrefix, walker)
 	})
 
 	// Make sure we also modify the currently cached objects:
@@ -225,8 +236,22 @@ func (db *DiskDatabase) Clear(key ...string) {
 	for key := range db.cache {
 		if strings.HasPrefix(key, prefix) {
 			delete(db.cache, key)
+			db.deletes[key] = struct{}{}
 		}
 	}
+
+	// Also check what keys we actually need to delete.
+	filePrefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
+	walker := func(filePath string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			key := reverseDirectoryKeys(filePath[len(db.basePath):])
+			db.deletes[path.Join(key...)] = struct{}{}
+		}
+
+		return nil
+	}
+
+	filepath.Walk(filePrefix, walker)
 }
 
 func (db *DiskDatabase) Erase(key ...string) {
@@ -244,7 +269,9 @@ func (db *DiskDatabase) Erase(key ...string) {
 		return err
 	})
 
-	delete(db.cache, path.Join(key...))
+	fullKey := path.Join(key...)
+	db.deletes[fullKey] = struct{}{}
+	delete(db.cache, fullKey)
 }
 
 func (db *DiskDatabase) HaveWrites() bool {
@@ -257,13 +284,16 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 		return nil
 	}
 
-	return filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(fullPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() {
-			return fn(reverseDirectoryKeys(path[len(db.basePath):]))
+			key := reverseDirectoryKeys(filePath[len(db.basePath):])
+			if _, ok := db.deletes[path.Join(key...)]; !ok {
+				return fn(key)
+			}
 		}
 
 		return nil
@@ -285,8 +315,10 @@ func (db *DiskDatabase) Glob(prefix []string) ([][]string, error) {
 		}
 
 		if !info.IsDir() {
-			result := strings.Split(match[len(db.basePath)+1:], string(filepath.Separator))
-			results = append(results, result)
+			key := match[len(db.basePath)+1:]
+			if _, ok := db.deletes[key]; !ok {
+				results = append(results, strings.Split(key, string(filepath.Separator)))
+			}
 		}
 	}
 

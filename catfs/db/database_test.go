@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -137,6 +138,12 @@ func testDatabaseOneDb(t *testing.T, name string) {
 			name: "glob",
 			test: testGlob,
 		}, {
+			name: "clear",
+			test: testClear,
+		}, {
+			name: "clear-prefix",
+			test: testClearPrefix,
+		}, {
 			name: "invalid-access",
 			test: testInvalidAccess,
 		}, {
@@ -157,10 +164,6 @@ func testDatabaseOneDb(t *testing.T, name string) {
 }
 
 ///////////
-
-// TODO: Test with recursive transactions.
-//       Only the most outer transaction should commit on Flush()!
-//       Test: dots in the key.
 
 func testRecursiveBatch(t *testing.T, db Database) {
 	batch1 := db.Batch()
@@ -188,6 +191,7 @@ func testPutAndGet(t *testing.T, db Database) {
 	testKeys := [][]string{
 		[]string{"some", "stuff", "x"},
 		[]string{"some", "stuff", "."},
+		[]string{".", ".", "."},
 		[]string{"some", "stuff", "__NO_DOT__"},
 		[]string{"some", "stuff", "DOT"},
 	}
@@ -209,6 +213,74 @@ func testInvalidAccess(t *testing.T, db Database) {
 	val, err := db.Get("hello", "world")
 	require.Equal(t, ErrNoSuchKey, err)
 	require.Nil(t, val)
+}
+
+func testClear(t *testing.T, db Database) {
+	batch := db.Batch()
+	for i := 0; i < 100; i++ {
+		batch.Put([]byte{1}, "a", "b", "c", fmt.Sprintf("%d", i))
+	}
+
+	require.Nil(t, batch.Flush())
+
+	batch = db.Batch()
+	batch.Clear()
+
+	// before flush:
+	for i := 0; i < 100; i++ {
+		_, err := db.Get("a", "b", "c", fmt.Sprintf("%d", i))
+		require.Equal(t, ErrNoSuchKey, err)
+	}
+
+	require.Nil(t, batch.Flush())
+
+	// after flush:
+	for i := 0; i < 100; i++ {
+		_, err := db.Get("a", "b", "c", fmt.Sprintf("%d", i))
+		require.Equal(t, ErrNoSuchKey, err)
+	}
+}
+
+func testClearPrefix(t *testing.T, db Database) {
+	batch := db.Batch()
+	for i := 0; i < 10; i++ {
+		batch.Put([]byte{1}, "a", "b", "c", fmt.Sprintf("%d", i))
+	}
+
+	for i := 0; i < 10; i++ {
+		batch.Put([]byte{1}, "x", "y", "z", fmt.Sprintf("%d", i))
+	}
+
+	require.Nil(t, batch.Flush())
+
+	batch = db.Batch()
+	batch.Clear("a")
+
+	// before flush:
+	for i := 0; i < 10; i++ {
+		_, err := db.Get("a", "b", "c", fmt.Sprintf("%d", i))
+		require.Equal(t, ErrNoSuchKey, err)
+	}
+
+	for i := 0; i < 10; i++ {
+		data, err := db.Get("x", "y", "z", fmt.Sprintf("%d", i))
+		require.Nil(t, err)
+		require.Equal(t, []byte{1}, data)
+	}
+
+	require.Nil(t, batch.Flush())
+
+	// after flush:
+	for i := 0; i < 10; i++ {
+		_, err := db.Get("a", "b", "c", fmt.Sprintf("%d", i))
+		require.Equal(t, ErrNoSuchKey, err)
+	}
+
+	for i := 0; i < 10; i++ {
+		data, err := db.Get("x", "y", "z", fmt.Sprintf("%d", i))
+		require.Nil(t, err)
+		require.Equal(t, []byte{1}, data)
+	}
 }
 
 func testGlob(t *testing.T, db Database) {
