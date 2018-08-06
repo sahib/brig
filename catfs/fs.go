@@ -274,7 +274,7 @@ func (fs *FS) doGcRun() {
 }
 
 func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool, fsCfg *config.Config) (*FS, error) {
-	kv, err := db.NewDiskDatabase(dbPath)
+	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
 		return nil, err
 	}

@@ -98,9 +98,12 @@ func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) er
 			}
 
 			if hasPrefix {
+				db.mu.Unlock()
 				if err := fn(strings.Split(fullKey, ".")); err != nil {
+					db.mu.Lock()
 					return err
 				}
+				db.mu.Lock()
 			}
 		}
 
@@ -221,10 +224,11 @@ func (db *BadgerDatabase) Flush() error {
 	}
 
 	if db.refCount < 0 {
-		log.Errorf("Negative batch ref count: %d", db.refCount)
+		log.Errorf("negative batch ref count: %d", db.refCount)
 		return nil
 	}
 
+	defer db.txn.Discard()
 	if err := db.txn.Commit(nil); err != nil {
 		return err
 	}
@@ -251,5 +255,23 @@ func (db *BadgerDatabase) HaveWrites() bool {
 }
 
 func (db *BadgerDatabase) Close() error {
-	return db.db.Close()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	// With an open transaction it would deadlock:
+	if db.txn != nil {
+		db.txn.Discard()
+		db.txn = nil
+		db.haveWrites = false
+	}
+
+	if db.db != nil {
+		oldDb := db.db
+		db.db = nil
+		if err := oldDb.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
