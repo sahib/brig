@@ -11,8 +11,21 @@ import (
 // MemoryDatabase is a purely in memory database.
 type MemoryDatabase struct {
 	data       map[string][]byte
+	oldData    map[string][]byte
 	haveWrites bool
 	refCount   int
+}
+
+// a shallow copy is enough here.
+func shallowCopyMap(src map[string][]byte) map[string][]byte {
+	dst := make(map[string][]byte)
+	for k, v := range src {
+		copyV := make([]byte, len(v))
+		copy(copyV, v)
+		dst[k] = copyV
+	}
+
+	return dst
 }
 
 // NewMemoryDatabase allocates a new empty MemoryDatabase
@@ -24,6 +37,10 @@ func NewMemoryDatabase() *MemoryDatabase {
 
 // Batch is a no-op for a memory database.
 func (mdb *MemoryDatabase) Batch() Batch {
+	if mdb.refCount == 0 {
+		mdb.oldData = shallowCopyMap(mdb.data)
+	}
+
 	mdb.refCount++
 	return mdb
 }
@@ -39,7 +56,14 @@ func (mdb *MemoryDatabase) Flush() error {
 }
 
 // Rollback is a no-op for a memory database
-func (mdb *MemoryDatabase) Rollback() {}
+func (mdb *MemoryDatabase) Rollback() {
+	if mdb.oldData != nil {
+		mdb.data = shallowCopyMap(mdb.oldData)
+		mdb.oldData = nil
+	}
+
+	mdb.refCount = 0
+}
 
 // Get returns `key` of `bucket`.
 func (mdb *MemoryDatabase) Get(key ...string) ([]byte, error) {
@@ -76,12 +100,28 @@ func (mdb *MemoryDatabase) Erase(key ...string) {
 
 // Keys will return all keys currently stored in the memory map
 func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) error {
-	prefixPath := path.Join(prefix...)
+	keys := []string{}
 	for key := range mdb.data {
-		if strings.HasPrefix(key, prefixPath) {
-			if err := fn(strings.Split(key, "/")); err != nil {
-				return err
+		splitKey := strings.Split(key, "/")
+
+		hasPrefix := len(prefix) <= len(splitKey)
+		for i := 0; hasPrefix && i < len(prefix) && i < len(splitKey); i++ {
+			if prefix[i] != splitKey[i] {
+				hasPrefix = false
 			}
+		}
+
+		if hasPrefix {
+			keys = append(keys, key)
+		}
+
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		if err := fn(strings.Split(key, "/")); err != nil {
+			return err
 		}
 	}
 

@@ -8,10 +8,6 @@ import (
 	"sync"
 )
 
-// TODO: Implement an actual fast KV store based on moss, boltdb or badger
-//       if there is any performance problem later on.
-//       For now, the filesystem based kv should suffice fine though.
-
 type BadgerDatabase struct {
 	mu         sync.Mutex
 	db         *badger.DB
@@ -91,8 +87,19 @@ func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) er
 			item := iter.Item()
 
 			fullKey := string(item.Key())
-			if err := fn(strings.Split(fullKey, ".")); err != nil {
-				return err
+			splitKey := strings.Split(fullKey, ".")
+
+			hasPrefix := len(prefix) <= len(splitKey)
+			for i := 0; hasPrefix && i < len(prefix) && i < len(splitKey); i++ {
+				if prefix[i] != splitKey[i] {
+					hasPrefix = false
+				}
+			}
+
+			if hasPrefix {
+				if err := fn(strings.Split(fullKey, ".")); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -210,6 +217,11 @@ func (db *BadgerDatabase) Flush() error {
 
 	db.refCount--
 	if db.refCount > 0 {
+		return nil
+	}
+
+	if db.refCount < 0 {
+		// TODO: maybe issue an warning here? mismatched flush?
 		return nil
 	}
 

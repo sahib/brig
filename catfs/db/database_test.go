@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -149,6 +150,15 @@ func testDatabaseOneDb(t *testing.T, name string) {
 		}, {
 			name: "recursive-batch",
 			test: testRecursiveBatch,
+		}, {
+			name: "rollback",
+			test: testRollback,
+		}, {
+			name: "erase",
+			test: testErase,
+		}, {
+			name: "keys",
+			test: testKeys,
 		},
 	}
 
@@ -164,6 +174,83 @@ func testDatabaseOneDb(t *testing.T, name string) {
 }
 
 ///////////
+
+func testErase(t *testing.T, db Database) {
+	batch := db.Batch()
+	batch.Put([]byte{1}, "existing_key")
+	batch.Flush()
+
+	batch = db.Batch()
+	batch.Erase("existing_key")
+
+	_, err := db.Get("existing_key")
+	require.Equal(t, ErrNoSuchKey, err)
+
+	batch.Flush()
+
+	_, err = db.Get("existing_key")
+	require.Equal(t, ErrNoSuchKey, err)
+}
+
+func testKeys(t *testing.T, db Database) {
+	batch := db.Batch()
+	for i := 0; i < 15; i++ {
+		batch.Put([]byte{byte(i)}, fmt.Sprintf("%d", i))
+	}
+	batch.Flush()
+
+	extractKeys := func(prefixes []string) []string {
+		keys := []string{}
+		err := db.Keys(func(key []string) error {
+			keys = append(keys, strings.Join(key, "."))
+			return nil
+		}, prefixes...)
+		require.Nil(t, err)
+		return keys
+	}
+
+	keys := extractKeys(nil)
+	require.Equal(t,
+		[]string{
+			"0", "1", "10", "11", "12", "13", "14",
+			"2", "3", "4", "5", "6", "7", "8", "9",
+		},
+		keys,
+	)
+
+	keys = extractKeys([]string{"1"})
+	require.Equal(t,
+		[]string{"1"},
+		keys,
+	)
+
+	errSentinel := errors.New("weird error")
+	err := db.Keys(func(key []string) error { return errSentinel })
+	require.Equal(t, errSentinel, err)
+}
+
+func testRollback(t *testing.T, db Database) {
+	batch := db.Batch()
+	batch.Put([]byte{1}, "existing_key")
+	batch.Flush()
+
+	batch = db.Batch()
+	batch.Put([]byte{2}, "existing_key")
+	batch.Put([]byte{2}, "some_key")
+
+	data, err := db.Get("some_key")
+	require.Nil(t, err)
+	require.Equal(t, []byte{2}, data)
+
+	batch.Rollback()
+
+	data, err = db.Get("existing_key")
+	require.Nil(t, err)
+	require.Equal(t, []byte{1}, data)
+
+	data, err = db.Get("some_key")
+	require.Equal(t, ErrNoSuchKey, err)
+}
 
 func testRecursiveBatch(t *testing.T, db Database) {
 	batch1 := db.Batch()

@@ -44,6 +44,7 @@ type Database interface {
 
 	// Keys iterates over all keys in the database If the error is returned by
 	// `fn` the iteration stops and the error value is returned.
+	// The keys are returned in lexical ordering.
 	Keys(fn func(key []string) error, prefix ...string) error
 
 	// Batch returns a new Batch object, that will allow modifications

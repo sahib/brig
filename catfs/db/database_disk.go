@@ -60,6 +60,10 @@ func fixDirectoryKeys(key []string) string {
 
 func reverseDirectoryKeys(key string) []string {
 	parts := strings.Split(key, string(filepath.Separator))
+	if len(parts) > 0 && parts[0] == "" {
+		parts = parts[1:]
+	}
+
 	switch parts[len(parts)-1] {
 	case "DOT":
 		parts[len(parts)-1] = "."
