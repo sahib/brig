@@ -15,7 +15,7 @@ type Batch interface {
 	Put(val []byte, key ...string)
 
 	// Clear all contents below and including `key`.
-	Clear(key ...string)
+	Clear(key ...string) error
 
 	// Erase a key from the database.
 	Erase(key ...string)

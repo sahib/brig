@@ -217,7 +217,7 @@ func (db *DiskDatabase) Put(val []byte, key ...string) {
 }
 
 // Clear removes all keys below and including `key`.
-func (db *DiskDatabase) Clear(key ...string) {
+func (db *DiskDatabase) Clear(key ...string) error {
 	if debug {
 		fmt.Println("CLEAR", key)
 	}
@@ -226,6 +226,14 @@ func (db *DiskDatabase) Clear(key ...string) {
 	db.ops = append(db.ops, func() error {
 		filePrefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
 		walker := func(path string, info os.FileInfo, err error) error {
+			if os.IsNotExist(err) {
+				return nil
+			}
+
+			if err != nil {
+				return err
+			}
+
 			if !info.IsDir() {
 				return os.Remove(path)
 			}
@@ -247,6 +255,14 @@ func (db *DiskDatabase) Clear(key ...string) {
 	// Also check what keys we actually need to delete.
 	filePrefix := filepath.Join(db.basePath, fixDirectoryKeys(key))
 	walker := func(filePath string, info os.FileInfo, err error) error {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
 		if !info.IsDir() {
 			key := reverseDirectoryKeys(filePath[len(db.basePath):])
 			db.deletes[path.Join(key...)] = struct{}{}
@@ -255,7 +271,7 @@ func (db *DiskDatabase) Clear(key ...string) {
 		return nil
 	}
 
-	filepath.Walk(filePrefix, walker)
+	return filepath.Walk(filePrefix, walker)
 }
 
 func (db *DiskDatabase) Erase(key ...string) {

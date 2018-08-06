@@ -110,7 +110,7 @@ func TestLinkerRefs(t *testing.T) {
 		}
 
 		require.Nil(t, kv.Keys(keyIter, "stage"))
-		require.Equal(t, []string{"/stage/STATUS"}, foundKeys)
+		require.Equal(t, []string{"stage/STATUS"}, foundKeys)
 
 		head, err := lkr.Head()
 		if err != nil {

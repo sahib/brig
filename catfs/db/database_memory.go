@@ -82,7 +82,7 @@ func (mdb *MemoryDatabase) Put(data []byte, key ...string) {
 }
 
 // Clear removes all keys includin and below `key`.
-func (mdb *MemoryDatabase) Clear(key ...string) {
+func (mdb *MemoryDatabase) Clear(key ...string) error {
 	mdb.haveWrites = true
 	joinedKey := path.Join(key...)
 	for mapKey := range mdb.data {
@@ -90,6 +90,8 @@ func (mdb *MemoryDatabase) Clear(key ...string) {
 			delete(mdb.data, mapKey)
 		}
 	}
+
+	return nil
 }
 
 func (mdb *MemoryDatabase) Erase(key ...string) {

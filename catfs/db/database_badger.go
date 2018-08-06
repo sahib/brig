@@ -1,11 +1,12 @@
 package db
 
 import (
-	"fmt"
 	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
 	"io"
 	"strings"
 	"sync"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type BadgerDatabase struct {
@@ -166,11 +167,9 @@ func (db *BadgerDatabase) Put(val []byte, key ...string) {
 
 	fullKey := []byte(strings.Join(key, "."))
 	db.txn.Set(fullKey, val)
-
-	// TODO: handle error?
 }
 
-func (db *BadgerDatabase) Clear(key ...string) {
+func (db *BadgerDatabase) Clear(key ...string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -195,10 +194,11 @@ func (db *BadgerDatabase) Clear(key ...string) {
 		}
 
 		if err := db.txn.Delete(key); err != nil {
-			fmt.Println("TODO: delete failed", err)
-			// TODO: handle error?
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (db *BadgerDatabase) Erase(key ...string) {
@@ -221,7 +221,7 @@ func (db *BadgerDatabase) Flush() error {
 	}
 
 	if db.refCount < 0 {
-		// TODO: maybe issue an warning here? mismatched flush?
+		log.Errorf("Negative batch ref count: %d", db.refCount)
 		return nil
 	}
 

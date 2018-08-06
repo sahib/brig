@@ -19,6 +19,8 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// TODO: Save pinning info in kv, not own badger.
+
 // errNotPinnedSentinel is returned to signal an early exit in Walk()
 var errNotPinnedSentinel = errors.New("not pinned")
 

@@ -311,7 +311,7 @@ func testClear(t *testing.T, db Database) {
 	require.Nil(t, batch.Flush())
 
 	batch = db.Batch()
-	batch.Clear()
+	require.Nil(t, batch.Clear())
 
 	// before flush:
 	for i := 0; i < 100; i++ {
@@ -341,7 +341,7 @@ func testClearPrefix(t *testing.T, db Database) {
 	require.Nil(t, batch.Flush())
 
 	batch = db.Batch()
-	batch.Clear("a")
+	require.Nil(t, batch.Clear("a"))
 
 	// before flush:
 	for i := 0; i < 10; i++ {
@@ -420,3 +420,5 @@ func testExportImport(t *testing.T, db1, db2 Database) {
 		require.Equal(t, []byte{1, 2, 3}, data)
 	}
 }
+
+// TODO: Write basic benchmarks for put speed.

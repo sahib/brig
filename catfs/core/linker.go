@@ -184,8 +184,8 @@ func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error
 	err := lkr.kv.Keys(func(key []string) error {
 		// Filter non-node storage:
 		fullKey := strings.Join(key, "/")
-		if !strings.HasPrefix(fullKey, "/objects") &&
-			!strings.HasPrefix(fullKey, "/stage/objects") {
+		if !strings.HasPrefix(fullKey, "objects") &&
+			!strings.HasPrefix(fullKey, "stage/objects") {
 			return nil
 		}
 
@@ -733,11 +733,11 @@ func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 func (lkr *Linker) ListRefs() ([]string, error) {
 	refs := []string{}
 	walker := func(key []string) error {
-		if len(key) <= 2 {
+		if len(key) <= 1 {
 			return nil
 		}
 
-		refs = append(refs, key[2])
+		refs = append(refs, key[1])
 		return nil
 	}
 
@@ -1633,8 +1633,8 @@ func (lkr *Linker) Atomic(fn func() error) (err error) {
 func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 	batch := lkr.kv.Batch()
 
-	// A panicking program should not leave the linker inconsistent.
-	// This is really a last defence against all odds.
+	// A panicking program should not leave the persistent linker state
+	// inconsistent. This is really a last defence against all odds.
 	defer func() {
 		if r := recover(); r != nil {
 			batch.Rollback()
