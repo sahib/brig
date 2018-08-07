@@ -101,3 +101,21 @@ func TestPinNode(t *testing.T) {
 		require.False(t, isExplicit)
 	})
 }
+
+func TestPinEntryMarshal(t *testing.T) {
+	pinEntry := &pinCacheEntry{
+		Inodes: map[uint64]bool{
+			10: true,
+			15: false,
+			20: true,
+		},
+	}
+
+	data, err := pinEnryToCapnpData(pinEntry)
+	require.Nil(t, err)
+
+	loadedPinEntry, err := capnpToPinCacheEntry(data)
+	require.Nil(t, err)
+
+	require.Equal(t, pinEntry, loadedPinEntry)
+}

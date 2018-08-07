@@ -1,8 +1,6 @@
 package catfs
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 
 	// Because ipfs' package manager sucks a lot (sorry, but it does)
@@ -12,11 +10,13 @@ import (
 	//
 	// So gx forces us to use their badger version for no good reason at all.
 
+	capnp "github.com/sahib/brig/catfs/capnp"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
+	capnp_lib "zombiezen.com/go/capnproto2"
 )
 
 // errNotPinnedSentinel is returned to signal an early exit in Walk()
@@ -25,6 +25,74 @@ var errNotPinnedSentinel = errors.New("not pinned")
 // pinCacheEntry is one entry in the pin cache.
 type pinCacheEntry struct {
 	Inodes map[uint64]bool
+}
+
+func capnpToPinCacheEntry(data []byte) (*pinCacheEntry, error) {
+	msg, err := capnp_lib.Unmarshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	capEntry, err := capnp.ReadRootPinEntry(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	capPins, err := capEntry.Pins()
+	if err != nil {
+		return nil, err
+	}
+
+	entry := &pinCacheEntry{
+		Inodes: make(map[uint64]bool),
+	}
+
+	for idx := 0; idx < capPins.Len(); idx++ {
+		capPin := capPins.At(idx)
+		entry.Inodes[capPin.Inode()] = capPin.IsPinned()
+	}
+
+	return entry, nil
+}
+
+func pinEnryToCapnpData(entry *pinCacheEntry) ([]byte, error) {
+	msg, seg, err := capnp_lib.NewMessage(capnp_lib.SingleSegment(nil))
+	if err != nil {
+		return nil, err
+	}
+
+	capEntry, err := capnp.NewRootPinEntry(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	capPinList, err := capnp.NewPin_List(seg, int32(len(entry.Inodes)))
+	if err != nil {
+		return nil, err
+	}
+
+	idx := 0
+	for inode, isPinned := range entry.Inodes {
+		capPin, err := capnp.NewPin(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		capPin.SetInode(inode)
+		capPin.SetIsPinned(isPinned)
+
+		if err := capPinList.Set(idx, capPin); err != nil {
+			return nil, err
+		}
+
+		idx++
+	}
+
+	if err := capEntry.SetPins(capPinList); err != nil {
+		return nil, err
+	}
+
+	return msg.Marshal()
 }
 
 // Pinner remembers which hashes are pinned and if they are pinned explicitly.
@@ -57,9 +125,7 @@ func getEntry(kv db.Database, hash h.Hash) (*pinCacheEntry, error) {
 		return nil, err
 	}
 
-	entry := pinCacheEntry{}
-	dec := gob.NewDecoder(bytes.NewReader(data))
-	return &entry, dec.Decode(&entry)
+	return capnpToPinCacheEntry(data)
 }
 
 // remember the pin state of a certain hash.
@@ -67,9 +133,6 @@ func getEntry(kv db.Database, hash h.Hash) (*pinCacheEntry, error) {
 // Use with care to avoid data inconsistencies.
 func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool) error {
 	return pc.lkr.AtomicWithBatch(func(batch db.Batch) error {
-		buf := &bytes.Buffer{}
-		enc := gob.NewEncoder(buf)
-
 		oldEntry, err := getEntry(pc.lkr.KV(), hash)
 		if err != nil {
 			return err
@@ -92,11 +155,12 @@ func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool)
 			Inodes: inodes,
 		}
 
-		if err := enc.Encode(entry); err != nil {
+		data, err := pinEnryToCapnpData(&entry)
+		if err != nil {
 			return err
 		}
 
-		batch.Put(buf.Bytes(), "pins", hash.B58String())
+		batch.Put(data, "pins", hash.B58String())
 		return nil
 	})
 }
@@ -109,9 +173,8 @@ func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
 
 	if err == nil {
 		// cache hit
-		entry := pinCacheEntry{}
-		dec := gob.NewDecoder(bytes.NewReader(data))
-		if err := dec.Decode(&entry); err != nil {
+		entry, err := capnpToPinCacheEntry(data)
+		if err != nil {
 			return false, false, err
 		}
 
