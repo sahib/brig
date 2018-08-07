@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -285,8 +284,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		return nil, err
 	}
 
-	pinCachePath := filepath.Join(dbPath, "pins")
-	pinCache, err := NewPinner(pinCachePath, lkr, backend)
+	pinCache, err := NewPinner(lkr, backend)
 	if err != nil {
 		return nil, err
 	}

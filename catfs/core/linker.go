@@ -1671,3 +1671,7 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 
 	return nil
 }
+
+func (lkr *Linker) KV() db.Database {
+	return lkr.kv
+}

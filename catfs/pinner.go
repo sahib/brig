@@ -11,15 +11,13 @@ import (
 	// (i.e. when using the "correct" import github.com/dgraph-io/badger)
 	//
 	// So gx forces us to use their badger version for no good reason at all.
-	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
 
 	c "github.com/sahib/brig/catfs/core"
+	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
 )
-
-// TODO: Save pinning info in kv, not own badger.
 
 // errNotPinnedSentinel is returned to signal an early exit in Walk()
 var errNotPinnedSentinel = errors.New("not pinned")
@@ -33,48 +31,34 @@ type pinCacheEntry struct {
 // Its API can be used to safely change the pinning state. It assumes that it
 // is the only entitiy the pins & unpins nodes.
 type Pinner struct {
-	db  *badger.DB
 	bk  FsBackend
 	lkr *c.Linker
 }
 
 // NewPinner creates a new pin cache at `pinDbPath`, possibly erroring out.
 // `lkr` and `bk` are used to make PinNode() and UnpinNode() work.
-func NewPinner(pinDbPath string, lkr *c.Linker, bk FsBackend) (*Pinner, error) {
-	opts := badger.DefaultOptions
-	opts.Dir = pinDbPath
-	opts.ValueDir = pinDbPath
-
-	db, err := badger.Open(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Pinner{db: db, lkr: lkr, bk: bk}, nil
+func NewPinner(lkr *c.Linker, bk FsBackend) (*Pinner, error) {
+	return &Pinner{lkr: lkr, bk: bk}, nil
 }
 
 // Close the pinning cache.
 func (pc *Pinner) Close() error {
-	return pc.db.Close()
+	// currently a no-op
+	return nil
 }
 
-func getEntry(txn *badger.Txn, hash h.Hash) (*pinCacheEntry, error) {
-	item, err := txn.Get(hash)
+func getEntry(kv db.Database, hash h.Hash) (*pinCacheEntry, error) {
+	data, err := kv.Get("pins", hash.B58String())
 	if err != nil {
-		if err == badger.ErrKeyNotFound {
+		if err == db.ErrNoSuchKey {
 			return nil, nil
 		}
 
 		return nil, err
 	}
 
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-
-	dec := gob.NewDecoder(bytes.NewReader(value))
 	entry := pinCacheEntry{}
+	dec := gob.NewDecoder(bytes.NewReader(data))
 	return &entry, dec.Decode(&entry)
 }
 
@@ -82,11 +66,11 @@ func getEntry(txn *badger.Txn, hash h.Hash) (*pinCacheEntry, error) {
 // This does change anything in the backend but only changes the caching structure.
 // Use with care to avoid data inconsistencies.
 func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool) error {
-	return pc.db.Update(func(txn *badger.Txn) error {
+	return pc.lkr.AtomicWithBatch(func(batch db.Batch) error {
 		buf := &bytes.Buffer{}
 		enc := gob.NewEncoder(buf)
 
-		oldEntry, err := getEntry(txn, hash)
+		oldEntry, err := getEntry(pc.lkr.KV(), hash)
 		if err != nil {
 			return err
 		}
@@ -112,33 +96,25 @@ func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool)
 			return err
 		}
 
-		return txn.Set(hash, buf.Bytes())
+		batch.Put(buf.Bytes(), "pins", hash.B58String())
+		return nil
 	})
 }
 
 func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
-	entry := pinCacheEntry{}
-	err := pc.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(hash)
-		if err != nil {
-			return err
-		}
-
-		value, err := item.Value()
-		if err != nil {
-			return err
-		}
-
-		dec := gob.NewDecoder(bytes.NewReader(value))
-		return dec.Decode(&entry)
-	})
-
-	if err != nil && err != badger.ErrKeyNotFound {
+	data, err := pc.lkr.KV().Get("pins", hash.B58String())
+	if err != nil && err != db.ErrNoSuchKey {
 		return false, false, err
 	}
 
-	if err != badger.ErrKeyNotFound {
+	if err == nil {
 		// cache hit
+		entry := pinCacheEntry{}
+		dec := gob.NewDecoder(bytes.NewReader(data))
+		if err := dec.Decode(&entry); err != nil {
+			return false, false, err
+		}
+
 		isExplicit, ok := entry.Inodes[inode]
 		return ok, isExplicit, nil
 	}
