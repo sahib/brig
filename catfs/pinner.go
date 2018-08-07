@@ -3,13 +3,6 @@ package catfs
 import (
 	"errors"
 
-	// Because ipfs' package manager sucks a lot (sorry, but it does)
-	// it imports badger with the import url below. This calls a few init()s,
-	// which will panic when being called twice due to expvar defines e.g.
-	// (i.e. when using the "correct" import github.com/dgraph-io/badger)
-	//
-	// So gx forces us to use their badger version for no good reason at all.
-
 	capnp "github.com/sahib/brig/catfs/capnp"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"
