@@ -462,7 +462,6 @@ func TestMakeDiff(t *testing.T) {
 			diff, err := fsa.MakeDiff(fsb, "head^^^", "curr")
 			require.Nil(t, err)
 
-			// TODO: we have a pinning inconsitency here.
 			require.Equal(t, []StatInfo{*fsb.nodeToStat(fsbA)}, diff.Added)
 			require.Equal(t, []StatInfo{*fsa.nodeToStat(fsaY)}, diff.Removed)
 			require.Equal(t, []DiffPair{{

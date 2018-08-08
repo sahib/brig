@@ -291,7 +291,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 
 	// NOTE: We do not need to validate fsCfg here.
 	// This is already done on the side of our config module.
-	// (we just need to convert a few keys to the vcs.SyncOptions later).
+	// (we just need to convert a few keys to the vcs.SyncOptions enum later).
 
 	fs := &FS{
 		kv:                kv,

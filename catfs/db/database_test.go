@@ -9,68 +9,54 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-func withDiskDatabase(t *testing.T, fn func(db *DiskDatabase)) {
+func withDiskDatabase(fn func(db *DiskDatabase)) error {
 	testDir, _ := ioutil.TempDir("", "brig-")
 	defer os.RemoveAll(testDir)
 
 	db, err := NewDiskDatabase(testDir)
 	if err != nil {
-		t.Errorf("Failed to create db1: %v", err)
-		return
+		return err
 	}
 
 	fn(db)
-
-	if err := db.Close(); err != nil {
-		t.Errorf("Failed to close db: %v", err)
-		return
-	}
+	return db.Close()
 }
 
-func withBadgerDatabase(t *testing.T, fn func(db *BadgerDatabase)) {
+func withBadgerDatabase(fn func(db *BadgerDatabase)) error {
 	testDir, _ := ioutil.TempDir("", "brig-")
 	defer os.RemoveAll(testDir)
 
 	db, err := NewBadgerDatabase(testDir)
 	if err != nil {
-		t.Errorf("Failed to create db1: %v", err)
-		return
+		return err
 	}
 
 	fn(db)
-
-	if err := db.Close(); err != nil {
-		t.Errorf("Failed to close db: %v", err)
-		return
-	}
+	return db.Close()
 }
 
-func withMemDatabase(t *testing.T, fn func(db *MemoryDatabase)) {
+func withMemDatabase(fn func(db *MemoryDatabase)) error {
 	mdb := NewMemoryDatabase()
-
 	fn(mdb)
-
-	if err := mdb.Close(); err != nil {
-		t.Errorf("Failed to close mdb: %v", err)
-		return
-	}
+	return mdb.Close()
 }
 
-func withDbByName(t *testing.T, name string, fn func(db Database)) {
+func withDbByName(name string, fn func(db Database)) error {
 	switch name {
 	case "memory":
-		withMemDatabase(t, func(db *MemoryDatabase) {
+		return withMemDatabase(func(db *MemoryDatabase) {
 			fn(db)
 		})
 	case "disk":
-		withDiskDatabase(t, func(db *DiskDatabase) {
+		return withDiskDatabase(func(db *DiskDatabase) {
 			fn(db)
 		})
 	case "badger":
-		withBadgerDatabase(t, func(db *BadgerDatabase) {
+		return withBadgerDatabase(func(db *BadgerDatabase) {
 			fn(db)
 		})
 	default:
@@ -78,9 +64,9 @@ func withDbByName(t *testing.T, name string, fn func(db Database)) {
 	}
 }
 
-func withDbsByName(t *testing.T, name string, fn func(db1, db2 Database)) {
-	withDbByName(t, name, func(db1 Database) {
-		withDbByName(t, name, func(db2 Database) {
+func withDbsByName(name string, fn func(db1, db2 Database)) error {
+	return withDbByName(name, func(db1 Database) {
+		withDbByName(name, func(db2 Database) {
 			fn(db1, db2)
 		})
 	})
@@ -119,9 +105,9 @@ func testDatabaseTwoDbs(t *testing.T, name string) {
 	t.Run("double", func(t *testing.T) {
 		for _, tc := range tcs {
 			t.Run(tc.name, func(t *testing.T) {
-				withDbsByName(t, name, func(db1, db2 Database) {
+				require.Nil(t, withDbsByName(name, func(db1, db2 Database) {
 					tc.test(t, db1, db2)
-				})
+				}))
 			})
 		}
 	})
@@ -165,9 +151,9 @@ func testDatabaseOneDb(t *testing.T, name string) {
 	t.Run("single", func(t *testing.T) {
 		for _, tc := range tcs {
 			t.Run(tc.name, func(t *testing.T) {
-				withDbByName(t, name, func(db Database) {
+				require.Nil(t, withDbByName(name, func(db Database) {
 					tc.test(t, db)
-				})
+				}))
 			})
 		}
 	})
@@ -421,4 +407,47 @@ func testExportImport(t *testing.T, db1, db2 Database) {
 	}
 }
 
-// TODO: Write basic benchmarks for put speed.
+func BenchmarkDatabase(b *testing.B) {
+	benchmarks := map[string]func(*testing.B, Database){
+		"put": benchmarkDatabasePut,
+		"get": benchmarkDatabaseGet,
+	}
+
+	for benchmark_name, benchmark := range benchmarks {
+		b.Run(benchmark_name, func(b *testing.B) {
+			for _, name := range []string{"badger", "memory", "disk"} {
+				b.Run(name, func(b *testing.B) {
+					withDbByName(name, func(db Database) {
+						b.ResetTimer()
+						benchmark(b, db)
+						b.StopTimer()
+					})
+				})
+			}
+		})
+	}
+}
+
+func benchmarkDatabasePut(b *testing.B, db Database) {
+	batch := db.Batch()
+	for i := 0; i < b.N; i++ {
+		keyName := fmt.Sprintf("key_%d", i%(1024*1024))
+		batch.Put(testutil.CreateDummyBuf(128), keyName)
+	}
+	batch.Flush()
+}
+
+func benchmarkDatabaseGet(b *testing.B, db Database) {
+	batch := db.Batch()
+	for i := 0; i < b.N; i++ {
+		keyName := fmt.Sprintf("key_%d", i%(1024*1024))
+		batch.Put(testutil.CreateDummyBuf(128), "prefix", keyName)
+	}
+	batch.Flush()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		keyName := fmt.Sprintf("key_%d", i%(1024*1024))
+		db.Get("prefix", keyName)
+	}
+}
