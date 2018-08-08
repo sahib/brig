@@ -188,20 +188,26 @@ func max(a, b int64) int64 {
 // and caches Writes on top of it. To the outside it delivers
 // a zipped stream of the recent writes and the underlying stream.
 type Layer struct {
-	index *IntervalIndex
-	r     io.ReadSeeker
-	pos   int64
-	limit int64
+	index    *IntervalIndex
+	r        io.ReadSeeker
+	pos      int64
+	limit    int64
+	fileSize int64
 }
 
 // NewLayer returns a new in memory layer.
 // No IO is performed on creation.
 func NewLayer(r io.ReadSeeker) *Layer {
 	return &Layer{
-		index: &IntervalIndex{},
-		r:     r,
-		limit: -1,
+		index:    &IntervalIndex{},
+		r:        r,
+		limit:    -1,
+		fileSize: -1,
 	}
+}
+
+func (l *Layer) SetSize(size int64) {
+	l.fileSize = size
 }
 
 // Write caches the buffer in memory or on disk until the file is closed.
@@ -323,7 +329,11 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekStart:
 		newPos = offset
 	case io.SeekEnd:
-		return 0, fmt.Errorf("layer: SEEK_END not supported")
+		if l.fileSize < 0 {
+			return 0, fmt.Errorf("layer: SEEK_END not supported without file size")
+		}
+
+		newPos = l.fileSize + offset
 	}
 
 	// Check if we hit the truncate limit:
@@ -355,6 +365,9 @@ func (l *Layer) Close() error {
 // A value < 0 disables truncation.
 func (l *Layer) Truncate(size int64) {
 	l.limit = size
+	if l.limit < l.fileSize {
+		l.fileSize = size
+	}
 }
 
 // Limit returns the current truncation limit

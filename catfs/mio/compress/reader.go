@@ -42,6 +42,11 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 		if destOff > 0 {
 			return 0, io.EOF
 		}
+
+		if err := r.parseTrailerIfNeeded(); err != nil {
+			return 0, err
+		}
+
 		return r.Seek(r.index[len(r.index)-1].rawOff+destOff, io.SeekStart)
 	}
 

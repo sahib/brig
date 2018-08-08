@@ -53,6 +53,7 @@ func (hdl *Handle) initStreamIfNeeded() error {
 
 	hdl.layer = overlay.NewLayer(hdl.stream)
 	hdl.layer.Truncate(int64(hdl.file.Size()))
+	hdl.layer.SetSize(int64(hdl.file.Size()))
 	return nil
 }
 

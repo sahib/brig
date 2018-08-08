@@ -117,6 +117,18 @@ func TestOpenOpAfterClose(t *testing.T) {
 //       - 9, SEEK_SET
 //       - ...
 func TestOpenExtend(t *testing.T) {
+	t.Run("start-10", func(t *testing.T) {
+		testOpenExtend(t, 10, io.SeekStart)
+	})
+	t.Run("curr-10", func(t *testing.T) {
+		testOpenExtend(t, 10, io.SeekCurrent)
+	})
+	t.Run("end-0", func(t *testing.T) {
+		testOpenExtend(t, 0, io.SeekEnd)
+	})
+}
+
+func testOpenExtend(t *testing.T, pos int64, whence int) {
 	withDummyFS(t, func(fs *FS) {
 		rawData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		require.Nil(t, fs.Stage("/x", bytes.NewReader(rawData)))
@@ -124,9 +136,9 @@ func TestOpenExtend(t *testing.T) {
 		fd, err := fs.Open("/x")
 		require.Nil(t, err)
 
-		pos, err := fd.Seek(10, io.SeekStart)
+		pos, err := fd.Seek(pos, whence)
 		require.Nil(t, err)
-		require.Equal(t, pos, int64(10))
+		require.Equal(t, pos, int64(pos))
 
 		n, err := fd.Write([]byte{11, 12, 13})
 		require.Nil(t, err)
