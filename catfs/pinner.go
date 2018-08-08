@@ -189,7 +189,7 @@ func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
 		return false, false, err
 	}
 
-	return true, false, nil
+	return isPinned, false, nil
 }
 
 ////////////////////////////
