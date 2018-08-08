@@ -53,6 +53,7 @@ func (w *writer) flushBuffer(data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	n, err := w.rawW.Write(encData)
 	if err != nil {
 		return err
