@@ -291,6 +291,10 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 	// Create it & give it a part of the main config.
 	fsCfg := rp.Config.Section("fs")
 	fsDbPath := filepath.Join(rp.BaseFolder, "metadata", owner)
+	if err := os.MkdirAll(fsDbPath, 0700); err != nil && err != os.ErrExist {
+		return nil, err
+	}
+
 	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, isReadOnly, fsCfg)
 	if err != nil {
 		return nil, err

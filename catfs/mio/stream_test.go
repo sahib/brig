@@ -224,8 +224,6 @@ func benchThroughputWriteOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io
 			b.Fatalf("failed to close writer: %v", err)
 		}
 	}
-
-	fmt.Println("--> ", read*int64(b.N))
 }
 
 type dummyWriter struct{ w io.Writer }

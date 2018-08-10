@@ -10,6 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/cmd/tabwriter"
@@ -352,6 +353,13 @@ func handleMount(ctx *cli.Context, ctl *client.Client) error {
 	absMountPath, err := filepath.Abs(mountPath)
 	if err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(absMountPath); err == os.ErrNotExist {
+		fmt.Printf("Mount directory does not exist. Will create it.")
+		if err := os.MkdirAll(absMountPath, 0700); err != nil {
+			return e.Wrapf(err, "failed to mkdir mount point")
+		}
 	}
 
 	if err := ctl.Mount(absMountPath); err != nil {
