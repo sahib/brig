@@ -9,6 +9,7 @@ import (
 
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
+	"github.com/sahib/brig/catfs/mio/overlay"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
@@ -170,13 +171,21 @@ func TestLimitedStream(t *testing.T) {
 	require.Equal(t, buf.Bytes(), testData)
 }
 
-// one operation of the reader throughput
+func benchThroughputOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
+	b.Run("read", func(b *testing.B) {
+		benchThroughputReadOp(b, size, rfn, wfn)
+	})
+
+	b.Run("write", func(b *testing.B) {
+		benchThroughputWriteOp(b, size, rfn, wfn)
+	})
+}
+
 func benchThroughputReadOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
 	var data []byte
-
 	buf := &bytes.Buffer{}
-	w := wfn(buf)
 
+	w := wfn(buf)
 	_, err := io.Copy(w, bytes.NewReader(testutil.CreateDummyBuf(size)))
 	if err != nil {
 		b.Fatalf("data preparation failed: %v", err)
@@ -197,16 +206,58 @@ func benchThroughputReadOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.
 	}
 }
 
+func benchThroughputWriteOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
+	data := testutil.CreateDummyBuf(size)
+
+	read := int64(0)
+
+	for i := 0; i < b.N; i++ {
+		w := wfn(ioutil.Discard)
+		n, err := io.Copy(w, bytes.NewReader(data))
+		if err != nil {
+			b.Fatalf("data preparation failed: %v", err)
+		}
+
+		read += n
+
+		if err := w.Close(); err != nil {
+			b.Fatalf("failed to close writer: %v", err)
+		}
+	}
+
+	fmt.Println("--> ", read*int64(b.N))
+}
+
 type dummyWriter struct{ w io.Writer }
 
 func (df *dummyWriter) Write(data []byte) (int, error) { return df.w.Write(data) }
 func (df *dummyWriter) Close() error                   { return nil }
 
+type combinedClosers struct {
+	cls []io.WriteCloser
+}
+
+func combineClosers(cls ...io.WriteCloser) io.WriteCloser {
+	return &combinedClosers{cls}
+}
+
+func (cc *combinedClosers) Write(data []byte) (int, error) {
+	return cc.cls[len(cc.cls)-1].Write(data)
+}
+
+func (cc *combinedClosers) Close() error {
+	for i := len(cc.cls) - 1; i >= 0; i-- {
+		cc.cls[i].Close()
+	}
+
+	return nil
+}
+
 func BenchmarkThroughputReader(b *testing.B) {
-	size := int64(8 * 1024 * 1024)
+	size := int64(1024 * 1024)
 
 	b.Run("baseline", func(b *testing.B) {
-		benchThroughputReadOp(
+		benchThroughputOp(
 			b, size,
 			func(r io.ReadSeeker) io.Reader {
 				return r
@@ -217,8 +268,25 @@ func BenchmarkThroughputReader(b *testing.B) {
 		)
 	})
 
+	b.Run("layer", func(b *testing.B) {
+		benchThroughputOp(
+			b, size,
+			func(r io.ReadSeeker) io.Reader {
+				layer := overlay.NewLayer(r)
+				layer.SetSize(1024 * 1024)
+				return layer
+			},
+			func(w io.Writer) io.WriteCloser {
+				// Put all the writes into an empty reader.
+				layer := overlay.NewLayer(bytes.NewReader(nil))
+				layer.SetSize(1024 * 1024)
+				return layer
+			},
+		)
+	})
+
 	b.Run("encrypt", func(b *testing.B) {
-		benchThroughputReadOp(
+		benchThroughputOp(
 			b, size,
 			func(r io.ReadSeeker) io.Reader {
 				key := make([]byte, 32)
@@ -249,9 +317,9 @@ func BenchmarkThroughputReader(b *testing.B) {
 	}
 
 	for _, algo := range compressAlgos {
-		name := fmt.Sprintf("compress-%s", algo)
+		name := fmt.Sprintf("zip-%s", algo)
 		b.Run(name, func(b *testing.B) {
-			benchThroughputReadOp(
+			benchThroughputOp(
 				b, size,
 				func(r io.ReadSeeker) io.Reader {
 					return compress.NewReader(r)
@@ -263,6 +331,40 @@ func BenchmarkThroughputReader(b *testing.B) {
 					}
 
 					return wzip
+				},
+			)
+		})
+	}
+
+	for _, algo := range compressAlgos {
+		name := fmt.Sprintf("srm-%s", algo)
+		b.Run(name, func(b *testing.B) {
+			benchThroughputOp(
+				b, size,
+				func(r io.ReadSeeker) io.Reader {
+					key := make([]byte, 32)
+					stream, err := NewOutStream(r, key)
+					if err != nil {
+						b.Fatalf("failed to create out stream: %v", err)
+					}
+
+					return stream
+				},
+				func(w io.Writer) io.WriteCloser {
+					key := make([]byte, 32)
+
+					// Setup the writer part:
+					wEnc, err := encrypt.NewWriter(w, key)
+					if err != nil {
+						b.Fatalf("failed to setup wenc: %v", err)
+					}
+
+					wZip, err := compress.NewWriter(wEnc, algo)
+					if err != nil {
+						b.Fatalf("failed to setup wzip: %v", err)
+					}
+
+					return combineClosers(wEnc, wZip)
 				},
 			)
 		})
