@@ -8,6 +8,7 @@ import (
 	// (i.e. when using the "correct" import github.com/dgraph-io/badger)
 	//
 	// So gx forces us to use their badger version for no good reason at all.
+
 	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
 	"io"
 	"strings"
@@ -71,7 +72,7 @@ func (db *BadgerDatabase) Get(key ...string) ([]byte, error) {
 			return err
 		}
 
-		data, err = item.Value()
+		data, err = item.ValueCopy(nil)
 		return err
 	})
 
@@ -130,23 +131,23 @@ func (db *BadgerDatabase) Glob(prefix []string) ([][]string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	fullPrefix := strings.Join(prefix, ".")
+
 	results := [][]string{}
 	err := db.view(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.IteratorOptions{})
 		defer iter.Close()
 
-		fullPrefix := strings.Join(prefix, ".")
+		for iter.Seek([]byte(fullPrefix)); iter.Valid(); iter.Next() {
+			fullKey := string(iter.Item().Key())
+			if !strings.HasPrefix(fullKey, fullPrefix) {
+				break
+			}
 
-		for iter.Rewind(); iter.Valid(); iter.Next() {
-			item := iter.Item()
-
-			fullKey := string(item.Key())
-			if strings.HasPrefix(fullKey, fullPrefix) {
-				// Don't do recursive globbing:
-				leftOver := fullKey[len(fullPrefix):]
-				if !strings.Contains(leftOver, ".") {
-					results = append(results, strings.Split(fullKey, "."))
-				}
+			// Don't do recursive globbing:
+			leftOver := fullKey[len(fullPrefix):]
+			if !strings.Contains(leftOver, ".") {
+				results = append(results, strings.Split(fullKey, "."))
 			}
 		}
 
@@ -248,9 +249,20 @@ func (db *BadgerDatabase) Rollback() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	db.refCount--
+	if db.refCount > 0 {
+		return
+	}
+
+	if db.refCount < 0 {
+		log.Errorf("negative batch ref count: %d", db.refCount)
+		return
+	}
+
 	db.txn.Discard()
 	db.txn = nil
 	db.haveWrites = false
+	db.refCount = 0
 }
 
 func (db *BadgerDatabase) HaveWrites() bool {

@@ -117,6 +117,7 @@ func (db *DiskDatabase) Rollback() {
 	db.refs = 0
 	db.ops = nil
 	db.cache = make(map[string][]byte)
+	db.deletes = make(map[string]struct{})
 }
 
 // Get a single value from `bucket` by `key`.

@@ -5,17 +5,47 @@ import (
 	"fmt"
 )
 
+type ExpectedError interface {
+	error
+	ShouldStopBatch() bool
+}
+
+// ExpectedError is a kind of error that
+type expectedError struct {
+	err             error
+	shouldStopBatch bool
+}
+
+func (ee *expectedError) ShouldStopBatch() bool {
+	return ee.shouldStopBatch
+}
+
+func (ee *expectedError) Error() string {
+	return ee.err.Error()
+}
+
+func NewExpectedError(msg string, shouldStopBatch bool) ExpectedError {
+	return &expectedError{
+		err:             errors.New(msg),
+		shouldStopBatch: shouldStopBatch,
+	}
+}
+
 var (
-	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
-	ErrStageNotEmpty = errors.New("There are changes in the staging area. Use the --force")
-	ErrNoChange      = errors.New("Nothing changed between the given versions")
-	ErrAmbigiousRev  = errors.New("There is more than one rev with this prefix")
+	ErrNotEmpty      = NewExpectedError("Cannot remove: Directory is not empty", false)
+	ErrStageNotEmpty = NewExpectedError("There are changes in the staging area. Use the --force", false)
+	ErrNoChange      = NewExpectedError("Nothing changed between the given versions", false)
+	ErrAmbigiousRev  = NewExpectedError("There is more than one rev with this prefix", false)
 )
 
 type ErrBadNodeType int
 
 func (e ErrBadNodeType) Error() string {
 	return fmt.Sprintf("Bad node type in db: %d", int(e))
+}
+
+func (e ErrBadNodeType) ShouldStopBatch() bool {
+	return false
 }
 
 //////////////
@@ -29,12 +59,20 @@ func (e ErrNoHashFound) Error() string {
 	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
 }
 
+func (e ErrNoHashFound) ShouldStopBatch() bool {
+	return false
+}
+
 //////////////
 
 type ErrNoSuchRef string
 
 func (e ErrNoSuchRef) Error() string {
 	return fmt.Sprintf("No ref found named `%s`", string(e))
+}
+
+func (e ErrNoSuchRef) ShouldStopBatch() bool {
+	return false
 }
 
 func IsErrNoSuchRef(err error) bool {
@@ -49,6 +87,10 @@ type ErrInvalidRefSpec struct {
 
 func (e ErrInvalidRefSpec) Error() string {
 	return fmt.Sprintf("Invalid ref `%s`: %s", e.input, e.cause)
+}
+
+func (e ErrInvalidRefSpec) ShouldStopBatch() bool {
+	return false
 }
 
 /////////////////

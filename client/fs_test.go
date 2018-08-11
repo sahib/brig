@@ -264,6 +264,7 @@ func TestSyncSeveralTimes(t *testing.T) {
 		require.Nil(t, err)
 
 		_, err = bobCtl.Sync("alice", true)
+
 		require.Nil(t, err)
 
 		dirs, err = bobCtl.List("/", -1)

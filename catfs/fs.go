@@ -1083,6 +1083,18 @@ func (fs *FS) Head() (string, error) {
 	return head.TreeHash().B58String(), nil
 }
 
+func (fs *FS) Curr() (string, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	status, err := fs.lkr.Status()
+	if err != nil {
+		return "", err
+	}
+
+	return status.TreeHash().B58String(), nil
+}
+
 // History returns all modifications of a node with one entry per commit.
 func (fs *FS) History(path string) ([]Change, error) {
 	fs.mu.Lock()

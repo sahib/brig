@@ -1643,7 +1643,12 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 		}
 	}()
 
-	if err = fn(batch); err != nil {
+	err = fn(batch)
+	if eerr, ok := err.(ie.ExpectedError); ok && !eerr.ShouldStopBatch() {
+		err = nil
+	}
+
+	if err != nil {
 		hadWrites := batch.HaveWrites()
 		batch.Rollback()
 
