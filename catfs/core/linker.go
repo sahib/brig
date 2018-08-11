@@ -1644,11 +1644,15 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 	}()
 
 	err = fn(batch)
-	if eerr, ok := err.(ie.ExpectedError); ok && !eerr.ShouldStopBatch() {
-		err = nil
+
+	needRollback := false
+	if err != nil {
+		if ee, ok := err.(ie.ExpectedError); !ok || ee.ShouldStopBatch() {
+			needRollback = true
+		}
 	}
 
-	if err != nil {
+	if needRollback {
 		hadWrites := batch.HaveWrites()
 		batch.Rollback()
 
@@ -1659,22 +1663,22 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 			// with the old state. This costs a little performance but saves me
 			// from writing special in-memory rollback logic for now.
 			lkr.MemIndexClear()
-
 			log.Warningf("rolled back due to error: %v", err)
 		}
+
 		return err
 	}
 
 	// Attempt to write it to disk.
 	// If that fails we're better off deleting our internal cache.
 	// so memory and disk is in sync.
-	if err := batch.Flush(); err != nil {
+	if flushErr := batch.Flush(); flushErr != nil {
 		lkr.MemIndexClear()
-		log.Warningf("flush to db failed, resetting mem index: %v", err)
+		log.Warningf("flush to db failed, resetting mem index: %v", flushErr)
 		return err
 	}
 
-	return nil
+	return err
 }
 
 func (lkr *Linker) KV() db.Database {
