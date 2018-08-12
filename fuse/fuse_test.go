@@ -11,7 +11,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util/testutil"
+	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,7 +33,10 @@ func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
 
 	defer os.RemoveAll(dbPath)
 
-	fs, err := catfs.NewFilesystem(backend, dbPath, owner, false, nil)
+	cfg, err := config.Open(nil, defaults.Defaults)
+	require.Nil(t, err)
+
+	fs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
