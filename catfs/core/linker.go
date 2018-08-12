@@ -166,9 +166,9 @@ func (lkr *Linker) NextInode() uint64 {
 	cntBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(cntBuf, cnt)
 
-	err = lkr.AtomicWithBatch(func(batch db.Batch) error {
+	err = lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		batch.Put(cntBuf, "stats", "max-inode")
-		return nil
+		return false, nil
 	})
 
 	if err != nil {
@@ -332,25 +332,25 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 // directories of the node in question will be staged automatically. If there
 // was no modification it will be a (quite expensive) NOOP.
 func (lkr *Linker) StageNode(nd n.Node) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		if err := lkr.stageNodeRecursive(batch, nd); err != nil {
-			return e.Wrapf(err, "recursive stage")
+			return true, e.Wrapf(err, "recursive stage")
 		}
 
 		// Update the staging commit's root hash:
 		status, err := lkr.Status()
 		if err != nil {
-			return fmt.Errorf("failed to retrieve status: %v", err)
+			return true, fmt.Errorf("failed to retrieve status: %v", err)
 		}
 
 		root, err := lkr.Root()
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		status.SetRoot(root.TreeHash())
 		lkr.MemSetRoot(root)
-		return lkr.saveStatus(status)
+		return hintRollback(lkr.saveStatus(status))
 	})
 }
 
@@ -475,9 +475,19 @@ func (lkr *Linker) SetMergeMarker(with string, remoteHead h.Hash) error {
 // The current staging commit is finalized with `author` and `message`
 // and gets saved. A new, identical staging commit is created pointing
 // to the root of the now new HEAD.
+//
+// If nothing changed since the last call to MakeCommit, it will
+// return ErrNoChange, which can be reacted upon.
 func (lkr *Linker) MakeCommit(author string, message string) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
-		return lkr.makeCommit(batch, author, message)
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
+		switch err := lkr.makeCommit(batch, author, message); err {
+		case ie.ErrNoChange:
+			return false, err
+		case nil:
+			return false, nil
+		default:
+			return true, nil
+		}
 	})
 }
 
@@ -604,9 +614,9 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 // MetadataPut remembers a value persisntenly identified by `key`.
 // It can be used as single-level key value store for user purposes.
 func (lkr *Linker) MetadataPut(key string, value []byte) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		batch.Put([]byte(value), "metadata", key)
-		return nil
+		return false, nil
 	})
 }
 
@@ -723,9 +733,9 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 // resolvable.
 func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 	refname = strings.ToLower(refname)
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		batch.Put([]byte(nd.TreeHash().B58String()), "refs", refname)
-		return nil
+		return false, nil
 	})
 }
 
@@ -749,9 +759,9 @@ func (lkr *Linker) ListRefs() ([]string, error) {
 }
 
 func (lkr *Linker) RemoveRef(refname string) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		batch.Erase("refs", refname)
-		return nil
+		return false, nil
 	})
 }
 
@@ -797,9 +807,9 @@ func (lkr *Linker) Status() (*n.Commit, error) {
 	var cmt *n.Commit
 	var err error
 
-	return cmt, lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return cmt, lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		cmt, err = lkr.status(batch)
-		return err
+		return hintRollback(err)
 	})
 }
 func (lkr *Linker) status(batch db.Batch) (cmt *n.Commit, err error) {
@@ -890,31 +900,31 @@ func (lkr *Linker) loadStatus() (*n.Commit, error) {
 
 // saveStatus copies cmt to stage/STATUS.
 func (lkr *Linker) saveStatus(cmt *n.Commit) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		head, err := lkr.Head()
 		if err != nil && !ie.IsErrNoSuchRef(err) {
-			return err
+			return hintRollback(err)
 		}
 
 		if head != nil {
 			if err := cmt.SetParent(lkr, head); err != nil {
-				return err
+				return hintRollback(err)
 			}
 		}
 
 		if err := cmt.BoxCommit(n.AuthorOfStage, ""); err != nil {
-			return err
+			return hintRollback(err)
 		}
 
 		data, err := n.MarshalNode(cmt)
 		if err != nil {
-			return err
+			return hintRollback(err)
 		}
 
 		inode := strconv.FormatUint(cmt.Inode(), 10)
 		batch.Put(data, "stage", "STATUS")
 		batch.Put([]byte(cmt.TreeHash().B58String()), "inode", inode)
-		return lkr.SaveRef("CURR", cmt)
+		return hintRollback(lkr.SaveRef("CURR", cmt))
 	})
 }
 
@@ -1165,7 +1175,7 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
 		return err
 	}
 
-	return lkr.Atomic(func() error {
+	return lkr.Atomic(func() (bool, error) {
 		// Set the current virtual in-memory cached root
 		lkr.MemSetRoot(root)
 		status.SetRoot(cmt.Root())
@@ -1173,7 +1183,7 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
 		// Invalidate the cache, causing NodeByHash and ResolveNode to load the
 		// file from the boltdb again:
 		lkr.MemIndexClear()
-		return lkr.saveStatus(status)
+		return hintRollback(lkr.saveStatus(status))
 	})
 }
 
@@ -1188,22 +1198,25 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 	dstInode := strconv.FormatUint(to.Inode(), 10)
 	dstToSrcKey := []string{"stage", "moves", dstInode}
 
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
 			line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
 			batch.Put(line, srcToDstKey...)
 			batch.Put(line, "stage", "moves", "overlay", srcInode)
+		} else if err != nil {
+			return hintRollback(err)
 		}
 
 		// Also remember the move in the other direction.
-		// This might come in handy for the
 		if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
 			line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
 			batch.Put(line, dstToSrcKey...)
 			batch.Put(line, "stage", "moves", "overlay", dstInode)
+		} else {
+			return hintRollback(err)
 		}
 
-		return nil
+		return false, nil
 	})
 }
 
@@ -1367,12 +1380,12 @@ func (lkr *Linker) commitMoveMappingKey(
 }
 
 func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		walker := func(key []string) error {
 			return lkr.commitMoveMappingKey(batch, status, exported, key)
 		}
 
-		return lkr.kv.Keys(walker, "stage", "moves")
+		return hintRollback(lkr.kv.Keys(walker, "stage", "moves"))
 	})
 }
 
@@ -1622,15 +1635,15 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 	return lkr.iterAll(prevCmt, to, visited, fn)
 }
 
-func (lkr *Linker) Atomic(fn func() error) (err error) {
-	return lkr.AtomicWithBatch(func(batch db.Batch) error {
+func (lkr *Linker) Atomic(fn func() (bool, error)) (err error) {
+	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		return fn()
 	})
 }
 
 // Atomic will execute `fn` in one transaction.
 // If anything goes wrong (i.e. `fn` returns an error)
-func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
+func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) (bool, error)) (err error) {
 	batch := lkr.kv.Batch()
 
 	// A panicking program should not leave the persistent linker state
@@ -1643,13 +1656,14 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 		}
 	}()
 
-	err = fn(batch)
-	if err != nil {
+	needRollback, err := fn(batch)
+	if needRollback {
 		hadWrites := batch.HaveWrites()
 		batch.Rollback()
 
 		// Only clear the whole index if something was written.
-		// Also, this prevents the slightly misleading log message below.
+		// Also, this prevents the slightly misleading log message below
+		// in case of read-only operations.
 		if hadWrites {
 			// clearing the mem index will cause it to be read freshly from disk
 			// with the old state. This costs a little performance but saves me
@@ -1667,10 +1681,18 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) error) (err error) {
 	if flushErr := batch.Flush(); flushErr != nil {
 		lkr.MemIndexClear()
 		log.Warningf("flush to db failed, resetting mem index: %v", flushErr)
-		return err
 	}
 
 	return err
+}
+
+// helper to return errros that should trigger a rollback in AtomicWithBatch()
+func hintRollback(err error) (bool, error) {
+	if err != nil {
+		return true, err
+	}
+
+	return false, nil
 }
 
 func (lkr *Linker) KV() db.Database {

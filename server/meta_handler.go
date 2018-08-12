@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
@@ -65,7 +66,7 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 
 	err = repo.Init(initFolder, owner, password, backendName)
 	if err != nil {
-		return err
+		return e.Wrapf(err, "repo-init")
 	}
 
 	rp, err := mh.base.Repo()
@@ -74,7 +75,8 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 	}
 
 	backendPath := rp.BackendPath(backendName)
-	return backend.InitByName(backendName, backendPath)
+	err = backend.InitByName(backendName, backendPath)
+	return e.Wrapf(err, "backend-init")
 }
 
 func (mh *metaHandler) Mount(call capnp.Meta_mount) error {

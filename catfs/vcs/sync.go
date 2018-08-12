@@ -290,15 +290,15 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 	}
 
 	// Make sure the complete sync goes through in one disk transaction.
-	return lkrDst.Atomic(func() error {
+	return lkrDst.Atomic(func() (bool, error) {
 		// This calls all the handleXXX() callbacks above.
 		if err := resolver.resolve(); err != nil {
-			return err
+			return true, err
 		}
 
 		wasModified, err := lkrDst.HaveStagedChanges()
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		// If something was changed, we should set the merge marker
@@ -306,24 +306,26 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 		if wasModified {
 			srcOwner, err := lkrSrc.Owner()
 			if err != nil {
-				return err
+				return true, err
 			}
 
 			srcHead, err := lkrSrc.Head()
 			if err != nil {
-				return err
+				return true, err
 			}
 
 			// If something was changed, remember that we merged with src.
 			// This avoids merging conflicting files a second time in the next resolve().
 			if err := lkrDst.SetMergeMarker(srcOwner, srcHead.TreeHash()); err != nil {
-				return err
+				return true, err
 			}
 
 			message := fmt.Sprintf("merge with %s", srcOwner)
-			return lkrDst.MakeCommit(srcOwner, message)
+			if err := lkrDst.MakeCommit(srcOwner, message); err != nil {
+				return true, err
+			}
 		}
 
-		return nil
+		return false, nil
 	})
 }

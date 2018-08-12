@@ -85,7 +85,7 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 func (gc *GarbageCollector) sweep(key []string) (int, error) {
 	removed := 0
 
-	return removed, gc.lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return removed, gc.lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		sweeper := func(key []string) error {
 			b58Hash := key[len(key)-1]
 			if _, ok := gc.markMap[b58Hash]; !ok {
@@ -114,7 +114,7 @@ func (gc *GarbageCollector) sweep(key []string) (int, error) {
 			return nil
 		}
 
-		return gc.kv.Keys(sweeper, key...)
+		return hintRollback(gc.kv.Keys(sweeper, key...))
 	})
 }
 

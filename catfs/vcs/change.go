@@ -111,7 +111,7 @@ func (ch *Change) String() string {
 // move, remove, modify, add. Commits are not replayed, everything happens in
 // lkr.Status() without creating a new commit.
 func (ch *Change) Replay(lkr *c.Linker) error {
-	return lkr.Atomic(func() error {
+	return lkr.Atomic(func() (bool, error) {
 		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
 			currNd := ch.Curr
 
@@ -121,7 +121,7 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			if ch.Curr.Type() == n.NodeTypeGhost {
 				currGhost, ok := ch.Curr.(*n.Ghost)
 				if !ok {
-					return ie.ErrBadNode
+					return true, ie.ErrBadNode
 				}
 
 				currNd = currGhost.OldNode()
@@ -130,14 +130,14 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			// Check the type of the old node:
 			oldNd, err := lkr.LookupModNode(currNd.Path())
 			if err != nil && !ie.IsNoSuchFileError(err) {
-				return err
+				return true, err
 			}
 
 			// If the types are conflicting we have to remove the existing node.
 			if oldNd != nil && oldNd.Type() != currNd.Type() {
 				_, _, err := c.Remove(lkr, oldNd, false, true)
 				if err != nil {
-					return e.Wrapf(err, "replay: type-conflict-remove")
+					return true, e.Wrapf(err, "replay: type-conflict-remove")
 				}
 			}
 
@@ -146,18 +146,18 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			switch currNd.(type) {
 			case *n.File:
 				if _, err := c.Mkdir(lkr, path.Dir(currNd.Path()), true); err != nil {
-					return e.Wrapf(err, "replay: mkdir")
+					return true, e.Wrapf(err, "replay: mkdir")
 				}
 
 				if _, err := c.StageFromFileNode(lkr, currNd.(*n.File)); err != nil {
-					return e.Wrapf(err, "replay: stage")
+					return true, e.Wrapf(err, "replay: stage")
 				}
 			case *n.Directory:
 				if _, err := c.Mkdir(lkr, currNd.Path(), true); err != nil {
-					return e.Wrapf(err, "replay: mkdir")
+					return true, e.Wrapf(err, "replay: mkdir")
 				}
 			default:
-				return e.Wrapf(ie.ErrBadNode, "replay: modify")
+				return true, e.Wrapf(ie.ErrBadNode, "replay: modify")
 			}
 		}
 
@@ -165,12 +165,12 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			if ch.WasPreviouslyAt != "" {
 				oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
 				if err != nil && !ie.IsNoSuchFileError(err) {
-					return err
+					return true, err
 				}
 
 				if oldNd.Type() != n.NodeTypeGhost {
 					if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
-						return e.Wrap(err, "replay: move: remove old")
+						return true, e.Wrap(err, "replay: move: remove old")
 					}
 				}
 			}
@@ -178,16 +178,16 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 			if ch.MovedTo != "" {
 				oldNd, err := lkr.LookupModNode(ch.Curr.Path())
 				if err != nil && !ie.IsNoSuchFileError(err) {
-					return err
+					return true, err
 				}
 
 				if _, err := c.Mkdir(lkr, path.Dir(ch.MovedTo), true); err != nil {
-					return e.Wrapf(err, "replay: mkdir")
+					return true, e.Wrapf(err, "replay: mkdir")
 				}
 
 				if oldNd != nil {
 					if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
-						return e.Wrapf(err, "replay: move")
+						return true, e.Wrapf(err, "replay: move")
 					}
 				}
 			}
@@ -198,17 +198,17 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 		if ch.Mask&ChangeTypeRemove != 0 && ch.Curr.Type() == n.NodeTypeGhost {
 			currNd, err := lkr.LookupModNode(ch.Curr.Path())
 			if err != nil {
-				return e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
+				return true, e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
 			}
 
 			if currNd.Type() != n.NodeTypeGhost {
 				if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
-					return err
+					return true, err
 				}
 			}
 		}
 
-		return nil
+		return false, nil
 	})
 }
 

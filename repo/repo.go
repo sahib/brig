@@ -145,7 +145,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	// so it needs to be locked only once on init and
 	// kept out otherwise from the locking machinery.
 	if err := lockFile(passwdFile, keyFromPassword(owner, password)); err != nil {
-		return err
+		return e.Wrapf(err, "passwd-lock")
 	}
 
 	logDir := filepath.Join(baseFolder, "logs")
@@ -153,12 +153,15 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return err
 	}
 
-	return LockRepo(
-		baseFolder,
-		owner,
-		password,
-		excludedFromLock,
-		excludedFromUnlock,
+	return e.Wrapf(
+		LockRepo(
+			baseFolder,
+			owner,
+			password,
+			excludedFromLock,
+			excludedFromUnlock,
+		),
+		"repo-lock",
 	)
 }
 

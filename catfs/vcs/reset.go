@@ -122,11 +122,11 @@ func ResetNode(lkr *c.Linker, cmt *n.Commit, currPath string) (n.Node, error) {
 	}
 
 	// Make sure that all write related action happen in one go:
-	return oldNode, lkr.Atomic(func() error {
+	return oldNode, lkr.Atomic(func() (bool, error) {
 		// Remove the node that is present at the current path:
 		par, err := clearPath(lkr, currPath)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		// old Node might not have yet existed back then.
@@ -134,7 +134,7 @@ func ResetNode(lkr *c.Linker, cmt *n.Commit, currPath string) (n.Node, error) {
 		if oldNode != nil {
 			oldModNode, ok := oldNode.(n.ModNode)
 			if !ok {
-				return e.Wrapf(ie.ErrBadNode, "reset file")
+				return true, e.Wrapf(ie.ErrBadNode, "reset file")
 			}
 
 			// If the old node was at a different location,
@@ -144,14 +144,14 @@ func ResetNode(lkr *c.Linker, cmt *n.Commit, currPath string) (n.Node, error) {
 			oldModNode.NotifyMove(lkr, oldModNode.Path())
 
 			if err := par.Add(lkr, oldNode); err != nil {
-				return err
+				return true, err
 			}
 
 			if err := lkr.StageNode(oldNode); err != nil {
-				return err
+				return true, err
 			}
 		}
 
-		return nil
+		return false, nil
 	})
 }

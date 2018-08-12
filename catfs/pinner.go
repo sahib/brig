@@ -125,10 +125,10 @@ func getEntry(kv db.Database, hash h.Hash) (*pinCacheEntry, error) {
 // This does change anything in the backend but only changes the caching structure.
 // Use with care to avoid data inconsistencies.
 func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool) error {
-	return pc.lkr.AtomicWithBatch(func(batch db.Batch) error {
+	return pc.lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		oldEntry, err := getEntry(pc.lkr.KV(), hash)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		var inodes map[uint64]bool
@@ -150,11 +150,11 @@ func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool)
 
 		data, err := pinEnryToCapnpData(&entry)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		batch.Put(data, "pins", hash.B58String())
-		return nil
+		return false, nil
 	})
 }
 

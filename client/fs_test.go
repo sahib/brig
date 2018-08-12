@@ -36,6 +36,9 @@ func withDaemon(t *testing.T, name string, port, backendPort int, basePath strin
 	require.Nil(t, os.MkdirAll(fullPath, 0700))
 
 	srv, err := server.BootServer(fullPath, "password", "", "localhost", port)
+	fmt.Println("BOOT UP ERR", err)
+
+	// TODO: Subsequent: listen tcp 127.0.0.1:6668: bind: address already in use
 	require.Nil(t, err)
 
 	waitForDeath := make(chan bool)
@@ -49,17 +52,22 @@ func withDaemon(t *testing.T, name string, port, backendPort int, basePath strin
 	ctl, err := Dial(context.Background(), port)
 	require.Nil(t, err)
 
+	defer func() {
+		// Send the death signal:
+		require.Nil(t, ctl.Quit())
+
+		// wait until serve was done.
+		<-waitForDeath
+	}()
+
 	err = ctl.Init(fullPath, name, "password", "mock")
+	// erver/capnp/local_api.capnp:Meta.init: rpc exception: archive/tar: write too long
+	fmt.Println("INIT ERR", err)
+
 	require.Nil(t, err)
 
 	// Run the actual test function:
 	fn(ctl)
-
-	// Send
-	require.Nil(t, ctl.Quit())
-
-	// wait until serve was done.
-	<-waitForDeath
 }
 
 func TestStageAndCat(t *testing.T) {

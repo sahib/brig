@@ -493,24 +493,24 @@ func TestIterAll(t *testing.T) {
 
 func TestAtomic(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
-		err := lkr.Atomic(func() error {
+		err := lkr.Atomic(func() (bool, error) {
 			MustTouch(t, lkr, "/x", 1)
 			return nil
 		})
 
 		require.Nil(t, err)
 
-		err = lkr.Atomic(func() error {
+		err = lkr.Atomic(func() (bool, error) {
 			MustTouch(t, lkr, "/y", 1)
-			return errors.New("artificial error")
+			return true, errors.New("artificial error")
 		})
 
 		require.NotNil(t, err)
 
-		err = lkr.Atomic(func() error {
+		err = lkr.Atomic(func() (bool, error) {
 			MustTouch(t, lkr, "/z", 1)
 			panic("woah")
-			return nil
+			return false, nil
 		})
 
 		require.NotNil(t, err)
