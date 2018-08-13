@@ -307,7 +307,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			userColumn = "USER\t"
 		}
 
-		fmt.Fprintf(tabW, "SIZE\tMODTIME\t%sPATH\tPIN\t\n", userColumn)
+		fmt.Fprintf(tabW, "SIZE\tMODTIME\t%sPIN\tPATH\t\n", userColumn)
 	}
 
 	for _, entry := range entries {
@@ -339,8 +339,8 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			entry.ModTime.Format(time.Stamp),
 			userEntry,
-			coloredPath,
 			pinState,
+			coloredPath,
 		)
 	}
 
