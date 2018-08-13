@@ -24,7 +24,7 @@ func OpenMigratedConfig(path string) (*config.Config, error) {
 
 	defer fd.Close()
 
-	// Add there any migrations with mgr.Add if needed.
+	// Add here any migrations with mgr.Add if needed.
 	mgr := config.NewMigrater(CurrentVersion)
 	mgr.Add(0, nil, DefaultsV0)
 

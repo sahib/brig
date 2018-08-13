@@ -787,6 +787,12 @@ CAVEATS
    Editing large files will currenly eat huge amounts of memory.
    We advise you to use normal commands like »brig cat« and »brig stage«
    until this is fixed.`,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "no-mkdir",
+				Usage: "Do not create the mount directory if it does not exist",
+			},
+		},
 	},
 	"unmount": {
 		Usage:     "Unmount a previously mounted directory",

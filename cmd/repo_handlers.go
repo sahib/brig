@@ -355,10 +355,15 @@ func handleMount(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	if _, err := os.Stat(absMountPath); err == os.ErrNotExist {
-		fmt.Printf("Mount directory does not exist. Will create it.")
-		if err := os.MkdirAll(absMountPath, 0700); err != nil {
-			return e.Wrapf(err, "failed to mkdir mount point")
+	if !ctx.Bool("no-mkdir") {
+		if _, err := os.Stat(absMountPath); os.IsNotExist(err) {
+			fmt.Printf(
+				"Mount directory »%s« does not exist. Will create it.\n",
+				absMountPath,
+			)
+			if err := os.MkdirAll(absMountPath, 0700); err != nil {
+				return e.Wrapf(err, "failed to mkdir mount point")
+			}
 		}
 	}
 
