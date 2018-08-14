@@ -1,7 +1,12 @@
 package config
 
-import "fmt"
-import "time"
+import (
+	"fmt"
+	"reflect"
+	"time"
+
+	e "github.com/pkg/errors"
+)
 
 // EnumValidator checks if the supplied string value is in the `options` list.
 func EnumValidator(options ...string) func(val interface{}) error {
@@ -74,5 +79,28 @@ func DurationValidator() func(val interface{}) error {
 
 		_, err := time.ParseDuration(s)
 		return err
+	}
+}
+
+// ListValidator takes any other validator and applies it to a list value.
+// If `fn` is nil it only checks if the value is indeed a list.
+func ListValidator(fn func(val interface{}) error) func(val interface{}) error {
+	return func(val interface{}) error {
+		typ := reflect.TypeOf(val)
+		if typ.Kind() != reflect.Slice {
+			return fmt.Errorf("%v (%T) is not a list", val, val)
+		}
+
+		if fn != nil {
+			rval := reflect.ValueOf(val)
+			for idx := 0; idx < rval.Len(); idx++ {
+				if err := fn(rval.Index(idx).Interface()); err != nil {
+					return e.Wrapf(err, "elem at index %d", idx)
+				}
+
+			}
+		}
+
+		return nil
 	}
 }

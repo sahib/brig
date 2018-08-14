@@ -89,6 +89,13 @@ package structure of your program. That way you can pass sub-section config to
 those packages and you can be sure that they can only change the keys they are
 responsible for.
 
+**Support for placeholder sections:** By using the special section name ``__many__``
+you can have several sections that all follow the same layout, but are allowed to be
+named differently.
+
+**Native support for slices:** All native types (``string``, ``int``, ``float`` and ``bool``)
+can be packed into lists and easily set and accessed with special API for them.
+
 **Merging:** Several configs from several sources can be merged. This might be
 useful e.g. when there are certain global defaults, that are overwritten with local
 defaults which are again merged with user defined settings.
