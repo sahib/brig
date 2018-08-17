@@ -5,15 +5,26 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path"
 	"sync"
 	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/util"
 )
+
+// MountOptions defines all possible knobs you can turn for a mount.
+// The zero value are the default options.
+type MountOptions struct {
+	// ReadOnly makes the mount not modifyable
+	ReadOnly bool
+	// Root determines what the root directory is.
+	Root string
+}
 
 // This is very similar (and indeed mostly copied) code from:
 // https://github.com/bazil/fuse/blob/master/fs/fstestutil/mounted.go
@@ -31,22 +42,40 @@ type Mount struct {
 	errors  chan error
 	conn    *fuse.Conn
 	server  *fs.Server
+	options MountOptions
 }
 
 // NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
-func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
-	conn, err := fuse.Mount(
-		mountpoint,
+func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, error) {
+	mountOptions := []fuse.MountOption{
 		fuse.FSName("brigfs"),
 		fuse.Subtype("brig"),
 		fuse.AllowNonEmptyMount(),
-	)
+	}
 
+	if opts.ReadOnly {
+		mountOptions = append(mountOptions, fuse.ReadOnly())
+	}
+
+	conn, err := fuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return nil, err
 	}
 
-	filesys := &Filesystem{cfs: cfs}
+	if opts.Root == "" {
+		opts.Root = "/"
+	}
+
+	info, err := cfs.Stat(opts.Root)
+	if err != nil {
+		return nil, e.Wrapf(err, "failed to lookup root node of mount: %v")
+	}
+
+	if !info.IsDir {
+		return nil, e.Wrapf(err, "%s is not a directory", opts.Root)
+	}
+
+	filesys := &Filesystem{cfs: cfs, root: opts.Root}
 	mnt := &Mount{
 		conn:    conn,
 		server:  fs.New(conn, nil),
@@ -54,6 +83,7 @@ func NewMount(cfs *catfs.FS, mountpoint string) (*Mount, error) {
 		Dir:     mountpoint,
 		done:    make(chan util.Empty),
 		errors:  make(chan error),
+		options: opts,
 	}
 
 	go func() {
@@ -92,6 +122,14 @@ func lazyUnmount(dir string) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Mount) EqualOptions(opts MountOptions) bool {
+	if m.options.ReadOnly != opts.ReadOnly {
+		return false
+	}
+
+	return path.Clean(m.options.Root) == path.Clean(opts.Root)
 }
 
 // Close will wait until all I/O operations are done and unmount the fuse
@@ -178,20 +216,20 @@ func NewMountTable(fs *catfs.FS) *MountTable {
 }
 
 // AddMount calls NewMount and adds it to the table at `path`.
-func (t *MountTable) AddMount(path string) (*Mount, error) {
+func (t *MountTable) AddMount(path string, opts MountOptions) (*Mount, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	return t.addMount(path)
+	return t.addMount(path, opts)
 }
 
-func (t *MountTable) addMount(path string) (*Mount, error) {
+func (t *MountTable) addMount(path string, opts MountOptions) (*Mount, error) {
 	m, ok := t.m[path]
 	if ok {
 		return m, nil
 	}
 
-	m, err := NewMount(t.fs, path)
+	m, err := NewMount(t.fs, path, opts)
 	if err == nil {
 		t.m[path] = m
 	}

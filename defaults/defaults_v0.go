@@ -84,6 +84,11 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: true,
 				Docs:         "Wether this mount should be done read-only",
 			},
+			"root": config.DefaultEntry{
+				Default:      "/",
+				NeedsRestart: true,
+				Docs:         "The root of the mount",
+			},
 		},
 	},
 	"data": config.DefaultMapping{

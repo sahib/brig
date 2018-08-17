@@ -369,7 +369,12 @@ func handleMount(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	if err := ctl.Mount(absMountPath); err != nil {
+	options := client.MountOptions{
+		ReadOnly: ctx.Bool("readonly"),
+		RootPath: ctx.String("root"),
+	}
+
+	if err := ctl.Mount(absMountPath, options); err != nil {
 		return ExitCode{
 			UnknownError,
 			fmt.Sprintf("Failed to mount: %v", err),
@@ -452,9 +457,13 @@ func handleGc(ctx *cli.Context, ctl *client.Client) error {
 func handleFstabAdd(ctx *cli.Context, ctl *client.Client) error {
 	mountName := ctx.Args().Get(0)
 	mountPath := ctx.Args().Get(1)
-	readOnly := ctx.Bool("readonly")
 
-	return ctl.FstabAdd(mountName, mountPath, readOnly)
+	options := client.MountOptions{
+		ReadOnly: ctx.Bool("readonly"),
+		RootPath: ctx.String("root"),
+	}
+
+	return ctl.FstabAdd(mountName, mountPath, options)
 }
 
 func handleFstabRemove(ctx *cli.Context, ctl *client.Client) error {
@@ -470,6 +479,7 @@ type fstabEntry struct {
 	name     string
 	path     string
 	readOnly string
+	root     string
 }
 
 func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
@@ -498,6 +508,10 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 		if split[2] == "read_only" {
 			mounts[mountName].readOnly = entry.Val
 		}
+
+		if split[2] == "root" {
+			mounts[mountName].root = entry.Val
+		}
 	}
 
 	sortedMounts := []fstabEntry{}
@@ -515,15 +529,16 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\t")
+	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\t")
 
 	for _, entry := range sortedMounts {
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t\n",
+			"%s\t%s\t%s\t%s\n",
 			entry.name,
 			entry.path,
 			entry.readOnly,
+			entry.root,
 		)
 	}
 

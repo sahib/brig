@@ -88,6 +88,7 @@ struct MountOptions {
     # For now empty, but there are some mount options
     # in planning.
     readOnly @0 :Bool;
+    rootPath @1 :Text;
 }
 
 struct PeerStatus $Go.doc("net status of a peer") {

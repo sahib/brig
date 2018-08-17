@@ -7,11 +7,13 @@ import (
 
 // Filesystem is the entry point to the fuse filesystem
 type Filesystem struct {
-	cfs *catfs.FS
+	root string
+	cfs  *catfs.FS
 }
 
 // Root returns the topmost directory node.
-// It will have the path "/".
+// This depends on what the user choose to select,
+// but usually it's "/".
 func (fs *Filesystem) Root() (fs.Node, error) {
-	return &Directory{path: "/", cfs: fs.cfs}, nil
+	return &Directory{path: fs.root, cfs: fs.cfs}, nil
 }

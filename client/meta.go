@@ -54,8 +54,36 @@ func (cl *Client) Init(path, owner, password, backend string) error {
 	return err
 }
 
-func (cl *Client) Mount(mountPath string) error {
+type MountOptions struct {
+	ReadOnly bool
+	RootPath string
+}
+
+func mountOptionsToCapnp(opts MountOptions, seg *capnplib.Segment) (*capnp.MountOptions, error) {
+	capOpts, err := capnp.NewMountOptions(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	capOpts.SetReadOnly(opts.ReadOnly)
+	if err := capOpts.SetRootPath(opts.RootPath); err != nil {
+		return nil, err
+	}
+
+	return &capOpts, nil
+}
+
+func (cl *Client) Mount(mountPath string, opts MountOptions) error {
 	call := cl.api.Mount(cl.ctx, func(p capnp.Meta_mount_Params) error {
+		capOpts, err := mountOptionsToCapnp(opts, p.Segment())
+		if err != nil {
+			return err
+		}
+
+		if err := p.SetOptions(*capOpts); err != nil {
+			return err
+		}
+
 		return p.SetMountPath(mountPath)
 	})
 
@@ -662,7 +690,7 @@ func (cl *Client) Version() (*VersionInfo, error) {
 	return version, nil
 }
 
-func (ctl *Client) FstabAdd(mountName, mountPath string, readOnly bool) error {
+func (ctl *Client) FstabAdd(mountName, mountPath string, opts MountOptions) error {
 	call := ctl.api.FstabAdd(ctl.ctx, func(p capnp.Meta_fstabAdd_Params) error {
 		if err := p.SetMountName(mountName); err != nil {
 			return err
@@ -672,12 +700,12 @@ func (ctl *Client) FstabAdd(mountName, mountPath string, readOnly bool) error {
 			return err
 		}
 
-		options, err := capnp.NewMountOptions(p.Segment())
+		capOpts, err := mountOptionsToCapnp(opts, p.Segment())
 		if err != nil {
 			return err
 		}
 
-		return p.SetOptions(options)
+		return p.SetOptions(*capOpts)
 	})
 
 	_, err := call.Struct()

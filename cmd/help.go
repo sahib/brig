@@ -781,6 +781,10 @@ if the service needs a restart when setting the value.
 				Name:  "r,readonly",
 				Usage: "Create the filesystem as readonly",
 			},
+			cli.StringFlag{
+				Name:  "x,root",
+				Usage: "Create the filesystem as readonly",
+			},
 		},
 	},
 	"fstab.remove": {
@@ -814,6 +818,14 @@ CAVEATS
 			cli.BoolFlag{
 				Name:  "no-mkdir",
 				Usage: "Do not create the mount directory if it does not exist",
+			},
+			cli.BoolFlag{
+				Name:  "r,readonly",
+				Usage: "Create the filesystem as readonly",
+			},
+			cli.StringFlag{
+				Name:  "x,root",
+				Usage: "Create the filesystem as readonly",
 			},
 		},
 	},

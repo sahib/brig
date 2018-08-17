@@ -88,12 +88,22 @@ func (mh *metaHandler) Mount(call capnp.Meta_mount) error {
 		return err
 	}
 
+	capOpts, err := call.Params.Options()
+	if err != nil {
+		return err
+	}
+
+	mountOptions, err := capMountOptionsToMountOptions(capOpts)
+	if err != nil {
+		return err
+	}
+
 	mounts, err := mh.base.Mounts()
 	if err != nil {
 		return err
 	}
 
-	_, err = mounts.AddMount(mountPath)
+	_, err = mounts.AddMount(mountPath, mountOptions)
 	return err
 }
 
@@ -111,6 +121,19 @@ func (mh *metaHandler) Unmount(call capnp.Meta_unmount) error {
 	}
 
 	return mounts.Unmount(mountPath)
+}
+
+func capMountOptionsToMountOptions(capOpts capnp.MountOptions) (fuse.MountOptions, error) {
+	readOnly := capOpts.ReadOnly()
+	rootPath, err := capOpts.RootPath()
+	if err != nil {
+		return fuse.MountOptions{}, err
+	}
+
+	return fuse.MountOptions{
+		ReadOnly: readOnly,
+		Root:     rootPath,
+	}, nil
 }
 
 func (mh *metaHandler) FstabAdd(call capnp.Meta_fstabAdd) error {
@@ -136,8 +159,12 @@ func (mh *metaHandler) FstabAdd(call capnp.Meta_fstabAdd) error {
 		return err
 	}
 
-	readOnly := options.ReadOnly()
-	return fuse.FsTabAdd(rp.Config.Section("mounts"), mountName, mountPath, readOnly)
+	mountOptions, err := capMountOptionsToMountOptions(options)
+	if err != nil {
+		return err
+	}
+
+	return fuse.FsTabAdd(rp.Config.Section("mounts"), mountName, mountPath, mountOptions)
 }
 
 func (mh *metaHandler) FstabRemove(call capnp.Meta_fstabRemove) error {
