@@ -35,6 +35,7 @@ type migrationEntry struct {
 type Migrater struct {
 	currentVersion Version
 	migrations     []migrationEntry
+	strictness     Strictness
 }
 
 // Add a new migration entry.
@@ -105,7 +106,8 @@ func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
 		return nil, fmt.Errorf("There are no defaults for `%d`", currVersion)
 	}
 
-	cfg, err := open(currVersion, memory, currMig.defaults)
+	// TODO
+	cfg, err := open(currVersion, memory, currMig.defaults, mm.strictness)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +120,7 @@ func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
 		}
 
 		// Create an empty default config:
-		newCfg, err := Open(nil, migration.defaults)
+		newCfg, err := Open(nil, migration.defaults, mm.strictness)
 		if err != nil {
 			return nil, e.Wrapf(err, "failed creating default config for v%d", migration.version)
 		}
@@ -146,9 +148,10 @@ func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
 //
 // Call Migrate() on the migrater will read the current version and
 // try to migrate to the most recent one.
-func NewMigrater(currentVersion Version) *Migrater {
+func NewMigrater(currentVersion Version, strictness Strictness) *Migrater {
 	return &Migrater{
 		currentVersion: currentVersion,
+		strictness:     strictness,
 	}
 }
 

@@ -182,6 +182,10 @@ func (t *MountTable) AddMount(path string) (*Mount, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	return t.addMount(path)
+}
+
+func (t *MountTable) addMount(path string) (*Mount, error) {
 	m, ok := t.m[path]
 	if ok {
 		return m, nil
@@ -200,6 +204,10 @@ func (t *MountTable) Unmount(path string) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	return t.unmount(path)
+}
+
+func (t *MountTable) unmount(path string) error {
 	m, ok := t.m[path]
 	if !ok {
 		return fmt.Errorf("No mount at `%v`.", path)

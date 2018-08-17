@@ -12,11 +12,11 @@ import (
 )
 
 func openFromData(data []byte, defaults DefaultMapping) (*Config, error) {
-	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults)
+	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults, StrictnessPanic)
 }
 
 func openFromString(data string, defaults DefaultMapping) (*Config, error) {
-	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults)
+	return Open(NewYamlDecoder(bytes.NewReader([]byte(data))), defaults, StrictnessPanic)
 }
 
 var TestDefaults = DefaultMapping{
@@ -78,7 +78,8 @@ var TestDefaults = DefaultMapping{
 }
 
 func getTypeOfDefaultKey(key string, defaults DefaultMapping) string {
-	defaultEntry := getDefaultByKey(key, defaults)
+	sness := StrictnessPanic
+	defaultEntry := getDefaultByKey(key, defaults, sness)
 	if defaultEntry == nil {
 		return ""
 	}
@@ -87,10 +88,11 @@ func getTypeOfDefaultKey(key string, defaults DefaultMapping) string {
 }
 
 func TestGetDefaults(t *testing.T) {
-	require.Equal(t, getDefaultByKey("daemon.port", TestDefaults).Default, 6666)
-	require.Nil(t, getDefaultByKey("daemon.port.sub", TestDefaults))
-	require.Nil(t, getDefaultByKey("daemon.xxx", TestDefaults))
-	require.Nil(t, getDefaultByKey("daemon", TestDefaults))
+	sness := StrictnessPanic
+	require.Equal(t, getDefaultByKey("daemon.port", TestDefaults, sness).Default, 6666)
+	require.Nil(t, getDefaultByKey("daemon.port.sub", TestDefaults, sness))
+	require.Nil(t, getDefaultByKey("daemon.xxx", TestDefaults, sness))
+	require.Nil(t, getDefaultByKey("daemon", TestDefaults, sness))
 }
 
 func TestDefaultsType(t *testing.T) {
@@ -199,7 +201,7 @@ func TestOpenSave(t *testing.T) {
 	buf := &bytes.Buffer{}
 	require.Nil(t, cfg.Save(NewYamlEncoder(buf)))
 
-	newCfg, err := Open(NewYamlDecoder(buf), TestDefaults)
+	newCfg, err := Open(NewYamlDecoder(buf), TestDefaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, int64(6666), newCfg.Int("daemon.port"))
@@ -246,10 +248,10 @@ func TestSection(t *testing.T) {
 
 	childKeys := fsSec.Keys()
 	require.Equal(t, []string{
-		"fs.compress.default_algo",
-		"fs.sync.conflict_strategy",
-		"fs.sync.ignore_moved",
-		"fs.sync.ignore_removed",
+		"compress.default_algo",
+		"sync.conflict_strategy",
+		"sync.ignore_moved",
+		"sync.ignore_removed",
 	}, childKeys)
 }
 
@@ -305,7 +307,7 @@ func TestCast(t *testing.T) {
 		},
 	}
 
-	cfg, err := Open(nil, defaults)
+	cfg, err := Open(nil, defaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	// Same string cast:
@@ -344,7 +346,7 @@ func configMustEquals(t *testing.T, aCfg, bCfg *Config) {
 }
 
 func TestToFileFromYamlFile(t *testing.T) {
-	cfg, err := Open(nil, TestDefaults)
+	cfg, err := Open(nil, TestDefaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	path := "/tmp/brig-test-config.yml"
@@ -352,21 +354,21 @@ func TestToFileFromYamlFile(t *testing.T) {
 
 	defer os.Remove(path)
 
-	loadCfg, err := FromYamlFile(path, TestDefaults)
+	loadCfg, err := FromYamlFile(path, TestDefaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	configMustEquals(t, cfg, loadCfg)
 }
 
 func TestSetIncompatibleType(t *testing.T) {
-	cfg, err := Open(nil, TestDefaults)
+	cfg, err := Open(nil, TestDefaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.NotNil(t, cfg.SetString("daemon.port", "xxx"))
 }
 
 func TestVersionPersisting(t *testing.T) {
-	cfg, err := Open(nil, TestDefaults)
+	cfg, err := Open(nil, TestDefaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, Version(0), cfg.Version())
@@ -394,7 +396,7 @@ func TestOpenMalformed(t *testing.T) {
 }
 
 func TestReload(t *testing.T) {
-	cfg, err := Open(nil, TestDefaultsV0)
+	cfg, err := Open(nil, TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 
 	text := `# version: 666
@@ -411,7 +413,7 @@ a:
 }
 
 func TestReloadSignal(t *testing.T) {
-	cfg, err := Open(nil, TestDefaultsV0)
+	cfg, err := Open(nil, TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 
 	text := `# version: 666
@@ -448,10 +450,10 @@ a:
   child:
     c: "world"
 `
-	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0)
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 
-	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV0)
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, int64(70), baseCfg.Get("a.b"))
@@ -484,10 +486,10 @@ a:
     c: "x"
 `
 
-	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0)
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 
-	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV1)
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), TestDefaultsV1, StrictnessPanic)
 	require.Nil(t, err)
 
 	err = baseCfg.Merge(overCfg)
@@ -507,7 +509,7 @@ duration: 5m20s
 		},
 	}
 
-	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, 5*time.Minute+20*time.Second, cfg.Duration("duration"))
@@ -551,7 +553,7 @@ mounts:
         path: c
 `
 
-	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, "a", cfg.Get("mounts.default.path"))
@@ -575,7 +577,7 @@ func TestManyMarkerEntries(t *testing.T) {
 intervals: 7s
 `
 
-	_, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	_, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.NotNil(t, err)
 }
 
@@ -602,7 +604,7 @@ floats: [1.9]
 bools: [false, true]
 `
 
-	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, []string{"a", "b", "c", "d"}, cfg.Get("strings"))
@@ -628,7 +630,7 @@ func TestListTypesDefaults(t *testing.T) {
 	}
 
 	baseYml := `# version: 666`
-	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.Nil(t, err)
 
 	require.Equal(t, []string{"a", "b", "c"}, cfg.Get("strings"))
@@ -666,7 +668,7 @@ func TestListTypesBadInput(t *testing.T) {
 
 	for _, tc := range tcs {
 		baseYml := fmt.Sprintf("# version: 666\n%s", tc)
-		_, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+		_, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 		require.NotNil(t, err)
 	}
 }
@@ -680,7 +682,7 @@ func TestDurationList(t *testing.T) {
 	}
 
 	baseYml := `# version: 666`
-	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults)
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
 	require.Nil(t, err)
 	require.Equal(
 		t,
@@ -697,4 +699,164 @@ func TestDurationList(t *testing.T) {
 		[]time.Duration{2 * time.Second, 4 * time.Second, 6 * time.Second},
 		cfg.Durations("durations"),
 	)
+}
+
+func TestGetSetMany(t *testing.T) {
+	defaults := DefaultMapping{
+		"__many__": DefaultMapping{
+			"__many__": DefaultMapping{
+				"c": DefaultEntry{
+					Default: "x",
+				},
+			},
+		},
+	}
+
+	baseYml := `# version: 666
+something:
+  else:
+    c: "y"
+`
+
+	cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
+	require.Nil(t, err)
+
+	require.Equal(t, "y", cfg.Get("something.else.c"))
+	require.Nil(t, cfg.Set("something.else.c", "z"))
+	require.Equal(t, "z", cfg.Get("something.else.c"))
+}
+
+func TestReset(t *testing.T) {
+	defaults := DefaultMapping{
+		"a": DefaultMapping{
+			"b": DefaultMapping{
+				"c": DefaultEntry{
+					Default: "x",
+				},
+			},
+			"__many__": DefaultMapping{
+				"val": DefaultEntry{
+					Default: 1,
+				},
+			},
+		},
+	}
+
+	baseYml := `# version: 666
+a:
+  b:
+    c: "y"
+`
+
+	t.Run("single-key", func(t *testing.T) {
+		cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
+		require.Nil(t, err)
+
+		require.Equal(t, "y", cfg.String("a.b.c"))
+		require.Nil(t, cfg.Reset("a.b.c"))
+		require.Equal(t, "x", cfg.String("a.b.c"))
+	})
+
+	t.Run("__many__", func(t *testing.T) {
+		cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
+		require.Nil(t, err)
+
+		require.Equal(t, 1, cfg.Get("a.many.val"))
+		require.Nil(t, cfg.Set("a.many.val", 5))
+		require.Equal(t, 5, cfg.Get("a.many.val"))
+
+		buf := &bytes.Buffer{}
+		cfg.Save(NewYamlEncoder(buf))
+		require.Contains(t, buf.String(), "many")
+		buf.Reset()
+
+		require.Nil(t, cfg.Reset("a.many"))
+		require.Equal(t, 1, cfg.Get("a.many.val"))
+
+		cfg.Save(NewYamlEncoder(buf))
+		require.NotContains(t, "many", buf.String())
+	})
+
+	t.Run("all", func(t *testing.T) {
+		cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
+		require.Nil(t, err)
+
+		require.Equal(t, "y", cfg.String("a.b.c"))
+		require.Nil(t, cfg.Reset(""))
+		require.Equal(t, "x", cfg.String("a.b.c"))
+	})
+
+	t.Run("section", func(t *testing.T) {
+		cfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), defaults, StrictnessPanic)
+		require.Nil(t, err)
+
+		require.Equal(t, "y", cfg.String("a.b.c"))
+		require.Nil(t, cfg.Reset("a.b"))
+		require.Equal(t, "x", cfg.String("a.b.c"))
+	})
+}
+
+func TestStrictness(t *testing.T) {
+	defaults := DefaultMapping{
+		"a": DefaultMapping{
+			"b": DefaultMapping{
+				"c": DefaultEntry{
+					Default: "x",
+				},
+			},
+		},
+	}
+
+	t.Run("panic", func(t *testing.T) {
+		cfg, err := Open(nil, defaults, StrictnessPanic)
+		require.Nil(t, err)
+
+		require.Panics(t, func() {
+			// bad key
+			cfg.Get("d")
+		})
+		require.Panics(t, func() {
+			// section
+			cfg.Get("a")
+		})
+		require.Panics(t, func() {
+			// wrong type
+			cfg.Int("a.b.c")
+		})
+		require.Panics(t, func() {
+			// wrong type and section
+			cfg.Int("a.b")
+		})
+	})
+
+	t.Run("warn", func(t *testing.T) {
+		cfg, err := Open(nil, defaults, StrictnessIgnore)
+		require.Nil(t, err)
+
+		require.Nil(t, cfg.Get("d"))
+		require.Nil(t, cfg.Get("a"))
+		require.Equal(t, int64(0), cfg.Int("a.b.c"))
+		require.Equal(t, int64(0), cfg.Int("a.b"))
+	})
+
+}
+
+func TestSectionKeys(t *testing.T) {
+	defaults := DefaultMapping{
+		"a": DefaultMapping{
+			"b": DefaultMapping{
+				"c": DefaultEntry{
+					Default: "x",
+				},
+			},
+		},
+	}
+
+	cfg, err := Open(nil, defaults, StrictnessIgnore)
+	require.Nil(t, err)
+
+	require.Equal(t, []string{"a.b.c"}, cfg.Keys())
+
+	sec := cfg.Section("a")
+	require.Equal(t, []string{"b.c"}, sec.Keys())
 }

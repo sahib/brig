@@ -100,6 +100,9 @@ func BootServer(basePath, password, logPath, bindHost string, port int) (*Server
 		}
 	}()
 
+	// TODO: Go online automatically
+	// TODO: Mount fstab entries here automatically.
+
 	return &Server{
 		baseServer: baseServer,
 		base:       base,

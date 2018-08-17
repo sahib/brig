@@ -3,7 +3,7 @@ package config
 import "os"
 
 // FromYamlFile creates a new config from the YAML file located at `path`
-func FromYamlFile(path string, defaults DefaultMapping) (cfg *Config, err error) {
+func FromYamlFile(path string, defaults DefaultMapping, strictness Strictness) (cfg *Config, err error) {
 	fd, fErr := os.Open(path)
 	if fErr != nil {
 		return nil, fErr
@@ -15,7 +15,7 @@ func FromYamlFile(path string, defaults DefaultMapping) (cfg *Config, err error)
 		}
 	}()
 
-	cfg, err = Open(NewYamlDecoder(fd), defaults)
+	cfg, err = Open(NewYamlDecoder(fd), defaults, strictness)
 	return cfg, err
 }
 

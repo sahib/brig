@@ -87,6 +87,7 @@ struct Identity $Go.doc("Info about our current user state") {
 struct MountOptions {
     # For now empty, but there are some mount options
     # in planning.
+    readOnly @0 :Bool;
 }
 
 struct PeerStatus $Go.doc("net status of a peer") {
@@ -176,6 +177,10 @@ interface Meta {
     disconnect  @20 ();
     onlinePeers @21 () -> (infos :List(PeerStatus));
     version     @22 () -> (version :Version);
+
+    fstabAdd    @23 (mountName :Text, mountPath :Text, options :MountOptions);
+    fstabRemove @24 (mountName :Text);
+    fstabApply  @25 ();
 }
 
 # Group all interfaces together in one API object,

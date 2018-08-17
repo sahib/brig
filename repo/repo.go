@@ -115,7 +115,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	// Create a default config, only with the default keys applied:
-	cfg, err := config.Open(nil, defaults.Defaults)
+	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
 	if err != nil {
 		return err
 	}

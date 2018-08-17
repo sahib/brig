@@ -319,6 +319,26 @@ func RunCmdline(args []string) int {
 				},
 			},
 		}, {
+			Name:     "fstab",
+			Category: repoGroup,
+			Subcommands: []cli.Command{
+				{
+					Name:   "add",
+					Action: withArgCheck(needAtLeast(2), withDaemon(handleFstabAdd, true)),
+				}, {
+					Name:    "remove",
+					Aliases: []string{"rm"},
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleFstabRemove, true)),
+				}, {
+					Name:   "apply",
+					Action: withArgCheck(needAtLeast(0), withDaemon(handleFstabApply, true)),
+				}, {
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withArgCheck(needAtLeast(0), withDaemon(handleFstabList, true)),
+				},
+			},
+		}, {
 			Name:     "mount",
 			Category: repoGroup,
 			Action:   withDaemon(handleMount, true),

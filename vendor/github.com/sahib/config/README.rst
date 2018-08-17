@@ -100,6 +100,8 @@ can be packed into lists and easily set and accessed with special API for them.
 useful e.g. when there are certain global defaults, that are overwritten with local
 defaults which are again merged with user defined settings.
 
+**Reset to defaults:** Any part of the config can be reset to defaults at any time.
+
 Examples
 --------
 

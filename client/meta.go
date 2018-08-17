@@ -661,3 +661,43 @@ func (cl *Client) Version() (*VersionInfo, error) {
 
 	return version, nil
 }
+
+func (ctl *Client) FstabAdd(mountName, mountPath string, readOnly bool) error {
+	call := ctl.api.FstabAdd(ctl.ctx, func(p capnp.Meta_fstabAdd_Params) error {
+		if err := p.SetMountName(mountName); err != nil {
+			return err
+		}
+
+		if err := p.SetMountPath(mountPath); err != nil {
+			return err
+		}
+
+		options, err := capnp.NewMountOptions(p.Segment())
+		if err != nil {
+			return err
+		}
+
+		return p.SetOptions(options)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) FstabRemove(mountName string) error {
+	call := ctl.api.FstabRemove(ctl.ctx, func(p capnp.Meta_fstabRemove_Params) error {
+		return p.SetMountName(mountName)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) FstabApply() error {
+	call := ctl.api.FstabApply(ctl.ctx, func(p capnp.Meta_fstabApply_Params) error {
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}

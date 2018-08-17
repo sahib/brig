@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
+	"sort"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -445,4 +447,86 @@ func handleGc(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
+}
+
+func handleFstabAdd(ctx *cli.Context, ctl *client.Client) error {
+	mountName := ctx.Args().Get(0)
+	mountPath := ctx.Args().Get(1)
+	readOnly := ctx.Bool("readonly")
+
+	return ctl.FstabAdd(mountName, mountPath, readOnly)
+}
+
+func handleFstabRemove(ctx *cli.Context, ctl *client.Client) error {
+	mountName := ctx.Args().Get(0)
+	return ctl.FstabRemove(mountName)
+}
+
+func handleFstabApply(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.FstabApply()
+}
+
+type fstabEntry struct {
+	name     string
+	path     string
+	readOnly string
+}
+
+func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
+	all, err := ctl.ConfigAll()
+	if err != nil {
+		return ExitCode{UnknownError, fmt.Sprintf("config list: %v", err)}
+	}
+
+	mounts := make(map[string]*fstabEntry)
+
+	for _, entry := range all {
+		split := strings.Split(entry.Key, ".")
+		if len(split) < 3 || split[0] != "mounts" {
+			continue
+		}
+
+		mountName := split[1]
+		if _, ok := mounts[mountName]; !ok {
+			mounts[mountName] = &fstabEntry{}
+		}
+
+		if split[2] == "path" {
+			mounts[mountName].path = entry.Val
+		}
+
+		if split[2] == "read_only" {
+			mounts[mountName].readOnly = entry.Val
+		}
+	}
+
+	sortedMounts := []fstabEntry{}
+	for name, entry := range mounts {
+		entry.name = name
+		sortedMounts = append(sortedMounts, *entry)
+	}
+
+	sort.Slice(sortedMounts, func(i, j int) bool {
+		return sortedMounts[i].name < sortedMounts[j].name
+	})
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\t")
+
+	for _, entry := range sortedMounts {
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
+			entry.name,
+			entry.path,
+			entry.readOnly,
+		)
+	}
+
+	return tabW.Flush()
+
 }

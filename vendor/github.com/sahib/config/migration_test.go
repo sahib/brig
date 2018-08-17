@@ -53,7 +53,7 @@ func migrateToV1(oldCfg, newCfg *Config) error {
 }
 
 func createInitialConfigData(t *testing.T) []byte {
-	cfg, err := Open(nil, TestDefaultsV0)
+	cfg, err := Open(nil, TestDefaultsV0, StrictnessPanic)
 	require.Nil(t, err)
 	require.Equal(t, Version(0), cfg.Version())
 
@@ -72,21 +72,21 @@ func checkIfSorted(t *testing.T, mgr *Migrater) {
 }
 
 func TestAddMigration(t *testing.T) {
-	mgr := NewMigrater(0)
+	mgr := NewMigrater(0, StrictnessPanic)
 	for idx := 0; idx < 10; idx++ {
 		mgr.Add(Version(idx), nil, nil)
 	}
 
 	checkIfSorted(t, mgr)
 
-	mgr = NewMigrater(0)
+	mgr = NewMigrater(0, StrictnessPanic)
 	for idx := 9; idx >= 0; idx-- {
 		mgr.Add(Version(idx), nil, nil)
 	}
 
 	checkIfSorted(t, mgr)
 
-	mgr = NewMigrater(0)
+	mgr = NewMigrater(0, StrictnessPanic)
 	for idx := 1; idx < 11; idx++ {
 		// Pseudo random order:
 		mgr.Add(Version(int64(idx)*114007148193231984%61), nil, nil)
@@ -96,7 +96,7 @@ func TestAddMigration(t *testing.T) {
 func TestBasicMigration(t *testing.T) {
 	initialData := createInitialConfigData(t)
 
-	mgr := NewMigrater(1)
+	mgr := NewMigrater(1, StrictnessPanic)
 	mgr.Add(0, nil, TestDefaultsV0)
 	mgr.Add(1, migrateToV1, TestDefaultsV1)
 	cfg, err := mgr.Migrate(NewYamlDecoder(bytes.NewReader(initialData)))
@@ -118,7 +118,7 @@ func TestBasicMigration(t *testing.T) {
 }
 
 func TestBiggerThan(t *testing.T) {
-	mgr := NewMigrater(0)
+	mgr := NewMigrater(0, StrictnessPanic)
 	for idx := 0; idx < 10; idx++ {
 		mgr.migrations = append(mgr.migrations, migrationEntry{
 			version: Version(idx),
@@ -135,7 +135,7 @@ func TestBiggerThan(t *testing.T) {
 }
 
 func TestMigrationFor(t *testing.T) {
-	mgr := NewMigrater(0)
+	mgr := NewMigrater(0, StrictnessPanic)
 	for idx := 0; idx < 10; idx++ {
 		mgr.migrations = append(mgr.migrations, migrationEntry{
 			version: Version(idx),

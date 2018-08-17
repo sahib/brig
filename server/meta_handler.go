@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/fuse"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
@@ -110,6 +111,73 @@ func (mh *metaHandler) Unmount(call capnp.Meta_unmount) error {
 	}
 
 	return mounts.Unmount(mountPath)
+}
+
+func (mh *metaHandler) FstabAdd(call capnp.Meta_fstabAdd) error {
+	server.Ack(call.Options)
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mountName, err := call.Params.MountName()
+	if err != nil {
+		return err
+	}
+
+	mountPath, err := call.Params.MountPath()
+	if err != nil {
+		return err
+	}
+
+	options, err := call.Params.Options()
+	if err != nil {
+		return err
+	}
+
+	readOnly := options.ReadOnly()
+	return fuse.FsTabAdd(rp.Config.Section("mounts"), mountName, mountPath, readOnly)
+}
+
+func (mh *metaHandler) FstabRemove(call capnp.Meta_fstabRemove) error {
+	server.Ack(call.Options)
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mountName, err := call.Params.MountName()
+	if err != nil {
+		return err
+	}
+
+	if err := fuse.FsTabRemove(rp.Config.Section("mounts"), mountName); err != nil {
+		return err
+	}
+
+	return rp.SaveConfig()
+}
+
+func (mh *metaHandler) FstabApply(call capnp.Meta_fstabApply) error {
+	server.Ack(call.Options)
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	if err := fuse.FsTabApply(rp.Config.Section("mounts"), mounts); err != nil {
+		return err
+	}
+
+	return rp.SaveConfig()
 }
 
 func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {

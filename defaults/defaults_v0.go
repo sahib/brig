@@ -72,6 +72,20 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "The repository owner that is published to the outside",
 		},
 	},
+	"mounts": config.DefaultMapping{
+		"__many__": config.DefaultMapping{
+			"path": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: true,
+				Docs:         "The place where the mount path can be found",
+			},
+			"read_only": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: true,
+				Docs:         "Wether this mount should be done read-only",
+			},
+		},
+	},
 	"data": config.DefaultMapping{
 		"ipfs": config.DefaultMapping{
 			"path": config.DefaultEntry{

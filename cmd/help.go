@@ -770,6 +770,29 @@ if the service needs a restart when setting the value.
 		Complete:    completeArgsUsage,
 		Description: `List all existing config keys. The output is valid YAML.`,
 	},
+	"fstab": {
+		Usage:       "Manage mounts that will be mounted always",
+		Description: "The list of mounts is stored in the config",
+	},
+	"fstab.add": {
+		Usage: "Add a new mount entry to fstab",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "r,readonly",
+				Usage: "Create the filesystem as readonly",
+			},
+		},
+	},
+	"fstab.remove": {
+		Usage: "Remove a mount from fstab",
+	},
+	"fstab.list": {
+		Usage: "List all items in the filesystem table",
+	},
+	"fstab.apply": {
+		Usage:       "Sync the reality with the mounts in fstab",
+		Description: "Mounts and unmounts directories as necessary",
+	},
 	"mount": {
 		Usage:     "Mount the contents of brig as FUSE filesystem",
 		ArgsUsage: "<mount_path>",

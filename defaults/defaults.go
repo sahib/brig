@@ -25,7 +25,8 @@ func OpenMigratedConfig(path string) (*config.Config, error) {
 	defer fd.Close()
 
 	// Add here any migrations with mgr.Add if needed.
-	mgr := config.NewMigrater(CurrentVersion)
+	// TODO: Switch to config.StrictnessWarn with some build tag.
+	mgr := config.NewMigrater(CurrentVersion, config.StrictnessPanic)
 	mgr.Add(0, nil, DefaultsV0)
 
 	cfg, err := mgr.Migrate(config.NewYamlDecoder(fd))

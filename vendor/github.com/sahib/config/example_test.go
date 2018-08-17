@@ -53,7 +53,7 @@ func ExampleOpen() {
 	// you just let it take over the defaults by passing nil as decoder. Open()
 	// is also the step where the initial validation happens.  If this
 	// validation fails, an error is returned.
-	cfg, err := Open(nil, ExampleDefaultsV0)
+	cfg, err := Open(nil, ExampleDefaultsV0, StrictnessPanic)
 	if err != nil {
 		log.Fatalf("Failed to open config: %v", err)
 	}
@@ -170,7 +170,7 @@ func ExampleMigrater() {
 	// Whenever you decide to change the layout of the config,
 	// you can bump the version and register a new migration func
 	// that will be run over older config upon opening them.
-	mgr := NewMigrater(CurrentVersion)
+	mgr := NewMigrater(CurrentVersion, StrictnessPanic)
 
 	// Add a migration - the first one for version "0" has no func attached.
 	mgr.Add(0, nil, ExampleDefaultsV0)
@@ -236,12 +236,12 @@ backend:
 backend:
   workers: 50
 `
-	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), ExampleDefaultsV0)
+	baseCfg, err := Open(NewYamlDecoder(strings.NewReader(baseYml)), ExampleDefaultsV0, StrictnessPanic)
 	if err != nil {
 		log.Fatalf("Failed to create base config: %v", err)
 	}
 
-	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), ExampleDefaultsV0)
+	overCfg, err := Open(NewYamlDecoder(strings.NewReader(overYml)), ExampleDefaultsV0, StrictnessPanic)
 	if err != nil {
 		log.Fatalf("Failed to create overlay config: %v", err)
 	}

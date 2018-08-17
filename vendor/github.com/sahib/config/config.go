@@ -25,7 +25,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"sort"
@@ -35,6 +37,29 @@ import (
 	"time"
 
 	e "github.com/pkg/errors"
+)
+
+// Strictness defines how the API of the config reacts when it thinks
+// that the programmer made a mistake. These kind of mistakes usually
+// fall into one of the following categories:
+//
+// - A wrong key was used for a Get(), Set() etc.
+// - The wrong type getter was used for a certain key (bool for a string e.g.)
+// - The defaults are faulty (wrong types, __many__ in the wrong place etc.)
+//
+// All of those errors should be catched early in the development and should
+// not make it to the user. Therefore StrictnessPanic is recommended for
+// developing. When building the software in release mode, one might want to
+// switch to StrictnessWarn, which just logs when it found something awful.
+type Strictness int
+
+const (
+	// StrictnessIgnore silently ignores any programmer error
+	StrictnessIgnore = Strictness(iota)
+	// StrictnessWarn will log a complaint via log.Println()
+	StrictnessWarn
+	// StrictnessPanic will panic when a programmer error was made.
+	StrictnessPanic
 )
 
 // DefaultEntry represents the metadata for a default value in the config.
@@ -73,21 +98,25 @@ var (
 	manyMarker = "__many__"
 )
 
-// recursive implementation of getDefaultByKey
-func getDefaultByKeys(keys []string, defaults DefaultMapping) *DefaultEntry {
+func getDefaultSectionByKeys(keys []string, defaults DefaultMapping, strictness Strictness) DefaultMapping {
 	if len(keys) == 0 {
-		return nil
+		return defaults
 	}
 
-	placeHolderFound := false
 	child, hasChild := defaults[keys[0]]
 	if !hasChild {
 		// The key might still be used if we have a __many__ entry.
 		// If not, it has to be a wrong key.
+		placeHolderFound := false
 		for defaultKeyVal := range defaults {
 			defaultKey, ok := defaultKeyVal.(string)
 			if !ok {
-				panic(fmt.Sprintf("programmer error: default key is not a string: %v", defaultKeyVal))
+				complain(
+					fmt.Sprintf("bug: default key is not a string: %v", defaultKeyVal),
+					strictness,
+				)
+
+				return nil
 			}
 
 			// We found a __many__ entry. Use it as validation base.
@@ -102,31 +131,51 @@ func getDefaultByKeys(keys []string, defaults DefaultMapping) *DefaultEntry {
 		}
 	}
 
-	defaultEntry, ok := child.(DefaultEntry)
-	if ok {
-		// did we really consume all keys?
-		if len(keys) > 1 {
-			return nil
-		}
-
-		if placeHolderFound {
-			panic("__many__ used for default entries")
-		}
-
-		// scalar type, return immediately.
-		return &defaultEntry
+	if child == nil {
+		return nil
 	}
 
 	section, ok := child.(DefaultMapping)
 	if !ok {
-		panic(fmt.Errorf("got bad type in default table: %T", child))
+		return nil
 	}
 
-	return getDefaultByKeys(keys[1:], section)
+	return getDefaultSectionByKeys(keys[1:], section, strictness)
 }
 
-func getDefaultByKey(key string, defaults DefaultMapping) *DefaultEntry {
-	return getDefaultByKeys(strings.Split(key, "."), defaults)
+// recursive implementation of getDefaultByKey
+func getDefaultByKeys(keys []string, defaults DefaultMapping, strictness Strictness) *DefaultEntry {
+	if len(keys) == 0 {
+		return nil
+	}
+
+	section := getDefaultSectionByKeys(keys[:len(keys)-1], defaults, strictness)
+	if section == nil {
+		return nil
+	}
+
+	lastKey := keys[len(keys)-1]
+	if lastKey == manyMarker {
+		complain("__many__ used for default entries", strictness)
+		return nil
+	}
+
+	child, ok := section[lastKey]
+	if !ok {
+		return nil
+	}
+
+	defaultEntry, ok := child.(DefaultEntry)
+	if !ok {
+		return nil
+	}
+
+	// scalar type, return immediately.
+	return &defaultEntry
+}
+
+func getDefaultByKey(key string, defaults DefaultMapping, strictness Strictness) *DefaultEntry {
+	return getDefaultByKeys(strings.Split(key, "."), defaults, strictness)
 }
 
 func getTypeOf(val interface{}) string {
@@ -353,14 +402,19 @@ func mergeDefaults(base map[interface{}]interface{}, overlay DefaultMapping, def
 }
 
 // validationChecker validates the incoming config
-func validationChecker(root map[interface{}]interface{}, defaults DefaultMapping, defaultKeys map[string]struct{}) error {
+func validationChecker(
+	root map[interface{}]interface{},
+	defaults DefaultMapping,
+	defaultKeys map[string]struct{},
+	strictness Strictness,
+) error {
 	err := keys(root, nil, func(section map[interface{}]interface{}, key []string) error {
 		// It's a scalar key. Let's run some diagnostics.
 		lastKey := key[len(key)-1]
 		child := section[lastKey]
 
 		fullKey := strings.Join(key, ".")
-		defaultEntry := getDefaultByKey(fullKey, defaults)
+		defaultEntry := getDefaultByKey(fullKey, defaults, strictness)
 		if defaultEntry == nil {
 			return fmt.Errorf("no default for key: %v", fullKey)
 		}
@@ -426,6 +480,7 @@ type Config struct {
 	changeCallbacks map[string]map[int]keyChangedEvent
 	defaultKeys     map[string]struct{}
 	version         Version
+	strictness      Strictness
 }
 
 func prefixKey(section, key string) string {
@@ -440,7 +495,7 @@ func prefixKey(section, key string) string {
 // tells the config which keys to expect and what type each of it should have.
 // It is allowed to pass `nil` as decoder. In this case a config purely with
 // default values will be created.
-func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
+func Open(dec Decoder, defaults DefaultMapping, strictness Strictness) (*Config, error) {
 	if defaults == nil {
 		return nil, fmt.Errorf("need a default mapping")
 	}
@@ -459,13 +514,18 @@ func Open(dec Decoder, defaults DefaultMapping) (*Config, error) {
 		version = Version(0)
 	}
 
-	return open(version, memory, defaults)
+	return open(version, memory, defaults, strictness)
 }
 
 // open does the actual struct creation. It is also used by the migrater.
-func open(version Version, memory map[interface{}]interface{}, defaults DefaultMapping) (*Config, error) {
+func open(
+	version Version,
+	memory map[interface{}]interface{},
+	defaults DefaultMapping,
+	strictness Strictness,
+) (*Config, error) {
 	defaultKeys := make(map[string]struct{})
-	if err := validationChecker(memory, defaults, defaultKeys); err != nil {
+	if err := validationChecker(memory, defaults, defaultKeys, strictness); err != nil {
 		return nil, e.Wrapf(err, "validate")
 	}
 
@@ -476,7 +536,19 @@ func open(version Version, memory map[interface{}]interface{}, defaults DefaultM
 		version:         version,
 		changeCallbacks: make(map[string]map[int]keyChangedEvent),
 		defaultKeys:     defaultKeys,
+		strictness:      strictness,
 	}, nil
+}
+
+func complain(msg string, strictness Strictness) {
+	switch strictness {
+	case StrictnessWarn:
+		log.Println(msg)
+	case StrictnessPanic:
+		panic(msg)
+	default:
+		return
+	}
 }
 
 // Reload re-sets all values in the config to the data in `dec`.
@@ -513,9 +585,10 @@ func (cfg *Config) Reload(dec Decoder) error {
 		callbackCount: cfg.callbackCount,
 		defaultKeys:   cfg.defaultKeys,
 		section:       cfg.section,
+		strictness:    cfg.strictness,
 	}
 
-	if err := validationChecker(memory, cfg.defaults, cfg.defaultKeys); err != nil {
+	if err := validationChecker(memory, cfg.defaults, cfg.defaultKeys, cfg.strictness); err != nil {
 		return e.Wrapf(err, "validate")
 	}
 
@@ -548,12 +621,12 @@ func (cfg *Config) Save(enc Encoder) error {
 ////////////
 
 // splitKey splits `key` into it's parent container and base key
-func (cfg *Config) splitKey(key string) (map[interface{}]interface{}, string) {
-	return splitKeyRecursive(strings.Split(key, "."), cfg.memory)
+func (cfg *Config) splitKey(key string, sectionAllowed bool) (map[interface{}]interface{}, string) {
+	return splitKeyRecursive(strings.Split(key, "."), cfg.memory, sectionAllowed)
 }
 
 // actual worker for splitKey
-func splitKeyRecursive(keys []string, root map[interface{}]interface{}) (map[interface{}]interface{}, string) {
+func splitKeyRecursive(keys []string, root map[interface{}]interface{}, sectionAllowed bool) (map[interface{}]interface{}, string) {
 	if len(keys) == 0 {
 		return nil, ""
 	}
@@ -573,15 +646,30 @@ func splitKeyRecursive(keys []string, root map[interface{}]interface{}) (map[int
 		return root, keys[0]
 	}
 
-	return splitKeyRecursive(keys[1:], section)
+	if sectionAllowed && len(keys) == 1 {
+		return root, keys[0]
+	}
+
+	return splitKeyRecursive(keys[1:], section, sectionAllowed)
 }
 
 // get is the worker for the higher level typed accessors
 func (cfg *Config) get(key string) interface{} {
 	key = prefixKey(cfg.section, key)
-	parent, base := cfg.splitKey(key)
+	parent, base := cfg.splitKey(key, false)
 	if parent == nil {
-		panic(fmt.Sprintf("bug: invalid config key: %v", key))
+		// It is not present in cfg.memory.
+		// Maybe it's an entry below __many__?
+		defEntry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
+		if defEntry != nil {
+			return defEntry.Default
+		}
+
+		complain(
+			fmt.Sprintf("bug: invalid config key: %v", key),
+			cfg.strictness,
+		)
+		return nil
 	}
 
 	return parent[base]
@@ -603,6 +691,29 @@ func (cfg *Config) gatherCallbacks(key string) []keyChangedEvent {
 	return callbacks
 }
 
+func (cfg *Config) punchHole(key []string, root map[interface{}]interface{}) (map[interface{}]interface{}, string, error) {
+	if len(key) == 0 {
+		return nil, "", nil
+	}
+
+	if len(key) == 1 {
+		return root, key[0], nil
+	}
+
+	child, ok := root[key[0]]
+	if !ok {
+		child = make(map[interface{}]interface{})
+		root[key[0]] = child
+	}
+
+	section, ok := child.(map[interface{}]interface{})
+	if !ok {
+		return nil, "", fmt.Errorf("trying to override value with section: %v", key)
+	}
+
+	return cfg.punchHole(key[1:], section)
+}
+
 // setLocked is worker behind the Set*() methods.
 func (cfg *Config) setLocked(key string, val interface{}) error {
 	cfg.mu.Lock()
@@ -619,9 +730,26 @@ func (cfg *Config) setLocked(key string, val interface{}) error {
 	// NOTE: the unlock is called before the other defer!
 	defer cfg.mu.Unlock()
 
-	parent, base := cfg.splitKey(key)
+	parent, base := cfg.splitKey(key, false)
 	if parent == nil {
-		panic(fmt.Sprintf("bug: invalid config key: %v", key))
+		// section, sectionBase := cfg.splitKey(key, true)
+		// mergeDefaults(, , cfg.defaultKeys, cfg.section)
+		def := getDefaultByKey(key, cfg.defaults, cfg.strictness)
+		if def != nil {
+			splitKey := strings.Split(key, ".")
+
+			var err error
+			parent, base, err = cfg.punchHole(splitKey, cfg.memory)
+			if err != nil {
+				return err
+			}
+
+			parent[base] = def.Default
+		} else {
+			msg := fmt.Sprintf("bug: invalid config key: %v", key)
+			complain(msg, cfg.strictness)
+			return errors.New(msg)
+		}
 	}
 
 	defType := getTypeOf(parent[base])
@@ -629,7 +757,7 @@ func (cfg *Config) setLocked(key string, val interface{}) error {
 
 	if !isCompatibleType(defType, valType) {
 		return fmt.Errorf(
-			"wrong type in set for key `%v`: want: %v but got %v",
+			"wrong type in set for key `%v`: want: `%v` but got `%v`",
 			key, defType, valType,
 		)
 	}
@@ -637,12 +765,13 @@ func (cfg *Config) setLocked(key string, val interface{}) error {
 	// Remember that we've overwritten this key:
 	delete(cfg.defaultKeys, key)
 
+	// Check if something was changed. If not we do not need to notify anyone.
 	if reflect.DeepEqual(val, parent[base]) {
 		return nil
 	}
 
 	// If there is an validator defined, we should check now.
-	defEntry := getDefaultByKey(key, cfg.defaults)
+	defEntry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
 	if defEntry.Validator != nil {
 		if err := defEntry.Validator(val); err != nil {
 			return err
@@ -674,9 +803,13 @@ func (cfg *Config) AddEvent(key string, fn func(key string)) int {
 
 	if key != "" {
 		key = prefixKey(cfg.section, key)
-		defaultEntry := getDefaultByKey(key, cfg.defaults)
+		defaultEntry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
 		if defaultEntry == nil {
-			panic(fmt.Sprintf("bug: invalid config key: %v", key))
+			complain(
+				fmt.Sprintf("bug: invalid config key: %v", key),
+				cfg.strictness,
+			)
+			return 0
 		}
 	}
 
@@ -722,9 +855,34 @@ func (cfg *Config) ClearEvents() {
 
 ////////////
 
+func (cfg *Config) checkZeroType(key string, val, zero interface{}) interface{} {
+	valTyp := reflect.TypeOf(val)
+	zeroTyp := reflect.TypeOf(zero)
+
+	if valTyp.ConvertibleTo(zeroTyp) {
+		// We can convert the types, all good.
+		return reflect.ValueOf(val).Convert(zeroTyp).Interface()
+	}
+
+	// Let's complain about the wrong type.
+	// The user of the api probably used he wrong type for this key.
+	// (i.e. Bool() for a string)
+	complain(
+		fmt.Sprintf(
+			"bug: wrong type in get for key `%s`. Want `%s`, but got `%s`. Wrong getter used?",
+			key,
+			zeroTyp.Name(),
+			valTyp.Name(),
+		),
+		cfg.strictness,
+	)
+	return zero
+}
+
 // Get returns the raw value at `key`.
 // Do not use this method when possible, use the typeed convinience methods.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Get(key string) interface{} {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -733,105 +891,173 @@ func (cfg *Config) Get(key string) interface{} {
 }
 
 // Bool returns the boolean value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Bool(key string) bool {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).(bool)
+	val := cfg.get(key)
+	if val == nil {
+		return false
+	}
+
+	return cfg.checkZeroType(key, val, false).(bool)
 }
 
 // String returns the string value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) String(key string) string {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).(string)
+	val := cfg.get(key)
+	if val == nil {
+		return ""
+	}
+
+	return cfg.checkZeroType(key, val, "").(string)
 }
 
 // Int returns the int value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Int(key string) int64 {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).(int64)
+	val := cfg.get(key)
+	if val == nil {
+		return 0
+	}
+
+	return cfg.checkZeroType(key, val, int64(0)).(int64)
 }
 
 // Float returns the float value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Float(key string) float64 {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).(float64)
+	val := cfg.get(key)
+	if val == nil {
+		return 0
+	}
+
+	return cfg.checkZeroType(key, val, float64(0)).(float64)
 }
 
 // Duration returns the duration value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Duration(key string) time.Duration {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	s := cfg.get(key).(string)
+	val := cfg.get(key)
+	if val == nil {
+		return time.Duration(0)
+	}
+
+	s := cfg.checkZeroType(key, val, "").(string)
 	d, err := time.ParseDuration(s)
 	if err != nil {
-		panic(fmt.Sprintf("invalid duration: %v; use the duration validator!", s))
+		complain(
+			fmt.Sprintf("invalid duration: %v; use the duration validator!", s),
+			cfg.strictness,
+		)
+		return time.Duration(0)
 	}
 
 	return d
 }
 
 // Strings returns the string list value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Strings(key string) []string {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).([]string)
+	val := cfg.get(key)
+	if val == nil {
+		return nil
+	}
+
+	return cfg.checkZeroType(key, val, []string{}).([]string)
 }
 
 // Ints returns the int list value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Ints(key string) []int64 {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).([]int64)
+	val := cfg.get(key)
+	if val == nil {
+		return nil
+	}
+
+	return cfg.checkZeroType(key, val, []int64{}).([]int64)
 }
 
 // Floats returns the float list value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Floats(key string) []float64 {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).([]float64)
+	val := cfg.get(key)
+	if val == nil {
+		return nil
+	}
+
+	return cfg.checkZeroType(key, val, []float64{}).([]float64)
 }
 
 // Bools returns the boolean list value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Bools(key string) []bool {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	return cfg.get(key).([]bool)
+	val := cfg.get(key)
+	if val == nil {
+		return nil
+	}
+
+	return cfg.checkZeroType(key, val, []bool{}).([]bool)
 }
 
 // Durations returns the duration value (or default) at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
+// If an error happens it will return the zero value.
 func (cfg *Config) Durations(key string) []time.Duration {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
-	strings := cfg.get(key).([]string)
+	val := cfg.get(key)
+	if val == nil {
+		return nil
+	}
+
+	strings := cfg.checkZeroType(key, val, []string{}).([]string)
 	durations := []time.Duration{}
 
 	for _, s := range strings {
 		d, err := time.ParseDuration(s)
 		if err != nil {
-			panic(fmt.Sprintf("invalid duration: %v; use the durations validator!", s))
+			complain(
+				fmt.Sprintf("invalid duration: %v; use the durations validator!", s),
+				cfg.strictness,
+			)
+			return nil
 		}
 
 		durations = append(durations, d)
@@ -844,7 +1070,7 @@ func (cfg *Config) Durations(key string) []time.Duration {
 
 // IsDefault will return true if this key was not explicitly set,
 // but taken over from the defaults.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) IsDefault(key string) bool {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -888,7 +1114,7 @@ func (cfg *Config) Merge(other *Config) error {
 		// Only use callbacks if the key really changed:
 		if !reflect.DeepEqual(newVal, oldVal) {
 			callbacks = append(callbacks, cfg.gatherCallbacks(key)...)
-			parent, base := cfg.splitKey(key)
+			parent, base := cfg.splitKey(key, false)
 			parent[base] = newVal
 		}
 	}
@@ -899,61 +1125,61 @@ func (cfg *Config) Merge(other *Config) error {
 ////////////
 
 // SetBool creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetBool(key string, val bool) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetString creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetString(key string, val string) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetInt creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetInt(key string, val int64) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetFloat creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetFloat(key string, val float64) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetDuration creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetDuration(key string, val time.Duration) error {
 	return cfg.setLocked(key, val.String())
 }
 
 // SetBools creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetBools(key string, val []bool) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetStrings creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetStrings(key string, val []string) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetInts creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetInts(key string, val []int64) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetFloats creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetFloats(key string, val []float64) error {
 	return cfg.setLocked(key, val)
 }
 
 // SetDurations creates or sets the `val` at `key`.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) SetDurations(key string, val []time.Duration) error {
 	strings := []string{}
 	for _, d := range val {
@@ -966,7 +1192,7 @@ func (cfg *Config) SetDurations(key string, val []time.Duration) error {
 // Set creates or sets the `val` at `key`.
 // Please only use this function only if you have an interface{}
 // that you do not want to cast yourself.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) Set(key string, val interface{}) error {
 	return cfg.setLocked(key, val)
 }
@@ -974,7 +1200,7 @@ func (cfg *Config) Set(key string, val interface{}) error {
 ////////////
 
 // GetDefault retrieves the default for a certain key.
-// Note: This function will panic if the key does not exist.
+// Note: This function might panic when they key does not exist and StrictnessPanic is used.
 func (cfg *Config) GetDefault(key string) DefaultEntry {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
@@ -982,9 +1208,10 @@ func (cfg *Config) GetDefault(key string) DefaultEntry {
 	// The lock here is probably not necessary,
 	// since we wont't modify defaults.
 	key = prefixKey(cfg.section, key)
-	entry := getDefaultByKey(key, cfg.defaults)
+	entry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
 	if entry == nil {
-		panic(fmt.Sprintf("bug: invalid config key: %v", key))
+		complain(fmt.Sprintf("bug: invalid config key: %v", key), cfg.strictness)
+		return DefaultEntry{}
 	}
 
 	return *entry
@@ -1003,7 +1230,10 @@ func (cfg *Config) keys() []string {
 	err := keys(cfg.memory, nil, func(section map[interface{}]interface{}, key []string) error {
 		fullKey := strings.Join(key, ".")
 		if strings.HasPrefix(fullKey, cfg.section) {
-			allKeys = append(allKeys, strings.Join(key, "."))
+			if len(cfg.section) != 0 {
+				fullKey = fullKey[len(cfg.section)+1:]
+			}
+			allKeys = append(allKeys, fullKey)
 		}
 
 		return nil
@@ -1013,7 +1243,8 @@ func (cfg *Config) keys() []string {
 		// keys() should only return an error if the function passed to it
 		// error in some way. Since we don't do that it should not produce
 		// any non-nil error return.
-		panic(fmt.Sprintf("Keys() failed internally: %v", err))
+		complain(fmt.Sprintf("Keys() failed internally: %v", err), cfg.strictness)
+		return nil
 	}
 
 	sort.Strings(allKeys)
@@ -1048,6 +1279,7 @@ func (cfg *Config) Section(section string) *Config {
 		// Sections may have own callbacks.
 		// The parent callbacks are still called though.
 		changeCallbacks: childChangeCallbacks,
+		strictness:      cfg.strictness,
 	}
 }
 
@@ -1058,7 +1290,7 @@ func (cfg *Config) IsValidKey(key string) bool {
 	defer cfg.mu.Unlock()
 
 	key = prefixKey(cfg.section, key)
-	return getDefaultByKey(key, cfg.defaults) != nil
+	return getDefaultByKey(key, cfg.defaults, cfg.strictness) != nil
 }
 
 // Cast takes `val` and reads the type of `key`.  It then tries to convert it
@@ -1072,9 +1304,11 @@ func (cfg *Config) Cast(key, val string) (interface{}, error) {
 	defer cfg.mu.Unlock()
 
 	key = prefixKey(cfg.section, key)
-	entry := getDefaultByKey(key, cfg.defaults)
+	entry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
 	if entry == nil {
-		panic(fmt.Sprintf("bug: invalid config key: %v", key))
+		msg := fmt.Sprintf("bug: invalid config key: %v", key)
+		complain(msg, cfg.strictness)
+		return nil, errors.New(msg)
 	}
 
 	switch entry.Default.(type) {
@@ -1098,4 +1332,57 @@ func (cfg *Config) Version() Version {
 	defer cfg.mu.Unlock()
 
 	return cfg.version
+}
+
+// Reset reverts a key or a section to its defaults.
+// If key points to a value, only this value is reset.
+// If key points to a section, all keys in it are reset.
+// If key is an empty string, the whole config is reset to defaults.
+//
+// When calling reset on parts of the config that includes __many__ sections,
+// those will be totally cleared and won't be serialized when calling Save().
+// Retrieving values from those will yield default values as if they were not set.
+func (cfg *Config) Reset(key string) error {
+	cfg.mu.Lock()
+
+	key = prefixKey(cfg.section, key)
+	entry := getDefaultByKey(key, cfg.defaults, cfg.strictness)
+	if entry != nil {
+		// Key points to a value.
+		cfg.defaults[key] = struct{}{}
+		cfg.mu.Unlock()
+		return cfg.setLocked(key, entry.Default)
+	}
+
+	defer cfg.mu.Unlock()
+
+	if key == "" {
+		// The whole config needs to be reset:
+		cfg.memory = make(map[interface{}]interface{})
+		return mergeDefaults(cfg.memory, cfg.defaults, cfg.defaultKeys, cfg.section)
+	}
+
+	// We need to clear a section:
+	splitKey := strings.Split(key, ".")
+	defaultSection := getDefaultSectionByKeys(
+		splitKey[:len(splitKey)-1],
+		cfg.defaults,
+		cfg.strictness,
+	)
+
+	if defaultSection == nil {
+		msg := fmt.Sprintf("no such section: %v", key)
+		complain(msg, cfg.strictness)
+		return errors.New(msg)
+	}
+
+	parent, base := cfg.splitKey(key, true)
+	if parent == nil {
+		msg := fmt.Sprintf("bug: invalid config key: %v", key)
+		complain(msg, cfg.strictness)
+		return errors.New(msg)
+	}
+
+	delete(parent, base)
+	return mergeDefaults(parent, defaultSection, cfg.defaultKeys, cfg.section)
 }
