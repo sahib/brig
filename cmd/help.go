@@ -705,10 +705,7 @@ outputting a .tar archive of the directory contents).
 		},
 		Description: `Start the dameon process in the foreground.
 
-   Note that the log will still be written to $BRIG_PATH/logs/main.log.
-   You can change this behaviour by being explicit with --log-path:
-
-   $ brig -l stdout daemon launch
+   $ brig daemon launch
 `,
 	},
 	"daemon.quit": {

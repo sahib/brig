@@ -75,7 +75,7 @@ func FsTabApply(cfg *config.Config, mounts *MountTable) error {
 	for path, mount := range mounts.m {
 		// Do not do anything when the path / options did not change.
 		opts, isConfigured := mountPaths[path]
-		if isConfigured && mount.EqualOptions(opts) {
+		if isConfigured && mount.EqualOptions(*opts) {
 			delete(mountPaths, path)
 			continue
 		}

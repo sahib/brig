@@ -148,11 +148,6 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrapf(err, "passwd-lock")
 	}
 
-	logDir := filepath.Join(baseFolder, "logs")
-	if err := os.MkdirAll(logDir, 0700); err != nil {
-		return err
-	}
-
 	return e.Wrapf(
 		LockRepo(
 			baseFolder,
