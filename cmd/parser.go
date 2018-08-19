@@ -315,6 +315,7 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "fstab",
 			Category: repoGroup,
+			Action:   withArgCheck(needAtLeast(0), withDaemon(handleFstabList, true)),
 			Subcommands: []cli.Command{
 				{
 					Name:   "add",
