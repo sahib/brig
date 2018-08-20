@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/repo"
@@ -30,9 +32,37 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func BootServer(basePath, password, bindHost string, port int) (*Server, error) {
+func readPasswordFromRegistry(basePath string) (string, error) {
+	registry, err := repo.OpenRegistry()
+	if err != nil {
+		return "", err
+	}
+
+	repoID, err := ioutil.ReadFile(filepath.Join(basePath, "REPO_ID"))
+	if err != nil {
+		return "", err
+	}
+
+	entry, err := registry.Entry(string(repoID))
+	if err != nil {
+		return "", err
+	}
+
+	log.Info("Was able to read password from registry")
+	return entry.Password, nil
+}
+
+func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int) (*Server, error) {
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon from %s on port %s", basePath, addr)
+
+	password, err := readPasswordFromRegistry(basePath)
+	if err != nil {
+		password, err = passwordFn()
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if err := repo.CheckPassword(basePath, password); err != nil {
 		return nil, err

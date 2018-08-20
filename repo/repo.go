@@ -18,7 +18,7 @@ import (
 
 var (
 	// Do not encrypt "data" (already contains encrypted streams) and
-	excludedFromLock   = []string{"data", "OWNER", "BACKEND"}
+	excludedFromLock   = []string{"data", "OWNER", "BACKEND", "REPO_ID"}
 	excludedFromUnlock = []string{"passwd.locked"}
 )
 
@@ -32,6 +32,7 @@ var (
 // config.yml
 // OWNER
 // BACKEND
+// REPO_ID
 // remotes.yml
 // data/
 //    <backend_name>
@@ -111,6 +112,29 @@ func Init(baseFolder, owner, password, backendName string) error {
 	// For future use: If we ever need to migrate the repo.
 	versionPath := filepath.Join(baseFolder, "VERSION")
 	if err := ioutil.WriteFile(versionPath, []byte("1"), 0644); err != nil {
+		return err
+	}
+
+	registry, err := OpenRegistry()
+	if err != nil {
+		// TODO: Is that error fatal? registry is more optional
+		return err
+	}
+
+	// TODO: This is most likely a bad idea.
+	// Only store hash in central place? At least make it possible to disable.
+	repoID, err := registry.Add(&RegistryEntry{
+		Owner:    owner,
+		Path:     baseFolder,
+		Password: password,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	repoIDPath := filepath.Join(baseFolder, "REPO_ID")
+	if err := ioutil.WriteFile(repoIDPath, []byte(repoID), 0644); err != nil {
 		return err
 	}
 

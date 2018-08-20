@@ -314,18 +314,28 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 			brigPath,
 		)
 	} else {
-		password, err = readPassword(ctx, brigPath)
-		if err != nil {
-			return ExitCode{
-				UnknownError,
-				fmt.Sprintf("Failed to read password: %v", err),
-			}
-		}
 	}
 
 	port := ctx.GlobalInt("port")
 	bindHost := ctx.GlobalString("bind")
-	server, err := server.BootServer(brigPath, password, bindHost, port)
+
+	passwordFn := func() (string, error) {
+		if !isInitialized {
+			return "", nil
+		}
+
+		password, err = readPassword(ctx, brigPath)
+		if err != nil {
+			return "", ExitCode{
+				UnknownError,
+				fmt.Sprintf("Failed to read password: %v", err),
+			}
+		}
+
+		return password, nil
+	}
+
+	server, err := server.BootServer(brigPath, passwordFn, bindHost, port)
 	if err != nil {
 		return ExitCode{
 			UnknownError,

@@ -94,6 +94,15 @@ func (mm *Migrater) biggerThan(version Version) []migrationEntry {
 
 // Migrate reads the config from `dec` and converts it to the newest version if required.
 func (mm *Migrater) Migrate(dec Decoder) (*Config, error) {
+	if dec == nil {
+		if len(mm.migrations) == 0 {
+			return nil, fmt.Errorf("no migration given and nothing to decode from")
+		}
+
+		defaults := mm.migrations[len(mm.migrations)-1].defaults
+		return Open(nil, defaults, mm.strictness)
+	}
+
 	currVersion, memory, err := dec.Decode()
 	if err != nil {
 		return nil, err
