@@ -3,11 +3,15 @@ package server
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/util/server"
 )
@@ -32,36 +36,54 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func readPasswordFromRegistry(basePath string) (string, error) {
-	registry, err := repo.OpenRegistry()
+func maybeReadPassword(basePath string) (string, error) {
+	configPath := filepath.Join(basePath, "config.yml")
+	cfg, err := defaults.OpenMigratedConfig(configPath)
 	if err != nil {
 		return "", err
 	}
 
-	repoID, err := ioutil.ReadFile(filepath.Join(basePath, "REPO_ID"))
+	passwordCmd := cfg.String("repo.password_command")
+	if passwordCmd == "" {
+		return "", fmt.Errorf("no password helper set")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	currentUser, err := user.Current()
 	if err != nil {
 		return "", err
 	}
 
-	entry, err := registry.Entry(string(repoID))
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", passwordCmd)
+	cmd.Env = append(cmd.Env, "BRIG_PATH="+basePath)
+	cmd.Env = append(cmd.Env, "HOME="+currentUser.HomeDir)
+
+	data, err := cmd.Output()
 	if err != nil {
+		log.Warningf("failed to execute password helper: %v: %s", err, data)
 		return "", err
 	}
 
-	log.Info("Was able to read password from registry")
-	return entry.Password, nil
+	return strings.Trim(string(data), "\n"), nil
 }
 
 func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int) (*Server, error) {
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon from %s on port %s", basePath, addr)
 
-	password, err := readPasswordFromRegistry(basePath)
+	password, err := maybeReadPassword(basePath)
 	if err != nil {
+		log.Infof("Failed to read password from helper: %s", err)
+		log.Infof("Attempting to read it from stdin", err)
+
 		password, err = passwordFn()
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		log.Infof("Password is coming from the configured password helper")
 	}
 
 	if err := repo.CheckPassword(basePath, password); err != nil {

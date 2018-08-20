@@ -18,7 +18,7 @@ import (
 
 var (
 	// Do not encrypt "data" (already contains encrypted streams) and
-	excludedFromLock   = []string{"data", "OWNER", "BACKEND", "REPO_ID"}
+	excludedFromLock   = []string{"data", "OWNER", "BACKEND", "REPO_ID", "config.yml"}
 	excludedFromUnlock = []string{"passwd.locked"}
 )
 
@@ -116,26 +116,23 @@ func Init(baseFolder, owner, password, backendName string) error {
 	}
 
 	registry, err := OpenRegistry()
-	if err != nil {
-		// TODO: Is that error fatal? registry is more optional
-		return err
-	}
+	if err == nil {
+		repoID, err := registry.Add(&RegistryEntry{
+			Owner: owner,
+			Path:  baseFolder,
+		})
 
-	// TODO: This is most likely a bad idea.
-	// Only store hash in central place? At least make it possible to disable.
-	repoID, err := registry.Add(&RegistryEntry{
-		Owner:    owner,
-		Path:     baseFolder,
-		Password: password,
-	})
+		if err != nil {
+			log.Warningf("failed to add self to registry: %v", err)
 
-	if err != nil {
-		return err
-	}
+		}
 
-	repoIDPath := filepath.Join(baseFolder, "REPO_ID")
-	if err := ioutil.WriteFile(repoIDPath, []byte(repoID), 0644); err != nil {
-		return err
+		repoIDPath := filepath.Join(baseFolder, "REPO_ID")
+		if err := ioutil.WriteFile(repoIDPath, []byte(repoID), 0644); err != nil {
+			return err
+		}
+	} else {
+		log.Info("failed to open global registry: %v", err)
 	}
 
 	// Create a default config, only with the default keys applied:

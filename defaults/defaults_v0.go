@@ -71,6 +71,11 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: true,
 			Docs:         "The repository owner that is published to the outside",
 		},
+		"password_command": config.DefaultEntry{
+			Default:      "",
+			NeedsRestart: false,
+			Docs:         "If set, the repo password is taken from stdout of this command",
+		},
 	},
 	"mounts": config.DefaultMapping{
 		"__many__": config.DefaultMapping{

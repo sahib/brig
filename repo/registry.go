@@ -24,17 +24,17 @@ var defaultsV0 = config.DefaultMapping{
 			"owner": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: true,
-				Docs:         "",
+				Docs:         "Owner of the repository",
+			},
+			"addr": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: true,
+				Docs:         "Backend Address of this repository",
 			},
 			"path": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: true,
-				Docs:         "",
-			},
-			"password": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: true,
-				Docs:         "",
+				Docs:         "Path to the repository",
 			},
 		},
 	},
@@ -46,9 +46,9 @@ type Registry struct {
 }
 
 type RegistryEntry struct {
-	Path     string
-	Owner    string
-	Password string
+	Path  string
+	Owner string
+	Addr  string
 }
 
 var (
@@ -114,39 +114,48 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 		return "", err
 	}
 
-	entryName := entryUUID.String()
+	newUUID := entryUUID.String()
+	if err := reg.update(newUUID, entry); err != nil {
+		return "", err
+	}
 
+	return newUUID, nil
+}
+
+func (reg *Registry) Update(uuid string, entry *RegistryEntry) error {
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+
+	return reg.update(uuid, entry)
+}
+
+func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
 	// Check this unlikely case:
-	if existingEntry, _ := reg.entry(entryName); existingEntry != nil {
-		return "", ErrRegistryEntryExists
+	if existingEntry, _ := reg.entry(uuid); existingEntry != nil {
+		return ErrRegistryEntryExists
 	}
 
-	ownerKey := fmt.Sprintf("repos.%s.owner", entryName)
+	ownerKey := fmt.Sprintf("repos.%s.owner", uuid)
 	if err := reg.cfg.SetString(ownerKey, entry.Owner); err != nil {
-		return "", err
+		return err
 	}
 
-	passwordKey := fmt.Sprintf("repos.%s.password", entryName)
-	if err := reg.cfg.SetString(passwordKey, entry.Password); err != nil {
-		return "", err
-	}
-
-	pathKey := fmt.Sprintf("repos.%s.path", entryName)
+	pathKey := fmt.Sprintf("repos.%s.path", uuid)
 	if err := reg.cfg.SetString(pathKey, entry.Path); err != nil {
-		return "", err
+		return err
 	}
 
 	registryPath := findRegistryPath()
 	if err := os.MkdirAll(filepath.Dir(registryPath), 0700); err != nil {
-		return "", err
+		return err
 	}
 
 	registryFd, err := os.OpenFile(registryPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return entryName, reg.cfg.Save(config.NewYamlEncoder(registryFd))
+	return reg.cfg.Save(config.NewYamlEncoder(registryFd))
 }
 
 func (reg *Registry) Entry(uuid string) (*RegistryEntry, error) {
@@ -173,14 +182,43 @@ func (reg *Registry) entry(uuid string) (*RegistryEntry, error) {
 	}
 
 	ownerKey := fmt.Sprintf("repos.%s.owner", uuid)
-	passwordKey := fmt.Sprintf("repos.%s.password", uuid)
+	addrKey := fmt.Sprintf("repos.%s.addr", uuid)
 
 	owner := reg.cfg.String(ownerKey)
-	password := reg.cfg.String(passwordKey)
+	addr := reg.cfg.String(addrKey)
 
 	return &RegistryEntry{
-		Path:     path,
-		Owner:    owner,
-		Password: password,
+		Path:  path,
+		Owner: owner,
+		Addr:  addr,
 	}, nil
+}
+
+func (reg *Registry) List() ([]*RegistryEntry, error) {
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+
+	entries := []*RegistryEntry{}
+
+	for _, key := range reg.cfg.Keys() {
+		if !strings.HasSuffix(key, ".path") {
+			continue
+		}
+
+		split := strings.Split(key, ".")
+		if len(split) < 3 {
+			return nil, fmt.Errorf("broken key in global registry: %s", key)
+		}
+
+		uuid := split[1]
+
+		entry, err := reg.entry(uuid)
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
 }
