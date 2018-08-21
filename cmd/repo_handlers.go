@@ -534,7 +534,9 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\t")
+	if len(sortedMounts) > 0 {
+		fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\t")
+	}
 
 	for _, entry := range sortedMounts {
 		fmt.Fprintf(
