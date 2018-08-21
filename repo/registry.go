@@ -31,10 +31,20 @@ var defaultsV0 = config.DefaultMapping{
 				NeedsRestart: true,
 				Docs:         "Backend Address of this repository",
 			},
+			"local_port": config.DefaultEntry{
+				Default:      6666,
+				NeedsRestart: true,
+				Docs:         "The port of the brigd service",
+			},
 			"path": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: true,
 				Docs:         "Path to the repository",
+			},
+			"is_default": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: true,
+				Docs:         "Use this repo as default?",
 			},
 		},
 	},
@@ -46,9 +56,11 @@ type Registry struct {
 }
 
 type RegistryEntry struct {
-	Path  string
-	Owner string
-	Addr  string
+	Path      string
+	Owner     string
+	Addr      string
+	Port      int64
+	IsDefault bool
 }
 
 var (
@@ -114,12 +126,17 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 		return "", err
 	}
 
-	newUUID := entryUUID.String()
-	if err := reg.update(newUUID, entry); err != nil {
+	entries, err := reg.list()
+	if err != nil {
 		return "", err
 	}
 
-	return newUUID, nil
+	entry.IsDefault = len(entries) == 0
+	if err := reg.update(entryUUID.String(), entry); err != nil {
+		return "", err
+	}
+
+	return entryUUID.String(), nil
 }
 
 func (reg *Registry) Update(uuid string, entry *RegistryEntry) error {
@@ -143,6 +160,18 @@ func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
 	pathKey := fmt.Sprintf("repos.%s.path", uuid)
 	if err := reg.cfg.SetString(pathKey, entry.Path); err != nil {
 		return err
+	}
+
+	isDefaultKey := fmt.Sprintf("repos.%s.is_default", uuid)
+	if err := reg.cfg.SetBool(isDefaultKey, entry.IsDefault); err != nil {
+		return err
+	}
+
+	if entry.Port != 0 {
+		portKey := fmt.Sprintf("repos.%s.local_port", uuid)
+		if err := reg.cfg.SetInt(portKey, entry.Port); err != nil {
+			return err
+		}
 	}
 
 	registryPath := findRegistryPath()
@@ -181,16 +210,22 @@ func (reg *Registry) entry(uuid string) (*RegistryEntry, error) {
 		return nil, fmt.Errorf("no entry for uuid `%s`", uuid)
 	}
 
+	isDefaultKey := fmt.Sprintf("repos.%s.is_default", uuid)
 	ownerKey := fmt.Sprintf("repos.%s.owner", uuid)
 	addrKey := fmt.Sprintf("repos.%s.addr", uuid)
+	portKey := fmt.Sprintf("repos.%s.local_port", uuid)
 
+	isDefault := reg.cfg.Bool(isDefaultKey)
 	owner := reg.cfg.String(ownerKey)
 	addr := reg.cfg.String(addrKey)
+	port := reg.cfg.Int(portKey)
 
 	return &RegistryEntry{
-		Path:  path,
-		Owner: owner,
-		Addr:  addr,
+		Path:      path,
+		Owner:     owner,
+		Addr:      addr,
+		Port:      port,
+		IsDefault: isDefault,
 	}, nil
 }
 
@@ -198,6 +233,10 @@ func (reg *Registry) List() ([]*RegistryEntry, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
+	return reg.list()
+}
+
+func (reg *Registry) list() ([]*RegistryEntry, error) {
 	entries := []*RegistryEntry{}
 
 	for _, key := range reg.cfg.Keys() {

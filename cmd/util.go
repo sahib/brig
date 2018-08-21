@@ -19,6 +19,8 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
+	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/repo"
 	"github.com/urfave/cli"
 )
 
@@ -39,21 +41,32 @@ func (err ExitCode) Error() string {
 	return err.Message
 }
 
-// guessRepoFolder tries to find the repository path
-// by using a number of sources.
-// This helper may call exit when it fails to get the path.
-func guessRepoFolder() string {
-	path := os.Getenv("BRIG_PATH")
-	if path == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			fmt.Printf("Failed to get current working dir: %v; aborting.", err)
-			os.Exit(1)
-		}
-
-		return cwd
+func getRepoFolderFromRegistry() (string, error) {
+	registry, err := repo.OpenRegistry()
+	if err != nil {
+		return "", err
 	}
 
+	entries, err := registry.List()
+	if err != nil {
+		return "", err
+	}
+
+	// Shortcut: If there's only one repo, always connect to that.
+	if len(entries) == 1 {
+		return entries[0].Path, nil
+	}
+
+	for _, entry := range entries {
+		if entry.IsDefault {
+			return entry.Path, nil
+		}
+	}
+
+	return "", fmt.Errorf("no suitable registry entry found")
+}
+
+func mustAbsPath(path string) string {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		fmt.Printf("Failed to get absolute repo path: %v", err)
@@ -61,6 +74,33 @@ func guessRepoFolder() string {
 	}
 
 	return absPath
+}
+
+// guessRepoFolder tries to find the repository path
+// by using a number of sources.
+// This helper may call exit when it fails to get the path.
+func guessRepoFolder() string {
+	envPath := os.Getenv("BRIG_PATH")
+	if envPath != "" {
+		return mustAbsPath(envPath)
+	}
+
+	regPath, err := getRepoFolderFromRegistry()
+	if err == nil {
+		fmt.Printf("Guessed from registry: %s\n", regPath)
+		return mustAbsPath(regPath)
+	}
+
+	fmt.Printf("Failed to get path from registry: %v\n", err)
+
+	cwdPath, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Failed to get current working dir: %v; aborting.", err)
+		os.Exit(1)
+	}
+
+	return mustAbsPath(cwdPath)
+
 }
 
 func readPasswordFromArgs(ctx *cli.Context) string {
@@ -120,14 +160,19 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		return nil, err
 	}
 
-	pwd, err := readPassword(ctx, repoPath)
+	// If a password helper is configured, we should not ask the password right here.
+	askPassword := true
+	cfg, err := defaults.OpenMigratedConfig(filepath.Join(repoPath, "config.yml"))
 	if err != nil {
-		return nil, err
+		fmt.Println("failed to open config for guessing password method")
+	} else {
+		if cfg.String("repo.password_command") != "" {
+			askPassword = false
+		}
 	}
 
 	bindHost := ctx.GlobalString("bind")
 
-	// Start a new daemon process:
 	log.Infof(
 		"No Daemon running at %s:%d. Starting daemon from binary: %s",
 		bindHost,
@@ -135,14 +180,22 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		exePath,
 	)
 
-	proc := exec.Command(
-		exePath,
-		"--password", pwd,
+	daemonArgs := []string{
 		"--port", strconv.FormatInt(int64(port), 10),
 		"--bind", bindHost,
 		"daemon", "launch",
-	)
+	}
 
+	if askPassword {
+		pwd, err := readPassword(ctx, repoPath)
+		if err != nil {
+			return nil, err
+		}
+
+		daemonArgs = append(daemonArgs, "--password", pwd)
+	}
+
+	proc := exec.Command(exePath, daemonArgs...)
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err

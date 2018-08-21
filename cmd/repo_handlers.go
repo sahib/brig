@@ -313,7 +313,6 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 			"No repository found at '%s'. Use `brig init <user>` to create one",
 			brigPath,
 		)
-	} else {
 	}
 
 	port := ctx.GlobalInt("port")
@@ -518,6 +517,8 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 			mounts[mountName].root = entry.Val
 		}
 	}
+
+	// TODO: Also display if the mount is being active currently.
 
 	sortedMounts := []fstabEntry{}
 	for name, entry := range mounts {

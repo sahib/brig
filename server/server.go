@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"log/syslog"
 	"net"
 	"os/exec"
 	"os/user"
@@ -48,7 +50,7 @@ func maybeReadPassword(basePath string) (string, error) {
 		return "", fmt.Errorf("no password helper set")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	currentUser, err := user.Current()
@@ -69,6 +71,40 @@ func maybeReadPassword(basePath string) (string, error) {
 	return strings.Trim(string(data), "\n"), nil
 }
 
+func switchToSyslog() {
+	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
+	if err != nil {
+		log.Warningf("Failed to open connection to syslog: %v", err)
+	}
+
+	log.SetOutput(wSyslog)
+}
+
+func updateRegistry(basePath string, port int) error {
+	data, err := ioutil.ReadFile(filepath.Join(basePath, "REPO_ID"))
+	if err != nil {
+		return err
+	}
+
+	uuid := string(data)
+
+	// TODO: Move repo.OpenRegisry to util somewhere.
+	// It is also used in the client.
+	registry, err := repo.OpenRegistry()
+	if err != nil {
+		return err
+	}
+
+	entry, err := registry.Entry(uuid)
+	if err != nil {
+		return err
+	}
+
+	entry.Port = int64(port)
+	entry.Path = basePath
+	return registry.Update(uuid, entry)
+}
+
 func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int) (*Server, error) {
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon from %s on port %s", basePath, addr)
@@ -76,7 +112,7 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	password, err := maybeReadPassword(basePath)
 	if err != nil {
 		log.Infof("Failed to read password from helper: %s", err)
-		log.Infof("Attempting to read it from stdin", err)
+		log.Infof("Attempting to read it from stdin")
 
 		password, err = passwordFn()
 		if err != nil {
@@ -91,6 +127,10 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	}
 
 	log.Infof("Password seems to be valid...")
+
+	if err := updateRegistry(basePath, port); err != nil {
+		log.Warningf("could not update global registry: %v", err)
+	}
 
 	if err := increaseMaxOpenFds(); err != nil {
 		log.Warningf("Failed to incrase number of open fds")
