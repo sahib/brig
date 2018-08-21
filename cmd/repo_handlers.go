@@ -44,21 +44,24 @@ func createInitialReadme(ctl *client.Client, folder string) error {
 Here's what you can do next:
 
     • Add a few remotes to sync with (See 'brig remote add -h')
-    • Mount your data somewhere convinient (See 'brig mount -h')
+    • Mount your data somewhere convinient (See 'brig fstab -h')
     • Have a relaxing day exploring brig's features.
 
 Please remember that brig is software in it's very early stages,
 and will currently eat your data with near-certainity.
 
-It's probably a good idea to add the following to your shell config,
-so you can easily restart brig after your computer restarted:
-
-   $ export BRIG_PATH=%s  # brig needs to know where the repo is.
-
 If you're done with this README, you can easily remove it:
 
     $ brig rm README.md
 
+We recommend highly to install a password manager and hook it up
+with brig. For example, with "pass" you can execute the following
+to avoid re-entering your password on every daemon startup:
+
+    $ brig cfg set repo.password_command "pass brig/my_pwd_key"
+
+The next start of brig will then read the password from the
+standard output of this process.
 `
 	fd, err := ioutil.TempFile("", ".brig-init-readme-")
 	if err != nil {
@@ -119,15 +122,17 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
-	password := readPasswordFromArgs(ctx)
+	folder := ctx.String("path")
+	password := readPasswordFromArgs(folder, ctx)
 
 	if ctx.NArg() > 1 {
 		return fmt.Errorf("Too many arguments, only user is needed.")
 	}
 
-	folder := ctx.String("path")
 	if folder == "" {
-		folder = guessRepoFolder()
+		// Make sure that we do not lookup the global registry:
+		folder = guessRepoFolder(false)
+		fmt.Printf("Guessed folder for init: %s\n", folder)
 	}
 
 	// Check if the folder exists...
@@ -161,6 +166,13 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	fmt.Println(brigLogo)
+
+	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
+		if err := ctl.ConfigSet("repo.password_command", pwHelper); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -295,7 +307,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
-	brigPath := guessRepoFolder()
+	brigPath := guessRepoFolder(true)
 	isInitialized, err := repoIsInitialized(brigPath)
 	if err != nil {
 		return err

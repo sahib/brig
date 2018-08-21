@@ -22,6 +22,7 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/util/pwutil"
 	"github.com/urfave/cli"
 )
 
@@ -96,19 +97,21 @@ func checkmarkify(val bool) string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 // This helper may call exit when it fails to get the path.
-func guessRepoFolder() string {
+func guessRepoFolder(lookupGlobal bool) string {
 	envPath := os.Getenv("BRIG_PATH")
 	if envPath != "" {
 		return mustAbsPath(envPath)
 	}
 
-	regPath, err := getRepoFolderFromRegistry()
-	if err == nil {
-		fmt.Printf("Guessed from registry: %s\n", regPath)
-		return mustAbsPath(regPath)
-	}
+	if lookupGlobal {
+		regPath, err := getRepoFolderFromRegistry()
+		if err == nil {
+			fmt.Printf("Guessed from registry: %s\n", regPath)
+			return mustAbsPath(regPath)
+		}
 
-	fmt.Printf("Failed to get path from registry: %v\n", err)
+		fmt.Printf("Failed to get path from registry: %v\n", err)
+	}
 
 	cwdPath, err := os.Getwd()
 	if err != nil {
@@ -120,7 +123,17 @@ func guessRepoFolder() string {
 
 }
 
-func readPasswordFromArgs(ctx *cli.Context) string {
+func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
+	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
+		password, err := pwutil.ReadPasswordFromHelper(basePath, pwHelper)
+
+		if err == nil {
+			return password
+		}
+
+		fmt.Printf("Failed to read password from '%s': %v\n", pwHelper, err)
+	}
+
 	for curr := ctx; curr != nil; {
 		if curr.Bool("no-password") {
 			return "no-pass"
@@ -148,7 +161,8 @@ func readPassword(ctx *cli.Context, repoPath string) (string, error) {
 
 	// Try to read the password from -x or fallback to the default
 	// password if requested by the --no-pass switch.
-	if password := readPasswordFromArgs(ctx); password != "" {
+	if password := readPasswordFromArgs(repoPath, ctx); password != "" {
+		fmt.Println("Password:", password)
 		return password, nil
 	}
 
@@ -257,7 +271,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Start the server & pass the password:
-		ctl, err = startDaemon(ctx, guessRepoFolder(), port)
+		ctl, err = startDaemon(ctx, guessRepoFolder(true), port)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,

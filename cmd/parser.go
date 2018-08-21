@@ -296,6 +296,7 @@ func RunCmdline(args []string) int {
 			Name:     "config",
 			Aliases:  []string{"cfg"},
 			Category: repoGroup,
+			Action:   withDaemon(handleConfigList, true),
 			Subcommands: []cli.Command{
 				{
 					Name:    "list",

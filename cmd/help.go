@@ -50,6 +50,11 @@ var HelpTexts = map[string]Help{
 				Value: "",
 				Usage: "Where to create the new repository (overwrites BRIG_PATH)",
 			},
+			cli.StringFlag{
+				Name:  "w,pw-helper",
+				Value: "",
+				Usage: "A commandline to specify a password helper (see repo.)",
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 

@@ -7,16 +7,13 @@ import (
 	"log/syslog"
 	"net"
 	"os"
-	"os/exec"
-	"os/user"
 	"path/filepath"
-	"strings"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo"
 	formatter "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/util/server"
 )
 
@@ -40,7 +37,7 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func maybeReadPassword(basePath string) (string, error) {
+func readPasswordFromHelper(basePath string) (string, error) {
 	configPath := filepath.Join(basePath, "config.yml")
 	cfg, err := defaults.OpenMigratedConfig(configPath)
 	if err != nil {
@@ -52,25 +49,7 @@ func maybeReadPassword(basePath string) (string, error) {
 		return "", fmt.Errorf("no password helper set")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-
-	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", passwordCmd)
-	cmd.Env = append(cmd.Env, "BRIG_PATH="+basePath)
-	cmd.Env = append(cmd.Env, "HOME="+currentUser.HomeDir)
-
-	data, err := cmd.Output()
-	if err != nil {
-		log.Warningf("failed to execute password helper: %v: %s", err, data)
-		return "", err
-	}
-
-	return strings.Trim(string(data), "\n"), nil
+	return pwutil.ReadPasswordFromHelper(basePath, passwordCmd)
 }
 
 func switchToSyslog() {
@@ -119,7 +98,7 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon from %s on port %s", basePath, addr)
 
-	password, err := maybeReadPassword(basePath)
+	password, err := readPasswordFromHelper(basePath)
 	if err != nil {
 		log.Infof("Failed to read password from helper: %s", err)
 		log.Infof("Attempting to read it from stdin")
