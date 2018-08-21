@@ -207,6 +207,82 @@ func (mh *metaHandler) FstabApply(call capnp.Meta_fstabApply) error {
 	return rp.SaveConfig()
 }
 
+func (mh *metaHandler) FstabUnmountAll(call capnp.Meta_fstabUnmountAll) error {
+	server.Ack(call.Options)
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	return fuse.FsTabUnmountAll(rp.Config, mounts)
+}
+
+func fsTabEntryToCap(entry fuse.FsTabEntry, seg *capnplib.Segment) (*capnp.FsTabEntry, error) {
+	capEntry, err := capnp.NewFsTabEntry(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	capEntry.SetReadOnly(entry.ReadOnly)
+	capEntry.SetActive(entry.Active)
+
+	if err := capEntry.SetPath(entry.Path); err != nil {
+		return nil, err
+	}
+	if err := capEntry.SetRoot(entry.Root); err != nil {
+		return nil, err
+	}
+	if err := capEntry.SetName(entry.Name); err != nil {
+		return nil, err
+	}
+
+	return &capEntry, nil
+}
+
+func (mh *metaHandler) FstabList(call capnp.Meta_fstabList) error {
+	server.Ack(call.Options)
+
+	rp, err := mh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := mh.base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	entries, err := fuse.FsTabList(rp.Config, mounts)
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+	capEntries, err := capnp.NewFsTabEntry_List(seg, int32(len(entries)))
+	if err != nil {
+		return err
+	}
+
+	for idx, entry := range entries {
+		capEntry, err := fsTabEntryToCap(entry, seg)
+		if err != nil {
+			return err
+		}
+
+		if err := capEntries.Set(idx, *capEntry); err != nil {
+			return err
+		}
+	}
+
+	return call.Results.SetMounts(capEntries)
+}
+
 func (mh *metaHandler) ConfigGet(call capnp.Meta_configGet) error {
 	repo, err := mh.base.Repo()
 	if err != nil {

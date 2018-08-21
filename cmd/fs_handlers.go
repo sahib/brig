@@ -385,15 +385,8 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	pinState := color.GreenString("yes")
-	if !info.IsPinned {
-		pinState = color.RedString("no")
-	}
-
-	explicitState := color.GreenString("yes")
-	if !info.IsExplicit {
-		explicitState = color.RedString("no")
-	}
+	pinState := yesify(info.IsPinned)
+	explicitState := yesify(info.IsExplicit)
 
 	nodeType := "file"
 	if info.IsDir {

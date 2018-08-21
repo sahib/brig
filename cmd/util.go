@@ -17,6 +17,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/VividCortex/godaemon"
+	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
@@ -74,6 +75,22 @@ func mustAbsPath(path string) string {
 	}
 
 	return absPath
+}
+
+func yesify(val bool) string {
+	if val {
+		return color.GreenString("yes")
+	}
+
+	return color.RedString("no")
+}
+
+func checkmarkify(val bool) string {
+	if val {
+		return color.GreenString("✔")
+	}
+
+	return ""
 }
 
 // guessRepoFolder tries to find the repository path

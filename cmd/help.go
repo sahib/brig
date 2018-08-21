@@ -793,6 +793,12 @@ if the service needs a restart when setting the value.
 	"fstab.apply": {
 		Usage:       "Sync the reality with the mounts in fstab",
 		Description: "Mounts and unmounts directories as necessary",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "u,unmount",
+				Usage: "Unmount all mounts in the filesystem table",
+			},
+		},
 	},
 	"mount": {
 		Usage:     "Mount the contents of brig as FUSE filesystem",

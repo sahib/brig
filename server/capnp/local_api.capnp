@@ -117,6 +117,14 @@ struct ExplicitPin {
     commit @1 :Text;
 }
 
+struct FsTabEntry {
+    name     @0 :Text;
+    path     @1 :Text;
+    readOnly @2 :Bool;
+    root     @3 :Text;
+    active   @4 :Bool;
+}
+
 interface FS {
     stage             @0   (localPath :Text, repoPath :Text);
     list              @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -179,9 +187,11 @@ interface Meta {
     onlinePeers @21 () -> (infos :List(PeerStatus));
     version     @22 () -> (version :Version);
 
-    fstabAdd    @23 (mountName :Text, mountPath :Text, options :MountOptions);
-    fstabRemove @24 (mountName :Text);
-    fstabApply  @25 ();
+    fstabAdd        @23 (mountName :Text, mountPath :Text, options :MountOptions);
+    fstabRemove     @24 (mountName :Text);
+    fstabApply      @25 ();
+    fstabList       @26 () -> (mounts :List(FsTabEntry));
+    fstabUnmountAll @27 ();
 }
 
 # Group all interfaces together in one API object,

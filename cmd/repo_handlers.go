@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
-	"sort"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -173,11 +171,7 @@ func printConfigDocEntry(entry client.ConfigEntry) {
 		entry.Val,
 	)
 
-	needsRestart := "no"
-	if entry.NeedsRestart == true {
-		needsRestart = color.RedString("yes")
-	}
-
+	needsRestart := yesify(entry.NeedsRestart)
 	defaultVal := entry.Default
 	if entry.Default == "" {
 		defaultVal = color.YellowString("(empty)")
@@ -476,80 +470,44 @@ func handleFstabRemove(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleFstabApply(ctx *cli.Context, ctl *client.Client) error {
+	if ctx.Bool("unmount") {
+		return ctl.FstabUnmountAll()
+	}
+
 	return ctl.FstabApply()
 }
 
-type fstabEntry struct {
-	name     string
-	path     string
-	readOnly string
-	root     string
+func handleFstabUnmounetAll(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.FstabUnmountAll()
 }
 
 func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
-	all, err := ctl.ConfigAll()
+	mounts, err := ctl.FsTabList()
 	if err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("config list: %v", err)}
 	}
 
-	mounts := make(map[string]*fstabEntry)
-
-	for _, entry := range all {
-		split := strings.Split(entry.Key, ".")
-		if len(split) < 3 || split[0] != "mounts" {
-			continue
-		}
-
-		mountName := split[1]
-		if _, ok := mounts[mountName]; !ok {
-			mounts[mountName] = &fstabEntry{}
-		}
-
-		if split[2] == "path" {
-			mounts[mountName].path = entry.Val
-		}
-
-		if split[2] == "read_only" {
-			mounts[mountName].readOnly = entry.Val
-		}
-
-		if split[2] == "root" {
-			mounts[mountName].root = entry.Val
-		}
+	if len(mounts) == 0 {
+		return nil
 	}
-
-	// TODO: Also display if the mount is being active currently.
-
-	sortedMounts := []fstabEntry{}
-	for name, entry := range mounts {
-		entry.name = name
-		sortedMounts = append(sortedMounts, *entry)
-	}
-
-	sort.Slice(sortedMounts, func(i, j int) bool {
-		return sortedMounts[i].name < sortedMounts[j].name
-	})
 
 	tabW := tabwriter.NewWriter(
 		os.Stdout, 0, 0, 2, ' ',
 		tabwriter.StripEscape,
 	)
 
-	if len(sortedMounts) > 0 {
-		fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\t")
-	}
-
-	for _, entry := range sortedMounts {
+	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\tACTIVE\t")
+	for _, entry := range mounts {
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\n",
-			entry.name,
-			entry.path,
-			entry.readOnly,
-			entry.root,
+			"%s\t%s\t%s\t%s\t%s\n",
+			entry.Name,
+			entry.Path,
+			yesify(entry.ReadOnly),
+			entry.Root,
+			checkmarkify(entry.Active),
 		)
 	}
 
 	return tabW.Flush()
-
 }

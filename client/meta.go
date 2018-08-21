@@ -729,3 +729,74 @@ func (ctl *Client) FstabApply() error {
 	_, err := call.Struct()
 	return err
 }
+
+func (ctl *Client) FstabUnmountAll() error {
+	call := ctl.api.FstabUnmountAll(ctl.ctx, func(p capnp.Meta_fstabUnmountAll_Params) error {
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+type FsTabEntry struct {
+	Name     string
+	Path     string
+	Root     string
+	Active   bool
+	ReadOnly bool
+}
+
+func capMountToMount(capEntry capnp.FsTabEntry) (*FsTabEntry, error) {
+	name, err := capEntry.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := capEntry.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	path, err := capEntry.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	return &FsTabEntry{
+		Path:     path,
+		Name:     name,
+		Root:     root,
+		Active:   capEntry.Active(),
+		ReadOnly: capEntry.ReadOnly(),
+	}, nil
+}
+
+func (ctl *Client) FsTabList() ([]FsTabEntry, error) {
+	call := ctl.api.FstabList(ctl.ctx, func(p capnp.Meta_fstabList_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capMounts, err := result.Mounts()
+	if err != nil {
+		return nil, err
+	}
+
+	mounts := []FsTabEntry{}
+	for idx := 0; idx < capMounts.Len(); idx++ {
+		capMount := capMounts.At(idx)
+		mount, err := capMountToMount(capMount)
+		if err != nil {
+			return nil, err
+		}
+
+		mounts = append(mounts, *mount)
+	}
+
+	return mounts, nil
+}

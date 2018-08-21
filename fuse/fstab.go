@@ -3,8 +3,10 @@ package fuse
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/util"
 	"github.com/sahib/config"
 )
@@ -45,6 +47,28 @@ func FsTabAdd(cfg *config.Config, name, path string, opts MountOptions) error {
 // call FsTabApply for this.
 func FsTabRemove(cfg *config.Config, name string) error {
 	return cfg.Reset(name)
+}
+
+func FsTabUnmountAll(cfg *config.Config, mounts *MountTable) error {
+	mounts.mu.Lock()
+	defer mounts.mu.Unlock()
+
+	errors := util.Errors{}
+	for _, key := range cfg.Keys() {
+		if strings.HasSuffix(key, ".path") {
+			mountPath := cfg.String(key)
+			log.Debugf("Unmount key %s %s", key, mountPath)
+			if mountPath == "" {
+				continue
+			}
+
+			if err := mounts.unmount(mountPath); err != nil {
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	return errors.ToErr()
 }
 
 // FsTabApply takes all configured mounts and makes sure that all of them are opened.
@@ -96,4 +120,55 @@ func FsTabApply(cfg *config.Config, mounts *MountTable) error {
 	}
 
 	return errors.ToErr()
+}
+
+type FsTabEntry struct {
+	Name     string
+	Path     string
+	Root     string
+	Active   bool
+	ReadOnly bool
+}
+
+func FsTabList(cfg *config.Config, mounts *MountTable) ([]FsTabEntry, error) {
+	mounts.mu.Lock()
+	defer mounts.mu.Unlock()
+
+	mountMap := make(map[string]*FsTabEntry)
+	for _, key := range cfg.Keys() {
+		split := strings.Split(key, ".")
+		if len(split) < 3 || split[0] != "mounts" {
+			continue
+		}
+
+		mountName := split[1]
+		if _, ok := mountMap[mountName]; !ok {
+			mountMap[mountName] = &FsTabEntry{}
+		}
+
+		switch split[2] {
+		case "path":
+			path := cfg.String(key)
+			mountMap[mountName].Path = path
+
+			_, isActive := mounts.m[path]
+			mountMap[mountName].Active = isActive
+		case "read_only":
+			mountMap[mountName].ReadOnly = cfg.Bool(key)
+		case "root":
+			mountMap[mountName].Root = cfg.String(key)
+		}
+	}
+
+	sortedMounts := []FsTabEntry{}
+	for name, entry := range mountMap {
+		entry.Name = name
+		sortedMounts = append(sortedMounts, *entry)
+	}
+
+	sort.Slice(sortedMounts, func(i, j int) bool {
+		return sortedMounts[i].Name < sortedMounts[j].Name
+	})
+
+	return sortedMounts, nil
 }
