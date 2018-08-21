@@ -328,7 +328,8 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return password, nil
 	}
 
-	server, err := server.BootServer(brigPath, passwordFn, bindHost, port)
+	logToStdout := ctx.Bool("log-to-stdout")
+	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)
 	if err != nil {
 		return ExitCode{
 			UnknownError,

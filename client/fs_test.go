@@ -35,7 +35,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, basePath strin
 	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
 	require.Nil(t, os.MkdirAll(fullPath, 0700))
 
-	srv, err := server.BootServer(fullPath, "password", "localhost", port)
+	srv, err := server.BootServer(fullPath, "password", "localhost", port, true)
 	fmt.Println("BOOT UP ERR", err)
 
 	// TODO: Subsequent: listen tcp 127.0.0.1:6668: bind: address already in use

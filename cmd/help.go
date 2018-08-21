@@ -702,6 +702,10 @@ outputting a .tar archive of the directory contents).
 				Name:  "trace,t",
 				Usage: "Create tracing output suitable for `go tool trace`",
 			},
+			cli.BoolFlag{
+				Name:  "s,log-to-stdout",
+				Usage: "Log all messages to stdout instead of syslog",
+			},
 		},
 		Description: `Start the dameon process in the foreground.
 

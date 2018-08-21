@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"net"
+	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo"
+	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/server"
 )
 
@@ -77,6 +79,8 @@ func switchToSyslog() {
 		log.Warningf("Failed to open connection to syslog: %v", err)
 	}
 
+	log.SetFormatter(&formatter.ColorfulLogFormatter{})
+	log.SetLevel(log.DebugLevel)
 	log.SetOutput(wSyslog)
 }
 
@@ -105,7 +109,13 @@ func updateRegistry(basePath string, port int) error {
 	return registry.Update(uuid, entry)
 }
 
-func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int) (*Server, error) {
+func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int, logToStdout bool) (*Server, error) {
+	if !logToStdout {
+		switchToSyslog()
+	} else {
+		log.SetOutput(os.Stdout)
+	}
+
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon from %s on port %s", basePath, addr)
 
