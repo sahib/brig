@@ -321,7 +321,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		)
 	}
 
-	port := ctx.GlobalInt("port")
+	port := guessPort(ctx)
 	bindHost := ctx.GlobalString("bind")
 
 	passwordFn := func() (string, error) {

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,29 +44,29 @@ func (err ExitCode) Error() string {
 	return err.Message
 }
 
-func getRepoFolderFromRegistry() (string, error) {
+func getRepoEntryFromRegistry() (*repo.RegistryEntry, error) {
 	registry, err := repo.OpenRegistry()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	entries, err := registry.List()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Shortcut: If there's only one repo, always connect to that.
 	if len(entries) == 1 {
-		return entries[0].Path, nil
+		return entries[0], nil
 	}
 
 	for _, entry := range entries {
 		if entry.IsDefault {
-			return entry.Path, nil
+			return entry, nil
 		}
 	}
 
-	return "", fmt.Errorf("no suitable registry entry found")
+	return nil, fmt.Errorf("no suitable registry entry found")
 }
 
 func mustAbsPath(path string) string {
@@ -104,10 +105,10 @@ func guessRepoFolder(lookupGlobal bool) string {
 	}
 
 	if lookupGlobal {
-		regPath, err := getRepoFolderFromRegistry()
+		entry, err := getRepoEntryFromRegistry()
 		if err == nil {
-			fmt.Printf("Guessed from registry: %s\n", regPath)
-			return mustAbsPath(regPath)
+			fmt.Printf("Guessed from registry: %s\n", entry.Path)
+			return mustAbsPath(entry.Path)
 		}
 
 		fmt.Printf("Failed to get path from registry: %v\n", err)
@@ -120,7 +121,58 @@ func guessRepoFolder(lookupGlobal bool) string {
 	}
 
 	return mustAbsPath(cwdPath)
+}
 
+func guessNextFreePort(ctx *cli.Context) (int, error) {
+	if ctx.GlobalIsSet("port") {
+		return ctx.GlobalInt("port"), nil
+	}
+
+	registry, err := repo.OpenRegistry()
+	if err != nil {
+		return 0, err
+	}
+
+	entries, err := registry.List()
+	if err != nil {
+		return 0, err
+	}
+
+	maxPort := ctx.GlobalInt("port")
+	for _, entry := range entries {
+		if int(entry.Port) > maxPort {
+			maxPort = int(entry.Port)
+		}
+	}
+
+	for off := 1; off < 1000; off++ {
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", maxPort+off))
+		if err != nil {
+			return maxPort + off, nil
+		}
+
+		conn.Close()
+	}
+
+	return 0, fmt.Errorf("failed to find next free port after 1000 attempts")
+}
+
+func guessPort(ctx *cli.Context) int {
+	if ctx.GlobalIsSet("port") {
+		return ctx.GlobalInt("port")
+	}
+
+	entry, err := getRepoEntryFromRegistry()
+	if err == nil {
+		fmt.Printf("Guessed port from registry: %s\n", entry.Port)
+		return int(entry.Port)
+	}
+
+	fmt.Printf("Failed to get port from registry: %v\n", err)
+
+	port := ctx.GlobalInt("port")
+	fmt.Printf("Warning: Falling back to default port (%d)\n", port)
+	return port
 }
 
 func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
@@ -211,12 +263,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		exePath,
 	)
 
-	daemonArgs := []string{
-		"--port", strconv.FormatInt(int64(port), 10),
-		"--bind", bindHost,
-		"daemon", "launch",
-	}
-
+	daemonArgs := []string{}
 	if askPassword {
 		pwd, err := readPassword(ctx, repoPath)
 		if err != nil {
@@ -226,6 +273,12 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		daemonArgs = append(daemonArgs, "--password", pwd)
 	}
 
+	daemonArgs = append(daemonArgs, []string{
+		"--port", strconv.FormatInt(int64(port), 10),
+		"--bind", bindHost,
+		"daemon", "launch",
+	}...)
+
 	proc := exec.Command(exePath, daemonArgs...)
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
@@ -233,7 +286,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	// This will likely suffice for most cases:
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	warningPrinted := false
 	for i := 0; i < 15; i++ {
@@ -254,10 +307,32 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
+func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
+	// If not, make sure we start a new one:
+	return withExit(func(ctx *cli.Context) error {
+		port, err := guessNextFreePort(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Start the server & pass the password:
+		ctl, err := startDaemon(ctx, guessRepoFolder(true), port)
+		if err != nil {
+			return ExitCode{
+				DaemonNotResponding,
+				fmt.Sprintf("Unable to start daemon: %v", err),
+			}
+		}
+
+		// Run the actual handler:
+		return handler(ctx, ctl)
+	})
+}
+
 func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	// If not, make sure we start a new one:
 	return withExit(func(ctx *cli.Context) error {
-		port := ctx.GlobalInt("port")
+		port := guessPort(ctx)
 
 		// Check if the daemon is running:
 		ctl, err := client.Dial(context.Background(), port)
