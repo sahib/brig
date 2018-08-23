@@ -529,7 +529,8 @@ EXAMPLES:
 	"stage": {
 		Usage:     "Add a local file to the storage",
 		ArgsUsage: "(<local-path> [<path>]|--stdin <path>)",
-		Complete:  completeLocalFile,
+		// TODO: Provide better auto-completion here.
+		// Complete:  completeLocalFile,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "stdin,i",

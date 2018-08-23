@@ -14,7 +14,7 @@ GITREV=`git rev-parse HEAD`
 all: build
 
 build:
-	go build -ldflags \
+	go install -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \

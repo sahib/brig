@@ -145,7 +145,8 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 		}
 	}
 
-	for off := 1; off < 1000; off++ {
+	maxAttempts := 1000
+	for off := 1; off <= maxAttempts; off++ {
 		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", maxPort+off))
 		if err != nil {
 			return maxPort + off, nil
@@ -154,7 +155,9 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 		conn.Close()
 	}
 
-	return 0, fmt.Errorf("failed to find next free port after 1000 attempts")
+	return 0, fmt.Errorf(
+		"failed to find next free port after %d attempts", maxAttempts
+	)
 }
 
 func guessPort(ctx *cli.Context) int {
