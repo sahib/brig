@@ -156,7 +156,8 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 	}
 
 	return 0, fmt.Errorf(
-		"failed to find next free port after %d attempts", maxAttempts
+		"failed to find next free port after %d attempts",
+		maxAttempts,
 	)
 }
 
@@ -167,14 +168,10 @@ func guessPort(ctx *cli.Context) int {
 
 	entry, err := getRepoEntryFromRegistry()
 	if err == nil {
-		fmt.Printf("Guessed port from registry: %s\n", entry.Port)
 		return int(entry.Port)
 	}
 
-	fmt.Printf("Failed to get port from registry: %v\n", err)
-
 	port := ctx.GlobalInt("port")
-	fmt.Printf("Warning: Falling back to default port (%d)\n", port)
 	return port
 }
 

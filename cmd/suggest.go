@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/sahib/brig/client"
 	"github.com/urfave/cli"
 	"github.com/xrash/smetrics"
 )
@@ -121,6 +123,37 @@ func findCurrentCommand(ctx *cli.Context) *cli.Command {
 	}
 
 	return command
+}
+
+func completeBrigPath(allowFiles, allowDirs bool) func(ctx *cli.Context) {
+	return func(ctx *cli.Context) {
+		port := guessPort(ctx)
+
+		// Check if the daemon is running:
+		ctl, err := client.Dial(context.Background(), port)
+		if err != nil {
+			return
+		}
+
+		stats, err := ctl.List("/", -1)
+		if err != nil {
+			return
+		}
+
+		for _, stat := range stats {
+			if stat.Path == "/" {
+				continue
+			}
+
+			if stat.IsDir && allowDirs {
+				fmt.Println(stat.Path)
+			}
+
+			if !stat.IsDir && allowFiles {
+				fmt.Println(stat.Path)
+			}
+		}
+	}
 }
 
 func completeArgsUsage(ctx *cli.Context) {

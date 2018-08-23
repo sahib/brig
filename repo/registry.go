@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/config"
 	"github.com/satori/go.uuid"
 )
@@ -91,7 +90,6 @@ func findRegistryPath() string {
 
 func OpenRegistry() (*Registry, error) {
 	registryPath := findRegistryPath()
-	log.Debugf("using registry path `%s`", registryPath)
 	registryFd, err := os.OpenFile(registryPath, os.O_RDONLY, 0600)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err

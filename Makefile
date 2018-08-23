@@ -14,7 +14,7 @@ GITREV=`git rev-parse HEAD`
 all: build
 
 build:
-	go install -ldflags \
+	time go install -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
@@ -49,6 +49,15 @@ endif
 
 	@sudo cp brig /usr/local/bin
 
-smaller-binary:
-	go build -ldflags="-s -w" brig.go
-	upx brig
+small:
+	time go install -ldflags \
+		" -s -w \
+			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
+			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
+			-X $(VERSION_IMPORT).Patch=$(VERSION_PATCH) \
+			-X $(VERSION_IMPORT).ReleaseType=$(RELEASETYPE) \
+			-X $(VERSION_IMPORT).BuildTime=$(BUILDTIME) \
+			-X $(VERSION_IMPORT).GitRev=$(GITREV) \
+		" \
+		brig.go
+	upx $(GOPATH)/bin/brig

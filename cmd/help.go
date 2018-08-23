@@ -156,7 +156,7 @@ var HelpTexts = map[string]Help{
 	"pin": {
 		Usage:     "Commands to pin a certain file",
 		ArgsUsage: "<file>",
-		Complete:  completeSubcommands,
+		Complete:  completeBrigPath(true, true),
 		Description: `Pinning a file to keep it in local storage.
 
    When you retrieve a file from a remote machine, the file will be cached (maybe
@@ -177,7 +177,7 @@ var HelpTexts = map[string]Help{
 	"pin.add": {
 		Usage:     "Pin a file or directory to local storage",
 		ArgsUsage: "<file>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `A node that is pinned to local storage will not be
    deleted by the garbage collector.`,
 	},
@@ -214,7 +214,7 @@ var HelpTexts = map[string]Help{
 	"pin.set": {
 		Usage:     "A more powerful version of `brig pin set`",
 		ArgsUsage: "[<PREFIX>]",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `Explicitly pin all files in the range between --from and --to
    that start with PREFIX.`,
 		Flags: ExplicitPinFlags,
@@ -222,7 +222,7 @@ var HelpTexts = map[string]Help{
 	"pin.remove": {
 		Usage:     "Remove a pin",
 		ArgsUsage: "<file>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `A node that is pinned to local storage will not be
    deleted by the garbage collector.`,
 	},
@@ -499,7 +499,7 @@ EXAMPLES:
 	"history": {
 		Usage:     "Show the history of a file or directory",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "empty,e",
@@ -557,7 +557,7 @@ EXAMPLES:
 	"touch": {
 		Usage:     "Create an empty file under the specified path",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, false),
 		Description: `Convinience command for adding empty files.
 
    If the file or directory already exists, the modification time is updated to
@@ -567,7 +567,7 @@ EXAMPLES:
 	"cat": {
 		Usage:     "Output the content of a file to standard output",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, false),
 		Description: `Decrypt and decompress the stream from ipfs and write it to standard output.
 
 Outputting a directory is currently not allowed (but might be in the future by
@@ -577,7 +577,7 @@ outputting a .tar archive of the directory contents).
 	"info": {
 		Usage:     "Show metadata of a file or directory",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `Show all metadata attributes known for a file or directory.
 
       Path: Absolute path of the file inside of the storage.
@@ -594,7 +594,7 @@ outputting a .tar archive of the directory contents).
 	"rm": {
 		Usage:     "Remove a file or directory",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `Remove a file or directory.
    In contrast to the rm(1) there is no --recursive switch.
    Directories are deleted recursively by default.
@@ -604,7 +604,7 @@ outputting a .tar archive of the directory contents).
 	"ls": {
 		Usage:     "List files and directories",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(false, true),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "depth,d",
@@ -626,7 +626,7 @@ outputting a .tar archive of the directory contents).
 	"tree": {
 		Usage:     "List files and directories in a tree",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(false, true),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "depth, d",
@@ -641,7 +641,7 @@ outputting a .tar archive of the directory contents).
 	"mkdir": {
 		Usage:     "Create an empty directory",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(false, true),
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "parents, p",
@@ -656,7 +656,7 @@ outputting a .tar archive of the directory contents).
 	"mv": {
 		Usage:     "Move a file or directory from »src« to »dst«",
 		ArgsUsage: "<src> <dst>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `Move a file or directory from »src« to »dst.«
 
    If »dst« already exists and is a file, it gets overwritten with »src«.
@@ -670,7 +670,7 @@ outputting a .tar archive of the directory contents).
 	"cp": {
 		Usage:     "Copy a file or directory from »src« to »dst«",
 		ArgsUsage: "<src> <dst>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, true),
 		Description: `Copy a file or directory from »src« to »dst«.
 
    The semantics are the same as for »brig mv«, except that »cp« does not remove »src«.
@@ -679,7 +679,7 @@ outputting a .tar archive of the directory contents).
 	"edit": {
 		Usage:     "Edit a file inplae with $EDITOR",
 		ArgsUsage: "<path>",
-		Complete:  completeArgsUsage,
+		Complete:  completeBrigPath(true, false),
 		Description: `Convinience command to read the file at »path« and display it in $EDITOR.
 
    Once $EDITOR quits, the file is saved back.
