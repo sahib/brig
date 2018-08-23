@@ -11,6 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/pwutil"
@@ -88,6 +89,25 @@ func updateRegistry(basePath string, port int) error {
 	return registry.Update(uuid, entry)
 }
 
+func applyFstabInitially(base *base) error {
+	rp, err := base.Repo()
+	if err != nil {
+		return err
+	}
+
+	mounts, err := base.Mounts()
+	if err != nil {
+		return err
+	}
+
+	return fuse.FsTabApply(rp.Config.Section("mounts"), mounts)
+}
+
+func startNetLayer(base *base) error {
+	_, err := base.PeerServer()
+	return err
+}
+
 func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int, logToStdout bool) (*Server, error) {
 	if !logToStdout {
 		switchToSyslog()
@@ -150,8 +170,17 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 		}
 	}()
 
-	// TODO: Go online automatically
-	// TODO: Mount fstab entries here automatically.
+	// Do the rest of the init in the background.
+	// This will curently log warnings for a not yet initialized repo.
+	go func() {
+		if err := startNetLayer(base); err != nil {
+			log.Warnf("could not start the net layer yet: %v", err)
+		}
+
+		if err := applyFstabInitially(base); err != nil {
+			log.Warnf("could not mount fstab mounts: %v", err)
+		}
+	}()
 
 	return &Server{
 		baseServer: baseServer,
