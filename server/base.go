@@ -430,7 +430,7 @@ func (b *base) Quit() (err error) {
 		}
 	}
 
-	log.Infof("brigd can be considered dead now!")
+	log.Infof("===== brigd can be considered dead now! ====")
 	return nil
 }
 
