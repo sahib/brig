@@ -17,7 +17,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/VividCortex/godaemon"
 	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
@@ -236,8 +235,19 @@ func prefixSlash(s string) string {
 
 type cmdHandlerWithClient func(ctx *cli.Context, ctl *client.Client) error
 
+func getExecutablePath() (string, error) {
+	// NOTE: This might not work on other platforms.
+	//       In this case we fall back to LookPath().
+	exePath, err := os.Readlink("/proc/self/exe")
+	if err != nil {
+		return exec.LookPath("brig")
+	}
+
+	return filepath.Clean(exePath), nil
+}
+
 func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, error) {
-	exePath, err := godaemon.GetExecutablePath()
+	exePath, err := getExecutablePath()
 	if err != nil {
 		return nil, err
 	}
