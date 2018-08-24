@@ -59,8 +59,11 @@ func switchToSyslog() {
 		log.Warningf("Failed to open connection to syslog for brig: %v", err)
 	}
 
-	log.SetFormatter(&formatter.ColorfulLogFormatter{})
 	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&formatter.FancyLogFormatter{
+		// Colors will be stripped from syslog anyways:
+		UseColors: false,
+	})
 	log.SetOutput(formatter.NewSyslogWrapper(wSyslog))
 }
 

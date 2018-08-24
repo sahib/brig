@@ -19,7 +19,9 @@ func init() {
 
 	// Only use fancy logging if we print to a terminal:
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		log.SetFormatter(&formatter.ColorfulLogFormatter{})
+		log.SetFormatter(&formatter.FancyLogFormatter{
+			UseColors: true,
+		})
 	}
 }
 

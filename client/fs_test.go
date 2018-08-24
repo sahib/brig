@@ -17,7 +17,9 @@ import (
 
 func init() {
 	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&colorlog.ColorfulLogFormatter{})
+	log.SetFormatter(&colorlog.FancyLogFormatter{
+		UseColors: true,
+	})
 }
 
 func withDaemon(t *testing.T, name string, port, backendPort int, basePath string, fn func(ctl *Client)) {

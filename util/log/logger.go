@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"log/syslog"
-	"os"
 	"strings"
 	"time"
 
@@ -13,8 +12,10 @@ import (
 	"github.com/fatih/color"
 )
 
-// ColorfulLogFormatter is the default logger for brig.
-type ColorfulLogFormatter struct{}
+// FancyLogFormatter is the default logger for brig.
+type FancyLogFormatter struct {
+	UseColors bool
+}
 
 var symbolTable = map[logrus.Level]string{
 	logrus.DebugLevel: "⚙",
@@ -25,50 +26,51 @@ var symbolTable = map[logrus.Level]string{
 	logrus.PanicLevel: "☠",
 }
 
-var colorTable = map[logrus.Level]color.Attribute{
-	logrus.DebugLevel: color.FgCyan,
-	logrus.InfoLevel:  color.FgGreen,
-	logrus.WarnLevel:  color.FgYellow,
-	logrus.ErrorLevel: color.FgRed,
-	logrus.FatalLevel: color.FgMagenta,
-	logrus.PanicLevel: color.BgRed,
+var colorTable = map[logrus.Level]func(string, ...interface{}) string{
+	logrus.DebugLevel: color.CyanString,
+	logrus.InfoLevel:  color.GreenString,
+	logrus.WarnLevel:  color.YellowString,
+	logrus.ErrorLevel: color.RedString,
+	logrus.FatalLevel: color.MagentaString,
+	logrus.PanicLevel: color.MagentaString,
 }
 
-func colorByLevel(level logrus.Level) *color.Color {
-	attr, ok := colorTable[level]
+func colorByLevel(level logrus.Level, msg string) string {
+	fn, ok := colorTable[level]
 	if !ok {
-		attr = color.Reset
+		return msg
 	}
 
-	return color.New(attr)
+	return fn(msg)
 }
 
-func formatColored(buffer *bytes.Buffer, msg string, level logrus.Level) {
-	color.Output = buffer
-	colorByLevel(level).Set()
-	buffer.WriteString(msg)
-	color.Unset()
+func formatColored(useColors bool, buffer *bytes.Buffer, msg string, level logrus.Level) {
+	if useColors {
+		buffer.WriteString(colorByLevel(level, msg))
+	} else {
+		buffer.WriteString(msg)
+	}
 }
 
-func formatTimestamp(buffer *bytes.Buffer, t time.Time) {
-	fmt.Fprintf(buffer, "%02d.%02d.%04d", t.Day(), t.Month(), t.Year())
-	buffer.WriteByte('/')
-	fmt.Fprintf(buffer, "%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
+func formatTimestamp(builder *strings.Builder, t time.Time) {
+	fmt.Fprintf(builder, "%02d.%02d.%04d", t.Day(), t.Month(), t.Year())
+	builder.WriteByte('/')
+	fmt.Fprintf(builder, "%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 }
 
-func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
+func formatFields(useColors bool, buffer *bytes.Buffer, entry *logrus.Entry) {
 	idx := 0
 	buffer.WriteString(" [")
 
 	for key, value := range entry.Data {
 		// Make the key colored:
-		formatColored(buffer, key, entry.Level)
+		formatColored(useColors, buffer, key, entry.Level)
 		buffer.WriteByte('=')
 
 		// A few special cases depending on the type:
 		switch v := value.(type) {
 		case *logrus.Entry:
-			formatColored(buffer, v.Message, logrus.ErrorLevel)
+			formatColored(useColors, buffer, v.Message, logrus.ErrorLevel)
 		default:
 			buffer.WriteString(fmt.Sprintf("%v", v))
 		}
@@ -85,30 +87,28 @@ func formatFields(buffer *bytes.Buffer, entry *logrus.Entry) {
 }
 
 // Format logs a single entry according to our formatting ideas.
-func (*ColorfulLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	buffer := &bytes.Buffer{}
-
-	// Add the timestamp:
-	color.Output = buffer
-	defer func() {
-		color.Output = os.Stdout
-	}()
-
-	colorByLevel(entry.Level).Set()
-	formatTimestamp(buffer, entry.Time)
-	buffer.WriteByte(' ')
+func (flf *FancyLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	prefixBuilder := strings.Builder{}
+	formatTimestamp(&prefixBuilder, entry.Time)
+	prefixBuilder.WriteByte(' ')
 
 	// Add the symbol:
-	buffer.WriteString(symbolTable[entry.Level])
-	color.Unset()
+	prefixBuilder.WriteString(symbolTable[entry.Level])
 
 	// Add the actual message:
+	buffer := &bytes.Buffer{}
+	if flf.UseColors {
+		buffer.WriteString(colorByLevel(entry.Level, prefixBuilder.String()))
+	} else {
+		buffer.WriteString(prefixBuilder.String())
+	}
+
 	buffer.WriteByte(' ')
 	buffer.WriteString(entry.Message)
 
 	// Add the fields, if any:
 	if len(entry.Data) > 0 {
-		formatFields(buffer, entry)
+		formatFields(flf.UseColors, buffer, entry)
 	}
 
 	buffer.WriteByte('\n')
@@ -142,7 +142,7 @@ func (l *Writer) Write(buf []byte) (int, error) {
 }
 
 // SyslogWrapper is a hacky way to make the syslog more readable.
-// This only works with ColorfulLogFormatter from above.
+// This only works with FancyLogFormatter from above.
 // It takes it's output, checks what log level was used and
 // puts it into syslog with the right notice level.
 type SyslogWrapper struct {

@@ -14,7 +14,7 @@ func TestLog(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	// Log pretty text
-	logrus.SetFormatter(&ColorfulLogFormatter{})
+	logrus.SetFormatter(&FancyLogFormatter{UseColors: true})
 	// logrus.SetFormatter(&logrus.JSONFormatter{})
 
 	defer func() {
