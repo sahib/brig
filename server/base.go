@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log/syslog"
 	"net"
-	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -52,7 +52,6 @@ type base struct {
 	backend backend.Backend
 	quitCh  chan struct{}
 
-	ipfsLogFd *os.File
 	conductor *conductor.Conductor
 
 	// backendLoaded is set to true once the backend is
@@ -151,6 +150,37 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 	return b.loadBackend()
 }
 
+func (base *base) updateBackendAddr(bk backend.Backend) error {
+	rp, err := base.repoUnlocked()
+	if err != nil {
+		return err
+	}
+
+	reg, err := repo.OpenRegistry()
+	if err != nil {
+		return err
+	}
+
+	info, err := bk.Identity()
+	if err != nil {
+		return err
+	}
+
+	repoID, err := rp.RepoID()
+	if err != nil {
+		return err
+	}
+
+	entry, err := reg.Entry(repoID)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Updating backend addr (%s) in registry...", info.Addr)
+	entry.Addr = info.Addr
+	return reg.Update(repoID, entry)
+}
+
 func (b *base) loadBackend() (backend.Backend, error) {
 	rp, err := b.repoUnlocked()
 	if err != nil {
@@ -167,20 +197,18 @@ func (b *base) loadBackend() (backend.Backend, error) {
 		return nil, err
 	}
 
-	ipfsLogPath := filepath.Join(rp.BaseFolder, "logs", "ipfs.log")
-	err = os.Mkdir(filepath.Dir(ipfsLogPath), 0700)
-	if err != nil && !os.IsExist(err) {
-		return nil, err
-	}
-
-	fd, err := os.Create(ipfsLogPath)
+	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig-ipfs")
 	if err != nil {
-		log.Warningf("Failed to open ipfs log path (%s): %v", ipfsLogPath, err)
+		log.Warningf("Failed to open connection to syslog for ipfs: %v", err)
 	}
 
-	b.ipfsLogFd = fd
-	realBackend.ForwardLog(fd)
+	realBackend.ForwardLog(wSyslog)
 	b.backend = realBackend
+
+	if err := b.updateBackendAddr(realBackend); err != nil {
+		log.Warningf("Failed to update registry with backend addr: %v", err)
+	}
+
 	return realBackend, nil
 }
 
@@ -398,12 +426,6 @@ func (b *base) Quit() (err error) {
 		}
 
 		if err := mounts.Close(); err != nil {
-			return err
-		}
-	}
-
-	if b.ipfsLogFd != nil {
-		if err := b.ipfsLogFd.Close(); err != nil {
 			return err
 		}
 	}

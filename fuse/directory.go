@@ -22,7 +22,7 @@ type Directory struct {
 func (dir *Directory) Attr(ctx context.Context, attr *fuse.Attr) error {
 	defer logPanic("dir: attr")
 
-	log.Debugf("Exec dir attr: %v", dir.path)
+	debugLog("Exec dir attr: %v", dir.path)
 	info, err := dir.cfs.Stat(dir.path)
 	if err != nil {
 		return errorize("dir-attr", err)
@@ -43,7 +43,7 @@ func (dir *Directory) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	defer logPanic("dir: lookup")
 
-	log.Debugf("Exec lookup: %v", name)
+	debugLog("Exec lookup: %v", name)
 	if name == "." {
 		return dir, nil
 	}
@@ -55,7 +55,6 @@ func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) 
 	var result fs.Node
 	childPath := path.Join(dir.path, name)
 
-	log.Debugf("   doing stat: %v %v", dir.path, childPath)
 	info, err := dir.cfs.Stat(childPath)
 	if err != nil {
 		return nil, errorize("dir-lookup", err)
@@ -73,6 +72,8 @@ func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) 
 // Mkdir is called to create a new directory node inside the receiver.
 func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	defer logPanic("dir: mkdir")
+
+	debugLog("fuse-mkdir: %v", req.Name)
 
 	childPath := path.Join(dir.path, req.Name)
 	if err := dir.cfs.Mkdir(childPath, false); err != nil {
@@ -92,7 +93,7 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 	defer logPanic("dir: create")
 
 	var err error
-	log.Debugf("fuse-create: %v", req.Name)
+	debugLog("fuse-create: %v", req.Name)
 
 	childPath := path.Join(dir.path, req.Name)
 	switch {
@@ -140,7 +141,7 @@ func (dir *Directory) Remove(ctx context.Context, req *fuse.RemoveRequest) error
 func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	defer logPanic("dir: readdirall")
 
-	log.Debugf("Exec read dir all")
+	debugLog("Exec read dir all")
 	selfInfo, err := dir.cfs.Stat(dir.path)
 	if err != nil {
 		log.Debugf("Failed to stat: %v", dir.path)
@@ -169,7 +170,7 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	entries, err := dir.cfs.List(dir.path, 1)
 	if err != nil {
-		log.Debugf("Failed to list entries: %v", dir.path)
+		log.Warningf("Failed to list entries: %v", dir.path)
 		return nil, errorize("fuse-dir-readall", err)
 	}
 
@@ -199,7 +200,7 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	defer logPanic("dir: getxattr")
 
-	log.Debugf("exec dir getxattr: %v: %v", dir.path, req.Name)
+	debugLog("exec dir getxattr: %v: %v", dir.path, req.Name)
 	xattrs, err := getXattr(dir.cfs, req.Name, dir.path, req.Size)
 	if err != nil {
 		return err
@@ -213,7 +214,7 @@ func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, r
 func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	defer logPanic("dir: listxattr")
 
-	log.Debugf("exec dir listxattr")
+	debugLog("exec dir listxattr")
 	resp.Xattr = listXattr(req.Size)
 	return nil
 }

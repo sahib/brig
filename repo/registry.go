@@ -124,13 +124,20 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 		return "", err
 	}
 
+	uuidString := entryUUID.String()
+
+	// Check this unlikely case:
+	if existingEntry, _ := reg.entry(uuidString); existingEntry != nil {
+		return "", ErrRegistryEntryExists
+	}
+
 	entries, err := reg.list()
 	if err != nil {
 		return "", err
 	}
 
 	entry.IsDefault = len(entries) == 0
-	if err := reg.update(entryUUID.String(), entry); err != nil {
+	if err := reg.update(uuidString, entry); err != nil {
 		return "", err
 	}
 
@@ -145,11 +152,6 @@ func (reg *Registry) Update(uuid string, entry *RegistryEntry) error {
 }
 
 func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
-	// Check this unlikely case:
-	if existingEntry, _ := reg.entry(uuid); existingEntry != nil {
-		return ErrRegistryEntryExists
-	}
-
 	ownerKey := fmt.Sprintf("repos.%s.owner", uuid)
 	if err := reg.cfg.SetString(ownerKey, entry.Owner); err != nil {
 		return err
@@ -162,6 +164,11 @@ func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
 
 	isDefaultKey := fmt.Sprintf("repos.%s.is_default", uuid)
 	if err := reg.cfg.SetBool(isDefaultKey, entry.IsDefault); err != nil {
+		return err
+	}
+
+	addrKey := fmt.Sprintf("repos.%s.addr", uuid)
+	if err := reg.cfg.SetString(addrKey, entry.Addr); err != nil {
 		return err
 	}
 

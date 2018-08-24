@@ -77,7 +77,6 @@ func (mh *metaHandler) Init(call capnp.Meta_init) error {
 
 	backendPath := rp.BackendPath(backendName)
 
-	// TODO: Update addr now?
 	err = backend.InitByName(backendName, backendPath)
 	return e.Wrapf(err, "backend-init")
 }

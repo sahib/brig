@@ -2,8 +2,19 @@ package fuse
 
 import (
 	"bazil.org/fuse/fs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 )
+
+const (
+	enableDebugLogs = false
+)
+
+func debugLog(format string, args ...interface{}) {
+	if enableDebugLogs {
+		log.Debugf(format, args...)
+	}
+}
 
 // Filesystem is the entry point to the fuse filesystem
 type Filesystem struct {

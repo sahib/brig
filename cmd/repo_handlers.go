@@ -122,7 +122,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
-	folder := ctx.String("path")
+	folder := ctx.GlobalString("path")
 	password := readPasswordFromArgs(folder, ctx)
 
 	if ctx.NArg() > 1 {

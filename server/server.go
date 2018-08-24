@@ -56,7 +56,7 @@ func readPasswordFromHelper(basePath string) (string, error) {
 func switchToSyslog() {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
 	if err != nil {
-		log.Warningf("Failed to open connection to syslog: %v", err)
+		log.Warningf("Failed to open connection to syslog for brig: %v", err)
 	}
 
 	log.SetFormatter(&formatter.ColorfulLogFormatter{})

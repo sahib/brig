@@ -214,7 +214,6 @@ func readPassword(ctx *cli.Context, repoPath string) (string, error) {
 	// Try to read the password from -x or fallback to the default
 	// password if requested by the --no-pass switch.
 	if password := readPasswordFromArgs(repoPath, ctx); password != "" {
-		fmt.Println("Password:", password)
 		return password, nil
 	}
 

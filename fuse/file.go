@@ -25,7 +25,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("exec file attr: %v", fi.path)
+	debugLog("exec file attr: %v", fi.path)
 
 	attr.Mode = 0755
 	attr.Size = info.Size
@@ -52,7 +52,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
 
-	log.Debugf("fuse-open: %s", fi.path)
+	debugLog("fuse-open: %s", fi.path)
 	fd, err := fi.cfs.Open(fi.path)
 	if err != nil {
 		return nil, errorize("file-open", err)
@@ -70,7 +70,7 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	// This is called when any attribute of the file changes,
 	// most importantly the file size. For example it is called when truncating
 	// the file to zero bytes with a size change of `0`.
-	log.Debugf("exec file setattr")
+	debugLog("exec file setattr")
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
 		log.Warningf("SIZE CHANGED OF %s: %d", fi.path, req.Size)
@@ -91,7 +91,7 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 	defer logPanic("file: fsync")
 
-	log.Debugf("exec file fsync")
+	debugLog("exec file fsync")
 	return nil
 }
 
@@ -99,7 +99,7 @@ func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	defer logPanic("file: getxattr")
 
-	log.Debugf("exec file getxattr: %v: %v", fi.path, req.Name)
+	debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
 	xattrs, err := getXattr(fi.cfs, req.Name, fi.path, req.Size)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	defer logPanic("file: listxattr")
 
-	log.Debugf("exec file listxattr")
+	debugLog("exec file listxattr")
 	resp.Xattr = listXattr(req.Size)
 	return nil
 }
@@ -121,7 +121,7 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
 	defer logPanic("file: rename")
 
-	log.Debugf("exec file rename")
+	debugLog("exec file rename")
 	newParent, ok := newDir.(*Directory)
 	if !ok {
 		return fuse.EIO

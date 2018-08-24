@@ -347,6 +347,15 @@ func (rp *Repository) BackendPath(name string) string {
 	return filepath.Join(rp.BaseFolder, "data", name)
 }
 
+func (rp *Repository) RepoID() (string, error) {
+	data, err := ioutil.ReadFile(filepath.Join(rp.BaseFolder, "REPO_ID"))
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func (rp *Repository) SaveConfig() error {
 	configPath := filepath.Join(rp.BaseFolder, "config.yml")
 	return config.ToYamlFile(configPath, rp.Config)
