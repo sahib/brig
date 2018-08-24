@@ -4,6 +4,7 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"log/syslog"
 	"os"
 	"strings"
 	"time"
@@ -138,4 +139,41 @@ func (l *Writer) Write(buf []byte) (int, error) {
 	}
 
 	return len(buf), nil
+}
+
+// SyslogWrapper is a hacky way to make the syslog more readable.
+// This only works with ColorfulLogFormatter from above.
+// It takes it's output, checks what log level was used and
+// puts it into syslog with the right notice level.
+type SyslogWrapper struct {
+	w *syslog.Writer
+}
+
+func NewSyslogWrapper(w *syslog.Writer) SyslogWrapper {
+	return SyslogWrapper{w: w}
+}
+
+func (sw SyslogWrapper) Write(data []byte) (int, error) {
+	prefix := data
+
+	if len(data) < 23 {
+		return len(data), sw.w.Info(string(data))
+	}
+
+	// The logging symbol is currently definitely in the this part
+	// of the log. It might span up to 4 bytes.
+	prefix = data[19:23]
+	if bytes.Index(prefix, []byte(symbolTable[logrus.DebugLevel])) > 0 {
+		return len(data), sw.w.Debug(string(data))
+	}
+
+	if bytes.Index(prefix, []byte(symbolTable[logrus.InfoLevel])) > 0 {
+		return len(data), sw.w.Info(string(data))
+	}
+
+	if bytes.Index(prefix, []byte(symbolTable[logrus.WarnLevel])) > 0 {
+		return len(data), sw.w.Warning(string(data))
+	}
+
+	return len(data), sw.w.Err(string(data))
 }

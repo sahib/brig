@@ -61,7 +61,7 @@ func switchToSyslog() {
 
 	log.SetFormatter(&formatter.ColorfulLogFormatter{})
 	log.SetLevel(log.DebugLevel)
-	log.SetOutput(wSyslog)
+	log.SetOutput(formatter.NewSyslogWrapper(wSyslog))
 }
 
 func updateRegistry(basePath string, port int) error {
