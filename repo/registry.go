@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/sahib/config"
-	"github.com/satori/go.uuid"
 )
 
 const (
