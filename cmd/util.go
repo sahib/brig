@@ -167,10 +167,12 @@ func guessPort(ctx *cli.Context) int {
 
 	entry, err := getRepoEntryFromRegistry()
 	if err == nil {
+		logVerbose(ctx, "found port from global registry: %d", entry.Port)
 		return int(entry.Port)
 	}
 
 	port := ctx.GlobalInt("port")
+	logVerbose(ctx, "using port from global --port option: %d", port)
 	return port
 }
 
@@ -182,7 +184,7 @@ func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
 			return password
 		}
 
-		fmt.Printf("Failed to read password from '%s': %v\n", pwHelper, err)
+		logVerbose(ctx, "failed to read password from '%s': %v\n", pwHelper, err)
 	}
 
 	for curr := ctx; curr != nil; {
@@ -207,6 +209,7 @@ func readPassword(ctx *cli.Context, repoPath string) (string, error) {
 	}
 
 	if !isInitialized {
+		logVerbose(ctx, "repository is not initialized, skipping password entry")
 		return "", nil
 	}
 
@@ -252,11 +255,13 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		return nil, err
 	}
 
+	logVerbose(ctx, "using executable path: %s", exePath)
+
 	// If a password helper is configured, we should not ask the password right here.
 	askPassword := true
 	cfg, err := defaults.OpenMigratedConfig(filepath.Join(repoPath, "config.yml"))
 	if err != nil {
-		fmt.Println("failed to open config for guessing password method")
+		logVerbose(ctx, "failed to open config for guessing password method: %v", err)
 	} else {
 		if cfg.String("repo.password_command") != "" {
 			askPassword = false
@@ -274,6 +279,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 	daemonArgs := []string{}
 	if askPassword {
+		logVerbose(ctx, "asking password since no password command was given")
 		pwd, err := readPassword(ctx, repoPath)
 		if err != nil {
 			return nil, err
@@ -298,11 +304,11 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	time.Sleep(300 * time.Millisecond)
 
 	warningPrinted := false
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 25; i++ {
 		ctl, err := client.Dial(context.Background(), port)
 		if err != nil {
 			// Only print this warning once...
-			if !warningPrinted {
+			if !warningPrinted && i >= 10 {
 				log.Warnf("Waiting for daemon to bootup... :/")
 				warningPrinted = true
 			}
@@ -324,8 +330,13 @@ func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
 			return err
 		}
 
+		logVerbose(ctx, "using port %d for new daemon.", port)
+
+		folder := guessRepoFolder(true)
+		logVerbose(ctx, "using repo %s for new daemon.", folder)
+
 		// Start the server & pass the password:
-		ctl, err := startDaemon(ctx, guessRepoFolder(true), port)
+		ctl, err := startDaemon(ctx, folder, port)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,
@@ -343,6 +354,12 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	return withExit(func(ctx *cli.Context) error {
 		port := guessPort(ctx)
 
+		if startNew {
+			logVerbose(ctx, "using port %d to check for running daemon.", port)
+		} else {
+			logVerbose(ctx, "using port %d to connect to old daemon.", port)
+		}
+
 		// Check if the daemon is running:
 		ctl, err := client.Dial(context.Background(), port)
 		if err == nil {
@@ -355,7 +372,10 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Start the server & pass the password:
-		ctl, err = startDaemon(ctx, guessRepoFolder(true), port)
+		folder := guessRepoFolder(true)
+		logVerbose(ctx, "starting new daemon in background on folder %s", folder)
+
+		ctl, err = startDaemon(ctx, folder, port)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,

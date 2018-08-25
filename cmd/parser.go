@@ -99,6 +99,10 @@ func RunCmdline(args []string) int {
 			Usage: "Supply user password. Usage is not recommended.",
 			Value: "",
 		},
+		cli.BoolFlag{
+			Name:  "verbose,V",
+			Usage: "Show certain messages during client startup (helpful for debugging)",
+		},
 		cli.StringFlag{
 			Name:   "path",
 			Usage:  "Path of the repository",
