@@ -150,13 +150,8 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 	return b.loadBackend()
 }
 
-func (base *base) updateBackendAddr(bk backend.Backend) error {
+func (base *base) updateBackendAddr(reg *repo.Registry, bk backend.Backend) error {
 	rp, err := base.repoUnlocked()
-	if err != nil {
-		return err
-	}
-
-	reg, err := repo.OpenRegistry()
 	if err != nil {
 		return err
 	}
@@ -181,6 +176,22 @@ func (base *base) updateBackendAddr(bk backend.Backend) error {
 	return reg.Update(repoID, entry)
 }
 
+func (b *base) findBootstrapAddrs(reg *repo.Registry) ([]string, error) {
+	entries, err := reg.List()
+	if err != nil {
+		return nil, err
+	}
+
+	bootstrapAddrs := []string{}
+	for _, entry := range entries {
+		if len(entry.Addr) > 0 {
+			bootstrapAddrs = append(bootstrapAddrs, entry.Addr)
+		}
+	}
+
+	return bootstrapAddrs, nil
+}
+
 func (b *base) loadBackend() (backend.Backend, error) {
 	rp, err := b.repoUnlocked()
 	if err != nil {
@@ -191,11 +202,24 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	log.Infof("Loading backend `%s`", backendName)
 
 	backendPath := rp.BackendPath(backendName)
-	realBackend, err := backend.FromName(backendName, backendPath)
+
+	reg, err := repo.OpenRegistry()
+	if err != nil {
+		return nil, err
+	}
+
+	bootstrapAddrs, err := b.findBootstrapAddrs(reg)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("Found local bootstrap addrs: %v", bootstrapAddrs)
+	realBackend, err := backend.FromName(backendName, backendPath, bootstrapAddrs)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
 		return nil, err
 	}
+	log.Debugf("loaded backend")
 
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig-ipfs")
 	if err != nil {
@@ -205,7 +229,7 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	realBackend.ForwardLog(wSyslog)
 	b.backend = realBackend
 
-	if err := b.updateBackendAddr(realBackend); err != nil {
+	if err := b.updateBackendAddr(reg, realBackend); err != nil {
 		log.Warningf("Failed to update registry with backend addr: %v", err)
 	}
 

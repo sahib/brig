@@ -106,7 +106,6 @@ func guessRepoFolder(lookupGlobal bool) string {
 	if lookupGlobal {
 		entry, err := getRepoEntryFromRegistry()
 		if err == nil {
-			fmt.Printf("Guessed from registry: %s\n", entry.Path)
 			return mustAbsPath(entry.Path)
 		}
 
@@ -322,6 +321,34 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
+func guessNextRepoFolder(ctx *cli.Context) string {
+	absify := func(path string) string {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			log.Warningf("failed to get absolute path: %s", path)
+			return path
+		}
+
+		return absPath
+	}
+
+	if folder := ctx.Args().First(); len(folder) > 0 {
+		return absify(folder)
+	}
+
+	if folder := ctx.GlobalString("path"); len(folder) > 0 {
+		return absify(folder)
+	}
+
+	folder, err := os.Getwd()
+	if err != nil {
+		log.Warningf("failed to get current working dir: %s", folder)
+		return "."
+	}
+
+	return folder
+}
+
 func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
 	// If not, make sure we start a new one:
 	return withExit(func(ctx *cli.Context) error {
@@ -332,8 +359,8 @@ func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
 
 		logVerbose(ctx, "using port %d for new daemon.", port)
 
-		folder := guessRepoFolder(true)
-		logVerbose(ctx, "using repo %s for new daemon.", folder)
+		folder := guessNextRepoFolder(ctx)
+		logVerbose(ctx, "using path %s for new daemon.", folder)
 
 		// Start the server & pass the password:
 		ctl, err := startDaemon(ctx, folder, port)

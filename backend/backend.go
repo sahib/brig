@@ -44,10 +44,10 @@ func InitByName(name, path string) error {
 
 // FromName returns a suitable backend for a human readable name.
 // If an invalid name is passed, nil is returned.
-func FromName(name, path string) (Backend, error) {
+func FromName(name, path string, bootstrapNodes []string) (Backend, error) {
 	switch name {
 	case "ipfs":
-		return ipfs.New(path)
+		return ipfs.New(path, bootstrapNodes)
 	case "mock":
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.

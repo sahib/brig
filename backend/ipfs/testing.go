@@ -87,7 +87,7 @@ func WithIpfsAtPort(t *testing.T, port int, f func(*Node)) {
 
 func WithIpfsAtPathAndPort(t *testing.T, root string, port int, f func(*Node)) {
 	WithIpfsRepo(t, root, func(path string) {
-		nd, err := NewWithPort(path, port)
+		nd, err := NewWithPort(path, nil, port)
 		if err != nil {
 			t.Fatalf("with ipfs: %v", err)
 		}

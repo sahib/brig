@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/defaults"
@@ -112,10 +113,22 @@ func startNetLayer(base *base) error {
 }
 
 func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int, logToStdout bool) (*Server, error) {
-	if !logToStdout {
-		switchToSyslog()
-	} else {
+	defer func() {
+		// If anything in the daemon goes fatally wrong and it blows up, we
+		// want to log the panic at least. Otherwise we'll have a hard time
+		// debugging why the daemon suddenly quit.
+		if err := recover(); err != nil {
+			log.Errorf("brig panicked with message: %v", err)
+			log.Errorf("stack trace: %s", debug.Stack())
+			panic(err)
+		}
+	}()
+
+	if logToStdout {
+		// Be sure it's really set to stdout.
 		log.SetOutput(os.Stdout)
+	} else {
+		switchToSyslog()
 	}
 
 	addr := fmt.Sprintf("%s:%d", bindHost, port)

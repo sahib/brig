@@ -39,7 +39,7 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
 	require.Nil(t, os.MkdirAll(fullPath, 0700))
 
-	bk, err := backend.FromName("mock", fullPath)
+	bk, err := backend.FromName("mock", fullPath, nil)
 	require.Nil(t, err)
 
 	err = repo.Init(fullPath, name, "password", "mock")
