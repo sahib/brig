@@ -58,6 +58,8 @@ func switchToSyslog() {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
 	if err != nil {
 		log.Warningf("Failed to open connection to syslog for brig: %v", err)
+		log.SetOutput(os.Stdout)
+		return
 	}
 
 	log.SetLevel(log.DebugLevel)
@@ -137,7 +139,7 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	password, err := readPasswordFromHelper(basePath)
 	if err != nil {
 		log.Infof("Failed to read password from helper: %s", err)
-		log.Infof("Attempting to read it from stdin")
+		log.Infof("Attempting to read it via client logic.")
 
 		password, err = passwordFn()
 		if err != nil {

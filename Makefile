@@ -61,3 +61,10 @@ small:
 		" \
 		brig.go
 	upx $(GOPATH)/bin/brig
+
+integration-tests:
+	@./test-runner.sh
+
+bob:
+	@echo "Running bob as sidekick under brig port :6667 and ipfs port :4003"
+	docker run -it -p 4003:4002 -p 6667:6666 brig

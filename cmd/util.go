@@ -59,6 +59,20 @@ func getRepoEntryFromRegistry() (*repo.RegistryEntry, error) {
 		return entries[0], nil
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	// Scan twice.
+	// First: Check if we're in some repo:
+	for _, entry := range entries {
+		if entry.Path == cwd {
+			return entry, nil
+		}
+	}
+
+	// Second: Check for defaults:
 	for _, entry := range entries {
 		if entry.IsDefault {
 			return entry, nil
@@ -136,15 +150,24 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 		return 0, err
 	}
 
-	maxPort := ctx.GlobalInt("port")
-	for _, entry := range entries {
-		if int(entry.Port) > maxPort {
-			maxPort = int(entry.Port)
+	maxPort := 0
+	if len(entries) == 0 {
+		// Use the default value.
+		maxPort = ctx.GlobalInt("port")
+	} else {
+		for _, entry := range entries {
+			if int(entry.Port) > maxPort {
+				maxPort = int(entry.Port)
+			}
 		}
+
+		// Always start checking with at least
+		// the next higher port.
+		maxPort += 1
 	}
 
 	maxAttempts := 1000
-	for off := 1; off <= maxAttempts; off++ {
+	for off := 0; off <= maxAttempts; off++ {
 		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", maxPort+off))
 		if err != nil {
 			return maxPort + off, nil
@@ -165,7 +188,7 @@ func guessPort(ctx *cli.Context) int {
 	}
 
 	entry, err := getRepoEntryFromRegistry()
-	if err == nil {
+	if err == nil && entry.Port > 0 {
 		logVerbose(ctx, "found port from global registry: %d", entry.Port)
 		return int(entry.Port)
 	}
@@ -284,7 +307,11 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 			return nil, err
 		}
 
-		daemonArgs = append(daemonArgs, "--password", pwd)
+		// TODO: Do not pass the password via a cmdline argument.
+		// Use a environment variable.
+		if len(pwd) != 0 {
+			daemonArgs = append(daemonArgs, "--password", pwd)
+		}
 	}
 
 	daemonArgs = append(daemonArgs, []string{
@@ -292,6 +319,9 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		"--bind", bindHost,
 		"daemon", "launch",
 	}...)
+
+	argString := fmt.Sprintf("'%s'", strings.Join(daemonArgs, "' '"))
+	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
 
 	proc := exec.Command(exePath, daemonArgs...)
 	if err := proc.Start(); err != nil {
@@ -483,20 +513,7 @@ func repoIsInitialized(dir string) (bool, error) {
 		return true, err
 	}
 
-	for _, name := range names {
-		switch name {
-		case "OWNER", "BACKEND":
-			return true, nil
-		case "logs":
-			// That's okay.
-		default:
-			// Anything else we do not know:
-			return true, nil
-		}
-	}
-
-	// base case for empty dir:
-	return false, nil
+	return len(names) >= 1, nil
 }
 
 // tempFileWithSuffix works the same as ioutil.TempFile(),
