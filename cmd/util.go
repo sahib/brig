@@ -355,8 +355,9 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 	absify := func(path string) string {
 		absPath, err := filepath.Abs(path)
 		if err != nil {
-			log.Warningf("failed to get absolute path: %s", path)
-			return path
+			// Better stop, before we do something stupid:
+			log.Errorf("failed to get absolute path: %s", path)
+			os.Exit(1)
 		}
 
 		return absPath
@@ -380,7 +381,6 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 }
 
 func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
-	// If not, make sure we start a new one:
 	return withExit(func(ctx *cli.Context) error {
 		port, err := guessNextFreePort(ctx)
 		if err != nil {

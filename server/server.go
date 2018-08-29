@@ -57,8 +57,9 @@ func readPasswordFromHelper(basePath string) (string, error) {
 func switchToSyslog() {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
 	if err != nil {
+		fd, _ := os.Create("/tmp/brig.log")
 		log.Warningf("Failed to open connection to syslog for brig: %v", err)
-		log.SetOutput(os.Stdout)
+		log.SetOutput(fd)
 		return
 	}
 
@@ -134,7 +135,7 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	}
 
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
-	log.Infof("Starting daemon from %s on port %s", basePath, addr)
+	log.Infof("Starting daemon for %s on port %s", basePath, addr)
 
 	password, err := readPasswordFromHelper(basePath)
 	if err != nil {

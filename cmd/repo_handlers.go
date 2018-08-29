@@ -16,6 +16,7 @@ import (
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
+	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
 	"github.com/urfave/cli"
 )
@@ -61,7 +62,9 @@ to avoid re-entering your password on every daemon startup:
     $ brig cfg set repo.password_command "pass brig/my_pwd_key"
 
 The next start of brig will then read the password from the
-standard output of this process.
+standard output of this process. Your repository is here:
+
+    %s
 `
 	fd, err := ioutil.TempFile("", ".brig-init-readme-")
 	if err != nil {
@@ -86,47 +89,21 @@ standard output of this process.
 	return ctl.MakeCommit("Added initial README.md")
 }
 
-// TODO: There are two functions doing the same.
-func dirIsInitReady(dir string) (bool, error) {
-	fd, err := os.Open(dir)
-	if err != nil && os.IsNotExist(err) {
-		return true, nil
-	}
-
-	if err != nil {
-		return false, err
-	}
-
-	names, err := fd.Readdirnames(-1)
-	if err != nil {
-		return false, err
-	}
-
-	for _, name := range names {
-		switch name {
-		case "OWNER", "BACKEND":
-			return false, nil
-		case "logs":
-			// That's okay.
-		default:
-			// Anything else we do not know:
-			return false, nil
-		}
-	}
-
-	// base case for empty dir:
-	return true, nil
-}
-
 func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	// Accumulate args:
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
 	folder := ctx.GlobalString("path")
-	password := readPasswordFromArgs(folder, ctx)
+	if ctx.NArg() == 2 {
+		var err error
+		folder, err = filepath.Abs(ctx.Args().Get(1))
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %s: %v", folder, err)
+		}
+	}
 
-	if ctx.NArg() > 1 {
-		return fmt.Errorf("Too many arguments, only user is needed.")
+	if ctx.NArg() > 2 {
+		return fmt.Errorf("Too many arguments.")
 	}
 
 	if folder == "" {
@@ -135,14 +112,24 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Printf("Guessed folder for init: %s\n", folder)
 	}
 
+	// If a password helper is set, we should read the password from it directly.
+	password := readPasswordFromArgs(folder, ctx)
+	if pwHelper := ctx.String("pw-helper"); password == "" && pwHelper != "" {
+		var err error
+		password, err = pwutil.ReadPasswordFromHelper(folder, pwHelper)
+		if err != nil {
+			return fmt.Errorf("failed to read password from helper: %s", err)
+		}
+	}
+
 	// Check if the folder exists...
 	// doing init twice can easily break things.
-	isReady, err := dirIsInitReady(folder)
+	isInitialized, err := repoIsInitialized(folder)
 	if err != nil {
 		return err
 	}
 
-	if !isReady {
+	if isInitialized {
 		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
 	}
 

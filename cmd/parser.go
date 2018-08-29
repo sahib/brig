@@ -106,7 +106,7 @@ func RunCmdline(args []string) int {
 		cli.StringFlag{
 			Name:   "path",
 			Usage:  "Path of the repository",
-			Value:  ".",
+			Value:  "",
 			EnvVar: "BRIG_PATH",
 		},
 	}

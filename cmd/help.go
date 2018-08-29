@@ -46,14 +46,9 @@ var HelpTexts = map[string]Help{
 				Usage: "What data backend to use for the new repo",
 			},
 			cli.StringFlag{
-				Name:  "p,path",
-				Value: "",
-				Usage: "Where to create the new repository (overwrites BRIG_PATH)",
-			},
-			cli.StringFlag{
 				Name:  "w,pw-helper",
 				Value: "",
-				Usage: "A commandline to specify a password helper (see repo.)",
+				Usage: "A commandline to specify a password helper (TODO)",
 			},
 		},
 		Description: `Initialize a new repository with a certain backend.

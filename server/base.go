@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -224,9 +225,12 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig-ipfs")
 	if err != nil {
 		log.Warningf("Failed to open connection to syslog for ipfs: %v", err)
+		log.Warningf("Will output ipfs logs to stdout for now")
+		realBackend.ForwardLog(os.Stderr)
+	} else {
+		realBackend.ForwardLog(wSyslog)
 	}
 
-	realBackend.ForwardLog(wSyslog)
 	b.backend = realBackend
 
 	if err := b.updateBackendAddr(reg, realBackend); err != nil {
