@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
-	"gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 	logWriter "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log/writer"
 
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
@@ -38,5 +36,4 @@ func Init(path string, keySize int) error {
 // Only messages >= INFO are logged.
 func (nd *Node) ForwardLog(w io.Writer) {
 	logWriter.Configure(logWriter.Output(w))
-	log.SetAllLoggers(logging.INFO)
 }

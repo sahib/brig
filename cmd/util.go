@@ -111,7 +111,11 @@ func checkmarkify(val bool) string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 // This helper may call exit when it fails to get the path.
-func guessRepoFolder(lookupGlobal bool) string {
+func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
+	if argPath := ctx.GlobalString("path"); argPath != "" {
+		return argPath
+	}
+
 	envPath := os.Getenv("BRIG_PATH")
 	if envPath != "" {
 		return mustAbsPath(envPath)
@@ -429,7 +433,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Start the server & pass the password:
-		folder := guessRepoFolder(true)
+		folder := guessRepoFolder(ctx, true)
 		logVerbose(ctx, "starting new daemon in background on folder %s", folder)
 
 		ctl, err = startDaemon(ctx, folder, port)
@@ -510,7 +514,7 @@ func repoIsInitialized(dir string) (bool, error) {
 
 	names, err := fd.Readdirnames(-1)
 	if err != nil {
-		return true, err
+		return false, err
 	}
 
 	return len(names) >= 1, nil

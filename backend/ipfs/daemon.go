@@ -7,6 +7,9 @@ import (
 	"os"
 	"sync"
 
+	ipfsLogging "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
+	ipfsLog "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
+
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 
@@ -60,6 +63,8 @@ type Node struct {
 }
 
 func createNode(path string, swarmPort int, ctx context.Context, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
+	ipfsLog.SetAllLoggers(ipfsLogging.INFO)
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Infof("Creating new ipfs repo at %s since it does not exist yet.", path)
 		if err := Init(path, 2048); err != nil {

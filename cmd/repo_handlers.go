@@ -108,7 +108,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	if folder == "" {
 		// Make sure that we do not lookup the global registry:
-		folder = guessRepoFolder(false)
+		folder = guessRepoFolder(ctx, false)
 		fmt.Printf("Guessed folder for init: %s\n", folder)
 	}
 
@@ -294,7 +294,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
-	brigPath := guessRepoFolder(true)
+	brigPath := guessRepoFolder(ctx, true)
 	isInitialized, err := repoIsInitialized(brigPath)
 	if err != nil {
 		return err
