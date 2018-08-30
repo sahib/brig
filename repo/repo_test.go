@@ -67,7 +67,7 @@ func TestRepoDeduplication(t *testing.T) {
 	ipfsPath := filepath.Join(testDir, "data/ipfs")
 	require.Nil(t, ipfs.Init(ipfsPath, 1024))
 
-	bk, err := ipfs.New(ipfsPath)
+	bk, err := ipfs.New(ipfsPath, nil)
 	require.Nil(t, err)
 
 	fs, err := rp.FS(rp.CurrentUser(), bk)

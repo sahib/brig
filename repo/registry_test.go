@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	RegistryPaths = append(RegistryPaths, TestRegistryPath)
+	RegistryPaths = append([]string{TestRegistryPath}, RegistryPaths...)
 }
 
 func touchTestRegistry(t *testing.T, data []byte) {
@@ -50,9 +50,11 @@ func TestRegistryAddGet(t *testing.T) {
 	require.Nil(t, err)
 
 	uuid, err := reg.Add(&RegistryEntry{
-		Owner:    "owner",
-		Password: "password",
-		Path:     "/tmp/xxx",
+		Owner:     "owner",
+		Path:      "/tmp/xxx",
+		Port:      123,
+		Addr:      "localhost",
+		IsDefault: true,
 	})
 
 	require.Nil(t, err)
@@ -61,8 +63,10 @@ func TestRegistryAddGet(t *testing.T) {
 	entry, err := reg.Entry(uuid)
 	require.Nil(t, err)
 	require.Equal(t, "owner", entry.Owner)
-	require.Equal(t, "password", entry.Password)
 	require.Equal(t, "/tmp/xxx", entry.Path)
+	require.Equal(t, int64(123), entry.Port)
+	require.Equal(t, "localhost", entry.Addr)
+	require.Equal(t, true, entry.IsDefault)
 }
 
 func TestRegistryGetEmpty(t *testing.T) {
@@ -88,9 +92,8 @@ func TestRegistryAddMany(t *testing.T) {
 
 	for idx := 0; idx < 100; idx++ {
 		_, err := reg.Add(&RegistryEntry{
-			Owner:    fmt.Sprintf("owner-%d", idx),
-			Password: fmt.Sprintf("password-%d", idx),
-			Path:     fmt.Sprintf("/tmp/xxx-%d", idx),
+			Owner: fmt.Sprintf("owner-%d", idx),
+			Path:  fmt.Sprintf("/tmp/xxx-%d", idx),
 		})
 		require.Nil(t, err)
 	}
@@ -109,9 +112,10 @@ func TestRegistryOpenTwice(t *testing.T) {
 		// Only add something on the first run.
 		if i == 0 {
 			uuid, err = reg.Add(&RegistryEntry{
-				Owner:    "owner",
-				Password: "password",
-				Path:     "/tmp/xxx",
+				Owner: "owner",
+				Path:  "/tmp/xxx",
+				Addr:  "localhost",
+				Port:  123,
 			})
 
 			require.Nil(t, err)
@@ -122,7 +126,8 @@ func TestRegistryOpenTwice(t *testing.T) {
 		entry, err := reg.Entry(uuid)
 		require.Nil(t, err)
 		require.Equal(t, "owner", entry.Owner)
-		require.Equal(t, "password", entry.Password)
 		require.Equal(t, "/tmp/xxx", entry.Path)
+		require.Equal(t, "localhost", entry.Addr)
+		require.Equal(t, int64(123), entry.Port)
 	}
 }

@@ -136,6 +136,7 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 		return "", err
 	}
 
+	// TODO: Improve this heurisitc.
 	entry.IsDefault = len(entries) == 0
 	if err := reg.update(uuidString, entry); err != nil {
 		return "", err
