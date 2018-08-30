@@ -42,7 +42,7 @@ func withDummyFSReadOnly(t *testing.T, readOnly bool, fn func(fs *FS)) {
 		}
 	}()
 
-	cfg, err := config.Open(nil, defaults.Defaults)
+	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
 	require.Nil(t, err)
 
 	fsCfg := cfg.Section("fs")

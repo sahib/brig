@@ -285,7 +285,7 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 			return true, e.Wrapf(err, "parent add")
 		}
 
-		return true, lkr.StageNode(newNode)
+		return false, lkr.StageNode(newNode)
 	})
 
 	return

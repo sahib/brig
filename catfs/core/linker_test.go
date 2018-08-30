@@ -495,7 +495,7 @@ func TestAtomic(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
 		err := lkr.Atomic(func() (bool, error) {
 			MustTouch(t, lkr, "/x", 1)
-			return nil
+			return false, nil
 		})
 
 		require.Nil(t, err)
