@@ -33,10 +33,10 @@ func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
 
 	defer os.RemoveAll(dbPath)
 
-	cfg, err := config.Open(nil, defaults.Defaults)
+	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
 	require.Nil(t, err)
 
-	fs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg)
+	fs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"))
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
@@ -48,8 +48,12 @@ func withDummyFS(t *testing.T, fn func(fs *catfs.FS)) {
 	}
 }
 
-func withMount(t *testing.T, f func(mount *Mount)) {
+func withMountFromFs(t *testing.T, opts MountOptions, fs *catfs.FS, f func(mount *Mount)) {
 	mntPath := filepath.Join(os.TempDir(), "brig-fuse-mountdir")
+
+	// Make sure to unmount any mounts that are there.
+	// Possibly there are some leftovers from previous failed runs.
+	lazyUnmount(mntPath)
 
 	if err := os.MkdirAll(mntPath, 0777); err != nil {
 		t.Fatalf("Unable to create empty mount dir: %v", err)
@@ -57,18 +61,23 @@ func withMount(t *testing.T, f func(mount *Mount)) {
 
 	defer testutil.Remover(t, mntPath)
 
+	mount, err := NewMount(fs, mntPath, opts)
+	if err != nil {
+		t.Fatalf("Cannot create mount: %v", err)
+	}
+
+	f(mount)
+
+	if err := mount.Close(); err != nil {
+		t.Fatalf("Closing mount failed: %v", err)
+	}
+}
+
+func withMount(t *testing.T, opts MountOptions, f func(mount *Mount)) {
 	withDummyFS(t, func(fs *catfs.FS) {
-		mount, err := NewMount(fs, mntPath)
-		if err != nil {
-			t.Fatalf("Cannot create mount: %v", err)
-		}
-
-		f(mount)
-
-		if err := mount.Close(); err != nil {
-			t.Fatalf("Closing mount failed: %v", err)
-		}
+		withMountFromFs(t, opts, fs, f)
 	})
+
 }
 
 func checkForCorrectFile(t *testing.T, path string, data []byte) {
@@ -113,7 +122,7 @@ var (
 )
 
 func TestRead(t *testing.T) {
-	withMount(t, func(mount *Mount) {
+	withMount(t, MountOptions{}, func(mount *Mount) {
 		for _, size := range DataSizes {
 			t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
 				helloData := testutil.CreateDummyBuf(size)
@@ -133,7 +142,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	withMount(t, func(mount *Mount) {
+	withMount(t, MountOptions{}, func(mount *Mount) {
 		for _, size := range DataSizes {
 			helloData := testutil.CreateDummyBuf(size)
 			path := filepath.Join(mount.Dir, fmt.Sprintf("hello_%d", size))
@@ -151,7 +160,7 @@ func TestWrite(t *testing.T) {
 
 // Regression test for copying larger file to the mount.
 func TestTouchWrite(t *testing.T) {
-	withMount(t, func(mount *Mount) {
+	withMount(t, MountOptions{}, func(mount *Mount) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)
 			if err := mount.filesys.cfs.Touch(name); err != nil {
@@ -174,7 +183,7 @@ func TestTouchWrite(t *testing.T) {
 
 // Regression test for copying a file to a subdirectory.
 func TestTouchWriteSubdir(t *testing.T) {
-	withMount(t, func(mount *Mount) {
+	withMount(t, MountOptions{}, func(mount *Mount) {
 		subDirPath := filepath.Join(mount.Dir, "sub")
 		require.Nil(t, os.Mkdir(subDirPath, 0644))
 
@@ -185,5 +194,61 @@ func TestTouchWriteSubdir(t *testing.T) {
 		got, err := ioutil.ReadFile(filePath)
 		require.Nil(t, err)
 		require.Equal(t, expected, got)
+	})
+}
+
+func TestReadOnlyFs(t *testing.T) {
+	opts := MountOptions{
+		ReadOnly: true,
+	}
+	withMount(t, opts, func(mount *Mount) {
+		cfs := mount.filesys.cfs
+		cfs.Stage("/x.png", bytes.NewReader([]byte{1, 2, 3}))
+
+		// Do some allowed io to check if the fs is actually working.
+		// The test does not check on the kind of errors otherwise.
+		xPath := filepath.Join(mount.Dir, "x.png")
+		data, err := ioutil.ReadFile(xPath)
+		require.Nil(t, err)
+		require.Equal(t, []byte{1, 2, 3}, data)
+
+		// Try creating a new file:
+		yPath := filepath.Join(mount.Dir, "y.png")
+		require.NotNil(t, ioutil.WriteFile(yPath, []byte{4, 5, 6}, 0600))
+
+		// Try modifying an existing file:
+		require.NotNil(t, ioutil.WriteFile(xPath, []byte{4, 5, 6}, 0600))
+
+		dirPath := filepath.Join(mount.Dir, "sub")
+		require.NotNil(t, os.Mkdir(dirPath, 0644))
+	})
+}
+
+func TestWithRoot(t *testing.T) {
+	opts := MountOptions{
+		Root: "/a/b",
+	}
+
+	withDummyFS(t, func(fs *catfs.FS) {
+		require.Nil(t, fs.Mkdir("/a/b", true))
+		require.Nil(t, fs.Mkdir("/a/b/c", true))
+		require.Nil(t, fs.Stage("/u.png", bytes.NewReader([]byte{1, 2, 3})))
+		require.Nil(t, fs.Stage("/a/x.png", bytes.NewReader([]byte{2, 3, 4})))
+		require.Nil(t, fs.Stage("/a/b/y.png", bytes.NewReader([]byte{3, 4, 5})))
+		require.Nil(t, fs.Stage("/a/b/c/z.png", bytes.NewReader([]byte{4, 5, 6})))
+
+		withMountFromFs(t, opts, fs, func(mount *Mount) {
+			yPath := filepath.Join(mount.Dir, "y.png")
+			data, err := ioutil.ReadFile(yPath)
+			require.Nil(t, err)
+			require.Equal(t, []byte{3, 4, 5}, data)
+
+			newPath := filepath.Join(mount.Dir, "new.png")
+			require.Nil(t, ioutil.WriteFile(newPath, []byte{5, 6, 7}, 0644))
+
+			data, err = ioutil.ReadFile(newPath)
+			require.Nil(t, err)
+			require.Equal(t, []byte{5, 6, 7}, data)
+		})
 	})
 }
