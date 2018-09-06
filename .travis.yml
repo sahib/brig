@@ -9,7 +9,7 @@ install:
     - sudo apt-get install fuse
     - go get -t -v github.com/sahib/brig
     - cd $GOPATH/src/github.com/sahib/brig
-    - make
+    - GOBIN=/bin make
 
 script:
     - cd $GOPATH/src/github.com/sahib/brig
