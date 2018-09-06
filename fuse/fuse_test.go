@@ -18,7 +18,6 @@ import (
 )
 
 func init() {
-	// NOTE: This is useful for debugging.
 	log.SetLevel(log.DebugLevel)
 }
 

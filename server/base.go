@@ -214,7 +214,10 @@ func (b *base) loadBackend() (backend.Backend, error) {
 		return nil, err
 	}
 
-	log.Debugf("Found local bootstrap addrs: %v", bootstrapAddrs)
+	if len(bootstrapAddrs) > 0 {
+		log.Debugf("Found local bootstrap addrs: %v", bootstrapAddrs)
+	}
+
 	realBackend, err := backend.FromName(backendName, backendPath, bootstrapAddrs)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
@@ -268,7 +271,6 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		return nil, err
 	}
 
-	log.Infof("Launching peer server...")
 	srv, err := p2pnet.NewServer(rp, bk)
 	if err != nil {
 		return nil, err
@@ -293,6 +295,7 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		addrs = append(addrs, remote.Fingerprint.Addr())
 	}
 
+	log.Infof("syncing pingers")
 	if err := srv.PingMap().Sync(addrs); err != nil {
 		return nil, err
 	}

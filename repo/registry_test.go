@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	RegistryPaths = append([]string{TestRegistryPath}, RegistryPaths...)
+	RegistryPaths = []string{TestRegistryPath}
 }
 
 func touchTestRegistry(t *testing.T, data []byte) {

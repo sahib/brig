@@ -169,16 +169,7 @@ func Init(baseFolder, owner, password, backendName string) error {
 		return e.Wrapf(err, "passwd-lock")
 	}
 
-	return e.Wrapf(
-		LockRepo(
-			baseFolder,
-			owner,
-			password,
-			excludedFromLock,
-			excludedFromUnlock,
-		),
-		"repo-lock",
-	)
+	return nil
 }
 
 func CheckPassword(baseFolder, password string) error {

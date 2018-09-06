@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/server"
 	colorlog "github.com/sahib/brig/util/log"
 	"github.com/stretchr/testify/require"
 )
@@ -22,55 +24,114 @@ func init() {
 	})
 }
 
-func withDaemon(t *testing.T, name string, port, backendPort int, basePath string, fn func(ctl *Client)) {
-	if basePath == "" {
-		var err error
-		basePath, err = ioutil.TempDir("", "brig-ctl-test")
-		require.Nil(t, err)
-
-		defer func() {
-			os.RemoveAll(basePath)
-		}()
+func hardKillDaemonForPort(t *testing.T, port int) {
+	pidPath := filepath.Join(os.TempDir(), fmt.Sprintf("brig.%d.pid", port))
+	data, err := ioutil.ReadFile(pidPath)
+	if os.IsNotExist(err) {
+		// pid file does not exist yet.
+		return
 	}
 
-	// This is a hacky way to tell the mock backend what port it should use:
-	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
-	require.Nil(t, os.MkdirAll(fullPath, 0700))
+	defer os.Remove(pidPath)
 
-	passwordFn := func() (string, error) {
-		return "password", nil
-	}
-
-	srv, err := server.BootServer(fullPath, passwordFn, "localhost", port, true)
-	fmt.Println("BOOT UP ERR", err)
-
-	// TODO: Subsequent: listen tcp 127.0.0.1:6668: bind: address already in use
-	fmt.Println(err)
+	// Handle other errors.
 	require.Nil(t, err)
 
-	waitForDeath := make(chan bool)
-	go func() {
-		defer func() {
-			waitForDeath <- true
-		}()
-		require.Nil(t, srv.Serve())
+	pid := string(data)
+	cmd := exec.Command("/bin/kill", "-9", pid)
+	require.Nil(t, cmd.Start())
+}
+
+func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *Client)) {
+	basePath, err := ioutil.TempDir("", "brig-ctl-test")
+	require.Nil(t, err)
+
+	// Path to the global registry file for this daemon:
+	regPath := filepath.Join(os.TempDir(), "test-reg.yml")
+	// Path to use for the net mock backend (stores dns names)
+	netPath := filepath.Join(os.TempDir(), "test-net-dir")
+
+	defer func() {
+		os.RemoveAll(basePath)
+		os.RemoveAll(regPath)
+		os.RemoveAll(netPath)
 	}()
 
-	ctl, err := Dial(context.Background(), port)
-	require.Nil(t, err)
+	hardKillDaemonForPort(t, port)
+	require.Nil(t, os.MkdirAll(basePath, 0700))
 
+	cmd := exec.Command(
+		"brig",
+		"--no-password",
+		"--port", fmt.Sprintf("%d", port),
+		"daemon", "launch",
+		"--log-to-stdout",
+	)
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_REGISTRY_PATH=/tmp/%s", regPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_NET_DB_PATH=%s", netPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_USER=%s", name))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_PORT=%d", backendPort))
+	cmd.Env = append(cmd.Env, "BRIG_LOG_SHOW_PID=true")
+
+	// Pipe the daemon output to the test output:
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	require.Nil(t, cmd.Start())
+
+	pidPath := filepath.Join(
+		os.TempDir(),
+		fmt.Sprintf("brig.%d.pid", port),
+	)
+
+	require.Nil(t,
+		ioutil.WriteFile(
+			pidPath,
+			[]byte(fmt.Sprintf("%d", cmd.Process.Pid)),
+			0644,
+		),
+	)
+
+	// Timeout to make sure that the dameon started.
+	// Only after this we try to connect normally.
+	time.Sleep(200 * time.Millisecond)
+
+	// Loop until we give up or have a valid connection.
+	var ctl *Client
+	for idx := 0; idx < 100; idx++ {
+		ctl, err = Dial(context.Background(), port)
+		if err == nil {
+			break
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	require.NotNil(t, ctl, "could not connect")
+
+	// Make sure that the daemon shut down correctly.
 	defer func() {
 		// Send the death signal:
 		require.Nil(t, ctl.Quit())
 
-		// wait until serve was done.
-		<-waitForDeath
+		// Wait until we cannot ping it anymore.
+		daemonErroredOut := false
+		for idx := 0; idx < 100; idx++ {
+			if err := ctl.Ping(); err != nil {
+				daemonErroredOut = true
+				break
+			}
+
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		if !daemonErroredOut {
+			t.Fatalf("daemon is still up and running after quit")
+		}
 	}()
 
-	err = ctl.Init(fullPath, name, "password", "mock")
-	// erver/capnp/local_api.capnp:Meta.init: rpc exception: archive/tar: write too long
-	fmt.Println("INIT ERR", err)
-
+	// Init the repo. This should block until done.
+	err = ctl.Init(basePath, name, "password", "mock")
 	require.Nil(t, err)
 
 	// Run the actual test function:
@@ -78,7 +139,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, basePath strin
 }
 
 func TestStageAndCat(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, "", func(ctl *Client) {
+	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
@@ -100,7 +161,7 @@ func TestStageAndCat(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, "", func(ctl *Client) {
+	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
 		// Create something nested with -p...
 		require.Nil(t, ctl.Mkdir("/a/b/c", true))
 
@@ -145,8 +206,8 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 		os.RemoveAll(basePath)
 	}()
 
-	withDaemon(t, "alice", 6668, 9998, basePath, func(aliCtl *Client) {
-		withDaemon(t, "bob", 6669, 9999, basePath, func(bobCtl *Client) {
+	withDaemon(t, "alice", 6668, 9998, func(aliCtl *Client) {
+		withDaemon(t, "bob", 6669, 9999, func(bobCtl *Client) {
 			aliWhoami, err := aliCtl.Whoami()
 			require.Nil(t, err)
 
@@ -172,7 +233,7 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 	})
 }
 
-func TestSync(t *testing.T) {
+func TestSyncBasic(t *testing.T) {
 	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
 		err := aliCtl.StageFromReader("/ali_file", bytes.NewReader([]byte{42}))
 		require.Nil(t, err)

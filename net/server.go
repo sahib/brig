@@ -75,17 +75,20 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 		bk: bk,
 	}
 
+	log.Infof("creating new listener")
 	lst, err := bk.Listen("brig/caprpc")
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
+	log.Infof("creating new server")
 	baseServer, err := server.NewServer(lst, hdl, ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Infof("publish self")
 	if err := publishSelf(bk, rp.Owner); err != nil {
 		log.Warningf("Failed to publish `%v` to the network: %v", rp.Owner, err)
 		log.Warningf("You will not be visible to other users.")

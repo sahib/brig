@@ -2,11 +2,10 @@ package backend
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
+	"os"
 	"strconv"
-	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/backend/ipfs"
 	"github.com/sahib/brig/backend/mock"
 	"github.com/sahib/brig/catfs"
@@ -52,25 +51,25 @@ func FromName(name, path string, bootstrapNodes []string) (Backend, error) {
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
 		// Side effect: user cannot contain slashes currently.
-		patt := regexp.MustCompile(`/user=(.*)-port=(\d+)`)
-		match := patt.FindStringSubmatch(path)
-		if match == nil {
-			return nil, fmt.Errorf(
-				"test error: please encode the user name and port in the path",
-			)
+		port := 9995
+		if envPort := os.Getenv("BRIG_MOCK_PORT"); envPort != "" {
+			newPort, err := strconv.Atoi(envPort)
+			if err != nil {
+				log.Warningf("Failed to parse BRIG_MOCK_PORT=%s: %s", envPort, err)
+			} else {
+				port = newPort
+			}
 		}
 
-		user := match[1]
-		port, err := strconv.Atoi(match[2])
-		if err != nil {
-			return nil, fmt.Errorf(
-				"invalid mock addr port: %s %v",
-				path,
-				err,
-			)
+		user := "alice"
+		if envUser := os.Getenv("BRIG_MOCK_USER"); envUser != "" {
+			user = envUser
 		}
 
-		path = strings.Replace(path, match[0], "/", 1)
+		if envNetDbPath := os.Getenv("BRIG_MOCK_NET_DB_PATH"); envNetDbPath != "" {
+			path = envNetDbPath
+		}
+
 		return mock.NewMockBackend(path, user, port), nil
 	}
 

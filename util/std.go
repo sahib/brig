@@ -83,7 +83,7 @@ func UClamp(x, lo, hi uint) uint {
 // but it's slightly better than a bare defer xyz.Close()
 func Closer(c io.Closer) {
 	if err := c.Close(); err != nil {
-		log.Errorf("Error on close `%v`: %v", c, err)
+		log.Warningf("Error on close `%v`: %v", c, err)
 	}
 }
 

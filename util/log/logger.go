@@ -5,12 +5,23 @@ import (
 	"bytes"
 	"fmt"
 	"log/syslog"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
 )
+
+var showPid = false
+
+func init() {
+	if os.Getenv("BRIG_LOG_SHOW_PID") != "" {
+		showPid = true
+	}
+}
 
 // FancyLogFormatter is the default logger for brig.
 type FancyLogFormatter struct {
@@ -86,6 +97,63 @@ func formatFields(useColors bool, buffer *bytes.Buffer, entry *logrus.Entry) {
 	buffer.WriteByte(']')
 }
 
+type empty struct{}
+
+var logSymbols = map[string]empty{
+	"logrus.Debugf":   empty{},
+	"logrus.Debug":    empty{},
+	"logrus.Infof":    empty{},
+	"logrus.Info":     empty{},
+	"logrus.Warnf":    empty{},
+	"logrus.Warn":     empty{},
+	"logrus.Warningf": empty{},
+	"logrus.Warning":  empty{},
+	"logrus.Errorf":   empty{},
+	"logrus.Error":    empty{},
+	"logrus.Panic":    empty{},
+	"logrus.Panicf":   empty{},
+}
+
+func findCallers() (string, int, bool) {
+	// Skipping 7 callers is probably fine.
+	// logrus adds some stuff to the stack trace.
+	pcs := make([]uintptr, 15)
+	nCallers := runtime.Callers(7, pcs)
+	frames := runtime.CallersFrames(pcs[:nCallers])
+
+	nextLineIsCallee := false
+	for {
+		frame, ok := frames.Next()
+		if !ok {
+			break
+		}
+
+		if nextLineIsCallee {
+			// Try to pretty print the file. If it's inside of brig,
+			// the relative path from the root is enough to print.
+			brigTag := "brig/"
+			brigModIdx := strings.LastIndex(frame.File, brigTag)
+			if brigModIdx == -1 {
+				return filepath.Base(frame.File), frame.Line, true
+			}
+
+			return frame.File[brigModIdx+len(brigTag):], frame.Line, true
+		}
+
+		// Try to get the pure function name (without the module prefix)
+		lastIdx := strings.LastIndex(frame.Function, "/")
+		if lastIdx == -1 {
+			continue
+		}
+
+		// Check if this line is a call to the official logrus API.
+		// Then, the next line must be the actual line where the log was done.
+		_, nextLineIsCallee = logSymbols[frame.Function[lastIdx+1:]]
+	}
+
+	return "", 0, false
+}
+
 // Format logs a single entry according to our formatting ideas.
 func (flf *FancyLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	prefixBuilder := strings.Builder{}
@@ -101,6 +169,17 @@ func (flf *FancyLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		buffer.WriteString(colorByLevel(entry.Level, prefixBuilder.String()))
 	} else {
 		buffer.WriteString(prefixBuilder.String())
+	}
+
+	if showPid {
+		// This is useful for debugging unittests where several processes
+		// all log to stdout. This helps differentiating the logs.
+		buffer.WriteString(fmt.Sprintf(" [%d]", os.Getpid()))
+	}
+
+	file, line, ok := findCallers()
+	if ok {
+		buffer.WriteString(fmt.Sprintf(" %s:%d:", file, line))
 	}
 
 	buffer.WriteByte(' ')

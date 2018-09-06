@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/util"
 
@@ -230,8 +229,6 @@ func (ath *AuthReadWriter) runAuth() error {
 		return err
 	}
 
-	log.Debugf("write name: %v", ath.ownName)
-
 	// Write our own pubkey down the line:
 	if _, err := writeSizePack(ath.rwc, ath.ownPubKey); err != nil {
 		return err
@@ -245,7 +242,6 @@ func (ath *AuthReadWriter) runAuth() error {
 		return err
 	}
 
-	log.Debugf("read name: %v %d", string(remoteName), len(remoteName))
 	ath.remoteName = string(remoteName)
 
 	// Read their pubkey:

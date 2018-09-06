@@ -71,6 +71,12 @@ var (
 	ErrRegistryEntryExists = errors.New("registry entry exists already")
 )
 
+func init() {
+	if path := os.Getenv("BRIG_REGISTRY_PATH"); path != "" {
+		RegistryPaths = []string{path}
+	}
+}
+
 func findRegistryPath() string {
 	for _, path := range RegistryPaths {
 		fullPath := os.ExpandEnv(path)
