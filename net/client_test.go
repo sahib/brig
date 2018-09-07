@@ -29,17 +29,21 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	basePath, err := ioutil.TempDir("", "brig-ctl-test")
 	require.Nil(t, err)
 
-	netDbPath, err := ioutil.TempDir("", "brig-net-db")
+	netDbPath := "/tmp/brig-net-test-netdb"
+	regDbPath := "/tmp/brig-net-test-reg.yml"
 	require.Nil(t, err)
 
 	defer func() {
 		require.Nil(t, os.RemoveAll(basePath))
 		require.Nil(t, os.RemoveAll(netDbPath))
+		require.Nil(t, os.RemoveAll(regDbPath))
 	}()
 
+	// The following env vars are only read in FromName.
 	require.Nil(t, os.Setenv("BRIG_MOCK_PORT", fmt.Sprintf("%d", backendPort)))
 	require.Nil(t, os.Setenv("BRIG_MOCK_USER", name))
 	require.Nil(t, os.Setenv("BRIG_MOCK_NET_DB_PATH", netDbPath))
+	require.Nil(t, os.Setenv("BRIG_REGISTRY_PATH", regDbPath))
 	bk, err := backend.FromName("mock", basePath, nil)
 	require.Nil(t, err)
 
