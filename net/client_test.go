@@ -26,26 +26,27 @@ type testUnit struct {
 }
 
 func withNetServer(t *testing.T, name string, backendPort int, basePath string, fn func(u testUnit)) {
-	if basePath == "" {
-		var err error
-		basePath, err = ioutil.TempDir("", "brig-ctl-test")
-		require.Nil(t, err)
-
-		defer func() {
-			require.Nil(t, os.RemoveAll(basePath))
-		}()
-	}
-
-	fullPath := fmt.Sprintf("%s/user=%s-port=%d", basePath, name, backendPort)
-	require.Nil(t, os.MkdirAll(fullPath, 0700))
-
-	bk, err := backend.FromName("mock", fullPath, nil)
+	basePath, err := ioutil.TempDir("", "brig-ctl-test")
 	require.Nil(t, err)
 
-	err = repo.Init(fullPath, name, "password", "mock")
+	netDbPath, err := ioutil.TempDir("", "brig-net-db")
 	require.Nil(t, err)
 
-	rp, err := repo.Open(fullPath, "password")
+	defer func() {
+		require.Nil(t, os.RemoveAll(basePath))
+		require.Nil(t, os.RemoveAll(netDbPath))
+	}()
+
+	require.Nil(t, os.Setenv("BRIG_MOCK_PORT", fmt.Sprintf("%d", backendPort)))
+	require.Nil(t, os.Setenv("BRIG_MOCK_USER", name))
+	require.Nil(t, os.Setenv("BRIG_MOCK_NET_DB_PATH", netDbPath))
+	bk, err := backend.FromName("mock", basePath, nil)
+	require.Nil(t, err)
+
+	err = repo.Init(basePath, name, "password", "mock")
+	require.Nil(t, err)
+
+	rp, err := repo.Open(basePath, "password")
 	require.Nil(t, err)
 
 	srv, err := NewServer(rp, bk)
