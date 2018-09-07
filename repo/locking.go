@@ -211,6 +211,15 @@ func UnlockRepo(root, user, password string, lockExcludes, unlockExcludes []stri
 		return err
 	}
 
+	warnAboutUnlockedFiles := true
+	initTagPath := filepath.Join(root, "INIT_TAG")
+	if _, err := os.Stat(initTagPath); err == nil {
+		warnAboutUnlockedFiles = false
+		if err := os.Remove(initTagPath); err != nil {
+			return err
+		}
+	}
+
 	key := keyFromPassword(user, password)
 
 	for _, info := range files {
@@ -230,7 +239,7 @@ func UnlockRepo(root, user, password string, lockExcludes, unlockExcludes []stri
 				return err
 			}
 		default:
-			if !isExcluded(path, lockExcludes) {
+			if warnAboutUnlockedFiles && !isExcluded(path, lockExcludes) {
 				log.Warningf("%s was not locked. Ignoring.", path)
 			}
 			continue
