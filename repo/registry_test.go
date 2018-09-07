@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	RegistryPaths = []string{TestRegistryPath}
+	os.Setenv("BRIG_REGISTRY_PATH", TestRegistryPath)
 }
 
 func touchTestRegistry(t *testing.T, data []byte) {

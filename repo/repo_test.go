@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	RegistryPaths = append(RegistryPaths, TestRegistryPath)
+	os.Setenv("BRIG_REGISTRY_PATH", TestRegistryPath)
 }
 
 func TestRepoInit(t *testing.T) {

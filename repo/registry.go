@@ -63,18 +63,19 @@ type RegistryEntry struct {
 }
 
 var (
-	RegistryPaths = []string{
-		"$HOME/.config/brig/registry.yml",
-		"$HOME/.brig-registry.yml",
-		"/etc/brig-registry.yml",
-	}
 	ErrRegistryEntryExists = errors.New("registry entry exists already")
 )
 
 func findRegistryPath() string {
-	registryPaths := RegistryPaths
+	var registryPaths []string
 	if path := os.Getenv("BRIG_REGISTRY_PATH"); path != "" {
 		registryPaths = []string{path}
+	} else {
+		registryPaths = []string{
+			"$HOME/.config/brig/registry.yml",
+			"$HOME/.brig-registry.yml",
+			"/etc/brig-registry.yml",
+		}
 	}
 
 	for _, path := range registryPaths {
@@ -90,7 +91,7 @@ func findRegistryPath() string {
 	}
 
 	// Nothing suitable found. Use the most preferred one.
-	return os.ExpandEnv(RegistryPaths[0])
+	return os.ExpandEnv(registryPaths[0])
 }
 
 func OpenRegistry() (*Registry, error) {
