@@ -149,7 +149,7 @@ func RunCmdline(args []string) int {
 			},
 		}, {
 			Name:     "pin",
-			Category: netwGroup,
+			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			Subcommands: []cli.Command{
 				{

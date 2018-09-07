@@ -81,12 +81,10 @@ struct Identity $Go.doc("Info about our current user state") {
     currentUser @0 :Text;
     owner       @1 :Text;
     fingerprint @2 :Text;
-    isOnline   @3  :Bool;
+    isOnline    @3  :Bool;
 }
 
 struct MountOptions {
-    # For now empty, but there are some mount options
-    # in planning.
     readOnly @0 :Bool;
     rootPath @1 :Text;
 }
@@ -156,46 +154,45 @@ interface VCS {
     fetch    @8 (who :Text);
 }
 
-interface Meta {
-    quit    @0 ();
-    ping    @1 () -> (reply :Text);
-    init    @2 (basePath :Text, owner :Text, backend :Text, password :Text);
-    mount   @3 (mountPath :Text, options :MountOptions);
-    unmount @4 (mountPath :Text);
+interface Repo {
+    quit            @0  ();
+    ping            @1  () -> (reply :Text);
+    init            @2  (basePath :Text, owner :Text, backend :Text, password :Text);
+    mount           @3  (mountPath :Text, options :MountOptions);
+    unmount         @4  (mountPath :Text);
 
-    configGet @5 (key :Text) -> (value :Text);
-    configSet @6 (key :Text, value :Text);
-    configAll @7 () -> (all :List(ConfigEntry));
-    configDoc @8 (key :Text) -> (desc :ConfigEntry);
+    configGet       @5  (key :Text) -> (value :Text);
+    configSet       @6  (key :Text, value :Text);
+    configAll       @7  () -> (all :List(ConfigEntry));
+    configDoc       @8  (key :Text) -> (desc :ConfigEntry);
 
-    remoteAdd    @9  (remote :Remote);
-    remoteRm     @10  (name :Text);
-    remoteLs     @11 () -> (remotes :List(Remote));
-    remoteSave   @12 (remotes :List(Remote));
-    remotePing   @13 (who :Text) -> (roundtrip :Float64);
-    remoteClear  @14 ();
+    become          @9  (who :Text);
 
-    netLocate     @15 (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
-    netLocateNext @16 (ticket :UInt64) -> (result :LocateResult);
+    fstabAdd        @10 (mountName :Text, mountPath :Text, options :MountOptions);
+    fstabRemove     @11 (mountName :Text);
+    fstabApply      @12 ();
+    fstabList       @13 () -> (mounts :List(FsTabEntry));
+    fstabUnmountAll @14 ();
 
-    # the combined command of both is "whathaveibecome":
-    whoami      @17  () -> (whoami :Identity);
-    become      @18 (who :Text);
+    version         @15 () -> (version :Version);
+}
 
-    connect     @19 ();
-    disconnect  @20 ();
-    onlinePeers @21 () -> (infos :List(PeerStatus));
-    version     @22 () -> (version :Version);
-
-    fstabAdd        @23 (mountName :Text, mountPath :Text, options :MountOptions);
-    fstabRemove     @24 (mountName :Text);
-    fstabApply      @25 ();
-    fstabList       @26 () -> (mounts :List(FsTabEntry));
-    fstabUnmountAll @27 ();
+interface Net {
+    remoteAdd     @0  (remote :Remote);
+    remoteRm      @1  (name :Text);
+    remoteLs      @2  () -> (remotes :List(Remote));
+    remoteSave    @3  (remotes :List(Remote));
+    remotePing    @4  (who :Text) -> (roundtrip :Float64);
+    remoteClear   @5  ();
+    netLocate     @6  (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
+    netLocateNext @7  (ticket :UInt64) -> (result :LocateResult);
+    whoami        @8  () -> (whoami :Identity);
+    connect       @9  ();
+    disconnect    @10 ();
+    onlinePeers   @11 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,
-# because apparently we have this limitation what one interface
+# because apparently we have this limitation that one interface
 # more or less equals one connection.
-interface API extends(FS, VCS, Meta) {
-}
+interface API extends(FS, VCS, Repo, Net) { }

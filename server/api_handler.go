@@ -1,17 +1,17 @@
 package server
 
 type apiHandler struct {
-	metaHandler
+	repoHandler
 	fsHandler
 	vcsHandler
+	netHandler
 }
 
 func newApiHandler(base *base) *apiHandler {
-	ah := &apiHandler{}
-
-	// Divide the implementation of all handlers over the respective areas:
-	ah.metaHandler.base = base
-	ah.fsHandler.base = base
-	ah.vcsHandler.base = base
-	return ah
+	return &apiHandler{
+		repoHandler: repoHandler{base},
+		netHandler:  netHandler{base},
+		vcsHandler:  vcsHandler{base},
+		fsHandler:   fsHandler{base},
+	}
 }

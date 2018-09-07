@@ -6891,649 +6891,385 @@ func (p VCS_fetch_Results_Promise) Struct() (VCS_fetch_Results, error) {
 	return VCS_fetch_Results{s}, err
 }
 
-type Meta struct{ Client capnp.Client }
+type Repo struct{ Client capnp.Client }
 
-// Meta_TypeID is the unique identifier for the type Meta.
-const Meta_TypeID = 0x83e6cb306e77e311
+// Repo_TypeID is the unique identifier for the type Repo.
+const Repo_TypeID = 0xa862cd929f7af191
 
-func (c Meta) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
+func (c Repo) Quit(ctx context.Context, params func(Repo_quit_Params) error, opts ...capnp.CallOption) Repo_quit_Results_Promise {
 	if c.Client == nil {
-		return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      0,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "quit",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_quit_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_quit_Params{Struct: s}) }
 	}
-	return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_quit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts ...capnp.CallOption) Meta_ping_Results_Promise {
+func (c Repo) Ping(ctx context.Context, params func(Repo_ping_Params) error, opts ...capnp.CallOption) Repo_ping_Results_Promise {
 	if c.Client == nil {
-		return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      1,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_ping_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_ping_Params{Struct: s}) }
 	}
-	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) Init(ctx context.Context, params func(Meta_init_Params) error, opts ...capnp.CallOption) Meta_init_Results_Promise {
+func (c Repo) Init(ctx context.Context, params func(Repo_init_Params) error, opts ...capnp.CallOption) Repo_init_Results_Promise {
 	if c.Client == nil {
-		return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      2,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "init",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 4}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_init_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_init_Params{Struct: s}) }
 	}
-	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) Mount(ctx context.Context, params func(Meta_mount_Params) error, opts ...capnp.CallOption) Meta_mount_Results_Promise {
+func (c Repo) Mount(ctx context.Context, params func(Repo_mount_Params) error, opts ...capnp.CallOption) Repo_mount_Results_Promise {
 	if c.Client == nil {
-		return Meta_mount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_mount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      3,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "mount",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_mount_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_mount_Params{Struct: s}) }
 	}
-	return Meta_mount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_mount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) Unmount(ctx context.Context, params func(Meta_unmount_Params) error, opts ...capnp.CallOption) Meta_unmount_Results_Promise {
+func (c Repo) Unmount(ctx context.Context, params func(Repo_unmount_Params) error, opts ...capnp.CallOption) Repo_unmount_Results_Promise {
 	if c.Client == nil {
-		return Meta_unmount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_unmount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      4,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "unmount",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_unmount_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_unmount_Params{Struct: s}) }
 	}
-	return Meta_unmount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_unmount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) error, opts ...capnp.CallOption) Meta_configGet_Results_Promise {
+func (c Repo) ConfigGet(ctx context.Context, params func(Repo_configGet_Params) error, opts ...capnp.CallOption) Repo_configGet_Results_Promise {
 	if c.Client == nil {
-		return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      5,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configGet",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configGet_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configGet_Params{Struct: s}) }
 	}
-	return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) error, opts ...capnp.CallOption) Meta_configSet_Results_Promise {
+func (c Repo) ConfigSet(ctx context.Context, params func(Repo_configSet_Params) error, opts ...capnp.CallOption) Repo_configSet_Results_Promise {
 	if c.Client == nil {
-		return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      6,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configSet",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configSet_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configSet_Params{Struct: s}) }
 	}
-	return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) error, opts ...capnp.CallOption) Meta_configAll_Results_Promise {
+func (c Repo) ConfigAll(ctx context.Context, params func(Repo_configAll_Params) error, opts ...capnp.CallOption) Repo_configAll_Results_Promise {
 	if c.Client == nil {
-		return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      7,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configAll",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configAll_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configAll_Params{Struct: s}) }
 	}
-	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) ConfigDoc(ctx context.Context, params func(Meta_configDoc_Params) error, opts ...capnp.CallOption) Meta_configDoc_Results_Promise {
+func (c Repo) ConfigDoc(ctx context.Context, params func(Repo_configDoc_Params) error, opts ...capnp.CallOption) Repo_configDoc_Results_Promise {
 	if c.Client == nil {
-		return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      8,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configDoc",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configDoc_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configDoc_Params{Struct: s}) }
 	}
-	return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) error, opts ...capnp.CallOption) Meta_remoteAdd_Results_Promise {
+func (c Repo) Become(ctx context.Context, params func(Repo_become_Params) error, opts ...capnp.CallOption) Repo_become_Results_Promise {
 	if c.Client == nil {
-		return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_become_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      9,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteAdd",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteAdd_Params{Struct: s}) }
-	}
-	return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) error, opts ...capnp.CallOption) Meta_remoteRm_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteRm",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteRm_Params{Struct: s}) }
-	}
-	return Meta_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) error, opts ...capnp.CallOption) Meta_remoteLs_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteLs",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteLs_Params{Struct: s}) }
-	}
-	return Meta_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params) error, opts ...capnp.CallOption) Meta_remoteSave_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteSave",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteSave_Params{Struct: s}) }
-	}
-	return Meta_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) RemotePing(ctx context.Context, params func(Meta_remotePing_Params) error, opts ...capnp.CallOption) Meta_remotePing_Results_Promise {
-	if c.Client == nil {
-		return Meta_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remotePing",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remotePing_Params{Struct: s}) }
-	}
-	return Meta_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) RemoteClear(ctx context.Context, params func(Meta_remoteClear_Params) error, opts ...capnp.CallOption) Meta_remoteClear_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteClear",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteClear_Params{Struct: s}) }
-	}
-	return Meta_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) NetLocate(ctx context.Context, params func(Meta_netLocate_Params) error, opts ...capnp.CallOption) Meta_netLocate_Results_Promise {
-	if c.Client == nil {
-		return Meta_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocate",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_netLocate_Params{Struct: s}) }
-	}
-	return Meta_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) NetLocateNext(ctx context.Context, params func(Meta_netLocateNext_Params) error, opts ...capnp.CallOption) Meta_netLocateNext_Results_Promise {
-	if c.Client == nil {
-		return Meta_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocateNext",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_netLocateNext_Params{Struct: s}) }
-	}
-	return Meta_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) Whoami(ctx context.Context, params func(Meta_whoami_Params) error, opts ...capnp.CallOption) Meta_whoami_Results_Promise {
-	if c.Client == nil {
-		return Meta_whoami_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "whoami",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_whoami_Params{Struct: s}) }
-	}
-	return Meta_whoami_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) Become(ctx context.Context, params func(Meta_become_Params) error, opts ...capnp.CallOption) Meta_become_Results_Promise {
-	if c.Client == nil {
-		return Meta_become_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "become",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_become_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_become_Params{Struct: s}) }
 	}
-	return Meta_become_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_become_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) Connect(ctx context.Context, params func(Meta_connect_Params) error, opts ...capnp.CallOption) Meta_connect_Results_Promise {
+func (c Repo) FstabAdd(ctx context.Context, params func(Repo_fstabAdd_Params) error, opts ...capnp.CallOption) Repo_fstabAdd_Results_Promise {
 	if c.Client == nil {
-		return Meta_connect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "connect",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_connect_Params{Struct: s}) }
-	}
-	return Meta_connect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) Disconnect(ctx context.Context, params func(Meta_disconnect_Params) error, opts ...capnp.CallOption) Meta_disconnect_Results_Promise {
-	if c.Client == nil {
-		return Meta_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "disconnect",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_disconnect_Params{Struct: s}) }
-	}
-	return Meta_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Params) error, opts ...capnp.CallOption) Meta_onlinePeers_Results_Promise {
-	if c.Client == nil {
-		return Meta_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "onlinePeers",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_onlinePeers_Params{Struct: s}) }
-	}
-	return Meta_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) Version(ctx context.Context, params func(Meta_version_Params) error, opts ...capnp.CallOption) Meta_version_Results_Promise {
-	if c.Client == nil {
-		return Meta_version_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      22,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "version",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_version_Params{Struct: s}) }
-	}
-	return Meta_version_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c Meta) FstabAdd(ctx context.Context, params func(Meta_fstabAdd_Params) error, opts ...capnp.CallOption) Meta_fstabAdd_Results_Promise {
-	if c.Client == nil {
-		return Meta_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      23,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabAdd",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabAdd_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabAdd_Params{Struct: s}) }
 	}
-	return Meta_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) FstabRemove(ctx context.Context, params func(Meta_fstabRemove_Params) error, opts ...capnp.CallOption) Meta_fstabRemove_Results_Promise {
+func (c Repo) FstabRemove(ctx context.Context, params func(Repo_fstabRemove_Params) error, opts ...capnp.CallOption) Repo_fstabRemove_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      24,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabRemove",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabRemove_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabRemove_Params{Struct: s}) }
 	}
-	return Meta_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) FstabApply(ctx context.Context, params func(Meta_fstabApply_Params) error, opts ...capnp.CallOption) Meta_fstabApply_Results_Promise {
+func (c Repo) FstabApply(ctx context.Context, params func(Repo_fstabApply_Params) error, opts ...capnp.CallOption) Repo_fstabApply_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      25,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      12,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabApply",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabApply_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabApply_Params{Struct: s}) }
 	}
-	return Meta_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) FstabList(ctx context.Context, params func(Meta_fstabList_Params) error, opts ...capnp.CallOption) Meta_fstabList_Results_Promise {
+func (c Repo) FstabList(ctx context.Context, params func(Repo_fstabList_Params) error, opts ...capnp.CallOption) Repo_fstabList_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      26,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      13,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabList",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabList_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabList_Params{Struct: s}) }
 	}
-	return Meta_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c Meta) FstabUnmountAll(ctx context.Context, params func(Meta_fstabUnmountAll_Params) error, opts ...capnp.CallOption) Meta_fstabUnmountAll_Results_Promise {
+func (c Repo) FstabUnmountAll(ctx context.Context, params func(Repo_fstabUnmountAll_Params) error, opts ...capnp.CallOption) Repo_fstabUnmountAll_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      27,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      14,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabUnmountAll",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabUnmountAll_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabUnmountAll_Params{Struct: s}) }
 	}
-	return Meta_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Repo) Version(ctx context.Context, params func(Repo_version_Params) error, opts ...capnp.CallOption) Repo_version_Results_Promise {
+	if c.Client == nil {
+		return Repo_version_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      15,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
+			MethodName:    "version",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_version_Params{Struct: s}) }
+	}
+	return Repo_version_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 
-type Meta_Server interface {
-	Quit(Meta_quit) error
+type Repo_Server interface {
+	Quit(Repo_quit) error
 
-	Ping(Meta_ping) error
+	Ping(Repo_ping) error
 
-	Init(Meta_init) error
+	Init(Repo_init) error
 
-	Mount(Meta_mount) error
+	Mount(Repo_mount) error
 
-	Unmount(Meta_unmount) error
+	Unmount(Repo_unmount) error
 
-	ConfigGet(Meta_configGet) error
+	ConfigGet(Repo_configGet) error
 
-	ConfigSet(Meta_configSet) error
+	ConfigSet(Repo_configSet) error
 
-	ConfigAll(Meta_configAll) error
+	ConfigAll(Repo_configAll) error
 
-	ConfigDoc(Meta_configDoc) error
+	ConfigDoc(Repo_configDoc) error
 
-	RemoteAdd(Meta_remoteAdd) error
+	Become(Repo_become) error
 
-	RemoteRm(Meta_remoteRm) error
+	FstabAdd(Repo_fstabAdd) error
 
-	RemoteLs(Meta_remoteLs) error
+	FstabRemove(Repo_fstabRemove) error
 
-	RemoteSave(Meta_remoteSave) error
+	FstabApply(Repo_fstabApply) error
 
-	RemotePing(Meta_remotePing) error
+	FstabList(Repo_fstabList) error
 
-	RemoteClear(Meta_remoteClear) error
+	FstabUnmountAll(Repo_fstabUnmountAll) error
 
-	NetLocate(Meta_netLocate) error
-
-	NetLocateNext(Meta_netLocateNext) error
-
-	Whoami(Meta_whoami) error
-
-	Become(Meta_become) error
-
-	Connect(Meta_connect) error
-
-	Disconnect(Meta_disconnect) error
-
-	OnlinePeers(Meta_onlinePeers) error
-
-	Version(Meta_version) error
-
-	FstabAdd(Meta_fstabAdd) error
-
-	FstabRemove(Meta_fstabRemove) error
-
-	FstabApply(Meta_fstabApply) error
-
-	FstabList(Meta_fstabList) error
-
-	FstabUnmountAll(Meta_fstabUnmountAll) error
+	Version(Repo_version) error
 }
 
-func Meta_ServerToClient(s Meta_Server) Meta {
+func Repo_ServerToClient(s Repo_Server) Repo {
 	c, _ := s.(server.Closer)
-	return Meta{Client: server.New(Meta_Methods(nil, s), c)}
+	return Repo{Client: server.New(Repo_Methods(nil, s), c)}
 }
 
-func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
+func Repo_Methods(methods []server.Method, s Repo_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 28)
+		methods = make([]server.Method, 0, 16)
 	}
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      0,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "quit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_quit{c, opts, Meta_quit_Params{Struct: p}, Meta_quit_Results{Struct: r}}
+			call := Repo_quit{c, opts, Repo_quit_Params{Struct: p}, Repo_quit_Results{Struct: r}}
 			return s.Quit(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7541,13 +7277,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      1,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_ping{c, opts, Meta_ping_Params{Struct: p}, Meta_ping_Results{Struct: r}}
+			call := Repo_ping{c, opts, Repo_ping_Params{Struct: p}, Repo_ping_Results{Struct: r}}
 			return s.Ping(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -7555,13 +7291,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      2,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "init",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_init{c, opts, Meta_init_Params{Struct: p}, Meta_init_Results{Struct: r}}
+			call := Repo_init{c, opts, Repo_init_Params{Struct: p}, Repo_init_Results{Struct: r}}
 			return s.Init(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7569,13 +7305,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      3,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "mount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_mount{c, opts, Meta_mount_Params{Struct: p}, Meta_mount_Results{Struct: r}}
+			call := Repo_mount{c, opts, Repo_mount_Params{Struct: p}, Repo_mount_Results{Struct: r}}
 			return s.Mount(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7583,13 +7319,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      4,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "unmount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_unmount{c, opts, Meta_unmount_Params{Struct: p}, Meta_unmount_Results{Struct: r}}
+			call := Repo_unmount{c, opts, Repo_unmount_Params{Struct: p}, Repo_unmount_Results{Struct: r}}
 			return s.Unmount(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7597,13 +7333,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      5,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configGet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configGet{c, opts, Meta_configGet_Params{Struct: p}, Meta_configGet_Results{Struct: r}}
+			call := Repo_configGet{c, opts, Repo_configGet_Params{Struct: p}, Repo_configGet_Results{Struct: r}}
 			return s.ConfigGet(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -7611,13 +7347,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      6,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configSet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configSet{c, opts, Meta_configSet_Params{Struct: p}, Meta_configSet_Results{Struct: r}}
+			call := Repo_configSet{c, opts, Repo_configSet_Params{Struct: p}, Repo_configSet_Results{Struct: r}}
 			return s.ConfigSet(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7625,13 +7361,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      7,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configAll{c, opts, Meta_configAll_Params{Struct: p}, Meta_configAll_Results{Struct: r}}
+			call := Repo_configAll{c, opts, Repo_configAll_Params{Struct: p}, Repo_configAll_Results{Struct: r}}
 			return s.ConfigAll(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -7639,13 +7375,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      8,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configDoc",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configDoc{c, opts, Meta_configDoc_Params{Struct: p}, Meta_configDoc_Results{Struct: r}}
+			call := Repo_configDoc{c, opts, Repo_configDoc_Params{Struct: p}, Repo_configDoc_Results{Struct: r}}
 			return s.ConfigDoc(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -7653,139 +7389,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      9,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteAdd",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteAdd{c, opts, Meta_remoteAdd_Params{Struct: p}, Meta_remoteAdd_Results{Struct: r}}
-			return s.RemoteAdd(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteRm",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteRm{c, opts, Meta_remoteRm_Params{Struct: p}, Meta_remoteRm_Results{Struct: r}}
-			return s.RemoteRm(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteLs",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteLs{c, opts, Meta_remoteLs_Params{Struct: p}, Meta_remoteLs_Results{Struct: r}}
-			return s.RemoteLs(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteSave",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteSave{c, opts, Meta_remoteSave_Params{Struct: p}, Meta_remoteSave_Results{Struct: r}}
-			return s.RemoteSave(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remotePing",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remotePing{c, opts, Meta_remotePing_Params{Struct: p}, Meta_remotePing_Results{Struct: r}}
-			return s.RemotePing(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteClear",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteClear{c, opts, Meta_remoteClear_Params{Struct: p}, Meta_remoteClear_Results{Struct: r}}
-			return s.RemoteClear(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocate",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_netLocate{c, opts, Meta_netLocate_Params{Struct: p}, Meta_netLocate_Results{Struct: r}}
-			return s.NetLocate(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocateNext",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_netLocateNext{c, opts, Meta_netLocateNext_Params{Struct: p}, Meta_netLocateNext_Results{Struct: r}}
-			return s.NetLocateNext(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "whoami",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_whoami{c, opts, Meta_whoami_Params{Struct: p}, Meta_whoami_Results{Struct: r}}
-			return s.Whoami(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "become",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_become{c, opts, Meta_become_Params{Struct: p}, Meta_become_Results{Struct: r}}
+			call := Repo_become{c, opts, Repo_become_Params{Struct: p}, Repo_become_Results{Struct: r}}
 			return s.Become(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7793,69 +7403,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "connect",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_connect{c, opts, Meta_connect_Params{Struct: p}, Meta_connect_Results{Struct: r}}
-			return s.Connect(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "disconnect",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_disconnect{c, opts, Meta_disconnect_Params{Struct: p}, Meta_disconnect_Results{Struct: r}}
-			return s.Disconnect(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "onlinePeers",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_onlinePeers{c, opts, Meta_onlinePeers_Params{Struct: p}, Meta_onlinePeers_Results{Struct: r}}
-			return s.OnlinePeers(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      22,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "version",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_version{c, opts, Meta_version_Params{Struct: p}, Meta_version_Results{Struct: r}}
-			return s.Version(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      23,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabAdd{c, opts, Meta_fstabAdd_Params{Struct: p}, Meta_fstabAdd_Results{Struct: r}}
+			call := Repo_fstabAdd{c, opts, Repo_fstabAdd_Params{Struct: p}, Repo_fstabAdd_Results{Struct: r}}
 			return s.FstabAdd(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7863,13 +7417,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      24,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabRemove",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabRemove{c, opts, Meta_fstabRemove_Params{Struct: p}, Meta_fstabRemove_Results{Struct: r}}
+			call := Repo_fstabRemove{c, opts, Repo_fstabRemove_Params{Struct: p}, Repo_fstabRemove_Results{Struct: r}}
 			return s.FstabRemove(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7877,13 +7431,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      25,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      12,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabApply",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabApply{c, opts, Meta_fstabApply_Params{Struct: p}, Meta_fstabApply_Results{Struct: r}}
+			call := Repo_fstabApply{c, opts, Repo_fstabApply_Params{Struct: p}, Repo_fstabApply_Results{Struct: r}}
 			return s.FstabApply(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -7891,13 +7445,13 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      26,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      13,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabList",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabList{c, opts, Meta_fstabList_Params{Struct: p}, Meta_fstabList_Results{Struct: r}}
+			call := Repo_fstabList{c, opts, Repo_fstabList_Params{Struct: p}, Repo_fstabList_Results{Struct: r}}
 			return s.FstabList(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -7905,725 +7459,643 @@ func Meta_Methods(methods []server.Method, s Meta_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      27,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      14,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabUnmountAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabUnmountAll{c, opts, Meta_fstabUnmountAll_Params{Struct: p}, Meta_fstabUnmountAll_Results{Struct: r}}
+			call := Repo_fstabUnmountAll{c, opts, Repo_fstabUnmountAll_Params{Struct: p}, Repo_fstabUnmountAll_Results{Struct: r}}
 			return s.FstabUnmountAll(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      15,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
+			MethodName:    "version",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Repo_version{c, opts, Repo_version_Params{Struct: p}, Repo_version_Results{Struct: r}}
+			return s.Version(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
 	return methods
 }
 
-// Meta_quit holds the arguments for a server call to Meta.quit.
-type Meta_quit struct {
+// Repo_quit holds the arguments for a server call to Repo.quit.
+type Repo_quit struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_quit_Params
-	Results Meta_quit_Results
+	Params  Repo_quit_Params
+	Results Repo_quit_Results
 }
 
-// Meta_ping holds the arguments for a server call to Meta.ping.
-type Meta_ping struct {
+// Repo_ping holds the arguments for a server call to Repo.ping.
+type Repo_ping struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_ping_Params
-	Results Meta_ping_Results
+	Params  Repo_ping_Params
+	Results Repo_ping_Results
 }
 
-// Meta_init holds the arguments for a server call to Meta.init.
-type Meta_init struct {
+// Repo_init holds the arguments for a server call to Repo.init.
+type Repo_init struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_init_Params
-	Results Meta_init_Results
+	Params  Repo_init_Params
+	Results Repo_init_Results
 }
 
-// Meta_mount holds the arguments for a server call to Meta.mount.
-type Meta_mount struct {
+// Repo_mount holds the arguments for a server call to Repo.mount.
+type Repo_mount struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_mount_Params
-	Results Meta_mount_Results
+	Params  Repo_mount_Params
+	Results Repo_mount_Results
 }
 
-// Meta_unmount holds the arguments for a server call to Meta.unmount.
-type Meta_unmount struct {
+// Repo_unmount holds the arguments for a server call to Repo.unmount.
+type Repo_unmount struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_unmount_Params
-	Results Meta_unmount_Results
+	Params  Repo_unmount_Params
+	Results Repo_unmount_Results
 }
 
-// Meta_configGet holds the arguments for a server call to Meta.configGet.
-type Meta_configGet struct {
+// Repo_configGet holds the arguments for a server call to Repo.configGet.
+type Repo_configGet struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_configGet_Params
-	Results Meta_configGet_Results
+	Params  Repo_configGet_Params
+	Results Repo_configGet_Results
 }
 
-// Meta_configSet holds the arguments for a server call to Meta.configSet.
-type Meta_configSet struct {
+// Repo_configSet holds the arguments for a server call to Repo.configSet.
+type Repo_configSet struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_configSet_Params
-	Results Meta_configSet_Results
+	Params  Repo_configSet_Params
+	Results Repo_configSet_Results
 }
 
-// Meta_configAll holds the arguments for a server call to Meta.configAll.
-type Meta_configAll struct {
+// Repo_configAll holds the arguments for a server call to Repo.configAll.
+type Repo_configAll struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_configAll_Params
-	Results Meta_configAll_Results
+	Params  Repo_configAll_Params
+	Results Repo_configAll_Results
 }
 
-// Meta_configDoc holds the arguments for a server call to Meta.configDoc.
-type Meta_configDoc struct {
+// Repo_configDoc holds the arguments for a server call to Repo.configDoc.
+type Repo_configDoc struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_configDoc_Params
-	Results Meta_configDoc_Results
+	Params  Repo_configDoc_Params
+	Results Repo_configDoc_Results
 }
 
-// Meta_remoteAdd holds the arguments for a server call to Meta.remoteAdd.
-type Meta_remoteAdd struct {
+// Repo_become holds the arguments for a server call to Repo.become.
+type Repo_become struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remoteAdd_Params
-	Results Meta_remoteAdd_Results
+	Params  Repo_become_Params
+	Results Repo_become_Results
 }
 
-// Meta_remoteRm holds the arguments for a server call to Meta.remoteRm.
-type Meta_remoteRm struct {
+// Repo_fstabAdd holds the arguments for a server call to Repo.fstabAdd.
+type Repo_fstabAdd struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remoteRm_Params
-	Results Meta_remoteRm_Results
+	Params  Repo_fstabAdd_Params
+	Results Repo_fstabAdd_Results
 }
 
-// Meta_remoteLs holds the arguments for a server call to Meta.remoteLs.
-type Meta_remoteLs struct {
+// Repo_fstabRemove holds the arguments for a server call to Repo.fstabRemove.
+type Repo_fstabRemove struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remoteLs_Params
-	Results Meta_remoteLs_Results
+	Params  Repo_fstabRemove_Params
+	Results Repo_fstabRemove_Results
 }
 
-// Meta_remoteSave holds the arguments for a server call to Meta.remoteSave.
-type Meta_remoteSave struct {
+// Repo_fstabApply holds the arguments for a server call to Repo.fstabApply.
+type Repo_fstabApply struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remoteSave_Params
-	Results Meta_remoteSave_Results
+	Params  Repo_fstabApply_Params
+	Results Repo_fstabApply_Results
 }
 
-// Meta_remotePing holds the arguments for a server call to Meta.remotePing.
-type Meta_remotePing struct {
+// Repo_fstabList holds the arguments for a server call to Repo.fstabList.
+type Repo_fstabList struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remotePing_Params
-	Results Meta_remotePing_Results
+	Params  Repo_fstabList_Params
+	Results Repo_fstabList_Results
 }
 
-// Meta_remoteClear holds the arguments for a server call to Meta.remoteClear.
-type Meta_remoteClear struct {
+// Repo_fstabUnmountAll holds the arguments for a server call to Repo.fstabUnmountAll.
+type Repo_fstabUnmountAll struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_remoteClear_Params
-	Results Meta_remoteClear_Results
+	Params  Repo_fstabUnmountAll_Params
+	Results Repo_fstabUnmountAll_Results
 }
 
-// Meta_netLocate holds the arguments for a server call to Meta.netLocate.
-type Meta_netLocate struct {
+// Repo_version holds the arguments for a server call to Repo.version.
+type Repo_version struct {
 	Ctx     context.Context
 	Options capnp.CallOptions
-	Params  Meta_netLocate_Params
-	Results Meta_netLocate_Results
+	Params  Repo_version_Params
+	Results Repo_version_Results
 }
 
-// Meta_netLocateNext holds the arguments for a server call to Meta.netLocateNext.
-type Meta_netLocateNext struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_netLocateNext_Params
-	Results Meta_netLocateNext_Results
-}
+type Repo_quit_Params struct{ capnp.Struct }
 
-// Meta_whoami holds the arguments for a server call to Meta.whoami.
-type Meta_whoami struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_whoami_Params
-	Results Meta_whoami_Results
-}
+// Repo_quit_Params_TypeID is the unique identifier for the type Repo_quit_Params.
+const Repo_quit_Params_TypeID = 0xaa98a78425cdd321
 
-// Meta_become holds the arguments for a server call to Meta.become.
-type Meta_become struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_become_Params
-	Results Meta_become_Results
-}
-
-// Meta_connect holds the arguments for a server call to Meta.connect.
-type Meta_connect struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_connect_Params
-	Results Meta_connect_Results
-}
-
-// Meta_disconnect holds the arguments for a server call to Meta.disconnect.
-type Meta_disconnect struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_disconnect_Params
-	Results Meta_disconnect_Results
-}
-
-// Meta_onlinePeers holds the arguments for a server call to Meta.onlinePeers.
-type Meta_onlinePeers struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_onlinePeers_Params
-	Results Meta_onlinePeers_Results
-}
-
-// Meta_version holds the arguments for a server call to Meta.version.
-type Meta_version struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_version_Params
-	Results Meta_version_Results
-}
-
-// Meta_fstabAdd holds the arguments for a server call to Meta.fstabAdd.
-type Meta_fstabAdd struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_fstabAdd_Params
-	Results Meta_fstabAdd_Results
-}
-
-// Meta_fstabRemove holds the arguments for a server call to Meta.fstabRemove.
-type Meta_fstabRemove struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_fstabRemove_Params
-	Results Meta_fstabRemove_Results
-}
-
-// Meta_fstabApply holds the arguments for a server call to Meta.fstabApply.
-type Meta_fstabApply struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_fstabApply_Params
-	Results Meta_fstabApply_Results
-}
-
-// Meta_fstabList holds the arguments for a server call to Meta.fstabList.
-type Meta_fstabList struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_fstabList_Params
-	Results Meta_fstabList_Results
-}
-
-// Meta_fstabUnmountAll holds the arguments for a server call to Meta.fstabUnmountAll.
-type Meta_fstabUnmountAll struct {
-	Ctx     context.Context
-	Options capnp.CallOptions
-	Params  Meta_fstabUnmountAll_Params
-	Results Meta_fstabUnmountAll_Results
-}
-
-type Meta_quit_Params struct{ capnp.Struct }
-
-// Meta_quit_Params_TypeID is the unique identifier for the type Meta_quit_Params.
-const Meta_quit_Params_TypeID = 0xdf3a2e83d0d533b3
-
-func NewMeta_quit_Params(s *capnp.Segment) (Meta_quit_Params, error) {
+func NewRepo_quit_Params(s *capnp.Segment) (Repo_quit_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_quit_Params{st}, err
+	return Repo_quit_Params{st}, err
 }
 
-func NewRootMeta_quit_Params(s *capnp.Segment) (Meta_quit_Params, error) {
+func NewRootRepo_quit_Params(s *capnp.Segment) (Repo_quit_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_quit_Params{st}, err
+	return Repo_quit_Params{st}, err
 }
 
-func ReadRootMeta_quit_Params(msg *capnp.Message) (Meta_quit_Params, error) {
+func ReadRootRepo_quit_Params(msg *capnp.Message) (Repo_quit_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_quit_Params{root.Struct()}, err
+	return Repo_quit_Params{root.Struct()}, err
 }
 
-func (s Meta_quit_Params) String() string {
-	str, _ := text.Marshal(0xdf3a2e83d0d533b3, s.Struct)
+func (s Repo_quit_Params) String() string {
+	str, _ := text.Marshal(0xaa98a78425cdd321, s.Struct)
 	return str
 }
 
-// Meta_quit_Params_List is a list of Meta_quit_Params.
-type Meta_quit_Params_List struct{ capnp.List }
+// Repo_quit_Params_List is a list of Repo_quit_Params.
+type Repo_quit_Params_List struct{ capnp.List }
 
-// NewMeta_quit_Params creates a new list of Meta_quit_Params.
-func NewMeta_quit_Params_List(s *capnp.Segment, sz int32) (Meta_quit_Params_List, error) {
+// NewRepo_quit_Params creates a new list of Repo_quit_Params.
+func NewRepo_quit_Params_List(s *capnp.Segment, sz int32) (Repo_quit_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_quit_Params_List{l}, err
+	return Repo_quit_Params_List{l}, err
 }
 
-func (s Meta_quit_Params_List) At(i int) Meta_quit_Params { return Meta_quit_Params{s.List.Struct(i)} }
+func (s Repo_quit_Params_List) At(i int) Repo_quit_Params { return Repo_quit_Params{s.List.Struct(i)} }
 
-func (s Meta_quit_Params_List) Set(i int, v Meta_quit_Params) error {
+func (s Repo_quit_Params_List) Set(i int, v Repo_quit_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_quit_Params_List) String() string {
-	str, _ := text.MarshalList(0xdf3a2e83d0d533b3, s.List)
+func (s Repo_quit_Params_List) String() string {
+	str, _ := text.MarshalList(0xaa98a78425cdd321, s.List)
 	return str
 }
 
-// Meta_quit_Params_Promise is a wrapper for a Meta_quit_Params promised by a client call.
-type Meta_quit_Params_Promise struct{ *capnp.Pipeline }
+// Repo_quit_Params_Promise is a wrapper for a Repo_quit_Params promised by a client call.
+type Repo_quit_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_quit_Params_Promise) Struct() (Meta_quit_Params, error) {
+func (p Repo_quit_Params_Promise) Struct() (Repo_quit_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_quit_Params{s}, err
+	return Repo_quit_Params{s}, err
 }
 
-type Meta_quit_Results struct{ capnp.Struct }
+type Repo_quit_Results struct{ capnp.Struct }
 
-// Meta_quit_Results_TypeID is the unique identifier for the type Meta_quit_Results.
-const Meta_quit_Results_TypeID = 0xe1dd2f0c85965fd6
+// Repo_quit_Results_TypeID is the unique identifier for the type Repo_quit_Results.
+const Repo_quit_Results_TypeID = 0x860c3dd5698349f5
 
-func NewMeta_quit_Results(s *capnp.Segment) (Meta_quit_Results, error) {
+func NewRepo_quit_Results(s *capnp.Segment) (Repo_quit_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_quit_Results{st}, err
+	return Repo_quit_Results{st}, err
 }
 
-func NewRootMeta_quit_Results(s *capnp.Segment) (Meta_quit_Results, error) {
+func NewRootRepo_quit_Results(s *capnp.Segment) (Repo_quit_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_quit_Results{st}, err
+	return Repo_quit_Results{st}, err
 }
 
-func ReadRootMeta_quit_Results(msg *capnp.Message) (Meta_quit_Results, error) {
+func ReadRootRepo_quit_Results(msg *capnp.Message) (Repo_quit_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_quit_Results{root.Struct()}, err
+	return Repo_quit_Results{root.Struct()}, err
 }
 
-func (s Meta_quit_Results) String() string {
-	str, _ := text.Marshal(0xe1dd2f0c85965fd6, s.Struct)
+func (s Repo_quit_Results) String() string {
+	str, _ := text.Marshal(0x860c3dd5698349f5, s.Struct)
 	return str
 }
 
-// Meta_quit_Results_List is a list of Meta_quit_Results.
-type Meta_quit_Results_List struct{ capnp.List }
+// Repo_quit_Results_List is a list of Repo_quit_Results.
+type Repo_quit_Results_List struct{ capnp.List }
 
-// NewMeta_quit_Results creates a new list of Meta_quit_Results.
-func NewMeta_quit_Results_List(s *capnp.Segment, sz int32) (Meta_quit_Results_List, error) {
+// NewRepo_quit_Results creates a new list of Repo_quit_Results.
+func NewRepo_quit_Results_List(s *capnp.Segment, sz int32) (Repo_quit_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_quit_Results_List{l}, err
+	return Repo_quit_Results_List{l}, err
 }
 
-func (s Meta_quit_Results_List) At(i int) Meta_quit_Results {
-	return Meta_quit_Results{s.List.Struct(i)}
+func (s Repo_quit_Results_List) At(i int) Repo_quit_Results {
+	return Repo_quit_Results{s.List.Struct(i)}
 }
 
-func (s Meta_quit_Results_List) Set(i int, v Meta_quit_Results) error {
+func (s Repo_quit_Results_List) Set(i int, v Repo_quit_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_quit_Results_List) String() string {
-	str, _ := text.MarshalList(0xe1dd2f0c85965fd6, s.List)
+func (s Repo_quit_Results_List) String() string {
+	str, _ := text.MarshalList(0x860c3dd5698349f5, s.List)
 	return str
 }
 
-// Meta_quit_Results_Promise is a wrapper for a Meta_quit_Results promised by a client call.
-type Meta_quit_Results_Promise struct{ *capnp.Pipeline }
+// Repo_quit_Results_Promise is a wrapper for a Repo_quit_Results promised by a client call.
+type Repo_quit_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_quit_Results_Promise) Struct() (Meta_quit_Results, error) {
+func (p Repo_quit_Results_Promise) Struct() (Repo_quit_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_quit_Results{s}, err
+	return Repo_quit_Results{s}, err
 }
 
-type Meta_ping_Params struct{ capnp.Struct }
+type Repo_ping_Params struct{ capnp.Struct }
 
-// Meta_ping_Params_TypeID is the unique identifier for the type Meta_ping_Params.
-const Meta_ping_Params_TypeID = 0xc9ac448a01179aec
+// Repo_ping_Params_TypeID is the unique identifier for the type Repo_ping_Params.
+const Repo_ping_Params_TypeID = 0x978c524c1a35015c
 
-func NewMeta_ping_Params(s *capnp.Segment) (Meta_ping_Params, error) {
+func NewRepo_ping_Params(s *capnp.Segment) (Repo_ping_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_ping_Params{st}, err
+	return Repo_ping_Params{st}, err
 }
 
-func NewRootMeta_ping_Params(s *capnp.Segment) (Meta_ping_Params, error) {
+func NewRootRepo_ping_Params(s *capnp.Segment) (Repo_ping_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_ping_Params{st}, err
+	return Repo_ping_Params{st}, err
 }
 
-func ReadRootMeta_ping_Params(msg *capnp.Message) (Meta_ping_Params, error) {
+func ReadRootRepo_ping_Params(msg *capnp.Message) (Repo_ping_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_ping_Params{root.Struct()}, err
+	return Repo_ping_Params{root.Struct()}, err
 }
 
-func (s Meta_ping_Params) String() string {
-	str, _ := text.Marshal(0xc9ac448a01179aec, s.Struct)
+func (s Repo_ping_Params) String() string {
+	str, _ := text.Marshal(0x978c524c1a35015c, s.Struct)
 	return str
 }
 
-// Meta_ping_Params_List is a list of Meta_ping_Params.
-type Meta_ping_Params_List struct{ capnp.List }
+// Repo_ping_Params_List is a list of Repo_ping_Params.
+type Repo_ping_Params_List struct{ capnp.List }
 
-// NewMeta_ping_Params creates a new list of Meta_ping_Params.
-func NewMeta_ping_Params_List(s *capnp.Segment, sz int32) (Meta_ping_Params_List, error) {
+// NewRepo_ping_Params creates a new list of Repo_ping_Params.
+func NewRepo_ping_Params_List(s *capnp.Segment, sz int32) (Repo_ping_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_ping_Params_List{l}, err
+	return Repo_ping_Params_List{l}, err
 }
 
-func (s Meta_ping_Params_List) At(i int) Meta_ping_Params { return Meta_ping_Params{s.List.Struct(i)} }
+func (s Repo_ping_Params_List) At(i int) Repo_ping_Params { return Repo_ping_Params{s.List.Struct(i)} }
 
-func (s Meta_ping_Params_List) Set(i int, v Meta_ping_Params) error {
+func (s Repo_ping_Params_List) Set(i int, v Repo_ping_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_ping_Params_List) String() string {
-	str, _ := text.MarshalList(0xc9ac448a01179aec, s.List)
+func (s Repo_ping_Params_List) String() string {
+	str, _ := text.MarshalList(0x978c524c1a35015c, s.List)
 	return str
 }
 
-// Meta_ping_Params_Promise is a wrapper for a Meta_ping_Params promised by a client call.
-type Meta_ping_Params_Promise struct{ *capnp.Pipeline }
+// Repo_ping_Params_Promise is a wrapper for a Repo_ping_Params promised by a client call.
+type Repo_ping_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_ping_Params_Promise) Struct() (Meta_ping_Params, error) {
+func (p Repo_ping_Params_Promise) Struct() (Repo_ping_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_ping_Params{s}, err
+	return Repo_ping_Params{s}, err
 }
 
-type Meta_ping_Results struct{ capnp.Struct }
+type Repo_ping_Results struct{ capnp.Struct }
 
-// Meta_ping_Results_TypeID is the unique identifier for the type Meta_ping_Results.
-const Meta_ping_Results_TypeID = 0xffd34f15ec608676
+// Repo_ping_Results_TypeID is the unique identifier for the type Repo_ping_Results.
+const Repo_ping_Results_TypeID = 0x9d64fa17798952ff
 
-func NewMeta_ping_Results(s *capnp.Segment) (Meta_ping_Results, error) {
+func NewRepo_ping_Results(s *capnp.Segment) (Repo_ping_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_ping_Results{st}, err
+	return Repo_ping_Results{st}, err
 }
 
-func NewRootMeta_ping_Results(s *capnp.Segment) (Meta_ping_Results, error) {
+func NewRootRepo_ping_Results(s *capnp.Segment) (Repo_ping_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_ping_Results{st}, err
+	return Repo_ping_Results{st}, err
 }
 
-func ReadRootMeta_ping_Results(msg *capnp.Message) (Meta_ping_Results, error) {
+func ReadRootRepo_ping_Results(msg *capnp.Message) (Repo_ping_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_ping_Results{root.Struct()}, err
+	return Repo_ping_Results{root.Struct()}, err
 }
 
-func (s Meta_ping_Results) String() string {
-	str, _ := text.Marshal(0xffd34f15ec608676, s.Struct)
+func (s Repo_ping_Results) String() string {
+	str, _ := text.Marshal(0x9d64fa17798952ff, s.Struct)
 	return str
 }
 
-func (s Meta_ping_Results) Reply() (string, error) {
+func (s Repo_ping_Results) Reply() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_ping_Results) HasReply() bool {
+func (s Repo_ping_Results) HasReply() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_ping_Results) ReplyBytes() ([]byte, error) {
+func (s Repo_ping_Results) ReplyBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_ping_Results) SetReply(v string) error {
+func (s Repo_ping_Results) SetReply(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_ping_Results_List is a list of Meta_ping_Results.
-type Meta_ping_Results_List struct{ capnp.List }
+// Repo_ping_Results_List is a list of Repo_ping_Results.
+type Repo_ping_Results_List struct{ capnp.List }
 
-// NewMeta_ping_Results creates a new list of Meta_ping_Results.
-func NewMeta_ping_Results_List(s *capnp.Segment, sz int32) (Meta_ping_Results_List, error) {
+// NewRepo_ping_Results creates a new list of Repo_ping_Results.
+func NewRepo_ping_Results_List(s *capnp.Segment, sz int32) (Repo_ping_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_ping_Results_List{l}, err
+	return Repo_ping_Results_List{l}, err
 }
 
-func (s Meta_ping_Results_List) At(i int) Meta_ping_Results {
-	return Meta_ping_Results{s.List.Struct(i)}
+func (s Repo_ping_Results_List) At(i int) Repo_ping_Results {
+	return Repo_ping_Results{s.List.Struct(i)}
 }
 
-func (s Meta_ping_Results_List) Set(i int, v Meta_ping_Results) error {
+func (s Repo_ping_Results_List) Set(i int, v Repo_ping_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_ping_Results_List) String() string {
-	str, _ := text.MarshalList(0xffd34f15ec608676, s.List)
+func (s Repo_ping_Results_List) String() string {
+	str, _ := text.MarshalList(0x9d64fa17798952ff, s.List)
 	return str
 }
 
-// Meta_ping_Results_Promise is a wrapper for a Meta_ping_Results promised by a client call.
-type Meta_ping_Results_Promise struct{ *capnp.Pipeline }
+// Repo_ping_Results_Promise is a wrapper for a Repo_ping_Results promised by a client call.
+type Repo_ping_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_ping_Results_Promise) Struct() (Meta_ping_Results, error) {
+func (p Repo_ping_Results_Promise) Struct() (Repo_ping_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_ping_Results{s}, err
+	return Repo_ping_Results{s}, err
 }
 
-type Meta_init_Params struct{ capnp.Struct }
+type Repo_init_Params struct{ capnp.Struct }
 
-// Meta_init_Params_TypeID is the unique identifier for the type Meta_init_Params.
-const Meta_init_Params_TypeID = 0xed03ac5ef50453fb
+// Repo_init_Params_TypeID is the unique identifier for the type Repo_init_Params.
+const Repo_init_Params_TypeID = 0x9c19777f493f1110
 
-func NewMeta_init_Params(s *capnp.Segment) (Meta_init_Params, error) {
+func NewRepo_init_Params(s *capnp.Segment) (Repo_init_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4})
-	return Meta_init_Params{st}, err
+	return Repo_init_Params{st}, err
 }
 
-func NewRootMeta_init_Params(s *capnp.Segment) (Meta_init_Params, error) {
+func NewRootRepo_init_Params(s *capnp.Segment) (Repo_init_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4})
-	return Meta_init_Params{st}, err
+	return Repo_init_Params{st}, err
 }
 
-func ReadRootMeta_init_Params(msg *capnp.Message) (Meta_init_Params, error) {
+func ReadRootRepo_init_Params(msg *capnp.Message) (Repo_init_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_init_Params{root.Struct()}, err
+	return Repo_init_Params{root.Struct()}, err
 }
 
-func (s Meta_init_Params) String() string {
-	str, _ := text.Marshal(0xed03ac5ef50453fb, s.Struct)
+func (s Repo_init_Params) String() string {
+	str, _ := text.Marshal(0x9c19777f493f1110, s.Struct)
 	return str
 }
 
-func (s Meta_init_Params) BasePath() (string, error) {
+func (s Repo_init_Params) BasePath() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_init_Params) HasBasePath() bool {
+func (s Repo_init_Params) HasBasePath() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_init_Params) BasePathBytes() ([]byte, error) {
+func (s Repo_init_Params) BasePathBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_init_Params) SetBasePath(v string) error {
+func (s Repo_init_Params) SetBasePath(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s Meta_init_Params) Owner() (string, error) {
+func (s Repo_init_Params) Owner() (string, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.Text(), err
 }
 
-func (s Meta_init_Params) HasOwner() bool {
+func (s Repo_init_Params) HasOwner() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_init_Params) OwnerBytes() ([]byte, error) {
+func (s Repo_init_Params) OwnerBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.TextBytes(), err
 }
 
-func (s Meta_init_Params) SetOwner(v string) error {
+func (s Repo_init_Params) SetOwner(v string) error {
 	return s.Struct.SetText(1, v)
 }
 
-func (s Meta_init_Params) Backend() (string, error) {
+func (s Repo_init_Params) Backend() (string, error) {
 	p, err := s.Struct.Ptr(2)
 	return p.Text(), err
 }
 
-func (s Meta_init_Params) HasBackend() bool {
+func (s Repo_init_Params) HasBackend() bool {
 	p, err := s.Struct.Ptr(2)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_init_Params) BackendBytes() ([]byte, error) {
+func (s Repo_init_Params) BackendBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(2)
 	return p.TextBytes(), err
 }
 
-func (s Meta_init_Params) SetBackend(v string) error {
+func (s Repo_init_Params) SetBackend(v string) error {
 	return s.Struct.SetText(2, v)
 }
 
-func (s Meta_init_Params) Password() (string, error) {
+func (s Repo_init_Params) Password() (string, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.Text(), err
 }
 
-func (s Meta_init_Params) HasPassword() bool {
+func (s Repo_init_Params) HasPassword() bool {
 	p, err := s.Struct.Ptr(3)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_init_Params) PasswordBytes() ([]byte, error) {
+func (s Repo_init_Params) PasswordBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(3)
 	return p.TextBytes(), err
 }
 
-func (s Meta_init_Params) SetPassword(v string) error {
+func (s Repo_init_Params) SetPassword(v string) error {
 	return s.Struct.SetText(3, v)
 }
 
-// Meta_init_Params_List is a list of Meta_init_Params.
-type Meta_init_Params_List struct{ capnp.List }
+// Repo_init_Params_List is a list of Repo_init_Params.
+type Repo_init_Params_List struct{ capnp.List }
 
-// NewMeta_init_Params creates a new list of Meta_init_Params.
-func NewMeta_init_Params_List(s *capnp.Segment, sz int32) (Meta_init_Params_List, error) {
+// NewRepo_init_Params creates a new list of Repo_init_Params.
+func NewRepo_init_Params_List(s *capnp.Segment, sz int32) (Repo_init_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4}, sz)
-	return Meta_init_Params_List{l}, err
+	return Repo_init_Params_List{l}, err
 }
 
-func (s Meta_init_Params_List) At(i int) Meta_init_Params { return Meta_init_Params{s.List.Struct(i)} }
+func (s Repo_init_Params_List) At(i int) Repo_init_Params { return Repo_init_Params{s.List.Struct(i)} }
 
-func (s Meta_init_Params_List) Set(i int, v Meta_init_Params) error {
+func (s Repo_init_Params_List) Set(i int, v Repo_init_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_init_Params_List) String() string {
-	str, _ := text.MarshalList(0xed03ac5ef50453fb, s.List)
+func (s Repo_init_Params_List) String() string {
+	str, _ := text.MarshalList(0x9c19777f493f1110, s.List)
 	return str
 }
 
-// Meta_init_Params_Promise is a wrapper for a Meta_init_Params promised by a client call.
-type Meta_init_Params_Promise struct{ *capnp.Pipeline }
+// Repo_init_Params_Promise is a wrapper for a Repo_init_Params promised by a client call.
+type Repo_init_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_init_Params_Promise) Struct() (Meta_init_Params, error) {
+func (p Repo_init_Params_Promise) Struct() (Repo_init_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_init_Params{s}, err
+	return Repo_init_Params{s}, err
 }
 
-type Meta_init_Results struct{ capnp.Struct }
+type Repo_init_Results struct{ capnp.Struct }
 
-// Meta_init_Results_TypeID is the unique identifier for the type Meta_init_Results.
-const Meta_init_Results_TypeID = 0xe826e800c318a7c4
+// Repo_init_Results_TypeID is the unique identifier for the type Repo_init_Results.
+const Repo_init_Results_TypeID = 0xfc6b4417fdef895a
 
-func NewMeta_init_Results(s *capnp.Segment) (Meta_init_Results, error) {
+func NewRepo_init_Results(s *capnp.Segment) (Repo_init_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_init_Results{st}, err
+	return Repo_init_Results{st}, err
 }
 
-func NewRootMeta_init_Results(s *capnp.Segment) (Meta_init_Results, error) {
+func NewRootRepo_init_Results(s *capnp.Segment) (Repo_init_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_init_Results{st}, err
+	return Repo_init_Results{st}, err
 }
 
-func ReadRootMeta_init_Results(msg *capnp.Message) (Meta_init_Results, error) {
+func ReadRootRepo_init_Results(msg *capnp.Message) (Repo_init_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_init_Results{root.Struct()}, err
+	return Repo_init_Results{root.Struct()}, err
 }
 
-func (s Meta_init_Results) String() string {
-	str, _ := text.Marshal(0xe826e800c318a7c4, s.Struct)
+func (s Repo_init_Results) String() string {
+	str, _ := text.Marshal(0xfc6b4417fdef895a, s.Struct)
 	return str
 }
 
-// Meta_init_Results_List is a list of Meta_init_Results.
-type Meta_init_Results_List struct{ capnp.List }
+// Repo_init_Results_List is a list of Repo_init_Results.
+type Repo_init_Results_List struct{ capnp.List }
 
-// NewMeta_init_Results creates a new list of Meta_init_Results.
-func NewMeta_init_Results_List(s *capnp.Segment, sz int32) (Meta_init_Results_List, error) {
+// NewRepo_init_Results creates a new list of Repo_init_Results.
+func NewRepo_init_Results_List(s *capnp.Segment, sz int32) (Repo_init_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_init_Results_List{l}, err
+	return Repo_init_Results_List{l}, err
 }
 
-func (s Meta_init_Results_List) At(i int) Meta_init_Results {
-	return Meta_init_Results{s.List.Struct(i)}
+func (s Repo_init_Results_List) At(i int) Repo_init_Results {
+	return Repo_init_Results{s.List.Struct(i)}
 }
 
-func (s Meta_init_Results_List) Set(i int, v Meta_init_Results) error {
+func (s Repo_init_Results_List) Set(i int, v Repo_init_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_init_Results_List) String() string {
-	str, _ := text.MarshalList(0xe826e800c318a7c4, s.List)
+func (s Repo_init_Results_List) String() string {
+	str, _ := text.MarshalList(0xfc6b4417fdef895a, s.List)
 	return str
 }
 
-// Meta_init_Results_Promise is a wrapper for a Meta_init_Results promised by a client call.
-type Meta_init_Results_Promise struct{ *capnp.Pipeline }
+// Repo_init_Results_Promise is a wrapper for a Repo_init_Results promised by a client call.
+type Repo_init_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_init_Results_Promise) Struct() (Meta_init_Results, error) {
+func (p Repo_init_Results_Promise) Struct() (Repo_init_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_init_Results{s}, err
+	return Repo_init_Results{s}, err
 }
 
-type Meta_mount_Params struct{ capnp.Struct }
+type Repo_mount_Params struct{ capnp.Struct }
 
-// Meta_mount_Params_TypeID is the unique identifier for the type Meta_mount_Params.
-const Meta_mount_Params_TypeID = 0x9f647c7028225a97
+// Repo_mount_Params_TypeID is the unique identifier for the type Repo_mount_Params.
+const Repo_mount_Params_TypeID = 0x98300b93ef71cc57
 
-func NewMeta_mount_Params(s *capnp.Segment) (Meta_mount_Params, error) {
+func NewRepo_mount_Params(s *capnp.Segment) (Repo_mount_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Meta_mount_Params{st}, err
+	return Repo_mount_Params{st}, err
 }
 
-func NewRootMeta_mount_Params(s *capnp.Segment) (Meta_mount_Params, error) {
+func NewRootRepo_mount_Params(s *capnp.Segment) (Repo_mount_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Meta_mount_Params{st}, err
+	return Repo_mount_Params{st}, err
 }
 
-func ReadRootMeta_mount_Params(msg *capnp.Message) (Meta_mount_Params, error) {
+func ReadRootRepo_mount_Params(msg *capnp.Message) (Repo_mount_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_mount_Params{root.Struct()}, err
+	return Repo_mount_Params{root.Struct()}, err
 }
 
-func (s Meta_mount_Params) String() string {
-	str, _ := text.Marshal(0x9f647c7028225a97, s.Struct)
+func (s Repo_mount_Params) String() string {
+	str, _ := text.Marshal(0x98300b93ef71cc57, s.Struct)
 	return str
 }
 
-func (s Meta_mount_Params) MountPath() (string, error) {
+func (s Repo_mount_Params) MountPath() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_mount_Params) HasMountPath() bool {
+func (s Repo_mount_Params) HasMountPath() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_mount_Params) MountPathBytes() ([]byte, error) {
+func (s Repo_mount_Params) MountPathBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_mount_Params) SetMountPath(v string) error {
+func (s Repo_mount_Params) SetMountPath(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s Meta_mount_Params) Options() (MountOptions, error) {
+func (s Repo_mount_Params) Options() (MountOptions, error) {
 	p, err := s.Struct.Ptr(1)
 	return MountOptions{Struct: p.Struct()}, err
 }
 
-func (s Meta_mount_Params) HasOptions() bool {
+func (s Repo_mount_Params) HasOptions() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_mount_Params) SetOptions(v MountOptions) error {
+func (s Repo_mount_Params) SetOptions(v MountOptions) error {
 	return s.Struct.SetPtr(1, v.Struct.ToPtr())
 }
 
 // NewOptions sets the options field to a newly
 // allocated MountOptions struct, preferring placement in s's segment.
-func (s Meta_mount_Params) NewOptions() (MountOptions, error) {
+func (s Repo_mount_Params) NewOptions() (MountOptions, error) {
 	ss, err := NewMountOptions(s.Struct.Segment())
 	if err != nil {
 		return MountOptions{}, err
@@ -8632,617 +8104,617 @@ func (s Meta_mount_Params) NewOptions() (MountOptions, error) {
 	return ss, err
 }
 
-// Meta_mount_Params_List is a list of Meta_mount_Params.
-type Meta_mount_Params_List struct{ capnp.List }
+// Repo_mount_Params_List is a list of Repo_mount_Params.
+type Repo_mount_Params_List struct{ capnp.List }
 
-// NewMeta_mount_Params creates a new list of Meta_mount_Params.
-func NewMeta_mount_Params_List(s *capnp.Segment, sz int32) (Meta_mount_Params_List, error) {
+// NewRepo_mount_Params creates a new list of Repo_mount_Params.
+func NewRepo_mount_Params_List(s *capnp.Segment, sz int32) (Repo_mount_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
-	return Meta_mount_Params_List{l}, err
+	return Repo_mount_Params_List{l}, err
 }
 
-func (s Meta_mount_Params_List) At(i int) Meta_mount_Params {
-	return Meta_mount_Params{s.List.Struct(i)}
+func (s Repo_mount_Params_List) At(i int) Repo_mount_Params {
+	return Repo_mount_Params{s.List.Struct(i)}
 }
 
-func (s Meta_mount_Params_List) Set(i int, v Meta_mount_Params) error {
+func (s Repo_mount_Params_List) Set(i int, v Repo_mount_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_mount_Params_List) String() string {
-	str, _ := text.MarshalList(0x9f647c7028225a97, s.List)
+func (s Repo_mount_Params_List) String() string {
+	str, _ := text.MarshalList(0x98300b93ef71cc57, s.List)
 	return str
 }
 
-// Meta_mount_Params_Promise is a wrapper for a Meta_mount_Params promised by a client call.
-type Meta_mount_Params_Promise struct{ *capnp.Pipeline }
+// Repo_mount_Params_Promise is a wrapper for a Repo_mount_Params promised by a client call.
+type Repo_mount_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_mount_Params_Promise) Struct() (Meta_mount_Params, error) {
+func (p Repo_mount_Params_Promise) Struct() (Repo_mount_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_mount_Params{s}, err
+	return Repo_mount_Params{s}, err
 }
 
-func (p Meta_mount_Params_Promise) Options() MountOptions_Promise {
+func (p Repo_mount_Params_Promise) Options() MountOptions_Promise {
 	return MountOptions_Promise{Pipeline: p.Pipeline.GetPipeline(1)}
 }
 
-type Meta_mount_Results struct{ capnp.Struct }
+type Repo_mount_Results struct{ capnp.Struct }
 
-// Meta_mount_Results_TypeID is the unique identifier for the type Meta_mount_Results.
-const Meta_mount_Results_TypeID = 0x9ec3cfd8ff4bae06
+// Repo_mount_Results_TypeID is the unique identifier for the type Repo_mount_Results.
+const Repo_mount_Results_TypeID = 0xfa4486fa9522275e
 
-func NewMeta_mount_Results(s *capnp.Segment) (Meta_mount_Results, error) {
+func NewRepo_mount_Results(s *capnp.Segment) (Repo_mount_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_mount_Results{st}, err
+	return Repo_mount_Results{st}, err
 }
 
-func NewRootMeta_mount_Results(s *capnp.Segment) (Meta_mount_Results, error) {
+func NewRootRepo_mount_Results(s *capnp.Segment) (Repo_mount_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_mount_Results{st}, err
+	return Repo_mount_Results{st}, err
 }
 
-func ReadRootMeta_mount_Results(msg *capnp.Message) (Meta_mount_Results, error) {
+func ReadRootRepo_mount_Results(msg *capnp.Message) (Repo_mount_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_mount_Results{root.Struct()}, err
+	return Repo_mount_Results{root.Struct()}, err
 }
 
-func (s Meta_mount_Results) String() string {
-	str, _ := text.Marshal(0x9ec3cfd8ff4bae06, s.Struct)
+func (s Repo_mount_Results) String() string {
+	str, _ := text.Marshal(0xfa4486fa9522275e, s.Struct)
 	return str
 }
 
-// Meta_mount_Results_List is a list of Meta_mount_Results.
-type Meta_mount_Results_List struct{ capnp.List }
+// Repo_mount_Results_List is a list of Repo_mount_Results.
+type Repo_mount_Results_List struct{ capnp.List }
 
-// NewMeta_mount_Results creates a new list of Meta_mount_Results.
-func NewMeta_mount_Results_List(s *capnp.Segment, sz int32) (Meta_mount_Results_List, error) {
+// NewRepo_mount_Results creates a new list of Repo_mount_Results.
+func NewRepo_mount_Results_List(s *capnp.Segment, sz int32) (Repo_mount_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_mount_Results_List{l}, err
+	return Repo_mount_Results_List{l}, err
 }
 
-func (s Meta_mount_Results_List) At(i int) Meta_mount_Results {
-	return Meta_mount_Results{s.List.Struct(i)}
+func (s Repo_mount_Results_List) At(i int) Repo_mount_Results {
+	return Repo_mount_Results{s.List.Struct(i)}
 }
 
-func (s Meta_mount_Results_List) Set(i int, v Meta_mount_Results) error {
+func (s Repo_mount_Results_List) Set(i int, v Repo_mount_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_mount_Results_List) String() string {
-	str, _ := text.MarshalList(0x9ec3cfd8ff4bae06, s.List)
+func (s Repo_mount_Results_List) String() string {
+	str, _ := text.MarshalList(0xfa4486fa9522275e, s.List)
 	return str
 }
 
-// Meta_mount_Results_Promise is a wrapper for a Meta_mount_Results promised by a client call.
-type Meta_mount_Results_Promise struct{ *capnp.Pipeline }
+// Repo_mount_Results_Promise is a wrapper for a Repo_mount_Results promised by a client call.
+type Repo_mount_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_mount_Results_Promise) Struct() (Meta_mount_Results, error) {
+func (p Repo_mount_Results_Promise) Struct() (Repo_mount_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_mount_Results{s}, err
+	return Repo_mount_Results{s}, err
 }
 
-type Meta_unmount_Params struct{ capnp.Struct }
+type Repo_unmount_Params struct{ capnp.Struct }
 
-// Meta_unmount_Params_TypeID is the unique identifier for the type Meta_unmount_Params.
-const Meta_unmount_Params_TypeID = 0xd0b0c690855bac45
+// Repo_unmount_Params_TypeID is the unique identifier for the type Repo_unmount_Params.
+const Repo_unmount_Params_TypeID = 0xd7a7f00d5a96fc43
 
-func NewMeta_unmount_Params(s *capnp.Segment) (Meta_unmount_Params, error) {
+func NewRepo_unmount_Params(s *capnp.Segment) (Repo_unmount_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_unmount_Params{st}, err
+	return Repo_unmount_Params{st}, err
 }
 
-func NewRootMeta_unmount_Params(s *capnp.Segment) (Meta_unmount_Params, error) {
+func NewRootRepo_unmount_Params(s *capnp.Segment) (Repo_unmount_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_unmount_Params{st}, err
+	return Repo_unmount_Params{st}, err
 }
 
-func ReadRootMeta_unmount_Params(msg *capnp.Message) (Meta_unmount_Params, error) {
+func ReadRootRepo_unmount_Params(msg *capnp.Message) (Repo_unmount_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_unmount_Params{root.Struct()}, err
+	return Repo_unmount_Params{root.Struct()}, err
 }
 
-func (s Meta_unmount_Params) String() string {
-	str, _ := text.Marshal(0xd0b0c690855bac45, s.Struct)
+func (s Repo_unmount_Params) String() string {
+	str, _ := text.Marshal(0xd7a7f00d5a96fc43, s.Struct)
 	return str
 }
 
-func (s Meta_unmount_Params) MountPath() (string, error) {
+func (s Repo_unmount_Params) MountPath() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_unmount_Params) HasMountPath() bool {
+func (s Repo_unmount_Params) HasMountPath() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_unmount_Params) MountPathBytes() ([]byte, error) {
+func (s Repo_unmount_Params) MountPathBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_unmount_Params) SetMountPath(v string) error {
+func (s Repo_unmount_Params) SetMountPath(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_unmount_Params_List is a list of Meta_unmount_Params.
-type Meta_unmount_Params_List struct{ capnp.List }
+// Repo_unmount_Params_List is a list of Repo_unmount_Params.
+type Repo_unmount_Params_List struct{ capnp.List }
 
-// NewMeta_unmount_Params creates a new list of Meta_unmount_Params.
-func NewMeta_unmount_Params_List(s *capnp.Segment, sz int32) (Meta_unmount_Params_List, error) {
+// NewRepo_unmount_Params creates a new list of Repo_unmount_Params.
+func NewRepo_unmount_Params_List(s *capnp.Segment, sz int32) (Repo_unmount_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_unmount_Params_List{l}, err
+	return Repo_unmount_Params_List{l}, err
 }
 
-func (s Meta_unmount_Params_List) At(i int) Meta_unmount_Params {
-	return Meta_unmount_Params{s.List.Struct(i)}
+func (s Repo_unmount_Params_List) At(i int) Repo_unmount_Params {
+	return Repo_unmount_Params{s.List.Struct(i)}
 }
 
-func (s Meta_unmount_Params_List) Set(i int, v Meta_unmount_Params) error {
+func (s Repo_unmount_Params_List) Set(i int, v Repo_unmount_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_unmount_Params_List) String() string {
-	str, _ := text.MarshalList(0xd0b0c690855bac45, s.List)
+func (s Repo_unmount_Params_List) String() string {
+	str, _ := text.MarshalList(0xd7a7f00d5a96fc43, s.List)
 	return str
 }
 
-// Meta_unmount_Params_Promise is a wrapper for a Meta_unmount_Params promised by a client call.
-type Meta_unmount_Params_Promise struct{ *capnp.Pipeline }
+// Repo_unmount_Params_Promise is a wrapper for a Repo_unmount_Params promised by a client call.
+type Repo_unmount_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_unmount_Params_Promise) Struct() (Meta_unmount_Params, error) {
+func (p Repo_unmount_Params_Promise) Struct() (Repo_unmount_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_unmount_Params{s}, err
+	return Repo_unmount_Params{s}, err
 }
 
-type Meta_unmount_Results struct{ capnp.Struct }
+type Repo_unmount_Results struct{ capnp.Struct }
 
-// Meta_unmount_Results_TypeID is the unique identifier for the type Meta_unmount_Results.
-const Meta_unmount_Results_TypeID = 0xe275355b4989aaee
+// Repo_unmount_Results_TypeID is the unique identifier for the type Repo_unmount_Results.
+const Repo_unmount_Results_TypeID = 0xd70c154f9521b73d
 
-func NewMeta_unmount_Results(s *capnp.Segment) (Meta_unmount_Results, error) {
+func NewRepo_unmount_Results(s *capnp.Segment) (Repo_unmount_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_unmount_Results{st}, err
+	return Repo_unmount_Results{st}, err
 }
 
-func NewRootMeta_unmount_Results(s *capnp.Segment) (Meta_unmount_Results, error) {
+func NewRootRepo_unmount_Results(s *capnp.Segment) (Repo_unmount_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_unmount_Results{st}, err
+	return Repo_unmount_Results{st}, err
 }
 
-func ReadRootMeta_unmount_Results(msg *capnp.Message) (Meta_unmount_Results, error) {
+func ReadRootRepo_unmount_Results(msg *capnp.Message) (Repo_unmount_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_unmount_Results{root.Struct()}, err
+	return Repo_unmount_Results{root.Struct()}, err
 }
 
-func (s Meta_unmount_Results) String() string {
-	str, _ := text.Marshal(0xe275355b4989aaee, s.Struct)
+func (s Repo_unmount_Results) String() string {
+	str, _ := text.Marshal(0xd70c154f9521b73d, s.Struct)
 	return str
 }
 
-// Meta_unmount_Results_List is a list of Meta_unmount_Results.
-type Meta_unmount_Results_List struct{ capnp.List }
+// Repo_unmount_Results_List is a list of Repo_unmount_Results.
+type Repo_unmount_Results_List struct{ capnp.List }
 
-// NewMeta_unmount_Results creates a new list of Meta_unmount_Results.
-func NewMeta_unmount_Results_List(s *capnp.Segment, sz int32) (Meta_unmount_Results_List, error) {
+// NewRepo_unmount_Results creates a new list of Repo_unmount_Results.
+func NewRepo_unmount_Results_List(s *capnp.Segment, sz int32) (Repo_unmount_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_unmount_Results_List{l}, err
+	return Repo_unmount_Results_List{l}, err
 }
 
-func (s Meta_unmount_Results_List) At(i int) Meta_unmount_Results {
-	return Meta_unmount_Results{s.List.Struct(i)}
+func (s Repo_unmount_Results_List) At(i int) Repo_unmount_Results {
+	return Repo_unmount_Results{s.List.Struct(i)}
 }
 
-func (s Meta_unmount_Results_List) Set(i int, v Meta_unmount_Results) error {
+func (s Repo_unmount_Results_List) Set(i int, v Repo_unmount_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_unmount_Results_List) String() string {
-	str, _ := text.MarshalList(0xe275355b4989aaee, s.List)
+func (s Repo_unmount_Results_List) String() string {
+	str, _ := text.MarshalList(0xd70c154f9521b73d, s.List)
 	return str
 }
 
-// Meta_unmount_Results_Promise is a wrapper for a Meta_unmount_Results promised by a client call.
-type Meta_unmount_Results_Promise struct{ *capnp.Pipeline }
+// Repo_unmount_Results_Promise is a wrapper for a Repo_unmount_Results promised by a client call.
+type Repo_unmount_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_unmount_Results_Promise) Struct() (Meta_unmount_Results, error) {
+func (p Repo_unmount_Results_Promise) Struct() (Repo_unmount_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_unmount_Results{s}, err
+	return Repo_unmount_Results{s}, err
 }
 
-type Meta_configGet_Params struct{ capnp.Struct }
+type Repo_configGet_Params struct{ capnp.Struct }
 
-// Meta_configGet_Params_TypeID is the unique identifier for the type Meta_configGet_Params.
-const Meta_configGet_Params_TypeID = 0x8c8ac84e843e98c6
+// Repo_configGet_Params_TypeID is the unique identifier for the type Repo_configGet_Params.
+const Repo_configGet_Params_TypeID = 0xe0b1a560d0e4d51a
 
-func NewMeta_configGet_Params(s *capnp.Segment) (Meta_configGet_Params, error) {
+func NewRepo_configGet_Params(s *capnp.Segment) (Repo_configGet_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configGet_Params{st}, err
+	return Repo_configGet_Params{st}, err
 }
 
-func NewRootMeta_configGet_Params(s *capnp.Segment) (Meta_configGet_Params, error) {
+func NewRootRepo_configGet_Params(s *capnp.Segment) (Repo_configGet_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configGet_Params{st}, err
+	return Repo_configGet_Params{st}, err
 }
 
-func ReadRootMeta_configGet_Params(msg *capnp.Message) (Meta_configGet_Params, error) {
+func ReadRootRepo_configGet_Params(msg *capnp.Message) (Repo_configGet_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_configGet_Params{root.Struct()}, err
+	return Repo_configGet_Params{root.Struct()}, err
 }
 
-func (s Meta_configGet_Params) String() string {
-	str, _ := text.Marshal(0x8c8ac84e843e98c6, s.Struct)
+func (s Repo_configGet_Params) String() string {
+	str, _ := text.Marshal(0xe0b1a560d0e4d51a, s.Struct)
 	return str
 }
 
-func (s Meta_configGet_Params) Key() (string, error) {
+func (s Repo_configGet_Params) Key() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_configGet_Params) HasKey() bool {
+func (s Repo_configGet_Params) HasKey() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configGet_Params) KeyBytes() ([]byte, error) {
+func (s Repo_configGet_Params) KeyBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_configGet_Params) SetKey(v string) error {
+func (s Repo_configGet_Params) SetKey(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_configGet_Params_List is a list of Meta_configGet_Params.
-type Meta_configGet_Params_List struct{ capnp.List }
+// Repo_configGet_Params_List is a list of Repo_configGet_Params.
+type Repo_configGet_Params_List struct{ capnp.List }
 
-// NewMeta_configGet_Params creates a new list of Meta_configGet_Params.
-func NewMeta_configGet_Params_List(s *capnp.Segment, sz int32) (Meta_configGet_Params_List, error) {
+// NewRepo_configGet_Params creates a new list of Repo_configGet_Params.
+func NewRepo_configGet_Params_List(s *capnp.Segment, sz int32) (Repo_configGet_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_configGet_Params_List{l}, err
+	return Repo_configGet_Params_List{l}, err
 }
 
-func (s Meta_configGet_Params_List) At(i int) Meta_configGet_Params {
-	return Meta_configGet_Params{s.List.Struct(i)}
+func (s Repo_configGet_Params_List) At(i int) Repo_configGet_Params {
+	return Repo_configGet_Params{s.List.Struct(i)}
 }
 
-func (s Meta_configGet_Params_List) Set(i int, v Meta_configGet_Params) error {
+func (s Repo_configGet_Params_List) Set(i int, v Repo_configGet_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configGet_Params_List) String() string {
-	str, _ := text.MarshalList(0x8c8ac84e843e98c6, s.List)
+func (s Repo_configGet_Params_List) String() string {
+	str, _ := text.MarshalList(0xe0b1a560d0e4d51a, s.List)
 	return str
 }
 
-// Meta_configGet_Params_Promise is a wrapper for a Meta_configGet_Params promised by a client call.
-type Meta_configGet_Params_Promise struct{ *capnp.Pipeline }
+// Repo_configGet_Params_Promise is a wrapper for a Repo_configGet_Params promised by a client call.
+type Repo_configGet_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configGet_Params_Promise) Struct() (Meta_configGet_Params, error) {
+func (p Repo_configGet_Params_Promise) Struct() (Repo_configGet_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configGet_Params{s}, err
+	return Repo_configGet_Params{s}, err
 }
 
-type Meta_configGet_Results struct{ capnp.Struct }
+type Repo_configGet_Results struct{ capnp.Struct }
 
-// Meta_configGet_Results_TypeID is the unique identifier for the type Meta_configGet_Results.
-const Meta_configGet_Results_TypeID = 0xfd36e047f496768b
+// Repo_configGet_Results_TypeID is the unique identifier for the type Repo_configGet_Results.
+const Repo_configGet_Results_TypeID = 0xabc3ec90b96a6d71
 
-func NewMeta_configGet_Results(s *capnp.Segment) (Meta_configGet_Results, error) {
+func NewRepo_configGet_Results(s *capnp.Segment) (Repo_configGet_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configGet_Results{st}, err
+	return Repo_configGet_Results{st}, err
 }
 
-func NewRootMeta_configGet_Results(s *capnp.Segment) (Meta_configGet_Results, error) {
+func NewRootRepo_configGet_Results(s *capnp.Segment) (Repo_configGet_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configGet_Results{st}, err
+	return Repo_configGet_Results{st}, err
 }
 
-func ReadRootMeta_configGet_Results(msg *capnp.Message) (Meta_configGet_Results, error) {
+func ReadRootRepo_configGet_Results(msg *capnp.Message) (Repo_configGet_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_configGet_Results{root.Struct()}, err
+	return Repo_configGet_Results{root.Struct()}, err
 }
 
-func (s Meta_configGet_Results) String() string {
-	str, _ := text.Marshal(0xfd36e047f496768b, s.Struct)
+func (s Repo_configGet_Results) String() string {
+	str, _ := text.Marshal(0xabc3ec90b96a6d71, s.Struct)
 	return str
 }
 
-func (s Meta_configGet_Results) Value() (string, error) {
+func (s Repo_configGet_Results) Value() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_configGet_Results) HasValue() bool {
+func (s Repo_configGet_Results) HasValue() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configGet_Results) ValueBytes() ([]byte, error) {
+func (s Repo_configGet_Results) ValueBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_configGet_Results) SetValue(v string) error {
+func (s Repo_configGet_Results) SetValue(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_configGet_Results_List is a list of Meta_configGet_Results.
-type Meta_configGet_Results_List struct{ capnp.List }
+// Repo_configGet_Results_List is a list of Repo_configGet_Results.
+type Repo_configGet_Results_List struct{ capnp.List }
 
-// NewMeta_configGet_Results creates a new list of Meta_configGet_Results.
-func NewMeta_configGet_Results_List(s *capnp.Segment, sz int32) (Meta_configGet_Results_List, error) {
+// NewRepo_configGet_Results creates a new list of Repo_configGet_Results.
+func NewRepo_configGet_Results_List(s *capnp.Segment, sz int32) (Repo_configGet_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_configGet_Results_List{l}, err
+	return Repo_configGet_Results_List{l}, err
 }
 
-func (s Meta_configGet_Results_List) At(i int) Meta_configGet_Results {
-	return Meta_configGet_Results{s.List.Struct(i)}
+func (s Repo_configGet_Results_List) At(i int) Repo_configGet_Results {
+	return Repo_configGet_Results{s.List.Struct(i)}
 }
 
-func (s Meta_configGet_Results_List) Set(i int, v Meta_configGet_Results) error {
+func (s Repo_configGet_Results_List) Set(i int, v Repo_configGet_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configGet_Results_List) String() string {
-	str, _ := text.MarshalList(0xfd36e047f496768b, s.List)
+func (s Repo_configGet_Results_List) String() string {
+	str, _ := text.MarshalList(0xabc3ec90b96a6d71, s.List)
 	return str
 }
 
-// Meta_configGet_Results_Promise is a wrapper for a Meta_configGet_Results promised by a client call.
-type Meta_configGet_Results_Promise struct{ *capnp.Pipeline }
+// Repo_configGet_Results_Promise is a wrapper for a Repo_configGet_Results promised by a client call.
+type Repo_configGet_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configGet_Results_Promise) Struct() (Meta_configGet_Results, error) {
+func (p Repo_configGet_Results_Promise) Struct() (Repo_configGet_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configGet_Results{s}, err
+	return Repo_configGet_Results{s}, err
 }
 
-type Meta_configSet_Params struct{ capnp.Struct }
+type Repo_configSet_Params struct{ capnp.Struct }
 
-// Meta_configSet_Params_TypeID is the unique identifier for the type Meta_configSet_Params.
-const Meta_configSet_Params_TypeID = 0x97e9d1c7a00e713e
+// Repo_configSet_Params_TypeID is the unique identifier for the type Repo_configSet_Params.
+const Repo_configSet_Params_TypeID = 0xc0ad53271497ab77
 
-func NewMeta_configSet_Params(s *capnp.Segment) (Meta_configSet_Params, error) {
+func NewRepo_configSet_Params(s *capnp.Segment) (Repo_configSet_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Meta_configSet_Params{st}, err
+	return Repo_configSet_Params{st}, err
 }
 
-func NewRootMeta_configSet_Params(s *capnp.Segment) (Meta_configSet_Params, error) {
+func NewRootRepo_configSet_Params(s *capnp.Segment) (Repo_configSet_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2})
-	return Meta_configSet_Params{st}, err
+	return Repo_configSet_Params{st}, err
 }
 
-func ReadRootMeta_configSet_Params(msg *capnp.Message) (Meta_configSet_Params, error) {
+func ReadRootRepo_configSet_Params(msg *capnp.Message) (Repo_configSet_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_configSet_Params{root.Struct()}, err
+	return Repo_configSet_Params{root.Struct()}, err
 }
 
-func (s Meta_configSet_Params) String() string {
-	str, _ := text.Marshal(0x97e9d1c7a00e713e, s.Struct)
+func (s Repo_configSet_Params) String() string {
+	str, _ := text.Marshal(0xc0ad53271497ab77, s.Struct)
 	return str
 }
 
-func (s Meta_configSet_Params) Key() (string, error) {
+func (s Repo_configSet_Params) Key() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_configSet_Params) HasKey() bool {
+func (s Repo_configSet_Params) HasKey() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configSet_Params) KeyBytes() ([]byte, error) {
+func (s Repo_configSet_Params) KeyBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_configSet_Params) SetKey(v string) error {
+func (s Repo_configSet_Params) SetKey(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s Meta_configSet_Params) Value() (string, error) {
+func (s Repo_configSet_Params) Value() (string, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.Text(), err
 }
 
-func (s Meta_configSet_Params) HasValue() bool {
+func (s Repo_configSet_Params) HasValue() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configSet_Params) ValueBytes() ([]byte, error) {
+func (s Repo_configSet_Params) ValueBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.TextBytes(), err
 }
 
-func (s Meta_configSet_Params) SetValue(v string) error {
+func (s Repo_configSet_Params) SetValue(v string) error {
 	return s.Struct.SetText(1, v)
 }
 
-// Meta_configSet_Params_List is a list of Meta_configSet_Params.
-type Meta_configSet_Params_List struct{ capnp.List }
+// Repo_configSet_Params_List is a list of Repo_configSet_Params.
+type Repo_configSet_Params_List struct{ capnp.List }
 
-// NewMeta_configSet_Params creates a new list of Meta_configSet_Params.
-func NewMeta_configSet_Params_List(s *capnp.Segment, sz int32) (Meta_configSet_Params_List, error) {
+// NewRepo_configSet_Params creates a new list of Repo_configSet_Params.
+func NewRepo_configSet_Params_List(s *capnp.Segment, sz int32) (Repo_configSet_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 2}, sz)
-	return Meta_configSet_Params_List{l}, err
+	return Repo_configSet_Params_List{l}, err
 }
 
-func (s Meta_configSet_Params_List) At(i int) Meta_configSet_Params {
-	return Meta_configSet_Params{s.List.Struct(i)}
+func (s Repo_configSet_Params_List) At(i int) Repo_configSet_Params {
+	return Repo_configSet_Params{s.List.Struct(i)}
 }
 
-func (s Meta_configSet_Params_List) Set(i int, v Meta_configSet_Params) error {
+func (s Repo_configSet_Params_List) Set(i int, v Repo_configSet_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configSet_Params_List) String() string {
-	str, _ := text.MarshalList(0x97e9d1c7a00e713e, s.List)
+func (s Repo_configSet_Params_List) String() string {
+	str, _ := text.MarshalList(0xc0ad53271497ab77, s.List)
 	return str
 }
 
-// Meta_configSet_Params_Promise is a wrapper for a Meta_configSet_Params promised by a client call.
-type Meta_configSet_Params_Promise struct{ *capnp.Pipeline }
+// Repo_configSet_Params_Promise is a wrapper for a Repo_configSet_Params promised by a client call.
+type Repo_configSet_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configSet_Params_Promise) Struct() (Meta_configSet_Params, error) {
+func (p Repo_configSet_Params_Promise) Struct() (Repo_configSet_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configSet_Params{s}, err
+	return Repo_configSet_Params{s}, err
 }
 
-type Meta_configSet_Results struct{ capnp.Struct }
+type Repo_configSet_Results struct{ capnp.Struct }
 
-// Meta_configSet_Results_TypeID is the unique identifier for the type Meta_configSet_Results.
-const Meta_configSet_Results_TypeID = 0xa3b41ad02b8645ed
+// Repo_configSet_Results_TypeID is the unique identifier for the type Repo_configSet_Results.
+const Repo_configSet_Results_TypeID = 0xa89254a0db970716
 
-func NewMeta_configSet_Results(s *capnp.Segment) (Meta_configSet_Results, error) {
+func NewRepo_configSet_Results(s *capnp.Segment) (Repo_configSet_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_configSet_Results{st}, err
+	return Repo_configSet_Results{st}, err
 }
 
-func NewRootMeta_configSet_Results(s *capnp.Segment) (Meta_configSet_Results, error) {
+func NewRootRepo_configSet_Results(s *capnp.Segment) (Repo_configSet_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_configSet_Results{st}, err
+	return Repo_configSet_Results{st}, err
 }
 
-func ReadRootMeta_configSet_Results(msg *capnp.Message) (Meta_configSet_Results, error) {
+func ReadRootRepo_configSet_Results(msg *capnp.Message) (Repo_configSet_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_configSet_Results{root.Struct()}, err
+	return Repo_configSet_Results{root.Struct()}, err
 }
 
-func (s Meta_configSet_Results) String() string {
-	str, _ := text.Marshal(0xa3b41ad02b8645ed, s.Struct)
+func (s Repo_configSet_Results) String() string {
+	str, _ := text.Marshal(0xa89254a0db970716, s.Struct)
 	return str
 }
 
-// Meta_configSet_Results_List is a list of Meta_configSet_Results.
-type Meta_configSet_Results_List struct{ capnp.List }
+// Repo_configSet_Results_List is a list of Repo_configSet_Results.
+type Repo_configSet_Results_List struct{ capnp.List }
 
-// NewMeta_configSet_Results creates a new list of Meta_configSet_Results.
-func NewMeta_configSet_Results_List(s *capnp.Segment, sz int32) (Meta_configSet_Results_List, error) {
+// NewRepo_configSet_Results creates a new list of Repo_configSet_Results.
+func NewRepo_configSet_Results_List(s *capnp.Segment, sz int32) (Repo_configSet_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_configSet_Results_List{l}, err
+	return Repo_configSet_Results_List{l}, err
 }
 
-func (s Meta_configSet_Results_List) At(i int) Meta_configSet_Results {
-	return Meta_configSet_Results{s.List.Struct(i)}
+func (s Repo_configSet_Results_List) At(i int) Repo_configSet_Results {
+	return Repo_configSet_Results{s.List.Struct(i)}
 }
 
-func (s Meta_configSet_Results_List) Set(i int, v Meta_configSet_Results) error {
+func (s Repo_configSet_Results_List) Set(i int, v Repo_configSet_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configSet_Results_List) String() string {
-	str, _ := text.MarshalList(0xa3b41ad02b8645ed, s.List)
+func (s Repo_configSet_Results_List) String() string {
+	str, _ := text.MarshalList(0xa89254a0db970716, s.List)
 	return str
 }
 
-// Meta_configSet_Results_Promise is a wrapper for a Meta_configSet_Results promised by a client call.
-type Meta_configSet_Results_Promise struct{ *capnp.Pipeline }
+// Repo_configSet_Results_Promise is a wrapper for a Repo_configSet_Results promised by a client call.
+type Repo_configSet_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configSet_Results_Promise) Struct() (Meta_configSet_Results, error) {
+func (p Repo_configSet_Results_Promise) Struct() (Repo_configSet_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configSet_Results{s}, err
+	return Repo_configSet_Results{s}, err
 }
 
-type Meta_configAll_Params struct{ capnp.Struct }
+type Repo_configAll_Params struct{ capnp.Struct }
 
-// Meta_configAll_Params_TypeID is the unique identifier for the type Meta_configAll_Params.
-const Meta_configAll_Params_TypeID = 0xb4b684abc5f91831
+// Repo_configAll_Params_TypeID is the unique identifier for the type Repo_configAll_Params.
+const Repo_configAll_Params_TypeID = 0xbebae5caecad3c49
 
-func NewMeta_configAll_Params(s *capnp.Segment) (Meta_configAll_Params, error) {
+func NewRepo_configAll_Params(s *capnp.Segment) (Repo_configAll_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_configAll_Params{st}, err
+	return Repo_configAll_Params{st}, err
 }
 
-func NewRootMeta_configAll_Params(s *capnp.Segment) (Meta_configAll_Params, error) {
+func NewRootRepo_configAll_Params(s *capnp.Segment) (Repo_configAll_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_configAll_Params{st}, err
+	return Repo_configAll_Params{st}, err
 }
 
-func ReadRootMeta_configAll_Params(msg *capnp.Message) (Meta_configAll_Params, error) {
+func ReadRootRepo_configAll_Params(msg *capnp.Message) (Repo_configAll_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_configAll_Params{root.Struct()}, err
+	return Repo_configAll_Params{root.Struct()}, err
 }
 
-func (s Meta_configAll_Params) String() string {
-	str, _ := text.Marshal(0xb4b684abc5f91831, s.Struct)
+func (s Repo_configAll_Params) String() string {
+	str, _ := text.Marshal(0xbebae5caecad3c49, s.Struct)
 	return str
 }
 
-// Meta_configAll_Params_List is a list of Meta_configAll_Params.
-type Meta_configAll_Params_List struct{ capnp.List }
+// Repo_configAll_Params_List is a list of Repo_configAll_Params.
+type Repo_configAll_Params_List struct{ capnp.List }
 
-// NewMeta_configAll_Params creates a new list of Meta_configAll_Params.
-func NewMeta_configAll_Params_List(s *capnp.Segment, sz int32) (Meta_configAll_Params_List, error) {
+// NewRepo_configAll_Params creates a new list of Repo_configAll_Params.
+func NewRepo_configAll_Params_List(s *capnp.Segment, sz int32) (Repo_configAll_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_configAll_Params_List{l}, err
+	return Repo_configAll_Params_List{l}, err
 }
 
-func (s Meta_configAll_Params_List) At(i int) Meta_configAll_Params {
-	return Meta_configAll_Params{s.List.Struct(i)}
+func (s Repo_configAll_Params_List) At(i int) Repo_configAll_Params {
+	return Repo_configAll_Params{s.List.Struct(i)}
 }
 
-func (s Meta_configAll_Params_List) Set(i int, v Meta_configAll_Params) error {
+func (s Repo_configAll_Params_List) Set(i int, v Repo_configAll_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configAll_Params_List) String() string {
-	str, _ := text.MarshalList(0xb4b684abc5f91831, s.List)
+func (s Repo_configAll_Params_List) String() string {
+	str, _ := text.MarshalList(0xbebae5caecad3c49, s.List)
 	return str
 }
 
-// Meta_configAll_Params_Promise is a wrapper for a Meta_configAll_Params promised by a client call.
-type Meta_configAll_Params_Promise struct{ *capnp.Pipeline }
+// Repo_configAll_Params_Promise is a wrapper for a Repo_configAll_Params promised by a client call.
+type Repo_configAll_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configAll_Params_Promise) Struct() (Meta_configAll_Params, error) {
+func (p Repo_configAll_Params_Promise) Struct() (Repo_configAll_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configAll_Params{s}, err
+	return Repo_configAll_Params{s}, err
 }
 
-type Meta_configAll_Results struct{ capnp.Struct }
+type Repo_configAll_Results struct{ capnp.Struct }
 
-// Meta_configAll_Results_TypeID is the unique identifier for the type Meta_configAll_Results.
-const Meta_configAll_Results_TypeID = 0x8cdf119f2d20b743
+// Repo_configAll_Results_TypeID is the unique identifier for the type Repo_configAll_Results.
+const Repo_configAll_Results_TypeID = 0xacf50d40a9d3436a
 
-func NewMeta_configAll_Results(s *capnp.Segment) (Meta_configAll_Results, error) {
+func NewRepo_configAll_Results(s *capnp.Segment) (Repo_configAll_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configAll_Results{st}, err
+	return Repo_configAll_Results{st}, err
 }
 
-func NewRootMeta_configAll_Results(s *capnp.Segment) (Meta_configAll_Results, error) {
+func NewRootRepo_configAll_Results(s *capnp.Segment) (Repo_configAll_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configAll_Results{st}, err
+	return Repo_configAll_Results{st}, err
 }
 
-func ReadRootMeta_configAll_Results(msg *capnp.Message) (Meta_configAll_Results, error) {
+func ReadRootRepo_configAll_Results(msg *capnp.Message) (Repo_configAll_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_configAll_Results{root.Struct()}, err
+	return Repo_configAll_Results{root.Struct()}, err
 }
 
-func (s Meta_configAll_Results) String() string {
-	str, _ := text.Marshal(0x8cdf119f2d20b743, s.Struct)
+func (s Repo_configAll_Results) String() string {
+	str, _ := text.Marshal(0xacf50d40a9d3436a, s.Struct)
 	return str
 }
 
-func (s Meta_configAll_Results) All() (ConfigEntry_List, error) {
+func (s Repo_configAll_Results) All() (ConfigEntry_List, error) {
 	p, err := s.Struct.Ptr(0)
 	return ConfigEntry_List{List: p.List()}, err
 }
 
-func (s Meta_configAll_Results) HasAll() bool {
+func (s Repo_configAll_Results) HasAll() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configAll_Results) SetAll(v ConfigEntry_List) error {
+func (s Repo_configAll_Results) SetAll(v ConfigEntry_List) error {
 	return s.Struct.SetPtr(0, v.List.ToPtr())
 }
 
 // NewAll sets the all field to a newly
 // allocated ConfigEntry_List, preferring placement in s's segment.
-func (s Meta_configAll_Results) NewAll(n int32) (ConfigEntry_List, error) {
+func (s Repo_configAll_Results) NewAll(n int32) (ConfigEntry_List, error) {
 	l, err := NewConfigEntry_List(s.Struct.Segment(), n)
 	if err != nil {
 		return ConfigEntry_List{}, err
@@ -9251,152 +8723,152 @@ func (s Meta_configAll_Results) NewAll(n int32) (ConfigEntry_List, error) {
 	return l, err
 }
 
-// Meta_configAll_Results_List is a list of Meta_configAll_Results.
-type Meta_configAll_Results_List struct{ capnp.List }
+// Repo_configAll_Results_List is a list of Repo_configAll_Results.
+type Repo_configAll_Results_List struct{ capnp.List }
 
-// NewMeta_configAll_Results creates a new list of Meta_configAll_Results.
-func NewMeta_configAll_Results_List(s *capnp.Segment, sz int32) (Meta_configAll_Results_List, error) {
+// NewRepo_configAll_Results creates a new list of Repo_configAll_Results.
+func NewRepo_configAll_Results_List(s *capnp.Segment, sz int32) (Repo_configAll_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_configAll_Results_List{l}, err
+	return Repo_configAll_Results_List{l}, err
 }
 
-func (s Meta_configAll_Results_List) At(i int) Meta_configAll_Results {
-	return Meta_configAll_Results{s.List.Struct(i)}
+func (s Repo_configAll_Results_List) At(i int) Repo_configAll_Results {
+	return Repo_configAll_Results{s.List.Struct(i)}
 }
 
-func (s Meta_configAll_Results_List) Set(i int, v Meta_configAll_Results) error {
+func (s Repo_configAll_Results_List) Set(i int, v Repo_configAll_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configAll_Results_List) String() string {
-	str, _ := text.MarshalList(0x8cdf119f2d20b743, s.List)
+func (s Repo_configAll_Results_List) String() string {
+	str, _ := text.MarshalList(0xacf50d40a9d3436a, s.List)
 	return str
 }
 
-// Meta_configAll_Results_Promise is a wrapper for a Meta_configAll_Results promised by a client call.
-type Meta_configAll_Results_Promise struct{ *capnp.Pipeline }
+// Repo_configAll_Results_Promise is a wrapper for a Repo_configAll_Results promised by a client call.
+type Repo_configAll_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configAll_Results_Promise) Struct() (Meta_configAll_Results, error) {
+func (p Repo_configAll_Results_Promise) Struct() (Repo_configAll_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configAll_Results{s}, err
+	return Repo_configAll_Results{s}, err
 }
 
-type Meta_configDoc_Params struct{ capnp.Struct }
+type Repo_configDoc_Params struct{ capnp.Struct }
 
-// Meta_configDoc_Params_TypeID is the unique identifier for the type Meta_configDoc_Params.
-const Meta_configDoc_Params_TypeID = 0xc3b93ffa6fc9f160
+// Repo_configDoc_Params_TypeID is the unique identifier for the type Repo_configDoc_Params.
+const Repo_configDoc_Params_TypeID = 0x9b96e8c9be077989
 
-func NewMeta_configDoc_Params(s *capnp.Segment) (Meta_configDoc_Params, error) {
+func NewRepo_configDoc_Params(s *capnp.Segment) (Repo_configDoc_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configDoc_Params{st}, err
+	return Repo_configDoc_Params{st}, err
 }
 
-func NewRootMeta_configDoc_Params(s *capnp.Segment) (Meta_configDoc_Params, error) {
+func NewRootRepo_configDoc_Params(s *capnp.Segment) (Repo_configDoc_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configDoc_Params{st}, err
+	return Repo_configDoc_Params{st}, err
 }
 
-func ReadRootMeta_configDoc_Params(msg *capnp.Message) (Meta_configDoc_Params, error) {
+func ReadRootRepo_configDoc_Params(msg *capnp.Message) (Repo_configDoc_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_configDoc_Params{root.Struct()}, err
+	return Repo_configDoc_Params{root.Struct()}, err
 }
 
-func (s Meta_configDoc_Params) String() string {
-	str, _ := text.Marshal(0xc3b93ffa6fc9f160, s.Struct)
+func (s Repo_configDoc_Params) String() string {
+	str, _ := text.Marshal(0x9b96e8c9be077989, s.Struct)
 	return str
 }
 
-func (s Meta_configDoc_Params) Key() (string, error) {
+func (s Repo_configDoc_Params) Key() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_configDoc_Params) HasKey() bool {
+func (s Repo_configDoc_Params) HasKey() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configDoc_Params) KeyBytes() ([]byte, error) {
+func (s Repo_configDoc_Params) KeyBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_configDoc_Params) SetKey(v string) error {
+func (s Repo_configDoc_Params) SetKey(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_configDoc_Params_List is a list of Meta_configDoc_Params.
-type Meta_configDoc_Params_List struct{ capnp.List }
+// Repo_configDoc_Params_List is a list of Repo_configDoc_Params.
+type Repo_configDoc_Params_List struct{ capnp.List }
 
-// NewMeta_configDoc_Params creates a new list of Meta_configDoc_Params.
-func NewMeta_configDoc_Params_List(s *capnp.Segment, sz int32) (Meta_configDoc_Params_List, error) {
+// NewRepo_configDoc_Params creates a new list of Repo_configDoc_Params.
+func NewRepo_configDoc_Params_List(s *capnp.Segment, sz int32) (Repo_configDoc_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_configDoc_Params_List{l}, err
+	return Repo_configDoc_Params_List{l}, err
 }
 
-func (s Meta_configDoc_Params_List) At(i int) Meta_configDoc_Params {
-	return Meta_configDoc_Params{s.List.Struct(i)}
+func (s Repo_configDoc_Params_List) At(i int) Repo_configDoc_Params {
+	return Repo_configDoc_Params{s.List.Struct(i)}
 }
 
-func (s Meta_configDoc_Params_List) Set(i int, v Meta_configDoc_Params) error {
+func (s Repo_configDoc_Params_List) Set(i int, v Repo_configDoc_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configDoc_Params_List) String() string {
-	str, _ := text.MarshalList(0xc3b93ffa6fc9f160, s.List)
+func (s Repo_configDoc_Params_List) String() string {
+	str, _ := text.MarshalList(0x9b96e8c9be077989, s.List)
 	return str
 }
 
-// Meta_configDoc_Params_Promise is a wrapper for a Meta_configDoc_Params promised by a client call.
-type Meta_configDoc_Params_Promise struct{ *capnp.Pipeline }
+// Repo_configDoc_Params_Promise is a wrapper for a Repo_configDoc_Params promised by a client call.
+type Repo_configDoc_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configDoc_Params_Promise) Struct() (Meta_configDoc_Params, error) {
+func (p Repo_configDoc_Params_Promise) Struct() (Repo_configDoc_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configDoc_Params{s}, err
+	return Repo_configDoc_Params{s}, err
 }
 
-type Meta_configDoc_Results struct{ capnp.Struct }
+type Repo_configDoc_Results struct{ capnp.Struct }
 
-// Meta_configDoc_Results_TypeID is the unique identifier for the type Meta_configDoc_Results.
-const Meta_configDoc_Results_TypeID = 0xc920e06b8110e91f
+// Repo_configDoc_Results_TypeID is the unique identifier for the type Repo_configDoc_Results.
+const Repo_configDoc_Results_TypeID = 0xa34213f24153536b
 
-func NewMeta_configDoc_Results(s *capnp.Segment) (Meta_configDoc_Results, error) {
+func NewRepo_configDoc_Results(s *capnp.Segment) (Repo_configDoc_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configDoc_Results{st}, err
+	return Repo_configDoc_Results{st}, err
 }
 
-func NewRootMeta_configDoc_Results(s *capnp.Segment) (Meta_configDoc_Results, error) {
+func NewRootRepo_configDoc_Results(s *capnp.Segment) (Repo_configDoc_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_configDoc_Results{st}, err
+	return Repo_configDoc_Results{st}, err
 }
 
-func ReadRootMeta_configDoc_Results(msg *capnp.Message) (Meta_configDoc_Results, error) {
+func ReadRootRepo_configDoc_Results(msg *capnp.Message) (Repo_configDoc_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_configDoc_Results{root.Struct()}, err
+	return Repo_configDoc_Results{root.Struct()}, err
 }
 
-func (s Meta_configDoc_Results) String() string {
-	str, _ := text.Marshal(0xc920e06b8110e91f, s.Struct)
+func (s Repo_configDoc_Results) String() string {
+	str, _ := text.Marshal(0xa34213f24153536b, s.Struct)
 	return str
 }
 
-func (s Meta_configDoc_Results) Desc() (ConfigEntry, error) {
+func (s Repo_configDoc_Results) Desc() (ConfigEntry, error) {
 	p, err := s.Struct.Ptr(0)
 	return ConfigEntry{Struct: p.Struct()}, err
 }
 
-func (s Meta_configDoc_Results) HasDesc() bool {
+func (s Repo_configDoc_Results) HasDesc() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_configDoc_Results) SetDesc(v ConfigEntry) error {
+func (s Repo_configDoc_Results) SetDesc(v ConfigEntry) error {
 	return s.Struct.SetPtr(0, v.Struct.ToPtr())
 }
 
 // NewDesc sets the desc field to a newly
 // allocated ConfigEntry struct, preferring placement in s's segment.
-func (s Meta_configDoc_Results) NewDesc() (ConfigEntry, error) {
+func (s Repo_configDoc_Results) NewDesc() (ConfigEntry, error) {
 	ss, err := NewConfigEntry(s.Struct.Segment())
 	if err != nil {
 		return ConfigEntry{}, err
@@ -9405,1978 +8877,249 @@ func (s Meta_configDoc_Results) NewDesc() (ConfigEntry, error) {
 	return ss, err
 }
 
-// Meta_configDoc_Results_List is a list of Meta_configDoc_Results.
-type Meta_configDoc_Results_List struct{ capnp.List }
+// Repo_configDoc_Results_List is a list of Repo_configDoc_Results.
+type Repo_configDoc_Results_List struct{ capnp.List }
 
-// NewMeta_configDoc_Results creates a new list of Meta_configDoc_Results.
-func NewMeta_configDoc_Results_List(s *capnp.Segment, sz int32) (Meta_configDoc_Results_List, error) {
+// NewRepo_configDoc_Results creates a new list of Repo_configDoc_Results.
+func NewRepo_configDoc_Results_List(s *capnp.Segment, sz int32) (Repo_configDoc_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_configDoc_Results_List{l}, err
+	return Repo_configDoc_Results_List{l}, err
 }
 
-func (s Meta_configDoc_Results_List) At(i int) Meta_configDoc_Results {
-	return Meta_configDoc_Results{s.List.Struct(i)}
+func (s Repo_configDoc_Results_List) At(i int) Repo_configDoc_Results {
+	return Repo_configDoc_Results{s.List.Struct(i)}
 }
 
-func (s Meta_configDoc_Results_List) Set(i int, v Meta_configDoc_Results) error {
+func (s Repo_configDoc_Results_List) Set(i int, v Repo_configDoc_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_configDoc_Results_List) String() string {
-	str, _ := text.MarshalList(0xc920e06b8110e91f, s.List)
+func (s Repo_configDoc_Results_List) String() string {
+	str, _ := text.MarshalList(0xa34213f24153536b, s.List)
 	return str
 }
 
-// Meta_configDoc_Results_Promise is a wrapper for a Meta_configDoc_Results promised by a client call.
-type Meta_configDoc_Results_Promise struct{ *capnp.Pipeline }
+// Repo_configDoc_Results_Promise is a wrapper for a Repo_configDoc_Results promised by a client call.
+type Repo_configDoc_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_configDoc_Results_Promise) Struct() (Meta_configDoc_Results, error) {
+func (p Repo_configDoc_Results_Promise) Struct() (Repo_configDoc_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_configDoc_Results{s}, err
+	return Repo_configDoc_Results{s}, err
 }
 
-func (p Meta_configDoc_Results_Promise) Desc() ConfigEntry_Promise {
+func (p Repo_configDoc_Results_Promise) Desc() ConfigEntry_Promise {
 	return ConfigEntry_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
 }
 
-type Meta_remoteAdd_Params struct{ capnp.Struct }
+type Repo_become_Params struct{ capnp.Struct }
 
-// Meta_remoteAdd_Params_TypeID is the unique identifier for the type Meta_remoteAdd_Params.
-const Meta_remoteAdd_Params_TypeID = 0xc53b6f91dec2daaa
+// Repo_become_Params_TypeID is the unique identifier for the type Repo_become_Params.
+const Repo_become_Params_TypeID = 0xe75c9c74c2bacb82
 
-func NewMeta_remoteAdd_Params(s *capnp.Segment) (Meta_remoteAdd_Params, error) {
+func NewRepo_become_Params(s *capnp.Segment) (Repo_become_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteAdd_Params{st}, err
+	return Repo_become_Params{st}, err
 }
 
-func NewRootMeta_remoteAdd_Params(s *capnp.Segment) (Meta_remoteAdd_Params, error) {
+func NewRootRepo_become_Params(s *capnp.Segment) (Repo_become_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteAdd_Params{st}, err
+	return Repo_become_Params{st}, err
 }
 
-func ReadRootMeta_remoteAdd_Params(msg *capnp.Message) (Meta_remoteAdd_Params, error) {
+func ReadRootRepo_become_Params(msg *capnp.Message) (Repo_become_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_remoteAdd_Params{root.Struct()}, err
+	return Repo_become_Params{root.Struct()}, err
 }
 
-func (s Meta_remoteAdd_Params) String() string {
-	str, _ := text.Marshal(0xc53b6f91dec2daaa, s.Struct)
+func (s Repo_become_Params) String() string {
+	str, _ := text.Marshal(0xe75c9c74c2bacb82, s.Struct)
 	return str
 }
 
-func (s Meta_remoteAdd_Params) Remote() (Remote, error) {
-	p, err := s.Struct.Ptr(0)
-	return Remote{Struct: p.Struct()}, err
-}
-
-func (s Meta_remoteAdd_Params) HasRemote() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_remoteAdd_Params) SetRemote(v Remote) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
-}
-
-// NewRemote sets the remote field to a newly
-// allocated Remote struct, preferring placement in s's segment.
-func (s Meta_remoteAdd_Params) NewRemote() (Remote, error) {
-	ss, err := NewRemote(s.Struct.Segment())
-	if err != nil {
-		return Remote{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
-}
-
-// Meta_remoteAdd_Params_List is a list of Meta_remoteAdd_Params.
-type Meta_remoteAdd_Params_List struct{ capnp.List }
-
-// NewMeta_remoteAdd_Params creates a new list of Meta_remoteAdd_Params.
-func NewMeta_remoteAdd_Params_List(s *capnp.Segment, sz int32) (Meta_remoteAdd_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_remoteAdd_Params_List{l}, err
-}
-
-func (s Meta_remoteAdd_Params_List) At(i int) Meta_remoteAdd_Params {
-	return Meta_remoteAdd_Params{s.List.Struct(i)}
-}
-
-func (s Meta_remoteAdd_Params_List) Set(i int, v Meta_remoteAdd_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteAdd_Params_List) String() string {
-	str, _ := text.MarshalList(0xc53b6f91dec2daaa, s.List)
-	return str
-}
-
-// Meta_remoteAdd_Params_Promise is a wrapper for a Meta_remoteAdd_Params promised by a client call.
-type Meta_remoteAdd_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteAdd_Params_Promise) Struct() (Meta_remoteAdd_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteAdd_Params{s}, err
-}
-
-func (p Meta_remoteAdd_Params_Promise) Remote() Remote_Promise {
-	return Remote_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
-}
-
-type Meta_remoteAdd_Results struct{ capnp.Struct }
-
-// Meta_remoteAdd_Results_TypeID is the unique identifier for the type Meta_remoteAdd_Results.
-const Meta_remoteAdd_Results_TypeID = 0x956cdf6b89128744
-
-func NewMeta_remoteAdd_Results(s *capnp.Segment) (Meta_remoteAdd_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteAdd_Results{st}, err
-}
-
-func NewRootMeta_remoteAdd_Results(s *capnp.Segment) (Meta_remoteAdd_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteAdd_Results{st}, err
-}
-
-func ReadRootMeta_remoteAdd_Results(msg *capnp.Message) (Meta_remoteAdd_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteAdd_Results{root.Struct()}, err
-}
-
-func (s Meta_remoteAdd_Results) String() string {
-	str, _ := text.Marshal(0x956cdf6b89128744, s.Struct)
-	return str
-}
-
-// Meta_remoteAdd_Results_List is a list of Meta_remoteAdd_Results.
-type Meta_remoteAdd_Results_List struct{ capnp.List }
-
-// NewMeta_remoteAdd_Results creates a new list of Meta_remoteAdd_Results.
-func NewMeta_remoteAdd_Results_List(s *capnp.Segment, sz int32) (Meta_remoteAdd_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteAdd_Results_List{l}, err
-}
-
-func (s Meta_remoteAdd_Results_List) At(i int) Meta_remoteAdd_Results {
-	return Meta_remoteAdd_Results{s.List.Struct(i)}
-}
-
-func (s Meta_remoteAdd_Results_List) Set(i int, v Meta_remoteAdd_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteAdd_Results_List) String() string {
-	str, _ := text.MarshalList(0x956cdf6b89128744, s.List)
-	return str
-}
-
-// Meta_remoteAdd_Results_Promise is a wrapper for a Meta_remoteAdd_Results promised by a client call.
-type Meta_remoteAdd_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteAdd_Results_Promise) Struct() (Meta_remoteAdd_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteAdd_Results{s}, err
-}
-
-type Meta_remoteRm_Params struct{ capnp.Struct }
-
-// Meta_remoteRm_Params_TypeID is the unique identifier for the type Meta_remoteRm_Params.
-const Meta_remoteRm_Params_TypeID = 0xbb6cabb7ec800819
-
-func NewMeta_remoteRm_Params(s *capnp.Segment) (Meta_remoteRm_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteRm_Params{st}, err
-}
-
-func NewRootMeta_remoteRm_Params(s *capnp.Segment) (Meta_remoteRm_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteRm_Params{st}, err
-}
-
-func ReadRootMeta_remoteRm_Params(msg *capnp.Message) (Meta_remoteRm_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteRm_Params{root.Struct()}, err
-}
-
-func (s Meta_remoteRm_Params) String() string {
-	str, _ := text.Marshal(0xbb6cabb7ec800819, s.Struct)
-	return str
-}
-
-func (s Meta_remoteRm_Params) Name() (string, error) {
+func (s Repo_become_Params) Who() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_remoteRm_Params) HasName() bool {
+func (s Repo_become_Params) HasWho() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_remoteRm_Params) NameBytes() ([]byte, error) {
+func (s Repo_become_Params) WhoBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_remoteRm_Params) SetName(v string) error {
+func (s Repo_become_Params) SetWho(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_remoteRm_Params_List is a list of Meta_remoteRm_Params.
-type Meta_remoteRm_Params_List struct{ capnp.List }
+// Repo_become_Params_List is a list of Repo_become_Params.
+type Repo_become_Params_List struct{ capnp.List }
 
-// NewMeta_remoteRm_Params creates a new list of Meta_remoteRm_Params.
-func NewMeta_remoteRm_Params_List(s *capnp.Segment, sz int32) (Meta_remoteRm_Params_List, error) {
+// NewRepo_become_Params creates a new list of Repo_become_Params.
+func NewRepo_become_Params_List(s *capnp.Segment, sz int32) (Repo_become_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_remoteRm_Params_List{l}, err
+	return Repo_become_Params_List{l}, err
 }
 
-func (s Meta_remoteRm_Params_List) At(i int) Meta_remoteRm_Params {
-	return Meta_remoteRm_Params{s.List.Struct(i)}
+func (s Repo_become_Params_List) At(i int) Repo_become_Params {
+	return Repo_become_Params{s.List.Struct(i)}
 }
 
-func (s Meta_remoteRm_Params_List) Set(i int, v Meta_remoteRm_Params) error {
+func (s Repo_become_Params_List) Set(i int, v Repo_become_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_remoteRm_Params_List) String() string {
-	str, _ := text.MarshalList(0xbb6cabb7ec800819, s.List)
+func (s Repo_become_Params_List) String() string {
+	str, _ := text.MarshalList(0xe75c9c74c2bacb82, s.List)
 	return str
 }
 
-// Meta_remoteRm_Params_Promise is a wrapper for a Meta_remoteRm_Params promised by a client call.
-type Meta_remoteRm_Params_Promise struct{ *capnp.Pipeline }
+// Repo_become_Params_Promise is a wrapper for a Repo_become_Params promised by a client call.
+type Repo_become_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_remoteRm_Params_Promise) Struct() (Meta_remoteRm_Params, error) {
+func (p Repo_become_Params_Promise) Struct() (Repo_become_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_remoteRm_Params{s}, err
+	return Repo_become_Params{s}, err
 }
 
-type Meta_remoteRm_Results struct{ capnp.Struct }
+type Repo_become_Results struct{ capnp.Struct }
 
-// Meta_remoteRm_Results_TypeID is the unique identifier for the type Meta_remoteRm_Results.
-const Meta_remoteRm_Results_TypeID = 0xe21b4052865cf7c4
+// Repo_become_Results_TypeID is the unique identifier for the type Repo_become_Results.
+const Repo_become_Results_TypeID = 0xeadaf2b11fded490
 
-func NewMeta_remoteRm_Results(s *capnp.Segment) (Meta_remoteRm_Results, error) {
+func NewRepo_become_Results(s *capnp.Segment) (Repo_become_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteRm_Results{st}, err
+	return Repo_become_Results{st}, err
 }
 
-func NewRootMeta_remoteRm_Results(s *capnp.Segment) (Meta_remoteRm_Results, error) {
+func NewRootRepo_become_Results(s *capnp.Segment) (Repo_become_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteRm_Results{st}, err
+	return Repo_become_Results{st}, err
 }
 
-func ReadRootMeta_remoteRm_Results(msg *capnp.Message) (Meta_remoteRm_Results, error) {
+func ReadRootRepo_become_Results(msg *capnp.Message) (Repo_become_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_remoteRm_Results{root.Struct()}, err
+	return Repo_become_Results{root.Struct()}, err
 }
 
-func (s Meta_remoteRm_Results) String() string {
-	str, _ := text.Marshal(0xe21b4052865cf7c4, s.Struct)
+func (s Repo_become_Results) String() string {
+	str, _ := text.Marshal(0xeadaf2b11fded490, s.Struct)
 	return str
 }
 
-// Meta_remoteRm_Results_List is a list of Meta_remoteRm_Results.
-type Meta_remoteRm_Results_List struct{ capnp.List }
+// Repo_become_Results_List is a list of Repo_become_Results.
+type Repo_become_Results_List struct{ capnp.List }
 
-// NewMeta_remoteRm_Results creates a new list of Meta_remoteRm_Results.
-func NewMeta_remoteRm_Results_List(s *capnp.Segment, sz int32) (Meta_remoteRm_Results_List, error) {
+// NewRepo_become_Results creates a new list of Repo_become_Results.
+func NewRepo_become_Results_List(s *capnp.Segment, sz int32) (Repo_become_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteRm_Results_List{l}, err
+	return Repo_become_Results_List{l}, err
 }
 
-func (s Meta_remoteRm_Results_List) At(i int) Meta_remoteRm_Results {
-	return Meta_remoteRm_Results{s.List.Struct(i)}
+func (s Repo_become_Results_List) At(i int) Repo_become_Results {
+	return Repo_become_Results{s.List.Struct(i)}
 }
 
-func (s Meta_remoteRm_Results_List) Set(i int, v Meta_remoteRm_Results) error {
+func (s Repo_become_Results_List) Set(i int, v Repo_become_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_remoteRm_Results_List) String() string {
-	str, _ := text.MarshalList(0xe21b4052865cf7c4, s.List)
+func (s Repo_become_Results_List) String() string {
+	str, _ := text.MarshalList(0xeadaf2b11fded490, s.List)
 	return str
 }
 
-// Meta_remoteRm_Results_Promise is a wrapper for a Meta_remoteRm_Results promised by a client call.
-type Meta_remoteRm_Results_Promise struct{ *capnp.Pipeline }
+// Repo_become_Results_Promise is a wrapper for a Repo_become_Results promised by a client call.
+type Repo_become_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_remoteRm_Results_Promise) Struct() (Meta_remoteRm_Results, error) {
+func (p Repo_become_Results_Promise) Struct() (Repo_become_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_remoteRm_Results{s}, err
+	return Repo_become_Results{s}, err
 }
 
-type Meta_remoteLs_Params struct{ capnp.Struct }
+type Repo_fstabAdd_Params struct{ capnp.Struct }
 
-// Meta_remoteLs_Params_TypeID is the unique identifier for the type Meta_remoteLs_Params.
-const Meta_remoteLs_Params_TypeID = 0x94ee8cc65b181abe
+// Repo_fstabAdd_Params_TypeID is the unique identifier for the type Repo_fstabAdd_Params.
+const Repo_fstabAdd_Params_TypeID = 0xd1afceb8146949d4
 
-func NewMeta_remoteLs_Params(s *capnp.Segment) (Meta_remoteLs_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteLs_Params{st}, err
-}
-
-func NewRootMeta_remoteLs_Params(s *capnp.Segment) (Meta_remoteLs_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteLs_Params{st}, err
-}
-
-func ReadRootMeta_remoteLs_Params(msg *capnp.Message) (Meta_remoteLs_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteLs_Params{root.Struct()}, err
-}
-
-func (s Meta_remoteLs_Params) String() string {
-	str, _ := text.Marshal(0x94ee8cc65b181abe, s.Struct)
-	return str
-}
-
-// Meta_remoteLs_Params_List is a list of Meta_remoteLs_Params.
-type Meta_remoteLs_Params_List struct{ capnp.List }
-
-// NewMeta_remoteLs_Params creates a new list of Meta_remoteLs_Params.
-func NewMeta_remoteLs_Params_List(s *capnp.Segment, sz int32) (Meta_remoteLs_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteLs_Params_List{l}, err
-}
-
-func (s Meta_remoteLs_Params_List) At(i int) Meta_remoteLs_Params {
-	return Meta_remoteLs_Params{s.List.Struct(i)}
-}
-
-func (s Meta_remoteLs_Params_List) Set(i int, v Meta_remoteLs_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteLs_Params_List) String() string {
-	str, _ := text.MarshalList(0x94ee8cc65b181abe, s.List)
-	return str
-}
-
-// Meta_remoteLs_Params_Promise is a wrapper for a Meta_remoteLs_Params promised by a client call.
-type Meta_remoteLs_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteLs_Params_Promise) Struct() (Meta_remoteLs_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteLs_Params{s}, err
-}
-
-type Meta_remoteLs_Results struct{ capnp.Struct }
-
-// Meta_remoteLs_Results_TypeID is the unique identifier for the type Meta_remoteLs_Results.
-const Meta_remoteLs_Results_TypeID = 0xb05ff814dad43968
-
-func NewMeta_remoteLs_Results(s *capnp.Segment) (Meta_remoteLs_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteLs_Results{st}, err
-}
-
-func NewRootMeta_remoteLs_Results(s *capnp.Segment) (Meta_remoteLs_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteLs_Results{st}, err
-}
-
-func ReadRootMeta_remoteLs_Results(msg *capnp.Message) (Meta_remoteLs_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteLs_Results{root.Struct()}, err
-}
-
-func (s Meta_remoteLs_Results) String() string {
-	str, _ := text.Marshal(0xb05ff814dad43968, s.Struct)
-	return str
-}
-
-func (s Meta_remoteLs_Results) Remotes() (Remote_List, error) {
-	p, err := s.Struct.Ptr(0)
-	return Remote_List{List: p.List()}, err
-}
-
-func (s Meta_remoteLs_Results) HasRemotes() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_remoteLs_Results) SetRemotes(v Remote_List) error {
-	return s.Struct.SetPtr(0, v.List.ToPtr())
-}
-
-// NewRemotes sets the remotes field to a newly
-// allocated Remote_List, preferring placement in s's segment.
-func (s Meta_remoteLs_Results) NewRemotes(n int32) (Remote_List, error) {
-	l, err := NewRemote_List(s.Struct.Segment(), n)
-	if err != nil {
-		return Remote_List{}, err
-	}
-	err = s.Struct.SetPtr(0, l.List.ToPtr())
-	return l, err
-}
-
-// Meta_remoteLs_Results_List is a list of Meta_remoteLs_Results.
-type Meta_remoteLs_Results_List struct{ capnp.List }
-
-// NewMeta_remoteLs_Results creates a new list of Meta_remoteLs_Results.
-func NewMeta_remoteLs_Results_List(s *capnp.Segment, sz int32) (Meta_remoteLs_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_remoteLs_Results_List{l}, err
-}
-
-func (s Meta_remoteLs_Results_List) At(i int) Meta_remoteLs_Results {
-	return Meta_remoteLs_Results{s.List.Struct(i)}
-}
-
-func (s Meta_remoteLs_Results_List) Set(i int, v Meta_remoteLs_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteLs_Results_List) String() string {
-	str, _ := text.MarshalList(0xb05ff814dad43968, s.List)
-	return str
-}
-
-// Meta_remoteLs_Results_Promise is a wrapper for a Meta_remoteLs_Results promised by a client call.
-type Meta_remoteLs_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteLs_Results_Promise) Struct() (Meta_remoteLs_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteLs_Results{s}, err
-}
-
-type Meta_remoteSave_Params struct{ capnp.Struct }
-
-// Meta_remoteSave_Params_TypeID is the unique identifier for the type Meta_remoteSave_Params.
-const Meta_remoteSave_Params_TypeID = 0x81b6b14efe0127c4
-
-func NewMeta_remoteSave_Params(s *capnp.Segment) (Meta_remoteSave_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteSave_Params{st}, err
-}
-
-func NewRootMeta_remoteSave_Params(s *capnp.Segment) (Meta_remoteSave_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remoteSave_Params{st}, err
-}
-
-func ReadRootMeta_remoteSave_Params(msg *capnp.Message) (Meta_remoteSave_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteSave_Params{root.Struct()}, err
-}
-
-func (s Meta_remoteSave_Params) String() string {
-	str, _ := text.Marshal(0x81b6b14efe0127c4, s.Struct)
-	return str
-}
-
-func (s Meta_remoteSave_Params) Remotes() (Remote_List, error) {
-	p, err := s.Struct.Ptr(0)
-	return Remote_List{List: p.List()}, err
-}
-
-func (s Meta_remoteSave_Params) HasRemotes() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_remoteSave_Params) SetRemotes(v Remote_List) error {
-	return s.Struct.SetPtr(0, v.List.ToPtr())
-}
-
-// NewRemotes sets the remotes field to a newly
-// allocated Remote_List, preferring placement in s's segment.
-func (s Meta_remoteSave_Params) NewRemotes(n int32) (Remote_List, error) {
-	l, err := NewRemote_List(s.Struct.Segment(), n)
-	if err != nil {
-		return Remote_List{}, err
-	}
-	err = s.Struct.SetPtr(0, l.List.ToPtr())
-	return l, err
-}
-
-// Meta_remoteSave_Params_List is a list of Meta_remoteSave_Params.
-type Meta_remoteSave_Params_List struct{ capnp.List }
-
-// NewMeta_remoteSave_Params creates a new list of Meta_remoteSave_Params.
-func NewMeta_remoteSave_Params_List(s *capnp.Segment, sz int32) (Meta_remoteSave_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_remoteSave_Params_List{l}, err
-}
-
-func (s Meta_remoteSave_Params_List) At(i int) Meta_remoteSave_Params {
-	return Meta_remoteSave_Params{s.List.Struct(i)}
-}
-
-func (s Meta_remoteSave_Params_List) Set(i int, v Meta_remoteSave_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteSave_Params_List) String() string {
-	str, _ := text.MarshalList(0x81b6b14efe0127c4, s.List)
-	return str
-}
-
-// Meta_remoteSave_Params_Promise is a wrapper for a Meta_remoteSave_Params promised by a client call.
-type Meta_remoteSave_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteSave_Params_Promise) Struct() (Meta_remoteSave_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteSave_Params{s}, err
-}
-
-type Meta_remoteSave_Results struct{ capnp.Struct }
-
-// Meta_remoteSave_Results_TypeID is the unique identifier for the type Meta_remoteSave_Results.
-const Meta_remoteSave_Results_TypeID = 0xf9b3f22591273e08
-
-func NewMeta_remoteSave_Results(s *capnp.Segment) (Meta_remoteSave_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteSave_Results{st}, err
-}
-
-func NewRootMeta_remoteSave_Results(s *capnp.Segment) (Meta_remoteSave_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteSave_Results{st}, err
-}
-
-func ReadRootMeta_remoteSave_Results(msg *capnp.Message) (Meta_remoteSave_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteSave_Results{root.Struct()}, err
-}
-
-func (s Meta_remoteSave_Results) String() string {
-	str, _ := text.Marshal(0xf9b3f22591273e08, s.Struct)
-	return str
-}
-
-// Meta_remoteSave_Results_List is a list of Meta_remoteSave_Results.
-type Meta_remoteSave_Results_List struct{ capnp.List }
-
-// NewMeta_remoteSave_Results creates a new list of Meta_remoteSave_Results.
-func NewMeta_remoteSave_Results_List(s *capnp.Segment, sz int32) (Meta_remoteSave_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteSave_Results_List{l}, err
-}
-
-func (s Meta_remoteSave_Results_List) At(i int) Meta_remoteSave_Results {
-	return Meta_remoteSave_Results{s.List.Struct(i)}
-}
-
-func (s Meta_remoteSave_Results_List) Set(i int, v Meta_remoteSave_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteSave_Results_List) String() string {
-	str, _ := text.MarshalList(0xf9b3f22591273e08, s.List)
-	return str
-}
-
-// Meta_remoteSave_Results_Promise is a wrapper for a Meta_remoteSave_Results promised by a client call.
-type Meta_remoteSave_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteSave_Results_Promise) Struct() (Meta_remoteSave_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteSave_Results{s}, err
-}
-
-type Meta_remotePing_Params struct{ capnp.Struct }
-
-// Meta_remotePing_Params_TypeID is the unique identifier for the type Meta_remotePing_Params.
-const Meta_remotePing_Params_TypeID = 0xbea1cb452f61974f
-
-func NewMeta_remotePing_Params(s *capnp.Segment) (Meta_remotePing_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remotePing_Params{st}, err
-}
-
-func NewRootMeta_remotePing_Params(s *capnp.Segment) (Meta_remotePing_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_remotePing_Params{st}, err
-}
-
-func ReadRootMeta_remotePing_Params(msg *capnp.Message) (Meta_remotePing_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_remotePing_Params{root.Struct()}, err
-}
-
-func (s Meta_remotePing_Params) String() string {
-	str, _ := text.Marshal(0xbea1cb452f61974f, s.Struct)
-	return str
-}
-
-func (s Meta_remotePing_Params) Who() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s Meta_remotePing_Params) HasWho() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_remotePing_Params) WhoBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s Meta_remotePing_Params) SetWho(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-// Meta_remotePing_Params_List is a list of Meta_remotePing_Params.
-type Meta_remotePing_Params_List struct{ capnp.List }
-
-// NewMeta_remotePing_Params creates a new list of Meta_remotePing_Params.
-func NewMeta_remotePing_Params_List(s *capnp.Segment, sz int32) (Meta_remotePing_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_remotePing_Params_List{l}, err
-}
-
-func (s Meta_remotePing_Params_List) At(i int) Meta_remotePing_Params {
-	return Meta_remotePing_Params{s.List.Struct(i)}
-}
-
-func (s Meta_remotePing_Params_List) Set(i int, v Meta_remotePing_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remotePing_Params_List) String() string {
-	str, _ := text.MarshalList(0xbea1cb452f61974f, s.List)
-	return str
-}
-
-// Meta_remotePing_Params_Promise is a wrapper for a Meta_remotePing_Params promised by a client call.
-type Meta_remotePing_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remotePing_Params_Promise) Struct() (Meta_remotePing_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remotePing_Params{s}, err
-}
-
-type Meta_remotePing_Results struct{ capnp.Struct }
-
-// Meta_remotePing_Results_TypeID is the unique identifier for the type Meta_remotePing_Results.
-const Meta_remotePing_Results_TypeID = 0xf0f86c25885c5fe0
-
-func NewMeta_remotePing_Results(s *capnp.Segment) (Meta_remotePing_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_remotePing_Results{st}, err
-}
-
-func NewRootMeta_remotePing_Results(s *capnp.Segment) (Meta_remotePing_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_remotePing_Results{st}, err
-}
-
-func ReadRootMeta_remotePing_Results(msg *capnp.Message) (Meta_remotePing_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_remotePing_Results{root.Struct()}, err
-}
-
-func (s Meta_remotePing_Results) String() string {
-	str, _ := text.Marshal(0xf0f86c25885c5fe0, s.Struct)
-	return str
-}
-
-func (s Meta_remotePing_Results) Roundtrip() float64 {
-	return math.Float64frombits(s.Struct.Uint64(0))
-}
-
-func (s Meta_remotePing_Results) SetRoundtrip(v float64) {
-	s.Struct.SetUint64(0, math.Float64bits(v))
-}
-
-// Meta_remotePing_Results_List is a list of Meta_remotePing_Results.
-type Meta_remotePing_Results_List struct{ capnp.List }
-
-// NewMeta_remotePing_Results creates a new list of Meta_remotePing_Results.
-func NewMeta_remotePing_Results_List(s *capnp.Segment, sz int32) (Meta_remotePing_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
-	return Meta_remotePing_Results_List{l}, err
-}
-
-func (s Meta_remotePing_Results_List) At(i int) Meta_remotePing_Results {
-	return Meta_remotePing_Results{s.List.Struct(i)}
-}
-
-func (s Meta_remotePing_Results_List) Set(i int, v Meta_remotePing_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remotePing_Results_List) String() string {
-	str, _ := text.MarshalList(0xf0f86c25885c5fe0, s.List)
-	return str
-}
-
-// Meta_remotePing_Results_Promise is a wrapper for a Meta_remotePing_Results promised by a client call.
-type Meta_remotePing_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remotePing_Results_Promise) Struct() (Meta_remotePing_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remotePing_Results{s}, err
-}
-
-type Meta_remoteClear_Params struct{ capnp.Struct }
-
-// Meta_remoteClear_Params_TypeID is the unique identifier for the type Meta_remoteClear_Params.
-const Meta_remoteClear_Params_TypeID = 0xd4353ecb879426a0
-
-func NewMeta_remoteClear_Params(s *capnp.Segment) (Meta_remoteClear_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteClear_Params{st}, err
-}
-
-func NewRootMeta_remoteClear_Params(s *capnp.Segment) (Meta_remoteClear_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteClear_Params{st}, err
-}
-
-func ReadRootMeta_remoteClear_Params(msg *capnp.Message) (Meta_remoteClear_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteClear_Params{root.Struct()}, err
-}
-
-func (s Meta_remoteClear_Params) String() string {
-	str, _ := text.Marshal(0xd4353ecb879426a0, s.Struct)
-	return str
-}
-
-// Meta_remoteClear_Params_List is a list of Meta_remoteClear_Params.
-type Meta_remoteClear_Params_List struct{ capnp.List }
-
-// NewMeta_remoteClear_Params creates a new list of Meta_remoteClear_Params.
-func NewMeta_remoteClear_Params_List(s *capnp.Segment, sz int32) (Meta_remoteClear_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteClear_Params_List{l}, err
-}
-
-func (s Meta_remoteClear_Params_List) At(i int) Meta_remoteClear_Params {
-	return Meta_remoteClear_Params{s.List.Struct(i)}
-}
-
-func (s Meta_remoteClear_Params_List) Set(i int, v Meta_remoteClear_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteClear_Params_List) String() string {
-	str, _ := text.MarshalList(0xd4353ecb879426a0, s.List)
-	return str
-}
-
-// Meta_remoteClear_Params_Promise is a wrapper for a Meta_remoteClear_Params promised by a client call.
-type Meta_remoteClear_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteClear_Params_Promise) Struct() (Meta_remoteClear_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteClear_Params{s}, err
-}
-
-type Meta_remoteClear_Results struct{ capnp.Struct }
-
-// Meta_remoteClear_Results_TypeID is the unique identifier for the type Meta_remoteClear_Results.
-const Meta_remoteClear_Results_TypeID = 0xc538e655744911c7
-
-func NewMeta_remoteClear_Results(s *capnp.Segment) (Meta_remoteClear_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteClear_Results{st}, err
-}
-
-func NewRootMeta_remoteClear_Results(s *capnp.Segment) (Meta_remoteClear_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_remoteClear_Results{st}, err
-}
-
-func ReadRootMeta_remoteClear_Results(msg *capnp.Message) (Meta_remoteClear_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_remoteClear_Results{root.Struct()}, err
-}
-
-func (s Meta_remoteClear_Results) String() string {
-	str, _ := text.Marshal(0xc538e655744911c7, s.Struct)
-	return str
-}
-
-// Meta_remoteClear_Results_List is a list of Meta_remoteClear_Results.
-type Meta_remoteClear_Results_List struct{ capnp.List }
-
-// NewMeta_remoteClear_Results creates a new list of Meta_remoteClear_Results.
-func NewMeta_remoteClear_Results_List(s *capnp.Segment, sz int32) (Meta_remoteClear_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_remoteClear_Results_List{l}, err
-}
-
-func (s Meta_remoteClear_Results_List) At(i int) Meta_remoteClear_Results {
-	return Meta_remoteClear_Results{s.List.Struct(i)}
-}
-
-func (s Meta_remoteClear_Results_List) Set(i int, v Meta_remoteClear_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_remoteClear_Results_List) String() string {
-	str, _ := text.MarshalList(0xc538e655744911c7, s.List)
-	return str
-}
-
-// Meta_remoteClear_Results_Promise is a wrapper for a Meta_remoteClear_Results promised by a client call.
-type Meta_remoteClear_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_remoteClear_Results_Promise) Struct() (Meta_remoteClear_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_remoteClear_Results{s}, err
-}
-
-type Meta_netLocate_Params struct{ capnp.Struct }
-
-// Meta_netLocate_Params_TypeID is the unique identifier for the type Meta_netLocate_Params.
-const Meta_netLocate_Params_TypeID = 0x943e5e6dc1abe7b8
-
-func NewMeta_netLocate_Params(s *capnp.Segment) (Meta_netLocate_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
-	return Meta_netLocate_Params{st}, err
-}
-
-func NewRootMeta_netLocate_Params(s *capnp.Segment) (Meta_netLocate_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
-	return Meta_netLocate_Params{st}, err
-}
-
-func ReadRootMeta_netLocate_Params(msg *capnp.Message) (Meta_netLocate_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_netLocate_Params{root.Struct()}, err
-}
-
-func (s Meta_netLocate_Params) String() string {
-	str, _ := text.Marshal(0x943e5e6dc1abe7b8, s.Struct)
-	return str
-}
-
-func (s Meta_netLocate_Params) Who() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s Meta_netLocate_Params) HasWho() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_netLocate_Params) WhoBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s Meta_netLocate_Params) SetWho(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-func (s Meta_netLocate_Params) TimeoutSec() float64 {
-	return math.Float64frombits(s.Struct.Uint64(0))
-}
-
-func (s Meta_netLocate_Params) SetTimeoutSec(v float64) {
-	s.Struct.SetUint64(0, math.Float64bits(v))
-}
-
-func (s Meta_netLocate_Params) LocateMask() (string, error) {
-	p, err := s.Struct.Ptr(1)
-	return p.Text(), err
-}
-
-func (s Meta_netLocate_Params) HasLocateMask() bool {
-	p, err := s.Struct.Ptr(1)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_netLocate_Params) LocateMaskBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(1)
-	return p.TextBytes(), err
-}
-
-func (s Meta_netLocate_Params) SetLocateMask(v string) error {
-	return s.Struct.SetText(1, v)
-}
-
-// Meta_netLocate_Params_List is a list of Meta_netLocate_Params.
-type Meta_netLocate_Params_List struct{ capnp.List }
-
-// NewMeta_netLocate_Params creates a new list of Meta_netLocate_Params.
-func NewMeta_netLocate_Params_List(s *capnp.Segment, sz int32) (Meta_netLocate_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2}, sz)
-	return Meta_netLocate_Params_List{l}, err
-}
-
-func (s Meta_netLocate_Params_List) At(i int) Meta_netLocate_Params {
-	return Meta_netLocate_Params{s.List.Struct(i)}
-}
-
-func (s Meta_netLocate_Params_List) Set(i int, v Meta_netLocate_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_netLocate_Params_List) String() string {
-	str, _ := text.MarshalList(0x943e5e6dc1abe7b8, s.List)
-	return str
-}
-
-// Meta_netLocate_Params_Promise is a wrapper for a Meta_netLocate_Params promised by a client call.
-type Meta_netLocate_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_netLocate_Params_Promise) Struct() (Meta_netLocate_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_netLocate_Params{s}, err
-}
-
-type Meta_netLocate_Results struct{ capnp.Struct }
-
-// Meta_netLocate_Results_TypeID is the unique identifier for the type Meta_netLocate_Results.
-const Meta_netLocate_Results_TypeID = 0xad2dd70d5d17decb
-
-func NewMeta_netLocate_Results(s *capnp.Segment) (Meta_netLocate_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_netLocate_Results{st}, err
-}
-
-func NewRootMeta_netLocate_Results(s *capnp.Segment) (Meta_netLocate_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_netLocate_Results{st}, err
-}
-
-func ReadRootMeta_netLocate_Results(msg *capnp.Message) (Meta_netLocate_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_netLocate_Results{root.Struct()}, err
-}
-
-func (s Meta_netLocate_Results) String() string {
-	str, _ := text.Marshal(0xad2dd70d5d17decb, s.Struct)
-	return str
-}
-
-func (s Meta_netLocate_Results) Ticket() uint64 {
-	return s.Struct.Uint64(0)
-}
-
-func (s Meta_netLocate_Results) SetTicket(v uint64) {
-	s.Struct.SetUint64(0, v)
-}
-
-// Meta_netLocate_Results_List is a list of Meta_netLocate_Results.
-type Meta_netLocate_Results_List struct{ capnp.List }
-
-// NewMeta_netLocate_Results creates a new list of Meta_netLocate_Results.
-func NewMeta_netLocate_Results_List(s *capnp.Segment, sz int32) (Meta_netLocate_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
-	return Meta_netLocate_Results_List{l}, err
-}
-
-func (s Meta_netLocate_Results_List) At(i int) Meta_netLocate_Results {
-	return Meta_netLocate_Results{s.List.Struct(i)}
-}
-
-func (s Meta_netLocate_Results_List) Set(i int, v Meta_netLocate_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_netLocate_Results_List) String() string {
-	str, _ := text.MarshalList(0xad2dd70d5d17decb, s.List)
-	return str
-}
-
-// Meta_netLocate_Results_Promise is a wrapper for a Meta_netLocate_Results promised by a client call.
-type Meta_netLocate_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_netLocate_Results_Promise) Struct() (Meta_netLocate_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_netLocate_Results{s}, err
-}
-
-type Meta_netLocateNext_Params struct{ capnp.Struct }
-
-// Meta_netLocateNext_Params_TypeID is the unique identifier for the type Meta_netLocateNext_Params.
-const Meta_netLocateNext_Params_TypeID = 0xd289114a83107db7
-
-func NewMeta_netLocateNext_Params(s *capnp.Segment) (Meta_netLocateNext_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_netLocateNext_Params{st}, err
-}
-
-func NewRootMeta_netLocateNext_Params(s *capnp.Segment) (Meta_netLocateNext_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
-	return Meta_netLocateNext_Params{st}, err
-}
-
-func ReadRootMeta_netLocateNext_Params(msg *capnp.Message) (Meta_netLocateNext_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_netLocateNext_Params{root.Struct()}, err
-}
-
-func (s Meta_netLocateNext_Params) String() string {
-	str, _ := text.Marshal(0xd289114a83107db7, s.Struct)
-	return str
-}
-
-func (s Meta_netLocateNext_Params) Ticket() uint64 {
-	return s.Struct.Uint64(0)
-}
-
-func (s Meta_netLocateNext_Params) SetTicket(v uint64) {
-	s.Struct.SetUint64(0, v)
-}
-
-// Meta_netLocateNext_Params_List is a list of Meta_netLocateNext_Params.
-type Meta_netLocateNext_Params_List struct{ capnp.List }
-
-// NewMeta_netLocateNext_Params creates a new list of Meta_netLocateNext_Params.
-func NewMeta_netLocateNext_Params_List(s *capnp.Segment, sz int32) (Meta_netLocateNext_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
-	return Meta_netLocateNext_Params_List{l}, err
-}
-
-func (s Meta_netLocateNext_Params_List) At(i int) Meta_netLocateNext_Params {
-	return Meta_netLocateNext_Params{s.List.Struct(i)}
-}
-
-func (s Meta_netLocateNext_Params_List) Set(i int, v Meta_netLocateNext_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_netLocateNext_Params_List) String() string {
-	str, _ := text.MarshalList(0xd289114a83107db7, s.List)
-	return str
-}
-
-// Meta_netLocateNext_Params_Promise is a wrapper for a Meta_netLocateNext_Params promised by a client call.
-type Meta_netLocateNext_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_netLocateNext_Params_Promise) Struct() (Meta_netLocateNext_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_netLocateNext_Params{s}, err
-}
-
-type Meta_netLocateNext_Results struct{ capnp.Struct }
-
-// Meta_netLocateNext_Results_TypeID is the unique identifier for the type Meta_netLocateNext_Results.
-const Meta_netLocateNext_Results_TypeID = 0x9eadc3c7605bd657
-
-func NewMeta_netLocateNext_Results(s *capnp.Segment) (Meta_netLocateNext_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_netLocateNext_Results{st}, err
-}
-
-func NewRootMeta_netLocateNext_Results(s *capnp.Segment) (Meta_netLocateNext_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_netLocateNext_Results{st}, err
-}
-
-func ReadRootMeta_netLocateNext_Results(msg *capnp.Message) (Meta_netLocateNext_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_netLocateNext_Results{root.Struct()}, err
-}
-
-func (s Meta_netLocateNext_Results) String() string {
-	str, _ := text.Marshal(0x9eadc3c7605bd657, s.Struct)
-	return str
-}
-
-func (s Meta_netLocateNext_Results) Result() (LocateResult, error) {
-	p, err := s.Struct.Ptr(0)
-	return LocateResult{Struct: p.Struct()}, err
-}
-
-func (s Meta_netLocateNext_Results) HasResult() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_netLocateNext_Results) SetResult(v LocateResult) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
-}
-
-// NewResult sets the result field to a newly
-// allocated LocateResult struct, preferring placement in s's segment.
-func (s Meta_netLocateNext_Results) NewResult() (LocateResult, error) {
-	ss, err := NewLocateResult(s.Struct.Segment())
-	if err != nil {
-		return LocateResult{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
-}
-
-// Meta_netLocateNext_Results_List is a list of Meta_netLocateNext_Results.
-type Meta_netLocateNext_Results_List struct{ capnp.List }
-
-// NewMeta_netLocateNext_Results creates a new list of Meta_netLocateNext_Results.
-func NewMeta_netLocateNext_Results_List(s *capnp.Segment, sz int32) (Meta_netLocateNext_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_netLocateNext_Results_List{l}, err
-}
-
-func (s Meta_netLocateNext_Results_List) At(i int) Meta_netLocateNext_Results {
-	return Meta_netLocateNext_Results{s.List.Struct(i)}
-}
-
-func (s Meta_netLocateNext_Results_List) Set(i int, v Meta_netLocateNext_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_netLocateNext_Results_List) String() string {
-	str, _ := text.MarshalList(0x9eadc3c7605bd657, s.List)
-	return str
-}
-
-// Meta_netLocateNext_Results_Promise is a wrapper for a Meta_netLocateNext_Results promised by a client call.
-type Meta_netLocateNext_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_netLocateNext_Results_Promise) Struct() (Meta_netLocateNext_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_netLocateNext_Results{s}, err
-}
-
-func (p Meta_netLocateNext_Results_Promise) Result() LocateResult_Promise {
-	return LocateResult_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
-}
-
-type Meta_whoami_Params struct{ capnp.Struct }
-
-// Meta_whoami_Params_TypeID is the unique identifier for the type Meta_whoami_Params.
-const Meta_whoami_Params_TypeID = 0x90027b0333e503ee
-
-func NewMeta_whoami_Params(s *capnp.Segment) (Meta_whoami_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_whoami_Params{st}, err
-}
-
-func NewRootMeta_whoami_Params(s *capnp.Segment) (Meta_whoami_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_whoami_Params{st}, err
-}
-
-func ReadRootMeta_whoami_Params(msg *capnp.Message) (Meta_whoami_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_whoami_Params{root.Struct()}, err
-}
-
-func (s Meta_whoami_Params) String() string {
-	str, _ := text.Marshal(0x90027b0333e503ee, s.Struct)
-	return str
-}
-
-// Meta_whoami_Params_List is a list of Meta_whoami_Params.
-type Meta_whoami_Params_List struct{ capnp.List }
-
-// NewMeta_whoami_Params creates a new list of Meta_whoami_Params.
-func NewMeta_whoami_Params_List(s *capnp.Segment, sz int32) (Meta_whoami_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_whoami_Params_List{l}, err
-}
-
-func (s Meta_whoami_Params_List) At(i int) Meta_whoami_Params {
-	return Meta_whoami_Params{s.List.Struct(i)}
-}
-
-func (s Meta_whoami_Params_List) Set(i int, v Meta_whoami_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_whoami_Params_List) String() string {
-	str, _ := text.MarshalList(0x90027b0333e503ee, s.List)
-	return str
-}
-
-// Meta_whoami_Params_Promise is a wrapper for a Meta_whoami_Params promised by a client call.
-type Meta_whoami_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_whoami_Params_Promise) Struct() (Meta_whoami_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_whoami_Params{s}, err
-}
-
-type Meta_whoami_Results struct{ capnp.Struct }
-
-// Meta_whoami_Results_TypeID is the unique identifier for the type Meta_whoami_Results.
-const Meta_whoami_Results_TypeID = 0xf135f1bd71a1071f
-
-func NewMeta_whoami_Results(s *capnp.Segment) (Meta_whoami_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_whoami_Results{st}, err
-}
-
-func NewRootMeta_whoami_Results(s *capnp.Segment) (Meta_whoami_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_whoami_Results{st}, err
-}
-
-func ReadRootMeta_whoami_Results(msg *capnp.Message) (Meta_whoami_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_whoami_Results{root.Struct()}, err
-}
-
-func (s Meta_whoami_Results) String() string {
-	str, _ := text.Marshal(0xf135f1bd71a1071f, s.Struct)
-	return str
-}
-
-func (s Meta_whoami_Results) Whoami() (Identity, error) {
-	p, err := s.Struct.Ptr(0)
-	return Identity{Struct: p.Struct()}, err
-}
-
-func (s Meta_whoami_Results) HasWhoami() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_whoami_Results) SetWhoami(v Identity) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
-}
-
-// NewWhoami sets the whoami field to a newly
-// allocated Identity struct, preferring placement in s's segment.
-func (s Meta_whoami_Results) NewWhoami() (Identity, error) {
-	ss, err := NewIdentity(s.Struct.Segment())
-	if err != nil {
-		return Identity{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
-}
-
-// Meta_whoami_Results_List is a list of Meta_whoami_Results.
-type Meta_whoami_Results_List struct{ capnp.List }
-
-// NewMeta_whoami_Results creates a new list of Meta_whoami_Results.
-func NewMeta_whoami_Results_List(s *capnp.Segment, sz int32) (Meta_whoami_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_whoami_Results_List{l}, err
-}
-
-func (s Meta_whoami_Results_List) At(i int) Meta_whoami_Results {
-	return Meta_whoami_Results{s.List.Struct(i)}
-}
-
-func (s Meta_whoami_Results_List) Set(i int, v Meta_whoami_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_whoami_Results_List) String() string {
-	str, _ := text.MarshalList(0xf135f1bd71a1071f, s.List)
-	return str
-}
-
-// Meta_whoami_Results_Promise is a wrapper for a Meta_whoami_Results promised by a client call.
-type Meta_whoami_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_whoami_Results_Promise) Struct() (Meta_whoami_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_whoami_Results{s}, err
-}
-
-func (p Meta_whoami_Results_Promise) Whoami() Identity_Promise {
-	return Identity_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
-}
-
-type Meta_become_Params struct{ capnp.Struct }
-
-// Meta_become_Params_TypeID is the unique identifier for the type Meta_become_Params.
-const Meta_become_Params_TypeID = 0xe478c8af63857432
-
-func NewMeta_become_Params(s *capnp.Segment) (Meta_become_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_become_Params{st}, err
-}
-
-func NewRootMeta_become_Params(s *capnp.Segment) (Meta_become_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_become_Params{st}, err
-}
-
-func ReadRootMeta_become_Params(msg *capnp.Message) (Meta_become_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_become_Params{root.Struct()}, err
-}
-
-func (s Meta_become_Params) String() string {
-	str, _ := text.Marshal(0xe478c8af63857432, s.Struct)
-	return str
-}
-
-func (s Meta_become_Params) Who() (string, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.Text(), err
-}
-
-func (s Meta_become_Params) HasWho() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_become_Params) WhoBytes() ([]byte, error) {
-	p, err := s.Struct.Ptr(0)
-	return p.TextBytes(), err
-}
-
-func (s Meta_become_Params) SetWho(v string) error {
-	return s.Struct.SetText(0, v)
-}
-
-// Meta_become_Params_List is a list of Meta_become_Params.
-type Meta_become_Params_List struct{ capnp.List }
-
-// NewMeta_become_Params creates a new list of Meta_become_Params.
-func NewMeta_become_Params_List(s *capnp.Segment, sz int32) (Meta_become_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_become_Params_List{l}, err
-}
-
-func (s Meta_become_Params_List) At(i int) Meta_become_Params {
-	return Meta_become_Params{s.List.Struct(i)}
-}
-
-func (s Meta_become_Params_List) Set(i int, v Meta_become_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_become_Params_List) String() string {
-	str, _ := text.MarshalList(0xe478c8af63857432, s.List)
-	return str
-}
-
-// Meta_become_Params_Promise is a wrapper for a Meta_become_Params promised by a client call.
-type Meta_become_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_become_Params_Promise) Struct() (Meta_become_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_become_Params{s}, err
-}
-
-type Meta_become_Results struct{ capnp.Struct }
-
-// Meta_become_Results_TypeID is the unique identifier for the type Meta_become_Results.
-const Meta_become_Results_TypeID = 0xf580568dec00ba9f
-
-func NewMeta_become_Results(s *capnp.Segment) (Meta_become_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_become_Results{st}, err
-}
-
-func NewRootMeta_become_Results(s *capnp.Segment) (Meta_become_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_become_Results{st}, err
-}
-
-func ReadRootMeta_become_Results(msg *capnp.Message) (Meta_become_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_become_Results{root.Struct()}, err
-}
-
-func (s Meta_become_Results) String() string {
-	str, _ := text.Marshal(0xf580568dec00ba9f, s.Struct)
-	return str
-}
-
-// Meta_become_Results_List is a list of Meta_become_Results.
-type Meta_become_Results_List struct{ capnp.List }
-
-// NewMeta_become_Results creates a new list of Meta_become_Results.
-func NewMeta_become_Results_List(s *capnp.Segment, sz int32) (Meta_become_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_become_Results_List{l}, err
-}
-
-func (s Meta_become_Results_List) At(i int) Meta_become_Results {
-	return Meta_become_Results{s.List.Struct(i)}
-}
-
-func (s Meta_become_Results_List) Set(i int, v Meta_become_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_become_Results_List) String() string {
-	str, _ := text.MarshalList(0xf580568dec00ba9f, s.List)
-	return str
-}
-
-// Meta_become_Results_Promise is a wrapper for a Meta_become_Results promised by a client call.
-type Meta_become_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_become_Results_Promise) Struct() (Meta_become_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_become_Results{s}, err
-}
-
-type Meta_connect_Params struct{ capnp.Struct }
-
-// Meta_connect_Params_TypeID is the unique identifier for the type Meta_connect_Params.
-const Meta_connect_Params_TypeID = 0xb81842457ebf1a07
-
-func NewMeta_connect_Params(s *capnp.Segment) (Meta_connect_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_connect_Params{st}, err
-}
-
-func NewRootMeta_connect_Params(s *capnp.Segment) (Meta_connect_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_connect_Params{st}, err
-}
-
-func ReadRootMeta_connect_Params(msg *capnp.Message) (Meta_connect_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_connect_Params{root.Struct()}, err
-}
-
-func (s Meta_connect_Params) String() string {
-	str, _ := text.Marshal(0xb81842457ebf1a07, s.Struct)
-	return str
-}
-
-// Meta_connect_Params_List is a list of Meta_connect_Params.
-type Meta_connect_Params_List struct{ capnp.List }
-
-// NewMeta_connect_Params creates a new list of Meta_connect_Params.
-func NewMeta_connect_Params_List(s *capnp.Segment, sz int32) (Meta_connect_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_connect_Params_List{l}, err
-}
-
-func (s Meta_connect_Params_List) At(i int) Meta_connect_Params {
-	return Meta_connect_Params{s.List.Struct(i)}
-}
-
-func (s Meta_connect_Params_List) Set(i int, v Meta_connect_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_connect_Params_List) String() string {
-	str, _ := text.MarshalList(0xb81842457ebf1a07, s.List)
-	return str
-}
-
-// Meta_connect_Params_Promise is a wrapper for a Meta_connect_Params promised by a client call.
-type Meta_connect_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_connect_Params_Promise) Struct() (Meta_connect_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_connect_Params{s}, err
-}
-
-type Meta_connect_Results struct{ capnp.Struct }
-
-// Meta_connect_Results_TypeID is the unique identifier for the type Meta_connect_Results.
-const Meta_connect_Results_TypeID = 0xd5616267acef42a7
-
-func NewMeta_connect_Results(s *capnp.Segment) (Meta_connect_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_connect_Results{st}, err
-}
-
-func NewRootMeta_connect_Results(s *capnp.Segment) (Meta_connect_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_connect_Results{st}, err
-}
-
-func ReadRootMeta_connect_Results(msg *capnp.Message) (Meta_connect_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_connect_Results{root.Struct()}, err
-}
-
-func (s Meta_connect_Results) String() string {
-	str, _ := text.Marshal(0xd5616267acef42a7, s.Struct)
-	return str
-}
-
-// Meta_connect_Results_List is a list of Meta_connect_Results.
-type Meta_connect_Results_List struct{ capnp.List }
-
-// NewMeta_connect_Results creates a new list of Meta_connect_Results.
-func NewMeta_connect_Results_List(s *capnp.Segment, sz int32) (Meta_connect_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_connect_Results_List{l}, err
-}
-
-func (s Meta_connect_Results_List) At(i int) Meta_connect_Results {
-	return Meta_connect_Results{s.List.Struct(i)}
-}
-
-func (s Meta_connect_Results_List) Set(i int, v Meta_connect_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_connect_Results_List) String() string {
-	str, _ := text.MarshalList(0xd5616267acef42a7, s.List)
-	return str
-}
-
-// Meta_connect_Results_Promise is a wrapper for a Meta_connect_Results promised by a client call.
-type Meta_connect_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_connect_Results_Promise) Struct() (Meta_connect_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_connect_Results{s}, err
-}
-
-type Meta_disconnect_Params struct{ capnp.Struct }
-
-// Meta_disconnect_Params_TypeID is the unique identifier for the type Meta_disconnect_Params.
-const Meta_disconnect_Params_TypeID = 0xa596c7cd35022b4b
-
-func NewMeta_disconnect_Params(s *capnp.Segment) (Meta_disconnect_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_disconnect_Params{st}, err
-}
-
-func NewRootMeta_disconnect_Params(s *capnp.Segment) (Meta_disconnect_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_disconnect_Params{st}, err
-}
-
-func ReadRootMeta_disconnect_Params(msg *capnp.Message) (Meta_disconnect_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_disconnect_Params{root.Struct()}, err
-}
-
-func (s Meta_disconnect_Params) String() string {
-	str, _ := text.Marshal(0xa596c7cd35022b4b, s.Struct)
-	return str
-}
-
-// Meta_disconnect_Params_List is a list of Meta_disconnect_Params.
-type Meta_disconnect_Params_List struct{ capnp.List }
-
-// NewMeta_disconnect_Params creates a new list of Meta_disconnect_Params.
-func NewMeta_disconnect_Params_List(s *capnp.Segment, sz int32) (Meta_disconnect_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_disconnect_Params_List{l}, err
-}
-
-func (s Meta_disconnect_Params_List) At(i int) Meta_disconnect_Params {
-	return Meta_disconnect_Params{s.List.Struct(i)}
-}
-
-func (s Meta_disconnect_Params_List) Set(i int, v Meta_disconnect_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_disconnect_Params_List) String() string {
-	str, _ := text.MarshalList(0xa596c7cd35022b4b, s.List)
-	return str
-}
-
-// Meta_disconnect_Params_Promise is a wrapper for a Meta_disconnect_Params promised by a client call.
-type Meta_disconnect_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_disconnect_Params_Promise) Struct() (Meta_disconnect_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_disconnect_Params{s}, err
-}
-
-type Meta_disconnect_Results struct{ capnp.Struct }
-
-// Meta_disconnect_Results_TypeID is the unique identifier for the type Meta_disconnect_Results.
-const Meta_disconnect_Results_TypeID = 0xf9be86640a05f28e
-
-func NewMeta_disconnect_Results(s *capnp.Segment) (Meta_disconnect_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_disconnect_Results{st}, err
-}
-
-func NewRootMeta_disconnect_Results(s *capnp.Segment) (Meta_disconnect_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_disconnect_Results{st}, err
-}
-
-func ReadRootMeta_disconnect_Results(msg *capnp.Message) (Meta_disconnect_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_disconnect_Results{root.Struct()}, err
-}
-
-func (s Meta_disconnect_Results) String() string {
-	str, _ := text.Marshal(0xf9be86640a05f28e, s.Struct)
-	return str
-}
-
-// Meta_disconnect_Results_List is a list of Meta_disconnect_Results.
-type Meta_disconnect_Results_List struct{ capnp.List }
-
-// NewMeta_disconnect_Results creates a new list of Meta_disconnect_Results.
-func NewMeta_disconnect_Results_List(s *capnp.Segment, sz int32) (Meta_disconnect_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_disconnect_Results_List{l}, err
-}
-
-func (s Meta_disconnect_Results_List) At(i int) Meta_disconnect_Results {
-	return Meta_disconnect_Results{s.List.Struct(i)}
-}
-
-func (s Meta_disconnect_Results_List) Set(i int, v Meta_disconnect_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_disconnect_Results_List) String() string {
-	str, _ := text.MarshalList(0xf9be86640a05f28e, s.List)
-	return str
-}
-
-// Meta_disconnect_Results_Promise is a wrapper for a Meta_disconnect_Results promised by a client call.
-type Meta_disconnect_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_disconnect_Results_Promise) Struct() (Meta_disconnect_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_disconnect_Results{s}, err
-}
-
-type Meta_onlinePeers_Params struct{ capnp.Struct }
-
-// Meta_onlinePeers_Params_TypeID is the unique identifier for the type Meta_onlinePeers_Params.
-const Meta_onlinePeers_Params_TypeID = 0xb6e947604cd03fdd
-
-func NewMeta_onlinePeers_Params(s *capnp.Segment) (Meta_onlinePeers_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_onlinePeers_Params{st}, err
-}
-
-func NewRootMeta_onlinePeers_Params(s *capnp.Segment) (Meta_onlinePeers_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_onlinePeers_Params{st}, err
-}
-
-func ReadRootMeta_onlinePeers_Params(msg *capnp.Message) (Meta_onlinePeers_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_onlinePeers_Params{root.Struct()}, err
-}
-
-func (s Meta_onlinePeers_Params) String() string {
-	str, _ := text.Marshal(0xb6e947604cd03fdd, s.Struct)
-	return str
-}
-
-// Meta_onlinePeers_Params_List is a list of Meta_onlinePeers_Params.
-type Meta_onlinePeers_Params_List struct{ capnp.List }
-
-// NewMeta_onlinePeers_Params creates a new list of Meta_onlinePeers_Params.
-func NewMeta_onlinePeers_Params_List(s *capnp.Segment, sz int32) (Meta_onlinePeers_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_onlinePeers_Params_List{l}, err
-}
-
-func (s Meta_onlinePeers_Params_List) At(i int) Meta_onlinePeers_Params {
-	return Meta_onlinePeers_Params{s.List.Struct(i)}
-}
-
-func (s Meta_onlinePeers_Params_List) Set(i int, v Meta_onlinePeers_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_onlinePeers_Params_List) String() string {
-	str, _ := text.MarshalList(0xb6e947604cd03fdd, s.List)
-	return str
-}
-
-// Meta_onlinePeers_Params_Promise is a wrapper for a Meta_onlinePeers_Params promised by a client call.
-type Meta_onlinePeers_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_onlinePeers_Params_Promise) Struct() (Meta_onlinePeers_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_onlinePeers_Params{s}, err
-}
-
-type Meta_onlinePeers_Results struct{ capnp.Struct }
-
-// Meta_onlinePeers_Results_TypeID is the unique identifier for the type Meta_onlinePeers_Results.
-const Meta_onlinePeers_Results_TypeID = 0xa40fb26fec6a8554
-
-func NewMeta_onlinePeers_Results(s *capnp.Segment) (Meta_onlinePeers_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_onlinePeers_Results{st}, err
-}
-
-func NewRootMeta_onlinePeers_Results(s *capnp.Segment) (Meta_onlinePeers_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_onlinePeers_Results{st}, err
-}
-
-func ReadRootMeta_onlinePeers_Results(msg *capnp.Message) (Meta_onlinePeers_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_onlinePeers_Results{root.Struct()}, err
-}
-
-func (s Meta_onlinePeers_Results) String() string {
-	str, _ := text.Marshal(0xa40fb26fec6a8554, s.Struct)
-	return str
-}
-
-func (s Meta_onlinePeers_Results) Infos() (PeerStatus_List, error) {
-	p, err := s.Struct.Ptr(0)
-	return PeerStatus_List{List: p.List()}, err
-}
-
-func (s Meta_onlinePeers_Results) HasInfos() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_onlinePeers_Results) SetInfos(v PeerStatus_List) error {
-	return s.Struct.SetPtr(0, v.List.ToPtr())
-}
-
-// NewInfos sets the infos field to a newly
-// allocated PeerStatus_List, preferring placement in s's segment.
-func (s Meta_onlinePeers_Results) NewInfos(n int32) (PeerStatus_List, error) {
-	l, err := NewPeerStatus_List(s.Struct.Segment(), n)
-	if err != nil {
-		return PeerStatus_List{}, err
-	}
-	err = s.Struct.SetPtr(0, l.List.ToPtr())
-	return l, err
-}
-
-// Meta_onlinePeers_Results_List is a list of Meta_onlinePeers_Results.
-type Meta_onlinePeers_Results_List struct{ capnp.List }
-
-// NewMeta_onlinePeers_Results creates a new list of Meta_onlinePeers_Results.
-func NewMeta_onlinePeers_Results_List(s *capnp.Segment, sz int32) (Meta_onlinePeers_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_onlinePeers_Results_List{l}, err
-}
-
-func (s Meta_onlinePeers_Results_List) At(i int) Meta_onlinePeers_Results {
-	return Meta_onlinePeers_Results{s.List.Struct(i)}
-}
-
-func (s Meta_onlinePeers_Results_List) Set(i int, v Meta_onlinePeers_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_onlinePeers_Results_List) String() string {
-	str, _ := text.MarshalList(0xa40fb26fec6a8554, s.List)
-	return str
-}
-
-// Meta_onlinePeers_Results_Promise is a wrapper for a Meta_onlinePeers_Results promised by a client call.
-type Meta_onlinePeers_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_onlinePeers_Results_Promise) Struct() (Meta_onlinePeers_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_onlinePeers_Results{s}, err
-}
-
-type Meta_version_Params struct{ capnp.Struct }
-
-// Meta_version_Params_TypeID is the unique identifier for the type Meta_version_Params.
-const Meta_version_Params_TypeID = 0x995f6a1f026506d7
-
-func NewMeta_version_Params(s *capnp.Segment) (Meta_version_Params, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_version_Params{st}, err
-}
-
-func NewRootMeta_version_Params(s *capnp.Segment) (Meta_version_Params, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_version_Params{st}, err
-}
-
-func ReadRootMeta_version_Params(msg *capnp.Message) (Meta_version_Params, error) {
-	root, err := msg.RootPtr()
-	return Meta_version_Params{root.Struct()}, err
-}
-
-func (s Meta_version_Params) String() string {
-	str, _ := text.Marshal(0x995f6a1f026506d7, s.Struct)
-	return str
-}
-
-// Meta_version_Params_List is a list of Meta_version_Params.
-type Meta_version_Params_List struct{ capnp.List }
-
-// NewMeta_version_Params creates a new list of Meta_version_Params.
-func NewMeta_version_Params_List(s *capnp.Segment, sz int32) (Meta_version_Params_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_version_Params_List{l}, err
-}
-
-func (s Meta_version_Params_List) At(i int) Meta_version_Params {
-	return Meta_version_Params{s.List.Struct(i)}
-}
-
-func (s Meta_version_Params_List) Set(i int, v Meta_version_Params) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_version_Params_List) String() string {
-	str, _ := text.MarshalList(0x995f6a1f026506d7, s.List)
-	return str
-}
-
-// Meta_version_Params_Promise is a wrapper for a Meta_version_Params promised by a client call.
-type Meta_version_Params_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_version_Params_Promise) Struct() (Meta_version_Params, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_version_Params{s}, err
-}
-
-type Meta_version_Results struct{ capnp.Struct }
-
-// Meta_version_Results_TypeID is the unique identifier for the type Meta_version_Results.
-const Meta_version_Results_TypeID = 0xca65371f4071f39b
-
-func NewMeta_version_Results(s *capnp.Segment) (Meta_version_Results, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_version_Results{st}, err
-}
-
-func NewRootMeta_version_Results(s *capnp.Segment) (Meta_version_Results, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_version_Results{st}, err
-}
-
-func ReadRootMeta_version_Results(msg *capnp.Message) (Meta_version_Results, error) {
-	root, err := msg.RootPtr()
-	return Meta_version_Results{root.Struct()}, err
-}
-
-func (s Meta_version_Results) String() string {
-	str, _ := text.Marshal(0xca65371f4071f39b, s.Struct)
-	return str
-}
-
-func (s Meta_version_Results) Version() (Version, error) {
-	p, err := s.Struct.Ptr(0)
-	return Version{Struct: p.Struct()}, err
-}
-
-func (s Meta_version_Results) HasVersion() bool {
-	p, err := s.Struct.Ptr(0)
-	return p.IsValid() || err != nil
-}
-
-func (s Meta_version_Results) SetVersion(v Version) error {
-	return s.Struct.SetPtr(0, v.Struct.ToPtr())
-}
-
-// NewVersion sets the version field to a newly
-// allocated Version struct, preferring placement in s's segment.
-func (s Meta_version_Results) NewVersion() (Version, error) {
-	ss, err := NewVersion(s.Struct.Segment())
-	if err != nil {
-		return Version{}, err
-	}
-	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
-	return ss, err
-}
-
-// Meta_version_Results_List is a list of Meta_version_Results.
-type Meta_version_Results_List struct{ capnp.List }
-
-// NewMeta_version_Results creates a new list of Meta_version_Results.
-func NewMeta_version_Results_List(s *capnp.Segment, sz int32) (Meta_version_Results_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_version_Results_List{l}, err
-}
-
-func (s Meta_version_Results_List) At(i int) Meta_version_Results {
-	return Meta_version_Results{s.List.Struct(i)}
-}
-
-func (s Meta_version_Results_List) Set(i int, v Meta_version_Results) error {
-	return s.List.SetStruct(i, v.Struct)
-}
-
-func (s Meta_version_Results_List) String() string {
-	str, _ := text.MarshalList(0xca65371f4071f39b, s.List)
-	return str
-}
-
-// Meta_version_Results_Promise is a wrapper for a Meta_version_Results promised by a client call.
-type Meta_version_Results_Promise struct{ *capnp.Pipeline }
-
-func (p Meta_version_Results_Promise) Struct() (Meta_version_Results, error) {
-	s, err := p.Pipeline.Struct()
-	return Meta_version_Results{s}, err
-}
-
-func (p Meta_version_Results_Promise) Version() Version_Promise {
-	return Version_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
-}
-
-type Meta_fstabAdd_Params struct{ capnp.Struct }
-
-// Meta_fstabAdd_Params_TypeID is the unique identifier for the type Meta_fstabAdd_Params.
-const Meta_fstabAdd_Params_TypeID = 0xe5d744f10b0b65b6
-
-func NewMeta_fstabAdd_Params(s *capnp.Segment) (Meta_fstabAdd_Params, error) {
+func NewRepo_fstabAdd_Params(s *capnp.Segment) (Repo_fstabAdd_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
-	return Meta_fstabAdd_Params{st}, err
+	return Repo_fstabAdd_Params{st}, err
 }
 
-func NewRootMeta_fstabAdd_Params(s *capnp.Segment) (Meta_fstabAdd_Params, error) {
+func NewRootRepo_fstabAdd_Params(s *capnp.Segment) (Repo_fstabAdd_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3})
-	return Meta_fstabAdd_Params{st}, err
+	return Repo_fstabAdd_Params{st}, err
 }
 
-func ReadRootMeta_fstabAdd_Params(msg *capnp.Message) (Meta_fstabAdd_Params, error) {
+func ReadRootRepo_fstabAdd_Params(msg *capnp.Message) (Repo_fstabAdd_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabAdd_Params{root.Struct()}, err
+	return Repo_fstabAdd_Params{root.Struct()}, err
 }
 
-func (s Meta_fstabAdd_Params) String() string {
-	str, _ := text.Marshal(0xe5d744f10b0b65b6, s.Struct)
+func (s Repo_fstabAdd_Params) String() string {
+	str, _ := text.Marshal(0xd1afceb8146949d4, s.Struct)
 	return str
 }
 
-func (s Meta_fstabAdd_Params) MountName() (string, error) {
+func (s Repo_fstabAdd_Params) MountName() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_fstabAdd_Params) HasMountName() bool {
+func (s Repo_fstabAdd_Params) HasMountName() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_fstabAdd_Params) MountNameBytes() ([]byte, error) {
+func (s Repo_fstabAdd_Params) MountNameBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_fstabAdd_Params) SetMountName(v string) error {
+func (s Repo_fstabAdd_Params) SetMountName(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-func (s Meta_fstabAdd_Params) MountPath() (string, error) {
+func (s Repo_fstabAdd_Params) MountPath() (string, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.Text(), err
 }
 
-func (s Meta_fstabAdd_Params) HasMountPath() bool {
+func (s Repo_fstabAdd_Params) HasMountPath() bool {
 	p, err := s.Struct.Ptr(1)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_fstabAdd_Params) MountPathBytes() ([]byte, error) {
+func (s Repo_fstabAdd_Params) MountPathBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(1)
 	return p.TextBytes(), err
 }
 
-func (s Meta_fstabAdd_Params) SetMountPath(v string) error {
+func (s Repo_fstabAdd_Params) SetMountPath(v string) error {
 	return s.Struct.SetText(1, v)
 }
 
-func (s Meta_fstabAdd_Params) Options() (MountOptions, error) {
+func (s Repo_fstabAdd_Params) Options() (MountOptions, error) {
 	p, err := s.Struct.Ptr(2)
 	return MountOptions{Struct: p.Struct()}, err
 }
 
-func (s Meta_fstabAdd_Params) HasOptions() bool {
+func (s Repo_fstabAdd_Params) HasOptions() bool {
 	p, err := s.Struct.Ptr(2)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_fstabAdd_Params) SetOptions(v MountOptions) error {
+func (s Repo_fstabAdd_Params) SetOptions(v MountOptions) error {
 	return s.Struct.SetPtr(2, v.Struct.ToPtr())
 }
 
 // NewOptions sets the options field to a newly
 // allocated MountOptions struct, preferring placement in s's segment.
-func (s Meta_fstabAdd_Params) NewOptions() (MountOptions, error) {
+func (s Repo_fstabAdd_Params) NewOptions() (MountOptions, error) {
 	ss, err := NewMountOptions(s.Struct.Segment())
 	if err != nil {
 		return MountOptions{}, err
@@ -11385,431 +9128,431 @@ func (s Meta_fstabAdd_Params) NewOptions() (MountOptions, error) {
 	return ss, err
 }
 
-// Meta_fstabAdd_Params_List is a list of Meta_fstabAdd_Params.
-type Meta_fstabAdd_Params_List struct{ capnp.List }
+// Repo_fstabAdd_Params_List is a list of Repo_fstabAdd_Params.
+type Repo_fstabAdd_Params_List struct{ capnp.List }
 
-// NewMeta_fstabAdd_Params creates a new list of Meta_fstabAdd_Params.
-func NewMeta_fstabAdd_Params_List(s *capnp.Segment, sz int32) (Meta_fstabAdd_Params_List, error) {
+// NewRepo_fstabAdd_Params creates a new list of Repo_fstabAdd_Params.
+func NewRepo_fstabAdd_Params_List(s *capnp.Segment, sz int32) (Repo_fstabAdd_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 3}, sz)
-	return Meta_fstabAdd_Params_List{l}, err
+	return Repo_fstabAdd_Params_List{l}, err
 }
 
-func (s Meta_fstabAdd_Params_List) At(i int) Meta_fstabAdd_Params {
-	return Meta_fstabAdd_Params{s.List.Struct(i)}
+func (s Repo_fstabAdd_Params_List) At(i int) Repo_fstabAdd_Params {
+	return Repo_fstabAdd_Params{s.List.Struct(i)}
 }
 
-func (s Meta_fstabAdd_Params_List) Set(i int, v Meta_fstabAdd_Params) error {
+func (s Repo_fstabAdd_Params_List) Set(i int, v Repo_fstabAdd_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabAdd_Params_List) String() string {
-	str, _ := text.MarshalList(0xe5d744f10b0b65b6, s.List)
+func (s Repo_fstabAdd_Params_List) String() string {
+	str, _ := text.MarshalList(0xd1afceb8146949d4, s.List)
 	return str
 }
 
-// Meta_fstabAdd_Params_Promise is a wrapper for a Meta_fstabAdd_Params promised by a client call.
-type Meta_fstabAdd_Params_Promise struct{ *capnp.Pipeline }
+// Repo_fstabAdd_Params_Promise is a wrapper for a Repo_fstabAdd_Params promised by a client call.
+type Repo_fstabAdd_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabAdd_Params_Promise) Struct() (Meta_fstabAdd_Params, error) {
+func (p Repo_fstabAdd_Params_Promise) Struct() (Repo_fstabAdd_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabAdd_Params{s}, err
+	return Repo_fstabAdd_Params{s}, err
 }
 
-func (p Meta_fstabAdd_Params_Promise) Options() MountOptions_Promise {
+func (p Repo_fstabAdd_Params_Promise) Options() MountOptions_Promise {
 	return MountOptions_Promise{Pipeline: p.Pipeline.GetPipeline(2)}
 }
 
-type Meta_fstabAdd_Results struct{ capnp.Struct }
+type Repo_fstabAdd_Results struct{ capnp.Struct }
 
-// Meta_fstabAdd_Results_TypeID is the unique identifier for the type Meta_fstabAdd_Results.
-const Meta_fstabAdd_Results_TypeID = 0xd702c8c0844a9a80
+// Repo_fstabAdd_Results_TypeID is the unique identifier for the type Repo_fstabAdd_Results.
+const Repo_fstabAdd_Results_TypeID = 0xbb83332a93ffdcad
 
-func NewMeta_fstabAdd_Results(s *capnp.Segment) (Meta_fstabAdd_Results, error) {
+func NewRepo_fstabAdd_Results(s *capnp.Segment) (Repo_fstabAdd_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabAdd_Results{st}, err
+	return Repo_fstabAdd_Results{st}, err
 }
 
-func NewRootMeta_fstabAdd_Results(s *capnp.Segment) (Meta_fstabAdd_Results, error) {
+func NewRootRepo_fstabAdd_Results(s *capnp.Segment) (Repo_fstabAdd_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabAdd_Results{st}, err
+	return Repo_fstabAdd_Results{st}, err
 }
 
-func ReadRootMeta_fstabAdd_Results(msg *capnp.Message) (Meta_fstabAdd_Results, error) {
+func ReadRootRepo_fstabAdd_Results(msg *capnp.Message) (Repo_fstabAdd_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabAdd_Results{root.Struct()}, err
+	return Repo_fstabAdd_Results{root.Struct()}, err
 }
 
-func (s Meta_fstabAdd_Results) String() string {
-	str, _ := text.Marshal(0xd702c8c0844a9a80, s.Struct)
+func (s Repo_fstabAdd_Results) String() string {
+	str, _ := text.Marshal(0xbb83332a93ffdcad, s.Struct)
 	return str
 }
 
-// Meta_fstabAdd_Results_List is a list of Meta_fstabAdd_Results.
-type Meta_fstabAdd_Results_List struct{ capnp.List }
+// Repo_fstabAdd_Results_List is a list of Repo_fstabAdd_Results.
+type Repo_fstabAdd_Results_List struct{ capnp.List }
 
-// NewMeta_fstabAdd_Results creates a new list of Meta_fstabAdd_Results.
-func NewMeta_fstabAdd_Results_List(s *capnp.Segment, sz int32) (Meta_fstabAdd_Results_List, error) {
+// NewRepo_fstabAdd_Results creates a new list of Repo_fstabAdd_Results.
+func NewRepo_fstabAdd_Results_List(s *capnp.Segment, sz int32) (Repo_fstabAdd_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabAdd_Results_List{l}, err
+	return Repo_fstabAdd_Results_List{l}, err
 }
 
-func (s Meta_fstabAdd_Results_List) At(i int) Meta_fstabAdd_Results {
-	return Meta_fstabAdd_Results{s.List.Struct(i)}
+func (s Repo_fstabAdd_Results_List) At(i int) Repo_fstabAdd_Results {
+	return Repo_fstabAdd_Results{s.List.Struct(i)}
 }
 
-func (s Meta_fstabAdd_Results_List) Set(i int, v Meta_fstabAdd_Results) error {
+func (s Repo_fstabAdd_Results_List) Set(i int, v Repo_fstabAdd_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabAdd_Results_List) String() string {
-	str, _ := text.MarshalList(0xd702c8c0844a9a80, s.List)
+func (s Repo_fstabAdd_Results_List) String() string {
+	str, _ := text.MarshalList(0xbb83332a93ffdcad, s.List)
 	return str
 }
 
-// Meta_fstabAdd_Results_Promise is a wrapper for a Meta_fstabAdd_Results promised by a client call.
-type Meta_fstabAdd_Results_Promise struct{ *capnp.Pipeline }
+// Repo_fstabAdd_Results_Promise is a wrapper for a Repo_fstabAdd_Results promised by a client call.
+type Repo_fstabAdd_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabAdd_Results_Promise) Struct() (Meta_fstabAdd_Results, error) {
+func (p Repo_fstabAdd_Results_Promise) Struct() (Repo_fstabAdd_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabAdd_Results{s}, err
+	return Repo_fstabAdd_Results{s}, err
 }
 
-type Meta_fstabRemove_Params struct{ capnp.Struct }
+type Repo_fstabRemove_Params struct{ capnp.Struct }
 
-// Meta_fstabRemove_Params_TypeID is the unique identifier for the type Meta_fstabRemove_Params.
-const Meta_fstabRemove_Params_TypeID = 0x9431ce5850882fb2
+// Repo_fstabRemove_Params_TypeID is the unique identifier for the type Repo_fstabRemove_Params.
+const Repo_fstabRemove_Params_TypeID = 0x86d95afae10f0893
 
-func NewMeta_fstabRemove_Params(s *capnp.Segment) (Meta_fstabRemove_Params, error) {
+func NewRepo_fstabRemove_Params(s *capnp.Segment) (Repo_fstabRemove_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_fstabRemove_Params{st}, err
+	return Repo_fstabRemove_Params{st}, err
 }
 
-func NewRootMeta_fstabRemove_Params(s *capnp.Segment) (Meta_fstabRemove_Params, error) {
+func NewRootRepo_fstabRemove_Params(s *capnp.Segment) (Repo_fstabRemove_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_fstabRemove_Params{st}, err
+	return Repo_fstabRemove_Params{st}, err
 }
 
-func ReadRootMeta_fstabRemove_Params(msg *capnp.Message) (Meta_fstabRemove_Params, error) {
+func ReadRootRepo_fstabRemove_Params(msg *capnp.Message) (Repo_fstabRemove_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabRemove_Params{root.Struct()}, err
+	return Repo_fstabRemove_Params{root.Struct()}, err
 }
 
-func (s Meta_fstabRemove_Params) String() string {
-	str, _ := text.Marshal(0x9431ce5850882fb2, s.Struct)
+func (s Repo_fstabRemove_Params) String() string {
+	str, _ := text.Marshal(0x86d95afae10f0893, s.Struct)
 	return str
 }
 
-func (s Meta_fstabRemove_Params) MountName() (string, error) {
+func (s Repo_fstabRemove_Params) MountName() (string, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.Text(), err
 }
 
-func (s Meta_fstabRemove_Params) HasMountName() bool {
+func (s Repo_fstabRemove_Params) HasMountName() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_fstabRemove_Params) MountNameBytes() ([]byte, error) {
+func (s Repo_fstabRemove_Params) MountNameBytes() ([]byte, error) {
 	p, err := s.Struct.Ptr(0)
 	return p.TextBytes(), err
 }
 
-func (s Meta_fstabRemove_Params) SetMountName(v string) error {
+func (s Repo_fstabRemove_Params) SetMountName(v string) error {
 	return s.Struct.SetText(0, v)
 }
 
-// Meta_fstabRemove_Params_List is a list of Meta_fstabRemove_Params.
-type Meta_fstabRemove_Params_List struct{ capnp.List }
+// Repo_fstabRemove_Params_List is a list of Repo_fstabRemove_Params.
+type Repo_fstabRemove_Params_List struct{ capnp.List }
 
-// NewMeta_fstabRemove_Params creates a new list of Meta_fstabRemove_Params.
-func NewMeta_fstabRemove_Params_List(s *capnp.Segment, sz int32) (Meta_fstabRemove_Params_List, error) {
+// NewRepo_fstabRemove_Params creates a new list of Repo_fstabRemove_Params.
+func NewRepo_fstabRemove_Params_List(s *capnp.Segment, sz int32) (Repo_fstabRemove_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_fstabRemove_Params_List{l}, err
+	return Repo_fstabRemove_Params_List{l}, err
 }
 
-func (s Meta_fstabRemove_Params_List) At(i int) Meta_fstabRemove_Params {
-	return Meta_fstabRemove_Params{s.List.Struct(i)}
+func (s Repo_fstabRemove_Params_List) At(i int) Repo_fstabRemove_Params {
+	return Repo_fstabRemove_Params{s.List.Struct(i)}
 }
 
-func (s Meta_fstabRemove_Params_List) Set(i int, v Meta_fstabRemove_Params) error {
+func (s Repo_fstabRemove_Params_List) Set(i int, v Repo_fstabRemove_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabRemove_Params_List) String() string {
-	str, _ := text.MarshalList(0x9431ce5850882fb2, s.List)
+func (s Repo_fstabRemove_Params_List) String() string {
+	str, _ := text.MarshalList(0x86d95afae10f0893, s.List)
 	return str
 }
 
-// Meta_fstabRemove_Params_Promise is a wrapper for a Meta_fstabRemove_Params promised by a client call.
-type Meta_fstabRemove_Params_Promise struct{ *capnp.Pipeline }
+// Repo_fstabRemove_Params_Promise is a wrapper for a Repo_fstabRemove_Params promised by a client call.
+type Repo_fstabRemove_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabRemove_Params_Promise) Struct() (Meta_fstabRemove_Params, error) {
+func (p Repo_fstabRemove_Params_Promise) Struct() (Repo_fstabRemove_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabRemove_Params{s}, err
+	return Repo_fstabRemove_Params{s}, err
 }
 
-type Meta_fstabRemove_Results struct{ capnp.Struct }
+type Repo_fstabRemove_Results struct{ capnp.Struct }
 
-// Meta_fstabRemove_Results_TypeID is the unique identifier for the type Meta_fstabRemove_Results.
-const Meta_fstabRemove_Results_TypeID = 0xeadeeb3132f58b99
+// Repo_fstabRemove_Results_TypeID is the unique identifier for the type Repo_fstabRemove_Results.
+const Repo_fstabRemove_Results_TypeID = 0xc3fcefc580775485
 
-func NewMeta_fstabRemove_Results(s *capnp.Segment) (Meta_fstabRemove_Results, error) {
+func NewRepo_fstabRemove_Results(s *capnp.Segment) (Repo_fstabRemove_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabRemove_Results{st}, err
+	return Repo_fstabRemove_Results{st}, err
 }
 
-func NewRootMeta_fstabRemove_Results(s *capnp.Segment) (Meta_fstabRemove_Results, error) {
+func NewRootRepo_fstabRemove_Results(s *capnp.Segment) (Repo_fstabRemove_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabRemove_Results{st}, err
+	return Repo_fstabRemove_Results{st}, err
 }
 
-func ReadRootMeta_fstabRemove_Results(msg *capnp.Message) (Meta_fstabRemove_Results, error) {
+func ReadRootRepo_fstabRemove_Results(msg *capnp.Message) (Repo_fstabRemove_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabRemove_Results{root.Struct()}, err
+	return Repo_fstabRemove_Results{root.Struct()}, err
 }
 
-func (s Meta_fstabRemove_Results) String() string {
-	str, _ := text.Marshal(0xeadeeb3132f58b99, s.Struct)
+func (s Repo_fstabRemove_Results) String() string {
+	str, _ := text.Marshal(0xc3fcefc580775485, s.Struct)
 	return str
 }
 
-// Meta_fstabRemove_Results_List is a list of Meta_fstabRemove_Results.
-type Meta_fstabRemove_Results_List struct{ capnp.List }
+// Repo_fstabRemove_Results_List is a list of Repo_fstabRemove_Results.
+type Repo_fstabRemove_Results_List struct{ capnp.List }
 
-// NewMeta_fstabRemove_Results creates a new list of Meta_fstabRemove_Results.
-func NewMeta_fstabRemove_Results_List(s *capnp.Segment, sz int32) (Meta_fstabRemove_Results_List, error) {
+// NewRepo_fstabRemove_Results creates a new list of Repo_fstabRemove_Results.
+func NewRepo_fstabRemove_Results_List(s *capnp.Segment, sz int32) (Repo_fstabRemove_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabRemove_Results_List{l}, err
+	return Repo_fstabRemove_Results_List{l}, err
 }
 
-func (s Meta_fstabRemove_Results_List) At(i int) Meta_fstabRemove_Results {
-	return Meta_fstabRemove_Results{s.List.Struct(i)}
+func (s Repo_fstabRemove_Results_List) At(i int) Repo_fstabRemove_Results {
+	return Repo_fstabRemove_Results{s.List.Struct(i)}
 }
 
-func (s Meta_fstabRemove_Results_List) Set(i int, v Meta_fstabRemove_Results) error {
+func (s Repo_fstabRemove_Results_List) Set(i int, v Repo_fstabRemove_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabRemove_Results_List) String() string {
-	str, _ := text.MarshalList(0xeadeeb3132f58b99, s.List)
+func (s Repo_fstabRemove_Results_List) String() string {
+	str, _ := text.MarshalList(0xc3fcefc580775485, s.List)
 	return str
 }
 
-// Meta_fstabRemove_Results_Promise is a wrapper for a Meta_fstabRemove_Results promised by a client call.
-type Meta_fstabRemove_Results_Promise struct{ *capnp.Pipeline }
+// Repo_fstabRemove_Results_Promise is a wrapper for a Repo_fstabRemove_Results promised by a client call.
+type Repo_fstabRemove_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabRemove_Results_Promise) Struct() (Meta_fstabRemove_Results, error) {
+func (p Repo_fstabRemove_Results_Promise) Struct() (Repo_fstabRemove_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabRemove_Results{s}, err
+	return Repo_fstabRemove_Results{s}, err
 }
 
-type Meta_fstabApply_Params struct{ capnp.Struct }
+type Repo_fstabApply_Params struct{ capnp.Struct }
 
-// Meta_fstabApply_Params_TypeID is the unique identifier for the type Meta_fstabApply_Params.
-const Meta_fstabApply_Params_TypeID = 0xdccb15f94f0d1d24
+// Repo_fstabApply_Params_TypeID is the unique identifier for the type Repo_fstabApply_Params.
+const Repo_fstabApply_Params_TypeID = 0xc7e5f661ac57ebb2
 
-func NewMeta_fstabApply_Params(s *capnp.Segment) (Meta_fstabApply_Params, error) {
+func NewRepo_fstabApply_Params(s *capnp.Segment) (Repo_fstabApply_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabApply_Params{st}, err
+	return Repo_fstabApply_Params{st}, err
 }
 
-func NewRootMeta_fstabApply_Params(s *capnp.Segment) (Meta_fstabApply_Params, error) {
+func NewRootRepo_fstabApply_Params(s *capnp.Segment) (Repo_fstabApply_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabApply_Params{st}, err
+	return Repo_fstabApply_Params{st}, err
 }
 
-func ReadRootMeta_fstabApply_Params(msg *capnp.Message) (Meta_fstabApply_Params, error) {
+func ReadRootRepo_fstabApply_Params(msg *capnp.Message) (Repo_fstabApply_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabApply_Params{root.Struct()}, err
+	return Repo_fstabApply_Params{root.Struct()}, err
 }
 
-func (s Meta_fstabApply_Params) String() string {
-	str, _ := text.Marshal(0xdccb15f94f0d1d24, s.Struct)
+func (s Repo_fstabApply_Params) String() string {
+	str, _ := text.Marshal(0xc7e5f661ac57ebb2, s.Struct)
 	return str
 }
 
-// Meta_fstabApply_Params_List is a list of Meta_fstabApply_Params.
-type Meta_fstabApply_Params_List struct{ capnp.List }
+// Repo_fstabApply_Params_List is a list of Repo_fstabApply_Params.
+type Repo_fstabApply_Params_List struct{ capnp.List }
 
-// NewMeta_fstabApply_Params creates a new list of Meta_fstabApply_Params.
-func NewMeta_fstabApply_Params_List(s *capnp.Segment, sz int32) (Meta_fstabApply_Params_List, error) {
+// NewRepo_fstabApply_Params creates a new list of Repo_fstabApply_Params.
+func NewRepo_fstabApply_Params_List(s *capnp.Segment, sz int32) (Repo_fstabApply_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabApply_Params_List{l}, err
+	return Repo_fstabApply_Params_List{l}, err
 }
 
-func (s Meta_fstabApply_Params_List) At(i int) Meta_fstabApply_Params {
-	return Meta_fstabApply_Params{s.List.Struct(i)}
+func (s Repo_fstabApply_Params_List) At(i int) Repo_fstabApply_Params {
+	return Repo_fstabApply_Params{s.List.Struct(i)}
 }
 
-func (s Meta_fstabApply_Params_List) Set(i int, v Meta_fstabApply_Params) error {
+func (s Repo_fstabApply_Params_List) Set(i int, v Repo_fstabApply_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabApply_Params_List) String() string {
-	str, _ := text.MarshalList(0xdccb15f94f0d1d24, s.List)
+func (s Repo_fstabApply_Params_List) String() string {
+	str, _ := text.MarshalList(0xc7e5f661ac57ebb2, s.List)
 	return str
 }
 
-// Meta_fstabApply_Params_Promise is a wrapper for a Meta_fstabApply_Params promised by a client call.
-type Meta_fstabApply_Params_Promise struct{ *capnp.Pipeline }
+// Repo_fstabApply_Params_Promise is a wrapper for a Repo_fstabApply_Params promised by a client call.
+type Repo_fstabApply_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabApply_Params_Promise) Struct() (Meta_fstabApply_Params, error) {
+func (p Repo_fstabApply_Params_Promise) Struct() (Repo_fstabApply_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabApply_Params{s}, err
+	return Repo_fstabApply_Params{s}, err
 }
 
-type Meta_fstabApply_Results struct{ capnp.Struct }
+type Repo_fstabApply_Results struct{ capnp.Struct }
 
-// Meta_fstabApply_Results_TypeID is the unique identifier for the type Meta_fstabApply_Results.
-const Meta_fstabApply_Results_TypeID = 0xfed377ce13579230
+// Repo_fstabApply_Results_TypeID is the unique identifier for the type Repo_fstabApply_Results.
+const Repo_fstabApply_Results_TypeID = 0xb5bf271ecf3bc074
 
-func NewMeta_fstabApply_Results(s *capnp.Segment) (Meta_fstabApply_Results, error) {
+func NewRepo_fstabApply_Results(s *capnp.Segment) (Repo_fstabApply_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabApply_Results{st}, err
+	return Repo_fstabApply_Results{st}, err
 }
 
-func NewRootMeta_fstabApply_Results(s *capnp.Segment) (Meta_fstabApply_Results, error) {
+func NewRootRepo_fstabApply_Results(s *capnp.Segment) (Repo_fstabApply_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabApply_Results{st}, err
+	return Repo_fstabApply_Results{st}, err
 }
 
-func ReadRootMeta_fstabApply_Results(msg *capnp.Message) (Meta_fstabApply_Results, error) {
+func ReadRootRepo_fstabApply_Results(msg *capnp.Message) (Repo_fstabApply_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabApply_Results{root.Struct()}, err
+	return Repo_fstabApply_Results{root.Struct()}, err
 }
 
-func (s Meta_fstabApply_Results) String() string {
-	str, _ := text.Marshal(0xfed377ce13579230, s.Struct)
+func (s Repo_fstabApply_Results) String() string {
+	str, _ := text.Marshal(0xb5bf271ecf3bc074, s.Struct)
 	return str
 }
 
-// Meta_fstabApply_Results_List is a list of Meta_fstabApply_Results.
-type Meta_fstabApply_Results_List struct{ capnp.List }
+// Repo_fstabApply_Results_List is a list of Repo_fstabApply_Results.
+type Repo_fstabApply_Results_List struct{ capnp.List }
 
-// NewMeta_fstabApply_Results creates a new list of Meta_fstabApply_Results.
-func NewMeta_fstabApply_Results_List(s *capnp.Segment, sz int32) (Meta_fstabApply_Results_List, error) {
+// NewRepo_fstabApply_Results creates a new list of Repo_fstabApply_Results.
+func NewRepo_fstabApply_Results_List(s *capnp.Segment, sz int32) (Repo_fstabApply_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabApply_Results_List{l}, err
+	return Repo_fstabApply_Results_List{l}, err
 }
 
-func (s Meta_fstabApply_Results_List) At(i int) Meta_fstabApply_Results {
-	return Meta_fstabApply_Results{s.List.Struct(i)}
+func (s Repo_fstabApply_Results_List) At(i int) Repo_fstabApply_Results {
+	return Repo_fstabApply_Results{s.List.Struct(i)}
 }
 
-func (s Meta_fstabApply_Results_List) Set(i int, v Meta_fstabApply_Results) error {
+func (s Repo_fstabApply_Results_List) Set(i int, v Repo_fstabApply_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabApply_Results_List) String() string {
-	str, _ := text.MarshalList(0xfed377ce13579230, s.List)
+func (s Repo_fstabApply_Results_List) String() string {
+	str, _ := text.MarshalList(0xb5bf271ecf3bc074, s.List)
 	return str
 }
 
-// Meta_fstabApply_Results_Promise is a wrapper for a Meta_fstabApply_Results promised by a client call.
-type Meta_fstabApply_Results_Promise struct{ *capnp.Pipeline }
+// Repo_fstabApply_Results_Promise is a wrapper for a Repo_fstabApply_Results promised by a client call.
+type Repo_fstabApply_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabApply_Results_Promise) Struct() (Meta_fstabApply_Results, error) {
+func (p Repo_fstabApply_Results_Promise) Struct() (Repo_fstabApply_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabApply_Results{s}, err
+	return Repo_fstabApply_Results{s}, err
 }
 
-type Meta_fstabList_Params struct{ capnp.Struct }
+type Repo_fstabList_Params struct{ capnp.Struct }
 
-// Meta_fstabList_Params_TypeID is the unique identifier for the type Meta_fstabList_Params.
-const Meta_fstabList_Params_TypeID = 0x9a6f30bbcafd1680
+// Repo_fstabList_Params_TypeID is the unique identifier for the type Repo_fstabList_Params.
+const Repo_fstabList_Params_TypeID = 0xd7315a3b3f92aa4a
 
-func NewMeta_fstabList_Params(s *capnp.Segment) (Meta_fstabList_Params, error) {
+func NewRepo_fstabList_Params(s *capnp.Segment) (Repo_fstabList_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabList_Params{st}, err
+	return Repo_fstabList_Params{st}, err
 }
 
-func NewRootMeta_fstabList_Params(s *capnp.Segment) (Meta_fstabList_Params, error) {
+func NewRootRepo_fstabList_Params(s *capnp.Segment) (Repo_fstabList_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabList_Params{st}, err
+	return Repo_fstabList_Params{st}, err
 }
 
-func ReadRootMeta_fstabList_Params(msg *capnp.Message) (Meta_fstabList_Params, error) {
+func ReadRootRepo_fstabList_Params(msg *capnp.Message) (Repo_fstabList_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabList_Params{root.Struct()}, err
+	return Repo_fstabList_Params{root.Struct()}, err
 }
 
-func (s Meta_fstabList_Params) String() string {
-	str, _ := text.Marshal(0x9a6f30bbcafd1680, s.Struct)
+func (s Repo_fstabList_Params) String() string {
+	str, _ := text.Marshal(0xd7315a3b3f92aa4a, s.Struct)
 	return str
 }
 
-// Meta_fstabList_Params_List is a list of Meta_fstabList_Params.
-type Meta_fstabList_Params_List struct{ capnp.List }
+// Repo_fstabList_Params_List is a list of Repo_fstabList_Params.
+type Repo_fstabList_Params_List struct{ capnp.List }
 
-// NewMeta_fstabList_Params creates a new list of Meta_fstabList_Params.
-func NewMeta_fstabList_Params_List(s *capnp.Segment, sz int32) (Meta_fstabList_Params_List, error) {
+// NewRepo_fstabList_Params creates a new list of Repo_fstabList_Params.
+func NewRepo_fstabList_Params_List(s *capnp.Segment, sz int32) (Repo_fstabList_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabList_Params_List{l}, err
+	return Repo_fstabList_Params_List{l}, err
 }
 
-func (s Meta_fstabList_Params_List) At(i int) Meta_fstabList_Params {
-	return Meta_fstabList_Params{s.List.Struct(i)}
+func (s Repo_fstabList_Params_List) At(i int) Repo_fstabList_Params {
+	return Repo_fstabList_Params{s.List.Struct(i)}
 }
 
-func (s Meta_fstabList_Params_List) Set(i int, v Meta_fstabList_Params) error {
+func (s Repo_fstabList_Params_List) Set(i int, v Repo_fstabList_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabList_Params_List) String() string {
-	str, _ := text.MarshalList(0x9a6f30bbcafd1680, s.List)
+func (s Repo_fstabList_Params_List) String() string {
+	str, _ := text.MarshalList(0xd7315a3b3f92aa4a, s.List)
 	return str
 }
 
-// Meta_fstabList_Params_Promise is a wrapper for a Meta_fstabList_Params promised by a client call.
-type Meta_fstabList_Params_Promise struct{ *capnp.Pipeline }
+// Repo_fstabList_Params_Promise is a wrapper for a Repo_fstabList_Params promised by a client call.
+type Repo_fstabList_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabList_Params_Promise) Struct() (Meta_fstabList_Params, error) {
+func (p Repo_fstabList_Params_Promise) Struct() (Repo_fstabList_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabList_Params{s}, err
+	return Repo_fstabList_Params{s}, err
 }
 
-type Meta_fstabList_Results struct{ capnp.Struct }
+type Repo_fstabList_Results struct{ capnp.Struct }
 
-// Meta_fstabList_Results_TypeID is the unique identifier for the type Meta_fstabList_Results.
-const Meta_fstabList_Results_TypeID = 0xbc17aa9af88d7a32
+// Repo_fstabList_Results_TypeID is the unique identifier for the type Repo_fstabList_Results.
+const Repo_fstabList_Results_TypeID = 0xc44d12b3aee49f34
 
-func NewMeta_fstabList_Results(s *capnp.Segment) (Meta_fstabList_Results, error) {
+func NewRepo_fstabList_Results(s *capnp.Segment) (Repo_fstabList_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_fstabList_Results{st}, err
+	return Repo_fstabList_Results{st}, err
 }
 
-func NewRootMeta_fstabList_Results(s *capnp.Segment) (Meta_fstabList_Results, error) {
+func NewRootRepo_fstabList_Results(s *capnp.Segment) (Repo_fstabList_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
-	return Meta_fstabList_Results{st}, err
+	return Repo_fstabList_Results{st}, err
 }
 
-func ReadRootMeta_fstabList_Results(msg *capnp.Message) (Meta_fstabList_Results, error) {
+func ReadRootRepo_fstabList_Results(msg *capnp.Message) (Repo_fstabList_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabList_Results{root.Struct()}, err
+	return Repo_fstabList_Results{root.Struct()}, err
 }
 
-func (s Meta_fstabList_Results) String() string {
-	str, _ := text.Marshal(0xbc17aa9af88d7a32, s.Struct)
+func (s Repo_fstabList_Results) String() string {
+	str, _ := text.Marshal(0xc44d12b3aee49f34, s.Struct)
 	return str
 }
 
-func (s Meta_fstabList_Results) Mounts() (FsTabEntry_List, error) {
+func (s Repo_fstabList_Results) Mounts() (FsTabEntry_List, error) {
 	p, err := s.Struct.Ptr(0)
 	return FsTabEntry_List{List: p.List()}, err
 }
 
-func (s Meta_fstabList_Results) HasMounts() bool {
+func (s Repo_fstabList_Results) HasMounts() bool {
 	p, err := s.Struct.Ptr(0)
 	return p.IsValid() || err != nil
 }
 
-func (s Meta_fstabList_Results) SetMounts(v FsTabEntry_List) error {
+func (s Repo_fstabList_Results) SetMounts(v FsTabEntry_List) error {
 	return s.Struct.SetPtr(0, v.List.ToPtr())
 }
 
 // NewMounts sets the mounts field to a newly
 // allocated FsTabEntry_List, preferring placement in s's segment.
-func (s Meta_fstabList_Results) NewMounts(n int32) (FsTabEntry_List, error) {
+func (s Repo_fstabList_Results) NewMounts(n int32) (FsTabEntry_List, error) {
 	l, err := NewFsTabEntry_List(s.Struct.Segment(), n)
 	if err != nil {
 		return FsTabEntry_List{}, err
@@ -11818,144 +9561,2422 @@ func (s Meta_fstabList_Results) NewMounts(n int32) (FsTabEntry_List, error) {
 	return l, err
 }
 
-// Meta_fstabList_Results_List is a list of Meta_fstabList_Results.
-type Meta_fstabList_Results_List struct{ capnp.List }
+// Repo_fstabList_Results_List is a list of Repo_fstabList_Results.
+type Repo_fstabList_Results_List struct{ capnp.List }
 
-// NewMeta_fstabList_Results creates a new list of Meta_fstabList_Results.
-func NewMeta_fstabList_Results_List(s *capnp.Segment, sz int32) (Meta_fstabList_Results_List, error) {
+// NewRepo_fstabList_Results creates a new list of Repo_fstabList_Results.
+func NewRepo_fstabList_Results_List(s *capnp.Segment, sz int32) (Repo_fstabList_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
-	return Meta_fstabList_Results_List{l}, err
+	return Repo_fstabList_Results_List{l}, err
 }
 
-func (s Meta_fstabList_Results_List) At(i int) Meta_fstabList_Results {
-	return Meta_fstabList_Results{s.List.Struct(i)}
+func (s Repo_fstabList_Results_List) At(i int) Repo_fstabList_Results {
+	return Repo_fstabList_Results{s.List.Struct(i)}
 }
 
-func (s Meta_fstabList_Results_List) Set(i int, v Meta_fstabList_Results) error {
+func (s Repo_fstabList_Results_List) Set(i int, v Repo_fstabList_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabList_Results_List) String() string {
-	str, _ := text.MarshalList(0xbc17aa9af88d7a32, s.List)
+func (s Repo_fstabList_Results_List) String() string {
+	str, _ := text.MarshalList(0xc44d12b3aee49f34, s.List)
 	return str
 }
 
-// Meta_fstabList_Results_Promise is a wrapper for a Meta_fstabList_Results promised by a client call.
-type Meta_fstabList_Results_Promise struct{ *capnp.Pipeline }
+// Repo_fstabList_Results_Promise is a wrapper for a Repo_fstabList_Results promised by a client call.
+type Repo_fstabList_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabList_Results_Promise) Struct() (Meta_fstabList_Results, error) {
+func (p Repo_fstabList_Results_Promise) Struct() (Repo_fstabList_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabList_Results{s}, err
+	return Repo_fstabList_Results{s}, err
 }
 
-type Meta_fstabUnmountAll_Params struct{ capnp.Struct }
+type Repo_fstabUnmountAll_Params struct{ capnp.Struct }
 
-// Meta_fstabUnmountAll_Params_TypeID is the unique identifier for the type Meta_fstabUnmountAll_Params.
-const Meta_fstabUnmountAll_Params_TypeID = 0xbbf40b1783c554ae
+// Repo_fstabUnmountAll_Params_TypeID is the unique identifier for the type Repo_fstabUnmountAll_Params.
+const Repo_fstabUnmountAll_Params_TypeID = 0xbbec523e9fc1abfc
 
-func NewMeta_fstabUnmountAll_Params(s *capnp.Segment) (Meta_fstabUnmountAll_Params, error) {
+func NewRepo_fstabUnmountAll_Params(s *capnp.Segment) (Repo_fstabUnmountAll_Params, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabUnmountAll_Params{st}, err
+	return Repo_fstabUnmountAll_Params{st}, err
 }
 
-func NewRootMeta_fstabUnmountAll_Params(s *capnp.Segment) (Meta_fstabUnmountAll_Params, error) {
+func NewRootRepo_fstabUnmountAll_Params(s *capnp.Segment) (Repo_fstabUnmountAll_Params, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabUnmountAll_Params{st}, err
+	return Repo_fstabUnmountAll_Params{st}, err
 }
 
-func ReadRootMeta_fstabUnmountAll_Params(msg *capnp.Message) (Meta_fstabUnmountAll_Params, error) {
+func ReadRootRepo_fstabUnmountAll_Params(msg *capnp.Message) (Repo_fstabUnmountAll_Params, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabUnmountAll_Params{root.Struct()}, err
+	return Repo_fstabUnmountAll_Params{root.Struct()}, err
 }
 
-func (s Meta_fstabUnmountAll_Params) String() string {
-	str, _ := text.Marshal(0xbbf40b1783c554ae, s.Struct)
+func (s Repo_fstabUnmountAll_Params) String() string {
+	str, _ := text.Marshal(0xbbec523e9fc1abfc, s.Struct)
 	return str
 }
 
-// Meta_fstabUnmountAll_Params_List is a list of Meta_fstabUnmountAll_Params.
-type Meta_fstabUnmountAll_Params_List struct{ capnp.List }
+// Repo_fstabUnmountAll_Params_List is a list of Repo_fstabUnmountAll_Params.
+type Repo_fstabUnmountAll_Params_List struct{ capnp.List }
 
-// NewMeta_fstabUnmountAll_Params creates a new list of Meta_fstabUnmountAll_Params.
-func NewMeta_fstabUnmountAll_Params_List(s *capnp.Segment, sz int32) (Meta_fstabUnmountAll_Params_List, error) {
+// NewRepo_fstabUnmountAll_Params creates a new list of Repo_fstabUnmountAll_Params.
+func NewRepo_fstabUnmountAll_Params_List(s *capnp.Segment, sz int32) (Repo_fstabUnmountAll_Params_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabUnmountAll_Params_List{l}, err
+	return Repo_fstabUnmountAll_Params_List{l}, err
 }
 
-func (s Meta_fstabUnmountAll_Params_List) At(i int) Meta_fstabUnmountAll_Params {
-	return Meta_fstabUnmountAll_Params{s.List.Struct(i)}
+func (s Repo_fstabUnmountAll_Params_List) At(i int) Repo_fstabUnmountAll_Params {
+	return Repo_fstabUnmountAll_Params{s.List.Struct(i)}
 }
 
-func (s Meta_fstabUnmountAll_Params_List) Set(i int, v Meta_fstabUnmountAll_Params) error {
+func (s Repo_fstabUnmountAll_Params_List) Set(i int, v Repo_fstabUnmountAll_Params) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabUnmountAll_Params_List) String() string {
-	str, _ := text.MarshalList(0xbbf40b1783c554ae, s.List)
+func (s Repo_fstabUnmountAll_Params_List) String() string {
+	str, _ := text.MarshalList(0xbbec523e9fc1abfc, s.List)
 	return str
 }
 
-// Meta_fstabUnmountAll_Params_Promise is a wrapper for a Meta_fstabUnmountAll_Params promised by a client call.
-type Meta_fstabUnmountAll_Params_Promise struct{ *capnp.Pipeline }
+// Repo_fstabUnmountAll_Params_Promise is a wrapper for a Repo_fstabUnmountAll_Params promised by a client call.
+type Repo_fstabUnmountAll_Params_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabUnmountAll_Params_Promise) Struct() (Meta_fstabUnmountAll_Params, error) {
+func (p Repo_fstabUnmountAll_Params_Promise) Struct() (Repo_fstabUnmountAll_Params, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabUnmountAll_Params{s}, err
+	return Repo_fstabUnmountAll_Params{s}, err
 }
 
-type Meta_fstabUnmountAll_Results struct{ capnp.Struct }
+type Repo_fstabUnmountAll_Results struct{ capnp.Struct }
 
-// Meta_fstabUnmountAll_Results_TypeID is the unique identifier for the type Meta_fstabUnmountAll_Results.
-const Meta_fstabUnmountAll_Results_TypeID = 0xe8fb1ccfc03c5c91
+// Repo_fstabUnmountAll_Results_TypeID is the unique identifier for the type Repo_fstabUnmountAll_Results.
+const Repo_fstabUnmountAll_Results_TypeID = 0x8ae5aae9653b7b02
 
-func NewMeta_fstabUnmountAll_Results(s *capnp.Segment) (Meta_fstabUnmountAll_Results, error) {
+func NewRepo_fstabUnmountAll_Results(s *capnp.Segment) (Repo_fstabUnmountAll_Results, error) {
 	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabUnmountAll_Results{st}, err
+	return Repo_fstabUnmountAll_Results{st}, err
 }
 
-func NewRootMeta_fstabUnmountAll_Results(s *capnp.Segment) (Meta_fstabUnmountAll_Results, error) {
+func NewRootRepo_fstabUnmountAll_Results(s *capnp.Segment) (Repo_fstabUnmountAll_Results, error) {
 	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
-	return Meta_fstabUnmountAll_Results{st}, err
+	return Repo_fstabUnmountAll_Results{st}, err
 }
 
-func ReadRootMeta_fstabUnmountAll_Results(msg *capnp.Message) (Meta_fstabUnmountAll_Results, error) {
+func ReadRootRepo_fstabUnmountAll_Results(msg *capnp.Message) (Repo_fstabUnmountAll_Results, error) {
 	root, err := msg.RootPtr()
-	return Meta_fstabUnmountAll_Results{root.Struct()}, err
+	return Repo_fstabUnmountAll_Results{root.Struct()}, err
 }
 
-func (s Meta_fstabUnmountAll_Results) String() string {
-	str, _ := text.Marshal(0xe8fb1ccfc03c5c91, s.Struct)
+func (s Repo_fstabUnmountAll_Results) String() string {
+	str, _ := text.Marshal(0x8ae5aae9653b7b02, s.Struct)
 	return str
 }
 
-// Meta_fstabUnmountAll_Results_List is a list of Meta_fstabUnmountAll_Results.
-type Meta_fstabUnmountAll_Results_List struct{ capnp.List }
+// Repo_fstabUnmountAll_Results_List is a list of Repo_fstabUnmountAll_Results.
+type Repo_fstabUnmountAll_Results_List struct{ capnp.List }
 
-// NewMeta_fstabUnmountAll_Results creates a new list of Meta_fstabUnmountAll_Results.
-func NewMeta_fstabUnmountAll_Results_List(s *capnp.Segment, sz int32) (Meta_fstabUnmountAll_Results_List, error) {
+// NewRepo_fstabUnmountAll_Results creates a new list of Repo_fstabUnmountAll_Results.
+func NewRepo_fstabUnmountAll_Results_List(s *capnp.Segment, sz int32) (Repo_fstabUnmountAll_Results_List, error) {
 	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
-	return Meta_fstabUnmountAll_Results_List{l}, err
+	return Repo_fstabUnmountAll_Results_List{l}, err
 }
 
-func (s Meta_fstabUnmountAll_Results_List) At(i int) Meta_fstabUnmountAll_Results {
-	return Meta_fstabUnmountAll_Results{s.List.Struct(i)}
+func (s Repo_fstabUnmountAll_Results_List) At(i int) Repo_fstabUnmountAll_Results {
+	return Repo_fstabUnmountAll_Results{s.List.Struct(i)}
 }
 
-func (s Meta_fstabUnmountAll_Results_List) Set(i int, v Meta_fstabUnmountAll_Results) error {
+func (s Repo_fstabUnmountAll_Results_List) Set(i int, v Repo_fstabUnmountAll_Results) error {
 	return s.List.SetStruct(i, v.Struct)
 }
 
-func (s Meta_fstabUnmountAll_Results_List) String() string {
-	str, _ := text.MarshalList(0xe8fb1ccfc03c5c91, s.List)
+func (s Repo_fstabUnmountAll_Results_List) String() string {
+	str, _ := text.MarshalList(0x8ae5aae9653b7b02, s.List)
 	return str
 }
 
-// Meta_fstabUnmountAll_Results_Promise is a wrapper for a Meta_fstabUnmountAll_Results promised by a client call.
-type Meta_fstabUnmountAll_Results_Promise struct{ *capnp.Pipeline }
+// Repo_fstabUnmountAll_Results_Promise is a wrapper for a Repo_fstabUnmountAll_Results promised by a client call.
+type Repo_fstabUnmountAll_Results_Promise struct{ *capnp.Pipeline }
 
-func (p Meta_fstabUnmountAll_Results_Promise) Struct() (Meta_fstabUnmountAll_Results, error) {
+func (p Repo_fstabUnmountAll_Results_Promise) Struct() (Repo_fstabUnmountAll_Results, error) {
 	s, err := p.Pipeline.Struct()
-	return Meta_fstabUnmountAll_Results{s}, err
+	return Repo_fstabUnmountAll_Results{s}, err
+}
+
+type Repo_version_Params struct{ capnp.Struct }
+
+// Repo_version_Params_TypeID is the unique identifier for the type Repo_version_Params.
+const Repo_version_Params_TypeID = 0x98eadc167523156e
+
+func NewRepo_version_Params(s *capnp.Segment) (Repo_version_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Repo_version_Params{st}, err
+}
+
+func NewRootRepo_version_Params(s *capnp.Segment) (Repo_version_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Repo_version_Params{st}, err
+}
+
+func ReadRootRepo_version_Params(msg *capnp.Message) (Repo_version_Params, error) {
+	root, err := msg.RootPtr()
+	return Repo_version_Params{root.Struct()}, err
+}
+
+func (s Repo_version_Params) String() string {
+	str, _ := text.Marshal(0x98eadc167523156e, s.Struct)
+	return str
+}
+
+// Repo_version_Params_List is a list of Repo_version_Params.
+type Repo_version_Params_List struct{ capnp.List }
+
+// NewRepo_version_Params creates a new list of Repo_version_Params.
+func NewRepo_version_Params_List(s *capnp.Segment, sz int32) (Repo_version_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Repo_version_Params_List{l}, err
+}
+
+func (s Repo_version_Params_List) At(i int) Repo_version_Params {
+	return Repo_version_Params{s.List.Struct(i)}
+}
+
+func (s Repo_version_Params_List) Set(i int, v Repo_version_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Repo_version_Params_List) String() string {
+	str, _ := text.MarshalList(0x98eadc167523156e, s.List)
+	return str
+}
+
+// Repo_version_Params_Promise is a wrapper for a Repo_version_Params promised by a client call.
+type Repo_version_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Repo_version_Params_Promise) Struct() (Repo_version_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Repo_version_Params{s}, err
+}
+
+type Repo_version_Results struct{ capnp.Struct }
+
+// Repo_version_Results_TypeID is the unique identifier for the type Repo_version_Results.
+const Repo_version_Results_TypeID = 0xafe329bc8cad8f74
+
+func NewRepo_version_Results(s *capnp.Segment) (Repo_version_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Repo_version_Results{st}, err
+}
+
+func NewRootRepo_version_Results(s *capnp.Segment) (Repo_version_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Repo_version_Results{st}, err
+}
+
+func ReadRootRepo_version_Results(msg *capnp.Message) (Repo_version_Results, error) {
+	root, err := msg.RootPtr()
+	return Repo_version_Results{root.Struct()}, err
+}
+
+func (s Repo_version_Results) String() string {
+	str, _ := text.Marshal(0xafe329bc8cad8f74, s.Struct)
+	return str
+}
+
+func (s Repo_version_Results) Version() (Version, error) {
+	p, err := s.Struct.Ptr(0)
+	return Version{Struct: p.Struct()}, err
+}
+
+func (s Repo_version_Results) HasVersion() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Repo_version_Results) SetVersion(v Version) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewVersion sets the version field to a newly
+// allocated Version struct, preferring placement in s's segment.
+func (s Repo_version_Results) NewVersion() (Version, error) {
+	ss, err := NewVersion(s.Struct.Segment())
+	if err != nil {
+		return Version{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Repo_version_Results_List is a list of Repo_version_Results.
+type Repo_version_Results_List struct{ capnp.List }
+
+// NewRepo_version_Results creates a new list of Repo_version_Results.
+func NewRepo_version_Results_List(s *capnp.Segment, sz int32) (Repo_version_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Repo_version_Results_List{l}, err
+}
+
+func (s Repo_version_Results_List) At(i int) Repo_version_Results {
+	return Repo_version_Results{s.List.Struct(i)}
+}
+
+func (s Repo_version_Results_List) Set(i int, v Repo_version_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Repo_version_Results_List) String() string {
+	str, _ := text.MarshalList(0xafe329bc8cad8f74, s.List)
+	return str
+}
+
+// Repo_version_Results_Promise is a wrapper for a Repo_version_Results promised by a client call.
+type Repo_version_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Repo_version_Results_Promise) Struct() (Repo_version_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Repo_version_Results{s}, err
+}
+
+func (p Repo_version_Results_Promise) Version() Version_Promise {
+	return Version_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+type Net struct{ Client capnp.Client }
+
+// Net_TypeID is the unique identifier for the type Net.
+const Net_TypeID = 0xaa133a60be5a7d01
+
+func (c Net) RemoteAdd(ctx context.Context, params func(Net_remoteAdd_Params) error, opts ...capnp.CallOption) Net_remoteAdd_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      0,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteAdd",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteAdd_Params{Struct: s}) }
+	}
+	return Net_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) RemoteRm(ctx context.Context, params func(Net_remoteRm_Params) error, opts ...capnp.CallOption) Net_remoteRm_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      1,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteRm",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteRm_Params{Struct: s}) }
+	}
+	return Net_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) RemoteLs(ctx context.Context, params func(Net_remoteLs_Params) error, opts ...capnp.CallOption) Net_remoteLs_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      2,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteLs",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteLs_Params{Struct: s}) }
+	}
+	return Net_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) RemoteSave(ctx context.Context, params func(Net_remoteSave_Params) error, opts ...capnp.CallOption) Net_remoteSave_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      3,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteSave",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteSave_Params{Struct: s}) }
+	}
+	return Net_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) RemotePing(ctx context.Context, params func(Net_remotePing_Params) error, opts ...capnp.CallOption) Net_remotePing_Results_Promise {
+	if c.Client == nil {
+		return Net_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      4,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remotePing",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remotePing_Params{Struct: s}) }
+	}
+	return Net_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) RemoteClear(ctx context.Context, params func(Net_remoteClear_Params) error, opts ...capnp.CallOption) Net_remoteClear_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      5,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteClear",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteClear_Params{Struct: s}) }
+	}
+	return Net_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) NetLocate(ctx context.Context, params func(Net_netLocate_Params) error, opts ...capnp.CallOption) Net_netLocate_Results_Promise {
+	if c.Client == nil {
+		return Net_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      6,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocate",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_netLocate_Params{Struct: s}) }
+	}
+	return Net_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) NetLocateNext(ctx context.Context, params func(Net_netLocateNext_Params) error, opts ...capnp.CallOption) Net_netLocateNext_Results_Promise {
+	if c.Client == nil {
+		return Net_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      7,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocateNext",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_netLocateNext_Params{Struct: s}) }
+	}
+	return Net_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) Whoami(ctx context.Context, params func(Net_whoami_Params) error, opts ...capnp.CallOption) Net_whoami_Results_Promise {
+	if c.Client == nil {
+		return Net_whoami_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "whoami",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_whoami_Params{Struct: s}) }
+	}
+	return Net_whoami_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) Connect(ctx context.Context, params func(Net_connect_Params) error, opts ...capnp.CallOption) Net_connect_Results_Promise {
+	if c.Client == nil {
+		return Net_connect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "connect",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_connect_Params{Struct: s}) }
+	}
+	return Net_connect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) Disconnect(ctx context.Context, params func(Net_disconnect_Params) error, opts ...capnp.CallOption) Net_disconnect_Results_Promise {
+	if c.Client == nil {
+		return Net_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "disconnect",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_disconnect_Params{Struct: s}) }
+	}
+	return Net_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Net) OnlinePeers(ctx context.Context, params func(Net_onlinePeers_Params) error, opts ...capnp.CallOption) Net_onlinePeers_Results_Promise {
+	if c.Client == nil {
+		return Net_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "onlinePeers",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_onlinePeers_Params{Struct: s}) }
+	}
+	return Net_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+
+type Net_Server interface {
+	RemoteAdd(Net_remoteAdd) error
+
+	RemoteRm(Net_remoteRm) error
+
+	RemoteLs(Net_remoteLs) error
+
+	RemoteSave(Net_remoteSave) error
+
+	RemotePing(Net_remotePing) error
+
+	RemoteClear(Net_remoteClear) error
+
+	NetLocate(Net_netLocate) error
+
+	NetLocateNext(Net_netLocateNext) error
+
+	Whoami(Net_whoami) error
+
+	Connect(Net_connect) error
+
+	Disconnect(Net_disconnect) error
+
+	OnlinePeers(Net_onlinePeers) error
+}
+
+func Net_ServerToClient(s Net_Server) Net {
+	c, _ := s.(server.Closer)
+	return Net{Client: server.New(Net_Methods(nil, s), c)}
+}
+
+func Net_Methods(methods []server.Method, s Net_Server) []server.Method {
+	if cap(methods) == 0 {
+		methods = make([]server.Method, 0, 12)
+	}
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      0,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteAdd",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteAdd{c, opts, Net_remoteAdd_Params{Struct: p}, Net_remoteAdd_Results{Struct: r}}
+			return s.RemoteAdd(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      1,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteRm",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteRm{c, opts, Net_remoteRm_Params{Struct: p}, Net_remoteRm_Results{Struct: r}}
+			return s.RemoteRm(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      2,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteLs",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteLs{c, opts, Net_remoteLs_Params{Struct: p}, Net_remoteLs_Results{Struct: r}}
+			return s.RemoteLs(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      3,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteSave",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteSave{c, opts, Net_remoteSave_Params{Struct: p}, Net_remoteSave_Results{Struct: r}}
+			return s.RemoteSave(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      4,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remotePing",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remotePing{c, opts, Net_remotePing_Params{Struct: p}, Net_remotePing_Results{Struct: r}}
+			return s.RemotePing(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      5,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteClear",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteClear{c, opts, Net_remoteClear_Params{Struct: p}, Net_remoteClear_Results{Struct: r}}
+			return s.RemoteClear(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      6,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocate",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_netLocate{c, opts, Net_netLocate_Params{Struct: p}, Net_netLocate_Results{Struct: r}}
+			return s.NetLocate(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      7,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocateNext",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_netLocateNext{c, opts, Net_netLocateNext_Params{Struct: p}, Net_netLocateNext_Results{Struct: r}}
+			return s.NetLocateNext(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "whoami",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_whoami{c, opts, Net_whoami_Params{Struct: p}, Net_whoami_Results{Struct: r}}
+			return s.Whoami(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "connect",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_connect{c, opts, Net_connect_Params{Struct: p}, Net_connect_Results{Struct: r}}
+			return s.Connect(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "disconnect",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_disconnect{c, opts, Net_disconnect_Params{Struct: p}, Net_disconnect_Results{Struct: r}}
+			return s.Disconnect(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "onlinePeers",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_onlinePeers{c, opts, Net_onlinePeers_Params{Struct: p}, Net_onlinePeers_Results{Struct: r}}
+			return s.OnlinePeers(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	return methods
+}
+
+// Net_remoteAdd holds the arguments for a server call to Net.remoteAdd.
+type Net_remoteAdd struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remoteAdd_Params
+	Results Net_remoteAdd_Results
+}
+
+// Net_remoteRm holds the arguments for a server call to Net.remoteRm.
+type Net_remoteRm struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remoteRm_Params
+	Results Net_remoteRm_Results
+}
+
+// Net_remoteLs holds the arguments for a server call to Net.remoteLs.
+type Net_remoteLs struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remoteLs_Params
+	Results Net_remoteLs_Results
+}
+
+// Net_remoteSave holds the arguments for a server call to Net.remoteSave.
+type Net_remoteSave struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remoteSave_Params
+	Results Net_remoteSave_Results
+}
+
+// Net_remotePing holds the arguments for a server call to Net.remotePing.
+type Net_remotePing struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remotePing_Params
+	Results Net_remotePing_Results
+}
+
+// Net_remoteClear holds the arguments for a server call to Net.remoteClear.
+type Net_remoteClear struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_remoteClear_Params
+	Results Net_remoteClear_Results
+}
+
+// Net_netLocate holds the arguments for a server call to Net.netLocate.
+type Net_netLocate struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_netLocate_Params
+	Results Net_netLocate_Results
+}
+
+// Net_netLocateNext holds the arguments for a server call to Net.netLocateNext.
+type Net_netLocateNext struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_netLocateNext_Params
+	Results Net_netLocateNext_Results
+}
+
+// Net_whoami holds the arguments for a server call to Net.whoami.
+type Net_whoami struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_whoami_Params
+	Results Net_whoami_Results
+}
+
+// Net_connect holds the arguments for a server call to Net.connect.
+type Net_connect struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_connect_Params
+	Results Net_connect_Results
+}
+
+// Net_disconnect holds the arguments for a server call to Net.disconnect.
+type Net_disconnect struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_disconnect_Params
+	Results Net_disconnect_Results
+}
+
+// Net_onlinePeers holds the arguments for a server call to Net.onlinePeers.
+type Net_onlinePeers struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Net_onlinePeers_Params
+	Results Net_onlinePeers_Results
+}
+
+type Net_remoteAdd_Params struct{ capnp.Struct }
+
+// Net_remoteAdd_Params_TypeID is the unique identifier for the type Net_remoteAdd_Params.
+const Net_remoteAdd_Params_TypeID = 0xf5c310bd5e2aa138
+
+func NewNet_remoteAdd_Params(s *capnp.Segment) (Net_remoteAdd_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteAdd_Params{st}, err
+}
+
+func NewRootNet_remoteAdd_Params(s *capnp.Segment) (Net_remoteAdd_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteAdd_Params{st}, err
+}
+
+func ReadRootNet_remoteAdd_Params(msg *capnp.Message) (Net_remoteAdd_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteAdd_Params{root.Struct()}, err
+}
+
+func (s Net_remoteAdd_Params) String() string {
+	str, _ := text.Marshal(0xf5c310bd5e2aa138, s.Struct)
+	return str
+}
+
+func (s Net_remoteAdd_Params) Remote() (Remote, error) {
+	p, err := s.Struct.Ptr(0)
+	return Remote{Struct: p.Struct()}, err
+}
+
+func (s Net_remoteAdd_Params) HasRemote() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_remoteAdd_Params) SetRemote(v Remote) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewRemote sets the remote field to a newly
+// allocated Remote struct, preferring placement in s's segment.
+func (s Net_remoteAdd_Params) NewRemote() (Remote, error) {
+	ss, err := NewRemote(s.Struct.Segment())
+	if err != nil {
+		return Remote{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Net_remoteAdd_Params_List is a list of Net_remoteAdd_Params.
+type Net_remoteAdd_Params_List struct{ capnp.List }
+
+// NewNet_remoteAdd_Params creates a new list of Net_remoteAdd_Params.
+func NewNet_remoteAdd_Params_List(s *capnp.Segment, sz int32) (Net_remoteAdd_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_remoteAdd_Params_List{l}, err
+}
+
+func (s Net_remoteAdd_Params_List) At(i int) Net_remoteAdd_Params {
+	return Net_remoteAdd_Params{s.List.Struct(i)}
+}
+
+func (s Net_remoteAdd_Params_List) Set(i int, v Net_remoteAdd_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteAdd_Params_List) String() string {
+	str, _ := text.MarshalList(0xf5c310bd5e2aa138, s.List)
+	return str
+}
+
+// Net_remoteAdd_Params_Promise is a wrapper for a Net_remoteAdd_Params promised by a client call.
+type Net_remoteAdd_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteAdd_Params_Promise) Struct() (Net_remoteAdd_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteAdd_Params{s}, err
+}
+
+func (p Net_remoteAdd_Params_Promise) Remote() Remote_Promise {
+	return Remote_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+type Net_remoteAdd_Results struct{ capnp.Struct }
+
+// Net_remoteAdd_Results_TypeID is the unique identifier for the type Net_remoteAdd_Results.
+const Net_remoteAdd_Results_TypeID = 0xfcaa6dc30ba75197
+
+func NewNet_remoteAdd_Results(s *capnp.Segment) (Net_remoteAdd_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteAdd_Results{st}, err
+}
+
+func NewRootNet_remoteAdd_Results(s *capnp.Segment) (Net_remoteAdd_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteAdd_Results{st}, err
+}
+
+func ReadRootNet_remoteAdd_Results(msg *capnp.Message) (Net_remoteAdd_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteAdd_Results{root.Struct()}, err
+}
+
+func (s Net_remoteAdd_Results) String() string {
+	str, _ := text.Marshal(0xfcaa6dc30ba75197, s.Struct)
+	return str
+}
+
+// Net_remoteAdd_Results_List is a list of Net_remoteAdd_Results.
+type Net_remoteAdd_Results_List struct{ capnp.List }
+
+// NewNet_remoteAdd_Results creates a new list of Net_remoteAdd_Results.
+func NewNet_remoteAdd_Results_List(s *capnp.Segment, sz int32) (Net_remoteAdd_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteAdd_Results_List{l}, err
+}
+
+func (s Net_remoteAdd_Results_List) At(i int) Net_remoteAdd_Results {
+	return Net_remoteAdd_Results{s.List.Struct(i)}
+}
+
+func (s Net_remoteAdd_Results_List) Set(i int, v Net_remoteAdd_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteAdd_Results_List) String() string {
+	str, _ := text.MarshalList(0xfcaa6dc30ba75197, s.List)
+	return str
+}
+
+// Net_remoteAdd_Results_Promise is a wrapper for a Net_remoteAdd_Results promised by a client call.
+type Net_remoteAdd_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteAdd_Results_Promise) Struct() (Net_remoteAdd_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteAdd_Results{s}, err
+}
+
+type Net_remoteRm_Params struct{ capnp.Struct }
+
+// Net_remoteRm_Params_TypeID is the unique identifier for the type Net_remoteRm_Params.
+const Net_remoteRm_Params_TypeID = 0xf485a561c31c83d2
+
+func NewNet_remoteRm_Params(s *capnp.Segment) (Net_remoteRm_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteRm_Params{st}, err
+}
+
+func NewRootNet_remoteRm_Params(s *capnp.Segment) (Net_remoteRm_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteRm_Params{st}, err
+}
+
+func ReadRootNet_remoteRm_Params(msg *capnp.Message) (Net_remoteRm_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteRm_Params{root.Struct()}, err
+}
+
+func (s Net_remoteRm_Params) String() string {
+	str, _ := text.Marshal(0xf485a561c31c83d2, s.Struct)
+	return str
+}
+
+func (s Net_remoteRm_Params) Name() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Net_remoteRm_Params) HasName() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_remoteRm_Params) NameBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Net_remoteRm_Params) SetName(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// Net_remoteRm_Params_List is a list of Net_remoteRm_Params.
+type Net_remoteRm_Params_List struct{ capnp.List }
+
+// NewNet_remoteRm_Params creates a new list of Net_remoteRm_Params.
+func NewNet_remoteRm_Params_List(s *capnp.Segment, sz int32) (Net_remoteRm_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_remoteRm_Params_List{l}, err
+}
+
+func (s Net_remoteRm_Params_List) At(i int) Net_remoteRm_Params {
+	return Net_remoteRm_Params{s.List.Struct(i)}
+}
+
+func (s Net_remoteRm_Params_List) Set(i int, v Net_remoteRm_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteRm_Params_List) String() string {
+	str, _ := text.MarshalList(0xf485a561c31c83d2, s.List)
+	return str
+}
+
+// Net_remoteRm_Params_Promise is a wrapper for a Net_remoteRm_Params promised by a client call.
+type Net_remoteRm_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteRm_Params_Promise) Struct() (Net_remoteRm_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteRm_Params{s}, err
+}
+
+type Net_remoteRm_Results struct{ capnp.Struct }
+
+// Net_remoteRm_Results_TypeID is the unique identifier for the type Net_remoteRm_Results.
+const Net_remoteRm_Results_TypeID = 0xdb78f249dcc7b9f1
+
+func NewNet_remoteRm_Results(s *capnp.Segment) (Net_remoteRm_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteRm_Results{st}, err
+}
+
+func NewRootNet_remoteRm_Results(s *capnp.Segment) (Net_remoteRm_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteRm_Results{st}, err
+}
+
+func ReadRootNet_remoteRm_Results(msg *capnp.Message) (Net_remoteRm_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteRm_Results{root.Struct()}, err
+}
+
+func (s Net_remoteRm_Results) String() string {
+	str, _ := text.Marshal(0xdb78f249dcc7b9f1, s.Struct)
+	return str
+}
+
+// Net_remoteRm_Results_List is a list of Net_remoteRm_Results.
+type Net_remoteRm_Results_List struct{ capnp.List }
+
+// NewNet_remoteRm_Results creates a new list of Net_remoteRm_Results.
+func NewNet_remoteRm_Results_List(s *capnp.Segment, sz int32) (Net_remoteRm_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteRm_Results_List{l}, err
+}
+
+func (s Net_remoteRm_Results_List) At(i int) Net_remoteRm_Results {
+	return Net_remoteRm_Results{s.List.Struct(i)}
+}
+
+func (s Net_remoteRm_Results_List) Set(i int, v Net_remoteRm_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteRm_Results_List) String() string {
+	str, _ := text.MarshalList(0xdb78f249dcc7b9f1, s.List)
+	return str
+}
+
+// Net_remoteRm_Results_Promise is a wrapper for a Net_remoteRm_Results promised by a client call.
+type Net_remoteRm_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteRm_Results_Promise) Struct() (Net_remoteRm_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteRm_Results{s}, err
+}
+
+type Net_remoteLs_Params struct{ capnp.Struct }
+
+// Net_remoteLs_Params_TypeID is the unique identifier for the type Net_remoteLs_Params.
+const Net_remoteLs_Params_TypeID = 0xc18496cf650e6886
+
+func NewNet_remoteLs_Params(s *capnp.Segment) (Net_remoteLs_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteLs_Params{st}, err
+}
+
+func NewRootNet_remoteLs_Params(s *capnp.Segment) (Net_remoteLs_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteLs_Params{st}, err
+}
+
+func ReadRootNet_remoteLs_Params(msg *capnp.Message) (Net_remoteLs_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteLs_Params{root.Struct()}, err
+}
+
+func (s Net_remoteLs_Params) String() string {
+	str, _ := text.Marshal(0xc18496cf650e6886, s.Struct)
+	return str
+}
+
+// Net_remoteLs_Params_List is a list of Net_remoteLs_Params.
+type Net_remoteLs_Params_List struct{ capnp.List }
+
+// NewNet_remoteLs_Params creates a new list of Net_remoteLs_Params.
+func NewNet_remoteLs_Params_List(s *capnp.Segment, sz int32) (Net_remoteLs_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteLs_Params_List{l}, err
+}
+
+func (s Net_remoteLs_Params_List) At(i int) Net_remoteLs_Params {
+	return Net_remoteLs_Params{s.List.Struct(i)}
+}
+
+func (s Net_remoteLs_Params_List) Set(i int, v Net_remoteLs_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteLs_Params_List) String() string {
+	str, _ := text.MarshalList(0xc18496cf650e6886, s.List)
+	return str
+}
+
+// Net_remoteLs_Params_Promise is a wrapper for a Net_remoteLs_Params promised by a client call.
+type Net_remoteLs_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteLs_Params_Promise) Struct() (Net_remoteLs_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteLs_Params{s}, err
+}
+
+type Net_remoteLs_Results struct{ capnp.Struct }
+
+// Net_remoteLs_Results_TypeID is the unique identifier for the type Net_remoteLs_Results.
+const Net_remoteLs_Results_TypeID = 0xb2255c049c7bc42f
+
+func NewNet_remoteLs_Results(s *capnp.Segment) (Net_remoteLs_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteLs_Results{st}, err
+}
+
+func NewRootNet_remoteLs_Results(s *capnp.Segment) (Net_remoteLs_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteLs_Results{st}, err
+}
+
+func ReadRootNet_remoteLs_Results(msg *capnp.Message) (Net_remoteLs_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteLs_Results{root.Struct()}, err
+}
+
+func (s Net_remoteLs_Results) String() string {
+	str, _ := text.Marshal(0xb2255c049c7bc42f, s.Struct)
+	return str
+}
+
+func (s Net_remoteLs_Results) Remotes() (Remote_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return Remote_List{List: p.List()}, err
+}
+
+func (s Net_remoteLs_Results) HasRemotes() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_remoteLs_Results) SetRemotes(v Remote_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewRemotes sets the remotes field to a newly
+// allocated Remote_List, preferring placement in s's segment.
+func (s Net_remoteLs_Results) NewRemotes(n int32) (Remote_List, error) {
+	l, err := NewRemote_List(s.Struct.Segment(), n)
+	if err != nil {
+		return Remote_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+// Net_remoteLs_Results_List is a list of Net_remoteLs_Results.
+type Net_remoteLs_Results_List struct{ capnp.List }
+
+// NewNet_remoteLs_Results creates a new list of Net_remoteLs_Results.
+func NewNet_remoteLs_Results_List(s *capnp.Segment, sz int32) (Net_remoteLs_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_remoteLs_Results_List{l}, err
+}
+
+func (s Net_remoteLs_Results_List) At(i int) Net_remoteLs_Results {
+	return Net_remoteLs_Results{s.List.Struct(i)}
+}
+
+func (s Net_remoteLs_Results_List) Set(i int, v Net_remoteLs_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteLs_Results_List) String() string {
+	str, _ := text.MarshalList(0xb2255c049c7bc42f, s.List)
+	return str
+}
+
+// Net_remoteLs_Results_Promise is a wrapper for a Net_remoteLs_Results promised by a client call.
+type Net_remoteLs_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteLs_Results_Promise) Struct() (Net_remoteLs_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteLs_Results{s}, err
+}
+
+type Net_remoteSave_Params struct{ capnp.Struct }
+
+// Net_remoteSave_Params_TypeID is the unique identifier for the type Net_remoteSave_Params.
+const Net_remoteSave_Params_TypeID = 0xc089763bca3e3f44
+
+func NewNet_remoteSave_Params(s *capnp.Segment) (Net_remoteSave_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteSave_Params{st}, err
+}
+
+func NewRootNet_remoteSave_Params(s *capnp.Segment) (Net_remoteSave_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remoteSave_Params{st}, err
+}
+
+func ReadRootNet_remoteSave_Params(msg *capnp.Message) (Net_remoteSave_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteSave_Params{root.Struct()}, err
+}
+
+func (s Net_remoteSave_Params) String() string {
+	str, _ := text.Marshal(0xc089763bca3e3f44, s.Struct)
+	return str
+}
+
+func (s Net_remoteSave_Params) Remotes() (Remote_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return Remote_List{List: p.List()}, err
+}
+
+func (s Net_remoteSave_Params) HasRemotes() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_remoteSave_Params) SetRemotes(v Remote_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewRemotes sets the remotes field to a newly
+// allocated Remote_List, preferring placement in s's segment.
+func (s Net_remoteSave_Params) NewRemotes(n int32) (Remote_List, error) {
+	l, err := NewRemote_List(s.Struct.Segment(), n)
+	if err != nil {
+		return Remote_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+// Net_remoteSave_Params_List is a list of Net_remoteSave_Params.
+type Net_remoteSave_Params_List struct{ capnp.List }
+
+// NewNet_remoteSave_Params creates a new list of Net_remoteSave_Params.
+func NewNet_remoteSave_Params_List(s *capnp.Segment, sz int32) (Net_remoteSave_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_remoteSave_Params_List{l}, err
+}
+
+func (s Net_remoteSave_Params_List) At(i int) Net_remoteSave_Params {
+	return Net_remoteSave_Params{s.List.Struct(i)}
+}
+
+func (s Net_remoteSave_Params_List) Set(i int, v Net_remoteSave_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteSave_Params_List) String() string {
+	str, _ := text.MarshalList(0xc089763bca3e3f44, s.List)
+	return str
+}
+
+// Net_remoteSave_Params_Promise is a wrapper for a Net_remoteSave_Params promised by a client call.
+type Net_remoteSave_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteSave_Params_Promise) Struct() (Net_remoteSave_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteSave_Params{s}, err
+}
+
+type Net_remoteSave_Results struct{ capnp.Struct }
+
+// Net_remoteSave_Results_TypeID is the unique identifier for the type Net_remoteSave_Results.
+const Net_remoteSave_Results_TypeID = 0x99b03ceb2dad70db
+
+func NewNet_remoteSave_Results(s *capnp.Segment) (Net_remoteSave_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteSave_Results{st}, err
+}
+
+func NewRootNet_remoteSave_Results(s *capnp.Segment) (Net_remoteSave_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteSave_Results{st}, err
+}
+
+func ReadRootNet_remoteSave_Results(msg *capnp.Message) (Net_remoteSave_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteSave_Results{root.Struct()}, err
+}
+
+func (s Net_remoteSave_Results) String() string {
+	str, _ := text.Marshal(0x99b03ceb2dad70db, s.Struct)
+	return str
+}
+
+// Net_remoteSave_Results_List is a list of Net_remoteSave_Results.
+type Net_remoteSave_Results_List struct{ capnp.List }
+
+// NewNet_remoteSave_Results creates a new list of Net_remoteSave_Results.
+func NewNet_remoteSave_Results_List(s *capnp.Segment, sz int32) (Net_remoteSave_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteSave_Results_List{l}, err
+}
+
+func (s Net_remoteSave_Results_List) At(i int) Net_remoteSave_Results {
+	return Net_remoteSave_Results{s.List.Struct(i)}
+}
+
+func (s Net_remoteSave_Results_List) Set(i int, v Net_remoteSave_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteSave_Results_List) String() string {
+	str, _ := text.MarshalList(0x99b03ceb2dad70db, s.List)
+	return str
+}
+
+// Net_remoteSave_Results_Promise is a wrapper for a Net_remoteSave_Results promised by a client call.
+type Net_remoteSave_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteSave_Results_Promise) Struct() (Net_remoteSave_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteSave_Results{s}, err
+}
+
+type Net_remotePing_Params struct{ capnp.Struct }
+
+// Net_remotePing_Params_TypeID is the unique identifier for the type Net_remotePing_Params.
+const Net_remotePing_Params_TypeID = 0xb5dc333528e5f7ae
+
+func NewNet_remotePing_Params(s *capnp.Segment) (Net_remotePing_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remotePing_Params{st}, err
+}
+
+func NewRootNet_remotePing_Params(s *capnp.Segment) (Net_remotePing_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_remotePing_Params{st}, err
+}
+
+func ReadRootNet_remotePing_Params(msg *capnp.Message) (Net_remotePing_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remotePing_Params{root.Struct()}, err
+}
+
+func (s Net_remotePing_Params) String() string {
+	str, _ := text.Marshal(0xb5dc333528e5f7ae, s.Struct)
+	return str
+}
+
+func (s Net_remotePing_Params) Who() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Net_remotePing_Params) HasWho() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_remotePing_Params) WhoBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Net_remotePing_Params) SetWho(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+// Net_remotePing_Params_List is a list of Net_remotePing_Params.
+type Net_remotePing_Params_List struct{ capnp.List }
+
+// NewNet_remotePing_Params creates a new list of Net_remotePing_Params.
+func NewNet_remotePing_Params_List(s *capnp.Segment, sz int32) (Net_remotePing_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_remotePing_Params_List{l}, err
+}
+
+func (s Net_remotePing_Params_List) At(i int) Net_remotePing_Params {
+	return Net_remotePing_Params{s.List.Struct(i)}
+}
+
+func (s Net_remotePing_Params_List) Set(i int, v Net_remotePing_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remotePing_Params_List) String() string {
+	str, _ := text.MarshalList(0xb5dc333528e5f7ae, s.List)
+	return str
+}
+
+// Net_remotePing_Params_Promise is a wrapper for a Net_remotePing_Params promised by a client call.
+type Net_remotePing_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remotePing_Params_Promise) Struct() (Net_remotePing_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remotePing_Params{s}, err
+}
+
+type Net_remotePing_Results struct{ capnp.Struct }
+
+// Net_remotePing_Results_TypeID is the unique identifier for the type Net_remotePing_Results.
+const Net_remotePing_Results_TypeID = 0xe83f954c9635f05a
+
+func NewNet_remotePing_Results(s *capnp.Segment) (Net_remotePing_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_remotePing_Results{st}, err
+}
+
+func NewRootNet_remotePing_Results(s *capnp.Segment) (Net_remotePing_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_remotePing_Results{st}, err
+}
+
+func ReadRootNet_remotePing_Results(msg *capnp.Message) (Net_remotePing_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remotePing_Results{root.Struct()}, err
+}
+
+func (s Net_remotePing_Results) String() string {
+	str, _ := text.Marshal(0xe83f954c9635f05a, s.Struct)
+	return str
+}
+
+func (s Net_remotePing_Results) Roundtrip() float64 {
+	return math.Float64frombits(s.Struct.Uint64(0))
+}
+
+func (s Net_remotePing_Results) SetRoundtrip(v float64) {
+	s.Struct.SetUint64(0, math.Float64bits(v))
+}
+
+// Net_remotePing_Results_List is a list of Net_remotePing_Results.
+type Net_remotePing_Results_List struct{ capnp.List }
+
+// NewNet_remotePing_Results creates a new list of Net_remotePing_Results.
+func NewNet_remotePing_Results_List(s *capnp.Segment, sz int32) (Net_remotePing_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Net_remotePing_Results_List{l}, err
+}
+
+func (s Net_remotePing_Results_List) At(i int) Net_remotePing_Results {
+	return Net_remotePing_Results{s.List.Struct(i)}
+}
+
+func (s Net_remotePing_Results_List) Set(i int, v Net_remotePing_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remotePing_Results_List) String() string {
+	str, _ := text.MarshalList(0xe83f954c9635f05a, s.List)
+	return str
+}
+
+// Net_remotePing_Results_Promise is a wrapper for a Net_remotePing_Results promised by a client call.
+type Net_remotePing_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remotePing_Results_Promise) Struct() (Net_remotePing_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remotePing_Results{s}, err
+}
+
+type Net_remoteClear_Params struct{ capnp.Struct }
+
+// Net_remoteClear_Params_TypeID is the unique identifier for the type Net_remoteClear_Params.
+const Net_remoteClear_Params_TypeID = 0xbee5e0529f9017ff
+
+func NewNet_remoteClear_Params(s *capnp.Segment) (Net_remoteClear_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteClear_Params{st}, err
+}
+
+func NewRootNet_remoteClear_Params(s *capnp.Segment) (Net_remoteClear_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteClear_Params{st}, err
+}
+
+func ReadRootNet_remoteClear_Params(msg *capnp.Message) (Net_remoteClear_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteClear_Params{root.Struct()}, err
+}
+
+func (s Net_remoteClear_Params) String() string {
+	str, _ := text.Marshal(0xbee5e0529f9017ff, s.Struct)
+	return str
+}
+
+// Net_remoteClear_Params_List is a list of Net_remoteClear_Params.
+type Net_remoteClear_Params_List struct{ capnp.List }
+
+// NewNet_remoteClear_Params creates a new list of Net_remoteClear_Params.
+func NewNet_remoteClear_Params_List(s *capnp.Segment, sz int32) (Net_remoteClear_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteClear_Params_List{l}, err
+}
+
+func (s Net_remoteClear_Params_List) At(i int) Net_remoteClear_Params {
+	return Net_remoteClear_Params{s.List.Struct(i)}
+}
+
+func (s Net_remoteClear_Params_List) Set(i int, v Net_remoteClear_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteClear_Params_List) String() string {
+	str, _ := text.MarshalList(0xbee5e0529f9017ff, s.List)
+	return str
+}
+
+// Net_remoteClear_Params_Promise is a wrapper for a Net_remoteClear_Params promised by a client call.
+type Net_remoteClear_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteClear_Params_Promise) Struct() (Net_remoteClear_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteClear_Params{s}, err
+}
+
+type Net_remoteClear_Results struct{ capnp.Struct }
+
+// Net_remoteClear_Results_TypeID is the unique identifier for the type Net_remoteClear_Results.
+const Net_remoteClear_Results_TypeID = 0xad37ff6270c35769
+
+func NewNet_remoteClear_Results(s *capnp.Segment) (Net_remoteClear_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteClear_Results{st}, err
+}
+
+func NewRootNet_remoteClear_Results(s *capnp.Segment) (Net_remoteClear_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_remoteClear_Results{st}, err
+}
+
+func ReadRootNet_remoteClear_Results(msg *capnp.Message) (Net_remoteClear_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_remoteClear_Results{root.Struct()}, err
+}
+
+func (s Net_remoteClear_Results) String() string {
+	str, _ := text.Marshal(0xad37ff6270c35769, s.Struct)
+	return str
+}
+
+// Net_remoteClear_Results_List is a list of Net_remoteClear_Results.
+type Net_remoteClear_Results_List struct{ capnp.List }
+
+// NewNet_remoteClear_Results creates a new list of Net_remoteClear_Results.
+func NewNet_remoteClear_Results_List(s *capnp.Segment, sz int32) (Net_remoteClear_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_remoteClear_Results_List{l}, err
+}
+
+func (s Net_remoteClear_Results_List) At(i int) Net_remoteClear_Results {
+	return Net_remoteClear_Results{s.List.Struct(i)}
+}
+
+func (s Net_remoteClear_Results_List) Set(i int, v Net_remoteClear_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_remoteClear_Results_List) String() string {
+	str, _ := text.MarshalList(0xad37ff6270c35769, s.List)
+	return str
+}
+
+// Net_remoteClear_Results_Promise is a wrapper for a Net_remoteClear_Results promised by a client call.
+type Net_remoteClear_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_remoteClear_Results_Promise) Struct() (Net_remoteClear_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_remoteClear_Results{s}, err
+}
+
+type Net_netLocate_Params struct{ capnp.Struct }
+
+// Net_netLocate_Params_TypeID is the unique identifier for the type Net_netLocate_Params.
+const Net_netLocate_Params_TypeID = 0xd35d6ae0fdbd9bc5
+
+func NewNet_netLocate_Params(s *capnp.Segment) (Net_netLocate_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
+	return Net_netLocate_Params{st}, err
+}
+
+func NewRootNet_netLocate_Params(s *capnp.Segment) (Net_netLocate_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2})
+	return Net_netLocate_Params{st}, err
+}
+
+func ReadRootNet_netLocate_Params(msg *capnp.Message) (Net_netLocate_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_netLocate_Params{root.Struct()}, err
+}
+
+func (s Net_netLocate_Params) String() string {
+	str, _ := text.Marshal(0xd35d6ae0fdbd9bc5, s.Struct)
+	return str
+}
+
+func (s Net_netLocate_Params) Who() (string, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.Text(), err
+}
+
+func (s Net_netLocate_Params) HasWho() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_netLocate_Params) WhoBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(0)
+	return p.TextBytes(), err
+}
+
+func (s Net_netLocate_Params) SetWho(v string) error {
+	return s.Struct.SetText(0, v)
+}
+
+func (s Net_netLocate_Params) TimeoutSec() float64 {
+	return math.Float64frombits(s.Struct.Uint64(0))
+}
+
+func (s Net_netLocate_Params) SetTimeoutSec(v float64) {
+	s.Struct.SetUint64(0, math.Float64bits(v))
+}
+
+func (s Net_netLocate_Params) LocateMask() (string, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.Text(), err
+}
+
+func (s Net_netLocate_Params) HasLocateMask() bool {
+	p, err := s.Struct.Ptr(1)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_netLocate_Params) LocateMaskBytes() ([]byte, error) {
+	p, err := s.Struct.Ptr(1)
+	return p.TextBytes(), err
+}
+
+func (s Net_netLocate_Params) SetLocateMask(v string) error {
+	return s.Struct.SetText(1, v)
+}
+
+// Net_netLocate_Params_List is a list of Net_netLocate_Params.
+type Net_netLocate_Params_List struct{ capnp.List }
+
+// NewNet_netLocate_Params creates a new list of Net_netLocate_Params.
+func NewNet_netLocate_Params_List(s *capnp.Segment, sz int32) (Net_netLocate_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 2}, sz)
+	return Net_netLocate_Params_List{l}, err
+}
+
+func (s Net_netLocate_Params_List) At(i int) Net_netLocate_Params {
+	return Net_netLocate_Params{s.List.Struct(i)}
+}
+
+func (s Net_netLocate_Params_List) Set(i int, v Net_netLocate_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_netLocate_Params_List) String() string {
+	str, _ := text.MarshalList(0xd35d6ae0fdbd9bc5, s.List)
+	return str
+}
+
+// Net_netLocate_Params_Promise is a wrapper for a Net_netLocate_Params promised by a client call.
+type Net_netLocate_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_netLocate_Params_Promise) Struct() (Net_netLocate_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_netLocate_Params{s}, err
+}
+
+type Net_netLocate_Results struct{ capnp.Struct }
+
+// Net_netLocate_Results_TypeID is the unique identifier for the type Net_netLocate_Results.
+const Net_netLocate_Results_TypeID = 0xdc0aec8d179d4ec9
+
+func NewNet_netLocate_Results(s *capnp.Segment) (Net_netLocate_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_netLocate_Results{st}, err
+}
+
+func NewRootNet_netLocate_Results(s *capnp.Segment) (Net_netLocate_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_netLocate_Results{st}, err
+}
+
+func ReadRootNet_netLocate_Results(msg *capnp.Message) (Net_netLocate_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_netLocate_Results{root.Struct()}, err
+}
+
+func (s Net_netLocate_Results) String() string {
+	str, _ := text.Marshal(0xdc0aec8d179d4ec9, s.Struct)
+	return str
+}
+
+func (s Net_netLocate_Results) Ticket() uint64 {
+	return s.Struct.Uint64(0)
+}
+
+func (s Net_netLocate_Results) SetTicket(v uint64) {
+	s.Struct.SetUint64(0, v)
+}
+
+// Net_netLocate_Results_List is a list of Net_netLocate_Results.
+type Net_netLocate_Results_List struct{ capnp.List }
+
+// NewNet_netLocate_Results creates a new list of Net_netLocate_Results.
+func NewNet_netLocate_Results_List(s *capnp.Segment, sz int32) (Net_netLocate_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Net_netLocate_Results_List{l}, err
+}
+
+func (s Net_netLocate_Results_List) At(i int) Net_netLocate_Results {
+	return Net_netLocate_Results{s.List.Struct(i)}
+}
+
+func (s Net_netLocate_Results_List) Set(i int, v Net_netLocate_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_netLocate_Results_List) String() string {
+	str, _ := text.MarshalList(0xdc0aec8d179d4ec9, s.List)
+	return str
+}
+
+// Net_netLocate_Results_Promise is a wrapper for a Net_netLocate_Results promised by a client call.
+type Net_netLocate_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_netLocate_Results_Promise) Struct() (Net_netLocate_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_netLocate_Results{s}, err
+}
+
+type Net_netLocateNext_Params struct{ capnp.Struct }
+
+// Net_netLocateNext_Params_TypeID is the unique identifier for the type Net_netLocateNext_Params.
+const Net_netLocateNext_Params_TypeID = 0xd701f5ae7e7560e9
+
+func NewNet_netLocateNext_Params(s *capnp.Segment) (Net_netLocateNext_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_netLocateNext_Params{st}, err
+}
+
+func NewRootNet_netLocateNext_Params(s *capnp.Segment) (Net_netLocateNext_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Net_netLocateNext_Params{st}, err
+}
+
+func ReadRootNet_netLocateNext_Params(msg *capnp.Message) (Net_netLocateNext_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_netLocateNext_Params{root.Struct()}, err
+}
+
+func (s Net_netLocateNext_Params) String() string {
+	str, _ := text.Marshal(0xd701f5ae7e7560e9, s.Struct)
+	return str
+}
+
+func (s Net_netLocateNext_Params) Ticket() uint64 {
+	return s.Struct.Uint64(0)
+}
+
+func (s Net_netLocateNext_Params) SetTicket(v uint64) {
+	s.Struct.SetUint64(0, v)
+}
+
+// Net_netLocateNext_Params_List is a list of Net_netLocateNext_Params.
+type Net_netLocateNext_Params_List struct{ capnp.List }
+
+// NewNet_netLocateNext_Params creates a new list of Net_netLocateNext_Params.
+func NewNet_netLocateNext_Params_List(s *capnp.Segment, sz int32) (Net_netLocateNext_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Net_netLocateNext_Params_List{l}, err
+}
+
+func (s Net_netLocateNext_Params_List) At(i int) Net_netLocateNext_Params {
+	return Net_netLocateNext_Params{s.List.Struct(i)}
+}
+
+func (s Net_netLocateNext_Params_List) Set(i int, v Net_netLocateNext_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_netLocateNext_Params_List) String() string {
+	str, _ := text.MarshalList(0xd701f5ae7e7560e9, s.List)
+	return str
+}
+
+// Net_netLocateNext_Params_Promise is a wrapper for a Net_netLocateNext_Params promised by a client call.
+type Net_netLocateNext_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_netLocateNext_Params_Promise) Struct() (Net_netLocateNext_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_netLocateNext_Params{s}, err
+}
+
+type Net_netLocateNext_Results struct{ capnp.Struct }
+
+// Net_netLocateNext_Results_TypeID is the unique identifier for the type Net_netLocateNext_Results.
+const Net_netLocateNext_Results_TypeID = 0xd2117353ea065c72
+
+func NewNet_netLocateNext_Results(s *capnp.Segment) (Net_netLocateNext_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_netLocateNext_Results{st}, err
+}
+
+func NewRootNet_netLocateNext_Results(s *capnp.Segment) (Net_netLocateNext_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_netLocateNext_Results{st}, err
+}
+
+func ReadRootNet_netLocateNext_Results(msg *capnp.Message) (Net_netLocateNext_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_netLocateNext_Results{root.Struct()}, err
+}
+
+func (s Net_netLocateNext_Results) String() string {
+	str, _ := text.Marshal(0xd2117353ea065c72, s.Struct)
+	return str
+}
+
+func (s Net_netLocateNext_Results) Result() (LocateResult, error) {
+	p, err := s.Struct.Ptr(0)
+	return LocateResult{Struct: p.Struct()}, err
+}
+
+func (s Net_netLocateNext_Results) HasResult() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_netLocateNext_Results) SetResult(v LocateResult) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewResult sets the result field to a newly
+// allocated LocateResult struct, preferring placement in s's segment.
+func (s Net_netLocateNext_Results) NewResult() (LocateResult, error) {
+	ss, err := NewLocateResult(s.Struct.Segment())
+	if err != nil {
+		return LocateResult{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Net_netLocateNext_Results_List is a list of Net_netLocateNext_Results.
+type Net_netLocateNext_Results_List struct{ capnp.List }
+
+// NewNet_netLocateNext_Results creates a new list of Net_netLocateNext_Results.
+func NewNet_netLocateNext_Results_List(s *capnp.Segment, sz int32) (Net_netLocateNext_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_netLocateNext_Results_List{l}, err
+}
+
+func (s Net_netLocateNext_Results_List) At(i int) Net_netLocateNext_Results {
+	return Net_netLocateNext_Results{s.List.Struct(i)}
+}
+
+func (s Net_netLocateNext_Results_List) Set(i int, v Net_netLocateNext_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_netLocateNext_Results_List) String() string {
+	str, _ := text.MarshalList(0xd2117353ea065c72, s.List)
+	return str
+}
+
+// Net_netLocateNext_Results_Promise is a wrapper for a Net_netLocateNext_Results promised by a client call.
+type Net_netLocateNext_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_netLocateNext_Results_Promise) Struct() (Net_netLocateNext_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_netLocateNext_Results{s}, err
+}
+
+func (p Net_netLocateNext_Results_Promise) Result() LocateResult_Promise {
+	return LocateResult_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+type Net_whoami_Params struct{ capnp.Struct }
+
+// Net_whoami_Params_TypeID is the unique identifier for the type Net_whoami_Params.
+const Net_whoami_Params_TypeID = 0xc338177a5379031a
+
+func NewNet_whoami_Params(s *capnp.Segment) (Net_whoami_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_whoami_Params{st}, err
+}
+
+func NewRootNet_whoami_Params(s *capnp.Segment) (Net_whoami_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_whoami_Params{st}, err
+}
+
+func ReadRootNet_whoami_Params(msg *capnp.Message) (Net_whoami_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_whoami_Params{root.Struct()}, err
+}
+
+func (s Net_whoami_Params) String() string {
+	str, _ := text.Marshal(0xc338177a5379031a, s.Struct)
+	return str
+}
+
+// Net_whoami_Params_List is a list of Net_whoami_Params.
+type Net_whoami_Params_List struct{ capnp.List }
+
+// NewNet_whoami_Params creates a new list of Net_whoami_Params.
+func NewNet_whoami_Params_List(s *capnp.Segment, sz int32) (Net_whoami_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_whoami_Params_List{l}, err
+}
+
+func (s Net_whoami_Params_List) At(i int) Net_whoami_Params {
+	return Net_whoami_Params{s.List.Struct(i)}
+}
+
+func (s Net_whoami_Params_List) Set(i int, v Net_whoami_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_whoami_Params_List) String() string {
+	str, _ := text.MarshalList(0xc338177a5379031a, s.List)
+	return str
+}
+
+// Net_whoami_Params_Promise is a wrapper for a Net_whoami_Params promised by a client call.
+type Net_whoami_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_whoami_Params_Promise) Struct() (Net_whoami_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_whoami_Params{s}, err
+}
+
+type Net_whoami_Results struct{ capnp.Struct }
+
+// Net_whoami_Results_TypeID is the unique identifier for the type Net_whoami_Results.
+const Net_whoami_Results_TypeID = 0x9a291d6964350a5b
+
+func NewNet_whoami_Results(s *capnp.Segment) (Net_whoami_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_whoami_Results{st}, err
+}
+
+func NewRootNet_whoami_Results(s *capnp.Segment) (Net_whoami_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_whoami_Results{st}, err
+}
+
+func ReadRootNet_whoami_Results(msg *capnp.Message) (Net_whoami_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_whoami_Results{root.Struct()}, err
+}
+
+func (s Net_whoami_Results) String() string {
+	str, _ := text.Marshal(0x9a291d6964350a5b, s.Struct)
+	return str
+}
+
+func (s Net_whoami_Results) Whoami() (Identity, error) {
+	p, err := s.Struct.Ptr(0)
+	return Identity{Struct: p.Struct()}, err
+}
+
+func (s Net_whoami_Results) HasWhoami() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_whoami_Results) SetWhoami(v Identity) error {
+	return s.Struct.SetPtr(0, v.Struct.ToPtr())
+}
+
+// NewWhoami sets the whoami field to a newly
+// allocated Identity struct, preferring placement in s's segment.
+func (s Net_whoami_Results) NewWhoami() (Identity, error) {
+	ss, err := NewIdentity(s.Struct.Segment())
+	if err != nil {
+		return Identity{}, err
+	}
+	err = s.Struct.SetPtr(0, ss.Struct.ToPtr())
+	return ss, err
+}
+
+// Net_whoami_Results_List is a list of Net_whoami_Results.
+type Net_whoami_Results_List struct{ capnp.List }
+
+// NewNet_whoami_Results creates a new list of Net_whoami_Results.
+func NewNet_whoami_Results_List(s *capnp.Segment, sz int32) (Net_whoami_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_whoami_Results_List{l}, err
+}
+
+func (s Net_whoami_Results_List) At(i int) Net_whoami_Results {
+	return Net_whoami_Results{s.List.Struct(i)}
+}
+
+func (s Net_whoami_Results_List) Set(i int, v Net_whoami_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_whoami_Results_List) String() string {
+	str, _ := text.MarshalList(0x9a291d6964350a5b, s.List)
+	return str
+}
+
+// Net_whoami_Results_Promise is a wrapper for a Net_whoami_Results promised by a client call.
+type Net_whoami_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_whoami_Results_Promise) Struct() (Net_whoami_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_whoami_Results{s}, err
+}
+
+func (p Net_whoami_Results_Promise) Whoami() Identity_Promise {
+	return Identity_Promise{Pipeline: p.Pipeline.GetPipeline(0)}
+}
+
+type Net_connect_Params struct{ capnp.Struct }
+
+// Net_connect_Params_TypeID is the unique identifier for the type Net_connect_Params.
+const Net_connect_Params_TypeID = 0x86541181da6400f7
+
+func NewNet_connect_Params(s *capnp.Segment) (Net_connect_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_connect_Params{st}, err
+}
+
+func NewRootNet_connect_Params(s *capnp.Segment) (Net_connect_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_connect_Params{st}, err
+}
+
+func ReadRootNet_connect_Params(msg *capnp.Message) (Net_connect_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_connect_Params{root.Struct()}, err
+}
+
+func (s Net_connect_Params) String() string {
+	str, _ := text.Marshal(0x86541181da6400f7, s.Struct)
+	return str
+}
+
+// Net_connect_Params_List is a list of Net_connect_Params.
+type Net_connect_Params_List struct{ capnp.List }
+
+// NewNet_connect_Params creates a new list of Net_connect_Params.
+func NewNet_connect_Params_List(s *capnp.Segment, sz int32) (Net_connect_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_connect_Params_List{l}, err
+}
+
+func (s Net_connect_Params_List) At(i int) Net_connect_Params {
+	return Net_connect_Params{s.List.Struct(i)}
+}
+
+func (s Net_connect_Params_List) Set(i int, v Net_connect_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_connect_Params_List) String() string {
+	str, _ := text.MarshalList(0x86541181da6400f7, s.List)
+	return str
+}
+
+// Net_connect_Params_Promise is a wrapper for a Net_connect_Params promised by a client call.
+type Net_connect_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_connect_Params_Promise) Struct() (Net_connect_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_connect_Params{s}, err
+}
+
+type Net_connect_Results struct{ capnp.Struct }
+
+// Net_connect_Results_TypeID is the unique identifier for the type Net_connect_Results.
+const Net_connect_Results_TypeID = 0xd0071dd673841599
+
+func NewNet_connect_Results(s *capnp.Segment) (Net_connect_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_connect_Results{st}, err
+}
+
+func NewRootNet_connect_Results(s *capnp.Segment) (Net_connect_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_connect_Results{st}, err
+}
+
+func ReadRootNet_connect_Results(msg *capnp.Message) (Net_connect_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_connect_Results{root.Struct()}, err
+}
+
+func (s Net_connect_Results) String() string {
+	str, _ := text.Marshal(0xd0071dd673841599, s.Struct)
+	return str
+}
+
+// Net_connect_Results_List is a list of Net_connect_Results.
+type Net_connect_Results_List struct{ capnp.List }
+
+// NewNet_connect_Results creates a new list of Net_connect_Results.
+func NewNet_connect_Results_List(s *capnp.Segment, sz int32) (Net_connect_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_connect_Results_List{l}, err
+}
+
+func (s Net_connect_Results_List) At(i int) Net_connect_Results {
+	return Net_connect_Results{s.List.Struct(i)}
+}
+
+func (s Net_connect_Results_List) Set(i int, v Net_connect_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_connect_Results_List) String() string {
+	str, _ := text.MarshalList(0xd0071dd673841599, s.List)
+	return str
+}
+
+// Net_connect_Results_Promise is a wrapper for a Net_connect_Results promised by a client call.
+type Net_connect_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_connect_Results_Promise) Struct() (Net_connect_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_connect_Results{s}, err
+}
+
+type Net_disconnect_Params struct{ capnp.Struct }
+
+// Net_disconnect_Params_TypeID is the unique identifier for the type Net_disconnect_Params.
+const Net_disconnect_Params_TypeID = 0xaf631f5cddda9aa3
+
+func NewNet_disconnect_Params(s *capnp.Segment) (Net_disconnect_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_disconnect_Params{st}, err
+}
+
+func NewRootNet_disconnect_Params(s *capnp.Segment) (Net_disconnect_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_disconnect_Params{st}, err
+}
+
+func ReadRootNet_disconnect_Params(msg *capnp.Message) (Net_disconnect_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_disconnect_Params{root.Struct()}, err
+}
+
+func (s Net_disconnect_Params) String() string {
+	str, _ := text.Marshal(0xaf631f5cddda9aa3, s.Struct)
+	return str
+}
+
+// Net_disconnect_Params_List is a list of Net_disconnect_Params.
+type Net_disconnect_Params_List struct{ capnp.List }
+
+// NewNet_disconnect_Params creates a new list of Net_disconnect_Params.
+func NewNet_disconnect_Params_List(s *capnp.Segment, sz int32) (Net_disconnect_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_disconnect_Params_List{l}, err
+}
+
+func (s Net_disconnect_Params_List) At(i int) Net_disconnect_Params {
+	return Net_disconnect_Params{s.List.Struct(i)}
+}
+
+func (s Net_disconnect_Params_List) Set(i int, v Net_disconnect_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_disconnect_Params_List) String() string {
+	str, _ := text.MarshalList(0xaf631f5cddda9aa3, s.List)
+	return str
+}
+
+// Net_disconnect_Params_Promise is a wrapper for a Net_disconnect_Params promised by a client call.
+type Net_disconnect_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_disconnect_Params_Promise) Struct() (Net_disconnect_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_disconnect_Params{s}, err
+}
+
+type Net_disconnect_Results struct{ capnp.Struct }
+
+// Net_disconnect_Results_TypeID is the unique identifier for the type Net_disconnect_Results.
+const Net_disconnect_Results_TypeID = 0xcb6e3e65f2dbc914
+
+func NewNet_disconnect_Results(s *capnp.Segment) (Net_disconnect_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_disconnect_Results{st}, err
+}
+
+func NewRootNet_disconnect_Results(s *capnp.Segment) (Net_disconnect_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_disconnect_Results{st}, err
+}
+
+func ReadRootNet_disconnect_Results(msg *capnp.Message) (Net_disconnect_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_disconnect_Results{root.Struct()}, err
+}
+
+func (s Net_disconnect_Results) String() string {
+	str, _ := text.Marshal(0xcb6e3e65f2dbc914, s.Struct)
+	return str
+}
+
+// Net_disconnect_Results_List is a list of Net_disconnect_Results.
+type Net_disconnect_Results_List struct{ capnp.List }
+
+// NewNet_disconnect_Results creates a new list of Net_disconnect_Results.
+func NewNet_disconnect_Results_List(s *capnp.Segment, sz int32) (Net_disconnect_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_disconnect_Results_List{l}, err
+}
+
+func (s Net_disconnect_Results_List) At(i int) Net_disconnect_Results {
+	return Net_disconnect_Results{s.List.Struct(i)}
+}
+
+func (s Net_disconnect_Results_List) Set(i int, v Net_disconnect_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_disconnect_Results_List) String() string {
+	str, _ := text.MarshalList(0xcb6e3e65f2dbc914, s.List)
+	return str
+}
+
+// Net_disconnect_Results_Promise is a wrapper for a Net_disconnect_Results promised by a client call.
+type Net_disconnect_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_disconnect_Results_Promise) Struct() (Net_disconnect_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_disconnect_Results{s}, err
+}
+
+type Net_onlinePeers_Params struct{ capnp.Struct }
+
+// Net_onlinePeers_Params_TypeID is the unique identifier for the type Net_onlinePeers_Params.
+const Net_onlinePeers_Params_TypeID = 0xe19b7cffa7304650
+
+func NewNet_onlinePeers_Params(s *capnp.Segment) (Net_onlinePeers_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_onlinePeers_Params{st}, err
+}
+
+func NewRootNet_onlinePeers_Params(s *capnp.Segment) (Net_onlinePeers_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Net_onlinePeers_Params{st}, err
+}
+
+func ReadRootNet_onlinePeers_Params(msg *capnp.Message) (Net_onlinePeers_Params, error) {
+	root, err := msg.RootPtr()
+	return Net_onlinePeers_Params{root.Struct()}, err
+}
+
+func (s Net_onlinePeers_Params) String() string {
+	str, _ := text.Marshal(0xe19b7cffa7304650, s.Struct)
+	return str
+}
+
+// Net_onlinePeers_Params_List is a list of Net_onlinePeers_Params.
+type Net_onlinePeers_Params_List struct{ capnp.List }
+
+// NewNet_onlinePeers_Params creates a new list of Net_onlinePeers_Params.
+func NewNet_onlinePeers_Params_List(s *capnp.Segment, sz int32) (Net_onlinePeers_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Net_onlinePeers_Params_List{l}, err
+}
+
+func (s Net_onlinePeers_Params_List) At(i int) Net_onlinePeers_Params {
+	return Net_onlinePeers_Params{s.List.Struct(i)}
+}
+
+func (s Net_onlinePeers_Params_List) Set(i int, v Net_onlinePeers_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_onlinePeers_Params_List) String() string {
+	str, _ := text.MarshalList(0xe19b7cffa7304650, s.List)
+	return str
+}
+
+// Net_onlinePeers_Params_Promise is a wrapper for a Net_onlinePeers_Params promised by a client call.
+type Net_onlinePeers_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Net_onlinePeers_Params_Promise) Struct() (Net_onlinePeers_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_onlinePeers_Params{s}, err
+}
+
+type Net_onlinePeers_Results struct{ capnp.Struct }
+
+// Net_onlinePeers_Results_TypeID is the unique identifier for the type Net_onlinePeers_Results.
+const Net_onlinePeers_Results_TypeID = 0xb9095b6d17298884
+
+func NewNet_onlinePeers_Results(s *capnp.Segment) (Net_onlinePeers_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_onlinePeers_Results{st}, err
+}
+
+func NewRootNet_onlinePeers_Results(s *capnp.Segment) (Net_onlinePeers_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1})
+	return Net_onlinePeers_Results{st}, err
+}
+
+func ReadRootNet_onlinePeers_Results(msg *capnp.Message) (Net_onlinePeers_Results, error) {
+	root, err := msg.RootPtr()
+	return Net_onlinePeers_Results{root.Struct()}, err
+}
+
+func (s Net_onlinePeers_Results) String() string {
+	str, _ := text.Marshal(0xb9095b6d17298884, s.Struct)
+	return str
+}
+
+func (s Net_onlinePeers_Results) Infos() (PeerStatus_List, error) {
+	p, err := s.Struct.Ptr(0)
+	return PeerStatus_List{List: p.List()}, err
+}
+
+func (s Net_onlinePeers_Results) HasInfos() bool {
+	p, err := s.Struct.Ptr(0)
+	return p.IsValid() || err != nil
+}
+
+func (s Net_onlinePeers_Results) SetInfos(v PeerStatus_List) error {
+	return s.Struct.SetPtr(0, v.List.ToPtr())
+}
+
+// NewInfos sets the infos field to a newly
+// allocated PeerStatus_List, preferring placement in s's segment.
+func (s Net_onlinePeers_Results) NewInfos(n int32) (PeerStatus_List, error) {
+	l, err := NewPeerStatus_List(s.Struct.Segment(), n)
+	if err != nil {
+		return PeerStatus_List{}, err
+	}
+	err = s.Struct.SetPtr(0, l.List.ToPtr())
+	return l, err
+}
+
+// Net_onlinePeers_Results_List is a list of Net_onlinePeers_Results.
+type Net_onlinePeers_Results_List struct{ capnp.List }
+
+// NewNet_onlinePeers_Results creates a new list of Net_onlinePeers_Results.
+func NewNet_onlinePeers_Results_List(s *capnp.Segment, sz int32) (Net_onlinePeers_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 1}, sz)
+	return Net_onlinePeers_Results_List{l}, err
+}
+
+func (s Net_onlinePeers_Results_List) At(i int) Net_onlinePeers_Results {
+	return Net_onlinePeers_Results{s.List.Struct(i)}
+}
+
+func (s Net_onlinePeers_Results_List) Set(i int, v Net_onlinePeers_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Net_onlinePeers_Results_List) String() string {
+	str, _ := text.MarshalList(0xb9095b6d17298884, s.List)
+	return str
+}
+
+// Net_onlinePeers_Results_Promise is a wrapper for a Net_onlinePeers_Results promised by a client call.
+type Net_onlinePeers_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Net_onlinePeers_Results_Promise) Struct() (Net_onlinePeers_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Net_onlinePeers_Results{s}, err
 }
 
 type API struct{ Client capnp.Client }
@@ -12463,565 +12484,565 @@ func (c API) Fetch(ctx context.Context, params func(VCS_fetch_Params) error, opt
 	}
 	return VCS_fetch_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Quit(ctx context.Context, params func(Meta_quit_Params) error, opts ...capnp.CallOption) Meta_quit_Results_Promise {
+func (c API) Quit(ctx context.Context, params func(Repo_quit_Params) error, opts ...capnp.CallOption) Repo_quit_Results_Promise {
 	if c.Client == nil {
-		return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_quit_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      0,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "quit",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_quit_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_quit_Params{Struct: s}) }
 	}
-	return Meta_quit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_quit_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts ...capnp.CallOption) Meta_ping_Results_Promise {
+func (c API) Ping(ctx context.Context, params func(Repo_ping_Params) error, opts ...capnp.CallOption) Repo_ping_Results_Promise {
 	if c.Client == nil {
-		return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      1,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "ping",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_ping_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_ping_Params{Struct: s}) }
 	}
-	return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_ping_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Init(ctx context.Context, params func(Meta_init_Params) error, opts ...capnp.CallOption) Meta_init_Results_Promise {
+func (c API) Init(ctx context.Context, params func(Repo_init_Params) error, opts ...capnp.CallOption) Repo_init_Results_Promise {
 	if c.Client == nil {
-		return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_init_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      2,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "init",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 4}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_init_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_init_Params{Struct: s}) }
 	}
-	return Meta_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_init_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Mount(ctx context.Context, params func(Meta_mount_Params) error, opts ...capnp.CallOption) Meta_mount_Results_Promise {
+func (c API) Mount(ctx context.Context, params func(Repo_mount_Params) error, opts ...capnp.CallOption) Repo_mount_Results_Promise {
 	if c.Client == nil {
-		return Meta_mount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_mount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      3,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "mount",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_mount_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_mount_Params{Struct: s}) }
 	}
-	return Meta_mount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_mount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Unmount(ctx context.Context, params func(Meta_unmount_Params) error, opts ...capnp.CallOption) Meta_unmount_Results_Promise {
+func (c API) Unmount(ctx context.Context, params func(Repo_unmount_Params) error, opts ...capnp.CallOption) Repo_unmount_Results_Promise {
 	if c.Client == nil {
-		return Meta_unmount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_unmount_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      4,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "unmount",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_unmount_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_unmount_Params{Struct: s}) }
 	}
-	return Meta_unmount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_unmount_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) ConfigGet(ctx context.Context, params func(Meta_configGet_Params) error, opts ...capnp.CallOption) Meta_configGet_Results_Promise {
+func (c API) ConfigGet(ctx context.Context, params func(Repo_configGet_Params) error, opts ...capnp.CallOption) Repo_configGet_Results_Promise {
 	if c.Client == nil {
-		return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configGet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      5,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configGet",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configGet_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configGet_Params{Struct: s}) }
 	}
-	return Meta_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configGet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) ConfigSet(ctx context.Context, params func(Meta_configSet_Params) error, opts ...capnp.CallOption) Meta_configSet_Results_Promise {
+func (c API) ConfigSet(ctx context.Context, params func(Repo_configSet_Params) error, opts ...capnp.CallOption) Repo_configSet_Results_Promise {
 	if c.Client == nil {
-		return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configSet_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      6,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configSet",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configSet_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configSet_Params{Struct: s}) }
 	}
-	return Meta_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configSet_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) ConfigAll(ctx context.Context, params func(Meta_configAll_Params) error, opts ...capnp.CallOption) Meta_configAll_Results_Promise {
+func (c API) ConfigAll(ctx context.Context, params func(Repo_configAll_Params) error, opts ...capnp.CallOption) Repo_configAll_Results_Promise {
 	if c.Client == nil {
-		return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      7,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configAll",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configAll_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configAll_Params{Struct: s}) }
 	}
-	return Meta_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) ConfigDoc(ctx context.Context, params func(Meta_configDoc_Params) error, opts ...capnp.CallOption) Meta_configDoc_Results_Promise {
+func (c API) ConfigDoc(ctx context.Context, params func(Repo_configDoc_Params) error, opts ...capnp.CallOption) Repo_configDoc_Results_Promise {
 	if c.Client == nil {
-		return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      8,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configDoc",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_configDoc_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_configDoc_Params{Struct: s}) }
 	}
-	return Meta_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_configDoc_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) RemoteAdd(ctx context.Context, params func(Meta_remoteAdd_Params) error, opts ...capnp.CallOption) Meta_remoteAdd_Results_Promise {
+func (c API) Become(ctx context.Context, params func(Repo_become_Params) error, opts ...capnp.CallOption) Repo_become_Results_Promise {
 	if c.Client == nil {
-		return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_become_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      9,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteAdd",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteAdd_Params{Struct: s}) }
-	}
-	return Meta_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) RemoteRm(ctx context.Context, params func(Meta_remoteRm_Params) error, opts ...capnp.CallOption) Meta_remoteRm_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteRm",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteRm_Params{Struct: s}) }
-	}
-	return Meta_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) RemoteLs(ctx context.Context, params func(Meta_remoteLs_Params) error, opts ...capnp.CallOption) Meta_remoteLs_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteLs",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteLs_Params{Struct: s}) }
-	}
-	return Meta_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) RemoteSave(ctx context.Context, params func(Meta_remoteSave_Params) error, opts ...capnp.CallOption) Meta_remoteSave_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteSave",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteSave_Params{Struct: s}) }
-	}
-	return Meta_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) RemotePing(ctx context.Context, params func(Meta_remotePing_Params) error, opts ...capnp.CallOption) Meta_remotePing_Results_Promise {
-	if c.Client == nil {
-		return Meta_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remotePing",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remotePing_Params{Struct: s}) }
-	}
-	return Meta_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) RemoteClear(ctx context.Context, params func(Meta_remoteClear_Params) error, opts ...capnp.CallOption) Meta_remoteClear_Results_Promise {
-	if c.Client == nil {
-		return Meta_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteClear",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_remoteClear_Params{Struct: s}) }
-	}
-	return Meta_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) NetLocate(ctx context.Context, params func(Meta_netLocate_Params) error, opts ...capnp.CallOption) Meta_netLocate_Results_Promise {
-	if c.Client == nil {
-		return Meta_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocate",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 2}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_netLocate_Params{Struct: s}) }
-	}
-	return Meta_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) NetLocateNext(ctx context.Context, params func(Meta_netLocateNext_Params) error, opts ...capnp.CallOption) Meta_netLocateNext_Results_Promise {
-	if c.Client == nil {
-		return Meta_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocateNext",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_netLocateNext_Params{Struct: s}) }
-	}
-	return Meta_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) Whoami(ctx context.Context, params func(Meta_whoami_Params) error, opts ...capnp.CallOption) Meta_whoami_Results_Promise {
-	if c.Client == nil {
-		return Meta_whoami_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "whoami",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_whoami_Params{Struct: s}) }
-	}
-	return Meta_whoami_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) Become(ctx context.Context, params func(Meta_become_Params) error, opts ...capnp.CallOption) Meta_become_Results_Promise {
-	if c.Client == nil {
-		return Meta_become_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "become",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_become_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_become_Params{Struct: s}) }
 	}
-	return Meta_become_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_become_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) Connect(ctx context.Context, params func(Meta_connect_Params) error, opts ...capnp.CallOption) Meta_connect_Results_Promise {
+func (c API) FstabAdd(ctx context.Context, params func(Repo_fstabAdd_Params) error, opts ...capnp.CallOption) Repo_fstabAdd_Results_Promise {
 	if c.Client == nil {
-		return Meta_connect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "connect",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_connect_Params{Struct: s}) }
-	}
-	return Meta_connect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) Disconnect(ctx context.Context, params func(Meta_disconnect_Params) error, opts ...capnp.CallOption) Meta_disconnect_Results_Promise {
-	if c.Client == nil {
-		return Meta_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "disconnect",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_disconnect_Params{Struct: s}) }
-	}
-	return Meta_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) OnlinePeers(ctx context.Context, params func(Meta_onlinePeers_Params) error, opts ...capnp.CallOption) Meta_onlinePeers_Results_Promise {
-	if c.Client == nil {
-		return Meta_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "onlinePeers",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_onlinePeers_Params{Struct: s}) }
-	}
-	return Meta_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) Version(ctx context.Context, params func(Meta_version_Params) error, opts ...capnp.CallOption) Meta_version_Results_Promise {
-	if c.Client == nil {
-		return Meta_version_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      22,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "version",
-		},
-		Options: capnp.NewCallOptions(opts),
-	}
-	if params != nil {
-		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_version_Params{Struct: s}) }
-	}
-	return Meta_version_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
-}
-func (c API) FstabAdd(ctx context.Context, params func(Meta_fstabAdd_Params) error, opts ...capnp.CallOption) Meta_fstabAdd_Results_Promise {
-	if c.Client == nil {
-		return Meta_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
-	}
-	call := &capnp.Call{
-		Ctx: ctx,
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      23,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabAdd",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 3}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabAdd_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabAdd_Params{Struct: s}) }
 	}
-	return Meta_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) FstabRemove(ctx context.Context, params func(Meta_fstabRemove_Params) error, opts ...capnp.CallOption) Meta_fstabRemove_Results_Promise {
+func (c API) FstabRemove(ctx context.Context, params func(Repo_fstabRemove_Params) error, opts ...capnp.CallOption) Repo_fstabRemove_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      24,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabRemove",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabRemove_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabRemove_Params{Struct: s}) }
 	}
-	return Meta_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabRemove_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) FstabApply(ctx context.Context, params func(Meta_fstabApply_Params) error, opts ...capnp.CallOption) Meta_fstabApply_Results_Promise {
+func (c API) FstabApply(ctx context.Context, params func(Repo_fstabApply_Params) error, opts ...capnp.CallOption) Repo_fstabApply_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      25,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      12,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabApply",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabApply_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabApply_Params{Struct: s}) }
 	}
-	return Meta_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabApply_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) FstabList(ctx context.Context, params func(Meta_fstabList_Params) error, opts ...capnp.CallOption) Meta_fstabList_Results_Promise {
+func (c API) FstabList(ctx context.Context, params func(Repo_fstabList_Params) error, opts ...capnp.CallOption) Repo_fstabList_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      26,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      13,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabList",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabList_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabList_Params{Struct: s}) }
 	}
-	return Meta_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabList_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
-func (c API) FstabUnmountAll(ctx context.Context, params func(Meta_fstabUnmountAll_Params) error, opts ...capnp.CallOption) Meta_fstabUnmountAll_Results_Promise {
+func (c API) FstabUnmountAll(ctx context.Context, params func(Repo_fstabUnmountAll_Params) error, opts ...capnp.CallOption) Repo_fstabUnmountAll_Results_Promise {
 	if c.Client == nil {
-		return Meta_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+		return Repo_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
 	}
 	call := &capnp.Call{
 		Ctx: ctx,
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      27,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      14,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabUnmountAll",
 		},
 		Options: capnp.NewCallOptions(opts),
 	}
 	if params != nil {
 		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
-		call.ParamsFunc = func(s capnp.Struct) error { return params(Meta_fstabUnmountAll_Params{Struct: s}) }
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_fstabUnmountAll_Params{Struct: s}) }
 	}
-	return Meta_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+	return Repo_fstabUnmountAll_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Version(ctx context.Context, params func(Repo_version_Params) error, opts ...capnp.CallOption) Repo_version_Results_Promise {
+	if c.Client == nil {
+		return Repo_version_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      15,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
+			MethodName:    "version",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Repo_version_Params{Struct: s}) }
+	}
+	return Repo_version_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemoteAdd(ctx context.Context, params func(Net_remoteAdd_Params) error, opts ...capnp.CallOption) Net_remoteAdd_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      0,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteAdd",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteAdd_Params{Struct: s}) }
+	}
+	return Net_remoteAdd_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemoteRm(ctx context.Context, params func(Net_remoteRm_Params) error, opts ...capnp.CallOption) Net_remoteRm_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      1,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteRm",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteRm_Params{Struct: s}) }
+	}
+	return Net_remoteRm_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemoteLs(ctx context.Context, params func(Net_remoteLs_Params) error, opts ...capnp.CallOption) Net_remoteLs_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      2,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteLs",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteLs_Params{Struct: s}) }
+	}
+	return Net_remoteLs_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemoteSave(ctx context.Context, params func(Net_remoteSave_Params) error, opts ...capnp.CallOption) Net_remoteSave_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      3,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteSave",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteSave_Params{Struct: s}) }
+	}
+	return Net_remoteSave_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemotePing(ctx context.Context, params func(Net_remotePing_Params) error, opts ...capnp.CallOption) Net_remotePing_Results_Promise {
+	if c.Client == nil {
+		return Net_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      4,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remotePing",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 1}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remotePing_Params{Struct: s}) }
+	}
+	return Net_remotePing_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) RemoteClear(ctx context.Context, params func(Net_remoteClear_Params) error, opts ...capnp.CallOption) Net_remoteClear_Results_Promise {
+	if c.Client == nil {
+		return Net_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      5,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteClear",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_remoteClear_Params{Struct: s}) }
+	}
+	return Net_remoteClear_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) NetLocate(ctx context.Context, params func(Net_netLocate_Params) error, opts ...capnp.CallOption) Net_netLocate_Results_Promise {
+	if c.Client == nil {
+		return Net_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      6,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocate",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 2}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_netLocate_Params{Struct: s}) }
+	}
+	return Net_netLocate_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) NetLocateNext(ctx context.Context, params func(Net_netLocateNext_Params) error, opts ...capnp.CallOption) Net_netLocateNext_Results_Promise {
+	if c.Client == nil {
+		return Net_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      7,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocateNext",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 8, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_netLocateNext_Params{Struct: s}) }
+	}
+	return Net_netLocateNext_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Whoami(ctx context.Context, params func(Net_whoami_Params) error, opts ...capnp.CallOption) Net_whoami_Results_Promise {
+	if c.Client == nil {
+		return Net_whoami_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "whoami",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_whoami_Params{Struct: s}) }
+	}
+	return Net_whoami_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Connect(ctx context.Context, params func(Net_connect_Params) error, opts ...capnp.CallOption) Net_connect_Results_Promise {
+	if c.Client == nil {
+		return Net_connect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "connect",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_connect_Params{Struct: s}) }
+	}
+	return Net_connect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Disconnect(ctx context.Context, params func(Net_disconnect_Params) error, opts ...capnp.CallOption) Net_disconnect_Results_Promise {
+	if c.Client == nil {
+		return Net_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "disconnect",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_disconnect_Params{Struct: s}) }
+	}
+	return Net_disconnect_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) OnlinePeers(ctx context.Context, params func(Net_onlinePeers_Params) error, opts ...capnp.CallOption) Net_onlinePeers_Results_Promise {
+	if c.Client == nil {
+		return Net_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "onlinePeers",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Net_onlinePeers_Params{Struct: s}) }
+	}
+	return Net_onlinePeers_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
 
 type API_Server interface {
@@ -13075,61 +13096,61 @@ type API_Server interface {
 
 	Fetch(VCS_fetch) error
 
-	Quit(Meta_quit) error
+	Quit(Repo_quit) error
 
-	Ping(Meta_ping) error
+	Ping(Repo_ping) error
 
-	Init(Meta_init) error
+	Init(Repo_init) error
 
-	Mount(Meta_mount) error
+	Mount(Repo_mount) error
 
-	Unmount(Meta_unmount) error
+	Unmount(Repo_unmount) error
 
-	ConfigGet(Meta_configGet) error
+	ConfigGet(Repo_configGet) error
 
-	ConfigSet(Meta_configSet) error
+	ConfigSet(Repo_configSet) error
 
-	ConfigAll(Meta_configAll) error
+	ConfigAll(Repo_configAll) error
 
-	ConfigDoc(Meta_configDoc) error
+	ConfigDoc(Repo_configDoc) error
 
-	RemoteAdd(Meta_remoteAdd) error
+	Become(Repo_become) error
 
-	RemoteRm(Meta_remoteRm) error
+	FstabAdd(Repo_fstabAdd) error
 
-	RemoteLs(Meta_remoteLs) error
+	FstabRemove(Repo_fstabRemove) error
 
-	RemoteSave(Meta_remoteSave) error
+	FstabApply(Repo_fstabApply) error
 
-	RemotePing(Meta_remotePing) error
+	FstabList(Repo_fstabList) error
 
-	RemoteClear(Meta_remoteClear) error
+	FstabUnmountAll(Repo_fstabUnmountAll) error
 
-	NetLocate(Meta_netLocate) error
+	Version(Repo_version) error
 
-	NetLocateNext(Meta_netLocateNext) error
+	RemoteAdd(Net_remoteAdd) error
 
-	Whoami(Meta_whoami) error
+	RemoteRm(Net_remoteRm) error
 
-	Become(Meta_become) error
+	RemoteLs(Net_remoteLs) error
 
-	Connect(Meta_connect) error
+	RemoteSave(Net_remoteSave) error
 
-	Disconnect(Meta_disconnect) error
+	RemotePing(Net_remotePing) error
 
-	OnlinePeers(Meta_onlinePeers) error
+	RemoteClear(Net_remoteClear) error
 
-	Version(Meta_version) error
+	NetLocate(Net_netLocate) error
 
-	FstabAdd(Meta_fstabAdd) error
+	NetLocateNext(Net_netLocateNext) error
 
-	FstabRemove(Meta_fstabRemove) error
+	Whoami(Net_whoami) error
 
-	FstabApply(Meta_fstabApply) error
+	Connect(Net_connect) error
 
-	FstabList(Meta_fstabList) error
+	Disconnect(Net_disconnect) error
 
-	FstabUnmountAll(Meta_fstabUnmountAll) error
+	OnlinePeers(Net_onlinePeers) error
 }
 
 func API_ServerToClient(s API_Server) API {
@@ -13494,13 +13515,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      0,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "quit",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_quit{c, opts, Meta_quit_Params{Struct: p}, Meta_quit_Results{Struct: r}}
+			call := Repo_quit{c, opts, Repo_quit_Params{Struct: p}, Repo_quit_Results{Struct: r}}
 			return s.Quit(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13508,13 +13529,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      1,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "ping",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_ping{c, opts, Meta_ping_Params{Struct: p}, Meta_ping_Results{Struct: r}}
+			call := Repo_ping{c, opts, Repo_ping_Params{Struct: p}, Repo_ping_Results{Struct: r}}
 			return s.Ping(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -13522,13 +13543,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      2,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "init",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_init{c, opts, Meta_init_Params{Struct: p}, Meta_init_Results{Struct: r}}
+			call := Repo_init{c, opts, Repo_init_Params{Struct: p}, Repo_init_Results{Struct: r}}
 			return s.Init(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13536,13 +13557,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      3,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "mount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_mount{c, opts, Meta_mount_Params{Struct: p}, Meta_mount_Results{Struct: r}}
+			call := Repo_mount{c, opts, Repo_mount_Params{Struct: p}, Repo_mount_Results{Struct: r}}
 			return s.Mount(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13550,13 +13571,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      4,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "unmount",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_unmount{c, opts, Meta_unmount_Params{Struct: p}, Meta_unmount_Results{Struct: r}}
+			call := Repo_unmount{c, opts, Repo_unmount_Params{Struct: p}, Repo_unmount_Results{Struct: r}}
 			return s.Unmount(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13564,13 +13585,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      5,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configGet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configGet{c, opts, Meta_configGet_Params{Struct: p}, Meta_configGet_Results{Struct: r}}
+			call := Repo_configGet{c, opts, Repo_configGet_Params{Struct: p}, Repo_configGet_Results{Struct: r}}
 			return s.ConfigGet(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -13578,13 +13599,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      6,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configSet",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configSet{c, opts, Meta_configSet_Params{Struct: p}, Meta_configSet_Results{Struct: r}}
+			call := Repo_configSet{c, opts, Repo_configSet_Params{Struct: p}, Repo_configSet_Results{Struct: r}}
 			return s.ConfigSet(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13592,13 +13613,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      7,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configAll{c, opts, Meta_configAll_Params{Struct: p}, Meta_configAll_Results{Struct: r}}
+			call := Repo_configAll{c, opts, Repo_configAll_Params{Struct: p}, Repo_configAll_Results{Struct: r}}
 			return s.ConfigAll(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -13606,13 +13627,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      8,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "configDoc",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_configDoc{c, opts, Meta_configDoc_Params{Struct: p}, Meta_configDoc_Results{Struct: r}}
+			call := Repo_configDoc{c, opts, Repo_configDoc_Params{Struct: p}, Repo_configDoc_Results{Struct: r}}
 			return s.ConfigDoc(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -13620,139 +13641,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
+			InterfaceID:   0xa862cd929f7af191,
 			MethodID:      9,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteAdd",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteAdd{c, opts, Meta_remoteAdd_Params{Struct: p}, Meta_remoteAdd_Results{Struct: r}}
-			return s.RemoteAdd(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      10,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteRm",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteRm{c, opts, Meta_remoteRm_Params{Struct: p}, Meta_remoteRm_Results{Struct: r}}
-			return s.RemoteRm(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      11,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteLs",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteLs{c, opts, Meta_remoteLs_Params{Struct: p}, Meta_remoteLs_Results{Struct: r}}
-			return s.RemoteLs(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      12,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteSave",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteSave{c, opts, Meta_remoteSave_Params{Struct: p}, Meta_remoteSave_Results{Struct: r}}
-			return s.RemoteSave(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      13,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remotePing",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remotePing{c, opts, Meta_remotePing_Params{Struct: p}, Meta_remotePing_Results{Struct: r}}
-			return s.RemotePing(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      14,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "remoteClear",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_remoteClear{c, opts, Meta_remoteClear_Params{Struct: p}, Meta_remoteClear_Results{Struct: r}}
-			return s.RemoteClear(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      15,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocate",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_netLocate{c, opts, Meta_netLocate_Params{Struct: p}, Meta_netLocate_Results{Struct: r}}
-			return s.NetLocate(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      16,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "netLocateNext",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_netLocateNext{c, opts, Meta_netLocateNext_Params{Struct: p}, Meta_netLocateNext_Results{Struct: r}}
-			return s.NetLocateNext(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      17,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "whoami",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_whoami{c, opts, Meta_whoami_Params{Struct: p}, Meta_whoami_Results{Struct: r}}
-			return s.Whoami(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      18,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "become",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_become{c, opts, Meta_become_Params{Struct: p}, Meta_become_Results{Struct: r}}
+			call := Repo_become{c, opts, Repo_become_Params{Struct: p}, Repo_become_Results{Struct: r}}
 			return s.Become(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13760,69 +13655,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      19,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "connect",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_connect{c, opts, Meta_connect_Params{Struct: p}, Meta_connect_Results{Struct: r}}
-			return s.Connect(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      20,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "disconnect",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_disconnect{c, opts, Meta_disconnect_Params{Struct: p}, Meta_disconnect_Results{Struct: r}}
-			return s.Disconnect(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      21,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "onlinePeers",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_onlinePeers{c, opts, Meta_onlinePeers_Params{Struct: p}, Meta_onlinePeers_Results{Struct: r}}
-			return s.OnlinePeers(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      22,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
-			MethodName:    "version",
-		},
-		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_version{c, opts, Meta_version_Params{Struct: p}, Meta_version_Results{Struct: r}}
-			return s.Version(call)
-		},
-		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
-	})
-
-	methods = append(methods, server.Method{
-		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      23,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabAdd",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabAdd{c, opts, Meta_fstabAdd_Params{Struct: p}, Meta_fstabAdd_Results{Struct: r}}
+			call := Repo_fstabAdd{c, opts, Repo_fstabAdd_Params{Struct: p}, Repo_fstabAdd_Results{Struct: r}}
 			return s.FstabAdd(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13830,13 +13669,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      24,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabRemove",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabRemove{c, opts, Meta_fstabRemove_Params{Struct: p}, Meta_fstabRemove_Results{Struct: r}}
+			call := Repo_fstabRemove{c, opts, Repo_fstabRemove_Params{Struct: p}, Repo_fstabRemove_Results{Struct: r}}
 			return s.FstabRemove(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13844,13 +13683,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      25,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      12,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabApply",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabApply{c, opts, Meta_fstabApply_Params{Struct: p}, Meta_fstabApply_Results{Struct: r}}
+			call := Repo_fstabApply{c, opts, Repo_fstabApply_Params{Struct: p}, Repo_fstabApply_Results{Struct: r}}
 			return s.FstabApply(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
@@ -13858,13 +13697,13 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      26,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      13,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabList",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabList{c, opts, Meta_fstabList_Params{Struct: p}, Meta_fstabList_Results{Struct: r}}
+			call := Repo_fstabList{c, opts, Repo_fstabList_Params{Struct: p}, Repo_fstabList_Results{Struct: r}}
 			return s.FstabList(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
@@ -13872,592 +13711,777 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 
 	methods = append(methods, server.Method{
 		Method: capnp.Method{
-			InterfaceID:   0x83e6cb306e77e311,
-			MethodID:      27,
-			InterfaceName: "server/capnp/local_api.capnp:Meta",
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      14,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
 			MethodName:    "fstabUnmountAll",
 		},
 		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
-			call := Meta_fstabUnmountAll{c, opts, Meta_fstabUnmountAll_Params{Struct: p}, Meta_fstabUnmountAll_Results{Struct: r}}
+			call := Repo_fstabUnmountAll{c, opts, Repo_fstabUnmountAll_Params{Struct: p}, Repo_fstabUnmountAll_Results{Struct: r}}
 			return s.FstabUnmountAll(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xa862cd929f7af191,
+			MethodID:      15,
+			InterfaceName: "server/capnp/local_api.capnp:Repo",
+			MethodName:    "version",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Repo_version{c, opts, Repo_version_Params{Struct: p}, Repo_version_Results{Struct: r}}
+			return s.Version(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      0,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteAdd",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteAdd{c, opts, Net_remoteAdd_Params{Struct: p}, Net_remoteAdd_Results{Struct: r}}
+			return s.RemoteAdd(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      1,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteRm",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteRm{c, opts, Net_remoteRm_Params{Struct: p}, Net_remoteRm_Results{Struct: r}}
+			return s.RemoteRm(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      2,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteLs",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteLs{c, opts, Net_remoteLs_Params{Struct: p}, Net_remoteLs_Results{Struct: r}}
+			return s.RemoteLs(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      3,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteSave",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteSave{c, opts, Net_remoteSave_Params{Struct: p}, Net_remoteSave_Results{Struct: r}}
+			return s.RemoteSave(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      4,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remotePing",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remotePing{c, opts, Net_remotePing_Params{Struct: p}, Net_remotePing_Results{Struct: r}}
+			return s.RemotePing(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      5,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "remoteClear",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_remoteClear{c, opts, Net_remoteClear_Params{Struct: p}, Net_remoteClear_Results{Struct: r}}
+			return s.RemoteClear(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      6,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocate",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_netLocate{c, opts, Net_netLocate_Params{Struct: p}, Net_netLocate_Results{Struct: r}}
+			return s.NetLocate(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      7,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "netLocateNext",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_netLocateNext{c, opts, Net_netLocateNext_Params{Struct: p}, Net_netLocateNext_Results{Struct: r}}
+			return s.NetLocateNext(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      8,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "whoami",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_whoami{c, opts, Net_whoami_Params{Struct: p}, Net_whoami_Results{Struct: r}}
+			return s.Whoami(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      9,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "connect",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_connect{c, opts, Net_connect_Params{Struct: p}, Net_connect_Results{Struct: r}}
+			return s.Connect(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      10,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "disconnect",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_disconnect{c, opts, Net_disconnect_Params{Struct: p}, Net_disconnect_Results{Struct: r}}
+			return s.Disconnect(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xaa133a60be5a7d01,
+			MethodID:      11,
+			InterfaceName: "server/capnp/local_api.capnp:Net",
+			MethodName:    "onlinePeers",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Net_onlinePeers{c, opts, Net_onlinePeers_Params{Struct: p}, Net_onlinePeers_Results{Struct: r}}
+			return s.OnlinePeers(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 1},
+	})
+
 	return methods
 }
 
-const schema_ea883e7d5248d81b = "x\xda\xbc<y|\x14E\xd6\xf5\xba\x13\x9a;\x0c\x1d" +
-	"1(q\x86\x10\xae@\x80$d\x17\x82!\x93p\x08" +
-	"\xc8\x91\xce\x00\"^tf*I\xcb\xcc\xf4\xd0\xddI" +
-	"\x88\x0b\xcb\xa1\x08\xa8\xf8\x89\x1f\x88\xa0\x88\xfa\xc9*\x0a" +
-	"\x8bx\xe1\xb1\xb8\xa2\xa0\xa2\xeb.\x1e\xa8\xb8\xa2\xe2\xca" +
-	"*~\xa0\x8b\xb2.\xa88\xdf\xaf\xaa\xa7\xbbk&\x93" +
-	"d\xe2\xfa\xed_IW\xbd\xaaz\xf5\xde\xabw\xd5\xab" +
-	"\x19\xf1\xeay^\xae =#\x1f!_W.\xbdC" +
-	"\xd4\xf5\x9b\xde\x1f\xea\xd37/E.\x0f \x94\x0e\x02" +
-	"BE\xa1^\xaf\x01\x02qY\xaf2\x04\xd1>W(" +
-	"\xaf\xfe\xf8e\xed2$e\x03D/|\x7fR\xd5\xe2" +
-	"\xb1\xab\xbeD\xe9i\x04rW\xaf\x0a\x10\xf7\xf6\x12\xc4" +
-	"\xbd\xbd\xdcE\xc7{\xb9\x01At\xdf@\xf8i\xfa\xae" +
-	"\xa7\x96!W\x8e=cz\xd6\xfdd\xc6\xf3\xb2\xc8\x8c" +
-	"\xae\xbf5\x86G\xbc\xfe\xf7\xeb\x91+\x9bw&DP" +
-	"4!\xab'\x88\xb3\xb2\xc8\x00)K\x10\xc4s}\x04" +
-	"\x84\xa2gz\xe1\xa1#\xee\xd9\xb7\xd2\xc4\x90.{\xac" +
-	"\x8f\x06(-\xbaj\xcd\xcd\xd3\x95Q\x15\xab\x98\x9e7" +
-	"\xcd\x9e\x97\xef\x1c{\xc3\xf4Wo\xba\x85\xc5aO\x9f" +
-	"M\x04\x877\xfa\x10\x1c\xc6\xed\xf6\xe4oq}\x1c\x07" +
-	"p\xb2\x0fE\xf2\x1c\x05\xf0\xbc\xb2\xe9W\xc7\xa5\x83\xb7" +
-	"\"W6\xbbk\x0a\x98\x9f]\x05by\xb6 \x96g" +
-	"\xbb\xc5\xfal\x02\xfe\x15\x7f\xac\x88\xff\x0dw\x9b9\x1f" +
-	"Ee}\xf6r\x82\xcac\xc3WU\xce\xf9s\xc1:" +
-	"v\xa5e\xd9\x0f\x93\x95\xd6\xd2\xa1O\x7f\xfe\xc8\xde\xd0" +
-	"\xd5c\xd7!)\x07\x08\x04G \x9e\xcc\xa6\xc8\xee\xcf" +
-	"\xde\x89 zp\xce\xa4\x9a\x9d~e]\x8cG<\x01" +
-	"\xc0\x17=K\x00\xea/\"\x00\xcf_\x90u\xc5\xcb\xb7" +
-	"|\xb5\x8eY\xbd\x9b\xfbv\xb2\xfa\xf8\x95=W\xcf\xff" +
-	"8\xb8\x9e\xe99w\xd1\xfd\xa4\xe7\xb9[\xa6\x97>\xfe" +
-	"\xbb[\xd7\xb3\x93\x9e\xbc\xe8EJ\x01:\xa96`\xdd" +
-	"\xc97w?\xb4\x1eI\x1e\xb0\xf7\xe4\xa6\x00[\xdd\x04" +
-	"\xf1K*N\xfe\xe5\x8ck\xea\x86\xa4\x92\xb1\xdf=\x05" +
-	"\xc4\xc3nA<\xecv\x17u\xf2P\xc9\x18\xbb\xa0\xfb" +
-	"\xbd\xaf\xbcy|C\x8c\x14t\xa3\xd9}\xe9F\xf3\xfb" +
-	"6\"\x88\xbe\xd7\x01s\xeek\xaf\xd9\xc8`\xbb\xba\xef" +
-	"M\x04\xdb\xa5\xbd\xce\xbd\xf6\xdc\x08u\x13\xd3\xd3DF" +
-	"\xa6E\xef\xe6:o\xc8z\xe8\xc1\xbbb\xfb\xa0\x93*" +
-	"}\xaf\xa5\xc4\xa1\x93\x9e/\xcd\xf8\xa8\xbb\xfb\xf1\xbb\xd9" +
-	"}\x1c\xee\xfb\x18\x018\xde\x97\xec\xe3\xb2w\xaf\x98\xf7" +
-	"\xcaK;\xeea9\xd4-\x87n4;\x87\x00t\xf8" +
-	"\xfd\xa5\xd1\xf7\xff\xf2\xd2=\xcc\xe2\xa59\x94\xb9\xdf\xf5" +
-	"\xfa\x077~\xc3\x8f\xf7\xb0\xa7gp\xce\\2\xb4\x98" +
-	"\x0e\xdd07gPdQ`\x0b\xbb\xe5Y9\xd7\x11" +
-	"\x009\x87`7\xea\xba\x17o\x7f\xe3\xad/\xb6\xb0\xd8" +
-	"\xed\xcd\xa9\xa6\x92Jgxu\xfa\xf9/z\x82\x8b\xef" +
-	"\x8b\xe3S\x0e=\xa0\xd0\x8f\xf0\xe9\x86\x91s\xef\x1fv" +
-	"\xcd\x88\xfb\x09\x1b\x98\xf3\x94\xde\x81@n\xecW\x08\xe2" +
-	"\xb6~\x82\xb8\xad\x9f\xbb\xe8H\xbf\x079\x04\xd1\x93\x13" +
-	"n\x1cr\xf0\x82'\xfe\x87\xd9\xce\xd6\x01T&f\xae" +
-	"\xb8\xf6\x84\xfaX\xc6\x03,%\xd6\x0f\xa0\xa4\xda:\x80" +
-	" \xb3b\xc8\xe2\xfd\xbe\xb7\xbf~\x00\xb9\xfaZC\x0f" +
-	"\x0d\xa8&C\x9f}\xab\xe7k\x83J\xeb\xb7\xc6\xedc" +
-	"\x00\xdd\xe8\x1bt\xe8\xa5C\xb8\xe27^\xb9c+\xb3" +
-	"\xeaIs\xd5\x9c\x86\xe5;\xdf\x9a\xb8\xfaAv\xe8\x91" +
-	"\x01o\x91\xa1\xa7\xe8\xd0\x91\xb3/\x8aN\xbd\xa2\xd36" +
-	"\x96\xca\xae\x81\x94\xca\xd9\x03\x09@\xe8\x9d\xcf\xc3\x9dj" +
-	"\x17o3\xd12\xa9\\:\x90\x12q\xf2@Be\xbe" +
-	"gW\xd7\xb0\xea\xbb\xe3f\xd8:P#\x00\xbb\xe8\x0c" +
-	";\x95\xa9\xb7\x1e\x9bt\xd1#,\xc0\x9b\x03\xa9\x14\x1d" +
-	"\xa1\x00y\xea7w\xfd\xf8\xf2\xeaG\x18]s\x8e\xf4" +
-	"\xa7E_\xff\xe8\xfc\xab\xba\xbd\x97\xbf#v~i\xd7" +
-	"\xf1\x81T\x95\x9c\xa5C\x0f\xfa~\xfa\xeb\xc7\xc3\xbe\xdb" +
-	"\x19\xc3\x8e\xce\xdd{\x10]\xbc\xff \x02 w\x1f\xf3" +
-	"z\xd6\x8f#\x1e\x8d\x11\xc0\x84\x980\x88\xae.\x0d\"" +
-	"\xf8\xef^\xf0\xd1\xc8\x92\xf7\xafx\x14I}\x1d\x88]" +
-	"&\xc4\x1e\x0aQ7\xfa\x9d\x0f2\xcf\\\xf3(\xcb\xba" +
-	"\xbe\x83\xe9\xd9*\x18L\x16\xb9{\xda%/\xbe\xfbI" +
-	"\xf5c\x0c\xeb\xe4\xc1\xd7\x91\x0d\xcc\xda<\xa8\xdf\xc3s" +
-	"\x16=\x91\xa0\xea(\xc8\xb4\xc19 ^5X\x10\xaf" +
-	"\x1a\xec\x16W\x0c\xfe\x1cA\xb4 \xeb\xec\xfeGnx" +
-	"\xea\x09\x86\x91J\x1e=\x8aG\xca\x0eN\x9dw\xc9\xf1" +
-	"\xa7\x98\x9e\xcb\xf3\x1e&=\xa7\xce\x9d\xfepo\xa9\xba" +
-	"\x9b=\xa4\x93\xf3(\x83f\xe5\x11\xf4G\xd7\xffv\xe2" +
-	"\xfc#\x07w3\xd8\xed\xca\xa3GL\xb8\xe0\x8f\xbf\x9d" +
-	"P\x91\xf543\xe9\xe6<\xaa\x13v\x0e\x9c\xda\xef\xb6" +
-	"\xcf\xba=\xcb\x8cY\x93Gw\xf4\xf8\x07\xe7J\xef\xdd" +
-	"v\xf5s,7\x9b\xf2\xa8\xc2\\\x9dG\x88\xd1\xbb\xe3" +
-	"\xd2\x13\xbb\x1f\x09>\xc7R\xeb\x99\xbc\xdb\x09\xc0\x01\x0a" +
-	"\xf0\xfb\x99\xfb\xaf?\xbf\xcb\xe9\xe7\x98U\x8f\xe7\xbdF" +
-	"\xe6.\xbcn\xcd\x99M\x0f\x9f\xff\x07v\xe8\x91<\xca" +
-	"\xee\x93t\xe8\x9d\xfb\x16W\x14\\9\xed\x0f\x89j\x91" +
-	"Bf\x0f\xa9\x02\xb1`\x88\x80\x90\x98?\x84l\xfc\xd2" +
-	"-\x99\x8b\x1a'o\xdb\xc3lb\xed\x10*W\xbe1" +
-	"#\xee8\xd1\xf4\xd4\x1ev\x13\x8b\x87P\x96\xaf\x1eB" +
-	"\x16\xda\xe4{\xa7\xfbo\x9e[\xf0|\x02\xdf\xa8\x86\xd8" +
-	"6$\x07\xc4g\x86\x08\xe23C\xdc\xe2\xf1!DO" +
-	"\xcc\xd8 \x0f\x9f\xf0\xfa}\xcf\xc7\x1d\xee\xa1\x14\xf1\xad" +
-	"C\xa9>?>\xf3\xef\xef~\xdb\xe7\x8f\x8c\x88\xef\x1f" +
-	"J\xcd\xe9\x99a\x87?\xf8\xa8\xe6\xc8\x0b,\xfbv\x0d" +
-	"\xa5\xec\xdb3\x94\xecb\xde\xa9\x03\xea\xf7e\xcf\xbc\xc4" +
-	"\xce\xdd;\x9fJ\xdf\xe0|2\xf7+\xae\xc9\xc6\xac\xbf" +
-	"\x8f\xda\xcf\xd0sr\xfecd\xee\x87?x\xf1\xa3\xb5" +
-	"\xea\x98\xfd\xec\xd0\xd1\xe6\xd0\xc9t\xa8\xfbx\x8fe\xf3" +
-	"?\xf1\x1c`\x01\x94|\x8aw\x13\x05\xb8\xfa\xd4\xa3\x03" +
-	"\xb6\xdf:\xeb\x00K\xa8\x8d\xf9\x94P[)@\xcd\xbd" +
-	"\xd7nz\xf5\xa2y\x07\x12\x08%\xd0\x1d\xe6\xf7\x04\xf1" +
-	"P\xbe \x1e\xcaw\x17\xc1\xb0\xff\"v\xea\xc4\xa6\xf3" +
-	"\xe1\xa6\xf1\xdb\x0f\xb0Fs8%\xc4{\xbe\xba\xb2\x01" +
-	"\x0f=~\x80!\xd1\xf1\xe1T\xe4\xee\xfav\x81\xd7\xfd" +
-	"k\xfc\x1a\x8b\xe5\xa1\xe1T\xa2\x8e\x0d'H|wR" +
-	"Z}\xcb7\xa7\xff\xc4\x0cM\x1fA\x19}\xedW+" +
-	"\xbf\xfcI\xecu0\x01=\xaa\xbfO\x0d\xcf\x01\x11F" +
-	"\x08\"\x8cp\x17\xe5\x8f\xb8\x8c\xa07a\xfb\x15+n" +
-	"{\xf9\xd1\x83\xecR\x8b\x0bn\"K\xad) K\xed" +
-	"^\xdc\xe3\xfa)\xae\xd5o\xb1\x1aiW\x01\x15\xff\xbd" +
-	"\x14\xe0\xde\x01\xebV\xbe>\xb6\xf8\x1df\x83G\x0b\xe8" +
-	"A\xad\x187\xf7\x87H\xffM\xef$\x0a/\x15\xaa7" +
-	"\x0b\x0aA<Z \x88G\x0b\xdc\xa2\xab\x90(\x83\x07" +
-	"+\xbe\xde^[-\x1fbf:UH=\x8f\xa5\x9b" +
-	"\xa6\xdc\xf0\xc2\xab\xdc{\xec\x1a\x85TM\xec\xdf\x7f\xe8" +
-	"\x87\xefrW\xbe\x17\xa7k\x0b\xa94\x1d)$\xe8u" +
-	"\x93o\xf8,4\xe9\xeb\xf7X\x85y\xae\x90\xd2\xb2[" +
-	"\x11\x01\xb8cM\x91\xdco\xcb\x84\xc3,@~\x115" +
-	"6\xa3)\x80\xb2\xe9\xa13\xdf\xe93\x0f'Si\x97" +
-	"\x17U\x81\x18*\"GP)\"{\xf8\xc7[K\xb7" +
-	"\x8e\xfbt\xe0_Y|\xcaGR\xfd<m$\x99\xed" +
-	"\xf4K\xdb'\xa4\xfd\xed\xa1\xbf2\xac\x0b\x8d\xa4V\xef" +
-	"\xd8+wm\xd8P\xb3\xf2\xc3\x84u\xe8\x01\xb9|\xe4" +
-	"\x14\x10C#\xe9:#\xc9!\xc9\xcd\xee6\xe3\xecy" +
-	"\xaf\x7f\xc8Pd\xffHj\x01\x1f/:t\xf0\xfaa" +
-	"%\x1f3=O\x8e\xa4\x02\xf7\x986t\xdf\xd3\x9bO" +
-	"\x7f\xc2\xee\xf4\xbe\x91\x94\xd7\xbb(n/~{i\xe6" +
-	"\xca\xcff\x1ee\x01\x8e\x8e\\N\xd5\x11\x05\xd8!\xec" +
-	"[\x92\x9b\xf3\xe4\xd1d\xa4\xe8V\x9c\x07bv1A" +
-	"\xb1w1!\xc5\xbb\xd7\xdc\xb1\xa2\xeb\xf0#GY\xc9" +
-	"/\xa6\xf2\xbd\xef_W\xdeX\xe5\xbd\xf0SV!\x16" +
-	"Sv~\xf5\xf0\xea\xc9W\x14\xd7\xb3=\x87\x8b\xa9\x08" +
-	"\x9c}g\xd1\x13W\xcdy\xfc\xd3f\x8e\xfe\x81b\x0e" +
-	"\xc4C\xc5\x94\xf1\xc5B\x9a\xa8\x8c\"\x8e\xfe\x98q_" +
-	"\xf3\xe3/<\xf3\xa9e\xe4\xe8T\xd2(\xb2\xd9\"y" +
-	"\x14\xf5 \x0b\x8d\x15\xfe\x9d\xaf.\xfc\x8c\x15\xfd\x15\xa3" +
-	"\xe9n\xd7\x8e&\xbb}\x0aw\xe9rj\xfc{\xc7b" +
-	"\x00Tlw\x8d\xa6\xa2\xb3w4\xd1\x82\xe7^\xee\xf0" +
-	"\x87\xf7\xe7\x9d\xf7\xb9\xb5\x08e\x95\\B\xb9\x1d*\xd9" +
-	"\x89\xe0\xeb}\x0ff\xbd\xf4\xc5\x80/\x9c\xdd\xa4\x8f\xa1" +
-	"\x14X{\xe5\xc5/\xfc\xa5\xcf\x0f_\xb0\xa2^\xf2\x16" +
-	"\xe9\x99=\xe8O\x9e?\x16\x0f>\xce\x0a\xd0\xb1\x12\xaa" +
-	"\x80N\x95\x10\xac6\xde\xfc\xcf\xc2\x82\xff\xfd\xe8Kf" +
-	"h\xdf1T\xfb\xed\x7f\xf7\x93\x1fVf\xec:\x91L" +
-	"\x87\xbb\xc6L\x01\xb1\xff\x18A\xec?\xc6-\xce\x1aC" +
-	"\xb0\xff\xc1\x97\xf6\xcf\xab\xb7\xf3'c\xdb3\xbd\xa81" +
-	"\x14\xf9\xb3c\x08\x03?\xb9\xe6\xcaU\xfd\x83g\xfe\xc1" +
-	"\x1e\xfdC\x17\xd3h\xe3\xd8\xc5T\x9b\x0a\xf7-\xd8s" +
-	"\xaa\xf8\x14K\xc1N\xa5T\xa0z\x97\x12\x80o\xd7q" +
-	"sf\x17\xe6~\xcb\x08\xfb\xe8R*\x8b\x97\x96\xec\x14" +
-	"w\xe5\xbfs\x9a\x15\xb5\xfe\xa5t\xf1\x022\xf4\x87-" +
-	"\xcf\x9eX3{\xe9?\x9dMJ\xa5\xd4P\x7f\xd7o" +
-	"\xee\x9c\xd1\x9d\xfa\xff\x8b\x1dX^J\xe93\x8d\xae\xf9" +
-	"\xf6\x0b\xef~\xf9v\xff\x0f\xfe\x95T\xeb,.\xad\x00" +
-	"qM)\x0d\x06J\xa9\x14T\x1d\xadx\xeez\xf7\xac" +
-	"3\xc9N\xdd\xe6\xb1\x85 \xee\x18+\x88;\xc6\xba\xc5" +
-	"\xc3c\xc9\xb9\xeb8v\xe0\xda\xfe\xdf<~\x96\xa1~" +
-	"q\x19\xd5v\xdb\xc6\x1e.[\xa1\xed>\xcb\x18\xdf\xfe" +
-	"e\x94\xd9\xb7~\x93\xde9p\xe3\xf3\xec\x18\x979\xe6" +
-	"\xf0\x8f\x19\xf9\x03\x9fH\xfb\x9e\xdd\x0c\x94Q*t+" +
-	"#\x9b\xc9\x9d\xb8\xaf\xe7\xd7K\x7f\xf7}3\xa9\xcf/" +
-	"\xeb\x0cbi\x19\xa5h\xd9%\x9c\xb8\xd5K\xa4\xfe\xeb" +
-	"\x0d7\x17f-\x9c\xf4c3\xf05\xde\xce n&" +
-	"0\xe2F\xaf n\xf4\xfe\x1a\xa1\xe8\xcd\x0dw\x9c\xbe" +
-	"\xe4\x93_\x9dc\xd9\xb7\xd1K\x8d\xe16/Y\xfd\xd7" +
-	"\xdc\xfaC\xd9\x8d7\x9e\x8b\xf3%\x0fx\xa9v=\xe4" +
-	"%\xe4\x18q\xfbe\xe2\x9f\x1b\xdf\xfe\x89%G9\xdd" +
-	"Z\xc3\x8d\xf3N\x9c7\xe3\xed(;y\xffr\xaaV" +
-	"\x0b\xca\xcb\xd0\xa8\xa8\x8e\xb5\x06\xac\x0d\xf7w\x90#\xe1" +
-	"\xc8\xf0\xa0\xea\x97\x83\xd7\xc8\x11e\x98\x9f|\x97L\xf4" +
-	"\x0d\x0b*\xba1aa$\xa8\xf8\x15\xa3R\x09\xeb\xb9" +
-	"UX\xaf\x0f\x1a:BR\x1a\x9f\x86P\x1a \xe4\xea" +
-	"\x96\x87\x90\xd4\x91\x07)\x97\x83\x8c\x88\x12\xd6\xa1;\x82" +
-	"J\x1e\xa0\x87\xa3O\x11\x90F{\xc1\xb4\xa4\x0bVb" +
-	"\xac\xf9\x0c\xd9\xa8\xd7Q%\x80\x94\x06\\\xf4\xea\xff\xde" +
-	"\"\xedy\xf7\xa6\xfdHJ\xe3\xa0<\x0b\xa0+B." +
-	"x8\x1a\xc6\x86G7d\x03\xeau\x8fZ\xe3\x91=" +
-	"\x19\x11\x8c5\x84\xa4L\x1b\xad\xc5\x04\xad\x85<H7" +
-	"p\xe0\x02\xc8$\xe4s-\xabFHZ\xca\x83t\x0b" +
-	"\x07.\x8e\xcb\x04\x0e!\xd7\xea)\x08I\xabx\x90\xd6" +
-	"q\x00|&\xf0\x08\xb9\xd6\x12\xc0\xdbx\x90\xee\xe6\xc0" +
-	"\x95\xc6gB\x1aB\xae\x8d\x85\x08I\xebx\x90\xee\xe5" +
-	" #,\x870tE\x1ct%.\x89\x12\xae\xc5Z" +
-	"DC\x82\x126\xec\xd6\xa0\xac\x1b>\x8c\xc3\x08!\xbb" +
-	"MS\xeb\xc3\x01CS\x90\x10\x99\xa6C\x1a\xe2 \x0d" +
-	"\x81\x1bk\x9a\xaa\xd90\x16\x99\xd2\x93\x92i\x1a6\xe4" +
-	"a\x1a\x0e\xa9\x06\xf6\xc9\x0d8\xb7R\xd6\x049\xa4\xb3" +
-	"\x1c\xa9p8\xb2\xc4\x84d\x98b\xfb\x99\x09L\xe1[" +
-	"Z\x0dd\xc2\x8e\x08\x9f\x8e\x90m\xda\xc02-\xe2\x02" +
-	">\x0fq\"\xe6\x05p<-\xb0DO\xbc\x9c\xf6N" +
-	"\xe3\x05\xe0lm\x07D%\xa3/\x06|!\x96\xd3\xde" +
-	"b^\x00\xde\x0e\xad\xc1\x0a\xcf\xc5\xc1|!\xe2\xc4l" +
-	"^\x804\xdbI\x02\xcb<\x89.\xbe\x02qb:/" +
-	"@\xba\x9d\x1f\x02\xeb<\x89g\xb9*\xc4\x89\xa78\x01" +
-	":\xd8y\x0a\xb0\"e\xf1\x18\xed=\xc2\x09 \xd8\xf1" +
-	"\x0fX9$\xf1M\xda{\x80\x13\xa0\xa3\xed\x09\x83\xe5" +
-	"\xb6\x8a{h\xef\x93\x9c\x00\x9dlg\x17\xac\xbc\x8c\xb8" +
-	"\x8d\xf6\xde\xc7\x09\xd0\xd9\x8eJ\xc02\xb6\xe2zn\x0a" +
-	"\xe2\xc45\x9c\x00]\xec$\x0fX\xa1\x9e\xb8\x8c\xf66" +
-	"q\x02t\xb5\xb3n`i;1\xc4\xcd%t\xe6\x04" +
-	"\xe8f\xfb\xfe`\xd9\x07\xf1r\xda+q\x02t\xb7\xdd" +
-	"A\xb0\xbctq\x02W\x8d8\xb1\x94\x13 \xc3\xceO" +
-	"\x81\x15\xe8\x8a\x05\x14\xe7\xc1\x9c\x00=l_\x13\xac," +
-	"\x8a\x98\xcdi\x88\x13\xcf\xe3\x04p\xd9i1\xb0\xcc\x8e" +
-	"\xd8\x89+A\x9cx\x0e\x04\xe8i[s\xd8\xf2,\xa2" +
-	"\x96C<\x05\xa4\xf7\x18\x08 \xda\x81\x1fX>\xa6x" +
-	"\x18\x08\x07\xdf\x00\x012\xedt\x02X\x9aZ\xdc\x0bd" +
-	"G\xcf\x80\x00\xe7\xd9\x91(X\x19\x0dq\x07\x90\x1dm" +
-	"\x05\x01z\xd9i&\xb0\x9cvq#\x9dy\x0d\x08p" +
-	"\xbe\xedB\x80\xe5\xc1\x8a\xcb\x80\xd2\x19\x04\xc8\xb2\xd3y" +
-	"`\xd9t1Dg\xc6 @o\xdb\xc5\x03K\xc9\x8a" +
-	"\x97S\xac$\x10\xe0\x02;\x89\x05V\x0c)N\x00B" +
-	"\xc9R\x10\xe0B;\xe4\x04\xcb\xd1\x10\x0b`9\xa13" +
-	"\x08\x19\x0b\xea\x15\xc3K\x95e\xad\x172\x940\xf9r" +
-	"\x87\xd4\xfa\xb0\xe1\x85%\xf5\xe1\xd8\x7fQ\xbf\x1a\xaeQ" +
-	"j/\xc1\x08\x9c/_\xdcWy\x10A\xd0\xfe\x1a\xaf" +
-	"\"\xf0{!j\x1e\xf9\xf2\x00\x82\x80\xfdU\x15B\x08" +
-	"\xd9_Su\xf6\xcb'#\xbe\x01\xdb\x9f\x95\x0a\xe2\x09" +
-	"b\xb1\xcfqA$`Y\xf3\x02\xd1\xbaSU\xbfl" +
-	" \xc0\xec\x97\x1bO\xc7\x0b\x0d/\x945\xd6\xa9rH" +
-	"\xf1BY5\xf6\xab!\xec\x85%~5\x1c\xc6~\x82" +
-	"o@\xd1\xe9\x07\xe2\xe9\xa7\x1a\x0e*a\\\x89\x91\x80" +
-	"5\xdd\x0bK\x1a\xb0\xa6+j\xd8\x0b\xd1\x1a\xdd\x90\xab" +
-	"\xcb\x03\x01\x13A\xfaU\x85CHP)\x86fo$" +
-	"\x82\xf8`\x93\xf59U\xd1M\x9a\xd0\xafY\xe1\x10\x10" +
-	"\xfa\x95\x07\x83\xc8\x0b\x95\xd0\x96\xd5\x99\xe8\x1bV\x1f\x8e" +
-	"(\xe1\xdc*\xec\xa6\xc6\xadmx\xdd\x90kqs\xf8" +
-	"V\xd4\xb5\xc5I\x83hk\x99\x8f\xd7\xd691m\x9d" +
-	"\xc9\x810\x1f7\xb5\xc7\x0cXR\x10\xa4\x96Y\x08\x1a" +
-	"I'\xce\xe5@\x90\x83A\xc7\x04\xd8\xa9\xde\x94\xecr" +
-	"\x15\x15\x83\x89j0\x80AKn\x99s\xa9e.\x80" +
-	"j\x88\x96{j\x08\xa4\x96\xe61\xead\xc3#{L" +
-	")\xf2(\xbaG\x0e\x06\xd5F\x1c\xf0\x18\xaaG\xf6\xfb" +
-	"\x05\xac'8\x12%\x0e!\xca\xccI\x9a\xd1\xa2K\xcb" +
-	"\xb40\xa5\x8f\x128\xa4#k@\xcb\xf0\x96h\xa9\xd4" +
-	"\x86fh\x096\xb4\x0a!\xa9+\x0fR\x16\x07Qz" +
-	" \xa7\xcb!\x04\xb8=\xdc\xb1N\x08\xb6\xb9\xde\xd5\x9e" +
-	"\x7f\x02a\x8e\x97\x07i*\x07\x96w2y.B\xd2" +
-	"$\x1e\xa4\x99\xc4;\x01\xd3;\x91Hc%\x0f\xd2\x95" +
-	"\x1c\x08\x8du\xaa\x8d\x80\xa1\x84\xb0Zo\xf8\x10\x8f\xfd" +
-	"\xd0\x05q\xd0\x85\xb8\x1ct\xbdi2\xe2\xf5\xf9)\xa2" +
-	"J\x04\x1a\xc7\xbbye&\x11YtK\x1ctmo" +
-	"j2q\xb1\xc6\xf3 U2\xde\xd4\xb4\x0b\x9cM\x94" +
-	"E4\\\xa3,\xb4\x10\xc9\xa8\xd1\xd4\x90\xf5\xc1\x1bj" +
-	"\xfb\x1d\x9e\xa9\xba\xc9_\xd0S\x1fS\x1e\x08\xd8\xa7\xe3" +
-	"g\xb8\xbc1y\xfa\x8f\xd3\xa2C\xaa\xcc\xb2|rV" +
-	"x\x0b\x9d\x93\xe4\xf6\x13\xe1\xb5<\xcd6\x8e\xfa8\xaa" +
-	"O&\x84\x0d\xad\x09\xb5\xe0\x84{bG=\x8f\x1cu" +
-	"S\xff\xf0\x1eLFx\x06)a\x7f\xb0>\xa0\x84k" +
-	"=!l\xc8\x1e%#\\\xa3\x0e\x8e\xf7\xcas\x92y" +
-	"\xe5\xa4q\x11\x0f\xd2*\x86v+r\x18W\x9d\x8f\xb9" +
-	"\xe5\xab\x89g{\x03\x0f\xd2m\x1c@\x9a\xe9\x95\xaf\xb9" +
-	"\x16!\xe9\x16\x1e\xa4;\xe3\xf5\xa7\xd0 \x07\xed\xff\x03" +
-	"\xaa\xdf\xfa\x7fI\x00\xd7\xc8\xf5A\xc7M\x0fc\x1c\xd0" +
-	"\xab\xb0\x8e2\x0cY3\x00\x10\x07\xd0\x1e\xf5\xebc\xd4" +
-	"zG{\xa7\x83\x09\xfe\xb9<H#\x98\x9d\xe6\x13\xc6" +
-	"\x0c\xe2A\x1a\x19\x8f\xab\xbbA\x0e\xd6\xb7K\xb7\xc4\x0c" +
-	"\xa6%\x9e(\x951\x96\xb5\xb4\xd1M\xd5\xd4Y\xea\x91" +
-	"\xd9]\x95\xb3\x11{w\x05$\x90\x1a\xc1\x83t1g" +
-	"j\xa2`%q\x16\xea\x9c\xe0\x07G\xd4J\xd9\xa8c" +
-	"\x03\xa26\x95S\xad\xacU\xcb\xb5x\x9c\x1a\x0cb\xbf" +
-	"\x91[\xe9\x96\x13U\xf5\\FU\xcb\xb5\xb5\x1a\xd6u" +
-	"\x85x4\xcdX\xd9!\x05]M|\x99\xa4g\x8a\xb5" +
-	"N\x1a\xed\x87\x1eNf\x12\x01\xf4`V\xea\xdc\xf2J" +
-	"\xd4\x98\xd8+\xb4j\xa7&\xfa\x86\x11\xcf$\x89\xcf\x90" +
-	"\xe7 \x93\x11\x91\x8d\xbaf\xe4Lk\x0b\x01K\xc7\xb7" +
-	"\xc5Sr\xe2\x86\xf2 \x8d\xb2\xec`<O\x97\xa8\x11" +
-	"CQ\xc3:\xf4pnJ\x12h\xd1\xa2p\xf9e#" +
-	"\xa9\xdf\x12\xb79Uk\xae\xbcZ\xd4\x8d\xfe \x96\xb5" +
-	"d\xea\xfb?\xaf\xbf\x93\x87\xd3>Cv\x1b\x93\xc35" +
-	"j\xeb~\xd4r\x88\xfa\x0c\x99\x02\xa6S\xcf\x89f;" +
-	"\xf2\x83\xca|\xec\x09`\xdd\xaf)\x94\xea4\xf7\x11n" +
-	"\xf2\x84\xd5\x00F\xf4\xec\xc5\xf6(\x96C\x1eB\xbe\x8b" +
-	"\x81\x07\xdf$p\xb6)N\x80)\x08\xf9\xc6\x93\xf6J" +
-	"\xe0\x00\xcc\x8d\x8a\xd3(\xf8$\xd2<\x93\x80\xf3@\xf5" +
-	"\xad(A!B\xbe\xa9\xa4}\x0eiO[Ju\xae" +
-	"8\x8b\xb6W\x92\xf6+I{zz&\xa4#$^" +
-	"N\xdbg\x92\xf6y\xa4\xbd\x03\x97\x09\x1d\x10\x12\xaf\x82" +
-	"\x0a\x84|sH{\x80\xb4\x0b\xcb2A@H\x94)" +
-	":\xf3H{\x90\xb4w\\\x9e\x09\x1d\x11\x12\x15\x98\x8b" +
-	"\x90\xaf\x8e\xb4\x1b\xa4\xbd\x13\x9f\x09\x9d\x10\x12\x17@5" +
-	"B\xbe\x08i_D\xda;\xa7eBg\x84\xc4&\x8a" +
-	"\xbfA\xda\x97\x92\xf6.\xe9\x99\xd0\x05!q1\x85_" +
-	"D\xdaWA\xe2Q14\x8c'\xc9:\xd5F\xdd\x10" +
-	"\x07\xdd\x10d\xe8\xcau\x18:!\x0e:!p+\x84" +
-	"\xae\xce\x97>^\xd1,\x95\xe2\x0e\xe0\x88Qg\x09\xe6" +
-	"\x92\x90\x1a\x98\xa90\xf9 E\xafT\xc2aL\x82\x18" +
-	"[\x09)\xba)\x98\x88W\x1c#\xe3W\xc3\x06\x0e\x1b" +
-	"\x93\x90 \xebu6\x16\xf5:\xe3\xfaV\xcb\xfe\xf98" +
-	"\x1c\x88\x07i\x9fuj\xe6\xfe\xb42\xca\x8a\xcc\xb0\xa6" +
-	"\xdb!N2\xd7\"\x97#\x04\xaaQ\x99\xcc\x92][" +
-	"\x94RX1{\x9coXP\xad\xb5\xf2Wm\xab\x0b" +
-	"\xbcP\xd1\x0d=\xb7\xaa\x0c7C\x8a\xd5\xcd&X{" +
-	"\xcc\xb8\x15\x9b\xfa\x8df\xc8\xb4C\xd3\x98\x1a\x1d\xf4_" +
-	"\xc2\x0f\x8b)\xc7_N\xf1\x13b\x1b\xb2M\xec6\xfd" +
-	"\x94\x0a\xc6O\xd1p\x83\xad\xed\x0d\xb9v:\x9b\xf8l" +
-	"s\x1bZ,\xc0jn\xb5\x7f\xe6N&\xfa\x86\x19j" +
-	"\xbd\xbf.Y\xcc\xf6\xf3\xa7\xa4HVa=#\xd5\x88" +
-	"\xde\x89\xed\x92Y0V\x1e\x0d\xc5?\x1f\x1b\x96\x1aI" +
-	"\x81O5\xd8 \xdbkN16Q\xc0F\x82m\xef" +
-	"n~@\xd1\x92yqy\x0e\xefm\xd6k\x8e\xc1\x8f" +
-	"'\xa2_\xc3\xb2\x81+e\xe4\xd6p8\xc9\x09ky" +
-	"GzS\xd8\x9fl\xf9)\x8e\x94\xd9\xfeF\x15\xe3C" +
-	"6*F\xddeuj\x88\xf5\x17\x89\xb7>\x11\x1b~" +
-	"\xe2\x83\xb4\xe3\x8c\xdb\xf1#=\xa6\xbc\xf1\xef\xe7\xcb\xdb" +
-	"b\xa0\xa5\xa7\xda\xf0\x08\xc6\xa9!!\xa4\x18\xad\xdfx" +
-	"\xdc\x14\xf5)\xe1\xda \xf6\x04A\xad5\xa3-\x04R" +
-	"\x0f{\x072a\xe4\x95<Hu\xcc!\xc6D^\xe6" +
-	"\xf1 \x05\x19\x97F!\x90\x01\x1e\xa4\xa5LX\xc5\xde" +
-	"\x95d\xd41fF\x08\xe9\xb5\xb6\xc7c\xc8\xb56Y" +
-	"H[w\x04\x19\x01\xd9\xc0?/a\x95\x18\x82\xa4h" +
-	"\x92bR\x94\xe2\x89N\xa2\xee*\xdaPwKt\xcd" +
-	"_\xc9\x88\xfd\x92\x80nT&\xd3%]Z\xe4\xbf_" +
-	"\x0d\x85\x94\x14]|\x8b*\x96\xf5\x89\x0f\xe6Z\x96\xb1" +
-	"\xfa0Q\xe7\xcdd,\xd5(*\x99\x11e-{\x8d" +
-	"\x86q\xc09\x03\xf6\xbdv\xc2\x19h\xf3\xc0U\x85\xac" +
-	"\x84MKz:\x9c\xcc\x9cth#\x88\x9de\xe6\xc8" +
-	"-9j\x7f\x00\xdc\x9a\xd2\xce\xe5\xa0\x8cN\xcf(\x01" +
-	"\xfbJ;%%0\x8d\x8c\x9eA]t\xd0\xc9\xc9n" +
-	"C\xe7\xb1q\xb3\x86\xe5\xc0\x8cp\xb0\x89u\x1d5U" +
-	"5Z\x8a\x9b[\xb7\xf7\xcdLZk\x91\xbea\x83\xb7" +
-	"\xc4,\xe2\xf0A\x0f\xa7F5!\xd2\xe3[\xca\x1f\x0b" +
-	"\xaa\x81[O'\x15B\x94D;\x1e\xd9\xa3\xf1f\xc2" +
-	"8\x82\xb1\xe6i\xc4\x9e\x90R[gx\x88\x09q{" +
-	"\x88A\x88\x8f\xe5\xf2\x92\xc5r\xd5l\x1e5\xa6\xf8$" +
-	"r\xc6\xa7\x9a*2\x85\xcb\xdb%f\x02\x9a\x11\x01\xbb" +
-	"\x84\xbc\xbdg\xa0R\x09\xd7&\xbb\xa5\xfd\xd9\xe6\xdc\xf4" +
-	"\x7fR\xbf\xaf\xf0\xab\x91\xa6\xffWU\xd8\xa6\xc2\x1f\xaf" +
-	"\xfa\x7f\xe1\x9b\x0f\xebn\x0a\xcbZ\xbbnb\x9c\x9cp" +
-	"\x12|\xe2S<\x040\xc1\xfe\xf7h\xef\xa6\xdbJo" +
-	"\x90`>\xe1B&\xa5\xd4\x89ye\xf5s\\\xe0\xe4" +
-	"gt\xbcR\x035\xc9Oh\x9f\x98\x0f\xf2}t\xbc" +
-	"RS\x835\x1c\xe6\xfc\xd8S\x8d\x8dF\x8c\xc3\x1e\xa3" +
-	"Q\xf5\xf8\xcb\xa8\xc1\xd3\x11\x92\xfa\xd8\x98<I\xcc\xc9" +
-	"\xa3<H\x7fb\xa4\xeb\x00\x91\xae}<H\x9f0'" +
-	"\xf3\x08i|\x9f\x07\xe94\xe3\x92\x9c\"\x8d'x\xf0" +
-	"u\xa4y\x073\xd7+\xa6C!BU$\x9c\xef\xc3" +
-	"\xa6\x1dzC\x09B\xbeL\xd2>\x82\xa6\x1d:\x98i" +
-	"\x87|\x9a^\x18jeA\xdcr \xc0Z5V\x8d" +
-	"uG\xa6\xeb\xd7\xd0\x1a\x80R\x1bV\xb5\xd6\x00B\x8a" +
-	"\xae+\xe1\xda\x16\x01\xdc\x09\x0b\xd8\xa5OfwY\x08" +
-	"k\xb5\xad\xf4\xd3{\xde\xa0\xe27\x88!h\x11(\x85" +
-	"\x14`\x84\xaa$3\xc2H9\x86K\xd1\xd9\x88KO" +
-	"'\x0b\x8a+\x1c\x11\xb5\xee}\xa1\x87S\xd8\x98r\xf6" +
-	"\x90h\xb5f\xf6\xad\x05'\xbbN\x16\xc2\xb5\xb8u\x01" +
-	"\xff2:#\x8c=\x93\x14\xdd\xe0T\xad)v\xa7Q" +
-	"\xa3j\x1e\xd9\x93Q\xa3\x041BR\x96\xbd\x8b\x8dy" +
-	"N-\x90-\xde\x9b\x89\x02\xb9\x93\x07\xe9\x01F\xbc\xef" +
-	"#\x90w\xf3 =\xc4\x88\xf7V\xd2x/\x0f\xd2v" +
-	"G\xba]\xdb\x08e\x1e\xe0Az\xd4\x91m\xd7\x8e\xe5" +
-	"\x08I\xdby\x90\x9eN8\xd1e\xfe:9\\k\x9b" +
-	"\xb1\x8c:,\x07\xa0\x87S\xfeo\xd21#\x8c\x17\x1a" +
-	"\xcd\x9b\x97PA\x9c\xe9\x18\x9dFY\xaf\xd4p\x83\x02" +
-	"j\xbd\x1el*7P{\x94q\xacd\xc1I\xb6\xb6" +
-	"v\x8f\x9ap'\xd0\x9eX\x9b\xe6\xe6\xad\xc4u\xfb\xc2" +
-	"\xed\x14MIbx\x91\\\x9c&\x07\xb0;l(F" +
-	"S\xeb>MO\xcb\xa7\xa9V\xf9z\xc3\xa3\xd6k\x1e" +
-	"\x7f\xbdF\x82gO\xbd\x8e5\xb3\x82\x8d\x88\x15\x13\xc8" +
-	"U31\x9b%VJa,f\x8b0b\x15\"\x90" +
-	"A\x1e\xa4\x85N\xd5Z=q$\x0d3\xb8\x8b\xc6\x96" +
-	"\x9a\x85\x04&\x9b\xe8V\x1b\xc3Ln1y\xdd\x9a\xa2" +
-	"\xcf\xa0\x11\x17\xeb\x82\xa6f\xf5h\x14c\x9d\xf9\x94=" +
-	"r\xeb\x86\x96\x84\xe5):\xaaI\xdc\xa96-_z" +
-	"\x8b\x9erH\x9e\x8f\x89qK\xaa\xae\xe2\xcc\xb5RS" +
-	"\x03=\x9c\x17\x08)\xe9*&$L\"\xbb\xac\x0f\xc4" +
-	"D\xdbm\xcci\x9e\x07\x8a.\xd0\xdcA[\xb9\x80\xbc" +
-	"\xd6r\x01\x11F3\xb1r\x15\xe7'g\xc8\x81\x80-" +
-	"9\x19!\x99)0H.F\xa9&t\x7f\xd1\xdc\xa0" +
-	"Y\xc9\x93\x90\xeeN\x0e\xcddo\xcd\xcb\xee\xe4\x891" +
-	"\xc75.q\\\xe3\x04ML\xb9\xdb\x1e\x95f\xd51" +
-	"\x05\x9bR\xcc\x7f\xd3Q\x0b\xea\x15\xa3\x99\xd9nY\xac" +
-	"\xeb\x14\xddP\xb5\xa6\xe4U\xbbl\xce+\x06\xe8\xb8\x14" +
-	"\xf6\x1b\x96\x94b\x1dv-\xab\\\xe2\xdfwIgc" +
-	"-\x83\xf8\x06\x09\xd2\xad%S\x90\xc4\xc8\xd4\xf1 \x19" +
-	"\x8ct/\xb8\x0e!)\xc2\x83\xb4\x88\x91\xee\xa6\xb9N" +
-	"\xa6+\xb6\xfel\x8c\xdc\xa6\x13\x12\x8fW\x15F\xd0\x90" +
-	"x\x0b3\x1b\x95\xe1x\xe0XG\x15\xe2\x9d4y\xca" +
-	"\xbcl\x8fKe'T\x9a\xa9\xca\x14,s3\x9d\xcc" +
-	"\xb7p\x80\xe8A\xf0\xd2Z_\xeb).X\x0f\xb3\xc5" +
-	"SP\x18\xab\xe7t*\xd3\xc1z.!\x1e\x86\xbcX" +
-	"='g\xbf\xf1\x04\xebA\xac\xb8\x17r\x10'>\x09" +
-	"\x02\xf0\xf6\x0bI\xb0^'\x88\xdb\xe8\xcc\x9bA\x804" +
-	"\xfbu'X\xcf\xb3\xc4\xb5\xb4\x8et\x05\x08\x90n\xbf" +
-	"=\x04\xeb\x09'\xbd\xfc\xe3\xc4\x10\x08\xd0\xc1~\xda\x06" +
-	"\xd6\xfb,Q\xa6\xbd\xb3@\x00\xc1~\xdf\x0b\xd6\x13 " +
-	"q2\xc5\xaa\x14\x04\xe8h?<\x03\xeb\x89\xbaX@" +
-	"\xb1\xea\x0f\x02t\xb2\x9f9\x81\xf5\x90O\xecMg\xee" +
-	"\x06\x02t\xb6_%\x83\xf5VQ\x04\xb8\x0eq\xae\xb3" +
-	"\x02t\xb1_\xa3\x82\xf5$\xcfu\xb2\x10q\xae\xa3\x02" +
-	"t\xb5_+\x81\xf5\xe2\xd6u\xa8\x04q\xae\x03\x02t" +
-	"\xb3\xdft\x83\xf5\xaa\xdf\xb5\xe7&\xc4\xb9\x9e\x11\xa0\xbb" +
-	"\xfd\x8e\x18\xac\xe7\xb6\xae\x1d\xb7#\xce\xb5M\x80\x0c\xfb" +
-	"\x819Xo\xbe]\x9b\x97#\xce\xb5^p\xd3r\x0e" +
-	"/d\x04\x15\xdd\xf0\x82\xe0\x97i\xe1\xe9\xfc\x80\xa2y" +
-	"\xcd\x88\xb7\x81\xf4\xc6\xfe\x10\x07\xdb\x0bBD\x09{\xc1" +
-	"M\x03N/d\x10\xeb\xeb\x85\xa8\x95NDefB" +
-	"\xd1\x0bn\x9a\x95\xf0Z\xf7o^\x88Z\xa5T`]" +
-	"\x91\xd1\x8aN\xeb\xe2\x0c,\xdd\x0b\x04\xd6*j\x02\x0b" +
-	"4\xbet3\x05\xd3m\xfb\x9eL\xb1\xd1\\\xa6\xae\xc8" +
-	"\xd2\x15+\xaa\x9d\x12\"[W\xac\x99\xe2\xd4\x10\xd9\xba" +
-	"b}\x95\xe3\xe2[\xc5F\x9b\xab\x1cg\xde,q\x99" +
-	"\xd1\x18F<\xe3R\x99\xc7tF#\x12XG\x8b\x82" +
-	"V\xe1\x86\xb8\xa7\x00\xe6\x81\x8eS3?\xf3v\xc3," +
-	"\xb8M\xa6|\xdbJ2\xa5\xe2\x9bY\x19\\&\xedV" +
-	"\xc5TKX\x94\x9dV\x15\xcb\xb0\xcda(;\xab\xc2" +
-	")_LZG\xf9K\xd6\x94\x10\x81\xd0\xb0\x8e\x9d*" +
-	"\xa1\xb62\x859\xce>\xc0*\xfa(t\xb2\x87q\xf6" +
-	"\x8a\xbd\x08u\xd7\xa8\x9a\x1f\xa7x\x05F\xa9\xa9\x84\x93" +
-	"\xe9\xfbv$\xba\x9b\xa9\xf0\xb4\xd6j\x18\x93\xa6rY" +
-	"\x9bO\xc2[\x85\xbd\xe7JHU\xa4,!\xb1\x12\xda" +
-	"\x14\xd3\x91\x97\x98\x8ac\xb2\x81CmU\x18V@\xb4" +
-	"\xdc\xa3\xd3{\xaf4\x8fb\xe0\x90YQ\xdc(\xeb\x9e" +
-	"\xf9J0\x88\x03\x9e\xea&\x8fQ\x87=\xb5~\x94B" +
-	"R\xb8\"Y\x81OK\xbc^\x12+\xcc\xb0.\xc2\x12" +
-	"\xe2\xa6T\xf9m\x89!\xe3\xbfLI9\xc0\xab`\x9c" +
-	"\x1aK'-\x98\xe285\xd1jY\xc7\x09\xd7\x02\xf1" +
-	"x.\x899'6\xde\x11Y\xd7\x1bU-\x90z\x01" +
-	"^b\x1e;\x99X\xb1!\xbe\xfd\xbe\x09\"vQr" +
-	"\x0a+\xc4\x8a\xb7\x93z\xaalto\xc2A\x0f\xe7e" +
-	"s\xaa\xe9\"\xf3\x0e<E)un\xd8\x92\x04'l" +
-	"\xfe\xaa\xa5z\x88\xb6u\xb5\xbd\xd5\x14\xcbd\xda}\x9e" +
-	"\xd9\x8cO\xdbi\xc1\x89\xfaL\xb9\xda,\xfc%\xa7\xb2" +
-	"\xadwty\x8ee\xb5\xf4\xe6\x8a)\x8ca\xe59S" +
-	"^\xd7\xe49o\xeb\\i`\x1a\xd1\xb5%\x8e\xb5\x8d" +
-	"\x0f1\xe3\xc2\x83$7a\x19\x9a\xaa\xdaqV\x99\xec" +
-	"7\x94$U\x9e-f\xb8\xdd5\x95\xb2\xa2\xb5\x9e\x04" +
-	"\xfc&Z\x85#\xc4\x86\x849\x83&\xb7\x034\xe9\xad" +
-	"\x84k=\xee\x1a%\x88uJ\xf2\xd6\x8bgr\x98\xe2" +
-	"\x19]\xf37\xbf0\x13\x02\xba\xd1\xca5Zj\xef\xfe" +
-	"R\xbc\xdaslb{\x82\x0d\xa6$\xaa\x1d\xeb\xd0:" +
-	"\x8fdEc\xed\xc8\xa1\xf0-\xcdn\x9a\x8b\\\x1a\x9a" +
-	"X?\\\x03\xd6[d\xd1E\x1d\xf9t\x1a\x9aX\xbf" +
-	"'\x00\xd6\xcf\x90\xb8\xce\x12\x9f\xfa$\x09L\xac\xdf\x96" +
-	"\x01\xeb\x97:\\Gs\x10\xe7:D\xc2\x12\xebE4" +
-	"X?E\xe2:@\xfc\xf4=$(\xb1\x1e\x9a\x83\xf5" +
-	"\xc8\xd8\xb5\x8b\xf4m%!\x89\xf5h\x1f\xac\xe7\xfd\xae" +
-	"\x8d\x15\x88s\xad!\x01\x89\xf5\x0a\x1e\xac_Ap-" +
-	"\x9b\x828W\x13\x09G\xac\x9f\x81\x01\xeb\x11\xb2+\x94" +
-	"\x878\x97L\x82\x11\xebWf\xc0\xfa\xa1\x17\xd7,\xb2" +
-	"\xdedA\x08\xaa\xb5^+\xe5\xe0\x05\xc1\x90k\xa9{" +
-	"n\xfe\xa5\x9c\xf6\xda\x11\xbd\x17\xa2\x96\x83L\xdfSe" +
-	"\x10\x0ey\xc1M+T\xe2]\xec\xe4t/\xaf\x9cL" +
-	"\xe9^\xc9\xa7K]\x01\x9c\xdf\x00@\xc8y\x19\x8d\x90" +
-	"\xf3#`\xa9]\xc4;\xef\xa1\x92]\x90\xb1Us\xc9" +
-	"\x0b\xe3[w}\x92\\u&+t\x9a\xc2\x14:\xb1" +
-	"z%\x1a\x92\x17\x8e\xc7\x11\xd3\xae&\xd6\xeb\xa5\x96\xd3" +
-	"I\xf1\xcc8w1\xad\xd5c\x102h8\x12\xb4\xef" +
-	"G\xff/\x00\x00\xff\xff\x97\x8cx\x83"
+const schema_ea883e7d5248d81b = "x\xda\xcc|{x\x14E\xbaw\xbd\xdd\x09m\xb8\x85" +
+	"\xb6\x03\x041\xcc\x10\xc3B\x02\xe1\x92\x10T f\x12" +
+	"\xaea\x01\xd33\xa0nD\x8f\x9d\x99J\xd22\xd33" +
+	"tw\x08q\xcdAXQ\xf1\xc8\x1euE\x04\xe5\xa8" +
+	"{\xd6\xa3AY\xbc,\x9f\x8b.\xae7\xce.\xee\xfa" +
+	"\xad7tQ\xd9O\xf7\xc8\xb7\x8bG>\x17\xd7\x1b." +
+	"\x9c\xf9\x9e\xaa\x9e\xea\xaeI&\x99\x89\xcf~\xdfs\xfe" +
+	"J\xa6\xfa\xed\xaa\xb7\xaa\xde\xf7W\xef\xadz\xe6{\xa3" +
+	"\x03\xc2\xac\xfc\xb6J\x84B\xa3\x84\xfc!I\xf9\xfb\xe3" +
+	"\xde\xb7V\xee\xbe\x01\xc9~@(\x1f$\x84\xaaw\x8e" +
+	"y\x05\x10({\xc7\xd4!H\x9e\x7f\xa5\xfe\xeb3\x1f" +
+	"\xb7mBj\x09@r\xfc\xef\x97\x06\xbb/\xb9\xe5c" +
+	"\x94\x9fG(\x8f\x8di\x00\xe5\xe4\x18I99\xc6W" +
+	"=z\xac\x0f\x10$\xbfh\xfc\x81~\xa4v\xf8MH" +
+	".\x05\x84(\xd9\xac\xe2\xeb\x00\xe5\x9d\xfd*\xf2\xee&" +
+	"y\xd5M\xf2D\xd6^R\xbc\x19P^\xf2G\xe7\x14" +
+	"~\xf8M\xf3\xd1\xd4\x1b\x0e\x0f\x05\xc5{\x08\x0f\xe3\x8a" +
+	"\x09\x0f_\x8f\xc1\xd3f\xfe\xcb\xcb7;L\xd2Wk" +
+	"\x8bM\xf2\xea-\xdb\xfei\xa5~Q\xc3-\xdc\x93r" +
+	"\xe7\x89\xf0\xfdy\xf8\xc4\x9e\xe3\xb7rl\x8c.~\x83" +
+	"<\xf1\xffj\xd7\x9c\x13\xeak?Dr\x09?\xa1\xd4" +
+	"\xb0APJ\x8a%\xa5\xa4\xd8\xa7\xa8t\xf0\xd7\xaeX" +
+	"\xda\xba/\xac\xdf\x95Z!\x91\x90\xad+~\x86p\xb7" +
+	"\xa9x\x1f\x82\xe4\xb3\xb7\xad\xac}\xea\xdf~\xb8\x9d'" +
+	"\x187\xeeEBP>\x8e\x10\x98\xdf\xb9\xeb\xe4\xebO" +
+	"?\xb2\x1d\xa9~`\xbc\xbc\xe0\x10\xbc>\x8e\x0c\xb1\xa4" +
+	"\xe1\xe4\xef\xbe\x96\x97\xef\xc8\xb8\xc6\xa7\xc6-\x03%\xff" +
+	"<I\xc9?\xcfW]s\x1e]\xe35Ps\xde\xf2" +
+	"\xe0m;\xb8\xc95\x8e\xa7\xd3\xbe\xfc\xb7\xeb>\xfd\xd1" +
+	"\xb0\x99\xf7\xa4\xd6R \x8fj\xc6_G\xc6\xaa\x1f\xdf" +
+	"\x89 i\x8c\xbe\xa0c\xcc\xfb\x1f\xdf\xc3\xbd\xfa\xe0\xf8" +
+	"[\xc9\xab\xef%\xf6V\xfe\xe7\xfc\xc7w\"o\x83\xee" +
+	"\x18\xffc\xf2\xe4\xca\xa15\x11\xbd\xa4|\x97\xf3\xc4Y" +
+	"\xa9M\xe37\x93N\xb7\x8d'\x13\xd8\xda%=w\xf8" +
+	"\xcfw\xdf\xcb\xef\xe0\xde\xf1\xbb\x08\xc1AJp\x9f0" +
+	"tG\xf1#\x0f\xdf\x9bZ#\xca\xd6\xb1\xf1\xd7\x12\x82" +
+	"\x13\x94\xadQr]\xe3\xc6\xceq\xf7\xa5z\xa0\xa3\xaf" +
+	"8\xdf$\x04\xdf;\xffO\x08\x92c\xd5K\xff0\xd2" +
+	"\xf7\xd4}\xfc\"\xd6\x94<I\x08\x16\x95\x90!\x92\xc1" +
+	"\xad]c\xbf\x89\xec\xe6y\xd0K\xe8\xcc;(\xc1\x97" +
+	"c\xfe\",\xdcq\xe6_xQ\xdf^\xd2L\x08\x1e" +
+	"\xa4\x04\x17]\xf7\xe2\x9d\xaf\xbe\xf1\xe7\xfb\xd3\xf6\xa9\xa4" +
+	"\x85\x10\xbcJ\x09~\xbdr\xec\x8b\xfeh\xf7\x83\xfcN" +
+	"\x9f,\xa1\xca\x02\x13\xc8N\xdf8\xbb\xf9\xc7\xd3\xffa" +
+	"\xe6\x8f\xc9F\x8a\xdcF\x0e\xa1j5\xa1\x0a\x94\x9e\x09" +
+	"\x92\xd23\xc1W}l\xc2\xc3\x02\x82\xe4\xdaP\xa8\xfe" +
+	"3\xa5\xe1_y\xa6\x1f\x9a\xf8c\xd2\xe3\xfe\x89d\xc8" +
+	"-S\xbb\x0f\x85\xde\xfc\xf4'\xdc\xa6\x1c\x99\xd8B6" +
+	"\xe5\x997\xce}eJm\xc7Ci\xdcN\xa4\xf3}" +
+	"\x95\xbeZ\xba~\xf3\xbe7\x16o}\x98'89\xf1" +
+	"\x0d\xcam)!\xb8\xe3\xd4u\xf7\xdf\xf9j\xcb#H" +
+	".\xe1\x98EP=\xb1\xf4\\Pf\x95\x92\x17*K" +
+	"\xa5<\xe5\xf52\x09\xa1\xe4\x18i\xc7{\x0f\xac\xba\xf3" +
+	"\x11Nr\x0e\x94Q\xf9\x98}\xd9\x84\xe4\xf2+\x0bz" +
+	"\xf8\x95\xed)\xa3+\xbb\xbf\x8c\x8c\x14{\xebOFA" +
+	"[wOJ\x80\xe8\xf6\x1f)\xa3+\xfba\x19\xd9~" +
+	"\xf1\xdc\xe1\xf2\xf4\x96\xfb\xd2z\xa8\x9dD\xb7\xbfq\x12" +
+	"\xe9\x01\xba\x9b\x9f\xbbf\xae\xb2\xa7\x0f\xaf\xfa\xa4\xa1\xa0" +
+	"tM\"/tL\x92D\xa5{2\xe1u\xe2\x9b\xaf" +
+	"N\xba\xf1\xe1{\xf6p\xbc\xe2\xc9TA\xf6\xe9\xcb\x7f" +
+	"x|\xe9\x84G\xf9\x91\xd4\xc9T\x12\xaf\x9aLF\xaa" +
+	"\x88\x7fv\xef\x99\x7f\xdf\xfa(\x07)\xdd\xe4y^r" +
+	"]\xec\xda\x03\xb7\x7f\xf2\xd2\xa3i\x126\x99nV\x17" +
+	"}\xf5\xda\x05o\xf6\x04F|\xf1\x18O\xb0\xd3!\xe8" +
+	"\xa1\x04\xfa\xe5/%Z\x92\x17\xee\xe5v\xf3\xe8\xe4=" +
+	"\xa4\xef\x7f\xdd\xf5\xee\xb15\xbe\xf0>\xee\xc9\xe1\xc9\xbb" +
+	"\xc8\x13\xfb\x9f\xf7\xde\xf6\x8b\xf2\xff\xd8\xc7wz`\xf2" +
+	"\x9d\xa4\xd3\xc3\xb4\xd3\xd7B\xff\xf5\xde\xff\x9a\xfe\xe5>" +
+	"^;OL\xa6k\xf7\x05%\xd0F\xce\xfbM\xf1\x99" +
+	"\x99\x8f\xa7\x04\xc1\xa1\x18=\x85\xcey\xe2\x14\xb2\xfcO" +
+	"\xaf\xfb\xc3\xec\xb9\xbf\xbf\xf2q\xa4N\xf4(69\x14" +
+	"\xdb(\xc5\x8c\x97\xbf\x7f_\xde\x9aIO\xf2\x83\x9c\x9a" +
+	"B\xb9\x80r\xaa\xe1+\x96\xbc\xf8\xf6\x07-Or\x13" +
+	"\x98UN`?\xb9z\xf7\x94\x0b\xf6\\q\xfd\xcfz" +
+	"\xe1\xads\x02\x94\x97\x82RY.)\x95\xe5>eu" +
+	"9Qt\xfb\xf9y\xbf\x9b0\xf9\x97\xfb\xb9\xad\xbb\xb8" +
+	"\x82\xae\xd1O\xbf:>\xa5\xa6\xfa\xfd\xfd<\x0f\xe5\x15" +
+	"\x14e.\xae <\x9c:\xfb\xf9\xfb/\xd4\xc6\x9f\xe6" +
+	"Q\xe6{\x15T\xccp\x05\x99\xc5\xc5\x1d\xff\xb8x\xed" +
+	"\xb1\xd7\x9e\xe6\x98|\xa1\x82\x9eA7\xdeR>6v" +
+	"e\xc1\x01\xbe\xef\xbd\x15\xf4\x0c:H\xfb\xde7y\xf9" +
+	"\x05\xb7\x7f4\xe2\x19\xee\xd5\x93\x15t~O\xbd{\xb6" +
+	"\xf6\x81\x9e\xab\x9f\xe5%\xeah\x05= N\xd0W\xf7" +
+	"\xbe\x9f\xfcQE\xf5\x0f\x9e\xe5f4n*\xdd\xdb3" +
+	"\x8f\xbep\xff%\xc1O\xf8'\x05S_!O\xeey" +
+	"\xb9\xbba\xd6\x9a\x15\xbf\xe8}$\xd0\xde\xcfV\x04A" +
+	"\x91\xa7J\x08)#\xa6\x92y}\xf7\xfe\xa2\xeb;\x1b" +
+	"{\x0er\xcc\xad\x9bJe64o\xe6\xdd\x9ft\xfd" +
+	"\x8f\x83<sWM\xa5\x1b\xabO%\xcc\xed\x0a\xbd5" +
+	"\xf2\xfb\xcf\xae{\xae\xd7\xeePl\xdb:\xb5\x14\x94\x9d" +
+	"S%e\xe7T\x9frx*A\xb8\xc6\xf9{?y" +
+	"\xe5\xf83\xcfq\x1cwL\xa3sI\x8e\xbd\xfd\xfe\xe0" +
+	"\x07\xc7\x9f\xe3x\xc0\xd3(<,9\xb1\xea\x7f\xbf\xfd" +
+	"\xd7\xf3\x7f\xc9i\xd4\xeaiT\x19\x17\xd6]\xf2\xca\xbc" +
+	"\xf5[\x9f\xe7W\xbd~\x1a\xddQu\x1a\xe1\xae\xf3\xd1" +
+	"\x1dE\x93C{\x9f\xe7\x8f\xb3M\x0e\xc1\x1d\xd3\xc8\xcc" +
+	"\xbf\x9e~\xf4\xdd?\xb4\x1e{\x9e\xdf\xf2\x93\xd3\xe8\x96" +
+	"\x9f\xa6\x047\xb5\x8f\xc4\xbf\xbb\xfb\xc6\x178\xb6VW" +
+	"\xd2\xf3\xee<\xb1+t\xdd\xd8\x8b^\xe2\x9e,\xaa\xa4" +
+	";\xbaeU\xe7\x0d\x87>=\xf3\x12o\xc2T>I" +
+	"\x91\xee\xfe\x8f~\xfa\xd4\xb9+^\xe6\x95qb%\xd5" +
+	"\xf0Y\x95\x84\xe1'\xff\xf3\xf2\xc7\xb4/\x8f\xff\x8a{" +
+	"U\xab\xa4\xabp\xf5\xa9\xc7\xbf\xf3\xd8\x0fW\x1fN\x03" +
+	"\x9eJ\x07x\xe8\xab\xad\x0f\\\xbb\xeb\xd7\x13\xae9\xdc" +
+	"k'$\x8a@\x95\xe7\x82\xb2\xadRR\xb6U\xfa\xaa" +
+	"\x0fT\xfe31\x02\xde\x09\xb5\xd7}\xe7\x91\xa7\x0es" +
+	"\xcb\xba\x7f\x06\xe5\xbf\xe8\xf0{\x9f\xe1K\x8c\xdfp3" +
+	"{p\x06e\xe2\xcb\x93\xea\xd6\xdb>\xfb\xfc\xb7\xdc;" +
+	"w\xcc\xa0\x82\xb2s\xf4\x8d\xd6\xdb%\xd2k\xdc;\xdd" +
+	"3\xe8:]\xfb\x7fn\xfe\xf8\xbf\x941\xaf\xf5\xe2\x8b" +
+	"\x9ei\xb1\x19\xa5\xa0t\xcf\x90\x94\xee\x19\xbe\xea\x9e\x19" +
+	"\x97\x13\xbe\xdej\xd4\x8b~\xfe?\xf7\xbd\x9eZ#*" +
+	"I\xa7gR\xa8(\x98E\xed\xa15C>\x0eY\xf2" +
+	"\x1b\xfc\xae\xf7\xcc\xa2\x0as`\x16Y\x89C\xf7\x1e<" +
+	"\xfb\xc1\xb5W\xbd\xc9\xe0\x88\xee\xea\xd1Y\xb4\x8b\x13\xb4" +
+	"\x8b\x86\x05\xcd\x7fKL\xda\xf5Vo\xf5p\xc4\xb6\xaa" +
+	"\x0a\x94\x9dU\x92\xb2\xb3\xca\xa7\x1c\xae\"\xa0r\xe2\x9a" +
+	"\x8e\x7f\xfc\xe9\x17\xf0N\xaaG:\xbd\x9ejj=\x1c" +
+	"\xa8&C\xd6>=q\xfb\xa5\xa3\x87\xbf\xc3\xed\xdb\xd1" +
+	"\xea;\xc9\xf4\x97\xed\xb9\xb3n^\xf3,\xfe\xc9\xe1j" +
+	"*\xf1\x87\x0e\x1d\xf9\xdb\x97e7\xbf\xc3\xef\xe8\x81j" +
+	"*{\x87h\xa7\x0b\xce\xdc\xdd<\xe2/\x0f\xbf\xc3K" +
+	"\xcb\xf1\xea[)2S\x82\x11\xda\x8d\x1f\xc5\x96~\xfa" +
+	"\x0e\xbf\x12\xe3f\xd3y\x96\xcf&\x04wo\xab\xd6." +
+	"\xb8\x7f\xd1Q\x9e\xa0q6=\xe4WS\x02}\xd7#" +
+	"_\x7fi\xad:\x9a\x09\\;f\x07A\xd9:\x9b\xc0" +
+	"\xc4\x96\xd9d\x15\xfe\xf2\xc6\x0d\x0f-\xf8\xe3\xe4\xf7\xd2" +
+	"\xc0\xa0\x86\x9e\x14z\x0d\x05\xd0\x03\xbfz\xbf\xf1\xb3\x0d" +
+	"\xefqB\xb0\xb5\x86\xae\xc2\xe7/=\xb6(\xef?\x1e" +
+	"y\x8f\x13\x9c\xae\x1aj\x87\x1c^\xb9{\xec\xb6O\x86" +
+	"\xbe\xcf/-\xae\xa1*\xdaA;=\xfe\xab{w\xec" +
+	"h\xbd\xf9\xfd^,\xd2M\xdd^\xb3\x0c\x94\x9e\x1a\xc2" +
+	"\xe2C5D]\xcf;\xf2\xd1k\xd7<\xf4\xc4\x07\xfc" +
+	"\x92\xc1\x1c\xda\x9b<\x87*\x989\xed\xe5\x9f\xef\xfe\xfc" +
+	"\x03~Ef\xcd\xa1kZO\x09^\xfc\xebw\x8bn" +
+	"\xfeh\xd5\x87<\xc1\xba9\xd4X\xed\xa6\x04M\x8bg" +
+	">\x9c\xbc\xfe\xde\x0f\xb9I\xee\x9eC\xb5c\xaf\xf4\xf2" +
+	"\xc6\xb2\xd2\xfd\x1ffZ\xccms*@\xd9=\x87p" +
+	"\xbas\x0eY\xcc\xd3o]\xff\xb3\xab\xaex\xea\x8f}" +
+	",\x92\xee\x0b\x05P\xb6^H^\xdar\xa1\x94\xa7\x94" +
+	"\xcc%\x16\xc9\xbc\x05\x9f\x8a\x0b\xc7\x7f\xfdG&\xd3\xb4" +
+	"\xd3\xfc\xb9\x84\xf1\xea\xd1s\xa9U\x7f\xf6\xdf\x87\xfc\xe2" +
+	"\xf7\xd7\x8c\xfeS\x9a\xd8_<\x8f\xee\xcf\xa2yD\xec" +
+	"7\xff\xe6\x99\x17\xed\xfb\xd6\xfc\x89_\x9dc\xf3\xe8\xdc" +
+	"N\xcc#sk\xfeK\xcd\xdd\xcb\xb7\xd7\xfd\x99\xdf\x8c" +
+	"\x82\xf9\x14\x9f\xc6\xcd'\x04\x97M\xf9\xad\xff\x975\xe5" +
+	"'\xd2\x0c\xad\xf9\x14\x85\x1a)\xc1\xedo\xfd\xc1\xf7\xc4" +
+	"g\xef~\xcc\x89{\xd7|\x8a\x03\x87\xde\xfe\xe0o7" +
+	"\x17>\xf1I\xa6\x93B\x9f\xbf\x0c\x94\xee\xf9\x92\xd2=" +
+	"\xdf\xa7\xec\x9dOx\xfd\xeb]\xc2\x15\x97U\x95\xfd\x95" +
+	"\x93\x98E\xb5\x14\xf5\xdf\xf8\xc1\xf9/i\x0fm\xf9<" +
+	"m\x0bk\x9d-\xac%<|w\xee>\xe5\x89\xca\xb7" +
+	"\xd2\x08\xb4Z\xba\x0e1Jp\xd1\x83\x15W\x1f\x1c\xf5" +
+	"\xd2\x17<\xc1\xb6Z\xaa7\xbb)\xc1\x97\x174_q" +
+	"q\xc1\xa4\xafx\x82\x83\xb5t\x9a\x87)\xc1\x9b\xcf\xbf" +
+	"\xfd\xf1\x9b\x93\xde\xfd*#\x80\x9c\xaem\x00\xa5\xe0\x12" +
+	"\xbaC\x97\xd0\xad\x09~\xd8\xf0\xec\x0f|\xab\xbf\xce$" +
+	"\xc3\xe3\xea\xaa@)\xaf\x93\x94\xf2:\x9f\xb2\xba\x8eH" +
+	"q\xcf%G\xeb\xb6\x98O\x9f\xe6D\xec\x89:\x0a\xcd" +
+	"G\xcf\x14VN\xfeY\xde7<c\xbb\xeb\xe8\xd4z" +
+	"\xea\x08cWO.\xdd\xfe\xcdM\x0b\xbf\xe1\xe1\xa6\x8e" +
+	"\x9a(e\x8b_>\xf7\xd3\x1b\xfe\xed\x9b>\x02\xb7\xbf" +
+	"n((\x87\xea\xa85S\xb7DP*\xeb\x89\xc0}" +
+	"\xba\xe3\x9f\xaa\x8a7,=\xd3\x87|t\xfdPP&" +
+	"\x11\x1aeb\xbd\xa4L\xac_\x82P\xb2y\xeb\xa7g" +
+	"\xc7.\\{\x86\x1b\xb6\xbc\x9er\xbcC}x\xd8K" +
+	"\xb1=g\xb8\xb9\x8c\xae\xa7\xf8w\xa1\xb0\xfdHI\xe7" +
+	"Mg\xd3\xec\xca\xfcz\x0a\x80r}'\xba(ia" +
+	"s=6g\x84\x87h\x09#1#\x1a\x0fk\xd1\x7f" +
+	"\xd0\x12\xfa\xf40\xf9=wqhzT\xb7\xecE\x1b" +
+	"\x12Q=\xac\xdbM\xbaa\x95\x05\xb1\xd5\x11\xb5-\x84" +
+	"\xd4<1\x0f\xa1<@H\x1eQ\x81\x90z\x8e\x08j" +
+	"\x99\x00\x85\x09\xdd\xb0`$\x82&\x11`\x94\x87-\x08" +
+	"H\xa3;`^\xc6\x01\x9b06C\xb6fwX\xa8" +
+	"\x09@\xcd\x03!y\xf5\x8f\xeeW\x0f\xbe}\xeb!\xa4" +
+	"\xe6\x09P_\x0c0\x1c!\x19\xf6$\x0dl\xfb-[" +
+	"\xb3\xa1\xc3\xf2\xc7[\xfd\x9a\xbf0\x81\xb1\x89\x90Z\xe4" +
+	"\xb2\xd5M\xd8\xda \x82z\xa3\x002@\x11Y\x03y" +
+	"S\x0bB\xea\x0d\"\xa8\xb7\x09 \x0bB\x11\x08\x08\xc9" +
+	"[\x97!\xa4\xde\"\x82z\x97\x00 \x16\x81\x88\x90|" +
+	"\x07!\xbc]\x04\xf5>\x01\xe4<\xb1\x08\xf2\x10\x92w" +
+	"V!\xa4\xde%\x82\xfa\x80\x00\x85\x86\x16\xc30\x1c\x09" +
+	"0\x9c\x18\x07\xba\xd1\x86\xcd\x84\x89$\xdd\xb0\xdd\xd6\xa8" +
+	"f\xd9!\x8c\x0d\x84\x90\xdbf\xc6;\x8c\x88m\xeaH" +
+	"J\xac\xb0 \x0f\x09\x90\x87\xc0\x87M3n\xba4\x03" +
+	"/S\x10'\xe2\xd3\xd7u\xe8vY\xb0\xce\xd9\x0e\xf7" +
+	"\x85a\x19_X\x89\xed\xe9\xe1\xb8a\xe0\xb0]\xd6\xa4" +
+	"\x99Z\xccB\xec\x85\xfe\x07h\xb5l\xad%\x88c\xf1" +
+	"\xf5\xb8\xacI+$o\xf1{\x1eDH\x1d.\x82Z" +
+	",@2\x16\xef0\xec\x95Z\x0c\x01\xceq\x0a\x8bC" +
+	"\xd3;\x8c\x84n\x94\x05\xb1/}\x06\xfd\xd2[\xb6\xd6" +
+	"\x86\xfb\xd2\x0f\xc92\x83\xd5\x06\xe5\xae>\x1aM\xc9." +
+	"XY\x977\x16\xb7\xf1\xe2x4\x82\xc1\xcc,\x87e" +
+	"T\x0egA\x0b$\xeb\xfd\xad\x84\xd2\xcc\xf3\xdb\xed\x9a" +
+	"\xed\xd7\xfc&}\xdd\xaf[~-\x1a\x8dw\xe2\x88\xdf" +
+	"\x8e\xfb\xb5pX\xc2V/\xb5\x99\x9bR\x9b\"\x01\xea" +
+	"\x9cN\xfa\xac^~\xbf\xab\x81\xd3\xf5\xb2\xce\xd9Wu" +
+	"\xb8\xdb\xfd\"\xd2}@\x04u9'\xfe\x8dD'\x16" +
+	"\x8a\xa06q\xe2\xbf\xe2<\x84\xd4\xa5\"\xa8\xab\x04\xa8" +
+	"K\x98\xb8U\xdf\xc0\x18)l5\xe31\xf6C\xb4\xe3" +
+	"}\x18\xcc\x1d9R\x82\xf7\xdf\x87\xc3\xdeK\xc8\xa0\x8d" +
+	"\xdf\xa2*o\x8b|a\"GLa\xb3\xc8\xd0\x82\xb8" +
+	"\xd1\xaa\xb7-2l\xb3\x0b\xf5\x83e\xfe\x94\x0cU\x10" +
+	"\x19\x0aSz\xd1\x8f\xc9\x1b\xfe)\xba\x11\x8evDt" +
+	"\xa3\xcd\x1f\xc3\xb6\xe6\xd7\x0b\x8d\xd6xy:\xb8\x95f" +
+	"\x027\xd2x\xbd\x08\xea-\xdc\xdam)\xe5\x10OL" +
+	"\xa1\xdb\xd6\x06\x84\xd4\x1bEPo\x17\x00\xf2\x1cp\xdb" +
+	"v-B\xeam\"\xa8\xf7\x08 \xad\xc5]l%\xa5" +
+	"\xf5Z\xd4\xfd?\x12\x0f\xb3\xff7Fp\xabF\x14\x8a" +
+	"\xad\xb8\x81q\xc4\x0ab\x0b\x15\xda\x9ai\x03 \x01 " +
+	"70K\xe8F[Y\x93\x8fJH.\xf4T\xa5]" +
+	"\x99?\xc7]\x95r\x82JSDPgs\xab2\x8b" +
+	"\xccu\x9a\x08\xeaE\x0c\xaa\x9a4\x1bA\xbb;\x8fx" +
+	"\xc2\xd6\xe3\x86\x05\xa3<\xaf\x1e\x01\x8c\xca\xaa\x86\x94\x95" +
+	"\xf5\xd8\xb4\xf4\xb8\xc1\xc4\x1bey\x87@\xb1\x83\x10!" +
+	"m=\xa62'\xf1p\xd6\xff[\x9d\xedq-\xa6g" +
+	"\x94R\x1eH\x1c2\x18\xe5\xb9`\xb9\xcf\xc5\x91\xc2\x85" +
+	"\xf10\x9d\x8d\x98\x0e\xf8\xa5\xde \xbct\xe4\x0a\xdc\xec" +
+	"\x08\xc9\xb6Y\xe4(\x9e)\x82:_\x80$\xed,}" +
+	"\xb3\x92&N\xc4\x9b4\xbb\x9d?Rs\x90\x18\xdd\xd0" +
+	"m&a\xea(\x97\x07\x8d\x0cw\x8d\x08j\x94\xe3A" +
+	"'Z\x1f\x11AMpj\x14#R\xd4.\x82js" +
+	"j\xb4\x8e\xbc\x9e\x10A\xbd^\x80d\x8bf\xe1^\x9c" +
+	"\xf9\xe2\x9d\x86\x87\xea\x1b[\xb4\xf0ZlD\\\xbe\x13" +
+	"\x9aeu\xc6\xcdH\xa6\xb9\xf4\x8b\xfcm\x9a\xd9\xa2\xb5" +
+	"\xe1\x05\xf1h\x94\x9e\xe7\xa99q;\xd5\xcc\x1d\xcdZ" +
+	"[\x9b\x89-KG\xe2z<h\x8dd\xe6E\x7f\x88" +
+	"h\xe2Dt\x10\x82@\xce\xfb\x0c\x82U\xe1\xf5X\x98" +
+	"\xd0\xec\xf6\xdc;\x0ck\xb6\xabA\xfd\xf6\x187\xfb\x82" +
+	"v\xbfgB8\x8a53\xd3\xb1\xf5\xff\xff\xdc\x123" +
+	"\xf2\x18\xb25\x9f\xddh\xb4\xc6\x076L6C\x92\x18" +
+	"\xd2\x840\x9f\x9a\"\xd4X\xae\x8c\xeak\xb1?\x82\xad" +
+	"\xb0\xa9S\xcc\xa3\xa6\xb3\xd1\xe57\xe2\x11\x8c\xa8\xe2\xa5" +
+	"\xe6\xa8\xd4C\x05B\xa1\xf9 Bh)x\xd3T\x16" +
+	"\xc12\x84B\x0bI{\x13\x08\x00\xceD\x95\x15\x94|" +
+	")i^E\xc8E\xa0\x0a\xa2\xa8P\x85Ph9i" +
+	"\xbf\x82\xb4\xe7\xdd@\xcf\x1ae5mo\"\xedkH" +
+	"{~~\x11\xe4#\xa4|\x8f\xb6\xaf\"\xed\xd7\x90\xf6" +
+	"!B\x11\x0cAH\xb9\x0a\x1a\x10\x0a]A\xda#\xa4" +
+	"]\xdaTD\xbc\x19E\xa3\xec\\C\xda\xa3\xa4\xfd\x9c" +
+	"\xcdEp\x0eB\x8a\x0e\xcd\x08\x85\xdaI\xbbM\xda\x0b" +
+	"\xc4\"(@HY\x07-\x08\x85\x12\xa4\xfdz\xd2>" +
+	"4\xaf\x08\x86\"\xa4tQ\xfem\xd2~\x03i\x1f\x96" +
+	"_\x04\xc3\x10R\xba)\xfd\xf5\xa4\xfd\x16\xe8-\x9f\xb6" +
+	"\x89\xf1R\xcd\xa2\x0a?\x02\x090\x02A\xa1\xa5_\x87" +
+	"\xa1\x00\x09P\x80\xc0\xa7\x93u\xf5~Y\x0bu\x93\xe9" +
+	"\xa0/\x82\x13v;\x13\xcc\x8d\xb1xd\x95\xce\xb9\x13" +
+	"\xba\xd5\xa4\x1b\x06\xa6\xc8\xc0\xb4V\xb7\x1c\xc1D\xa2\xee" +
+	"\x1d\xae\xe1\xb8ac\xc3^\x8a$\xcdjw\xb9\xe8\xb0" +
+	"8[2\x85:\xe9$\x83;\x0e\xb2)\x19\x11)\x18" +
+	"\xe5\xe5I{\x1d9\x99\x15\xf8\xb2\x05\xa1\xe9\xd1x\x1b" +
+	"\xd10)\xfb\xb9\xbf84\x1do\xd0-\xdb\xca\x88J" +
+	"\xfc\x09\xe8\x90\xf5\x01\xbbA\xe8<s\x14\x06g\x09\x8a" +
+	"\xfd\xad$Pe\x0d\x88\xf9\\\xe2\x0bX\x1a^9\x05" +
+	"\x15HP\x8e\x83\x04^\xde\x18X\xb2T9J\x9f\xbe" +
+	"\x0a\x12\x08n\x0e\x16X0@y\x81>\xdd\x0f\x12\x88" +
+	"nf\x19X\x84B\xe9\x81*$(\xbbA\x82<7" +
+	"\xd4\x09,\x90\xaa\xdc\x01\x0dHP\xb6\x80\x04\xf9nT" +
+	"\x0fX\x0aM\xe9\x82 \x12\x94u \xc1\x107\xc8\x0f" +
+	",\xc3\xa8`\xfa\xf4*\x90@r3\x0e\xc0\xb2k\x8a" +
+	"J\x9f6\x82\x04\xe7\xb8\x99g`\x99T\xa5\x96>\xad" +
+	"\x01\x09\x0a\xdcx\x19\xb0\xa8\x96R\x0es\x91\xa0\x94\x80" +
+	"\x04C\xdd@5\xb0\x04\x8d\"\xc32$(\x05 \xc1" +
+	"0\xb7*\x01X6@>\xdb\x82\x04\xf9\x0b\x09\x86\xbb" +
+	"Q~`\xc9*\xf9D3\x12\xe4\x0f%\x18\xe1\xc6\x8b" +
+	"\x81\xe5\x0a\xe4#A$\xc8\xafJ0\xd2\xcd\xf7\x00\xab" +
+	"N\x90_\xd8\x8c\x04\xf9\x80\x04\x85nb\x1eX\xc2O" +
+	"\xde\xdb\x80\x04\xf9A\xa9\x90\xb8\xe2\x01\x1a\xf9h\x0b@" +
+	"!\xb14\x02\xe0\xa3\x86f\x006v\x18\xa9\xff\x92\x8e" +
+	":-\xc1\x08\xbc_\xa1\xb4_\xf5Q\x04Q\xf7\xd7\xc2" +
+	"8\x82p\x00\xeaZp8\x1e\xc3\x01HR\x7f\xb6>" +
+	"B@\x81\xfd\x0a\xe2\x18\x92\xe2\xeb\xbd\xa7\x89\x04\x12\xa3" +
+	"]\xec\xe7r\xddr\xfag\xae0\xa4|a\x14\x80\x8d" +
+	")\xcb5\x00M0\x088\x08a\xbb\xaf\xd5:\xe0\x09" +
+	"\xfd\xf7;\xf2\x09b\xd8\x9a\x8b\x18\xbc-I\xac\xd32" +
+	"\x11\xd4\x99\xdc\x91\\\xd9\xe0\x19\x98\x92\x89\xd7\xbbv\x98" +
+	"\xad\xb5\xad\xe4\x837Y\xa7a\xa6\xc2 }m\xad\xac" +
+	"3\x11\xfb3\xe8\x1d\xbfp&E\x05\x16/\x05\x16\xcc" +
+	"S\xd6Q-\xd1)*\xb0x,\xb0\xf0\xbfr\x15\xd5" +
+	"\x83\xd5\x14\x15X\x02\x0dX\x0aXi\xa4O\xeb)*" +
+	"\xb0\x0c\x1e\xb0\xea\x11\xa5\x06\x9a\x91\xa0TRT`\x19" +
+	"[`qie\"}:\x8e\xa2\x02\xcb\x18\x02K\x8b" +
+	"+#\xa0\x05\x09J>E\x05\x96\x04\x02\x96`\x90O" +
+	"\x13=:E0\x81\xa5s\x80\xa5\x92\xe4\xe3&\x12\xe4" +
+	"c\x04\x11XZ\x0fX\xd5\x8a\xfc\xfa\\$\xc8\x87$" +
+	"(`\x15H\\\xb2\xeb\x00\xd1\xb1\xbd\x04\x0dX\x06\x1e" +
+	"X\xf6L~\x90\xe8\xf4N\x82\x05,e\x00,M," +
+	"o#X\xb0EJ:\xbeV}\x04A$\x00\xa9_" +
+	"\xc1\x98\xa3A\xce\xaf\xe5\x16\xff+\xa4\x11K\xd9\xfd\xd9" +
+	"\xa4#\x91hu\xea\xe7\x82(\x92\xb0f\x06\x88\xafk" +
+	"/\x8f\x87\x89k\x82\xf9_>\xbc\x12o\xb0\x03\xcc\x0d" +
+	"\x0b\xc0\xc6T\xdc-\x00\xc9\x88n\xd1\x1fH\xa4?\xe3" +
+	"FT7p\x13F\x126\xadt%\xcc\x16\xf6\xcb\xcd" +
+	"S^\x1c\x9an\xc7;\xc2\xed\x99\xa2w\xdf\xde\xe6\xa6" +
+	"\x8a\x10\xc4VaGv\xb7\x95\x83\x8d%8\xb3\xa9\xce" +
+	"\x1f\xab\xeb\xb5h\x07\xce\xd1\x11\xe2\xbaf\xa1\xbd\xde]" +
+	"\x97zQiI\x8bF\xbd\xa04o\xa6\x8c\xcc:\x92" +
+	"\xe7\xb1/ \x86B\xaes'\xaf\xb1\x1d\x0f\xbb 8" +
+	"\x98\x88B&+\xa4\xc1[.\x86\xdf0\xca\xcb\x8b\xe5" +
+	"lw\xb5b\x9b\x08F_<\xe3\xbd\xfc\xce\xf6\xf8 " +
+	"\xe4bmD73y\xf9\x15\x1e2\xbb\xc0lz\x11" +
+	"\x99t\xf1\x0b\x9bX\xb3q\x93\x86|&62\x18q" +
+	"\xfd\xcf\xc8\xea2\xc2\x99\x86_\xe6\x9d\x01n\x8c!\xc8" +
+	"\xc5\x18:u\xbb\xfd\xf2\xf6x\x8c\xf7\xc1\x0d\x8c#\x8b" +
+	"\xb1\x1dF\xd0\xde\x87\x83lB\xb2\xdc\x1ap\xe3\xca\x04" +
+	"\xd8\xe8\x10rY\x12\xb7\xc6#\xa7,\x89\xb7\x7f}\xc2" +
+	"\xffb?\xc1\xc8\x98\x14\xd3\xed\x81S*\xb7&C\xba" +
+	"\xd1\x16\xc5\xfe(\xc4\xdb\x9c8$\x02>RB\xf6q" +
+	"\x8d\x08j;w\xc2\xe2R.|\xc2\x9c^\xbd\"\x15" +
+	">\xb9\x81\x8b\x94\xf0\xc9\x98\xc2v\xce\x11\x91bV\x9b" +
+	"\xeb\x13\xdbZ\x9b\xbb,\xa4m$\x82\xc2\x88f\x0f\x0a" +
+	"\x14\x98\x1d\x14\xed\x1a\x8c\xaa2\xb87\xda\xb2\xc5\xbe\x06" +
+	"\xa7\x15N\xf6\xa4\x8f\xb9\xd2\x90\xc5\\\xd9h\x99\xe1&" +
+	"N16F,\xbb)\x13N\x0f\xebWD\xc2\xf1X" +
+	"L\xb7\xddx\xe1\x80\x09\x1f\xb2\x02\xec<\xc2\xa6\xe5." +
+	"\\&\xa4.\x13\x88c\xdb\x1a\xe7\xe4\xd7\xadA\xceY" +
+	"~;\x0cb\xc7\xf5\x91\xdf\\\x83^\x03\x05\xa6\x08\x7f" +
+	"\xad&\xc6\x11\x8f?73\x9e\x13\xe0sR\x14\x898" +
+	"\xeb'~\xbb\x84S\x9f\x98p\xe6\x05YA\xe8/\xa5" +
+	"\x01\x19\xb0\x88\x96f\x81/>Djb-r\xa9\x11" +
+	"\xed\xe2\x03\x05f<n\x0f.D\xca\x0c\xeb>\x0a3" +
+	"PP\xd7\xce(&\xbceA\xc4\x04FyU\xb7\xbd" +
+	"\x8e\xa7\xfe\x1c\xe6\x98DTq\xc0\xa4I\x15$\x1b\x8d" +
+	"\xd6\xb8_\xf3\x9b\xa2\x93oK`l\xfa;\xb1?\xa6" +
+	"\xb7\xb5\xdb~r\x1a\xf8\xfc\x04\xdb\xd3#w\x15\x99\"" +
+	"w-^\x90\xce\x051\x95(\xe3r\x07\xeer\xc8\xf4" +
+	"nt\xf2w\x9cN\xb8U\xec\xb9\xcb\x9cg\xce\xe4f" +
+	"-\xf4\xb6Lr\x0e\xa48fa\x9fTjN\x19\x8b" +
+	"\x0c\xe8\xf8\xad\xce\xb6\x9c\x1cM6X6G\xaf\x8as" +
+	"\xf4\xb8\xdcD?\x16e\xff\xdej<\xd1\xf5\xff\x14\xad" +
+	"s0\x1er\xc4\x0c.#\x94J\x83\xe5\x8cj\xa9\x9c" +
+	"~\x8e\xdb\xef\xbd\xb7\\\xb72\xdb\xf0s\xbd\xfd\xaf\xa3" +
+	"\xd8\xc7m\xbf[\xc73X\xe8\xa5\x07x\xce\x12\xed\x14" +
+	"\x13|\x1bG'3\x08-\xd4[\xa153\x04\x9d\x9f" +
+	"2\x98\xbeI.\xd4[[\xb1\x89\x0d!\x8c\xfd-\xd8" +
+	"\xee\xc4\xd8\xf0\xdb\x9dq\x7f\xb8\x8e\x1e\xbd\x16B\xea\xf9" +
+	".'\xfb\x89\x8c>.\x82\xfa[N\x88\x0e\x13!z" +
+	"Y\x04\xf5\x03\x0ez\x8e\x91\xc6\xdf\x8b\xa0~\xce\xd9O" +
+	"\xa7H\xe3'\"\x84\xce\xa1at'e\xab\xe4C\x15" +
+	"BA\x10!t>\x1fE\x1f\x07s\x11\x0a\x15\x91\xf6" +
+	"\x994\x8a>\xc4\x89\xa2W\xd2h\xf94\x16\xd4\xf7i" +
+	"\x91\x08\x7fL\xf28=\x129\xba\xbc~ \x02\xbd\xcd" +
+	"\x88\x9b\x03\x11\xc4t\xcb\xd2\x8d\xb6~\x09|\xbd\x06p" +
+	"\xcb\xb8\x9c\xc7u1l\xb6\x0d\xf0\x9c\x06\xca\xa2z\xd8" +
+	"&']\xbfD\xb9Fwr\xb4Fz9v\x83\x88" +
+	"\x85\x11t\x19\x84I\xca\x8f@K\xae\xb2\x99\xf9\xed\x9a" +
+	"d\xb4\xe1\x81\xa5\xf6\xe3\xe4\xa5\x06\xf6/\xd5-[\x88" +
+	"\x9b]\xa9z\x83\xd6\xb8\xe9\xd7\xfc\x85\xadz\x14#\xa4" +
+	"\x16\xbb2\xbb\xb3\xc2+wrev7Q\xf7{D" +
+	"P\x7f\xc2\xc9\xec\x83\x84\xf2>\x11\xd4G8\x99}\x88" +
+	"4> \x82\xfa\x98'\xb2r\x0f\x11\xe4\x9f\x88\xa0>" +
+	"\xee\x09\xac\xbcw3B\xeac\"\xa8?\xef\xa5\xa6u" +
+	"\xe1v\xcdhs!\xbc\xb0\x1dk\x11\x18\xe5]Yp" +
+	",\x8aB\x03o\xb0\xfb6o\xa4\xd2\xb5\xca3\xd7;" +
+	"5\xab\xc9\xc4\xebu\x88wX\xd1\xaez\x1b\x0d\xde\xaf" +
+	"\x88D\x1c\x84\x86\xb4R\x9b \x97\xfbc\xeb\xb4\"\x98" +
+	"\xb2 \xae\xe0\xd6i5\x99}\x93\x08\xea\x9a~\xca\xa6" +
+	"\xfe\x9e\xf5\x09D\x88Xd\x8a\xc6\xa5\xb2\xa6NL\xc7" +
+	"s\x1d\xe5\x95-\x0f~\xa0L\xebS\xea\x99]\xae\xd5" +
+	"\xd5\xcc[]\x90\xb2\xba\x9a\xbd\xe5Is\xb4l=\x86" +
+	"\xe3\x1dv\x08\x898\x0c\xc3\x90\x00\xc3\x90S\x1e`\xe3" +
+	"\x15\x1a\x12\xad\xb59\xe2zc\x04\xfb\x0c[\xb7\xbb\x06" +
+	"6/\xcfe\xe6eK\\\xec\xb0\xfd\xf1\x0e\xd3\x1f\xee" +
+	"0Ml\xd8\xfe\x0e\x0b\x9bN\xe5!\xd1\x15\xce?n" +
+	"\xc9\xb9\x92\x80PFEP7x\xd5\x86\x1d\xc4\xa6\xb7" +
+	"\x1d\x9f9\x99\x1aj5\x92\xb84^z)A?\xf5" +
+	"\x86\xbau)\xf5\xe2xo`\xb02\x92!(\xc4\x8b" +
+	"\x88\xad\x87\xd7b\x9b%5sQ\x9cT\x06\xa4o\xf9" +
+	"]N\x06GoSx`\x8f\x84\x19o\x83\xb1\x00r" +
+	"`\xdd-\x02\x18\xa8\x00\xb2W\xa1\xca\xc0\xdd\x13\x8f+" +
+	"\xa6\xad\xc5\xc4\x86\xc8\x180JK\xaf\xea\xad\xad0\xca" +
+	"\xbb\x80\x92s\x98/\x15\x03`\x85R\xfdD4\xb8\x08" +
+	"L\x96>\x1d1\xa1\xec\x02\x8d'e\x8b\x0fU\x0c\x14" +
+	"\x1fJpg\x05\xaf\x14i\xfeV\xa1\x16\x89\xb8b_" +
+	"\x18\xd38U\xcf\xac\x03\xb9\xa6\x91\xbfM2'\x9b\xfd" +
+	"\x1e\x8c\xe5Zd\x9a*\x87\x19D\xfd\x97\x07\xb0,$" +
+	"1H\x15\xcd\xcc\x08\x97\xf8v2R\x99C\xb7\x9e\xdf" +
+	"3\xd7\xf3{z\x1d\xd5T\xd8\x06\x1f\xbf_\x82\xedo" +
+	"So\xd6\xbf^\xb5\xeb\x96\x1d7\xbb2\xd7\xaa\xf3\xce" +
+	"j\x8a\xd03\x1d\xdd\xabT9y+\xfcX\xac\xba\xf5" +
+	"\xef#M|,\xae\xb7\x0f\x94\xf9`\xbb\x0c\x9b\x85\x96" +
+	"\x1e7z)\xa5\x99\xe9P\x0ar\x95lL)\xd7]" +
+	"\xe7U\xb2\xb9J\xd9\xd5\xec\x05mS\xe3_\x86\x91\xcf" +
+	"I;\xa4\xcf&\x88\x11\xac\xef]rr\x19\xaa\xc3\xe9" +
+	"\xc4\xa9\x07A$z\xe9\xd8,3[\x1cB^\xf9\x04" +
+	"\xbb\xa7\x0e\xec\xc3\x02\xca)Z\xe4\xe0\x94O\xb0\x0b\x0f" +
+	"\xc0n\xd1\xa4\x95O\xb0[\xd0\xc0\xee\x91+/@\xa9" +
+	"[>\xc1.\xe1\x02\xbb\x17\x93V>\xc1\xee?\x03\xbb" +
+	"\xd4\xa7\xdcA\x0b\x15\x9c\xf2\x09v\xaf\x15\xd8\xdddZ" +
+	"O$(1\x9a(eW \x81]\xeeS4\xfat" +
+	"5-\x9f`\xb7\xde\x81\xdd\xe0R\x1a)W\xb5\xb4|" +
+	"\x82]J\x04\xf6\x89\x05e\x16\xe5j\x12-\x9f`\x17" +
+	"\xdc\x80\xdd\"U\xc6\xd1\x9eG\xd0\xf2\x09v#\x1f\xd8" +
+	"\x05X\x05\xe0:$\xc8\xa7%\x18\xe6^\xb3\x06v\xf9" +
+	"S>Y\xe5TH\x0cw\xaf\xa1\x01\xbb\xc2.\x1f\x99" +
+	"\x8b\x04\xf9\xb0\x04#\xdc\x8f)\x00\xfb0\x85|\xf0V" +
+	"\xa7Bb\xa4{\xfd\x1e\xd8\xcdvy\xef\x9dH\x90{" +
+	"$(t\xbf\xd2\x00\xecc\x0b\xf2\xee\xcdH\x90\xb7K" +
+	">Z\x1e\x1a\x80\xc2\xa8n\xd9\x01\x90\xc2\x1a\xad\x9eX" +
+	"\x1b\xd1\xcd\x001Hc\xb4\xba\xa10\xf5\x87\xf8P\x01" +
+	"\x90\x12\xba\x11\x00\x1fu\xfa\x03PHN\xfe\x00$Y" +
+	"\x8c\x18\xd59Q\xe2\x00\xf8h\xa0+\xc0J\x82\x02\x90" +
+	"dU\xe9\xc0j}h\xea\x97U\x00\x01CB \xb4" +
+	"\xac>\x1c\x18i.\x95\x12i\xe7\xbak6pu\xdb" +
+	"\xcd\\\x896\xd3\xc8--^5\xb6\xab\x91\xdb\x96y" +
+	"\xe5\xd8\xaeFn\x0fz\x1e\x19\xab\xdb\xde\x1d\xf4|/" +
+	"\xa7d\xf6\xd2N\x03\x89\x9c\xb1\xe8\x1cN\x97v\"\x89" +
+	"7!)i\x10\xafO\xbb\x9c\xe2\x1cci\xca<P" +
+	"6\xac\x7f\xd3\xc3\xc4\x16\xf6\x8c\xc9l!\xd8R\xcf\x81" +
+	"\x02V;Y\xe59\x08i\xf8\xc9\x97r\xf8Z\xe3f" +
+	"\x18\xe7h\xeb\xd23\xc7\xa9\xa6\xc9\x84\xd7\xd9\x92<9" +
+	"%\x8f2\xc5\xc7xK\xd1\xbd\xfd\x03\x09\xd7\x8f\xc9j" +
+	")DS\x91\xb7>\xc1v\xfe0#\xae\xbc\xceG^" +
+	"{\xc5Z\x06\xb18}#\x0e\x99Y[\xe2h\\\xa3" +
+	"\x8dc\xd9n94@\xb2\xdeo\xd1\x0cc\x9e_\xb7" +
+	"q\xcc\xb9.\xd3\xa9Y\xfe\xb5z4\x8a#\xfe\x96." +
+	"\xbf\xdd\x8e\xfdma\x94C\xc8\xbe!S\xb1m\x7f\x02" +
+	"\xb31U$\xc9R\x8e\xbd\\\xa9\x1cS\xdb\x83\x0e\x97" +
+	"\x07c\x19\xfd\x06\xde,0r\xafB\xf2\xb2f\x19\x0c" +
+	"W\xbe,\xa0\xbf\xe2\xa6l\xec\xf2\xa1\x8d~\xc3\x03\x84" +
+	"\xb0WP?\xf7B\xcfAK0\x1f\xcf\xc9!\x92g" +
+	"\xad\xd2Z\x9c+7D\x16\xb3]\x04\xac\xf0\x80\x98A" +
+	"\xce\x96e\x1c\x0e\x8b\x82\x03\xb9\xdb*\xbc\xcb\x81r\x1e" +
+	"8\x98{\xc7\\\x0f\x9c\xd3\xdd\x954K/Cv\xae" +
+	"\xd0\x8c\xc7]#\xb9N\x0b\xdbz\x86\xc2\xfc~\x83\xd2" +
+	"\xbe\xd6&M7\x07\x0e\xf1}\x96\x0c\xe2\x04\x81_C" +
+	"\xb0i<:B\xe3\xd4\xba\xd1\xe6\xf7\xb5\xeaQl\xd1" +
+	"%\x1f8\xa1R\xca%T,3\xdc7\x89'E," +
+	"{\x80\xd4^\xb6s\xa1O\xac5Ka\x07S\xbeo" +
+	"\xe9!\x17d\xbbJ\x94S\x96\xfc\xb2\x05!\x07\xe6\xca" +
+	"\xa8-\xca>\xfd\x03\xec2\xb3\"S\xcb-\x9f\xda\xa2" +
+	"\xec\xcb\x00\xc0\xbei\"\x9f&F\xd4Ib\x89\xb2\xcf" +
+	"\xed\x00\xfb.\x88\xfca)\x12\xe4#\xc4\x0eew\xab" +
+	"\x81}\xd0D>L\x0c\xb3\x83\xc4\x0ae\x17\xd0\x81\xdd" +
+	"_\x96\x9f \xcf\x1e\"6(\xbbV\x0f\xec\x02\xbe\xbc" +
+	"\xb3\x01\x09\xf26b\x81\xb2\xbb\xed\xc0\xbeg oZ" +
+	"\x86\x04\xb9\x8b\xd8\x9f\xec\xd32\xc0n>\xcb\xb1\x0a$" +
+	"\xc8\x1a\xb1>\xd9\x97k\x80}<F^M\xc6k\x94" +
+	"\xa4h\xbc-\xc0<\xbe\x00H\xb6\xd6F\xed1\xe7/" +
+	"\xdd\xe2\x80\xeb^\x05 \xc9,\"ZiWHv4" +
+	"\x00>Z\xc3\x92nSe\x96\xfb\xfa\xa6F\xba\xeeM" +
+	"b\xbe:\x0a\xb8\x9b\xfd\x08y\x97\xae\x11\xf2\xbe\x97\x84" +
+	"\x90\xf7=\xa2\xac\x87\x98w=h\x10\x09\x00\x0f2\xfb" +
+	"\xd4\x07\x0c|\x8ag\xc8.f*\x90Z\xc6\x15H\xf1" +
+	"\x80\x91\x8ci\x1b\x16\xe2\x84\x93\xdbO\x15\xa0\xff\xdf\x00" +
+	"\x00\x00\xff\xff\xfa+\x8aD"
 
 func init() {
 	schemas.Register(schema_ea883e7d5248d81b,
 		0x809d4e73dc197b11,
 		0x8167eafcc8695b1c,
-		0x81b6b14efe0127c4,
-		0x83e6cb306e77e311,
+		0x860c3dd5698349f5,
+		0x86541181da6400f7,
+		0x86d95afae10f0893,
 		0x87c49e302c6516f8,
 		0x884238694e8b8d88,
-		0x8c8ac84e843e98c6,
-		0x8cdf119f2d20b743,
+		0x8ae5aae9653b7b02,
 		0x8ed051e9369ac720,
-		0x90027b0333e503ee,
-		0x9431ce5850882fb2,
-		0x943e5e6dc1abe7b8,
 		0x946963af664858d0,
-		0x94ee8cc65b181abe,
-		0x956cdf6b89128744,
 		0x958ea6b33d4e8cbb,
 		0x95a8b7d1ed942672,
 		0x974c11f8cfed4247,
-		0x97e9d1c7a00e713e,
-		0x995f6a1f026506d7,
-		0x9a6f30bbcafd1680,
+		0x978c524c1a35015c,
+		0x98300b93ef71cc57,
+		0x98eadc167523156e,
+		0x99b03ceb2dad70db,
+		0x9a291d6964350a5b,
+		0x9b96e8c9be077989,
 		0x9ba7a818970a029c,
+		0x9c19777f493f1110,
 		0x9cb31f0ede4f5117,
-		0x9eadc3c7605bd657,
-		0x9ec3cfd8ff4bae06,
+		0x9d64fa17798952ff,
 		0x9efc974402f016f6,
-		0x9f647c7028225a97,
 		0x9fe8d2cd92c27a38,
 		0xa17d6c20c2174ec8,
 		0xa2305f2ea25a3484,
-		0xa3b41ad02b8645ed,
-		0xa40fb26fec6a8554,
+		0xa34213f24153536b,
 		0xa4efd353c57d2b85,
 		0xa5753d28ca12d2ba,
-		0xa596c7cd35022b4b,
 		0xa78946d2af827622,
+		0xa862cd929f7af191,
+		0xa89254a0db970716,
 		0xa9095b4cff1e5634,
 		0xa97d67096ee7d46d,
 		0xa99c622e110c1203,
+		0xaa133a60be5a7d01,
+		0xaa98a78425cdd321,
 		0xab1e48e58e4c69af,
 		0xab89c6fc9bf26f2a,
-		0xad2dd70d5d17decb,
+		0xabc3ec90b96a6d71,
+		0xacf50d40a9d3436a,
+		0xad37ff6270c35769,
+		0xaf631f5cddda9aa3,
+		0xafe329bc8cad8f74,
 		0xaff62edfdbfe53d0,
 		0xb030fc18cb3b0e61,
 		0xb05bd83a34de71b7,
-		0xb05ff814dad43968,
+		0xb2255c049c7bc42f,
 		0xb262e0d6c2474d9c,
 		0xb47c58aa23289d55,
-		0xb4b684abc5f91831,
-		0xb6e947604cd03fdd,
+		0xb5bf271ecf3bc074,
+		0xb5dc333528e5f7ae,
 		0xb76f3dc1dcf4fdf1,
 		0xb7d0dd6b467e7539,
-		0xb81842457ebf1a07,
+		0xb9095b6d17298884,
 		0xba0de490234c27af,
 		0xbb5ea9a03dfddab3,
-		0xbb6cabb7ec800819,
-		0xbbf40b1783c554ae,
-		0xbc17aa9af88d7a32,
+		0xbb83332a93ffdcad,
+		0xbbec523e9fc1abfc,
 		0xbc4d5c31427dc498,
 		0xbda949777c149f4b,
 		0xbdb679ec96303b53,
 		0xbe71bb7b0ed4539a,
-		0xbea1cb452f61974f,
+		0xbebae5caecad3c49,
+		0xbee5e0529f9017ff,
 		0xbf1cf3d6e654e947,
+		0xc089763bca3e3f44,
+		0xc0ad53271497ab77,
 		0xc0dd66dedad92ef8,
-		0xc3b93ffa6fc9f160,
-		0xc538e655744911c7,
-		0xc53b6f91dec2daaa,
-		0xc920e06b8110e91f,
+		0xc18496cf650e6886,
+		0xc338177a5379031a,
+		0xc3fcefc580775485,
+		0xc44d12b3aee49f34,
+		0xc7e5f661ac57ebb2,
 		0xc9558eac26b0f15e,
 		0xc9601ec89a6aa066,
-		0xc9ac448a01179aec,
 		0xc9b3a8263f6853d7,
-		0xca65371f4071f39b,
+		0xcb6e3e65f2dbc914,
 		0xccf4f28c8951edf6,
+		0xd0071dd673841599,
 		0xd01613feea87ee6a,
-		0xd0b0c690855bac45,
-		0xd289114a83107db7,
-		0xd4353ecb879426a0,
+		0xd1afceb8146949d4,
+		0xd2117353ea065c72,
+		0xd35d6ae0fdbd9bc5,
 		0xd49a2570fb5a4342,
-		0xd5616267acef42a7,
-		0xd702c8c0844a9a80,
+		0xd701f5ae7e7560e9,
+		0xd70c154f9521b73d,
+		0xd7315a3b3f92aa4a,
 		0xd78724f6fbd5c5c5,
+		0xd7a7f00d5a96fc43,
 		0xd7ef486de484610d,
 		0xd9459f2361338d96,
 		0xd95473f6f8a89a69,
 		0xdb27e243a580d2f0,
+		0xdb78f249dcc7b9f1,
 		0xdba8e30445acc3f4,
+		0xdc0aec8d179d4ec9,
 		0xdc876697979bc7e5,
-		0xdccb15f94f0d1d24,
-		0xdf3a2e83d0d533b3,
+		0xe0b1a560d0e4d51a,
 		0xe0f49db8c42c72b2,
 		0xe154e487144bf3c2,
+		0xe19b7cffa7304650,
 		0xe1b522247fc407ad,
-		0xe1dd2f0c85965fd6,
-		0xe21b4052865cf7c4,
-		0xe275355b4989aaee,
 		0xe2b3585db47cd4f9,
 		0xe2f81b4403ef433b,
-		0xe478c8af63857432,
-		0xe5d744f10b0b65b6,
 		0xe71560d8bc06c6fd,
-		0xe826e800c318a7c4,
-		0xe8fb1ccfc03c5c91,
+		0xe75c9c74c2bacb82,
+		0xe83f954c9635f05a,
 		0xe92935bf20cc2856,
-		0xeadeeb3132f58b99,
+		0xeadaf2b11fded490,
 		0xecb10f87fbe0d6c5,
-		0xed03ac5ef50453fb,
-		0xf0f86c25885c5fe0,
-		0xf135f1bd71a1071f,
 		0xf3243256580294f3,
+		0xf485a561c31c83d2,
 		0xf4d42db113af3a4b,
-		0xf580568dec00ba9f,
+		0xf5c310bd5e2aa138,
 		0xf7250939585a23f6,
 		0xf7da25d3ead6c0d3,
 		0xf8551f83bb42e152,
-		0xf9b3f22591273e08,
 		0xf9b772853fd93ea9,
-		0xf9be86640a05f28e,
 		0xfa04b4272d0ffcd9,
+		0xfa4486fa9522275e,
 		0xfaa680ef12c44624,
 		0xfc487818328b97ef,
-		0xfd36e047f496768b,
-		0xfd86771dd5950237,
-		0xfed377ce13579230,
-		0xffd34f15ec608676)
+		0xfc6b4417fdef895a,
+		0xfcaa6dc30ba75197,
+		0xfd86771dd5950237)
 }

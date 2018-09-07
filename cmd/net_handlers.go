@@ -16,11 +16,11 @@ import (
 )
 
 func handleOffline(ctx *cli.Context, ctl *client.Client) error {
-	return ctl.Disconnect()
+	return ctl.NetDisonnect()
 }
 
 func handleOnline(ctx *cli.Context, ctl *client.Client) error {
-	return ctl.Connect()
+	return ctl.NetConnect()
 }
 
 func handleIsOnline(ctx *cli.Context, ctl *client.Client) error {
