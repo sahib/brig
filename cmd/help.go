@@ -50,6 +50,10 @@ var HelpTexts = map[string]Help{
 				Value: "",
 				Usage: "A commandline to specify a password helper (TODO)",
 			},
+			cli.BoolFlag{
+				Name:  "no-password,x",
+				Usage: "Use a static password. Not recommended beside testing.",
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 

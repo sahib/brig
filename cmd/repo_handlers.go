@@ -154,6 +154,14 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	fmt.Println(brigLogo)
 
+	if ctx.Bool("no-password") {
+		// Set a command in the config that simply echoes a static password:
+		staticPasswordHelper := "echo no-password"
+		if err := ctl.ConfigSet("repo.password_command", staticPasswordHelper); err != nil {
+			return err
+		}
+	}
+
 	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
 		if err := ctl.ConfigSet("repo.password_command", pwHelper); err != nil {
 			return err

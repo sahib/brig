@@ -74,10 +74,6 @@ func RunCmdline(args []string) int {
 			Name:  "nodaemon,n",
 			Usage: "Don't start the daemon automatically",
 		},
-		cli.BoolFlag{
-			Name:  "no-password,x",
-			Usage: "Use 'no-pass' as password",
-		},
 		cli.StringFlag{
 			Name:   "bind",
 			Usage:  "To what host to bind to (default: localhost)",

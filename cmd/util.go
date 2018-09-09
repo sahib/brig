@@ -203,6 +203,10 @@ func guessPort(ctx *cli.Context) int {
 }
 
 func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
+	if ctx.Bool("no-password") {
+		return "no-password"
+	}
+
 	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
 		password, err := pwutil.ReadPasswordFromHelper(basePath, pwHelper)
 
@@ -213,11 +217,9 @@ func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
 		logVerbose(ctx, "failed to read password from '%s': %v\n", pwHelper, err)
 	}
 
+	// Note: the "--no-password" switch of init is handled by
+	// setting a password command that echoes a static password.
 	for curr := ctx; curr != nil; {
-		if curr.Bool("no-password") {
-			return "no-pass"
-		}
-
 		if password := curr.String("password"); password != "" {
 			return password
 		}
