@@ -116,11 +116,6 @@ func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
 		return argPath
 	}
 
-	envPath := os.Getenv("BRIG_PATH")
-	if envPath != "" {
-		return mustAbsPath(envPath)
-	}
-
 	if lookupGlobal {
 		entry, err := getRepoEntryFromRegistry()
 		if err == nil {
@@ -298,7 +293,8 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 	bindHost := ctx.GlobalString("bind")
 
-	log.Infof(
+	logVerbose(
+		ctx,
 		"No Daemon running at %s:%d. Starting daemon from binary: %s",
 		bindHost,
 		port,
@@ -330,6 +326,8 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
 
 	proc := exec.Command(exePath, daemonArgs...)
+	proc.Env = append(proc.Env, fmt.Sprintf("BRIG_PATH=%s", repoPath))
+
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err
@@ -369,7 +367,7 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 		return absPath
 	}
 
-	if folder := ctx.Args().First(); len(folder) > 0 {
+	if folder := ctx.Args().Get(1); len(folder) > 0 {
 		return absify(folder)
 	}
 

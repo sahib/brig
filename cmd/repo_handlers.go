@@ -94,6 +94,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
 	folder := ctx.GlobalString("path")
+
 	if ctx.NArg() == 2 {
 		var err error
 		folder, err = filepath.Abs(ctx.Args().Get(1))
