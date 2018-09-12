@@ -70,40 +70,41 @@ func RunCmdline(args []string) int {
 	}
 
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name:  "nodaemon,n",
-			Usage: "Don't start the daemon automatically",
-		},
-		cli.StringFlag{
-			Name:   "bind",
-			Usage:  "To what host to bind to (default: localhost)",
-			Value:  "localhost",
-			EnvVar: "BRIG_BIND",
-		},
 		cli.IntFlag{
 			Name:   "port,p",
-			Usage:  "On what port the daemon listens on (default: 6666)",
+			Usage:  "Port of the daemon to connect to.",
 			EnvVar: "BRIG_PORT",
 			Value:  6666,
 		},
-		cli.BoolFlag{
-			Name:  "no-color,",
-			Usage: "Use 'no-pass' as password",
-		},
 		cli.StringFlag{
-			Name:  "password,P",
-			Usage: "Supply user password. Usage is not recommended.",
-			Value: "",
+			Name:   "repo",
+			Usage:  "Path to the repository. Only has effect for new daemons.",
+			Value:  "",
+			EnvVar: "BRIG_PATH",
 		},
 		cli.BoolFlag{
 			Name:  "verbose,V",
 			Usage: "Show certain messages during client startup (helpful for debugging)",
 		},
 		cli.StringFlag{
-			Name:   "repo",
-			Usage:  "Path to the repository",
+			Name:   "bind",
+			Usage:  "To what host to bind to. Do not expose to the outside. Seriously.",
+			Value:  "localhost",
+			EnvVar: "BRIG_BIND",
+		},
+		cli.StringFlag{
+			Name:   "password,P",
+			Usage:  "Supply user password. Usage is not recommended.",
+			EnvVar: "BRIG_PASSWORD",
 			Value:  "",
-			EnvVar: "BRIG_PATH",
+		},
+		cli.BoolFlag{
+			Name:  "nodaemon,n",
+			Usage: "Don't start the daemon automatically.",
+		},
+		cli.BoolFlag{
+			Name:  "no-color",
+			Usage: "Forbid the usage of colors.",
 		},
 	}
 

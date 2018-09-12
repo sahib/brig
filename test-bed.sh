@@ -2,7 +2,7 @@
 
 pkill -9 brig
 rm -rf /tmp/{ali,bob}
-rm ~/.config/brig/registry.yml
+rm -f ~/.config/brig/registry.yml
 
 alias brig-ali='brig -p 6666'
 alias brig-bob='brig -p 6667'

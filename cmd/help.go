@@ -52,7 +52,7 @@ var HelpTexts = map[string]Help{
 			},
 			cli.BoolFlag{
 				Name:  "no-password,x",
-				Usage: "Use a static password. Not recommended beside testing.",
+				Usage: "Use a static password. Not recommended besides testing.",
 			},
 		},
 		Description: `Initialize a new repository with a certain backend.
@@ -310,6 +310,10 @@ See the »diff« command for more information.`,
 				Name:  "offline,o",
 				Usage: "Do no fetch before computing the diff",
 			},
+			cli.BoolFlag{
+				Name:  "self,s",
+				Usage: "Assume self as owner of both sides and compare only commits",
+			},
 		},
 		Description: `View what sync would do when being called on the specified points in history.
 
@@ -335,7 +339,7 @@ EXAMPLES:
    $ brig diff alice                 # Show diff from our CURR to alice's last state
    $ brig diff alice some_tag        # Show diff from our CURR to 'some_tag' of alice
    $ brig diff alice bob HEAD HEAD   # Show diff between alice and bob's HEAD
-   $ brig diff alice alice HEAD CURR # Show diff between alice and bob's HEAD
+   $ brig diff --self HEAD CURR      # Show diff between HEAD and CURR
 `,
 	},
 	"tag": {

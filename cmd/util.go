@@ -315,7 +315,18 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		exePath,
 	)
 
-	daemonArgs := []string{}
+	daemonArgs := []string{
+		"--repo", repoPath,
+		"--port", strconv.FormatInt(int64(port), 10),
+		"--bind", bindHost,
+		"daemon", "launch",
+	}
+
+	argString := fmt.Sprintf("'%s'", strings.Join(daemonArgs, "' '"))
+	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
+
+	proc := exec.Command(exePath, daemonArgs...)
+
 	if askPassword {
 		logVerbose(ctx, "asking password since no password command was given")
 		pwd, err := readPassword(ctx, repoPath)
@@ -323,24 +334,11 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 			return nil, err
 		}
 
-		// TODO: Do not pass the password via a cmdline argument.
-		// Use a environment variable.
 		if len(pwd) != 0 {
-			daemonArgs = append(daemonArgs, "--password", pwd)
+			proc.Env = append(proc.Env, fmt.Sprintf("BRIG_PASSWORD=%s", pwd))
 		}
 	}
 
-	daemonArgs = append(daemonArgs, []string{
-		"--repo", repoPath,
-		"--port", strconv.FormatInt(int64(port), 10),
-		"--bind", bindHost,
-		"daemon", "launch",
-	}...)
-
-	argString := fmt.Sprintf("'%s'", strings.Join(daemonArgs, "' '"))
-	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
-
-	proc := exec.Command(exePath, daemonArgs...)
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err

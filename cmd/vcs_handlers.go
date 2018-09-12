@@ -353,24 +353,35 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 	remoteRev := "CURR"
 	localRev := "CURR"
 
-	if ctx.NArg() == 0 {
+	nArgs := ctx.NArg()
+	if nArgs == 0 {
 		// Special case: When typing brig diff we want to show
 		// the diff from our CURR to HEAD only.
 		localRev = "HEAD"
 	}
 
-	switch n := ctx.NArg(); {
-	case n >= 4:
-		localRev = ctx.Args().Get(3)
-		fallthrough
-	case n >= 3:
-		remoteRev = ctx.Args().Get(2)
-		fallthrough
-	case n >= 2:
-		localName = ctx.Args().Get(1)
-		fallthrough
-	case n >= 1:
-		remoteName = ctx.Args().Get(0)
+	if ctx.Bool("self") {
+		switch {
+		case nArgs >= 2:
+			localRev = ctx.Args().Get(1)
+			fallthrough
+		case nArgs >= 1:
+			remoteRev = ctx.Args().Get(0)
+		}
+	} else {
+		switch {
+		case nArgs >= 4:
+			localRev = ctx.Args().Get(3)
+			fallthrough
+		case nArgs >= 3:
+			remoteRev = ctx.Args().Get(2)
+			fallthrough
+		case nArgs >= 2:
+			localName = ctx.Args().Get(1)
+			fallthrough
+		case nArgs >= 1:
+			remoteName = ctx.Args().Get(0)
+		}
 	}
 
 	needFetch := !ctx.Bool("offline")
