@@ -43,7 +43,7 @@ func (err ExitCode) Error() string {
 	return err.Message
 }
 
-func getRepoEntryFromRegistry() (*repo.RegistryEntry, error) {
+func getRepoEntryFromRegistry(port int64) (*repo.RegistryEntry, error) {
 	registry, err := repo.OpenRegistry()
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func getRepoEntryFromRegistry() (*repo.RegistryEntry, error) {
 		return nil, err
 	}
 
-	// Scan twice.
+	// Scan three times.
 	// First: Check if we're in some repo:
 	for _, entry := range entries {
 		if entry.Path == cwd {
@@ -72,7 +72,16 @@ func getRepoEntryFromRegistry() (*repo.RegistryEntry, error) {
 		}
 	}
 
-	// Second: Check for defaults:
+	// Second: Check if we have a matching port.
+	// This is only used if the port was explicitly set
+	// (and we did not guess).
+	for _, entry := range entries {
+		if entry.Port == port {
+			return entry, nil
+		}
+	}
+
+	// Third: Check for defaults:
 	for _, entry := range entries {
 		if entry.IsDefault {
 			return entry, nil
@@ -117,7 +126,12 @@ func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
 	}
 
 	if lookupGlobal {
-		entry, err := getRepoEntryFromRegistry()
+		port := int64(-1)
+		if ctx.GlobalIsSet("port") {
+			port = ctx.Int64("port")
+		}
+
+		entry, err := getRepoEntryFromRegistry(port)
 		if err == nil {
 			return mustAbsPath(entry.Path)
 		}
@@ -186,7 +200,7 @@ func guessPort(ctx *cli.Context) int {
 		return ctx.GlobalInt("port")
 	}
 
-	entry, err := getRepoEntryFromRegistry()
+	entry, err := getRepoEntryFromRegistry(-1)
 	if err == nil && entry.Port > 0 {
 		logVerbose(ctx, "found port from global registry: %d", entry.Port)
 		return int(entry.Port)
@@ -317,6 +331,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	daemonArgs = append(daemonArgs, []string{
+		"--path", repoPath,
 		"--port", strconv.FormatInt(int64(port), 10),
 		"--bind", bindHost,
 		"daemon", "launch",
@@ -326,8 +341,6 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
 
 	proc := exec.Command(exePath, daemonArgs...)
-	proc.Env = append(proc.Env, fmt.Sprintf("BRIG_PATH=%s", repoPath))
-
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err

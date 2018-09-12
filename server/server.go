@@ -166,7 +166,7 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 
 	ctx := context.Background()
 	quitCh := make(chan struct{})
-	base, err := newBase(basePath, password, bindHost, ctx, quitCh)
+	base, err := newBase(int64(port), basePath, password, bindHost, ctx, quitCh)
 	if err != nil {
 		return nil, err
 	}

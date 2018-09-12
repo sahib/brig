@@ -47,8 +47,6 @@ func (pm *PingMap) doUpdate() {
 		return
 	}
 
-	log.Infof("Updating pinger entries...")
-
 	for addr, pinger := range pm.peers {
 		if pinger == nil {
 			// Try to get a pinger in the background:
@@ -68,7 +66,6 @@ func (pm *PingMap) doUpdate() {
 func (pm *PingMap) doUpdateSingle(addr string) {
 	pinger, err := pm.netBk.Ping(addr)
 	if err != nil {
-		log.Infof("Pinger %s still not reachable: %v", addr, err)
 		if pinger != nil {
 			pinger.Close()
 		}

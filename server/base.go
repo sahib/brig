@@ -28,6 +28,9 @@ import (
 type base struct {
 	mu sync.Mutex
 
+	// port used by the local server
+	port int64
+
 	// base path to the repository (i.e. BRIG_PATH)
 	basePath string
 
@@ -466,6 +469,7 @@ func (b *base) Quit() (err error) {
 }
 
 func newBase(
+	port int64,
 	basePath string,
 	password string,
 	bindHost string,
@@ -474,6 +478,7 @@ func newBase(
 ) (*base, error) {
 	return &base{
 		ctx:       ctx,
+		port:      port,
 		basePath:  basePath,
 		password:  password,
 		bindHost:  bindHost,

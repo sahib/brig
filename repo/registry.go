@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -71,27 +72,34 @@ func findRegistryPath() string {
 	if path := os.Getenv("BRIG_REGISTRY_PATH"); path != "" {
 		registryPaths = []string{path}
 	} else {
+		home := ""
+		user, err := user.Current()
+		if err != nil {
+			home = os.Getenv("HOME")
+		} else {
+			home = user.HomeDir
+		}
+
 		registryPaths = []string{
-			"$HOME/.config/brig/registry.yml",
-			"$HOME/.brig-registry.yml",
+			fmt.Sprintf("%s/.config/brig/registry.yml", home),
+			fmt.Sprintf("%s/.brig-registry.yml", home),
 			"/etc/brig-registry.yml",
 		}
 	}
 
 	for _, path := range registryPaths {
-		fullPath := os.ExpandEnv(path)
-		if _, err := os.Stat(fullPath); err != nil {
+		if _, err := os.Stat(path); err != nil {
 			// Ignore any kind of errors, including
 			// bad permissions or broken filesystems.
 			continue
 		}
 
 		// This path seems okay.
-		return fullPath
+		return path
 	}
 
 	// Nothing suitable found. Use the most preferred one.
-	return os.ExpandEnv(registryPaths[0])
+	return registryPaths[0]
 }
 
 func OpenRegistry() (*Registry, error) {

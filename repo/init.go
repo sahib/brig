@@ -21,7 +21,7 @@ func touch(path string) error {
 	return fd.Close()
 }
 
-func Init(baseFolder, owner, password, backendName string) error {
+func Init(baseFolder, owner, password, backendName string, daemonPort int64) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)
 	if os.IsNotExist(err) {
@@ -72,11 +72,11 @@ func Init(baseFolder, owner, password, backendName string) error {
 		repoID, err := registry.Add(&RegistryEntry{
 			Owner: owner,
 			Path:  baseFolder,
+			Port:  daemonPort,
 		})
 
 		if err != nil {
 			log.Warningf("failed to add self to registry: %v", err)
-
 		}
 
 		repoIDPath := filepath.Join(baseFolder, "REPO_ID")

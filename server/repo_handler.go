@@ -59,7 +59,7 @@ func (rh *repoHandler) Init(call capnp.Repo_init) error {
 	rh.base.password = password
 	rh.base.basePath = initFolder
 
-	err = repo.Init(initFolder, owner, password, backendName)
+	err = repo.Init(initFolder, owner, password, backendName, rh.base.port)
 	if err != nil {
 		return e.Wrapf(err, "repo-init")
 	}
@@ -70,7 +70,6 @@ func (rh *repoHandler) Init(call capnp.Repo_init) error {
 	}
 
 	backendPath := rp.BackendPath(backendName)
-
 	err = backend.InitByName(backendName, backendPath)
 	return e.Wrapf(err, "backend-init")
 }
