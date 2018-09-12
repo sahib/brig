@@ -100,8 +100,8 @@ func RunCmdline(args []string) int {
 			Usage: "Show certain messages during client startup (helpful for debugging)",
 		},
 		cli.StringFlag{
-			Name:   "path",
-			Usage:  "Path of the repository",
+			Name:   "repo",
+			Usage:  "Path to the repository",
 			Value:  "",
 			EnvVar: "BRIG_PATH",
 		},

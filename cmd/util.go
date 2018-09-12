@@ -121,7 +121,7 @@ func checkmarkify(val bool) string {
 // by using a number of sources.
 // This helper may call exit when it fails to get the path.
 func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
-	if argPath := ctx.GlobalString("path"); argPath != "" {
+	if argPath := ctx.GlobalString("repo"); argPath != "" {
 		return argPath
 	}
 
@@ -331,7 +331,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	daemonArgs = append(daemonArgs, []string{
-		"--path", repoPath,
+		"--repo", repoPath,
 		"--port", strconv.FormatInt(int64(port), 10),
 		"--bind", bindHost,
 		"daemon", "launch",
@@ -384,7 +384,7 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 		return absify(folder)
 	}
 
-	if folder := ctx.GlobalString("path"); len(folder) > 0 {
+	if folder := ctx.GlobalString("repo"); len(folder) > 0 {
 		return absify(folder)
 	}
 

@@ -90,11 +90,9 @@ standard output of this process. Your repository is here:
 }
 
 func handleInit(ctx *cli.Context, ctl *client.Client) error {
-	// Accumulate args:
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
-	folder := ctx.GlobalString("path")
-
+	folder := ctx.GlobalString("repo")
 	if ctx.NArg() == 2 {
 		var err error
 		folder, err = filepath.Abs(ctx.Args().Get(1))
