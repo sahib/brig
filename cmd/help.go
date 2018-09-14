@@ -54,6 +54,10 @@ var HelpTexts = map[string]Help{
 				Name:  "no-password,x",
 				Usage: "Use a static password. Not recommended besides testing.",
 			},
+			cli.BoolFlag{
+				Name:  "empty,e",
+				Usage: "Do not create an initial README.",
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 
@@ -339,7 +343,7 @@ EXAMPLES:
    $ brig diff alice                 # Show diff from our CURR to alice's last state
    $ brig diff alice some_tag        # Show diff from our CURR to 'some_tag' of alice
    $ brig diff alice bob HEAD HEAD   # Show diff between alice and bob's HEAD
-   $ brig diff --self HEAD CURR      # Show diff between HEAD and CURR
+   $ brig diff -s HEAD CURR          # Show diff between HEAD and CURR of alice
 `,
 	},
 	"tag": {

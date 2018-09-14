@@ -13,5 +13,8 @@ brig-bob --repo /tmp/bob init bob -x > /dev/null
 brig-ali remote add bob $(brig-bob whoami -f)
 brig-bob remote add ali $(brig-ali whoami -f)
 
-brig-ali stage BUGS
-brig-bob stage TODO
+brig-ali stage BUGS ali-file
+brig-ali commit -m 'Added ali-file'
+brig-bob stage TODO bob-file
+brig-bob commit -m 'Added bob-file'
+

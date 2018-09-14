@@ -147,8 +147,10 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
-	if err := createInitialReadme(ctl, folder); err != nil {
-		return err
+	if !ctx.Bool("empty") {
+		if err := createInitialReadme(ctl, folder); err != nil {
+			return err
+		}
 	}
 
 	fmt.Println(brigLogo)

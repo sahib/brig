@@ -431,13 +431,14 @@ func (vcs *vcsHandler) doFetch(who string) error {
 	}
 
 	if who == rp.Owner {
-		log.Infof("skipping fetch for own meadata")
+		log.Infof("skipping fetch for own metadata")
 		return nil
 	}
 
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		return vcs.base.withRemoteFs(who, func(remoteFs *catfs.FS) error {
 			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+				log.Debugf("fetch: doing complete fetch for %s", who)
 				storeBuf, err := ctl.FetchStore()
 				if err != nil {
 					return e.Wrapf(err, "fetch-store")
@@ -451,6 +452,7 @@ func (vcs *vcsHandler) doFetch(who string) error {
 				return err
 			}
 
+			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
 			patch, err := ctl.FetchPatch(fromIndex)
 			if err != nil {
 				return err
@@ -509,6 +511,7 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 				return err
 			}
 
+			log.Infof("diffing %s <-> %s", cmtBefore, cmtAfter)
 			diff, err := ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
 			if err != nil {
 				return err
