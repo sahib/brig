@@ -437,15 +437,15 @@ func (vcs *vcsHandler) doFetch(who string) error {
 
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		return vcs.base.withRemoteFs(who, func(remoteFs *catfs.FS) error {
-			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
-				log.Debugf("fetch: doing complete fetch for %s", who)
-				storeBuf, err := ctl.FetchStore()
-				if err != nil {
-					return e.Wrapf(err, "fetch-store")
-				}
-
-				return e.Wrapf(remoteFs.Import(storeBuf), "import")
+			// if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+			log.Debugf("fetch: doing complete fetch for %s", who)
+			storeBuf, err := ctl.FetchStore()
+			if err != nil {
+				return e.Wrapf(err, "fetch-store")
 			}
+
+			return e.Wrapf(remoteFs.Import(storeBuf), "import")
+			// }
 
 			fromIndex, err := remoteFs.LastPatchIndex()
 			if err != nil {
