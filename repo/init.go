@@ -93,6 +93,10 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 		return err
 	}
 
+	if err := cfg.SetInt("daemon.port", daemonPort); err != nil {
+		return err
+	}
+
 	configPath := filepath.Join(baseFolder, "config.yml")
 	if err := config.ToYamlFile(configPath, cfg); err != nil {
 		return e.Wrap(err, "Failed to setup default config")
