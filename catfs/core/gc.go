@@ -99,10 +99,12 @@ func (gc *GarbageCollector) sweep(key []string) (int, error) {
 					return err
 				}
 
-				// Allow the gc caller to check if he really
-				// wants to delete this node.
-				if gc.notifier != nil && !gc.notifier(node) {
-					return nil
+				if node != nil {
+					// Allow the gc caller to check if he really
+					// wants to delete this node.
+					if gc.notifier != nil && !gc.notifier(node) {
+						return nil
+					}
 				}
 
 				// Actually get rid of the node:

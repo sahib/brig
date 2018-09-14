@@ -43,7 +43,7 @@ func (err ExitCode) Error() string {
 	return err.Message
 }
 
-func getRepoEntryFromRegistry(port int64) (*repo.RegistryEntry, error) {
+func getRepoEntryFromRegistry(ctx *cli.Context, port int64) (*repo.RegistryEntry, error) {
 	registry, err := repo.OpenRegistry()
 	if err != nil {
 		return nil, err
@@ -68,6 +68,7 @@ func getRepoEntryFromRegistry(port int64) (*repo.RegistryEntry, error) {
 	// First: Check if we're in some repo:
 	for _, entry := range entries {
 		if entry.Path == cwd {
+			logVerbose(ctx, "Found path via current working dir: %s", cwd)
 			return entry, nil
 		}
 	}
@@ -77,6 +78,7 @@ func getRepoEntryFromRegistry(port int64) (*repo.RegistryEntry, error) {
 	// (and we did not guess).
 	for _, entry := range entries {
 		if entry.Port == port {
+			logVerbose(ctx, "Found path via port (%d): %s", port, entry.Path)
 			return entry, nil
 		}
 	}
@@ -84,6 +86,7 @@ func getRepoEntryFromRegistry(port int64) (*repo.RegistryEntry, error) {
 	// Third: Check for defaults:
 	for _, entry := range entries {
 		if entry.IsDefault {
+			logVerbose(ctx, "Found path via is_default %s", entry.Path)
 			return entry, nil
 		}
 	}
@@ -122,16 +125,16 @@ func checkmarkify(val bool) string {
 // This helper may call exit when it fails to get the path.
 func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
 	if argPath := ctx.GlobalString("repo"); argPath != "" {
-		return argPath
+		return mustAbsPath(argPath)
 	}
 
 	if lookupGlobal {
 		port := int64(-1)
 		if ctx.GlobalIsSet("port") {
-			port = ctx.Int64("port")
+			port = ctx.GlobalInt64("port")
 		}
 
-		entry, err := getRepoEntryFromRegistry(port)
+		entry, err := getRepoEntryFromRegistry(ctx, port)
 		if err == nil {
 			return mustAbsPath(entry.Path)
 		}
@@ -200,7 +203,7 @@ func guessPort(ctx *cli.Context) int {
 		return ctx.GlobalInt("port")
 	}
 
-	entry, err := getRepoEntryFromRegistry(-1)
+	entry, err := getRepoEntryFromRegistry(ctx, -1)
 	if err == nil && entry.Port > 0 {
 		logVerbose(ctx, "found port from global registry: %d", entry.Port)
 		return int(entry.Port)
@@ -445,7 +448,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 
 		// Start the server & pass the password:
 		folder := guessRepoFolder(ctx, true)
-		logVerbose(ctx, "starting new daemon in background on folder %s", folder)
+		logVerbose(ctx, "starting new daemon in background, on folder '%s'", folder)
 
 		ctl, err = startDaemon(ctx, folder, port)
 		if err != nil {

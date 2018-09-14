@@ -797,7 +797,7 @@ if the service needs a restart when setting the value.
 			},
 			cli.StringFlag{
 				Name:  "x,root",
-				Usage: "Create the filesystem as readonly",
+				Usage: "Specify a root directory other than »/«",
 			},
 		},
 	},
