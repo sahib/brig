@@ -100,7 +100,6 @@ func (gc *GarbageCollector) sweep(key []string) (int, error) {
 				}
 
 				// TODO: Apparently node can be nil sometimes.
-				//       Find out why, but avoid crashes in the meantime.
 				if node != nil {
 					// Allow the gc caller to check if he really
 					// wants to delete this node.
@@ -110,8 +109,6 @@ func (gc *GarbageCollector) sweep(key []string) (int, error) {
 
 					// Actually get rid of the node:
 					gc.lkr.MemIndexPurge(node)
-				} else {
-					log.Warnf("bad hash in gc: %s", hash)
 				}
 
 				batch.Erase(key...)

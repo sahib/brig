@@ -490,16 +490,16 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 
 	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
 		return vcs.base.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
-			cmtBefore, err := ownFs.Head()
-			if err != nil {
-				return err
-			}
-
 			// Automatically make a commit before merging with their state:
 			timeStamp := time.Now().UTC().Format(time.RFC3339)
 			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
 			if err = ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
 				return e.Wrapf(err, "merge-commit")
+			}
+
+			cmtBefore, err := ownFs.Head()
+			if err != nil {
+				return err
 			}
 
 			if err := ownFs.Sync(remoteFs); err != nil {
