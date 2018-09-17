@@ -950,6 +950,8 @@ func handleOpenHelp(ctx *cli.Context) error {
 	if err := webbrowser.Open(url); err != nil {
 		fmt.Printf("could not open browser for you: %v\n", err)
 		fmt.Printf("Please open this link yourself:\n\n\t%s\n", url)
+	} else {
+		fmt.Printf("A new tab was opened in your browser.\n")
 	}
 
 	return nil

@@ -437,21 +437,25 @@ func (vcs *vcsHandler) doFetch(who string) error {
 
 	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
 		return vcs.base.withRemoteFs(who, func(remoteFs *catfs.FS) error {
-			// if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
-			log.Debugf("fetch: doing complete fetch for %s", who)
-			storeBuf, err := ctl.FetchStore()
-			if err != nil {
-				return e.Wrapf(err, "fetch-store")
+			// Not all remotes might allow doing a full fetch.
+			// This is only possible when having full access to all folders.
+			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+				log.Debugf("fetch: doing complete fetch for %s", who)
+				storeBuf, err := ctl.FetchStore()
+				if err != nil {
+					return e.Wrapf(err, "fetch-store")
+				}
+
+				return e.Wrapf(remoteFs.Import(storeBuf), "import")
 			}
 
-			return e.Wrapf(remoteFs.Import(storeBuf), "import")
-			// }
-
+			// Ask our local copy of the remote what the last patch index was.
 			fromIndex, err := remoteFs.LastPatchIndex()
 			if err != nil {
 				return err
 			}
 
+			// Get the missing changes since then:
 			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
 			patch, err := ctl.FetchPatch(fromIndex)
 			if err != nil {

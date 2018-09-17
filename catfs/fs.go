@@ -1540,7 +1540,26 @@ func (fs *FS) ApplyPatch(data []byte) error {
 	// This info can be read via LastPatchIndex() to determine
 	// the next version to get from the remote.
 	fromIndexData := []byte(strconv.FormatInt(patch.CurrIndex, 10))
-	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
+	if err := fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData); err != nil {
+		return err
+	}
+
+	owner, err := fs.lkr.Owner()
+	if err != nil {
+		return err
+	}
+
+	cmtMsg := fmt.Sprintf("apply patch") // TODO: Better message.
+	if err := fs.lkr.MakeCommit(owner, cmtMsg); err != nil {
+		// An empty patch is perfectly valid:
+		if err == ie.ErrNoChange {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // LastPatchIndex will return the current version of this filesystem

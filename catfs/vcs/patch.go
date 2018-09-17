@@ -4,6 +4,7 @@ import (
 	"path"
 	"sort"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -261,11 +262,16 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		return na.ModTime().Before(nb.ModTime())
 	})
 
+	for _, ch := range patch.Changes {
+		log.Debugf("  change: %s", ch)
+	}
+
 	return patch, nil
 }
 
 func ApplyPatch(lkr *c.Linker, p *Patch) error {
 	for _, change := range p.Changes {
+		log.Debugf("apply %s", change)
 		if err := change.Replay(lkr); err != nil {
 			return err
 		}

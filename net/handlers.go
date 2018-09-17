@@ -78,6 +78,8 @@ func (hdl *requestHandler) FetchPatch(call capnp.Sync_fetchPatch) error {
 
 	fromIndex := call.Params.FromIndex()
 	fromRev := fmt.Sprintf("commit[%d]", fromIndex)
+
+	log.Debugf("Bundling up all changes starting from: %s", fromRev)
 	patchData, err := fs.MakePatch(fromRev, prefixes, currRemote.Name)
 	if err != nil {
 		return err
