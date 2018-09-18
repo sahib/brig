@@ -1,7 +1,6 @@
 package vcs
 
 import (
-	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -253,7 +252,6 @@ func TestMakePatchDirMoveCompletely(t *testing.T) {
 		patch2, err := MakePatch(lkrSrc, preMove, []string{"/"})
 		require.Nil(t, err)
 
-		fmt.Println("PATCH2", patch2)
 		require.Nil(t, ApplyPatch(lkrDst, patch2))
 
 		srcDirGhost, err := lkrDst.LookupGhost("/src")

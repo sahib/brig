@@ -101,6 +101,11 @@ var HelpTexts = map[string]Help{
    order to add a remote, you need their fingerprint, which should be exchange in
    prior. You can view your own fingerprint with the »whoami« command. Also see
    the »net locate« command for more information.
+
+EXAMPLES:
+
+   # Show a diff for each remote:
+   $ brig remote list --format '{{ .Name }}' | xargs -n 1 brig diff
 `,
 	},
 	"remote.add": {
@@ -122,6 +127,10 @@ var HelpTexts = map[string]Help{
 			cli.BoolFlag{
 				Name:  "offline,o",
 				Usage: "Do not query the online status",
+			},
+			cli.StringFlag{
+				Name:  "format,f",
+				Usage: "Format the output according to a template",
 			},
 		},
 		Description: `This goes over every entry in your remote list and prins
