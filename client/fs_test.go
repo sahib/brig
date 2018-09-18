@@ -138,7 +138,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *C
 }
 
 func TestStageAndCat(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "ali", 6667, 9999, func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
@@ -160,7 +160,7 @@ func TestStageAndCat(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
-	withDaemon(t, "alice", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "ali", 6667, 9999, func(ctl *Client) {
 		// Create something nested with -p...
 		require.Nil(t, ctl.Mkdir("/a/b/c", true))
 
@@ -205,7 +205,7 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 		os.RemoveAll(basePath)
 	}()
 
-	withDaemon(t, "alice", 6668, 9998, func(aliCtl *Client) {
+	withDaemon(t, "ali", 6668, 9998, func(aliCtl *Client) {
 		withDaemon(t, "bob", 6669, 9999, func(bobCtl *Client) {
 			aliWhoami, err := aliCtl.Whoami()
 			require.Nil(t, err)
@@ -213,16 +213,16 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 			bobWhoami, err := bobCtl.Whoami()
 			require.Nil(t, err)
 
-			// add bob to alice as remote
+			// add bob to ali as remote
 			err = aliCtl.RemoteAdd(Remote{
 				Name:        "bob",
 				Fingerprint: bobWhoami.Fingerprint,
 			})
 			require.Nil(t, err)
 
-			// add alice to bob as remote
+			// add ali to bob as remote
 			err = bobCtl.RemoteAdd(Remote{
-				Name:        "alice",
+				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
 			})
 			require.Nil(t, err)
@@ -243,7 +243,7 @@ func TestSyncBasic(t *testing.T) {
 		_, err = aliCtl.Sync("bob", true)
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		// We cannot query the file contents, since the mock backend
@@ -277,7 +277,7 @@ func TestSyncConflict(t *testing.T) {
 		require.Nil(t, err)
 
 		// Sync and check if the files are still equal:
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		aliFileStat, err := aliCtl.Stat("/README")
@@ -290,7 +290,7 @@ func TestSyncConflict(t *testing.T) {
 		err = bobCtl.StageFromReader("/README", bytes.NewReader([]byte{43}))
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		bobFileStat, err = bobCtl.Stat("/README")
@@ -298,7 +298,7 @@ func TestSyncConflict(t *testing.T) {
 
 		require.NotEqual(t, aliFileStat.ContentHash, bobFileStat.ContentHash)
 
-		// Modify alice's side additionally. Now we should get a conflicting file.
+		// Modify ali's side additionally. Now we should get a conflicting file.
 		err = aliCtl.StageFromReader("/README", bytes.NewReader([]byte{41}))
 		require.Nil(t, err)
 
@@ -306,7 +306,7 @@ func TestSyncConflict(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, []string{"/", "/README"}, pathsFromListing(dirs))
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		dirs, err = bobCtl.List("/", -1)
@@ -324,7 +324,7 @@ func TestSyncSeveralTimes(t *testing.T) {
 		err := aliCtl.StageFromReader("/ali_file_1", bytes.NewReader([]byte{1}))
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		dirs, err := bobCtl.List("/", -1)
@@ -338,7 +338,7 @@ func TestSyncSeveralTimes(t *testing.T) {
 		err = aliCtl.StageFromReader("/ali_file_2", bytes.NewReader([]byte{2}))
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 
 		require.Nil(t, err)
 
@@ -353,7 +353,7 @@ func TestSyncSeveralTimes(t *testing.T) {
 		err = aliCtl.StageFromReader("/ali_file_3", bytes.NewReader([]byte{3}))
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		dirs, err = bobCtl.List("/", -1)
@@ -388,7 +388,7 @@ func TestSyncPartial(t *testing.T) {
 
 		err = bobCtl.RemoteSave([]Remote{
 			{
-				Name:        "alice",
+				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
 				Folders: []RemoteFolder{
 					{
@@ -411,7 +411,7 @@ func TestSyncPartial(t *testing.T) {
 		_, err = aliCtl.Sync("bob", true)
 		require.Nil(t, err)
 
-		_, err = bobCtl.Sync("alice", true)
+		_, err = bobCtl.Sync("ali", true)
 		require.Nil(t, err)
 
 		// We cannot query the file contents, since the mock backend
@@ -457,5 +457,29 @@ func TestSyncPartial(t *testing.T) {
 			},
 			bobPaths,
 		)
+	})
+}
+
+func TestSyncMovedFile(t *testing.T) {
+	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+		require.Nil(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
+		require.Nil(t, bobCtl.StageFromReader("/bob-file", bytes.NewReader([]byte{4, 5, 6})))
+
+		aliDiff, err := aliCtl.Sync("bob", true)
+		require.Nil(t, err)
+
+		bobDiff, err := bobCtl.Sync("ali", true)
+		require.Nil(t, err)
+
+		require.Equal(t, aliDiff.Added[0].Path, "/bob-file")
+		require.Equal(t, bobDiff.Added[0].Path, "/ali-file")
+
+		require.Nil(t, aliCtl.Move("/ali-file", "/bali-file"))
+		bobDiffAfter, err := bobCtl.Sync("ali", true)
+		require.Nil(t, err)
+
+		require.Len(t, bobDiffAfter.Added, 0)
+		require.Len(t, bobDiffAfter.Removed, 0)
+		require.Len(t, bobDiffAfter.Moved, 1)
 	})
 }

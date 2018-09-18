@@ -515,7 +515,6 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 				return err
 			}
 
-			log.Infof("diffing %s <-> %s", cmtBefore, cmtAfter)
 			diff, err := ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
 			if err != nil {
 				return err

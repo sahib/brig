@@ -46,6 +46,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"path"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -1652,7 +1653,7 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) (bool, error)) (err e
 		if r := recover(); r != nil {
 			batch.Rollback()
 			lkr.MemIndexClear()
-			err = fmt.Errorf("panic rollback: %v", r)
+			err = fmt.Errorf("panic rollback: %v; stack: %s", r, string(debug.Stack()))
 		}
 	}()
 
@@ -1669,7 +1670,7 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) (bool, error)) (err e
 			// with the old state. This costs a little performance but saves me
 			// from writing special in-memory rollback logic for now.
 			lkr.MemIndexClear()
-			log.Warningf("rolled back due to error: %v", err)
+			log.Warningf("rolled back due to error: %v %s", err, debug.Stack())
 		}
 
 		return err

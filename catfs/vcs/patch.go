@@ -164,6 +164,8 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		CurrIndex: status.Index(),
 	}
 
+	log.Debugf("Doing patch between commit[%d] and commmit[%d]", from.Index(), status.Index())
+
 	// Shortcut: The patch CURR..CURR would be empty.
 	// No need for further computations.
 	if from.TreeHash().Equal(status.TreeHash()) {
@@ -180,6 +182,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	err = n.Walk(lkr, root, true, func(child n.Node) error {
 		childParentPath := path.Dir(child.Path())
 		if len(prefixes) != 0 && !hasValidPrefix(prefixTrie, childParentPath) {
+			log.Debugf("Ignoring invalid prefix: %s", childParentPath)
 			return nil
 		}
 

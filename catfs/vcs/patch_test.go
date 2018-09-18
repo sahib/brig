@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -252,6 +253,7 @@ func TestMakePatchDirMoveCompletely(t *testing.T) {
 		patch2, err := MakePatch(lkrSrc, preMove, []string{"/"})
 		require.Nil(t, err)
 
+		fmt.Println("PATCH2", patch2)
 		require.Nil(t, ApplyPatch(lkrDst, patch2))
 
 		srcDirGhost, err := lkrDst.LookupGhost("/src")
@@ -267,5 +269,38 @@ func TestMakePatchDirMoveCompletely(t *testing.T) {
 		require.Nil(t, err)
 		_, err = lkrDst.LookupFile("/dst/x")
 		require.Nil(t, err)
+	})
+}
+
+func TestSyncPartialTwiceWithMovedFile(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrAli, lkrBob *c.Linker) {
+		aliNd, _ := c.MustTouchAndCommit(t, lkrAli, "/ali-file", 1)
+		c.MustTouchAndCommit(t, lkrBob, "/bob-file", 2)
+
+		require.Nil(t, Sync(lkrAli, lkrBob, nil))
+		require.Nil(t, Sync(lkrBob, lkrAli, nil))
+
+		beforeMove, err := lkrAli.Head()
+		require.Nil(t, err)
+		c.MustMove(t, lkrAli, aliNd, "/bali-bile")
+		c.MustCommit(t, lkrAli, "after move")
+
+		// do commit before.
+		patch, err := MakePatch(lkrAli, beforeMove, nil)
+		require.Nil(t, err)
+
+		// Apply the patch on bob's side.
+		require.Nil(t, ApplyPatch(lkrBob, patch))
+		c.MustCommit(t, lkrBob, "after patch")
+
+		diff, err := MakeDiff(lkrBob, lkrAli, nil, nil, nil)
+		require.Nil(t, err)
+
+		require.Len(t, diff.Added, 0)
+		require.Len(t, diff.Removed, 0)
+		require.Len(t, diff.Moved, 0)
+		require.Len(t, diff.Conflict, 0)
+		require.Len(t, diff.Merged, 0)
+		require.Len(t, diff.Ignored, 0)
 	})
 }

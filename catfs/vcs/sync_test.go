@@ -297,3 +297,24 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 		require.Equal(t, diff.Ignored[0].Path(), "/x.png.conflict.0")
 	})
 }
+
+func TestSyncTwiceWithMovedFile(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrAli, lkrBob *c.Linker) {
+		aliNd, _ := c.MustTouchAndCommit(t, lkrAli, "/ali-file", 1)
+		bobNd, _ := c.MustTouchAndCommit(t, lkrBob, "/bob-file", 2)
+
+		require.Nil(t, Sync(lkrAli, lkrBob, nil))
+		require.Nil(t, Sync(lkrBob, lkrAli, nil))
+
+		c.MustMove(t, lkrAli, aliNd, "/bali-bile")
+		c.MustMove(t, lkrBob, bobNd, "/blob-lile")
+		c.MustCommit(t, lkrAli, "moved file")
+
+		diff, err := MakeDiff(lkrBob, lkrAli, nil, nil, nil)
+		require.Nil(t, err)
+
+		require.Len(t, diff.Added, 0)
+		require.Len(t, diff.Removed, 0)
+		require.Len(t, diff.Moved, 2)
+	})
+}

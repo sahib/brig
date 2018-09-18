@@ -411,11 +411,12 @@ func History(lkr *c.Linker, nd n.ModNode, start, stop *n.Commit) ([]*Change, err
 
 	for walker.Next() {
 		state := walker.State()
+		states = append(states, state)
+
+		// Stop searching when he iterated deep enough:
 		if stop != nil && state.Head.TreeHash().Equal(stop.TreeHash()) {
 			break
 		}
-
-		states = append(states, state)
 	}
 
 	if err := walker.Err(); err != nil {

@@ -168,9 +168,11 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 					return true, err
 				}
 
-				if oldNd.Type() != n.NodeTypeGhost {
-					if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
-						return true, e.Wrap(err, "replay: move: remove old")
+				if oldNd != nil {
+					if oldNd.Type() != n.NodeTypeGhost {
+						if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
+							return true, e.Wrap(err, "replay: move: remove old")
+						}
 					}
 				}
 			}
