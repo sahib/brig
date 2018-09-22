@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -107,6 +108,48 @@ func (ch *Change) String() string {
 	return fmt.Sprintf("<%s:%s%s%s>", ch.Curr.Path(), ch.Mask, prevAt, movedTo)
 }
 
+func replayAdd(lkr *c.Linker, currNd n.ModNode) error {
+	switch currNd.(type) {
+	case *n.File:
+		if _, err := c.Mkdir(lkr, path.Dir(currNd.Path()), true); err != nil {
+			return e.Wrapf(err, "replay: mkdir")
+		}
+
+		if _, err := c.StageFromFileNode(lkr, currNd.(*n.File)); err != nil {
+			return e.Wrapf(err, "replay: stage")
+		}
+	case *n.Directory:
+		if _, err := c.Mkdir(lkr, currNd.Path(), true); err != nil {
+			return e.Wrapf(err, "replay: mkdir")
+		}
+	default:
+		return e.Wrapf(ie.ErrBadNode, "replay: modify")
+	}
+
+	return nil
+}
+
+func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
+	oldNd, err := lkr.LookupModNode(oldPath)
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
+	}
+
+	if oldNd == nil {
+		return nil
+	}
+
+	newNd, err := lkr.LookupModNode(newPath)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("adding move mapping: %v %v", oldNd, newNd)
+	// TODO: Why is the parameter order screwed up here?
+	// TODO: Add test of replayAddMoveMapping behaviour.
+	return lkr.AddMoveMapping(newNd, oldNd)
+}
+
 // Replay applies the change `ch` onto `lkr` by redoing the same operations:
 // move, remove, modify, add. Commits are not replayed, everything happens in
 // lkr.Status() without creating a new commit.
@@ -143,40 +186,12 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 
 			// Something needs to be done based on the type.
 			// Either create/update a new file or create a directory.
-			switch currNd.(type) {
-			case *n.File:
-				if _, err := c.Mkdir(lkr, path.Dir(currNd.Path()), true); err != nil {
-					return true, e.Wrapf(err, "replay: mkdir")
-				}
-
-				if _, err := c.StageFromFileNode(lkr, currNd.(*n.File)); err != nil {
-					return true, e.Wrapf(err, "replay: stage")
-				}
-			case *n.Directory:
-				if _, err := c.Mkdir(lkr, currNd.Path(), true); err != nil {
-					return true, e.Wrapf(err, "replay: mkdir")
-				}
-			default:
-				return true, e.Wrapf(ie.ErrBadNode, "replay: modify")
+			if err := replayAdd(lkr, currNd); err != nil {
+				return true, err
 			}
 		}
 
 		if ch.Mask&ChangeTypeMove != 0 {
-			if ch.WasPreviouslyAt != "" {
-				oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
-				if err != nil && !ie.IsNoSuchFileError(err) {
-					return true, err
-				}
-
-				if oldNd != nil {
-					if oldNd.Type() != n.NodeTypeGhost {
-						if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
-							return true, e.Wrap(err, "replay: move: remove old")
-						}
-					}
-				}
-			}
-
 			if ch.MovedTo != "" {
 				oldNd, err := lkr.LookupModNode(ch.Curr.Path())
 				if err != nil && !ie.IsNoSuchFileError(err) {
@@ -191,6 +206,34 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 					if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
 						return true, e.Wrapf(err, "replay: move")
 					}
+				}
+			}
+
+			// TODO: clean up and make sure to add move mapping.
+			if ch.Curr.Type() != n.NodeTypeGhost {
+				if _, err := lkr.LookupModNode(ch.Curr.Path()); ie.IsNoSuchFileError(err) {
+					if err := replayAdd(lkr, ch.Curr); err != nil {
+						return true, err
+					}
+				}
+			}
+
+			if ch.WasPreviouslyAt != "" {
+				oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
+				if err != nil && !ie.IsNoSuchFileError(err) {
+					return true, err
+				}
+
+				if oldNd != nil {
+					if oldNd.Type() != n.NodeTypeGhost {
+						if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
+							return true, e.Wrap(err, "replay: move: remove old")
+						}
+					}
+				}
+
+				if err := replayAddMoveMapping(lkr, ch.WasPreviouslyAt, ch.Curr.Path()); err != nil {
+					return true, err
 				}
 			}
 		}
@@ -382,16 +425,18 @@ func CombineChanges(changes []*Change) *Change {
 		for idx := len(changes) - 1; idx >= 0; idx-- {
 			if refPath := changes[idx].WasPreviouslyAt; refPath != "" {
 				ch.WasPreviouslyAt = refPath
+				pathChanged = refPath != changes[0].Curr.Path()
 				break
 			}
 		}
 	}
 
-	// If the path did not really change, we do not want
-	// to have ChangeTypeMove in the mask. If it's a ghost
+	// If the path did not really change, we do not want to have ChangeTypeMove
+	// in the mask. This is to protect against circular moves.  If it's a ghost
 	// we should still include it though (for WasPreviouslyAt)
 	if !pathChanged && !isGhost {
 		ch.Mask &= ^ChangeTypeMove
+
 	}
 
 	// If the last change was not a remove, we do not need to

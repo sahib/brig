@@ -26,7 +26,7 @@ type Linker interface {
 
 	// MemIndexSwap should be called when
 	// the hash of a node changes.
-	MemIndexSwap(nd Node, oldHash h.Hash)
+	MemIndexSwap(nd Node, oldHash h.Hash, updatePathIndex bool)
 
 	// MemSetRoot should be called when the current root directory changed.
 	MemSetRoot(root *Directory)
@@ -93,14 +93,16 @@ func (ml *MockLinker) MemSetRoot(root *Directory) {
 
 // MemIndexSwap will replace a node (referenced by `oldHash`) with `nd`.
 // The path does not change.
-func (ml *MockLinker) MemIndexSwap(nd Node, oldHash h.Hash) {
+func (ml *MockLinker) MemIndexSwap(nd Node, oldHash h.Hash, updatePathIndex bool) {
 	delete(ml.hashes, oldHash.B58String())
-	ml.AddNode(nd)
+	ml.AddNode(nd, updatePathIndex)
 }
 
 // AddNode will add a node to the memory index.
 // This is not part of the linker interface.
-func (ml *MockLinker) AddNode(nd Node) {
+func (ml *MockLinker) AddNode(nd Node, updatePathIndex bool) {
 	ml.hashes[nd.TreeHash().B58String()] = nd
-	ml.paths[nd.Path()] = nd
+	if updatePathIndex {
+		ml.paths[nd.Path()] = nd
+	}
 }

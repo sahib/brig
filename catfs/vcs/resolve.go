@@ -203,7 +203,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	if src.TreeHash().Equal(dst.TreeHash()) {
 		return false, 0, 0, nil
 	}
-
 	srcHist, err := History(rv.lkrSrc, src, rv.srcHead, rv.srcMergeCmt)
 	if err != nil {
 		return false, 0, 0, e.Wrapf(err, "history src")

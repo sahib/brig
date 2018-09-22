@@ -398,7 +398,7 @@ EXAMPLES:
 			},
 		},
 		Description: `Show a list of commits from a start (--from) up to and end (--to).
-   If omitted »--from INIT --to HEAD« will be assumed.
+   If omitted »--from INIT --to CURR« will be assumed.
 
    The output will show one commit per line, each including the (short) hash of the commit,
    the date it was committed and the (optional) commit message.

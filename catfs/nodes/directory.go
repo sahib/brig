@@ -423,7 +423,7 @@ func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {
 		lkr.MemSetRoot(d)
 	}
 
-	lkr.MemIndexSwap(d, oldHash)
+	lkr.MemIndexSwap(d, oldHash, true)
 	return nil
 }
 
@@ -547,7 +547,7 @@ func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
 		return err
 	}
 
-	lkr.MemIndexSwap(d, oldHash)
+	lkr.MemIndexSwap(d, oldHash, true)
 
 	// content hash is not affected.
 	return nil

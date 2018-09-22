@@ -91,16 +91,18 @@ func NewLinker(kv db.Database) *Linker {
 	return lkr
 }
 
-//  MemIndexAdd adds `nd` to the in memory index.
-func (lkr *Linker) MemIndexAdd(nd n.Node) {
+// MemIndexAdd adds `nd` to the in memory index.
+func (lkr *Linker) MemIndexAdd(nd n.Node, updatePathIndex bool) {
 	lkr.index[nd.TreeHash().B58String()] = nd
 	lkr.inodeIndex[nd.Inode()] = nd
 
-	path := nd.Path()
-	if nd.Type() == n.NodeTypeDirectory {
-		path = appendDot(path)
+	if updatePathIndex {
+		path := nd.Path()
+		if nd.Type() == n.NodeTypeDirectory {
+			path = appendDot(path)
+		}
+		lkr.ptrie.InsertWithData(path, nd)
 	}
-	lkr.ptrie.InsertWithData(path, nd)
 }
 
 // MemIndexSwap updates an entry of the in memory index, by deleting
@@ -108,12 +110,12 @@ func (lkr *Linker) MemIndexAdd(nd n.Node) {
 // to ensure that old hashes do not resolve to the new, updated instance.
 // If the old instance is needed, it will be loaded as new instance.
 // You should not need to call this function, except when implementing own Nodes.
-func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash) {
+func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash, updatePathIndex bool) {
 	if oldHash != nil {
 		delete(lkr.index, oldHash.B58String())
 	}
 
-	lkr.MemIndexAdd(nd)
+	lkr.MemIndexAdd(nd, updatePathIndex)
 }
 
 // MemSetRoot sets the current root, but does not store it yet. It's supposed
@@ -121,9 +123,9 @@ func (lkr *Linker) MemIndexSwap(nd n.Node, oldHash h.Hash) {
 // might need to call this function.
 func (lkr *Linker) MemSetRoot(root *n.Directory) {
 	if lkr.root != nil {
-		lkr.MemIndexSwap(root, lkr.root.TreeHash())
+		lkr.MemIndexSwap(root, lkr.root.TreeHash(), true)
 	} else {
-		lkr.MemIndexAdd(root)
+		lkr.MemIndexAdd(root, true)
 	}
 
 	lkr.root = root
@@ -273,7 +275,7 @@ func (lkr *Linker) NodeByHash(hash h.Hash) (n.Node, error) {
 		return nil, nil
 	}
 
-	lkr.MemIndexSwap(nd, nil)
+	lkr.MemIndexAdd(nd, false)
 	return nd, nil
 }
 
@@ -424,7 +426,7 @@ func (lkr *Linker) stageNodeRecursive(batch db.Batch, nd n.Node) error {
 	batch.Put([]byte(b58Hash), hashPath...)
 
 	// Remember/Update this node in the cache if it's not yet there:
-	lkr.MemIndexAdd(nd)
+	lkr.MemIndexAdd(nd, true)
 
 	// We need to save parent directories too, in case the hash changed:
 	// Note that this will create many pointless directories in staging.

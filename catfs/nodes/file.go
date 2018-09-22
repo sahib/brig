@@ -171,7 +171,7 @@ func (f *File) rehash(lkr Linker, newPath string) {
 	}
 
 	f.tree = h.Sum([]byte(fmt.Sprintf("%s|%s", newPath, contentHash)))
-	lkr.MemIndexSwap(f, oldHash)
+	lkr.MemIndexSwap(f, oldHash, true)
 }
 
 // NotifyMove should be called when the node moved parents.

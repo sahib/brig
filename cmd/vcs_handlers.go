@@ -551,7 +551,7 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Printf(
 			"%s %s %s%s\n",
-			color.GreenString(entry.Hash.ShortB58()),
+			color.GreenString(entry.Hash.B58String()),
 			color.YellowString(entry.Date.Format(time.Stamp)),
 			msg,
 			color.CyanString(tags),

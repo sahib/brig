@@ -164,8 +164,6 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		CurrIndex: status.Index(),
 	}
 
-	log.Debugf("Doing patch between commit[%d] and commmit[%d]", from.Index(), status.Index())
-
 	// Shortcut: The patch CURR..CURR would be empty.
 	// No need for further computations.
 	if from.TreeHash().Equal(status.TreeHash()) {
@@ -227,6 +225,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return err
 		}
 
+		log.Debugf("combine: %v <= %v (valid %v)", combCh, changes, isValid)
 		if isValid && combCh.Mask != 0 {
 			patch.Changes = append(patch.Changes, combCh)
 		}
@@ -265,6 +264,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		return na.ModTime().Before(nb.ModTime())
 	})
 
+	// TODO: remove.
 	for _, ch := range patch.Changes {
 		log.Debugf("  change: %s", ch)
 	}
@@ -274,7 +274,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 
 func ApplyPatch(lkr *c.Linker, p *Patch) error {
 	for _, change := range p.Changes {
-		log.Debugf("apply %s", change)
+		log.Debugf("apply %s %v", change, change.Curr.Type())
 		if err := change.Replay(lkr); err != nil {
 			return err
 		}

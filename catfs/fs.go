@@ -1476,11 +1476,6 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	from, err := parseRev(fs.lkr, fromRev)
-	if err != nil {
-		return nil, err
-	}
-
 	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
 	if err != nil {
 		return nil, err
@@ -1490,7 +1485,7 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	// This is a little unfortunate implication on how the current
 	// way of sending getting patches work. Creating a patch itself
 	// works with a staging commit, but the versioning does not work
-	// aynmore then, since the same version might have a different
+	// anymore then, since the same version might have a different
 	// set of changes.
 	if haveStagedChanges {
 		owner, err := fs.lkr.Owner()
@@ -1502,6 +1497,11 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
 			return nil, err
 		}
+	}
+
+	from, err := parseRev(fs.lkr, fromRev)
+	if err != nil {
+		return nil, err
 	}
 
 	patch, err := vcs.MakePatch(fs.lkr, from, folders)

@@ -313,6 +313,7 @@ func (hw *HistoryWalker) Next() bool {
 	if prev == nil || direction != c.MoveDirSrcToDst {
 		// No valid move mapping found, node was probably not moved.
 		// Assume that we can reach it directly via it's path.
+
 		prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
 		if err != nil {
 			hw.err = e.Wrap(err, "cannot find previous root directory")
