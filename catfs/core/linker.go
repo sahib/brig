@@ -663,6 +663,7 @@ func (lkr *Linker) SetOwner(owner string) error {
 // be resolved, ErrNoSuchRef is returned. Typically, Node will be a Commit. But
 // there are no technical restrictions on which node typ to use.
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
+	origRefname := refname
 	refname = strings.ToLower(refname)
 
 	nUps := 0
@@ -713,7 +714,7 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 			}
 
 			if parentNd == nil {
-				log.Warningf("ref `%s` is too far back; stopping at `init`", refname)
+				log.Warningf("ref `%s` is too far back; stopping at `init`", origRefname)
 				break
 			}
 
