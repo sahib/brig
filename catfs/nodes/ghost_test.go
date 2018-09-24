@@ -14,7 +14,7 @@ func TestGhost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create root dir: %v", err)
 	}
-	lkr.AddNode(root)
+	lkr.AddNode(root, true)
 	lkr.MemSetRoot(root)
 
 	file := NewEmptyFile(root, "x.png", "a", 42)
