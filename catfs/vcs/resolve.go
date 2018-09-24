@@ -51,6 +51,7 @@ import (
 	"fmt"
 	"regexp"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -276,7 +277,21 @@ func isConflictNode(nd n.Node) bool {
 	return conflictNodePattern.MatchString(nd.Path())
 }
 
+func pathOrNil(nd n.Node) string {
+	if nd == nil {
+		return "nil"
+	}
+
+	return nd.Path()
+}
+
 func (rv *resolver) decide(pair MapPair) error {
+	log.Debugf(
+		"Deciding pair: src=%v dst=%v",
+		pathOrNil(pair.Src),
+		pathOrNil(pair.Dst),
+	)
+
 	if pair.Src == nil && pair.Dst == nil {
 		return fmt.Errorf("Received completely empty mapping; ignoring")
 	}

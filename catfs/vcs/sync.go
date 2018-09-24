@@ -254,6 +254,10 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	dstFile.SetSize(srcFile.Size())
 	dstFile.SetKey(srcFile.Key())
 
+	if err := dstParent.Add(sy.lkrDst, dstFile); err != nil {
+		return err
+	}
+
 	if sy.cfg.OnMerge != nil {
 		if !sy.cfg.OnMerge(src, dst) {
 			return nil

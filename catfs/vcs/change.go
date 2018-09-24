@@ -422,6 +422,7 @@ func CombineChanges(changes []*Change) *Change {
 				break
 			}
 		}
+
 		for idx := len(changes) - 1; idx >= 0; idx-- {
 			if refPath := changes[idx].WasPreviouslyAt; refPath != "" {
 				ch.WasPreviouslyAt = refPath
