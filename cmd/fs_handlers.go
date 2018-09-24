@@ -294,6 +294,21 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tmpl != nil {
+		for _, entry := range entries {
+			if err := tmpl.Execute(os.Stdout, entry); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
 	users := []string{}
 	for _, entry := range entries {
 		users = append(users, entry.User)
@@ -383,6 +398,15 @@ func handleInfo(ctx *cli.Context, ctl *client.Client) error {
 	info, err := ctl.Stat(path)
 	if err != nil {
 		return err
+	}
+
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tmpl != nil {
+		return tmpl.Execute(os.Stdout, info)
 	}
 
 	pinState := yesify(info.IsPinned)
@@ -481,7 +505,10 @@ func handlePinList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintf(tabW, "COMMIT\tPATH\t\n")
+	if len(pins) > 0 {
+		fmt.Fprintf(tabW, "COMMIT\tPATH\t\n")
+	}
+
 	for _, pin := range pins {
 		fmt.Fprintf(tabW, "%s\t%s\t\n", pin.Commit[:15], color.MagentaString(pin.Path))
 	}

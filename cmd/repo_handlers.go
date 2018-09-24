@@ -505,8 +505,24 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\tACTIVE\t")
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tmpl == nil && len(mounts) != 0 {
+		fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\tACTIVE\t")
+	}
+
 	for _, entry := range mounts {
+		if tmpl != nil {
+			if err := tmpl.Execute(os.Stdout, entry); err != nil {
+				return err
+			}
+
+			continue
+		}
+
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s\t%s\n",

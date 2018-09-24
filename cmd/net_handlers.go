@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/fatih/color"
@@ -54,8 +53,13 @@ func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if ctx.IsSet("format") {
+		tmpl, err := readFormatTemplate(ctx)
+		if err != nil {
+			return err
+		}
+
 		for _, remote := range remotes {
-			if err := handleRemoteListFormatEntry(ctx, remote); err != nil {
+			if err := tmpl.Execute(os.Stdout, remote); err != nil {
 				return err
 			}
 		}
@@ -82,16 +86,6 @@ func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 	return tabW.Flush()
 }
 
-func handleRemoteListFormatEntry(ctx *cli.Context, remote client.Remote) error {
-	source := ctx.String("format") + "\n"
-	tmpl, err := template.New("format").Parse(source)
-	if err != nil {
-		return err
-	}
-
-	return tmpl.Execute(os.Stdout, remote)
-}
-
 func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 	infos, err := ctl.OnlinePeers()
 	if err != nil {
@@ -112,14 +106,19 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tLASTSEEN\t")
 	}
 
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, info := range infos {
-		if ctx.IsSet("format") {
+		if tmpl != nil {
 			rmt := client.Remote{
 				Fingerprint: info.Fingerprint,
 				Name:        info.Name,
 			}
 
-			if err := handleRemoteListFormatEntry(ctx, rmt); err != nil {
+			if err := tmpl.Execute(os.Stdout, rmt); err != nil {
 				return err
 			}
 

@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -647,4 +648,18 @@ func parseDuration(s string) (float64, error) {
 	}
 
 	return float64(dur) / float64(time.Second), nil
+}
+
+func readFormatTemplate(ctx *cli.Context) (*template.Template, error) {
+	if ctx.IsSet("format") {
+		source := ctx.String("format") + "\n"
+		tmpl, err := template.New("format").Parse(source)
+		if err != nil {
+			return nil, err
+		}
+
+		return tmpl, nil
+	}
+
+	return nil, nil
 }

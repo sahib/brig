@@ -387,14 +387,8 @@ EXAMPLES:
 		Complete: completeArgsUsage,
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "from,f",
-				Value: "",
-				Usage: "Lower range limit; initial commit if omitted",
-			},
-			cli.StringFlag{
-				Name:  "to,t",
-				Value: "",
-				Usage: "Upper range limit; HEAD if omitted",
+				Name:  "format,f",
+				Usage: "Format the output according to a template",
 			},
 		},
 		Description: `Show a list of commits from a start (--from) up to and end (--to).
@@ -594,6 +588,12 @@ outputting a .tar archive of the directory contents).
 		Usage:     "Show metadata of a file or directory",
 		ArgsUsage: "<path>",
 		Complete:  completeBrigPath(true, true),
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "format,f",
+				Usage: "Format the output according to a template",
+			},
+		},
 		Description: `Show all metadata attributes known for a file or directory.
 
       Path: Absolute path of the file inside of the storage.
@@ -630,6 +630,10 @@ outputting a .tar archive of the directory contents).
 			cli.BoolFlag{
 				Name:  "recursive,R",
 				Usage: "Allow recursive traverse",
+			},
+			cli.StringFlag{
+				Name:  "format,f",
+				Usage: "Format the output according to a template",
 			},
 		},
 		Description: `List files an directories starting with »path«.
@@ -815,6 +819,12 @@ if the service needs a restart when setting the value.
 	},
 	"fstab.list": {
 		Usage: "List all items in the filesystem table",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "format,f",
+				Usage: "Format the output according to a template",
+			},
+		},
 	},
 	"fstab.apply": {
 		Usage:       "Sync the reality with the mounts in fstab",

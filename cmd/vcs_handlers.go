@@ -536,7 +536,20 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("commit: %v", err)}
 	}
 
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, entry := range entries {
+		if tmpl != nil {
+			if err := tmpl.Execute(os.Stdout, entry); err != nil {
+				return err
+			}
+
+			continue
+		}
+
 		tags := ""
 		if len(entry.Tags) > 0 {
 			tags = fmt.Sprintf(" (%s)", strings.Join(entry.Tags, ", "))
