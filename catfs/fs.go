@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -434,7 +435,7 @@ func (fs *FS) Copy(src, dst string) error {
 	return err
 }
 
-func (fs *FS) Mkdir(path string, createParents bool) error {
+func (fs *FS) Mkdir(dir string, createParents bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -442,7 +443,9 @@ func (fs *FS) Mkdir(path string, createParents bool) error {
 		return ErrReadOnly
 	}
 
-	_, err := c.Mkdir(fs.lkr, path, createParents)
+	// "brig mkdir ." somehow is able to overwrite everything:
+	dir = strings.TrimLeft(path.Clean(dir), ".")
+	_, err := c.Mkdir(fs.lkr, dir, createParents)
 	return err
 }
 
