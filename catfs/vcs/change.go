@@ -136,6 +136,7 @@ func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
 	}
 
 	if oldNd == nil {
+		log.Debugf("No such old node: %v", oldPath)
 		return nil
 	}
 

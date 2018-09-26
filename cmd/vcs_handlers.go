@@ -405,8 +405,32 @@ func handleFetch(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleSync(ctx *cli.Context, ctl *client.Client) error {
-	who := ctx.Args().First()
+	if len(ctx.Args()) > 0 {
+		return handleSyncSingle(ctx, ctl, ctx.Args().First())
+	}
 
+	remotes, err := ctl.RemoteLs()
+	if err != nil {
+		return err
+	}
+
+	for _, rmt := range remotes {
+		_, err := ctl.RemotePing(rmt.Name)
+		if err != nil {
+			fmt.Printf("Cannot reach %s...", rmt.Name)
+			continue
+		}
+
+		fmt.Printf("Syncing with `%s`...\n", rmt.Name)
+		if err := handleSyncSingle(ctx, ctl, rmt.Name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func handleSyncSingle(ctx *cli.Context, ctl *client.Client, remoteName string) error {
 	needFetch := true
 	if ctx.Bool("no-fetch") {
 		needFetch = false
@@ -416,7 +440,7 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 		return nil
 	}
 
-	diff, err := ctl.Sync(who, needFetch)
+	diff, err := ctl.Sync(remoteName, needFetch)
 	if err != nil {
 		return err
 	}

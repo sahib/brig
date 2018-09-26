@@ -76,14 +76,14 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Stage(absLocalPath, repoPath)
 }
 
-type stagePair struct {
-	local, repo string
-}
-
 func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
 	// First create all directories:
 	// (tbh: I'm not exactly sure what "lexical" order means in the docs of Walk,
 	//  i.e. breadth-first or depth first, so better be safe)
+	type stagePair struct {
+		local, repo string
+	}
+
 	toBeStaged := []stagePair{}
 
 	root = filepath.Clean(root)

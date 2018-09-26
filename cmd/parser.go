@@ -211,7 +211,7 @@ func RunCmdline(args []string) int {
 			// TODO: option to auto-download (parts of?) the synced result.
 			Name:     "sync",
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleSync, true)),
+			Action:   withDaemon(handleSync, true),
 		}, {
 			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
 			Name:     "commit",
@@ -226,6 +226,7 @@ func RunCmdline(args []string) int {
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
 		}, {
 			Name:     "become",
+			Aliases:  []string{"be"},
 			Category: vcscGroup,
 			Action:   withDaemon(handleBecome, true),
 		}, {

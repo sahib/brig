@@ -429,6 +429,9 @@ EXAMPLES:
 
    It is recommended that your first check what will be synced with »brig diff«.
 
+   When passing no arguments, 'sync' will synchronize with all online remotes.
+   When passing a single argument, it will be used as the remote name to sync with.
+
    TODO: write some more documentation on this.
 `,
 	},
