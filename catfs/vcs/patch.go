@@ -31,19 +31,19 @@ func (p *Patch) Swap(i, j int) {
 func (p *Patch) Less(i, j int) bool {
 	na, nb := p.Changes[i].Curr, p.Changes[j].Curr
 
+	naIsGhost := na.Type() == n.NodeTypeGhost
+	nbIsGhost := nb.Type() == n.NodeTypeGhost
+	if naIsGhost != nbIsGhost {
+		// Make sure ghosts are first added
+		return naIsGhost
+	}
+
 	naIsDir := na.Type() == n.NodeTypeDirectory
 	nbIsDir := nb.Type() == n.NodeTypeDirectory
 	if naIsDir != nbIsDir {
 		// Make sure that we first apply directory creation
 		// and possible directory moves.
 		return naIsDir
-	}
-
-	naIsGhost := na.Type() == n.NodeTypeGhost
-	nbIsGhost := nb.Type() == n.NodeTypeGhost
-	if naIsGhost != nbIsGhost {
-		// Make sure ghosts are first added
-		return naIsGhost
 	}
 
 	naIsRemove := p.Changes[i].Mask&ChangeTypeRemove != 0
