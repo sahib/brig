@@ -314,14 +314,18 @@ func printDiff(diff *client.Diff) {
 		fmt.Println()
 	}
 
-	pairSection := func(heading string, infos []client.DiffPair) {
+	pairSection := func(heading, symbol string, infos []client.DiffPair) {
 		if len(infos) == 0 {
 			return
 		}
 
 		fmt.Println(heading)
 		for _, pair := range infos {
-			fmt.Printf("  %s <-> %s\n", pair.Src.Path, pair.Dst.Path)
+			if pair.Src.Path != pair.Dst.Path {
+				fmt.Printf("  %s %s %s\n", pair.Src.Path, symbol, pair.Dst.Path)
+			} else {
+				fmt.Printf("  %s %s\n", symbol, pair.Src.Path)
+			}
 		}
 
 		fmt.Println()
@@ -332,9 +336,9 @@ func printDiff(diff *client.Diff) {
 	simpleSection(color.RedString("Removed:"), diff.Removed)
 	simpleSection(color.RedString("Missing:"), diff.Missing)
 
-	pairSection(color.BlueString("Moved:"), diff.Moved)
-	pairSection(color.CyanString("Resolveable Conflicts:"), diff.Merged)
-	pairSection(color.MagentaString("Conflicts:"), diff.Conflict)
+	pairSection(color.BlueString("Moved:"), "→", diff.Moved)
+	pairSection(color.CyanString("Resolveable Conflicts:"), "⇄", diff.Merged)
+	pairSection(color.MagentaString("Conflicts:"), "⚡", diff.Conflict)
 }
 
 func handleDiff(ctx *cli.Context, ctl *client.Client) error {
