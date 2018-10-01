@@ -20,6 +20,51 @@ type Patch struct {
 	Changes   []*Change
 }
 
+func (p *Patch) Len() int {
+	return len(p.Changes)
+}
+
+func (p *Patch) Swap(i, j int) {
+	p.Changes[i], p.Changes[j] = p.Changes[j], p.Changes[i]
+}
+
+func (p *Patch) Less(i, j int) bool {
+	na, nb := p.Changes[i].Curr, p.Changes[j].Curr
+
+	naIsDir := na.Type() == n.NodeTypeDirectory
+	nbIsDir := nb.Type() == n.NodeTypeDirectory
+	if naIsDir != nbIsDir {
+		// Make sure that we first apply directory creation
+		// and possible directory moves.
+		return naIsDir
+	}
+
+	naIsGhost := na.Type() == n.NodeTypeGhost
+	nbIsGhost := nb.Type() == n.NodeTypeGhost
+	if naIsGhost != nbIsGhost {
+		// Make sure ghosts are first added
+		return naIsGhost
+	}
+
+	naIsRemove := p.Changes[i].Mask&ChangeTypeRemove != 0
+	nbIsRemove := p.Changes[j].Mask&ChangeTypeRemove != 0
+	if naIsRemove != nbIsRemove {
+		// Make sure that everything is removed before
+		// doing any other changes.
+		return naIsRemove
+	}
+
+	naIsMove := p.Changes[i].Mask&ChangeTypeMove != 0
+	nbIsMove := p.Changes[j].Mask&ChangeTypeMove != 0
+	if naIsMove != nbIsMove {
+		// Make sure that everything is moved before
+		// doing any adds / modifcations.
+		return naIsMove
+	}
+
+	return na.ModTime().Before(nb.ModTime())
+}
+
 func (p *Patch) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -184,21 +229,6 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return nil
 		}
 
-		// We're only interested in directories if they're leaf nodes,
-		// i.e. empty directories. Directories in between will be shaped
-		// by the changes done to them and we do/can not recreate the
-		// changes for intermediate directories easily.
-		if child.Type() == n.NodeTypeDirectory {
-			dir, ok := child.(*n.Directory)
-			if !ok {
-				return e.Wrapf(ie.ErrBadNode, "make-patch: dir")
-			}
-
-			if dir.NChildren() > 0 {
-				return nil
-			}
-		}
-
 		// Get all changes between status and `from`.
 		childModNode, ok := child.(n.ModNode)
 		if !ok {
@@ -216,6 +246,25 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		}
 
 		combCh := CombineChanges(changes)
+
+		// Directories are a bit of a special case. We're only interested in them
+		// when creating new, empty directories (n_children == 0) or if whole trees
+		// were moved. In the latter case we need to also send a notice about that,
+		// but we can leave out any other change.
+		if child.Type() == n.NodeTypeDirectory {
+			dir, ok := child.(*n.Directory)
+			if !ok {
+				return e.Wrapf(ie.ErrBadNode, "make-patch: dir")
+			}
+
+			if combCh.Mask&ChangeTypeMove == 0 {
+				if dir.NChildren() > 0 {
+					return nil
+				}
+			} else {
+				combCh.Mask = ChangeTypeMove
+			}
+		}
 
 		// Some special filtering needs to be done here.
 		// If it'a "move" ghost we don't want to export it unless
@@ -237,34 +286,12 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		return nil, err
 	}
 
-	// Make sure to apply the modifications *first* that are older.
-	sort.Slice(patch.Changes, func(i, j int) bool {
-		na, nb := patch.Changes[i].Curr, patch.Changes[j].Curr
+	// Make sure the patch is applied in the right order.
+	// The receiving site will sort it again, but it's better
+	// to have it in the right order already.
+	sort.Sort(patch)
 
-		// Ghosts should sort after normal nodes.
-		naIsGhost := na.Type() == n.NodeTypeGhost
-		nbIsGhost := nb.Type() == n.NodeTypeGhost
-		if naIsGhost != nbIsGhost {
-			// sort non ghosts to the beginning
-			return naIsGhost
-		}
-
-		naIsRemove := patch.Changes[i].Mask&ChangeTypeRemove != 0
-		nbIsRemove := patch.Changes[j].Mask&ChangeTypeRemove != 0
-		if naIsRemove != nbIsRemove {
-			return naIsRemove
-		}
-
-		naIsMove := patch.Changes[i].Mask&ChangeTypeMove != 0
-		nbIsMove := patch.Changes[j].Mask&ChangeTypeMove != 0
-		if naIsMove != nbIsMove {
-			return naIsMove
-		}
-
-		return na.ModTime().Before(nb.ModTime())
-	})
-
-	// TODO: remove.
+	// TODO: remove eventually.
 	for _, ch := range patch.Changes {
 		log.Debugf("  change: %s", ch)
 	}
@@ -273,6 +300,8 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 }
 
 func ApplyPatch(lkr *c.Linker, p *Patch) error {
+	sort.Sort(p)
+
 	for _, change := range p.Changes {
 		log.Debugf("apply %s %v", change, change.Curr.Type())
 		if err := change.Replay(lkr); err != nil {

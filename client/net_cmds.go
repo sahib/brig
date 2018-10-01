@@ -18,9 +18,9 @@ type RemoteFolder struct {
 }
 
 type Remote struct {
-	Name        string         `yaml:"Name"`
-	Fingerprint string         `yaml:"Fingerprint"`
-	Folders     []RemoteFolder `yaml:"Folders,omitempty,flow"`
+	Name        string   `yaml:"Name"`
+	Fingerprint string   `yaml:"Fingerprint"`
+	Folders     []string `yaml:"Folders,flow"`
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
@@ -39,7 +39,7 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 		return nil, err
 	}
 
-	folders := []RemoteFolder{}
+	folders := []string{}
 	for idx := 0; idx < remoteFolders.Len(); idx++ {
 		folder := remoteFolders.At(idx)
 		folderName, err := folder.Folder()
@@ -47,10 +47,7 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 			return nil, err
 		}
 
-		// TODO: Read perms here once defined.
-		folders = append(folders, RemoteFolder{
-			Folder: folderName,
-		})
+		folders = append(folders, folderName)
 	}
 
 	return &Remote{
@@ -85,7 +82,7 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 			return nil, err
 		}
 
-		if err := capFolder.SetFolder(folder.Folder); err != nil {
+		if err := capFolder.SetFolder(folder); err != nil {
 			return nil, err
 		}
 

@@ -142,6 +142,12 @@ func RunCmdline(args []string) int {
 				}, {
 					Name:   "ping",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
+					// TODO: Add a way to modify remote folders.
+					// }, {
+					// 	Name: "folders",
+					// 	Subcommands: []cli.Command{
+					// 		"add",
+					// 	},
 				},
 			},
 		}, {
