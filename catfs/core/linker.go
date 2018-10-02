@@ -572,7 +572,7 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 	}
 
 	// Check if we have already tagged the initial commit.
-	if _, err := lkr.ResolveRef("INIT"); err != nil {
+	if _, err := lkr.ResolveRef("init"); err != nil {
 		if !ie.IsErrNoSuchRef(err) {
 			// Some other error happened.
 			return err
@@ -662,9 +662,9 @@ func (lkr *Linker) SetOwner(owner string) error {
 // ResolveRef resolves the hash associated with `refname`. If the ref could not
 // be resolved, ErrNoSuchRef is returned. Typically, Node will be a Commit. But
 // there are no technical restrictions on which node typ to use.
+// NOTE: ResolveRef("HEAD") != ResolveRef("head") due to case.
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	origRefname := refname
-	refname = strings.ToLower(refname)
 
 	nUps := 0
 	for idx := len(refname) - 1; idx >= 0; idx-- {
@@ -690,17 +690,37 @@ func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	}
 
 	if len(b58Hash) == 0 {
-		return nil, ie.ErrNoSuchRef(refname)
+		// Try to interpret the refname as b58hash directly.
+		// This path will hit when passing a commit hash directly
+		// as `refname` to this method.
+		b58Hash = []byte(refname)
 	}
 
 	hash, err := h.FromB58String(string(b58Hash))
 	if err != nil {
+		// Could not parse hash, so it's probably none.
+		return nil, ie.ErrNoSuchRef(refname)
+	}
+
+	status, err := lkr.Status()
+	if err != nil {
 		return nil, err
 	}
 
-	nd, err := lkr.NodeByHash(h.Hash(hash))
-	if err != nil {
-		return nil, err
+	// Special case: Allow the resolving of `curr`
+	// by using its status hash and check it explicitly.
+	var nd n.Node
+	if status.TreeHash().Equal(hash) {
+		nd = status
+	} else {
+		nd, err = lkr.NodeByHash(h.Hash(hash))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if nd == nil {
+		return nil, ie.ErrNoSuchRef(refname)
 	}
 
 	// Possibly advance a few commits until we hit the one
@@ -771,7 +791,7 @@ func (lkr *Linker) RemoveRef(refname string) error {
 
 // Head is just a shortcut for ResolveRef("HEAD").
 func (lkr *Linker) Head() (*n.Commit, error) {
-	nd, err := lkr.ResolveRef("HEAD")
+	nd, err := lkr.ResolveRef("head")
 	if err != nil {
 		return nil, err
 	}
@@ -1547,6 +1567,17 @@ func (lkr *Linker) ExpandAbbrev(abbrev string) (h.Hash, error) {
 	prefixes := [][]string{
 		{"stage", "objects"},
 		{"objects"},
+	}
+
+	// Special case: Make it possible to abbrev the commit
+	// of ``curr`` - it does live in stage/STATUS, not somewhere else.
+	curr, err := lkr.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.HasPrefix(curr.TreeHash().B58String(), abbrev) {
+		return curr.TreeHash(), nil
 	}
 
 	for _, prefix := range prefixes {

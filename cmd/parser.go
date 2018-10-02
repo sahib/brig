@@ -255,9 +255,10 @@ func RunCmdline(args []string) int {
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
 		}, {
-			Name:     "info",
+			Name:     "show",
+			Aliases:  []string{"s"},
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleInfo, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleShow, true)),
 		}, {
 			Name:     "rm",
 			Aliases:  []string{"remove"},

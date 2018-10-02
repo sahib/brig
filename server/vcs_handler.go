@@ -529,3 +529,33 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		})
 	})
 }
+
+func (vcs *vcsHandler) CommitInfo(call capnp.VCS_commitInfo) error {
+	server.Ack(call.Options)
+
+	rev, err := call.Params.Rev()
+	if err != nil {
+		return err
+	}
+
+	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
+		cmt, err := fs.CommitInfo(rev)
+		if err != nil {
+			return err
+		}
+
+		call.Results.SetIsValidRef(cmt != nil)
+		if cmt != nil {
+			capCmt, err := commitToCap(cmt, call.Results.Segment())
+			if err != nil {
+				return err
+			}
+
+			if err := call.Results.SetCommit(*capCmt); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}

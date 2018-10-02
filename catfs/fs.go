@@ -1568,6 +1568,9 @@ func (fs *FS) ApplyPatch(data []byte) error {
 // LastPatchIndex will return the current version of this filesystem
 // regarding patch state.
 func (fs *FS) LastPatchIndex() (int64, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	fromIndexData, err := fs.lkr.MetadataGet("fs.last-merge-index")
 	if err != nil && err != db.ErrNoSuchKey {
 		return -1, err
@@ -1580,4 +1583,26 @@ func (fs *FS) LastPatchIndex() (int64, error) {
 	}
 
 	return strconv.ParseInt(string(fromIndexData), 10, 64)
+}
+
+func (fs *FS) CommitInfo(rev string) (*Commit, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	cmt, err := parseRev(fs.lkr, rev)
+	if ie.IsErrNoSuchRef(err) {
+		return nil, nil
+	}
+
+	hashToRef, err := fs.buildCommitHashToRefTable()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Commit{
+		Hash: cmt.TreeHash().Clone(),
+		Msg:  cmt.Message(),
+		Tags: hashToRef[cmt.TreeHash().B58String()],
+		Date: cmt.ModTime(),
+	}, nil
 }

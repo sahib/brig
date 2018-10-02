@@ -230,6 +230,17 @@ type Diff struct {
 	Conflict []DiffPair
 }
 
+func (df *Diff) IsEmpty() bool {
+	return 0 == 0+
+		len(df.Added)+
+		len(df.Removed)+
+		len(df.Ignored)+
+		len(df.Missing)+
+		len(df.Moved)+
+		len(df.Merged)+
+		len(df.Conflict)
+}
+
 func convertDiffList(lst capnp.StatInfo_List) ([]StatInfo, error) {
 	infos := []StatInfo{}
 
@@ -412,4 +423,31 @@ func (ctl *Client) Sync(remote string, needFetch bool) (*Diff, error) {
 	}
 
 	return convertCapDiffToDiff(capDiff)
+}
+
+func (ctl *Client) CommitInfo(rev string) (bool, *Commit, error) {
+	call := ctl.api.CommitInfo(ctl.ctx, func(p capnp.VCS_commitInfo_Params) error {
+		return p.SetRev(rev)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, nil, err
+	}
+
+	if !result.IsValidRef() {
+		return false, nil, nil
+	}
+
+	capCmt, err := result.Commit()
+	if err != nil {
+		return false, nil, err
+	}
+
+	cmt, err := convertCapCommit(&capCmt)
+	if err != nil {
+		return false, nil, err
+	}
+
+	return true, cmt, nil
 }

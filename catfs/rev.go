@@ -68,27 +68,31 @@ func parseRev(lkr *c.Linker, rev string) (*n.Commit, error) {
 		return lkr.CommitByIndex(index)
 	}
 
-	var cmt *n.Commit
-	cmtNd, err := lkr.ResolveRef(lowerRev)
-
+	pureRev := strings.TrimRight(rev, "^")
+	hash, err := lkr.ExpandAbbrev(pureRev)
 	if err != nil {
-		// Expand possible abbreviations:
-		hash, err := lkr.ExpandAbbrev(rev)
-		if err != nil {
-			// If the file was not a valid refname
-			// and the hash conversion failed it's probably invalid.
-			return nil, ie.ErrNoSuchRef(rev)
-		}
-
-		cmt, err := lkr.CommitByHash(hash)
+		// Either it was an hash and it is valid,
+		// Or it is a tag name like HEAD (or "head")
+		nd, err := lkr.ResolveRef(lowerRev)
 		if err != nil {
 			return nil, err
+		}
+
+		cmt, ok := nd.(*n.Commit)
+		if !ok {
+			return nil, ie.ErrBadNode
 		}
 
 		return cmt, nil
 	}
 
-	cmt, ok := cmtNd.(*n.Commit)
+	actualRev := hash.B58String() + strings.Repeat("^", strings.Count(rev, "^"))
+	nd, err := lkr.ResolveRef(actualRev)
+	if err != nil {
+		return nil, err
+	}
+
+	cmt, ok := nd.(*n.Commit)
 	if !ok {
 		return nil, ie.ErrBadNode
 	}

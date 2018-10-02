@@ -587,8 +587,8 @@ Outputting a directory is currently not allowed (but might be in the future by
 outputting a .tar archive of the directory contents).
 `,
 	},
-	"info": {
-		Usage:     "Show metadata of a file or directory",
+	"show": {
+		Usage:     "Show metadata of a file or directory or commit",
 		ArgsUsage: "<path>",
 		Complete:  completeBrigPath(true, true),
 		Flags: []cli.Flag{

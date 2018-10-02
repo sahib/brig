@@ -143,15 +143,16 @@ interface FS {
 }
 
 interface VCS {
-    log      @0 () -> (entries :List(Commit));
-    commit   @1 (msg :Text);
-    tag      @2 (rev :Text, tagName :Text);
-    untag    @3 (tagName :Text);
-    reset    @4 (path :Text, rev :Text, force :Bool);
-    history  @5 (path :Text) -> (history :List(Change));
-    makeDiff @6 (localOwner :Text, remoteOwner :Text, localRev :Text, remoteRev :Text, needFetch :Bool) -> (diff :Diff);
-    sync     @7 (withWhom :Text, needFetch :Bool) -> (diff :Diff);
-    fetch    @8 (who :Text);
+    log         @0 () -> (entries :List(Commit));
+    commit      @1 (msg :Text);
+    tag         @2 (rev :Text, tagName :Text);
+    untag       @3 (tagName :Text);
+    reset       @4 (path :Text, rev :Text, force :Bool);
+    history     @5 (path :Text) -> (history :List(Change));
+    makeDiff    @6 (localOwner :Text, remoteOwner :Text, localRev :Text, remoteRev :Text, needFetch :Bool) -> (diff :Diff);
+    sync        @7 (withWhom :Text, needFetch :Bool) -> (diff :Diff);
+    fetch       @8 (who :Text);
+    commitInfo  @9 (rev :Text)  -> (isValidRef :Bool, commit :Commit);
 }
 
 interface Repo {

@@ -393,8 +393,71 @@ func handleMkdir(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
-func handleInfo(ctx *cli.Context, ctl *client.Client) error {
+func handleShow(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
+	isValidRef, cmt, err := ctl.CommitInfo(path)
+	if err != nil {
+		return err
+	}
+
+	if isValidRef {
+		return handleShowCommit(ctx, ctl, cmt)
+	}
+
+	return handleShowFileOrDir(ctx, ctl, path)
+}
+
+func handleShowCommit(ctx *cli.Context, ctl *client.Client, cmt *client.Commit) error {
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "ATTR\tVALUE\t")
+
+	printPair := func(name string, val interface{}) {
+		fmt.Fprintf(
+			tabW,
+			"%s\t%v\t\n",
+			color.WhiteString(name),
+			val,
+		)
+	}
+
+	printPair("Path", cmt.Hash)
+	printPair("Tags", strings.Join(cmt.Tags, ", "))
+	printPair("ModTime", cmt.Date.Format(time.RFC3339))
+	printPair("Message", cmt.Msg)
+	tabW.Flush()
+
+	self, err := ctl.Whoami()
+	if err != nil {
+		return err
+	}
+
+	diff, err := ctl.MakeDiff(
+		self.CurrentUser,
+		self.CurrentUser,
+		cmt.Hash.B58String()+"^",
+		cmt.Hash.B58String(),
+		false,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !diff.IsEmpty() {
+		fmt.Println()
+		fmt.Println("Here's what changed in this commit:")
+		fmt.Println()
+		printDiffTree(diff)
+	}
+
+	return nil
+}
+
+func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) error {
 	info, err := ctl.Stat(path)
 	if err != nil {
 		return err
