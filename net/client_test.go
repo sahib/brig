@@ -47,7 +47,7 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	bk, err := backend.FromName("mock", basePath, nil)
 	require.Nil(t, err)
 
-	err = repo.Init(basePath, name, "password", "mock")
+	err = repo.Init(basePath, name, "password", "mock", 6666)
 	require.Nil(t, err)
 
 	rp, err := repo.Open(basePath, "password")

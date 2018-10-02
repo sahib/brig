@@ -20,7 +20,7 @@ func TestRepoInit(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))
 
-	err := Init(testDir, "alice", "klaus", "mock")
+	err := Init(testDir, "alice", "klaus", "mock", 6666)
 	require.Nil(t, err)
 
 	rp, err := Open(testDir, "klaus")
@@ -58,7 +58,7 @@ func dirSize(t *testing.T, path string) int64 {
 func TestRepoDeduplication(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))
-	err := Init(testDir, "alice", "klaus", "ipfs")
+	err := Init(testDir, "alice", "klaus", "ipfs", 6666)
 	require.Nil(t, err)
 
 	rp, err := Open(testDir, "klaus")

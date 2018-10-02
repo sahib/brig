@@ -611,7 +611,7 @@ func TestHead(t *testing.T) {
 		ref, err := fs.Head()
 		require.Nil(t, err)
 
-		headCmt, err := fs.lkr.ResolveRef("HEAD")
+		headCmt, err := fs.lkr.ResolveRef("head")
 		require.Nil(t, err)
 
 		require.Equal(t, headCmt.TreeHash().B58String(), ref)
