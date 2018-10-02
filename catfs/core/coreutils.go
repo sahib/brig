@@ -65,8 +65,6 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 		return
 	}
 
-	log.Debugf("mkdir: %s", dirname)
-
 	err = lkr.Atomic(func() (bool, error) {
 		// If it's nil, we might need to create it:
 		if parent == nil {
@@ -113,6 +111,7 @@ func Mkdir(lkr *Linker, repoPath string, createParents bool) (dir *n.Directory, 
 			return true, e.Wrapf(err, "stage dir")
 		}
 
+		log.Debugf("mkdir: %s", dirname)
 		return false, nil
 	})
 
@@ -439,10 +438,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 		file.SetUser(lkr.owner)
 
 		// Add it again when the hash was changed.
-		log.Debugf(
-			"Adding %s (%v) to %s (%v)",
-			file.Path(), file.BackendHash(), parentDir.Path(), parentDir.BackendHash(),
-		)
+		log.Debugf("Adding %s (%v)", file.Path(), file.BackendHash())
 		if err := parentDir.Add(lkr, file); err != nil {
 			return true, err
 		}

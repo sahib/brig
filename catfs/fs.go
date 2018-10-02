@@ -848,10 +848,13 @@ func (fs *FS) computePreconditions(path string, rs io.ReadSeeker) (h.Hash, uint6
 			return nil, 0, compress.AlgoNone, err
 		}
 
-		log.Warningf("failed to guess suitable zip algo: %v", err)
+		log.Warningf("failed to guess suitable zip algo for %s: %v", path, err)
 	}
 
-	log.Debugf("using '%s' compression for file %s", algo, path)
+	if algo != compress.AlgoNone {
+		log.Debugf("Using '%s' compression for file %s", algo, path)
+	}
+
 	contentHash := hashWriter.Finalize()
 	size := sizeAcc.Size()
 	return contentHash, size, algo, nil

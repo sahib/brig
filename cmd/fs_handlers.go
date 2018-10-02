@@ -413,8 +413,6 @@ func handleShowCommit(ctx *cli.Context, ctl *client.Client, cmt *client.Commit) 
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "ATTR\tVALUE\t")
-
 	printPair := func(name string, val interface{}) {
 		fmt.Fprintf(
 			tabW,
@@ -484,8 +482,6 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 		os.Stdout, 0, 0, 2, ' ',
 		tabwriter.StripEscape,
 	)
-
-	fmt.Fprintln(tabW, "ATTR\tVALUE\t")
 
 	printPair := func(name string, val interface{}) {
 		fmt.Fprintf(

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"bitbucket.org/taruti/mimemagic"
-	log "github.com/Sirupsen/logrus"
 )
 
 var (
@@ -56,13 +55,6 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 
 	mime := guessMime(path, header)
 	compressible := isCompressible(mime)
-
-	log.Debugf(
-		"guessed `%s` mime for `%s` (compressible: %v)",
-		mime,
-		path,
-		compressible,
-	)
 
 	if !compressible {
 		return AlgoNone, nil
