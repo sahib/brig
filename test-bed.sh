@@ -4,6 +4,7 @@ pkill -9 brig
 rm -rf /tmp/{ali,bob}
 rm -f ~/.config/brig/registry.yml
 
+export BRIG_COLOR=always
 alias brig-ali='brig --port 6666'
 alias brig-bob='brig --port 6667'
 

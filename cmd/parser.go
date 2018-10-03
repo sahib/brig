@@ -17,12 +17,23 @@ func init() {
 	log.SetOutput(os.Stderr)
 	log.SetLevel(log.DebugLevel)
 
-	// Only use fancy logging if we print to a terminal:
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		log.SetFormatter(&formatter.FancyLogFormatter{
-			UseColors: true,
-		})
+	useColor := true
+	switch envVar := os.Getenv("BRIG_COLOR"); envVar {
+	case "", "auto":
+		useColor = isatty.IsTerminal(os.Stdout.Fd())
+	case "never":
+		useColor = false
+	case "always":
+		useColor = true
+	default:
+		log.Warningf("Bad value for $BRIG_COLOR: %s, disabling color", envVar)
+		useColor = false
 	}
+
+	// Only use fancy logging if we print to a terminal:
+	log.SetFormatter(&formatter.FancyLogFormatter{
+		UseColors: useColor,
+	})
 }
 
 func formatGroup(category string) string {

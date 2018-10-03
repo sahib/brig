@@ -21,6 +21,8 @@ func init() {
 	if os.Getenv("BRIG_LOG_SHOW_PID") != "" {
 		showPid = true
 	}
+
+	color.NoColor = false
 }
 
 // FancyLogFormatter is the default logger for brig.
