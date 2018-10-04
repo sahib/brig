@@ -420,7 +420,7 @@ func TestResolveRef(t *testing.T) {
 		cmts = append(cmts, initCmt)
 
 		for nUp := 0; nUp < len(cmts)+3; nUp++ {
-			refname := "HEAD"
+			refname := "head"
 			for idx := 0; idx < nUp; idx++ {
 				refname += "^"
 			}
@@ -435,7 +435,7 @@ func TestResolveRef(t *testing.T) {
 			require.Equal(t, expect, ref)
 		}
 
-		_, err = lkr.ResolveRef("HE^^AD")
+		_, err = lkr.ResolveRef("he^^ad")
 		require.Equal(t, err, ie.ErrNoSuchRef("he^^ad"))
 	})
 }
