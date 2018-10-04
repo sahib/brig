@@ -62,6 +62,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *C
 
 	cmd := exec.Command(
 		"brig",
+		"--repo", basePath,
 		"--port", fmt.Sprintf("%d", port),
 		"daemon", "launch",
 		"--log-to-stdout",
