@@ -186,9 +186,15 @@ func (b *base) findBootstrapAddrs(reg *repo.Registry) ([]string, error) {
 		return nil, err
 	}
 
+	seenAddrs := make(map[string]bool)
 	bootstrapAddrs := []string{}
 	for _, entry := range entries {
 		if len(entry.Addr) > 0 {
+			if seenAddrs[entry.Addr] {
+				continue
+			}
+
+			seenAddrs[entry.Addr] = true
 			bootstrapAddrs = append(bootstrapAddrs, entry.Addr)
 		}
 	}
