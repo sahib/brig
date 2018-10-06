@@ -58,8 +58,12 @@ type base struct {
 
 	conductor *conductor.Conductor
 
-	// backendLoaded is set to true once the backend is
+	// fsLoaded is set to true once the backend is
 	// loaded/accessed the first time.
+	fsLoaded bool
+
+	// backendLoaded is set to true the first time Backend()
+	// returned successfully.
 	backendLoaded bool
 
 	// logToStdout is true when logging to stdout was explicitly requested.
@@ -163,6 +167,13 @@ func (b *base) Backend() (backend.Backend, error) {
 	return b.backendUnlocked()
 }
 
+func (b *base) BackendWasLoaded() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.backendLoaded
+}
+
 func (b *base) backendUnlocked() (backend.Backend, error) {
 	if b.backend != nil {
 		return b.backend, nil
@@ -255,6 +266,7 @@ func (b *base) loadBackend() (backend.Backend, error) {
 		log.Warningf("Failed to update registry with backend addr: %v", err)
 	}
 
+	b.backendLoaded = true
 	return realBackend, nil
 }
 
@@ -368,7 +380,7 @@ func (b *base) withCurrFs(fn func(fs *catfs.FS) error) error {
 		return err
 	}
 
-	b.backendLoaded = true
+	b.fsLoaded = true
 	return fn(fs)
 }
 
@@ -465,7 +477,7 @@ func (b *base) Quit() (err error) {
 	// Only unmount things when we used the backend.
 	// Otherwise we might load the backend implicitly
 	// when doing unmounting which slows the shutdown process down.
-	if b.backendLoaded {
+	if b.fsLoaded {
 		mounts, err = b.Mounts()
 		if err != nil {
 			return err

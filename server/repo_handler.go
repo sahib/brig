@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
@@ -70,8 +71,16 @@ func (rh *repoHandler) Init(call capnp.Repo_init) error {
 	}
 
 	backendPath := rp.BackendPath(backendName)
-	err = backend.InitByName(backendName, backendPath)
-	return e.Wrapf(err, "backend-init")
+	if err := backend.InitByName(backendName, backendPath); err != nil {
+		return e.Wrapf(err, "backend-init")
+	}
+
+	// Do a first time load of the backend, so it's cached for the next time.
+	if _, err := rh.base.Backend(); err != nil {
+		return e.Wrapf(err, "backend-first-load")
+	}
+
+	return nil
 }
 
 func (rh *repoHandler) Mount(call capnp.Repo_mount) error {
@@ -441,6 +450,8 @@ func (rh *repoHandler) Become(call capnp.Repo_become) error {
 }
 
 func (rh *repoHandler) Version(call capnp.Repo_version) error {
+	server.Ack(call.Options)
+
 	rp, err := rh.base.Repo()
 	if err != nil {
 		return err
@@ -474,4 +485,22 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 	}
 
 	return call.Results.SetVersion(capVersion)
+}
+
+func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
+	server.Ack(call.Options)
+
+	log.Debugf("--- starting wait on repo")
+	// Wait at max 25s for a flawless repo init:
+	for idx := 0; idx < 500; idx++ {
+		if !rh.base.BackendWasLoaded() {
+			time.Sleep(time.Millisecond * 50)
+			continue
+		}
+
+		break
+	}
+
+	log.Debugf("--- done succesfully")
+	return nil
 }

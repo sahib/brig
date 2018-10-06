@@ -755,6 +755,16 @@ outputting a .tar archive of the directory contents).
 		Description: `Send up to 100 ping packages to the daemon
    and also print the roundtrip time for each.
 `,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "w,wait-for-init",
+				Usage: "Wait for the daemon to be initialized before the first ping",
+			},
+			cli.BoolFlag{
+				Name:  "c,count",
+				Usage: "How many time to ping the daemon",
+			},
+		},
 	},
 	"config": {
 		Usage:    "View and modify config options",

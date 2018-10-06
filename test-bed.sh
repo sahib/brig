@@ -13,12 +13,19 @@ alias brig-bob='brig --port 6667'
 (brig-ali --repo /tmp/ali daemon launch -s 2>&1 > /tmp/log.ali) &
 (brig-bob --repo /tmp/bob daemon launch -s 2>&1 > /tmp/log.bob) &
 
-time brig-ali --repo /tmp/ali init ali -x > /dev/null
-time brig-bob --repo /tmp/bob init bob -x > /dev/null
+# Give the daemon to start up a bit.
+sleep 0.5
+
+(brig-ali --repo /tmp/ali init ali -x > /dev/null) &
+(brig-bob --repo /tmp/bob init bob -x > /dev/null) &
+
+# Wait until the daemon fully booted up.
+brig-ali daemon ping -w -c 0
+brig-bob daemon ping -w -c 0
 
 # Add them as remotes each
-time brig-ali remote add bob $(brig-bob whoami -f)
-time brig-bob remote add ali $(brig-ali whoami -f)
+brig-ali remote add bob $(brig-bob whoami -f)
+brig-bob remote add ali $(brig-ali whoami -f)
 
 brig-ali stage BUGS ali-file
 brig-ali commit -m 'Added ali-file'

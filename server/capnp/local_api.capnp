@@ -176,6 +176,7 @@ interface Repo {
     fstabUnmountAll @14 ();
 
     version         @15 () -> (version :Version);
+    waitForInit     @16 ();
 }
 
 interface Net {

@@ -245,7 +245,14 @@ func handleConfigDoc(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
-	for i := 0; i < 100; i++ {
+	if ctx.Bool("wait-for-init") {
+		if err := ctl.WaitForInit(); err != nil {
+			return err
+		}
+	}
+
+	count := ctx.Int("count")
+	for i := 0; i < count; i++ {
 		before := time.Now()
 		symbol := color.GreenString("✔")
 

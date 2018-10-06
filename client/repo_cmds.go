@@ -432,3 +432,12 @@ func (cl *Client) Become(who string) error {
 	_, err := call.Struct()
 	return err
 }
+
+func (cl *Client) WaitForInit() error {
+	call := cl.api.WaitForInit(cl.ctx, func(p capnp.Repo_waitForInit_Params) error {
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}
