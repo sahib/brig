@@ -29,5 +29,5 @@ brig-bob remote add ali $(brig-ali whoami -f)
 
 brig-ali stage BUGS ali-file
 brig-ali commit -m 'Added ali-file'
-brig-bob stage TODO bob-file
+brig-bob stage LICENSE bob-file
 brig-bob commit -m 'Added bob-file'
