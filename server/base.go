@@ -61,6 +61,9 @@ type base struct {
 	// backendLoaded is set to true once the backend is
 	// loaded/accessed the first time.
 	backendLoaded bool
+
+	// logToStdout is true when logging to stdout was explicitly requested.
+	logToStdout bool
 }
 
 func repoIsInitialized(path string) error {
@@ -134,6 +137,20 @@ func (b *base) loadRepo() (*repo.Repository, error) {
 	}
 
 	b.repo = rp
+
+	// Adjust the backend's logging output here, since this should be done
+	// before actually loading the backend (which might produce logs already)
+	backendName := rp.BackendName()
+	logName := fmt.Sprintf("brig-%s", backendName)
+	wSyslog, err := syslog.New(syslog.LOG_NOTICE, logName)
+	if err != nil {
+		log.Warningf("Failed to open connection to syslog for ipfs: %v", err)
+		log.Warningf("Will output ipfs logs to stderr for now")
+		backend.ForwardLogByName(backendName, os.Stderr)
+	} else {
+		backend.ForwardLogByName(backendName, wSyslog)
+	}
+
 	return rp, nil
 }
 
@@ -232,19 +249,8 @@ func (b *base) loadBackend() (backend.Backend, error) {
 		log.Errorf("Failed to load backend: %v", err)
 		return nil, err
 	}
-	log.Debugf("loaded backend")
-
-	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig-ipfs")
-	if err != nil {
-		log.Warningf("Failed to open connection to syslog for ipfs: %v", err)
-		log.Warningf("Will output ipfs logs to stdout for now")
-		realBackend.ForwardLog(os.Stderr)
-	} else {
-		realBackend.ForwardLog(wSyslog)
-	}
 
 	b.backend = realBackend
-
 	if err := b.updateBackendAddr(reg, realBackend); err != nil {
 		log.Warningf("Failed to update registry with backend addr: %v", err)
 	}
@@ -481,14 +487,16 @@ func newBase(
 	bindHost string,
 	ctx context.Context,
 	quitCh chan struct{},
+	logToStdout bool,
 ) (*base, error) {
 	return &base{
-		ctx:       ctx,
-		port:      port,
-		basePath:  basePath,
-		password:  password,
-		bindHost:  bindHost,
-		quitCh:    quitCh,
-		conductor: conductor.New(5*time.Minute, 100),
+		ctx:         ctx,
+		port:        port,
+		basePath:    basePath,
+		password:    password,
+		bindHost:    bindHost,
+		quitCh:      quitCh,
+		logToStdout: logToStdout,
+		conductor:   conductor.New(5*time.Minute, 100),
 	}, nil
 }

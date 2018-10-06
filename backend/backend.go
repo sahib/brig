@@ -2,6 +2,7 @@ package backend
 
 import (
 	"errors"
+	"io"
 	"os"
 	"strconv"
 
@@ -34,6 +35,18 @@ func InitByName(name, path string) error {
 	switch name {
 	case "ipfs":
 		return ipfs.Init(path, 2048)
+	case "mock":
+		return nil
+	}
+
+	return ErrNoSuchBackend
+}
+
+func ForwardLogByName(name string, w io.Writer) error {
+	switch name {
+	case "ipfs":
+		ipfs.ForwardLog(w)
+		return nil
 	case "mock":
 		return nil
 	}

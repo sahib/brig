@@ -309,17 +309,10 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return err
 	}
 
-	var password string
-	if !isInitialized {
-		log.Infof(
-			"No repository found at '%s'. Use `brig init <user>` to create one",
-			brigPath,
-		)
-	}
-
 	port := guessPort(ctx)
 	bindHost := ctx.GlobalString("bind")
 
+	var password string
 	passwordFn := func() (string, error) {
 		if !isInitialized {
 			return "", nil
