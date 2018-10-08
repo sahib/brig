@@ -542,8 +542,7 @@ EXAMPLES:
 	"stage": {
 		Usage:     "Add a local file to the storage",
 		ArgsUsage: "(<local-path> [<path>]|--stdin <path>)",
-		// TODO: Provide better auto-completion here.
-		// Complete:  completeLocalFile,
+		Complete:  completeLocalPath,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "stdin,i",
@@ -558,7 +557,7 @@ EXAMPLES:
    directory, with the basename of »local-path«. You can change this by
    specifying where to save the local file by additionally passing »path«.
 
-   Additonally you can read the file from standard input, if you pass »--stdin«.
+   Additonally you can read the file from standard input if you pass »--stdin«.
    In this case you pass only one path: The path where the stream is stored.
 
 EXAMPLES:

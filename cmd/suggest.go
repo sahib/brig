@@ -125,6 +125,17 @@ func findCurrentCommand(ctx *cli.Context) *cli.Command {
 	return command
 }
 
+func completeLocalPath(ctx *cli.Context) {
+	files, err := ioutil.ReadDir("./")
+	if err != nil {
+		return
+	}
+
+	for _, file := range files {
+		fmt.Println(file.Name())
+	}
+}
+
 func completeBrigPath(allowFiles, allowDirs bool) func(ctx *cli.Context) {
 	return func(ctx *cli.Context) {
 		port := guessPort(ctx)
