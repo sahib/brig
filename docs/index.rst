@@ -25,13 +25,20 @@ Since ``brig`` is a "general purpose" tool for file synchronization it of course
 cannot excel in all areas. This is especially true for efficiency, which is
 sometimes sacrificed to get the balance of usability and security right.
 
-At this moment ``brig`` is **only available for Linux**. Porting efforts are welcome though.
+Current Status
+--------------
 
-.. warning:: 
+**This software is in active development and not suited for production use yet!**
+But to get there I need people that try it and verify the workflows.
 
-    ``brig`` is currently in an open beta phase. It implements all features
-    that are descibed in the documentation but contains too many bugs to be
-    considered production ready. Do **NOT** use it for any sensible data yet!
+Apart from that, ``brig`` is near a somewhat usable state where you can play around
+with it quite well. All aforementioned features do work, besides possibly being
+a little harder to use than ideally possible. A lot of work is currently going into
+stabilizing the current feature set.
+
+At this moment ``brig`` is **only available for Linux**. Porting efforts are
+welcome though. The only blocker is *FUSE* which would be needed to either
+replaced on other platforms or disabled.
 
 .. toctree::
    :maxdepth: 2

@@ -24,8 +24,7 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -167,7 +166,9 @@
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>At the time of writing, there are no pre-compiled binaries. So you gonna have
-to compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself - but don’t worry that is quite easy:</p>
+to compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself - but don’t worry that is quite easy since
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> does not have many dependencies. You only need two things: The
+programming language <em>Go</em> and the version control system <code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
 <div class="section" id="step-0-installing-go">
 <h2>Step 0: Installing Go<a class="headerlink" href="#step-0-installing-go" title="Permalink to this headline">¶</a></h2>
 <p>This is only required if you don’t have <code class="docutils literal notranslate"><span class="pre">Go</span></code> installed.</p>
@@ -175,7 +176,7 @@ to compile <code class="docutils literal notranslate"><span class="pre">brig</sp
 <p class="first admonition-title">Warning</p>
 <p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> only works with a newer version of Go (&gt;= 1.9).
 The version in your package manager might be too outdated,
-if you’re on e.g. Debian. Make sure it’s up to date!</p>
+if you’re on e.g. Debian. Make sure it’s rather up to date!</p>
 </div>
 <p>If you did not do that, you gonna need to install <code class="docutils literal notranslate"><span class="pre">Go</span></code>. <a class="reference external" href="https://golang.org/doc/install">Refere here</a> for possible ways of doing so. Remember to
 set the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> to a place where you’d like to have your <code class="docutils literal notranslate"><span class="pre">.go</span></code> files being
@@ -186,17 +187,12 @@ placed. For example you can put this in your <code class="docutils literal notra
 </pre></div>
 </div>
 <p>By choosing to have the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> in your home directory you’re not required
-to have <code class="docutils literal notranslate"><span class="pre">sudo</span></code> permissions later on.</p>
-<p>You also need to have <code class="docutils literal notranslate"><span class="pre">git</span></code> installed for the next step.</p>
-<div class="admonition-todo admonition" id="index-0">
-<p class="first admonition-title">Todo</p>
-<p class="last">Describe <em>how</em> for different distributions.</p>
-</div>
+to have <code class="docutils literal notranslate"><span class="pre">sudo</span></code> permissions later on. You also need to have <code class="docutils literal notranslate"><span class="pre">git</span></code>
+<a class="reference external" href="https://git-scm.com/download/linux">installed</a> for the next step.</p>
 </div>
 <div class="section" id="step-1-compile-install-brig">
 <h2>Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code><a class="headerlink" href="#step-1-compile-install-brig" title="Permalink to this headline">¶</a></h2>
-<p>This step requires that you have set <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code>, as discussed
-in the previous section.</p>
+<p>This step requires setting <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code>, as discussed in the previous section.</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span>$ go get -d -v -u github.com/sahib/brig  # Download the sources.
 $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
 $ make                                   # Build the software.
@@ -204,14 +200,11 @@ $ sudo make install                      # Install it system-wide (optional)
 </pre></div>
 </div>
 <p>All dependencies of brig are downloaded for you during the first step.
-Execution might take a few minutes though.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>For the curious: Why the Makefile?</p>
-<p class="last">In theory it’s also possible to install <code class="docutils literal notranslate"><span class="pre">brig</span></code> via <code class="docutils literal notranslate"><span class="pre">go</span> <span class="pre">get</span></code> only, but
-there is no way to straight-forward way to set the git revision in the binary.
-Thus the Makefile.</p>
-</div>
+Execution might take a few minutes though because all of <code class="docutils literal notranslate"><span class="pre">brig</span></code> is being
+compiled during the <code class="docutils literal notranslate"><span class="pre">make</span></code> step.</p>
+<p>If you cannot or want to install <code class="docutils literal notranslate"><span class="pre">git</span></code> for some reason, you can <a class="reference external" href="https://github.com/sahib/brig/archive/master.zip">manually
+download a zip</a> from GitHub
+and place its contents into <code class="docutils literal notranslate"><span class="pre">$GOPATH/src/github.com/sahib/brig</span></code>.</p>
 </div>
 <div class="section" id="step-2-test-if-the-installation-is-working">
 <h2>Step 2: Test if the installation is working<a class="headerlink" href="#step-2-test-if-the-installation-is-working" title="Permalink to this headline">¶</a></h2>
@@ -283,16 +276,11 @@ do not want to hear the details.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 

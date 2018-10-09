@@ -2,8 +2,9 @@ Installation
 ------------
 
 At the time of writing, there are no pre-compiled binaries. So you gonna have
-to compile ``brig`` yourself - but don't worry that is quite easy:
-
+to compile ``brig`` yourself - but don't worry that is quite easy since
+``brig`` does not have many dependencies. You only need two things: The
+programming language *Go* and the version control system ``git``.
 
 Step 0: Installing Go
 ~~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +15,7 @@ This is only required if you don't have ``Go`` installed.
 
     ``brig`` only works with a newer version of Go (>= 1.9).
     The version in your package manager might be too outdated,
-    if you're on e.g. Debian. Make sure it's up to date!
+    if you're on e.g. Debian. Make sure it's rather up to date!
 
 
 If you did not do that, you gonna need to install ``Go``. `Refere here
@@ -29,17 +30,13 @@ placed. For example you can put this in your ``.bashrc``:
     export PATH="$GOPATH/bin:$PATH"
 
 By choosing to have the ``GOPATH`` in your home directory you're not required
-to have ``sudo`` permissions later on.
-
-You also need to have ``git`` installed for the next step.
-
-.. todo:: Describe *how* for different distributions.
+to have ``sudo`` permissions later on. You also need to have ``git``
+`installed <https://git-scm.com/download/linux>`_ for the next step.
 
 Step 1: Compile & Install ``brig``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This step requires that you have set ``GOPATH``, as discussed
-in the previous section.
+This step requires setting ``GOPATH``, as discussed in the previous section.
 
 .. code:: bash
 
@@ -49,15 +46,12 @@ in the previous section.
     $ sudo make install                      # Install it system-wide (optional)
 
 All dependencies of brig are downloaded for you during the first step.
-Execution might take a few minutes though.
+Execution might take a few minutes though because all of ``brig`` is being
+compiled during the ``make`` step.
 
-.. note::
-
-    For the curious: Why the Makefile?
-
-    In theory it's also possible to install ``brig`` via ``go get`` only, but
-    there is no way to straight-forward way to set the git revision in the binary.
-    Thus the Makefile.
+If you cannot or want to install ``git`` for some reason, you can `manually
+download a zip <https://github.com/sahib/brig/archive/master.zip>`_ from GitHub
+and place its contents into ``$GOPATH/src/github.com/sahib/brig``.
 
 Step 2: Test if the installation is working
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

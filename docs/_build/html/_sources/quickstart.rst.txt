@@ -4,14 +4,15 @@ Quickstart
 ==========
 
 This does not really explain the philosophy behind ``brig``, but gives a good
-idea what the tool is and how it's supposed to be used.
+idea what the tool is and how it's supposed to be used. Users familiar to ``git``
+should be able to grok most of the commands intuitively.
 
 1. Init
 -------
 
 Before you can do anything with ``brig`` you need to create a repository.
-During this step, also your online identity will be created. So make sure
-to use a sane username (``sahib@wald.de``) and resource (``laptop``).
+During this step, also your online identity will be created. So make sure to
+use a sane username (``sahib@wald.de``) and resource (``laptop``).
 
 .. raw:: html
 

@@ -24,8 +24,7 @@
 
   
 
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -179,12 +178,17 @@ result is easy and pleasant to use, while being secure by default.
 Since <code class="docutils literal notranslate"><span class="pre">brig</span></code> is a “general purpose” tool for file synchronization it of course
 cannot excel in all areas. This is especially true for efficiency, which is
 sometimes sacrificed to get the balance of usability and security right.</p>
-<p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only available for Linux</strong>. Porting efforts are welcome though.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> is currently in an open beta phase. It implements all features that are descibed in the documentation
-but contains too many bugs to be considered production ready. Do <strong>NOT</strong> use if for any sensible data yet!</p>
-</div>
+<div class="section" id="current-status">
+<h2>Current Status<a class="headerlink" href="#current-status" title="Permalink to this headline">¶</a></h2>
+<p><strong>This software is in active development and not suited for production use yet!</strong>
+But to get there I need people that try it and verify the workflows.</p>
+<p>Apart from that, <code class="docutils literal notranslate"><span class="pre">brig</span></code> is near a somewhat usable state where you can play around
+with it quite well. All aforementioned features do work, besides possibly being
+a little harder to use than ideally possible. A lot of work is currently going into
+stabilizing the current feature set.</p>
+<p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only available for Linux</strong>. Porting efforts are
+welcome though. The only blocker is <em>FUSE</em> which would be needed to either
+replaced on other platforms or disabled.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">User documentation:</span></p>
 <ul>
@@ -198,11 +202,13 @@ but contains too many bugs to be considered production ready. Do <strong>NOT</st
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#precursor-the-help-system">Precursor: The help system</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#creating-a-repository">Creating a repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#adding-viewing-files">Adding &amp; Viewing files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#coreutils">Coreutils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#mounting-repositories">Mounting repositories</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#remotes">Remotes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#syncing">Syncing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#pinning">Pinning</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#version-control">Version control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#viewing-logs">Viewing logs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a><ul>
@@ -240,6 +246,7 @@ but contains too many bugs to be considered production ready. Do <strong>NOT</st
 </ul>
 </li>
 </ul>
+</div>
 </div>
 </div>
 
@@ -298,16 +305,11 @@ but contains too many bugs to be considered production ready. Do <strong>NOT</st
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 

@@ -4,36 +4,27 @@ Getting started
 ================
 
 This guide will walk you through the steps of synchronizing your first files
-over ``brig``. It's hand's on, so make sure to open a terminal.
-We'll explain all import concepts along the way.
+over ``brig``. You will learn about the concepts behind it along the way.
+
+Everything is hands on, so make sure to open a terminal. For now, ``brig`` has
+no other user interface.
 
 Precursor: The help system
 --------------------------
 
-``brig`` has some built-in commands to help you.
-Before you dive into the actual commands, you should take a look at them:
-
-
-Open the online documentation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This opens a new browser window with this site.
-URLs are hard to remember, so we got you covered:
-
-.. code-block:: bash
-
-    $ brig docs
+``brig`` has some built-in helpers to serve as support for your memory. Before
+you dive into the actual commands, you should take a look at them.
 
 Built-in documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Every command offers detailled built-in help,
-which you can view using the ``brig help`` command:
+Every command offers detailed built-in help, which you can view using the
+``brig help`` command:
 
 .. code-block:: bash
 
 
-    $ brig help remote
+    $ brig help stage
     NAME:
        brig stage - Add a local file to the storage
 
@@ -49,9 +40,9 @@ which you can view using the ``brig help`` command:
 
     EXAMPLES:
 
-       $ brig stage file.png                   # gets added as /file.png
-       $ brig stage file.png /photos/me.png    # gets added as /photos/me.png
-       $ cat file.png | brig --stdin /file.png # gets added as /file.png
+       $ brig stage file.png                         # gets added as /file.png
+       $ brig stage file.png /photos/me.png          # gets added as /photos/me.png
+       $ cat file.png | brig stage --stdin /file.png # gets added as /file.png
 
     OPTIONS:
        --stdin, -i  Read data from stdin
@@ -69,36 +60,18 @@ at the end of your ``.bashrc``:
 
 Or if you happen to use ``zsh``, append this to your ``.zshrc``:
 
-
 .. code-block:: bash
 
   source $GOPATH/src/github.com/sahib/brig/autocomplete/zsh_autocomplete
 
-After starting a new shell you should be able to do this:
+After starting a new shell you should be able to autocomplete most commands.
+Try this for example by typing ``brig remote <tab>``.
 
-.. code-block:: bash
+Open the online documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    # There's builtin autocompletion if you source
-    # autocomplete/bash_autocomplete
-    $ brig remote <tab>
-    add     clear   edit    list    ping    remove
-
-Typo suggestion
-~~~~~~~~~~~~~~~
-
-This is a rather silly, little feature but if you mistype a command, you get
-suggestion on what you likely meant to type:
-
-.. code-block:: bash
-
-    $ brig remot
-    `remot` is not a valid command.
-
-    Did you maybe mean one of those?
-      * reset
-      * mount
-      * rm
-      * remote
+By typing ``brig docs`` you'll get a tab opened in your browser with this
+domain loaded.
 
 Reporting bugs
 ~~~~~~~~~~~~~~~
@@ -106,31 +79,34 @@ Reporting bugs
 If you need to report a bug you can use a built-in utility to do that. It will
 gather all relevant information, create a report and open a tab with the
 *GitHub* issue tracker in a browser for you. Only thing left for you is to fill
-out some questions in the report (and possibly create a *GitHub* account
-first):
+out some questions in the report and include anything you think is relevant.
 
 .. code-block:: bash
 
     $ brig bug
 
+To actually create the issue you sadly need an *GitHub* `account <https://github.com/join>`_.
+
 Creating a repository
 ---------------------
 
-You need a central place where your files are stored and ``brig`` calls this
-place the *repository*. Note that this is not directly comparable to what other
-tools calls the *Sync folder*. Rather think of it as the ``.git`` folder of
-a ``git``-repository: A place where all internal state, data and metadata of
-``brig`` is stored.
+Let's get started with the actual working commands.
 
-By creating a new repository you also generate your identity, under which
-your buddies can later find *and* authenticate you.
+You need a central place where ``brig`` stores files you give it. This place is
+called a »repository« or short »repo«. Think of it as a database where all
+files and some metadata about them is **copied** to. It is important to keep in mind
+that ``brig`` **copies** the file and does not do anything with the original file.
+
+By creating a new repository you also generate your identity, under which your
+buddies can later **find** and **authenticate** you.
 
 But enough of the grey theory, let's get started:
 
 .. code-block:: bash
 
+    # Create a place where we store our metadata.
     $ mkdir ~/metadata && cd ~/metadata
-    $ brig init alice@wonderland.lit/rabbithole
+    $ brig init --repo . alice@wonderland.lit/rabbithole
     27.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
     ⚠  39 New passphrase:
 
@@ -159,24 +135,53 @@ The name you specified after the ``init`` is the name that will be shown
 to other users and by which you are searchable in the network.
 See :ref:`about_names` for more details on the subject.
 
-You will be asked to enter a new password. *»Why«* you ask? This password is
-used to store your data in an encrypted manner on your harddisk. This is
-especially important if you think about creating the repository on a portable
-media (e.g. usb sticks). If you still choose to disable this security feature
-you're free to do so by passing ``-x`` directly before the ``init`` subcommand.
-When typing the password, you will notice that the prompt changes color. The
-more secure (measured by Dropbox's ``zxcvbn`` library) the password is, the
-closer to green the prompt gets.
+Once the ``init`` ran successfully there will be a daemon process running the
+background. Every other ``brig`` commands will communicate with it via a local
+network socket.
 
-Also note that a lot of files were created in the current directory.
-This is all part of the metadata that is being used by the daemon that runs
-in the background.
+Also note that a lot of files were created in the current directory. This is
+all part of the metadata that is being used by the daemon that runs in the
+background. Please try not to modify them.
+
+Passwords
+~~~~~~~~~
+
+You will be asked to enter a new password. The more secure the password is you
+entered, the greener the prompt gets [#]_. This password is used to store
+the metadata in an encrypted manner on your filesystem and without further
+configuration it needs to be re-entered every time you start the daemon. There
+are two ways to prevent that:
+
+1. Use a password helper and tell ``brig`` how to get a password from it by using ``-w / --password-helper`` on the ``init`` command.
+   We recommend using `pass <https://www.passwordstore.org/>`_  to do that:
+
+   .. code-block:: bash
+
+       # Generate a password and store it in "pass":
+       $ pass generate brig/alice -n 20
+       # Tell brig how to get the password out of "pass":
+       $ brig init -w "pass brig/alice"
+       # Now pass will ask you for the master password with
+       # a nice dialog whenever one if its passwords is first used.
+
+2. Do not use a password. You can do this by passing ``-x`` to the ``init`` command.
+   This is obviously not recommended.
+
+.. note::
+
+    Using a good password is especially important if you're planning to move
+    the repo, i.e. carrying it around you on a usb stick. When the daemon shuts
+    down it locks and encrypts all files in the repository (including all
+    metadata and keys), so nobodoy is able to access them anymore.
+
+.. [#] This uses `Dropbox's password strength library »zxcvbn« <https://github.com/dropbox/zxcvbn>`_.
 
 Adding & Viewing files
 ----------------------
 
-Phew, that was a lot of text, but there was not any real action yet.
-Let's change that by adding some files to ``brig``:
+Now let's add some files to ``brig``. We do this by using ``brig stage``. It's
+called ``stage`` because all files first get added to a staging area. If you
+want, and are able to remember that easier, you can also use ``brig add``.
 
 .. code-block:: bash
 
@@ -189,20 +194,66 @@ Let's change that by adding some files to ``brig``:
     443 B  Dec 27 14:44:44  /README.md     🖈
     12 B   Dec 27 15:14:16  /hello.world   🖈
 
-You might have noticed that the »hello.world« file was stored in ``brig`` without the
-full path (»/tmp/hello.world«). This is done on purpose, since you should imagine all
-added files live under an own root. You can however give the file a new name while adding it:
+This adds the content of ``/tmp/hello.world`` to a new file in ``brig`` called
+``/hello.world``. The name was automatically chosen from looking at the
+basename. All files in ``brig`` have their own name, possibly differing from
+the content of the file they originally came from. Of course, you can also add
+whole directories.
+
+If you want to use a different name, you can simply pass the new name as second
+argument to ``stage``:
 
 .. code-block:: bash
 
     $ brig stage /tmp/hello.world /hallo.welt
 
+You also previously saw ``brig cat`` which can be used to get the content of
+a file again. ``brig ls`` in contrast shows you a list of currently existing
+files, including their size, last modification time, path and pin state [#]_.
+
+.. [#] Pinning and pin states are explained :ref:`pinning-section` and are not important for now.
+
+Coreutils
+---------
+
+You probably already noticed that a lot of commands you'd type in a terminal have
+a sibling as ``brig`` command. Here is a short overview of the available commands:
+
+.. code-block:: bash
+
+    $ brig mkdir photos
+    $ brig touch photos/me.png
+    $ brig tree
+        • 🖈
+    ├──photos 🖈
+    │  └── me.png 🖈
+    ├── README.md 🖈
+    └── hello.world 🖈
+
+    2 directories, 2 files
+    $ brig cp photos/me.png photos/moi.png
+    $ brig mv photos/me.png photos/ich.png
+    $ brig rm photos
+
+Please refer to ``brig help <command>`` for more information about those. Often
+they work a little bit different [#]_ and a bit less surprising than their
+counterparts. Also note that there is no ``brig cd`` currently. All paths must
+be absolute.
+
+.. [#] ``brig rm`` for example deletes directories without needing a ``-r`` switch.
+
 Mounting repositories
 ---------------------
 
-There are subcommands that act very similar to ``mkdir``, ``rm`` and ``mv``.
-While those surely are useful, it's not a very native feel of handling files.
-That's why you can mount all files kown to ``brig`` to a special folder:
+Of course, using those specialized ``brig`` commands all day can be annoying
+and feels not very seamless, especially when being used to tools like file
+browsers. Indeed, those commands are only supposed to serve as a low-level way
+of interacting with ``brig`` and as means for scripting own workflows.
+
+For your daily workflow it is far easier to mount all files known to ``brig``
+to a directory of your choice and use it with your normal tools. To accomplish
+that ``brig`` supports a FUSE filesystem that can be controlled via the
+``mount`` and ``fstab`` commands. Let's look at ``brig mount``:
 
 .. code-block:: bash
 
@@ -210,43 +261,134 @@ That's why you can mount all files kown to ``brig`` to a special folder:
    $ brig mount ~/data
    $ cat hello-world
    Hello World
+   $ echo 'Salut le monde!' > salut.monde
+   # There is no difference between brig's "virtual view"
+   # and the conents of the mount:
+   $ brig cat salut.monde
+   Salut le monde!
 
+You can use this directory exactly [#] like a normal one. You can have any
+number of mounts. This proves especially useful when only mounting
+a subdirectory of ``brig`` (let's say ``Public``) with the ``--root`` option of
+``brig mount`` and mounting all other files as read only (``--readonly``).
 
-You can use this directory (almost) exactly like a normal one.
-We recommend though, that you shouldn't do any heavy editing inside of the folder
-and use it more like a »transfer box« for efficiency reasons.
+.. [#] Well almost. See the *Caveats* below.
+
+.. code-block:: bash
+
+    $ brig mount ~/data --readonly
+    $ brig mkdir /writable
+    $ brig touch /writable/please-edit-me
+    $ mkdir ~/rw-data
+    $ brig mount ~/rw-data --root /writable
+    $ echo 'writable?' > ~/data/test
+    read-only file system: ~/data/test
+    $ echo 'writable!' > ~/rw-data/test
+    $ cat ~/rw-data/test
+    writable!
+
+An existing mount can be removed again with ``brig unmount <path>``:
+
+.. code-block:: bash
+
+    $ brig unmount ~/data
+    $ brig unmount ~/rw-data
+    $ brig rm writable
+
+It can get a little annoying of course when having to manage all mounts
+yourself. It would be nice to have some *typical* mounts you'd like to have
+always and it should be only one command to mount or unmount all of them, kind
+of what ``mount -a`` does. That's what ``brig fstab`` is for:
+
+.. code-block:: bash
+
+    $ brig fstab add tmp_rw_mount /tmp/rw-mount
+    $ brig fstab add tmp_ro_mount /tmp/ro-mount -r
+    $ brig fstab
+    NAME          PATH           READ_ONLY  ROOT  ACTIVE
+    tmp_ro_mount  /tmp/ro-mount  yes        /
+    tmp_rw_mount  /tmp/rw-mount  no         /
+    $ brig fstab apply
+    $ brig fstab
+    NAME          PATH           READ_ONLY  ROOT  ACTIVE
+    tmp_ro_mount  /tmp/ro-mount  yes        /     ✔
+    tmp_rw_mount  /tmp/rw-mount  no         /     ✔
+    $ brig fstab apply -u
+    NAME          PATH           READ_ONLY  ROOT  ACTIVE
+    tmp_ro_mount  /tmp/ro-mount  yes        /
+    tmp_rw_mount  /tmp/rw-mount  no         /
+
+Et Voilà, all mounts will be created and mounted once you enter ``brig fstab
+apply``. The opposite can be achieved by executing ``brig fstab apply --unmount``.
+On every restart of the daemon, all mounts are mounted by default, so the only
+thing you need to make sure is that the daemon is running.
+
+*Caveats:* The FUSE filesystem is not (yet) perfect. Keep those points in mind:
+
+- **Performance:** Writing to FUSE is currently somewhat *memory and CPU
+  intensive*. Generally, reading should be fast enough for most basic use
+  cases, but also is not enough for high performance needs. If you need to edit
+  a file many times, it is recommended to copy the file somewhere to your local
+  storage (e.g. ``brig cat the_file > /tmp/the_file``), edit it there and save
+  it back for syncing purpose. Future releases will work on optimizing the
+  performance.
+- **Timeouts:** Although it tries not to look like one, we're operating on
+  a networking filesystem. Every file you access might come from a different
+  computer. If no other machine can serve this file we might block for a long
+  time, causing application hangs and general slowness. This is a problem that
+  still needs a proper solution and leaves much to be desired in the current
+  implementation.
 
 Remotes
 -------
 
-Until now, all files where only local. How do we even talk to other peers? This
-is done by adding them as »remote«. Every repository you are using has
-a user-chosen name (»alice@wonderland.lit/rabbithole«) and a unique
-fingerprint that was generated during ``init``. Let's see what our own fingerprint is:
+Until now, all our operations were tied only to our local computer. But
+``brig`` is a synchronization tool and that would be hardly very useful without
+supporting other peers.
 
+Every peer possesses two things that identifies him:
+
+- **A human readable name:** This name can be choose by the user and can take
+  pretty much any form, but we recommend to sticking for a form that resembles
+  an extended email [#]_ like »ali@woods.org/desktop«. The name is **not**
+  unique! In theory everyone could take it and it is therefore only used for
+  display purposes.
+- **A unique fingerprint:** This serves both as address for a certain repository and as certificate of identity.
+  It is long and hard to remember, which is the reason why ``brig`` offers to loosely link a human readable to it.
+
+.. [#] To be more exact, it resembles an `XMPP or Jabber-ID <https://en.wikipedia.org/wiki/Jabber_ID>`_.
+
+If we want to find out what our name and fingerprint is, we can use the ``brig
+whoami`` command to ask existential questions:
 
 .. code-block:: bash
 
     # The hash will most likely look different for you:
     $ brig whoami
-    alice@wonderland.lit/rabbithole QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+    ali@home.cz/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
-The fingerprint consists of two hashes divided by a colon (:). The first part
-is the identity of your ``ipfs`` node, the second part is the fingerprint of
-a keypair that was generated by ``brig`` and will be used to authenticate other
-peers.
+.. note::
 
-Now let's assume another user (let's call him Bob) wants to synchronize files
-with Alice. Both sides now need to share the information printed by ``brig
-whoami`` over a secure side channel. This side channel could be one of the
-following:
+    The fingerprint consists of two hashes divided by a colon (:). The first
+    part is the identity of your ``ipfs`` node, the second part is the
+    fingerprint of a keypair that was generated by ``brig`` during init and
+    will be used to authenticate other peers.
 
-- Encrpyted mail.
-- A secure instant messenger of your choice.
-- Any *insecure* channel, as long you call or meet the person later and you
-  validate at least a few digits of his fingerprint.
+When we want to synchronize with another repository, we need to exchange fingerprints.
+There are three typical scenarios here:
 
-Once you have exchanged the fingerprints, *Alice* can add *Bob*:
+- Both repositories are controlled by you. In this case you can simple execute
+  ``brig whoami`` on both repositories.
+- You want to sync with somebody you know well. In this case you should both
+  execute ``brig whoami`` and send it over a trusted sidechannel. Personally,
+  I use a `secure messenger like Signal <https://signal.org>`_, but you can
+  also use any channel you like, including encrypted mail or meeting up with
+  the person in question.
+- You don't know each other. Get to know each other and the proceed like in the
+  second point. TODO: net locate
+
+Once you have exchanged the fingerprints, you add each other as **remotes**.
+Let's call the other side *bob*: [#]_
 
 .. code-block:: bash
 
@@ -254,132 +396,141 @@ Once you have exchanged the fingerprints, *Alice* can add *Bob*:
 		QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
 		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 
+.. [#] The name you choose as remote can be anything you like and does not need
+       to match the name the other person chose for themselves. It's not a bad
+       idea though.
 
-*Bob* can do the same on his side:
+*Bob* has do the same on his side. Otherwise the connection won't be
+established, because the other side won't be authenticated. Adding somebody as
+remote is the way to authenticate them.
 
 .. code-block:: bash
 
-	$ brig remote add alice \
+	$ brig remote add ali \
         QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
         SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
-After doing so ``brig`` can figure out the rest (i.e. how to actually reach the
-node over the network itself). Remember that this mechanism might seem
-inconvinient at first, but it's the only way for you to actually check if
-someone is truly the person he claims to be.
+Thanks to the fingerprint, ``brig`` now knows how to reach the other repository over the network.
+TODO: Network intermezzo?
+TODO: Auto accept?
 
-If both sides are up & running, we can check if we can reach the other side:
+The remote list can tell us if a remote is online:
 
 .. code-block:: bash
 
 	$ brig remote list
     NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
-    bob    QmUDSXt27    ∞          ✔ Apr 16 17:31:01
-	# Yep that works.
+    bob    QmUDSXt27    0s         ✔ Apr 16 17:31:01
 	$ brig remote ping bob
     ping to bob: ✔ (0.00250ms)
 
-Cool, we are ready to reach them. Note that ``brig remote list`` only shows if
-a another node is really online. ``brig remote ping <name>`` sends an actual
-message to them which will only be replied back if they mutually authenticated
-us!
+Nice. Now we know that bob is online and also that he authenticated us.
+Otherwise ``brig remote ping bob`` would have failed. (TODO: This needs some cleanup)
 
 .. note:: About open ports:
 
    While ``ipfs`` tries to do it's best to avoid having the user to open ports
-   in his firewall/router. This mechanism might not be perfect though (and
-   maybe never is). If any of the following network operations might not work
-   it might be necessary to open the ports 4001 - 4005 or enable UPnP. For
-   security reasons we recommend to only open the required ports explicitly and
-   not to use UPnP. This only is necessary if the computers you're using
-   ``brig`` on are not in the same network anyways.
-
-This all requires of course that both partners are online at the same time.
-Later versions might make it possible to have a third party instance that acts
-as intermediate cache. This would then resemble something like ``ownCloud`` does.
+   in his firewall/router. This mechanism might not be perfect though and maybe
+   never is. If any of the following network operations might not work it might
+   be necessary to open the ports 4001 - 4005 and/or enable UPnP. For security
+   reasons we recommend to only open the required ports explicitly and not to
+   use UPnP unless necessary though. This is only necessary if the computers
+   you're using ``brig`` on are not in the same network anyways.
 
 .. _about_names:
 
-About names
-~~~~~~~~~~~
+Choosing and finding names
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You might already have wondered what those names that you pass on ``init`` are
-and what they are for. ``brig`` does not impose any strict format on the
-username. So any of these are valid usernames:
+You might wonder what the name you pass to ``init`` is actually for. As
+previously noted, there is no real restriction for choosing a name, so all of
+the following are indeed valid names:
 
-- ``alice``
-- ``alice@wonderland.lit``
-- ``alice@wonderland.lit/rabbithole``
-- ``alice/rabbithole``
+- ``ali``
+- ``ali@woods.org``
+- ``ali@woods.org/desktop``
+- ``ali/desktop``
 
 It's however recomended to choose a name that is formatted like
-a `XMPP/Jabber-ID`_. Those IDs can look like plain emails, but can
-optionally have a »resource« part as suffix (separated by a »/« like
-``ovaloffice``). The advantage of having a username in this form is
-locabillity: ``brig`` can find users with the same domain - which is useful for
-e.g. companies with many users.
+a `XMPP/Jabber-ID`_. Those IDs can look like plain emails, but can optionally
+have a »resource« part as suffix (separated by a »/« like ``desktop``).
+Choosing such a name has two advantages:
 
-.. _`XMPP/Jabber-ID`: https://de.wikipedia.org/wiki/Jabber_Identifier
+- Other peers can find you by only specifying parts of your name.
+  Imagine all of the *Smith* family members use ``brig``, then they'd possibly those names:
 
-.. note::
+  * ``dad@smith.org/desktop``
+  * ``mom@smith.org/tablet``
+  * ``son@smith.org/laptop``
 
-    The domain part of the email does not need to be a valid domain,
-    but later releases might add email based authentication schemes
-    which will require a valid domain in the username.
+  When ``dad`` now sets up ``brig`` on his server, he can use ``brig net locate
+  -m domain 'smith.org'`` to get all fingerprints of all family members. Note
+  however that ``brig net locate`` **is not secure**. Its purpose is solely
+  discovery, but is not able to verify that the fingerprints really correspond
+  to the persons they claim to be. This due to the distributed nature of
+  ``brig`` where there is no central or federated authority that coordinate
+  user name registrations. So it is perfectly possible that one name can be
+  taken by several repositories - only the fingerprint is unique.
+
+  .. todo::
+
+    Provide output of the locate command and verify this scenario works fine.
+
+- Later development of ``brig`` might interpret the user name and domain as
+  email and might use your email account for verification purposes.
 
 Having a resource part is optional, but can help if you have several instances
 of ``brig`` on your machines. i.e. one username could be
-``alice@wonderland.org/desktop`` and the other ``alice@wonderland.org/laptop``.
-
-.. note::
-
-    The same name can be taken by more than one node. That's a result of the
-    distributed nature of ``brig`` since there is no central part that can
-    register all usernames persistently. This of course opens space for
-    attackers: A malicious person can take the same username as your friend
-    - but luckily he can't take over his fingerprint.
-
-    ``brig`` does therefore not use the name to authenticate a user. This is done
-    by the *fingerprint*, which is explained later. Think of the name
-    as a human readable »DNS«-name for fingerprints for now.
+``dad@smith.org/desktop`` and the other ``dad@smith.org/server``.
 
 Syncing
 -------
 
-Finally there. Let's recap what we've done so far:
+Before we move on to do our first synchronization, let's recap what we have don so far:
 
 - Create a repository (``brig init <name>``) - needs to be done only once.
+- Create optional mount points (``brig fstab add <name> <path>``) - needs to be done only once.
 - Find & add remotes (``brig remote add``) - needs to be done once for each peer.
 - Add some files (``brig stage <path>``) - needs to be done as much as you like to.
 
-Only thing left to do now is using ``brig diff`` and ``brig sync``.
-First, let's check what changes ``bob`` has and how it will change our files:
+As you see, there is some initial setup work, but the actual syncing is pretty
+effortless now. Before we attempt to sync with anybody, it's always a good idea
+to see what changes they have. We can check this with ``brig diff <remote>``:
 
 .. code-block:: bash
 
-    $ brig diff bob
+    $ brig diff bob --missing
     •
     ├── _ hello.world
-    ├── + election
+    ├── + videos/
     └── README.md ⇄ README.md
 
-``brig`` does not support showing what changed *in* a file, but it supports
-how the file itself changed. For this we record the following type of changes:
+This output resembles the one we saw from ``brig tree`` earlier. But instead If
+you do not like this view you can also display it in a more traditional fashion
+with ``--list``. Each node in this tree tells us about something that would
+happen when we merge. The prefix of each file and the color in the terminal
+indicate what would happen with this file. Refer to the table below to see what
+prefix relates to what action:
 
 ====== ====================================================================
 Symbol Description
 ====== ====================================================================
-``+``  The file was added on the remote side.
+``+``  The file is only present on the remote side..
 ``-``  The file was removed on the remote side.
-``_``  The file is missing on the remote side (e.g. we added it)
 ``→``  The file was moved to a new location.
-``*``  This file was ignored because we chose to due to our settings.
-``⇄``  Both sides have changes, but they can be merged.
-``⚡``  Both sides have changes, but they conflict.
+``*``  This file was ignored because we chose to, due to our settings.
+``⇄``  Both sides have changes, but they are compatible and can be merged.
+``⚡``  Both sides have changes, but they are incompatible and result in conflicts.
+``_``  The file is missing on the remote side (output needs to be enabled with ``--missing``)
 ====== ====================================================================
 
+.. note::
+
+    ``brig`` does not do any actual diffs between files. It does not care a lot about the content.
+    It only records how the file metadata changes and what content the file has at a certain point.
+
 So in the above output we can tell that *Bob* added the directory
-``/election``, but does not posess the ``/hello.world`` file. He also
+``/videos``, but does not possess the ``/hello.world`` file. He also
 apparently modified ``README.md``, but since we did not, it's safe for us to
 take his changes. If we sync now we will get this directory from him:
 
@@ -387,28 +538,34 @@ take his changes. If we sync now we will get this directory from him:
 
     $ brig sync bob
     $ brig ls
-    SIZE   MODTIME          PATH          PIN
-    443 B  Dec 27 14:44:44  /README.md     🖈
-    12 B   Dec 27 15:14:16  /hello.world   🖈
-    32 GB  Dec 27 15:14:16  /election      🖈
+    SIZE   MODTIME          OWNER    PATH                      PIN
+    443 B  Dec 27 14:44:44  sahib    /README.md                🖈
+    443 B  Dec 27 14:44:44  bob      /README.md.conflict.0
+    12 B   Dec 27 15:14:16  sahib    /hello.world              🖈
+    32 GB  Dec 27 15:14:16  bob      /videos                   🖈
 
-You might notice that the ``sync`` step was kind of fast for 32 GB. This is
-because ``sync`` *does not transfer actual data*. It only transferred the
-metadata, while the actual ``data`` will only be loaded when required. This
-also means that your data does not need to reside on the same device on which
-you are using ``brig``. You could have one instance on your always online
-server, while you use only tiny parts of it on your small netbook.
+You might notice that the ``sync`` step took only around one second, even
+though ``/videos`` is 32 GB in size. This is because ``sync`` *does not
+transfer actual data*. It only transferred the metadata, while the actual data
+will only be loaded when required. This sounds a little inconvinient at first.
+When I want to watch the video, I'd prefer to have it cached locally before
+viewing it to avoid stuttering playback. If you plan to use that, you're free
+to do so using pinning (see :ref:`pinning-section`)
 
-Where is the data then? Thanks to ``ipfs`` it can be transferred from anywhere,
-but usually nodes that already downloaded the file from the origin. This is
-another advantage of a distributed approach: The original node does not need to
-be online as long as some other node also has your file stored. Note that your
-node will not pro-actively gather data you won't use. It simply might cache
-data longer than necessary.
+If the data is not on your local machine, where is it then? Thanks to ``ipfs``
+it can be transferred from any other peer that caches this particular content.
+Content is usually cached when the peer either really stores this file or if
+this peer recently used this content. In the latter case it will still be
+available in its cache. This property is particularly useful when having
+a small device for viewing data (e.g. a smartphone) and a big machine that acts
+as storage server (e.g. a desktop).
 
-How are the files secure then if they essentially could be everywhere?
-Every file is encrypted by ``brig`` before giving it to ``ipfs``. The key is part
-of the metadata and will be used to decrypt the file again on the receiver's end.
+How are the files secure then if they essentially could be everywhere? Every
+file is encrypted by ``brig`` before giving it to ``ipfs``. The encryption key
+is part of the metadata and is only available to the peers that you chose to
+synchronize with.
+
+.. _pinning-section:
 
 Pinning
 -------
@@ -463,7 +620,7 @@ This is written from the perspective of a ``git`` user:
 * A change is only recorded between individual commits. Changes in-between are
   not recorded.
 * There are no branches. Every user has a linear list of commits. The choice
-  not to have branches is on purpose, since they tend to bring greate
+  not to have branches is on purpose, since they tend to bring great
   complexity to both implementation and user-interface.
 * Since there are no branches, there is no way to go back into history. You can
   however checkout previous files.
@@ -501,3 +658,10 @@ Individual commands
   therefore.
 * ``brig diff / status``: Show the difference (i.e. what files were added/removed/moved/clashed)
 * ``brig become``: View the files of a person we synced with.
+
+Viewing logs
+------------
+
+.. todo:: Logs
+
+    Where to view them and how to pipe to stdout.
