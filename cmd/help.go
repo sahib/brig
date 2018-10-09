@@ -327,6 +327,10 @@ See the »diff« command for more information.`,
 				Name:  "self,s",
 				Usage: "Assume self as owner of both sides and compare only commits",
 			},
+			cli.BoolFlag{
+				Name:  "missing,m",
+				Usage: "Show missing files in diff output",
+			},
 		},
 		Description: `View what sync would do when being called on the specified points in history.
 

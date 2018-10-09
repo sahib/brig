@@ -449,7 +449,7 @@ func handleShowCommit(ctx *cli.Context, ctl *client.Client, cmt *client.Commit) 
 		fmt.Println()
 		fmt.Println("Here's what changed in this commit:")
 		fmt.Println()
-		printDiffTree(diff)
+		printDiffTree(diff, false)
 	}
 
 	return nil

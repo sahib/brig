@@ -157,7 +157,7 @@ func makePathAbbrev(src, dst string) string {
 	return relPath
 }
 
-func printDiffTree(diff *client.Diff) {
+func printDiffTree(diff *client.Diff, printMissing bool) {
 	const (
 		diffTypeNone = iota
 		diffTypeAdded
@@ -186,10 +186,14 @@ func printDiffTree(diff *client.Diff) {
 		types[info.Path] = diffEntry{typ: diffTypeRemoved}
 		entries = append(entries, info)
 	}
-	for _, info := range diff.Missing {
-		types[info.Path] = diffEntry{typ: diffTypeMissing}
-		entries = append(entries, info)
+
+	if printMissing {
+		for _, info := range diff.Missing {
+			types[info.Path] = diffEntry{typ: diffTypeMissing}
+			entries = append(entries, info)
+		}
 	}
+
 	for _, info := range diff.Ignored {
 		types[info.Path] = diffEntry{typ: diffTypeIgnored}
 		entries = append(entries, info)
@@ -300,7 +304,7 @@ func isEmptyDiff(diff *client.Diff) bool {
 		len(diff.Removed)
 }
 
-func printDiff(diff *client.Diff) {
+func printDiff(diff *client.Diff, printMissing bool) {
 	simpleSection := func(heading string, infos []client.StatInfo) {
 		if len(infos) == 0 {
 			return
@@ -334,7 +338,10 @@ func printDiff(diff *client.Diff) {
 	simpleSection(color.GreenString("Added:"), diff.Added)
 	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
 	simpleSection(color.RedString("Removed:"), diff.Removed)
-	simpleSection(color.RedString("Missing:"), diff.Missing)
+
+	if printMissing {
+		simpleSection(color.RedString("Missing:"), diff.Missing)
+	}
 
 	pairSection(color.BlueString("Moved:"), "→", diff.Moved)
 	pairSection(color.CyanString("Resolveable Conflicts:"), "⇄", diff.Merged)
@@ -394,10 +401,11 @@ func handleDiff(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("diff: %v", err)}
 	}
 
+	printMissing := ctx.Bool("missing")
 	if ctx.Bool("list") {
-		printDiff(diff)
+		printDiff(diff, printMissing)
 	} else {
-		printDiffTree(diff)
+		printDiffTree(diff, printMissing)
 	}
 
 	return nil
@@ -454,7 +462,7 @@ func handleSyncSingle(ctx *cli.Context, ctl *client.Client, remoteName string) e
 		return nil
 	}
 
-	printDiff(diff)
+	printDiff(diff, false)
 	return nil
 }
 
@@ -471,9 +479,9 @@ func handleStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if ctx.Bool("tree") {
-		printDiffTree(diff)
+		printDiffTree(diff, false)
 	} else {
-		printDiff(diff)
+		printDiff(diff, false)
 	}
 
 	return nil
