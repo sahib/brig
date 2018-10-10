@@ -2,8 +2,11 @@ package server
 
 import (
 	"fmt"
+	"io"
+	"net"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
@@ -138,13 +141,57 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
-		port, err := bootTransferServer(fs, fh.base.bindHost, url.Path)
+		stream, err := fs.Cat(path)
 		if err != nil {
+			return err
+		}
+
+		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+			defer stream.Close()
+			localAddr := conn.LocalAddr().String()
+
+			n, err := io.Copy(conn, stream)
+			if err != nil {
+				log.Warningf("IO failed for path %s on %s: %v", path, localAddr, err)
+				return
+			}
+
+			log.Infof("Wrote %d bytes of `%s` over %s", n, path, localAddr)
+		})
+
+		if err != nil {
+			// Close the stream, since the copy callback was likely not called.
+			stream.Close()
 			return err
 		}
 
 		call.Results.SetPort(int32(port))
 		return nil
+	})
+}
+
+func (fh *fsHandler) Tar(call capnp.FS_tar) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+		if _, err := fs.Stat(path); err != nil {
+			return err
+		}
+
+		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+			localAddr := conn.LocalAddr().String()
+			if err := fs.Tar(path, conn); err != nil {
+				log.Warningf("tar failed for path %s on %s: %v", path, localAddr, err)
+			}
+		})
+
+		call.Results.SetPort(int32(port))
+		return err
 	})
 }
 

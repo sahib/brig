@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -24,27 +23,19 @@ func getNextFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func bootTransferServer(fs *catfs.FS, bindHost, path string) (int, error) {
+func bootTransferServer(fs *catfs.FS, bindHost string, copyFn func(conn net.Conn)) (int, error) {
 	port, err := getNextFreePort()
 	if err != nil {
 		return 0, err
 	}
 
-	stream, err := fs.Cat(path)
-	if err != nil {
-		return 0, err
-	}
-
 	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindHost, port))
-
 	if err != nil {
-		stream.Close()
 		return 0, err
 	}
 
 	go func() {
 		defer lst.Close()
-		defer stream.Close()
 
 		conn, err := lst.Accept()
 		if err != nil {
@@ -53,14 +44,7 @@ func bootTransferServer(fs *catfs.FS, bindHost, path string) (int, error) {
 		}
 
 		defer conn.Close()
-
-		n, err := io.Copy(conn, stream)
-		if err != nil {
-			log.Warningf("IO failed for path %s on %d: %v", path, port, err)
-			return
-		}
-
-		log.Infof("Wrote %d bytes of `%s` over port %d", n, path, port)
+		copyFn(conn)
 	}()
 
 	return port, nil

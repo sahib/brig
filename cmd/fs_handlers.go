@@ -198,6 +198,32 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleTar(ctx *cli.Context, ctl *client.Client) error {
+	root := "/"
+	if len(ctx.Args()) >= 1 {
+		root = ctx.Args().First()
+	}
+
+	stream, err := ctl.Tar(root)
+	if err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("cat: %v", err),
+		}
+	}
+
+	defer util.Closer(stream)
+
+	if _, err := io.Copy(os.Stdout, stream); err != nil {
+		return ExitCode{
+			UnknownError,
+			fmt.Sprintf("tar: %v", err),
+		}
+	}
+
+	return nil
+}
+
 func handleRm(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 

@@ -580,6 +580,22 @@ EXAMPLES:
    the current timestamp (like the original touch(1) does).
 `,
 	},
+	"tar": {
+		Usage:     "Output a file or directory as tar archive stream",
+		ArgsUsage: "<path>",
+		Complete:  completeBrigPath(true, false),
+		Description: `Create a .tar archive from a directory.
+
+This can be used to save a whole directory to disk with less overhead than doing it individually.
+
+EXAMPLES:
+
+   # Create a tar from root and unpack it to the current directory.
+   $ brig tar | tar xfv -
+   # Create .tar.gz out of of the /photos directory.
+   $ brig tar photos | gzip -f > photos.tar.gz
+`,
+	},
 	"cat": {
 		Usage:     "Output the content of a file to standard output",
 		ArgsUsage: "<path>",

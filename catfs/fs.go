@@ -1,6 +1,7 @@
 package catfs
 
 import (
+	"archive/tar"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -993,6 +994,86 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 ////////////////////
 // I/O OPERATIONS //
 ////////////////////
+
+type tarEntry struct {
+	path string
+	size int64
+}
+
+func (fs *FS) getTarableEntries(path string) ([]tarEntry, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	rootNd, err := fs.lkr.LookupNode(path)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := []tarEntry{}
+	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
+		if child.Type() == n.NodeTypeFile {
+			entries = append(entries, tarEntry{
+				path: child.Path(),
+				size: int64(child.Size()),
+			})
+		}
+
+		return nil
+	})
+
+	// Make sure that the entries are served in lexicographical order.
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].path < entries[j].path
+	})
+
+	return entries, err
+}
+
+func (fs *FS) Tar(root string, w io.Writer) error {
+	entries, err := fs.getTarableEntries(root)
+	if err != nil {
+		return err
+	}
+
+	info, err := fs.Stat(root)
+	if err != nil {
+		return err
+	}
+
+	prefixPath := root
+	if !info.IsDir {
+		prefixPath = path.Dir(root)
+	}
+
+	tw := tar.NewWriter(w)
+	for _, entry := range entries {
+		hdr := &tar.Header{
+			Name: entry.path[len(prefixPath):],
+			Mode: 0600,
+			Size: entry.size,
+		}
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		stream, err := fs.Cat(entry.path)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(tw, stream); err != nil {
+			stream.Close()
+			return err
+		}
+
+		if err := stream.Close(); err != nil {
+			return err
+		}
+	}
+
+	return tw.Close()
+}
 
 // Cat will open a file read-only and expose it's underlying data as stream.
 // If no such path is known or it was deleted, nil is returned as stream.

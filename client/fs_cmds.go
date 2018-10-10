@@ -160,6 +160,25 @@ func (cl *Client) Cat(path string) (io.ReadCloser, error) {
 	return conn, nil
 }
 
+func (cl *Client) Tar(path string) (io.ReadCloser, error) {
+	call := cl.api.Tar(cl.ctx, func(p capnp.FS_tar_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	port := result.Port()
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
 func (cl *Client) Mkdir(path string, createParents bool) error {
 	call := cl.api.Mkdir(cl.ctx, func(p capnp.FS_mkdir_Params) error {
 		p.SetCreateParents(createParents)

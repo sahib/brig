@@ -140,6 +140,7 @@ interface FS {
     listExplicitPins  @13  (prefix :Text, from :Text, to :Text) -> (pins :List(ExplicitPin));
     clearExplicitPins @14  (prefix :Text, from :Text, to :Text) -> (count :Int32);
     setExplicitPins   @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
+    tar               @16  (path :Text) -> (port :Int32);
 }
 
 interface VCS {
