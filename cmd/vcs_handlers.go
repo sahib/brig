@@ -140,21 +140,44 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 
 // makePathAbbrev tries to abbreviate the `dst` path if
 // both are in the same directory.
-func makePathAbbrev(src, dst string) string {
+func makePathAbbrev(srcNd, dstNd client.StatInfo) string {
+	src, dst := srcNd.Path, dstNd.Path
 	if path.Dir(src) == path.Dir(dst) {
-		return path.Base(dst)
+		dstBase := path.Base(dst)
+		if dstNd.IsDir {
+			return dstBase + "/"
+
+		}
+
+		return dstBase
 	}
 
 	relPath, err := filepath.Rel(path.Dir(src), dst)
 	if err != nil {
-		fmt.Println("Failed to get relatie path: ", err)
+		fmt.Println("Failed to get relative path: ", err)
+		if dstNd.IsDir {
+			return dst + "/"
+		}
+
 		return dst
 	}
 
 	// We could also possibly check here if relPath is longer than dst
 	// and only display the relative version then. But being consistent
 	// is more valueable here I think.
+	if dstNd.IsDir {
+		return relPath + "/"
+	}
+
 	return relPath
+}
+
+func suffixIfDir(nd *treeNode) string {
+	if nd.entry.IsDir {
+		return nd.name + "/"
+	}
+
+	return nd.name
 }
 
 func printDiffTree(diff *client.Diff, printMissing bool) {
@@ -240,46 +263,37 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 		if diffEntry, ok := types[n.entry.Path]; ok {
 			switch diffEntry.typ {
 			case diffTypeAdded:
-				return color.GreenString(" + " + n.name)
+				return color.GreenString(" + " + suffixIfDir(n))
 			case diffTypeRemoved:
-				return color.RedString(" - " + n.name)
+				return color.RedString(" - " + suffixIfDir(n))
 			case diffTypeMissing:
-				return color.MagentaString(" _ " + n.name)
+				return color.MagentaString(" _ " + suffixIfDir(n))
 			case diffTypeIgnored:
-				return color.YellowString(" * " + n.name)
+				return color.YellowString(" * " + suffixIfDir(n))
 			case diffTypeMoved:
-				dstPath := makePathAbbrev(
-					diffEntry.pair.Src.Path,
-					diffEntry.pair.Dst.Path,
-				)
-				name := fmt.Sprintf(
-					" %s → %s",
-					dstPath,
-					path.Base(diffEntry.pair.Src.Path),
-				)
-				return color.BlueString(name)
+				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				srcBase := path.Base(diffEntry.pair.Src.Path)
+				if diffEntry.pair.Src.IsDir {
+					srcBase += "/"
+				}
+
+				return color.BlueString(fmt.Sprintf(" %s → %s", dstPath, srcBase))
 			case diffTypeMerged:
-				dstPath := makePathAbbrev(
-					diffEntry.pair.Src.Path,
-					diffEntry.pair.Dst.Path,
-				)
-				name := fmt.Sprintf(
-					" %s ⇄ %s",
-					path.Base(diffEntry.pair.Src.Path),
-					dstPath,
-				)
-				return color.CyanString(name)
+				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				srcBase := path.Base(diffEntry.pair.Src.Path)
+				if diffEntry.pair.Src.IsDir {
+					srcBase += "/"
+				}
+
+				return color.CyanString(fmt.Sprintf(" %s ⇄ %s", srcBase, dstPath))
 			case diffTypeConflict:
-				dstPath := makePathAbbrev(
-					diffEntry.pair.Src.Path,
-					diffEntry.pair.Dst.Path,
-				)
-				name := fmt.Sprintf(
-					" %s ⚡ %s",
-					path.Base(diffEntry.pair.Src.Path),
-					dstPath,
-				)
-				return color.MagentaString(name)
+				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				srcBase := path.Base(diffEntry.pair.Src.Path)
+				if diffEntry.pair.Src.IsDir {
+					srcBase += "/"
+				}
+
+				return color.MagentaString(fmt.Sprintf(" %s ⚡ %s", srcBase, dstPath))
 			}
 		}
 
@@ -312,7 +326,12 @@ func printDiff(diff *client.Diff, printMissing bool) {
 
 		fmt.Println(heading)
 		for _, info := range infos {
-			fmt.Printf("  %s\n", info.Path)
+			path := info.Path
+			if info.IsDir {
+				path += "/"
+			}
+
+			fmt.Printf("  %s\n", path)
 		}
 
 		fmt.Println()
@@ -325,10 +344,20 @@ func printDiff(diff *client.Diff, printMissing bool) {
 
 		fmt.Println(heading)
 		for _, pair := range infos {
+			srcPath := pair.Src.Path
+			if pair.Src.IsDir {
+				srcPath += "/"
+			}
+
+			dstPath := pair.Dst.Path
+			if pair.Dst.IsDir {
+				dstPath += "/"
+			}
+
 			if pair.Src.Path != pair.Dst.Path {
-				fmt.Printf("  %s %s %s\n", pair.Src.Path, symbol, pair.Dst.Path)
+				fmt.Printf("  %s %s %s\n", srcPath, symbol, dstPath)
 			} else {
-				fmt.Printf("  %s %s\n", symbol, pair.Src.Path)
+				fmt.Printf("  %s %s\n", symbol, srcPath)
 			}
 		}
 

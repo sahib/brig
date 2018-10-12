@@ -155,7 +155,7 @@ func (n *treeNode) Print(cfg *treeCfg) {
 			case n.name == "/":
 				return color.MagentaString("•")
 			case n.entry.IsDir:
-				return color.GreenString(n.name)
+				return " " + color.GreenString(n.name+"/")
 			}
 
 			return " " + n.name
