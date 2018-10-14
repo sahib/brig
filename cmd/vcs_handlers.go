@@ -616,8 +616,16 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 		}
 
 		tags := ""
+		isCurr := false
 		if len(entry.Tags) > 0 {
 			tags = fmt.Sprintf(" (%s)", strings.Join(entry.Tags, ", "))
+
+			for _, tag := range entry.Tags {
+				if tag == "curr" {
+					isCurr = true
+					break
+				}
+			}
 		}
 
 		msg := entry.Msg
@@ -627,10 +635,15 @@ func handleLog(ctx *cli.Context, ctl *client.Client) error {
 
 		entry.Hash.ShortB58()
 
+		commitHash := entry.Hash.ShortB58()
+		if isCurr {
+			commitHash = "      -     "
+		}
+
 		fmt.Printf(
 			"%s %s %s%s\n",
-			color.GreenString(entry.Hash.ShortB58()),
-			color.YellowString(entry.Date.Format(time.Stamp)),
+			color.GreenString(commitHash),
+			color.YellowString(entry.Date.Format(time.UnixDate)),
 			msg,
 			color.CyanString(tags),
 		)

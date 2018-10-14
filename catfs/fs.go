@@ -1674,7 +1674,7 @@ func (fs *FS) CommitInfo(rev string) (*Commit, error) {
 	defer fs.mu.Unlock()
 
 	cmt, err := parseRev(fs.lkr, rev)
-	if ie.IsErrNoSuchRef(err) {
+	if cmt == nil || ie.IsErrNoSuchRef(err) {
 		return nil, nil
 	}
 
