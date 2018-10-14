@@ -173,11 +173,17 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func printConfigDocEntry(entry client.ConfigEntry) {
-	fmt.Printf(
-		"%s: %v\n",
-		color.GreenString(entry.Key),
-		entry.Val,
-	)
+	val := entry.Val
+	if val == "" {
+		val = color.YellowString("(empty)")
+	}
+
+	defaultMarker := ""
+	if entry.Val == entry.Default {
+		defaultMarker = color.CyanString("(default)")
+	}
+
+	fmt.Printf("%s: %v %s\n", color.GreenString(entry.Key), val, defaultMarker)
 
 	needsRestart := yesify(entry.NeedsRestart)
 	defaultVal := entry.Default
