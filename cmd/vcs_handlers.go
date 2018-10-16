@@ -122,7 +122,7 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		}
 
 		changeDesc := color.YellowString(strings.Join(entry.Mask, ", "))
-		when := color.MagentaString(entry.Head.Date.Format(time.Stamp))
+		when := color.MagentaString(entry.Head.Date.Format(time.UnixDate))
 
 		fmt.Fprintf(
 			tabW,

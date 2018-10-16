@@ -779,9 +779,10 @@ outputting a .tar archive of the directory contents).
 				Name:  "w,wait-for-init",
 				Usage: "Wait for the daemon to be initialized before the first ping",
 			},
-			cli.BoolFlag{
+			cli.IntFlag{
 				Name:  "c,count",
-				Usage: "How many time to ping the daemon",
+				Usage: "How many times to ping the daemon",
+				Value: 10,
 			},
 		},
 	},

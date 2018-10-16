@@ -130,7 +130,7 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			suffix = fmt.Sprintf(
 				"%s\t%s",
 				info.Roundtrip,
-				color.GreenString("✔ "+info.LastSeen.Format(time.Stamp)),
+				color.GreenString("✔ "+info.LastSeen.Format(time.UnixDate)),
 			)
 		} else {
 			suffix = fmt.Sprintf(

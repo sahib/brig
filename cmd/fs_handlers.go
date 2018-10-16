@@ -378,7 +378,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			tabW,
 			"%s\t%s\t%s%s\t%s\t\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
-			entry.ModTime.Format(time.Stamp),
+			entry.ModTime.Format(time.UnixDate),
 			userEntry,
 			coloredPath,
 			pinState,
