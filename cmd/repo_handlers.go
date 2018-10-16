@@ -257,6 +257,7 @@ func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
+	count := ctx.Int("count")
 	for i := 0; i < count; i++ {
 		before := time.Now()
 		symbol := color.GreenString("✔")
