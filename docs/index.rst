@@ -29,7 +29,7 @@ Current Status
 --------------
 
 **This software is in active development and not suited for production use yet!**
-But to get there I need people that try it and verify the workflows.
+But to get there I need people that try it and verify their workflows with ``brig``.
 
 Apart from that, ``brig`` is near a somewhat usable state where you can play around
 with it quite well. All aforementioned features do work, besides possibly being

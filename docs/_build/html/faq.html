@@ -93,7 +93,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#who-develops-it">2. Who develops it?</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#technical-questions">Technical questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#technical-questions">Technical questions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-is-the-encryption-working">1. How is the encryption working?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#is-there-compression-implemented">2. Is there compression implemented?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-hash-algorithms-are-used">3. What hash algorithms are used?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-kind-of-deduplication-is-currently-used">4. What kind of deduplication is currently used?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-fast-is-the-i-o-when-using-brig">5. How fast is the I/O when using <code class="docutils literal notranslate"><span class="pre">brig</span></code>?</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -177,8 +184,8 @@ When we named it, we thought it’s a good name for the following reason:</p>
 <ul class="simple">
 <li>A <code class="docutils literal notranslate"><span class="pre">brig</span></code> is a very lightweight and fast ship.</li>
 <li>It was commonly used to transport small amount of goods.</li>
-<li>A ship operates on streams (sorry :)</li>
-<li>The name is short and is not very far from <code class="docutils literal notranslate"><span class="pre">git</span></code>.</li>
+<li>A ship operates on streams (sorry 😛)</li>
+<li>The name is short and somewhat similar to <code class="docutils literal notranslate"><span class="pre">git</span></code>.</li>
 <li>It gives you a few nautical metaphors and a logo for free.</li>
 </ul>
 <p>Truth be told, only half of the two name givers thought it’s a good name, but
@@ -186,20 +193,83 @@ I still kinda like it.</p>
 </div>
 <div class="section" id="who-develops-it">
 <h3>2. Who develops it?<a class="headerlink" href="#who-develops-it" title="Permalink to this headline">¶</a></h3>
-<p>Although this documentation speaks of »we«, the only developer is currently
-[Chris Pahl](<a class="reference external" href="https://github.com/sahib">https://github.com/sahib</a>). He writes it entirely in his free time
-(and ther emostly during commuting with the train).</p>
+<p>Although this documentation sometimes speaks of »we«, the only developer is
+currently <a class="reference external" href="https://github.com/sahib">Chris Pahl</a>. He writes it entirely in
+his free time (and there mostly during commuting with the train).</p>
 </div>
 </div>
 <div class="section" id="technical-questions">
 <h2>Technical questions<a class="headerlink" href="#technical-questions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-is-the-encryption-working">
+<h3>1. How is the encryption working?<a class="headerlink" href="#how-is-the-encryption-working" title="Permalink to this headline">¶</a></h3>
+<p>A stream is chunked into equal sized blocks that are encrypted in GCM mode
+using AES-256. Additionally ChaCha20 (with Poly1305) is currently supported but
+it might be removed soon. The overall file format is somewhat similar to NaCL
+secretboxes, but it is more tailored to supporting efficient seeking.</p>
+<p>The current default is <code class="docutils literal notranslate"><span class="pre">ChaCha20</span></code>, although machines with the <code class="docutils literal notranslate"><span class="pre">aes-ni</span></code>
+instruction set might yield significant higher throughput. The source of the
+<a class="reference external" href="https://github.com/sahib/brig/tree/master/catfs/mio/encrypt">encryption layer can be found here</a>.
+Here’s a basic overview over the format:</p>
+<a class="reference internal image-reference" href="_images/format-encryption.svg"><div align="center" class="align-center"><img alt="_images/format-encryption.svg" src="_images/format-encryption.svg" width="66%" /></div>
+</a>
+<p>The key of each file is currently being derived from the content hash of the file
+(See also <a class="reference external" href="https://en.wikipedia.org/wiki/Convergent_encryption">Convergent Encryption</a>).
+If the content changes later, the key does not change.</p>
+<p>Please refer to the implementation for all implementation details for now. No
+security audits of the implementation have been done yet, therefore I’d
+appreciate every pair of eyes. Especially while everything is still in flux and
+won’t harm any users.</p>
+</div>
+<div class="section" id="is-there-compression-implemented">
+<h3>2. Is there compression implemented?<a class="headerlink" href="#is-there-compression-implemented" title="Permalink to this headline">¶</a></h3>
+<p>Yes. The compression is being done before encryption and is only enabled if the
+file looks compression-worthy. This is determined by looking at its header to
+guess a mime-type. Depending on the mime-type either <code class="docutils literal notranslate"><span class="pre">snappy</span></code> or <code class="docutils literal notranslate"><span class="pre">lz4</span></code> is
+selected (or no compression is added).</p>
+<p>The source of the <a class="reference external" href="https://github.com/sahib/brig/tree/master/catfs/mio/compress">compression layer can be found here</a>. Here’s
+a basic overview over the format:</p>
+<a class="reference internal image-reference" href="_images/format-compression.svg"><div align="center" class="align-center"><img alt="_images/format-compression.svg" src="_images/format-compression.svg" width="66%" /></div>
+</a>
+</div>
+<div class="section" id="what-hash-algorithms-are-used">
+<h3>3. What hash algorithms are used?<a class="headerlink" href="#what-hash-algorithms-are-used" title="Permalink to this headline">¶</a></h3>
+<p>Two algorithms are used:</p>
 <ul class="simple">
-<li>Encryption</li>
-<li>Compression</li>
+<li><code class="docutils literal notranslate"><span class="pre">SHA256</span></code> is used by <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> for every content hash.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Blake2B</span></code> is used as general purpose hash for everything <code class="docutils literal notranslate"><span class="pre">brig</span></code> internal.</li>
 </ul>
+<p>Each hash is encoded as <a class="reference external" href="https://github.com/multiformats/multihash">multihash</a>.
+For output purposes this representation is encoded additionally in base58.
+Therefore, all hashes that start with <code class="docutils literal notranslate"><span class="pre">SEfXUE</span></code> are <code class="docutils literal notranslate"><span class="pre">blake2b</span></code> hashes while
+the ones starting with <code class="docutils literal notranslate"><span class="pre">Qm</span></code> are <code class="docutils literal notranslate"><span class="pre">sha256</span></code> hashes.</p>
+</div>
+<div class="section" id="what-kind-of-deduplication-is-currently-used">
+<h3>4. What kind of deduplication is currently used?<a class="headerlink" href="#what-kind-of-deduplication-is-currently-used" title="Permalink to this headline">¶</a></h3>
+<p>It is currently only possible to deduplicate between individual versions of a file.
+And there also only the portion before the modification.</p>
+<p><code class="docutils literal notranslate"><span class="pre">IPFS</span></code> implements deduplication, but that is circumvented by encrypting
+blocks before giving them over to the backend. Implementing a more proper and
+informed deduplication is one of the long term goals, which require more
+thorough interaction with <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>. It is also possible to do some basic
+deduplication purely on <code class="docutils literal notranslate"><span class="pre">brig</span></code> side since we have more info on the file than
+<code class="docutils literal notranslate"><span class="pre">IPFS</span></code> has.</p>
+</div>
+<div class="section" id="how-fast-is-the-i-o-when-using-brig">
+<h3>5. How fast is the I/O when using <code class="docutils literal notranslate"><span class="pre">brig</span></code>?<a class="headerlink" href="#how-fast-is-the-i-o-when-using-brig" title="Permalink to this headline">¶</a></h3>
+<p>Here are some rather outdated graphs where you can get a rough feeling how fast it can be.
+There are a few rules of thumb with mostly obvious content:</p>
+<ul class="simple">
+<li>It it goes over the network, it’s the network speed plus a smaller constant overhead.</li>
+<li>If it comes over FUSE, it is quite a bit slower than over <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code>.</li>
+<li>If you do not use compression, writing and reading will be faster.</li>
+</ul>
+<a class="reference internal image-reference" href="_images/movie_read.svg"><img alt="_images/movie_read.svg" src="_images/movie_read.svg" width="66%" /></a>
+<a class="reference internal image-reference" href="_images/movie_write.svg"><img alt="_images/movie_write.svg" src="_images/movie_write.svg" width="66%" /></a>
+<p>Your mileage may vary and you better do your own benchmarks for now.</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
-<p class="last">Fill this with questions. Contributors welcome!</p>
+<p class="last">Explain/Update those graphs.</p>
+</div>
 </div>
 </div>
 </div>

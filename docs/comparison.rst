@@ -17,4 +17,5 @@ on where the focus of each tool differs.
 
 .. todo::
 
-    Translate the comparison from master thesis and update and restructure.
+    Translate the comparison from master thesis, update and restructure.
+    Low priority though.

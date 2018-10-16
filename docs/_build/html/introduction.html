@@ -530,8 +530,12 @@ I use a <a class="reference external" href="https://signal.org">secure messenger
 also use any channel you like, including encrypted mail or meeting up with
 the person in question.</li>
 <li>You don’t know each other. Get to know each other and the proceed like in the
-second point. TODO: net locate</li>
+second point.</li>
 </ul>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Mention <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code></p>
+</div>
 <p>Once you have exchanged the fingerprints, you add each other as <strong>remotes</strong>.
 Let’s call the other side <em>bob</em>: <a class="footnote-reference" href="#id13" id="id7">[6]</a></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob <span class="se">\</span>
@@ -548,17 +552,17 @@ SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5Fc
 </pre></div>
 </div>
 <p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository over the network.</p>
-<div class="admonition-todo admonition" id="index-0">
+<div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <p>Rework this whole section:</p>
-<p class="last">TODO: Network intermezzo?
-TODO: Auto accept?</p>
+<p>TODO: Network intermezzo?</p>
+<p class="last">TODO: Auto accept?</p>
 </div>
 <p>The remote list can tell us if a remote is online:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>    $ brig remote list
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote list
 NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
 bob    QmUDSXt27    0s         ✔ Apr <span class="m">16</span> <span class="m">17</span>:31:01
-    $ brig remote ping bob
+$ brig remote ping bob
 ping to bob: ✔ <span class="o">(</span><span class="m">0</span>.00250ms<span class="o">)</span>
 </pre></div>
 </div>
@@ -606,7 +610,7 @@ to the persons they claim to be. This due to the distributed nature of
 <code class="docutils literal notranslate"><span class="pre">brig</span></code> where there is no central or federated authority that coordinate
 user name registrations. So it is perfectly possible that one name can be
 taken by several repositories - only the fingerprint is unique.</p>
-<div class="admonition-todo admonition" id="index-1">
+<div class="admonition-todo admonition" id="index-2">
 <p class="first admonition-title">Todo</p>
 <p class="last">Provide output of the locate command and verify this scenario works fine.</p>
 </div>
@@ -729,7 +733,7 @@ other, but not with your fellow students where you maybe want to share the
 <code class="docutils literal notranslate"><span class="pre">/lectures</span></code> folder. In <code class="docutils literal notranslate"><span class="pre">brig</span></code> you can define what folder you want to share
 with what remote. If you do not limit this, all folders will be open to
 a remote by default.</p>
-<div class="admonition-todo admonition" id="index-2">
+<div class="admonition-todo admonition" id="index-3">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
 <li>Write docs for brig remote folders.</li>
@@ -766,7 +770,7 @@ these!«.</li>
 It’s still not clear what the best way is to modify/view the pin state
 of older versions. Time and user experience will tell.</p>
 </div>
-<div class="admonition-todo admonition" id="index-3">
+<div class="admonition-todo admonition" id="index-4">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
 <li>Explain the implications of pinning when syncing files and other operations like reset.</li>

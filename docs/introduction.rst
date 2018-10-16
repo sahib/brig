@@ -373,7 +373,11 @@ There are three typical scenarios here:
   also use any channel you like, including encrypted mail or meeting up with
   the person in question.
 - You don't know each other. Get to know each other and the proceed like in the
-  second point. TODO: net locate
+  second point.
+
+.. todo::
+
+    Mention ``brig net locate``
 
 Once you have exchanged the fingerprints, you add each other as **remotes**.
 Let's call the other side *bob*: [#]_
@@ -401,16 +405,17 @@ Thanks to the fingerprint, ``brig`` now knows how to reach the other repository 
     Rework this whole section:
 
     TODO: Network intermezzo?
+
     TODO: Auto accept?
 
 The remote list can tell us if a remote is online:
 
 .. code-block:: bash
 
-	$ brig remote list
+    $ brig remote list
     NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
     bob    QmUDSXt27    0s         ✔ Apr 16 17:31:01
-	$ brig remote ping bob
+    $ brig remote ping bob
     ping to bob: ✔ (0.00250ms)
 
 Nice. Now we know that bob is online and also that he authenticated us.

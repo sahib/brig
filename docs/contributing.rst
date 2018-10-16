@@ -8,9 +8,10 @@ How to contribute
 
 This software is still in very early stages and still needs to find the
 direction where it's usable for a high number of people. Implementing features
-that only a very limited number of users will benefit from is one of the highest
-risk currently. Since we also want to make sure that the feature set of »brig«
-makes sense as a whole we do not want typical feature request at the moment.
+that only a very limited number of users will benefit from is one of the
+highest risk currently. Since we also want to make sure that the feature set of
+»brig« makes sense as a whole and all features are orthogonal, we will ignore
+typical feature request at the moment.
 
 What we want instead are *experience reports*. We want you to use the current state
 of the software and write down the following:
@@ -36,6 +37,10 @@ Please use the ``brig bug`` command to get a template with all the info we need.
 **Are very small feature requests okay?** If it's only about changing or
 extending an existing feature, it's probably fine. Feel free to create an issue
 on GitHub to check back on this before you do any actual change.
+
+Also, the developer of this software is currently doing all of this is in his
+free time. If you're willing to offer any financial support feel free to
+contact me.
 
 What to improve
 ---------------
