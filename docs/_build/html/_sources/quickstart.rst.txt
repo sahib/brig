@@ -1,5 +1,11 @@
 .. _quickstart:
 
+.. warning::
+
+    The examples below are slightly outdated and will be revisited at some point.
+    They're still good enough to get a general impression, but please refer to the
+    :ref:`getting_started` guide for now.
+
 Quickstart
 ==========
 

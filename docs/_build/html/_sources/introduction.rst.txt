@@ -5,7 +5,6 @@ Getting started
 
 This guide will walk you through the steps of synchronizing your first files
 over ``brig``. You will learn about the concepts behind it along the way.
-
 Everything is hands on, so make sure to open a terminal. For now, ``brig`` has
 no other user interface.
 
@@ -22,7 +21,6 @@ Every command offers detailed built-in help, which you can view using the
 ``brig help`` command:
 
 .. code-block:: bash
-
 
     $ brig help stage
     NAME:
@@ -113,10 +111,10 @@ But enough of the grey theory, let's get started:
     Well done! Please re-type your password now:
     ⚠  39 Retype passphrase:
 
-           _____         /  /\        ___          /  /\ 
+           _____         /  /\        ___          /  /\
           /  /::\       /  /::\      /  /\        /  /:/_
-         /  /:/\:\     /  /:/\:\    /  /:/       /  /:/ /\ 
-        /  /:/~/::\   /  /:/~/:/   /__/::\      /  /:/_/::\ 
+         /  /:/\:\     /  /:/\:\    /  /:/       /  /:/ /\
+        /  /:/~/::\   /  /:/~/:/   /__/::\      /  /:/_/::\
        /__/:/ /:/\:| /__/:/ /:/___ \__\/\:\__  /__/:/__\/\:\
        \  \:\/:/~/:/ \  \:\/:::::/    \  \:\/\ \  \:\ /~~/:/
         \  \::/ /:/   \  \::/~~~~      \__\::/  \  \:\  /:/
@@ -174,8 +172,6 @@ are two ways to prevent that:
     down it locks and encrypts all files in the repository (including all
     metadata and keys), so nobodoy is able to access them anymore.
 
-.. [#] This uses `Dropbox's password strength library »zxcvbn« <https://github.com/dropbox/zxcvbn>`_.
-
 Adding & Viewing files
 ----------------------
 
@@ -211,8 +207,6 @@ You also previously saw ``brig cat`` which can be used to get the content of
 a file again. ``brig ls`` in contrast shows you a list of currently existing
 files, including their size, last modification time, path and pin state [#]_.
 
-.. [#] Pinning and pin states are explained :ref:`pinning-section` and are not important for now.
-
 Coreutils
 ---------
 
@@ -240,8 +234,6 @@ they work a little bit different [#]_ and a bit less surprising than their
 counterparts. Also note that there is no ``brig cd`` currently. All paths must
 be absolute.
 
-.. [#] ``brig rm`` for example deletes directories without needing a ``-r`` switch.
-
 Mounting repositories
 ---------------------
 
@@ -267,12 +259,10 @@ that ``brig`` supports a FUSE filesystem that can be controlled via the
    $ brig cat salut.monde
    Salut le monde!
 
-You can use this directory exactly [#] like a normal one. You can have any
+You can use this directory exactly [#]_ like a normal one. You can have any
 number of mounts. This proves especially useful when only mounting
 a subdirectory of ``brig`` (let's say ``Public``) with the ``--root`` option of
 ``brig mount`` and mounting all other files as read only (``--readonly``).
-
-.. [#] Well almost. See the *Caveats* below.
 
 .. code-block:: bash
 
@@ -356,14 +346,12 @@ Every peer possesses two things that identifies him:
 - **A unique fingerprint:** This serves both as address for a certain repository and as certificate of identity.
   It is long and hard to remember, which is the reason why ``brig`` offers to loosely link a human readable to it.
 
-.. [#] To be more exact, it resembles an `XMPP or Jabber-ID <https://en.wikipedia.org/wiki/Jabber_ID>`_.
-
 If we want to find out what our name and fingerprint is, we can use the ``brig
 whoami`` command to ask existential questions:
 
 .. code-block:: bash
 
-    # The hash will most likely look different for you:
+    # NOTE: The hash will look different for you:
     $ brig whoami
     ali@home.cz/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
@@ -396,10 +384,6 @@ Let's call the other side *bob*: [#]_
 		QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
 		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 
-.. [#] The name you choose as remote can be anything you like and does not need
-       to match the name the other person chose for themselves. It's not a bad
-       idea though.
-
 *Bob* has do the same on his side. Otherwise the connection won't be
 established, because the other side won't be authenticated. Adding somebody as
 remote is the way to authenticate them.
@@ -411,8 +395,13 @@ remote is the way to authenticate them.
         SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
 Thanks to the fingerprint, ``brig`` now knows how to reach the other repository over the network.
-TODO: Network intermezzo?
-TODO: Auto accept?
+
+.. todo::
+
+    Rework this whole section:
+
+    TODO: Network intermezzo?
+    TODO: Auto accept?
 
 The remote list can tell us if a remote is online:
 
@@ -451,10 +440,10 @@ the following are indeed valid names:
 - ``ali@woods.org/desktop``
 - ``ali/desktop``
 
-It's however recomended to choose a name that is formatted like
-a `XMPP/Jabber-ID`_. Those IDs can look like plain emails, but can optionally
-have a »resource« part as suffix (separated by a »/« like ``desktop``).
-Choosing such a name has two advantages:
+It's however recommended to choose a name that is formatted like
+a XMPP/Jabber-ID. Those IDs can look like plain emails, but can optionally have
+a »resource« part as suffix (separated by a »/« like ``desktop``). Choosing
+such a name has two advantages:
 
 - Other peers can find you by only specifying parts of your name.
   Imagine all of the *Smith* family members use ``brig``, then they'd possibly those names:
@@ -488,10 +477,10 @@ Syncing
 
 Before we move on to do our first synchronization, let's recap what we have don so far:
 
-- Create a repository (``brig init <name>``) - needs to be done only once.
-- Create optional mount points (``brig fstab add <name> <path>``) - needs to be done only once.
-- Find & add remotes (``brig remote add``) - needs to be done once for each peer.
-- Add some files (``brig stage <path>``) - needs to be done as much as you like to.
+- Create a repository (``brig init <name>``) - This needs to be done only once.
+- Create optional mount points (``brig fstab add <name> <path>``) - This needs to be done only once.
+- Find & add remotes (``brig remote add``) - This needs to be done once for each peer.
+- Add some files (``brig stage <path>``) - Do as often as you like.
 
 As you see, there is some initial setup work, but the actual syncing is pretty
 effortless now. Before we attempt to sync with anybody, it's always a good idea
@@ -499,15 +488,15 @@ to see what changes they have. We can check this with ``brig diff <remote>``:
 
 .. code-block:: bash
 
+    # The "--missing" switch also tells us what files they don't have:
     $ brig diff bob --missing
     •
     ├── _ hello.world
     ├── + videos/
     └── README.md ⇄ README.md
 
-This output resembles the one we saw from ``brig tree`` earlier. But instead If
-you do not like this view you can also display it in a more traditional fashion
-with ``--list``. Each node in this tree tells us about something that would
+This output resembles the one we saw from ``brig tree`` earlier.
+Each node in this tree tells us about something that would
 happen when we merge. The prefix of each file and the color in the terminal
 indicate what would happen with this file. Refer to the table below to see what
 prefix relates to what action:
@@ -515,7 +504,7 @@ prefix relates to what action:
 ====== ====================================================================
 Symbol Description
 ====== ====================================================================
-``+``  The file is only present on the remote side..
+``+``  The file is only present on the remote side.
 ``-``  The file was removed on the remote side.
 ``→``  The file was moved to a new location.
 ``*``  This file was ignored because we chose to, due to our settings.
@@ -529,10 +518,13 @@ Symbol Description
     ``brig`` does not do any actual diffs between files. It does not care a lot about the content.
     It only records how the file metadata changes and what content the file has at a certain point.
 
+If you prefer a more traditional view, similar to ``git``, you can use
+``--list`` on ``brig diff``.
+
 So in the above output we can tell that *Bob* added the directory
 ``/videos``, but does not possess the ``/hello.world`` file. He also
 apparently modified ``README.md``, but since we did not, it's safe for us to
-take his changes. If we sync now we will get this directory from him:
+take over his changes. If we sync now we will get this directory from him:
 
 .. code-block:: bash
 
@@ -547,10 +539,13 @@ take his changes. If we sync now we will get this directory from him:
 You might notice that the ``sync`` step took only around one second, even
 though ``/videos`` is 32 GB in size. This is because ``sync`` *does not
 transfer actual data*. It only transferred the metadata, while the actual data
-will only be loaded when required. This sounds a little inconvinient at first.
+will only be loaded when required. This sounds a little inconvenient at first.
 When I want to watch the video, I'd prefer to have it cached locally before
 viewing it to avoid stuttering playback. If you plan to use that, you're free
 to do so using pinning (see :ref:`pinning-section`)
+
+Data retrieval
+~~~~~~~~~~~~~~
 
 If the data is not on your local machine, where is it then? Thanks to ``ipfs``
 it can be transferred from any other peer that caches this particular content.
@@ -563,105 +558,422 @@ as storage server (e.g. a desktop).
 How are the files secure then if they essentially could be everywhere? Every
 file is encrypted by ``brig`` before giving it to ``ipfs``. The encryption key
 is part of the metadata and is only available to the peers that you chose to
-synchronize with.
+synchronize with. Think of each brig repository only as a cache for the whole
+network it is in.
+
+Partial synchronisation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes you only want to share certain things with certain people. You
+probably want to share all your ``/photos`` directory with your significant
+other, but not with your fellow students where you maybe want to share the
+``/lectures`` folder. In ``brig`` you can define what folder you want to share
+with what remote. If you do not limit this, all folders will be open to
+a remote by default.
+
+
+.. todo::
+
+    * Write docs for brig remote folders.
+    * Finish brig remote folder handling on the command line.
 
 .. _pinning-section:
 
 Pinning
 -------
 
-How do we control then what files are stored locally and what not? By *pinning*
-each file or directory you want to keep always. Files you add explicitly are
-pinned by default and also files that were synced to you. Only old versions of
-a file are by default unpinned.
+How can we control what files are stored locally and which should be retrieved
+from the network? You can do this by **pinning** each file or directory you
+want to keep locally. Normally, files that are not pinned may be cleaned up
+from time to time, that means they are evaded from the local cache and need to
+be fetched again when being accessed afterwards. Since you still have the
+metadata for this file, you won't notice difference beside possible network
+lag. When you pin a file, it will not be garbage collected.
 
-``brig`` knows of two types of pins: **Explicit** and **implicit**. When a file
-or directory is being pinned by ``brig pin``, we call this an explicit pin,
-since the user decided he wants to keep that file. When you update a file
-locally, ``brig`` will unpin the old version and pin the new content
-*implicitly*. In the command line output, explicit pins are always shows
-magenta, while implicit pins are shown as implicit.
+``brig`` knows of two types of pins: **Explicit** and **implicit**.
+
+- **Implicit pins:** This kind of pin is created automatically by ``brig`` and
+  cannot be created by the user. In the command line output it always shows as
+  blue pin. Implicit pins are created by ``brig`` whenever you create a new
+  file, or update the contents of a file. The old version of a file will then
+  be unpinned.
+- **Explicit pins:** This kind of pin is created by the user explicitly (hence
+  the name) and is never done by ``brig`` automatically. It has the same effect
+  as an implicit pin, but cannot be removed again by ``brig``, unless
+  explicitly unpinned. It's the user's way to tell ``brig`` »Never forgot
+  these!«.
+
+.. note::
+
+    The current pinning implementation is still under conceptual development.
+    It's still not clear what the best way is to modify/view the pin state
+    of older versions. Time and user experience will tell.
 
 .. todo::
 
-    Explain the implications of pinning when syncing files and other operations like reset.
+    * Explain the implications of pinning when syncing files and other operations like reset.
+    * Add a command example and an example that shows what "brig gc" does.
 
 If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin
-them explictly, so brig cannot unpin them implicily. For this you should also
+them explictly, so brig cannot unpin them implicitly. For this you should also
 look into the ``brig pin set`` and ``brig pin clear`` commands, which are
 similar to ``brig pin add`` and ``brig pin rm`` but can operate on whole commit
 ranges.
 
-Once ``brig gc`` is being run, all files that are not pinned (explicit or
-implcit) are being deleted from local storage. However, those files can be
-still retrieved by other nodes that store the respective content.
+Garbage collection
+~~~~~~~~~~~~~~~~~~
+
+Strongly related to pinning is garbage collection. This is normally being run
+for you every few minutes, but you can also trigger it manually via the ``brig
+gc`` command. While not usually needed, it can help you understand how ``brig``
+works internally as it shows what hashes it throws away.
 
 Version control
 ---------------
 
-One key feature of ``brig`` over other synchronisation tools is the handy
-version control you can have. It will feel familiar to ``git`` users, but a few
-concepts are different.
+One key feature of ``brig`` over other synchronisation tools is the built-in
+and quite capable version control. If you already know ``git`` that's a plus
+for this chapter since a lot of stuff will feel similar. This is not surprise,
+since ``brig`` implements something like ``git`` internally. Don't worry,
+knowing ``git`` is however not needed at all for this chapter.
 
 Key concepts
 ~~~~~~~~~~~~
 
-This is written from the perspective of a ``git`` user:
+I'd like you to keep the following mantra in your head when thinking
+about versioning (repeating before you go to sleep may or may not help):
 
-* You can »snapshot« your current repository by creating a commit (``brig commit``)
-* There are no detailed »diffs« between two files. Only a mix of the following state changes:
+**Metadata and actual data are separated.** This means that a repository may
+contain metadata about many files, including older versions of them. However,
+it is not guaranteed that a repository caches all actual data for each file or
+version. This is solely controlled by pinning described in the section before.
+If you check out earlier versions of a file, you're always able to see the
+metadata of it, but being able to view the actual data depends on having a peer
+that is being able to deliver the data in your network (which might be
+yourself). So in short: ``brig`` **only versions metadata and links to the
+respective data for each version**.
 
-   - *added:* The file was added in this commit.
-   - *moved:* The file was moved in this commit.
-   - *removed:* The file was removed in this commit.
-   - *modified:* The file's content was changed in this commit.
+This is a somewhat novel approach to versioning, so feel free to re-read the
+last paragraph, since I've found that it does not quite fit what most people
+are used to. Together with pinning this offers a high degree of freedom on
+how you can decide what repositories store what data.
 
-* A change is only recorded between individual commits. Changes in-between are
-  not recorded.
-* There are no branches. Every user has a linear list of commits. The choice
-  not to have branches is on purpose, since they tend to bring great
-  complexity to both implementation and user-interface.
-* Since there are no branches, there is no way to go back into history. You can
-  however checkout previous files.
-* You can tag individual commits. There are three pre-defined tags:
+You can invoke ``brig info`` to see what metadata is being saved per file version:
 
-    - *STAGE*: The current, not yet finalized commit. Constantly changing.
-    - *HEAD*: The last finished commit.
-    - *INIT*: The first commit that was made.
+.. code-block:: bash
 
-* When synchronizing files with somebody, a merge commit is automatically created.
-  It contains a special marker to indicate with whom, at what time and what state we merged with.
-  On the next sync, commits before this merge will automatically be ignored.
+    $ brig show README.md
+    Path          /README.md
+    User          ali
+    Type          file
+    Size          832 bytes
+    Inode         4
+    Pinned        yes
+    Explicit      no
+    ModTime       2018-10-14T22:46:00+02:00
+    Tree Hash     SEfXUE2YhBFALY7EQd1BbYFugugqipCeKmadx7wMo5SRdNjNZhaCV9W77vs8aYjvTnB8uvC4ZKi5znaq9iGaKZyTyjZv6
+    Content Hash  SEfXUDMbsF97A5vgf52aXsdVEVhGPKFC2QUU3946yoFTL3EsqjRJHTXNZSz1vhKegrmwBKQFghvREQoNUVRv7Hx6b8a1M
+    Backend Hash  QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK
 
-Individual commands
+
+Most of it should be no big surprise. It might be a small surprise that three
+hashes are stored per file. The ``Backend Hash`` is really the link to the
+actual data. If you'd type ``ipfs cat
+QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK`` you might get the encrypted
+version of your file dumped to your terminal. The ``Content Hash`` is being
+calculated before the encryption and is the same for two files with the same
+content. The ``Tree Hash`` is a hash that uniquely identifies this specific
+node. The ``Inode`` is unique to a file and is also used in the FUSE
+filesystem.
+
+Commits
+~~~~~~~
+
+Now that we know that only metadata is versioned, we have to ask »what is the
+smallest unit of modification that can be saved?« This smallest unit is
+a commit. A commit can be seen as a snapshot of a repository.
+
+The command ``brig log`` shows you a list of commits that were made already:
+
+.. code-block:: bash
+
+          -      Sun Oct 14 22:46:00 CEST 2018 • (curr)
+    SEfXUDozvTHH Sun Oct 14 22:46:00 CEST 2018 user: Added ali-file (head)
+    SEfXUASkpNy4 Sun Oct 14 22:46:00 CEST 2018 user: Added initial README.md
+    SEfXUEru1pLi Sun Oct 14 22:46:00 CEST 2018 initial commit (init)
+
+
+Each commit is identified by a hash (e.g. ``SEfXUDozvTHH``) and records the
+time when it was created. Apart from that, there is a message that describes
+the commit in some way. In contrast to ``git``, **commits are rarely done by
+the user themselve**. More often they are done by ``brig`` when synchronizing.
+
+All commits form a long chain (**no branches**, just a linear chain) with the
+very first empty commit called ``init`` and the still unfinished commit called
+``curr``. Directly below ``curr`` there is the last finished commit called ``head``.
+
+.. note::
+
+    ``curr`` is what ``git`` users would call the staging area. While the staging area
+    in ``git`` is "special", the ``curr`` commit can be used like any other one, with
+    the sole difference that it does not have a proper hash yet.
+
+Sometimes you might want to do a snapshot or »savepoint« yourself. In this case
+you can do a commit yourself:
+
+.. code-block:: bash
+
+    $ brig touch A_NEW_FILE
+    $ brig commit -m 'better leave some breadcrumbs'
+    $ brig log | head -n 2
+          -      Mon Oct 15 00:27:37 CEST 2018 • (curr)
+    SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (head)
+
+This snapshot can be useful later if you decide to revert to a certain version.
+The hash of the commit is of course hard to remember, so if you need it very often, you can
+give it a tag yourself. Tags are similar to the names, ``curr``, ``head`` and ``init`` but
+won't be changed by ``brig`` and won't move therefore:
+
+.. code-block:: bash
+
+    # instead of "SEfXUDkdjUND" you also could use "head" here:
+    $ brig tag SEfXUDkdjUND breadcrumbs
+    $ brig log | grep breadcrumps
+    $ SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs, head)
+
+
+File history
+~~~~~~~~~~~~
+
+Each file and directory in ``brig`` maintains its own history. Each entry of
+this history relates to exactly one distinct commit. In the life of a file or
+directory there are four things that can happen to it:
+
+- *added:* The file was added in this commit.
+- *moved:* The file was moved in this commit.
+- *removed:* The file was removed in this commit.
+- *modified:* The file's content (i.e. hash changed) was altered in this commit.
+
+You can check an individual file or directorie's history by using the ``brig history`` command:
+
+.. code-block:: bash
+
+    # or "hst" for short:
+    $ brig hst README.md
+    CHANGE  FROM  TO              WHEN
+    added   INIT  SEfXUASkpNy4    Oct 14 22:46:00
+    $ brig mv README.md README_LATER.md
+    $ brig hst README_LATER.md
+    CHANGE  FROM  TO            HOW                           WHEN
+    moved   HEAD  CURR          /README.md → /README_LATER.md Oct 15 00:27:37
+    added   INIT  SEfXUASkpNy4                                Oct 14 22:46:0
+
+As you can see, you will be shown one line per history entry. Each entry
+denotes which commit the change was in. Some commits were nothing was changed
+will be jumped over except if you pass ``--empty``.
+
+Viewing differences
 ~~~~~~~~~~~~~~~~~~~
 
-* ``brig commit``: Create a new commit, possibly with a message that describes what happened in the commit.
+If you're interested what changed in a range of commits, you can use the ``brig
+diff`` command as shown previously. The ``-s`` (``--self``) switch says that it
+should only look at own commits and not compare any remotes.
 
-* ``brig log``: Show a list of all commits, starting from the newest one.
+.. code-block:: bash
 
-  .. code-block:: bash
+    # Let's compare the commit hashes from above:
+    $ brig diff -s SEfXUDkdjUND SEfXUDozvTHH
+    •
+    └── + A_NEW_FILE
 
-      $ brig log
-      SEfXUBDu4J Dec 20 00:06:43 • (curr)
-      SEfXUEVczh Dec 20 00:06:43 Added initial README.md (head)
-      SEfXUEru1p Dec 20 00:06:43 initial commit (init)
+Often, those hashes are quite hard to remember and annoying to look up. That's
+why you can the special syntax ``<tag or hash>^`` to denote that you want to go
+»one commit up«:
 
-* ``brig tag``: Tag a commit with a user defined name. This is helpful for
-  remembering special commits like »homework-finale«.
-* ``brig history``: Show the list of changes made to this file between commits.
-* ``brig reset``: Checkout a whole commit or bring a single file or directory
-  to the state of an old commit. In contrast to ``git``, checking out an old
-  state works not by »jumpinp back«, but by setting the current commit
-  (``STAGE``) to the contents of the old commit. It's a rather cheap operation
-  therefore.
-* ``brig diff / status``: Show the difference (i.e. what files were added/removed/moved/clashed)
-* ``brig become``: View the files of a person we synced with.
+.. code-block:: bash
 
-Viewing logs
-------------
+    brig diff -s head head^
+    •
+    └── + A_NEW_FILE
+    # You can also use this several times:
+    brig diff -s head^^^ head^^^^^
+    •
+    └── + README.md
 
-.. todo:: Logs
+If you just want to see what you changed since ``head``, you can simply type ``brig diff``.
+This is the same as ``brig diff -s curr head``:
 
-    Where to view them and how to pipe to stdout.
+.. code-block:: bash
+
+    $ brig diff
+    •
+    └── README.md → README_LATER.md
+    $ brig diff -s curr head
+    •
+    └── README.md → README_LATER.md
+
+
+Reverting to previous state
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Until now we were only looking at the version history and didn't modify it. The
+most versatile command to do that is ``brig reset``. It is able to revert
+changes previously made:
+
+.. code-block:: bash
+
+    # Reset to the "init" commit (the very first and empty commit)
+    $ brig reset init
+    $ brig ls  # nothing, it's empty.
+
+
+The key here is that you did not loose any history:
+
+.. code-block:: bash
+
+    $ brig log | head -2
+           -     Mon Oct 15 00:51:12 CEST 2018 • (curr)
+    SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs)
+
+
+As you can see, we still have the previous commits. ``brig revert`` did not
+thing more than restoring the state of ``init`` and put that result in
+``curr``. This also means that you can't really *modify* history. But you can
+revert it. Let's revert your complete wipe-out:
+
+.. code-block:: bash
+
+    $ brig reset breadcrumbs
+
+
+Now everything is as we left it. ``brig reset`` cannot only restore old
+commits, but individual files and directories:
+
+
+.. code-block:: bash
+
+    $ brig reset head^^
+
+.. note::
+
+    It is a good idea to do a ``brig commit`` before a ``brig reset``. Since it
+    modifies ``curr`` you might loose uncommitted changes. It will warn you
+    about that, but you can overwrite that warning with ``--force``. If you did
+    a ``brig commit`` you can simply use ``brig reset head`` to go back to the
+    last good state.
+
+
+Other commands
+~~~~~~~~~~~~~~
+
+There are a few other commands, but they are not (yet) very useful for most end
+users. Therefore they will not be explained in depth to save you some mental
+space. The commands in question are:
+
+- ``brig become``: View the metadata of another remote. Good for debugging.
+- ``brig daemon``: Start the daemon manually. Good for init systems like ``systemd``.
+- ``brig net``: Commands to modify the network status and find other peers.
+- ``brig edit``: Edit a file in brig with the ``$EDITOR``.
+- ``brig fetch``: Manually trigger the fetching of a remote's metadata.
+- ``brig tar``: Output files and directories as tar archive. Useful to output whole directories.
+
+Please use ``brig help <command>`` to find out more about them if you're interested.
+
+Configuration
+-------------
+
+Quite a few details can be configured in a different way to your liking. ``brig
+config`` is the command that allows you to list, get and set individual
+configuration values. Each config entry already brings some documentation that
+tells you about its purpose:
+
+.. code-block:: bash
+
+    $ brig config ls
+    [... output truncated ...]
+    fs.sync.ignore_moved: false (default)
+    Default:       false
+    Documentation: Do not move what the remote moved
+    Needs restart: no
+    [... output truncated ...]
+    $ brig config get repo.password_command
+    pass brig/repo/password
+    $ brig config set repo.password_command "pass brig/repo/my-password"
+
+Running the daemon and viewing logs
+-----------------------------------
+
+As discussed before, the daemon is being started on demand in the background.
+Subsequent commands will then use the daemon. For debugging purposes it can be useful
+to run in the daemon in the foreground. You can do this with the ``brig daemon`` commands:
+
+.. code-block:: bash
+
+    # Make sure no prior daemon is running:
+    $ brig daemon quit
+    # Start the daemon in the foreground and log to stdout:
+    $ brig daemon launch -s
+
+The last step will ask for your password if you did not set a password helper
+program. If you want to quit the instance, either just hit CTRL-C or type
+``brig daemon quit`` into another terminal window.
+
+Logging
+~~~~~~~
+
+Unless you pass the ``-s`` (``--log-to-stdout`` flag) all logs are being piped
+to the system log. You can follow the log like this:
+
+.. code-block:: bash
+
+    # The actual daemon log:
+    $ journalctl -ft brig
+
+    # The ipfs log:
+    $ journalctl -ft brig-ipfs
+
+This assumes you're using a ``systemd``-based distribution. If not, refer to
+the documentation of your syslog daemon.
+
+Using several repositories in parallel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It can be useful to run more than one instance of the ``brig`` daemon in
+parallel. Either for testing purposes or as actual production configuration. If
+you're planning to do that it is advisable to be always explicit about the port
+number you're using. Here's an example how you can run two daemons at the same
+time:
+
+.. code-block:: bash
+
+    # It might be a good idea to keep that in your .bashrc:
+    alias brig-ali='brig --port 6666'
+    alias brig-bob='brig --port 6667'
+
+    # Subsitute your password helper here:
+    brig-ali --repo /tmp/ali init ali -w "echo brig/repo/ali"
+    brig-bob --repo /tmp/bob init bob -w "echo brig/repo/bob"
+
+    # Now you can use them normally,
+    # e.g. by adding them as remotes each:
+    brig-ali remote add bob $(brig-bob whoami -f)
+    brig-bob remote add ali $(brig-ali whoami -f)
+
+-------
+
+.. [#] This uses `Dropbox's password strength library »zxcvbn« <https://github.com/dropbox/zxcvbn>`_.
+
+
+.. [#] Pinning and pin states are explained :ref:`pinning-section` and are not important for now.
+
+.. [#] ``brig rm`` for example deletes directories without needing a ``-r`` switch.
+
+.. [#] Well almost. See the *Caveats* below.
+
+.. [#] To be more exact, it resembles an `XMPP or Jabber-ID <https://en.wikipedia.org/wiki/Jabber_ID>`_.
+
+.. [#] The name you choose as remote can be anything you like and does not need
+       to match the name the other person chose for themselves. It's not a bad
+       idea though.
+
