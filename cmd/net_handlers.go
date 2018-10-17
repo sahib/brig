@@ -87,7 +87,7 @@ func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
-	infos, err := ctl.OnlinePeers()
+	peers, err := ctl.OnlinePeers()
 	if err != nil {
 		return err
 	}
@@ -97,13 +97,13 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	if len(infos) == 0 {
+	if len(peers) == 0 {
 		fmt.Println("Remote list is empty. Nobody there to ping.")
 		return nil
 	}
 
 	if !ctx.IsSet("format") {
-		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tLASTSEEN\t")
+		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tONLINE\tAUTHENTICATED\tLASTSEEN\t")
 	}
 
 	tmpl, err := readFormatTemplate(ctx)
@@ -111,11 +111,11 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	for _, info := range infos {
+	for _, peer := range peers {
 		if tmpl != nil {
 			rmt := client.Remote{
-				Fingerprint: info.Fingerprint,
-				Name:        info.Name,
+				Fingerprint: peer.Fingerprint,
+				Name:        peer.Name,
 			}
 
 			if err := tmpl.Execute(os.Stdout, rmt); err != nil {
@@ -125,23 +125,22 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			continue
 		}
 
-		suffix := ""
-		if info.Err == nil {
-			suffix = fmt.Sprintf(
-				"%s\t%s",
-				info.Roundtrip,
-				color.GreenString("✔ "+info.LastSeen.Format(time.UnixDate)),
-			)
-		} else {
-			suffix = fmt.Sprintf(
-				"∞\t%s",
-				color.RedString("✘ "+info.Err.Error()),
-			)
+		roundtrip := peer.Roundtrip.String()
+		isOnline := color.GreenString("✔ ")
+
+		if peer.Err != nil {
+			isOnline = color.RedString("✘ " + peer.Err.Error())
+			roundtrip = "∞"
+		}
+
+		authenticated := color.RedString("✘")
+		if peer.Authenticated {
+			authenticated = color.GreenString("✔")
 		}
 
 		shortFp := ""
-		splitFp := strings.SplitN(info.Fingerprint, ":", 2)
 
+		splitFp := strings.SplitN(peer.Fingerprint, ":", 2)
 		if len(splitFp) > 0 {
 			shortAddr := splitFp[0]
 			if len(shortAddr) > 12 {
@@ -161,7 +160,16 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			shortFp += shortPubKeyID
 		}
 
-		fmt.Fprintf(tabW, "%s\t%s\t%s\t\n", info.Name, shortFp, suffix)
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t%s\t%s\t%s\t\n",
+			peer.Name,
+			shortFp,
+			roundtrip,
+			isOnline,
+			authenticated,
+			peer.LastSeen.Format(time.UnixDate),
+		)
 	}
 
 	return tabW.Flush()

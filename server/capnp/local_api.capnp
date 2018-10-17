@@ -81,7 +81,7 @@ struct Identity $Go.doc("Info about our current user state") {
     currentUser @0 :Text;
     owner       @1 :Text;
     fingerprint @2 :Text;
-    isOnline    @3  :Bool;
+    isOnline    @3 :Bool;
 }
 
 struct MountOptions {
@@ -90,11 +90,12 @@ struct MountOptions {
 }
 
 struct PeerStatus $Go.doc("net status of a peer") {
-    name        @0 :Text;
-    fingerprint @1 :Text;
-    lastSeen    @2 :Text;
-    roundtripMs @3 :Int32;
-    error       @4 :Text;
+    name          @0 :Text;
+    fingerprint   @1 :Text;
+    lastSeen      @2 :Text;
+    roundtripMs   @3 :Int32;
+    error         @4 :Text;
+    authenticated @5 :Bool;
 }
 
 struct GarbageItem $Go.doc("A single item that was killed by the gc") {

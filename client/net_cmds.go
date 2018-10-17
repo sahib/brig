@@ -345,11 +345,12 @@ func (cl *Client) NetDisonnect() error {
 }
 
 type PeerStatus struct {
-	Name        string
-	Fingerprint string
-	LastSeen    time.Time
-	Roundtrip   time.Duration
-	Err         error
+	Name          string
+	Fingerprint   string
+	LastSeen      time.Time
+	Roundtrip     time.Duration
+	Err           error
+	Authenticated bool
 }
 
 func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) {
@@ -388,11 +389,12 @@ func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) 
 
 	roundtripMs := time.Duration(capStatus.RoundtripMs()) * time.Millisecond
 	return &PeerStatus{
-		Name:        name,
-		Fingerprint: fp,
-		LastSeen:    lastSeen,
-		Roundtrip:   roundtripMs,
-		Err:         pingErr,
+		Name:          name,
+		Fingerprint:   fp,
+		LastSeen:      lastSeen,
+		Roundtrip:     roundtripMs,
+		Err:           pingErr,
+		Authenticated: capStatus.Authenticated(),
 	}, nil
 }
 

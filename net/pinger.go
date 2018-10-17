@@ -49,17 +49,25 @@ func (pm *PingMap) doUpdate() {
 
 	for addr, pinger := range pm.peers {
 		if pinger == nil {
-			// Try to get a pinger in the background:
+			// Try to get a pinger in the background.
+			// This will already update the pingmap,
+			// but next time we continue in this loop.
 			go pm.doUpdateSingle(addr)
 			continue
 		}
 
-		// Maybe the pinger errored in between?
 		if err := pinger.Err(); err != nil {
+			// Maybe the pinger errored in between?
 			log.Warningf("Pinger %s failed: %v", addr, err)
 			pinger.Close()
+
+			// Mark this addr to be tried later again.
 			pm.peers[addr] = nil
+			continue
 		}
+
+		// Reaching this point means that the pinger
+		// seems to work and did not error out.
 	}
 }
 

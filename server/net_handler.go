@@ -127,6 +127,7 @@ func (nh *netHandler) OnlinePeers(call capnp.Net_onlinePeers) error {
 			status.SetError(err.Error())
 		}
 
+		authenticated := false
 		if pinger != nil {
 			roundtrip := int32(pinger.Roundtrip() / time.Millisecond)
 			status.SetRoundtripMs(roundtrip)
@@ -135,8 +136,19 @@ func (nh *netHandler) OnlinePeers(call capnp.Net_onlinePeers) error {
 			if err := status.SetLastSeen(lastSeen); err != nil {
 				return err
 			}
+
+			err = nh.base.withNetClient(remote.Name, func(ctl *p2pnet.Client) error {
+				authenticated = ctl.Ping() == nil
+				return nil
+			})
+
+			status.SetAuthenticated(authenticated)
+
+			if err != nil {
+				return err
+			}
 		} else {
-			errMsg := fmt.Sprintf("no route (yet)")
+			errMsg := fmt.Sprintf("no route")
 			if err := status.SetError(errMsg); err != nil {
 				return err
 			}
