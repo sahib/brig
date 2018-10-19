@@ -555,10 +555,17 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 
 func handleCommit(ctx *cli.Context, ctl *client.Client) error {
 	msg := ""
-	if msg = ctx.String("message"); msg == "" {
-		msg = fmt.Sprintf("manual commit")
+
+	// Build the message:
+	if ctx.IsSet("message") {
+		msg = ctx.String("message")
+	} else if len(ctx.Args()) >= 1 {
+		msg = strings.Join(ctx.Args(), " ")
+	} else {
+		msg = "manual commit"
 	}
 
+	// Send the commit:
 	if err := ctl.MakeCommit(msg); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("commit: %v", err)}
 	}

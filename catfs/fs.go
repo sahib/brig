@@ -1447,7 +1447,7 @@ func (fs *FS) Reset(path, rev string) error {
 	}
 
 	if path == "/" || path == "" {
-		return fs.Checkout(rev, false)
+		return fs.checkout(rev, false)
 	}
 
 	cmt, err := parseRev(fs.lkr, rev)
@@ -1484,6 +1484,10 @@ func (fs *FS) Checkout(rev string, force bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	return fs.checkout(rev, force)
+}
+
+func (fs *FS) checkout(rev string, force bool) error {
 	cmt, err := parseRev(fs.lkr, rev)
 	if err != nil {
 		return err

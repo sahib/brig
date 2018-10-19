@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	logging "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
 	logWriter "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log/writer"
 
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
@@ -35,6 +34,8 @@ func Init(path string, keySize int) error {
 
 // ForwardLog routes all ipfs logs to a file provided by brig.
 func ForwardLog(w io.Writer) {
-	logWriter.Configure(logWriter.Output(w))
-	logging.SetLevel(logging.WARNING, "")
+	logWriter.Configure(
+		logWriter.Output(w),
+		logWriter.LevelError,
+	)
 }
