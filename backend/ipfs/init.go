@@ -5,7 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	ipfsLogging "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
+	ipfsLog "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 	logWriter "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log/writer"
+
+	brigLog "github.com/Sirupsen/logrus"
 
 	ipfsconfig "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
@@ -34,8 +38,12 @@ func Init(path string, keySize int) error {
 
 // ForwardLog routes all ipfs logs to a file provided by brig.
 func ForwardLog(w io.Writer) {
-	logWriter.Configure(
-		logWriter.Output(w),
-		logWriter.LevelError,
-	)
+	// TODO: The log level setting of ipfs does not work yet.
+	// It is still setting the log level to INFO.
+	logWriter.Configure(logWriter.Output(w))
+	ipfsLogging.SetLevel(ipfsLogging.WARNING, "*")
+
+	if err := ipfsLog.SetLogLevel("*", "warning"); err != nil {
+		brigLog.Errorf("failed to set ipfs log level: %v", err)
+	}
 }
