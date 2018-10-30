@@ -277,7 +277,7 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 					srcBase += "/"
 				}
 
-				return color.BlueString(fmt.Sprintf(" %s → %s", dstPath, srcBase))
+				return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
 			case diffTypeMerged:
 				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
 				srcBase := path.Base(diffEntry.pair.Src.Path)
@@ -285,7 +285,7 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 					srcBase += "/"
 				}
 
-				return color.CyanString(fmt.Sprintf(" %s ⇄ %s", srcBase, dstPath))
+				return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", srcBase, dstPath))
 			case diffTypeConflict:
 				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
 				srcBase := path.Base(diffEntry.pair.Src.Path)
@@ -372,8 +372,8 @@ func printDiff(diff *client.Diff, printMissing bool) {
 		simpleSection(color.RedString("Missing:"), diff.Missing)
 	}
 
-	pairSection(color.BlueString("Moved:"), "→", diff.Moved)
-	pairSection(color.CyanString("Resolveable Conflicts:"), "⇄", diff.Merged)
+	pairSection(color.CyanString("Moved:"), "→", diff.Moved)
+	pairSection(color.WhiteString("Resolveable Conflicts:"), "⇄", diff.Merged)
 	pairSection(color.MagentaString("Conflicts:"), "⚡", diff.Conflict)
 }
 
