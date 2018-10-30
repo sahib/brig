@@ -7,9 +7,6 @@ import (
 	"os"
 	"sync"
 
-	ipfsLogging "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
-	ipfsLog "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
-
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 
@@ -20,7 +17,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Find the next free tcp port near to `port` (possibly euqal to `port`).
+// Find the next free tcp port near to `port` (possibly equal to `port`).
 // Only `maxTries` number of trials will be made.
 // This method is (of course...) racy since the port might be already
 // taken again by another process until we startup our service on that port.
@@ -33,7 +30,9 @@ func findFreePortAfter(port int, maxTries int) int {
 		}
 
 		if err := lst.Close(); err != nil {
-			// TODO: Well? Maybe do something?
+			// continue, this port might be burned.
+			// should not happen most likely though.
+			continue
 		}
 
 		return port + idx
@@ -52,8 +51,7 @@ type Node struct {
 	Path      string
 	SwarmPort int
 
-	mu sync.Mutex
-
+	mu       sync.Mutex
 	ipfsNode *core.IpfsNode
 
 	// Root context used for all operations.
@@ -62,9 +60,7 @@ type Node struct {
 	bootstrapAddrs []string
 }
 
-func createNode(path string, swarmPort int, ctx context.Context, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
-	ipfsLog.SetAllLoggers(ipfsLogging.INFO)
-
+func createNode(path string, minSwarmPort int, ctx context.Context, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Infof("Creating new ipfs repo at %s since it does not exist yet.", path)
 		if err := Init(path, 2048); err != nil {
@@ -117,7 +113,7 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool, bo
 		return nil, err
 	}
 
-	swarmPort = findFreePortAfter(4002, 100)
+	swarmPort := findFreePortAfter(minSwarmPort, 100)
 
 	log.Debugf(
 		"ipfs node configured to run on swarm port %d",
@@ -159,8 +155,7 @@ func createNode(path string, swarmPort int, ctx context.Context, online bool, bo
 	return ipfsNode, nil
 }
 
-// New creates a new ipfs node manager.
-// No daemon is started yet.
+// New creates a new ipfs node manager. No daemon is started yet.
 func New(ipfsPath string, bootstrapAddrs []string) (*Node, error) {
 	return NewWithPort(ipfsPath, bootstrapAddrs, 4001)
 }
