@@ -1211,20 +1211,19 @@ func (lkr *Linker) CheckoutCommit(cmt *n.Commit, force bool) error {
 	})
 }
 
-// AddMoveMapping takes note that the the node `from` has been moved to `to`
-// in the staging commit.
-func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
+// AddMoveMapping takes note that the the node with `fromInode` has been moved
+// to `toInode` in the staging commit.
+func (lkr *Linker) AddMoveMapping(fromInode, toInode uint64) (err error) {
 	// Make sure the actual checkout will land as one batch on disk:
-
-	srcInode := strconv.FormatUint(from.Inode(), 10)
+	srcInode := strconv.FormatUint(fromInode, 10)
 	srcToDstKey := []string{"stage", "moves", srcInode}
 
-	dstInode := strconv.FormatUint(to.Inode(), 10)
+	dstInode := strconv.FormatUint(toInode, 10)
 	dstToSrcKey := []string{"stage", "moves", dstInode}
 
 	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		if _, err = lkr.kv.Get(srcToDstKey...); err == db.ErrNoSuchKey {
-			line := []byte(fmt.Sprintf("> inode %d", to.Inode()))
+			line := []byte(fmt.Sprintf("> inode %d", toInode))
 			batch.Put(line, srcToDstKey...)
 			batch.Put(line, "stage", "moves", "overlay", srcInode)
 		} else if err != nil {
@@ -1233,7 +1232,7 @@ func (lkr *Linker) AddMoveMapping(from, to n.Node) (err error) {
 
 		// Also remember the move in the other direction.
 		if _, err = lkr.kv.Get(dstToSrcKey...); err == db.ErrNoSuchKey {
-			line := []byte(fmt.Sprintf("< inode %d", from.Inode()))
+			line := []byte(fmt.Sprintf("< inode %d", fromInode))
 			batch.Put(line, dstToSrcKey...)
 			batch.Put(line, "stage", "moves", "overlay", dstInode)
 		} else {

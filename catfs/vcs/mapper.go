@@ -334,7 +334,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 	return nil
 }
 
-// ghostToAlive receives a `nd` and tries to find
 func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModNode, error) {
 	partnerNd, moveDir, err := lkr.MoveEntryPoint(nd)
 	if err != nil {

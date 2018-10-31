@@ -344,7 +344,7 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 			return true, err
 		}
 
-		if err := lkr.AddMoveMapping(nd, ghost); err != nil {
+		if err := lkr.AddMoveMapping(nd.Inode(), ghost.Inode()); err != nil {
 			return true, e.Wrapf(err, "add move mapping")
 		}
 

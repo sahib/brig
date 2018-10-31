@@ -130,25 +130,15 @@ func replayAdd(lkr *c.Linker, currNd n.ModNode) error {
 }
 
 func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
-	oldNd, err := lkr.LookupModNode(oldPath)
-	if err != nil && !ie.IsNoSuchFileError(err) {
-		return err
-	}
-
-	if oldNd == nil {
-		log.Debugf("No such old node: %v", oldPath)
-		return nil
-	}
-
 	newNd, err := lkr.LookupModNode(newPath)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("adding move mapping: %v %v", oldNd, newNd)
+	log.Debugf("adding move mapping: %s %s", oldPath, newPath)
 	// TODO: Why is the parameter order screwed up here?
 	// TODO: Add test of replayAddMoveMapping behaviour.
-	return lkr.AddMoveMapping(newNd, oldNd)
+	return lkr.AddMoveMapping(newNd.Inode(), newNd.Inode())
 }
 
 // Replay applies the change `ch` onto `lkr` by redoing the same operations:
@@ -179,7 +169,7 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 
 			// If the types are conflicting we have to remove the existing node.
 			if oldNd != nil && oldNd.Type() != currNd.Type() {
-				_, _, err := c.Remove(lkr, oldNd, false, true)
+				_, _, err := c.Remove(lkr, oldNd, true, true)
 				if err != nil {
 					return true, e.Wrapf(err, "replay: type-conflict-remove")
 				}
