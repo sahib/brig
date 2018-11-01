@@ -135,10 +135,19 @@ func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
 		return err
 	}
 
+	oldNd, err := lkr.LookupModNode(oldPath)
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return nil
+	}
+
+	if oldNd == nil {
+		return nil
+	}
+
 	log.Debugf("adding move mapping: %s %s", oldPath, newPath)
 	// TODO: Why is the parameter order screwed up here?
 	// TODO: Add test of replayAddMoveMapping behaviour.
-	return lkr.AddMoveMapping(newNd.Inode(), newNd.Inode())
+	return lkr.AddMoveMapping(oldNd.Inode(), newNd.Inode())
 }
 
 // Replay applies the change `ch` onto `lkr` by redoing the same operations:

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
@@ -139,6 +141,8 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 }
 
 func (sy *syncer) handleAdd(src n.ModNode) error {
+	log.Debugf("handling add: %s", src.Path())
+
 	if sy.cfg.OnAdd != nil {
 		if !sy.cfg.OnAdd(src) {
 			return nil
@@ -153,13 +157,19 @@ func (sy *syncer) handleMove(src, dst n.ModNode) error {
 		return nil
 	}
 
+	log.Debugf("handling move: %s -> %s", dst.Path(), src.Path())
+	if _, err := c.Mkdir(sy.lkrDst, path.Dir(src.Path()), true); err != nil {
+		return err
+	}
+
 	// Move our node (dst) to the path determined by src.
-	return c.Move(sy.lkrDst, dst, src.Path())
+	return e.Wrapf(c.Move(sy.lkrDst, dst, src.Path()), "move")
 }
 
 func (sy *syncer) handleMissing(dst n.ModNode) error {
 	// This is only called when a file in dst is missing on src.
 	// No sync action is required.
+	log.Debugf("handling missing: %s", dst.Path())
 	return nil
 }
 
@@ -167,6 +177,8 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 	if sy.cfg.IgnoreDeletes {
 		return nil
 	}
+
+	log.Debugf("handling remove: %s", dst.Path())
 
 	// We should check if dst really exists for us.
 	if sy.cfg.OnRemove != nil {
@@ -184,10 +196,12 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 		return nil
 	}
 
+	log.Debugf("handling conflict: %s <-> %s", src.Path(), dst.Path())
+
 	// Find a path that we do not have yet.
 	// stamp := time.Now().Format(time.RFC3339)
-	conflictNameTmpl := fmt.Sprintf("%s.conflict.%%d", dst.Name())
 	conflictName := ""
+	conflictNameTmpl := fmt.Sprintf("%s.conflict.%%d", dst.Name())
 
 	// Fix the unlikely case that there is already a node at the conflict path:
 	for tries := 0; tries < 100; tries++ {
@@ -214,6 +228,8 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 }
 
 func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
+	log.Debugf("handling merge: %s <-> %s", src.Path(), dst.Path())
+
 	if src.Path() != dst.Path() {
 		// Only move the file if it was only moved on the remote side.
 		if srcMask&ChangeTypeMove != 0 && dstMask&ChangeTypeMove == 0 {
@@ -268,11 +284,15 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 }
 
 func (sy *syncer) handleTypeConflict(src, dst n.ModNode) error {
+	log.Debugf("handling type conflict: %s <-> %s", src.Path(), dst.Path())
+
 	// Simply do nothing.
 	return nil
 }
 
 func (sy *syncer) handleConflictNode(src n.ModNode) error {
+	log.Debugf("handling node conflict: %s", src.Path())
+
 	// We don't care for files on the other side named "README.conflict.0" e.g.
 	return nil
 }

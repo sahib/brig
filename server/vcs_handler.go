@@ -506,9 +506,13 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 				return err
 			}
 
+			log.Debugf("Starting sync with %s", withWhom)
+
 			if err := ownFs.Sync(remoteFs); err != nil {
 				return err
 			}
+
+			log.Debugf("Sync with %s done", withWhom)
 
 			cmtAfter, err := ownFs.Head()
 			if err != nil {

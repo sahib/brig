@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -232,7 +233,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		}
 	}
 
-	debug("map dir", srcCurr.Path(), dstPath)
+	log.Debugf("mapping dir %s %s", srcCurr.Path(), dstPath)
 
 	ma.setSrcVisited(srcCurr)
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
@@ -244,6 +245,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		// We never heard of this directory apparently. Go sync it.
 		return ma.report(srcCurr, nil, false, false, false)
 	}
+
+	log.Debugf("Content: %v %v", srcCurr.ContentHash(), dstCurrNd.ContentHash())
 
 	// Special case: The node might have been moved on dst's side.
 	// We might notice this, if dst type is a ghost.
@@ -293,6 +296,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 			return ma.report(srcCurr, dstCurr, false, false, true)
 		}
 
+		// Nothing we need to do here.
 		return nil
 	}
 
@@ -335,7 +339,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 }
 
 func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModNode, error) {
-	partnerNd, moveDir, err := lkr.MoveEntryPoint(nd)
+	partnerNd, _, err := lkr.MoveEntryPoint(nd)
 	if err != nil {
 		return nil, e.Wrap(err, "move entry point")
 	}
@@ -348,9 +352,10 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 	// We want to go forward in history.
 	// In theory, the other direction should not happen,
 	// since we're always operating on ghosts here.
-	if moveDir != c.MoveDirDstToSrc {
-		return nil, nil
-	}
+	// if moveDir != c.MoveDirDstToSrc {
+	// 	log.Debugf("bad move direction")
+	// 	return nil, nil
+	// }
 
 	// Go forward to the most recent version of this node.
 	// This is no guarantee yet that this node is reachable
@@ -436,7 +441,7 @@ func (ma *Mapper) handleGhosts() error {
 				return ma.report(nil, dstModNd, false, true, false)
 			}
 
-			// Not does not exist on both sides, nothing to report.
+			// does not exist on both sides, nothing to report.
 			return nil
 		}
 
@@ -490,7 +495,7 @@ func (ma *Mapper) handleGhosts() error {
 			ma.setSrcVisited(srcNd)
 			return err
 		case n.NodeTypeDirectory:
-			ma.setSrcVisited(srcNd)
+			// ma.setSrcVisited(srcNd)
 			if dstRefNd.Type() != n.NodeTypeDirectory {
 				return ma.report(aliveSrcNd, dstRefModNd, true, false, false)
 			}
@@ -518,6 +523,7 @@ func (ma *Mapper) handleGhosts() error {
 	// Handle moved paths after handling single files.
 	// (mapDirectory assumes that moved files in it were already handled).
 	for _, movedSrcDir := range movedSrcDirs {
+		log.Debugf("map: %v %v", movedSrcDir.srcDir.Path(), movedSrcDir.dstPath)
 		if err := ma.mapDirectory(movedSrcDir.srcDir, movedSrcDir.dstPath, false); err != nil {
 			return err
 		}
