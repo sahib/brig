@@ -192,14 +192,8 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
 
-	var content h.Hash
-	if file, ok := nd.(*n.File); ok {
-		content = file.ContentHash()
-	}
-
 	return &StatInfo{
 		Path:        nd.Path(),
-		TreeHash:    nd.TreeHash().Clone(),
 		User:        nd.User(),
 		ModTime:     nd.ModTime(),
 		IsDir:       nd.Type() == n.NodeTypeDirectory,
@@ -208,8 +202,9 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		Depth:       n.Depth(nd),
 		IsPinned:    isPinned,
 		IsExplicit:  isExplicit,
-		ContentHash: content,
+		ContentHash: nd.ContentHash().Clone(),
 		BackendHash: nd.BackendHash().Clone(),
+		TreeHash:    nd.TreeHash().Clone(),
 	}
 }
 

@@ -946,3 +946,45 @@ func TestHistoryMovedDirsWithReloadedLinker(t *testing.T) {
 		validateHist(hist)
 	})
 }
+
+// Regression test:
+func TestHistoryOfMovedNestedDir(t *testing.T) {
+	c.WithDummyLinker(t, func(lkr *c.Linker) {
+		c.MustMkdir(t, lkr, "/src/core")
+		c.MustTouch(t, lkr, "/src/core/linker.go", 3)
+		c.MustCommit(t, lkr, "added")
+
+		c.MustMove(t, lkr, c.MustLookupDirectory(t, lkr, "/src"), "/dst")
+		c.MustCommit(t, lkr, "move")
+
+		status, err := lkr.Status()
+		require.Nil(t, err)
+
+		// This raised an error before, since "/dst" was missing
+		// in the "added" commit.
+		hist, err := History(lkr, c.MustLookupDirectory(t, lkr, "/dst/core"), status, nil)
+		require.Nil(t, err)
+
+		require.Equal(t, "/dst/core", hist[0].Curr.Path())
+		require.Equal(t, ChangeTypeNone, hist[0].Mask)
+		require.Equal(t, "/dst/core", hist[1].Curr.Path())
+		require.Equal(t, ChangeTypeMove, hist[1].Mask)
+		require.Equal(t, "/src/core", hist[1].WasPreviouslyAt)
+		require.Equal(t, "/src/core", hist[2].Curr.Path())
+		require.Equal(t, ChangeTypeAdd, hist[2].Mask)
+
+		file, err := lkr.LookupModNode("/dst/core/linker.go")
+		require.Nil(t, err)
+
+		hist, err = History(lkr, file, status, nil)
+		require.Nil(t, err)
+
+		require.Equal(t, "/dst/core/linker.go", hist[0].Curr.Path())
+		require.Equal(t, ChangeTypeNone, hist[0].Mask)
+		require.Equal(t, "/dst/core/linker.go", hist[1].Curr.Path())
+		require.Equal(t, ChangeTypeMove, hist[1].Mask)
+		require.Equal(t, "/src/core/linker.go", hist[1].WasPreviouslyAt)
+		require.Equal(t, "/src/core/linker.go", hist[2].Curr.Path())
+		require.Equal(t, ChangeTypeAdd, hist[2].Mask)
+	})
+}

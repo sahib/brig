@@ -222,7 +222,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	}
 	prefixTrie := buildPrefixTrie(prefixes)
 
-	err = n.Walk(lkr, root, true, func(child n.Node) error {
+	err = n.Walk(lkr, root, false, func(child n.Node) error {
 		childParentPath := path.Dir(child.Path())
 		if len(prefixes) != 0 && !hasValidPrefix(prefixTrie, childParentPath) {
 			log.Debugf("Ignoring invalid prefix: %s", childParentPath)
@@ -266,9 +266,10 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			}
 		}
 
-		// Some special filtering needs to be done here.
-		// If it'a "move" ghost we don't want to export it unless
-		// the move goes outside our prefixes (which would count as "remove").
+		// Some special filtering needs to be done here. If it'a "move" ghost
+		// we don't want to export it if the move goes outside our prefixes
+		// (which would count as "remove").  or if we already reported a top
+		// level directory that contains this move.
 		isValid, err := filterInvalidMoveGhost(lkr, child, combCh, prefixTrie)
 		if err != nil {
 			return err

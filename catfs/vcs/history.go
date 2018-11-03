@@ -108,6 +108,10 @@ func ParentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Dir
 
 	nd, err := root.Lookup(lkr, nextDirPath)
 	if err != nil {
+		if ie.IsNoSuchFileError(err) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -158,7 +162,7 @@ func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.Move
 
 		prevDirNd, direction, err := lkr.MoveMapping(head, parentDir)
 		if err != nil {
-			return nil, c.MoveDirNone, nil
+			return nil, c.MoveDirNone, err
 		}
 
 		// Advance for next round:
@@ -171,8 +175,7 @@ func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.Move
 		}
 
 		// At this point we know that the dir `parentDir` was moved.
-		// Now we have to find the old version of the node.
-		// This for loop will end now anyways.
+		// Now we have to find the old version of the node and exit this for loop.
 
 		var prevDir *n.Directory
 

@@ -136,7 +136,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		mpb.AppendDecorators(decor.Percentage()),
 	)
 
-	nWorkers := 20
+	nWorkers := 1
 	start := time.Now()
 	jobs := make(chan stagePair, nWorkers)
 
@@ -528,7 +528,12 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
 	printPair("Tree Hash", info.TreeHash.B58String())
 	printPair("Content Hash", info.ContentHash.B58String())
-	printPair("Backend Hash", info.BackendHash.B58String())
+
+	if !info.IsDir {
+		printPair("Backend Hash", info.BackendHash.B58String())
+	} else {
+		printPair("Backend Hash", "-")
+	}
 
 	return tabW.Flush()
 }

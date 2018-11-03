@@ -360,10 +360,13 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 
 	if !printFingerprint && !printName {
 		if self.CurrentUser != self.Owner {
-			fmt.Printf("# viewing %s's data currently", userName)
+			fmt.Printf(
+				"# Note: viewing %s's data currently\n",
+				color.YellowString(userName),
+			)
 		}
 
-		fmt.Printf("- Name: %s\n", userName)
+		fmt.Printf("- Name: %s\n", color.YellowString(self.Owner))
 		fmt.Printf("  Fingerprint: %s\n", self.Fingerprint)
 
 		return nil

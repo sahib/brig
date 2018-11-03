@@ -88,14 +88,14 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	for idx, entry := range history {
+	for _, entry := range history {
 		what := ""
 		printLine := true
 
 		for _, detail := range entry.Mask {
 			// If it was moved, let's display what moved.
-			if detail == "moved" && idx+1 < len(history) {
-				src := history[idx+1].Path
+			if detail == "moved" {
+				src := entry.WasPreviouslyAt
 				dst := entry.Path
 
 				if entry.MovedTo != "" {
@@ -111,10 +111,6 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 			if detail == "none" && !ctx.Bool("empty") {
 				printLine = false
 			}
-		}
-
-		if entry.WasPreviouslyAt != "" {
-			what = fmt.Sprintf("%s (was %s)", what, entry.WasPreviouslyAt)
 		}
 
 		if !printLine {

@@ -512,9 +512,14 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	nodeContent := dirContentHash(nd.ContentHash(), len(d.children)+1)
 
 	err := d.Up(lkr, func(parent *Directory) error {
-		parent.size += nodeSize
-		if err := parent.content.Xor(nodeContent); err != nil {
-			return err
+		if nd.Type() != NodeTypeGhost {
+			// Only add to the size if it's not a ghost.
+			// They do not really count as size.
+			// Same goes for the node content.
+			parent.size += nodeSize
+			if err := parent.content.Xor(nodeContent); err != nil {
+				return err
+			}
 		}
 
 		return parent.xorHash(lkr, nodeHash)
@@ -559,7 +564,7 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 
 	oldRootPath := d.Path()
 	err := Walk(lkr, d, true, func(child Node) error {
-		oldChildPath := child.Path() // /another_empty_huhgg
+		oldChildPath := child.Path()
 		newChildPath := path.Join(newPath, oldChildPath[len(oldRootPath):])
 		visited[newChildPath] = child
 
@@ -570,7 +575,7 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 				return ie.ErrBadNode
 			}
 
-			if err := d.rehash(lkr, oldChildPath, newChildPath); err != nil {
+			if err := childDir.rehash(lkr, oldChildPath, newChildPath); err != nil {
 				return err
 			}
 
