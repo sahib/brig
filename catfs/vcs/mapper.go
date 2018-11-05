@@ -297,7 +297,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		}
 
 		// TODO: Search for ways to enable this performance optimization again.
-		// Nothing we need to do here.
+		//       This does not work when directories where moved and there were
+		//       no other modifications (thus "/" has the same content hash)
 		// return nil
 	}
 

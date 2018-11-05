@@ -267,29 +267,29 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 			case diffTypeIgnored:
 				return color.YellowString(" * " + suffixIfDir(n))
 			case diffTypeMoved:
-				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 				srcBase := path.Base(diffEntry.pair.Src.Path)
 				if diffEntry.pair.Src.IsDir {
 					srcBase += "/"
 				}
 
-				return color.CyanString(fmt.Sprintf(" %s → %s", dstPath, srcBase))
+				return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
 			case diffTypeMerged:
-				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 				srcBase := path.Base(diffEntry.pair.Src.Path)
 				if diffEntry.pair.Src.IsDir {
 					srcBase += "/"
 				}
 
-				return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", srcBase, dstPath))
+				return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", dstPath, srcBase))
 			case diffTypeConflict:
-				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
+				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 				srcBase := path.Base(diffEntry.pair.Src.Path)
 				if diffEntry.pair.Src.IsDir {
 					srcBase += "/"
 				}
 
-				return color.MagentaString(fmt.Sprintf(" %s ⚡ %s", srcBase, dstPath))
+				return color.MagentaString(fmt.Sprintf(" %s ⚡ %s" dstPath, srcBase))
 			}
 		}
 
@@ -351,7 +351,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 			}
 
 			if pair.Src.Path != pair.Dst.Path {
-				fmt.Printf("  %s %s %s\n", srcPath, symbol, dstPath)
+				fmt.Printf("  %s %s %s\n", dstPath, symbol, srcPath)
 			} else {
 				fmt.Printf("  %s %s\n", symbol, srcPath)
 			}
