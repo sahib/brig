@@ -296,8 +296,9 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 			return ma.report(srcCurr, dstCurr, false, false, true)
 		}
 
+		// TODO: Search for ways to enable this performance optimization again.
 		// Nothing we need to do here.
-		return nil
+		// return nil
 	}
 
 	// Both sides have this directory, but the content differs.

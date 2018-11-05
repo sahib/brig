@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	printDebug = true
+	printDebug = false
 )
 
 func debug(args ...interface{}) {
