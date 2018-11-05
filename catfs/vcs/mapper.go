@@ -300,6 +300,10 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		//       This does not work when directories where moved and there were
 		//       no other modifications (thus "/" has the same content hash)
 		// return nil
+
+		if srcCurr.TreeHash().Equal(dstCurr.TreeHash()) {
+			return nil
+		}
 	}
 
 	// Both sides have this directory, but the content differs.

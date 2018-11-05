@@ -136,7 +136,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		mpb.AppendDecorators(decor.Percentage()),
 	)
 
-	nWorkers := 1
+	nWorkers := 20
 	start := time.Now()
 	jobs := make(chan stagePair, nWorkers)
 
