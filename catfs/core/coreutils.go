@@ -219,7 +219,10 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 			}
 
 			if childDir.Size() > 0 {
-				return nil, fmt.Errorf("Cannot move over: %s; directory is not empty!", child.Path())
+				return nil, fmt.Errorf(
+					"Cannot move over: %s; directory is not empty!",
+					child.Path(),
+				)
 			}
 
 			// Okay, there is an empty directory. Let's remove it to
@@ -335,6 +338,8 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 		if err := parentDir.Add(lkr, nd); err != nil {
 			return true, e.Wrapf(err, "parent add")
 		}
+
+		parentDir.RebuildOrderCache()
 
 		err = n.Walk(lkr, nd, true, func(child n.Node) error {
 			return e.Wrapf(lkr.StageNode(child), "stage node")

@@ -22,6 +22,8 @@ type Directory struct {
 	size       uint64
 	parentName string
 	children   map[string]h.Hash
+	contents   map[string]h.Hash
+	order      []string
 }
 
 // NewEmptyDirectory creates a new empty directory that does not exist yet.
@@ -45,6 +47,8 @@ func NewEmptyDirectory(
 			modTime:  time.Now().Truncate(time.Microsecond),
 		},
 		children: make(map[string]h.Hash),
+		contents: make(map[string]h.Hash),
+		order:    []string{},
 	}
 
 	if parent != nil {
@@ -123,12 +127,40 @@ func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Director
 		return nil, err
 	}
 
+	contents, err := capnp_model.NewDirEntry_List(seg, int32(len(d.contents)))
+	if err != nil {
+		return nil, err
+	}
+
+	entryIdx = 0
+	for name, hash := range d.contents {
+		entry, err := capnp_model.NewDirEntry(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := entry.SetName(name); err != nil {
+			return nil, err
+		}
+		if err := entry.SetHash(hash); err != nil {
+			return nil, err
+		}
+		if err := contents.Set(entryIdx, entry); err != nil {
+			return nil, err
+		}
+
+		entryIdx++
+	}
+
+	if err := capDir.SetContents(contents); err != nil {
+		return nil, err
+	}
+
 	if err := capDir.SetParent(d.parentName); err != nil {
 		return nil, err
 	}
 
 	capDir.SetSize(d.size)
-
 	return &capDir, nil
 }
 
@@ -183,8 +215,31 @@ func (d *Directory) readDirectoryAttr(capDir capnp_model.Directory) error {
 		}
 
 		d.children[name] = hash
+		d.order = append(d.order, name)
 	}
 
+	contentList, err := capDir.Contents()
+	if err != nil {
+		return err
+	}
+
+	d.contents = make(map[string]h.Hash)
+	for i := 0; i < contentList.Len(); i++ {
+		entry := contentList.At(i)
+		name, err := entry.Name()
+		if err != nil {
+			return err
+		}
+
+		hash, err := entry.Hash()
+		if err != nil {
+			return err
+		}
+
+		d.contents[name] = hash
+	}
+
+	sort.Strings(d.order)
 	d.nodeType = NodeTypeDirectory
 	return nil
 }
@@ -250,10 +305,10 @@ func (d *Directory) SetParent(lkr Linker, nd Node) error {
 // ////////////// TREE MOVEMENT /////////////////
 
 // VisitChildren will call `fn` for each of it's direct children.
-// Note that the order in which `fn` will be called for each node may
-// be in any random order.
+// The order of visits is lexicographical based on the child name.
 func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
-	for name, hash := range d.children {
+	for _, name := range d.order {
+		hash := d.children[name]
 		child, err := lkr.NodeByHash(hash)
 		if err != nil {
 			return err
@@ -271,13 +326,11 @@ func (d *Directory) VisitChildren(lkr Linker, fn func(nd Node) error) error {
 	return nil
 }
 
-// ChildrenSorted returns a list of children node objects,
-// sorted lexically by their path.
-// Use this whenever you want to have a defined order of nodes,
+// ChildrenSorted returns a list of children node objects, sorted lexically by
+// their path. Use this whenever you want to have a defined order of nodes,
 // but do not really care what order.
 func (d *Directory) ChildrenSorted(lkr Linker) ([]Node, error) {
 	children := []Node{}
-
 	err := d.VisitChildren(lkr, func(nd Node) error {
 		children = append(children, nd)
 		return nil
@@ -286,10 +339,6 @@ func (d *Directory) ChildrenSorted(lkr Linker) ([]Node, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	sort.Slice(children, func(i, j int) bool {
-		return children[i].Path() < children[j].Path()
-	})
 
 	return children, nil
 }
@@ -314,7 +363,7 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 		childHash, ok := curr.children[elem]
 		if !ok {
 			// This usually means that some link is missing.
-			return fmt.Errorf("bug: cannot reach self from root in Up()")
+			return fmt.Errorf("bug: cannot reach self from root in up()")
 		}
 
 		childNode, err := lkr.NodeByHash(childHash)
@@ -324,7 +373,7 @@ func (d *Directory) Up(lkr Linker, visit func(par *Directory) error) error {
 
 		child, ok := childNode.(*Directory)
 		if !ok {
-			return fmt.Errorf("bug: non-directory in Up(): %v", childHash)
+			return fmt.Errorf("bug: non-directory in up(): %v", childHash)
 		}
 
 		dirs = append(dirs, child)
@@ -385,14 +434,15 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 		}
 	}
 
-	for name, link := range d.children {
-		child, err := lkr.NodeByHash(link)
+	for _, name := range d.order {
+		hash := d.children[name]
+		child, err := lkr.NodeByHash(hash)
 		if err != nil {
 			return err
 		}
 
 		if child == nil {
-			return fmt.Errorf("walk: could not resolve %s (%s)", name, link.B58String())
+			return fmt.Errorf("walk: could not resolve %s (%s)", name, hash.B58String())
 		}
 
 		if err := Walk(lkr, child, dfs, visit); err != nil {
@@ -410,20 +460,6 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 		}
 	}
 
-	return nil
-}
-
-func (d *Directory) xorHash(lkr Linker, hash h.Hash) error {
-	oldHash := d.tree.Clone()
-	if err := d.tree.Xor(hash); err != nil {
-		return err
-	}
-
-	if d.IsRoot() {
-		lkr.MemSetRoot(d)
-	}
-
-	lkr.MemIndexSwap(d, oldHash, true)
 	return nil
 }
 
@@ -481,20 +517,51 @@ func (d *Directory) SetModTime(modTime time.Time) {
 // Copy returns a copy of the directory with `inode` changed.
 func (d *Directory) Copy(inode uint64) ModNode {
 	children := make(map[string]h.Hash)
+	contents := make(map[string]h.Hash)
+
 	for name, hash := range d.children {
 		children[name] = hash.Clone()
 	}
+
+	for name, hash := range d.contents {
+		contents[name] = hash.Clone()
+	}
+
+	order := make([]string, len(d.order))
+	copy(order, d.order)
 
 	return &Directory{
 		Base:       d.Base.copyBase(inode),
 		size:       d.size,
 		parentName: d.parentName,
 		children:   children,
+		contents:   contents,
+		order:      order,
 	}
 }
 
-func dirContentHash(content h.Hash, nchildren int) h.Hash {
-	return h.Sum([]byte(fmt.Sprintf("%d:%s", nchildren, content.B58String())))
+func (d *Directory) rehash(lkr Linker, updateContentHash bool) error {
+	newTreeHash := h.EmptyBackendHash.Clone()
+	newContentHash := h.EmptyBackendHash.Clone()
+	for _, name := range d.order {
+		newTreeHash = newTreeHash.Mix(d.children[name])
+
+		if childContent := d.contents[name]; updateContentHash && childContent != nil {
+			// The child content might be nil in case of ghost.
+			// Those should not add to the content calculation.
+			newContentHash = newContentHash.Mix(childContent)
+		}
+	}
+
+	oldHash := d.tree.Clone()
+	d.tree = newTreeHash
+
+	if updateContentHash {
+		d.content = newContentHash
+	}
+
+	lkr.MemIndexSwap(d, oldHash, true)
+	return nil
 }
 
 // Add `nd` to this directory using `lkr`.
@@ -509,20 +576,41 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 
 	nodeSize := nd.Size()
 	nodeHash := nd.TreeHash()
-	nodeContent := dirContentHash(nd.ContentHash(), len(d.children)+1)
+	nodeContent := nd.ContentHash()
 
+	d.children[nd.Name()] = nodeHash
+	if nd.Type() != NodeTypeGhost {
+		d.contents[nd.Name()] = nodeContent
+	}
+
+	nameIdx := sort.SearchStrings(d.order, nd.Name())
+	suffix := append([]string{nd.Name()}, d.order[nameIdx:]...)
+	d.order = append(d.order[:nameIdx], suffix...)
+
+	var lastNd Node
 	err := d.Up(lkr, func(parent *Directory) error {
 		if nd.Type() != NodeTypeGhost {
 			// Only add to the size if it's not a ghost.
 			// They do not really count as size.
 			// Same goes for the node content.
 			parent.size += nodeSize
-			if err := parent.content.Xor(nodeContent); err != nil {
-				return err
+
+		}
+
+		if lastNd != nil {
+			parent.children[lastNd.Name()] = lastNd.TreeHash()
+
+			if nd.Type() != NodeTypeGhost {
+				parent.contents[lastNd.Name()] = lastNd.ContentHash()
 			}
 		}
 
-		return parent.xorHash(lkr, nodeHash)
+		if err := parent.rehash(lkr, true); err != nil {
+			return err
+		}
+
+		lastNd = parent
+		return nil
 	})
 
 	if err != nil {
@@ -534,35 +622,68 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 		return err
 	}
 
-	d.children[nd.Name()] = nodeHash
 	return nil
 }
 
-func (d *Directory) rehash(lkr Linker, oldPath, newPath string) error {
-	if oldPath == newPath {
+// RemoveChild removes the child named `name` from it's children.
+// There is no way to remove the root node.
+func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
+	name := nd.Name()
+	if _, ok := d.children[name]; !ok {
+		return ie.NoSuchFile(name)
+	}
+
+	// Unset parent from child:
+	if err := nd.SetParent(lkr, nil); err != nil {
+		return err
+	}
+
+	// Delete it from orders and children.
+	// This assumes that it definitely was part of orders before.
+	delete(d.children, name)
+	delete(d.contents, name)
+
+	nameIdx := sort.SearchStrings(d.order, name)
+	d.order = append(d.order[:nameIdx], d.order[nameIdx+1:]...)
+
+	var lastNd Node
+	nodeSize := nd.Size()
+	return d.Up(lkr, func(parent *Directory) error {
+		if nd.Type() != NodeTypeGhost {
+			parent.size -= nodeSize
+		}
+
+		if lastNd != nil {
+			parent.children[lastNd.Name()] = lastNd.TreeHash()
+
+			if nd.Type() != NodeTypeGhost {
+				parent.contents[lastNd.Name()] = lastNd.ContentHash()
+			}
+		}
+
+		if err := parent.rehash(lkr, true); err != nil {
+			return err
+		}
+
+		lastNd = parent
 		return nil
+	})
+}
+
+// TODO: Is that really necessary? That's really leaky abstractions
+func (d *Directory) RebuildOrderCache() {
+	d.order = []string{}
+	for name := range d.children {
+		d.order = append(d.order, name)
 	}
-
-	oldHash := d.tree.Clone()
-	if err := d.tree.Xor(h.Sum([]byte(oldPath))); err != nil {
-		return err
-	}
-
-	if err := d.tree.Xor(h.Sum([]byte(newPath))); err != nil {
-		return err
-	}
-
-	lkr.MemIndexSwap(d, oldHash, true)
-
-	// content hash is not affected.
-	return nil
+	sort.Strings(d.order)
 }
 
 // NotifyMove should be called whenever a node is being moved.
 func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 	visited := map[string]Node{}
-
 	oldRootPath := d.Path()
+
 	err := Walk(lkr, d, true, func(child Node) error {
 		oldChildPath := child.Path()
 		newChildPath := path.Join(newPath, oldChildPath[len(oldRootPath):])
@@ -575,7 +696,12 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 				return ie.ErrBadNode
 			}
 
-			if err := childDir.rehash(lkr, oldChildPath, newChildPath); err != nil {
+			for name := range childDir.children {
+				movedChildPath := path.Join(newChildPath, name)
+				childDir.children[name] = visited[movedChildPath].TreeHash()
+			}
+
+			if err := childDir.rehash(lkr, false); err != nil {
 				return err
 			}
 
@@ -600,7 +726,7 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 
 			childGhost.SetGhostPath(newChildPath)
 		default:
-			return fmt.Errorf("Bad node type in NotifyMove(): %d", child.Type())
+			return fmt.Errorf("bad node type in NotifyMove(): %d", child.Type())
 		}
 
 		return nil
@@ -610,48 +736,23 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 		return err
 	}
 
+	// Fixup the links from the parents to the children:
 	for nodePath, node := range visited {
-		// Check if the visited nodes also contain the parent directory
-		// of this node.
 		if parent, ok := visited[path.Dir(nodePath)]; ok {
 			parentDir := parent.(*Directory)
 			baseName := path.Base(nodePath)
 			parentDir.children[baseName] = node.TreeHash()
+
+			parentDir.order = make([]string, 0, len(parentDir.order))
+			for name := range parentDir.children {
+				parentDir.order = append(parentDir.order, name)
+			}
+
+			sort.Strings(parentDir.order)
 		}
 	}
 
 	return nil
-}
-
-// RemoveChild removes the child named `name` from it's children.
-//
-// Note that there is no general Remove() function that works on itself.
-// It is therefore not possible (or a good idea) to remove the root node.
-func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
-	name := nd.Name()
-	if _, ok := d.children[name]; !ok {
-		return ie.NoSuchFile(name)
-	}
-
-	// Unset parent from child:
-	if err := nd.SetParent(lkr, nil); err != nil {
-		return err
-	}
-
-	delete(d.children, name)
-
-	nodeSize := nd.Size()
-	nodeHash := nd.TreeHash()
-	nodeContent := dirContentHash(nd.ContentHash(), len(d.children))
-
-	return d.Up(lkr, func(parent *Directory) error {
-		parent.size -= nodeSize
-		if err := parent.content.Xor(nodeContent); err != nil {
-			return err
-		}
-
-		return parent.xorHash(lkr, nodeHash)
-	})
 }
 
 // SetUser sets the user that last modified the directory.

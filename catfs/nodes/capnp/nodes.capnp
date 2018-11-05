@@ -29,6 +29,7 @@ struct Directory $Go.doc("Directory contains one or more directories or files") 
     size     @0 :UInt64;
     parent   @1 :Text;
     children @2 :List(DirEntry);
+    contents @3 :List(DirEntry);
 }
 
 struct File $Go.doc("A leaf node in the MDAG") {

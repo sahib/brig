@@ -1,8 +1,10 @@
 package vcs
 
 import (
+	"os"
 	"testing"
 
+	log "github.com/Sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/stretchr/testify/require"
 )
@@ -130,6 +132,9 @@ func TestDiffWithSameLinker(t *testing.T) {
 
 		status, err := lkr.Status()
 		require.Nil(t, err)
+
+		log.SetOutput(os.Stderr)
+		log.SetLevel(log.DebugLevel)
 
 		diff, err := MakeDiff(lkr, lkr, head, status, nil)
 		if err != nil {

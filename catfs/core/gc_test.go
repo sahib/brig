@@ -32,7 +32,7 @@ func TestGC(t *testing.T) {
 
 	killExpected[root.TreeHash().B58String()] = true
 
-	sub1, err := n.NewEmptyDirectory(lkr, root, "a", "u", 2)
+	sub1, err := n.NewEmptyDirectory(lkr, root, "a", "u", 3)
 	if err != nil {
 		t.Fatalf("Creating sub2 failed: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestGC(t *testing.T) {
 	killExpected[root.TreeHash().B58String()] = true
 	killExpected[sub1.TreeHash().B58String()] = true
 
-	sub2, err := n.NewEmptyDirectory(lkr, sub1, "b", "u", 3)
+	sub2, err := n.NewEmptyDirectory(lkr, sub1, "b", "u", 4)
 	if err != nil {
 		t.Fatalf("Creating sub2 failed: %v", err)
 	}
@@ -53,12 +53,18 @@ func TestGC(t *testing.T) {
 		t.Fatalf("Staging root failed: %v", err)
 	}
 
+	root, err = lkr.Root()
+
 	if err := gc.Run(true); err != nil {
 		t.Fatalf("gc run failed: %v", err)
 	}
 
 	if len(killExpected) != len(killActual) {
-		t.Fatalf("GC killed %d nodes, but should have killed %d", len(killActual), len(killExpected))
+		t.Fatalf(
+			"GC killed %d nodes, but should have killed %d",
+			len(killActual),
+			len(killExpected),
+		)
 	}
 
 	for killedHash := range killActual {

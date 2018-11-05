@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -580,9 +581,11 @@ func TestCommitByIndex(t *testing.T) {
 
 func TestLookupNodeAt(t *testing.T) {
 	WithDummyLinker(t, func(lkr *Linker) {
+		fmt.Println("start")
 		for idx := byte(0); idx < 10; idx++ {
 			MustTouchAndCommit(t, lkr, "/x", idx)
 		}
+		fmt.Println("done")
 
 		for idx := 0; idx < 10; idx++ {
 			// commit index of 0 is init, so + 1

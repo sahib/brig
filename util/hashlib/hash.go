@@ -126,6 +126,13 @@ func (h Hash) Equal(other Hash) bool {
 	return bytes.Equal(h, other)
 }
 
+func (h Hash) Mix(o Hash) Hash {
+	buf := make([]byte, len(h)+len(o))
+	copy(buf, h)
+	copy(buf[len(h):], o)
+	return Sum(buf)
+}
+
 func (h Hash) Xor(o Hash) error {
 	decH, err := multihash.Decode(h)
 	if err != nil {

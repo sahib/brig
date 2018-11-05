@@ -273,7 +273,7 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 					srcBase += "/"
 				}
 
-				return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
+				return color.CyanString(fmt.Sprintf(" %s → %s", dstPath, srcBase))
 			case diffTypeMerged:
 				dstPath := makePathAbbrev(diffEntry.pair.Src, diffEntry.pair.Dst)
 				srcBase := path.Base(diffEntry.pair.Src.Path)

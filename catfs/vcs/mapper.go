@@ -233,7 +233,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		}
 	}
 
-	log.Debugf("mapping dir %s %s", srcCurr.Path(), dstPath)
+	log.Debugf("mapping dir %s <-> %s", srcCurr.Path(), dstPath)
 
 	ma.setSrcVisited(srcCurr)
 	dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, dstPath)
@@ -245,8 +245,6 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		// We never heard of this directory apparently. Go sync it.
 		return ma.report(srcCurr, nil, false, false, false)
 	}
-
-	log.Debugf("Content: %v %v", srcCurr.ContentHash(), dstCurrNd.ContentHash())
 
 	// Special case: The node might have been moved on dst's side.
 	// We might notice this, if dst type is a ghost.
@@ -288,6 +286,8 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		// Remember that we visited this subtree.
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
+
+		log.Debugf("%s and %s have the same content; skipping", srcCurr.Path(), dstCurr.Path())
 
 		debug("Looks equal", srcCurr.Path(), dstCurr.Path())
 		debug(dstCurr.ChildrenSorted(ma.lkrDst))
@@ -720,9 +720,12 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 // Some examples of the described behaviours can be found in the tests of Mapper.
 func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 	ma.fn = fn
+	log.Debugf("mapping ghosts")
 	if err := ma.handleGhosts(); err != nil {
 		return err
 	}
+
+	log.Debugf("mapping non-ghosts")
 
 	switch ma.srcRoot.Type() {
 	case n.NodeTypeDirectory:
