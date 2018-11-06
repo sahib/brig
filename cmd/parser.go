@@ -154,8 +154,9 @@ func RunCmdline(args []string) int {
 					Name:   "ping",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				}, {
-					Name:    "folders",
+					Name:    "folder",
 					Aliases: []string{"fld", "f"},
+					Action:  withDaemon(handleRemoteFolderListAll, true),
 					Subcommands: []cli.Command{
 						{
 							Name:   "add",

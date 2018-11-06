@@ -573,8 +573,10 @@ Sometimes you only want to share certain things with certain people. You
 probably want to share all your ``/photos`` directory with your significant
 other, but not with your fellow students where you maybe want to share the
 ``/lectures`` folder. In ``brig`` you can define what folder you want to share
-with what remote. If you do not limit this, all folders will be open to
-a remote by default.
+with what remote. If you do not limit this, **all folders will be open to
+a remote by default.**
+
+To add a folder for a specific remote, you can use the ``folders` 
 
 
 .. todo::

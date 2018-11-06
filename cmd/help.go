@@ -165,30 +165,30 @@ EXAMPLES:
 		Description: `Edit the current list using $EDITOR as YAML file.
    It will be updated upon saving`,
 	},
-	"remote.folders": {
-		Usage:       "List the folders of all remotes",
+	"remote.folder": {
+		Usage:       "List the folders of all remotes.",
 		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Description: ``,
 	},
-	"remote.folders.add": {
-		Usage:       "Add a remote folder for a specific remote",
+	"remote.folder.add": {
+		Usage:       "Add a remote folder for a specific remote.",
 		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Description: ``,
 	},
-	"remote.folders.remove": {
-		Usage:       "Remove a certain folder by name for a remote",
+	"remote.folder.remove": {
+		Usage:       "Remove a folder from a specific remote. ",
 		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Description: ``,
 	},
-	"remote.folders.clear": {
-		Usage:       "Clear all folders from a remote",
+	"remote.folder.clear": {
+		Usage:       "Clear all folders from a specific remote.",
 		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Description: ``,
 	},
-	"remote.folders.list": {
-		Usage:       "List all allowed folders for a certain remote",
+	"remote.folder.list": {
+		Usage:       "List all allowed folders for a specific remote.",
 		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Description: ``,
 	},
 	"pin": {
 		Usage:     "Commands to pin a certain file",

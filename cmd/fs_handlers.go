@@ -521,7 +521,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("Path", info.Path)
 	printPair("User", info.User)
 	printPair("Type", nodeType)
-	printPair("Size", fmt.Sprintf("%d bytes", info.Size))
+	printPair("Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.Size), info.Size))
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)

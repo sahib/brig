@@ -343,6 +343,22 @@ func handleRemoteFolderList(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleRemoteFolderListAll(ctx *cli.Context, ctl *client.Client) error {
+	remotes, err := ctl.RemoteLs()
+	if err != nil {
+		return err
+	}
+
+	for _, remote := range remotes {
+		fmt.Println(remote.Name)
+		for _, folder := range remote.Folders {
+			fmt.Printf("  %s\n", folder)
+		}
+	}
+
+	return nil
+}
+
 func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
 	timeoutSec, err := parseDuration(ctx.String("timeout"))
