@@ -81,7 +81,24 @@ func (rl *RemoteList) Export(w io.Writer) error {
 	return nil
 }
 
+func dedupeFolders(folders []Folder) []Folder {
+	seen := make(map[string]bool)
+	newFolders := []Folder{}
+
+	for _, folder := range folders {
+		if _, ok := seen[folder.Folder]; ok {
+			continue
+		}
+
+		seen[folder.Folder] = true
+		newFolders = append(newFolders, folder)
+	}
+
+	return newFolders
+}
+
 func (rl *RemoteList) AddRemote(remote Remote) error {
+	remote.Folders = dedupeFolders(remote.Folders)
 	rl.remotes[remote.Name] = &remote
 	return rl.save()
 }
@@ -102,6 +119,17 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	}
 
 	return *rm, nil
+}
+
+func (rl *RemoteList) UpdateRemote(remote Remote) error {
+	if _, ok := rl.remotes[remote.Name]; !ok {
+		return ErrNoSuchRemote
+	}
+
+	// TODO: This leaves the folders to be change-able... same for Add.
+	remote.Folders = dedupeFolders(remote.Folders)
+	rl.remotes[remote.Name] = &remote
+	return rl.save()
 }
 
 func (rl *RemoteList) SetRemote(name string, newRm Remote) error {

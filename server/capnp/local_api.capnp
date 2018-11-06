@@ -185,15 +185,16 @@ interface Net {
     remoteAdd     @0  (remote :Remote);
     remoteRm      @1  (name :Text);
     remoteLs      @2  () -> (remotes :List(Remote));
-    remoteSave    @3  (remotes :List(Remote));
-    remotePing    @4  (who :Text) -> (roundtrip :Float64);
-    remoteClear   @5  ();
-    netLocate     @6  (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
-    netLocateNext @7  (ticket :UInt64) -> (result :LocateResult);
-    whoami        @8  () -> (whoami :Identity);
-    connect       @9  ();
-    disconnect    @10 ();
-    onlinePeers   @11 () -> (infos :List(PeerStatus));
+    remoteUpdate  @3  (remote :Remote);
+    remoteSave    @4  (remotes :List(Remote));
+    remotePing    @5  (who :Text) -> (roundtrip :Float64);
+    remoteClear   @6  ();
+    netLocate     @7  (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
+    netLocateNext @8  (ticket :UInt64) -> (result :LocateResult);
+    whoami        @9  () -> (whoami :Identity);
+    connect       @10 ();
+    disconnect    @11 ();
+    onlinePeers   @12 () -> (infos :List(PeerStatus));
 }
 
 # Group all interfaces together in one API object,

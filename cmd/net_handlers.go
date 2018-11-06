@@ -263,6 +263,86 @@ func handleRemoteEdit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func findRemoteForName(ctl *client.Client, name string) (*client.Remote, error) {
+	remotes, err := ctl.RemoteLs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, remote := range remotes {
+		if remote.Name == name {
+			return &remote, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No such remote with this name: %s", name)
+}
+
+func handleRemoteFolderAdd(ctx *cli.Context, ctl *client.Client) error {
+	remote, err := findRemoteForName(ctl, ctx.Args().First())
+	if err != nil {
+		return err
+	}
+
+	for _, folder := range ctx.Args().Tail() {
+		if _, err := ctl.Stat(folder); err != nil {
+			fmt.Printf("warning: »%s« has no stat info: %s\n", folder, err)
+		}
+
+		remote.Folders = append(remote.Folders, folder)
+	}
+
+	return ctl.RemoteUpdate(*remote)
+}
+
+func handleRemoteFolderRemove(ctx *cli.Context, ctl *client.Client) error {
+	remote, err := findRemoteForName(ctl, ctx.Args().First())
+	if err != nil {
+		return err
+	}
+
+	folderName := ctx.Args().Get(1)
+	newFolders := []string{}
+	for _, folder := range remote.Folders {
+		if string(folder) == folderName {
+			continue
+		}
+
+		newFolders = append(newFolders, folder)
+	}
+
+	remote.Folders = newFolders
+	return ctl.RemoteUpdate(*remote)
+}
+
+func handleRemoteFolderClear(ctx *cli.Context, ctl *client.Client) error {
+	remote, err := findRemoteForName(ctl, ctx.Args().First())
+	if err != nil {
+		return err
+	}
+
+	remote.Folders = []string{}
+	return ctl.RemoteUpdate(*remote)
+}
+
+func handleRemoteFolderList(ctx *cli.Context, ctl *client.Client) error {
+	remote, err := findRemoteForName(ctl, ctx.Args().First())
+	if err != nil {
+		return err
+	}
+
+	if len(remote.Folders) == 0 {
+		fmt.Println("No folders specified. All folders are accessible.")
+		return nil
+	}
+
+	for _, folder := range remote.Folders {
+		fmt.Println(folder)
+	}
+
+	return nil
+}
+
 func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {
 	who := ctx.Args().First()
 	timeoutSec, err := parseDuration(ctx.String("timeout"))

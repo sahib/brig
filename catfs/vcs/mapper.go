@@ -287,20 +287,18 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 		ma.setSrcHandled(srcCurr)
 		ma.setDstHandled(dstCurr)
 
-		log.Debugf("%s and %s have the same content; skipping", srcCurr.Path(), dstCurr.Path())
-
-		debug("Looks equal", srcCurr.Path(), dstCurr.Path())
-		debug(dstCurr.ChildrenSorted(ma.lkrDst))
+		log.Debugf(
+			"%s and %s have the same content; skipping",
+			srcCurr.Path(),
+			dstCurr.Path(),
+		)
 
 		if srcCurr.Path() != dstCurr.Path() {
 			return ma.report(srcCurr, dstCurr, false, false, true)
 		}
 
-		// TODO: Search for ways to enable this performance optimization again.
-		//       This does not work when directories where moved and there were
-		//       no other modifications (thus "/" has the same content hash)
-		// return nil
-
+		// If they even have the same tree hash, we can be sure that both
+		// use the same path layout even. No work to do in this case.
 		if srcCurr.TreeHash().Equal(dstCurr.TreeHash()) {
 			return nil
 		}

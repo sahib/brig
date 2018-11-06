@@ -142,6 +142,16 @@ EXAMPLES:
 		Complete:    completeArgsUsage,
 		Description: "Clear the complete remote list. Note that you cannot undo this operation.",
 	},
+	"remote.ping": {
+		Usage:    "Ping a remote",
+		Complete: completeArgsUsage,
+		Description: `Ping a remote and check if we can reach them.
+
+   There is a small difference to the »remote list« command. »ping« will only work
+   if both sides authenticated each other and can thus be used as a test for this.
+   Additonally, it shows the roundtrip time, the ping request took to travel.
+`,
+	},
 	"remote.edit": {
 		Usage:    "Edit the current list",
 		Complete: completeArgsUsage,
@@ -155,15 +165,30 @@ EXAMPLES:
 		Description: `Edit the current list using $EDITOR as YAML file.
    It will be updated upon saving`,
 	},
-	"remote.ping": {
-		Usage:    "Ping a remote",
-		Complete: completeArgsUsage,
-		Description: `Ping a remote and check if we can reach them.
-
-   There is a small difference to the »remote list« command. »ping« will only work
-   if both sides authenticated each other and can thus be used as a test for this.
-   Additonally, it shows the roundtrip time, the ping request took to travel.
-`,
+	"remote.folders": {
+		Usage:       "List the folders of all remotes",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
+	},
+	"remote.folders.add": {
+		Usage:       "Add a remote folder for a specific remote",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
+	},
+	"remote.folders.remove": {
+		Usage:       "Remove a certain folder by name for a remote",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
+	},
+	"remote.folders.clear": {
+		Usage:       "Clear all folders from a remote",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
+	},
+	"remote.folders.list": {
+		Usage:       "List all allowed folders for a certain remote",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
 	},
 	"pin": {
 		Usage:     "Commands to pin a certain file",

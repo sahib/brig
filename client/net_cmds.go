@@ -112,6 +112,20 @@ func (cl *Client) RemoteAdd(remote Remote) error {
 	return err
 }
 
+func (cl *Client) RemoteUpdate(remote Remote) error {
+	call := cl.api.RemoteUpdate(cl.ctx, func(p capnp.Net_remoteUpdate_Params) error {
+		capRemote, err := remoteToCapRemote(remote, p.Segment())
+		if err != nil {
+			return err
+		}
+
+		return p.SetRemote(*capRemote)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 func (cl *Client) RemoteRm(name string) error {
 	call := cl.api.RemoteRm(cl.ctx, func(p capnp.Net_remoteRm_Params) error {
 		return p.SetName(name)

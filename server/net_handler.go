@@ -13,6 +13,7 @@ import (
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
 	capnplib "zombiezen.com/go/capnproto2"
+	"zombiezen.com/go/capnproto2/server"
 )
 
 type netHandler struct {
@@ -20,6 +21,8 @@ type netHandler struct {
 }
 
 func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
+	server.Ack(call.Options)
+
 	capId, err := capnp.NewIdentity(call.Results.Segment())
 	if err != nil {
 		return err
@@ -66,6 +69,8 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 }
 
 func (nh *netHandler) Connect(call capnp.Net_connect) error {
+	server.Ack(call.Options)
+
 	psrv, err := nh.base.PeerServer()
 	if err != nil {
 		return err
@@ -76,6 +81,8 @@ func (nh *netHandler) Connect(call capnp.Net_connect) error {
 }
 
 func (nh *netHandler) Disconnect(call capnp.Net_disconnect) error {
+	server.Ack(call.Options)
+
 	psrv, err := nh.base.PeerServer()
 	if err != nil {
 		return err
@@ -86,6 +93,8 @@ func (nh *netHandler) Disconnect(call capnp.Net_disconnect) error {
 }
 
 func (nh *netHandler) OnlinePeers(call capnp.Net_onlinePeers) error {
+	server.Ack(call.Options)
+
 	rp, err := nh.base.Repo()
 	if err != nil {
 		return err
@@ -288,6 +297,8 @@ func (nh *netHandler) syncPingMap() error {
 }
 
 func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
+	server.Ack(call.Options)
+
 	rp, err := nh.base.Repo()
 	if err != nil {
 		return err
@@ -311,6 +322,8 @@ func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
 }
 
 func (nh *netHandler) RemoteClear(call capnp.Net_remoteClear) error {
+	server.Ack(call.Options)
+
 	rp, err := nh.base.Repo()
 	if err != nil {
 		return err
@@ -320,6 +333,8 @@ func (nh *netHandler) RemoteClear(call capnp.Net_remoteClear) error {
 }
 
 func (nh *netHandler) RemoteRm(call capnp.Net_remoteRm) error {
+	server.Ack(call.Options)
+
 	repo, err := nh.base.Repo()
 	if err != nil {
 		return err
@@ -338,6 +353,8 @@ func (nh *netHandler) RemoteRm(call capnp.Net_remoteRm) error {
 }
 
 func (nh *netHandler) RemoteLs(call capnp.Net_remoteLs) error {
+	server.Ack(call.Options)
+
 	repo, err := nh.base.Repo()
 	if err != nil {
 		return err
@@ -368,7 +385,30 @@ func (nh *netHandler) RemoteLs(call capnp.Net_remoteLs) error {
 	return call.Results.SetRemotes(capRemotes)
 }
 
+func (nh *netHandler) RemoteUpdate(call capnp.Net_remoteUpdate) error {
+	server.Ack(call.Options)
+
+	rp, err := nh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	capRemote, err := call.Params.Remote()
+	if err != nil {
+		return err
+	}
+
+	remote, err := capRemoteToRemote(capRemote)
+	if err != nil {
+		return err
+	}
+
+	return rp.Remotes.UpdateRemote(*remote)
+}
+
 func (nh *netHandler) RemoteSave(call capnp.Net_remoteSave) error {
+	server.Ack(call.Options)
+
 	remotes := []repo.Remote{}
 	capRemotes, err := call.Params.Remotes()
 	if err != nil {
