@@ -365,15 +365,15 @@ whoami`` command to ask existential questions:
 When we want to synchronize with another repository, we need to exchange fingerprints.
 There are three typical scenarios here:
 
-- Both repositories are controlled by you. In this case you can simple execute
+1. Both repositories are controlled by you. In this case you can simple execute
   ``brig whoami`` on both repositories.
-- You want to sync with somebody you know well. In this case you should both
-  execute ``brig whoami`` and send it over a trusted sidechannel. Personally,
-  I use a `secure messenger like Signal <https://signal.org>`_, but you can
-  also use any channel you like, including encrypted mail or meeting up with
-  the person in question.
-- You don't know each other. Get to know each other and the proceed like in the
-  second point.
+2. You want to sync with somebody you know well. In this case you should both
+   execute ``brig whoami`` and send it over a trusted side channel. Personally,
+   I use a `secure messenger like Signal <https://signal.org>`_, but you can
+   also use any channel you like, including encrypted mail or meeting up with
+   the person in question.
+3. You don't know each other. Get to know each other and the proceed like in the
+   second point.
 
 .. todo::
 
@@ -413,13 +413,13 @@ The remote list can tell us if a remote is online:
 .. code-block:: bash
 
     $ brig remote list
-    NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
-    bob    QmUDSXt27    0s         ✔ Apr 16 17:31:01
+    NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN
+    bob    QmUDSXt27    0s         ✔      ✔             Apr 16 17:31:01
     $ brig remote ping bob
-    ping to bob: ✔ (0.00250ms)
+    ping to bob: ✔ (0.00250s)
 
-Nice. Now we know that bob is online and also that he authenticated us.
-Otherwise ``brig remote ping bob`` would have failed. (TODO: This needs some cleanup)
+Nice. Now we know that bob is online and also that he authenticated us ().
+Otherwise ``brig remote ping bob`` would have failed.
 
 .. note:: About open ports:
 
@@ -574,15 +574,26 @@ probably want to share all your ``/photos`` directory with your significant
 other, but not with your fellow students where you maybe want to share the
 ``/lectures`` folder. In ``brig`` you can define what folder you want to share
 with what remote. If you do not limit this, **all folders will be open to
-a remote by default.**
+a remote by default.** Also note, that if a remote already got some content
+of a folder you did not want to share, he will still be able to access it.
+If you're unsure, you should better be restrictive than too permissive.
 
-To add a folder for a specific remote, you can use the ``folders` 
+To add a folder for a specific remote, you can use the ``folders`` subcommand
+of ``brig remote``:
 
+.. code-block:: bash
 
-.. todo::
+    # Starting with next sync, bob will only see the /videos folder:
+    $ brig remote folder add bob /videos
+    $ brig remote folder ls bob
+    /videos
 
-    * Write docs for brig remote folders.
-    * Finish brig remote folder handling on the command line.
+If you're tired of typing all of this, be reminded that there are aliases for most
+subcommands:
+
+.. code-block:: bash
+
+    $ brig rmt f a bob /videos
 
 .. _pinning-section:
 
