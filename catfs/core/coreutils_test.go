@@ -325,7 +325,7 @@ var moveAndCopyTestCases = []struct {
 	},
 }
 
-func TestMove(t *testing.T) {
+func TestMoveSingle(t *testing.T) {
 	// Cases to cover for move():
 	// 1.        Dest exists:
 	// 1.1.      Is a directory.

@@ -541,7 +541,7 @@ func (d *Directory) Copy(inode uint64) ModNode {
 }
 
 func (d *Directory) rehash(lkr Linker, updateContentHash bool) error {
-	newTreeHash := h.EmptyBackendHash.Clone()
+	newTreeHash := h.Sum([]byte(path.Join(d.parentName, d.name)))
 	newContentHash := h.EmptyBackendHash.Clone()
 	for _, name := range d.order {
 		newTreeHash = newTreeHash.Mix(d.children[name])
