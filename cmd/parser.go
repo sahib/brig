@@ -134,8 +134,9 @@ func RunCmdline(args []string) int {
 			Category: netwGroup,
 			Subcommands: []cli.Command{
 				{
-					Name:   "add",
-					Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
+					Name:    "add",
+					Aliases: []string{"a"},
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},

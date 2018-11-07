@@ -369,7 +369,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 	}
 
 	pairSection(color.CyanString("Moved:"), "→", diff.Moved)
-	pairSection(color.WhiteString("Resolveable Conflicts:"), "⇄", diff.Merged)
+	pairSection(color.WhiteString("Resolved Conflicts:"), "⇄", diff.Merged)
 	pairSection(color.MagentaString("Conflicts:"), "⚡", diff.Conflict)
 }
 
