@@ -7,7 +7,7 @@ VERSION_IMPORT="github.com/sahib/brig/version"
 VERSION_MAJOR=0
 VERSION_MINOR=1
 VERSION_PATCH=0
-RELEASETYPE=alpha
+RELEASETYPE=
 BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
 GITREV=`git rev-parse HEAD`
 
