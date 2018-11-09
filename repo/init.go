@@ -84,7 +84,7 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 			return err
 		}
 	} else {
-		log.Info("failed to open global registry: %v", err)
+		log.Infof("failed to open global registry: %v", err)
 	}
 
 	// Create a default config, only with the default keys applied:

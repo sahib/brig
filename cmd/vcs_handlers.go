@@ -289,7 +289,7 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 					srcBase += "/"
 				}
 
-				return color.MagentaString(fmt.Sprintf(" %s ⚡ s", dstPath, srcBase))
+				return color.MagentaString(fmt.Sprintf(" %s ⚡%s", dstPath, srcBase))
 			}
 		}
 

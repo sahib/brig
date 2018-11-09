@@ -68,7 +68,7 @@ func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, erro
 
 	info, err := cfs.Stat(opts.Root)
 	if err != nil {
-		return nil, e.Wrapf(err, "failed to lookup root node of mount: %v")
+		return nil, e.Wrapf(err, "failed to lookup root node of mount: %v", mountpoint)
 	}
 
 	if !info.IsDir {

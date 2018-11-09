@@ -215,8 +215,6 @@ func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.Move
 
 		return child, direction, nil
 	}
-
-	return nil, c.MoveDirNone, fmt.Errorf("How did we end up here?")
 }
 
 func getRealType(nd n.Node) n.NodeType {

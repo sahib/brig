@@ -511,7 +511,6 @@ func TestAtomic(t *testing.T) {
 		err = lkr.Atomic(func() (bool, error) {
 			MustTouch(t, lkr, "/z", 1)
 			panic("woah")
-			return false, nil
 		})
 
 		require.NotNil(t, err)

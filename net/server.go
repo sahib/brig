@@ -323,6 +323,7 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 	// here catches errors early.
 	if err := authConn.Trigger(); err != nil {
 		log.Warnf("failed to authenticate connection: %v", err)
+		reqCancel()
 		return
 	}
 

@@ -8,6 +8,10 @@ import (
 )
 
 func TestLog(t *testing.T) {
+	// This test is only for messing with the log output.
+	// It has no real (unit) testing value.
+	// t.SkipNow()
+
 	logrus.SetOutput(os.Stderr)
 
 	// Only log the warning severity or above.
