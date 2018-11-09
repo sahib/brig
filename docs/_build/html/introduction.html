@@ -509,7 +509,7 @@ It is long and hard to remember, which is the reason why <code class="docutils l
 <span class="pre">whoami</span></code> command to ask existential questions:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: The hash will look different for you:</span>
 $ brig whoami
-ali@home.cz/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 </pre></div>
 </div>
 <div class="admonition note">
@@ -521,21 +521,33 @@ will be used to authenticate other peers.</p>
 </div>
 <p>When we want to synchronize with another repository, we need to exchange fingerprints.
 There are three typical scenarios here:</p>
-<ul class="simple">
-<li>Both repositories are controlled by you. In this case you can simple execute
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> on both repositories.</li>
-<li>You want to sync with somebody you know well. In this case you should both
-execute <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> and send it over a trusted sidechannel. Personally,
+<ol class="arabic">
+<li><p class="first">Both repositories are controlled by you. In this case you can simple execute
+<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> on both repositories.</p>
+</li>
+<li><p class="first">You want to sync with somebody you know well. In this case you should both
+execute <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> and send it over a trusted side channel. Personally,
 I use a <a class="reference external" href="https://signal.org">secure messenger like Signal</a>, but you can
 also use any channel you like, including encrypted mail or meeting up with
-the person in question.</li>
-<li>You don’t know each other. Get to know each other and the proceed like in the
-second point.</li>
-</ul>
+the person in question.</p>
+</li>
+<li><p class="first">You don’t know each other. Get to know each other and the proceed like in the
+second point. If you need to get a hint of what users use a certain domain,
+you can use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code> to get a list of those:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This command might take some time to yield results:</span>
+$ brig net locate -m domain woods.org
+NAME           TYPE    FINGERPRINT
+ali@woods.org  domain  QmTTJbk<span class="o">[</span>...<span class="o">]</span>:SEfXUDvKzjRPb4rbbk<span class="o">[</span>...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Please note again: Do not blindly add the fingerprint you see here. Always
+make sure the person you’re syncing with is the one you think they are.</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
-<p class="last">Mention <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code></p>
+<p class="last">This seems currently broken.</p>
 </div>
+</li>
+</ol>
 <p>Once you have exchanged the fingerprints, you add each other as <strong>remotes</strong>.
 Let’s call the other side <em>bob</em>: <a class="footnote-reference" href="#id13" id="id7">[6]</a></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob <span class="se">\</span>
@@ -544,30 +556,26 @@ Let’s call the other side <em>bob</em>: <a class="footnote-reference" href="#i
 </pre></div>
 </div>
 <p><em>Bob</em> has do the same on his side. Otherwise the connection won’t be
-established, because the other side won’t be authenticated. Adding somebody as
-remote is the way to authenticate them.</p>
+established, because the other side won’t be authenticated. By adding somebody
+as remote we <strong>authenticate</strong> them:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add ali <span class="se">\</span>
 QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
 SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 </pre></div>
 </div>
-<p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository over the network.</p>
-<div class="admonition-todo admonition" id="index-1">
-<p class="first admonition-title">Todo</p>
-<p>Rework this whole section:</p>
-<p>TODO: Network intermezzo?</p>
-<p class="last">TODO: Auto accept?</p>
-</div>
+<p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository
+over the network. This is done in the background via <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> and might take
+a few moments until a valid route to the host was found.</p>
 <p>The remote list can tell us if a remote is online:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote list
-NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
-bob    QmUDSXt27    0s         ✔ Apr <span class="m">16</span> <span class="m">17</span>:31:01
+NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN
+bob    QmUDSXt27    0s         ✔      ✔             Apr <span class="m">16</span> <span class="m">17</span>:31:01
 $ brig remote ping bob
-ping to bob: ✔ <span class="o">(</span><span class="m">0</span>.00250ms<span class="o">)</span>
+ping to bob: ✔ <span class="o">(</span><span class="m">0</span>.00250s<span class="o">)</span>
 </pre></div>
 </div>
-<p>Nice. Now we know that bob is online and also that he authenticated us.
-Otherwise <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">ping</span> <span class="pre">bob</span></code> would have failed. (TODO: This needs some cleanup)</p>
+<p>Nice. Now we know that bob is online and also that he authenticated us ().
+Otherwise <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">ping</span> <span class="pre">bob</span></code> would have failed.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>About open ports:</p>
@@ -610,10 +618,6 @@ to the persons they claim to be. This due to the distributed nature of
 <code class="docutils literal notranslate"><span class="pre">brig</span></code> where there is no central or federated authority that coordinate
 user name registrations. So it is perfectly possible that one name can be
 taken by several repositories - only the fingerprint is unique.</p>
-<div class="admonition-todo admonition" id="index-2">
-<p class="first admonition-title">Todo</p>
-<p class="last">Provide output of the locate command and verify this scenario works fine.</p>
-</div>
 </li>
 <li><p class="first">Later development of <code class="docutils literal notranslate"><span class="pre">brig</span></code> might interpret the user name and domain as
 email and might use your email account for verification purposes.</p>
@@ -731,14 +735,22 @@ network it is in.</p>
 probably want to share all your <code class="docutils literal notranslate"><span class="pre">/photos</span></code> directory with your significant
 other, but not with your fellow students where you maybe want to share the
 <code class="docutils literal notranslate"><span class="pre">/lectures</span></code> folder. In <code class="docutils literal notranslate"><span class="pre">brig</span></code> you can define what folder you want to share
-with what remote. If you do not limit this, all folders will be open to
-a remote by default.</p>
-<div class="admonition-todo admonition" id="index-3">
-<p class="first admonition-title">Todo</p>
-<ul class="last simple">
-<li>Write docs for brig remote folders.</li>
-<li>Finish brig remote folder handling on the command line.</li>
-</ul>
+with what remote. If you do not limit this, <strong>all folders will be open to
+a remote by default.</strong> Also note, that if a remote already got some content
+of a folder you did not want to share, he will still be able to access it.
+If you’re unsure, you should better be restrictive than too permissive.</p>
+<p>To add a folder for a specific remote, you can use the <code class="docutils literal notranslate"><span class="pre">folders</span></code> subcommand
+of <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Starting with next sync, bob will only see the /videos folder:</span>
+$ brig remote folder add bob /videos
+$ brig remote folder ls bob
+/videos
+</pre></div>
+</div>
+<p>If you’re tired of typing all of this, be reminded that there are aliases for most
+subcommands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig rmt f a bob /videos
+</pre></div>
 </div>
 </div>
 </div>
@@ -770,13 +782,9 @@ these!«.</li>
 It’s still not clear what the best way is to modify/view the pin state
 of older versions. Time and user experience will tell.</p>
 </div>
-<div class="admonition-todo admonition" id="index-4">
-<p class="first admonition-title">Todo</p>
-<ul class="last simple">
-<li>Explain the implications of pinning when syncing files and other operations like reset.</li>
-<li>Add a command example and an example that shows what “brig gc” does.</li>
-</ul>
-</div>
+<p>When syncing with somebody, all files retrieved by them are by default <strong>not
+pinned</strong>. If you want to keep them for longer, make sure to pin them
+explicitly.</p>
 <p>If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin
 them explictly, so brig cannot unpin them implicitly. For this you should also

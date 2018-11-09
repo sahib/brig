@@ -103,8 +103,8 @@ But enough of the grey theory, let's get started:
 .. code-block:: bash
 
     # Create a place where we store our metadata.
-    $ mkdir ~/metadata && cd ~/metadata
-    $ brig init --repo . alice@wonderland.lit/rabbithole
+    $ mkdir ~/sync
+    $ brig --repo ~/sync init alice@wonderland.lit/rabbithole
     27.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
     ⚠  39 New passphrase:
 
@@ -353,7 +353,7 @@ whoami`` command to ask existential questions:
 
     # NOTE: The hash will look different for you:
     $ brig whoami
-    ali@home.cz/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+    ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
 .. note::
 
@@ -366,18 +366,30 @@ When we want to synchronize with another repository, we need to exchange fingerp
 There are three typical scenarios here:
 
 1. Both repositories are controlled by you. In this case you can simple execute
-  ``brig whoami`` on both repositories.
+   ``brig whoami`` on both repositories.
 2. You want to sync with somebody you know well. In this case you should both
    execute ``brig whoami`` and send it over a trusted side channel. Personally,
    I use a `secure messenger like Signal <https://signal.org>`_, but you can
    also use any channel you like, including encrypted mail or meeting up with
    the person in question.
 3. You don't know each other. Get to know each other and the proceed like in the
-   second point.
+   second point. If you need to get a hint of what users use a certain domain,
+   you can use ``brig net locate`` to get a list of those:
 
-.. todo::
+   .. code-block:: bash
 
-    Mention ``brig net locate``
+     # This command might take some time to yield results:
+     $ brig net locate -m domain woods.org
+     NAME           TYPE    FINGERPRINT
+     ali@woods.org  domain  QmTTJbk[...]:SEfXUDvKzjRPb4rbbk[...]
+
+
+   Please note again: Do not blindly add the fingerprint you see here. Always
+   make sure the person you're syncing with is the one you think they are.
+
+   .. todo::
+
+      This seems currently broken.
 
 Once you have exchanged the fingerprints, you add each other as **remotes**.
 Let's call the other side *bob*: [#]_
@@ -389,8 +401,8 @@ Let's call the other side *bob*: [#]_
 		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 
 *Bob* has do the same on his side. Otherwise the connection won't be
-established, because the other side won't be authenticated. Adding somebody as
-remote is the way to authenticate them.
+established, because the other side won't be authenticated. By adding somebody
+as remote we **authenticate** them:
 
 .. code-block:: bash
 
@@ -398,15 +410,9 @@ remote is the way to authenticate them.
         QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
         SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
-Thanks to the fingerprint, ``brig`` now knows how to reach the other repository over the network.
-
-.. todo::
-
-    Rework this whole section:
-
-    TODO: Network intermezzo?
-
-    TODO: Auto accept?
+Thanks to the fingerprint, ``brig`` now knows how to reach the other repository
+over the network. This is done in the background via ``ipfs`` and might take
+a few moments until a valid route to the host was found.
 
 The remote list can tell us if a remote is online:
 
@@ -465,10 +471,6 @@ such a name has two advantages:
   ``brig`` where there is no central or federated authority that coordinate
   user name registrations. So it is perfectly possible that one name can be
   taken by several repositories - only the fingerprint is unique.
-
-  .. todo::
-
-    Provide output of the locate command and verify this scenario works fine.
 
 - Later development of ``brig`` might interpret the user name and domain as
   email and might use your email account for verification purposes.
@@ -627,10 +629,9 @@ lag. When you pin a file, it will not be garbage collected.
     It's still not clear what the best way is to modify/view the pin state
     of older versions. Time and user experience will tell.
 
-.. todo::
-
-    * Explain the implications of pinning when syncing files and other operations like reset.
-    * Add a command example and an example that shows what "brig gc" does.
+When syncing with somebody, all files retrieved by them are by default **not
+pinned**. If you want to keep them for longer, make sure to pin them
+explicitly.
 
 If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin

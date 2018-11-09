@@ -353,7 +353,7 @@ whoami`` command to ask existential questions:
 
     # NOTE: The hash will look different for you:
     $ brig whoami
-    ali@home.cz/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+    ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
 .. note::
 
@@ -365,19 +365,31 @@ whoami`` command to ask existential questions:
 When we want to synchronize with another repository, we need to exchange fingerprints.
 There are three typical scenarios here:
 
-- Both repositories are controlled by you. In this case you can simple execute
-  ``brig whoami`` on both repositories.
-- You want to sync with somebody you know well. In this case you should both
-  execute ``brig whoami`` and send it over a trusted sidechannel. Personally,
-  I use a `secure messenger like Signal <https://signal.org>`_, but you can
-  also use any channel you like, including encrypted mail or meeting up with
-  the person in question.
-- You don't know each other. Get to know each other and the proceed like in the
-  second point.
+1. Both repositories are controlled by you. In this case you can simple execute
+   ``brig whoami`` on both repositories.
+2. You want to sync with somebody you know well. In this case you should both
+   execute ``brig whoami`` and send it over a trusted side channel. Personally,
+   I use a `secure messenger like Signal <https://signal.org>`_, but you can
+   also use any channel you like, including encrypted mail or meeting up with
+   the person in question.
+3. You don't know each other. Get to know each other and the proceed like in the
+   second point. If you need to get a hint of what users use a certain domain,
+   you can use ``brig net locate`` to get a list of those:
 
-.. todo::
+   .. code-block:: bash
 
-    Mention ``brig net locate``
+     # This command might take some time to yield results:
+     $ brig net locate -m domain woods.org
+     NAME           TYPE    FINGERPRINT
+     ali@woods.org  domain  QmTTJbk[...]:SEfXUDvKzjRPb4rbbk[...]
+
+
+   Please note again: Do not blindly add the fingerprint you see here. Always
+   make sure the person you're syncing with is the one you think they are.
+
+   .. todo::
+
+      This seems currently broken.
 
 Once you have exchanged the fingerprints, you add each other as **remotes**.
 Let's call the other side *bob*: [#]_
@@ -389,8 +401,8 @@ Let's call the other side *bob*: [#]_
 		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
 
 *Bob* has do the same on his side. Otherwise the connection won't be
-established, because the other side won't be authenticated. Adding somebody as
-remote is the way to authenticate them.
+established, because the other side won't be authenticated. By adding somebody
+as remote we **authenticate** them:
 
 .. code-block:: bash
 
@@ -398,28 +410,22 @@ remote is the way to authenticate them.
         QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
         SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
 
-Thanks to the fingerprint, ``brig`` now knows how to reach the other repository over the network.
-
-.. todo::
-
-    Rework this whole section:
-
-    TODO: Network intermezzo?
-
-    TODO: Auto accept?
+Thanks to the fingerprint, ``brig`` now knows how to reach the other repository
+over the network. This is done in the background via ``ipfs`` and might take
+a few moments until a valid route to the host was found.
 
 The remote list can tell us if a remote is online:
 
 .. code-block:: bash
 
     $ brig remote list
-    NAME   FINGERPRINT  ROUNDTRIP  LASTSEEN
-    bob    QmUDSXt27    0s         ✔ Apr 16 17:31:01
+    NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN
+    bob    QmUDSXt27    0s         ✔      ✔             Apr 16 17:31:01
     $ brig remote ping bob
-    ping to bob: ✔ (0.00250ms)
+    ping to bob: ✔ (0.00250s)
 
-Nice. Now we know that bob is online and also that he authenticated us.
-Otherwise ``brig remote ping bob`` would have failed. (TODO: This needs some cleanup)
+Nice. Now we know that bob is online and also that he authenticated us ().
+Otherwise ``brig remote ping bob`` would have failed.
 
 .. note:: About open ports:
 
@@ -465,10 +471,6 @@ such a name has two advantages:
   ``brig`` where there is no central or federated authority that coordinate
   user name registrations. So it is perfectly possible that one name can be
   taken by several repositories - only the fingerprint is unique.
-
-  .. todo::
-
-    Provide output of the locate command and verify this scenario works fine.
 
 - Later development of ``brig`` might interpret the user name and domain as
   email and might use your email account for verification purposes.
@@ -573,14 +575,27 @@ Sometimes you only want to share certain things with certain people. You
 probably want to share all your ``/photos`` directory with your significant
 other, but not with your fellow students where you maybe want to share the
 ``/lectures`` folder. In ``brig`` you can define what folder you want to share
-with what remote. If you do not limit this, all folders will be open to
-a remote by default.
+with what remote. If you do not limit this, **all folders will be open to
+a remote by default.** Also note, that if a remote already got some content
+of a folder you did not want to share, he will still be able to access it.
+If you're unsure, you should better be restrictive than too permissive.
 
+To add a folder for a specific remote, you can use the ``folders`` subcommand
+of ``brig remote``:
 
-.. todo::
+.. code-block:: bash
 
-    * Write docs for brig remote folders.
-    * Finish brig remote folder handling on the command line.
+    # Starting with next sync, bob will only see the /videos folder:
+    $ brig remote folder add bob /videos
+    $ brig remote folder ls bob
+    /videos
+
+If you're tired of typing all of this, be reminded that there are aliases for most
+subcommands:
+
+.. code-block:: bash
+
+    $ brig rmt f a bob /videos
 
 .. _pinning-section:
 
@@ -614,10 +629,9 @@ lag. When you pin a file, it will not be garbage collected.
     It's still not clear what the best way is to modify/view the pin state
     of older versions. Time and user experience will tell.
 
-.. todo::
-
-    * Explain the implications of pinning when syncing files and other operations like reset.
-    * Add a command example and an example that shows what "brig gc" does.
+When syncing with somebody, all files retrieved by them are by default **not
+pinned**. If you want to keep them for longer, make sure to pin them
+explicitly.
 
 If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin

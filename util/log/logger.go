@@ -13,6 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
+	ownStrings "github.com/sahib/brig/util/log/strings"
 )
 
 var showPid = false
@@ -65,7 +66,7 @@ func formatColored(useColors bool, buffer *bytes.Buffer, msg string, level logru
 	}
 }
 
-func formatTimestamp(builder *strings.Builder, t time.Time) {
+func formatTimestamp(builder *ownStrings.Builder, t time.Time) {
 	fmt.Fprintf(builder, "%02d.%02d.%04d", t.Day(), t.Month(), t.Year())
 	builder.WriteByte('/')
 	fmt.Fprintf(builder, "%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
@@ -158,7 +159,7 @@ func findCallers() (string, int, bool) {
 
 // Format logs a single entry according to our formatting ideas.
 func (flf *FancyLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	prefixBuilder := strings.Builder{}
+	prefixBuilder := ownStrings.Builder{}
 	formatTimestamp(&prefixBuilder, entry.Time)
 	prefixBuilder.WriteByte(' ')
 
