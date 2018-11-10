@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/peer"
@@ -139,5 +140,7 @@ func (nb *NetBackend) Ping(addr string) (backend.Pinger, error) {
 }
 
 func (nb *NetBackend) Listen(protocol string) (net.Listener, error) {
-	return net.Listen("tcp", fmt.Sprintf("localhost:%d", nb.port))
+	addr := fmt.Sprintf("localhost:%d", nb.port)
+	log.Debugf("Mock listening on %s", addr)
+	return net.Listen("tcp", addr)
 }

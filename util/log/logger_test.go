@@ -10,7 +10,7 @@ import (
 func TestLog(t *testing.T) {
 	// This test is only for messing with the log output.
 	// It has no real (unit) testing value.
-	// t.SkipNow()
+	t.Skip("This test is only to debug log formatting")
 
 	logrus.SetOutput(os.Stderr)
 

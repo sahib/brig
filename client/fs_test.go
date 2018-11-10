@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var CurrBackendPort = 10000
+
 func init() {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&colorlog.FancyLogFormatter{
@@ -211,11 +213,12 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 	require.Nil(t, err, stringify(err))
 
 	defer func() {
+		CurrBackendPort += 2
 		os.RemoveAll(basePath)
 	}()
 
-	withDaemon(t, "ali", 6668, 9998, func(aliCtl *Client) {
-		withDaemon(t, "bob", 6669, 9999, func(bobCtl *Client) {
+	withDaemon(t, "ali", 6668, CurrBackendPort, func(aliCtl *Client) {
+		withDaemon(t, "bob", 6669, CurrBackendPort+1, func(bobCtl *Client) {
 			aliWhoami, err := aliCtl.Whoami()
 			require.Nil(t, err, stringify(err))
 

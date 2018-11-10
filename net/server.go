@@ -10,6 +10,7 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 
 	log "github.com/Sirupsen/logrus"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/net/peer"
@@ -25,7 +26,7 @@ type Server struct {
 }
 
 func (sv *Server) Serve() error {
-	return sv.baseServer.Serve()
+	return e.Wrapf(sv.baseServer.Serve(), "serve")
 }
 
 func (sv *Server) Close() error {
@@ -77,13 +78,13 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 
 	lst, err := bk.Listen("brig/caprpc")
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "listen")
 	}
 
 	ctx := context.Background()
 	baseServer, err := server.NewServer(lst, hdl, ctx)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "new-server")
 	}
 
 	log.Debugf("Publish own identity to network: %s", rp.Owner)
