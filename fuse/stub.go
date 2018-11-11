@@ -5,9 +5,10 @@
 package fuse
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/config"
 )
 
 var ErrCompiledWithoutFuse = errors.New("brig was compiled without fuse support")
@@ -22,7 +23,7 @@ type Mount struct {
 }
 
 func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, error) {
-	retur nil, ErrCompiledWithoutFuse
+	return nil, ErrCompiledWithoutFuse
 }
 
 func (m *Mount) EqualOptions(opts MountOptions) bool {
