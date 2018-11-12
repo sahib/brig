@@ -178,46 +178,32 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 }
 
 func handleCat(ctx *cli.Context, ctl *client.Client) error {
-	stream, err := ctl.Cat(ctx.Args().First())
-	if err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("cat: %v", err),
-		}
-	}
-
-	defer util.Closer(stream)
-
-	if _, err := io.Copy(os.Stdout, stream); err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("cat: %v", err),
-		}
-	}
-
-	return nil
-}
-
-func handleTar(ctx *cli.Context, ctl *client.Client) error {
-	root := "/"
+	path := "/"
 	if len(ctx.Args()) >= 1 {
-		root = ctx.Args().First()
+		path = ctx.Args().First()
 	}
 
-	stream, err := ctl.Tar(root)
+	info, err := ctl.Stat(path)
 	if err != nil {
-		return ExitCode{
-			UnknownError,
-			fmt.Sprintf("cat: %v", err),
-		}
+		return err
 	}
 
+	var stream io.ReadCloser
+	if info.IsDir {
+		stream, err = ctl.Tar(path)
+	} else {
+		stream, err = ctl.Cat(path)
+	}
+
+	if err != nil {
+		return err
+	}
 	defer util.Closer(stream)
 
 	if _, err := io.Copy(os.Stdout, stream); err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("tar: %v", err),
+			fmt.Sprintf("cat: %v", err),
 		}
 	}
 

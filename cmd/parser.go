@@ -280,11 +280,7 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "cat",
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleCat, true)),
-		}, {
-			Name:     "tar",
-			Category: wdirGroup,
-			Action:   withDaemon(handleTar, true),
+			Action:   withDaemon(handleCat, true),
 		}, {
 			Name:     "show",
 			Aliases:  []string{"s"},

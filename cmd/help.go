@@ -605,30 +605,26 @@ EXAMPLES:
    the current timestamp (like the original touch(1) does).
 `,
 	},
-	"tar": {
-		Usage:     "Output a file or directory as tar archive stream",
-		ArgsUsage: "<path>",
+	"cat": {
+		Usage:     "Output the content of a file to standard output",
+		ArgsUsage: "[<path>]",
 		Complete:  completeBrigPath(true, false),
-		Description: `Create a .tar archive from a directory.
+		Description: `Decrypt and decompress the stream from ipfs and write it to standard output.
 
-This can be used to save a whole directory to disk with less overhead than doing it individually.
+When specifying a directory instead of a file, the directory content will be
+output as tar archive. This is useful when saving a whole directory tree to
+disk (see also EXAMPLES).
+
+When no path is specified, »/« is assumed and all contents are outputted as tar.
 
 EXAMPLES:
 
+   # Output a single file:
+   $ brig cat photo.png
    # Create a tar from root and unpack it to the current directory.
    $ brig tar | tar xfv -
    # Create .tar.gz out of of the /photos directory.
    $ brig tar photos | gzip -f > photos.tar.gz
-`,
-	},
-	"cat": {
-		Usage:     "Output the content of a file to standard output",
-		ArgsUsage: "<path>",
-		Complete:  completeBrigPath(true, false),
-		Description: `Decrypt and decompress the stream from ipfs and write it to standard output.
-
-Outputting a directory is currently not allowed (but might be in the future by
-outputting a .tar archive of the directory contents).
 `,
 	},
 	"show": {
