@@ -142,7 +142,7 @@ type ModNode interface {
 	// NotifyMove tells the node that it was moved.
 	// It should be called whenever the path of the node changed.
 	// (i.e. not only the name, but parts of the parent path)
-	NotifyMove(lkr Linker, newPath string) error
+	NotifyMove(lkr Linker, parent *Directory, newPath string) error
 
 	// Copy creates a copy of this node with the inode `inode`.
 	Copy(inode uint64) ModNode

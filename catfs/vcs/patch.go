@@ -292,7 +292,6 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	// to have it in the right order already.
 	sort.Sort(patch)
 
-	// TODO: remove eventually.
 	for _, ch := range patch.Changes {
 		log.Debugf("  change: %s", ch)
 	}

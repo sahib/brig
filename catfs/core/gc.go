@@ -99,17 +99,18 @@ func (gc *GarbageCollector) sweep(key []string) (int, error) {
 					return err
 				}
 
-				// TODO: Apparently node can be nil sometimes.
-				if node != nil {
-					// Allow the gc caller to check if he really
-					// wants to delete this node.
-					if gc.notifier != nil && !gc.notifier(node) {
-						return nil
-					}
-
-					// Actually get rid of the node:
-					gc.lkr.MemIndexPurge(node)
+				if node == nil {
+					return nil
 				}
+
+				// Allow the gc caller to check if he really
+				// wants to delete this node.
+				if gc.notifier != nil && !gc.notifier(node) {
+					return nil
+				}
+
+				// Actually get rid of the node:
+				gc.lkr.MemIndexPurge(node)
 
 				batch.Erase(key...)
 				removed++

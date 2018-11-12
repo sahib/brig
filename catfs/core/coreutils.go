@@ -281,12 +281,7 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 		newNode = nd.Copy(lkr.NextInode())
 		newNode.SetName(path.Base(dstPath))
 		newNode.SetParent(lkr, parentDir)
-		newNode.NotifyMove(lkr, newNode.Path())
-
-		if err := parentDir.Add(lkr, newNode); err != nil {
-			return true, e.Wrapf(err, "parent add")
-		}
-
+		newNode.NotifyMove(lkr, parentDir, newNode.Path())
 		return false, lkr.StageNode(newNode)
 	})
 
@@ -330,16 +325,9 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 
 		// The node needs to be told that it's path changed,
 		// since it might need to change it's hash value now.
-		if err := nd.NotifyMove(lkr, dstPath); err != nil {
+		if err := nd.NotifyMove(lkr, parentDir, dstPath); err != nil {
 			return true, e.Wrapf(err, "notify move")
 		}
-
-		// And add it to the right destination dir:
-		if err := parentDir.Add(lkr, nd); err != nil {
-			return true, e.Wrapf(err, "parent add")
-		}
-
-		parentDir.RebuildOrderCache()
 
 		err = n.Walk(lkr, nd, true, func(child n.Node) error {
 			return e.Wrapf(lkr.StageNode(child), "stage node")

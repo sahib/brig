@@ -141,11 +141,7 @@ func ResetNode(lkr *c.Linker, cmt *n.Commit, currPath string) (n.Node, error) {
 			// we need to modify its path.
 			oldModNode.SetName(path.Base(currPath))
 			oldModNode.SetParent(lkr, par)
-			oldModNode.NotifyMove(lkr, oldModNode.Path())
-
-			if err := par.Add(lkr, oldNode); err != nil {
-				return true, err
-			}
+			oldModNode.NotifyMove(lkr, par, oldModNode.Path())
 
 			if err := lkr.StageNode(oldNode); err != nil {
 				return true, err

@@ -145,8 +145,6 @@ func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
 	}
 
 	log.Debugf("adding move mapping: %s %s", oldPath, newPath)
-	// TODO: Why is the parameter order screwed up here?
-	// TODO: Add test of replayAddMoveMapping behaviour.
 	return lkr.AddMoveMapping(oldNd.Inode(), newNd.Inode())
 }
 
@@ -209,7 +207,6 @@ func (ch *Change) Replay(lkr *c.Linker) error {
 				}
 			}
 
-			// TODO: clean up and make sure to add move mapping.
 			if ch.Curr.Type() != n.NodeTypeGhost {
 				if _, err := lkr.LookupModNode(ch.Curr.Path()); ie.IsNoSuchFileError(err) {
 					if err := replayAdd(lkr, ch.Curr); err != nil {

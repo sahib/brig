@@ -175,11 +175,20 @@ func (f *File) rehash(lkr Linker, newPath string) {
 }
 
 // NotifyMove should be called when the node moved parents.
-func (f *File) NotifyMove(lkr Linker, newPath string) error {
+func (f *File) NotifyMove(lkr Linker, newParent *Directory, newPath string) error {
 	dirname, basename := path.Split(newPath)
 	f.SetName(basename)
 	f.parent = dirname
 	f.rehash(lkr, newPath)
+
+	if newParent != nil {
+		if err := newParent.Add(lkr, f); err != nil {
+			return err
+		}
+
+		newParent.rebuildOrderCache()
+	}
+
 	return nil
 }
 

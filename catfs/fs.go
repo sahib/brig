@@ -1635,9 +1635,9 @@ func (fs *FS) ApplyPatch(data []byte) error {
 		return err
 	}
 
-	cmtMsg := fmt.Sprintf("apply patch") // TODO: Better message.
+	cmtMsg := fmt.Sprintf("apply patch with %d changes", len(patch.Changes))
 	if err := fs.lkr.MakeCommit(owner, cmtMsg); err != nil {
-		// An empty patch is perfectly valid:
+		// An empty patch is perfectly valid (though unusual):
 		if err == ie.ErrNoChange {
 			return nil
 		}

@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: write more tests for the handle interface.
-
 func TestOpenRead(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
 		rawData := []byte{1, 2, 3}
@@ -111,7 +109,7 @@ func TestOpenOpAfterClose(t *testing.T) {
 	})
 }
 
-// TODO: More tests. This is still very buggy.
+// TODO: More tests. This still feels buggy.
 //       Cases needed for:
 //       - 0, SEEK_END
 //       - 9, SEEK_SET

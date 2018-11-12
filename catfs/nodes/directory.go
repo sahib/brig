@@ -670,8 +670,7 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 	})
 }
 
-// TODO: Is that really necessary? That's really leaky abstractions
-func (d *Directory) RebuildOrderCache() {
+func (d *Directory) rebuildOrderCache() {
 	d.order = []string{}
 	for name := range d.children {
 		d.order = append(d.order, name)
@@ -680,7 +679,7 @@ func (d *Directory) RebuildOrderCache() {
 }
 
 // NotifyMove should be called whenever a node is being moved.
-func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
+func (d *Directory) NotifyMove(lkr Linker, newParent *Directory, newPath string) error {
 	visited := map[string]Node{}
 	oldRootPath := d.Path()
 
@@ -715,7 +714,7 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 				return ie.ErrBadNode
 			}
 
-			if err := childFile.NotifyMove(lkr, newChildPath); err != nil {
+			if err := childFile.NotifyMove(lkr, nil, newChildPath); err != nil {
 				return err
 			}
 		case NodeTypeGhost:
@@ -740,18 +739,16 @@ func (d *Directory) NotifyMove(lkr Linker, newPath string) error {
 	for nodePath, node := range visited {
 		if parent, ok := visited[path.Dir(nodePath)]; ok {
 			parentDir := parent.(*Directory)
-			baseName := path.Base(nodePath)
-			parentDir.children[baseName] = node.TreeHash()
-
-			parentDir.order = make([]string, 0, len(parentDir.order))
-			for name := range parentDir.children {
-				parentDir.order = append(parentDir.order, name)
-			}
-
-			sort.Strings(parentDir.order)
+			parentDir.children[path.Base(nodePath)] = node.TreeHash()
+			parentDir.rebuildOrderCache()
 		}
 	}
 
+	if err := newParent.Add(lkr, d); err != nil {
+		return err
+	}
+
+	newParent.rebuildOrderCache()
 	return nil
 }
 
