@@ -99,7 +99,10 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#adding-viewing-files">Adding &amp; Viewing files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#coreutils">Coreutils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mounting-repositories">Mounting repositories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mounting-repositories">Mounting repositories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#making-mounts-permanent">Making mounts permanent</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#remotes">Remotes</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#choosing-and-finding-names">Choosing and finding names</a></li>
 </ul>
@@ -211,7 +214,7 @@ no other user interface.</p>
 <div class="section" id="precursor-the-help-system">
 <h2>Precursor: The help system<a class="headerlink" href="#precursor-the-help-system" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">brig</span></code> has some built-in helpers to serve as support for your memory. Before
-you dive into the actual commands, you should take a look at them.</p>
+you dive into the actual commands, you should learn how to get help.</p>
 <div class="section" id="built-in-documentation">
 <h3>Built-in documentation<a class="headerlink" href="#built-in-documentation" title="Permalink to this headline">¶</a></h3>
 <p>Every command offers detailed built-in help, which you can view using the
@@ -278,14 +281,15 @@ out some questions in the report and include anything you think is relevant.</p>
 <p>Let’s get started with the actual working commands.</p>
 <p>You need a central place where <code class="docutils literal notranslate"><span class="pre">brig</span></code> stores files you give it. This place is
 called a »repository« or short »repo«. Think of it as a database where all
-files and some metadata about them is <strong>copied</strong> to. It is important to keep in mind
-that <code class="docutils literal notranslate"><span class="pre">brig</span></code> <strong>copies</strong> the file and does not do anything with the original file.</p>
+files (and some metadata about them) is <strong>copied</strong> to. It is important to keep
+in mind that <code class="docutils literal notranslate"><span class="pre">brig</span></code> <strong>copies</strong> the file and does not do anything destructive
+to the original file.</p>
 <p>By creating a new repository you also generate your identity, under which your
 buddies can later <strong>find</strong> and <strong>authenticate</strong> you.</p>
-<p>But enough of the grey theory, let’s get started:</p>
+<p>But enough of the mere theory, let’s get started:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a place where we store our metadata.</span>
-$ mkdir ~/metadata <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/metadata
-$ brig init --repo . alice@wonderland.lit/rabbithole
+$ mkdir ~/sync
+$ brig --repo ~/sync init alice@wonderland.lit/rabbithole
 <span class="m">27</span>.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
 ⚠  <span class="m">39</span> New passphrase:
 
@@ -368,10 +372,10 @@ SIZE   MODTIME          PATH          PIN
 </pre></div>
 </div>
 <p>This adds the content of <code class="docutils literal notranslate"><span class="pre">/tmp/hello.world</span></code> to a new file in <code class="docutils literal notranslate"><span class="pre">brig</span></code> called
-<code class="docutils literal notranslate"><span class="pre">/hello.world</span></code>. The name was automatically chosen from looking at the
-basename. All files in <code class="docutils literal notranslate"><span class="pre">brig</span></code> have their own name, possibly differing from
-the content of the file they originally came from. Of course, you can also add
-whole directories.</p>
+<code class="docutils literal notranslate"><span class="pre">/hello.world</span></code>. The name was automatically chosen from looking at the base
+name of the added file. All files in <code class="docutils literal notranslate"><span class="pre">brig</span></code> have their own name, possibly
+differing from the content of the file they originally came from. Of course,
+you can also add whole directories.</p>
 <p>If you want to use a different name, you can simply pass the new name as second
 argument to <code class="docutils literal notranslate"><span class="pre">stage</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig stage /tmp/hello.world /hallo.welt
@@ -380,11 +384,22 @@ argument to <code class="docutils literal notranslate"><span class="pre">stage</
 <p>You also previously saw <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code> which can be used to get the content of
 a file again. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">ls</span></code> in contrast shows you a list of currently existing
 files, including their size, last modification time, path and pin state <a class="footnote-reference" href="#id9" id="id3">[2]</a>.</p>
+<p>One useful feature of <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code> is that you can output directories as well.
+When specifying a directory as path, a <code class="docutils literal notranslate"><span class="pre">.tar</span></code> archive is being outputted.
+You can use that easily to store whole directories on your disk or archive
+in order to send it to some client for example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a tar from root and unpack it to the current directory.</span>
+$ brig tar <span class="p">|</span> tar xfv -
+<span class="c1"># Create .tar.gz out of of the /photos directory.</span>
+$ brig tar photos <span class="p">|</span> gzip -f &gt; photos.tar.gz
+</pre></div>
+</div>
 </div>
 <div class="section" id="coreutils">
 <h2>Coreutils<a class="headerlink" href="#coreutils" title="Permalink to this headline">¶</a></h2>
-<p>You probably already noticed that a lot of commands you’d type in a terminal have
-a sibling as <code class="docutils literal notranslate"><span class="pre">brig</span></code> command. Here is a short overview of the available commands:</p>
+<p>You probably already noticed that a lot of commands you’d type in a terminal on
+a normal day have a sibling as <code class="docutils literal notranslate"><span class="pre">brig</span></code> command. Here is a short overview of
+the available commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig mkdir photos
 $ brig touch photos/me.png
 $ brig tree
@@ -400,17 +415,17 @@ $ brig mv photos/me.png photos/ich.png
 $ brig rm photos
 </pre></div>
 </div>
-<p>Please refer to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span> <span class="pre">&lt;command&gt;</span></code> for more information about those. Often
-they work a little bit different <a class="footnote-reference" href="#id10" id="id4">[3]</a> and a bit less surprising than their
-counterparts. Also note that there is no <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cd</span></code> currently. All paths must
-be absolute.</p>
+<p>Please refer to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span> <span class="pre">&lt;command&gt;</span></code> for more information about those.
+Sometimes they work a little bit different <a class="footnote-reference" href="#id10" id="id4">[3]</a> and a bit less surprising than
+their counterparts. Also note that there is no <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cd</span></code> currently. All paths
+must be absolute.</p>
 </div>
 <div class="section" id="mounting-repositories">
 <h2>Mounting repositories<a class="headerlink" href="#mounting-repositories" title="Permalink to this headline">¶</a></h2>
-<p>Of course, using those specialized <code class="docutils literal notranslate"><span class="pre">brig</span></code> commands all day can be annoying
-and feels not very seamless, especially when being used to tools like file
-browsers. Indeed, those commands are only supposed to serve as a low-level way
-of interacting with <code class="docutils literal notranslate"><span class="pre">brig</span></code> and as means for scripting own workflows.</p>
+<p>Using those specialized <code class="docutils literal notranslate"><span class="pre">brig</span></code> commands might not feel very seamless,
+especially when being used to tools like file browsers. And indeed, those
+commands are only supposed to serve as a low-level way of interacting with
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> and as means for scripting own workflows.</p>
 <p>For your daily workflow it is far easier to mount all files known to <code class="docutils literal notranslate"><span class="pre">brig</span></code>
 to a directory of your choice and use it with your normal tools. To accomplish
 that <code class="docutils literal notranslate"><span class="pre">brig</span></code> supports a FUSE filesystem that can be controlled via the
@@ -419,16 +434,16 @@ that <code class="docutils literal notranslate"><span class="pre">brig</span></c
 $ brig mount ~/data
 $ cat hello-world
 Hello World
-$ <span class="nb">echo</span> <span class="s1">&#39;Salut le monde!&#39;</span> &gt; salut.monde
+$ <span class="nb">echo</span> <span class="s1">&#39;Salut le monde!&#39;</span> &gt; salut-monde.txt
 <span class="c1"># There is no difference between brig&#39;s &quot;virtual view&quot;</span>
-<span class="c1"># and the conents of the mount:</span>
-$ brig cat salut.monde
+<span class="c1"># and the contents of the mount:</span>
+$ brig cat salut-monde.txt
 Salut le monde!
 </pre></div>
 </div>
 <p>You can use this directory exactly <a class="footnote-reference" href="#id11" id="id5">[4]</a> like a normal one. You can have any
-number of mounts. This proves especially useful when only mounting
-a subdirectory of <code class="docutils literal notranslate"><span class="pre">brig</span></code> (let’s say <code class="docutils literal notranslate"><span class="pre">Public</span></code>) with the <code class="docutils literal notranslate"><span class="pre">--root</span></code> option of
+number of mounts. This proves especially useful when only mounting a
+subdirectory of <code class="docutils literal notranslate"><span class="pre">brig</span></code> (let’s say <code class="docutils literal notranslate"><span class="pre">Public</span></code>) with the <code class="docutils literal notranslate"><span class="pre">--root</span></code> option of
 <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">mount</span></code> and mounting all other files as read only (<code class="docutils literal notranslate"><span class="pre">--readonly</span></code>).</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig mount ~/data --readonly
 $ brig mkdir /writable
@@ -448,10 +463,12 @@ $ brig unmount ~/rw-data
 $ brig rm writable
 </pre></div>
 </div>
-<p>It can get a little annoying of course when having to manage all mounts
-yourself. It would be nice to have some <em>typical</em> mounts you’d like to have
-always and it should be only one command to mount or unmount all of them, kind
-of what <code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">-a</span></code> does. That’s what <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span></code> is for:</p>
+<div class="section" id="making-mounts-permanent">
+<h3>Making mounts permanent<a class="headerlink" href="#making-mounts-permanent" title="Permalink to this headline">¶</a></h3>
+<p>It can get a little annoying when having to manage several mounts yourself. It
+would be nice to have some <em>typical</em> mounts you’d like to have always and it
+should be only one command to mount or unmount all of them, kind of what
+<code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">-a</span></code> does. That’s what <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span></code> is for:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig fstab add tmp_rw_mount /tmp/rw-mount
 $ brig fstab add tmp_ro_mount /tmp/ro-mount -r
 $ brig fstab
@@ -473,7 +490,7 @@ tmp_rw_mount  /tmp/rw-mount  no         /
 <span class="pre">apply</span></code>. The opposite can be achieved by executing <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span> <span class="pre">apply</span> <span class="pre">--unmount</span></code>.
 On every restart of the daemon, all mounts are mounted by default, so the only
 thing you need to make sure is that the daemon is running.</p>
-<p><em>Caveats:</em> The FUSE filesystem is not (yet) perfect. Keep those points in mind:</p>
+<p><em>Caveats:</em> The FUSE filesystem is not yet perfect. Keep those points in mind:</p>
 <ul class="simple">
 <li><strong>Performance:</strong> Writing to FUSE is currently somewhat <em>memory and CPU
 intensive</em>. Generally, reading should be fast enough for most basic use
@@ -490,23 +507,27 @@ still needs a proper solution and leaves much to be desired in the current
 implementation.</li>
 </ul>
 </div>
+</div>
 <div class="section" id="remotes">
 <h2>Remotes<a class="headerlink" href="#remotes" title="Permalink to this headline">¶</a></h2>
 <p>Until now, all our operations were tied only to our local computer. But
 <code class="docutils literal notranslate"><span class="pre">brig</span></code> is a synchronization tool and that would be hardly very useful without
-supporting other peers.</p>
-<p>Every peer possesses two things that identifies him:</p>
+supporting other peers. We call other peers »remotes« similar to the slang used
+in the <code class="docutils literal notranslate"><span class="pre">git</span></code> world.</p>
+<p>Every remote possesses two things that identifies him:</p>
 <ul class="simple">
 <li><strong>A human readable name:</strong> This name can be choose by the user and can take
 pretty much any form, but we recommend to sticking for a form that resembles
-an extended email <a class="footnote-reference" href="#id12" id="id6">[5]</a> like »<a class="reference external" href="mailto:ali&#37;&#52;&#48;woods&#46;org/desktop">ali<span>&#64;</span>woods<span>&#46;</span>org/desktop</a>«. The name is <strong>not</strong>
-unique! In theory everyone could take it and it is therefore only used for
-display purposes.</li>
-<li><strong>A unique fingerprint:</strong> This serves both as address for a certain repository and as certificate of identity.
-It is long and hard to remember, which is the reason why <code class="docutils literal notranslate"><span class="pre">brig</span></code> offers to loosely link a human readable to it.</li>
+an extended email <a class="footnote-reference" href="#id12" id="id6">[5]</a> like »<a class="reference external" href="mailto:ali&#37;&#52;&#48;woods&#46;org/desktop">ali<span>&#64;</span>woods<span>&#46;</span>org/desktop</a>«. This name is <strong>not</strong>
+guaranteed to be unique! In theory everyone could take it and it is therefore
+only used for display purposes. There is no central place where users are registered.</li>
+<li><strong>A unique fingerprint:</strong> This serves both as address for a certain
+repository and as certificate of identity. It is long and hard to remember,
+which is the reason why <code class="docutils literal notranslate"><span class="pre">brig</span></code> offers to loosely link a human readable to
+it.</li>
 </ul>
 <p>If we want to find out what our name and fingerprint is, we can use the <code class="docutils literal notranslate"><span class="pre">brig</span>
-<span class="pre">whoami</span></code> command to ask existential questions:</p>
+<span class="pre">whoami</span></code> command to ask a very existential questions:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: The hash will look different for you:</span>
 $ brig whoami
 ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
@@ -515,21 +536,22 @@ ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjR
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The fingerprint consists of two hashes divided by a colon (:). The first
-part is the identity of your <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> node, the second part is the
+part is the identity of your <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> node, the second part is the
 fingerprint of a keypair that was generated by <code class="docutils literal notranslate"><span class="pre">brig</span></code> during init and
 will be used to authenticate other peers.</p>
 </div>
-<p>When we want to synchronize with another repository, we need to exchange fingerprints.
-There are three typical scenarios here:</p>
+<p>When we want to synchronize with another repository, we need to exchange fingerprints
+and each other as remote. There are three typical scenarios here:</p>
 <ol class="arabic">
 <li><p class="first">Both repositories are controlled by you. In this case you can simple execute
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> on both repositories.</p>
+<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> on both repositories and add them with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">add</span></code>
+as described in the following.</p>
 </li>
-<li><p class="first">You want to sync with somebody you know well. In this case you should both
-execute <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> and send it over a trusted side channel. Personally,
-I use a <a class="reference external" href="https://signal.org">secure messenger like Signal</a>, but you can
-also use any channel you like, including encrypted mail or meeting up with
-the person in question.</p>
+<li><p class="first">You want to sync with somebody you know. In this case you should both
+execute <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> and send its output over a trusted side channel.
+Personally, I use a <a class="reference external" href="https://signal.org">secure messenger like Signal</a>,
+but you can also use any channel you like, including encrypted mail or
+meeting up with the person in question.</p>
 </li>
 <li><p class="first">You don’t know each other. Get to know each other and the proceed like in the
 second point. If you need to get a hint of what users use a certain domain,
@@ -544,7 +566,7 @@ ali@woods.org  domain  QmTTJbk<span class="o">[</span>...<span class="o">]</span
 make sure the person you’re syncing with is the one you think they are.</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
-<p class="last">This seems currently broken.</p>
+<p class="last">This seems currently broken as it does not yield any results.</p>
 </div>
 </li>
 </ol>
@@ -564,7 +586,7 @@ SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5Fc
 </pre></div>
 </div>
 <p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository
-over the network. This is done in the background via <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> and might take
+over the network. This is done in the background via <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> and might take
 a few moments until a valid route to the host was found.</p>
 <p>The remote list can tell us if a remote is online:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote list
@@ -574,7 +596,7 @@ $ brig remote ping bob
 ping to bob: ✔ <span class="o">(</span><span class="m">0</span>.00250s<span class="o">)</span>
 </pre></div>
 </div>
-<p>Nice. Now we know that bob is online and also that he authenticated us ().
+<p>Nice. Now we know that bob is online (✔) and also that he authenticated us (✔).
 Otherwise <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">ping</span> <span class="pre">bob</span></code> would have failed.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -582,10 +604,10 @@ Otherwise <code class="docutils literal notranslate"><span class="pre">brig</spa
 <p class="last">While <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> tries to do it’s best to avoid having the user to open ports
 in his firewall/router. This mechanism might not be perfect though and maybe
 never is. If any of the following network operations might not work it might
-be necessary to open the ports 4001 - 4005 and/or enable UPnP. For security
-reasons we recommend to only open the required ports explicitly and not to
-use UPnP unless necessary though. This is only necessary if the computers
-you’re using <code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same network anyways.</p>
+be necessary to open the port 4001 and/or enable UPnP. For security reasons
+we recommend to only open the required ports explicitly and not to use UPnP
+unless necessary. This is only necessary if the computers you’re using
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same network anyways.</p>
 </div>
 <div class="section" id="choosing-and-finding-names">
 <span id="about-names"></span><h3>Choosing and finding names<a class="headerlink" href="#choosing-and-finding-names" title="Permalink to this headline">¶</a></h3>
@@ -630,17 +652,19 @@ of <code class="docutils literal notranslate"><span class="pre">brig</span></cod
 </div>
 <div class="section" id="syncing">
 <h2>Syncing<a class="headerlink" href="#syncing" title="Permalink to this headline">¶</a></h2>
-<p>Before we move on to do our first synchronization, let’s recap what we have don so far:</p>
+<p>Before we move on to do our first synchronization, let’s do a quick recap of
+what we have done so far:</p>
 <ul class="simple">
 <li>Create a repository (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">init</span> <span class="pre">&lt;name&gt;</span></code>) - This needs to be done only once.</li>
 <li>Create optional mount points (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span> <span class="pre">add</span> <span class="pre">&lt;name&gt;</span> <span class="pre">&lt;path&gt;</span></code>) - This needs to be done only once.</li>
 <li>Find &amp; add remotes (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">add</span></code>) - This needs to be done once for each peer.</li>
 <li>Add some files (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">stage</span> <span class="pre">&lt;path&gt;</span></code>) - Do as often as you like.</li>
 </ul>
-<p>As you see, there is some initial setup work, but the actual syncing is pretty
-effortless now. Before we attempt to sync with anybody, it’s always a good idea
-to see what changes they have. We can check this with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span> <span class="pre">&lt;remote&gt;</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The &quot;--missing&quot; switch also tells us what files they don&#39;t have:</span>
+<p>As you can see, there is some initial setup work, but the actual syncing is
+pretty effortless now. Before we attempt to sync with anybody, it’s always a
+good idea to see what changes they have. We can check this with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span>
+<span class="pre">&lt;remote&gt;</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The &quot;--missing&quot; switch also tells us what files the remote does not posess:</span>
 $ brig diff bob --missing
 •
 ├── _ hello.world
@@ -648,11 +672,10 @@ $ brig diff bob --missing
 └── README.md ⇄ README.md
 </pre></div>
 </div>
-<p>This output resembles the one we saw from <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">tree</span></code> earlier.
-Each node in this tree tells us about something that would
-happen when we merge. The prefix of each file and the color in the terminal
-indicate what would happen with this file. Refer to the table below to see what
-prefix relates to what action:</p>
+<p>This output resembles the one we saw from <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">tree</span></code> earlier. Each node in
+this tree tells us about something that would happen when we merge. The prefix
+of each file and the color in the terminal indicate what would happen with this
+file. Refer to the table below to see what prefix relates to what action:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="7%" />
@@ -665,13 +688,13 @@ prefix relates to what action:</p>
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">+</span></code></td>
-<td>The file is only present on the remote side.</td>
+<td>This file is only present on the remote side.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-</span></code></td>
-<td>The file was removed on the remote side.</td>
+<td>This file was removed on the remote side.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">→</span></code></td>
-<td>The file was moved to a new location.</td>
+<td>This file was moved to a new location.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">*</span></code></td>
 <td>This file was ignored because we chose to, due to our settings.</td>
@@ -680,17 +703,18 @@ prefix relates to what action:</p>
 <td>Both sides have changes, but they are compatible and can be merged.</td>
 </tr>
 <tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">⚡</span></code></td>
-<td>Both sides have changes, but they are incompatible and result in conflicts.</td>
+<td>Both sides have changes, but they are incompatible and result in conflict files.</td>
 </tr>
 <tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">_</span></code></td>
-<td>The file is missing on the remote side (output needs to be enabled with <code class="docutils literal notranslate"><span class="pre">--missing</span></code>)</td>
+<td>This file is missing on the remote side (needs to be enabled with <code class="docutils literal notranslate"><span class="pre">--missing</span></code>)</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> does not do any actual diffs between files. It does not care a lot about the content.
-It only records how the file metadata changes and what content the file has at a certain point.</p>
+<p class="last">Remember that <code class="docutils literal notranslate"><span class="pre">brig</span></code> does not do any actual diffs between files. It does
+not care a lot about the content. It only records how the file metadata
+changes and what content hash the file has at a certain point.</p>
 </div>
 <p>If you prefer a more traditional view, similar to <code class="docutils literal notranslate"><span class="pre">git</span></code>, you can use
 <code class="docutils literal notranslate"><span class="pre">--list</span></code> on <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code>.</p>
@@ -701,30 +725,30 @@ take over his changes. If we sync now we will get this directory from him:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig sync bob
 $ brig ls
 SIZE   MODTIME          OWNER    PATH                      PIN
-<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  sahib    /README.md                🖈
+<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  ali      /README.md                🖈
 <span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  bob      /README.md.conflict.0
-<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  sahib    /hello.world              🖈
+<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  ali      /hello.world              🖈
 <span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  bob      /videos                   🖈
 </pre></div>
 </div>
 <p>You might notice that the <code class="docutils literal notranslate"><span class="pre">sync</span></code> step took only around one second, even
-though <code class="docutils literal notranslate"><span class="pre">/videos</span></code> is 32 GB in size. This is because <code class="docutils literal notranslate"><span class="pre">sync</span></code> <em>does not
-transfer actual data</em>. It only transferred the metadata, while the actual data
-will only be loaded when required. This sounds a little inconvenient at first.
-When I want to watch the video, I’d prefer to have it cached locally before
-viewing it to avoid stuttering playback. If you plan to use that, you’re free
-to do so using pinning (see <a class="reference internal" href="#pinning-section"><span class="std std-ref">Pinning</span></a>)</p>
+though <code class="docutils literal notranslate"><span class="pre">/videos</span></code> is 32 GB in size. This is because <code class="docutils literal notranslate"><span class="pre">sync</span></code> <strong>does not
+transfer actual data</strong>. It only transferred the metadata, while the actual data
+will only be loaded when required. This might sound a little inconvenient at
+first. When I want to watch the video, I’d prefer to have it cached locally
+before viewing it to avoid stuttering playback. If you plan to use the files
+immediately, you should be using pinning (see <a class="reference internal" href="#pinning-section"><span class="std std-ref">Pinning</span></a>)</p>
 <div class="section" id="data-retrieval">
 <h3>Data retrieval<a class="headerlink" href="#data-retrieval" title="Permalink to this headline">¶</a></h3>
-<p>If the data is not on your local machine, where is it then? Thanks to <code class="docutils literal notranslate"><span class="pre">ipfs</span></code>
+<p>If the data is not on your local machine, where is it then? Thanks to <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>
 it can be transferred from any other peer that caches this particular content.
 Content is usually cached when the peer either really stores this file or if
 this peer recently used this content. In the latter case it will still be
-available in its cache. This property is particularly useful when having
-a small device for viewing data (e.g. a smartphone) and a big machine that acts
-as storage server (e.g. a desktop).</p>
+available in its cache. This property is particularly useful when having a
+small device for viewing data (e.g. a smartphone, granted <code class="docutils literal notranslate"><span class="pre">brig</span></code> would run
+there) and a big machine that acts as storage server (e.g. a desktop).</p>
 <p>How are the files secure then if they essentially could be everywhere? Every
-file is encrypted by <code class="docutils literal notranslate"><span class="pre">brig</span></code> before giving it to <code class="docutils literal notranslate"><span class="pre">ipfs</span></code>. The encryption key
+file is encrypted by <code class="docutils literal notranslate"><span class="pre">brig</span></code> before giving it to <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>. The encryption key
 is part of the metadata and is only available to the peers that you chose to
 synchronize with. Think of each brig repository only as a cache for the whole
 network it is in.</p>
@@ -821,9 +845,12 @@ yourself). So in short: <code class="docutils literal notranslate"><span class="
 respective data for each version</strong>.</p>
 <p>This is a somewhat novel approach to versioning, so feel free to re-read the
 last paragraph, since I’ve found that it does not quite fit what most people
-are used to. Together with pinning this offers a high degree of freedom on
-how you can decide what repositories store what data.</p>
-<p>You can invoke <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">info</span></code> to see what metadata is being saved per file version:</p>
+are used to. Together with pinning this offers a high degree of freedom on how
+you can decide what repositories store what data. The price is that this
+fine-tuned control can get a little annoying. Future versions of <code class="docutils literal notranslate"><span class="pre">brig</span></code> will
+try to solve that.</p>
+<p>For some more background, you can invoke <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">info</span></code> to see what metadata is
+being saved per file version:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig show README.md
 Path          /README.md
 User          ali
@@ -841,18 +868,19 @@ Backend Hash  QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK
 <p>Most of it should be no big surprise. It might be a small surprise that three
 hashes are stored per file. The <code class="docutils literal notranslate"><span class="pre">Backend</span> <span class="pre">Hash</span></code> is really the link to the
 actual data. If you’d type <code class="docutils literal notranslate"><span class="pre">ipfs</span> <span class="pre">cat</span>
-<span class="pre">QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK</span></code> you might get the encrypted
+<span class="pre">QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK</span></code> you will get the encrypted
 version of your file dumped to your terminal. The <code class="docutils literal notranslate"><span class="pre">Content</span> <span class="pre">Hash</span></code> is being
 calculated before the encryption and is the same for two files with the same
 content. The <code class="docutils literal notranslate"><span class="pre">Tree</span> <span class="pre">Hash</span></code> is a hash that uniquely identifies this specific
-node. The <code class="docutils literal notranslate"><span class="pre">Inode</span></code> is unique to a file and is also used in the FUSE
-filesystem.</p>
+node for internal purposes. The <code class="docutils literal notranslate"><span class="pre">Inode</span></code> is a number that stays unique over
+the lifetime of a file (including moves and removes). It is used mostly in the
+FUSE filesystem.</p>
 </div>
 <div class="section" id="commits">
 <h3>Commits<a class="headerlink" href="#commits" title="Permalink to this headline">¶</a></h3>
 <p>Now that we know that only metadata is versioned, we have to ask »what is the
-smallest unit of modification that can be saved?« This smallest unit is
-a commit. A commit can be seen as a snapshot of a repository.</p>
+smallest unit of modification that can be saved?«. This smallest unit is
+a commit. A commit can be seen as a snapshot of the whole repository.</p>
 <p>The command <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">log</span></code> shows you a list of commits that were made already:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>      -      Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
 SEfXUDozvTHH Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added ali-file <span class="o">(</span>head<span class="o">)</span>
@@ -974,12 +1002,13 @@ SEfXUDkdjUND Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 C
 thing more than restoring the state of <code class="docutils literal notranslate"><span class="pre">init</span></code> and put that result in
 <code class="docutils literal notranslate"><span class="pre">curr</span></code>. This also means that you can’t really <em>modify</em> history. But you can
 revert it. Let’s revert your complete wipe-out:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig reset breadcrumbs
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reset to the state we had in »breadcrumbs«</span>
+$ brig reset breadcrumbs
 </pre></div>
 </div>
-<p>Now everything is as we left it. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code> cannot only restore old
-commits, but individual files and directories:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig reset head^^
+<p><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code> cannot only restore old commits, but individual files and
+directories:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig reset head^^ README.md
 </pre></div>
 </div>
 <div class="admonition note">
@@ -1000,9 +1029,8 @@ space. The commands in question are:</p>
 <li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">become</span></code>: View the metadata of another remote. Good for debugging.</li>
 <li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">daemon</span></code>: Start the daemon manually. Good for init systems like <code class="docutils literal notranslate"><span class="pre">systemd</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span></code>: Commands to modify the network status and find other peers.</li>
-<li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">edit</span></code>: Edit a file in brig with the <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>.</li>
-<li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fetch</span></code>: Manually trigger the fetching of a remote’s metadata.</li>
-<li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">tar</span></code>: Output files and directories as tar archive. Useful to output whole directories.</li>
+<li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">edit</span></code>: Edit a file in brig with the <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>. Good for quick edits.</li>
+<li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fetch</span></code>: Manually trigger the fetching of a remote’s metadata. Also good for debugging.</li>
 </ul>
 <p>Please use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span> <span class="pre">&lt;command&gt;</span></code> to find out more about them if you’re interested.</p>
 </div>

@@ -2,14 +2,15 @@ Installation
 ------------
 
 At the time of writing, there are no pre-compiled binaries. So you gonna have
-to compile ``brig`` yourself - but don't worry that is quite easy since
-``brig`` does not have many dependencies. You only need two things: The
-programming language *Go* and the version control system ``git``.
+to compile ``brig`` yourself - but don't worry that is quite easy. We do not
+have many dependencies, you only need two things: The programming language *Go*
+and the version control system ``git``.
 
 Step 0: Installing Go
 ~~~~~~~~~~~~~~~~~~~~~
 
-This is only required if you don't have ``Go`` installed.
+This is only required if you don't already have ``Go`` installed.
+Please consult your package manager for that.
 
 .. warning::
 
@@ -20,8 +21,9 @@ This is only required if you don't have ``Go`` installed.
 
 If you did not do that, you gonna need to install ``Go``. `Refere here
 <https://golang.org/doc/install>`_ for possible ways of doing so. Remember to
-set the ``GOPATH`` to a place where you'd like to have your ``.go`` files being
-placed. For example you can put this in your ``.bashrc``:
+set the ``GOPATH`` environment variable to a place where you'd like to have
+your ``.go`` sources being placed. For example you can put this in your
+``.bashrc``:
 
 .. code:: bash
 
@@ -51,7 +53,8 @@ compiled during the ``make`` step.
 
 If you cannot or want to install ``git`` for some reason, you can `manually
 download a zip <https://github.com/sahib/brig/archive/master.zip>`_ from GitHub
-and place its contents into ``$GOPATH/src/github.com/sahib/brig``.
+and place its contents into ``$GOPATH/src/github.com/sahib/brig``. In this
+case, you can skip the ``go get`` step.
 
 Step 2: Test if the installation is working
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,9 +64,9 @@ Step 2: Test if the installation is working
     $ brig help
 
 If above command prints out documentation on how to use the program's
-commandline switches then the installation worked. Congratulations!
+commandline switches then the installation worked. Happy shipping!
 
 -----
 
 Continue with :ref:`getting_started` or directly go to :ref:`quickstart` if you
-do not want to hear the details.
+just need a refresh on the details.

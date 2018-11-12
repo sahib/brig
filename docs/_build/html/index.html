@@ -164,31 +164,33 @@
 It is based on <code class="docutils literal notranslate"><span class="pre">ipfs</span></code>, written in Go and will feel familiar to <code class="docutils literal notranslate"><span class="pre">git</span></code> users.</p>
 <p><strong>Key feature highlights:</strong></p>
 <ul class="simple">
-<li>Encryption of data in rest and transport + compression on the fly.</li>
-<li>Simplified <code class="docutils literal notranslate"><span class="pre">git</span></code> version control.</li>
-<li>Sync algorithm that can handle moved files and empty directories and files.</li>
+<li>Encryption of data in rest and transport, plus optional compression on the fly.</li>
+<li>Simplified <code class="docutils literal notranslate"><span class="pre">git</span></code> version control only limited by your storage space.</li>
+<li>Synchronization algorithm that can handle moved files and empty directories and files.</li>
 <li>Your data does not need to be stored on the device you are currently using.</li>
-<li>FUSE filesystem that feels like a normal (sync) folder.</li>
+<li>FUSE filesystem that feels like a normal sync folder.</li>
 <li>No central server at all. Still, central architectures can be build with <code class="docutils literal notranslate"><span class="pre">brig</span></code>.</li>
-<li>Simple user identification and discovery with users that look like email addresses.</li>
+<li>Simple user identification and discovery.</li>
+<li>Completely free software under the terms of the <code class="docutils literal notranslate"><span class="pre">AGPL</span></code>.</li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">brig</span></code> tries to focus on being up conceptually simple, by hiding a lot of
-complicated details regarding storage and security. Therefore I hope the end
-result is easy and pleasant to use, while being secure by default.
-Since <code class="docutils literal notranslate"><span class="pre">brig</span></code> is a “general purpose” tool for file synchronization it of course
-cannot excel in all areas. This is especially true for efficiency, which is
-sometimes sacrificed to get the balance of usability and security right.</p>
+complicated details regarding storage and security. Therefore the end result is
+hopefully easy and pleasant to use, while being secure by default. Since
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> is a »general purpose« tool for file synchronization it of course
+cannot excel in all areas. It won’t replace high performance network file
+systems.</p>
 <div class="section" id="current-status">
 <h2>Current Status<a class="headerlink" href="#current-status" title="Permalink to this headline">¶</a></h2>
-<p><strong>This software is in active development and not suited for production use yet!</strong>
-But to get there I need people that try it and verify their workflows with <code class="docutils literal notranslate"><span class="pre">brig</span></code>.</p>
-<p>Apart from that, <code class="docutils literal notranslate"><span class="pre">brig</span></code> is near a somewhat usable state where you can play around
+<p><strong>This software is in active development and probably not suited for production
+use yet!</strong> But to get it in a stable state, it is <strong>essential</strong> that people
+play around with it. Consider this is as an open beta phase.</p>
+<p>With that being said, <code class="docutils literal notranslate"><span class="pre">brig</span></code> is near a somewhat usable state where you can play around
 with it quite well. All aforementioned features do work, besides possibly being
 a little harder to use than ideally possible. A lot of work is currently going into
 stabilizing the current feature set.</p>
-<p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only available for Linux</strong>. Porting efforts are
-welcome though. The only blocker is <em>FUSE</em> which would be needed to either
-replaced on other platforms or disabled.</p>
+<p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only tested on Linux</strong>. Porting and testing
+efforts are welcome. The only incompatible feature so far is <em>FUSE</em> which would
+be needed to either disabled or replaced on other platforms.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">User documentation:</span></p>
 <ul>

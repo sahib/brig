@@ -166,12 +166,13 @@
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>At the time of writing, there are no pre-compiled binaries. So you gonna have
-to compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself - but don’t worry that is quite easy since
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> does not have many dependencies. You only need two things: The
-programming language <em>Go</em> and the version control system <code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
+to compile <code class="docutils literal notranslate"><span class="pre">brig</span></code> yourself - but don’t worry that is quite easy. We do not
+have many dependencies, you only need two things: The programming language <em>Go</em>
+and the version control system <code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
 <div class="section" id="step-0-installing-go">
 <h2>Step 0: Installing Go<a class="headerlink" href="#step-0-installing-go" title="Permalink to this headline">¶</a></h2>
-<p>This is only required if you don’t have <code class="docutils literal notranslate"><span class="pre">Go</span></code> installed.</p>
+<p>This is only required if you don’t already have <code class="docutils literal notranslate"><span class="pre">Go</span></code> installed.
+Please consult your package manager for that.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> only works with a newer version of Go (&gt;= 1.9).
@@ -179,8 +180,9 @@ The version in your package manager might be too outdated,
 if you’re on e.g. Debian. Make sure it’s rather up to date!</p>
 </div>
 <p>If you did not do that, you gonna need to install <code class="docutils literal notranslate"><span class="pre">Go</span></code>. <a class="reference external" href="https://golang.org/doc/install">Refere here</a> for possible ways of doing so. Remember to
-set the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> to a place where you’d like to have your <code class="docutils literal notranslate"><span class="pre">.go</span></code> files being
-placed. For example you can put this in your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
+set the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> environment variable to a place where you’d like to have
+your <code class="docutils literal notranslate"><span class="pre">.go</span></code> sources being placed. For example you can put this in your
+<code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Place the go sources in a &quot;go&quot; directory inside your home directory:</span>
 <span class="n">export</span> <span class="n">GOPATH</span><span class="o">=~/</span><span class="n">go</span>
 <span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin:$PATH&quot;</span>
@@ -204,7 +206,8 @@ Execution might take a few minutes though because all of <code class="docutils l
 compiled during the <code class="docutils literal notranslate"><span class="pre">make</span></code> step.</p>
 <p>If you cannot or want to install <code class="docutils literal notranslate"><span class="pre">git</span></code> for some reason, you can <a class="reference external" href="https://github.com/sahib/brig/archive/master.zip">manually
 download a zip</a> from GitHub
-and place its contents into <code class="docutils literal notranslate"><span class="pre">$GOPATH/src/github.com/sahib/brig</span></code>.</p>
+and place its contents into <code class="docutils literal notranslate"><span class="pre">$GOPATH/src/github.com/sahib/brig</span></code>. In this
+case, you can skip the <code class="docutils literal notranslate"><span class="pre">go</span> <span class="pre">get</span></code> step.</p>
 </div>
 <div class="section" id="step-2-test-if-the-installation-is-working">
 <h2>Step 2: Test if the installation is working<a class="headerlink" href="#step-2-test-if-the-installation-is-working" title="Permalink to this headline">¶</a></h2>
@@ -212,10 +215,10 @@ and place its contents into <code class="docutils literal notranslate"><span cla
 </pre></div>
 </div>
 <p>If above command prints out documentation on how to use the program’s
-commandline switches then the installation worked. Congratulations!</p>
+commandline switches then the installation worked. Happy shipping!</p>
 <hr class="docutils" />
 <p>Continue with <a class="reference internal" href="introduction.html#getting-started"><span class="std std-ref">Getting started</span></a> or directly go to <span class="xref std std-ref">quickstart</span> if you
-do not want to hear the details.</p>
+just need a refresh on the details.</p>
 </div>
 </div>
 
