@@ -175,7 +175,7 @@ func TestAuthProcess(t *testing.T) {
 
 	// TODO: Increaseing 17 to 18 causes hangs. Investigate.
 	sizes := []int64{0, 255}
-	for i := uint(0); i < 17; i++ {
+	for i := uint(0); i < 19; i++ {
 		sizes = append(sizes, int64(1<<i))
 	}
 

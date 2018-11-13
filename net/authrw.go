@@ -357,7 +357,6 @@ func (ath *AuthReadWriter) readMessage() ([]byte, error) {
 	}
 
 	buf := make([]byte, size)
-
 	if _, err := io.ReadAtLeast(ath.cryptedRW, buf, int(size)); err != nil {
 		return nil, err
 	}

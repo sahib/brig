@@ -105,11 +105,11 @@ func withNetPair(t *testing.T, fn func(a, b testUnit)) {
 	withNetServer(t, "alice", 9998, basePath, func(a testUnit) {
 		withNetServer(t, "bob", 9999, basePath, func(b testUnit) {
 			// Add each other's fingerprints:
-			require.Nil(t, a.rp.Remotes.AddRemote(repo.Remote{
+			require.Nil(t, a.rp.Remotes.AddOrUpdateRemote(repo.Remote{
 				Name:        "bob",
 				Fingerprint: buildFingerprint(t, b),
 			}))
-			require.Nil(t, b.rp.Remotes.AddRemote(repo.Remote{
+			require.Nil(t, b.rp.Remotes.AddOrUpdateRemote(repo.Remote{
 				Name:        "alice",
 				Fingerprint: buildFingerprint(t, a),
 			}))

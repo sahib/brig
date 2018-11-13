@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"io/ioutil"
 )
 
 var (
@@ -159,7 +158,7 @@ func Pack(data []byte, algo AlgorithmType) ([]byte, error) {
 		return nil, err
 	}
 
-	if _, err := zipW.Write(data); err != nil {
+	if _, err := zipW.ReadFrom(bytes.NewReader(data)); err != nil {
 		return nil, err
 	}
 
@@ -174,5 +173,10 @@ func Pack(data []byte, algo AlgorithmType) ([]byte, error) {
 // The algorithm is read from the data itself.
 // This is a convinience method meant to be used for small data packages.
 func Unpack(data []byte) ([]byte, error) {
-	return ioutil.ReadAll(NewReader(bytes.NewReader(data)))
+	buf := &bytes.Buffer{}
+	if _, err := NewReader(bytes.NewReader(data)).WriteTo(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
