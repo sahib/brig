@@ -444,8 +444,46 @@ type LocateResult struct {
 	Fingerprint string
 }
 
-// TODO: This method is too complex, clean it up a bit
-//       and move parts of it to net.Server
+func (nh *netHandler) peekAndCachePeer(peer peer.Info, mask p2pnet.LocateMask, ticket uint64) error {
+	peekCtx, cancel := context.WithTimeout(nh.base.ctx, 2*time.Second)
+	defer cancel()
+
+	psrv, err := nh.base.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	// Attempt to get
+	fingerprint, remoteName, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
+	if err != nil {
+		log.Warningf(
+			"No fingerprint for %v %v",
+			peer.Addr,
+			err,
+		)
+		return err
+	}
+
+	if string(fingerprint) == "" {
+		return nil
+	}
+
+	result := &LocateResult{
+		Name:        string(remoteName),
+		Addr:        string(peer.Addr),
+		Mask:        mask.String(),
+		Fingerprint: string(fingerprint),
+	}
+
+	log.Debugf("Pushing partial result: %v", result)
+	if err := nh.base.conductor.Push(ticket, result); err != nil {
+		log.Debugf("Failed to push result: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func (nh *netHandler) NetLocate(call capnp.Net_netLocate) error {
 	timeoutSec := call.Params.TimeoutSec()
 
@@ -500,6 +538,9 @@ func (nh *netHandler) NetLocate(call capnp.Net_netLocate) error {
 				continue
 			}
 
+			// Every result might have more than one peer.
+			// We should quickly check all of them to see if they are valid.
+			// If some addrs are duplicated, we'll retrieve them from addrCache.
 			for _, locatedPeer := range located.Peers {
 				if _, ok := addrCache.Load(locatedPeer.Addr); ok {
 					continue
@@ -507,43 +548,14 @@ func (nh *netHandler) NetLocate(call capnp.Net_netLocate) error {
 
 				log.Debugf("Fetching fingerprint for %v", locatedPeer.Addr)
 
+				// Do the actual lookup in the background and start
+				// the other lookups in parallel.
 				wg.Add(1)
-				go func(peer peer.Info) {
+				go func(peer peer.Info, located p2pnet.LocateResult) {
 					defer wg.Done()
-
-					peekCtx, cancel := context.WithTimeout(nh.base.ctx, 2*time.Second)
-					defer cancel()
-
-					// Remember that we already resolved this addr.
 					addrCache.Store(peer.Addr, true)
-
-					fingerprint, remoteName, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
-					if err != nil {
-						log.Warningf(
-							"No fingerprint for %v (query: %s): %v",
-							peer.Addr,
-							who,
-							err,
-						)
-						return
-					}
-
-					if string(fingerprint) == "" {
-						return
-					}
-
-					result := &LocateResult{
-						Name:        string(remoteName),
-						Addr:        string(peer.Addr),
-						Mask:        located.Mask.String(),
-						Fingerprint: string(fingerprint),
-					}
-
-					log.Debugf("Pushing partial result: %v", result)
-					if err := nh.base.conductor.Push(ticket, result); err != nil {
-						log.Debugf("Failed to push result: %v", err)
-					}
-				}(locatedPeer)
+					nh.peekAndCachePeer(peer, located.Mask, ticket)
+				}(locatedPeer, located)
 			}
 		}
 
@@ -553,6 +565,7 @@ func (nh *netHandler) NetLocate(call capnp.Net_netLocate) error {
 		return nil
 	})
 
+	// Tell the client under what ticket he can query for results.
 	call.Results.SetTicket(ticket)
 	return nil
 }
