@@ -1,4 +1,6 @@
-package repo
+// Package registry contains shared utils between server and client
+// regarding the registry opening and modification.
+package registry
 
 import (
 	"errors"
@@ -55,7 +57,7 @@ type Registry struct {
 	cfg *config.Config
 }
 
-type RegistryEntry struct {
+type Entry struct {
 	Path      string
 	Owner     string
 	Addr      string
@@ -64,7 +66,7 @@ type RegistryEntry struct {
 }
 
 var (
-	ErrRegistryEntryExists = errors.New("registry entry exists already")
+	ErrEntryExists = errors.New("registry entry exists already")
 )
 
 func findRegistryPath() string {
@@ -102,7 +104,7 @@ func findRegistryPath() string {
 	return registryPaths[0]
 }
 
-func OpenRegistry() (*Registry, error) {
+func Open() (*Registry, error) {
 	registryPath := findRegistryPath()
 	registryFd, err := os.OpenFile(registryPath, os.O_RDONLY, 0600)
 	if err != nil && !os.IsNotExist(err) {
@@ -129,7 +131,7 @@ func OpenRegistry() (*Registry, error) {
 	}, nil
 }
 
-func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
+func (reg *Registry) Add(entry *Entry) (string, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
@@ -142,7 +144,7 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 
 	// Check this unlikely case:
 	if existingEntry, _ := reg.entry(uuidString); existingEntry != nil {
-		return "", ErrRegistryEntryExists
+		return "", ErrEntryExists
 	}
 
 	entries, err := reg.list()
@@ -158,14 +160,14 @@ func (reg *Registry) Add(entry *RegistryEntry) (string, error) {
 	return entryUUID.String(), nil
 }
 
-func (reg *Registry) Update(uuid string, entry *RegistryEntry) error {
+func (reg *Registry) Update(uuid string, entry *Entry) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
 	return reg.update(uuid, entry)
 }
 
-func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
+func (reg *Registry) update(uuid string, entry *Entry) error {
 	ownerKey := fmt.Sprintf("repos.%s.owner", uuid)
 	if err := reg.cfg.SetString(ownerKey, entry.Owner); err != nil {
 		return err
@@ -206,14 +208,14 @@ func (reg *Registry) update(uuid string, entry *RegistryEntry) error {
 	return reg.cfg.Save(config.NewYamlEncoder(registryFd))
 }
 
-func (reg *Registry) Entry(uuid string) (*RegistryEntry, error) {
+func (reg *Registry) Entry(uuid string) (*Entry, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
 	return reg.entry(uuid)
 }
 
-func (reg *Registry) entry(uuid string) (*RegistryEntry, error) {
+func (reg *Registry) entry(uuid string) (*Entry, error) {
 	if len(uuid) == 0 {
 		return nil, fmt.Errorf("empty uuid")
 	}
@@ -239,7 +241,7 @@ func (reg *Registry) entry(uuid string) (*RegistryEntry, error) {
 	addr := reg.cfg.String(addrKey)
 	port := reg.cfg.Int(portKey)
 
-	return &RegistryEntry{
+	return &Entry{
 		Path:      path,
 		Owner:     owner,
 		Addr:      addr,
@@ -248,15 +250,15 @@ func (reg *Registry) entry(uuid string) (*RegistryEntry, error) {
 	}, nil
 }
 
-func (reg *Registry) List() ([]*RegistryEntry, error) {
+func (reg *Registry) List() ([]*Entry, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
 	return reg.list()
 }
 
-func (reg *Registry) list() ([]*RegistryEntry, error) {
-	entries := []*RegistryEntry{}
+func (reg *Registry) list() ([]*Entry, error) {
+	entries := []*Entry{}
 
 	for _, key := range reg.cfg.Keys() {
 		if !strings.HasSuffix(key, ".path") {

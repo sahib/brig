@@ -23,6 +23,7 @@ import (
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
+	"github.com/sahib/brig/util/registry"
 )
 
 type base struct {
@@ -182,7 +183,7 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 	return b.loadBackend()
 }
 
-func (base *base) updateBackendAddr(reg *repo.Registry, bk backend.Backend) error {
+func (base *base) updateBackendAddr(reg *registry.Registry, bk backend.Backend) error {
 	rp, err := base.repoUnlocked()
 	if err != nil {
 		return err
@@ -208,7 +209,7 @@ func (base *base) updateBackendAddr(reg *repo.Registry, bk backend.Backend) erro
 	return reg.Update(repoID, entry)
 }
 
-func (b *base) findBootstrapAddrs(reg *repo.Registry) ([]string, error) {
+func (b *base) findBootstrapAddrs(reg *registry.Registry) ([]string, error) {
 	entries, err := reg.List()
 	if err != nil {
 		return nil, err
@@ -241,7 +242,7 @@ func (b *base) loadBackend() (backend.Backend, error) {
 
 	backendPath := rp.BackendPath(backendName)
 
-	reg, err := repo.OpenRegistry()
+	reg, err := registry.Open()
 	if err != nil {
 		return nil, err
 	}

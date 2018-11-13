@@ -22,8 +22,8 @@ import (
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
-	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/util/pwutil"
+	"github.com/sahib/brig/util/registry"
 	"github.com/urfave/cli"
 )
 
@@ -44,13 +44,13 @@ func (err ExitCode) Error() string {
 	return err.Message
 }
 
-func getRepoEntryFromRegistry(ctx *cli.Context, port int64) (*repo.RegistryEntry, error) {
-	registry, err := repo.OpenRegistry()
+func getRepoEntryFromRegistry(ctx *cli.Context, port int64) (*registry.Entry, error) {
+	reg, err := registry.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	entries, err := registry.List()
+	entries, err := reg.List()
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +157,12 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 		return ctx.GlobalInt("port"), nil
 	}
 
-	registry, err := repo.OpenRegistry()
+	reg, err := registry.Open()
 	if err != nil {
 		return 0, err
 	}
 
-	entries, err := registry.List()
+	entries, err := reg.List()
 	if err != nil {
 		return 0, err
 	}

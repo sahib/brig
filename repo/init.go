@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/util/registry"
 	"github.com/sahib/config"
 )
 
@@ -67,9 +68,9 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 		return err
 	}
 
-	registry, err := OpenRegistry()
+	reg, err := registry.Open()
 	if err == nil {
-		repoID, err := registry.Add(&RegistryEntry{
+		repoID, err := reg.Add(&registry.Entry{
 			Owner: owner,
 			Path:  baseFolder,
 			Port:  daemonPort,

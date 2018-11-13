@@ -16,6 +16,7 @@ import (
 	"github.com/sahib/brig/repo"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/pwutil"
+	"github.com/sahib/brig/util/registry"
 	"github.com/sahib/brig/util/server"
 )
 
@@ -79,21 +80,19 @@ func updateRegistry(basePath string, port int) error {
 
 	uuid := string(data)
 
-	// TODO: Move repo.OpenRegisry to util somewhere.
-	// It is also used in the client.
-	registry, err := repo.OpenRegistry()
+	reg, err := registry.Open()
 	if err != nil {
 		return err
 	}
 
-	entry, err := registry.Entry(uuid)
+	entry, err := reg.Entry(uuid)
 	if err != nil {
 		return err
 	}
 
 	entry.Port = int64(port)
 	entry.Path = basePath
-	return registry.Update(uuid, entry)
+	return reg.Update(uuid, entry)
 }
 
 func applyFstabInitially(base *base) error {

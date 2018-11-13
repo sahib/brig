@@ -1,4 +1,4 @@
-package repo
+package registry
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func TestRegistryOpen(t *testing.T) {
 	defer cleanUpTestRegistry(t)
 
 	touchTestRegistry(t, nil)
-	_, err := OpenRegistry()
+	_, err := Open()
 	require.Nil(t, err)
 }
 
@@ -46,10 +46,10 @@ func TestRegistryAddGet(t *testing.T) {
 	defer cleanUpTestRegistry(t)
 
 	touchTestRegistry(t, nil)
-	reg, err := OpenRegistry()
+	reg, err := Open()
 	require.Nil(t, err)
 
-	uuid, err := reg.Add(&RegistryEntry{
+	uuid, err := reg.Add(&Entry{
 		Owner:     "owner",
 		Path:      "/tmp/xxx",
 		Port:      123,
@@ -73,7 +73,7 @@ func TestRegistryGetEmpty(t *testing.T) {
 	defer cleanUpTestRegistry(t)
 
 	touchTestRegistry(t, nil)
-	reg, err := OpenRegistry()
+	reg, err := Open()
 	require.Nil(t, err)
 
 	_, err = reg.Entry("")
@@ -87,11 +87,11 @@ func TestRegistryAddMany(t *testing.T) {
 	defer cleanUpTestRegistry(t)
 
 	touchTestRegistry(t, nil)
-	reg, err := OpenRegistry()
+	reg, err := Open()
 	require.Nil(t, err)
 
 	for idx := 0; idx < 100; idx++ {
-		_, err := reg.Add(&RegistryEntry{
+		_, err := reg.Add(&Entry{
 			Owner: fmt.Sprintf("owner-%d", idx),
 			Path:  fmt.Sprintf("/tmp/xxx-%d", idx),
 		})
@@ -106,12 +106,12 @@ func TestRegistryOpenTwice(t *testing.T) {
 	touchTestRegistry(t, nil)
 
 	for i := 0; i < 2; i++ {
-		reg, err := OpenRegistry()
+		reg, err := Open()
 		require.Nil(t, err)
 
 		// Only add something on the first run.
 		if i == 0 {
-			uuid, err = reg.Add(&RegistryEntry{
+			uuid, err = reg.Add(&Entry{
 				Owner: "owner",
 				Path:  "/tmp/xxx",
 				Addr:  "localhost",
