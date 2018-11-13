@@ -293,7 +293,6 @@ EXAMPLES:
 		Usage:     "Try to locate a remote by their name or by a part of it",
 		ArgsUsage: "<name-or-part-of-it>",
 		Complete:  completeArgsUsage,
-		// TODO: think of way to upload fingerprint of node more
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "t,timeout",
@@ -461,7 +460,15 @@ EXAMPLES:
    When passing no arguments, 'sync' will synchronize with all online remotes.
    When passing a single argument, it will be used as the remote name to sync with.
 
-   TODO: write some more documentation on this.
+   The symbols in the output prefixing every path have the following meaning:
+
+	+	The file is only present on the remote side.
+	-	The file was removed on the remote side.
+	→	The file was moved to a new location.
+	*	This file was ignored because we chose to, due to our settings.
+	⇄	Both sides have changes, but they are compatible and can be merged.
+	⚡   Both sides have changes, but they are incompatible and result in conflicts.
+	_	The file is missing on the remote side.
 `,
 	},
 	"commit": {

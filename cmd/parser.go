@@ -241,18 +241,15 @@ func RunCmdline(args []string) int {
 			Category: vcscGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
 		}, {
-			// TODO: option to auto-download (parts of?) the synced result.
 			Name:     "sync",
 			Category: vcscGroup,
 			Action:   withDaemon(handleSync, true),
 		}, {
-			// TODO: Do re-pinning of old files only after a commit (to allow safe jump backs)
 			Name:     "commit",
 			Aliases:  []string{"cmt"},
 			Category: vcscGroup,
 			Action:   withDaemon(handleCommit, true),
 		}, {
-			// TODO: Figure out/test exact way of pinning and write docs for it.
 			Name:     "reset",
 			Aliases:  []string{"re"},
 			Category: vcscGroup,
