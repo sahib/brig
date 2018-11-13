@@ -189,9 +189,6 @@ func (fp Fingerprint) PubKeyMatches(pubKeyData []byte) bool {
 
 ///////////////////////
 
-// TODO: Make Info -> Addr one day?
-//       Having a separate name is not that useful to justify complexity.
-
 type Info struct {
 	Name Name
 	Addr string

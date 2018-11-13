@@ -174,7 +174,7 @@ func TestAuthProcess(t *testing.T) {
 	t.Parallel()
 
 	sizes := []int64{0, 255}
-	for i := uint(0); i < 20; i++ {
+	for i := uint(0); i < 18; i++ {
 		sizes = append(sizes, int64(1<<i))
 	}
 

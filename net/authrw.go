@@ -224,7 +224,6 @@ func wrapEncryptedRW(iv, key []byte, rw io.ReadWriter) (io.ReadWriter, error) {
 
 // runAuth runs the protocol pointed out above.
 func (ath *AuthReadWriter) runAuth() error {
-	// TODO: Sign name? That only helps in transition changes though...
 	if _, err := writeSizePack(ath.rwc, []byte(ath.ownName)); err != nil {
 		return err
 	}
