@@ -44,12 +44,14 @@ func createInitialReadme(ctl *client.Client, folder string) error {
 
 Here's what you can do next:
 
-    • Add a few remotes to sync with (See 'brig remote add -h')
-    • Mount your data somewhere convinient (See 'brig fstab -h')
-    • Have a relaxing day exploring brig's features.
+	• Read the official documentation (Just type »brig docs«)
+    • Add a few remotes to sync with (See »brig help remote«)
+    • Mount your data somewhere convinient (See »brig help fstab«)
+	• Sync with the remotes you've added (See »brig help sync«)
+    • Have a relaxing day while exploring brig.
 
-Please remember that brig is software in it's very early stages,
-and will currently eat your data with near-certainity.
+Please remember that brig is software in its very early stages,
+and you should not rely on it yet for production purposes.
 
 If you're done with this README, you can easily remove it:
 
@@ -65,6 +67,8 @@ The next start of brig will then read the password from the
 standard output of this process. Your repository is here:
 
     %s
+
+Have a nice day.
 `
 	fd, err := ioutil.TempFile("", ".brig-init-readme-")
 	if err != nil {
