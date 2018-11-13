@@ -63,7 +63,6 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 		return err
 	}
 
-	// TODO: Asking for IsOnline() can cause an initial Connect() currently.
 	capId.SetIsOnline(psrv.IsOnline())
 	return call.Results.SetWhoami(capId)
 }

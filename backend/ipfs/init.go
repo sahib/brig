@@ -38,8 +38,6 @@ func Init(path string, keySize int) error {
 
 // ForwardLog routes all ipfs logs to a file provided by brig.
 func ForwardLog(w io.Writer) {
-	// TODO: The log level setting of ipfs does not work yet.
-	// It is still setting the log level to INFO.
 	logWriter.Configure(logWriter.Output(w))
 	ipfsLogging.SetLevel(ipfsLogging.WARNING, "*")
 

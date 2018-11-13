@@ -48,7 +48,7 @@ var HelpTexts = map[string]Help{
 			cli.StringFlag{
 				Name:  "w,pw-helper",
 				Value: "",
-				Usage: "A commandline to specify a password helper (TODO)",
+				Usage: "A commandline to specify a password helper",
 			},
 			cli.BoolFlag{
 				Name:  "no-password,x",
@@ -70,6 +70,14 @@ var HelpTexts = map[string]Help{
    XMPP IDs. Specifying a resource can help you use the same name for different
    computers and specifying a domain makes it possible to indicate groups.  This
    is especially important for commands like »brig net locate«.
+
+   You will be asked to enter a password if you did not specify -w. This
+   password will be used to encrypt the repository while brig is not running.
+   For ease of use we recommend to set the password with the -w option. This
+   allows you to specify a password command that will print the desired
+   password as output. This output is read by brig and used as password. For
+   testing you could use »-w "echo mypass"«, while for serious use, you should
+   use something like »pass brig/desktop/password«.
 `,
 	},
 	"whoami": {

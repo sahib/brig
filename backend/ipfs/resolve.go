@@ -39,7 +39,7 @@ func (nd *Node) PublishName(name string) error {
 // Identity returns the base58 encoded id of the own ipfs node.
 func (nd *Node) Identity() (peer.Info, error) {
 	return peer.Info{
-		Name: "", // TODO: Should we return something meaningful here?
+		Name: "ipfs", // The name is not used currently.
 		Addr: nd.ipfsNode.Identity.Pretty(),
 	}, nil
 }

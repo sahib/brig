@@ -24,8 +24,7 @@ func OpenMigratedConfig(path string) (*config.Config, error) {
 
 	defer fd.Close()
 
-	// Add here any migrations with mgr.Add if needed.
-	// TODO: Switch to config.StrictnessWarn with some build tag.
+	// NOTE: Add here any migrations with mgr.Add if needed.
 	mgr := config.NewMigrater(CurrentVersion, config.StrictnessPanic)
 	mgr.Add(0, nil, DefaultsV0)
 
