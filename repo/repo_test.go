@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	TestRegistryPath = "/tmp/test-registry.yml"
+)
+
 func init() {
 	os.Setenv("BRIG_REGISTRY_PATH", TestRegistryPath)
 }
