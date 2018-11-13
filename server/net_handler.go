@@ -314,7 +314,7 @@ func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
 		return err
 	}
 
-	if err := rp.Remotes.AddRemote(*remote); err != nil {
+	if err := rp.Remotes.AddOrUpdateRemote(*remote); err != nil {
 		return err
 	}
 
@@ -403,7 +403,7 @@ func (nh *netHandler) RemoteUpdate(call capnp.Net_remoteUpdate) error {
 		return err
 	}
 
-	return rp.Remotes.UpdateRemote(*remote)
+	return rp.Remotes.AddOrUpdateRemote(*remote)
 }
 
 func (nh *netHandler) RemoteSave(call capnp.Net_remoteSave) error {

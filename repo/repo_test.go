@@ -2,6 +2,7 @@ package repo
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,11 +30,17 @@ func TestRepoInit(t *testing.T) {
 	bk := mock.NewMockBackend("", "", 0)
 	fs, err := rp.FS(rp.CurrentUser(), bk)
 	require.Nil(t, err)
-
-	// TODO: Assert a bit more that fs is working.
 	require.NotNil(t, fs)
-	require.Nil(t, fs.Close())
 
+	require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
+	stream, err := fs.Cat("/x")
+	require.Nil(t, err)
+
+	data, err := ioutil.ReadAll(stream)
+	require.Nil(t, err)
+	require.Equal(t, data, []byte{1, 2, 3})
+
+	require.Nil(t, fs.Close())
 	require.Nil(t, rp.Close("klaus"))
 
 }

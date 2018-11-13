@@ -43,7 +43,7 @@ func TestRemotesReload(t *testing.T) {
 	rl1, err := NewRemotes(fd.Name())
 	require.Nil(t, err)
 
-	require.Nil(t, rl1.AddRemote(bobRemote))
+	require.Nil(t, rl1.AddOrUpdateRemote(bobRemote))
 
 	rl2, err := NewRemotes(fd.Name())
 	require.Nil(t, err)
@@ -69,8 +69,8 @@ func TestRemoteOps(t *testing.T) {
 	rl, err := NewRemotes(fd.Name())
 	require.Nil(t, err)
 
-	require.Nil(t, rl.AddRemote(bobRemote))
-	require.Nil(t, rl.AddRemote(charlieRemote))
+	require.Nil(t, rl.AddOrUpdateRemote(bobRemote))
+	require.Nil(t, rl.AddOrUpdateRemote(charlieRemote))
 
 	fetchedBob, err := rl.Remote("bob@bobbyland.com/home")
 	require.Nil(t, err)

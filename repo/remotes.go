@@ -97,7 +97,7 @@ func dedupeFolders(folders []Folder) []Folder {
 	return newFolders
 }
 
-func (rl *RemoteList) AddRemote(remote Remote) error {
+func (rl *RemoteList) AddOrUpdateRemote(remote Remote) error {
 	remote.Folders = dedupeFolders(remote.Folders)
 	rl.remotes[remote.Name] = &remote
 	return rl.save()
@@ -119,17 +119,6 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	}
 
 	return *rm, nil
-}
-
-func (rl *RemoteList) UpdateRemote(remote Remote) error {
-	if _, ok := rl.remotes[remote.Name]; !ok {
-		return ErrNoSuchRemote
-	}
-
-	// TODO: This leaves the folders to be change-able... same for Add.
-	remote.Folders = dedupeFolders(remote.Folders)
-	rl.remotes[remote.Name] = &remote
-	return rl.save()
 }
 
 func (rl *RemoteList) SetRemote(name string, newRm Remote) error {
