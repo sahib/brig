@@ -15,7 +15,7 @@ func TestPinAdd(t *testing.T) {
 		t.Error(err)
 	}
 
-	p, err := api.Unixfs().Add(ctx, strings.NewReader("foo"))
+	p, err := api.Unixfs().Add(ctx, strFile("foo")())
 	if err != nil {
 		t.Error(err)
 	}
@@ -33,7 +33,7 @@ func TestPinSimple(t *testing.T) {
 		t.Error(err)
 	}
 
-	p, err := api.Unixfs().Add(ctx, strings.NewReader("foo"))
+	p, err := api.Unixfs().Add(ctx, strFile("foo")())
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,7 +52,7 @@ func TestPinSimple(t *testing.T) {
 		t.Errorf("unexpected pin list len: %d", len(list))
 	}
 
-	if list[0].Path().String() != p.String() {
+	if list[0].Path().Cid().String() != p.Cid().String() {
 		t.Error("paths don't match")
 	}
 
@@ -82,12 +82,12 @@ func TestPinRecursive(t *testing.T) {
 		t.Error(err)
 	}
 
-	p0, err := api.Unixfs().Add(ctx, strings.NewReader("foo"))
+	p0, err := api.Unixfs().Add(ctx, strFile("foo")())
 	if err != nil {
 		t.Error(err)
 	}
 
-	p1, err := api.Unixfs().Add(ctx, strings.NewReader("bar"))
+	p1, err := api.Unixfs().Add(ctx, strFile("bar")())
 	if err != nil {
 		t.Error(err)
 	}
@@ -156,7 +156,7 @@ func TestPinRecursive(t *testing.T) {
 		t.Errorf("unexpected pin list len: %d", len(list))
 	}
 
-	if list[0].Path().String() != p0.String() {
+	if list[0].Path().Cid().String() != p0.Cid().String() {
 		t.Error("unexpected path")
 	}
 
@@ -195,7 +195,7 @@ func TestPinRecursive(t *testing.T) {
 			t.Fatalf("unexpected badNodes len")
 		}
 
-		if r.BadNodes()[0].Path().String() != p0.String() {
+		if r.BadNodes()[0].Path().Cid().String() != p0.Cid().String() {
 			t.Error("unexpected badNode path")
 		}
 

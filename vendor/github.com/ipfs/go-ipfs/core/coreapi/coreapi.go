@@ -18,22 +18,22 @@ import (
 
 	core "github.com/ipfs/go-ipfs/core"
 	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	ipfspath "github.com/ipfs/go-ipfs/path"
-	resolver "github.com/ipfs/go-ipfs/path/resolver"
-	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	ipld "gx/ipfs/QmWi2BYBL5gJ3CiAiQchg6rn1A8iBsrWy51EYxvHVjFvLb/go-ipld-format"
-	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
+	ipld "gx/ipfs/QmR7TcHkR9nxkUorfi8XMTAMLUK7GiP64TWWBzY3aacc1o/go-ipld-format"
+	dag "gx/ipfs/QmSei8kFMfqdJq7Q68d2LMnHbTWKKg2daA29ezUYFAUNgc/go-merkledag"
+	logging "gx/ipfs/QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae/go-log"
 )
+
+var log = logging.Logger("core/coreapi")
 
 type CoreAPI struct {
 	node *core.IpfsNode
+	dag  ipld.DAGService
 }
 
 // NewCoreAPI creates new instance of IPFS CoreAPI backed by go-ipfs Node.
 func NewCoreAPI(n *core.IpfsNode) coreiface.CoreAPI {
-	api := &CoreAPI{n}
+	api := &CoreAPI{n, n.DAG}
 	return api
 }
 
@@ -72,85 +72,23 @@ func (api *CoreAPI) Pin() coreiface.PinAPI {
 	return (*PinAPI)(api)
 }
 
-// ResolveNode resolves the path `p` using Unixfx resolver, gets and returns the
-// resolved Node.
-func (api *CoreAPI) ResolveNode(ctx context.Context, p coreiface.Path) (ipld.Node, error) {
-	return resolveNode(ctx, api.node.DAG, api.node.Namesys, p)
+// Dht returns the DhtAPI interface implementation backed by the go-ipfs node
+func (api *CoreAPI) Dht() coreiface.DhtAPI {
+	return (*DhtAPI)(api)
 }
 
-func resolveNode(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (ipld.Node, error) {
-	p, err := resolvePath(ctx, ng, nsys, p)
-	if err != nil {
-		return nil, err
-	}
-
-	node, err := ng.Get(ctx, p.Cid())
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
+// Swarm returns the SwarmAPI interface implementation backed by the go-ipfs node
+func (api *CoreAPI) Swarm() coreiface.SwarmAPI {
+	return (*SwarmAPI)(api)
 }
 
-// ResolvePath resolves the path `p` using Unixfs resolver, returns the
-// resolved path.
-// TODO: store all of ipfspath.Resolver.ResolvePathComponents() in Path
-func (api *CoreAPI) ResolvePath(ctx context.Context, p coreiface.Path) (coreiface.Path, error) {
-	return resolvePath(ctx, api.node.DAG, api.node.Namesys, p)
+// PubSub returns the PubSubAPI interface implementation backed by the go-ipfs node
+func (api *CoreAPI) PubSub() coreiface.PubSubAPI {
+	return (*PubSubAPI)(api)
 }
 
-func resolvePath(ctx context.Context, ng ipld.NodeGetter, nsys namesys.NameSystem, p coreiface.Path) (coreiface.Path, error) {
-	if p.Resolved() {
-		return p, nil
-	}
-
-	r := &resolver.Resolver{
-		DAG:         ng,
-		ResolveOnce: uio.ResolveUnixfsOnce,
-	}
-
-	p2 := ipfspath.FromString(p.String())
-	node, err := core.Resolve(ctx, nsys, r, p2)
-	if err == core.ErrNoNamesys {
-		return nil, coreiface.ErrOffline
-	} else if err != nil {
-		return nil, err
-	}
-
-	var root *cid.Cid
-	if p2.IsJustAKey() {
-		root = node.Cid()
-	}
-
-	return ResolvedPath(p.String(), node.Cid(), root), nil
+// getSession returns new api backed by the same node with a read-only session DAG
+func (api *CoreAPI) getSession(ctx context.Context) *CoreAPI {
+	ng := dag.NewReadOnlyDagService(dag.NewSession(ctx, api.dag))
+	return &CoreAPI{api.node, ng}
 }
-
-// Implements coreiface.Path
-type path struct {
-	path ipfspath.Path
-	cid  *cid.Cid
-	root *cid.Cid
-}
-
-// ParsePath parses path `p` using ipfspath parser, returns the parsed path.
-func ParsePath(p string) (coreiface.Path, error) {
-	pp, err := ipfspath.ParsePath(p)
-	if err != nil {
-		return nil, err
-	}
-	return &path{path: pp}, nil
-}
-
-// ParseCid parses the path from `c`, returns the parsed path.
-func ParseCid(c *cid.Cid) coreiface.Path {
-	return &path{path: ipfspath.FromCid(c), cid: c, root: c}
-}
-
-// ResolvePath parses path from string `p`, returns parsed path.
-func ResolvedPath(p string, c *cid.Cid, r *cid.Cid) coreiface.Path {
-	return &path{path: ipfspath.FromString(p), cid: c, root: r}
-}
-
-func (p *path) String() string { return p.path.String() }
-func (p *path) Cid() *cid.Cid  { return p.cid }
-func (p *path) Root() *cid.Cid { return p.root }
-func (p *path) Resolved() bool { return p.cid != nil }

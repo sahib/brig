@@ -7,12 +7,12 @@ import (
 	"math/rand"
 	"testing"
 
-	dag "github.com/ipfs/go-ipfs/merkledag"
+	dag "gx/ipfs/QmSei8kFMfqdJq7Q68d2LMnHbTWKKg2daA29ezUYFAUNgc/go-merkledag"
 
-	posinfo "gx/ipfs/QmUWsXLvYYDAaoAt9TPZpFX4ffHHMg46AHrz1ZLTN5ABbe/go-ipfs-posinfo"
-	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
-	blockstore "gx/ipfs/QmdpuJBPBZ6sLPj9BQpn3Rpi38BT2cF1QMiUfyzNWeySW4/go-ipfs-blockstore"
-	ds "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore"
+	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
+	posinfo "gx/ipfs/QmQyUyYcpKG1u53V7N25qRTGw5XwaAxTMKXbduqHotQztg/go-ipfs-posinfo"
+	ds "gx/ipfs/QmaRb5yNXKonhbkpNxNawoydk4N6es6b4fPj19sjEKsh5D/go-datastore"
+	blockstore "gx/ipfs/QmcDDgAXDbpDUpadCJKLr49KYR4HuL7T8Z1dZTHt6ixsoR/go-ipfs-blockstore"
 )
 
 func newTestFilestore(t *testing.T) (string, *Filestore) {
@@ -23,6 +23,7 @@ func newTestFilestore(t *testing.T) (string, *Filestore) {
 		t.Fatal(err)
 	}
 	fm := NewFileManager(mds, testdir)
+	fm.AllowFiles = true
 
 	bs := blockstore.NewBlockstore(mds)
 	fstore := NewFilestore(bs, fm)
@@ -54,7 +55,7 @@ func TestBasicFilestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var cids []*cid.Cid
+	var cids []cid.Cid
 	for i := 0; i < 100; i++ {
 		n := &posinfo.FilestoreNode{
 			PosInfo: &posinfo.PosInfo{
@@ -103,7 +104,7 @@ func TestBasicFilestore(t *testing.T) {
 	}
 }
 
-func randomFileAdd(t *testing.T, fs *Filestore, dir string, size int) (string, []*cid.Cid) {
+func randomFileAdd(t *testing.T, fs *Filestore, dir string, size int) (string, []cid.Cid) {
 	buf := make([]byte, size)
 	rand.Read(buf)
 
@@ -112,7 +113,7 @@ func randomFileAdd(t *testing.T, fs *Filestore, dir string, size int) (string, [
 		t.Fatal(err)
 	}
 
-	var out []*cid.Cid
+	var out []cid.Cid
 	for i := 0; i < size/10; i++ {
 		n := &posinfo.FilestoreNode{
 			PosInfo: &posinfo.PosInfo{
@@ -160,5 +161,17 @@ func TestDeletes(t *testing.T) {
 		if deleted[c.KeyString()] {
 			t.Fatal("shouldnt have reference to this key anymore")
 		}
+	}
+}
+
+func TestIsURL(t *testing.T) {
+	if !IsURL("http://www.example.com") {
+		t.Fatal("IsURL failed: http://www.example.com")
+	}
+	if !IsURL("https://www.example.com") {
+		t.Fatal("IsURL failed: https://www.example.com")
+	}
+	if IsURL("adir/afile") || IsURL("http:/ /afile") || IsURL("http:/a/file") {
+		t.Fatal("IsURL recognized non-url")
 	}
 }
