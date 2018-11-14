@@ -257,7 +257,7 @@ EXAMPLES:
 		Flags: ExplicitPinFlags,
 	},
 	"pin.set": {
-		Usage:     "A more powerful version of `brig pin set`",
+		Usage:     "A more powerful version of `brig pin add`",
 		ArgsUsage: "[<PREFIX>]",
 		Complete:  completeBrigPath(true, true),
 		Description: `Explicitly pin all files in the range between --from and --to

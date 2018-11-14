@@ -190,7 +190,7 @@ func Cast(data []byte) (Hash, error) {
 	return Hash(mh), nil
 }
 
-// TestDummy returns an internal hash based on `seed`.
+// TestDummy returns a blake2b hash based on `seed`.
 // The same `seed` will always generate the same hash.
 func TestDummy(t *testing.T, seed byte) Hash {
 	data := make([]byte, multihash.DefaultLengths[InternalHashAlgo])

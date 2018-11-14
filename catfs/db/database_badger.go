@@ -9,7 +9,7 @@ import (
 	//
 	// So gx forces us to use their badger version for no good reason at all.
 
-	"gx/ipfs/QmeAEa8FDWAmZJTL6YcM1oEndZ4MyhCr5rTsjYZQui1x1L/badger"
+	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
 	"io"
 	"strings"
 	"sync"

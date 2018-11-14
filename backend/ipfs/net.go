@@ -8,11 +8,12 @@ import (
 
 	netBackend "github.com/sahib/brig/net/backend"
 
-	p2pnet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	ipfspeer "gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	ipfspeer "gx/ipfs/QmTRhk7cgjUf2gfQ3p2M9KPECNZEW9XUrmHcFCgog4cPgB/go-libp2p-peer"
+	p2pnet "gx/ipfs/QmXuRkCR7BNQa9uqfpTiFWsTQLzmTWYg91Ja1w95gnqb6u/go-libp2p-net"
 
+	pstore "gx/ipfs/QmTTJcDL3gsnGDALjh2fDGg1onGRUdVgNL2hU2WEZcVrMX/go-libp2p-peerstore"
+	ping "gx/ipfs/QmUDTcnDp2WssbmiDLC6aYurUeyt7QeRakHUQMxA2mZ5iB/go-libp2p/p2p/protocol/ping"
 	pro "gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 type streamAddr struct {
@@ -185,7 +186,7 @@ func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
 	}
 
 	ctx, cancel := context.WithCancel(nd.ctx)
-	pingCh, err := nd.ipfsNode.Ping.Ping(ctx, peerID)
+	pingCh, err := ping.Ping(ctx, nd.ipfsNode.PeerHost, peerID)
 	if err != nil {
 		// If peer cannot be rached, we will bail out here.
 		cancel()

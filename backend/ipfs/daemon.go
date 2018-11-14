@@ -11,6 +11,8 @@ import (
 	e "github.com/pkg/errors"
 
 	core "github.com/ipfs/go-ipfs/core"
+	coreapi "github.com/ipfs/go-ipfs/core/coreapi"
+	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
@@ -58,6 +60,7 @@ type Node struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	bootstrapAddrs []string
+	api            coreiface.CoreAPI
 }
 
 func createNode(path string, minSwarmPort int, ctx context.Context, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
@@ -171,6 +174,7 @@ func NewWithPort(ipfsPath string, bootstrapAddrs []string, swarmPort int) (*Node
 		Path:           ipfsPath,
 		SwarmPort:      swarmPort,
 		ipfsNode:       ipfsNode,
+		api:            coreapi.NewCoreAPI(ipfsNode),
 		ctx:            ctx,
 		cancel:         cancel,
 		bootstrapAddrs: bootstrapAddrs,
@@ -202,6 +206,7 @@ func (nd *Node) Connect() error {
 		return err
 	}
 
+	nd.api = coreapi.NewCoreAPI(nd.ipfsNode)
 	return nil
 }
 
@@ -219,6 +224,7 @@ func (nd *Node) Disconnect() error {
 		return err
 	}
 
+	nd.api = coreapi.NewCoreAPI(nd.ipfsNode)
 	return nil
 }
 

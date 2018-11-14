@@ -1,7 +1,7 @@
 package ipfs
 
 import (
-	config "github.com/ipfs/go-ipfs/repo/config"
+	ipfsversion "github.com/ipfs/go-ipfs"
 )
 
 type version struct {
@@ -14,8 +14,8 @@ func (v *version) Rev() string    { return v.rev }
 
 func Version() *version {
 	return &version{
-		semVer: config.CurrentVersionNumber,
+		semVer: ipfsversion.CurrentVersionNumber,
 		name:   "go-ipfs",
-		rev:    config.CurrentCommit,
+		rev:    ipfsversion.CurrentCommit,
 	}
 }

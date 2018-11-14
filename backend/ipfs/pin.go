@@ -2,13 +2,11 @@ package ipfs
 
 import (
 	"fmt"
+	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
 	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
-	cid "gx/ipfs/QmapdYm1b22Frv3k17fqrBYTFRxwiaVJkB299Mfn33edeB/go-cid"
 
-	core "github.com/ipfs/go-ipfs/core"
-	"github.com/ipfs/go-ipfs/path"
-	"github.com/ipfs/go-ipfs/path/resolver"
-	uio "github.com/ipfs/go-ipfs/unixfs/io"
+	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
+
 	h "github.com/sahib/brig/util/hashlib"
 )
 
@@ -16,17 +14,12 @@ func (nd *Node) Pin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()
 
-	rslv := &resolver.Resolver{
-		DAG:         nd.ipfsNode.DAG,
-		ResolveOnce: uio.ResolveUnixfsOnce,
-	}
-
-	p, err := path.ParsePath(hash.B58String())
+	p, err := coreiface.ParsePath(hash.B58String())
 	if err != nil {
 		return err
 	}
 
-	dagnode, err := core.Resolve(nd.ctx, nd.ipfsNode.Namesys, rslv, p)
+	dagnode, err := nd.api.ResolveNode(nd.ctx, p)
 	if err != nil {
 		return fmt.Errorf("pin: %s", err)
 	}
