@@ -153,10 +153,16 @@ type Commit struct {
 	Date time.Time
 }
 
-// Change describes a single change to a node between to version
+// Change describes a single change to a node between two versions
 type Change struct {
 	// Path is the node that was changed
 	Path string
+
+	// IsPinned tells you if the content is pinned at this stage
+	IsPinned bool
+
+	// IsExplicty tells you if the content is pinned explicitly.
+	IsExplicit bool
 
 	// Change describes what was changed
 	Change string
@@ -1221,9 +1227,16 @@ func (fs *FS) History(path string) ([]Change, error) {
 			}
 		}
 
+		isPinned, isExplicit, err := fs.pinner.IsNodePinned(change.Curr)
+		if err != nil {
+			return nil, err
+		}
+
 		entries = append(entries, Change{
 			Path:            change.Curr.Path(),
 			Change:          change.Mask.String(),
+			IsPinned:        isPinned,
+			IsExplicit:      isExplicit,
 			Head:            head,
 			Next:            next,
 			MovedTo:         change.MovedTo,
