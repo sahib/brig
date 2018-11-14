@@ -167,7 +167,7 @@ func (f *File) rehash(lkr Linker, newPath string) {
 	if f.Base.content != nil {
 		contentHash = f.Base.content.Clone()
 	} else {
-		contentHash = h.EmptyBackendHash.Clone()
+		contentHash = h.EmptyInternalHash.Clone()
 	}
 
 	f.tree = h.Sum([]byte(fmt.Sprintf("%s|%s", newPath, contentHash)))

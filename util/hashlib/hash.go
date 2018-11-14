@@ -9,19 +9,19 @@ import (
 
 	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/multiformats/go-multihash"
-	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
-	ContentHash = multihash.BLAKE2B_MAX
+	InternalHashAlgo = multihash.SHA3_256
 )
 
 var (
-	// EmptyHash is a completely zero hash with 512 bits (blake2b compatible)
-	EmptyHash Hash
-
-	// EmptyBackendHash is a zero hash with 256 bits (ipfs compatible)
+	// EmptyBackendHash is a hash containing only zeros, using IPFS's default hash.
 	EmptyBackendHash Hash
+
+	// EmptyInternalHash is a hash containing only zeros, using brig's default hash.
+	EmptyInternalHash Hash
 )
 
 func init() {
@@ -31,15 +31,15 @@ func init() {
 		panic(fmt.Sprintf("Unable to create empty hash: %v", err))
 	}
 
-	EmptyHash = Hash(hash)
+	EmptyBackendHash = Hash(hash)
 
-	data = make([]byte, multihash.DefaultLengths[ContentHash])
-	hash, err = multihash.Encode(data, ContentHash)
+	data = make([]byte, multihash.DefaultLengths[InternalHashAlgo])
+	hash, err = multihash.Encode(data, InternalHashAlgo)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to create empty content hash: %v", err))
 	}
 
-	EmptyBackendHash = Hash(hash)
+	EmptyInternalHash = Hash(hash)
 }
 
 // Hash is like multihash.Multihash but also supports serializing to json.
@@ -73,7 +73,7 @@ func FromB58String(b58 string) (Hash, error) {
 // and converts it to raw bytes.
 func (h Hash) UnmarshalJSON(data []byte) error {
 	if h == nil {
-		h = EmptyHash
+		h = EmptyBackendHash
 	}
 
 	unquoted, err := strconv.Unquote(string(data))
@@ -92,13 +92,13 @@ func (h Hash) UnmarshalJSON(data []byte) error {
 
 // Valid returns true if the hash contains a defined value.
 func (h Hash) Valid() bool {
-	return h != nil && !bytes.Equal(h, EmptyHash)
+	return h != nil && !bytes.Equal(h, EmptyBackendHash)
 }
 
 // Bytes returns the underlying bytes in the hash.
 func (h Hash) Bytes() []byte {
 	if h == nil {
-		return EmptyHash
+		return EmptyBackendHash
 	}
 
 	return []byte(h)
@@ -165,7 +165,7 @@ func (h Hash) Xor(o Hash) error {
 }
 
 func Sum(data []byte) Hash {
-	return sum(data, multihash.BLAKE2B_MAX, multihash.DefaultLengths[multihash.BLAKE2B_MAX])
+	return sum(data, InternalHashAlgo, multihash.DefaultLengths[InternalHashAlgo])
 }
 
 func SumSHA256(data []byte) Hash {
@@ -190,15 +190,15 @@ func Cast(data []byte) (Hash, error) {
 	return Hash(mh), nil
 }
 
-// TestDummy returns a blake2b hash based on `seed`.
+// TestDummy returns an internal hash based on `seed`.
 // The same `seed` will always generate the same hash.
 func TestDummy(t *testing.T, seed byte) Hash {
-	data := make([]byte, multihash.DefaultLengths[multihash.BLAKE2B_MAX])
+	data := make([]byte, multihash.DefaultLengths[InternalHashAlgo])
 	for idx := range data {
 		data[idx] = seed
 	}
 
-	hash, err := multihash.Encode(data, multihash.BLAKE2B_MAX)
+	hash, err := multihash.Encode(data, InternalHashAlgo)
 	if err != nil {
 		t.Fatalf("Failed to create dummy hash: %v", err)
 		return nil
@@ -221,18 +221,12 @@ type HashWriter struct {
 }
 
 func NewHashWriter() *HashWriter {
-	digest, err := blake2b.New512(nil)
-	if err != nil {
-		// New512 can only fail when passing a non-nil key.
-		panic(fmt.Sprintf("failed to create blake2b hash: %v", err))
-	}
-
-	return &HashWriter{hash: digest}
+	return &HashWriter{hash: sha3.New256()}
 }
 
 func (hw *HashWriter) Finalize() Hash {
 	sum := hw.hash.Sum(nil)
-	hash, err := multihash.Encode(sum, multihash.BLAKE2B_MAX)
+	hash, err := multihash.Encode(sum, InternalHashAlgo)
 	if err != nil {
 		// If this does not work, there's something serious wrong.
 		panic(fmt.Sprintf("failed to encode final hash: %v", err))

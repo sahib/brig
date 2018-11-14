@@ -373,7 +373,7 @@ whoami`` command to ask a very existential questions:
 
     # NOTE: The hash will look different for you:
     $ brig whoami
-    ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+    ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
 
 .. note::
 
@@ -402,7 +402,7 @@ and each other as remote. There are three typical scenarios here:
      # This command might take some time to yield results:
      $ brig net locate -m domain woods.org
      NAME           TYPE    FINGERPRINT
-     ali@woods.org  domain  QmTTJbk[...]:SEfXUDvKzjRPb4rbbk[...]
+     ali@woods.org  domain  QmTTJbk[...]:W1UDvKzjRPb4rbbk[...]
 
    Please note again: Do not blindly add the fingerprint you see here. Always
    make sure the person you're syncing with is the one you think they are.
@@ -418,7 +418,7 @@ Let's call the other side *bob*: [#]_
 
 	$ brig remote add bob \
 		QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
-		SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
+		W1e3rNGGCuuQnzyoiBKLdoN41yQ4NfNy9nRD3MwXk6h8Vy
 
 *Bob* has do the same on his side. Otherwise the connection won't be
 established, because the other side won't be authenticated. By adding somebody
@@ -428,7 +428,7 @@ as remote we **authenticate** them:
 
 	$ brig remote add ali \
         QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
-        SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+        W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
 
 Thanks to the fingerprint, ``brig`` now knows how to reach the other repository
 over the network. This is done in the background via ``IPFS`` and might take
@@ -716,8 +716,8 @@ being saved per file version:
     Pinned        yes
     Explicit      no
     ModTime       2018-10-14T22:46:00+02:00
-    Tree Hash     SEfXUE2YhBFALY7EQd1BbYFugugqipCeKmadx7wMo5SRdNjNZhaCV9W77vs8aYjvTnB8uvC4ZKi5znaq9iGaKZyTyjZv6
-    Content Hash  SEfXUDMbsF97A5vgf52aXsdVEVhGPKFC2QUU3946yoFTL3EsqjRJHTXNZSz1vhKegrmwBKQFghvREQoNUVRv7Hx6b8a1M
+    Tree Hash     W1gX8NMQ9m8SBnjHRGtamRAjJewbnSgi6C1P7YEunfgTA3
+    Content Hash  W1pzHcGbVpXaePa1XpehW4HGPatDUJs8zZzSRbpNCGbN2u
     Backend Hash  QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK
 
 
@@ -744,12 +744,12 @@ The command ``brig log`` shows you a list of commits that were made already:
 .. code-block:: bash
 
           -      Sun Oct 14 22:46:00 CEST 2018 • (curr)
-    SEfXUDozvTHH Sun Oct 14 22:46:00 CEST 2018 user: Added ali-file (head)
-    SEfXUASkpNy4 Sun Oct 14 22:46:00 CEST 2018 user: Added initial README.md
-    SEfXUEru1pLi Sun Oct 14 22:46:00 CEST 2018 initial commit (init)
+    W1kAySD3aKLt Sun Oct 14 22:46:00 CEST 2018 user: Added ali-file (head)
+    W1ocyBsS28SD Sun Oct 14 22:46:00 CEST 2018 user: Added initial README.md
+    W1D9KsLNnAv4 Sun Oct 14 22:46:00 CEST 2018 initial commit (init)
 
 
-Each commit is identified by a hash (e.g. ``SEfXUDozvTHH``) and records the
+Each commit is identified by a hash (e.g. ``W1kAySD3aKLt``) and records the
 time when it was created. Apart from that, there is a message that describes
 the commit in some way. In contrast to ``git``, **commits are rarely done by
 the user themselve**. More often they are done by ``brig`` when synchronizing.
@@ -773,7 +773,7 @@ you can do a commit yourself:
     $ brig commit -m 'better leave some breadcrumbs'
     $ brig log | head -n 2
           -      Mon Oct 15 00:27:37 CEST 2018 • (curr)
-    SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (head)
+    W1hZoY7TrxyK Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (head)
 
 This snapshot can be useful later if you decide to revert to a certain version.
 The hash of the commit is of course hard to remember, so if you need it very often, you can
@@ -782,10 +782,10 @@ won't be changed by ``brig`` and won't move therefore:
 
 .. code-block:: bash
 
-    # instead of "SEfXUDkdjUND" you also could use "head" here:
-    $ brig tag SEfXUDkdjUND breadcrumbs
+    # instead of "W1hZoY7TrxyK" you also could use "head" here:
+    $ brig tag W1hZoY7TrxyK breadcrumbs
     $ brig log | grep breadcrumps
-    $ SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs, head)
+    $ W1hZoY7TrxyK Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs, head)
 
 
 File history
@@ -807,12 +807,12 @@ You can check an individual file or directorie's history by using the ``brig his
     # or "hst" for short:
     $ brig hst README.md
     CHANGE  FROM  TO              WHEN
-    added   INIT  SEfXUASkpNy4    Oct 14 22:46:00
+    added   INIT  W1ocyBsS28SD    Oct 14 22:46:00
     $ brig mv README.md README_LATER.md
     $ brig hst README_LATER.md
     CHANGE  FROM  TO            HOW                           WHEN
     moved   HEAD  CURR          /README.md → /README_LATER.md Oct 15 00:27:37
-    added   INIT  SEfXUASkpNy4                                Oct 14 22:46:0
+    added   INIT  W1ocyBsS28SD                                Oct 14 22:46:0
 
 As you can see, you will be shown one line per history entry. Each entry
 denotes which commit the change was in. Some commits were nothing was changed
@@ -828,7 +828,7 @@ should only look at own commits and not compare any remotes.
 .. code-block:: bash
 
     # Let's compare the commit hashes from above:
-    $ brig diff -s SEfXUDkdjUND SEfXUDozvTHH
+    $ brig diff -s W1hZoY7TrxyK W1kAySD3aKLt
     •
     └── + A_NEW_FILE
 
@@ -879,7 +879,7 @@ The key here is that you did not loose any history:
 
     $ brig log | head -2
            -     Mon Oct 15 00:51:12 CEST 2018 • (curr)
-    SEfXUDkdjUND Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs)
+    W1hZoY7TrxyK Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs)
 
 
 As you can see, we still have the previous commits. ``brig revert`` did not

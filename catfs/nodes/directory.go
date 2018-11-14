@@ -40,8 +40,8 @@ func NewEmptyDirectory(
 			inode:    inode,
 			user:     user,
 			tree:     h.Sum([]byte(absPath)),
-			content:  h.EmptyBackendHash.Clone(),
-			backend:  h.EmptyHash.Clone(),
+			content:  h.EmptyInternalHash.Clone(),
+			backend:  h.EmptyBackendHash.Clone(),
 			name:     name,
 			nodeType: NodeTypeDirectory,
 			modTime:  time.Now().Truncate(time.Microsecond),
@@ -542,7 +542,7 @@ func (d *Directory) Copy(inode uint64) ModNode {
 
 func (d *Directory) rehash(lkr Linker, updateContentHash bool) error {
 	newTreeHash := h.Sum([]byte(path.Join(d.parentName, d.name)))
-	newContentHash := h.EmptyBackendHash.Clone()
+	newContentHash := h.EmptyInternalHash.Clone()
 	for _, name := range d.order {
 		newTreeHash = newTreeHash.Mix(d.children[name])
 

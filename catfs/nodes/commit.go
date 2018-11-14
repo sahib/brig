@@ -6,7 +6,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/multiformats/go-multihash"
 	capnp_model "github.com/sahib/brig/catfs/nodes/capnp"
 	h "github.com/sahib/brig/util/hashlib"
 	capnp "zombiezen.com/go/capnproto2"
@@ -222,7 +221,7 @@ func (c *Commit) BoxCommit(author string, message string) error {
 
 	buf := &bytes.Buffer{}
 
-	// If parent == nil, this will be EmptyHash.
+	// If parent == nil, this will be EmptyBackendHash.
 	buf.Write(padHash(c.parent))
 
 	// Write the root hash.
@@ -234,16 +233,7 @@ func (c *Commit) BoxCommit(author string, message string) error {
 	// Write the message last, it may be arbitary length.
 	buf.Write([]byte(message))
 
-	mh, err := multihash.Sum(
-		buf.Bytes(),
-		multihash.BLAKE2B_MAX,
-		multihash.DefaultLengths[multihash.BLAKE2B_MAX],
-	)
-
-	if err != nil {
-		return err
-	}
-
+	mh := h.Sum(buf.Bytes())
 	c.message = message
 	c.tree = h.Hash(mh)
 	return nil

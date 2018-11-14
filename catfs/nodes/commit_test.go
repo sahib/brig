@@ -14,8 +14,8 @@ func TestCommit(t *testing.T) {
 		t.Fatalf("Failed to create commit: %v", err)
 	}
 
-	cmt.root = h.EmptyHash
-	cmt.parent = h.EmptyHash
+	cmt.root = h.EmptyBackendHash
+	cmt.parent = h.EmptyBackendHash
 	cmt.Base.name = "some commit"
 
 	cmt.SetMergeMarker(AuthorOfStage, h.TestDummy(t, 42))
@@ -48,11 +48,11 @@ func TestCommit(t *testing.T) {
 		t.Fatalf("Bad message unmarshaled: %v", empty.message)
 	}
 
-	if !empty.root.Equal(h.EmptyHash) {
+	if !empty.root.Equal(h.EmptyBackendHash) {
 		t.Fatalf("Bad root unmarshaled: %v", empty.root)
 	}
 
-	if !empty.parent.Equal(h.EmptyHash) {
+	if !empty.parent.Equal(h.EmptyBackendHash) {
 		t.Fatalf("Bad parent unmarshaled: %v", empty.root)
 	}
 
