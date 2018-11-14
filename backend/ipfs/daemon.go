@@ -134,6 +134,7 @@ func createNode(path string, minSwarmPort int, ctx context.Context, online bool,
 		"Addresses.Gateway":    "",
 		"Reprovider.Interval":  "2h",
 		"Swarm.EnableRelayHop": true,
+		"Experimental.QUIC":    true,
 	}
 
 	for key, value := range config {
