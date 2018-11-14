@@ -137,6 +137,9 @@ type Change struct {
 
 	MovedTo         string
 	WasPreviouslyAt string
+
+	IsPinned   bool
+	IsExplicit bool
 }
 
 func (cl *Client) History(path string) ([]*Change, error) {
@@ -207,6 +210,8 @@ func (cl *Client) History(path string) ([]*Change, error) {
 			Next:            next,
 			MovedTo:         movedTo,
 			WasPreviouslyAt: wasPreviouslyAt,
+			IsPinned:        entry.IsPinned(),
+			IsExplicit:      entry.IsExplicit(),
 		})
 	}
 

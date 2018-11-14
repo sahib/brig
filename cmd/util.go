@@ -663,3 +663,16 @@ func readFormatTemplate(ctx *cli.Context) (*template.Template, error) {
 
 	return nil, nil
 }
+
+func pinStateToSymbol(isPinned, isExplicit bool) string {
+	if isPinned {
+		colorFn := color.CyanString
+		if isExplicit {
+			colorFn = color.MagentaString
+		}
+
+		return colorFn("🖈")
+	}
+
+	return ""
+}

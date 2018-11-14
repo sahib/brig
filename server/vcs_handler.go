@@ -191,6 +191,9 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 				return err
 			}
 
+			entry.SetIsPinned(change.IsPinned)
+			entry.SetIsExplicit(change.IsExplicit)
+
 			if err := entry.SetChange(change.Change); err != nil {
 				return err
 			}

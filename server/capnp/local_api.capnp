@@ -34,13 +34,15 @@ struct ConfigEntry $Go.doc("A config entry (including meta info)") {
     needsRestart @4 :Bool;
 }
 
-struct Change $Go.doc("One History entry for a file") {
+struct Change $Go.doc("One history entry for a file") {
     path            @0 :Text;
     change          @1 :Text;
     head            @2 :Commit;
     next            @3 :Commit;
     movedTo         @4 :Text;
     wasPreviouslyAt @5 :Text;
+    isPinned        @6 :Bool;
+    isExplicit      @7 :Bool;
 }
 
 struct DiffPair $Go.doc("Represent two differing files") {

@@ -82,9 +82,9 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 
 	if len(history) != 0 {
 		if containsMoves {
-			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\tHOW\tWHEN\t\n")
+			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\tHOW\tWHEN\tPIN\t\n")
 		} else {
-			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\t\tWHEN\t\n")
+			fmt.Fprintf(tabW, "CHANGE\tFROM\tTO\t\tWHEN\tPIN\t\n")
 		}
 	}
 
@@ -122,12 +122,13 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t%s\t\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t\n",
 			changeDesc,
 			color.CyanString(commitName(entry.Next)),
 			color.GreenString(commitName(entry.Head)),
 			what,
 			when,
+			pinStateToSymbol(entry.IsPinned, entry.IsExplicit),
 		)
 	}
 
