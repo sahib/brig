@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"strings"
+
+	ownStrings "github.com/sahib/brig/util/strings"
 )
 
 // Component is a single multiaddr Component.
@@ -66,14 +67,14 @@ func (c *Component) Value() string {
 }
 
 func (c *Component) String() string {
-	var b strings.Builder
+	var b ownStrings.Builder
 	c.writeTo(&b)
 	return b.String()
 }
 
 // writeTo is an efficient, private function for string-formatting a multiaddr.
 // Trust me, we tend to allocate a lot when doing this.
-func (c *Component) writeTo(b *strings.Builder) {
+func (c *Component) writeTo(b *ownStrings.Builder) {
 	b.WriteByte('/')
 	b.WriteString(c.protocol.Name)
 	value := c.Value()

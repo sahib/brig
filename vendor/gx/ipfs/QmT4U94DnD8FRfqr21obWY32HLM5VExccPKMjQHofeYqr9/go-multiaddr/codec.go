@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	ownStrings "github.com/sahib/brig/util/strings"
 )
 
 func stringToBytes(s string) ([]byte, error) {
@@ -136,7 +138,7 @@ func readComponent(b []byte) (int, Component, error) {
 }
 
 func bytesToString(b []byte) (ret string, err error) {
-	var buf strings.Builder
+	var buf ownStrings.Builder
 
 	for len(b) > 0 {
 		n, c, err := readComponent(b)

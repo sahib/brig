@@ -13,7 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
-	ownStrings "github.com/sahib/brig/util/log/strings"
+	ownStrings "github.com/sahib/brig/util/strings"
 )
 
 var showPid = false
