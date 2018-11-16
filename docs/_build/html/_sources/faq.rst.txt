@@ -76,12 +76,13 @@ a basic overview over the format:
 Two algorithms are used:
 
 * ``SHA256`` is used by ``ipfs`` for every content hash.
-* ``Blake2B`` is used as general purpose hash for everything ``brig`` internal.
+* ``SHA3-256`` is used as general purpose hash for everything ``brig`` internal.
 
-Each hash is encoded as `multihash <https://github.com/multiformats/multihash>`_.
-For output purposes this representation is encoded additionally in base58.
-Therefore, all hashes that start with ``SEfXUE`` are ``blake2b`` hashes while
-the ones starting with ``Qm`` are ``sha256`` hashes.
+Each hash is encoded as `multihash
+<https://github.com/multiformats/multihash>`_. For output purposes this
+representation is encoded additionally in base58. Therefore, all hashes that
+start with ``W1`` are ``sha3-256`` hashes while the ones starting with ``Qm``
+are ``sha256`` hashes.
 
 4. What kind of deduplication is currently used?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

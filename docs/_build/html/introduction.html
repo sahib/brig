@@ -530,7 +530,7 @@ it.</li>
 <span class="pre">whoami</span></code> command to ask a very existential questions:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: The hash will look different for you:</span>
 $ brig whoami
-ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
 </pre></div>
 </div>
 <div class="admonition note">
@@ -559,7 +559,7 @@ you can use <code class="docutils literal notranslate"><span class="pre">brig</s
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This command might take some time to yield results:</span>
 $ brig net locate -m domain woods.org
 NAME           TYPE    FINGERPRINT
-ali@woods.org  domain  QmTTJbk<span class="o">[</span>...<span class="o">]</span>:SEfXUDvKzjRPb4rbbk<span class="o">[</span>...<span class="o">]</span>
+ali@woods.org  domain  QmTTJbk<span class="o">[</span>...<span class="o">]</span>:W1UDvKzjRPb4rbbk<span class="o">[</span>...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Please note again: Do not blindly add the fingerprint you see here. Always
@@ -574,7 +574,7 @@ make sure the person you’re syncing with is the one you think they are.</p>
 Let’s call the other side <em>bob</em>: <a class="footnote-reference" href="#id13" id="id7">[6]</a></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob <span class="se">\</span>
         QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
-        SEfXUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7wEghtP787DUvDMyYucLGugHMZMnRZBAa4qQFLugyoDhEW
+        W1e3rNGGCuuQnzyoiBKLdoN41yQ4NfNy9nRD3MwXk6h8Vy
 </pre></div>
 </div>
 <p><em>Bob</em> has do the same on his side. Otherwise the connection won’t be
@@ -582,7 +582,7 @@ established, because the other side won’t be authenticated. By adding somebody
 as remote we <strong>authenticate</strong> them:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add ali <span class="se">\</span>
 QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
-SEfXUDvKzjRPb4rbbkKqwfcs1eLkMwUpw4C35TJ9mdtWnUHJaeKQYxjFnu7nzrWgU3XXHoW6AjvBv5FcwyJjSMHu4VR4f
+W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
 </pre></div>
 </div>
 <p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository
@@ -860,8 +860,8 @@ Inode         <span class="m">4</span>
 Pinned        yes
 Explicit      no
 ModTime       <span class="m">2018</span>-10-14T22:46:00+02:00
-Tree Hash     SEfXUE2YhBFALY7EQd1BbYFugugqipCeKmadx7wMo5SRdNjNZhaCV9W77vs8aYjvTnB8uvC4ZKi5znaq9iGaKZyTyjZv6
-Content Hash  SEfXUDMbsF97A5vgf52aXsdVEVhGPKFC2QUU3946yoFTL3EsqjRJHTXNZSz1vhKegrmwBKQFghvREQoNUVRv7Hx6b8a1M
+Tree Hash     W1gX8NMQ9m8SBnjHRGtamRAjJewbnSgi6C1P7YEunfgTA3
+Content Hash  W1pzHcGbVpXaePa1XpehW4HGPatDUJs8zZzSRbpNCGbN2u
 Backend Hash  QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK
 </pre></div>
 </div>
@@ -883,12 +883,12 @@ smallest unit of modification that can be saved?«. This smallest unit is
 a commit. A commit can be seen as a snapshot of the whole repository.</p>
 <p>The command <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">log</span></code> shows you a list of commits that were made already:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>      -      Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-SEfXUDozvTHH Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added ali-file <span class="o">(</span>head<span class="o">)</span>
-SEfXUASkpNy4 Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added initial README.md
-SEfXUEru1pLi Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> initial commit <span class="o">(</span>init<span class="o">)</span>
+W1kAySD3aKLt Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added ali-file <span class="o">(</span>head<span class="o">)</span>
+W1ocyBsS28SD Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added initial README.md
+W1D9KsLNnAv4 Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> initial commit <span class="o">(</span>init<span class="o">)</span>
 </pre></div>
 </div>
-<p>Each commit is identified by a hash (e.g. <code class="docutils literal notranslate"><span class="pre">SEfXUDozvTHH</span></code>) and records the
+<p>Each commit is identified by a hash (e.g. <code class="docutils literal notranslate"><span class="pre">W1kAySD3aKLt</span></code>) and records the
 time when it was created. Apart from that, there is a message that describes
 the commit in some way. In contrast to <code class="docutils literal notranslate"><span class="pre">git</span></code>, <strong>commits are rarely done by
 the user themselve</strong>. More often they are done by <code class="docutils literal notranslate"><span class="pre">brig</span></code> when synchronizing.</p>
@@ -907,17 +907,17 @@ you can do a commit yourself:</p>
 $ brig commit -m <span class="s1">&#39;better leave some breadcrumbs&#39;</span>
 $ brig log <span class="p">|</span> head -n <span class="m">2</span>
       -      Mon Oct <span class="m">15</span> <span class="m">00</span>:27:37 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-SEfXUDkdjUND Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>head<span class="o">)</span>
+W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>head<span class="o">)</span>
 </pre></div>
 </div>
 <p>This snapshot can be useful later if you decide to revert to a certain version.
 The hash of the commit is of course hard to remember, so if you need it very often, you can
 give it a tag yourself. Tags are similar to the names, <code class="docutils literal notranslate"><span class="pre">curr</span></code>, <code class="docutils literal notranslate"><span class="pre">head</span></code> and <code class="docutils literal notranslate"><span class="pre">init</span></code> but
 won’t be changed by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and won’t move therefore:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># instead of &quot;SEfXUDkdjUND&quot; you also could use &quot;head&quot; here:</span>
-$ brig tag SEfXUDkdjUND breadcrumbs
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># instead of &quot;W1hZoY7TrxyK&quot; you also could use &quot;head&quot; here:</span>
+$ brig tag W1hZoY7TrxyK breadcrumbs
 $ brig log <span class="p">|</span> grep breadcrumps
-$ SEfXUDkdjUND Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs, head<span class="o">)</span>
+$ W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs, head<span class="o">)</span>
 </pre></div>
 </div>
 </div>
@@ -936,12 +936,12 @@ directory there are four things that can happen to it:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># or &quot;hst&quot; for short:</span>
 $ brig hst README.md
 CHANGE  FROM  TO              WHEN
-added   INIT  SEfXUASkpNy4    Oct <span class="m">14</span> <span class="m">22</span>:46:00
+added   INIT  W1ocyBsS28SD    Oct <span class="m">14</span> <span class="m">22</span>:46:00
 $ brig mv README.md README_LATER.md
 $ brig hst README_LATER.md
 CHANGE  FROM  TO            HOW                           WHEN
 moved   HEAD  CURR          /README.md → /README_LATER.md Oct <span class="m">15</span> <span class="m">00</span>:27:37
-added   INIT  SEfXUASkpNy4                                Oct <span class="m">14</span> <span class="m">22</span>:46:0
+added   INIT  W1ocyBsS28SD                                Oct <span class="m">14</span> <span class="m">22</span>:46:0
 </pre></div>
 </div>
 <p>As you can see, you will be shown one line per history entry. Each entry
@@ -954,7 +954,7 @@ will be jumped over except if you pass <code class="docutils literal notranslate
 <span class="pre">diff</span></code> command as shown previously. The <code class="docutils literal notranslate"><span class="pre">-s</span></code> (<code class="docutils literal notranslate"><span class="pre">--self</span></code>) switch says that it
 should only look at own commits and not compare any remotes.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s compare the commit hashes from above:</span>
-$ brig diff -s SEfXUDkdjUND SEfXUDozvTHH
+$ brig diff -s W1hZoY7TrxyK W1kAySD3aKLt
 •
 └── + A_NEW_FILE
 </pre></div>
@@ -995,7 +995,7 @@ $ brig ls  <span class="c1"># nothing, it&#39;s empty.</span>
 <p>The key here is that you did not loose any history:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig log <span class="p">|</span> head -2
        -     Mon Oct <span class="m">15</span> <span class="m">00</span>:51:12 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-SEfXUDkdjUND Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs<span class="o">)</span>
+W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs<span class="o">)</span>
 </pre></div>
 </div>
 <p>As you can see, we still have the previous commits. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">revert</span></code> did not

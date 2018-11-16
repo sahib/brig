@@ -236,12 +236,12 @@ a basic overview over the format:</p>
 <p>Two algorithms are used:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">SHA256</span></code> is used by <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> for every content hash.</li>
-<li><code class="docutils literal notranslate"><span class="pre">Blake2B</span></code> is used as general purpose hash for everything <code class="docutils literal notranslate"><span class="pre">brig</span></code> internal.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SHA3-256</span></code> is used as general purpose hash for everything <code class="docutils literal notranslate"><span class="pre">brig</span></code> internal.</li>
 </ul>
-<p>Each hash is encoded as <a class="reference external" href="https://github.com/multiformats/multihash">multihash</a>.
-For output purposes this representation is encoded additionally in base58.
-Therefore, all hashes that start with <code class="docutils literal notranslate"><span class="pre">SEfXUE</span></code> are <code class="docutils literal notranslate"><span class="pre">blake2b</span></code> hashes while
-the ones starting with <code class="docutils literal notranslate"><span class="pre">Qm</span></code> are <code class="docutils literal notranslate"><span class="pre">sha256</span></code> hashes.</p>
+<p>Each hash is encoded as <a class="reference external" href="https://github.com/multiformats/multihash">multihash</a>. For output purposes this
+representation is encoded additionally in base58. Therefore, all hashes that
+start with <code class="docutils literal notranslate"><span class="pre">W1</span></code> are <code class="docutils literal notranslate"><span class="pre">sha3-256</span></code> hashes while the ones starting with <code class="docutils literal notranslate"><span class="pre">Qm</span></code>
+are <code class="docutils literal notranslate"><span class="pre">sha256</span></code> hashes.</p>
 </div>
 <div class="section" id="what-kind-of-deduplication-is-currently-used">
 <h3>4. What kind of deduplication is currently used?<a class="headerlink" href="#what-kind-of-deduplication-is-currently-used" title="Permalink to this headline">¶</a></h3>

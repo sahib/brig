@@ -24,6 +24,13 @@ use a sane username (``sahib@wald.de``) and resource (``laptop``).
 
     <script src="https://asciinema.org/a/163713.js" id="asciicast-163713" async></script>
 
+
+As an alternative to entering your password manually, you can use an existing password manager:
+
+.. raw:: html
+
+    <script src="https://asciinema.org/a/212204 id="asciicast-212204" async></script>
+
 2. Adding files
 ---------------
 
