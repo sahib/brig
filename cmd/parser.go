@@ -280,7 +280,7 @@ func RunCmdline(args []string) int {
 			Action:   withDaemon(handleCat, true),
 		}, {
 			Name:     "show",
-			Aliases:  []string{"s"},
+			Aliases:  []string{"s", "info"},
 			Category: wdirGroup,
 			Action:   withArgCheck(needAtLeast(1), withDaemon(handleShow, true)),
 		}, {
