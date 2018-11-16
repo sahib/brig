@@ -299,6 +299,8 @@ An existing mount can be removed again with ``brig unmount <path>``:
     $ brig unmount ~/rw-data
     $ brig rm writable
 
+.. _permanent-mounts:
+
 Making mounts permanent
 ~~~~~~~~~~~~~~~~~~~~~~~
 

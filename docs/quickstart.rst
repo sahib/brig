@@ -3,15 +3,15 @@
 .. warning::
 
     The examples below are slightly outdated and will be revisited at some point.
-    They're still good enough to get a general impression, but please refer to the
-    :ref:`getting_started` guide for now.
+    All commands should still work, but the output might be a little different now.
+    Please refer to the :ref:`getting_started` guide for a more up-to-date version.
 
 Quickstart
 ==========
 
 This does not really explain the philosophy behind ``brig``, but gives a good
-idea what the tool is and how it's supposed to be used. Users familiar to ``git``
-should be able to grok most of the commands intuitively.
+idea what the tool is able to do and how it's supposed to be used. Users
+familiar to ``git`` should be able to grok most of the commands intuitively.
 
 1. Init
 -------
@@ -35,7 +35,7 @@ As an alternative to entering your password manually, you can use an existing pa
 ---------------
 
 Before synchronizing them, you need to *stage* them. The files will be stored
-encrypted (and possibly compressed) in blobs on your harddisks.
+encrypted (and possibly compressed) in blobs on your hard disks.
 
 .. raw:: html
 
@@ -45,9 +45,9 @@ encrypted (and possibly compressed) in blobs on your harddisks.
 3. Coreutils
 ------------
 
-``brig`` provides implementations of most file related coreutils like ``mv``,
+``brig`` provides implementations of most file related core utils like ``mv``,
 ``cp``, ``rm``, ``mkdir`` or ``cat``. Handling of files should thus feel
-familar for users that know the command line.
+familiar for users that know the command line.
 
 .. raw:: html
 
@@ -56,8 +56,9 @@ familar for users that know the command line.
 4. Mounting
 -----------
 
-For daily use and for use with other tools you might prefer a folder that contains the file
-you gave to ``brig``. This can be done via the builtin FUSE layer.
+For daily use and for use with other tools you might prefer a folder that
+contains the file you gave to ``brig``. This can be done via the built-in FUSE
+layer.
 
 .. raw:: html
 
@@ -67,6 +68,9 @@ you gave to ``brig``. This can be done via the builtin FUSE layer.
 
     Some built-in commands provided by brig are faster.
     ``brig cp`` for example only copies metadata, while the real ``cp`` will copy the whole file.
+
+If you wish to always have the mount when ``brig`` is running, you should look
+into :ref:`permanent-mounts`.
 
 5. Commits
 ----------

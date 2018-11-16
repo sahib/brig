@@ -172,14 +172,14 @@
   <div class="admonition warning" id="quickstart">
 <p class="first admonition-title">Warning</p>
 <p class="last">The examples below are slightly outdated and will be revisited at some point.
-They’re still good enough to get a general impression, but please refer to the
-<a class="reference internal" href="introduction.html#getting-started"><span class="std std-ref">Getting started</span></a> guide for now.</p>
+All commands should still work, but the output might be a little different now.
+Please refer to the <a class="reference internal" href="introduction.html#getting-started"><span class="std std-ref">Getting started</span></a> guide for a more up-to-date version.</p>
 </div>
 <div class="section" id="id1">
 <h1>Quickstart<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
 <p>This does not really explain the philosophy behind <code class="docutils literal notranslate"><span class="pre">brig</span></code>, but gives a good
-idea what the tool is and how it’s supposed to be used. Users familiar to <code class="docutils literal notranslate"><span class="pre">git</span></code>
-should be able to grok most of the commands intuitively.</p>
+idea what the tool is able to do and how it’s supposed to be used. Users
+familiar to <code class="docutils literal notranslate"><span class="pre">git</span></code> should be able to grok most of the commands intuitively.</p>
 <div class="section" id="init">
 <h2>1. Init<a class="headerlink" href="#init" title="Permalink to this headline">¶</a></h2>
 <p>Before you can do anything with <code class="docutils literal notranslate"><span class="pre">brig</span></code> you need to create a repository.
@@ -190,23 +190,26 @@ use a sane username (<code class="docutils literal notranslate"><span class="pre
 <div class="section" id="adding-files">
 <h2>2. Adding files<a class="headerlink" href="#adding-files" title="Permalink to this headline">¶</a></h2>
 <p>Before synchronizing them, you need to <em>stage</em> them. The files will be stored
-encrypted (and possibly compressed) in blobs on your harddisks.</p>
+encrypted (and possibly compressed) in blobs on your hard disks.</p>
 <script src="https://asciinema.org/a/j5yCj6H6fPUldbJDQz9nDhUc4.js" id="asciicast-j5yCj6H6fPUldbJDQz9nDhUc4" async></script></div>
 <div class="section" id="coreutils">
 <h2>3. Coreutils<a class="headerlink" href="#coreutils" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> provides implementations of most file related coreutils like <code class="docutils literal notranslate"><span class="pre">mv</span></code>,
+<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> provides implementations of most file related core utils like <code class="docutils literal notranslate"><span class="pre">mv</span></code>,
 <code class="docutils literal notranslate"><span class="pre">cp</span></code>, <code class="docutils literal notranslate"><span class="pre">rm</span></code>, <code class="docutils literal notranslate"><span class="pre">mkdir</span></code> or <code class="docutils literal notranslate"><span class="pre">cat</span></code>. Handling of files should thus feel
-familar for users that know the command line.</p>
+familiar for users that know the command line.</p>
 <script src="https://asciinema.org/a/swIw29Qkml0A44H1MgKQvOQ8L.js" id="asciicast-swIw29Qkml0A44H1MgKQvOQ8L" async></script></div>
 <div class="section" id="mounting">
 <h2>4. Mounting<a class="headerlink" href="#mounting" title="Permalink to this headline">¶</a></h2>
-<p>For daily use and for use with other tools you might prefer a folder that contains the file
-you gave to <code class="docutils literal notranslate"><span class="pre">brig</span></code>. This can be done via the builtin FUSE layer.</p>
+<p>For daily use and for use with other tools you might prefer a folder that
+contains the file you gave to <code class="docutils literal notranslate"><span class="pre">brig</span></code>. This can be done via the built-in FUSE
+layer.</p>
 <script src="https://asciinema.org/a/166178.js" id="asciicast-166178" async></script><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Some built-in commands provided by brig are faster.
 <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cp</span></code> for example only copies metadata, while the real <code class="docutils literal notranslate"><span class="pre">cp</span></code> will copy the whole file.</p>
 </div>
+<p>If you wish to always have the mount when <code class="docutils literal notranslate"><span class="pre">brig</span></code> is running, you should look
+into <a class="reference internal" href="introduction.html#permanent-mounts"><span class="std std-ref">Making mounts permanent</span></a>.</p>
 </div>
 <div class="section" id="commits">
 <h2>5. Commits<a class="headerlink" href="#commits" title="Permalink to this headline">¶</a></h2>
