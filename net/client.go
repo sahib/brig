@@ -82,7 +82,7 @@ func DialByAddr(
 
 	// Setup capnp-rpc:
 	transport := rpc.StreamTransport(rawConn)
-	clientConn := rpc.NewConn(transport)
+	clientConn := rpc.NewConn(transport, rpc.ConnLog(nil))
 	api := capnp.API{Client: clientConn.Bootstrap(ctx)}
 
 	return &Client{

@@ -654,6 +654,7 @@ func readFormatTemplate(ctx *cli.Context) (*template.Template, error) {
 	if ctx.IsSet("format") {
 		source := ctx.String("format") + "\n"
 		tmpl, err := template.New("format").Parse(source)
+
 		if err != nil {
 			return nil, err
 		}

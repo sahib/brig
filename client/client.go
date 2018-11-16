@@ -29,7 +29,7 @@ func Dial(ctx context.Context, port int) (*Client, error) {
 	}
 
 	transport := rpc.StreamTransport(tcpConn)
-	clientConn := rpc.NewConn(transport)
+	clientConn := rpc.NewConn(transport, rpc.ConnLog(nil))
 	api := capnp.API{Client: clientConn.Bootstrap(ctx)}
 
 	return &Client{

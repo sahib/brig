@@ -89,7 +89,11 @@ func repoIsInitialized(path string) error {
 func (b *base) Handle(ctx context.Context, conn net.Conn) {
 	transport := rpc.StreamTransport(conn)
 	srv := capnp.API_ServerToClient(newApiHandler(b))
-	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
+	rpcConn := rpc.NewConn(
+		transport,
+		rpc.MainInterface(srv.Client),
+		rpc.ConnLog(nil),
+	)
 
 	if err := rpcConn.Wait(); err != nil {
 		log.Warnf("Serving rpc failed: %v", err)

@@ -455,7 +455,7 @@ func handleSync(ctx *cli.Context, ctl *client.Client) error {
 	for _, rmt := range remotes {
 		_, err := ctl.RemotePing(rmt.Name)
 		if err != nil {
-			fmt.Printf("Cannot reach %s...", rmt.Name)
+			fmt.Printf("Cannot reach %s..\n", rmt.Name)
 			continue
 		}
 

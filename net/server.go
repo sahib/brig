@@ -332,7 +332,11 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 	// Initialize the capnp rpc protocol over it.
 	transport := rpc.StreamTransport(conn)
 	srv := capnp.API_ServerToClient(reqHdl)
-	rpcConn := rpc.NewConn(transport, rpc.MainInterface(srv.Client))
+	rpcConn := rpc.NewConn(
+		transport,
+		rpc.MainInterface(srv.Client),
+		rpc.ConnLog(nil),
+	)
 
 	// Wait until either side quits the connection in the background.
 	// The number of open connections is limited by the base server.
