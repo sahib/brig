@@ -203,9 +203,9 @@ func isConflictPath(path string) bool {
 	return conflictNodePattern.MatchString(path)
 }
 
-// hasConflictFile reports if we already created a conflict file for `srcNd`.
-func (rv *resolver) hasConflictFile(srcNd n.ModNode) (bool, error) {
-	parent, err := rv.lkrSrc.LookupDirectory(path.Dir(srcNd.Path()))
+// hasConflictFile reports if we already created a conflict file for `dstNd`.
+func (rv *resolver) hasConflictFile(dstNd n.ModNode) (bool, error) {
+	parent, err := rv.lkrDst.LookupDirectory(path.Dir(dstNd.Path()))
 	if err != nil {
 		return false, err
 	}
@@ -213,7 +213,7 @@ func (rv *resolver) hasConflictFile(srcNd n.ModNode) (bool, error) {
 	// Assumption: The original node and its conflict fil
 	// will be always on the same level. If this change,
 	// the logic here has to change also.
-	children, err := parent.ChildrenSorted(rv.lkrSrc)
+	children, err := parent.ChildrenSorted(rv.lkrDst)
 	if err != nil {
 		return false, err
 	}
@@ -221,7 +221,7 @@ func (rv *resolver) hasConflictFile(srcNd n.ModNode) (bool, error) {
 	for _, child := range children {
 		if isConflictPath(child.Path()) {
 			// Also check if the conflict file belongs to our node:
-			return strings.HasPrefix(child.Path(), srcNd.Path()), nil
+			return strings.HasPrefix(child.Path(), dstNd.Path()), nil
 		}
 	}
 
@@ -366,7 +366,7 @@ func (rv *resolver) decide(pair MapPair) error {
 		return rv.exec.handleConflict(pair.Src, pair.Dst, srcMask, dstMask)
 	}
 
-	hasConflictFile, err := rv.hasConflictFile(pair.Src)
+	hasConflictFile, err := rv.hasConflictFile(pair.Dst)
 	if err != nil {
 		return err
 	}

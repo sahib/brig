@@ -1296,6 +1296,9 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 					oldNd.Path(),
 					oldNd.BackendHash(),
 				)
+
+				// better don't change something.
+				return true
 			}
 
 			// Pin new node with old pin state:
