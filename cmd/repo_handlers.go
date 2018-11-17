@@ -44,10 +44,10 @@ func createInitialReadme(ctl *client.Client, folder string) error {
 
 Here's what you can do next:
 
-	• Read the official documentation (Just type »brig docs«)
+    • Read the official documentation (Just type »brig docs«)
     • Add a few remotes to sync with (See »brig help remote«)
     • Mount your data somewhere convinient (See »brig help fstab«)
-	• Sync with the remotes you've added (See »brig help sync«)
+    • Sync with the remotes you've added (See »brig help sync«)
     • Have a relaxing day while exploring brig.
 
 Please remember that brig is software in its very early stages,
