@@ -49,7 +49,9 @@ package vcs
 
 import (
 	"fmt"
+	"path"
 	"regexp"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
@@ -195,15 +197,48 @@ func (rv *resolver) cacheLastCommonMerge() error {
 	return nil
 }
 
-// hasConflicts is always called when two nodes on both sides and they do not
-// have the same hash. In the best case, both have compatible changes and can
-// be merged, otherwise a user defined conflict strategy has to be applied.
+// isConflictPath will return true if the file or directory was created
+// as conflict file in case of a merge conflicts.
+func isConflictPath(path string) bool {
+	return conflictNodePattern.MatchString(path)
+}
+
+// hasConflictFile reports if we already created a conflict file for `srcNd`.
+func (rv *resolver) hasConflictFile(srcNd n.ModNode) (bool, error) {
+	parent, err := rv.lkrSrc.LookupDirectory(path.Dir(srcNd.Path()))
+	if err != nil {
+		return false, err
+	}
+
+	// Assumption: The original node and its conflict fil
+	// will be always on the same level. If this change,
+	// the logic here has to change also.
+	children, err := parent.ChildrenSorted(rv.lkrSrc)
+	if err != nil {
+		return false, err
+	}
+
+	for _, child := range children {
+		if isConflictPath(child.Path()) {
+			// Also check if the conflict file belongs to our node:
+			return strings.HasPrefix(child.Path(), srcNd.Path()), nil
+		}
+	}
+
+	// None found, assume we do not have a conflict file (yet)
+	return false, nil
+}
+
+// hasConflicts is always called when two nodes are on both sides and they do
+// not have the same hash. In the best case, both have compatible changes and
+// can be merged, otherwise a user defined conflict strategy has to be applied.
 func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeType, error) {
 	// Nodes with same hashes are no conflicts...
 	// (tree hash is also influenced by content)
 	if src.TreeHash().Equal(dst.TreeHash()) {
 		return false, 0, 0, nil
 	}
+
 	srcHist, err := History(rv.lkrSrc, src, rv.srcHead, rv.srcMergeCmt)
 	if err != nil {
 		return false, 0, 0, e.Wrapf(err, "history src")
@@ -252,7 +287,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 		return false, 0, 0, nil
 
 	}
-
 	if len(srcHist) == 0 && len(dstHist) > 0 {
 		// Only our side has changes. We can consider this node as merged.
 		return false, 0, 0, nil
@@ -269,12 +303,6 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 
 	// No conflict. We can merge src and dst.
 	return false, srcMask, dstMask, nil
-}
-
-// isConflictNode will return true if the file or directory was created
-// as conflict file in case of merge conflicts.
-func isConflictNode(nd n.Node) bool {
-	return conflictNodePattern.MatchString(nd.Path())
 }
 
 func pathOrNil(nd n.Node) string {
@@ -296,11 +324,11 @@ func (rv *resolver) decide(pair MapPair) error {
 		return fmt.Errorf("Received completely empty mapping; ignoring")
 	}
 
-	if pair.Src != nil && isConflictNode(pair.Src) {
+	if pair.Src != nil && isConflictPath(pair.Src.Path()) {
 		return rv.exec.handleConflictNode(pair.Src)
 	}
 
-	if pair.Dst != nil && isConflictNode(pair.Dst) {
+	if pair.Dst != nil && isConflictPath(pair.Dst.Path()) {
 		return rv.exec.handleConflictNode(pair.Dst)
 	}
 
@@ -336,6 +364,15 @@ func (rv *resolver) decide(pair MapPair) error {
 
 	if hasConflicts {
 		return rv.exec.handleConflict(pair.Src, pair.Dst, srcMask, dstMask)
+	}
+
+	hasConflictFile, err := rv.hasConflictFile(pair.Src)
+	if err != nil {
+		return err
+	}
+
+	if hasConflictFile {
+		return nil
 	}
 
 	// handleMerge needs the masks to decide what path / content to choose.

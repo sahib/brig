@@ -280,6 +280,7 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		}
 	}
 
+	// TODO: If the previous node was pinned, it should stay pinned.
 	return sy.lkrDst.StageNode(dstFile)
 }
 
