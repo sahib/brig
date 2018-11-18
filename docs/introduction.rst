@@ -287,8 +287,6 @@ number of mounts. This proves especially useful when only mounting a
 subdirectory of ``brig`` (let's say ``Public``) with the ``--root`` option of
 ``brig mount`` and mounting all other files as read only (``--readonly``).
 
-TODO: Make sure an mount directory is empty before mounting.
-
 .. code-block:: bash
 
     $ brig mount ~/data --readonly

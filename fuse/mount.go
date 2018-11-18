@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"path"
 	"sync"
@@ -225,7 +226,25 @@ func (t *MountTable) AddMount(path string, opts MountOptions) (*Mount, error) {
 	return t.addMount(path, opts)
 }
 
+func checkMountPath(path string) error {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		// This will also fail if `path` is not a directory:
+		return err
+	}
+
+	if len(files) > 0 {
+		return fmt.Errorf("Refusing to mount over non-empty dir `%s`", path)
+	}
+
+	return nil
+}
+
 func (t *MountTable) addMount(path string, opts MountOptions) (*Mount, error) {
+	if err := checkMountPath(path); err != nil {
+		return nil, err
+	}
+
 	m, ok := t.m[path]
 	if ok {
 		return m, nil
