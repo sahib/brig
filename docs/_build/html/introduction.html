@@ -289,7 +289,7 @@ buddies can later <strong>find</strong> and <strong>authenticate</strong> you.</
 <p>But enough of the mere theory, let’s get started:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a place where we store our metadata.</span>
 $ mkdir ~/sync
-$ brig --repo ~/sync init alice@wonderland.lit/rabbithole
+$ brig --repo ~/sync init ali@woods.org/desktop
 <span class="m">27</span>.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
 ⚠  <span class="m">39</span> New passphrase:
 
@@ -310,6 +310,7 @@ Well <span class="k">done</span>! Please re-type your password now:
 
      A new file README.md was automatically added.
      Use <span class="s1">&#39;brig cat README.md&#39;</span> to view it <span class="p">&amp;</span> get started.
+$ <span class="nb">cd</span> ~/sync
 $ ls
 config.yml  data  gpg.prv  gpg.pub  logs  metadata
 meta.yml  passwd.locked  remotes.yml
@@ -335,13 +336,18 @@ are two ways to prevent that:</p>
 <li><p class="first">Use a password helper and tell <code class="docutils literal notranslate"><span class="pre">brig</span></code> how to get a password from it by using <code class="docutils literal notranslate"><span class="pre">-w</span> <span class="pre">/</span> <span class="pre">--password-helper</span></code> on the <code class="docutils literal notranslate"><span class="pre">init</span></code> command.
 We recommend using <a class="reference external" href="https://www.passwordstore.org/">pass</a>  to do that:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate a password and store it in &quot;pass&quot;:</span>
-$ pass generate brig/alice -n <span class="m">20</span>
+$ pass generate brig/ali -n <span class="m">20</span>
 <span class="c1"># Tell brig how to get the password out of &quot;pass&quot;:</span>
-$ brig init -w <span class="s2">&quot;pass brig/alice&quot;</span>
+<span class="c1"># (This is an alternative to the way shown above,</span>
+<span class="c1">#  if you try it out we first need to shut down the previous daemon)</span>
+$ brig daemon quit
+$ brig --repo ~/sync-with-password init -w <span class="s2">&quot;pass brig/ali&quot;</span> ali@woods.org/desktop
 <span class="c1"># Now pass will ask you for the master password with</span>
 <span class="c1"># a nice dialog whenever one if its passwords is first used.</span>
 </pre></div>
 </div>
+<p>If you like this setup for an existing repo, take a look at the
+<a class="reference internal" href="#configurations"><span class="std std-ref">Configuration</span></a> section.</p>
 </li>
 <li><p class="first">Do not use a password. You can do this by passing <code class="docutils literal notranslate"><span class="pre">-x</span></code> to the <code class="docutils literal notranslate"><span class="pre">init</span></code> command.
 This is obviously not recommended.</p>
@@ -389,9 +395,9 @@ When specifying a directory as path, a <code class="docutils literal notranslate
 You can use that easily to store whole directories on your disk or archive
 in order to send it to some client for example:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a tar from root and unpack it to the current directory.</span>
-$ brig tar <span class="p">|</span> tar xfv -
+$ brig cat <span class="p">|</span> tar xfv -
 <span class="c1"># Create .tar.gz out of of the /photos directory.</span>
-$ brig tar photos <span class="p">|</span> gzip -f &gt; photos.tar.gz
+$ brig cat photos <span class="p">|</span> gzip -f &gt; photos.tar.gz
 </pre></div>
 </div>
 </div>
@@ -412,6 +418,7 @@ $ brig tree
 <span class="m">2</span> directories, <span class="m">2</span> files
 $ brig cp photos/me.png photos/moi.png
 $ brig mv photos/me.png photos/ich.png
+<span class="c1"># NOTE: There is no &quot;-r&quot; switch. Directories are always deleted recursively.</span>
 $ brig rm photos
 </pre></div>
 </div>
@@ -430,8 +437,9 @@ commands are only supposed to serve as a low-level way of interacting with
 to a directory of your choice and use it with your normal tools. To accomplish
 that <code class="docutils literal notranslate"><span class="pre">brig</span></code> supports a FUSE filesystem that can be controlled via the
 <code class="docutils literal notranslate"><span class="pre">mount</span></code> and <code class="docutils literal notranslate"><span class="pre">fstab</span></code> commands. Let’s look at <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">mount</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir ~/data <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/data
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir ~/data
 $ brig mount ~/data
+$ <span class="nb">cd</span> ~/data
 $ cat hello-world
 Hello World
 $ <span class="nb">echo</span> <span class="s1">&#39;Salut le monde!&#39;</span> &gt; salut-monde.txt
@@ -607,7 +615,7 @@ never is. If any of the following network operations might not work it might
 be necessary to open the port 4001 and/or enable UPnP. For security reasons
 we recommend to only open the required ports explicitly and not to use UPnP
 unless necessary. This is only necessary if the computers you’re using
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same network anyways.</p>
+<code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same local network.</p>
 </div>
 <div class="section" id="choosing-and-finding-names">
 <span id="about-names"></span><h3>Choosing and finding names<a class="headerlink" href="#choosing-and-finding-names" title="Permalink to this headline">¶</a></h3>
@@ -728,7 +736,7 @@ SIZE   MODTIME          OWNER    PATH                      PIN
 <span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  ali      /README.md                🖈
 <span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  bob      /README.md.conflict.0
 <span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  ali      /hello.world              🖈
-<span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  bob      /videos                   🖈
+<span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  bob      /videos
 </pre></div>
 </div>
 <p>You might notice that the <code class="docutils literal notranslate"><span class="pre">sync</span></code> step took only around one second, even
@@ -827,9 +835,9 @@ works internally as it shows what hashes it throws away.</p>
 <h2>Version control<a class="headerlink" href="#version-control" title="Permalink to this headline">¶</a></h2>
 <p>One key feature of <code class="docutils literal notranslate"><span class="pre">brig</span></code> over other synchronisation tools is the built-in
 and quite capable version control. If you already know <code class="docutils literal notranslate"><span class="pre">git</span></code> that’s a plus
-for this chapter since a lot of stuff will feel similar. This is not surprise,
-since <code class="docutils literal notranslate"><span class="pre">brig</span></code> implements something like <code class="docutils literal notranslate"><span class="pre">git</span></code> internally. Don’t worry,
-knowing <code class="docutils literal notranslate"><span class="pre">git</span></code> is however not needed at all for this chapter.</p>
+for this chapter since a lot of stuff will feel similar. This isn’t a big
+surprise, since <code class="docutils literal notranslate"><span class="pre">brig</span></code> implements something like <code class="docutils literal notranslate"><span class="pre">git</span></code> internally. Don’t
+worry, knowing <code class="docutils literal notranslate"><span class="pre">git</span></code> is however not needed at all for this chapter.</p>
 <div class="section" id="key-concepts">
 <h3>Key concepts<a class="headerlink" href="#key-concepts" title="Permalink to this headline">¶</a></h3>
 <p>I’d like you to keep the following mantra in your head when thinking
@@ -916,7 +924,7 @@ give it a tag yourself. Tags are similar to the names, <code class="docutils lit
 won’t be changed by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and won’t move therefore:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># instead of &quot;W1hZoY7TrxyK&quot; you also could use &quot;head&quot; here:</span>
 $ brig tag W1hZoY7TrxyK breadcrumbs
-$ brig log <span class="p">|</span> grep breadcrumps
+$ brig log <span class="p">|</span> grep breadcrumbs
 $ W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs, head<span class="o">)</span>
 </pre></div>
 </div>
@@ -950,9 +958,10 @@ will be jumped over except if you pass <code class="docutils literal notranslate
 </div>
 <div class="section" id="viewing-differences">
 <h3>Viewing differences<a class="headerlink" href="#viewing-differences" title="Permalink to this headline">¶</a></h3>
-<p>If you’re interested what changed in a range of commits, you can use the <code class="docutils literal notranslate"><span class="pre">brig</span>
-<span class="pre">diff</span></code> command as shown previously. The <code class="docutils literal notranslate"><span class="pre">-s</span></code> (<code class="docutils literal notranslate"><span class="pre">--self</span></code>) switch says that it
-should only look at own commits and not compare any remotes.</p>
+<p>If you’re interested what changed in a range of your own commits, you can use
+the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code> command as shown previously. The <code class="docutils literal notranslate"><span class="pre">-s</span></code> (<code class="docutils literal notranslate"><span class="pre">--self</span></code>) switch
+says that we want to compare only two of our own commits (as opposed to
+comparing with the commits of a remote).</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s compare the commit hashes from above:</span>
 $ brig diff -s W1hZoY7TrxyK W1kAySD3aKLt
 •
@@ -998,7 +1007,7 @@ $ brig ls  <span class="c1"># nothing, it&#39;s empty.</span>
 W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs<span class="o">)</span>
 </pre></div>
 </div>
-<p>As you can see, we still have the previous commits. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">revert</span></code> did not
+<p>As you can see, we still have the previous commits. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">revert</span></code> did one
 thing more than restoring the state of <code class="docutils literal notranslate"><span class="pre">init</span></code> and put that result in
 <code class="docutils literal notranslate"><span class="pre">curr</span></code>. This also means that you can’t really <em>modify</em> history. But you can
 revert it. Let’s revert your complete wipe-out:</p>
@@ -1019,6 +1028,10 @@ about that, but you can overwrite that warning with <code class="docutils litera
 a <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">commit</span></code> you can simply use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span> <span class="pre">head</span></code> to go back to the
 last good state.</p>
 </div>
+<p>Nodes that were overwritten with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code> will be unpinned (unless pinned
+explicitly). Those nodes and their content will be garbage collected after some
+time. The content may still be accessed through the use of other remotes
+though.</p>
 </div>
 <div class="section" id="other-commands">
 <h3>Other commands<a class="headerlink" href="#other-commands" title="Permalink to this headline">¶</a></h3>
@@ -1036,7 +1049,7 @@ space. The commands in question are:</p>
 </div>
 </div>
 <div class="section" id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<span id="configurations"></span><h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
 <p>Quite a few details can be configured in a different way to your liking. <code class="docutils literal notranslate"><span class="pre">brig</span>
 <span class="pre">config</span></code> is the command that allows you to list, get and set individual
 configuration values. Each config entry already brings some documentation that

@@ -406,7 +406,7 @@ func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
 			return err
 		}
 
-		logVerbose(ctx, "using port %d for new daemon.", port)
+		logVerbose(ctx, "using port %d for starting a new daemon.", port)
 
 		folder := guessNextRepoFolder(ctx)
 		logVerbose(ctx, "using path %s for new daemon.", folder)

@@ -105,7 +105,7 @@ But enough of the mere theory, let's get started:
 
     # Create a place where we store our metadata.
     $ mkdir ~/sync
-    $ brig --repo ~/sync init alice@wonderland.lit/rabbithole
+    $ brig --repo ~/sync init ali@woods.org/desktop
     27.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
     ⚠  39 New passphrase:
 
@@ -126,6 +126,7 @@ But enough of the mere theory, let's get started:
 
          A new file README.md was automatically added.
          Use 'brig cat README.md' to view it & get started.
+    $ cd ~/sync
     $ ls
     config.yml  data  gpg.prv  gpg.pub  logs  metadata
     meta.yml  passwd.locked  remotes.yml
@@ -157,11 +158,18 @@ are two ways to prevent that:
    .. code-block:: bash
 
        # Generate a password and store it in "pass":
-       $ pass generate brig/alice -n 20
+       $ pass generate brig/ali -n 20
        # Tell brig how to get the password out of "pass":
-       $ brig init -w "pass brig/alice"
+       # (This is an alternative to the way shown above,
+       #  if you try it out we first need to shut down the previous daemon)
+       $ brig daemon quit
+       $ brig --repo ~/sync-with-password init -w "pass brig/ali" ali@woods.org/desktop
        # Now pass will ask you for the master password with
        # a nice dialog whenever one if its passwords is first used.
+
+
+   If you like this setup for an existing repo, take a look at the
+   :ref:`configurations` section. 
 
 2. Do not use a password. You can do this by passing ``-x`` to the ``init`` command.
    This is obviously not recommended.
@@ -216,9 +224,9 @@ in order to send it to some client for example:
 .. code-block:: bash
 
    # Create a tar from root and unpack it to the current directory.
-   $ brig tar | tar xfv -
+   $ brig cat | tar xfv -
    # Create .tar.gz out of of the /photos directory.
-   $ brig tar photos | gzip -f > photos.tar.gz
+   $ brig cat photos | gzip -f > photos.tar.gz
 
 Coreutils
 ---------
@@ -241,6 +249,7 @@ the available commands:
     2 directories, 2 files
     $ brig cp photos/me.png photos/moi.png
     $ brig mv photos/me.png photos/ich.png
+    # NOTE: There is no "-r" switch. Directories are always deleted recursively.
     $ brig rm photos
 
 Please refer to ``brig help <command>`` for more information about those.
@@ -263,8 +272,9 @@ that ``brig`` supports a FUSE filesystem that can be controlled via the
 
 .. code-block:: bash
 
-   $ mkdir ~/data && cd ~/data
+   $ mkdir ~/data
    $ brig mount ~/data
+   $ cd ~/data
    $ cat hello-world
    Hello World
    $ echo 'Salut le monde!' > salut-monde.txt
@@ -457,7 +467,7 @@ Otherwise ``brig remote ping bob`` would have failed.
    be necessary to open the port 4001 and/or enable UPnP. For security reasons
    we recommend to only open the required ports explicitly and not to use UPnP
    unless necessary. This is only necessary if the computers you're using
-   ``brig`` on are not in the same network anyways.
+   ``brig`` on are not in the same local network.
 
 .. _about_names:
 
@@ -565,7 +575,7 @@ take over his changes. If we sync now we will get this directory from him:
     443 B  Dec 27 14:44:44  ali      /README.md                🖈
     443 B  Dec 27 14:44:44  bob      /README.md.conflict.0
     12 B   Dec 27 15:14:16  ali      /hello.world              🖈
-    32 GB  Dec 27 15:14:16  bob      /videos                   🖈
+    32 GB  Dec 27 15:14:16  bob      /videos
 
 You might notice that the ``sync`` step took only around one second, even
 though ``/videos`` is 32 GB in size. This is because ``sync`` **does not
@@ -677,9 +687,9 @@ Version control
 
 One key feature of ``brig`` over other synchronisation tools is the built-in
 and quite capable version control. If you already know ``git`` that's a plus
-for this chapter since a lot of stuff will feel similar. This is not surprise,
-since ``brig`` implements something like ``git`` internally. Don't worry,
-knowing ``git`` is however not needed at all for this chapter.
+for this chapter since a lot of stuff will feel similar. This isn't a big
+surprise, since ``brig`` implements something like ``git`` internally. Don't
+worry, knowing ``git`` is however not needed at all for this chapter.
 
 Key concepts
 ~~~~~~~~~~~~
@@ -786,7 +796,7 @@ won't be changed by ``brig`` and won't move therefore:
 
     # instead of "W1hZoY7TrxyK" you also could use "head" here:
     $ brig tag W1hZoY7TrxyK breadcrumbs
-    $ brig log | grep breadcrumps
+    $ brig log | grep breadcrumbs
     $ W1hZoY7TrxyK Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs, head)
 
 
@@ -823,9 +833,10 @@ will be jumped over except if you pass ``--empty``.
 Viewing differences
 ~~~~~~~~~~~~~~~~~~~
 
-If you're interested what changed in a range of commits, you can use the ``brig
-diff`` command as shown previously. The ``-s`` (``--self``) switch says that it
-should only look at own commits and not compare any remotes.
+If you're interested what changed in a range of your own commits, you can use
+the ``brig diff`` command as shown previously. The ``-s`` (``--self``) switch
+says that we want to compare only two of our own commits (as opposed to
+comparing with the commits of a remote).
 
 .. code-block:: bash
 
@@ -884,7 +895,7 @@ The key here is that you did not loose any history:
     W1hZoY7TrxyK Sun Oct 14 22:46:00 CEST 2018 user: better leave some bread crumbs (breadcrumbs)
 
 
-As you can see, we still have the previous commits. ``brig revert`` did not
+As you can see, we still have the previous commits. ``brig revert`` did one
 thing more than restoring the state of ``init`` and put that result in
 ``curr``. This also means that you can't really *modify* history. But you can
 revert it. Let's revert your complete wipe-out:
@@ -911,6 +922,11 @@ directories:
     last good state.
 
 
+Nodes that were overwritten with ``brig reset`` will be unpinned (unless pinned
+explicitly). Those nodes and their content will be garbage collected after some
+time. The content may still be accessed through the use of other remotes
+though.
+
 Other commands
 ~~~~~~~~~~~~~~
 
@@ -925,6 +941,8 @@ space. The commands in question are:
 - ``brig fetch``: Manually trigger the fetching of a remote's metadata. Also good for debugging.
 
 Please use ``brig help <command>`` to find out more about them if you're interested.
+
+.. _configurations:
 
 Configuration
 -------------

@@ -185,6 +185,9 @@ your <code class="docutils literal notranslate"><span class="pre">.go</span></co
 <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
 <div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Place the go sources in a &quot;go&quot; directory inside your home directory:</span>
 <span class="n">export</span> <span class="n">GOPATH</span><span class="o">=~/</span><span class="n">go</span>
+<span class="c1"># This is needed for the go toolchain:</span>
+<span class="n">export</span> <span class="n">GOBIN</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin&quot;</span>
+<span class="c1"># Make sure that our shell finds the go binaries:</span>
 <span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin:$PATH&quot;</span>
 </pre></div>
 </div>

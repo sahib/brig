@@ -31,7 +31,8 @@ Current Status
 
 **This software is in active development and probably not suited for production
 use yet!** But to get it in a stable state, it is **essential** that people
-play around with it. Consider this is as an open beta phase.
+play around with it. Consider this is as an open beta phase. Also don't take
+anything granted for now, everything might change wildly before version ``1.0.0``.
 
 With that being said, ``brig`` is near a somewhat usable state where you can play around
 with it quite well. All aforementioned features do work, besides possibly being

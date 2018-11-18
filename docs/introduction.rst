@@ -168,7 +168,8 @@ are two ways to prevent that:
        # a nice dialog whenever one if its passwords is first used.
 
 
-TODO: Make "brig init harder when there is already a daemon running"
+   If you like this setup for an existing repo, take a look at the
+   :ref:`configurations` section. 
 
 2. Do not use a password. You can do this by passing ``-x`` to the ``init`` command.
    This is obviously not recommended.
@@ -921,7 +922,10 @@ directories:
     last good state.
 
 
-TODO: Find out how brig reset handles pinning.
+Nodes that were overwritten with ``brig reset`` will be unpinned (unless pinned
+explicitly). Those nodes and their content will be garbage collected after some
+time. The content may still be accessed through the use of other remotes
+though.
 
 Other commands
 ~~~~~~~~~~~~~~
@@ -937,6 +941,8 @@ space. The commands in question are:
 - ``brig fetch``: Manually trigger the fetching of a remote's metadata. Also good for debugging.
 
 Please use ``brig help <command>`` to find out more about them if you're interested.
+
+.. _configurations:
 
 Configuration
 -------------
@@ -958,7 +964,6 @@ tells you about its purpose:
     $ brig config get repo.password_command
     pass brig/repo/password
     $ brig config set repo.password_command "pass brig/repo/my-password"
-
 
 Running the daemon and viewing logs
 -----------------------------------

@@ -29,6 +29,9 @@ your ``.go`` sources being placed. For example you can put this in your
 
     # Place the go sources in a "go" directory inside your home directory:
     export GOPATH=~/go
+    # This is needed for the go toolchain:
+    export GOBIN="$GOPATH/bin"
+    # Make sure that our shell finds the go binaries:
     export PATH="$GOPATH/bin:$PATH"
 
 By choosing to have the ``GOPATH`` in your home directory you're not required
