@@ -57,7 +57,7 @@ const (
 	headerSize = 20 + macSize
 
 	// Chacha20 appears to be twice as fast as AES-GCM on my machine
-	defaultCipherType = aeadCipherChaCha
+	defaultCipherType = aeadCipherAES
 
 	// Default maxBlockSize if not set
 	defaultMaxBlockSize = 64 * 1024
