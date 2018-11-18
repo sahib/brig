@@ -637,9 +637,9 @@ EXAMPLES:
    # Output a single file:
    $ brig cat photo.png
    # Create a tar from root and unpack it to the current directory.
-   $ brig tar | tar xfv -
+   $ brig cat | tar xfv -
    # Create .tar.gz out of of the /photos directory.
-   $ brig tar photos | gzip -f > photos.tar.gz
+   $ brig cat photos | gzip -f > photos.tar.gz
 `,
 	},
 	"show": {
@@ -670,9 +670,12 @@ EXAMPLES:
 		ArgsUsage: "<path>",
 		Complete:  completeBrigPath(true, true),
 		Description: `Remove a file or directory.
-   In contrast to the rm(1) there is no --recursive switch.
+   In contrast to the usual rm(1) there is no --recursive switch.
    Directories are deleted recursively by default.
-   Note that you can still access the history of a accessed file.
+
+   Even after deleting files, you will be able to access its history
+   by using the »brig history« command. If you want to restore a deleted
+   entry you are able to with the »brig reset« command.
 `,
 	},
 	"ls": {
