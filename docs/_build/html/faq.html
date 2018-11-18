@@ -195,7 +195,7 @@ I still kinda like it.</p>
 <h3>2. Who develops it?<a class="headerlink" href="#who-develops-it" title="Permalink to this headline">¶</a></h3>
 <p>Although this documentation sometimes speaks of »we«, the only developer is
 currently <a class="reference external" href="https://github.com/sahib">Chris Pahl</a>. He writes it entirely in
-his free time (and there mostly during commuting with the train).</p>
+his free time, mostly during commuting with the train.</p>
 </div>
 </div>
 <div class="section" id="technical-questions">
@@ -212,9 +212,10 @@ instruction set might yield significant higher throughput. The source of the
 Here’s a basic overview over the format:</p>
 <a class="reference internal image-reference" href="_images/format-encryption.svg"><div align="center" class="align-center"><img alt="_images/format-encryption.svg" src="_images/format-encryption.svg" width="66%" /></div>
 </a>
-<p>The key of each file is currently being derived from the content hash of the file
-(See also <a class="reference external" href="https://en.wikipedia.org/wiki/Convergent_encryption">Convergent Encryption</a>).
-If the content changes later, the key does not change.</p>
+<p>The key of each file is currently being derived from the content hash of the
+file (See also <a class="reference external" href="https://en.wikipedia.org/wiki/Convergent_encryption">Convergent Encryption</a>). If the content
+changes later, the key does not change since the key is only generated once
+during the first staging of the file.</p>
 <p>Please refer to the implementation for all implementation details for now. No
 security audits of the implementation have been done yet, therefore I’d
 appreciate every pair of eyes. Especially while everything is still in flux and
@@ -223,9 +224,9 @@ won’t harm any users.</p>
 <div class="section" id="is-there-compression-implemented">
 <h3>2. Is there compression implemented?<a class="headerlink" href="#is-there-compression-implemented" title="Permalink to this headline">¶</a></h3>
 <p>Yes. The compression is being done before encryption and is only enabled if the
-file looks compression-worthy. This is determined by looking at its header to
-guess a mime-type. Depending on the mime-type either <code class="docutils literal notranslate"><span class="pre">snappy</span></code> or <code class="docutils literal notranslate"><span class="pre">lz4</span></code> is
-selected (or no compression is added).</p>
+file looks compression-worthy. The »worthiness« is determined by looking at its
+header to guess a mime-type. Depending on the mime-type either <code class="docutils literal notranslate"><span class="pre">snappy</span></code> or
+<code class="docutils literal notranslate"><span class="pre">lz4</span></code> is selected or no compression is added at all.</p>
 <p>The source of the <a class="reference external" href="https://github.com/sahib/brig/tree/master/catfs/mio/compress">compression layer can be found here</a>. Here’s
 a basic overview over the format:</p>
 <a class="reference internal image-reference" href="_images/format-compression.svg"><div align="center" class="align-center"><img alt="_images/format-compression.svg" src="_images/format-compression.svg" width="66%" /></div>
@@ -235,34 +236,36 @@ a basic overview over the format:</p>
 <h3>3. What hash algorithms are used?<a class="headerlink" href="#what-hash-algorithms-are-used" title="Permalink to this headline">¶</a></h3>
 <p>Two algorithms are used:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">SHA256</span></code> is used by <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> for every content hash.</li>
-<li><code class="docutils literal notranslate"><span class="pre">SHA3-256</span></code> is used as general purpose hash for everything <code class="docutils literal notranslate"><span class="pre">brig</span></code> internal.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SHA256</span></code> is used by <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> for every backend hash.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SHA3-256</span></code> is used as general purpose hash for everything <code class="docutils literal notranslate"><span class="pre">brig</span></code> internal
+(Content and Tree hash).</li>
 </ul>
 <p>Each hash is encoded as <a class="reference external" href="https://github.com/multiformats/multihash">multihash</a>. For output purposes this
-representation is encoded additionally in base58. Therefore, all hashes that
-start with <code class="docutils literal notranslate"><span class="pre">W1</span></code> are <code class="docutils literal notranslate"><span class="pre">sha3-256</span></code> hashes while the ones starting with <code class="docutils literal notranslate"><span class="pre">Qm</span></code>
-are <code class="docutils literal notranslate"><span class="pre">sha256</span></code> hashes.</p>
+representation is encoded additionally in <code class="docutils literal notranslate"><span class="pre">base58</span></code>. Therefore, all hashes
+that start with <code class="docutils literal notranslate"><span class="pre">W1</span></code> are <code class="docutils literal notranslate"><span class="pre">sha3-256</span></code> hashes while the ones starting with
+<code class="docutils literal notranslate"><span class="pre">Qm</span></code> are <code class="docutils literal notranslate"><span class="pre">sha256</span></code> hashes. Keep in mind that <code class="docutils literal notranslate"><span class="pre">base58</span></code> is case-sensitive.</p>
 </div>
 <div class="section" id="what-kind-of-deduplication-is-currently-used">
 <h3>4. What kind of deduplication is currently used?<a class="headerlink" href="#what-kind-of-deduplication-is-currently-used" title="Permalink to this headline">¶</a></h3>
 <p>It is currently only possible to deduplicate between individual versions of a file.
 And there also only the portion before the modification.</p>
-<p><code class="docutils literal notranslate"><span class="pre">IPFS</span></code> implements deduplication, but that is circumvented by encrypting
-blocks before giving them over to the backend. Implementing a more proper and
-informed deduplication is one of the long term goals, which require more
-thorough interaction with <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>. It is also possible to do some basic
-deduplication purely on <code class="docutils literal notranslate"><span class="pre">brig</span></code> side since we have more info on the file than
-<code class="docutils literal notranslate"><span class="pre">IPFS</span></code> has.</p>
+<p><code class="docutils literal notranslate"><span class="pre">IPFS</span></code> implements deduplication, but it is circumvented by encrypting blocks
+before giving them over to the backend. Implementing a more proper and informed
+deduplication is one of the long term goals, which require more thorough
+interaction with <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>. It is also possible to do some basic deduplication
+purely on <code class="docutils literal notranslate"><span class="pre">brig</span></code> side since we have more info on the file than <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> has.</p>
 </div>
 <div class="section" id="how-fast-is-the-i-o-when-using-brig">
 <h3>5. How fast is the I/O when using <code class="docutils literal notranslate"><span class="pre">brig</span></code>?<a class="headerlink" href="#how-fast-is-the-i-o-when-using-brig" title="Permalink to this headline">¶</a></h3>
-<p>Here are some rather outdated graphs where you can get a rough feeling how fast it can be.
-There are a few rules of thumb with mostly obvious content:</p>
+<p>Here are some rather outdated graphs where you can get a rough feeling how fast
+it can be. There are a few rules of thumb with mostly obvious content:</p>
 <ul class="simple">
 <li>It it goes over the network, it’s the network speed plus a smaller constant overhead.</li>
 <li>If it comes over FUSE, it is quite a bit slower than over <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code>.</li>
 <li>If you do not use compression, writing and reading will be faster.</li>
 </ul>
+<p>The graphs below only measure in-memory performance compared to a <code class="docutils literal notranslate"><span class="pre">dd</span></code> like
+speed (see the »baseline« line).</p>
 <a class="reference internal image-reference" href="_images/movie_read.svg"><img alt="_images/movie_read.svg" src="_images/movie_read.svg" width="66%" /></a>
 <a class="reference internal image-reference" href="_images/movie_write.svg"><img alt="_images/movie_write.svg" src="_images/movie_write.svg" width="66%" /></a>
 <p>Your mileage may vary and you better do your own benchmarks for now.</p>

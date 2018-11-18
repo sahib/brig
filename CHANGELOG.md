@@ -18,7 +18,7 @@ Changes that are not yet released can be prepared here.
 
 ### Deprecated
 
-## [0.2.0 Baffling Buck] -- 2018-11-11
+## [0.2.0 Baffling Buck] -- 2018-11-21
 
 ### Fixed
 
