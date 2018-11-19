@@ -83,7 +83,7 @@ type Linker struct {
 	owner string
 }
 
-// NewFilesystem returns a new lkr, ready to use. It assumes the key value store
+// NewLinker returns a new lkr, ready to use. It assumes the key value store
 // is working and does no check on this.
 func NewLinker(kv db.Database) *Linker {
 	lkr := &Linker{kv: kv}
@@ -152,7 +152,7 @@ func (lkr *Linker) MemIndexClear() {
 // COMMON NODE HANDLING //
 //////////////////////////
 
-// NextInode() returns a unique identifier, used to identify a single node. You
+// NextInode returns a unique identifier, used to identify a single node. You
 // should not need to call this function, except when implementing own nodes.
 func (lkr *Linker) NextInode() uint64 {
 	nodeCount, err := lkr.kv.Get("stats", "max-inode")
@@ -181,6 +181,9 @@ func (lkr *Linker) NextInode() uint64 {
 	return cnt
 }
 
+// FilesByContents checks what files are associated with the content hashes in
+// `contents`. It returns a map of content hash b58 to file. This method is
+// quite heavy and should not be used in loops. There is room for optimizations.
 func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error) {
 	result := make(map[string]*n.File)
 
@@ -357,6 +360,9 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 	})
 }
 
+// CommitByIndex returns the commit referenced by `index`.
+// `0` will return the very first commit. Negative numbers will yield
+// a ErrNoSuchKey error.
 func (lkr *Linker) CommitByIndex(index int64) (*n.Commit, error) {
 	b58Hash, err := lkr.kv.Get("index", strconv.FormatInt(index, 10))
 	if err != nil && err != db.ErrNoSuchKey {
@@ -623,7 +629,7 @@ func (lkr *Linker) MetadataPut(key string, value []byte) error {
 	})
 }
 
-// MetadataGet retriesves a previosuly put key value pair.
+// MetadataGet retriesves a previously put key value pair.
 // It will return nil if no such value could be retrieved.
 func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 	return lkr.kv.Get("metadata", key)
@@ -633,6 +639,7 @@ func (lkr *Linker) MetadataGet(key string) ([]byte, error) {
 // OWNERSHIP HANDLING //
 ////////////////////////
 
+// Owner returns the owner of the linker.
 func (lkr *Linker) Owner() (string, error) {
 	if lkr.owner != "" {
 		return lkr.owner, nil
@@ -650,6 +657,7 @@ func (lkr *Linker) Owner() (string, error) {
 	return lkr.owner, nil
 }
 
+// SetOwner will set the owner to `owner`.
 func (lkr *Linker) SetOwner(owner string) error {
 	lkr.owner = owner
 	return lkr.MetadataPut("owner", []byte(owner))
@@ -660,8 +668,8 @@ func (lkr *Linker) SetOwner(owner string) error {
 ////////////////////////
 
 // ResolveRef resolves the hash associated with `refname`. If the ref could not
-// be resolved, ErrNoSuchRef is returned. Typically, Node will be a Commit. But
-// there are no technical restrictions on which node typ to use.
+// be resolved, ErrNoSuchRef is returned. Typically, Node will be a Commit.
+// But there are no technical restrictions on which node typ to use.
 // NOTE: ResolveRef("HEAD") != ResolveRef("head") due to case.
 func (lkr *Linker) ResolveRef(refname string) (n.Node, error) {
 	origRefname := refname
@@ -782,6 +790,7 @@ func (lkr *Linker) ListRefs() ([]string, error) {
 	return refs, nil
 }
 
+// RemoveRef removes the ref named `refname`.
 func (lkr *Linker) RemoveRef(refname string) error {
 	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		batch.Erase("refs", refname)
@@ -968,6 +977,7 @@ func (lkr *Linker) LookupNode(repoPath string) (n.Node, error) {
 	return root.Lookup(lkr, repoPath)
 }
 
+// LookupNodeAt works like LookupNode but returns the node at the state of `cmt`.
 func (lkr *Linker) LookupNodeAt(cmt *n.Commit, repoPath string) (n.Node, error) {
 	root, err := lkr.DirectoryByHash(cmt.Root())
 	if err != nil {
@@ -981,6 +991,7 @@ func (lkr *Linker) LookupNodeAt(cmt *n.Commit, repoPath string) (n.Node, error) 
 	return root.Lookup(lkr, repoPath)
 }
 
+// LookupModNode is like LookupNode but returns a readily cast ModNode.
 func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 	node, err := lkr.LookupNode(repoPath)
 	if err != nil {
@@ -999,6 +1010,7 @@ func (lkr *Linker) LookupModNode(repoPath string) (n.ModNode, error) {
 	return snode, nil
 }
 
+// LookupModNodeAt is like LookupNodeAt but with readily cast type.
 func (lkr *Linker) LookupModNodeAt(cmt *n.Commit, repoPath string) (n.ModNode, error) {
 	node, err := lkr.LookupNodeAt(cmt, repoPath)
 	if err != nil {
@@ -1333,7 +1345,7 @@ func (lkr *Linker) commitMoveMappingKey(
 	dstB58 := dstNode.TreeHash().B58String()
 	srcB58 := srcNode.TreeHash().B58String()
 
-	forwardLine := fmt.Sprintf("%s hash %s", moveDirection, dstB58)
+	forwardLine := fmt.Sprintf("%v hash %s", moveDirection, dstB58)
 	batch.Put(
 		[]byte(forwardLine),
 		"moves", status.TreeHash().B58String(), srcB58,
@@ -1345,7 +1357,7 @@ func (lkr *Linker) commitMoveMappingKey(
 	)
 
 	reverseLine := fmt.Sprintf(
-		"%s hash %s",
+		"%v hash %s",
 		moveDirection.Invert(),
 		srcB58,
 	)
@@ -1413,12 +1425,19 @@ func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool)
 }
 
 const (
+	// MoveDirUnknown should only be used for init purposes.
 	MoveDirUnknown = iota
+	// MoveDirSrcToDst means that this file was moved from source to dest.
+	// (Therefore it is the new destination file and probably not a ghost)
 	MoveDirSrcToDst
+	// MoveDirDstToSrc means that this place was moved somewhere else.
+	// (Therefore it is a likely a ghost and the new file lives somewhere else)
 	MoveDirDstToSrc
+	// MoveDirNone tells us that this file did not move.
 	MoveDirNone
 )
 
+// MoveDir describes the direction of a move.
 type MoveDir int
 
 func (md MoveDir) String() string {
@@ -1458,6 +1477,8 @@ func moveDirFromString(spec string) MoveDir {
 	}
 }
 
+// MoveEntryPoint tells us if a node participated in a move.
+// If so, the new node and the corresponding move direction is returned.
 func (lkr *Linker) MoveEntryPoint(nd n.Node) (n.Node, MoveDir, error) {
 	moveData, err := lkr.kv.Get(
 		"stage", "moves", "overlay",
@@ -1669,6 +1690,8 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 	return lkr.iterAll(prevCmt, to, visited, fn)
 }
 
+// Atomic is like AtomicWithBatch but does not require using a batch.
+// Use this for read-only operations. It's only syntactic sugar though.
 func (lkr *Linker) Atomic(fn func() (bool, error)) (err error) {
 	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
 		return fn()
@@ -1729,6 +1752,7 @@ func hintRollback(err error) (bool, error) {
 	return false, nil
 }
 
+// KV returns the key value store passed when constructing the linker.
 func (lkr *Linker) KV() db.Database {
 	return lkr.kv
 }

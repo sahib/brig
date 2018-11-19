@@ -71,6 +71,8 @@ type FS struct {
 	readOnly bool
 }
 
+// ErrReadOnly is returned when a file system was created in read only mode
+// and a modifying operation was called on it.
 var ErrReadOnly = errors.New("fs is read only")
 
 // StatInfo describes the metadata of a single node.
@@ -275,6 +277,8 @@ func (fs *FS) doGcRun() {
 	}
 }
 
+// NewFilesystem creates a new CATFS filesystem.
+// This filesystem stores all its data in a Merkle DAG and is fully versioned.
 func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool, fsCfg *config.Config) (*FS, error) {
 	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
@@ -605,6 +609,7 @@ func (fs *FS) Unpin(path string) error {
 	return fs.pinner.UnpinNode(nd, true)
 }
 
+// ListExplicitPins returns all pathes that are pinned explicitly.
 func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -659,6 +664,8 @@ func (fs *FS) ListExplicitPins(prefix, fromRef, toRef string) ([]ExplicitPin, er
 	return results, nil
 }
 
+// ClearExplicitPins clears all pins in the commit range referenced
+// by `fromRef` and `toRef`. The cleared files have to start with `prefix`.
 func (fs *FS) ClearExplicitPins(prefix, fromRef, toRef string) (int, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -666,6 +673,8 @@ func (fs *FS) ClearExplicitPins(prefix, fromRef, toRef string) (int, error) {
 	return fs.setExplicitPins(false, prefix, fromRef, toRef)
 }
 
+// SetExplicitPin pins all pins in the commit range referenced by `fromRef` and
+// `toRef` explicitly. The files have to start with `prefix`.
 func (fs *FS) SetExplicitPin(prefix, fromRef, toRef string) (int, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1030,6 +1039,8 @@ func (fs *FS) getTarableEntries(path string) ([]tarEntry, error) {
 	return entries, err
 }
 
+// Tar produces a tar archive from the file or directory at `root` and writes
+// the ouput to `w`. If you want compression, supply a gzip writer.
 func (fs *FS) Tar(root string, w io.Writer) error {
 	entries, err := fs.getTarableEntries(root)
 	if err != nil {
@@ -1333,6 +1344,8 @@ func (fs *FS) Sync(remote *FS) error {
 	return vcs.Sync(remote.lkr, fs.lkr, syncCfg)
 }
 
+// MakeDiff will return a diff between `headRevOwn` and `headRevRemote`.
+// `remote` is the filesystem `headRevRemote` belongs to and may be the same as `fs`.
 func (fs *FS) MakeDiff(remote *FS, headRevOwn, headRevRemote string) (*Diff, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1449,6 +1462,7 @@ func (fs *FS) Log() ([]Commit, error) {
 	})
 }
 
+// Reset restores the state of `path` to the state in `rev`.
 func (fs *FS) Reset(path, rev string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1491,6 +1505,8 @@ func (fs *FS) Reset(path, rev string) error {
 	return fs.pinner.PinNode(newNode, false)
 }
 
+// Checkout reverts all state to the commit referenced by `rev`.
+// If `force` is true a non-empty staging area will be overwritten.
 func (fs *FS) Checkout(rev string, force bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1535,6 +1551,9 @@ func (fs *FS) RemoveTag(name string) error {
 	return fs.lkr.RemoveRef(name)
 }
 
+// FilesByContent returns all stat info for the content hashes referenced in
+// `contents`.  The return value is a map with the content hash as key and a
+// StatInfo describing the exact file content.
 func (fs *FS) FilesByContent(contents []h.Hash) (map[string]StatInfo, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1552,6 +1571,8 @@ func (fs *FS) FilesByContent(contents []h.Hash) (map[string]StatInfo, error) {
 	return infos, nil
 }
 
+// ScheduleGCRun runs GC run at the next possible time.
+// This method does not block until the run is finished.
 func (fs *FS) ScheduleGCRun() {
 	// Putting a value into gcControl might block,
 	// so better do it in the background.
@@ -1684,6 +1705,7 @@ func (fs *FS) LastPatchIndex() (int64, error) {
 	return strconv.ParseInt(string(fromIndexData), 10, 64)
 }
 
+// CommitInfo returns detailed info about a certain commit.
 func (fs *FS) CommitInfo(rev string) (*Commit, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

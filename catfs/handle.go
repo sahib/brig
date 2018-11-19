@@ -15,6 +15,9 @@ var (
 	ErrIsClosed = errors.New("File handle is closed")
 )
 
+// Handle is a emulation of a os.File handle, as returned by os.Open()
+// It supports the usual operations like open, read, write and seek.
+// Take note that the flushing operation currently is quite expensive.
 type Handle struct {
 	fs          *FS
 	file        *n.File
@@ -57,6 +60,9 @@ func (hdl *Handle) initStreamIfNeeded() error {
 	return nil
 }
 
+// Read will try to fill `buf` as much as possible.
+// The seek pointer will be advanced by the number of bytes written.
+// Take care, `buf` might still have contents, even if io.EOF was returned.
 func (hdl *Handle) Read(buf []byte) (int, error) {
 	var err error
 
@@ -84,6 +90,8 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 	return n, nil
 }
 
+// Write will write the contents of `buf` to the current position.
+// It will return the number of currently written bytes.
 func (hdl *Handle) Write(buf []byte) (int, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
@@ -134,6 +142,8 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	return n, nil
 }
 
+// Seek will jump to the `offset` relative to `whence`.
+// There next read and write operation will start from this point.
 func (hdl *Handle) Seek(offset int64, whence int) (int64, error) {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
@@ -218,6 +228,8 @@ func (hdl *Handle) flush() error {
 	return hdl.layer.Close()
 }
 
+// Flush makes sure to write the current state to the backend.
+// Please remember that this method is currently pretty expensive.
 func (hdl *Handle) Flush() error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
@@ -233,6 +245,8 @@ func (hdl *Handle) Flush() error {
 	return hdl.flush()
 }
 
+// Close will finalize the file. It should not be used after.
+// This will call flush if it did not happen yet.
 func (hdl *Handle) Close() error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
@@ -245,6 +259,7 @@ func (hdl *Handle) Close() error {
 	return hdl.flush()
 }
 
+// Path returns the absolute path of the file.
 func (hdl *Handle) Path() string {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()

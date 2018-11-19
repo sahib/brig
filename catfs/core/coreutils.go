@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	// ErrIsGhost is returned by Remove() when calling it on a ghost.
 	ErrIsGhost = errors.New("Is a ghost")
 )
 
@@ -248,6 +249,7 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 	}
 }
 
+// Copy copies the node `nd` to the path at `dstPath`.
 func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err error) {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if nd.Path() == dstPath {
@@ -288,6 +290,8 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 	return
 }
 
+// Move moves the node `nd` to the path at `dstPath` and leaves
+// a ghost at the old place.
 func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	// Forbid moving a node inside of one of it's subdirectories.
 	if nd.Type() == n.NodeTypeGhost {
@@ -345,10 +349,12 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 	})
 }
 
+// StageFromFileNode is a convinience helper that will call Stage() with all necessary params from `f`.
 func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
 	return Stage(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.Key())
 }
 
+// Stage adds a file to brigs DAG.
 func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
@@ -446,6 +452,9 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 	return
 }
 
+// Log will call `fn` on every commit we currently have, starting
+// with the most current one (CURR, then HEAD, ...).
+// If `fn`` will return an error, the iteration is being stopped.
 func Log(lkr *Linker, fn func(cmt *n.Commit) error) error {
 	curr, err := lkr.Status()
 	if err != nil {

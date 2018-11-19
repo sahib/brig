@@ -644,7 +644,7 @@ func TestList(t *testing.T) {
 		dir, err := fs.lkr.LookupDirectory("/1")
 		require.Nil(t, err)
 
-		// Check if ghosts are being treated as not existant:
+		// Check if ghosts are being treated as not existent:
 		c.MustMove(t, fs.lkr, dir, "/666")
 		_, err = fs.List("/1", -1)
 		require.True(t, ie.IsNoSuchFileError(err))

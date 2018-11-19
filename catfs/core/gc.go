@@ -8,6 +8,9 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// GarbageCollector implements a small mark & sweep garbage collector.
+// It exists more for the sake of fault tolerance than it being an
+// essential part of brig. This is different from the ipfs garbage collector.
 type GarbageCollector struct {
 	lkr      *Linker
 	kv       db.Database
@@ -15,6 +18,8 @@ type GarbageCollector struct {
 	markMap  map[string]struct{}
 }
 
+// NewGarbageCollector will return a new GC, operating on `lkr` and `kv`.
+// It will call `kc` on every collected node.
 func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *GarbageCollector {
 	return &GarbageCollector{
 		lkr:      lkr,
@@ -151,6 +156,9 @@ func (gc *GarbageCollector) findAllMoveLocations(head *n.Commit) ([][]string, er
 	return locations, nil
 }
 
+// Run will trigger a GC run. If `allObjects` is false,
+// only the staging commit will be checked. Otherwise
+// all objects in the key value store.
 func (gc *GarbageCollector) Run(allObjects bool) error {
 	gc.markMap = make(map[string]struct{})
 	head, err := gc.lkr.Status()

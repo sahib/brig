@@ -189,9 +189,9 @@ func prefixSlash(s string) string {
 	return s
 }
 
-////////////////////////////////////////
-// MARSHAL HELPERS FOR ARBITARY NODES //
-////////////////////////////////////////
+/////////////////////////////////////////
+// MARSHAL HELPERS FOR ARBITRARY NODES //
+/////////////////////////////////////////
 
 // MarshalNode will convert any Node to a byte string
 // Use UnmarshalNode to load a Node from it again.

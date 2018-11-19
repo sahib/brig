@@ -5,6 +5,7 @@ import (
 
 	"github.com/sahib/brig/catfs/db"
 	n "github.com/sahib/brig/catfs/nodes"
+	"github.com/stretchr/testify/require"
 )
 
 func assertNodeExists(t *testing.T, kv db.Database, nd n.Node) {
@@ -54,6 +55,7 @@ func TestGC(t *testing.T) {
 	}
 
 	root, err = lkr.Root()
+	require.Nil(t, err)
 
 	if err := gc.Run(true); err != nil {
 		t.Fatalf("gc run failed: %v", err)

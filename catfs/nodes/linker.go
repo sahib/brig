@@ -77,7 +77,7 @@ func (ml *MockLinker) LookupNode(path string) (Node, error) {
 	return nil, ie.NoSuchFile(path)
 }
 
-// NodeByHash will return a previosuly added node (via AddNode) by it's hash.
+// NodeByHash will return a previously added node (via AddNode) by it's hash.
 func (ml *MockLinker) NodeByHash(hash h.Hash) (Node, error) {
 	if node, ok := ml.hashes[hash.B58String()]; ok {
 		return node, nil

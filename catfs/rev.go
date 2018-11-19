@@ -21,7 +21,7 @@ var (
 // from a syntactic point of view.
 //
 // A valid ref may contain only letters or numbers, but might end with an
-// arbitary number of '^' at the end. Unicode is allowed.
+// arbitrary number of '^' at the end. Unicode is allowed.
 // As special case it might also match indexCommitPattern.
 //
 // If any violation is dected, an error is returned.

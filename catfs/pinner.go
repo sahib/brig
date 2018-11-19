@@ -194,6 +194,7 @@ func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
 
 ////////////////////////////
 
+// Pin will remember the node at `inode` with hash `hash` as `explicit`ly pinned.
 func (pc *Pinner) Pin(inode uint64, hash h.Hash, explicit bool) error {
 	isPinned, isExplicit, err := pc.IsPinned(inode, hash)
 	if err != nil {

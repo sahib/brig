@@ -230,7 +230,7 @@ func (c *Commit) BoxCommit(author string, message string) error {
 	// Write the author hash. Different author -> different content.
 	buf.Write(padHash(h.Sum([]byte(c.author))))
 
-	// Write the message last, it may be arbitary length.
+	// Write the message last, it may be arbitrary length.
 	buf.Write([]byte(message))
 
 	mh := h.Sum(buf.Bytes())
