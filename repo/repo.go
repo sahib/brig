@@ -135,6 +135,9 @@ func Open(baseFolder, password string) (*Repository, error) {
 
 	backendNamePath := filepath.Join(baseFolder, "BACKEND")
 	backendName, err := ioutil.ReadFile(backendNamePath)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Repository{
 		BaseFolder:  baseFolder,

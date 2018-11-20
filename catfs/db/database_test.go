@@ -236,6 +236,7 @@ func testRollback(t *testing.T, db Database) {
 
 	data, err = db.Get("some_key")
 	require.Equal(t, ErrNoSuchKey, err)
+	require.Nil(t, data)
 }
 
 func testRecursiveBatch(t *testing.T, db Database) {

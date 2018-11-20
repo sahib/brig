@@ -74,7 +74,7 @@ func findRegistryPath() string {
 	if path := os.Getenv("BRIG_REGISTRY_PATH"); path != "" {
 		registryPaths = []string{path}
 	} else {
-		home := ""
+		var home string
 		user, err := user.Current()
 		if err != nil {
 			home = os.Getenv("HOME")

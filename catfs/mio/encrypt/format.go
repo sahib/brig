@@ -236,6 +236,10 @@ func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
 	}
 
 	n, err := io.CopyBuffer(layer, source, make([]byte, defaultEncBufferSize))
+	if err != nil {
+		return n, err
+	}
+
 	if closeErr := layer.Close(); closeErr != nil {
 		return n, closeErr
 	}

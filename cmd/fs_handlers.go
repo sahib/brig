@@ -339,7 +339,8 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 
 	for _, entry := range entries {
 		pinState := " " + pinStateToSymbol(entry.IsPinned, entry.IsExplicit)
-		coloredPath := ""
+
+		var coloredPath string
 		if entry.IsDir {
 			coloredPath = color.GreenString(entry.Path)
 		} else {

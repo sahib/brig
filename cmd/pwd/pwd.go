@@ -19,7 +19,7 @@ const (
 )
 
 func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, error) {
-	var line = ""
+	var line string
 	var bytepwd []byte
 	var err error
 
@@ -38,7 +38,8 @@ func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, erro
 }
 
 func createStrengthPrompt(password []rune, prefix string) string {
-	symbol, colorFn := "", color.RedString
+	var symbol string
+	var colorFn func(format string, a ...interface{}) string
 
 	strength := zxcvbn.PasswordStrength(string(password), nil)
 

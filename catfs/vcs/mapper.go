@@ -149,12 +149,11 @@ func (ma *Mapper) report(src, dst n.ModNode, typeMismatch, isRemove, isMove bool
 }
 
 func (ma *Mapper) reportByType(src, dst n.ModNode) error {
-	isTypeMismatch := false
 	if src == nil || dst == nil {
 		return ma.report(src, dst, false, false, false)
 	}
 
-	isTypeMismatch = src.Type() != dst.Type()
+	isTypeMismatch := src.Type() != dst.Type()
 
 	if src.ContentHash().Equal(dst.ContentHash()) {
 		// If the files are equal, but the location changed,
@@ -665,6 +664,10 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 					err = ma.report(dir, nil, false, false, false)
 				} else {
 					err = ma.report(nil, dir, false, false, false)
+				}
+
+				if err != nil {
+					return err
 				}
 			} else {
 				if err := ma.extractLeftovers(lkr, dir, srcToDst); err != nil {

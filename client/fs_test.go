@@ -386,21 +386,21 @@ func TestSyncPartial(t *testing.T) {
 		bobWhoami, err := bobCtl.Whoami()
 		require.Nil(t, err, stringify(err))
 
-		err = aliCtl.RemoteSave([]Remote{
+		require.Nil(t, aliCtl.RemoteSave([]Remote{
 			{
 				Name:        "bob",
 				Fingerprint: bobWhoami.Fingerprint,
 				Folders:     []string{"/photos"},
 			},
-		})
+		}))
 
-		err = bobCtl.RemoteSave([]Remote{
+		require.Nil(t, bobCtl.RemoteSave([]Remote{
 			{
 				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
 				Folders:     []string{"/photos"},
 			},
-		})
+		}))
 
 		err = aliCtl.StageFromReader("/docs/ali_secret.txt", bytes.NewReader([]byte{0}))
 		require.Nil(t, err, stringify(err))

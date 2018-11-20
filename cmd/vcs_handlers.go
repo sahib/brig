@@ -551,7 +551,7 @@ func handleBecome(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleCommit(ctx *cli.Context, ctl *client.Client) error {
-	msg := ""
+	var msg string
 
 	// Build the message:
 	if ctx.IsSet("message") {

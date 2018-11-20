@@ -26,8 +26,8 @@ type historySetup struct {
 /////////////// ACTUAL TESTCASES ///////////////
 
 func setupHistoryBasic(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	file, c3 := c.MustTouchAndCommit(t, lkr, "/x.png", 3)
 
 	status, err := lkr.Status()
@@ -55,8 +55,8 @@ func setupHistoryBasic(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryBasicHole(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
-	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	// Needed to have a commit that has changes:
 	c.MustTouch(t, lkr, "/other", 23)
@@ -112,7 +112,7 @@ func setupHistoryRemoveImmediately(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
@@ -149,7 +149,7 @@ func setupHistoryRemoved(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoved(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustMove(t, lkr, file, "/y.png")
 	c3 := c.MustCommit(t, lkr, "post-move")
@@ -172,8 +172,8 @@ func setupHistoryMoved(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoveStaging(t *testing.T, lkr *c.Linker) *historySetup {
-	file := c.MustTouch(t, lkr, "/x.png", 1)
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	c.MustTouch(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustMove(t, lkr, file, "/y.png")
 
@@ -224,7 +224,7 @@ func setupMoveInitial(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := c.MustMove(t, lkr, file, "/y.png")
@@ -249,7 +249,7 @@ func setupHistoryMoveAndModify(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	newFile := c.MustMove(t, lkr, file, "/y.png")
 	c.MustModify(t, lkr, newFile.(*n.File), 42)
@@ -277,7 +277,7 @@ func setupHistoryMoveAndModifyStage(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
@@ -303,7 +303,7 @@ func setupHistoryRemoveReadd(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
@@ -329,7 +329,7 @@ func setupHistoryRemoveReaddModify(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryRemoveReaddNoModify(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	c.MustRemove(t, lkr, file)
 	c3 := c.MustCommit(t, lkr, "after remove")
@@ -355,7 +355,7 @@ func setupHistoryRemoveReaddNoModify(t *testing.T, lkr *c.Linker) *historySetup 
 }
 
 func setupHistoryMoveCircle(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 	newFile := c.MustMove(t, lkr, file, "/y.png")
 	c3 := c.MustCommit(t, lkr, "move to y.png")
@@ -463,7 +463,7 @@ func setupHistoryMoveSamePlaceRight(t *testing.T, lkr *c.Linker) *historySetup {
 }
 
 func setupHistoryMoveAndReaddFromMoved(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	newFile := c.MustMove(t, lkr, file, "/y.png")
@@ -539,7 +539,7 @@ func setupHistoryMultipleMovesInStage(t *testing.T, lkr *c.Linker) *historySetup
 }
 
 func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetup {
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/x.png", 2)
 
 	c.MustMove(t, lkr, file, "/y.png")
@@ -568,7 +568,7 @@ func setupHistoryMoveAndReaddFromAdded(t *testing.T, lkr *c.Linker) *historySetu
 
 func setupMoveDirectoryWithChild(t *testing.T, lkr *c.Linker) *historySetup {
 	dir := c.MustMkdir(t, lkr, "/sub")
-	file, c1 := c.MustTouchAndCommit(t, lkr, "/sub/x.png", 1)
+	_, c1 := c.MustTouchAndCommit(t, lkr, "/sub/x.png", 1)
 	file, c2 := c.MustTouchAndCommit(t, lkr, "/sub/x.png", 2)
 
 	c.MustMove(t, lkr, dir, "/moved-sub")

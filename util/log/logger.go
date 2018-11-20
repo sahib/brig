@@ -236,15 +236,13 @@ func NewSyslogWrapper(w *syslog.Writer) SyslogWrapper {
 }
 
 func (sw SyslogWrapper) Write(data []byte) (int, error) {
-	prefix := data
-
 	if len(data) < 23 {
 		return len(data), sw.w.Info(string(data))
 	}
 
 	// The logging symbol is currently definitely in the this part
 	// of the log. It might span up to 4 bytes.
-	prefix = data[19:23]
+	prefix := data[19:23]
 	if bytes.Index(prefix, []byte(symbolTable[logrus.DebugLevel])) > 0 {
 		return len(data), sw.w.Debug(string(data))
 	}

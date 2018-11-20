@@ -17,7 +17,7 @@ func init() {
 	log.SetOutput(os.Stderr)
 	log.SetLevel(log.DebugLevel)
 
-	useColor := true
+	var useColor bool
 	switch envVar := os.Getenv("BRIG_COLOR"); envVar {
 	case "", "auto":
 		useColor = isatty.IsTerminal(os.Stdout.Fd())
