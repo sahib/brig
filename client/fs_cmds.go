@@ -333,7 +333,7 @@ func (cl *Client) ListExplicitPins(prefix, from, to string) ([]PathAtCommit, err
 		return nil, err
 	}
 
-	pins := []ExplicitPin{}
+	pins := []PathAtCommit{}
 	for idx := 0; idx < capPins.Len(); idx++ {
 		capPin := capPins.At(idx)
 		path, err := capPin.Path()
@@ -346,7 +346,7 @@ func (cl *Client) ListExplicitPins(prefix, from, to string) ([]PathAtCommit, err
 			return nil, err
 		}
 
-		pins = append(pins, ExplicitPin{
+		pins = append(pins, PathAtCommit{
 			Path:   path,
 			Commit: commit,
 		})
