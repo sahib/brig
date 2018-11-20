@@ -33,7 +33,7 @@ It is based on ``IPFS``, written in Go and will feel familiar to ``git`` users.
 * No central server at all. Still, central architectures can be build with ``brig``.
 * Simple user identification and discovery with users that look like email addresses.
 
-Also take a look [at the website draft](http://sahib.github.io/brig/public/) for a polished list of features.
+Also take a look [at the documentation](http://brig.readthedocs.io/en/latest/index.html) for more details.
 
 ## Getting started
 
@@ -65,20 +65,19 @@ All documentation can be found on ReadTheDocs.org:
 
 	http://brig.readthedocs.io/en/latest/index.html
 
-### Donations
+## Donations
 
 I really would like to work more on ``brig``, but my day job (and the money
-that comes with it) forbids that. If you're interested in the development
-and would think about supporting me financially, then please [contact
-me!](mailto:sahib@online.de)
-
-If you'd like to give me a small & steady donation, you can always use *Liberapay*:
+that comes with it) forbids that. If you're interested in the development and
+would think about supporting me financially, then please [contact
+me!](mailto:sahib@online.de) If you'd like to give me a small & steady
+donation, you can always use *Liberapay*:
 
 <noscript><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
 
-Thank you!
+*Thank you!*
 
-### Focus
+## Focus
 
 ``brig`` tries to focus on being up conceptually simple, by hiding a lot of
 complicated details regarding storage and security. Therefore I hope the end
