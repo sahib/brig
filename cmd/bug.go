@@ -16,6 +16,10 @@ import (
 	"github.com/urfave/cli"
 )
 
+const (
+	reportURL = "https://github.com/sahib/brig/issues/new?"
+)
+
 // printError simply prints a nicely formatted error to stderr.
 func printError(msg string) {
 	fmt.Fprintln(os.Stderr, color.RedString("*** ")+msg)
@@ -93,9 +97,7 @@ Please include anything else you think is helpful. Thanks!
 		// Try to open the issue tracker for convinience:
 		urlVal := url.Values{}
 		urlVal.Set("body", buf.String())
-		reportUrl := "https://github.com/sahib/brig/issues/new?"
-
-		if err := webbrowser.Open(reportUrl + urlVal.Encode()); err != nil {
+		if err := webbrowser.Open(reportURL + urlVal.Encode()); err != nil {
 			printToStdout = true
 		}
 	}

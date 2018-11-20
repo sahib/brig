@@ -14,9 +14,9 @@ var (
 	Patch = ""
 	// ReleaseType is "beta", "alpha" or "" for final releases
 	ReleaseType = ""
-	// Gitrev is the current HEAD of git of this release
+	// GitRev is the current HEAD of git of this release
 	GitRev = ""
-	// Buildtime is the ISO8601 timestamp of the current build
+	// BuildTime is the ISO8601 timestamp of the current build
 	BuildTime = ""
 
 	// MajorInt is "Major" as parsed integer
@@ -46,12 +46,12 @@ func init() {
 	PatchInt = parseVersionNum(Patch, "patch")
 }
 
-// Version returns a tuple of (major, minor, patch)
+// Numbers returns a tuple of (major, minor, patch)
 func Numbers() (int, int, int) {
 	return MajorInt, MinorInt, PatchInt
 }
 
-// VersionString returns a Maj.Min.Patch string.
+// String returns a Maj.Min.Patch string.
 func String() string {
 	base := fmt.Sprintf("v%s.%s.%s", Major, Minor, Patch)
 	if ReleaseType != "" {

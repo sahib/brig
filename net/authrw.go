@@ -117,7 +117,7 @@ func NewAuthReadWriter(
 	}
 }
 
-// Authorised will return true if the partner was successfully authenticated.
+// IsAuthorised will return true if the partner was successfully authenticated.
 // It will return false if no call to Read() or Write() was made.
 func (ath *AuthReadWriter) IsAuthorised() bool {
 	return ath.authorised
@@ -189,7 +189,7 @@ func (ath *AuthReadWriter) RemotePubKey() []byte {
 	return ath.remotePubKey
 }
 
-// Return the remote's screen name.
+// RemoteName returns the remote's screen name.
 // Note that this name only serves as indication for display
 // and should not be relied on since it can be easily faked.
 func (ath *AuthReadWriter) RemoteName() string {

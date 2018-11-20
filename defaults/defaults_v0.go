@@ -4,7 +4,7 @@ import (
 	"github.com/sahib/config"
 )
 
-// Defaults is the default validation for brig
+// DefaultsV0 is the default config validation for brig
 var DefaultsV0 = config.DefaultMapping{
 	"daemon": config.DefaultMapping{
 		"port": config.DefaultEntry{

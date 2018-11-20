@@ -16,6 +16,8 @@ import (
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
+// Client is a client for inter-remote communication.
+// It implements convenient methods to talk to other brig instances.
 type Client struct {
 	bk netBackend.Backend
 
@@ -26,14 +28,15 @@ type Client struct {
 	api      capnp.API
 }
 
-func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.Context) (*Client, error) {
+// Dial creates a new Client connected to `name`.
+func Dial(ctx context.Context, name string, rp *repo.Repository, bk netBackend.Backend) (*Client, error) {
 	remote, err := rp.Remotes.Remote(name)
 	if err != nil {
 		return nil, err
 	}
 
 	addr := remote.Fingerprint.Addr()
-	ctl, err := DialByAddr(addr, remote.Fingerprint, rp, bk, ctx)
+	ctl, err := DialByAddr(ctx, addr, remote.Fingerprint, rp, bk)
 	if err != nil {
 		return nil, e.Wrapf(err, "by-addr")
 	}
@@ -41,12 +44,13 @@ func Dial(name string, rp *repo.Repository, bk netBackend.Backend, ctx context.C
 	return ctl, nil
 }
 
+// DialByAddr is like Dial but does not get its info from the remote list.
 func DialByAddr(
+	ctx context.Context,
 	addr string,
 	fingerprint peer.Fingerprint,
 	rp *repo.Repository,
 	bk netBackend.Backend,
-	ctx context.Context,
 ) (*Client, error) {
 	kr := rp.Keyring()
 	ownPubKey, err := kr.OwnPubKey()
@@ -94,11 +98,12 @@ func DialByAddr(
 	}, nil
 }
 
+// PeekRemotePubkey connects to `addr` and tries to read the public key they claim.
 func PeekRemotePubkey(
+	ctx context.Context,
 	addr string,
 	rp *repo.Repository,
 	bk netBackend.Backend,
-	ctx context.Context,
 ) ([]byte, string, error) {
 	kr := rp.Keyring()
 	ownPubKey, err := kr.OwnPubKey()
@@ -135,6 +140,8 @@ func (cl *Client) Close() error {
 // ACTUAL COMMANDS //
 /////////////////////
 
+// Ping will contact the remote. This will only work if both remotes are authenticated.
+// This in contrast to the backend ping, which will work when there is a network connection.
 func (cl *Client) Ping() error {
 	call := cl.api.Ping(cl.ctx, func(p capnp.Meta_ping_Params) error {
 		return nil
@@ -144,6 +151,9 @@ func (cl *Client) Ping() error {
 	return err
 }
 
+// FetchStore tries to fetch all store data from the remote.
+// This will only work when the other store allowed us to access all folders.
+// (See IsCompleteFetchAllowed)
 func (cl *Client) FetchStore() (*bytes.Buffer, error) {
 	call := cl.api.FetchStore(cl.ctx, func(p capnp.Sync_fetchStore_Params) error {
 		return nil
@@ -162,6 +172,8 @@ func (cl *Client) FetchStore() (*bytes.Buffer, error) {
 	return bytes.NewBuffer(data), nil
 }
 
+// FetchPatch tries to get a set of changes since `fromIndex`.
+// The serialized patch is returned as byte slice.
 func (cl *Client) FetchPatch(fromIndex int64) ([]byte, error) {
 	call := cl.api.FetchPatch(cl.ctx, func(p capnp.Sync_fetchPatch_Params) error {
 		p.SetFromIndex(fromIndex)
@@ -181,6 +193,7 @@ func (cl *Client) FetchPatch(fromIndex int64) ([]byte, error) {
 	return data, nil
 }
 
+// IsCompleteFetchAllowed asks the remote if we can use FetchStore.
 func (cl *Client) IsCompleteFetchAllowed() (bool, error) {
 	call := cl.api.IsCompleteFetchAllowed(cl.ctx, func(p capnp.Sync_isCompleteFetchAllowed_Params) error {
 		return nil

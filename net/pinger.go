@@ -11,10 +11,15 @@ import (
 )
 
 var (
-	ErrPingMapClosed = errors.New("Pinger Map was already closed")
-	ErrNoSuchAddr    = errors.New("No such addr known to ping map")
+	// ErrPingMapClosed is returned when an operation is performed on a closed
+	// ping map.
+	ErrPingMapClosed = errors.New("pinger Map was already closed")
+
+	// ErrNoSuchAddr is returned when asking for a pinger that we don't know.
+	ErrNoSuchAddr = errors.New("No such addr known to ping map")
 )
 
+// PingMap remembers the times we last accessed a remote.
 type PingMap struct {
 	mu    sync.Mutex
 	tickr *time.Ticker
@@ -22,6 +27,7 @@ type PingMap struct {
 	netBk backend.Backend
 }
 
+// NewPingMap returns a new PingMap.
 func NewPingMap(netBk backend.Backend) *PingMap {
 	pm := &PingMap{
 		peers: make(map[string]backend.Pinger),
@@ -140,6 +146,7 @@ func (pm *PingMap) Sync(addrs []string) error {
 	return nil
 }
 
+// For returns a new pinger for a certain `addr`.
 func (pm *PingMap) For(addr string) (backend.Pinger, error) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
@@ -156,6 +163,7 @@ func (pm *PingMap) For(addr string) (backend.Pinger, error) {
 	return pinger, nil
 }
 
+// Close shuts down the ping map. Do not use afterwards.
 func (pm *PingMap) Close() error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()

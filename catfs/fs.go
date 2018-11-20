@@ -368,6 +368,7 @@ func (fs *FS) autoCommitLoop() {
 	}
 }
 
+// Close will clean up internal storage.
 func (fs *FS) Close() error {
 	go func() {
 		fs.gcControl <- false
@@ -384,6 +385,7 @@ func (fs *FS) Close() error {
 	return fs.kv.Close()
 }
 
+// Export will export a serialized version of the filesystem to `w`.
 func (fs *FS) Export(w io.Writer) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -391,6 +393,7 @@ func (fs *FS) Export(w io.Writer) error {
 	return fs.kv.Export(w)
 }
 
+// Import will read a previously FS dump from `r`.
 func (fs *FS) Import(r io.Reader) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -408,6 +411,8 @@ func (fs *FS) Import(r io.Reader) error {
 // CORE OPERATIONS //
 /////////////////////
 
+// Move will move the file or directory at `src` to `dst`.
+// If it does not exist, an error will be returned.
 func (fs *FS) Move(src, dst string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -424,6 +429,8 @@ func (fs *FS) Move(src, dst string) error {
 	return c.Move(fs.lkr, srcNd, dst)
 }
 
+// Copy will copy the file or directory at `src` to `dst`.
+// If it does not exist, an error will be returned.
 func (fs *FS) Copy(src, dst string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -441,6 +448,8 @@ func (fs *FS) Copy(src, dst string) error {
 	return err
 }
 
+// Mkdir creates a new empty directory at `dir`, possibly creating
+// all intermediate parents if `createParents` is set.
 func (fs *FS) Mkdir(dir string, createParents bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -455,6 +464,7 @@ func (fs *FS) Mkdir(dir string, createParents bool) error {
 	return err
 }
 
+// Remove removes the file or directory at `path`.
 func (fs *FS) Remove(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -472,6 +482,7 @@ func (fs *FS) Remove(path string) error {
 	return err
 }
 
+// Stat delivers detailed information about the node at `path`.
 func (fs *FS) Stat(path string) (*StatInfo, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -578,6 +589,7 @@ func (fs *FS) preCacheInBackground(path string) {
 	}()
 }
 
+// Pin will pin the file or directory at `path` explicitly.
 func (fs *FS) Pin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -597,6 +609,7 @@ func (fs *FS) Pin(path string) error {
 	return nil
 }
 
+// Unpin will unpin the file or directory at `path` explicitly.
 func (fs *FS) Unpin(path string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1170,6 +1183,7 @@ func (fs *FS) MakeCommit(msg string) error {
 	return nil
 }
 
+// Head translates the "head" symbol to a ref.
 func (fs *FS) Head() (string, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1182,6 +1196,7 @@ func (fs *FS) Head() (string, error) {
 	return head.TreeHash().B58String(), nil
 }
 
+// Curr translates the "curr" symbol to a ref.
 func (fs *FS) Curr() (string, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()

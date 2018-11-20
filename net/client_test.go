@@ -114,10 +114,11 @@ func withNetPair(t *testing.T, fn func(a, b testUnit)) {
 				Fingerprint: buildFingerprint(t, a),
 			}))
 
-			aliCtl, err := Dial("alice", b.rp, b.bk, context.Background())
+			ctx := context.Background()
+			aliCtl, err := Dial(ctx, "alice", b.rp, b.bk)
 			require.Nil(t, err)
 
-			bobCtl, err := Dial("bob", a.rp, a.bk, context.Background())
+			bobCtl, err := Dial(ctx, "bob", a.rp, a.bk)
 			require.Nil(t, err)
 
 			a.ctl = bobCtl
@@ -248,7 +249,7 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 		rmt, err := a.rp.Remotes.Remote("bob")
 		require.Nil(t, err)
 
-		err = a.rp.Remotes.SetRemote("bob", repo.Remote{
+		err = a.rp.Remotes.AddOrUpdateRemote("bob", repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{
@@ -264,7 +265,7 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 		require.False(t, isAllowed)
 
 		// Try again with the root folder enabled:
-		err = a.rp.Remotes.SetRemote("bob", repo.Remote{
+		err = a.rp.Remotes.AddOrUpdateRemote("bob", repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{

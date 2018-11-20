@@ -8,8 +8,10 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
-func (cl *Client) MakeCommit(msg string) error {
-	call := cl.api.Commit(cl.ctx, func(p capnp.VCS_commit_Params) error {
+// MakeCommit creates a new commit from the current staging area.
+// The commit will have the message `msg`.
+func (ctl *Client) MakeCommit(msg string) error {
+	call := ctl.api.Commit(ctl.ctx, func(p capnp.VCS_commit_Params) error {
 		return p.SetMsg(msg)
 	})
 
@@ -17,6 +19,7 @@ func (cl *Client) MakeCommit(msg string) error {
 	return err
 }
 
+// Commit describes a single commit in more detail.
 type Commit struct {
 	Hash h.Hash
 	Msg  string
@@ -64,8 +67,9 @@ func convertCapCommit(capEntry *capnp.Commit) (*Commit, error) {
 	return &result, nil
 }
 
-func (cl *Client) Log() ([]Commit, error) {
-	call := cl.api.Log(cl.ctx, func(p capnp.VCS_log_Params) error {
+// Log lists all commits, starting with the newest one.
+func (ctl *Client) Log() ([]Commit, error) {
+	call := ctl.api.Log(ctl.ctx, func(p capnp.VCS_log_Params) error {
 		return nil
 	})
 
@@ -93,8 +97,9 @@ func (cl *Client) Log() ([]Commit, error) {
 	return results, nil
 }
 
-func (cl *Client) Tag(rev, name string) error {
-	call := cl.api.Tag(cl.ctx, func(p capnp.VCS_tag_Params) error {
+// Tag tags a commit (`rev`) with a certain `name`.
+func (ctl *Client) Tag(rev, name string) error {
+	call := ctl.api.Tag(ctl.ctx, func(p capnp.VCS_tag_Params) error {
 		if err := p.SetTagName(name); err != nil {
 			return err
 		}
@@ -106,8 +111,9 @@ func (cl *Client) Tag(rev, name string) error {
 	return err
 }
 
-func (cl *Client) Untag(name string) error {
-	call := cl.api.Untag(cl.ctx, func(p capnp.VCS_untag_Params) error {
+// Untag removes the `name` tag.
+func (ctl *Client) Untag(name string) error {
+	call := ctl.api.Untag(ctl.ctx, func(p capnp.VCS_untag_Params) error {
 		return p.SetTagName(name)
 	})
 
@@ -115,8 +121,10 @@ func (cl *Client) Untag(name string) error {
 	return err
 }
 
-func (cl *Client) Reset(path, rev string, force bool) error {
-	call := cl.api.Reset(cl.ctx, func(p capnp.VCS_reset_Params) error {
+// Reset restores the content of `path` to the state at `rev`.
+// If `force` is true, it will overwrite the staging area if it needs to.
+func (ctl *Client) Reset(path, rev string, force bool) error {
+	call := ctl.api.Reset(ctl.ctx, func(p capnp.VCS_reset_Params) error {
 		if err := p.SetPath(path); err != nil {
 			return err
 		}
@@ -129,6 +137,7 @@ func (cl *Client) Reset(path, rev string, force bool) error {
 	return err
 }
 
+// Change describes a change of a node between two commits.
 type Change struct {
 	Path string
 	Mask []string
@@ -142,8 +151,9 @@ type Change struct {
 	IsExplicit bool
 }
 
-func (cl *Client) History(path string) ([]*Change, error) {
-	call := cl.api.History(cl.ctx, func(p capnp.VCS_history_Params) error {
+// History returns a detailed set of changes that happened to the node at `path`.
+func (ctl *Client) History(path string) ([]*Change, error) {
+	call := ctl.api.History(ctl.ctx, func(p capnp.VCS_history_Params) error {
 		return p.SetPath(path)
 	})
 
@@ -218,12 +228,13 @@ func (cl *Client) History(path string) ([]*Change, error) {
 	return results, nil
 }
 
-// Again: duplicated from catfs/fs.go
+// DiffPair is a pair of nodes that were changed in some way.
 type DiffPair struct {
 	Src StatInfo
 	Dst StatInfo
 }
 
+// Diff gives a detailed overview over the changes between two commits.
 type Diff struct {
 	Added   []StatInfo
 	Removed []StatInfo
@@ -235,6 +246,7 @@ type Diff struct {
 	Conflict []DiffPair
 }
 
+// IsEmpty reports if a diff is completely empty (i.e. nothing changed)
 func (df *Diff) IsEmpty() bool {
 	return 0 == 0+
 		len(df.Added)+
@@ -371,8 +383,10 @@ func convertCapDiffToDiff(capDiff capnp.Diff) (*Diff, error) {
 	return diff, nil
 }
 
-func (cl *Client) MakeDiff(local, remote, localRev, remoteRev string, needFetch bool) (*Diff, error) {
-	call := cl.api.MakeDiff(cl.ctx, func(p capnp.VCS_makeDiff_Params) error {
+// MakeDiff creates a diff between the commits at `remoteRev` and `localRev`.
+// If `needFetch` is true, the data is first updated from the remote.
+func (ctl *Client) MakeDiff(local, remote, localRev, remoteRev string, needFetch bool) (*Diff, error) {
+	call := ctl.api.MakeDiff(ctl.ctx, func(p capnp.VCS_makeDiff_Params) error {
 		if err := p.SetLocalOwner(local); err != nil {
 			return err
 		}
@@ -402,6 +416,7 @@ func (cl *Client) MakeDiff(local, remote, localRev, remoteRev string, needFetch 
 	return convertCapDiffToDiff(capDiff)
 }
 
+// Fetch updates our internal copy of the data of `remote`.
 func (ctl *Client) Fetch(remote string) error {
 	call := ctl.api.Fetch(ctl.ctx, func(p capnp.VCS_fetch_Params) error {
 		return p.SetWho(remote)
@@ -411,6 +426,8 @@ func (ctl *Client) Fetch(remote string) error {
 	return err
 }
 
+// Sync triggers a sync with the data from `remote`.
+// If `needFetch` is true, the data is first updated from the remote.
 func (ctl *Client) Sync(remote string, needFetch bool) (*Diff, error) {
 	call := ctl.api.Sync(ctl.ctx, func(p capnp.VCS_sync_Params) error {
 		p.SetNeedFetch(needFetch)
@@ -430,6 +447,7 @@ func (ctl *Client) Sync(remote string, needFetch bool) (*Diff, error) {
 	return convertCapDiffToDiff(capDiff)
 }
 
+// CommitInfo is like a stat(2) for commits.
 func (ctl *Client) CommitInfo(rev string) (bool, *Commit, error) {
 	call := ctl.api.CommitInfo(ctl.ctx, func(p capnp.VCS_commitInfo_Params) error {
 		return p.SetRev(rev)

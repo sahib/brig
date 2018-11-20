@@ -40,12 +40,12 @@ func Dial(ctx context.Context, port int) (*Client, error) {
 	}, nil
 }
 
-// Return info about the local addr
+// LocalAddr return info about the local addr
 func (cl *Client) LocalAddr() net.Addr {
 	return cl.tcpConn.LocalAddr()
 }
 
-// Return info about the remote addr
+// RemoteAddr return info about the remote addr
 func (cl *Client) RemoteAddr() net.Addr {
 	return cl.tcpConn.RemoteAddr()
 }

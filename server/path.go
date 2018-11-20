@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// Path parsing utilities.
-
-type Url struct {
+// URL is a path to a file or directory,
+// that might optionally include a user name.
+type URL struct {
 	User string
 	Path string
 }
@@ -24,18 +24,18 @@ func clean(p string) string {
 	return prefixSlash(path.Clean(p))
 }
 
-func parsePath(p string) (*Url, error) {
+func parsePath(p string) (*URL, error) {
 	if strings.HasPrefix(p, "/") {
 		// no user part in there.
-		return &Url{Path: clean(p), User: ""}, nil
+		return &URL{Path: clean(p), User: ""}, nil
 	}
 
 	if idx := strings.IndexRune(p, ':'); idx <= 0 || idx >= len(p)-1 {
-		return &Url{Path: clean(p), User: ""}, nil
+		return &URL{Path: clean(p), User: ""}, nil
 	}
 
 	split := strings.SplitN(p, ":", 2)
-	return &Url{
+	return &URL{
 		Path: clean(split[1]),
 		User: split[0],
 	}, nil

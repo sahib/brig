@@ -13,10 +13,13 @@ import (
 // REMOTE LIST ACCESS //
 ////////////////////////
 
+// RemoteFolder describes a folder entry in the remote list.
+// Is is currently only a single folder.
 type RemoteFolder struct {
 	Folder string
 }
 
+// Remote describes a single remote in the remote list.
 type Remote struct {
 	Name        string   `yaml:"Name"`
 	Fingerprint string   `yaml:"Fingerprint"`
@@ -98,6 +101,8 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 	return &capRemote, nil
 }
 
+// RemoteAdd adds a new remote described in `remote`.
+// We thus authenticate this remote.
 func (cl *Client) RemoteAdd(remote Remote) error {
 	call := cl.api.RemoteAdd(cl.ctx, func(p capnp.Net_remoteAdd_Params) error {
 		capRemote, err := remoteToCapRemote(remote, p.Segment())
@@ -112,6 +117,7 @@ func (cl *Client) RemoteAdd(remote Remote) error {
 	return err
 }
 
+// RemoteUpdate Updates the contents of `remote`.
 func (cl *Client) RemoteUpdate(remote Remote) error {
 	call := cl.api.RemoteUpdate(cl.ctx, func(p capnp.Net_remoteUpdate_Params) error {
 		capRemote, err := remoteToCapRemote(remote, p.Segment())
@@ -126,6 +132,7 @@ func (cl *Client) RemoteUpdate(remote Remote) error {
 	return err
 }
 
+// RemoteRm removes a remote by `name` from the remote list.
 func (cl *Client) RemoteRm(name string) error {
 	call := cl.api.RemoteRm(cl.ctx, func(p capnp.Net_remoteRm_Params) error {
 		return p.SetName(name)
@@ -135,6 +142,7 @@ func (cl *Client) RemoteRm(name string) error {
 	return err
 }
 
+// RemoteClear clears all of the remote list.
 func (cl *Client) RemoteClear() error {
 	call := cl.api.RemoteClear(cl.ctx, func(p capnp.Net_remoteClear_Params) error {
 		return nil
@@ -144,6 +152,7 @@ func (cl *Client) RemoteClear() error {
 	return err
 }
 
+// RemoteLs lists all remotes in the remote list.
 func (cl *Client) RemoteLs() ([]Remote, error) {
 	call := cl.api.RemoteLs(cl.ctx, func(p capnp.Net_remoteLs_Params) error {
 		return nil
@@ -173,6 +182,7 @@ func (cl *Client) RemoteLs() ([]Remote, error) {
 	return remotes, nil
 }
 
+// RemoteSave swaps the contents of the remote lists with the contents of `remotes`.
 func (cl *Client) RemoteSave(remotes []Remote) error {
 	call := cl.api.RemoteSave(cl.ctx, func(p capnp.Net_remoteSave_Params) error {
 		seg := p.Segment()
@@ -199,6 +209,7 @@ func (cl *Client) RemoteSave(remotes []Remote) error {
 	return err
 }
 
+// LocateResult is a result returned by Locate()
 type LocateResult struct {
 	Name        string
 	Addr        string
@@ -235,6 +246,9 @@ func capLrToLr(capLr capnp.LocateResult) (*LocateResult, error) {
 	}, nil
 }
 
+// NetLocate tries to find other remotes by searching of `who` described by `mask`.
+// It will at max. take `timeoutSec` to search. This operation might take some time.
+// The return channel will yield a LocateResult once a new result is available.
 func (cl *Client) NetLocate(who, mask string, timeoutSec float64) (chan *LocateResult, error) {
 	call := cl.api.NetLocate(cl.ctx, func(p capnp.Net_netLocate_Params) error {
 		p.SetTimeoutSec(float64(timeoutSec))
@@ -289,6 +303,7 @@ func (cl *Client) NetLocate(who, mask string, timeoutSec float64) (chan *LocateR
 	return resultCh, nil
 }
 
+// RemotePing pings a remote by the name `who`.
 func (cl *Client) RemotePing(who string) (float64, error) {
 	call := cl.api.RemotePing(cl.ctx, func(p capnp.Net_remotePing_Params) error {
 		return p.SetWho(who)
@@ -302,6 +317,7 @@ func (cl *Client) RemotePing(who string) (float64, error) {
 	return result.Roundtrip(), nil
 }
 
+// Whoami describes the current user state
 type Whoami struct {
 	CurrentUser string
 	Owner       string
@@ -309,6 +325,7 @@ type Whoami struct {
 	IsOnline    bool
 }
 
+// Whoami describes our own identity.
 func (cl *Client) Whoami() (*Whoami, error) {
 	call := cl.api.Whoami(cl.ctx, func(p capnp.Net_whoami_Params) error {
 		return nil
@@ -344,6 +361,7 @@ func (cl *Client) Whoami() (*Whoami, error) {
 	return whoami, nil
 }
 
+// NetConnect connects to the ipfs network.
 func (cl *Client) NetConnect() error {
 	_, err := cl.api.Connect(cl.ctx, func(p capnp.Net_connect_Params) error {
 		return nil
@@ -351,13 +369,16 @@ func (cl *Client) NetConnect() error {
 	return err
 }
 
-func (cl *Client) NetDisonnect() error {
+// NetDisconnect disconnects from the ipfs network.
+func (cl *Client) NetDisconnect() error {
 	_, err := cl.api.Disconnect(cl.ctx, func(p capnp.Net_disconnect_Params) error {
 		return nil
 	}).Struct()
 	return err
 }
 
+// PeerStatus is a entry in the remote online list.
+// Fingerprint is not necessarily filled.
 type PeerStatus struct {
 	Name          string
 	Fingerprint   string
@@ -412,6 +433,8 @@ func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) 
 	}, nil
 }
 
+// OnlinePeers is like RemoteList but also includes IsOnline and Authenticated
+// status.
 func (cl *Client) OnlinePeers() ([]PeerStatus, error) {
 	call := cl.api.OnlinePeers(cl.ctx, func(p capnp.Net_onlinePeers_Params) error {
 		return nil

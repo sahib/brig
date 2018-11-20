@@ -106,7 +106,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if ctx.NArg() > 2 {
-		return fmt.Errorf("Too many arguments.")
+		return fmt.Errorf("too many arguments")
 	}
 
 	if folder == "" {

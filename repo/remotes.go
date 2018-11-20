@@ -14,16 +14,28 @@ import (
 )
 
 var (
+	// ErrNoSuchRemote will be returned by various remote functions
+	// when a non-existing remote was requested.
 	ErrNoSuchRemote = errors.New("No such remote with this name")
 )
 
+// Folder defines a folder setting of the remote.
 type Folder struct {
 	Folder string
 }
 
+// Remote is one entry in the remote list.
+// It defines what users we may talk to (and also how)
 type Remote struct {
-	Name        string
-	Folders     []Folder
+	// Name is the name of the remote.
+	// This name can be freely chosen.
+	Name string
+
+	// Folders is a list of folders the remote has access to.
+	// If this list is empty, this remote may access all folders.
+	Folders []Folder
+
+	// Fingerprint is the fingerprint of the remote.
 	Fingerprint peer.Fingerprint
 }
 
@@ -34,6 +46,7 @@ type RemoteList struct {
 	path    string
 }
 
+// NewRemotes returns a new RemoteList.
 func NewRemotes(path string) (*RemoteList, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
@@ -68,6 +81,7 @@ func (rl *RemoteList) save() error {
 	return ioutil.WriteFile(rl.path, buf.Bytes(), 0600)
 }
 
+// Export writes the contents of the remote list to `w` in YAML format.
 func (rl *RemoteList) Export(w io.Writer) error {
 	data, err := yml.Marshal(rl.remotes)
 	if err != nil {
@@ -97,12 +111,15 @@ func dedupeFolders(folders []Folder) []Folder {
 	return newFolders
 }
 
+// AddOrUpdateRemote will add/update a remote.
 func (rl *RemoteList) AddOrUpdateRemote(remote Remote) error {
 	remote.Folders = dedupeFolders(remote.Folders)
 	rl.remotes[remote.Name] = &remote
 	return rl.save()
 }
 
+// RmRemote will remove a remote by `name`.
+// If there is not such remote, ErrNoSuchRemote is returned.
 func (rl *RemoteList) RmRemote(name string) error {
 	if _, ok := rl.remotes[name]; !ok {
 		return ErrNoSuchRemote
@@ -112,6 +129,8 @@ func (rl *RemoteList) RmRemote(name string) error {
 	return rl.save()
 }
 
+// Remote will return the remote named `name`.
+// If there is not such remote, ErrNoSuchRemote is returned.
 func (rl *RemoteList) Remote(name string) (Remote, error) {
 	rm, ok := rl.remotes[name]
 	if !ok {
@@ -121,21 +140,13 @@ func (rl *RemoteList) Remote(name string) (Remote, error) {
 	return *rm, nil
 }
 
-func (rl *RemoteList) SetRemote(name string, newRm Remote) error {
-	rm, ok := rl.remotes[name]
-	if !ok {
-		return ErrNoSuchRemote
-	}
-
-	*rm = newRm
-	return nil
-}
-
+// Clear will remove all of the remote list.
 func (rl *RemoteList) Clear() error {
 	rl.remotes = make(map[string]*Remote)
 	return rl.save()
 }
 
+// ListRemotes will return a copy of the remote list entries.
 func (rl *RemoteList) ListRemotes() ([]Remote, error) {
 	remotes := []Remote{}
 	for _, remote := range rl.remotes {
@@ -150,6 +161,7 @@ func (rl *RemoteList) ListRemotes() ([]Remote, error) {
 	return remotes, nil
 }
 
+// SaveList will store the contents of `remotes` to disk.
 func (rl *RemoteList) SaveList(remotes []Remote) error {
 	// Clear remotes and overwrite them.
 	rl.remotes = make(map[string]*Remote)

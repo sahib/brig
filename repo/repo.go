@@ -22,6 +22,7 @@ var (
 )
 
 var (
+	// ErrBadPassword is returned by Open() when the decyption password seems to be wrong.
 	ErrBadPassword = errors.New("Failed to open repository. Probably wrong password")
 )
 
@@ -63,6 +64,8 @@ type Repository struct {
 	Remotes *RemoteList
 }
 
+// CheckPassword will try to validate `password` by decrypting something
+// in `baseFolder`.
 func CheckPassword(baseFolder, password string) error {
 	passwdFile := filepath.Join(baseFolder, "passwd.locked")
 
@@ -92,6 +95,7 @@ func CheckPassword(baseFolder, password string) error {
 	return nil
 }
 
+// Open will open the repository at `baseFolder` by using `password`.
 func Open(baseFolder, password string) (*Repository, error) {
 	// This is only a sanity check here. If the wrong password
 	// was supplied, we won't be able to unlock the repo anyways.
@@ -149,6 +153,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}, nil
 }
 
+// Close will lock the repository, making this instance unusable.
 func (rp *Repository) Close(password string) error {
 	return LockRepo(
 		rp.BaseFolder,
@@ -159,6 +164,7 @@ func (rp *Repository) Close(password string) error {
 	)
 }
 
+// BackendName returns the backend name used when constructing the repo.
 func (rp *Repository) BackendName() string {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
@@ -216,22 +222,29 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 	return fs, nil
 }
 
+// CurrentUser returns the current user of the repository.
+// (i.e. what FS is being shown)
 func (rp *Repository) CurrentUser() string {
 	return rp.Config.String("repo.current_user")
 }
 
+// SetCurrentUser sets the current user of the repository.
+// (i.e. called by "become" when changing the FS)
 func (rp *Repository) SetCurrentUser(user string) {
 	rp.Config.Set("repo.current_user", user)
 }
 
+// Keyring returns the keyring of the repository.
 func (rp *Repository) Keyring() *Keyring {
 	return newKeyringHandle(rp.BaseFolder)
 }
 
+// BackendPath returns the absolute path to the backend folder inside the repo.
 func (rp *Repository) BackendPath(name string) string {
 	return filepath.Join(rp.BaseFolder, "data", name)
 }
 
+// RepoID returns a unique ID specific to this repository.
 func (rp *Repository) RepoID() (string, error) {
 	data, err := ioutil.ReadFile(filepath.Join(rp.BaseFolder, "REPO_ID"))
 	if err != nil {
@@ -241,6 +254,7 @@ func (rp *Repository) RepoID() (string, error) {
 	return string(data), nil
 }
 
+// SaveConfig dumps the in memory config to disk.
 func (rp *Repository) SaveConfig() error {
 	configPath := filepath.Join(rp.BaseFolder, "config.yml")
 	return config.ToYamlFile(configPath, rp.Config)

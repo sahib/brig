@@ -110,7 +110,7 @@ func TestRepoDeduplication(t *testing.T) {
 	// Modify the beginning of the data,
 	// key did not change so there should be only a minimal
 	// size increase in the first block (~+64k)
-	data[0] += 1
+	data[0]++
 	fs.Stage("/x", bytes.NewReader(data))
 
 	size = dirSize(t, testDir)

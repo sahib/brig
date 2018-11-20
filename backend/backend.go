@@ -15,9 +15,12 @@ import (
 )
 
 var (
+	// ErrNoSuchBackend is returned when passing an invalid backend name
 	ErrNoSuchBackend = errors.New("No such backend")
 )
 
+// VersionInfo is a small interface that will return version info about the
+// backend.
 type VersionInfo interface {
 	SemVer() string
 	Name() string
@@ -31,6 +34,7 @@ type Backend interface {
 	netBackend.Backend
 }
 
+// InitByName creates a new backend structure at `path` for the backend `name`
 func InitByName(name, path string) error {
 	switch name {
 	case "ipfs":
@@ -42,6 +46,7 @@ func InitByName(name, path string) error {
 	return ErrNoSuchBackend
 }
 
+// ForwardLogByName will forward the logs of the backend `name` to `w`.
 func ForwardLogByName(name string, w io.Writer) error {
 	switch name {
 	case "ipfs":
@@ -89,6 +94,7 @@ func FromName(name, path string, bootstrapNodes []string) (Backend, error) {
 	return nil, ErrNoSuchBackend
 }
 
+// IsValidName tells you if `name` is a valid backend name.
 func IsValidName(name string) bool {
 	switch name {
 	case "ipfs", "mock":
@@ -98,6 +104,7 @@ func IsValidName(name string) bool {
 	}
 }
 
+// Version returns version info for the backend `name`.
 func Version(name string) VersionInfo {
 	switch name {
 	case "ipfs":

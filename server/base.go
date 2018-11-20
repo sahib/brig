@@ -88,7 +88,7 @@ func repoIsInitialized(path string) error {
 // for every local request that is being served to the brig daemon.
 func (b *base) Handle(ctx context.Context, conn net.Conn) {
 	transport := rpc.StreamTransport(conn)
-	srv := capnp.API_ServerToClient(newApiHandler(b))
+	srv := capnp.API_ServerToClient(newAPIHandler(b))
 	rpcConn := rpc.NewConn(
 		transport,
 		rpc.MainInterface(srv.Client),
@@ -187,8 +187,8 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 	return b.loadBackend()
 }
 
-func (base *base) updateBackendAddr(reg *registry.Registry, bk backend.Backend) error {
-	rp, err := base.repoUnlocked()
+func (b *base) updateBackendAddr(reg *registry.Registry, bk backend.Backend) error {
+	rp, err := b.repoUnlocked()
 	if err != nil {
 		return err
 	}
@@ -408,7 +408,7 @@ func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
 	return fn(fs)
 }
 
-func (b *base) withFsFromPath(path string, fn func(url *Url, fs *catfs.FS) error) error {
+func (b *base) withFsFromPath(path string, fn func(url *URL, fs *catfs.FS) error) error {
 	url, err := parsePath(path)
 	if err != nil {
 		return err
@@ -439,7 +439,7 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 	subCtx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
-	ctl, err := p2pnet.Dial(who, rp, bk, subCtx)
+	ctl, err := p2pnet.Dial(subCtx, who, rp, bk)
 	if err != nil {
 		return e.Wrapf(err, "dial")
 	}
@@ -498,11 +498,11 @@ func (b *base) Quit() (err error) {
 }
 
 func newBase(
+	ctx context.Context,
 	port int64,
 	basePath string,
 	password string,
 	bindHost string,
-	ctx context.Context,
 	quitCh chan struct{},
 	logToStdout bool,
 ) (*base, error) {

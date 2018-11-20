@@ -7,7 +7,7 @@ type apiHandler struct {
 	netHandler
 }
 
-func newApiHandler(base *base) *apiHandler {
+func newAPIHandler(base *base) *apiHandler {
 	return &apiHandler{
 		repoHandler: repoHandler{base},
 		netHandler:  netHandler{base},

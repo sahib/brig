@@ -14,8 +14,10 @@ import (
 )
 
 const (
+	// LockPathSuffix is the suffix appended to each file in its locked state.
 	LockPathSuffix = ".locked"
-	LockDirSuffix  = ".tgz" + LockPathSuffix
+	// LockDirSuffix is the suffix appended to each directory in its locked state.
+	LockDirSuffix = ".tgz" + LockPathSuffix
 )
 
 func lockFile(path string, key []byte) error {
@@ -91,6 +93,9 @@ func keyFromPassword(owner, password string) []byte {
 	return util.DeriveKey([]byte(password), []byte(owner), 32)
 }
 
+// LockRepo encrypts all files (except those in `lockExcludes`) in `root`,
+// depending on `user` and `password`. `unlockExcludes` is only used to
+// prevent warnings about not locked files.
 func LockRepo(root, user, password string, lockExcludes, unlockExcludes []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
@@ -205,6 +210,7 @@ func unlockDirectory(path string, key []byte) error {
 	return util.Untar(encR, unlockedPath)
 }
 
+// UnlockRepo is the exact opposite of LockRepo.
 func UnlockRepo(root, user, password string, lockExcludes, unlockExcludes []string) error {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {

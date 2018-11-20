@@ -13,6 +13,8 @@ import (
 	"github.com/sahib/config"
 )
 
+// FsTabAdd adds the mount at `path` with `name` and `opts` to `cfg`.
+// It does not yet do the mounting.
 func FsTabAdd(cfg *config.Config, name, path string, opts MountOptions) error {
 	for _, key := range cfg.Keys() {
 		if strings.HasSuffix(key, ".path") {
@@ -51,6 +53,7 @@ func FsTabRemove(cfg *config.Config, name string) error {
 	return cfg.Reset(name)
 }
 
+// FsTabUnmountAll will unmount all currently mounted mounts.
 func FsTabUnmountAll(cfg *config.Config, mounts *MountTable) error {
 	mounts.mu.Lock()
 	defer mounts.mu.Unlock()
@@ -124,6 +127,7 @@ func FsTabApply(cfg *config.Config, mounts *MountTable) error {
 	return errors.ToErr()
 }
 
+// FsTabEntry is a representation of one entry in the filesystem tab.
 type FsTabEntry struct {
 	Name     string
 	Path     string
@@ -132,6 +136,7 @@ type FsTabEntry struct {
 	ReadOnly bool
 }
 
+// FsTabList lists all entries in the filesystem tab in a nice way.
 func FsTabList(cfg *config.Config, mounts *MountTable) ([]FsTabEntry, error) {
 	mounts.mu.Lock()
 	defer mounts.mu.Unlock()

@@ -23,7 +23,7 @@ type netHandler struct {
 func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 	server.Ack(call.Options)
 
-	capId, err := capnp.NewIdentity(call.Results.Segment())
+	capID, err := capnp.NewIdentity(call.Results.Segment())
 	if err != nil {
 		return err
 	}
@@ -51,20 +51,20 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 
 	finger := peer.BuildFingerprint(self.Addr, ownPubKey)
 
-	if err := capId.SetOwner(rp.Owner); err != nil {
+	if err := capID.SetOwner(rp.Owner); err != nil {
 		return err
 	}
 
-	if err := capId.SetFingerprint(string(finger)); err != nil {
+	if err := capID.SetFingerprint(string(finger)); err != nil {
 		return err
 	}
 
-	if err := capId.SetCurrentUser(rp.CurrentUser()); err != nil {
+	if err := capID.SetCurrentUser(rp.CurrentUser()); err != nil {
 		return err
 	}
 
-	capId.SetIsOnline(psrv.IsOnline())
-	return call.Results.SetWhoami(capId)
+	capID.SetIsOnline(psrv.IsOnline())
+	return call.Results.SetWhoami(capID)
 }
 
 func (nh *netHandler) Connect(call capnp.Net_connect) error {
@@ -436,6 +436,7 @@ func (nh *netHandler) RemoteSave(call capnp.Net_remoteSave) error {
 	return nh.syncPingMap()
 }
 
+// LocateResult is one entry in the result of the "net locate" command.
 type LocateResult struct {
 	Name        string
 	Mask        string

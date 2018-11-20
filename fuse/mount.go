@@ -127,6 +127,8 @@ func lazyUnmount(dir string) error {
 	return nil
 }
 
+// EqualOptions returns true when the options in `opts` have the same
+// option as currently set in the mount. If so, no re-mount is required.
 func (m *Mount) EqualOptions(opts MountOptions) bool {
 	if m.options.ReadOnly != opts.ReadOnly {
 		return false
@@ -269,7 +271,7 @@ func (t *MountTable) Unmount(path string) error {
 func (t *MountTable) unmount(path string) error {
 	m, ok := t.m[path]
 	if !ok {
-		return fmt.Errorf("No mount at `%v`.", path)
+		return fmt.Errorf("no mount at `%v`", path)
 	}
 
 	delete(t.m, path)

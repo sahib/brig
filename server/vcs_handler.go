@@ -154,7 +154,7 @@ func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 	}
 
 	// Reset a specific file or directory otherwise:
-	return vcs.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return vcs.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Reset(url.Path, rev)
 	})
 }
@@ -169,7 +169,7 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 
 	seg := call.Results.Segment()
 
-	return vcs.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return vcs.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		history, err := fs.History(url.Path)
 		if err != nil {
 			return err

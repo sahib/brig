@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-type Help struct {
+type helpEntry struct {
 	Usage       string
 	ArgsUsage   string
 	Description string
@@ -21,7 +21,7 @@ func die(msg string) {
 	panic(msg)
 }
 
-var ExplicitPinFlags = []cli.Flag{
+var explicitPinFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "from,f",
 		Value: "HEAD",
@@ -34,7 +34,7 @@ var ExplicitPinFlags = []cli.Flag{
 	},
 }
 
-var HelpTexts = map[string]Help{
+var helpTexts = map[string]helpEntry{
 	"init": {
 		Usage:     "Initialize a new repository",
 		ArgsUsage: "<username>",
@@ -240,7 +240,7 @@ EXAMPLES:
    If no PREFIX is given, all paths are shown.
 `,
 		ArgsUsage: "[<PREFIX>]",
-		Flags:     ExplicitPinFlags,
+		Flags:     explicitPinFlags,
 	},
 	"pin.clear": {
 		Usage:     "A more powerful version of `brig pin rm`",
@@ -254,7 +254,7 @@ EXAMPLES:
    You should be however careful not to unpin CURR or HEAD, since this might
    lead to dataloss if »brig gc« at some point.
 `,
-		Flags: ExplicitPinFlags,
+		Flags: explicitPinFlags,
 	},
 	"pin.set": {
 		Usage:     "A more powerful version of `brig pin add`",
@@ -262,7 +262,7 @@ EXAMPLES:
 		Complete:  completeBrigPath(true, true),
 		Description: `Explicitly pin all files in the range between --from and --to
    that start with PREFIX.`,
-		Flags: ExplicitPinFlags,
+		Flags: explicitPinFlags,
 	},
 	"pin.remove": {
 		Usage:     "Remove a pin",
@@ -1007,7 +1007,7 @@ CAVEATS
 }
 
 func injectHelp(cmd *cli.Command, path string) {
-	help, ok := HelpTexts[path]
+	help, ok := helpTexts[path]
 	if !ok {
 		die(fmt.Sprintf("bug: no such help entry: %v", path))
 	}

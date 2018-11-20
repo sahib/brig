@@ -20,22 +20,19 @@ import (
 	"github.com/sahib/brig/util/server"
 )
 
-const (
-	MaxConnections = 10
-)
-
-//////////////////////////////
-
+// Server is the local api server used by the command client.
 type Server struct {
 	baseServer *server.Server
 	base       *base
 }
 
+// Serve blocks until a quit command was send.
 func (sv *Server) Serve() error {
 	log.Infof("Serving local requests from now on.")
 	return sv.baseServer.Serve()
 }
 
+// Close will clean up the listener resources.
 func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
@@ -114,7 +111,20 @@ func startNetLayer(base *base) error {
 	return err
 }
 
-func BootServer(basePath string, passwordFn func() (string, error), bindHost string, port int, logToStdout bool) (*Server, error) {
+// BootServer will boot up the local server.
+// `basePath` is the path to the repository.
+// `passwordFn` is a function that will deliver a password when
+// no password was configured.
+// `bindHost` is the host to bind too.
+// `port` is the port to listen for requests.
+// `logToStdout` should be true when logging to stdout.
+func BootServer(
+	basePath string,
+	passwordFn func() (string, error),
+	bindHost string,
+	port int,
+	logToStdout bool,
+) (*Server, error) {
 	defer func() {
 		// If anything in the daemon goes fatally wrong and it blows up, we
 		// want to log the panic at least. Otherwise we'll have a hard time
@@ -166,11 +176,11 @@ func BootServer(basePath string, passwordFn func() (string, error), bindHost str
 	ctx := context.Background()
 	quitCh := make(chan struct{})
 	base, err := newBase(
+		ctx,
 		int64(port),
 		basePath,
 		password,
 		bindHost,
-		ctx,
 		quitCh,
 		logToStdout,
 	)

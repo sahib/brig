@@ -18,6 +18,7 @@ import (
 	"github.com/sahib/brig/util/server"
 )
 
+// Server implements the server for inter-remote communication.
 type Server struct {
 	bk         backend.Backend
 	baseServer *server.Server
@@ -25,14 +26,17 @@ type Server struct {
 	pingMap    *PingMap
 }
 
+// Serve blocks and serves request until quit was called.
 func (sv *Server) Serve() error {
 	return e.Wrapf(sv.baseServer.Serve(), "serve")
 }
 
+// Close will clean up resources.
 func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
+// Quit will shut down the server and unblock Serve()
 func (sv *Server) Quit() {
 	sv.baseServer.Quit()
 }
@@ -70,6 +74,7 @@ func publishSelf(bk backend.Backend, owner string) error {
 	return nil
 }
 
+// NewServer returns a new inter-remote server.
 func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 	hdl := &connHandler{
 		rp: rp,
@@ -102,14 +107,22 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 }
 
 const (
-	LocateNone  = 0
+	// LocateNone is used when no part of the name should be searched.
+	LocateNone = 0
+	// LocateExact means that we should search for the name exactly.
 	LocateExact = 1 << iota
+	// LocateDomain means that we only search for the domain name only.
 	LocateDomain
+	// LocateUser means that we only search for the user name only.
 	LocateUser
+	// LocateEmail means that we only search for the user@domain part only.
 	LocateEmail
+	// LocateAll means that we search for everything.
 	LocateAll = LocateExact | LocateDomain | LocateUser | LocateEmail
 )
 
+// LocateMask is a combination of the individual LocateXXX settings
+// and tells Locate() what parts of the name to search for.
 type LocateMask int
 
 func (lm LocateMask) String() string {
@@ -134,6 +147,8 @@ func (lm LocateMask) String() string {
 	return strings.Join(parts, ",")
 }
 
+// LocateMaskFromString builds a LocateMask from a comma separated string.
+// This is the inverse of mask.String().
 func LocateMaskFromString(s string) (LocateMask, error) {
 	s = strings.TrimSpace(s)
 	if len(s) == 0 {
@@ -170,6 +185,10 @@ type LocateResult struct {
 	Err   error
 }
 
+// Locate tries to find other remotes named `who`.
+// It also tries to find different variations/parts of `who`, defined by `mask`.
+// It does not block, but returns a channel where the results are being pushed to.
+// This is a very slow operation.
 func (sv *Server) Locate(ctx context.Context, who peer.Name, mask LocateMask) chan LocateResult {
 	uniqueNames := make(map[string]LocateMask)
 
@@ -227,7 +246,7 @@ func (sv *Server) Locate(ctx context.Context, who peer.Name, mask LocateMask) ch
 func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Fingerprint, string, error) {
 	// Query the remotes pubkey and use it to build the remotes' fingerprint.
 	// If not available we just send an empty string back to the client.
-	pubKey, remoteName, err := PeekRemotePubkey(addr, sv.hdl.rp, sv.bk, ctx)
+	pubKey, remoteName, err := PeekRemotePubkey(ctx, addr, sv.hdl.rp, sv.bk)
 	if err != nil {
 		log.Warningf(
 			"locate: failed to dial to `%s` (%s): %v",
@@ -240,22 +259,27 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 	return peer.BuildFingerprint(addr, pubKey), remoteName, nil
 }
 
+// Identity returns the backend's Identity (i.e. addr)
 func (sv *Server) Identity() (peer.Info, error) {
 	return sv.bk.Identity()
 }
 
+// PingMap returns the ping map associated with this server.
 func (sv *Server) PingMap() *PingMap {
 	return sv.pingMap
 }
 
+// IsOnline returns true if we are online.
 func (sv *Server) IsOnline() bool {
 	return sv.bk.IsOnline()
 }
 
+// Connect will connect to the network (this is the default already)
 func (sv *Server) Connect() error {
 	return sv.bk.Connect()
 }
 
+// Disconnect will stop network operations immediately.
 func (sv *Server) Disconnect() error {
 	return sv.bk.Disconnect()
 }

@@ -77,7 +77,7 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 
 	maxDepth := call.Params.MaxDepth()
 
-	return fh.base.withFsFromPath(root, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(root, func(url *URL, fs *catfs.FS) error {
 		entries, err := fs.List(url.Path, int(maxDepth))
 		if err != nil {
 			return err
@@ -120,7 +120,7 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(repoPath, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
 		fd, err := os.Open(localPath)
 		if err != nil {
 			return err
@@ -140,7 +140,7 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		stream, err := fs.Cat(path)
 		if err != nil {
 			return err
@@ -178,7 +178,7 @@ func (fh *fsHandler) Tar(call capnp.FS_tar) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		if _, err := fs.Stat(path); err != nil {
 			return err
 		}
@@ -204,7 +204,7 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 	}
 
 	createParents := call.Params.CreateParents()
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Mkdir(url.Path, createParents)
 	})
 }
@@ -217,7 +217,7 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Remove(url.Path)
 	})
 }
@@ -235,17 +235,17 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 		return err
 	}
 
-	dstUrl, err := parsePath(dstPath)
+	dstURL, err := parsePath(dstPath)
 	if err != nil {
 		return err
 	}
 
-	return fh.base.withFsFromPath(srcPath, func(srcUrl *Url, fs *catfs.FS) error {
-		if srcUrl.User != dstUrl.User {
-			return fmt.Errorf("cannot move between users: %s <-> %s", srcUrl.User, dstUrl.User)
+	return fh.base.withFsFromPath(srcPath, func(srcUrl *URL, fs *catfs.FS) error {
+		if srcUrl.User != dstURL.User {
+			return fmt.Errorf("cannot move between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
-		return fs.Move(srcUrl.Path, dstUrl.Path)
+		return fs.Move(srcUrl.Path, dstURL.Path)
 	})
 }
 
@@ -262,17 +262,17 @@ func (fh *fsHandler) Copy(call capnp.FS_copy) error {
 		return err
 	}
 
-	dstUrl, err := parsePath(dstPath)
+	dstURL, err := parsePath(dstPath)
 	if err != nil {
 		return err
 	}
 
-	return fh.base.withFsFromPath(srcPath, func(srcUrl *Url, fs *catfs.FS) error {
-		if srcUrl.User != dstUrl.User {
-			return fmt.Errorf("cannot copy between users: %s <-> %s", srcUrl.User, dstUrl.User)
+	return fh.base.withFsFromPath(srcPath, func(srcUrl *URL, fs *catfs.FS) error {
+		if srcUrl.User != dstURL.User {
+			return fmt.Errorf("cannot copy between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
-		return fs.Copy(srcUrl.Path, dstUrl.Path)
+		return fs.Copy(srcUrl.Path, dstURL.Path)
 	})
 }
 
@@ -284,7 +284,7 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Pin(url.Path)
 	})
 }
@@ -297,7 +297,7 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Unpin(url.Path)
 	})
 }
@@ -310,7 +310,7 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		info, err := fs.Stat(url.Path)
 		if err != nil {
 			return err
@@ -393,7 +393,7 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		return fs.Touch(url.Path)
 	})
 }
@@ -404,7 +404,7 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 		return err
 	}
 
-	return fh.base.withFsFromPath(path, func(url *Url, fs *catfs.FS) error {
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		_, err := fs.Stat(url.Path)
 
 		exists := true

@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	// ErrIsClosed is returned when an operation is performed on an already
+	// closed file.
 	ErrIsClosed = errors.New("File handle is closed")
 )
 

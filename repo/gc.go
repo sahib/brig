@@ -6,6 +6,11 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// GC runs the garbage collector of the backend.  If `aggressive` is true, also
+// the internal data structures will be garbage collected, which might lead to
+// minimally less storage.  It returns a map of maps, where the inner map
+// consists of content hash58 to binary representation of the same hash. The
+// outer key is the owner of the file.
 func (rp *Repository) GC(backend Backend, aggressive bool) (map[string]map[string]h.Hash, error) {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()

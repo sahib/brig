@@ -180,7 +180,7 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 
 		// Always start checking with at least
 		// the next higher port.
-		maxPort += 1
+		maxPort++
 	}
 
 	maxAttempts := 1000

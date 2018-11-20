@@ -22,6 +22,10 @@ func touch(path string) error {
 	return fd.Close()
 }
 
+// Init will create a new repository on disk at `baseFolder`.
+// `owner` will be the new owner and should be something like user@domain/resource.
+// `backendName` is the name of the backend, either "ipfs" or "mock".
+// `daemonPort` is the port of the local daemon.
 func Init(baseFolder, owner, password, backendName string, daemonPort int64) error {
 	// The basefolder has to exist:
 	info, err := os.Stat(baseFolder)

@@ -44,7 +44,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.BlockSize = 4096
 	attr.Blocks = info.Size / 512
 	if info.Size%uint64(512) > 0 {
-		attr.Blocks += 1
+		attr.Blocks++
 	}
 
 	return nil
@@ -120,6 +120,7 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 	return nil
 }
 
+// Rename is called when the node changed its path.
 func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
 	defer logPanic("file: rename")
 

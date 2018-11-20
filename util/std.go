@@ -131,8 +131,8 @@ func (s *SizeAccumulator) Reset() {
 	atomic.StoreUint64(&s.size, 0)
 }
 
-// NopCloser returns a WriteCloser with a no-op Close method wrapping
-// the provided Writer w.
+// NopWriteCloser returns a WriteCloser with a no-op Close method wrapping the
+// provided Writer w.
 func NopWriteCloser(w io.Writer) io.WriteCloser {
 	return nopCloser{w}
 }
@@ -190,6 +190,8 @@ func (b *SyncBuffer) Write(p []byte) (int, error) {
 	return b.buf.Write(p)
 }
 
+// TimeoutReadWriter is io.ReadWriter capable of returning ErrTimeout
+// if there was no result in a certain timeout period.
 type TimeoutReadWriter struct {
 	io.Writer
 	io.Reader
@@ -202,21 +204,22 @@ type TimeoutReadWriter struct {
 	wdeadline   time.Time
 }
 
+// ErrTimeout will be returned by Read/Write in case of a timeout.
 var ErrTimeout = errors.New("I/O Timeout: Operation timed out")
 
-func (w *TimeoutReadWriter) io(p []byte, doRead bool) (n int, err error) {
+func (rw *TimeoutReadWriter) io(p []byte, doRead bool) (n int, err error) {
 	var deadline <-chan time.Time
 
 	// Figoure out when it's too late:
 	switch {
-	case doRead && w.useDeadline:
-		deadline = time.After(w.rdeadline.Sub(time.Now()))
-	case doRead && !w.useDeadline:
-		deadline = time.After(w.rtimeout)
-	case !doRead && w.useDeadline:
-		deadline = time.After(w.wdeadline.Sub(time.Now()))
-	case !doRead && !w.useDeadline:
-		deadline = time.After(w.wtimeout)
+	case doRead && rw.useDeadline:
+		deadline = time.After(rw.rdeadline.Sub(time.Now()))
+	case doRead && !rw.useDeadline:
+		deadline = time.After(rw.rtimeout)
+	case !doRead && rw.useDeadline:
+		deadline = time.After(rw.wdeadline.Sub(time.Now()))
+	case !doRead && !rw.useDeadline:
+		deadline = time.After(rw.wtimeout)
 	}
 
 	// Resever one element, so the go routine gets cleaned up
@@ -224,9 +227,9 @@ func (w *TimeoutReadWriter) io(p []byte, doRead bool) (n int, err error) {
 	done := make(chan bool, 1)
 	go func() {
 		if doRead {
-			n, err = w.Reader.Read(p)
+			n, err = rw.Reader.Read(p)
 		} else {
-			n, err = w.Writer.Write(p)
+			n, err = rw.Writer.Write(p)
 		}
 		done <- true
 	}()
@@ -248,50 +251,63 @@ func (rw *TimeoutReadWriter) Write(p []byte) (n int, err error) {
 	return rw.io(p, false)
 }
 
+// SetReadDeadline sets an absolute time in the future where
+// a read option should be canceled.
 func (rw *TimeoutReadWriter) SetReadDeadline(d time.Time) error {
 	rw.useDeadline = true
 	rw.rdeadline = d
 	return nil
 }
 
+// SetWriteDeadline sets an absolute time in the future where
+// a write option should be canceled.
 func (rw *TimeoutReadWriter) SetWriteDeadline(d time.Time) error {
 	rw.useDeadline = true
 	rw.wdeadline = d
 	return nil
 }
 
+// SetDeadline sets an absolute time in the future where an I/O
+// operation should be canceled.
 func (rw *TimeoutReadWriter) SetDeadline(d time.Time) error {
 	rw.SetWriteDeadline(d)
 	rw.SetReadDeadline(d)
 	return nil
 }
 
+// SetWriteTimeout sets an own timeout for writing.
 func (rw *TimeoutReadWriter) SetWriteTimeout(d time.Duration) error {
 	rw.wtimeout = d
 	return nil
 }
 
+// SetReadTimeout sets an own timeout for reading.
 func (rw *TimeoutReadWriter) SetReadTimeout(d time.Duration) error {
 	rw.rtimeout = d
 	return nil
 }
 
+// SetTimeout sets both the read and write timeout to `d`.
 func (rw *TimeoutReadWriter) SetTimeout(d time.Duration) error {
 	rw.rtimeout = d
 	rw.wtimeout = d
 	return nil
 }
 
-// TimeoutReadWriter wraps `w` and returns a io.Writer that times out
+// NewTimeoutWriter wraps `w` and returns a io.Writer that times out
 // after `d` elapsed with ErrTimeout if `w` didn't succeed in that time.
 func NewTimeoutWriter(w io.Writer, d time.Duration) io.Writer {
 	return &TimeoutReadWriter{Writer: w, wtimeout: d}
 }
 
+// NewTimeoutReader wraps `r` and returns a io.Reader that times out
+// after `d` elapsed with ErrTimeout if `r` didn't succeed in that time.
 func NewTimeoutReader(r io.Reader, d time.Duration) io.Reader {
 	return &TimeoutReadWriter{Reader: r, rtimeout: d}
 }
 
+// NewTimeoutReadWriter wraps `rw` and returns a io.ReadWriter that times out
+// after `d` elapsed with ErrTimeout if `rw` didn't succeed in that time.
 func NewTimeoutReadWriter(rw io.ReadWriter, d time.Duration) *TimeoutReadWriter {
 	return &TimeoutReadWriter{
 		Reader: rw, Writer: rw,
@@ -318,6 +334,8 @@ func (es Errors) Error() string {
 	}
 }
 
+// ToErr combines all errors in the list to a single error.
+// If there were no errors, it returns nil.
 func (es Errors) ToErr() error {
 	if len(es) > 0 {
 		return es
@@ -349,9 +367,9 @@ func OmitBytes(data []byte, lim int) string {
 
 	if len(data[hi:]) > 0 {
 		return fmt.Sprintf("%v ... %v", data[:lo], data[hi:])
-	} else {
-		return fmt.Sprintf("%v", data[:lo])
 	}
+
+	return fmt.Sprintf("%v", data[:lo])
 }
 
 type limitWriter struct {
@@ -360,6 +378,7 @@ type limitWriter struct {
 	pos int64
 }
 
+// LimitWriter is like io.LimitReader but for an io.Writer
 func LimitWriter(w io.Writer, sz int64) io.Writer {
 	return &limitWriter{
 		wr: w,
@@ -410,6 +429,7 @@ func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 	return nread, err
 }
 
+// PrefixReader returns an io.Reader that outputs `data` before the rest of `r`.
 func PrefixReader(data []byte, r io.Reader) io.Reader {
 	return &prefixReader{data: data, r: r}
 }

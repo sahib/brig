@@ -7,8 +7,8 @@ import (
 )
 
 // Quit sends a quit signal to brigd.
-func (cl *Client) Quit() error {
-	call := cl.api.Quit(cl.ctx, func(p capnp.Repo_quit_Params) error {
+func (ctl *Client) Quit() error {
+	call := ctl.api.Quit(ctl.ctx, func(p capnp.Repo_quit_Params) error {
 		return nil
 	})
 
@@ -16,8 +16,9 @@ func (cl *Client) Quit() error {
 	return err
 }
 
-func (cl *Client) Ping() error {
-	call := cl.api.Ping(cl.ctx, func(p capnp.Repo_ping_Params) error {
+// Ping pings the daemon to see if it is responding.
+func (ctl *Client) Ping() error {
+	call := ctl.api.Ping(ctl.ctx, func(p capnp.Repo_ping_Params) error {
 		return nil
 	})
 
@@ -30,8 +31,9 @@ func (cl *Client) Ping() error {
 	return err
 }
 
-func (cl *Client) Init(path, owner, password, backend string) error {
-	call := cl.api.Init(cl.ctx, func(p capnp.Repo_init_Params) error {
+// Init tells the daemon to start creating the repository.
+func (ctl *Client) Init(path, owner, password, backend string) error {
+	call := ctl.api.Init(ctl.ctx, func(p capnp.Repo_init_Params) error {
 		if err := p.SetOwner(owner); err != nil {
 			return err
 		}
@@ -51,6 +53,7 @@ func (cl *Client) Init(path, owner, password, backend string) error {
 	return err
 }
 
+// MountOptions holds the possible option for a single mount.
 type MountOptions struct {
 	ReadOnly bool
 	RootPath string
@@ -70,8 +73,9 @@ func mountOptionsToCapnp(opts MountOptions, seg *capnplib.Segment) (*capnp.Mount
 	return &capOpts, nil
 }
 
-func (cl *Client) Mount(mountPath string, opts MountOptions) error {
-	call := cl.api.Mount(cl.ctx, func(p capnp.Repo_mount_Params) error {
+// Mount creates a new mount at `mountPath` with `opts`.
+func (ctl *Client) Mount(mountPath string, opts MountOptions) error {
+	call := ctl.api.Mount(ctl.ctx, func(p capnp.Repo_mount_Params) error {
 		capOpts, err := mountOptionsToCapnp(opts, p.Segment())
 		if err != nil {
 			return err
@@ -88,8 +92,9 @@ func (cl *Client) Mount(mountPath string, opts MountOptions) error {
 	return err
 }
 
-func (cl *Client) Unmount(mountPath string) error {
-	call := cl.api.Unmount(cl.ctx, func(p capnp.Repo_unmount_Params) error {
+// Unmount kills a previously created mount at `mountPath`.
+func (ctl *Client) Unmount(mountPath string) error {
+	call := ctl.api.Unmount(ctl.ctx, func(p capnp.Repo_unmount_Params) error {
 		return p.SetMountPath(mountPath)
 	})
 
@@ -97,8 +102,9 @@ func (cl *Client) Unmount(mountPath string) error {
 	return err
 }
 
-func (cl *Client) ConfigGet(key string) (string, error) {
-	call := cl.api.ConfigGet(cl.ctx, func(p capnp.Repo_configGet_Params) error {
+// ConfigGet returns the value at `key`.
+func (ctl *Client) ConfigGet(key string) (string, error) {
+	call := ctl.api.ConfigGet(ctl.ctx, func(p capnp.Repo_configGet_Params) error {
 		return p.SetKey(key)
 	})
 
@@ -110,8 +116,9 @@ func (cl *Client) ConfigGet(key string) (string, error) {
 	return result.Value()
 }
 
-func (cl *Client) ConfigSet(key, value string) error {
-	call := cl.api.ConfigSet(cl.ctx, func(p capnp.Repo_configSet_Params) error {
+// ConfigSet sets the key at `key` to `value`
+func (ctl *Client) ConfigSet(key, value string) error {
+	call := ctl.api.ConfigSet(ctl.ctx, func(p capnp.Repo_configSet_Params) error {
 		if err := p.SetValue(value); err != nil {
 			return err
 		}
@@ -123,6 +130,7 @@ func (cl *Client) ConfigSet(key, value string) error {
 	return err
 }
 
+// ConfigEntry is a single entry of the config.
 type ConfigEntry struct {
 	Key          string
 	Val          string
@@ -161,8 +169,9 @@ func configEntryFromCapnp(capEntry capnp.ConfigEntry) (*ConfigEntry, error) {
 	}, nil
 }
 
-func (cl *Client) ConfigAll() ([]ConfigEntry, error) {
-	call := cl.api.ConfigAll(cl.ctx, func(p capnp.Repo_configAll_Params) error {
+// ConfigAll returns all config entries with details.
+func (ctl *Client) ConfigAll() ([]ConfigEntry, error) {
+	call := ctl.api.ConfigAll(ctl.ctx, func(p capnp.Repo_configAll_Params) error {
 		return nil
 	})
 
@@ -190,8 +199,9 @@ func (cl *Client) ConfigAll() ([]ConfigEntry, error) {
 	return entries, nil
 }
 
-func (cl *Client) ConfigDoc(key string) (ConfigEntry, error) {
-	call := cl.api.ConfigDoc(cl.ctx, func(p capnp.Repo_configDoc_Params) error {
+// ConfigDoc gets the documentation for a single config entry at `key`.
+func (ctl *Client) ConfigDoc(key string) (ConfigEntry, error) {
+	call := ctl.api.ConfigDoc(ctl.ctx, func(p capnp.Repo_configDoc_Params) error {
 		return p.SetKey(key)
 	})
 
@@ -213,6 +223,7 @@ func (cl *Client) ConfigDoc(key string) (ConfigEntry, error) {
 	return *entry, nil
 }
 
+// VersionInfo describes the version of the server.
 type VersionInfo struct {
 	ServerSemVer  string
 	ServerRev     string
@@ -220,8 +231,9 @@ type VersionInfo struct {
 	BackendRev    string
 }
 
-func (cl *Client) Version() (*VersionInfo, error) {
-	call := cl.api.Version(cl.ctx, func(p capnp.Repo_version_Params) error {
+// Version returns version information about the server.
+func (ctl *Client) Version() (*VersionInfo, error) {
+	call := ctl.api.Version(ctl.ctx, func(p capnp.Repo_version_Params) error {
 		return nil
 	})
 
@@ -259,6 +271,8 @@ func (cl *Client) Version() (*VersionInfo, error) {
 	return version, nil
 }
 
+// FstabAdd adds a new mount named `mountName` at `mountPath` with `opts`.
+// The mount will only be created after calling FstabApply.
 func (ctl *Client) FstabAdd(mountName, mountPath string, opts MountOptions) error {
 	call := ctl.api.FstabAdd(ctl.ctx, func(p capnp.Repo_fstabAdd_Params) error {
 		if err := p.SetMountName(mountName); err != nil {
@@ -281,6 +295,7 @@ func (ctl *Client) FstabAdd(mountName, mountPath string, opts MountOptions) erro
 	return err
 }
 
+// FstabRemove removes a named mount called `mountName`.
 func (ctl *Client) FstabRemove(mountName string) error {
 	call := ctl.api.FstabRemove(ctl.ctx, func(p capnp.Repo_fstabRemove_Params) error {
 		return p.SetMountName(mountName)
@@ -290,6 +305,8 @@ func (ctl *Client) FstabRemove(mountName string) error {
 	return err
 }
 
+// FstabApply will apply any changes made the filesystem tab.
+// This won't do anything if nothing was changed in the mean time.
 func (ctl *Client) FstabApply() error {
 	call := ctl.api.FstabApply(ctl.ctx, func(p capnp.Repo_fstabApply_Params) error {
 		return nil
@@ -299,6 +316,7 @@ func (ctl *Client) FstabApply() error {
 	return err
 }
 
+// FstabUnmountAll will unmount all currently mounted fstab entries.
 func (ctl *Client) FstabUnmountAll() error {
 	call := ctl.api.FstabUnmountAll(ctl.ctx, func(p capnp.Repo_fstabUnmountAll_Params) error {
 		return nil
@@ -308,6 +326,7 @@ func (ctl *Client) FstabUnmountAll() error {
 	return err
 }
 
+// FsTabEntry describes a single entry in the filesystem tab
 type FsTabEntry struct {
 	Name     string
 	Path     string
@@ -341,6 +360,7 @@ func capMountToMount(capEntry capnp.FsTabEntry) (*FsTabEntry, error) {
 	}, nil
 }
 
+// FsTabList lists all fs tab entries.
 func (ctl *Client) FsTabList() ([]FsTabEntry, error) {
 	call := ctl.api.FstabList(ctl.ctx, func(p capnp.Repo_fstabList_Params) error {
 		return nil
@@ -370,14 +390,16 @@ func (ctl *Client) FsTabList() ([]FsTabEntry, error) {
 	return mounts, nil
 }
 
+// GarbageItem is a single path that was reaped by the garbage collector.
 type GarbageItem struct {
 	Path    string
 	Owner   string
 	Content h.Hash
 }
 
-func (cl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
-	call := cl.api.GarbageCollect(cl.ctx, func(p capnp.FS_garbageCollect_Params) error {
+// GarbageCollect calls the backend (IPSF) garbage collector and returns the collected items.
+func (ctl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
+	call := ctl.api.GarbageCollect(ctl.ctx, func(p capnp.FS_garbageCollect_Params) error {
 		p.SetAggressive(aggressive)
 		return nil
 	})
@@ -424,8 +446,9 @@ func (cl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
 	return freed, nil
 }
 
-func (cl *Client) Become(who string) error {
-	call := cl.api.Become(cl.ctx, func(p capnp.Repo_become_Params) error {
+// Become changes the current users to one of the users in the remote list.
+func (ctl *Client) Become(who string) error {
+	call := ctl.api.Become(ctl.ctx, func(p capnp.Repo_become_Params) error {
 		return p.SetWho(who)
 	})
 
@@ -433,8 +456,9 @@ func (cl *Client) Become(who string) error {
 	return err
 }
 
-func (cl *Client) WaitForInit() error {
-	call := cl.api.WaitForInit(cl.ctx, func(p capnp.Repo_waitForInit_Params) error {
+// WaitForInit waits until the server is fully functional.
+func (ctl *Client) WaitForInit() error {
+	call := ctl.api.WaitForInit(ctl.ctx, func(p capnp.Repo_waitForInit_Params) error {
 		return nil
 	})
 

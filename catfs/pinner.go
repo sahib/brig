@@ -158,6 +158,9 @@ func (pc *Pinner) remember(inode uint64, hash h.Hash, isPinned, isExplicit bool)
 	})
 }
 
+// IsPinned returns two boolean values indicating the pin status of `inode` and
+// `hash`.  If the first value is true, the content is pinned, if the second is
+// true it is pinned explicitly.
 func (pc *Pinner) IsPinned(inode uint64, hash h.Hash) (bool, bool, error) {
 	data, err := pc.lkr.KV().Get("pins", hash.B58String())
 	if err != nil && err != db.ErrNoSuchKey {
@@ -215,6 +218,8 @@ func (pc *Pinner) Pin(inode uint64, hash h.Hash, explicit bool) error {
 	return pc.remember(inode, hash, true, explicit)
 }
 
+// Unpin pins the content at `inode` and `hash`. If the pin was explicit,
+// `explicit` must be true to make this work.
 func (pc *Pinner) Unpin(inode uint64, hash h.Hash, explicit bool) error {
 	isPinned, isExplicit, err := pc.IsPinned(inode, hash)
 	if err != nil {
