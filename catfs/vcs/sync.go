@@ -12,11 +12,18 @@ import (
 )
 
 const (
+	// ConflictStragetyMarker creates marker files for each conflict.
 	ConflictStragetyMarker = iota
+
+	// ConflictStragetyIgnore ignores conflicts totally.
 	ConflictStragetyIgnore
+
+	// ConflictStragetyUnknown should be used when the strategy is not clear.
 	ConflictStragetyUnknown
 )
 
+// ConflictStrategy defines what conflict strategy to apply in case of
+// nodes with different content hashes.
 type ConflictStrategy int
 
 func (cs ConflictStrategy) String() string {
@@ -30,6 +37,8 @@ func (cs ConflictStrategy) String() string {
 	}
 }
 
+// ConflictStrategyFromString converts a string to a ConflictStrategy.
+// It it is not valid, ConflictStragetyUnknown is returned.
 func ConflictStrategyFromString(spec string) ConflictStrategy {
 	switch spec {
 	case "marker":
@@ -54,7 +63,7 @@ type SyncOptions struct {
 }
 
 var (
-	DefaultSyncConfig = &SyncOptions{}
+	defaultSyncConfig = &SyncOptions{}
 )
 
 type syncer struct {
@@ -297,9 +306,11 @@ func (sy *syncer) handleConflictNode(src n.ModNode) error {
 	return nil
 }
 
+// Sync will synchronize the changes from `lkrSrc` to `lkrDst`,
+// according to the options set in `cfg`. This is atomic.
 func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 	if cfg == nil {
-		cfg = DefaultSyncConfig
+		cfg = defaultSyncConfig
 	}
 
 	syncer := &syncer{

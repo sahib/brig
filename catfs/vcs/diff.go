@@ -5,6 +5,8 @@ import (
 	n "github.com/sahib/brig/catfs/nodes"
 )
 
+// DiffPair is a pair of nodes that have a relation in regard of a change. The
+// change is described by the masks.
 type DiffPair struct {
 	Src     n.ModNode
 	Dst     n.ModNode
@@ -12,6 +14,7 @@ type DiffPair struct {
 	DstMask ChangeType
 }
 
+// Diff describes a difference between two commits.
 type Diff struct {
 	cfg *SyncOptions
 
@@ -102,13 +105,13 @@ func (df *Diff) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) err
 	return nil
 }
 
-// Diff show the differences between two linkers.
+// MakeDiff show the differences between two linkers.
 //
 // Internally it works like Sync() but does not modify anything and just
 // merely records what the algorithm decided to do.
 func MakeDiff(lkrSrc, lkrDst *c.Linker, headSrc, headDst *n.Commit, cfg *SyncOptions) (*Diff, error) {
 	if cfg == nil {
-		cfg = DefaultSyncConfig
+		cfg = defaultSyncConfig
 	}
 
 	diff := &Diff{cfg: cfg}

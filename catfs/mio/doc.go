@@ -1,4 +1,4 @@
-// package mio (short for memory input/output) implements the layered io stack
+// Package mio (short for memory input/output) implements the layered io stack
 // of brig. This includes currently three major parts:
 //
 // - encrypt  - Encryption and Decryption layer with seeking support.

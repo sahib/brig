@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// TextfileExtensions not covered by mime.TypeByExtension
+	// TextFileExtensions not covered by mime.TypeByExtension
 	TextFileExtensions = map[string]bool{
 		".go":   true,
 		".json": true,
@@ -48,6 +48,8 @@ func isCompressible(mimetype string) bool {
 	return CompressibleMapping[mimetype]
 }
 
+// GuessAlgorithm takes the path name and the header data of it
+// and tries to guess a suitable compression algorithm.
 func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	if len(header) < HeaderSizeThreshold {
 		return AlgoNone, nil

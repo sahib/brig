@@ -95,7 +95,7 @@ func (hw *HistoryWalker) maskFromState(curr, next n.ModNode) ChangeType {
 	return mask
 }
 
-func ParentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Directory, error) {
+func parentDirectoryForCommit(lkr *c.Linker, cmt *n.Commit, curr n.Node) (*n.Directory, error) {
 	nextDirPath := path.Dir(curr.Path())
 	if nextDirPath == "/" {
 		return nil, nil
@@ -151,7 +151,7 @@ func findMovePartner(lkr *c.Linker, head *n.Commit, curr n.Node) (n.Node, c.Move
 	childPath := []string{curr.Name()}
 
 	for {
-		parentDir, err := ParentDirectoryForCommit(lkr, head, curr)
+		parentDir, err := parentDirectoryForCommit(lkr, head, curr)
 		if err != nil {
 			return nil, c.MoveDirNone, e.Wrap(err, "bad parent dir")
 		}

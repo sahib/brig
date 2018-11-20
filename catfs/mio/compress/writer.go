@@ -7,7 +7,8 @@ import (
 	"github.com/sahib/brig/util"
 )
 
-type writer struct {
+// Writer implements a compression writer.
+type Writer struct {
 	// Underlying raw, uncompressed data stream.
 	rawW io.Writer
 
@@ -36,11 +37,11 @@ type writer struct {
 	headerWritten bool
 }
 
-func (w *writer) addRecordToIndex() {
+func (w *Writer) addRecordToIndex() {
 	w.index = append(w.index, record{w.rawOff, w.zipOff})
 }
 
-func (w *writer) flushBuffer(data []byte) error {
+func (w *Writer) flushBuffer(data []byte) error {
 	if len(data) <= 0 {
 		return nil
 	}
@@ -67,7 +68,7 @@ func (w *writer) flushBuffer(data []byte) error {
 	return nil
 }
 
-func (w *writer) writeHeaderIfNeeded() error {
+func (w *Writer) writeHeaderIfNeeded() error {
 	if w.headerWritten {
 		return nil
 	}
@@ -81,7 +82,8 @@ func (w *writer) writeHeaderIfNeeded() error {
 	return nil
 }
 
-func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
+// ReadFrom implements io.ReaderFrom
+func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 	read := 0
 	buf := [maxChunkSize]byte{}
 
@@ -106,7 +108,7 @@ func (w *writer) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 }
 
-func (w *writer) Write(p []byte) (n int, err error) {
+func (w *Writer) Write(p []byte) (n int, err error) {
 	if err := w.writeHeaderIfNeeded(); err != nil {
 		return 0, err
 	}
@@ -129,12 +131,12 @@ func (w *writer) Write(p []byte) (n int, err error) {
 }
 
 // NewWriter returns a WriteCloser with compression support.
-func NewWriter(w io.Writer, algoType AlgorithmType) (*writer, error) {
+func NewWriter(w io.Writer, algoType AlgorithmType) (*Writer, error) {
 	algo, err := AlgorithmFromType(algoType)
 	if err != nil {
 		return nil, err
 	}
-	return &writer{
+	return &Writer{
 		rawW:     w,
 		algo:     algo,
 		algoType: algoType,
@@ -143,7 +145,9 @@ func NewWriter(w io.Writer, algoType AlgorithmType) (*writer, error) {
 	}, nil
 }
 
-func (w *writer) Close() error {
+// Close cleans up internal resources.
+// Make sure to call close always since it might write data.
+func (w *Writer) Close() error {
 	if err := w.writeHeaderIfNeeded(); err != nil {
 		return err
 	}

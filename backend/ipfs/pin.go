@@ -10,6 +10,7 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// Pin does the same as `ipfs pin add <hash>`
 func (nd *Node) Pin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()
@@ -32,6 +33,7 @@ func (nd *Node) Pin(hash h.Hash) error {
 	return nd.ipfsNode.Pinning.Flush()
 }
 
+// Unpin does the same as `ipfs pin rm <hash>`
 func (nd *Node) Unpin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()
@@ -44,6 +46,7 @@ func (nd *Node) Unpin(hash h.Hash) error {
 	return nd.ipfsNode.Pinning.Flush()
 }
 
+// IsPinned returns true if `hash` is pinned.
 func (nd *Node) IsPinned(hash h.Hash) (bool, error) {
 	cid := cid.NewCidV0(mh.Multihash(hash))
 	mode, _, err := nd.ipfsNode.Pinning.IsPinned(cid)

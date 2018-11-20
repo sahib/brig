@@ -6,33 +6,41 @@ import (
 	repoMock "github.com/sahib/brig/repo/mock"
 )
 
-type mockBackend struct {
+// Backend is used for local testing.
+type Backend struct {
 	*catfs.MemFsBackend
-	*repoMock.MockRepoBackend
+	*repoMock.RepoBackend
 	*netMock.NetBackend
 }
 
 // NewMockBackend returns a backend.Backend that operates only in memory
 // and does not use any resources outliving the own process, except the net
 // part which stores connection info on disk.
-func NewMockBackend(path, owner string, port int) *mockBackend {
-	return &mockBackend{
-		MemFsBackend:    catfs.NewMemFsBackend(),
-		MockRepoBackend: repoMock.NewMockRepoBackend(),
-		NetBackend:      netMock.NewNetBackend(path, owner, port),
+func NewMockBackend(path, owner string, port int) *Backend {
+	return &Backend{
+		MemFsBackend: catfs.NewMemFsBackend(),
+		RepoBackend:  repoMock.NewMockRepoBackend(),
+		NetBackend:   netMock.NewNetBackend(path, owner, port),
 	}
 }
 
-type version struct {
+// VersionInfo holds version info (yeah, golint)
+type VersionInfo struct {
 	semVer, name, rev string
 }
 
-func (v *version) SemVer() string { return v.semVer }
-func (v *version) Name() string   { return v.name }
-func (v *version) Rev() string    { return v.rev }
+// SemVer returns a version string complying semantic versioning
+func (v *VersionInfo) SemVer() string { return v.semVer }
 
-func Version() *version {
-	return &version{
+// Name returns the name of the backend
+func (v *VersionInfo) Name() string { return v.name }
+
+// Rev returns the git revision of the backend
+func (v *VersionInfo) Rev() string { return v.rev }
+
+// Version returns detailed version info as struct
+func Version() *VersionInfo {
+	return &VersionInfo{
 		semVer: "0.0.1",
 		name:   "mock",
 		rev:    "HEAD",

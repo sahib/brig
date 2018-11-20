@@ -109,6 +109,7 @@ func (g *Ghost) ToCapnp() (*capnp.Message, error) {
 	return msg, g.ToCapnpNode(seg, capNd)
 }
 
+// ToCapnpNode converts this node to a serializable capnp proto node.
 func (g *Ghost) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
 	var base *Base
 	capghost, err := capNd.NewGhost()
@@ -179,6 +180,7 @@ func (g *Ghost) FromCapnp(msg *capnp.Message) error {
 	return g.FromCapnpNode(capNd)
 }
 
+// FromCapnpNode converts a serialized node to a normal node.
 func (g *Ghost) FromCapnpNode(capNd capnp_model.Node) error {
 	if typ := capNd.Which(); typ != capnp_model.Node_Which_ghost {
 		return fmt.Errorf("BUG: ghost unmarshal with non ghost type: %d", typ)

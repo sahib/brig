@@ -6,59 +6,39 @@ import (
 )
 
 var (
-	ErrNotEmpty      = errors.New("Cannot remove: Directory is not empty")
-	ErrStageNotEmpty = errors.New("There are changes in the staging area. Use the --force")
-	ErrNoChange      = errors.New("Nothing changed between the given versions")
-	ErrAmbigiousRev  = errors.New("There is more than one rev with this prefix")
+	// ErrStageNotEmpty is returned by Reset() when it was called without force.
+	// and there are still changes in the staging area.
+	ErrStageNotEmpty = errors.New("there are changes in the staging area; use the --force")
+
+	// ErrNoChange is returned when trying to commit, but there is no change.
+	ErrNoChange = errors.New("nothing changed between the given versions")
+
+	// ErrAmbigiousRev is returned when a ref string could mean several commits.
+	ErrAmbigiousRev = errors.New("there is more than one rev with this prefix")
+
+	// ErrExists is returned if a node already exists at a path, but should not.
+	ErrExists = errors.New("File exists")
+
+	// ErrBadNode is returned when a wrong node type was passed to a method.
+	ErrBadNode = errors.New("Cannot convert to concrete type. Broken input data?")
 )
 
-type ErrBadNodeType int
-
-func (e ErrBadNodeType) Error() string {
-	return fmt.Sprintf("Bad node type in db: %d", int(e))
-}
-
 //////////////
 
-type ErrNoHashFound struct {
-	b58hash string
-	where   string
-}
-
-func (e ErrNoHashFound) Error() string {
-	return fmt.Sprintf("No such hash in `%s`: '%s'", e.where, e.b58hash)
-}
-
-//////////////
-
+// ErrNoSuchRef is returned when a bad ref was used
 type ErrNoSuchRef string
 
 func (e ErrNoSuchRef) Error() string {
 	return fmt.Sprintf("No ref found named `%s`", string(e))
 }
 
+// IsErrNoSuchRef checks if `err` is a no such ref error.
 func IsErrNoSuchRef(err error) bool {
 	_, ok := err.(ErrNoSuchRef)
 	return ok
 }
 
-type ErrInvalidRefSpec struct {
-	input string
-	cause string
-}
-
-func (e ErrInvalidRefSpec) Error() string {
-	return fmt.Sprintf("Invalid ref `%s`: %s", e.input, e.cause)
-}
-
 /////////////////
-
-var (
-	// ErrExists is returned if a node already exists at a path, but should not.
-	ErrExists = errors.New("File exists")
-	// ErrBadNode is returned when a wrong node type was passed to a method.
-	ErrBadNode = errors.New("Cannot convert to concrete type. Broken input data?")
-)
 
 type errNoSuchFile struct {
 	path string

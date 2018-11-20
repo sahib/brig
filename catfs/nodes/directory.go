@@ -80,6 +80,7 @@ func (d *Directory) ToCapnp() (*capnp.Message, error) {
 	return msg, d.ToCapnpNode(seg, capNd)
 }
 
+// ToCapnpNode converts this node to a serializable capnp proto node.
 func (d *Directory) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
 	if err := d.setBaseAttrsToNode(capNd); err != nil {
 		return err
@@ -174,6 +175,7 @@ func (d *Directory) FromCapnp(msg *capnp.Message) error {
 	return d.FromCapnpNode(capNd)
 }
 
+// FromCapnpNode converts a serialized node to a normal node.
 func (d *Directory) FromCapnpNode(capNd capnp_model.Node) error {
 	if err := d.parseBaseAttrsFromNode(capNd); err != nil {
 		return err
@@ -395,14 +397,16 @@ func (d *Directory) IsRoot() bool {
 	return d.parentName == ""
 }
 
-var SkipChild = errors.New("skip sub directory")
+// ErrSkipChild can be returned inside a Walk() closure to stop descending
+// recursively into a directory.
+var ErrSkipChild = errors.New("skip sub directory")
 
 // Walk calls `visit` for each node below `node`, including `node`.
 // If `dfs` is true, depth first search will be used.
 // If `dfs` is false, breadth first search will be used.
 // It is valid to pass a File to Walk(), then visit will be called exactly once.
 //
-// It is possible to return the special error value SkipChild in the callback.
+// It is possible to return the special error value ErrSkipChild in the callback.
 // In this case, the children of this node are skipped.
 // For this to work, `dfs` has to be false.
 func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
@@ -412,7 +416,7 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	if node.Type() != NodeTypeDirectory {
 		err := visit(node)
-		if err == SkipChild {
+		if err == ErrSkipChild {
 			return nil
 		}
 
@@ -426,7 +430,7 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	if !dfs {
 		if err := visit(node); err != nil {
-			if err == SkipChild {
+			if err == ErrSkipChild {
 				return nil
 			}
 
@@ -452,8 +456,8 @@ func Walk(lkr Linker, node Node, dfs bool, visit func(child Node) error) error {
 
 	if dfs {
 		if err := visit(node); err != nil {
-			if err == SkipChild {
-				panic("bug: you cannot use dfs=true and SkipChild together")
+			if err == ErrSkipChild {
+				panic("bug: you cannot use dfs=true and ErrSkipChild together")
 			}
 
 			return err

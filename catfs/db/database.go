@@ -10,6 +10,7 @@ var (
 	ErrNoSuchKey = errors.New("This key does not exist")
 )
 
+// Batch is an API object used to model a transaction.
 type Batch interface {
 	// Put sets `val` at `key`.
 	Put(val []byte, key ...string)
@@ -68,6 +69,7 @@ type Database interface {
 	Glob(prefix []string) ([][]string, error)
 }
 
+// CopyKey is a helper method to copy a bunch of keys in `src` to `dst`.
 func CopyKey(db Database, src, dst []string) error {
 	data, err := db.Get(src...)
 	if err != nil {

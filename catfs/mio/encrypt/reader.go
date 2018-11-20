@@ -126,7 +126,7 @@ func (r *Reader) readBlock() (int, error) {
 	if n, err := r.Reader.Read(r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
-		return 0, fmt.Errorf("Nonce size mismatch. Should: %d. Have: %d",
+		return 0, fmt.Errorf("nonce size mismatch; should: %d - have: %d",
 			r.aead.NonceSize(), n)
 	}
 
@@ -137,7 +137,7 @@ func (r *Reader) readBlock() (int, error) {
 	currBlockNum := uint64(r.lastDecSeekPos / int64(r.info.Blocklen))
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
-			"Bad block number. Was %d, should be %d.", readBlockNum, currBlockNum,
+			"bad block number; as %d, should be %d", readBlockNum, currBlockNum,
 		)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/sahib/brig/util"
 )
 
+// Stream is a stream coming from the backend.
 type Stream interface {
 	io.Reader
 	io.Seeker

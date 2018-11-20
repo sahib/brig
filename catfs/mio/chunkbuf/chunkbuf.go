@@ -25,12 +25,14 @@ func (c *ChunkBuffer) Write(p []byte) (int, error) {
 	return n, nil
 }
 
+// Reset resets the buffer like bytes.Buffer
 func (c *ChunkBuffer) Reset() {
 	c.readOff = 0
 	c.writeOff = 0
 	c.size = 0
 }
 
+// Len tells you the current size of the buffer contents
 func (c *ChunkBuffer) Len() int {
 	return int(c.size - c.readOff)
 }
@@ -45,6 +47,7 @@ func (c *ChunkBuffer) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+// Seek implements io.Seeker
 func (c *ChunkBuffer) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekCurrent:
@@ -64,6 +67,7 @@ func (c *ChunkBuffer) Close() error {
 	return nil
 }
 
+// WriteTo implements the io.WriterTo interface
 func (c *ChunkBuffer) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(c.buf[c.readOff:])
 	if err != nil {

@@ -12,11 +12,16 @@ import (
 )
 
 const (
-	MaxConnections = 10
+	maxConnections = 10
 )
 
+// Handler is a interface that needs to be implemented in
+// order to react on the requests that Server is getting.
 type Handler interface {
+	// Handle is called whenever a new connection is accepted.
 	Handle(ctx context.Context, conn net.Conn)
+
+	// Quit is being called when the server received a quit signal.
 	Quit() error
 }
 
@@ -31,8 +36,7 @@ type Server struct {
 	quitCh  chan bool
 }
 
-// for calling Accept(). This is used to check periodically for a quit signal.
-// DeadListener is a listener that allows to set a deadline
+// DeadlineListener is a listener that allows to set a deadline
 type DeadlineListener interface {
 	net.Listener
 
@@ -79,16 +83,19 @@ func (sv *Server) accept(rateCh chan struct{}) error {
 	return nil
 }
 
+// Close cleans up internal resources
 func (sv *Server) Close() error {
 	return sv.lst.Close()
 }
 
+// Serve blocks to serve requests to the client.
+// It can be stopped by calling Quit.
 func (sv *Server) Serve() error {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Reserve a pool of connections:
-	rateCh := make(chan struct{}, MaxConnections)
+	rateCh := make(chan struct{}, maxConnections)
 	for i := 0; i < cap(rateCh); i++ {
 		rateCh <- struct{}{}
 	}
@@ -119,11 +126,14 @@ func (sv *Server) Serve() error {
 	return sv.handler.Quit()
 }
 
+// Quit stops the blocking of Serve()
 func (sv *Server) Quit() {
 	sv.quitCh <- true
 }
 
-func NewServer(lst net.Listener, handler Handler, ctx context.Context) (*Server, error) {
+// NewServer creates a new server from the listener in `lst` and will call `handler`
+// when receiving requests. It uses `ctx` for handling timeouts.
+func NewServer(ctx context.Context, lst net.Listener, handler Handler) (*Server, error) {
 	return &Server{
 		ctx:     ctx,
 		lst:     lst,

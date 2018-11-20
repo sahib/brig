@@ -307,6 +307,7 @@ func (ch *Change) toCapnpChange(seg *capnp.Segment, capCh *capnp_patch.Change) e
 
 }
 
+// ToCapnp converts a change to a capnproto message.
 func (ch *Change) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -379,6 +380,7 @@ func (ch *Change) fromCapnpChange(capCh capnp_patch.Change) error {
 	return nil
 }
 
+// FromCapnp deserializes `msg` and writes it to `ch`.
 func (ch *Change) FromCapnp(msg *capnp.Message) error {
 	capCh, err := capnp_patch.ReadRootChange(msg)
 	if err != nil {

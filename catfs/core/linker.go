@@ -1453,6 +1453,7 @@ func (md MoveDir) String() string {
 	}
 }
 
+// Invert changes the direction of a move, if it has one.
 func (md MoveDir) Invert() MoveDir {
 	switch md {
 	case MoveDirSrcToDst:
@@ -1647,7 +1648,7 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 
 	walker := func(child n.Node) error {
 		if _, ok := visited[child.TreeHash().B58String()]; ok {
-			return n.SkipChild
+			return n.ErrSkipChild
 		}
 
 		modChild, ok := child.(n.ModNode)

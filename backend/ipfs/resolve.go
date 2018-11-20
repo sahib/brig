@@ -24,6 +24,7 @@ func (nd *Node) addBlock(data []byte) (h.Hash, error) {
 	return h.Hash(block.Cid().Hash()), nil
 }
 
+// PublishName makes the string `name` known in the network.
 func (nd *Node) PublishName(name string) error {
 	// Build all names under we can find this node:
 	fullName := "brig:" + string(name)
@@ -44,7 +45,7 @@ func (nd *Node) Identity() (peer.Info, error) {
 	}, nil
 }
 
-// Locate finds the object pointed to by `hash`. it will wait
+// ResolveName finds the object pointed to by `hash`. it will wait
 // for max `timeout` duration if it got less than `n` items in that time.
 // if `n` is less than 0, all reachable peers that have `hash` will be returned.
 // if `n` is 0, locate will return immeditately.

@@ -75,6 +75,7 @@ func (c *Commit) ToCapnp() (*capnp.Message, error) {
 	return msg, c.ToCapnpNode(seg, capNd)
 }
 
+// ToCapnpNode converts this node to a serializable capnp proto node.
 func (c *Commit) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
 	if err := c.setBaseAttrsToNode(capNd); err != nil {
 		return err
@@ -134,6 +135,7 @@ func (c *Commit) FromCapnp(msg *capnp.Message) error {
 	return c.FromCapnpNode(capNd)
 }
 
+// FromCapnpNode converts a serialized node to a normal node.
 func (c *Commit) FromCapnpNode(capNd capnp_model.Node) error {
 	if err := c.parseBaseAttrsFromNode(capNd); err != nil {
 		return err

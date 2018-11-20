@@ -9,7 +9,8 @@ import (
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 )
 
-type reader struct {
+// Reader implements an decompressing reader
+type Reader struct {
 	// Underlying raw, compressed datastream.
 	rawR io.ReadSeeker
 
@@ -37,7 +38,8 @@ type reader struct {
 	decodeBuf *bytes.Buffer
 }
 
-func (r *reader) Seek(destOff int64, whence int) (int64, error) {
+// Seek implements io.Seeker
+func (r *Reader) Seek(destOff int64, whence int) (int64, error) {
 	if whence == io.SeekEnd {
 		if destOff > 0 {
 			return 0, io.EOF
@@ -87,7 +89,7 @@ func (r *reader) Seek(destOff int64, whence int) (int64, error) {
 // in. If currOff is 0, the first and second record is returned. If currOff is
 // at the end of file the end record (currRecord) is returned twice.  The offset
 // difference (chunksize) between prevRecord and currRecord is then equal to 0.
-func (r *reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
+func (r *Reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
 	// Get smallest index that is before given currOff.
 	i := sort.Search(len(r.index), func(i int) bool {
 		if isRawOff {
@@ -108,7 +110,7 @@ func (r *reader) chunkLookup(currOff int64, isRawOff bool) (*record, *record) {
 	return &r.index[i-1], &r.index[i]
 }
 
-func (r *reader) parseTrailerIfNeeded() error {
+func (r *Reader) parseTrailerIfNeeded() error {
 	if r.trailer != nil {
 		return nil
 	}
@@ -177,7 +179,7 @@ func (r *reader) parseTrailerIfNeeded() error {
 		indexBuf = indexBuf[indexChunkSize:]
 	}
 
-	// Set reader to beginning of file
+	// Set Reader to beginning of file
 	if _, err := r.rawR.Seek(headerSize, io.SeekStart); err != nil {
 		return err
 	}
@@ -187,7 +189,8 @@ func (r *reader) parseTrailerIfNeeded() error {
 	return nil
 }
 
-func (r *reader) WriteTo(w io.Writer) (int64, error) {
+// WriteTo implements io.WriterTo
+func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 	if err := r.parseTrailerIfNeeded(); err != nil {
 		return 0, err
 	}
@@ -219,7 +222,7 @@ func (r *reader) WriteTo(w io.Writer) (int64, error) {
 }
 
 // Read reads len(p) bytes from the compressed stream into p.
-func (r *reader) Read(p []byte) (int, error) {
+func (r *Reader) Read(p []byte) (int, error) {
 	if err := r.parseTrailerIfNeeded(); err != nil {
 		return 0, err
 	}
@@ -250,7 +253,7 @@ func (r *reader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
-func (r *reader) fixZipChunk() (int64, error) {
+func (r *Reader) fixZipChunk() (int64, error) {
 	// Get the start and end record of the chunk currOff is located in.
 	prevRecord, currRecord := r.chunkLookup(r.rawSeekOffset, false)
 	if currRecord == nil || prevRecord == nil {
@@ -263,7 +266,7 @@ func (r *reader) fixZipChunk() (int64, error) {
 		return 0, io.EOF
 	}
 
-	// Set reader to compressed offset.
+	// Set Reader to compressed offset.
 	if _, err := r.rawR.Seek(prevRecord.zipOff, io.SeekStart); err != nil {
 		return 0, err
 	}
@@ -274,8 +277,8 @@ func (r *reader) fixZipChunk() (int64, error) {
 	return chunkSize, nil
 }
 
-func (r *reader) readZipChunk() ([]byte, error) {
-	// Get current position of the reader; offset of the compressed file.
+func (r *Reader) readZipChunk() ([]byte, error) {
+	// Get current position of the Reader; offset of the compressed file.
 	r.chunkBuf.Reset()
 	chunkSize, err := r.fixZipChunk()
 	if err != nil {
@@ -300,8 +303,8 @@ func (r *reader) readZipChunk() ([]byte, error) {
 // NewReader returns a new ReadSeeker with compression support. As random access
 // is the purpose of this layer, a ReadSeeker is required as parameter. The used
 // compression algorithm is chosen based on trailer information.
-func NewReader(r io.ReadSeeker) *reader {
-	return &reader{
+func NewReader(r io.ReadSeeker) *Reader {
+	return &Reader{
 		rawR:      r,
 		decodeBuf: &bytes.Buffer{},
 		chunkBuf:  chunkbuf.NewChunkBuffer([]byte{}),

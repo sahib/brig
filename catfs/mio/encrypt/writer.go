@@ -8,8 +8,11 @@ import (
 )
 
 var (
-	ErrBadBlockSize = errors.New("Underlying reader failed to read full w.maxBlockSize")
-	ErrMixedMethods = errors.New("Mixing Write() and ReadFrom() is not allowed.")
+	// ErrBadBlockSize is returned when the data is damaged and has an invalid block size
+	ErrBadBlockSize = errors.New("underlying reader failed to read full w.maxBlockSize")
+
+	// ErrMixedMethods is returned when calling Write() with ReadFrom() together.
+	ErrMixedMethods = errors.New("mixing Write() and ReadFrom() is not allowed")
 )
 
 // Writer encrypts the data stream before writing to Writer.
@@ -37,10 +40,12 @@ type Writer struct {
 	cipher uint16
 }
 
+// GoodDecBufferSize returns a buffer size that is suitable for decryption.
 func (w *Writer) GoodDecBufferSize() int64 {
 	return w.maxBlockSize
 }
 
+// GoodEncBufferSize returns a buffer size that is suitable for encryption.
 func (w *Writer) GoodEncBufferSize() int64 {
 	return w.maxBlockSize + 40
 }

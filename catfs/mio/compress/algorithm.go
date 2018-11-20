@@ -22,23 +22,25 @@ type noneAlgo struct{}
 type snappyAlgo struct{}
 type lz4Algo struct{}
 
-// AlgoMap maps the algorithm type to the respective Algorithm interface
-var AlgoMap = map[AlgorithmType]Algorithm{
-	AlgoNone:   noneAlgo{},
-	AlgoSnappy: snappyAlgo{},
-	AlgoLZ4:    lz4Algo{},
-}
+var (
+	algoMap = map[AlgorithmType]Algorithm{
+		AlgoNone:   noneAlgo{},
+		AlgoSnappy: snappyAlgo{},
+		AlgoLZ4:    lz4Algo{},
+	}
 
-var AlgoToString = map[AlgorithmType]string{
-	AlgoNone:   "none",
-	AlgoSnappy: "snappy",
-	AlgoLZ4:    "lz4",
-}
-var StringToAlgo = map[string]AlgorithmType{
-	"none":   AlgoNone,
-	"snappy": AlgoSnappy,
-	"lz4":    AlgoLZ4,
-}
+	algoToString = map[AlgorithmType]string{
+		AlgoNone:   "none",
+		AlgoSnappy: "snappy",
+		AlgoLZ4:    "lz4",
+	}
+
+	stringToAlgo = map[string]AlgorithmType{
+		"none":   AlgoNone,
+		"snappy": AlgoSnappy,
+		"lz4":    AlgoLZ4,
+	}
+)
 
 // AlgoNone
 func (a noneAlgo) Encode(src []byte) ([]byte, error) {
@@ -70,22 +72,24 @@ func (a lz4Algo) Decode(src []byte) ([]byte, error) {
 
 // AlgorithmFromType returns a interface to the given AlgorithmType.
 func AlgorithmFromType(a AlgorithmType) (Algorithm, error) {
-	if algo, ok := AlgoMap[a]; ok {
+	if algo, ok := algoMap[a]; ok {
 		return algo, nil
 	}
 	return nil, ErrBadAlgo
 }
 
-func String(a AlgorithmType) string {
-	algo, ok := AlgoToString[a]
+// AlgoToString converts a algorithm type to a string.
+func AlgoToString(a AlgorithmType) string {
+	algo, ok := algoToString[a]
 	if !ok {
 		return "unknown algorithm"
 	}
 	return algo
 }
 
+// AlgoFromString tries to convert a string to AlgorithmType
 func AlgoFromString(s string) (AlgorithmType, error) {
-	algoType, ok := StringToAlgo[s]
+	algoType, ok := stringToAlgo[s]
 	if !ok {
 		return 0, errors.New("Invalid algorithm name")
 	}

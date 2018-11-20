@@ -14,12 +14,15 @@ import (
 	capnp "zombiezen.com/go/capnproto2"
 )
 
+// Patch is a set of changes that changed since a certain
+// version of a graph.
 type Patch struct {
 	FromIndex int64
 	CurrIndex int64
 	Changes   []*Change
 }
 
+// Len returns the number of changes in the patch.
 func (p *Patch) Len() int {
 	return len(p.Changes)
 }
@@ -65,6 +68,7 @@ func (p *Patch) Less(i, j int) bool {
 	return na.ModTime().Before(nb.ModTime())
 }
 
+// ToCapnp serializes a patch to capnproto message.
 func (p *Patch) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
@@ -106,6 +110,7 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 	return msg, nil
 }
 
+// FromCapnp deserializes `msg` into `p`.
 func (p *Patch) FromCapnp(msg *capnp.Message) error {
 	capPatch, err := capnp_patch.ReadRootPatch(msg)
 	if err != nil {
@@ -193,6 +198,8 @@ func filterInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixT
 	return true, nil
 }
 
+// MakePatch creates a patch with all changes starting from `from`. It will only
+// include nodes that are located under one of the prefixes in `prefixes`.
 func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
 	root, err := lkr.Root()
 	if err != nil {
@@ -299,6 +306,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	return patch, nil
 }
 
+// ApplyPatch applies the patch `p` to the linker `lkr`.
 func ApplyPatch(lkr *c.Linker, p *Patch) error {
 	sort.Sort(p)
 

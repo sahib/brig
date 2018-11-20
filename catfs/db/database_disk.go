@@ -74,6 +74,7 @@ func reverseDirectoryKeys(key string) []string {
 	return parts
 }
 
+// Flush is the disk implementation of Database.Flush
 func (db *DiskDatabase) Flush() error {
 	db.refs--
 	if db.refs < 0 {
@@ -109,6 +110,7 @@ func (db *DiskDatabase) Flush() error {
 	return nil
 }
 
+// Rollback is the disk implementation of Database.Rollback
 func (db *DiskDatabase) Rollback() {
 	if debug {
 		fmt.Println("ROLLBACK")
@@ -150,6 +152,7 @@ func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
 	return data, err
 }
 
+// Batch is the disk implementation of Database.Batch
 func (db *DiskDatabase) Batch() Batch {
 	db.refs++
 	return db
@@ -275,6 +278,7 @@ func (db *DiskDatabase) Clear(key ...string) error {
 	return filepath.Walk(filePrefix, walker)
 }
 
+// Erase is the disk implementation of Database.Erase
 func (db *DiskDatabase) Erase(key ...string) {
 	if debug {
 		fmt.Println("ERASE", key)
@@ -295,10 +299,12 @@ func (db *DiskDatabase) Erase(key ...string) {
 	delete(db.cache, fullKey)
 }
 
+// HaveWrites is the disk implementation of Database.HaveWrites
 func (db *DiskDatabase) HaveWrites() bool {
 	return len(db.ops) > 0
 }
 
+// Keys is the disk implementation of Database.Keys
 func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) error {
 	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(prefix))
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
@@ -321,6 +327,7 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 	})
 }
 
+// Glob is the disk implementation of Database.Glob
 func (db *DiskDatabase) Glob(prefix []string) ([][]string, error) {
 	fullPrefix := filepath.Join(db.basePath, filepath.Join(prefix...))
 	matches, err := filepath.Glob(fullPrefix + "*")

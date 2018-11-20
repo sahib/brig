@@ -206,6 +206,7 @@ func NewLayer(r io.ReadSeeker) *Layer {
 	}
 }
 
+// SetSize sets the size of the absolute layer.
 func (l *Layer) SetSize(size int64) {
 	l.fileSize = size
 }

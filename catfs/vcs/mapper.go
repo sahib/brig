@@ -535,6 +535,8 @@ func (ma *Mapper) handleGhosts() error {
 	return nil
 }
 
+// NewMapper creates a new mapper object that is capable of finding pairs of
+// nodes between lkrDst and lkrSrc.
 func NewMapper(lkrSrc, lkrDst *c.Linker, srcHead, dstHead *n.Commit, srcRoot n.Node) (*Mapper, error) {
 	var err error
 
@@ -698,7 +700,7 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 	return nil
 }
 
-// Diff calls `fn` for each pairing that was found. Equal files and
+// Map calls `fn` for each pairing that was found. Equal files and
 // directories are not reported. Most directories are also not reported, but
 // if they are empty and not present on our side they will. No ghosts will be
 // reported.

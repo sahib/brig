@@ -219,6 +219,7 @@ func UnmarshalNode(data []byte) (Node, error) {
 	return CapNodeToNode(capNd)
 }
 
+// CapNodeToNode converts a capnproto `capNd` to a normal `Node`.
 func CapNodeToNode(capNd capnp_model.Node) (Node, error) {
 	// Find out the correct node struct to initialize.
 	var node Node

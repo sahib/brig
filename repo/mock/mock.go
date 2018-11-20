@@ -4,20 +4,25 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
-type MockRepoBackend struct{}
+// RepoBackend is used to fake a repo backend in testing.
+type RepoBackend struct{}
 
-func (mrb *MockRepoBackend) Init(folder string) error {
+// Init does nothing to create a mock repo.
+func (mrb *RepoBackend) Init(folder string) error {
 	return nil
 }
 
-func (mrb *MockRepoBackend) GC() ([]h.Hash, error) {
+// GC does nothing.
+func (mrb *RepoBackend) GC() ([]h.Hash, error) {
 	return nil, nil
 }
 
-func (mrb *MockRepoBackend) Name() string {
+// Name returns "mock"
+func (mrb *RepoBackend) Name() string {
 	return "mock"
 }
 
-func NewMockRepoBackend() *MockRepoBackend {
-	return &MockRepoBackend{}
+// NewMockRepoBackend returns a new RepoBackend
+func NewMockRepoBackend() *RepoBackend {
+	return &RepoBackend{}
 }

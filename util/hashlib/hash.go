@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	InternalHashAlgo = multihash.SHA3_256
+	internalHashAlgo = multihash.SHA3_256
 )
 
 var (
@@ -33,8 +33,8 @@ func init() {
 
 	EmptyBackendHash = Hash(hash)
 
-	data = make([]byte, multihash.DefaultLengths[InternalHashAlgo])
-	hash, err = multihash.Encode(data, InternalHashAlgo)
+	data = make([]byte, multihash.DefaultLengths[internalHashAlgo])
+	hash, err = multihash.Encode(data, internalHashAlgo)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to create empty content hash: %v", err))
 	}
@@ -50,6 +50,7 @@ func (h Hash) String() string {
 	return h.B58String()
 }
 
+// B58String formats the hash as base58 string.
 func (h Hash) B58String() string {
 	if h == nil {
 		return "<empty hash>"
@@ -58,7 +59,17 @@ func (h Hash) B58String() string {
 	return multihash.Multihash(h).B58String()
 }
 
-// Create a new Hash from a b58 string.
+// ShortB58 produces a shorter version (12 bytes long) of B58String()
+func (h Hash) ShortB58() string {
+	full := h.B58String()
+	if len(full) > 12 {
+		return full[:12]
+	}
+
+	return full
+}
+
+// FromB58String creates a new Hash from a base58 string.
 // (This is shorthand for importing/using &Hash{multihash.FromB58String("xxx")}
 func FromB58String(b58 string) (Hash, error) {
 	mh, err := multihash.FromB58String(b58)
@@ -126,6 +137,7 @@ func (h Hash) Equal(other Hash) bool {
 	return bytes.Equal(h, other)
 }
 
+// Mix produces a hash of both passed hashes.
 func (h Hash) Mix(o Hash) Hash {
 	buf := make([]byte, len(h)+len(o))
 	copy(buf, h)
@@ -133,54 +145,30 @@ func (h Hash) Mix(o Hash) Hash {
 	return Sum(buf)
 }
 
-func (h Hash) Xor(o Hash) error {
-	decH, err := multihash.Decode(h)
-	if err != nil {
-		fmt.Println("Decode self failed")
-		return err
-	}
-
-	decO, err := multihash.Decode(o)
-	if err != nil {
-		fmt.Println("Decode other failed", o)
-		return err
-	}
-
-	if decO.Length != decH.Length {
-		return fmt.Errorf("xor: hashs have different lengths: %d != %d", decH.Length, decO.Length)
-	}
-
-	for i := 0; i < decH.Length; i++ {
-		decH.Digest[i] ^= decO.Digest[i]
-	}
-
-	mh, err := multihash.Encode(decH.Digest, decH.Code)
-	if err != nil {
-		fmt.Println("encode failed")
-		return err
-	}
-
-	copy(h, mh)
-	return nil
-}
-
+// Sum hashes `data` with the internal hashing algorithm.
 func Sum(data []byte) Hash {
-	return sum(data, InternalHashAlgo, multihash.DefaultLengths[InternalHashAlgo])
+	return sum(data, internalHashAlgo, multihash.DefaultLengths[internalHashAlgo])
 }
 
-func SumSHA256(data []byte) Hash {
-	return sum(data, multihash.SHA2_256, multihash.DefaultLengths[multihash.SHA2_256])
+// SumWithBackendHash creates a hash with the same algorithm the backend uses.
+func SumWithBackendHash(data []byte) Hash {
+	return sum(
+		data,
+		goipfsutil.DefaultIpfsHash,
+		multihash.DefaultLengths[goipfsutil.DefaultIpfsHash],
+	)
 }
 
 func sum(data []byte, code uint64, length int) Hash {
 	mh, err := multihash.Sum(data, code, length)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to calculate basic hash value. Something is wrong: %s", err))
+		panic(fmt.Sprintf("failed to calculate basic hash value; something is wrong: %s", err))
 	}
 
 	return Hash(mh)
 }
 
+// Cast checks if `data` is a suitable hash and converts it.
 func Cast(data []byte) (Hash, error) {
 	mh, err := multihash.Cast(data)
 	if err != nil {
@@ -193,12 +181,12 @@ func Cast(data []byte) (Hash, error) {
 // TestDummy returns a blake2b hash based on `seed`.
 // The same `seed` will always generate the same hash.
 func TestDummy(t *testing.T, seed byte) Hash {
-	data := make([]byte, multihash.DefaultLengths[InternalHashAlgo])
+	data := make([]byte, multihash.DefaultLengths[internalHashAlgo])
 	for idx := range data {
 		data[idx] = seed
 	}
 
-	hash, err := multihash.Encode(data, InternalHashAlgo)
+	hash, err := multihash.Encode(data, internalHashAlgo)
 	if err != nil {
 		t.Fatalf("Failed to create dummy hash: %v", err)
 		return nil
@@ -207,26 +195,21 @@ func TestDummy(t *testing.T, seed byte) Hash {
 	return Hash(hash)
 }
 
-func (h Hash) ShortB58() string {
-	full := h.B58String()
-	if len(full) > 12 {
-		return full[:12]
-	}
-
-	return full
-}
-
+// HashWriter is a io.Writer that supports being written to.
 type HashWriter struct {
 	hash hash.Hash
 }
 
+// NewHashWriter returns a new HashWriter.
+// Currently it is always sha3-256.
 func NewHashWriter() *HashWriter {
 	return &HashWriter{hash: sha3.New256()}
 }
 
+// Finalize returns the final hash of the written data.
 func (hw *HashWriter) Finalize() Hash {
 	sum := hw.hash.Sum(nil)
-	hash, err := multihash.Encode(sum, InternalHashAlgo)
+	hash, err := multihash.Encode(sum, internalHashAlgo)
 	if err != nil {
 		// If this does not work, there's something serious wrong.
 		panic(fmt.Sprintf("failed to encode final hash: %v", err))

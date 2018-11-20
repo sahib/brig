@@ -231,6 +231,8 @@ type SyslogWrapper struct {
 	w *syslog.Writer
 }
 
+// NewSyslogWrapper creates a SyslogWrapper and calls
+// the right log level for each line.
 func NewSyslogWrapper(w *syslog.Writer) SyslogWrapper {
 	return SyslogWrapper{w: w}
 }

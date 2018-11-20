@@ -10,6 +10,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// ReadPasswordFromHelper tries to read a password from a shell command.
+// The shell command gets BRIG_PATH and ENV as environment variables.
+// The output of the password is trimmed from newlines.
 func ReadPasswordFromHelper(basePath, helperCommand string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()

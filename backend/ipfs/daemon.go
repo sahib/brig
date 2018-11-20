@@ -63,7 +63,7 @@ type Node struct {
 	api            coreiface.CoreAPI
 }
 
-func createNode(path string, minSwarmPort int, ctx context.Context, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
+func createNode(ctx context.Context, path string, minSwarmPort int, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Infof("Creating new ipfs repo at %s since it does not exist yet.", path)
 		if err := Init(path, 2048); err != nil {
@@ -164,9 +164,11 @@ func New(ipfsPath string, bootstrapAddrs []string) (*Node, error) {
 	return NewWithPort(ipfsPath, bootstrapAddrs, 4001)
 }
 
+// NewWithPort creates a new ipfs instance with the repo at `ipfsPath`
+// the additional bootstrap addrs in `bootstrapAddrs` at port `swarmPort`.
 func NewWithPort(ipfsPath string, bootstrapAddrs []string, swarmPort int) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	ipfsNode, err := createNode(ipfsPath, swarmPort, ctx, true, bootstrapAddrs)
+	ipfsNode, err := createNode(ctx, ipfsPath, swarmPort, true, bootstrapAddrs)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +184,7 @@ func NewWithPort(ipfsPath string, bootstrapAddrs []string, swarmPort int) (*Node
 	}, nil
 }
 
+// IsOnline returns true when the ipfs node is online.
 func (nd *Node) IsOnline() bool {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
@@ -193,6 +196,8 @@ func (nd *Node) isOnline() bool {
 	return nd.ipfsNode.OnlineMode()
 }
 
+// Connect will connect to the ipfs network.
+// This is the default anyways.
 func (nd *Node) Connect() error {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
@@ -202,7 +207,7 @@ func (nd *Node) Connect() error {
 	}
 
 	var err error
-	nd.ipfsNode, err = createNode(nd.Path, nd.SwarmPort, nd.ctx, true, nd.bootstrapAddrs)
+	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, true, nd.bootstrapAddrs)
 	if err != nil {
 		return err
 	}
@@ -211,6 +216,7 @@ func (nd *Node) Connect() error {
 	return nil
 }
 
+// Disconnect disconnects from the ipfs network.
 func (nd *Node) Disconnect() error {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
@@ -220,7 +226,7 @@ func (nd *Node) Disconnect() error {
 	}
 
 	var err error
-	nd.ipfsNode, err = createNode(nd.Path, nd.SwarmPort, nd.ctx, false, nd.bootstrapAddrs)
+	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, false, nd.bootstrapAddrs)
 	if err != nil {
 		return err
 	}
@@ -236,6 +242,7 @@ func (nd *Node) Close() error {
 	return nd.ipfsNode.Close()
 }
 
+// Name returns "ipfs" as name of the backend.
 func (nd *Node) Name() string {
 	return "ipfs"
 }

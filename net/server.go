@@ -87,7 +87,7 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 	}
 
 	ctx := context.Background()
-	baseServer, err := server.NewServer(lst, hdl, ctx)
+	baseServer, err := server.NewServer(ctx, lst, hdl)
 	if err != nil {
 		return nil, e.Wrapf(err, "new-server")
 	}

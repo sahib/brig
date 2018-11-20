@@ -24,7 +24,7 @@ func TestNet(t *testing.T) {
 			t.Fatalf("Could not get alice's identity %v", err)
 		}
 
-		var bobId peer.Info
+		var bobID peer.Info
 
 		t.Logf("Alice is online (%v).", aliceID)
 		WithIpfsAtPort(t, 4003, func(bob *Node) {
@@ -32,12 +32,12 @@ func TestNet(t *testing.T) {
 				t.Fatalf("Bob failed to go online: %v", err)
 			}
 
-			bobId, err = bob.Identity()
+			bobID, err = bob.Identity()
 			if err != nil {
 				t.Fatalf("Could not get bob's identity: %v", err)
 			}
 
-			t.Logf("Bob is online. (%v)", bobId)
+			t.Logf("Bob is online. (%v)", bobID)
 
 			ls, err := bob.Listen(TestProtocol)
 			if err != nil {
@@ -73,7 +73,7 @@ func TestNet(t *testing.T) {
 			}()
 
 			// Alice sending data to bob:
-			conn, err := alice.Dial(bobId.Addr, TestProtocol)
+			conn, err := alice.Dial(bobID.Addr, TestProtocol)
 			if err != nil {
 				t.Fatalf("Dial(self) did not work: %v", err)
 			}

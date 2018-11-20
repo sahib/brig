@@ -13,6 +13,7 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// WithDummyKv creates a testing key value store and passes it to `fn`.
 func WithDummyKv(t *testing.T, fn func(kv db.Database)) {
 	dbPath, err := ioutil.TempDir("", "brig-test")
 	if err != nil {
@@ -33,6 +34,7 @@ func WithDummyKv(t *testing.T, fn func(kv db.Database)) {
 	}
 }
 
+// WithDummyLinker creates a testing linker and passes it to `fn`.
 func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
@@ -43,6 +45,9 @@ func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 	})
 }
 
+// WithReloadingLinker creates a testing linker and passes it to `fn1`.
+// It then closes the linker and lets it load a second time and passes it to `fn2`.
+// This is useful to test persistency issues.
 func WithReloadingLinker(t *testing.T, fn1 func(lkr *Linker), fn2 func(lkr *Linker)) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr1 := NewLinker(kv)
@@ -56,6 +61,7 @@ func WithReloadingLinker(t *testing.T, fn1 func(lkr *Linker), fn2 func(lkr *Link
 	})
 }
 
+// WithLinkerPair creates two linkers, useful for testing syncing.
 func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	WithDummyLinker(t, func(lkrSrc *Linker) {
 		WithDummyLinker(t, func(lkrDst *Linker) {
@@ -66,6 +72,7 @@ func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	})
 }
 
+// AssertDir asserts the existance of a directory.
 func AssertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	dir, err := lkr.LookupDirectory(path)
 	if shouldExist {
@@ -83,6 +90,7 @@ func AssertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	}
 }
 
+// MustMkdir creates a directory or fails on `t`.
 func MustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
 	dir, err := Mkdir(lkr, repoPath, true)
 	if err != nil {
@@ -92,6 +100,8 @@ func MustMkdir(t *testing.T, lkr *Linker, repoPath string) *n.Directory {
 	return dir
 }
 
+// MustTouch creates a new node at `touchPath` and sets its content hash
+// to a hash derived from `seed`.
 func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	dirname := path.Dir(touchPath)
 	parent, err := lkr.LookupDirectory(dirname)
@@ -128,6 +138,7 @@ func MustTouch(t *testing.T, lkr *Linker, touchPath string, seed byte) *n.File {
 	return file
 }
 
+// MustMove moves the node `nd` to `destPath` or fails `t`.
 func MustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNode {
 	if err := Move(lkr, nd, destPath); err != nil {
 		t.Fatalf("move of %s to %s failed: %v", nd.Path(), destPath, err)
@@ -141,6 +152,7 @@ func MustMove(t *testing.T, lkr *Linker, nd n.ModNode, destPath string) n.ModNod
 	return newNd
 }
 
+// MustRemove removes the node `nd` or fails.
 func MustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
 	if _, _, err := Remove(lkr, nd, true, false); err != nil {
 		t.Fatalf("Failed to remove %s: %v", nd.Path(), err)
@@ -154,6 +166,7 @@ func MustRemove(t *testing.T, lkr *Linker, nd n.ModNode) n.ModNode {
 	return newNd
 }
 
+// MustCommit commits the current state with `msg`.
 func MustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	if err := lkr.MakeCommit(n.AuthorOfStage, msg); err != nil {
 		t.Fatalf("Failed to make commit with msg %s: %v", msg, err)
@@ -167,6 +180,7 @@ func MustCommit(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	return head
 }
 
+// MustCommitIfPossible with is like MustCommit, but allows empty changesets.
 func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	haveChanges, err := lkr.HaveStagedChanges()
 	if err != nil {
@@ -180,6 +194,7 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 	return nil
 }
 
+// MustTouchAndCommit is a combined MustTouch and MustCommit.
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
 	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), uint64(seed), nil)
 	if err != nil {
@@ -189,6 +204,7 @@ func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.F
 	return file, MustCommit(t, lkr, fmt.Sprintf("cmt %d", seed))
 }
 
+// MustModify changes the content of an existing node.
 func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	root, err := lkr.Root()
 	if err != nil {
@@ -212,6 +228,7 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	}
 }
 
+// MustLookupDirectory loads an existing dir or fails.
 func MustLookupDirectory(t *testing.T, lkr *Linker, path string) *n.Directory {
 	dir, err := lkr.LookupDirectory(path)
 	if err != nil {

@@ -221,7 +221,7 @@ func prepareParent(lkr *Linker, nd n.ModNode, dstPath string) (*n.Directory, err
 
 			if childDir.Size() > 0 {
 				return nil, fmt.Errorf(
-					"Cannot move over: %s; directory is not empty!",
+					"cannot move over: %s; directory is not empty",
 					child.Path(),
 				)
 			}

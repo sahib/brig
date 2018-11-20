@@ -47,6 +47,7 @@ func (st *stdStream) RemoteAddr() net.Addr {
 	}
 }
 
+// Dial connects to the repo identified by `peerHash` with the protocol `protocol`.
 func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
@@ -62,8 +63,7 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 		return nil, err
 	}
 
-	protoId := pro.ID(protocol)
-	stream, err := nd.ipfsNode.PeerHost.NewStream(nd.ctx, peerID, protoId)
+	stream, err := nd.ipfsNode.PeerHost.NewStream(nd.ctx, peerID, pro.ID(protocol))
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +75,8 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 // LISTENER IMPLEMENTATION //
 /////////////////////////////
 
+// Listener is a ipfs net.Listener that will accecpt all incoming
+// ipfs connections having a certain protocol.
 type Listener struct {
 	self     string
 	protocol string
@@ -84,6 +86,7 @@ type Listener struct {
 	cancel func()
 }
 
+// Listen for all incoming connections using `protocol`.
 func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
@@ -98,8 +101,7 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 		cancel:   cancel,
 	}
 
-	protoId := pro.ID(protocol)
-	nd.ipfsNode.PeerHost.SetStreamHandler(protoId, func(stream p2pnet.Stream) {
+	nd.ipfsNode.PeerHost.SetStreamHandler(pro.ID(protocol), func(stream p2pnet.Stream) {
 		select {
 		case lst.conCh <- stream:
 		case <-ctx.Done():
@@ -110,6 +112,7 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	return lst, nil
 }
 
+// Accept is like net.Listener.Accept()
 func (lst *Listener) Accept() (net.Conn, error) {
 	select {
 	case <-lst.ctx.Done():
@@ -119,6 +122,7 @@ func (lst *Listener) Accept() (net.Conn, error) {
 	}
 }
 
+// Addr returns the listen addr of the listener.
 func (lst *Listener) Addr() net.Addr {
 	return &streamAddr{
 		protocol: lst.protocol,
@@ -126,24 +130,29 @@ func (lst *Listener) Addr() net.Addr {
 	}
 }
 
+// SetDeadline is not implemented.
 func (lst *Listener) SetDeadline(t time.Time) error {
 	// NOTE: Implement, if we need a stoppable quit.
 	return nil
 }
 
+// Close will stop accepting new connections.
 func (lst *Listener) Close() error {
 	lst.cancel()
 	return nil
 }
 
+// Pinger handles pinging over nodes on a network level.
 type Pinger struct {
 	lastSeen  time.Time
 	roundtrip time.Duration
 	cancel    func()
 	mu        sync.Mutex
 	isClosed  bool
+	err       error
 }
 
+// LastSeen returns the time we pinged the remote last time.
 func (p *Pinger) LastSeen() time.Time {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -151,6 +160,8 @@ func (p *Pinger) LastSeen() time.Time {
 	return p.lastSeen
 }
 
+// Roundtrip returns the time needed send a single package to
+// the remote and receive the answer.
 func (p *Pinger) Roundtrip() time.Duration {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -158,10 +169,15 @@ func (p *Pinger) Roundtrip() time.Duration {
 	return p.roundtrip
 }
 
+// Err will return a non-nil error when the current ping did not succeed.
 func (p *Pinger) Err() error {
-	return nil
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.err
 }
 
+// Close will clean up the pinger.
 func (p *Pinger) Close() error {
 	p.cancel()
 
@@ -205,6 +221,7 @@ func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
 			pinger.mu.Lock()
 			pinger.roundtrip = roundtrip
 			pinger.lastSeen = time.Now()
+			pinger.err = nil
 
 			isClosed := pinger.isClosed
 			pinger.mu.Unlock()

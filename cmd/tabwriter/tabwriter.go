@@ -170,7 +170,7 @@ const (
 	Debug
 )
 
-// A Writer must be initialized with a call to Init. The first parameter (output)
+// Init initiliazes a Writer. The first parameter (output)
 // specifies the filter output. The remaining parameters control the formatting:
 //
 //	minwidth	minimal cell width including any padding
@@ -397,7 +397,7 @@ func (b *Writer) updateWidth() {
 	b.pos = b.buf.Len()
 }
 
-// To escape a text segment, bracket it with Escape characters.
+// Escape escapes a text segment.
 // For instance, the tab in this string "Ignore this tab: \xff\t\xff"
 // does not terminate a cell and constitutes a single character of
 // width one for formatting purposes.
@@ -405,6 +405,8 @@ func (b *Writer) updateWidth() {
 // The value 0xff was chosen because it cannot appear in a valid UTF-8 sequence.
 //
 const Escape = '\xff'
+
+// ColorStart defines a byte sequence that indicates the start of terminal colors.
 const ColorStart = '\x1B'
 
 // Start escaped mode.

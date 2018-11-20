@@ -404,10 +404,10 @@ func TestEncryptedByteSwaps(t *testing.T) {
 	data3 := testutil.CreateDummyBuf(2 * defaultMaxBlockSize)
 
 	// Do a small modification in the beginning.
-	data2[0] += 1
+	data2[0]++
 
 	// Do a small modification in the end.
-	data3[2*defaultMaxBlockSize-1] += 1
+	data3[2*defaultMaxBlockSize-1]++
 
 	// Encrypt all data samples:
 	encBuf1 := &bytes.Buffer{}

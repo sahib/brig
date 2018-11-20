@@ -51,8 +51,8 @@ func TestChooseCompressAlgo(t *testing.T) {
 				t.Errorf(
 					"For path '%s' expected '%s', got '%s'",
 					tc.path,
-					AlgoToString[tc.expectedAlgo],
-					AlgoToString[algo],
+					algoToString[tc.expectedAlgo],
+					algoToString[algo],
 				)
 			}
 		})

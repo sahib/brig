@@ -94,6 +94,7 @@ func (mdb *MemoryDatabase) Clear(key ...string) error {
 	return nil
 }
 
+// Erase removes `key`
 func (mdb *MemoryDatabase) Erase(key ...string) {
 	fullKey := path.Join(key...)
 	mdb.haveWrites = true
@@ -130,10 +131,12 @@ func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) e
 	return nil
 }
 
+// HaveWrites returns true if there are any open writes.
 func (mdb *MemoryDatabase) HaveWrites() bool {
 	return mdb.haveWrites
 }
 
+// Glob returns all keys starting with `prefix`.
 func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
 	prefixKey := path.Join(prefix...)
 

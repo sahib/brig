@@ -194,7 +194,7 @@ func BootServer(
 		return nil, err
 	}
 
-	baseServer, err := server.NewServer(lst, base, ctx)
+	baseServer, err := server.NewServer(ctx, lst, base)
 	if err != nil {
 		return nil, err
 	}

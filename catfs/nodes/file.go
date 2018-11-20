@@ -49,6 +49,7 @@ func (f *File) ToCapnp() (*capnp.Message, error) {
 	return msg, f.ToCapnpNode(seg, capNd)
 }
 
+// ToCapnpNode converts this node to a serializable capnp proto node.
 func (f *File) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
 	if err := f.setBaseAttrsToNode(capNd); err != nil {
 		return err
@@ -90,6 +91,7 @@ func (f *File) FromCapnp(msg *capnp.Message) error {
 	return f.FromCapnpNode(capNd)
 }
 
+// FromCapnpNode converts a serialized node to a normal node.
 func (f *File) FromCapnpNode(capNd capnp_model.Node) error {
 	if err := f.parseBaseAttrsFromNode(capNd); err != nil {
 		return err

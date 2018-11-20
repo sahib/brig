@@ -143,7 +143,7 @@ type HeaderInfo struct {
 // parsing fails, an error is returned.
 func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	if bytes.Compare(header[:len(MagicNumber)], MagicNumber) != 0 {
-		return nil, fmt.Errorf("Magic number in header differs")
+		return nil, fmt.Errorf("magic number in header differs")
 	}
 
 	version := binary.LittleEndian.Uint16(header[8:10])
@@ -153,7 +153,7 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	case aeadCipherChaCha:
 		// we support this!
 	default:
-		return nil, fmt.Errorf("Unknown cipher type: %d", cipher)
+		return nil, fmt.Errorf("unknown cipher type: %d", cipher)
 	}
 
 	keylen := binary.LittleEndian.Uint32(header[12:16])
@@ -168,7 +168,7 @@ func ParseHeader(header, key []byte) (*HeaderInfo, error) {
 	storedMac := header[headerSize-macSize : headerSize]
 	shortHeaderMac := headerMac.Sum(nil)[:macSize]
 	if !hmac.Equal(shortHeaderMac, storedMac) {
-		return nil, fmt.Errorf("Header MAC differs from expected.")
+		return nil, fmt.Errorf("header MAC differs from expected")
 	}
 
 	return &HeaderInfo{
@@ -195,7 +195,7 @@ func createAEADWorker(cipherType uint16, key []byte) (cipher.AEAD, error) {
 		return chacha.New(key)
 	}
 
-	return nil, fmt.Errorf("No such cipher type.")
+	return nil, fmt.Errorf("no such cipher type: %d", cipherType)
 }
 
 type aeadCommon struct {

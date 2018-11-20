@@ -52,11 +52,15 @@ var defaultsV0 = config.DefaultMapping{
 	},
 }
 
+// Registry is a global config that stores the location and details
+// of all brig repos on the same machine. It is supposed to help
+// figuring out the right port and so on.
 type Registry struct {
 	mu  sync.Mutex
 	cfg *config.Config
 }
 
+// Entry is a single entry to the Registry.
 type Entry struct {
 	Path      string
 	Owner     string
@@ -66,6 +70,7 @@ type Entry struct {
 }
 
 var (
+	// ErrEntryExists is returned when adding a registry entry that already exists.
 	ErrEntryExists = errors.New("registry entry exists already")
 )
 
@@ -104,6 +109,7 @@ func findRegistryPath() string {
 	return registryPaths[0]
 }
 
+// Open opens the global registry.
 func Open() (*Registry, error) {
 	registryPath := findRegistryPath()
 	registryFd, err := os.OpenFile(registryPath, os.O_RDONLY, 0600)
@@ -131,6 +137,7 @@ func Open() (*Registry, error) {
 	}, nil
 }
 
+// Add adds a single entry to the registry.
 func (reg *Registry) Add(entry *Entry) (string, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
@@ -160,6 +167,7 @@ func (reg *Registry) Add(entry *Entry) (string, error) {
 	return entryUUID.String(), nil
 }
 
+// Update updates the entry with `uuid`.
 func (reg *Registry) Update(uuid string, entry *Entry) error {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
@@ -208,6 +216,7 @@ func (reg *Registry) update(uuid string, entry *Entry) error {
 	return reg.cfg.Save(config.NewYamlEncoder(registryFd))
 }
 
+// Entry returns the entry with `uuid`.
 func (reg *Registry) Entry(uuid string) (*Entry, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
@@ -250,6 +259,7 @@ func (reg *Registry) entry(uuid string) (*Entry, error) {
 	}, nil
 }
 
+// List returns all entries in the registry.
 func (reg *Registry) List() ([]*Entry, error) {
 	reg.mu.Lock()
 	defer reg.mu.Unlock()

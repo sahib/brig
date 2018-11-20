@@ -17,6 +17,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// BadgerDatabase is a database implementation based on BadgerDB
 type BadgerDatabase struct {
 	mu         sync.Mutex
 	db         *badger.DB
@@ -25,6 +26,7 @@ type BadgerDatabase struct {
 	haveWrites bool
 }
 
+// NewBadgerDatabase creates a new badger database.
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	opts := badger.DefaultOptions
 
@@ -52,6 +54,7 @@ func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
 	return db.db.View(fn)
 }
 
+// Get is the badger implementation of Database.Get.
 func (db *BadgerDatabase) Get(key ...string) ([]byte, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -83,6 +86,7 @@ func (db *BadgerDatabase) Get(key ...string) ([]byte, error) {
 	return data, nil
 }
 
+// Keys is the badger implementation of Database.Keys.
 func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -118,15 +122,18 @@ func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) er
 	})
 }
 
+// Export is the badger implementation of Database.Export.
 func (db *BadgerDatabase) Export(w io.Writer) error {
 	_, err := db.db.Backup(w, 0)
 	return err
 }
 
+// Import is the badger implementation of Database.Import.
 func (db *BadgerDatabase) Import(r io.Reader) error {
 	return db.db.Load(r)
 }
 
+// Glob is the badger implementation of Database.Glob
 func (db *BadgerDatabase) Glob(prefix []string) ([][]string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -157,6 +164,7 @@ func (db *BadgerDatabase) Glob(prefix []string) ([][]string, error) {
 	return results, err
 }
 
+// Batch is the badger implementation of Database.Batch
 func (db *BadgerDatabase) Batch() Batch {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -169,6 +177,7 @@ func (db *BadgerDatabase) Batch() Batch {
 	return db
 }
 
+// Put is the badger implementation of Database.Put
 func (db *BadgerDatabase) Put(val []byte, key ...string) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -179,6 +188,7 @@ func (db *BadgerDatabase) Put(val []byte, key ...string) {
 	db.txn.Set(fullKey, val)
 }
 
+// Clear is the badger implementation of Database.Clear
 func (db *BadgerDatabase) Clear(key ...string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -211,6 +221,7 @@ func (db *BadgerDatabase) Clear(key ...string) error {
 	return nil
 }
 
+// Erase is the badger implementation of Database.Erase
 func (db *BadgerDatabase) Erase(key ...string) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -221,6 +232,7 @@ func (db *BadgerDatabase) Erase(key ...string) {
 	db.txn.Delete(fullKey)
 }
 
+// Flush is the badger implementation of Database.Flush
 func (db *BadgerDatabase) Flush() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -245,6 +257,7 @@ func (db *BadgerDatabase) Flush() error {
 	return nil
 }
 
+// Rollback is the badger implementation of Database.Rollback
 func (db *BadgerDatabase) Rollback() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -265,6 +278,7 @@ func (db *BadgerDatabase) Rollback() {
 	db.refCount = 0
 }
 
+// HaveWrites is the badger implementation of Database.HaveWrites
 func (db *BadgerDatabase) HaveWrites() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -272,6 +286,7 @@ func (db *BadgerDatabase) HaveWrites() bool {
 	return db.haveWrites
 }
 
+// Close is the badger implementation of Database.Close
 func (db *BadgerDatabase) Close() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()

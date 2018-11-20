@@ -16,6 +16,9 @@ import (
 	"github.com/sahib/brig/net/peer"
 )
 
+// NetBackend provides a testing backend implementation
+// of net.Backend. It only works on a single machine
+// by storing some data into a temporary directory.
 type NetBackend struct {
 	isOnline bool
 	conns    map[string]chan net.Conn
@@ -24,6 +27,7 @@ type NetBackend struct {
 	port     int
 }
 
+// NewNetBackend returns a new fake NetBackend
 func NewNetBackend(path, name string, port int) *NetBackend {
 	return &NetBackend{
 		isOnline: true,
@@ -34,6 +38,7 @@ func NewNetBackend(path, name string, port int) *NetBackend {
 	}
 }
 
+// PublishName is a fake implementation.
 func (nb *NetBackend) PublishName(partialName string) error {
 	discoveryName := filepath.Join(nb.path, "discovery", partialName, nb.name)
 	if err := os.MkdirAll(filepath.Dir(discoveryName), 0744); err != nil {
@@ -43,6 +48,7 @@ func (nb *NetBackend) PublishName(partialName string) error {
 	return ioutil.WriteFile(discoveryName, nil, 0644)
 }
 
+// ResolveName is a fake implementation.
 func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]peer.Info, error) {
 	discoDir := filepath.Join(nb.path, "discovery", partialName)
 	names, err := ioutil.ReadDir(discoDir)
@@ -71,6 +77,7 @@ func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]pe
 	return infos, nil
 }
 
+// Connect is a fake implementation.
 func (nb *NetBackend) Connect() error {
 	if nb.isOnline {
 		return fmt.Errorf("already online")
@@ -91,6 +98,7 @@ func (nb *NetBackend) Connect() error {
 	return nil
 }
 
+// Disconnect is a fake implementation.
 func (nb *NetBackend) Disconnect() error {
 	if !nb.isOnline {
 		return fmt.Errorf("already offline")
@@ -100,10 +108,12 @@ func (nb *NetBackend) Disconnect() error {
 	return nil
 }
 
+// IsOnline is a fake implementation.
 func (nb *NetBackend) IsOnline() bool {
 	return nb.isOnline
 }
 
+// Identity is a fake implementation.
 func (nb *NetBackend) Identity() (peer.Info, error) {
 	dnsTag := fmt.Sprintf("%s@%d", nb.name, nb.port)
 	return peer.Info{
@@ -126,6 +136,7 @@ func getPortFromAddr(peerAddr string) (int, error) {
 	return port, nil
 }
 
+// Dial is a fake implementation.
 func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 	port, err := getPortFromAddr(peerAddr)
 	if err != nil {
@@ -135,10 +146,12 @@ func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
 	return net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 }
 
+// Ping is a fake implementation.
 func (nb *NetBackend) Ping(addr string) (backend.Pinger, error) {
 	return pingerByName(addr)
 }
 
+// Listen is a fake implementation.
 func (nb *NetBackend) Listen(protocol string) (net.Listener, error) {
 	addr := fmt.Sprintf("localhost:%d", nb.port)
 	log.Debugf("Mock listening on %s", addr)

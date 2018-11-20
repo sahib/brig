@@ -51,6 +51,7 @@ const (
 // AlgorithmType user defined type to store the algorithm type.
 type AlgorithmType byte
 
+// IsValid returns true if `at` is a valid algorithm type.
 func (at AlgorithmType) IsValid() bool {
 	switch at {
 	case AlgoNone, AlgoSnappy, AlgoLZ4:
@@ -61,7 +62,7 @@ func (at AlgorithmType) IsValid() bool {
 }
 
 func (at AlgorithmType) String() string {
-	name, ok := AlgoToString[at]
+	name, ok := algoToString[at]
 	if !ok {
 		return "unknown"
 	}
