@@ -72,7 +72,7 @@ func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	})
 }
 
-// AssertDir asserts the existance of a directory.
+// AssertDir asserts the existence of a directory.
 func AssertDir(t *testing.T, lkr *Linker, path string, shouldExist bool) {
 	dir, err := lkr.LookupDirectory(path)
 	if shouldExist {
