@@ -85,7 +85,7 @@ func TestWriteAndRead(t *testing.T) {
 		regularData := testutil.CreateDummyBuf(size)
 		randomData := testutil.CreateRandomDummyBuf(size, 42)
 
-		for algo, _ := range compress.AlgoMap {
+		for algo := range compress.AlgoMap {
 			prefix := fmt.Sprintf("%s-size%d-", algo, size)
 			t.Run(prefix+"regular", func(t *testing.T) {
 				t.Parallel()

@@ -103,18 +103,18 @@ func formatFields(useColors bool, buffer *bytes.Buffer, entry *logrus.Entry) {
 type empty struct{}
 
 var logSymbols = map[string]empty{
-	"logrus.Debugf":   empty{},
-	"logrus.Debug":    empty{},
-	"logrus.Infof":    empty{},
-	"logrus.Info":     empty{},
-	"logrus.Warnf":    empty{},
-	"logrus.Warn":     empty{},
-	"logrus.Warningf": empty{},
-	"logrus.Warning":  empty{},
-	"logrus.Errorf":   empty{},
-	"logrus.Error":    empty{},
-	"logrus.Panic":    empty{},
-	"logrus.Panicf":   empty{},
+	"logrus.Debugf":   {},
+	"logrus.Debug":    {},
+	"logrus.Infof":    {},
+	"logrus.Info":     {},
+	"logrus.Warnf":    {},
+	"logrus.Warn":     {},
+	"logrus.Warningf": {},
+	"logrus.Warning":  {},
+	"logrus.Errorf":   {},
+	"logrus.Error":    {},
+	"logrus.Panic":    {},
+	"logrus.Panicf":   {},
 }
 
 func findCallers() (string, int, bool) {

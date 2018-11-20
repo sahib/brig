@@ -263,11 +263,11 @@ func testRecursiveBatch(t *testing.T, db Database) {
 
 func testPutAndGet(t *testing.T, db Database) {
 	testKeys := [][]string{
-		[]string{"some", "stuff", "x"},
-		[]string{"some", "stuff", "."},
-		[]string{".", ".", "."},
-		[]string{"some", "stuff", "__NO_DOT__"},
-		[]string{"some", "stuff", "DOT"},
+		{"some", "stuff", "x"},
+		{"some", "stuff", "."},
+		{".", ".", "."},
+		{"some", "stuff", "__NO_DOT__"},
+		{"some", "stuff", "DOT"},
 	}
 
 	for _, key := range testKeys {
@@ -378,10 +378,10 @@ func testGlob(t *testing.T, db Database) {
 
 func testExportImport(t *testing.T, db1, db2 Database) {
 	testKeys := [][]string{
-		[]string{"some", "stuff", "x"},
-		[]string{"some", "stuff", "."},
-		[]string{"some", "stuff", "__NO_DOT__"},
-		[]string{"some", "stuff", "DOT"},
+		{"some", "stuff", "x"},
+		{"some", "stuff", "."},
+		{"some", "stuff", "__NO_DOT__"},
+		{"some", "stuff", "DOT"},
 	}
 
 	batch := db1.Batch()

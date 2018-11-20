@@ -240,8 +240,8 @@ func (lkr *Linker) loadNode(hash h.Hash) (n.Node, error) {
 
 	// First look in the stage:
 	loadableBuckets := [][]string{
-		[]string{"stage", "objects", b58hash},
-		[]string{"objects", b58hash},
+		{"stage", "objects", b58hash},
+		{"objects", b58hash},
 	}
 
 	for _, bucketPath := range loadableBuckets {
@@ -305,8 +305,8 @@ func (lkr *Linker) ResolveNode(nodePath string) (n.Node, error) {
 	}
 
 	fullPaths := [][]string{
-		[]string{"stage", "tree", nodePath},
-		[]string{"tree", nodePath},
+		{"stage", "tree", nodePath},
+		{"tree", nodePath},
 	}
 
 	for _, fullPath := range fullPaths {
@@ -597,9 +597,9 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 
 	// Clear the staging area.
 	toClear := [][]string{
-		[]string{"stage", "objects"},
-		[]string{"stage", "tree"},
-		[]string{"stage", "moves"},
+		{"stage", "objects"},
+		{"stage", "tree"},
+		{"stage", "moves"},
 	}
 
 	for _, key := range toClear {

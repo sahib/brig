@@ -158,12 +158,12 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	}
 
 	fuseEnts := []fuse.Dirent{
-		fuse.Dirent{
+		{
 			Inode: selfInfo.Inode,
 			Type:  fuse.DT_Dir,
 			Name:  ".",
 		},
-		fuse.Dirent{
+		{
 			Inode: parInfo.Inode,
 			Type:  fuse.DT_Dir,
 			Name:  "..",
