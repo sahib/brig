@@ -8,9 +8,9 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
-	"golang.org/x/net/context"
 )
 
 // File is a file inside a directory.

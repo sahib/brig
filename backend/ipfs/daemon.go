@@ -16,7 +16,7 @@ import (
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 // Find the next free tcp port near to `port` (possibly equal to `port`).
