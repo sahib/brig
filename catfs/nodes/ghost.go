@@ -166,11 +166,7 @@ func (g *Ghost) ToCapnpNode(seg *capnp.Segment, capNd capnp_model.Node) error {
 		return err
 	}
 
-	if err := capNd.SetGhost(capghost); err != nil {
-		return err
-	}
-
-	return nil
+	return capNd.SetGhost(capghost)
 }
 
 // FromCapnp reads all attributes from a previously marshaled ghost.

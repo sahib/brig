@@ -34,11 +34,7 @@ func createKeyPair(owner, folder string, bits int) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(prvPath, key.Secring(&cfg), 0600); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(prvPath, key.Secring(&cfg), 0600)
 }
 
 // encryptAsymmetric loads the pubkey from `folder` and encrypts `data` with it.

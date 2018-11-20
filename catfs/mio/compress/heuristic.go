@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// Textfile extensions not covered by mime.TypeByExtension
+	// TextfileExtensions not covered by mime.TypeByExtension
 	TextFileExtensions = map[string]bool{
 		".go":   true,
 		".json": true,

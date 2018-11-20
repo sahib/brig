@@ -577,10 +577,10 @@ func TestCopy(t *testing.T) {
 
 					// No need to test more.
 					return
-				} else {
-					if tc.isErrorCase {
-						t.Fatalf("test should have failed")
-					}
+				}
+
+				if tc.isErrorCase {
+					t.Fatalf("test should have failed")
 				}
 
 				if newNd == nil {

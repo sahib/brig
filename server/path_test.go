@@ -9,18 +9,18 @@ import (
 func TestParsePath(t *testing.T) {
 	tcs := []struct {
 		Path   string
-		Expect *Url
+		Expect *URL
 	}{
-		{Path: "/", Expect: &Url{User: "", Path: "/"}},
-		{Path: "/a/b/c", Expect: &Url{User: "", Path: "/a/b/c"}},
-		{Path: "a/b/c", Expect: &Url{User: "", Path: "/a/b/c"}},
-		{Path: "a:/b/c", Expect: &Url{User: "a", Path: "/b/c"}},
-		{Path: "a:b/c", Expect: &Url{User: "a", Path: "/b/c"}},
-		{Path: "a:b/c/..", Expect: &Url{User: "a", Path: "/b"}},
-		{Path: "a::b", Expect: &Url{User: "a", Path: "/:b"}},
-		{Path: "a::", Expect: &Url{User: "a", Path: "/:"}},
-		{Path: "a:", Expect: &Url{User: "", Path: "/a:"}},
-		{Path: ":a", Expect: &Url{User: "", Path: "/:a"}},
+		{Path: "/", Expect: &URL{User: "", Path: "/"}},
+		{Path: "/a/b/c", Expect: &URL{User: "", Path: "/a/b/c"}},
+		{Path: "a/b/c", Expect: &URL{User: "", Path: "/a/b/c"}},
+		{Path: "a:/b/c", Expect: &URL{User: "a", Path: "/b/c"}},
+		{Path: "a:b/c", Expect: &URL{User: "a", Path: "/b/c"}},
+		{Path: "a:b/c/..", Expect: &URL{User: "a", Path: "/b"}},
+		{Path: "a::b", Expect: &URL{User: "a", Path: "/:b"}},
+		{Path: "a::", Expect: &URL{User: "a", Path: "/:"}},
+		{Path: "a:", Expect: &URL{User: "", Path: "/a:"}},
+		{Path: ":a", Expect: &URL{User: "", Path: "/:a"}},
 	}
 
 	for _, tc := range tcs {

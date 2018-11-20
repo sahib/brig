@@ -339,9 +339,9 @@ func (rv *resolver) decide(pair MapPair) error {
 	if pair.Src == nil {
 		if pair.SrcWasRemoved {
 			return rv.exec.handleRemove(pair.Dst)
-		} else {
-			return rv.exec.handleMissing(pair.Dst)
 		}
+
+		return rv.exec.handleMissing(pair.Dst)
 	}
 
 	if pair.Dst == nil {

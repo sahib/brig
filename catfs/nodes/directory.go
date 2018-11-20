@@ -618,11 +618,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	// Establish the link between parent and child:
-	if err := nd.SetParent(lkr, d); err != nil {
-		return err
-	}
-
-	return nil
+	return nd.SetParent(lkr, d)
 }
 
 // RemoveChild removes the child named `name` from it's children.

@@ -40,11 +40,7 @@ func FsTabAdd(cfg *config.Config, name, path string, opts MountOptions) error {
 		opts.Root = "/"
 	}
 
-	if err := cfg.SetString(name+".root", opts.Root); err != nil {
-		return err
-	}
-
-	return nil
+	return cfg.SetString(name+".root", opts.Root)
 }
 
 // FsTabRemove removes a mount. It does not directly unmount it,

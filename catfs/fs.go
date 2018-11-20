@@ -1176,11 +1176,7 @@ func (fs *FS) MakeCommit(msg string) error {
 		return err
 	}
 
-	if err := fs.lkr.MakeCommit(owner, msg); err != nil {
-		return err
-	}
-
-	return nil
+	return fs.lkr.MakeCommit(owner, msg)
 }
 
 // Head translates the "head" symbol to a ref.

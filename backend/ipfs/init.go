@@ -30,11 +30,7 @@ func Init(path string, keySize int) error {
 	}
 
 	// Init the actual data store.
-	if err := fsrepo.Init(path, cfg); err != nil {
-		return err
-	}
-
-	return nil
+	return fsrepo.Init(path, cfg)
 }
 
 // ForwardLog routes all ipfs logs to a file provided by brig.

@@ -1656,11 +1656,7 @@ func (lkr *Linker) iterAll(from, to *n.Commit, visited map[string]struct{}, fn f
 		}
 
 		visited[child.TreeHash().B58String()] = struct{}{}
-		if err := fn(modChild, from); err != nil {
-			return err
-		}
-
-		return nil
+		return fn(modChild, from)
 	}
 
 	if err := n.Walk(lkr, root, false, walker); err != nil {
@@ -1698,7 +1694,7 @@ func (lkr *Linker) Atomic(fn func() (bool, error)) (err error) {
 	})
 }
 
-// Atomic will execute `fn` in one transaction.
+// AtomicWithBatch will execute `fn` in one transaction.
 // If anything goes wrong (i.e. `fn` returns an error)
 func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) (bool, error)) (err error) {
 	batch := lkr.kv.Batch()

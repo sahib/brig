@@ -414,8 +414,8 @@ func BenchmarkDatabase(b *testing.B) {
 		"get": benchmarkDatabaseGet,
 	}
 
-	for benchmark_name, benchmark := range benchmarks {
-		b.Run(benchmark_name, func(b *testing.B) {
+	for benchmarkName, benchmark := range benchmarks {
+		b.Run(benchmarkName, func(b *testing.B) {
 			for _, name := range []string{"badger", "memory", "disk"} {
 				b.Run(name, func(b *testing.B) {
 					withDbByName(name, func(db Database) {
