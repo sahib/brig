@@ -249,7 +249,7 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 		rmt, err := a.rp.Remotes.Remote("bob")
 		require.Nil(t, err)
 
-		err = a.rp.Remotes.AddOrUpdateRemote("bob", repo.Remote{
+		err = a.rp.Remotes.AddOrUpdateRemote(repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{
@@ -265,7 +265,7 @@ func TestClientCompleteFetchAllowed(t *testing.T) {
 		require.False(t, isAllowed)
 
 		// Try again with the root folder enabled:
-		err = a.rp.Remotes.AddOrUpdateRemote("bob", repo.Remote{
+		err = a.rp.Remotes.AddOrUpdateRemote(repo.Remote{
 			Fingerprint: rmt.Fingerprint,
 			Name:        rmt.Name,
 			Folders: []repo.Folder{
