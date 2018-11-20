@@ -227,9 +227,9 @@ func getRealType(nd n.Node) n.NodeType {
 
 // Next advances the walker to the next commit.
 // Call State() to get the current state after.
-// If there are no commits left or an error happended,
+// If there are no commits left or an error happened,
 // false is returned. True otherwise. You should check
-// after a failing Next() if an error happended via Err()
+// after a failing Next() if an error happened via Err()
 func (hw *HistoryWalker) Next() bool {
 	if hw.err != nil {
 		return false

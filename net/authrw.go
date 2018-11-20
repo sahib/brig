@@ -21,7 +21,7 @@ const (
 	// nonceSize is the size in bytes of the challenge we send to the remote
 	nonceSize = 62
 	// MaxMessageSize is the max size of a messsage that can be send to us.
-	// The limit is arbitary and should avoid being spammed by huge messages.
+	// The limit is arbitrary and should avoid being spammed by huge messages.
 	// (Later on we could also implement a proper streaming protocol)
 	MaxMessageSize = 16 * 1024 * 1024
 )
@@ -50,7 +50,7 @@ type RemoteChecker func(remotePubKey []byte) error
 // 2) A random nonce of 62 bytes is generated and encrypted with the
 //    remote's public key. The resulting ciphertext is then send to the
 //    remote. On their side they decrypt the ciphertext (proving that
-//    they posess the respective private key).
+//    they possess the respective private key).
 //
 // 3) The resulting nonce from the remote is then hashed with sha3
 //    and send back. Each sides check if the response matched the challenge.
@@ -117,7 +117,7 @@ func NewAuthReadWriter(
 	}
 }
 
-// Authorised will return true if the partner was succesfully authenticated.
+// Authorised will return true if the partner was successfully authenticated.
 // It will return false if no call to Read() or Write() was made.
 func (ath *AuthReadWriter) IsAuthorised() bool {
 	return ath.authorised

@@ -9,7 +9,7 @@ import (
 )
 
 // ErrNoSuchTicket will be returned by Push() or Pop() if there is no such ticket
-// with this id. This will be also returned when accessing a previosuly expired ticket.
+// with this id. This will be also returned when accessing a previously expired ticket.
 type ErrNoSuchTicket struct {
 	ticket uint64
 }

@@ -18,7 +18,7 @@ of the software and write down the following:
 
 - Was it easy to get »brig« running?
 - Was it easy to understand it's concepts?
-- What is your intented usecase for it? Could you make it work?
+- What is your intended usecase for it? Could you make it work?
 - If no, what's missing in your opinion to make the usecase possible?
 - Anything else that you feel free to share.
 

@@ -40,7 +40,7 @@ func (dp *dummyPinger) ping(port int) {
 
 	conn.Close()
 
-	// Simulate a succesful ping:
+	// Simulate a successful ping:
 	jitter := time.Duration(rand.Intn(5000)) * time.Nanosecond
 	dp.roundtrip = 20*time.Millisecond + jitter
 	dp.lastSeen = time.Now()

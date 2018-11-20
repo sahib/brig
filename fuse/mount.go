@@ -162,7 +162,7 @@ func (m *Mount) Close() error {
 	}
 
 	if !couldUnmount {
-		log.Warn("cant properly unmount; are there still procesess using the mount?")
+		log.Warn("cant properly unmount; are there still processes using the mount?")
 		log.Warn("attempting lazy umount (you might leak resources!)")
 		if err := lazyUnmount(m.Dir); err != nil {
 			log.Debugf("lazy unmount failed: %v", err)

@@ -672,7 +672,7 @@ what we have done so far:</p>
 pretty effortless now. Before we attempt to sync with anybody, it’s always a
 good idea to see what changes they have. We can check this with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span>
 <span class="pre">&lt;remote&gt;</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The &quot;--missing&quot; switch also tells us what files the remote does not posess:</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The &quot;--missing&quot; switch also tells us what files the remote does not possess:</span>
 $ brig diff bob --missing
 •
 ├── _ hello.world
@@ -819,7 +819,7 @@ pinned</strong>. If you want to keep them for longer, make sure to pin them
 explicitly.</p>
 <p>If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin
-them explictly, so brig cannot unpin them implicitly. For this you should also
+them explicitly, so brig cannot unpin them implicitly. For this you should also
 look into the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">clear</span></code> commands, which are
 similar to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">add</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">rm</span></code> but can operate on whole commit
 ranges.</p>

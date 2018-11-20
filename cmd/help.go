@@ -157,7 +157,7 @@ EXAMPLES:
 
    There is a small difference to the »remote list« command. »ping« will only work
    if both sides authenticated each other and can thus be used as a test for this.
-   Additonally, it shows the roundtrip time, the ping request took to travel.
+   Additionally, it shows the roundtrip time, the ping request took to travel.
 `,
 	},
 	"remote.edit": {
@@ -601,7 +601,7 @@ EXAMPLES:
    directory, with the basename of »local-path«. You can change this by
    specifying where to save the local file by additionally passing »path«.
 
-   Additonally you can read the file from standard input if you pass »--stdin«.
+   Additionally you can read the file from standard input if you pass »--stdin«.
    In this case you pass only one path: The path where the stream is stored.
 
 EXAMPLES:
@@ -699,7 +699,7 @@ EXAMPLES:
 		},
 		Description: `List files an directories starting with »path«.
    If no »<path>« is given, the root directory is assumed. Every line of »ls«
-   shows a human readable size of each entry, the last modified timestmap, the
+   shows a human readable size of each entry, the last modified timestamp, the
    user that last modified the entry (if there's more than one) and if the
    entry if pinned.
 `,
@@ -922,7 +922,7 @@ if the service needs a restart when setting the value.
 
 CAVEATS
 
-   Editing large files will currenly eat huge amounts of memory.
+   Editing large files will currently eat huge amounts of memory.
    We advise you to use normal commands like »brig cat« and »brig stage«
    until this is fixed.`,
 		Flags: []cli.Flag{

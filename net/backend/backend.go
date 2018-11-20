@@ -24,7 +24,7 @@ type Pinger interface {
 	Close() error
 }
 
-// Backend defines all required methods needed from the underyling
+// Backend defines all required methods needed from the underlying
 // implementation in order to talk with other nodes.
 type Backend interface {
 	// ResolveName resolves a human readable `name` to a list of peers.

@@ -287,7 +287,7 @@ func TestBigFile(t *testing.T) {
 }
 
 func TestHasGaps(t *testing.T) {
-	// gap inbetween:
+	// gap between:
 	require.True(t, hasGaps(
 		[]Interval{
 			&Modification{20, make([]byte, 20)},

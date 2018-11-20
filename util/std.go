@@ -309,7 +309,7 @@ func (es Errors) Error() string {
 	case 1:
 		return es[0].Error()
 	default:
-		base := "More than one error happended:\n"
+		base := "More than one error happened:\n"
 		for _, err := range es {
 			base += "\t" + err.Error() + "\n"
 		}

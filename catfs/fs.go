@@ -1040,7 +1040,7 @@ func (fs *FS) getTarableEntries(path string) ([]tarEntry, error) {
 }
 
 // Tar produces a tar archive from the file or directory at `root` and writes
-// the ouput to `w`. If you want compression, supply a gzip writer.
+// the output to `w`. If you want compression, supply a gzip writer.
 func (fs *FS) Tar(root string, w io.Writer) error {
 	entries, err := fs.getTarableEntries(root)
 	if err != nil {

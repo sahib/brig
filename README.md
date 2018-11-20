@@ -21,7 +21,7 @@
 ## About
 
 ``brig`` is a distributed & secure file synchronization tool with version control.
-It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
+It is based on ``IPFS``, written in Go and will feel familiar to ``git`` users.
 
 **Key feature highlights:**
 
@@ -44,17 +44,18 @@ Also take a look [at the website draft](http://sahib.github.io/brig/public/) for
 
 ## Status
 
-At the moment it is somewhere in the big void between proof of concept and beta
-release. **If you try it out right now, it will inevitably eat the data you
-give it and possibly harm your kids.** You have been warned. I still encourage
-you to try it.
+This software is in a **beta phase** currently. All mentioned features should
+work. Things might still change rapdily and there will be no guarantee to
+change that until version ``1.0.0``. Do not use ``brig`` yet as only storage
+for your production data. There are still bugs, but it should be safe enough to
+toy around with it quite a bit.
 
 This project has started end of 2015 and has seen many conceptual changes in
 the meantime. It started out as research project of two computer science
 students (me and [qitta](https://github.com/qitta)). After writing our [master
 theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
 a few months until I ([sahib](https://github.com/sahib)) picked at up again and
-currently am trying to push it to a usable prototype.
+currently am trying to push it to usable software.
 
 If you want to open a bug report, just type ``brig bug`` to get a readily filled template for you.
 

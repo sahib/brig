@@ -501,6 +501,6 @@ func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
 		break
 	}
 
-	log.Debugf("--- done succesfully")
+	log.Debugf("--- done successfully")
 	return nil
 }

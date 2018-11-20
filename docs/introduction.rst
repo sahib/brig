@@ -529,7 +529,7 @@ good idea to see what changes they have. We can check this with ``brig diff
 
 .. code-block:: bash
 
-    # The "--missing" switch also tells us what files the remote does not posess:
+    # The "--missing" switch also tells us what files the remote does not possess:
     $ brig diff bob --missing
     •
     ├── _ hello.world
@@ -669,7 +669,7 @@ explicitly.
 
 If you never pin something explicitly, only the newest version of all files
 will be stored locally. If you decide that you need older versions, you can pin
-them explictly, so brig cannot unpin them implicitly. For this you should also
+them explicitly, so brig cannot unpin them implicitly. For this you should also
 look into the ``brig pin set`` and ``brig pin clear`` commands, which are
 similar to ``brig pin add`` and ``brig pin rm`` but can operate on whole commit
 ranges.

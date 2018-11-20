@@ -35,7 +35,7 @@ type Reader struct {
 	// Buffer for decrypted data (MaxBlockSize big)
 	decBuf []byte
 
-	// true as long readBlock was not succesful
+	// true as long readBlock was not successful
 	isInitialRead bool
 
 	// Total size of the underlying stream in bytes.
@@ -284,7 +284,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 // WriteTo copies all data from `r` to `w`.
 //
-// It is intented to avoid unneeded copying by choosing a suitable buffer size
+// It is intended to avoid unneeded copying by choosing a suitable buffer size
 // and by directly reading block after block. io.Copy will use it automatically.
 //
 // It returns the number of written bytes and possible errors (but no io.EOF)

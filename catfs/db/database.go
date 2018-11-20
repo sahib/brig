@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	// ErrNoSuchKey is returned when Get() was passed a non-existant key
+	// ErrNoSuchKey is returned when Get() was passed a non-existent key
 	ErrNoSuchKey = errors.New("This key does not exist")
 )
 
@@ -33,7 +33,7 @@ type Batch interface {
 }
 
 // Database is a key/value store that offers different buckets
-// for storage. Keys are strings, values are arbitary untyped data.
+// for storage. Keys are strings, values are arbitrary untyped data.
 type Database interface {
 	// Get retrievies the key `key` out of bucket.
 	// If no such key exists, it will return (nil, ErrNoSuchKey)

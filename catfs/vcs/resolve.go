@@ -27,7 +27,7 @@ package vcs
 //   (same hash = same content) to skip over same parts.
 //
 // - Stage 3: "Resolving":
-//   For each file a decision needs to be made. This decison defines the next step
+//   For each file a decision needs to be made. This decision defines the next step
 //   and can be one of the following.
 //
 //   - The file was added on the remote, we should add it to -> Add them.

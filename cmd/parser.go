@@ -48,7 +48,7 @@ func formatGroup(category string) string {
 func RunCmdline(args []string) int {
 	app := cli.NewApp()
 	app.Name = "brig"
-	app.Usage = "Secure and dezentralized file synchronization"
+	app.Usage = "Secure and decentralized file synchronization"
 	app.EnableBashCompletion = true
 	app.Version = fmt.Sprintf(
 		"%s [buildtime: %s] (client version)",

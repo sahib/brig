@@ -131,7 +131,7 @@ func LockRepo(root, user, password string, lockExcludes, unlockExcludes []string
 			continue
 		}
 
-		// File was succesfully locked, remove the source.
+		// File was successfully locked, remove the source.
 		if err := os.RemoveAll(path); err != nil {
 			return err
 		}

@@ -161,7 +161,7 @@ func makePathAbbrev(srcNd, dstNd client.StatInfo) string {
 
 	// We could also possibly check here if relPath is longer than dst
 	// and only display the relative version then. But being consistent
-	// is more valueable here I think.
+	// is more valuable here I think.
 	if dstNd.IsDir {
 		return relPath + "/"
 	}
