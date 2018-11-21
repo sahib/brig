@@ -172,6 +172,7 @@ func NewWithPort(ipfsPath string, bootstrapAddrs []string, swarmPort int) (*Node
 	ctx, cancel := context.WithCancel(context.Background())
 	ipfsNode, err := createNode(ctx, ipfsPath, swarmPort, true, bootstrapAddrs)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
