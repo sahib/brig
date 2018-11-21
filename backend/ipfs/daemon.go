@@ -130,11 +130,13 @@ func createNode(ctx context.Context, path string, minSwarmPort int, online bool,
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", swarmPort),
 			fmt.Sprintf("/ip6/::/tcp/%d", swarmPort),
 		},
-		"Addresses.API":        "",
-		"Addresses.Gateway":    "",
-		"Reprovider.Interval":  "2h",
-		"Swarm.EnableRelayHop": true,
-		"Experimental.QUIC":    true,
+		"Addresses.API":           "",
+		"Addresses.Gateway":       "",
+		"Reprovider.Interval":     "2h",
+		"Swarm.EnableRelayHop":    true,
+		"Swarm.ConnMgr.LowWater":  100,
+		"Swarm.ConnMgr.HighWater": 200,
+		"Experimental.QUIC":       true,
 	}
 
 	for key, value := range config {
