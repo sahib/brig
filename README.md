@@ -13,10 +13,12 @@
 ## Table of Contents
 
 - [About](#about)
+- [Installation](#installation)
 - [Getting Started](#getting_started)
 - [Status](#status)
 - [Documentation](#documentation)
 - [Donations](#donations)
+- [Focus](#focus)
 
 ## About
 
@@ -34,6 +36,19 @@ It is based on ``IPFS``, written in Go and will feel familiar to ``git`` users.
 * Simple user identification and discovery with users that look like email addresses.
 
 Also take a look [at the documentation](http://brig.readthedocs.io/en/latest/index.html) for more details.
+
+## Installation
+
+If you have a recent version of ``go`` (``>= 1.9``) installed, it should be as easy as this:
+
+```bash
+$ go get -d -v -u github.com/sahib/brig  # Download the sources.
+$ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
+$ make                                   # Build the software.
+$ sudo make install                      # Install it system-wide (optional)
+```
+
+Please refer to the [install docs](https://brig.readthedocs.io/en/latest/installation.html) for more details.
 
 ## Getting started
 
@@ -61,9 +76,7 @@ If you want to open a bug report, just type ``brig bug`` to get a readily filled
 
 ## Documentation
 
-All documentation can be found on ReadTheDocs.org:
-
-	http://brig.readthedocs.io/en/latest/index.html
+All documentation can be found on [ReadTheDocs.org](http://brig.readthedocs.io/en/latest/index.html).
 
 ## Donations
 
