@@ -34,6 +34,7 @@ lint:
 	find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' -exec go fix {} \;
 	find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' -exec golint {} \;
 	find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' -exec misspell {} \;
+	find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' -exec gocyclo -over 20 {} \; | sort -n
 
 capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo server/capnp/local_api.capnp

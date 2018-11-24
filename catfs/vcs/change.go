@@ -108,6 +108,37 @@ func (ch *Change) String() string {
 	return fmt.Sprintf("<%s:%s%s%s>", ch.Curr.Path(), ch.Mask, prevAt, movedTo)
 }
 
+func replayAddWithUnpacking(lkr *c.Linker, ch *Change) error {
+	// If it's an ghost, unpack it first: It will be added as if it was
+	// never a ghost, but since the change mask has the
+	// ChangeTypeRemove flag set, it will removed directly after.
+	currNd := ch.Curr
+	if ch.Curr.Type() == n.NodeTypeGhost {
+		currGhost, ok := ch.Curr.(*n.Ghost)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		currNd = currGhost.OldNode()
+	}
+
+	// Check the type of the old node:
+	oldNd, err := lkr.LookupModNode(currNd.Path())
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
+	}
+
+	// If the types are conflicting we have to remove the existing node.
+	if oldNd != nil && oldNd.Type() != currNd.Type() {
+		_, _, err := c.Remove(lkr, oldNd, true, true)
+		if err != nil {
+			return e.Wrapf(err, "replay: type-conflict-remove")
+		}
+	}
+
+	return replayAdd(lkr, currNd)
+}
+
 func replayAdd(lkr *c.Linker, currNd n.ModNode) error {
 	switch currNd.(type) {
 	case *n.File:
@@ -124,6 +155,54 @@ func replayAdd(lkr *c.Linker, currNd n.ModNode) error {
 		}
 	default:
 		return e.Wrapf(ie.ErrBadNode, "replay: modify")
+	}
+
+	return nil
+}
+
+func replayMove(lkr *c.Linker, ch *Change) error {
+	if ch.MovedTo != "" {
+		oldNd, err := lkr.LookupModNode(ch.Curr.Path())
+		if err != nil && !ie.IsNoSuchFileError(err) {
+			return err
+		}
+
+		if _, err := c.Mkdir(lkr, path.Dir(ch.MovedTo), true); err != nil {
+			return e.Wrapf(err, "replay: mkdir")
+		}
+
+		if oldNd != nil {
+			if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
+				return e.Wrapf(err, "replay: move")
+			}
+		}
+	}
+
+	if ch.Curr.Type() != n.NodeTypeGhost {
+		if _, err := lkr.LookupModNode(ch.Curr.Path()); ie.IsNoSuchFileError(err) {
+			if err := replayAdd(lkr, ch.Curr); err != nil {
+				return err
+			}
+		}
+	}
+
+	if ch.WasPreviouslyAt != "" {
+		oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
+		if err != nil && !ie.IsNoSuchFileError(err) {
+			return err
+		}
+
+		if oldNd != nil {
+			if oldNd.Type() != n.NodeTypeGhost {
+				if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
+					return e.Wrap(err, "replay: move: remove old")
+				}
+			}
+		}
+
+		if err := replayAddMoveMapping(lkr, ch.WasPreviouslyAt, ch.Curr.Path()); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -148,105 +227,45 @@ func replayAddMoveMapping(lkr *c.Linker, oldPath, newPath string) error {
 	return lkr.AddMoveMapping(oldNd.Inode(), newNd.Inode())
 }
 
+func replayRemove(lkr *c.Linker, ch *Change) error {
+	currNd, err := lkr.LookupModNode(ch.Curr.Path())
+	if err != nil {
+		return e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
+	}
+
+	if currNd.Type() != n.NodeTypeGhost {
+		if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Replay applies the change `ch` onto `lkr` by redoing the same operations:
 // move, remove, modify, add. Commits are not replayed, everything happens in
 // lkr.Status() without creating a new commit.
 func (ch *Change) Replay(lkr *c.Linker) error {
 	return lkr.Atomic(func() (bool, error) {
 		if ch.Mask&(ChangeTypeModify|ChangeTypeAdd) != 0 {
-			currNd := ch.Curr
-
-			// If it's an ghost, unpack it first: It will be added as if it was
-			// never a ghost, but since the change mask has the
-			// ChangeTypeRemove flag set, it will removed directly after.
-			if ch.Curr.Type() == n.NodeTypeGhost {
-				currGhost, ok := ch.Curr.(*n.Ghost)
-				if !ok {
-					return true, ie.ErrBadNode
-				}
-
-				currNd = currGhost.OldNode()
-			}
-
-			// Check the type of the old node:
-			oldNd, err := lkr.LookupModNode(currNd.Path())
-			if err != nil && !ie.IsNoSuchFileError(err) {
-				return true, err
-			}
-
-			// If the types are conflicting we have to remove the existing node.
-			if oldNd != nil && oldNd.Type() != currNd.Type() {
-				_, _, err := c.Remove(lkr, oldNd, true, true)
-				if err != nil {
-					return true, e.Wrapf(err, "replay: type-conflict-remove")
-				}
-			}
-
 			// Something needs to be done based on the type.
 			// Either create/update a new file or create a directory.
-			if err := replayAdd(lkr, currNd); err != nil {
+			if err := replayAddWithUnpacking(lkr, ch); err != nil {
 				return true, err
 			}
 		}
 
 		if ch.Mask&ChangeTypeMove != 0 {
-			if ch.MovedTo != "" {
-				oldNd, err := lkr.LookupModNode(ch.Curr.Path())
-				if err != nil && !ie.IsNoSuchFileError(err) {
-					return true, err
-				}
-
-				if _, err := c.Mkdir(lkr, path.Dir(ch.MovedTo), true); err != nil {
-					return true, e.Wrapf(err, "replay: mkdir")
-				}
-
-				if oldNd != nil {
-					if err := c.Move(lkr, oldNd, ch.MovedTo); err != nil {
-						return true, e.Wrapf(err, "replay: move")
-					}
-				}
-			}
-
-			if ch.Curr.Type() != n.NodeTypeGhost {
-				if _, err := lkr.LookupModNode(ch.Curr.Path()); ie.IsNoSuchFileError(err) {
-					if err := replayAdd(lkr, ch.Curr); err != nil {
-						return true, err
-					}
-				}
-			}
-
-			if ch.WasPreviouslyAt != "" {
-				oldNd, err := lkr.LookupModNode(ch.WasPreviouslyAt)
-				if err != nil && !ie.IsNoSuchFileError(err) {
-					return true, err
-				}
-
-				if oldNd != nil {
-					if oldNd.Type() != n.NodeTypeGhost {
-						if _, _, err := c.Remove(lkr, oldNd, true, true); err != nil {
-							return true, e.Wrap(err, "replay: move: remove old")
-						}
-					}
-				}
-
-				if err := replayAddMoveMapping(lkr, ch.WasPreviouslyAt, ch.Curr.Path()); err != nil {
-					return true, err
-				}
+			if err := replayMove(lkr, ch); err != nil {
+				return true, err
 			}
 		}
 
 		// We should only remove a node if we're getting a ghost in ch.Curr.
 		// Otherwise the node might have been removed and added again.
 		if ch.Mask&ChangeTypeRemove != 0 && ch.Curr.Type() == n.NodeTypeGhost {
-			currNd, err := lkr.LookupModNode(ch.Curr.Path())
-			if err != nil {
-				return true, e.Wrapf(err, "replay: lookup: %v", ch.Curr.Path())
-			}
-
-			if currNd.Type() != n.NodeTypeGhost {
-				if _, _, err := c.Remove(lkr, currNd, true, true); err != nil {
-					return true, err
-				}
+			if err := replayRemove(lkr, ch); err != nil {
+				return true, err
 			}
 		}
 
