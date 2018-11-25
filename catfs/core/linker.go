@@ -500,6 +500,28 @@ func (lkr *Linker) MakeCommit(author string, message string) error {
 	})
 }
 
+func (lkr *Linker) makeCommitPutCurrToPersistent(batch db.Batch, rootDir *n.Directory) (map[uint64]bool, error) {
+	exportedInodes := make(map[uint64]bool)
+	return exportedInodes, n.Walk(lkr, rootDir, true, func(child n.Node) error {
+		data, err := n.MarshalNode(child)
+		if err != nil {
+			return err
+		}
+
+		b58Hash := child.TreeHash().B58String()
+		batch.Put(data, "objects", b58Hash)
+		exportedInodes[child.Inode()] = true
+
+		childPath := child.Path()
+		if child.Type() == n.NodeTypeDirectory {
+			childPath = appendDot(childPath)
+		}
+
+		batch.Put([]byte(b58Hash), "tree", childPath)
+		return nil
+	})
+}
+
 func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) error {
 	head, err := lkr.Head()
 	if err != nil && !ie.IsErrNoSuchRef(err) {
@@ -526,38 +548,19 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 	// Go over all files/directories and save them in tree & objects.
 	// Note that this will only move nodes that are reachable from the current
 	// commit root. Intermediate nodes will not be copied.
-	exportedInodes := make(map[uint64]bool)
-	err = n.Walk(lkr, rootDir, true, func(child n.Node) error {
-		data, err := n.MarshalNode(child)
-		if err != nil {
-			return err
-		}
-
-		b58Hash := child.TreeHash().B58String()
-		batch.Put(data, "objects", b58Hash)
-		exportedInodes[child.Inode()] = true
-
-		childPath := child.Path()
-		if child.Type() == n.NodeTypeDirectory {
-			childPath = appendDot(childPath)
-		}
-
-		batch.Put([]byte(b58Hash), "tree", childPath)
-		return nil
-	})
-
+	exportedInodes, err := lkr.makeCommitPutCurrToPersistent(batch, rootDir)
 	if err != nil {
 		return err
 	}
 
+	// NOTE: `head` may be nil, if it couldn't be resolved,
+	//        or (maybe more likely) if this is the first commit.
 	if head != nil {
 		if err := status.SetParent(lkr, head); err != nil {
 			return err
 		}
 	}
 
-	// NOTE: `head` may be nil, if it couldn't be resolved,
-	//        or (maybe more likely) if this is the first commit.
 	if err := status.BoxCommit(author, message); err != nil {
 		return err
 	}
