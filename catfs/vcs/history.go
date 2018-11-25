@@ -225,6 +225,79 @@ func getRealType(nd n.Node) n.NodeType {
 	return nd.Type()
 }
 
+func (hw *HistoryWalker) findReferToPath(prevHeadCommit *n.Commit, prev n.Node) (string, n.Node, error) {
+	if prev == nil {
+		return "", nil, nil
+	}
+
+	referToPath := prev.Path()
+
+	// Unpack the old ghost before doing anything with it:
+	if prev.Type() != n.NodeTypeGhost {
+		return referToPath, prev, nil
+	}
+
+	prevGhost, ok := prev.(*n.Ghost)
+	if !ok {
+		return "", nil, ie.ErrBadNode
+	}
+
+	prev = prevGhost.OldNode()
+
+	// Special case:
+	// A file has a move partner in this commit,
+	// but there is no previous node in the commit before.
+	// We should count this node as added therefore, not moved.
+	prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
+	if err != nil {
+		return "", nil, e.Wrap(err, "cannot find previous root directory")
+	}
+
+	_, err = prevRoot.Lookup(hw.lkr, prev.Path())
+	if ie.IsNoSuchFileError(err) {
+		prev = nil
+		referToPath = ""
+	}
+
+	return referToPath, prev, nil
+}
+
+func (hw *HistoryWalker) findDirectPrev(prevHeadCommit *n.Commit) (n.Node, bool) {
+	prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
+	if err != nil {
+		hw.err = e.Wrap(err, "cannot find previous root directory")
+		return nil, false
+	}
+
+	prev, err := prevRoot.Lookup(hw.lkr, hw.curr.Path())
+	if ie.IsNoSuchFileError(err) {
+		// The file did not exist in the previous commit (no ghost!)
+		// It must have been added in this commit.
+		hw.state = &Change{
+			Head: hw.head,
+			Mask: ChangeTypeAdd,
+			Curr: hw.curr,
+			Next: prevHeadCommit,
+		}
+
+		// If curr is a ghost we have a rare case:
+		// The node was added and removed in the same commit.
+		if hw.curr.Type() == n.NodeTypeGhost {
+			hw.state.Mask |= ChangeTypeRemove
+		}
+
+		hw.head = nil
+		return nil, true
+	}
+
+	if err != nil {
+		hw.err = e.Wrap(err, "history: prev root lookup failed")
+		return nil, false
+	}
+
+	return prev, false
+}
+
 // Next advances the walker to the next commit.
 // Call State() to get the current state after.
 // If there are no commits left or an error happened,
@@ -276,36 +349,11 @@ func (hw *HistoryWalker) Next() bool {
 		return false
 	}
 
-	referToPath := ""
-	if prev != nil {
-		referToPath = prev.Path()
-
-		// Unpack the old ghost before doing anything with it:
-		if prev.Type() == n.NodeTypeGhost {
-			prevGhost, ok := prev.(*n.Ghost)
-			if !ok {
-				hw.err = ie.ErrBadNode
-				return false
-			}
-
-			prev = prevGhost.OldNode()
-
-			// Special case:
-			// A file has a move partner in this commit,
-			// but there is no previous node in the commit before.
-			// We should count this node as added therefore, not moved.
-			prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
-			if err != nil {
-				hw.err = e.Wrap(err, "cannot find previous root directory")
-				return false
-			}
-
-			_, err = prevRoot.Lookup(hw.lkr, prev.Path())
-			if ie.IsNoSuchFileError(err) {
-				prev = nil
-				referToPath = ""
-			}
-		}
+	// Try to find the node "prev" is actually referring to in the old commit:
+	referToPath, prev, err := hw.findReferToPath(prevHeadCommit, prev)
+	if err != nil {
+		hw.err = e.Wrap(err, "history: findReferToPath")
+		return false
 	}
 
 	// Assumption here: The move mapping should only store one move per commit.
@@ -314,37 +362,10 @@ func (hw *HistoryWalker) Next() bool {
 	if prev == nil || direction != c.MoveDirSrcToDst {
 		// No valid move mapping found, node was probably not moved.
 		// Assume that we can reach it directly via it's path.
-
-		prevRoot, err := hw.lkr.DirectoryByHash(prevHeadCommit.Root())
-		if err != nil {
-			hw.err = e.Wrap(err, "cannot find previous root directory")
-			return false
-		}
-
-		prev, err = prevRoot.Lookup(hw.lkr, hw.curr.Path())
-		if ie.IsNoSuchFileError(err) {
-			// The file did not exist in the previous commit (no ghost!)
-			// It must have been added in this commit.
-			hw.state = &Change{
-				Head: hw.head,
-				Mask: ChangeTypeAdd,
-				Curr: hw.curr,
-				Next: prevHeadCommit,
-			}
-
-			// If curr is a ghost we have a rare case:
-			// The node was added and removed in the same commit.
-			if hw.curr.Type() == n.NodeTypeGhost {
-				hw.state.Mask |= ChangeTypeRemove
-			}
-
-			hw.head = nil
-			return true
-		}
-
-		if err != nil {
-			hw.err = e.Wrap(err, "history: prev root lookup failed")
-			return false
+		var hasNext bool
+		prev, hasNext = hw.findDirectPrev(prevHeadCommit)
+		if prev == nil {
+			return hasNext
 		}
 	}
 

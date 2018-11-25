@@ -225,6 +225,43 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 	}
 }
 
+func (ma *Mapper) mapDirectoryContents(srcCurr *n.Directory, dstPath string) error {
+	srcChildren, err := srcCurr.ChildrenSorted(ma.lkrSrc)
+	if err != nil {
+		return err
+	}
+
+	for _, srcChild := range srcChildren {
+		childDstPath := path.Join(dstPath, srcChild.Name())
+		switch srcChild.Type() {
+		case n.NodeTypeDirectory:
+			srcChildDir, ok := srcChild.(*n.Directory)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			if err := ma.mapDirectory(srcChildDir, childDstPath, false); err != nil {
+				return err
+			}
+		case n.NodeTypeFile:
+			srcChildFile, ok := srcChild.(*n.File)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			if err := ma.mapFile(srcChildFile, childDstPath); err != nil {
+				return err
+			}
+		case n.NodeTypeGhost:
+			// remote ghosts are ignored, since they were handled beforehand.
+		default:
+			return ie.ErrBadNode
+		}
+	}
+
+	return nil
+}
+
 func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool) error {
 	if !force {
 		if ma.isSrcVisited(srcCurr) {
@@ -305,40 +342,7 @@ func (ma *Mapper) mapDirectory(srcCurr *n.Directory, dstPath string, force bool)
 
 	// Both sides have this directory, but the content differs.
 	// We need to figure out recursively what exactly is different.
-	srcChildren, err := srcCurr.ChildrenSorted(ma.lkrSrc)
-	if err != nil {
-		return err
-	}
-
-	for _, srcChild := range srcChildren {
-		childDstPath := path.Join(dstPath, srcChild.Name())
-		switch srcChild.Type() {
-		case n.NodeTypeDirectory:
-			srcChildDir, ok := srcChild.(*n.Directory)
-			if !ok {
-				return ie.ErrBadNode
-			}
-
-			if err := ma.mapDirectory(srcChildDir, childDstPath, false); err != nil {
-				return err
-			}
-		case n.NodeTypeFile:
-			srcChildFile, ok := srcChild.(*n.File)
-			if !ok {
-				return ie.ErrBadNode
-			}
-
-			if err := ma.mapFile(srcChildFile, childDstPath); err != nil {
-				return err
-			}
-		case n.NodeTypeGhost:
-			// remote ghosts are ignored, since they were handled beforehand.
-		default:
-			return ie.ErrBadNode
-		}
-	}
-
-	return nil
+	return ma.mapDirectoryContents(srcCurr, dstPath)
 }
 
 func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModNode, error) {
@@ -401,18 +405,38 @@ func (ma *Mapper) ghostToAlive(lkr *c.Linker, head *n.Commit, nd n.Node) (n.ModN
 	return reacheableModNd, nil
 }
 
-func (ma *Mapper) handleGhosts() error {
-	type ghostDir struct {
-		// source directory.
-		srcDir *n.Directory
+type ghostDir struct {
+	// source directory.
+	srcDir *n.Directory
 
-		// mapped path in lkrDst
-		dstPath string
+	// mapped path in lkrDst
+	dstPath string
+}
+
+func (ma *Mapper) handleGhostsWithoutAliveNd(srcNd n.Node) error {
+	dstNd, err := ma.lkrDst.LookupNodeAt(ma.dstHead, srcNd.Path())
+	if err != nil && !ie.IsNoSuchFileError(err) {
+		return err
 	}
 
-	movedSrcDirs := []ghostDir{}
+	// Check if we maybe already removed or moved the node:
+	if dstNd != nil && dstNd.Type() != n.NodeTypeGhost {
+		dstModNd, ok := dstNd.(n.ModNode)
+		if !ok {
+			return ie.ErrBadNode
+		}
 
-	err := n.Walk(ma.lkrSrc, ma.srcRoot, true, func(srcNd n.Node) error {
+		// Report that the file is missing on src's side.
+		return ma.report(nil, dstModNd, false, true, false)
+	}
+
+	// does not exist on both sides, nothing to report.
+	return nil
+}
+
+func (ma *Mapper) extractGhostDirs() ([]ghostDir, error) {
+	movedSrcDirs := []ghostDir{}
+	return movedSrcDirs, n.Walk(ma.lkrSrc, ma.srcRoot, true, func(srcNd n.Node) error {
 		// Ignore everything that is not a ghost.
 		if srcNd.Type() != n.NodeTypeGhost {
 			return nil
@@ -428,24 +452,7 @@ func (ma *Mapper) handleGhosts() error {
 			// This node *might* have been removed on the remote side.
 			// Try to see if we have a node at this path, the next step
 			// of sync then needs to decide if the node needs to be removed.
-			dstNd, err := ma.lkrDst.LookupNodeAt(ma.dstHead, srcNd.Path())
-			if err != nil && !ie.IsNoSuchFileError(err) {
-				return err
-			}
-
-			// Check if we maybe already removed or moved the node:
-			if dstNd != nil && dstNd.Type() != n.NodeTypeGhost {
-				dstModNd, ok := dstNd.(n.ModNode)
-				if !ok {
-					return ie.ErrBadNode
-				}
-
-				// Report that the file is missing on src's side.
-				return ma.report(nil, dstModNd, false, true, false)
-			}
-
-			// does not exist on both sides, nothing to report.
-			return nil
+			return ma.handleGhostsWithoutAliveNd(srcNd)
 		}
 
 		// At this point we know that the ghost related to a moved file.
@@ -518,7 +525,10 @@ func (ma *Mapper) handleGhosts() error {
 			return e.Wrapf(ie.ErrBadNode, "Unexpected type in handle ghosts: %v", err)
 		}
 	})
+}
 
+func (ma *Mapper) handleGhosts() error {
+	movedSrcDirs, err := ma.extractGhostDirs()
 	if err != nil {
 		return err
 	}
