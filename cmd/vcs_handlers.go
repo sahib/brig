@@ -177,23 +177,69 @@ func suffixIfDir(nd *treeNode) string {
 	return nd.name
 }
 
-func printDiffTree(diff *client.Diff, printMissing bool) {
-	const (
-		diffTypeNone = iota
-		diffTypeAdded
-		diffTypeRemoved
-		diffTypeMissing
-		diffTypeMoved
-		diffTypeIgnored
-		diffTypeConflict
-		diffTypeMerged
-	)
+const (
+	diffTypeNone = iota
+	diffTypeAdded
+	diffTypeRemoved
+	diffTypeMissing
+	diffTypeMoved
+	diffTypeIgnored
+	diffTypeConflict
+	diffTypeMerged
+)
 
-	type diffEntry struct {
-		typ  int
-		pair client.DiffPair
+type diffEntry struct {
+	typ  int
+	pair client.DiffPair
+}
+
+// Called to format each name in the resulting tree:
+func printDiffTreeLineFormatter(types map[string]diffEntry, n *treeNode) string {
+	if n.name == "/" {
+		return color.MagentaString("•")
 	}
 
+	if diffEntry, ok := types[n.entry.Path]; ok {
+		switch diffEntry.typ {
+		case diffTypeAdded:
+			return color.GreenString(" + " + suffixIfDir(n))
+		case diffTypeRemoved:
+			return color.RedString(" - " + suffixIfDir(n))
+		case diffTypeMissing:
+			return color.MagentaString(" _ " + suffixIfDir(n))
+		case diffTypeIgnored:
+			return color.YellowString(" * " + suffixIfDir(n))
+		case diffTypeMoved:
+			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
+			srcBase := path.Base(diffEntry.pair.Src.Path)
+			if diffEntry.pair.Src.IsDir {
+				srcBase += "/"
+			}
+
+			return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
+		case diffTypeMerged:
+			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
+			srcBase := path.Base(diffEntry.pair.Src.Path)
+			if diffEntry.pair.Src.IsDir {
+				srcBase += "/"
+			}
+
+			return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", dstPath, srcBase))
+		case diffTypeConflict:
+			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
+			srcBase := path.Base(diffEntry.pair.Src.Path)
+			if diffEntry.pair.Src.IsDir {
+				srcBase += "/"
+			}
+
+			return color.MagentaString(fmt.Sprintf(" %s ⚡%s", dstPath, srcBase))
+		}
+	}
+
+	return n.name
+}
+
+func printDiffTree(diff *client.Diff, printMissing bool) {
 	entries := []client.StatInfo{}
 	types := make(map[string]diffEntry)
 
@@ -251,55 +297,11 @@ func printDiffTree(diff *client.Diff, printMissing bool) {
 		return entries[i].Path < entries[j].Path
 	})
 
-	// Called to format each name in the resulting tree:
-	formatter := func(n *treeNode) string {
-		if n.name == "/" {
-			return color.MagentaString("•")
-		}
-
-		if diffEntry, ok := types[n.entry.Path]; ok {
-			switch diffEntry.typ {
-			case diffTypeAdded:
-				return color.GreenString(" + " + suffixIfDir(n))
-			case diffTypeRemoved:
-				return color.RedString(" - " + suffixIfDir(n))
-			case diffTypeMissing:
-				return color.MagentaString(" _ " + suffixIfDir(n))
-			case diffTypeIgnored:
-				return color.YellowString(" * " + suffixIfDir(n))
-			case diffTypeMoved:
-				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
-				srcBase := path.Base(diffEntry.pair.Src.Path)
-				if diffEntry.pair.Src.IsDir {
-					srcBase += "/"
-				}
-
-				return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
-			case diffTypeMerged:
-				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
-				srcBase := path.Base(diffEntry.pair.Src.Path)
-				if diffEntry.pair.Src.IsDir {
-					srcBase += "/"
-				}
-
-				return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", dstPath, srcBase))
-			case diffTypeConflict:
-				dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
-				srcBase := path.Base(diffEntry.pair.Src.Path)
-				if diffEntry.pair.Src.IsDir {
-					srcBase += "/"
-				}
-
-				return color.MagentaString(fmt.Sprintf(" %s ⚡%s", dstPath, srcBase))
-			}
-		}
-
-		return n.name
-	}
-
 	// Render the tree:
 	showTree(entries, &treeCfg{
-		format:  formatter,
+		format: func(n *treeNode) string {
+			return printDiffTreeLineFormatter(types, n)
+		},
 		showPin: false,
 	})
 }

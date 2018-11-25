@@ -22,6 +22,28 @@ func touch(path string) error {
 	return fd.Close()
 }
 
+func addSelfToRegistry(owner, baseFolder string, daemonPort int64) error {
+	reg, err := registry.Open()
+	if err != nil {
+		log.Infof("failed to open global registry: %v", err)
+		return nil
+	}
+
+	repoID, err := reg.Add(&registry.Entry{
+		Owner: owner,
+		Path:  baseFolder,
+		Port:  daemonPort,
+	})
+
+	if err != nil {
+		log.Warningf("failed to add self to registry: %v", err)
+		return err
+	}
+
+	repoIDPath := filepath.Join(baseFolder, "REPO_ID")
+	return ioutil.WriteFile(repoIDPath, []byte(repoID), 0644)
+}
+
 // Init will create a new repository on disk at `baseFolder`.
 // `owner` will be the new owner and should be something like user@domain/resource.
 // `backendName` is the name of the backend, either "ipfs" or "mock".
@@ -72,24 +94,8 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 		return err
 	}
 
-	reg, err := registry.Open()
-	if err == nil {
-		repoID, err := reg.Add(&registry.Entry{
-			Owner: owner,
-			Path:  baseFolder,
-			Port:  daemonPort,
-		})
-
-		if err != nil {
-			log.Warningf("failed to add self to registry: %v", err)
-		}
-
-		repoIDPath := filepath.Join(baseFolder, "REPO_ID")
-		if err := ioutil.WriteFile(repoIDPath, []byte(repoID), 0644); err != nil {
-			return err
-		}
-	} else {
-		log.Infof("failed to open global registry: %v", err)
+	if err := addSelfToRegistry(owner, baseFolder, daemonPort); err != nil {
+		return err
 	}
 
 	// Create a default config, only with the default keys applied:

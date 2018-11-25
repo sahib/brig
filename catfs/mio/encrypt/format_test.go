@@ -140,11 +140,13 @@ var SizeTests = []int64{
 	defaultEncBufferSize + 1,
 }
 
-var SeekTests = []struct {
+type seekTest struct {
 	Whence int
 	Offset float64
 	Error  error
-}{
+}
+
+var SeekTests = []seekTest{
 	// Jump to the mid:
 	{io.SeekStart, 0.5, nil},
 	// Should stay the same:
@@ -220,102 +222,111 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 	lastJump := int64(0)
 
 	for _, test := range SeekTests {
-		realOffset := int64(math.Floor(.5 + test.Offset*float64(N)))
+		lastJump = testSeekOneWhence(
+			t, N, readFrom, writeTo, lastJump, test, decLayer, sourceData,
+		)
+	}
+}
 
-		whence := map[int]string{
-			0: "SEEK_SET",
-			1: "SEEK_CUR",
-			2: "SEEK_END",
-		}[test.Whence]
+func testSeekOneWhence(
+	t *testing.T, N int64, readFrom, writeTo bool,
+	lastJump int64, test seekTest,
+	decLayer *Reader, sourceData []byte,
+) int64 {
+	realOffset := int64(math.Floor(.5 + test.Offset*float64(N)))
 
-		exptOffset := int64(0)
-		switch test.Whence {
-		case io.SeekStart:
-			exptOffset = realOffset
-		case io.SeekCurrent:
-			exptOffset = lastJump + realOffset
-		case io.SeekEnd:
-			exptOffset = N + realOffset
-		default:
-			panic("Bad whence")
-		}
+	whence := map[int]string{
+		0: "SEEK_SET",
+		1: "SEEK_CUR",
+		2: "SEEK_END",
+	}[test.Whence]
 
-		if ExtraDebug {
-			t.Logf(
-				" => Seek(%v, %v) -> %v (size: %v)",
+	exptOffset := int64(0)
+	switch test.Whence {
+	case io.SeekStart:
+		exptOffset = realOffset
+	case io.SeekCurrent:
+		exptOffset = lastJump + realOffset
+	case io.SeekEnd:
+		exptOffset = N + realOffset
+	default:
+		panic("Bad whence")
+	}
+
+	if ExtraDebug {
+		t.Logf(
+			" => Seek(%v, %v) -> %v (size: %v)",
+			realOffset,
+			whence,
+			exptOffset,
+			N,
+		)
+	}
+
+	jumpedTo, err := decLayer.Seek(realOffset, test.Whence)
+	if err != test.Error {
+		if err != io.EOF && N != 0 {
+			t.Fatalf(
+				"Seek(%v, %v) produced an error: %v (should be %v)",
 				realOffset,
 				whence,
-				exptOffset,
-				N,
+				err,
+				test.Error,
 			)
-		}
-
-		jumpedTo, err := decLayer.Seek(realOffset, test.Whence)
-		if err != test.Error {
-			if err != io.EOF && N != 0 {
-				t.Errorf(
-					"Seek(%v, %v) produced an error: %v (should be %v)",
-					realOffset,
-					whence,
-					err,
-					test.Error,
-				)
-			}
-			return
-		}
-
-		if test.Error != nil {
-			continue
-		}
-
-		if jumpedTo != exptOffset {
-			t.Errorf(
-				"Seek(%v, %v) jumped badly. Should be %v, was %v",
-				realOffset,
-				whence,
-				exptOffset,
-				jumpedTo,
-			)
-			return
-		}
-
-		lastJump = jumpedTo
-
-		// Decrypt and check if the contents are okay:
-		dest := bytes.NewBuffer(nil)
-
-		copiedBytes, err := testutil.DumbCopy(dest, decLayer, readFrom, writeTo)
-		if err != nil {
-			t.Errorf("Decrypt failed: %v", err)
-			return
-		}
-
-		if copiedBytes != N-jumpedTo {
-			t.Errorf("Copied different amount of decrypted data than expected.")
-			t.Errorf("Should be %v, was %v bytes.", N-jumpedTo, copiedBytes)
-		}
-
-		// Check the data actually matches the source data.
-		if !bytes.Equal(sourceData[jumpedTo:], dest.Bytes()) {
-			t.Errorf("Seeked data does not match expectations.")
-			t.Errorf("\tEXPECTED: %v", util.OmitBytes(sourceData[jumpedTo:], 10))
-			t.Errorf("\tGOT:      %v", util.OmitBytes(dest.Bytes(), 10))
-			return
-		}
-
-		// Jump back, so the other tests continue to work:
-		jumpedAgain, err := decLayer.Seek(jumpedTo, io.SeekStart)
-		if err != nil {
-			t.Errorf("Seeking not possible after reading: %v", err)
-			return
-		}
-
-		if jumpedTo != jumpedAgain {
-			t.Errorf("Jumping back to original pos failed.")
-			t.Errorf("Should be %v, was %v.", jumpedTo, jumpedAgain)
-			return
 		}
 	}
+
+	if test.Error != nil {
+		return lastJump
+	}
+
+	if jumpedTo != exptOffset {
+		t.Errorf(
+			"Seek(%v, %v) jumped badly. Should be %v, was %v",
+			realOffset,
+			whence,
+			exptOffset,
+			jumpedTo,
+		)
+		return -1
+	}
+
+	// Decrypt and check if the contents are okay:
+	dest := bytes.NewBuffer(nil)
+
+	copiedBytes, err := testutil.DumbCopy(dest, decLayer, readFrom, writeTo)
+	if err != nil {
+		t.Errorf("Decrypt failed: %v", err)
+		return jumpedTo
+	}
+
+	if copiedBytes != N-jumpedTo {
+		t.Errorf("Copied different amount of decrypted data than expected.")
+		t.Errorf("Should be %v, was %v bytes.", N-jumpedTo, copiedBytes)
+	}
+
+	// Check the data actually matches the source data.
+	if !bytes.Equal(sourceData[jumpedTo:], dest.Bytes()) {
+		t.Errorf("Seeked data does not match expectations.")
+		t.Errorf("\tEXPECTED: %v", util.OmitBytes(sourceData[jumpedTo:], 10))
+		t.Errorf("\tGOT:      %v", util.OmitBytes(dest.Bytes(), 10))
+		return jumpedTo
+	}
+
+	// Jump back, so the other tests continue to work:
+	jumpedAgain, err := decLayer.Seek(jumpedTo, io.SeekStart)
+	if err != nil {
+		t.Errorf("Seeking not possible after reading: %v", err)
+		return jumpedTo
+	}
+
+	if jumpedTo != jumpedAgain {
+		t.Errorf("Jumping back to original pos failed.")
+		t.Errorf("Should be %v, was %v.", jumpedTo, jumpedAgain)
+		return jumpedTo
+	}
+
+	return jumpedTo
 }
 
 func TestEmptyFile(t *testing.T) {
