@@ -19,6 +19,7 @@ import (
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/fuse"
+	"github.com/sahib/brig/gateway"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
@@ -69,6 +70,8 @@ type base struct {
 
 	// logToStdout is true when logging to stdout was explicitly requested.
 	logToStdout bool
+
+	gateway *gateway.Gateway
 }
 
 func repoIsInitialized(path string) error {
@@ -272,6 +275,18 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	}
 
 	b.backendLoaded = true
+
+	err = b.withCurrFs(func(fs *catfs.FS) error {
+		b.gateway = gateway.NewGateway(fs, rp.Config.Section("gateway"))
+		rp.Config.Set("gateway.folders", []string{"/"})
+		b.gateway.Start()
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	return realBackend, nil
 }
 

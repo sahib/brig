@@ -14,6 +14,40 @@ var DefaultsV0 = config.DefaultMapping{
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
 	},
+	"gateway": config.DefaultMapping{
+		"enabled": config.DefaultEntry{
+			Default:      true,
+			NeedsRestart: false,
+			Docs:         "Wether the gateway should be running",
+		},
+		"port": config.DefaultEntry{
+			Default:      5000,
+			NeedsRestart: false,
+			Docs:         "On what port the gateway runs on",
+		},
+		"folders": config.DefaultEntry{
+			Default:      []string{},
+			NeedsRestart: false,
+			Docs:         "What folders may be accessed by the gateway",
+		},
+		"auth": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         "Wether the gateway should be running",
+			},
+			"user": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: false,
+				Docs:         "User used for basic HTTP auth",
+			},
+			"pass": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: false,
+				Docs:         "Password used for basic HTTP auth",
+			},
+		},
+	},
 	"fs": config.DefaultMapping{
 		"sync": config.DefaultMapping{
 			"ignore_removed": config.DefaultEntry{
