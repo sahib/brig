@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"testing"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/config"
@@ -184,3 +186,24 @@ func TestGatewayConfigChangePort(t *testing.T) {
 		require.Equal(t, exampleData, data)
 	})
 }
+
+func TestBlock(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
+		exampleData := []byte("Hello world")
+		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
+		require.Nil(t, err)
+
+		gw.cfg.SetStrings("folders", []string{"/"})
+		gw.cfg.SetString("cert.domain", "nwzmlh4iouqikobq.myfritz.net")
+		gw.cfg.SetString("cert.certfile", "/tmp/fullchain.pem")
+		gw.cfg.SetString("cert.keyfile", "/tmp/privkey.pem")
+
+		ch := make(chan os.Signal)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
+	})
+}
+
+// TODO: Test for directory.
+// TODO: Tests for upcoming cert stuff.

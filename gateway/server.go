@@ -49,6 +49,8 @@ func NewGateway(backend Backend, cfg *config.Config) *Gateway {
 		cfg:     cfg,
 	}
 
+	// TODO: Use a different port if one is already occupied.
+
 	// Restarts the gateway on the next possible idle phase:
 	reloader := func(key string) {
 		log.Debugf("reloading gateway because config key changed: %s", key)
@@ -62,6 +64,9 @@ func NewGateway(backend Backend, cfg *config.Config) *Gateway {
 	// If any of those vars change, we should reload:
 	cfg.AddEvent("enabled", reloader)
 	cfg.AddEvent("port", reloader)
+	cfg.AddEvent("cert.certfile", reloader)
+	cfg.AddEvent("cert.keyfile", reloader)
+	cfg.AddEvent("cert.domain", reloader)
 	return gw
 }
 
@@ -112,13 +117,32 @@ func (gw *Gateway) Start() {
 	addr := fmt.Sprintf("0.0.0.0:%d", gw.cfg.Int("port"))
 	log.Debugf("starting gateway on %s", addr)
 
+	tlsConfig, err := getTLSConfig(gw.cfg)
+	if err != nil {
+		log.Errorf("failed to read TLS config: %v", err)
+		return
+	}
+
 	gw.srv = &http.Server{
-		Addr:    addr,
-		Handler: gw,
+		Addr:      addr,
+		Handler:   gw,
+		TLSConfig: tlsConfig,
+
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {
-		gw.srv.ListenAndServe()
+		if tlsConfig != nil {
+			err = gw.srv.ListenAndServeTLS("", "")
+		} else {
+			err = gw.srv.ListenAndServe()
+		}
+
+		if err != nil && err != http.ErrServerClosed {
+			log.Errorf("serve failed: %v", err)
+		}
 	}()
 }
 

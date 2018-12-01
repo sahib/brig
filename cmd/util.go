@@ -439,6 +439,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		// Check if the daemon is running:
 		ctl, err := client.Dial(context.Background(), port)
 		if err == nil {
+			defer ctl.Close()
 			return handler(ctx, ctl)
 		}
 
@@ -460,6 +461,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Run the actual handler:
+		defer ctl.Close()
 		return handler(ctx, ctl)
 	})
 }

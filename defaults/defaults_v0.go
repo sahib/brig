@@ -30,6 +30,23 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "What folders may be accessed by the gateway",
 		},
+		"cert": config.DefaultMapping{
+			"certfile": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: false,
+				Docs:         "Path to an existing certificate file",
+			},
+			"keyfile": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: false,
+				Docs:         "Path to an existing key file",
+			},
+			"domain": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: false,
+				Docs:         "What domain to use for getting a certificate from LetsEncrypt",
+			},
+		},
 		"auth": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      false,

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/cmd/tabwriter"
+	"github.com/sahib/brig/gateway"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/pwutil"
@@ -545,4 +547,46 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
+}
+
+func handleGatewayCert(ctx *cli.Context) error {
+	domain := ctx.Args().First()
+	privPath, pubPath, err := gateway.FetchTLSCertificate(domain)
+	if err != nil {
+		fmt.Printf("Failed to download cert: %s\n", err)
+		return err
+	}
+
+	fmt.Println("A certificate was downloaded successfully.")
+
+	port := guessPort(ctx)
+	ctl, err := client.Dial(context.Background(), port)
+	if err != nil {
+		fmt.Println("There does not seem a daemon running currently.")
+		fmt.Println("Please execute the following commands when it is running:")
+		fmt.Println("")
+		fmt.Printf("  $ brig config set gateway.cert.certfile '%s'\n", pubPath)
+		fmt.Printf("  $ brig config set gateway.cert.keyfile  '%s'\n", privPath)
+		fmt.Println("")
+		fmt.Println("Alternatively, just re-run this command again some time else.")
+		return nil
+	}
+
+	defer ctl.Close()
+
+	if err := ctl.ConfigSet("gateway.cert.domain", domain); err != nil {
+		return err
+	}
+
+	if err := ctl.ConfigSet("gateway.cert.certfile", pubPath); err != nil {
+		return err
+	}
+
+	if err := ctl.ConfigSet("gateway.cert.keyfile", privPath); err != nil {
+		return err
+	}
+
+	fmt.Println("Successfully set the gateway config to use the certificate.")
+	fmt.Println("Note that you have to re-run this command every 90 days currently.")
+	return nil
 }

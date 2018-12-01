@@ -490,7 +490,6 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
 	server.Ack(call.Options)
 
-	log.Debugf("--- starting wait on repo")
 	// Wait at max 25s for a flawless repo init:
 	for idx := 0; idx < 500; idx++ {
 		if !rh.base.BackendWasLoaded() {
@@ -501,6 +500,5 @@ func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
 		break
 	}
 
-	log.Debugf("--- done successfully")
 	return nil
 }

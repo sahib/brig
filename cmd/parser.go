@@ -370,6 +370,16 @@ func RunCmdline(args []string) int {
 				},
 			},
 		}, {
+			Name:     "gateway",
+			Aliases:  []string{"gw"},
+			Category: repoGroup,
+			Subcommands: []cli.Command{
+				{
+					Name:   "cert",
+					Action: handleGatewayCert,
+				},
+			},
+		}, {
 			Name:     "mount",
 			Category: repoGroup,
 			Action:   withDaemon(handleMount, true),

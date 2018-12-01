@@ -995,6 +995,12 @@ CAVEATS
 	"docs": {
 		Usage: "Open the online documentation in webbrowser",
 	},
+	"gateway": {
+		Usage: "TODO",
+	},
+	"gateway.cert": {
+		Usage: "TODO",
+	},
 	"bug": {
 		Usage: "Print a template for bug reports",
 		Flags: []cli.Flag{
