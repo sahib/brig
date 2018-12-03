@@ -55,7 +55,7 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 		return AlgoNone, nil
 	}
 
-	// TODO: Use net.DetectContentType?
+	// TODO: Use http.DetectContentType?
 	mime := guessMime(path, header)
 	compressible := isCompressible(mime)
 

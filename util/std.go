@@ -433,3 +433,17 @@ func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 func PrefixReader(data []byte, r io.Reader) io.Reader {
 	return &prefixReader{data: data, r: r}
 }
+
+// PeekHeader returns a new reader that will yield the very same data as `r`.
+// It reads `size` bytes from `r` and returns it. The underlying implementation
+// uses PrefixReader to prefix the stream with the header again.
+func PeekHeader(r io.Reader, size int64) ([]byte, io.Reader, error) {
+	headerBuf := make([]byte, size)
+	n, err := r.Read(headerBuf)
+	if err != nil && err != io.EOF {
+		return nil, nil, err
+	}
+
+	headerBuf = headerBuf[:n]
+	return headerBuf, PrefixReader(headerBuf, r), nil
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/config"
 )
 
@@ -54,8 +55,6 @@ func NewGateway(backend Backend, cfg *config.Config) *Gateway {
 		backend: backend,
 		cfg:     cfg,
 	}
-
-	// TODO: When https is used, redirect http traffic to https route.
 
 	// Restarts the gateway on the next possible idle phase:
 	reloader := func(key string) {
@@ -146,16 +145,33 @@ func (rh redirHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
 }
 
-func basenameFromNode(info *catfs.StatInfo) string {
+func setContentDisposition(info *catfs.StatInfo, hdr http.Header, dispoType string) {
 	basename := path.Base(info.Path)
 	if info.IsDir {
 		if basename == "/" {
 			basename = "root"
 		}
 
-		return basename + ".tar"
+		basename += ".tar"
 	}
-	return basename
+
+	hdr.Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			"%s; filename*=UTF-8''%s",
+			dispoType,
+			url.QueryEscape(basename),
+		),
+	)
+}
+
+func mimeTypeFromStream(stream mio.Stream) (io.Reader, string) {
+	hdr, newStream, err := util.PeekHeader(stream, 512)
+	if err != nil {
+		return stream, "application/octet-stream"
+	}
+
+	return newStream, http.DetectContentType(hdr)
 }
 
 // Start will start the gateway.
@@ -272,6 +288,12 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 	}()
 
 	fullURL := rq.URL.EscapedPath()
+	if fullURL == "/" {
+		rw.WriteHeader(200)
+		rw.Write([]byte("This brig gateway seems to be working."))
+		return
+	}
+
 	if !strings.HasPrefix(fullURL, "/get/") {
 		rw.WriteHeader(400)
 		return
@@ -310,17 +332,12 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		return
 	}
 
-	hdr.Set(
-		"Content-Disposition",
-		fmt.Sprintf(
-			"attachement; filename*=UTF-8''%s",
-			url.QueryEscape(basenameFromNode(info)),
-		),
-	)
 	hdr.Set("ETag", info.ContentHash.B58String())
 	hdr.Set("Last-Modified", info.ModTime.Format(http.TimeFormat))
 
 	if info.IsDir {
+		setContentDisposition(info, hdr, "attachment")
+
 		if err := gw.backend.Tar(nodePath, rw); err != nil {
 			// All other error is handled relatively broad.
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
@@ -336,10 +353,18 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 			return
 		}
 
-		hdr.Set("Content-Type", "application/octet-stream")
+		rawStream, mimeType := mimeTypeFromStream(stream)
+		hdr.Set("Content-Type", mimeType)
 		hdr.Set("Content-Length", strconv.FormatUint(info.Size, 10))
 
-		if _, err := io.Copy(rw, stream); err != nil {
+		// Set the content disposition to inline if it looks like something viewable.
+		if mimeType == "application/octet-stream" {
+			setContentDisposition(info, hdr, "attachment")
+		} else {
+			setContentDisposition(info, hdr, "inline")
+		}
+
+		if _, err := io.Copy(rw, rawStream); err != nil {
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
 			rw.WriteHeader(500)
 			return

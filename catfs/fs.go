@@ -830,21 +830,10 @@ func (fs *FS) Truncate(path string, size uint64) error {
 	return fs.lkr.StageNode(nd)
 }
 
-func peekHeader(r io.Reader) ([]byte, io.Reader, error) {
-	headerBuf := make([]byte, 4*1024)
-	n, err := r.Read(headerBuf)
-	if err != nil && err != io.EOF {
-		return nil, nil, err
-	}
-
-	headerBuf = headerBuf[:n]
-	return headerBuf, util.PrefixReader(headerBuf, r), nil
-}
-
 func (fs *FS) computePreconditions(path string, rs io.ReadSeeker) (h.Hash, uint64, compress.AlgorithmType, error) {
 	// Save a little header of the things we read,
 	// but avoid reading it twice.
-	headerBuf, pr, err := peekHeader(rs)
+	headerBuf, pr, err := util.PeekHeader(rs, 4*1024)
 	if err != nil {
 		return nil, 0, compress.AlgoNone, err
 	}
