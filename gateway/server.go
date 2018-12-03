@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -28,17 +30,21 @@ const (
 type Backend interface {
 	Stat(nodePath string) (*catfs.StatInfo, error)
 	Cat(nodePath string) (mio.Stream, error)
+	Tar(nodePath string, w io.Writer) error
 }
 
 // Gateway is a small HTTP server that is able to serve
 // files from brig over HTTP. This can be used to share files
 // inside of brig with users that do not use brig.
 type Gateway struct {
-	backend  Backend
-	cfg      *config.Config
+	backend     Backend
+	cfg         *config.Config
+	tickets     chan int
+	isClosed    bool
+	isReloading bool
+
 	srv      *http.Server
-	tickets  chan int
-	isClosed bool
+	redirSrv *http.Server
 }
 
 // NewGateway returns a newly built gateway.
@@ -49,24 +55,39 @@ func NewGateway(backend Backend, cfg *config.Config) *Gateway {
 		cfg:     cfg,
 	}
 
-	// TODO: Use a different port if one is already occupied.
+	// TODO: When https is used, redirect http traffic to https route.
 
 	// Restarts the gateway on the next possible idle phase:
 	reloader := func(key string) {
+		if gw.isClosed {
+			return
+		}
+
+		// Forbid recursive reloading.
+		if gw.isReloading {
+			return
+		}
+
+		gw.isReloading = true
+
 		log.Debugf("reloading gateway because config key changed: %s", key)
 		if err := gw.Stop(); err != nil {
 			log.Errorf("failed to reload gateway: %v", err)
 		}
 
 		gw.Start()
+		gw.isReloading = false
 	}
 
-	// If any of those vars change, we should reload:
+	// If any of those vars change, we should reload.
+	// All other config values are read on-demand anyways.
 	cfg.AddEvent("enabled", reloader)
 	cfg.AddEvent("port", reloader)
 	cfg.AddEvent("cert.certfile", reloader)
 	cfg.AddEvent("cert.keyfile", reloader)
 	cfg.AddEvent("cert.domain", reloader)
+	cfg.AddEvent("cert.redirect.enabled", reloader)
+	cfg.AddEvent("cert.redirect.http_port", reloader)
 	return gw
 }
 
@@ -93,11 +114,48 @@ func (gw *Gateway) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	if err := gw.srv.Shutdown(ctx); err != nil {
-		return err
+	if gw.redirSrv != nil {
+		if err := gw.redirSrv.Shutdown(ctx); err != nil {
+			return err
+		}
+
+		gw.redirSrv = nil
 	}
 
-	return nil
+	return gw.srv.Shutdown(ctx)
+}
+
+type redirHandler struct {
+	redirPort int64
+}
+
+func (rh redirHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// remove/add not default ports from req.Host
+	host, _, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	target := fmt.Sprintf("https://%s:%d%s", host, rh.redirPort, req.URL.Path)
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
+	}
+
+	log.Debugf("redirect to: %s", target)
+	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
+}
+
+func basenameFromNode(info *catfs.StatInfo) string {
+	basename := path.Base(info.Path)
+	if info.IsDir {
+		if basename == "/" {
+			basename = "root"
+		}
+
+		return basename + ".tar"
+	}
+	return basename
 }
 
 // Start will start the gateway.
@@ -123,9 +181,24 @@ func (gw *Gateway) Start() {
 		return
 	}
 
+	// If requested, forward all http requests from a different port
+	// to the normal https port.
+	if tlsConfig != nil && gw.cfg.Bool("cert.redirect.enabled") {
+		gw.redirSrv = &http.Server{
+			Addr:    fmt.Sprintf(":%d", gw.cfg.Int("cert.redirect.http_port")),
+			Handler: redirHandler{redirPort: gw.cfg.Int("port")},
+		}
+
+		go func() {
+			if err := gw.redirSrv.ListenAndServe(); err != nil {
+				log.Errorf("failed to start http redirecter: %v", err)
+			}
+		}()
+	}
+
 	gw.srv = &http.Server{
 		Addr:      addr,
-		Handler:   gw,
+		Handler:   gziphandler.GzipHandler(gw),
 		TLSConfig: tlsConfig,
 
 		ReadTimeout:  5 * time.Second,
@@ -237,22 +310,39 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		return
 	}
 
-	stream, err := gw.backend.Cat(nodePath)
-	if err != nil {
-		// All other error is handled relatively broad.
-		log.Errorf("gateway: failed to cat %s: %v", nodePath, err)
-		rw.WriteHeader(500)
-		return
-	}
+	hdr.Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			"attachement; filename*=UTF-8''%s",
+			url.QueryEscape(basenameFromNode(info)),
+		),
+	)
+	hdr.Set("ETag", info.ContentHash.B58String())
+	hdr.Set("Last-Modified", info.ModTime.Format(http.TimeFormat))
 
-	// Set the right headers for the stream:
-	hdr.Set("Content-Type", "application/octet-stream")
-	hdr.Set("Content-Transfer-Encoding", "binary")
-	hdr.Set("Content-Length", strconv.FormatUint(info.Size, 10))
+	if info.IsDir {
+		if err := gw.backend.Tar(nodePath, rw); err != nil {
+			// All other error is handled relatively broad.
+			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
+			rw.WriteHeader(500)
+			return
+		}
+	} else {
+		stream, err := gw.backend.Cat(nodePath)
+		if err != nil {
+			// All other error is handled relatively broad.
+			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
+			rw.WriteHeader(500)
+			return
+		}
 
-	if _, err := io.Copy(rw, stream); err != nil {
-		log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
-		rw.WriteHeader(500)
-		return
+		hdr.Set("Content-Type", "application/octet-stream")
+		hdr.Set("Content-Length", strconv.FormatUint(info.Size, 10))
+
+		if _, err := io.Copy(rw, stream); err != nil {
+			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
+			rw.WriteHeader(500)
+			return
+		}
 	}
 }

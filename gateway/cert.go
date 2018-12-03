@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -37,8 +38,10 @@ func getTLSConfig(cfg *config.Config) (*tls.Config, error) {
 			return nil, err
 		}
 
+		// PCI DSS 3.2.1. demands offering TLS >= 1.1:
 		return &tls.Config{
 			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS11,
 		}, nil
 	}
 
@@ -91,21 +94,31 @@ func certToPubPrivKeyPair(tlscert *tls.Certificate) ([]byte, []byte, error) {
 // This either needs rights to bind :80 (i.e. sudo) or the right capabilities
 // (i.e. sudo setcap CAP_NET_BIND_SERVICE=+ep ~/go/bin/brig)
 func FetchTLSCertificate(domain string) (string, string, error) {
-	// Try to bind to port :80 as early as possible.
-	lst, err := net.Listen("tcp", ":80")
-	if err != nil {
-		return "", "", err
-	}
-
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
-		lst.Close()
 		return "", "", err
 	}
 
 	cacheDir := filepath.Join(userCacheDir, "brig")
 	if err := os.MkdirAll(cacheDir, 0700); err != nil {
-		lst.Close()
+		return "", "", err
+	}
+
+	privPath := filepath.Join(cacheDir, fmt.Sprintf("%s_key.pem", domain))
+	pubPath := filepath.Join(cacheDir, fmt.Sprintf("%s_cert.pem", domain))
+
+	// Try to bind to port :80 as early as possible.
+	lst, err := net.Listen("tcp", ":80")
+	if err != nil {
+		// This most likely failed if we do not have access to port 80.
+		// Try to use the (possibly outdated) cert from the cache, if there.
+		_, privPathErr := os.Stat(privPath)
+		_, pubPathErr := os.Stat(pubPath)
+		if privPathErr == nil && pubPathErr == nil {
+			log.Debugf("could not update certificate, but found cached one.")
+			return privPath, pubPath, nil
+		}
+
 		return "", "", err
 	}
 
@@ -146,12 +159,10 @@ func FetchTLSCertificate(domain string) (string, string, error) {
 		return "", "", err
 	}
 
-	privPath := filepath.Join(cacheDir, "key.pem")
 	if err = ioutil.WriteFile(privPath, privData, 0600); err != nil {
 		return "", "", err
 	}
 
-	pubPath := filepath.Join(cacheDir, "cert.pem")
 	if err = ioutil.WriteFile(pubPath, pubData, 0600); err != nil {
 		return "", "", err
 	}
@@ -162,7 +173,7 @@ func FetchTLSCertificate(domain string) (string, string, error) {
 func updateCert(cfg *config.Config) error {
 	domain := cfg.String("cert.domain")
 	if domain == "" {
-		log.Debugf("note: no domain set in config, cannot get certificate")
+		log.Debugf("note: no domain set in config, cannot update certificate")
 		return nil
 	}
 

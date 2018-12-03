@@ -46,6 +46,18 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: false,
 				Docs:         "What domain to use for getting a certificate from LetsEncrypt",
 			},
+			"redirect": config.DefaultMapping{
+				"enabled": config.DefaultEntry{
+					Default:      true,
+					NeedsRestart: false,
+					Docs:         "Wether http request should be forwarded to https",
+				},
+				"http_port": config.DefaultEntry{
+					Default:      5001,
+					NeedsRestart: false,
+					Docs:         "What port the http server should run on",
+				},
+			},
 		},
 		"auth": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
