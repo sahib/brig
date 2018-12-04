@@ -301,7 +301,7 @@ func (rh *repoHandler) ConfigGet(call capnp.Repo_configGet) error {
 		return fmt.Errorf("invalid key: %v", key)
 	}
 
-	value := repo.Config.String(key)
+	value := repo.Config.Uncast(key)
 	return call.Results.SetValue(value)
 }
 

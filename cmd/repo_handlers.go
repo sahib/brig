@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -222,13 +223,20 @@ func handleConfigGet(ctx *cli.Context, ctl *client.Client) error {
 		return ExitCode{UnknownError, fmt.Sprintf("config get: %v", err)}
 	}
 
-	fmt.Println(val)
+	for _, elem := range strings.Split(val, " ;; ") {
+		fmt.Println(elem)
+	}
 	return nil
 }
 
 func handleConfigSet(ctx *cli.Context, ctl *client.Client) error {
 	key := ctx.Args().Get(0)
+
 	val := ctx.Args().Get(1)
+	if len(ctx.Args()) > 2 {
+		val = strings.Join(ctx.Args()[1:], " ;; ")
+	}
+
 	if err := ctl.ConfigSet(key, val); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("config set: %v", err)}
 	}
