@@ -217,9 +217,9 @@ func (gw *Gateway) Start() {
 		Handler:   gziphandler.GzipHandler(gw),
 		TLSConfig: tlsConfig,
 
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {
@@ -294,6 +294,15 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		return
 	}
 
+	if fullURL == "/favicon.ico" || fullURL == "/favicon" {
+		rw.WriteHeader(200)
+		data := []byte(favicon)
+		rw.Header().Set("Content-Type", "image/x-icon")
+		rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+		rw.Write(data)
+		return
+	}
+
 	if !strings.HasPrefix(fullURL, "/get/") {
 		rw.WriteHeader(400)
 		return
@@ -339,7 +348,6 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		setContentDisposition(info, hdr, "attachment")
 
 		if err := gw.backend.Tar(nodePath, rw); err != nil {
-			// All other error is handled relatively broad.
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
 			rw.WriteHeader(500)
 			return
@@ -347,7 +355,6 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 	} else {
 		stream, err := gw.backend.Cat(nodePath)
 		if err != nil {
-			// All other error is handled relatively broad.
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
 			rw.WriteHeader(500)
 			return
