@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime/trace"
@@ -557,8 +558,162 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 	return tabW.Flush()
 }
 
+func handleGatewayStart(ctx *cli.Context, ctl *client.Client) error {
+	isEnabled, err := ctl.ConfigGet("gateway.enabled")
+	if err != nil {
+		return err
+	}
+
+	if isEnabled == "false" {
+		if err := ctl.ConfigSet("gateway.enabled", "true"); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Seems like we're running already.")
+	}
+
+	port, err := ctl.ConfigGet("gateway.port")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(
+		"The gateway is accessible via %s\n",
+		color.GreenString("localhost:"+port+"/get/README.md"),
+	)
+
+	return nil
+}
+
+func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
+	isEnabled, err := ctl.ConfigGet("gateway.enabled")
+	if err != nil {
+		return err
+	}
+
+	if isEnabled == "false" {
+		fmt.Println("The gateway is not running. Use `brig gateway start`.")
+		return nil
+	}
+
+	port, err := ctl.ConfigGet("gateway.port")
+	if err != nil {
+		return err
+	}
+	domain, err := ctl.ConfigGet("gateway.cert.domain")
+	if err != nil {
+		return err
+	}
+
+	if domain == "" {
+		domain = "localhost"
+	}
+
+	fmt.Printf("Running on %s\n", color.GreenString(fmt.Sprintf("https://%s:%s", domain, port)))
+
+	folders, err := ctl.ConfigGet("gateway.folders")
+	if err != nil {
+		return err
+	}
+
+	if folders == "" {
+		fmt.Println(color.RedString("No folders are accessible at all (empty folder config)."))
+		fmt.Println(color.RedString("You might want to change that by setting this config key:"))
+		fmt.Println()
+		fmt.Println("  $ brig cfg set gateway.folders <folder1> <folder2> ...")
+		fmt.Println()
+		fmt.Println("To enable access to everything, you can use the root folder:")
+		fmt.Println()
+		fmt.Println("  $ brig cfg set gateway.folders /")
+		fmt.Println()
+	} else {
+		fmt.Println("All files under the following folders are accessible:")
+		fmt.Println()
+		for _, folder := range strings.Split(folders, " ;; ") {
+			fmt.Println(" ", folder)
+		}
+		fmt.Println()
+	}
+
+	certPath, err := ctl.ConfigGet("gateway.cert.certfile")
+	if err != nil {
+		return err
+	}
+
+	keyPath, err := ctl.ConfigGet("gateway.cert.keyfile")
+	if err != nil {
+		return err
+	}
+
+	isHttps := certPath != "" && keyPath != ""
+	if isHttps {
+		fmt.Printf("Using %s for transmitting files. Nice.\n", color.GreenString("https"))
+	} else {
+		fmt.Printf("Using %s for transmitting files.", color.RedString("http"))
+		fmt.Println("Consider changing this (if possible) by using `brig gateway cert`.")
+	}
+
+	authIsEnabled, err := ctl.ConfigGet("gateway.auth.enabled")
+	if err != nil {
+		return err
+	}
+
+	if authIsEnabled == "true" {
+		fmt.Printf("Basic HTTP authentication with user and password is enabled.\n")
+	} else {
+		fmt.Printf("There is %s user authentication enabled.\n", color.YellowString("no"))
+		fmt.Printf("You can enable it by setting the following config keys:\n")
+		fmt.Printf("\n")
+		fmt.Printf("  $ brig config set gateway.auth.user <user>\n")
+		fmt.Printf("  $ brig config set gateway.auth.pass <pass>\n")
+		fmt.Printf("\n")
+	}
+
+	redirIsEnabled, err := ctl.ConfigGet("gateway.cert.redirect.enabled")
+
+	if redirIsEnabled == "true" {
+		redirPort, err := ctl.ConfigGet("gateway.cert.redirect.http_port")
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf(
+			"All requests on HTTP port %s will be forwarded to HTTPS port %s.\n",
+			color.GreenString(redirPort),
+			color.GreenString(port),
+		)
+	} else if isHttps {
+		fmt.Printf("There is not HTTP port configured that forwards to HTTPS.\n")
+	}
+
+	return nil
+}
+
+func handleGatewayStop(ctx *cli.Context, ctl *client.Client) error {
+	isEnabled, err := ctl.ConfigGet("gateway.enabled")
+	if err != nil {
+		return err
+	}
+
+	if isEnabled == "true" {
+		if err := ctl.ConfigSet("gateway.enabled", "false"); err != nil {
+			return err
+		}
+
+		fmt.Println("The gateway will stop serving after handling all open requests.")
+	} else {
+		fmt.Println("It seems like the gateway is already stopped.")
+	}
+
+	return nil
+}
+
 func handleGatewayCert(ctx *cli.Context) error {
 	domain := ctx.Args().First()
+	if domain == "" {
+		return fmt.Errorf("Usage: brig gateway cert your.domain.org")
+	}
+
 	privPath, pubPath, err := gateway.FetchTLSCertificate(domain)
 	if err != nil {
 		fmt.Printf("Failed to download cert: %s\n", err)
@@ -596,5 +751,51 @@ func handleGatewayCert(ctx *cli.Context) error {
 
 	fmt.Println("Successfully set the gateway config to use the certificate.")
 	fmt.Println("Note that you have to re-run this command every 90 days currently.")
+	return nil
+}
+
+func handleGatewayUrl(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	if _, err := ctl.Stat(path); err != nil {
+		return err
+	}
+
+	domain, err := ctl.ConfigGet("gateway.cert.domain")
+	if err != nil {
+		return err
+	}
+
+	if domain == "" {
+		domain = "localhost"
+	}
+
+	port, err := ctl.ConfigGet("gateway.port")
+	if err != nil {
+		return err
+	}
+
+	if port == "80" || port == "443" {
+		port = ""
+	} else {
+		port = ":" + port
+	}
+
+	certPath, err := ctl.ConfigGet("gateway.cert.certfile")
+	if err != nil {
+		return err
+	}
+
+	keyPath, err := ctl.ConfigGet("gateway.cert.keyfile")
+	if err != nil {
+		return err
+	}
+
+	protocol := "http"
+	if domain != "localhost" && certPath != "" && keyPath != "" {
+		protocol = "https"
+	}
+
+	escapedPath := url.PathEscape(strings.TrimLeft(path, "/"))
+	fmt.Printf("%s://%s%s/get/%s\n", protocol, domain, port, escapedPath)
 	return nil
 }

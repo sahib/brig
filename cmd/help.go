@@ -993,13 +993,25 @@ CAVEATS
 `,
 	},
 	"docs": {
-		Usage: "Open the online documentation in webbrowser",
+		Usage: "Open the online documentation in webbrowser.",
 	},
 	"gateway": {
-		Usage: "TODO",
+		Usage: "Control the HTTP/S gateway service.",
+	},
+	"gateway.start": {
+		Usage: "Start the gateway.",
+	},
+	"gateway.stop": {
+		Usage: "Stop the gateway.",
+	},
+	"gateway.status": {
+		Usage: "Print a diagnostic report on the status of the gateway.",
 	},
 	"gateway.cert": {
-		Usage: "TODO",
+		Usage: "Helper to get a LetsEncrypt certificate. Needs root.",
+	},
+	"gateway.url": {
+		Usage: "Print the URL to a named file or directory.",
 	},
 	"bug": {
 		Usage: "Print a template for bug reports",

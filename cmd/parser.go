@@ -375,8 +375,24 @@ func RunCmdline(args []string) int {
 			Category: repoGroup,
 			Subcommands: []cli.Command{
 				{
+					Name:   "start",
+					Action: withDaemon(handleGatewayStart, true),
+				},
+				{
+					Name:   "stop",
+					Action: withDaemon(handleGatewayStop, true),
+				},
+				{
+					Name:   "status",
+					Action: withDaemon(handleGatewayStatus, true),
+				},
+				{
 					Name:   "cert",
 					Action: handleGatewayCert,
+				},
+				{
+					Name:   "url",
+					Action: withArgCheck(needAtLeast(0), withDaemon(handleGatewayUrl, true)),
 				},
 			},
 		}, {
@@ -406,6 +422,7 @@ func RunCmdline(args []string) int {
 	})
 
 	if err := app.Run(args); err != nil {
+		fmt.Println(err)
 		return 1
 	}
 	return 0

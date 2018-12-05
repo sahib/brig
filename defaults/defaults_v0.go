@@ -16,7 +16,7 @@ var DefaultsV0 = config.DefaultMapping{
 	},
 	"gateway": config.DefaultMapping{
 		"enabled": config.DefaultEntry{
-			Default:      true,
+			Default:      false,
 			NeedsRestart: false,
 			Docs:         "Wether the gateway should be running",
 		},
@@ -26,7 +26,7 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "On what port the gateway runs on",
 		},
 		"folders": config.DefaultEntry{
-			Default:      []string{},
+			Default:      []string{"/"},
 			NeedsRestart: false,
 			Docs:         "What folders may be accessed by the gateway",
 		},
@@ -55,7 +55,7 @@ var DefaultsV0 = config.DefaultMapping{
 				"http_port": config.DefaultEntry{
 					Default:      5001,
 					NeedsRestart: false,
-					Docs:         "What port the http server should run on",
+					Docs:         "What port the http redirect server should run on",
 				},
 			},
 		},

@@ -145,6 +145,9 @@ func (rh redirHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
 }
 
+// setContentDisposition sets the Content-Disposition header, based on
+// the content we are serving. It tells a browser if it should open
+// a save dialog or display it inline (and how)
 func setContentDisposition(info *catfs.StatInfo, hdr http.Header, dispoType string) {
 	basename := path.Base(info.Path)
 	if info.IsDir {
@@ -176,6 +179,7 @@ func mimeTypeFromStream(stream mio.Stream) (io.Reader, string) {
 
 // Start will start the gateway.
 // If the gateway is not enabled in the config, this does nothing.
+// The gateway is started in the background, this method does not block.
 func (gw *Gateway) Start() {
 	if !gw.cfg.Bool("enabled") {
 		log.Debugf("gateway is disabled in the config; doing nothing until enabled.")
@@ -183,12 +187,14 @@ func (gw *Gateway) Start() {
 	}
 
 	gw.isClosed = false
+
+	// Allocate enough tickets to have 50 connection at the same time:
 	gw.tickets = make(chan int, 50)
 	for idx := 0; idx < 50; idx++ {
 		gw.tickets <- idx
 	}
 
-	addr := fmt.Sprintf("0.0.0.0:%d", gw.cfg.Int("port"))
+	addr := fmt.Sprintf(":%d", gw.cfg.Int("port"))
 	log.Debugf("starting gateway on %s", addr)
 
 	tlsConfig, err := getTLSConfig(gw.cfg)
@@ -217,9 +223,9 @@ func (gw *Gateway) Start() {
 		Handler:   gziphandler.GzipHandler(gw),
 		TLSConfig: tlsConfig,
 
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      5 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		// ReadHeaderTimeout: 5 * time.Second,
+		// WriteTimeout:      5 * time.Second,
+		// IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {
@@ -235,6 +241,7 @@ func (gw *Gateway) Start() {
 	}()
 }
 
+// validateUserForPath checks if `rq` is allowed to view `nodePath`.
 func (gw *Gateway) validateUserForPath(nodePath string, rq *http.Request) bool {
 	if gw.cfg.Bool("auth.enabled") {
 		user, pass, ok := rq.BasicAuth()
@@ -244,9 +251,14 @@ func (gw *Gateway) validateUserForPath(nodePath string, rq *http.Request) bool {
 
 		cfgUser := gw.cfg.String("auth.user")
 		cfgPass := gw.cfg.String("auth.pass")
-		return user == cfgUser && pass == cfgPass
+		if user != cfgUser || pass != cfgPass {
+			return false
+		}
+
+		// Continue with folder checking.
 	}
 
+	// build a map for constant lookup time
 	folders := make(map[string]bool)
 	for _, folder := range gw.cfg.Strings("folders") {
 		folders[folder] = true
@@ -254,7 +266,7 @@ func (gw *Gateway) validateUserForPath(nodePath string, rq *http.Request) bool {
 
 	curr := nodePath
 	for {
-		if ok := folders[curr]; ok {
+		if folders[curr] {
 			return true
 		}
 

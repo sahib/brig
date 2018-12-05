@@ -2,6 +2,7 @@ package compress
 
 import (
 	"mime"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -25,6 +26,11 @@ const (
 )
 
 func guessMime(path string, buf []byte) string {
+	httpMatch := http.DetectContentType(buf)
+	if httpMatch != "application/octet-stream" {
+		return httpMatch
+	}
+
 	// try to guess it from the buffer we pass:
 	match := mimemagic.Match("", buf)
 	if match == "" {
@@ -55,7 +61,6 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 		return AlgoNone, nil
 	}
 
-	// TODO: Use http.DetectContentType?
 	mime := guessMime(path, header)
 	compressible := isCompressible(mime)
 

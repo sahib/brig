@@ -1,10 +1,10 @@
-.. _quickstart:
-
 .. warning::
 
     The examples below are slightly outdated and will be revisited at some point.
     All commands should still work, but the output might be a little different now.
     Please refer to the :ref:`getting_started` guide for a more up-to-date version.
+
+.. _quickstart:
 
 Quickstart
 ==========

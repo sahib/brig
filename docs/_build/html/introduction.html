@@ -126,6 +126,12 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-gateway">Using the gateway</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#securing-access">Securing access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
@@ -1065,6 +1071,134 @@ $ brig config get repo.password_command
 pass brig/repo/password
 $ brig config <span class="nb">set</span> repo.password_command <span class="s2">&quot;pass brig/repo/my-password&quot;</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="using-the-gateway">
+<h2>Using the gateway<a class="headerlink" href="#using-the-gateway" title="Permalink to this headline">¶</a></h2>
+<p>Many users will not run <code class="docutils literal notranslate"><span class="pre">brig</span></code>. Chances are, that you still want to send them
+your files with too much hassle. <code class="docutils literal notranslate"><span class="pre">brig</span></code> features a <em>Gateway</em> to HTTP(S),
+which comes particularly handy if you happen to run a public server.</p>
+<p>The gateway is disabled by default. If you want to start it, use this command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway start
+</pre></div>
+</div>
+<p>Without further configuration, this will create a HTTP server on port <code class="docutils literal notranslate"><span class="pre">5000</span></code>,
+which can be queried already. There is a small helper that will print you a nice
+hyperlink to a certain file called <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gateway</span> <span class="pre">url</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway url README.md
+http://localhost:5000/get/README.md
+</pre></div>
+</div>
+<p>Opening this in your browser will show you the file’s content.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>You can always check the status of the gateway:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway status
+</pre></div>
+</div>
+<p class="last">This will also print helpful diagnostics if something might be wrong.</p>
+</div>
+<p>The gateway can be stopped anytime with the following command. It tries to still
+serve all open requests, so that no connections are dropped:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway stop
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want to forward the gateway to the outside, but do not own
+a dedicated server, you can forward port 5000 to your computer. With this
+setup you should also get a certficate which in turn requires a DNS name.
+An easy way to get one is to use dynamic DNS.</p>
+</div>
+<div class="section" id="securing-access">
+<h3>Securing access<a class="headerlink" href="#securing-access" title="Permalink to this headline">¶</a></h3>
+<p>You probably do not want to offer your files to everyone that have a link.
+Therefore you can restrict access to a few folders (<code class="docutils literal notranslate"><span class="pre">/public</span></code> for example)
+and require a user to authenticate himself with a user and password upon access.</p>
+<p>By default all files are accessible. You can change this by changing the config:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.folders /public
+</pre></div>
+</div>
+<p>Now only the files in <code class="docutils literal notranslate"><span class="pre">/public</span></code> (and including <code class="docutils literal notranslate"><span class="pre">/public</span></code> itself) are
+accessible from the gateway. If you want to add basic HTTP authentication:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.auth.enabled <span class="nb">true</span>
+$ brig cfg <span class="nb">set</span> gateway.auth.user &lt;user&gt;
+$ brig cfg <span class="nb">set</span> gateway.auth.pass &lt;pass&gt;
+</pre></div>
+</div>
+<p>If you use HTTP authentication, it is strongly recommended to enable HTTPS.
+Otherwise the password will be transmitted in clear text.</p>
+</div>
+<div class="section" id="running-the-gateway-with-https">
+<h3>Running the gateway with HTTPS<a class="headerlink" href="#running-the-gateway-with-https" title="Permalink to this headline">¶</a></h3>
+<p>The gateway has built-in support for <a class="reference external" href="https://letsencrypt.org/">LetsEncrypt</a>.
+If the gateway is reachable under a DNS name, it is straightforward to get
+a TLS certificate for it. In total there are three methods:</p>
+<p><strong>Method one: Automatic:</strong> This works by telling the gateway the domain name.
+Since the retrieval process for getting a certificate involves binding on port 80,
+you need to prepare the brig binary to allow that without running as root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig daemon quit
+$ sudo setcap <span class="nv">CAP_NET_BIND_SERVICE</span><span class="o">=</span>+ep <span class="k">$(</span>which brig<span class="k">)</span>
+</pre></div>
+</div>
+<p>Afterwards you can set the domain in the config. If the gateway is already running,
+it will restart immediately.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.cert.domain your.domain.org
+</pre></div>
+</div>
+<p>You can check after a few seconds if it worked by checking if the <code class="docutils literal notranslate"><span class="pre">certfile</span></code> and <code class="docutils literal notranslate"><span class="pre">keyfile</span></code>
+was set:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg get gateway.cert.certfile
+/home/user/.cache/brig/your.domain.org_cert.pem
+$ brig cfg get gateway.cert.keyfile
+/home/user/.cache/brig/your.domain.org_key.pem
+$ curl -i https://your.domain.org:5000
+HTTP/2 <span class="m">200</span>
+vary: Accept-Encoding
+content-type: text/plain<span class="p">;</span> <span class="nv">charset</span><span class="o">=</span>utf-8
+content-length: <span class="m">38</span>
+date: Wed, <span class="m">05</span> Dec <span class="m">2018</span> <span class="m">11</span>:53:57 GMT
+
+This brig gateway seems to be working.
+</pre></div>
+</div>
+<p>This method has the advantage that the certificate can be updated automatically
+before it expires.</p>
+<p><strong>Method two: Half-Automated:</strong></p>
+<p>If the above did not work for whatever reasons, you can try to get a certificate manually.
+There is a built-in helper called <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gateway</span> <span class="pre">cert</span></code> that can help you doing that:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo brig gateway cert your.domain.org
+A certificate was downloaded successfully.
+Successfully <span class="nb">set</span> the gateway config to use the certificate.
+Note that you have to re-run this <span class="nb">command</span> every <span class="m">90</span> days currently.
+</pre></div>
+</div>
+<p>If successful, this command will set the <code class="docutils literal notranslate"><span class="pre">certfile</span></code> and <code class="docutils literal notranslate"><span class="pre">keyfile</span></code> config
+values for you. You can test if the change worked by doing the same procedure
+as in <em>method one</em>. Sadly, you have to re-execute once the certificate expires.</p>
+<p><strong>Method three: Manual:</strong></p>
+<p>If you already own a certificate you can make the gateway use it by setting the path
+to the public certificate and the private key file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.cert.certfile /path/to/cert.pem
+$ brig cfg <span class="nb">set</span> gateway.cert.keyfile /path/to/key.pem
+</pre></div>
+</div>
+<p>If you do not own a certificate yet, but want to setup an automated way to
+download one for usages outside of brig, you should look into
+<a class="reference external" href="https://certbot.eff.org/docs/">certbot</a>.</p>
+</div>
+<div class="section" id="redirecting-http-traffic">
+<h3>Redirecting HTTP traffic<a class="headerlink" href="#redirecting-http-traffic" title="Permalink to this headline">¶</a></h3>
+<p>This section only applies to you if you choose <strong>method one</strong> from above and
+want to run the gateway on port 80 (http) and port 443 (https). This has the
+advantage that a user does not need to specify the port in a gateway URL have
+which looks a little bit less <em>»scary«</em>. With this setup all traffic on port 80
+will be redirected directly to port 443.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.port <span class="m">443</span>
+$ brig cfg <span class="nb">set</span> gateway.cert.redirect.enabled <span class="nb">true</span>
+$ brig cfg <span class="nb">set</span> gateway.cert.redirect.http_port <span class="m">80</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="running-the-daemon-and-viewing-logs">

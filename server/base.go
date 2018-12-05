@@ -278,7 +278,6 @@ func (b *base) loadBackend() (backend.Backend, error) {
 
 	err = b.withCurrFs(func(fs *catfs.FS) error {
 		b.gateway = gateway.NewGateway(fs, rp.Config.Section("gateway"))
-		rp.Config.Set("gateway.folders", []string{"/"})
 		b.gateway.Start()
 		return nil
 	})
