@@ -54,25 +54,25 @@ func ping(t *testing.T, gw *Gateway) bool {
 
 func query(t *testing.T, gw *Gateway, suffix string) (int, []byte) {
 	resp, err := http.Get(buildURL(gw, suffix))
-	require.Nil(t, err, err.Error())
+	require.Nil(t, err, string(err))
 
 	data, err := ioutil.ReadAll(resp.Body)
-	require.Nil(t, err, err.Error())
+	require.Nil(t, err, string(err))
 
 	return resp.StatusCode, data
 }
 
 func queryWithAuth(t *testing.T, gw *Gateway, suffix, user, pass string) (int, []byte) {
 	req, err := http.NewRequest("GET", buildURL(gw, suffix), nil)
-	require.Nil(t, err, err.Error())
+	require.Nil(t, err, string(err))
 
 	req.SetBasicAuth(user, pass)
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	require.Nil(t, err, err.Error())
+	require.Nil(t, err, string(err))
 
 	data, err := ioutil.ReadAll(resp.Body)
-	require.Nil(t, err, err.Error())
+	require.Nil(t, err, string(err))
 
 	return resp.StatusCode, data
 }
@@ -81,7 +81,7 @@ func TestGatewayOK(t *testing.T) {
 	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
 		exampleData := []byte("Hello world")
 		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
-		require.Nil(t, err, err.Error())
+		require.Nil(t, err, string(err))
 
 		gw.cfg.SetStrings("folders", []string{"/"})
 		status, data := query(t, gw, "/get/hello/world.png")
@@ -103,7 +103,7 @@ func TestGatewayUnauthorizedBadFolder(t *testing.T) {
 	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
 		exampleData := []byte("Hello world")
 		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
-		require.Nil(t, err, err.Error())
+		require.Nil(t, err, string(err))
 
 		gw.cfg.SetStrings("folders", []string{"/world"})
 		status, data := query(t, gw, "/get/hello/world.png")
@@ -116,7 +116,7 @@ func TestGatewayUnauthorizedBadUser(t *testing.T) {
 	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
 		exampleData := []byte("Hello world")
 		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
-		require.Nil(t, err, err.Error())
+		require.Nil(t, err, string(err))
 
 		gw.cfg.SetStrings("folders", []string{"/"})
 		gw.cfg.SetBool("auth.enabled", true)
