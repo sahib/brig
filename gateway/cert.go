@@ -209,9 +209,9 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 	// HACK: This function gets also executed by "brig gateway cert",
 	// which tends to be run as root. We store the certificate in ~/.cache/brig
 	// anyways, so even it is owned by root, it should be readable by other users.
-	perms := 0600
+	perms := os.FileMode(0600)
 	if os.Geteuid() == 0 {
-		perms = 0644
+		perms = os.FileMode(0644)
 	}
 
 	if err = ioutil.WriteFile(privPath, privData, perms); err != nil {
