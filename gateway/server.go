@@ -203,6 +203,8 @@ func (gw *Gateway) Start() {
 		return
 	}
 
+	fmt.Println("TLS CONFIG", tlsConfig)
+
 	// If requested, forward all http requests from a different port
 	// to the normal https port.
 	if tlsConfig != nil && gw.cfg.Bool("cert.redirect.enabled") {
