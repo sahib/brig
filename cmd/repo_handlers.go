@@ -726,7 +726,6 @@ func handleGatewayCert(ctx *cli.Context) error {
 		cacheDir = filepath.Join(cacheDir, "brig")
 	}
 
-	fmt.Println(os.Geteuid(), os.Getuid())
 	if os.Geteuid() != 0 {
 		fmt.Println(
 			color.YellowString("You are not root. We need root rights to bind to port 80."),

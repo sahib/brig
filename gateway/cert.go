@@ -147,7 +147,7 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 	}
 
 	cacheDir = filepath.Join(cacheDir, "brig")
-	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+	if err := os.MkdirAll(cacheDir, 0777); err != nil {
 		return "", "", err
 	}
 
@@ -206,11 +206,19 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 		return "", "", err
 	}
 
-	if err = ioutil.WriteFile(privPath, privData, 0600); err != nil {
+	// HACK: This function gets also executed by "brig gateway cert",
+	// which tends to be run as root. We store the certificate in ~/.cache/brig
+	// anyways, so even it is owned by root, it should be readable by other users.
+	perms := 0600
+	if os.Geteuid() == 0 {
+		perms = 0644
+	}
+
+	if err = ioutil.WriteFile(privPath, privData, perms); err != nil {
 		return "", "", err
 	}
 
-	if err = ioutil.WriteFile(pubPath, pubData, 0600); err != nil {
+	if err = ioutil.WriteFile(pubPath, pubData, perms); err != nil {
 		return "", "", err
 	}
 
