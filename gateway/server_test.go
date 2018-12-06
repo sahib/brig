@@ -39,9 +39,12 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 	gw := NewGateway(fs, cfg.Section("gateway"))
 	gw.Start()
 
-	fn(gw, fs)
+	defer func() {
+		require.Nil(t, gw.Stop())
+	}()
 
-	require.Nil(t, gw.Stop())
+	time.Sleep(100 * time.Millisecond)
+	fn(gw, fs)
 }
 
 func buildURL(gw *Gateway, suffix string) string {
