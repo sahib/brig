@@ -1099,7 +1099,11 @@ There is a built-in helper called ``brig gateway cert`` that can help you doing 
 
 .. code-block:: bash
 
-    $ sudo brig gateway cert your.domain.org
+    $ brig gateway cert your.domain.org
+    You are not root. We need root rights to bind to port 80.
+    I will re-execute this command for you as:
+    $ sudo brig gateway cert nwzmlh4iouqikobq.myfritz.net --cache-dir /home/sahib/.cache/brig
+
     A certificate was downloaded successfully.
     Successfully set the gateway config to use the certificate.
     Note that you have to re-run this command every 90 days currently.

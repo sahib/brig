@@ -362,11 +362,11 @@ func RunCmdline(args []string) int {
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleFstabRemove, true)),
 				}, {
 					Name:   "apply",
-					Action: withArgCheck(needAtLeast(0), withDaemon(handleFstabApply, true)),
+					Action: withDaemon(handleFstabApply, true),
 				}, {
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withArgCheck(needAtLeast(0), withDaemon(handleFstabList, true)),
+					Action:  withDaemon(handleFstabList, true),
 				},
 			},
 		}, {
@@ -392,7 +392,7 @@ func RunCmdline(args []string) int {
 				},
 				{
 					Name:   "url",
-					Action: withArgCheck(needAtLeast(0), withDaemon(handleGatewayUrl, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleGatewayURL, true)),
 				},
 			},
 		}, {

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -89,17 +90,63 @@ func certToPubPrivKeyPair(tlscert *tls.Certificate) ([]byte, []byte, error) {
 	return privBuf.Bytes(), pubBuf.Bytes(), nil
 }
 
+// UserCacheDir is the same as os.UserCacheDir from go1.11,
+// but taken from the standard library. This way it also works
+// for go1.9 and go1.10.
+//
+// This method should be replaced by os.UserCacheDir by go1.13.
+func UserCacheDir() (string, error) {
+	var dir string
+
+	switch runtime.GOOS {
+	case "windows":
+		dir = os.Getenv("LocalAppData")
+		if dir == "" {
+			return "", errors.New("%LocalAppData% is not defined")
+		}
+
+	case "darwin":
+		dir = os.Getenv("HOME")
+		if dir == "" {
+			return "", errors.New("$HOME is not defined")
+		}
+		dir += "/Library/Caches"
+
+	case "plan9":
+		dir = os.Getenv("home")
+		if dir == "" {
+			return "", errors.New("$home is not defined")
+		}
+		dir += "/lib/cache"
+
+	default: // Unix
+		dir = os.Getenv("XDG_CACHE_HOME")
+		if dir == "" {
+			dir = os.Getenv("HOME")
+			if dir == "" {
+				return "", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined")
+			}
+			dir += "/.cache"
+		}
+	}
+
+	return dir, nil
+}
+
 // FetchTLSCertificate will use the ACME protocol and LetsEncrypt to
 // download a certificate to the user's cache dir automatically.
 // This either needs rights to bind :80 (i.e. sudo) or the right capabilities
 // (i.e. sudo setcap CAP_NET_BIND_SERVICE=+ep ~/go/bin/brig)
-func FetchTLSCertificate(domain string) (string, string, error) {
-	userCacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return "", "", err
+func FetchTLSCertificate(domain string, cacheDir string) (string, string, error) {
+	if cacheDir == "" {
+		var err error
+		cacheDir, err = UserCacheDir()
+		if err != nil {
+			return "", "", err
+		}
 	}
 
-	cacheDir := filepath.Join(userCacheDir, "brig")
+	cacheDir = filepath.Join(cacheDir, "brig")
 	if err := os.MkdirAll(cacheDir, 0700); err != nil {
 		return "", "", err
 	}
@@ -177,7 +224,7 @@ func updateCert(cfg *config.Config) error {
 		return nil
 	}
 
-	privPath, pubPath, err := FetchTLSCertificate(domain)
+	privPath, pubPath, err := FetchTLSCertificate(domain, "")
 	if err != nil {
 		return err
 	}

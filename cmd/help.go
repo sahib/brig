@@ -1009,6 +1009,12 @@ CAVEATS
 	},
 	"gateway.cert": {
 		Usage: "Helper to get a LetsEncrypt certificate. Needs root.",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "cache-dir,d",
+				Usage: "In what directory to save the certificates in. Defaults to $HOME/.cache/brig",
+			},
+		},
 	},
 	"gateway.url": {
 		Usage: "Print the URL to a named file or directory.",

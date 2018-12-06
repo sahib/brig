@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime/trace"
 	"strings"
@@ -645,8 +646,8 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	isHttps := certPath != "" && keyPath != ""
-	if isHttps {
+	isHTTPS := certPath != "" && keyPath != ""
+	if isHTTPS {
 		fmt.Printf("Using %s for transmitting files. Nice.\n", color.GreenString("https"))
 	} else {
 		fmt.Printf("Using %s for transmitting files.", color.RedString("http"))
@@ -682,7 +683,7 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 			color.GreenString(redirPort),
 			color.GreenString(port),
 		)
-	} else if isHttps {
+	} else if isHTTPS {
 		fmt.Printf("There is not HTTP port configured that forwards to HTTPS.\n")
 	}
 
@@ -709,12 +710,60 @@ func handleGatewayStop(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleGatewayCert(ctx *cli.Context) error {
-	domain := ctx.Args().First()
+	domain := ctx.Args().Get(0)
 	if domain == "" {
-		return fmt.Errorf("Usage: brig gateway cert your.domain.org")
+		return fmt.Errorf("Usage: brig gateway cert your.domain.org ")
 	}
 
-	privPath, pubPath, err := gateway.FetchTLSCertificate(domain)
+	cacheDir := ctx.String("cache-dir")
+	if cacheDir == "" {
+		var err error
+		cacheDir, err = gateway.UserCacheDir()
+		if err != nil {
+			return err
+		}
+
+		cacheDir = filepath.Join(cacheDir, "brig")
+	}
+
+	if os.Geteuid() != 0 {
+		fmt.Println(
+			color.YellowString("You are not root. We need root rights to bind to port 80."),
+		)
+		fmt.Println(
+			color.YellowString("I will re-execute this command for you as:"),
+		)
+		fmt.Printf("$ sudo brig gateway cert %s --cache-dir %s\n", domain, cacheDir)
+		fmt.Println()
+		exePath, err := getExecutablePath()
+		if err != nil {
+			return err
+		}
+
+		sudoPath, err := exec.LookPath("sudo")
+		if err != nil {
+			return err
+		}
+
+		proc := exec.Command(
+			sudoPath,
+			exePath,
+			"gateway", "cert",
+			domain,
+			cacheDir,
+		)
+		proc.Stdin = os.Stdin
+		proc.Stdout = os.Stdout
+		proc.Stderr = os.Stderr
+
+		if err := proc.Start(); err != nil {
+			return err
+		}
+
+		return proc.Wait()
+	}
+
+	privPath, pubPath, err := gateway.FetchTLSCertificate(domain, cacheDir)
 	if err != nil {
 		fmt.Printf("Failed to download cert: %s\n", err)
 		return err
@@ -754,7 +803,7 @@ func handleGatewayCert(ctx *cli.Context) error {
 	return nil
 }
 
-func handleGatewayUrl(ctx *cli.Context, ctl *client.Client) error {
+func handleGatewayURL(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 	if _, err := ctl.Stat(path); err != nil {
 		return err
