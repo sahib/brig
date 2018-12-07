@@ -18,6 +18,23 @@ Changes that are not yet released can be prepared here.
 
 ### Deprecated
 
+## [0.3.0 Galloping Galapgos] -- 2018-12-07
+
+### Fixed
+
+- Compression guessing is now using Go's http.DetectContentType()
+
+### Added
+
+* New gateway subcommand and feature. Now files and directories can be easily
+  shared to non-brig users via a normal webserver. Also includes easy https setup.
+
+### Changed
+
+### Removed
+
+### Deprecated
+
 ## [0.2.0 Baffling Buck] -- 2018-11-21
 
 ### Fixed
