@@ -18,7 +18,7 @@ Changes that are not yet released can be prepared here.
 
 ### Deprecated
 
-## [0.3.0 Galloping Galapgos] -- 2018-12-07
+## [0.3.0 Galloping Galapagos] -- 2018-12-07
 
 ### Fixed
 
