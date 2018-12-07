@@ -52,16 +52,13 @@ type Gateway struct {
 // This function does not yet start a server.
 func NewGateway(backend Backend, cfg *config.Config) *Gateway {
 	gw := &Gateway{
-		backend: backend,
-		cfg:     cfg,
+		backend:  backend,
+		cfg:      cfg,
+		isClosed: true,
 	}
 
 	// Restarts the gateway on the next possible idle phase:
 	reloader := func(key string) {
-		if gw.isClosed {
-			return
-		}
-
 		// Forbid recursive reloading.
 		if gw.isReloading {
 			return
@@ -101,6 +98,7 @@ func (gw *Gateway) Stop() error {
 	// Wait until all requests were done.
 	// We do not want to close downloads just because
 	// the user changed the config.
+	log.Debugf("reserving tickets for at max %d parallel requests", rateLimit)
 	for {
 		if len(gw.tickets) == rateLimit {
 			// All requests have been served.
@@ -189,8 +187,8 @@ func (gw *Gateway) Start() {
 	gw.isClosed = false
 
 	// Allocate enough tickets to have 50 connection at the same time:
-	gw.tickets = make(chan int, 50)
-	for idx := 0; idx < 50; idx++ {
+	gw.tickets = make(chan int, rateLimit)
+	for idx := 0; idx < rateLimit; idx++ {
 		gw.tickets <- idx
 	}
 
@@ -213,7 +211,9 @@ func (gw *Gateway) Start() {
 
 		go func() {
 			if err := gw.redirSrv.ListenAndServe(); err != nil {
-				log.Errorf("failed to start http redirecter: %v", err)
+				if err != http.ErrServerClosed {
+					log.Errorf("failed to start http redirecter: %v", err)
+				}
 			}
 		}()
 	}

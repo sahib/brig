@@ -578,12 +578,36 @@ func handleGatewayStart(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
+	isHTTPS, err := gatewayIsHTTPS(ctl)
+	if err != nil {
+		return err
+	}
+
+	protocol := "http"
+	if isHTTPS {
+		protocol = "https"
+	}
+
 	fmt.Printf(
 		"The gateway is accessible via %s\n",
-		color.GreenString("localhost:"+port+"/get/README.md"),
+		color.GreenString(protocol+"://localhost:"+port+"/get/README.md"),
 	)
 
 	return nil
+}
+
+func gatewayIsHTTPS(ctl *client.Client) (bool, error) {
+	certPath, err := ctl.ConfigGet("gateway.cert.certfile")
+	if err != nil {
+		return false, err
+	}
+
+	keyPath, err := ctl.ConfigGet("gateway.cert.keyfile")
+	if err != nil {
+		return false, err
+	}
+
+	return certPath != "" && keyPath != "", nil
 }
 
 func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
@@ -636,17 +660,7 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Println()
 	}
 
-	certPath, err := ctl.ConfigGet("gateway.cert.certfile")
-	if err != nil {
-		return err
-	}
-
-	keyPath, err := ctl.ConfigGet("gateway.cert.keyfile")
-	if err != nil {
-		return err
-	}
-
-	isHTTPS := certPath != "" && keyPath != ""
+	isHTTPS, err := gatewayIsHTTPS(ctl)
 	if isHTTPS {
 		fmt.Printf("Using %s for transmitting files. Nice.\n", color.GreenString("https"))
 	} else {
@@ -829,18 +843,13 @@ func handleGatewayURL(ctx *cli.Context, ctl *client.Client) error {
 		port = ":" + port
 	}
 
-	certPath, err := ctl.ConfigGet("gateway.cert.certfile")
-	if err != nil {
-		return err
-	}
-
-	keyPath, err := ctl.ConfigGet("gateway.cert.keyfile")
+	isHTTPS, err := gatewayIsHTTPS(ctl)
 	if err != nil {
 		return err
 	}
 
 	protocol := "http"
-	if domain != "localhost" && certPath != "" && keyPath != "" {
+	if domain != "localhost" && isHTTPS {
 		protocol = "https"
 	}
 
