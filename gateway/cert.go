@@ -41,8 +41,9 @@ func getTLSConfig(cfg *config.Config) (*tls.Config, error) {
 
 		// PCI DSS 3.2.1. demands offering TLS >= 1.1:
 		return &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS11,
+			Certificates:             []tls.Certificate{cert},
+			MinVersion:               tls.VersionTLS11,
+			PreferServerCipherSuites: true,
 		}, nil
 	}
 
