@@ -970,7 +970,7 @@ Using the gateway
 -----------------
 
 Many users will not run ``brig``. Chances are, that you still want to send them
-your files with too much hassle. ``brig`` features a *Gateway* to HTTP(S),
+your files without too much hassle. ``brig`` features a *Gateway* to HTTP(S),
 which comes particularly handy if you happen to run a public server.
 
 The gateway is disabled by default. If you want to start it, use this command:
@@ -1044,7 +1044,7 @@ accessible from the gateway. If you want to add basic HTTP authentication:
     $ brig cfg set gateway.auth.user <user>
     $ brig cfg set gateway.auth.pass <pass>
 
-If you use HTTP authentication, it is strongly recommended to enable HTTPS.
+If you use authentication, it is strongly recommended to enable HTTPS.
 Otherwise the password will be transmitted in clear text.
 
 
@@ -1061,6 +1061,8 @@ you need to prepare the brig binary to allow that without running as root:
 
 .. code-block:: bash
 
+    # You need to restart the brig daemon for that.
+    # Every next brig command will restart it.
     $ brig daemon quit
     $ sudo setcap CAP_NET_BIND_SERVICE=+ep $(which brig)
 
