@@ -205,8 +205,11 @@ func (gw *Gateway) Start() {
 	// to the normal https port.
 	if tlsConfig != nil && gw.cfg.Bool("cert.redirect.enabled") {
 		gw.redirSrv = &http.Server{
-			Addr:    fmt.Sprintf(":%d", gw.cfg.Int("cert.redirect.http_port")),
-			Handler: redirHandler{redirPort: gw.cfg.Int("port")},
+			ReadHeaderTimeout: 10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			IdleTimeout:       360 * time.Second,
+			Addr:              fmt.Sprintf(":%d", gw.cfg.Int("cert.redirect.http_port")),
+			Handler:           redirHandler{redirPort: gw.cfg.Int("port")},
 		}
 
 		go func() {
@@ -219,13 +222,12 @@ func (gw *Gateway) Start() {
 	}
 
 	gw.srv = &http.Server{
-		Addr:      addr,
-		Handler:   gziphandler.GzipHandler(gw),
-		TLSConfig: tlsConfig,
-
-		// ReadHeaderTimeout: 5 * time.Second,
-		// WriteTimeout:      5 * time.Second,
-		// IdleTimeout:       120 * time.Second,
+		Addr:              addr,
+		Handler:           gziphandler.GzipHandler(gw),
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       360 * time.Second,
 	}
 
 	go func() {
