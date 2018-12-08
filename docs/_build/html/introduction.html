@@ -26,6 +26,7 @@
 
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Quickstart" href="quickstart.html" />
@@ -1076,7 +1077,7 @@ $ brig config <span class="nb">set</span> repo.password_command <span class="s2"
 <div class="section" id="using-the-gateway">
 <h2>Using the gateway<a class="headerlink" href="#using-the-gateway" title="Permalink to this headline">¶</a></h2>
 <p>Many users will not run <code class="docutils literal notranslate"><span class="pre">brig</span></code>. Chances are, that you still want to send them
-your files with too much hassle. <code class="docutils literal notranslate"><span class="pre">brig</span></code> features a <em>Gateway</em> to HTTP(S),
+your files without too much hassle. <code class="docutils literal notranslate"><span class="pre">brig</span></code> features a <em>Gateway</em> to HTTP(S),
 which comes particularly handy if you happen to run a public server.</p>
 <p>The gateway is disabled by default. If you want to start it, use this command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway start
@@ -1089,7 +1090,12 @@ hyperlink to a certain file called <code class="docutils literal notranslate"><s
 http://localhost:5000/get/README.md
 </pre></div>
 </div>
-<p>Opening this in your browser will show you the file’s content.</p>
+<p>Opening this in your browser will show you the file’s content. If you’d like to
+use another port than <code class="docutils literal notranslate"><span class="pre">5000</span></code>, you can do so by setting the respective config
+key:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.port <span class="m">7777</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>You can always check the status of the gateway:</p>
@@ -1126,7 +1132,7 @@ $ brig cfg <span class="nb">set</span> gateway.auth.user &lt;user&gt;
 $ brig cfg <span class="nb">set</span> gateway.auth.pass &lt;pass&gt;
 </pre></div>
 </div>
-<p>If you use HTTP authentication, it is strongly recommended to enable HTTPS.
+<p>If you use authentication, it is strongly recommended to enable HTTPS.
 Otherwise the password will be transmitted in clear text.</p>
 </div>
 <div class="section" id="running-the-gateway-with-https">
@@ -1137,7 +1143,9 @@ a TLS certificate for it. In total there are three methods:</p>
 <p><strong>Method one: Automatic:</strong> This works by telling the gateway the domain name.
 Since the retrieval process for getting a certificate involves binding on port 80,
 you need to prepare the brig binary to allow that without running as root:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig daemon quit
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># You need to restart the brig daemon for that.</span>
+<span class="c1"># Every next brig command will restart it.</span>
+$ brig daemon quit
 $ sudo setcap <span class="nv">CAP_NET_BIND_SERVICE</span><span class="o">=</span>+ep <span class="k">$(</span>which brig<span class="k">)</span>
 </pre></div>
 </div>
@@ -1167,7 +1175,11 @@ before it expires.</p>
 <p><strong>Method two: Half-Automated:</strong></p>
 <p>If the above did not work for whatever reasons, you can try to get a certificate manually.
 There is a built-in helper called <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gateway</span> <span class="pre">cert</span></code> that can help you doing that:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo brig gateway cert your.domain.org
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway cert your.domain.org
+You are not root. We need root rights to <span class="nb">bind</span> to port <span class="m">80</span>.
+I will re-execute this <span class="nb">command</span> <span class="k">for</span> you as:
+$ sudo brig gateway cert nwzmlh4iouqikobq.myfritz.net --cache-dir /home/sahib/.cache/brig
+
 A certificate was downloaded successfully.
 Successfully <span class="nb">set</span> the gateway config to use the certificate.
 Note that you have to re-run this <span class="nb">command</span> every <span class="m">90</span> days currently.

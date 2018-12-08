@@ -39,10 +39,12 @@ Those features should be considered after releasing the first prototype.
 A certain amount of first user input should be collected to see if the
 direction we're going is valid.
 
-*Gateway:* Provide a built-in (and optional) http server, that can »bridge«
+ ..  role:: strikethrough
+
+*Gateway:* :strikethrough:`Provide a built-in (and optional) http server, that can »bridge«
 between the internal ipfs network and people that use a regular browser.
 Instances that run on a public server can then provide hyperlinks of files to
-non-brig users.
+non-brig users.` *Done as of version 0.3.0.*
 
 *Shelf instances:* Special instaces of brig, that operate automatically and are
 meant to be run on public servers. They can be used to exchange data between
