@@ -126,7 +126,7 @@ func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *C
 
 		// Wait until we cannot ping it anymore.
 		daemonErroredOut := false
-		for idx := 0; idx < 100; idx++ {
+		for idx := 0; idx < 200; idx++ {
 			if err := ctl.Ping(); err != nil {
 				daemonErroredOut = true
 				break
