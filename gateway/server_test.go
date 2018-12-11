@@ -60,6 +60,7 @@ func ping(t *testing.T, gw *Gateway) bool {
 func query(t *testing.T, gw *Gateway, suffix string) (int, []byte) {
 	resp, err := http.Get(buildURL(gw, suffix))
 	require.Nil(t, err, fmt.Sprintf("%v", err))
+	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	require.Nil(t, err, fmt.Sprintf("%v", err))
@@ -75,6 +76,7 @@ func queryWithAuth(t *testing.T, gw *Gateway, suffix, user, pass string) (int, [
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.Nil(t, err, fmt.Sprintf("%v", err))
+	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	require.Nil(t, err, fmt.Sprintf("%v", err))
@@ -100,7 +102,7 @@ func TestGatewayNoSuchFile(t *testing.T) {
 		gw.cfg.SetStrings("folders", []string{"/"})
 		status, data := query(t, gw, "/get/hello/world.png")
 		require.Equal(t, 404, status)
-		require.Equal(t, []byte{}, data)
+		require.Equal(t, "not found", string(bytes.TrimSpace(data)))
 	})
 }
 
@@ -113,7 +115,7 @@ func TestGatewayUnauthorizedBadFolder(t *testing.T) {
 		gw.cfg.SetStrings("folders", []string{"/world"})
 		status, data := query(t, gw, "/get/hello/world.png")
 		require.Equal(t, 401, status)
-		require.Equal(t, []byte{}, data)
+		require.Equal(t, "not authorized", string(bytes.TrimSpace(data)))
 	})
 }
 
@@ -130,7 +132,7 @@ func TestGatewayUnauthorizedBadUser(t *testing.T) {
 
 		status, data := queryWithAuth(t, gw, "/get/hello/world.png", "resu", "pass")
 		require.Equal(t, 401, status)
-		require.Equal(t, []byte{}, data)
+		require.Equal(t, "not authorized", string(bytes.TrimSpace(data)))
 	})
 }
 
@@ -147,7 +149,7 @@ func TestGatewayUnauthorizedBadPass(t *testing.T) {
 
 		status, data := queryWithAuth(t, gw, "/get/hello/world.png", "user", "ssap")
 		require.Equal(t, 401, status)
-		require.Equal(t, []byte{}, data)
+		require.Equal(t, "not authorized", string(bytes.TrimSpace(data)))
 	})
 }
 
@@ -182,7 +184,7 @@ func TestGatewayConfigChangePort(t *testing.T) {
 		require.Equal(t, 200, status)
 		require.Equal(t, exampleData, data)
 
-		gw.cfg.SetInt("port", 5001)
+		gw.cfg.SetInt("port", 8888)
 		time.Sleep(1 * time.Second)
 
 		// should still work, the port changed.

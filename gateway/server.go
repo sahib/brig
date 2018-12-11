@@ -130,7 +130,7 @@ func (rh redirHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// remove/add not default ports from req.Host
 	host, _, err := net.SplitHostPort(req.Host)
 	if err != nil {
-		w.WriteHeader(400)
+		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 	}
 
 	if !strings.HasPrefix(fullURL, "/get/") {
-		rw.WriteHeader(400)
+		http.Error(rw, "invalid url prefix", http.StatusBadRequest)
 		return
 	}
 
@@ -326,7 +326,7 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 	nodePath, err := url.PathUnescape(fullURL[4:])
 	if err != nil {
 		log.Debugf("received malformed url: %s", fullURL)
-		rw.WriteHeader(400)
+		http.Error(rw, "malformed url", http.StatusBadRequest)
 		return
 	}
 
@@ -338,7 +338,7 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 			hdr.Set("WWW-Authenticate", "Basic realm=\"brig gateway\"")
 		}
 
-		rw.WriteHeader(401)
+		http.Error(rw, "not authorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -346,12 +346,12 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 	if err != nil {
 		// Handle a bad nodePath more explicit:
 		if ie.IsNoSuchFileError(err) {
-			rw.WriteHeader(404)
+			http.Error(rw, "not found", http.StatusNotFound)
 			return
 		}
 
 		log.Errorf("gateway: failed to stat %s: %v", nodePath, err)
-		rw.WriteHeader(500)
+		http.Error(rw, "failed to stat file", http.StatusInternalServerError)
 		return
 	}
 
@@ -363,14 +363,14 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 
 		if err := gw.backend.Tar(nodePath, rw); err != nil {
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
-			rw.WriteHeader(500)
+			http.Error(rw, "failed to stream", http.StatusInternalServerError)
 			return
 		}
 	} else {
 		stream, err := gw.backend.Cat(nodePath)
 		if err != nil {
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
-			rw.WriteHeader(500)
+			http.Error(rw, "failed to stream", http.StatusInternalServerError)
 			return
 		}
 
@@ -386,8 +386,8 @@ func (gw *Gateway) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		}
 
 		if _, err := io.Copy(rw, rawStream); err != nil {
-			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
-			rw.WriteHeader(500)
+			log.Errorf("gateway: failed to copy %s: %v", nodePath, err)
+			http.Error(rw, "failed to copy", http.StatusInternalServerError)
 			return
 		}
 	}
