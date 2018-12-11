@@ -39,6 +39,7 @@ func EventFromString(ev string) (EventType, error) {
 
 type Event struct {
 	EvType EventType
+	Source string
 }
 
 func (msg *Event) Encode() ([]byte, error) {
@@ -85,4 +86,27 @@ func decodeMessage(data []byte) (*Event, error) {
 	}
 
 	return &Event{EvType: ev}, nil
+}
+
+func dedupeEvents(evs []Event) []Event {
+	// TODO: Take source into account. different sources may have fs events.
+	seen := make(map[EventType]map[string]bool)
+	dedupEvs := []Event{}
+
+	for _, ev := range evs {
+		seenSources, ok := seen[ev.EvType]
+		if ok {
+			if seenSources[ev.Source] {
+				continue
+			}
+		} else {
+			seenSources = make(map[string]bool)
+			seen[ev.EvType] = seenSources
+		}
+
+		dedupEvs = append(dedupEvs, ev)
+		seen[ev.EvType][ev.Source] = true
+	}
+
+	return dedupEvs
 }

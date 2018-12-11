@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/server/capnp"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -16,6 +17,20 @@ import (
 
 type fsHandler struct {
 	base *base
+}
+
+func (fh *fsHandler) notifyFsChangeEvent() {
+	if fh.base.evListener == nil {
+		return
+	}
+
+	ev := events.Event{
+		EvType: events.FsEvent,
+	}
+
+	if err := fh.base.evListener.PublishEvent(ev); err != nil {
+		log.Warningf("failed to publish filesystem change event: %v", err)
+	}
 }
 
 func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, error) {
@@ -127,6 +142,7 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 		}
 
 		defer fd.Close()
+		defer fh.notifyFsChangeEvent()
 
 		return fs.Stage(url.Path, fd)
 	})
@@ -205,6 +221,7 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 
 	createParents := call.Params.CreateParents()
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		defer fh.notifyFsChangeEvent()
 		return fs.Mkdir(url.Path, createParents)
 	})
 }
@@ -218,6 +235,7 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		defer fh.notifyFsChangeEvent()
 		return fs.Remove(url.Path)
 	})
 }
@@ -245,6 +263,7 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 			return fmt.Errorf("cannot move between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
+		defer fh.notifyFsChangeEvent()
 		return fs.Move(srcUrl.Path, dstURL.Path)
 	})
 }
@@ -272,6 +291,7 @@ func (fh *fsHandler) Copy(call capnp.FS_copy) error {
 			return fmt.Errorf("cannot copy between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
+		defer fh.notifyFsChangeEvent()
 		return fs.Copy(srcUrl.Path, dstURL.Path)
 	})
 }

@@ -14,6 +14,23 @@ var DefaultsV0 = config.DefaultMapping{
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
 	},
+	"events": config.DefaultMapping{
+		"enabled": config.DefaultEntry{
+			Default:      true,
+			NeedsRestart: false,
+			Docs:         "Wether we should handle incoming events and publish events",
+		},
+		"send_flush_window": config.DefaultEntry{
+			Default:      "1s",
+			NeedsRestart: false,
+			Docs:         "time window to collect internal events before sending",
+		},
+		"recv_flush_window": config.DefaultEntry{
+			Default:      "200ms",
+			NeedsRestart: false,
+			Docs:         "time window before triggering notifications by remote events",
+		},
+	},
 	"gateway": config.DefaultMapping{
 		"enabled": config.DefaultEntry{
 			Default:      false,

@@ -18,6 +18,8 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
+	fserrs "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/gateway"
 	p2pnet "github.com/sahib/brig/net"
@@ -71,7 +73,11 @@ type base struct {
 	// logToStdout is true when logging to stdout was explicitly requested.
 	logToStdout bool
 
+	// gateway is the control object for the gateway server
 	gateway *gateway.Gateway
+
+	// evListener is a listener that will h
+	evListener *events.Listener
 }
 
 func repoIsInitialized(path string) error {
@@ -346,6 +352,15 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		return nil, err
 	}
 
+	self, err := bk.Identity()
+	if err != nil {
+		return nil, err
+	}
+
+	b.evListener = events.NewListener(rp.Config.Section("events"), bk, self.Addr)
+	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
+	go b.evListener.Listen(context.TODO())
+
 	// Give peer server a small bit of time to start up, so it can Accept()
 	// connections immediately after loadPeerServer. Nice for tests.
 	time.Sleep(50 * time.Millisecond)
@@ -476,6 +491,11 @@ func (b *base) Quit() (err error) {
 		}
 	}
 
+	log.Infof("Shutting down event listener...")
+	if err := b.evListener.Close(); err != nil {
+		log.Warningf("shutting down event handler failed: %v", err)
+	}
+
 	log.Infof("Trying to lock repository...")
 
 	rp, err := b.Repo()
@@ -530,4 +550,105 @@ func newBase(
 		logToStdout: logToStdout,
 		conductor:   conductor.New(5*time.Minute, 100),
 	}, nil
+}
+
+func (b *base) doFetch(who string) error {
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	if who == rp.Owner {
+		log.Infof("skipping fetch for own metadata")
+		return nil
+	}
+
+	return b.withNetClient(who, func(ctl *p2pnet.Client) error {
+		return b.withRemoteFs(who, func(remoteFs *catfs.FS) error {
+			// Not all remotes might allow doing a full fetch.
+			// This is only possible when having full access to all folders.
+			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+				log.Debugf("fetch: doing complete fetch for %s", who)
+				storeBuf, err := ctl.FetchStore()
+				if err != nil {
+					return e.Wrapf(err, "fetch-store")
+				}
+
+				return e.Wrapf(remoteFs.Import(storeBuf), "import")
+			}
+
+			// Ask our local copy of the remote what the last patch index was.
+			fromIndex, err := remoteFs.LastPatchIndex()
+			if err != nil {
+				return err
+			}
+
+			// Get the missing changes since then:
+			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
+			patch, err := ctl.FetchPatch(fromIndex)
+			if err != nil {
+				return err
+			}
+
+			return remoteFs.ApplyPatch(patch)
+		})
+	})
+}
+
+func (b *base) doSync(withWhom string, needFetch bool) (*catfs.Diff, error) {
+	if needFetch {
+		if err := b.doFetch(withWhom); err != nil {
+			return nil, e.Wrapf(err, "fetch")
+		}
+	}
+
+	var diff *catfs.Diff
+
+	return diff, b.withCurrFs(func(ownFs *catfs.FS) error {
+		return b.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
+			// Automatically make a commit before merging with their state:
+			timeStamp := time.Now().UTC().Format(time.RFC3339)
+			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
+			if err := ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
+				return e.Wrapf(err, "merge-commit")
+			}
+
+			cmtBefore, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
+			log.Debugf("Starting sync with %s", withWhom)
+
+			if err := ownFs.Sync(remoteFs); err != nil {
+				return err
+			}
+
+			log.Debugf("Sync with %s done", withWhom)
+
+			cmtAfter, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
+			diff, err = ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
+			return err
+		})
+	})
+}
+
+func (b *base) handleFsEvent(ev *events.Event) {
+	rmt, err := b.repo.Remotes.RemoteByAddr(ev.Source)
+	if err != nil {
+		log.Warningf("failed to resolve '%s' to a remote name: %v", ev.Source, err)
+		return
+	}
+
+	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
+	diff, err := b.doSync(rmt.Name, true)
+	if err != nil {
+		log.Warningf("sync failed: %v", err)
+	} else {
+		log.Debugf("sync successful: %v", diff)
+	}
 }

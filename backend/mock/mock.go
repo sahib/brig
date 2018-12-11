@@ -2,6 +2,7 @@ package mock
 
 import (
 	"github.com/sahib/brig/catfs"
+	eventsMock "github.com/sahib/brig/events/mock"
 	netMock "github.com/sahib/brig/net/mock"
 	repoMock "github.com/sahib/brig/repo/mock"
 )
@@ -11,6 +12,7 @@ type Backend struct {
 	*catfs.MemFsBackend
 	*repoMock.RepoBackend
 	*netMock.NetBackend
+	*eventsMock.MockBackend
 }
 
 // NewMockBackend returns a backend.Backend that operates only in memory

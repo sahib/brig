@@ -37,6 +37,11 @@ type Remote struct {
 
 	// Fingerprint is the fingerprint of the remote.
 	Fingerprint peer.Fingerprint
+
+	// AcceptAutoUpdates can be true if we want to receive
+	// updates from other peers that support this.
+	// TODO: Actually use this.
+	AcceptAutoUpdates bool
 }
 
 // RemoteList is a helper that parses the remote access yml file
@@ -180,4 +185,16 @@ func (rl *RemoteList) SaveList(remotes []Remote) error {
 	}
 
 	return rl.save()
+}
+
+// RemoteByAddr will return a remote with `addr` in its fingerprint, if any.
+// If none are found ErrNoSuchRemote will be returned as error.
+func (rl *RemoteList) RemoteByAddr(addr string) (Remote, error) {
+	for _, remote := range rl.remotes {
+		if addr == remote.Fingerprint.Addr() {
+			return *remote, nil
+		}
+	}
+
+	return Remote{}, ErrNoSuchRemote
 }

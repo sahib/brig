@@ -61,7 +61,9 @@ instances might want to pin almost everything up to a certain depth.
 
 *Improve read/write performance:* Big files are currently hold in memory
 completely by the fuse layer (when doing a flush). This is suboptimal and needs
-more intelligent handling and out-of-memory caching of writes.
+more intelligent handling and out-of-memory caching of writes. Also, the
+network performance is often very low and ridden by network errors and
+timeouts.
 
 *More automated authentication scheme:* E-Mail-like usernames could be used to
 verify a user without exchanging fingerprints. This could be done by e.g.

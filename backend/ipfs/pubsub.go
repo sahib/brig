@@ -21,7 +21,7 @@ func (msg *message) Data() []byte {
 }
 
 func (msg *message) Source() string {
-	return string(msg.msg.From())
+	return msg.msg.From().Pretty()
 }
 
 func (s *subscription) Next(ctx context.Context) (eventsBackend.Message, error) {
