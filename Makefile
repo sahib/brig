@@ -5,7 +5,7 @@ VERSION_IMPORT="github.com/sahib/brig/version"
 
 # Build metadata:
 VERSION_MAJOR=0
-VERSION_MINOR=2
+VERSION_MINOR=3
 VERSION_PATCH=0
 RELEASETYPE=
 BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`

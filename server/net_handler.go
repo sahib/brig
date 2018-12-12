@@ -271,7 +271,7 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 	return &capRemote, nil
 }
 
-func (nh *netHandler) syncPingMap() error {
+func (nh *netHandler) syncRemoteStates() error {
 	psrv, err := nh.base.PeerServer()
 	if err != nil {
 		return err
@@ -292,7 +292,11 @@ func (nh *netHandler) syncPingMap() error {
 		addrs = append(addrs, remote.Fingerprint.Addr())
 	}
 
-	return psrv.PingMap().Sync(addrs)
+	if err := psrv.PingMap().Sync(addrs); err != nil {
+		return err
+	}
+
+	return nh.base.evListener.SetupListeners(nh.base.evListenerCtx, addrs)
 }
 
 func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
@@ -317,7 +321,7 @@ func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
 		return err
 	}
 
-	return nh.syncPingMap()
+	return nh.syncRemoteStates()
 }
 
 func (nh *netHandler) RemoteClear(call capnp.Net_remoteClear) error {
@@ -348,7 +352,7 @@ func (nh *netHandler) RemoteRm(call capnp.Net_remoteRm) error {
 		return err
 	}
 
-	return nh.syncPingMap()
+	return nh.syncRemoteStates()
 }
 
 func (nh *netHandler) RemoteLs(call capnp.Net_remoteLs) error {
@@ -433,7 +437,7 @@ func (nh *netHandler) RemoteSave(call capnp.Net_remoteSave) error {
 		return err
 	}
 
-	return nh.syncPingMap()
+	return nh.syncRemoteStates()
 }
 
 // LocateResult is one entry in the result of the "net locate" command.

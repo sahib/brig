@@ -12,7 +12,7 @@ type Backend struct {
 	*catfs.MemFsBackend
 	*repoMock.RepoBackend
 	*netMock.NetBackend
-	*eventsMock.MockBackend
+	*eventsMock.EventsBackend
 }
 
 // NewMockBackend returns a backend.Backend that operates only in memory
@@ -23,6 +23,7 @@ func NewMockBackend(path, owner string, port int) *Backend {
 		MemFsBackend: catfs.NewMemFsBackend(),
 		RepoBackend:  repoMock.NewMockRepoBackend(),
 		NetBackend:   netMock.NewNetBackend(path, owner, port),
+		EventBackend: eventsMock.NewEventsBackend(),
 	}
 }
 

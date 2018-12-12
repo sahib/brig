@@ -78,6 +78,12 @@ type base struct {
 
 	// evListener is a listener that will h
 	evListener *events.Listener
+
+	// evListenerCtx is the context for the event subsystem
+	evListenerCtx context.Context
+
+	// evListenerCancel can be called on quitting the daemon
+	evListenerCancel context.CancelFunc
 }
 
 func repoIsInitialized(path string) error {
@@ -357,9 +363,12 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		return nil, err
 	}
 
+	b.evListenerCtx, b.evListenerCancel = context.WithCancel(context.Background())
 	b.evListener = events.NewListener(rp.Config.Section("events"), bk, self.Addr)
 	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
-	go b.evListener.Listen(context.TODO())
+	if err := b.evListener.SetupListeners(b.evListenerCtx, addrs); err != nil {
+		log.Warningf("failed to setup event listeners: %v", err)
+	}
 
 	// Give peer server a small bit of time to start up, so it can Accept()
 	// connections immediately after loadPeerServer. Nice for tests.
@@ -489,6 +498,8 @@ func (b *base) Quit() (err error) {
 		if err = b.peerServer.Close(); err != nil {
 			log.Warningf("Failed to close peer server: %v", err)
 		}
+
+		b.evListenerCancel()
 	}
 
 	log.Infof("Shutting down event listener...")

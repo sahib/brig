@@ -25,7 +25,7 @@ func (fh *fsHandler) notifyFsChangeEvent() {
 	}
 
 	ev := events.Event{
-		EvType: events.FsEvent,
+		Type: events.FsEvent,
 	}
 
 	if err := fh.base.evListener.PublishEvent(ev); err != nil {
