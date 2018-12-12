@@ -2,12 +2,13 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/events/backend"
 	"github.com/sahib/config"
 )
 
@@ -28,6 +29,7 @@ type Listener struct {
 	evSendCh  chan Event
 	evRecvCh  chan Event
 	ownAddr   string
+	isClosed  bool
 }
 
 // NewListener constructs a new listener.
@@ -40,9 +42,9 @@ func NewListener(cfg *config.Config, bk backend.Backend, ownAddr string) *Listen
 		cfg:       cfg,
 		ownAddr:   ownAddr,
 		callbacks: make(map[EventType]func(*Event)),
-		evSendCh:  make(chan Event, 10),
-		evRecvCh:  make(chan Event, 10),
 		cancels:   make(map[string]context.CancelFunc),
+		evSendCh:  make(chan Event, 100),
+		evRecvCh:  make(chan Event, 100),
 	}
 
 	go lst.eventSendLoop()
@@ -55,6 +57,10 @@ func (lst *Listener) Close() error {
 	lst.mu.Lock()
 	defer lst.mu.Unlock()
 
+	if lst.isClosed {
+		return nil
+	}
+
 	close(lst.evSendCh)
 	close(lst.evRecvCh)
 
@@ -62,6 +68,7 @@ func (lst *Listener) Close() error {
 		cancel()
 	}
 
+	lst.isClosed = true
 	return nil
 }
 
@@ -70,6 +77,10 @@ func (lst *Listener) Close() error {
 func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
 	lst.mu.Lock()
 	defer lst.mu.Unlock()
+
+	if lst.isClosed {
+		return
+	}
 
 	lst.callbacks[ev] = hdl
 }
@@ -137,16 +148,28 @@ func (lst *Listener) eventRecvLoop() {
 
 // PublishEvent notifies other peers that something on our
 // side changed. The "something" is defined by `ev`.
+// PublishEvent does not block.
 func (lst *Listener) PublishEvent(ev Event) error {
 	lst.mu.Lock()
 	defer lst.mu.Unlock()
+
+	if lst.isClosed {
+		return nil
+	}
 
 	if !lst.cfg.Bool("enabled") {
 		return nil
 	}
 
-	lst.evSendCh <- ev
-	return nil
+	// Only send the event if we are not clogged up yet.
+	// We prioritze the well-being of other systems more by
+	// not allowing PublishEvent to block.
+	select {
+	case lst.evSendCh <- ev:
+		return nil
+	default:
+		return fmt.Errorf("lost event")
+	}
 }
 
 // SetupListeners sets up the listener to receive events from any of `addrs`.
@@ -154,6 +177,10 @@ func (lst *Listener) PublishEvent(ev Event) error {
 // SetupListeners can be called several times, each time overwriting and stopping
 // previous listeners.
 func (lst *Listener) SetupListeners(ctx context.Context, addrs []string) error {
+	if lst.isClosed {
+		return nil
+	}
+
 	seen := make(map[string]bool)
 
 	for _, addr := range addrs {
@@ -217,7 +244,12 @@ func (lst *Listener) listenSingle(ctx context.Context, topic string) error {
 		}
 
 		ev.Source = msg.Source()
-		lst.evRecvCh <- *ev
+
+		select {
+		case lst.evRecvCh <- *ev:
+		default:
+			log.Warningf("dropped incoming event: %v", ev)
+		}
 	}
 
 	return nil
