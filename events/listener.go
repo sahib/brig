@@ -223,12 +223,10 @@ func (lst *Listener) listenSingle(ctx context.Context, topic string) error {
 			continue
 		}
 
-		log.Debugf("entering next")
 		msg, err := sub.Next(ctx)
 		if msg == nil {
 			continue
 		}
-		log.Debugf("leave next: %v", msg)
 
 		if err == io.EOF || err == context.Canceled {
 			return nil

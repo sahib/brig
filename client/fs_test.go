@@ -226,14 +226,14 @@ func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
 			require.Nil(t, err, stringify(err))
 
 			// add bob to ali as remote
-			err = aliCtl.RemoteAdd(Remote{
+			err = aliCtl.RemoteAddOrUpdate(Remote{
 				Name:        "bob",
 				Fingerprint: bobWhoami.Fingerprint,
 			})
 			require.Nil(t, err, stringify(err))
 
 			// add ali to bob as remote
-			err = bobCtl.RemoteAdd(Remote{
+			err = bobCtl.RemoteAddOrUpdate(Remote{
 				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
 			})
