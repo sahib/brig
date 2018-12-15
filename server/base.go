@@ -694,16 +694,15 @@ func (b *base) notifyFsChangeEvent(rp *repo.Repository) {
 		return
 	}
 
-	log.Debugf("publishing fs event")
 	// Do not trigger events when we're looking at the store of somebody else.
 	if rp.Owner != rp.CurrentUser() {
 		return
 	}
 
+	log.Debugf("publishing fs event")
 	ev := events.Event{
 		Type: events.FsEvent,
 	}
-	log.Debugf("BEFORE ACTUAL PUBLISH")
 
 	if err := b.evListener.PublishEvent(ev); err != nil {
 		log.Warningf("failed to publish filesystem change event: %v", err)

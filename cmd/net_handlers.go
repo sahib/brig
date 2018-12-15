@@ -492,13 +492,17 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
+	splitFingerprint := strings.SplitN(self.Fingerprint, ":", 2)
+
 	printFingerprint := ctx.Bool("fingerprint")
 	printName := ctx.Bool("name")
+	printAddr := ctx.Bool("addr")
+	printKey := ctx.Bool("key")
 
 	userName := color.YellowString(self.CurrentUser)
 	ownerName := color.GreenString(self.Owner)
 
-	if !printFingerprint && !printName {
+	if !printFingerprint && !printName && !printAddr && !printKey {
 		if self.CurrentUser != self.Owner {
 			fmt.Printf(
 				"# Note: viewing %s's data currently\n",
@@ -521,6 +525,26 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 			fmt.Printf(" ")
 		}
 		fmt.Printf("%s", self.Fingerprint)
+	}
+
+	if printAddr {
+		if printName || printFingerprint {
+			fmt.Printf(" ")
+		}
+
+		if len(splitFingerprint) > 0 {
+			fmt.Printf("%s", splitFingerprint[0])
+		}
+	}
+
+	if printKey {
+		if printName || printFingerprint || printAddr {
+			fmt.Printf(" ")
+		}
+
+		if len(splitFingerprint) > 1 {
+			fmt.Printf("%s", splitFingerprint[1])
+		}
 	}
 
 	fmt.Printf("\n")

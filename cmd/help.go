@@ -92,6 +92,14 @@ var helpTexts = map[string]helpEntry{
 				Name:  "name,n",
 				Usage: "Only print the own name",
 			},
+			cli.BoolFlag{
+				Name:  "addr,a",
+				Usage: "Only print the addr portion of the fingerprint",
+			},
+			cli.BoolFlag{
+				Name:  "key,k",
+				Usage: "Only print the key portion of the fingerprint",
+			},
 		},
 		Description: `This command prints your name, fingerprint and what store
    you are looking at. When you initialized your repository, you chose

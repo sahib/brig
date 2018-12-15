@@ -20,15 +20,25 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "Wether we should handle incoming events and publish events",
 		},
-		"send_flush_window": config.DefaultEntry{
-			Default:      "2s",
+		"recv_min_backoff": config.DefaultEntry{
+			Default:      "50ms",
 			NeedsRestart: false,
-			Docs:         "time window to collect internal events before sending",
+			Docs:         "Minimal time window between handling incoming events",
 		},
-		"recv_flush_window": config.DefaultEntry{
+		"recv_max_backoff": config.DefaultEntry{
+			Default:      "30s",
+			NeedsRestart: false,
+			Docs:         "Maximal time window between handling incoming events",
+		},
+		"send_min_backoff": config.DefaultEntry{
 			Default:      "250ms",
 			NeedsRestart: false,
-			Docs:         "time window before triggering notifications by remote events",
+			Docs:         "Minimal time to pass before sending events",
+		},
+		"send_max_backoff": config.DefaultEntry{
+			Default:      "2s",
+			NeedsRestart: false,
+			Docs:         "Maximal time to pass before sending events",
 		},
 	},
 	"gateway": config.DefaultMapping{

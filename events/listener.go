@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/jpillora/backoff"
 	"github.com/sahib/brig/events/backend"
 	"github.com/sahib/config"
 )
@@ -85,35 +86,44 @@ func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
 	lst.callbacks[ev] = hdl
 }
 
-func (lst *Listener) eventSendLoop() {
-	events := []Event{}
-	tckr := time.NewTicker(lst.cfg.Duration("send_flush_window"))
+func (lst *Listener) eventLoop(evCh chan Event, minBackoff, maxBackoff time.Duration, fn func(ev Event)) {
+	tckr := time.NewTicker(minBackoff)
 	defer tckr.Stop()
 
-	ownTopic := brigEventTopicPrefix + lst.ownAddr
+	events := []Event{}
+	lastEvent := time.Now()
+
+	backoff := backoff.Backoff{
+		Min:    minBackoff,
+		Max:    maxBackoff,
+		Jitter: true,
+	}
 
 	for {
 		select {
 		case <-tckr.C:
 			for _, ev := range dedupeEvents(events) {
-				data, err := ev.encode()
-				if err != nil {
-					log.Errorf("event: failed to encode: %v", err)
-					continue
-				}
-
-				log.Debugf("publishing %v on %s", data, ownTopic)
-				if err := lst.bk.PublishEvent(ownTopic, data); err != nil {
-					log.Errorf("event: failed to publish: %v", err)
-					continue
-				}
+				fn(ev)
 			}
 
 			events = []Event{}
-		case ev, ok := <-lst.evSendCh:
+		case ev, ok := <-evCh:
 			if !ok {
 				return
 			}
+
+			// If the last event was long ago, we can forget about the
+			// backoff and use the most minimal again.
+			if time.Since(lastEvent) >= (minBackoff+maxBackoff)/2 {
+				backoff.Reset()
+			}
+
+			d := backoff.Duration()
+			tckr.Stop()
+			tckr = time.NewTicker(backoff.Duration())
+			lastEvent = time.Now()
+
+			log.Debugf("*** new duration: %v", d)
 
 			events = append(events, ev)
 		}
@@ -121,30 +131,37 @@ func (lst *Listener) eventSendLoop() {
 }
 
 func (lst *Listener) eventRecvLoop() {
-	events := []Event{}
-	tckr := time.NewTicker(lst.cfg.Duration("recv_flush_window"))
-	defer tckr.Stop()
+	minBackoff := lst.cfg.Duration("recv_min_backoff")
+	maxBackoff := lst.cfg.Duration("recv_max_backoff")
 
-	for {
-		select {
-		case <-tckr.C:
-			for _, ev := range dedupeEvents(events) {
-				lst.mu.Lock()
-				if cb, ok := lst.callbacks[ev.Type]; ok {
-					go cb(&ev)
-				}
-				lst.mu.Unlock()
-			}
-
-			events = []Event{}
-		case ev, ok := <-lst.evRecvCh:
-			if !ok {
-				return
-			}
-
-			events = append(events, ev)
+	lst.eventLoop(lst.evRecvCh, minBackoff, maxBackoff, func(ev Event) {
+		lst.mu.Lock()
+		if cb, ok := lst.callbacks[ev.Type]; ok {
+			go cb(&ev)
 		}
-	}
+		lst.mu.Unlock()
+	})
+}
+
+func (lst *Listener) eventSendLoop() {
+	ownTopic := brigEventTopicPrefix + lst.ownAddr
+
+	minBackoff := lst.cfg.Duration("send_min_backoff")
+	maxBackoff := lst.cfg.Duration("send_max_backoff")
+
+	lst.eventLoop(lst.evSendCh, minBackoff, maxBackoff, func(ev Event) {
+		data, err := ev.encode()
+		if err != nil {
+			log.Errorf("event: failed to encode: %v", err)
+			return
+		}
+
+		log.Debugf("publishing %v on %s", data, ownTopic)
+		if err := lst.bk.PublishEvent(ownTopic, data); err != nil {
+			log.Errorf("event: failed to publish: %v", err)
+			return
+		}
+	})
 }
 
 // PublishEvent notifies other peers that something on our
