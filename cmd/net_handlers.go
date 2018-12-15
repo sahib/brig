@@ -77,17 +77,23 @@ func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\t")
+	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tAUTO-UPDATE\t")
 
 	for _, remote := range remotes {
-		fmt.Fprintf(tabW, "%s\t%s\t\n", remote.Name, remote.Fingerprint)
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
+			remote.Name,
+			remote.Fingerprint,
+			yesOrNo(remote.AutoUpdate),
+		)
 	}
 
 	return tabW.Flush()
 }
 
 func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
-	peers, err := ctl.OnlinePeers()
+	peers, err := ctl.RemoteOnlineList()
 	if err != nil {
 		return err
 	}
@@ -103,7 +109,7 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if !ctx.IsSet("format") {
-		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tONLINE\tAUTHENTICATED\tLASTSEEN\t")
+		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tONLINE\tAUTHENTICATED\tLASTSEEN\tAUTO-UPDATE\t")
 	}
 
 	tmpl, err := readFormatTemplate(ctx)
@@ -111,11 +117,11 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	for _, peer := range peers {
+	for _, status := range peers {
 		if tmpl != nil {
 			rmt := client.Remote{
-				Fingerprint: peer.Fingerprint,
-				Name:        peer.Name,
+				Fingerprint: status.Remote.Fingerprint,
+				Name:        status.Remote.Name,
 			}
 
 			if err := tmpl.Execute(os.Stdout, rmt); err != nil {
@@ -125,22 +131,22 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			continue
 		}
 
-		roundtrip := peer.Roundtrip.String()
+		roundtrip := status.Roundtrip.String()
 		isOnline := color.GreenString("✔ ")
 
-		if peer.Err != nil {
-			isOnline = color.RedString("✘ " + peer.Err.Error())
+		if status.Err != nil {
+			isOnline = color.RedString("✘ " + status.Err.Error())
 			roundtrip = "∞"
 		}
 
 		authenticated := color.RedString("✘")
-		if peer.Authenticated {
+		if status.Authenticated {
 			authenticated = color.GreenString("✔")
 		}
 
 		shortFp := ""
 
-		splitFp := strings.SplitN(peer.Fingerprint, ":", 2)
+		splitFp := strings.SplitN(status.Remote.Fingerprint, ":", 2)
 		if len(splitFp) > 0 {
 			shortAddr := splitFp[0]
 			if len(shortAddr) > 12 {
@@ -162,13 +168,14 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t%s\t%s\t\n",
-			peer.Name,
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+			status.Remote.Name,
 			shortFp,
 			roundtrip,
 			isOnline,
 			authenticated,
-			peer.LastSeen.Format(time.UnixDate),
+			status.LastSeen.Format(time.UnixDate),
+			yesOrNo(status.Remote.AutoUpdate),
 		)
 	}
 
@@ -205,11 +212,48 @@ func handleRemoteAdd(ctx *cli.Context, ctl *client.Client) error {
 	remote := client.Remote{
 		Name:        ctx.Args().Get(0),
 		Fingerprint: ctx.Args().Get(1),
-		Folders:     nil,
+		AutoUpdate:  ctx.Bool("auto-update"),
 	}
 
-	if err := ctl.RemoteAdd(remote); err != nil {
+	for _, folder := range ctx.StringSlice("folder") {
+		remote.Folders = append(remote.Folders, folder)
+	}
+
+	if err := ctl.RemoteAddOrUpdate(remote); err != nil {
 		return fmt.Errorf("remote add: %v", err)
+	}
+
+	return nil
+}
+
+func handleRemoteAutoUpdate(ctx *cli.Context, ctl *client.Client) error {
+	enable := true
+
+	switch ctx.Args().First() {
+	case "enable", "e":
+		enable = true
+	case "disable", "d":
+		enable = false
+	default:
+		return fmt.Errorf("please specify 'enable' or 'disable' as first argument")
+	}
+
+	for _, remoteName := range ctx.Args()[1:] {
+		rmt, err := ctl.RemoteByName(remoteName)
+		if err != nil {
+			return err
+		}
+
+		rmt.AutoUpdate = enable
+		if err := ctl.RemoteAddOrUpdate(rmt); err != nil {
+			return fmt.Errorf("remote update: %v", err)
+		}
+
+		if !ctx.Bool("no-initial-sync") {
+			if _, err := ctl.Sync(remoteName, true); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

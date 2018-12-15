@@ -102,6 +102,7 @@ func (lst *Listener) eventSendLoop() {
 					continue
 				}
 
+				log.Debugf("publishing %v on %s", data, ownTopic)
 				if err := lst.bk.PublishEvent(ownTopic, data); err != nil {
 					log.Errorf("event: failed to publish: %v", err)
 					continue
@@ -222,10 +223,12 @@ func (lst *Listener) listenSingle(ctx context.Context, topic string) error {
 			continue
 		}
 
+		log.Debugf("entering next")
 		msg, err := sub.Next(ctx)
 		if msg == nil {
 			continue
 		}
+		log.Debugf("leave next: %v", msg)
 
 		if err == io.EOF || err == context.Canceled {
 			return nil

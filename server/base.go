@@ -319,6 +319,7 @@ func (b *base) peerServerUnlocked() (*p2pnet.Server, error) {
 }
 
 func (b *base) loadPeerServer() (*p2pnet.Server, error) {
+	log.Debugf("loading peer server")
 	bk, err := b.backendUnlocked()
 	if err != nil {
 		return nil, err
@@ -371,8 +372,17 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 	}
 
 	// Give peer server a small bit of time to start up, so it can Accept()
-	// connections immediately after loadPeerServer. Nice for tests.
+	// connections immediately after loadPeerServer. Also nice for tests.
 	time.Sleep(50 * time.Millisecond)
+
+	if err := b.initialSyncWithAutoUpdatePeers(); err != nil {
+		log.Warningf("initial sync failed with one or more peers: %v", err)
+	}
+
+	// Now that we boooted up, we should tell other users that our fs changed.
+	// It may or may not have, but other remotes judge that.
+	b.notifyFsChangeEvent(rp)
+
 	return srv, nil
 }
 
@@ -500,11 +510,12 @@ func (b *base) Quit() (err error) {
 		}
 
 		b.evListenerCancel()
-	}
-
-	log.Infof("Shutting down event listener...")
-	if err := b.evListener.Close(); err != nil {
-		log.Warningf("shutting down event handler failed: %v", err)
+		log.Infof("Shutting down event listener...")
+		if b.evListener != nil {
+			if err := b.evListener.Close(); err != nil {
+				log.Warningf("shutting down event handler failed: %v", err)
+			}
+		}
 	}
 
 	log.Infof("Trying to lock repository...")
@@ -649,17 +660,76 @@ func (b *base) doSync(withWhom string, needFetch bool) (*catfs.Diff, error) {
 }
 
 func (b *base) handleFsEvent(ev *events.Event) {
+	log.Debugf("received fs event: %v", ev)
 	rmt, err := b.repo.Remotes.RemoteByAddr(ev.Source)
 	if err != nil {
 		log.Warningf("failed to resolve '%s' to a remote name: %v", ev.Source, err)
 		return
 	}
 
-	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
-	diff, err := b.doSync(rmt.Name, true)
-	if err != nil {
-		log.Warningf("sync failed: %v", err)
-	} else {
-		log.Debugf("sync successful: %v", diff)
+	log.Debugf("resolved to remote: %v", rmt)
+	if !rmt.AcceptAutoUpdates {
+		log.Debugf("currently not accepting events from %s", rmt.Name)
+		return
 	}
+
+	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
+	if _, err := b.doSync(rmt.Name, true); err != nil {
+		log.Warningf("sync failed: %v", err)
+	}
+}
+
+func (b *base) notifyFsChangeEventLocked() {
+	rp, err := b.Repo()
+	if err != nil {
+		log.Warningf("failed to load repo: %v", err)
+		return
+	}
+
+	b.notifyFsChangeEvent(rp)
+}
+
+func (b *base) notifyFsChangeEvent(rp *repo.Repository) {
+	if b.evListener == nil {
+		return
+	}
+
+	log.Debugf("publishing fs event")
+	// Do not trigger events when we're looking at the store of somebody else.
+	if rp.Owner != rp.CurrentUser() {
+		return
+	}
+
+	ev := events.Event{
+		Type: events.FsEvent,
+	}
+	log.Debugf("BEFORE ACTUAL PUBLISH")
+
+	if err := b.evListener.PublishEvent(ev); err != nil {
+		log.Warningf("failed to publish filesystem change event: %v", err)
+	}
+}
+
+func (b *base) initialSyncWithAutoUpdatePeers() error {
+	rp, err := b.repoUnlocked()
+	if err != nil {
+		return err
+	}
+
+	rmts, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	for _, rmt := range rmts {
+		if !rmt.AcceptAutoUpdates {
+			continue
+		}
+
+		if _, err := b.doSync(rmt.Name, true); err != nil {
+			log.Warningf("failed to sync initially with %s: %v", rmt.Name, err)
+		}
+	}
+
+	return nil
 }

@@ -91,7 +91,7 @@ func (nh *netHandler) Disconnect(call capnp.Net_disconnect) error {
 	return psrv.Disconnect()
 }
 
-func (nh *netHandler) OnlinePeers(call capnp.Net_onlinePeers) error {
+func (nh *netHandler) RemoteOnlineList(call capnp.Net_remoteOnlineList) error {
 	server.Ack(call.Options)
 
 	rp, err := nh.base.Repo()
@@ -110,23 +110,23 @@ func (nh *netHandler) OnlinePeers(call capnp.Net_onlinePeers) error {
 	}
 
 	seg := call.Results.Segment()
-	statuses, err := capnp.NewPeerStatus_List(seg, int32(len(remotes)))
+	statuses, err := capnp.NewRemoteStatus_List(seg, int32(len(remotes)))
 	if err != nil {
 		return err
 	}
 
 	for idx, remote := range remotes {
-		status, err := capnp.NewPeerStatus(call.Results.Segment())
+		status, err := capnp.NewRemoteStatus(call.Results.Segment())
 		if err != nil {
 			return err
 		}
 
-		fp := string(remote.Fingerprint)
-		if err := status.SetFingerprint(fp); err != nil {
+		capRemote, err := remoteToCapRemote(remote, seg)
+		if err != nil {
 			return err
 		}
 
-		if err := status.SetName(remote.Name); err != nil {
+		if err := status.SetRemote(*capRemote); err != nil {
 			return err
 		}
 
@@ -224,9 +224,10 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 	}
 
 	return &repo.Remote{
-		Name:        remoteName,
-		Fingerprint: peer.Fingerprint(fingerprint),
-		Folders:     folders,
+		Name:              remoteName,
+		Fingerprint:       peer.Fingerprint(fingerprint),
+		Folders:           folders,
+		AcceptAutoUpdates: remote.AcceptAutoUpdates(),
 	}, nil
 }
 
@@ -268,6 +269,7 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 		return nil, err
 	}
 
+	capRemote.SetAcceptAutoUpdates(remote.AcceptAutoUpdates)
 	return &capRemote, nil
 }
 
@@ -299,7 +301,33 @@ func (nh *netHandler) syncRemoteStates() error {
 	return nh.base.evListener.SetupListeners(nh.base.evListenerCtx, addrs)
 }
 
-func (nh *netHandler) RemoteAdd(call capnp.Net_remoteAdd) error {
+func (nh *netHandler) RemoteByName(call capnp.Net_remoteByName) error {
+	server.Ack(call.Options)
+
+	name, err := call.Params.Name()
+	if err != nil {
+		return err
+	}
+
+	rp, err := nh.base.Repo()
+	if err != nil {
+		return err
+	}
+
+	rmt, err := rp.Remotes.Remote(name)
+	if err != nil {
+		return err
+	}
+
+	capRemote, err := remoteToCapRemote(rmt, call.Results.Segment())
+	if err != nil {
+		return err
+	}
+
+	return call.Results.SetRemote(*capRemote)
+}
+
+func (nh *netHandler) RemoteAddOrUpdate(call capnp.Net_remoteAddOrUpdate) error {
 	server.Ack(call.Options)
 
 	rp, err := nh.base.Repo()

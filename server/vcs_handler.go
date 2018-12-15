@@ -151,7 +151,12 @@ func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 
 	// Reset a specific file or directory otherwise:
 	return vcs.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Reset(url.Path, rev)
+		if err := fs.Reset(url.Path, rev); err != nil {
+			return err
+		}
+
+		vcs.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 

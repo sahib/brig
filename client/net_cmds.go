@@ -13,17 +13,12 @@ import (
 // REMOTE LIST ACCESS //
 ////////////////////////
 
-// RemoteFolder describes a folder entry in the remote list.
-// Is is currently only a single folder.
-type RemoteFolder struct {
-	Folder string
-}
-
 // Remote describes a single remote in the remote list.
 type Remote struct {
 	Name        string   `yaml:"Name"`
 	Fingerprint string   `yaml:"Fingerprint"`
 	Folders     []string `yaml:"Folders,flow"`
+	AutoUpdate  bool     `yaml:"AutoUpdate"`
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
@@ -57,6 +52,7 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 		Name:        remoteName,
 		Fingerprint: remoteFp,
 		Folders:     folders,
+		AutoUpdate:  remote.AcceptAutoUpdates(),
 	}, nil
 }
 
@@ -98,13 +94,14 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 		return nil, err
 	}
 
+	capRemote.SetAcceptAutoUpdates(remote.AutoUpdate)
 	return &capRemote, nil
 }
 
-// RemoteAdd adds a new remote described in `remote`.
+// RemoteAddOrUpdate adds a new remote described in `remote`.
 // We thus authenticate this remote.
-func (cl *Client) RemoteAdd(remote Remote) error {
-	call := cl.api.RemoteAdd(cl.ctx, func(p capnp.Net_remoteAdd_Params) error {
+func (cl *Client) RemoteAddOrUpdate(remote Remote) error {
+	call := cl.api.RemoteAddOrUpdate(cl.ctx, func(p capnp.Net_remoteAddOrUpdate_Params) error {
 		capRemote, err := remoteToCapRemote(remote, p.Segment())
 		if err != nil {
 			return err
@@ -115,6 +112,31 @@ func (cl *Client) RemoteAdd(remote Remote) error {
 
 	_, err := call.Struct()
 	return err
+}
+
+// RemoteByName adds a new remote described in `remote`.
+// We thus authenticate this remote.
+func (cl *Client) RemoteByName(name string) (Remote, error) {
+	call := cl.api.RemoteByName(cl.ctx, func(p capnp.Net_remoteByName_Params) error {
+		return p.SetName(name)
+	})
+
+	res, err := call.Struct()
+	if err != nil {
+		return Remote{}, err
+	}
+
+	capRmt, err := res.Remote()
+	if err != nil {
+		return Remote{}, err
+	}
+
+	rmt, err := capRemoteToRemote(capRmt)
+	if err != nil {
+		return Remote{}, err
+	}
+
+	return *rmt, nil
 }
 
 // RemoteUpdate Updates the contents of `remote`.
@@ -377,24 +399,23 @@ func (cl *Client) NetDisconnect() error {
 	return err
 }
 
-// PeerStatus is a entry in the remote online list.
+// RemoteStatus is a entry in the remote online list.
 // Fingerprint is not necessarily filled.
-type PeerStatus struct {
-	Name          string
-	Fingerprint   string
+type RemoteStatus struct {
+	Remote        Remote
 	LastSeen      time.Time
 	Roundtrip     time.Duration
 	Err           error
 	Authenticated bool
 }
 
-func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) {
-	name, err := capStatus.Name()
+func capRemoteStatusToRemoteStatus(capStatus capnp.RemoteStatus) (*RemoteStatus, error) {
+	capRemote, err := capStatus.Remote()
 	if err != nil {
 		return nil, err
 	}
 
-	fp, err := capStatus.Fingerprint()
+	remote, err := capRemoteToRemote(capRemote)
 	if err != nil {
 		return nil, err
 	}
@@ -423,9 +444,8 @@ func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) 
 	}
 
 	roundtripMs := time.Duration(capStatus.RoundtripMs()) * time.Millisecond
-	return &PeerStatus{
-		Name:          name,
-		Fingerprint:   fp,
+	return &RemoteStatus{
+		Remote:        *remote,
 		LastSeen:      lastSeen,
 		Roundtrip:     roundtripMs,
 		Err:           pingErr,
@@ -433,10 +453,10 @@ func capPeerStatusToPeerStatus(capStatus capnp.PeerStatus) (*PeerStatus, error) 
 	}, nil
 }
 
-// OnlinePeers is like RemoteList but also includes IsOnline and Authenticated
+// RemoteOnlineList is like RemoteList but also includes IsOnline and Authenticated
 // status.
-func (cl *Client) OnlinePeers() ([]PeerStatus, error) {
-	call := cl.api.OnlinePeers(cl.ctx, func(p capnp.Net_onlinePeers_Params) error {
+func (cl *Client) RemoteOnlineList() ([]RemoteStatus, error) {
+	call := cl.api.RemoteOnlineList(cl.ctx, func(p capnp.Net_remoteOnlineList_Params) error {
 		return nil
 	})
 
@@ -450,10 +470,10 @@ func (cl *Client) OnlinePeers() ([]PeerStatus, error) {
 		return nil, err
 	}
 
-	statuses := []PeerStatus{}
+	statuses := []RemoteStatus{}
 	for idx := 0; idx < capStatuses.Len(); idx++ {
 		capStatus := capStatuses.At(idx)
-		status, err := capPeerStatusToPeerStatus(capStatus)
+		status, err := capRemoteStatusToRemoteStatus(capStatus)
 		if err != nil {
 			return nil, err
 		}
