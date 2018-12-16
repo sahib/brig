@@ -1168,7 +1168,7 @@ Alternatively, we could have used the ``-a`` switch when adding ``bob`` as remot
 
 .. code-block:: bash
 
-    brig remote add bob -a
+    $ brig remote add bob -a
 
 In any case, an initial sync is performed with this remote and a sync on every change
 that ``bob`` published. Keep in mind that ``bob`` will not receive your updates by default,

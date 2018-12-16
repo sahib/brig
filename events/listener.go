@@ -112,6 +112,7 @@ func eventLoop(evCh chan Event, interval time.Duration, rps float64, fn func(ev 
 			if !r.OK() {
 				// would only happen if the burst size is too big.
 				// drop all events in this special case.
+				events = []Event{}
 				continue
 			}
 
