@@ -20,25 +20,25 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "Wether we should handle incoming events and publish events",
 		},
-		"recv_min_backoff": config.DefaultEntry{
-			Default:      "50ms",
+		"recv_interval": config.DefaultEntry{
+			Default:      "100ms",
 			NeedsRestart: false,
-			Docs:         "Minimal time window between handling incoming events",
+			Docs:         "Time window in which events are buffered before handling them",
 		},
-		"recv_max_backoff": config.DefaultEntry{
-			Default:      "30s",
+		"recv_max_events_per_second": config.DefaultEntry{
+			Default:      0.5,
 			NeedsRestart: false,
-			Docs:         "Maximal time window between handling incoming events",
+			Docs:         "How many events per second to process at max",
 		},
-		"send_min_backoff": config.DefaultEntry{
-			Default:      "250ms",
+		"send_interval": config.DefaultEntry{
+			Default:      "200ms",
 			NeedsRestart: false,
-			Docs:         "Minimal time to pass before sending events",
+			Docs:         "Time window in which events are buffered before sending them",
 		},
-		"send_max_backoff": config.DefaultEntry{
-			Default:      "2s",
+		"send_max_events_per_second": config.DefaultEntry{
+			Default:      5.0,
 			NeedsRestart: false,
-			Docs:         "Maximal time to pass before sending events",
+			Docs:         "How many events per second to send out at max",
 		},
 	},
 	"gateway": config.DefaultMapping{

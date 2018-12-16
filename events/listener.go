@@ -8,13 +8,14 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/jpillora/backoff"
 	"github.com/sahib/brig/events/backend"
 	"github.com/sahib/config"
+	"golang.org/x/time/rate"
 )
 
 const (
 	brigEventTopicPrefix = "brig/events/"
+	maxBurstSize         = 100
 )
 
 // Listener listens to incoming events from other remotes.
@@ -44,8 +45,8 @@ func NewListener(cfg *config.Config, bk backend.Backend, ownAddr string) *Listen
 		ownAddr:   ownAddr,
 		callbacks: make(map[EventType]func(*Event)),
 		cancels:   make(map[string]context.CancelFunc),
-		evSendCh:  make(chan Event, 100),
-		evRecvCh:  make(chan Event, 100),
+		evSendCh:  make(chan Event, maxBurstSize),
+		evRecvCh:  make(chan Event, maxBurstSize),
 	}
 
 	go lst.eventSendLoop()
@@ -86,24 +87,40 @@ func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
 	lst.callbacks[ev] = hdl
 }
 
-func (lst *Listener) eventLoop(evCh chan Event, minBackoff, maxBackoff time.Duration, fn func(ev Event)) {
-	tckr := time.NewTicker(minBackoff)
+func eventLoop(evCh chan Event, interval time.Duration, rps float64, fn func(ev Event)) {
+	tckr := time.NewTicker(interval)
 	defer tckr.Stop()
 
+	// Use a time window approach to dedupe incoming events
+	// and to process them in a batch (in order to avoid work)
+	// We still rate limit while processing too many at the same time.
 	events := []Event{}
-	lastEvent := time.Now()
-
-	backoff := backoff.Backoff{
-		Min:    minBackoff,
-		Max:    maxBackoff,
-		Jitter: true,
-	}
+	lim := rate.NewLimiter(rate.Limit(rps), maxBurstSize)
 
 	for {
 		select {
 		case <-tckr.C:
-			for _, ev := range dedupeEvents(events) {
+			// Flush phase. Deduple all events and send them out to the handler
+			// in a possibly time throttled manner.
+			events = dedupeEvents(events)
+			if len(events) == 0 {
+				continue
+			}
+
+			// Apply the rate limiting only after
+			r := lim.ReserveN(time.Now(), len(events))
+			if !r.OK() {
+				// would only happen if the burst size is too big.
+				// drop all events in this special case.
+				continue
+			}
+
+			delay := r.Delay()
+			for _, ev := range events {
 				fn(ev)
+
+				// spread the work over the processing of all events:
+				time.Sleep(delay / time.Duration(len(events)))
 			}
 
 			events = []Event{}
@@ -112,18 +129,10 @@ func (lst *Listener) eventLoop(evCh chan Event, minBackoff, maxBackoff time.Dura
 				return
 			}
 
-			// If the last event was long ago, we can forget about the
-			// backoff and use the most minimal again.
-			if time.Since(lastEvent) >= (minBackoff+maxBackoff)/2 {
-				backoff.Reset()
+			if len(events) > maxBurstSize {
+				// drop events if the list gets too big:
+				continue
 			}
-
-			d := backoff.Duration()
-			tckr.Stop()
-			tckr = time.NewTicker(backoff.Duration())
-			lastEvent = time.Now()
-
-			log.Debugf("*** new duration: %v", d)
 
 			events = append(events, ev)
 		}
@@ -131,10 +140,10 @@ func (lst *Listener) eventLoop(evCh chan Event, minBackoff, maxBackoff time.Dura
 }
 
 func (lst *Listener) eventRecvLoop() {
-	minBackoff := lst.cfg.Duration("recv_min_backoff")
-	maxBackoff := lst.cfg.Duration("recv_max_backoff")
+	recvInterval := lst.cfg.Duration("recv_interval")
+	recvMaxEvRPS := lst.cfg.Float("recv_max_events_per_second")
 
-	lst.eventLoop(lst.evRecvCh, minBackoff, maxBackoff, func(ev Event) {
+	eventLoop(lst.evRecvCh, recvInterval, recvMaxEvRPS, func(ev Event) {
 		lst.mu.Lock()
 		if cb, ok := lst.callbacks[ev.Type]; ok {
 			go cb(&ev)
@@ -146,10 +155,10 @@ func (lst *Listener) eventRecvLoop() {
 func (lst *Listener) eventSendLoop() {
 	ownTopic := brigEventTopicPrefix + lst.ownAddr
 
-	minBackoff := lst.cfg.Duration("send_min_backoff")
-	maxBackoff := lst.cfg.Duration("send_max_backoff")
+	sendInterval := lst.cfg.Duration("send_interval")
+	sendMaxEvRPS := lst.cfg.Float("send_max_events_per_second")
 
-	lst.eventLoop(lst.evSendCh, minBackoff, maxBackoff, func(ev Event) {
+	eventLoop(lst.evSendCh, sendInterval, sendMaxEvRPS, func(ev Event) {
 		data, err := ev.encode()
 		if err != nil {
 			log.Errorf("event: failed to encode: %v", err)
@@ -186,7 +195,7 @@ func (lst *Listener) PublishEvent(ev Event) error {
 	case lst.evSendCh <- ev:
 		return nil
 	default:
-		return fmt.Errorf("lost event")
+		return fmt.Errorf("lost event: %v", ev)
 	}
 }
 
