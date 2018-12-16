@@ -275,8 +275,8 @@ func TestSyncPartialTwiceWithMovedFile(t *testing.T) {
 		aliNd, _ := c.MustTouchAndCommit(t, lkrAli, "/ali-file", 1)
 		c.MustTouchAndCommit(t, lkrBob, "/bob-file", 2)
 
-		require.Nil(t, Sync(lkrAli, lkrBob, nil))
-		require.Nil(t, Sync(lkrBob, lkrAli, nil))
+		require.Nil(t, Sync(lkrAli, lkrBob, nil, ""))
+		require.Nil(t, Sync(lkrBob, lkrAli, nil, ""))
 
 		beforeMove, err := lkrAli.Head()
 		require.Nil(t, err)

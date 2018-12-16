@@ -447,7 +447,7 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		return err
 	}
 
-	diff, err := vcs.base.doSync(withWhom, call.Params.NeedFetch())
+	diff, err := vcs.base.doSync(withWhom, call.Params.NeedFetch(), "")
 	if err != nil {
 		return err
 	}

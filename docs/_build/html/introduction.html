@@ -133,6 +133,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-updating">Automatic Updating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
@@ -1212,6 +1213,29 @@ $ brig cfg <span class="nb">set</span> gateway.cert.redirect.http_port <span cla
 </pre></div>
 </div>
 </div>
+</div>
+<div class="section" id="automatic-updating">
+<h2>Automatic Updating<a class="headerlink" href="#automatic-updating" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This feature is very experimental and builds upon the also experimental
+pubsub experiment of the IPFS project. Use with care.</p>
+</div>
+<p>If you do not want to hit <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">sync</span></code> every time somebody wants to merge with you,
+you can enable the automatic updating for any remote you like. Let’s suppose we are <code class="docutils literal notranslate"><span class="pre">ali</span></code>
+and want to receive updates on every change of <code class="docutils literal notranslate"><span class="pre">bob</span></code>, we should simply add the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote auto-update <span class="nb">enable</span> bob
+<span class="c1"># You can also abbreviate most of that:</span>
+$ brig rmt au e bob
+</pre></div>
+</div>
+<p>Alternatively, we could have used the <code class="docutils literal notranslate"><span class="pre">-a</span></code> switch when adding <code class="docutils literal notranslate"><span class="pre">bob</span></code> as remote:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brig remote add bob -a
+</pre></div>
+</div>
+<p>In any case, an initial sync is performed with this remote and a sync on every change
+that <code class="docutils literal notranslate"><span class="pre">bob</span></code> published. Keep in mind that <code class="docutils literal notranslate"><span class="pre">bob</span></code> will not receive your updates by default,
+he needs to decide to use auto updating for himself.</p>
 </div>
 <div class="section" id="running-the-daemon-and-viewing-logs">
 <h2>Running the daemon and viewing logs<a class="headerlink" href="#running-the-daemon-and-viewing-logs" title="Permalink to this headline">¶</a></h2>

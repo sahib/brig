@@ -165,7 +165,6 @@ func (lst *Listener) eventSendLoop() {
 			return
 		}
 
-		log.Debugf("publishing %v on %s", data, ownTopic)
 		if err := lst.bk.PublishEvent(ownTopic, data); err != nil {
 			log.Errorf("event: failed to publish: %v", err)
 			return

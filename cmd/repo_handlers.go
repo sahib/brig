@@ -95,7 +95,7 @@ Have a nice day.
 		return err
 	}
 
-	return ctl.MakeCommit("Added initial README.md")
+	return ctl.MakeCommit("added initial README.md")
 }
 
 func handleInit(ctx *cli.Context, ctl *client.Client) error {

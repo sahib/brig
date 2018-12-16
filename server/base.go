@@ -617,7 +617,7 @@ func (b *base) doFetch(who string) error {
 	})
 }
 
-func (b *base) doSync(withWhom string, needFetch bool) (*catfs.Diff, error) {
+func (b *base) doSync(withWhom string, needFetch bool, msg string) (*catfs.Diff, error) {
 	if needFetch {
 		if err := b.doFetch(withWhom); err != nil {
 			return nil, e.Wrapf(err, "fetch")
@@ -642,7 +642,7 @@ func (b *base) doSync(withWhom string, needFetch bool) (*catfs.Diff, error) {
 
 			log.Debugf("Starting sync with %s", withWhom)
 
-			if err := ownFs.Sync(remoteFs); err != nil {
+			if err := ownFs.Sync(remoteFs, msg); err != nil {
 				return err
 			}
 
@@ -674,7 +674,9 @@ func (b *base) handleFsEvent(ev *events.Event) {
 	}
 
 	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
-	if _, err := b.doSync(rmt.Name, true); err != nil {
+
+	msg := fmt.Sprintf("sync due to notification from »%s«", rmt.Name)
+	if _, err := b.doSync(rmt.Name, true, msg); err != nil {
 		log.Warningf("sync failed: %v", err)
 	}
 }
@@ -725,7 +727,8 @@ func (b *base) initialSyncWithAutoUpdatePeers() error {
 			continue
 		}
 
-		if _, err := b.doSync(rmt.Name, true); err != nil {
+		msg := fmt.Sprintf("sync with »%s« due to intial auto-update", rmt.Name)
+		if _, err := b.doSync(rmt.Name, true, msg); err != nil {
 			log.Warningf("failed to sync initially with %s: %v", rmt.Name, err)
 		}
 	}

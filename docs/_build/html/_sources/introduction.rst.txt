@@ -1143,6 +1143,37 @@ will be redirected directly to port 443.
     $ brig cfg set gateway.cert.redirect.enabled true
     $ brig cfg set gateway.cert.redirect.http_port 80
 
+
+Automatic Updating
+------------------
+
+.. warning::
+
+    This feature is very experimental and builds upon the also experimental
+    pubsub experiment of the IPFS project. Use with care.
+
+
+If you do not want to hit ``brig sync`` every time somebody wants to merge with you,
+you can enable the automatic updating for any remote you like. Let's suppose we are ``ali``
+and want to receive updates on every change of ``bob``, we should simply add the following:
+
+.. code-block:: bash
+
+    $ brig remote auto-update enable bob
+    # You can also abbreviate most of that:
+    $ brig rmt au e bob
+
+
+Alternatively, we could have used the ``-a`` switch when adding ``bob`` as remote:
+
+.. code-block:: bash
+
+    brig remote add bob -a
+
+In any case, an initial sync is performed with this remote and a sync on every change
+that ``bob`` published. Keep in mind that ``bob`` will not receive your updates by default,
+he needs to decide to use auto updating for himself.
+
 Running the daemon and viewing logs
 -----------------------------------
 
