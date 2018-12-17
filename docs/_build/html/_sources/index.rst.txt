@@ -17,6 +17,8 @@ It is based on ``ipfs``, written in Go and will feel familiar to ``git`` users.
 * FUSE filesystem that feels like a normal sync folder.
 * No central server at all. Still, central architectures can be build with ``brig``.
 * Simple user identification and discovery.
+* Gateway to share normal HTTP/S links with other users.
+* Auto-updating facility that will sync on any change.
 * Completely free software under the terms of the ``AGPL``.
 
 ``brig`` tries to focus on being up conceptually simple, by hiding a lot of

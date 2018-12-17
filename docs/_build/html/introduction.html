@@ -1230,12 +1230,19 @@ $ brig rmt au e bob
 </pre></div>
 </div>
 <p>Alternatively, we could have used the <code class="docutils literal notranslate"><span class="pre">-a</span></code> switch when adding <code class="docutils literal notranslate"><span class="pre">bob</span></code> as remote:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brig remote add bob -a
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob -a
 </pre></div>
 </div>
 <p>In any case, an initial sync is performed with this remote and a sync on every change
 that <code class="docutils literal notranslate"><span class="pre">bob</span></code> published. Keep in mind that <code class="docutils literal notranslate"><span class="pre">bob</span></code> will not receive your updates by default,
-he needs to decide to use auto updating for himself.</p>
+he needs to decide to use auto updating for himself. You can watch the times when your repository
+was updated automatically by looking at <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">log</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig log
+     -       Sun Dec <span class="m">16</span> <span class="m">18</span>:24:27 CET <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
+W1kGKKviWCBY Sun Dec <span class="m">16</span> <span class="m">18</span>:24:27 CET <span class="m">2018</span> sync due to notification from »bob« <span class="o">(</span>head<span class="o">)</span>
+...
+</pre></div>
+</div>
 </div>
 <div class="section" id="running-the-daemon-and-viewing-logs">
 <h2>Running the daemon and viewing logs<a class="headerlink" href="#running-the-daemon-and-viewing-logs" title="Permalink to this headline">¶</a></h2>
