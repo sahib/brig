@@ -22,7 +22,7 @@ func ReadPasswordFromHelper(basePath, helperCommand string) (string, error) {
 		return "", err
 	}
 
-	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", helperCommand)
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", helperCommand) // #nosec
 	cmd.Env = append(cmd.Env, "BRIG_PATH="+basePath)
 	cmd.Env = append(cmd.Env, "HOME="+currentUser.HomeDir)
 

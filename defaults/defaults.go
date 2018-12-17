@@ -17,7 +17,7 @@ var Defaults = DefaultsV0
 // If required, it also migrates the config structure to the newest
 // version - brig can always rely on the latest config keys to be present.
 func OpenMigratedConfig(path string) (*config.Config, error) {
-	fd, err := os.Open(path)
+	fd, err := os.Open(path) // #nosec
 	if err != nil {
 		return nil, e.Wrap(err, "failed to open config")
 	}

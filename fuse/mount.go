@@ -114,7 +114,7 @@ func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, erro
 }
 
 func lazyUnmount(dir string) error {
-	cmd := exec.Command("fusermount", "-u", "-z", dir)
+	cmd := exec.Command("fusermount", "-u", "-z", dir) // #nosec
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if len(output) > 0 {

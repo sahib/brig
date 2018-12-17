@@ -81,7 +81,7 @@ func CheckPassword(baseFolder, password string) error {
 	// Try to get the owner of the repo.
 	// Needed for the key derivation function.
 	ownerPath := filepath.Join(baseFolder, "OWNER")
-	owner, err := ioutil.ReadFile(ownerPath)
+	owner, err := ioutil.ReadFile(ownerPath) // #nosec
 	if err != nil {
 		return e.Wrap(err, "failed to read OWNER")
 	}
@@ -105,7 +105,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}
 
 	ownerPath := filepath.Join(baseFolder, "OWNER")
-	owner, err := ioutil.ReadFile(ownerPath)
+	owner, err := ioutil.ReadFile(ownerPath) // #nosec
 	if err != nil {
 		return nil, e.Wrap(err, "failed to read OWNER")
 	}
@@ -138,7 +138,7 @@ func Open(baseFolder, password string) (*Repository, error) {
 	}
 
 	backendNamePath := filepath.Join(baseFolder, "BACKEND")
-	backendName, err := ioutil.ReadFile(backendNamePath)
+	backendName, err := ioutil.ReadFile(backendNamePath) // #nosec
 	if err != nil {
 		return nil, err
 	}

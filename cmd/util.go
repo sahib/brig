@@ -329,7 +329,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	argString := fmt.Sprintf("'%s'", strings.Join(daemonArgs, "' '"))
 	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
 
-	proc := exec.Command(exePath, daemonArgs...)
+	proc := exec.Command(exePath, daemonArgs...) // #nosec
 
 	if askPassword {
 		logVerbose(ctx, "asking password since no password command was given")
@@ -520,7 +520,7 @@ func needAtLeast(min int) checkFunc {
 }
 
 func repoIsInitialized(dir string) (bool, error) {
-	fd, err := os.Open(dir)
+	fd, err := os.Open(dir) // #nosec
 	if err != nil && os.IsNotExist(err) {
 		return false, nil
 	}
@@ -548,7 +548,7 @@ func tempFileWithSuffix(dir, prefix, suffix string) (f *os.File, err error) {
 	}
 
 	for i := 0; i < 10000; i++ {
-		mid := strconv.Itoa(rand.Int())
+		mid := strconv.Itoa(rand.Int()) // #nosec
 		name := filepath.Join(dir, prefix+mid+suffix)
 		f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
 		if os.IsExist(err) {
@@ -594,7 +594,7 @@ func editToPath(data []byte, suffix string) (string, error) {
 	}
 
 	// Launch editor and hook it up with all necessary fds:
-	cmd := exec.Command(editor, fd.Name())
+	cmd := exec.Command(editor, fd.Name()) // #nosec
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -625,7 +625,7 @@ func edit(data []byte, suffix string) ([]byte, error) {
 		}
 	}()
 
-	newData, err := ioutil.ReadFile(tempPath)
+	newData, err := ioutil.ReadFile(tempPath) // #nosec
 	if err != nil {
 		return nil, err
 	}

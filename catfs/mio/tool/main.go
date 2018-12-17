@@ -95,7 +95,7 @@ func main() {
 
 	defer inFd.Close()
 
-	outFd, err := os.OpenFile(*outputFlag, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	outFd, err := os.OpenFile(*outputFlag, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		fmt.Printf("Failed to open output file: %v\n", err)
 		os.Exit(1)

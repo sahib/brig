@@ -68,7 +68,7 @@ func encryptAsymmetric(data, pubKey []byte) ([]byte, error) {
 // amounts of data.
 func decryptAsymetric(folder string, data []byte) ([]byte, error) {
 	prvPath := filepath.Join(folder, "gpg.prv")
-	fd, err := os.Open(prvPath)
+	fd, err := os.Open(prvPath) // #nosec
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +117,13 @@ func (kp *Keyring) Decrypt(data []byte) ([]byte, error) {
 // OwnPubKey returns an exported version of our own public key.
 func (kp *Keyring) OwnPubKey() ([]byte, error) {
 	pubPath := filepath.Join(kp.folder, "gpg.pub")
-	return ioutil.ReadFile(pubPath)
+	return ioutil.ReadFile(pubPath) // #nosec
 }
 
 // PubKeyFor returns the stored public key for a partner named `name`
 func (kp *Keyring) PubKeyFor(name string) ([]byte, error) {
 	path := filepath.Join(kp.folder, "pubkeys", filepath.Clean(name))
-	return ioutil.ReadFile(path)
+	return ioutil.ReadFile(path) // #nosec
 }
 
 // SavePubKey stores a public key from a partner with the name `name`

@@ -11,6 +11,7 @@ import (
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
+	"github.com/stretchr/testify/require"
 )
 
 // WithDummyKv creates a testing key value store and passes it to `fn`.
@@ -38,7 +39,7 @@ func WithDummyKv(t *testing.T, fn func(kv db.Database)) {
 func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr := NewLinker(kv)
-		lkr.SetOwner("alice")
+		require.Nil(t, lkr.SetOwner("alice"))
 		MustCommit(t, lkr, "init")
 
 		fn(lkr)
@@ -51,7 +52,7 @@ func WithDummyLinker(t *testing.T, fn func(lkr *Linker)) {
 func WithReloadingLinker(t *testing.T, fn1 func(lkr *Linker), fn2 func(lkr *Linker)) {
 	WithDummyKv(t, func(kv db.Database) {
 		lkr1 := NewLinker(kv)
-		lkr1.SetOwner("alice")
+		require.Nil(t, lkr1.SetOwner("alice"))
 		MustCommit(t, lkr1, "init")
 
 		fn1(lkr1)
@@ -65,8 +66,8 @@ func WithReloadingLinker(t *testing.T, fn1 func(lkr *Linker), fn2 func(lkr *Link
 func WithLinkerPair(t *testing.T, fn func(lkrSrc, lkrDst *Linker)) {
 	WithDummyLinker(t, func(lkrSrc *Linker) {
 		WithDummyLinker(t, func(lkrDst *Linker) {
-			lkrSrc.SetOwner("src")
-			lkrDst.SetOwner("dst")
+			require.Nil(t, lkrSrc.SetOwner("src"))
+			require.Nil(t, lkrDst.SetOwner("dst"))
 			fn(lkrSrc, lkrDst)
 		})
 	})

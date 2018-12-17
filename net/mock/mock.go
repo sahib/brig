@@ -63,7 +63,7 @@ func (nb *NetBackend) ResolveName(ctx context.Context, partialName string) ([]pe
 	infos := []peer.Info{}
 	for _, name := range names {
 		dnsName := filepath.Join(nb.path, "dns", filepath.Base(name.Name()))
-		data, err := ioutil.ReadFile(dnsName)
+		data, err := ioutil.ReadFile(dnsName) // #nosec
 		if err != nil {
 			return nil, fmt.Errorf("no such peer: %v", name)
 		}

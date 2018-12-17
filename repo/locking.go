@@ -29,7 +29,7 @@ func lockFile(path string, key []byte) error {
 
 	defer util.Closer(dstFd)
 
-	srcFd, err := os.Open(path)
+	srcFd, err := os.Open(path) // #nosec
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func LockRepo(root, user, password string, lockExcludes, unlockExcludes []string
 }
 
 func checkUnlockability(path string, key []byte) error {
-	srcFd, err := os.Open(path)
+	srcFd, err := os.Open(path) // #nosec
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func checkUnlockability(path string, key []byte) error {
 }
 
 func unlockFile(path string, key []byte) error {
-	srcFd, err := os.Open(path)
+	srcFd, err := os.Open(path) // #nosec
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func unlockFile(path string, key []byte) error {
 
 func unlockDirectory(path string, key []byte) error {
 	unlockedPath := path[:len(path)-len(LockDirSuffix)]
-	fd, err := os.Open(path)
+	fd, err := os.Open(path) // #nosec
 	if err != nil {
 		return err
 	}

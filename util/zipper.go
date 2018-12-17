@@ -39,7 +39,7 @@ func Tar(root, archiveName string, w io.Writer) error {
 			return werr
 		}
 
-		fd, err := os.Open(path)
+		fd, err := os.Open(path) // #nosec
 		if err != nil {
 			return err
 		}

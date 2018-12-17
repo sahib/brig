@@ -121,7 +121,7 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	}
 
 	return fh.base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
-		fd, err := os.Open(localPath)
+		fd, err := os.Open(localPath) // #nosec
 		if err != nil {
 			return err
 		}

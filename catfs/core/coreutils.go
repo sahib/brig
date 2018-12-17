@@ -157,8 +157,7 @@ func Remove(lkr *Linker, nd n.ModNode, createGhost, force bool) (parentDir *n.Di
 				return true, err
 			}
 
-			parentDir.Add(lkr, newGhost)
-			if err != nil {
+			if err := parentDir.Add(lkr, newGhost); err != nil {
 				return true, err
 			}
 
@@ -282,8 +281,14 @@ func Copy(lkr *Linker, nd n.ModNode, dstPath string) (newNode n.ModNode, err err
 		// And add it to the right destination dir:
 		newNode = nd.Copy(lkr.NextInode())
 		newNode.SetName(path.Base(dstPath))
-		newNode.SetParent(lkr, parentDir)
-		newNode.NotifyMove(lkr, parentDir, newNode.Path())
+		if err := newNode.SetParent(lkr, parentDir); err != nil {
+			return true, e.Wrapf(err, "set parent")
+		}
+
+		if err := newNode.NotifyMove(lkr, parentDir, newNode.Path()); err != nil {
+			return true, e.Wrapf(err, "notify move")
+		}
+
 		return false, lkr.StageNode(newNode)
 	})
 

@@ -1077,7 +1077,10 @@ func (fs *FS) Tar(root string, w io.Writer) error {
 		}
 
 		if _, err := io.Copy(tw, stream); err != nil {
-			stream.Close()
+			if err := stream.Close(); err != nil {
+				log.Debugf("failed to close stream; might leak file descriptor")
+			}
+
 			return err
 		}
 

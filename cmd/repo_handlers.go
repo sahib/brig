@@ -759,6 +759,7 @@ func handleGatewayCert(ctx *cli.Context) error {
 			return err
 		}
 
+		// #nosec
 		proc := exec.Command(
 			sudoPath,
 			exePath,
@@ -766,6 +767,7 @@ func handleGatewayCert(ctx *cli.Context) error {
 			domain,
 			cacheDir,
 		)
+
 		proc.Stdin = os.Stdin
 		proc.Stdout = os.Stdout
 		proc.Stderr = os.Stderr

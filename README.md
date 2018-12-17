@@ -9,6 +9,7 @@
 [![Build Status](https://travis-ci.org/sahib/brig.svg?branch=master)](https://travis-ci.org/sahib/brig)
 [![Documentation](https://readthedocs.org/projects/rmlint/badge/?version=latest)](http://brig.readthedocs.io/en/latest)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1558/badge)](https://bestpractices.coreinfrastructure.org/en/projects/1558)
 
 ## Table of Contents
 

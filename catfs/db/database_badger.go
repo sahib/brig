@@ -185,7 +185,9 @@ func (db *BadgerDatabase) Put(val []byte, key ...string) {
 	db.haveWrites = true
 
 	fullKey := []byte(strings.Join(key, "."))
-	db.txn.Set(fullKey, val)
+	if err := db.txn.Set(fullKey, val); err != nil {
+		log.Warningf("badger: failed to set key %s: %v", fullKey, err)
+	}
 }
 
 // Clear is the badger implementation of Database.Clear
@@ -229,7 +231,9 @@ func (db *BadgerDatabase) Erase(key ...string) {
 	db.haveWrites = true
 
 	fullKey := []byte(strings.Join(key, "."))
-	db.txn.Delete(fullKey)
+	if err := db.txn.Delete(fullKey); err != nil {
+		log.Warningf("badger: failed to del key %s: %v", fullKey, err)
+	}
 }
 
 // Flush is the badger implementation of Database.Flush

@@ -55,9 +55,15 @@ func readPasswordFromHelper(basePath string) (string, error) {
 func switchToSyslog() {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
 	if err != nil {
-		fd, _ := os.Create("/tmp/brig.log")
 		log.Warningf("Failed to open connection to syslog for brig: %v", err)
-		log.SetOutput(fd)
+		logFd, err := ioutil.TempFile("", "brig-*.log")
+		if err != nil {
+			log.Warningf("")
+		} else {
+			log.Warningf("Will log to %s from now on.", logFd.Name())
+			log.SetOutput(logFd)
+		}
+
 		return
 	}
 
@@ -70,7 +76,7 @@ func switchToSyslog() {
 }
 
 func updateRegistry(basePath string, port int) error {
-	data, err := ioutil.ReadFile(filepath.Join(basePath, "REPO_ID"))
+	data, err := ioutil.ReadFile(filepath.Join(basePath, "REPO_ID")) // #nosec
 	if err != nil {
 		return err
 	}

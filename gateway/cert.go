@@ -148,7 +148,7 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 	}
 
 	cacheDir = filepath.Join(cacheDir, "brig")
-	if err := os.MkdirAll(cacheDir, 0777); err != nil {
+	if err := os.MkdirAll(cacheDir, 0750); err != nil {
 		return "", "", err
 	}
 
@@ -156,7 +156,7 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 	pubPath := filepath.Join(cacheDir, fmt.Sprintf("%s_cert.pem", domain))
 
 	// Try to bind to port :80 as early as possible.
-	lst, err := net.Listen("tcp", ":80")
+	lst, err := net.Listen("tcp", ":80") // #nosec
 	if err != nil {
 		// This most likely failed if we do not have access to port 80.
 		// Try to use the (possibly outdated) cert from the cache, if there.
@@ -212,7 +212,7 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 	// anyways, so even it is owned by root, it should be readable by other users.
 	perms := os.FileMode(0600)
 	if os.Geteuid() == 0 {
-		perms = os.FileMode(0644)
+		perms = os.FileMode(0640) // #nosec
 	}
 
 	if err = ioutil.WriteFile(privPath, privData, perms); err != nil {

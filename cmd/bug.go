@@ -28,7 +28,7 @@ func printError(msg string) {
 // cmdOutput runs a command at `path` with `args` and returns it's output.
 // No real error checking is done, on errors an empty string is returned.
 func cmdOutput(path string, args ...string) string {
-	out, err := exec.Command(path, args...).Output()
+	out, err := exec.Command(path, args...).Output() // #nosec
 	if err != nil {
 		// No other error checking here, `brig bug` is best effort.
 		printError(fmt.Sprintf("failed to run %s %s", path, strings.Join(args, " ")))

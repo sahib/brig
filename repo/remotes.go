@@ -48,7 +48,7 @@ type RemoteList struct {
 
 // NewRemotes returns a new RemoteList.
 func NewRemotes(path string) (*RemoteList, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := ioutil.ReadFile(path) // #nosec
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}

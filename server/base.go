@@ -75,7 +75,7 @@ type base struct {
 }
 
 func repoIsInitialized(path string) error {
-	data, err := ioutil.ReadFile(filepath.Join(path, "OWNER"))
+	data, err := ioutil.ReadFile(filepath.Join(path, "OWNER")) // #nosec
 	if err != nil {
 		return err
 	}

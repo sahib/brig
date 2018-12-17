@@ -606,7 +606,9 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 	}
 
 	for _, key := range toClear {
-		batch.Clear(key...)
+		if err := batch.Clear(key...); err != nil {
+			return err
+		}
 	}
 
 	newStatus, err := n.NewEmptyCommit(lkr.NextInode(), status.Index()+1)
@@ -614,8 +616,11 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 		return err
 	}
 
-	newStatus.SetParent(lkr, status)
 	newStatus.SetRoot(status.Root())
+	if err := newStatus.SetParent(lkr, status); err != nil {
+		return err
+	}
+
 	return lkr.saveStatus(newStatus)
 }
 

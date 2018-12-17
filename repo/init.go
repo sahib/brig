@@ -14,7 +14,7 @@ import (
 )
 
 func touch(path string) error {
-	fd, err := os.OpenFile(path, os.O_CREATE, 0644)
+	fd, err := os.OpenFile(path, os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}

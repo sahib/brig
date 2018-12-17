@@ -46,6 +46,20 @@ func fixDirectoryKeys(key []string) string {
 		return ""
 	}
 
+	// Filter potential ".." elements that could be used
+	// to break out of the database store and read whatever files
+	// outside of it due to bad intentions.
+	keyCopy := key[:0]
+	for _, val := range key {
+		if val != ".." {
+			keyCopy = append(keyCopy, val)
+		} else {
+			keyCopy = append(keyCopy, "DOTDOT")
+		}
+	}
+
+	key = keyCopy
+
 	switch lastPart := key[len(key)-1]; {
 	case lastPart == "DOT":
 		return filepath.Join(key[:len(key)-1]...) + "/__NO_DOT__"
@@ -143,7 +157,7 @@ func (db *DiskDatabase) Get(key ...string) ([]byte, error) {
 
 	// We have to go to the disk to find the right key:
 	filePath := filepath.Join(db.basePath, fixDirectoryKeys(key))
-	data, err := ioutil.ReadFile(filePath)
+	data, err := ioutil.ReadFile(filePath) // #nosec
 
 	if os.IsNotExist(err) {
 		return nil, ErrNoSuchKey
