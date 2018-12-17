@@ -49,6 +49,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
@@ -354,6 +355,7 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 			return true, err
 		}
 
+		status.SetModTime(time.Now())
 		status.SetRoot(root.TreeHash())
 		lkr.MemSetRoot(root)
 		return hintRollback(lkr.saveStatus(status))

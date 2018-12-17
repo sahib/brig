@@ -5,7 +5,7 @@ VERSION_IMPORT="github.com/sahib/brig/version"
 
 # Build metadata:
 VERSION_MAJOR=0
-VERSION_MINOR=2
+VERSION_MINOR=3
 VERSION_PATCH=0
 RELEASETYPE=
 BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
@@ -43,6 +43,7 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo net/capnp/api.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/vcs/capnp/patch.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/capnp/pinner.capnp
+	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo events/capnp/events_api.capnp
 
 install:
 ifneq ("$(wildcard brig)","")

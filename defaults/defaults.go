@@ -19,7 +19,7 @@ var Defaults = DefaultsV0
 func OpenMigratedConfig(path string) (*config.Config, error) {
 	fd, err := os.Open(path) // #nosec
 	if err != nil {
-		return nil, e.Wrap(err, "failed to open config")
+		return nil, e.Wrapf(err, "failed to open config path %s", path)
 	}
 
 	defer fd.Close()
@@ -30,7 +30,7 @@ func OpenMigratedConfig(path string) (*config.Config, error) {
 
 	cfg, err := mgr.Migrate(config.NewYamlDecoder(fd))
 	if err != nil {
-		return nil, e.Wrap(err, "failed to migrate")
+		return nil, e.Wrap(err, "failed to migrate or open")
 	}
 
 	return cfg, nil

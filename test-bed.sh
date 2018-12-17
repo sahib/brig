@@ -51,6 +51,6 @@ if [ "$USE_SINGLE" = false ]; then
 fi
 
 brig-ali stage BUGS ali-file
-brig-ali commit -m 'Added ali-file'
+brig-ali commit -m 'added ali-file'
 brig-bob stage LICENSE bob-file
-brig-bob commit -m 'Added bob-file'
+brig-bob commit -m 'added bob-file'

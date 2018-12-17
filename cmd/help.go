@@ -92,6 +92,14 @@ var helpTexts = map[string]helpEntry{
 				Name:  "name,n",
 				Usage: "Only print the own name",
 			},
+			cli.BoolFlag{
+				Name:  "addr,a",
+				Usage: "Only print the addr portion of the fingerprint",
+			},
+			cli.BoolFlag{
+				Name:  "key,k",
+				Usage: "Only print the key portion of the fingerprint",
+			},
 		},
 		Description: `This command prints your name, fingerprint and what store
    you are looking at. When you initialized your repository, you chose
@@ -121,6 +129,16 @@ EXAMPLES:
 		ArgsUsage:   "<name> <fingerprint>",
 		Complete:    completeArgsUsage,
 		Description: "Add a new remote under a handy name with their fingerprint.",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "auto-update,a",
+				Usage: "Take automatic updates from this node",
+			},
+			cli.StringSliceFlag{
+				Name:  "folder,f",
+				Usage: "Configure the folders this remote may see",
+			},
+		},
 	},
 	"remote.remove": {
 		Usage:       "Remove a remote by name",
@@ -172,6 +190,17 @@ EXAMPLES:
 		},
 		Description: `Edit the current list using $EDITOR as YAML file.
    It will be updated upon saving`,
+	},
+	"remote.auto-update": {
+		Usage:       "",
+		Complete:    completeArgsUsage,
+		Description: ``,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "no-initial-sync,n",
+				Usage: "Do not sync initially when enabling the update",
+			},
+		},
 	},
 	"remote.folder": {
 		Usage:       "List the folders of all remotes.",

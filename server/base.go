@@ -18,6 +18,8 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
+	fserrs "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/gateway"
 	p2pnet "github.com/sahib/brig/net"
@@ -71,7 +73,17 @@ type base struct {
 	// logToStdout is true when logging to stdout was explicitly requested.
 	logToStdout bool
 
+	// gateway is the control object for the gateway server
 	gateway *gateway.Gateway
+
+	// evListener is a listener that will h
+	evListener *events.Listener
+
+	// evListenerCtx is the context for the event subsystem
+	evListenerCtx context.Context
+
+	// evListenerCancel can be called on quitting the daemon
+	evListenerCancel context.CancelFunc
 }
 
 func repoIsInitialized(path string) error {
@@ -307,6 +319,7 @@ func (b *base) peerServerUnlocked() (*p2pnet.Server, error) {
 }
 
 func (b *base) loadPeerServer() (*p2pnet.Server, error) {
+	log.Debugf("loading peer server")
 	bk, err := b.backendUnlocked()
 	if err != nil {
 		return nil, err
@@ -346,9 +359,30 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		return nil, err
 	}
 
+	self, err := bk.Identity()
+	if err != nil {
+		return nil, err
+	}
+
+	b.evListenerCtx, b.evListenerCancel = context.WithCancel(context.Background())
+	b.evListener = events.NewListener(rp.Config.Section("events"), bk, self.Addr)
+	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
+	if err := b.evListener.SetupListeners(b.evListenerCtx, addrs); err != nil {
+		log.Warningf("failed to setup event listeners: %v", err)
+	}
+
 	// Give peer server a small bit of time to start up, so it can Accept()
-	// connections immediately after loadPeerServer. Nice for tests.
+	// connections immediately after loadPeerServer. Also nice for tests.
 	time.Sleep(50 * time.Millisecond)
+
+	if err := b.initialSyncWithAutoUpdatePeers(); err != nil {
+		log.Warningf("initial sync failed with one or more peers: %v", err)
+	}
+
+	// Now that we boooted up, we should tell other users that our fs changed.
+	// It may or may not have, but other remotes judge that.
+	b.notifyFsChangeEvent(rp)
+
 	return srv, nil
 }
 
@@ -474,6 +508,14 @@ func (b *base) Quit() (err error) {
 		if err = b.peerServer.Close(); err != nil {
 			log.Warningf("Failed to close peer server: %v", err)
 		}
+
+		b.evListenerCancel()
+		log.Infof("Shutting down event listener...")
+		if b.evListener != nil {
+			if err := b.evListener.Close(); err != nil {
+				log.Warningf("shutting down event handler failed: %v", err)
+			}
+		}
 	}
 
 	log.Infof("Trying to lock repository...")
@@ -530,4 +572,166 @@ func newBase(
 		logToStdout: logToStdout,
 		conductor:   conductor.New(5*time.Minute, 100),
 	}, nil
+}
+
+func (b *base) doFetch(who string) error {
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	if who == rp.Owner {
+		log.Infof("skipping fetch for own metadata")
+		return nil
+	}
+
+	return b.withNetClient(who, func(ctl *p2pnet.Client) error {
+		return b.withRemoteFs(who, func(remoteFs *catfs.FS) error {
+			// Not all remotes might allow doing a full fetch.
+			// This is only possible when having full access to all folders.
+			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
+				log.Debugf("fetch: doing complete fetch for %s", who)
+				storeBuf, err := ctl.FetchStore()
+				if err != nil {
+					return e.Wrapf(err, "fetch-store")
+				}
+
+				return e.Wrapf(remoteFs.Import(storeBuf), "import")
+			}
+
+			// Ask our local copy of the remote what the last patch index was.
+			fromIndex, err := remoteFs.LastPatchIndex()
+			if err != nil {
+				return err
+			}
+
+			// Get the missing changes since then:
+			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
+			patch, err := ctl.FetchPatch(fromIndex)
+			if err != nil {
+				return err
+			}
+
+			return remoteFs.ApplyPatch(patch)
+		})
+	})
+}
+
+func (b *base) doSync(withWhom string, needFetch bool, msg string) (*catfs.Diff, error) {
+	if needFetch {
+		if err := b.doFetch(withWhom); err != nil {
+			return nil, e.Wrapf(err, "fetch")
+		}
+	}
+
+	var diff *catfs.Diff
+
+	return diff, b.withCurrFs(func(ownFs *catfs.FS) error {
+		return b.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
+			// Automatically make a commit before merging with their state:
+			timeStamp := time.Now().UTC().Format(time.RFC3339)
+			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
+			if err := ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
+				return e.Wrapf(err, "merge-commit")
+			}
+
+			cmtBefore, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
+			log.Debugf("Starting sync with %s", withWhom)
+
+			if err := ownFs.Sync(remoteFs, msg); err != nil {
+				return err
+			}
+
+			log.Debugf("Sync with %s done", withWhom)
+
+			cmtAfter, err := ownFs.Head()
+			if err != nil {
+				return err
+			}
+
+			diff, err = ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
+			return err
+		})
+	})
+}
+
+func (b *base) handleFsEvent(ev *events.Event) {
+	log.Debugf("received fs event: %v", ev)
+	rmt, err := b.repo.Remotes.RemoteByAddr(ev.Source)
+	if err != nil {
+		log.Warningf("failed to resolve '%s' to a remote name: %v", ev.Source, err)
+		return
+	}
+
+	log.Debugf("resolved to remote: %v", rmt)
+	if !rmt.AcceptAutoUpdates {
+		log.Debugf("currently not accepting events from %s", rmt.Name)
+		return
+	}
+
+	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
+
+	msg := fmt.Sprintf("sync due to notification from »%s«", rmt.Name)
+	if _, err := b.doSync(rmt.Name, true, msg); err != nil {
+		log.Warningf("sync failed: %v", err)
+	}
+}
+
+func (b *base) notifyFsChangeEventLocked() {
+	rp, err := b.Repo()
+	if err != nil {
+		log.Warningf("failed to load repo: %v", err)
+		return
+	}
+
+	b.notifyFsChangeEvent(rp)
+}
+
+func (b *base) notifyFsChangeEvent(rp *repo.Repository) {
+	if b.evListener == nil {
+		return
+	}
+
+	// Do not trigger events when we're looking at the store of somebody else.
+	if rp.Owner != rp.CurrentUser() {
+		return
+	}
+
+	log.Debugf("publishing fs event")
+	ev := events.Event{
+		Type: events.FsEvent,
+	}
+
+	if err := b.evListener.PublishEvent(ev); err != nil {
+		log.Warningf("failed to publish filesystem change event: %v", err)
+	}
+}
+
+func (b *base) initialSyncWithAutoUpdatePeers() error {
+	rp, err := b.repoUnlocked()
+	if err != nil {
+		return err
+	}
+
+	rmts, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	for _, rmt := range rmts {
+		if !rmt.AcceptAutoUpdates {
+			continue
+		}
+
+		msg := fmt.Sprintf("sync with »%s« due to intial auto-update", rmt.Name)
+		if _, err := b.doSync(rmt.Name, true, msg); err != nil {
+			log.Warningf("failed to sync initially with %s: %v", rmt.Name, err)
+		}
+	}
+
+	return nil
 }

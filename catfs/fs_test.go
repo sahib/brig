@@ -410,14 +410,14 @@ func TestSync(t *testing.T) {
 		require.Nil(t, fsa.MakeCommit("hello a"))
 		withDummyFS(t, func(fsb *FS) {
 			require.Nil(t, fsb.MakeCommit("hello b"))
-			require.Nil(t, fsa.Sync(fsb))
+			require.Nil(t, fsa.Sync(fsb, ""))
 
 			require.Nil(t, fsb.Stage("/x", bytes.NewReader([]byte{1})))
 			require.Nil(t, fsb.Stage("/y", bytes.NewReader([]byte{2})))
 			require.Nil(t, fsb.Stage("/z", bytes.NewReader([]byte{3})))
 
 			// Actually sync the results:
-			require.Nil(t, fsa.Sync(fsb))
+			require.Nil(t, fsa.Sync(fsb, ""))
 
 			info, err := fsa.Stat("/x")
 			require.Nil(t, err)
@@ -447,7 +447,7 @@ func TestMakeDiff(t *testing.T) {
 		require.Nil(t, fsa.MakeCommit("hello a"))
 		withDummyFS(t, func(fsb *FS) {
 			require.Nil(t, fsb.MakeCommit("hello b"))
-			require.Nil(t, fsa.Sync(fsb))
+			require.Nil(t, fsa.Sync(fsb, ""))
 
 			fsbX := c.MustTouch(t, fsb.lkr, "/x", 4)
 			c.MustTouch(t, fsb.lkr, "/y", 5)

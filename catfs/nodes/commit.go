@@ -322,5 +322,11 @@ func (c *Commit) SetParent(lkr Linker, nd Node) error {
 	return nil
 }
 
+// SetModTime sets the commits modtime to `t`.
+// This should only be used for the most recent commit.
+func (c *Commit) SetModTime(t time.Time) {
+	c.modTime = t
+}
+
 // Assert that Commit follows the Node interface:
 var _ Node = &Commit{}

@@ -10,6 +10,7 @@ import (
 	"github.com/sahib/brig/backend/ipfs"
 	"github.com/sahib/brig/backend/mock"
 	"github.com/sahib/brig/catfs"
+	eventsBackend "github.com/sahib/brig/events/backend"
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/repo"
 )
@@ -32,6 +33,7 @@ type Backend interface {
 	repo.Backend
 	catfs.FsBackend
 	netBackend.Backend
+	eventsBackend.Backend
 }
 
 // InitByName creates a new backend structure at `path` for the backend `name`

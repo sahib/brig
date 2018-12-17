@@ -128,7 +128,12 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 
 		defer fd.Close()
 
-		return fs.Stage(url.Path, fd)
+		if err := fs.Stage(url.Path, fd); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -205,7 +210,12 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 
 	createParents := call.Params.CreateParents()
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Mkdir(url.Path, createParents)
+		if err := fs.Mkdir(url.Path, createParents); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -218,7 +228,12 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Remove(url.Path)
+		if err := fs.Remove(url.Path); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -245,7 +260,12 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 			return fmt.Errorf("cannot move between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
-		return fs.Move(srcUrl.Path, dstURL.Path)
+		if err := fs.Move(srcUrl.Path, dstURL.Path); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -272,7 +292,12 @@ func (fh *fsHandler) Copy(call capnp.FS_copy) error {
 			return fmt.Errorf("cannot copy between users: %s <-> %s", srcUrl.User, dstURL.User)
 		}
 
-		return fs.Copy(srcUrl.Path, dstURL.Path)
+		if err := fs.Copy(srcUrl.Path, dstURL.Path); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -394,7 +419,12 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Touch(url.Path)
+		if err := fs.Touch(url.Path); err != nil {
+			return err
+		}
+
+		fh.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 

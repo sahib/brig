@@ -679,3 +679,11 @@ func pinStateToSymbol(isPinned, isExplicit bool) string {
 
 	return ""
 }
+
+func yesOrNo(v bool) string {
+	if v {
+		return color.GreenString("yes")
+	}
+
+	return color.RedString("no")
+}

@@ -65,12 +65,6 @@ struct RemoteFolder $Go.doc("A folder that a remote is allowed to access") {
     folder @0 :Text;
 }
 
-struct Remote $Go.doc("Info a remote peer we might sync with") {
-    name        @0 :Text;
-    fingerprint @1 :Text;
-    folders     @2 :List(RemoteFolder);
-}
-
 # This is similar to a remote:
 struct LocateResult {
     name        @0 :Text;
@@ -91,13 +85,19 @@ struct MountOptions {
     rootPath @1 :Text;
 }
 
-struct PeerStatus $Go.doc("net status of a peer") {
-    name          @0 :Text;
-    fingerprint   @1 :Text;
-    lastSeen      @2 :Text;
-    roundtripMs   @3 :Int32;
-    error         @4 :Text;
-    authenticated @5 :Bool;
+struct Remote $Go.doc("Info a remote peer we might sync with") {
+    name              @0 :Text;
+    fingerprint       @1 :Text;
+    folders           @2 :List(RemoteFolder);
+    acceptAutoUpdates @3 :Bool;
+}
+
+struct RemoteStatus $Go.doc("net status of a remote") {
+    remote        @0 :Remote;
+    lastSeen      @1 :Text;
+    roundtripMs   @2 :Int32;
+    error         @3 :Text;
+    authenticated @4 :Bool;
 }
 
 struct GarbageItem $Go.doc("A single item that was killed by the gc") {
@@ -184,19 +184,20 @@ interface Repo {
 }
 
 interface Net {
-    remoteAdd     @0  (remote :Remote);
-    remoteRm      @1  (name :Text);
-    remoteLs      @2  () -> (remotes :List(Remote));
-    remoteUpdate  @3  (remote :Remote);
-    remoteSave    @4  (remotes :List(Remote));
-    remotePing    @5  (who :Text) -> (roundtrip :Float64);
-    remoteClear   @6  ();
-    netLocate     @7  (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
-    netLocateNext @8  (ticket :UInt64) -> (result :LocateResult);
-    whoami        @9  () -> (whoami :Identity);
-    connect       @10 ();
-    disconnect    @11 ();
-    onlinePeers   @12 () -> (infos :List(PeerStatus));
+    remoteAddOrUpdate @0  (remote :Remote);
+    remoteRm          @1  (name :Text);
+    remoteLs          @2  () -> (remotes :List(Remote));
+    remoteUpdate      @3  (remote :Remote);
+    remoteSave        @4  (remotes :List(Remote));
+    remotePing        @5  (who :Text) -> (roundtrip :Float64);
+    remoteClear       @6  ();
+    netLocate         @7  (who :Text, timeoutSec :Float64, locateMask :Text) -> (ticket :UInt64);
+    netLocateNext     @8  (ticket :UInt64) -> (result :LocateResult);
+    whoami            @9  () -> (whoami :Identity);
+    connect           @10 ();
+    disconnect        @11 ();
+    remoteOnlineList  @12 () -> (infos :List(RemoteStatus));
+    remoteByName      @13 (name :Text) -> (remote :Remote);
 }
 
 # Group all interfaces together in one API object,

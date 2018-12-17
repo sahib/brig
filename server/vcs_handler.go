@@ -2,13 +2,9 @@ package server
 
 import (
 	"fmt"
-	"time"
 
-	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
-	fserrs "github.com/sahib/brig/catfs/errors"
-	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/server/capnp"
 	cplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -155,7 +151,12 @@ func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 
 	// Reset a specific file or directory otherwise:
 	return vcs.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Reset(url.Path, rev)
+		if err := fs.Reset(url.Path, rev); err != nil {
+			return err
+		}
+
+		vcs.base.notifyFsChangeEventLocked()
+		return nil
 	})
 }
 
@@ -384,11 +385,11 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	}
 
 	if call.Params.NeedFetch() {
-		if err := vcs.doFetch(remoteOwner); err != nil {
+		if err := vcs.base.doFetch(remoteOwner); err != nil {
 			return e.Wrapf(err, "fetch-remote")
 		}
 
-		if err := vcs.doFetch(localOwner); err != nil {
+		if err := vcs.base.doFetch(localOwner); err != nil {
 			return e.Wrapf(err, "fetch-local")
 		}
 	}
@@ -427,49 +428,6 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 	})
 }
 
-func (vcs *vcsHandler) doFetch(who string) error {
-	rp, err := vcs.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	if who == rp.Owner {
-		log.Infof("skipping fetch for own metadata")
-		return nil
-	}
-
-	return vcs.base.withNetClient(who, func(ctl *p2pnet.Client) error {
-		return vcs.base.withRemoteFs(who, func(remoteFs *catfs.FS) error {
-			// Not all remotes might allow doing a full fetch.
-			// This is only possible when having full access to all folders.
-			if isAllowed, err := ctl.IsCompleteFetchAllowed(); isAllowed && err != nil {
-				log.Debugf("fetch: doing complete fetch for %s", who)
-				storeBuf, err := ctl.FetchStore()
-				if err != nil {
-					return e.Wrapf(err, "fetch-store")
-				}
-
-				return e.Wrapf(remoteFs.Import(storeBuf), "import")
-			}
-
-			// Ask our local copy of the remote what the last patch index was.
-			fromIndex, err := remoteFs.LastPatchIndex()
-			if err != nil {
-				return err
-			}
-
-			// Get the missing changes since then:
-			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
-			patch, err := ctl.FetchPatch(fromIndex)
-			if err != nil {
-				return err
-			}
-
-			return remoteFs.ApplyPatch(patch)
-		})
-	})
-}
-
 func (vcs *vcsHandler) Fetch(call capnp.VCS_fetch) error {
 	server.Ack(call.Options)
 
@@ -478,7 +436,7 @@ func (vcs *vcsHandler) Fetch(call capnp.VCS_fetch) error {
 		return err
 	}
 
-	return vcs.doFetch(who)
+	return vcs.base.doFetch(who)
 }
 
 func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
@@ -489,52 +447,17 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		return err
 	}
 
-	if call.Params.NeedFetch() {
-		if err := vcs.doFetch(withWhom); err != nil {
-			return e.Wrapf(err, "fetch")
-		}
+	diff, err := vcs.base.doSync(withWhom, call.Params.NeedFetch(), "")
+	if err != nil {
+		return err
 	}
 
-	return vcs.base.withCurrFs(func(ownFs *catfs.FS) error {
-		return vcs.base.withRemoteFs(withWhom, func(remoteFs *catfs.FS) error {
-			// Automatically make a commit before merging with their state:
-			timeStamp := time.Now().UTC().Format(time.RFC3339)
-			commitMsg := fmt.Sprintf("sync with %s on %s", withWhom, timeStamp)
-			if err = ownFs.MakeCommit(commitMsg); err != nil && err != fserrs.ErrNoChange {
-				return e.Wrapf(err, "merge-commit")
-			}
+	capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
+	if err != nil {
+		return err
+	}
 
-			cmtBefore, err := ownFs.Head()
-			if err != nil {
-				return err
-			}
-
-			log.Debugf("Starting sync with %s", withWhom)
-
-			if err := ownFs.Sync(remoteFs); err != nil {
-				return err
-			}
-
-			log.Debugf("Sync with %s done", withWhom)
-
-			cmtAfter, err := ownFs.Head()
-			if err != nil {
-				return err
-			}
-
-			diff, err := ownFs.MakeDiff(ownFs, cmtBefore, cmtAfter)
-			if err != nil {
-				return err
-			}
-
-			capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
-			if err != nil {
-				return err
-			}
-
-			return call.Results.SetDiff(*capDiff)
-		})
-	})
+	return call.Results.SetDiff(*capDiff)
 }
 
 func (vcs *vcsHandler) CommitInfo(call capnp.VCS_commitInfo) error {

@@ -1,7 +1,10 @@
 package mock
 
 import (
+	"fmt"
+
 	"github.com/sahib/brig/catfs"
+	eventsMock "github.com/sahib/brig/events/mock"
 	netMock "github.com/sahib/brig/net/mock"
 	repoMock "github.com/sahib/brig/repo/mock"
 )
@@ -11,6 +14,7 @@ type Backend struct {
 	*catfs.MemFsBackend
 	*repoMock.RepoBackend
 	*netMock.NetBackend
+	*eventsMock.EventsBackend
 }
 
 // NewMockBackend returns a backend.Backend that operates only in memory
@@ -18,9 +22,10 @@ type Backend struct {
 // part which stores connection info on disk.
 func NewMockBackend(path, owner string, port int) *Backend {
 	return &Backend{
-		MemFsBackend: catfs.NewMemFsBackend(),
-		RepoBackend:  repoMock.NewMockRepoBackend(),
-		NetBackend:   netMock.NewNetBackend(path, owner, port),
+		MemFsBackend:  catfs.NewMemFsBackend(),
+		RepoBackend:   repoMock.NewMockRepoBackend(),
+		NetBackend:    netMock.NewNetBackend(path, owner, port),
+		EventsBackend: eventsMock.NewEventsBackend(fmt.Sprintf("%s-%d", owner, port)),
 	}
 }
 

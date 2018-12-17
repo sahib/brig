@@ -308,7 +308,9 @@ func (sy *syncer) handleConflictNode(src n.ModNode) error {
 
 // Sync will synchronize the changes from `lkrSrc` to `lkrDst`,
 // according to the options set in `cfg`. This is atomic.
-func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
+// A new commit might be created with `message`, defaulting to a default message
+// when an empty string was given.
+func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions, message string) error {
 	if cfg == nil {
 		cfg = defaultSyncConfig
 	}
@@ -355,7 +357,10 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 				return true, err
 			}
 
-			message := fmt.Sprintf("merge with %s", srcOwner)
+			if message == "" {
+				message = fmt.Sprintf("merge with »%s«", srcOwner)
+			}
+
 			if err := lkrDst.MakeCommit(srcOwner, message); err != nil {
 				return true, err
 			}

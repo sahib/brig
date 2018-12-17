@@ -1331,7 +1331,7 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 // Sync will synchronize the state of two filesystems.
 // If one of filesystems have unstaged changes, they will be committted first.
 // If our filesystem was changed by Sync(), a new merge commit will also be created.
-func (fs *FS) Sync(remote *FS) error {
+func (fs *FS) Sync(remote *FS, msg string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -1344,7 +1344,7 @@ func (fs *FS) Sync(remote *FS) error {
 		return err
 	}
 
-	return vcs.Sync(remote.lkr, fs.lkr, syncCfg)
+	return vcs.Sync(remote.lkr, fs.lkr, syncCfg, msg)
 }
 
 // MakeDiff will return a diff between `headRevOwn` and `headRevRemote`.

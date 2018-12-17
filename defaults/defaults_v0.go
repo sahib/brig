@@ -14,6 +14,33 @@ var DefaultsV0 = config.DefaultMapping{
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
 	},
+	"events": config.DefaultMapping{
+		"enabled": config.DefaultEntry{
+			Default:      true,
+			NeedsRestart: false,
+			Docs:         "Wether we should handle incoming events and publish events",
+		},
+		"recv_interval": config.DefaultEntry{
+			Default:      "100ms",
+			NeedsRestart: false,
+			Docs:         "Time window in which events are buffered before handling them",
+		},
+		"recv_max_events_per_second": config.DefaultEntry{
+			Default:      0.5,
+			NeedsRestart: false,
+			Docs:         "How many events per second to process at max",
+		},
+		"send_interval": config.DefaultEntry{
+			Default:      "200ms",
+			NeedsRestart: false,
+			Docs:         "Time window in which events are buffered before sending them",
+		},
+		"send_max_events_per_second": config.DefaultEntry{
+			Default:      5.0,
+			NeedsRestart: false,
+			Docs:         "How many events per second to send out at max",
+		},
+	},
 	"gateway": config.DefaultMapping{
 		"enabled": config.DefaultEntry{
 			Default:      false,

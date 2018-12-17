@@ -155,6 +155,10 @@ func RunCmdline(args []string) int {
 					Name:   "ping",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				}, {
+					Name:    "auto-update",
+					Aliases: []string{"au"},
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAutoUpdate, true)),
+				}, {
 					Name:    "folder",
 					Aliases: []string{"fld", "f"},
 					Action:  withDaemon(handleRemoteFolderListAll, true),
