@@ -20,6 +20,10 @@ import (
 	"github.com/sahib/brig/util"
 )
 
+type Notifier interface {
+	PublishEvent()
+}
+
 // MountOptions defines all possible knobs you can turn for a mount.
 // The zero value are the default options.
 type MountOptions struct {
@@ -39,17 +43,19 @@ type MountOptions struct {
 type Mount struct {
 	Dir string
 
-	filesys *Filesystem
-	closed  bool
-	done    chan util.Empty
-	errors  chan error
-	conn    *fuse.Conn
-	server  *fs.Server
-	options MountOptions
+	filesys  *Filesystem
+	closed   bool
+	done     chan util.Empty
+	errors   chan error
+	conn     *fuse.Conn
+	server   *fs.Server
+	options  MountOptions
+	notifier Notifier
+	fs       *catfs.FS
 }
 
 // NewMount mounts a fuse endpoint at `mountpoint` retrieving data from `store`.
-func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, error) {
+func NewMount(cfs *catfs.FS, mountpoint string, notifier Notifier, opts MountOptions) (*Mount, error) {
 	mountOptions := []fuse.MountOption{
 		fuse.FSName("brigfs"),
 		fuse.Subtype("brig"),
@@ -78,16 +84,18 @@ func NewMount(cfs *catfs.FS, mountpoint string, opts MountOptions) (*Mount, erro
 		return nil, e.Wrapf(err, "%s is not a directory", opts.Root)
 	}
 
-	filesys := &Filesystem{cfs: cfs, root: opts.Root}
 	mnt := &Mount{
-		conn:    conn,
-		server:  fs.New(conn, nil),
-		filesys: filesys,
-		Dir:     mountpoint,
-		done:    make(chan util.Empty),
-		errors:  make(chan error),
-		options: opts,
+		conn:     conn,
+		server:   fs.New(conn, nil),
+		Dir:      mountpoint,
+		done:     make(chan util.Empty),
+		errors:   make(chan error),
+		options:  opts,
+		notifier: notifier,
+		fs:       cfs,
 	}
+	filesys := &Filesystem{m: mnt, root: opts.Root}
+	mnt.filesys = filesys
 
 	go func() {
 		defer close(mnt.done)
@@ -207,16 +215,18 @@ func (m *Mount) Close() error {
 // `Mount` struct. It's given as convenient way to maintain several mounts.
 // All operations on the table are safe to call from several goroutines.
 type MountTable struct {
-	mu sync.Mutex
-	m  map[string]*Mount
-	fs *catfs.FS
+	mu       sync.Mutex
+	m        map[string]*Mount
+	fs       *catfs.FS
+	notifier Notifier
 }
 
 // NewMountTable returns an empty mount table.
-func NewMountTable(fs *catfs.FS) *MountTable {
+func NewMountTable(fs *catfs.FS, notifier Notifier) *MountTable {
 	return &MountTable{
-		m:  make(map[string]*Mount),
-		fs: fs,
+		m:        make(map[string]*Mount),
+		fs:       fs,
+		notifier: notifier,
 	}
 }
 
@@ -252,7 +262,7 @@ func (t *MountTable) addMount(path string, opts MountOptions) (*Mount, error) {
 		return m, nil
 	}
 
-	m, err := NewMount(t.fs, path, opts)
+	m, err := NewMount(t.fs, path, t.notifier, opts)
 	if err == nil {
 		t.m[path] = m
 	}

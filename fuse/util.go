@@ -3,6 +3,8 @@
 package fuse
 
 import (
+	"time"
+
 	"bazil.org/fuse"
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -79,4 +81,13 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 	}
 
 	return resp, nil
+}
+
+func notifyChange(m *Mount, d time.Duration) {
+	if m.notifier == nil {
+		// this can happen in tests.
+		return
+	}
+
+	time.AfterFunc(d, m.notifier.PublishEvent)
 }

@@ -5,19 +5,21 @@ package fuse
 import (
 	"io"
 	"sync"
+	"time"
+
+	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 )
 
 // Handle is an open Entry.
 type Handle struct {
-	mu  sync.Mutex
-	fd  *catfs.Handle
-	cfs *catfs.FS
+	mu sync.Mutex
+	fd *catfs.Handle
+	m  *Mount
 }
 
 // Read is called to read a block of data at a certain offset.
@@ -85,7 +87,12 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 // Flush is called to make sure all written contents get synced to disk.
 func (hd *Handle) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 	defer logPanic("handle: flush")
-	return hd.flush()
+	if err := hd.flush(); err != nil {
+		return err
+	}
+
+	notifyChange(hd.m, 500*time.Millisecond)
+	return nil
 }
 
 // flush does the actual adding to brig.

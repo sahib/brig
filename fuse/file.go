@@ -5,25 +5,26 @@ package fuse
 import (
 	"os"
 	"path"
+	"time"
+
+	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"context"
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
 )
 
 // File is a file inside a directory.
 type File struct {
 	path string
-	cfs  *catfs.FS
+	m    *Mount
 }
 
 // Attr is called to get the stat(2) attributes of a file.
 func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	defer logPanic("file: attr")
 
-	info, err := fi.cfs.Stat(fi.path)
+	info, err := fi.m.fs.Stat(fi.path)
 	if err != nil {
 		return err
 	}
@@ -55,12 +56,12 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	defer logPanic("file: open")
 
 	debugLog("fuse-open: %s", fi.path)
-	fd, err := fi.cfs.Open(fi.path)
+	fd, err := fi.m.fs.Open(fi.path)
 	if err != nil {
 		return nil, errorize("file-open", err)
 	}
 
-	return &Handle{fd: fd, cfs: fi.cfs}, nil
+	return &Handle{fd: fd, m: fi.m}, nil
 }
 
 // Setattr is called once an attribute of a file changes.
@@ -75,12 +76,11 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	debugLog("exec file setattr")
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
-		log.Warningf("SIZE CHANGED OF %s: %d", fi.path, req.Size)
-		if err := fi.cfs.Truncate(fi.path, req.Size); err != nil {
+		if err := fi.m.fs.Truncate(fi.path, req.Size); err != nil {
 			return errorize("file-setattr-size", err)
 		}
 	case req.Valid&fuse.SetattrMtime != 0:
-		if err := fi.cfs.Touch(fi.path); err != nil {
+		if err := fi.m.fs.Touch(fi.path); err != nil {
 			return errorize("file-setattr-mtime", err)
 		}
 	}
@@ -102,7 +102,7 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 	defer logPanic("file: getxattr")
 
 	debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
-	xattrs, err := getXattr(fi.cfs, req.Name, fi.path, req.Size)
+	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path, req.Size)
 	if err != nil {
 		return err
 	}
@@ -131,11 +131,12 @@ func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.N
 	}
 
 	newPath := path.Join(newParent.path, req.NewName)
-	if err := fi.cfs.Move(fi.path, newPath); err != nil {
+	if err := fi.m.fs.Move(fi.path, newPath); err != nil {
 		log.Warningf("fuse: file: mv: %v", err)
 		return err
 	}
 
+	notifyChange(fi.m, 100*time.Millisecond)
 	return nil
 }
 

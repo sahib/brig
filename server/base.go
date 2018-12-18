@@ -403,9 +403,17 @@ func (b *base) mountsUnlocked() (*fuse.MountTable, error) {
 	return b.loadMounts()
 }
 
+type mountNotifier struct {
+	b *base
+}
+
+func (mn mountNotifier) PublishEvent() {
+	mn.b.notifyFsChangeEventLocked()
+}
+
 func (b *base) loadMounts() (*fuse.MountTable, error) {
 	err := b.withCurrFs(func(fs *catfs.FS) error {
-		b.mounts = fuse.NewMountTable(fs)
+		b.mounts = fuse.NewMountTable(fs, mountNotifier{b: b})
 		return nil
 	})
 
@@ -727,7 +735,7 @@ func (b *base) initialSyncWithAutoUpdatePeers() error {
 			continue
 		}
 
-		msg := fmt.Sprintf("sync with »%s« due to intial auto-update", rmt.Name)
+		msg := fmt.Sprintf("sync with »%s« due to initial auto-update", rmt.Name)
 		if _, err := b.doSync(rmt.Name, true, msg); err != nil {
 			log.Warningf("failed to sync initially with %s: %v", rmt.Name, err)
 		}

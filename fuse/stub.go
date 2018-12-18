@@ -15,6 +15,10 @@ import (
 	"github.com/sahib/config"
 )
 
+type Notifier interface {
+	PublishEvent()
+}
+
 var ErrCompiledWithoutFuse = errors.New("brig was compiled without fuse support")
 
 type MountOptions struct {

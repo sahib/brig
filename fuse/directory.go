@@ -5,19 +5,19 @@ package fuse
 import (
 	"os"
 	"path"
+	"time"
 
 	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
 )
 
 // Directory represents a directory node.
 type Directory struct {
 	path string
-	cfs  *catfs.FS
+	m    *Mount
 }
 
 // Attr is called to retrieve stat-metadata about the directory.
@@ -25,7 +25,7 @@ func (dir *Directory) Attr(ctx context.Context, attr *fuse.Attr) error {
 	defer logPanic("dir: attr")
 
 	debugLog("Exec dir attr: %v", dir.path)
-	info, err := dir.cfs.Stat(dir.path)
+	info, err := dir.m.fs.Stat(dir.path)
 	if err != nil {
 		return errorize("dir-attr", err)
 	}
@@ -51,21 +51,21 @@ func (dir *Directory) Lookup(ctx context.Context, name string) (fs.Node, error) 
 	}
 
 	if name == ".." && dir.path != "/" {
-		return &Directory{path: path.Dir(dir.path), cfs: dir.cfs}, nil
+		return &Directory{path: path.Dir(dir.path), m: dir.m}, nil
 	}
 
 	var result fs.Node
 	childPath := path.Join(dir.path, name)
 
-	info, err := dir.cfs.Stat(childPath)
+	info, err := dir.m.fs.Stat(childPath)
 	if err != nil {
 		return nil, errorize("dir-lookup", err)
 	}
 
 	if info.IsDir {
-		result = &Directory{path: childPath, cfs: dir.cfs}
+		result = &Directory{path: childPath, m: dir.m}
 	} else {
-		result = &File{path: childPath, cfs: dir.cfs}
+		result = &File{path: childPath, m: dir.m}
 	}
 
 	return result, nil
@@ -78,7 +78,7 @@ func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Nod
 	debugLog("fuse-mkdir: %v", req.Name)
 
 	childPath := path.Join(dir.path, req.Name)
-	if err := dir.cfs.Mkdir(childPath, false); err != nil {
+	if err := dir.m.fs.Mkdir(childPath, false); err != nil {
 		log.WithFields(log.Fields{
 			"path":  childPath,
 			"error": err,
@@ -87,7 +87,8 @@ func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Nod
 		return nil, fuse.ENODATA
 	}
 
-	return &Directory{path: childPath, cfs: dir.cfs}, nil
+	notifyChange(dir.m, 100*time.Millisecond)
+	return &Directory{path: childPath, m: dir.m}, nil
 }
 
 // Create is called to create an opened file or directory  as child of the receiver.
@@ -100,9 +101,9 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 	childPath := path.Join(dir.path, req.Name)
 	switch {
 	case req.Mode&os.ModeDir != 0:
-		err = dir.cfs.Mkdir(childPath, false)
+		err = dir.m.fs.Mkdir(childPath, false)
 	default:
-		err = dir.cfs.Touch(childPath)
+		err = dir.m.fs.Touch(childPath)
 	}
 
 	if err != nil {
@@ -113,17 +114,14 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 		return nil, nil, fuse.ENODATA
 	}
 
-	fd, err := dir.cfs.Open(childPath)
+	fd, err := dir.m.fs.Open(childPath)
 	if err != nil {
 		return nil, nil, errorize("fuse-dir-create", err)
 	}
 
-	file := &File{
-		path: childPath,
-		cfs:  dir.cfs,
-	}
-
-	return file, &Handle{fd: fd, cfs: dir.cfs}, nil
+	notifyChange(dir.m, 100*time.Millisecond)
+	file := &File{path: childPath, m: dir.m}
+	return file, &Handle{fd: fd, m: dir.m}, nil
 }
 
 // Remove is called when a direct child in the directory needs to be removed.
@@ -131,11 +129,12 @@ func (dir *Directory) Remove(ctx context.Context, req *fuse.RemoveRequest) error
 	defer logPanic("dir: remove")
 
 	path := path.Join(dir.path, req.Name)
-	if err := dir.cfs.Remove(path); err != nil {
+	if err := dir.m.fs.Remove(path); err != nil {
 		log.Errorf("fuse: dir-remove: `%s` failed: %v", path, err)
 		return fuse.ENOENT
 	}
 
+	notifyChange(dir.m, 100*time.Millisecond)
 	return nil
 }
 
@@ -144,14 +143,14 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	defer logPanic("dir: readdirall")
 
 	debugLog("Exec read dir all")
-	selfInfo, err := dir.cfs.Stat(dir.path)
+	selfInfo, err := dir.m.fs.Stat(dir.path)
 	if err != nil {
 		log.Debugf("Failed to stat: %v", dir.path)
 		return nil, errorize("fuse-dir-ls-stat", err)
 	}
 
 	parentDir := path.Dir(dir.path)
-	parInfo, err := dir.cfs.Stat(parentDir)
+	parInfo, err := dir.m.fs.Stat(parentDir)
 	if err != nil {
 		log.Debugf("Failed to stat parent: %v", parentDir)
 		return nil, errorize("fuse-dir-ls-stat-par", err)
@@ -170,7 +169,7 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		},
 	}
 
-	entries, err := dir.cfs.List(dir.path, 1)
+	entries, err := dir.m.fs.List(dir.path, 1)
 	if err != nil {
 		log.Warningf("Failed to list entries: %v", dir.path)
 		return nil, errorize("fuse-dir-readall", err)
@@ -203,7 +202,7 @@ func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, r
 	defer logPanic("dir: getxattr")
 
 	debugLog("exec dir getxattr: %v: %v", dir.path, req.Name)
-	xattrs, err := getXattr(dir.cfs, req.Name, dir.path, req.Size)
+	xattrs, err := getXattr(dir.m.fs, req.Name, dir.path, req.Size)
 	if err != nil {
 		return err
 	}

@@ -62,7 +62,7 @@ func withMountFromFs(t *testing.T, opts MountOptions, fs *catfs.FS, f func(mount
 
 	defer testutil.Remover(t, mntPath)
 
-	mount, err := NewMount(fs, mntPath, opts)
+	mount, err := NewMount(fs, mntPath, nil, opts)
 	if err != nil {
 		t.Fatalf("Cannot create mount: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestRead(t *testing.T) {
 				// Add a simple file:
 				name := fmt.Sprintf("hello_%d", size)
 				reader := bytes.NewReader(helloData)
-				if err := mount.filesys.cfs.Stage("/"+name, reader); err != nil {
+				if err := mount.filesys.m.fs.Stage("/"+name, reader); err != nil {
 					t.Fatalf("Adding simple file from reader failed: %v", err)
 				}
 
@@ -164,7 +164,7 @@ func TestTouchWrite(t *testing.T) {
 	withMount(t, MountOptions{}, func(mount *Mount) {
 		for _, size := range DataSizes {
 			name := fmt.Sprintf("/empty_%d", size)
-			if err := mount.filesys.cfs.Touch(name); err != nil {
+			if err := mount.filesys.m.fs.Touch(name); err != nil {
 				t.Fatalf("Could not touch an empty file: %v", err)
 			}
 
@@ -203,7 +203,7 @@ func TestReadOnlyFs(t *testing.T) {
 		ReadOnly: true,
 	}
 	withMount(t, opts, func(mount *Mount) {
-		cfs := mount.filesys.cfs
+		cfs := mount.filesys.m.fs
 		cfs.Stage("/x.png", bytes.NewReader([]byte{1, 2, 3}))
 
 		// Do some allowed io to check if the fs is actually working.
