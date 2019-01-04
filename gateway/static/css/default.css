@@ -1,0 +1,187 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 48px 0 0;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-sticky {
+  position: relative;
+  top: 0;
+  height: calc(100vh - 48px);
+  padding-top: .5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@supports ((position: -webkit-sticky) or (position: sticky)) {
+  .sidebar-sticky {
+    position: -webkit-sticky;
+    position: sticky;
+  }
+}
+
+.sidebar .nav-link {
+  margin-left: 50px;
+  font-weight: 500;
+  font-size: 125%;
+  font-weight: 600;
+  color: #333;
+  padding: 15px;
+}
+
+.sidebar .nav-link .feather {
+  margin-right: 4px;
+  color: #999;
+}
+
+.sidebar .nav-link.active {
+  color: #007bff;
+}
+
+.sidebar .nav-link:hover .feather,
+.sidebar .nav-link.active .feather {
+  color: inherit;
+}
+
+.sidebar-heading {
+  font-size: .75rem;
+  text-transform: uppercase;
+}
+
+#sidebar-bottom {
+	width: 100%;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	padding-bottom: 10px;
+}
+
+#sidebar-bottom-text {
+	margin-left: 25px;
+    font-size: 75%;
+}
+
+.icon-column {
+	width: 20px;
+}
+
+/* ---------------- */
+
+
+.input-group-addon {
+    background:transparent;
+}
+
+.input-group-addon button {
+    border: 0px;
+    background:transparent;
+    padding: 0px;
+}
+
+.stylish-input-group .form-control{
+	border-right: 0;
+	box-shadow:0 0 0;
+	border-color: #ccc;
+}
+.stylish-input-group .input-group-append {
+    border:0;
+    background:transparent;
+}
+
+/* ---------------- */
+
+.checkbox label:after, 
+.radio label:after {
+    content: '';
+    display: table;
+    clear: both;
+}
+
+.checkbox .cr,
+.radio .cr {
+    position: relative;
+    display: inline-block;
+    border: 1px solid #a9a9a9;
+    border-radius: .25em;
+    width: 1.3em;
+    height: 1.3em;
+    float: left;
+    margin-right: .5em;
+}
+
+.radio .cr {
+    border-radius: 50%;
+}
+
+.checkbox .cr .cr-icon,
+.radio .cr .cr-icon {
+    position: absolute;
+    font-size: .8em;
+    line-height: 0;
+    top: 50%;
+    left: 20%;
+}
+
+.radio .cr .cr-icon {
+    margin-left: 0.04em;
+}
+
+.checkbox label input[type="checkbox"],
+.radio label input[type="radio"] {
+    display: none;
+}
+
+.checkbox label input[type="checkbox"] + .cr > .cr-icon,
+.radio label input[type="radio"] + .cr > .cr-icon {
+    transform: scale(3) rotateZ(-20deg);
+    opacity: 0;
+    transition: all .1s ease-in;
+}
+
+.checkbox label input[type="checkbox"]:checked + .cr > .cr-icon,
+.radio label input[type="radio"]:checked + .cr > .cr-icon {
+    transform: scale(1) rotateZ(0deg);
+    opacity: 1;
+}
+
+.checkbox label input[type="checkbox"]:disabled + .cr,
+.radio label input[type="radio"]:disabled + .cr {
+    opacity: .5;
+}
+
+/* ---------------- */
+
+/* Add a bit of space before the main content */
+#main-header-row {
+    margin-top: 25px;
+	font-size: 112.5%;
+}
+
+#main-content-row {
+    margin-top: 25px;
+	font-size: 112.5%;
+}
+
+#main-column {
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+/* Remove the grey background from the breadcrumbs */
+.breadcrumb {
+    border:0;
+    background:transparent;
+}
+
+#toolbar-item-list {
+	list-style: none;
+	padding: 0px;
+}
+
+.file-list-icon {
+  color: #007bff;
+}

@@ -14,6 +14,7 @@ GITREV=`git rev-parse HEAD`
 all: build
 
 build:
+	go generate ./...
 	time go install -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \

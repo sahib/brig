@@ -407,16 +407,20 @@ func (lw *limitWriter) Write(buf []byte) (int, error) {
 
 type prefixReader struct {
 	data []byte
-	curs int
-	r    io.Reader
+	curs int64
+	r    io.ReadSeeker
 }
 
 func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 	nread := 0
-	if pr.curs < len(pr.data) {
+	if pr.curs < 0 {
+		return -1, fmt.Errorf("negative cursor")
+	}
+
+	if pr.curs < int64(len(pr.data)) {
 		n := copy(buf, pr.data[pr.curs:])
 		buf = buf[n:]
-		pr.curs += n
+		pr.curs += int64(n)
 		nread += n
 	}
 
@@ -429,15 +433,25 @@ func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 	return nread, err
 }
 
+func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
+	newPos, err := pr.r.Seek(offset, whence)
+	if err != nil {
+		return newPos, err
+	}
+
+	pr.curs = newPos
+	return newPos, nil
+}
+
 // PrefixReader returns an io.Reader that outputs `data` before the rest of `r`.
-func PrefixReader(data []byte, r io.Reader) io.Reader {
+func PrefixReader(data []byte, r io.ReadSeeker) io.ReadSeeker {
 	return &prefixReader{data: data, r: r}
 }
 
 // PeekHeader returns a new reader that will yield the very same data as `r`.
 // It reads `size` bytes from `r` and returns it. The underlying implementation
 // uses PrefixReader to prefix the stream with the header again.
-func PeekHeader(r io.Reader, size int64) ([]byte, io.Reader, error) {
+func PeekHeader(r io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
 	headerBuf := make([]byte, size)
 	n, err := r.Read(headerBuf)
 	if err != nil && err != io.EOF {

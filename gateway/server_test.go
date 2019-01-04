@@ -6,12 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/config"
@@ -191,26 +189,6 @@ func TestGatewayConfigChangePort(t *testing.T) {
 		status, data = query(t, gw, "/get/hello/world.png")
 		require.Equal(t, 200, status)
 		require.Equal(t, exampleData, data)
-	})
-}
-
-func TestBlock(t *testing.T) {
-	t.Skip("This test is only for debugging purposes")
-
-	log.SetLevel(log.DebugLevel)
-	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
-		exampleData := []byte("Hello world")
-		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
-		require.Nil(t, err)
-
-		gw.cfg.SetStrings("folders", []string{"/"})
-		gw.cfg.SetString("cert.domain", "nwzmlh4iouqikobq.myfritz.net")
-		gw.cfg.SetString("cert.certfile", "/tmp/fullchain.pem")
-		gw.cfg.SetString("cert.keyfile", "/tmp/privkey.pem")
-
-		ch := make(chan os.Signal)
-		signal.Notify(ch, os.Interrupt)
-		<-ch
 	})
 }
 
