@@ -15,6 +15,7 @@ boolToStr b =
 
 monthToInt : Time.Month -> Int
 monthToInt month =
+    -- This feels stupid.
     case month of
         Time.Jan ->
             1

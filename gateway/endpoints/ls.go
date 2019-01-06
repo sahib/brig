@@ -3,6 +3,8 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/config"
@@ -78,6 +80,15 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, item := range items {
 		files = append(files, toExternalStatInfo(item))
 	}
+
+	// Sort dirs before files and sort each part alphabetically
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].IsDir != files[j].IsDir {
+			return files[i].IsDir
+		}
+
+		return strings.ToLower(files[i].Path) < strings.ToLower(files[j].Path)
+	})
 
 	jsonify(w, http.StatusOK, &LsResponse{
 		Success: true,

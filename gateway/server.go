@@ -165,6 +165,7 @@ func (gw *Gateway) Start() {
 	apiRouter.Handle("/login", endpoints.NewLoginHandler(gw.cfg))
 	apiRouter.Handle("/logout", endpoints.NewLogoutHandler())
 	apiRouter.Handle("/ls", endpoints.NewLsHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/upload", endpoints.NewUploadHandler(gw.cfg, gw.fs))
 	// TODO: Should ls be really POST?
 
 	// Add the /get endpoint. Since it might contain any path, we have to
