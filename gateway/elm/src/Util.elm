@@ -1,6 +1,10 @@
-module Util exposing (monthToInt)
+module Util exposing (basename, formatLastModified, monthToInt, splitPath, urlToPath)
 
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Time
+import Url
 
 
 boolToStr : Bool -> String
@@ -52,3 +56,66 @@ monthToInt month =
 
         Time.Dec ->
             12
+
+
+formatLastModified : Time.Zone -> Time.Posix -> String -> Html.Html msg
+formatLastModified z t owner =
+    let
+        timestamp =
+            String.join " "
+                -- Day portion:
+                [ String.join
+                    "/"
+                    [ Time.toDay z t |> String.fromInt
+                    , Time.toMonth z t |> monthToInt |> String.fromInt
+                    , Time.toYear z t |> String.fromInt
+                    ]
+
+                -- Time portion:
+                , String.join ":"
+                    [ Time.toHour z t |> String.fromInt |> String.padLeft 2 '0'
+                    , Time.toMinute z t |> String.fromInt |> String.padLeft 2 '0'
+                    , Time.toSecond z t |> String.fromInt |> String.padLeft 2 '0'
+                    ]
+                ]
+    in
+    p [] [ text timestamp, span [ class "text-muted" ] [ text " by " ], text owner ]
+
+
+splitPath : String -> List String
+splitPath path =
+    List.filter (\s -> String.length s > 0) (String.split "/" path)
+
+
+urlToPath : Url.Url -> String
+urlToPath url =
+    let
+        decodeUrlPart =
+            \e ->
+                case Url.percentDecode e of
+                    Just val ->
+                        val
+
+                    Nothing ->
+                        ""
+    in
+    case splitPath url.path of
+        [] ->
+            "/"
+
+        _ :: xs ->
+            "/" ++ String.join "/" (List.map decodeUrlPart xs)
+
+
+basename : String -> String
+basename path =
+    let
+        splitUrl =
+            List.reverse (splitPath path)
+    in
+    case splitUrl of
+        [] ->
+            "/"
+
+        x :: _ ->
+            x

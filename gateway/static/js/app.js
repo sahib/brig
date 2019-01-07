@@ -4832,11 +4832,6 @@ var author$project$Login$Query = F2(
 	function (username, password) {
 		return {password: password, username: username};
 	});
-var author$project$Main$AdjustTimeZone = function (a) {
-	return {$: 'AdjustTimeZone', a: a};
-};
-var author$project$Main$Loading = {$: 'Loading'};
-var author$project$Main$UploadFileSelect = {$: 'UploadFileSelect'};
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
@@ -5329,20 +5324,17 @@ var elm$json$Json$Encode$object = function (pairs) {
 			pairs));
 };
 var elm$json$Json$Encode$string = _Json_wrap;
-var author$project$Login$encode = function (query) {
+var author$project$Login$encode = function (q) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
 				_Utils_Tuple2(
 				'username',
-				elm$json$Json$Encode$string(query.username)),
+				elm$json$Json$Encode$string(q.username)),
 				_Utils_Tuple2(
 				'password',
-				elm$json$Json$Encode$string(query.password))
+				elm$json$Json$Encode$string(q.password))
 			]));
-};
-var author$project$Main$GotLoginResp = function (a) {
-	return {$: 'GotLoginResp', a: a};
 };
 var elm$core$Result$mapError = F2(
 	function (f, result) {
@@ -6230,15 +6222,28 @@ var elm$http$Http$post = function (r) {
 	return elm$http$Http$request(
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var author$project$Main$doLoginQuery = function (q) {
-	return elm$http$Http$post(
-		{
-			body: elm$http$Http$jsonBody(
-				author$project$Login$encode(q)),
-			expect: A2(elm$http$Http$expectJson, author$project$Main$GotLoginResp, author$project$Login$decode),
-			url: '/api/v0/login'
-		});
+var author$project$Login$query = F3(
+	function (msg, user, pass) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Login$encode(
+						A2(author$project$Login$Query, user, pass))),
+				expect: A2(elm$http$Http$expectJson, msg, author$project$Login$decode),
+				url: '/api/v0/login'
+			});
+	});
+var author$project$Main$AdjustTimeZone = function (a) {
+	return {$: 'AdjustTimeZone', a: a};
 };
+var author$project$Main$GotLoginResp = function (a) {
+	return {$: 'GotLoginResp', a: a};
+};
+var author$project$Main$Loading = {$: 'Loading'};
+var author$project$Modals$Upload$Ready = {$: 'Ready'};
+var rundis$elm_bootstrap$Bootstrap$Modal$Hide = {$: 'Hide'};
+var rundis$elm_bootstrap$Bootstrap$Modal$hidden = rundis$elm_bootstrap$Bootstrap$Modal$Hide;
+var author$project$Modals$Upload$newModel = {modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Upload$Ready};
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
@@ -6325,21 +6330,21 @@ var elm$time$Time$Zone = F2(
 var elm$time$Time$customZone = elm$time$Time$Zone;
 var elm$time$Time$here = _Time_here(_Utils_Tuple0);
 var elm$time$Time$utc = A2(elm$time$Time$Zone, 0, _List_Nil);
-var rundis$elm_bootstrap$Bootstrap$Modal$Hide = {$: 'Hide'};
-var rundis$elm_bootstrap$Bootstrap$Modal$hidden = rundis$elm_bootstrap$Bootstrap$Modal$Hide;
 var author$project$Main$init = F3(
 	function (_n0, url, key) {
 		return _Utils_Tuple2(
-			{checkedEntries: elm$core$Set$empty, key: key, listState: author$project$Main$Loading, uploadModalState: rundis$elm_bootstrap$Bootstrap$Modal$hidden, uploadState: author$project$Main$UploadFileSelect, url: url, zone: elm$time$Time$utc},
+			{checkedEntries: elm$core$Set$empty, key: key, listState: author$project$Main$Loading, uploadState: author$project$Modals$Upload$newModel, url: url, zone: elm$time$Time$utc},
 			elm$core$Platform$Cmd$batch(
 				_List_fromArray(
 					[
-						author$project$Main$doLoginQuery(
-						A2(author$project$Login$Query, 'ali', 'ila')),
+						A3(author$project$Login$query, author$project$Main$GotLoginResp, 'ali', 'ila'),
 						A2(elm$core$Task$perform, author$project$Main$AdjustTimeZone, elm$time$Time$here)
 					])));
 	});
-var author$project$Main$UploadProgress = function (a) {
+var author$project$Main$UploadMsg = function (a) {
+	return {$: 'UploadMsg', a: a};
+};
+var author$project$Modals$Upload$UploadProgress = function (a) {
 	return {$: 'UploadProgress', a: a};
 };
 var elm$http$Http$track = F2(
@@ -6347,27 +6352,25 @@ var elm$http$Http$track = F2(
 		return elm$http$Http$subscription(
 			A2(elm$http$Http$MySub, tracker, toMsg));
 	});
+var author$project$Modals$Upload$subscriptions = function (model) {
+	return A2(elm$http$Http$track, 'upload', author$project$Modals$Upload$UploadProgress);
+};
+var elm$core$Platform$Sub$batch = _Platform_batch;
+var elm$core$Platform$Sub$map = _Platform_map;
 var author$project$Main$subscriptions = function (model) {
-	return A2(elm$http$Http$track, 'upload', author$project$Main$UploadProgress);
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				A2(
+				elm$core$Platform$Sub$map,
+				author$project$Main$UploadMsg,
+				author$project$Modals$Upload$subscriptions(model.uploadState))
+			]));
 };
 var author$project$Ls$Query = F2(
 	function (root, maxDepth) {
 		return {maxDepth: maxDepth, root: root};
 	});
-var author$project$Main$LoginFailure = {$: 'LoginFailure'};
-var author$project$Main$LoginSuccess = {$: 'LoginSuccess'};
-var author$project$Main$LsFailure = {$: 'LsFailure'};
-var author$project$Main$LsSuccess = function (a) {
-	return {$: 'LsSuccess', a: a};
-};
-var author$project$Main$UploadDone = {$: 'UploadDone'};
-var author$project$Main$UploadFail = {$: 'UploadFail'};
-var author$project$Main$Uploaded = function (a) {
-	return {$: 'Uploaded', a: a};
-};
-var author$project$Main$Uploading = function (a) {
-	return {$: 'Uploading', a: a};
-};
 var elm$json$Json$Decode$map2 = _Json_map2;
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
@@ -6451,18 +6454,152 @@ var author$project$Ls$encode = function (q) {
 				elm$json$Json$Encode$int(q.maxDepth))
 			]));
 };
+var author$project$Ls$query = F2(
+	function (msg, path) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Ls$encode(
+						A2(author$project$Ls$Query, path, 1))),
+				expect: A2(elm$http$Http$expectJson, msg, author$project$Ls$decode),
+				url: '/api/v0/ls'
+			});
+	});
 var author$project$Main$GotLsResp = function (a) {
 	return {$: 'GotLsResp', a: a};
 };
-var author$project$Main$doLsQuery = function (q) {
-	return elm$http$Http$post(
-		{
-			body: elm$http$Http$jsonBody(
-				author$project$Ls$encode(q)),
-			expect: A2(elm$http$Http$expectJson, author$project$Main$GotLsResp, author$project$Ls$decode),
-			url: '/api/v0/ls'
-		});
+var author$project$Main$LoginFailure = {$: 'LoginFailure'};
+var author$project$Main$LoginSuccess = {$: 'LoginSuccess'};
+var author$project$Main$LsFailure = {$: 'LsFailure'};
+var author$project$Main$LsSuccess = function (a) {
+	return {$: 'LsSuccess', a: a};
 };
+var elm$core$Platform$Cmd$map = _Platform_map;
+var author$project$Main$updateWith = F4(
+	function (toModel, toMsg, model, _n0) {
+		var subModel = _n0.a;
+		var subCmd = _n0.b;
+		return _Utils_Tuple2(
+			toModel(subModel),
+			A2(elm$core$Platform$Cmd$map, toMsg, subCmd));
+	});
+var author$project$Modals$Upload$Done = {$: 'Done'};
+var author$project$Modals$Upload$Fail = {$: 'Fail'};
+var author$project$Modals$Upload$Uploaded = function (a) {
+	return {$: 'Uploaded', a: a};
+};
+var author$project$Modals$Upload$Uploading = function (a) {
+	return {$: 'Uploading', a: a};
+};
+var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
+var elm$http$Http$expectBytesResponse = F2(
+	function (toMsg, toResult) {
+		return A3(
+			_Http_expect,
+			'arraybuffer',
+			_Http_toDataView,
+			A2(elm$core$Basics$composeR, toResult, toMsg));
+	});
+var elm$http$Http$expectWhatever = function (toMsg) {
+	return A2(
+		elm$http$Http$expectBytesResponse,
+		toMsg,
+		elm$http$Http$resolve(
+			function (_n0) {
+				return elm$core$Result$Ok(_Utils_Tuple0);
+			}));
+};
+var elm$http$Http$filePart = _Http_pair;
+var elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var elm$http$Http$fractionSent = function (p) {
+	return (!p.size) ? 1 : A3(elm$core$Basics$clamp, 0, 1, p.sent / p.size);
+};
+var elm$http$Http$multipartBody = function (parts) {
+	return A2(
+		_Http_pair,
+		'',
+		_Http_toFormData(parts));
+};
+var rundis$elm_bootstrap$Bootstrap$Modal$Show = {$: 'Show'};
+var rundis$elm_bootstrap$Bootstrap$Modal$shown = rundis$elm_bootstrap$Bootstrap$Modal$Show;
+var author$project$Modals$Upload$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'UploadSelectedFiles':
+				var files = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							state: author$project$Modals$Upload$Uploading(0)
+						}),
+					elm$http$Http$request(
+						{
+							body: elm$http$Http$multipartBody(
+								A2(
+									elm$core$List$map,
+									elm$http$Http$filePart('files[]'),
+									files)),
+							expect: elm$http$Http$expectWhatever(author$project$Modals$Upload$Uploaded),
+							headers: _List_Nil,
+							method: 'POST',
+							timeout: elm$core$Maybe$Nothing,
+							tracker: elm$core$Maybe$Just('upload'),
+							url: '/api/v0/upload'
+						}));
+			case 'UploadProgress':
+				var progress = msg.a;
+				if (progress.$ === 'Sending') {
+					var p = progress.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Modals$Upload$Uploading(
+									elm$http$Http$fractionSent(p))
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			case 'Uploaded':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{state: author$project$Modals$Upload$Done}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{state: author$project$Modals$Upload$Fail}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'UploadCancel':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{state: author$project$Modals$Upload$Ready}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalShow':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
 var elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -6475,7 +6612,7 @@ var elm$core$List$filter = F2(
 			list);
 	});
 var elm$core$String$length = _String_length;
-var author$project$Main$splitPath = function (path) {
+var author$project$Util$splitPath = function (path) {
 	return A2(
 		elm$core$List$filter,
 		function (s) {
@@ -6484,7 +6621,7 @@ var author$project$Main$splitPath = function (path) {
 		A2(elm$core$String$split, '/', path));
 };
 var elm$url$Url$percentDecode = _Url_percentDecode;
-var author$project$Main$urlToPath = function (url) {
+var author$project$Util$urlToPath = function (url) {
 	var decodeUrlPart = function (e) {
 		var _n1 = elm$url$Url$percentDecode(e);
 		if (_n1.$ === 'Just') {
@@ -6494,7 +6631,7 @@ var author$project$Main$urlToPath = function (url) {
 			return '';
 		}
 	};
-	var _n0 = author$project$Main$splitPath(url.path);
+	var _n0 = author$project$Util$splitPath(url.path);
 	if (!_n0.b) {
 		return '/';
 	} else {
@@ -6666,7 +6803,6 @@ var elm$url$Url$fromString = function (str) {
 };
 var elm$browser$Browser$Navigation$load = _Browser_load;
 var elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
-var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var elm$core$Set$insert = F2(
 	function (key, _n0) {
 		var dict = _n0.a;
@@ -6705,37 +6841,6 @@ var elm$core$Dict$size = function (dict) {
 var elm$core$Set$size = function (_n0) {
 	var dict = _n0.a;
 	return elm$core$Dict$size(dict);
-};
-var elm$http$Http$expectBytesResponse = F2(
-	function (toMsg, toResult) {
-		return A3(
-			_Http_expect,
-			'arraybuffer',
-			_Http_toDataView,
-			A2(elm$core$Basics$composeR, toResult, toMsg));
-	});
-var elm$http$Http$expectWhatever = function (toMsg) {
-	return A2(
-		elm$http$Http$expectBytesResponse,
-		toMsg,
-		elm$http$Http$resolve(
-			function (_n0) {
-				return elm$core$Result$Ok(_Utils_Tuple0);
-			}));
-};
-var elm$http$Http$filePart = _Http_pair;
-var elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var elm$http$Http$fractionSent = function (p) {
-	return (!p.size) ? 1 : A3(elm$core$Basics$clamp, 0, 1, p.sent / p.size);
-};
-var elm$http$Http$multipartBody = function (parts) {
-	return A2(
-		_Http_pair,
-		'',
-		_Http_toFormData(parts));
 };
 var elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
@@ -6781,8 +6886,6 @@ var elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
-var rundis$elm_bootstrap$Bootstrap$Modal$Show = {$: 'Show'};
-var rundis$elm_bootstrap$Bootstrap$Modal$shown = rundis$elm_bootstrap$Bootstrap$Modal$Show;
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -6799,8 +6902,7 @@ var author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{listState: author$project$Main$Loading}),
-					author$project$Main$doLsQuery(
-						A2(author$project$Ls$Query, path, 1)));
+					A2(author$project$Ls$query, author$project$Main$GotLsResp, path));
 			case 'GotLsResp':
 				var result = msg.a;
 				var updatedModel = function () {
@@ -6829,11 +6931,10 @@ var author$project$Main$update = F2(
 						_Utils_update(
 							model,
 							{listState: author$project$Main$LoginSuccess}),
-						author$project$Main$doLsQuery(
-							A2(
-								author$project$Ls$Query,
-								author$project$Main$urlToPath(model.url),
-								1)));
+						A2(
+							author$project$Ls$query,
+							author$project$Main$GotLsResp,
+							author$project$Util$urlToPath(model.url)));
 				} else {
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -6863,11 +6964,10 @@ var author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{url: url}),
-					author$project$Main$doLsQuery(
-						A2(
-							author$project$Ls$Query,
-							author$project$Main$urlToPath(url),
-							1)));
+					A2(
+						author$project$Ls$query,
+						author$project$Main$GotLsResp,
+						author$project$Util$urlToPath(url)));
 			case 'CheckboxTick':
 				var path = msg.a;
 				var isChecked = msg.b;
@@ -6932,79 +7032,20 @@ var author$project$Main$update = F2(
 							{checkedEntries: elm$core$Set$empty}),
 						elm$core$Platform$Cmd$none);
 				}
-			case 'ModalShowUpload':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{uploadModalState: rundis$elm_bootstrap$Bootstrap$Modal$shown, uploadState: author$project$Main$UploadFileSelect}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalCloseUpload':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{uploadModalState: rundis$elm_bootstrap$Bootstrap$Modal$hidden, uploadState: author$project$Main$UploadFileSelect}),
-					elm$core$Platform$Cmd$none);
-			case 'UploadSelectedFiles':
-				var files = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							uploadState: author$project$Main$Uploading(0)
-						}),
-					elm$http$Http$request(
-						{
-							body: elm$http$Http$multipartBody(
-								A2(
-									elm$core$List$map,
-									elm$http$Http$filePart('files[]'),
-									files)),
-							expect: elm$http$Http$expectWhatever(author$project$Main$Uploaded),
-							headers: _List_Nil,
-							method: 'POST',
-							timeout: elm$core$Maybe$Nothing,
-							tracker: elm$core$Maybe$Just('upload'),
-							url: '/api/v0/upload'
-						}));
-			case 'UploadProgress':
-				var progress = msg.a;
-				if (progress.$ === 'Sending') {
-					var p = progress.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								uploadState: author$project$Main$Uploading(
-									elm$http$Http$fractionSent(p))
-							}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				}
-			case 'Uploaded':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{uploadState: author$project$Main$UploadDone}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{uploadState: author$project$Main$UploadFail}),
-						elm$core$Platform$Cmd$none);
-				}
 			default:
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{uploadState: author$project$Main$UploadFileSelect}),
-					elm$core$Platform$Cmd$none);
+				var subMsg = msg.a;
+				return A4(
+					author$project$Main$updateWith,
+					function (m) {
+						return _Utils_update(
+							model,
+							{uploadState: m});
+					},
+					author$project$Main$UploadMsg,
+					model,
+					A2(author$project$Modals$Upload$update, subMsg, model.uploadState));
 		}
 	});
-var author$project$Main$ModalShowUpload = {$: 'ModalShowUpload'};
 var author$project$Main$labelSelectedItems = function (num) {
 	switch (num) {
 		case 0:
@@ -7074,6 +7115,8 @@ var author$project$Main$numberOfSelectedItems = function (model) {
 			},
 			model.checkedEntries));
 };
+var author$project$Modals$Upload$ModalShow = {$: 'ModalShow'};
+var author$project$Modals$Upload$showModal = author$project$Modals$Upload$ModalShow;
 var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$br = _VirtualDom_node('br');
 var elm$html$Html$div = _VirtualDom_node('div');
@@ -7333,7 +7376,8 @@ var author$project$Main$viewActionList = function (model) {
 						rundis$elm_bootstrap$Bootstrap$Button$attrs(
 						_List_fromArray(
 							[
-								elm$html$Html$Events$onClick(author$project$Main$ModalShowUpload)
+								elm$html$Html$Events$onClick(
+								author$project$Main$UploadMsg(author$project$Modals$Upload$showModal))
 							]))
 					]),
 				_List_fromArray(
@@ -7660,8 +7704,8 @@ var author$project$Main$viewBreadcrumbs = function (model) {
 					_Utils_ap(
 						_List_fromArray(
 							['']),
-						author$project$Main$splitPath(
-							author$project$Main$urlToPath(model.url))),
+						author$project$Util$splitPath(
+							author$project$Util$urlToPath(model.url))),
 					_List_Nil))
 			]));
 };
@@ -7675,9 +7719,110 @@ var author$project$Main$CheckboxTick = F2(
 var author$project$Main$CheckboxTickAll = function (a) {
 	return {$: 'CheckboxTickAll', a: a};
 };
-var author$project$Main$basename = function (path) {
+var elm$html$Html$i = _VirtualDom_node('i');
+var elm$html$Html$input = _VirtualDom_node('input');
+var elm$html$Html$label = _VirtualDom_node('label');
+var elm$html$Html$Attributes$checked = elm$html$Html$Attributes$boolProperty('checked');
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
+var elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
+	});
+var elm$html$Html$Events$targetChecked = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'checked']),
+	elm$json$Json$Decode$bool);
+var elm$html$Html$Events$onCheck = function (tagger) {
+	return A2(
+		elm$html$Html$Events$on,
+		'change',
+		A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetChecked));
+};
+var author$project$Main$makeCheckbox = F2(
+	function (isChecked, msg) {
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('checkbox')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$label,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$input,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$type_('checkbox'),
+									elm$html$Html$Events$onCheck(msg),
+									elm$html$Html$Attributes$checked(isChecked)
+								]),
+							_List_Nil),
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('cr')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$i,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('cr-icon fas fa-lg fa-check')
+										]),
+									_List_Nil)
+								]))
+						]))
+				]));
+	});
+var elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _n0 = A2(elm$core$Dict$get, key, dict);
+		if (_n0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var elm$core$Set$member = F2(
+	function (key, _n0) {
+		var dict = _n0.a;
+		return A2(elm$core$Dict$member, key, dict);
+	});
+var author$project$Main$readCheckedState = F2(
+	function (model, path) {
+		return A2(elm$core$Set$member, path, model.checkedEntries);
+	});
+var author$project$Main$viewEntryIcon = function (entry) {
+	var _n0 = entry.isDir;
+	if (_n0) {
+		return A2(
+			elm$html$Html$span,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('far fa-lg fa-folder text-xs-right file-list-icon')
+				]),
+			_List_Nil);
+	} else {
+		return A2(
+			elm$html$Html$span,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('far fa-lg fa-file text-xs-right file-list-icon')
+				]),
+			_List_Nil);
+	}
+};
+var author$project$Util$basename = function (path) {
 	var splitUrl = elm$core$List$reverse(
-		author$project$Main$splitPath(path));
+		author$project$Util$splitPath(path));
 	if (!splitUrl.b) {
 		return '/';
 	} else {
@@ -7884,44 +8029,51 @@ var elm$time$Time$toYear = F2(
 		return elm$time$Time$toCivil(
 			A2(elm$time$Time$toAdjustedMinutes, zone, time)).year;
 	});
-var author$project$Main$formatLastModified = F3(
+var author$project$Util$formatLastModified = F3(
 	function (z, t, owner) {
 		var timestamp = A2(
 			elm$core$String$join,
-			'/',
+			' ',
 			_List_fromArray(
 				[
-					elm$core$String$fromInt(
-					A2(elm$time$Time$toDay, z, t)),
-					elm$core$String$fromInt(
-					author$project$Util$monthToInt(
-						A2(elm$time$Time$toMonth, z, t))),
-					elm$core$String$fromInt(
-					A2(elm$time$Time$toYear, z, t))
-				])) + (' ' + A2(
-			elm$core$String$join,
-			':',
-			_List_fromArray(
-				[
-					A3(
-					elm$core$String$padLeft,
-					2,
-					_Utils_chr('0'),
-					elm$core$String$fromInt(
-						A2(elm$time$Time$toHour, z, t))),
-					A3(
-					elm$core$String$padLeft,
-					2,
-					_Utils_chr('0'),
-					elm$core$String$fromInt(
-						A2(elm$time$Time$toMinute, z, t))),
-					A3(
-					elm$core$String$padLeft,
-					2,
-					_Utils_chr('0'),
-					elm$core$String$fromInt(
-						A2(elm$time$Time$toSecond, z, t)))
-				])));
+					A2(
+					elm$core$String$join,
+					'/',
+					_List_fromArray(
+						[
+							elm$core$String$fromInt(
+							A2(elm$time$Time$toDay, z, t)),
+							elm$core$String$fromInt(
+							author$project$Util$monthToInt(
+								A2(elm$time$Time$toMonth, z, t))),
+							elm$core$String$fromInt(
+							A2(elm$time$Time$toYear, z, t))
+						])),
+					A2(
+					elm$core$String$join,
+					':',
+					_List_fromArray(
+						[
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toHour, z, t))),
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toMinute, z, t))),
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toSecond, z, t)))
+						]))
+				]));
 		return A2(
 			elm$html$Html$p,
 			_List_Nil,
@@ -7941,107 +8093,6 @@ var author$project$Main$formatLastModified = F3(
 					elm$html$Html$text(owner)
 				]));
 	});
-var elm$html$Html$i = _VirtualDom_node('i');
-var elm$html$Html$input = _VirtualDom_node('input');
-var elm$html$Html$label = _VirtualDom_node('label');
-var elm$html$Html$Attributes$checked = elm$html$Html$Attributes$boolProperty('checked');
-var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
-var elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
-	});
-var elm$html$Html$Events$targetChecked = A2(
-	elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'checked']),
-	elm$json$Json$Decode$bool);
-var elm$html$Html$Events$onCheck = function (tagger) {
-	return A2(
-		elm$html$Html$Events$on,
-		'change',
-		A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetChecked));
-};
-var author$project$Main$makeCheckbox = F2(
-	function (isChecked, msg) {
-		return A2(
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('checkbox')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$label,
-					_List_Nil,
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$input,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$type_('checkbox'),
-									elm$html$Html$Events$onCheck(msg),
-									elm$html$Html$Attributes$checked(isChecked)
-								]),
-							_List_Nil),
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('cr')
-								]),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$i,
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('cr-icon fas fa-lg fa-check')
-										]),
-									_List_Nil)
-								]))
-						]))
-				]));
-	});
-var elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _n0 = A2(elm$core$Dict$get, key, dict);
-		if (_n0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var elm$core$Set$member = F2(
-	function (key, _n0) {
-		var dict = _n0.a;
-		return A2(elm$core$Dict$member, key, dict);
-	});
-var author$project$Main$readCheckedState = F2(
-	function (model, path) {
-		return A2(elm$core$Set$member, path, model.checkedEntries);
-	});
-var author$project$Main$viewEntryIcon = function (entry) {
-	var _n0 = entry.isDir;
-	if (_n0) {
-		return A2(
-			elm$html$Html$span,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('far fa-lg fa-folder text-xs-right file-list-icon')
-				]),
-			_List_Nil);
-	} else {
-		return A2(
-			elm$html$Html$span,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('far fa-lg fa-file text-xs-right file-list-icon')
-				]),
-			_List_Nil);
-	}
-};
 var basti1302$elm_human_readable_filesize$Filesize$Base10 = {$: 'Base10'};
 var basti1302$elm_human_readable_filesize$Filesize$defaultSettings = {decimalPlaces: 2, decimalSeparator: '.', units: basti1302$elm_human_readable_filesize$Filesize$Base10};
 var basti1302$elm_human_readable_filesize$Filesize$base10UnitList = _List_fromArray(
@@ -9143,7 +9194,7 @@ var author$project$Main$entriesToHtml = F2(
 												_List_fromArray(
 													[
 														elm$html$Html$text(
-														author$project$Main$basename(e.path))
+														author$project$Util$basename(e.path))
 													]))
 											])),
 										A2(
@@ -9151,7 +9202,7 @@ var author$project$Main$entriesToHtml = F2(
 										_List_Nil,
 										_List_fromArray(
 											[
-												A3(author$project$Main$formatLastModified, model.zone, e.lastModified, e.user)
+												A3(author$project$Util$formatLastModified, model.zone, e.lastModified, e.user)
 											])),
 										A2(
 										rundis$elm_bootstrap$Bootstrap$Table$td,
@@ -9309,13 +9360,572 @@ var author$project$Main$viewLsResponse = function (model) {
 					]));
 	}
 };
-var author$project$Main$ModalCloseUpload = {$: 'ModalCloseUpload'};
-var author$project$Main$UploadCancel = {$: 'UploadCancel'};
-var author$project$Main$UploadSelectedFiles = function (a) {
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder = function (a) {
+	return {$: 'Placeholder', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder = function (value_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder(value_);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs = F2(
+	function (attributes, _n0) {
+		var conf = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
+			_Utils_update(
+				conf,
+				{attributes: attributes}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config = function (input_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
+		{attributes: _List_Nil, input: input_, predecessors: _List_Nil, size: elm$core$Maybe$Nothing, successors: _List_Nil});
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon = function (a) {
+	return {$: 'Addon', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span = F2(
+	function (attributes, children) {
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon(
+			A2(
+				elm$html$Html$span,
+				A2(
+					elm$core$List$cons,
+					elm$html$Html$Attributes$class('input-group-text'),
+					attributes),
+				children));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors = F2(
+	function (addons, _n0) {
+		var conf = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
+			_Utils_update(
+				conf,
+				{successors: addons}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Text = {$: 'Text'};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Input = function (a) {
+	return {$: 'Input', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Type = function (a) {
+	return {$: 'Type', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$create = F2(
+	function (tipe, options) {
+		return rundis$elm_bootstrap$Bootstrap$Form$Input$Input(
+			{
+				options: A2(
+					elm$core$List$cons,
+					rundis$elm_bootstrap$Bootstrap$Form$Input$Type(tipe),
+					options)
+			});
+	});
+var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
+var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
+var elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var elm$html$Html$Events$targetValue = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	elm$json$Json$Decode$string);
+var elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			elm$json$Json$Decode$map,
+			elm$html$Html$Events$alwaysStop,
+			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier = F2(
+	function (modifier, options) {
+		switch (modifier.$) {
+			case 'Size':
+				var size_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						size: elm$core$Maybe$Just(size_)
+					});
+			case 'Id':
+				var id_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						id: elm$core$Maybe$Just(id_)
+					});
+			case 'Type':
+				var tipe = modifier.a;
+				return _Utils_update(
+					options,
+					{tipe: tipe});
+			case 'Disabled':
+				var val = modifier.a;
+				return _Utils_update(
+					options,
+					{disabled: val});
+			case 'Value':
+				var value_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						value: elm$core$Maybe$Just(value_)
+					});
+			case 'Placeholder':
+				var value_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						placeholder: elm$core$Maybe$Just(value_)
+					});
+			case 'OnInput':
+				var onInput_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						onInput: elm$core$Maybe$Just(onInput_)
+					});
+			case 'Validation':
+				var validation_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						validation: elm$core$Maybe$Just(validation_)
+					});
+			case 'Readonly':
+				var val = modifier.a;
+				return _Utils_update(
+					options,
+					{readonly: val});
+			default:
+				var attrs_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						attributes: _Utils_ap(options.attributes, attrs_)
+					});
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions = {attributes: _List_Nil, disabled: false, id: elm$core$Maybe$Nothing, onInput: elm$core$Maybe$Nothing, placeholder: elm$core$Maybe$Nothing, readonly: false, size: elm$core$Maybe$Nothing, tipe: rundis$elm_bootstrap$Bootstrap$Form$Input$Text, validation: elm$core$Maybe$Nothing, value: elm$core$Maybe$Nothing};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute = function (size) {
+	return A2(
+		elm$core$Maybe$map,
+		function (s) {
+			return elm$html$Html$Attributes$class('form-control-' + s);
+		},
+		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute = function (inputType) {
+	return elm$html$Html$Attributes$type_(
+		function () {
+			switch (inputType.$) {
+				case 'Text':
+					return 'text';
+				case 'Password':
+					return 'password';
+				case 'DatetimeLocal':
+					return 'datetime-local';
+				case 'Date':
+					return 'date';
+				case 'Month':
+					return 'month';
+				case 'Time':
+					return 'time';
+				case 'Week':
+					return 'week';
+				case 'Number':
+					return 'number';
+				case 'Email':
+					return 'email';
+				case 'Url':
+					return 'url';
+				case 'Search':
+					return 'search';
+				case 'Tel':
+					return 'tel';
+				default:
+					return 'color';
+			}
+		}());
+};
+var rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString = function (validation) {
+	if (validation.$ === 'Success') {
+		return 'is-valid';
+	} else {
+		return 'is-invalid';
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute = function (validation) {
+	return elm$html$Html$Attributes$class(
+		rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString(validation));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes = function (modifiers) {
+	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions, modifiers);
+	return _Utils_ap(
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('form-control'),
+				elm$html$Html$Attributes$disabled(options.disabled),
+				elm$html$Html$Attributes$readonly(options.readonly),
+				rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute(options.tipe)
+			]),
+		_Utils_ap(
+			A2(
+				elm$core$List$filterMap,
+				elm$core$Basics$identity,
+				_List_fromArray(
+					[
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$id, options.id),
+						A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute, options.size),
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$value, options.value),
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$placeholder, options.placeholder),
+						A2(elm$core$Maybe$map, elm$html$Html$Events$onInput, options.onInput),
+						A2(elm$core$Maybe$map, rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute, options.validation)
+					])),
+			options.attributes));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$view = function (_n0) {
+	var options = _n0.a.options;
+	return A2(
+		elm$html$Html$input,
+		rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes(options),
+		_List_Nil);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$input = F2(
+	function (tipe, options) {
+		return rundis$elm_bootstrap$Bootstrap$Form$Input$view(
+			A2(rundis$elm_bootstrap$Bootstrap$Form$Input$create, tipe, options));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$Input$text = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Text);
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Input = function (a) {
+	return {$: 'Input', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$input = F2(
+	function (inputFn, options) {
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Input(
+			inputFn(options));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text = rundis$elm_bootstrap$Bootstrap$Form$InputGroup$input(rundis$elm_bootstrap$Bootstrap$Form$Input$text);
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$sizeAttribute = function (size) {
+	return A2(
+		elm$core$Maybe$map,
+		function (s) {
+			return elm$html$Html$Attributes$class('input-group-' + s);
+		},
+		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view = function (_n0) {
+	var conf = _n0.a;
+	var _n1 = conf.input;
+	var input_ = _n1.a;
+	return A2(
+		elm$html$Html$div,
+		_Utils_ap(
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('input-group')
+				]),
+			_Utils_ap(
+				A2(
+					elm$core$List$filterMap,
+					elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$InputGroup$sizeAttribute, conf.size)
+						])),
+				conf.attributes)),
+		_Utils_ap(
+			A2(
+				elm$core$List$map,
+				function (_n2) {
+					var e = _n2.a;
+					return A2(
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('input-group-prepend')
+							]),
+						_List_fromArray(
+							[e]));
+				},
+				conf.predecessors),
+			_Utils_ap(
+				_List_fromArray(
+					[input_]),
+				A2(
+					elm$core$List$map,
+					function (_n3) {
+						var e = _n3.a;
+						return A2(
+							elm$html$Html$div,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('input-group-append')
+								]),
+							_List_fromArray(
+								[e]));
+					},
+					conf.successors))));
+};
+var author$project$Main$viewSearchBox = function (model) {
+	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
+		A2(
+			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('stylish-input-group input-group')
+				]),
+			A2(
+				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('input-group-addon')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$button,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('fas fa-search fa-xs input-group-addon')
+											]),
+										_List_Nil)
+									]))
+							]))
+					]),
+				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
+					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Search')
+							]))))));
+};
+var elm$html$Html$hr = _VirtualDom_node('hr');
+var author$project$Main$viewSidebar = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('sidebar-sticky')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$ul,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('nav'),
+						elm$html$Html$Attributes$class('flex-column')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$li,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-item')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-link active'),
+										elm$html$Html$Attributes$href('/view')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('fas fa-4x fa-torii-gate')
+											]),
+										_List_Nil)
+									]))
+							])),
+						A2(elm$html$Html$br, _List_Nil, _List_Nil),
+						A2(
+						elm$html$Html$li,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-item')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-link'),
+										elm$html$Html$Attributes$href('#')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('text-muted')
+											]),
+										_List_fromArray(
+											[
+												elm$html$Html$text('Files')
+											]))
+									]))
+							])),
+						A2(
+						elm$html$Html$li,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-item')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-link'),
+										elm$html$Html$Attributes$href('#')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('text-muted')
+											]),
+										_List_fromArray(
+											[
+												elm$html$Html$text('Remotes')
+											]))
+									]))
+							])),
+						A2(
+						elm$html$Html$li,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-item')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-link'),
+										elm$html$Html$Attributes$href('#')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('text-muted')
+											]),
+										_List_fromArray(
+											[
+												elm$html$Html$text('Deleted files')
+											]))
+									]))
+							])),
+						A2(
+						elm$html$Html$li,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-item')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-link'),
+										elm$html$Html$Attributes$href('#')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('text-muted')
+											]),
+										_List_fromArray(
+											[
+												elm$html$Html$text('Settings')
+											]))
+									]))
+							]))
+					])),
+				A2(
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$id('sidebar-bottom')
+					]),
+				_List_fromArray(
+					[
+						A2(elm$html$Html$hr, _List_Nil, _List_Nil),
+						A2(
+						elm$html$Html$p,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$id('sidebar-bottom-text'),
+								elm$html$Html$Attributes$class('text-muted')
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Powered by brig Ⓒ 2015 ‒ 2019'),
+								A2(elm$html$Html$br, _List_Nil, _List_Nil),
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$href('https://github.com/sahib/brig')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('Get the source code here')
+									]))
+							]))
+					]))
+			]));
+};
+var author$project$Modals$Upload$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$Upload$UploadCancel = {$: 'UploadCancel'};
+var author$project$Modals$Upload$UploadSelectedFiles = function (a) {
 	return {$: 'UploadSelectedFiles', a: a};
 };
 var elm$file$File$decoder = _File_decoder;
-var author$project$Main$filesDecoder = A2(
+var author$project$Modals$Upload$filesDecoder = A2(
 	elm$json$Json$Decode$at,
 	_List_fromArray(
 		['target', 'files']),
@@ -9521,10 +10131,10 @@ var rundis$elm_bootstrap$Bootstrap$Progress$Value = function (a) {
 var rundis$elm_bootstrap$Bootstrap$Progress$value = function (val) {
 	return rundis$elm_bootstrap$Bootstrap$Progress$Value(val);
 };
-var author$project$Main$showUploadState = function (model) {
-	var _n0 = model.uploadState;
+var author$project$Modals$Upload$viewUploadState = function (model) {
+	var _n0 = model.state;
 	switch (_n0.$) {
-		case 'UploadFileSelect':
+		case 'Ready':
 			return _List_fromArray(
 				[
 					A2(
@@ -9551,7 +10161,7 @@ var author$project$Main$showUploadState = function (model) {
 											A2(
 											elm$html$Html$Events$on,
 											'change',
-											A2(elm$json$Json$Decode$map, author$project$Main$UploadSelectedFiles, author$project$Main$filesDecoder)),
+											A2(elm$json$Json$Decode$map, author$project$Modals$Upload$UploadSelectedFiles, author$project$Modals$Upload$filesDecoder)),
 											A2(elm$html$Html$Attributes$style, 'display', 'none')
 										]),
 									_List_Nil)
@@ -9589,7 +10199,7 @@ var author$project$Main$showUploadState = function (model) {
 									rundis$elm_bootstrap$Bootstrap$Button$attrs(
 									_List_fromArray(
 										[
-											elm$html$Html$Events$onClick(author$project$Main$UploadCancel)
+											elm$html$Html$Events$onClick(author$project$Modals$Upload$UploadCancel)
 										]))
 								]),
 							_List_fromArray(
@@ -9598,7 +10208,7 @@ var author$project$Main$showUploadState = function (model) {
 								]))
 						]))
 				]);
-		case 'UploadDone':
+		case 'Done':
 			return _List_fromArray(
 				[
 					A2(
@@ -10835,10 +11445,10 @@ var rundis$elm_bootstrap$Bootstrap$Modal$view = F2(
 					]),
 				A2(rundis$elm_bootstrap$Bootstrap$Modal$backdrop, visibility, conf)));
 	});
-var author$project$Main$viewModalUpload = function (model) {
+var author$project$Modals$Upload$view = function (model) {
 	return A2(
 		rundis$elm_bootstrap$Bootstrap$Modal$view,
-		model.uploadModalState,
+		model.modal,
 		A3(
 			rundis$elm_bootstrap$Bootstrap$Modal$footer,
 			_List_Nil,
@@ -10852,7 +11462,7 @@ var author$project$Main$viewModalUpload = function (model) {
 							rundis$elm_bootstrap$Bootstrap$Button$attrs(
 							_List_fromArray(
 								[
-									elm$html$Html$Events$onClick(author$project$Main$ModalCloseUpload)
+									elm$html$Html$Events$onClick(author$project$Modals$Upload$ModalClose)
 								]))
 						]),
 					_List_fromArray(
@@ -10873,7 +11483,7 @@ var author$project$Main$viewModalUpload = function (model) {
 								A2(
 								rundis$elm_bootstrap$Bootstrap$Grid$row,
 								_List_Nil,
-								author$project$Main$showUploadState(model))
+								author$project$Modals$Upload$viewUploadState(model))
 							]))
 					]),
 				A3(
@@ -10884,567 +11494,10 @@ var author$project$Main$viewModalUpload = function (model) {
 							elm$html$Html$text('Upload a new file')
 						]),
 					rundis$elm_bootstrap$Bootstrap$Modal$large(
-						rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Main$ModalCloseUpload))))));
+						rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Upload$ModalClose))))));
 };
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder = function (a) {
-	return {$: 'Placeholder', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder = function (value_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder(value_);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs = F2(
-	function (attributes, _n0) {
-		var conf = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
-			_Utils_update(
-				conf,
-				{attributes: attributes}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config = function (input_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
-		{attributes: _List_Nil, input: input_, predecessors: _List_Nil, size: elm$core$Maybe$Nothing, successors: _List_Nil});
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon = function (a) {
-	return {$: 'Addon', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span = F2(
-	function (attributes, children) {
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon(
-			A2(
-				elm$html$Html$span,
-				A2(
-					elm$core$List$cons,
-					elm$html$Html$Attributes$class('input-group-text'),
-					attributes),
-				children));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors = F2(
-	function (addons, _n0) {
-		var conf = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
-			_Utils_update(
-				conf,
-				{successors: addons}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Text = {$: 'Text'};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Input = function (a) {
-	return {$: 'Input', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Type = function (a) {
-	return {$: 'Type', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$create = F2(
-	function (tipe, options) {
-		return rundis$elm_bootstrap$Bootstrap$Form$Input$Input(
-			{
-				options: A2(
-					elm$core$List$cons,
-					rundis$elm_bootstrap$Bootstrap$Form$Input$Type(tipe),
-					options)
-			});
-	});
-var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
-var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
-var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
-var elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var elm$html$Html$Events$targetValue = A2(
-	elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	elm$json$Json$Decode$string);
-var elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			elm$json$Json$Decode$map,
-			elm$html$Html$Events$alwaysStop,
-			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier = F2(
-	function (modifier, options) {
-		switch (modifier.$) {
-			case 'Size':
-				var size_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						size: elm$core$Maybe$Just(size_)
-					});
-			case 'Id':
-				var id_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						id: elm$core$Maybe$Just(id_)
-					});
-			case 'Type':
-				var tipe = modifier.a;
-				return _Utils_update(
-					options,
-					{tipe: tipe});
-			case 'Disabled':
-				var val = modifier.a;
-				return _Utils_update(
-					options,
-					{disabled: val});
-			case 'Value':
-				var value_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						value: elm$core$Maybe$Just(value_)
-					});
-			case 'Placeholder':
-				var value_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						placeholder: elm$core$Maybe$Just(value_)
-					});
-			case 'OnInput':
-				var onInput_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						onInput: elm$core$Maybe$Just(onInput_)
-					});
-			case 'Validation':
-				var validation_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						validation: elm$core$Maybe$Just(validation_)
-					});
-			case 'Readonly':
-				var val = modifier.a;
-				return _Utils_update(
-					options,
-					{readonly: val});
-			default:
-				var attrs_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						attributes: _Utils_ap(options.attributes, attrs_)
-					});
-		}
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions = {attributes: _List_Nil, disabled: false, id: elm$core$Maybe$Nothing, onInput: elm$core$Maybe$Nothing, placeholder: elm$core$Maybe$Nothing, readonly: false, size: elm$core$Maybe$Nothing, tipe: rundis$elm_bootstrap$Bootstrap$Form$Input$Text, validation: elm$core$Maybe$Nothing, value: elm$core$Maybe$Nothing};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute = function (size) {
-	return A2(
-		elm$core$Maybe$map,
-		function (s) {
-			return elm$html$Html$Attributes$class('form-control-' + s);
-		},
-		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute = function (inputType) {
-	return elm$html$Html$Attributes$type_(
-		function () {
-			switch (inputType.$) {
-				case 'Text':
-					return 'text';
-				case 'Password':
-					return 'password';
-				case 'DatetimeLocal':
-					return 'datetime-local';
-				case 'Date':
-					return 'date';
-				case 'Month':
-					return 'month';
-				case 'Time':
-					return 'time';
-				case 'Week':
-					return 'week';
-				case 'Number':
-					return 'number';
-				case 'Email':
-					return 'email';
-				case 'Url':
-					return 'url';
-				case 'Search':
-					return 'search';
-				case 'Tel':
-					return 'tel';
-				default:
-					return 'color';
-			}
-		}());
-};
-var rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString = function (validation) {
-	if (validation.$ === 'Success') {
-		return 'is-valid';
-	} else {
-		return 'is-invalid';
-	}
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute = function (validation) {
-	return elm$html$Html$Attributes$class(
-		rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString(validation));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes = function (modifiers) {
-	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions, modifiers);
-	return _Utils_ap(
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('form-control'),
-				elm$html$Html$Attributes$disabled(options.disabled),
-				elm$html$Html$Attributes$readonly(options.readonly),
-				rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute(options.tipe)
-			]),
-		_Utils_ap(
-			A2(
-				elm$core$List$filterMap,
-				elm$core$Basics$identity,
-				_List_fromArray(
-					[
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$id, options.id),
-						A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute, options.size),
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$value, options.value),
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$placeholder, options.placeholder),
-						A2(elm$core$Maybe$map, elm$html$Html$Events$onInput, options.onInput),
-						A2(elm$core$Maybe$map, rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute, options.validation)
-					])),
-			options.attributes));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$view = function (_n0) {
-	var options = _n0.a.options;
-	return A2(
-		elm$html$Html$input,
-		rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes(options),
-		_List_Nil);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$input = F2(
-	function (tipe, options) {
-		return rundis$elm_bootstrap$Bootstrap$Form$Input$view(
-			A2(rundis$elm_bootstrap$Bootstrap$Form$Input$create, tipe, options));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$text = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Text);
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Input = function (a) {
-	return {$: 'Input', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$input = F2(
-	function (inputFn, options) {
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Input(
-			inputFn(options));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text = rundis$elm_bootstrap$Bootstrap$Form$InputGroup$input(rundis$elm_bootstrap$Bootstrap$Form$Input$text);
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$sizeAttribute = function (size) {
-	return A2(
-		elm$core$Maybe$map,
-		function (s) {
-			return elm$html$Html$Attributes$class('input-group-' + s);
-		},
-		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view = function (_n0) {
-	var conf = _n0.a;
-	var _n1 = conf.input;
-	var input_ = _n1.a;
-	return A2(
-		elm$html$Html$div,
-		_Utils_ap(
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('input-group')
-				]),
-			_Utils_ap(
-				A2(
-					elm$core$List$filterMap,
-					elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$InputGroup$sizeAttribute, conf.size)
-						])),
-				conf.attributes)),
-		_Utils_ap(
-			A2(
-				elm$core$List$map,
-				function (_n2) {
-					var e = _n2.a;
-					return A2(
-						elm$html$Html$div,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('input-group-prepend')
-							]),
-						_List_fromArray(
-							[e]));
-				},
-				conf.predecessors),
-			_Utils_ap(
-				_List_fromArray(
-					[input_]),
-				A2(
-					elm$core$List$map,
-					function (_n3) {
-						var e = _n3.a;
-						return A2(
-							elm$html$Html$div,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('input-group-append')
-								]),
-							_List_fromArray(
-								[e]));
-					},
-					conf.successors))));
-};
-var author$project$Main$viewSearchBox = function (model) {
-	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
-		A2(
-			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('stylish-input-group input-group')
-				]),
-			A2(
-				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('input-group-addon')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$button,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('fas fa-search fa-xs input-group-addon')
-											]),
-										_List_Nil)
-									]))
-							]))
-					]),
-				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
-					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Search')
-							]))))));
-};
-var elm$html$Html$hr = _VirtualDom_node('hr');
-var author$project$Main$viewSidebar = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('sidebar-sticky')
-			]),
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$ul,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav'),
-						elm$html$Html$Attributes$class('flex-column')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link active'),
-										elm$html$Html$Attributes$href('/view')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('fas fa-4x fa-torii-gate')
-											]),
-										_List_Nil)
-									]))
-							])),
-						A2(elm$html$Html$br, _List_Nil, _List_Nil),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Files')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Remotes')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Deleted files')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Settings')
-											]))
-									]))
-							]))
-					])),
-				A2(
-				elm$html$Html$div,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$id('sidebar-bottom')
-					]),
-				_List_fromArray(
-					[
-						A2(elm$html$Html$hr, _List_Nil, _List_Nil),
-						A2(
-						elm$html$Html$p,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$id('sidebar-bottom-text'),
-								elm$html$Html$Attributes$class('text-muted')
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Powered by brig Ⓒ 2015 ‒ 2019'),
-								A2(elm$html$Html$br, _List_Nil, _List_Nil),
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$href('https://github.com/sahib/brig')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Get the source code here')
-									]))
-							]))
-					]))
-			]));
-};
+var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs = function (a) {
 	return {$: 'ColAttrs', a: a};
 };
@@ -11574,10 +11627,13 @@ var author$project$Main$view = function (model) {
 											]))
 									]))
 							])),
-						author$project$Main$viewModalUpload(model)
+						A2(
+						elm$html$Html$map,
+						author$project$Main$UploadMsg,
+						author$project$Modals$Upload$view(model.uploadState))
 					]))
 			]),
-		title: 'gateway'
+		title: 'Gateway'
 	};
 };
 var elm$browser$Browser$application = _Browser_application;

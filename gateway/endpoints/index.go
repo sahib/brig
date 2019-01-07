@@ -17,6 +17,7 @@ func NewIndexHandler() *IndexHandler {
 }
 
 func (ih *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// TODO: Read from parcello.
 	data, err := ioutil.ReadFile("gateway/templates/index.html")
 	if err != nil {
 		jsonifyErrf(w, http.StatusInternalServerError, "could not load template: %v", err)

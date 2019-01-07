@@ -21,6 +21,7 @@ func NewUploadHandler(cfg *config.Config, fs *catfs.FS) *UploadHandler {
 }
 
 func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// TODO: Currently always put into /. How to select the right path?
 	// Hold at max 1 MB in memory:
 	if err := r.ParseMultipartForm(1 * 1024 * 1024); err != nil {
 		log.Debugf("upload: bad multipartform: %v", err)
@@ -48,4 +49,6 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fd.Close()
 		}
 	}
+
+	jsonifySuccess(w)
 }

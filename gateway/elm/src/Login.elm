@@ -1,4 +1,4 @@
-module Login exposing (Query, decode, encode)
+module Login exposing (decode, encode, query)
 
 import Http
 import Json.Decode as D
@@ -20,13 +20,22 @@ type alias Query =
 
 
 encode : Query -> E.Value
-encode query =
+encode q =
     E.object
-        [ ( "username", E.string query.username )
-        , ( "password", E.string query.password )
+        [ ( "username", E.string q.username )
+        , ( "password", E.string q.password )
         ]
 
 
 decode : D.Decoder Bool
 decode =
     D.field "success" D.bool
+
+
+query : (Result Http.Error Bool -> msg) -> String -> String -> Cmd msg
+query msg user pass =
+    Http.post
+        { url = "/api/v0/login"
+        , body = Http.jsonBody <| encode <| Query user pass
+        , expect = Http.expectJson msg decode
+        }

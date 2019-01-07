@@ -1,4 +1,4 @@
-module Ls exposing (Entry, Query, decode, encode)
+module Ls exposing (Entry, decode, encode, query)
 
 import Http
 import Json.Decode as D
@@ -66,3 +66,12 @@ timestampToPosix =
     D.int
         |> D.andThen
             (\ms -> D.succeed <| Time.millisToPosix ms)
+
+
+query : (Result Http.Error (List Entry) -> msg) -> String -> Cmd msg
+query msg path =
+    Http.post
+        { url = "/api/v0/ls"
+        , body = Http.jsonBody <| encode <| Query path 1
+        , expect = Http.expectJson msg decode
+        }

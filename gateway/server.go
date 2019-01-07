@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	// TODO: Save somewhere. Config?
 	csrfKey = "60b725f10c9c85c70d97880dfe8191b3"
 )
 
@@ -166,6 +167,11 @@ func (gw *Gateway) Start() {
 	apiRouter.Handle("/logout", endpoints.NewLogoutHandler())
 	apiRouter.Handle("/ls", endpoints.NewLsHandler(gw.cfg, gw.fs))
 	apiRouter.Handle("/upload", endpoints.NewUploadHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/move", endpoints.NewMoveHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/mkdir", endpoints.NewMkdirHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/copy", endpoints.NewCopyHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/remove", endpoints.NewRemoveHandler(gw.cfg, gw.fs))
+	apiRouter.Handle("/history", endpoints.NewHistoryHandler(gw.cfg, gw.fs))
 	// TODO: Should ls be really POST?
 
 	// Add the /get endpoint. Since it might contain any path, we have to
@@ -173,6 +179,7 @@ func (gw *Gateway) Start() {
 	router.PathPrefix("/get/").Handler(endpoints.NewGetHandler(gw.cfg, gw.fs)).Methods("GET")
 
 	// Special case: index.html gets a csrf token:
+	router.Handle("/", endpoints.NewIndexHandler()).Methods("GET")
 	router.Handle("/index.html", endpoints.NewIndexHandler()).Methods("GET")
 	router.PathPrefix("/view").Handler(endpoints.NewIndexHandler()).Methods("GET")
 

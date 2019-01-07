@@ -8,9 +8,6 @@ import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
-import Bootstrap.Modal as Modal
-import Bootstrap.Navbar as Navbar
-import Bootstrap.Progress as Progress
 import Bootstrap.Table as Table
 import Browser
 import Browser.Navigation as Nav
@@ -25,6 +22,7 @@ import Json.Encode as E
 import List
 import Login
 import Ls
+import Modals.Upload as Upload
 import Set
 import Task
 import Time
@@ -61,19 +59,7 @@ type Msg
     | UrlChanged Url.Url
     | CheckboxTick String Bool
     | CheckboxTickAll Bool
-    | ModalShowUpload
-    | ModalCloseUpload
-    | UploadSelectedFiles (List File.File)
-    | UploadProgress Http.Progress
-    | Uploaded (Result Http.Error ())
-    | UploadCancel
-
-
-type UploadState
-    = UploadFileSelect
-    | Uploading Float
-    | UploadDone
-    | UploadFail
+    | UploadMsg Upload.Msg
 
 
 type ListModel
@@ -84,15 +70,24 @@ type ListModel
     | LsSuccess (List Ls.Entry)
 
 
+
+-- TODO: ListModel should not care about Login,
+--       should be part of bigger model.
+
+
 type alias Model =
     { listState : ListModel
     , zone : Time.Zone
     , checkedEntries : Set.Set String
     , key : Nav.Key
     , url : Url.Url
-    , uploadState : UploadState
-    , uploadModalState : Modal.Visibility
+    , uploadState : Upload.Model
     }
+
+
+
+-- TODO: Merge listState and checkedEntries?
+-- TODO: Merge uploadState and uploadModalState?
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -102,11 +97,10 @@ init _ url key =
       , key = key
       , checkedEntries = Set.empty
       , url = url
-      , uploadState = UploadFileSelect
-      , uploadModalState = Modal.hidden
+      , uploadState = Upload.newModel
       }
     , Cmd.batch
-        [ doLoginQuery (Login.Query "ali" "ila")
+        [ Login.query GotLoginResp "ali" "ila"
         , Task.perform AdjustTimeZone Time.here
         ]
     )
@@ -116,43 +110,11 @@ init _ url key =
 -- UPDATE
 
 
-splitPath : String -> List String
-splitPath path =
-    List.filter (\s -> String.length s > 0) (String.split "/" path)
-
-
-urlToPath : Url.Url -> String
-urlToPath url =
-    let
-        decodeUrlPart =
-            \e ->
-                case Url.percentDecode e of
-                    Just val ->
-                        val
-
-                    Nothing ->
-                        ""
-    in
-    case splitPath url.path of
-        [] ->
-            "/"
-
-        _ :: xs ->
-            "/" ++ String.join "/" (List.map decodeUrlPart xs)
-
-
-basename : String -> String
-basename path =
-    let
-        splitUrl =
-            List.reverse (splitPath path)
-    in
-    case splitUrl of
-        [] ->
-            "/"
-
-        x :: _ ->
-            x
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg model ( subModel, subCmd ) =
+    ( toModel subModel
+    , Cmd.map toMsg subCmd
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -162,7 +124,7 @@ update msg model =
             ( { model | zone = newZone }, Cmd.none )
 
         FetchList path ->
-            ( { model | listState = Loading }, doLsQuery (Ls.Query path 1) )
+            ( { model | listState = Loading }, Ls.query GotLsResp <| path )
 
         GotLsResp result ->
             let
@@ -183,7 +145,7 @@ update msg model =
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
                     ( { model | listState = LoginSuccess }
-                    , doLsQuery (Ls.Query (urlToPath model.url) 1)
+                    , Ls.query GotLsResp <| Util.urlToPath model.url
                     )
 
                 Err _ ->
@@ -199,7 +161,7 @@ update msg model =
 
         UrlChanged url ->
             ( { model | url = url }
-            , doLsQuery (Ls.Query (urlToPath url) 1)
+            , Ls.query GotLsResp (Util.urlToPath url)
             )
 
         CheckboxTick path isChecked ->
@@ -254,43 +216,10 @@ update msg model =
                 False ->
                     ( { model | checkedEntries = Set.empty }, Cmd.none )
 
-        ModalShowUpload ->
-            ( { model | uploadModalState = Modal.shown, uploadState = UploadFileSelect }, Cmd.none )
-
-        ModalCloseUpload ->
-            ( { model | uploadModalState = Modal.hidden, uploadState = UploadFileSelect }, Cmd.none )
-
-        UploadSelectedFiles files ->
-            ( { model | uploadState = Uploading 0 }
-            , Http.request
-                { method = "POST"
-                , url = "/api/v0/upload"
-                , headers = []
-                , body = Http.multipartBody <| List.map (Http.filePart "files[]") files
-                , expect = Http.expectWhatever Uploaded
-                , timeout = Nothing
-                , tracker = Just "upload"
-                }
-            )
-
-        UploadProgress progress ->
-            case progress of
-                Http.Sending p ->
-                    ( { model | uploadState = Uploading <| Http.fractionSent p }, Cmd.none )
-
-                Http.Receiving _ ->
-                    ( model, Cmd.none )
-
-        Uploaded result ->
-            case result of
-                Ok _ ->
-                    ( { model | uploadState = UploadDone }, Cmd.none )
-
-                Err _ ->
-                    ( { model | uploadState = UploadFail }, Cmd.none )
-
-        UploadCancel ->
-            ( { model | uploadState = UploadFileSelect }, Cmd.none )
+        UploadMsg subMsg ->
+            -- Delegate the logic to the upload modal module:
+            Upload.update subMsg model.uploadState
+                |> updateWith (\m -> { model | uploadState = m }) UploadMsg model
 
 
 
@@ -299,7 +228,9 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Http.track "upload" UploadProgress
+    Sub.batch
+        [ Sub.map UploadMsg (Upload.subscriptions model.uploadState)
+        ]
 
 
 
@@ -308,7 +239,7 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "gateway"
+    { title = "Gateway"
     , body =
         [ Grid.containerFluid []
             [ Grid.row []
@@ -340,72 +271,10 @@ view model =
                         ]
                     ]
                 ]
-            , viewModalUpload model
+            , Html.map UploadMsg (Upload.view model.uploadState)
             ]
         ]
     }
-
-
-filesDecoder : D.Decoder (List File.File)
-filesDecoder =
-    D.at [ "target", "files" ] (D.list File.decoder)
-
-
-showUploadState : Model -> List (Grid.Column Msg)
-showUploadState model =
-    case model.uploadState of
-        UploadFileSelect ->
-            [ Grid.col [ Col.xs12 ]
-                [ label [ class "btn btn-file btn-primary btn-default" ]
-                    [ text "Browse local files"
-                    , input
-                        [ type_ "file"
-                        , multiple True
-                        , on "change" (D.map UploadSelectedFiles filesDecoder)
-                        , style "display" "none"
-                        ]
-                        []
-                    ]
-                ]
-            ]
-
-        Uploading fraction ->
-            -- TODO: Provide cancel button.
-            [ Grid.col [ Col.xs10 ]
-                [ Progress.progress
-                    [ Progress.animated
-                    , Progress.value (100 * fraction)
-                    ]
-                ]
-            , Grid.col [ Col.xs2 ]
-                [ Button.button [ Button.outlinePrimary, Button.attrs [ onClick UploadCancel ] ] [ text "Cancel" ]
-                ]
-            ]
-
-        UploadDone ->
-            [ Grid.col [ Col.xs12 ] [ text "Upload done" ] ]
-
-        UploadFail ->
-            [ Grid.col [ Col.xs12 ] [ text "Upload failed for unknown reasons" ] ]
-
-
-viewModalUpload : Model -> Html Msg
-viewModalUpload model =
-    Modal.config ModalCloseUpload
-        |> Modal.large
-        |> Modal.h5 [] [ text "Upload a new file" ]
-        |> Modal.body []
-            [ Grid.containerFluid []
-                [ Grid.row [] (showUploadState model) ]
-            ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick ModalCloseUpload ]
-                ]
-                [ text "Close" ]
-            ]
-        |> Modal.view model.uploadModalState
 
 
 buildBreadcrumbs : List String -> List String -> List (Breadcrumb.Item msg)
@@ -446,7 +315,7 @@ viewBreadcrumbs : Model -> Html msg
 viewBreadcrumbs model =
     div [ id "breadcrumbs-box" ]
         [ Breadcrumb.container
-            (buildBreadcrumbs ([ "" ] ++ (urlToPath model.url |> splitPath)) [])
+            (buildBreadcrumbs ([ "" ] ++ (Util.urlToPath model.url |> Util.splitPath)) [])
         ]
 
 
@@ -512,26 +381,6 @@ viewEntryIcon entry =
             span [ class "far fa-lg fa-file text-xs-right file-list-icon" ] []
 
 
-formatLastModified : Time.Zone -> Time.Posix -> String -> Html Msg
-formatLastModified z t owner =
-    let
-        timestamp =
-            String.join
-                "/"
-                [ Time.toDay z t |> String.fromInt
-                , Time.toMonth z t |> monthToInt |> String.fromInt
-                , Time.toYear z t |> String.fromInt
-                ]
-                ++ " "
-                ++ String.join ":"
-                    [ Time.toHour z t |> String.fromInt |> String.padLeft 2 '0'
-                    , Time.toMinute z t |> String.fromInt |> String.padLeft 2 '0'
-                    , Time.toSecond z t |> String.fromInt |> String.padLeft 2 '0'
-                    ]
-    in
-    p [] [ text timestamp, span [ class "text-muted" ] [ text " by " ], text owner ]
-
-
 makeCheckbox : Bool -> (Bool -> Msg) -> Html Msg
 makeCheckbox isChecked msg =
     div [ class "checkbox" ]
@@ -569,8 +418,8 @@ entriesToHtml model entries =
                                 [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
                                 ]
                             , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
-                            , Table.td [] [ a [ "/view" ++ e.path |> href ] [ text (basename e.path) ] ]
-                            , Table.td [] [ formatLastModified model.zone e.lastModified e.user ]
+                            , Table.td [] [ a [ "/view" ++ e.path |> href ] [ text (Util.basename e.path) ] ]
+                            , Table.td [] [ Util.formatLastModified model.zone e.lastModified e.user ]
                             , Table.td [] [ text (Filesize.format e.size) ]
                             ]
                     )
@@ -637,13 +486,13 @@ viewActionList model =
         [ Button.button
             [ Button.primary
             , Button.block
-            , Button.disabled (nSelected == 0)
+            , Button.disabled <| nSelected == 0
             ]
             [ text "Share" ]
         , Button.button
             [ Button.primary
             , Button.block
-            , Button.attrs [ onClick <| ModalShowUpload ]
+            , Button.attrs [ onClick (UploadMsg Upload.showModal) ]
             ]
             [ text "Upload" ]
         , br [] []
@@ -672,25 +521,3 @@ viewActionList model =
                 ]
             ]
         ]
-
-
-
--- QUERYING
-
-
-doLoginQuery : Login.Query -> Cmd Msg
-doLoginQuery q =
-    Http.post
-        { url = "/api/v0/login"
-        , body = Http.jsonBody (Login.encode q)
-        , expect = Http.expectJson GotLoginResp Login.decode
-        }
-
-
-doLsQuery : Ls.Query -> Cmd Msg
-doLsQuery q =
-    Http.post
-        { url = "/api/v0/ls"
-        , body = Http.jsonBody (Ls.encode q)
-        , expect = Http.expectJson GotLsResp Ls.decode
-        }
