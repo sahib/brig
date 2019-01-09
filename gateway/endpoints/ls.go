@@ -23,8 +23,8 @@ func NewLsHandler(cfg *config.Config, fs *catfs.FS) *LsHandler {
 }
 
 type LsRequest struct {
-	Root     string `json:"root"`
-	MaxDepth int    `json:"max_depth"`
+	Root   string `json:"root"`
+	Filter string `json:"filter,omitempty"`
 }
 
 type StatInfo struct {
@@ -58,6 +58,14 @@ type LsResponse struct {
 	Files   []*StatInfo `json:"files"`
 }
 
+func doQuery(fs *catfs.FS, req *LsRequest) ([]*catfs.StatInfo, error) {
+	if req.Filter == "" {
+		return fs.List(req.Root, 1)
+	}
+
+	return fs.Filter(req.Root, req.Filter)
+}
+
 func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	lsReq := &LsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&lsReq); err != nil {
@@ -66,13 +74,13 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !validateUserForPath(lh.cfg, lsReq.Root, r) {
-		http.Error(w, "not authorized", http.StatusUnauthorized)
+		jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	items, err := lh.fs.List(lsReq.Root, lsReq.MaxDepth)
+	items, err := doQuery(lh.fs, lsReq)
 	if err != nil {
-		jsonifyErrf(w, http.StatusBadRequest, "failed to list: %v", err)
+		jsonifyErrf(w, http.StatusBadRequest, "failed to query: %v", err)
 		return
 	}
 

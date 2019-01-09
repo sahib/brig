@@ -499,6 +499,63 @@ func (fs *FS) Stat(path string) (*StatInfo, error) {
 	return fs.nodeToStat(nd), nil
 }
 
+// Filter implements a quick and easy way to search over all files
+// by using a query that checks if it is part of the path.
+func (fs *FS) Filter(root, query string) ([]*StatInfo, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	rootNd, err := fs.lkr.LookupNode(root)
+	if err != nil {
+		return nil, err
+	}
+
+	if rootNd.Type() == n.NodeTypeGhost {
+		return nil, ie.NoSuchFile(root)
+	}
+
+	query = strings.ToLower(query)
+	result := []*StatInfo{}
+	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
+		// Ghost nodes should not be visible to the outside.
+		if child.Type() == n.NodeTypeGhost {
+			return nil
+		}
+
+		// Special case: Forget about the root node.
+		// It should not be part of the results.
+		childPath := child.Path()
+		if childPath == root {
+			return nil
+		}
+
+		childPath = strings.ToLower(childPath[len(root):])
+		if !strings.Contains(childPath, query) {
+			return nil
+		}
+
+		result = append(result, fs.nodeToStat(child))
+		return n.ErrSkipChild
+	})
+
+	sort.Slice(result, func(i, j int) bool {
+		iDepth := result[i].Depth
+		jDepth := result[j].Depth
+
+		if iDepth == jDepth {
+			return result[i].Path < result[j].Path
+		}
+
+		return iDepth < jDepth
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // List returns stat info for each node below (and including) root.
 // Nodes deeper than maxDepth will not be shown. If maxDepth is a
 // negative number, all nodes will be shown.

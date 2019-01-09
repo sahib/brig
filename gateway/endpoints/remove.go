@@ -3,6 +3,7 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -22,7 +23,7 @@ func NewRemoveHandler(cfg *config.Config, fs *catfs.FS) *RemoveHandler {
 }
 
 type RemoveRequest struct {
-	Path string `json:"path"`
+	Paths []string `json:"paths"`
 }
 
 func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,15 +33,24 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(rh.cfg, rmReq.Path, r) {
-		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
-		return
+	for _, path := range rmReq.Paths {
+		if !strings.HasPrefix(path, "/") {
+			jsonifyErrf(w, http.StatusBadRequest, "bad path: %s (not absolute)", path)
+			return
+		}
+
+		if !validateUserForPath(rh.cfg, path, r) {
+			jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
+			return
+		}
 	}
 
-	if err := rh.fs.Remove(rmReq.Path); err != nil {
-		log.Debugf("failed to remove %s: %v", rmReq.Path, err)
-		jsonifyErrf(w, http.StatusInternalServerError, "failed to remove")
-		return
+	for _, path := range rmReq.Paths {
+		if err := rh.fs.Remove(path); err != nil {
+			log.Debugf("failed to remove %s: %v", path, err)
+			jsonifyErrf(w, http.StatusBadRequest, "failed to remove")
+			return
+		}
 	}
 
 	jsonifySuccess(w)

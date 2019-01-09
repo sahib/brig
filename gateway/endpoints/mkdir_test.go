@@ -10,14 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type loginResponse struct {
-	Success bool `json:"success"`
+type mkdirResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
-func mustLogin(t *testing.T) {
-}
-
-func TestLoginEndpointSuccess(t *testing.T) {
+func TestMkdirEndpointSuccess(t *testing.T) {
 	withFsAndCfg(t, func(cfg *config.Config, fs *catfs.FS) {
 		cfg.SetString("auth.user", "ali")
 		cfg.SetString("auth.pass", "ila")
@@ -25,27 +23,25 @@ func TestLoginEndpointSuccess(t *testing.T) {
 		req := mustCreateRequest(
 			t,
 			"POST",
-			"http://localhost:5000/api/v0/login",
-			&LoginRequest{
-				Username: "ali",
-				Password: "ila",
+			"http://localhost:5000/api/v0/mkdir",
+			&MkdirRequest{
+				Path: "/test",
 			},
 		)
 
 		rsw := httptest.NewRecorder()
-		hdl := NewLoginHandler(cfg)
+		hdl := NewMkdirHandler(cfg, fs)
 		hdl.ServeHTTP(rsw, req)
 
 		resp := rsw.Result()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		loginResp := &loginResponse{}
-		mustDecodeBody(t, resp.Body, &loginResp)
+		mkdirResp := &mkdirResponse{}
+		mustDecodeBody(t, resp.Body, &mkdirResp)
+		require.Equal(t, true, mkdirResp.Success)
 
-		require.Equal(t, true, loginResp.Success)
-		cookies := resp.Cookies()
-		require.Len(t, cookies, 1)
-		require.Equal(t, "session", cookies[0].Name)
-
+		info, err := fs.Stat("/test")
+		require.Nil(t, err)
+		require.Equal(t, "/test", info.Path)
 	})
 }

@@ -1,4 +1,4 @@
-module Modals.Upload exposing (Model, Msg, newModel, showModal, subscriptions, update, view)
+module Modals.Upload exposing (Model, Msg, newModel, show, subscriptions, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
@@ -16,6 +16,11 @@ import Http
 import Json.Decode as D
 import List
 import Url
+
+
+
+-- TODO: Handle case where the file already exist.
+--       Warn and ask to overwrite?
 
 
 type State
@@ -37,6 +42,7 @@ type Msg
     | Uploaded (Result Http.Error ())
     | UploadCancel
     | ModalShow
+    | AnimateModal Modal.Visibility
     | ModalClose
 
 
@@ -88,13 +94,28 @@ update msg model =
         UploadCancel ->
             ( { model | state = Ready }, Cmd.none )
 
+        AnimateModal visibility ->
+            ( { model | modal = visibility }, Cmd.none )
+
         ModalShow ->
-            -- TODO: Move to upload
             ( { model | modal = Modal.shown }, Cmd.none )
 
         ModalClose ->
-            -- TODO: Move to upload
-            ( { model | modal = Modal.hidden }, Cmd.none )
+            -- Clear up failure or success state on close.
+            let
+                updatedModel =
+                    case model.state of
+                        -- TODO: Is there a way to pattern match Done and Fail?
+                        Done ->
+                            { model | state = Ready }
+
+                        Fail ->
+                            { model | state = Ready }
+
+                        _ ->
+                            model
+            in
+            ( { updatedModel | modal = Modal.hidden }, Cmd.none )
 
 
 
@@ -116,12 +137,6 @@ viewUploadState model =
                     , input
                         [ type_ "file"
                         , multiple True
-
-                        -- 2nd argument: Decoder Msg
-                        -- map : (a -> value) -> Decoder a -> Decoder value
-                        -- a = (List File.File)
-                        -- value = Msg
-                        -- parentMsg
                         , on "change" (D.map UploadSelectedFiles filesDecoder)
                         , style "display" "none"
                         ]
@@ -157,6 +172,7 @@ view : Model -> Html Msg
 view model =
     Modal.config ModalClose
         |> Modal.large
+        |> Modal.withAnimation AnimateModal
         |> Modal.h5 [] [ text "Upload a new file" ]
         |> Modal.body []
             [ Grid.containerFluid []
@@ -165,18 +181,15 @@ view model =
         |> Modal.footer []
             [ Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick ModalClose ]
+                , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
                 ]
                 [ text "Close" ]
             ]
         |> Modal.view model.modal
 
 
-
--- TODO: Why can't I just use ModalShow?
-
-
-showModal =
+show : Msg
+show =
     ModalShow
 
 
@@ -186,4 +199,7 @@ showModal =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Http.track "upload" UploadProgress
+    Sub.batch
+        [ Http.track "upload" UploadProgress
+        , Modal.subscriptions model.modal AnimateModal
+        ]

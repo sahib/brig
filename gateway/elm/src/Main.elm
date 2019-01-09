@@ -1,7 +1,7 @@
 module Main exposing (init, main, subscriptions, update, view)
 
-import Bootstrap.Breadcrumb as Breadcrumb
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Form.Checkbox as Checkbox
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
@@ -12,7 +12,6 @@ import Bootstrap.Table as Table
 import Browser
 import Browser.Navigation as Nav
 import File
-import Filesize
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -22,11 +21,16 @@ import Json.Encode as E
 import List
 import Login
 import Ls
+import Modals.Mkdir as Mkdir
+import Modals.Remove as Remove
+import Modals.Share as Share
 import Modals.Upload as Upload
-import Set
 import Task
 import Time
 import Url
+import Url.Builder as UrlBuilder
+import Url.Parser as UrlParser
+import Url.Parser.Query as Query
 import Util exposing (..)
 
 
@@ -47,58 +51,61 @@ main =
 
 
 
--- MODEL
+-- MESSAGES
 
 
 type Msg
-    = FetchList String
-    | GotLsResp (Result Http.Error (List Ls.Entry))
-    | GotLoginResp (Result Http.Error Bool)
+    = GotLoginResp (Result Http.Error Bool)
     | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | CheckboxTick String Bool
-    | CheckboxTickAll Bool
+    | SearchInput String
+      -- View parent messages:
+    | ListMsg Ls.Msg
+      -- Modal parent messages:
     | UploadMsg Upload.Msg
-
-
-type ListModel
-    = LsFailure
-    | LoginFailure
-    | Loading
-    | LoginSuccess
-    | LsSuccess (List Ls.Entry)
+    | MkdirMsg Mkdir.Msg
+    | RemoveMsg Remove.Msg
+    | ShareMsg Share.Msg
 
 
 
--- TODO: ListModel should not care about Login,
---       should be part of bigger model.
+-- MODEL
 
 
-type alias Model =
-    { listState : ListModel
-    , zone : Time.Zone
-    , checkedEntries : Set.Set String
-    , key : Nav.Key
-    , url : Url.Url
+type alias ViewState =
+    { listState : Ls.Model
     , uploadState : Upload.Model
+    , mkdirState : Mkdir.Model
+    , removeState : Remove.Model
+    , shareState : Share.Model
     }
 
 
+type LoginState
+    = LoginReady
+    | LoginLoading
+    | LoginFailure
+    | LoginSuccess ViewState
 
--- TODO: Merge listState and checkedEntries?
--- TODO: Merge uploadState and uploadModalState?
+
+type alias Model =
+    { zone : Time.Zone
+    , key : Nav.Key
+    , url : Url.Url
+    , loginState : LoginState
+    }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( { listState = Loading
-      , zone = Time.utc
+    ( { zone = Time.utc
       , key = key
-      , checkedEntries = Set.empty
       , url = url
-      , uploadState = Upload.newModel
+      , loginState = LoginLoading
       }
+      -- TODO: Build login form.
+      --       For now this just logins on startup.
     , Cmd.batch
         [ Login.query GotLoginResp "ali" "ila"
         , Task.perform AdjustTimeZone Time.here
@@ -117,109 +124,131 @@ updateWith toModel toMsg model ( subModel, subCmd ) =
     )
 
 
+searchQueryFromUrl : Url.Url -> String
+searchQueryFromUrl url =
+    Maybe.withDefault ""
+        (UrlParser.parse
+            (UrlParser.query
+                (Query.map (Maybe.withDefault "") (Query.string "filter"))
+            )
+            (Debug.log "URL" { url | path = "" })
+        )
+
+
+doListQueryFromUrl : Url.Url -> Cmd Msg
+doListQueryFromUrl url =
+    let
+        path =
+            Util.urlToPath url
+
+        filter =
+            searchQueryFromUrl url
+    in
+    Cmd.map ListMsg <| Ls.query path filter
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AdjustTimeZone newZone ->
             ( { model | zone = newZone }, Cmd.none )
 
-        FetchList path ->
-            ( { model | listState = Loading }, Ls.query GotLsResp <| path )
-
-        GotLsResp result ->
-            let
-                updatedModel =
-                    case result of
-                        Ok entries ->
-                            { model | listState = LsSuccess entries }
-
-                        Err _ ->
-                            { model | listState = LsFailure }
-            in
-            -- When changing pages, we should clear the existing checkmarks.
-            ( { updatedModel | checkedEntries = Set.empty }, Cmd.none )
-
         GotLoginResp result ->
             case result of
                 Ok _ ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    ( { model | listState = LoginSuccess }
-                    , Ls.query GotLsResp <| Util.urlToPath model.url
+                    ( { model
+                        | loginState =
+                            LoginSuccess
+                                { listState = Ls.newModel
+                                , uploadState = Upload.newModel
+                                , mkdirState = Mkdir.newModel
+                                , removeState = Remove.newModel
+                                , shareState = Share.newModel
+                                }
+                      }
+                    , doListQueryFromUrl model.url
                     )
 
                 Err _ ->
-                    ( { model | listState = LoginFailure }, Cmd.none )
+                    ( { model | loginState = LoginFailure }, Cmd.none )
 
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Nav.pushUrl model.key (Url.toString url) )
+                    ( model, Nav.pushUrl model.key (Url.toString { url | query = Nothing }) )
 
                 Browser.External href ->
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            ( { model | url = url }
-            , Ls.query GotLsResp (Util.urlToPath url)
+            ( { model | url = url }, doListQueryFromUrl url )
+
+        SearchInput query ->
+            ( model
+            , Nav.pushUrl model.key <|
+                model.url.path
+                    ++ (if String.length query == 0 then
+                            ""
+
+                        else
+                            UrlBuilder.toQuery
+                                [ UrlBuilder.string "filter" query
+                                ]
+                       )
             )
 
-        CheckboxTick path isChecked ->
-            case model.listState of
-                LsSuccess entries ->
-                    case isChecked of
-                        True ->
-                            let
-                                updatedSet =
-                                    Set.insert path model.checkedEntries
-                            in
-                            ( { model
-                                | checkedEntries =
-                                    if Set.size updatedSet == List.length entries then
-                                        Set.insert "" updatedSet
-
-                                    else
-                                        updatedSet
-                              }
-                            , Cmd.none
-                            )
-
-                        False ->
-                            ( { model
-                                | checkedEntries =
-                                    Set.remove "" <| Set.remove path model.checkedEntries
-                              }
-                            , Cmd.none
-                            )
+        -- TODO: Think of a way to make that delegation easier.
+        ListMsg subMsg ->
+            case model.loginState of
+                LoginSuccess viewState ->
+                    -- Delegate the logic to the list modal module:
+                    Ls.update subMsg viewState.listState
+                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | listState = m } }) ListMsg model
 
                 _ ->
                     ( model, Cmd.none )
 
-        CheckboxTickAll isChecked ->
-            case isChecked of
-                True ->
-                    case model.listState of
-                        LsSuccess entries ->
-                            ( { model
-                                | checkedEntries =
-                                    Set.fromList
-                                        (List.map (\e -> e.path) entries
-                                            ++ [ "" ]
-                                        )
-                              }
-                            , Cmd.none
-                            )
-
-                        _ ->
-                            ( model, Cmd.none )
-
-                False ->
-                    ( { model | checkedEntries = Set.empty }, Cmd.none )
-
         UploadMsg subMsg ->
-            -- Delegate the logic to the upload modal module:
-            Upload.update subMsg model.uploadState
-                |> updateWith (\m -> { model | uploadState = m }) UploadMsg model
+            case model.loginState of
+                LoginSuccess viewState ->
+                    -- Delegate the logic to the list modal module:
+                    Upload.update subMsg viewState.uploadState
+                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | uploadState = m } }) UploadMsg model
+
+                _ ->
+                    ( model, Cmd.none )
+
+        MkdirMsg subMsg ->
+            case model.loginState of
+                LoginSuccess viewState ->
+                    -- Delegate the logic to the list modal module:
+                    Mkdir.update subMsg viewState.mkdirState
+                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | mkdirState = m } }) MkdirMsg model
+
+                _ ->
+                    ( model, Cmd.none )
+
+        RemoveMsg subMsg ->
+            case model.loginState of
+                LoginSuccess viewState ->
+                    -- Delegate the logic to the list modal module:
+                    Remove.update subMsg viewState.removeState
+                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | removeState = m } }) RemoveMsg model
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ShareMsg subMsg ->
+            case model.loginState of
+                LoginSuccess viewState ->
+                    -- Delegate the logic to the list modal module:
+                    Share.update subMsg viewState.shareState
+                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | shareState = m } }) ShareMsg model
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 
@@ -228,9 +257,17 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Sub.map UploadMsg (Upload.subscriptions model.uploadState)
-        ]
+    case model.loginState of
+        LoginSuccess viewState ->
+            Sub.batch
+                [ Sub.map UploadMsg (Upload.subscriptions viewState.uploadState)
+                , Sub.map MkdirMsg (Mkdir.subscriptions viewState.mkdirState)
+                , Sub.map RemoveMsg (Remove.subscriptions viewState.removeState)
+                , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
+                ]
+
+        _ ->
+            Sub.none
 
 
 
@@ -241,89 +278,63 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Gateway"
     , body =
-        [ Grid.containerFluid []
-            [ Grid.row []
-                [ Grid.col
-                    [ Col.md2
-                    , Col.attrs
-                        [ class "d-none"
-                        , class "d-md-block"
-                        , class "bg-light"
-                        , class "sidebar"
+        case model.loginState of
+            LoginReady ->
+                [ text "Please wait until I implement some login form." ]
+
+            LoginFailure ->
+                [ text "Failed to login. Wrong user/password?" ]
+
+            LoginLoading ->
+                [ text "...Waiting for server..." ]
+
+            LoginSuccess viewState ->
+                [ Grid.containerFluid []
+                    [ Grid.row []
+                        [ Grid.col
+                            [ Col.md2
+                            , Col.attrs [ class "d-none d-md-block bg-light sidebar" ]
+                            ]
+                            [ viewSidebar model ]
+                        , Grid.col
+                            [ Col.lg10
+                            , Col.attrs [ class "ml-sm-auto px-4", id "main-column" ]
+                            ]
+                            [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
+                                [ Grid.col [ Col.xl9 ]
+                                    [ Html.map ListMsg
+                                        (Ls.viewBreadcrumbs model.url viewState.listState)
+                                    ]
+                                , Grid.col [ Col.xl3 ] [ viewSearchBox model ]
+                                ]
+                            , Grid.row [ Row.attrs [ id "main-content-row" ] ]
+                                [ Grid.col [ Col.xl10 ]
+                                    [ Html.map ListMsg
+                                        (Ls.viewList viewState.listState model.zone)
+                                    ]
+                                , Grid.col [ Col.xl2 ] [ viewActionList viewState ]
+                                ]
+                            ]
                         ]
-                    ]
-                    [ viewSidebar model ]
-                , Grid.col
-                    [ Col.lg10
-                    , Col.attrs
-                        [ class "ml-sm-auto"
-                        , class "px-4"
-                        , id "main-column"
-                        ]
-                    ]
-                    [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                        [ Grid.col [ Col.xl9 ] [ viewBreadcrumbs model ]
-                        , Grid.col [ Col.xl3 ] [ viewSearchBox model ]
-                        ]
-                    , Grid.row [ Row.attrs [ id "main-content-row" ] ]
-                        [ Grid.col [ Col.xl10 ] [ viewLsResponse model ]
-                        , Grid.col [ Col.xl2 ] [ viewActionList model ]
-                        ]
+                    , Html.map UploadMsg (Upload.view viewState.uploadState)
+                    , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url)
+                    , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
+                    , Html.map ShareMsg (Share.view viewState.shareState model.url)
                     ]
                 ]
-            , Html.map UploadMsg (Upload.view model.uploadState)
-            ]
-        ]
     }
 
 
-buildBreadcrumbs : List String -> List String -> List (Breadcrumb.Item msg)
-buildBreadcrumbs names previous =
-    let
-        displayName =
-            \n ->
-                if String.length n <= 0 then
-                    "Home"
-
-                else
-                    n
-    in
-    case names of
-        [] ->
-            -- Recursion stop.
-            []
-
-        [ name ] ->
-            -- Final element in the breadcrumbs.
-            -- Already selected therefore.
-            [ Breadcrumb.item []
-                [ text (displayName name)
-                ]
-            ]
-
-        name :: rest ->
-            -- Some intermediate element.
-            [ Breadcrumb.item []
-                [ a [ href ("/view" ++ String.join "/" (previous ++ [ name ])) ]
-                    [ text (displayName name) ]
-                ]
-            ]
-                ++ buildBreadcrumbs rest (previous ++ [ name ])
-
-
-viewBreadcrumbs : Model -> Html msg
-viewBreadcrumbs model =
-    div [ id "breadcrumbs-box" ]
-        [ Breadcrumb.container
-            (buildBreadcrumbs ([ "" ] ++ (Util.urlToPath model.url |> Util.splitPath)) [])
-        ]
-
-
-viewSearchBox : Model -> Html msg
+viewSearchBox : Model -> Html Msg
 viewSearchBox model =
     InputGroup.config
         (InputGroup.text
-            [ Input.placeholder "Search" ]
+            [ Input.placeholder "Search"
+            , Input.attrs
+                [ onInput SearchInput
+                , value (searchQueryFromUrl model.url)
+                ]
+            ]
         )
         |> InputGroup.successors
             [ InputGroup.span [ class "input-group-addon" ]
@@ -344,8 +355,12 @@ viewSidebar model =
                 ]
             , br [] []
             , li [ class "nav-item" ]
+                [ a [ class "nav-link active", href "#" ]
+                    [ span [] [ text "Files" ] ]
+                ]
+            , li [ class "nav-item" ]
                 [ a [ class "nav-link", href "#" ]
-                    [ span [ class "text-muted" ] [ text "Files" ] ]
+                    [ span [ class "text-muted" ] [ text "Commit Log" ] ]
                 ]
             , li [ class "nav-item" ]
                 [ a [ class "nav-link", href "#" ]
@@ -371,98 +386,6 @@ viewSidebar model =
         ]
 
 
-viewEntryIcon : Ls.Entry -> Html Msg
-viewEntryIcon entry =
-    case entry.isDir of
-        True ->
-            span [ class "far fa-lg fa-folder text-xs-right file-list-icon" ] []
-
-        False ->
-            span [ class "far fa-lg fa-file text-xs-right file-list-icon" ] []
-
-
-makeCheckbox : Bool -> (Bool -> Msg) -> Html Msg
-makeCheckbox isChecked msg =
-    div [ class "checkbox" ]
-        [ label []
-            [ input [ type_ "checkbox", onCheck msg, checked isChecked ] []
-            , span [ class "cr" ] [ i [ class "cr-icon fas fa-lg fa-check" ] [] ]
-            ]
-        ]
-
-
-readCheckedState : Model -> String -> Bool
-readCheckedState model path =
-    Set.member path model.checkedEntries
-
-
-entriesToHtml : Model -> List Ls.Entry -> Html Msg
-entriesToHtml model entries =
-    Table.table
-        { options = [ Table.hover ]
-        , thead =
-            Table.simpleThead
-                [ Table.th [] [ makeCheckbox (readCheckedState model "") CheckboxTickAll ]
-                , Table.th [] [ span [ class "icon-column" ] [ text "" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Name" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Modified" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Size" ] ]
-                ]
-        , tbody =
-            Table.tbody []
-                (List.map
-                    (\e ->
-                        Table.tr
-                            []
-                            [ Table.td []
-                                [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
-                                ]
-                            , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
-                            , Table.td [] [ a [ "/view" ++ e.path |> href ] [ text (Util.basename e.path) ] ]
-                            , Table.td [] [ Util.formatLastModified model.zone e.lastModified e.user ]
-                            , Table.td [] [ text (Filesize.format e.size) ]
-                            ]
-                    )
-                    entries
-                )
-        }
-
-
-viewLsResponse : Model -> Html Msg
-viewLsResponse model =
-    case model.listState of
-        LoginFailure ->
-            div []
-                [ text "I could not login. Try different user / password" ]
-
-        LsFailure ->
-            div []
-                [ button
-                    [ onClick (FetchList "/"), style "display" "block" ]
-                    [ text "Try again!" ]
-                ]
-
-        Loading ->
-            text "Loading..."
-
-        LoginSuccess ->
-            div []
-                [ button
-                    [ onClick (FetchList "/"), style "display" "block" ]
-                    [ text "Show list!" ]
-                , text "you are logged in."
-                ]
-
-        LsSuccess entries ->
-            div []
-                [ entriesToHtml model entries ]
-
-
-numberOfSelectedItems : Model -> Int
-numberOfSelectedItems model =
-    Set.filter (\e -> String.isEmpty e |> not) model.checkedEntries |> Set.size
-
-
 labelSelectedItems : Int -> String
 labelSelectedItems num =
     case num of
@@ -476,48 +399,45 @@ labelSelectedItems num =
             String.fromInt n ++ " items selected"
 
 
-viewActionList : Model -> Html Msg
+viewActionList : ViewState -> Html Msg
 viewActionList model =
     let
         nSelected =
-            numberOfSelectedItems model
+            Ls.nSelectedItems model.listState
     in
     div [ class "toolbar" ]
-        [ Button.button
-            [ Button.primary
-            , Button.block
-            , Button.disabled <| nSelected == 0
-            ]
-            [ text "Share" ]
-        , Button.button
-            [ Button.primary
-            , Button.block
-            , Button.attrs [ onClick (UploadMsg Upload.showModal) ]
-            ]
-            [ text "Upload" ]
+        [ p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
         , br [] []
-        , p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
-        , br [] []
-        , ul [ id "toolbar-item-list" ]
-            [ li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "fas fa-lg fa-history" ] [], text " Version history" ]
+        , ButtonGroup.toolbar [ class "btn-group-vertical" ]
+            [ ButtonGroup.buttonGroupItem
+                [ ButtonGroup.small, ButtonGroup.vertical, ButtonGroup.attrs [ class "mb-3" ] ]
+                [ ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", onClick <| UploadMsg Upload.show ] ]
+                    [ span [ class "fas fa-lg fa-upload" ] [], span [ id "toolbar-label" ] [ text " Upload" ] ]
+                , ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", onClick <| MkdirMsg <| Mkdir.show ] ]
+                    [ span [ class "fas fa-lg fa-edit" ] [], span [ id "toolbar-label" ] [ text " New Folder" ] ]
+                , ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
+                    [ span [ class "fas fa-lg fa-history" ] [], span [ id "toolbar-label" ] [ text " History" ] ]
                 ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "fas fa-lg fa-edit" ] [], text " Create Folder" ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "fas fa-lg fa-arrow-right" ] [], text " Move" ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "fas fa-lg fa-copy" ] [], text " Copy" ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "fas fa-lg fa-trash" ] [], text " Delete" ]
+            , ButtonGroup.buttonGroupItem
+                [ ButtonGroup.small, ButtonGroup.vertical, ButtonGroup.attrs [ class "mt-3" ] ]
+                [ ButtonGroup.button
+                    [ Button.light
+                    , Button.block
+                    , Button.attrs [ class "text-left", disabled <| nSelected == 0, onClick <| ShareMsg <| Share.show ]
+                    ]
+                    [ span [ class "fas fa-lg fa-share-alt" ] [], span [ id "toolbar-label" ] [ text " Share" ] ]
+                , ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled <| nSelected == 0, onClick <| RemoveMsg Remove.show ] ]
+                    [ span [ class "fas fa-lg fa-trash" ] [], span [ id "toolbar-label" ] [ text " Delete" ] ]
+                , ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
+                    [ span [ class "fas fa-lg fa-copy" ] [], span [ id "toolbar-label" ] [ text " Copy" ] ]
+                , ButtonGroup.button
+                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
+                    [ span [ class "fas fa-lg fa-arrow-right" ] [], span [ id "toolbar-label" ] [ text " Move" ] ]
                 ]
             ]
         ]

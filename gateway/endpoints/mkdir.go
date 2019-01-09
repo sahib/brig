@@ -3,6 +3,7 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -29,6 +30,11 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mkdirReq := &MkdirRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&mkdirReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
+		return
+	}
+
+	if !strings.HasPrefix(mkdirReq.Path, "/") {
+		jsonifyErrf(w, http.StatusBadRequest, "absolute path needs to start with /")
 		return
 	}
 

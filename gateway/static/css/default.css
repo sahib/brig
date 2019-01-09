@@ -177,11 +177,10 @@
     background:transparent;
 }
 
-#toolbar-item-list {
-	list-style: none;
-	padding: 0px;
-}
-
 .file-list-icon {
   color: #007bff;
+}
+
+#toolbar-label {
+  font-size: 120% !important;
 }

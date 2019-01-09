@@ -33,7 +33,7 @@ func jsonifyErrf(w http.ResponseWriter, statusCode int, format string, data ...i
 
 	jsonify(w, statusCode, struct {
 		Success bool   `json:"success"`
-		Message string `json:"message,omitempty"`
+		Message string `json:"message"`
 	}{
 		Success: success,
 		Message: msg,

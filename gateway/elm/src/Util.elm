@@ -1,8 +1,10 @@
-module Util exposing (basename, formatLastModified, monthToInt, splitPath, urlToPath)
+module Util exposing (basename, buildAlert, formatLastModified, httpErrorToString, joinPath, monthToInt, splitPath, urlToPath)
 
+import Bootstrap.Alert as Alert
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Http
 import Time
 import Url
 
@@ -87,6 +89,11 @@ splitPath path =
     List.filter (\s -> String.length s > 0) (String.split "/" path)
 
 
+joinPath : List String -> String
+joinPath paths =
+    "/" ++ String.join "/" (List.foldr (++) [] (List.map splitPath paths))
+
+
 urlToPath : Url.Url -> String
 urlToPath url =
     let
@@ -119,3 +126,39 @@ basename path =
 
         x :: _ ->
             x
+
+
+buildAlert : Alert.Visibility -> (Alert.Visibility -> msg) -> Bool -> String -> String -> Html msg
+buildAlert visibility msg isError title message =
+    Alert.config
+        |> Alert.dismissableWithAnimation msg
+        |> (if isError then
+                Alert.danger
+
+            else
+                Alert.success
+           )
+        |> Alert.children
+            [ Alert.h4 [] [ text title ]
+            , text message
+            ]
+        |> Alert.view visibility
+
+
+httpErrorToString : Http.Error -> String
+httpErrorToString err =
+    case err of
+        Http.BadUrl msg ->
+            "Bad url: " ++ msg
+
+        Http.Timeout ->
+            "Timeout"
+
+        Http.NetworkError ->
+            "Network error"
+
+        Http.BadStatus status ->
+            "Bad status: " ++ String.fromInt status
+
+        Http.BadBody msg ->
+            "Could not decode body: " ++ msg

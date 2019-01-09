@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"path"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/securecookie"
@@ -70,9 +71,12 @@ func validateUserForPath(cfg *config.Config, nodePath string, r *http.Request) b
 		folders[folder] = true
 	}
 
+	if !strings.HasPrefix(nodePath, "/") {
+		nodePath = "/" + nodePath
+	}
+
 	curr := nodePath
 	for curr != "" {
-		// fmt.Println("curr", curr)
 		if folders[curr] {
 			return true
 		}
