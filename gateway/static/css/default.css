@@ -184,3 +184,90 @@
 #toolbar-label {
   font-size: 120% !important;
 }
+
+#share-list {
+	list-style-type: none;
+}
+
+.glyphicon-refresh-animate {
+    -animation: spin .7s infinite linear;
+    -webkit-animation: spin2 .7s infinite linear;
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg);}
+    to { -webkit-transform: rotate(360deg);}
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg);}
+    to { transform: scale(1) rotate(360deg);}
+}
+
+
+.login-form {
+	max-width: 38vw;
+	margin: 50px auto;
+}
+.login-form > div {
+	margin-bottom: 15px;
+	background: #f7f7f7;
+	box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, 0.3);
+	padding: 30px;
+}
+.login-form h2 {
+	margin: 0 0 15px;
+}
+.login-input, .login-btn {
+	min-height: 38px;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	border-radius: 2px;
+}
+
+.login-btn {
+	font-size: 120%;
+	font-weight: bold;
+	margin-top: 15px;
+}
+
+.login-header {
+	padding-bottom: 15px;
+}
+
+.progress-cancel {
+	padding: 0px;
+	margin: 0px;
+}
+
+.notification-list > .alert {
+	margin-bottom: 5px;
+    height: 40px;
+    line-height: 40px;
+    padding: 0px 15px;
+	font-size: 80%;
+}
+
+.notification-close-btn {
+	color: rgba(0, 0, 0, 0.5);
+
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+
+	margin-top: 0px;
+    margin-right: 0px;
+    margin-bottom: 5px;
+    margin-left: 0px;
+}
+
+#upload-btn {
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+
+	margin-top: 0px;
+    margin-right: 0px;
+    margin-bottom: 2px;
+}

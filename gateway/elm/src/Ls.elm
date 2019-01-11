@@ -1,7 +1,28 @@
-module Ls exposing (Entry, Model, Msg, decode, encode, nSelectedItems, newModel, query, selectedPaths, update, viewBreadcrumbs, viewList)
+module Ls exposing
+    ( Entry
+    , Model
+    , Msg
+    , currIsFile
+    , currRoot
+    , decode
+    , encode
+    , nSelectedItems
+    , newModel
+    , query
+    , selectedPaths
+    , update
+    , viewBreadcrumbs
+    , viewList
+    )
 
 import Bootstrap.Breadcrumb as Breadcrumb
+import Bootstrap.Button as Button
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
+import Bootstrap.Grid.Row as Row
+import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
+import Bootstrap.Text as Text
 import Filesize
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -23,6 +44,8 @@ import Util
 type alias ActualModel =
     { entries : List Entry
     , checked : Set.Set String
+    , isFiltered : Bool
+    , self : Entry
     }
 
 
@@ -57,12 +80,39 @@ selectedPaths model =
             []
 
 
+currIsFile : Model -> Bool
+currIsFile model =
+    case model of
+        Success actualModel ->
+            not actualModel.self.isDir
+
+        _ ->
+            False
+
+
+currRoot : Model -> Maybe String
+currRoot model =
+    case model of
+        Success actualModel ->
+            Just actualModel.self.path
+
+        _ ->
+            Nothing
+
+
 
 -- MESSAGES
 
 
+type alias Response =
+    { self : Entry
+    , isFiltered : Bool
+    , entries : List Entry
+    }
+
+
 type Msg
-    = GotResponse (Result Http.Error (List Entry))
+    = GotResponse (Result Http.Error Response)
     | CheckboxTick String Bool
     | CheckboxTickAll Bool
 
@@ -102,9 +152,12 @@ encode q =
         ]
 
 
-decode : D.Decoder (List Entry)
+decode : D.Decoder Response
 decode =
-    D.field "files" (D.list decodeEntry)
+    D.map3 Response
+        (D.field "self" decodeEntry)
+        (D.field "is_filtered" D.bool)
+        (D.field "files" (D.list decodeEntry))
 
 
 decodeEntry : D.Decoder Entry
@@ -146,9 +199,21 @@ update msg model =
     case msg of
         GotResponse result ->
             case result of
-                Ok entries ->
+                Ok response ->
                     -- New list model means also new checked entries.
-                    ( Success <| ActualModel entries Set.empty, Cmd.none )
+                    ( Success <|
+                        { entries = response.entries
+                        , isFiltered = response.isFiltered
+                        , checked =
+                            if response.self.isDir then
+                                Set.empty
+
+                            else
+                                Set.singleton response.self.path
+                        , self = response.self
+                        }
+                    , Cmd.none
+                    )
 
                 Err _ ->
                     ( Failure, Cmd.none )
@@ -213,8 +278,62 @@ update msg model =
 -- VIEW
 
 
-viewList : Model -> Time.Zone -> Html Msg
-viewList model zone =
+viewMetaRow : String -> Html msg -> Html msg
+viewMetaRow key value =
+    Grid.row []
+        [ Grid.col [ Col.xs4, Col.textAlign Text.alignXsLeft ] [ span [ class "text-muted" ] [ text key ] ]
+        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsRight ] [ value ]
+        ]
+
+
+viewDownloadButton : ActualModel -> Url.Url -> Html msg
+viewDownloadButton model url =
+    Button.linkButton
+        [ Button.outlinePrimary
+        , Button.large
+        , Button.attrs
+            [ href
+                (Util.urlPrefixToString url
+                    ++ "get"
+                    ++ Util.urlEncodePath model.self.path
+                    ++ "?direct=yes"
+                )
+            ]
+        ]
+        [ span [ class "fas fa-download" ] [], text " Download" ]
+
+
+viewViewButton : ActualModel -> Url.Url -> Html msg
+viewViewButton model url =
+    Button.linkButton
+        [ Button.outlinePrimary
+        , Button.large
+        , Button.attrs
+            [ href
+                (Util.urlPrefixToString url
+                    ++ "get"
+                    ++ Util.urlEncodePath model.self.path
+                )
+            ]
+        ]
+        [ span [ class "fas fa-eye" ] [], text " View" ]
+
+
+viewPinIcon : Bool -> Bool -> Html msg
+viewPinIcon isPinned isExplicit =
+    case ( isPinned, isExplicit ) of
+        ( True, True ) ->
+            span [ class "text-success fa fa-check" ] []
+
+        ( True, False ) ->
+            span [ class "text-warning fa fa-check" ] []
+
+        _ ->
+            span [ class "text-danger fa fa-times" ] []
+
+
+viewList : Model -> Url.Url -> Time.Zone -> Html Msg
+viewList model url zone =
     case model of
         Failure ->
             div [] [ text "Sorry, something did not work out as expected." ]
@@ -223,8 +342,41 @@ viewList model zone =
             text "Loading..."
 
         Success actualModel ->
-            div []
-                [ entriesToHtml actualModel zone ]
+            case actualModel.self.isDir of
+                True ->
+                    div []
+                        [ entriesToHtml actualModel zone ]
+
+                False ->
+                    Grid.row []
+                        [ Grid.col [ Col.xs2 ] []
+                        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsCenter ]
+                            [ ListGroup.ul
+                                [ ListGroup.li []
+                                    [ viewMetaRow "Path" (text <| actualModel.self.path)
+                                    ]
+                                , ListGroup.li []
+                                    [ viewMetaRow "Size" (text <| Filesize.format actualModel.self.size)
+                                    ]
+                                , ListGroup.li []
+                                    [ viewMetaRow "Owner" (text <| actualModel.self.user)
+                                    ]
+                                , ListGroup.li []
+                                    [ viewMetaRow "Last Modified" (text <| Util.formatLastModified zone actualModel.self.lastModified)
+                                    ]
+                                , ListGroup.li []
+                                    [ viewMetaRow "Pinned"
+                                        (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
+                                    ]
+                                , ListGroup.li [ ListGroup.light ]
+                                    [ viewDownloadButton actualModel url
+                                    , text " "
+                                    , viewViewButton actualModel url
+                                    ]
+                                ]
+                            ]
+                        , Grid.col [ Col.xs2 ] []
+                        ]
 
 
 buildBreadcrumbs : List String -> List String -> List (Breadcrumb.Item msg)
@@ -299,6 +451,20 @@ readCheckedState model path =
     Set.member path model.checked
 
 
+
+-- TODO: Make table headings sortable.
+
+
+formatPath : ActualModel -> Entry -> String
+formatPath model entry =
+    case model.isFiltered of
+        True ->
+            String.join "/" (Util.splitPath entry.path)
+
+        False ->
+            Util.basename entry.path
+
+
 entriesToHtml : ActualModel -> Time.Zone -> Html Msg
 entriesToHtml model zone =
     Table.table
@@ -322,12 +488,10 @@ entriesToHtml model zone =
                                 ]
                             , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
                             , Table.td []
-                                -- TODO: Do not show basename if it is not a child of the current directory.
-                                --       This can happen in search mode. Show something like deep/nested/dir instead.
-                                [ a [ "/view" ++ e.path |> href ] [ text (Util.basename e.path) ]
+                                [ a [ "/view" ++ e.path |> href ] [ text (formatPath model e) ]
                                 ]
                             , Table.td []
-                                [ Util.formatLastModified zone e.lastModified e.user
+                                [ Util.formatLastModifiedOwner zone e.lastModified e.user
                                 ]
                             , Table.td []
                                 [ text (Filesize.format e.size)

@@ -72,7 +72,7 @@ func (r *Reader) Seek(destOff int64, whence int) (int64, error) {
 
 	// Don't re-read if offset is in current chunk.
 	if currRecord.rawOff != destRecord.rawOff || !r.isInitialRead {
-		if _, err := r.readZipChunk(); err != nil {
+		if _, err := r.readZipChunk(); err != nil && err != io.EOF {
 			return 0, err
 		}
 	}

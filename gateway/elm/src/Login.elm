@@ -1,4 +1,4 @@
-module Login exposing (decode, encode, query)
+module Login exposing (Whoami, decode, encode, query, whoami, logout)
 
 import Http
 import Json.Decode as D
@@ -38,4 +38,42 @@ query msg user pass =
         { url = "/api/v0/login"
         , body = Http.jsonBody <| encode <| Query user pass
         , expect = Http.expectJson msg decode
+        }
+
+
+
+-- WHOAMI QUERY
+
+
+logout : (Result Http.Error Bool -> msg) -> Cmd msg
+logout msg =
+    Http.post
+        { url = "/api/v0/logout"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg decode
+        }
+
+
+-- WHOAMI QUERY
+
+
+type alias Whoami =
+    { username : String
+    , isLoggedIn : Bool
+    }
+
+
+decodeWhoami : D.Decoder Whoami
+decodeWhoami =
+    D.map2 Whoami
+        (D.field "user" D.string)
+        (D.field "is_logged_in" D.bool)
+
+
+whoami : (Result Http.Error Whoami -> msg) -> Cmd msg
+whoami msg =
+    Http.post
+        { url = "/api/v0/whoami"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg decodeWhoami
         }

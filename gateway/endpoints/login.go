@@ -151,3 +151,29 @@ func (loh *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	clearSession(w)
 	jsonifySuccess(w)
 }
+
+///////
+
+type WhoamiHandler struct {
+}
+
+func NewWhoamiHandler() *WhoamiHandler {
+	return &WhoamiHandler{}
+}
+
+type WhoamiResponse struct {
+	IsLoggedIn bool   `json:"is_logged_in"`
+	User       string `json:"user"`
+}
+
+func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	user := getUserName(r)
+	if user != "" {
+		setSession(user, w, r)
+	}
+
+	jsonify(w, http.StatusOK, WhoamiResponse{
+		IsLoggedIn: len(user) > 0,
+		User:       user,
+	})
+}

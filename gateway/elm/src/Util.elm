@@ -1,4 +1,16 @@
-module Util exposing (basename, buildAlert, formatLastModified, httpErrorToString, joinPath, monthToInt, splitPath, urlToPath)
+module Util exposing
+    ( basename
+    , buildAlert
+    , formatLastModified
+    , formatLastModifiedOwner
+    , httpErrorToString
+    , joinPath
+    , monthToInt
+    , splitPath
+    , urlEncodePath
+    , urlPrefixToString
+    , urlToPath
+    )
 
 import Bootstrap.Alert as Alert
 import Html exposing (..)
@@ -60,28 +72,29 @@ monthToInt month =
             12
 
 
-formatLastModified : Time.Zone -> Time.Posix -> String -> Html.Html msg
-formatLastModified z t owner =
-    let
-        timestamp =
-            String.join " "
-                -- Day portion:
-                [ String.join
-                    "/"
-                    [ Time.toDay z t |> String.fromInt
-                    , Time.toMonth z t |> monthToInt |> String.fromInt
-                    , Time.toYear z t |> String.fromInt
-                    ]
+formatLastModifiedOwner : Time.Zone -> Time.Posix -> String -> Html.Html msg
+formatLastModifiedOwner z t owner =
+    p [] [ text (formatLastModified z t), span [ class "text-muted" ] [ text " by " ], text owner ]
 
-                -- Time portion:
-                , String.join ":"
-                    [ Time.toHour z t |> String.fromInt |> String.padLeft 2 '0'
-                    , Time.toMinute z t |> String.fromInt |> String.padLeft 2 '0'
-                    , Time.toSecond z t |> String.fromInt |> String.padLeft 2 '0'
-                    ]
-                ]
-    in
-    p [] [ text timestamp, span [ class "text-muted" ] [ text " by " ], text owner ]
+
+formatLastModified : Time.Zone -> Time.Posix -> String
+formatLastModified z t =
+    String.join " "
+        -- Day portion:
+        [ String.join
+            "/"
+            [ Time.toDay z t |> String.fromInt
+            , Time.toMonth z t |> monthToInt |> String.fromInt
+            , Time.toYear z t |> String.fromInt
+            ]
+
+        -- Time portion:
+        , String.join ":"
+            [ Time.toHour z t |> String.fromInt |> String.padLeft 2 '0'
+            , Time.toMinute z t |> String.fromInt |> String.padLeft 2 '0'
+            , Time.toSecond z t |> String.fromInt |> String.padLeft 2 '0'
+            ]
+        ]
 
 
 splitPath : String -> List String
@@ -162,3 +175,28 @@ httpErrorToString err =
 
         Http.BadBody msg ->
             "Could not decode body: " ++ msg
+
+
+urlPrefixToString : Url.Url -> String
+urlPrefixToString url =
+    (case url.protocol of
+        Url.Https ->
+            "https://"
+
+        Url.Http ->
+            "http://"
+    )
+        ++ url.host
+        ++ (case url.port_ of
+                Just port_ ->
+                    ":" ++ String.fromInt port_
+
+                Nothing ->
+                    ""
+           )
+        ++ "/"
+
+
+urlEncodePath : String -> String
+urlEncodePath path =
+    joinPath (List.map Url.percentEncode (splitPath path))

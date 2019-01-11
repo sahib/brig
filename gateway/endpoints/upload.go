@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"net/http"
+	"path"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -21,8 +22,12 @@ func NewUploadHandler(cfg *config.Config, fs *catfs.FS) *UploadHandler {
 }
 
 func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Currently always put into /. How to select the right path?
-	// Hold at max 1 MB in memory:
+	// TODO: Fix this.
+	root := r.URL.Query().Get("root")
+	if root == "" {
+		root = "/"
+	}
+
 	if err := r.ParseMultipartForm(1 * 1024 * 1024); err != nil {
 		log.Debugf("upload: bad multipartform: %v", err)
 		jsonifyErrf(w, http.StatusBadRequest, "failed to parse mutlipart form: %v", err)
@@ -31,11 +36,11 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, headers := range r.MultipartForm.File {
 		for _, header := range headers {
-			path := header.Filename
+			path := path.Join(root, header.Filename)
 			fd, err := header.Open()
 			if err != nil {
 				log.Debugf("upload: bad header: %v", err)
-				jsonifyErrf(w, http.StatusBadRequest, "failed to open file: %v", path)
+				jsonifyErrf(w, http.StatusBadRequest, "failed to open file: %v", header.Filename)
 				return
 			}
 

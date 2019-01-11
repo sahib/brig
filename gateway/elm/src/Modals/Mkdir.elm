@@ -30,7 +30,6 @@ import Util
 type State
     = Ready
     | Fail String
-    | Done
 
 
 type alias Model =
@@ -103,7 +102,7 @@ update msg model =
             case result of
                 Ok _ ->
                     -- New list model means also new checked entries.
-                    ( { model | state = Done }, Cmd.none )
+                    ( { model | state = Ready, modal = Modal.hidden }, Cmd.none )
 
                 Err err ->
                     ( { model | state = Fail <| Util.httpErrorToString err }, Cmd.none )
@@ -139,9 +138,6 @@ viewMkdirContent model =
             Ready ->
                 text ""
 
-            Done ->
-                Util.buildAlert model.alert AlertMsg False "Yay!" "Created directory"
-
             Fail message ->
                 Util.buildAlert model.alert AlertMsg True "Oh no!" ("Could not create directory: " ++ message)
         ]
@@ -150,10 +146,14 @@ viewMkdirContent model =
 
 view : Model -> Url.Url -> Html Msg
 view model url =
+    let
+        path =
+            Util.urlToPath url
+    in
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text "Create new directory" ]
+        |> Modal.h5 [] [ text ("Create a new directory in " ++ path) ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row [] (viewMkdirContent model) ]
@@ -162,8 +162,18 @@ view model url =
             [ Button.button
                 [ Button.primary
                 , Button.attrs
-                    [ onClick <| CreateDir (Util.joinPath [ Util.urlToPath url, model.inputName ])
-                    , disabled (String.length model.inputName == 0)
+                    [ onClick <| CreateDir (Util.joinPath [ path, model.inputName ])
+                    , disabled
+                        (String.length model.inputName
+                            == 0
+                            || (case model.state of
+                                    Fail _ ->
+                                        True
+
+                                    _ ->
+                                        False
+                               )
+                        )
                     ]
                 ]
                 [ text "Create" ]

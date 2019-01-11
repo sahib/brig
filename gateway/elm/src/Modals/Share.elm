@@ -8,7 +8,9 @@ import Bootstrap.Modal as Modal
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Ls
 import Url
+import Util
 
 
 type alias Model =
@@ -55,27 +57,38 @@ update msg model =
 -- VIEW
 
 
-viewShare : Url.Url -> Model -> List (Grid.Column Msg)
-viewShare url model =
+formatEntry : Url.Url -> String -> Html msg
+formatEntry url path =
+    let
+        link =
+            Util.urlPrefixToString url ++ "get" ++ Util.urlEncodePath path
+    in
+    li [] [ a [ href link ] [ text link ] ]
+
+
+viewShare : Model -> Ls.Model -> Url.Url -> List (Grid.Column Msg)
+viewShare model lsModel url =
+    let
+        entries =
+            Ls.selectedPaths lsModel
+    in
     [ Grid.col [ Col.xs12 ]
-        [ p [] [ text "Use those links to share files with people that do not use brig." ]
-        , p [] [ b [] [ text "Note:" ], text "They still need to authenticate themselves." ]
-        , pre []
-            [ text "lalala"
-            ]
+        [ p [] [ text "Use those links to share the selected files with people that do not use brig." ]
+        , p [] [ b [] [ text "Note:" ], text " They still need to authenticate themselves." ]
+        , ul [ id "share-list" ] (List.map (formatEntry url) entries)
         ]
     ]
 
 
-view : Model -> Url.Url -> Html Msg
-view model url =
+view : Model -> Ls.Model -> Url.Url -> Html Msg
+view model lsModel url =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
         |> Modal.h5 [] [ text "Share hyperlinks" ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewShare url model) ]
+                [ Grid.row [] (viewShare model lsModel url) ]
             ]
         |> Modal.footer []
             [ Button.button

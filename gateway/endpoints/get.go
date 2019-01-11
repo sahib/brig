@@ -111,13 +111,20 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		hdr.Set("Content-Type", mimeType)
 		hdr.Set("Content-Length", strconv.FormatUint(info.Size, 10))
 
+		isDirectDownload := r.URL.Query().Get("direct") == "yes"
+
 		// Set the content disposition to inline if it looks like something viewable.
-		if mimeType == "application/octet-stream" {
+		if mimeType == "application/octet-stream" || isDirectDownload {
 			setContentDisposition(info, hdr, "attachment")
 		} else {
 			setContentDisposition(info, hdr, "inline")
 		}
 
-		http.ServeContent(w, r, path.Base(info.Path), info.ModTime, prefixStream)
+		// TODO: Try to use ServeContent, which does weird stuff though.
+		// http.ServeContent(w, r, path.Base(info.Path), info.ModTime, prefixStream)
+		if _, err := io.Copy(w, prefixStream); err != nil {
+			log.Warningf("stream failure: %v", err)
+			http.Error(w, "failed to stream", http.StatusInternalServerError)
+		}
 	}
 }

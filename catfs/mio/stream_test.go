@@ -137,16 +137,16 @@ func TestLimitedStream(t *testing.T) {
 
 	limitStream := LimitStream(stream, 5)
 
-	_, err = limitStream.Seek(5, io.SeekStart)
+	_, err = limitStream.Seek(4, io.SeekStart)
 	require.Nil(t, err)
 
-	_, err = limitStream.Seek(6, io.SeekStart)
+	_, err = limitStream.Seek(5, io.SeekStart)
 	require.Equal(t, err, io.EOF)
 
-	_, err = limitStream.Seek(5, io.SeekEnd)
+	_, err = limitStream.Seek(-5, io.SeekEnd)
 	require.Nil(t, err)
 
-	_, err = limitStream.Seek(6, io.SeekEnd)
+	_, err = limitStream.Seek(-5, io.SeekEnd)
 	require.Equal(t, err, io.EOF)
 
 	_, err = stream.Seek(0, io.SeekStart)

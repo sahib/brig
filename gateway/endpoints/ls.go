@@ -54,8 +54,10 @@ func toExternalStatInfo(i *catfs.StatInfo) *StatInfo {
 }
 
 type LsResponse struct {
-	Success bool        `json:"success"`
-	Files   []*StatInfo `json:"files"`
+	Success    bool        `json:"success"`
+	Self       *StatInfo   `json:"self"`
+	IsFiltered bool        `json:"is_filtered"`
+	Files      []*StatInfo `json:"files"`
 }
 
 func doQuery(fs *catfs.FS, req *LsRequest) ([]*catfs.StatInfo, error) {
@@ -75,6 +77,12 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if !validateUserForPath(lh.cfg, lsReq.Root, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	info, err := lh.fs.Stat(lsReq.Root)
+	if err != nil {
+		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root")
 		return
 	}
 
@@ -99,7 +107,9 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	jsonify(w, http.StatusOK, &LsResponse{
-		Success: true,
-		Files:   files,
+		Success:    true,
+		Files:      files,
+		IsFiltered: len(lsReq.Filter) > 0,
+		Self:       toExternalStatInfo(info),
 	})
 }

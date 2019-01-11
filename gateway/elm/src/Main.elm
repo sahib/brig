@@ -1,7 +1,9 @@
 module Main exposing (init, main, subscriptions, update, view)
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
+import Bootstrap.Form as Form
 import Bootstrap.Form.Checkbox as Checkbox
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
@@ -9,12 +11,15 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Table as Table
+import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
 import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Keyed as Keyed
+import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
 import Json.Encode as E
@@ -56,10 +61,16 @@ main =
 
 type Msg
     = GotLoginResp (Result Http.Error Bool)
+    | GotWhoamiResp (Result Http.Error Login.Whoami)
+    | GotLogoutResp (Result Http.Error Bool)
     | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | SearchInput String
+    | UsernameInput String
+    | PasswordInput String
+    | LoginSubmit
+    | LogoutSubmit
       -- View parent messages:
     | ListMsg Ls.Msg
       -- Modal parent messages:
@@ -83,9 +94,10 @@ type alias ViewState =
 
 
 type LoginState
-    = LoginReady
-    | LoginLoading
-    | LoginFailure
+    = LoginLimbo -- weird state where we do not know if we're logged in yet.
+    | LoginReady String String
+    | LoginLoading String String
+    | LoginFailure String String
     | LoginSuccess ViewState
 
 
@@ -102,26 +114,34 @@ init _ url key =
     ( { zone = Time.utc
       , key = key
       , url = url
-      , loginState = LoginLoading
+      , loginState = LoginLimbo
       }
-      -- TODO: Build login form.
-      --       For now this just logins on startup.
     , Cmd.batch
-        [ Login.query GotLoginResp "ali" "ila"
-        , Task.perform AdjustTimeZone Time.here
+        -- TODO: Send an initial "is logged in" query here.
+        [ Task.perform AdjustTimeZone Time.here
+        , Login.whoami GotWhoamiResp
         ]
     )
 
 
 
 -- UPDATE
+-- withSubUpdate lets you call sub updater methods that update ViewState in some way and return their own Cmd.
+-- It is an abomination, but it saves quite a few lines down below.
 
 
-updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
-updateWith toModel toMsg model ( subModel, subCmd ) =
-    ( toModel subModel
-    , Cmd.map toMsg subCmd
-    )
+withSubUpdate : subMsg -> (ViewState -> subModel) -> Model -> (subMsg -> Msg) -> (subMsg -> subModel -> ( subModel, Cmd subMsg )) -> (ViewState -> subModel -> ViewState) -> ( Model, Cmd Msg )
+withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
+    case model.loginState of
+        LoginSuccess viewState ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    subUpdate subMsg (subModel viewState)
+            in
+            ( { model | loginState = LoginSuccess (viewStateUpdate viewState newSubModel) }, Cmd.map msg newSubCmd )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 searchQueryFromUrl : Url.Url -> String
@@ -131,7 +151,7 @@ searchQueryFromUrl url =
             (UrlParser.query
                 (Query.map (Maybe.withDefault "") (Query.string "filter"))
             )
-            (Debug.log "URL" { url | path = "" })
+            { url | path = "" }
         )
 
 
@@ -147,46 +167,136 @@ doListQueryFromUrl url =
     Cmd.map ListMsg <| Ls.query path filter
 
 
+doInitAfterLogin : Model -> ( Model, Cmd Msg )
+doInitAfterLogin model =
+    ( { model
+        | loginState =
+            LoginSuccess
+                { listState = Ls.newModel
+                , uploadState = Upload.newModel
+                , mkdirState = Mkdir.newModel
+                , removeState = Remove.newModel
+                , shareState = Share.newModel
+                }
+      }
+    , doListQueryFromUrl model.url
+    )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AdjustTimeZone newZone ->
             ( { model | zone = newZone }, Cmd.none )
 
+        GotWhoamiResp result ->
+            case result of
+                Ok whoami ->
+                    -- Immediately hit off a list query, which will in turn populate
+                    -- the list view. Take the path from the current URL.
+                    case whoami.isLoggedIn of
+                        True ->
+                            doInitAfterLogin model
+
+                        False ->
+                            ( { model | loginState = LoginReady "" "" }, Cmd.none )
+
+                Err _ ->
+                    ( { model | loginState = LoginReady "" "" }, Cmd.none )
+
         GotLoginResp result ->
             case result of
                 Ok _ ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    ( { model
-                        | loginState =
-                            LoginSuccess
-                                { listState = Ls.newModel
-                                , uploadState = Upload.newModel
-                                , mkdirState = Mkdir.newModel
-                                , removeState = Remove.newModel
-                                , shareState = Share.newModel
-                                }
-                      }
-                    , doListQueryFromUrl model.url
-                    )
+                    doInitAfterLogin model
 
                 Err _ ->
-                    ( { model | loginState = LoginFailure }, Cmd.none )
+                    ( { model | loginState = LoginFailure "" "" }, Cmd.none )
+
+        GotLogoutResp result ->
+            ( { model | loginState = LoginReady "" "" }, Cmd.none )
 
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Nav.pushUrl model.key (Url.toString { url | query = Nothing }) )
+                    -- Special case: /get/ requests should be routed as if we clicked an
+                    -- external link.
+                    case String.startsWith "/get/" url.path of
+                        True ->
+                            ( model, Nav.load (Url.toString url) )
+
+                        False ->
+                            ( model, Nav.pushUrl model.key (Url.toString { url | query = Nothing }) )
 
                 Browser.External href ->
-                    ( model, Nav.load href )
+                    let
+                        currUrl =
+                            Url.toString model.url
+                    in
+                    case href of
+                        "" ->
+                            ( model, Cmd.none )
+
+                        "#" ->
+                            ( model, Cmd.none )
+
+                        _ ->
+                            ( model
+                            , if href == currUrl then
+                                Cmd.none
+
+                              else
+                                Nav.load href
+                            )
 
         UrlChanged url ->
             ( { model | url = url }, doListQueryFromUrl url )
 
+        UsernameInput username ->
+            case model.loginState of
+                LoginReady _ password ->
+                    ( { model | loginState = LoginReady username password }, Cmd.none )
+
+                LoginFailure _ password ->
+                    ( { model | loginState = LoginFailure username password }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        PasswordInput password ->
+            case model.loginState of
+                LoginReady username _ ->
+                    ( { model | loginState = LoginReady username password }, Cmd.none )
+
+                LoginFailure username _ ->
+                    ( { model | loginState = LoginFailure username password }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        LoginSubmit ->
+            case model.loginState of
+                LoginReady username password ->
+                    ( { model | loginState = LoginLoading username password }
+                    , Login.query GotLoginResp username password
+                    )
+
+                LoginFailure username password ->
+                    ( { model | loginState = LoginLoading username password }
+                    , Login.query GotLoginResp username password
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        LogoutSubmit ->
+            ( model, Login.logout GotLogoutResp )
+
         SearchInput query ->
             ( model
+              -- Save the filter query in the URL itself.
+              -- This way the query can be shared amongst users via link.
             , Nav.pushUrl model.key <|
                 model.url.path
                     ++ (if String.length query == 0 then
@@ -199,56 +309,20 @@ update msg model =
                        )
             )
 
-        -- TODO: Think of a way to make that delegation easier.
         ListMsg subMsg ->
-            case model.loginState of
-                LoginSuccess viewState ->
-                    -- Delegate the logic to the list modal module:
-                    Ls.update subMsg viewState.listState
-                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | listState = m } }) ListMsg model
-
-                _ ->
-                    ( model, Cmd.none )
+            withSubUpdate subMsg .listState model ListMsg Ls.update (\viewState newSubModel -> { viewState | listState = newSubModel })
 
         UploadMsg subMsg ->
-            case model.loginState of
-                LoginSuccess viewState ->
-                    -- Delegate the logic to the list modal module:
-                    Upload.update subMsg viewState.uploadState
-                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | uploadState = m } }) UploadMsg model
-
-                _ ->
-                    ( model, Cmd.none )
+            withSubUpdate subMsg .uploadState model UploadMsg Upload.update (\viewState newSubModel -> { viewState | uploadState = newSubModel })
 
         MkdirMsg subMsg ->
-            case model.loginState of
-                LoginSuccess viewState ->
-                    -- Delegate the logic to the list modal module:
-                    Mkdir.update subMsg viewState.mkdirState
-                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | mkdirState = m } }) MkdirMsg model
-
-                _ ->
-                    ( model, Cmd.none )
+            withSubUpdate subMsg .mkdirState model MkdirMsg Mkdir.update (\viewState newSubModel -> { viewState | mkdirState = newSubModel })
 
         RemoveMsg subMsg ->
-            case model.loginState of
-                LoginSuccess viewState ->
-                    -- Delegate the logic to the list modal module:
-                    Remove.update subMsg viewState.removeState
-                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | removeState = m } }) RemoveMsg model
-
-                _ ->
-                    ( model, Cmd.none )
+            withSubUpdate subMsg .removeState model RemoveMsg Remove.update (\viewState newSubModel -> { viewState | removeState = newSubModel })
 
         ShareMsg subMsg ->
-            case model.loginState of
-                LoginSuccess viewState ->
-                    -- Delegate the logic to the list modal module:
-                    Share.update subMsg viewState.shareState
-                        |> updateWith (\m -> { model | loginState = LoginSuccess { viewState | shareState = m } }) ShareMsg model
-
-                _ ->
-                    ( model, Cmd.none )
+            withSubUpdate subMsg .shareState model ShareMsg Share.update (\viewState newSubModel -> { viewState | shareState = newSubModel })
 
 
 
@@ -272,6 +346,7 @@ subscriptions model =
 
 
 -- VIEW
+-- TODO: Use some lazy and keyed calls here.
 
 
 view : Model -> Browser.Document Msg
@@ -279,14 +354,17 @@ view model =
     { title = "Gateway"
     , body =
         case model.loginState of
-            LoginReady ->
-                [ text "Please wait until I implement some login form." ]
+            LoginLimbo ->
+                [ text "Waiting in Limbo..." ]
 
-            LoginFailure ->
-                [ text "Failed to login. Wrong user/password?" ]
+            LoginReady _ _ ->
+                [ viewLoginForm model ]
 
-            LoginLoading ->
-                [ text "...Waiting for server..." ]
+            LoginFailure _ _ ->
+                [ viewLoginForm model ]
+
+            LoginLoading _ _ ->
+                [ viewLoginForm model ]
 
             LoginSuccess viewState ->
                 [ Grid.containerFluid []
@@ -308,21 +386,109 @@ view model =
                                 , Grid.col [ Col.xl3 ] [ viewSearchBox model ]
                                 ]
                             , Grid.row [ Row.attrs [ id "main-content-row" ] ]
-                                [ Grid.col [ Col.xl10 ]
+                                [ Grid.col
+                                    [ Col.xl10
+
+                                    --, Col.textAlign Text.alignXsCenter
+                                    ]
                                     [ Html.map ListMsg
-                                        (Ls.viewList viewState.listState model.zone)
+                                        (Ls.viewList viewState.listState model.url model.zone)
                                     ]
                                 , Grid.col [ Col.xl2 ] [ viewActionList viewState ]
                                 ]
                             ]
                         ]
-                    , Html.map UploadMsg (Upload.view viewState.uploadState)
                     , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url)
                     , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
-                    , Html.map ShareMsg (Share.view viewState.shareState model.url)
+                    , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
                     ]
                 ]
     }
+
+
+viewLoginInputs : String -> String -> List (Html Msg)
+viewLoginInputs username password =
+    [ h2 [ class "login-header" ] [ text "Login" ]
+    , Input.text
+        [ Input.id "username-input"
+        , Input.attrs [ class "login-input" ]
+        , Input.large
+        , Input.placeholder "Username"
+        , Input.value username
+        , Input.onInput UsernameInput
+        ]
+    , Input.password
+        [ Input.id "password-input"
+        , Input.attrs [ class "login-input" ]
+        , Input.large
+        , Input.placeholder "Password"
+        , Input.value password
+        , Input.onInput PasswordInput
+        ]
+    ]
+
+
+viewLoginButton : String -> String -> Bool -> Html Msg
+viewLoginButton username password isLoading =
+    let
+        loadingClass =
+            if isLoading then
+                "fa fa-sync fa-sync-animate"
+
+            else
+                ""
+    in
+    Button.button
+        [ Button.primary
+        , Button.attrs
+            [ onClick <| LoginSubmit
+            , class "login-btn"
+            , disabled
+                (String.length (String.trim username)
+                    == 0
+                    || String.length (String.trim password)
+                    == 0
+                    || isLoading
+                )
+            ]
+        ]
+        [ span [ class loadingClass ] [], text " Log in" ]
+
+
+viewLoginForm : Model -> Html Msg
+viewLoginForm model =
+    Grid.containerFluid []
+        [ Grid.row []
+            [ Grid.col
+                [ Col.lg8
+                , Col.textAlign Text.alignXsCenter
+                , Col.attrs [ class "login-form" ]
+                ]
+                [ div []
+                    [ Form.group []
+                        (case model.loginState of
+                            LoginReady username password ->
+                                viewLoginInputs username password
+                                    ++ [ viewLoginButton username password False ]
+
+                            LoginLoading username password ->
+                                viewLoginInputs username password
+                                    ++ [ viewLoginButton username password True ]
+
+                            LoginFailure username password ->
+                                viewLoginInputs username password
+                                    ++ [ Alert.simpleDanger [] [ text "Login failed, please try again." ]
+                                       , viewLoginButton username password False
+                                       ]
+
+                            _ ->
+                                -- This should not happen.
+                                []
+                        )
+                    ]
+                ]
+            ]
+        ]
 
 
 viewSearchBox : Model -> Html Msg
@@ -393,10 +559,22 @@ labelSelectedItems num =
             "Nothing selected"
 
         1 ->
-            "1 item selected"
+            " 1 item selected"
 
         n ->
-            String.fromInt n ++ " items selected"
+            " " ++ String.fromInt n ++ " items selected"
+
+
+buildActionButton : Msg -> String -> String -> Bool -> ButtonGroup.ButtonItem Msg
+buildActionButton msg iconName labelText isDisabled =
+    ButtonGroup.button
+        [ Button.block
+        , Button.roleLink
+        , Button.attrs [ class "text-left", disabled isDisabled, onClick msg ]
+        ]
+        [ span [ class "fas fa-lg", class iconName ] []
+        , span [ id "toolbar-label" ] [ text (" " ++ labelText) ]
+        ]
 
 
 viewActionList : ViewState -> Html Msg
@@ -405,39 +583,37 @@ viewActionList model =
         nSelected =
             Ls.nSelectedItems model.listState
     in
+    -- TODO: Make sure we disable mkdir/upload when viewing a single file.
     div [ class "toolbar" ]
         [ p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
         , br [] []
+        , Upload.buildButton model.uploadState model.listState UploadMsg
         , ButtonGroup.toolbar [ class "btn-group-vertical" ]
             [ ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small, ButtonGroup.vertical, ButtonGroup.attrs [ class "mb-3" ] ]
-                [ ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", onClick <| UploadMsg Upload.show ] ]
-                    [ span [ class "fas fa-lg fa-upload" ] [], span [ id "toolbar-label" ] [ text " Upload" ] ]
-                , ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", onClick <| MkdirMsg <| Mkdir.show ] ]
-                    [ span [ class "fas fa-lg fa-edit" ] [], span [ id "toolbar-label" ] [ text " New Folder" ] ]
-                , ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
-                    [ span [ class "fas fa-lg fa-history" ] [], span [ id "toolbar-label" ] [ text " History" ] ]
+                [ ButtonGroup.small
+                , ButtonGroup.vertical
+                , ButtonGroup.attrs [ class "mb-3" ]
+                ]
+                [ buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "History" True
                 ]
             , ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small, ButtonGroup.vertical, ButtonGroup.attrs [ class "mt-3" ] ]
-                [ ButtonGroup.button
-                    [ Button.light
-                    , Button.block
-                    , Button.attrs [ class "text-left", disabled <| nSelected == 0, onClick <| ShareMsg <| Share.show ]
-                    ]
-                    [ span [ class "fas fa-lg fa-share-alt" ] [], span [ id "toolbar-label" ] [ text " Share" ] ]
-                , ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled <| nSelected == 0, onClick <| RemoveMsg Remove.show ] ]
-                    [ span [ class "fas fa-lg fa-trash" ] [], span [ id "toolbar-label" ] [ text " Delete" ] ]
-                , ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
-                    [ span [ class "fas fa-lg fa-copy" ] [], span [ id "toolbar-label" ] [ text " Copy" ] ]
-                , ButtonGroup.button
-                    [ Button.light, Button.block, Button.attrs [ class "text-left", disabled True ] ]
-                    [ span [ class "fas fa-lg fa-arrow-right" ] [], span [ id "toolbar-label" ] [ text " Move" ] ]
+                [ ButtonGroup.small
+                , ButtonGroup.vertical
+                , ButtonGroup.attrs [ class "mt-3 mb-3" ]
+                ]
+                [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
+                , buildActionButton (RemoveMsg <| Remove.show) "fa-trash" "Delete" (nSelected == 0)
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-trash" "Copy" True
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-arrow-right" "Move" True
+                ]
+            , ButtonGroup.buttonGroupItem
+                [ ButtonGroup.small
+                , ButtonGroup.vertical
+                , ButtonGroup.attrs [ class "mt-3" ]
+                ]
+                [ buildActionButton LogoutSubmit "fa-sign-out-alt" "Log out" False
                 ]
             ]
+        , Html.map UploadMsg (Upload.viewUploadState model.uploadState)
         ]

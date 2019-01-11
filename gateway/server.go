@@ -172,7 +172,7 @@ func (gw *Gateway) Start() {
 	apiRouter.Handle("/copy", endpoints.NewCopyHandler(gw.cfg, gw.fs))
 	apiRouter.Handle("/remove", endpoints.NewRemoveHandler(gw.cfg, gw.fs))
 	apiRouter.Handle("/history", endpoints.NewHistoryHandler(gw.cfg, gw.fs))
-	// TODO: Should ls be really POST?
+	apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler())
 
 	// Add the /get endpoint. Since it might contain any path, we have to
 	// Use a path prefix so the right handler is called.

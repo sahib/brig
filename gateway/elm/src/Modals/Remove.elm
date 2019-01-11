@@ -31,7 +31,6 @@ import Util
 type State
     = Ready
     | Fail String
-    | Done
 
 
 type alias Model =
@@ -98,7 +97,7 @@ update msg model =
             case result of
                 Ok _ ->
                     -- New list model means also new checked entries.
-                    ( { model | state = Done }, Cmd.none )
+                    ( { model | state = Ready, modal = Modal.hidden }, Cmd.none )
 
                 Err err ->
                     ( { model | state = Fail <| Util.httpErrorToString err }, Cmd.none )
@@ -127,12 +126,8 @@ viewRemoveContent model lsModel =
             Ready ->
                 text ("Remove the " ++ String.fromInt (Ls.nSelectedItems lsModel) ++ " selected items")
 
-            Done ->
-                -- TODO: Make the dialog close after success.
-                text ""
-
             Fail message ->
-                Util.buildAlert model.alert AlertMsg True "Oh no!" ("Could not create directory" ++ message)
+                Util.buildAlert model.alert AlertMsg True "Oh no!" ("Could not remove directory: " ++ message)
         ]
     ]
 
@@ -151,7 +146,16 @@ view model lsModel =
             [ Button.button
                 [ Button.danger
                 , Button.attrs
-                    [ onClick <| RemoveAll <| Ls.selectedPaths lsModel ]
+                    [ onClick <| RemoveAll <| Ls.selectedPaths lsModel
+                    , disabled
+                        (case model.state of
+                            Fail _ ->
+                                True
+
+                            _ ->
+                                False
+                        )
+                    ]
                 ]
                 [ text "Remove" ]
             , Button.button
