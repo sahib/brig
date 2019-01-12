@@ -5,20 +5,14 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type CopyHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewCopyHandler(cfg *config.Config, fs *catfs.FS) *CopyHandler {
-	return &CopyHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewCopyHandler(s State) *CopyHandler {
+	return &CopyHandler{State: s}
 }
 
 type CopyRequest struct {
@@ -49,5 +43,6 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ch.evHdl.Notify("fs", r.Context())
 	jsonifySuccess(w)
 }

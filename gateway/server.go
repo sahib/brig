@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/gateway/endpoints"
 	"github.com/sahib/config"
 	"github.com/ulule/limiter"
@@ -40,6 +41,8 @@ type Gateway struct {
 	cfg         *config.Config
 	isClosed    bool
 	isReloading bool
+	ev          *events.Listener
+	evHdl       *endpoints.EventsHandler
 
 	srv      *http.Server
 	redirSrv *http.Server
@@ -47,11 +50,13 @@ type Gateway struct {
 
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
-func NewGateway(fs *catfs.FS, cfg *config.Config) *Gateway {
+func NewGateway(fs *catfs.FS, cfg *config.Config, ev *events.Listener) *Gateway {
 	gw := &Gateway{
 		fs:       fs,
 		cfg:      cfg,
+		ev:       ev,
 		isClosed: true,
+		evHdl:    endpoints.NewEventsHandler(ev),
 	}
 
 	// Restarts the gateway on the next possible idle phase:
@@ -92,6 +97,7 @@ func (gw *Gateway) Stop() error {
 	}
 
 	gw.isClosed = true
+	gw.evHdl.Shutdown()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -109,6 +115,12 @@ func (gw *Gateway) Stop() error {
 	}
 
 	return nil
+}
+
+type csrfErrorHandler struct{}
+
+func (ch *csrfErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Warningf("csrf failed: %v", r.Context().Value("gorilla.csrf.Error"))
 }
 
 // Start will start the gateway.
@@ -159,38 +171,42 @@ func (gw *Gateway) Start() {
 	}
 
 	router := mux.NewRouter()
-	router.Use(csrf.Protect([]byte(csrfKey)))
+	router.Use(csrf.Protect([]byte(csrfKey), csrf.ErrorHandler(&csrfErrorHandler{})))
+	state := endpoints.NewState(gw.fs, gw.cfg, gw.ev, gw.evHdl)
 
 	// API route definition:
 	apiRouter := router.PathPrefix("/api/v0").Methods("POST").Subrouter()
-	apiRouter.Handle("/login", endpoints.NewLoginHandler(gw.cfg))
-	apiRouter.Handle("/logout", endpoints.NewLogoutHandler())
-	apiRouter.Handle("/ls", endpoints.NewLsHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/upload", endpoints.NewUploadHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/move", endpoints.NewMoveHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/mkdir", endpoints.NewMkdirHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/copy", endpoints.NewCopyHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/remove", endpoints.NewRemoveHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/history", endpoints.NewHistoryHandler(gw.cfg, gw.fs))
-	apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler())
+	apiRouter.Handle("/login", endpoints.NewLoginHandler(state))
+	apiRouter.Handle("/logout", endpoints.NewLogoutHandler(state))
+	apiRouter.Handle("/ls", endpoints.NewLsHandler(state))
+	apiRouter.Handle("/upload", endpoints.NewUploadHandler(state))
+	apiRouter.Handle("/move", endpoints.NewMoveHandler(state))
+	apiRouter.Handle("/mkdir", endpoints.NewMkdirHandler(state))
+	apiRouter.Handle("/copy", endpoints.NewCopyHandler(state))
+	apiRouter.Handle("/remove", endpoints.NewRemoveHandler(state))
+	apiRouter.Handle("/history", endpoints.NewHistoryHandler(state))
+	apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(state))
 
 	// Add the /get endpoint. Since it might contain any path, we have to
 	// Use a path prefix so the right handler is called.
-	router.PathPrefix("/get/").Handler(endpoints.NewGetHandler(gw.cfg, gw.fs)).Methods("GET")
+	router.PathPrefix("/get/").Handler(endpoints.NewGetHandler(state)).Methods("GET")
+
+	// Events is special too:
+	router.PathPrefix("/events").Handler(gw.evHdl).Methods("GET")
 
 	// Special case: index.html gets a csrf token:
-	router.Handle("/", endpoints.NewIndexHandler()).Methods("GET")
-	router.Handle("/index.html", endpoints.NewIndexHandler()).Methods("GET")
-	router.PathPrefix("/view").Handler(endpoints.NewIndexHandler()).Methods("GET")
+	idxHdl := endpoints.NewIndexHandler(state)
+	router.Handle("/", idxHdl).Methods("GET")
+	router.Handle("/index.html", idxHdl).Methods("GET")
+	router.PathPrefix("/view").Handler(idxHdl).Methods("GET")
 
 	// Serve all files in the static directory as-is.
 	// This has to come last, since it's a wildcard for everything else.
 	// The static files are packed inside the binary (for now)
 	// TODO: Use this in development mode:
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./gateway/static")))
-
-	// TODO: Use this in release mode:
 	// router.PathPrefix("/").Handler(http.FileServer(parcello.ManagerAt("/")))
+	// TODO: Persistent session cookies.
 
 	// Implement rate limiting:
 	router.Use(
@@ -205,8 +221,10 @@ func (gw *Gateway) Start() {
 		Handler:           gziphandler.GzipHandler(router),
 		TLSConfig:         tlsConfig,
 		ReadHeaderTimeout: 10 * time.Second,
-		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       360 * time.Second,
+		// We cant' really enable write timeout, since upload will break then.
+		// See also: https://github.com/golang/go/issues/16100
+		// WriteTimeout:      10 * time.Second,
 	}
 
 	go func() {

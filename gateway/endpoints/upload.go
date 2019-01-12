@@ -5,24 +5,19 @@ import (
 	"path"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type UploadHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewUploadHandler(cfg *config.Config, fs *catfs.FS) *UploadHandler {
-	return &UploadHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewUploadHandler(s State) *UploadHandler {
+	return &UploadHandler{State: s}
 }
 
 func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Fix this.
+	// TODO: Fix this. This endpoint breaks on bigger files and seems to take
+	// the whole server with it. Multipart requests are confusing as hell. Who invented this?
 	root := r.URL.Query().Get("root")
 	if root == "" {
 		root = "/"
@@ -55,5 +50,6 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	uh.evHdl.Notify("fs", r.Context())
 	jsonifySuccess(w)
 }

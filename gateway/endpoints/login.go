@@ -97,11 +97,11 @@ func validateUserForPath(cfg *config.Config, nodePath string, r *http.Request) b
 ///////
 
 type LoginHandler struct {
-	cfg *config.Config
+	State
 }
 
-func NewLoginHandler(cfg *config.Config) *LoginHandler {
-	return &LoginHandler{cfg: cfg}
+func NewLoginHandler(s State) *LoginHandler {
+	return &LoginHandler{State: s}
 }
 
 type LoginRequest struct {
@@ -135,10 +135,12 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ///////
 
-type LogoutHandler struct{}
+type LogoutHandler struct {
+	State
+}
 
-func NewLogoutHandler() *LogoutHandler {
-	return &LogoutHandler{}
+func NewLogoutHandler(s State) *LogoutHandler {
+	return &LogoutHandler{State: s}
 }
 
 func (loh *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -155,10 +157,11 @@ func (loh *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 ///////
 
 type WhoamiHandler struct {
+	State
 }
 
-func NewWhoamiHandler() *WhoamiHandler {
-	return &WhoamiHandler{}
+func NewWhoamiHandler(s State) *WhoamiHandler {
+	return &WhoamiHandler{State: s}
 }
 
 type WhoamiResponse struct {

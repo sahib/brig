@@ -13,19 +13,14 @@ import (
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/config"
 )
 
 type GetHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewGetHandler(cfg *config.Config, fs *catfs.FS) *GetHandler {
-	return &GetHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewGetHandler(s State) *GetHandler {
+	return &GetHandler{State: s}
 }
 
 func mimeTypeFromStream(stream mio.Stream) (io.ReadSeeker, string) {

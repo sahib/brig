@@ -1,12 +1,55 @@
 package endpoints
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/events"
+	"github.com/sahib/config"
 )
+
+type State struct {
+	fs    *catfs.FS
+	cfg   *config.Config
+	ev    *events.Listener
+	evHdl *EventsHandler
+}
+
+func NewState(fs *catfs.FS, cfg *config.Config, ev *events.Listener, evHdl *EventsHandler) State {
+	return State{
+		fs:    fs,
+		cfg:   cfg,
+		ev:    ev,
+		evHdl: evHdl,
+	}
+}
+
+func (s State) publishFsEvent(req *http.Request) {
+	if s.evHdl != nil {
+		ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		defer cancel()
+
+		s.evHdl.Notify("fs", ctx)
+	}
+
+	if s.ev == nil {
+		return
+	}
+
+	log.Debugf("publishing fs event from gateway")
+	ev := events.Event{
+		Type: events.FsEvent,
+	}
+
+	if err := s.ev.PublishEvent(ev); err != nil {
+		log.Warningf("failed to publish filesystem change event: %v", err)
+	}
+}
 
 func jsonify(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.WriteHeader(statusCode)

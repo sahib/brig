@@ -26,7 +26,7 @@ type Listener struct {
 
 	bk        backend.Backend
 	cfg       *config.Config
-	callbacks map[EventType]func(*Event)
+	callbacks map[EventType][]func(*Event)
 	cancels   map[string]context.CancelFunc
 	evSendCh  chan Event
 	evRecvCh  chan Event
@@ -43,7 +43,7 @@ func NewListener(cfg *config.Config, bk backend.Backend, ownAddr string) *Listen
 		bk:        bk,
 		cfg:       cfg,
 		ownAddr:   ownAddr,
-		callbacks: make(map[EventType]func(*Event)),
+		callbacks: make(map[EventType][]func(*Event)),
 		cancels:   make(map[string]context.CancelFunc),
 		evSendCh:  make(chan Event, maxBurstSize),
 		evRecvCh:  make(chan Event, maxBurstSize),
@@ -84,7 +84,7 @@ func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
 		return
 	}
 
-	lst.callbacks[ev] = hdl
+	lst.callbacks[ev] = append(lst.callbacks[ev], hdl)
 }
 
 func eventLoop(evCh chan Event, interval time.Duration, rps float64, fn func(ev Event)) {
@@ -146,8 +146,10 @@ func (lst *Listener) eventRecvLoop() {
 
 	eventLoop(lst.evRecvCh, recvInterval, recvMaxEvRPS, func(ev Event) {
 		lst.mu.Lock()
-		if cb, ok := lst.callbacks[ev.Type]; ok {
-			go cb(&ev)
+		if cbs, ok := lst.callbacks[ev.Type]; ok {
+			for _, cb := range cbs {
+				go cb(&ev)
+			}
 		}
 		lst.mu.Unlock()
 	})

@@ -73,7 +73,7 @@ func main() {
 		}
 	}
 
-	gw := gateway.NewGateway(fs, cfg.Section("gateway"))
+	gw := gateway.NewGateway(fs, cfg.Section("gateway"), nil)
 	gw.Start()
 
 	defer func() {

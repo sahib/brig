@@ -7,19 +7,14 @@ import (
 	"strings"
 
 	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type LsHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewLsHandler(cfg *config.Config, fs *catfs.FS) *LsHandler {
-	return &LsHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewLsHandler(s State) *LsHandler {
+	return &LsHandler{State: s}
 }
 
 type LsRequest struct {
@@ -82,7 +77,7 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	info, err := lh.fs.Stat(lsReq.Root)
 	if err != nil {
-		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root")
+		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root %s: %v", lsReq.Root, err)
 		return
 	}
 

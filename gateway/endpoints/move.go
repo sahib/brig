@@ -5,20 +5,14 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type MoveHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewMoveHandler(cfg *config.Config, fs *catfs.FS) *MoveHandler {
-	return &MoveHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewMoveHandler(s State) *MoveHandler {
+	return &MoveHandler{State: s}
 }
 
 type MoveRequest struct {
@@ -49,5 +43,6 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mh.evHdl.Notify("fs", r.Context())
 	jsonifySuccess(w)
 }

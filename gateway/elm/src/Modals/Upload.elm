@@ -35,10 +35,6 @@ import Url
 import Util
 
 
-
--- TODO: Make "Upload" button open the file dialog directly.
-
-
 type alias Alertable =
     { alert : Alert.Visibility
     , path : String

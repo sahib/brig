@@ -287,17 +287,6 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	}
 
 	b.backendLoaded = true
-
-	err = b.withCurrFs(func(fs *catfs.FS) error {
-		b.gateway = gateway.NewGateway(fs, rp.Config.Section("gateway"))
-		b.gateway.Start()
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
 	return realBackend, nil
 }
 
@@ -369,6 +358,16 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
 	if err := b.evListener.SetupListeners(b.evListenerCtx, addrs); err != nil {
 		log.Warningf("failed to setup event listeners: %v", err)
+	}
+
+	err = b.withCurrFs(func(fs *catfs.FS) error {
+		b.gateway = gateway.NewGateway(fs, rp.Config.Section("gateway"), b.evListener)
+		b.gateway.Start()
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	// Give peer server a small bit of time to start up, so it can Accept()

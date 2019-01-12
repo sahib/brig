@@ -6,20 +6,14 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type RemoveHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewRemoveHandler(cfg *config.Config, fs *catfs.FS) *RemoveHandler {
-	return &RemoveHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewRemoveHandler(s State) *RemoveHandler {
+	return &RemoveHandler{State: s}
 }
 
 type RemoveRequest struct {
@@ -45,13 +39,20 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	hasChanged := false
+
 	for _, path := range rmReq.Paths {
 		if err := rh.fs.Remove(path); err != nil {
 			log.Debugf("failed to remove %s: %v", path, err)
 			jsonifyErrf(w, http.StatusBadRequest, "failed to remove")
 			return
 		}
+
+		hasChanged = true
 	}
 
-	jsonifySuccess(w)
+	if hasChanged {
+		rh.evHdl.Notify("fs", r.Context())
+		jsonifySuccess(w)
+	}
 }

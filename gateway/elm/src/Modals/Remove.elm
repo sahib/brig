@@ -2,13 +2,13 @@ module Modals.Remove exposing (Model, Msg, newModel, show, subscriptions, update
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
-import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
 import Bootstrap.Progress as Progress
 import Browser
+import Browser.Events as Events
 import Browser.Navigation as Nav
 import File
 import Html exposing (..)
@@ -47,6 +47,7 @@ type Msg
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
+    | KeyPress (List String) String
 
 
 
@@ -81,17 +82,20 @@ decode =
     D.field "message" D.string
 
 
+doRemove : List String -> Cmd Msg
+doRemove paths =
+    Http.post
+        { url = "/api/v0/remove"
+        , body = Http.jsonBody <| encode <| Query paths
+        , expect = Http.expectJson GotResponse decode
+        }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         RemoveAll paths ->
-            ( model
-            , Http.post
-                { url = "/api/v0/remove"
-                , body = Http.jsonBody <| encode <| Query paths
-                , expect = Http.expectJson GotResponse decode
-                }
-            )
+            ( model, doRemove paths )
 
         GotResponse result ->
             case result of
@@ -113,6 +117,20 @@ update msg model =
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
+
+        KeyPress paths key ->
+            ( model
+            , if model.modal == Modal.hidden then
+                Cmd.none
+
+              else
+                case key of
+                    "Enter" ->
+                        doRemove paths
+
+                    _ ->
+                        Cmd.none
+            )
 
 
 
@@ -176,9 +194,10 @@ show =
 -- SUBSCRIPTIONS
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : Ls.Model -> Model -> Sub Msg
+subscriptions lsModel model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
+        , Events.onKeyPress (D.map (KeyPress <| Ls.selectedPaths lsModel) <| D.field "key" D.string)
         ]

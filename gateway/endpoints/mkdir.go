@@ -6,20 +6,14 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type MkdirHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewMkdirHandler(cfg *config.Config, fs *catfs.FS) *MkdirHandler {
-	return &MkdirHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewMkdirHandler(s State) *MkdirHandler {
+	return &MkdirHandler{State: s}
 }
 
 type MkdirRequest struct {
@@ -49,5 +43,6 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mh.evHdl.Notify("fs", r.Context())
 	jsonifySuccess(w)
 }

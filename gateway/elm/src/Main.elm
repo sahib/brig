@@ -18,7 +18,6 @@ import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Html.Keyed as Keyed
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
@@ -30,6 +29,7 @@ import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
 import Modals.Share as Share
 import Modals.Upload as Upload
+import Port
 import Task
 import Time
 import Url
@@ -71,6 +71,7 @@ type Msg
     | PasswordInput String
     | LoginSubmit
     | LogoutSubmit
+    | WebsocketIn String
       -- View parent messages:
     | ListMsg Ls.Msg
       -- Modal parent messages:
@@ -117,7 +118,6 @@ init _ url key =
       , loginState = LoginLimbo
       }
     , Cmd.batch
-        -- TODO: Send an initial "is logged in" query here.
         [ Task.perform AdjustTimeZone Time.here
         , Login.whoami GotWhoamiResp
         ]
@@ -309,6 +309,12 @@ update msg model =
                        )
             )
 
+        WebsocketIn _ ->
+            -- Currently we know only one event that is being sent
+            -- over the websocket. It means "update the list, something changed". Change
+            -- this once we have more events.
+            ( model, doListQueryFromUrl model.url )
+
         ListMsg subMsg ->
             withSubUpdate subMsg .listState model ListMsg Ls.update (\viewState newSubModel -> { viewState | listState = newSubModel })
 
@@ -335,9 +341,10 @@ subscriptions model =
         LoginSuccess viewState ->
             Sub.batch
                 [ Sub.map UploadMsg (Upload.subscriptions viewState.uploadState)
-                , Sub.map MkdirMsg (Mkdir.subscriptions viewState.mkdirState)
-                , Sub.map RemoveMsg (Remove.subscriptions viewState.removeState)
+                , Sub.map MkdirMsg (Mkdir.subscriptions model.url viewState.mkdirState)
+                , Sub.map RemoveMsg (Remove.subscriptions viewState.listState viewState.removeState)
                 , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
+                , Port.websocketIn WebsocketIn
                 ]
 
         _ ->
@@ -346,7 +353,6 @@ subscriptions model =
 
 
 -- VIEW
--- TODO: Use some lazy and keyed calls here.
 
 
 view : Model -> Browser.Document Msg
@@ -358,52 +364,54 @@ view model =
                 [ text "Waiting in Limbo..." ]
 
             LoginReady _ _ ->
-                [ viewLoginForm model ]
+                [ Lazy.lazy viewLoginForm model ]
 
             LoginFailure _ _ ->
-                [ viewLoginForm model ]
+                [ Lazy.lazy viewLoginForm model ]
 
             LoginLoading _ _ ->
-                [ viewLoginForm model ]
+                [ Lazy.lazy viewLoginForm model ]
 
             LoginSuccess viewState ->
-                [ Grid.containerFluid []
-                    [ Grid.row []
-                        [ Grid.col
-                            [ Col.md2
-                            , Col.attrs [ class "d-none d-md-block bg-light sidebar" ]
-                            ]
-                            [ viewSidebar model ]
-                        , Grid.col
-                            [ Col.lg10
-                            , Col.attrs [ class "ml-sm-auto px-4", id "main-column" ]
-                            ]
-                            [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                                [ Grid.col [ Col.xl9 ]
-                                    [ Html.map ListMsg
-                                        (Ls.viewBreadcrumbs model.url viewState.listState)
-                                    ]
-                                , Grid.col [ Col.xl3 ] [ viewSearchBox model ]
-                                ]
-                            , Grid.row [ Row.attrs [ id "main-content-row" ] ]
-                                [ Grid.col
-                                    [ Col.xl10
+                viewList model viewState
+    }
 
-                                    --, Col.textAlign Text.alignXsCenter
-                                    ]
-                                    [ Html.map ListMsg
-                                        (Ls.viewList viewState.listState model.url model.zone)
-                                    ]
-                                , Grid.col [ Col.xl2 ] [ viewActionList viewState ]
-                                ]
-                            ]
+
+viewList : Model -> ViewState -> List (Html Msg)
+viewList model viewState =
+    [ Grid.containerFluid []
+        [ Grid.row []
+            [ Grid.col
+                [ Col.md2
+                , Col.attrs [ class "d-none d-md-block bg-light sidebar" ]
+                ]
+                [ Lazy.lazy viewSidebar model ]
+            , Grid.col
+                [ Col.lg10
+                , Col.attrs [ class "ml-sm-auto px-4", id "main-column" ]
+                ]
+                [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
+                    [ Grid.col [ Col.xl9 ]
+                        [ Html.map ListMsg
+                            (Ls.viewBreadcrumbs model.url viewState.listState)
                         ]
-                    , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url)
-                    , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
-                    , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
+                    , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
+                    ]
+                , Grid.row [ Row.attrs [ id "main-content-row" ] ]
+                    [ Grid.col
+                        [ Col.xl10 ]
+                        [ Html.map ListMsg
+                            (Ls.viewList viewState.listState model.url model.zone)
+                        ]
+                    , Grid.col [ Col.xl2 ] [ Lazy.lazy viewActionList viewState ]
                     ]
                 ]
-    }
+            ]
+        , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url)
+        , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
+        , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
+        ]
+    ]
 
 
 viewLoginInputs : String -> String -> List (Html Msg)
@@ -443,6 +451,7 @@ viewLoginButton username password isLoading =
         , Button.attrs
             [ onClick <| LoginSubmit
             , class "login-btn"
+            , type_ "submit"
             , disabled
                 (String.length (String.trim username)
                     == 0
@@ -464,7 +473,7 @@ viewLoginForm model =
                 , Col.textAlign Text.alignXsCenter
                 , Col.attrs [ class "login-form" ]
                 ]
-                [ div []
+                [ Form.form [ onSubmit LoginSubmit ]
                     [ Form.group []
                         (case model.loginState of
                             LoginReady username password ->
@@ -583,7 +592,6 @@ viewActionList model =
         nSelected =
             Ls.nSelectedItems model.listState
     in
-    -- TODO: Make sure we disable mkdir/upload when viewing a single file.
     div [ class "toolbar" ]
         [ p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
         , br [] []
@@ -595,7 +603,7 @@ viewActionList model =
                 , ButtonGroup.attrs [ class "mb-3" ]
                 ]
                 [ buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "History" True
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-history" "History" True
                 ]
             , ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small
@@ -604,7 +612,7 @@ viewActionList model =
                 ]
                 [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
                 , buildActionButton (RemoveMsg <| Remove.show) "fa-trash" "Delete" (nSelected == 0)
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-trash" "Copy" True
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-copy" "Copy" True
                 , buildActionButton (MkdirMsg <| Mkdir.show) "fa-arrow-right" "Move" True
                 ]
             , ButtonGroup.buttonGroupItem

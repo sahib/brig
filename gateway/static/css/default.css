@@ -209,9 +209,9 @@
 	max-width: 38vw;
 	margin: 50px auto;
 }
-.login-form > div {
+.login-form > form {
 	margin-bottom: 15px;
-	background: #f7f7f7;
+	background: #fff;
 	box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, 0.3);
 	padding: 30px;
 }
@@ -270,4 +270,9 @@
 	margin-top: 0px;
     margin-right: 0px;
     margin-bottom: 2px;
+}
+
+.share-row {
+    max-height: 42vh;
+    overflow-y: scroll;
 }

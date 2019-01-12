@@ -74,7 +74,7 @@ viewShare model lsModel url =
     in
     [ Grid.col [ Col.xs12 ]
         [ p [] [ text "Use those links to share the selected files with people that do not use brig." ]
-        , p [] [ b [] [ text "Note:" ], text " They still need to authenticate themselves." ]
+        , p [] [ b [] [ text "Note:" ], text " Remember, they still need to authenticate themselves." ]
         , ul [ id "share-list" ] (List.map (formatEntry url) entries)
         ]
     ]
@@ -88,7 +88,7 @@ view model lsModel url =
         |> Modal.h5 [] [ text "Share hyperlinks" ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewShare model lsModel url) ]
+                [ Grid.row [ Row.attrs [ class "share-row" ] ] (viewShare model lsModel url) ]
             ]
         |> Modal.footer []
             [ Button.button

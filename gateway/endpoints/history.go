@@ -6,19 +6,14 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 )
 
 type HistoryHandler struct {
-	cfg *config.Config
-	fs  *catfs.FS
+	State
 }
 
-func NewHistoryHandler(cfg *config.Config, fs *catfs.FS) *HistoryHandler {
-	return &HistoryHandler{
-		cfg: cfg,
-		fs:  fs,
-	}
+func NewHistoryHandler(s State) *HistoryHandler {
+	return &HistoryHandler{State: s}
 }
 
 type HistoryRequest struct {

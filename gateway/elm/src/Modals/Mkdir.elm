@@ -9,6 +9,7 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
 import Bootstrap.Progress as Progress
 import Browser
+import Browser.Events as Events
 import Browser.Navigation as Nav
 import File
 import Html exposing (..)
@@ -48,6 +49,7 @@ type Msg
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
+    | KeyPress String String
 
 
 
@@ -83,17 +85,20 @@ decode =
     D.field "message" D.string
 
 
+doMkdir : String -> Cmd Msg
+doMkdir path =
+    Http.post
+        { url = "/api/v0/mkdir"
+        , body = Http.jsonBody <| encode <| Query path
+        , expect = Http.expectJson GotResponse decode
+        }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         CreateDir path ->
-            ( model
-            , Http.post
-                { url = "/api/v0/mkdir"
-                , body = Http.jsonBody <| encode <| Query path
-                , expect = Http.expectJson GotResponse decode
-                }
-            )
+            ( model, doMkdir path )
 
         InputChanged inputName ->
             ( { model | inputName = inputName }, Cmd.none )
@@ -111,13 +116,27 @@ update msg model =
             ( { model | modal = visibility }, Cmd.none )
 
         ModalShow ->
-            ( { model | modal = Modal.shown }, Cmd.none )
+            ( { model | modal = Modal.shown, inputName = "" }, Cmd.none )
 
         ModalClose ->
             ( { model | modal = Modal.hidden, state = Ready }, Cmd.none )
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
+
+        KeyPress path key ->
+            ( model
+            , if model.modal == Modal.hidden then
+                Cmd.none
+
+              else
+                case key of
+                    "Enter" ->
+                        doMkdir path
+
+                    _ ->
+                        Cmd.none
+            )
 
 
 
@@ -144,6 +163,11 @@ viewMkdirContent model =
     ]
 
 
+pathFromUrl : Url.Url -> Model -> String
+pathFromUrl url model =
+    Util.joinPath [ Util.urlToPath url, model.inputName ]
+
+
 view : Model -> Url.Url -> Html Msg
 view model url =
     let
@@ -162,7 +186,8 @@ view model url =
             [ Button.button
                 [ Button.primary
                 , Button.attrs
-                    [ onClick <| CreateDir (Util.joinPath [ path, model.inputName ])
+                    [ onClick (CreateDir (pathFromUrl url model))
+                    , type_ "submit"
                     , disabled
                         (String.length model.inputName
                             == 0
@@ -195,9 +220,10 @@ show =
 -- SUBSCRIPTIONS
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : Url.Url -> Model -> Sub Msg
+subscriptions url model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
+        , Events.onKeyPress (D.map (KeyPress <| pathFromUrl url model) <| D.field "key" D.string)
         ]

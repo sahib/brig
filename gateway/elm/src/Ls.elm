@@ -27,6 +27,7 @@ import Filesize
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
 import Json.Decode.Pipeline as DP
@@ -332,6 +333,39 @@ viewPinIcon isPinned isExplicit =
             span [ class "text-danger fa fa-times" ] []
 
 
+viewSingleEntry : ActualModel -> Url.Url -> Time.Zone -> Html Msg
+viewSingleEntry actualModel url zone =
+    Grid.row []
+        [ Grid.col [ Col.xs2 ] []
+        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsCenter ]
+            [ ListGroup.ul
+                [ ListGroup.li []
+                    [ viewMetaRow "Path" (text <| actualModel.self.path)
+                    ]
+                , ListGroup.li []
+                    [ viewMetaRow "Size" (text <| Filesize.format actualModel.self.size)
+                    ]
+                , ListGroup.li []
+                    [ viewMetaRow "Owner" (text <| actualModel.self.user)
+                    ]
+                , ListGroup.li []
+                    [ viewMetaRow "Last Modified" (text <| Util.formatLastModified zone actualModel.self.lastModified)
+                    ]
+                , ListGroup.li []
+                    [ viewMetaRow "Pinned"
+                        (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
+                    ]
+                , ListGroup.li [ ListGroup.light ]
+                    [ viewDownloadButton actualModel url
+                    , text " "
+                    , viewViewButton actualModel url
+                    ]
+                ]
+            ]
+        , Grid.col [ Col.xs2 ] []
+        ]
+
+
 viewList : Model -> Url.Url -> Time.Zone -> Html Msg
 viewList model url zone =
     case model of
@@ -345,38 +379,10 @@ viewList model url zone =
             case actualModel.self.isDir of
                 True ->
                     div []
-                        [ entriesToHtml actualModel zone ]
+                        [ Lazy.lazy2 entriesToHtml zone actualModel ]
 
                 False ->
-                    Grid.row []
-                        [ Grid.col [ Col.xs2 ] []
-                        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsCenter ]
-                            [ ListGroup.ul
-                                [ ListGroup.li []
-                                    [ viewMetaRow "Path" (text <| actualModel.self.path)
-                                    ]
-                                , ListGroup.li []
-                                    [ viewMetaRow "Size" (text <| Filesize.format actualModel.self.size)
-                                    ]
-                                , ListGroup.li []
-                                    [ viewMetaRow "Owner" (text <| actualModel.self.user)
-                                    ]
-                                , ListGroup.li []
-                                    [ viewMetaRow "Last Modified" (text <| Util.formatLastModified zone actualModel.self.lastModified)
-                                    ]
-                                , ListGroup.li []
-                                    [ viewMetaRow "Pinned"
-                                        (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
-                                    ]
-                                , ListGroup.li [ ListGroup.light ]
-                                    [ viewDownloadButton actualModel url
-                                    , text " "
-                                    , viewViewButton actualModel url
-                                    ]
-                                ]
-                            ]
-                        , Grid.col [ Col.xs2 ] []
-                        ]
+                    Lazy.lazy3 viewSingleEntry actualModel url zone
 
 
 buildBreadcrumbs : List String -> List String -> List (Breadcrumb.Item msg)
@@ -430,7 +436,7 @@ viewEntryIcon : Entry -> Html Msg
 viewEntryIcon entry =
     case entry.isDir of
         True ->
-            span [ class "far fa-lg fa-folder text-xs-right file-list-icon" ] []
+            span [ class "fas fa-lg fa-folder text-xs-right file-list-icon" ] []
 
         False ->
             span [ class "far fa-lg fa-file text-xs-right file-list-icon" ] []
@@ -465,8 +471,28 @@ formatPath model entry =
             Util.basename entry.path
 
 
-entriesToHtml : ActualModel -> Time.Zone -> Html Msg
-entriesToHtml model zone =
+entryToHtml : ActualModel -> Time.Zone -> Entry -> Table.Row Msg
+entryToHtml model zone e =
+    Table.tr
+        []
+        [ Table.td []
+            [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
+            ]
+        , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
+        , Table.td []
+            [ a [ "/view" ++ e.path |> href ] [ text (formatPath model e) ]
+            ]
+        , Table.td []
+            [ Util.formatLastModifiedOwner zone e.lastModified e.user
+            ]
+        , Table.td []
+            [ text (Filesize.format e.size)
+            ]
+        ]
+
+
+entriesToHtml : Time.Zone -> ActualModel -> Html Msg
+entriesToHtml zone model =
     Table.table
         { options = [ Table.hover ]
         , thead =
@@ -479,25 +505,5 @@ entriesToHtml model zone =
                 ]
         , tbody =
             Table.tbody []
-                (List.map
-                    (\e ->
-                        Table.tr
-                            []
-                            [ Table.td []
-                                [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
-                                ]
-                            , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
-                            , Table.td []
-                                [ a [ "/view" ++ e.path |> href ] [ text (formatPath model e) ]
-                                ]
-                            , Table.td []
-                                [ Util.formatLastModifiedOwner zone e.lastModified e.user
-                                ]
-                            , Table.td []
-                                [ text (Filesize.format e.size)
-                                ]
-                            ]
-                    )
-                    model.entries
-                )
+                (List.map (entryToHtml model zone) model.entries)
         }
