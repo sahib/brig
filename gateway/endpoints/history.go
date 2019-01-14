@@ -9,10 +9,10 @@ import (
 )
 
 type HistoryHandler struct {
-	State
+	*State
 }
 
-func NewHistoryHandler(s State) *HistoryHandler {
+func NewHistoryHandler(s *State) *HistoryHandler {
 	return &HistoryHandler{State: s}
 }
 
@@ -68,7 +68,7 @@ func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(hh.cfg, histReq.Path, r) {
+	if !validateUserForPath(hh.store, hh.cfg, histReq.Path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}

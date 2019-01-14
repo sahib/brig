@@ -2,12 +2,15 @@ package endpoints
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/config"
@@ -18,18 +21,47 @@ type State struct {
 	cfg   *config.Config
 	ev    *events.Listener
 	evHdl *EventsHandler
+	store *sessions.CookieStore
 }
 
-func NewState(fs *catfs.FS, cfg *config.Config, ev *events.Listener, evHdl *EventsHandler) State {
-	return State{
+func readOrInitKeyFromConfig(cfg *config.Config, keyName string, keyLen int) ([]byte, error) {
+	keyStr := cfg.String(keyName)
+	if keyStr == "" {
+		keyData := securecookie.GenerateRandomKey(keyLen)
+		cfg.SetString(keyName, base64.StdEncoding.EncodeToString(keyData))
+		return keyData, nil
+	}
+
+	return base64.StdEncoding.DecodeString(keyStr)
+}
+
+func NewState(fs *catfs.FS, cfg *config.Config, ev *events.Listener, evHdl *EventsHandler) (*State, error) {
+	authKey, err := readOrInitKeyFromConfig(cfg, "auth.session-authentication-key", 64)
+	if err != nil {
+		return nil, err
+	}
+
+	encKey, err := readOrInitKeyFromConfig(cfg, "auth.session-encryption-key", 32)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generated here, but used by the server:
+	_, err = readOrInitKeyFromConfig(cfg, "auth.session-csrf-key", 32)
+	if err != nil {
+		return nil, err
+	}
+
+	return &State{
 		fs:    fs,
 		cfg:   cfg,
 		ev:    ev,
 		evHdl: evHdl,
-	}
+		store: sessions.NewCookieStore(authKey, encKey),
+	}, nil
 }
 
-func (s State) publishFsEvent(req *http.Request) {
+func (s *State) publishFsEvent(req *http.Request) {
 	if s.evHdl != nil {
 		ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
 		defer cancel()

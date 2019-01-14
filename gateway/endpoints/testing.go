@@ -72,14 +72,15 @@ func mustDecodeBody(t *testing.T, body io.Reader, v interface{}) {
 
 func mustCreateRequest(t *testing.T, verb string, url string, jsonBody interface{}) *http.Request {
 	req := httptest.NewRequest(verb, url, mustEncodeBody(t, jsonBody))
-	encoded, err := cookieHandler.Encode("session", map[string]string{"name": "ali"})
-	require.Nil(t, err)
+	// TODO: rewrite this to use sessions:
+	// encoded, err := cookieHandler.Encode("session", map[string]string{"name": "ali"})
+	// require.Nil(t, err)
 
-	req.AddCookie(&http.Cookie{
-		Name:  "session",
-		Value: encoded,
-		Path:  "/",
-	})
+	// req.AddCookie(&http.Cookie{
+	// 	Name:  "session",
+	// 	Value: encoded,
+	// 	Path:  "/",
+	// })
 
 	return req
 }

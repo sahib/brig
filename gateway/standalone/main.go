@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -13,7 +14,45 @@ import (
 	"github.com/sahib/config"
 )
 
-const dbPath = "/tmp/gw-runner"
+const (
+	dbPath     = "/tmp/gw-runner"
+	configPath = "/tmp/config.cfg"
+)
+
+func loadConfig(configPath string) *config.Config {
+	cfg, err := defaults.OpenMigratedConfig(configPath)
+	if err == nil {
+		return cfg
+	}
+
+	log.Printf("failed to open config: %v", err)
+	if _, err := os.Stat(configPath); err != nil && !os.IsNotExist(err) {
+		os.Exit(1)
+	}
+
+	log.Printf("creating empty config at %s", configPath)
+	cfg, err = config.Open(nil, defaults.Defaults, config.StrictnessPanic)
+	if err != nil {
+		log.Printf("failed to load defaults: %v", err)
+		return cfg
+	}
+
+	saveConfig(cfg, configPath)
+	return cfg
+}
+
+func saveConfig(cfg *config.Config, configPath string) {
+	fd, err := os.OpenFile(configPath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatalf("failed to write to config location %s: %v", configPath, err)
+	}
+
+	defer fd.Close()
+
+	if err := cfg.Save(config.NewYamlEncoder(fd)); err != nil {
+		log.Fatalf("failed to serialize config: %v", err)
+	}
+}
 
 func main() {
 	log.SetLevel(log.DebugLevel)
@@ -21,12 +60,10 @@ func main() {
 		log.Fatalf("failed to create dir %s: %v", dbPath, err)
 	}
 
-	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
-	if err != nil {
-		log.Fatalf("failed to open default config: %v", err)
-	}
-
+	cfg := loadConfig(configPath)
 	cfg.SetBool("gateway.enabled", true)
+	cfg.SetBool("gateway.ui.enabled", true)
+	cfg.SetBool("gateway.ui.debug_mode", true)
 	cfg.SetInt("gateway.port", 5000)
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
@@ -75,6 +112,9 @@ func main() {
 
 	gw := gateway.NewGateway(fs, cfg.Section("gateway"), nil)
 	gw.Start()
+
+	time.Sleep(1 * time.Second)
+	saveConfig(cfg, configPath)
 
 	defer func() {
 		if err := gw.Stop(); err != nil {

@@ -8,10 +8,10 @@ import (
 )
 
 type MoveHandler struct {
-	State
+	*State
 }
 
-func NewMoveHandler(s State) *MoveHandler {
+func NewMoveHandler(s *State) *MoveHandler {
 	return &MoveHandler{State: s}
 }
 
@@ -27,12 +27,12 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(mh.cfg, moveReq.Source, r) {
+	if !validateUserForPath(mh.store, mh.cfg, moveReq.Source, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !validateUserForPath(mh.cfg, moveReq.Destination, r) {
+	if !validateUserForPath(mh.store, mh.cfg, moveReq.Destination, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}

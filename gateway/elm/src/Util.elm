@@ -141,18 +141,17 @@ basename path =
             x
 
 
-buildAlert : Alert.Visibility -> (Alert.Visibility -> msg) -> Bool -> String -> String -> Html msg
-buildAlert visibility msg isError title message =
+buildAlert : Alert.Visibility -> (Alert.Visibility -> msg) -> (Alert.Config msg -> Alert.Config msg) -> String -> String -> Html msg
+buildAlert visibility msg severity title message =
     Alert.config
         |> Alert.dismissableWithAnimation msg
-        |> (if isError then
-                Alert.danger
-
-            else
-                Alert.success
-           )
+        |> severity
         |> Alert.children
-            [ Alert.h4 [] [ text title ]
+            [ if String.length title > 0 then
+                Alert.h4 [] [ text title ]
+
+              else
+                text ""
             , text message
             ]
         |> Alert.view visibility

@@ -7,61 +7,80 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"github.com/sahib/config"
 )
 
-var cookieHandler = securecookie.New(
-	securecookie.GenerateRandomKey(64),
-	securecookie.GenerateRandomKey(32),
-)
-
-func getUserName(r *http.Request) string {
-	cookie, err := r.Cookie("session")
+func getUserName(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request) string {
+	sess, err := store.Get(r, "sess")
 	if err != nil {
+		log.Warningf("failed to get session: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	cookieValue := make(map[string]string)
-	if err := cookieHandler.Decode("session", cookie.Value, &cookieValue); err != nil {
-		log.Debugf("failed to decode cookie: %v", err)
+	userNameIf, ok := sess.Values["name"]
+	if !ok {
 		return ""
 	}
 
-	return cookieValue["name"]
+	userName, ok := userNameIf.(string)
+	if !ok {
+		log.Warningf("failed to convert user name to string: %v", userNameIf)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return ""
+	}
+
+	return userName
 }
 
-func setSession(userName string, w http.ResponseWriter, r *http.Request) {
-	value := map[string]string{
-		"name": userName,
-	}
-
-	encoded, err := cookieHandler.Encode("session", value)
+func setSession(store *sessions.CookieStore, userName string, w http.ResponseWriter, r *http.Request) {
+	sess, err := store.Get(r, "sess")
 	if err != nil {
-		log.Warningf("failed to set cookie: %v", err)
+		log.Warningf("failed to get session: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// TODO: Set cookie domain?
-	http.SetCookie(w, &http.Cookie{
-		Name:  "session",
-		Value: encoded,
-		Path:  "/",
-	})
+	sess.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   31 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	sess.Values["name"] = userName
+	if err := sess.Save(r, w); err != nil {
+		log.Warningf("set: failed to save session: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
-func clearSession(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		Path:   "/",
+func clearSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request) {
+	sess, err := store.Get(r, "sess")
+	if err != nil {
+		log.Warningf("failed to get session: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sess.Options = &sessions.Options{
 		MaxAge: -1,
-	})
+	}
+
+	sess.Values["name"] = ""
+	if err := sess.Save(r, w); err != nil {
+		log.Warningf("clear: failed to save session: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
-// validateUserForPath checks if `r` is allowed to view `nodePath`.
-func validateUserForPath(cfg *config.Config, nodePath string, r *http.Request) bool {
-	if getUserName(r) == "" {
+// validateUserForPath checks if `r` is allowed to access `nodePath`.
+func validateUserForPath(store *sessions.CookieStore, cfg *config.Config, nodePath string, w http.ResponseWriter, r *http.Request) bool {
+	if getUserName(store, w, r) == "" {
 		return false
 	}
 
@@ -97,10 +116,10 @@ func validateUserForPath(cfg *config.Config, nodePath string, r *http.Request) b
 ///////
 
 type LoginHandler struct {
-	State
+	*State
 }
 
-func NewLoginHandler(s State) *LoginHandler {
+func NewLoginHandler(s *State) *LoginHandler {
 	return &LoginHandler{State: s}
 }
 
@@ -116,6 +135,8 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("doing login")
+
 	if loginReq.Username == "" || loginReq.Password == "" {
 		jsonifyErrf(w, http.StatusBadRequest, "empty password or username")
 		return
@@ -129,38 +150,41 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setSession(cfgUser, w, r)
+	log.Printf("before set session")
+	setSession(lih.store, cfgUser, w, r)
+	log.Printf("before success")
 	jsonifySuccess(w)
+	log.Printf("after success")
 }
 
 ///////
 
 type LogoutHandler struct {
-	State
+	*State
 }
 
-func NewLogoutHandler(s State) *LogoutHandler {
+func NewLogoutHandler(s *State) *LogoutHandler {
 	return &LogoutHandler{State: s}
 }
 
 func (loh *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := getUserName(r)
+	user := getUserName(loh.store, w, r)
 	if user == "" {
 		jsonifyErrf(w, http.StatusBadRequest, "not logged in")
 		return
 	}
 
-	clearSession(w)
+	clearSession(loh.store, w, r)
 	jsonifySuccess(w)
 }
 
 ///////
 
 type WhoamiHandler struct {
-	State
+	*State
 }
 
-func NewWhoamiHandler(s State) *WhoamiHandler {
+func NewWhoamiHandler(s *State) *WhoamiHandler {
 	return &WhoamiHandler{State: s}
 }
 
@@ -170,9 +194,9 @@ type WhoamiResponse struct {
 }
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := getUserName(r)
+	user := getUserName(wh.store, w, r)
 	if user != "" {
-		setSession(user, w, r)
+		setSession(wh.store, user, w, r)
 	}
 
 	jsonify(w, http.StatusOK, WhoamiResponse{

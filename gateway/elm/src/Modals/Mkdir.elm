@@ -19,13 +19,9 @@ import Http
 import Json.Decode as D
 import Json.Encode as E
 import List
+import Ls
 import Url
 import Util
-
-
-
--- TODO: Handle case where the dir already exist.
---       Warn and ask to overwrite?
 
 
 type State
@@ -143,8 +139,27 @@ update msg model =
 -- VIEW
 
 
-viewMkdirContent : Model -> List (Grid.Column Msg)
-viewMkdirContent model =
+hasPathCollision : Model -> Ls.Model -> Bool
+hasPathCollision model lsModel =
+    Maybe.withDefault False (Ls.existsInCurr model.inputName lsModel)
+
+
+showPathCollision : Model -> Ls.Model -> Html Msg
+showPathCollision model lsModel =
+    if hasPathCollision model lsModel then
+        span [ class "text-left" ]
+            [ span [ class "fas fa-md fa-exclamation-triangle text-warning" ] []
+            , span [ class "text-muted" ]
+                [ text (" »" ++ model.inputName ++ "« exists already. Please choose another name.\u{00A0}\u{00A0}\u{00A0}")
+                ]
+            ]
+
+    else
+        span [] []
+
+
+viewMkdirContent : Model -> Ls.Model -> List (Grid.Column Msg)
+viewMkdirContent model lsModel =
     [ Grid.col [ Col.xs12 ]
         [ Input.text
             [ Input.id "mkdir-input"
@@ -158,7 +173,7 @@ viewMkdirContent model =
                 text ""
 
             Fail message ->
-                Util.buildAlert model.alert AlertMsg True "Oh no!" ("Could not create directory: " ++ message)
+                Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not create directory: " ++ message)
         ]
     ]
 
@@ -168,8 +183,8 @@ pathFromUrl url model =
     Util.joinPath [ Util.urlToPath url, model.inputName ]
 
 
-view : Model -> Url.Url -> Html Msg
-view model url =
+view : Model -> Url.Url -> Ls.Model -> Html Msg
+view model url lsModel =
     let
         path =
             Util.urlToPath url
@@ -180,10 +195,11 @@ view model url =
         |> Modal.h5 [] [ text ("Create a new directory in " ++ path) ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewMkdirContent model) ]
+                [ Grid.row [] (viewMkdirContent model lsModel) ]
             ]
         |> Modal.footer []
-            [ Button.button
+            [ showPathCollision model lsModel
+            , Button.button
                 [ Button.primary
                 , Button.attrs
                     [ onClick (CreateDir (pathFromUrl url model))
@@ -198,6 +214,7 @@ view model url =
                                     _ ->
                                         False
                                )
+                            || hasPathCollision model lsModel
                         )
                     ]
                 ]

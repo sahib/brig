@@ -69,8 +69,6 @@ func (eh *EventsHandler) Shutdown() {
 }
 
 func (eh *EventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement authentication that works with websocket.
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warningf("failed to upgrade to websocket: %v", err)

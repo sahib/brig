@@ -6,6 +6,7 @@ module Ls exposing
     , currRoot
     , decode
     , encode
+    , existsInCurr
     , nSelectedItems
     , newModel
     , query
@@ -15,14 +16,18 @@ module Ls exposing
     , viewList
     )
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Breadcrumb as Breadcrumb
 import Bootstrap.Button as Button
+import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
 import Bootstrap.Text as Text
+import Browser.Navigation as Nav
+import Commands
 import Filesize
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -47,23 +52,36 @@ type alias ActualModel =
     , checked : Set.Set String
     , isFiltered : Bool
     , self : Entry
+    , sortState : ( SortDirection, SortKey )
     }
 
 
-type Model
+type State
     = Failure
     | Loading
     | Success ActualModel
 
 
-newModel : Model
-newModel =
-    Loading
+type alias Model =
+    { key : Nav.Key
+    , state : State
+    , alert : Alert.Visibility
+    , currError : String
+    }
+
+
+newModel : Nav.Key -> Model
+newModel key =
+    { key = key
+    , state = Loading
+    , alert = Alert.closed
+    , currError = ""
+    }
 
 
 nSelectedItems : Model -> Int
 nSelectedItems model =
-    case model of
+    case model.state of
         Success actualModel ->
             Set.filter (\e -> String.isEmpty e |> not) actualModel.checked |> Set.size
 
@@ -73,7 +91,7 @@ nSelectedItems model =
 
 selectedPaths : Model -> List String
 selectedPaths model =
-    case model of
+    case model.state of
         Success actualModel ->
             Set.filter (\e -> String.isEmpty e |> not) actualModel.checked |> Set.toList
 
@@ -83,7 +101,7 @@ selectedPaths model =
 
 currIsFile : Model -> Bool
 currIsFile model =
-    case model of
+    case model.state of
         Success actualModel ->
             not actualModel.self.isDir
 
@@ -93,9 +111,24 @@ currIsFile model =
 
 currRoot : Model -> Maybe String
 currRoot model =
-    case model of
+    case model.state of
         Success actualModel ->
             Just actualModel.self.path
+
+        _ ->
+            Nothing
+
+
+existsInCurr : String -> Model -> Maybe Bool
+existsInCurr name model =
+    case model.state of
+        Success actualModel ->
+            case actualModel.isFiltered of
+                True ->
+                    Just False
+
+                False ->
+                    Just (List.any (\e -> name == Util.basename e.path) actualModel.entries)
 
         _ ->
             Nothing
@@ -112,10 +145,28 @@ type alias Response =
     }
 
 
+type SortKey
+    = None
+    | Name
+    | ModTime
+    | Size
+
+
+type SortDirection
+    = Ascending
+    | Descending
+
+
 type Msg
     = GotResponse (Result Http.Error Response)
     | CheckboxTick String Bool
     | CheckboxTickAll Bool
+    | ActionDropdownMsg Entry Dropdown.State
+    | RowClicked Entry
+    | RemoveClicked Entry
+    | RemoveResponse (Result Http.Error String)
+    | SortBy SortDirection SortKey
+    | AlertMsg Alert.Visibility
 
 
 
@@ -129,7 +180,8 @@ type alias Query =
 
 
 type alias Entry =
-    { path : String
+    { dropdown : Dropdown.State
+    , path : String
     , user : String
     , size : Int
     , inode : Int
@@ -163,7 +215,7 @@ decode =
 
 decodeEntry : D.Decoder Entry
 decodeEntry =
-    D.succeed Entry
+    D.succeed (Entry Dropdown.initialState)
         |> DP.required "path" D.string
         |> DP.required "user" D.string
         |> DP.required "size" D.int
@@ -195,88 +247,201 @@ query path filter =
 -- UPDATE
 
 
+fixDropdownState : Entry -> Dropdown.State -> Entry -> Entry
+fixDropdownState refEntry state entry =
+    if entry.path == refEntry.path then
+        { entry | dropdown = state }
+
+    else
+        entry
+
+
+sortBy : ActualModel -> SortDirection -> SortKey -> ActualModel
+sortBy model direction key =
+    case direction of
+        Ascending ->
+            { model
+                | entries = sortByAscending model key
+                , sortState = ( Ascending, key )
+            }
+
+        Descending ->
+            { model
+                | entries = List.reverse (sortByAscending model key)
+                , sortState = ( Descending, key )
+            }
+
+
+sortByAscending : ActualModel -> SortKey -> List Entry
+sortByAscending model key =
+    case key of
+        Name ->
+            List.sortBy (\e -> String.toLower (Util.basename e.path)) model.entries
+
+        ModTime ->
+            List.sortBy (\e -> Time.posixToMillis e.lastModified) model.entries
+
+        Size ->
+            List.sortBy .size model.entries
+
+        None ->
+            model.entries
+
+
+updateCheckboxTickActual : String -> Bool -> ActualModel -> ActualModel
+updateCheckboxTickActual path isChecked model =
+    case isChecked of
+        True ->
+            let
+                updatedSet =
+                    Set.insert path model.checked
+            in
+            { model
+                | checked =
+                    if Set.size updatedSet == List.length model.entries then
+                        Set.insert "" updatedSet
+
+                    else
+                        updatedSet
+            }
+
+        False ->
+            { model
+                | checked =
+                    Set.remove "" <| Set.remove path model.checked
+            }
+
+
+updateCheckboxTick : String -> Bool -> Model -> Model
+updateCheckboxTick path isChecked model =
+    case model.state of
+        Success actualModel ->
+            { model | state = Success (updateCheckboxTickActual path isChecked actualModel) }
+
+        _ ->
+            model
+
+
+updateCheckboxTickAllActual : Bool -> ActualModel -> ActualModel
+updateCheckboxTickAllActual isChecked model =
+    case isChecked of
+        True ->
+            { model | checked = Set.fromList (List.map (\e -> e.path) model.entries ++ [ "" ]) }
+
+        False ->
+            { model | checked = Set.empty }
+
+
+updateCheckboxTickAll : Bool -> Model -> Model
+updateCheckboxTickAll isChecked model =
+    case model.state of
+        Success actualModel ->
+            { model | state = Success (updateCheckboxTickAllActual isChecked actualModel) }
+
+        _ ->
+            model
+
+
+setDropdownState : Model -> Entry -> Dropdown.State -> Model
+setDropdownState model entry state =
+    case model.state of
+        Success actualModel ->
+            { model
+                | state =
+                    Success
+                        { actualModel
+                            | entries = List.map (fixDropdownState entry state) actualModel.entries
+                        }
+            }
+
+        _ ->
+            model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ActionDropdownMsg entry state ->
+            ( setDropdownState model entry state, Cmd.none )
+
+        RowClicked entry ->
+            ( model, Nav.pushUrl model.key ("/view" ++ Util.urlEncodePath entry.path) )
+
+        RemoveClicked entry ->
+            ( setDropdownState model entry Dropdown.initialState
+            , Commands.doRemove RemoveResponse [ entry.path ]
+            )
+
+        SortBy direction key ->
+            case model.state of
+                Success actualModel ->
+                    ( { model | state = Success (sortBy actualModel direction key) }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        RemoveResponse result ->
+            case result of
+                Ok _ ->
+                    ( model, Cmd.none )
+
+                Err err ->
+                    ( { model
+                        | currError = Util.httpErrorToString err
+                        , alert = Alert.shown
+                      }
+                    , Cmd.none
+                    )
+
         GotResponse result ->
             case result of
                 Ok response ->
                     -- New list model means also new checked entries.
-                    ( Success <|
-                        { entries = response.entries
-                        , isFiltered = response.isFiltered
-                        , checked =
-                            if response.self.isDir then
-                                Set.empty
+                    ( { model
+                        | state =
+                            Success <|
+                                { entries = response.entries
+                                , isFiltered = response.isFiltered
+                                , checked =
+                                    if response.self.isDir then
+                                        Set.empty
 
-                            else
-                                Set.singleton response.self.path
-                        , self = response.self
-                        }
+                                    else
+                                        Set.singleton response.self.path
+                                , self = response.self
+                                , sortState = ( Ascending, None )
+                                }
+                      }
                     , Cmd.none
                     )
 
                 Err _ ->
-                    ( Failure, Cmd.none )
+                    ( { model | state = Failure }, Cmd.none )
 
         CheckboxTick path isChecked ->
-            case model of
-                Success actualModel ->
-                    case isChecked of
-                        True ->
-                            let
-                                updatedSet =
-                                    Set.insert path actualModel.checked
-                            in
-                            ( Success
-                                { actualModel
-                                    | checked =
-                                        if Set.size updatedSet == List.length actualModel.entries then
-                                            Set.insert "" updatedSet
-
-                                        else
-                                            updatedSet
-                                }
-                            , Cmd.none
-                            )
-
-                        False ->
-                            ( Success
-                                { actualModel
-                                    | checked =
-                                        Set.remove "" <| Set.remove path actualModel.checked
-                                }
-                            , Cmd.none
-                            )
-
-                _ ->
-                    ( model, Cmd.none )
+            ( updateCheckboxTick path isChecked model, Cmd.none )
 
         CheckboxTickAll isChecked ->
-            case model of
-                Success actualModel ->
-                    case isChecked of
-                        True ->
-                            ( Success
-                                { actualModel
-                                    | checked =
-                                        Set.fromList
-                                            (List.map (\e -> e.path) actualModel.entries
-                                                ++ [ "" ]
-                                            )
-                                }
-                            , Cmd.none
-                            )
+            ( updateCheckboxTickAll isChecked model, Cmd.none )
 
-                        False ->
-                            ( Success { actualModel | checked = Set.empty }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
+        AlertMsg state ->
+            ( { model | alert = state }, Cmd.none )
 
 
 
 -- VIEW
+
+
+showAlert : Model -> Html Msg
+showAlert model =
+    Alert.config
+        |> Alert.dismissable AlertMsg
+        |> Alert.danger
+        |> Alert.children
+            [ Alert.h4 [] [ text "Oh, something went wrong! :(" ]
+            , text ("The exact error was: " ++ model.currError)
+            ]
+        |> Alert.view model.alert
 
 
 viewMetaRow : String -> Html msg -> Html msg
@@ -368,7 +533,7 @@ viewSingleEntry actualModel url zone =
 
 viewList : Model -> Url.Url -> Time.Zone -> Html Msg
 viewList model url zone =
-    case model of
+    case model.state of
         Failure ->
             div [] [ text "Sorry, something did not work out as expected." ]
 
@@ -379,10 +544,15 @@ viewList model url zone =
             case actualModel.self.isDir of
                 True ->
                     div []
-                        [ Lazy.lazy2 entriesToHtml zone actualModel ]
+                        [ showAlert model
+                        , Lazy.lazy2 entriesToHtml zone actualModel
+                        ]
 
                 False ->
-                    Lazy.lazy3 viewSingleEntry actualModel url zone
+                    div []
+                        [ showAlert model
+                        , Lazy.lazy3 viewSingleEntry actualModel url zone
+                        ]
 
 
 buildBreadcrumbs : List String -> List String -> List (Breadcrumb.Item msg)
@@ -457,10 +627,6 @@ readCheckedState model path =
     Set.member path model.checked
 
 
-
--- TODO: Make table headings sortable.
-
-
 formatPath : ActualModel -> Entry -> String
 formatPath model entry =
     case model.isFiltered of
@@ -471,6 +637,55 @@ formatPath model entry =
             Util.basename entry.path
 
 
+buildActionDropdown : ActualModel -> Entry -> Html Msg
+buildActionDropdown model entry =
+    Dropdown.dropdown
+        entry.dropdown
+        { options = [ Dropdown.alignMenuRight ]
+        , toggleMsg = ActionDropdownMsg entry
+        , toggleButton =
+            Dropdown.toggle
+                [ Button.roleLink ]
+                [ span [ class "fas fa-ellipsis-h" ] [] ]
+        , items =
+            [ Dropdown.buttonItem
+                [ disabled True ]
+                [ span [ class "fa fa-md fa-history" ] []
+                , text " History"
+                ]
+            , Dropdown.divider
+            , Dropdown.anchorItem
+                [ href
+                    ("/get"
+                        ++ Util.urlEncodePath model.self.path
+                        ++ "?direct=yes"
+                    )
+                , onClick (ActionDropdownMsg entry Dropdown.initialState)
+                ]
+                [ span [ class "fa fa-md fa-file-download" ] []
+                , text " Download"
+                ]
+            , Dropdown.divider
+            , Dropdown.buttonItem
+                [ onClick (RemoveClicked entry)
+                ]
+                [ span [ class "fa fa-md fa-trash" ] []
+                , text " Delete"
+                ]
+            , Dropdown.buttonItem
+                [ class "disabled" ]
+                [ span [ class "fa fa-md fa-arrow-right" ] []
+                , text " Move"
+                ]
+            , Dropdown.buttonItem
+                [ class "disabled" ]
+                [ span [ class "fa fa-md fa-copy" ] []
+                , text " Copy"
+                ]
+            ]
+        }
+
+
 entryToHtml : ActualModel -> Time.Zone -> Entry -> Table.Row Msg
 entryToHtml model zone e =
     Table.tr
@@ -478,16 +693,59 @@ entryToHtml model zone e =
         [ Table.td []
             [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
             ]
-        , Table.td [ Table.cellAttr (class "icon-column") ] [ viewEntryIcon e ]
-        , Table.td []
+        , Table.td
+            [ Table.cellAttr (class "icon-column"), Table.cellAttr (onClick (RowClicked e)) ]
+            [ viewEntryIcon e ]
+        , Table.td
+            [ Table.cellAttr (onClick (RowClicked e)) ]
             [ a [ "/view" ++ e.path |> href ] [ text (formatPath model e) ]
             ]
-        , Table.td []
+        , Table.td
+            [ Table.cellAttr (onClick (RowClicked e)) ]
             [ Util.formatLastModifiedOwner zone e.lastModified e.user
             ]
-        , Table.td []
+        , Table.td
+            [ Table.cellAttr (onClick (RowClicked e)) ]
             [ text (Filesize.format e.size)
             ]
+        , Table.td
+            []
+            [ buildActionDropdown model e
+            ]
+        ]
+
+
+buildSortControl : ActualModel -> SortKey -> Html Msg
+buildSortControl model key =
+    let
+        ascClass =
+            if ( Ascending, key ) == model.sortState then
+                "sort-button-selected"
+
+            else
+                ""
+
+        descClass =
+            if ( Descending, key ) == model.sortState then
+                "sort-button-selected"
+
+            else
+                ""
+    in
+    span [ class "sort-button-container" ]
+        [ Button.linkButton
+            [ Button.small
+            , Button.attrs [ onClick (SortBy Ascending key), class "sort-button" ]
+            ]
+            [ span
+                [ class "fas fa-xs fa-arrow-up", class ascClass ]
+                []
+            ]
+        , Button.linkButton
+            [ Button.small
+            , Button.attrs [ onClick (SortBy Descending key), class "sort-button" ]
+            ]
+            [ span [ class "fas fa-xs fa-arrow-down", class descClass ] [] ]
         ]
 
 
@@ -497,13 +755,57 @@ entriesToHtml zone model =
         { options = [ Table.hover ]
         , thead =
             Table.simpleThead
-                [ Table.th [] [ makeCheckbox (readCheckedState model "") CheckboxTickAll ]
-                , Table.th [] [ span [ class "icon-column" ] [ text "" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Name" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Modified" ] ]
-                , Table.th [] [ span [ class "text-muted" ] [ text "Size" ] ]
+                [ Table.th [ Table.cellAttr (style "width" "5%") ]
+                    [ makeCheckbox (readCheckedState model "") CheckboxTickAll
+                    ]
+                , Table.th [ Table.cellAttr (style "width" "5%") ]
+                    [ span
+                        [ class "icon-column"
+                        ]
+                        [ text "" ]
+                    ]
+                , Table.th [ Table.cellAttr (style "width" "50%") ]
+                    [ span
+                        [ class "text-muted"
+                        ]
+                        [ text "Name", buildSortControl model Name ]
+                    ]
+                , Table.th [ Table.cellAttr (style "width" "25%") ]
+                    [ span
+                        [ class "text-muted"
+                        ]
+                        [ text "Modified", buildSortControl model ModTime ]
+                    ]
+                , Table.th [ Table.cellAttr (style "width" "10%") ]
+                    [ span
+                        [ class "text-muted"
+                        ]
+                        [ text "Size", buildSortControl model Size ]
+                    ]
+                , Table.th [ Table.cellAttr (style "width" "5%") ]
+                    [ span
+                        [ class "text-muted"
+                        ]
+                        [ text "" ]
+                    ]
                 ]
         , tbody =
             Table.tbody []
                 (List.map (entryToHtml model zone) model.entries)
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.state of
+        Success actualModel ->
+            Sub.batch
+                [ Sub.batch
+                    (List.map (\e -> Dropdown.subscriptions e.dropdown (ActionDropdownMsg e))
+                        actualModel.entries
+                    )
+                , Alert.subscriptions model.alert AlertMsg
+                ]
+
+        _ ->
+            Sub.none

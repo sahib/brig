@@ -9,10 +9,10 @@ import (
 )
 
 type RemoveHandler struct {
-	State
+	*State
 }
 
-func NewRemoveHandler(s State) *RemoveHandler {
+func NewRemoveHandler(s *State) *RemoveHandler {
 	return &RemoveHandler{State: s}
 }
 
@@ -33,7 +33,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !validateUserForPath(rh.cfg, path, r) {
+		if !validateUserForPath(rh.store, rh.cfg, path, w, r) {
 			jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 			return
 		}

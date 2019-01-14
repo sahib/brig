@@ -10,6 +10,7 @@ import Bootstrap.Progress as Progress
 import Browser
 import Browser.Events as Events
 import Browser.Navigation as Nav
+import Commands
 import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -21,11 +22,6 @@ import List
 import Ls
 import Url
 import Util
-
-
-
--- TODO: Handle case where the dir already exist.
---       Warn and ask to overwrite?
 
 
 type State
@@ -66,36 +62,11 @@ newModel =
 -- UPDATE
 
 
-type alias Query =
-    { paths : List String
-    }
-
-
-encode : Query -> E.Value
-encode q =
-    E.object
-        [ ( "paths", E.list E.string q.paths ) ]
-
-
-decode : D.Decoder String
-decode =
-    D.field "message" D.string
-
-
-doRemove : List String -> Cmd Msg
-doRemove paths =
-    Http.post
-        { url = "/api/v0/remove"
-        , body = Http.jsonBody <| encode <| Query paths
-        , expect = Http.expectJson GotResponse decode
-        }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         RemoveAll paths ->
-            ( model, doRemove paths )
+            ( model, Commands.doRemove GotResponse paths )
 
         GotResponse result ->
             case result of
@@ -126,7 +97,7 @@ update msg model =
               else
                 case key of
                     "Enter" ->
-                        doRemove paths
+                        Commands.doRemove GotResponse paths
 
                     _ ->
                         Cmd.none
@@ -145,7 +116,7 @@ viewRemoveContent model lsModel =
                 text ("Remove the " ++ String.fromInt (Ls.nSelectedItems lsModel) ++ " selected items")
 
             Fail message ->
-                Util.buildAlert model.alert AlertMsg True "Oh no!" ("Could not remove directory: " ++ message)
+                Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not remove directory: " ++ message)
         ]
     ]
 

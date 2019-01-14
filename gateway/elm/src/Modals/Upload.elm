@@ -246,7 +246,7 @@ viewAlert alert path isSuccess =
                             class "fas fa-xs fa-exclamation-circle"
                         ]
                         []
-                    , text (" " ++ clampText path 25)
+                    , text (" " ++ clampText path 15)
                     ]
                 , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]
                     [ Button.button

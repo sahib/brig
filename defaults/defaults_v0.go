@@ -57,6 +57,18 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "What folders may be accessed by the gateway",
 		},
+		"ui": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: false,
+				Docs:         "Enable the UI. This does not affect the /get endpoint.",
+			},
+			"debug_mode": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         "Enable debug mode (load resources from filesystem)",
+			},
+		},
 		"cert": config.DefaultMapping{
 			"certfile": config.DefaultEntry{
 				Default:      "",
@@ -101,6 +113,21 @@ var DefaultsV0 = config.DefaultMapping{
 				Default:      "",
 				NeedsRestart: false,
 				Docs:         "Password used for basic HTTP auth",
+			},
+			"session-encryption-key": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: true,
+				Docs:         "Encryption key for session cookies. Generated when left empty.",
+			},
+			"session-authentication-key": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: true,
+				Docs:         "Authentication key for session cookies. Generated when left empty.",
+			},
+			"session-csrf-key": config.DefaultEntry{
+				Default:      "",
+				NeedsRestart: true,
+				Docs:         "Key used for CSRF protection. Generated if empty.",
 			},
 		},
 	},

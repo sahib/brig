@@ -2,8 +2,10 @@ package endpoints
 
 import (
 	"html/template"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/csrf"
@@ -14,16 +16,23 @@ import (
 )
 
 type IndexHandler struct {
-	State
+	*State
 }
 
-func NewIndexHandler(s State) *IndexHandler {
+func NewIndexHandler(s *State) *IndexHandler {
 	return &IndexHandler{State: s}
 }
 
 func (ih *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mgr := parcello.ManagerAt("/")
-	fd, err := mgr.Open("index.html")
+	var err error
+	var fd io.ReadCloser
+	if ih.cfg.Bool("ui.debug_mode") {
+		fd, err = os.Open("./gateway/templates/index.html")
+	} else {
+		mgr := parcello.ManagerAt("/")
+		fd, err = mgr.Open("index.html")
+	}
+
 	if err != nil {
 		jsonifyErrf(w, http.StatusInternalServerError, "no index.html")
 		return

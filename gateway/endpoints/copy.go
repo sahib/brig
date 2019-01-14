@@ -8,10 +8,10 @@ import (
 )
 
 type CopyHandler struct {
-	State
+	*State
 }
 
-func NewCopyHandler(s State) *CopyHandler {
+func NewCopyHandler(s *State) *CopyHandler {
 	return &CopyHandler{State: s}
 }
 
@@ -27,12 +27,12 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(ch.cfg, copyReq.Source, r) {
+	if !validateUserForPath(ch.store, ch.cfg, copyReq.Source, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !validateUserForPath(ch.cfg, copyReq.Destination, r) {
+	if !validateUserForPath(ch.store, ch.cfg, copyReq.Destination, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}

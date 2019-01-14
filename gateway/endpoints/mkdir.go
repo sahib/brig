@@ -9,10 +9,10 @@ import (
 )
 
 type MkdirHandler struct {
-	State
+	*State
 }
 
-func NewMkdirHandler(s State) *MkdirHandler {
+func NewMkdirHandler(s *State) *MkdirHandler {
 	return &MkdirHandler{State: s}
 }
 
@@ -32,7 +32,7 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(mh.cfg, mkdirReq.Path, r) {
+	if !validateUserForPath(mh.store, mh.cfg, mkdirReq.Path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}

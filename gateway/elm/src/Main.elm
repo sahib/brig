@@ -172,7 +172,7 @@ doInitAfterLogin model =
     ( { model
         | loginState =
             LoginSuccess
-                { listState = Ls.newModel
+                { listState = Ls.newModel model.key
                 , uploadState = Upload.newModel
                 , mkdirState = Mkdir.newModel
                 , removeState = Remove.newModel
@@ -407,7 +407,7 @@ viewList model viewState =
                     ]
                 ]
             ]
-        , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url)
+        , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url viewState.listState)
         , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
         , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
         ]
@@ -526,7 +526,9 @@ viewSidebar model =
         [ ul [ class "nav", class "flex-column" ]
             [ li [ class "nav-item" ]
                 [ a [ class "nav-link active", href "/view" ]
-                    [ span [ class "fas fa-4x fa-torii-gate" ] [] ]
+                    [ span [ class "fas fa-4x fa-torii-gate" ] []
+                    , span [ class "badge badge-success text-center" ] [ text "beta" ]
+                    ]
                 ]
             , br [] []
             , li [ class "nav-item" ]
@@ -602,18 +604,15 @@ viewActionList model =
                 , ButtonGroup.vertical
                 , ButtonGroup.attrs [ class "mb-3" ]
                 ]
-                [ buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-history" "History" True
+                [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
                 ]
             , ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small
                 , ButtonGroup.vertical
                 , ButtonGroup.attrs [ class "mt-3 mb-3" ]
                 ]
-                [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
+                [ buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
                 , buildActionButton (RemoveMsg <| Remove.show) "fa-trash" "Delete" (nSelected == 0)
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-copy" "Copy" True
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-arrow-right" "Move" True
                 ]
             , ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small

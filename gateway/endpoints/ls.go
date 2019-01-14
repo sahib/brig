@@ -10,10 +10,10 @@ import (
 )
 
 type LsHandler struct {
-	State
+	*State
 }
 
-func NewLsHandler(s State) *LsHandler {
+func NewLsHandler(s *State) *LsHandler {
 	return &LsHandler{State: s}
 }
 
@@ -70,7 +70,7 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(lh.cfg, lsReq.Root, r) {
+	if !validateUserForPath(lh.store, lh.cfg, lsReq.Root, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}

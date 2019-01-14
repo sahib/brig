@@ -276,3 +276,28 @@
     max-height: 42vh;
     overflow-y: scroll;
 }
+
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+	background-color: rgba(235, 245, 255);
+}
+
+.sort-button-container {
+	padding-left: 10px;
+}
+
+.sort-button {
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-bottom: 0px;
+
+	margin-top: 0px;
+    margin-right: 0px;
+    margin-left: 2px;
+    margin-bottom: 5px;
+	background: white;
+}
+
+.sort-button-selected {
+	color: #007bff;
+}
