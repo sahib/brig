@@ -14,6 +14,7 @@ import Bootstrap.Table as Table
 import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
+import Commands
 import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -23,7 +24,6 @@ import Http
 import Json.Decode as D
 import Json.Encode as E
 import List
-import Login
 import Ls
 import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
@@ -60,8 +60,8 @@ main =
 
 
 type Msg
-    = GotLoginResp (Result Http.Error Bool)
-    | GotWhoamiResp (Result Http.Error Login.Whoami)
+    = GotLoginResp (Result Http.Error String)
+    | GotWhoamiResp (Result Http.Error Commands.WhoamiResponse)
     | GotLogoutResp (Result Http.Error Bool)
     | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
@@ -91,6 +91,7 @@ type alias ViewState =
     , mkdirState : Mkdir.Model
     , removeState : Remove.Model
     , shareState : Share.Model
+    , loginName : String
     }
 
 
@@ -98,7 +99,7 @@ type LoginState
     = LoginLimbo -- weird state where we do not know if we're logged in yet.
     | LoginReady String String
     | LoginLoading String String
-    | LoginFailure String String
+    | LoginFailure String String String
     | LoginSuccess ViewState
 
 
@@ -119,7 +120,7 @@ init _ url key =
       }
     , Cmd.batch
         [ Task.perform AdjustTimeZone Time.here
-        , Login.whoami GotWhoamiResp
+        , Commands.doWhoami GotWhoamiResp
         ]
     )
 
@@ -164,11 +165,11 @@ doListQueryFromUrl url =
         filter =
             searchQueryFromUrl url
     in
-    Cmd.map ListMsg <| Ls.query path filter
+    Cmd.map ListMsg <| Ls.loadList path filter
 
 
-doInitAfterLogin : Model -> ( Model, Cmd Msg )
-doInitAfterLogin model =
+doInitAfterLogin : Model -> String -> ( Model, Cmd Msg )
+doInitAfterLogin model loginName =
     ( { model
         | loginState =
             LoginSuccess
@@ -177,6 +178,7 @@ doInitAfterLogin model =
                 , mkdirState = Mkdir.newModel
                 , removeState = Remove.newModel
                 , shareState = Share.newModel
+                , loginName = loginName
                 }
       }
     , doListQueryFromUrl model.url
@@ -196,7 +198,7 @@ update msg model =
                     -- the list view. Take the path from the current URL.
                     case whoami.isLoggedIn of
                         True ->
-                            doInitAfterLogin model
+                            doInitAfterLogin model whoami.username
 
                         False ->
                             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -206,13 +208,13 @@ update msg model =
 
         GotLoginResp result ->
             case result of
-                Ok _ ->
+                Ok username ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    doInitAfterLogin model
+                    doInitAfterLogin model username
 
-                Err _ ->
-                    ( { model | loginState = LoginFailure "" "" }, Cmd.none )
+                Err err ->
+                    ( { model | loginState = LoginFailure "" "" (Util.httpErrorToString err) }, Cmd.none )
 
         GotLogoutResp result ->
             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -258,8 +260,8 @@ update msg model =
                 LoginReady _ password ->
                     ( { model | loginState = LoginReady username password }, Cmd.none )
 
-                LoginFailure _ password ->
-                    ( { model | loginState = LoginFailure username password }, Cmd.none )
+                LoginFailure _ password _ ->
+                    ( { model | loginState = LoginFailure username password "" }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -269,8 +271,8 @@ update msg model =
                 LoginReady username _ ->
                     ( { model | loginState = LoginReady username password }, Cmd.none )
 
-                LoginFailure username _ ->
-                    ( { model | loginState = LoginFailure username password }, Cmd.none )
+                LoginFailure username _ _ ->
+                    ( { model | loginState = LoginFailure username password "" }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -279,19 +281,19 @@ update msg model =
             case model.loginState of
                 LoginReady username password ->
                     ( { model | loginState = LoginLoading username password }
-                    , Login.query GotLoginResp username password
+                    , Commands.doLogin GotLoginResp username password
                     )
 
-                LoginFailure username password ->
+                LoginFailure username password _ ->
                     ( { model | loginState = LoginLoading username password }
-                    , Login.query GotLoginResp username password
+                    , Commands.doLogin GotLoginResp username password
                     )
 
                 _ ->
                     ( model, Cmd.none )
 
         LogoutSubmit ->
-            ( model, Login.logout GotLogoutResp )
+            ( model, Commands.doLogout GotLogoutResp )
 
         SearchInput query ->
             ( model
@@ -332,26 +334,6 @@ update msg model =
 
 
 
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model.loginState of
-        LoginSuccess viewState ->
-            Sub.batch
-                [ Sub.map UploadMsg (Upload.subscriptions viewState.uploadState)
-                , Sub.map MkdirMsg (Mkdir.subscriptions model.url viewState.mkdirState)
-                , Sub.map RemoveMsg (Remove.subscriptions viewState.listState viewState.removeState)
-                , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
-                , Port.websocketIn WebsocketIn
-                ]
-
-        _ ->
-            Sub.none
-
-
-
 -- VIEW
 
 
@@ -366,7 +348,7 @@ view model =
             LoginReady _ _ ->
                 [ Lazy.lazy viewLoginForm model ]
 
-            LoginFailure _ _ ->
+            LoginFailure _ _ _ ->
                 [ Lazy.lazy viewLoginForm model ]
 
             LoginLoading _ _ ->
@@ -485,7 +467,7 @@ viewLoginForm model =
                                 viewLoginInputs username password
                                     ++ [ viewLoginButton username password True ]
 
-                            LoginFailure username password ->
+                            LoginFailure username password _ ->
                                 viewLoginInputs username password
                                     ++ [ Alert.simpleDanger [] [ text "Login failed, please try again." ]
                                        , viewLoginButton username password False
@@ -624,22 +606,35 @@ viewActionList model url =
                 , ButtonGroup.attrs [ class "mb-3" ]
                 ]
                 [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
-                ]
-            , ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small
-                , ButtonGroup.vertical
-                , ButtonGroup.attrs [ class "mt-3 mb-3" ]
-                ]
-                [ buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
+                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
                 , buildActionButton (RemoveMsg <| Remove.show) "fa-trash" "Delete" (nSelected == 0)
-                ]
-            , ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small
-                , ButtonGroup.vertical
-                , ButtonGroup.attrs [ class "mt-3" ]
-                ]
-                [ buildActionButton LogoutSubmit "fa-sign-out-alt" "Log out" False
+                , buildActionButton
+                    LogoutSubmit
+                    "fa-sign-out-alt"
+                    ("Log out »" ++ model.loginName ++ "«")
+                    False
                 ]
             ]
         , Html.map UploadMsg (Upload.viewUploadState model.uploadState)
         ]
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.loginState of
+        LoginSuccess viewState ->
+            Sub.batch
+                [ Sub.map UploadMsg (Upload.subscriptions viewState.uploadState)
+                , Sub.map MkdirMsg (Mkdir.subscriptions model.url viewState.mkdirState)
+                , Sub.map RemoveMsg (Remove.subscriptions viewState.listState viewState.removeState)
+                , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
+                , Sub.map ListMsg (Ls.subscriptions viewState.listState)
+                , Port.websocketIn WebsocketIn
+                ]
+
+        _ ->
+            Sub.none

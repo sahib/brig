@@ -1,18 +1,30 @@
 module Commands exposing
-    ( HistoryEntry
+    ( Entry
+    , HistoryEntry
+    , ListResponse
+    , WhoamiResponse
     , doCopy
     , doHistory
     , doListAllDirs
+    , doListQuery
+    , doLogin
+    , doLogout
+    , doMkdir
     , doMove
     , doRemove
     , doReset
+    , doUpload
+    , doWhoami
     )
 
+import Bootstrap.Dropdown as Dropdown
+import File
 import Http
 import Json.Decode as D
 import Json.Decode.Pipeline as DP
 import Json.Encode as E
 import Time
+import Url
 import Util
 
 
@@ -211,7 +223,7 @@ doCopy toMsg src dst =
 
 
 
--- ALL DIRs
+-- ALL DIRS
 
 
 decodeAllDirsResponse : D.Decoder (List String)
@@ -225,4 +237,191 @@ doListAllDirs toMsg =
         { url = "/api/v0/all-dirs"
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg decodeAllDirsResponse
+        }
+
+
+
+-- LIST
+
+
+type alias ListQuery =
+    { root : String
+    , filter : String
+    }
+
+
+type alias Entry =
+    { dropdown : Dropdown.State
+    , path : String
+    , user : String
+    , size : Int
+    , inode : Int
+    , depth : Int
+    , lastModified : Time.Posix
+    , isDir : Bool
+    , isPinned : Bool
+    , isExplicit : Bool
+    }
+
+
+type alias ListResponse =
+    { self : Entry
+    , isFiltered : Bool
+    , entries : List Entry
+    }
+
+
+encodeListResponse : ListQuery -> E.Value
+encodeListResponse q =
+    E.object
+        [ ( "root", E.string q.root )
+        , ( "filter", E.string q.filter )
+        ]
+
+
+decodeListResponse : D.Decoder ListResponse
+decodeListResponse =
+    D.map3 ListResponse
+        (D.field "self" decodeListEntry)
+        (D.field "is_filtered" D.bool)
+        (D.field "files" (D.list decodeListEntry))
+
+
+decodeListEntry : D.Decoder Entry
+decodeListEntry =
+    D.succeed (Entry Dropdown.initialState)
+        |> DP.required "path" D.string
+        |> DP.required "user" D.string
+        |> DP.required "size" D.int
+        |> DP.required "inode" D.int
+        |> DP.required "depth" D.int
+        |> DP.required "last_modified_ms" timestampToPosix
+        |> DP.required "is_dir" D.bool
+        |> DP.required "is_pinned" D.bool
+        |> DP.required "is_explicit" D.bool
+
+
+doListQuery : (Result Http.Error ListResponse -> msg) -> String -> String -> Cmd msg
+doListQuery toMsg path filter =
+    Http.post
+        { url = "/api/v0/ls"
+        , body = Http.jsonBody <| encodeListResponse <| ListQuery path filter
+        , expect = Http.expectJson toMsg decodeListResponse
+        }
+
+
+
+-- UPLOAD
+
+
+doUpload : (String -> Result Http.Error () -> msg) -> String -> File.File -> Cmd msg
+doUpload toMsg destPath file =
+    Http.request
+        { method = "POST"
+        , url = "/api/v0/upload?root=" ++ Url.percentEncode destPath
+        , headers = []
+        , body = Http.multipartBody [ Http.filePart "files[]" file ]
+        , expect = Http.expectWhatever (toMsg (File.name file))
+        , timeout = Nothing
+        , tracker = Just ("upload-" ++ File.name file)
+        }
+
+
+
+-- MKDIR
+
+
+type alias MkdirQuery =
+    { path : String
+    }
+
+
+encodeMkdirQuery : MkdirQuery -> E.Value
+encodeMkdirQuery q =
+    E.object
+        [ ( "path", E.string q.path ) ]
+
+
+decodeMkdirResponse : D.Decoder String
+decodeMkdirResponse =
+    D.field "message" D.string
+
+
+doMkdir : (Result Http.Error String -> msg) -> String -> Cmd msg
+doMkdir toMsg path =
+    Http.post
+        { url = "/api/v0/mkdir"
+        , body = Http.jsonBody <| encodeMkdirQuery <| MkdirQuery path
+        , expect = Http.expectJson toMsg decodeMkdirResponse
+        }
+
+
+
+-- LOGIN
+
+
+type alias LoginQuery =
+    { username : String
+    , password : String
+    }
+
+
+encodeLoginQuery : LoginQuery -> E.Value
+encodeLoginQuery q =
+    E.object
+        [ ( "username", E.string q.username )
+        , ( "password", E.string q.password )
+        ]
+
+
+decodeLoginResponse : D.Decoder String
+decodeLoginResponse =
+    D.field "username" D.string
+
+
+doLogin : (Result Http.Error String -> msg) -> String -> String -> Cmd msg
+doLogin toMsg user pass =
+    Http.post
+        { url = "/api/v0/login"
+        , body = Http.jsonBody <| encodeLoginQuery <| LoginQuery user pass
+        , expect = Http.expectJson toMsg decodeLoginResponse
+        }
+
+
+
+-- LOGOUT QUERY
+
+
+doLogout : (Result Http.Error Bool -> msg) -> Cmd msg
+doLogout msg =
+    Http.post
+        { url = "/api/v0/logout"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg (D.field "success" D.bool)
+        }
+
+
+
+-- WHOAMI QUERY
+
+
+type alias WhoamiResponse =
+    { username : String
+    , isLoggedIn : Bool
+    }
+
+
+decodeWhoami : D.Decoder WhoamiResponse
+decodeWhoami =
+    D.map2 WhoamiResponse
+        (D.field "user" D.string)
+        (D.field "is_logged_in" D.bool)
+
+
+doWhoami : (Result Http.Error WhoamiResponse -> msg) -> Cmd msg
+doWhoami msg =
+    Http.post
+        { url = "/api/v0/whoami"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg decodeWhoami
         }

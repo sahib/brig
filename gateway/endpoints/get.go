@@ -68,12 +68,16 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if gh.cfg.Bool("auth.enabled") {
 		if !validateUserForPath(gh.store, gh.cfg, nodePath, w, r) {
 			user, pass, ok := r.BasicAuth()
+
+			// No basic auth sent. If a browser send the request: ask him to
+			// show a user/password form that gives a chance to change that.
 			if !ok {
 				w.Header().Set("WWW-Authenticate", "Basic realm=\"brig gateway\"")
 				http.Error(w, "not authorized", http.StatusUnauthorized)
 				return
 			}
 
+			// Check is the basic auth credentials are valid.
 			cfgUser := gh.cfg.String("auth.user")
 			cfgPass := gh.cfg.String("auth.pass")
 			if user != cfgUser || pass != cfgPass {
@@ -81,6 +85,8 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
+		//  All good. Proceed with the content.
 	}
 
 	info, err := gh.fs.Stat(nodePath)

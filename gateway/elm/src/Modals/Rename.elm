@@ -114,9 +114,6 @@ update msg model =
                     "Enter" ->
                         ( model, triggerRename model.currPath model.inputName )
 
-                    "Escape" ->
-                        ( { model | modal = Modal.hidden }, Cmd.none )
-
                     _ ->
                         ( model, Cmd.none )
 
@@ -195,7 +192,7 @@ view model =
                 [ text "Rename" ]
             , Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick ModalClose ]
+                , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
                 ]
                 [ text "Cancel" ]
             ]

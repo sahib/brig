@@ -8,10 +8,8 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
 import Bootstrap.Progress as Progress
-import Browser
 import Browser.Events as Events
-import Browser.Navigation as Nav
-import File
+import Commands
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -65,36 +63,11 @@ newModel =
 -- UPDATE
 
 
-type alias Query =
-    { path : String
-    }
-
-
-encode : Query -> E.Value
-encode q =
-    E.object
-        [ ( "path", E.string q.path ) ]
-
-
-decode : D.Decoder String
-decode =
-    D.field "message" D.string
-
-
-doMkdir : String -> Cmd Msg
-doMkdir path =
-    Http.post
-        { url = "/api/v0/mkdir"
-        , body = Http.jsonBody <| encode <| Query path
-        , expect = Http.expectJson GotResponse decode
-        }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         CreateDir path ->
-            ( model, doMkdir path )
+            ( model, Commands.doMkdir GotResponse path )
 
         InputChanged inputName ->
             ( { model | inputName = inputName }, Cmd.none )
@@ -127,10 +100,7 @@ update msg model =
             else
                 case key of
                     "Enter" ->
-                        ( model, doMkdir path )
-
-                    "Escape" ->
-                        ( { model | modal = Modal.hidden }, Cmd.none )
+                        ( model, Commands.doMkdir GotResponse path )
 
                     _ ->
                         ( model, Cmd.none )

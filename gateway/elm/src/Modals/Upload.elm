@@ -3,7 +3,6 @@ module Modals.Upload exposing
     , Msg
     , buildButton
     , newModel
-    , show
     , subscriptions
     , update
     , viewUploadState
@@ -14,11 +13,11 @@ import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
-import Bootstrap.Modal as Modal
 import Bootstrap.Progress as Progress
 import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
+import Commands
 import Delay
 import Dict
 import File
@@ -45,7 +44,6 @@ type alias Model =
     { uploads : Dict.Dict String Float
     , failed : List Alertable
     , success : List Alertable
-    , modal : Modal.Visibility
     }
 
 
@@ -54,9 +52,6 @@ type Msg
     | UploadProgress String Http.Progress
     | Uploaded String (Result Http.Error ())
     | UploadCancel String
-    | ModalShow
-    | AnimateModal Modal.Visibility
-    | ModalClose
     | AlertMsg String Alert.Visibility
 
 
@@ -67,7 +62,6 @@ type Msg
 newModel : Model
 newModel =
     { uploads = Dict.empty
-    , modal = Modal.hidden
     , failed = []
     , success = []
     }
@@ -95,22 +89,8 @@ update msg model =
                 newUploads =
                     Dict.union model.uploads <| Dict.fromList (List.map (\f -> ( File.name f, 0 )) files)
             in
-            ( { model | uploads = newUploads, modal = Modal.hidden }
-            , Cmd.batch
-                (List.map
-                    (\f ->
-                        Http.request
-                            { method = "POST"
-                            , url = "/api/v0/upload?root=" ++ Url.percentEncode root
-                            , headers = []
-                            , body = Http.multipartBody [ Http.filePart "files[]" f ]
-                            , expect = Http.expectWhatever (Uploaded (File.name f))
-                            , timeout = Nothing
-                            , tracker = Just ("upload-" ++ File.name f)
-                            }
-                    )
-                    files
-                )
+            ( { model | uploads = newUploads }
+            , Cmd.batch (List.map (Commands.doUpload Uploaded root) files)
             )
 
         UploadProgress path progress ->
@@ -148,15 +128,6 @@ update msg model =
             , Http.cancel ("upload-" ++ path)
             )
 
-        AnimateModal visibility ->
-            ( { model | modal = visibility }, Cmd.none )
-
-        ModalShow ->
-            ( { model | modal = Modal.shown }, Cmd.none )
-
-        ModalClose ->
-            ( { model | modal = Modal.hidden }, Cmd.none )
-
         AlertMsg path vis ->
             ( { model
                 | success = List.map (alertMapper path vis) model.success
@@ -173,11 +144,6 @@ update msg model =
 filesDecoder : D.Decoder (List File.File)
 filesDecoder =
     D.at [ "target", "files" ] (D.list File.decoder)
-
-
-show : Msg
-show =
-    ModalShow
 
 
 buildButton : Model -> Ls.Model -> (Msg -> msg) -> Html msg
@@ -311,5 +277,4 @@ subscriptions model =
             )
         , Sub.batch (List.map (\a -> Alert.subscriptions a.alert (AlertMsg a.path)) model.success)
         , Sub.batch (List.map (\a -> Alert.subscriptions a.alert (AlertMsg a.path)) model.failed)
-        , Modal.subscriptions model.modal AnimateModal
         ]

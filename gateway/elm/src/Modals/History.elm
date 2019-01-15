@@ -214,7 +214,7 @@ view model =
         |> Modal.footer []
             [ Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick <| ModalClose ]
+                , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
                 ]
                 [ text "Close" ]
             ]

@@ -1,17 +1,15 @@
 module Ls exposing
-    ( Entry
-    , Model
+    ( Model
     , Msg
     , buildModals
     , currIsFile
     , currRoot
-    , decode
-    , encode
     , existsInCurr
+    , loadList
     , nSelectedItems
     , newModel
-    , query
     , selectedPaths
+    , subscriptions
     , update
     , viewBreadcrumbs
     , viewList
@@ -35,9 +33,6 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
-import Json.Decode as D
-import Json.Decode.Pipeline as DP
-import Json.Encode as E
 import Modals.History as History
 import Modals.MoveCopy as MoveCopy
 import Modals.Rename as Rename
@@ -52,10 +47,10 @@ import Util
 
 
 type alias ActualModel =
-    { entries : List Entry
+    { entries : List Commands.Entry
     , checked : Set.Set String
     , isFiltered : Bool
-    , self : Entry
+    , self : Commands.Entry
     , sortState : ( SortDirection, SortKey )
     }
 
@@ -146,15 +141,13 @@ existsInCurr name model =
             Nothing
 
 
+loadList : String -> String -> Cmd Msg
+loadList root filter =
+    Commands.doListQuery GotResponse root filter
+
+
 
 -- MESSAGES
-
-
-type alias Response =
-    { self : Entry
-    , isFiltered : Bool
-    , entries : List Entry
-    }
 
 
 type SortKey
@@ -170,13 +163,13 @@ type SortDirection
 
 
 type Msg
-    = GotResponse (Result Http.Error Response)
+    = GotResponse (Result Http.Error Commands.ListResponse)
     | CheckboxTick String Bool
     | CheckboxTickAll Bool
-    | ActionDropdownMsg Entry Dropdown.State
-    | RowClicked Entry
-    | RemoveClicked Entry
-    | HistoryClicked Entry
+    | ActionDropdownMsg Commands.Entry Dropdown.State
+    | RowClicked Commands.Entry
+    | RemoveClicked Commands.Entry
+    | HistoryClicked Commands.Entry
     | RemoveResponse (Result Http.Error String)
     | SortBy SortDirection SortKey
     | AlertMsg Alert.Visibility
@@ -188,85 +181,10 @@ type Msg
 
 
 
--- TYPES
-
-
-type alias Query =
-    { root : String
-    , filter : String
-    }
-
-
-type alias Entry =
-    { dropdown : Dropdown.State
-    , path : String
-    , user : String
-    , size : Int
-    , inode : Int
-    , depth : Int
-    , lastModified : Time.Posix
-    , isDir : Bool
-    , isPinned : Bool
-    , isExplicit : Bool
-    }
-
-
-
--- DECODE & ENCODE
--- TODO: Move that out to Commands.
-
-
-encode : Query -> E.Value
-encode q =
-    E.object
-        [ ( "root", E.string q.root )
-        , ( "filter", E.string q.filter )
-        ]
-
-
-decode : D.Decoder Response
-decode =
-    D.map3 Response
-        (D.field "self" decodeEntry)
-        (D.field "is_filtered" D.bool)
-        (D.field "files" (D.list decodeEntry))
-
-
-decodeEntry : D.Decoder Entry
-decodeEntry =
-    D.succeed (Entry Dropdown.initialState)
-        |> DP.required "path" D.string
-        |> DP.required "user" D.string
-        |> DP.required "size" D.int
-        |> DP.required "inode" D.int
-        |> DP.required "depth" D.int
-        |> DP.required "last_modified_ms" timestampToPosix
-        |> DP.required "is_dir" D.bool
-        |> DP.required "is_pinned" D.bool
-        |> DP.required "is_explicit" D.bool
-
-
-timestampToPosix : D.Decoder Time.Posix
-timestampToPosix =
-    D.int
-        |> D.andThen
-            (\ms -> D.succeed <| Time.millisToPosix ms)
-
-
-query : String -> String -> Cmd Msg
-query path filter =
-    Http.post
-        { url = "/api/v0/ls"
-        , body = Http.jsonBody <| encode <| Query path filter
-        , expect = Http.expectJson GotResponse decode
-        }
-
-
-
 -- UPDATE
 
 
-fixDropdownState : Entry -> Dropdown.State -> Entry -> Entry
+fixDropdownState : Commands.Entry -> Dropdown.State -> Commands.Entry -> Commands.Entry
 fixDropdownState refEntry state entry =
     if entry.path == refEntry.path then
         { entry | dropdown = state }
@@ -291,7 +209,7 @@ sortBy model direction key =
             }
 
 
-sortByAscending : ActualModel -> SortKey -> List Entry
+sortByAscending : ActualModel -> SortKey -> List Commands.Entry
 sortByAscending model key =
     case key of
         Name ->
@@ -361,7 +279,7 @@ updateCheckboxTickAll isChecked model =
             model
 
 
-setDropdownState : Model -> Entry -> Dropdown.State -> Model
+setDropdownState : Model -> Commands.Entry -> Dropdown.State -> Model
 setDropdownState model entry state =
     case model.state of
         Success actualModel ->
@@ -654,7 +572,7 @@ viewBreadcrumbs url model =
         ]
 
 
-viewEntryIcon : Entry -> Html Msg
+viewEntryIcon : Commands.Entry -> Html Msg
 viewEntryIcon entry =
     case entry.isDir of
         True ->
@@ -679,7 +597,7 @@ readCheckedState model path =
     Set.member path model.checked
 
 
-formatPath : ActualModel -> Entry -> String
+formatPath : ActualModel -> Commands.Entry -> String
 formatPath model entry =
     case model.isFiltered of
         True ->
@@ -689,7 +607,7 @@ formatPath model entry =
             Util.basename entry.path
 
 
-buildActionDropdown : ActualModel -> Entry -> Html Msg
+buildActionDropdown : ActualModel -> Commands.Entry -> Html Msg
 buildActionDropdown model entry =
     Dropdown.dropdown
         entry.dropdown
@@ -756,7 +674,7 @@ buildActionDropdown model entry =
         }
 
 
-entryToHtml : ActualModel -> Time.Zone -> Entry -> Table.Row Msg
+entryToHtml : ActualModel -> Time.Zone -> Commands.Entry -> Table.Row Msg
 entryToHtml model zone e =
     Table.tr
         []

@@ -66,11 +66,7 @@ func clearSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	sess.Options = &sessions.Options{
-		MaxAge: -1,
-	}
-
-	sess.Values["name"] = ""
+	sess.Options.MaxAge = -1
 	if err := sess.Save(r, w); err != nil {
 		log.Warningf("clear: failed to save session: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,8 +120,13 @@ func NewLoginHandler(s *State) *LoginHandler {
 }
 
 type LoginRequest struct {
-	Username string `json="username"`
-	Password string `json="password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Success  bool   `json:"success"`
+	Username string `json:"username"`
 }
 
 func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +135,6 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return
 	}
-
-	log.Printf("doing login")
 
 	if loginReq.Username == "" || loginReq.Password == "" {
 		jsonifyErrf(w, http.StatusBadRequest, "empty password or username")
@@ -150,11 +149,11 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("before set session")
 	setSession(lih.store, cfgUser, w, r)
-	log.Printf("before success")
-	jsonifySuccess(w)
-	log.Printf("after success")
+	jsonify(w, http.StatusOK, &LoginResponse{
+		Success:  true,
+		Username: loginReq.Username,
+	})
 }
 
 ///////

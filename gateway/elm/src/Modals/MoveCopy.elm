@@ -62,6 +62,7 @@ type Msg
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
+    | KeyPress String
 
 
 
@@ -146,21 +147,21 @@ filterAllDirs filter dirs =
     List.filter (String.contains lowerFilter) dirs
 
 
+doAction : Model -> Cmd Msg
+doAction model =
+    case model.action of
+        Move ->
+            Commands.doMove GotActionResponse model.sourcePath model.destPath
+
+        Copy ->
+            Commands.doCopy GotActionResponse model.sourcePath model.destPath
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         DoAction ->
-            -- TODO: Implement move/copy
-            case model.action of
-                Move ->
-                    ( model
-                    , Commands.doMove GotActionResponse model.sourcePath model.destPath
-                    )
-
-                Copy ->
-                    ( model
-                    , Commands.doCopy GotActionResponse model.sourcePath model.destPath
-                    )
+            ( model, doAction model )
 
         DirChosen path ->
             ( { model | destPath = path }, Cmd.none )
@@ -171,7 +172,6 @@ update msg model =
         GotAllDirsResponse result ->
             case result of
                 Ok dirs ->
-                    -- New list model means also new checked entries.
                     ( { model | state = Ready (fixAllDirResponse model dirs) }, Cmd.none )
 
                 Err err ->
@@ -180,12 +180,10 @@ update msg model =
         GotActionResponse result ->
             case result of
                 Ok _ ->
-                    -- New list model means also new checked entries.
                     ( { model | modal = Modal.hidden }, Cmd.none )
 
                 Err err ->
-                    -- TODO: Display error somehow. Change model?
-                    ( model, Cmd.none )
+                    ( { model | state = Fail <| Util.httpErrorToString err }, Cmd.none )
 
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
@@ -205,6 +203,20 @@ update msg model =
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
+
+        KeyPress key ->
+            ( model
+            , if model.modal == Modal.hidden || model.destPath == "" then
+                Cmd.none
+
+              else
+                case key of
+                    "Enter" ->
+                        doAction model
+
+                    _ ->
+                        Cmd.none
+            )
 
 
 
@@ -228,9 +240,11 @@ viewDirList model dirs =
     Table.table
         { options = [ Table.hover ]
         , thead =
-            Table.simpleThead
-                [ Table.th [ Table.cellAttr (style "width" "10%") ] []
-                , Table.th [ Table.cellAttr (style "width" "90%") ] []
+            Table.thead [ Table.headAttr (style "display" "none") ]
+                [ Table.tr []
+                    [ Table.th [ Table.cellAttr (style "width" "10%") ] []
+                    , Table.th [ Table.cellAttr (style "width" "90%") ] []
+                    ]
                 ]
         , tbody =
             Table.tbody [] (List.map (viewDirEntry model) (filterAllDirs model.filter dirs))
@@ -328,7 +342,7 @@ view model =
                 [ text (typeToString model.action) ]
             , Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick ModalClose ]
+                , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
                 ]
                 [ text "Cancel" ]
             ]
@@ -349,4 +363,5 @@ subscriptions model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
+        , Events.onKeyPress (D.map KeyPress <| D.field "key" D.string)
         ]
