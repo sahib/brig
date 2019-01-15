@@ -1,4 +1,4 @@
-module Modals.Mkdir exposing (Model, Msg, newModel, show, subscriptions, update, view)
+module Modals.Rename exposing (Model, Msg, newModel, show, subscriptions, update, view)
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
@@ -11,6 +11,7 @@ import Bootstrap.Progress as Progress
 import Browser
 import Browser.Events as Events
 import Browser.Navigation as Nav
+import Commands
 import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -19,7 +20,6 @@ import Http
 import Json.Decode as D
 import Json.Encode as E
 import List
-import Ls
 import Url
 import Util
 
@@ -31,6 +31,7 @@ type State
 
 type alias Model =
     { state : State
+    , currPath : String
     , inputName : String
     , modal : Modal.Visibility
     , alert : Alert.Visibility
@@ -38,14 +39,14 @@ type alias Model =
 
 
 type Msg
-    = CreateDir String
+    = DoRename
     | InputChanged String
-    | ModalShow
+    | ModalShow String
     | GotResponse (Result Http.Error String)
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
-    | KeyPress String String
+    | KeyPress String
 
 
 
@@ -57,6 +58,7 @@ newModel =
     { state = Ready
     , modal = Modal.hidden
     , inputName = ""
+    , currPath = ""
     , alert = Alert.shown
     }
 
@@ -65,36 +67,19 @@ newModel =
 -- UPDATE
 
 
-type alias Query =
-    { path : String
-    }
-
-
-encode : Query -> E.Value
-encode q =
-    E.object
-        [ ( "path", E.string q.path ) ]
-
-
-decode : D.Decoder String
-decode =
-    D.field "message" D.string
-
-
-doMkdir : String -> Cmd Msg
-doMkdir path =
-    Http.post
-        { url = "/api/v0/mkdir"
-        , body = Http.jsonBody <| encode <| Query path
-        , expect = Http.expectJson GotResponse decode
-        }
+triggerRename : String -> String -> Cmd Msg
+triggerRename sourcePath newName =
+    Commands.doMove
+        GotResponse
+        sourcePath
+        (Util.joinPath [ Util.dirname sourcePath, Util.basename newName ])
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        CreateDir path ->
-            ( model, doMkdir path )
+        DoRename ->
+            ( model, triggerRename model.currPath model.inputName )
 
         InputChanged inputName ->
             ( { model | inputName = inputName }, Cmd.none )
@@ -111,8 +96,8 @@ update msg model =
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
 
-        ModalShow ->
-            ( { model | modal = Modal.shown, inputName = "" }, Cmd.none )
+        ModalShow currPath ->
+            ( { model | modal = Modal.shown, inputName = "", currPath = currPath }, Cmd.none )
 
         ModalClose ->
             ( { model | modal = Modal.hidden, state = Ready }, Cmd.none )
@@ -120,14 +105,14 @@ update msg model =
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
 
-        KeyPress path key ->
+        KeyPress key ->
             if model.modal == Modal.hidden then
                 ( model, Cmd.none )
 
             else
                 case key of
                     "Enter" ->
-                        ( model, doMkdir path )
+                        ( model, triggerRename model.currPath model.inputName )
 
                     "Escape" ->
                         ( { model | modal = Modal.hidden }, Cmd.none )
@@ -140,32 +125,13 @@ update msg model =
 -- VIEW
 
 
-hasPathCollision : Model -> Ls.Model -> Bool
-hasPathCollision model lsModel =
-    Maybe.withDefault False (Ls.existsInCurr model.inputName lsModel)
-
-
-showPathCollision : Model -> Ls.Model -> Html Msg
-showPathCollision model lsModel =
-    if hasPathCollision model lsModel then
-        span [ class "text-left" ]
-            [ span [ class "fas fa-md fa-exclamation-triangle text-warning" ] []
-            , span [ class "text-muted" ]
-                [ text (" »" ++ model.inputName ++ "« exists already. Please choose another name.\u{00A0}\u{00A0}\u{00A0}")
-                ]
-            ]
-
-    else
-        span [] []
-
-
-viewMkdirContent : Model -> Ls.Model -> List (Grid.Column Msg)
-viewMkdirContent model lsModel =
+viewRenameContent : Model -> List (Grid.Column Msg)
+viewRenameContent model =
     [ Grid.col [ Col.xs12 ]
         [ Input.text
-            [ Input.id "mkdir-input"
+            [ Input.id "rename-input"
             , Input.large
-            , Input.placeholder "Directory name"
+            , Input.placeholder "New name"
             , Input.onInput InputChanged
             , Input.attrs [ autofocus True ]
             ]
@@ -175,36 +141,43 @@ viewMkdirContent model lsModel =
                 text ""
 
             Fail message ->
-                Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not create directory: " ++ message)
+                Util.buildAlert
+                    model.alert
+                    AlertMsg
+                    Alert.danger
+                    "Oh no!"
+                    ("Could not rename path: " ++ message)
         ]
     ]
 
 
-pathFromUrl : Url.Url -> Model -> String
-pathFromUrl url model =
-    Util.joinPath [ Util.urlToPath url, model.inputName ]
-
-
-view : Model -> Url.Url -> Ls.Model -> Html Msg
-view model url lsModel =
-    let
-        path =
-            Util.urlToPath url
-    in
+view : Model -> Html Msg
+view model =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text ("Create a new directory in " ++ path) ]
+        |> Modal.h5 []
+            [ text "Rename "
+            , span [ class "text-muted" ]
+                [ text (Util.basename model.currPath) ]
+            , if String.length model.inputName > 0 then
+                span []
+                    [ text " to "
+                    , span [ class "text-muted" ] [ text model.inputName ]
+                    ]
+
+              else
+                text ""
+            ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewMkdirContent model lsModel) ]
+                [ Grid.row [] (viewRenameContent model) ]
             ]
         |> Modal.footer []
-            [ showPathCollision model lsModel
-            , Button.button
+            [ Button.button
                 [ Button.primary
                 , Button.attrs
-                    [ onClick (CreateDir (pathFromUrl url model))
+                    [ onClick DoRename
                     , type_ "submit"
                     , disabled
                         (String.length model.inputName
@@ -216,33 +189,32 @@ view model url lsModel =
                                     _ ->
                                         False
                                )
-                            || hasPathCollision model lsModel
                         )
                     ]
                 ]
-                [ text "Create" ]
+                [ text "Rename" ]
             , Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
+                , Button.attrs [ onClick ModalClose ]
                 ]
                 [ text "Cancel" ]
             ]
         |> Modal.view model.modal
 
 
-show : Msg
-show =
-    ModalShow
+show : String -> Msg
+show currPath =
+    ModalShow currPath
 
 
 
 -- SUBSCRIPTIONS
 
 
-subscriptions : Url.Url -> Model -> Sub Msg
-subscriptions url model =
+subscriptions : Model -> Sub Msg
+subscriptions model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
-        , Events.onKeyPress (D.map (KeyPress <| pathFromUrl url model) <| D.field "key" D.string)
+        , Events.onKeyPress (D.map KeyPress <| D.field "key" D.string)
         ]

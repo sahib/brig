@@ -403,13 +403,14 @@ viewList model viewState =
                         [ Html.map ListMsg
                             (Ls.viewList viewState.listState model.url model.zone)
                         ]
-                    , Grid.col [ Col.xl2 ] [ Lazy.lazy viewActionList viewState ]
+                    , Grid.col [ Col.xl2 ] [ Lazy.lazy2 viewActionList viewState model.url ]
                     ]
                 ]
             ]
         , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url viewState.listState)
         , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
         , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
+        , Html.map ListMsg (Ls.buildModals viewState.listState)
         ]
     ]
 
@@ -588,16 +589,34 @@ buildActionButton msg iconName labelText isDisabled =
         ]
 
 
-viewActionList : ViewState -> Html Msg
-viewActionList model =
+viewActionList : ViewState -> Url.Url -> Html Msg
+viewActionList model url =
     let
         nSelected =
             Ls.nSelectedItems model.listState
+
+        disabledClass =
+            if Ls.currIsFile model.listState then
+                class "disabled"
+
+            else
+                class "btn-default"
     in
     div [ class "toolbar" ]
         [ p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
         , br [] []
         , Upload.buildButton model.uploadState model.listState UploadMsg
+        , Button.linkButton
+            [ Button.block
+            , Button.attrs
+                [ class "text-left btn-link"
+                , disabledClass
+                , href ("/get" ++ Util.urlToPath url ++ "?direct=yes")
+                ]
+            ]
+            [ span [ class "fas fa-lg fa-file-download" ] []
+            , span [ id "upload-btn" ] [ text " Download all" ]
+            ]
         , ButtonGroup.toolbar [ class "btn-group-vertical" ]
             [ ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small

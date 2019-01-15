@@ -272,7 +272,7 @@
     margin-bottom: 2px;
 }
 
-.share-row {
+.scrollable-modal-row {
     max-height: 42vh;
     overflow-y: scroll;
 }

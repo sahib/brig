@@ -28,12 +28,9 @@ type Commit struct {
 }
 
 type HistoryEntry struct {
-	MovedTo         string `json:"moved_to"`
-	WasPreviouslyAt string `json:"was_previously_at"`
-	Head            Commit `json:"head"`
-	Next            Commit `json:"next"`
-	Path            string `json:"path"`
-	Change          string `json:"change"`
+	Head   Commit `json:"head"`
+	Path   string `json:"path"`
+	Change string `json:"change"`
 }
 
 type HistoryResponse struct {
@@ -43,10 +40,17 @@ type HistoryResponse struct {
 
 func toExternalCommit(cmt *catfs.Commit) Commit {
 	ext := Commit{}
-	ext.Date = cmt.Date.Unix()
+	ext.Date = cmt.Date.Unix() * 1000
 	ext.Hash = cmt.Hash.B58String()
 	ext.Msg = cmt.Msg
 	ext.Tags = cmt.Tags
+
+	// Make sure we set an empty list,
+	// otherwise .Tags gets serialized as null
+	// which breaks frontend.
+	if ext.Tags == nil {
+		ext.Tags = []string{}
+	}
 	return ext
 }
 
@@ -54,10 +58,7 @@ func toExternalChange(c catfs.Change) HistoryEntry {
 	e := HistoryEntry{}
 	e.Change = c.Change
 	e.Head = toExternalCommit(c.Head)
-	e.Next = toExternalCommit(c.Next)
 	e.Path = c.Path
-	e.WasPreviouslyAt = c.WasPreviouslyAt
-	e.MovedTo = c.MovedTo
 	return e
 }
 
@@ -82,6 +83,10 @@ func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	entries := []HistoryEntry{}
 	for _, change := range hist {
+		if change.Change == "none" {
+			continue
+		}
+
 		entries = append(entries, toExternalChange(change))
 	}
 

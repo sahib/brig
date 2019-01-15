@@ -2,6 +2,7 @@ module Ls exposing
     ( Entry
     , Model
     , Msg
+    , buildModals
     , currIsFile
     , currRoot
     , decode
@@ -37,6 +38,9 @@ import Http
 import Json.Decode as D
 import Json.Decode.Pipeline as DP
 import Json.Encode as E
+import Modals.History as History
+import Modals.MoveCopy as MoveCopy
+import Modals.Rename as Rename
 import Set
 import Time
 import Url
@@ -67,6 +71,10 @@ type alias Model =
     , state : State
     , alert : Alert.Visibility
     , currError : String
+    , historyState : History.Model
+    , renameState : Rename.Model
+    , moveState : MoveCopy.Model
+    , copyState : MoveCopy.Model
     }
 
 
@@ -76,6 +84,10 @@ newModel key =
     , state = Loading
     , alert = Alert.closed
     , currError = ""
+    , historyState = History.newModel
+    , renameState = Rename.newModel
+    , moveState = MoveCopy.newMoveModel
+    , copyState = MoveCopy.newCopyModel
     }
 
 
@@ -164,9 +176,15 @@ type Msg
     | ActionDropdownMsg Entry Dropdown.State
     | RowClicked Entry
     | RemoveClicked Entry
+    | HistoryClicked Entry
     | RemoveResponse (Result Http.Error String)
     | SortBy SortDirection SortKey
     | AlertMsg Alert.Visibility
+      -- Sub messages:
+    | HistoryMsg History.Msg
+    | RenameMsg Rename.Msg
+    | MoveMsg MoveCopy.Msg
+    | CopyMsg MoveCopy.Msg
 
 
 
@@ -195,6 +213,7 @@ type alias Entry =
 
 
 -- DECODE & ENCODE
+-- TODO: Move that out to Commands.
 
 
 encode : Query -> E.Value
@@ -372,6 +391,11 @@ update msg model =
             , Commands.doRemove RemoveResponse [ entry.path ]
             )
 
+        HistoryClicked entry ->
+            ( setDropdownState model entry Dropdown.initialState
+            , Cmd.map HistoryMsg (History.show entry.path)
+            )
+
         SortBy direction key ->
             case model.state of
                 Success actualModel ->
@@ -426,6 +450,34 @@ update msg model =
 
         AlertMsg state ->
             ( { model | alert = state }, Cmd.none )
+
+        HistoryMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    History.update subMsg model.historyState
+            in
+            ( { model | historyState = newSubModel }, Cmd.map HistoryMsg newSubCmd )
+
+        RenameMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    Rename.update subMsg model.renameState
+            in
+            ( { model | renameState = newSubModel }, Cmd.map RenameMsg newSubCmd )
+
+        MoveMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    MoveCopy.update subMsg model.moveState
+            in
+            ( { model | moveState = newSubModel }, Cmd.map MoveMsg newSubCmd )
+
+        CopyMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    MoveCopy.update subMsg model.copyState
+            in
+            ( { model | copyState = newSubModel }, Cmd.map CopyMsg newSubCmd )
 
 
 
@@ -649,7 +701,7 @@ buildActionDropdown model entry =
                 [ span [ class "fas fa-ellipsis-h" ] [] ]
         , items =
             [ Dropdown.buttonItem
-                [ disabled True ]
+                [ onClick (HistoryClicked entry) ]
                 [ span [ class "fa fa-md fa-history" ] []
                 , text " History"
                 ]
@@ -657,13 +709,25 @@ buildActionDropdown model entry =
             , Dropdown.anchorItem
                 [ href
                     ("/get"
-                        ++ Util.urlEncodePath model.self.path
+                        ++ Util.urlEncodePath
+                            (Util.joinPath [ model.self.path, Util.basename entry.path ])
                         ++ "?direct=yes"
                     )
                 , onClick (ActionDropdownMsg entry Dropdown.initialState)
                 ]
                 [ span [ class "fa fa-md fa-file-download" ] []
                 , text " Download"
+                ]
+            , Dropdown.anchorItem
+                [ href
+                    ("/get"
+                        ++ Util.urlEncodePath
+                            (Util.joinPath [ model.self.path, Util.basename entry.path ])
+                    )
+                , onClick (ActionDropdownMsg entry Dropdown.initialState)
+                ]
+                [ span [ class "fa fa-md fa-eye" ] []
+                , text " View"
                 ]
             , Dropdown.divider
             , Dropdown.buttonItem
@@ -672,13 +736,19 @@ buildActionDropdown model entry =
                 [ span [ class "fa fa-md fa-trash" ] []
                 , text " Delete"
                 ]
+            , Dropdown.divider
             , Dropdown.buttonItem
-                [ class "disabled" ]
+                [ onClick (RenameMsg (Rename.show entry.path)) ]
+                [ span [ class "fa fa-md fa-file-signature" ] []
+                , text " Rename"
+                ]
+            , Dropdown.buttonItem
+                [ onClick (MoveMsg (MoveCopy.show entry.path)) ]
                 [ span [ class "fa fa-md fa-arrow-right" ] []
                 , text " Move"
                 ]
             , Dropdown.buttonItem
-                [ class "disabled" ]
+                [ onClick (CopyMsg (MoveCopy.show entry.path)) ]
                 [ span [ class "fa fa-md fa-copy" ] []
                 , text " Copy"
                 ]
@@ -764,13 +834,13 @@ entriesToHtml zone model =
                         ]
                         [ text "" ]
                     ]
-                , Table.th [ Table.cellAttr (style "width" "50%") ]
+                , Table.th [ Table.cellAttr (style "width" "45%") ]
                     [ span
                         [ class "text-muted"
                         ]
                         [ text "Name", buildSortControl model Name ]
                     ]
-                , Table.th [ Table.cellAttr (style "width" "25%") ]
+                , Table.th [ Table.cellAttr (style "width" "30%") ]
                     [ span
                         [ class "text-muted"
                         ]
@@ -795,16 +865,30 @@ entriesToHtml zone model =
         }
 
 
+buildModals : Model -> Html Msg
+buildModals model =
+    span []
+        [ Html.map HistoryMsg (History.view model.historyState)
+        , Html.map RenameMsg (Rename.view model.renameState)
+        , Html.map MoveMsg (MoveCopy.view model.moveState)
+        , Html.map CopyMsg (MoveCopy.view model.copyState)
+        ]
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.state of
         Success actualModel ->
             Sub.batch
-                [ Sub.batch
+                [ Alert.subscriptions model.alert AlertMsg
+                , Sub.map HistoryMsg (History.subscriptions model.historyState)
+                , Sub.map RenameMsg (Rename.subscriptions model.renameState)
+                , Sub.map MoveMsg (MoveCopy.subscriptions model.moveState)
+                , Sub.map CopyMsg (MoveCopy.subscriptions model.copyState)
+                , Sub.batch
                     (List.map (\e -> Dropdown.subscriptions e.dropdown (ActionDropdownMsg e))
                         actualModel.entries
                     )
-                , Alert.subscriptions model.alert AlertMsg
                 ]
 
         _ ->

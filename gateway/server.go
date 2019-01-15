@@ -195,6 +195,8 @@ func (gw *Gateway) Start() {
 		apiRouter.Handle("/remove", endpoints.NewRemoveHandler(state))
 		apiRouter.Handle("/history", endpoints.NewHistoryHandler(state))
 		apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(state))
+		apiRouter.Handle("/reset", endpoints.NewResetHandler(state))
+		apiRouter.Handle("/all-dirs", endpoints.NewAllDirsHandler(state))
 	}
 
 	// Add the /get endpoint. Since it might contain any path, we have to
@@ -221,6 +223,9 @@ func (gw *Gateway) Start() {
 			router.PathPrefix("/").Handler(http.FileServer(parcello.ManagerAt("/")))
 		}
 	}
+
+	// TODO: Kick out unauthorized access early via middleware
+	// TODO: Implement proper support for partial folders.
 
 	// Implement rate limiting:
 	router.Use(

@@ -88,7 +88,7 @@ view model lsModel url =
         |> Modal.h5 [] [ text "Share hyperlinks" ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [ Row.attrs [ class "share-row" ] ] (viewShare model lsModel url) ]
+                [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model lsModel url) ]
             ]
         |> Modal.footer []
             [ Button.button

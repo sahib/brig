@@ -1,6 +1,7 @@
 module Util exposing
     ( basename
     , buildAlert
+    , dirname
     , formatLastModified
     , formatLastModifiedOwner
     , httpErrorToString
@@ -10,6 +11,7 @@ module Util exposing
     , urlEncodePath
     , urlPrefixToString
     , urlToPath
+    , prefixSlash
     )
 
 import Bootstrap.Alert as Alert
@@ -130,15 +132,36 @@ urlToPath url =
 basename : String -> String
 basename path =
     let
-        splitUrl =
+        split =
             List.reverse (splitPath path)
     in
-    case splitUrl of
+    case split of
         [] ->
             "/"
 
         x :: _ ->
             x
+
+prefixSlash : String -> String
+prefixSlash path =
+    if String.startsWith "/" path then
+        path
+    else
+        "/" ++ path
+
+
+dirname : String -> String
+dirname path =
+    let
+        split =
+            splitPath path
+    in
+    case split of
+        [] ->
+            "/"
+
+        _ ->
+            joinPath <| List.take (List.length split - 1) split
 
 
 buildAlert : Alert.Visibility -> (Alert.Visibility -> msg) -> (Alert.Config msg -> Alert.Config msg) -> String -> String -> Html msg
