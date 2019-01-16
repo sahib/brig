@@ -66,7 +66,7 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if gh.cfg.Bool("auth.enabled") {
-		if !validateUserForPath(gh.store, gh.cfg, nodePath, w, r) {
+		if !gh.validatePath(nodePath, w, r) {
 			user, pass, ok := r.BasicAuth()
 
 			// No basic auth sent. If a browser send the request: ask him to

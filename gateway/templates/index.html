@@ -40,31 +40,38 @@
               node: document.getElementById('elm')
             });
 
-			// Forward all websocket messages received from our websocket module
-			// to the elm runtime where we receive them as subscription.
-			// Elm 0.19.0 sadly has no up2date websocket package yet.
-			var ws = new WebSocket("{{.wsAddr}}");
-			ws.onopen = function() {
-				console.log("event websocket is open");
-			};
+            function openWebsocket() {
+                // Forward all websocket messages received from our websocket module
+                // to the elm runtime where we receive them as subscription.
+                // Elm 0.19.0 sadly has no up2date websocket package yet.
+                var ws = new WebSocket("{{.wsAddr}}");
+                ws.onopen = function() {
+                    console.log("event websocket is open");
+                };
 
-    		ws.onmessage = function(message) {
-				console.log(message);
-            	app.ports.websocketIn.send(
-					JSON.stringify({
-						data: message.data,
-						timeStamp: message.timeStamp
-					})
-				);
-        	};
+                ws.onmessage = function(message) {
+                    /* console.log(message); */
+                    app.ports.websocketIn.send(
+                        JSON.stringify({
+                            data: message.data,
+                            timeStamp: message.timeStamp
+                        })
+                    );
+                };
 
-			ws.onclose = function(evt) {
-				console.log("event websocket was closed")
-            };
+                ws.onclose = function(evt) {
+                    console.log("event websocket was closed");
+                };
 
-			ws.onerror = function(evt) {
-				console.log("event websocket errored: " + evt.data)
-            };
+                ws.onerror = function(evt) {
+                    console.log("event websocket errored: " + evt.data);
+                    console.log("you might not see updates of your actions.");
+                };
+            }
+
+            app.ports.websocketOpen.subscribe(function(data) {
+                openWebsocket();
+            });
         </script>
     </body>
 </html>

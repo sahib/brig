@@ -29,7 +29,6 @@ import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
 import Modals.Share as Share
 import Modals.Upload as Upload
-import Port
 import Task
 import Time
 import Url
@@ -37,6 +36,7 @@ import Url.Builder as UrlBuilder
 import Url.Parser as UrlParser
 import Url.Parser.Query as Query
 import Util exposing (..)
+import Websocket
 
 
 
@@ -181,7 +181,10 @@ doInitAfterLogin model loginName =
                 , loginName = loginName
                 }
       }
-    , doListQueryFromUrl model.url
+    , Cmd.batch
+        [ doListQueryFromUrl model.url
+        , Websocket.open ()
+        ]
     )
 
 
@@ -646,7 +649,7 @@ subscriptions model =
                 , Sub.map RemoveMsg (Remove.subscriptions viewState.listState viewState.removeState)
                 , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
                 , Sub.map ListMsg (Ls.subscriptions viewState.listState)
-                , Port.websocketIn WebsocketIn
+                , Websocket.incoming WebsocketIn
                 ]
 
         _ ->

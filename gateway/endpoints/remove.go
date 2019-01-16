@@ -33,7 +33,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !validateUserForPath(rh.store, rh.cfg, path, w, r) {
+		if !rh.validatePath(path, w, r) {
 			jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 			return
 		}

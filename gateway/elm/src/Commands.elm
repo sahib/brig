@@ -29,7 +29,6 @@ import Util
 
 
 
--- TODO: Move all the other query stuff here (mkdir, ls, upload and so on)
 -- REMOVE
 
 

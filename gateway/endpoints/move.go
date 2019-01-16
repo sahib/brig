@@ -27,12 +27,12 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(mh.store, mh.cfg, moveReq.Source, w, r) {
+	if !mh.validatePath(moveReq.Source, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !validateUserForPath(mh.store, mh.cfg, moveReq.Destination, w, r) {
+	if !mh.validatePath(moveReq.Destination, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}

@@ -8843,6 +8843,12 @@ var author$project$Modals$Remove$Ready = {$: 'Ready'};
 var author$project$Modals$Remove$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready};
 var author$project$Modals$Share$newModel = {modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil};
 var author$project$Modals$Upload$newModel = {failed: _List_Nil, success: _List_Nil, uploads: elm$core$Dict$empty};
+var elm$json$Json$Encode$null = _Json_encodeNull;
+var author$project$Port$websocketOpen = _Platform_outgoingPort(
+	'websocketOpen',
+	function ($) {
+		return elm$json$Json$Encode$null;
+	});
 var author$project$Main$doInitAfterLogin = F2(
 	function (model, loginName) {
 		return _Utils_Tuple2(
@@ -8859,7 +8865,12 @@ var author$project$Main$doInitAfterLogin = F2(
 							uploadState: author$project$Modals$Upload$newModel
 						})
 				}),
-			author$project$Main$doListQueryFromUrl(model.url));
+			elm$core$Platform$Cmd$batch(
+				_List_fromArray(
+					[
+						author$project$Main$doListQueryFromUrl(model.url),
+						author$project$Port$websocketOpen(_Utils_Tuple0)
+					])));
 	});
 var author$project$Main$withSubUpdate = F6(
 	function (subMsg, subModel, model, msg, subUpdate, viewStateUpdate) {

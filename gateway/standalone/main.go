@@ -72,6 +72,7 @@ func main() {
 	cfg.SetString("gateway.auth.pass", "password")
 
 	cfg.SetStrings("gateway.folders", []string{"/"})
+	// cfg.SetStrings("gateway.folders", []string{"/endpoints", "/static/js"})
 	cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
 	cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
 	cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")

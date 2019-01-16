@@ -70,10 +70,10 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(lh.store, lh.cfg, lsReq.Root, w, r) {
-		jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
+	// if !lh.validatePath(lsReq.Root, w, r) {
+	// 	jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
+	// 	return
+	// }
 
 	info, err := lh.fs.Stat(lsReq.Root)
 	if err != nil {
@@ -89,6 +89,10 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	files := []*StatInfo{}
 	for _, item := range items {
+		if !lh.pathIsVisible(item.Path, w, r) {
+			continue
+		}
+
 		files = append(files, toExternalStatInfo(item))
 	}
 

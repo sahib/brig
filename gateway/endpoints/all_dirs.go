@@ -33,10 +33,10 @@ func (ah *AllDirsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	paths := []string{}
 	for _, node := range nodes {
-		// TODO: Filter paths that user is not allowed to access.
-		if !node.IsDir {
+		if !node.IsDir || !ah.validatePath(node.Path, w, r) {
 			continue
 		}
+
 		paths = append(paths, node.Path)
 	}
 

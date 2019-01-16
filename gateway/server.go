@@ -178,6 +178,7 @@ func (gw *Gateway) Start() {
 	// Use csrf protection for all routes by default.
 	// This does not influence GET routes, only POST ones:
 	router := mux.NewRouter()
+	needsAuth := endpoints.AuthMiddleware(state)
 
 	if uiEnabled {
 		csrfKey := []byte(gw.cfg.String("auth.session-csrf-key"))
@@ -186,26 +187,29 @@ func (gw *Gateway) Start() {
 		// API route definition:
 		apiRouter := router.PathPrefix("/api/v0").Methods("POST").Subrouter()
 		apiRouter.Handle("/login", endpoints.NewLoginHandler(state))
-		apiRouter.Handle("/logout", endpoints.NewLogoutHandler(state))
-		apiRouter.Handle("/ls", endpoints.NewLsHandler(state))
-		apiRouter.Handle("/upload", endpoints.NewUploadHandler(state))
-		apiRouter.Handle("/move", endpoints.NewMoveHandler(state))
-		apiRouter.Handle("/mkdir", endpoints.NewMkdirHandler(state))
-		apiRouter.Handle("/copy", endpoints.NewCopyHandler(state))
-		apiRouter.Handle("/remove", endpoints.NewRemoveHandler(state))
-		apiRouter.Handle("/history", endpoints.NewHistoryHandler(state))
 		apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(state))
-		apiRouter.Handle("/reset", endpoints.NewResetHandler(state))
-		apiRouter.Handle("/all-dirs", endpoints.NewAllDirsHandler(state))
+		apiRouter.Handle("/logout", needsAuth(endpoints.NewLogoutHandler(state)))
+		apiRouter.Handle("/ls", needsAuth(endpoints.NewLsHandler(state)))
+		apiRouter.Handle("/upload", needsAuth(endpoints.NewUploadHandler(state)))
+		apiRouter.Handle("/move", needsAuth(endpoints.NewMoveHandler(state)))
+		apiRouter.Handle("/mkdir", needsAuth(endpoints.NewMkdirHandler(state)))
+		apiRouter.Handle("/copy", needsAuth(endpoints.NewCopyHandler(state)))
+		apiRouter.Handle("/remove", needsAuth(endpoints.NewRemoveHandler(state)))
+		apiRouter.Handle("/history", needsAuth(endpoints.NewHistoryHandler(state)))
+		apiRouter.Handle("/reset", needsAuth(endpoints.NewResetHandler(state)))
+		apiRouter.Handle("/all-dirs", needsAuth(endpoints.NewAllDirsHandler(state)))
 	}
 
 	// Add the /get endpoint. Since it might contain any path, we have to
 	// Use a path prefix so the right handler is called.
-	router.PathPrefix("/get/").Handler(endpoints.NewGetHandler(state)).Methods("GET")
+	// NOTE: /get does its own auth handling currently,
+	// since it needs to be available if somebody is not using the UI.
+	router.PathPrefix("/get").Handler(endpoints.NewGetHandler(state)).Methods("GET")
 
 	if uiEnabled {
-		// Events is special too:
-		router.PathPrefix("/events").Handler(gw.evHdl).Methods("GET")
+		// /events is a websocket that pushes events to the client.
+		// The client will probably call /ls then.
+		router.PathPrefix("/events").Handler(needsAuth(gw.evHdl)).Methods("GET")
 
 		// Special case: index.html gets a csrf token:
 		idxHdl := endpoints.NewIndexHandler(state)
@@ -224,7 +228,6 @@ func (gw *Gateway) Start() {
 		}
 	}
 
-	// TODO: Kick out unauthorized access early via middleware
 	// TODO: Implement proper support for partial folders.
 
 	// Implement rate limiting:

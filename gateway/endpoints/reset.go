@@ -33,10 +33,13 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(rh.store, rh.cfg, resetReq.Path, w, r) {
+	if !rh.validatePath(resetReq.Path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}
+
+	// TODO: Is that a problem when the "new" path (after reset)
+	// lies in a forbidden zone? It would be at least confusing for the user.
 
 	if err := rh.fs.Reset(resetReq.Path, resetReq.Revision); err != nil {
 		log.Debugf("failed to reset %s to %s: %v", resetReq.Path, resetReq.Revision, err)

@@ -39,7 +39,7 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if !validateUserForPath(uh.store, uh.cfg, path, w, r) {
+			if !uh.validatePath(path, w, r) {
 				jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
 				return
 			}

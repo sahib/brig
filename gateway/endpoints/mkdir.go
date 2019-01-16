@@ -32,7 +32,7 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(mh.store, mh.cfg, mkdirReq.Path, w, r) {
+	if !mh.validatePath(mkdirReq.Path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}

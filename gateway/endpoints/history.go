@@ -69,7 +69,7 @@ func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(hh.store, hh.cfg, histReq.Path, w, r) {
+	if !hh.validatePath(histReq.Path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}

@@ -27,12 +27,12 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateUserForPath(ch.store, ch.cfg, copyReq.Source, w, r) {
+	if !ch.validatePath(copyReq.Source, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !validateUserForPath(ch.store, ch.cfg, copyReq.Destination, w, r) {
+	if !ch.validatePath(copyReq.Destination, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}

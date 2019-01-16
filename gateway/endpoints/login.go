@@ -3,12 +3,9 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
-	"path"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/sessions"
-	"github.com/sahib/config"
 )
 
 func getUserName(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request) string {
@@ -72,41 +69,6 @@ func clearSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// validateUserForPath checks if `r` is allowed to access `nodePath`.
-func validateUserForPath(store *sessions.CookieStore, cfg *config.Config, nodePath string, w http.ResponseWriter, r *http.Request) bool {
-	if getUserName(store, w, r) == "" {
-		return false
-	}
-
-	// build a map for constant lookup time
-	folders := make(map[string]bool)
-	for _, folder := range cfg.Strings("folders") {
-		folders[folder] = true
-	}
-
-	if !strings.HasPrefix(nodePath, "/") {
-		nodePath = "/" + nodePath
-	}
-
-	curr := nodePath
-	for curr != "" {
-		if folders[curr] {
-			return true
-		}
-
-		next := path.Dir(curr)
-		if curr == "/" && next == curr {
-			// We've gone up too much:
-			break
-		}
-
-		curr = next
-	}
-
-	// No fitting path found:
-	return false
 }
 
 ///////
@@ -202,4 +164,27 @@ func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		IsLoggedIn: len(user) > 0,
 		User:       user,
 	})
+}
+
+///////
+
+type authMiddleware struct {
+	*State
+	SubHandler http.Handler
+}
+
+func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	user := getUserName(am.store, w, r)
+	if user == "" {
+		jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
+		return
+	}
+
+	am.SubHandler.ServeHTTP(w, r)
+}
+
+func AuthMiddleware(s *State) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return &authMiddleware{State: s, SubHandler: h}
+	}
 }
