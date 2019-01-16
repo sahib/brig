@@ -13693,8 +13693,6 @@ var author$project$Modals$Rename$show = function (currPath) {
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
 var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
 	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
-var rundis$elm_bootstrap$Bootstrap$Dropdown$AlignMenuRight = {$: 'AlignMenuRight'};
-var rundis$elm_bootstrap$Bootstrap$Dropdown$alignMenuRight = rundis$elm_bootstrap$Bootstrap$Dropdown$AlignMenuRight;
 var rundis$elm_bootstrap$Bootstrap$Dropdown$DropdownItem = function (a) {
 	return {$: 'DropdownItem', a: a};
 };
@@ -14273,8 +14271,7 @@ var author$project$Ls$buildActionDropdown = F2(
 								elm$html$Html$text(' Copy')
 							]))
 					]),
-				options: _List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Dropdown$alignMenuRight]),
+				options: _List_Nil,
 				toggleButton: A2(
 					rundis$elm_bootstrap$Bootstrap$Dropdown$toggle,
 					_List_fromArray(
@@ -16093,234 +16090,280 @@ var author$project$Main$viewSearchBox = function (model) {
 									]))
 							]))))));
 };
+var elm$virtual_dom$VirtualDom$lazy = _VirtualDom_lazy;
+var elm$html$Html$Lazy$lazy = elm$virtual_dom$VirtualDom$lazy;
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg12 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col12);
+var rundis$elm_bootstrap$Bootstrap$General$Internal$XL = {$: 'XL'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3 = {$: 'Col3'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9 = {$: 'Col9'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
+var author$project$Main$viewListMainContent = F2(
+	function (model, viewState) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Grid$row,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$lg12]),
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Grid$row,
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$id('main-header-row')
+										]))
+								]),
+							_List_fromArray(
+								[
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$col,
+									_List_fromArray(
+										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$map,
+											author$project$Main$ListMsg,
+											A2(author$project$Ls$viewBreadcrumbs, model.url, viewState.listState))
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$col,
+									_List_fromArray(
+										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3]),
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Lazy$lazy, author$project$Main$viewSearchBox, model)
+										]))
+								])),
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Grid$row,
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$id('main-content-row')
+										]))
+								]),
+							_List_fromArray(
+								[
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$col,
+									_List_fromArray(
+										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$map,
+											author$project$Main$ListMsg,
+											A3(author$project$Ls$viewList, viewState.listState, model.url, model.zone))
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$col,
+									_List_fromArray(
+										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2]),
+									_List_fromArray(
+										[
+											A3(elm$html$Html$Lazy$lazy2, author$project$Main$viewActionList, viewState, model.url)
+										]))
+								]))
+						]))
+				]));
+	});
 var elm$html$Html$hr = _VirtualDom_node('hr');
-var author$project$Main$viewSidebar = function (model) {
+var author$project$Main$viewSidebarBottom = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_fromArray(
 			[
-				elm$html$Html$Attributes$class('sidebar-sticky')
+				elm$html$Html$Attributes$id('sidebar-bottom'),
+				elm$html$Html$Attributes$class('d-none d-lg-block')
+			]),
+		_List_fromArray(
+			[
+				A2(elm$html$Html$hr, _List_Nil, _List_Nil),
+				A2(
+				elm$html$Html$p,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$id('sidebar-bottom-text'),
+						elm$html$Html$Attributes$class('text-muted')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Powered by brig Ⓒ 2015 ‒ 2019'),
+						A2(elm$html$Html$br, _List_Nil, _List_Nil),
+						A2(
+						elm$html$Html$a,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$href('https://github.com/sahib/brig')
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Get the source code here')
+							]))
+					]))
+			]));
+};
+var author$project$Main$viewSidebarItems = function (model) {
+	return A2(
+		elm$html$Html$ul,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('flex-column navbar-nav w-100 text-left')
 			]),
 		_List_fromArray(
 			[
 				A2(
-				elm$html$Html$ul,
+				elm$html$Html$li,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('nav'),
-						elm$html$Html$Attributes$class('flex-column')
+						elm$html$Html$Attributes$class('nav-item')
 					]),
 				_List_fromArray(
 					[
 						A2(
-						elm$html$Html$li,
+						elm$html$Html$a,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$class('nav-item')
+								elm$html$Html$Attributes$class('nav-link active'),
+								elm$html$Html$Attributes$href('#')
 							]),
 						_List_fromArray(
 							[
 								A2(
-								elm$html$Html$a,
+								elm$html$Html$span,
+								_List_Nil,
 								_List_fromArray(
 									[
-										elm$html$Html$Attributes$class('nav-link active'),
-										elm$html$Html$Attributes$href('/view')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('fas fa-4x fa-torii-gate')
-											]),
-										_List_Nil),
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('badge badge-success text-center')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('beta')
-											]))
-									]))
-							])),
-						A2(elm$html$Html$br, _List_Nil, _List_Nil),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link active'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_Nil,
-										_List_fromArray(
-											[
-												elm$html$Html$text('Files')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Commit Log')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Remotes')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Deleted files')
-											]))
-									]))
-							])),
-						A2(
-						elm$html$Html$li,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-item')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$a,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('nav-link'),
-										elm$html$Html$Attributes$href('#')
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('text-muted')
-											]),
-										_List_fromArray(
-											[
-												elm$html$Html$text('Settings')
-											]))
+										elm$html$Html$text('Files')
 									]))
 							]))
 					])),
 				A2(
-				elm$html$Html$div,
+				elm$html$Html$li,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$id('sidebar-bottom')
+						elm$html$Html$Attributes$class('nav-item')
 					]),
 				_List_fromArray(
 					[
-						A2(elm$html$Html$hr, _List_Nil, _List_Nil),
 						A2(
-						elm$html$Html$p,
+						elm$html$Html$a,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$id('sidebar-bottom-text'),
-								elm$html$Html$Attributes$class('text-muted')
+								elm$html$Html$Attributes$class('nav-link pl-0'),
+								elm$html$Html$Attributes$href('#')
 							]),
 						_List_fromArray(
 							[
-								elm$html$Html$text('Powered by brig Ⓒ 2015 ‒ 2019'),
-								A2(elm$html$Html$br, _List_Nil, _List_Nil),
 								A2(
-								elm$html$Html$a,
+								elm$html$Html$span,
 								_List_fromArray(
 									[
-										elm$html$Html$Attributes$href('https://github.com/sahib/brig')
+										elm$html$Html$Attributes$class('text-muted')
 									]),
 								_List_fromArray(
 									[
-										elm$html$Html$text('Get the source code here')
+										elm$html$Html$text('Commit Log')
+									]))
+							]))
+					])),
+				A2(
+				elm$html$Html$li,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('nav-item')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$a,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-link pl-0'),
+								elm$html$Html$Attributes$href('#')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('text-muted')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('Remotes')
+									]))
+							]))
+					])),
+				A2(
+				elm$html$Html$li,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('nav-item')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$a,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-link pl-0'),
+								elm$html$Html$Attributes$href('#')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('text-muted')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('Deleted files')
+									]))
+							]))
+					])),
+				A2(
+				elm$html$Html$li,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('nav-item')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$a,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('nav-link pl-0'),
+								elm$html$Html$Attributes$href('#')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('text-muted')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('Settings')
 									]))
 							]))
 					]))
@@ -16756,147 +16799,129 @@ var author$project$Modals$Share$view = F3(
 							rundis$elm_bootstrap$Bootstrap$Modal$large(
 								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Share$ModalClose)))))));
 	});
-var elm$virtual_dom$VirtualDom$lazy = _VirtualDom_lazy;
-var elm$html$Html$Lazy$lazy = elm$virtual_dom$VirtualDom$lazy;
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs = function (a) {
-	return {$: 'ColAttrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs(attrs_);
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
-var rundis$elm_bootstrap$Bootstrap$General$Internal$XL = {$: 'XL'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3 = {$: 'Col3'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9 = {$: 'Col9'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
+var elm$html$Html$aside = _VirtualDom_node('aside');
+var elm$html$Html$main_ = _VirtualDom_node('main');
 var author$project$Main$viewList = F2(
 	function (model, viewState) {
 		return _List_fromArray(
 			[
 				A2(
-				rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
-				_List_Nil,
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('container-fluid')
+					]),
 				_List_fromArray(
 					[
 						A2(
-						rundis$elm_bootstrap$Bootstrap$Grid$row,
-						_List_Nil,
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('row wrapper')
+							]),
 						_List_fromArray(
 							[
 								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								elm$html$Html$aside,
 								_List_fromArray(
 									[
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$md2,
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('d-none d-md-block bg-light sidebar')
-											]))
-									]),
-								_List_fromArray(
-									[
-										A2(elm$html$Html$Lazy$lazy, author$project$Main$viewSidebar, model)
-									])),
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
-								_List_fromArray(
-									[
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$lg10,
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('ml-sm-auto px-4'),
-												elm$html$Html$Attributes$id('main-column')
-											]))
+										elm$html$Html$Attributes$class('col-12 col-md-2 p-0 bg-light')
 									]),
 								_List_fromArray(
 									[
 										A2(
-										rundis$elm_bootstrap$Bootstrap$Grid$row,
+										elm$html$Html$nav,
 										_List_fromArray(
 											[
-												rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$id('main-header-row')
-													]))
+												elm$html$Html$Attributes$class('navbar navbar-expand-md navbar-light bg-align-items-start flex-md-column flex-row')
 											]),
 										_List_fromArray(
 											[
 												A2(
-												rundis$elm_bootstrap$Bootstrap$Grid$col,
+												elm$html$Html$a,
 												_List_fromArray(
-													[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9]),
+													[
+														elm$html$Html$Attributes$class('nav-link active'),
+														elm$html$Html$Attributes$href('/view')
+													]),
 												_List_fromArray(
 													[
 														A2(
-														elm$html$Html$map,
-														author$project$Main$ListMsg,
-														A2(author$project$Ls$viewBreadcrumbs, model.url, viewState.listState))
+														elm$html$Html$span,
+														_List_fromArray(
+															[
+																elm$html$Html$Attributes$class('fas fa-2x fa-fw fa-torii-gate logo')
+															]),
+														_List_Nil),
+														A2(
+														elm$html$Html$span,
+														_List_fromArray(
+															[
+																elm$html$Html$Attributes$class('badge badge-success text-center')
+															]),
+														_List_fromArray(
+															[
+																elm$html$Html$text('beta')
+															]))
 													])),
 												A2(
-												rundis$elm_bootstrap$Bootstrap$Grid$col,
-												_List_fromArray(
-													[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3]),
+												elm$html$Html$a,
 												_List_fromArray(
 													[
-														A2(elm$html$Html$Lazy$lazy, author$project$Main$viewSearchBox, model)
+														elm$html$Html$Attributes$class('navbar-toggler'),
+														A2(elm$html$Html$Attributes$attribute, 'data-toggle', 'collapse'),
+														A2(elm$html$Html$Attributes$attribute, 'data-target', '.sidebar')
+													]),
+												_List_fromArray(
+													[
+														A2(
+														elm$html$Html$span,
+														_List_fromArray(
+															[
+																elm$html$Html$Attributes$class('navbar-toggler-icon')
+															]),
+														_List_Nil)
+													])),
+												A2(
+												elm$html$Html$div,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('collapse navbar-collapse sidebar')
+													]),
+												_List_fromArray(
+													[
+														author$project$Main$viewSidebarItems(model)
 													]))
 											])),
+										author$project$Main$viewSidebarBottom(model)
+									])),
+								A2(
+								elm$html$Html$main_,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('col bg-faded py-3')
+									]),
+								_List_fromArray(
+									[
+										A2(author$project$Main$viewListMainContent, model, viewState),
 										A2(
-										rundis$elm_bootstrap$Bootstrap$Grid$row,
-										_List_fromArray(
-											[
-												rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$id('main-content-row')
-													]))
-											]),
-										_List_fromArray(
-											[
-												A2(
-												rundis$elm_bootstrap$Bootstrap$Grid$col,
-												_List_fromArray(
-													[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10]),
-												_List_fromArray(
-													[
-														A2(
-														elm$html$Html$map,
-														author$project$Main$ListMsg,
-														A3(author$project$Ls$viewList, viewState.listState, model.url, model.zone))
-													])),
-												A2(
-												rundis$elm_bootstrap$Bootstrap$Grid$col,
-												_List_fromArray(
-													[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2]),
-												_List_fromArray(
-													[
-														A3(elm$html$Html$Lazy$lazy2, author$project$Main$viewActionList, viewState, model.url)
-													]))
-											]))
+										elm$html$Html$map,
+										author$project$Main$MkdirMsg,
+										A3(author$project$Modals$Mkdir$view, viewState.mkdirState, model.url, viewState.listState)),
+										A2(
+										elm$html$Html$map,
+										author$project$Main$RemoveMsg,
+										A2(author$project$Modals$Remove$view, viewState.removeState, viewState.listState)),
+										A2(
+										elm$html$Html$map,
+										author$project$Main$ShareMsg,
+										A3(author$project$Modals$Share$view, viewState.shareState, viewState.listState, model.url)),
+										A2(
+										elm$html$Html$map,
+										author$project$Main$ListMsg,
+										author$project$Ls$buildModals(viewState.listState))
 									]))
-							])),
-						A2(
-						elm$html$Html$map,
-						author$project$Main$MkdirMsg,
-						A3(author$project$Modals$Mkdir$view, viewState.mkdirState, model.url, viewState.listState)),
-						A2(
-						elm$html$Html$map,
-						author$project$Main$RemoveMsg,
-						A2(author$project$Modals$Remove$view, viewState.removeState, viewState.listState)),
-						A2(
-						elm$html$Html$map,
-						author$project$Main$ShareMsg,
-						A3(author$project$Modals$Share$view, viewState.shareState, viewState.listState, model.url)),
-						A2(
-						elm$html$Html$map,
-						author$project$Main$ListMsg,
-						author$project$Ls$buildModals(viewState.listState))
+							]))
 					]))
 			]);
 	});
@@ -17068,6 +17093,12 @@ var rundis$elm_bootstrap$Bootstrap$Form$group = F2(
 			rundis$elm_bootstrap$Bootstrap$Form$toAttributes(options),
 			children);
 	});
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs = function (a) {
+	return {$: 'ColAttrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs(attrs_);
+};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
 var author$project$Main$viewLoginForm = function (model) {
 	return A2(

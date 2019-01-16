@@ -4,26 +4,26 @@ import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Form as Form
-
+import Bootstrap.Form.Checkbox as Checkbox
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
-
+import Bootstrap.Table as Table
 import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
 import Commands
-
+import File
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
-
-
-
+import Json.Decode as D
+import Json.Encode as E
+import List
 import Ls
 import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
@@ -361,40 +361,57 @@ view model =
 
 viewList : Model -> ViewState -> List (Html Msg)
 viewList model viewState =
-    [ Grid.containerFluid []
-        [ Grid.row []
-            [ Grid.col
-                [ Col.md2
-                , Col.attrs [ class "d-none d-md-block bg-light sidebar" ]
-                ]
-                [ Lazy.lazy viewSidebar model ]
-            , Grid.col
-                [ Col.lg10
-                , Col.attrs [ class "ml-sm-auto px-4", id "main-column" ]
-                ]
-                [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                    [ Grid.col [ Col.xl9 ]
-                        [ Html.map ListMsg
-                            (Ls.viewBreadcrumbs model.url viewState.listState)
+    [ div [ class "container-fluid" ]
+        [ div [ class "row wrapper" ]
+            [ aside [ class "col-12 col-md-2 p-0 bg-light" ]
+                [ nav [ class "navbar navbar-expand-md navbar-light bg-align-items-start flex-md-column flex-row" ]
+                    [ a [ class "nav-link active", href "/view" ]
+                        [ span [ class "fas fa-2x fa-fw fa-torii-gate logo" ] []
+                        , span [ class "badge badge-success text-center" ] [ text "beta" ]
                         ]
-                    , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
-                    ]
-                , Grid.row [ Row.attrs [ id "main-content-row" ] ]
-                    [ Grid.col
-                        [ Col.xl10 ]
-                        [ Html.map ListMsg
-                            (Ls.viewList viewState.listState model.url model.zone)
+                    , a [ class "navbar-toggler", attribute "data-toggle" "collapse", attribute "data-target" ".sidebar" ]
+                        [ span [ class "navbar-toggler-icon" ] []
                         ]
-                    , Grid.col [ Col.xl2 ] [ Lazy.lazy2 viewActionList viewState model.url ]
+                    , div [ class "collapse navbar-collapse sidebar" ]
+                        [ viewSidebarItems model
+                        ]
                     ]
+                , viewSidebarBottom model
+                ]
+            , main_ [ class "col bg-faded py-3" ]
+                [ viewListMainContent model viewState
+                , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url viewState.listState)
+                , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
+                , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
+                , Html.map ListMsg (Ls.buildModals viewState.listState)
                 ]
             ]
-        , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url viewState.listState)
-        , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
-        , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
-        , Html.map ListMsg (Ls.buildModals viewState.listState)
         ]
     ]
+
+
+viewListMainContent : Model -> ViewState -> Html Msg
+viewListMainContent model viewState =
+    Grid.row []
+        [ Grid.col
+            [ Col.lg12 ]
+            [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
+                [ Grid.col [ Col.xl9 ]
+                    [ Html.map ListMsg
+                        (Ls.viewBreadcrumbs model.url viewState.listState)
+                    ]
+                , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
+                ]
+            , Grid.row [ Row.attrs [ id "main-content-row" ] ]
+                [ Grid.col
+                    [ Col.xl10 ]
+                    [ Html.map ListMsg
+                        (Ls.viewList viewState.listState model.url model.zone)
+                    ]
+                , Grid.col [ Col.xl2 ] [ Lazy.lazy2 viewActionList viewState model.url ]
+                ]
+            ]
+        ]
 
 
 viewLoginInputs : String -> String -> List (Html Msg)
@@ -503,45 +520,41 @@ viewSearchBox model =
         |> InputGroup.view
 
 
-viewSidebar : Model -> Html Msg
-viewSidebar model =
-    div [ class "sidebar-sticky" ]
-        [ ul [ class "nav", class "flex-column" ]
-            [ li [ class "nav-item" ]
-                [ a [ class "nav-link active", href "/view" ]
-                    [ span [ class "fas fa-4x fa-torii-gate" ] []
-                    , span [ class "badge badge-success text-center" ] [ text "beta" ]
-                    ]
-                ]
-            , br [] []
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link active", href "#" ]
-                    [ span [] [ text "Files" ] ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "text-muted" ] [ text "Commit Log" ] ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "text-muted" ] [ text "Remotes" ] ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "text-muted" ] [ text "Deleted files" ] ]
-                ]
-            , li [ class "nav-item" ]
-                [ a [ class "nav-link", href "#" ]
-                    [ span [ class "text-muted" ] [ text "Settings" ] ]
-                ]
+viewSidebarItems : Model -> Html Msg
+viewSidebarItems model =
+    ul [ class "flex-column navbar-nav w-100 text-left" ]
+        [ li [ class "nav-item" ]
+            [ a [ class "nav-link active", href "#" ]
+                [ span [] [ text "Files" ] ]
             ]
-        , div [ id "sidebar-bottom" ]
-            [ hr [] []
-            , p [ id "sidebar-bottom-text", class "text-muted" ]
-                [ text "Powered by brig Ⓒ 2015 ‒ 2019"
-                , br [] []
-                , a [ href "https://github.com/sahib/brig" ] [ text "Get the source code here" ]
-                ]
+        , li [ class "nav-item" ]
+            [ a [ class "nav-link pl-0", href "#" ]
+                [ span [ class "text-muted" ] [ text "Commit Log" ] ]
+            ]
+        , li [ class "nav-item" ]
+            [ a [ class "nav-link pl-0", href "#" ]
+                [ span [ class "text-muted" ] [ text "Remotes" ] ]
+            ]
+        , li [ class "nav-item" ]
+            [ a [ class "nav-link pl-0", href "#" ]
+                [ span [ class "text-muted" ] [ text "Deleted files" ] ]
+            ]
+        , li [ class "nav-item" ]
+            [ a [ class "nav-link pl-0", href "#" ]
+                [ span [ class "text-muted" ] [ text "Settings" ] ]
+            ]
+        ]
+
+
+viewSidebarBottom : Model -> Html Msg
+viewSidebarBottom model =
+    -- Make sure to not display that on small devices:
+    div [ id "sidebar-bottom", class "d-none d-lg-block" ]
+        [ hr [] []
+        , p [ id "sidebar-bottom-text", class "text-muted" ]
+            [ text "Powered by brig Ⓒ 2015 ‒ 2019"
+            , br [] []
+            , a [ href "https://github.com/sahib/brig" ] [ text "Get the source code here" ]
             ]
         ]
 

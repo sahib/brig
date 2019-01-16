@@ -21,7 +21,6 @@ import Bootstrap.Button as Button
 import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
 import Bootstrap.Text as Text
@@ -611,7 +610,7 @@ buildActionDropdown : ActualModel -> Commands.Entry -> Html Msg
 buildActionDropdown model entry =
     Dropdown.dropdown
         entry.dropdown
-        { options = [ Dropdown.alignMenuRight ]
+        { options = []
         , toggleMsg = ActionDropdownMsg entry
         , toggleButton =
             Dropdown.toggle
