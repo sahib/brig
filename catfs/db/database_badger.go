@@ -29,7 +29,6 @@ type BadgerDatabase struct {
 // NewBadgerDatabase creates a new badger database.
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	opts := badger.DefaultOptions
-
 	opts.Dir = path
 	opts.ValueDir = path
 

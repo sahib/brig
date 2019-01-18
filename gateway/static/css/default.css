@@ -15,7 +15,7 @@
 .nav-link {
   margin-left: 50px;
   font-weight: 500;
-  font-size: 115%;
+  font-size: 110%;
   font-weight: 600;
   color: #333;
   padding-right: 66px !important;
@@ -133,12 +133,10 @@
 /* Add a bit of space before the main content */
 #main-header-row {
     margin-top: 25px;
-	font-size: 112.5%;
 }
 
 #main-content-row {
     margin-top: 25px;
-	font-size: 112.5%;
 }
 
 #main-column {
@@ -157,7 +155,6 @@
 }
 
 #toolbar-label {
-  font-size: 120% !important;
 }
 
 #share-list {
@@ -201,7 +198,6 @@
 }
 
 .login-btn {
-	font-size: 120%;
 	font-weight: bold;
 	margin-top: 15px;
 }
@@ -237,7 +233,7 @@
     margin-left: 0px;
 }
 
-#upload-btn {
+#action-btn {
 	padding-top: 0px;
     padding-right: 0px;
     padding-bottom: 0px;
@@ -245,6 +241,9 @@
 	margin-top: 0px;
     margin-right: 0px;
     margin-bottom: 2px;
+
+    width: 100%;
+    font-size: 92%;
 }
 
 .scrollable-modal-row {
@@ -289,4 +288,18 @@ body, html, .container-fluid {
 main {
     max-height: 100%;
     overflow-y: auto;
+}
+
+@media all and (max-width: 1200px) {
+    .toolbar {
+        padding-left: 25vw;
+        padding: 10px;
+        margin: auto;
+        width: 50%;
+    }
+}
+
+#select-label {
+    text-align: left;
+    width: 100%;
 }

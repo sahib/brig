@@ -287,6 +287,14 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	}
 
 	b.backendLoaded = true
+
+	// Load the gateway pretty early. It won't start unless
+	// being told so in the config. The peer server / event handler
+	// stuff later is optional.
+	if _, err := b.gatewayUnlocked(); err != nil {
+		log.Warningf("failed to start gateway: %v", err)
+	}
+
 	return realBackend, nil
 }
 
@@ -360,14 +368,8 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 		log.Warningf("failed to setup event listeners: %v", err)
 	}
 
-	err = b.withCurrFs(func(fs *catfs.FS) error {
-		b.gateway = gateway.NewGateway(fs, rp.Config.Section("gateway"), b.evListener)
-		b.gateway.Start()
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
+	if b.gateway != nil {
+		b.gateway.SetEventListener(b.evListener)
 	}
 
 	// Give peer server a small bit of time to start up, so it can Accept()
@@ -383,6 +385,54 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 	b.notifyFsChangeEvent(rp)
 
 	return srv, nil
+}
+
+//////
+
+func (b *base) Gateway() (*gateway.Gateway, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.gatewayUnlocked()
+}
+
+func (b *base) gatewayUnlocked() (*gateway.Gateway, error) {
+	if b.gateway != nil {
+		return b.gateway, nil
+	}
+
+	return b.loadGateway()
+}
+
+func (b *base) loadGateway() (*gateway.Gateway, error) {
+	log.Debugf("loading gateway")
+
+	rp, err := b.repoUnlocked()
+	if err != nil {
+		return nil, err
+	}
+
+	err = b.withCurrFs(func(fs *catfs.FS) error {
+		var err error
+		b.gateway, err = gateway.NewGateway(
+			fs,
+			rp.Config.Section("gateway"),
+			filepath.Join(rp.BaseFolder, "gateway"),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		b.gateway.Start()
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return b.gateway, nil
 }
 
 /////////

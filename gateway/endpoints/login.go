@@ -103,15 +103,30 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfgUser := lih.cfg.String("auth.user")
-	cfgPass := lih.cfg.String("auth.pass")
-
-	if cfgUser != loginReq.Username || cfgPass != loginReq.Password {
+	dbUser, err := lih.userDb.Get(loginReq.Username)
+	if err != nil {
+		// No such user.
 		jsonifyErrf(w, http.StatusForbidden, "bad credentials")
 		return
 	}
 
-	setSession(lih.store, cfgUser, w, r)
+	if dbUser.Name != loginReq.Username {
+		// Bad username. Might be a problem on our side.
+		jsonifyErrf(w, http.StatusForbidden, "bad credentials")
+		return
+	}
+
+	isValid, err := dbUser.CheckPassword(loginReq.Password)
+	if err != nil || !isValid {
+		if err != nil {
+			log.Warningf("check password failed: %v", err)
+		}
+
+		jsonifyErrf(w, http.StatusForbidden, "bad credentials")
+		return
+	}
+
+	setSession(lih.store, dbUser.Name, w, r)
 	jsonify(w, http.StatusOK, &LoginResponse{
 		Success:  true,
 		Username: loginReq.Username,
@@ -155,14 +170,26 @@ type WhoamiResponse struct {
 }
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := getUserName(wh.store, w, r)
-	if user != "" {
-		setSession(wh.store, user, w, r)
+	if wh.cfg.Bool("auth.enabled") {
+		user := getUserName(wh.store, w, r)
+		if user != "" {
+			// renew the session, if already logged in:
+			setSession(wh.store, user, w, r)
+		}
+
+		jsonify(w, http.StatusOK, WhoamiResponse{
+			IsLoggedIn: len(user) > 0,
+			User:       user,
+		})
+
+		return
 	}
 
+	// If no auth is used, fake a anon session:
+	setSession(wh.store, "anon", w, r)
 	jsonify(w, http.StatusOK, WhoamiResponse{
-		IsLoggedIn: len(user) > 0,
-		User:       user,
+		IsLoggedIn: true,
+		User:       "anon",
 	})
 }
 
@@ -174,10 +201,12 @@ type authMiddleware struct {
 }
 
 func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := getUserName(am.store, w, r)
-	if user == "" {
-		jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
-		return
+	if am.cfg.Bool("auth.enabled") {
+		user := getUserName(am.store, w, r)
+		if user == "" {
+			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
+			return
+		}
 	}
 
 	am.SubHandler.ServeHTTP(w, r)

@@ -126,6 +126,13 @@ struct FsTabEntry {
     active   @4 :Bool;
 }
 
+struct User {
+    name         @0 :Text;
+    passwordHash @1 :Text;
+    salt         @2 :Text;
+    folders      @3 :List(Text);
+}
+
 interface FS {
     stage             @0   (localPath :Text, repoPath :Text);
     list              @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -181,6 +188,10 @@ interface Repo {
 
     version         @15 () -> (version :Version);
     waitForInit     @16 ();
+
+    gatewayUserAdd  @17 (name :Text, password :Text, folders :List(Text));
+    gatewayUserRm   @18 (name :Text);
+    gatewayUserList @19 () -> (users :List(User));
 }
 
 interface Net {

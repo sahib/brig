@@ -15,16 +15,17 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/events"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/config"
 )
 
 type State struct {
-	fs          *catfs.FS
-	cfg         *config.Config
-	ev          *events.Listener
-	evHdl       *EventsHandler
-	store       *sessions.CookieStore
-	folderCache map[string]bool
+	fs     *catfs.FS
+	cfg    *config.Config
+	ev     *events.Listener
+	evHdl  *EventsHandler
+	store  *sessions.CookieStore
+	userDb *db.UserDatabase
 }
 
 func readOrInitKeyFromConfig(cfg *config.Config, keyName string, keyLen int) ([]byte, error) {
@@ -38,16 +39,12 @@ func readOrInitKeyFromConfig(cfg *config.Config, keyName string, keyLen int) ([]
 	return base64.StdEncoding.DecodeString(keyStr)
 }
 
-func buildFolderCache(cfg *config.Config) map[string]bool {
-	folders := make(map[string]bool)
-	for _, folder := range cfg.Strings("folders") {
-		folders[prefixRoot(path.Clean(folder))] = true
-	}
-
-	return folders
-}
-
-func NewState(fs *catfs.FS, cfg *config.Config, ev *events.Listener, evHdl *EventsHandler) (*State, error) {
+func NewState(
+	fs *catfs.FS,
+	cfg *config.Config,
+	evHdl *EventsHandler,
+	userDb *db.UserDatabase,
+) (*State, error) {
 	authKey, err := readOrInitKeyFromConfig(cfg, "auth.session-authentication-key", 64)
 	if err != nil {
 		return nil, err
@@ -64,21 +61,23 @@ func NewState(fs *catfs.FS, cfg *config.Config, ev *events.Listener, evHdl *Even
 		return nil, err
 	}
 
-	state := &State{
-		fs:          fs,
-		cfg:         cfg,
-		ev:          ev,
-		evHdl:       evHdl,
-		store:       sessions.NewCookieStore(authKey, encKey),
-		folderCache: buildFolderCache(cfg),
-	}
+	return &State{
+		fs:     fs,
+		cfg:    cfg,
+		evHdl:  evHdl,
+		store:  sessions.NewCookieStore(authKey, encKey),
+		userDb: userDb,
+	}, nil
+}
 
-	// Rebuild the cache when the config key changed:
-	cfg.AddEvent("folders", func(key string) {
-		state.folderCache = buildFolderCache(cfg)
-	})
+func (s *State) Close() error {
+	s.evHdl.Shutdown()
+	return s.userDb.Close()
+}
 
-	return state, nil
+func (s *State) SetEventListener(ev *events.Listener) {
+	s.ev = ev
+	s.evHdl.SetEventListener(ev)
 }
 
 func (s *State) publishFsEvent(req *http.Request) {
@@ -111,16 +110,45 @@ func prefixRoot(nodePath string) string {
 	return "/" + nodePath
 }
 
+func buildFolderCache(folders []string) map[string]bool {
+	folderCache := make(map[string]bool)
+	for _, folder := range folders {
+		folderCache[prefixRoot(path.Clean(folder))] = true
+	}
+
+	return folderCache
+}
+
+func (s *State) folderCacheForUser(w http.ResponseWriter, r *http.Request) (map[string]bool, error) {
+	name := getUserName(s.store, w, r)
+	if name == "" {
+		return nil, fmt.Errorf("no user")
+	}
+
+	user, err := s.userDb.Get(name)
+	if err != nil {
+		return nil, fmt.Errorf("validate: user db: %v", err)
+	}
+
+	return buildFolderCache(user.Folders), nil
+}
+
 func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Request) bool {
 	nodePath = prefixRoot(path.Clean(nodePath))
 	if s.validatePath(nodePath, w, r) {
 		return true
 	}
 
+	folderCache, err := s.folderCacheForUser(w, r)
+	if err != nil {
+		log.Debugf("failed to build folder cache: %v", err)
+		return false
+	}
+
 	// Go over all folders, and see if we have some allowed folder
 	// that we need to display "on the way". This could be probably
 	// made faster if we ever need to.
-	for folder, isValid := range s.folderCache {
+	for folder, isValid := range folderCache {
 		if !isValid {
 			continue
 		}
@@ -142,9 +170,16 @@ func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Re
 }
 
 func (s *State) validatePath(nodePath string, w http.ResponseWriter, r *http.Request) bool {
+	folderCache, err := s.folderCacheForUser(w, r)
+	if err != nil {
+		log.Debugf("could not build folder cache: %v", err)
+		return false
+	}
+
 	curr := prefixRoot(nodePath)
+
 	for curr != "" {
-		if s.folderCache[curr] {
+		if folderCache[curr] {
 			return true
 		}
 

@@ -68,11 +68,6 @@ func main() {
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
 	cfg.SetBool("gateway.auth.enabled", true)
-	cfg.SetString("gateway.auth.user", "admin")
-	cfg.SetString("gateway.auth.pass", "password")
-
-	cfg.SetStrings("gateway.folders", []string{"/"})
-	// cfg.SetStrings("gateway.folders", []string{"/endpoints", "/static/js"})
 	cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
 	cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
 	cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")
@@ -111,7 +106,16 @@ func main() {
 		}
 	}
 
-	gw := gateway.NewGateway(fs, cfg.Section("gateway"), nil)
+	userDbPath := filepath.Join(dbPath, "users")
+	gw, err := gateway.NewGateway(fs, cfg.Section("gateway"), userDbPath)
+	if err != nil {
+		log.Fatalf("failed to open gateway: %v", err)
+	}
+
+	if err := gw.UserDatabase().Add("admin", "password", nil); err != nil {
+		log.Fatalf("failed to add user: %v", err)
+	}
+
 	gw.Start()
 
 	time.Sleep(1 * time.Second)

@@ -151,8 +151,8 @@ buildButton model lsModel toMsg =
             Ls.currIsFile lsModel
     in
     label
-        [ class "btn btn-file btn-link btn-default"
-        , id "upload-btn"
+        [ class "btn btn-file btn-link btn-default text-left"
+        , id "action-btn"
         , if isDisabled then
             class "disabled"
 

@@ -425,7 +425,6 @@ viewDownloadButton : ActualModel -> Url.Url -> Html msg
 viewDownloadButton model url =
     Button.linkButton
         [ Button.outlinePrimary
-        , Button.large
         , Button.attrs
             [ href
                 (Util.urlPrefixToString url
@@ -442,7 +441,6 @@ viewViewButton : ActualModel -> Url.Url -> Html msg
 viewViewButton model url =
     Button.linkButton
         [ Button.outlinePrimary
-        , Button.large
         , Button.attrs
             [ href
                 (Util.urlPrefixToString url

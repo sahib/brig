@@ -7280,7 +7280,7 @@ var author$project$Modals$Upload$subscriptions = function (model) {
 					model.failed))
 			]));
 };
-var author$project$Port$websocketIn = _Platform_incomingPort('websocketIn', elm$json$Json$Decode$string);
+var author$project$Websocket$incoming = _Platform_incomingPort('incoming', elm$json$Json$Decode$string);
 var author$project$Main$subscriptions = function (model) {
 	var _n0 = model.loginState;
 	if (_n0.$ === 'LoginSuccess') {
@@ -7308,7 +7308,7 @@ var author$project$Main$subscriptions = function (model) {
 					elm$core$Platform$Sub$map,
 					author$project$Main$ListMsg,
 					author$project$Ls$subscriptions(viewState.listState)),
-					author$project$Port$websocketIn(author$project$Main$WebsocketIn)
+					author$project$Websocket$incoming(author$project$Main$WebsocketIn)
 				]));
 	} else {
 		return elm$core$Platform$Sub$none;
@@ -8844,8 +8844,8 @@ var author$project$Modals$Remove$newModel = {alert: rundis$elm_bootstrap$Bootstr
 var author$project$Modals$Share$newModel = {modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil};
 var author$project$Modals$Upload$newModel = {failed: _List_Nil, success: _List_Nil, uploads: elm$core$Dict$empty};
 var elm$json$Json$Encode$null = _Json_encodeNull;
-var author$project$Port$websocketOpen = _Platform_outgoingPort(
-	'websocketOpen',
+var author$project$Websocket$open = _Platform_outgoingPort(
+	'open',
 	function ($) {
 		return elm$json$Json$Encode$null;
 	});
@@ -8869,7 +8869,7 @@ var author$project$Main$doInitAfterLogin = F2(
 				_List_fromArray(
 					[
 						author$project$Main$doListQueryFromUrl(model.url),
-						author$project$Port$websocketOpen(_Utils_Tuple0)
+						author$project$Websocket$open(_Utils_Tuple0)
 					])));
 	});
 var author$project$Main$withSubUpdate = F6(
@@ -15038,7 +15038,6 @@ var author$project$Util$urlPrefixToString = function (url) {
 		}
 	}() + '/'));
 };
-var rundis$elm_bootstrap$Bootstrap$Button$large = rundis$elm_bootstrap$Bootstrap$Internal$Button$Size(rundis$elm_bootstrap$Bootstrap$General$Internal$LG);
 var author$project$Ls$viewDownloadButton = F2(
 	function (model, url) {
 		return A2(
@@ -15046,7 +15045,6 @@ var author$project$Ls$viewDownloadButton = F2(
 			_List_fromArray(
 				[
 					rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-					rundis$elm_bootstrap$Bootstrap$Button$large,
 					rundis$elm_bootstrap$Bootstrap$Button$attrs(
 					_List_fromArray(
 						[
@@ -15159,7 +15157,6 @@ var author$project$Ls$viewViewButton = F2(
 			_List_fromArray(
 				[
 					rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-					rundis$elm_bootstrap$Bootstrap$Button$large,
 					rundis$elm_bootstrap$Bootstrap$Button$attrs(
 					_List_fromArray(
 						[
@@ -15397,17 +15394,22 @@ var author$project$Main$buildActionButton = F4(
 						]))
 				]));
 	});
-var author$project$Main$labelSelectedItems = function (num) {
-	switch (num) {
-		case 0:
-			return 'Nothing selected';
-		case 1:
-			return ' 1 item selected';
-		default:
-			var n = num;
-			return ' ' + (elm$core$String$fromInt(n) + ' items selected');
-	}
-};
+var author$project$Main$labelSelectedItems = F2(
+	function (lsModel, num) {
+		if (author$project$Ls$currIsFile(lsModel)) {
+			return '';
+		} else {
+			switch (num) {
+				case 0:
+					return 'Nothing selected';
+				case 1:
+					return ' 1 item selected';
+				default:
+					var n = num;
+					return ' ' + (elm$core$String$fromInt(n) + ' items selected');
+			}
+		}
+	});
 var author$project$Modals$Mkdir$ModalShow = {$: 'ModalShow'};
 var author$project$Modals$Mkdir$show = author$project$Modals$Mkdir$ModalShow;
 var author$project$Modals$Remove$ModalShow = {$: 'ModalShow'};
@@ -15441,8 +15443,8 @@ var author$project$Modals$Upload$buildButton = F3(
 			elm$html$Html$label,
 			_List_fromArray(
 				[
-					elm$html$Html$Attributes$class('btn btn-file btn-link btn-default'),
-					elm$html$Html$Attributes$id('upload-btn'),
+					elm$html$Html$Attributes$class('btn btn-file btn-link btn-default text-left'),
+					elm$html$Html$Attributes$id('action-btn'),
 					isDisabled ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default')
 				]),
 			_List_fromArray(
@@ -15840,12 +15842,6 @@ var author$project$Modals$Upload$viewUploadState = function (model) {
 							elm$core$Dict$toList(model.uploads)))))
 			]));
 };
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$Attrs = function (a) {
-	return {$: 'Attrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$attrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$ButtonGroup$Attrs(attrs_);
-};
 var rundis$elm_bootstrap$Bootstrap$ButtonGroup$GroupItem = function (a) {
 	return {$: 'GroupItem', a: a};
 };
@@ -15957,12 +15953,13 @@ var author$project$Main$viewActionList = F2(
 					elm$html$Html$p,
 					_List_fromArray(
 						[
-							elm$html$Html$Attributes$class('text-muted')
+							elm$html$Html$Attributes$class('text-muted'),
+							elm$html$Html$Attributes$id('select-label')
 						]),
 					_List_fromArray(
 						[
 							elm$html$Html$text(
-							author$project$Main$labelSelectedItems(nSelected))
+							A2(author$project$Main$labelSelectedItems, model.listState, nSelected))
 						])),
 					A2(elm$html$Html$br, _List_Nil, _List_Nil),
 					A3(author$project$Modals$Upload$buildButton, model.uploadState, model.listState, author$project$Main$UploadMsg),
@@ -15993,7 +15990,7 @@ var author$project$Main$viewActionList = F2(
 							elm$html$Html$span,
 							_List_fromArray(
 								[
-									elm$html$Html$Attributes$id('upload-btn')
+									elm$html$Html$Attributes$id('action-btn')
 								]),
 							_List_fromArray(
 								[
@@ -16011,15 +16008,7 @@ var author$project$Main$viewActionList = F2(
 							A2(
 							rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem,
 							_List_fromArray(
-								[
-									rundis$elm_bootstrap$Bootstrap$ButtonGroup$small,
-									rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical,
-									rundis$elm_bootstrap$Bootstrap$ButtonGroup$attrs(
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('mb-3')
-										]))
-								]),
+								[rundis$elm_bootstrap$Bootstrap$ButtonGroup$small, rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical]),
 							_List_fromArray(
 								[
 									A4(

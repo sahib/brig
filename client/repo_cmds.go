@@ -465,3 +465,120 @@ func (ctl *Client) WaitForInit() error {
 	_, err := call.Struct()
 	return err
 }
+
+type GatewayUser struct {
+	Name         string
+	PasswordHash string
+	Salt         string
+	Folders      []string
+}
+
+func (ctl *Client) GatewayUserAdd(name, password string, folders []string) error {
+	call := ctl.api.GatewayUserAdd(ctl.ctx, func(p capnp.Repo_gatewayUserAdd_Params) error {
+		if err := p.SetName(name); err != nil {
+			return err
+		}
+
+		if err := p.SetPassword(password); err != nil {
+			return err
+		}
+
+		if err := p.SetPassword(password); err != nil {
+			return err
+		}
+
+		seg := p.Segment()
+		capFolders, err := capnplib.NewTextList(seg, int32(len(folders)))
+		if err != nil {
+			return err
+		}
+
+		for idx, folder := range folders {
+			if err := capFolders.Set(idx, folder); err != nil {
+				return err
+			}
+		}
+
+		return p.SetFolders(capFolders)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) GatewayUserRemove(name string) error {
+	call := ctl.api.GatewayUserRm(ctl.ctx, func(p capnp.Repo_gatewayUserRm_Params) error {
+		return p.SetName(name)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func capUserToUser(capUser capnp.User) (*GatewayUser, error) {
+	name, err := capUser.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	passwordHash, err := capUser.PasswordHash()
+	if err != nil {
+		return nil, err
+	}
+
+	salt, err := capUser.Salt()
+	if err != nil {
+		return nil, err
+	}
+
+	capFolders, err := capUser.Folders()
+	if err != nil {
+		return nil, err
+	}
+
+	folders := []string{}
+	for idx := 0; idx < capFolders.Len(); idx++ {
+		folder, err := capFolders.At(idx)
+		if err != nil {
+			return nil, err
+		}
+
+		folders = append(folders, folder)
+	}
+
+	return &GatewayUser{
+		Name:         name,
+		Salt:         salt,
+		PasswordHash: passwordHash,
+		Folders:      folders,
+	}, nil
+}
+
+func (ctl *Client) GatewayUserList() ([]GatewayUser, error) {
+	call := ctl.api.GatewayUserList(ctl.ctx, func(p capnp.Repo_gatewayUserList_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capUsers, err := result.Users()
+	if err != nil {
+		return nil, err
+	}
+
+	users := []GatewayUser{}
+	for idx := 0; idx < capUsers.Len(); idx++ {
+		capUser := capUsers.At(idx)
+		user, err := capUserToUser(capUser)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, *user)
+	}
+
+	return users, err
+}

@@ -398,6 +398,27 @@ func RunCmdline(args []string) int {
 					Name:   "url",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleGatewayURL, true)),
 				},
+				{
+					Name:    "user",
+					Aliases: []string{"u"},
+					Subcommands: []cli.Command{
+						{
+							Name:    "add",
+							Aliases: []string{"a"},
+							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserAdd, true)),
+						},
+						{
+							Name:    "remove",
+							Aliases: []string{"rm"},
+							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserRemove, true)),
+						},
+						{
+							Name:    "list",
+							Aliases: []string{"ls"},
+							Action:  withDaemon(handleGatewayUserList, true),
+						},
+					},
+				},
 			},
 		}, {
 			Name:     "mount",

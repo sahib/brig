@@ -2,12 +2,14 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/fuse"
+	gwdb "github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/version"
@@ -501,4 +503,129 @@ func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
 	}
 
 	return nil
+}
+
+func (rh *repoHandler) GatewayUserAdd(call capnp.Repo_gatewayUserAdd) error {
+	server.Ack(call.Options)
+
+	name, err := call.Params.Name()
+	if err != nil {
+		return err
+	}
+
+	password, err := call.Params.Password()
+	if err != nil {
+		return err
+	}
+
+	folders := []string{}
+	capFolders, err := call.Params.Folders()
+	if err != nil {
+		return err
+	}
+
+	for idx := 0; idx < capFolders.Len(); idx++ {
+		folder, err := capFolders.At(idx)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasPrefix(folder, "/") {
+			folder = "/" + folder
+		}
+
+		folders = append(folders, folder)
+	}
+
+	gw, err := rh.base.Gateway()
+	if err != nil {
+		return err
+	}
+
+	return gw.UserDatabase().Add(name, password, folders)
+}
+
+func (rh *repoHandler) GatewayUserRm(call capnp.Repo_gatewayUserRm) error {
+	server.Ack(call.Options)
+
+	name, err := call.Params.Name()
+	if err != nil {
+		return err
+	}
+
+	gw, err := rh.base.Gateway()
+	if err != nil {
+		return err
+	}
+
+	return gw.UserDatabase().Remove(name)
+}
+
+func userToCapUser(user gwdb.User, seg *capnplib.Segment) (*capnp.User, error) {
+	capUser, err := capnp.NewUser(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capUser.SetName(user.Name); err != nil {
+		return nil, err
+	}
+
+	if err := capUser.SetPasswordHash(user.PasswordHash); err != nil {
+		return nil, err
+	}
+
+	if err := capUser.SetSalt(user.Salt); err != nil {
+		return nil, err
+	}
+
+	capFolders, err := capnplib.NewTextList(seg, int32(len(user.Folders)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, folder := range user.Folders {
+		if err := capFolders.Set(idx, folder); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := capUser.SetFolders(capFolders); err != nil {
+		return nil, err
+	}
+
+	return &capUser, nil
+}
+
+func (rh *repoHandler) GatewayUserList(call capnp.Repo_gatewayUserList) error {
+	server.Ack(call.Options)
+
+	gw, err := rh.base.Gateway()
+	if err != nil {
+		return err
+	}
+
+	users, err := gw.UserDatabase().List()
+	if err != nil {
+		return err
+	}
+
+	seg := call.Results.Segment()
+	capUsers, err := capnp.NewUser_List(seg, int32(len(users)))
+	if err != nil {
+		return err
+	}
+
+	for idx, user := range users {
+		capUser, err := userToCapUser(user, seg)
+		if err != nil {
+			return err
+		}
+
+		if err := capUsers.Set(idx, *capUser); err != nil {
+			return err
+		}
+	}
+
+	return call.Results.SetUsers(capUsers)
 }

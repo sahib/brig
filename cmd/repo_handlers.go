@@ -634,31 +634,8 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 		domain = "localhost"
 	}
 
-	fmt.Printf("Running on %s\n", color.GreenString(fmt.Sprintf("https://%s:%s", domain, port)))
-
-	folders, err := ctl.ConfigGet("gateway.folders")
-	if err != nil {
-		return err
-	}
-
-	if folders == "" {
-		fmt.Println(color.RedString("No folders are accessible at all (empty folder config)."))
-		fmt.Println(color.RedString("You might want to change that by setting this config key:"))
-		fmt.Println()
-		fmt.Println("  $ brig cfg set gateway.folders <folder1> <folder2> ...")
-		fmt.Println()
-		fmt.Println("To enable access to everything, you can use the root folder:")
-		fmt.Println()
-		fmt.Println("  $ brig cfg set gateway.folders /")
-		fmt.Println()
-	} else {
-		fmt.Println("All files under the following folders are accessible:")
-		fmt.Println()
-		for _, folder := range strings.Split(folders, " ;; ") {
-			fmt.Println(" ", folder)
-		}
-		fmt.Println()
-	}
+	url := fmt.Sprintf("https://%s:%s", domain, port)
+	fmt.Printf("Running on %s\n", color.GreenString(url))
 
 	isHTTPS, err := gatewayIsHTTPS(ctl)
 	if isHTTPS {
@@ -668,13 +645,47 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Println("Consider changing this (if possible) by using `brig gateway cert`.")
 	}
 
+	uiIsEnabled, err := ctl.ConfigGet("gateway.ui.enabled")
+	if err != nil {
+		return err
+	}
+
+	if uiIsEnabled == "true" {
+		fmt.Println("The Web UI is currenly enabled and can be accessed via the URL above.")
+		fmt.Println("If you want to disable the UI (»/get« will still work), then do:")
+		fmt.Println("")
+		fmt.Println("  $ brig cfg gateway.ui.enabled false")
+		fmt.Println("")
+	} else {
+		fmt.Println("There is no UI enabled. You can enable it via:")
+		fmt.Println("")
+		fmt.Println("  $ brig cfg gateway.ui.enabled true")
+		fmt.Println("")
+	}
+
 	authIsEnabled, err := ctl.ConfigGet("gateway.auth.enabled")
 	if err != nil {
 		return err
 	}
 
 	if authIsEnabled == "true" {
-		fmt.Printf("Basic HTTP authentication with user and password is enabled.\n")
+		fmt.Printf("Password based user authentication is enabled. Good.\n")
+		users, err := ctl.GatewayUserList()
+		if err != nil {
+			return err
+		}
+
+		if len(users) == 0 {
+			fmt.Printf(
+				"But there are %s users set. Add a user with »brig gw user add <name>!«\n",
+				color.RedString("no"),
+			)
+		} else {
+			fmt.Printf(
+				"There are %d users currently. Review them with »brig gw user ls«.\n",
+				color.GreenString(fmt.Sprintf("%d", len(users))),
+			)
+		}
 	} else {
 		fmt.Printf("There is %s user authentication enabled.\n", color.YellowString("no"))
 		fmt.Printf("You can enable it by setting the following config keys:\n")
@@ -858,4 +869,77 @@ func handleGatewayURL(ctx *cli.Context, ctl *client.Client) error {
 	escapedPath := url.PathEscape(strings.TrimLeft(path, "/"))
 	fmt.Printf("%s://%s%s/get/%s\n", protocol, domain, port, escapedPath)
 	return nil
+}
+
+func handleGatewayUserAdd(ctx *cli.Context, ctl *client.Client) error {
+	nArgs := len(ctx.Args())
+	name := ctx.Args().First()
+
+	var password string
+	if nArgs > 1 {
+		password = ctx.Args().Get(1)
+	} else {
+		bPassword, err := pwd.PromptNewPassword(14)
+		if err != nil {
+			return err
+		}
+
+		password = string(bPassword)
+	}
+
+	folders := []string{"/"}
+	if nArgs > 2 {
+		folders = ctx.Args()[2:]
+	}
+
+	return ctl.GatewayUserAdd(name, password, folders)
+}
+
+func handleGatewayUserRemove(ctx *cli.Context, ctl *client.Client) error {
+	name := ctx.Args().First()
+	return ctl.GatewayUserRemove(name)
+}
+
+func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
+	users, err := ctl.GatewayUserList()
+	if err != nil {
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	tmpl, err := readFormatTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tmpl == nil {
+		if len(users) == 0 {
+			fmt.Println("No users. Add some with »brig gw user add <name> <pass> <folders...>«")
+		} else {
+			fmt.Fprintln(tabW, "NAME\tFOLDERS\t")
+		}
+	}
+
+	for _, user := range users {
+		if tmpl != nil {
+			if err := tmpl.Execute(os.Stdout, user); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t\n",
+			user.Name,
+			strings.Join(user.Folders, ", "),
+		)
+	}
+
+	return tabW.Flush()
 }

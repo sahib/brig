@@ -52,11 +52,6 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "On what port the gateway runs on",
 		},
-		"folders": config.DefaultEntry{
-			Default:      []string{"/"},
-			NeedsRestart: false,
-			Docs:         "What folders may be accessed by the gateway",
-		},
 		"ui": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,
@@ -100,19 +95,9 @@ var DefaultsV0 = config.DefaultMapping{
 		},
 		"auth": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
-				Default:      false,
+				Default:      true,
 				NeedsRestart: false,
 				Docs:         "Wether the gateway should be running",
-			},
-			"user": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: false,
-				Docs:         "User used for basic HTTP auth",
-			},
-			"pass": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: false,
-				Docs:         "Password used for basic HTTP auth",
 			},
 			"session-encryption-key": config.DefaultEntry{
 				Default:      "",

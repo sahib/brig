@@ -29,6 +29,7 @@ import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
 import Modals.Share as Share
 import Modals.Upload as Upload
+import Websocket
 import Task
 import Time
 import Url
@@ -36,7 +37,6 @@ import Url.Builder as UrlBuilder
 import Url.Parser as UrlParser
 import Url.Parser.Query as Query
 import Util exposing (..)
-import Websocket
 
 
 
@@ -562,17 +562,20 @@ viewSidebarBottom model =
         ]
 
 
-labelSelectedItems : Int -> String
-labelSelectedItems num =
-    case num of
-        0 ->
-            "Nothing selected"
+labelSelectedItems : Ls.Model -> Int -> String
+labelSelectedItems lsModel num =
+    if Ls.currIsFile lsModel then
+        ""
+    else
+        case num of
+            0 ->
+                "Nothing selected"
 
-        1 ->
-            " 1 item selected"
+            1 ->
+                " 1 item selected"
 
-        n ->
-            " " ++ String.fromInt n ++ " items selected"
+            n ->
+                " " ++ String.fromInt n ++ " items selected"
 
 
 buildActionButton : Msg -> String -> String -> Bool -> ButtonGroup.ButtonItem Msg
@@ -601,7 +604,7 @@ viewActionList model url =
                 class "btn-default"
     in
     div [ class "toolbar" ]
-        [ p [ class "text-muted" ] [ text (labelSelectedItems nSelected) ]
+        [ p [ class "text-muted", id "select-label" ] [ text (labelSelectedItems model.listState nSelected) ]
         , br [] []
         , Upload.buildButton model.uploadState model.listState UploadMsg
         , Button.linkButton
@@ -613,13 +616,12 @@ viewActionList model url =
                 ]
             ]
             [ span [ class "fas fa-lg fa-file-download" ] []
-            , span [ id "upload-btn" ] [ text " Download all" ]
+            , span [ id "action-btn" ] [ text " Download all" ]
             ]
         , ButtonGroup.toolbar [ class "btn-group-vertical" ]
             [ ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small
                 , ButtonGroup.vertical
-                , ButtonGroup.attrs [ class "mb-3" ]
                 ]
                 [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
                 , buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)

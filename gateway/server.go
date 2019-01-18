@@ -13,6 +13,7 @@ import (
 	"github.com/phogolabs/parcello"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/events"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/endpoints"
 	"github.com/sahib/config"
 	"github.com/ulule/limiter"
@@ -33,11 +34,11 @@ var rate = limiter.Rate{
 // files from brig over HTTP. This can be used to share files
 // inside of brig with users that do not use brig.
 type Gateway struct {
-	fs          *catfs.FS
 	cfg         *config.Config
 	isClosed    bool
 	isReloading bool
-	ev          *events.Listener
+	state       *endpoints.State
+	userDb      *db.UserDatabase
 	evHdl       *endpoints.EventsHandler
 
 	srv      *http.Server
@@ -46,13 +47,24 @@ type Gateway struct {
 
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
-func NewGateway(fs *catfs.FS, cfg *config.Config, ev *events.Listener) *Gateway {
+func NewGateway(fs *catfs.FS, cfg *config.Config, dbPath string) (*Gateway, error) {
+	userDb, err := db.NewUserDatabase(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	evHdl := endpoints.NewEventsHandler()
+	state, err := endpoints.NewState(fs, cfg, evHdl, userDb)
+	if err != nil {
+		return nil, err
+	}
+
 	gw := &Gateway{
-		fs:       fs,
-		cfg:      cfg,
-		ev:       ev,
+		state:    state,
+		userDb:   userDb,
 		isClosed: true,
-		evHdl:    endpoints.NewEventsHandler(ev),
+		cfg:      cfg,
+		evHdl:    evHdl,
 	}
 
 	// Restarts the gateway on the next possible idle phase:
@@ -83,7 +95,10 @@ func NewGateway(fs *catfs.FS, cfg *config.Config, ev *events.Listener) *Gateway 
 	cfg.AddEvent("cert.domain", reloader)
 	cfg.AddEvent("cert.redirect.enabled", reloader)
 	cfg.AddEvent("cert.redirect.http_port", reloader)
-	return gw
+	cfg.AddEvent("auth.session-encryption-key", reloader)
+	cfg.AddEvent("auth.session-authentication-key", reloader)
+	cfg.AddEvent("auth.session-csrf-key", reloader)
+	return gw, nil
 }
 
 // Stop stops the gateway gracefully.
@@ -93,7 +108,9 @@ func (gw *Gateway) Stop() error {
 	}
 
 	gw.isClosed = true
-	gw.evHdl.Shutdown()
+	if err := gw.state.Close(); err != nil {
+		log.Warningf("failed to shutdown state object: %v", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -167,18 +184,12 @@ func (gw *Gateway) Start() {
 		}()
 	}
 
-	state, err := endpoints.NewState(gw.fs, gw.cfg, gw.ev, gw.evHdl)
-	if err != nil {
-		log.Errorf("failed to create state object: %v", err)
-		return
-	}
-
 	uiEnabled := gw.cfg.Bool("ui.enabled")
 
 	// Use csrf protection for all routes by default.
 	// This does not influence GET routes, only POST ones:
 	router := mux.NewRouter()
-	needsAuth := endpoints.AuthMiddleware(state)
+	needsAuth := endpoints.AuthMiddleware(gw.state)
 
 	if uiEnabled {
 		csrfKey := []byte(gw.cfg.String("auth.session-csrf-key"))
@@ -186,25 +197,25 @@ func (gw *Gateway) Start() {
 
 		// API route definition:
 		apiRouter := router.PathPrefix("/api/v0").Methods("POST").Subrouter()
-		apiRouter.Handle("/login", endpoints.NewLoginHandler(state))
-		apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(state))
-		apiRouter.Handle("/logout", needsAuth(endpoints.NewLogoutHandler(state)))
-		apiRouter.Handle("/ls", needsAuth(endpoints.NewLsHandler(state)))
-		apiRouter.Handle("/upload", needsAuth(endpoints.NewUploadHandler(state)))
-		apiRouter.Handle("/move", needsAuth(endpoints.NewMoveHandler(state)))
-		apiRouter.Handle("/mkdir", needsAuth(endpoints.NewMkdirHandler(state)))
-		apiRouter.Handle("/copy", needsAuth(endpoints.NewCopyHandler(state)))
-		apiRouter.Handle("/remove", needsAuth(endpoints.NewRemoveHandler(state)))
-		apiRouter.Handle("/history", needsAuth(endpoints.NewHistoryHandler(state)))
-		apiRouter.Handle("/reset", needsAuth(endpoints.NewResetHandler(state)))
-		apiRouter.Handle("/all-dirs", needsAuth(endpoints.NewAllDirsHandler(state)))
+		apiRouter.Handle("/login", endpoints.NewLoginHandler(gw.state))
+		apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(gw.state))
+		apiRouter.Handle("/logout", needsAuth(endpoints.NewLogoutHandler(gw.state)))
+		apiRouter.Handle("/ls", needsAuth(endpoints.NewLsHandler(gw.state)))
+		apiRouter.Handle("/upload", needsAuth(endpoints.NewUploadHandler(gw.state)))
+		apiRouter.Handle("/move", needsAuth(endpoints.NewMoveHandler(gw.state)))
+		apiRouter.Handle("/mkdir", needsAuth(endpoints.NewMkdirHandler(gw.state)))
+		apiRouter.Handle("/copy", needsAuth(endpoints.NewCopyHandler(gw.state)))
+		apiRouter.Handle("/remove", needsAuth(endpoints.NewRemoveHandler(gw.state)))
+		apiRouter.Handle("/history", needsAuth(endpoints.NewHistoryHandler(gw.state)))
+		apiRouter.Handle("/reset", needsAuth(endpoints.NewResetHandler(gw.state)))
+		apiRouter.Handle("/all-dirs", needsAuth(endpoints.NewAllDirsHandler(gw.state)))
 	}
 
 	// Add the /get endpoint. Since it might contain any path, we have to
 	// Use a path prefix so the right handler is called.
 	// NOTE: /get does its own auth handling currently,
 	// since it needs to be available if somebody is not using the UI.
-	router.PathPrefix("/get").Handler(endpoints.NewGetHandler(state)).Methods("GET")
+	router.PathPrefix("/get").Handler(endpoints.NewGetHandler(gw.state)).Methods("GET")
 
 	if uiEnabled {
 		// /events is a websocket that pushes events to the client.
@@ -212,7 +223,7 @@ func (gw *Gateway) Start() {
 		router.PathPrefix("/events").Handler(needsAuth(gw.evHdl)).Methods("GET")
 
 		// Special case: index.html gets a csrf token:
-		idxHdl := endpoints.NewIndexHandler(state)
+		idxHdl := endpoints.NewIndexHandler(gw.state)
 		router.Handle("/", idxHdl).Methods("GET")
 		router.Handle("/index.html", idxHdl).Methods("GET")
 		router.PathPrefix("/view").Handler(idxHdl).Methods("GET")
@@ -227,8 +238,6 @@ func (gw *Gateway) Start() {
 			router.PathPrefix("/").Handler(http.FileServer(parcello.ManagerAt("/")))
 		}
 	}
-
-	// TODO: Implement proper support for partial folders.
 
 	// Implement rate limiting:
 	router.Use(
@@ -260,4 +269,12 @@ func (gw *Gateway) Start() {
 			log.Errorf("serve failed: %v", err)
 		}
 	}()
+}
+
+func (gw *Gateway) UserDatabase() *db.UserDatabase {
+	return gw.userDb
+}
+
+func (gw *Gateway) SetEventListener(ev *events.Listener) {
+	gw.state.SetEventListener(ev)
 }

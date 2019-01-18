@@ -1048,6 +1048,24 @@ CAVEATS
 	"gateway.url": {
 		Usage: "Print the URL to a named file or directory.",
 	},
+	"gateway.user": {
+		Usage: "Control the user account that can access the HTTP gateway.",
+	},
+	"gateway.user.add": {
+		Usage: "Add a new gateway user.",
+	},
+	"gateway.user.remove": {
+		Usage: "Remove a gateway user.",
+	},
+	"gateway.user.list": {
+		Usage: "List all gateway users.",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "format,f",
+				Usage: "TODO",
+			},
+		},
+	},
 	"bug": {
 		Usage: "Print a template for bug reports",
 		Flags: []cli.Flag{

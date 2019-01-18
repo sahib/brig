@@ -22,21 +22,21 @@ type EventsHandler struct {
 	chs map[int]chan string
 }
 
-func NewEventsHandler(ev *events.Listener) *EventsHandler {
+func NewEventsHandler() *EventsHandler {
 	hdl := &EventsHandler{
 		chs: make(map[int]chan string),
 	}
 
-	if ev != nil {
-		ev.RegisterEventHandler(events.FsEvent, func(ev *events.Event) {
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-			defer cancel()
-
-			hdl.Notify("fs", ctx)
-		})
-	}
-
 	return hdl
+}
+
+func (eh *EventsHandler) SetEventListener(ev *events.Listener) {
+	ev.RegisterEventHandler(events.FsEvent, func(ev *events.Event) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		eh.Notify("fs", ctx)
+	})
 }
 
 func (eh *EventsHandler) Notify(msg string, ctx context.Context) error {
