@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/util"
 )
 
@@ -42,8 +41,6 @@ type User struct {
 }
 
 func (u User) CheckPassword(password string) (bool, error) {
-	log.Warningf("check password: %v", password)
-
 	salt, err := base64.StdEncoding.DecodeString(u.Salt)
 	if err != nil {
 		return false, err
@@ -55,25 +52,22 @@ func (u User) CheckPassword(password string) (bool, error) {
 	}
 
 	newHash := util.DeriveKey([]byte(password), salt, 32)
-	log.Warningf("compare %x %x", oldHash, newHash)
 	return subtle.ConstantTimeCompare(oldHash, newHash) == 1, nil
 }
 
 func HashPassword(password string) (string, string, error) {
 	// Read a new salt from a random source.
 	// 8 bytes are considered enough by the scrypt documentation.
-	log.Warningf("hash password: %v", password)
 	salt := make([]byte, 8)
 	if n, err := rand.Read(salt); err != nil {
 		return "", "", err
 	} else if n != 8 {
-		return "", "", fmt.Errorf("did not read enough randon bytes")
+		return "", "", fmt.Errorf("did not read enough random bytes")
 	}
 
 	// Derive the actual hash and encode it to base64.
 	hash := util.DeriveKey([]byte(password), salt, 32)
 	encode := base64.StdEncoding.EncodeToString
-	log.Warningf("result: %s", encode(hash), encode(salt))
 	return encode(hash), encode(salt), nil
 }
 

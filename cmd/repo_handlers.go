@@ -578,6 +578,15 @@ func handleGatewayStart(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
+	domain, err := ctl.ConfigGet("gateway.cert.domain")
+	if err != nil {
+		return err
+	}
+
+	if domain == "" {
+		domain = "localhost"
+	}
+
 	isHTTPS, err := gatewayIsHTTPS(ctl)
 	if err != nil {
 		return err
@@ -588,11 +597,8 @@ func handleGatewayStart(ctx *cli.Context, ctl *client.Client) error {
 		protocol = "https"
 	}
 
-	fmt.Printf(
-		"The gateway is accessible via %s\n",
-		color.GreenString(protocol+"://localhost:"+port+"/get/README.md"),
-	)
-
+	url := fmt.Sprintf("%s://%s:%s", protocol, domain, port)
+	fmt.Printf("The gateway is accessible via %s\n", url)
 	return nil
 }
 
@@ -617,7 +623,7 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if isEnabled == "false" {
-		fmt.Println("The gateway is not running. Use `brig gateway start`.")
+		fmt.Println("• The gateway is not running. Use »brig gateway start« to start.")
 		return nil
 	}
 
@@ -634,15 +640,24 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 		domain = "localhost"
 	}
 
-	url := fmt.Sprintf("https://%s:%s", domain, port)
-	fmt.Printf("Running on %s\n", color.GreenString(url))
-
 	isHTTPS, err := gatewayIsHTTPS(ctl)
+	if err != nil {
+		return err
+	}
+
+	protocol := "http"
 	if isHTTPS {
-		fmt.Printf("Using %s for transmitting files. Nice.\n", color.GreenString("https"))
+		protocol = "https"
+	}
+
+	url := fmt.Sprintf("%s://%s:%s", protocol, domain, port)
+
+	fmt.Printf("• Running on %s\n", color.GreenString(url))
+	if isHTTPS {
+		fmt.Printf("• Using %s. Nice.\n", color.GreenString("https"))
 	} else {
-		fmt.Printf("Using %s for transmitting files.", color.RedString("http"))
-		fmt.Println("Consider changing this (if possible) by using `brig gateway cert`.")
+		fmt.Printf("• Using %s for transmitting files.\n", color.RedString("http"))
+		fmt.Println("  Consider changing this (if possible) by using »brig gateway cert«.")
 	}
 
 	uiIsEnabled, err := ctl.ConfigGet("gateway.ui.enabled")
@@ -651,15 +666,15 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if uiIsEnabled == "true" {
-		fmt.Println("The Web UI is currenly enabled and can be accessed via the URL above.")
-		fmt.Println("If you want to disable the UI (»/get« will still work), then do:")
+		fmt.Println("• The Web UI is currenly enabled and can be accessed via the URL above.")
+		fmt.Println("  If you want to disable the UI (»/get« will still work), then do:")
 		fmt.Println("")
-		fmt.Println("  $ brig cfg gateway.ui.enabled false")
+		fmt.Println("    $ brig cfg gateway.ui.enabled false")
 		fmt.Println("")
 	} else {
-		fmt.Println("There is no UI enabled. You can enable it via:")
+		fmt.Println("• There is no UI enabled. You can enable it via:")
 		fmt.Println("")
-		fmt.Println("  $ brig cfg gateway.ui.enabled true")
+		fmt.Println("    $ brig cfg gateway.ui.enabled true")
 		fmt.Println("")
 	}
 
@@ -669,7 +684,7 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if authIsEnabled == "true" {
-		fmt.Printf("Password based user authentication is enabled. Good.\n")
+		fmt.Printf("• Password based user authentication is enabled. Good.\n")
 		users, err := ctl.GatewayUserList()
 		if err != nil {
 			return err
@@ -677,39 +692,44 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 
 		if len(users) == 0 {
 			fmt.Printf(
-				"But there are %s users set. Add a user with »brig gw user add <name>!«\n",
+				"• But there are %s users set. Add a user with »brig gw user add <name>«!\n",
 				color.RedString("no"),
 			)
 		} else {
 			fmt.Printf(
-				"There are %d users currently. Review them with »brig gw user ls«.\n",
+				"• There are %s users currently. Review them with »brig gw user ls«.\n",
 				color.GreenString(fmt.Sprintf("%d", len(users))),
 			)
 		}
 	} else {
-		fmt.Printf("There is %s user authentication enabled.\n", color.YellowString("no"))
-		fmt.Printf("You can enable it by setting the following config keys:\n")
+		fmt.Printf("• There is %s user authentication enabled.\n", color.YellowString("no"))
+		fmt.Printf("  You can enable it by setting the following config keys:\n")
 		fmt.Printf("\n")
-		fmt.Printf("  $ brig config set gateway.auth.user <user>\n")
-		fmt.Printf("  $ brig config set gateway.auth.pass <pass>\n")
+		fmt.Printf("    $ brig config set gateway.auth.user <user>\n")
+		fmt.Printf("    $ brig config set gateway.auth.pass <pass>\n")
 		fmt.Printf("\n")
 	}
 
-	redirIsEnabled, err := ctl.ConfigGet("gateway.cert.redirect.enabled")
-
-	if redirIsEnabled == "true" {
-		redirPort, err := ctl.ConfigGet("gateway.cert.redirect.http_port")
+	if isHTTPS {
+		redirIsEnabled, err := ctl.ConfigGet("gateway.cert.redirect.enabled")
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf(
-			"All requests on HTTP port %s will be forwarded to HTTPS port %s.\n",
-			color.GreenString(redirPort),
-			color.GreenString(port),
-		)
-	} else if isHTTPS {
-		fmt.Printf("There is not HTTP port configured that forwards to HTTPS.\n")
+		if redirIsEnabled == "true" {
+			redirPort, err := ctl.ConfigGet("gateway.cert.redirect.http_port")
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf(
+				"• All requests on HTTP port %s will be forwarded to HTTPS port %s.\n",
+				color.GreenString(redirPort),
+				color.GreenString(port),
+			)
+		} else {
+			fmt.Printf("• There is not HTTP port configured that forwards to HTTPS.\n")
+		}
 	}
 
 	return nil
