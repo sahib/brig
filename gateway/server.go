@@ -226,7 +226,19 @@ func (gw *Gateway) Start() {
 		idxHdl := endpoints.NewIndexHandler(gw.state)
 		router.Handle("/", idxHdl).Methods("GET")
 		router.Handle("/index.html", idxHdl).Methods("GET")
-		router.PathPrefix("/view").Handler(idxHdl).Methods("GET")
+
+		spaRoutes := []string{
+			"/view",
+			"/log",
+			"/remotes",
+			"/deleted",
+			"/settings",
+			"/nothing",
+		}
+
+		for _, route := range spaRoutes {
+			router.PathPrefix(route).Handler(idxHdl).Methods("GET")
+		}
 
 		// Serve all files in the static directory as-is.
 		// This has to come last, since it's a wildcard for everything else.

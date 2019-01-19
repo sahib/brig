@@ -1,4 +1,4 @@
-module Ls exposing
+module Routes.Ls exposing
     ( Model
     , Msg
     , buildModals

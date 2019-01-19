@@ -24,11 +24,16 @@ import Http
 import Json.Decode as D
 import Json.Encode as E
 import List
-import Ls
 import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
 import Modals.Share as Share
 import Modals.Upload as Upload
+import Routes.Commits as Commits
+import Routes.DeletedFiles as DeletedFiles
+import Routes.Ls as Ls
+import Routes.NotFound as NotFound
+import Routes.Remotes as Remotes
+import Routes.Settings as Settings
 import Task
 import Time
 import Url
@@ -73,15 +78,35 @@ type Msg
     | WebsocketIn String
       -- View parent messages:
     | ListMsg Ls.Msg
+    | CommitsMsg Commits.Msg
+    | DeletedFilesMsg DeletedFiles.Msg
+    | NotFoundMsg NotFound.Msg
+    | RemotesMsg Remotes.Msg
+    | SettingsMsg Settings.Msg
 
 
 
 -- MODEL
 
 
+type View
+    = ViewList
+    | ViewCommits
+    | ViewRemotes
+    | ViewDeletedFiles
+    | ViewSettings
+    | ViewNotFound
+
+
 type alias ViewState =
     { listState : Ls.Model
+    , commitsState : Commits.Model
+    , remoteState : Remotes.Model
+    , deletedFilesState : DeletedFiles.Model
+    , notFoundState : NotFound.Model
+    , settingsState : Settings.Model
     , loginName : String
+    , currentView : View
     }
 
 
@@ -139,7 +164,13 @@ doInitAfterLogin model loginName =
         | loginState =
             LoginSuccess
                 { listState = Ls.newModel model.key model.url
+                , commitsState = Commits.newModel model.key model.zone
+                , deletedFilesState = DeletedFiles.newModel model.key model.zone
+                , notFoundState = NotFound.newModel model.key model.zone
+                , remoteState = Remotes.newModel model.key model.zone
+                , settingsState = Settings.newModel model.key model.zone
                 , loginName = loginName
+                , currentView = viewFromUrl model.url
                 }
       }
     , Cmd.batch
@@ -147,6 +178,55 @@ doInitAfterLogin model loginName =
         , Websocket.open ()
         ]
     )
+
+
+viewFromUrl : Url.Url -> View
+viewFromUrl url =
+    case List.head <| List.drop 1 <| String.split "/" url.path of
+        Nothing ->
+            ViewNotFound
+
+        Just first ->
+            case Debug.log "FIrST" first of
+                "view" ->
+                    ViewList
+
+                "log" ->
+                    ViewCommits
+
+                "remotes" ->
+                    ViewRemotes
+
+                "deleted" ->
+                    ViewDeletedFiles
+
+                "settings" ->
+                    ViewSettings
+
+                _ ->
+                    ViewNotFound
+
+
+viewToString : View -> String
+viewToString v =
+    case v of
+        ViewList ->
+            "/view"
+
+        ViewCommits ->
+            "/log"
+
+        ViewRemotes ->
+            "/remotes"
+
+        ViewDeletedFiles ->
+            "/deleted"
+
+        ViewSettings ->
+            "/settings"
+
+        ViewNotFound ->
+            "/nothing"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -229,14 +309,43 @@ update msg model =
         UrlChanged url ->
             case model.loginState of
                 LoginSuccess viewState ->
-                    ( { model
-                        | url = url
-                        , loginState =
-                            LoginSuccess
-                                { viewState | listState = Ls.changeUrl url viewState.listState }
-                      }
-                    , Cmd.map ListMsg <| Ls.doListQueryFromUrl url
-                    )
+                    case viewFromUrl url of
+                        ViewList ->
+                            ( { model
+                                | url = url
+                                , loginState =
+                                    LoginSuccess
+                                        { viewState
+                                            | currentView = ViewList
+                                            , listState = Ls.changeUrl url viewState.listState
+                                        }
+                              }
+                            , Cmd.map ListMsg <| Ls.doListQueryFromUrl url
+                            )
+
+                        ViewCommits ->
+                            ( { model
+                                | url = url
+                                , loginState =
+                                    LoginSuccess
+                                        { viewState
+                                            | currentView = ViewCommits
+                                        }
+                              }
+                            , Cmd.none
+                            )
+
+                        other ->
+                            ( { model
+                                | url = url
+                                , loginState =
+                                    LoginSuccess
+                                        { viewState
+                                            | currentView = other
+                                        }
+                              }
+                            , Cmd.none
+                            )
 
                 _ ->
                     ( { model | url = url }, Cmd.none )
@@ -296,6 +405,51 @@ update msg model =
                 Ls.update
                 (\viewState newSubModel -> { viewState | listState = newSubModel })
 
+        CommitsMsg subMsg ->
+            withSubUpdate
+                subMsg
+                .commitsState
+                model
+                CommitsMsg
+                Commits.update
+                (\viewState newSubModel -> { viewState | commitsState = newSubModel })
+
+        DeletedFilesMsg subMsg ->
+            withSubUpdate
+                subMsg
+                .deletedFilesState
+                model
+                DeletedFilesMsg
+                DeletedFiles.update
+                (\viewState newSubModel -> { viewState | deletedFilesState = newSubModel })
+
+        NotFoundMsg subMsg ->
+            withSubUpdate
+                subMsg
+                .notFoundState
+                model
+                NotFoundMsg
+                NotFound.update
+                (\viewState newSubModel -> { viewState | notFoundState = newSubModel })
+
+        RemotesMsg subMsg ->
+            withSubUpdate
+                subMsg
+                .remoteState
+                model
+                RemotesMsg
+                Remotes.update
+                (\viewState newSubModel -> { viewState | remoteState = newSubModel })
+
+        SettingsMsg subMsg ->
+            withSubUpdate
+                subMsg
+                .settingsState
+                model
+                SettingsMsg
+                Settings.update
+                (\viewState newSubModel -> { viewState | settingsState = newSubModel })
+
 
 
 -- VIEW
@@ -353,7 +507,24 @@ viewMainContent model viewState =
 
 viewCurrentRoute : Model -> ViewState -> Html Msg
 viewCurrentRoute model viewState =
-    Html.map ListMsg <| Ls.view viewState.listState
+    case viewState.currentView of
+        ViewList ->
+            Html.map ListMsg <| Ls.view viewState.listState
+
+        ViewCommits ->
+            Html.map CommitsMsg <| Commits.view viewState.commitsState
+
+        ViewDeletedFiles ->
+            Html.map DeletedFilesMsg <| DeletedFiles.view viewState.deletedFilesState
+
+        ViewRemotes ->
+            Html.map RemotesMsg <| Remotes.view viewState.remoteState
+
+        ViewSettings ->
+            Html.map SettingsMsg <| Settings.view viewState.settingsState
+
+        ViewNotFound ->
+            Html.map NotFoundMsg <| NotFound.view viewState.notFoundState
 
 
 viewLoginInputs : String -> String -> List (Html Msg)
@@ -446,23 +617,23 @@ viewSidebarItems : Model -> ViewState -> Html Msg
 viewSidebarItems model viewState =
     ul [ class "flex-column navbar-nav w-100 text-left" ]
         [ li [ class "nav-item" ]
-            [ a [ class "nav-link active", href "#" ]
+            [ a [ class "nav-link active", href (viewToString ViewList) ]
                 [ span [] [ text "Files" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href "#" ]
+            [ a [ class "nav-link pl-0", href (viewToString ViewCommits) ]
                 [ span [ class "text-muted" ] [ text "Commit Log" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href "#" ]
+            [ a [ class "nav-link pl-0", href (viewToString ViewRemotes) ]
                 [ span [ class "text-muted" ] [ text "Remotes" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href "#" ]
+            [ a [ class "nav-link pl-0", href (viewToString ViewDeletedFiles) ]
                 [ span [ class "text-muted" ] [ text "Deleted files" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href "#" ]
+            [ a [ class "nav-link pl-0", href (viewToString ViewSettings) ]
                 [ span [ class "text-muted" ] [ text "Settings" ] ]
             ]
         , li [ class "nav-item" ]
@@ -495,6 +666,7 @@ subscriptions model =
         LoginSuccess viewState ->
             Sub.batch
                 [ Sub.map ListMsg (Ls.subscriptions viewState.listState)
+                , Sub.map CommitsMsg (Commits.subscriptions viewState.commitsState)
                 , Websocket.incoming WebsocketIn
                 ]
 
