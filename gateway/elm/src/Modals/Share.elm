@@ -8,7 +8,6 @@ import Bootstrap.Modal as Modal
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Ls
 import Url
 import Util
 
@@ -66,12 +65,8 @@ formatEntry url path =
     li [] [ a [ href link ] [ text link ] ]
 
 
-viewShare : Model -> Ls.Model -> Url.Url -> List (Grid.Column Msg)
-viewShare model lsModel url =
-    let
-        entries =
-            Ls.selectedPaths lsModel
-    in
+viewShare : Model -> List String -> Url.Url -> List (Grid.Column Msg)
+viewShare model entries url =
     [ Grid.col [ Col.xs12 ]
         [ p [] [ text "Use those links to share the selected files with people that do not use brig." ]
         , p [] [ b [] [ text "Note:" ], text " Remember, they still need to authenticate themselves." ]
@@ -80,15 +75,15 @@ viewShare model lsModel url =
     ]
 
 
-view : Model -> Ls.Model -> Url.Url -> Html Msg
-view model lsModel url =
+view : Model -> List String -> Url.Url -> Html Msg
+view model selectedPaths url =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
         |> Modal.h5 [] [ text "Share hyperlinks" ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model lsModel url) ]
+                [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model selectedPaths url) ]
             ]
         |> Modal.footer []
             [ Button.button

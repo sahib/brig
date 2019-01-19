@@ -2,25 +2,25 @@ module Ls exposing
     ( Model
     , Msg
     , buildModals
-    , currIsFile
-    , currRoot
-    , existsInCurr
-    , loadList
-    , nSelectedItems
+    , changeTimeZone
+    , changeUrl
+    , doListQueryFromUrl
     , newModel
-    , selectedPaths
     , subscriptions
     , update
-    , viewBreadcrumbs
-    , viewList
+    , view
     )
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Breadcrumb as Breadcrumb
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Dropdown as Dropdown
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
+import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
 import Bootstrap.Text as Text
@@ -33,11 +33,18 @@ import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
 import Modals.History as History
+import Modals.Mkdir as Mkdir
 import Modals.MoveCopy as MoveCopy
+import Modals.Remove as Remove
 import Modals.Rename as Rename
+import Modals.Share as Share
+import Modals.Upload as Upload
 import Set
 import Time
 import Url
+import Url.Builder as UrlBuilder
+import Url.Parser as UrlParser
+import Url.Parser.Query as Query
 import Util
 
 
@@ -62,19 +69,29 @@ type State
 
 type alias Model =
     { key : Nav.Key
+    , url : Url.Url
+    , zone : Time.Zone
     , state : State
     , alert : Alert.Visibility
     , currError : String
+
+    -- Sub models (for modals and dialogs):
     , historyState : History.Model
     , renameState : Rename.Model
     , moveState : MoveCopy.Model
     , copyState : MoveCopy.Model
+    , uploadState : Upload.Model
+    , mkdirState : Mkdir.Model
+    , removeState : Remove.Model
+    , shareState : Share.Model
     }
 
 
-newModel : Nav.Key -> Model
-newModel key =
+newModel : Nav.Key -> Url.Url -> Model
+newModel key url =
     { key = key
+    , url = url
+    , zone = Time.utc
     , state = Loading
     , alert = Alert.closed
     , currError = ""
@@ -82,7 +99,21 @@ newModel key =
     , renameState = Rename.newModel
     , moveState = MoveCopy.newMoveModel
     , copyState = MoveCopy.newCopyModel
+    , uploadState = Upload.newModel
+    , mkdirState = Mkdir.newModel
+    , removeState = Remove.newModel
+    , shareState = Share.newModel
     }
+
+
+changeUrl : Url.Url -> Model -> Model
+changeUrl url model =
+    { model | url = url }
+
+
+changeTimeZone : Time.Zone -> Model -> Model
+changeTimeZone zone model =
+    { model | zone = zone }
 
 
 nSelectedItems : Model -> Int
@@ -125,24 +156,19 @@ currRoot model =
             Nothing
 
 
-existsInCurr : String -> Model -> Maybe Bool
-existsInCurr name model =
+existsInCurr : Model -> String -> Bool
+existsInCurr model name =
     case model.state of
         Success actualModel ->
             case actualModel.isFiltered of
                 True ->
-                    Just False
+                    False
 
                 False ->
-                    Just (List.any (\e -> name == Util.basename e.path) actualModel.entries)
+                    List.any (\e -> name == Util.basename e.path) actualModel.entries
 
         _ ->
-            Nothing
-
-
-loadList : String -> String -> Cmd Msg
-loadList root filter =
-    Commands.doListQuery GotResponse root filter
+            False
 
 
 
@@ -172,11 +198,17 @@ type Msg
     | RemoveResponse (Result Http.Error String)
     | SortBy SortDirection SortKey
     | AlertMsg Alert.Visibility
+    | SearchInput String
       -- Sub messages:
     | HistoryMsg History.Msg
     | RenameMsg Rename.Msg
     | MoveMsg MoveCopy.Msg
     | CopyMsg MoveCopy.Msg
+      -- Modal sub messages:
+    | UploadMsg Upload.Msg
+    | MkdirMsg Mkdir.Msg
+    | RemoveMsg Remove.Msg
+    | ShareMsg Share.Msg
 
 
 
@@ -308,6 +340,22 @@ update msg model =
             , Commands.doRemove RemoveResponse [ entry.path ]
             )
 
+        SearchInput query ->
+            ( model
+              -- Save the filter query in the URL itself.
+              -- This way the query can be shared amongst users via link.
+            , Nav.pushUrl model.key <|
+                model.url.path
+                    ++ (if String.length query == 0 then
+                            ""
+
+                        else
+                            UrlBuilder.toQuery
+                                [ UrlBuilder.string "filter" query
+                                ]
+                       )
+            )
+
         HistoryClicked entry ->
             ( setDropdownState model entry Dropdown.initialState
             , Cmd.map HistoryMsg (History.show entry.path)
@@ -396,6 +444,34 @@ update msg model =
             in
             ( { model | copyState = newSubModel }, Cmd.map CopyMsg newSubCmd )
 
+        UploadMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    Upload.update subMsg model.uploadState
+            in
+            ( { model | uploadState = newSubModel }, Cmd.map UploadMsg newSubCmd )
+
+        MkdirMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    Mkdir.update subMsg model.mkdirState
+            in
+            ( { model | mkdirState = newSubModel }, Cmd.map MkdirMsg newSubCmd )
+
+        RemoveMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    Remove.update subMsg model.removeState
+            in
+            ( { model | removeState = newSubModel }, Cmd.map RemoveMsg newSubCmd )
+
+        ShareMsg subMsg ->
+            let
+                ( newSubModel, newSubCmd ) =
+                    Share.update subMsg model.shareState
+            in
+            ( { model | shareState = newSubModel }, Cmd.map ShareMsg newSubCmd )
+
 
 
 -- VIEW
@@ -465,8 +541,8 @@ viewPinIcon isPinned isExplicit =
             span [ class "text-danger fa fa-times" ] []
 
 
-viewSingleEntry : ActualModel -> Url.Url -> Time.Zone -> Html Msg
-viewSingleEntry actualModel url zone =
+viewSingleEntry : Model -> ActualModel -> Time.Zone -> Html Msg
+viewSingleEntry model actualModel zone =
     Grid.row []
         [ Grid.col [ Col.xs2 ] []
         , Grid.col [ Col.xs8, Col.textAlign Text.alignXsCenter ]
@@ -488,9 +564,9 @@ viewSingleEntry actualModel url zone =
                         (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
                     ]
                 , ListGroup.li [ ListGroup.light ]
-                    [ viewDownloadButton actualModel url
+                    [ viewDownloadButton actualModel model.url
                     , text " "
-                    , viewViewButton actualModel url
+                    , viewViewButton actualModel model.url
                     ]
                 ]
             ]
@@ -498,8 +574,8 @@ viewSingleEntry actualModel url zone =
         ]
 
 
-viewList : Model -> Url.Url -> Time.Zone -> Html Msg
-viewList model url zone =
+viewList : Model -> Time.Zone -> Html Msg
+viewList model zone =
     case model.state of
         Failure ->
             div [] [ text "Sorry, something did not work out as expected." ]
@@ -518,7 +594,7 @@ viewList model url zone =
                 False ->
                     div []
                         [ showAlert model
-                        , Lazy.lazy3 viewSingleEntry actualModel url zone
+                        , Lazy.lazy3 viewSingleEntry model actualModel zone
                         ]
 
 
@@ -556,13 +632,13 @@ buildBreadcrumbs names previous =
                 ++ buildBreadcrumbs rest (previous ++ [ name ])
 
 
-viewBreadcrumbs : Url.Url -> Model -> Html msg
-viewBreadcrumbs url model =
+viewBreadcrumbs : Model -> Html msg
+viewBreadcrumbs model =
     div [ id "breadcrumbs-box" ]
         [ Breadcrumb.container
             (buildBreadcrumbs
                 ([ "" ]
-                    ++ (Util.urlToPath url |> Util.splitPath)
+                    ++ (Util.urlToPath model.url |> Util.splitPath)
                 )
                 []
             )
@@ -782,12 +858,172 @@ entriesToHtml zone model =
 
 buildModals : Model -> Html Msg
 buildModals model =
+    let
+        paths =
+            selectedPaths model
+    in
     span []
         [ Html.map HistoryMsg (History.view model.historyState)
         , Html.map RenameMsg (Rename.view model.renameState)
         , Html.map MoveMsg (MoveCopy.view model.moveState)
         , Html.map CopyMsg (MoveCopy.view model.copyState)
+        , Html.map MkdirMsg (Mkdir.view model.mkdirState model.url (existsInCurr model))
+        , Html.map RemoveMsg (Remove.view model.removeState paths)
+        , Html.map ShareMsg (Share.view model.shareState paths model.url)
         ]
+
+
+searchQueryFromUrl : Url.Url -> String
+searchQueryFromUrl url =
+    Maybe.withDefault ""
+        (UrlParser.parse
+            (UrlParser.query
+                (Query.map (Maybe.withDefault "") (Query.string "filter"))
+            )
+            { url | path = "" }
+        )
+
+
+doListQueryFromUrl : Url.Url -> Cmd Msg
+doListQueryFromUrl url =
+    let
+        path =
+            Util.urlToPath url
+
+        filter =
+            searchQueryFromUrl url
+    in
+    Commands.doListQuery GotResponse path filter
+
+
+viewSearchBox : Model -> Html Msg
+viewSearchBox model =
+    InputGroup.config
+        (InputGroup.text
+            [ Input.placeholder "Search"
+            , Input.attrs
+                [ onInput SearchInput
+                , value (searchQueryFromUrl model.url)
+                ]
+            ]
+        )
+        |> InputGroup.successors
+            [ InputGroup.span [ class "input-group-addon" ]
+                [ button [] [ span [ class "fas fa-search fa-xs input-group-addon" ] [] ]
+                ]
+            ]
+        |> InputGroup.attrs [ class "stylish-input-group input-group" ]
+        |> InputGroup.view
+
+
+buildActionButton : Msg -> String -> String -> Bool -> ButtonGroup.ButtonItem Msg
+buildActionButton msg iconName labelText isDisabled =
+    ButtonGroup.button
+        [ Button.block
+        , Button.roleLink
+        , Button.attrs [ class "text-left", disabled isDisabled, onClick msg ]
+        ]
+        [ span [ class "fas fa-lg", class iconName ] []
+        , span [ id "toolbar-label" ] [ text (" " ++ labelText) ]
+        ]
+
+
+labelSelectedItems : Model -> Int -> String
+labelSelectedItems model num =
+    if currIsFile model then
+        ""
+
+    else
+        case num of
+            0 ->
+                "Nothing selected"
+
+            1 ->
+                " 1 item selected"
+
+            n ->
+                " " ++ String.fromInt n ++ " items selected"
+
+
+viewActionList : Model -> Html Msg
+viewActionList model =
+    let
+        nSelected =
+            nSelectedItems model
+
+        disabledClass =
+            if currIsFile model then
+                class "disabled"
+
+            else
+                class "btn-default"
+
+        root =
+            Maybe.withDefault "/" (currRoot model)
+    in
+    div [ class "toolbar" ]
+        [ p [ class "text-muted", id "select-label" ] [ text (labelSelectedItems model nSelected) ]
+        , br [] []
+        , Upload.buildButton model.uploadState (currIsFile model) root UploadMsg
+        , Button.linkButton
+            [ Button.block
+            , Button.attrs
+                [ class "text-left btn-link"
+                , disabledClass
+                , href ("/get" ++ Util.urlToPath model.url ++ "?direct=yes")
+                ]
+            ]
+            [ span [ class "fas fa-lg fa-file-download" ] []
+            , span [ id "action-btn" ] [ text " Download all" ]
+            ]
+        , ButtonGroup.toolbar [ class "btn-group-vertical" ]
+            [ ButtonGroup.buttonGroupItem
+                [ ButtonGroup.small
+                , ButtonGroup.vertical
+                ]
+                [ buildActionButton
+                    (ShareMsg <| Share.show)
+                    "fa-share-alt"
+                    "Share"
+                    (nSelected == 0)
+                , buildActionButton
+                    (MkdirMsg <| Mkdir.show)
+                    "fa-edit"
+                    "New Folder"
+                    (currIsFile model)
+                , buildActionButton
+                    (RemoveMsg <| Remove.show (selectedPaths model))
+                    "fa-trash"
+                    "Delete"
+                    (nSelected == 0)
+                ]
+            ]
+        , Html.map UploadMsg (Upload.viewUploadState model.uploadState)
+        ]
+
+
+view : Model -> Html Msg
+view model =
+    Grid.row []
+        [ Grid.col
+            [ Col.lg12 ]
+            [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
+                [ Grid.col [ Col.xl9 ]
+                    [ viewBreadcrumbs model ]
+                , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
+                ]
+            , Grid.row [ Row.attrs [ id "main-content-row" ] ]
+                [ Grid.col
+                    [ Col.xl10 ]
+                    [ viewList model model.zone ]
+                , Grid.col [ Col.xl2 ] [ Lazy.lazy viewActionList model ]
+                ]
+            ]
+        ]
+
+
+
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
@@ -800,6 +1036,10 @@ subscriptions model =
                 , Sub.map RenameMsg (Rename.subscriptions model.renameState)
                 , Sub.map MoveMsg (MoveCopy.subscriptions model.moveState)
                 , Sub.map CopyMsg (MoveCopy.subscriptions model.copyState)
+                , Sub.map UploadMsg (Upload.subscriptions model.uploadState)
+                , Sub.map MkdirMsg (Mkdir.subscriptions model.url model.mkdirState)
+                , Sub.map RemoveMsg (Remove.subscriptions model.removeState)
+                , Sub.map ShareMsg (Share.subscriptions model.shareState)
                 , Sub.batch
                     (List.map (\e -> Dropdown.subscriptions e.dropdown (ActionDropdownMsg e))
                         actualModel.entries

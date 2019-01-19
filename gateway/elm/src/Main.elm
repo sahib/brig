@@ -29,7 +29,6 @@ import Modals.Mkdir as Mkdir
 import Modals.Remove as Remove
 import Modals.Share as Share
 import Modals.Upload as Upload
-import Websocket
 import Task
 import Time
 import Url
@@ -37,6 +36,7 @@ import Url.Builder as UrlBuilder
 import Url.Parser as UrlParser
 import Url.Parser.Query as Query
 import Util exposing (..)
+import Websocket
 
 
 
@@ -66,7 +66,6 @@ type Msg
     | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | SearchInput String
     | UsernameInput String
     | PasswordInput String
     | LoginSubmit
@@ -74,11 +73,6 @@ type Msg
     | WebsocketIn String
       -- View parent messages:
     | ListMsg Ls.Msg
-      -- Modal parent messages:
-    | UploadMsg Upload.Msg
-    | MkdirMsg Mkdir.Msg
-    | RemoveMsg Remove.Msg
-    | ShareMsg Share.Msg
 
 
 
@@ -87,10 +81,6 @@ type Msg
 
 type alias ViewState =
     { listState : Ls.Model
-    , uploadState : Upload.Model
-    , mkdirState : Mkdir.Model
-    , removeState : Remove.Model
-    , shareState : Share.Model
     , loginName : String
     }
 
@@ -127,8 +117,6 @@ init _ url key =
 
 
 -- UPDATE
--- withSubUpdate lets you call sub updater methods that update ViewState in some way and return their own Cmd.
--- It is an abomination, but it saves quite a few lines down below.
 
 
 withSubUpdate : subMsg -> (ViewState -> subModel) -> Model -> (subMsg -> Msg) -> (subMsg -> subModel -> ( subModel, Cmd subMsg )) -> (ViewState -> subModel -> ViewState) -> ( Model, Cmd Msg )
@@ -145,44 +133,17 @@ withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
             ( model, Cmd.none )
 
 
-searchQueryFromUrl : Url.Url -> String
-searchQueryFromUrl url =
-    Maybe.withDefault ""
-        (UrlParser.parse
-            (UrlParser.query
-                (Query.map (Maybe.withDefault "") (Query.string "filter"))
-            )
-            { url | path = "" }
-        )
-
-
-doListQueryFromUrl : Url.Url -> Cmd Msg
-doListQueryFromUrl url =
-    let
-        path =
-            Util.urlToPath url
-
-        filter =
-            searchQueryFromUrl url
-    in
-    Cmd.map ListMsg <| Ls.loadList path filter
-
-
 doInitAfterLogin : Model -> String -> ( Model, Cmd Msg )
 doInitAfterLogin model loginName =
     ( { model
         | loginState =
             LoginSuccess
-                { listState = Ls.newModel model.key
-                , uploadState = Upload.newModel
-                , mkdirState = Mkdir.newModel
-                , removeState = Remove.newModel
-                , shareState = Share.newModel
+                { listState = Ls.newModel model.key model.url
                 , loginName = loginName
                 }
       }
     , Cmd.batch
-        [ doListQueryFromUrl model.url
+        [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
         , Websocket.open ()
         ]
     )
@@ -192,7 +153,17 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AdjustTimeZone newZone ->
-            ( { model | zone = newZone }, Cmd.none )
+            case model.loginState of
+                LoginSuccess viewState ->
+                    ( { model
+                        | zone = newZone
+                        , loginState = LoginSuccess { viewState | listState = Ls.changeTimeZone newZone viewState.listState }
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( { model | zone = newZone }, Cmd.none )
 
         GotWhoamiResp result ->
             case result of
@@ -256,7 +227,19 @@ update msg model =
                             )
 
         UrlChanged url ->
-            ( { model | url = url }, doListQueryFromUrl url )
+            case model.loginState of
+                LoginSuccess viewState ->
+                    ( { model
+                        | url = url
+                        , loginState =
+                            LoginSuccess
+                                { viewState | listState = Ls.changeUrl url viewState.listState }
+                      }
+                    , Cmd.map ListMsg <| Ls.doListQueryFromUrl url
+                    )
+
+                _ ->
+                    ( { model | url = url }, Cmd.none )
 
         UsernameInput username ->
             case model.loginState of
@@ -298,42 +281,20 @@ update msg model =
         LogoutSubmit ->
             ( model, Commands.doLogout GotLogoutResp )
 
-        SearchInput query ->
-            ( model
-              -- Save the filter query in the URL itself.
-              -- This way the query can be shared amongst users via link.
-            , Nav.pushUrl model.key <|
-                model.url.path
-                    ++ (if String.length query == 0 then
-                            ""
-
-                        else
-                            UrlBuilder.toQuery
-                                [ UrlBuilder.string "filter" query
-                                ]
-                       )
-            )
-
         WebsocketIn _ ->
             -- Currently we know only one event that is being sent
             -- over the websocket. It means "update the list, something changed". Change
             -- this once we have more events.
-            ( model, doListQueryFromUrl model.url )
+            ( model, Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url )
 
         ListMsg subMsg ->
-            withSubUpdate subMsg .listState model ListMsg Ls.update (\viewState newSubModel -> { viewState | listState = newSubModel })
-
-        UploadMsg subMsg ->
-            withSubUpdate subMsg .uploadState model UploadMsg Upload.update (\viewState newSubModel -> { viewState | uploadState = newSubModel })
-
-        MkdirMsg subMsg ->
-            withSubUpdate subMsg .mkdirState model MkdirMsg Mkdir.update (\viewState newSubModel -> { viewState | mkdirState = newSubModel })
-
-        RemoveMsg subMsg ->
-            withSubUpdate subMsg .removeState model RemoveMsg Remove.update (\viewState newSubModel -> { viewState | removeState = newSubModel })
-
-        ShareMsg subMsg ->
-            withSubUpdate subMsg .shareState model ShareMsg Share.update (\viewState newSubModel -> { viewState | shareState = newSubModel })
+            withSubUpdate
+                subMsg
+                .listState
+                model
+                ListMsg
+                Ls.update
+                (\viewState newSubModel -> { viewState | listState = newSubModel })
 
 
 
@@ -358,12 +319,12 @@ view model =
                 [ Lazy.lazy viewLoginForm model ]
 
             LoginSuccess viewState ->
-                viewList model viewState
+                viewMainContent model viewState
     }
 
 
-viewList : Model -> ViewState -> List (Html Msg)
-viewList model viewState =
+viewMainContent : Model -> ViewState -> List (Html Msg)
+viewMainContent model viewState =
     [ div [ class "container-fluid" ]
         [ div [ class "row wrapper" ]
             [ aside [ class "col-12 col-md-2 p-0 bg-light" ]
@@ -376,16 +337,13 @@ viewList model viewState =
                         [ span [ class "navbar-toggler-icon" ] []
                         ]
                     , div [ class "collapse navbar-collapse sidebar" ]
-                        [ viewSidebarItems model
+                        [ viewSidebarItems model viewState
                         ]
                     ]
                 , viewSidebarBottom model
                 ]
             , main_ [ class "col bg-faded py-3" ]
-                [ viewListMainContent model viewState
-                , Html.map MkdirMsg (Mkdir.view viewState.mkdirState model.url viewState.listState)
-                , Html.map RemoveMsg (Remove.view viewState.removeState viewState.listState)
-                , Html.map ShareMsg (Share.view viewState.shareState viewState.listState model.url)
+                [ viewCurrentRoute model viewState
                 , Html.map ListMsg (Ls.buildModals viewState.listState)
                 ]
             ]
@@ -393,28 +351,9 @@ viewList model viewState =
     ]
 
 
-viewListMainContent : Model -> ViewState -> Html Msg
-viewListMainContent model viewState =
-    Grid.row []
-        [ Grid.col
-            [ Col.lg12 ]
-            [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                [ Grid.col [ Col.xl9 ]
-                    [ Html.map ListMsg
-                        (Ls.viewBreadcrumbs model.url viewState.listState)
-                    ]
-                , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
-                ]
-            , Grid.row [ Row.attrs [ id "main-content-row" ] ]
-                [ Grid.col
-                    [ Col.xl10 ]
-                    [ Html.map ListMsg
-                        (Ls.viewList viewState.listState model.url model.zone)
-                    ]
-                , Grid.col [ Col.xl2 ] [ Lazy.lazy2 viewActionList viewState model.url ]
-                ]
-            ]
-        ]
+viewCurrentRoute : Model -> ViewState -> Html Msg
+viewCurrentRoute model viewState =
+    Html.map ListMsg <| Ls.view viewState.listState
 
 
 viewLoginInputs : String -> String -> List (Html Msg)
@@ -503,28 +442,8 @@ viewLoginForm model =
         ]
 
 
-viewSearchBox : Model -> Html Msg
-viewSearchBox model =
-    InputGroup.config
-        (InputGroup.text
-            [ Input.placeholder "Search"
-            , Input.attrs
-                [ onInput SearchInput
-                , value (searchQueryFromUrl model.url)
-                ]
-            ]
-        )
-        |> InputGroup.successors
-            [ InputGroup.span [ class "input-group-addon" ]
-                [ button [] [ span [ class "fas fa-search fa-xs input-group-addon" ] [] ]
-                ]
-            ]
-        |> InputGroup.attrs [ class "stylish-input-group input-group" ]
-        |> InputGroup.view
-
-
-viewSidebarItems : Model -> Html Msg
-viewSidebarItems model =
+viewSidebarItems : Model -> ViewState -> Html Msg
+viewSidebarItems model viewState =
     ul [ class "flex-column navbar-nav w-100 text-left" ]
         [ li [ class "nav-item" ]
             [ a [ class "nav-link active", href "#" ]
@@ -546,6 +465,10 @@ viewSidebarItems model =
             [ a [ class "nav-link pl-0", href "#" ]
                 [ span [ class "text-muted" ] [ text "Settings" ] ]
             ]
+        , li [ class "nav-item" ]
+            [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                [ span [ class "text-muted" ] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
+            ]
         ]
 
 
@@ -562,81 +485,6 @@ viewSidebarBottom model =
         ]
 
 
-labelSelectedItems : Ls.Model -> Int -> String
-labelSelectedItems lsModel num =
-    if Ls.currIsFile lsModel then
-        ""
-    else
-        case num of
-            0 ->
-                "Nothing selected"
-
-            1 ->
-                " 1 item selected"
-
-            n ->
-                " " ++ String.fromInt n ++ " items selected"
-
-
-buildActionButton : Msg -> String -> String -> Bool -> ButtonGroup.ButtonItem Msg
-buildActionButton msg iconName labelText isDisabled =
-    ButtonGroup.button
-        [ Button.block
-        , Button.roleLink
-        , Button.attrs [ class "text-left", disabled isDisabled, onClick msg ]
-        ]
-        [ span [ class "fas fa-lg", class iconName ] []
-        , span [ id "toolbar-label" ] [ text (" " ++ labelText) ]
-        ]
-
-
-viewActionList : ViewState -> Url.Url -> Html Msg
-viewActionList model url =
-    let
-        nSelected =
-            Ls.nSelectedItems model.listState
-
-        disabledClass =
-            if Ls.currIsFile model.listState then
-                class "disabled"
-
-            else
-                class "btn-default"
-    in
-    div [ class "toolbar" ]
-        [ p [ class "text-muted", id "select-label" ] [ text (labelSelectedItems model.listState nSelected) ]
-        , br [] []
-        , Upload.buildButton model.uploadState model.listState UploadMsg
-        , Button.linkButton
-            [ Button.block
-            , Button.attrs
-                [ class "text-left btn-link"
-                , disabledClass
-                , href ("/get" ++ Util.urlToPath url ++ "?direct=yes")
-                ]
-            ]
-            [ span [ class "fas fa-lg fa-file-download" ] []
-            , span [ id "action-btn" ] [ text " Download all" ]
-            ]
-        , ButtonGroup.toolbar [ class "btn-group-vertical" ]
-            [ ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small
-                , ButtonGroup.vertical
-                ]
-                [ buildActionButton (ShareMsg <| Share.show) "fa-share-alt" "Share" (nSelected == 0)
-                , buildActionButton (MkdirMsg <| Mkdir.show) "fa-edit" "New Folder" (Ls.currIsFile model.listState)
-                , buildActionButton (RemoveMsg <| Remove.show) "fa-trash" "Delete" (nSelected == 0)
-                , buildActionButton
-                    LogoutSubmit
-                    "fa-sign-out-alt"
-                    ("Log out »" ++ model.loginName ++ "«")
-                    False
-                ]
-            ]
-        , Html.map UploadMsg (Upload.viewUploadState model.uploadState)
-        ]
-
-
 
 -- SUBSCRIPTIONS
 
@@ -646,11 +494,7 @@ subscriptions model =
     case model.loginState of
         LoginSuccess viewState ->
             Sub.batch
-                [ Sub.map UploadMsg (Upload.subscriptions viewState.uploadState)
-                , Sub.map MkdirMsg (Mkdir.subscriptions model.url viewState.mkdirState)
-                , Sub.map RemoveMsg (Remove.subscriptions viewState.listState viewState.removeState)
-                , Sub.map ShareMsg (Share.subscriptions viewState.shareState)
-                , Sub.map ListMsg (Ls.subscriptions viewState.listState)
+                [ Sub.map ListMsg (Ls.subscriptions viewState.listState)
                 , Websocket.incoming WebsocketIn
                 ]
 

@@ -51,7 +51,7 @@
 
                 ws.onmessage = function(message) {
                     /* console.log(message); */
-                    app.ports.websocketIn.send(
+                    app.ports.incoming.send(
                         JSON.stringify({
                             data: message.data,
                             timeStamp: message.timeStamp

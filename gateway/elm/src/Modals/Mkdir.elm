@@ -5,9 +5,7 @@ import Bootstrap.Button as Button
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
 import Bootstrap.Modal as Modal
-
 import Browser.Events as Events
 import Commands
 import Html exposing (..)
@@ -15,9 +13,6 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
-
-import Ls
 import Url
 import Util
 
@@ -110,14 +105,9 @@ update msg model =
 -- VIEW
 
 
-hasPathCollision : Model -> Ls.Model -> Bool
-hasPathCollision model lsModel =
-    Maybe.withDefault False (Ls.existsInCurr model.inputName lsModel)
-
-
-showPathCollision : Model -> Ls.Model -> Html Msg
-showPathCollision model lsModel =
-    if hasPathCollision model lsModel then
+showPathCollision : Model -> Bool -> Html Msg
+showPathCollision model doesExist =
+    if doesExist then
         span [ class "text-left" ]
             [ span [ class "fas fa-md fa-exclamation-triangle text-warning" ] []
             , span [ class "text-muted" ]
@@ -129,8 +119,8 @@ showPathCollision model lsModel =
         span [] []
 
 
-viewMkdirContent : Model -> Ls.Model -> List (Grid.Column Msg)
-viewMkdirContent model lsModel =
+viewMkdirContent : Model -> List (Grid.Column Msg)
+viewMkdirContent model =
     [ Grid.col [ Col.xs12 ]
         [ Input.text
             [ Input.id "mkdir-input"
@@ -155,11 +145,14 @@ pathFromUrl url model =
     Util.joinPath [ Util.urlToPath url, model.inputName ]
 
 
-view : Model -> Url.Url -> Ls.Model -> Html Msg
-view model url lsModel =
+view : Model -> Url.Url -> (String -> Bool) -> Html Msg
+view model url existChecker =
     let
         path =
             Util.urlToPath url
+
+        hasPathCollision =
+            existChecker model.inputName
     in
     Modal.config ModalClose
         |> Modal.large
@@ -167,10 +160,10 @@ view model url lsModel =
         |> Modal.h5 [] [ text ("Create a new directory in " ++ path) ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewMkdirContent model lsModel) ]
+                [ Grid.row [] (viewMkdirContent model) ]
             ]
         |> Modal.footer []
-            [ showPathCollision model lsModel
+            [ showPathCollision model hasPathCollision
             , Button.button
                 [ Button.primary
                 , Button.attrs
@@ -186,7 +179,7 @@ view model url lsModel =
                                     _ ->
                                         False
                                )
-                            || hasPathCollision model lsModel
+                            || hasPathCollision
                         )
                     ]
                 ]

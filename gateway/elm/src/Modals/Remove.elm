@@ -4,23 +4,14 @@ import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
 import Bootstrap.Modal as Modal
-
-
 import Browser.Events as Events
-
 import Commands
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
-
-import Ls
-
 import Util
 
 
@@ -33,17 +24,18 @@ type alias Model =
     { state : State
     , modal : Modal.Visibility
     , alert : Alert.Visibility
+    , selected : List String
     }
 
 
 type Msg
     = RemoveAll (List String)
-    | ModalShow
+    | ModalShow (List String)
     | GotResponse (Result Http.Error String)
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
-    | KeyPress (List String) String
+    | KeyPress String
 
 
 
@@ -55,6 +47,7 @@ newModel =
     { state = Ready
     , modal = Modal.hidden
     , alert = Alert.shown
+    , selected = []
     }
 
 
@@ -80,8 +73,8 @@ update msg model =
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
 
-        ModalShow ->
-            ( { model | modal = Modal.shown }, Cmd.none )
+        ModalShow paths ->
+            ( { model | modal = Modal.shown, selected = paths }, Cmd.none )
 
         ModalClose ->
             ( { model | modal = Modal.hidden, state = Ready }, Cmd.none )
@@ -89,7 +82,7 @@ update msg model =
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
 
-        KeyPress paths key ->
+        KeyPress key ->
             ( model
             , if model.modal == Modal.hidden then
                 Cmd.none
@@ -97,7 +90,7 @@ update msg model =
               else
                 case key of
                     "Enter" ->
-                        Commands.doRemove GotResponse paths
+                        Commands.doRemove GotResponse model.selected
 
                     _ ->
                         Cmd.none
@@ -108,12 +101,12 @@ update msg model =
 -- VIEW
 
 
-viewRemoveContent : Model -> Ls.Model -> List (Grid.Column Msg)
-viewRemoveContent model lsModel =
+viewRemoveContent : Model -> Int -> List (Grid.Column Msg)
+viewRemoveContent model nSelected =
     [ Grid.col [ Col.xs12 ]
         [ case model.state of
             Ready ->
-                text ("Remove the " ++ String.fromInt (Ls.nSelectedItems lsModel) ++ " selected items")
+                text ("Remove the " ++ String.fromInt nSelected ++ " selected items")
 
             Fail message ->
                 Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not remove directory: " ++ message)
@@ -121,21 +114,21 @@ viewRemoveContent model lsModel =
     ]
 
 
-view : Model -> Ls.Model -> Html Msg
-view model lsModel =
+view : Model -> List String -> Html Msg
+view model selectedPaths =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
         |> Modal.h5 [] [ text "Really remove?" ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [] (viewRemoveContent model lsModel) ]
+                [ Grid.row [] (viewRemoveContent model (List.length selectedPaths)) ]
             ]
         |> Modal.footer []
             [ Button.button
                 [ Button.danger
                 , Button.attrs
-                    [ onClick <| RemoveAll <| Ls.selectedPaths lsModel
+                    [ onClick <| RemoveAll selectedPaths
                     , disabled
                         (case model.state of
                             Fail _ ->
@@ -156,19 +149,19 @@ view model lsModel =
         |> Modal.view model.modal
 
 
-show : Msg
-show =
-    ModalShow
+show : List String -> Msg
+show paths =
+    ModalShow paths
 
 
 
 -- SUBSCRIPTIONS
 
 
-subscriptions : Ls.Model -> Model -> Sub Msg
-subscriptions lsModel model =
+subscriptions : Model -> Sub Msg
+subscriptions model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
-        , Events.onKeyPress (D.map (KeyPress <| Ls.selectedPaths lsModel) <| D.field "key" D.string)
+        , Events.onKeyPress (D.map KeyPress <| D.field "key" D.string)
         ]

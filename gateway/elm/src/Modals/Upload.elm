@@ -12,11 +12,8 @@ import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
 import Bootstrap.Progress as Progress
 import Bootstrap.Text as Text
-
-
 import Commands
 import Delay
 import Dict
@@ -27,8 +24,6 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D
 import List
-import Ls
-
 import Tuple
 
 
@@ -144,16 +139,12 @@ filesDecoder =
     D.at [ "target", "files" ] (D.list File.decoder)
 
 
-buildButton : Model -> Ls.Model -> (Msg -> msg) -> Html msg
-buildButton model lsModel toMsg =
-    let
-        isDisabled =
-            Ls.currIsFile lsModel
-    in
+buildButton : Model -> Bool -> String -> (Msg -> msg) -> Html msg
+buildButton model currIsFile currRoot toMsg =
     label
         [ class "btn btn-file btn-link btn-default text-left"
         , id "action-btn"
-        , if isDisabled then
+        , if currIsFile then
             class "disabled"
 
           else
@@ -167,14 +158,12 @@ buildButton model lsModel toMsg =
             , on "change"
                 (D.map toMsg
                     (D.map
-                        (UploadSelectedFiles
-                            (Maybe.withDefault "/" (Ls.currRoot lsModel))
-                        )
+                        (UploadSelectedFiles currRoot)
                         filesDecoder
                     )
                 )
             , style "display" "none"
-            , disabled isDisabled
+            , disabled currIsFile
             ]
             []
         ]

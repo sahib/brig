@@ -6318,11 +6318,23 @@ var author$project$Ls$CopyMsg = function (a) {
 var author$project$Ls$HistoryMsg = function (a) {
 	return {$: 'HistoryMsg', a: a};
 };
+var author$project$Ls$MkdirMsg = function (a) {
+	return {$: 'MkdirMsg', a: a};
+};
 var author$project$Ls$MoveMsg = function (a) {
 	return {$: 'MoveMsg', a: a};
 };
+var author$project$Ls$RemoveMsg = function (a) {
+	return {$: 'RemoveMsg', a: a};
+};
 var author$project$Ls$RenameMsg = function (a) {
 	return {$: 'RenameMsg', a: a};
+};
+var author$project$Ls$ShareMsg = function (a) {
+	return {$: 'ShareMsg', a: a};
+};
+var author$project$Ls$UploadMsg = function (a) {
+	return {$: 'UploadMsg', a: a};
 };
 var author$project$Modals$History$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
@@ -6934,141 +6946,6 @@ var author$project$Modals$History$subscriptions = function (model) {
 					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
 			]));
 };
-var author$project$Modals$MoveCopy$AlertMsg = function (a) {
-	return {$: 'AlertMsg', a: a};
-};
-var author$project$Modals$MoveCopy$AnimateModal = function (a) {
-	return {$: 'AnimateModal', a: a};
-};
-var author$project$Modals$MoveCopy$KeyPress = function (a) {
-	return {$: 'KeyPress', a: a};
-};
-var author$project$Modals$MoveCopy$subscriptions = function (model) {
-	return elm$core$Platform$Sub$batch(
-		_List_fromArray(
-			[
-				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$MoveCopy$AnimateModal),
-				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$MoveCopy$AlertMsg),
-				elm$browser$Browser$Events$onKeyPress(
-				A2(
-					elm$json$Json$Decode$map,
-					author$project$Modals$MoveCopy$KeyPress,
-					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
-			]));
-};
-var author$project$Modals$Rename$AlertMsg = function (a) {
-	return {$: 'AlertMsg', a: a};
-};
-var author$project$Modals$Rename$AnimateModal = function (a) {
-	return {$: 'AnimateModal', a: a};
-};
-var author$project$Modals$Rename$KeyPress = function (a) {
-	return {$: 'KeyPress', a: a};
-};
-var author$project$Modals$Rename$subscriptions = function (model) {
-	return elm$core$Platform$Sub$batch(
-		_List_fromArray(
-			[
-				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$Rename$AnimateModal),
-				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$Rename$AlertMsg),
-				elm$browser$Browser$Events$onKeyPress(
-				A2(
-					elm$json$Json$Decode$map,
-					author$project$Modals$Rename$KeyPress,
-					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
-			]));
-};
-var elm$core$Platform$Sub$map = _Platform_map;
-var elm$browser$Browser$Events$onClick = A2(elm$browser$Browser$Events$on, elm$browser$Browser$Events$Document, 'click');
-var rundis$elm_bootstrap$Bootstrap$Dropdown$Closed = {$: 'Closed'};
-var rundis$elm_bootstrap$Bootstrap$Dropdown$ListenClicks = {$: 'ListenClicks'};
-var rundis$elm_bootstrap$Bootstrap$Dropdown$State = function (a) {
-	return {$: 'State', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus = F2(
-	function (status, _n0) {
-		var stateRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Dropdown$State(
-			_Utils_update(
-				stateRec,
-				{status: status}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions = F2(
-	function (state, toMsg) {
-		var status = state.a.status;
-		switch (status.$) {
-			case 'Open':
-				return elm$browser$Browser$Events$onAnimationFrame(
-					function (_n1) {
-						return toMsg(
-							A2(rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus, rundis$elm_bootstrap$Bootstrap$Dropdown$ListenClicks, state));
-					});
-			case 'ListenClicks':
-				return elm$browser$Browser$Events$onClick(
-					elm$json$Json$Decode$succeed(
-						toMsg(
-							A2(rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus, rundis$elm_bootstrap$Bootstrap$Dropdown$Closed, state))));
-			default:
-				return elm$core$Platform$Sub$none;
-		}
-	});
-var author$project$Ls$subscriptions = function (model) {
-	var _n0 = model.state;
-	if (_n0.$ === 'Success') {
-		var actualModel = _n0.a;
-		return elm$core$Platform$Sub$batch(
-			_List_fromArray(
-				[
-					A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Ls$AlertMsg),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Ls$HistoryMsg,
-					author$project$Modals$History$subscriptions(model.historyState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Ls$RenameMsg,
-					author$project$Modals$Rename$subscriptions(model.renameState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Ls$MoveMsg,
-					author$project$Modals$MoveCopy$subscriptions(model.moveState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Ls$CopyMsg,
-					author$project$Modals$MoveCopy$subscriptions(model.copyState)),
-					elm$core$Platform$Sub$batch(
-					A2(
-						elm$core$List$map,
-						function (e) {
-							return A2(
-								rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions,
-								e.dropdown,
-								author$project$Ls$ActionDropdownMsg(e));
-						},
-						actualModel.entries))
-				]));
-	} else {
-		return elm$core$Platform$Sub$none;
-	}
-};
-var author$project$Main$ListMsg = function (a) {
-	return {$: 'ListMsg', a: a};
-};
-var author$project$Main$MkdirMsg = function (a) {
-	return {$: 'MkdirMsg', a: a};
-};
-var author$project$Main$RemoveMsg = function (a) {
-	return {$: 'RemoveMsg', a: a};
-};
-var author$project$Main$ShareMsg = function (a) {
-	return {$: 'ShareMsg', a: a};
-};
-var author$project$Main$UploadMsg = function (a) {
-	return {$: 'UploadMsg', a: a};
-};
-var author$project$Main$WebsocketIn = function (a) {
-	return {$: 'WebsocketIn', a: a};
-};
 var author$project$Modals$Mkdir$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
 };
@@ -7154,47 +7031,27 @@ var author$project$Modals$Mkdir$subscriptions = F2(
 						A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
 				]));
 	});
-var elm$core$Basics$not = _Basics_not;
-var elm$core$Dict$filter = F2(
-	function (isGood, dict) {
-		return A3(
-			elm$core$Dict$foldl,
-			F3(
-				function (k, v, d) {
-					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
-				}),
-			elm$core$Dict$empty,
-			dict);
-	});
-var elm$core$Set$Set_elm_builtin = function (a) {
-	return {$: 'Set_elm_builtin', a: a};
+var author$project$Modals$MoveCopy$AlertMsg = function (a) {
+	return {$: 'AlertMsg', a: a};
 };
-var elm$core$Set$filter = F2(
-	function (isGood, _n0) {
-		var dict = _n0.a;
-		return elm$core$Set$Set_elm_builtin(
-			A2(
-				elm$core$Dict$filter,
-				F2(
-					function (key, _n1) {
-						return isGood(key);
-					}),
-				dict));
-	});
-var author$project$Ls$selectedPaths = function (model) {
-	var _n0 = model.state;
-	if (_n0.$ === 'Success') {
-		var actualModel = _n0.a;
-		return elm$core$Set$toList(
-			A2(
-				elm$core$Set$filter,
-				function (e) {
-					return !elm$core$String$isEmpty(e);
-				},
-				actualModel.checked));
-	} else {
-		return _List_Nil;
-	}
+var author$project$Modals$MoveCopy$AnimateModal = function (a) {
+	return {$: 'AnimateModal', a: a};
+};
+var author$project$Modals$MoveCopy$KeyPress = function (a) {
+	return {$: 'KeyPress', a: a};
+};
+var author$project$Modals$MoveCopy$subscriptions = function (model) {
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$MoveCopy$AnimateModal),
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$MoveCopy$AlertMsg),
+				elm$browser$Browser$Events$onKeyPress(
+				A2(
+					elm$json$Json$Decode$map,
+					author$project$Modals$MoveCopy$KeyPress,
+					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+			]));
 };
 var author$project$Modals$Remove$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
@@ -7202,25 +7059,44 @@ var author$project$Modals$Remove$AlertMsg = function (a) {
 var author$project$Modals$Remove$AnimateModal = function (a) {
 	return {$: 'AnimateModal', a: a};
 };
-var author$project$Modals$Remove$KeyPress = F2(
-	function (a, b) {
-		return {$: 'KeyPress', a: a, b: b};
-	});
-var author$project$Modals$Remove$subscriptions = F2(
-	function (lsModel, model) {
-		return elm$core$Platform$Sub$batch(
-			_List_fromArray(
-				[
-					A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$Remove$AnimateModal),
-					A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$Remove$AlertMsg),
-					elm$browser$Browser$Events$onKeyPress(
-					A2(
-						elm$json$Json$Decode$map,
-						author$project$Modals$Remove$KeyPress(
-							author$project$Ls$selectedPaths(lsModel)),
-						A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
-				]));
-	});
+var author$project$Modals$Remove$KeyPress = function (a) {
+	return {$: 'KeyPress', a: a};
+};
+var author$project$Modals$Remove$subscriptions = function (model) {
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$Remove$AnimateModal),
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$Remove$AlertMsg),
+				elm$browser$Browser$Events$onKeyPress(
+				A2(
+					elm$json$Json$Decode$map,
+					author$project$Modals$Remove$KeyPress,
+					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+			]));
+};
+var author$project$Modals$Rename$AlertMsg = function (a) {
+	return {$: 'AlertMsg', a: a};
+};
+var author$project$Modals$Rename$AnimateModal = function (a) {
+	return {$: 'AnimateModal', a: a};
+};
+var author$project$Modals$Rename$KeyPress = function (a) {
+	return {$: 'KeyPress', a: a};
+};
+var author$project$Modals$Rename$subscriptions = function (model) {
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$Rename$AnimateModal),
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$Rename$AlertMsg),
+				elm$browser$Browser$Events$onKeyPress(
+				A2(
+					elm$json$Json$Decode$map,
+					author$project$Modals$Rename$KeyPress,
+					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+			]));
+};
 var author$project$Modals$Share$AnimateModal = function (a) {
 	return {$: 'AnimateModal', a: a};
 };
@@ -7280,6 +7156,101 @@ var author$project$Modals$Upload$subscriptions = function (model) {
 					model.failed))
 			]));
 };
+var elm$core$Platform$Sub$map = _Platform_map;
+var elm$browser$Browser$Events$onClick = A2(elm$browser$Browser$Events$on, elm$browser$Browser$Events$Document, 'click');
+var rundis$elm_bootstrap$Bootstrap$Dropdown$Closed = {$: 'Closed'};
+var rundis$elm_bootstrap$Bootstrap$Dropdown$ListenClicks = {$: 'ListenClicks'};
+var rundis$elm_bootstrap$Bootstrap$Dropdown$State = function (a) {
+	return {$: 'State', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus = F2(
+	function (status, _n0) {
+		var stateRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Dropdown$State(
+			_Utils_update(
+				stateRec,
+				{status: status}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions = F2(
+	function (state, toMsg) {
+		var status = state.a.status;
+		switch (status.$) {
+			case 'Open':
+				return elm$browser$Browser$Events$onAnimationFrame(
+					function (_n1) {
+						return toMsg(
+							A2(rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus, rundis$elm_bootstrap$Bootstrap$Dropdown$ListenClicks, state));
+					});
+			case 'ListenClicks':
+				return elm$browser$Browser$Events$onClick(
+					elm$json$Json$Decode$succeed(
+						toMsg(
+							A2(rundis$elm_bootstrap$Bootstrap$Dropdown$updateStatus, rundis$elm_bootstrap$Bootstrap$Dropdown$Closed, state))));
+			default:
+				return elm$core$Platform$Sub$none;
+		}
+	});
+var author$project$Ls$subscriptions = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var actualModel = _n0.a;
+		return elm$core$Platform$Sub$batch(
+			_List_fromArray(
+				[
+					A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Ls$AlertMsg),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$HistoryMsg,
+					author$project$Modals$History$subscriptions(model.historyState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$RenameMsg,
+					author$project$Modals$Rename$subscriptions(model.renameState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$MoveMsg,
+					author$project$Modals$MoveCopy$subscriptions(model.moveState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$CopyMsg,
+					author$project$Modals$MoveCopy$subscriptions(model.copyState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$UploadMsg,
+					author$project$Modals$Upload$subscriptions(model.uploadState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$MkdirMsg,
+					A2(author$project$Modals$Mkdir$subscriptions, model.url, model.mkdirState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$RemoveMsg,
+					author$project$Modals$Remove$subscriptions(model.removeState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Ls$ShareMsg,
+					author$project$Modals$Share$subscriptions(model.shareState)),
+					elm$core$Platform$Sub$batch(
+					A2(
+						elm$core$List$map,
+						function (e) {
+							return A2(
+								rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions,
+								e.dropdown,
+								author$project$Ls$ActionDropdownMsg(e));
+						},
+						actualModel.entries))
+				]));
+	} else {
+		return elm$core$Platform$Sub$none;
+	}
+};
+var author$project$Main$ListMsg = function (a) {
+	return {$: 'ListMsg', a: a};
+};
+var author$project$Main$WebsocketIn = function (a) {
+	return {$: 'WebsocketIn', a: a};
+};
 var author$project$Websocket$incoming = _Platform_incomingPort('incoming', elm$json$Json$Decode$string);
 var author$project$Main$subscriptions = function (model) {
 	var _n0 = model.loginState;
@@ -7288,22 +7259,6 @@ var author$project$Main$subscriptions = function (model) {
 		return elm$core$Platform$Sub$batch(
 			_List_fromArray(
 				[
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Main$UploadMsg,
-					author$project$Modals$Upload$subscriptions(viewState.uploadState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Main$MkdirMsg,
-					A2(author$project$Modals$Mkdir$subscriptions, model.url, viewState.mkdirState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Main$RemoveMsg,
-					A2(author$project$Modals$Remove$subscriptions, viewState.listState, viewState.removeState)),
-					A2(
-					elm$core$Platform$Sub$map,
-					author$project$Main$ShareMsg,
-					author$project$Modals$Share$subscriptions(viewState.shareState)),
 					A2(
 					elm$core$Platform$Sub$map,
 					author$project$Main$ListMsg,
@@ -7372,6 +7327,357 @@ var author$project$Commands$doLogout = function (msg) {
 				A2(elm$json$Json$Decode$field, 'success', elm$json$Json$Decode$bool)),
 			url: '/api/v0/logout'
 		});
+};
+var author$project$Ls$changeTimeZone = F2(
+	function (zone, model) {
+		return _Utils_update(
+			model,
+			{zone: zone});
+	});
+var author$project$Ls$changeUrl = F2(
+	function (url, model) {
+		return _Utils_update(
+			model,
+			{url: url});
+	});
+var author$project$Commands$ListQuery = F2(
+	function (root, filter) {
+		return {filter: filter, root: root};
+	});
+var author$project$Commands$ListResponse = F3(
+	function (self, isFiltered, entries) {
+		return {entries: entries, isFiltered: isFiltered, self: self};
+	});
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2(elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var author$project$Commands$Entry = function (dropdown) {
+	return function (path) {
+		return function (user) {
+			return function (size) {
+				return function (inode) {
+					return function (depth) {
+						return function (lastModified) {
+							return function (isDir) {
+								return function (isPinned) {
+									return function (isExplicit) {
+										return {depth: depth, dropdown: dropdown, inode: inode, isDir: isDir, isExplicit: isExplicit, isPinned: isPinned, lastModified: lastModified, path: path, size: size, user: user};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
+var elm$json$Json$Decode$andThen = _Json_andThen;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var author$project$Commands$timestampToPosix = A2(
+	elm$json$Json$Decode$andThen,
+	function (ms) {
+		return elm$json$Json$Decode$succeed(
+			elm$time$Time$millisToPosix(ms));
+	},
+	elm$json$Json$Decode$int);
+var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area = F4(
+	function (top, left, width, height) {
+		return {height: height, left: left, top: top, width: width};
+	});
+var rundis$elm_bootstrap$Bootstrap$Dropdown$initialState = rundis$elm_bootstrap$Bootstrap$Dropdown$State(
+	{
+		menuSize: A4(rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area, 0, 0, 0, 0),
+		status: rundis$elm_bootstrap$Bootstrap$Dropdown$Closed,
+		toggleSize: A4(rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area, 0, 0, 0, 0)
+	});
+var author$project$Commands$decodeListEntry = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'is_explicit',
+	elm$json$Json$Decode$bool,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'is_pinned',
+		elm$json$Json$Decode$bool,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'is_dir',
+			elm$json$Json$Decode$bool,
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'last_modified_ms',
+				author$project$Commands$timestampToPosix,
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'depth',
+					elm$json$Json$Decode$int,
+					A3(
+						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+						'inode',
+						elm$json$Json$Decode$int,
+						A3(
+							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+							'size',
+							elm$json$Json$Decode$int,
+							A3(
+								NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+								'user',
+								elm$json$Json$Decode$string,
+								A3(
+									NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+									'path',
+									elm$json$Json$Decode$string,
+									elm$json$Json$Decode$succeed(
+										author$project$Commands$Entry(rundis$elm_bootstrap$Bootstrap$Dropdown$initialState)))))))))));
+var elm$json$Json$Decode$list = _Json_decodeList;
+var elm$json$Json$Decode$map3 = _Json_map3;
+var author$project$Commands$decodeListResponse = A4(
+	elm$json$Json$Decode$map3,
+	author$project$Commands$ListResponse,
+	A2(elm$json$Json$Decode$field, 'self', author$project$Commands$decodeListEntry),
+	A2(elm$json$Json$Decode$field, 'is_filtered', elm$json$Json$Decode$bool),
+	A2(
+		elm$json$Json$Decode$field,
+		'files',
+		elm$json$Json$Decode$list(author$project$Commands$decodeListEntry)));
+var author$project$Commands$encodeListResponse = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'root',
+				elm$json$Json$Encode$string(q.root)),
+				_Utils_Tuple2(
+				'filter',
+				elm$json$Json$Encode$string(q.filter))
+			]));
+};
+var author$project$Commands$doListQuery = F3(
+	function (toMsg, path, filter) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodeListResponse(
+						A2(author$project$Commands$ListQuery, path, filter))),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeListResponse),
+				url: '/api/v0/ls'
+			});
+	});
+var author$project$Ls$GotResponse = function (a) {
+	return {$: 'GotResponse', a: a};
+};
+var elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var elm$url$Url$Parser$State = F5(
+	function (visited, unvisited, params, frag, value) {
+		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var elm$url$Url$Parser$getFirstMatch = function (states) {
+	getFirstMatch:
+	while (true) {
+		if (!states.b) {
+			return elm$core$Maybe$Nothing;
+		} else {
+			var state = states.a;
+			var rest = states.b;
+			var _n1 = state.unvisited;
+			if (!_n1.b) {
+				return elm$core$Maybe$Just(state.value);
+			} else {
+				if ((_n1.a === '') && (!_n1.b.b)) {
+					return elm$core$Maybe$Just(state.value);
+				} else {
+					var $temp$states = rest;
+					states = $temp$states;
+					continue getFirstMatch;
+				}
+			}
+		}
+	}
+};
+var elm$url$Url$Parser$removeFinalEmpty = function (segments) {
+	if (!segments.b) {
+		return _List_Nil;
+	} else {
+		if ((segments.a === '') && (!segments.b.b)) {
+			return _List_Nil;
+		} else {
+			var segment = segments.a;
+			var rest = segments.b;
+			return A2(
+				elm$core$List$cons,
+				segment,
+				elm$url$Url$Parser$removeFinalEmpty(rest));
+		}
+	}
+};
+var elm$url$Url$Parser$preparePath = function (path) {
+	var _n0 = A2(elm$core$String$split, '/', path);
+	if (_n0.b && (_n0.a === '')) {
+		var segments = _n0.b;
+		return elm$url$Url$Parser$removeFinalEmpty(segments);
+	} else {
+		var segments = _n0;
+		return elm$url$Url$Parser$removeFinalEmpty(segments);
+	}
+};
+var elm$url$Url$Parser$addToParametersHelp = F2(
+	function (value, maybeList) {
+		if (maybeList.$ === 'Nothing') {
+			return elm$core$Maybe$Just(
+				_List_fromArray(
+					[value]));
+		} else {
+			var list = maybeList.a;
+			return elm$core$Maybe$Just(
+				A2(elm$core$List$cons, value, list));
+		}
+	});
+var elm$url$Url$Parser$addParam = F2(
+	function (segment, dict) {
+		var _n0 = A2(elm$core$String$split, '=', segment);
+		if ((_n0.b && _n0.b.b) && (!_n0.b.b.b)) {
+			var rawKey = _n0.a;
+			var _n1 = _n0.b;
+			var rawValue = _n1.a;
+			var _n2 = elm$url$Url$percentDecode(rawKey);
+			if (_n2.$ === 'Nothing') {
+				return dict;
+			} else {
+				var key = _n2.a;
+				var _n3 = elm$url$Url$percentDecode(rawValue);
+				if (_n3.$ === 'Nothing') {
+					return dict;
+				} else {
+					var value = _n3.a;
+					return A3(
+						elm$core$Dict$update,
+						key,
+						elm$url$Url$Parser$addToParametersHelp(value),
+						dict);
+				}
+			}
+		} else {
+			return dict;
+		}
+	});
+var elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
+	if (maybeQuery.$ === 'Nothing') {
+		return elm$core$Dict$empty;
+	} else {
+		var qry = maybeQuery.a;
+		return A3(
+			elm$core$List$foldr,
+			elm$url$Url$Parser$addParam,
+			elm$core$Dict$empty,
+			A2(elm$core$String$split, '&', qry));
+	}
+};
+var elm$url$Url$Parser$parse = F2(
+	function (_n0, url) {
+		var parser = _n0.a;
+		return elm$url$Url$Parser$getFirstMatch(
+			parser(
+				A5(
+					elm$url$Url$Parser$State,
+					_List_Nil,
+					elm$url$Url$Parser$preparePath(url.path),
+					elm$url$Url$Parser$prepareQuery(url.query),
+					url.fragment,
+					elm$core$Basics$identity)));
+	});
+var elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var elm$url$Url$Parser$query = function (_n0) {
+	var queryParser = _n0.a;
+	return elm$url$Url$Parser$Parser(
+		function (_n1) {
+			var visited = _n1.visited;
+			var unvisited = _n1.unvisited;
+			var params = _n1.params;
+			var frag = _n1.frag;
+			var value = _n1.value;
+			return _List_fromArray(
+				[
+					A5(
+					elm$url$Url$Parser$State,
+					visited,
+					unvisited,
+					params,
+					frag,
+					value(
+						queryParser(params)))
+				]);
+		});
+};
+var elm$url$Url$Parser$Internal$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var elm$url$Url$Parser$Query$map = F2(
+	function (func, _n0) {
+		var a = _n0.a;
+		return elm$url$Url$Parser$Internal$Parser(
+			function (dict) {
+				return func(
+					a(dict));
+			});
+	});
+var elm$url$Url$Parser$Query$custom = F2(
+	function (key, func) {
+		return elm$url$Url$Parser$Internal$Parser(
+			function (dict) {
+				return func(
+					A2(
+						elm$core$Maybe$withDefault,
+						_List_Nil,
+						A2(elm$core$Dict$get, key, dict)));
+			});
+	});
+var elm$url$Url$Parser$Query$string = function (key) {
+	return A2(
+		elm$url$Url$Parser$Query$custom,
+		key,
+		function (stringList) {
+			if (stringList.b && (!stringList.b.b)) {
+				var str = stringList.a;
+				return elm$core$Maybe$Just(str);
+			} else {
+				return elm$core$Maybe$Nothing;
+			}
+		});
+};
+var author$project$Ls$searchQueryFromUrl = function (url) {
+	return A2(
+		elm$core$Maybe$withDefault,
+		'',
+		A2(
+			elm$url$Url$Parser$parse,
+			elm$url$Url$Parser$query(
+				A2(
+					elm$url$Url$Parser$Query$map,
+					elm$core$Maybe$withDefault(''),
+					elm$url$Url$Parser$Query$string('filter'))),
+			_Utils_update(
+				url,
+				{path: ''})));
+};
+var author$project$Ls$doListQueryFromUrl = function (url) {
+	var path = author$project$Util$urlToPath(url);
+	var filter = author$project$Ls$searchQueryFromUrl(url);
+	return A3(author$project$Commands$doListQuery, author$project$Ls$GotResponse, path, filter);
 };
 var author$project$Commands$RemoveQuery = function (paths) {
 	return {paths: paths};
@@ -7508,6 +7814,9 @@ var author$project$Ls$sortBy = F3(
 				});
 		}
 	});
+var elm$core$Set$Set_elm_builtin = function (a) {
+	return {$: 'Set_elm_builtin', a: a};
+};
 var elm$core$Set$insert = F2(
 	function (key, _n0) {
 		var dict = _n0.a;
@@ -7626,14 +7935,6 @@ var author$project$Ls$updateCheckboxTickAll = F2(
 var author$project$Commands$HistoryQuery = function (path) {
 	return {path: path};
 };
-var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
-var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2(elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
-	});
 var author$project$Commands$HistoryEntry = F3(
 	function (head, path, change) {
 		return {change: change, head: head, path: path};
@@ -7642,16 +7943,6 @@ var author$project$Commands$Commit = F4(
 	function (date, msg, tags, hash) {
 		return {date: date, hash: hash, msg: msg, tags: tags};
 	});
-var elm$json$Json$Decode$andThen = _Json_andThen;
-var elm$json$Json$Decode$int = _Json_decodeInt;
-var author$project$Commands$timestampToPosix = A2(
-	elm$json$Json$Decode$andThen,
-	function (ms) {
-		return elm$json$Json$Decode$succeed(
-			elm$time$Time$millisToPosix(ms));
-	},
-	elm$json$Json$Decode$int);
-var elm$json$Json$Decode$list = _Json_decodeList;
 var author$project$Commands$decodeCommit = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'hash',
@@ -7823,6 +8114,130 @@ var author$project$Modals$History$update = F2(
 								model,
 								{history: elm$core$Maybe$Nothing, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
 							elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					}
+				}
+		}
+	});
+var author$project$Commands$MkdirQuery = function (path) {
+	return {path: path};
+};
+var author$project$Commands$decodeMkdirResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var author$project$Commands$encodeMkdirQuery = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'path',
+				elm$json$Json$Encode$string(q.path))
+			]));
+};
+var author$project$Commands$doMkdir = F2(
+	function (toMsg, path) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodeMkdirQuery(
+						author$project$Commands$MkdirQuery(path))),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeMkdirResponse),
+				url: '/api/v0/mkdir'
+			});
+	});
+var author$project$Modals$Mkdir$Fail = function (a) {
+	return {$: 'Fail', a: a};
+};
+var author$project$Modals$Mkdir$GotResponse = function (a) {
+	return {$: 'GotResponse', a: a};
+};
+var author$project$Modals$Mkdir$Ready = {$: 'Ready'};
+var author$project$Util$httpErrorToString = function (err) {
+	switch (err.$) {
+		case 'BadUrl':
+			var msg = err.a;
+			return 'Bad url: ' + msg;
+		case 'Timeout':
+			return 'Timeout';
+		case 'NetworkError':
+			return 'Network error';
+		case 'BadStatus':
+			var status = err.a;
+			return 'Bad status: ' + elm$core$String$fromInt(status);
+		default:
+			var msg = err.a;
+			return 'Could not decode body: ' + msg;
+	}
+};
+var author$project$Modals$Mkdir$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'CreateDir':
+				var path = msg.a;
+				return _Utils_Tuple2(
+					model,
+					A2(author$project$Commands$doMkdir, author$project$Modals$Mkdir$GotResponse, path));
+			case 'InputChanged':
+				var inputName = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{inputName: inputName}),
+					elm$core$Platform$Cmd$none);
+			case 'GotResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Modals$Mkdir$Fail(
+									author$project$Util$httpErrorToString(err))
+							}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'AnimateModal':
+				var visibility = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: visibility}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalShow':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalClose':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready}),
+					elm$core$Platform$Cmd$none);
+			case 'AlertMsg':
+				var vis = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{alert: vis}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var path = msg.a;
+				var key = msg.b;
+				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				} else {
+					if (key === 'Enter') {
+						return _Utils_Tuple2(
+							model,
+							A2(author$project$Commands$doMkdir, author$project$Modals$Mkdir$GotResponse, path));
 					} else {
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 					}
@@ -8064,6 +8479,7 @@ var author$project$Util$dirname = function (path) {
 	}
 };
 var elm$core$Basics$neq = _Utils_notEqual;
+var elm$core$Basics$not = _Basics_not;
 var author$project$Modals$MoveCopy$filterInvalidTargets = F2(
 	function (sourcePath, path) {
 		return (!_Utils_eq(
@@ -8086,23 +8502,6 @@ var author$project$Modals$MoveCopy$fixAllDirResponse = F2(
 				author$project$Modals$MoveCopy$filterInvalidTargets(model.sourcePath),
 				paths));
 	});
-var author$project$Util$httpErrorToString = function (err) {
-	switch (err.$) {
-		case 'BadUrl':
-			var msg = err.a;
-			return 'Bad url: ' + msg;
-		case 'Timeout':
-			return 'Timeout';
-		case 'NetworkError':
-			return 'Network error';
-		case 'BadStatus':
-			var status = err.a;
-			return 'Bad status: ' + elm$core$String$fromInt(status);
-		default:
-			var msg = err.a;
-			return 'Could not decode body: ' + msg;
-	}
-};
 var author$project$Modals$MoveCopy$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -8210,6 +8609,84 @@ var author$project$Modals$MoveCopy$update = F2(
 					}());
 		}
 	});
+var author$project$Modals$Remove$Fail = function (a) {
+	return {$: 'Fail', a: a};
+};
+var author$project$Modals$Remove$GotResponse = function (a) {
+	return {$: 'GotResponse', a: a};
+};
+var author$project$Modals$Remove$Ready = {$: 'Ready'};
+var author$project$Modals$Remove$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'RemoveAll':
+				var paths = msg.a;
+				return _Utils_Tuple2(
+					model,
+					A2(author$project$Commands$doRemove, author$project$Modals$Remove$GotResponse, paths));
+			case 'GotResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Modals$Remove$Fail(
+									author$project$Util$httpErrorToString(err))
+							}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'AnimateModal':
+				var visibility = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: visibility}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalShow':
+				var paths = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown, selected: paths}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalClose':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready}),
+					elm$core$Platform$Cmd$none);
+			case 'AlertMsg':
+				var vis = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{alert: vis}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var key = msg.a;
+				return _Utils_Tuple2(
+					model,
+					function () {
+						if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
+							return elm$core$Platform$Cmd$none;
+						} else {
+							if (key === 'Enter') {
+								return A2(author$project$Commands$doRemove, author$project$Modals$Remove$GotResponse, model.selected);
+							} else {
+								return elm$core$Platform$Cmd$none;
+							}
+						}
+					}());
+		}
+	});
 var author$project$Modals$Rename$Fail = function (a) {
 	return {$: 'Fail', a: a};
 };
@@ -8305,7 +8782,263 @@ var author$project$Modals$Rename$update = F2(
 				}
 		}
 	});
+var author$project$Modals$Share$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'AnimateModal':
+				var visibility = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: visibility}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalShow':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var andrewMacmurray$elm_delay$Delay$Second = {$: 'Second'};
+var andrewMacmurray$elm_delay$Delay$Duration = F2(
+	function (a, b) {
+		return {$: 'Duration', a: a, b: b};
+	});
+var elm$core$Basics$always = F2(
+	function (a, _n0) {
+		return a;
+	});
+var elm$core$Process$sleep = _Process_sleep;
+var andrewMacmurray$elm_delay$Delay$after_ = F2(
+	function (time, msg) {
+		return A2(
+			elm$core$Task$perform,
+			elm$core$Basics$always(msg),
+			elm$core$Process$sleep(time));
+	});
+var andrewMacmurray$elm_delay$Delay$Minute = {$: 'Minute'};
+var andrewMacmurray$elm_delay$Delay$toMillis = function (_n0) {
+	var t = _n0.a;
+	var u = _n0.b;
+	switch (u.$) {
+		case 'Millisecond':
+			return t;
+		case 'Second':
+			return 1000 * t;
+		case 'Minute':
+			return andrewMacmurray$elm_delay$Delay$toMillis(
+				A2(andrewMacmurray$elm_delay$Delay$Duration, 60 * t, andrewMacmurray$elm_delay$Delay$Second));
+		default:
+			return andrewMacmurray$elm_delay$Delay$toMillis(
+				A2(andrewMacmurray$elm_delay$Delay$Duration, 60 * t, andrewMacmurray$elm_delay$Delay$Minute));
+	}
+};
+var andrewMacmurray$elm_delay$Delay$after = F3(
+	function (time, unit, msg) {
+		return A2(
+			andrewMacmurray$elm_delay$Delay$after_,
+			andrewMacmurray$elm_delay$Delay$toMillis(
+				A2(andrewMacmurray$elm_delay$Delay$Duration, time, unit)),
+			msg);
+	});
+var elm$file$File$name = _File_name;
+var elm$http$Http$expectBytesResponse = F2(
+	function (toMsg, toResult) {
+		return A3(
+			_Http_expect,
+			'arraybuffer',
+			_Http_toDataView,
+			A2(elm$core$Basics$composeR, toResult, toMsg));
+	});
+var elm$http$Http$expectWhatever = function (toMsg) {
+	return A2(
+		elm$http$Http$expectBytesResponse,
+		toMsg,
+		elm$http$Http$resolve(
+			function (_n0) {
+				return elm$core$Result$Ok(_Utils_Tuple0);
+			}));
+};
+var elm$http$Http$filePart = _Http_pair;
+var elm$http$Http$multipartBody = function (parts) {
+	return A2(
+		_Http_pair,
+		'',
+		_Http_toFormData(parts));
+};
 var elm$url$Url$percentEncode = _Url_percentEncode;
+var author$project$Commands$doUpload = F3(
+	function (toMsg, destPath, file) {
+		return elm$http$Http$request(
+			{
+				body: elm$http$Http$multipartBody(
+					_List_fromArray(
+						[
+							A2(elm$http$Http$filePart, 'files[]', file)
+						])),
+				expect: elm$http$Http$expectWhatever(
+					toMsg(
+						elm$file$File$name(file))),
+				headers: _List_Nil,
+				method: 'POST',
+				timeout: elm$core$Maybe$Nothing,
+				tracker: elm$core$Maybe$Just(
+					'upload-' + elm$file$File$name(file)),
+				url: '/api/v0/upload?root=' + elm$url$Url$percentEncode(destPath)
+			});
+	});
+var author$project$Modals$Upload$Alertable = F2(
+	function (alert, path) {
+		return {alert: alert, path: path};
+	});
+var author$project$Modals$Upload$Uploaded = F2(
+	function (a, b) {
+		return {$: 'Uploaded', a: a, b: b};
+	});
+var author$project$Modals$Upload$alertMapper = F3(
+	function (path, vis, a) {
+		var _n0 = _Utils_eq(a.path, path);
+		if (_n0) {
+			return _Utils_update(
+				a,
+				{alert: vis});
+		} else {
+			return a;
+		}
+	});
+var elm$http$Http$cancel = function (tracker) {
+	return elm$http$Http$command(
+		elm$http$Http$Cancel(tracker));
+};
+var elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var elm$http$Http$fractionSent = function (p) {
+	return (!p.size) ? 1 : A3(elm$core$Basics$clamp, 0, 1, p.sent / p.size);
+};
+var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
+var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
+var rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
+var rundis$elm_bootstrap$Bootstrap$Alert$shown = rundis$elm_bootstrap$Bootstrap$Alert$Shown;
+var author$project$Modals$Upload$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'UploadSelectedFiles':
+				var root = msg.a;
+				var files = msg.b;
+				var newUploads = A2(
+					elm$core$Dict$union,
+					model.uploads,
+					elm$core$Dict$fromList(
+						A2(
+							elm$core$List$map,
+							function (f) {
+								return _Utils_Tuple2(
+									elm$file$File$name(f),
+									0);
+							},
+							files)));
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{uploads: newUploads}),
+					elm$core$Platform$Cmd$batch(
+						A2(
+							elm$core$List$map,
+							A2(author$project$Commands$doUpload, author$project$Modals$Upload$Uploaded, root),
+							files)));
+			case 'UploadProgress':
+				var path = msg.a;
+				var progress = msg.b;
+				if (progress.$ === 'Sending') {
+					var p = progress.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								uploads: A3(
+									elm$core$Dict$insert,
+									path,
+									elm$http$Http$fractionSent(p),
+									model.uploads)
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			case 'Uploaded':
+				var path = msg.a;
+				var result = msg.b;
+				var newUploads = A2(elm$core$Dict$remove, path, model.uploads);
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								success: A2(
+									elm$core$List$cons,
+									A2(author$project$Modals$Upload$Alertable, rundis$elm_bootstrap$Bootstrap$Alert$shown, path),
+									model.success),
+								uploads: newUploads
+							}),
+						A3(
+							andrewMacmurray$elm_delay$Delay$after,
+							5,
+							andrewMacmurray$elm_delay$Delay$Second,
+							A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed)));
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								failed: A2(
+									elm$core$List$cons,
+									A2(author$project$Modals$Upload$Alertable, rundis$elm_bootstrap$Bootstrap$Alert$shown, path),
+									model.failed),
+								uploads: newUploads
+							}),
+						A3(
+							andrewMacmurray$elm_delay$Delay$after,
+							30,
+							andrewMacmurray$elm_delay$Delay$Second,
+							A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed)));
+				}
+			case 'UploadCancel':
+				var path = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							uploads: A2(elm$core$Dict$remove, path, model.uploads)
+						}),
+					elm$http$Http$cancel('upload-' + path));
+			default:
+				var path = msg.a;
+				var vis = msg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							failed: A2(
+								elm$core$List$map,
+								A2(author$project$Modals$Upload$alertMapper, path, vis),
+								model.failed),
+							success: A2(
+								elm$core$List$map,
+								A2(author$project$Modals$Upload$alertMapper, path, vis),
+								model.success)
+						}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
 var author$project$Util$urlEncodePath = function (path) {
 	return author$project$Util$joinPath(
 		A2(
@@ -8323,18 +9056,32 @@ var elm$core$Set$singleton = function (key) {
 	return elm$core$Set$Set_elm_builtin(
 		A2(elm$core$Dict$singleton, key, _Utils_Tuple0));
 };
-var rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
-var rundis$elm_bootstrap$Bootstrap$Alert$shown = rundis$elm_bootstrap$Bootstrap$Alert$Shown;
-var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area = F4(
-	function (top, left, width, height) {
-		return {height: height, left: left, top: top, width: width};
+var elm$url$Url$Builder$QueryParameter = F2(
+	function (a, b) {
+		return {$: 'QueryParameter', a: a, b: b};
 	});
-var rundis$elm_bootstrap$Bootstrap$Dropdown$initialState = rundis$elm_bootstrap$Bootstrap$Dropdown$State(
-	{
-		menuSize: A4(rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area, 0, 0, 0, 0),
-		status: rundis$elm_bootstrap$Bootstrap$Dropdown$Closed,
-		toggleSize: A4(rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$Area, 0, 0, 0, 0)
+var elm$url$Url$Builder$string = F2(
+	function (key, value) {
+		return A2(
+			elm$url$Url$Builder$QueryParameter,
+			elm$url$Url$percentEncode(key),
+			elm$url$Url$percentEncode(value));
 	});
+var elm$url$Url$Builder$toQueryPair = function (_n0) {
+	var key = _n0.a;
+	var value = _n0.b;
+	return key + ('=' + value);
+};
+var elm$url$Url$Builder$toQuery = function (parameters) {
+	if (!parameters.b) {
+		return '';
+	} else {
+		return '?' + A2(
+			elm$core$String$join,
+			'&',
+			A2(elm$core$List$map, elm$url$Url$Builder$toQueryPair, parameters));
+	}
+};
 var author$project$Ls$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -8361,6 +9108,20 @@ var author$project$Ls$update = F2(
 						author$project$Ls$RemoveResponse,
 						_List_fromArray(
 							[entry.path])));
+			case 'SearchInput':
+				var query = msg.a;
+				return _Utils_Tuple2(
+					model,
+					A2(
+						elm$browser$Browser$Navigation$pushUrl,
+						model.key,
+						_Utils_ap(
+							model.url.path,
+							(!elm$core$String$length(query)) ? '' : elm$url$Url$Builder$toQuery(
+								_List_fromArray(
+									[
+										A2(elm$url$Url$Builder$string, 'filter', query)
+									])))));
 			case 'HistoryClicked':
 				var entry = msg.a;
 				return _Utils_Tuple2(
@@ -8474,7 +9235,7 @@ var author$project$Ls$update = F2(
 						model,
 						{moveState: newSubModel}),
 					A2(elm$core$Platform$Cmd$map, author$project$Ls$MoveMsg, newSubCmd));
-			default:
+			case 'CopyMsg':
 				var subMsg = msg.a;
 				var _n7 = A2(author$project$Modals$MoveCopy$update, subMsg, model.copyState);
 				var newSubModel = _n7.a;
@@ -8484,6 +9245,46 @@ var author$project$Ls$update = F2(
 						model,
 						{copyState: newSubModel}),
 					A2(elm$core$Platform$Cmd$map, author$project$Ls$CopyMsg, newSubCmd));
+			case 'UploadMsg':
+				var subMsg = msg.a;
+				var _n8 = A2(author$project$Modals$Upload$update, subMsg, model.uploadState);
+				var newSubModel = _n8.a;
+				var newSubCmd = _n8.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{uploadState: newSubModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Ls$UploadMsg, newSubCmd));
+			case 'MkdirMsg':
+				var subMsg = msg.a;
+				var _n9 = A2(author$project$Modals$Mkdir$update, subMsg, model.mkdirState);
+				var newSubModel = _n9.a;
+				var newSubCmd = _n9.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{mkdirState: newSubModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Ls$MkdirMsg, newSubCmd));
+			case 'RemoveMsg':
+				var subMsg = msg.a;
+				var _n10 = A2(author$project$Modals$Remove$update, subMsg, model.removeState);
+				var newSubModel = _n10.a;
+				var newSubCmd = _n10.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{removeState: newSubModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Ls$RemoveMsg, newSubCmd));
+			default:
+				var subMsg = msg.a;
+				var _n11 = A2(author$project$Modals$Share$update, subMsg, model.shareState);
+				var newSubModel = _n11.a;
+				var newSubCmd = _n11.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{shareState: newSubModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Ls$ShareMsg, newSubCmd));
 		}
 	});
 var author$project$Main$GotLoginResp = function (a) {
@@ -8504,345 +9305,24 @@ var author$project$Main$LoginReady = F2(
 	function (a, b) {
 		return {$: 'LoginReady', a: a, b: b};
 	});
+var author$project$Main$LoginSuccess = function (a) {
+	return {$: 'LoginSuccess', a: a};
+};
 var author$project$Ls$Loading = {$: 'Loading'};
 var author$project$Modals$History$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, history: elm$core$Maybe$Nothing, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden};
+var author$project$Modals$Mkdir$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready};
 var author$project$Modals$MoveCopy$Copy = {$: 'Copy'};
 var author$project$Modals$MoveCopy$newCopyModel = {action: author$project$Modals$MoveCopy$Copy, alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, destPath: '', filter: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, sourcePath: '', state: author$project$Modals$MoveCopy$Loading};
 var author$project$Modals$MoveCopy$Move = {$: 'Move'};
 var author$project$Modals$MoveCopy$newMoveModel = {action: author$project$Modals$MoveCopy$Move, alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, destPath: '', filter: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, sourcePath: '', state: author$project$Modals$MoveCopy$Loading};
+var author$project$Modals$Remove$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, selected: _List_Nil, state: author$project$Modals$Remove$Ready};
 var author$project$Modals$Rename$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, currPath: '', inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Rename$Ready};
-var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
-var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
-var author$project$Ls$newModel = function (key) {
-	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$closed, copyState: author$project$Modals$MoveCopy$newCopyModel, currError: '', historyState: author$project$Modals$History$newModel, key: key, moveState: author$project$Modals$MoveCopy$newMoveModel, renameState: author$project$Modals$Rename$newModel, state: author$project$Ls$Loading};
-};
-var author$project$Main$LoginSuccess = function (a) {
-	return {$: 'LoginSuccess', a: a};
-};
-var author$project$Commands$ListQuery = F2(
-	function (root, filter) {
-		return {filter: filter, root: root};
-	});
-var author$project$Commands$ListResponse = F3(
-	function (self, isFiltered, entries) {
-		return {entries: entries, isFiltered: isFiltered, self: self};
-	});
-var author$project$Commands$Entry = function (dropdown) {
-	return function (path) {
-		return function (user) {
-			return function (size) {
-				return function (inode) {
-					return function (depth) {
-						return function (lastModified) {
-							return function (isDir) {
-								return function (isPinned) {
-									return function (isExplicit) {
-										return {depth: depth, dropdown: dropdown, inode: inode, isDir: isDir, isExplicit: isExplicit, isPinned: isPinned, lastModified: lastModified, path: path, size: size, user: user};
-									};
-								};
-							};
-						};
-					};
-				};
-			};
-		};
-	};
-};
-var author$project$Commands$decodeListEntry = A3(
-	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'is_explicit',
-	elm$json$Json$Decode$bool,
-	A3(
-		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'is_pinned',
-		elm$json$Json$Decode$bool,
-		A3(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'is_dir',
-			elm$json$Json$Decode$bool,
-			A3(
-				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'last_modified_ms',
-				author$project$Commands$timestampToPosix,
-				A3(
-					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-					'depth',
-					elm$json$Json$Decode$int,
-					A3(
-						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-						'inode',
-						elm$json$Json$Decode$int,
-						A3(
-							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-							'size',
-							elm$json$Json$Decode$int,
-							A3(
-								NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-								'user',
-								elm$json$Json$Decode$string,
-								A3(
-									NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-									'path',
-									elm$json$Json$Decode$string,
-									elm$json$Json$Decode$succeed(
-										author$project$Commands$Entry(rundis$elm_bootstrap$Bootstrap$Dropdown$initialState)))))))))));
-var elm$json$Json$Decode$map3 = _Json_map3;
-var author$project$Commands$decodeListResponse = A4(
-	elm$json$Json$Decode$map3,
-	author$project$Commands$ListResponse,
-	A2(elm$json$Json$Decode$field, 'self', author$project$Commands$decodeListEntry),
-	A2(elm$json$Json$Decode$field, 'is_filtered', elm$json$Json$Decode$bool),
-	A2(
-		elm$json$Json$Decode$field,
-		'files',
-		elm$json$Json$Decode$list(author$project$Commands$decodeListEntry)));
-var author$project$Commands$encodeListResponse = function (q) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'root',
-				elm$json$Json$Encode$string(q.root)),
-				_Utils_Tuple2(
-				'filter',
-				elm$json$Json$Encode$string(q.filter))
-			]));
-};
-var author$project$Commands$doListQuery = F3(
-	function (toMsg, path, filter) {
-		return elm$http$Http$post(
-			{
-				body: elm$http$Http$jsonBody(
-					author$project$Commands$encodeListResponse(
-						A2(author$project$Commands$ListQuery, path, filter))),
-				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeListResponse),
-				url: '/api/v0/ls'
-			});
-	});
-var author$project$Ls$GotResponse = function (a) {
-	return {$: 'GotResponse', a: a};
-};
-var author$project$Ls$loadList = F2(
-	function (root, filter) {
-		return A3(author$project$Commands$doListQuery, author$project$Ls$GotResponse, root, filter);
-	});
-var elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var elm$url$Url$Parser$State = F5(
-	function (visited, unvisited, params, frag, value) {
-		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
-	});
-var elm$url$Url$Parser$getFirstMatch = function (states) {
-	getFirstMatch:
-	while (true) {
-		if (!states.b) {
-			return elm$core$Maybe$Nothing;
-		} else {
-			var state = states.a;
-			var rest = states.b;
-			var _n1 = state.unvisited;
-			if (!_n1.b) {
-				return elm$core$Maybe$Just(state.value);
-			} else {
-				if ((_n1.a === '') && (!_n1.b.b)) {
-					return elm$core$Maybe$Just(state.value);
-				} else {
-					var $temp$states = rest;
-					states = $temp$states;
-					continue getFirstMatch;
-				}
-			}
-		}
-	}
-};
-var elm$url$Url$Parser$removeFinalEmpty = function (segments) {
-	if (!segments.b) {
-		return _List_Nil;
-	} else {
-		if ((segments.a === '') && (!segments.b.b)) {
-			return _List_Nil;
-		} else {
-			var segment = segments.a;
-			var rest = segments.b;
-			return A2(
-				elm$core$List$cons,
-				segment,
-				elm$url$Url$Parser$removeFinalEmpty(rest));
-		}
-	}
-};
-var elm$url$Url$Parser$preparePath = function (path) {
-	var _n0 = A2(elm$core$String$split, '/', path);
-	if (_n0.b && (_n0.a === '')) {
-		var segments = _n0.b;
-		return elm$url$Url$Parser$removeFinalEmpty(segments);
-	} else {
-		var segments = _n0;
-		return elm$url$Url$Parser$removeFinalEmpty(segments);
-	}
-};
-var elm$url$Url$Parser$addToParametersHelp = F2(
-	function (value, maybeList) {
-		if (maybeList.$ === 'Nothing') {
-			return elm$core$Maybe$Just(
-				_List_fromArray(
-					[value]));
-		} else {
-			var list = maybeList.a;
-			return elm$core$Maybe$Just(
-				A2(elm$core$List$cons, value, list));
-		}
-	});
-var elm$url$Url$Parser$addParam = F2(
-	function (segment, dict) {
-		var _n0 = A2(elm$core$String$split, '=', segment);
-		if ((_n0.b && _n0.b.b) && (!_n0.b.b.b)) {
-			var rawKey = _n0.a;
-			var _n1 = _n0.b;
-			var rawValue = _n1.a;
-			var _n2 = elm$url$Url$percentDecode(rawKey);
-			if (_n2.$ === 'Nothing') {
-				return dict;
-			} else {
-				var key = _n2.a;
-				var _n3 = elm$url$Url$percentDecode(rawValue);
-				if (_n3.$ === 'Nothing') {
-					return dict;
-				} else {
-					var value = _n3.a;
-					return A3(
-						elm$core$Dict$update,
-						key,
-						elm$url$Url$Parser$addToParametersHelp(value),
-						dict);
-				}
-			}
-		} else {
-			return dict;
-		}
-	});
-var elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
-	if (maybeQuery.$ === 'Nothing') {
-		return elm$core$Dict$empty;
-	} else {
-		var qry = maybeQuery.a;
-		return A3(
-			elm$core$List$foldr,
-			elm$url$Url$Parser$addParam,
-			elm$core$Dict$empty,
-			A2(elm$core$String$split, '&', qry));
-	}
-};
-var elm$url$Url$Parser$parse = F2(
-	function (_n0, url) {
-		var parser = _n0.a;
-		return elm$url$Url$Parser$getFirstMatch(
-			parser(
-				A5(
-					elm$url$Url$Parser$State,
-					_List_Nil,
-					elm$url$Url$Parser$preparePath(url.path),
-					elm$url$Url$Parser$prepareQuery(url.query),
-					url.fragment,
-					elm$core$Basics$identity)));
-	});
-var elm$url$Url$Parser$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var elm$url$Url$Parser$query = function (_n0) {
-	var queryParser = _n0.a;
-	return elm$url$Url$Parser$Parser(
-		function (_n1) {
-			var visited = _n1.visited;
-			var unvisited = _n1.unvisited;
-			var params = _n1.params;
-			var frag = _n1.frag;
-			var value = _n1.value;
-			return _List_fromArray(
-				[
-					A5(
-					elm$url$Url$Parser$State,
-					visited,
-					unvisited,
-					params,
-					frag,
-					value(
-						queryParser(params)))
-				]);
-		});
-};
-var elm$url$Url$Parser$Internal$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var elm$url$Url$Parser$Query$map = F2(
-	function (func, _n0) {
-		var a = _n0.a;
-		return elm$url$Url$Parser$Internal$Parser(
-			function (dict) {
-				return func(
-					a(dict));
-			});
-	});
-var elm$url$Url$Parser$Query$custom = F2(
-	function (key, func) {
-		return elm$url$Url$Parser$Internal$Parser(
-			function (dict) {
-				return func(
-					A2(
-						elm$core$Maybe$withDefault,
-						_List_Nil,
-						A2(elm$core$Dict$get, key, dict)));
-			});
-	});
-var elm$url$Url$Parser$Query$string = function (key) {
-	return A2(
-		elm$url$Url$Parser$Query$custom,
-		key,
-		function (stringList) {
-			if (stringList.b && (!stringList.b.b)) {
-				var str = stringList.a;
-				return elm$core$Maybe$Just(str);
-			} else {
-				return elm$core$Maybe$Nothing;
-			}
-		});
-};
-var author$project$Main$searchQueryFromUrl = function (url) {
-	return A2(
-		elm$core$Maybe$withDefault,
-		'',
-		A2(
-			elm$url$Url$Parser$parse,
-			elm$url$Url$Parser$query(
-				A2(
-					elm$url$Url$Parser$Query$map,
-					elm$core$Maybe$withDefault(''),
-					elm$url$Url$Parser$Query$string('filter'))),
-			_Utils_update(
-				url,
-				{path: ''})));
-};
-var author$project$Main$doListQueryFromUrl = function (url) {
-	var path = author$project$Util$urlToPath(url);
-	var filter = author$project$Main$searchQueryFromUrl(url);
-	return A2(
-		elm$core$Platform$Cmd$map,
-		author$project$Main$ListMsg,
-		A2(author$project$Ls$loadList, path, filter));
-};
-var author$project$Modals$Mkdir$Ready = {$: 'Ready'};
-var author$project$Modals$Mkdir$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready};
-var author$project$Modals$Remove$Ready = {$: 'Ready'};
-var author$project$Modals$Remove$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready};
 var author$project$Modals$Share$newModel = {modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil};
 var author$project$Modals$Upload$newModel = {failed: _List_Nil, success: _List_Nil, uploads: elm$core$Dict$empty};
+var author$project$Ls$newModel = F2(
+	function (key, url) {
+		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$closed, copyState: author$project$Modals$MoveCopy$newCopyModel, currError: '', historyState: author$project$Modals$History$newModel, key: key, mkdirState: author$project$Modals$Mkdir$newModel, moveState: author$project$Modals$MoveCopy$newMoveModel, removeState: author$project$Modals$Remove$newModel, renameState: author$project$Modals$Rename$newModel, shareState: author$project$Modals$Share$newModel, state: author$project$Ls$Loading, uploadState: author$project$Modals$Upload$newModel, url: url, zone: elm$time$Time$utc};
+	});
 var elm$json$Json$Encode$null = _Json_encodeNull;
 var author$project$Websocket$open = _Platform_outgoingPort(
 	'open',
@@ -8857,18 +9337,17 @@ var author$project$Main$doInitAfterLogin = F2(
 				{
 					loginState: author$project$Main$LoginSuccess(
 						{
-							listState: author$project$Ls$newModel(model.key),
-							loginName: loginName,
-							mkdirState: author$project$Modals$Mkdir$newModel,
-							removeState: author$project$Modals$Remove$newModel,
-							shareState: author$project$Modals$Share$newModel,
-							uploadState: author$project$Modals$Upload$newModel
+							listState: A2(author$project$Ls$newModel, model.key, model.url),
+							loginName: loginName
 						})
 				}),
 			elm$core$Platform$Cmd$batch(
 				_List_fromArray(
 					[
-						author$project$Main$doListQueryFromUrl(model.url),
+						A2(
+						elm$core$Platform$Cmd$map,
+						author$project$Main$ListMsg,
+						author$project$Ls$doListQueryFromUrl(model.url)),
 						author$project$Websocket$open(_Utils_Tuple0)
 					])));
 	});
@@ -8893,441 +9372,6 @@ var author$project$Main$withSubUpdate = F6(
 				A2(elm$core$Platform$Cmd$map, msg, newSubCmd));
 		} else {
 			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-		}
-	});
-var author$project$Commands$MkdirQuery = function (path) {
-	return {path: path};
-};
-var author$project$Commands$decodeMkdirResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
-var author$project$Commands$encodeMkdirQuery = function (q) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'path',
-				elm$json$Json$Encode$string(q.path))
-			]));
-};
-var author$project$Commands$doMkdir = F2(
-	function (toMsg, path) {
-		return elm$http$Http$post(
-			{
-				body: elm$http$Http$jsonBody(
-					author$project$Commands$encodeMkdirQuery(
-						author$project$Commands$MkdirQuery(path))),
-				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeMkdirResponse),
-				url: '/api/v0/mkdir'
-			});
-	});
-var author$project$Modals$Mkdir$Fail = function (a) {
-	return {$: 'Fail', a: a};
-};
-var author$project$Modals$Mkdir$GotResponse = function (a) {
-	return {$: 'GotResponse', a: a};
-};
-var author$project$Modals$Mkdir$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'CreateDir':
-				var path = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A2(author$project$Commands$doMkdir, author$project$Modals$Mkdir$GotResponse, path));
-			case 'InputChanged':
-				var inputName = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{inputName: inputName}),
-					elm$core$Platform$Cmd$none);
-			case 'GotResponse':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					var err = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: author$project$Modals$Mkdir$Fail(
-									author$project$Util$httpErrorToString(err))
-							}),
-						elm$core$Platform$Cmd$none);
-				}
-			case 'AnimateModal':
-				var visibility = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: visibility}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalShow':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalClose':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready}),
-					elm$core$Platform$Cmd$none);
-			case 'AlertMsg':
-				var vis = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{alert: vis}),
-					elm$core$Platform$Cmd$none);
-			default:
-				var path = msg.a;
-				var key = msg.b;
-				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				} else {
-					if (key === 'Enter') {
-						return _Utils_Tuple2(
-							model,
-							A2(author$project$Commands$doMkdir, author$project$Modals$Mkdir$GotResponse, path));
-					} else {
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-					}
-				}
-		}
-	});
-var author$project$Modals$Remove$Fail = function (a) {
-	return {$: 'Fail', a: a};
-};
-var author$project$Modals$Remove$GotResponse = function (a) {
-	return {$: 'GotResponse', a: a};
-};
-var author$project$Modals$Remove$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'RemoveAll':
-				var paths = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A2(author$project$Commands$doRemove, author$project$Modals$Remove$GotResponse, paths));
-			case 'GotResponse':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					var err = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: author$project$Modals$Remove$Fail(
-									author$project$Util$httpErrorToString(err))
-							}),
-						elm$core$Platform$Cmd$none);
-				}
-			case 'AnimateModal':
-				var visibility = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: visibility}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalShow':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalClose':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Remove$Ready}),
-					elm$core$Platform$Cmd$none);
-			case 'AlertMsg':
-				var vis = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{alert: vis}),
-					elm$core$Platform$Cmd$none);
-			default:
-				var paths = msg.a;
-				var key = msg.b;
-				return _Utils_Tuple2(
-					model,
-					function () {
-						if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
-							return elm$core$Platform$Cmd$none;
-						} else {
-							if (key === 'Enter') {
-								return A2(author$project$Commands$doRemove, author$project$Modals$Remove$GotResponse, paths);
-							} else {
-								return elm$core$Platform$Cmd$none;
-							}
-						}
-					}());
-		}
-	});
-var author$project$Modals$Share$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'AnimateModal':
-				var visibility = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: visibility}),
-					elm$core$Platform$Cmd$none);
-			case 'ModalShow':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
-					elm$core$Platform$Cmd$none);
-			default:
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil}),
-					elm$core$Platform$Cmd$none);
-		}
-	});
-var andrewMacmurray$elm_delay$Delay$Second = {$: 'Second'};
-var andrewMacmurray$elm_delay$Delay$Duration = F2(
-	function (a, b) {
-		return {$: 'Duration', a: a, b: b};
-	});
-var elm$core$Basics$always = F2(
-	function (a, _n0) {
-		return a;
-	});
-var elm$core$Process$sleep = _Process_sleep;
-var andrewMacmurray$elm_delay$Delay$after_ = F2(
-	function (time, msg) {
-		return A2(
-			elm$core$Task$perform,
-			elm$core$Basics$always(msg),
-			elm$core$Process$sleep(time));
-	});
-var andrewMacmurray$elm_delay$Delay$Minute = {$: 'Minute'};
-var andrewMacmurray$elm_delay$Delay$toMillis = function (_n0) {
-	var t = _n0.a;
-	var u = _n0.b;
-	switch (u.$) {
-		case 'Millisecond':
-			return t;
-		case 'Second':
-			return 1000 * t;
-		case 'Minute':
-			return andrewMacmurray$elm_delay$Delay$toMillis(
-				A2(andrewMacmurray$elm_delay$Delay$Duration, 60 * t, andrewMacmurray$elm_delay$Delay$Second));
-		default:
-			return andrewMacmurray$elm_delay$Delay$toMillis(
-				A2(andrewMacmurray$elm_delay$Delay$Duration, 60 * t, andrewMacmurray$elm_delay$Delay$Minute));
-	}
-};
-var andrewMacmurray$elm_delay$Delay$after = F3(
-	function (time, unit, msg) {
-		return A2(
-			andrewMacmurray$elm_delay$Delay$after_,
-			andrewMacmurray$elm_delay$Delay$toMillis(
-				A2(andrewMacmurray$elm_delay$Delay$Duration, time, unit)),
-			msg);
-	});
-var elm$file$File$name = _File_name;
-var elm$http$Http$expectBytesResponse = F2(
-	function (toMsg, toResult) {
-		return A3(
-			_Http_expect,
-			'arraybuffer',
-			_Http_toDataView,
-			A2(elm$core$Basics$composeR, toResult, toMsg));
-	});
-var elm$http$Http$expectWhatever = function (toMsg) {
-	return A2(
-		elm$http$Http$expectBytesResponse,
-		toMsg,
-		elm$http$Http$resolve(
-			function (_n0) {
-				return elm$core$Result$Ok(_Utils_Tuple0);
-			}));
-};
-var elm$http$Http$filePart = _Http_pair;
-var elm$http$Http$multipartBody = function (parts) {
-	return A2(
-		_Http_pair,
-		'',
-		_Http_toFormData(parts));
-};
-var author$project$Commands$doUpload = F3(
-	function (toMsg, destPath, file) {
-		return elm$http$Http$request(
-			{
-				body: elm$http$Http$multipartBody(
-					_List_fromArray(
-						[
-							A2(elm$http$Http$filePart, 'files[]', file)
-						])),
-				expect: elm$http$Http$expectWhatever(
-					toMsg(
-						elm$file$File$name(file))),
-				headers: _List_Nil,
-				method: 'POST',
-				timeout: elm$core$Maybe$Nothing,
-				tracker: elm$core$Maybe$Just(
-					'upload-' + elm$file$File$name(file)),
-				url: '/api/v0/upload?root=' + elm$url$Url$percentEncode(destPath)
-			});
-	});
-var author$project$Modals$Upload$Alertable = F2(
-	function (alert, path) {
-		return {alert: alert, path: path};
-	});
-var author$project$Modals$Upload$Uploaded = F2(
-	function (a, b) {
-		return {$: 'Uploaded', a: a, b: b};
-	});
-var author$project$Modals$Upload$alertMapper = F3(
-	function (path, vis, a) {
-		var _n0 = _Utils_eq(a.path, path);
-		if (_n0) {
-			return _Utils_update(
-				a,
-				{alert: vis});
-		} else {
-			return a;
-		}
-	});
-var elm$http$Http$cancel = function (tracker) {
-	return elm$http$Http$command(
-		elm$http$Http$Cancel(tracker));
-};
-var elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var elm$http$Http$fractionSent = function (p) {
-	return (!p.size) ? 1 : A3(elm$core$Basics$clamp, 0, 1, p.sent / p.size);
-};
-var author$project$Modals$Upload$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'UploadSelectedFiles':
-				var root = msg.a;
-				var files = msg.b;
-				var newUploads = A2(
-					elm$core$Dict$union,
-					model.uploads,
-					elm$core$Dict$fromList(
-						A2(
-							elm$core$List$map,
-							function (f) {
-								return _Utils_Tuple2(
-									elm$file$File$name(f),
-									0);
-							},
-							files)));
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{uploads: newUploads}),
-					elm$core$Platform$Cmd$batch(
-						A2(
-							elm$core$List$map,
-							A2(author$project$Commands$doUpload, author$project$Modals$Upload$Uploaded, root),
-							files)));
-			case 'UploadProgress':
-				var path = msg.a;
-				var progress = msg.b;
-				if (progress.$ === 'Sending') {
-					var p = progress.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								uploads: A3(
-									elm$core$Dict$insert,
-									path,
-									elm$http$Http$fractionSent(p),
-									model.uploads)
-							}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				}
-			case 'Uploaded':
-				var path = msg.a;
-				var result = msg.b;
-				var newUploads = A2(elm$core$Dict$remove, path, model.uploads);
-				if (result.$ === 'Ok') {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								success: A2(
-									elm$core$List$cons,
-									A2(author$project$Modals$Upload$Alertable, rundis$elm_bootstrap$Bootstrap$Alert$shown, path),
-									model.success),
-								uploads: newUploads
-							}),
-						A3(
-							andrewMacmurray$elm_delay$Delay$after,
-							5,
-							andrewMacmurray$elm_delay$Delay$Second,
-							A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed)));
-				} else {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								failed: A2(
-									elm$core$List$cons,
-									A2(author$project$Modals$Upload$Alertable, rundis$elm_bootstrap$Bootstrap$Alert$shown, path),
-									model.failed),
-								uploads: newUploads
-							}),
-						A3(
-							andrewMacmurray$elm_delay$Delay$after,
-							30,
-							andrewMacmurray$elm_delay$Delay$Second,
-							A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed)));
-				}
-			case 'UploadCancel':
-				var path = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							uploads: A2(elm$core$Dict$remove, path, model.uploads)
-						}),
-					elm$http$Http$cancel('upload-' + path));
-			default:
-				var path = msg.a;
-				var vis = msg.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							failed: A2(
-								elm$core$List$map,
-								A2(author$project$Modals$Upload$alertMapper, path, vis),
-								model.failed),
-							success: A2(
-								elm$core$List$map,
-								A2(author$project$Modals$Upload$alertMapper, path, vis),
-								model.success)
-						}),
-					elm$core$Platform$Cmd$none);
 		}
 	});
 var elm$browser$Browser$Navigation$load = _Browser_load;
@@ -9375,48 +9419,40 @@ var elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
-var elm$url$Url$Builder$QueryParameter = F2(
-	function (a, b) {
-		return {$: 'QueryParameter', a: a, b: b};
-	});
-var elm$url$Url$Builder$string = F2(
-	function (key, value) {
-		return A2(
-			elm$url$Url$Builder$QueryParameter,
-			elm$url$Url$percentEncode(key),
-			elm$url$Url$percentEncode(value));
-	});
-var elm$url$Url$Builder$toQueryPair = function (_n0) {
-	var key = _n0.a;
-	var value = _n0.b;
-	return key + ('=' + value);
-};
-var elm$url$Url$Builder$toQuery = function (parameters) {
-	if (!parameters.b) {
-		return '';
-	} else {
-		return '?' + A2(
-			elm$core$String$join,
-			'&',
-			A2(elm$core$List$map, elm$url$Url$Builder$toQueryPair, parameters));
-	}
-};
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'AdjustTimeZone':
 				var newZone = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{zone: newZone}),
-					elm$core$Platform$Cmd$none);
+				var _n1 = model.loginState;
+				if (_n1.$ === 'LoginSuccess') {
+					var viewState = _n1.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								loginState: author$project$Main$LoginSuccess(
+									_Utils_update(
+										viewState,
+										{
+											listState: A2(author$project$Ls$changeTimeZone, newZone, viewState.listState)
+										})),
+								zone: newZone
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{zone: newZone}),
+						elm$core$Platform$Cmd$none);
+				}
 			case 'GotWhoamiResp':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var whoami = result.a;
-					var _n2 = whoami.isLoggedIn;
-					if (_n2) {
+					var _n3 = whoami.isLoggedIn;
+					if (_n3) {
 						return A2(author$project$Main$doInitAfterLogin, model, whoami.username);
 					} else {
 						return _Utils_Tuple2(
@@ -9468,8 +9504,8 @@ var author$project$Main$update = F2(
 				var urlRequest = msg.a;
 				if (urlRequest.$ === 'Internal') {
 					var url = urlRequest.a;
-					var _n5 = A2(elm$core$String$startsWith, '/get/', url.path);
-					if (_n5) {
+					var _n6 = A2(elm$core$String$startsWith, '/get/', url.path);
+					if (_n6) {
 						return _Utils_Tuple2(
 							model,
 							elm$browser$Browser$Navigation$load(
@@ -9501,17 +9537,38 @@ var author$project$Main$update = F2(
 				}
 			case 'UrlChanged':
 				var url = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{url: url}),
-					author$project$Main$doListQueryFromUrl(url));
+				var _n8 = model.loginState;
+				if (_n8.$ === 'LoginSuccess') {
+					var viewState = _n8.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								loginState: author$project$Main$LoginSuccess(
+									_Utils_update(
+										viewState,
+										{
+											listState: A2(author$project$Ls$changeUrl, url, viewState.listState)
+										})),
+								url: url
+							}),
+						A2(
+							elm$core$Platform$Cmd$map,
+							author$project$Main$ListMsg,
+							author$project$Ls$doListQueryFromUrl(url)));
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{url: url}),
+						elm$core$Platform$Cmd$none);
+				}
 			case 'UsernameInput':
 				var username = msg.a;
-				var _n7 = model.loginState;
-				switch (_n7.$) {
+				var _n9 = model.loginState;
+				switch (_n9.$) {
 					case 'LoginReady':
-						var password = _n7.b;
+						var password = _n9.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9520,7 +9577,7 @@ var author$project$Main$update = F2(
 								}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginFailure':
-						var password = _n7.b;
+						var password = _n9.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9533,10 +9590,10 @@ var author$project$Main$update = F2(
 				}
 			case 'PasswordInput':
 				var password = msg.a;
-				var _n8 = model.loginState;
-				switch (_n8.$) {
+				var _n10 = model.loginState;
+				switch (_n10.$) {
 					case 'LoginReady':
-						var username = _n8.a;
+						var username = _n10.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9545,7 +9602,7 @@ var author$project$Main$update = F2(
 								}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginFailure':
-						var username = _n8.a;
+						var username = _n10.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9557,11 +9614,11 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
 			case 'LoginSubmit':
-				var _n9 = model.loginState;
-				switch (_n9.$) {
+				var _n11 = model.loginState;
+				switch (_n11.$) {
 					case 'LoginReady':
-						var username = _n9.a;
-						var password = _n9.b;
+						var username = _n11.a;
+						var password = _n11.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9570,8 +9627,8 @@ var author$project$Main$update = F2(
 								}),
 							A3(author$project$Commands$doLogin, author$project$Main$GotLoginResp, username, password));
 					case 'LoginFailure':
-						var username = _n9.a;
-						var password = _n9.b;
+						var username = _n11.a;
+						var password = _n11.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9586,25 +9643,14 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					model,
 					author$project$Commands$doLogout(author$project$Main$GotLogoutResp));
-			case 'SearchInput':
-				var query = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A2(
-						elm$browser$Browser$Navigation$pushUrl,
-						model.key,
-						_Utils_ap(
-							model.url.path,
-							(!elm$core$String$length(query)) ? '' : elm$url$Url$Builder$toQuery(
-								_List_fromArray(
-									[
-										A2(elm$url$Url$Builder$string, 'filter', query)
-									])))));
 			case 'WebsocketIn':
 				return _Utils_Tuple2(
 					model,
-					author$project$Main$doListQueryFromUrl(model.url));
-			case 'ListMsg':
+					A2(
+						elm$core$Platform$Cmd$map,
+						author$project$Main$ListMsg,
+						author$project$Ls$doListQueryFromUrl(model.url)));
+			default:
 				var subMsg = msg.a;
 				return A6(
 					author$project$Main$withSubUpdate,
@@ -9621,108 +9667,13 @@ var author$project$Main$update = F2(
 								viewState,
 								{listState: newSubModel});
 						}));
-			case 'UploadMsg':
-				var subMsg = msg.a;
-				return A6(
-					author$project$Main$withSubUpdate,
-					subMsg,
-					function ($) {
-						return $.uploadState;
-					},
-					model,
-					author$project$Main$UploadMsg,
-					author$project$Modals$Upload$update,
-					F2(
-						function (viewState, newSubModel) {
-							return _Utils_update(
-								viewState,
-								{uploadState: newSubModel});
-						}));
-			case 'MkdirMsg':
-				var subMsg = msg.a;
-				return A6(
-					author$project$Main$withSubUpdate,
-					subMsg,
-					function ($) {
-						return $.mkdirState;
-					},
-					model,
-					author$project$Main$MkdirMsg,
-					author$project$Modals$Mkdir$update,
-					F2(
-						function (viewState, newSubModel) {
-							return _Utils_update(
-								viewState,
-								{mkdirState: newSubModel});
-						}));
-			case 'RemoveMsg':
-				var subMsg = msg.a;
-				return A6(
-					author$project$Main$withSubUpdate,
-					subMsg,
-					function ($) {
-						return $.removeState;
-					},
-					model,
-					author$project$Main$RemoveMsg,
-					author$project$Modals$Remove$update,
-					F2(
-						function (viewState, newSubModel) {
-							return _Utils_update(
-								viewState,
-								{removeState: newSubModel});
-						}));
-			default:
-				var subMsg = msg.a;
-				return A6(
-					author$project$Main$withSubUpdate,
-					subMsg,
-					function ($) {
-						return $.shareState;
-					},
-					model,
-					author$project$Main$ShareMsg,
-					author$project$Modals$Share$update,
-					F2(
-						function (viewState, newSubModel) {
-							return _Utils_update(
-								viewState,
-								{shareState: newSubModel});
-						}));
 		}
 	});
-var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
-var author$project$Modals$History$ResetClicked = F2(
-	function (a, b) {
-		return {$: 'ResetClicked', a: a, b: b};
-	});
-var elm$core$List$intersperse = F2(
-	function (sep, xs) {
-		if (!xs.b) {
-			return _List_Nil;
-		} else {
-			var hd = xs.a;
-			var tl = xs.b;
-			var step = F2(
-				function (x, rest) {
-					return A2(
-						elm$core$List$cons,
-						sep,
-						A2(elm$core$List$cons, x, rest));
-				});
-			var spersed = A3(elm$core$List$foldr, step, _List_Nil, tl);
-			return A2(elm$core$List$cons, hd, spersed);
-		}
-	});
+var author$project$Main$LoginSubmit = {$: 'LoginSubmit'};
+var elm$core$String$trim = _String_trim;
+var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var author$project$Modals$History$joinChanges = function (changes) {
-	return A2(
-		elm$core$List$intersperse,
-		elm$html$Html$text(', '),
-		changes);
-};
-var elm$html$Html$span = _VirtualDom_node('span');
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -9731,318 +9682,16 @@ var elm$html$Html$Attributes$stringProperty = F2(
 			elm$json$Json$Encode$string(string));
 	});
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
-var author$project$Modals$History$viewChangeColor = function (change) {
-	switch (change) {
-		case 'added':
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-success')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(change)
-					]));
-		case 'modified':
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-warning')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(change)
-					]));
-		case 'removed':
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-danger')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(change)
-					]));
-		case 'moved':
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-info')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(change)
-					]));
-		default:
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-muted')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(change)
-					]));
-	}
-};
-var author$project$Modals$History$viewChangeSet = function (change) {
-	var changes = A2(
-		elm$core$List$map,
-		author$project$Modals$History$viewChangeColor,
-		A2(elm$core$String$split, '|', change));
-	return A2(
-		elm$html$Html$span,
-		_List_Nil,
-		author$project$Modals$History$joinChanges(changes));
-};
-var author$project$Util$monthToInt = function (month) {
-	switch (month.$) {
-		case 'Jan':
-			return 1;
-		case 'Feb':
-			return 2;
-		case 'Mar':
-			return 3;
-		case 'Apr':
-			return 4;
-		case 'May':
-			return 5;
-		case 'Jun':
-			return 6;
-		case 'Jul':
-			return 7;
-		case 'Aug':
-			return 8;
-		case 'Sep':
-			return 9;
-		case 'Oct':
-			return 10;
-		case 'Nov':
-			return 11;
-		default:
-			return 12;
-	}
-};
-var elm$core$String$cons = _String_cons;
-var elm$core$String$fromChar = function (_char) {
-	return A2(elm$core$String$cons, _char, '');
-};
-var elm$core$Bitwise$and = _Bitwise_and;
-var elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
-var elm$core$String$repeatHelp = F3(
-	function (n, chunk, result) {
-		return (n <= 0) ? result : A3(
-			elm$core$String$repeatHelp,
-			n >> 1,
-			_Utils_ap(chunk, chunk),
-			(!(n & 1)) ? result : _Utils_ap(result, chunk));
-	});
-var elm$core$String$repeat = F2(
-	function (n, chunk) {
-		return A3(elm$core$String$repeatHelp, n, chunk, '');
-	});
-var elm$core$String$padLeft = F3(
-	function (n, _char, string) {
-		return _Utils_ap(
-			A2(
-				elm$core$String$repeat,
-				n - elm$core$String$length(string),
-				elm$core$String$fromChar(_char)),
-			string);
-	});
-var elm$time$Time$flooredDiv = F2(
-	function (numerator, denominator) {
-		return elm$core$Basics$floor(numerator / denominator);
-	});
-var elm$time$Time$toAdjustedMinutesHelp = F3(
-	function (defaultOffset, posixMinutes, eras) {
-		toAdjustedMinutesHelp:
-		while (true) {
-			if (!eras.b) {
-				return posixMinutes + defaultOffset;
-			} else {
-				var era = eras.a;
-				var olderEras = eras.b;
-				if (_Utils_cmp(era.start, posixMinutes) < 0) {
-					return posixMinutes + era.offset;
-				} else {
-					var $temp$defaultOffset = defaultOffset,
-						$temp$posixMinutes = posixMinutes,
-						$temp$eras = olderEras;
-					defaultOffset = $temp$defaultOffset;
-					posixMinutes = $temp$posixMinutes;
-					eras = $temp$eras;
-					continue toAdjustedMinutesHelp;
-				}
-			}
-		}
-	});
-var elm$time$Time$toAdjustedMinutes = F2(
-	function (_n0, time) {
-		var defaultOffset = _n0.a;
-		var eras = _n0.b;
-		return A3(
-			elm$time$Time$toAdjustedMinutesHelp,
-			defaultOffset,
-			A2(
-				elm$time$Time$flooredDiv,
-				elm$time$Time$posixToMillis(time),
-				60000),
-			eras);
-	});
-var elm$core$Basics$ge = _Utils_ge;
-var elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var elm$time$Time$toCivil = function (minutes) {
-	var rawDay = A2(elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
-	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
-	var dayOfEra = rawDay - (era * 146097);
-	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
-	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
-	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
-	var month = mp + ((mp < 10) ? 3 : (-9));
-	var year = yearOfEra + (era * 400);
-	return {
-		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
-		month: month,
-		year: year + ((month <= 2) ? 1 : 0)
-	};
-};
-var elm$time$Time$toDay = F2(
-	function (zone, time) {
-		return elm$time$Time$toCivil(
-			A2(elm$time$Time$toAdjustedMinutes, zone, time)).day;
-	});
-var elm$core$Basics$modBy = _Basics_modBy;
-var elm$time$Time$toHour = F2(
-	function (zone, time) {
+var elm$json$Json$Encode$bool = _Json_wrap;
+var elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
 		return A2(
-			elm$core$Basics$modBy,
-			24,
-			A2(
-				elm$time$Time$flooredDiv,
-				A2(elm$time$Time$toAdjustedMinutes, zone, time),
-				60));
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$bool(bool));
 	});
-var elm$time$Time$toMinute = F2(
-	function (zone, time) {
-		return A2(
-			elm$core$Basics$modBy,
-			60,
-			A2(elm$time$Time$toAdjustedMinutes, zone, time));
-	});
-var elm$time$Time$Apr = {$: 'Apr'};
-var elm$time$Time$Aug = {$: 'Aug'};
-var elm$time$Time$Dec = {$: 'Dec'};
-var elm$time$Time$Feb = {$: 'Feb'};
-var elm$time$Time$Jan = {$: 'Jan'};
-var elm$time$Time$Jul = {$: 'Jul'};
-var elm$time$Time$Jun = {$: 'Jun'};
-var elm$time$Time$Mar = {$: 'Mar'};
-var elm$time$Time$May = {$: 'May'};
-var elm$time$Time$Nov = {$: 'Nov'};
-var elm$time$Time$Oct = {$: 'Oct'};
-var elm$time$Time$Sep = {$: 'Sep'};
-var elm$time$Time$toMonth = F2(
-	function (zone, time) {
-		var _n0 = elm$time$Time$toCivil(
-			A2(elm$time$Time$toAdjustedMinutes, zone, time)).month;
-		switch (_n0) {
-			case 1:
-				return elm$time$Time$Jan;
-			case 2:
-				return elm$time$Time$Feb;
-			case 3:
-				return elm$time$Time$Mar;
-			case 4:
-				return elm$time$Time$Apr;
-			case 5:
-				return elm$time$Time$May;
-			case 6:
-				return elm$time$Time$Jun;
-			case 7:
-				return elm$time$Time$Jul;
-			case 8:
-				return elm$time$Time$Aug;
-			case 9:
-				return elm$time$Time$Sep;
-			case 10:
-				return elm$time$Time$Oct;
-			case 11:
-				return elm$time$Time$Nov;
-			default:
-				return elm$time$Time$Dec;
-		}
-	});
-var elm$time$Time$toSecond = F2(
-	function (_n0, time) {
-		return A2(
-			elm$core$Basics$modBy,
-			60,
-			A2(
-				elm$time$Time$flooredDiv,
-				elm$time$Time$posixToMillis(time),
-				1000));
-	});
-var elm$time$Time$toYear = F2(
-	function (zone, time) {
-		return elm$time$Time$toCivil(
-			A2(elm$time$Time$toAdjustedMinutes, zone, time)).year;
-	});
-var author$project$Util$formatLastModified = F2(
-	function (z, t) {
-		return A2(
-			elm$core$String$join,
-			' ',
-			_List_fromArray(
-				[
-					A2(
-					elm$core$String$join,
-					'/',
-					_List_fromArray(
-						[
-							elm$core$String$fromInt(
-							A2(elm$time$Time$toDay, z, t)),
-							elm$core$String$fromInt(
-							author$project$Util$monthToInt(
-								A2(elm$time$Time$toMonth, z, t))),
-							elm$core$String$fromInt(
-							A2(elm$time$Time$toYear, z, t))
-						])),
-					A2(
-					elm$core$String$join,
-					':',
-					_List_fromArray(
-						[
-							A3(
-							elm$core$String$padLeft,
-							2,
-							_Utils_chr('0'),
-							elm$core$String$fromInt(
-								A2(elm$time$Time$toHour, z, t))),
-							A3(
-							elm$core$String$padLeft,
-							2,
-							_Utils_chr('0'),
-							elm$core$String$fromInt(
-								A2(elm$time$Time$toMinute, z, t))),
-							A3(
-							elm$core$String$padLeft,
-							2,
-							_Utils_chr('0'),
-							elm$core$String$fromInt(
-								A2(elm$time$Time$toSecond, z, t)))
-						]))
-				]));
-	});
-var elm$html$Html$br = _VirtualDom_node('br');
-var elm$html$Html$p = _VirtualDom_node('p');
+var elm$html$Html$Attributes$disabled = elm$html$Html$Attributes$boolProperty('disabled');
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -10090,15 +9739,6 @@ var elm$html$Html$Attributes$classList = function (classes) {
 				elm$core$Tuple$first,
 				A2(elm$core$List$filter, elm$core$Tuple$second, classes))));
 };
-var elm$json$Json$Encode$bool = _Json_wrap;
-var elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			elm$json$Json$Encode$bool(bool));
-	});
-var elm$html$Html$Attributes$disabled = elm$html$Html$Attributes$boolProperty('disabled');
 var rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption = function (size) {
 	switch (size.$) {
 		case 'XS':
@@ -10233,12 +9873,624 @@ var rundis$elm_bootstrap$Bootstrap$Button$button = F2(
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring = function (a) {
 	return {$: 'Coloring', a: a};
 };
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined = function (a) {
-	return {$: 'Outlined', a: a};
-};
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary = {$: 'Primary'};
-var rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined(rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary));
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled = function (a) {
+	return {$: 'Roled', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Button$primary = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary));
+var author$project$Main$viewLoginButton = F3(
+	function (username, password, isLoading) {
+		var loadingClass = isLoading ? 'fa fa-sync fa-sync-animate' : '';
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Button$button,
+			_List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Button$primary,
+					rundis$elm_bootstrap$Bootstrap$Button$attrs(
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(author$project$Main$LoginSubmit),
+							elm$html$Html$Attributes$class('login-btn'),
+							elm$html$Html$Attributes$type_('submit'),
+							elm$html$Html$Attributes$disabled(
+							(!elm$core$String$length(
+								elm$core$String$trim(username))) || ((!elm$core$String$length(
+								elm$core$String$trim(password))) || isLoading))
+						]))
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class(loadingClass)
+						]),
+					_List_Nil),
+					elm$html$Html$text(' Log in')
+				]));
+	});
+var author$project$Main$PasswordInput = function (a) {
+	return {$: 'PasswordInput', a: a};
+};
+var author$project$Main$UsernameInput = function (a) {
+	return {$: 'UsernameInput', a: a};
+};
+var elm$html$Html$h2 = _VirtualDom_node('h2');
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Attrs = function (a) {
+	return {$: 'Attrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$attrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$Attrs(attrs_);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Id = function (a) {
+	return {$: 'Id', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$id = function (id_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$Id(id_);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Size = function (a) {
+	return {$: 'Size', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$General$Internal$LG = {$: 'LG'};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$large = rundis$elm_bootstrap$Bootstrap$Form$Input$Size(rundis$elm_bootstrap$Bootstrap$General$Internal$LG);
+var rundis$elm_bootstrap$Bootstrap$Form$Input$OnInput = function (a) {
+	return {$: 'OnInput', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$onInput = function (toMsg) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$OnInput(toMsg);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Password = {$: 'Password'};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Input = function (a) {
+	return {$: 'Input', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Type = function (a) {
+	return {$: 'Type', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$create = F2(
+	function (tipe, options) {
+		return rundis$elm_bootstrap$Bootstrap$Form$Input$Input(
+			{
+				options: A2(
+					elm$core$List$cons,
+					rundis$elm_bootstrap$Bootstrap$Form$Input$Type(tipe),
+					options)
+			});
+	});
+var elm$html$Html$input = _VirtualDom_node('input');
+var elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
+var elm$html$Html$Attributes$id = elm$html$Html$Attributes$stringProperty('id');
+var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
+var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
+var elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
+	});
+var elm$html$Html$Events$targetValue = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	elm$json$Json$Decode$string);
+var elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			elm$json$Json$Decode$map,
+			elm$html$Html$Events$alwaysStop,
+			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier = F2(
+	function (modifier, options) {
+		switch (modifier.$) {
+			case 'Size':
+				var size_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						size: elm$core$Maybe$Just(size_)
+					});
+			case 'Id':
+				var id_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						id: elm$core$Maybe$Just(id_)
+					});
+			case 'Type':
+				var tipe = modifier.a;
+				return _Utils_update(
+					options,
+					{tipe: tipe});
+			case 'Disabled':
+				var val = modifier.a;
+				return _Utils_update(
+					options,
+					{disabled: val});
+			case 'Value':
+				var value_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						value: elm$core$Maybe$Just(value_)
+					});
+			case 'Placeholder':
+				var value_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						placeholder: elm$core$Maybe$Just(value_)
+					});
+			case 'OnInput':
+				var onInput_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						onInput: elm$core$Maybe$Just(onInput_)
+					});
+			case 'Validation':
+				var validation_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						validation: elm$core$Maybe$Just(validation_)
+					});
+			case 'Readonly':
+				var val = modifier.a;
+				return _Utils_update(
+					options,
+					{readonly: val});
+			default:
+				var attrs_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						attributes: _Utils_ap(options.attributes, attrs_)
+					});
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Text = {$: 'Text'};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions = {attributes: _List_Nil, disabled: false, id: elm$core$Maybe$Nothing, onInput: elm$core$Maybe$Nothing, placeholder: elm$core$Maybe$Nothing, readonly: false, size: elm$core$Maybe$Nothing, tipe: rundis$elm_bootstrap$Bootstrap$Form$Input$Text, validation: elm$core$Maybe$Nothing, value: elm$core$Maybe$Nothing};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute = function (size) {
+	return A2(
+		elm$core$Maybe$map,
+		function (s) {
+			return elm$html$Html$Attributes$class('form-control-' + s);
+		},
+		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute = function (inputType) {
+	return elm$html$Html$Attributes$type_(
+		function () {
+			switch (inputType.$) {
+				case 'Text':
+					return 'text';
+				case 'Password':
+					return 'password';
+				case 'DatetimeLocal':
+					return 'datetime-local';
+				case 'Date':
+					return 'date';
+				case 'Month':
+					return 'month';
+				case 'Time':
+					return 'time';
+				case 'Week':
+					return 'week';
+				case 'Number':
+					return 'number';
+				case 'Email':
+					return 'email';
+				case 'Url':
+					return 'url';
+				case 'Search':
+					return 'search';
+				case 'Tel':
+					return 'tel';
+				default:
+					return 'color';
+			}
+		}());
+};
+var rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString = function (validation) {
+	if (validation.$ === 'Success') {
+		return 'is-valid';
+	} else {
+		return 'is-invalid';
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute = function (validation) {
+	return elm$html$Html$Attributes$class(
+		rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString(validation));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes = function (modifiers) {
+	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions, modifiers);
+	return _Utils_ap(
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('form-control'),
+				elm$html$Html$Attributes$disabled(options.disabled),
+				elm$html$Html$Attributes$readonly(options.readonly),
+				rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute(options.tipe)
+			]),
+		_Utils_ap(
+			A2(
+				elm$core$List$filterMap,
+				elm$core$Basics$identity,
+				_List_fromArray(
+					[
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$id, options.id),
+						A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute, options.size),
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$value, options.value),
+						A2(elm$core$Maybe$map, elm$html$Html$Attributes$placeholder, options.placeholder),
+						A2(elm$core$Maybe$map, elm$html$Html$Events$onInput, options.onInput),
+						A2(elm$core$Maybe$map, rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute, options.validation)
+					])),
+			options.attributes));
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$view = function (_n0) {
+	var options = _n0.a.options;
+	return A2(
+		elm$html$Html$input,
+		rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes(options),
+		_List_Nil);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$input = F2(
+	function (tipe, options) {
+		return rundis$elm_bootstrap$Bootstrap$Form$Input$view(
+			A2(rundis$elm_bootstrap$Bootstrap$Form$Input$create, tipe, options));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$Input$password = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Password);
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder = function (a) {
+	return {$: 'Placeholder', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder = function (value_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder(value_);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$text = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Text);
+var rundis$elm_bootstrap$Bootstrap$Form$Input$Value = function (a) {
+	return {$: 'Value', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$Input$value = function (value_) {
+	return rundis$elm_bootstrap$Bootstrap$Form$Input$Value(value_);
+};
+var author$project$Main$viewLoginInputs = F2(
+	function (username, password) {
+		return _List_fromArray(
+			[
+				A2(
+				elm$html$Html$h2,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('login-header')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Login')
+					])),
+				rundis$elm_bootstrap$Bootstrap$Form$Input$text(
+				_List_fromArray(
+					[
+						rundis$elm_bootstrap$Bootstrap$Form$Input$id('username-input'),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('login-input')
+							])),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$large,
+						rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Username'),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$value(username),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Main$UsernameInput)
+					])),
+				rundis$elm_bootstrap$Bootstrap$Form$Input$password(
+				_List_fromArray(
+					[
+						rundis$elm_bootstrap$Bootstrap$Form$Input$id('password-input'),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('login-input')
+							])),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$large,
+						rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Password'),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$value(password),
+						rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Main$PasswordInput)
+					]))
+			]);
+	});
+var elm$html$Html$Events$alwaysPreventDefault = function (msg) {
+	return _Utils_Tuple2(msg, true);
+};
+var elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var elm$html$Html$Events$onSubmit = function (msg) {
+	return A2(
+		elm$html$Html$Events$preventDefaultOn,
+		'submit',
+		A2(
+			elm$json$Json$Decode$map,
+			elm$html$Html$Events$alwaysPreventDefault,
+			elm$json$Json$Decode$succeed(msg)));
+};
+var rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Alert$attrs = F2(
+	function (attributes, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{attributes: attributes}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$children = F2(
+	function (children_, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{children: children_}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary = {$: 'Secondary'};
+var rundis$elm_bootstrap$Bootstrap$Alert$config = rundis$elm_bootstrap$Bootstrap$Alert$Config(
+	{attributes: _List_Nil, children: _List_Nil, dismissable: elm$core$Maybe$Nothing, role: rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary, visibility: rundis$elm_bootstrap$Bootstrap$Alert$Shown, withAnimation: false});
+var rundis$elm_bootstrap$Bootstrap$Alert$role = F2(
+	function (role_, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{role: role_}));
+	});
+var elm$html$Html$div = _VirtualDom_node('div');
+var elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
+var rundis$elm_bootstrap$Bootstrap$Alert$StartClose = {$: 'StartClose'};
+var rundis$elm_bootstrap$Bootstrap$Alert$clickHandler = F2(
+	function (visibility, configRec) {
+		var handleClick = F2(
+			function (viz, toMsg) {
+				return elm$html$Html$Events$onClick(
+					toMsg(viz));
+			});
+		var _n0 = configRec.dismissable;
+		if (_n0.$ === 'Just') {
+			var dismissMsg = _n0.a;
+			return _List_fromArray(
+				[
+					configRec.withAnimation ? A2(handleClick, rundis$elm_bootstrap$Bootstrap$Alert$StartClose, dismissMsg) : A2(handleClick, rundis$elm_bootstrap$Bootstrap$Alert$Closed, dismissMsg)
+				]);
+		} else {
+			return _List_Nil;
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$injectButton = F2(
+	function (btn, children_) {
+		if (children_.b) {
+			var head = children_.a;
+			var tail = children_.b;
+			return A2(
+				elm$core$List$cons,
+				head,
+				A2(elm$core$List$cons, btn, tail));
+		} else {
+			return _List_fromArray(
+				[btn]);
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$isDismissable = function (configRec) {
+	var _n0 = configRec.dismissable;
+	if (_n0.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton = F3(
+	function (visibilty, configRec, children_) {
+		return rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec) ? A2(
+			rundis$elm_bootstrap$Bootstrap$Alert$injectButton,
+			A2(
+				elm$html$Html$button,
+				_Utils_ap(
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$type_('button'),
+							elm$html$Html$Attributes$class('close'),
+							A2(elm$html$Html$Attributes$attribute, 'aria-label', 'close')
+						]),
+					A2(rundis$elm_bootstrap$Bootstrap$Alert$clickHandler, visibilty, configRec)),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								A2(elm$html$Html$Attributes$attribute, 'aria-hidden', 'true')
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('×')
+							]))
+					])),
+			children_) : children_;
+	});
+var elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3(elm$core$List$foldr, elm$core$List$cons, ys, xs);
+		}
+	});
+var elm$core$List$concat = function (lists) {
+	return A3(elm$core$List$foldr, elm$core$List$append, _List_Nil, lists);
+};
+var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass = F2(
+	function (prefix, role) {
+		return elm$html$Html$Attributes$class(
+			prefix + ('-' + function () {
+				switch (role.$) {
+					case 'Primary':
+						return 'primary';
+					case 'Secondary':
+						return 'secondary';
+					case 'Success':
+						return 'success';
+					case 'Info':
+						return 'info';
+					case 'Warning':
+						return 'warning';
+					case 'Danger':
+						return 'danger';
+					case 'Light':
+						return 'light';
+					default:
+						return 'dark';
+				}
+			}()));
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes = F2(
+	function (visibility, configRec) {
+		var visibiltyAttributes = _Utils_eq(visibility, rundis$elm_bootstrap$Bootstrap$Alert$Closed) ? _List_fromArray(
+			[
+				A2(elm$html$Html$Attributes$style, 'display', 'none')
+			]) : _List_Nil;
+		var animationAttributes = function () {
+			if (configRec.withAnimation) {
+				var _n0 = configRec.dismissable;
+				if (_n0.$ === 'Just') {
+					var dismissMsg = _n0.a;
+					return _List_fromArray(
+						[
+							A2(
+							elm$html$Html$Events$on,
+							'transitionend',
+							elm$json$Json$Decode$succeed(
+								dismissMsg(rundis$elm_bootstrap$Bootstrap$Alert$Closed)))
+						]);
+				} else {
+					return _List_Nil;
+				}
+			} else {
+				return _List_Nil;
+			}
+		}();
+		var alertAttributes = _List_fromArray(
+			[
+				A2(elm$html$Html$Attributes$attribute, 'role', 'alert'),
+				elm$html$Html$Attributes$classList(
+				_List_fromArray(
+					[
+						_Utils_Tuple2('alert', true),
+						_Utils_Tuple2(
+						'alert-dismissible',
+						rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec)),
+						_Utils_Tuple2('fade', configRec.withAnimation),
+						_Utils_Tuple2(
+						'show',
+						_Utils_eq(visibility, rundis$elm_bootstrap$Bootstrap$Alert$Shown))
+					])),
+				A2(rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass, 'alert', configRec.role)
+			]);
+		return elm$core$List$concat(
+			_List_fromArray(
+				[configRec.attributes, alertAttributes, visibiltyAttributes, animationAttributes]));
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$view = F2(
+	function (visibility, _n0) {
+		var configRec = _n0.a;
+		return A2(
+			elm$html$Html$div,
+			A2(rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes, visibility, configRec),
+			A3(rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton, visibility, configRec, configRec.children));
+	});
+var rundis$elm_bootstrap$Bootstrap$Alert$simple = F3(
+	function (role_, attributes, children_) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Alert$view,
+			rundis$elm_bootstrap$Bootstrap$Alert$Shown,
+			A2(
+				rundis$elm_bootstrap$Bootstrap$Alert$children,
+				children_,
+				A2(
+					rundis$elm_bootstrap$Bootstrap$Alert$attrs,
+					attributes,
+					A2(rundis$elm_bootstrap$Bootstrap$Alert$role, role_, rundis$elm_bootstrap$Bootstrap$Alert$config))));
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
+var rundis$elm_bootstrap$Bootstrap$Alert$simpleDanger = rundis$elm_bootstrap$Bootstrap$Alert$simple(rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger);
+var elm$html$Html$form = _VirtualDom_node('form');
+var rundis$elm_bootstrap$Bootstrap$Form$form = F2(
+	function (attributes, children) {
+		return A2(elm$html$Html$form, attributes, children);
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$applyModifier = F2(
+	function (modifier, options) {
+		var attrs = modifier.a;
+		return _Utils_update(
+			options,
+			{
+				attributes: _Utils_ap(options.attributes, attrs)
+			});
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$defaultOptions = {attributes: _List_Nil};
+var rundis$elm_bootstrap$Bootstrap$Form$toAttributes = function (modifiers) {
+	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$defaultOptions, modifiers);
+	return _Utils_ap(
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('form-group')
+			]),
+		options.attributes);
+};
+var rundis$elm_bootstrap$Bootstrap$Form$group = F2(
+	function (options, children) {
+		return A2(
+			elm$html$Html$div,
+			rundis$elm_bootstrap$Bootstrap$Form$toAttributes(options),
+			children);
+	});
 var rundis$elm_bootstrap$Bootstrap$Grid$Column = function (a) {
 	return {$: 'Column', a: a};
 };
@@ -10247,7 +10499,18 @@ var rundis$elm_bootstrap$Bootstrap$Grid$col = F2(
 		return rundis$elm_bootstrap$Bootstrap$Grid$Column(
 			{children: children, options: options});
 	});
-var elm$html$Html$div = _VirtualDom_node('div');
+var rundis$elm_bootstrap$Bootstrap$Grid$containerFluid = F2(
+	function (attributes, children) {
+		return A2(
+			elm$html$Html$div,
+			_Utils_ap(
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('container-fluid')
+					]),
+				attributes),
+			children);
+	});
 var elm$virtual_dom$VirtualDom$keyedNode = function (tag) {
 	return _VirtualDom_keyedNode(
 		_VirtualDom_noScript(tag));
@@ -10510,16 +10773,6 @@ var rundis$elm_bootstrap$Bootstrap$Grid$Internal$applyColOption = F2(
 					{
 						textAlign: elm$core$Maybe$Just(align)
 					});
-		}
-	});
-var elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return elm$core$Maybe$Nothing;
 		}
 	});
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$columnCountOption = function (size) {
@@ -11049,8 +11302,13 @@ var rundis$elm_bootstrap$Bootstrap$Grid$row = F2(
 			rundis$elm_bootstrap$Bootstrap$Grid$Internal$rowAttributes(options),
 			A2(elm$core$List$map, rundis$elm_bootstrap$Bootstrap$Grid$renderCol, cols));
 	});
-var rundis$elm_bootstrap$Bootstrap$General$Internal$MD = {$: 'MD'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs = function (a) {
+	return {$: 'ColAttrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs(attrs_);
+};
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8 = {$: 'Col8'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth = function (a) {
 	return {$: 'ColWidth', a: a};
 };
@@ -11059,6 +11317,529 @@ var rundis$elm_bootstrap$Bootstrap$Grid$Internal$width = F2(
 		return rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth(
 			A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$Width, size, count));
 	});
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$TextAlign = function (a) {
+	return {$: 'TextAlign', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign = function (align) {
+	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$TextAlign(align);
+};
+var rundis$elm_bootstrap$Bootstrap$Internal$Text$Center = {$: 'Center'};
+var rundis$elm_bootstrap$Bootstrap$Text$alignXs = function (dir) {
+	return {dir: dir, size: rundis$elm_bootstrap$Bootstrap$General$Internal$XS};
+};
+var rundis$elm_bootstrap$Bootstrap$Text$alignXsCenter = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Center);
+var author$project$Main$viewLoginForm = function (model) {
+	return A2(
+		rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				rundis$elm_bootstrap$Bootstrap$Grid$row,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$col,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8,
+								rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsCenter),
+								rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('login-form')
+									]))
+							]),
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Form$form,
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onSubmit(author$project$Main$LoginSubmit)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										rundis$elm_bootstrap$Bootstrap$Form$group,
+										_List_Nil,
+										function () {
+											var _n0 = model.loginState;
+											switch (_n0.$) {
+												case 'LoginReady':
+													var username = _n0.a;
+													var password = _n0.b;
+													return _Utils_ap(
+														A2(author$project$Main$viewLoginInputs, username, password),
+														_List_fromArray(
+															[
+																A3(author$project$Main$viewLoginButton, username, password, false)
+															]));
+												case 'LoginLoading':
+													var username = _n0.a;
+													var password = _n0.b;
+													return _Utils_ap(
+														A2(author$project$Main$viewLoginInputs, username, password),
+														_List_fromArray(
+															[
+																A3(author$project$Main$viewLoginButton, username, password, true)
+															]));
+												case 'LoginFailure':
+													var username = _n0.a;
+													var password = _n0.b;
+													return _Utils_ap(
+														A2(author$project$Main$viewLoginInputs, username, password),
+														_List_fromArray(
+															[
+																A2(
+																rundis$elm_bootstrap$Bootstrap$Alert$simpleDanger,
+																_List_Nil,
+																_List_fromArray(
+																	[
+																		elm$html$Html$text('Login failed, please try again.')
+																	])),
+																A3(author$project$Main$viewLoginButton, username, password, false)
+															]));
+												default:
+													return _List_Nil;
+											}
+										}())
+									]))
+							]))
+					]))
+			]));
+};
+var elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var author$project$Ls$existsInCurr = F2(
+	function (model, name) {
+		var _n0 = model.state;
+		if (_n0.$ === 'Success') {
+			var actualModel = _n0.a;
+			var _n1 = actualModel.isFiltered;
+			if (_n1) {
+				return false;
+			} else {
+				return A2(
+					elm$core$List$any,
+					function (e) {
+						return _Utils_eq(
+							name,
+							author$project$Util$basename(e.path));
+					},
+					actualModel.entries);
+			}
+		} else {
+			return false;
+		}
+	});
+var elm$core$Dict$filter = F2(
+	function (isGood, dict) {
+		return A3(
+			elm$core$Dict$foldl,
+			F3(
+				function (k, v, d) {
+					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
+				}),
+			elm$core$Dict$empty,
+			dict);
+	});
+var elm$core$Set$filter = F2(
+	function (isGood, _n0) {
+		var dict = _n0.a;
+		return elm$core$Set$Set_elm_builtin(
+			A2(
+				elm$core$Dict$filter,
+				F2(
+					function (key, _n1) {
+						return isGood(key);
+					}),
+				dict));
+	});
+var author$project$Ls$selectedPaths = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var actualModel = _n0.a;
+		return elm$core$Set$toList(
+			A2(
+				elm$core$Set$filter,
+				function (e) {
+					return !elm$core$String$isEmpty(e);
+				},
+				actualModel.checked));
+	} else {
+		return _List_Nil;
+	}
+};
+var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$History$ResetClicked = F2(
+	function (a, b) {
+		return {$: 'ResetClicked', a: a, b: b};
+	});
+var elm$core$List$intersperse = F2(
+	function (sep, xs) {
+		if (!xs.b) {
+			return _List_Nil;
+		} else {
+			var hd = xs.a;
+			var tl = xs.b;
+			var step = F2(
+				function (x, rest) {
+					return A2(
+						elm$core$List$cons,
+						sep,
+						A2(elm$core$List$cons, x, rest));
+				});
+			var spersed = A3(elm$core$List$foldr, step, _List_Nil, tl);
+			return A2(elm$core$List$cons, hd, spersed);
+		}
+	});
+var author$project$Modals$History$joinChanges = function (changes) {
+	return A2(
+		elm$core$List$intersperse,
+		elm$html$Html$text(', '),
+		changes);
+};
+var author$project$Modals$History$viewChangeColor = function (change) {
+	switch (change) {
+		case 'added':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-success')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(change)
+					]));
+		case 'modified':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-warning')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(change)
+					]));
+		case 'removed':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-danger')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(change)
+					]));
+		case 'moved':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-info')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(change)
+					]));
+		default:
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-muted')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(change)
+					]));
+	}
+};
+var author$project$Modals$History$viewChangeSet = function (change) {
+	var changes = A2(
+		elm$core$List$map,
+		author$project$Modals$History$viewChangeColor,
+		A2(elm$core$String$split, '|', change));
+	return A2(
+		elm$html$Html$span,
+		_List_Nil,
+		author$project$Modals$History$joinChanges(changes));
+};
+var author$project$Util$monthToInt = function (month) {
+	switch (month.$) {
+		case 'Jan':
+			return 1;
+		case 'Feb':
+			return 2;
+		case 'Mar':
+			return 3;
+		case 'Apr':
+			return 4;
+		case 'May':
+			return 5;
+		case 'Jun':
+			return 6;
+		case 'Jul':
+			return 7;
+		case 'Aug':
+			return 8;
+		case 'Sep':
+			return 9;
+		case 'Oct':
+			return 10;
+		case 'Nov':
+			return 11;
+		default:
+			return 12;
+	}
+};
+var elm$core$String$cons = _String_cons;
+var elm$core$String$fromChar = function (_char) {
+	return A2(elm$core$String$cons, _char, '');
+};
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3(elm$core$String$repeatHelp, n, chunk, '');
+	});
+var elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				elm$core$String$repeat,
+				n - elm$core$String$length(string),
+				elm$core$String$fromChar(_char)),
+			string);
+	});
+var elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return elm$core$Basics$floor(numerator / denominator);
+	});
+var elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var elm$time$Time$toAdjustedMinutes = F2(
+	function (_n0, time) {
+		var defaultOffset = _n0.a;
+		var eras = _n0.b;
+		return A3(
+			elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				elm$time$Time$flooredDiv,
+				elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var elm$core$Basics$ge = _Utils_ge;
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var elm$time$Time$toCivil = function (minutes) {
+	var rawDay = A2(elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
+	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
+	var dayOfEra = rawDay - (era * 146097);
+	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
+	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
+	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
+	var month = mp + ((mp < 10) ? 3 : (-9));
+	var year = yearOfEra + (era * 400);
+	return {
+		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
+		month: month,
+		year: year + ((month <= 2) ? 1 : 0)
+	};
+};
+var elm$time$Time$toDay = F2(
+	function (zone, time) {
+		return elm$time$Time$toCivil(
+			A2(elm$time$Time$toAdjustedMinutes, zone, time)).day;
+	});
+var elm$core$Basics$modBy = _Basics_modBy;
+var elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			24,
+			A2(
+				elm$time$Time$flooredDiv,
+				A2(elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			60,
+			A2(elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var elm$time$Time$Apr = {$: 'Apr'};
+var elm$time$Time$Aug = {$: 'Aug'};
+var elm$time$Time$Dec = {$: 'Dec'};
+var elm$time$Time$Feb = {$: 'Feb'};
+var elm$time$Time$Jan = {$: 'Jan'};
+var elm$time$Time$Jul = {$: 'Jul'};
+var elm$time$Time$Jun = {$: 'Jun'};
+var elm$time$Time$Mar = {$: 'Mar'};
+var elm$time$Time$May = {$: 'May'};
+var elm$time$Time$Nov = {$: 'Nov'};
+var elm$time$Time$Oct = {$: 'Oct'};
+var elm$time$Time$Sep = {$: 'Sep'};
+var elm$time$Time$toMonth = F2(
+	function (zone, time) {
+		var _n0 = elm$time$Time$toCivil(
+			A2(elm$time$Time$toAdjustedMinutes, zone, time)).month;
+		switch (_n0) {
+			case 1:
+				return elm$time$Time$Jan;
+			case 2:
+				return elm$time$Time$Feb;
+			case 3:
+				return elm$time$Time$Mar;
+			case 4:
+				return elm$time$Time$Apr;
+			case 5:
+				return elm$time$Time$May;
+			case 6:
+				return elm$time$Time$Jun;
+			case 7:
+				return elm$time$Time$Jul;
+			case 8:
+				return elm$time$Time$Aug;
+			case 9:
+				return elm$time$Time$Sep;
+			case 10:
+				return elm$time$Time$Oct;
+			case 11:
+				return elm$time$Time$Nov;
+			default:
+				return elm$time$Time$Dec;
+		}
+	});
+var elm$time$Time$toSecond = F2(
+	function (_n0, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			60,
+			A2(
+				elm$time$Time$flooredDiv,
+				elm$time$Time$posixToMillis(time),
+				1000));
+	});
+var elm$time$Time$toYear = F2(
+	function (zone, time) {
+		return elm$time$Time$toCivil(
+			A2(elm$time$Time$toAdjustedMinutes, zone, time)).year;
+	});
+var author$project$Util$formatLastModified = F2(
+	function (z, t) {
+		return A2(
+			elm$core$String$join,
+			' ',
+			_List_fromArray(
+				[
+					A2(
+					elm$core$String$join,
+					'/',
+					_List_fromArray(
+						[
+							elm$core$String$fromInt(
+							A2(elm$time$Time$toDay, z, t)),
+							elm$core$String$fromInt(
+							author$project$Util$monthToInt(
+								A2(elm$time$Time$toMonth, z, t))),
+							elm$core$String$fromInt(
+							A2(elm$time$Time$toYear, z, t))
+						])),
+					A2(
+					elm$core$String$join,
+					':',
+					_List_fromArray(
+						[
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toHour, z, t))),
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toMinute, z, t))),
+							A3(
+							elm$core$String$padLeft,
+							2,
+							_Utils_chr('0'),
+							elm$core$String$fromInt(
+								A2(elm$time$Time$toSecond, z, t)))
+						]))
+				]));
+	});
+var elm$html$Html$br = _VirtualDom_node('br');
+var elm$html$Html$p = _VirtualDom_node('p');
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined = function (a) {
+	return {$: 'Outlined', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined(rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary));
+var rundis$elm_bootstrap$Bootstrap$General$Internal$MD = {$: 'MD'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$md10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$MD, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$md2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$MD, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
@@ -11175,30 +11956,6 @@ var rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$applyModifier = F2(
 		}
 	});
 var rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$defaultOptions = {action: false, active: false, attributes: _List_Nil, disabled: false, role: elm$core$Maybe$Nothing};
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass = F2(
-	function (prefix, role) {
-		return elm$html$Html$Attributes$class(
-			prefix + ('-' + function () {
-				switch (role.$) {
-					case 'Primary':
-						return 'primary';
-					case 'Secondary':
-						return 'secondary';
-					case 'Success':
-						return 'success';
-					case 'Info':
-						return 'info';
-					case 'Warning':
-						return 'warning';
-					case 'Danger':
-						return 'danger';
-					case 'Light':
-						return 'light';
-					default:
-						return 'dark';
-				}
-			}()));
-	});
 var rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$itemAttributes = function (options) {
 	return _Utils_ap(
 		_List_fromArray(
@@ -11280,20 +12037,6 @@ var author$project$Modals$History$viewHistoryEntries = F2(
 						]))
 				]));
 	});
-var rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Alert$children = F2(
-	function (children_, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{children: children_}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary = {$: 'Secondary'};
-var rundis$elm_bootstrap$Bootstrap$Alert$config = rundis$elm_bootstrap$Bootstrap$Alert$Config(
-	{attributes: _List_Nil, children: _List_Nil, dismissable: elm$core$Maybe$Nothing, role: rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary, visibility: rundis$elm_bootstrap$Bootstrap$Alert$Shown, withAnimation: false});
 var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
 	function (dismissMsg, _n0) {
 		var configRec = _n0.a;
@@ -11320,153 +12063,6 @@ var rundis$elm_bootstrap$Bootstrap$Alert$h4 = F2(
 	function (attributes, children_) {
 		return A3(rundis$elm_bootstrap$Bootstrap$Alert$headingPrivate, elm$html$Html$h4, attributes, children_);
 	});
-var elm$virtual_dom$VirtualDom$attribute = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_attribute,
-			_VirtualDom_noOnOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
-	});
-var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
-var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
-var rundis$elm_bootstrap$Bootstrap$Alert$StartClose = {$: 'StartClose'};
-var rundis$elm_bootstrap$Bootstrap$Alert$clickHandler = F2(
-	function (visibility, configRec) {
-		var handleClick = F2(
-			function (viz, toMsg) {
-				return elm$html$Html$Events$onClick(
-					toMsg(viz));
-			});
-		var _n0 = configRec.dismissable;
-		if (_n0.$ === 'Just') {
-			var dismissMsg = _n0.a;
-			return _List_fromArray(
-				[
-					configRec.withAnimation ? A2(handleClick, rundis$elm_bootstrap$Bootstrap$Alert$StartClose, dismissMsg) : A2(handleClick, rundis$elm_bootstrap$Bootstrap$Alert$Closed, dismissMsg)
-				]);
-		} else {
-			return _List_Nil;
-		}
-	});
-var rundis$elm_bootstrap$Bootstrap$Alert$injectButton = F2(
-	function (btn, children_) {
-		if (children_.b) {
-			var head = children_.a;
-			var tail = children_.b;
-			return A2(
-				elm$core$List$cons,
-				head,
-				A2(elm$core$List$cons, btn, tail));
-		} else {
-			return _List_fromArray(
-				[btn]);
-		}
-	});
-var rundis$elm_bootstrap$Bootstrap$Alert$isDismissable = function (configRec) {
-	var _n0 = configRec.dismissable;
-	if (_n0.$ === 'Just') {
-		return true;
-	} else {
-		return false;
-	}
-};
-var rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton = F3(
-	function (visibilty, configRec, children_) {
-		return rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec) ? A2(
-			rundis$elm_bootstrap$Bootstrap$Alert$injectButton,
-			A2(
-				elm$html$Html$button,
-				_Utils_ap(
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$type_('button'),
-							elm$html$Html$Attributes$class('close'),
-							A2(elm$html$Html$Attributes$attribute, 'aria-label', 'close')
-						]),
-					A2(rundis$elm_bootstrap$Bootstrap$Alert$clickHandler, visibilty, configRec)),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$span,
-						_List_fromArray(
-							[
-								A2(elm$html$Html$Attributes$attribute, 'aria-hidden', 'true')
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('×')
-							]))
-					])),
-			children_) : children_;
-	});
-var elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3(elm$core$List$foldr, elm$core$List$cons, ys, xs);
-		}
-	});
-var elm$core$List$concat = function (lists) {
-	return A3(elm$core$List$foldr, elm$core$List$append, _List_Nil, lists);
-};
-var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
-var rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes = F2(
-	function (visibility, configRec) {
-		var visibiltyAttributes = _Utils_eq(visibility, rundis$elm_bootstrap$Bootstrap$Alert$Closed) ? _List_fromArray(
-			[
-				A2(elm$html$Html$Attributes$style, 'display', 'none')
-			]) : _List_Nil;
-		var animationAttributes = function () {
-			if (configRec.withAnimation) {
-				var _n0 = configRec.dismissable;
-				if (_n0.$ === 'Just') {
-					var dismissMsg = _n0.a;
-					return _List_fromArray(
-						[
-							A2(
-							elm$html$Html$Events$on,
-							'transitionend',
-							elm$json$Json$Decode$succeed(
-								dismissMsg(rundis$elm_bootstrap$Bootstrap$Alert$Closed)))
-						]);
-				} else {
-					return _List_Nil;
-				}
-			} else {
-				return _List_Nil;
-			}
-		}();
-		var alertAttributes = _List_fromArray(
-			[
-				A2(elm$html$Html$Attributes$attribute, 'role', 'alert'),
-				elm$html$Html$Attributes$classList(
-				_List_fromArray(
-					[
-						_Utils_Tuple2('alert', true),
-						_Utils_Tuple2(
-						'alert-dismissible',
-						rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec)),
-						_Utils_Tuple2('fade', configRec.withAnimation),
-						_Utils_Tuple2(
-						'show',
-						_Utils_eq(visibility, rundis$elm_bootstrap$Bootstrap$Alert$Shown))
-					])),
-				A2(rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass, 'alert', configRec.role)
-			]);
-		return elm$core$List$concat(
-			_List_fromArray(
-				[configRec.attributes, alertAttributes, visibiltyAttributes, animationAttributes]));
-	});
-var rundis$elm_bootstrap$Bootstrap$Alert$view = F2(
-	function (visibility, _n0) {
-		var configRec = _n0.a;
-		return A2(
-			elm$html$Html$div,
-			A2(rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes, visibility, configRec),
-			A3(rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton, visibility, configRec, configRec.children));
-	});
 var author$project$Util$buildAlert = F5(
 	function (visibility, msg, severity, title, message) {
 		return A2(
@@ -11488,15 +12084,6 @@ var author$project$Util$buildAlert = F5(
 				severity(
 					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, msg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
 	});
-var rundis$elm_bootstrap$Bootstrap$Alert$role = F2(
-	function (role_, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{role: role_}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
 var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
 	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
@@ -11535,18 +12122,6 @@ var author$project$Modals$History$viewHistory = function (model) {
 				]))
 		]);
 };
-var rundis$elm_bootstrap$Bootstrap$Grid$containerFluid = F2(
-	function (attributes, children) {
-		return A2(
-			elm$html$Html$div,
-			_Utils_ap(
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('container-fluid')
-					]),
-				attributes),
-			children);
-	});
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$RowAttrs = function (a) {
 	return {$: 'RowAttrs', a: a};
 };
@@ -11632,7 +12207,6 @@ var rundis$elm_bootstrap$Bootstrap$Modal$titledHeader = F3(
 var rundis$elm_bootstrap$Bootstrap$Modal$h5 = rundis$elm_bootstrap$Bootstrap$Modal$titledHeader(elm$html$Html$h5);
 var rundis$elm_bootstrap$Bootstrap$Modal$StartClose = {$: 'StartClose'};
 var rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated = rundis$elm_bootstrap$Bootstrap$Modal$StartClose;
-var rundis$elm_bootstrap$Bootstrap$General$Internal$LG = {$: 'LG'};
 var rundis$elm_bootstrap$Bootstrap$Modal$large = function (_n0) {
 	var conf = _n0.a;
 	var options = conf.options;
@@ -11739,10 +12313,6 @@ var rundis$elm_bootstrap$Bootstrap$Modal$backdrop = F2(
 			]);
 	});
 var elm$json$Json$Decode$fail = _Json_fail;
-var elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
-	});
 var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$className = A2(
 	elm$json$Json$Decode$at,
 	_List_fromArray(
@@ -12048,6 +12618,164 @@ var author$project$Modals$History$view = function (model) {
 						rundis$elm_bootstrap$Bootstrap$Modal$large(
 							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$History$ModalClose)))))));
 };
+var author$project$Modals$Mkdir$CreateDir = function (a) {
+	return {$: 'CreateDir', a: a};
+};
+var author$project$Modals$Mkdir$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$Mkdir$showPathCollision = F2(
+	function (model, doesExist) {
+		return doesExist ? A2(
+			elm$html$Html$span,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('text-left')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fas fa-md fa-exclamation-triangle text-warning')
+						]),
+					_List_Nil),
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('text-muted')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(' »' + (model.inputName + '« exists already. Please choose another name.\u00a0\u00a0\u00a0'))
+						]))
+				])) : A2(elm$html$Html$span, _List_Nil, _List_Nil);
+	});
+var author$project$Modals$Mkdir$InputChanged = function (a) {
+	return {$: 'InputChanged', a: a};
+};
+var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
+var author$project$Modals$Mkdir$viewMkdirContent = function (model) {
+	return _List_fromArray(
+		[
+			A2(
+			rundis$elm_bootstrap$Bootstrap$Grid$col,
+			_List_fromArray(
+				[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
+			_List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Form$Input$text(
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Form$Input$id('mkdir-input'),
+							rundis$elm_bootstrap$Bootstrap$Form$Input$large,
+							rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Directory name'),
+							rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$Mkdir$InputChanged),
+							rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$autofocus(true)
+								]))
+						])),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					function () {
+					var _n0 = model.state;
+					if (_n0.$ === 'Ready') {
+						return elm$html$Html$text('');
+					} else {
+						var message = _n0.a;
+						return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Mkdir$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not create directory: ' + message);
+					}
+				}()
+				]))
+		]);
+};
+var author$project$Modals$Mkdir$view = F3(
+	function (model, url, existChecker) {
+		var path = author$project$Util$urlToPath(url);
+		var hasPathCollision = existChecker(model.inputName);
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Modal$view,
+			model.modal,
+			A3(
+				rundis$elm_bootstrap$Bootstrap$Modal$footer,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(author$project$Modals$Mkdir$showPathCollision, model, hasPathCollision),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Button$button,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Button$primary,
+								rundis$elm_bootstrap$Bootstrap$Button$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(
+										author$project$Modals$Mkdir$CreateDir(
+											A2(author$project$Modals$Mkdir$pathFromUrl, url, model))),
+										elm$html$Html$Attributes$type_('submit'),
+										elm$html$Html$Attributes$disabled(
+										(!elm$core$String$length(model.inputName)) || (function () {
+											var _n0 = model.state;
+											if (_n0.$ === 'Fail') {
+												return true;
+											} else {
+												return false;
+											}
+										}() || hasPathCollision))
+									]))
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Create')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Button$button,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+								rundis$elm_bootstrap$Bootstrap$Button$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(
+										author$project$Modals$Mkdir$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
+									]))
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Cancel')
+							]))
+					]),
+				A3(
+					rundis$elm_bootstrap$Bootstrap$Modal$body,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$row,
+									_List_Nil,
+									author$project$Modals$Mkdir$viewMkdirContent(model))
+								]))
+						]),
+					A3(
+						rundis$elm_bootstrap$Bootstrap$Modal$h5,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('Create a new directory in ' + path)
+							]),
+						A2(
+							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
+							author$project$Modals$Mkdir$AnimateModal,
+							rundis$elm_bootstrap$Bootstrap$Modal$large(
+								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Mkdir$ModalClose)))))));
+	});
 var author$project$Modals$MoveCopy$DoAction = {$: 'DoAction'};
 var author$project$Modals$MoveCopy$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$MoveCopy$typeToString = function (typ) {
@@ -12137,27 +12865,6 @@ var rundis$elm_bootstrap$Bootstrap$Table$headAttr = function (attr_) {
 };
 var rundis$elm_bootstrap$Bootstrap$Table$Hover = {$: 'Hover'};
 var rundis$elm_bootstrap$Bootstrap$Table$hover = rundis$elm_bootstrap$Bootstrap$Table$Hover;
-var elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
 var elm$html$Html$table = _VirtualDom_node('table');
 var rundis$elm_bootstrap$Bootstrap$Table$Inversed = {$: 'Inversed'};
 var rundis$elm_bootstrap$Bootstrap$Table$isResponsive = function (option) {
@@ -12698,46 +13405,6 @@ var author$project$Modals$MoveCopy$viewDirList = F2(
 var author$project$Modals$MoveCopy$SearchInput = function (a) {
 	return {$: 'SearchInput', a: a};
 };
-var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
-var elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var elm$html$Html$Events$targetValue = A2(
-	elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	elm$json$Json$Decode$string);
-var elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			elm$json$Json$Decode$map,
-			elm$html$Html$Events$alwaysStop,
-			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Attrs = function (a) {
-	return {$: 'Attrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$attrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$Attrs(attrs_);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder = function (a) {
-	return {$: 'Placeholder', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder = function (value_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$Placeholder(value_);
-};
 var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -12775,187 +13442,6 @@ var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors = F2(
 				conf,
 				{successors: addons}));
 	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Text = {$: 'Text'};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Input = function (a) {
-	return {$: 'Input', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Type = function (a) {
-	return {$: 'Type', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$create = F2(
-	function (tipe, options) {
-		return rundis$elm_bootstrap$Bootstrap$Form$Input$Input(
-			{
-				options: A2(
-					elm$core$List$cons,
-					rundis$elm_bootstrap$Bootstrap$Form$Input$Type(tipe),
-					options)
-			});
-	});
-var elm$html$Html$input = _VirtualDom_node('input');
-var elm$html$Html$Attributes$id = elm$html$Html$Attributes$stringProperty('id');
-var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
-var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
-var rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier = F2(
-	function (modifier, options) {
-		switch (modifier.$) {
-			case 'Size':
-				var size_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						size: elm$core$Maybe$Just(size_)
-					});
-			case 'Id':
-				var id_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						id: elm$core$Maybe$Just(id_)
-					});
-			case 'Type':
-				var tipe = modifier.a;
-				return _Utils_update(
-					options,
-					{tipe: tipe});
-			case 'Disabled':
-				var val = modifier.a;
-				return _Utils_update(
-					options,
-					{disabled: val});
-			case 'Value':
-				var value_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						value: elm$core$Maybe$Just(value_)
-					});
-			case 'Placeholder':
-				var value_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						placeholder: elm$core$Maybe$Just(value_)
-					});
-			case 'OnInput':
-				var onInput_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						onInput: elm$core$Maybe$Just(onInput_)
-					});
-			case 'Validation':
-				var validation_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						validation: elm$core$Maybe$Just(validation_)
-					});
-			case 'Readonly':
-				var val = modifier.a;
-				return _Utils_update(
-					options,
-					{readonly: val});
-			default:
-				var attrs_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						attributes: _Utils_ap(options.attributes, attrs_)
-					});
-		}
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions = {attributes: _List_Nil, disabled: false, id: elm$core$Maybe$Nothing, onInput: elm$core$Maybe$Nothing, placeholder: elm$core$Maybe$Nothing, readonly: false, size: elm$core$Maybe$Nothing, tipe: rundis$elm_bootstrap$Bootstrap$Form$Input$Text, validation: elm$core$Maybe$Nothing, value: elm$core$Maybe$Nothing};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute = function (size) {
-	return A2(
-		elm$core$Maybe$map,
-		function (s) {
-			return elm$html$Html$Attributes$class('form-control-' + s);
-		},
-		rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption(size));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute = function (inputType) {
-	return elm$html$Html$Attributes$type_(
-		function () {
-			switch (inputType.$) {
-				case 'Text':
-					return 'text';
-				case 'Password':
-					return 'password';
-				case 'DatetimeLocal':
-					return 'datetime-local';
-				case 'Date':
-					return 'date';
-				case 'Month':
-					return 'month';
-				case 'Time':
-					return 'time';
-				case 'Week':
-					return 'week';
-				case 'Number':
-					return 'number';
-				case 'Email':
-					return 'email';
-				case 'Url':
-					return 'url';
-				case 'Search':
-					return 'search';
-				case 'Tel':
-					return 'tel';
-				default:
-					return 'color';
-			}
-		}());
-};
-var rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString = function (validation) {
-	if (validation.$ === 'Success') {
-		return 'is-valid';
-	} else {
-		return 'is-invalid';
-	}
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute = function (validation) {
-	return elm$html$Html$Attributes$class(
-		rundis$elm_bootstrap$Bootstrap$Form$FormInternal$validationToString(validation));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes = function (modifiers) {
-	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$Input$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$Input$defaultOptions, modifiers);
-	return _Utils_ap(
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('form-control'),
-				elm$html$Html$Attributes$disabled(options.disabled),
-				elm$html$Html$Attributes$readonly(options.readonly),
-				rundis$elm_bootstrap$Bootstrap$Form$Input$typeAttribute(options.tipe)
-			]),
-		_Utils_ap(
-			A2(
-				elm$core$List$filterMap,
-				elm$core$Basics$identity,
-				_List_fromArray(
-					[
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$id, options.id),
-						A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$Form$Input$sizeAttribute, options.size),
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$value, options.value),
-						A2(elm$core$Maybe$map, elm$html$Html$Attributes$placeholder, options.placeholder),
-						A2(elm$core$Maybe$map, elm$html$Html$Events$onInput, options.onInput),
-						A2(elm$core$Maybe$map, rundis$elm_bootstrap$Bootstrap$Form$Input$validationAttribute, options.validation)
-					])),
-			options.attributes));
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$view = function (_n0) {
-	var options = _n0.a.options;
-	return A2(
-		elm$html$Html$input,
-		rundis$elm_bootstrap$Bootstrap$Form$Input$toAttributes(options),
-		_List_Nil);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$input = F2(
-	function (tipe, options) {
-		return rundis$elm_bootstrap$Bootstrap$Form$Input$view(
-			A2(rundis$elm_bootstrap$Bootstrap$Form$Input$create, tipe, options));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$Input$text = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Text);
 var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Input = function (a) {
 	return {$: 'Input', a: a};
 };
@@ -13106,11 +13592,6 @@ var author$project$Modals$MoveCopy$viewContent = function (model) {
 				]))
 		]);
 };
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled = function (a) {
-	return {$: 'Roled', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Button$primary = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary));
 var author$project$Modals$MoveCopy$view = function (model) {
 	return A2(
 		rundis$elm_bootstrap$Bootstrap$Modal$view,
@@ -13228,27 +13709,124 @@ var author$project$Modals$MoveCopy$view = function (model) {
 						rundis$elm_bootstrap$Bootstrap$Modal$large(
 							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$MoveCopy$ModalClose)))))));
 };
+var author$project$Modals$Remove$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$Remove$RemoveAll = function (a) {
+	return {$: 'RemoveAll', a: a};
+};
+var author$project$Modals$Remove$viewRemoveContent = F2(
+	function (model, nSelected) {
+		return _List_fromArray(
+			[
+				A2(
+				rundis$elm_bootstrap$Bootstrap$Grid$col,
+				_List_fromArray(
+					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
+				_List_fromArray(
+					[
+						function () {
+						var _n0 = model.state;
+						if (_n0.$ === 'Ready') {
+							return elm$html$Html$text(
+								'Remove the ' + (elm$core$String$fromInt(nSelected) + ' selected items'));
+						} else {
+							var message = _n0.a;
+							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Remove$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not remove directory: ' + message);
+						}
+					}()
+					]))
+			]);
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger = {$: 'Danger'};
+var rundis$elm_bootstrap$Bootstrap$Button$danger = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger));
+var author$project$Modals$Remove$view = F2(
+	function (model, selectedPaths) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Modal$view,
+			model.modal,
+			A3(
+				rundis$elm_bootstrap$Bootstrap$Modal$footer,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Button$button,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Button$danger,
+								rundis$elm_bootstrap$Bootstrap$Button$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(
+										author$project$Modals$Remove$RemoveAll(selectedPaths)),
+										elm$html$Html$Attributes$disabled(
+										function () {
+											var _n0 = model.state;
+											if (_n0.$ === 'Fail') {
+												return true;
+											} else {
+												return false;
+											}
+										}())
+									]))
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Remove')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Button$button,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+								rundis$elm_bootstrap$Bootstrap$Button$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(
+										author$project$Modals$Remove$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
+									]))
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Cancel')
+							]))
+					]),
+				A3(
+					rundis$elm_bootstrap$Bootstrap$Modal$body,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$row,
+									_List_Nil,
+									A2(
+										author$project$Modals$Remove$viewRemoveContent,
+										model,
+										elm$core$List$length(selectedPaths)))
+								]))
+						]),
+					A3(
+						rundis$elm_bootstrap$Bootstrap$Modal$h5,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('Really remove?')
+							]),
+						A2(
+							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
+							author$project$Modals$Remove$AnimateModal,
+							rundis$elm_bootstrap$Bootstrap$Modal$large(
+								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Remove$ModalClose)))))));
+	});
 var author$project$Modals$Rename$DoRename = {$: 'DoRename'};
 var author$project$Modals$Rename$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$Rename$InputChanged = function (a) {
 	return {$: 'InputChanged', a: a};
-};
-var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Id = function (a) {
-	return {$: 'Id', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$id = function (id_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$Id(id_);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Size = function (a) {
-	return {$: 'Size', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$large = rundis$elm_bootstrap$Bootstrap$Form$Input$Size(rundis$elm_bootstrap$Bootstrap$General$Internal$LG);
-var rundis$elm_bootstrap$Bootstrap$Form$Input$OnInput = function (a) {
-	return {$: 'OnInput', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$onInput = function (toMsg) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$OnInput(toMsg);
 };
 var author$project$Modals$Rename$viewRenameContent = function (model) {
 	return _List_fromArray(
@@ -13393,9 +13971,164 @@ var author$project$Modals$Rename$view = function (model) {
 						rundis$elm_bootstrap$Bootstrap$Modal$large(
 							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Rename$ModalClose)))))));
 };
+var author$project$Modals$Share$ModalClose = {$: 'ModalClose'};
+var author$project$Util$urlPrefixToString = function (url) {
+	return function () {
+		var _n0 = url.protocol;
+		if (_n0.$ === 'Https') {
+			return 'https://';
+		} else {
+			return 'http://';
+		}
+	}() + (url.host + (function () {
+		var _n1 = url.port_;
+		if (_n1.$ === 'Just') {
+			var port_ = _n1.a;
+			return ':' + elm$core$String$fromInt(port_);
+		} else {
+			return '';
+		}
+	}() + '/'));
+};
+var elm$html$Html$a = _VirtualDom_node('a');
+var elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var author$project$Modals$Share$formatEntry = F2(
+	function (url, path) {
+		var link = author$project$Util$urlPrefixToString(url) + ('get' + author$project$Util$urlEncodePath(path));
+		return A2(
+			elm$html$Html$li,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$a,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$href(link)
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(link)
+						]))
+				]));
+	});
+var elm$html$Html$b = _VirtualDom_node('b');
+var author$project$Modals$Share$viewShare = F3(
+	function (model, entries, url) {
+		return _List_fromArray(
+			[
+				A2(
+				rundis$elm_bootstrap$Bootstrap$Grid$col,
+				_List_fromArray(
+					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$p,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('Use those links to share the selected files with people that do not use brig.')
+							])),
+						A2(
+						elm$html$Html$p,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$b,
+								_List_Nil,
+								_List_fromArray(
+									[
+										elm$html$Html$text('Note:')
+									])),
+								elm$html$Html$text(' Remember, they still need to authenticate themselves.')
+							])),
+						A2(
+						elm$html$Html$ul,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$id('share-list')
+							]),
+						A2(
+							elm$core$List$map,
+							author$project$Modals$Share$formatEntry(url),
+							entries))
+					]))
+			]);
+	});
+var author$project$Modals$Share$view = F3(
+	function (model, selectedPaths, url) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Modal$view,
+			model.modal,
+			A3(
+				rundis$elm_bootstrap$Bootstrap$Modal$footer,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Button$button,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+								rundis$elm_bootstrap$Bootstrap$Button$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(
+										author$project$Modals$Share$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
+									]))
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text('Close')
+							]))
+					]),
+				A3(
+					rundis$elm_bootstrap$Bootstrap$Modal$body,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Grid$row,
+									_List_fromArray(
+										[
+											rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('scrollable-modal-row')
+												]))
+										]),
+									A3(author$project$Modals$Share$viewShare, model, selectedPaths, url))
+								]))
+						]),
+					A3(
+						rundis$elm_bootstrap$Bootstrap$Modal$h5,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('Share hyperlinks')
+							]),
+						A2(
+							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
+							author$project$Modals$Share$AnimateModal,
+							rundis$elm_bootstrap$Bootstrap$Modal$large(
+								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Share$ModalClose)))))));
+	});
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Ls$buildModals = function (model) {
+	var paths = author$project$Ls$selectedPaths(model);
 	return A2(
 		elm$html$Html$span,
 		_List_Nil,
@@ -13416,15 +14149,767 @@ var author$project$Ls$buildModals = function (model) {
 				A2(
 				elm$html$Html$map,
 				author$project$Ls$CopyMsg,
-				author$project$Modals$MoveCopy$view(model.copyState))
+				author$project$Modals$MoveCopy$view(model.copyState)),
+				A2(
+				elm$html$Html$map,
+				author$project$Ls$MkdirMsg,
+				A3(
+					author$project$Modals$Mkdir$view,
+					model.mkdirState,
+					model.url,
+					author$project$Ls$existsInCurr(model))),
+				A2(
+				elm$html$Html$map,
+				author$project$Ls$RemoveMsg,
+				A2(author$project$Modals$Remove$view, model.removeState, paths)),
+				A2(
+				elm$html$Html$map,
+				author$project$Ls$ShareMsg,
+				A3(author$project$Modals$Share$view, model.shareState, paths, model.url))
 			]));
 };
-var elm$html$Html$a = _VirtualDom_node('a');
-var elm$html$Html$Attributes$href = function (url) {
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Block = {$: 'Block'};
+var rundis$elm_bootstrap$Bootstrap$Button$block = rundis$elm_bootstrap$Bootstrap$Internal$Button$Block;
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
+var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$ButtonItem = function (a) {
+	return {$: 'ButtonItem', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$button = F2(
+	function (options, children) {
+		return rundis$elm_bootstrap$Bootstrap$ButtonGroup$ButtonItem(
+			A2(rundis$elm_bootstrap$Bootstrap$Button$button, options, children));
+	});
+var author$project$Ls$buildActionButton = F4(
+	function (msg, iconName, labelText, isDisabled) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$ButtonGroup$button,
+			_List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Button$block,
+					rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+					rundis$elm_bootstrap$Bootstrap$Button$attrs(
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('text-left'),
+							elm$html$Html$Attributes$disabled(isDisabled),
+							elm$html$Html$Events$onClick(msg)
+						]))
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fas fa-lg'),
+							elm$html$Html$Attributes$class(iconName)
+						]),
+					_List_Nil),
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$id('toolbar-label')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(' ' + labelText)
+						]))
+				]));
+	});
+var author$project$Ls$currIsFile = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var actualModel = _n0.a;
+		return !actualModel.self.isDir;
+	} else {
+		return false;
+	}
+};
+var author$project$Ls$currRoot = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var actualModel = _n0.a;
+		return elm$core$Maybe$Just(actualModel.self.path);
+	} else {
+		return elm$core$Maybe$Nothing;
+	}
+};
+var author$project$Ls$labelSelectedItems = F2(
+	function (model, num) {
+		if (author$project$Ls$currIsFile(model)) {
+			return '';
+		} else {
+			switch (num) {
+				case 0:
+					return 'Nothing selected';
+				case 1:
+					return ' 1 item selected';
+				default:
+					var n = num;
+					return ' ' + (elm$core$String$fromInt(n) + ' items selected');
+			}
+		}
+	});
+var author$project$Ls$nSelectedItems = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var actualModel = _n0.a;
+		return elm$core$Set$size(
+			A2(
+				elm$core$Set$filter,
+				function (e) {
+					return !elm$core$String$isEmpty(e);
+				},
+				actualModel.checked));
+	} else {
+		return 0;
+	}
+};
+var author$project$Modals$Mkdir$ModalShow = {$: 'ModalShow'};
+var author$project$Modals$Mkdir$show = author$project$Modals$Mkdir$ModalShow;
+var author$project$Modals$Remove$ModalShow = function (a) {
+	return {$: 'ModalShow', a: a};
+};
+var author$project$Modals$Remove$show = function (paths) {
+	return author$project$Modals$Remove$ModalShow(paths);
+};
+var author$project$Modals$Share$ModalShow = {$: 'ModalShow'};
+var author$project$Modals$Share$show = author$project$Modals$Share$ModalShow;
+var author$project$Modals$Upload$UploadSelectedFiles = F2(
+	function (a, b) {
+		return {$: 'UploadSelectedFiles', a: a, b: b};
+	});
+var elm$file$File$decoder = _File_decoder;
+var author$project$Modals$Upload$filesDecoder = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'files']),
+	elm$json$Json$Decode$list(elm$file$File$decoder));
+var elm$html$Html$label = _VirtualDom_node('label');
+var elm$html$Html$Attributes$multiple = elm$html$Html$Attributes$boolProperty('multiple');
+var author$project$Modals$Upload$buildButton = F4(
+	function (model, currIsFile, currRoot, toMsg) {
+		return A2(
+			elm$html$Html$label,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('btn btn-file btn-link btn-default text-left'),
+					elm$html$Html$Attributes$id('action-btn'),
+					currIsFile ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fas fa-plus')
+						]),
+					_List_Nil),
+					elm$html$Html$text('\u00a0\u00a0Upload'),
+					A2(
+					elm$html$Html$input,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$type_('file'),
+							elm$html$Html$Attributes$multiple(true),
+							A2(
+							elm$html$Html$Events$on,
+							'change',
+							A2(
+								elm$json$Json$Decode$map,
+								toMsg,
+								A2(
+									elm$json$Json$Decode$map,
+									author$project$Modals$Upload$UploadSelectedFiles(currRoot),
+									author$project$Modals$Upload$filesDecoder))),
+							A2(elm$html$Html$Attributes$style, 'display', 'none'),
+							elm$html$Html$Attributes$disabled(currIsFile)
+						]),
+					_List_Nil)
+				]));
+	});
+var author$project$Modals$Upload$clampText = F2(
+	function (text, length) {
+		return (_Utils_cmp(
+			elm$core$String$length(text),
+			length) < 1) ? text : (A3(elm$core$String$slice, 0, length, text) + '…');
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
+var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
+	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
+};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
+var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
+var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
+var author$project$Modals$Upload$viewAlert = F3(
+	function (alert, path, isSuccess) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Alert$view,
+			alert,
+			A2(
+				rundis$elm_bootstrap$Bootstrap$Alert$children,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$row,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												isSuccess ? elm$html$Html$Attributes$class('fas fa-xs fa-check') : elm$html$Html$Attributes$class('fas fa-xs fa-exclamation-circle')
+											]),
+										_List_Nil),
+										elm$html$Html$text(
+										' ' + A2(author$project$Modals$Upload$clampText, path, 15))
+									])),
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										rundis$elm_bootstrap$Bootstrap$Button$button,
+										_List_fromArray(
+											[
+												rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+												rundis$elm_bootstrap$Bootstrap$Button$attrs(
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('notification-close-btn'),
+														elm$html$Html$Events$onClick(
+														A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed))
+													]))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$span,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('fas fa-xs fa-times')
+													]),
+												_List_Nil)
+											]))
+									]))
+							]))
+					]),
+				(isSuccess ? rundis$elm_bootstrap$Bootstrap$Alert$success : rundis$elm_bootstrap$Bootstrap$Alert$danger)(
+					A2(
+						rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation,
+						author$project$Modals$Upload$AlertMsg(path),
+						rundis$elm_bootstrap$Bootstrap$Alert$config))));
+	});
+var author$project$Modals$Upload$UploadCancel = function (a) {
+	return {$: 'UploadCancel', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$Attrs = function (a) {
+	return {$: 'Attrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$attrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Progress$Attrs(attrs_);
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$Label = function (a) {
+	return {$: 'Label', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$customLabel = function (children) {
+	return rundis$elm_bootstrap$Bootstrap$Progress$Label(children);
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$Options = function (a) {
+	return {$: 'Options', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$applyOption = F2(
+	function (modifier, _n0) {
+		var options = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Progress$Options(
+			function () {
+				switch (modifier.$) {
+					case 'Value':
+						var value_ = modifier.a;
+						return _Utils_update(
+							options,
+							{value: value_});
+					case 'Height':
+						var height_ = modifier.a;
+						return _Utils_update(
+							options,
+							{height: height_});
+					case 'Label':
+						var label_ = modifier.a;
+						return _Utils_update(
+							options,
+							{label: label_});
+					case 'Roled':
+						var role_ = modifier.a;
+						return _Utils_update(
+							options,
+							{role: role_});
+					case 'Striped':
+						var striped_ = modifier.a;
+						return _Utils_update(
+							options,
+							{striped: striped_});
+					case 'Animated':
+						var animated_ = modifier.a;
+						return _Utils_update(
+							options,
+							{animated: animated_});
+					case 'Attrs':
+						var attrs_ = modifier.a;
+						return _Utils_update(
+							options,
+							{attributes: attrs_});
+					default:
+						var attrs_ = modifier.a;
+						return _Utils_update(
+							options,
+							{wrapperAttributes: attrs_});
+				}
+			}());
+	});
+var rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions = rundis$elm_bootstrap$Bootstrap$Progress$Options(
+	{animated: false, attributes: _List_Nil, height: elm$core$Maybe$Nothing, label: _List_Nil, role: elm$core$Maybe$Nothing, striped: false, value: 0, wrapperAttributes: _List_Nil});
+var elm$core$String$fromFloat = _String_fromNumber;
+var rundis$elm_bootstrap$Bootstrap$Progress$roleClass = function (role) {
+	return elm$html$Html$Attributes$class(
+		function () {
+			switch (role.$) {
+				case 'Success':
+					return 'bg-success';
+				case 'Info':
+					return 'bg-info';
+				case 'Warning':
+					return 'bg-warning';
+				default:
+					return 'bg-danger';
+			}
+		}());
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$toAttributes = function (_n0) {
+	var options = _n0.a;
+	return elm$core$List$concat(
+		_List_fromArray(
+			[
+				_List_fromArray(
+				[
+					A2(elm$html$Html$Attributes$attribute, 'role', 'progressbar'),
+					A2(
+					elm$html$Html$Attributes$attribute,
+					'aria-value-now',
+					elm$core$String$fromFloat(options.value)),
+					A2(elm$html$Html$Attributes$attribute, 'aria-valuemin', '0'),
+					A2(elm$html$Html$Attributes$attribute, 'aria-valuemax', '100'),
+					A2(
+					elm$html$Html$Attributes$style,
+					'width',
+					elm$core$String$fromFloat(options.value) + '%'),
+					elm$html$Html$Attributes$classList(
+					_List_fromArray(
+						[
+							_Utils_Tuple2('progress-bar', true),
+							_Utils_Tuple2('progress-bar-striped', options.striped || options.animated),
+							_Utils_Tuple2('progress-bar-animated', options.animated)
+						]))
+				]),
+				function () {
+				var _n1 = options.height;
+				if (_n1.$ === 'Just') {
+					var height_ = _n1.a;
+					return _List_fromArray(
+						[
+							A2(
+							elm$html$Html$Attributes$style,
+							'height',
+							elm$core$String$fromInt(height_) + 'px')
+						]);
+				} else {
+					return _List_Nil;
+				}
+			}(),
+				function () {
+				var _n2 = options.role;
+				if (_n2.$ === 'Just') {
+					var role_ = _n2.a;
+					return _List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Progress$roleClass(role_)
+						]);
+				} else {
+					return _List_Nil;
+				}
+			}(),
+				options.attributes
+			]));
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$renderBar = function (modifiers) {
+	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Progress$applyOption, rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions, modifiers);
+	var opts = options.a;
 	return A2(
-		elm$html$Html$Attributes$stringProperty,
-		'href',
-		_VirtualDom_noJavaScriptUri(url));
+		elm$html$Html$div,
+		rundis$elm_bootstrap$Bootstrap$Progress$toAttributes(options),
+		opts.label);
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$progress = function (modifiers) {
+	var _n0 = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Progress$applyOption, rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions, modifiers);
+	var options = _n0.a;
+	return A2(
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			elm$html$Html$Attributes$class('progress'),
+			options.wrapperAttributes),
+		_List_fromArray(
+			[
+				rundis$elm_bootstrap$Bootstrap$Progress$renderBar(modifiers)
+			]));
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$Value = function (a) {
+	return {$: 'Value', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$value = function (val) {
+	return rundis$elm_bootstrap$Bootstrap$Progress$Value(val);
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$WrapperAttrs = function (a) {
+	return {$: 'WrapperAttrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Progress$wrapperAttrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Progress$WrapperAttrs(attrs_);
+};
+var author$project$Modals$Upload$viewProgressIndicator = F2(
+	function (path, fraction) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Grid$row,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md10]),
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Progress$progress(
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Progress$value(100 * fraction),
+									rundis$elm_bootstrap$Bootstrap$Progress$customLabel(
+									_List_fromArray(
+										[
+											elm$html$Html$text(
+											A2(author$project$Modals$Upload$clampText, path, 25))
+										])),
+									rundis$elm_bootstrap$Bootstrap$Progress$attrs(
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'height', '25px')
+										])),
+									rundis$elm_bootstrap$Bootstrap$Progress$wrapperAttrs(
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'height', '25px')
+										]))
+								]))
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md2]),
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Button$button,
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+									rundis$elm_bootstrap$Bootstrap$Button$attrs(
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('progress-cancel'),
+											elm$html$Html$Events$onClick(
+											author$project$Modals$Upload$UploadCancel(path))
+										]))
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('fas fa-xs fa-times')
+										]),
+									_List_Nil)
+								]))
+						]))
+				]));
+	});
+var author$project$Modals$Upload$viewUploadState = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(
+				elm$html$Html$ul,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('notification-list list-group')
+					]),
+				_Utils_ap(
+					A2(
+						elm$core$List$map,
+						function (a) {
+							return A3(author$project$Modals$Upload$viewAlert, a.alert, a.path, true);
+						},
+						model.success),
+					_Utils_ap(
+						A2(
+							elm$core$List$map,
+							function (a) {
+								return A3(author$project$Modals$Upload$viewAlert, a.alert, a.path, false);
+							},
+							model.failed),
+						A2(
+							elm$core$List$map,
+							function (p) {
+								return A2(author$project$Modals$Upload$viewProgressIndicator, p.a, p.b);
+							},
+							elm$core$Dict$toList(model.uploads)))))
+			]));
+};
+var rundis$elm_bootstrap$Bootstrap$Button$linkButton = F2(
+	function (options, children) {
+		return A2(
+			elm$html$Html$a,
+			A2(
+				elm$core$List$cons,
+				A2(elm$html$Html$Attributes$attribute, 'role', 'button'),
+				rundis$elm_bootstrap$Bootstrap$Internal$Button$buttonAttributes(options)),
+			children);
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$GroupItem = function (a) {
+	return {$: 'GroupItem', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$applyModifier = F2(
+	function (modifier, options) {
+		switch (modifier.$) {
+			case 'Size':
+				var size = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						size: elm$core$Maybe$Just(size)
+					});
+			case 'Vertical':
+				return _Utils_update(
+					options,
+					{vertical: true});
+			default:
+				var attrs_ = modifier.a;
+				return _Utils_update(
+					options,
+					{
+						attributes: _Utils_ap(options.attributes, attrs_)
+					});
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$defaultOptions = {attributes: _List_Nil, size: elm$core$Maybe$Nothing, vertical: false};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$groupAttributes = F2(
+	function (toggle, modifiers) {
+		var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$ButtonGroup$applyModifier, rundis$elm_bootstrap$Bootstrap$ButtonGroup$defaultOptions, modifiers);
+		return _Utils_ap(
+			_List_fromArray(
+				[
+					A2(elm$html$Html$Attributes$attribute, 'role', 'group'),
+					elm$html$Html$Attributes$classList(
+					_List_fromArray(
+						[
+							_Utils_Tuple2('btn-group', true),
+							_Utils_Tuple2('btn-group-toggle', toggle),
+							_Utils_Tuple2('btn-group-vertical', options.vertical)
+						])),
+					A2(elm$html$Html$Attributes$attribute, 'data-toggle', 'buttons')
+				]),
+			_Utils_ap(
+				function () {
+					var _n0 = A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption, options.size);
+					if (_n0.$ === 'Just') {
+						var s = _n0.a;
+						return _List_fromArray(
+							[
+								elm$html$Html$Attributes$class('btn-group-' + s)
+							]);
+					} else {
+						return _List_Nil;
+					}
+				}(),
+				options.attributes));
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem = F2(
+	function (options, items) {
+		return rundis$elm_bootstrap$Bootstrap$ButtonGroup$GroupItem(
+			A2(
+				elm$html$Html$div,
+				A2(rundis$elm_bootstrap$Bootstrap$ButtonGroup$groupAttributes, false, options),
+				A2(
+					elm$core$List$map,
+					function (_n0) {
+						var elem = _n0.a;
+						return elem;
+					},
+					items)));
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$Size = function (a) {
+	return {$: 'Size', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$General$Internal$SM = {$: 'SM'};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$small = rundis$elm_bootstrap$Bootstrap$ButtonGroup$Size(rundis$elm_bootstrap$Bootstrap$General$Internal$SM);
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$renderGroup = function (_n0) {
+	var elem = _n0.a;
+	return elem;
+};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$toolbar = F2(
+	function (attributes, items) {
+		return A2(
+			elm$html$Html$div,
+			_Utils_ap(
+				_List_fromArray(
+					[
+						A2(elm$html$Html$Attributes$attribute, 'role', 'toolbar'),
+						elm$html$Html$Attributes$class('btn-toolbar')
+					]),
+				attributes),
+			A2(elm$core$List$map, rundis$elm_bootstrap$Bootstrap$ButtonGroup$renderGroup, items));
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$Vertical = {$: 'Vertical'};
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical = rundis$elm_bootstrap$Bootstrap$ButtonGroup$Vertical;
+var author$project$Ls$viewActionList = function (model) {
+	var root = A2(
+		elm$core$Maybe$withDefault,
+		'/',
+		author$project$Ls$currRoot(model));
+	var nSelected = author$project$Ls$nSelectedItems(model);
+	var disabledClass = author$project$Ls$currIsFile(model) ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default');
+	return A2(
+		elm$html$Html$div,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('toolbar')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$p,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('text-muted'),
+						elm$html$Html$Attributes$id('select-label')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						A2(author$project$Ls$labelSelectedItems, model, nSelected))
+					])),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil),
+				A4(
+				author$project$Modals$Upload$buildButton,
+				model.uploadState,
+				author$project$Ls$currIsFile(model),
+				root,
+				author$project$Ls$UploadMsg),
+				A2(
+				rundis$elm_bootstrap$Bootstrap$Button$linkButton,
+				_List_fromArray(
+					[
+						rundis$elm_bootstrap$Bootstrap$Button$block,
+						rundis$elm_bootstrap$Bootstrap$Button$attrs(
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('text-left btn-link'),
+								disabledClass,
+								elm$html$Html$Attributes$href(
+								'/get' + (author$project$Util$urlToPath(model.url) + '?direct=yes'))
+							]))
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-lg fa-file-download')
+							]),
+						_List_Nil),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$id('action-btn')
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text(' Download all')
+							]))
+					])),
+				A2(
+				rundis$elm_bootstrap$Bootstrap$ButtonGroup$toolbar,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('btn-group-vertical')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem,
+						_List_fromArray(
+							[rundis$elm_bootstrap$Bootstrap$ButtonGroup$small, rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical]),
+						_List_fromArray(
+							[
+								A4(
+								author$project$Ls$buildActionButton,
+								author$project$Ls$ShareMsg(author$project$Modals$Share$show),
+								'fa-share-alt',
+								'Share',
+								!nSelected),
+								A4(
+								author$project$Ls$buildActionButton,
+								author$project$Ls$MkdirMsg(author$project$Modals$Mkdir$show),
+								'fa-edit',
+								'New Folder',
+								author$project$Ls$currIsFile(model)),
+								A4(
+								author$project$Ls$buildActionButton,
+								author$project$Ls$RemoveMsg(
+									author$project$Modals$Remove$show(
+										author$project$Ls$selectedPaths(model))),
+								'fa-trash',
+								'Delete',
+								!nSelected)
+							]))
+					])),
+				A2(
+				elm$html$Html$map,
+				author$project$Ls$UploadMsg,
+				author$project$Modals$Upload$viewUploadState(model.uploadState))
+			]));
 };
 var rundis$elm_bootstrap$Bootstrap$Breadcrumb$Item = F2(
 	function (a, b) {
@@ -13564,27 +15049,26 @@ var rundis$elm_bootstrap$Bootstrap$Breadcrumb$container = function (items) {
 				]));
 	}
 };
-var author$project$Ls$viewBreadcrumbs = F2(
-	function (url, model) {
-		return A2(
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$id('breadcrumbs-box')
-				]),
-			_List_fromArray(
-				[
-					rundis$elm_bootstrap$Bootstrap$Breadcrumb$container(
-					A2(
-						author$project$Ls$buildBreadcrumbs,
-						_Utils_ap(
-							_List_fromArray(
-								['']),
-							author$project$Util$splitPath(
-								author$project$Util$urlToPath(url))),
-						_List_Nil))
-				]));
-	});
+var author$project$Ls$viewBreadcrumbs = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$id('breadcrumbs-box')
+			]),
+		_List_fromArray(
+			[
+				rundis$elm_bootstrap$Bootstrap$Breadcrumb$container(
+				A2(
+					author$project$Ls$buildBreadcrumbs,
+					_Utils_ap(
+						_List_fromArray(
+							['']),
+						author$project$Util$splitPath(
+							author$project$Util$urlToPath(model.url))),
+					_List_Nil))
+			]));
+};
 var author$project$Ls$CheckboxTickAll = function (a) {
 	return {$: 'CheckboxTickAll', a: a};
 };
@@ -13595,17 +15079,6 @@ var author$project$Ls$SortBy = F2(
 	function (a, b) {
 		return {$: 'SortBy', a: a, b: b};
 	});
-var rundis$elm_bootstrap$Bootstrap$Button$linkButton = F2(
-	function (options, children) {
-		return A2(
-			elm$html$Html$a,
-			A2(
-				elm$core$List$cons,
-				A2(elm$html$Html$Attributes$attribute, 'role', 'button'),
-				rundis$elm_bootstrap$Bootstrap$Internal$Button$buttonAttributes(options)),
-			children);
-	});
-var rundis$elm_bootstrap$Bootstrap$General$Internal$SM = {$: 'SM'};
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Size = function (a) {
 	return {$: 'Size', a: a};
 };
@@ -13701,9 +15174,6 @@ var author$project$Modals$Rename$ModalShow = function (a) {
 var author$project$Modals$Rename$show = function (currPath) {
 	return author$project$Modals$Rename$ModalShow(currPath);
 };
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
-var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
 var rundis$elm_bootstrap$Bootstrap$Dropdown$DropdownItem = function (a) {
 	return {$: 'DropdownItem', a: a};
 };
@@ -13780,7 +15250,6 @@ var rundis$elm_bootstrap$Bootstrap$Dropdown$dropdownAttributes = F2(
 				rundis$elm_bootstrap$Bootstrap$Dropdown$dropDir(config.dropDirection),
 				config.attributes));
 	});
-var elm$core$String$fromFloat = _String_fromNumber;
 var rundis$elm_bootstrap$Bootstrap$Dropdown$menuStyles = F2(
 	function (_n0, config) {
 		var status = _n0.a.status;
@@ -14313,7 +15782,6 @@ var author$project$Ls$formatPath = F2(
 		}
 	});
 var elm$html$Html$i = _VirtualDom_node('i');
-var elm$html$Html$label = _VirtualDom_node('label');
 var elm$html$Html$Attributes$checked = elm$html$Html$Attributes$boolProperty('checked');
 var elm$html$Html$Events$targetChecked = A2(
 	elm$json$Json$Decode$at,
@@ -15020,24 +16488,6 @@ var author$project$Ls$showAlert = function (model) {
 			rundis$elm_bootstrap$Bootstrap$Alert$danger(
 				A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissable, author$project$Ls$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
 };
-var author$project$Util$urlPrefixToString = function (url) {
-	return function () {
-		var _n0 = url.protocol;
-		if (_n0.$ === 'Https') {
-			return 'https://';
-		} else {
-			return 'http://';
-		}
-	}() + (url.host + (function () {
-		var _n1 = url.port_;
-		if (_n1.$ === 'Just') {
-			var port_ = _n1.a;
-			return ':' + elm$core$String$fromInt(port_);
-		} else {
-			return '';
-		}
-	}() + '/'));
-};
 var author$project$Ls$viewDownloadButton = F2(
 	function (model, url) {
 		return A2(
@@ -15064,23 +16514,11 @@ var author$project$Ls$viewDownloadButton = F2(
 					elm$html$Html$text(' Download')
 				]));
 	});
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$TextAlign = function (a) {
-	return {$: 'TextAlign', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign = function (align) {
-	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$TextAlign(align);
-};
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col4 = {$: 'Col4'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs4 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col4);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8 = {$: 'Col8'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
 var rundis$elm_bootstrap$Bootstrap$Internal$Text$Left = {$: 'Left'};
-var rundis$elm_bootstrap$Bootstrap$Text$alignXs = function (dir) {
-	return {dir: dir, size: rundis$elm_bootstrap$Bootstrap$General$Internal$XS};
-};
 var rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Left);
-var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
-var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
 var author$project$Ls$viewMetaRow = F2(
 	function (key, value) {
 		return A2(
@@ -15176,16 +16614,13 @@ var author$project$Ls$viewViewButton = F2(
 					elm$html$Html$text(' View')
 				]));
 	});
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
 var rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$Roled = function (a) {
 	return {$: 'Roled', a: a};
 };
 var rundis$elm_bootstrap$Bootstrap$Internal$Role$Light = {$: 'Light'};
 var rundis$elm_bootstrap$Bootstrap$ListGroup$light = rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Role$Light);
-var rundis$elm_bootstrap$Bootstrap$Internal$Text$Center = {$: 'Center'};
-var rundis$elm_bootstrap$Bootstrap$Text$alignXsCenter = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Center);
 var author$project$Ls$viewSingleEntry = F3(
-	function (actualModel, url, zone) {
+	function (model, actualModel, zone) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Grid$row,
 			_List_Nil,
@@ -15266,9 +16701,9 @@ var author$project$Ls$viewSingleEntry = F3(
 										[rundis$elm_bootstrap$Bootstrap$ListGroup$light]),
 									_List_fromArray(
 										[
-											A2(author$project$Ls$viewDownloadButton, actualModel, url),
+											A2(author$project$Ls$viewDownloadButton, actualModel, model.url),
 											elm$html$Html$text(' '),
-											A2(author$project$Ls$viewViewButton, actualModel, url)
+											A2(author$project$Ls$viewViewButton, actualModel, model.url)
 										]))
 								]))
 						])),
@@ -15283,8 +16718,8 @@ var elm$virtual_dom$VirtualDom$lazy2 = _VirtualDom_lazy2;
 var elm$html$Html$Lazy$lazy2 = elm$virtual_dom$VirtualDom$lazy2;
 var elm$virtual_dom$VirtualDom$lazy3 = _VirtualDom_lazy3;
 var elm$html$Html$Lazy$lazy3 = elm$virtual_dom$VirtualDom$lazy3;
-var author$project$Ls$viewList = F3(
-	function (model, url, zone) {
+var author$project$Ls$viewList = F2(
+	function (model, zone) {
 		var _n0 = model.state;
 		switch (_n0.$) {
 			case 'Failure':
@@ -15316,732 +16751,15 @@ var author$project$Ls$viewList = F3(
 						_List_fromArray(
 							[
 								author$project$Ls$showAlert(model),
-								A4(elm$html$Html$Lazy$lazy3, author$project$Ls$viewSingleEntry, actualModel, url, zone)
+								A4(elm$html$Html$Lazy$lazy3, author$project$Ls$viewSingleEntry, model, actualModel, zone)
 							]));
 				}
 		}
 	});
-var author$project$Ls$currIsFile = function (model) {
-	var _n0 = model.state;
-	if (_n0.$ === 'Success') {
-		var actualModel = _n0.a;
-		return !actualModel.self.isDir;
-	} else {
-		return false;
-	}
-};
-var author$project$Ls$nSelectedItems = function (model) {
-	var _n0 = model.state;
-	if (_n0.$ === 'Success') {
-		var actualModel = _n0.a;
-		return elm$core$Set$size(
-			A2(
-				elm$core$Set$filter,
-				function (e) {
-					return !elm$core$String$isEmpty(e);
-				},
-				actualModel.checked));
-	} else {
-		return 0;
-	}
-};
-var author$project$Main$LogoutSubmit = {$: 'LogoutSubmit'};
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Block = {$: 'Block'};
-var rundis$elm_bootstrap$Bootstrap$Button$block = rundis$elm_bootstrap$Bootstrap$Internal$Button$Block;
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$ButtonItem = function (a) {
-	return {$: 'ButtonItem', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$button = F2(
-	function (options, children) {
-		return rundis$elm_bootstrap$Bootstrap$ButtonGroup$ButtonItem(
-			A2(rundis$elm_bootstrap$Bootstrap$Button$button, options, children));
-	});
-var author$project$Main$buildActionButton = F4(
-	function (msg, iconName, labelText, isDisabled) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$ButtonGroup$button,
-			_List_fromArray(
-				[
-					rundis$elm_bootstrap$Bootstrap$Button$block,
-					rundis$elm_bootstrap$Bootstrap$Button$roleLink,
-					rundis$elm_bootstrap$Bootstrap$Button$attrs(
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('text-left'),
-							elm$html$Html$Attributes$disabled(isDisabled),
-							elm$html$Html$Events$onClick(msg)
-						]))
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('fas fa-lg'),
-							elm$html$Html$Attributes$class(iconName)
-						]),
-					_List_Nil),
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$id('toolbar-label')
-						]),
-					_List_fromArray(
-						[
-							elm$html$Html$text(' ' + labelText)
-						]))
-				]));
-	});
-var author$project$Main$labelSelectedItems = F2(
-	function (lsModel, num) {
-		if (author$project$Ls$currIsFile(lsModel)) {
-			return '';
-		} else {
-			switch (num) {
-				case 0:
-					return 'Nothing selected';
-				case 1:
-					return ' 1 item selected';
-				default:
-					var n = num;
-					return ' ' + (elm$core$String$fromInt(n) + ' items selected');
-			}
-		}
-	});
-var author$project$Modals$Mkdir$ModalShow = {$: 'ModalShow'};
-var author$project$Modals$Mkdir$show = author$project$Modals$Mkdir$ModalShow;
-var author$project$Modals$Remove$ModalShow = {$: 'ModalShow'};
-var author$project$Modals$Remove$show = author$project$Modals$Remove$ModalShow;
-var author$project$Modals$Share$ModalShow = {$: 'ModalShow'};
-var author$project$Modals$Share$show = author$project$Modals$Share$ModalShow;
-var author$project$Ls$currRoot = function (model) {
-	var _n0 = model.state;
-	if (_n0.$ === 'Success') {
-		var actualModel = _n0.a;
-		return elm$core$Maybe$Just(actualModel.self.path);
-	} else {
-		return elm$core$Maybe$Nothing;
-	}
-};
-var author$project$Modals$Upload$UploadSelectedFiles = F2(
-	function (a, b) {
-		return {$: 'UploadSelectedFiles', a: a, b: b};
-	});
-var elm$file$File$decoder = _File_decoder;
-var author$project$Modals$Upload$filesDecoder = A2(
-	elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'files']),
-	elm$json$Json$Decode$list(elm$file$File$decoder));
-var elm$html$Html$Attributes$multiple = elm$html$Html$Attributes$boolProperty('multiple');
-var author$project$Modals$Upload$buildButton = F3(
-	function (model, lsModel, toMsg) {
-		var isDisabled = author$project$Ls$currIsFile(lsModel);
-		return A2(
-			elm$html$Html$label,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('btn btn-file btn-link btn-default text-left'),
-					elm$html$Html$Attributes$id('action-btn'),
-					isDisabled ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('fas fa-plus')
-						]),
-					_List_Nil),
-					elm$html$Html$text('\u00a0\u00a0Upload'),
-					A2(
-					elm$html$Html$input,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$type_('file'),
-							elm$html$Html$Attributes$multiple(true),
-							A2(
-							elm$html$Html$Events$on,
-							'change',
-							A2(
-								elm$json$Json$Decode$map,
-								toMsg,
-								A2(
-									elm$json$Json$Decode$map,
-									author$project$Modals$Upload$UploadSelectedFiles(
-										A2(
-											elm$core$Maybe$withDefault,
-											'/',
-											author$project$Ls$currRoot(lsModel))),
-									author$project$Modals$Upload$filesDecoder))),
-							A2(elm$html$Html$Attributes$style, 'display', 'none'),
-							elm$html$Html$Attributes$disabled(isDisabled)
-						]),
-					_List_Nil)
-				]));
-	});
-var author$project$Modals$Upload$clampText = F2(
-	function (text, length) {
-		return (_Utils_cmp(
-			elm$core$String$length(text),
-			length) < 1) ? text : (A3(elm$core$String$slice, 0, length, text) + '…');
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
-var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
-	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
-var author$project$Modals$Upload$viewAlert = F3(
-	function (alert, path, isSuccess) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Alert$view,
-			alert,
-			A2(
-				rundis$elm_bootstrap$Bootstrap$Alert$children,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Grid$row,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
-								_List_fromArray(
-									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												isSuccess ? elm$html$Html$Attributes$class('fas fa-xs fa-check') : elm$html$Html$Attributes$class('fas fa-xs fa-exclamation-circle')
-											]),
-										_List_Nil),
-										elm$html$Html$text(
-										' ' + A2(author$project$Modals$Upload$clampText, path, 15))
-									])),
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
-								_List_fromArray(
-									[
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
-									]),
-								_List_fromArray(
-									[
-										A2(
-										rundis$elm_bootstrap$Bootstrap$Button$button,
-										_List_fromArray(
-											[
-												rundis$elm_bootstrap$Bootstrap$Button$roleLink,
-												rundis$elm_bootstrap$Bootstrap$Button$attrs(
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('notification-close-btn'),
-														elm$html$Html$Events$onClick(
-														A2(author$project$Modals$Upload$AlertMsg, path, rundis$elm_bootstrap$Bootstrap$Alert$closed))
-													]))
-											]),
-										_List_fromArray(
-											[
-												A2(
-												elm$html$Html$span,
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('fas fa-xs fa-times')
-													]),
-												_List_Nil)
-											]))
-									]))
-							]))
-					]),
-				(isSuccess ? rundis$elm_bootstrap$Bootstrap$Alert$success : rundis$elm_bootstrap$Bootstrap$Alert$danger)(
-					A2(
-						rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation,
-						author$project$Modals$Upload$AlertMsg(path),
-						rundis$elm_bootstrap$Bootstrap$Alert$config))));
-	});
-var author$project$Modals$Upload$UploadCancel = function (a) {
-	return {$: 'UploadCancel', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$Attrs = function (a) {
-	return {$: 'Attrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$attrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$Progress$Attrs(attrs_);
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$Label = function (a) {
-	return {$: 'Label', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$customLabel = function (children) {
-	return rundis$elm_bootstrap$Bootstrap$Progress$Label(children);
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$Options = function (a) {
-	return {$: 'Options', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$applyOption = F2(
-	function (modifier, _n0) {
-		var options = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Progress$Options(
-			function () {
-				switch (modifier.$) {
-					case 'Value':
-						var value_ = modifier.a;
-						return _Utils_update(
-							options,
-							{value: value_});
-					case 'Height':
-						var height_ = modifier.a;
-						return _Utils_update(
-							options,
-							{height: height_});
-					case 'Label':
-						var label_ = modifier.a;
-						return _Utils_update(
-							options,
-							{label: label_});
-					case 'Roled':
-						var role_ = modifier.a;
-						return _Utils_update(
-							options,
-							{role: role_});
-					case 'Striped':
-						var striped_ = modifier.a;
-						return _Utils_update(
-							options,
-							{striped: striped_});
-					case 'Animated':
-						var animated_ = modifier.a;
-						return _Utils_update(
-							options,
-							{animated: animated_});
-					case 'Attrs':
-						var attrs_ = modifier.a;
-						return _Utils_update(
-							options,
-							{attributes: attrs_});
-					default:
-						var attrs_ = modifier.a;
-						return _Utils_update(
-							options,
-							{wrapperAttributes: attrs_});
-				}
-			}());
-	});
-var rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions = rundis$elm_bootstrap$Bootstrap$Progress$Options(
-	{animated: false, attributes: _List_Nil, height: elm$core$Maybe$Nothing, label: _List_Nil, role: elm$core$Maybe$Nothing, striped: false, value: 0, wrapperAttributes: _List_Nil});
-var rundis$elm_bootstrap$Bootstrap$Progress$roleClass = function (role) {
-	return elm$html$Html$Attributes$class(
-		function () {
-			switch (role.$) {
-				case 'Success':
-					return 'bg-success';
-				case 'Info':
-					return 'bg-info';
-				case 'Warning':
-					return 'bg-warning';
-				default:
-					return 'bg-danger';
-			}
-		}());
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$toAttributes = function (_n0) {
-	var options = _n0.a;
-	return elm$core$List$concat(
-		_List_fromArray(
-			[
-				_List_fromArray(
-				[
-					A2(elm$html$Html$Attributes$attribute, 'role', 'progressbar'),
-					A2(
-					elm$html$Html$Attributes$attribute,
-					'aria-value-now',
-					elm$core$String$fromFloat(options.value)),
-					A2(elm$html$Html$Attributes$attribute, 'aria-valuemin', '0'),
-					A2(elm$html$Html$Attributes$attribute, 'aria-valuemax', '100'),
-					A2(
-					elm$html$Html$Attributes$style,
-					'width',
-					elm$core$String$fromFloat(options.value) + '%'),
-					elm$html$Html$Attributes$classList(
-					_List_fromArray(
-						[
-							_Utils_Tuple2('progress-bar', true),
-							_Utils_Tuple2('progress-bar-striped', options.striped || options.animated),
-							_Utils_Tuple2('progress-bar-animated', options.animated)
-						]))
-				]),
-				function () {
-				var _n1 = options.height;
-				if (_n1.$ === 'Just') {
-					var height_ = _n1.a;
-					return _List_fromArray(
-						[
-							A2(
-							elm$html$Html$Attributes$style,
-							'height',
-							elm$core$String$fromInt(height_) + 'px')
-						]);
-				} else {
-					return _List_Nil;
-				}
-			}(),
-				function () {
-				var _n2 = options.role;
-				if (_n2.$ === 'Just') {
-					var role_ = _n2.a;
-					return _List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Progress$roleClass(role_)
-						]);
-				} else {
-					return _List_Nil;
-				}
-			}(),
-				options.attributes
-			]));
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$renderBar = function (modifiers) {
-	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Progress$applyOption, rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions, modifiers);
-	var opts = options.a;
-	return A2(
-		elm$html$Html$div,
-		rundis$elm_bootstrap$Bootstrap$Progress$toAttributes(options),
-		opts.label);
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$progress = function (modifiers) {
-	var _n0 = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Progress$applyOption, rundis$elm_bootstrap$Bootstrap$Progress$defaultOptions, modifiers);
-	var options = _n0.a;
-	return A2(
-		elm$html$Html$div,
-		A2(
-			elm$core$List$cons,
-			elm$html$Html$Attributes$class('progress'),
-			options.wrapperAttributes),
-		_List_fromArray(
-			[
-				rundis$elm_bootstrap$Bootstrap$Progress$renderBar(modifiers)
-			]));
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$Value = function (a) {
-	return {$: 'Value', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$value = function (val) {
-	return rundis$elm_bootstrap$Bootstrap$Progress$Value(val);
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$WrapperAttrs = function (a) {
-	return {$: 'WrapperAttrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Progress$wrapperAttrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$Progress$WrapperAttrs(attrs_);
-};
-var author$project$Modals$Upload$viewProgressIndicator = F2(
-	function (path, fraction) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Grid$row,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					rundis$elm_bootstrap$Bootstrap$Grid$col,
-					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md10]),
-					_List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Progress$progress(
-							_List_fromArray(
-								[
-									rundis$elm_bootstrap$Bootstrap$Progress$value(100 * fraction),
-									rundis$elm_bootstrap$Bootstrap$Progress$customLabel(
-									_List_fromArray(
-										[
-											elm$html$Html$text(
-											A2(author$project$Modals$Upload$clampText, path, 25))
-										])),
-									rundis$elm_bootstrap$Bootstrap$Progress$attrs(
-									_List_fromArray(
-										[
-											A2(elm$html$Html$Attributes$style, 'height', '25px')
-										])),
-									rundis$elm_bootstrap$Bootstrap$Progress$wrapperAttrs(
-									_List_fromArray(
-										[
-											A2(elm$html$Html$Attributes$style, 'height', '25px')
-										]))
-								]))
-						])),
-					A2(
-					rundis$elm_bootstrap$Bootstrap$Grid$col,
-					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md2]),
-					_List_fromArray(
-						[
-							A2(
-							rundis$elm_bootstrap$Bootstrap$Button$button,
-							_List_fromArray(
-								[
-									rundis$elm_bootstrap$Bootstrap$Button$roleLink,
-									rundis$elm_bootstrap$Bootstrap$Button$attrs(
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('progress-cancel'),
-											elm$html$Html$Events$onClick(
-											author$project$Modals$Upload$UploadCancel(path))
-										]))
-								]),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$span,
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('fas fa-xs fa-times')
-										]),
-									_List_Nil)
-								]))
-						]))
-				]));
-	});
-var author$project$Modals$Upload$viewUploadState = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(elm$html$Html$br, _List_Nil, _List_Nil),
-				A2(elm$html$Html$br, _List_Nil, _List_Nil),
-				A2(
-				elm$html$Html$ul,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('notification-list list-group')
-					]),
-				_Utils_ap(
-					A2(
-						elm$core$List$map,
-						function (a) {
-							return A3(author$project$Modals$Upload$viewAlert, a.alert, a.path, true);
-						},
-						model.success),
-					_Utils_ap(
-						A2(
-							elm$core$List$map,
-							function (a) {
-								return A3(author$project$Modals$Upload$viewAlert, a.alert, a.path, false);
-							},
-							model.failed),
-						A2(
-							elm$core$List$map,
-							function (p) {
-								return A2(author$project$Modals$Upload$viewProgressIndicator, p.a, p.b);
-							},
-							elm$core$Dict$toList(model.uploads)))))
-			]));
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$GroupItem = function (a) {
-	return {$: 'GroupItem', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$applyModifier = F2(
-	function (modifier, options) {
-		switch (modifier.$) {
-			case 'Size':
-				var size = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						size: elm$core$Maybe$Just(size)
-					});
-			case 'Vertical':
-				return _Utils_update(
-					options,
-					{vertical: true});
-			default:
-				var attrs_ = modifier.a;
-				return _Utils_update(
-					options,
-					{
-						attributes: _Utils_ap(options.attributes, attrs_)
-					});
-		}
-	});
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$defaultOptions = {attributes: _List_Nil, size: elm$core$Maybe$Nothing, vertical: false};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$groupAttributes = F2(
-	function (toggle, modifiers) {
-		var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$ButtonGroup$applyModifier, rundis$elm_bootstrap$Bootstrap$ButtonGroup$defaultOptions, modifiers);
-		return _Utils_ap(
-			_List_fromArray(
-				[
-					A2(elm$html$Html$Attributes$attribute, 'role', 'group'),
-					elm$html$Html$Attributes$classList(
-					_List_fromArray(
-						[
-							_Utils_Tuple2('btn-group', true),
-							_Utils_Tuple2('btn-group-toggle', toggle),
-							_Utils_Tuple2('btn-group-vertical', options.vertical)
-						])),
-					A2(elm$html$Html$Attributes$attribute, 'data-toggle', 'buttons')
-				]),
-			_Utils_ap(
-				function () {
-					var _n0 = A2(elm$core$Maybe$andThen, rundis$elm_bootstrap$Bootstrap$General$Internal$screenSizeOption, options.size);
-					if (_n0.$ === 'Just') {
-						var s = _n0.a;
-						return _List_fromArray(
-							[
-								elm$html$Html$Attributes$class('btn-group-' + s)
-							]);
-					} else {
-						return _List_Nil;
-					}
-				}(),
-				options.attributes));
-	});
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem = F2(
-	function (options, items) {
-		return rundis$elm_bootstrap$Bootstrap$ButtonGroup$GroupItem(
-			A2(
-				elm$html$Html$div,
-				A2(rundis$elm_bootstrap$Bootstrap$ButtonGroup$groupAttributes, false, options),
-				A2(
-					elm$core$List$map,
-					function (_n0) {
-						var elem = _n0.a;
-						return elem;
-					},
-					items)));
-	});
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$Size = function (a) {
-	return {$: 'Size', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$small = rundis$elm_bootstrap$Bootstrap$ButtonGroup$Size(rundis$elm_bootstrap$Bootstrap$General$Internal$SM);
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$renderGroup = function (_n0) {
-	var elem = _n0.a;
-	return elem;
-};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$toolbar = F2(
-	function (attributes, items) {
-		return A2(
-			elm$html$Html$div,
-			_Utils_ap(
-				_List_fromArray(
-					[
-						A2(elm$html$Html$Attributes$attribute, 'role', 'toolbar'),
-						elm$html$Html$Attributes$class('btn-toolbar')
-					]),
-				attributes),
-			A2(elm$core$List$map, rundis$elm_bootstrap$Bootstrap$ButtonGroup$renderGroup, items));
-	});
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$Vertical = {$: 'Vertical'};
-var rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical = rundis$elm_bootstrap$Bootstrap$ButtonGroup$Vertical;
-var author$project$Main$viewActionList = F2(
-	function (model, url) {
-		var nSelected = author$project$Ls$nSelectedItems(model.listState);
-		var disabledClass = author$project$Ls$currIsFile(model.listState) ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default');
-		return A2(
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('toolbar')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$p,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('text-muted'),
-							elm$html$Html$Attributes$id('select-label')
-						]),
-					_List_fromArray(
-						[
-							elm$html$Html$text(
-							A2(author$project$Main$labelSelectedItems, model.listState, nSelected))
-						])),
-					A2(elm$html$Html$br, _List_Nil, _List_Nil),
-					A3(author$project$Modals$Upload$buildButton, model.uploadState, model.listState, author$project$Main$UploadMsg),
-					A2(
-					rundis$elm_bootstrap$Bootstrap$Button$linkButton,
-					_List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Button$block,
-							rundis$elm_bootstrap$Bootstrap$Button$attrs(
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('text-left btn-link'),
-									disabledClass,
-									elm$html$Html$Attributes$href(
-									'/get' + (author$project$Util$urlToPath(url) + '?direct=yes'))
-								]))
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('fas fa-lg fa-file-download')
-								]),
-							_List_Nil),
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$id('action-btn')
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text(' Download all')
-								]))
-						])),
-					A2(
-					rundis$elm_bootstrap$Bootstrap$ButtonGroup$toolbar,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('btn-group-vertical')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem,
-							_List_fromArray(
-								[rundis$elm_bootstrap$Bootstrap$ButtonGroup$small, rundis$elm_bootstrap$Bootstrap$ButtonGroup$vertical]),
-							_List_fromArray(
-								[
-									A4(
-									author$project$Main$buildActionButton,
-									author$project$Main$ShareMsg(author$project$Modals$Share$show),
-									'fa-share-alt',
-									'Share',
-									!nSelected),
-									A4(
-									author$project$Main$buildActionButton,
-									author$project$Main$MkdirMsg(author$project$Modals$Mkdir$show),
-									'fa-edit',
-									'New Folder',
-									author$project$Ls$currIsFile(model.listState)),
-									A4(
-									author$project$Main$buildActionButton,
-									author$project$Main$RemoveMsg(author$project$Modals$Remove$show),
-									'fa-trash',
-									'Delete',
-									!nSelected),
-									A4(author$project$Main$buildActionButton, author$project$Main$LogoutSubmit, 'fa-sign-out-alt', 'Log out »' + (model.loginName + '«'), false)
-								]))
-						])),
-					A2(
-					elm$html$Html$map,
-					author$project$Main$UploadMsg,
-					author$project$Modals$Upload$viewUploadState(model.uploadState))
-				]));
-	});
-var author$project$Main$SearchInput = function (a) {
+var author$project$Ls$SearchInput = function (a) {
 	return {$: 'SearchInput', a: a};
 };
-var author$project$Main$viewSearchBox = function (model) {
+var author$project$Ls$viewSearchBox = function (model) {
 	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
 		A2(
 			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs,
@@ -16084,9 +16802,9 @@ var author$project$Main$viewSearchBox = function (model) {
 								rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
 								_List_fromArray(
 									[
-										elm$html$Html$Events$onInput(author$project$Main$SearchInput),
+										elm$html$Html$Events$onInput(author$project$Ls$SearchInput),
 										elm$html$Html$Attributes$value(
-										author$project$Main$searchQueryFromUrl(model.url))
+										author$project$Ls$searchQueryFromUrl(model.url))
 									]))
 							]))))));
 };
@@ -16100,85 +16818,85 @@ var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3 = {$: 'Col3'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3);
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9 = {$: 'Col9'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
-var author$project$Main$viewListMainContent = F2(
+var author$project$Ls$view = function (model) {
+	return A2(
+		rundis$elm_bootstrap$Bootstrap$Grid$row,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				rundis$elm_bootstrap$Bootstrap$Grid$col,
+				_List_fromArray(
+					[rundis$elm_bootstrap$Bootstrap$Grid$Col$lg12]),
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$row,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$id('main-header-row')
+									]))
+							]),
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9]),
+								_List_fromArray(
+									[
+										author$project$Ls$viewBreadcrumbs(model)
+									])),
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3]),
+								_List_fromArray(
+									[
+										A2(elm$html$Html$Lazy$lazy, author$project$Ls$viewSearchBox, model)
+									]))
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$row,
+						_List_fromArray(
+							[
+								rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$id('main-content-row')
+									]))
+							]),
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10]),
+								_List_fromArray(
+									[
+										A2(author$project$Ls$viewList, model, model.zone)
+									])),
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2]),
+								_List_fromArray(
+									[
+										A2(elm$html$Html$Lazy$lazy, author$project$Ls$viewActionList, model)
+									]))
+							]))
+					]))
+			]));
+};
+var author$project$Main$viewCurrentRoute = F2(
 	function (model, viewState) {
 		return A2(
-			rundis$elm_bootstrap$Bootstrap$Grid$row,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					rundis$elm_bootstrap$Bootstrap$Grid$col,
-					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$lg12]),
-					_List_fromArray(
-						[
-							A2(
-							rundis$elm_bootstrap$Bootstrap$Grid$row,
-							_List_fromArray(
-								[
-									rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$id('main-header-row')
-										]))
-								]),
-							_List_fromArray(
-								[
-									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$col,
-									_List_fromArray(
-										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9]),
-									_List_fromArray(
-										[
-											A2(
-											elm$html$Html$map,
-											author$project$Main$ListMsg,
-											A2(author$project$Ls$viewBreadcrumbs, model.url, viewState.listState))
-										])),
-									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$col,
-									_List_fromArray(
-										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3]),
-									_List_fromArray(
-										[
-											A2(elm$html$Html$Lazy$lazy, author$project$Main$viewSearchBox, model)
-										]))
-								])),
-							A2(
-							rundis$elm_bootstrap$Bootstrap$Grid$row,
-							_List_fromArray(
-								[
-									rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$id('main-content-row')
-										]))
-								]),
-							_List_fromArray(
-								[
-									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$col,
-									_List_fromArray(
-										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10]),
-									_List_fromArray(
-										[
-											A2(
-											elm$html$Html$map,
-											author$project$Main$ListMsg,
-											A3(author$project$Ls$viewList, viewState.listState, model.url, model.zone))
-										])),
-									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$col,
-									_List_fromArray(
-										[rundis$elm_bootstrap$Bootstrap$Grid$Col$xl2]),
-									_List_fromArray(
-										[
-											A3(elm$html$Html$Lazy$lazy2, author$project$Main$viewActionList, viewState, model.url)
-										]))
-								]))
-						]))
-				]));
+			elm$html$Html$map,
+			author$project$Main$ListMsg,
+			author$project$Ls$view(viewState.listState));
 	});
 var elm$html$Html$hr = _VirtualDom_node('hr');
 var author$project$Main$viewSidebarBottom = function (model) {
@@ -16216,592 +16934,194 @@ var author$project$Main$viewSidebarBottom = function (model) {
 					]))
 			]));
 };
-var author$project$Main$viewSidebarItems = function (model) {
-	return A2(
-		elm$html$Html$ul,
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('flex-column navbar-nav w-100 text-left')
-			]),
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$li,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav-item')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$a,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-link active'),
-								elm$html$Html$Attributes$href('#')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$span,
-								_List_Nil,
-								_List_fromArray(
-									[
-										elm$html$Html$text('Files')
-									]))
-							]))
-					])),
-				A2(
-				elm$html$Html$li,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav-item')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$a,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-link pl-0'),
-								elm$html$Html$Attributes$href('#')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$span,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('text-muted')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Commit Log')
-									]))
-							]))
-					])),
-				A2(
-				elm$html$Html$li,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav-item')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$a,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-link pl-0'),
-								elm$html$Html$Attributes$href('#')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$span,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('text-muted')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Remotes')
-									]))
-							]))
-					])),
-				A2(
-				elm$html$Html$li,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav-item')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$a,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-link pl-0'),
-								elm$html$Html$Attributes$href('#')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$span,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('text-muted')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Deleted files')
-									]))
-							]))
-					])),
-				A2(
-				elm$html$Html$li,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('nav-item')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$a,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('nav-link pl-0'),
-								elm$html$Html$Attributes$href('#')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$span,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('text-muted')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Settings')
-									]))
-							]))
-					]))
-			]));
-};
-var author$project$Modals$Mkdir$CreateDir = function (a) {
-	return {$: 'CreateDir', a: a};
-};
-var author$project$Modals$Mkdir$ModalClose = {$: 'ModalClose'};
-var author$project$Ls$existsInCurr = F2(
-	function (name, model) {
-		var _n0 = model.state;
-		if (_n0.$ === 'Success') {
-			var actualModel = _n0.a;
-			var _n1 = actualModel.isFiltered;
-			if (_n1) {
-				return elm$core$Maybe$Just(false);
-			} else {
-				return elm$core$Maybe$Just(
-					A2(
-						elm$core$List$any,
-						function (e) {
-							return _Utils_eq(
-								name,
-								author$project$Util$basename(e.path));
-						},
-						actualModel.entries));
-			}
-		} else {
-			return elm$core$Maybe$Nothing;
-		}
-	});
-var author$project$Modals$Mkdir$hasPathCollision = F2(
-	function (model, lsModel) {
+var author$project$Main$LogoutSubmit = {$: 'LogoutSubmit'};
+var author$project$Main$viewSidebarItems = F2(
+	function (model, viewState) {
 		return A2(
-			elm$core$Maybe$withDefault,
-			false,
-			A2(author$project$Ls$existsInCurr, model.inputName, lsModel));
-	});
-var author$project$Modals$Mkdir$showPathCollision = F2(
-	function (model, lsModel) {
-		return A2(author$project$Modals$Mkdir$hasPathCollision, model, lsModel) ? A2(
-			elm$html$Html$span,
+			elm$html$Html$ul,
 			_List_fromArray(
 				[
-					elm$html$Html$Attributes$class('text-left')
+					elm$html$Html$Attributes$class('flex-column navbar-nav w-100 text-left')
 				]),
 			_List_fromArray(
 				[
 					A2(
-					elm$html$Html$span,
+					elm$html$Html$li,
 					_List_fromArray(
 						[
-							elm$html$Html$Attributes$class('fas fa-md fa-exclamation-triangle text-warning')
+							elm$html$Html$Attributes$class('nav-item')
 						]),
-					_List_Nil),
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('text-muted')
-						]),
-					_List_fromArray(
-						[
-							elm$html$Html$text(' »' + (model.inputName + '« exists already. Please choose another name.\u00a0\u00a0\u00a0'))
-						]))
-				])) : A2(elm$html$Html$span, _List_Nil, _List_Nil);
-	});
-var author$project$Modals$Mkdir$InputChanged = function (a) {
-	return {$: 'InputChanged', a: a};
-};
-var author$project$Modals$Mkdir$viewMkdirContent = F2(
-	function (model, lsModel) {
-		return _List_fromArray(
-			[
-				A2(
-				rundis$elm_bootstrap$Bootstrap$Grid$col,
-				_List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
-				_List_fromArray(
-					[
-						rundis$elm_bootstrap$Bootstrap$Form$Input$text(
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Form$Input$id('mkdir-input'),
-								rundis$elm_bootstrap$Bootstrap$Form$Input$large,
-								rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Directory name'),
-								rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$Mkdir$InputChanged),
-								rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$autofocus(true)
-									]))
-							])),
-						A2(elm$html$Html$br, _List_Nil, _List_Nil),
-						function () {
-						var _n0 = model.state;
-						if (_n0.$ === 'Ready') {
-							return elm$html$Html$text('');
-						} else {
-							var message = _n0.a;
-							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Mkdir$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not create directory: ' + message);
-						}
-					}()
-					]))
-			]);
-	});
-var author$project$Modals$Mkdir$view = F3(
-	function (model, url, lsModel) {
-		var path = author$project$Util$urlToPath(url);
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Modal$view,
-			model.modal,
-			A3(
-				rundis$elm_bootstrap$Bootstrap$Modal$footer,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(author$project$Modals$Mkdir$showPathCollision, model, lsModel),
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Button$button,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Button$primary,
-								rundis$elm_bootstrap$Bootstrap$Button$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onClick(
-										author$project$Modals$Mkdir$CreateDir(
-											A2(author$project$Modals$Mkdir$pathFromUrl, url, model))),
-										elm$html$Html$Attributes$type_('submit'),
-										elm$html$Html$Attributes$disabled(
-										(!elm$core$String$length(model.inputName)) || (function () {
-											var _n0 = model.state;
-											if (_n0.$ === 'Fail') {
-												return true;
-											} else {
-												return false;
-											}
-										}() || A2(author$project$Modals$Mkdir$hasPathCollision, model, lsModel)))
-									]))
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Create')
-							])),
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Button$button,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-								rundis$elm_bootstrap$Bootstrap$Button$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onClick(
-										author$project$Modals$Mkdir$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
-									]))
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Cancel')
-							]))
-					]),
-				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$body,
-					_List_Nil,
 					_List_fromArray(
 						[
 							A2(
-							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
-							_List_Nil,
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link active'),
+									elm$html$Html$Attributes$href('#')
+								]),
 							_List_fromArray(
 								[
 									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$row,
+									elm$html$Html$span,
 									_List_Nil,
-									A2(author$project$Modals$Mkdir$viewMkdirContent, model, lsModel))
+									_List_fromArray(
+										[
+											elm$html$Html$text('Files')
+										]))
 								]))
+						])),
+					A2(
+					elm$html$Html$li,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('nav-item')
 						]),
-					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text('Create a new directory in ' + path)
-							]),
-						A2(
-							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
-							author$project$Modals$Mkdir$AnimateModal,
-							rundis$elm_bootstrap$Bootstrap$Modal$large(
-								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Mkdir$ModalClose)))))));
-	});
-var author$project$Modals$Remove$ModalClose = {$: 'ModalClose'};
-var author$project$Modals$Remove$RemoveAll = function (a) {
-	return {$: 'RemoveAll', a: a};
-};
-var author$project$Modals$Remove$viewRemoveContent = F2(
-	function (model, lsModel) {
-		return _List_fromArray(
-			[
-				A2(
-				rundis$elm_bootstrap$Bootstrap$Grid$col,
-				_List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
-				_List_fromArray(
-					[
-						function () {
-						var _n0 = model.state;
-						if (_n0.$ === 'Ready') {
-							return elm$html$Html$text(
-								'Remove the ' + (elm$core$String$fromInt(
-									author$project$Ls$nSelectedItems(lsModel)) + ' selected items'));
-						} else {
-							var message = _n0.a;
-							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Remove$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not remove directory: ' + message);
-						}
-					}()
-					]))
-			]);
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger = {$: 'Danger'};
-var rundis$elm_bootstrap$Bootstrap$Button$danger = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger));
-var author$project$Modals$Remove$view = F2(
-	function (model, lsModel) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Modal$view,
-			model.modal,
-			A3(
-				rundis$elm_bootstrap$Bootstrap$Modal$footer,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Button$button,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Button$danger,
-								rundis$elm_bootstrap$Bootstrap$Button$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onClick(
-										author$project$Modals$Remove$RemoveAll(
-											author$project$Ls$selectedPaths(lsModel))),
-										elm$html$Html$Attributes$disabled(
-										function () {
-											var _n0 = model.state;
-											if (_n0.$ === 'Fail') {
-												return true;
-											} else {
-												return false;
-											}
-										}())
-									]))
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Remove')
-							])),
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Button$button,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-								rundis$elm_bootstrap$Bootstrap$Button$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onClick(
-										author$project$Modals$Remove$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
-									]))
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Cancel')
-							]))
-					]),
-				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$body,
-					_List_Nil,
 					_List_fromArray(
 						[
 							A2(
-							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
-							_List_Nil,
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link pl-0'),
+									elm$html$Html$Attributes$href('#')
+								]),
 							_List_fromArray(
 								[
 									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$row,
-									_List_Nil,
-									A2(author$project$Modals$Remove$viewRemoveContent, model, lsModel))
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('text-muted')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Commit Log')
+										]))
 								]))
-						]),
-					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text('Really remove?')
-							]),
-						A2(
-							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
-							author$project$Modals$Remove$AnimateModal,
-							rundis$elm_bootstrap$Bootstrap$Modal$large(
-								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Remove$ModalClose)))))));
-	});
-var author$project$Modals$Share$ModalClose = {$: 'ModalClose'};
-var author$project$Modals$Share$formatEntry = F2(
-	function (url, path) {
-		var link = author$project$Util$urlPrefixToString(url) + ('get' + author$project$Util$urlEncodePath(path));
-		return A2(
-			elm$html$Html$li,
-			_List_Nil,
-			_List_fromArray(
-				[
+						])),
 					A2(
-					elm$html$Html$a,
+					elm$html$Html$li,
 					_List_fromArray(
 						[
-							elm$html$Html$Attributes$href(link)
+							elm$html$Html$Attributes$class('nav-item')
 						]),
 					_List_fromArray(
 						[
-							elm$html$Html$text(link)
+							A2(
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link pl-0'),
+									elm$html$Html$Attributes$href('#')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('text-muted')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Remotes')
+										]))
+								]))
+						])),
+					A2(
+					elm$html$Html$li,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('nav-item')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link pl-0'),
+									elm$html$Html$Attributes$href('#')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('text-muted')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Deleted files')
+										]))
+								]))
+						])),
+					A2(
+					elm$html$Html$li,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('nav-item')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link pl-0'),
+									elm$html$Html$Attributes$href('#')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('text-muted')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Settings')
+										]))
+								]))
+						])),
+					A2(
+					elm$html$Html$li,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('nav-item')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$a,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('nav-link pl-0'),
+									elm$html$Html$Attributes$href('#'),
+									elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('text-muted')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
+										]))
+								]))
 						]))
 				]));
 	});
-var elm$html$Html$b = _VirtualDom_node('b');
-var author$project$Modals$Share$viewShare = F3(
-	function (model, lsModel, url) {
-		var entries = author$project$Ls$selectedPaths(lsModel);
-		return _List_fromArray(
-			[
-				A2(
-				rundis$elm_bootstrap$Bootstrap$Grid$col,
-				_List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
-				_List_fromArray(
-					[
-						A2(
-						elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text('Use those links to share the selected files with people that do not use brig.')
-							])),
-						A2(
-						elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$b,
-								_List_Nil,
-								_List_fromArray(
-									[
-										elm$html$Html$text('Note:')
-									])),
-								elm$html$Html$text(' Remember, they still need to authenticate themselves.')
-							])),
-						A2(
-						elm$html$Html$ul,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$id('share-list')
-							]),
-						A2(
-							elm$core$List$map,
-							author$project$Modals$Share$formatEntry(url),
-							entries))
-					]))
-			]);
-	});
-var author$project$Modals$Share$view = F3(
-	function (model, lsModel, url) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Modal$view,
-			model.modal,
-			A3(
-				rundis$elm_bootstrap$Bootstrap$Modal$footer,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Button$button,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-								rundis$elm_bootstrap$Bootstrap$Button$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onClick(
-										author$project$Modals$Share$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
-									]))
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Close')
-							]))
-					]),
-				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$body,
-					_List_Nil,
-					_List_fromArray(
-						[
-							A2(
-							rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
-							_List_Nil,
-							_List_fromArray(
-								[
-									A2(
-									rundis$elm_bootstrap$Bootstrap$Grid$row,
-									_List_fromArray(
-										[
-											rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-											_List_fromArray(
-												[
-													elm$html$Html$Attributes$class('scrollable-modal-row')
-												]))
-										]),
-									A3(author$project$Modals$Share$viewShare, model, lsModel, url))
-								]))
-						]),
-					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text('Share hyperlinks')
-							]),
-						A2(
-							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
-							author$project$Modals$Share$AnimateModal,
-							rundis$elm_bootstrap$Bootstrap$Modal$large(
-								rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$Share$ModalClose)))))));
-	});
 var elm$html$Html$aside = _VirtualDom_node('aside');
 var elm$html$Html$main_ = _VirtualDom_node('main');
-var author$project$Main$viewList = F2(
+var author$project$Main$viewMainContent = F2(
 	function (model, viewState) {
 		return _List_fromArray(
 			[
@@ -16890,7 +17210,7 @@ var author$project$Main$viewList = F2(
 													]),
 												_List_fromArray(
 													[
-														author$project$Main$viewSidebarItems(model)
+														A2(author$project$Main$viewSidebarItems, model, viewState)
 													]))
 											])),
 										author$project$Main$viewSidebarBottom(model)
@@ -16903,19 +17223,7 @@ var author$project$Main$viewList = F2(
 									]),
 								_List_fromArray(
 									[
-										A2(author$project$Main$viewListMainContent, model, viewState),
-										A2(
-										elm$html$Html$map,
-										author$project$Main$MkdirMsg,
-										A3(author$project$Modals$Mkdir$view, viewState.mkdirState, model.url, viewState.listState)),
-										A2(
-										elm$html$Html$map,
-										author$project$Main$RemoveMsg,
-										A2(author$project$Modals$Remove$view, viewState.removeState, viewState.listState)),
-										A2(
-										elm$html$Html$map,
-										author$project$Main$ShareMsg,
-										A3(author$project$Modals$Share$view, viewState.shareState, viewState.listState, model.url)),
+										A2(author$project$Main$viewCurrentRoute, model, viewState),
 										A2(
 										elm$html$Html$map,
 										author$project$Main$ListMsg,
@@ -16925,263 +17233,6 @@ var author$project$Main$viewList = F2(
 					]))
 			]);
 	});
-var author$project$Main$LoginSubmit = {$: 'LoginSubmit'};
-var elm$core$String$trim = _String_trim;
-var author$project$Main$viewLoginButton = F3(
-	function (username, password, isLoading) {
-		var loadingClass = isLoading ? 'fa fa-sync fa-sync-animate' : '';
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Button$button,
-			_List_fromArray(
-				[
-					rundis$elm_bootstrap$Bootstrap$Button$primary,
-					rundis$elm_bootstrap$Bootstrap$Button$attrs(
-					_List_fromArray(
-						[
-							elm$html$Html$Events$onClick(author$project$Main$LoginSubmit),
-							elm$html$Html$Attributes$class('login-btn'),
-							elm$html$Html$Attributes$type_('submit'),
-							elm$html$Html$Attributes$disabled(
-							(!elm$core$String$length(
-								elm$core$String$trim(username))) || ((!elm$core$String$length(
-								elm$core$String$trim(password))) || isLoading))
-						]))
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class(loadingClass)
-						]),
-					_List_Nil),
-					elm$html$Html$text(' Log in')
-				]));
-	});
-var author$project$Main$PasswordInput = function (a) {
-	return {$: 'PasswordInput', a: a};
-};
-var author$project$Main$UsernameInput = function (a) {
-	return {$: 'UsernameInput', a: a};
-};
-var elm$html$Html$h2 = _VirtualDom_node('h2');
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Password = {$: 'Password'};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$password = rundis$elm_bootstrap$Bootstrap$Form$Input$input(rundis$elm_bootstrap$Bootstrap$Form$Input$Password);
-var rundis$elm_bootstrap$Bootstrap$Form$Input$Value = function (a) {
-	return {$: 'Value', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$Input$value = function (value_) {
-	return rundis$elm_bootstrap$Bootstrap$Form$Input$Value(value_);
-};
-var author$project$Main$viewLoginInputs = F2(
-	function (username, password) {
-		return _List_fromArray(
-			[
-				A2(
-				elm$html$Html$h2,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('login-header')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text('Login')
-					])),
-				rundis$elm_bootstrap$Bootstrap$Form$Input$text(
-				_List_fromArray(
-					[
-						rundis$elm_bootstrap$Bootstrap$Form$Input$id('username-input'),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('login-input')
-							])),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$large,
-						rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Username'),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$value(username),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Main$UsernameInput)
-					])),
-				rundis$elm_bootstrap$Bootstrap$Form$Input$password(
-				_List_fromArray(
-					[
-						rundis$elm_bootstrap$Bootstrap$Form$Input$id('password-input'),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('login-input')
-							])),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$large,
-						rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Password'),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$value(password),
-						rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Main$PasswordInput)
-					]))
-			]);
-	});
-var elm$html$Html$Events$alwaysPreventDefault = function (msg) {
-	return _Utils_Tuple2(msg, true);
-};
-var elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
-	return {$: 'MayPreventDefault', a: a};
-};
-var elm$html$Html$Events$preventDefaultOn = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
-	});
-var elm$html$Html$Events$onSubmit = function (msg) {
-	return A2(
-		elm$html$Html$Events$preventDefaultOn,
-		'submit',
-		A2(
-			elm$json$Json$Decode$map,
-			elm$html$Html$Events$alwaysPreventDefault,
-			elm$json$Json$Decode$succeed(msg)));
-};
-var rundis$elm_bootstrap$Bootstrap$Alert$attrs = F2(
-	function (attributes, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{attributes: attributes}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Alert$simple = F3(
-	function (role_, attributes, children_) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Alert$view,
-			rundis$elm_bootstrap$Bootstrap$Alert$Shown,
-			A2(
-				rundis$elm_bootstrap$Bootstrap$Alert$children,
-				children_,
-				A2(
-					rundis$elm_bootstrap$Bootstrap$Alert$attrs,
-					attributes,
-					A2(rundis$elm_bootstrap$Bootstrap$Alert$role, role_, rundis$elm_bootstrap$Bootstrap$Alert$config))));
-	});
-var rundis$elm_bootstrap$Bootstrap$Alert$simpleDanger = rundis$elm_bootstrap$Bootstrap$Alert$simple(rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger);
-var elm$html$Html$form = _VirtualDom_node('form');
-var rundis$elm_bootstrap$Bootstrap$Form$form = F2(
-	function (attributes, children) {
-		return A2(elm$html$Html$form, attributes, children);
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$applyModifier = F2(
-	function (modifier, options) {
-		var attrs = modifier.a;
-		return _Utils_update(
-			options,
-			{
-				attributes: _Utils_ap(options.attributes, attrs)
-			});
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$defaultOptions = {attributes: _List_Nil};
-var rundis$elm_bootstrap$Bootstrap$Form$toAttributes = function (modifiers) {
-	var options = A3(elm$core$List$foldl, rundis$elm_bootstrap$Bootstrap$Form$applyModifier, rundis$elm_bootstrap$Bootstrap$Form$defaultOptions, modifiers);
-	return _Utils_ap(
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('form-group')
-			]),
-		options.attributes);
-};
-var rundis$elm_bootstrap$Bootstrap$Form$group = F2(
-	function (options, children) {
-		return A2(
-			elm$html$Html$div,
-			rundis$elm_bootstrap$Bootstrap$Form$toAttributes(options),
-			children);
-	});
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs = function (a) {
-	return {$: 'ColAttrs', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs = function (attrs_) {
-	return rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAttrs(attrs_);
-};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
-var author$project$Main$viewLoginForm = function (model) {
-	return A2(
-		rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				rundis$elm_bootstrap$Bootstrap$Grid$row,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Grid$col,
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8,
-								rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsCenter),
-								rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('login-form')
-									]))
-							]),
-						_List_fromArray(
-							[
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Form$form,
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onSubmit(author$project$Main$LoginSubmit)
-									]),
-								_List_fromArray(
-									[
-										A2(
-										rundis$elm_bootstrap$Bootstrap$Form$group,
-										_List_Nil,
-										function () {
-											var _n0 = model.loginState;
-											switch (_n0.$) {
-												case 'LoginReady':
-													var username = _n0.a;
-													var password = _n0.b;
-													return _Utils_ap(
-														A2(author$project$Main$viewLoginInputs, username, password),
-														_List_fromArray(
-															[
-																A3(author$project$Main$viewLoginButton, username, password, false)
-															]));
-												case 'LoginLoading':
-													var username = _n0.a;
-													var password = _n0.b;
-													return _Utils_ap(
-														A2(author$project$Main$viewLoginInputs, username, password),
-														_List_fromArray(
-															[
-																A3(author$project$Main$viewLoginButton, username, password, true)
-															]));
-												case 'LoginFailure':
-													var username = _n0.a;
-													var password = _n0.b;
-													return _Utils_ap(
-														A2(author$project$Main$viewLoginInputs, username, password),
-														_List_fromArray(
-															[
-																A2(
-																rundis$elm_bootstrap$Bootstrap$Alert$simpleDanger,
-																_List_Nil,
-																_List_fromArray(
-																	[
-																		elm$html$Html$text('Login failed, please try again.')
-																	])),
-																A3(author$project$Main$viewLoginButton, username, password, false)
-															]));
-												default:
-													return _List_Nil;
-											}
-										}())
-									]))
-							]))
-					]))
-			]));
-};
 var author$project$Main$view = function (model) {
 	return {
 		body: function () {
@@ -17209,7 +17260,7 @@ var author$project$Main$view = function (model) {
 						]);
 				default:
 					var viewState = _n0.a;
-					return A2(author$project$Main$viewList, model, viewState);
+					return A2(author$project$Main$viewMainContent, model, viewState);
 			}
 		}(),
 		title: 'Gateway'
