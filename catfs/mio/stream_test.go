@@ -132,22 +132,25 @@ func TestLimitedStream(t *testing.T) {
 
 	var err error
 
+	// Reset and do some special torturing:
 	_, err = stream.Seek(0, io.SeekStart)
 	require.Nil(t, err)
 
 	limitStream := LimitStream(stream, 5)
 
-	_, err = limitStream.Seek(4, io.SeekStart)
+	n, err := limitStream.Seek(4, io.SeekStart)
 	require.Nil(t, err)
+	require.Equal(t, int64(4), n)
 
-	_, err = limitStream.Seek(5, io.SeekStart)
+	n, err = limitStream.Seek(5, io.SeekStart)
 	require.Equal(t, err, io.EOF)
 
-	_, err = limitStream.Seek(-5, io.SeekEnd)
+	n, err = limitStream.Seek(-5, io.SeekEnd)
 	require.Nil(t, err)
+	require.Equal(t, int64(0), n)
 
-	_, err = limitStream.Seek(-5, io.SeekEnd)
-	require.Equal(t, err, io.EOF)
+	_, err = limitStream.Seek(-6, io.SeekEnd)
+	require.True(t, err == io.EOF)
 
 	_, err = stream.Seek(0, io.SeekStart)
 	require.Nil(t, err)
@@ -155,7 +158,7 @@ func TestLimitedStream(t *testing.T) {
 	limitStream = LimitStream(stream, 5)
 
 	buf := &bytes.Buffer{}
-	n, err := limitStream.WriteTo(buf)
+	n, err = limitStream.WriteTo(buf)
 	require.Nil(t, err)
 	require.Equal(t, n, int64(10))
 	require.Equal(t, buf.Bytes(), testData[:5])
