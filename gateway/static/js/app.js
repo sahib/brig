@@ -15560,17 +15560,22 @@ var author$project$Main$viewSidebarBottom = function (model) {
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text('Powered by brig Ⓒ 2015 ‒ 2019'),
-						A2(elm$html$Html$br, _List_Nil, _List_Nil),
 						A2(
-						elm$html$Html$a,
+						elm$html$Html$span,
+						_List_Nil,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$href('https://github.com/sahib/brig')
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Get the source code here')
+								elm$html$Html$text('Powered by '),
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$href('https://github.com/sahib/brig')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('brig')
+									]))
 							]))
 					]))
 			]));

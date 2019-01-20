@@ -8,54 +8,55 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	testDbPath  = "/tmp/gw-standalone.db"
-	testGwUser  = "ali"
-	testCsrfKey = "00000000000000000000000000000000"
+	testGwUser = "ali"
 )
 
-func withFsAndCfg(t *testing.T, fn func(cfg *config.Config, fs *catfs.FS)) {
+type TestState struct {
+	*State
+}
+
+func withState(t *testing.T, fn func(state *TestState)) {
+	tmpDir, err := ioutil.TempDir("", "brig-endpoints-test-userdb")
+	require.Nil(t, err)
+
 	defer func() {
-		os.RemoveAll(testDbPath)
+		os.RemoveAll(tmpDir)
 	}()
 
 	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
 	require.Nil(t, err)
 
-	cfg.SetBool("gateway.enabled", true)
-	cfg.SetInt("gateway.port", 5000)
-	cfg.SetBool("gateway.cert.redirect.enabled", false)
-
-	cfg.SetStrings("gateway.folders", []string{"/"})
-
-	// TODO: Do we really need https for tests?
-	cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
-	cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
-	cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")
-
 	fs, err := catfs.NewFilesystem(
 		catfs.NewMemFsBackend(),
-		testDbPath,
+		filepath.Join(tmpDir, "fs"),
 		testGwUser,
 		false,
 		cfg.Section("fs"),
 	)
 	require.Nil(t, err)
 
-	exampleData := bytes.NewReader([]byte("Hello world"))
-	err = fs.Stage("/hello/world.png", exampleData)
+	userDb, err := db.NewUserDatabase(filepath.Join(tmpDir, "user"))
+	require.Nil(t, err)
+	require.Nil(t, userDb.Add("ali", "ila", nil))
+
+	state, err := NewState(fs, cfg.Section("gateway"), NewEventsHandler(), userDb)
 	require.Nil(t, err)
 
-	fn(cfg.Section("gateway"), fs)
-	require.Nil(t, fs.Close())
+	fn(&TestState{state})
+
+	require.Nil(t, state.fs.Close())
+	require.Nil(t, state.userDb.Close())
 }
 
 func mustEncodeBody(t *testing.T, v interface{}) io.Reader {
@@ -70,17 +71,16 @@ func mustDecodeBody(t *testing.T, body io.Reader, v interface{}) {
 	require.Nil(t, json.NewDecoder(bytes.NewReader(data)).Decode(v))
 }
 
-func mustCreateRequest(t *testing.T, verb string, url string, jsonBody interface{}) *http.Request {
+func (s *TestState) mustRun(t *testing.T, hdl http.Handler, verb, url string, jsonBody interface{}) *http.Response {
 	req := httptest.NewRequest(verb, url, mustEncodeBody(t, jsonBody))
-	// TODO: rewrite this to use sessions:
-	// encoded, err := cookieHandler.Encode("session", map[string]string{"name": "ali"})
-	// require.Nil(t, err)
+	rsw := httptest.NewRecorder()
 
-	// req.AddCookie(&http.Cookie{
-	// 	Name:  "session",
-	// 	Value: encoded,
-	// 	Path:  "/",
-	// })
+	setSession(s.store, "ali", rsw, req)
+	hdl.ServeHTTP(rsw, req)
+	return rsw.Result()
+}
 
-	return req
+func (s *TestState) mustChangeFolders(t *testing.T, folders ...string) {
+	require.Nil(t, s.userDb.Remove("ali"))
+	require.Nil(t, s.userDb.Add("ali", "ila", folders))
 }

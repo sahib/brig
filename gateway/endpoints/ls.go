@@ -70,11 +70,6 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if !lh.validatePath(lsReq.Root, w, r) {
-	// 	jsonifyErrf(w, http.StatusUnauthorized, "unauthorized")
-	// 	return
-	// }
-
 	info, err := lh.fs.Stat(lsReq.Root)
 	if err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root %s: %v", lsReq.Root, err)

@@ -649,9 +649,10 @@ viewSidebarBottom model =
     div [ id "sidebar-bottom", class "d-none d-lg-block" ]
         [ hr [] []
         , p [ id "sidebar-bottom-text", class "text-muted" ]
-            [ text "Powered by brig Ⓒ 2015 ‒ 2019"
-            , br [] []
-            , a [ href "https://github.com/sahib/brig" ] [ text "Get the source code here" ]
+            [ span []
+                [ text "Powered by "
+                , a [ href "https://github.com/sahib/brig" ] [ text "brig" ]
+                ]
             ]
         ]
 

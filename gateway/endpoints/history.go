@@ -77,7 +77,7 @@ func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hist, err := hh.fs.History(histReq.Path)
 	if err != nil {
 		log.Debugf("failed to check history for %s: %v", histReq.Path, err)
-		jsonifyErrf(w, http.StatusInternalServerError, "failed to check history")
+		jsonifyErrf(w, http.StatusBadRequest, "failed to check history")
 		return
 	}
 

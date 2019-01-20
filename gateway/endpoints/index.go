@@ -23,16 +23,17 @@ func NewIndexHandler(s *State) *IndexHandler {
 	return &IndexHandler{State: s}
 }
 
-func (ih *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var fd io.ReadCloser
+func (ih *IndexHandler) loadTemplateData() (io.ReadCloser, error) {
 	if ih.cfg.Bool("ui.debug_mode") {
-		fd, err = os.Open("./gateway/templates/index.html")
-	} else {
-		mgr := parcello.ManagerAt("/")
-		fd, err = mgr.Open("index.html")
+		return os.Open("./gateway/templates/index.html")
 	}
 
+	mgr := parcello.ManagerAt("/")
+	return mgr.Open("index.html")
+}
+
+func (ih *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fd, err := ih.loadTemplateData()
 	if err != nil {
 		jsonifyErrf(w, http.StatusInternalServerError, "no index.html")
 		return

@@ -27,6 +27,7 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Remove the cached files in /tmp
 	defer r.MultipartForm.RemoveAll()
 
 	for _, headers := range r.MultipartForm.File {

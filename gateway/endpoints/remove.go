@@ -53,6 +53,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if hasChanged {
 		rh.evHdl.Notify("fs", r.Context())
-		jsonifySuccess(w)
 	}
+
+	jsonifySuccess(w)
 }

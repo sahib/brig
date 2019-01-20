@@ -144,6 +144,7 @@ func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Re
 		log.Debugf("failed to build folder cache: %v", err)
 		return false
 	}
+	fmt.Println("FOLDER CACHE", folderCache)
 
 	// Go over all folders, and see if we have some allowed folder
 	// that we need to display "on the way". This could be probably

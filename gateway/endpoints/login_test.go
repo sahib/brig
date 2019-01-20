@@ -2,11 +2,8 @@ package endpoints
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,16 +11,11 @@ type loginResponse struct {
 	Success bool `json:"success"`
 }
 
-func mustLogin(t *testing.T) {
-}
-
 func TestLoginEndpointSuccess(t *testing.T) {
-	withFsAndCfg(t, func(cfg *config.Config, fs *catfs.FS) {
-		cfg.SetString("auth.user", "ali")
-		cfg.SetString("auth.pass", "ila")
-
-		req := mustCreateRequest(
+	withState(t, func(s *TestState) {
+		resp := s.mustRun(
 			t,
+			NewLoginHandler(s.State),
 			"POST",
 			"http://localhost:5000/api/v0/login",
 			&LoginRequest{
@@ -32,11 +24,6 @@ func TestLoginEndpointSuccess(t *testing.T) {
 			},
 		)
 
-		rsw := httptest.NewRecorder()
-		hdl := NewLoginHandler(cfg)
-		hdl.ServeHTTP(rsw, req)
-
-		resp := rsw.Result()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		loginResp := &loginResponse{}
@@ -44,8 +31,6 @@ func TestLoginEndpointSuccess(t *testing.T) {
 
 		require.Equal(t, true, loginResp.Success)
 		cookies := resp.Cookies()
-		require.Len(t, cookies, 1)
-		require.Equal(t, "session", cookies[0].Name)
-
+		require.Equal(t, "sess", cookies[0].Name)
 	})
 }

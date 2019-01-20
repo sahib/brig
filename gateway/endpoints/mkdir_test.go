@@ -2,11 +2,8 @@ package endpoints
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/sahib/brig/catfs"
-	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,12 +13,10 @@ type mkdirResponse struct {
 }
 
 func TestMkdirEndpointSuccess(t *testing.T) {
-	withFsAndCfg(t, func(cfg *config.Config, fs *catfs.FS) {
-		cfg.SetString("auth.user", "ali")
-		cfg.SetString("auth.pass", "ila")
-
-		req := mustCreateRequest(
+	withState(t, func(s *TestState) {
+		resp := s.mustRun(
 			t,
+			NewMkdirHandler(s.State),
 			"POST",
 			"http://localhost:5000/api/v0/mkdir",
 			&MkdirRequest{
@@ -29,19 +24,31 @@ func TestMkdirEndpointSuccess(t *testing.T) {
 			},
 		)
 
-		rsw := httptest.NewRecorder()
-		hdl := NewMkdirHandler(cfg, fs)
-		hdl.ServeHTTP(rsw, req)
-
-		resp := rsw.Result()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		mkdirResp := &mkdirResponse{}
 		mustDecodeBody(t, resp.Body, &mkdirResp)
 		require.Equal(t, true, mkdirResp.Success)
 
-		info, err := fs.Stat("/test")
+		info, err := s.fs.Stat("/test")
 		require.Nil(t, err)
 		require.Equal(t, "/test", info.Path)
+	})
+}
+
+func TestMkdirEndpointInvalidPath(t *testing.T) {
+	withState(t, func(s *TestState) {
+		s.mustChangeFolders(t, "/something/else")
+		resp := s.mustRun(
+			t,
+			NewMkdirHandler(s.State),
+			"POST",
+			"http://localhost:5000/api/v0/mkdir",
+			&MkdirRequest{
+				Path: "/test",
+			},
+		)
+
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 }
