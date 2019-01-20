@@ -1,0 +1,7 @@
+
+Starting Webserver on http://localhost:8080
+
+You can access the embedded resource by visiting:
+
+http://localhost:8080/
+

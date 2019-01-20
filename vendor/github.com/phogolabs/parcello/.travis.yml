@@ -1,0 +1,25 @@
+language: go
+go:
+  - 1.11.x
+
+before_script:
+  - mysql -e 'CREATE DATABASE gom;'
+  - psql -c 'CREATE DATABASE gom;' -U postgres
+
+install:
+  - export PATH=$PATH:$HOME/gopath/bin
+  - export GO111MODULE=on
+  - go get github.com/onsi/gomega
+  - go get github.com/onsi/ginkgo
+  - go get github.com/mattn/goveralls
+  - go install github.com/onsi/ginkgo/ginkgo
+  - go mod download
+  - go mod verify
+
+
+script:
+  - ginkgo -r -v -covermode=atomic
+
+after_success:
+  - script/cover.sh
+  - bash <(curl -s https://codecov.io/bash)

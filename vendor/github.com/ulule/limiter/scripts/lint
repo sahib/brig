@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -eo pipefail
+
+gometalinter_path="${GOPATH}/bin/gometalinter"
+
+if [[ ! -x "${gometalinter_path}" ]]; then
+    go get -u github.com/alecthomas/gometalinter
+    gometalinter --install
+fi
+
+SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
+cd "${SOURCE_DIRECTORY}/.."
+
+if [[ -n $1 ]]; then
+    gometalinter --config gometalinter.json --disable=dupl "$1"
+else
+    gometalinter --config gometalinter.json --disable=dupl ./...
+fi
