@@ -8,14 +8,17 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// RemoveHandler implements http.Handler.
 type RemoveHandler struct {
 	*State
 }
 
+// NewRemoveHandler returns a new RemoveHandler
 func NewRemoveHandler(s *State) *RemoveHandler {
 	return &RemoveHandler{State: s}
 }
 
+// RemoveRequest is the request that is being sent to the endpoint.
 type RemoveRequest struct {
 	Paths []string `json:"paths"`
 }
@@ -52,7 +55,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasChanged {
-		rh.evHdl.Notify("fs", r.Context())
+		rh.evHdl.Notify(r.Context(), "fs")
 	}
 
 	jsonifySuccess(w)

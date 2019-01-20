@@ -22,11 +22,11 @@ const (
 	testGwUser = "ali"
 )
 
-type TestState struct {
+type testState struct {
 	*State
 }
 
-func withState(t *testing.T, fn func(state *TestState)) {
+func withState(t *testing.T, fn func(state *testState)) {
 	tmpDir, err := ioutil.TempDir("", "brig-endpoints-test-userdb")
 	require.Nil(t, err)
 
@@ -53,7 +53,7 @@ func withState(t *testing.T, fn func(state *TestState)) {
 	state, err := NewState(fs, cfg.Section("gateway"), NewEventsHandler(), userDb)
 	require.Nil(t, err)
 
-	fn(&TestState{state})
+	fn(&testState{state})
 
 	require.Nil(t, state.fs.Close())
 	require.Nil(t, state.userDb.Close())
@@ -71,7 +71,7 @@ func mustDecodeBody(t *testing.T, body io.Reader, v interface{}) {
 	require.Nil(t, json.NewDecoder(bytes.NewReader(data)).Decode(v))
 }
 
-func (s *TestState) mustRun(t *testing.T, hdl http.Handler, verb, url string, jsonBody interface{}) *http.Response {
+func (s *testState) mustRun(t *testing.T, hdl http.Handler, verb, url string, jsonBody interface{}) *http.Response {
 	req := httptest.NewRequest(verb, url, mustEncodeBody(t, jsonBody))
 	rsw := httptest.NewRecorder()
 
@@ -80,7 +80,7 @@ func (s *TestState) mustRun(t *testing.T, hdl http.Handler, verb, url string, js
 	return rsw.Result()
 }
 
-func (s *TestState) mustChangeFolders(t *testing.T, folders ...string) {
+func (s *testState) mustChangeFolders(t *testing.T, folders ...string) {
 	require.Nil(t, s.userDb.Remove("ali"))
 	require.Nil(t, s.userDb.Add("ali", "ila", folders))
 }

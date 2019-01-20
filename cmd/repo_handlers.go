@@ -666,7 +666,7 @@ func handleGatewayStatus(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if uiIsEnabled == "true" {
-		fmt.Println("• The Web UI is currenly enabled and can be accessed via the URL above.")
+		fmt.Println("• The Web UI is currently enabled and can be accessed via the URL above.")
 		fmt.Println("  If you want to disable the UI (»/get« will still work), then do:")
 		fmt.Println("")
 		fmt.Println("    $ brig cfg gateway.ui.enabled false")

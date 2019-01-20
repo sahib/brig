@@ -8,15 +8,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// MkdirHandler implements http.Handler.
 type MkdirHandler struct {
 	*State
 }
 
+// NewMkdirHandler creates a new mkdir handler.
 func NewMkdirHandler(s *State) *MkdirHandler {
 	return &MkdirHandler{State: s}
 }
 
+// MkdirRequest is the request that can be sent to this endpoint as JSON.
 type MkdirRequest struct {
+	// Path to create.
 	Path string `json:"path"`
 }
 
@@ -43,6 +47,6 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mh.evHdl.Notify("fs", r.Context())
+	mh.evHdl.Notify(r.Context(), "fs")
 	jsonifySuccess(w)
 }

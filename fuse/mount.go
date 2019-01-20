@@ -20,7 +20,10 @@ import (
 	"github.com/sahib/brig/util"
 )
 
+// Notifier implementors can take notifications
+// from any events happening in the fuse mount.
 type Notifier interface {
+	// PublishEvent is called whenever a modification happens.
 	PublishEvent()
 }
 

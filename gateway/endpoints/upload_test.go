@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mustDoUpload(t *testing.T, s *TestState, name string, data []byte) *http.Response {
+func mustDoUpload(t *testing.T, s *testState, name string, data []byte) *http.Response {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", path.Base(name))
@@ -37,7 +37,7 @@ func mustDoUpload(t *testing.T, s *TestState, name string, data []byte) *http.Re
 }
 
 func TestUploadSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Mkdir("/sub", true))
 		resp := mustDoUpload(t, s, "/sub/new_file.png", []byte("hello"))
 
@@ -56,7 +56,7 @@ func TestUploadSuccess(t *testing.T) {
 }
 
 func TestUploadForbidden(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/public")
 		resp := mustDoUpload(t, s, "/sub/new_file.png", []byte("hello"))
 

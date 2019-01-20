@@ -73,19 +73,23 @@ func clearSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Re
 
 ///////
 
+// LoginHandler implements http.Handler
 type LoginHandler struct {
 	*State
 }
 
+// NewLoginHandler creates a new LoginHandler
 func NewLoginHandler(s *State) *LoginHandler {
 	return &LoginHandler{State: s}
 }
 
+// LoginRequest is the request sent as JSON to this endpoint.
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
+// LoginResponse is what the endpoint will return.
 type LoginResponse struct {
 	Success  bool   `json:"success"`
 	Username string `json:"username"`
@@ -135,10 +139,12 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ///////
 
+// LogoutHandler implements http.Handler
 type LogoutHandler struct {
 	*State
 }
 
+// NewLogoutHandler returns a new LogoutHandler
 func NewLogoutHandler(s *State) *LogoutHandler {
 	return &LogoutHandler{State: s}
 }
@@ -156,14 +162,18 @@ func (loh *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ///////
 
+// WhoamiHandler implements http.Handler.
+// This handler checks if a user is already logged in.
 type WhoamiHandler struct {
 	*State
 }
 
+// NewWhoamiHandler returns a new WhoamiHandler.
 func NewWhoamiHandler(s *State) *WhoamiHandler {
 	return &WhoamiHandler{State: s}
 }
 
+// WhoamiResponse is the response sent back by this endpoint.
 type WhoamiResponse struct {
 	IsLoggedIn bool   `json:"is_logged_in"`
 	User       string `json:"user"`
@@ -202,8 +212,16 @@ type authMiddleware struct {
 
 func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if am.cfg.Bool("auth.enabled") {
-		user := getUserName(am.store, w, r)
-		if user == "" {
+		name := getUserName(am.store, w, r)
+		if name == "" {
+			// invalid token.
+			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
+			return
+		}
+
+		if _, err := am.userDb.Get(name); err != nil {
+			// valid token, but invalid user.
+			// (user might have been deleted on our side)
 			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
 			return
 		}
@@ -212,6 +230,9 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	am.SubHandler.ServeHTTP(w, r)
 }
 
+// AuthMiddleware returns a new handler wrapper, that will require
+// all calls to the respective handler to have a "sess" cookie with
+// a valid user name.
 func AuthMiddleware(s *State) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return &authMiddleware{State: s, SubHandler: h}

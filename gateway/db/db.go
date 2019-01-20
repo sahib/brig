@@ -8,14 +8,20 @@ import (
 	"encoding/gob"
 	"fmt"
 	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
+	"sync"
 
 	"github.com/sahib/brig/util"
 )
 
+// UserDatabase is a badger db that stores user information,
+// using the user name as unique key.
 type UserDatabase struct {
+	mu sync.Mutex
 	db *badger.DB
 }
 
+// NewUserDatabase creates a new UserDatabase at `path` or loads
+// an existing one.
 func NewUserDatabase(path string) (*UserDatabase, error) {
 	opts := badger.DefaultOptions
 	opts.Dir = path
@@ -29,10 +35,21 @@ func NewUserDatabase(path string) (*UserDatabase, error) {
 	return &UserDatabase{db: db}, nil
 }
 
+// Close cleans up all the resources used by a badger db.
 func (ub *UserDatabase) Close() error {
+	ub.mu.Lock()
+	defer ub.mu.Unlock()
+
+	if err := ub.db.Close(); err != nil {
+		return err
+	}
+
+	ub.db = nil
 	return nil
 }
 
+// User is one user that is stored in the database.
+// The passwords are stored as scrypt hash with added salt.
 type User struct {
 	Name         string
 	PasswordHash string
@@ -40,6 +57,7 @@ type User struct {
 	Folders      []string
 }
 
+// CheckPassword checks if `password` matches the stored one.
 func (u User) CheckPassword(password string) (bool, error) {
 	salt, err := base64.StdEncoding.DecodeString(u.Salt)
 	if err != nil {
@@ -55,6 +73,7 @@ func (u User) CheckPassword(password string) (bool, error) {
 	return subtle.ConstantTimeCompare(oldHash, newHash) == 1, nil
 }
 
+// HashPassword creates a new hash and salt from a password.
 func HashPassword(password string) (string, string, error) {
 	// Read a new salt from a random source.
 	// 8 bytes are considered enough by the scrypt documentation.
@@ -71,7 +90,12 @@ func HashPassword(password string) (string, string, error) {
 	return encode(hash), encode(salt), nil
 }
 
+// Add adds a new user to the database.
+// If the user exists already, it is overwritten.
 func (ub *UserDatabase) Add(name, password string, folders []string) error {
+	ub.mu.Lock()
+	defer ub.mu.Unlock()
+
 	buf := &bytes.Buffer{}
 
 	hashed, salt, err := HashPassword(password)
@@ -99,7 +123,12 @@ func (ub *UserDatabase) Add(name, password string, folders []string) error {
 	})
 }
 
+// Get returns a User, if it exists. If it does not exist,
+// an error will be returned.
 func (ub *UserDatabase) Get(name string) (User, error) {
+	ub.mu.Lock()
+	defer ub.mu.Unlock()
+
 	user := User{}
 	return user, ub.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(name))
@@ -113,7 +142,11 @@ func (ub *UserDatabase) Get(name string) (User, error) {
 	})
 }
 
+// Remove removes an existing user.
 func (ub *UserDatabase) Remove(name string) error {
+	ub.mu.Lock()
+	defer ub.mu.Unlock()
+
 	return ub.db.Update(func(txn *badger.Txn) error {
 		// Make sure to error out if the key did not exist:
 		if _, err := txn.Get([]byte(name)); err != nil {
@@ -124,7 +157,11 @@ func (ub *UserDatabase) Remove(name string) error {
 	})
 }
 
+// List returns all users currently in the database.
 func (ub *UserDatabase) List() ([]User, error) {
+	ub.mu.Lock()
+	defer ub.mu.Unlock()
+
 	users := []User{}
 	return users, ub.db.View(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.IteratorOptions{})

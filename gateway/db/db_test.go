@@ -23,15 +23,12 @@ func withDummyDb(t *testing.T, fn func(db *UserDatabase)) {
 
 func TestAddGet(t *testing.T) {
 	withDummyDb(t, func(db *UserDatabase) {
-		require.Nil(t, db.Add("hello", User{
-			Password: "world",
-			Folders:  []string{"/"},
-		}))
-
+		require.Nil(t, db.Add("hello", "world", []string{"/"}))
 		user, err := db.Get("hello")
 		require.Nil(t, err)
 		require.Equal(t, "hello", user.Name)
-		require.Equal(t, "world", user.Password)
+		require.NotEmpty(t, user.PasswordHash)
+		require.NotEmpty(t, user.Salt)
 		require.Equal(t, []string{"/"}, user.Folders)
 	})
 }

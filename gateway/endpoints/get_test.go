@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetEndpointSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		fileData := []byte("HelloWorld")
 		require.Nil(t, s.fs.Stage("/file", bytes.NewReader(fileData)))
 
@@ -29,7 +29,7 @@ func TestGetEndpointSuccess(t *testing.T) {
 }
 
 func TestGetEndpointDisallowed(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		fileData := []byte("HelloWorld")
 		require.Nil(t, s.fs.Stage("/file", bytes.NewReader(fileData)))
 		s.mustChangeFolders(t, "/public")

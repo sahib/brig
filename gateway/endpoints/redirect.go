@@ -8,10 +8,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// RedirHandler implements http.Handler.
+// It redirects all of its requests to the respective https:// route.
 type RedirHandler struct {
 	redirPort int64
 }
 
+// NewHTTPRedirectHandler returns a new RedirHandler
 func NewHTTPRedirectHandler(redirPort int64) *RedirHandler {
 	return &RedirHandler{
 		redirPort: redirPort,

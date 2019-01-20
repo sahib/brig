@@ -9,7 +9,7 @@ import (
 )
 
 func TestLsEndpoint(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		exampleData := bytes.NewReader([]byte("Hello world"))
 		require.Nil(t, s.fs.Stage("/hello/world.png", exampleData))
 

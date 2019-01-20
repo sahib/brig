@@ -19,6 +19,8 @@ import (
 	"github.com/sahib/config"
 )
 
+// State is a helper struct that contains all API objects that might be useful
+// to the endpoint implementation. It does not serve other purposes.
 type State struct {
 	fs     *catfs.FS
 	cfg    *config.Config
@@ -39,6 +41,8 @@ func readOrInitKeyFromConfig(cfg *config.Config, keyName string, keyLen int) ([]
 	return base64.StdEncoding.DecodeString(keyStr)
 }
 
+// NewState creates a new state object.
+// events.Listener can be set later with SetEventListener.
 func NewState(
 	fs *catfs.FS,
 	cfg *config.Config,
@@ -70,11 +74,15 @@ func NewState(
 	}, nil
 }
 
+// Close cleans up any potentially open resource.
 func (s *State) Close() error {
 	s.evHdl.Shutdown()
 	return s.userDb.Close()
 }
 
+// SetEventListener sets the event listener.
+// Since the gateway can run before (or without) the peer server
+// and event listener running, we can set this dynamically.
 func (s *State) SetEventListener(ev *events.Listener) {
 	s.ev = ev
 	s.evHdl.SetEventListener(ev)
@@ -85,7 +93,7 @@ func (s *State) publishFsEvent(req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
 		defer cancel()
 
-		s.evHdl.Notify("fs", ctx)
+		s.evHdl.Notify(ctx, "fs")
 	}
 
 	if s.ev == nil {

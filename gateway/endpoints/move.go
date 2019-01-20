@@ -7,16 +7,21 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// MoveHandler implements http.Handler.
 type MoveHandler struct {
 	*State
 }
 
+// NewMoveHandler creates a new move handler.
 func NewMoveHandler(s *State) *MoveHandler {
 	return &MoveHandler{State: s}
 }
 
+// MoveRequest is the request that can be send to this endpoint.
 type MoveRequest struct {
-	Source      string `json:"source"`
+	// Source is the path to the old node.
+	Source string `json:"source"`
+	// Destination is the path of the new node.
 	Destination string `json:"destination"`
 }
 
@@ -43,6 +48,6 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mh.evHdl.Notify("fs", r.Context())
+	mh.evHdl.Notify(r.Context(), "fs")
 	jsonifySuccess(w)
 }

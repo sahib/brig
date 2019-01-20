@@ -13,7 +13,7 @@ type removeResponse struct {
 }
 
 func TestRemoveEndpointSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Touch("/file"))
 		require.Nil(t, s.fs.Mkdir("/dir", true))
 
@@ -42,7 +42,7 @@ func TestRemoveEndpointSuccess(t *testing.T) {
 }
 
 func TestRemoveEndpointForbidden(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/public")
 		resp := s.mustRun(
 			t,

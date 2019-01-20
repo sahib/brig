@@ -36,6 +36,8 @@ func NewTmpFsBackend(root string) (*TmpFsBackend, error) {
 // Cat implements FsBackend.Cat by querying memory.
 func (tb *TmpFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 	path := filepath.Join(tb.root, hash.B58String())
+
+	/* #nosec */
 	fd, err := os.Open(path)
 	if err != nil {
 		return nil, err

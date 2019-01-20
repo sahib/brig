@@ -283,10 +283,14 @@ func (gw *Gateway) Start() {
 	}()
 }
 
+// UserDatabase returns the user database API.
 func (gw *Gateway) UserDatabase() *db.UserDatabase {
 	return gw.userDb
 }
 
+// SetEventListener sets the event listener, if any.
+// The gateway can exist without the event listener and can be instantiated,
+// before bringing up the peer server and event interface.
 func (gw *Gateway) SetEventListener(ev *events.Listener) {
 	gw.state.SetEventListener(ev)
 }

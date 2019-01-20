@@ -8,18 +8,23 @@ import (
 	"github.com/sahib/brig/catfs"
 )
 
+// HistoryHandler implements http.Handler
 type HistoryHandler struct {
 	*State
 }
 
+// NewHistoryHandler returns a new HistoryHandler
 func NewHistoryHandler(s *State) *HistoryHandler {
 	return &HistoryHandler{State: s}
 }
 
+// HistoryRequest is the request sent to this endpoint.
 type HistoryRequest struct {
 	Path string `json:"path"`
 }
 
+// Commit is the same as catfs.Commit, but JSON friendly
+// and with some omitted fields that are not used by the client.
 type Commit struct {
 	Date int64    `json:"date"`
 	Msg  string   `json:"msg"`
@@ -27,12 +32,14 @@ type Commit struct {
 	Hash string   `json:"hash"`
 }
 
+// HistoryEntry is one entry in the response.
 type HistoryEntry struct {
 	Head   Commit `json:"head"`
 	Path   string `json:"path"`
 	Change string `json:"change"`
 }
 
+// HistoryResponse is the data that is sent back to the client.
 type HistoryResponse struct {
 	Success bool           `json:"success"`
 	Entries []HistoryEntry `json:"entries"`

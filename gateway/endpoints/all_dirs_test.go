@@ -8,7 +8,7 @@ import (
 )
 
 func TestAllDirsSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/a")
 		require.Nil(t, s.fs.Mkdir("/a/b/c", true))
 		require.Nil(t, s.fs.Mkdir("/d/e/f", true))

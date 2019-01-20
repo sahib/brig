@@ -16,12 +16,14 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+// EventsHandler implements http.Handler
 type EventsHandler struct {
 	mu  sync.Mutex
 	id  int
 	chs map[int]chan string
 }
 
+// NewEventsHandler returns a new EventsHandler
 func NewEventsHandler() *EventsHandler {
 	hdl := &EventsHandler{
 		chs: make(map[int]chan string),
@@ -30,16 +32,20 @@ func NewEventsHandler() *EventsHandler {
 	return hdl
 }
 
+// SetEventListener sets the event listener for this event handler.
+// See also State.SetEventListener
 func (eh *EventsHandler) SetEventListener(ev *events.Listener) {
 	ev.RegisterEventHandler(events.FsEvent, func(ev *events.Event) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		eh.Notify("fs", ctx)
+		eh.Notify(ctx, "fs")
 	})
 }
 
-func (eh *EventsHandler) Notify(msg string, ctx context.Context) error {
+// Notify sends `msg` to all connected clients, but stops in case `ctx`
+// was canceled before sending it all.
+func (eh *EventsHandler) Notify(ctx context.Context, msg string) error {
 	eh.mu.Lock()
 	chs := []chan string{}
 	for _, ch := range eh.chs {
@@ -59,6 +65,7 @@ func (eh *EventsHandler) Notify(msg string, ctx context.Context) error {
 	return nil
 }
 
+// Shutdown closes all open websockets.
 func (eh *EventsHandler) Shutdown() {
 	eh.mu.Lock()
 	defer eh.mu.Unlock()

@@ -12,7 +12,7 @@ type loginResponse struct {
 }
 
 func TestLoginEndpointSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		resp := s.mustRun(
 			t,
 			NewLoginHandler(s.State),

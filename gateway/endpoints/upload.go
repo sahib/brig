@@ -7,10 +7,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// UploadHandler implements http.Handler.
 type UploadHandler struct {
 	*State
 }
 
+// NewUploadHandler returns a new UploadHandler.
 func NewUploadHandler(s *State) *UploadHandler {
 	return &UploadHandler{State: s}
 }
@@ -56,6 +58,6 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	uh.evHdl.Notify("fs", r.Context())
+	uh.evHdl.Notify(r.Context(), "fs")
 	jsonifySuccess(w)
 }

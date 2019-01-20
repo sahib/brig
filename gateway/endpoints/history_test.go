@@ -9,7 +9,7 @@ import (
 )
 
 func TestHistoryEndpointSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Stage("/x", bytes.NewReader([]byte("hello"))))
 		require.Nil(t, s.fs.MakeCommit("hello"))
 		require.Nil(t, s.fs.Stage("/x", bytes.NewReader([]byte("world"))))
@@ -54,7 +54,7 @@ func TestHistoryEndpointSuccess(t *testing.T) {
 }
 
 func TestHistoryEndpointForbidden(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/public")
 
 		resp := s.mustRun(

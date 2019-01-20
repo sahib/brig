@@ -466,6 +466,7 @@ func (ctl *Client) WaitForInit() error {
 	return err
 }
 
+// GatewayUser is a user that has access to the gateway.
 type GatewayUser struct {
 	Name         string
 	PasswordHash string
@@ -473,6 +474,9 @@ type GatewayUser struct {
 	Folders      []string
 }
 
+// GatewayUserAdd adds a new user to the user database.
+// `folders` is a list of directories he may access. It might be empty,
+// in which case he can access everything (same as []string{"/"})
 func (ctl *Client) GatewayUserAdd(name, password string, folders []string) error {
 	call := ctl.api.GatewayUserAdd(ctl.ctx, func(p capnp.Repo_gatewayUserAdd_Params) error {
 		if err := p.SetName(name); err != nil {
@@ -506,6 +510,8 @@ func (ctl *Client) GatewayUserAdd(name, password string, folders []string) error
 	return err
 }
 
+// GatewayUserRemove removes an existing user and will error out
+// if the said user does not exist.
 func (ctl *Client) GatewayUserRemove(name string) error {
 	call := ctl.api.GatewayUserRm(ctl.ctx, func(p capnp.Repo_gatewayUserRm_Params) error {
 		return p.SetName(name)
@@ -554,6 +560,7 @@ func capUserToUser(capUser capnp.User) (*GatewayUser, error) {
 	}, nil
 }
 
+// GatewayUserList lists all currently existing users.
 func (ctl *Client) GatewayUserList() ([]GatewayUser, error) {
 	call := ctl.api.GatewayUserList(ctl.ctx, func(p capnp.Repo_gatewayUserList_Params) error {
 		return nil

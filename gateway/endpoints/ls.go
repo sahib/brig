@@ -9,19 +9,25 @@ import (
 	"github.com/sahib/brig/catfs"
 )
 
+// LsHandler implements http.Handler.
 type LsHandler struct {
 	*State
 }
 
+// NewLsHandler returns a new LsHandler
 func NewLsHandler(s *State) *LsHandler {
 	return &LsHandler{State: s}
 }
 
+// LsRequest is the data that needs to be sent to this endpoint.
 type LsRequest struct {
 	Root   string `json:"root"`
 	Filter string `json:"filter,omitempty"`
 }
 
+// StatInfo is a single node in the list response.
+// It is the same as catfs.StatInfo, but is more JSON friendly
+// and omits some fields like hashes that are not useful to the client.
 type StatInfo struct {
 	Path       string `json:"path"`
 	User       string `json:"user"`
@@ -48,11 +54,12 @@ func toExternalStatInfo(i *catfs.StatInfo) *StatInfo {
 	}
 }
 
+// LsResponse is the response sent back to the client.
 type LsResponse struct {
 	Success    bool        `json:"success"`
 	Self       *StatInfo   `json:"self"`
-	IsFiltered bool        `json:"is_filtered"`
 	Files      []*StatInfo `json:"files"`
+	IsFiltered bool        `json:"is_filtered"`
 }
 
 func doQuery(fs *catfs.FS, req *LsRequest) ([]*catfs.StatInfo, error) {

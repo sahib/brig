@@ -15,10 +15,12 @@ import (
 	"github.com/sahib/brig/util"
 )
 
+// GetHandler implements http.Handler
 type GetHandler struct {
 	*State
 }
 
+// NewGetHandler returns a new GetHandler
 func NewGetHandler(s *State) *GetHandler {
 	return &GetHandler{State: s}
 }
@@ -67,7 +69,7 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if gh.cfg.Bool("auth.enabled") {
 		if !gh.validatePath(nodePath, w, r) {
-			user, pass, ok := r.BasicAuth()
+			name, pass, ok := r.BasicAuth()
 
 			// No basic auth sent. If a browser send the request: ask him to
 			// show a user/password form that gives a chance to change that.
@@ -78,9 +80,18 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Check is the basic auth credentials are valid.
-			cfgUser := gh.cfg.String("auth.user")
-			cfgPass := gh.cfg.String("auth.pass")
-			if user != cfgUser || pass != cfgPass {
+			user, err := gh.userDb.Get(name)
+			if err != nil {
+				http.Error(w, "not authorized", http.StatusUnauthorized)
+				return
+			}
+
+			isValid, err := user.CheckPassword(pass)
+			if !isValid {
+				if err != nil {
+					log.Warningf("get: failed to check password: %v", err)
+				}
+
 				http.Error(w, "not authorized", http.StatusUnauthorized)
 				return
 			}

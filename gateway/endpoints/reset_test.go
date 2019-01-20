@@ -15,7 +15,7 @@ type resetResponse struct {
 }
 
 func TestResetSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Stage("/file", bytes.NewReader([]byte("hello"))))
 		require.Nil(t, s.fs.MakeCommit("add"))
 		require.Nil(t, s.fs.Stage("/file", bytes.NewReader([]byte("world"))))
@@ -48,7 +48,7 @@ func TestResetSuccess(t *testing.T) {
 }
 
 func TestResetForbidden(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/public")
 		resp := s.mustRun(
 			t,

@@ -6,14 +6,20 @@ import (
 	"strings"
 )
 
+// AllDirsHandler implements http.Handler.
+// This endpoint returns all directories that the client may see.
+// It is used in the client to offer the user a list of directories
+// to move or copy files to.
 type AllDirsHandler struct {
 	*State
 }
 
+// NewAllDirsHandler returns a new AllDirsHandler.
 func NewAllDirsHandler(s *State) *AllDirsHandler {
 	return &AllDirsHandler{State: s}
 }
 
+// AllDirsResponse is the response sent to the client.
 type AllDirsResponse struct {
 	Success bool     `json:"success"`
 	Paths   []string `json:"paths"`

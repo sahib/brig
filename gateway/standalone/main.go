@@ -1,5 +1,9 @@
 package main
 
+// Simple test gateway. This is not very useful on its own,
+// but very useful for frontend development. Use it like this:
+// $ go generate ./... && go run gateway/standalone/*.go some/test/data
+
 import (
 	"fmt"
 	"os"
@@ -89,6 +93,7 @@ func main() {
 				return nil
 			}
 
+			/* #nosec */
 			fd, err := os.Open(path)
 			if err != nil {
 				log.Fatalf("failed to open: %v", err)

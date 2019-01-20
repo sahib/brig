@@ -7,16 +7,21 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// CopyHandler implements http.Handler.
 type CopyHandler struct {
 	*State
 }
 
+// NewCopyHandler creates a new copy handler.
 func NewCopyHandler(s *State) *CopyHandler {
 	return &CopyHandler{State: s}
 }
 
+// CopyRequest is the request that can be send to this endpoint.
 type CopyRequest struct {
-	Source      string `json="source"`
+	// Source is the path to the old node.
+	Source string `json="source"`
+	// Destination is the path of the new node.
 	Destination string `json="destination"`
 }
 
@@ -43,6 +48,6 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch.evHdl.Notify("fs", r.Context())
+	ch.evHdl.Notify(r.Context(), "fs")
 	jsonifySuccess(w)
 }

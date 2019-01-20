@@ -13,7 +13,7 @@ type mkdirResponse struct {
 }
 
 func TestMkdirEndpointSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		resp := s.mustRun(
 			t,
 			NewMkdirHandler(s.State),
@@ -37,7 +37,7 @@ func TestMkdirEndpointSuccess(t *testing.T) {
 }
 
 func TestMkdirEndpointInvalidPath(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/something/else")
 		resp := s.mustRun(
 			t,

@@ -12,7 +12,7 @@ type copyResponse struct {
 }
 
 func TestCopySuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 		resp := s.mustRun(
 			t,
@@ -42,7 +42,7 @@ func TestCopySuccess(t *testing.T) {
 }
 
 func TestCopyDisallowedSource(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/kunz")
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 
@@ -62,7 +62,7 @@ func TestCopyDisallowedSource(t *testing.T) {
 }
 
 func TestCopyDisallowedDest(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/hinz")
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 

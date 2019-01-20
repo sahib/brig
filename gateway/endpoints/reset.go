@@ -8,14 +8,17 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// ResetHandler implements http.Handler.
 type ResetHandler struct {
 	*State
 }
 
+// NewResetHandler returns a new ResetHandler.
 func NewResetHandler(s *State) *ResetHandler {
 	return &ResetHandler{State: s}
 }
 
+// ResetRequest is a request sent to this endpoint.
 type ResetRequest struct {
 	Path     string `json:"path"`
 	Revision string `json:"revision"`
@@ -53,6 +56,6 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rh.evHdl.Notify("fs", r.Context())
+	rh.evHdl.Notify(r.Context(), "fs")
 	jsonifySuccess(w)
 }

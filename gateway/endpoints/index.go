@@ -15,10 +15,13 @@ import (
 	_ "github.com/sahib/brig/gateway/templates"
 )
 
+// IndexHandler implements http.Handler.
+// It serves index.html from either file or memory.
 type IndexHandler struct {
 	*State
 }
 
+// NewIndexHandler returns a new IndexHandler.
 func NewIndexHandler(s *State) *IndexHandler {
 	return &IndexHandler{State: s}
 }

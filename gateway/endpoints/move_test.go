@@ -12,7 +12,7 @@ type moveResponse struct {
 }
 
 func TestMoveSuccess(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 
 		resp := s.mustRun(
@@ -42,7 +42,7 @@ func TestMoveSuccess(t *testing.T) {
 }
 
 func TestMoveDisallowedSource(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/kunz")
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 
@@ -62,7 +62,7 @@ func TestMoveDisallowedSource(t *testing.T) {
 }
 
 func TestMoveDisallowedDest(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		s.mustChangeFolders(t, "/hinz")
 		require.Nil(t, s.fs.Mkdir("/hinz", true))
 

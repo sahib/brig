@@ -10,7 +10,7 @@ import (
 )
 
 func TestEvents(t *testing.T) {
-	withState(t, func(s *TestState) {
+	withState(t, func(s *testState) {
 		dialer := wstest.NewDialer(s.evHdl)
 		conn, resp, err := dialer.Dial("ws://whatever/ws", nil)
 		require.Nil(t, err)
