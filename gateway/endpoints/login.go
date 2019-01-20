@@ -44,7 +44,8 @@ func setSession(store *sessions.CookieStore, userName string, w http.ResponseWri
 		MaxAge:   31 * 24 * 60 * 60,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		// TODO: This is only available in Go 1.11:
+		// SameSite: http.SameSiteLaxMode,
 	}
 
 	sess.Values["name"] = userName
