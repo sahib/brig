@@ -95,6 +95,11 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "not authorized", http.StatusUnauthorized)
 				return
 			}
+
+			if !gh.validatePathForUser(nodePath, user, w, r) {
+				http.Error(w, "not authorized", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		//  All good. Proceed with the content.

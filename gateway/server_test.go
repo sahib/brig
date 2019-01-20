@@ -103,6 +103,7 @@ func TestGatewayNoSuchFile(t *testing.T) {
 
 func TestGatewayUnauthorizedBadFolder(t *testing.T) {
 	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
+		require.Nil(t, gw.userDb.Add("ali", "ila", []string{"/public"}))
 		exampleData := []byte("Hello world")
 		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
 		require.Nil(t, err, fmt.Sprintf("%v", err))

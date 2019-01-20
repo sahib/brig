@@ -127,32 +127,27 @@ func buildFolderCache(folders []string) map[string]bool {
 	return folderCache
 }
 
-func (s *State) folderCacheForUser(w http.ResponseWriter, r *http.Request) (map[string]bool, error) {
-	name := getUserName(s.store, w, r)
-	if name == "" {
-		return nil, fmt.Errorf("no user")
-	}
-
-	user, err := s.userDb.Get(name)
-	if err != nil {
-		return nil, fmt.Errorf("validate: user db: %v", err)
-	}
-
-	return buildFolderCache(user.Folders), nil
-}
-
 func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Request) bool {
 	nodePath = prefixRoot(path.Clean(nodePath))
 	if s.validatePath(nodePath, w, r) {
 		return true
 	}
 
-	folderCache, err := s.folderCacheForUser(w, r)
+	name := getUserName(s.store, w, r)
+	if name == "" {
+		return false
+	}
+
+	user, err := s.userDb.Get(name)
+	if err != nil {
+		return false
+	}
+
+	folderCache := buildFolderCache(user.Folders)
 	if err != nil {
 		log.Debugf("failed to build folder cache: %v", err)
 		return false
 	}
-	fmt.Println("FOLDER CACHE", folderCache)
 
 	// Go over all folders, and see if we have some allowed folder
 	// that we need to display "on the way". This could be probably
@@ -179,13 +174,22 @@ func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Re
 }
 
 func (s *State) validatePath(nodePath string, w http.ResponseWriter, r *http.Request) bool {
-	folderCache, err := s.folderCacheForUser(w, r)
-	if err != nil {
-		log.Debugf("could not build folder cache: %v", err)
+	name := getUserName(s.store, w, r)
+	if name == "" {
 		return false
 	}
 
+	user, err := s.userDb.Get(name)
+	if err != nil {
+		return false
+	}
+
+	return s.validatePathForUser(nodePath, user, w, r)
+}
+
+func (s *State) validatePathForUser(nodePath string, user db.User, w http.ResponseWriter, r *http.Request) bool {
 	curr := prefixRoot(nodePath)
+	folderCache := buildFolderCache(user.Folders)
 
 	for curr != "" {
 		if folderCache[curr] {
