@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
@@ -123,8 +124,26 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hdr.Set("Last-Modified", info.ModTime.Format(http.TimeFormat))
 
 	if info.IsDir {
+		params := r.URL.Query()
+		includes := params["include"]
+
+		filter := func(info *catfs.StatInfo) bool {
+			if len(includes) == 0 {
+				return true
+			}
+
+			for _, include := range includes {
+				if strings.HasPrefix(info.Path, include) {
+					return true
+				}
+			}
+
+			log.Debugf("fitlered %s", info.Path)
+			return false
+		}
+
 		setContentDisposition(info, hdr, "attachment")
-		if err := gh.fs.Tar(nodePath, w); err != nil {
+		if err := gh.fs.Tar(nodePath, w, filter); err != nil {
 			log.Errorf("gateway: failed to stream %s: %v", nodePath, err)
 			http.Error(w, "failed to stream", http.StatusInternalServerError)
 			return

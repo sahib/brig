@@ -1,8 +1,10 @@
 package catfs
 
 import (
+	"archive/tar"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -785,6 +787,43 @@ func TestPatch(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, int64(2), dstIndex)
 		})
+	})
+}
+
+func TestTar(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Stage("/a/file.png", bytes.NewReader([]byte("hello"))))
+		require.Nil(t, fs.Stage("/b/file.jpg", bytes.NewReader([]byte("world"))))
+		require.Nil(t, fs.Stage("/c/file.gif", bytes.NewReader([]byte("!"))))
+
+		buf := &bytes.Buffer{}
+		require.Nil(t, fs.Tar("/", buf, func(info *StatInfo) bool {
+			// Exclude the /c directory:
+			return info.Path != "/c"
+		}))
+
+		r := tar.NewReader(buf)
+		for idx := 0; ; idx++ {
+			hdr, err := r.Next()
+			if err == io.EOF {
+				break
+			}
+			require.Nil(t, err)
+
+			data, err := ioutil.ReadAll(r)
+			switch idx {
+			case 0:
+				require.Equal(t, []byte("hello"), data)
+				require.Equal(t, "a/file.png", hdr.Name)
+				require.Equal(t, int64(5), hdr.Size)
+			case 1:
+				require.Equal(t, []byte("world"), data)
+				require.Equal(t, "b/file.jpg", hdr.Name)
+				require.Equal(t, int64(5), hdr.Size)
+			default:
+				require.True(t, false, "should not be reached")
+			}
+		}
 	})
 }
 

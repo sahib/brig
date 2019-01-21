@@ -190,7 +190,7 @@ func (fh *fsHandler) Tar(call capnp.FS_tar) error {
 
 		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
 			localAddr := conn.LocalAddr().String()
-			if err := fs.Tar(path, conn); err != nil {
+			if err := fs.Tar(path, conn, nil); err != nil {
 				log.Warningf("tar failed for path %s on %s: %v", path, localAddr, err)
 			}
 		})

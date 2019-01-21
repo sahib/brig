@@ -1065,28 +1065,48 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 ////////////////////
 
 type tarEntry struct {
-	path string
-	size int64
+	path   string
+	size   int64
+	stream mio.Stream
 }
 
-func (fs *FS) getTarableEntries(path string) ([]tarEntry, error) {
+func (fs *FS) getTarableEntries(root string, filter func(node *StatInfo) bool) ([]tarEntry, string, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	rootNd, err := fs.lkr.LookupNode(path)
+	rootNd, err := fs.lkr.LookupNode(root)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	entries := []tarEntry{}
 	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
-		if child.Type() == n.NodeTypeFile {
-			entries = append(entries, tarEntry{
-				path: child.Path(),
-				size: int64(child.Size()),
-			})
+		if filter != nil && rootNd.Path() != child.Path() {
+			// Ask the API user if he wants this node in his archive:
+			if !filter(fs.nodeToStat(child)) {
+				return n.ErrSkipChild
+			}
 		}
 
+		if child.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		file, ok := child.(*n.File)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		stream, err := fs.catHash(file.BackendHash(), file.Key(), file.Size())
+		if err != nil {
+			return e.Wrapf(err, "failed to open stream for %s", file.Path())
+		}
+
+		entries = append(entries, tarEntry{
+			path:   child.Path(),
+			size:   int64(child.Size()),
+			stream: stream,
+		})
 		return nil
 	})
 
@@ -1095,29 +1115,42 @@ func (fs *FS) getTarableEntries(path string) ([]tarEntry, error) {
 		return entries[i].path < entries[j].path
 	})
 
-	return entries, err
+	prefixPath := root
+	if rootNd.Type() != n.NodeTypeDirectory {
+		prefixPath = path.Dir(root)
+	}
+
+	return entries, prefixPath, err
 }
 
 // Tar produces a tar archive from the file or directory at `root` and writes
 // the output to `w`. If you want compression, supply a gzip writer.
-func (fs *FS) Tar(root string, w io.Writer) error {
-	entries, err := fs.getTarableEntries(root)
+func (fs *FS) Tar(root string, w io.Writer, filter func(node *StatInfo) bool) error {
+	// getTarableEntries is locking fs.mu while it is running.
+	// the rest of the code in this method should NOT use any nodes
+	// or anything that is open to race conditions!
+	entries, prefixPath, err := fs.getTarableEntries(root, filter)
 	if err != nil {
 		return err
-	}
-
-	info, err := fs.Stat(root)
-	if err != nil {
-		return err
-	}
-
-	prefixPath := root
-	if !info.IsDir {
-		prefixPath = path.Dir(root)
 	}
 
 	tw := tar.NewWriter(w)
-	for _, entry := range entries {
+
+	// Make sure to close all remaining streams when any error happens.
+	// Also clean up the tar writer. This might flush some data still.
+	// The user of this API should not use `w` if an error happens.
+	cleanup := func(idx int) {
+		for ; idx < len(entries); idx++ {
+			entry := entries[idx]
+			if err := entry.stream.Close(); err != nil {
+				log.Debugf("could not close stream: %v (file descriptor leak?)", entry.path)
+			}
+		}
+
+		tw.Close()
+	}
+
+	for idx, entry := range entries {
 		hdr := &tar.Header{
 			Name: entry.path[len(prefixPath):],
 			Mode: 0600,
@@ -1125,23 +1158,17 @@ func (fs *FS) Tar(root string, w io.Writer) error {
 		}
 
 		if err := tw.WriteHeader(hdr); err != nil {
+			cleanup(idx)
 			return err
 		}
 
-		stream, err := fs.Cat(entry.path)
-		if err != nil {
+		if _, err := io.Copy(tw, entry.stream); err != nil {
+			cleanup(idx)
 			return err
 		}
 
-		if _, err := io.Copy(tw, stream); err != nil {
-			if err := stream.Close(); err != nil {
-				log.Debugf("failed to close stream; might leak file descriptor")
-			}
-
-			return err
-		}
-
-		if err := stream.Close(); err != nil {
+		if err := entry.stream.Close(); err != nil {
+			cleanup(idx + 1)
 			return err
 		}
 	}
@@ -1173,7 +1200,11 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 
 	fs.mu.Unlock()
 
-	// NOTE: This part of the code is not locked by fs.mu!
+	return fs.catHash(backendHash, key, size)
+}
+
+// NOTE: This method can be called without locking fs.mu!
+func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64) (mio.Stream, error) {
 	rawStream, err := fs.bk.Cat(backendHash)
 	if err != nil {
 		return nil, err

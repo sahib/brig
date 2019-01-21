@@ -156,6 +156,35 @@ currRoot model =
             Nothing
 
 
+currTotalSize : Model -> Int
+currTotalSize model =
+    case model.state of
+        Success actualModel ->
+            actualModel.self.size
+
+        _ ->
+            0
+
+
+currSelectedSize : Model -> Int
+currSelectedSize model =
+    case model.state of
+        Success actualModel ->
+            let
+                entryToSizeIfSelected =
+                    \e ->
+                        if Set.member e.path actualModel.checked then
+                            e.size
+
+                        else
+                            0
+            in
+            List.foldl (+) 0 (List.map entryToSizeIfSelected actualModel.entries)
+
+        _ ->
+            0
+
+
 existsInCurr : Model -> String -> Bool
 existsInCurr model name =
     case model.state of
@@ -928,21 +957,79 @@ buildActionButton msg iconName labelText isDisabled =
         ]
 
 
-labelSelectedItems : Model -> Int -> String
+labelSelectedItems : Model -> Int -> Html Msg
 labelSelectedItems model num =
     if currIsFile model then
-        ""
+        text ""
 
     else
         case num of
             0 ->
-                "Nothing selected"
+                p []
+                    [ text " Nothing selected"
+                    , br [] []
+                    , text (Filesize.format (currTotalSize model) ++ " in total")
+                    ]
 
             1 ->
-                " 1 item selected"
+                p []
+                    [ text " 1 item"
+                    , br [] []
+                    , text (Filesize.format (currSelectedSize model))
+                    ]
 
             n ->
-                " " ++ String.fromInt n ++ " items selected"
+                p []
+                    [ text (" " ++ String.fromInt n ++ " items")
+                    , br [] []
+                    , text (Filesize.format (currSelectedSize model))
+                    ]
+
+
+buildDownloadUrl : Model -> String
+buildDownloadUrl model =
+    UrlBuilder.absolute
+        ([ "get" ] ++ (Util.splitPath <| Util.urlToPath model.url))
+        ([ UrlBuilder.string "direct" "yes" ]
+            ++ (if nSelectedItems model > 0 then
+                    List.map (UrlBuilder.string "include") (selectedPaths model)
+
+                else
+                    []
+               )
+        )
+
+
+viewSidebarDownloadButton : Model -> Html Msg
+viewSidebarDownloadButton model =
+    let
+        nSelected =
+            nSelectedItems model
+
+        disabledClass =
+            if currIsFile model then
+                class "disabled"
+
+            else
+                class "btn-default"
+    in
+    Button.linkButton
+        [ Button.block
+        , Button.attrs
+            [ class "text-left btn-link"
+            , disabledClass
+            , href (buildDownloadUrl model)
+            ]
+        ]
+        [ span [ class "fas fa-lg fa-file-download" ] []
+        , span [ id "action-btn" ]
+            [ if nSelected > 0 then
+                text " Download selected "
+
+              else
+                text " Download all"
+            ]
+        ]
 
 
 viewActionList : Model -> Html Msg
@@ -962,20 +1049,12 @@ viewActionList model =
             Maybe.withDefault "/" (currRoot model)
     in
     div [ class "toolbar" ]
-        [ p [ class "text-muted", id "select-label" ] [ text (labelSelectedItems model nSelected) ]
+        [ p
+            [ class "text-muted", id "select-label" ]
+            [ labelSelectedItems model nSelected ]
         , br [] []
         , Upload.buildButton model.uploadState (currIsFile model) root UploadMsg
-        , Button.linkButton
-            [ Button.block
-            , Button.attrs
-                [ class "text-left btn-link"
-                , disabledClass
-                , href ("/get" ++ Util.urlToPath model.url ++ "?direct=yes")
-                ]
-            ]
-            [ span [ class "fas fa-lg fa-file-download" ] []
-            , span [ id "action-btn" ] [ text " Download all" ]
-            ]
+        , viewSidebarDownloadButton model
         , ButtonGroup.toolbar [ class "btn-group-vertical" ]
             [ ButtonGroup.buttonGroupItem
                 [ ButtonGroup.small

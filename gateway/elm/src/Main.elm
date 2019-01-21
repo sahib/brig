@@ -187,7 +187,7 @@ viewFromUrl url =
             ViewNotFound
 
         Just first ->
-            case Debug.log "FIrST" first of
+            case first of
                 "view" ->
                     ViewList
 
@@ -202,6 +202,9 @@ viewFromUrl url =
 
                 "settings" ->
                     ViewSettings
+
+                "" ->
+                    ViewList
 
                 _ ->
                     ViewNotFound
@@ -615,30 +618,39 @@ viewLoginForm model =
 
 viewSidebarItems : Model -> ViewState -> Html Msg
 viewSidebarItems model viewState =
+    let
+        isActiveClass =
+            \v ->
+                if v == viewState.currentView then
+                    class "nav-link active"
+
+                else
+                    class "nav-link"
+    in
     ul [ class "flex-column navbar-nav w-100 text-left" ]
         [ li [ class "nav-item" ]
-            [ a [ class "nav-link active", href (viewToString ViewList) ]
+            [ a [ isActiveClass ViewList, href (viewToString ViewList) ]
                 [ span [] [ text "Files" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href (viewToString ViewCommits) ]
-                [ span [ class "text-muted" ] [ text "Commit Log" ] ]
+            [ a [ isActiveClass ViewCommits, href (viewToString ViewCommits) ]
+                [ span [] [ text "Commit Log" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href (viewToString ViewRemotes) ]
-                [ span [ class "text-muted" ] [ text "Remotes" ] ]
+            [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
+                [ span [] [ text "Remotes" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href (viewToString ViewDeletedFiles) ]
-                [ span [ class "text-muted" ] [ text "Deleted files" ] ]
+            [ a [ isActiveClass ViewDeletedFiles, href (viewToString ViewDeletedFiles) ]
+                [ span [] [ text "Deleted files" ] ]
             ]
         , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href (viewToString ViewSettings) ]
-                [ span [ class "text-muted" ] [ text "Settings" ] ]
+            [ a [ isActiveClass ViewSettings, href (viewToString ViewSettings) ]
+                [ span [] [ text "Settings" ] ]
             ]
         , li [ class "nav-item" ]
             [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
-                [ span [ class "text-muted" ] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
+                [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
             ]
         ]
 
