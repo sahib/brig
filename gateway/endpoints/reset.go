@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -44,18 +45,19 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: Is that a problem when the "new" path (after reset)
 	// lies in a forbidden zone? It would be at least confusing for the user.
 
+	log.Debugf("reset %s to %s", resetReq.Path, resetReq.Revision)
 	if err := rh.fs.Reset(resetReq.Path, resetReq.Revision); err != nil {
 		log.Debugf("failed to reset %s to %s: %v", resetReq.Path, resetReq.Revision, err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to reset")
 		return
 	}
 
-	if err := rh.fs.MakeCommit("reset of '%s' to '%s' via gateway"); err != nil {
-		log.Debugf("failed to make commit: %v", err)
-		jsonifyErrf(w, http.StatusInternalServerError, "failed to commit after reset")
-		return
-	}
+	msg := fmt.Sprintf(
+		"reverted »%s« to »%s«",
+		resetReq.Path,
+		resetReq.Revision,
+	)
 
-	rh.evHdl.Notify(r.Context(), "fs")
+	rh.commitChange(msg, w, r)
 	jsonifySuccess(w)
 }

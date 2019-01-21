@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 
@@ -32,6 +33,8 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Remove the cached files in /tmp
 	defer r.MultipartForm.RemoveAll()
 
+	paths := []string{}
+
 	for _, headers := range r.MultipartForm.File {
 		for _, header := range headers {
 			path := path.Join(root, header.Filename)
@@ -54,10 +57,19 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			paths = append(paths, path)
 			fd.Close()
 		}
 	}
 
-	uh.evHdl.Notify(r.Context(), "fs")
+	if len(paths) > 0 {
+		msg := fmt.Sprintf("uploaded »%s«", paths[0])
+		if len(paths) > 1 {
+			msg += fmt.Sprintf(" and %d more", len(paths)-1)
+		}
+
+		uh.commitChange(msg, w, r)
+	}
+
 	jsonifySuccess(w)
 }

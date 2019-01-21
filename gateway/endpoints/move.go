@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
@@ -48,6 +49,7 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mh.evHdl.Notify(r.Context(), "fs")
+	msg := fmt.Sprintf("moved »%s« to »%s« via gateway", moveReq.Source, moveReq.Destination)
+	mh.commitChange(msg, w, r)
 	jsonifySuccess(w)
 }

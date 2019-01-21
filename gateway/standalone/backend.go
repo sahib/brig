@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
 )
@@ -70,7 +71,11 @@ func (tb *TmpFsBackend) Pin(hash h.Hash) error {
 // Unpin implements FsBackend.Unpin by removing a marker in memory.
 func (tb *TmpFsBackend) Unpin(hash h.Hash) error {
 	path := filepath.Join(tb.root, hash.B58String()+"-pin")
-	return os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		log.Debugf("unpin failed: %v", err)
+	}
+
+	return nil
 }
 
 // IsPinned implements FsBackend.IsPinned by querying a marker in memory.

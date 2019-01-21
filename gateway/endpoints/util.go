@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/sahib/brig/catfs"
+	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/config"
@@ -245,4 +246,20 @@ func jsonifyErrf(w http.ResponseWriter, statusCode int, format string, data ...i
 
 func jsonifySuccess(w http.ResponseWriter) {
 	jsonifyErrf(w, http.StatusOK, "success")
+}
+
+func (s *State) commitChange(msg string, w http.ResponseWriter, r *http.Request) {
+	name := getUserName(s.store, w, r)
+	fullMsg := fmt.Sprintf("gateway: »%s« %s", name, msg)
+
+	if err := s.fs.MakeCommit(fullMsg); err != nil {
+		if err != ie.ErrNoChange {
+			log.Warningf("could not commit: %v", err)
+			jsonifyErrf(w, http.StatusInternalServerError, "could not commit")
+		}
+
+		return
+	}
+
+	s.evHdl.Notify(r.Context(), "fs")
 }

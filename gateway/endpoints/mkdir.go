@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -47,6 +48,7 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mh.evHdl.Notify(r.Context(), "fs")
+	msg := fmt.Sprintf("mkdir'd »%s«", mkdirReq.Path)
+	mh.commitChange(msg, w, r)
 	jsonifySuccess(w)
 }

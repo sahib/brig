@@ -304,3 +304,10 @@ main {
     font-size: 90%;
     width: 100%;
 }
+
+/* remove link border after click */
+a:active, a:focus {
+  outline: 0;
+  border: none;
+  -moz-outline-style: none;
+}

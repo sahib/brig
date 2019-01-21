@@ -139,7 +139,7 @@ encodeResetQuery : ResetQuery -> E.Value
 encodeResetQuery q =
     E.object
         [ ( "path", E.string q.path )
-        , ( "revsision", E.string q.revision )
+        , ( "revision", E.string q.revision )
         ]
 
 

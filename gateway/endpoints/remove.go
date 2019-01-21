@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -42,7 +43,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	hasChanged := false
+	paths := []string{}
 
 	for _, path := range rmReq.Paths {
 		if err := rh.fs.Remove(path); err != nil {
@@ -51,11 +52,16 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hasChanged = true
+		paths = append(paths, path)
 	}
 
-	if hasChanged {
-		rh.evHdl.Notify(r.Context(), "fs")
+	if len(paths) > 0 {
+		msg := fmt.Sprintf("removed »%s«", paths[0])
+		if len(paths) > 1 {
+			msg += fmt.Sprintf(" and %d others", len(paths)-1)
+		}
+
+		rh.commitChange(msg, w, r)
 	}
 
 	jsonifySuccess(w)

@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
@@ -48,6 +49,7 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch.evHdl.Notify(r.Context(), "fs")
+	msg := fmt.Sprintf("copied »%s« to »%s«", copyReq.Source, copyReq.Destination)
+	ch.commitChange(msg, w, r)
 	jsonifySuccess(w)
 }
