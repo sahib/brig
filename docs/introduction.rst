@@ -969,9 +969,27 @@ tells you about its purpose:
 Using the gateway
 -----------------
 
-Many users will not run ``brig``. Chances are, that you still want to send them
-your files without too much hassle. ``brig`` features a *Gateway* to HTTP(S),
-which comes particularly handy if you happen to run a public server.
+Many users will not run ``brig``. Chances are, that you still want to send or
+present them your files without too much hassle. ``brig`` features a *Gateway*
+to HTTP(S), which comes particularly handy if you happen to run a public
+server and/or want to provide a GUI to your users.
+
+.. image:: _static/gateway.png
+    :alt: Beta version of the UI.
+    :width: 66%
+
+Before you do anything, you need to a »user« to your gateway. This user is different
+than remotes and describes what credentials can be used to access the gateway.
+You can add add a new user like this:
+
+.. code-block:: bash
+
+    $ brig gateway user add admin my-password
+    # or shorter:
+    # brig gw u a admin my-password
+    $ brig gateway user list
+    NAME  FOLDERS
+    admin /
 
 The gateway is disabled by default. If you want to start it, use this command:
 
@@ -979,19 +997,12 @@ The gateway is disabled by default. If you want to start it, use this command:
 
     $ brig gateway start
 
+Without further configuration, this will create a HTTP (**not** HTTPS!) server
+on port ``5000``, which can be used already. If you access it under ``http://localhost:5000``
+you will see a login mask where you can log yourself in with the credentials you used earlier.
 
-Without further configuration, this will create a HTTP server on port ``5000``,
-which can be queried already. There is a small helper that will print you a nice
-hyperlink to a certain file called ``brig gateway url``:
-
-.. code-block:: bash
-
-    $ brig gateway url README.md
-    http://localhost:5000/get/README.md
-
-Opening this in your browser will show you the file's content. If you'd like to
-use another port than ``5000``, you can do so by setting the respective config
-key:
+If you'd like to use another port than ``5000``, you can do so by setting the
+respective config key:
 
 .. code-block:: bash
 
@@ -1020,6 +1031,15 @@ serve all open requests, so that no connections are dropped:
     a dedicated server, you can forward port 5000 to your computer. With this
     setup you should also get a certficate which in turn requires a DNS name.
     An easy way to get one is to use dynamic DNS.
+
+There is also a small helper that will print you a nice hyperlink to a certain
+file called ``brig gateway url``:
+
+.. code-block:: bash
+
+    $ brig gateway url README.md
+    http://localhost:5000/get/README.md
+
 
 Securing access
 ~~~~~~~~~~~~~~~
