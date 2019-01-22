@@ -833,3 +833,80 @@ func TestReadOnly(t *testing.T) {
 		require.Equal(t, ErrReadOnly, err)
 	})
 }
+
+func TestDeletedNodes(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Stage("/a", bytes.NewReader([]byte("hello"))))
+		require.Nil(t, fs.Stage("/b", bytes.NewReader([]byte("world"))))
+		require.Nil(t, fs.MakeCommit("initial"))
+
+		require.Nil(t, fs.Remove("/a"))
+		require.Nil(t, fs.Move("/b", "/c"))
+		require.Nil(t, fs.MakeCommit("{re,}move"))
+
+		dels, err := fs.DeletedNodes("/")
+		require.Nil(t, err)
+		require.Len(t, dels, 1)
+		require.Equal(t, "/a", dels[0].Path)
+		require.False(t, dels[0].IsDir)
+	})
+}
+
+// func TestUndeleteNotDeleted(t *testing.T) {
+// func TestUndeleteNotDirectory(t *testing.T) {
+func TestUndeleteFile(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Stage("/a", bytes.NewReader([]byte("hello"))))
+		require.Nil(t, fs.Stage("/b", bytes.NewReader([]byte("world"))))
+		require.Nil(t, fs.MakeCommit("initial"))
+
+		require.Nil(t, fs.Remove("/a"))
+		require.Nil(t, fs.Move("/b", "/c"))
+		require.Nil(t, fs.MakeCommit("{re,}move"))
+
+		require.Nil(t, fs.Undelete("/a"))
+		info, err := fs.Stat("/a")
+		require.Nil(t, err)
+		require.Equal(t, "/a", info.Path)
+
+		// Is this okay? Should it be brought back?
+		require.NotNil(t, fs.Undelete("/b"))
+	})
+}
+
+func TestUndeleteDirectory(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Stage("/dir/a", bytes.NewReader([]byte("hello"))))
+		require.Nil(t, fs.Stage("/dir/sub/b", bytes.NewReader([]byte("world"))))
+		require.Nil(t, fs.Mkdir("/dir/empty", true))
+		require.Nil(t, fs.MakeCommit("initial"))
+
+		require.Nil(t, fs.Remove("/dir"))
+		require.Nil(t, fs.MakeCommit("remove"))
+
+		_, err := fs.Stat("/dir/a")
+		require.True(t, ie.IsNoSuchFileError(err))
+
+		require.Nil(t, fs.Undelete("/dir"))
+		info, err := fs.Stat("/dir")
+		require.Nil(t, err)
+		require.Equal(t, "/dir", info.Path)
+
+		entries, err := fs.List("/dir", -1)
+		require.Nil(t, err)
+		require.Equal(t, 5, len(entries))
+
+		paths := []string{}
+		for _, entry := range entries {
+			paths = append(paths, entry.Path)
+		}
+
+		require.Equal(t, []string{
+			"/dir",
+			"/dir/a",
+			"/dir/empty",
+			"/dir/sub",
+			"/dir/sub/b",
+		}, paths)
+	})
+}

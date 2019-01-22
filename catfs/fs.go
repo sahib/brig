@@ -1259,6 +1259,82 @@ func (fs *FS) MakeCommit(msg string) error {
 	return fs.lkr.MakeCommit(owner, msg)
 }
 
+func (fs *FS) isMove(nd n.ModNode) (bool, error) {
+	cmt, err := fs.lkr.Status()
+	if err != nil {
+		return false, err
+	}
+
+	walker := vcs.NewHistoryWalker(fs.lkr, cmt, nd)
+	for walker.Next() {
+		state := walker.State()
+		if state.Mask == vcs.ChangeTypeNone {
+			continue
+		}
+
+		if state.Mask&vcs.ChangeTypeMove != 0 {
+			return true, nil
+		}
+
+		return false, nil
+	}
+
+	return false, nil
+}
+
+// DeletedNodes returns all nodes under `root` that were deleted.
+// This does not include files that were moved. Note that you
+// cannot pass the paths of those files to methods like Cat(),
+// since they will refuse to work on deleted files.
+func (fs *FS) DeletedNodes(root string) ([]*StatInfo, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	rootNd, err := fs.lkr.LookupNode(root)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := []*StatInfo{}
+	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
+		if child.Type() != n.NodeTypeGhost {
+			return nil
+		}
+
+		modNd, ok := child.(n.ModNode)
+		if !ok {
+			return ie.ErrBadNode
+		}
+
+		isMove, err := fs.isMove(modNd)
+		if err != nil {
+			return err
+		}
+
+		if !isMove {
+			nodes = append(nodes, fs.nodeToStat(modNd))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
+}
+
+// Undelete tries to recover a file or directory that was previously deleted.
+// This will fail when being called on a regular file or directory.
+// You can obtain deleted paths by using DeletedNodes()
+func (fs *FS) Undelete(root string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	return vcs.Undelete(fs.lkr, root)
+}
+
 // Head translates the "head" symbol to a ref.
 func (fs *FS) Head() (string, error) {
 	fs.mu.Lock()

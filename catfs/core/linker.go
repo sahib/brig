@@ -497,7 +497,7 @@ func (lkr *Linker) MakeCommit(author string, message string) error {
 		case nil:
 			return false, nil
 		default:
-			return true, nil
+			return true, err
 		}
 	})
 }
@@ -1729,7 +1729,7 @@ func (lkr *Linker) AtomicWithBatch(fn func(batch db.Batch) (bool, error)) (err e
 	}()
 
 	needRollback, err := fn(batch)
-	if needRollback {
+	if needRollback && err != nil {
 		hadWrites := batch.HaveWrites()
 		batch.Rollback()
 

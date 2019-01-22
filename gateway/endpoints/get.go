@@ -138,7 +138,6 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			log.Debugf("fitlered %s", info.Path)
 			return false
 		}
 
