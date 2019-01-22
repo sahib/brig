@@ -600,17 +600,8 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 		return err
 	}
 
-	// Clear the staging area.
-	toClear := [][]string{
-		{"stage", "objects"},
-		{"stage", "tree"},
-		{"stage", "moves"},
-	}
-
-	for _, key := range toClear {
-		if err := batch.Clear(key...); err != nil {
-			return err
-		}
+	if err := lkr.clearStage(batch); err != nil {
+		return err
 	}
 
 	newStatus, err := n.NewEmptyCommit(lkr.NextInode(), status.Index()+1)
@@ -624,6 +615,23 @@ func (lkr *Linker) makeCommit(batch db.Batch, author string, message string) err
 	}
 
 	return lkr.saveStatus(newStatus)
+}
+
+func (lkr *Linker) clearStage(batch db.Batch) error {
+	// Clear the staging area.
+	toClear := [][]string{
+		{"stage", "objects"},
+		{"stage", "tree"},
+		{"stage", "moves"},
+	}
+
+	for _, key := range toClear {
+		if err := batch.Clear(key...); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 ///////////////////////

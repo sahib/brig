@@ -13,7 +13,6 @@ import (
 
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
-	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
@@ -46,17 +45,16 @@ func withState(t *testing.T, fn func(state *testState)) {
 	)
 	require.Nil(t, err)
 
-	userDb, err := db.NewUserDatabase(filepath.Join(tmpDir, "user"))
+	dbPath := filepath.Join(tmpDir, "user")
+	state, err := NewState(fs, cfg.Section("gateway"), NewEventsHandler(), dbPath)
 	require.Nil(t, err)
-	require.Nil(t, userDb.Add("ali", "ila", nil))
 
-	state, err := NewState(fs, cfg.Section("gateway"), NewEventsHandler(), userDb)
-	require.Nil(t, err)
+	state.UserDatabase().Add("ali", "ila", nil)
 
 	fn(&testState{state})
 
 	require.Nil(t, state.fs.Close())
-	require.Nil(t, state.userDb.Close())
+	require.Nil(t, state.Close())
 }
 
 func mustEncodeBody(t *testing.T, v interface{}) io.Reader {

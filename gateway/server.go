@@ -38,7 +38,6 @@ type Gateway struct {
 	isClosed    bool
 	isReloading bool
 	state       *endpoints.State
-	userDb      *db.UserDatabase
 	evHdl       *endpoints.EventsHandler
 
 	srv      *http.Server
@@ -48,20 +47,14 @@ type Gateway struct {
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
 func NewGateway(fs *catfs.FS, cfg *config.Config, dbPath string) (*Gateway, error) {
-	userDb, err := db.NewUserDatabase(dbPath)
-	if err != nil {
-		return nil, err
-	}
-
 	evHdl := endpoints.NewEventsHandler()
-	state, err := endpoints.NewState(fs, cfg, evHdl, userDb)
+	state, err := endpoints.NewState(fs, cfg, evHdl, dbPath)
 	if err != nil {
 		return nil, err
 	}
 
 	gw := &Gateway{
 		state:    state,
-		userDb:   userDb,
 		isClosed: true,
 		cfg:      cfg,
 		evHdl:    evHdl,
@@ -83,6 +76,12 @@ func NewGateway(fs *catfs.FS, cfg *config.Config, dbPath string) (*Gateway, erro
 			return
 		}
 
+		state, err := endpoints.NewState(fs, cfg, evHdl, dbPath)
+		if err != nil {
+			log.Errorf("failed to re-create state: %v", err)
+		}
+
+		gw.state = state
 		gw.Start()
 	}
 
@@ -285,7 +284,7 @@ func (gw *Gateway) Start() {
 
 // UserDatabase returns the user database API.
 func (gw *Gateway) UserDatabase() *db.UserDatabase {
-	return gw.userDb
+	return gw.state.UserDatabase()
 }
 
 // SetEventListener sets the event listener, if any.

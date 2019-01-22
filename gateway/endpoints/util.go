@@ -48,7 +48,7 @@ func NewState(
 	fs *catfs.FS,
 	cfg *config.Config,
 	evHdl *EventsHandler,
-	userDb *db.UserDatabase,
+	dbPath string,
 ) (*State, error) {
 	authKey, err := readOrInitKeyFromConfig(cfg, "auth.session-authentication-key", 64)
 	if err != nil {
@@ -66,6 +66,11 @@ func NewState(
 		return nil, err
 	}
 
+	userDb, err := db.NewUserDatabase(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
 	return &State{
 		fs:     fs,
 		cfg:    cfg,
@@ -79,6 +84,11 @@ func NewState(
 func (s *State) Close() error {
 	s.evHdl.Shutdown()
 	return s.userDb.Close()
+}
+
+// UserDatabase returns the currently opened user database.
+func (s *State) UserDatabase() *db.UserDatabase {
+	return s.userDb
 }
 
 // SetEventListener sets the event listener.
