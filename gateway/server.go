@@ -188,6 +188,7 @@ func (gw *Gateway) Start() {
 	// Use csrf protection for all routes by default.
 	// This does not influence GET routes, only POST ones:
 	router := mux.NewRouter()
+	router.Use(endpoints.SecureMiddleware(gw.state))
 	needsAuth := endpoints.AuthMiddleware(gw.state)
 
 	if uiEnabled {
@@ -208,6 +209,9 @@ func (gw *Gateway) Start() {
 		apiRouter.Handle("/history", needsAuth(endpoints.NewHistoryHandler(gw.state)))
 		apiRouter.Handle("/reset", needsAuth(endpoints.NewResetHandler(gw.state)))
 		apiRouter.Handle("/all-dirs", needsAuth(endpoints.NewAllDirsHandler(gw.state)))
+		apiRouter.Handle("/log", needsAuth(endpoints.NewLogHandler(gw.state)))
+		apiRouter.Handle("/deleted", needsAuth(endpoints.NewDeletedPathsHandler(gw.state)))
+		apiRouter.Handle("/undelete", needsAuth(endpoints.NewUndeleteHandler(gw.state)))
 	}
 
 	// Add the /get endpoint. Since it might contain any path, we have to

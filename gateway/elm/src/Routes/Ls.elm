@@ -805,8 +805,8 @@ entryToHtml model zone e =
         ]
 
 
-buildSortControl : ActualModel -> SortKey -> Html Msg
-buildSortControl model key =
+buildSortControl : String -> ActualModel -> SortKey -> Html Msg
+buildSortControl name model key =
     let
         ascClass =
             if ( Ascending, key ) == model.sortState then
@@ -822,20 +822,23 @@ buildSortControl model key =
             else
                 ""
     in
-    span [ class "sort-button-container" ]
-        [ Button.linkButton
-            [ Button.small
-            , Button.attrs [ onClick (SortBy Ascending key), class "sort-button" ]
+    span [ class "sort-button-container text-muted" ]
+        [ span [] [ text (name ++ " ") ]
+        , span [ class "sort-button" ]
+            [ Button.linkButton
+                [ Button.small
+                , Button.attrs [ onClick (SortBy Ascending key), class "sort-button" ]
+                ]
+                [ span
+                    [ class "fas fa-xs fa-arrow-up", class ascClass ]
+                    []
+                ]
+            , Button.linkButton
+                [ Button.small
+                , Button.attrs [ onClick (SortBy Descending key), class "sort-button" ]
+                ]
+                [ span [ class "fas fa-xs fa-arrow-down", class descClass ] [] ]
             ]
-            [ span
-                [ class "fas fa-xs fa-arrow-up", class ascClass ]
-                []
-            ]
-        , Button.linkButton
-            [ Button.small
-            , Button.attrs [ onClick (SortBy Descending key), class "sort-button" ]
-            ]
-            [ span [ class "fas fa-xs fa-arrow-down", class descClass ] [] ]
         ]
 
 
@@ -849,35 +852,15 @@ entriesToHtml zone model =
                     [ makeCheckbox (readCheckedState model "") CheckboxTickAll
                     ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
-                    [ span
-                        [ class "icon-column"
-                        ]
-                        [ text "" ]
-                    ]
+                    [ text "" ]
                 , Table.th [ Table.cellAttr (style "width" "45%") ]
-                    [ span
-                        [ class "text-muted"
-                        ]
-                        [ text "Name", buildSortControl model Name ]
-                    ]
+                    [ buildSortControl "Name" model Name ]
                 , Table.th [ Table.cellAttr (style "width" "30%") ]
-                    [ span
-                        [ class "text-muted"
-                        ]
-                        [ text "Modified", buildSortControl model ModTime ]
-                    ]
+                    [ buildSortControl "Modified" model ModTime ]
                 , Table.th [ Table.cellAttr (style "width" "10%") ]
-                    [ span
-                        [ class "text-muted"
-                        ]
-                        [ text "Size", buildSortControl model Size ]
-                    ]
+                    [ buildSortControl "Size" model Size ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
-                    [ span
-                        [ class "text-muted"
-                        ]
-                        [ text "" ]
-                    ]
+                    [ text "" ]
                 ]
         , tbody =
             Table.tbody []

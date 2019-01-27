@@ -62,7 +62,7 @@ type LsResponse struct {
 	IsFiltered bool        `json:"is_filtered"`
 }
 
-func doQuery(fs *catfs.FS, req *LsRequest) ([]*catfs.StatInfo, error) {
+func doQuery(fs *catfs.FS, req LsRequest) ([]*catfs.StatInfo, error) {
 	if req.Filter == "" {
 		return fs.List(req.Root, 1)
 	}
@@ -71,7 +71,7 @@ func doQuery(fs *catfs.FS, req *LsRequest) ([]*catfs.StatInfo, error) {
 }
 
 func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	lsReq := &LsRequest{}
+	lsReq := LsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&lsReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

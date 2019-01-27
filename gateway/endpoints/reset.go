@@ -23,10 +23,11 @@ func NewResetHandler(s *State) *ResetHandler {
 type ResetRequest struct {
 	Path     string `json:"path"`
 	Revision string `json:"revision"`
+	Force    bool   `json:"force"`
 }
 
 func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resetReq := &ResetRequest{}
+	resetReq := ResetRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&resetReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

@@ -68,7 +68,7 @@ func main() {
 	cfg.SetBool("gateway.enabled", true)
 	cfg.SetBool("gateway.ui.enabled", true)
 	cfg.SetBool("gateway.ui.debug_mode", true)
-	cfg.SetInt("gateway.port", 5000)
+	cfg.SetInt("gateway.port", 5001)
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
 	cfg.SetBool("gateway.auth.enabled", true)

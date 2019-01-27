@@ -49,6 +49,7 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/vcs/capnp/patch.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo catfs/capnp/pinner.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo events/capnp/events_api.capnp
+	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo gateway/db/capnp/user.capnp
 
 install:
 ifneq ("$(wildcard brig)","")

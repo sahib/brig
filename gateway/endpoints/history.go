@@ -70,7 +70,7 @@ func toExternalChange(c catfs.Change) HistoryEntry {
 }
 
 func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	histReq := &HistoryRequest{}
+	histReq := HistoryRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&histReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

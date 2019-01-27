@@ -555,3 +555,5 @@ func (fh *fsHandler) SetExplicitPins(call capnp.FS_setExplicitPins) error {
 		return nil
 	})
 }
+
+// TODO: Implement deleted and undelete ops.

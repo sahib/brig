@@ -157,7 +157,18 @@ view model url existChecker =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text ("Create a new directory in " ++ path) ]
+        |> Modal.h5 []
+            [ text "Create a new directory in "
+            , span [ class "text-muted" ]
+                [ text
+                    (if path == "/" then
+                        "Home"
+
+                     else
+                        path
+                    )
+                ]
+            ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row [] (viewMkdirContent model) ]

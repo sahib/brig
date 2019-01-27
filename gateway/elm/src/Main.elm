@@ -160,22 +160,24 @@ withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
 
 doInitAfterLogin : Model -> String -> ( Model, Cmd Msg )
 doInitAfterLogin model loginName =
-    ( { model
-        | loginState =
-            LoginSuccess
-                { listState = Ls.newModel model.key model.url
-                , commitsState = Commits.newModel model.key model.zone
-                , deletedFilesState = DeletedFiles.newModel model.key model.zone
-                , notFoundState = NotFound.newModel model.key model.zone
-                , remoteState = Remotes.newModel model.key model.zone
-                , settingsState = Settings.newModel model.key model.zone
-                , loginName = loginName
-                , currentView = viewFromUrl model.url
-                }
-      }
+    let
+        newViewState =
+            { listState = Ls.newModel model.key model.url
+            , commitsState = Commits.newModel model.key model.zone
+            , deletedFilesState = DeletedFiles.newModel model.key model.zone
+            , notFoundState = NotFound.newModel model.key model.zone
+            , remoteState = Remotes.newModel model.key model.zone
+            , settingsState = Settings.newModel model.key model.zone
+            , loginName = loginName
+            , currentView = viewFromUrl model.url
+            }
+    in
+    ( { model | loginState = LoginSuccess newViewState }
     , Cmd.batch
         [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
         , Websocket.open ()
+        , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
+        , Cmd.map CommitsMsg <| Commits.reload
         ]
     )
 
@@ -335,7 +337,19 @@ update msg model =
                                             | currentView = ViewCommits
                                         }
                               }
-                            , Cmd.none
+                            , Cmd.map CommitsMsg <| Commits.reload
+                            )
+
+                        ViewDeletedFiles ->
+                            ( { model
+                                | url = url
+                                , loginState =
+                                    LoginSuccess
+                                        { viewState
+                                            | currentView = ViewDeletedFiles
+                                        }
+                              }
+                            , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
                             )
 
                         other ->
@@ -397,7 +411,13 @@ update msg model =
             -- Currently we know only one event that is being sent
             -- over the websocket. It means "update the list, something changed". Change
             -- this once we have more events.
-            ( model, Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url )
+            ( model
+            , Cmd.batch
+                [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
+                , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
+                , Cmd.map CommitsMsg <| Commits.reload
+                ]
+            )
 
         ListMsg subMsg ->
             withSubUpdate
@@ -499,7 +519,7 @@ viewMainContent model viewState =
                     ]
                 , viewSidebarBottom model
                 ]
-            , main_ [ class "col bg-faded py-3" ]
+            , main_ [ class "col" ]
                 [ viewCurrentRoute model viewState
                 , Html.map ListMsg (Ls.buildModals viewState.listState)
                 ]
@@ -634,20 +654,22 @@ viewSidebarItems model viewState =
             ]
         , li [ class "nav-item" ]
             [ a [ isActiveClass ViewCommits, href (viewToString ViewCommits) ]
-                [ span [] [ text "Commit Log" ] ]
+                [ span [] [ text "Changelog" ] ]
             ]
-        , li [ class "nav-item" ]
-            [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
-                [ span [] [ text "Remotes" ] ]
-            ]
+
+        -- , li [ class "nav-item" ]
+        --     [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
+        --         [ span [] [ text "Remotes" ] ]
+        --     ]
         , li [ class "nav-item" ]
             [ a [ isActiveClass ViewDeletedFiles, href (viewToString ViewDeletedFiles) ]
-                [ span [] [ text "Deleted files" ] ]
+                [ span [] [ text "Trashbin" ] ]
             ]
-        , li [ class "nav-item" ]
-            [ a [ isActiveClass ViewSettings, href (viewToString ViewSettings) ]
-                [ span [] [ text "Settings" ] ]
-            ]
+
+        -- , li [ class "nav-item" ]
+        --     [ a [ isActiveClass ViewSettings, href (viewToString ViewSettings) ]
+        --         [ span [] [ text "Settings" ] ]
+        --     ]
         , li [ class "nav-item" ]
             [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
                 [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]

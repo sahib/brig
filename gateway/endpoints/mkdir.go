@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -26,14 +25,9 @@ type MkdirRequest struct {
 }
 
 func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mkdirReq := &MkdirRequest{}
+	mkdirReq := MkdirRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&mkdirReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
-		return
-	}
-
-	if !strings.HasPrefix(mkdirReq.Path, "/") {
-		jsonifyErrf(w, http.StatusBadRequest, "absolute path needs to start with /")
 		return
 	}
 

@@ -97,7 +97,7 @@ type LoginResponse struct {
 }
 
 func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	loginReq := &LoginRequest{}
+	loginReq := LoginRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

@@ -185,6 +185,10 @@ func (s *State) pathIsVisible(nodePath string, w http.ResponseWriter, r *http.Re
 }
 
 func (s *State) validatePath(nodePath string, w http.ResponseWriter, r *http.Request) bool {
+	if !strings.HasPrefix(nodePath, "/") {
+		return false
+	}
+
 	name := getUserName(s.store, w, r)
 	if name == "" {
 		return false
@@ -272,4 +276,45 @@ func (s *State) commitChange(msg string, w http.ResponseWriter, r *http.Request)
 	}
 
 	s.evHdl.Notify(r.Context(), "fs")
+}
+
+///////
+
+type secureMiddleware struct {
+	*State
+	SubHandler http.Handler
+}
+
+func (sm *secureMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	hdr := w.Header()
+
+	// Do not let browsers guess the content type:
+	// https://en.wikipedia.org/wiki/Content_sniffing
+	hdr.Set("X-Content-Type-Options", "nosniff")
+
+	// https://security.stackexchange.com/questions/121796/what-security-implications-does-dns-prefetching-have
+	hdr.Set("X-DNS-Prefetch-Control", "off")
+
+	// Do not allow <iframe> of our website embedded in other sites.
+	// This could be changed if we see a valid use case for this.
+	hdr.Set("X-Frame-Options", "DENY")
+
+	// https://en.wikipedia.org/wiki/Content_sniffing
+	hdr.Set("Strict-Transport-Security", "max-age=5184000; includeSubDomains")
+
+	// Prevents Internet Explorer from executing downloads in site's context
+	hdr.Set("X-Download-Options", "noopen")
+
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+	hdr.Set("X-XSS-Protection", "1; mode=block")
+
+	sm.SubHandler.ServeHTTP(w, r)
+}
+
+// SecureMiddleware sets some security related headers suitable for all
+// endpoints that are supposed to protect users from some browser quirks.
+func SecureMiddleware(s *State) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return &secureMiddleware{State: s, SubHandler: h}
+	}
 }

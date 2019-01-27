@@ -1,18 +1,22 @@
 module Commands exposing
-    ( Entry
+    ( Commit
+    , Entry
     , HistoryEntry
     , ListResponse
     , WhoamiResponse
     , doCopy
+    , doDeletedFiles
     , doHistory
     , doListAllDirs
     , doListQuery
+    , doLog
     , doLogin
     , doLogout
     , doMkdir
     , doMove
     , doRemove
     , doReset
+    , doUndelete
     , doUpload
     , doWhoami
     )
@@ -132,6 +136,7 @@ doHistory toMsg path =
 type alias ResetQuery =
     { path : String
     , revision : String
+    , force : Bool
     }
 
 
@@ -152,7 +157,7 @@ doReset : (Result Http.Error String -> msg) -> String -> String -> Cmd msg
 doReset toMsg path revision =
     Http.post
         { url = "/api/v0/reset"
-        , body = Http.jsonBody <| encodeResetQuery <| ResetQuery path revision
+        , body = Http.jsonBody <| encodeResetQuery <| ResetQuery path revision True
         , expect = Http.expectJson toMsg decodeResetQuery
         }
 
@@ -281,13 +286,13 @@ encodeListResponse q =
 decodeListResponse : D.Decoder ListResponse
 decodeListResponse =
     D.map3 ListResponse
-        (D.field "self" decodeListEntry)
+        (D.field "self" decodeEntry)
         (D.field "is_filtered" D.bool)
-        (D.field "files" (D.list decodeListEntry))
+        (D.field "files" (D.list decodeEntry))
 
 
-decodeListEntry : D.Decoder Entry
-decodeListEntry =
+decodeEntry : D.Decoder Entry
+decodeEntry =
     D.succeed (Entry Dropdown.initialState)
         |> DP.required "path" D.string
         |> DP.required "user" D.string
@@ -423,4 +428,69 @@ doWhoami msg =
         { url = "/api/v0/whoami"
         , body = Http.emptyBody
         , expect = Http.expectJson msg decodeWhoami
+        }
+
+
+
+-- LOG
+
+
+decodeLog : D.Decoder (List Commit)
+decodeLog =
+    D.field "commits" (D.list decodeCommit)
+
+
+doLog : (Result Http.Error (List Commit) -> msg) -> Cmd msg
+doLog msg =
+    Http.post
+        { url = "/api/v0/log"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg decodeLog
+        }
+
+
+
+-- DELETED FILES
+
+
+decodeDeletedFiles : D.Decoder (List Entry)
+decodeDeletedFiles =
+    D.field "entries" (D.list decodeEntry)
+
+
+doDeletedFiles : (Result Http.Error (List Entry) -> msg) -> Cmd msg
+doDeletedFiles msg =
+    Http.post
+        { url = "/api/v0/deleted"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg decodeDeletedFiles
+        }
+
+
+
+-- UNDELETE
+
+
+type alias UndeleteQuery =
+    { path : String
+    }
+
+
+encodeUndeleteQuery : UndeleteQuery -> E.Value
+encodeUndeleteQuery q =
+    E.object
+        [ ( "path", E.string q.path ) ]
+
+
+decodeUndeleteResponse : D.Decoder String
+decodeUndeleteResponse =
+    D.field "message" D.string
+
+
+doUndelete : (Result Http.Error String -> msg) -> String -> Cmd msg
+doUndelete toMsg path =
+    Http.post
+        { url = "/api/v0/undelete"
+        , body = Http.jsonBody <| encodeUndeleteQuery <| UndeleteQuery path
+        , expect = Http.expectJson toMsg decodeUndeleteResponse
         }

@@ -200,11 +200,22 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
 
+	isDir := false
+	switch nd.Type() {
+	case n.NodeTypeDirectory:
+		isDir = true
+	case n.NodeTypeGhost:
+		ghost, ok := nd.(*n.Ghost)
+		if ok {
+			isDir = (ghost.OldNode().Type() == n.NodeTypeDirectory)
+		}
+	}
+
 	return &StatInfo{
 		Path:        nd.Path(),
 		User:        nd.User(),
 		ModTime:     nd.ModTime(),
-		IsDir:       nd.Type() == n.NodeTypeDirectory,
+		IsDir:       isDir,
 		Inode:       nd.Inode(),
 		Size:        nd.Size(),
 		Depth:       n.Depth(nd),

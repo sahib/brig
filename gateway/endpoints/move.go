@@ -27,7 +27,7 @@ type MoveRequest struct {
 }
 
 func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	moveReq := &MoveRequest{}
+	moveReq := MoveRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&moveReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

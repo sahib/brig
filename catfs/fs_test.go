@@ -834,11 +834,30 @@ func TestReadOnly(t *testing.T) {
 	})
 }
 
-func TestDeletedNodes(t *testing.T) {
+func TestDeletedNodesDirectory(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Mkdir("/dir_a", true))
+		require.Nil(t, fs.Mkdir("/dir_b", true))
+		require.Nil(t, fs.MakeCommit("added"))
+
+		require.Nil(t, fs.Remove("/dir_a"))
+		require.Nil(t, fs.Move("/dir_b", "/dir_c"))
+		require.Nil(t, fs.MakeCommit("{re,}move"))
+
+		dels, err := fs.DeletedNodes("/")
+		require.Nil(t, err)
+		require.Len(t, dels, 1)
+		require.Equal(t, "/dir_a", dels[0].Path)
+		require.True(t, dels[0].IsDir)
+	})
+}
+
+func TestDeletedNodesFile(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+
 		require.Nil(t, fs.Stage("/a", bytes.NewReader([]byte("hello"))))
 		require.Nil(t, fs.Stage("/b", bytes.NewReader([]byte("world"))))
-		require.Nil(t, fs.MakeCommit("initial"))
+		require.Nil(t, fs.MakeCommit("added"))
 
 		require.Nil(t, fs.Remove("/a"))
 		require.Nil(t, fs.Move("/b", "/c"))
@@ -852,8 +871,6 @@ func TestDeletedNodes(t *testing.T) {
 	})
 }
 
-// func TestUndeleteNotDeleted(t *testing.T) {
-// func TestUndeleteNotDirectory(t *testing.T) {
 func TestUndeleteFile(t *testing.T) {
 	withDummyFS(t, func(fs *FS) {
 		require.Nil(t, fs.Stage("/a", bytes.NewReader([]byte("hello"))))
@@ -868,8 +885,15 @@ func TestUndeleteFile(t *testing.T) {
 		info, err := fs.Stat("/a")
 		require.Nil(t, err)
 		require.Equal(t, "/a", info.Path)
+		require.False(t, info.IsDir)
 
-		// Is this okay? Should it be brought back?
+		stream, err := fs.Cat("/a")
+		require.Nil(t, err)
+		data, err := ioutil.ReadAll(stream)
+		require.Nil(t, err)
+		require.Equal(t, []byte("hello"), data)
+
+		// This file was moved -> Don't bring it back.
 		require.NotNil(t, fs.Undelete("/b"))
 	})
 }
@@ -891,6 +915,7 @@ func TestUndeleteDirectory(t *testing.T) {
 		info, err := fs.Stat("/dir")
 		require.Nil(t, err)
 		require.Equal(t, "/dir", info.Path)
+		require.True(t, info.IsDir)
 
 		entries, err := fs.List("/dir", -1)
 		require.Nil(t, err)

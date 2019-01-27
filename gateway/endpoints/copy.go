@@ -27,7 +27,7 @@ type CopyRequest struct {
 }
 
 func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	copyReq := &CopyRequest{}
+	copyReq := CopyRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&copyReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return

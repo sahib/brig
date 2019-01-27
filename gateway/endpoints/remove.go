@@ -25,7 +25,7 @@ type RemoveRequest struct {
 }
 
 func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rmReq := &RemoveRequest{}
+	rmReq := RemoveRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rmReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return
