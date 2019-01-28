@@ -628,3 +628,25 @@ func handlePinSet(ctx *cli.Context, ctl *client.Client) error {
 	fmt.Printf("Pinned %d %s.\n", count, what)
 	return nil
 }
+
+func handleTrashList(ctx *cli.Context, ctl *client.Client) error {
+	root := "/"
+	if firstArg := ctx.Args().First(); firstArg != "" {
+		root = firstArg
+	}
+
+	nodes, err := ctl.DeletedNodes(root)
+	if err != nil {
+		return err
+	}
+
+	for _, node := range nodes {
+		fmt.Println(node.Path)
+	}
+
+	return nil
+}
+
+func handleTrashRemove(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.Undelete(ctx.Args().First())
+}

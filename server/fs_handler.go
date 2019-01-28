@@ -556,4 +556,49 @@ func (fh *fsHandler) SetExplicitPins(call capnp.FS_setExplicitPins) error {
 	})
 }
 
-// TODO: Implement deleted and undelete ops.
+func (fh *fsHandler) Undelete(call capnp.FS_undelete) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		return fs.Undelete(path)
+	})
+}
+
+func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
+	root, err := call.Params.Root()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		nodes, err := fs.DeletedNodes(root)
+		if err != nil {
+			return err
+		}
+
+		lst, err := capnp.NewStatInfo_List(
+			call.Results.Segment(),
+			int32(len(nodes)),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		for idx, node := range nodes {
+			capEntry, err := statToCapnp(node, call.Results.Segment())
+			if err != nil {
+				return err
+			}
+
+			if err := lst.Set(idx, *capEntry); err != nil {
+				return err
+			}
+		}
+
+		return call.Results.SetNodes(lst)
+	})
+}

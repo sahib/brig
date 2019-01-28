@@ -374,6 +374,23 @@ func RunCmdline(args []string) int {
 				},
 			},
 		}, {
+			Name:     "trash",
+			Aliases:  []string{"tr"},
+			Category: repoGroup,
+			Action:   handleTrashList,
+			Subcommands: []cli.Command{
+				{
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(handleTrashList, true),
+				},
+				{
+					Name:    "remove",
+					Aliases: []string{"rm"},
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleTrashRemove, true)),
+				},
+			},
+		}, {
 			Name:     "gateway",
 			Aliases:  []string{"gw"},
 			Category: repoGroup,

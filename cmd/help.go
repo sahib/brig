@@ -1024,6 +1024,15 @@ CAVEATS
 	"docs": {
 		Usage: "Open the online documentation in webbrowser.",
 	},
+	"trash": {
+		Usage: "Control the trash bin contents.",
+	},
+	"trash.list": {
+		Usage: "List all items in the trash bin.",
+	},
+	"trash.remove": {
+		Usage: "Remove an item from the trash bin.",
+	},
 	"gateway": {
 		Usage: "Control the HTTP/S gateway service.",
 	},

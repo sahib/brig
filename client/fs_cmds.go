@@ -103,6 +103,10 @@ func (cl *Client) List(root string, maxDepth int) ([]StatInfo, error) {
 
 	results := []StatInfo{}
 	statList, err := result.Entries()
+	if err != nil {
+		return nil, err
+	}
+
 	for idx := 0; idx < statList.Len(); idx++ {
 		capInfo := statList.At(idx)
 		info, err := convertCapStatInfo(&capInfo)
@@ -399,4 +403,44 @@ func (cl *Client) SetExplicitPins(prefix, from, to string) (int, error) {
 	}
 
 	return int(result.Count()), nil
+}
+
+// Undelete restores the deleted file at `path`.
+func (cl *Client) Undelete(path string) error {
+	call := cl.api.Undelete(cl.ctx, func(p capnp.FS_undelete_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+// DeletedNodes returns a list of deleted nodes under `root`.
+func (cl *Client) DeletedNodes(root string) ([]StatInfo, error) {
+	call := cl.api.DeletedNodes(cl.ctx, func(p capnp.FS_deletedNodes_Params) error {
+		return p.SetRoot(root)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capNodes, err := result.Nodes()
+	if err != nil {
+		return nil, err
+	}
+
+	results := []StatInfo{}
+	for idx := 0; idx < capNodes.Len(); idx++ {
+		capInfo := capNodes.At(idx)
+		info, err := convertCapStatInfo(&capInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, *info)
+	}
+
+	return results, err
 }

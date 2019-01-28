@@ -151,6 +151,8 @@ interface FS {
     clearExplicitPins @14  (prefix :Text, from :Text, to :Text) -> (count :Int32);
     setExplicitPins   @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
     tar               @16  (path :Text) -> (port :Int32);
+    deletedNodes      @17  (root :Text) -> (nodes :List(StatInfo));
+    undelete          @18  (path :Text);
 }
 
 interface VCS {
