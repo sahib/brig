@@ -15,12 +15,13 @@ import (
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/gateway"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
 )
 
 const (
 	dbPath     = "/tmp/gw-runner"
-	configPath = "/tmp/config.cfg"
+	configPath = "/tmp/gw-runner/config.cfg"
 )
 
 func loadConfig(configPath string) *config.Config {
@@ -111,8 +112,10 @@ func main() {
 		}
 	}
 
+	rmtMock := remotesapi.NewMock("ali", "<fingerprint>")
+
 	userDbPath := filepath.Join(dbPath, "users")
-	gw, err := gateway.NewGateway(fs, cfg.Section("gateway"), userDbPath)
+	gw, err := gateway.NewGateway(fs, rmtMock, cfg.Section("gateway"), userDbPath)
 	if err != nil {
 		log.Fatalf("failed to open gateway: %v", err)
 	}

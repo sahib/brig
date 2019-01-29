@@ -46,7 +46,9 @@ func withState(t *testing.T, fn func(state *testState)) {
 	require.Nil(t, err)
 
 	dbPath := filepath.Join(tmpDir, "user")
-	state, err := NewState(fs, cfg.Section("gateway"), NewEventsHandler(), dbPath)
+
+	// TODO: Pass some sort of repo here?
+	state, err := NewState(fs, nil, cfg.Section("gateway"), NewEventsHandler(), dbPath)
 	require.Nil(t, err)
 
 	state.UserDatabase().Add("ali", "ila", nil)

@@ -15,6 +15,7 @@ import (
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/endpoints"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/middleware/stdlib"
@@ -46,9 +47,9 @@ type Gateway struct {
 
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
-func NewGateway(fs *catfs.FS, cfg *config.Config, dbPath string) (*Gateway, error) {
+func NewGateway(fs *catfs.FS, rapi remotesapi.RemotesAPI, cfg *config.Config, dbPath string) (*Gateway, error) {
 	evHdl := endpoints.NewEventsHandler()
-	state, err := endpoints.NewState(fs, cfg, evHdl, dbPath)
+	state, err := endpoints.NewState(fs, rapi, cfg, evHdl, dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func NewGateway(fs *catfs.FS, cfg *config.Config, dbPath string) (*Gateway, erro
 			return
 		}
 
-		state, err := endpoints.NewState(fs, cfg, evHdl, dbPath)
+		state, err := endpoints.NewState(fs, rapi, cfg, evHdl, dbPath)
 		if err != nil {
 			log.Errorf("failed to re-create state: %v", err)
 		}
@@ -212,6 +213,15 @@ func (gw *Gateway) Start() {
 		apiRouter.Handle("/log", needsAuth(endpoints.NewLogHandler(gw.state)))
 		apiRouter.Handle("/deleted", needsAuth(endpoints.NewDeletedPathsHandler(gw.state)))
 		apiRouter.Handle("/undelete", needsAuth(endpoints.NewUndeleteHandler(gw.state)))
+
+		// Remote API:
+		apiRouter.Handle("/remotes/list", needsAuth(endpoints.NewRemotesListHandler(gw.state)))
+		apiRouter.Handle("/remotes/add", needsAuth(endpoints.NewRemotesAddHandler(gw.state)))
+		apiRouter.Handle("/remotes/modify", needsAuth(endpoints.NewRemotesModifyHandler(gw.state)))
+		apiRouter.Handle("/remotes/remove", needsAuth(endpoints.NewRemotesRemoveHandler(gw.state)))
+		apiRouter.Handle("/remotes/self", needsAuth(endpoints.NewRemotesSelfHandler(gw.state)))
+		apiRouter.Handle("/remotes/sync", needsAuth(endpoints.NewRemotesSyncHandler(gw.state)))
+		apiRouter.Handle("/remotes/diff", needsAuth(endpoints.NewRemotesDiffHandler(gw.state)))
 	}
 
 	// Add the /get endpoint. Since it might contain any path, we have to

@@ -17,6 +17,7 @@ import (
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/gateway/db"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
 )
 
@@ -24,6 +25,7 @@ import (
 // to the endpoint implementation. It does not serve other purposes.
 type State struct {
 	fs     *catfs.FS
+	rapi   remotesapi.RemotesAPI
 	cfg    *config.Config
 	ev     *events.Listener
 	evHdl  *EventsHandler
@@ -46,6 +48,7 @@ func readOrInitKeyFromConfig(cfg *config.Config, keyName string, keyLen int) ([]
 // events.Listener can be set later with SetEventListener.
 func NewState(
 	fs *catfs.FS,
+	rapi remotesapi.RemotesAPI,
 	cfg *config.Config,
 	evHdl *EventsHandler,
 	dbPath string,
@@ -73,6 +76,7 @@ func NewState(
 
 	return &State{
 		fs:     fs,
+		rapi:   rapi,
 		cfg:    cfg,
 		evHdl:  evHdl,
 		store:  sessions.NewCookieStore(authKey, encKey),

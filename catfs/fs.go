@@ -114,32 +114,32 @@ type StatInfo struct {
 // is a node on the remote side and the dst node is
 // a node on our side.
 type DiffPair struct {
-	Src StatInfo
-	Dst StatInfo
+	Src StatInfo `json:"src"`
+	Dst StatInfo `json:"dst"`
 }
 
 // Diff is a list of things that changed between to commits
 type Diff struct {
 	// Added is a list of nodes that were added newly
-	Added []StatInfo
+	Added []StatInfo `json:"added"`
 
 	// Removed is a list of nodes that were removed
-	Removed []StatInfo
+	Removed []StatInfo `json:"removed"`
 
 	// Ignored is a list of nodes that were not considered
-	Ignored []StatInfo
+	Ignored []StatInfo `json:"ignored"`
 
 	// Missing is a list of nodes that the remoe side is missing
-	Missing []StatInfo
+	Missing []StatInfo `json:"missing"`
 
 	// Moved is a list of nodes that changed path
-	Moved []DiffPair
+	Moved []DiffPair `json:"moved"`
 
 	// Merged is a list of nodes that can be merged automatically
-	Merged []DiffPair
+	Merged []DiffPair `json:"merged"`
 
 	// Conflict is a list of nodes that cannot be merged automatically
-	Conflict []DiffPair
+	Conflict []DiffPair `json:"conflict"`
 }
 
 // Commit gives information about a single commit.

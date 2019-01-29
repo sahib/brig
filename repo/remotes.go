@@ -24,6 +24,10 @@ type Folder struct {
 	Folder string
 }
 
+func (f Folder) String() string {
+	return f.Folder
+}
+
 // Remote is one entry in the remote list.
 // It defines what users we may talk to (and also how)
 type Remote struct {
@@ -40,7 +44,6 @@ type Remote struct {
 
 	// AcceptAutoUpdates can be true if we want to receive
 	// updates from other peers that support this.
-	// TODO: Actually use this.
 	AcceptAutoUpdates bool
 }
 

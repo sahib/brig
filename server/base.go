@@ -412,27 +412,24 @@ func (b *base) loadGateway() (*gateway.Gateway, error) {
 		return nil, err
 	}
 
-	err = b.withCurrFs(func(fs *catfs.FS) error {
-		var err error
-		b.gateway, err = gateway.NewGateway(
+	rapi := NewRemotesAPI(b)
+	return b.gateway, b.withCurrFs(func(fs *catfs.FS) error {
+		gateway, err := gateway.NewGateway(
 			fs,
+			rapi,
 			rp.Config.Section("gateway"),
 			filepath.Join(rp.BaseFolder, "gateway"),
 		)
 
 		if err != nil {
+			b.gateway = nil
 			return err
 		}
 
+		b.gateway = gateway
 		b.gateway.Start()
 		return nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return b.gateway, nil
 }
 
 /////////
@@ -791,4 +788,32 @@ func (b *base) initialSyncWithAutoUpdatePeers() error {
 	}
 
 	return nil
+}
+
+func (b *base) syncRemoteStates() error {
+	psrv, err := b.PeerServer()
+	if err != nil {
+		return err
+	}
+
+	rp, err := b.Repo()
+	if err != nil {
+		return err
+	}
+
+	addrs := []string{}
+	remotes, err := rp.Remotes.ListRemotes()
+	if err != nil {
+		return err
+	}
+
+	for _, remote := range remotes {
+		addrs = append(addrs, remote.Fingerprint.Addr())
+	}
+
+	if err := psrv.PingMap().Sync(addrs); err != nil {
+		return err
+	}
+
+	return b.evListener.SetupListeners(b.evListenerCtx, addrs)
 }
