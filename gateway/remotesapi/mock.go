@@ -43,6 +43,18 @@ func (m *Mock) Get(name string) (*Remote, error) {
 }
 
 func (m *Mock) Set(rm Remote) error {
+	if rm.Name == "" {
+		return fmt.Errorf("empty name")
+	}
+
+	if rm.Fingerprint == "" {
+		return fmt.Errorf("empty fingerprint")
+	}
+
+	if rm.Name == m.name {
+		return fmt.Errorf("cannot add remote with own name")
+	}
+
 	m.remotes[rm.Name] = &rm
 	return nil
 }
@@ -71,10 +83,11 @@ func (m *Mock) Sync(name string) error {
 	return nil
 }
 
-func (m *Mock) Diff(name string) (*catfs.Diff, error) {
+func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 	if _, ok := m.remotes[name]; !ok {
 		return nil, fmt.Errorf("no such remote: %s", name)
 	}
 
-	return nil, fmt.Errorf("not implemented")
+	// always send an empty diff.
+	return &catfs.Diff{}, nil
 }

@@ -14,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +42,9 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 
 	cfg.SetBool("gateway.enabled", true)
 	cfg.SetInt("gateway.port", 9999)
-	gw, err := NewGateway(fs, cfg.Section("gateway"), filepath.Join(tmpDir, "users"))
+
+	rapi := remotesapi.NewMock("ali", "alisfingerprint")
+	gw, err := NewGateway(fs, rapi, cfg.Section("gateway"), filepath.Join(tmpDir, "users"))
 	require.Nil(t, err)
 
 	require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/"}))

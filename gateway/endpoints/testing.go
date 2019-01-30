@@ -13,6 +13,7 @@ import (
 
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
 	"github.com/stretchr/testify/require"
 )
@@ -47,8 +48,8 @@ func withState(t *testing.T, fn func(state *testState)) {
 
 	dbPath := filepath.Join(tmpDir, "user")
 
-	// TODO: Pass some sort of repo here?
-	state, err := NewState(fs, nil, cfg.Section("gateway"), NewEventsHandler(), dbPath)
+	rapi := remotesapi.NewMock("ali", "alisfingerprint")
+	state, err := NewState(fs, rapi, cfg.Section("gateway"), NewEventsHandler(), dbPath)
 	require.Nil(t, err)
 
 	state.UserDatabase().Add("ali", "ila", nil)

@@ -113,7 +113,6 @@ func main() {
 	}
 
 	rmtMock := remotesapi.NewMock("ali", "<fingerprint>")
-
 	userDbPath := filepath.Join(dbPath, "users")
 	gw, err := gateway.NewGateway(fs, rmtMock, cfg.Section("gateway"), userDbPath)
 	if err != nil {
