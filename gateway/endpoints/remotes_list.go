@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/sahib/brig/gateway/remotesapi"
 )
@@ -28,6 +29,10 @@ func (rh *RemoteListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
 		return
 	}
+
+	sort.Slice(rmts, func(i, j int) bool {
+		return rmts[i].Name < rmts[j].Name
+	})
 
 	jsonify(w, http.StatusOK, &RemoteListResponse{
 		Success: true,

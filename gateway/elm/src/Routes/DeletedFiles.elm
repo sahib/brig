@@ -251,14 +251,15 @@ viewDeletedList model entries =
     Table.table
         { options =
             [ Table.hover
+            , Table.attr (class "borderless-table")
             ]
         , thead =
             Table.thead []
                 [ Table.tr []
                     [ Table.th [ Table.cellAttr (style "width" "5%") ] []
-                    , Table.th [ Table.cellAttr (style "width" "65%") ] [ text "Name" ]
-                    , Table.th [ Table.cellAttr (style "width" "15%") ] [ text "Deleted at" ]
-                    , Table.th [ Table.cellAttr (style "width" "10%") ] [ text "Size" ]
+                    , Table.th [ Table.cellAttr (style "width" "55%") ] [ text "Name" ]
+                    , Table.th [ Table.cellAttr (style "width" "20%") ] [ text "Deleted at" ]
+                    , Table.th [ Table.cellAttr (style "width" "15%") ] [ text "Size" ]
                     , Table.th [ Table.cellAttr (style "width" "5%") ] []
                     ]
                 ]
@@ -277,9 +278,30 @@ maybeViewDeletedList model entries =
         viewDeletedList model entries
 
     else
-        span
-            [ class "text-muted text-center", style "width" "100%" ]
-            [ text "The trashbin is empty. If you delete something, it will appear here." ]
+        Grid.row []
+            [ Grid.col [ Col.xs12, Col.textAlign Text.alignXsCenter ]
+                [ span [ class "text-muted" ]
+                    [ text " The "
+                    , span [ class "fas fa-md fa-trash-alt" ] []
+                    , text " is empty. If you delete something, it will appear here."
+                    ]
+                ]
+            ]
+
+
+viewDeletedContainer : Model -> List Commands.Entry -> Html Msg
+viewDeletedContainer model entries =
+    Grid.row []
+        [ Grid.col [ Col.lg1, Col.attrs [ class "d-none d-lg-block" ] ] []
+        , Grid.col [ Col.lg10, Col.md12 ]
+            [ h4 [ class "text-muted text-center" ] [ text "Deleted files" ]
+            , br [] []
+            , viewAlert model.alert True
+            , maybeViewDeletedList model entries
+            , br [] []
+            ]
+        , Grid.col [ Col.lg1, Col.attrs [ class "d-none d-lg-block" ] ] []
+        ]
 
 
 view : Model -> Html Msg
@@ -296,22 +318,13 @@ view model =
                 [ Grid.col
                     [ Col.lg12 ]
                     [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                        [ Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
+                        [ Grid.col [ Col.xl9 ] []
+                        , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
                         ]
                     , Grid.row [ Row.attrs [ id "main-content-row" ] ]
                         [ Grid.col
                             [ Col.xl10 ]
-                            [ div [ class "background" ]
-                                [ div [ class "frame" ]
-                                    [ div [ class "frame-content" ]
-                                        [ h3 [ class "text-center" ] [ span [ class "text-muted" ] [ text "Deleted files" ] ]
-                                        , br [] []
-                                        , viewAlert model.alert True
-                                        , maybeViewDeletedList model entries
-                                        ]
-                                    ]
-                                ]
-                            ]
+                            [ viewDeletedContainer model entries ]
                         ]
                     ]
                 ]

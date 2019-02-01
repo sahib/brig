@@ -3,6 +3,8 @@ module Commands exposing
     , Entry
     , HistoryEntry
     , ListResponse
+    , Remote
+    , Self
     , WhoamiResponse
     , doCopy
     , doDeletedFiles
@@ -14,16 +16,24 @@ module Commands exposing
     , doLogout
     , doMkdir
     , doMove
+    , doRemoteAdd
+    , doRemoteDiff
+    , doRemoteList
+    , doRemoteRemove
+    , doRemoteSync
     , doRemove
     , doReset
+    , doSelfQuery
     , doUndelete
     , doUpload
     , doWhoami
+    , emptySelf
     )
 
 import Bootstrap.Dropdown as Dropdown
 import File
 import Http
+import ISO8601
 import Json.Decode as D
 import Json.Decode.Pipeline as DP
 import Json.Encode as E
@@ -70,6 +80,20 @@ timestampToPosix =
     D.int
         |> D.andThen
             (\ms -> D.succeed <| Time.millisToPosix ms)
+
+
+iso8601ToPosix : D.Decoder Time.Posix
+iso8601ToPosix =
+    D.string
+        |> D.andThen
+            (\stamp ->
+                case ISO8601.fromString stamp of
+                    Ok time ->
+                        D.succeed <| ISO8601.toPosix time
+
+                    Err msg ->
+                        D.fail msg
+            )
 
 
 type alias HistoryQuery =
@@ -493,4 +517,211 @@ doUndelete toMsg path =
         { url = "/api/v0/undelete"
         , body = Http.jsonBody <| encodeUndeleteQuery <| UndeleteQuery path
         , expect = Http.expectJson toMsg decodeUndeleteResponse
+        }
+
+
+
+-- REMOTE LIST
+
+
+type alias Remote =
+    { name : String
+    , folders : List String
+    , fingerprint : String
+    , acceptAutoUpdates : Bool
+    , isOnline : Bool
+    , isAuthenticated : Bool
+    , lastSeen : Time.Posix
+    }
+
+
+decodeRemoteListResponse : D.Decoder (List Remote)
+decodeRemoteListResponse =
+    D.field "remotes" (D.list decodeRemote)
+
+
+decodeRemote : D.Decoder Remote
+decodeRemote =
+    D.succeed Remote
+        |> DP.required "name" D.string
+        |> DP.required "folders" (D.oneOf [ D.list D.string, D.null [] ])
+        |> DP.required "fingerprint" D.string
+        |> DP.required "accept_auto_updates" D.bool
+        |> DP.required "is_online" D.bool
+        |> DP.required "is_authenticated" D.bool
+        |> DP.required "last_seen" iso8601ToPosix
+
+
+doRemoteList : (Result Http.Error (List Remote) -> msg) -> Cmd msg
+doRemoteList toMsg =
+    Http.post
+        { url = "/api/v0/remotes/list"
+        , body = Http.emptyBody
+        , expect = Http.expectJson toMsg decodeRemoteListResponse
+        }
+
+
+
+-- REMOTE REMOVE
+
+
+type alias RemoteRemoveQuery =
+    { name : String
+    }
+
+
+encodeRemoteRemoveQuery : RemoteRemoveQuery -> E.Value
+encodeRemoteRemoveQuery q =
+    E.object
+        [ ( "name", E.string q.name ) ]
+
+
+decodeRemoteRemoveQuery : D.Decoder String
+decodeRemoteRemoveQuery =
+    D.field "message" D.string
+
+
+doRemoteRemove : (Result Http.Error String -> msg) -> String -> Cmd msg
+doRemoteRemove toMsg name =
+    Http.post
+        { url = "/api/v0/remotes/remove"
+        , body = Http.jsonBody <| encodeRemoteRemoveQuery <| RemoteRemoveQuery name
+        , expect = Http.expectJson toMsg decodeRemoteRemoveQuery
+        }
+
+
+
+-- REMOTE SYNC
+
+
+type alias RemoteSyncQuery =
+    { name : String
+    }
+
+
+encodeRemoteSyncQuery : RemoteSyncQuery -> E.Value
+encodeRemoteSyncQuery q =
+    E.object
+        [ ( "name", E.string q.name ) ]
+
+
+decodeRemoteSyncQuery : D.Decoder String
+decodeRemoteSyncQuery =
+    D.field "message" D.string
+
+
+doRemoteSync : (Result Http.Error String -> msg) -> String -> Cmd msg
+doRemoteSync toMsg name =
+    Http.post
+        { url = "/api/v0/remotes/sync"
+        , body = Http.jsonBody <| encodeRemoteSyncQuery <| RemoteSyncQuery name
+        , expect = Http.expectJson toMsg decodeRemoteSyncQuery
+        }
+
+
+
+-- REMOTE DIFF
+
+
+type alias RemoteDiffQuery =
+    { name : String
+    }
+
+
+encodeRemoteDiffQuery : RemoteDiffQuery -> E.Value
+encodeRemoteDiffQuery q =
+    E.object
+        [ ( "name", E.string q.name ) ]
+
+
+decodeRemoteDiffQuery : D.Decoder String
+decodeRemoteDiffQuery =
+    D.field "message" D.string
+
+
+doRemoteDiff : (Result Http.Error String -> msg) -> String -> Cmd msg
+doRemoteDiff toMsg name =
+    Http.post
+        { url = "/api/v0/remotes/diff"
+        , body = Http.jsonBody <| encodeRemoteDiffQuery <| RemoteDiffQuery name
+        , expect = Http.expectJson toMsg decodeRemoteDiffQuery
+        }
+
+
+
+-- REMOTE ADD
+
+
+type alias RemoteAddQuery =
+    { name : String
+    , fingerprint : String
+    , folders : List String
+    , doAutoUpdate : Bool
+    }
+
+
+encodeRemoteAddQuery : RemoteAddQuery -> E.Value
+encodeRemoteAddQuery q =
+    E.object
+        [ ( "name", E.string q.name )
+        , ( "fingerprint", E.string q.fingerprint )
+        , ( "accept_auto_updates", E.bool q.doAutoUpdate )
+        , ( "folders", E.list E.string q.folders )
+        ]
+
+
+decodeRemoteAddQuery : D.Decoder String
+decodeRemoteAddQuery =
+    D.field "message" D.string
+
+
+doRemoteAdd : (Result Http.Error String -> msg) -> String -> String -> Bool -> List String -> Cmd msg
+doRemoteAdd toMsg name fingerprint doAutoUpdate folders =
+    Http.post
+        { url = "/api/v0/remotes/add"
+        , body =
+            Http.jsonBody <|
+                encodeRemoteAddQuery <|
+                    { name = name
+                    , fingerprint = fingerprint
+                    , doAutoUpdate = doAutoUpdate
+                    , folders = folders
+                    }
+        , expect = Http.expectJson toMsg decodeRemoteAddQuery
+        }
+
+
+
+-- REMOTE SELF
+
+
+type alias Self =
+    { name : String
+    , fingerprint : String
+    }
+
+
+emptySelf : Self
+emptySelf =
+    Self "" ""
+
+
+decodeSelfResponse : D.Decoder Self
+decodeSelfResponse =
+    D.field "self" decodeSelf
+
+
+decodeSelf : D.Decoder Self
+decodeSelf =
+    D.succeed Self
+        |> DP.required "name" D.string
+        |> DP.required "fingerprint" D.string
+
+
+doSelfQuery : (Result Http.Error Self -> msg) -> Cmd msg
+doSelfQuery toMsg =
+    Http.post
+        { url = "/api/v0/remotes/self"
+        , body = Http.emptyBody
+        , expect = Http.expectJson toMsg decodeSelfResponse
         }

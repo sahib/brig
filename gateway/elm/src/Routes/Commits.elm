@@ -6,7 +6,9 @@ import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
+import Bootstrap.Text as Text
 import Browser.Navigation as Nav
 import Commands
 import Html exposing (..)
@@ -127,44 +129,51 @@ filterCommits filter commits =
             )
 
 
-viewCommit : Model -> Commands.Commit -> Table.Row Msg
+viewCommit : Model -> Commands.Commit -> ListGroup.Item Msg
 viewCommit model commit =
-    Table.tr []
-        [ Table.td
+    ListGroup.li []
+        [ Grid.row
             []
-            [ span [ class "fas fa-lg fa-save text-xs-right file-list-icon" ] [] ]
-        , Table.td
-            []
-            [ text commit.msg ]
-        , Table.td
-            []
-            [ Button.button
-                [ Button.outlineDanger
-                , Button.attrs [ onClick <| CheckoutClicked commit.hash ]
+            [ Grid.col
+                [ Col.xs1
+                , Col.textAlign Text.alignXsLeft
                 ]
-                [ text "Checkout" ]
+                [ span [ class "fas fa-lg fa-save text-xs-right" ] []
+                ]
+            , Grid.col [ Col.xs9, Col.textAlign Text.alignXsLeft ]
+                [ text commit.msg
+                ]
+            , Grid.col
+                [ Col.xs2
+                , Col.textAlign Text.alignXsRight
+                ]
+                [ Button.button
+                    [ Button.outlineDanger
+                    , Button.attrs [ onClick <| CheckoutClicked commit.hash ]
+                    ]
+                    [ text "Checkout" ]
+                ]
             ]
         ]
 
 
 viewCommitList : Model -> List Commands.Commit -> Html Msg
 viewCommitList model commits =
-    Table.table
-        { options = [ Table.hover ]
-        , thead =
-            Table.thead [ Table.headAttr (style "display" "none") ]
-                [ Table.tr []
-                    [ Table.th [ Table.cellAttr (style "width" "10%") ] []
-                    , Table.th [ Table.cellAttr (style "width" "90%") ] []
-                    ]
-                ]
-        , tbody =
-            Table.tbody []
-                (List.map
-                    (viewCommit model)
-                    (filterCommits model.filter commits)
-                )
-        }
+    ListGroup.ul (List.map (viewCommit model) (filterCommits model.filter commits))
+
+
+viewCommitListContainer : Model -> List Commands.Commit -> Html Msg
+viewCommitListContainer model commits =
+    Grid.row []
+        [ Grid.col [ Col.lg2, Col.attrs [ class "d-none d-lg-block" ] ] []
+        , Grid.col [ Col.lg8, Col.md12 ]
+            [ h4 [ class "text-muted text-center" ] [ text "Commits" ]
+            , br [] []
+            , viewCommitList model commits
+            , br [] []
+            ]
+        , Grid.col [ Col.lg2, Col.attrs [ class "d-none d-lg-block" ] ] []
+        ]
 
 
 view : Model -> Html Msg
@@ -181,20 +190,13 @@ view model =
                 [ Grid.col
                     [ Col.lg12 ]
                     [ Grid.row [ Row.attrs [ id "main-header-row" ] ]
-                        [ Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
+                        [ Grid.col [ Col.xl9 ] [ text "" ]
+                        , Grid.col [ Col.xl3 ] [ Lazy.lazy viewSearchBox model ]
                         ]
                     , Grid.row [ Row.attrs [ id "main-content-row" ] ]
                         [ Grid.col
                             [ Col.xl10 ]
-                            [ div [ class "background" ]
-                                [ div [ class "frame" ]
-                                    [ div [ class "frame-content" ]
-                                        [ h3 [] [ span [ class "text-muted" ] [ text "Commits" ] ]
-                                        , br [] []
-                                        , viewCommitList model commits
-                                        ]
-                                    ]
-                                ]
+                            [ viewCommitListContainer model commits
                             ]
                         ]
                     ]

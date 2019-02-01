@@ -178,6 +178,7 @@ doInitAfterLogin model loginName =
         , Websocket.open ()
         , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
         , Cmd.map CommitsMsg <| Commits.reload
+        , Cmd.map RemotesMsg <| Remotes.reload
         ]
     )
 
@@ -522,6 +523,7 @@ viewMainContent model viewState =
             , main_ [ class "col" ]
                 [ viewCurrentRoute model viewState
                 , Html.map ListMsg (Ls.buildModals viewState.listState)
+                , Html.map RemotesMsg (Remotes.buildModals viewState.remoteState)
                 ]
             ]
         ]
@@ -656,14 +658,13 @@ viewSidebarItems model viewState =
             [ a [ isActiveClass ViewCommits, href (viewToString ViewCommits) ]
                 [ span [] [ text "Changelog" ] ]
             ]
-
-        -- , li [ class "nav-item" ]
-        --     [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
-        --         [ span [] [ text "Remotes" ] ]
-        --     ]
         , li [ class "nav-item" ]
             [ a [ isActiveClass ViewDeletedFiles, href (viewToString ViewDeletedFiles) ]
                 [ span [] [ text "Trashbin" ] ]
+            ]
+        , li [ class "nav-item" ]
+            [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
+                [ span [] [ text "Remotes" ] ]
             ]
 
         -- , li [ class "nav-item" ]
@@ -702,6 +703,7 @@ subscriptions model =
             Sub.batch
                 [ Sub.map ListMsg (Ls.subscriptions viewState.listState)
                 , Sub.map CommitsMsg (Commits.subscriptions viewState.commitsState)
+                , Sub.map RemotesMsg (Remotes.subscriptions viewState.remoteState)
                 , Websocket.incoming WebsocketIn
                 ]
 

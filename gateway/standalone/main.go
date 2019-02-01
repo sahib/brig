@@ -112,7 +112,32 @@ func main() {
 		}
 	}
 
-	rmtMock := remotesapi.NewMock("ali", "<fingerprint>")
+	rmtMock := remotesapi.NewMock("ali", "QmbRDdQUvUUenmMYVuAWa1KKf29Joy3CkXEhUAVqbKKfsR:W1f3yaz1eyEfHXDvqQjz2EBXGGzBCQHMR4mN8adRcEtg86")
+	rmtMock.Set(remotesapi.Remote{
+		Name:              "bob",
+		Fingerprint:       "QmbRDdQUvUUenmMYVuAWa1KKf29Joy3CkXEhUAVqbKKfsR:W1f3yaz1eyEfHXDvqQjz2EBXGGzBCQHMR4mN8adRcEtg86",
+		AcceptAutoUpdates: true,
+		Folders:           nil,
+		IsOnline:          true,
+		IsAuthenticated:   true,
+	})
+	rmtMock.Set(remotesapi.Remote{
+		Name:              "charlie",
+		Fingerprint:       "QmoEQqDHiHHrazZLIhNJn1XXs29Wbl3PxKRuHNIdoXXsfE:W1s3lnm1rlRsUKQidDwm2ROKTTmOPDUZE4zA8nqEpRgt86",
+		AcceptAutoUpdates: false,
+		Folders:           []string{"/public"},
+		IsOnline:          false,
+		IsAuthenticated:   true,
+	})
+	rmtMock.Set(remotesapi.Remote{
+		Name:              "mallory",
+		Fingerprint:       "QmgtEcRda8Nm4RMHQCBzGGXBE2zjQqvDXHfEye1zay3f1w:W1fKKbqVAUhEXkC3yoJ92fKK1aWAuVYMmneUUvUQdDRbMq",
+		AcceptAutoUpdates: false,
+		Folders:           []string{"/"},
+		IsOnline:          true,
+		IsAuthenticated:   false,
+	})
+
 	userDbPath := filepath.Join(dbPath, "users")
 	gw, err := gateway.NewGateway(fs, rmtMock, cfg.Section("gateway"), userDbPath)
 	if err != nil {
