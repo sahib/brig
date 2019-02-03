@@ -39,11 +39,12 @@ func setSession(store *sessions.CookieStore, userName string, w http.ResponseWri
 		return
 	}
 
+	isHttps := r.TLS != nil
 	sess.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   31 * 24 * 60 * 60,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   isHttps,
 		// TODO: This is only available in Go 1.11:
 		// SameSite: http.SameSiteLaxMode,
 	}

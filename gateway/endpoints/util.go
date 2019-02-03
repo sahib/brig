@@ -303,14 +303,16 @@ func (sm *secureMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// This could be changed if we see a valid use case for this.
 	hdr.Set("X-Frame-Options", "DENY")
 
-	// https://en.wikipedia.org/wiki/Content_sniffing
-	hdr.Set("Strict-Transport-Security", "max-age=5184000; includeSubDomains")
-
 	// Prevents Internet Explorer from executing downloads in site's context
 	hdr.Set("X-Download-Options", "noopen")
 
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
 	hdr.Set("X-XSS-Protection", "1; mode=block")
+
+	if r.TLS != nil {
+		// https://en.wikipedia.org/wiki/Content_sniffing
+		hdr.Set("Strict-Transport-Security", "max-age=5184000; includeSubDomains")
+	}
 
 	sm.SubHandler.ServeHTTP(w, r)
 }

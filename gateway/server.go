@@ -192,9 +192,17 @@ func (gw *Gateway) Start() {
 	router.Use(endpoints.SecureMiddleware(gw.state))
 	needsAuth := endpoints.AuthMiddleware(gw.state)
 
+	csrfOpts := []csrf.Option{
+		csrf.ErrorHandler(&csrfErrorHandler{}),
+	}
+
+	if tlsConfig == nil {
+		csrfOpts = append(csrfOpts, csrf.Secure(false))
+	}
+
 	if uiEnabled {
 		csrfKey := []byte(gw.cfg.String("auth.session-csrf-key"))
-		router.Use(csrf.Protect(csrfKey, csrf.ErrorHandler(&csrfErrorHandler{})))
+		router.Use(csrf.Protect(csrfKey, csrfOpts...))
 
 		// API route definition:
 		apiRouter := router.PathPrefix("/api/v0").Methods("POST").Subrouter()
