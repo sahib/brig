@@ -12,18 +12,25 @@ import Bootstrap.Text as Text
 import Browser.Navigation as Nav
 import Commands
 import Delay
+import Dict
 import Filesize
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
+import Scroll
 import Time
 import Util
 
 
 
 -- MODEL:
+
+
+loadLimit : Int
+loadLimit =
+    25
 
 
 type State
@@ -52,13 +59,14 @@ type alias Model =
     , state : State
     , zone : Time.Zone
     , filter : String
+    , offset : Int
     , alert : AlertState
     }
 
 
 newModel : Nav.Key -> Time.Zone -> Model
 newModel key zone =
-    Model key Loading zone "" defaultAlertState
+    Model key Loading zone "" 0 defaultAlertState
 
 
 
@@ -66,29 +74,85 @@ newModel key zone =
 
 
 type Msg
-    = GotDeletedPathsResponse (Result Http.Error (List Commands.Entry))
+    = GotDeletedPathsResponse Bool (Result Http.Error (List Commands.Entry))
     | GotUndeleteResponse (Result Http.Error String)
     | UndeleteClicked String
     | SearchInput String
     | AlertMsg Alert.Visibility
+    | OnScroll Scroll.ScreenData
 
 
 
 -- UPDATE:
 
 
-reload : Cmd Msg
-reload =
-    Commands.doDeletedFiles GotDeletedPathsResponse
+reload : Model -> Cmd Msg
+reload model =
+    Commands.doDeletedFiles (GotDeletedPathsResponse True) model.offset loadLimit model.filter
+
+
+reloadWithoutFlush : Model -> Int -> Cmd Msg
+reloadWithoutFlush model newOffset =
+    Commands.doDeletedFiles (GotDeletedPathsResponse False) newOffset loadLimit model.filter
+
+
+toMap : List Commands.Entry -> Dict.Dict String Commands.Entry
+toMap entries =
+    Dict.fromList (List.map (\e -> ( e.path, e )) entries)
+
+
+sortEntries : Commands.Entry -> Commands.Entry -> Order
+sortEntries a b =
+    let
+        inv =
+            \v ->
+                if v then
+                    0
+
+                else
+                    1
+    in
+    case compare (inv a.isDir) (inv b.isDir) of
+        EQ ->
+            compare a.path b.path
+
+        other ->
+            other
+
+
+mergeEntries : List Commands.Entry -> List Commands.Entry -> List Commands.Entry
+mergeEntries old new =
+    Dict.union (toMap new) (toMap old)
+        |> Dict.toList
+        |> List.map (\( _, v ) -> v)
+        |> List.sortWith sortEntries
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotDeletedPathsResponse result ->
+        GotDeletedPathsResponse doFlush result ->
             case result of
                 Ok entries ->
-                    ( { model | state = Success entries }, Cmd.none )
+                    let
+                        ( prevEntries, newOffset ) =
+                            if doFlush then
+                                ( [], 0 )
+
+                            else
+                                case model.state of
+                                    Success oldEntries ->
+                                        ( oldEntries, model.offset + loadLimit )
+
+                                    _ ->
+                                        ( [], model.offset )
+                    in
+                    ( { model
+                        | state = Success (mergeEntries prevEntries entries)
+                        , offset = newOffset
+                      }
+                    , Cmd.none
+                    )
 
                 Err err ->
                     ( { model | state = Failure (Util.httpErrorToString err) }, Cmd.none )
@@ -97,7 +161,11 @@ update msg model =
             ( model, Commands.doUndelete GotUndeleteResponse path )
 
         SearchInput filter ->
-            ( { model | filter = filter }, Cmd.none )
+            let
+                upModel =
+                    { model | filter = filter }
+            in
+            ( upModel, reload upModel )
 
         GotUndeleteResponse result ->
             case result of
@@ -111,7 +179,7 @@ update msg model =
                     in
                     ( { model | alert = newAlert }
                     , Cmd.batch
-                        [ reload
+                        [ reload model
                         , Delay.after 5 Delay.Second (AlertMsg Alert.closed)
                         ]
                     )
@@ -126,7 +194,7 @@ update msg model =
                     in
                     ( model
                     , Cmd.batch
-                        [ reload
+                        [ reload model
                         , Delay.after 15 Delay.Second (AlertMsg Alert.closed)
                         ]
                     )
@@ -137,6 +205,13 @@ update msg model =
                     AlertState model.alert.message model.alert.typ vis
             in
             ( { model | alert = newAlert }, Cmd.none )
+
+        OnScroll data ->
+            if Scroll.hasHitBottom (Debug.log "SCROLL" data) then
+                ( model, reloadWithoutFlush model (Debug.log "RELOAD" (model.offset + loadLimit)) )
+
+            else
+                ( model, Cmd.none )
 
 
 
@@ -281,10 +356,16 @@ maybeViewDeletedList model entries =
         Grid.row []
             [ Grid.col [ Col.xs12, Col.textAlign Text.alignXsCenter ]
                 [ span [ class "text-muted" ]
-                    [ text " The "
-                    , span [ class "fas fa-md fa-trash-alt" ] []
-                    , text " is empty. If you delete something, it will appear here."
-                    ]
+                    (if String.length model.filter == 0 then
+                        [ text " The "
+                        , span [ class "fas fa-md fa-trash-alt" ] []
+                        , text " is empty. If you delete something, it will appear here."
+                        ]
+
+                     else
+                        [ text " Search did not find anything. Remove the query to go back. "
+                        ]
+                    )
                 ]
             ]
 
@@ -336,4 +417,7 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Alert.subscriptions model.alert.vis AlertMsg
+    Sub.batch
+        [ Scroll.scrollOrResize OnScroll
+        , Alert.subscriptions model.alert.vis AlertMsg
+        ]

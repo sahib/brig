@@ -20,6 +20,7 @@ func NewLogHandler(s *State) *LogHandler {
 	return &LogHandler{State: s}
 }
 
+// LogRequest is the data sent to this endpoint.
 type LogRequest struct {
 	Offset int64  `json:"offset"`
 	Limit  int64  `json:"limit"`

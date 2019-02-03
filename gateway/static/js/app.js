@@ -6308,6 +6308,9 @@ var author$project$Main$init = F3(
 var author$project$Main$CommitsMsg = function (a) {
 	return {$: 'CommitsMsg', a: a};
 };
+var author$project$Main$DeletedFilesMsg = function (a) {
+	return {$: 'DeletedFilesMsg', a: a};
+};
 var author$project$Main$ListMsg = function (a) {
 	return {$: 'ListMsg', a: a};
 };
@@ -6355,46 +6358,21 @@ var author$project$Routes$Commits$subscriptions = function (model) {
 				author$project$Scroll$scrollOrResize(author$project$Routes$Commits$OnScroll)
 			]));
 };
-var author$project$Modals$History$AlertMsg = function (a) {
+var author$project$Routes$DeletedFiles$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
 };
-var author$project$Modals$History$AnimateModal = function (a) {
-	return {$: 'AnimateModal', a: a};
+var author$project$Routes$DeletedFiles$OnScroll = function (a) {
+	return {$: 'OnScroll', a: a};
 };
-var author$project$Modals$History$KeyPress = function (a) {
-	return {$: 'KeyPress', a: a};
+var elm$browser$Browser$AnimationManager$Time = function (a) {
+	return {$: 'Time', a: a};
 };
-var elm$browser$Browser$Events$Document = {$: 'Document'};
-var elm$browser$Browser$Events$MySub = F3(
-	function (a, b, c) {
-		return {$: 'MySub', a: a, b: b, c: c};
+var elm$browser$Browser$AnimationManager$State = F3(
+	function (subs, request, oldTime) {
+		return {oldTime: oldTime, request: request, subs: subs};
 	});
-var elm$browser$Browser$Events$State = F2(
-	function (subs, pids) {
-		return {pids: pids, subs: subs};
-	});
-var elm$browser$Browser$Events$init = elm$core$Task$succeed(
-	A2(elm$browser$Browser$Events$State, _List_Nil, elm$core$Dict$empty));
-var elm$browser$Browser$Events$nodeToKey = function (node) {
-	if (node.$ === 'Document') {
-		return 'd_';
-	} else {
-		return 'w_';
-	}
-};
-var elm$browser$Browser$Events$addKey = function (sub) {
-	var node = sub.a;
-	var name = sub.b;
-	return _Utils_Tuple2(
-		_Utils_ap(
-			elm$browser$Browser$Events$nodeToKey(node),
-			name),
-		sub);
-};
-var elm$browser$Browser$Events$Event = F2(
-	function (key, event) {
-		return {event: event, key: key};
-	});
+var elm$browser$Browser$AnimationManager$init = elm$core$Task$succeed(
+	A3(elm$browser$Browser$AnimationManager$State, _List_Nil, elm$core$Maybe$Nothing, 0));
 var elm$browser$Browser$External = function (a) {
 	return {$: 'External', a: a};
 };
@@ -6555,6 +6533,189 @@ var elm$url$Url$fromString = function (str) {
 		elm$url$Url$Https,
 		A2(elm$core$String$dropLeft, 8, str)) : elm$core$Maybe$Nothing);
 };
+var elm$browser$Browser$AnimationManager$now = _Browser_now(_Utils_Tuple0);
+var elm$browser$Browser$AnimationManager$rAF = _Browser_rAF(_Utils_Tuple0);
+var elm$browser$Browser$AnimationManager$onEffects = F3(
+	function (router, subs, _n0) {
+		var request = _n0.request;
+		var oldTime = _n0.oldTime;
+		var _n1 = _Utils_Tuple2(request, subs);
+		if (_n1.a.$ === 'Nothing') {
+			if (!_n1.b.b) {
+				var _n2 = _n1.a;
+				return elm$browser$Browser$AnimationManager$init;
+			} else {
+				var _n4 = _n1.a;
+				return A2(
+					elm$core$Task$andThen,
+					function (pid) {
+						return A2(
+							elm$core$Task$andThen,
+							function (time) {
+								return elm$core$Task$succeed(
+									A3(
+										elm$browser$Browser$AnimationManager$State,
+										subs,
+										elm$core$Maybe$Just(pid),
+										time));
+							},
+							elm$browser$Browser$AnimationManager$now);
+					},
+					elm$core$Process$spawn(
+						A2(
+							elm$core$Task$andThen,
+							elm$core$Platform$sendToSelf(router),
+							elm$browser$Browser$AnimationManager$rAF)));
+			}
+		} else {
+			if (!_n1.b.b) {
+				var pid = _n1.a.a;
+				return A2(
+					elm$core$Task$andThen,
+					function (_n3) {
+						return elm$browser$Browser$AnimationManager$init;
+					},
+					elm$core$Process$kill(pid));
+			} else {
+				return elm$core$Task$succeed(
+					A3(elm$browser$Browser$AnimationManager$State, subs, request, oldTime));
+			}
+		}
+	});
+var elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var elm$time$Time$millisToPosix = elm$time$Time$Posix;
+var elm$browser$Browser$AnimationManager$onSelfMsg = F3(
+	function (router, newTime, _n0) {
+		var subs = _n0.subs;
+		var oldTime = _n0.oldTime;
+		var send = function (sub) {
+			if (sub.$ === 'Time') {
+				var tagger = sub.a;
+				return A2(
+					elm$core$Platform$sendToApp,
+					router,
+					tagger(
+						elm$time$Time$millisToPosix(newTime)));
+			} else {
+				var tagger = sub.a;
+				return A2(
+					elm$core$Platform$sendToApp,
+					router,
+					tagger(newTime - oldTime));
+			}
+		};
+		return A2(
+			elm$core$Task$andThen,
+			function (pid) {
+				return A2(
+					elm$core$Task$andThen,
+					function (_n1) {
+						return elm$core$Task$succeed(
+							A3(
+								elm$browser$Browser$AnimationManager$State,
+								subs,
+								elm$core$Maybe$Just(pid),
+								newTime));
+					},
+					elm$core$Task$sequence(
+						A2(elm$core$List$map, send, subs)));
+			},
+			elm$core$Process$spawn(
+				A2(
+					elm$core$Task$andThen,
+					elm$core$Platform$sendToSelf(router),
+					elm$browser$Browser$AnimationManager$rAF)));
+	});
+var elm$browser$Browser$AnimationManager$Delta = function (a) {
+	return {$: 'Delta', a: a};
+};
+var elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var elm$browser$Browser$AnimationManager$subMap = F2(
+	function (func, sub) {
+		if (sub.$ === 'Time') {
+			var tagger = sub.a;
+			return elm$browser$Browser$AnimationManager$Time(
+				A2(elm$core$Basics$composeL, func, tagger));
+		} else {
+			var tagger = sub.a;
+			return elm$browser$Browser$AnimationManager$Delta(
+				A2(elm$core$Basics$composeL, func, tagger));
+		}
+	});
+_Platform_effectManagers['Browser.AnimationManager'] = _Platform_createManager(elm$browser$Browser$AnimationManager$init, elm$browser$Browser$AnimationManager$onEffects, elm$browser$Browser$AnimationManager$onSelfMsg, 0, elm$browser$Browser$AnimationManager$subMap);
+var elm$browser$Browser$AnimationManager$subscription = _Platform_leaf('Browser.AnimationManager');
+var elm$browser$Browser$AnimationManager$onAnimationFrame = function (tagger) {
+	return elm$browser$Browser$AnimationManager$subscription(
+		elm$browser$Browser$AnimationManager$Time(tagger));
+};
+var elm$browser$Browser$Events$onAnimationFrame = elm$browser$Browser$AnimationManager$onAnimationFrame;
+var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
+var rundis$elm_bootstrap$Bootstrap$Alert$FadeClose = {$: 'FadeClose'};
+var rundis$elm_bootstrap$Bootstrap$Alert$subscriptions = F2(
+	function (visibility, animateMsg) {
+		if (visibility.$ === 'StartClose') {
+			return elm$browser$Browser$Events$onAnimationFrame(
+				function (_n1) {
+					return animateMsg(rundis$elm_bootstrap$Bootstrap$Alert$FadeClose);
+				});
+		} else {
+			return elm$core$Platform$Sub$none;
+		}
+	});
+var author$project$Routes$DeletedFiles$subscriptions = function (model) {
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				author$project$Scroll$scrollOrResize(author$project$Routes$DeletedFiles$OnScroll),
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert.vis, author$project$Routes$DeletedFiles$AlertMsg)
+			]));
+};
+var author$project$Modals$History$AlertMsg = function (a) {
+	return {$: 'AlertMsg', a: a};
+};
+var author$project$Modals$History$AnimateModal = function (a) {
+	return {$: 'AnimateModal', a: a};
+};
+var author$project$Modals$History$KeyPress = function (a) {
+	return {$: 'KeyPress', a: a};
+};
+var elm$browser$Browser$Events$Document = {$: 'Document'};
+var elm$browser$Browser$Events$MySub = F3(
+	function (a, b, c) {
+		return {$: 'MySub', a: a, b: b, c: c};
+	});
+var elm$browser$Browser$Events$State = F2(
+	function (subs, pids) {
+		return {pids: pids, subs: subs};
+	});
+var elm$browser$Browser$Events$init = elm$core$Task$succeed(
+	A2(elm$browser$Browser$Events$State, _List_Nil, elm$core$Dict$empty));
+var elm$browser$Browser$Events$nodeToKey = function (node) {
+	if (node.$ === 'Document') {
+		return 'd_';
+	} else {
+		return 'w_';
+	}
+};
+var elm$browser$Browser$Events$addKey = function (sub) {
+	var node = sub.a;
+	var name = sub.b;
+	return _Utils_Tuple2(
+		_Utils_ap(
+			elm$browser$Browser$Events$nodeToKey(node),
+			name),
+		sub);
+};
+var elm$browser$Browser$Events$Event = F2(
+	function (key, event) {
+		return {event: event, key: key};
+	});
 var elm$browser$Browser$Events$spawn = F3(
 	function (router, key, _n0) {
 		var node = _n0.a;
@@ -6794,150 +6955,6 @@ var elm$browser$Browser$Events$on = F3(
 			A3(elm$browser$Browser$Events$MySub, node, name, decoder));
 	});
 var elm$browser$Browser$Events$onKeyPress = A2(elm$browser$Browser$Events$on, elm$browser$Browser$Events$Document, 'keypress');
-var elm$browser$Browser$AnimationManager$Time = function (a) {
-	return {$: 'Time', a: a};
-};
-var elm$browser$Browser$AnimationManager$State = F3(
-	function (subs, request, oldTime) {
-		return {oldTime: oldTime, request: request, subs: subs};
-	});
-var elm$browser$Browser$AnimationManager$init = elm$core$Task$succeed(
-	A3(elm$browser$Browser$AnimationManager$State, _List_Nil, elm$core$Maybe$Nothing, 0));
-var elm$browser$Browser$AnimationManager$now = _Browser_now(_Utils_Tuple0);
-var elm$browser$Browser$AnimationManager$rAF = _Browser_rAF(_Utils_Tuple0);
-var elm$browser$Browser$AnimationManager$onEffects = F3(
-	function (router, subs, _n0) {
-		var request = _n0.request;
-		var oldTime = _n0.oldTime;
-		var _n1 = _Utils_Tuple2(request, subs);
-		if (_n1.a.$ === 'Nothing') {
-			if (!_n1.b.b) {
-				var _n2 = _n1.a;
-				return elm$browser$Browser$AnimationManager$init;
-			} else {
-				var _n4 = _n1.a;
-				return A2(
-					elm$core$Task$andThen,
-					function (pid) {
-						return A2(
-							elm$core$Task$andThen,
-							function (time) {
-								return elm$core$Task$succeed(
-									A3(
-										elm$browser$Browser$AnimationManager$State,
-										subs,
-										elm$core$Maybe$Just(pid),
-										time));
-							},
-							elm$browser$Browser$AnimationManager$now);
-					},
-					elm$core$Process$spawn(
-						A2(
-							elm$core$Task$andThen,
-							elm$core$Platform$sendToSelf(router),
-							elm$browser$Browser$AnimationManager$rAF)));
-			}
-		} else {
-			if (!_n1.b.b) {
-				var pid = _n1.a.a;
-				return A2(
-					elm$core$Task$andThen,
-					function (_n3) {
-						return elm$browser$Browser$AnimationManager$init;
-					},
-					elm$core$Process$kill(pid));
-			} else {
-				return elm$core$Task$succeed(
-					A3(elm$browser$Browser$AnimationManager$State, subs, request, oldTime));
-			}
-		}
-	});
-var elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var elm$time$Time$millisToPosix = elm$time$Time$Posix;
-var elm$browser$Browser$AnimationManager$onSelfMsg = F3(
-	function (router, newTime, _n0) {
-		var subs = _n0.subs;
-		var oldTime = _n0.oldTime;
-		var send = function (sub) {
-			if (sub.$ === 'Time') {
-				var tagger = sub.a;
-				return A2(
-					elm$core$Platform$sendToApp,
-					router,
-					tagger(
-						elm$time$Time$millisToPosix(newTime)));
-			} else {
-				var tagger = sub.a;
-				return A2(
-					elm$core$Platform$sendToApp,
-					router,
-					tagger(newTime - oldTime));
-			}
-		};
-		return A2(
-			elm$core$Task$andThen,
-			function (pid) {
-				return A2(
-					elm$core$Task$andThen,
-					function (_n1) {
-						return elm$core$Task$succeed(
-							A3(
-								elm$browser$Browser$AnimationManager$State,
-								subs,
-								elm$core$Maybe$Just(pid),
-								newTime));
-					},
-					elm$core$Task$sequence(
-						A2(elm$core$List$map, send, subs)));
-			},
-			elm$core$Process$spawn(
-				A2(
-					elm$core$Task$andThen,
-					elm$core$Platform$sendToSelf(router),
-					elm$browser$Browser$AnimationManager$rAF)));
-	});
-var elm$browser$Browser$AnimationManager$Delta = function (a) {
-	return {$: 'Delta', a: a};
-};
-var elm$core$Basics$composeL = F3(
-	function (g, f, x) {
-		return g(
-			f(x));
-	});
-var elm$browser$Browser$AnimationManager$subMap = F2(
-	function (func, sub) {
-		if (sub.$ === 'Time') {
-			var tagger = sub.a;
-			return elm$browser$Browser$AnimationManager$Time(
-				A2(elm$core$Basics$composeL, func, tagger));
-		} else {
-			var tagger = sub.a;
-			return elm$browser$Browser$AnimationManager$Delta(
-				A2(elm$core$Basics$composeL, func, tagger));
-		}
-	});
-_Platform_effectManagers['Browser.AnimationManager'] = _Platform_createManager(elm$browser$Browser$AnimationManager$init, elm$browser$Browser$AnimationManager$onEffects, elm$browser$Browser$AnimationManager$onSelfMsg, 0, elm$browser$Browser$AnimationManager$subMap);
-var elm$browser$Browser$AnimationManager$subscription = _Platform_leaf('Browser.AnimationManager');
-var elm$browser$Browser$AnimationManager$onAnimationFrame = function (tagger) {
-	return elm$browser$Browser$AnimationManager$subscription(
-		elm$browser$Browser$AnimationManager$Time(tagger));
-};
-var elm$browser$Browser$Events$onAnimationFrame = elm$browser$Browser$AnimationManager$onAnimationFrame;
-var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
-var rundis$elm_bootstrap$Bootstrap$Alert$FadeClose = {$: 'FadeClose'};
-var rundis$elm_bootstrap$Bootstrap$Alert$subscriptions = F2(
-	function (visibility, animateMsg) {
-		if (visibility.$ === 'StartClose') {
-			return elm$browser$Browser$Events$onAnimationFrame(
-				function (_n1) {
-					return animateMsg(rundis$elm_bootstrap$Bootstrap$Alert$FadeClose);
-				});
-		} else {
-			return elm$core$Platform$Sub$none;
-		}
-	});
 var rundis$elm_bootstrap$Bootstrap$Modal$FadeClose = {$: 'FadeClose'};
 var rundis$elm_bootstrap$Bootstrap$Modal$subscriptions = F2(
 	function (visibility, animateMsg) {
@@ -7397,6 +7414,10 @@ var author$project$Main$subscriptions = function (model) {
 					elm$core$Platform$Sub$map,
 					author$project$Main$RemotesMsg,
 					author$project$Routes$Remotes$subscriptions(viewState.remoteState)),
+					A2(
+					elm$core$Platform$Sub$map,
+					author$project$Main$DeletedFilesMsg,
+					author$project$Routes$DeletedFiles$subscriptions(viewState.deletedFilesState)),
 					author$project$Websocket$incoming(author$project$Main$WebsocketIn)
 				]));
 	} else {
@@ -7461,9 +7482,6 @@ var author$project$Commands$doLogout = function (msg) {
 				A2(elm$json$Json$Decode$field, 'success', elm$json$Json$Decode$bool)),
 			url: '/api/v0/logout'
 		});
-};
-var author$project$Main$DeletedFilesMsg = function (a) {
-	return {$: 'DeletedFilesMsg', a: a};
 };
 var author$project$Main$GotLoginResp = function (a) {
 	return {$: 'GotLoginResp', a: a};
@@ -7677,14 +7695,18 @@ var author$project$Routes$Commits$reload = function (model) {
 		model.filter);
 };
 var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
-var author$project$Routes$DeletedFiles$Model = F5(
-	function (key, state, zone, filter, alert) {
-		return {alert: alert, filter: filter, key: key, state: state, zone: zone};
+var author$project$Routes$DeletedFiles$Model = F6(
+	function (key, state, zone, filter, offset, alert) {
+		return {alert: alert, filter: filter, key: key, offset: offset, state: state, zone: zone};
 	});
 var author$project$Routes$DeletedFiles$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$DeletedFiles$newModel = F2(
 	function (key, zone) {
-		return A5(author$project$Routes$DeletedFiles$Model, key, author$project$Routes$DeletedFiles$Loading, zone, '', author$project$Routes$DeletedFiles$defaultAlertState);
+		return A6(author$project$Routes$DeletedFiles$Model, key, author$project$Routes$DeletedFiles$Loading, zone, '', 0, author$project$Routes$DeletedFiles$defaultAlertState);
+	});
+var author$project$Commands$DeletedFilesQuery = F3(
+	function (offset, limit, filter) {
+		return {filter: filter, limit: limit, offset: offset};
 	});
 var author$project$Commands$Entry = function (dropdown) {
 	return function (path) {
@@ -7759,18 +7781,45 @@ var author$project$Commands$decodeDeletedFiles = A2(
 	elm$json$Json$Decode$field,
 	'entries',
 	elm$json$Json$Decode$list(author$project$Commands$decodeEntry));
-var author$project$Commands$doDeletedFiles = function (msg) {
-	return elm$http$Http$post(
-		{
-			body: elm$http$Http$emptyBody,
-			expect: A2(elm$http$Http$expectJson, msg, author$project$Commands$decodeDeletedFiles),
-			url: '/api/v0/deleted'
-		});
+var author$project$Commands$encodeDeletedFiles = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'offset',
+				elm$json$Json$Encode$int(q.offset)),
+				_Utils_Tuple2(
+				'limit',
+				elm$json$Json$Encode$int(q.limit)),
+				_Utils_Tuple2(
+				'filter',
+				elm$json$Json$Encode$string(q.filter))
+			]));
 };
-var author$project$Routes$DeletedFiles$GotDeletedPathsResponse = function (a) {
-	return {$: 'GotDeletedPathsResponse', a: a};
+var author$project$Commands$doDeletedFiles = F4(
+	function (msg, offset, limit, filter) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodeDeletedFiles(
+						A3(author$project$Commands$DeletedFilesQuery, offset, limit, filter))),
+				expect: A2(elm$http$Http$expectJson, msg, author$project$Commands$decodeDeletedFiles),
+				url: '/api/v0/deleted'
+			});
+	});
+var author$project$Routes$DeletedFiles$GotDeletedPathsResponse = F2(
+	function (a, b) {
+		return {$: 'GotDeletedPathsResponse', a: a, b: b};
+	});
+var author$project$Routes$DeletedFiles$loadLimit = 25;
+var author$project$Routes$DeletedFiles$reload = function (model) {
+	return A4(
+		author$project$Commands$doDeletedFiles,
+		author$project$Routes$DeletedFiles$GotDeletedPathsResponse(true),
+		model.offset,
+		author$project$Routes$DeletedFiles$loadLimit,
+		model.filter);
 };
-var author$project$Routes$DeletedFiles$reload = author$project$Commands$doDeletedFiles(author$project$Routes$DeletedFiles$GotDeletedPathsResponse);
 var author$project$Commands$ListQuery = F2(
 	function (root, filter) {
 		return {filter: filter, root: root};
@@ -8616,7 +8665,10 @@ var author$project$Main$doInitAfterLogin = F2(
 						author$project$Main$ListMsg,
 						author$project$Routes$Ls$doListQueryFromUrl(model.url)),
 						author$project$Websocket$open(_Utils_Tuple0),
-						A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload),
+						A2(
+						elm$core$Platform$Cmd$map,
+						author$project$Main$DeletedFilesMsg,
+						author$project$Routes$DeletedFiles$reload(newViewState.deletedFilesState)),
 						A2(
 						elm$core$Platform$Cmd$map,
 						author$project$Main$CommitsMsg,
@@ -8931,9 +8983,6 @@ var author$project$Commands$doUndelete = F2(
 				url: '/api/v0/undelete'
 			});
 	});
-var author$project$Routes$DeletedFiles$AlertMsg = function (a) {
-	return {$: 'AlertMsg', a: a};
-};
 var author$project$Routes$DeletedFiles$AlertState = F3(
 	function (message, typ, vis) {
 		return {message: message, typ: typ, vis: vis};
@@ -8947,18 +8996,89 @@ var author$project$Routes$DeletedFiles$GotUndeleteResponse = function (a) {
 var author$project$Routes$DeletedFiles$Success = function (a) {
 	return {$: 'Success', a: a};
 };
+var author$project$Routes$DeletedFiles$sortEntries = F2(
+	function (a, b) {
+		var inv = function (v) {
+			return v ? 0 : 1;
+		};
+		var _n0 = A2(
+			elm$core$Basics$compare,
+			inv(a.isDir),
+			inv(b.isDir));
+		if (_n0.$ === 'EQ') {
+			return A2(elm$core$Basics$compare, a.path, b.path);
+		} else {
+			var other = _n0;
+			return other;
+		}
+	});
+var author$project$Routes$DeletedFiles$toMap = function (entries) {
+	return elm$core$Dict$fromList(
+		A2(
+			elm$core$List$map,
+			function (e) {
+				return _Utils_Tuple2(e.path, e);
+			},
+			entries));
+};
+var elm$core$List$sortWith = _List_sortWith;
+var author$project$Routes$DeletedFiles$mergeEntries = F2(
+	function (old, _new) {
+		return A2(
+			elm$core$List$sortWith,
+			author$project$Routes$DeletedFiles$sortEntries,
+			A2(
+				elm$core$List$map,
+				function (_n0) {
+					var v = _n0.b;
+					return v;
+				},
+				elm$core$Dict$toList(
+					A2(
+						elm$core$Dict$union,
+						author$project$Routes$DeletedFiles$toMap(_new),
+						author$project$Routes$DeletedFiles$toMap(old)))));
+	});
+var author$project$Routes$DeletedFiles$reloadWithoutFlush = F2(
+	function (model, newOffset) {
+		return A4(
+			author$project$Commands$doDeletedFiles,
+			author$project$Routes$DeletedFiles$GotDeletedPathsResponse(false),
+			newOffset,
+			author$project$Routes$DeletedFiles$loadLimit,
+			model.filter);
+	});
+var elm$core$Debug$log = _Debug_log;
 var author$project$Routes$DeletedFiles$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'GotDeletedPathsResponse':
-				var result = msg.a;
+				var doFlush = msg.a;
+				var result = msg.b;
 				if (result.$ === 'Ok') {
 					var entries = result.a;
+					var _n2 = function () {
+						if (doFlush) {
+							return _Utils_Tuple2(_List_Nil, 0);
+						} else {
+							var _n3 = model.state;
+							if (_n3.$ === 'Success') {
+								var oldEntries = _n3.a;
+								return _Utils_Tuple2(oldEntries, model.offset + author$project$Routes$DeletedFiles$loadLimit);
+							} else {
+								return _Utils_Tuple2(_List_Nil, model.offset);
+							}
+						}
+					}();
+					var prevEntries = _n2.a;
+					var newOffset = _n2.b;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{
-								state: author$project$Routes$DeletedFiles$Success(entries)
+								offset: newOffset,
+								state: author$project$Routes$DeletedFiles$Success(
+									A2(author$project$Routes$DeletedFiles$mergeEntries, prevEntries, entries))
 							}),
 						elm$core$Platform$Cmd$none);
 				} else {
@@ -8979,11 +9099,12 @@ var author$project$Routes$DeletedFiles$update = F2(
 					A2(author$project$Commands$doUndelete, author$project$Routes$DeletedFiles$GotUndeleteResponse, path));
 			case 'SearchInput':
 				var filter = msg.a;
+				var upModel = _Utils_update(
+					model,
+					{filter: filter});
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{filter: filter}),
-					elm$core$Platform$Cmd$none);
+					upModel,
+					author$project$Routes$DeletedFiles$reload(upModel));
 			case 'GotUndeleteResponse':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
@@ -8995,7 +9116,7 @@ var author$project$Routes$DeletedFiles$update = F2(
 						elm$core$Platform$Cmd$batch(
 							_List_fromArray(
 								[
-									author$project$Routes$DeletedFiles$reload,
+									author$project$Routes$DeletedFiles$reload(model),
 									A3(
 									andrewMacmurray$elm_delay$Delay$after,
 									5,
@@ -9014,7 +9135,7 @@ var author$project$Routes$DeletedFiles$update = F2(
 						elm$core$Platform$Cmd$batch(
 							_List_fromArray(
 								[
-									author$project$Routes$DeletedFiles$reload,
+									author$project$Routes$DeletedFiles$reload(model),
 									A3(
 									andrewMacmurray$elm_delay$Delay$after,
 									15,
@@ -9022,7 +9143,7 @@ var author$project$Routes$DeletedFiles$update = F2(
 									author$project$Routes$DeletedFiles$AlertMsg(rundis$elm_bootstrap$Bootstrap$Alert$closed))
 								])));
 				}
-			default:
+			case 'AlertMsg':
 				var vis = msg.a;
 				var newAlert = A3(author$project$Routes$DeletedFiles$AlertState, model.alert.message, model.alert.typ, vis);
 				return _Utils_Tuple2(
@@ -9030,6 +9151,15 @@ var author$project$Routes$DeletedFiles$update = F2(
 						model,
 						{alert: newAlert}),
 					elm$core$Platform$Cmd$none);
+			default:
+				var data = msg.a;
+				return author$project$Scroll$hasHitBottom(
+					A2(elm$core$Debug$log, 'SCROLL', data)) ? _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Routes$DeletedFiles$reloadWithoutFlush,
+						model,
+						A2(elm$core$Debug$log, 'RELOAD', model.offset + author$project$Routes$DeletedFiles$loadLimit))) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Routes$Ls$changeTimeZone = F2(
@@ -11181,7 +11311,10 @@ var author$project$Main$update = F2(
 												{currentView: author$project$Main$ViewDeletedFiles})),
 										url: url
 									}),
-								A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload));
+								A2(
+									elm$core$Platform$Cmd$map,
+									author$project$Main$DeletedFilesMsg,
+									author$project$Routes$DeletedFiles$reload(viewState.deletedFilesState)));
 						default:
 							var other = _n9;
 							return _Utils_Tuple2(
@@ -11288,29 +11421,30 @@ var author$project$Main$update = F2(
 				var _n13 = author$project$Main$eventType(event);
 				switch (_n13) {
 					case 'fs':
-						return _Utils_Tuple2(
-							model,
-							elm$core$Platform$Cmd$batch(
-								_List_fromArray(
-									[
-										A2(
-										elm$core$Platform$Cmd$map,
-										author$project$Main$ListMsg,
-										author$project$Routes$Ls$doListQueryFromUrl(model.url)),
-										A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload),
-										function () {
-										var _n14 = model.loginState;
-										if (_n14.$ === 'LoginSuccess') {
-											var viewState = _n14.a;
-											return A2(
-												elm$core$Platform$Cmd$map,
-												author$project$Main$CommitsMsg,
-												author$project$Routes$Commits$reload(viewState.commitsState));
-										} else {
-											return elm$core$Platform$Cmd$none;
-										}
-									}()
-									])));
+						var _n14 = model.loginState;
+						if (_n14.$ === 'LoginSuccess') {
+							var viewState = _n14.a;
+							return _Utils_Tuple2(
+								model,
+								elm$core$Platform$Cmd$batch(
+									_List_fromArray(
+										[
+											A2(
+											elm$core$Platform$Cmd$map,
+											author$project$Main$ListMsg,
+											author$project$Routes$Ls$doListQueryFromUrl(model.url)),
+											A2(
+											elm$core$Platform$Cmd$map,
+											author$project$Main$DeletedFilesMsg,
+											author$project$Routes$DeletedFiles$reload(viewState.deletedFilesState)),
+											A2(
+											elm$core$Platform$Cmd$map,
+											author$project$Main$CommitsMsg,
+											author$project$Routes$Commits$reload(viewState.commitsState))
+										])));
+						} else {
+							return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+						}
 					case 'remotes':
 						return _Utils_Tuple2(
 							model,
@@ -15022,7 +15156,7 @@ var author$project$Routes$DeletedFiles$maybeViewDeletedList = F2(
 								[
 									elm$html$Html$Attributes$class('text-muted')
 								]),
-							_List_fromArray(
+							(!elm$core$String$length(model.filter)) ? _List_fromArray(
 								[
 									elm$html$Html$text(' The '),
 									A2(
@@ -15033,6 +15167,9 @@ var author$project$Routes$DeletedFiles$maybeViewDeletedList = F2(
 										]),
 									_List_Nil),
 									elm$html$Html$text(' is empty. If you delete something, it will appear here.')
+								]) : _List_fromArray(
+								[
+									elm$html$Html$text(' Search did not find anything. Remove the query to go back. ')
 								]))
 						]))
 				]));

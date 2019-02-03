@@ -176,7 +176,7 @@ doInitAfterLogin model loginName =
     , Cmd.batch
         [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
         , Websocket.open ()
-        , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
+        , Cmd.map DeletedFilesMsg <| DeletedFiles.reload newViewState.deletedFilesState
         , Cmd.map CommitsMsg <| Commits.reload newViewState.commitsState
         , Cmd.map RemotesMsg <| Remotes.reload
         ]
@@ -364,7 +364,7 @@ update msg model =
                                             | currentView = ViewDeletedFiles
                                         }
                               }
-                            , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
+                            , Cmd.map DeletedFilesMsg <| DeletedFiles.reload viewState.deletedFilesState
                             )
 
                         other ->
@@ -428,18 +428,18 @@ update msg model =
             -- filesystem entries or remotes.
             case eventType event of
                 "fs" ->
-                    ( model
-                    , Cmd.batch
-                        [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
-                        , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
-                        , case model.loginState of
-                            LoginSuccess viewState ->
-                                Cmd.map CommitsMsg <| Commits.reload viewState.commitsState
+                    case model.loginState of
+                        LoginSuccess viewState ->
+                            ( model
+                            , Cmd.batch
+                                [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
+                                , Cmd.map DeletedFilesMsg <| DeletedFiles.reload viewState.deletedFilesState
+                                , Cmd.map CommitsMsg <| Commits.reload viewState.commitsState
+                                ]
+                            )
 
-                            _ ->
-                                Cmd.none
-                        ]
-                    )
+                        _ ->
+                            ( model, Cmd.none )
 
                 "remotes" ->
                     ( model, Cmd.map RemotesMsg Remotes.reload )
@@ -731,6 +731,7 @@ subscriptions model =
                 [ Sub.map ListMsg (Ls.subscriptions viewState.listState)
                 , Sub.map CommitsMsg (Commits.subscriptions viewState.commitsState)
                 , Sub.map RemotesMsg (Remotes.subscriptions viewState.remoteState)
+                , Sub.map DeletedFilesMsg (DeletedFiles.subscriptions viewState.deletedFilesState)
                 , Websocket.incoming WebsocketIn
                 ]
 

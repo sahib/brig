@@ -495,16 +495,32 @@ doLog msg offset limit filter =
 -- DELETED FILES
 
 
+type alias DeletedFilesQuery =
+    { offset : Int
+    , limit : Int
+    , filter : String
+    }
+
+
+encodeDeletedFiles : DeletedFilesQuery -> E.Value
+encodeDeletedFiles q =
+    E.object
+        [ ( "offset", E.int q.offset )
+        , ( "limit", E.int q.limit )
+        , ( "filter", E.string q.filter )
+        ]
+
+
 decodeDeletedFiles : D.Decoder (List Entry)
 decodeDeletedFiles =
     D.field "entries" (D.list decodeEntry)
 
 
-doDeletedFiles : (Result Http.Error (List Entry) -> msg) -> Cmd msg
-doDeletedFiles msg =
+doDeletedFiles : (Result Http.Error (List Entry) -> msg) -> Int -> Int -> String -> Cmd msg
+doDeletedFiles msg offset limit filter =
     Http.post
         { url = "/api/v0/deleted"
-        , body = Http.emptyBody
+        , body = Http.jsonBody <| encodeDeletedFiles <| DeletedFilesQuery offset limit filter
         , expect = Http.expectJson msg decodeDeletedFiles
         }
 
