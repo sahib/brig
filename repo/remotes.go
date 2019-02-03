@@ -50,8 +50,9 @@ type Remote struct {
 // RemoteList is a helper that parses the remote access yml file
 // and makes it easily accessible from the Go side.
 type RemoteList struct {
-	remotes map[string]*Remote
-	path    string
+	remotes   map[string]*Remote
+	callbacks []func()
+	path      string
 }
 
 // NewRemotes returns a new RemoteList.
@@ -86,7 +87,12 @@ func (rl *RemoteList) save() error {
 		return err
 	}
 
-	return ioutil.WriteFile(rl.path, buf.Bytes(), 0600)
+	if err := ioutil.WriteFile(rl.path, buf.Bytes(), 0600); err != nil {
+		return err
+	}
+
+	rl.notify()
+	return nil
 }
 
 // Export writes the contents of the remote list to `w` in YAML format.
@@ -200,4 +206,14 @@ func (rl *RemoteList) RemoteByAddr(addr string) (Remote, error) {
 	}
 
 	return Remote{}, ErrNoSuchRemote
+}
+
+func (rl *RemoteList) notify() {
+	for _, fn := range rl.callbacks {
+		fn()
+	}
+}
+
+func (rl *RemoteList) OnChange(fn func()) {
+	rl.callbacks = append(rl.callbacks, fn)
 }

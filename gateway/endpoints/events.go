@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
 	"github.com/sahib/brig/events"
+	"github.com/sahib/brig/gateway/remotesapi"
 )
 
 var upgrader = websocket.Upgrader{
@@ -18,16 +19,25 @@ var upgrader = websocket.Upgrader{
 
 // EventsHandler implements http.Handler
 type EventsHandler struct {
-	mu  sync.Mutex
-	id  int
-	chs map[int]chan string
+	mu   sync.Mutex
+	id   int
+	chs  map[int]chan string
+	rapi remotesapi.RemotesAPI
 }
 
 // NewEventsHandler returns a new EventsHandler
-func NewEventsHandler() *EventsHandler {
+func NewEventsHandler(rapi remotesapi.RemotesAPI) *EventsHandler {
 	hdl := &EventsHandler{
-		chs: make(map[int]chan string),
+		chs:  make(map[int]chan string),
+		rapi: rapi,
 	}
+
+	rapi.OnChange(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		hdl.Notify(ctx, "remotes")
+	})
 
 	return hdl
 }

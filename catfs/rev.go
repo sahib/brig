@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	indexCommitPattern = regexp.MustCompile(`^commit\[([0-9]+)\]$`)
+	indexCommitPattern = regexp.MustCompile(`^commit\[([-\+]{0,1}[0-9]+)\]$`)
 )
 
 // validateRev check is a rev spec looks like it's valid

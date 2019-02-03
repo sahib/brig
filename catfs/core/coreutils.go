@@ -459,13 +459,9 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 
 // Log will call `fn` on every commit we currently have, starting
 // with the most current one (CURR, then HEAD, ...).
-// If `fn`` will return an error, the iteration is being stopped.
-func Log(lkr *Linker, fn func(cmt *n.Commit) error) error {
-	curr, err := lkr.Status()
-	if err != nil {
-		return err
-	}
-
+// If `fn` will return an error, the iteration is being stopped.
+func Log(lkr *Linker, start *n.Commit, fn func(cmt *n.Commit) error) error {
+	curr := start
 	for curr != nil {
 		if err := fn(curr); err != nil {
 			return err

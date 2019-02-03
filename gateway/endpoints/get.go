@@ -62,6 +62,10 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get the file nodePath including the leading slash:
 	fullURL := r.URL.EscapedPath()
 	nodePath, err := url.PathUnescape(fullURL[4:])
+	if nodePath == "" {
+		nodePath = "/"
+	}
+
 	if err != nil {
 		log.Debugf("received malformed url: %s", fullURL)
 		http.Error(w, "malformed url", http.StatusBadRequest)

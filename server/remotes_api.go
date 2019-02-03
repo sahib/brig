@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/gateway/remotesapi"
@@ -197,4 +198,14 @@ func (a *RemotesAPI) MakeDiff(name string) (*catfs.Diff, error) {
 			return nil
 		})
 	})
+}
+
+func (a *RemotesAPI) OnChange(fn func()) {
+	rp, err := a.base.Repo()
+	if err != nil {
+		log.Errorf("failed to register callback: no repo: %v", err)
+		return
+	}
+
+	rp.Remotes.OnChange(fn)
 }

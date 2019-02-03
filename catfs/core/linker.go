@@ -366,6 +366,17 @@ func (lkr *Linker) StageNode(nd n.Node) error {
 // `0` will return the very first commit. Negative numbers will yield
 // a ErrNoSuchKey error.
 func (lkr *Linker) CommitByIndex(index int64) (*n.Commit, error) {
+	status, err := lkr.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	if index < 0 {
+		// Interpret an index of -n as curr-(n+1),
+		// so that -1 means "curr".
+		index = status.Index() + index + 1
+	}
+
 	b58Hash, err := lkr.kv.Get("index", strconv.FormatInt(index, 10))
 	if err != nil && err != db.ErrNoSuchKey {
 		return nil, err
@@ -374,11 +385,6 @@ func (lkr *Linker) CommitByIndex(index int64) (*n.Commit, error) {
 	// Special case: status is not in the index bucket.
 	// Do a separate check for it.
 	if err == db.ErrNoSuchKey {
-		status, err := lkr.Status()
-		if err != nil {
-			return nil, err
-		}
-
 		if status.Index() == index {
 			return status, nil
 		}

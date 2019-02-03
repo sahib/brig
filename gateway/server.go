@@ -48,7 +48,7 @@ type Gateway struct {
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
 func NewGateway(fs *catfs.FS, rapi remotesapi.RemotesAPI, cfg *config.Config, dbPath string) (*Gateway, error) {
-	evHdl := endpoints.NewEventsHandler()
+	evHdl := endpoints.NewEventsHandler(rapi)
 	state, err := endpoints.NewState(fs, rapi, cfg, evHdl, dbPath)
 	if err != nil {
 		return nil, err

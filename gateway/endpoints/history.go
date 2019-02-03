@@ -26,10 +26,11 @@ type HistoryRequest struct {
 // Commit is the same as catfs.Commit, but JSON friendly
 // and with some omitted fields that are not used by the client.
 type Commit struct {
-	Date int64    `json:"date"`
-	Msg  string   `json:"msg"`
-	Tags []string `json:"tags"`
-	Hash string   `json:"hash"`
+	Date  int64    `json:"date"`
+	Msg   string   `json:"msg"`
+	Tags  []string `json:"tags"`
+	Hash  string   `json:"hash"`
+	Index int64    `json:"index"`
 }
 
 // HistoryEntry is one entry in the response.
@@ -51,6 +52,7 @@ func toExternalCommit(cmt *catfs.Commit) Commit {
 	ext.Hash = cmt.Hash.B58String()
 	ext.Msg = cmt.Msg
 	ext.Tags = cmt.Tags
+	ext.Index = cmt.Index
 
 	// Make sure we set an empty list,
 	// otherwise .Tags gets serialized as null

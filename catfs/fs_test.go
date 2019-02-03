@@ -120,7 +120,7 @@ func TestLogAndTag(t *testing.T) {
 
 		cmts = append(cmts, status)
 
-		log, err := fs.Log()
+		log, err := fs.Log("", "")
 		require.Nil(t, err)
 
 		for idx, entry := range log {
@@ -248,7 +248,7 @@ func TestHistory(t *testing.T) {
 		hist, err := fs.History("/x")
 		require.Nil(t, err)
 
-		log, err := fs.Log()
+		log, err := fs.Log("", "")
 		require.Nil(t, err)
 
 		for idx, entry := range hist {

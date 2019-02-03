@@ -34,6 +34,7 @@ type RemotesAPI interface {
 	Set(rm Remote) error
 	Remove(name string) error
 	Self() (Identity, error)
+	OnChange(fn func())
 
 	Sync(name string) error
 	MakeDiff(name string) (*catfs.Diff, error)

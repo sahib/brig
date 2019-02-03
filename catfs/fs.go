@@ -153,6 +153,8 @@ type Commit struct {
 	Tags []string
 	// Date is the time when the commit was made
 	Date time.Time
+	// Index is the index of the commit:
+	Index int64
 }
 
 // Change describes a single change to a node between two versions
@@ -1343,6 +1345,7 @@ func (fs *FS) Undelete(root string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	// TODO: Fix pin state after undelete.
 	return vcs.Undelete(fs.lkr, root)
 }
 
@@ -1372,6 +1375,21 @@ func (fs *FS) Curr() (string, error) {
 	return status.TreeHash().B58String(), nil
 }
 
+func commitToExternal(cmt *n.Commit, hashToRef map[string][]string) *Commit {
+	tags := []string{}
+	if hashToRef != nil {
+		tags = hashToRef[cmt.TreeHash().B58String()]
+	}
+
+	return &Commit{
+		Hash:  cmt.TreeHash().Clone(),
+		Msg:   cmt.Message(),
+		Tags:  tags,
+		Date:  cmt.ModTime(),
+		Index: cmt.Index(),
+	}
+}
+
 // History returns all modifications of a node with one entry per commit.
 func (fs *FS) History(path string) ([]Change, error) {
 	fs.mu.Lock()
@@ -1399,21 +1417,11 @@ func (fs *FS) History(path string) ([]Change, error) {
 
 	entries := []Change{}
 	for _, change := range hist {
-		head := &Commit{
-			Hash: change.Head.TreeHash().Clone(),
-			Msg:  change.Head.Message(),
-			Tags: hashToRef[change.Head.TreeHash().B58String()],
-			Date: change.Head.ModTime(),
-		}
+		head := commitToExternal(change.Head, hashToRef)
 
 		var next *Commit
 		if change.Next != nil {
-			next = &Commit{
-				Hash: change.Next.TreeHash().Clone(),
-				Msg:  change.Next.Message(),
-				Tags: hashToRef[change.Next.TreeHash().B58String()],
-				Date: change.Next.ModTime(),
-			}
+			next = commitToExternal(change.Next, hashToRef)
 		}
 
 		isPinned, isExplicit, err := fs.pinner.IsNodePinned(change.Curr)
@@ -1617,26 +1625,37 @@ func (fs *FS) buildCommitHashToRefTable() (map[string][]string, error) {
 }
 
 // Log returns a list of commits starting with the staging commit until the
-// initial commit. For each commit, metadata is collected.
-func (fs *FS) Log() ([]Commit, error) {
+// initial commit. For each commit, metadata is collected and fn is called.
+// The log starts at the revision pointed to by `head`.
+// If `head` is an empty string, "curr" is assumed.
+func (fs *FS) Log(head string, fn func(c *Commit) error) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	hashToRef, err := fs.buildCommitHashToRefTable()
-	if err != nil {
-		return nil, err
+	var (
+		headCmt *n.Commit
+		err     error
+	)
+
+	if head == "" {
+		headCmt, err = fs.lkr.Status()
+		if err != nil {
+			return err
+		}
+	} else {
+		headCmt, err = parseRev(fs.lkr, head)
+		if err != nil {
+			return err
+		}
 	}
 
-	entries := []Commit{}
-	return entries, c.Log(fs.lkr, func(cmt *n.Commit) error {
-		entries = append(entries, Commit{
-			Hash: cmt.TreeHash().Clone(),
-			Msg:  cmt.Message(),
-			Tags: hashToRef[cmt.TreeHash().B58String()],
-			Date: cmt.ModTime(),
-		})
+	hashToRef, err := fs.buildCommitHashToRefTable()
+	if err != nil {
+		return err
+	}
 
-		return nil
+	return c.Log(fs.lkr, headCmt, func(cmt *n.Commit) error {
+		return fn(commitToExternal(cmt, hashToRef))
 	})
 }
 
@@ -1898,10 +1917,5 @@ func (fs *FS) CommitInfo(rev string) (*Commit, error) {
 		return nil, err
 	}
 
-	return &Commit{
-		Hash: cmt.TreeHash().Clone(),
-		Msg:  cmt.Message(),
-		Tags: hashToRef[cmt.TreeHash().B58String()],
-		Date: cmt.ModTime(),
-	}, nil
+	return commitToExternal(cmt, hashToRef), nil
 }

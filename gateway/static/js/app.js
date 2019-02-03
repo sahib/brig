@@ -6317,10 +6317,43 @@ var author$project$Main$RemotesMsg = function (a) {
 var author$project$Main$WebsocketIn = function (a) {
 	return {$: 'WebsocketIn', a: a};
 };
+var author$project$Routes$Commits$OnScroll = function (a) {
+	return {$: 'OnScroll', a: a};
+};
+var elm$json$Json$Decode$andThen = _Json_andThen;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var elm$json$Json$Decode$succeed = _Json_succeed;
+var author$project$Scroll$scrollOrResize = _Platform_incomingPort(
+	'scrollOrResize',
+	A2(
+		elm$json$Json$Decode$andThen,
+		function (viewportWidth) {
+			return A2(
+				elm$json$Json$Decode$andThen,
+				function (viewportHeight) {
+					return A2(
+						elm$json$Json$Decode$andThen,
+						function (scrollTop) {
+							return A2(
+								elm$json$Json$Decode$andThen,
+								function (pageHeight) {
+									return elm$json$Json$Decode$succeed(
+										{pageHeight: pageHeight, scrollTop: scrollTop, viewportHeight: viewportHeight, viewportWidth: viewportWidth});
+								},
+								A2(elm$json$Json$Decode$field, 'pageHeight', elm$json$Json$Decode$int));
+						},
+						A2(elm$json$Json$Decode$field, 'scrollTop', elm$json$Json$Decode$int));
+				},
+				A2(elm$json$Json$Decode$field, 'viewportHeight', elm$json$Json$Decode$int));
+		},
+		A2(elm$json$Json$Decode$field, 'viewportWidth', elm$json$Json$Decode$int)));
 var elm$core$Platform$Sub$batch = _Platform_batch;
-var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Routes$Commits$subscriptions = function (model) {
-	return elm$core$Platform$Sub$none;
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				author$project$Scroll$scrollOrResize(author$project$Routes$Commits$OnScroll)
+			]));
 };
 var author$project$Modals$History$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
@@ -6381,7 +6414,6 @@ var elm$core$Basics$never = function (_n0) {
 	}
 };
 var elm$json$Json$Decode$map = _Json_map1;
-var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -6893,6 +6925,7 @@ var elm$browser$Browser$AnimationManager$onAnimationFrame = function (tagger) {
 		elm$browser$Browser$AnimationManager$Time(tagger));
 };
 var elm$browser$Browser$Events$onAnimationFrame = elm$browser$Browser$AnimationManager$onAnimationFrame;
+var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var rundis$elm_bootstrap$Bootstrap$Alert$FadeClose = {$: 'FadeClose'};
 var rundis$elm_bootstrap$Bootstrap$Alert$subscriptions = F2(
 	function (visibility, animateMsg) {
@@ -7524,73 +7557,9 @@ var author$project$Main$viewFromUrl = function (url) {
 	}
 };
 var author$project$Routes$Commits$Loading = {$: 'Loading'};
-var author$project$Routes$Commits$Model = F4(
-	function (key, state, zone, filter) {
-		return {filter: filter, key: key, state: state, zone: zone};
-	});
-var author$project$Routes$Commits$newModel = F2(
-	function (key, zone) {
-		return A4(author$project$Routes$Commits$Model, key, author$project$Routes$Commits$Loading, zone, '');
-	});
-var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
-var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2(elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
-	});
-var author$project$Commands$Commit = F4(
-	function (date, msg, tags, hash) {
-		return {date: date, hash: hash, msg: msg, tags: tags};
-	});
-var elm$json$Json$Decode$andThen = _Json_andThen;
-var elm$json$Json$Decode$int = _Json_decodeInt;
-var author$project$Commands$timestampToPosix = A2(
-	elm$json$Json$Decode$andThen,
-	function (ms) {
-		return elm$json$Json$Decode$succeed(
-			elm$time$Time$millisToPosix(ms));
-	},
-	elm$json$Json$Decode$int);
-var elm$json$Json$Decode$list = _Json_decodeList;
-var author$project$Commands$decodeCommit = A3(
-	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'hash',
-	elm$json$Json$Decode$string,
-	A3(
-		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'tags',
-		elm$json$Json$Decode$list(elm$json$Json$Decode$string),
-		A3(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'msg',
-			elm$json$Json$Decode$string,
-			A3(
-				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'date',
-				author$project$Commands$timestampToPosix,
-				elm$json$Json$Decode$succeed(author$project$Commands$Commit)))));
-var author$project$Commands$decodeLog = A2(
-	elm$json$Json$Decode$field,
-	'commits',
-	elm$json$Json$Decode$list(author$project$Commands$decodeCommit));
-var author$project$Commands$doLog = function (msg) {
-	return elm$http$Http$post(
-		{
-			body: elm$http$Http$emptyBody,
-			expect: A2(elm$http$Http$expectJson, msg, author$project$Commands$decodeLog),
-			url: '/api/v0/log'
-		});
-};
-var author$project$Routes$Commits$GotLogResponse = function (a) {
-	return {$: 'GotLogResponse', a: a};
-};
-var author$project$Routes$Commits$reload = author$project$Commands$doLog(author$project$Routes$Commits$GotLogResponse);
-var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
-var author$project$Routes$DeletedFiles$Model = F5(
-	function (key, state, zone, filter, alert) {
-		return {alert: alert, filter: filter, key: key, state: state, zone: zone};
+var author$project$Routes$Commits$Model = F6(
+	function (key, state, zone, filter, offset, alert) {
+		return {alert: alert, filter: filter, key: key, offset: offset, state: state, zone: zone};
 	});
 var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
 var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
@@ -7613,6 +7582,105 @@ var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
 var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
 	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
+var author$project$Routes$Commits$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
+var author$project$Routes$Commits$newModel = F2(
+	function (key, zone) {
+		return A6(author$project$Routes$Commits$Model, key, author$project$Routes$Commits$Loading, zone, '', 0, author$project$Routes$Commits$defaultAlertState);
+	});
+var author$project$Commands$LogQuery = F3(
+	function (offset, limit, filter) {
+		return {filter: filter, limit: limit, offset: offset};
+	});
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2(elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var author$project$Commands$Commit = F5(
+	function (date, msg, tags, hash, index) {
+		return {date: date, hash: hash, index: index, msg: msg, tags: tags};
+	});
+var author$project$Commands$timestampToPosix = A2(
+	elm$json$Json$Decode$andThen,
+	function (ms) {
+		return elm$json$Json$Decode$succeed(
+			elm$time$Time$millisToPosix(ms));
+	},
+	elm$json$Json$Decode$int);
+var elm$json$Json$Decode$list = _Json_decodeList;
+var author$project$Commands$decodeCommit = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'index',
+	elm$json$Json$Decode$int,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'hash',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'tags',
+			elm$json$Json$Decode$list(elm$json$Json$Decode$string),
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'msg',
+				elm$json$Json$Decode$string,
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'date',
+					author$project$Commands$timestampToPosix,
+					elm$json$Json$Decode$succeed(author$project$Commands$Commit))))));
+var author$project$Commands$decodeLog = A2(
+	elm$json$Json$Decode$field,
+	'commits',
+	elm$json$Json$Decode$list(author$project$Commands$decodeCommit));
+var elm$json$Json$Encode$int = _Json_wrap;
+var author$project$Commands$encodeLog = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'offset',
+				elm$json$Json$Encode$int(q.offset)),
+				_Utils_Tuple2(
+				'limit',
+				elm$json$Json$Encode$int(q.limit)),
+				_Utils_Tuple2(
+				'filter',
+				elm$json$Json$Encode$string(q.filter))
+			]));
+};
+var author$project$Commands$doLog = F4(
+	function (msg, offset, limit, filter) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodeLog(
+						A3(author$project$Commands$LogQuery, offset, limit, filter))),
+				expect: A2(elm$http$Http$expectJson, msg, author$project$Commands$decodeLog),
+				url: '/api/v0/log'
+			});
+	});
+var author$project$Routes$Commits$GotLogResponse = F2(
+	function (a, b) {
+		return {$: 'GotLogResponse', a: a, b: b};
+	});
+var author$project$Routes$Commits$loadLimit = 20;
+var author$project$Routes$Commits$reload = function (model) {
+	return A4(
+		author$project$Commands$doLog,
+		author$project$Routes$Commits$GotLogResponse(true),
+		model.offset,
+		author$project$Routes$Commits$loadLimit,
+		model.filter);
+};
+var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
+var author$project$Routes$DeletedFiles$Model = F5(
+	function (key, state, zone, filter, alert) {
+		return {alert: alert, filter: filter, key: key, state: state, zone: zone};
+	});
 var author$project$Routes$DeletedFiles$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$DeletedFiles$newModel = F2(
 	function (key, zone) {
@@ -8549,10 +8617,25 @@ var author$project$Main$doInitAfterLogin = F2(
 						author$project$Routes$Ls$doListQueryFromUrl(model.url)),
 						author$project$Websocket$open(_Utils_Tuple0),
 						A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload),
-						A2(elm$core$Platform$Cmd$map, author$project$Main$CommitsMsg, author$project$Routes$Commits$reload),
+						A2(
+						elm$core$Platform$Cmd$map,
+						author$project$Main$CommitsMsg,
+						author$project$Routes$Commits$reload(newViewState.commitsState)),
 						A2(elm$core$Platform$Cmd$map, author$project$Main$RemotesMsg, author$project$Routes$Remotes$reload)
 					])));
 	});
+var author$project$Main$eventType = function (data) {
+	var result = A2(
+		elm$json$Json$Decode$decodeString,
+		A2(elm$json$Json$Decode$field, 'data', elm$json$Json$Decode$string),
+		data);
+	if (result.$ === 'Ok') {
+		var typ = result.a;
+		return typ;
+	} else {
+		return 'failed';
+	}
+};
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$withSubUpdate = F6(
 	function (subMsg, subModel, model, msg, subUpdate, viewStateUpdate) {
@@ -8605,6 +8688,10 @@ var author$project$Commands$doReset = F3(
 				url: '/api/v0/reset'
 			});
 	});
+var author$project$Routes$Commits$AlertState = F3(
+	function (message, typ, vis) {
+		return {message: message, typ: typ, vis: vis};
+	});
 var author$project$Routes$Commits$Failure = function (a) {
 	return {$: 'Failure', a: a};
 };
@@ -8614,69 +8701,38 @@ var author$project$Routes$Commits$GotResetResponse = function (a) {
 var author$project$Routes$Commits$Success = function (a) {
 	return {$: 'Success', a: a};
 };
-var author$project$Util$httpErrorToString = function (err) {
-	switch (err.$) {
-		case 'BadUrl':
-			var msg = err.a;
-			return 'Bad url: ' + msg;
-		case 'Timeout':
-			return 'Timeout';
-		case 'NetworkError':
-			return 'Network error';
-		case 'BadStatus':
-			var status = err.a;
-			return 'Bad status: ' + elm$core$String$fromInt(status);
-		default:
-			var msg = err.a;
-			return 'Could not decode body: ' + msg;
-	}
+var author$project$Routes$Commits$toMap = function (commits) {
+	return elm$core$Dict$fromList(
+		A2(
+			elm$core$List$map,
+			function (c) {
+				return _Utils_Tuple2(c.index, c);
+			},
+			commits));
 };
-var author$project$Routes$Commits$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'GotLogResponse':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					var commits = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: author$project$Routes$Commits$Success(commits)
-							}),
-						elm$core$Platform$Cmd$none);
-				} else {
-					var err = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: author$project$Routes$Commits$Failure(
-									author$project$Util$httpErrorToString(err))
-							}),
-						elm$core$Platform$Cmd$none);
-				}
-			case 'GotResetResponse':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				} else {
-					var err = result.a;
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				}
-			case 'CheckoutClicked':
-				var hash = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A3(author$project$Commands$doReset, author$project$Routes$Commits$GotResetResponse, '/', hash));
-			default:
-				var filter = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{filter: filter}),
-					elm$core$Platform$Cmd$none);
-		}
+var author$project$Routes$Commits$mergeCommits = F2(
+	function (old, _new) {
+		return elm$core$List$reverse(
+			A2(
+				elm$core$List$map,
+				function (_n0) {
+					var v = _n0.b;
+					return v;
+				},
+				elm$core$Dict$toList(
+					A2(
+						elm$core$Dict$union,
+						author$project$Routes$Commits$toMap(_new),
+						author$project$Routes$Commits$toMap(old)))));
+	});
+var author$project$Routes$Commits$reloadWithoutFlush = F2(
+	function (model, newOffset) {
+		return A4(
+			author$project$Commands$doLog,
+			author$project$Routes$Commits$GotLogResponse(false),
+			newOffset,
+			author$project$Routes$Commits$loadLimit,
+			model.filter);
 	});
 var andrewMacmurray$elm_delay$Delay$Second = {$: 'Second'};
 var andrewMacmurray$elm_delay$Delay$Duration = F2(
@@ -8720,6 +8776,137 @@ var andrewMacmurray$elm_delay$Delay$after = F3(
 				A2(andrewMacmurray$elm_delay$Delay$Duration, time, unit)),
 			msg);
 	});
+var author$project$Routes$Commits$AlertMsg = function (a) {
+	return {$: 'AlertMsg', a: a};
+};
+var author$project$Routes$Commits$showAlert = F4(
+	function (model, duration, modalTyp, message) {
+		var newAlert = A3(author$project$Routes$Commits$AlertState, message, modalTyp, rundis$elm_bootstrap$Bootstrap$Alert$shown);
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{alert: newAlert}),
+			elm$core$Platform$Cmd$batch(
+				_List_fromArray(
+					[
+						A3(
+						andrewMacmurray$elm_delay$Delay$after,
+						duration,
+						andrewMacmurray$elm_delay$Delay$Second,
+						author$project$Routes$Commits$AlertMsg(rundis$elm_bootstrap$Bootstrap$Alert$closed))
+					])));
+	});
+var author$project$Scroll$percFloat = function (data) {
+	return (data.scrollTop * 100) / (data.pageHeight - data.viewportHeight);
+};
+var author$project$Scroll$hasHitBottom = function (data) {
+	return author$project$Scroll$percFloat(data) >= 95;
+};
+var author$project$Util$httpErrorToString = function (err) {
+	switch (err.$) {
+		case 'BadUrl':
+			var msg = err.a;
+			return 'Bad url: ' + msg;
+		case 'Timeout':
+			return 'Timeout';
+		case 'NetworkError':
+			return 'Network error';
+		case 'BadStatus':
+			var status = err.a;
+			return 'Bad status: ' + elm$core$String$fromInt(status);
+		default:
+			var msg = err.a;
+			return 'Could not decode body: ' + msg;
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
+var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
+	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
+};
+var author$project$Routes$Commits$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GotLogResponse':
+				var doFlush = msg.a;
+				var result = msg.b;
+				if (result.$ === 'Ok') {
+					var commits = result.a;
+					var _n2 = function () {
+						if (doFlush) {
+							return _Utils_Tuple2(_List_Nil, 0);
+						} else {
+							var _n3 = model.state;
+							if (_n3.$ === 'Success') {
+								var oldCommits = _n3.a;
+								return _Utils_Tuple2(oldCommits, model.offset + author$project$Routes$Commits$loadLimit);
+							} else {
+								return _Utils_Tuple2(_List_Nil, model.offset);
+							}
+						}
+					}();
+					var prevCommits = _n2.a;
+					var newOffset = _n2.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								offset: newOffset,
+								state: author$project$Routes$Commits$Success(
+									A2(author$project$Routes$Commits$mergeCommits, prevCommits, commits))
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Routes$Commits$Failure(
+									author$project$Util$httpErrorToString(err))
+							}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'GotResetResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return A4(author$project$Routes$Commits$showAlert, model, 5, rundis$elm_bootstrap$Bootstrap$Alert$success, 'Succesfully reset state.');
+				} else {
+					var err = result.a;
+					return A4(
+						author$project$Routes$Commits$showAlert,
+						model,
+						15,
+						rundis$elm_bootstrap$Bootstrap$Alert$danger,
+						'Failed to reset: ' + author$project$Util$httpErrorToString(err));
+				}
+			case 'CheckoutClicked':
+				var hash = msg.a;
+				return _Utils_Tuple2(
+					model,
+					A3(author$project$Commands$doReset, author$project$Routes$Commits$GotResetResponse, '/', hash));
+			case 'SearchInput':
+				var filter = msg.a;
+				var upModel = _Utils_update(
+					model,
+					{filter: filter});
+				return _Utils_Tuple2(
+					upModel,
+					author$project$Routes$Commits$reload(upModel));
+			case 'OnScroll':
+				var data = msg.a;
+				return author$project$Scroll$hasHitBottom(data) ? _Utils_Tuple2(
+					model,
+					A2(author$project$Routes$Commits$reloadWithoutFlush, model, model.offset + author$project$Routes$Commits$loadLimit)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			default:
+				var vis = msg.a;
+				var newAlert = A3(author$project$Routes$Commits$AlertState, model.alert.message, model.alert.typ, vis);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{alert: newAlert}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
 var author$project$Commands$UndeleteQuery = function (path) {
 	return {path: path};
 };
@@ -8759,10 +8946,6 @@ var author$project$Routes$DeletedFiles$GotUndeleteResponse = function (a) {
 };
 var author$project$Routes$DeletedFiles$Success = function (a) {
 	return {$: 'Success', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
-var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
-	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
 var author$project$Routes$DeletedFiles$update = F2(
 	function (msg, model) {
@@ -10916,7 +11099,7 @@ var author$project$Main$update = F2(
 				var urlRequest = msg.a;
 				if (urlRequest.$ === 'Internal') {
 					var url = urlRequest.a;
-					var _n6 = A2(elm$core$String$startsWith, '/get/', url.path);
+					var _n6 = A2(elm$core$String$startsWith, '/get', url.path);
 					if (_n6) {
 						return _Utils_Tuple2(
 							model,
@@ -10983,7 +11166,10 @@ var author$project$Main$update = F2(
 												{currentView: author$project$Main$ViewCommits})),
 										url: url
 									}),
-								A2(elm$core$Platform$Cmd$map, author$project$Main$CommitsMsg, author$project$Routes$Commits$reload));
+								A2(
+									elm$core$Platform$Cmd$map,
+									author$project$Main$CommitsMsg,
+									author$project$Routes$Commits$reload(viewState.commitsState)));
 						case 'ViewDeletedFiles':
 							return _Utils_Tuple2(
 								_Utils_update(
@@ -11098,18 +11284,40 @@ var author$project$Main$update = F2(
 					model,
 					author$project$Commands$doLogout(author$project$Main$GotLogoutResp));
 			case 'WebsocketIn':
-				return _Utils_Tuple2(
-					model,
-					elm$core$Platform$Cmd$batch(
-						_List_fromArray(
-							[
-								A2(
-								elm$core$Platform$Cmd$map,
-								author$project$Main$ListMsg,
-								author$project$Routes$Ls$doListQueryFromUrl(model.url)),
-								A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload),
-								A2(elm$core$Platform$Cmd$map, author$project$Main$CommitsMsg, author$project$Routes$Commits$reload)
-							])));
+				var event = msg.a;
+				var _n13 = author$project$Main$eventType(event);
+				switch (_n13) {
+					case 'fs':
+						return _Utils_Tuple2(
+							model,
+							elm$core$Platform$Cmd$batch(
+								_List_fromArray(
+									[
+										A2(
+										elm$core$Platform$Cmd$map,
+										author$project$Main$ListMsg,
+										author$project$Routes$Ls$doListQueryFromUrl(model.url)),
+										A2(elm$core$Platform$Cmd$map, author$project$Main$DeletedFilesMsg, author$project$Routes$DeletedFiles$reload),
+										function () {
+										var _n14 = model.loginState;
+										if (_n14.$ === 'LoginSuccess') {
+											var viewState = _n14.a;
+											return A2(
+												elm$core$Platform$Cmd$map,
+												author$project$Main$CommitsMsg,
+												author$project$Routes$Commits$reload(viewState.commitsState));
+										} else {
+											return elm$core$Platform$Cmd$none;
+										}
+									}()
+									])));
+					case 'remotes':
+						return _Utils_Tuple2(
+							model,
+							A2(elm$core$Platform$Cmd$map, author$project$Main$RemotesMsg, author$project$Routes$Remotes$reload));
+					default:
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
 			case 'ListMsg':
 				var subMsg = msg.a;
 				return A6(
@@ -12940,19 +13148,92 @@ var author$project$Main$viewLoginForm = function (model) {
 					]))
 			]));
 };
-var author$project$Routes$Commits$filterCommits = F2(
-	function (filter, commits) {
+var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
+	function (dismissMsg, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{
+					dismissable: elm$core$Maybe$Just(dismissMsg),
+					withAnimation: true
+				}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
+var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
+var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
+var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
+var author$project$Routes$Commits$viewAlert = F2(
+	function (alert, isSuccess) {
 		return A2(
-			elm$core$List$filter,
-			function (c) {
-				return (filter === '') ? true : A2(elm$core$String$contains, filter, c.msg);
-			},
+			rundis$elm_bootstrap$Bootstrap$Alert$view,
+			alert.vis,
 			A2(
-				elm$core$List$filter,
-				function (c) {
-					return elm$core$String$length(c.msg) > 0;
-				},
-				commits));
+				rundis$elm_bootstrap$Bootstrap$Alert$children,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$row,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												isSuccess ? elm$html$Html$Attributes$class('fas fa-xs fa-check') : elm$html$Html$Attributes$class('fas fa-xs fa-exclamation-circle')
+											]),
+										_List_Nil),
+										elm$html$Html$text(' ' + alert.message)
+									])),
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										rundis$elm_bootstrap$Bootstrap$Button$button,
+										_List_fromArray(
+											[
+												rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+												rundis$elm_bootstrap$Bootstrap$Button$attrs(
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('notification-close-btn'),
+														elm$html$Html$Events$onClick(
+														author$project$Routes$Commits$AlertMsg(rundis$elm_bootstrap$Bootstrap$Alert$closed))
+													]))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$span,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('fas fa-xs fa-times')
+													]),
+												_List_Nil)
+											]))
+									]))
+							]))
+					]),
+				alert.typ(
+					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, author$project$Routes$Commits$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
 	});
 var author$project$Routes$Commits$CheckoutClicked = function (a) {
 	return {$: 'CheckoutClicked', a: a};
@@ -12965,10 +13246,9 @@ var rundis$elm_bootstrap$Bootstrap$Button$outlineDanger = rundis$elm_bootstrap$B
 	rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined(rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger));
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col1 = {$: 'Col1'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col1);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9 = {$: 'Col9'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3 = {$: 'Col3'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs3 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3);
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
 var elm$html$Html$li = _VirtualDom_node('li');
 var rundis$elm_bootstrap$Bootstrap$Internal$ListGroup$Item = function (a) {
 	return {$: 'Item', a: a};
@@ -12980,8 +13260,6 @@ var rundis$elm_bootstrap$Bootstrap$ListGroup$li = F2(
 	});
 var rundis$elm_bootstrap$Bootstrap$Internal$Text$Left = {$: 'Left'};
 var rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Left);
-var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
-var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
 var author$project$Routes$Commits$viewCommit = F2(
 	function (model, commit) {
 		return A2(
@@ -13015,7 +13293,7 @@ var author$project$Routes$Commits$viewCommit = F2(
 							rundis$elm_bootstrap$Bootstrap$Grid$col,
 							_List_fromArray(
 								[
-									rundis$elm_bootstrap$Bootstrap$Grid$Col$xs9,
+									rundis$elm_bootstrap$Bootstrap$Grid$Col$xs8,
 									rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft)
 								]),
 							_List_fromArray(
@@ -13026,7 +13304,7 @@ var author$project$Routes$Commits$viewCommit = F2(
 							rundis$elm_bootstrap$Bootstrap$Grid$col,
 							_List_fromArray(
 								[
-									rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
+									rundis$elm_bootstrap$Bootstrap$Grid$Col$xs3,
 									rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
 								]),
 							_List_fromArray(
@@ -13142,7 +13420,12 @@ var author$project$Routes$Commits$viewCommitList = F2(
 			A2(
 				elm$core$List$map,
 				author$project$Routes$Commits$viewCommit(model),
-				A2(author$project$Routes$Commits$filterCommits, model.filter, commits)));
+				A2(
+					elm$core$List$filter,
+					function (c) {
+						return elm$core$String$length(c.msg) > 0;
+					},
+					commits)));
 	});
 var elm$html$Html$br = _VirtualDom_node('br');
 var elm$html$Html$h4 = _VirtualDom_node('h4');
@@ -13185,6 +13468,7 @@ var author$project$Routes$Commits$viewCommitListContainer = F2(
 								[
 									elm$html$Html$text('Commits')
 								])),
+							A2(author$project$Routes$Commits$viewAlert, model.alert, true),
 							A2(elm$html$Html$br, _List_Nil, _List_Nil),
 							A2(author$project$Routes$Commits$viewCommitList, model, commits),
 							A2(elm$html$Html$br, _List_Nil, _List_Nil)
@@ -13365,10 +13649,9 @@ var elm$virtual_dom$VirtualDom$lazy = _VirtualDom_lazy;
 var elm$html$Html$Lazy$lazy = elm$virtual_dom$VirtualDom$lazy;
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg12 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col12);
 var rundis$elm_bootstrap$Bootstrap$General$Internal$XL = {$: 'XL'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3 = {$: 'Col3'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl3 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col3);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9 = {$: 'Col9'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xl9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XL, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$RowAttrs = function (a) {
 	return {$: 'RowAttrs', a: a};
@@ -14754,21 +15037,6 @@ var author$project$Routes$DeletedFiles$maybeViewDeletedList = F2(
 						]))
 				]));
 	});
-var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
-	function (dismissMsg, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{
-					dismissable: elm$core$Maybe$Just(dismissMsg),
-					withAnimation: true
-				}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
-var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
 var author$project$Routes$DeletedFiles$viewAlert = F2(
 	function (alert, isSuccess) {
 		return A2(
@@ -17159,7 +17427,6 @@ var author$project$Routes$Ls$viewDownloadButton = F2(
 	});
 var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col4 = {$: 'Col4'};
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs4 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col4);
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs8 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col8);
 var author$project$Routes$Ls$viewMetaRow = F2(
 	function (key, value) {
 		return A2(

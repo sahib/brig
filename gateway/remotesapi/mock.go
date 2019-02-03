@@ -12,6 +12,7 @@ type Mock struct {
 	name        string
 	fingerprint string
 	remotes     map[string]*Remote
+	callbacks   []func()
 }
 
 // NewMock creates a new Mock.
@@ -56,6 +57,7 @@ func (m *Mock) Set(rm Remote) error {
 	}
 
 	m.remotes[rm.Name] = &rm
+	m.notify()
 	return nil
 }
 
@@ -65,6 +67,7 @@ func (m *Mock) Remove(name string) error {
 	}
 
 	delete(m.remotes, name)
+	m.notify()
 	return nil
 }
 
@@ -90,4 +93,14 @@ func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 
 	// always send an empty diff.
 	return &catfs.Diff{}, nil
+}
+
+func (m *Mock) notify() {
+	for _, fn := range m.callbacks {
+		fn()
+	}
+}
+
+func (m *Mock) OnChange(fn func()) {
+	m.callbacks = append(m.callbacks, fn)
 }

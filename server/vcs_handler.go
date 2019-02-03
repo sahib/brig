@@ -60,7 +60,14 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 	seg := call.Results.Segment()
 
 	return vcs.base.withCurrFs(func(fs *catfs.FS) error {
-		entries, err := fs.Log()
+		// TODO: Support partial logs at some point.
+		// (like in gateway. currently everything is dumped.)
+		entries := []*catfs.Commit{}
+		err := fs.Log("", func(cmt *catfs.Commit) error {
+			entries = append(entries, cmt)
+			return nil
+		})
+
 		if err != nil {
 			return err
 		}
@@ -71,7 +78,7 @@ func (vcs *vcsHandler) Log(call capnp.VCS_log) error {
 		}
 
 		for idx, entry := range entries {
-			capEntry, err := commitToCap(&entry, seg)
+			capEntry, err := commitToCap(entry, seg)
 			if err != nil {
 				return err
 			}

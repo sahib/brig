@@ -106,6 +106,7 @@ type alias Commit =
     , msg : String
     , tags : List String
     , hash : String
+    , index : Int
     }
 
 
@@ -129,6 +130,7 @@ decodeCommit =
         |> DP.required "msg" D.string
         |> DP.required "tags" (D.list D.string)
         |> DP.required "hash" D.string
+        |> DP.required "index" D.int
 
 
 decodeHistoryEntry : D.Decoder HistoryEntry
@@ -459,16 +461,32 @@ doWhoami msg =
 -- LOG
 
 
+type alias LogQuery =
+    { offset : Int
+    , limit : Int
+    , filter : String
+    }
+
+
+encodeLog : LogQuery -> E.Value
+encodeLog q =
+    E.object
+        [ ( "offset", E.int q.offset )
+        , ( "limit", E.int q.limit )
+        , ( "filter", E.string q.filter )
+        ]
+
+
 decodeLog : D.Decoder (List Commit)
 decodeLog =
     D.field "commits" (D.list decodeCommit)
 
 
-doLog : (Result Http.Error (List Commit) -> msg) -> Cmd msg
-doLog msg =
+doLog : (Result Http.Error (List Commit) -> msg) -> Int -> Int -> String -> Cmd msg
+doLog msg offset limit filter =
     Http.post
         { url = "/api/v0/log"
-        , body = Http.emptyBody
+        , body = Http.jsonBody <| encodeLog <| LogQuery offset limit filter
         , expect = Http.expectJson msg decodeLog
         }
 

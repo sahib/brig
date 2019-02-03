@@ -177,7 +177,7 @@ doInitAfterLogin model loginName =
         [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
         , Websocket.open ()
         , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
-        , Cmd.map CommitsMsg <| Commits.reload
+        , Cmd.map CommitsMsg <| Commits.reload newViewState.commitsState
         , Cmd.map RemotesMsg <| Remotes.reload
         ]
     )
@@ -235,6 +235,20 @@ viewToString v =
             "/nothing"
 
 
+eventType : String -> String
+eventType data =
+    let
+        result =
+            D.decodeString (D.field "data" D.string) data
+    in
+    case result of
+        Ok typ ->
+            typ
+
+        Err _ ->
+            "failed"
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -284,7 +298,7 @@ update msg model =
                 Browser.Internal url ->
                     -- Special case: /get/ requests should be routed as if we clicked an
                     -- external link.
-                    case String.startsWith "/get/" url.path of
+                    case String.startsWith "/get" url.path of
                         True ->
                             ( model, Nav.load (Url.toString url) )
 
@@ -338,7 +352,7 @@ update msg model =
                                             | currentView = ViewCommits
                                         }
                               }
-                            , Cmd.map CommitsMsg <| Commits.reload
+                            , Cmd.map CommitsMsg <| Commits.reload viewState.commitsState
                             )
 
                         ViewDeletedFiles ->
@@ -408,17 +422,30 @@ update msg model =
         LogoutSubmit ->
             ( model, Commands.doLogout GotLogoutResp )
 
-        WebsocketIn _ ->
-            -- Currently we know only one event that is being sent
-            -- over the websocket. It means "update the list, something changed". Change
-            -- this once we have more events.
-            ( model
-            , Cmd.batch
-                [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
-                , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
-                , Cmd.map CommitsMsg <| Commits.reload
-                ]
-            )
+        WebsocketIn event ->
+            -- The backend lets us know that some of the data changed.
+            -- Depending on the event type these are currently either
+            -- filesystem entries or remotes.
+            case eventType event of
+                "fs" ->
+                    ( model
+                    , Cmd.batch
+                        [ Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url
+                        , Cmd.map DeletedFilesMsg <| DeletedFiles.reload
+                        , case model.loginState of
+                            LoginSuccess viewState ->
+                                Cmd.map CommitsMsg <| Commits.reload viewState.commitsState
+
+                            _ ->
+                                Cmd.none
+                        ]
+                    )
+
+                "remotes" ->
+                    ( model, Cmd.map RemotesMsg Remotes.reload )
+
+                _ ->
+                    ( model, Cmd.none )
 
         ListMsg subMsg ->
             withSubUpdate
