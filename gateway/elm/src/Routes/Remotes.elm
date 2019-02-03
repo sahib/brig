@@ -370,8 +370,8 @@ viewMetaRow key value =
 viewSelf : Model -> Html Msg
 viewSelf model =
     Grid.row []
-        [ Grid.col [ Col.xs2 ] []
-        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsCenter ]
+        [ Grid.col [ Col.lg2, Col.attrs [ class "d-none d-lg-block" ] ] []
+        , Grid.col [ Col.xs12, Col.lg8, Col.textAlign Text.alignXsCenter ]
             [ ListGroup.ul
                 [ ListGroup.li []
                     [ viewMetaRow "Name" (text model.self.name)
@@ -381,15 +381,15 @@ viewSelf model =
                     ]
                 ]
             ]
-        , Grid.col [ Col.xs2 ] []
+        , Grid.col [ Col.lg2, Col.attrs [ class "d-none d-lg-block" ] ] []
         ]
 
 
 viewRemoteListContainer : Model -> List Commands.Remote -> Html Msg
 viewRemoteListContainer model remotes =
     Grid.row []
-        [ Grid.col [ Col.xs1 ] []
-        , Grid.col [ Col.xs10 ]
+        [ Grid.col [ Col.lg1, Col.attrs [ class "d-none d-lg-block" ] ] []
+        , Grid.col [ Col.xs12, Col.lg10 ]
             [ viewAlert model.alert True
             , viewRemoteList model remotes
             , div [ class "text-left" ]
@@ -403,7 +403,7 @@ viewRemoteListContainer model remotes =
                     ]
                 ]
             ]
-        , Grid.col [ Col.xs1 ] []
+        , Grid.col [ Col.lg1, Col.attrs [ class "d-none d-lg-block" ] ] []
         ]
 
 

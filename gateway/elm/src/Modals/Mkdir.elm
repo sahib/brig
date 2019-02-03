@@ -157,16 +157,20 @@ view model url existChecker =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 []
-            [ text "Create a new directory in "
-            , span [ class "text-muted" ]
-                [ text
-                    (if path == "/" then
-                        "Home"
+        |> Modal.header [ class "modal-title modal-header-primary" ]
+            [ h4 []
+                [ text "Create a new directory in "
+                , span []
+                    [ text "»"
+                    , text
+                        (if path == "/" then
+                            "Home"
 
-                     else
-                        path
-                    )
+                         else
+                            path
+                        )
+                    , text "«"
+                    ]
                 ]
             ]
         |> Modal.body []

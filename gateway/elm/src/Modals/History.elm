@@ -2,27 +2,20 @@ module Modals.History exposing (Model, Msg, newModel, show, subscriptions, updat
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
-
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Modal as Modal
-
-
 import Browser.Events as Events
-
 import Commands
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
 import List
 import Time
-
 import Util
 
 
@@ -206,7 +199,8 @@ view model =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text "History" ]
+        |> Modal.header [ class "modal-title modal-header-success" ]
+            [ h4 [] [ text "History" ] ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewHistory model) ]

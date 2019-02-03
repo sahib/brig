@@ -17,21 +17,15 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
-
 import Bootstrap.Table as Table
-
 import Browser.Events as Events
-
 import Commands
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
 import List
-
 import Util
 
 
@@ -300,18 +294,24 @@ view model =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 []
-            [ text (typeToString model.action ++ " ")
-            , span [ class "text-muted" ]
-                [ text (Util.basename model.sourcePath) ]
-            , if String.length model.destPath > 0 then
-                span []
-                    [ text " into "
-                    , span [ class "text-muted" ] [ text model.destPath ]
+        |> Modal.header [ class "modal-title modal-header-primary" ]
+            [ h4 []
+                [ text (typeToString model.action ++ " ")
+                , span []
+                    [ text "»"
+                    , text (Util.basename model.sourcePath)
+                    , text "«"
                     ]
+                , if String.length model.destPath > 0 then
+                    span []
+                        [ text " into »"
+                        , text model.destPath
+                        , text "«"
+                        ]
 
-              else
-                text " into ..."
+                  else
+                    text " into ..."
+                ]
             ]
         |> Modal.body []
             [ Grid.containerFluid []

@@ -80,7 +80,8 @@ view model selectedPaths url =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text "Share hyperlinks" ]
+        |> Modal.header [ class "modal-title modal-header-primary" ]
+            [ h4 [] [ text "Share hyperlinks" ] ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model selectedPaths url) ]

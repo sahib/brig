@@ -18234,12 +18234,19 @@ var author$project$Routes$Remotes$viewRemoteListContainer = F2(
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1]),
+						[
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$lg1,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('d-none d-lg-block')
+								]))
+						]),
 					_List_Nil),
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12, rundis$elm_bootstrap$Bootstrap$Grid$Col$lg10]),
 					_List_fromArray(
 						[
 							A2(author$project$Routes$Remotes$viewAlert, model.alert, true),
@@ -18280,7 +18287,14 @@ var author$project$Routes$Remotes$viewRemoteListContainer = F2(
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1]),
+						[
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$lg1,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('d-none d-lg-block')
+								]))
+						]),
 					_List_Nil)
 				]));
 	});
@@ -18331,13 +18345,21 @@ var author$project$Routes$Remotes$viewSelf = function (model) {
 				A2(
 				rundis$elm_bootstrap$Bootstrap$Grid$col,
 				_List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2]),
+					[
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$lg2,
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('d-none d-lg-block')
+							]))
+					]),
 				_List_Nil),
 				A2(
 				rundis$elm_bootstrap$Bootstrap$Grid$col,
 				_List_fromArray(
 					[
-						rundis$elm_bootstrap$Bootstrap$Grid$Col$xs8,
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12,
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$lg8,
 						rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsCenter)
 					]),
 				_List_fromArray(
@@ -18370,7 +18392,14 @@ var author$project$Routes$Remotes$viewSelf = function (model) {
 				A2(
 				rundis$elm_bootstrap$Bootstrap$Grid$col,
 				_List_fromArray(
-					[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2]),
+					[
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$lg2,
+						rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('d-none d-lg-block')
+							]))
+					]),
 				_List_Nil)
 			]));
 };
@@ -19001,7 +19030,6 @@ var rundis$elm_bootstrap$Bootstrap$Modal$footer = F3(
 							{attributes: attributes, children: children}))
 				}));
 	});
-var elm$html$Html$h5 = _VirtualDom_node('h5');
 var rundis$elm_bootstrap$Bootstrap$Modal$Header = function (a) {
 	return {$: 'Header', a: a};
 };
@@ -19017,23 +19045,6 @@ var rundis$elm_bootstrap$Bootstrap$Modal$header = F3(
 							{attributes: attributes, children: children}))
 				}));
 	});
-var rundis$elm_bootstrap$Bootstrap$Modal$titledHeader = F3(
-	function (itemFn, attributes, children) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Modal$header,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					itemFn,
-					A2(
-						elm$core$List$cons,
-						elm$html$Html$Attributes$class('modal-title'),
-						attributes),
-					children)
-				]));
-	});
-var rundis$elm_bootstrap$Bootstrap$Modal$h5 = rundis$elm_bootstrap$Bootstrap$Modal$titledHeader(elm$html$Html$h5);
 var rundis$elm_bootstrap$Bootstrap$Modal$StartClose = {$: 'StartClose'};
 var rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated = rundis$elm_bootstrap$Bootstrap$Modal$StartClose;
 var rundis$elm_bootstrap$Bootstrap$Modal$large = function (_n0) {
@@ -19429,11 +19440,20 @@ var author$project$Modals$History$view = function (model) {
 							]))
 					]),
 				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$h5,
-					_List_Nil,
+					rundis$elm_bootstrap$Bootstrap$Modal$header,
 					_List_fromArray(
 						[
-							elm$html$Html$text('History')
+							elm$html$Html$Attributes$class('modal-title modal-header-success')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$h4,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text('History')
+								]))
 						]),
 					A2(
 						rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
@@ -19587,21 +19607,29 @@ var author$project$Modals$Mkdir$view = F3(
 								]))
 						]),
 					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
+						rundis$elm_bootstrap$Bootstrap$Modal$header,
 						_List_fromArray(
 							[
-								elm$html$Html$text('Create a new directory in '),
+								elm$html$Html$Attributes$class('modal-title modal-header-primary')
+							]),
+						_List_fromArray(
+							[
 								A2(
-								elm$html$Html$span,
+								elm$html$Html$h4,
+								_List_Nil,
 								_List_fromArray(
 									[
-										elm$html$Html$Attributes$class('text-muted')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text(
-										(path === '/') ? 'Home' : path)
+										elm$html$Html$text('Create a new directory in '),
+										A2(
+										elm$html$Html$span,
+										_List_Nil,
+										_List_fromArray(
+											[
+												elm$html$Html$text('»'),
+												elm$html$Html$text(
+												(path === '/') ? 'Home' : path),
+												elm$html$Html$text('«')
+											]))
 									]))
 							]),
 						A2(
@@ -19881,40 +19909,40 @@ var author$project$Modals$MoveCopy$view = function (model) {
 							]))
 					]),
 				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$h5,
-					_List_Nil,
+					rundis$elm_bootstrap$Bootstrap$Modal$header,
 					_List_fromArray(
 						[
-							elm$html$Html$text(
-							author$project$Modals$MoveCopy$typeToString(model.action) + ' '),
+							elm$html$Html$Attributes$class('modal-title modal-header-primary')
+						]),
+					_List_fromArray(
+						[
 							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('text-muted')
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text(
-									author$project$Util$basename(model.sourcePath))
-								])),
-							(elm$core$String$length(model.destPath) > 0) ? A2(
-							elm$html$Html$span,
+							elm$html$Html$h4,
 							_List_Nil,
 							_List_fromArray(
 								[
-									elm$html$Html$text(' into '),
+									elm$html$Html$text(
+									author$project$Modals$MoveCopy$typeToString(model.action) + ' '),
 									A2(
 									elm$html$Html$span,
+									_List_Nil,
 									_List_fromArray(
 										[
-											elm$html$Html$Attributes$class('text-muted')
-										]),
+											elm$html$Html$text('»'),
+											elm$html$Html$text(
+											author$project$Util$basename(model.sourcePath)),
+											elm$html$Html$text('«')
+										])),
+									(elm$core$String$length(model.destPath) > 0) ? A2(
+									elm$html$Html$span,
+									_List_Nil,
 									_List_fromArray(
 										[
-											elm$html$Html$text(model.destPath)
-										]))
-								])) : elm$html$Html$text(' into ...')
+											elm$html$Html$text(' into »'),
+											elm$html$Html$text(model.destPath),
+											elm$html$Html$text('«')
+										])) : elm$html$Html$text(' into ...')
+								]))
 						]),
 					A2(
 						rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
@@ -19940,7 +19968,7 @@ var author$project$Modals$Remove$viewRemoveContent = F2(
 						var _n0 = model.state;
 						if (_n0.$ === 'Ready') {
 							return elm$html$Html$text(
-								'Remove the ' + (elm$core$String$fromInt(nSelected) + ' selected items'));
+								'This would remove the ' + (elm$core$String$fromInt(nSelected) + ' selected items.'));
 						} else {
 							var message = _n0.a;
 							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Remove$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not remove directory: ' + message);
@@ -19949,8 +19977,9 @@ var author$project$Modals$Remove$viewRemoveContent = F2(
 					]))
 			]);
 	});
-var rundis$elm_bootstrap$Bootstrap$Button$danger = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger));
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Warning = {$: 'Warning'};
+var rundis$elm_bootstrap$Bootstrap$Button$warning = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Warning));
 var author$project$Modals$Remove$view = F2(
 	function (model, selectedPaths) {
 		return A2(
@@ -19965,7 +19994,7 @@ var author$project$Modals$Remove$view = F2(
 						rundis$elm_bootstrap$Bootstrap$Button$button,
 						_List_fromArray(
 							[
-								rundis$elm_bootstrap$Bootstrap$Button$danger,
+								rundis$elm_bootstrap$Bootstrap$Button$warning,
 								rundis$elm_bootstrap$Bootstrap$Button$attrs(
 								_List_fromArray(
 									[
@@ -20023,11 +20052,20 @@ var author$project$Modals$Remove$view = F2(
 								]))
 						]),
 					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
+						rundis$elm_bootstrap$Bootstrap$Modal$header,
 						_List_fromArray(
 							[
-								elm$html$Html$text('Really remove?')
+								elm$html$Html$Attributes$class('modal-title modal-header-warning')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$h4,
+								_List_Nil,
+								_List_fromArray(
+									[
+										elm$html$Html$text('Really remove?')
+									]))
 							]),
 						A2(
 							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
@@ -20143,28 +20181,19 @@ var author$project$Modals$Rename$view = function (model) {
 							]))
 					]),
 				A3(
-					rundis$elm_bootstrap$Bootstrap$Modal$h5,
-					_List_Nil,
+					rundis$elm_bootstrap$Bootstrap$Modal$header,
 					_List_fromArray(
 						[
-							elm$html$Html$text('Rename '),
+							elm$html$Html$Attributes$class('modal-title modal-header-primary')
+						]),
+					_List_fromArray(
+						[
 							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('text-muted')
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text(
-									author$project$Util$basename(model.currPath))
-								])),
-							(elm$core$String$length(model.inputName) > 0) ? A2(
-							elm$html$Html$span,
+							elm$html$Html$h4,
 							_List_Nil,
 							_List_fromArray(
 								[
-									elm$html$Html$text(' to '),
+									elm$html$Html$text('Rename '),
 									A2(
 									elm$html$Html$span,
 									_List_fromArray(
@@ -20173,9 +20202,27 @@ var author$project$Modals$Rename$view = function (model) {
 										]),
 									_List_fromArray(
 										[
-											elm$html$Html$text(model.inputName)
-										]))
-								])) : elm$html$Html$text('')
+											elm$html$Html$text(
+											author$project$Util$basename(model.currPath))
+										])),
+									(elm$core$String$length(model.inputName) > 0) ? A2(
+									elm$html$Html$span,
+									_List_Nil,
+									_List_fromArray(
+										[
+											elm$html$Html$text(' to '),
+											A2(
+											elm$html$Html$span,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('text-muted')
+												]),
+											_List_fromArray(
+												[
+													elm$html$Html$text(model.inputName)
+												]))
+										])) : elm$html$Html$text('')
+								]))
 						]),
 					A2(
 						rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
@@ -20300,11 +20347,20 @@ var author$project$Modals$Share$view = F3(
 								]))
 						]),
 					A3(
-						rundis$elm_bootstrap$Bootstrap$Modal$h5,
-						_List_Nil,
+						rundis$elm_bootstrap$Bootstrap$Modal$header,
 						_List_fromArray(
 							[
-								elm$html$Html$text('Share hyperlinks')
+								elm$html$Html$Attributes$class('modal-title modal-header-primary')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$h4,
+								_List_Nil,
+								_List_fromArray(
+									[
+										elm$html$Html$text('Share hyperlinks')
+									]))
 							]),
 						A2(
 							rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
@@ -20611,6 +20667,8 @@ var author$project$Modals$RemoteRemove$viewRemoteAddContent = function (model) {
 				]))
 		]);
 };
+var rundis$elm_bootstrap$Bootstrap$Button$danger = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger));
 var author$project$Modals$RemoteRemove$view = function (model) {
 	return A2(
 		rundis$elm_bootstrap$Bootstrap$Modal$view,

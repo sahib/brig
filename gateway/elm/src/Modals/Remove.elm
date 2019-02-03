@@ -106,7 +106,7 @@ viewRemoveContent model nSelected =
     [ Grid.col [ Col.xs12 ]
         [ case model.state of
             Ready ->
-                text ("Remove the " ++ String.fromInt nSelected ++ " selected items")
+                text ("This would remove the " ++ String.fromInt nSelected ++ " selected items.")
 
             Fail message ->
                 Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not remove directory: " ++ message)
@@ -119,14 +119,15 @@ view model selectedPaths =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 [] [ text "Really remove?" ]
+        |> Modal.header [ class "modal-title modal-header-warning" ]
+            [ h4 [] [ text "Really remove?" ] ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row [] (viewRemoveContent model (List.length selectedPaths)) ]
             ]
         |> Modal.footer []
             [ Button.button
-                [ Button.danger
+                [ Button.warning
                 , Button.attrs
                     [ onClick <| RemoveAll selectedPaths
                     , disabled

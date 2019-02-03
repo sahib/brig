@@ -5,22 +5,14 @@ import Bootstrap.Button as Button
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
 import Bootstrap.Modal as Modal
-
-
 import Browser.Events as Events
-
 import Commands
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
-
-
 import Util
 
 
@@ -153,18 +145,20 @@ view model =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
-        |> Modal.h5 []
-            [ text "Rename "
-            , span [ class "text-muted" ]
-                [ text (Util.basename model.currPath) ]
-            , if String.length model.inputName > 0 then
-                span []
-                    [ text " to "
-                    , span [ class "text-muted" ] [ text model.inputName ]
-                    ]
+        |> Modal.header [ class "modal-title modal-header-primary" ]
+            [ h4 []
+                [ text "Rename "
+                , span [ class "text-muted" ]
+                    [ text (Util.basename model.currPath) ]
+                , if String.length model.inputName > 0 then
+                    span []
+                        [ text " to "
+                        , span [ class "text-muted" ] [ text model.inputName ]
+                        ]
 
-              else
-                text ""
+                  else
+                    text ""
+                ]
             ]
         |> Modal.body []
             [ Grid.containerFluid []
