@@ -50,6 +50,9 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := fmt.Sprintf("moved »%s« to »%s« via gateway", moveReq.Source, moveReq.Destination)
-	mh.commitChange(msg, w, r)
+	if !mh.commitChange(msg, w, r) {
+		return
+	}
+
 	jsonifySuccess(w)
 }

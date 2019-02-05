@@ -7,11 +7,12 @@ module Util exposing
     , httpErrorToString
     , joinPath
     , monthToInt
+    , prefixSlash
     , splitPath
     , urlEncodePath
     , urlPrefixToString
     , urlToPath
-    , prefixSlash
+    , viewToggleSwitch
     )
 
 import Bootstrap.Alert as Alert
@@ -142,10 +143,12 @@ basename path =
         x :: _ ->
             x
 
+
 prefixSlash : String -> String
 prefixSlash path =
     if String.startsWith "/" path then
         path
+
     else
         "/" ++ path
 
@@ -222,3 +225,18 @@ urlPrefixToString url =
 urlEncodePath : String -> String
 urlEncodePath path =
     joinPath (List.map Url.percentEncode (splitPath path))
+
+
+viewToggleSwitch : (Bool -> msg) -> String -> Bool -> Html msg
+viewToggleSwitch toMsg message isChecked =
+    span []
+        [ span []
+            [ label [ class "toggle-switch" ]
+                [ input [ type_ "checkbox", onCheck toMsg, checked isChecked ] []
+                , span [ class "toggle-slider toggle-round" ] []
+                ]
+            ]
+        , span
+            [ class "text-muted" ]
+            [ text (" " ++ message) ]
+        ]

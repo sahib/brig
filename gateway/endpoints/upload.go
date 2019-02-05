@@ -68,7 +68,9 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			msg += fmt.Sprintf(" and %d more", len(paths)-1)
 		}
 
-		uh.commitChange(msg, w, r)
+		if !uh.commitChange(msg, w, r) {
+			return
+		}
 	}
 
 	jsonifySuccess(w)

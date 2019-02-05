@@ -162,18 +162,7 @@ viewRemoteAddContent model =
             , Input.onInput FoldersChanged
             ]
         , br [] []
-        , span []
-            [ span [ class "text-muted" ] []
-            , span [ class "checkbox" ]
-                [ label [ style "margin-bottom" "0px !important" ]
-                    [ input [ type_ "checkbox", onCheck AutoUpdateChanged ] []
-                    , span [ class "cr" ] [ i [ class "cr-icon fas fa-lg fa-check" ] [] ]
-                    ]
-                ]
-            , span
-                [ class "text-muted" ]
-                [ text "Accept automatic updates?" ]
-            ]
+        , span [] [ Util.viewToggleSwitch AutoUpdateChanged "Accept automatic updates?" model.doAutoUdate ]
         , case model.state of
             Ready ->
                 text ""

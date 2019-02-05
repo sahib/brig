@@ -1,8 +1,11 @@
 module Commands exposing
     ( Commit
+    , Diff
+    , DiffPair
     , Entry
     , HistoryEntry
     , ListResponse
+    , Log
     , Remote
     , Self
     , WhoamiResponse
@@ -19,6 +22,7 @@ module Commands exposing
     , doRemoteAdd
     , doRemoteDiff
     , doRemoteList
+    , doRemoteModify
     , doRemoteRemove
     , doRemoteSync
     , doRemove
@@ -27,6 +31,7 @@ module Commands exposing
     , doUndelete
     , doUpload
     , doWhoami
+    , emptyRemote
     , emptySelf
     )
 
@@ -468,6 +473,12 @@ type alias LogQuery =
     }
 
 
+type alias Log =
+    { haveStagedChanges : Bool
+    , commits : List Commit
+    }
+
+
 encodeLog : LogQuery -> E.Value
 encodeLog q =
     E.object
@@ -477,12 +488,14 @@ encodeLog q =
         ]
 
 
-decodeLog : D.Decoder (List Commit)
+decodeLog : D.Decoder Log
 decodeLog =
-    D.field "commits" (D.list decodeCommit)
+    D.map2 Log
+        (D.field "have_staged_changes" D.bool)
+        (D.field "commits" (D.list decodeCommit))
 
 
-doLog : (Result Http.Error (List Commit) -> msg) -> Int -> Int -> String -> Cmd msg
+doLog : (Result Http.Error Log -> msg) -> Int -> Int -> String -> Cmd msg
 doLog msg offset limit filter =
     Http.post
         { url = "/api/v0/log"
@@ -566,6 +579,18 @@ type alias Remote =
     , isOnline : Bool
     , isAuthenticated : Bool
     , lastSeen : Time.Posix
+    }
+
+
+emptyRemote : Remote
+emptyRemote =
+    { name = ""
+    , folders = []
+    , fingerprint = ""
+    , acceptAutoUpdates = False
+    , isOnline = False
+    , isAuthenticated = False
+    , lastSeen = Time.millisToPosix 0
     }
 
 
@@ -654,35 +679,6 @@ doRemoteSync toMsg name =
 
 
 
--- REMOTE DIFF
-
-
-type alias RemoteDiffQuery =
-    { name : String
-    }
-
-
-encodeRemoteDiffQuery : RemoteDiffQuery -> E.Value
-encodeRemoteDiffQuery q =
-    E.object
-        [ ( "name", E.string q.name ) ]
-
-
-decodeRemoteDiffQuery : D.Decoder String
-decodeRemoteDiffQuery =
-    D.field "message" D.string
-
-
-doRemoteDiff : (Result Http.Error String -> msg) -> String -> Cmd msg
-doRemoteDiff toMsg name =
-    Http.post
-        { url = "/api/v0/remotes/diff"
-        , body = Http.jsonBody <| encodeRemoteDiffQuery <| RemoteDiffQuery name
-        , expect = Http.expectJson toMsg decodeRemoteDiffQuery
-        }
-
-
-
 -- REMOTE ADD
 
 
@@ -725,6 +721,22 @@ doRemoteAdd toMsg name fingerprint doAutoUpdate folders =
         }
 
 
+doRemoteModify : (Result Http.Error String -> msg) -> Remote -> Cmd msg
+doRemoteModify toMsg remote =
+    Http.post
+        { url = "/api/v0/remotes/modify"
+        , body =
+            Http.jsonBody <|
+                encodeRemoteAddQuery <|
+                    { name = remote.name
+                    , fingerprint = remote.fingerprint
+                    , doAutoUpdate = remote.acceptAutoUpdates
+                    , folders = remote.folders
+                    }
+        , expect = Http.expectJson toMsg decodeRemoteAddQuery
+        }
+
+
 
 -- REMOTE SELF
 
@@ -758,4 +770,69 @@ doSelfQuery toMsg =
         { url = "/api/v0/remotes/self"
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg decodeSelfResponse
+        }
+
+
+
+-- REMOTE DIFF
+
+
+type alias DiffPair =
+    { src : Entry
+    , dst : Entry
+    }
+
+
+type alias Diff =
+    { added : List Entry
+    , removed : List Entry
+    , ignored : List Entry
+    , missing : List Entry
+    , moved : List DiffPair
+    , merged : List DiffPair
+    , conflict : List DiffPair
+    }
+
+
+type alias RemoteDiffQuery =
+    { name : String
+    }
+
+
+encodeRemoteDiffQuery : RemoteDiffQuery -> E.Value
+encodeRemoteDiffQuery q =
+    E.object
+        [ ( "name", E.string q.name ) ]
+
+
+decodeDiffPair : D.Decoder DiffPair
+decodeDiffPair =
+    D.map2 DiffPair
+        (D.field "src" decodeEntry)
+        (D.field "dst" decodeEntry)
+
+
+decodeDiffResponse : D.Decoder Diff
+decodeDiffResponse =
+    D.field "diff" decodeDiff
+
+
+decodeDiff : D.Decoder Diff
+decodeDiff =
+    D.succeed Diff
+        |> DP.required "added" (D.list decodeEntry)
+        |> DP.required "removed" (D.list decodeEntry)
+        |> DP.required "ignored" (D.list decodeEntry)
+        |> DP.required "missing" (D.list decodeEntry)
+        |> DP.required "moved" (D.list decodeDiffPair)
+        |> DP.required "merged" (D.list decodeDiffPair)
+        |> DP.required "conflict" (D.list decodeDiffPair)
+
+
+doRemoteDiff : (Result Http.Error Diff -> msg) -> String -> Cmd msg
+doRemoteDiff toMsg name =
+    Http.post
+        { url = "/api/v0/remotes/diff"
+        , body = Http.jsonBody <| encodeRemoteDiffQuery <| RemoteDiffQuery name
+        , expect = Http.expectJson toMsg decodeDiffResponse
         }

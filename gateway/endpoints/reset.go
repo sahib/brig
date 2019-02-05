@@ -66,6 +66,8 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resetReq.Revision,
 	)
 
-	rh.commitChange(msg, w, r)
+	if !rh.commitChange(msg, w, r) {
+		return
+	}
 	jsonifySuccess(w)
 }

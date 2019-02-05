@@ -50,6 +50,9 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := fmt.Sprintf("copied »%s« to »%s«", copyReq.Source, copyReq.Destination)
-	ch.commitChange(msg, w, r)
+	if !ch.commitChange(msg, w, r) {
+		return
+	}
+
 	jsonifySuccess(w)
 }

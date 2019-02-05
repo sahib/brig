@@ -61,7 +61,9 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			msg += fmt.Sprintf(" and %d others", len(paths)-1)
 		}
 
-		rh.commitChange(msg, w, r)
+		if !rh.commitChange(msg, w, r) {
+			return
+		}
 	}
 
 	jsonifySuccess(w)

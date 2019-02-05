@@ -163,8 +163,8 @@ doInitAfterLogin model loginName =
     let
         newViewState =
             { listState = Ls.newModel model.key model.url
-            , commitsState = Commits.newModel model.key model.zone
-            , deletedFilesState = DeletedFiles.newModel model.key model.zone
+            , commitsState = Commits.newModel model.url model.key model.zone
+            , deletedFilesState = DeletedFiles.newModel model.url model.key model.zone
             , notFoundState = NotFound.newModel model.key model.zone
             , remoteState = Remotes.newModel model.key model.zone
             , settingsState = Settings.newModel model.key model.zone
@@ -338,6 +338,8 @@ update msg model =
                                         { viewState
                                             | currentView = ViewList
                                             , listState = Ls.changeUrl url viewState.listState
+                                            , commitsState = Commits.updateUrl viewState.commitsState url
+                                            , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
                                         }
                               }
                             , Cmd.map ListMsg <| Ls.doListQueryFromUrl url
@@ -350,9 +352,11 @@ update msg model =
                                     LoginSuccess
                                         { viewState
                                             | currentView = ViewCommits
+                                            , commitsState = Commits.updateUrl viewState.commitsState url
+                                            , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
                                         }
                               }
-                            , Cmd.map CommitsMsg <| Commits.reload viewState.commitsState
+                            , Cmd.map CommitsMsg <| Commits.reloadIfNeeded viewState.commitsState
                             )
 
                         ViewDeletedFiles ->
@@ -362,9 +366,11 @@ update msg model =
                                     LoginSuccess
                                         { viewState
                                             | currentView = ViewDeletedFiles
+                                            , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
+                                            , commitsState = Commits.updateUrl viewState.commitsState url
                                         }
                               }
-                            , Cmd.map DeletedFilesMsg <| DeletedFiles.reload viewState.deletedFilesState
+                            , Cmd.map DeletedFilesMsg <| DeletedFiles.reloadIfNeeded viewState.deletedFilesState
                             )
 
                         other ->
@@ -374,6 +380,8 @@ update msg model =
                                     LoginSuccess
                                         { viewState
                                             | currentView = other
+                                            , commitsState = Commits.updateUrl viewState.commitsState url
+                                            , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
                                         }
                               }
                             , Cmd.none

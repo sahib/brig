@@ -29,8 +29,9 @@ type LogRequest struct {
 
 // LogResponse is the response sent back to the client.
 type LogResponse struct {
-	Success bool     `json:"success"`
-	Commits []Commit `json:"commits"`
+	Success           bool     `json:"success"`
+	HaveStagedChanges bool     `json:"have_staged_changes"`
+	Commits           []Commit `json:"commits"`
 }
 
 func matchCommit(cmt *catfs.Commit, filter string) bool {
@@ -86,8 +87,15 @@ func (lh *LogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	haveStagedChanges, err := lh.fs.HaveStagedChanges()
+	if err != nil {
+		jsonifyErrf(w, http.StatusInternalServerError, "failed to check staged state: %v", err)
+		return
+	}
+
 	jsonify(w, http.StatusOK, &LogResponse{
-		Success: true,
-		Commits: commits,
+		Success:           true,
+		HaveStagedChanges: haveStagedChanges,
+		Commits:           commits,
 	})
 }

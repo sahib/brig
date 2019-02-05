@@ -7332,6 +7332,28 @@ var author$project$Modals$RemoteAdd$subscriptions = function (model) {
 					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
 			]));
 };
+var author$project$Modals$RemoteFolders$AlertMsg = function (a) {
+	return {$: 'AlertMsg', a: a};
+};
+var author$project$Modals$RemoteFolders$AnimateModal = function (a) {
+	return {$: 'AnimateModal', a: a};
+};
+var author$project$Modals$RemoteFolders$KeyPress = function (a) {
+	return {$: 'KeyPress', a: a};
+};
+var author$project$Modals$RemoteFolders$subscriptions = function (model) {
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$RemoteFolders$AnimateModal),
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$RemoteFolders$AlertMsg),
+				elm$browser$Browser$Events$onKeyPress(
+				A2(
+					elm$json$Json$Decode$map,
+					author$project$Modals$RemoteFolders$KeyPress,
+					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+			]));
+};
 var author$project$Modals$RemoteRemove$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
 };
@@ -7364,6 +7386,9 @@ var author$project$Routes$Remotes$DropdownMsg = F2(
 var author$project$Routes$Remotes$RemoteAddMsg = function (a) {
 	return {$: 'RemoteAddMsg', a: a};
 };
+var author$project$Routes$Remotes$RemoteFolderMsg = function (a) {
+	return {$: 'RemoteFolderMsg', a: a};
+};
 var author$project$Routes$Remotes$RemoteRemoveMsg = function (a) {
 	return {$: 'RemoteRemoveMsg', a: a};
 };
@@ -7380,6 +7405,10 @@ var author$project$Routes$Remotes$subscriptions = function (model) {
 				elm$core$Platform$Sub$map,
 				author$project$Routes$Remotes$RemoteRemoveMsg,
 				author$project$Modals$RemoteRemove$subscriptions(model.remoteRemoveState)),
+				A2(
+				elm$core$Platform$Sub$map,
+				author$project$Routes$Remotes$RemoteFolderMsg,
+				author$project$Modals$RemoteFolders$subscriptions(model.remoteFoldersState)),
 				elm$core$Platform$Sub$batch(
 				A2(
 					elm$core$List$map,
@@ -7575,10 +7604,6 @@ var author$project$Main$viewFromUrl = function (url) {
 	}
 };
 var author$project$Routes$Commits$Loading = {$: 'Loading'};
-var author$project$Routes$Commits$Model = F6(
-	function (key, state, zone, filter, offset, alert) {
-		return {alert: alert, filter: filter, key: key, offset: offset, state: state, zone: zone};
-	});
 var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
 var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
 var rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
@@ -7601,13 +7626,17 @@ var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
 	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
 var author$project$Routes$Commits$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
-var author$project$Routes$Commits$newModel = F2(
-	function (key, zone) {
-		return A6(author$project$Routes$Commits$Model, key, author$project$Routes$Commits$Loading, zone, '', 0, author$project$Routes$Commits$defaultAlertState);
+var author$project$Routes$Commits$newModel = F3(
+	function (url, key, zone) {
+		return {alert: author$project$Routes$Commits$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
 	});
 var author$project$Commands$LogQuery = F3(
 	function (offset, limit, filter) {
 		return {filter: filter, limit: limit, offset: offset};
+	});
+var author$project$Commands$Log = F2(
+	function (haveStagedChanges, commits) {
+		return {commits: commits, haveStagedChanges: haveStagedChanges};
 	});
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
@@ -7650,10 +7679,14 @@ var author$project$Commands$decodeCommit = A3(
 					'date',
 					author$project$Commands$timestampToPosix,
 					elm$json$Json$Decode$succeed(author$project$Commands$Commit))))));
-var author$project$Commands$decodeLog = A2(
-	elm$json$Json$Decode$field,
-	'commits',
-	elm$json$Json$Decode$list(author$project$Commands$decodeCommit));
+var author$project$Commands$decodeLog = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Commands$Log,
+	A2(elm$json$Json$Decode$field, 'have_staged_changes', elm$json$Json$Decode$bool),
+	A2(
+		elm$json$Json$Decode$field,
+		'commits',
+		elm$json$Json$Decode$list(author$project$Commands$decodeCommit)));
 var elm$json$Json$Encode$int = _Json_wrap;
 var author$project$Commands$encodeLog = function (q) {
 	return elm$json$Json$Encode$object(
@@ -7690,19 +7723,15 @@ var author$project$Routes$Commits$reload = function (model) {
 	return A4(
 		author$project$Commands$doLog,
 		author$project$Routes$Commits$GotLogResponse(true),
-		model.offset,
-		author$project$Routes$Commits$loadLimit,
+		0,
+		model.offset + author$project$Routes$Commits$loadLimit,
 		model.filter);
 };
 var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
-var author$project$Routes$DeletedFiles$Model = F6(
-	function (key, state, zone, filter, offset, alert) {
-		return {alert: alert, filter: filter, key: key, offset: offset, state: state, zone: zone};
-	});
 var author$project$Routes$DeletedFiles$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
-var author$project$Routes$DeletedFiles$newModel = F2(
-	function (key, zone) {
-		return A6(author$project$Routes$DeletedFiles$Model, key, author$project$Routes$DeletedFiles$Loading, zone, '', 0, author$project$Routes$DeletedFiles$defaultAlertState);
+var author$project$Routes$DeletedFiles$newModel = F3(
+	function (url, key, zone) {
+		return {alert: author$project$Routes$DeletedFiles$defaultAlertState, filter: '', key: key, offset: 0, state: author$project$Routes$DeletedFiles$Loading, url: url, zone: zone};
 	});
 var author$project$Commands$DeletedFilesQuery = F3(
 	function (offset, limit, filter) {
@@ -7816,8 +7845,8 @@ var author$project$Routes$DeletedFiles$reload = function (model) {
 	return A4(
 		author$project$Commands$doDeletedFiles,
 		author$project$Routes$DeletedFiles$GotDeletedPathsResponse(true),
-		model.offset,
-		author$project$Routes$DeletedFiles$loadLimit,
+		0,
+		model.offset + author$project$Routes$DeletedFiles$loadLimit,
 		model.filter);
 };
 var author$project$Commands$ListQuery = F2(
@@ -8112,6 +8141,21 @@ var author$project$Modals$RemoteAdd$newModelWithState = function (state) {
 	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, doAutoUdate: false, fingerprint: '', folders: _List_Nil, modal: state, name: '', state: author$project$Modals$RemoteAdd$Ready};
 };
 var author$project$Modals$RemoteAdd$newModel = author$project$Modals$RemoteAdd$newModelWithState(rundis$elm_bootstrap$Bootstrap$Modal$hidden);
+var author$project$Commands$emptyRemote = {
+	acceptAutoUpdates: false,
+	fingerprint: '',
+	folders: _List_Nil,
+	isAuthenticated: false,
+	isOnline: false,
+	lastSeen: elm$time$Time$millisToPosix(0),
+	name: ''
+};
+var author$project$Modals$RemoteFolders$Ready = {$: 'Ready'};
+var author$project$Modals$RemoteFolders$newModelWithState = F2(
+	function (state, remote) {
+		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, folders: _List_Nil, modal: state, newFolder: '', remote: remote, state: author$project$Modals$RemoteFolders$Ready};
+	});
+var author$project$Modals$RemoteFolders$newModel = A2(author$project$Modals$RemoteFolders$newModelWithState, rundis$elm_bootstrap$Bootstrap$Modal$hidden, author$project$Commands$emptyRemote);
 var author$project$Modals$RemoteRemove$Ready = {$: 'Ready'};
 var author$project$Modals$RemoteRemove$newModelWithState = F2(
 	function (name, state) {
@@ -8122,7 +8166,7 @@ var author$project$Routes$Remotes$Loading = {$: 'Loading'};
 var author$project$Routes$Remotes$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$Remotes$newModel = F2(
 	function (key, zone) {
-		return {alert: author$project$Routes$Remotes$defaultAlertState, dropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
+		return {alert: author$project$Routes$Remotes$defaultAlertState, dropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteFoldersState: author$project$Modals$RemoteFolders$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
 	});
 var author$project$Commands$Remote = F7(
 	function (name, folders, fingerprint, acceptAutoUpdates, isOnline, isAuthenticated, lastSeen) {
@@ -8642,9 +8686,9 @@ var elm$core$Platform$Cmd$map = _Platform_map;
 var author$project$Main$doInitAfterLogin = F2(
 	function (model, loginName) {
 		var newViewState = {
-			commitsState: A2(author$project$Routes$Commits$newModel, model.key, model.zone),
+			commitsState: A3(author$project$Routes$Commits$newModel, model.url, model.key, model.zone),
 			currentView: author$project$Main$viewFromUrl(model.url),
-			deletedFilesState: A2(author$project$Routes$DeletedFiles$newModel, model.key, model.zone),
+			deletedFilesState: A3(author$project$Routes$DeletedFiles$newModel, model.url, model.key, model.zone),
 			listState: A2(author$project$Routes$Ls$newModel, model.key, model.url),
 			loginName: loginName,
 			notFoundState: A2(author$project$Routes$NotFound$newModel, model.key, model.zone),
@@ -8712,6 +8756,15 @@ var author$project$Main$withSubUpdate = F6(
 			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
+var author$project$Routes$Commits$reloadIfNeeded = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var commits = _n0.a;
+		return (!elm$core$List$length(commits)) ? author$project$Routes$Commits$reload(model) : elm$core$Platform$Cmd$none;
+	} else {
+		return elm$core$Platform$Cmd$none;
+	}
+};
 var author$project$Commands$ResetQuery = F3(
 	function (path, revision, force) {
 		return {force: force, path: path, revision: revision};
@@ -8882,7 +8935,7 @@ var author$project$Routes$Commits$update = F2(
 				var doFlush = msg.a;
 				var result = msg.b;
 				if (result.$ === 'Ok') {
-					var commits = result.a;
+					var log = result.a;
 					var _n2 = function () {
 						if (doFlush) {
 							return _Utils_Tuple2(_List_Nil, 0);
@@ -8902,9 +8955,10 @@ var author$project$Routes$Commits$update = F2(
 						_Utils_update(
 							model,
 							{
+								haveStagedChanges: log.haveStagedChanges,
 								offset: newOffset,
 								state: author$project$Routes$Commits$Success(
-									A2(author$project$Routes$Commits$mergeCommits, prevCommits, commits))
+									A2(author$project$Routes$Commits$mergeCommits, prevCommits, log.commits))
 							}),
 						elm$core$Platform$Cmd$none);
 				} else {
@@ -8946,9 +9000,9 @@ var author$project$Routes$Commits$update = F2(
 					author$project$Routes$Commits$reload(upModel));
 			case 'OnScroll':
 				var data = msg.a;
-				return author$project$Scroll$hasHitBottom(data) ? _Utils_Tuple2(
+				return A2(elm$core$String$startsWith, '/log', model.url.path) ? (author$project$Scroll$hasHitBottom(data) ? _Utils_Tuple2(
 					model,
-					A2(author$project$Routes$Commits$reloadWithoutFlush, model, model.offset + author$project$Routes$Commits$loadLimit)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					A2(author$project$Routes$Commits$reloadWithoutFlush, model, model.offset + author$project$Routes$Commits$loadLimit)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			default:
 				var vis = msg.a;
 				var newAlert = A3(author$project$Routes$Commits$AlertState, model.alert.message, model.alert.typ, vis);
@@ -8959,6 +9013,21 @@ var author$project$Routes$Commits$update = F2(
 					elm$core$Platform$Cmd$none);
 		}
 	});
+var author$project$Routes$Commits$updateUrl = F2(
+	function (model, url) {
+		return _Utils_update(
+			model,
+			{url: url});
+	});
+var author$project$Routes$DeletedFiles$reloadIfNeeded = function (model) {
+	var _n0 = model.state;
+	if (_n0.$ === 'Success') {
+		var commits = _n0.a;
+		return (!elm$core$List$length(commits)) ? author$project$Routes$DeletedFiles$reload(model) : elm$core$Platform$Cmd$none;
+	} else {
+		return elm$core$Platform$Cmd$none;
+	}
+};
 var author$project$Commands$UndeleteQuery = function (path) {
 	return {path: path};
 };
@@ -9048,7 +9117,6 @@ var author$project$Routes$DeletedFiles$reloadWithoutFlush = F2(
 			author$project$Routes$DeletedFiles$loadLimit,
 			model.filter);
 	});
-var elm$core$Debug$log = _Debug_log;
 var author$project$Routes$DeletedFiles$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -9153,14 +9221,16 @@ var author$project$Routes$DeletedFiles$update = F2(
 					elm$core$Platform$Cmd$none);
 			default:
 				var data = msg.a;
-				return author$project$Scroll$hasHitBottom(
-					A2(elm$core$Debug$log, 'SCROLL', data)) ? _Utils_Tuple2(
+				return A2(elm$core$String$startsWith, '/deleted', model.url.path) ? (author$project$Scroll$hasHitBottom(data) ? _Utils_Tuple2(
 					model,
-					A2(
-						author$project$Routes$DeletedFiles$reloadWithoutFlush,
-						model,
-						A2(elm$core$Debug$log, 'RELOAD', model.offset + author$project$Routes$DeletedFiles$loadLimit))) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					A2(author$project$Routes$DeletedFiles$reloadWithoutFlush, model, model.offset + author$project$Routes$DeletedFiles$loadLimit)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
+	});
+var author$project$Routes$DeletedFiles$updateUrl = F2(
+	function (model, url) {
+		return _Utils_update(
+			model,
+			{url: url});
 	});
 var author$project$Routes$Ls$changeTimeZone = F2(
 	function (zone, model) {
@@ -10669,7 +10739,49 @@ var author$project$Routes$NotFound$update = F2(
 var author$project$Commands$RemoteDiffQuery = function (name) {
 	return {name: name};
 };
-var author$project$Commands$decodeRemoteDiffQuery = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var author$project$Commands$Diff = F7(
+	function (added, removed, ignored, missing, moved, merged, conflict) {
+		return {added: added, conflict: conflict, ignored: ignored, merged: merged, missing: missing, moved: moved, removed: removed};
+	});
+var author$project$Commands$DiffPair = F2(
+	function (src, dst) {
+		return {dst: dst, src: src};
+	});
+var author$project$Commands$decodeDiffPair = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Commands$DiffPair,
+	A2(elm$json$Json$Decode$field, 'src', author$project$Commands$decodeEntry),
+	A2(elm$json$Json$Decode$field, 'dst', author$project$Commands$decodeEntry));
+var author$project$Commands$decodeDiff = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'conflict',
+	elm$json$Json$Decode$list(author$project$Commands$decodeDiffPair),
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'merged',
+		elm$json$Json$Decode$list(author$project$Commands$decodeDiffPair),
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'moved',
+			elm$json$Json$Decode$list(author$project$Commands$decodeDiffPair),
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'missing',
+				elm$json$Json$Decode$list(author$project$Commands$decodeEntry),
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'ignored',
+					elm$json$Json$Decode$list(author$project$Commands$decodeEntry),
+					A3(
+						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+						'removed',
+						elm$json$Json$Decode$list(author$project$Commands$decodeEntry),
+						A3(
+							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+							'added',
+							elm$json$Json$Decode$list(author$project$Commands$decodeEntry),
+							elm$json$Json$Decode$succeed(author$project$Commands$Diff))))))));
+var author$project$Commands$decodeDiffResponse = A2(elm$json$Json$Decode$field, 'diff', author$project$Commands$decodeDiff);
 var author$project$Commands$encodeRemoteDiffQuery = function (q) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -10686,8 +10798,39 @@ var author$project$Commands$doRemoteDiff = F2(
 				body: elm$http$Http$jsonBody(
 					author$project$Commands$encodeRemoteDiffQuery(
 						author$project$Commands$RemoteDiffQuery(name))),
-				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeRemoteDiffQuery),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeDiffResponse),
 				url: '/api/v0/remotes/diff'
+			});
+	});
+var author$project$Commands$decodeRemoteAddQuery = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var elm$json$Json$Encode$bool = _Json_wrap;
+var author$project$Commands$encodeRemoteAddQuery = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				elm$json$Json$Encode$string(q.name)),
+				_Utils_Tuple2(
+				'fingerprint',
+				elm$json$Json$Encode$string(q.fingerprint)),
+				_Utils_Tuple2(
+				'accept_auto_updates',
+				elm$json$Json$Encode$bool(q.doAutoUpdate)),
+				_Utils_Tuple2(
+				'folders',
+				A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, q.folders))
+			]));
+};
+var author$project$Commands$doRemoteModify = F2(
+	function (toMsg, remote) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodeRemoteAddQuery(
+						{doAutoUpdate: remote.acceptAutoUpdates, fingerprint: remote.fingerprint, folders: remote.folders, name: remote.name})),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeRemoteAddQuery),
+				url: '/api/v0/remotes/modify'
 			});
 	});
 var author$project$Commands$RemoteSyncQuery = function (name) {
@@ -10716,26 +10859,6 @@ var author$project$Commands$doRemoteSync = F2(
 	});
 var author$project$Modals$RemoteAdd$Fail = function (a) {
 	return {$: 'Fail', a: a};
-};
-var author$project$Commands$decodeRemoteAddQuery = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
-var elm$json$Json$Encode$bool = _Json_wrap;
-var author$project$Commands$encodeRemoteAddQuery = function (q) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'name',
-				elm$json$Json$Encode$string(q.name)),
-				_Utils_Tuple2(
-				'fingerprint',
-				elm$json$Json$Encode$string(q.fingerprint)),
-				_Utils_Tuple2(
-				'accept_auto_updates',
-				elm$json$Json$Encode$bool(q.doAutoUpdate)),
-				_Utils_Tuple2(
-				'folders',
-				A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, q.folders))
-			]));
 };
 var author$project$Commands$doRemoteAdd = F5(
 	function (toMsg, name, fingerprint, doAutoUpdate, folders) {
@@ -10843,6 +10966,127 @@ var author$project$Modals$RemoteAdd$update = F2(
 						return _Utils_Tuple2(
 							model,
 							author$project$Modals$RemoteAdd$submit(model));
+					} else {
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					}
+				}
+		}
+	});
+var author$project$Modals$RemoteFolders$Fail = function (a) {
+	return {$: 'Fail', a: a};
+};
+var author$project$Modals$RemoteFolders$fixFolder = function (path) {
+	return author$project$Util$prefixSlash(path);
+};
+var elm$core$List$sort = function (xs) {
+	return A2(elm$core$List$sortBy, elm$core$Basics$identity, xs);
+};
+var author$project$Modals$RemoteFolders$addFolder = function (model) {
+	var oldRemote = model.remote;
+	var cleanFolder = author$project$Modals$RemoteFolders$fixFolder(model.newFolder);
+	var newRemote = _Utils_update(
+		oldRemote,
+		{
+			folders: elm$core$List$sort(
+				A2(elm$core$List$cons, cleanFolder, oldRemote.folders))
+		});
+	return _Utils_Tuple2(
+		_Utils_update(
+			model,
+			{newFolder: '', remote: newRemote}),
+		elm$core$Platform$Cmd$none);
+};
+var author$project$Modals$RemoteFolders$GotResponse = function (a) {
+	return {$: 'GotResponse', a: a};
+};
+var author$project$Modals$RemoteFolders$submit = function (model) {
+	return A2(author$project$Commands$doRemoteModify, author$project$Modals$RemoteFolders$GotResponse, model.remote);
+};
+var author$project$Modals$RemoteFolders$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GotResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$RemoteFolders$Ready}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Modals$RemoteFolders$Fail(
+									author$project$Util$httpErrorToString(err))
+							}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'NewFolderChange':
+				var folder = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{newFolder: folder}),
+					elm$core$Platform$Cmd$none);
+			case 'FolderAdd':
+				return author$project$Modals$RemoteFolders$addFolder(model);
+			case 'FolderRemove':
+				var folder = msg.a;
+				var oldRemote = model.remote;
+				var newRemote = _Utils_update(
+					oldRemote,
+					{
+						folders: A2(
+							elm$core$List$filter,
+							function (f) {
+								return !_Utils_eq(f, folder);
+							},
+							oldRemote.folders)
+					});
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{remote: newRemote}),
+					elm$core$Platform$Cmd$none);
+			case 'RemoteModify':
+				return _Utils_Tuple2(
+					model,
+					author$project$Modals$RemoteFolders$submit(model));
+			case 'AnimateModal':
+				var visibility = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: visibility}),
+					elm$core$Platform$Cmd$none);
+			case 'ModalShow':
+				var remote = msg.a;
+				return _Utils_Tuple2(
+					A2(author$project$Modals$RemoteFolders$newModelWithState, rundis$elm_bootstrap$Bootstrap$Modal$shown, remote),
+					elm$core$Platform$Cmd$none);
+			case 'ModalClose':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
+					elm$core$Platform$Cmd$none);
+			case 'AlertMsg':
+				var vis = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{alert: vis}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var key = msg.a;
+				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				} else {
+					if (key === 'Enter') {
+						return author$project$Modals$RemoteFolders$addFolder(model);
 					} else {
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 					}
@@ -10958,6 +11202,9 @@ var author$project$Routes$Remotes$Failure = function (a) {
 var author$project$Routes$Remotes$GotDiffResponse = function (a) {
 	return {$: 'GotDiffResponse', a: a};
 };
+var author$project$Routes$Remotes$GotRemoteModifyResponse = function (a) {
+	return {$: 'GotRemoteModifyResponse', a: a};
+};
 var author$project$Routes$Remotes$GotSyncResponse = function (a) {
 	return {$: 'GotSyncResponse', a: a};
 };
@@ -11019,6 +11266,19 @@ var author$project$Routes$Remotes$update = F2(
 						rundis$elm_bootstrap$Bootstrap$Alert$danger,
 						'Failed to sync: ' + author$project$Util$httpErrorToString(err));
 				}
+			case 'GotRemoteModifyResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return A4(
+						author$project$Routes$Remotes$showAlert,
+						model,
+						20,
+						rundis$elm_bootstrap$Bootstrap$Alert$danger,
+						'Failed to set auto update: ' + author$project$Util$httpErrorToString(err));
+				}
 			case 'GotDiffResponse':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
@@ -11065,11 +11325,22 @@ var author$project$Routes$Remotes$update = F2(
 				return _Utils_Tuple2(
 					model,
 					A2(author$project$Commands$doRemoteDiff, author$project$Routes$Remotes$GotDiffResponse, name));
+			case 'AutoUpdateToggled':
+				var remote = msg.a;
+				var state = msg.b;
+				return _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Commands$doRemoteModify,
+						author$project$Routes$Remotes$GotRemoteModifyResponse,
+						_Utils_update(
+							remote,
+							{acceptAutoUpdates: state})));
 			case 'RemoteAddMsg':
 				var subMsg = msg.a;
-				var _n5 = A2(author$project$Modals$RemoteAdd$update, subMsg, model.remoteAddState);
-				var upModel = _n5.a;
-				var upCmd = _n5.b;
+				var _n6 = A2(author$project$Modals$RemoteAdd$update, subMsg, model.remoteAddState);
+				var upModel = _n6.a;
+				var upCmd = _n6.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -11077,14 +11348,24 @@ var author$project$Routes$Remotes$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Remotes$RemoteAddMsg, upCmd));
 			case 'RemoteRemoveMsg':
 				var subMsg = msg.a;
-				var _n6 = A2(author$project$Modals$RemoteRemove$update, subMsg, model.remoteRemoveState);
-				var upModel = _n6.a;
-				var upCmd = _n6.b;
+				var _n7 = A2(author$project$Modals$RemoteRemove$update, subMsg, model.remoteRemoveState);
+				var upModel = _n7.a;
+				var upCmd = _n7.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{remoteRemoveState: upModel}),
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Remotes$RemoteRemoveMsg, upCmd));
+			case 'RemoteFolderMsg':
+				var subMsg = msg.a;
+				var _n8 = A2(author$project$Modals$RemoteFolders$update, subMsg, model.remoteFoldersState);
+				var upModel = _n8.a;
+				var upCmd = _n8.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{remoteFoldersState: upModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Routes$Remotes$RemoteFolderMsg, upCmd));
 			default:
 				var vis = msg.a;
 				var newAlert = A3(author$project$Routes$Remotes$AlertState, model.alert.message, model.alert.typ, vis);
@@ -11276,7 +11557,9 @@ var author$project$Main$update = F2(
 											_Utils_update(
 												viewState,
 												{
+													commitsState: A2(author$project$Routes$Commits$updateUrl, viewState.commitsState, url),
 													currentView: author$project$Main$ViewList,
+													deletedFilesState: A2(author$project$Routes$DeletedFiles$updateUrl, viewState.deletedFilesState, url),
 													listState: A2(author$project$Routes$Ls$changeUrl, url, viewState.listState)
 												})),
 										url: url
@@ -11293,13 +11576,17 @@ var author$project$Main$update = F2(
 										loginState: author$project$Main$LoginSuccess(
 											_Utils_update(
 												viewState,
-												{currentView: author$project$Main$ViewCommits})),
+												{
+													commitsState: A2(author$project$Routes$Commits$updateUrl, viewState.commitsState, url),
+													currentView: author$project$Main$ViewCommits,
+													deletedFilesState: A2(author$project$Routes$DeletedFiles$updateUrl, viewState.deletedFilesState, url)
+												})),
 										url: url
 									}),
 								A2(
 									elm$core$Platform$Cmd$map,
 									author$project$Main$CommitsMsg,
-									author$project$Routes$Commits$reload(viewState.commitsState)));
+									author$project$Routes$Commits$reloadIfNeeded(viewState.commitsState)));
 						case 'ViewDeletedFiles':
 							return _Utils_Tuple2(
 								_Utils_update(
@@ -11308,13 +11595,17 @@ var author$project$Main$update = F2(
 										loginState: author$project$Main$LoginSuccess(
 											_Utils_update(
 												viewState,
-												{currentView: author$project$Main$ViewDeletedFiles})),
+												{
+													commitsState: A2(author$project$Routes$Commits$updateUrl, viewState.commitsState, url),
+													currentView: author$project$Main$ViewDeletedFiles,
+													deletedFilesState: A2(author$project$Routes$DeletedFiles$updateUrl, viewState.deletedFilesState, url)
+												})),
 										url: url
 									}),
 								A2(
 									elm$core$Platform$Cmd$map,
 									author$project$Main$DeletedFilesMsg,
-									author$project$Routes$DeletedFiles$reload(viewState.deletedFilesState)));
+									author$project$Routes$DeletedFiles$reloadIfNeeded(viewState.deletedFilesState)));
 						default:
 							var other = _n9;
 							return _Utils_Tuple2(
@@ -11324,7 +11615,11 @@ var author$project$Main$update = F2(
 										loginState: author$project$Main$LoginSuccess(
 											_Utils_update(
 												viewState,
-												{currentView: other})),
+												{
+													commitsState: A2(author$project$Routes$Commits$updateUrl, viewState.commitsState, url),
+													currentView: other,
+													deletedFilesState: A2(author$project$Routes$DeletedFiles$updateUrl, viewState.deletedFilesState, url)
+												})),
 										url: url
 									}),
 								elm$core$Platform$Cmd$none);
@@ -13372,6 +13667,36 @@ var author$project$Routes$Commits$viewAlert = F2(
 var author$project$Routes$Commits$CheckoutClicked = function (a) {
 	return {$: 'CheckoutClicked', a: a};
 };
+var elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger = {$: 'Danger'};
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined = function (a) {
 	return {$: 'Outlined', a: a};
@@ -13452,7 +13777,9 @@ var author$project$Routes$Commits$viewCommit = F2(
 											_List_fromArray(
 												[
 													elm$html$Html$Events$onClick(
-													author$project$Routes$Commits$CheckoutClicked(commit.hash))
+													author$project$Routes$Commits$CheckoutClicked(commit.hash)),
+													elm$html$Html$Attributes$disabled(
+													(!model.haveStagedChanges) && A2(elm$core$List$member, 'head', commit.tags))
 												]))
 										]),
 									_List_fromArray(
@@ -14180,27 +14507,6 @@ var elm$core$String$dropRight = F2(
 		return (n < 1) ? string : A3(elm$core$String$slice, 0, -n, string);
 	});
 var elm$core$String$endsWith = _String_endsWith;
-var elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
 var elm$core$String$foldr = _String_foldr;
 var elm$core$String$toList = function (string) {
 	return A3(elm$core$String$foldr, elm$core$List$cons, _List_Nil, string);
@@ -17999,15 +18305,74 @@ var author$project$Routes$Remotes$viewAlert = F2(
 				alert.typ(
 					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, author$project$Routes$Remotes$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
 	});
-var author$project$Routes$Remotes$viewAutoUpdatesIcon = function (v) {
-	return v ? A2(
-		elm$html$Html$span,
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('fas fa-md fa-check text-success')
-			]),
-		_List_Nil) : elm$html$Html$text('');
+var author$project$Modals$RemoteFolders$ModalShow = function (a) {
+	return {$: 'ModalShow', a: a};
 };
+var author$project$Modals$RemoteFolders$show = function (remote) {
+	return author$project$Modals$RemoteFolders$ModalShow(remote);
+};
+var author$project$Routes$Remotes$AutoUpdateToggled = F2(
+	function (a, b) {
+		return {$: 'AutoUpdateToggled', a: a, b: b};
+	});
+var author$project$Util$viewToggleSwitch = F3(
+	function (toMsg, message, isChecked) {
+		return A2(
+			elm$html$Html$span,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$label,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('toggle-switch')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$input,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$type_('checkbox'),
+											elm$html$Html$Events$onCheck(toMsg),
+											elm$html$Html$Attributes$checked(isChecked)
+										]),
+									_List_Nil),
+									A2(
+									elm$html$Html$span,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('toggle-slider toggle-round')
+										]),
+									_List_Nil)
+								]))
+						])),
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('text-muted')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(' ' + message)
+						]))
+				]));
+	});
+var author$project$Routes$Remotes$viewAutoUpdatesIcon = F2(
+	function (state, remote) {
+		return A3(
+			author$project$Util$viewToggleSwitch,
+			author$project$Routes$Remotes$AutoUpdateToggled(remote),
+			'',
+			state);
+	});
 var author$project$Modals$RemoteRemove$ModalShow = function (a) {
 	return {$: 'ModalShow', a: a};
 };
@@ -18128,7 +18493,7 @@ var author$project$Routes$Remotes$viewFingerprint = function (fingerprint) {
 			A2(
 				elm$core$List$map,
 				function (t) {
-					return A3(elm$core$String$slice, 0, 15, t);
+					return A3(elm$core$String$slice, 0, 10, t);
 				},
 				A2(elm$core$String$split, ':', fingerprint))));
 };
@@ -18216,7 +18581,51 @@ var author$project$Routes$Remotes$viewRemote = F2(
 					_List_Nil,
 					_List_fromArray(
 						[
-							author$project$Routes$Remotes$viewAutoUpdatesIcon(remote.acceptAutoUpdates)
+							A2(author$project$Routes$Remotes$viewAutoUpdatesIcon, remote.acceptAutoUpdates, remote)
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Table$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Button$button,
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+									rundis$elm_bootstrap$Bootstrap$Button$attrs(
+									_List_fromArray(
+										[
+											elm$html$Html$Events$onClick(
+											author$project$Routes$Remotes$RemoteFolderMsg(
+												author$project$Modals$RemoteFolders$show(remote)))
+										]))
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$span,
+									_List_Nil,
+									_List_fromArray(
+										[
+											function () {
+											var _n0 = elm$core$List$length(remote.folders);
+											if (!_n0) {
+												return A2(
+													elm$html$Html$span,
+													_List_fromArray(
+														[
+															elm$html$Html$Attributes$class('fas fa-xs fa-asterisk')
+														]),
+													_List_Nil);
+											} else {
+												var n = _n0;
+												return elm$html$Html$text(
+													elm$core$String$fromInt(n));
+											}
+										}()
+										]))
+								]))
 						])),
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Table$td,
@@ -18314,7 +18723,7 @@ var author$project$Routes$Remotes$viewRemoteList = F2(
 									_List_fromArray(
 										[
 											rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
-											A2(elm$html$Html$Attributes$style, 'width', '35%'))
+											A2(elm$html$Html$Attributes$style, 'width', '30%'))
 										]),
 									_List_fromArray(
 										[
@@ -18334,7 +18743,7 @@ var author$project$Routes$Remotes$viewRemoteList = F2(
 									_List_fromArray(
 										[
 											rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
-											A2(elm$html$Html$Attributes$style, 'width', '15%'))
+											A2(elm$html$Html$Attributes$style, 'width', '10%'))
 										]),
 									_List_fromArray(
 										[
@@ -18347,6 +18756,26 @@ var author$project$Routes$Remotes$viewRemoteList = F2(
 											_List_fromArray(
 												[
 													elm$html$Html$text('Auto Update')
+												]))
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Table$th,
+									_List_fromArray(
+										[
+											rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
+											A2(elm$html$Html$Attributes$style, 'width', '10%'))
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$span,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('text-muted')
+												]),
+											_List_fromArray(
+												[
+													elm$html$Html$text('Folders')
 												]))
 										])),
 									A2(
@@ -20628,65 +21057,7 @@ var author$project$Modals$RemoteAdd$viewRemoteAddContent = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('text-muted')
-								]),
-							_List_Nil),
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('checkbox')
-								]),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$label,
-									_List_fromArray(
-										[
-											A2(elm$html$Html$Attributes$style, 'margin-bottom', '0px !important')
-										]),
-									_List_fromArray(
-										[
-											A2(
-											elm$html$Html$input,
-											_List_fromArray(
-												[
-													elm$html$Html$Attributes$type_('checkbox'),
-													elm$html$Html$Events$onCheck(author$project$Modals$RemoteAdd$AutoUpdateChanged)
-												]),
-											_List_Nil),
-											A2(
-											elm$html$Html$span,
-											_List_fromArray(
-												[
-													elm$html$Html$Attributes$class('cr')
-												]),
-											_List_fromArray(
-												[
-													A2(
-													elm$html$Html$i,
-													_List_fromArray(
-														[
-															elm$html$Html$Attributes$class('cr-icon fas fa-lg fa-check')
-														]),
-													_List_Nil)
-												]))
-										]))
-								])),
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('text-muted')
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text('Accept automatic updates?')
-								]))
+							A3(author$project$Util$viewToggleSwitch, author$project$Modals$RemoteAdd$AutoUpdateChanged, 'Accept automatic updates?', model.doAutoUdate)
 						])),
 					function () {
 					var _n0 = model.state;
@@ -20788,6 +21159,277 @@ var author$project$Modals$RemoteAdd$view = function (model) {
 						author$project$Modals$RemoteAdd$AnimateModal,
 						rundis$elm_bootstrap$Bootstrap$Modal$large(
 							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$RemoteAdd$ModalClose)))))));
+};
+var author$project$Modals$RemoteFolders$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$RemoteFolders$RemoteModify = {$: 'RemoteModify'};
+var author$project$Modals$RemoteFolders$FolderRemove = function (a) {
+	return {$: 'FolderRemove', a: a};
+};
+var author$project$Modals$RemoteFolders$viewRow = F3(
+	function (a, b, c) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Grid$row,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
+						]),
+					_List_fromArray(
+						[a])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft)
+						]),
+					_List_fromArray(
+						[b])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Grid$col,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft)
+						]),
+					_List_fromArray(
+						[c]))
+				]));
+	});
+var author$project$Modals$RemoteFolders$viewFolder = function (folder) {
+	return A3(
+		author$project$Modals$RemoteFolders$viewRow,
+		A2(
+			elm$html$Html$span,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('fas fa-md fa-folder text-muted')
+				]),
+			_List_Nil),
+		elm$html$Html$text(folder),
+		A2(
+			rundis$elm_bootstrap$Bootstrap$Button$button,
+			_List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Button$attrs(
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('close'),
+							elm$html$Html$Events$onClick(
+							author$project$Modals$RemoteFolders$FolderRemove(folder))
+						]))
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fas fa-xs fa-times text-muted')
+						]),
+					_List_Nil)
+				])));
+};
+var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
+	return (elm$core$List$length(remote.folders) <= 0) ? A2(
+		elm$html$Html$span,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('text-muted text-center')
+			]),
+		_List_fromArray(
+			[
+				elm$html$Html$text('No folders. This means this user can see everthing.'),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil),
+				elm$html$Html$text('Add a new folder below to change this.'),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil)
+			])) : rundis$elm_bootstrap$Bootstrap$ListGroup$ul(
+		A2(
+			elm$core$List$map,
+			function (f) {
+				return A2(
+					rundis$elm_bootstrap$Bootstrap$ListGroup$li,
+					_List_Nil,
+					_List_fromArray(
+						[
+							author$project$Modals$RemoteFolders$viewFolder(f)
+						]));
+			},
+			remote.folders));
+};
+var author$project$Modals$RemoteFolders$FolderAdd = {$: 'FolderAdd'};
+var author$project$Modals$RemoteFolders$NewFolderChange = function (a) {
+	return {$: 'NewFolderChange', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$button = F2(
+	function (options, children) {
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon(
+			A2(rundis$elm_bootstrap$Bootstrap$Button$button, options, children));
+	});
+var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$predecessors = F2(
+	function (addons, _n0) {
+		var conf = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
+			_Utils_update(
+				conf,
+				{predecessors: addons}));
+	});
+var author$project$Modals$RemoteFolders$viewNewFolderControl = function (model) {
+	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
+		A2(
+			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$predecessors,
+			_List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$button,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Button$primary,
+							rundis$elm_bootstrap$Bootstrap$Button$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Events$onClick(author$project$Modals$RemoteFolders$FolderAdd),
+									elm$html$Html$Attributes$disabled(
+									!elm$core$String$length(model.newFolder))
+								]))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-lg fa-folder-plus')
+								]),
+							_List_Nil)
+						]))
+				]),
+			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
+				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('New folder path'),
+							rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$RemoteFolders$NewFolderChange),
+							rundis$elm_bootstrap$Bootstrap$Form$Input$value(model.newFolder)
+						])))));
+};
+var author$project$Modals$RemoteFolders$viewRemoteAddContent = function (model) {
+	return _List_fromArray(
+		[
+			A2(
+			rundis$elm_bootstrap$Bootstrap$Grid$col,
+			_List_fromArray(
+				[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
+			_List_fromArray(
+				[
+					author$project$Modals$RemoteFolders$viewFolders(model.remote),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					author$project$Modals$RemoteFolders$viewNewFolderControl(model),
+					function () {
+					var _n0 = model.state;
+					if (_n0.$ === 'Ready') {
+						return elm$html$Html$text('');
+					} else {
+						var message = _n0.a;
+						return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$RemoteFolders$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not add remote: ' + message);
+					}
+				}()
+				]))
+		]);
+};
+var author$project$Modals$RemoteFolders$view = function (model) {
+	return A2(
+		rundis$elm_bootstrap$Bootstrap$Modal$view,
+		model.modal,
+		A3(
+			rundis$elm_bootstrap$Bootstrap$Modal$footer,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Button$button,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Button$primary,
+							rundis$elm_bootstrap$Bootstrap$Button$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Events$onClick(author$project$Modals$RemoteFolders$RemoteModify),
+									elm$html$Html$Attributes$type_('submit'),
+									elm$html$Html$Attributes$disabled(false)
+								]))
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('Save')
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Button$button,
+					_List_fromArray(
+						[
+							rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+							rundis$elm_bootstrap$Bootstrap$Button$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Events$onClick(
+									author$project$Modals$RemoteFolders$AnimateModal(rundis$elm_bootstrap$Bootstrap$Modal$hiddenAnimated))
+								]))
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('Cancel')
+						]))
+				]),
+			A3(
+				rundis$elm_bootstrap$Bootstrap$Modal$body,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$containerFluid,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$row,
+								_List_fromArray(
+									[
+										rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+										_List_fromArray(
+											[
+												A2(elm$html$Html$Attributes$style, 'min-width', '60vh')
+											]))
+									]),
+								author$project$Modals$RemoteFolders$viewRemoteAddContent(model))
+							]))
+					]),
+				A3(
+					rundis$elm_bootstrap$Bootstrap$Modal$header,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('modal-title modal-header-primary')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$h4,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text('Edit folders')
+								]))
+						]),
+					A2(
+						rundis$elm_bootstrap$Bootstrap$Modal$withAnimation,
+						author$project$Modals$RemoteFolders$AnimateModal,
+						rundis$elm_bootstrap$Bootstrap$Modal$large(
+							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$RemoteFolders$ModalClose)))))));
 };
 var author$project$Modals$RemoteRemove$DoRemove = {$: 'DoRemove'};
 var author$project$Modals$RemoteRemove$ModalClose = {$: 'ModalClose'};
@@ -20899,7 +21541,11 @@ var author$project$Routes$Remotes$buildModals = function (model) {
 				A2(
 				elm$html$Html$map,
 				author$project$Routes$Remotes$RemoteRemoveMsg,
-				author$project$Modals$RemoteRemove$view(model.remoteRemoveState))
+				author$project$Modals$RemoteRemove$view(model.remoteRemoveState)),
+				A2(
+				elm$html$Html$map,
+				author$project$Routes$Remotes$RemoteFolderMsg,
+				author$project$Modals$RemoteFolders$view(model.remoteFoldersState))
 			]));
 };
 var elm$html$Html$aside = _VirtualDom_node('aside');

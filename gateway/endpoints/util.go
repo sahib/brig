@@ -266,7 +266,7 @@ func jsonifySuccess(w http.ResponseWriter) {
 	jsonifyErrf(w, http.StatusOK, "success")
 }
 
-func (s *State) commitChange(msg string, w http.ResponseWriter, r *http.Request) {
+func (s *State) commitChange(msg string, w http.ResponseWriter, r *http.Request) bool {
 	name := getUserName(s.store, w, r)
 	fullMsg := fmt.Sprintf("gateway: »%s« %s", name, msg)
 
@@ -274,12 +274,15 @@ func (s *State) commitChange(msg string, w http.ResponseWriter, r *http.Request)
 		if err != ie.ErrNoChange {
 			log.Warningf("could not commit: %v", err)
 			jsonifyErrf(w, http.StatusInternalServerError, "could not commit")
+			return false
 		}
 
-		return
+		// There was no change. No need to notify.
+		return true
 	}
 
 	s.evHdl.Notify(r.Context(), "fs")
+	return true
 }
 
 ///////

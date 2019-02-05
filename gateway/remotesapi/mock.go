@@ -56,6 +56,13 @@ func (m *Mock) Set(rm Remote) error {
 		return fmt.Errorf("cannot add remote with own name")
 	}
 
+	prevRm, ok := m.remotes[rm.Name]
+	if ok {
+		rm.IsAuthenticated = prevRm.IsAuthenticated
+		rm.LastSeen = prevRm.LastSeen
+		rm.IsOnline = prevRm.IsOnline
+	}
+
 	m.remotes[rm.Name] = &rm
 	m.notify()
 	return nil
@@ -92,7 +99,15 @@ func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 	}
 
 	// always send an empty diff.
-	return &catfs.Diff{}, nil
+	return &catfs.Diff{
+		Added:    []catfs.StatInfo{},
+		Removed:  []catfs.StatInfo{},
+		Ignored:  []catfs.StatInfo{},
+		Missing:  []catfs.StatInfo{},
+		Conflict: []catfs.DiffPair{},
+		Moved:    []catfs.DiffPair{},
+		Merged:   []catfs.DiffPair{},
+	}, nil
 }
 
 func (m *Mock) notify() {

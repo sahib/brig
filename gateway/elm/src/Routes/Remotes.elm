@@ -30,6 +30,7 @@ import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
 import Modals.RemoteAdd as RemoteAdd
+import Modals.RemoteFolders as RemoteFolders
 import Modals.RemoteRemove as RemoteRemove
 import Time
 import Util
@@ -68,6 +69,7 @@ type alias Model =
     , alert : AlertState
     , remoteAddState : RemoteAdd.Model
     , remoteRemoveState : RemoteRemove.Model
+    , remoteFoldersState : RemoteFolders.Model
     , dropdowns : Dict.Dict String Dropdown.State
     }
 
@@ -80,6 +82,7 @@ newModel key zone =
     , self = Commands.emptySelf
     , remoteAddState = RemoteAdd.newModel
     , remoteRemoveState = RemoteRemove.newModel
+    , remoteFoldersState = RemoteFolders.newModel
     , dropdowns = Dict.empty
     , alert = defaultAlertState
     }
@@ -92,13 +95,16 @@ newModel key zone =
 type Msg
     = GotRemoteListResponse (Result Http.Error (List Commands.Remote))
     | GotSyncResponse (Result Http.Error String)
-    | GotDiffResponse (Result Http.Error String)
+    | GotDiffResponse (Result Http.Error Commands.Diff)
     | GotSelfResponse (Result Http.Error Commands.Self)
+    | GotRemoteModifyResponse (Result Http.Error String)
     | SyncClicked String
     | DiffClicked String
+    | AutoUpdateToggled Commands.Remote Bool
       -- Sub messages:
     | RemoteAddMsg RemoteAdd.Msg
     | RemoteRemoveMsg RemoteRemove.Msg
+    | RemoteFolderMsg RemoteFolders.Msg
     | DropdownMsg String Dropdown.State
     | AlertMsg Alert.Visibility
 
@@ -146,6 +152,14 @@ update msg model =
                 Err err ->
                     showAlert model 20 Alert.danger ("Failed to sync: " ++ Util.httpErrorToString err)
 
+        GotRemoteModifyResponse result ->
+            case result of
+                Ok _ ->
+                    ( model, Cmd.none )
+
+                Err err ->
+                    showAlert model 20 Alert.danger ("Failed to set auto update: " ++ Util.httpErrorToString err)
+
         GotDiffResponse result ->
             case result of
                 Ok _ ->
@@ -173,6 +187,9 @@ update msg model =
         DiffClicked name ->
             ( model, Commands.doRemoteDiff GotDiffResponse name )
 
+        AutoUpdateToggled remote state ->
+            ( model, Commands.doRemoteModify GotRemoteModifyResponse { remote | acceptAutoUpdates = state } )
+
         RemoteAddMsg subMsg ->
             let
                 ( upModel, upCmd ) =
@@ -186,6 +203,13 @@ update msg model =
                     RemoteRemove.update subMsg model.remoteRemoveState
             in
             ( { model | remoteRemoveState = upModel }, Cmd.map RemoteRemoveMsg upCmd )
+
+        RemoteFolderMsg subMsg ->
+            let
+                ( upModel, upCmd ) =
+                    RemoteFolders.update subMsg model.remoteFoldersState
+            in
+            ( { model | remoteFoldersState = upModel }, Cmd.map RemoteFolderMsg upCmd )
 
         AlertMsg vis ->
             let
@@ -232,13 +256,9 @@ viewAlert alert isSuccess =
         |> Alert.view alert.vis
 
 
-viewAutoUpdatesIcon : Bool -> Html Msg
-viewAutoUpdatesIcon v =
-    if v then
-        span [ class "fas fa-md fa-check text-success" ] []
-
-    else
-        text ""
+viewAutoUpdatesIcon : Bool -> Commands.Remote -> Html Msg
+viewAutoUpdatesIcon state remote =
+    Util.viewToggleSwitch (AutoUpdateToggled remote) "" state
 
 
 viewRemoteState : Model -> Commands.Remote -> Html Msg
@@ -258,7 +278,7 @@ viewRemoteState model remote =
 viewFingerprint : String -> Html Msg
 viewFingerprint fingerprint =
     String.split ":" fingerprint
-        |> List.map (\t -> String.slice 0 15 t)
+        |> List.map (\t -> String.slice 0 10 t)
         |> String.join ":"
         |> text
 
@@ -313,7 +333,26 @@ viewRemote model remote =
             [ span [ class "text-muted" ] [ viewFingerprint remote.fingerprint ] ]
         , Table.td
             []
-            [ viewAutoUpdatesIcon remote.acceptAutoUpdates ]
+            [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote ]
+        , Table.td
+            []
+            [ Button.button
+                [ Button.roleLink
+                , Button.attrs
+                    [ onClick <| RemoteFolderMsg (RemoteFolders.show remote)
+                    ]
+                ]
+                [ span
+                    []
+                    [ case List.length remote.folders of
+                        0 ->
+                            span [ class "fas fa-xs fa-asterisk" ] []
+
+                        n ->
+                            text <| String.fromInt n
+                    ]
+                ]
+            ]
         , Table.td
             [ Table.cellAttr (class "text-right") ]
             [ viewDropdown model remote ]
@@ -340,11 +379,14 @@ viewRemoteList model remotes =
                         [ Table.cellAttr (style "width" "20%") ]
                         [ span [ class "text-muted" ] [ text "Online" ] ]
                     , Table.th
-                        [ Table.cellAttr (style "width" "35%") ]
+                        [ Table.cellAttr (style "width" "30%") ]
                         [ span [ class "text-muted" ] [ text "Fingerprint" ] ]
                     , Table.th
-                        [ Table.cellAttr (style "width" "15%") ]
+                        [ Table.cellAttr (style "width" "10%") ]
                         [ span [ class "text-muted" ] [ text "Auto Update" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "10%") ]
+                        [ span [ class "text-muted" ] [ text "Folders" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "5%") ]
                         []
@@ -446,6 +488,7 @@ buildModals model =
     span []
         [ Html.map RemoteAddMsg (RemoteAdd.view model.remoteAddState)
         , Html.map RemoteRemoveMsg (RemoteRemove.view model.remoteRemoveState)
+        , Html.map RemoteFolderMsg (RemoteFolders.view model.remoteFoldersState)
         ]
 
 
@@ -459,6 +502,7 @@ subscriptions model =
         [ Alert.subscriptions model.alert.vis AlertMsg
         , Sub.map RemoteAddMsg <| RemoteAdd.subscriptions model.remoteAddState
         , Sub.map RemoteRemoveMsg <| RemoteRemove.subscriptions model.remoteRemoveState
+        , Sub.map RemoteFolderMsg <| RemoteFolders.subscriptions model.remoteFoldersState
         , Sub.batch
             (List.map
                 (\( name, state ) -> Dropdown.subscriptions state (DropdownMsg name))

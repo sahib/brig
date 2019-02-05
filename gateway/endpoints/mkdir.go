@@ -43,6 +43,8 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := fmt.Sprintf("mkdir'd »%s«", mkdirReq.Path)
-	mh.commitChange(msg, w, r)
+	if !mh.commitChange(msg, w, r) {
+		return
+	}
 	jsonifySuccess(w)
 }

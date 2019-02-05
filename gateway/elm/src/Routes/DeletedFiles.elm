@@ -1,4 +1,14 @@
-module Routes.DeletedFiles exposing (Model, Msg, newModel, reload, subscriptions, update, view)
+module Routes.DeletedFiles exposing
+    ( Model
+    , Msg
+    , newModel
+    , reload
+    , reloadIfNeeded
+    , subscriptions
+    , update
+    , updateUrl
+    , view
+    )
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
@@ -21,6 +31,7 @@ import Html.Lazy as Lazy
 import Http
 import Scroll
 import Time
+import Url
 import Util
 
 
@@ -61,12 +72,25 @@ type alias Model =
     , filter : String
     , offset : Int
     , alert : AlertState
+    , url : Url.Url
     }
 
 
-newModel : Nav.Key -> Time.Zone -> Model
-newModel key zone =
-    Model key Loading zone "" 0 defaultAlertState
+newModel : Url.Url -> Nav.Key -> Time.Zone -> Model
+newModel url key zone =
+    { key = key
+    , state = Loading
+    , zone = zone
+    , filter = ""
+    , offset = 0
+    , alert = defaultAlertState
+    , url = url
+    }
+
+
+updateUrl : Model -> Url.Url -> Model
+updateUrl model url =
+    { model | url = url }
 
 
 
@@ -88,7 +112,21 @@ type Msg
 
 reload : Model -> Cmd Msg
 reload model =
-    Commands.doDeletedFiles (GotDeletedPathsResponse True) model.offset loadLimit model.filter
+    Commands.doDeletedFiles (GotDeletedPathsResponse True) 0 (model.offset + loadLimit) model.filter
+
+
+reloadIfNeeded : Model -> Cmd Msg
+reloadIfNeeded model =
+    case model.state of
+        Success commits ->
+            if List.length commits == 0 then
+                reload model
+
+            else
+                Cmd.none
+
+        _ ->
+            Cmd.none
 
 
 reloadWithoutFlush : Model -> Int -> Cmd Msg
@@ -207,10 +245,15 @@ update msg model =
             ( { model | alert = newAlert }, Cmd.none )
 
         OnScroll data ->
-            if Scroll.hasHitBottom (Debug.log "SCROLL" data) then
-                ( model, reloadWithoutFlush model (Debug.log "RELOAD" (model.offset + loadLimit)) )
+            if String.startsWith "/deleted" model.url.path then
+                if Scroll.hasHitBottom data then
+                    ( model, reloadWithoutFlush model (model.offset + loadLimit) )
+
+                else
+                    ( model, Cmd.none )
 
             else
+                -- We're currently not visible. Forget updating.
                 ( model, Cmd.none )
 
 

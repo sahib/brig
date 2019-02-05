@@ -44,6 +44,8 @@ func (uh *UndeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := fmt.Sprintf("undeleted »%s«", undelReq.Path)
-	uh.commitChange(msg, w, r)
+	if !uh.commitChange(msg, w, r) {
+		return
+	}
 	jsonifySuccess(w)
 }

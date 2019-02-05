@@ -1,4 +1,14 @@
-module Routes.Commits exposing (Model, Msg, newModel, reload, subscriptions, update, view)
+module Routes.Commits exposing
+    ( Model
+    , Msg
+    , newModel
+    , reload
+    , reloadIfNeeded
+    , subscriptions
+    , update
+    , updateUrl
+    , view
+    )
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
@@ -21,6 +31,7 @@ import Html.Lazy as Lazy
 import Http
 import Scroll
 import Time
+import Url
 import Util
 
 
@@ -61,12 +72,27 @@ type alias Model =
     , filter : String
     , offset : Int
     , alert : AlertState
+    , url : Url.Url
+    , haveStagedChanges : Bool
     }
 
 
-newModel : Nav.Key -> Time.Zone -> Model
-newModel key zone =
-    Model key Loading zone "" 0 defaultAlertState
+newModel : Url.Url -> Nav.Key -> Time.Zone -> Model
+newModel url key zone =
+    { key = key
+    , state = Loading
+    , zone = zone
+    , filter = ""
+    , offset = 0
+    , alert = defaultAlertState
+    , url = url
+    , haveStagedChanges = False
+    }
+
+
+updateUrl : Model -> Url.Url -> Model
+updateUrl model url =
+    { model | url = url }
 
 
 
@@ -74,7 +100,7 @@ newModel key zone =
 
 
 type Msg
-    = GotLogResponse Bool (Result Http.Error (List Commands.Commit))
+    = GotLogResponse Bool (Result Http.Error Commands.Log)
     | GotResetResponse (Result Http.Error String)
     | CheckoutClicked String
     | SearchInput String
@@ -88,7 +114,21 @@ type Msg
 
 reload : Model -> Cmd Msg
 reload model =
-    Commands.doLog (GotLogResponse True) model.offset loadLimit model.filter
+    Commands.doLog (GotLogResponse True) 0 (model.offset + loadLimit) model.filter
+
+
+reloadIfNeeded : Model -> Cmd Msg
+reloadIfNeeded model =
+    case model.state of
+        Success commits ->
+            if List.length commits == 0 then
+                reload model
+
+            else
+                Cmd.none
+
+        _ ->
+            Cmd.none
 
 
 reloadWithoutFlush : Model -> Int -> Cmd Msg
@@ -126,7 +166,7 @@ update msg model =
     case msg of
         GotLogResponse doFlush result ->
             case result of
-                Ok commits ->
+                Ok log ->
                     -- Got a new load of data. Merge it with the previous dataset,
                     -- unless we want to flush the current view.
                     let
@@ -143,8 +183,9 @@ update msg model =
                                         ( [], model.offset )
                     in
                     ( { model
-                        | state = Success (mergeCommits prevCommits commits)
+                        | state = Success (mergeCommits prevCommits log.commits)
                         , offset = newOffset
+                        , haveStagedChanges = log.haveStagedChanges
                       }
                     , Cmd.none
                     )
@@ -171,10 +212,16 @@ update msg model =
             ( upModel, reload upModel )
 
         OnScroll data ->
-            if Scroll.hasHitBottom data then
-                ( model, reloadWithoutFlush model (model.offset + loadLimit) )
+            if String.startsWith "/log" model.url.path then
+                if Scroll.hasHitBottom data then
+                    ( model, reloadWithoutFlush model (model.offset + loadLimit) )
+
+                else
+                    -- We don't need to reload yet.
+                    ( model, Cmd.none )
 
             else
+                -- We're currently not visible. Forget updating.
                 ( model, Cmd.none )
 
         AlertMsg vis ->
@@ -263,7 +310,10 @@ viewCommit model commit =
                 ]
                 [ Button.button
                     [ Button.outlineDanger
-                    , Button.attrs [ onClick <| CheckoutClicked commit.hash ]
+                    , Button.attrs
+                        [ onClick <| CheckoutClicked commit.hash
+                        , disabled (not model.haveStagedChanges && List.member "head" commit.tags)
+                        ]
                     ]
                     [ text "Checkout" ]
                 ]

@@ -1919,3 +1919,8 @@ func (fs *FS) CommitInfo(rev string) (*Commit, error) {
 
 	return commitToExternal(cmt, hashToRef), nil
 }
+
+// HaveStagedChanges returns true if there are changes that were not committed yet.
+func (fs *FS) HaveStagedChanges() (bool, error) {
+	return fs.lkr.HaveStagedChanges()
+}
