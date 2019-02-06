@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
+	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger/options"
 	"sync"
+	"time"
 
 	capnp "github.com/sahib/brig/gateway/db/capnp"
 	"github.com/sahib/brig/util"
@@ -16,8 +18,9 @@ import (
 // UserDatabase is a badger db that stores user information,
 // using the user name as unique key.
 type UserDatabase struct {
-	mu sync.Mutex
-	db *badger.DB
+	mu       sync.Mutex
+	db       *badger.DB
+	gcTicker *time.Ticker
 }
 
 // NewUserDatabase creates a new UserDatabase at `path` or loads
@@ -26,19 +29,38 @@ func NewUserDatabase(path string) (*UserDatabase, error) {
 	opts := badger.DefaultOptions
 	opts.Dir = path
 	opts.ValueDir = path
+	opts.TableLoadingMode, opts.ValueLogLoadingMode = options.FileIO, options.FileIO
+	opts.MaxTableSize = 1 << 20
+	opts.NumMemtables = 1
+	opts.NumLevelZeroTables = 1
+	opts.NumLevelZeroTablesStall = 2
+	opts.SyncWrites = false
 
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserDatabase{db: db}, nil
+	gcTicker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for range gcTicker.C {
+		again:
+			err := db.RunValueLogGC(0.5)
+			if err == nil {
+				goto again
+			}
+		}
+	}()
+
+	return &UserDatabase{db: db, gcTicker: gcTicker}, nil
 }
 
 // Close cleans up all the resources used by a badger db.
 func (ub *UserDatabase) Close() error {
 	ub.mu.Lock()
 	defer ub.mu.Unlock()
+
+	ub.gcTicker.Stop()
 
 	if err := ub.db.Close(); err != nil {
 		return err

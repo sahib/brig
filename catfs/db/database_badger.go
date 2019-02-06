@@ -10,9 +10,11 @@ import (
 	// So gx forces us to use their badger version for no good reason at all.
 
 	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
+	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger/options"
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -24,6 +26,7 @@ type BadgerDatabase struct {
 	txn        *badger.Txn
 	refCount   int
 	haveWrites bool
+	gcTicker   *time.Ticker
 }
 
 // NewBadgerDatabase creates a new badger database.
@@ -31,14 +34,32 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	opts := badger.DefaultOptions
 	opts.Dir = path
 	opts.ValueDir = path
+	opts.TableLoadingMode, opts.ValueLogLoadingMode = options.FileIO, options.FileIO
+	opts.MaxTableSize = 1 << 20
+	opts.NumMemtables = 1
+	opts.NumLevelZeroTables = 1
+	opts.NumLevelZeroTablesStall = 2
+	opts.SyncWrites = false
 
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
 	}
 
+	gcTicker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for range gcTicker.C {
+		again:
+			err := db.RunValueLogGC(0.5)
+			if err == nil {
+				goto again
+			}
+		}
+	}()
+
 	return &BadgerDatabase{
-		db: db,
+		db:       db,
+		gcTicker: gcTicker,
 	}, nil
 }
 
@@ -293,6 +314,8 @@ func (db *BadgerDatabase) HaveWrites() bool {
 func (db *BadgerDatabase) Close() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	db.gcTicker.Stop()
 
 	// With an open transaction it would deadlock:
 	if db.txn != nil {
