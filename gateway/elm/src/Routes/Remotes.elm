@@ -12,8 +12,6 @@ module Routes.Remotes exposing
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Dropdown as Dropdown
-
-
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
@@ -27,7 +25,6 @@ import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-
 import Http
 import Modals.RemoteAdd as RemoteAdd
 import Modals.RemoteFolders as RemoteFolders
@@ -47,27 +44,12 @@ type State
     | Success (List Commands.Remote)
 
 
-type alias AlertState =
-    { message : String
-    , typ : Alert.Config Msg -> Alert.Config Msg
-    , vis : Alert.Visibility
-    }
-
-
-defaultAlertState : AlertState
-defaultAlertState =
-    { message = ""
-    , typ = Alert.danger
-    , vis = Alert.closed
-    }
-
-
 type alias Model =
     { key : Nav.Key
     , zone : Time.Zone
     , state : State
     , self : Commands.Self
-    , alert : AlertState
+    , alert : Util.AlertState
     , remoteAddState : RemoteAdd.Model
     , remoteRemoveState : RemoteRemove.Model
     , remoteFoldersState : RemoteFolders.Model
@@ -85,7 +67,7 @@ newModel key zone =
     , remoteRemoveState = RemoteRemove.newModel
     , remoteFoldersState = RemoteFolders.newModel
     , dropdowns = Dict.empty
-    , alert = defaultAlertState
+    , alert = Util.defaultAlertState
     }
 
 
@@ -120,11 +102,11 @@ reload =
         ]
 
 
-showAlert : Model -> Float -> (Alert.Config Msg -> Alert.Config Msg) -> String -> ( Model, Cmd Msg )
+showAlert : Model -> Float -> Util.AlertType -> String -> ( Model, Cmd Msg )
 showAlert model duration modalTyp message =
     let
         newAlert =
-            AlertState message modalTyp Alert.shown
+            Util.AlertState message modalTyp Alert.shown
     in
     ( { model | alert = newAlert }
     , Cmd.batch
@@ -146,10 +128,10 @@ update msg model =
         GotSyncResponse result ->
             case result of
                 Ok _ ->
-                    showAlert model 5 Alert.success "Succesfully synchronized!"
+                    showAlert model 5 Util.Success "Succesfully synchronized!"
 
                 Err err ->
-                    showAlert model 20 Alert.danger ("Failed to sync: " ++ Util.httpErrorToString err)
+                    showAlert model 20 Util.Danger ("Failed to sync: " ++ Util.httpErrorToString err)
 
         GotRemoteModifyResponse result ->
             case result of
@@ -157,7 +139,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Err err ->
-                    showAlert model 20 Alert.danger ("Failed to set auto update: " ++ Util.httpErrorToString err)
+                    showAlert model 20 Util.Danger ("Failed to set auto update: " ++ Util.httpErrorToString err)
 
         GotSelfResponse result ->
             case result of
@@ -201,46 +183,13 @@ update msg model =
         AlertMsg vis ->
             let
                 newAlert =
-                    AlertState model.alert.message model.alert.typ vis
+                    Util.AlertState model.alert.message model.alert.typ vis
             in
             ( { model | alert = newAlert }, Cmd.none )
 
 
 
 -- VIEW:
-
-
-viewAlert : AlertState -> Bool -> Html Msg
-viewAlert alert isSuccess =
-    Alert.config
-        |> Alert.dismissableWithAnimation AlertMsg
-        |> alert.typ
-        |> Alert.children
-            [ Grid.row []
-                [ Grid.col [ Col.xs10 ]
-                    [ span
-                        [ if isSuccess then
-                            class "fas fa-xs fa-check"
-
-                          else
-                            class "fas fa-xs fa-exclamation-circle"
-                        ]
-                        []
-                    , text (" " ++ alert.message)
-                    ]
-                , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]
-                    [ Button.button
-                        [ Button.roleLink
-                        , Button.attrs
-                            [ class "notification-close-btn"
-                            , onClick (AlertMsg Alert.closed)
-                            ]
-                        ]
-                        [ span [ class "fas fa-xs fa-times" ] [] ]
-                    ]
-                ]
-            ]
-        |> Alert.view alert.vis
 
 
 viewAutoUpdatesIcon : Bool -> Commands.Remote -> Html Msg
@@ -423,7 +372,7 @@ viewRemoteListContainer model remotes =
     Grid.row []
         [ Grid.col [ Col.lg1, Col.attrs [ class "d-none d-lg-block" ] ] []
         , Grid.col [ Col.xs12, Col.lg10 ]
-            [ viewAlert model.alert True
+            [ Util.viewAlert AlertMsg model.alert
             , viewRemoteList model remotes
             , div [ class "text-left" ]
                 [ Button.button

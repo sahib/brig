@@ -23,7 +23,7 @@ import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
+import Bootstrap.Grid.Row as Row
 import Bootstrap.Text as Text
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -280,7 +280,7 @@ iconFromAlertType : AlertType -> Html msg
 iconFromAlertType typ =
     case typ of
         Danger ->
-            span [ class "fas fa-xs fa-times" ] []
+            span [ class "fas fa-xs fa-exclamation-circle" ] []
 
         Success ->
             span [ class "fas fa-xs fa-check" ] []

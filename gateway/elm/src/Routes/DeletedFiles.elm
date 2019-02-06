@@ -50,28 +50,13 @@ type State
     | Success (List Commands.Entry)
 
 
-type alias AlertState =
-    { message : String
-    , typ : Alert.Config Msg -> Alert.Config Msg
-    , vis : Alert.Visibility
-    }
-
-
-defaultAlertState : AlertState
-defaultAlertState =
-    { message = ""
-    , typ = Alert.danger
-    , vis = Alert.closed
-    }
-
-
 type alias Model =
     { key : Nav.Key
     , state : State
     , zone : Time.Zone
     , filter : String
     , offset : Int
-    , alert : AlertState
+    , alert : Util.AlertState
     , url : Url.Url
     }
 
@@ -83,7 +68,7 @@ newModel url key zone =
     , zone = zone
     , filter = ""
     , offset = 0
-    , alert = defaultAlertState
+    , alert = Util.defaultAlertState
     , url = url
     }
 
@@ -210,9 +195,9 @@ update msg model =
                 Ok _ ->
                     let
                         newAlert =
-                            AlertState
+                            Util.AlertState
                                 "Succcesfully undeleted one item."
-                                Alert.success
+                                Util.Success
                                 Alert.shown
                     in
                     ( { model | alert = newAlert }
@@ -225,9 +210,9 @@ update msg model =
                 Err err ->
                     let
                         newAlert =
-                            AlertState
+                            Util.AlertState
                                 ("Failed to undelete: " ++ Util.httpErrorToString err)
-                                Alert.danger
+                                Util.Danger
                                 Alert.shown
                     in
                     ( model
@@ -240,7 +225,7 @@ update msg model =
         AlertMsg vis ->
             let
                 newAlert =
-                    AlertState model.alert.message model.alert.typ vis
+                    Util.AlertState model.alert.message model.alert.typ vis
             in
             ( { model | alert = newAlert }, Cmd.none )
 
@@ -259,39 +244,6 @@ update msg model =
 
 
 -- VIEW:
-
-
-viewAlert : AlertState -> Bool -> Html Msg
-viewAlert alert isSuccess =
-    Alert.config
-        |> Alert.dismissableWithAnimation AlertMsg
-        |> alert.typ
-        |> Alert.children
-            [ Grid.row []
-                [ Grid.col [ Col.xs10 ]
-                    [ span
-                        [ if isSuccess then
-                            class "fas fa-xs fa-check"
-
-                          else
-                            class "fas fa-xs fa-exclamation-circle"
-                        ]
-                        []
-                    , text (" " ++ alert.message)
-                    ]
-                , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]
-                    [ Button.button
-                        [ Button.roleLink
-                        , Button.attrs
-                            [ class "notification-close-btn"
-                            , onClick (AlertMsg Alert.closed)
-                            ]
-                        ]
-                        [ span [ class "fas fa-xs fa-times" ] [] ]
-                    ]
-                ]
-            ]
-        |> Alert.view alert.vis
 
 
 viewSearchBox : Model -> Html Msg
@@ -420,7 +372,7 @@ viewDeletedContainer model entries =
         , Grid.col [ Col.lg10, Col.md12 ]
             [ h4 [ class "text-muted text-center" ] [ text "Deleted files" ]
             , br [] []
-            , viewAlert model.alert True
+            , Util.viewAlert AlertMsg model.alert
             , maybeViewDeletedList model entries
             , br [] []
             ]
