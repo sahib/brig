@@ -2,32 +2,32 @@ module Main exposing (init, main, subscriptions, update, view)
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
-import Bootstrap.ButtonGroup as ButtonGroup
+
 import Bootstrap.Form as Form
-import Bootstrap.Form.Checkbox as Checkbox
+
 import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
+
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
-import Bootstrap.Table as Table
+
+
 import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
 import Commands
-import File
+
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
-import Json.Encode as E
+
 import List
-import Modals.Mkdir as Mkdir
-import Modals.Remove as Remove
-import Modals.Share as Share
-import Modals.Upload as Upload
+
+
+
+
 import Routes.Commits as Commits
 import Routes.DeletedFiles as DeletedFiles
 import Routes.Diff as Diff
@@ -37,9 +37,9 @@ import Routes.Remotes as Remotes
 import Task
 import Time
 import Url
-import Url.Builder as UrlBuilder
-import Url.Parser as UrlParser
-import Url.Parser.Query as Query
+
+
+
 import Util exposing (..)
 import Websocket
 

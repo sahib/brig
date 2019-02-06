@@ -25,7 +25,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-import Url
+
 import Util
 
 

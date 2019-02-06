@@ -12,8 +12,8 @@ module Routes.Remotes exposing
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Dropdown as Dropdown
-import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
+
+
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
@@ -27,7 +27,7 @@ import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Html.Lazy as Lazy
+
 import Http
 import Modals.RemoteAdd as RemoteAdd
 import Modals.RemoteFolders as RemoteFolders

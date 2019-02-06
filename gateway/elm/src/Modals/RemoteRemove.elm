@@ -2,7 +2,7 @@ module Modals.RemoteRemove exposing (Model, Msg, newModel, show, subscriptions, 
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
-import Bootstrap.Form.Input as Input
+
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Modal as Modal
@@ -13,7 +13,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-import Url
+
 import Util
 
 

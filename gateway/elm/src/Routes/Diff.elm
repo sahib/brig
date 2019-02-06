@@ -18,12 +18,12 @@ import Commands
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Html.Lazy as Lazy
+
 import Http
 import Time
 import Url
 import Url.Parser exposing ((</>), parse, s, string)
-import Url.Parser.Query as Query
+
 import Util
 
 
