@@ -74,7 +74,7 @@ func (lh *LogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		if int64(len(commits)) >= logReq.Limit {
+		if logReq.Limit >= 0 && int64(len(commits)) >= logReq.Limit {
 			return errSkip
 		}
 

@@ -28,7 +28,11 @@ func TestDeletedPathSuccess(t *testing.T) {
 			NewDeletedPathsHandler(s.State),
 			"POST",
 			"http://localhost:5000/api/v0/deleted",
-			nil,
+			&DeletedRequest{
+				Offset: 0,
+				Limit:  -1,
+				Filter: "",
+			},
 		)
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)

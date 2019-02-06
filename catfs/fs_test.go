@@ -120,8 +120,11 @@ func TestLogAndTag(t *testing.T) {
 
 		cmts = append(cmts, status)
 
-		log, err := fs.Log("", "")
-		require.Nil(t, err)
+		log := []*Commit{}
+		require.Nil(t, fs.Log("", func(c *Commit) error {
+			log = append(log, c)
+			return nil
+		}))
 
 		for idx, entry := range log {
 			ridx := len(cmts) - idx - 1
@@ -248,8 +251,11 @@ func TestHistory(t *testing.T) {
 		hist, err := fs.History("/x")
 		require.Nil(t, err)
 
-		log, err := fs.Log("", "")
-		require.Nil(t, err)
+		log := []*Commit{}
+		require.Nil(t, fs.Log("", func(c *Commit) error {
+			log = append(log, c)
+			return nil
+		}))
 
 		for idx, entry := range hist {
 			require.Equal(t, entry.Path, "/x")

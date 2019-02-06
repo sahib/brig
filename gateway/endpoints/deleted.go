@@ -37,6 +37,10 @@ type DeletedRequest struct {
 }
 
 func matchEntry(info *catfs.StatInfo, filter string) bool {
+	if filter == "" {
+		return true
+	}
+
 	return strings.Contains(strings.ToLower(info.Path), filter)
 }
 

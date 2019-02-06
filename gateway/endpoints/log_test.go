@@ -22,7 +22,11 @@ func TestLogEndpointSuccess(t *testing.T) {
 			NewLogHandler(s.State),
 			"POST",
 			"http://localhost:5000/api/v0/log",
-			nil,
+			&LogRequest{
+				Offset: 0,
+				Limit:  -1,
+				Filter: "",
+			},
 		)
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
