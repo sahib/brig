@@ -1,6 +1,8 @@
 module Util exposing
-    ( basename
+    ( AlertState
+    , basename
     , buildAlert
+    , defaultAlertState
     , dirname
     , formatLastModified
     , formatLastModifiedOwner
@@ -12,10 +14,16 @@ module Util exposing
     , urlEncodePath
     , urlPrefixToString
     , urlToPath
+    , viewAlert
     , viewToggleSwitch
     )
 
 import Bootstrap.Alert as Alert
+import Bootstrap.Button as Button
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
+import Bootstrap.Grid.Row as Row
+import Bootstrap.Text as Text
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -240,3 +248,50 @@ viewToggleSwitch toMsg message isChecked =
             [ class "text-muted" ]
             [ text (" " ++ message) ]
         ]
+
+
+
+-- ALERT UTILS
+
+
+type alias AlertState msg =
+    { message : String
+    , typ : Alert.Config msg -> Alert.Config msg
+    , vis : Alert.Visibility
+    }
+
+
+defaultAlertState : AlertState msg
+defaultAlertState =
+    { message = ""
+    , typ = Alert.danger
+    , vis = Alert.closed
+    }
+
+
+viewAlert : (Alert.Visibility -> msg) -> AlertState msg -> Html msg
+viewAlert toMsg alert =
+    Alert.config
+        |> Alert.dismissableWithAnimation toMsg
+        |> alert.typ
+        |> Alert.children
+            [ Grid.row []
+                [ Grid.col [ Col.xs10 ]
+                    [ span
+                        [ class "fas fa-xs fa-check" ]
+                        []
+                    , text (" " ++ alert.message)
+                    ]
+                , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]
+                    [ Button.button
+                        [ Button.roleLink
+                        , Button.attrs
+                            [ class "notification-close-btn"
+                            , onClick (toMsg Alert.closed)
+                            ]
+                        ]
+                        [ span [ class "fas fa-xs fa-times" ] [] ]
+                    ]
+                ]
+            ]
+        |> Alert.view alert.vis

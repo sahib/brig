@@ -7625,10 +7625,10 @@ var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
 var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
 	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
-var author$project$Routes$Commits$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
+var author$project$Util$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$Commits$newModel = F3(
 	function (url, key, zone) {
-		return {alert: author$project$Routes$Commits$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
+		return {alert: author$project$Util$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
 	});
 var author$project$Commands$LogQuery = F3(
 	function (offset, limit, filter) {
@@ -8970,10 +8970,6 @@ var author$project$Commands$doReset = F3(
 				url: '/api/v0/reset'
 			});
 	});
-var author$project$Routes$Commits$AlertState = F3(
-	function (message, typ, vis) {
-		return {message: message, typ: typ, vis: vis};
-	});
 var author$project$Routes$Commits$Failure = function (a) {
 	return {$: 'Failure', a: a};
 };
@@ -9061,9 +9057,13 @@ var andrewMacmurray$elm_delay$Delay$after = F3(
 var author$project$Routes$Commits$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
 };
+var author$project$Util$AlertState = F3(
+	function (message, typ, vis) {
+		return {message: message, typ: typ, vis: vis};
+	});
 var author$project$Routes$Commits$showAlert = F4(
 	function (model, duration, modalTyp, message) {
-		var newAlert = A3(author$project$Routes$Commits$AlertState, message, modalTyp, rundis$elm_bootstrap$Bootstrap$Alert$shown);
+		var newAlert = A3(author$project$Util$AlertState, message, modalTyp, rundis$elm_bootstrap$Bootstrap$Alert$shown);
 		return _Utils_Tuple2(
 			_Utils_update(
 				model,
@@ -9182,7 +9182,7 @@ var author$project$Routes$Commits$update = F2(
 					A2(author$project$Routes$Commits$reloadWithoutFlush, model, model.offset + author$project$Routes$Commits$loadLimit)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			default:
 				var vis = msg.a;
-				var newAlert = A3(author$project$Routes$Commits$AlertState, model.alert.message, model.alert.typ, vis);
+				var newAlert = A3(author$project$Util$AlertState, model.alert.message, model.alert.typ, vis);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -13719,93 +13719,6 @@ var author$project$Main$viewLoginForm = function (model) {
 					]))
 			]));
 };
-var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
-	function (dismissMsg, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{
-					dismissable: elm$core$Maybe$Just(dismissMsg),
-					withAnimation: true
-				}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
-var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
-	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
-var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
-var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
-var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
-var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
-var author$project$Routes$Commits$viewAlert = F2(
-	function (alert, isSuccess) {
-		return A2(
-			rundis$elm_bootstrap$Bootstrap$Alert$view,
-			alert.vis,
-			A2(
-				rundis$elm_bootstrap$Bootstrap$Alert$children,
-				_List_fromArray(
-					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Grid$row,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
-								_List_fromArray(
-									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												isSuccess ? elm$html$Html$Attributes$class('fas fa-xs fa-check') : elm$html$Html$Attributes$class('fas fa-xs fa-exclamation-circle')
-											]),
-										_List_Nil),
-										elm$html$Html$text(' ' + alert.message)
-									])),
-								A2(
-								rundis$elm_bootstrap$Bootstrap$Grid$col,
-								_List_fromArray(
-									[
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
-										rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
-									]),
-								_List_fromArray(
-									[
-										A2(
-										rundis$elm_bootstrap$Bootstrap$Button$button,
-										_List_fromArray(
-											[
-												rundis$elm_bootstrap$Bootstrap$Button$roleLink,
-												rundis$elm_bootstrap$Bootstrap$Button$attrs(
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('notification-close-btn'),
-														elm$html$Html$Events$onClick(
-														author$project$Routes$Commits$AlertMsg(rundis$elm_bootstrap$Bootstrap$Alert$closed))
-													]))
-											]),
-										_List_fromArray(
-											[
-												A2(
-												elm$html$Html$span,
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('fas fa-xs fa-times')
-													]),
-												_List_Nil)
-											]))
-									]))
-							]))
-					]),
-				alert.typ(
-					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, author$project$Routes$Commits$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
-	});
 var author$project$Routes$Commits$CheckoutClicked = function (a) {
 	return {$: 'CheckoutClicked', a: a};
 };
@@ -13861,6 +13774,8 @@ var rundis$elm_bootstrap$Bootstrap$ListGroup$li = F2(
 	});
 var rundis$elm_bootstrap$Bootstrap$Internal$Text$Left = {$: 'Left'};
 var rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Left);
+var rundis$elm_bootstrap$Bootstrap$Internal$Text$Right = {$: 'Right'};
+var rundis$elm_bootstrap$Bootstrap$Text$alignXsRight = rundis$elm_bootstrap$Bootstrap$Text$alignXs(rundis$elm_bootstrap$Bootstrap$Internal$Text$Right);
 var author$project$Routes$Commits$viewCommit = F2(
 	function (model, commit) {
 		return A2(
@@ -14030,6 +13945,91 @@ var author$project$Routes$Commits$viewCommitList = F2(
 					},
 					commits)));
 	});
+var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
+	function (dismissMsg, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{
+					dismissable: elm$core$Maybe$Just(dismissMsg),
+					withAnimation: true
+				}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Button$Link = {$: 'Link'};
+var rundis$elm_bootstrap$Bootstrap$Button$roleLink = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
+	rundis$elm_bootstrap$Bootstrap$Internal$Button$Roled(rundis$elm_bootstrap$Bootstrap$Internal$Button$Link));
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
+var rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
+var author$project$Util$viewAlert = F2(
+	function (toMsg, alert) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Alert$view,
+			alert.vis,
+			A2(
+				rundis$elm_bootstrap$Bootstrap$Alert$children,
+				_List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Grid$row,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$span,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('fas fa-xs fa-check')
+											]),
+										_List_Nil),
+										elm$html$Html$text(' ' + alert.message)
+									])),
+								A2(
+								rundis$elm_bootstrap$Bootstrap$Grid$col,
+								_List_fromArray(
+									[
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
+										rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsRight)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										rundis$elm_bootstrap$Bootstrap$Button$button,
+										_List_fromArray(
+											[
+												rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+												rundis$elm_bootstrap$Bootstrap$Button$attrs(
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('notification-close-btn'),
+														elm$html$Html$Events$onClick(
+														toMsg(rundis$elm_bootstrap$Bootstrap$Alert$closed))
+													]))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$span,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('fas fa-xs fa-times')
+													]),
+												_List_Nil)
+											]))
+									]))
+							]))
+					]),
+				alert.typ(
+					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, toMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
+	});
 var elm$html$Html$br = _VirtualDom_node('br');
 var elm$html$Html$h4 = _VirtualDom_node('h4');
 var rundis$elm_bootstrap$Bootstrap$Grid$Col$lg2 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$LG, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
@@ -14071,7 +14071,7 @@ var author$project$Routes$Commits$viewCommitListContainer = F2(
 								[
 									elm$html$Html$text('Commits')
 								])),
-							A2(author$project$Routes$Commits$viewAlert, model.alert, true),
+							A2(author$project$Util$viewAlert, author$project$Routes$Commits$AlertMsg, model.alert),
 							A2(elm$html$Html$br, _List_Nil, _List_Nil),
 							A2(author$project$Routes$Commits$viewCommitList, model, commits),
 							A2(elm$html$Html$br, _List_Nil, _List_Nil)

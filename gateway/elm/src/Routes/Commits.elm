@@ -50,28 +50,13 @@ type State
     | Success (List Commands.Commit)
 
 
-type alias AlertState =
-    { message : String
-    , typ : Alert.Config Msg -> Alert.Config Msg
-    , vis : Alert.Visibility
-    }
-
-
-defaultAlertState : AlertState
-defaultAlertState =
-    { message = ""
-    , typ = Alert.danger
-    , vis = Alert.closed
-    }
-
-
 type alias Model =
     { key : Nav.Key
     , state : State
     , zone : Time.Zone
     , filter : String
     , offset : Int
-    , alert : AlertState
+    , alert : Util.AlertState Msg
     , url : Url.Url
     , haveStagedChanges : Bool
     }
@@ -84,7 +69,7 @@ newModel url key zone =
     , zone = zone
     , filter = ""
     , offset = 0
-    , alert = defaultAlertState
+    , alert = Util.defaultAlertState
     , url = url
     , haveStagedChanges = False
     }
@@ -153,7 +138,7 @@ showAlert : Model -> Float -> (Alert.Config Msg -> Alert.Config Msg) -> String -
 showAlert model duration modalTyp message =
     let
         newAlert =
-            AlertState message modalTyp Alert.shown
+            Util.AlertState message modalTyp Alert.shown
     in
     ( { model | alert = newAlert }
     , Cmd.batch
@@ -227,7 +212,7 @@ update msg model =
         AlertMsg vis ->
             let
                 newAlert =
-                    AlertState model.alert.message model.alert.typ vis
+                    Util.AlertState model.alert.message model.alert.typ vis
             in
             ( { model | alert = newAlert }, Cmd.none )
 
@@ -235,39 +220,6 @@ update msg model =
 
 -- VIEW:
 -- TODO: Move this to some util module.
-
-
-viewAlert : AlertState -> Bool -> Html Msg
-viewAlert alert isSuccess =
-    Alert.config
-        |> Alert.dismissableWithAnimation AlertMsg
-        |> alert.typ
-        |> Alert.children
-            [ Grid.row []
-                [ Grid.col [ Col.xs10 ]
-                    [ span
-                        [ if isSuccess then
-                            class "fas fa-xs fa-check"
-
-                          else
-                            class "fas fa-xs fa-exclamation-circle"
-                        ]
-                        []
-                    , text (" " ++ alert.message)
-                    ]
-                , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]
-                    [ Button.button
-                        [ Button.roleLink
-                        , Button.attrs
-                            [ class "notification-close-btn"
-                            , onClick (AlertMsg Alert.closed)
-                            ]
-                        ]
-                        [ span [ class "fas fa-xs fa-times" ] [] ]
-                    ]
-                ]
-            ]
-        |> Alert.view alert.vis
 
 
 viewSearchBox : Model -> Html Msg
@@ -332,7 +284,7 @@ viewCommitListContainer model commits =
         [ Grid.col [ Col.lg2, Col.attrs [ class "d-none d-lg-block" ] ] []
         , Grid.col [ Col.lg8, Col.md12 ]
             [ h4 [ class "text-muted text-center" ] [ text "Commits" ]
-            , viewAlert model.alert True
+            , Util.viewAlert AlertMsg model.alert
             , br [] []
             , viewCommitList model commits
             , br [] []
