@@ -19,10 +19,11 @@ var upgrader = websocket.Upgrader{
 
 // EventsHandler implements http.Handler
 type EventsHandler struct {
-	mu   sync.Mutex
-	id   int
-	chs  map[int]chan string
-	rapi remotesapi.RemotesAPI
+	mu         sync.Mutex
+	id         int
+	chs        map[int]chan string
+	rapi       remotesapi.RemotesAPI
+	changeOnce sync.Once
 }
 
 // NewEventsHandler returns a new EventsHandler
@@ -31,13 +32,6 @@ func NewEventsHandler(rapi remotesapi.RemotesAPI) *EventsHandler {
 		chs:  make(map[int]chan string),
 		rapi: rapi,
 	}
-
-	rapi.OnChange(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		hdl.Notify(ctx, "remotes")
-	})
 
 	return hdl
 }
@@ -91,6 +85,18 @@ func (eh *EventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Warningf("failed to upgrade to websocket: %v", err)
 		return
 	}
+
+	// We setup the on change handler only here,
+	// since calling OnChange in init might deadlock
+	// since the real implementation might call Repo()
+	eh.changeOnce.Do(func() {
+		eh.rapi.OnChange(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+
+			eh.Notify(ctx, "remotes")
+		})
+	})
 
 	eh.mu.Lock()
 	id := eh.id
