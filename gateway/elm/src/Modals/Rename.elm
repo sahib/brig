@@ -148,12 +148,19 @@ view model =
         |> Modal.header [ class "modal-title modal-header-primary" ]
             [ h4 []
                 [ text "Rename "
-                , span [ class "text-muted" ]
-                    [ text (Util.basename model.currPath) ]
+                , span []
+                    [ text "»"
+                    , text (Util.basename model.currPath)
+                    , text "«"
+                    ]
                 , if String.length model.inputName > 0 then
                     span []
                         [ text " to "
-                        , span [ class "text-muted" ] [ text model.inputName ]
+                        , span []
+                            [ text "»"
+                            , text model.inputName
+                            , text "«"
+                            ]
                         ]
 
                   else

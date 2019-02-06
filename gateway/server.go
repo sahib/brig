@@ -253,7 +253,7 @@ func (gw *Gateway) Start() {
 			"/log",
 			"/remotes",
 			"/deleted",
-			"/settings",
+			"/diff",
 			"/nothing",
 		}
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 )
 
@@ -37,7 +38,8 @@ func (rh *RemotesDiffHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	diff, err := rh.rapi.MakeDiff(rmtDiffReq.Name)
 	if err != nil {
-		jsonifyErrf(w, http.StatusBadRequest, "failed to sync")
+		log.Errorf("failed to diff: %v", err)
+		jsonifyErrf(w, http.StatusBadRequest, "failed to diff")
 		return
 	}
 

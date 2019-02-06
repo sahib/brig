@@ -30,10 +30,10 @@ import Modals.Share as Share
 import Modals.Upload as Upload
 import Routes.Commits as Commits
 import Routes.DeletedFiles as DeletedFiles
+import Routes.Diff as Diff
 import Routes.Ls as Ls
 import Routes.NotFound as NotFound
 import Routes.Remotes as Remotes
-import Routes.Settings as Settings
 import Task
 import Time
 import Url
@@ -82,7 +82,7 @@ type Msg
     | DeletedFilesMsg DeletedFiles.Msg
     | NotFoundMsg NotFound.Msg
     | RemotesMsg Remotes.Msg
-    | SettingsMsg Settings.Msg
+    | DiffMsg Diff.Msg
 
 
 
@@ -94,7 +94,7 @@ type View
     | ViewCommits
     | ViewRemotes
     | ViewDeletedFiles
-    | ViewSettings
+    | ViewDiff
     | ViewNotFound
 
 
@@ -104,7 +104,7 @@ type alias ViewState =
     , remoteState : Remotes.Model
     , deletedFilesState : DeletedFiles.Model
     , notFoundState : NotFound.Model
-    , settingsState : Settings.Model
+    , diffState : Diff.Model
     , loginName : String
     , currentView : View
     }
@@ -167,7 +167,7 @@ doInitAfterLogin model loginName =
             , deletedFilesState = DeletedFiles.newModel model.url model.key model.zone
             , notFoundState = NotFound.newModel model.key model.zone
             , remoteState = Remotes.newModel model.key model.zone
-            , settingsState = Settings.newModel model.key model.zone
+            , diffState = Diff.newModel model.key model.url model.zone
             , loginName = loginName
             , currentView = viewFromUrl model.url
             }
@@ -179,6 +179,7 @@ doInitAfterLogin model loginName =
         , Cmd.map DeletedFilesMsg <| DeletedFiles.reload newViewState.deletedFilesState
         , Cmd.map CommitsMsg <| Commits.reload newViewState.commitsState
         , Cmd.map RemotesMsg <| Remotes.reload
+        , Cmd.map DiffMsg <| Diff.reload newViewState.diffState model.url
         ]
     )
 
@@ -203,8 +204,8 @@ viewFromUrl url =
                 "deleted" ->
                     ViewDeletedFiles
 
-                "settings" ->
-                    ViewSettings
+                "diff" ->
+                    ViewDiff
 
                 "" ->
                     ViewList
@@ -228,8 +229,8 @@ viewToString v =
         ViewDeletedFiles ->
             "/deleted"
 
-        ViewSettings ->
-            "/settings"
+        ViewDiff ->
+            "/Diff"
 
         ViewNotFound ->
             "/nothing"
@@ -340,9 +341,25 @@ update msg model =
                                             , listState = Ls.changeUrl url viewState.listState
                                             , commitsState = Commits.updateUrl viewState.commitsState url
                                             , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
+                                            , diffState = Diff.updateUrl viewState.diffState url
                                         }
                               }
                             , Cmd.map ListMsg <| Ls.doListQueryFromUrl url
+                            )
+
+                        ViewDiff ->
+                            ( { model
+                                | url = url
+                                , loginState =
+                                    LoginSuccess
+                                        { viewState
+                                            | currentView = ViewDiff
+                                            , commitsState = Commits.updateUrl viewState.commitsState url
+                                            , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
+                                            , diffState = Diff.updateUrl viewState.diffState url
+                                        }
+                              }
+                            , Cmd.map DiffMsg <| Diff.reload viewState.diffState url
                             )
 
                         ViewCommits ->
@@ -354,6 +371,7 @@ update msg model =
                                             | currentView = ViewCommits
                                             , commitsState = Commits.updateUrl viewState.commitsState url
                                             , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
+                                            , diffState = Diff.updateUrl viewState.diffState url
                                         }
                               }
                             , Cmd.map CommitsMsg <| Commits.reloadIfNeeded viewState.commitsState
@@ -368,6 +386,7 @@ update msg model =
                                             | currentView = ViewDeletedFiles
                                             , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
                                             , commitsState = Commits.updateUrl viewState.commitsState url
+                                            , diffState = Diff.updateUrl viewState.diffState url
                                         }
                               }
                             , Cmd.map DeletedFilesMsg <| DeletedFiles.reloadIfNeeded viewState.deletedFilesState
@@ -382,6 +401,7 @@ update msg model =
                                             | currentView = other
                                             , commitsState = Commits.updateUrl viewState.commitsState url
                                             , deletedFilesState = DeletedFiles.updateUrl viewState.deletedFilesState url
+                                            , diffState = Diff.updateUrl viewState.diffState url
                                         }
                               }
                             , Cmd.none
@@ -500,14 +520,14 @@ update msg model =
                 Remotes.update
                 (\viewState newSubModel -> { viewState | remoteState = newSubModel })
 
-        SettingsMsg subMsg ->
+        DiffMsg subMsg ->
             withSubUpdate
                 subMsg
-                .settingsState
+                .diffState
                 model
-                SettingsMsg
-                Settings.update
-                (\viewState newSubModel -> { viewState | settingsState = newSubModel })
+                DiffMsg
+                Diff.update
+                (\viewState newSubModel -> { viewState | diffState = newSubModel })
 
 
 
@@ -580,8 +600,8 @@ viewCurrentRoute model viewState =
         ViewRemotes ->
             Html.map RemotesMsg <| Remotes.view viewState.remoteState
 
-        ViewSettings ->
-            Html.map SettingsMsg <| Settings.view viewState.settingsState
+        ViewDiff ->
+            Html.map DiffMsg <| Diff.view viewState.diffState
 
         ViewNotFound ->
             Html.map NotFoundMsg <| NotFound.view viewState.notFoundState
@@ -701,11 +721,6 @@ viewSidebarItems model viewState =
             [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
                 [ span [] [ text "Remotes" ] ]
             ]
-
-        -- , li [ class "nav-item" ]
-        --     [ a [ isActiveClass ViewSettings, href (viewToString ViewSettings) ]
-        --         [ span [] [ text "Settings" ] ]
-        --     ]
         , li [ class "nav-item" ]
             [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
                 [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]

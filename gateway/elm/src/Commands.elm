@@ -9,6 +9,7 @@ module Commands exposing
     , Remote
     , Self
     , WhoamiResponse
+    , diffChangeCount
     , doCopy
     , doDeletedFiles
     , doHistory
@@ -792,6 +793,17 @@ type alias Diff =
     , merged : List DiffPair
     , conflict : List DiffPair
     }
+
+
+diffChangeCount : Diff -> Int
+diffChangeCount diff =
+    List.length diff.added
+        + List.length diff.removed
+        + List.length diff.ignored
+        + List.length diff.missing
+        + List.length diff.moved
+        + List.length diff.merged
+        + List.length diff.conflict
 
 
 type alias RemoteDiffQuery =

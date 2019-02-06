@@ -45,8 +45,7 @@ type alias Model =
 
 
 type Msg
-    = RemoteModify
-    | ModalShow Commands.Remote
+    = ModalShow Commands.Remote
     | NewFolderChange String
     | FolderRemove String
     | FolderAdd
@@ -102,8 +101,11 @@ addFolder model =
 
         newRemote =
             { oldRemote | folders = List.sort <| cleanFolder :: oldRemote.folders }
+
+        upModel =
+            { model | remote = newRemote, newFolder = "" }
     in
-    ( { model | remote = newRemote, newFolder = "" }, Cmd.none )
+    ( upModel, submit upModel )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -113,7 +115,7 @@ update msg model =
             case result of
                 Ok _ ->
                     -- New list model means also new checked entries.
-                    ( { model | state = Ready, modal = Modal.hidden }, Cmd.none )
+                    ( { model | state = Ready }, Cmd.none )
 
                 Err err ->
                     ( { model | state = Fail <| Util.httpErrorToString err }, Cmd.none )
@@ -131,11 +133,11 @@ update msg model =
 
                 newRemote =
                     { oldRemote | folders = List.filter (\f -> f /= folder) oldRemote.folders }
-            in
-            ( { model | remote = newRemote }, Cmd.none )
 
-        RemoteModify ->
-            ( model, submit model )
+                upModel =
+                    { model | remote = newRemote }
+            in
+            ( upModel, submit upModel )
 
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
@@ -260,19 +262,10 @@ view model =
             ]
         |> Modal.footer []
             [ Button.button
-                [ Button.primary
-                , Button.attrs
-                    [ onClick RemoteModify
-                    , type_ "submit"
-                    , disabled False
-                    ]
-                ]
-                [ text "Save" ]
-            , Button.button
                 [ Button.outlinePrimary
                 , Button.attrs [ onClick <| AnimateModal Modal.hiddenAnimated ]
                 ]
-                [ text "Cancel" ]
+                [ text "Close" ]
             ]
         |> Modal.view model.modal
 

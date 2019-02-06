@@ -33,6 +33,7 @@ import Modals.RemoteAdd as RemoteAdd
 import Modals.RemoteFolders as RemoteFolders
 import Modals.RemoteRemove as RemoteRemove
 import Time
+import Url
 import Util
 
 
@@ -95,11 +96,9 @@ newModel key zone =
 type Msg
     = GotRemoteListResponse (Result Http.Error (List Commands.Remote))
     | GotSyncResponse (Result Http.Error String)
-    | GotDiffResponse (Result Http.Error Commands.Diff)
     | GotSelfResponse (Result Http.Error Commands.Self)
     | GotRemoteModifyResponse (Result Http.Error String)
     | SyncClicked String
-    | DiffClicked String
     | AutoUpdateToggled Commands.Remote Bool
       -- Sub messages:
     | RemoteAddMsg RemoteAdd.Msg
@@ -160,15 +159,6 @@ update msg model =
                 Err err ->
                     showAlert model 20 Alert.danger ("Failed to set auto update: " ++ Util.httpErrorToString err)
 
-        GotDiffResponse result ->
-            case result of
-                Ok _ ->
-                    -- TODO: show diff.
-                    ( model, Cmd.none )
-
-                Err err ->
-                    showAlert model 20 Alert.danger ("Failed to make diff: " ++ Util.httpErrorToString err)
-
         GotSelfResponse result ->
             case result of
                 Ok self ->
@@ -183,9 +173,6 @@ update msg model =
 
         SyncClicked name ->
             ( model, Commands.doRemoteSync GotSyncResponse name )
-
-        DiffClicked name ->
-            ( model, Commands.doRemoteDiff GotDiffResponse name )
 
         AutoUpdateToggled remote state ->
             ( model, Commands.doRemoteModify GotRemoteModifyResponse { remote | acceptAutoUpdates = state } )
@@ -299,9 +286,13 @@ viewDropdown model remote =
                 , disabled (not remote.isAuthenticated)
                 ]
                 [ span [ class "fas fa-md fa-sync-alt" ] [], text " Sync" ]
-            , Dropdown.buttonItem
-                [ onClick (DiffClicked remote.name)
-                , disabled (not remote.isAuthenticated)
+            , Dropdown.anchorItem
+                [ disabled (not remote.isAuthenticated)
+                , if remote.isAuthenticated then
+                    href ("/diff/" ++ Url.percentEncode remote.name)
+
+                  else
+                    class "text-muted"
                 ]
                 [ span [ class "fas fa-md fa-search-minus" ] [], text " Diff" ]
             , Dropdown.divider
