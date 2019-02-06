@@ -1,5 +1,6 @@
 module Util exposing
     ( AlertState
+    , AlertType(..)
     , basename
     , buildAlert
     , defaultAlertState
@@ -254,32 +255,62 @@ viewToggleSwitch toMsg message isChecked =
 -- ALERT UTILS
 
 
-type alias AlertState msg =
+type AlertType
+    = Danger
+    | Success
+    | Info
+
+
+type alias AlertState =
     { message : String
-    , typ : Alert.Config msg -> Alert.Config msg
+    , typ : AlertType
     , vis : Alert.Visibility
     }
 
 
-defaultAlertState : AlertState msg
+defaultAlertState : AlertState
 defaultAlertState =
     { message = ""
-    , typ = Alert.danger
+    , typ = Info
     , vis = Alert.closed
     }
 
 
-viewAlert : (Alert.Visibility -> msg) -> AlertState msg -> Html msg
+iconFromAlertType : AlertType -> Html msg
+iconFromAlertType typ =
+    case typ of
+        Danger ->
+            span [ class "fas fa-xs fa-times" ] []
+
+        Success ->
+            span [ class "fas fa-xs fa-check" ] []
+
+        _ ->
+            text ""
+
+
+visualFromAlertType : AlertType -> (Alert.Config msg -> Alert.Config msg)
+visualFromAlertType typ =
+    case typ of
+        Danger ->
+            Alert.danger
+
+        Success ->
+            Alert.success
+
+        _ ->
+            Alert.info
+
+
+viewAlert : (Alert.Visibility -> msg) -> AlertState -> Html msg
 viewAlert toMsg alert =
     Alert.config
         |> Alert.dismissableWithAnimation toMsg
-        |> alert.typ
+        |> visualFromAlertType alert.typ
         |> Alert.children
             [ Grid.row []
                 [ Grid.col [ Col.xs10 ]
-                    [ span
-                        [ class "fas fa-xs fa-check" ]
-                        []
+                    [ iconFromAlertType alert.typ
                     , text (" " ++ alert.message)
                     ]
                 , Grid.col [ Col.xs2, Col.textAlign Text.alignXsRight ]

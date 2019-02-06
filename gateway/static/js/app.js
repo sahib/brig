@@ -6350,13 +6350,8 @@ var author$project$Scroll$scrollOrResize = _Platform_incomingPort(
 				A2(elm$json$Json$Decode$field, 'viewportHeight', elm$json$Json$Decode$int));
 		},
 		A2(elm$json$Json$Decode$field, 'viewportWidth', elm$json$Json$Decode$int)));
-var elm$core$Platform$Sub$batch = _Platform_batch;
 var author$project$Routes$Commits$subscriptions = function (model) {
-	return elm$core$Platform$Sub$batch(
-		_List_fromArray(
-			[
-				author$project$Scroll$scrollOrResize(author$project$Routes$Commits$OnScroll)
-			]));
+	return author$project$Scroll$scrollOrResize(author$project$Routes$Commits$OnScroll);
 };
 var author$project$Routes$DeletedFiles$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
@@ -6364,6 +6359,7 @@ var author$project$Routes$DeletedFiles$AlertMsg = function (a) {
 var author$project$Routes$DeletedFiles$OnScroll = function (a) {
 	return {$: 'OnScroll', a: a};
 };
+var elm$core$Platform$Sub$batch = _Platform_batch;
 var elm$browser$Browser$AnimationManager$Time = function (a) {
 	return {$: 'Time', a: a};
 };
@@ -7604,28 +7600,10 @@ var author$project$Main$viewFromUrl = function (url) {
 	}
 };
 var author$project$Routes$Commits$Loading = {$: 'Loading'};
+var author$project$Util$Info = {$: 'Info'};
 var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
 var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
-var rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary = {$: 'Secondary'};
-var rundis$elm_bootstrap$Bootstrap$Alert$config = rundis$elm_bootstrap$Bootstrap$Alert$Config(
-	{attributes: _List_Nil, children: _List_Nil, dismissable: elm$core$Maybe$Nothing, role: rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary, visibility: rundis$elm_bootstrap$Bootstrap$Alert$Shown, withAnimation: false});
-var rundis$elm_bootstrap$Bootstrap$Alert$role = F2(
-	function (role_, _n0) {
-		var configRec = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
-			_Utils_update(
-				configRec,
-				{role: role_}));
-	});
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
-var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
-	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
-};
-var author$project$Util$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
+var author$project$Util$defaultAlertState = {message: '', typ: author$project$Util$Info, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$Commits$newModel = F3(
 	function (url, key, zone) {
 		return {alert: author$project$Util$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
@@ -7728,6 +7706,25 @@ var author$project$Routes$Commits$reload = function (model) {
 		model.filter);
 };
 var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
+var rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary = {$: 'Secondary'};
+var rundis$elm_bootstrap$Bootstrap$Alert$config = rundis$elm_bootstrap$Bootstrap$Alert$Config(
+	{attributes: _List_Nil, children: _List_Nil, dismissable: elm$core$Maybe$Nothing, role: rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary, visibility: rundis$elm_bootstrap$Bootstrap$Alert$Shown, withAnimation: false});
+var rundis$elm_bootstrap$Bootstrap$Alert$role = F2(
+	function (role_, _n0) {
+		var configRec = _n0.a;
+		return rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{role: role_}));
+	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger = {$: 'Danger'};
+var rundis$elm_bootstrap$Bootstrap$Alert$danger = function (conf) {
+	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Danger, rundis$elm_bootstrap$Bootstrap$Alert$config);
+};
 var author$project$Routes$DeletedFiles$defaultAlertState = {message: '', typ: rundis$elm_bootstrap$Bootstrap$Alert$danger, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
 var author$project$Routes$DeletedFiles$newModel = F3(
 	function (url, key, zone) {
@@ -9084,6 +9081,8 @@ var author$project$Scroll$percFloat = function (data) {
 var author$project$Scroll$hasHitBottom = function (data) {
 	return author$project$Scroll$percFloat(data) >= 95;
 };
+var author$project$Util$Danger = {$: 'Danger'};
+var author$project$Util$Success = {$: 'Success'};
 var author$project$Util$httpErrorToString = function (err) {
 	switch (err.$) {
 		case 'BadUrl':
@@ -9100,10 +9099,6 @@ var author$project$Util$httpErrorToString = function (err) {
 			var msg = err.a;
 			return 'Could not decode body: ' + msg;
 	}
-};
-var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
-var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
-	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
 };
 var author$project$Routes$Commits$update = F2(
 	function (msg, model) {
@@ -9152,14 +9147,14 @@ var author$project$Routes$Commits$update = F2(
 			case 'GotResetResponse':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
-					return A4(author$project$Routes$Commits$showAlert, model, 5, rundis$elm_bootstrap$Bootstrap$Alert$success, 'Succesfully reset state.');
+					return A4(author$project$Routes$Commits$showAlert, model, 5, author$project$Util$Success, 'Succesfully reset state.');
 				} else {
 					var err = result.a;
 					return A4(
 						author$project$Routes$Commits$showAlert,
 						model,
 						15,
-						rundis$elm_bootstrap$Bootstrap$Alert$danger,
+						author$project$Util$Danger,
 						'Failed to reset: ' + author$project$Util$httpErrorToString(err));
 				}
 			case 'CheckoutClicked':
@@ -9294,6 +9289,10 @@ var author$project$Routes$DeletedFiles$reloadWithoutFlush = F2(
 			author$project$Routes$DeletedFiles$loadLimit,
 			model.filter);
 	});
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
+var rundis$elm_bootstrap$Bootstrap$Alert$success = function (conf) {
+	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Success, rundis$elm_bootstrap$Bootstrap$Alert$config);
+};
 var author$project$Routes$DeletedFiles$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -13945,6 +13944,42 @@ var author$project$Routes$Commits$viewCommitList = F2(
 					},
 					commits)));
 	});
+var author$project$Util$iconFromAlertType = function (typ) {
+	switch (typ.$) {
+		case 'Danger':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fas fa-xs fa-times')
+					]),
+				_List_Nil);
+		case 'Success':
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fas fa-xs fa-check')
+					]),
+				_List_Nil);
+		default:
+			return elm$html$Html$text('');
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Internal$Role$Info = {$: 'Info'};
+var rundis$elm_bootstrap$Bootstrap$Alert$info = function (conf) {
+	return A2(rundis$elm_bootstrap$Bootstrap$Alert$role, rundis$elm_bootstrap$Bootstrap$Internal$Role$Info, rundis$elm_bootstrap$Bootstrap$Alert$config);
+};
+var author$project$Util$visualFromAlertType = function (typ) {
+	switch (typ.$) {
+		case 'Danger':
+			return rundis$elm_bootstrap$Bootstrap$Alert$danger;
+		case 'Success':
+			return rundis$elm_bootstrap$Bootstrap$Alert$success;
+		default:
+			return rundis$elm_bootstrap$Bootstrap$Alert$info;
+	}
+};
 var rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation = F2(
 	function (dismissMsg, _n0) {
 		var configRec = _n0.a;
@@ -13983,13 +14018,7 @@ var author$project$Util$viewAlert = F2(
 									[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10]),
 								_List_fromArray(
 									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('fas fa-xs fa-check')
-											]),
-										_List_Nil),
+										author$project$Util$iconFromAlertType(alert.typ),
 										elm$html$Html$text(' ' + alert.message)
 									])),
 								A2(
@@ -14027,7 +14056,9 @@ var author$project$Util$viewAlert = F2(
 									]))
 							]))
 					]),
-				alert.typ(
+				A2(
+					author$project$Util$visualFromAlertType,
+					alert.typ,
 					A2(rundis$elm_bootstrap$Bootstrap$Alert$dismissableWithAnimation, toMsg, rundis$elm_bootstrap$Bootstrap$Alert$config))));
 	});
 var elm$html$Html$br = _VirtualDom_node('br');

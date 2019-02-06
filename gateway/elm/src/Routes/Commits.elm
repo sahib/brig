@@ -56,7 +56,7 @@ type alias Model =
     , zone : Time.Zone
     , filter : String
     , offset : Int
-    , alert : Util.AlertState Msg
+    , alert : Util.AlertState
     , url : Url.Url
     , haveStagedChanges : Bool
     }
@@ -134,7 +134,7 @@ mergeCommits old new =
         |> List.reverse
 
 
-showAlert : Model -> Float -> (Alert.Config Msg -> Alert.Config Msg) -> String -> ( Model, Cmd Msg )
+showAlert : Model -> Float -> Util.AlertType -> String -> ( Model, Cmd Msg )
 showAlert model duration modalTyp message =
     let
         newAlert =
@@ -181,10 +181,10 @@ update msg model =
         GotResetResponse result ->
             case result of
                 Ok _ ->
-                    showAlert model 5 Alert.success "Succesfully reset state."
+                    showAlert model 5 Util.Success "Succesfully reset state."
 
                 Err err ->
-                    showAlert model 15 Alert.danger ("Failed to reset: " ++ Util.httpErrorToString err)
+                    showAlert model 15 Util.Danger ("Failed to reset: " ++ Util.httpErrorToString err)
 
         CheckoutClicked hash ->
             ( model, Commands.doReset GotResetResponse "/" hash )
@@ -219,7 +219,6 @@ update msg model =
 
 
 -- VIEW:
--- TODO: Move this to some util module.
 
 
 viewSearchBox : Model -> Html Msg
@@ -326,6 +325,4 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Scroll.scrollOrResize OnScroll
-        ]
+    Scroll.scrollOrResize OnScroll
