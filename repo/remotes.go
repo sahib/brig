@@ -214,6 +214,8 @@ func (rl *RemoteList) notify() {
 	}
 }
 
+// OnChange register a callback to be called once the remote list is modified.
+// Can be called several times.
 func (rl *RemoteList) OnChange(fn func()) {
 	rl.callbacks = append(rl.callbacks, fn)
 }

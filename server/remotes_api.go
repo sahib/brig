@@ -12,20 +12,19 @@ import (
 	"github.com/sahib/brig/repo"
 )
 
-// Mock is for testing purposes whenever a normal RemotesAPI is needed.
-// It stores remotes in memory and does not implement realy syncing or diffing.
+// RemotesAPI is an adapter of base for the gateway.
 type RemotesAPI struct {
 	base *base
 }
 
-// NewMock creates a new Mock.
-// `name` and `fingerprint` will be returned
+// NewRemotesAPI returns a new RemotesAPI.
 func NewRemotesAPI(base *base) *RemotesAPI {
 	return &RemotesAPI{
 		base: base,
 	}
 }
 
+// List all existing remotes.
 func (a *RemotesAPI) List() ([]*remotesapi.Remote, error) {
 	// TODO: Do this in parallel.
 	rp, err := a.base.Repo()
@@ -51,6 +50,7 @@ func (a *RemotesAPI) List() ([]*remotesapi.Remote, error) {
 	return extRmts, nil
 }
 
+// Get a remote by its `name`.
 func (a *RemotesAPI) Get(name string) (*remotesapi.Remote, error) {
 	return a.get(name)
 }
@@ -103,6 +103,8 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 	return extRmt, nil
 }
 
+// Set (i.e. add or modify) a remote.
+// IsAuthenticated, IsOnline and LastSeen will be ignored.
 func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 	rp, err := a.base.Repo()
 	if err != nil {
@@ -134,6 +136,7 @@ func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 	return a.base.syncRemoteStates()
 }
 
+// Remove removes a remote by `name`.
 func (a *RemotesAPI) Remove(name string) error {
 	rp, err := a.base.Repo()
 	if err != nil {
@@ -147,6 +150,7 @@ func (a *RemotesAPI) Remove(name string) error {
 	return a.base.syncRemoteStates()
 }
 
+// Self returns the identity of this repository.
 func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
 	rp, err := a.base.Repo()
 	if err != nil {
@@ -175,12 +179,14 @@ func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
 	}, nil
 }
 
+// Sync synchronizes the latest state of `name` with our latest state.
 func (a *RemotesAPI) Sync(name string) error {
 	msg := fmt.Sprintf("sync with »%s« from gateway", name)
 	_, err := a.base.doSync(name, true, msg)
 	return err
 }
 
+// MakeDiff produces a diff to the remote with `name`.
 func (a *RemotesAPI) MakeDiff(name string) (*catfs.Diff, error) {
 	if err := a.base.doFetch(name); err != nil {
 		return nil, e.Wrapf(err, "fetch-remote")
@@ -200,6 +206,7 @@ func (a *RemotesAPI) MakeDiff(name string) (*catfs.Diff, error) {
 	})
 }
 
+// OnChange register a callback to be called once the remote list changes.
 func (a *RemotesAPI) OnChange(fn func()) {
 	rp, err := a.base.Repo()
 	if err != nil {

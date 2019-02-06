@@ -7,7 +7,7 @@ import (
 )
 
 // Mock is for testing purposes whenever a normal RemotesAPI is needed.
-// It stores remotes in memory and does not implement realy syncing or diffing.
+// It stores remotes in memory and does not implement really syncing or diffing.
 type Mock struct {
 	name        string
 	fingerprint string
@@ -25,6 +25,7 @@ func NewMock(name, fingerprint string) *Mock {
 	}
 }
 
+// List all existing remotes.
 func (m *Mock) List() ([]*Remote, error) {
 	rmts := []*Remote{}
 	for _, rmt := range m.remotes {
@@ -34,6 +35,7 @@ func (m *Mock) List() ([]*Remote, error) {
 	return rmts, nil
 }
 
+// Get a remote by `name`.
 func (m *Mock) Get(name string) (*Remote, error) {
 	rm, ok := m.remotes[name]
 	if !ok {
@@ -43,6 +45,9 @@ func (m *Mock) Get(name string) (*Remote, error) {
 	return rm, nil
 }
 
+// Set (i.e. add or modify) a remote.
+// The mock implementation takes the isOnline, isAuthenticated
+// and LastSeen info from the remote, in contrast to the real implementation.
 func (m *Mock) Set(rm Remote) error {
 	if rm.Name == "" {
 		return fmt.Errorf("empty name")
@@ -68,6 +73,7 @@ func (m *Mock) Set(rm Remote) error {
 	return nil
 }
 
+// Remove removes a remote by `name`.
 func (m *Mock) Remove(name string) error {
 	if _, ok := m.remotes[name]; !ok {
 		return fmt.Errorf("no such remote: %s", name)
@@ -78,6 +84,7 @@ func (m *Mock) Remove(name string) error {
 	return nil
 }
 
+// Self returns the identity of this repository.
 func (m *Mock) Self() (Identity, error) {
 	return Identity{
 		Name:        m.name,
@@ -85,6 +92,8 @@ func (m *Mock) Self() (Identity, error) {
 	}, nil
 }
 
+// Sync synchronizes the latest state of `name` with our latest state.
+// The mock implementation does nothing currently.
 func (m *Mock) Sync(name string) error {
 	if _, ok := m.remotes[name]; !ok {
 		return fmt.Errorf("no such remote: %s", name)
@@ -93,6 +102,7 @@ func (m *Mock) Sync(name string) error {
 	return nil
 }
 
+// MakeDiff produces a diff to the remote with `name`.
 func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 	if _, ok := m.remotes[name]; !ok {
 		return nil, fmt.Errorf("no such remote: %s", name)
@@ -116,6 +126,7 @@ func (m *Mock) notify() {
 	}
 }
 
+// OnChange register a callback to be called once the remote list changes.
 func (m *Mock) OnChange(fn func()) {
 	m.callbacks = append(m.callbacks, fn)
 }
