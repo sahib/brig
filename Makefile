@@ -29,7 +29,6 @@ build:
 			-X $(VERSION_IMPORT).GitRev=$(GITREV) \
 		" \
 		brig.go
-	cp "$(GOBIN)/brig" .
 
 test:
 	# New go test ignores vendor/
