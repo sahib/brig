@@ -104,8 +104,7 @@ But enough of the mere theory, let's get started:
 .. code-block:: bash
 
     # Create a place where we store our metadata.
-    $ mkdir ~/sync
-    $ brig --repo ~/sync init ali@woods.org/desktop
+    $ brig --repo ~/.brig init ali@woods.org/desktop
     27.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
     ⚠  39 New passphrase:
 
