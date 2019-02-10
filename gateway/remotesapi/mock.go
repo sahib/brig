@@ -2,8 +2,11 @@ package remotesapi
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/sahib/brig/catfs"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // Mock is for testing purposes whenever a normal RemotesAPI is needed.
@@ -102,6 +105,22 @@ func (m *Mock) Sync(name string) error {
 	return nil
 }
 
+func dummyNode(path, user string, isDir bool) catfs.StatInfo {
+	return catfs.StatInfo{
+		BackendHash: h.EmptyBackendHash.Clone(),
+		TreeHash:    h.EmptyInternalHash.Clone(),
+		ContentHash: h.EmptyInternalHash.Clone(),
+		Depth:       strings.Count(path, "/") - 1,
+		Inode:       7,
+		IsDir:       isDir,
+		IsExplicit:  false,
+		ModTime:     time.Now(),
+		Path:        path,
+		User:        user,
+		Size:        789,
+	}
+}
+
 // MakeDiff produces a diff to the remote with `name`.
 func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 	if _, ok := m.remotes[name]; !ok {
@@ -110,13 +129,37 @@ func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 
 	// always send an empty diff.
 	return &catfs.Diff{
-		Added:    []catfs.StatInfo{},
-		Removed:  []catfs.StatInfo{},
-		Ignored:  []catfs.StatInfo{},
-		Missing:  []catfs.StatInfo{},
-		Conflict: []catfs.DiffPair{},
-		Moved:    []catfs.DiffPair{},
-		Merged:   []catfs.DiffPair{},
+		Added: []catfs.StatInfo{
+			dummyNode("/new_dir", name, true),
+			dummyNode("/new_file", name, false),
+		},
+		Removed: []catfs.StatInfo{
+			dummyNode("/removed_file", name, false),
+		},
+		Ignored: []catfs.StatInfo{
+			dummyNode("/ignored", name, false),
+		},
+		Missing: []catfs.StatInfo{
+			dummyNode("/missing", name, false),
+		},
+		Conflict: []catfs.DiffPair{
+			catfs.DiffPair{
+				Src: dummyNode("/conflict_src", name, false),
+				Dst: dummyNode("/conflict_src", name, false),
+			},
+		},
+		Moved: []catfs.DiffPair{
+			catfs.DiffPair{
+				Src: dummyNode("/moved_src", name, false),
+				Dst: dummyNode("/moved_dst", name, false),
+			},
+		},
+		Merged: []catfs.DiffPair{
+			catfs.DiffPair{
+				Src: dummyNode("/merged_src", name, false),
+				Dst: dummyNode("/merged_dst", name, false),
+			},
+		},
 	}, nil
 }
 

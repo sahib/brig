@@ -653,12 +653,11 @@ buildBreadcrumbs names previous =
 
         name :: rest ->
             -- Some intermediate element.
-            [ Breadcrumb.item []
-                [ a [ href ("/view" ++ String.join "/" (previous ++ [ name ])) ]
+            Breadcrumb.item []
+                [ a [ href ("/view" ++ String.join "/" (name :: previous)) ]
                     [ text (displayName name) ]
                 ]
-            ]
-                ++ buildBreadcrumbs rest (previous ++ [ name ])
+                :: buildBreadcrumbs rest (previous ++ [ name ])
 
 
 viewBreadcrumbs : Model -> Html msg
@@ -666,9 +665,7 @@ viewBreadcrumbs model =
     div [ id "breadcrumbs-box" ]
         [ Breadcrumb.container
             (buildBreadcrumbs
-                ([ "" ]
-                    ++ (Util.urlToPath model.url |> Util.splitPath)
-                )
+                ("" :: (Util.urlToPath model.url |> Util.splitPath))
                 []
             )
         ]
@@ -972,9 +969,9 @@ labelSelectedItems model num =
 buildDownloadUrl : Model -> String
 buildDownloadUrl model =
     UrlBuilder.absolute
-        ([ "get" ] ++ (Util.splitPath <| Util.urlToPath model.url))
-        ([ UrlBuilder.string "direct" "yes" ]
-            ++ (if nSelectedItems model > 0 then
+        ("get" :: (Util.splitPath <| Util.urlToPath model.url))
+        (UrlBuilder.string "direct" "yes"
+            :: (if nSelectedItems model > 0 then
                     List.map (UrlBuilder.string "include") (selectedPaths model)
 
                 else

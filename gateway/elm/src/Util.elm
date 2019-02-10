@@ -23,7 +23,6 @@ import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
 import Bootstrap.Text as Text
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -31,16 +30,6 @@ import Html.Events exposing (..)
 import Http
 import Time
 import Url
-
-
-boolToStr : Bool -> String
-boolToStr b =
-    case b of
-        True ->
-            "yes"
-
-        False ->
-            "no"
 
 
 monthToInt : Time.Month -> Int

@@ -2,44 +2,29 @@ module Main exposing (init, main, subscriptions, update, view)
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
-
 import Bootstrap.Form as Form
-
 import Bootstrap.Form.Input as Input
-
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-
-
 import Bootstrap.Text as Text
 import Browser
 import Browser.Navigation as Nav
 import Commands
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
-
 import List
-
-
-
-
 import Routes.Commits as Commits
 import Routes.DeletedFiles as DeletedFiles
 import Routes.Diff as Diff
 import Routes.Ls as Ls
-import Routes.NotFound as NotFound
 import Routes.Remotes as Remotes
 import Task
 import Time
 import Url
-
-
-
 import Util exposing (..)
 import Websocket
 
@@ -80,7 +65,6 @@ type Msg
     | ListMsg Ls.Msg
     | CommitsMsg Commits.Msg
     | DeletedFilesMsg DeletedFiles.Msg
-    | NotFoundMsg NotFound.Msg
     | RemotesMsg Remotes.Msg
     | DiffMsg Diff.Msg
 
@@ -103,7 +87,6 @@ type alias ViewState =
     , commitsState : Commits.Model
     , remoteState : Remotes.Model
     , deletedFilesState : DeletedFiles.Model
-    , notFoundState : NotFound.Model
     , diffState : Diff.Model
     , loginName : String
     , currentView : View
@@ -165,7 +148,6 @@ doInitAfterLogin model loginName =
             { listState = Ls.newModel model.key model.url
             , commitsState = Commits.newModel model.url model.key model.zone
             , deletedFilesState = DeletedFiles.newModel model.url model.key model.zone
-            , notFoundState = NotFound.newModel model.key model.zone
             , remoteState = Remotes.newModel model.key model.zone
             , diffState = Diff.newModel model.key model.url model.zone
             , loginName = loginName
@@ -291,7 +273,7 @@ update msg model =
                 Err err ->
                     ( { model | loginState = LoginFailure "" "" (Util.httpErrorToString err) }, Cmd.none )
 
-        GotLogoutResp result ->
+        GotLogoutResp _ ->
             ( { model | loginState = LoginReady "" "" }, Cmd.none )
 
         LinkClicked urlRequest ->
@@ -502,15 +484,6 @@ update msg model =
                 DeletedFiles.update
                 (\viewState newSubModel -> { viewState | deletedFilesState = newSubModel })
 
-        NotFoundMsg subMsg ->
-            withSubUpdate
-                subMsg
-                .notFoundState
-                model
-                NotFoundMsg
-                NotFound.update
-                (\viewState newSubModel -> { viewState | notFoundState = newSubModel })
-
         RemotesMsg subMsg ->
             withSubUpdate
                 subMsg
@@ -604,7 +577,7 @@ viewCurrentRoute model viewState =
             Html.map DiffMsg <| Diff.view viewState.diffState
 
         ViewNotFound ->
-            Html.map NotFoundMsg <| NotFound.view viewState.notFoundState
+            text "You seem to have hit a route that does not exist..."
 
 
 viewLoginInputs : String -> String -> List (Html Msg)

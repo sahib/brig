@@ -147,8 +147,7 @@ update msg model =
                     ( { model | self = self }, Cmd.none )
 
                 Err err ->
-                    -- TODO: show failure message.
-                    ( model, Cmd.none )
+                    showAlert model 20 Util.Danger ("Failed to get information about ourselves: " ++ Util.httpErrorToString err)
 
         DropdownMsg name state ->
             ( { model | dropdowns = Dict.insert name state model.dropdowns }, Cmd.none )

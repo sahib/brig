@@ -18,12 +18,10 @@ import Commands
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-
 import Http
 import Time
 import Url
 import Url.Parser exposing ((</>), parse, s, string)
-
 import Util
 
 
@@ -106,7 +104,9 @@ viewSingle entries header =
     if List.length entries > 0 then
         span []
             [ header
-            , span [] (List.map (\e -> text e.path) entries)
+            , span [] (List.map (\e -> text <| " " ++ e.path) entries)
+            , br [] []
+            , br [] []
             ]
 
     else
@@ -118,7 +118,9 @@ viewPairs entries header =
     if List.length entries > 0 then
         span []
             [ header
-            , span [] (List.map (\p -> text (p.src.path ++ " <-> " ++ p.dst.path)) entries)
+            , span [] (List.map (\p -> text (" " ++ p.src.path ++ " ↔ " ++ p.dst.path)) entries)
+            , br [] []
+            , br [] []
             ]
 
     else
@@ -127,7 +129,7 @@ viewPairs entries header =
 
 viewHeading : String -> String -> Html Msg
 viewHeading className message =
-    h5 [ class "text-center", class className ] [ text message ]
+    h5 [ class className ] [ text message ]
 
 
 viewDiff : Model -> Commands.Diff -> Html Msg
@@ -149,6 +151,8 @@ viewDiff model diff =
                 , viewPairs diff.moved (viewHeading "text-primary" "Moved")
                 , viewPairs diff.merged (viewHeading "text-info" "Merged")
                 , viewPairs diff.conflict (viewHeading "text-danger" "Conflicts")
+                , br [] []
+                , br [] []
                 , text (String.fromInt n ++ " changes in total")
                 ]
 

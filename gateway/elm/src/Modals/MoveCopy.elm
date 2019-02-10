@@ -127,11 +127,6 @@ fixAllDirResponse model paths =
         |> List.map fixPath
 
 
-filterCaseless : String -> String -> Bool
-filterCaseless filter path =
-    String.contains filter (String.toLower path)
-
-
 filterAllDirs : String -> List String -> List String
 filterAllDirs filter dirs =
     let
