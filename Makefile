@@ -52,16 +52,6 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo events/capnp/events_api.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo gateway/db/capnp/user.capnp
 
-install:
-ifneq ("$(wildcard brig)","")
-	@echo "binary found, installing to /usr/local/bin"
-else
-	@echo "'brig' binary does not exist; please run 'make build' before 'make install'"
-	@exit 1
-endif
-
-	@sudo cp brig /usr/local/bin
-
 small:
 	time go install -ldflags \
 		" -s -w \

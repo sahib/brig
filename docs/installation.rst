@@ -48,7 +48,6 @@ This step requires setting ``GOPATH``, as discussed in the previous section.
     $ go get -d -v -u github.com/sahib/brig  # Download the sources.
     $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
     $ make                                   # Build the software.
-    $ sudo make install                      # Install it system-wide (optional)
 
 All dependencies of brig are downloaded for you during the first step.
 Execution might take a few minutes though because all of ``brig`` is being
@@ -61,6 +60,8 @@ case, you can skip the ``go get`` step.
 
 Step 2: Test if the installation is working
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If everything worked, there will be a ``brig`` binary in ``$GOBIN``.
 
 .. code:: bash
 
