@@ -15811,6 +15811,16 @@ var author$project$Routes$Diff$viewHeading = F2(
 					elm$html$Html$text(message)
 				]));
 	});
+var author$project$Routes$Diff$viewLine = function (line) {
+	return A2(
+		elm$html$Html$span,
+		_List_Nil,
+		_List_fromArray(
+			[
+				elm$html$Html$text(line),
+				A2(elm$html$Html$br, _List_Nil, _List_Nil)
+			]));
+};
 var author$project$Routes$Diff$viewPairs = F2(
 	function (entries, header) {
 		return (elm$core$List$length(entries) > 0) ? A2(
@@ -15825,10 +15835,9 @@ var author$project$Routes$Diff$viewPairs = F2(
 					A2(
 						elm$core$List$map,
 						function (p) {
-							return elm$html$Html$text(' ' + (p.src.path + (' ↔ ' + p.dst.path)));
+							return author$project$Routes$Diff$viewLine(' ' + (p.src.path + (' ↔ ' + p.dst.path)));
 						},
 						entries)),
-					A2(elm$html$Html$br, _List_Nil, _List_Nil),
 					A2(elm$html$Html$br, _List_Nil, _List_Nil)
 				])) : elm$html$Html$text('');
 	});
@@ -15846,10 +15855,9 @@ var author$project$Routes$Diff$viewSingle = F2(
 					A2(
 						elm$core$List$map,
 						function (e) {
-							return elm$html$Html$text(' ' + e.path);
+							return author$project$Routes$Diff$viewLine(' ' + e.path);
 						},
 						entries)),
-					A2(elm$html$Html$br, _List_Nil, _List_Nil),
 					A2(elm$html$Html$br, _List_Nil, _List_Nil)
 				])) : elm$html$Html$text('');
 	});
@@ -15945,16 +15953,6 @@ var author$project$Routes$Diff$viewDiffContainer = F2(
 										])),
 									elm$html$Html$text(
 									author$project$Routes$Diff$nameFromUrl(model.url)),
-									A2(
-									elm$html$Html$span,
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('text-muted')
-										]),
-									_List_fromArray(
-										[
-											elm$html$Html$text('«')
-										])),
 									A2(
 									elm$html$Html$span,
 									_List_fromArray(
@@ -16977,7 +16975,7 @@ var author$project$Routes$Ls$buildBreadcrumbs = F2(
 								_List_fromArray(
 									[
 										elm$html$Html$Attributes$href(
-										'/view' + A2(
+										'/view/' + A2(
 											elm$core$String$join,
 											'/',
 											A2(elm$core$List$cons, name, previous)))

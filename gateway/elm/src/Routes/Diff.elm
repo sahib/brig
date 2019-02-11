@@ -99,13 +99,17 @@ update msg model =
 -- VIEW:
 
 
+viewLine : String -> Html Msg
+viewLine line =
+    span [] [ text line, br [] [] ]
+
+
 viewSingle : List Commands.Entry -> Html Msg -> Html Msg
 viewSingle entries header =
     if List.length entries > 0 then
         span []
             [ header
-            , span [] (List.map (\e -> text <| " " ++ e.path) entries)
-            , br [] []
+            , span [] (List.map (\e -> viewLine <| " " ++ e.path) entries)
             , br [] []
             ]
 
@@ -118,8 +122,7 @@ viewPairs entries header =
     if List.length entries > 0 then
         span []
             [ header
-            , span [] (List.map (\p -> text (" " ++ p.src.path ++ " ↔ " ++ p.dst.path)) entries)
-            , br [] []
+            , span [] (List.map (\p -> viewLine (" " ++ p.src.path ++ " ↔ " ++ p.dst.path)) entries)
             , br [] []
             ]
 
@@ -165,7 +168,6 @@ viewDiffContainer model result =
             [ h4 [ class "text-center" ]
                 [ span [ class "text-muted" ] [ text "Difference to »" ]
                 , text (nameFromUrl model.url)
-                , span [ class "text-muted" ] [ text "«" ]
                 , span [ class "text-muted" ] [ text "«" ]
                 , Button.button
                     [ Button.roleLink

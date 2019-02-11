@@ -43,9 +43,6 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Is that a problem when the "new" path (after reset)
-	// lies in a forbidden zone? It would be at least confusing for the user.
-
 	var err error
 	if resetReq.Path == "/" {
 		err = rh.fs.Checkout(resetReq.Revision, true)

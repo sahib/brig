@@ -118,6 +118,8 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekEnd:
 		ls.pos = 0
 		return ls.Seek(int64(ls.size)+offset, io.SeekStart)
+	case io.SeekStart:
+		ls.pos = 0
 	}
 
 	newPos := int64(ls.pos) + offset

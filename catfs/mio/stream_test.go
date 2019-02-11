@@ -371,3 +371,38 @@ func BenchmarkThroughputReader(b *testing.B) {
 		})
 	}
 }
+
+func TestLimitStreamSize(t *testing.T) {
+	data := testutil.CreateDummyBuf(6041)
+	packData, err := compress.Pack(data, compress.AlgoSnappy)
+	require.Nil(t, err)
+
+	rZip := compress.NewReader(bytes.NewReader(packData))
+	stream := struct {
+		io.Reader
+		io.Seeker
+		io.Closer
+		io.WriterTo
+	}{
+		Reader:   rZip,
+		Seeker:   rZip,
+		WriterTo: rZip,
+		Closer:   ioutil.NopCloser(rZip),
+	}
+
+	r := LimitStream(stream, uint64(len(data)))
+
+	size, err := r.Seek(0, io.SeekEnd)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), size)
+
+	off, err := r.Seek(0, io.SeekStart)
+	require.Nil(t, err)
+	require.Equal(t, int64(0), off)
+
+	buf := &bytes.Buffer{}
+	n, err := io.Copy(buf, r)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), n)
+	require.Equal(t, data, buf.Bytes())
+}

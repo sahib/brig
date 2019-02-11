@@ -31,7 +31,6 @@ func TestRemoteDiffEndpoint(t *testing.T) {
 		mustDecodeBody(t, resp.Body, &data)
 		require.Equal(t, true, data.Success)
 
-		// TODO: Currently the mock backend always returns an empty diff:
 		require.Equal(t, 2, len(data.Diff.Added))
 		require.Equal(t, "/new_dir", data.Diff.Added[0].Path)
 		require.Equal(t, "/new_file", data.Diff.Added[1].Path)

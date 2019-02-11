@@ -296,3 +296,25 @@ func TestReadFuseLike(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckSize(t *testing.T) {
+	data := testutil.CreateDummyBuf(6041)
+	packData, err := Pack(data, AlgoSnappy)
+	require.Nil(t, err)
+
+	r := NewReader(bytes.NewReader(packData))
+
+	size, err := r.Seek(0, io.SeekEnd)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), size)
+
+	off, err := r.Seek(0, io.SeekStart)
+	require.Nil(t, err)
+	require.Equal(t, int64(0), off)
+
+	buf := &bytes.Buffer{}
+	n, err := io.Copy(buf, r)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), n)
+	require.Equal(t, data, buf.Bytes())
+}

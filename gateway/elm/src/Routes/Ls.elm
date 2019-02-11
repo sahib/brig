@@ -654,7 +654,7 @@ buildBreadcrumbs names previous =
         name :: rest ->
             -- Some intermediate element.
             Breadcrumb.item []
-                [ a [ href ("/view" ++ String.join "/" (name :: previous)) ]
+                [ a [ href ("/view/" ++ String.join "/" (name :: previous)) ]
                     [ text (displayName name) ]
                 ]
                 :: buildBreadcrumbs rest (previous ++ [ name ])

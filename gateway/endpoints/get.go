@@ -58,6 +58,39 @@ func setContentDisposition(info *catfs.StatInfo, hdr http.Header, dispoType stri
 	)
 }
 
+func (gh *GetHandler) checkBasicAuth(nodePath string, w http.ResponseWriter, r *http.Request) bool {
+	name, pass, ok := r.BasicAuth()
+
+	// No basic auth sent. If a browser send the request: ask him to
+	// show a user/password form that gives a chance to change that.
+	if !ok {
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"brig gateway\"")
+		return false
+	}
+
+	// Check is the basic auth credentials are valid.
+	user, err := gh.userDb.Get(name)
+	if err != nil {
+		return false
+	}
+
+	isValid, err := user.CheckPassword(pass)
+	if !isValid {
+		if err != nil {
+			log.Warningf("get: failed to check password: %v", err)
+		}
+
+		return false
+	}
+
+	// Check again if this user has access to the path:
+	if !gh.validatePathForUser(nodePath, user, w, r) {
+		return false
+	}
+
+	return true
+}
+
 func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get the file nodePath including the leading slash:
 	fullURL := r.URL.EscapedPath()
@@ -73,37 +106,12 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if gh.cfg.Bool("auth.enabled") {
+		// validatePath will check if the user is actually logged in
+		// and may access the path in question. The login could come
+		// from a previous login to the UI (the /get endpoint could be used separately)
 		if !gh.validatePath(nodePath, w, r) {
-			name, pass, ok := r.BasicAuth()
-
-			// No basic auth sent. If a browser send the request: ask him to
-			// show a user/password form that gives a chance to change that.
-			if !ok {
-				w.Header().Set("WWW-Authenticate", "Basic realm=\"brig gateway\"")
+			if !gh.checkBasicAuth(nodePath, w, r) {
 				http.Error(w, "not authorized", http.StatusUnauthorized)
-				return
-			}
-
-			// Check is the basic auth credentials are valid.
-			user, err := gh.userDb.Get(name)
-			if err != nil {
-				http.Error(w, "not authorized", http.StatusUnauthorized)
-				return
-			}
-
-			isValid, err := user.CheckPassword(pass)
-			if !isValid {
-				if err != nil {
-					log.Warningf("get: failed to check password: %v", err)
-				}
-
-				http.Error(w, "not authorized", http.StatusUnauthorized)
-				return
-			}
-
-			if !gh.validatePathForUser(nodePath, user, w, r) {
-				http.Error(w, "not authorized", http.StatusUnauthorized)
-				return
 			}
 		}
 
@@ -172,11 +180,6 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			setContentDisposition(info, hdr, "inline")
 		}
 
-		// TODO: Try to use ServeContent, which does weird stuff though.
-		// http.ServeContent(w, r, path.Base(info.Path), info.ModTime, prefixStream)
-		if _, err := io.Copy(w, prefixStream); err != nil {
-			log.Warningf("stream failure: %v", err)
-			http.Error(w, "failed to stream", http.StatusInternalServerError)
-		}
+		http.ServeContent(w, r, path.Base(info.Path), info.ModTime, prefixStream)
 	}
 }

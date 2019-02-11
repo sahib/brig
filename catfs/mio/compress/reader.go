@@ -40,7 +40,8 @@ type Reader struct {
 
 // Seek implements io.Seeker
 func (r *Reader) Seek(destOff int64, whence int) (int64, error) {
-	if whence == io.SeekEnd {
+	switch whence {
+	case io.SeekEnd:
 		if destOff > 0 {
 			return 0, io.EOF
 		}
@@ -50,9 +51,7 @@ func (r *Reader) Seek(destOff int64, whence int) (int64, error) {
 		}
 
 		return r.Seek(r.index[len(r.index)-1].rawOff+destOff, io.SeekStart)
-	}
-
-	if whence == io.SeekCurrent {
+	case io.SeekCurrent:
 		return r.Seek(r.zipSeekOffset+destOff, io.SeekStart)
 	}
 

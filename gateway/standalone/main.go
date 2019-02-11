@@ -123,6 +123,7 @@ func main() {
 		Folders:           nil,
 		IsOnline:          true,
 		IsAuthenticated:   true,
+		LastSeen:          time.Now(),
 	})
 	rmtMock.Set(remotesapi.Remote{
 		Name:              "charlie",
@@ -131,6 +132,7 @@ func main() {
 		Folders:           []string{"/public"},
 		IsOnline:          false,
 		IsAuthenticated:   true,
+		LastSeen:          time.Now(),
 	})
 	rmtMock.Set(remotesapi.Remote{
 		Name:              "mallory",
@@ -139,6 +141,7 @@ func main() {
 		Folders:           []string{"/"},
 		IsOnline:          true,
 		IsAuthenticated:   false,
+		LastSeen:          time.Now(),
 	})
 
 	userDbPath := filepath.Join(dbPath, "users")

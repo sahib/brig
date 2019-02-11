@@ -203,6 +203,7 @@ func (s *State) validatePath(nodePath string, w http.ResponseWriter, r *http.Req
 		return false
 	}
 
+	// At this point we know that the user is logged in.
 	return s.validatePathForUser(nodePath, user, w, r)
 }
 
