@@ -137,6 +137,7 @@ func createNode(ctx context.Context, path string, minSwarmPort int, online bool,
 		"Swarm.ConnMgr.LowWater":  100,
 		"Swarm.ConnMgr.HighWater": 200,
 		"Experimental.QUIC":       true,
+		"Pubsub.Router":           "gossipsub",
 	}
 
 	for key, value := range config {
