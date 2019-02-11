@@ -205,9 +205,32 @@ func (db *BadgerDatabase) Put(val []byte, key ...string) {
 	db.haveWrites = true
 
 	fullKey := []byte(strings.Join(key, "."))
-	if err := db.txn.Set(fullKey, val); err != nil {
+
+	err := db.withRetry(func() error {
+		return db.txn.Set(fullKey, val)
+	})
+
+	if err != nil {
 		log.Warningf("badger: failed to set key %s: %v", fullKey, err)
 	}
+}
+
+func (db *BadgerDatabase) withRetry(fn func() error) error {
+	if err := fn(); err != badger.ErrTxnTooBig {
+		// This also returns nil.
+		return err
+	}
+
+	// Commit previous (almost too big) transaction:
+	if err := db.txn.Commit(nil); err != nil {
+		// Something seems pretty wrong.
+		return err
+	}
+
+	db.txn = db.db.NewTransaction(true)
+
+	// If this fails again, we're out of luck.
+	return fn()
 }
 
 // Clear is the badger implementation of Database.Clear
@@ -235,7 +258,11 @@ func (db *BadgerDatabase) Clear(key ...string) error {
 			continue
 		}
 
-		if err := db.txn.Delete(key); err != nil {
+		err := db.withRetry(func() error {
+			return db.txn.Delete(key)
+		})
+
+		if err != nil {
 			return err
 		}
 	}
@@ -251,7 +278,11 @@ func (db *BadgerDatabase) Erase(key ...string) {
 	db.haveWrites = true
 
 	fullKey := []byte(strings.Join(key, "."))
-	if err := db.txn.Delete(fullKey); err != nil {
+	err := db.withRetry(func() error {
+		return db.txn.Delete(fullKey)
+	})
+
+	if err != nil {
 		log.Warningf("badger: failed to del key %s: %v", fullKey, err)
 	}
 }

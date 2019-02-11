@@ -408,6 +408,35 @@ func testExportImport(t *testing.T, db1, db2 Database) {
 	}
 }
 
+// Regression bug fix: too many key/values in a transaction
+// will cause badger to return ErrTxnTooBig, which should
+// be handled as retry. This code triggers this.
+func TestLargeBatch(t *testing.T) {
+	nKeys := 1000 * 10
+
+	for _, name := range []string{"badger", "memory", "disk"} {
+		t.Run(name, func(t *testing.T) {
+			withDbByName(name, func(db Database) {
+				batch := db.Batch()
+				for idx := 0; idx < nKeys; idx++ {
+					val := testutil.CreateRandomDummyBuf(int64(1024), int64(idx))
+					key := fmt.Sprintf("idx-%d", idx)
+					batch.Put(val, key)
+				}
+
+				require.Nil(t, batch.Flush())
+				for idx := 0; idx < nKeys; idx++ {
+					expect := testutil.CreateRandomDummyBuf(int64(1024), int64(idx))
+					key := fmt.Sprintf("idx-%d", idx)
+					got, err := db.Get(key)
+					require.Nil(t, err)
+					require.Equal(t, expect, got)
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkDatabase(b *testing.B) {
 	benchmarks := map[string]func(*testing.B, Database){
 		"put": benchmarkDatabasePut,
