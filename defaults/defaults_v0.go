@@ -148,7 +148,7 @@ var DefaultsV0 = config.DefaultMapping{
 		},
 		"pre_cache": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
-				Default:      true,
+				Default:      false,
 				NeedsRestart: false,
 				Docs:         "pre-cache pinned files",
 			},
