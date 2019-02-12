@@ -142,8 +142,8 @@ func TestLimitedStream(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(4), n)
 
-	n, err = limitStream.Seek(5, io.SeekStart)
-	require.Equal(t, err, io.EOF)
+	n, err = limitStream.Seek(6, io.SeekStart)
+	require.True(t, err == io.EOF)
 
 	n, err = limitStream.Seek(-5, io.SeekEnd)
 	require.Nil(t, err)
