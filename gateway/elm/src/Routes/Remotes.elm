@@ -210,12 +210,12 @@ viewRemoteState model remote =
         span [ class "text-danger" ] [ text "not authenticated" ]
 
 
-viewFingerprint : String -> Html Msg
-viewFingerprint fingerprint =
+viewFullFingerprint : String -> Html Msg
+viewFullFingerprint fingerprint =
     String.split ":" fingerprint
-        |> List.map (\t -> String.slice 0 10 t)
-        |> String.join ":"
-        |> text
+        |> List.map (\t -> span [ class "text-muted" ] [ text t ])
+        |> List.intersperse (span [] [ text ":", br [] [] ])
+        |> span [ class "fingerprint" ]
 
 
 viewDropdown : Model -> Commands.Remote -> Html Msg
@@ -269,7 +269,7 @@ viewRemote model remote =
             [ viewRemoteState model remote ]
         , Table.td
             []
-            [ span [ class "text-muted" ] [ viewFingerprint remote.fingerprint ] ]
+            [ span [ class "text-muted" ] [ viewFullFingerprint remote.fingerprint ] ]
         , Table.td
             []
             [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote ]
@@ -358,7 +358,7 @@ viewSelf model =
                     [ viewMetaRow "Name" (text model.self.name)
                     ]
                 , ListGroup.li []
-                    [ viewMetaRow "Fingerprint" (viewFingerprint model.self.fingerprint)
+                    [ viewMetaRow "Fingerprint" (viewFullFingerprint model.self.fingerprint)
                     ]
                 ]
             ]

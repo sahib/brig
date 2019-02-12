@@ -18763,15 +18763,54 @@ var author$project$Routes$Remotes$viewDropdown = F2(
 				toggleMsg: author$project$Routes$Remotes$DropdownMsg(remote.name)
 			});
 	});
-var author$project$Routes$Remotes$viewFingerprint = function (fingerprint) {
-	return elm$html$Html$text(
+var elm$core$List$intersperse = F2(
+	function (sep, xs) {
+		if (!xs.b) {
+			return _List_Nil;
+		} else {
+			var hd = xs.a;
+			var tl = xs.b;
+			var step = F2(
+				function (x, rest) {
+					return A2(
+						elm$core$List$cons,
+						sep,
+						A2(elm$core$List$cons, x, rest));
+				});
+			var spersed = A3(elm$core$List$foldr, step, _List_Nil, tl);
+			return A2(elm$core$List$cons, hd, spersed);
+		}
+	});
+var author$project$Routes$Remotes$viewFullFingerprint = function (fingerprint) {
+	return A2(
+		elm$html$Html$span,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('fingerprint')
+			]),
 		A2(
-			elm$core$String$join,
-			':',
+			elm$core$List$intersperse,
+			A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(':'),
+						A2(elm$html$Html$br, _List_Nil, _List_Nil)
+					])),
 			A2(
 				elm$core$List$map,
 				function (t) {
-					return A3(elm$core$String$slice, 0, 10, t);
+					return A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('text-muted')
+							]),
+						_List_fromArray(
+							[
+								elm$html$Html$text(t)
+							]));
 				},
 				A2(elm$core$String$split, ':', fingerprint))));
 };
@@ -18851,7 +18890,7 @@ var author$project$Routes$Remotes$viewRemote = F2(
 								]),
 							_List_fromArray(
 								[
-									author$project$Routes$Remotes$viewFingerprint(remote.fingerprint)
+									author$project$Routes$Remotes$viewFullFingerprint(remote.fingerprint)
 								]))
 						])),
 					A2(
@@ -19229,7 +19268,7 @@ var author$project$Routes$Remotes$viewSelf = function (model) {
 										A2(
 										author$project$Routes$Remotes$viewMetaRow,
 										'Fingerprint',
-										author$project$Routes$Remotes$viewFingerprint(model.self.fingerprint))
+										author$project$Routes$Remotes$viewFullFingerprint(model.self.fingerprint))
 									]))
 							]))
 					])),
@@ -19576,24 +19615,6 @@ var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$History$ResetClicked = F2(
 	function (a, b) {
 		return {$: 'ResetClicked', a: a, b: b};
-	});
-var elm$core$List$intersperse = F2(
-	function (sep, xs) {
-		if (!xs.b) {
-			return _List_Nil;
-		} else {
-			var hd = xs.a;
-			var tl = xs.b;
-			var step = F2(
-				function (x, rest) {
-					return A2(
-						elm$core$List$cons,
-						sep,
-						A2(elm$core$List$cons, x, rest));
-				});
-			var spersed = A3(elm$core$List$foldr, step, _List_Nil, tl);
-			return A2(elm$core$List$cons, hd, spersed);
-		}
 	});
 var author$project$Modals$History$joinChanges = function (changes) {
 	return A2(

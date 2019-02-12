@@ -454,3 +454,7 @@ input:checked + .toggle-slider:before {
 .toggle-slider.toggle-round:before {
   border-radius: 50%;
 }
+
+.fingerprint {
+    font-size: 65%;
+}
