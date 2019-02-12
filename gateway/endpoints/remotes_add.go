@@ -3,6 +3,7 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/sahib/brig/gateway/remotesapi"
 )
@@ -25,6 +26,26 @@ type RemoteAddRequest struct {
 	AcceptAutoUpdates bool     `json:"accept_auto_updates"`
 }
 
+func dedupeFolders(folders []string) []string {
+	seen := make(map[string]bool)
+	deduped := []string{}
+
+	for _, folder := range folders {
+		if !strings.HasPrefix(folder, "/") {
+			folder = "/" + folder
+		}
+
+		if seen[folder] {
+			continue
+		}
+
+		deduped = append(deduped, folder)
+		seen[folder] = true
+	}
+
+	return deduped
+}
+
 func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	remoteAddReq := RemoteAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
@@ -37,9 +58,11 @@ func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: validate fingerprint.
+
 	rmt := remotesapi.Remote{
 		Name:              remoteAddReq.Name,
-		Folders:           remoteAddReq.Folders,
+		Folders:           dedupeFolders(remoteAddReq.Folders),
 		Fingerprint:       remoteAddReq.Fingerprint,
 		AcceptAutoUpdates: remoteAddReq.AcceptAutoUpdates,
 	}
@@ -78,7 +101,7 @@ func (rh *RemotesModifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	rmt := remotesapi.Remote{
 		Name:              remoteAddReq.Name,
-		Folders:           remoteAddReq.Folders,
+		Folders:           dedupeFolders(remoteAddReq.Folders),
 		Fingerprint:       remoteAddReq.Fingerprint,
 		AcceptAutoUpdates: remoteAddReq.AcceptAutoUpdates,
 	}

@@ -13,7 +13,6 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
 import Util
 
 
@@ -27,7 +26,6 @@ type alias Model =
     , name : String
     , fingerprint : String
     , doAutoUdate : Bool
-    , folders : List String
     , modal : Modal.Visibility
     , alert : Alert.Visibility
     }
@@ -37,7 +35,6 @@ type Msg
     = RemoteAdd
     | NameInputChanged String
     | FingerprintInputChanged String
-    | FoldersChanged String
     | AutoUpdateChanged Bool
     | ModalShow
     | GotResponse (Result Http.Error String)
@@ -63,7 +60,6 @@ newModelWithState state =
     , name = ""
     , fingerprint = ""
     , doAutoUdate = False
-    , folders = []
     , alert = Alert.shown
     }
 
@@ -78,7 +74,7 @@ submit model =
         model.name
         model.fingerprint
         model.doAutoUdate
-        model.folders
+        []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -95,9 +91,6 @@ update msg model =
 
         AutoUpdateChanged doAutoUdate ->
             ( { model | doAutoUdate = doAutoUdate }, Cmd.none )
-
-        FoldersChanged folders ->
-            ( { model | folders = String.split "," folders }, Cmd.none )
 
         GotResponse result ->
             case result of
@@ -153,13 +146,6 @@ viewRemoteAddContent model =
             , Input.large
             , Input.placeholder "Remote fingerprint"
             , Input.onInput FingerprintInputChanged
-            ]
-        , br [] []
-        , Input.text
-            [ Input.id "remote-folders-input"
-            , Input.large
-            , Input.placeholder "Comma separated list of folders"
-            , Input.onInput FoldersChanged
             ]
         , br [] []
         , span [] [ Util.viewToggleSwitch AutoUpdateChanged "Accept automatic updates?" model.doAutoUdate ]

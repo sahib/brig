@@ -25,7 +25,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
-
+import Modals.MoveCopy as MoveCopy
+import Set
 import Util
 
 
@@ -36,8 +37,8 @@ type State
 
 type alias Model =
     { state : State
-    , folders : List String
-    , newFolder : String
+    , allDirs : List String
+    , filter : String
     , remote : Commands.Remote
     , modal : Modal.Visibility
     , alert : Alert.Visibility
@@ -46,14 +47,14 @@ type alias Model =
 
 type Msg
     = ModalShow Commands.Remote
-    | NewFolderChange String
     | FolderRemove String
-    | FolderAdd
     | GotResponse (Result Http.Error String)
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
-    | KeyPress String
+    | GotAllDirsResponse (Result Http.Error (List String))
+    | DirChosen String
+    | SearchInput String
 
 
 
@@ -69,8 +70,8 @@ newModelWithState : Modal.Visibility -> Commands.Remote -> Model
 newModelWithState state remote =
     { state = Ready
     , modal = state
-    , folders = []
-    , newFolder = ""
+    , allDirs = []
+    , filter = ""
     , remote = remote
     , alert = Alert.shown
     }
@@ -90,20 +91,20 @@ fixFolder path =
     Util.prefixSlash path
 
 
-addFolder : Model -> ( Model, Cmd Msg )
-addFolder model =
+addFolder : Model -> String -> ( Model, Cmd Msg )
+addFolder model folder =
     let
         oldRemote =
             model.remote
 
         cleanFolder =
-            fixFolder model.newFolder
+            fixFolder folder
 
         newRemote =
             { oldRemote | folders = List.sort <| cleanFolder :: oldRemote.folders }
 
         upModel =
-            { model | remote = newRemote, newFolder = "" }
+            { model | remote = newRemote }
     in
     ( upModel, submit upModel )
 
@@ -119,12 +120,6 @@ update msg model =
 
                 Err err ->
                     ( { model | state = Fail <| Util.httpErrorToString err }, Cmd.none )
-
-        NewFolderChange folder ->
-            ( { model | newFolder = folder }, Cmd.none )
-
-        FolderAdd ->
-            addFolder model
 
         FolderRemove folder ->
             let
@@ -143,25 +138,29 @@ update msg model =
             ( { model | modal = visibility }, Cmd.none )
 
         ModalShow remote ->
-            ( newModelWithState Modal.shown remote, Cmd.none )
+            ( newModelWithState Modal.shown remote
+            , Commands.doListAllDirs GotAllDirsResponse
+            )
+
+        GotAllDirsResponse result ->
+            case result of
+                Ok allDirs ->
+                    ( { model | allDirs = allDirs }, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        DirChosen choice ->
+            addFolder model choice
+
+        SearchInput filter ->
+            ( { model | filter = filter }, Cmd.none )
 
         ModalClose ->
-            ( { model | modal = Modal.hidden }, Cmd.none )
+            ( { model | modal = Modal.hidden, filter = "" }, Cmd.none )
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
-
-        KeyPress key ->
-            if model.modal == Modal.hidden then
-                ( model, Cmd.none )
-
-            else
-                case key of
-                    "Enter" ->
-                        addFolder model
-
-                    _ ->
-                        ( model, Cmd.none )
 
 
 
@@ -191,50 +190,35 @@ viewFolder folder =
 
 viewFolders : Commands.Remote -> Html Msg
 viewFolders remote =
-    if List.length remote.folders <= 0 then
+    let
+        folders =
+            List.sort (Set.toList (Set.fromList remote.folders))
+    in
+    if List.length folders <= 0 then
         span
             [ class "text-muted text-center" ]
             [ text "No folders. This means this user can see everthing."
             , br [] []
-            , text "Add a new folder below to change this."
+            , text "Add a new folder below to limit what this remote can see."
             , br [] []
             , br [] []
             ]
 
     else
         ListGroup.ul
-            (List.map (\f -> ListGroup.li [] [ viewFolder f ]) remote.folders)
+            (List.map (\f -> ListGroup.li [] [ viewFolder f ]) folders)
 
 
-viewNewFolderControl : Model -> Html Msg
-viewNewFolderControl model =
-    InputGroup.config
-        (InputGroup.text
-            [ Input.placeholder "New folder path"
-            , Input.onInput NewFolderChange
-            , Input.value model.newFolder
-            ]
-        )
-        |> InputGroup.predecessors
-            [ InputGroup.button
-                [ Button.primary
-                , Button.attrs
-                    [ onClick <| FolderAdd
-                    , disabled
-                        (String.length model.newFolder == 0)
-                    ]
-                ]
-                [ span [ class "fas fa-lg fa-folder-plus" ] [] ]
-            ]
-        |> InputGroup.view
-
-
-viewRemoteAddContent : Model -> List (Grid.Column Msg)
-viewRemoteAddContent model =
+viewRemoteFoldersContent : Model -> List (Grid.Column Msg)
+viewRemoteFoldersContent model =
     [ Grid.col [ Col.xs12 ]
-        [ viewFolders model.remote
+        [ h4 [] [ span [ class "text-muted text-center" ] [ text "Visible folders" ] ]
+        , viewFolders model.remote
         , br [] []
-        , viewNewFolderControl model
+        , br [] []
+        , h4 [] [ span [ class "text-muted text-center" ] [ text "All folders" ] ]
+        , MoveCopy.viewSearchBox SearchInput model.filter
+        , MoveCopy.viewDirList DirChosen model.filter model.allDirs
         , case model.state of
             Ready ->
                 text ""
@@ -251,13 +235,13 @@ view model =
         |> Modal.large
         |> Modal.withAnimation AnimateModal
         |> Modal.header [ class "modal-title modal-header-primary" ]
-            [ h4 [] [ text "Edit folders" ] ]
+            [ h4 [] [ text "Edit folders of »", text model.remote.name, text "«" ] ]
         |> Modal.body []
             [ Grid.containerFluid []
                 [ Grid.row
-                    [ Row.attrs [ style "min-width" "60vh" ]
+                    [ Row.attrs [ style "min-width" "60vh", class "scrollable-modal-row" ]
                     ]
-                    (viewRemoteAddContent model)
+                    (viewRemoteFoldersContent model)
                 ]
             ]
         |> Modal.footer []
@@ -284,5 +268,4 @@ subscriptions model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
-        , Events.onKeyPress (D.map KeyPress <| D.field "key" D.string)
         ]

@@ -7,6 +7,8 @@ module Modals.MoveCopy exposing
     , subscriptions
     , update
     , view
+    , viewDirList
+    , viewSearchBox
     )
 
 import Bootstrap.Alert as Alert
@@ -212,20 +214,20 @@ update msg model =
 -- VIEW
 
 
-viewDirEntry : Model -> String -> Table.Row Msg
-viewDirEntry model path =
+viewDirEntry : (String -> msg) -> String -> Table.Row msg
+viewDirEntry clickMsg path =
     Table.tr []
         [ Table.td
-            [ Table.cellAttr <| onClick (DirChosen path) ]
+            [ Table.cellAttr <| onClick (clickMsg path) ]
             [ span [ class "fas fa-lg fa-folder text-xs-right file-list-icon" ] [] ]
         , Table.td
-            [ Table.cellAttr <| onClick (DirChosen path) ]
+            [ Table.cellAttr <| onClick (clickMsg path) ]
             [ text path ]
         ]
 
 
-viewDirList : Model -> List String -> Html Msg
-viewDirList model dirs =
+viewDirList : (String -> msg) -> String -> List String -> Html msg
+viewDirList clickMsg filter dirs =
     Table.table
         { options = [ Table.hover ]
         , thead =
@@ -236,18 +238,18 @@ viewDirList model dirs =
                     ]
                 ]
         , tbody =
-            Table.tbody [] (List.map (viewDirEntry model) (filterAllDirs model.filter dirs))
+            Table.tbody [] (List.map (viewDirEntry clickMsg) (filterAllDirs filter dirs))
         }
 
 
-viewSearchBox : Model -> Html Msg
-viewSearchBox model =
+viewSearchBox : (String -> msg) -> String -> Html msg
+viewSearchBox searchMsg filter =
     InputGroup.config
         (InputGroup.text
             [ Input.placeholder "Filter directory list"
             , Input.attrs
-                [ onInput SearchInput
-                , value model.filter
+                [ onInput searchMsg
+                , value filter
                 ]
             ]
         )
@@ -266,8 +268,8 @@ viewContent model =
         [ case model.state of
             Ready dirs ->
                 div []
-                    [ viewSearchBox model
-                    , viewDirList model dirs
+                    [ viewSearchBox SearchInput model.filter
+                    , viewDirList DirChosen model.filter dirs
                     ]
 
             Loading ->
@@ -279,7 +281,7 @@ viewContent model =
                     AlertMsg
                     Alert.danger
                     "Oh no!"
-                    ("Could not rename path: " ++ message)
+                    ("Could not move or copy path: " ++ message)
         ]
     ]
 

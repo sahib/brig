@@ -7334,20 +7334,12 @@ var author$project$Modals$RemoteFolders$AlertMsg = function (a) {
 var author$project$Modals$RemoteFolders$AnimateModal = function (a) {
 	return {$: 'AnimateModal', a: a};
 };
-var author$project$Modals$RemoteFolders$KeyPress = function (a) {
-	return {$: 'KeyPress', a: a};
-};
 var author$project$Modals$RemoteFolders$subscriptions = function (model) {
 	return elm$core$Platform$Sub$batch(
 		_List_fromArray(
 			[
 				A2(rundis$elm_bootstrap$Bootstrap$Modal$subscriptions, model.modal, author$project$Modals$RemoteFolders$AnimateModal),
-				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$RemoteFolders$AlertMsg),
-				elm$browser$Browser$Events$onKeyPress(
-				A2(
-					elm$json$Json$Decode$map,
-					author$project$Modals$RemoteFolders$KeyPress,
-					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+				A2(rundis$elm_bootstrap$Bootstrap$Alert$subscriptions, model.alert, author$project$Modals$RemoteFolders$AlertMsg)
 			]));
 };
 var author$project$Modals$RemoteRemove$AlertMsg = function (a) {
@@ -8286,7 +8278,7 @@ var author$project$Commands$Self = F2(
 var author$project$Commands$emptySelf = A2(author$project$Commands$Self, '', '');
 var author$project$Modals$RemoteAdd$Ready = {$: 'Ready'};
 var author$project$Modals$RemoteAdd$newModelWithState = function (state) {
-	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, doAutoUdate: false, fingerprint: '', folders: _List_Nil, modal: state, name: '', state: author$project$Modals$RemoteAdd$Ready};
+	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, doAutoUdate: false, fingerprint: '', modal: state, name: '', state: author$project$Modals$RemoteAdd$Ready};
 };
 var author$project$Modals$RemoteAdd$newModel = author$project$Modals$RemoteAdd$newModelWithState(rundis$elm_bootstrap$Bootstrap$Modal$hidden);
 var author$project$Commands$emptyRemote = {
@@ -8301,7 +8293,7 @@ var author$project$Commands$emptyRemote = {
 var author$project$Modals$RemoteFolders$Ready = {$: 'Ready'};
 var author$project$Modals$RemoteFolders$newModelWithState = F2(
 	function (state, remote) {
-		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, folders: _List_Nil, modal: state, newFolder: '', remote: remote, state: author$project$Modals$RemoteFolders$Ready};
+		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, allDirs: _List_Nil, filter: '', modal: state, remote: remote, state: author$project$Modals$RemoteFolders$Ready};
 	});
 var author$project$Modals$RemoteFolders$newModel = A2(author$project$Modals$RemoteFolders$newModelWithState, rundis$elm_bootstrap$Bootstrap$Modal$hidden, author$project$Commands$emptyRemote);
 var author$project$Modals$RemoteRemove$Ready = {$: 'Ready'};
@@ -10987,7 +10979,7 @@ var author$project$Modals$RemoteAdd$GotResponse = function (a) {
 	return {$: 'GotResponse', a: a};
 };
 var author$project$Modals$RemoteAdd$submit = function (model) {
-	return A5(author$project$Commands$doRemoteAdd, author$project$Modals$RemoteAdd$GotResponse, model.name, model.fingerprint, model.doAutoUdate, model.folders);
+	return A5(author$project$Commands$doRemoteAdd, author$project$Modals$RemoteAdd$GotResponse, model.name, model.fingerprint, model.doAutoUdate, _List_Nil);
 };
 var author$project$Modals$RemoteAdd$update = F2(
 	function (msg, model) {
@@ -11016,15 +11008,6 @@ var author$project$Modals$RemoteAdd$update = F2(
 					_Utils_update(
 						model,
 						{doAutoUdate: doAutoUdate}),
-					elm$core$Platform$Cmd$none);
-			case 'FoldersChanged':
-				var folders = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							folders: A2(elm$core$String$split, ',', folders)
-						}),
 					elm$core$Platform$Cmd$none);
 			case 'GotResponse':
 				var result = msg.a;
@@ -11087,6 +11070,9 @@ var author$project$Modals$RemoteAdd$update = F2(
 var author$project$Modals$RemoteFolders$Fail = function (a) {
 	return {$: 'Fail', a: a};
 };
+var author$project$Modals$RemoteFolders$GotAllDirsResponse = function (a) {
+	return {$: 'GotAllDirsResponse', a: a};
+};
 var author$project$Modals$RemoteFolders$fixFolder = function (path) {
 	return author$project$Util$prefixSlash(path);
 };
@@ -11099,22 +11085,23 @@ var author$project$Modals$RemoteFolders$submit = function (model) {
 var elm$core$List$sort = function (xs) {
 	return A2(elm$core$List$sortBy, elm$core$Basics$identity, xs);
 };
-var author$project$Modals$RemoteFolders$addFolder = function (model) {
-	var oldRemote = model.remote;
-	var cleanFolder = author$project$Modals$RemoteFolders$fixFolder(model.newFolder);
-	var newRemote = _Utils_update(
-		oldRemote,
-		{
-			folders: elm$core$List$sort(
-				A2(elm$core$List$cons, cleanFolder, oldRemote.folders))
-		});
-	var upModel = _Utils_update(
-		model,
-		{newFolder: '', remote: newRemote});
-	return _Utils_Tuple2(
-		upModel,
-		author$project$Modals$RemoteFolders$submit(upModel));
-};
+var author$project$Modals$RemoteFolders$addFolder = F2(
+	function (model, folder) {
+		var oldRemote = model.remote;
+		var cleanFolder = author$project$Modals$RemoteFolders$fixFolder(folder);
+		var newRemote = _Utils_update(
+			oldRemote,
+			{
+				folders: elm$core$List$sort(
+					A2(elm$core$List$cons, cleanFolder, oldRemote.folders))
+			});
+		var upModel = _Utils_update(
+			model,
+			{remote: newRemote});
+		return _Utils_Tuple2(
+			upModel,
+			author$project$Modals$RemoteFolders$submit(upModel));
+	});
 var author$project$Modals$RemoteFolders$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -11137,15 +11124,6 @@ var author$project$Modals$RemoteFolders$update = F2(
 							}),
 						elm$core$Platform$Cmd$none);
 				}
-			case 'NewFolderChange':
-				var folder = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{newFolder: folder}),
-					elm$core$Platform$Cmd$none);
-			case 'FolderAdd':
-				return author$project$Modals$RemoteFolders$addFolder(model);
 			case 'FolderRemove':
 				var folder = msg.a;
 				var oldRemote = model.remote;
@@ -11176,31 +11154,42 @@ var author$project$Modals$RemoteFolders$update = F2(
 				var remote = msg.a;
 				return _Utils_Tuple2(
 					A2(author$project$Modals$RemoteFolders$newModelWithState, rundis$elm_bootstrap$Bootstrap$Modal$shown, remote),
+					author$project$Commands$doListAllDirs(author$project$Modals$RemoteFolders$GotAllDirsResponse));
+			case 'GotAllDirsResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var allDirs = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{allDirs: allDirs}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			case 'DirChosen':
+				var choice = msg.a;
+				return A2(author$project$Modals$RemoteFolders$addFolder, model, choice);
+			case 'SearchInput':
+				var filter = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{filter: filter}),
 					elm$core$Platform$Cmd$none);
 			case 'ModalClose':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
+						{filter: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
 					elm$core$Platform$Cmd$none);
-			case 'AlertMsg':
+			default:
 				var vis = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{alert: vis}),
 					elm$core$Platform$Cmd$none);
-			default:
-				var key = msg.a;
-				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				} else {
-					if (key === 'Enter') {
-						return author$project$Modals$RemoteFolders$addFolder(model);
-					} else {
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-					}
-				}
 		}
 	});
 var author$project$Modals$RemoteRemove$Fail = function (a) {
@@ -20506,6 +20495,12 @@ var author$project$Modals$MoveCopy$typeToString = function (typ) {
 		return 'Copy';
 	}
 };
+var author$project$Modals$MoveCopy$DirChosen = function (a) {
+	return {$: 'DirChosen', a: a};
+};
+var author$project$Modals$MoveCopy$SearchInput = function (a) {
+	return {$: 'SearchInput', a: a};
+};
 var author$project$Modals$MoveCopy$filterAllDirs = F2(
 	function (filter, dirs) {
 		var lowerFilter = elm$core$String$toLower(filter);
@@ -20514,11 +20509,8 @@ var author$project$Modals$MoveCopy$filterAllDirs = F2(
 			elm$core$String$contains(lowerFilter),
 			dirs);
 	});
-var author$project$Modals$MoveCopy$DirChosen = function (a) {
-	return {$: 'DirChosen', a: a};
-};
 var author$project$Modals$MoveCopy$viewDirEntry = F2(
-	function (model, path) {
+	function (clickMsg, path) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Table$tr,
 			_List_Nil,
@@ -20530,7 +20522,7 @@ var author$project$Modals$MoveCopy$viewDirEntry = F2(
 						[
 							rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
 							elm$html$Html$Events$onClick(
-								author$project$Modals$MoveCopy$DirChosen(path)))
+								clickMsg(path)))
 						]),
 					_List_fromArray(
 						[
@@ -20548,7 +20540,7 @@ var author$project$Modals$MoveCopy$viewDirEntry = F2(
 						[
 							rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
 							elm$html$Html$Events$onClick(
-								author$project$Modals$MoveCopy$DirChosen(path)))
+								clickMsg(path)))
 						]),
 					_List_fromArray(
 						[
@@ -20562,8 +20554,8 @@ var rundis$elm_bootstrap$Bootstrap$Table$HeadAttr = function (a) {
 var rundis$elm_bootstrap$Bootstrap$Table$headAttr = function (attr_) {
 	return rundis$elm_bootstrap$Bootstrap$Table$HeadAttr(attr_);
 };
-var author$project$Modals$MoveCopy$viewDirList = F2(
-	function (model, dirs) {
+var author$project$Modals$MoveCopy$viewDirList = F3(
+	function (clickMsg, filter, dirs) {
 		return rundis$elm_bootstrap$Bootstrap$Table$table(
 			{
 				options: _List_fromArray(
@@ -20573,8 +20565,8 @@ var author$project$Modals$MoveCopy$viewDirList = F2(
 					_List_Nil,
 					A2(
 						elm$core$List$map,
-						author$project$Modals$MoveCopy$viewDirEntry(model),
-						A2(author$project$Modals$MoveCopy$filterAllDirs, model.filter, dirs))),
+						author$project$Modals$MoveCopy$viewDirEntry(clickMsg),
+						A2(author$project$Modals$MoveCopy$filterAllDirs, filter, dirs))),
 				thead: A2(
 					rundis$elm_bootstrap$Bootstrap$Table$thead,
 					_List_fromArray(
@@ -20609,57 +20601,55 @@ var author$project$Modals$MoveCopy$viewDirList = F2(
 						]))
 			});
 	});
-var author$project$Modals$MoveCopy$SearchInput = function (a) {
-	return {$: 'SearchInput', a: a};
-};
-var author$project$Modals$MoveCopy$viewSearchBox = function (model) {
-	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
-		A2(
-			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('stylish-input-group input-group')
-				]),
+var author$project$Modals$MoveCopy$viewSearchBox = F2(
+	function (searchMsg, filter) {
+		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
 			A2(
-				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors,
+				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$attrs,
 				_List_fromArray(
 					[
-						A2(
-						rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('input-group-addon')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$button,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$span,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('fas fa-search fa-xs input-group-addon')
-											]),
-										_List_Nil)
-									]))
-							]))
+						elm$html$Html$Attributes$class('stylish-input-group input-group')
 					]),
-				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
-					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
-						_List_fromArray(
-							[
-								rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Filter directory list'),
-								rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
-								_List_fromArray(
-									[
-										elm$html$Html$Events$onInput(author$project$Modals$MoveCopy$SearchInput),
-										elm$html$Html$Attributes$value(model.filter)
-									]))
-							]))))));
-};
+				A2(
+					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$successors,
+					_List_fromArray(
+						[
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Form$InputGroup$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('input-group-addon')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									elm$html$Html$button,
+									_List_Nil,
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$span,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('fas fa-search fa-xs input-group-addon')
+												]),
+											_List_Nil)
+										]))
+								]))
+						]),
+					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
+						rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Filter directory list'),
+									rundis$elm_bootstrap$Bootstrap$Form$Input$attrs(
+									_List_fromArray(
+										[
+											elm$html$Html$Events$onInput(searchMsg),
+											elm$html$Html$Attributes$value(filter)
+										]))
+								]))))));
+	});
 var author$project$Modals$MoveCopy$viewContent = function (model) {
 	return _List_fromArray(
 		[
@@ -20679,14 +20669,14 @@ var author$project$Modals$MoveCopy$viewContent = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										author$project$Modals$MoveCopy$viewSearchBox(model),
-										A2(author$project$Modals$MoveCopy$viewDirList, model, dirs)
+										A2(author$project$Modals$MoveCopy$viewSearchBox, author$project$Modals$MoveCopy$SearchInput, model.filter),
+										A3(author$project$Modals$MoveCopy$viewDirList, author$project$Modals$MoveCopy$DirChosen, model.filter, dirs)
 									]));
 						case 'Loading':
 							return elm$html$Html$text('Loading.');
 						default:
 							var message = _n0.a;
-							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$MoveCopy$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not rename path: ' + message);
+							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$MoveCopy$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not move or copy path: ' + message);
 					}
 				}()
 				]))
@@ -21296,9 +21286,6 @@ var author$project$Modals$RemoteAdd$AutoUpdateChanged = function (a) {
 var author$project$Modals$RemoteAdd$FingerprintInputChanged = function (a) {
 	return {$: 'FingerprintInputChanged', a: a};
 };
-var author$project$Modals$RemoteAdd$FoldersChanged = function (a) {
-	return {$: 'FoldersChanged', a: a};
-};
 var author$project$Modals$RemoteAdd$NameInputChanged = function (a) {
 	return {$: 'NameInputChanged', a: a};
 };
@@ -21332,15 +21319,6 @@ var author$project$Modals$RemoteAdd$viewRemoteAddContent = function (model) {
 							rundis$elm_bootstrap$Bootstrap$Form$Input$large,
 							rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Remote fingerprint'),
 							rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$RemoteAdd$FingerprintInputChanged)
-						])),
-					A2(elm$html$Html$br, _List_Nil, _List_Nil),
-					rundis$elm_bootstrap$Bootstrap$Form$Input$text(
-					_List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Form$Input$id('remote-folders-input'),
-							rundis$elm_bootstrap$Bootstrap$Form$Input$large,
-							rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('Comma separated list of folders'),
-							rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$RemoteAdd$FoldersChanged)
 						])),
 					A2(elm$html$Html$br, _List_Nil, _List_Nil),
 					A2(
@@ -21452,6 +21430,12 @@ var author$project$Modals$RemoteAdd$view = function (model) {
 							rundis$elm_bootstrap$Bootstrap$Modal$config(author$project$Modals$RemoteAdd$ModalClose)))))));
 };
 var author$project$Modals$RemoteFolders$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$RemoteFolders$DirChosen = function (a) {
+	return {$: 'DirChosen', a: a};
+};
+var author$project$Modals$RemoteFolders$SearchInput = function (a) {
+	return {$: 'SearchInput', a: a};
+};
 var author$project$Modals$RemoteFolders$FolderRemove = function (a) {
 	return {$: 'FolderRemove', a: a};
 };
@@ -21526,7 +21510,10 @@ var author$project$Modals$RemoteFolders$viewFolder = function (folder) {
 				])));
 };
 var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
-	return (elm$core$List$length(remote.folders) <= 0) ? A2(
+	var folders = elm$core$List$sort(
+		elm$core$Set$toList(
+			elm$core$Set$fromList(remote.folders)));
+	return (elm$core$List$length(folders) <= 0) ? A2(
 		elm$html$Html$span,
 		_List_fromArray(
 			[
@@ -21536,7 +21523,7 @@ var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
 			[
 				elm$html$Html$text('No folders. This means this user can see everthing.'),
 				A2(elm$html$Html$br, _List_Nil, _List_Nil),
-				elm$html$Html$text('Add a new folder below to change this.'),
+				elm$html$Html$text('Add a new folder below to limit what this remote can see.'),
 				A2(elm$html$Html$br, _List_Nil, _List_Nil),
 				A2(elm$html$Html$br, _List_Nil, _List_Nil)
 			])) : rundis$elm_bootstrap$Bootstrap$ListGroup$ul(
@@ -21551,65 +21538,9 @@ var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
 							author$project$Modals$RemoteFolders$viewFolder(f)
 						]));
 			},
-			remote.folders));
+			folders));
 };
-var author$project$Modals$RemoteFolders$FolderAdd = {$: 'FolderAdd'};
-var author$project$Modals$RemoteFolders$NewFolderChange = function (a) {
-	return {$: 'NewFolderChange', a: a};
-};
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$button = F2(
-	function (options, children) {
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Addon(
-			A2(rundis$elm_bootstrap$Bootstrap$Button$button, options, children));
-	});
-var rundis$elm_bootstrap$Bootstrap$Form$InputGroup$predecessors = F2(
-	function (addons, _n0) {
-		var conf = _n0.a;
-		return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$Config(
-			_Utils_update(
-				conf,
-				{predecessors: addons}));
-	});
-var author$project$Modals$RemoteFolders$viewNewFolderControl = function (model) {
-	return rundis$elm_bootstrap$Bootstrap$Form$InputGroup$view(
-		A2(
-			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$predecessors,
-			_List_fromArray(
-				[
-					A2(
-					rundis$elm_bootstrap$Bootstrap$Form$InputGroup$button,
-					_List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Button$primary,
-							rundis$elm_bootstrap$Bootstrap$Button$attrs(
-							_List_fromArray(
-								[
-									elm$html$Html$Events$onClick(author$project$Modals$RemoteFolders$FolderAdd),
-									elm$html$Html$Attributes$disabled(
-									!elm$core$String$length(model.newFolder))
-								]))
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('fas fa-lg fa-folder-plus')
-								]),
-							_List_Nil)
-						]))
-				]),
-			rundis$elm_bootstrap$Bootstrap$Form$InputGroup$config(
-				rundis$elm_bootstrap$Bootstrap$Form$InputGroup$text(
-					_List_fromArray(
-						[
-							rundis$elm_bootstrap$Bootstrap$Form$Input$placeholder('New folder path'),
-							rundis$elm_bootstrap$Bootstrap$Form$Input$onInput(author$project$Modals$RemoteFolders$NewFolderChange),
-							rundis$elm_bootstrap$Bootstrap$Form$Input$value(model.newFolder)
-						])))));
-};
-var author$project$Modals$RemoteFolders$viewRemoteAddContent = function (model) {
+var author$project$Modals$RemoteFolders$viewRemoteFoldersContent = function (model) {
 	return _List_fromArray(
 		[
 			A2(
@@ -21618,9 +21549,43 @@ var author$project$Modals$RemoteFolders$viewRemoteAddContent = function (model) 
 				[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs12]),
 			_List_fromArray(
 				[
+					A2(
+					elm$html$Html$h4,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('text-muted text-center')
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('All folders')
+								]))
+						])),
 					author$project$Modals$RemoteFolders$viewFolders(model.remote),
 					A2(elm$html$Html$br, _List_Nil, _List_Nil),
-					author$project$Modals$RemoteFolders$viewNewFolderControl(model),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					elm$html$Html$h4,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('text-muted text-center')
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('All folders')
+								]))
+						])),
+					A2(author$project$Modals$MoveCopy$viewSearchBox, author$project$Modals$RemoteFolders$SearchInput, model.filter),
+					A3(author$project$Modals$MoveCopy$viewDirList, author$project$Modals$RemoteFolders$DirChosen, model.filter, model.allDirs),
 					function () {
 					var _n0 = model.state;
 					if (_n0.$ === 'Ready') {
@@ -21676,10 +21641,11 @@ var author$project$Modals$RemoteFolders$view = function (model) {
 										rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
 										_List_fromArray(
 											[
-												A2(elm$html$Html$Attributes$style, 'min-width', '60vh')
+												A2(elm$html$Html$Attributes$style, 'min-width', '60vh'),
+												elm$html$Html$Attributes$class('scrollable-modal-row')
 											]))
 									]),
-								author$project$Modals$RemoteFolders$viewRemoteAddContent(model))
+								author$project$Modals$RemoteFolders$viewRemoteFoldersContent(model))
 							]))
 					]),
 				A3(
@@ -21695,7 +21661,9 @@ var author$project$Modals$RemoteFolders$view = function (model) {
 							_List_Nil,
 							_List_fromArray(
 								[
-									elm$html$Html$text('Edit folders')
+									elm$html$Html$text('Edit folders of »'),
+									elm$html$Html$text(model.remote.name),
+									elm$html$Html$text('«')
 								]))
 						]),
 					A2(
