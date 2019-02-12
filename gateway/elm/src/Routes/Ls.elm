@@ -746,6 +746,12 @@ buildActionDropdown model entry =
                 [ span [ class "fa fa-md fa-eye" ] []
                 , text " View"
                 ]
+            , Dropdown.anchorItem
+                [ onClick (ShareMsg <| Share.show [ entry.path ])
+                ]
+                [ span [ class "fa fa-md fa-share-alt" ] []
+                , text " Share"
+                ]
             , Dropdown.divider
             , Dropdown.buttonItem
                 [ onClick (RemoveClicked entry)
@@ -878,7 +884,7 @@ buildModals model =
         , Html.map CopyMsg (MoveCopy.view model.copyState)
         , Html.map MkdirMsg (Mkdir.view model.mkdirState model.url (existsInCurr model))
         , Html.map RemoveMsg (Remove.view model.removeState paths)
-        , Html.map ShareMsg (Share.view model.shareState paths model.url)
+        , Html.map ShareMsg (Share.view model.shareState model.url)
         ]
 
 
@@ -1041,7 +1047,7 @@ viewActionList model =
                 , ButtonGroup.vertical
                 ]
                 [ buildActionButton
-                    (ShareMsg <| Share.show)
+                    (ShareMsg <| Share.show (selectedPaths model))
                     "fa-share-alt"
                     "Share"
                     (nSelected == 0)

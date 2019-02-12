@@ -19,7 +19,7 @@ type alias Model =
 
 
 type Msg
-    = ModalShow
+    = ModalShow (List String)
     | AnimateModal Modal.Visibility
     | ModalClose
 
@@ -45,8 +45,8 @@ update msg model =
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
 
-        ModalShow ->
-            ( { model | modal = Modal.shown }, Cmd.none )
+        ModalShow paths ->
+            ( { model | modal = Modal.shown, paths = paths }, Cmd.none )
 
         ModalClose ->
             ( { model | modal = Modal.hidden, paths = [] }, Cmd.none )
@@ -65,18 +65,18 @@ formatEntry url path =
     li [] [ a [ href link ] [ text link ] ]
 
 
-viewShare : Model -> List String -> Url.Url -> List (Grid.Column Msg)
-viewShare model entries url =
+viewShare : Model -> Url.Url -> List (Grid.Column Msg)
+viewShare model url =
     [ Grid.col [ Col.xs12 ]
         [ p [] [ text "Use those links to share the selected files with people that do not use brig." ]
         , p [] [ b [] [ text "Note:" ], text " Remember, they still need to authenticate themselves." ]
-        , ul [ id "share-list" ] (List.map (formatEntry url) entries)
+        , ul [ id "share-list" ] (List.map (formatEntry url) model.paths)
         ]
     ]
 
 
-view : Model -> List String -> Url.Url -> Html Msg
-view model selectedPaths url =
+view : Model -> Url.Url -> Html Msg
+view model url =
     Modal.config ModalClose
         |> Modal.large
         |> Modal.withAnimation AnimateModal
@@ -84,7 +84,7 @@ view model selectedPaths url =
             [ h4 [] [ text "Share hyperlinks" ] ]
         |> Modal.body []
             [ Grid.containerFluid []
-                [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model selectedPaths url) ]
+                [ Grid.row [ Row.attrs [ class "scrollable-modal-row" ] ] (viewShare model url) ]
             ]
         |> Modal.footer []
             [ Button.button
@@ -96,9 +96,9 @@ view model selectedPaths url =
         |> Modal.view model.modal
 
 
-show : Msg
-show =
-    ModalShow
+show : List String -> Msg
+show paths =
+    ModalShow paths
 
 
 

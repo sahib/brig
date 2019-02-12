@@ -10256,10 +10256,11 @@ var author$project$Modals$Share$update = F2(
 						{modal: visibility}),
 					elm$core$Platform$Cmd$none);
 			case 'ModalShow':
+				var paths = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown}),
+						{modal: rundis$elm_bootstrap$Bootstrap$Modal$shown, paths: paths}),
 					elm$core$Platform$Cmd$none);
 			default:
 				return _Utils_Tuple2(
@@ -16064,8 +16065,12 @@ var author$project$Modals$Remove$ModalShow = function (a) {
 var author$project$Modals$Remove$show = function (paths) {
 	return author$project$Modals$Remove$ModalShow(paths);
 };
-var author$project$Modals$Share$ModalShow = {$: 'ModalShow'};
-var author$project$Modals$Share$show = author$project$Modals$Share$ModalShow;
+var author$project$Modals$Share$ModalShow = function (a) {
+	return {$: 'ModalShow', a: a};
+};
+var author$project$Modals$Share$show = function (paths) {
+	return author$project$Modals$Share$ModalShow(paths);
+};
 var author$project$Modals$Upload$UploadSelectedFiles = F2(
 	function (a, b) {
 		return {$: 'UploadSelectedFiles', a: a, b: b};
@@ -16905,7 +16910,9 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 							[
 								A4(
 								author$project$Routes$Ls$buildActionButton,
-								author$project$Routes$Ls$ShareMsg(author$project$Modals$Share$show),
+								author$project$Routes$Ls$ShareMsg(
+									author$project$Modals$Share$show(
+										author$project$Routes$Ls$selectedPaths(model))),
 								'fa-share-alt',
 								'Share',
 								!nSelected),
@@ -17706,6 +17713,27 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 									]),
 								_List_Nil),
 								elm$html$Html$text(' View')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$anchorItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								author$project$Routes$Ls$ShareMsg(
+									author$project$Modals$Share$show(
+										_List_fromArray(
+											[entry.path]))))
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fa fa-md fa-share-alt')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Share')
 							])),
 						rundis$elm_bootstrap$Bootstrap$Dropdown$divider,
 						A2(
@@ -21060,8 +21088,8 @@ var author$project$Modals$Share$formatEntry = F2(
 				]));
 	});
 var elm$html$Html$b = _VirtualDom_node('b');
-var author$project$Modals$Share$viewShare = F3(
-	function (model, entries, url) {
+var author$project$Modals$Share$viewShare = F2(
+	function (model, url) {
 		return _List_fromArray(
 			[
 				A2(
@@ -21100,12 +21128,12 @@ var author$project$Modals$Share$viewShare = F3(
 						A2(
 							elm$core$List$map,
 							author$project$Modals$Share$formatEntry(url),
-							entries))
+							model.paths))
 					]))
 			]);
 	});
-var author$project$Modals$Share$view = F3(
-	function (model, selectedPaths, url) {
+var author$project$Modals$Share$view = F2(
+	function (model, url) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Modal$view,
 			model.modal,
@@ -21151,7 +21179,7 @@ var author$project$Modals$Share$view = F3(
 													elm$html$Html$Attributes$class('scrollable-modal-row')
 												]))
 										]),
-									A3(author$project$Modals$Share$viewShare, model, selectedPaths, url))
+									A2(author$project$Modals$Share$viewShare, model, url))
 								]))
 						]),
 					A3(
@@ -21236,7 +21264,7 @@ var author$project$Routes$Ls$buildModals = function (model) {
 				A2(
 				elm$html$Html$map,
 				author$project$Routes$Ls$ShareMsg,
-				A3(author$project$Modals$Share$view, model.shareState, paths, model.url))
+				A2(author$project$Modals$Share$view, model.shareState, model.url))
 			]));
 };
 var author$project$Modals$RemoteAdd$ModalClose = {$: 'ModalClose'};
