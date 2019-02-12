@@ -973,8 +973,30 @@ present them your files without too much hassle. ``brig`` features a *Gateway*
 to HTTP(S), which comes particularly handy if you happen to run a public
 server and/or want to provide a GUI to your users.
 
-.. image:: _static/gateway.png
-    :alt: Beta version of the UI.
+Here's some screenshots of the gateway
+
+.. image:: _static/gateway-login.png
+    :alt: Gateway login screen
+    :width: 66%
+
+.. image:: _static/gateway-files.png
+    :alt: Gateway files view
+    :width: 66%
+
+.. image:: _static/gateway-changelog.png
+    :alt: Gateway changelog view
+    :width: 66%
+
+.. image:: _static/gateway-trashbin.png
+    :alt: Gateway trashbin view
+    :width: 66%
+
+.. image:: _static/gateway-remotes.png
+    :alt: Gateway remotes view
+    :width: 66%
+
+.. image:: _static/gateway-add-remote.png
+    :alt: Gateway add remote view
     :width: 66%
 
 Before you do anything, you need to a »user« to your gateway. This user is different

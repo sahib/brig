@@ -11,7 +11,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1558/badge)](https://bestpractices.coreinfrastructure.org/en/projects/1558)
 
-![](https://raw.githubusercontent.com/sahib/brig/master/docs/_static/gateway-files.png)
+![brig gateway in the files tab](https://raw.githubusercontent.com/sahib/brig/master/docs/_static/gateway-files.png)
 
 ## Table of Contents
 
