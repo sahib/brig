@@ -442,7 +442,8 @@ func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
 	//       by the length of the prefix.
 	switch whence {
 	case io.SeekStart:
-		if _, err := pr.r.Seek(Max64(int64(len(pr.data)), offset), whence); err != nil {
+		newOff := Max64(int64(len(pr.data)), offset)
+		if _, err := pr.r.Seek(newOff, whence); err != nil {
 			return -1, err
 		}
 
@@ -469,15 +470,9 @@ func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
 
 		pr.curs = newOff
 		return pr.curs, nil
+	default:
+		return -1, fmt.Errorf("invalid whence: %d", whence)
 	}
-
-	newOff, err := pr.r.Seek(offset, whence)
-	if err != nil {
-		return newOff, err
-	}
-
-	pr.curs = newOff
-	return newOff, err
 }
 
 func makePrefixReader(data []byte, r io.ReadSeeker) *prefixReader {
