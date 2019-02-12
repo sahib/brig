@@ -191,7 +191,7 @@ func TestPrefixReader(t *testing.T) {
 	a := []byte{1, 2, 3}
 	b := []byte{4, 5, 6}
 
-	r := PrefixReader(a, bytes.NewReader(b))
+	r := makePrefixReader(a, bytes.NewReader(b))
 	data, err := ioutil.ReadAll(r)
 	require.Nil(t, err)
 	require.Equal(t, data, []byte{1, 2, 3, 4, 5, 6})
@@ -201,7 +201,7 @@ func TestPrefixReaderEmptyReader(t *testing.T) {
 	a := []byte{1, 2, 3}
 	b := []byte{}
 
-	r := PrefixReader(a, bytes.NewReader(b))
+	r := makePrefixReader(a, bytes.NewReader(b))
 	data, err := ioutil.ReadAll(r)
 	require.Nil(t, err)
 	require.Equal(t, data, []byte{1, 2, 3})
@@ -211,7 +211,7 @@ func TestPrefixReaderEmptyBuffer(t *testing.T) {
 	a := []byte{}
 	b := []byte{4, 5, 6}
 
-	r := PrefixReader(a, bytes.NewReader(b))
+	r := makePrefixReader(a, bytes.NewReader(b))
 	data, err := ioutil.ReadAll(r)
 	require.Nil(t, err)
 	require.Equal(t, data, []byte{4, 5, 6})
@@ -221,7 +221,7 @@ func TestPrefixReaderBothEmpty(t *testing.T) {
 	a := []byte{}
 	b := []byte{}
 
-	r := PrefixReader(a, bytes.NewReader(b))
+	r := makePrefixReader(a, bytes.NewReader(b))
 	data, err := ioutil.ReadAll(r)
 	require.Nil(t, err)
 	require.Equal(t, data, []byte{})
@@ -231,7 +231,7 @@ func TestPrefixReaderPartial(t *testing.T) {
 	a := []byte{1, 2, 3}
 	b := []byte{4, 5, 6}
 
-	r := PrefixReader(a, bytes.NewReader(b))
+	r := makePrefixReader(a, bytes.NewReader(b))
 
 	buf := make([]byte, 6)
 	for i := 0; i < 6; i++ {
@@ -240,4 +240,28 @@ func TestPrefixReaderPartial(t *testing.T) {
 		require.Equal(t, n, 1)
 		require.Equal(t, buf[:i+1], []byte{1, 2, 3, 4, 5, 6}[:i+1])
 	}
+}
+
+func TestPrefixReaderSeekSize(t *testing.T) {
+	a := []byte{1, 2, 3}
+	b := []byte{1, 2, 3, 4, 5, 6}
+
+	r := makePrefixReader(a, bytes.NewReader(b))
+	size, err := r.Seek(0, io.SeekEnd)
+	require.Nil(t, err)
+	require.Equal(t, int64(6), int64(size))
+
+	off, err := r.Seek(0, io.SeekStart)
+	require.Nil(t, err)
+	require.Equal(t, int64(0), off)
+
+	curr, err := r.Seek(0, io.SeekCurrent)
+	require.Nil(t, err)
+	require.Equal(t, int64(0), curr)
+
+	buf := &bytes.Buffer{}
+	n, err := io.Copy(buf, r)
+	require.Nil(t, err)
+	require.Equal(t, int64(6), n)
+	require.Equal(t, []byte{1, 2, 3, 4, 5, 6}, buf.Bytes())
 }

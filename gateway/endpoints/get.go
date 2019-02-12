@@ -112,6 +112,7 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !gh.validatePath(nodePath, w, r) {
 			if !gh.checkBasicAuth(nodePath, w, r) {
 				http.Error(w, "not authorized", http.StatusUnauthorized)
+				return
 			}
 		}
 

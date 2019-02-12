@@ -373,6 +373,7 @@ func BenchmarkThroughputReader(b *testing.B) {
 }
 
 func TestLimitStreamSize(t *testing.T) {
+	// Size taken from a dummy file that showed this bug:
 	data := testutil.CreateDummyBuf(6041)
 	packData, err := compress.Pack(data, compress.AlgoSnappy)
 	require.Nil(t, err)
@@ -405,4 +406,31 @@ func TestLimitStreamSize(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(len(data)), n)
 	require.Equal(t, data, buf.Bytes())
+}
+
+func TestStreamSizeBySeek(t *testing.T) {
+	buf := &bytes.Buffer{}
+	data := testutil.CreateDummyBuf(6041 * 1024)
+	encStream, err := NewInStream(bytes.NewReader(data), TestKey, compress.AlgoSnappy)
+	require.Nil(t, err)
+
+	_, err = io.Copy(buf, encStream)
+	require.Nil(t, err)
+
+	stream, err := NewOutStream(bytes.NewReader(buf.Bytes()), TestKey)
+	require.Nil(t, err)
+
+	n, err := stream.Seek(0, io.SeekEnd)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), n)
+
+	n, err = stream.Seek(0, io.SeekStart)
+	require.Nil(t, err)
+	require.Equal(t, int64(0), n)
+
+	outBuf := &bytes.Buffer{}
+	n, err = io.Copy(outBuf, stream)
+	require.Nil(t, err)
+	require.Equal(t, int64(len(data)), n)
+	require.Equal(t, outBuf.Bytes(), data)
 }

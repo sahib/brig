@@ -429,23 +429,59 @@ func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 	}
 
 	n, err = pr.r.Read(buf)
+
+	// err might be io.EOF, so progress.
 	nread += n
 	return nread, err
 }
 
 func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
-	newPos, err := pr.r.Seek(offset, whence)
-	if err != nil {
-		return newPos, err
+	// NOTE: pr.r shares the same offset space as pr does.
+	//       All this Seek() does is preventing it from jumping it into the prefix space.
+	//       It does this by calculating an absolute offset and limits the jump offset
+	//       by the length of the prefix.
+	switch whence {
+	case io.SeekStart:
+		if _, err := pr.r.Seek(Max64(int64(len(pr.data)), offset), whence); err != nil {
+			return -1, err
+		}
+
+		pr.curs = offset
+		return pr.curs, nil
+	case io.SeekCurrent:
+		newOff := Max64(int64(len(pr.data)), pr.curs+offset)
+		if _, err := pr.r.Seek(newOff, io.SeekStart); err != nil {
+			return -1, err
+		}
+
+		pr.curs += offset
+		return pr.curs, nil
+	case io.SeekEnd:
+		size, err := pr.r.Seek(0, io.SeekEnd)
+		if err != nil {
+			return -1, err
+		}
+
+		newOff := Max64(int64(len(pr.data)), size+offset)
+		if _, err := pr.r.Seek(newOff, io.SeekStart); err != nil {
+			return -1, err
+		}
+
+		pr.curs = newOff
+		return pr.curs, nil
 	}
 
-	pr.curs = newPos
-	return newPos, nil
+	newOff, err := pr.r.Seek(offset, whence)
+	if err != nil {
+		return newOff, err
+	}
+
+	pr.curs = newOff
+	return newOff, err
 }
 
-// PrefixReader returns an io.Reader that outputs `data` before the rest of `r`.
-func PrefixReader(data []byte, r io.ReadSeeker) io.ReadSeeker {
-	return &prefixReader{data: data, r: r}
+func makePrefixReader(data []byte, r io.ReadSeeker) *prefixReader {
+	return &prefixReader{r: r, data: data}
 }
 
 // PeekHeader returns a new reader that will yield the very same data as `r`.
@@ -459,5 +495,5 @@ func PeekHeader(r io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
 	}
 
 	headerBuf = headerBuf[:n]
-	return headerBuf, PrefixReader(headerBuf, r), nil
+	return headerBuf, &prefixReader{data: headerBuf, r: r}, nil
 }
