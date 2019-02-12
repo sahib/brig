@@ -128,7 +128,7 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	if newPos > int64(ls.size) {
-		return ls.size, io.EOF
+		return int64(ls.size), io.EOF
 	}
 
 	ls.pos = uint64(newPos)
